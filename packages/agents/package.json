@@ -18,7 +18,12 @@
     "@omega-v/types": "*",
     "@omega-v/sdk": "*",
     "@omega-v/compiler": "*",
-    "@omega-v/ir": "*"
+    "@omega-v/ir": "*",
+    "@omega-v/governance": "*",
+    "@omega-v/learning": "*",
+    "@omega-v/evidence": "*",
+    "@omega-v/green": "*",
+    "@omega-v/human": "*"
   },
   "devDependencies": {
     "@types/jest": "^29.5.0",

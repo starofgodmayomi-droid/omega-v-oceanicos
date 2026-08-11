@@ -19,6 +19,12 @@ export default {
     '@omega-v/friction': '<rootDir>/packages/friction/src/index.ts',
     '@omega-v/graph': '<rootDir>/packages/graph/src/index.ts',
     '@omega-v/security': '<rootDir>/packages/security/src/index.ts',
+    '@omega-v/evolution': '<rootDir>/packages/evolution/src/index.ts',
+    '@omega-v/learning': '<rootDir>/packages/learning/src/index.ts',
+    '@omega-v/governance': '<rootDir>/packages/governance/src/index.ts',
+    '@omega-v/evidence': '<rootDir>/packages/evidence/src/index.ts',
+    '@omega-v/green': '<rootDir>/packages/green/src/index.ts',
+    '@omega-v/human': '<rootDir>/packages/human/src/index.ts',
   },
   collectCoverageFrom: [
     'packages/*/src/**/*.ts',

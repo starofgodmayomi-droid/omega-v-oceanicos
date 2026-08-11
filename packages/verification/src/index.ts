@@ -237,6 +237,13 @@ export class VerificationEngine {
   }
 
   /**
+   * Get all registered rules
+   */
+  public getRules(): VerificationRule[] {
+    return Array.from(this.ruleRegistry.values());
+  }
+
+  /**
    * Get the number of registered rules
    */
   public getRuleCount(): number {

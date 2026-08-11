@@ -494,5 +494,133 @@ export interface AuthorizationResult {
   timestamp: string;
 }
 
+/**
+ * Evolution & Recompilation Types (Section XXVII)
+ * Controlled rule updates driven by drift detection and evidence.
+ */
+export interface DriftAnalysis {
+  ruleName: string;
+  totalExecutions: number;
+  failureRate: number;
+  driftDetected: boolean;
+  recommendedAction: 'MAINTAIN' | 'ADJUST_THRESHOLD' | 'RECOMPILE_DSL';
+}
+
+export interface EvolutionProposal {
+  id: string;
+  targetRule: string;
+  previousDefinition: string;
+  candidateDefinition: string;
+  rationale: string;
+  simulatedSuccessRate: number;
+  status: 'PROPOSED' | 'TESTED' | 'PROMOTED' | 'REJECTED';
+  proposedAt: string;
+}
+
+/**
+ * Learning Engine Types (Section XXVI)
+ * Learning must be grounded in observed outcomes compared to predictions.
+ */
+export interface Prediction {
+  id: string;
+  expectedOutcome: string;
+  confidence: number;
+  basedOnRule: string;
+  madeAt: string;
+}
+
+export interface LearningEvent {
+  id: string;
+  predictionId: string;
+  prediction: Prediction;
+  actualOutcome: string;
+  error: number; // 0 = perfect match, 1 = complete contradiction
+  insight: LearningInsight;
+  recordedAt: string;
+}
+
+/**
+ * Governance Engine Types (Section XXIX)
+ * Governance constrains power.
+ */
+export type GovernanceAction = 
+  | 'AGENT_AUTONOMY'
+  | 'DATA_ACCESS'
+  | 'MODEL_DEPLOYMENT'
+  | 'EMERGENCY_ACTION'
+  | 'ROLLBACK';
+
+export interface GovernanceRule {
+  id: string;
+  action: GovernanceAction;
+  requiresHumanApproval: boolean;
+  minimumConfidenceThreshold: number;
+  maximumRiskThreshold: number;
+  active: boolean;
+}
+
+export interface GovernanceDecision {
+  id: string;
+  action: GovernanceAction;
+  requestedBy: string;
+  context: Record<string, unknown>;
+  allowed: boolean;
+  reason: string;
+  requiresHumanApproval: boolean;
+  decidedAt: string;
+}
+
+/**
+ * Evidence Artifact Types (Section XXIV)
+ */
+export interface EvidenceArtifact {
+  id: string;
+  verificationId: string;
+  commitHash?: string;
+  environment: string;
+  toolVersions: Record<string, string>;
+  lineageHash: string;
+  payload: Record<string, unknown>; // JSON dump of raw verification trace
+  createdAt: string;
+}
+
+/**
+ * GREEN Rule Types (Section XXV)
+ */
+export interface GreenEvaluation {
+  isGreen: boolean;
+  allChecksPassed: boolean;
+  evidenceExists: boolean;
+  lineageExists: boolean;
+  attestationExists: boolean;
+  noCriticalFailures: boolean;
+  reason: string;
+  evaluatedAt: string;
+}
+
+/**
+ * Human Intelligence Types (Section XXVIII)
+ * Humans are participants in the loop.
+ */
+export type HumanActionType = 
+  | 'DREAM' 
+  | 'THOUGHT' 
+  | 'INTENTION' 
+  | 'VALUE_JUDGMENT' 
+  | 'ACTION' 
+  | 'FEEDBACK' 
+  | 'DISSENT' 
+  | 'APPROVAL';
+
+export interface HumanInput {
+  id: string;
+  type: HumanActionType;
+  humanId: string;
+  contextId?: string; // Links to a VerificationResult, Proposal, or GovernanceDecision
+  payload: Record<string, unknown>;
+  rationale: string;
+  recordedAt: string;
+}
+
 
 

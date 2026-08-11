@@ -42,9 +42,15 @@ export class RuleCompiler {
         instructions.push({ opcode: Opcode.BETWEEN });
       } else {
         // Parse binary expression: `left op right`
-        const match = token.match(/^([a-zA-Z0-9_.]+)\s*(==|!=|<=|>=|<|>|contains)\s*(.+)$/i);
+        const match = token.match(/^([a-zA-Z0-9_.]+)\s*(==|!=|<=|>=|<|>|contains)\s+(.+)$/i);
         if (!match) {
           throw new Error(`Compiler Syntax Error: Unable to parse expression '${token}' in rule '${ruleName}'`);
+        }
+
+        // Reject if the parsed value starts with operator characters (e.g. <<< or ==)
+        const rawValCheck = match[3].trim();
+        if (/^[<>=!]/.test(rawValCheck)) {
+          throw new Error(`Compiler Syntax Error: Invalid value '${rawValCheck}' in expression '${token}' of rule '${ruleName}'`);
         }
 
         const [, field, operator, rawVal] = match;

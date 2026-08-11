@@ -35,7 +35,13 @@
       "@omega-v/mood": ["packages/mood/src/index.ts"],
       "@omega-v/friction": ["packages/friction/src/index.ts"],
       "@omega-v/graph": ["packages/graph/src/index.ts"],
-      "@omega-v/security": ["packages/security/src/index.ts"]
+      "@omega-v/security": ["packages/security/src/index.ts"],
+      "@omega-v/evolution": ["packages/evolution/src/index.ts"],
+      "@omega-v/learning": ["packages/learning/src/index.ts"],
+      "@omega-v/governance": ["packages/governance/src/index.ts"],
+      "@omega-v/evidence": ["packages/evidence/src/index.ts"],
+      "@omega-v/green": ["packages/green/src/index.ts"],
+      "@omega-v/human": ["packages/human/src/index.ts"]
     }
   },
   "include": ["packages/*/src", "apps/*/src"],

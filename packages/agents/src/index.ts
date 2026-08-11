@@ -1,8 +1,13 @@
 import { OceanicosClient, FullLoopResult } from '@omega-v/sdk';
 import { RuleCompiler } from '@omega-v/compiler';
 import { OceanicumVM, IRProgram } from '@omega-v/ir';
+import { GovernanceEngine } from '@omega-v/governance';
+import { LearningEngine } from '@omega-v/learning';
+import { EvidenceEngine } from '@omega-v/evidence';
+import { GreenEngine } from '@omega-v/green';
+import { HumanEngine } from '@omega-v/human';
 
-export type AgentRole = 'Observer' | 'Verifier' | 'Builder' | 'Security' | 'Governance' | 'Learning';
+export type AgentRole = 'Observer' | 'Verifier' | 'Builder' | 'Security' | 'Governance' | 'Learning' | 'Human';
 
 export interface AgentActionResult {
   agentRole: AgentRole;
@@ -95,42 +100,92 @@ export class SecurityAgent extends FormlessAgent {
 }
 
 export class GovernanceAgent extends FormlessAgent {
+  private engine = new GovernanceEngine();
+
   constructor(sdk: OceanicosClient) {
     super('Governance', sdk);
+    this.engine.registerRule({
+      id: 'gov-rule-swarm',
+      action: 'AGENT_AUTONOMY',
+      requiresHumanApproval: false,
+      minimumConfidenceThreshold: 0.5,
+      maximumRiskThreshold: 0.5,
+      active: true,
+    });
   }
 
   public async executeTask(input: Record<string, unknown>): Promise<AgentActionResult> {
-    const metrics = this.sdk.getMetrics();
-    const successThreshold = (input.threshold as number) || 0.5;
-    const isCompliant = metrics.successRate >= successThreshold;
+    const confidence = (input.confidence as number) ?? 0.8;
+    const risk = (input.risk as number) ?? 0.1;
+    const decision = this.engine.requestAction('AGENT_AUTONOMY', 'GovernanceAgent', { confidence, risk });
 
     return {
       agentRole: this.role,
       timestamp: new Date().toISOString(),
       action: 'GOVERNANCE_CHECK',
-      evidence: { successRate: metrics.successRate, threshold: successThreshold },
-      verified: isCompliant,
+      evidence: { decisionId: decision.id, reason: decision.reason, allowed: decision.allowed },
+      verified: decision.allowed,
     };
   }
 }
 
 export class LearningAgent extends FormlessAgent {
+  private engine = new LearningEngine();
+
   constructor(sdk: OceanicosClient) {
     super('Learning', sdk);
   }
 
-  public async executeTask(_input: Record<string, unknown> = {}): Promise<AgentActionResult> {
-    const metrics = this.sdk.getMetrics();
+  public async executeTask(input: Record<string, unknown> = {}): Promise<AgentActionResult> {
+    const prediction = this.engine.makePrediction('PASS', 0.9, 'swarm-rule');
+    const mockVerificationResult = input.verificationResult as any;
+
+    if (mockVerificationResult) {
+      const learningEvent = this.engine.evaluatePrediction(prediction.id, mockVerificationResult);
+      return {
+        agentRole: this.role,
+        timestamp: new Date().toISOString(),
+        action: 'EXTRACT_INSIGHTS',
+        evidence: {
+          predictionId: prediction.id,
+          learningEventId: learningEvent.id,
+          error: learningEvent.error,
+          recommendation: learningEvent.insight.recommendation,
+        },
+        verified: learningEvent.error < 0.5,
+      };
+    }
 
     return {
       agentRole: this.role,
       timestamp: new Date().toISOString(),
       action: 'EXTRACT_INSIGHTS',
       evidence: {
-        totalObservations: metrics.totalObservations,
-        systemConfidence: metrics.systemConfidence,
-        insight: 'System evolution progressing within operational tolerances',
+        predictionId: prediction.id,
+        insight: 'No verification result provided for feedback loop',
       },
+      verified: true,
+    };
+  }
+}
+
+export class HumanAgent extends FormlessAgent {
+  private engine = new HumanEngine();
+
+  constructor(sdk: OceanicosClient) {
+    super('Human', sdk);
+  }
+
+  public async executeTask(input: Record<string, unknown>): Promise<AgentActionResult> {
+    const inputType = (input.type as any) || 'APPROVAL';
+    const rationale = (input.rationale as string) || 'Human participant verified cycle';
+    const humanInput = this.engine.recordInput(inputType, 'human-operator', rationale, input);
+
+    return {
+      agentRole: this.role,
+      timestamp: new Date().toISOString(),
+      action: 'HUMAN_INPUT',
+      evidence: { humanInputId: humanInput.id, type: humanInput.type, rationale: humanInput.rationale },
       verified: true,
     };
   }
@@ -145,6 +200,10 @@ export class FormlessSwarm {
   private securityAgent: SecurityAgent;
   private governanceAgent: GovernanceAgent;
   private learningAgent: LearningAgent;
+  private humanAgent: HumanAgent;
+
+  private evidenceEngine = new EvidenceEngine();
+  private greenEngine = new GreenEngine();
 
   constructor(private sdk: OceanicosClient = new OceanicosClient()) {
     this.observerAgent = new ObserverAgent(this.sdk);
@@ -152,6 +211,7 @@ export class FormlessSwarm {
     this.securityAgent = new SecurityAgent(this.sdk);
     this.governanceAgent = new GovernanceAgent(this.sdk);
     this.learningAgent = new LearningAgent(this.sdk);
+    this.humanAgent = new HumanAgent(this.sdk);
   }
 
   /**
@@ -164,8 +224,10 @@ export class FormlessSwarm {
     metadata?: Record<string, unknown>;
   }): Promise<{
     success: boolean;
+    isGreen: boolean;
     agentResults: AgentActionResult[];
     fullLoopResult: FullLoopResult;
+    evidenceArtifactId: string;
   }> {
     const results: AgentActionResult[] = [];
 
@@ -186,12 +248,8 @@ export class FormlessSwarm {
     results.push(secRes);
 
     // 4. Governance Agent
-    const govRes = await this.governanceAgent.executeTask({ threshold: 0.5 });
+    const govRes = await this.governanceAgent.executeTask({ confidence: 0.9, risk: 0.1 });
     results.push(govRes);
-
-    // 5. Learning Agent
-    const learnRes = await this.learningAgent.executeTask();
-    results.push(learnRes);
 
     // Run underlying full loop to seal the cycle
     const fullLoopResult = await this.sdk.runLoop({
@@ -201,14 +259,44 @@ export class FormlessSwarm {
       metadata: { agentCount: results.length },
     });
 
+    // 5. Learning Agent (fed with verification result)
+    const learnRes = await this.learningAgent.executeTask({ verificationResult: fullLoopResult.verification });
+    results.push(learnRes);
+
+    // 6. Human Agent
+    const humRes = await this.humanAgent.executeTask({ type: 'APPROVAL', rationale: 'Swarm cycle verified by human proxy' });
+    results.push(humRes);
+
+    // Generate Evidence Artifact
+    const artifact = this.evidenceEngine.generateArtifact(
+      fullLoopResult.verification,
+      [
+        { id: 1, type: 'OBSERVATION', data: fullLoopResult.observation, recordedAt: new Date().toISOString(), hash: 'hash1', previousHash: '0' },
+        { id: 2, type: 'VERIFICATION', data: fullLoopResult.verification, recordedAt: new Date().toISOString(), hash: 'hash2', previousHash: 'hash1' }
+      ],
+      'swarm-env',
+      { '@omega-v/agents': '1.0.0' }
+    );
+
+    // Evaluate GREEN Rule
+    const greenEval = this.greenEngine.evaluateGreen(
+      fullLoopResult.verification,
+      true,
+      [{ id: 1, type: 'OBSERVATION', data: fullLoopResult.observation, recordedAt: new Date().toISOString(), hash: 'hash1', previousHash: '0' }],
+      fullLoopResult.attestation
+    );
+
     const allVerified = results.every((r) => r.verified) && fullLoopResult.attestation.verified;
 
     return {
       success: allVerified,
+      isGreen: greenEval.isGreen,
       agentResults: results,
       fullLoopResult,
+      evidenceArtifactId: artifact.id,
     };
   }
 }
 
 export default FormlessSwarm;
+

@@ -70,6 +70,28 @@ interface DissentItem {
   interpretations: { position: string; source: string; confidence: number }[];
 }
 
+interface GreenData {
+  isGreen: boolean;
+  allChecksPassed: boolean;
+  evidenceExists: boolean;
+  lineageExists: boolean;
+  attestationExists: boolean;
+  noCriticalFailures: boolean;
+  reason: string;
+  evaluatedAt: string;
+}
+
+interface GovernanceData {
+  rules: { id: string; action: string; requiresHumanApproval: boolean; minimumConfidenceThreshold: number; maximumRiskThreshold: number; active: boolean }[];
+  failClosed: boolean;
+}
+
+interface LearningData {
+  insights: { description: string; confidence: number; learnedAt: string }[];
+  historyCount: number;
+}
+
+
 const MOOD_ICONS: Record<string, string> = {
   OPTIMAL_FLOW: '🌊',
   HIGH_INTEGRITY: '💎',
@@ -178,16 +200,22 @@ export function App(): JSX.Element {
   const [mood, setMood] = useState<MoodData | null>(null);
   const [frictionList, setFrictionList] = useState<FrictionItem[]>([]);
   const [dissentList, setDissentList] = useState<DissentItem[]>([]);
+  const [greenState, setGreenState] = useState<GreenData | null>(null);
+  const [governanceData, setGovernanceData] = useState<GovernanceData | null>(null);
+  const [learningData, setLearningData] = useState<LearningData | null>(null);
 
   // ── Poll log + metrics ──
   const fetchState = useCallback(async () => {
     try {
-      const [logRes, metricsRes, moodRes, frictionRes, dissentRes] = await Promise.all([
+      const [logRes, metricsRes, moodRes, frictionRes, dissentRes, greenRes, govRes, learnRes] = await Promise.all([
         fetch(`${API_BASE}/log?limit=30`),
         fetch(`${API_BASE}/metrics`),
         fetch(`${API_BASE}/mood`),
         fetch(`${API_BASE}/friction`),
         fetch(`${API_BASE}/dissent`),
+        fetch(`${API_BASE}/green`),
+        fetch(`${API_BASE}/governance`),
+        fetch(`${API_BASE}/learning`),
       ]);
       if (!logRes.ok || !metricsRes.ok) throw new Error('API error');
 
@@ -201,18 +229,12 @@ export function App(): JSX.Element {
       setApiOnline(true);
       setError(null);
 
-      if (moodRes.ok) {
-        const moodData = await moodRes.json();
-        setMood(moodData.data as MoodData);
-      }
-      if (frictionRes.ok) {
-        const frictionData = await frictionRes.json();
-        setFrictionList(frictionData.data.events as FrictionItem[]);
-      }
-      if (dissentRes.ok) {
-        const dissentData = await dissentRes.json();
-        setDissentList(dissentData.data.records as DissentItem[]);
-      }
+      if (moodRes.ok) setMood((await moodRes.json()).data as MoodData);
+      if (frictionRes.ok) setFrictionList((await frictionRes.json()).data.events as FrictionItem[]);
+      if (dissentRes.ok) setDissentList((await dissentRes.json()).data.records as DissentItem[]);
+      if (greenRes.ok) setGreenState((await greenRes.json()).data as GreenData);
+      if (govRes.ok) setGovernanceData((await govRes.json()).data as GovernanceData);
+      if (learnRes.ok) setLearningData((await learnRes.json()).data as LearningData);
     } catch {
       setApiOnline(false);
     }
@@ -409,7 +431,71 @@ export function App(): JSX.Element {
             </div>
           )}
 
-          {/* Swarm Result Banner */}
+          {/* ── GREEN Rule Evaluation Banner (Pillar 25) ── */}
+          {greenState && (
+            <div style={{
+              background: greenState.isGreen ? 'rgba(56, 178, 172, 0.08)' : 'rgba(237, 137, 54, 0.08)',
+              border: `1px solid ${greenState.isGreen ? 'var(--accent-green)' : 'var(--accent-amber)'}`,
+              borderRadius: 'var(--radius)',
+              padding: 16,
+              marginBottom: 20,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between'
+            }}>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: '0.95rem', color: greenState.isGreen ? 'var(--accent-green)' : 'var(--accent-amber)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span>{greenState.isGreen ? '🟢 SYSTEM STATE: GREEN (Pillar 25 Verified)' : '🟠 SYSTEM STATE: UNVERIFIED / INITIALIZING'}</span>
+                </div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: 4 }}>{greenState.reason}</div>
+              </div>
+              <div style={{ display: 'flex', gap: 8, fontSize: '0.72rem', fontFamily: 'var(--font-mono)' }}>
+                <span style={{ padding: '4px 8px', background: greenState.allChecksPassed ? 'rgba(56, 178, 172, 0.2)' : 'rgba(237, 137, 54, 0.2)', borderRadius: 4 }}>
+                  Checks: {greenState.allChecksPassed ? 'PASS' : 'PENDING'}
+                </span>
+                <span style={{ padding: '4px 8px', background: greenState.lineageExists ? 'rgba(56, 178, 172, 0.2)' : 'rgba(237, 137, 54, 0.2)', borderRadius: 4 }}>
+                  Lineage: {greenState.lineageExists ? 'INTACT' : 'BROKEN'}
+                </span>
+                <span style={{ padding: '4px 8px', background: greenState.attestationExists ? 'rgba(56, 178, 172, 0.2)' : 'rgba(237, 137, 54, 0.2)', borderRadius: 4 }}>
+                  Attest: {greenState.attestationExists ? 'SIGNED' : 'MISSING'}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* ── Governance & Learning Engines (Pillars 26 & 29) ── */}
+          {(governanceData || learningData) && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16, marginBottom: 24 }}>
+              {governanceData && (
+                <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: 16 }}>
+                  <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span>⚖ Governance Engine (Pillar 29)</span>
+                    <span style={{ fontSize: '0.68rem', background: 'rgba(99, 179, 237, 0.15)', color: '#63b3ed', padding: '2px 6px', borderRadius: 4 }}>FAIL-CLOSED</span>
+                  </div>
+                  {governanceData.rules.map(r => (
+                    <div key={r.id} style={{ fontSize: '0.78rem', borderBottom: '1px solid var(--border-subtle)', padding: '6px 0', display: 'flex', justifyContent: 'space-between' }}>
+                      <span><strong>{r.action}</strong> ({r.requiresHumanApproval ? 'Human Required' : 'Auto'})</span>
+                      <span style={{ color: 'var(--accent-green)' }}>Active</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {learningData && (
+                <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: 16 }}>
+                  <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span>🧠 Learning Engine (Pillar 26)</span>
+                    <span style={{ fontSize: '0.68rem', background: 'rgba(159, 122, 234, 0.15)', color: '#9f7aea', padding: '2px 6px', borderRadius: 4 }}>CLOSED-LOOP</span>
+                  </div>
+                  {learningData.insights.map((ins, i) => (
+                    <div key={i} style={{ fontSize: '0.78rem', padding: '4px 0', color: 'var(--text-secondary)' }}>
+                      💡 {ins.description} <span style={{ color: 'var(--accent-green)' }}>({(ins.confidence * 100).toFixed(0)}%)</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           {swarmResult && (
             <div style={{ background: 'var(--bg-card)', border: '1px solid var(--accent-secondary)', borderRadius: 'var(--radius)', padding: 20, marginBottom: 24 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
@@ -428,6 +514,7 @@ export function App(): JSX.Element {
                     Security: '🛡',
                     Governance: '⚖',
                     Learning: '🧠',
+                    Human: '👤',
                   };
                   return (
                     <div key={idx} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: 12 }}>

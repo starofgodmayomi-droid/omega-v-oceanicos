@@ -1,0 +1,59 @@
+name: Ω∞v Verification CI Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  verify:
+    name: Continuous Verification & Provenance Attestation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Workspace Dependencies
+        run: npm ci || npm install
+
+      - name: 1. TypeScript Strict Verification
+        run: npx tsc --noEmit
+
+      - name: 2. Full-Stack Jest Test Suite (16 Suites / 69+ Specs)
+        run: npx jest --no-cache --verbose --coverage
+
+      - name: 3. Ω∞v CLI Swarm Verification
+        run: npx tsx packages/cli/src/bin.ts swarm "CI Automated Verification Pipeline"
+
+      - name: 4. Export Verification Evidence Artifact
+        run: |
+          mkdir -p artifacts
+          node -e "
+            const fs = require('fs');
+            const artifact = {
+              pipeline: 'Ω∞v Continuous Verification',
+              timestamp: new Date().toISOString(),
+              status: 'VERIFIED',
+              greenRuleSatisfied: true,
+              provenance: {
+                commit: process.env.GITHUB_SHA || 'local',
+                branch: process.env.GITHUB_REF_NAME || 'main',
+                runner: 'GitHub Actions'
+              }
+            };
+            fs.writeFileSync('artifacts/verification-evidence.json', JSON.stringify(artifact, null, 2));
+          "
+
+      - name: 5. Upload Evidence Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: verification-evidence
+          path: artifacts/

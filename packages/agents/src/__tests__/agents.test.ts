@@ -44,7 +44,8 @@ describe('Formless Swarm & Agents', () => {
     });
 
     expect(cycleRes.success).toBe(true);
-    expect(cycleRes.agentResults).toHaveLength(5);
+    expect(cycleRes.agentResults).toHaveLength(6);
+    expect(cycleRes.isGreen).toBe(true);
     expect(cycleRes.fullLoopResult.attestation.verified).toBe(true);
   });
 });

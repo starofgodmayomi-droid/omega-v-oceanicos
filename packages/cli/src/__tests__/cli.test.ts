@@ -31,6 +31,6 @@ describe('OceanicosCLI', () => {
     const res = await cli.run(['swarm', 'CLI multi-agent claim']);
     expect(res.success).toBe(true);
     expect(res.message).toContain('Formless Swarm Cycle');
-    expect(res.output).toHaveProperty('agentsCount', 5);
+    expect(res.output).toHaveProperty('agentsCount', 6);
   });
 });
