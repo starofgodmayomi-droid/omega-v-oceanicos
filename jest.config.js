@@ -9,6 +9,8 @@ export default {
     '@omega-v/observer': '<rootDir>/packages/observer/src/index.ts',
     '@omega-v/verification': '<rootDir>/packages/verification/src/index.ts',
     '@omega-v/attestation': '<rootDir>/packages/attestation/src/index.ts',
+    '@omega-v/recorder': '<rootDir>/packages/recorder/src/index.ts',
+    '@omega-v/runtime': '<rootDir>/packages/runtime/src/index.ts',
   },
   collectCoverageFrom: [
     'packages/*/src/**/*.ts',

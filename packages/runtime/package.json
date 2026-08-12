@@ -1,0 +1,22 @@
+{
+  "name": "@omega-v/runtime",
+  "version": "0.1.0",
+  "description": "Unified runtime orchestrator for Ω∞v Oceanicos verification loop",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@omega-v/types": "workspace:*",
+    "@omega-v/observer": "workspace:*",
+    "@omega-v/verification": "workspace:*",
+    "@omega-v/attestation": "workspace:*",
+    "@omega-v/recorder": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  }
+}

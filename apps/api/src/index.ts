@@ -1,12 +1,12 @@
 import express, { Express, Request, Response } from 'express';
-import { Observer } from '@omega-v/observer';
-import { VerificationEngine } from '@omega-v/verification';
-import { AttestationService } from '@omega-v/attestation';
+import { VerificationRuntime } from '@omega-v/runtime';
 import { SuccessResponse, ErrorResponse } from '@omega-v/types';
 
 /**
  * Ω∞v Oceanicos API Server
- * Exposes the verification loop via REST endpoints
+ * Exposes the complete verification loop via REST endpoints
+ *
+ * Implements: Observe → Verify → Attest → Record → Query → Learn
  */
 const app: Express = express();
 const port = process.env.API_PORT || 3000;
@@ -14,13 +14,11 @@ const port = process.env.API_PORT || 3000;
 // Middleware
 app.use(express.json());
 
-// Initialize services
-const observer = new Observer();
-const verificationEngine = new VerificationEngine();
-const attestationService = new AttestationService();
+// Initialize unified runtime
+const runtime = new VerificationRuntime();
 
-// Register default rules
-verificationEngine.registerRule({
+// Register default verification rules
+runtime.registerRule({
   name: 'response-time-threshold',
   version: '1.0.5',
   appliesTo: ['health-check'],
@@ -30,7 +28,7 @@ verificationEngine.registerRule({
   active: true,
 });
 
-verificationEngine.registerRule({
+runtime.registerRule({
   name: 'status-code-check',
   version: '1.2.0',
   appliesTo: ['health-check'],
@@ -52,123 +50,15 @@ app.get('/health', (_req: Request, res: Response) => {
 });
 
 /**
- * POST /observe - Submit an observation
- * Step 1 of the verification loop
- */
-app.post('/observe', (req: Request, res: Response) => {
-  try {
-    const { claim, category, source, observedBy, metadata, confidence, confidenceReason } =
-      req.body;
-
-    const observation = observer.observe({
-      claim,
-      category,
-      source,
-      observedBy,
-      metadata,
-      confidence,
-      confidenceReason,
-    });
-
-    const response: SuccessResponse<typeof observation> = {
-      data: observation,
-      timestamp: new Date().toISOString(),
-    };
-
-    res.status(201).json(response);
-  } catch (error) {
-    const errorResponse: ErrorResponse = {
-      code: 'OBSERVATION_FAILED',
-      message: error instanceof Error ? error.message : 'Failed to create observation',
-      timestamp: new Date().toISOString(),
-    };
-    res.status(400).json(errorResponse);
-  }
-});
-
-/**
- * POST /verify - Verify an observation
- * Step 2 of the verification loop
- */
-app.post('/verify', (req: Request, res: Response) => {
-  try {
-    const { observation } = req.body;
-
-    if (!observation) {
-      const errorResponse: ErrorResponse = {
-        code: 'MISSING_OBSERVATION',
-        message: 'Observation is required',
-        timestamp: new Date().toISOString(),
-      };
-      res.status(400).json(errorResponse);
-      return;
-    }
-
-    const verificationResult = verificationEngine.verify(observation);
-
-    const response: SuccessResponse<typeof verificationResult> = {
-      data: verificationResult,
-      timestamp: new Date().toISOString(),
-    };
-
-    res.status(201).json(response);
-  } catch (error) {
-    const errorResponse: ErrorResponse = {
-      code: 'VERIFICATION_FAILED',
-      message: error instanceof Error ? error.message : 'Verification failed',
-      timestamp: new Date().toISOString(),
-    };
-    res.status(400).json(errorResponse);
-  }
-});
-
-/**
- * POST /attest - Attest a verification result
- * Step 3 of the verification loop
- */
-app.post('/attest', (req: Request, res: Response) => {
-  try {
-    const { verificationResult } = req.body;
-
-    if (!verificationResult) {
-      const errorResponse: ErrorResponse = {
-        code: 'MISSING_VERIFICATION',
-        message: 'Verification result is required',
-        timestamp: new Date().toISOString(),
-      };
-      res.status(400).json(errorResponse);
-      return;
-    }
-
-    const attestation = attestationService.attest(verificationResult);
-
-    const response: SuccessResponse<typeof attestation> = {
-      data: attestation,
-      timestamp: new Date().toISOString(),
-    };
-
-    res.status(201).json(response);
-  } catch (error) {
-    const errorResponse: ErrorResponse = {
-      code: 'ATTESTATION_FAILED',
-      message: error instanceof Error ? error.message : 'Attestation failed',
-      timestamp: new Date().toISOString(),
-    };
-    res.status(400).json(errorResponse);
-  }
-});
-
-/**
- * POST /complete-loop - Execute the complete verification loop
- * Observe → Verify → Attest in one request
+ * POST /complete-loop - Execute the complete verification loop with recording
+ * Observe → Verify → Attest → Record in one request
  */
 app.post('/complete-loop', (req: Request, res: Response) => {
   try {
     const { claim, category, source, observedBy, metadata, confidence, confidenceReason } =
       req.body;
 
-    // Step 1: Observe
-    const observation = observer.observe({
+    const result = runtime.executeLoop({
       claim,
       category,
       source,
@@ -178,22 +68,8 @@ app.post('/complete-loop', (req: Request, res: Response) => {
       confidenceReason,
     });
 
-    // Step 2: Verify
-    const verificationResult = verificationEngine.verify(observation);
-
-    // Step 3: Attest
-    const attestation = attestationService.attest(verificationResult);
-
-    const response: SuccessResponse<{
-      observation: typeof observation;
-      verification: typeof verificationResult;
-      attestation: typeof attestation;
-    }> = {
-      data: {
-        observation,
-        verification: verificationResult,
-        attestation,
-      },
+    const response: SuccessResponse<typeof result> = {
+      data: result,
       timestamp: new Date().toISOString(),
     };
 
@@ -209,30 +85,160 @@ app.post('/complete-loop', (req: Request, res: Response) => {
 });
 
 /**
- * GET /rules - List all registered verification rules
+ * GET /query/observations - Query observations from event log
  */
-app.get('/rules', (_req: Request, res: Response) => {
-  const applicableRules = verificationEngine.getApplicableRules({
-    claim: { statement: '', category: '' },
-    source: { system: '', version: '', environment: '' },
-    timestamp: '',
-    observedBy: '',
-    metadata: {},
-    confidence: 0,
-    confidenceReason: '',
-    status: 'normalized',
-    id: '',
-  });
+app.get('/query/observations', (req: Request, res: Response) => {
+  try {
+    const limit = parseInt(req.query.limit as string) || 50;
+    const offset = parseInt(req.query.offset as string) || 0;
 
-  const response: SuccessResponse<{ count: number; rules: any[] }> = {
-    data: {
-      count: applicableRules.length,
-      rules: applicableRules,
-    },
-    timestamp: new Date().toISOString(),
-  };
+    const result = runtime.queryObservations({ limit, offset });
 
-  res.json(response);
+    const response: SuccessResponse<typeof result> = {
+      data: result,
+      timestamp: new Date().toISOString(),
+    };
+
+    res.json(response);
+  } catch (error) {
+    const errorResponse: ErrorResponse = {
+      code: 'QUERY_FAILED',
+      message: error instanceof Error ? error.message : 'Query failed',
+      timestamp: new Date().toISOString(),
+    };
+    res.status(400).json(errorResponse);
+  }
+});
+
+/**
+ * GET /query/verifications - Query verification results from event log
+ */
+app.get('/query/verifications', (req: Request, res: Response) => {
+  try {
+    const limit = parseInt(req.query.limit as string) || 50;
+    const offset = parseInt(req.query.offset as string) || 0;
+
+    const result = runtime.queryVerifications({ limit, offset });
+
+    const response: SuccessResponse<typeof result> = {
+      data: result,
+      timestamp: new Date().toISOString(),
+    };
+
+    res.json(response);
+  } catch (error) {
+    const errorResponse: ErrorResponse = {
+      code: 'QUERY_FAILED',
+      message: error instanceof Error ? error.message : 'Query failed',
+      timestamp: new Date().toISOString(),
+    };
+    res.status(400).json(errorResponse);
+  }
+});
+
+/**
+ * GET /query/attestations - Query attestations from event log
+ */
+app.get('/query/attestations', (req: Request, res: Response) => {
+  try {
+    const limit = parseInt(req.query.limit as string) || 50;
+    const offset = parseInt(req.query.offset as string) || 0;
+
+    const result = runtime.queryAttestations({ limit, offset });
+
+    const response: SuccessResponse<typeof result> = {
+      data: result,
+      timestamp: new Date().toISOString(),
+    };
+
+    res.json(response);
+  } catch (error) {
+    const errorResponse: ErrorResponse = {
+      code: 'QUERY_FAILED',
+      message: error instanceof Error ? error.message : 'Query failed',
+      timestamp: new Date().toISOString(),
+    };
+    res.status(400).json(errorResponse);
+  }
+});
+
+/**
+ * GET /query/trace/:id - Get complete trace for an observation
+ */
+app.get('/query/trace/:id', (req: Request, res: Response) => {
+  try {
+    const trace = runtime.getTrace(req.params.id);
+
+    if (!trace.observation) {
+      const errorResponse: ErrorResponse = {
+        code: 'NOT_FOUND',
+        message: 'Observation not found',
+        timestamp: new Date().toISOString(),
+      };
+      res.status(404).json(errorResponse);
+      return;
+    }
+
+    const response: SuccessResponse<typeof trace> = {
+      data: trace,
+      timestamp: new Date().toISOString(),
+    };
+
+    res.json(response);
+  } catch (error) {
+    const errorResponse: ErrorResponse = {
+      code: 'QUERY_FAILED',
+      message: error instanceof Error ? error.message : 'Query failed',
+      timestamp: new Date().toISOString(),
+    };
+    res.status(400).json(errorResponse);
+  }
+});
+
+/**
+ * GET /integrity - Verify event log integrity
+ */
+app.get('/integrity', (_req: Request, res: Response) => {
+  try {
+    const integrity = runtime.verifyIntegrity();
+
+    const response: SuccessResponse<typeof integrity> = {
+      data: integrity,
+      timestamp: new Date().toISOString(),
+    };
+
+    res.json(response);
+  } catch (error) {
+    const errorResponse: ErrorResponse = {
+      code: 'VERIFICATION_FAILED',
+      message: error instanceof Error ? error.message : 'Integrity check failed',
+      timestamp: new Date().toISOString(),
+    };
+    res.status(400).json(errorResponse);
+  }
+});
+
+/**
+ * GET /metrics - Get system metrics and statistics
+ */
+app.get('/metrics', (_req: Request, res: Response) => {
+  try {
+    const metrics = runtime.getMetrics();
+
+    const response: SuccessResponse<typeof metrics> = {
+      data: metrics,
+      timestamp: new Date().toISOString(),
+    };
+
+    res.json(response);
+  } catch (error) {
+    const errorResponse: ErrorResponse = {
+      code: 'QUERY_FAILED',
+      message: error instanceof Error ? error.message : 'Metrics query failed',
+      timestamp: new Date().toISOString(),
+    };
+    res.status(400).json(errorResponse);
+  }
 });
 
 /**
@@ -253,12 +259,14 @@ app.use((_req: Request, res: Response) => {
 app.listen(port, () => {
   console.log(`[Ω∞v API] Verification loop server running on http://localhost:${port}`);
   console.log(`Available endpoints:`);
-  console.log(`  POST   /observe          - Create an observation`);
-  console.log(`  POST   /verify           - Verify an observation`);
-  console.log(`  POST   /attest           - Attest a verification`);
-  console.log(`  POST   /complete-loop    - Execute full loop in one request`);
-  console.log(`  GET    /rules            - List verification rules`);
-  console.log(`  GET    /health           - Health check`);
+  console.log(`  POST   /complete-loop          - Execute full loop in one request`);
+  console.log(`  GET    /query/observations     - Query observations with pagination`);
+  console.log(`  GET    /query/verifications    - Query verifications with pagination`);
+  console.log(`  GET    /query/attestations     - Query attestations with pagination`);
+  console.log(`  GET    /query/trace/:id        - Get complete trace for observation`);
+  console.log(`  GET    /integrity              - Verify event log integrity`);
+  console.log(`  GET    /metrics                - Get system metrics`);
+  console.log(`  GET    /health                 - Health check`);
 });
 
 export default app;
