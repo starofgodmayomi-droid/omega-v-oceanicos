@@ -21,9 +21,7 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@omega-v/types": "*",
-    "@omega-v/observer": "*",
-    "@omega-v/verification": "*",
-    "@omega-v/attestation": "*",
+    "@omega-v/runtime": "*",
     "express": "^4.18.2"
   },
   "devDependencies": {
