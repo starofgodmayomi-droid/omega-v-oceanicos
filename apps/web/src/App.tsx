@@ -1,15 +1,69 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import './App.css';
 
 /**
  * Ω∞v Oceanicos Web Dashboard
  * Visualizes the verification loop in real-time
+ * Integrates with VerificationRuntime API endpoints
  */
 export function App(): JSX.Element {
   const [observation, setObservation] = useState<string>('');
   const [claim, setClaim] = useState<string>('Service X is healthy');
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<any>(null);
+  const [metrics, setMetrics] = useState<any>(null);
+  const [observations, setObservations] = useState<any[]>([]);
+  const [integrity, setIntegrity] = useState<any>(null);
+  const [selectedTrace, setSelectedTrace] = useState<any>(null);
+
+  // Load metrics on mount and periodically
+  useEffect(() => {
+    const loadMetrics = async () => {
+      try {
+        const response = await fetch('/api/metrics');
+        const data = (await response.json()) as { data: object };
+        setMetrics(data.data);
+      } catch (error) {
+        console.error('Failed to load metrics:', error);
+      }
+    };
+
+    loadMetrics();
+    const interval = setInterval(loadMetrics, 5000); // Refresh every 5s
+    return () => clearInterval(interval);
+  }, []);
+
+  // Load observations history
+  useEffect(() => {
+    const loadObservations = async () => {
+      try {
+        const response = await fetch('/api/query/observations?limit=10&offset=0');
+        const data = (await response.json()) as { data: { events: any[] } };
+        setObservations(data.data.events);
+      } catch (error) {
+        console.error('Failed to load observations:', error);
+      }
+    };
+
+    loadObservations();
+  }, [results]); // Reload when new results come in
+
+  // Check integrity
+  useEffect(() => {
+    const checkIntegrity = async () => {
+      try {
+        const response = await fetch('/api/integrity');
+        const data = (await response.json()) as { data: object };
+        setIntegrity(data.data);
+      } catch (error) {
+        console.error('Failed to check integrity:', error);
+      }
+    };
+
+    checkIntegrity();
+    const interval = setInterval(checkIntegrity, 10000); // Check every 10s
+    return () => clearInterval(interval);
+  }, []);
 
   const executeVerificationLoop = async () => {
     setLoading(true);
@@ -37,11 +91,21 @@ export function App(): JSX.Element {
 
       const data = (await response.json()) as { data: object };
       setResults(data.data);
-      setObservation('Verification complete');
+      setObservation('Verification complete ✓');
     } catch (error) {
       setObservation(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadTrace = async (obsId: string) => {
+    try {
+      const response = await fetch(`/api/query/trace/${obsId}`);
+      const data = (await response.json()) as { data: object };
+      setSelectedTrace(data.data);
+    } catch (error) {
+      console.error('Failed to load trace:', error);
     }
   };
 
@@ -53,6 +117,42 @@ export function App(): JSX.Element {
       </header>
 
       <main className="main">
+        {/* Metrics Dashboard */}
+        {metrics && (
+          <section className="metrics-section">
+            <h2>System Metrics</h2>
+            <div className="metrics-grid">
+              <div className="metric">
+                <div className="metric-value">{metrics.totalObservations}</div>
+                <div className="metric-label">Observations</div>
+              </div>
+              <div className="metric">
+                <div className="metric-value">{metrics.totalVerifications}</div>
+                <div className="metric-label">Verifications</div>
+              </div>
+              <div className="metric">
+                <div className="metric-value">{(metrics.successRate * 100).toFixed(0)}%</div>
+                <div className="metric-label">Success Rate</div>
+              </div>
+              <div className="metric">
+                <div className="metric-value">{(metrics.systemConfidence * 100).toFixed(0)}%</div>
+                <div className="metric-label">System Confidence</div>
+              </div>
+              <div className="metric">
+                <div className="metric-value">{metrics.totalAttestations}</div>
+                <div className="metric-label">Attestations</div>
+              </div>
+              {integrity && (
+                <div className="metric">
+                  <div className="metric-value">{integrity.valid ? '✓ Valid' : '✗ Broken'}</div>
+                  <div className="metric-label">Event Log Integrity</div>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
+        {/* Verification Executor */}
         <section className="input-section">
           <h2>Execute Verification Loop</h2>
           <div className="form-group">
@@ -70,6 +170,7 @@ export function App(): JSX.Element {
           </button>
         </section>
 
+        {/* Verification Results */}
         {results && (
           <section className="results-section">
             <h2>Verification Results</h2>
@@ -134,6 +235,78 @@ export function App(): JSX.Element {
                 </p>
               </div>
             </div>
+          </section>
+        )}
+
+        {/* Event History */}
+        {observations.length > 0 && (
+          <section className="history-section">
+            <h2>Event History</h2>
+            <div className="events-list">
+              {observations.map((event, idx) => (
+                <div key={idx} className="event-item">
+                  <div className="event-header">
+                    <span className="event-type">{event.type}</span>
+                    <span className="event-time">
+                      {new Date(event.recordedAt).toLocaleTimeString()}
+                    </span>
+                  </div>
+                  {event.type === 'OBSERVATION' && (
+                    <p className="event-data">
+                      Claim: {(event.data as any).claim?.statement || 'N/A'}
+                    </p>
+                  )}
+                  {event.type === 'VERIFICATION' && (
+                    <p className="event-data">
+                      Status: {(event.data as any).summary?.passed ? '✓ Passed' : '✗ Failed'}
+                    </p>
+                  )}
+                  {event.type === 'ATTESTATION' && (
+                    <p className="event-data">
+                      Verified: {(event.data as any).verified ? '✓ Yes' : '✗ No'}
+                    </p>
+                  )}
+                  <button
+                    className="btn-trace"
+                    onClick={() => loadTrace((event.data as any).observationId || (event.data as any).id)}
+                  >
+                    View Trace
+                  </button>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Trace Details */}
+        {selectedTrace && (
+          <section className="trace-section">
+            <h2>Event Trace</h2>
+            <button className="btn-close" onClick={() => setSelectedTrace(null)}>
+              ✕ Close
+            </button>
+
+            {selectedTrace.observation && (
+              <div className="trace-event">
+                <h4>Observation</h4>
+                <p>ID: {(selectedTrace.observation.data as any).id}</p>
+                <p>Claim: {(selectedTrace.observation.data as any).claim?.statement}</p>
+              </div>
+            )}
+
+            {selectedTrace.verifications?.map((ver: any, idx: number) => (
+              <div key={idx} className="trace-event">
+                <h4>Verification {idx + 1}</h4>
+                <p>Status: {(ver.data as any).summary?.passed ? '✓ Passed' : '✗ Failed'}</p>
+              </div>
+            ))}
+
+            {selectedTrace.attestations?.map((att: any, idx: number) => (
+              <div key={idx} className="trace-event">
+                <h4>Attestation {idx + 1}</h4>
+                <p>Verified: {(att.data as any).verified ? '✓ Yes' : '✗ No'}</p>
+              </div>
+            ))}
           </section>
         )}
 

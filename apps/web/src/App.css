@@ -232,6 +232,164 @@ code {
   opacity: 0.9;
 }
 
+/* Metrics Section */
+.metrics-section {
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.metrics-section h2 {
+  margin-bottom: 16px;
+  color: #667eea;
+  border-bottom: 2px solid #667eea;
+  padding-bottom: 8px;
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 16px;
+}
+
+.metric {
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+  border-left: 4px solid #667eea;
+}
+
+.metric-value {
+  font-size: 2em;
+  font-weight: bold;
+  color: #667eea;
+  margin-bottom: 8px;
+}
+
+.metric-label {
+  font-size: 0.85em;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* History Section */
+.history-section,
+.trace-section {
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.history-section h2,
+.trace-section h2 {
+  margin-bottom: 16px;
+  color: #667eea;
+  border-bottom: 2px solid #667eea;
+  padding-bottom: 8px;
+}
+
+.events-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.event-item {
+  background: #f9fafb;
+  border-left: 4px solid #667eea;
+  padding: 12px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.event-item:hover {
+  background: #f3f4f6;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.event-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 0.85em;
+}
+
+.event-type {
+  background: #667eea;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-weight: 600;
+}
+
+.event-time {
+  color: #999;
+  font-size: 0.8em;
+}
+
+.event-data {
+  margin: 8px 0;
+  font-size: 0.9em;
+  color: #555;
+}
+
+.btn-trace,
+.btn-close {
+  background: #667eea;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 0.85em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 8px;
+}
+
+.btn-trace:hover,
+.btn-close:hover {
+  background: #764ba2;
+}
+
+.btn-close {
+  float: right;
+  padding: 4px 8px;
+  font-size: 1em;
+  margin-top: 0;
+}
+
+/* Trace Section */
+.trace-section {
+  margin-top: 20px;
+  position: relative;
+}
+
+.trace-event {
+  background: #f9fafb;
+  border-left: 4px solid #16a34a;
+  padding: 16px;
+  margin-bottom: 12px;
+  border-radius: 4px;
+}
+
+.trace-event h4 {
+  color: #16a34a;
+  margin-bottom: 8px;
+  font-size: 0.95em;
+}
+
+.trace-event p {
+  margin: 4px 0;
+  font-size: 0.9em;
+  color: #555;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .header h1 {
