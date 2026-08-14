@@ -30,13 +30,13 @@
     "type-check": "tsc --noEmit",
     "format:check": "prettier --check .",
     "format:fix": "prettier --write .",
-    "verify": "npm run lint && npm run type-check && npm run test && npm run build",
-    "verify:fast": "npm run lint && npm run type-check && npm run test:fast",
-    "verify:full": "npm run lint && npm run type-check && npm run test:coverage && npm run test:integration && npm run build",
+    "verify": "pnpm lint && pnpm type-check && pnpm test && pnpm build",
+    "verify:fast": "pnpm lint && pnpm type-check && pnpm test:fast",
+    "verify:full": "pnpm lint && pnpm type-check && pnpm test:coverage && pnpm test:integration && pnpm build",
     "docs:build": "echo 'Documentation build (coming soon)'",
     "docs:test": "echo 'Documentation test (coming soon)'",
     "docs:watch": "echo 'Documentation watch (coming soon)'",
-    "precommit": "npm run lint && npm run type-check",
+    "precommit": "pnpm lint && pnpm type-check",
     "prepare": "husky install 2>/dev/null || true"
   },
   "devDependencies": {
