@@ -1,451 +1,548 @@
-# Architecture
+# Architecture — Formless Intelligence OS
 
-The Ω∞v Oceanicos system is designed around a single principle: **every component should strengthen the verification loop**.
+> **Ω∞v · One Root · One Current · Infinite Forms**
 
----
+Ω∞v Oceanicos is designed as a **Formless Intelligence OS**: a verification-first operating substrate where intelligence is not a single product surface, but a continuous current of observation, evidence, action, and evolution.
 
-## System Layers
+The system strengthens one invariant at every layer:
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│  User Interfaces (Web Dashboard, Mobile, CLI)              │
-│  Entry points for observation and result visualization     │
-└─────────────────────────┬───────────────────────────────────┘
-                          │
-┌─────────────────────────┴───────────────────────────────────┐
-│  APIs & SDKs (REST, gRPC, JavaScript, Python, etc.)       │
-│  Public contracts for interaction                          │
-└─────────────────────────┬───────────────────────────────────┘
-                          │
-┌─────────────────────────┴───────────────────────────────────┐
-│  Verification Engine                                        │
-│  ├─ Observer: Captures events and claims                   │
-│  ├─ Verification Rules: Apply logic to observations        │
-│  ├─ Attestation: Cryptographically sign results            │
-│  └─ Evidence Path: Track proof of verification             │
-└─────────────────────────┬───────────────────────────────────┘
-                          │
-┌─────────────────────────┴───────────────────────────────────┐
-│  Compiler & Intermediate Representation (IR)               │
-│  ├─ Rule Language Parser                                   │
-│  ├─ Bytecode Generator                                     │
-│  └─ Runtime Bytecode Interpreter                           │
-└─────────────────────────┬───────────────────────────────────┘
-                          │
-┌─────────────────────────┴───────────────────────────────────┐
-│  Persistence Layer                                          │
-│  ├─ Event Store (Append-only observation log)              │
-│  ├─ Verification Index (Query verification results)        │
-│  ├─ Attestation Store (Signatures and proofs)              │
-│  └─ Rules Registry (Versioned verification rules)          │
-└─────────────────────────┬───────────────────────────────────┘
-                          │
-┌─────────────────────────┴───────────────────────────────────┐
-│  Infrastructure                                             │
-│  ├─ Docker: Containerized services                         │
-│  ├─ Kubernetes: Distributed orchestration                  │
-│  ├─ Edge: Lightweight verification at network edge         │
-│  └─ Cloud: Serverless verification services               │
-└─────────────────────────────────────────────────────────────┘
-```
+**Every claim must become evidence. Every action must return to source.**
 
 ---
 
-## Core Components
+## North Star
 
-### 1. Observer
-
-**Purpose**: Capture observations (events, claims, states) and normalize them.
-
-**Responsibilities**:
-- Accept observations from any source (API, CLI, SDK, real-time events)
-- Validate observation schema (who, when, what, where, confidence)
-- Deduplicate similar observations
-- Create normalized event stream
-
-**Example**:
-```typescript
-observer.observe({
-  claim: "Service X is healthy",
-  source: "health-check-api",
-  timestamp: 2026-08-07T10:30:00Z,
-  metadata: {
-    responseTime: 45,
-    statusCode: 200,
-    version: "1.2.3"
-  },
-  confidence: 0.95
-});
+```
+FORMLESS INTELLIGENCE OS
+ONE ROOT · ONE CURRENT · INFINITE FORMS
 ```
 
-**Output**: Standardized Event object, ready for verification.
+- **One Root** — Oceanicos Core principles and the verification ethic
+- **One Current** — a single continuous flow of context, events, and evidence
+- **Infinite Forms** — web, mobile, desktop, CLI, SDK, voice, AR/VR, agents, edge
+
+The runtime does not treat UI, API, agent, or infrastructure as separate truths. They are projections of the same current.
 
 ---
 
-### 2. Verification Engine
+## The Current
 
-**Purpose**: Apply verification rules to observations and produce evidence.
+At the center of the architecture is **The Current** — the live intelligence stream flowing through every layer.
 
-**Responsibilities**:
-- Load and manage versioned verification rules
-- Execute rules against observations
-- Produce evidence paths (not just true/false)
-- Handle rule errors gracefully
-- Support multiple verification strategies (deterministic, probabilistic, consensus)
-
-**Example**:
-```typescript
-verification.verify(event, {
-  rules: ["health-check", "response-time-threshold"],
-  ruleVersion: "1.2.0"
-});
-
-// Returns:
-// {
-//   success: true,
-//   evidence: [
-//     { rule: "health-check", passed: true, details: {...} },
-//     { rule: "response-time-threshold", passed: true, details: {...} }
-//   ],
-//   confidence: 0.95,
-//   ruleVersion: "1.2.0"
-// }
+```
+                 UNIFIED EXPERIENCE LAYER
+        Web · Mobile · Desktop · CLI · SDK · Voice · AR/VR
+                              │
+              ┌───────────────┴───────────────┐
+              │                               │
+         CONTEXT BUS                     EVENT STREAM
+              │                               │
+              └───────────────┬───────────────┘
+                              │
+                        THE CURRENT
+                 (flows through all layers)
+                              │
+              ┌───────────────┼───────────────┐
+              │               │               │
+        Core Services   Data & Memory   Infrastructure
+              │               │               │
+              └───────────────┼───────────────┘
+                              │
+                   Security & Governance
+                              │
+                        OCEANICOS CORE
 ```
 
-**Output**: Verification result with evidence path.
+The Current carries:
+
+- normalized observations
+- evidence paths
+- attestations
+- authorized actions
+- learning signals
+- recompilation proposals
+- return-to-source feedback
 
 ---
 
-### 3. Attestation Service
+## End-to-End Loop
 
-**Purpose**: Cryptographically sign verification results and create unforgeable proof.
+The operational loop realized by the runtime is:
 
-**Responsibilities**:
-- Generate or load signing keys
-- Sign verification results with timestamp
-- Include attestation metadata (key ID, rule version, signer identity)
-- Support key rotation
-- Enable signature verification
-
-**Example**:
-```typescript
-const attestation = await attestation.attest(verificationResult);
-
-// Returns:
-// {
-//   verificationId: "v-2026-08-07-1234",
-//   signature: "0x1a2b3c...",
-//   signingKey: "key-v2",
-//   timestamp: 2026-08-07T10:30:05Z,
-//   ruleVersion: "1.2.0",
-//   signer: "api-server-1"
-// }
+```
+∞ → OBSERVE → VERIFY → ATTEST → ACT → LEARN → RECOMPILE → RETURN → ∞
 ```
 
-**Output**: Signed attestation object.
+| Stage | Purpose | Current runtime surface |
+|-------|---------|-------------------------|
+| **Observe** | Capture claims, signals, and context | `@omega-v/observer`, `POST /observe`, web operator input |
+| **Verify** | Apply rules and produce evidence paths | `@omega-v/verification`, `POST /verify` |
+| **Attest** | Cryptographically commit to the result | `@omega-v/attestation`, `POST /attest` |
+| **Act** | Authorize downstream action only after attestation | `POST /act` |
+| **Learn** | Record outcomes as first-class evidence | `POST /learn` |
+| **Recompile** | Propose evolved rules / versions from learning | `POST /recompile` |
+| **Return** | Feed improved knowledge back into observation | mode/state transitions and next observation cycle |
+
+Evidence and failed checks remain visible. The loop never discards friction; it treats friction as signal.
 
 ---
 
-### 4. Compiler & IR
+## Capability Rings
 
-**Purpose**: Transform high-level rule definitions into portable bytecode.
+Around The Current, capability rings organize how the system senses, reasons, trusts, and evolves.
 
-**Responsibilities**:
-- Parse rule language (domain-specific language, DSL)
-- Generate bytecode (Oceanicum Intermediate Representation)
-- Validate rule syntax and semantics
-- Support rule versioning
-- Enable portable execution across platforms
+### Observe
 
-**Example**:
-```
-Rule Language:
-┌─────────────────────────┐
-│ when response_time < 100 │
-│ and status_code == 200   │
-│ then is_healthy          │
-└─────────────────────────┘
-              ↓
-         Compiler
-              ↓
-      Bytecode (IR)
-┌─────────────────────────┐
-│ LOAD response_time       │
-│ CONST 100               │
-│ LT                      │
-│ LOAD status_code        │
-│ CONST 200               │
-│ EQ                      │
-│ AND                     │
-│ STORE is_healthy        │
-└─────────────────────────┘
-```
+Real-time intake from the external world:
 
-**Output**: Portable bytecode that can run anywhere.
+- Real-time signals
+- Events
+- Sensors
+- User actions
+- System metrics
+- External feeds
+
+### Sense Layer
+
+Turns raw intake into usable stream state:
+
+- Collector agents
+- Stream ingestion
+- Normalization
+- Edge processing
+- Noise filtering
+
+Maps primarily to observer normalization, API ingestion, and future edge collectors.
+
+### Intent & Reasoning
+
+Interprets what the system should do next:
+
+- Natural language intent
+- Context understanding
+- Multi-model reasoning
+- Decision graphs
+- Goal decomposition
+
+Today this is operator-driven (web/API input). Future agents and multi-model planners plug into the same current.
+
+### Verification Engine
+
+Evidence before trust:
+
+- Rules engine
+- Logic and constraints
+- Cross-validation
+- Consistency checks
+- Uncertainty model
+
+Implemented by `@omega-v/verification` with versioned rules and evidence steps.
+
+### Attestation & Trust
+
+Unforgeable commitment:
+
+- Proof generation
+- Digital signatures
+- Immutable records
+- Trust scores
+- Audit trails
+
+Implemented by `@omega-v/attestation` plus append-only runtime event history.
+
+### Action Orchestrator
+
+Action only after verified trust:
+
+- Task planner
+- Workflow engine
+- Agent coordination
+- Service invocation
+- Automation
+
+Runtime authorization is gated by valid attestation (`/act`).
+
+### Dissent & Friction
+
+Disagreement is data, not noise:
+
+- Conflict detection
+- Contradictions
+- Anomaly alerts
+- Risk analysis
+- Friction map
+
+Failed verifications, denied actions, and uncertain learning outcomes remain first-class events.
+
+### Learn & Evolve
+
+Close the intelligence loop:
+
+- Feedback loop
+- Adaptive models
+- Pattern evolution
+- Self-improvement
+- Knowledge growth
+- Recompilation
+
+Runtime captures learning outcomes and recompilation proposals as durable records.
+
+### Outcomes & Value
+
+What the loop is for:
+
+- Real impact
+- User value
+- System growth
+- Network effects
+- Sustainable evolution
+- Return to source
+
+### External World
+
+Everything outside the OS boundary:
+
+- Users
+- Devices
+- Systems
+- APIs
+- IoT / sensors
+- The environment
 
 ---
 
-### 5. Persistence Layer
+## Structural Layers
 
-**Purpose**: Store observations, verifications, and attestations immutably.
+### 1. Unified Experience Layer
 
-**Responsibilities**:
-- Maintain append-only event log
-- Index verification results for querying
-- Store signed attestations
-- Manage rule versioning
-- Support temporal queries (what was true at time T?)
+Entry points that render and steer The Current without owning a separate truth model:
 
-**Storage Model**:
-```
-Event Store:
-  ID | Timestamp | Type | Observation | Source | Confidence
-  1  | 10:30:00  | CLAIM | "Health OK" | API    | 0.95
-  2  | 10:30:05  | CLAIM | "Health OK" | API    | 0.96
-  ...
+| Surface | Role |
+|---------|------|
+| Web | Operator console / dashboard |
+| Mobile | Edge observation and alerts (planned) |
+| Desktop | Local operator surfaces (planned) |
+| CLI | Scriptable verification workflow (planned) |
+| SDK | Programmatic loop access (planned) |
+| Voice | Conversational intent intake (planned) |
+| AR / VR | Spatial observation and inspection (planned) |
 
-Verification Index:
-  Event ID | Rule | Version | Result | Confidence | Timestamp
-  1        | health-check | 1.2.0 | true | 0.95 | 10:30:01
-  2        | health-check | 1.2.0 | true | 0.96 | 10:30:06
-  ...
+Current implementations:
 
-Attestation Store:
-  Verification ID | Signature | Key ID | Timestamp | Signer
-  v-1             | 0x1a2b... | key-v2 | 10:30:01  | server-1
-  v-2             | 0x3c4d... | key-v2 | 10:30:06  | server-1
-  ...
-```
+- `apps/web` — live operator UI over the current
+- `apps/api` — REST boundary for the loop
 
-**Output**: Queryable, immutable history.
+### 2. Core Services Layer
+
+Shared services that keep the OS operable:
+
+- API Gateway
+- Auth Service
+- Agent Runtime
+- Notification
+- Payments
+- Search
+- Analytics
+
+Current focus: API gateway behavior in `apps/api` (health, state, observe/verify/attest/act/learn/recompile, event streams). Broader service mesh is roadmap.
+
+### 3. Data & Memory Layer
+
+Memory is plural because evidence is plural:
+
+| Store | Purpose |
+|-------|---------|
+| Time series DB | Metrics and live activity |
+| Graph DB | Relationship / agent / evidence graphs |
+| Relational DB | Structured operational records |
+| Vector DB | Semantic / knowledge retrieval |
+| Object store | Large artifacts and proofs |
+| Cache | Hot verification and state |
+| Ledger | Append-only evidence and attestation chain |
+
+Current runtime uses an append-oriented event/run snapshot store with file or memory persistence. Multi-store backends are planned.
+
+### 4. Infrastructure Layer
+
+Where forms execute without becoming the source of truth:
+
+- Containers
+- Kubernetes
+- Service mesh
+- Serverless
+- Edge nodes
+- CDN
+- Storage
+
+See `infra/` for deployment scaffolding as it matures.
+
+### 5. Security & Governance
+
+Cross-cutting controls that protect The Current:
+
+- Identity
+- Authorization
+- Encryption
+- Policy engine
+- Compliance
+- Monitoring
+- Audit
+
+Attestation validity, request IDs, and action authorization are the present footholds.
+
+### 6. Oceanicos Core
+
+Non-negotiable substrate principles:
+
+- **Ω∞v Compiler** — rules and intent compile into portable verification form
+- **Autopoiesis** — the system continuously remakes itself from evidence
+- **Non-Dual** — observer and observed participate in one current
+- **Friction-as-Fertility** — dissent and failure feed evolution
+- **No Terrain Dependency** — truth is not bound to one cloud, device, or UI
 
 ---
 
-## Data Flow
+## Context Bus and Event Stream
 
-### The Verification Loop
+Two complementary channels keep forms synchronized:
+
+### Context Bus
+
+Carries durable situational state:
+
+- active mode / stage
+- trust and trust basis
+- service readiness
+- persistence mode
+- selected correlation / request identity
+
+Exposed today via `GET /state` and web runtime refresh.
+
+### Event Stream
+
+Carries live transitions through the loop:
+
+- observation accepted
+- verification passed/failed
+- attestation signed
+- action authorized/denied
+- learning recorded
+- recompilation proposed
+
+Exposed today via `GET /events`, run history, and stream-oriented runtime events.
+
+Together they implement the dual flow around The Current.
+
+---
+
+## Live Operator Surfaces
+
+The architecture expects always-on operator telemetry. The web console already mirrors this shape:
+
+| Panel | Meaning |
+|-------|---------|
+| System mood / trust | Confidence derived from evidence quality, verification coverage, attestation validity, readiness, and recent failures |
+| Live activity | Recent runtime events and stage transitions |
+| Verification flow | Observe → evidence → verify path for the active run |
+| Agent / service network | Service readiness and coordination status |
+| Evidence ledger | Attestations, actions, learnings, recompilations |
+
+These are not decorative dashboards. They are projections of The Current for human co-observation.
+
+---
+
+## Package Map
+
+| Package / app | Architectural role |
+|---------------|--------------------|
+| `packages/types` | Shared contracts for observations, evidence, attestations, metrics |
+| `packages/observer` | Sense/observe normalization and deduplication |
+| `packages/verification` | Verification engine and evidence paths |
+| `packages/attestation` | Cryptographic attestation and signature checks |
+| `apps/api` | Core services boundary + loop orchestration |
+| `apps/web` | Unified experience layer (web form of The Current) |
+| `infra/` | Infrastructure layer definitions |
+| `tests/` | Cross-component verification of the loop |
+
+Planned packages from the monorepo vision (`compiler`, `ir`, `sdk`, `cli`) extend Oceanicos Core and the experience layer without changing the loop.
+
+---
+
+## Data Flow (Runtime)
 
 ```
 1. OBSERVE
-   ┌──────────────────────┐
-   │ Event from any source│
-   └──────────────────────┘
-            ↓
-2. NORMALIZE
-   ┌──────────────────────┐
-   │ Add metadata, schema │
-   └──────────────────────┘
-            ↓
-3. VERIFY
-   ┌──────────────────────┐
-   │ Apply rules, produce │
-   │ evidence path        │
-   └──────────────────────┘
-            ↓
-4. ATTEST
-   ┌──────────────────────┐
-   │ Cryptographic sign   │
-   │ the verification     │
-   └──────────────────────┘
-            ↓
-5. RECORD
-   ┌──────────────────────┐
-   │ Append to event log  │
-   │ Index for queries    │
-   └──────────────────────┘
-            ↓
-6. DISPLAY
-   ┌──────────────────────┐
-   │ Show to users via UI,│
-   │ API, or CLI          │
-   └──────────────────────┘
-            ↓
-7. LEARN
-   ┌──────────────────────┐
-   │ Extract patterns,    │
-   │ improve rules        │
-   └──────────────────────┘
-            ↓
-8. RETURN
-   ┌──────────────────────┐
-   │ Feed learning back   │
-   │ into observation     │
-   └──────────────────────┘
+   Operator / API / sensor submits a claim + metadata
+   Observer normalizes and deduplicates
+                 ↓
+2. VERIFY
+   Verification engine selects versioned rules
+   Evidence path is produced (pass and fail both retained)
+                 ↓
+3. ATTEST
+   Attestation service signs the verification payload
+   Signature becomes portable trust evidence
+                 ↓
+4. ACT
+   Downstream action is authorized only if attestation verifies
+   Denied actions remain visible friction
+                 ↓
+5. LEARN
+   Outcome of the action is recorded (success / failure / uncertain)
+                 ↓
+6. RECOMPILE
+   Learning yields a proposed rule/version evolution
+                 ↓
+7. RETURN
+   Improved knowledge re-enters observation and trust scoring
+   The Current continues
 ```
 
 ---
 
 ## Interface Boundaries
 
-### Public APIs
+### REST (current)
 
-#### REST API
-- `POST /observe` — Submit an observation
-- `POST /verify` — Verify an observation
-- `GET /verification/:id` — Retrieve verification result
-- `GET /attestations` — Query attestations
-- `GET /rules` — List available rules
+- `GET /health` — process health
+- `GET /state` — context bus snapshot (mode, trust, services, persistence)
+- `GET /events` / run APIs — event stream and completed loop history
+- `POST /observe` — enter an observation into The Current
+- `POST /verify` — verify an observation
+- `POST /attest` — attest a verification
+- `POST /act` — authorize action from attestation
+- `POST /learn` — record learning from action outcomes
+- `POST /recompile` — propose evolution from learning
+- attestation verification endpoints for signature checks
 
-#### SDK
-- `observer.observe(claim)` — Programmatic observation
-- `verification.verify(claim, rules)` — Programmatic verification
-- `attestation.attest(result)` — Programmatic attestation
-- `store.query(filter)` — Query the event store
+### Experience layer (current)
 
-#### CLI
-```bash
-omega observe "claim" --source api --confidence 0.95
-omega verify claim-id --rules health-check
-omega attest verification-id
-omega query attestations --since 2026-08-07
-```
+- Web operator console for claim entry, stage navigation, trust basis, and ledger inspection
 
----
+### Planned contracts
 
-## Concurrency & Distribution
-
-### Single Instance
-- Event loop processes observations sequentially
-- In-memory verification results are cached
-- Append-only writes ensure consistency
-
-### Multiple Instances
-- Events are propagated through event broker (Kafka, RabbitMQ)
-- Verification results are consensus-based when needed
-- Attestations are anchored to a single authority (or distributed consensus)
-- Database is distributed (PostgreSQL replication, or distributed store)
-
-### Edge Deployment
-- Lightweight verifier runs at the edge
-- Observations are submitted to central system
-- Attestations are signed by the edge node
-- Periodic sync with central authority
+- SDK bindings for the same loop
+- CLI for scripted observe/verify/attest/act flows
+- gRPC and edge protocols for distributed currents
 
 ---
 
-## Error Handling
+## Trust Model
 
-### Observation Errors
-- Invalid schema → Reject with clear error message
-- Unknown source → Accept but flag for review
-- Duplicate observation → Deduplicate (same event, different times)
+Trust is computed, not declared.
 
-### Verification Errors
-- Rule not found → Fail gracefully, return error
-- Rule execution exception → Catch and record as failed verification
-- Timeout → Record timeout as verification failure
+Typical trust basis components:
 
-### Attestation Errors
-- Key unavailable → Fail attestation (don't sign without authority)
-- Clock skew → Use server time, not client time
-- Signature failure → Log and alert (security issue)
+- **Evidence quality** — completeness and clarity of evidence paths
+- **Verification coverage** — rules applied vs. required categories
+- **Attestation validity** — signature and key/version integrity
+- **Service readiness** — whether core services can honor the loop
+- **Recent failures** — friction density in the live event stream
 
-### Storage Errors
-- Write failure → Return error, don't acknowledge completion
-- Read failure → Return stale cached result, log issue
-- Replication lag → Return with freshness timestamp
+No UI label of “healthy” is authoritative without this basis.
+
+---
+
+## Concurrency and Distribution
+
+### Single instance (current developer runtime)
+
+- Sequential loop execution per request
+- In-process services with append-oriented persistence
+- Event fan-out to connected operator streams
+
+### Multi-instance (target)
+
+- Event broker propagation of The Current
+- Sharded observation intake
+- Consensus or quorum where attestations require multi-party trust
+- Edge verifiers that sign locally and sync centrally
+
+### Edge
+
+- Lightweight observe/verify/attest at the perimeter
+- Local friction capture under intermittent connectivity
+- Periodic return of evidence to the central ledger
+
+---
+
+## Error and Friction Handling
+
+| Domain | Behavior |
+|--------|----------|
+| Observation | Invalid schema rejected with explicit error; unknowns can be flagged |
+| Verification | Rule miss/failure becomes evidence, not silent success |
+| Attestation | No key, no signature — never fake trust |
+| Action | Unauthorized without valid attestation; denial is recorded |
+| Learning | Uncertain outcomes are valid data |
+| Storage | Failed writes are not acknowledged as complete |
+
+**Friction-as-fertility**: anomalies, dissent, and failures are retained as evolutionary fuel.
 
 ---
 
 ## Security Considerations
 
-### Key Management
-- Keys are never transmitted in observation or verification
-- Keys are stored encrypted at rest
-- Key rotation is tracked (which key created which attestation?)
-- Private keys never leave their secure location
-
-### Attestation Trust
-- Attestations are signed with private key
-- Verifiers use public key to check signatures
-- Compromise of one key → revoke and re-sign (but history remains)
-
-### Audit Trail
-- All operations are logged
-- Logs are stored separately from database
-- Logs are immutable (append-only)
-- Access to logs is audited
+- Signing material never rides inside ordinary observation payloads
+- Attestations are verifiable with public material / shared verification logic
+- Request IDs and correlation IDs bind operator actions to ledger entries
+- Key rotation is explicit and versioned
+- Audit trails are append-oriented
 
 ---
 
-## Performance Characteristics
+## Performance Targets
 
-### Observation
-- **Latency**: < 10ms (in-memory)
-- **Throughput**: 10,000+ observations/second (single instance)
+| Operation | Target (single instance) |
+|-----------|--------------------------|
+| Observe | < 10ms normalize path |
+| Verify | < 100ms typical rule set |
+| Attest | < 50ms signature |
+| State/query | < 100ms indexed read |
 
-### Verification
-- **Latency**: < 100ms (typical rule execution)
-- **Cache hit rate**: 80%+ (same rule on similar observations)
-
-### Attestation
-- **Latency**: < 50ms (signature generation)
-- **Throughput**: 1,000+ attestations/second (single instance)
-
-### Storage Query
-- **Latency**: < 100ms (indexed query)
-- **Memory**: O(1) per query (streaming results)
-
-### Scalability
-- **Horizontal**: Add more instances, shard by observation source
-- **Vertical**: Add CPU, RAM for verification caching
-- **Temporal**: Archive old data, keep recent in hot storage
+Horizontal scale comes from sharding intake and separating hot context from cold ledger history.
 
 ---
 
 ## Testing Strategy
 
-### Unit Tests
-- Each component is tested independently
-- Mock external dependencies
-- Tests verify behavior and correctness
-
-### Integration Tests
-- Full loop: Observation → Verification → Attestation → Storage → Query
-- Uses real database and storage
-- Tests interaction between components
-
-### Property-Based Tests
-- Invariants: "Every attestation has a signature"
-- Determinism: "Same observation + same rule = same result"
-- Causality: "Verification happens after observation"
-
-### Performance Tests
-- Latency: Verify all operations meet SLAs
-- Throughput: Verify system handles expected load
-- Memory: Verify no memory leaks
+- **Unit** — observer, verification, attestation packages in isolation
+- **API** — full loop endpoints and authorization boundaries
+- **Integration** — observe → verify → attest → act → learn → recompile
+- **Property** — every attestation has a signature; failures remain queryable
+- **UI** — operator console reflects runtime state, not optimistic fiction
 
 ---
 
 ## Deployment Modes
 
-### Development
-- Single container
-- SQLite database
-- File-based event log
-- In-memory attestation signing
+| Mode | Shape |
+|------|-------|
+| Development | Local API + web, file or memory runtime store |
+| Production | Containerized services, durable ledger, hardened keys |
+| Edge | Minimal verifier/observer with sync-back |
 
-### Production
-- Docker Compose or Kubernetes
-- PostgreSQL with replication
-- Message broker for events
-- HSM (Hardware Security Module) for keys
+---
 
-### Edge
-- Lightweight container
-- Local SQLite cache
-- HTTP/gRPC to central system
-- Local signing keys (rotated frequently)
+## Design Invariants
+
+1. **Forms are projections** — no experience surface owns a private truth
+2. **Evidence before action** — act only after attestable verification
+3. **Dissent is retained** — contradictions strengthen the ledger
+4. **Evolution is explicit** — recompilation is a recorded event, not silent drift
+5. **Return is mandatory** — learning must re-enter The Current
+6. **No terrain dependency** — portable contracts over cloud-specific coupling
 
 ---
 
 ## References
 
-- [MANIFEST.md](../MANIFEST.md) — System principles and invariants
-- [CHARTER.md](../CHARTER.md) — How we make architectural decisions
-- [VERIFICATION_LOOP.md](./VERIFICATION_LOOP.md) — Detailed algorithm walkthrough
+- [MANIFEST.md](../MANIFEST.md) — mission, principles, invariants
+- [CHARTER.md](../CHARTER.md) — verification ethic and decision-making
+- [VERIFICATION_LOOP.md](./VERIFICATION_LOOP.md) — stage-by-stage algorithm
+- [ROADMAP.md](./ROADMAP.md) — phased delivery toward the full OS surface
 
 ---
 
-**Last Updated**: 2026-08-07  
-**Status**: Living — Evolves as implementation progresses
+**Last Updated**: 2026-08-14  
+**Status**: Living — aligned to the Formless Intelligence OS architecture and current runtime loop

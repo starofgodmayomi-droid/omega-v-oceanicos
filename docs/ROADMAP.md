@@ -4,7 +4,7 @@ This document captures the project roadmap for the Ω∞v Oceanicos verification
 
 ## Vision
 
-Ω∞v is a full-stack orchestration system that connects observation, verification, attestation, recording, rendering, learning, and evolution into a trusted intelligence loop.
+Ω∞v is the **Formless Intelligence OS**: a full-stack orchestration system where **The Current** connects observation, verification, attestation, action, learning, recompilation, and return across infinite forms (web, API, agents, edge, and beyond).
 
 ## Current Status
 
@@ -39,22 +39,26 @@ Built the initial workspace structure and runnable proof-of-concept:
 
 ### Phase 3 — Runtime
 Current focus:
-- `Observe → Verify → Attest` execution loop
+- Full loop: `Observe → Verify → Attest → Act → Learn → Recompile → Return`
+- The Current exposed via context bus (`/state`) and event stream (`/events`)
 - Runnable local developer experience
 - Package-level compile/test boundaries
-- `@omega-v/api` and `@omega-v/web`
+- `@omega-v/api` and `@omega-v/web` operator console
+- Trust basis explained from evidence, coverage, attestation, readiness, friction
 
 ### Phase 4 — Verification Engine
 Next objectives:
-- Build rule execution engine and configurable rule models
+- Deepen rule execution engine and configurable rule models
 - Add support for extensible verification rule formats
 - Improve evidence path generation and auditing
 - Add policy-driven verification workflows
+- Strengthen uncertainty modeling and cross-validation
 
-### Phase 5 — Observer
+### Phase 5 — Observer / Sense Layer
 Next objectives:
-- Add structured observation capture
+- Expand structured observation capture (signals, sensors, external feeds)
 - Support event provenance and deduplication
+- Add collector agents and stream ingestion patterns
 - Add persistence and append-only event storage
 - Add telemetry and observability metrics
 
@@ -72,12 +76,12 @@ Next objectives:
 - Add query and history APIs
 - Add API versioning and contract tests
 
-### Phase 8 — Web
+### Phase 8 — Unified Experience Layer
 Next objectives:
-- Add dashboard visuals and historical views
-- Add workflow orchestration UI
+- Expand web operator console (system mood, verification flow, evidence ledger)
+- Add historical views and workflow orchestration UI
 - Add real-time observability and runtime metrics
-- Add SDK integration examples
+- Extend toward CLI/SDK/mobile forms of The Current
 
 ### Phase 9 — SDK
 Next objectives:
@@ -144,4 +148,5 @@ pnpm run dev
 
 - `pnpm` is the current workspace package manager
 - The repo is now runnable end-to-end locally
-- The next milestone is runtime persistence and integration tests
+- Architecture docs describe the Formless Intelligence OS target and the current runtime mapping
+- The next milestone is durable Data & Memory layer work plus deeper verification engine capabilities

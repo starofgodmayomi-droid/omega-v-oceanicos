@@ -51,39 +51,47 @@ The project embodies a living evolution: every step contains all steps; every en
 ### The Verification Loop (Core)
 
 ```
-Observe → Verify → Attest → Record → Display → Learn → Return
+Observe → Verify → Attest → Act → Learn → Recompile → Return
 ```
 
-Every operation in Ω∞v follows this loop:
+Every operation in Ω∞v follows this loop through **The Current**:
 
-1. **Observe**: Capture state, events, or claims
-2. **Verify**: Apply evidence-based reasoning; check against known truths
+1. **Observe**: Capture state, events, or claims from the external world
+2. **Verify**: Apply evidence-based reasoning; produce an evidence path
 3. **Attest**: Generate verifiable proof; create cryptographic commitment
-4. **Record**: Store provenance; maintain immutable history
-5. **Display**: Present results to stakeholders; enable visualization
-6. **Learn**: Extract patterns; improve verification rules
-7. **Return**: Feed learning back into observation and verification
+4. **Act**: Authorize downstream work only after attestation
+5. **Learn**: Record outcomes (including friction and uncertainty)
+6. **Recompile**: Evolve rules, strategies, or forms from learning
+7. **Return**: Feed evolution back into observation and trust
 
-### Structural Layers
+### Structural Layers (Formless Intelligence OS)
 
 ```
-┌─────────────────────────────────────────┐
-│  User Interfaces (Web, Mobile, CLI)     │  ← Presentation
-├─────────────────────────────────────────┤
-│  SDKs & APIs                            │  ← Integration
-├─────────────────────────────────────────┤
-│  Verification Engine                    │  ← Core Logic
-│  • Observer                             │
-│  • Verification Rules                   │
-│  • Attestation Service                  │
-├─────────────────────────────────────────┤
-│  Compiler → IR → Runtime                │  ← Execution
-├─────────────────────────────────────────┤
-│  Persistence Layer (Database, Events)   │  ← Storage
-├─────────────────────────────────────────┤
-│  Deployment (Docker, Kubernetes, Edge)  │  ← Infrastructure
-└─────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────┐
+│  Unified Experience Layer                                │
+│  Web · Mobile · Desktop · CLI · SDK · Voice · AR/VR      │
+├──────────────────────────────────────────────────────────┤
+│  The Current · Context Bus · Event Stream                │
+├──────────────────────────────────────────────────────────┤
+│  Capability Rings                                        │
+│  Observe · Sense · Intent · Verify · Attest · Act        │
+│  Dissent/Friction · Learn/Evolve · Outcomes              │
+├──────────────────────────────────────────────────────────┤
+│  Core Services Layer                                     │
+│  API · Auth · Agent Runtime · Notify · Search · Analytics│
+├──────────────────────────────────────────────────────────┤
+│  Data & Memory Layer                                     │
+│  Time series · Graph · Relational · Vector · Ledger      │
+├──────────────────────────────────────────────────────────┤
+│  Infrastructure · Security & Governance                  │
+├──────────────────────────────────────────────────────────┤
+│  Oceanicos Core                                          │
+│  Compiler · Autopoiesis · Non-Dual · Friction-as-Fertility│
+│  No Terrain Dependency                                   │
+└──────────────────────────────────────────────────────────┘
 ```
+
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full Formless Intelligence OS map.
 
 ### Component Purposes
 
@@ -92,13 +100,16 @@ Every operation in Ω∞v follows this loop:
 | **Observer** | Captures observations from any source | Standardized event stream |
 | **Verification** | Applies rules to observations | Boolean + evidence path |
 | **Attestation** | Cryptographically signs verification | Signature + timestamp + key |
+| **Action Orchestrator** | Authorizes work after attestation | Authorized / denied action records |
+| **Learning** | Records outcomes and friction | Learning events |
+| **Recompiler** | Proposes evolved rules/versions | Recompilation proposals |
 | **Compiler** | Transforms rules into executable form | Oceanicum IR bytecode |
 | **IR** | Portable verification rule representation | Low-level verification ops |
-| **SDK** | Programmatic access to verification | Language bindings |
+| **SDK** | Programmatic access to The Current | Language bindings |
 | **CLI** | Command-line verification interface | STDOUT + exit codes |
-| **API** | Network-accessible verification | REST/gRPC endpoints |
-| **Database** | Immutable provenance store | Event log + attestation index |
-| **Dashboard** | Visual verification results | Timeline + status + evidence |
+| **API** | Network-accessible loop boundary | REST/gRPC endpoints |
+| **Data & Memory** | Plural memory + immutable ledger | Events, attestations, metrics |
+| **Dashboard** | Live operator projection of The Current | Trust, activity, evidence ledger |
 
 ---
 
@@ -134,16 +145,25 @@ These rules are non-negotiable:
    - Each layer can be tested independently
    - Integration tests verify the full loop
 
+8. **Every action must be attestation-gated**
+   - No silent side effects from unverified claims
+   - Denied actions remain visible as friction
+
+9. **Evolution is explicit recompilation**
+   - Rule and strategy changes are recorded events
+   - Learning returns to source through The Current
+
 ---
 
 ## Verification Roadmap
 
 ### Phase 1: Foundation (Core Loop)
-- [ ] Observer: Event capture and normalization
-- [ ] Verification: Rule engine with evidence paths
-- [ ] Attestation: Cryptographic signing service
-- [ ] Database: Append-only provenance store
-- [ ] Dashboard: Timeline view of attestations
+- [x] Observer: Event capture and normalization
+- [x] Verification: Rule engine with evidence paths
+- [x] Attestation: Cryptographic signing service
+- [x] Action / Learn / Recompile runtime stages
+- [ ] Database: Durable multi-store Data & Memory layer
+- [x] Dashboard: Operator console over The Current
 
 ### Phase 2: Integration (Ecosystem)
 - [ ] Compiler: Rule language → IR
@@ -211,5 +231,5 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on:
 
 ---
 
-**Last Updated**: 2026-08-07  
+**Last Updated**: 2026-08-14  
 **Manifest Status**: Living document — evolves with evidence and community input

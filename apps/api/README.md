@@ -31,7 +31,7 @@ Returns API status.
 ```json
 {
   "data": { "status": "ok" },
-  "timestamp": "2026-08-07T10:30:00Z"
+  "timestamp": "2026-08-14T10:30:00Z"
 }
 ```
 
@@ -69,14 +69,14 @@ POST /observe
 ```json
 {
   "data": {
-    "id": "obs-2026-08-07-1",
+    "id": "obs-2026-08-14-1",
     "claim": { "statement": "...", "category": "health-check" },
     "source": { ... },
-    "timestamp": "2026-08-07T10:30:00Z",
+    "timestamp": "2026-08-14T10:30:00Z",
     "confidence": 0.95,
     "status": "normalized"
   },
-  "timestamp": "2026-08-07T10:30:00Z"
+  "timestamp": "2026-08-14T10:30:00Z"
 }
 ```
 
@@ -101,8 +101,8 @@ POST /verify
 ```json
 {
   "data": {
-    "id": "ver-2026-08-07-abc",
-    "observationId": "obs-2026-08-07-1",
+    "id": "ver-2026-08-14-abc",
+    "observationId": "obs-2026-08-14-1",
     "summary": {
       "passed": true,
       "confidence": 0.95,
@@ -130,7 +130,7 @@ POST /verify
     },
     "status": "completed"
   },
-  "timestamp": "2026-08-07T10:30:01Z"
+  "timestamp": "2026-08-14T10:30:01Z"
 }
 ```
 
@@ -155,19 +155,19 @@ POST /attest
 ```json
 {
   "data": {
-    "id": "att-2026-08-07-xyz",
-    "verificationId": "ver-2026-08-07-abc",
+    "id": "att-2026-08-14-xyz",
+    "verificationId": "ver-2026-08-14-abc",
     "verified": true,
     "confidence": 0.95,
     "signature": "0x1a2b3c4d5e6f...",
     "signingKey": "key-2026-08-production-v1",
     "keyVersion": "1",
     "signingAlgorithm": "HMAC-SHA256",
-    "attestedAt": "2026-08-07T10:30:02Z",
+    "attestedAt": "2026-08-14T10:30:02Z",
     "attestedBy": "attestation-service",
     "status": "signed"
   },
-  "timestamp": "2026-08-07T10:30:02Z"
+  "timestamp": "2026-08-14T10:30:02Z"
 }
 ```
 
@@ -177,7 +177,7 @@ POST /attest
 POST /complete-loop
 ```
 
-Execute the entire verification loop in one request: Observe → Verify → Attest.
+Execute the entire verification loop in one request: Observe → Verify → Attest → Act → Learn → Recompile → Return.
 
 **Request:** Same as `/observe`
 
@@ -190,7 +190,7 @@ Execute the entire verification loop in one request: Observe → Verify → Atte
     "verification": {/* VerificationResult from step 2 */},
     "attestation": {/* Attestation from step 3 */}
   },
-  "timestamp": "2026-08-07T10:30:02Z"
+  "timestamp": "2026-08-14T10:30:02Z"
 }
 ```
 
@@ -301,7 +301,7 @@ List all registered verification rules.
       }
     ]
   },
-  "timestamp": "2026-08-07T10:30:00Z"
+  "timestamp": "2026-08-14T10:30:00Z"
 }
 ```
 
@@ -314,7 +314,7 @@ All errors follow this format:
   "code": "ERROR_CODE",
   "message": "Human-readable error message",
   "details": {/* Optional context */},
-  "timestamp": "2026-08-07T10:30:00Z"
+  "timestamp": "2026-08-14T10:30:00Z"
 }
 ```
 
@@ -373,4 +373,4 @@ npm run start
 
 **Package Status:** Stable (v0.1.0)  
 **Part of:** Ω∞v Oceanicos verification system  
-**Last Updated:** 2026-08-07
+**Last Updated:** 2026-08-14

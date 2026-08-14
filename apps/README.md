@@ -7,13 +7,13 @@ User-facing applications and services for the Ω∞v Oceanicos verification ecos
 Applications expose the core verification loop to end users through different interfaces:
 
 ```
-Web Dashboard    REST API    CLI (future)    Mobile (future)
-      ↓           ↓             ↓                ↓
-   React UI   Express.js   Command-line    iOS/Android
-      └─────────────┬──────────────┐──────────────┘
+Web Console     REST API     CLI (future)    Mobile (future)
+     ↓             ↓              ↓                ↓
+  React UI     Express.js    Command-line     iOS/Android
+     └──────────────┬───────────────┬──────────────┘
                     ↓
-        Shared Verification Loop
-        (Observer → Verify → Attest)
+              THE CURRENT
+   Observe → Verify → Attest → Act → Learn → Recompile → Return
 ```
 
 ## Structure
@@ -82,7 +82,8 @@ React dashboard for visualizing the verification loop in real-time.
 
 - Interactive claim submission
 - Real-time verification execution
-- Step-by-step result visualization (Observation → Verification → Attestation)
+- Stage visualization across observe → verify → attest → act → learn → recompile
+- Trust basis, live events, and evidence ledger projections of The Current
 - Evidence path display with reasoning
 - Signature preview
 - Responsive design
@@ -150,15 +151,13 @@ JSON Response
 ### Web Layer
 
 ```
-User Input (React Form)
+Operator Input (React console)
      ↓
-Fetch to /api/complete-loop
+API: complete-loop / state / events / act / learn / recompile
      ↓
-Receive Observation + Verification + Attestation
+The Current (context bus + event stream)
      ↓
-Render Results (JSX Components)
-     ↓
-Display on Dashboard
+Render trust, stages, evidence, and ledger
 ```
 
 ## Testing
@@ -373,14 +372,7 @@ Each app follows these standards:
 ---
 
 **Status:** Stable (v0.1.0)  
-**Part of:** Ω∞v Oceanicos verification system  
-**Last Updated:** 2026-08-07
-
-```
-
-Runs on `http://localhost:3001`
-
----
+**Part of:** Ω∞v Oceanicos Formless Intelligence OS  
+**Last Updated:** 2026-08-14
 
 See [../../CONTRIBUTING.md](../../CONTRIBUTING.md) for contribution guidelines.
-```

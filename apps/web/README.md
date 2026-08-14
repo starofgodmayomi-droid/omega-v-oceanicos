@@ -20,7 +20,7 @@ npm run dev
 
 ### Real-Time Verification
 
-Execute the complete Observe → Verify → Attest cycle from the browser.
+Execute the complete Observe → Verify → Attest → Act → Learn → Recompile → Return cycle from the browser.
 
 ### Runtime Inspection
 
@@ -252,4 +252,4 @@ npm run dev
 **Package Status:** Beta (v0.1.0)  
 **Part of:** Ω∞v Oceanicos verification system  
 **Next:** Dashboard persistence, historical queries, metrics  
-**Last Updated:** 2026-08-07
+**Last Updated:** 2026-08-14

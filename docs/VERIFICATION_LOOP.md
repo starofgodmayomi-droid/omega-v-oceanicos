@@ -1,16 +1,18 @@
 # The Verification Loop
 
-This document describes the heart of Ω∞v Oceanicos: the complete verification workflow from observation to learning.
+This document describes the heart of Ω∞v Oceanicos: the complete Formless Intelligence OS workflow from observation through recompilation and return.
 
 ---
 
 ## Overview
 
-The verification loop is a seven-step process that transforms observations into trustworthy, verifiable facts:
+The verification loop is the heartbeat of the Formless Intelligence OS. It transforms observations into trustworthy, actionable, evolvable facts inside **The Current**:
 
 ```
-Observe → Verify → Attest → Record → Display → Learn → Return
+Observe → Verify → Attest → Act → Learn → Recompile → Return
 ```
+
+Recording and display are not separate philosophical stages — they are continuous properties of The Current (event stream + operator surfaces) that accompany every step.
 
 Every operation in Ω∞v follows this loop. Understanding it is crucial to understanding the entire system.
 
@@ -377,19 +379,61 @@ console.log(isValid); // true
 
 ---
 
-## Step 4: Record
+## Step 4: Act
 
 ### Purpose
-Store the complete chain of observation, verification, and attestation in an immutable log.
+Authorize downstream work only after a verification has been attested. Action without attestation is protocol failure.
+
+### Input
+- Signed attestation from Step 3
+- Requested action identity / payload
+- Policy / authorization context
+
+### Process
+
+#### 4.1 Validate Attestation
+```typescript
+const valid = attestationService.verify(attestation);
+if (!valid) {
+  return { status: "denied", reason: "invalid-attestation" };
+}
+```
+
+#### 4.2 Authorize the Action
+```typescript
+const action = {
+  id: "act-2026-08-14-001",
+  action: "notify-oncall",
+  attestationId: attestation.id,
+  status: "authorized",
+  timestamp: "2026-08-14T10:30:03Z"
+};
+```
+
+#### 4.3 Record Denial as Friction
+Denied actions are not dropped. They enter the event stream as friction for learning.
+
+### Output
+**Runtime Action** with `authorized` or denied evidence linked to the attestation.
+
+---
+
+## Step 5: Record (Continuous)
+
+### Purpose
+In the Formless OS model, recording is continuous across The Current. Ledger writes accompany observation, verification, attestation, action, learning, and recompilation.
+
+Store the complete chain in an immutable log:
 
 ### Input
 - Observation from Step 1
 - Verification from Step 2
 - Attestation from Step 3
+- Action / learning / recompilation records when present
 
 ### Process
 
-#### 4.1 Append to Event Store
+#### 5.1 Append to Event Store
 
 ```typescript
 // Event log is append-only
@@ -415,7 +459,7 @@ eventStore.append({
 });
 ```
 
-#### 4.2 Create Indices
+#### 5.2 Create Indices
 
 ```typescript
 // Index for fast querying
@@ -436,7 +480,7 @@ sourceIndex.add({
 });
 ```
 
-#### 4.3 Enable Temporal Queries
+#### 5.3 Enable Temporal Queries
 
 ```typescript
 // "Was this service healthy at 10:30:00?"
@@ -467,7 +511,7 @@ Queryable by:
 
 ---
 
-## Step 5: Display
+## Step 6: Display (Operator Projection)
 
 ### Purpose
 Make verification results visible to users and systems.
@@ -477,7 +521,7 @@ Make verification results visible to users and systems.
 
 ### Channels
 
-#### 5.1 Web Dashboard
+#### 6.1 Web Dashboard
 ```
 Timeline View:
 ┌─────────────────────────────────────┐
@@ -499,7 +543,7 @@ Timeline View:
 Click to expand: See full evidence path
 ```
 
-#### 5.2 REST API
+#### 6.2 REST API
 ```bash
 GET /verification/ver-2026-08-07-5678
 
@@ -515,7 +559,7 @@ GET /verification/ver-2026-08-07-5678
 }
 ```
 
-#### 5.3 CLI
+#### 6.3 CLI
 ```bash
 $ omega query att-2026-08-07-9012
 
@@ -531,7 +575,7 @@ To see full evidence:
   omega show-evidence ver-2026-08-07-5678
 ```
 
-#### 5.4 Alert Systems
+#### 6.4 Alert Systems
 ```
 If verification fails:
   → Alert to monitoring system
@@ -547,14 +591,27 @@ If verification fails:
 
 ---
 
-## Step 6: Learn
+## Step 7: Learn
 
 ### Purpose
-Extract patterns from verifications and improve future predictions.
+Capture the outcome of authorized action (or verification friction) as first-class evidence for evolution, then extract patterns that improve future predictions.
+
+> Note: Learning is not optional decoration. Uncertain and failed outcomes are valid learning events.
 
 ### Process
 
-#### 6.1 Analyze Patterns
+#### 7.1 Record Outcome
+```typescript
+const learning = {
+  id: "lrn-2026-08-14-001",
+  actionId: action.id,
+  outcome: "success", // or "failure" | "uncertain"
+  note: "On-call acknowledged within SLO",
+  timestamp: "2026-08-14T10:35:00Z"
+};
+```
+
+#### 7.2 Analyze Patterns
 
 ```typescript
 // Aggregate verification results
@@ -576,7 +633,7 @@ const analysis = learningEngine.analyze({
 }
 ```
 
-#### 6.2 Identify Rule Improvements
+#### 7.3 Identify Rule Improvements
 
 ```typescript
 // Are our rules too strict? Too loose?
@@ -595,7 +652,7 @@ const ruleReview = learningEngine.reviewRule("response-time-threshold", {
 }
 ```
 
-#### 6.3 Generate Learning Reports
+#### 7.4 Generate Learning Reports
 
 ```typescript
 const report = learningEngine.generateReport({
@@ -617,14 +674,45 @@ const report = learningEngine.generateReport({
 
 ---
 
-## Step 7: Return
+## Step 8: Recompile
 
 ### Purpose
-Close the loop by using learning to improve observation and verification.
+Turn learning into an explicit evolutionary proposal — new rule versions, thresholds, or strategies — without silent drift.
+
+### Input
+- Learning events from Step 7
+- Current rule versions and policies
 
 ### Process
 
-#### 7.1 Update Rules
+#### 8.1 Propose Evolution
+```typescript
+const recompilation = {
+  id: "rcp-2026-08-14-001",
+  learningId: learning.id,
+  version: "response-time-threshold@1.0.6",
+  status: "proposed",
+  rationale: "Reduce false positives observed in learning window",
+  timestamp: "2026-08-14T23:00:00Z"
+};
+```
+
+#### 8.2 Keep History
+Prior rule versions remain queryable. Recompilation proposes; it does not erase.
+
+### Output
+**Recompilation proposal** ready to re-enter The Current after acceptance/verification.
+
+---
+
+## Step 9: Return
+
+### Purpose
+Close the loop by using learning and recompilation to improve observation and verification.
+
+### Process
+
+#### 9.1 Update Rules
 
 ```typescript
 // Based on learning, propose rule update
@@ -642,7 +730,7 @@ const newRule = {
 rulesRegistry.addVersion(newRule);
 ```
 
-#### 7.2 Adjust Observation Strategy
+#### 9.2 Adjust Observation Strategy
 
 ```typescript
 // Update what we observe based on learning
@@ -661,7 +749,7 @@ const updatedObservationStrategy = {
 observationConfig.update(updatedObservationStrategy);
 ```
 
-#### 7.3 Improve Confidence Estimates
+#### 9.3 Improve Confidence Estimates
 
 ```typescript
 // As we learn, we refine confidence
@@ -675,7 +763,7 @@ const confidenceModel = learningEngine.trainConfidenceModel({
 observationEngine.setConfidenceModel(confidenceModel);
 ```
 
-#### 7.4 Return to Step 1
+#### 9.4 Return to Step 1
 
 Next observation uses improved rules, strategies, and confidence models:
 
@@ -705,25 +793,17 @@ observer.observe({
 ## Complete Cycle Summary
 
 ```
-Observation 1 (Aug 7, 10:30)
-  └─ Rule v1.0.5 (threshold: 100)
-     └─ Result: Healthy (confidence: 0.95)
-        └─ Recorded in event log
+Observation 1
+  └─ Verify (rule v1.0.5)
+     └─ Attest signature
+        └─ Act (authorized notification)
+           └─ Learn (success / friction)
+              └─ Recompile proposal (rule v1.0.6)
+                 └─ Return into The Current
 
-Learning (Aug 7, 23:00)
-  └─ Analysis: Rule too strict (15% false positives)
-     └─ Recommendation: Increase threshold to 120
-
-Evolution (Aug 8, 00:00)
-  └─ Rule v1.0.6 published (threshold: 120)
-     └─ Observation strategy updated (add memory/CPU metrics)
-
-Observation 2 (Aug 8, 10:30)
-  └─ Rule v1.0.6 (threshold: 120)
-     └─ Additional metrics (memory, CPU)
-        └─ Result: Healthy (confidence: 0.96)
-           └─ Recorded in event log
-              └─ Better prediction because of learning
+Observation 2
+  └─ Uses recompiled knowledge
+     └─ Stronger evidence, clearer trust basis
 ```
 
 ---
@@ -765,38 +845,34 @@ signingKey: key-2026-08-production-v2
 timestamp: 10:30:02
 ```
 
-**Step 4: Record**
+**Step 4: Act**
 ```
-Append to event log:
-  - Observation
-  - Verification
-  - Attestation
-Index for fast queries
+Attestation valid → action authorized
+Attestation invalid → action denied (friction retained)
 ```
 
-**Step 5: Display**
+**Step 5–6: Record + Display**
 ```
-Dashboard shows:
-  ✓ Healthy (confidence 95%)
-  Signed at 10:30:02
-  Click to see evidence
-```
-
-**Step 6: Learn**
-```
-Over 7 days:
-  - 240 verifications
-  - 228 passed, 12 failed
-  - Success rate: 95%
-  - Rule effectiveness: 97%
-  - No recommended changes
+Event stream + operator console show:
+  ✓ verification, signature, action status
+  Evidence path remains inspectable
 ```
 
-**Step 7: Return**
+**Step 7: Learn**
 ```
-Rules remain at v1.0.5
-Next observation will use same strategy
-System has proven stable
+Outcome recorded: success | failure | uncertain
+Friction patterns become learning fuel
+```
+
+**Step 8: Recompile**
+```
+Propose rule/strategy version bump with rationale
+History preserved
+```
+
+**Step 9: Return**
+```
+Next observation enters The Current with evolved knowledge
 ```
 
 ---
@@ -832,5 +908,5 @@ System has proven stable
 
 ---
 
-**Last Updated**: 2026-08-07  
-**Status**: The heart of Ω∞v Oceanicos
+**Last Updated**: 2026-08-14  
+**Status**: The heart of Ω∞v Oceanicos — Formless Intelligence OS loop

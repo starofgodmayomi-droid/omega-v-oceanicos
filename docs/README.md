@@ -13,8 +13,8 @@ Welcome to the Ω∞v Oceanicos documentation. Start here to understand the proj
 
 ### Development
 - **[Development Setup](./DEVELOPMENT.md)** — Get the project running locally
-- **[Architecture](./ARCHITECTURE.md)** — High-level system design and component relationships
-- **[Verification Loop](./VERIFICATION_LOOP.md)** — How the core observation → verification → attestation cycle works
+- **[Architecture](./ARCHITECTURE.md)** — Formless Intelligence OS layers, The Current, and component map
+- **[Verification Loop](./VERIFICATION_LOOP.md)** — Observe → Verify → Attest → Act → Learn → Recompile → Return
 
 ---
 
@@ -64,7 +64,7 @@ Welcome to the Ω∞v Oceanicos documentation. Start here to understand the proj
 ### Community
 - **[Code of Conduct](../CHARTER.md#code-of-conduct)** — How we treat each other
 - **[Release Process](./RELEASES.md)** — How we publish versions (coming soon)
-- **[Roadmap](./ROADMAP.md)** — What we're building next (coming soon)
+- **[Roadmap](./ROADMAP.md)** — What we're building next
 
 ---
 
@@ -89,11 +89,12 @@ A: Provide evidence and propose alternatives. See [CHARTER.md](../CHARTER.md#how
 
 ## Project Status
 
-- **Current Phase**: Foundation (Step 1 in progress)
-- **Next Phase**: Core Loop Implementation (Step 2)
+- **Current Phase**: Runtime (Phase 3) — loop is executable locally
+- **Architecture**: Formless Intelligence OS documented in [ARCHITECTURE.md](./ARCHITECTURE.md)
+- **Next Phase**: Verification engine depth + durable memory/ledger
 - **Stability**: Rapidly evolving — APIs may change
 
-See [MANIFEST.md](../MANIFEST.md#verification-roadmap) for the full roadmap.
+See [ROADMAP.md](./ROADMAP.md) and [MANIFEST.md](../MANIFEST.md#verification-roadmap) for the full roadmap.
 
 ---
 
@@ -106,4 +107,4 @@ See [MANIFEST.md](../MANIFEST.md#verification-roadmap) for the full roadmap.
 ---
 
 **Documentation Status**: Living — Evolves as the project grows  
-**Last Updated**: 2026-08-07
+**Last Updated**: 2026-08-14

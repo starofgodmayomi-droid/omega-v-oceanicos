@@ -4,13 +4,13 @@ Shared libraries and core verification loop components.
 
 ## Overview
 
-The verification loop is built on three core packages that can be used independently or together:
+Core loop primitives that feed **The Current**. Packages cover the first three stages; API/runtime orchestrates act → learn → recompile → return:
 
 ```
-Observation → Verification → Attestation
-    ↓            ↓               ↓
-@omega-v/   @omega-v/        @omega-v/
-observer    verification     attestation
+Observe → Verify → Attest → (Act → Learn → Recompile → Return)
+   ↓         ↓         ↓
+@omega-v/ @omega-v/ @omega-v/
+observer  verification attestation
 ```
 
 ## Structure
@@ -211,32 +211,6 @@ Current version: **0.1.0** (preview/alpha)
 ---
 
 **Status:** In active development  
-**Last Updated:** 2026-08-07
-
-export interface PublicAPI {
-  // Single responsibility
-}
-
-export class Implementation implements PublicAPI {
-  // Single, testable behavior
-}
-```
-
-## Shared Types
-
-Common types are in `packages/types/`:
-
-```typescript
-export interface Observation {
-  id: string;
-  claim: string;
-  source: string;
-  timestamp: string;
-  confidence: number;
-  metadata: Record<string, unknown>;
-}
-```
-
----
+**Last Updated:** 2026-08-14
 
 See [../../CONTRIBUTING.md](../../CONTRIBUTING.md) for contribution guidelines.

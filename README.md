@@ -21,17 +21,17 @@ A verification-first full-stack ecosystem for observing, verifying, attesting, a
 ### The Core Loop
 
 ```
-Observe → Verify → Attest → Record → Display → Learn → Return
+Observe → Verify → Attest → Act → Learn → Recompile → Return
 ```
 
-Every observation:
+Every claim that enters **The Current**:
 
 1. **Observed** with metadata (who, when, what, confidence)
 2. **Verified** against rules with evidence paths
 3. **Attested** with cryptographic signatures
-4. **Recorded** in an immutable event log
-5. **Displayed** to users and systems
-6. **Learned** from to improve future verification
+4. **Acted on** only after attestation authorizes downstream work
+5. **Learned** from outcomes (success, failure, or uncertain)
+6. **Recompiled** into improved rules, versions, or strategies
 7. **Returned** to observation with better knowledge
 
 ### Why It Matters
@@ -188,12 +188,13 @@ See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md#common-commands) for more.
 
 - ✅ Project manifest and charter
 - ✅ Development setup and tooling
-- ✅ Documentation structure
-- ⏳ Core verification loop implementation
-- ⏳ API server skeleton
-- ⏳ Web dashboard skeleton
+- ✅ Documentation structure (Formless Intelligence OS architecture)
+- ✅ Core loop runtime: observe → verify → attest → act → learn → recompile
+- ✅ API server + web operator console over The Current
+- ⏳ Persistence hardening and multi-store memory layer
+- ⏳ Broader experience surfaces (CLI, SDK, mobile)
 
-**Next Phase**: Core Loop Implementation (Step 2)
+**Next Phase**: Verification Engine depth + durable Data & Memory layer
 
 See [MANIFEST.md](MANIFEST.md#verification-roadmap) for the full roadmap.
 
@@ -302,4 +303,4 @@ We welcome contributions in all areas:
 ---
 
 **Status**: Rapidly evolving, foundation phase  
-**Last Updated**: 2026-08-07
+**Last Updated**: 2026-08-14
