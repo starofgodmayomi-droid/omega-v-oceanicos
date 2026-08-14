@@ -5,6 +5,7 @@ import express, { Express, Request, Response } from 'express';
 import { Observer } from '@omega-v/observer';
 import { VerificationEngine } from '@omega-v/verification';
 import { AttestationService } from '@omega-v/attestation';
+import { Memory } from '@omega-v/memory';
 import { Attestation, SuccessResponse, ErrorResponse, VerificationRule } from '@omega-v/types';
 
 /**
@@ -37,6 +38,7 @@ app.use((req: Request, res: Response, next) => {
 const observer = new Observer();
 const verificationEngine = new VerificationEngine();
 const attestationService = new AttestationService();
+const memory = new Memory();
 
 type RuntimeEvent = {
   id: string;
@@ -223,6 +225,7 @@ app.get('/state', (_req: Request, res: Response) => {
         { name: 'observer', status: 'ready' },
         { name: 'verifier', status: 'ready' },
         { name: 'attester', status: 'ready' },
+        { name: 'memory', status: 'ready' },
       ],
     },
     timestamp: new Date().toISOString(),
@@ -248,6 +251,17 @@ app.get('/events/stream', (req: Request, res: Response) => {
 
 app.get('/runs', (_req: Request, res: Response) => {
   res.json({ data: completedRuns, timestamp: new Date().toISOString() });
+});
+
+app.get('/memory', (_req: Request, res: Response) => {
+  res.json({
+    data: {
+      entries: memory.query(),
+      size: memory.size(),
+      integrity: memory.verifyIntegrity(),
+    },
+    timestamp: new Date().toISOString(),
+  });
 });
 
 app.get('/actions', (_req: Request, res: Response) => {
@@ -634,6 +648,11 @@ app.post('/complete-loop', (req: Request, res: Response) => {
       details: { attestationId: attestation.id },
     });
 
+    // Step 4: Remember — append the provenance chain to memory
+    memory.record('OBSERVATION', observation);
+    memory.record('VERIFICATION', verificationResult);
+    memory.record('ATTESTATION', attestation);
+
     const response: SuccessResponse<{
       observation: typeof observation;
       verification: typeof verificationResult;
@@ -711,6 +730,7 @@ const startServer = () =>
         '  GET    /events           - Recent lifecycle events',
         '  GET    /events/stream    - Live lifecycle events',
         '  GET    /runs             - Completed runs',
+        '  GET    /memory           - Provenance memory chain',
         '  POST   /act              - Authorize an action',
         '  POST   /learn            - Record learning',
         '  POST   /recompile        - Propose a recompile',

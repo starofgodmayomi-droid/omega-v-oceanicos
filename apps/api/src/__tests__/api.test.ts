@@ -279,4 +279,49 @@ describe('API runtime contracts', () => {
     });
     expect(missingLearningResponse.status).toBe(404);
   });
+
+  it('remembers each completed loop in the provenance memory chain', async () => {
+    const loopResponse = await fetch(`${baseUrl}/complete-loop`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        claim: 'API memory contract test',
+        category: 'health-check',
+        source: { system: 'api-test', version: '0.1.0', environment: 'test' },
+        observedBy: 'jest',
+        metadata: { responseTime: 42, statusCode: 200 },
+        confidence: 0.95,
+        confidenceReason: 'Executable contract test',
+      }),
+    });
+    const loop = (await loopResponse.json()) as ApiResponse<LoopPayload>;
+    expect(loopResponse.status).toBe(201);
+
+    const memoryResponse = await fetch(`${baseUrl}/memory`);
+    const memoryState = (await memoryResponse.json()) as ApiResponse<{
+      entries: Array<{
+        id: number;
+        type: 'OBSERVATION' | 'VERIFICATION' | 'ATTESTATION';
+        data: { id: string };
+        hash: string;
+        previousHash: string;
+      }>;
+      size: number;
+      integrity: boolean;
+    }>;
+
+    expect(memoryResponse.status).toBe(200);
+    expect(memoryState.data.integrity).toBe(true);
+
+    const { entries } = memoryState.data;
+    const tail = entries.slice(-3);
+    expect(tail.map((entry) => entry.type)).toEqual(['OBSERVATION', 'VERIFICATION', 'ATTESTATION']);
+    expect(tail[0]?.data.id).toBe(loop.data.observation.id);
+    expect(tail[2]?.data.id).toBe(loop.data.attestation.id);
+
+    for (let index = 1; index < entries.length; index++) {
+      expect(entries[index]?.previousHash).toBe(entries[index - 1]?.hash);
+    }
+    expect(memoryState.data.size).toBe(entries.length);
+  });
 });
