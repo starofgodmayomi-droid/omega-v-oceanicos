@@ -73,6 +73,7 @@ export function App(): JSX.Element {
   >('idle');
   const [commandOpen, setCommandOpen] = useState(false);
   const claimInputRef = useRef<HTMLTextAreaElement>(null);
+  const commandFirstRef = useRef<HTMLButtonElement>(null);
 
   const refreshRuntime = async () => {
     try {
@@ -114,6 +115,10 @@ export function App(): JSX.Element {
   useEffect(() => {
     void refreshRuntime();
   }, []);
+
+  useEffect(() => {
+    if (commandOpen) commandFirstRef.current?.focus();
+  }, [commandOpen]);
 
   useEffect(() => {
     const stream = new EventSource('/api/events/stream');
@@ -357,7 +362,10 @@ export function App(): JSX.Element {
                 ⌘ <span>What do you want to do?</span>
                 <kbd>ESC</kbd>
               </div>
-              <button onClick={() => runCommand(() => claimInputRef.current?.focus())}>
+              <button
+                ref={commandFirstRef}
+                onClick={() => runCommand(() => claimInputRef.current?.focus())}
+              >
                 <strong>Observe</strong>
                 <span>Focus operator input</span>
               </button>

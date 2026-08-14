@@ -20,6 +20,13 @@ textarea {
 button {
   cursor: pointer;
 }
+button:focus-visible,
+textarea:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid #8ce8c8;
+  outline-offset: 2px;
+}
 .os-shell {
   display: flex;
   min-height: 100vh;
