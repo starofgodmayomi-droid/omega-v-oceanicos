@@ -87,13 +87,13 @@ View each step of the verification loop:
 
 The dashboard communicates with the API server:
 
-```typescript
-POST / api / complete - loop;
-GET / api / state;
-GET / api / events;
-GET / api / events / stream;
-GET / api / runs;
-POST / api / attest / verify;
+```text
+POST /api/complete-loop
+GET /api/state
+GET /api/events
+GET /api/events/stream
+GET /api/runs
+POST /api/attest/verify
 ```
 
 **Request:**
