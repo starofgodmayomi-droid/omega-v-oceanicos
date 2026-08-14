@@ -109,14 +109,14 @@ npm run test      # Run tests
 
 ```bash
 # Install dependencies for all apps and packages
-npm install
+pnpm install
 
 # Start all apps in parallel (hot reload enabled)
-npm run dev
+pnpm dev
 
 # In separate terminals or after Ctrl+C:
-npm run build    # Build all apps
-npm run test     # Test all apps
+pnpm build       # Build all apps
+pnpm test        # Test all apps
 ```
 
 ### Option 2: Start Individual App

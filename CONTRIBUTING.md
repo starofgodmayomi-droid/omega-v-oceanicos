@@ -11,6 +11,7 @@ Thank you for joining this verification-first community. This document explains 
 ### Step 1: Observation — Identify the Gap
 
 **What you do:**
+
 - Use Ω∞v and observe where verification could be better
 - Ask: "What would need to be true for this to work?"
 - Document your observation with evidence:
@@ -19,6 +20,7 @@ Thank you for joining this verification-first community. This document explains 
   - Can others reproduce this?
 
 **What you create:**
+
 - An issue with:
   - **Title**: Observable problem statement
   - **Current State**: What you see now (with evidence)
@@ -29,6 +31,7 @@ Thank you for joining this verification-first community. This document explains 
 ### Step 2: Verification — Propose a Solution
 
 **What you do:**
+
 - Read related issues and existing code
 - Design a solution that can be tested
 - Create a proposal that includes:
@@ -37,6 +40,7 @@ Thank you for joining this verification-first community. This document explains 
   - How will you know when you're done?
 
 **What you create:**
+
 - A PR with:
   - **Clear description**: What problem does this solve?
   - **Test plan**: How will reviewers verify this works?
@@ -46,11 +50,13 @@ Thank you for joining this verification-first community. This document explains 
 ### Step 3: Attestation — Build Trust Through Review
 
 **What happens:**
+
 - Reviewers verify your work against the proposal
 - CI/CD automation runs tests and checks
 - Evidence accumulates that the solution works
 
 **How to prepare:**
+
 - Run tests locally first
 - Document your verification steps
 - Respond to reviewer feedback with evidence
@@ -59,11 +65,13 @@ Thank you for joining this verification-first community. This document explains 
 ### Step 4: Record — Merge and Document
 
 **What you do:**
+
 - Address final feedback
 - Merge when all checks pass
 - Your contribution is now part of the attestation trail
 
 **What we do:**
+
 - GitHub automatically creates an immutable record
 - Changelog is updated with verifiable links
 - Community learns from your contribution
@@ -71,6 +79,7 @@ Thank you for joining this verification-first community. This document explains 
 ### Step 5: Display — Share What You've Built
 
 **What happens:**
+
 - Your change appears in the next release
 - Documentation is updated
 - Users can verify your work in production
@@ -111,12 +120,12 @@ Thank you for joining this verification-first community. This document explains 
 5. **Commit with evidence**
    ```bash
    git commit -m "Verify: Add feature X (#123)
-   
+
    Evidence:
    - Test coverage: 95%
    - Performance: +2ms (acceptable)
    - Compatibility: Tested on Node 18+
-   
+
    Related: Fixes #123
    "
    ```
@@ -124,8 +133,9 @@ Thank you for joining this verification-first community. This document explains 
 ### When You're Ready
 
 6. **Run the full verification suite**
+
    ```bash
-   npm run verify
+   pnpm verify
    # This runs: lint, type-check, test, build
    ```
 
@@ -158,17 +168,17 @@ Your code should:
 
 ```bash
 # Check code style
-npm run lint
+pnpm lint
 
 # Fix style issues automatically
-npm run lint:fix
+pnpm lint:fix
 
 # Type-check TypeScript
-npm run type-check
+pnpm type-check
 
 # Full format check
-npm run format:check
-npm run format:fix
+pnpm format:check
+pnpm format:fix
 ```
 
 ### Testing Requirements
@@ -181,8 +191,8 @@ npm run format:fix
 Minimum standard: **80% code coverage** for new code.
 
 ```bash
-npm run test
-npm run test:coverage
+pnpm test
+pnpm test:coverage
 ```
 
 ---
@@ -202,6 +212,7 @@ Follow this format:
 ```
 
 **Types:**
+
 - `observe:` — New observation or investigation
 - `verify:` — Feature implementation with evidence
 - `attest:` — Documentation, tests, type info
@@ -210,18 +221,21 @@ Follow this format:
 - `chore:` — Maintenance, dependency updates
 
 **Subject:**
+
 - Imperative mood ("add feature" not "added feature")
 - Lowercase
 - No period at end
 - Max 50 characters
 
 **Body:**
-- Explain *why* not *what*
+
+- Explain _why_ not _what_
 - Include evidence (test results, benchmarks)
 - Reference issue numbers: `Fixes #123`
 - Max 72 characters per line
 
 **Example:**
+
 ```
 verify: add event observer for async tasks
 
@@ -245,22 +259,26 @@ Your PR description should include:
 
 ```markdown
 ## What This Verifies
+
 Fixes #[issue number]
 
 [Clear statement of the problem]
 
 ## How I Verified It
+
 - [ ] Tests pass locally
 - [ ] New tests added
 - [ ] Documentation updated
 - [ ] No breaking changes (or breaking changes marked)
 
 ## Evidence
+
 - Test results: [paste output or screenshot]
 - Performance impact: [if applicable]
 - Screenshots: [if applicable]
 
 ## Checklist
+
 - [ ] I read CHARTER.md
 - [ ] Tests are green
 - [ ] Code follows linting standards
@@ -294,6 +312,7 @@ npm run docs:build
 Report a bug:
 
 1. **Create a minimal reproduction**
+
    ```bash
    git clone https://github.com/starofgodmayomi-droid/omega-v-oceanicos.git
    cd omega-v-oceanicos
@@ -353,6 +372,7 @@ Propose a feature:
 ### What to Expect from Reviewers
 
 Reviewers will:
+
 - Check that the code solves the stated problem
 - Verify test coverage and quality
 - Ensure consistency with project standards
@@ -360,6 +380,7 @@ Reviewers will:
 - Suggest improvements based on evidence
 
 Reviewers will **not**:
+
 - Rewrite your code for you
 - Block PRs on stylistic preferences
 - Require changes without explanation
@@ -387,12 +408,14 @@ If you disagree with feedback:
 ## Becoming a Maintainer
 
 Maintainers are trusted to:
+
 - Review and merge PRs
 - Release new versions
 - Manage issues and discussions
 - Uphold the verification ethic
 
 **Path to maintainership:**
+
 1. Contribute consistently with high-quality work
 2. Show understanding of the charter and principles
 3. Demonstrate good judgment in reviews
@@ -419,6 +442,7 @@ That means:
 - ✗ Ignore evidence that contradicts your view
 
 **Violations** of this code will result in:
+
 1. A recorded conversation (transparent)
 2. An opportunity to understand the impact
 3. A chance to repair (if the community agrees)

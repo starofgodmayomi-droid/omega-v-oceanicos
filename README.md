@@ -25,6 +25,7 @@ Observe → Verify → Attest → Record → Display → Learn → Return
 ```
 
 Every observation:
+
 1. **Observed** with metadata (who, when, what, confidence)
 2. **Verified** against rules with evidence paths
 3. **Attested** with cryptographic signatures
@@ -45,18 +46,23 @@ Most systems assert correctness. We verify it.
 ## Key Principles
 
 ### 1. Verification Before Everything
+
 No claim without evidence. No evolution without verification.
 
 ### 2. Continuous Observation
+
 Systems are never final. Observation is ongoing.
 
 ### 3. Evidence-Based Trust
+
 Trust emerges from verifiable provenance, not authority.
 
 ### 4. Graceful Pluralism
+
 One system, many interpreters. Consensus and dissent both matter.
 
 ### 5. Recursive Completeness
+
 Every component contains the whole verification loop.
 
 ---
@@ -108,10 +114,10 @@ git clone https://github.com/starofgodmayomi-droid/omega-v-oceanicos.git
 cd omega-v-oceanicos
 
 # Install
-npm install
+pnpm install
 
 # Verify everything works
-npm run verify
+pnpm verify
 ```
 
 See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for detailed setup.
@@ -119,6 +125,7 @@ See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for detailed setup.
 ### 3. Pick a Contribution
 
 Look for issues labeled:
+
 - `good first issue` — Start here
 - `help wanted` — Areas needing contributions
 - `question` — Discussion and feedback
@@ -126,6 +133,7 @@ Look for issues labeled:
 ### 4. Read the Contribution Guide
 
 [CONTRIBUTING.md](CONTRIBUTING.md) explains:
+
 - How to propose changes
 - How to verify your work
 - How to submit PRs
@@ -139,35 +147,35 @@ Look for issues labeled:
 
 ```bash
 # Start all services
-npm run dev
+pnpm dev
 
 # Run in watch mode
-npm run watch
+pnpm --parallel --filter @omega-v/api --filter @omega-v/web dev
 
 # Build everything
-npm run build
+pnpm build
 ```
 
 ### Verification
 
 ```bash
 # Full verification (lint, test, build)
-npm run verify
+pnpm verify
 
 # Quick verification (lint, test only)
-npm run verify:fast
+pnpm verify:fast
 
 # Comprehensive (full + coverage + integration)
-npm run verify:full
+pnpm verify:full
 ```
 
 ### Code Quality
 
 ```bash
-npm run lint              # Check code style
-npm run lint:fix          # Fix style issues
-npm run type-check        # Check TypeScript
-npm run test:coverage     # Generate coverage report
+pnpm lint              # Check code style
+pnpm lint:fix          # Fix style issues
+pnpm type-check        # Check TypeScript
+pnpm test:coverage     # Generate coverage report
 ```
 
 See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md#common-commands) for more.
@@ -176,7 +184,7 @@ See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md#common-commands) for more.
 
 ## Current Phase
 
-**Phase 1: Foundation** (In Progress)
+**Phase 3: Runtime** (In Progress)
 
 - ✅ Project manifest and charter
 - ✅ Development setup and tooling
@@ -222,21 +230,25 @@ See [CHARTER.md](CHARTER.md#code-of-conduct) for full details.
 ## Technology Stack
 
 ### Languages
+
 - TypeScript (core, SDKs, tests)
 - Potentially: Python, Go, Rust (SDKs)
 
 ### Runtime & Frameworks
+
 - Node.js 18+ (backend)
 - React (web dashboard)
 - Express or Fastify (API)
 - PostgreSQL (production) or SQLite (development)
 
 ### DevOps
+
 - Docker (containerization)
 - GitHub Actions (CI/CD)
 - Kubernetes (orchestration, optional)
 
 ### Testing & Quality
+
 - Jest (unit & integration tests)
 - ESLint + Prettier (code quality)
 - TypeScript (type safety)
@@ -274,11 +286,13 @@ We welcome contributions in all areas:
 ## About the Name
 
 **Ω∞v** represents:
+
 - **Ω** (Omega) — The end and the infinite return
 - **∞** (Infinity) — Continuous becoming and evolution
 - **v** (Lowercase) — Humility and pluralism (no authority imposing meaning)
 
 **Oceanicos** represents:
+
 - The vast, interconnected system of observations and verifications
 - Currents of formless intelligence flowing through evidence
 - The observer within the ocean, recognizing their reflection

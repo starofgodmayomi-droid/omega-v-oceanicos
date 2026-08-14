@@ -7,15 +7,18 @@ Get Ω∞v Oceanicos running locally in 10 minutes.
 ## Prerequisites
 
 ### Required
+
 - **Git** 2.30+
 - **Node.js** 18.x or 20.x (LTS recommended)
 - **npm** 9+ or **pnpm** 8+
 
 ### Recommended
+
 - **VS Code** with recommended extensions (will prompt on open)
 - **Docker** (for running services in containers)
 
 ### Optional
+
 - **Make** (for running common commands)
 - **PostgreSQL** 14+ (for production testing)
 
@@ -38,19 +41,16 @@ npm install
 
 Or with pnpm:
 
-```bash
-pnpm install
-```
-
-### 3. Run Verification
+````bash
 
 The full verification suite checks that everything is working:
 
 ```bash
-npm run verify
-```
+pnpm verify
+````
 
 This runs:
+
 - ✓ Linting (code style)
 - ✓ Type checking (TypeScript)
 - ✓ Unit tests
@@ -63,10 +63,11 @@ If all checks pass, your environment is ready!
 Once the monorepo structure is built, run:
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
 This starts:
+
 - API server on `http://localhost:3000`
 - Web dashboard on `http://localhost:3001`
 - File watchers for hot reload
@@ -200,6 +201,7 @@ The repository includes workspace recommendations. When you open it in VS Code:
 3. Reload VS Code
 
 Recommended extensions:
+
 - **ESLint** — Real-time linting
 - **TypeScript Vue Plugin** — Type checking
 - **Prettier** — Code formatting
