@@ -25,6 +25,7 @@ export function App(): JSX.Element {
   const [error, setError] = useState('');
   const [activeNav, setActiveNav] = useState('Current');
   const [selectedEvent, setSelectedEvent] = useState<RuntimeEvent | null>(null);
+  const [attestationStatus, setAttestationStatus] = useState<'idle' | 'checking' | 'valid' | 'invalid'>('idle');
 
   const refreshRuntime = async () => {
     try {
@@ -60,6 +61,20 @@ export function App(): JSX.Element {
     } catch (requestError) { setError(requestError instanceof Error ? requestError.message : 'The loop failed'); } finally { setLoading(false); }
   };
 
+  const verifyAttestation = async () => {
+    if (!result) return;
+    setAttestationStatus('checking');
+    try {
+      const response = await fetch('/api/attest/verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ attestation: result.attestation }) });
+      if (!response.ok) throw new Error('Attestation check failed');
+      const payload = (await response.json()) as { data: { valid: boolean } };
+      setAttestationStatus(payload.data.valid ? 'valid' : 'invalid');
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : 'Attestation check failed');
+      setAttestationStatus('invalid');
+    }
+  };
+
   const activeStage = stages.includes(mode) ? mode : 'observe';
   return <div className="os-shell">
     <aside className="sidebar"><div className="brand"><span className="brand-mark">Ω∞v</span><span>ECOSYSTEMOS</span></div><div className="side-status"><span className="status-dot" /> Runtime active</div><nav aria-label="Primary navigation">{navGroups.map((group) => <div className="nav-group" key={group.label}><span className="nav-label">{group.label}</span>{group.items.map((item) => <button className={activeNav === item ? 'nav-item active' : 'nav-item'} key={item} onClick={() => setActiveNav(item)}><span className="nav-glyph">{item === 'Current' ? '◈' : '·'}</span>{item}</button>)}</div>)}</nav><div className="sidebar-foot"><span>LOCAL ENVIRONMENT</span><strong>v0.1.0</strong></div></aside>
@@ -69,7 +84,7 @@ export function App(): JSX.Element {
         <div className="intent-panel"><div className="section-kicker">CREATE AN OBSERVATION <span>OPERATOR INPUT</span></div><label htmlFor="claim">What should enter the current?</label><textarea id="claim" value={claim} onChange={(event) => setClaim(event.target.value)} rows={3} /><div className="input-controls"><label htmlFor="response-time">Response ms<input id="response-time" type="number" min="0" value={responseTime} onChange={(event) => setResponseTime(event.target.value)} /></label><label htmlFor="status-code">Status code<input id="status-code" type="number" min="100" value={statusCode} onChange={(event) => setStatusCode(event.target.value)} /></label></div><div className="input-meta"><span>health-check / local</span><button className="run-button" onClick={executeLoop} disabled={loading || !claim.trim()}>{loading ? 'Running current...' : 'Run verification'} <span>↗</span></button></div><div className="truth-note"><span>⊙</span> Checks use the values you submit. Failures remain visible as evidence.</div></div></section>
       <section className="metrics-row"><div><span>EVENTS RECORDED</span><strong>{events.length.toString().padStart(2, '0')}</strong></div><div><span>VERIFICATION</span><strong className="green">{result ? (result.verification.summary.passed ? 'PASSED' : 'FAILED') : 'READY'}</strong></div><div><span>SERVICES</span><strong>03 / 03</strong></div><div><span>ENVIRONMENT</span><strong>LOCAL</strong></div></section>
       <section className="lower-grid"><div className="stream-panel"><div className="panel-heading"><div><span className="section-kicker">UNIVERSAL EVENT STREAM</span><h2>What is happening</h2></div><span className="live-tag">● LIVE</span></div><div className="event-list">{events.length === 0 ? <div className="empty">No observations have entered the current yet.</div> : events.map((event) => <button className={selectedEvent?.id === event.id ? 'event-row selected' : 'event-row'} key={event.id} onClick={() => setSelectedEvent(event)}><span className={`event-marker ${event.status}`} /><time>{timeLabel(event.timestamp)}</time><div><strong>{event.type.replace('.', ' / ').toUpperCase()}</strong><p>{event.message}</p></div><span className="event-stage">{event.stage}</span></button>)}</div></div>
-        <div className="evidence-panel"><div className="panel-heading"><div><span className="section-kicker">EVENT INSPECTOR</span><h2>{selectedEvent ? selectedEvent.type : 'Evidence chain'}</h2></div><span className="seal">◉</span></div>{selectedEvent ? <div className="event-inspector"><div><span>EVENT ID</span><code>{selectedEvent.id}</code></div><div><span>CORRELATION</span><code>{selectedEvent.correlationId ?? 'not assigned'}</code></div><div><span>PAYLOAD</span><pre>{JSON.stringify(selectedEvent.details ?? {}, null, 2)}</pre></div></div> : result ? <div className="chain">{[['OBSERVATION', result.observation.id], ['VERIFICATION', result.verification.id], ['ATTESTATION', result.attestation.id]].map(([label, id]) => <div className="chain-item" key={label}><span className="chain-line" /><div><span>{label}</span><code>{id}</code></div></div>)}</div> : <div className="empty evidence-empty">Run the loop to generate a traceable evidence chain.</div>}<div className="panel-foot">ATTEST ≠ ASSERT <span>Evidence before trust</span></div></div></section>
+        <div className="evidence-panel"><div className="panel-heading"><div><span className="section-kicker">EVENT INSPECTOR</span><h2>{selectedEvent ? selectedEvent.type : 'Evidence chain'}</h2></div><span className="seal">◉</span></div>{selectedEvent ? <div className="event-inspector"><div><span>EVENT ID</span><code>{selectedEvent.id}</code></div><div><span>CORRELATION</span><code>{selectedEvent.correlationId ?? 'not assigned'}</code></div><div><span>PAYLOAD</span><pre>{JSON.stringify(selectedEvent.details ?? {}, null, 2)}</pre></div></div> : result ? <div className="chain"><div className="chain-item"><span className="chain-line" /><div><span>OBSERVATION</span><code>{result.observation.id}</code></div></div><div className="chain-item"><span className="chain-line" /><div><span>VERIFICATION / EVIDENCE</span><code>{result.verification.id}</code>{result.verification.evidencePath.map((step) => <p className={step.passed ? 'evidence-pass' : 'evidence-fail'} key={step.rule}>{step.passed ? 'PASS' : 'FAIL'} / {step.reasoning}</p>)}</div></div><div className="chain-item"><span className="chain-line" /><div><span>ATTESTATION</span><code>{result.attestation.id}</code><button className="verify-button" onClick={verifyAttestation} disabled={attestationStatus === 'checking'}>{attestationStatus === 'checking' ? 'Checking...' : 'Verify signature'}</button>{attestationStatus !== 'idle' && <small className={attestationStatus === 'valid' ? 'attestation-valid' : 'attestation-invalid'}>{attestationStatus.toUpperCase()}</small>}</div></div></div> : <div className="empty evidence-empty">Run the loop to generate a traceable evidence chain.</div>}<div className="panel-foot">ATTEST ≠ ASSERT <span>Evidence before trust</span></div></div></section>
     </main></div>;
 }
 

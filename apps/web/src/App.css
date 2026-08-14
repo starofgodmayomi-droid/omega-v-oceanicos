@@ -28,3 +28,9 @@ button { cursor: pointer; }
 .input-controls label { margin: 0; color: #5b8a80; font: 10px 'DM Mono', monospace; }
 .input-controls input { display: block; width: 100%; margin-top: 6px; padding: 8px; background: #071613; border: 1px solid #315950; color: #ebfaf4; outline: 0; }
 .input-controls input:focus { border-color: #71d8b7; }
+.evidence-pass, .evidence-fail { margin: 8px 0 0; color: #78dcb9; font: 10px/1.4 'DM Mono', monospace; }
+.evidence-fail { color: #ed9986; }
+.verify-button { display: block; margin-top: 10px; border: 1px solid #438b77; background: #0d2823; color: #8ce8c8; padding: 7px 9px; font: 10px 'DM Mono', monospace; }
+.verify-button:disabled { opacity: .55; cursor: wait; }
+.attestation-valid, .attestation-invalid { display: block; margin-top: 8px; color: #78e2bd; font: 10px 'DM Mono', monospace; }
+.attestation-invalid { color: #ed9986; }

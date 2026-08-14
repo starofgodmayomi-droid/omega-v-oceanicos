@@ -232,6 +232,31 @@ app.post('/attest', (req: Request, res: Response) => {
   }
 });
 
+app.post('/attest/verify', (req: Request, res: Response) => {
+  try {
+    const { attestation } = req.body;
+    if (!attestation) {
+      res.status(400).json({
+        code: 'MISSING_ATTESTATION',
+        message: 'Attestation is required',
+        timestamp: new Date().toISOString(),
+      } satisfies ErrorResponse);
+      return;
+    }
+
+    res.json({
+      data: { valid: attestationService.verify(attestation) },
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    res.status(400).json({
+      code: 'ATTESTATION_VERIFICATION_FAILED',
+      message: error instanceof Error ? error.message : 'Attestation verification failed',
+      timestamp: new Date().toISOString(),
+    } satisfies ErrorResponse);
+  }
+});
+
 /**
  * POST /complete-loop - Execute the complete verification loop
  * Observe → Verify → Attest in one request
