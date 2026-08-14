@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "rootDir": "src",
+    "outDir": "dist",
+    "paths": {
+      "@omega-v/types": ["../../packages/types/dist/index.d.ts"],
+      "@omega-v/observer": ["../../packages/observer/dist/index.d.ts"],
+      "@omega-v/verification": ["../../packages/verification/dist/index.d.ts"],
+      "@omega-v/attestation": ["../../packages/attestation/dist/index.d.ts"]
+    }
+  },
+  "include": ["src"]
+}
