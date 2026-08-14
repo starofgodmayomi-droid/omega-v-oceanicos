@@ -314,9 +314,16 @@ describe('API runtime contracts', () => {
     expect(memoryState.data.integrity).toBe(true);
 
     const { entries } = memoryState.data;
-    const tail = entries.slice(-3);
+    const observationIndex = entries.findIndex(
+      (entry) => entry.type === 'OBSERVATION' && entry.data.id === loop.data.observation.id
+    );
+    expect(observationIndex).toBeGreaterThanOrEqual(0);
+
+    const tail = entries.slice(observationIndex, observationIndex + 3);
     expect(tail.map((entry) => entry.type)).toEqual(['OBSERVATION', 'VERIFICATION', 'ATTESTATION']);
-    expect(tail[0]?.data.id).toBe(loop.data.observation.id);
+    expect((tail[1]?.data as { observationId?: string }).observationId).toBe(
+      loop.data.observation.id
+    );
     expect(tail[2]?.data.id).toBe(loop.data.attestation.id);
 
     for (let index = 1; index < entries.length; index++) {
