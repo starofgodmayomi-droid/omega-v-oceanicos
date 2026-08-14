@@ -31,6 +31,15 @@ const navGroups = [
 
 const timeLabel = (value: string) => new Date(value).toLocaleTimeString([], { hour12: false });
 
+const describeResponseError = async (response: Response, fallback: string): Promise<string> => {
+  const body = (await response.json().catch(() => ({}))) as {
+    message?: string;
+    requestId?: string;
+  };
+  const requestId = body.requestId ?? response.headers.get('x-request-id');
+  return `${body.message ?? fallback}${requestId ? ` [${requestId}]` : ''}`;
+};
+
 export function App(): JSX.Element {
   const [claim, setClaim] = useState('Service X is healthy');
   const [responseTime, setResponseTime] = useState('42');
@@ -150,7 +159,8 @@ export function App(): JSX.Element {
           confidenceReason: 'Operator initiated health observation',
         }),
       });
-      if (!response.ok) throw new Error('The verification loop failed');
+      if (!response.ok)
+        throw new Error(await describeResponseError(response, 'The verification loop failed'));
       const payload = (await response.json()) as { data: LoopResult };
       setResult(payload.data);
       await refreshRuntime();
@@ -170,7 +180,8 @@ export function App(): JSX.Element {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ attestation: result.attestation }),
       });
-      if (!response.ok) throw new Error('Attestation check failed');
+      if (!response.ok)
+        throw new Error(await describeResponseError(response, 'Attestation check failed'));
       const payload = (await response.json()) as { data: { valid: boolean } };
       setAttestationStatus(payload.data.valid ? 'valid' : 'invalid');
     } catch (requestError) {
@@ -191,7 +202,9 @@ export function App(): JSX.Element {
       });
       if (!response.ok) {
         const payload = (await response.json()) as { message?: string };
-        throw new Error(payload.message ?? 'Action authorization failed');
+        throw new Error(
+          `${payload.message ?? 'Action authorization failed'} [${response.headers.get('x-request-id') ?? 'request unavailable'}]`
+        );
       }
       const payload = (await response.json()) as { data: { id: string } };
       setAuthorizedActionId(payload.data.id);
@@ -218,7 +231,8 @@ export function App(): JSX.Element {
           note: learningNote,
         }),
       });
-      if (!response.ok) throw new Error('Learning could not be recorded');
+      if (!response.ok)
+        throw new Error(await describeResponseError(response, 'Learning could not be recorded'));
       setLearningStatus('recorded');
       await refreshRuntime();
     } catch (requestError) {
@@ -243,7 +257,8 @@ export function App(): JSX.Element {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ learningId }),
       });
-      if (!response.ok) throw new Error('Recompile proposal failed');
+      if (!response.ok)
+        throw new Error(await describeResponseError(response, 'Recompile proposal failed'));
       setRecompileStatus('proposed');
       await refreshRuntime();
     } catch (requestError) {
