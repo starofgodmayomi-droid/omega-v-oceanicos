@@ -177,7 +177,17 @@ POST /attest
 POST /complete-loop
 ```
 
-Execute the entire verification loop in one request: Observe → Verify → Attest → Act → Learn → Recompile → Return.
+Execute the core evidence chain in one request: **Observe → Verify → Attest**.
+
+This is the fast path that enters a claim into The Current and returns a signed result. The downstream evolutionary stages remain explicit follow-up calls so operators can authorize action, record learning, and propose recompilation deliberately:
+
+- `POST /act` — authorize work from a verified attestation
+- `POST /learn` — record outcome feedback
+- `POST /recompile` — propose evolution from learning
+
+Full OS loop:
+
+`Observe → Verify → Attest → Act → Learn → Recompile → Return`
 
 **Request:** Same as `/observe`
 
