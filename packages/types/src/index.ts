@@ -189,16 +189,19 @@ export interface Attestation {
 /**
  * A recorded event in the immutable event log
  * The system maintains an append-only log of all observations, verifications, and attestations
+ *
+ * In the MINI kernel (Observe → Verify → Remember), memory entries are
+ * OBSERVATION and VERIFICATION only. ATTESTATION is an earned expansion.
  */
 export interface EventLogEntry {
   /** Sequential ID in the event log */
   id: number;
 
   /** Type of event */
-  type: 'OBSERVATION' | 'VERIFICATION' | 'ATTESTATION';
+  type: 'OBSERVATION' | 'VERIFICATION' | 'ATTESTATION' | 'MEMORY';
 
   /** The actual data */
-  data: Observation | VerificationResult | Attestation;
+  data: Observation | VerificationResult | Attestation | MemoryRecord;
 
   /** When was this recorded? */
   recordedAt: string;
@@ -208,6 +211,50 @@ export interface EventLogEntry {
 
   /** Hash of the previous entry (creating a chain) */
   previousHash: string;
+}
+
+/**
+ * A memory record is what the MINI kernel 🧠 stores after observe + verify.
+ * It is the smallest durable unit of verified experience.
+ */
+export interface MemoryRecord {
+  /** Unique identifier for this memory */
+  id: string;
+
+  /** Linked observation id */
+  observationId: string;
+
+  /** Linked verification id */
+  verificationId: string;
+
+  /** Did verification pass? */
+  verified: boolean;
+
+  /** Confidence carried from verification */
+  confidence: number;
+
+  /** Optional human-readable summary */
+  summary?: string;
+
+  /** When this memory was formed */
+  rememberedAt: string;
+}
+
+/**
+ * Result of one MINI kernel cycle: Observe → Verify → Remember
+ */
+export interface MiniCycleResult {
+  /** Normalized observation */
+  observation: Observation;
+
+  /** Verification evidence */
+  verification: VerificationResult;
+
+  /** Durable memory of the cycle */
+  memory: MemoryRecord;
+
+  /** Append-only log entries written during this cycle */
+  entries: EventLogEntry[];
 }
 
 /**

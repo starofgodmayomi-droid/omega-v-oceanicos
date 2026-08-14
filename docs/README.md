@@ -13,8 +13,10 @@ Welcome to the Ω∞v Oceanicos documentation. Start here to understand the proj
 
 ### Development
 - **[Development Setup](./DEVELOPMENT.md)** — Get the project running locally
-- **[Architecture](./ARCHITECTURE.md)** — High-level system design and component relationships
-- **[Verification Loop](./VERIFICATION_LOOP.md)** — How the core observation → verification → attestation cycle works
+- **[MINI Kernel](./MINI.md)** — Zero → MINI → verified expansion (canonical growth model)
+- **[Architecture](./ARCHITECTURE.md)** — High-level system design from MINI outward
+- **[Roadmap](./ROADMAP.md)** — Earned expansion phases
+- **[Verification Loop](./VERIFICATION_LOOP.md)** — Full workflow including post-MINI steps
 
 ---
 
@@ -28,10 +30,11 @@ Welcome to the Ω∞v Oceanicos documentation. Start here to understand the proj
 5. See your work merged and in production — celebrate!
 
 ### For Architects
-1. Read [MANIFEST.md](../MANIFEST.md) — understand the vision
-2. Study [ARCHITECTURE.md](./ARCHITECTURE.md) — how components fit together
-3. Review [VERIFICATION_LOOP.md](./VERIFICATION_LOOP.md) — the core algorithm
-4. Explore the codebase and propose improvements
+1. Read [MINI.md](./MINI.md) — Zero → MINI → expansion law
+2. Read [MANIFEST.md](../MANIFEST.md) — understand the vision
+3. Study [ARCHITECTURE.md](./ARCHITECTURE.md) — how components fit together
+4. Review [VERIFICATION_LOOP.md](./VERIFICATION_LOOP.md) — full workflow
+5. Explore the codebase and propose improvements only as earned `+` layers
 
 ### For Users
 1. Read the README in the root — get oriented
@@ -64,7 +67,7 @@ Welcome to the Ω∞v Oceanicos documentation. Start here to understand the proj
 ### Community
 - **[Code of Conduct](../CHARTER.md#code-of-conduct)** — How we treat each other
 - **[Release Process](./RELEASES.md)** — How we publish versions (coming soon)
-- **[Roadmap](./ROADMAP.md)** — What we're building next (coming soon)
+- **[Roadmap](./ROADMAP.md)** — Earned expansion phases
 
 ---
 
@@ -89,11 +92,11 @@ A: Provide evidence and propose alternatives. See [CHARTER.md](../CHARTER.md#how
 
 ## Project Status
 
-- **Current Phase**: Foundation (Step 1 in progress)
-- **Next Phase**: Core Loop Implementation (Step 2)
+- **Current Phase**: MINI kernel (Observe → Verify → Remember)
+- **Next Phase**: Earned expansions (`+ Attest`, interfaces) after MINI is proven
 - **Stability**: Rapidly evolving — APIs may change
 
-See [MANIFEST.md](../MANIFEST.md#verification-roadmap) for the full roadmap.
+See [MINI.md](./MINI.md) and [ROADMAP.md](./ROADMAP.md).
 
 ---
 
@@ -105,5 +108,5 @@ See [MANIFEST.md](../MANIFEST.md#verification-roadmap) for the full roadmap.
 
 ---
 
-**Documentation Status**: Living — Evolves as the project grows  
-**Last Updated**: 2026-08-07
+**Documentation Status**: Living — Zero → MINI → verified expansion  
+**Last Updated**: 2026-08-14

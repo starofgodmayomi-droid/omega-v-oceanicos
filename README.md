@@ -18,21 +18,33 @@ A verification-first full-stack ecosystem for observing, verifying, attesting, a
 
 Ω∞v Oceanicos is a system for building trustworthy software through continuous verification and evidence-based evolution.
 
-### The Core Loop
+### Growth law
 
-```
-Observe → Verify → Attest → Record → Display → Learn → Return
+```text
+0 → MINI → + → + → FULL STACK → ECOSYSTEM → REALITY ↺ ∞
 ```
 
-Every observation:
+Architecture does **not** begin as the giant ecosystem. It begins at **ZERO**, becomes **MINI**, and expands only when reality verifies the next step.
+
+### The MINI Kernel
+
+```text
+💧 Ω∞v MINI ::= 👁 Observe → ✓ Verify → 🧠 Remember
+```
+
+Every MINI cycle:
 
 1. **Observed** with metadata (who, when, what, confidence)
 2. **Verified** against rules with evidence paths
-3. **Attested** with cryptographic signatures
-4. **Recorded** in an immutable event log
-5. **Displayed** to users and systems
-6. **Learned** from to improve future verification
-7. **Returned** to observation with better knowledge
+3. **Remembered** in append-only, hash-chained memory
+
+### Expanded loop (earned layers)
+
+```
+Observe → Verify → Remember → Attest → Display → Learn → Return
+```
+
+Attestation, APIs, UI, and infra are **earned expansions** — not prerequisites. See [docs/MINI.md](docs/MINI.md).
 
 ### Why It Matters
 
@@ -71,22 +83,20 @@ Every component contains the whole verification loop.
 
 ```
 omega-v-oceanicos/
-├── apps/              # User-facing applications
-│   ├── api/           # REST/gRPC backend
-│   ├── web/           # Web dashboard
-│   └── mobile/        # Mobile app (planned)
+├── packages/          # MINI kernel + expansions
+│   ├── types/         # Shared contracts
+│   ├── observer/      # 👁 Observe
+│   ├── verification/  # ✓ Verify
+│   ├── remember/      # 🧠 Remember
+│   ├── mini/          # 💧 Compose MINI cycle
+│   └── attestation/   # + ATTEST (earned expansion)
 │
-├── packages/          # Shared libraries
-│   ├── observer/      # Event capture
-│   ├── verification/  # Rule engine
-│   ├── attestation/   # Cryptographic signing
-│   ├── compiler/      # Rule compiler
-│   ├── ir/            # Bytecode
-│   ├── sdk/           # Client SDK
-│   └── cli/           # Command-line tool
+├── apps/              # Earned interface expansions
+│   ├── api/           # + API
+│   └── web/           # + Web
 │
-├── docs/              # Documentation
-├── infra/             # Deployment
+├── docs/              # Including MINI.md growth model
+├── infra/             # Later + infrastructure
 ├── tests/             # Integration tests
 │
 ├── MANIFEST.md        # Project constitution
@@ -184,18 +194,16 @@ See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md#common-commands) for more.
 
 ## Current Phase
 
-**Phase 3: Runtime** (In Progress)
+**Phase 2: MINI kernel** (Establish Observe → Verify → Remember)
 
-- ✅ Project manifest and charter
-- ✅ Development setup and tooling
-- ✅ Documentation structure
-- ⏳ Core verification loop implementation
-- ⏳ API server skeleton
-- ⏳ Web dashboard skeleton
+- ✅ Zero acknowledged; constitution documents
+- ✅ `@omega-v/observer` · `@omega-v/verification` · `@omega-v/remember` · `@omega-v/mini`
+- ⏳ MINI as default path across apps and docs
+- ⏳ Earned expansions: attestation, API, web (present, not kernel)
 
-**Next Phase**: Core Loop Implementation (Step 2)
+**Next**: Prove MINI under use, then earn `+ Attest` against remembered results.
 
-See [MANIFEST.md](MANIFEST.md#verification-roadmap) for the full roadmap.
+See [docs/MINI.md](docs/MINI.md) and [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ---
 
@@ -301,5 +309,5 @@ We welcome contributions in all areas:
 
 ---
 
-**Status**: Rapidly evolving, foundation phase  
-**Last Updated**: 2026-08-07
+**Status**: MINI kernel establishing — expand only with evidence  
+**Last Updated**: 2026-08-14

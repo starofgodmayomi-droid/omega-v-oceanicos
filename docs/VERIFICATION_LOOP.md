@@ -6,13 +6,22 @@ This document describes the heart of Ω∞v Oceanicos: the complete verification
 
 ## Overview
 
-The verification loop is a seven-step process that transforms observations into trustworthy, verifiable facts:
+### MINI foundation (always)
+
+```text
+💧 Ω∞v MINI ::= 👁 Observe → ✓ Verify → 🧠 Remember
+```
+
+This is the smallest useful kernel. See [MINI.md](./MINI.md).
+
+### Expanded loop (earned layers wrap MINI)
 
 ```
-Observe → Verify → Attest → Record → Display → Learn → Return
+Observe → Verify → Remember → Attest → Display → Learn → Return
 ```
 
-Every operation in Ω∞v follows this loop. Understanding it is crucial to understanding the entire system.
+Attest/Display/Learn are expansions. They must not redefine or replace MINI.
+Understanding both layers is crucial: start from MINI, then earn the rest.
 
 ---
 
@@ -267,10 +276,42 @@ const failureResult = {
 
 ---
 
-## Step 3: Attest
+## Step 3: Remember (MINI)
+
+### Purpose
+Persist the observation and verification as durable memory without assuming a database or ecosystem.
+
+### Process
+
+```typescript
+import { Remember } from '@omega-v/remember';
+
+const memory = new Remember();
+const record = memory.remember(observation, verification);
+// append-only: OBSERVATION → VERIFICATION → MEMORY
+memory.verifyIntegrity();
+```
+
+### Output
+
+**MemoryRecord** linked to observation + verification ids, plus hash-chained log entries.
+
+### Kernel composition
+
+```typescript
+import { MiniKernel } from '@omega-v/mini';
+const result = new MiniKernel({ rules }).cycle(input);
+// result.observation / result.verification / result.memory
+```
+
+---
+
+## Step 4: Attest (`+ ATTEST` expansion)
 
 ### Purpose
 Cryptographically sign the verification result, creating an unforgeable proof.
+
+This step is an **earned expansion**. MINI is complete without it.
 
 ### Input
 - Verification result from Step 2
@@ -377,10 +418,10 @@ console.log(isValid); // true
 
 ---
 
-## Step 4: Record
+## Step 5: Record (durable expansion of Remember)
 
 ### Purpose
-Store the complete chain of observation, verification, and attestation in an immutable log.
+When multi-process reality demands it, store the complete chain of observation, verification, memory, and attestation beyond in-process Remember.
 
 ### Input
 - Observation from Step 1
@@ -467,7 +508,7 @@ Queryable by:
 
 ---
 
-## Step 5: Display
+## Step 6: Display
 
 ### Purpose
 Make verification results visible to users and systems.
@@ -547,7 +588,7 @@ If verification fails:
 
 ---
 
-## Step 6: Learn
+## Step 7: Learn
 
 ### Purpose
 Extract patterns from verifications and improve future predictions.
@@ -617,7 +658,7 @@ const report = learningEngine.generateReport({
 
 ---
 
-## Step 7: Return
+## Step 8: Return
 
 ### Purpose
 Close the loop by using learning to improve observation and verification.
@@ -832,5 +873,5 @@ System has proven stable
 
 ---
 
-**Last Updated**: 2026-08-07  
-**Status**: The heart of Ω∞v Oceanicos
+**Last Updated**: 2026-08-14  
+**Status**: MINI is the heart; expanded steps are earned wrappers
