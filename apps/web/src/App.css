@@ -34,3 +34,7 @@ button { cursor: pointer; }
 .verify-button:disabled { opacity: .55; cursor: wait; }
 .attestation-valid, .attestation-invalid { display: block; margin-top: 8px; color: #78e2bd; font: 10px 'DM Mono', monospace; }
 .attestation-invalid { color: #ed9986; }
+.command-backdrop { position: fixed; inset: 0; z-index: 10; display: grid; place-items: start center; padding-top: 14vh; background: rgba(2, 10, 9, .72); backdrop-filter: blur(5px); }
+.command-palette { width: min(520px, calc(100vw - 28px)); border: 1px solid #376c60; background: #0b211d; box-shadow: 0 24px 70px rgba(0, 0, 0, .45); }
+.command-search { display: flex; align-items: center; gap: 10px; padding: 17px; color: #77dfbd; border-bottom: 1px solid #21463e; font: 12px 'DM Mono', monospace; }.command-search span { color: #789d95; flex: 1; }.command-search kbd { color: #5e8980; font-size: 10px; }
+.command-palette button { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 14px 17px; border: 0; border-bottom: 1px solid #173830; color: #d4e8e3; background: transparent; text-align: left; }.command-palette button:hover { background: #14352f; }.command-palette button:disabled { opacity: .4; cursor: not-allowed; }.command-palette strong { font-size: 12px; }.command-palette button span { color: #6d9990; font: 10px 'DM Mono', monospace; }
