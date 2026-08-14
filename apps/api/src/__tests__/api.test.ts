@@ -30,7 +30,7 @@ describe('API runtime contracts', () => {
   it('executes the loop and records its runtime lineage', async () => {
     const loopResponse = await fetch(`${baseUrl}/complete-loop`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-request-id': 'request-contract-1' },
       body: JSON.stringify({
         claim: 'API contract test is healthy',
         category: 'health-check',
@@ -44,11 +44,12 @@ describe('API runtime contracts', () => {
     const loop = (await loopResponse.json()) as ApiResponse<LoopPayload>;
 
     expect(loopResponse.status).toBe(201);
+    expect(loopResponse.headers.get('x-request-id')).toBe('request-contract-1');
     expect(loop.data.verification.summary.passed).toBe(true);
     expect(loop.data.attestation.verified).toBe(true);
 
     const events = (await (await fetch(`${baseUrl}/events`)).json()) as ApiResponse<
-      Array<{ correlationId?: string }>
+      Array<{ correlationId?: string; requestId?: string }>
     >;
     const runs = (await (await fetch(`${baseUrl}/runs`)).json()) as ApiResponse<
       Array<{ observation: { id: string } }>
@@ -56,6 +57,8 @@ describe('API runtime contracts', () => {
 
     expect(events.data).toHaveLength(4);
     expect(new Set(events.data.map((event) => event.correlationId)).size).toBe(1);
+    expect(new Set(events.data.map((event) => event.requestId)).size).toBe(1);
+    expect(events.data[0]?.requestId).toBe('request-contract-1');
     expect(runs.data[0]?.observation.id).toBe(loop.data.observation.id);
   });
 

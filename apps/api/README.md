@@ -206,6 +206,8 @@ These endpoints expose the current runtime state, recent lifecycle events, and c
 
 Set `OMEGA_RUNTIME_STORE_PATH` to choose another JSON store path. Tests use isolated memory state and do not write to disk.
 
+Every response includes an `x-request-id` header. Supplying an existing `x-request-id` reuses it; otherwise the API generates one. Complete-loop events and runs retain that request ID alongside their correlation ID.
+
 ### Event Stream
 
 ```

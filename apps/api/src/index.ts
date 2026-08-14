@@ -1,5 +1,6 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
+import { randomUUID } from 'node:crypto';
 import express, { Express, Request, Response } from 'express';
 import { Observer } from '@omega-v/observer';
 import { VerificationEngine } from '@omega-v/verification';
@@ -15,6 +16,12 @@ const port = process.env.API_PORT || 3000;
 
 // Middleware
 app.use(express.json());
+app.use((req: Request, res: Response, next) => {
+  const requestId = req.header('x-request-id') || `req-${randomUUID()}`;
+  res.locals.requestId = requestId;
+  res.setHeader('x-request-id', requestId);
+  next();
+});
 
 // Initialize services
 const observer = new Observer();
@@ -29,11 +36,13 @@ type RuntimeEvent = {
   status: 'active' | 'passed' | 'failed';
   timestamp: string;
   correlationId?: string;
+  requestId?: string;
   details?: Record<string, unknown>;
 };
 
 type CompletedRun = {
   correlationId: string;
+  requestId: string;
   observation: ReturnType<Observer['observe']>;
   verification: ReturnType<VerificationEngine['verify']>;
   attestation: ReturnType<AttestationService['attest']>;
@@ -403,6 +412,7 @@ app.post('/act', (req: Request, res: Response) => {
       message: `Action authorized: ${action}`,
       status: 'passed',
       details: { actionId: recordedAction.id, attestationId: attestation.id },
+      requestId: res.locals.requestId,
     });
     res.status(201).json({ data: recordedAction, timestamp: new Date().toISOString() });
   } catch (error) {
@@ -458,6 +468,7 @@ app.post('/learn', (req: Request, res: Response) => {
       message: `Learning recorded: ${outcome}`,
       status: outcome === 'failure' ? 'failed' : 'passed',
       details: { learningId: learning.id, actionId },
+      requestId: res.locals.requestId,
     });
     res.status(201).json({ data: learning, timestamp: new Date().toISOString() });
   } catch (error) {
@@ -499,6 +510,7 @@ app.post('/recompile', (req: Request, res: Response) => {
       message: `Recompile proposal created: ${proposal.version}`,
       status: 'active',
       details: { proposalId: proposal.id, learningId: learning.id },
+      requestId: res.locals.requestId,
     });
     res.status(201).json({ data: proposal, timestamp: new Date().toISOString() });
   } catch (error) {
@@ -516,6 +528,7 @@ app.post('/recompile', (req: Request, res: Response) => {
  */
 app.post('/complete-loop', (req: Request, res: Response) => {
   const correlationId = `loop-${Date.now()}`;
+  const requestId = res.locals.requestId as string;
   try {
     const { claim, category, source, observedBy, metadata, confidence, confidenceReason } =
       req.body;
@@ -527,6 +540,7 @@ app.post('/complete-loop', (req: Request, res: Response) => {
       message: 'Observation received from the workspace',
       status: 'active',
       correlationId,
+      requestId,
     });
     const observation = observer.observe({
       claim,
@@ -545,6 +559,7 @@ app.post('/complete-loop', (req: Request, res: Response) => {
       message: 'Evidence checks started',
       status: 'active',
       correlationId,
+      requestId,
       details: { claim },
     });
     const verificationResult = verificationEngine.verify(observation);
@@ -557,6 +572,7 @@ app.post('/complete-loop', (req: Request, res: Response) => {
         : 'Verification found a failed rule',
       status: verificationResult.summary.passed ? 'passed' : 'failed',
       correlationId,
+      requestId,
       details: { rulesApplied: verificationResult.summary.rulesApplied },
     });
 
@@ -564,6 +580,7 @@ app.post('/complete-loop', (req: Request, res: Response) => {
     const attestation = attestationService.attest(verificationResult);
     completedRuns.unshift({
       correlationId,
+      requestId,
       observation,
       verification: verificationResult,
       attestation,
@@ -576,6 +593,7 @@ app.post('/complete-loop', (req: Request, res: Response) => {
       message: 'Verification result signed and recorded',
       status: attestation.verified ? 'passed' : 'failed',
       correlationId,
+      requestId,
       details: { attestationId: attestation.id },
     });
 

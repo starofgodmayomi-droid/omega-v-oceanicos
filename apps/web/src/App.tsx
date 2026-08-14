@@ -9,6 +9,7 @@ type RuntimeEvent = {
   status: 'active' | 'passed' | 'failed';
   timestamp: string;
   correlationId?: string;
+  requestId?: string;
   details?: Record<string, unknown>;
 };
 type LoopResult = {
@@ -510,6 +511,10 @@ export function App(): JSX.Element {
                 <div>
                   <span>CORRELATION</span>
                   <code>{selectedEvent.correlationId ?? 'not assigned'}</code>
+                </div>
+                <div>
+                  <span>REQUEST</span>
+                  <code>{selectedEvent.requestId ?? 'not assigned'}</code>
                 </div>
                 <div>
                   <span>PAYLOAD</span>
