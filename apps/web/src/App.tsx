@@ -117,8 +117,10 @@ export function App(): JSX.Element {
 
   useEffect(() => {
     const stream = new EventSource('/api/events/stream');
-    stream.onopen = () =>
+    stream.onopen = () => {
       setError((current) => (current.startsWith('Live event stream') ? '' : current));
+      void refreshRuntime();
+    };
     stream.onmessage = (message) => {
       try {
         const incoming = JSON.parse(message.data) as RuntimeEvent;
