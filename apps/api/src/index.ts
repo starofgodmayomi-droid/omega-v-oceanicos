@@ -388,18 +388,21 @@ app.use((_req: Request, res: Response) => {
   res.status(404).json(errorResponse);
 });
 
-/**
- * Start the server
- */
-app.listen(port, () => {
-  console.log(`[Ω∞v API] Verification loop server running on http://localhost:${port}`);
-  console.log(`Available endpoints:`);
-  console.log(`  POST   /observe          - Create an observation`);
-  console.log(`  POST   /verify           - Verify an observation`);
-  console.log(`  POST   /attest           - Attest a verification`);
-  console.log(`  POST   /complete-loop    - Execute full loop in one request`);
-  console.log(`  GET    /rules            - List verification rules`);
-  console.log(`  GET    /health           - Health check`);
-});
+const startServer = () =>
+  app.listen(port, () => {
+    console.log(`[Ω∞v API] Verification loop server running on http://localhost:${port}`);
+    console.log(`Available endpoints:`);
+    console.log(`  POST   /observe          - Create an observation`);
+    console.log(`  POST   /verify           - Verify an observation`);
+    console.log(`  POST   /attest           - Attest a verification`);
+    console.log(`  POST   /complete-loop    - Execute full loop in one request`);
+    console.log(`  GET    /rules            - List verification rules`);
+    console.log(`  GET    /health           - Health check`);
+  });
 
+if (process.env.NODE_ENV !== 'test') {
+  startServer();
+}
+
+export { app, startServer };
 export default app;

@@ -1,0 +1,87 @@
+import { createServer, Server } from 'node:http';
+import app from '../index';
+
+type ApiResponse<T> = { data: T };
+
+type LoopPayload = {
+  observation: { id: string };
+  verification: { summary: { passed: boolean } };
+  attestation: { id: string; verified: boolean };
+};
+
+describe('API runtime contracts', () => {
+  let server: Server;
+  let baseUrl: string;
+
+  beforeAll(async () => {
+    server = createServer(app);
+    await new Promise<void>((resolve) => server.listen(0, resolve));
+    const address = server.address();
+    if (!address || typeof address === 'string') throw new Error('Test server did not start');
+    baseUrl = `http://127.0.0.1:${address.port}`;
+  });
+
+  afterAll(async () => {
+    await new Promise<void>((resolve, reject) =>
+      server.close((error) => (error ? reject(error) : resolve()))
+    );
+  });
+
+  it('executes the loop and records its runtime lineage', async () => {
+    const loopResponse = await fetch(`${baseUrl}/complete-loop`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        claim: 'API contract test is healthy',
+        category: 'health-check',
+        source: { system: 'api-test', version: '0.1.0', environment: 'test' },
+        observedBy: 'jest',
+        metadata: { responseTime: 42, statusCode: 200 },
+        confidence: 0.95,
+        confidenceReason: 'Executable contract test',
+      }),
+    });
+    const loop = (await loopResponse.json()) as ApiResponse<LoopPayload>;
+
+    expect(loopResponse.status).toBe(201);
+    expect(loop.data.verification.summary.passed).toBe(true);
+    expect(loop.data.attestation.verified).toBe(true);
+
+    const events = (await (await fetch(`${baseUrl}/events`)).json()) as ApiResponse<
+      Array<{ correlationId?: string }>
+    >;
+    const runs = (await (await fetch(`${baseUrl}/runs`)).json()) as ApiResponse<
+      Array<{ observation: { id: string } }>
+    >;
+
+    expect(events.data).toHaveLength(4);
+    expect(new Set(events.data.map((event) => event.correlationId)).size).toBe(1);
+    expect(runs.data[0]?.observation.id).toBe(loop.data.observation.id);
+  });
+
+  it('verifies the attestation produced by the loop', async () => {
+    const loopResponse = await fetch(`${baseUrl}/complete-loop`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        claim: 'API attestation contract test',
+        category: 'health-check',
+        source: { system: 'api-test', version: '0.1.0', environment: 'test' },
+        observedBy: 'jest',
+        metadata: { responseTime: 42, statusCode: 200 },
+        confidence: 0.95,
+        confidenceReason: 'Executable contract test',
+      }),
+    });
+    const loop = (await loopResponse.json()) as ApiResponse<LoopPayload>;
+    const verificationResponse = await fetch(`${baseUrl}/attest/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ attestation: loop.data.attestation }),
+    });
+    const verification = (await verificationResponse.json()) as ApiResponse<{ valid: boolean }>;
+
+    expect(verificationResponse.status).toBe(200);
+    expect(verification.data.valid).toBe(true);
+  });
+});
