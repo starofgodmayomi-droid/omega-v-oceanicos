@@ -5,7 +5,7 @@ import express, { Express, Request, Response } from 'express';
 import { Observer } from '@omega-v/observer';
 import { VerificationEngine } from '@omega-v/verification';
 import { AttestationService } from '@omega-v/attestation';
-import { Attestation, SuccessResponse, ErrorResponse } from '@omega-v/types';
+import { Attestation, SuccessResponse, ErrorResponse, VerificationRule } from '@omega-v/types';
 
 /**
  * Ω∞v Oceanicos API Server
@@ -659,7 +659,7 @@ app.get('/rules', (_req: Request, res: Response) => {
     id: '',
   });
 
-  const response: SuccessResponse<{ count: number; rules: any[] }> = {
+  const response: SuccessResponse<{ count: number; rules: VerificationRule[] }> = {
     data: {
       count: applicableRules.length,
       rules: applicableRules,

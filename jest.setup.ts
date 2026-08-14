@@ -9,7 +9,7 @@ jest.setTimeout(30000);
 // Suppress console errors in tests (optional)
 const originalError = console.error;
 beforeAll(() => {
-  console.error = (...args: any[]): void => {
+  console.error = (...args: unknown[]): void => {
     if (
       typeof args[0] === 'string' &&
       args[0].includes('Not implemented: HTMLFormElement.prototype.submit')
