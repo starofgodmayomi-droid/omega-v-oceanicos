@@ -1,154 +1,60 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import './App.css';
 
-/**
- * Ω∞v Oceanicos Web Dashboard
- * Visualizes the verification loop in real-time
- */
+type RuntimeEvent = { id: string; type: string; stage: string; message: string; status: 'active' | 'passed' | 'failed'; timestamp: string };
+type LoopResult = { observation: { id: string; claim: { statement: string }; confidence: number }; verification: { id: string; summary: { passed: boolean; rulesApplied: number; rulesPassed: number; confidence: number }; evidencePath: Array<{ rule: string; passed: boolean; reasoning: string }> }; attestation: { id: string; verified: boolean; signature: string; attestedAt: string } };
+
+const stages = ['observe', 'evidence', 'verify', 'attest', 'act', 'learn', 'recompile'];
+const navGroups = [
+  { label: 'Core', items: ['Current', 'Observe', 'Evidence', 'Verify', 'Attest', 'Act'] },
+  { label: 'Intelligence', items: ['AI', 'Agents', 'Knowledge', 'Memory'] },
+  { label: 'System', items: ['API', 'Data', 'Runtime', 'Security', 'Governance'] },
+];
+
+const timeLabel = (value: string) => new Date(value).toLocaleTimeString([], { hour12: false });
+
 export function App(): JSX.Element {
-  const [observation, setObservation] = useState<string>('');
-  const [claim, setClaim] = useState<string>('Service X is healthy');
+  const [claim, setClaim] = useState('Service X is healthy');
+  const [events, setEvents] = useState<RuntimeEvent[]>([]);
+  const [result, setResult] = useState<LoopResult | null>(null);
+  const [mode, setMode] = useState('observe');
+  const [trust, setTrust] = useState(0.984);
   const [loading, setLoading] = useState(false);
-  const [results, setResults] = useState<any>(null);
+  const [error, setError] = useState('');
+  const [activeNav, setActiveNav] = useState('Current');
 
-  const executeVerificationLoop = async () => {
-    setLoading(true);
+  const refreshRuntime = async () => {
     try {
-      const response = await fetch('/api/complete-loop', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          claim,
-          category: 'health-check',
-          source: {
-            system: 'web-dashboard',
-            version: '0.1.0',
-            environment: 'production',
-          },
-          observedBy: 'user',
-          metadata: {
-            responseTime: Math.random() * 200,
-            statusCode: 200,
-          },
-          confidence: 0.95,
-          confidenceReason: 'Manual verification from dashboard',
-        }),
-      });
-
-      const data = (await response.json()) as { data: object };
-      setResults(data.data);
-      setObservation('Verification complete');
-    } catch (error) {
-      setObservation(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    } finally {
-      setLoading(false);
-    }
+      const [stateResponse, eventsResponse] = await Promise.all([fetch('/api/state'), fetch('/api/events')]);
+      if (!stateResponse.ok || !eventsResponse.ok) throw new Error('Runtime unavailable');
+      const state = (await stateResponse.json()) as { data: { mode: string; trust: number } };
+      const eventData = (await eventsResponse.json()) as { data: RuntimeEvent[] };
+      setMode(state.data.mode); setTrust(state.data.trust); setEvents(eventData.data); setError('');
+    } catch (requestError) { setError(requestError instanceof Error ? requestError.message : 'Runtime unavailable'); }
   };
 
-  return (
-    <div className="container">
-      <header className="header">
-        <h1>Ω∞v Oceanicos</h1>
-        <p>Verification-First Full-Stack Ecosystem</p>
-      </header>
+  useEffect(() => { void refreshRuntime(); const timer = window.setInterval(() => void refreshRuntime(), 4000); return () => window.clearInterval(timer); }, []);
 
-      <main className="main">
-        <section className="input-section">
-          <h2>Execute Verification Loop</h2>
-          <div className="form-group">
-            <label htmlFor="claim">Claim:</label>
-            <input
-              id="claim"
-              type="text"
-              value={claim}
-              onChange={(e) => setClaim(e.target.value)}
-              placeholder="Enter a claim to verify"
-            />
-          </div>
-          <button onClick={executeVerificationLoop} disabled={loading} className="btn-primary">
-            {loading ? 'Verifying...' : 'Run Verification'}
-          </button>
-        </section>
+  const executeLoop = async () => {
+    setLoading(true); setError('');
+    try {
+      const response = await fetch('/api/complete-loop', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ claim, category: 'health-check', source: { system: 'current-console', version: '0.1.0', environment: 'local' }, observedBy: 'operator', metadata: { responseTime: 42, statusCode: 200 }, confidence: 0.95, confidenceReason: 'Operator initiated health observation' }) });
+      if (!response.ok) throw new Error('The verification loop failed');
+      const payload = (await response.json()) as { data: LoopResult }; setResult(payload.data); await refreshRuntime();
+    } catch (requestError) { setError(requestError instanceof Error ? requestError.message : 'The loop failed'); } finally { setLoading(false); }
+  };
 
-        {results && (
-          <section className="results-section">
-            <h2>Verification Results</h2>
-
-            <div className="step observation">
-              <h3>✓ Observation</h3>
-              <div className="details">
-                <p>
-                  <strong>ID:</strong> {results.observation.id}
-                </p>
-                <p>
-                  <strong>Claim:</strong> {results.observation.claim.statement}
-                </p>
-                <p>
-                  <strong>Confidence:</strong> {(results.observation.confidence * 100).toFixed(0)}%
-                </p>
-              </div>
-            </div>
-
-            <div className="step verification">
-              <h3>✓ Verification</h3>
-              <div className="details">
-                <p>
-                  <strong>Status:</strong>{' '}
-                  {results.verification.summary.passed ? '✓ PASSED' : '✗ FAILED'}
-                </p>
-                <p>
-                  <strong>Rules Applied:</strong> {results.verification.summary.rulesApplied}
-                </p>
-                <p>
-                  <strong>Rules Passed:</strong> {results.verification.summary.rulesPassed}
-                </p>
-                <div className="evidence">
-                  <h4>Evidence Path:</h4>
-                  <ul>
-                    {results.verification.evidencePath.map((step: any, idx: number) => (
-                      <li key={idx}>
-                        {step.passed ? '✓' : '✗'} {step.rule}: {step.reasoning}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            </div>
-
-            <div className="step attestation">
-              <h3>✓ Attestation</h3>
-              <div className="details">
-                <p>
-                  <strong>ID:</strong> {results.attestation.id}
-                </p>
-                <p>
-                  <strong>Verified:</strong> {results.attestation.verified ? '✓ Yes' : '✗ No'}
-                </p>
-                <p>
-                  <strong>Signed At:</strong>{' '}
-                  {new Date(results.attestation.attestedAt).toLocaleString()}
-                </p>
-                <p>
-                  <strong>Signature:</strong>{' '}
-                  <code>{results.attestation.signature.substring(0, 32)}...</code>
-                </p>
-              </div>
-            </div>
-          </section>
-        )}
-
-        {observation && (
-          <section className="status-section">
-            <p className="status">{observation}</p>
-          </section>
-        )}
-      </main>
-
-      <footer className="footer">
-        <p>Attest, don't assert. Evidence before trust. Verification before evolution.</p>
-      </footer>
-    </div>
-  );
+  const activeStage = stages.includes(mode) ? mode : 'observe';
+  return <div className="os-shell">
+    <aside className="sidebar"><div className="brand"><span className="brand-mark">Ω∞v</span><span>ECOSYSTEMOS</span></div><div className="side-status"><span className="status-dot" /> Runtime active</div><nav aria-label="Primary navigation">{navGroups.map((group) => <div className="nav-group" key={group.label}><span className="nav-label">{group.label}</span>{group.items.map((item) => <button className={activeNav === item ? 'nav-item active' : 'nav-item'} key={item} onClick={() => setActiveNav(item)}><span className="nav-glyph">{item === 'Current' ? '◈' : '·'}</span>{item}</button>)}</div>)}</nav><div className="sidebar-foot"><span>LOCAL ENVIRONMENT</span><strong>v0.1.0</strong></div></aside>
+    <main className="workspace"><header className="topbar"><div><span className="eyebrow">Current / {activeNav}</span><h1>One root. Infinite forms.</h1></div><div className="top-meta"><span className="mode-pill"><span className="status-dot" /> {mode.toUpperCase()}</span><span className="trust">TRUST <strong>{(trust * 100).toFixed(1)}%</strong></span><button className="command">⌘ K</button></div></header>
+      {error && <div className="error-banner" role="alert"><strong>Runtime boundary</strong><span>{error}. UI is showing the last known state.</span></div>}
+      <section className="hero-grid"><div className="current-panel"><div className="section-kicker">ACTIVE CURRENT <span>LIVE</span></div><div className="current-orbit"><div className="orbit orbit-one" /><div className="orbit orbit-two" /><div className="core"><span>Ω∞v</span><small>CORE</small></div></div><p className="current-caption">The current is the system. Every form returns to evidence.</p><div className="stage-flow">{stages.map((stage, index) => <button className={activeStage === stage ? 'stage active' : 'stage'} key={stage} onClick={() => setMode(stage)}><span>{String(index + 1).padStart(2, '0')}</span>{stage}</button>)}</div></div>
+        <div className="intent-panel"><div className="section-kicker">CREATE AN OBSERVATION <span>OPERATOR INPUT</span></div><label htmlFor="claim">What should enter the current?</label><textarea id="claim" value={claim} onChange={(event) => setClaim(event.target.value)} rows={3} /><div className="input-meta"><span>health-check / local</span><button className="run-button" onClick={executeLoop} disabled={loading || !claim.trim()}>{loading ? 'Running current...' : 'Run verification'} <span>↗</span></button></div><div className="truth-note"><span>⊙</span> This action creates real observation, evidence, verification, and attestation records.</div></div></section>
+      <section className="metrics-row"><div><span>EVENTS RECORDED</span><strong>{events.length.toString().padStart(2, '0')}</strong></div><div><span>VERIFICATION</span><strong className="green">{result ? (result.verification.summary.passed ? 'PASSED' : 'FAILED') : 'READY'}</strong></div><div><span>SERVICES</span><strong>03 / 03</strong></div><div><span>ENVIRONMENT</span><strong>LOCAL</strong></div></section>
+      <section className="lower-grid"><div className="stream-panel"><div className="panel-heading"><div><span className="section-kicker">UNIVERSAL EVENT STREAM</span><h2>What is happening</h2></div><span className="live-tag">● LIVE</span></div><div className="event-list">{events.length === 0 ? <div className="empty">No observations have entered the current yet.</div> : events.map((event) => <div className="event-row" key={event.id}><span className={`event-marker ${event.status}`} /><time>{timeLabel(event.timestamp)}</time><div><strong>{event.type.replace('.', ' / ').toUpperCase()}</strong><p>{event.message}</p></div><span className="event-stage">{event.stage}</span></div>)}</div></div>
+        <div className="evidence-panel"><div className="panel-heading"><div><span className="section-kicker">LAST ATTESTED PATH</span><h2>Evidence chain</h2></div><span className="seal">◉</span></div>{result ? <div className="chain">{[['OBSERVATION', result.observation.id], ['VERIFICATION', result.verification.id], ['ATTESTATION', result.attestation.id]].map(([label, id]) => <div className="chain-item" key={label}><span className="chain-line" /><div><span>{label}</span><code>{id}</code></div></div>)}</div> : <div className="empty evidence-empty">Run the loop to generate a traceable evidence chain.</div>}<div className="panel-foot">ATTEST ≠ ASSERT <span>Evidence before trust</span></div></div></section>
+    </main></div>;
 }
 
 export default App;

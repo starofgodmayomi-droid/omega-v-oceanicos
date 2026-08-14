@@ -19,6 +19,30 @@ const observer = new Observer();
 const verificationEngine = new VerificationEngine();
 const attestationService = new AttestationService();
 
+type RuntimeEvent = {
+  id: string;
+  type: string;
+  stage: string;
+  message: string;
+  status: 'active' | 'passed' | 'failed';
+  timestamp: string;
+  correlationId?: string;
+  details?: Record<string, unknown>;
+};
+
+const runtimeEvents: RuntimeEvent[] = [];
+
+const recordEvent = (event: Omit<RuntimeEvent, 'id' | 'timestamp'>): RuntimeEvent => {
+  const recorded: RuntimeEvent = {
+    ...event,
+    id: `evt-${Date.now()}-${runtimeEvents.length + 1}`,
+    timestamp: new Date().toISOString(),
+  };
+  runtimeEvents.unshift(recorded);
+  runtimeEvents.splice(40);
+  return recorded;
+};
+
 // Register default rules
 verificationEngine.registerRule({
   name: 'response-time-threshold',
@@ -49,6 +73,29 @@ app.get('/health', (_req: Request, res: Response) => {
     timestamp: new Date().toISOString(),
   };
   res.json(response);
+});
+
+app.get('/state', (_req: Request, res: Response) => {
+  const latest = runtimeEvents[0];
+  res.json({
+    data: {
+      status: 'active',
+      mode: latest?.stage || 'observing',
+      trust: latest?.status === 'failed' ? 0.72 : 0.984,
+      events: runtimeEvents.length,
+      lastActivity: latest?.timestamp || null,
+      services: [
+        { name: 'observer', status: 'ready' },
+        { name: 'verifier', status: 'ready' },
+        { name: 'attester', status: 'ready' },
+      ],
+    },
+    timestamp: new Date().toISOString(),
+  });
+});
+
+app.get('/events', (_req: Request, res: Response) => {
+  res.json({ data: runtimeEvents, timestamp: new Date().toISOString() });
 });
 
 /**
@@ -163,11 +210,19 @@ app.post('/attest', (req: Request, res: Response) => {
  * Observe → Verify → Attest in one request
  */
 app.post('/complete-loop', (req: Request, res: Response) => {
+  const correlationId = `loop-${Date.now()}`;
   try {
     const { claim, category, source, observedBy, metadata, confidence, confidenceReason } =
       req.body;
 
     // Step 1: Observe
+    recordEvent({
+      type: 'observation.received',
+      stage: 'observe',
+      message: 'Observation received from the workspace',
+      status: 'active',
+      correlationId,
+    });
     const observation = observer.observe({
       claim,
       category,
@@ -179,10 +234,37 @@ app.post('/complete-loop', (req: Request, res: Response) => {
     });
 
     // Step 2: Verify
+    recordEvent({
+      type: 'verification.started',
+      stage: 'verify',
+      message: 'Evidence checks started',
+      status: 'active',
+      correlationId,
+      details: { claim },
+    });
     const verificationResult = verificationEngine.verify(observation);
+
+    recordEvent({
+      type: verificationResult.summary.passed ? 'verification.passed' : 'verification.failed',
+      stage: 'verify',
+      message: verificationResult.summary.passed
+        ? 'All applicable rules passed'
+        : 'Verification found a failed rule',
+      status: verificationResult.summary.passed ? 'passed' : 'failed',
+      correlationId,
+      details: { rulesApplied: verificationResult.summary.rulesApplied },
+    });
 
     // Step 3: Attest
     const attestation = attestationService.attest(verificationResult);
+    recordEvent({
+      type: 'attestation.created',
+      stage: 'attest',
+      message: 'Verification result signed and recorded',
+      status: attestation.verified ? 'passed' : 'failed',
+      correlationId,
+      details: { attestationId: attestation.id },
+    });
 
     const response: SuccessResponse<{
       observation: typeof observation;
