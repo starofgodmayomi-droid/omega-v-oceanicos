@@ -1,3 +1,5 @@
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname } from 'node:path';
 import express, { Express, Request, Response } from 'express';
 import { Observer } from '@omega-v/observer';
 import { VerificationEngine } from '@omega-v/verification';
@@ -30,36 +32,89 @@ type RuntimeEvent = {
   details?: Record<string, unknown>;
 };
 
-const runtimeEvents: RuntimeEvent[] = [];
-const eventStreams = new Set<Response>();
-const completedRuns: Array<{
+type CompletedRun = {
   correlationId: string;
   observation: ReturnType<Observer['observe']>;
   verification: ReturnType<VerificationEngine['verify']>;
   attestation: ReturnType<AttestationService['attest']>;
-}> = [];
-const runtimeActions: Array<{
+};
+type RuntimeAction = {
   id: string;
   action: string;
   attestationId: string;
   status: 'authorized';
   timestamp: string;
-}> = [];
-const runtimeLearnings: Array<{
+};
+type RuntimeLearning = {
   id: string;
   actionId: string;
   outcome: 'success' | 'failure' | 'uncertain';
   note: string;
   timestamp: string;
-}> = [];
-const runtimeRecompilations: Array<{
+};
+type RuntimeRecompilation = {
   id: string;
   learningId: string;
   version: string;
   status: 'proposed';
   rationale: string;
   timestamp: string;
-}> = [];
+};
+type RuntimeSnapshot = {
+  events: RuntimeEvent[];
+  runs: CompletedRun[];
+  actions: RuntimeAction[];
+  learnings: RuntimeLearning[];
+  recompilations: RuntimeRecompilation[];
+};
+
+const runtimeStorePath =
+  process.env.OMEGA_RUNTIME_STORE_PATH || '/tmp/omega-v-oceanicos/runtime.json';
+const persistenceEnabled = process.env.NODE_ENV !== 'test';
+const emptySnapshot = (): RuntimeSnapshot => ({
+  events: [],
+  runs: [],
+  actions: [],
+  learnings: [],
+  recompilations: [],
+});
+const loadSnapshot = (): RuntimeSnapshot => {
+  if (!persistenceEnabled) return emptySnapshot();
+  try {
+    return {
+      ...emptySnapshot(),
+      ...JSON.parse(readFileSync(runtimeStorePath, 'utf8')),
+    } as RuntimeSnapshot;
+  } catch {
+    return emptySnapshot();
+  }
+};
+const snapshot = loadSnapshot();
+const persistRuntime = (): void => {
+  if (!persistenceEnabled) return;
+  mkdirSync(dirname(runtimeStorePath), { recursive: true });
+  writeFileSync(
+    runtimeStorePath,
+    JSON.stringify(
+      {
+        events: runtimeEvents,
+        runs: completedRuns,
+        actions: runtimeActions,
+        learnings: runtimeLearnings,
+        recompilations: runtimeRecompilations,
+      },
+      null,
+      2
+    )
+  );
+};
+
+const runtimeEvents = snapshot.events;
+const eventStreams = new Set<Response>();
+const completedRuns = snapshot.runs;
+const runtimeActions = snapshot.actions;
+const runtimeLearnings = snapshot.learnings;
+const runtimeRecompilations = snapshot.recompilations;
 
 const recordEvent = (event: Omit<RuntimeEvent, 'id' | 'timestamp'>): RuntimeEvent => {
   const recorded: RuntimeEvent = {
@@ -69,6 +124,7 @@ const recordEvent = (event: Omit<RuntimeEvent, 'id' | 'timestamp'>): RuntimeEven
   };
   runtimeEvents.unshift(recorded);
   runtimeEvents.splice(40);
+  persistRuntime();
   for (const stream of eventStreams) {
     stream.write(`data: ${JSON.stringify(recorded)}\n\n`);
   }
@@ -112,6 +168,7 @@ app.get('/state', (_req: Request, res: Response) => {
   res.json({
     data: {
       status: 'active',
+      persistence: persistenceEnabled ? 'file' : 'memory',
       mode: latest?.stage || 'observing',
       trust: latest ? (latest.status === 'failed' ? 0 : 1) : null,
       events: runtimeEvents.length,
@@ -339,6 +396,7 @@ app.post('/act', (req: Request, res: Response) => {
     };
     runtimeActions.unshift(recordedAction);
     runtimeActions.splice(20);
+    persistRuntime();
     recordEvent({
       type: 'action.authorized',
       stage: 'act',
@@ -393,6 +451,7 @@ app.post('/learn', (req: Request, res: Response) => {
     };
     runtimeLearnings.unshift(learning);
     runtimeLearnings.splice(20);
+    persistRuntime();
     recordEvent({
       type: 'learning.recorded',
       stage: 'learn',
@@ -433,6 +492,7 @@ app.post('/recompile', (req: Request, res: Response) => {
     };
     runtimeRecompilations.unshift(proposal);
     runtimeRecompilations.splice(20);
+    persistRuntime();
     recordEvent({
       type: 'recompile.proposed',
       stage: 'recompile',
@@ -509,6 +569,7 @@ app.post('/complete-loop', (req: Request, res: Response) => {
       attestation,
     });
     completedRuns.splice(20);
+    persistRuntime();
     recordEvent({
       type: 'attestation.created',
       stage: 'attest',

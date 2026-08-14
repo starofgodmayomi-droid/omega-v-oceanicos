@@ -202,7 +202,9 @@ GET /events
 GET /runs
 ```
 
-These endpoints expose the current in-memory runtime state, recent lifecycle events, and completed observation/verification/attestation runs.
+These endpoints expose the current runtime state, recent lifecycle events, and completed observation/verification/attestation runs. Local development persists these records to `/tmp/omega-v-oceanicos/runtime.json` by default.
+
+Set `OMEGA_RUNTIME_STORE_PATH` to choose another JSON store path. Tests use isolated memory state and do not write to disk.
 
 ### Event Stream
 

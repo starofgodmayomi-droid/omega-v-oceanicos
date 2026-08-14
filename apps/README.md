@@ -70,6 +70,7 @@ npm run test      # Run tests
 **Configuration:**
 
 - `API_PORT` — Server port (default: 3000)
+- `OMEGA_RUNTIME_STORE_PATH` — Local runtime snapshot path (default: `/tmp/omega-v-oceanicos/runtime.json`)
 
 **See also:** [api/README.md](api/README.md)
 
