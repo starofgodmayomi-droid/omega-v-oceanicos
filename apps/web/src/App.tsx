@@ -48,6 +48,13 @@ export function App(): JSX.Element {
   const [result, setResult] = useState<LoopResult | null>(null);
   const [mode, setMode] = useState('observe');
   const [trust, setTrust] = useState<number | null>(null);
+  const [trustBasis, setTrustBasis] = useState<{
+    evidenceQuality: number | null;
+    verificationCoverage: number | null;
+    attestationValidity: number | null;
+    serviceReadiness: number | null;
+    recentFailures: number;
+  } | null>(null);
   const [serviceHealth, setServiceHealth] = useState({ ready: 0, total: 0 });
   const [persistenceMode, setPersistenceMode] = useState<'file' | 'memory' | null>(null);
   const [loading, setLoading] = useState(false);
@@ -89,6 +96,13 @@ export function App(): JSX.Element {
         data: {
           mode: string;
           trust: number | null;
+          trustBasis: {
+            evidenceQuality: number | null;
+            verificationCoverage: number | null;
+            attestationValidity: number | null;
+            serviceReadiness: number | null;
+            recentFailures: number;
+          };
           persistence: 'file' | 'memory';
           services: Array<{ status: string }>;
         };
@@ -100,6 +114,7 @@ export function App(): JSX.Element {
       ).length;
       setMode(state.data.mode);
       setTrust(state.data.trust);
+      setTrustBasis(state.data.trustBasis);
       setPersistenceMode(state.data.persistence);
       setServiceHealth({ ready: readyServices, total: state.data.services.length });
       setEvents(eventData.data);
@@ -372,6 +387,14 @@ export function App(): JSX.Element {
             </span>
             <span className="trust">
               TRUST <strong>{trust === null ? 'UNKNOWN' : `${(trust * 100).toFixed(1)}%`}</strong>
+            </span>
+            <span
+              className="trust-basis"
+              title="Trust is derived from runtime evidence, verification, attestation, and service state"
+            >
+              {trustBasis
+                ? `EVIDENCE ${trustBasis.evidenceQuality === null ? 'UNKNOWN' : `${(trustBasis.evidenceQuality * 100).toFixed(0)}%`} · ${trustBasis.recentFailures} FAILURES`
+                : 'EVIDENCE UNKNOWN'}
             </span>
             <button
               ref={commandTriggerRef}

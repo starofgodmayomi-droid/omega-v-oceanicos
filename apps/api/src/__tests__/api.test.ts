@@ -54,12 +54,24 @@ describe('API runtime contracts', () => {
     const runs = (await (await fetch(`${baseUrl}/runs`)).json()) as ApiResponse<
       Array<{ observation: { id: string } }>
     >;
+    const state = (await (await fetch(`${baseUrl}/state`)).json()) as ApiResponse<{
+      trustBasis: {
+        evidenceQuality: number | null;
+        verificationCoverage: number | null;
+        attestationValidity: number | null;
+        serviceReadiness: number;
+        recentFailures: number;
+      };
+    }>;
 
     expect(events.data).toHaveLength(4);
     expect(new Set(events.data.map((event) => event.correlationId)).size).toBe(1);
     expect(new Set(events.data.map((event) => event.requestId)).size).toBe(1);
     expect(events.data[0]?.requestId).toBe('request-contract-1');
     expect(runs.data[0]?.observation.id).toBe(loop.data.observation.id);
+    expect(state.data.trustBasis.evidenceQuality).toBe(0.95);
+    expect(state.data.trustBasis.verificationCoverage).toBe(1);
+    expect(state.data.trustBasis.attestationValidity).toBe(1);
   });
 
   it('verifies the attestation produced by the loop', async () => {

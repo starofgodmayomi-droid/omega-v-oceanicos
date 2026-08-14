@@ -196,12 +196,27 @@ app.get('/health', (_req: Request, res: Response) => {
 
 app.get('/state', (_req: Request, res: Response) => {
   const latest = runtimeEvents[0];
+  const latestRun = completedRuns[0];
+  const recentFailures = runtimeEvents.filter((event) => event.status === 'failed').length;
+  const verificationCoverage = latestRun ? (latestRun.verification.summary.passed ? 1 : 0) : null;
+  const attestationValidity = latestRun
+    ? attestationService.verify(latestRun.attestation)
+      ? 1
+      : 0
+    : null;
   res.json({
     data: {
       status: 'active',
       persistence: persistenceEnabled ? 'file' : 'memory',
       mode: latest?.stage || 'observing',
       trust: latest ? (latest.status === 'failed' ? 0 : 1) : null,
+      trustBasis: {
+        evidenceQuality: latestRun ? latestRun.verification.summary.confidence : null,
+        verificationCoverage,
+        attestationValidity,
+        serviceReadiness: 1,
+        recentFailures,
+      },
       events: runtimeEvents.length,
       lastActivity: latest?.timestamp || null,
       services: [

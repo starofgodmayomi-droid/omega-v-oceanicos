@@ -171,6 +171,12 @@ select:focus-visible {
   color: #e2f6ee;
   font-size: 14px;
 }
+.trust-basis {
+  color: #6f9f95;
+  max-width: 180px;
+  font-size: 9px;
+  line-height: 1.4;
+}
 .command {
   color: #8ab4ab;
   background: #0d211e;
