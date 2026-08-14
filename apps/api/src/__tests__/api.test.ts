@@ -85,6 +85,39 @@ describe('API runtime contracts', () => {
     expect(verification.data.valid).toBe(true);
   });
 
+  it('streams a ready frame and lifecycle events over SSE', async () => {
+    const streamResponse = await fetch(`${baseUrl}/events/stream`);
+    expect(streamResponse.headers.get('content-type')).toContain('text/event-stream');
+    if (!streamResponse.body) throw new Error('SSE response has no body');
+
+    const reader = streamResponse.body.getReader();
+    const readyChunk = await reader.read();
+    expect(new TextDecoder().decode(readyChunk.value)).toContain('event: ready');
+
+    await fetch(`${baseUrl}/complete-loop`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        claim: 'SSE contract test',
+        category: 'health-check',
+        source: { system: 'api-test', version: '0.1.0', environment: 'test' },
+        observedBy: 'jest',
+        metadata: { responseTime: 42, statusCode: 200 },
+        confidence: 0.95,
+        confidenceReason: 'Executable contract test',
+      }),
+    });
+
+    const eventChunk = await Promise.race([
+      reader.read(),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Timed out waiting for SSE lifecycle event')), 1000)
+      ),
+    ]);
+    expect(new TextDecoder().decode(eventChunk.value)).toContain('observation.received');
+    await reader.cancel();
+  });
+
   it('authorizes an action only from a verified attestation', async () => {
     const loopResponse = await fetch(`${baseUrl}/complete-loop`, {
       method: 'POST',
