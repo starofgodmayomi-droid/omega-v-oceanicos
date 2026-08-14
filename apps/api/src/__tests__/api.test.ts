@@ -128,6 +128,26 @@ describe('API runtime contracts', () => {
     expect(learning.data.actionId).toBe(action.data.id);
     expect(learning.data.outcome).toBe('success');
 
+    const recompileResponse = await fetch(`${baseUrl}/recompile`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ learningId: learning.data.actionId }),
+    });
+    expect(recompileResponse.status).toBe(404);
+
+    const learningRecord = (await (await fetch(`${baseUrl}/learning`)).json()) as ApiResponse<
+      Array<{ id: string }>
+    >;
+    const validRecompileResponse = await fetch(`${baseUrl}/recompile`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ learningId: learningRecord.data[0]?.id }),
+    });
+    const proposal = (await validRecompileResponse.json()) as ApiResponse<{ status: string }>;
+
+    expect(validRecompileResponse.status).toBe(201);
+    expect(proposal.data.status).toBe('proposed');
+
     const failedLoopResponse = await fetch(`${baseUrl}/complete-loop`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

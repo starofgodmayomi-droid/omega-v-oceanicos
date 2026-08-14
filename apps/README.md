@@ -51,6 +51,8 @@ Express REST server exposing the verification loop via HTTP.
 - `GET /actions` — List authorized actions
 - `POST /learn` — Record action feedback
 - `GET /learning` — List learning records
+- `POST /recompile` — Propose a change from learning
+- `GET /recompilations` — List recompile proposals
 - `GET /state` — Current runtime state and service health
 - `GET /events` — Recent lifecycle events
 - `GET /events/stream` — Server-sent lifecycle event stream

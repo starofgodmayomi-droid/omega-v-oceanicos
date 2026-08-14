@@ -52,6 +52,14 @@ const runtimeLearnings: Array<{
   note: string;
   timestamp: string;
 }> = [];
+const runtimeRecompilations: Array<{
+  id: string;
+  learningId: string;
+  version: string;
+  status: 'proposed';
+  rationale: string;
+  timestamp: string;
+}> = [];
 
 const recordEvent = (event: Omit<RuntimeEvent, 'id' | 'timestamp'>): RuntimeEvent => {
   const recorded: RuntimeEvent = {
@@ -145,6 +153,10 @@ app.get('/actions', (_req: Request, res: Response) => {
 
 app.get('/learning', (_req: Request, res: Response) => {
   res.json({ data: runtimeLearnings, timestamp: new Date().toISOString() });
+});
+
+app.get('/recompilations', (_req: Request, res: Response) => {
+  res.json({ data: runtimeRecompilations, timestamp: new Date().toISOString() });
 });
 
 /**
@@ -385,6 +397,46 @@ app.post('/learn', (req: Request, res: Response) => {
     res.status(400).json({
       code: 'LEARNING_FAILED',
       message: error instanceof Error ? error.message : 'Learning recording failed',
+      timestamp: new Date().toISOString(),
+    } satisfies ErrorResponse);
+  }
+});
+
+app.post('/recompile', (req: Request, res: Response) => {
+  try {
+    const { learningId } = req.body as { learningId?: string };
+    const learning = runtimeLearnings.find((record) => record.id === learningId);
+    if (!learning) {
+      res.status(404).json({
+        code: 'LEARNING_NOT_FOUND',
+        message: 'Recompile proposals must reference a recorded learning',
+        timestamp: new Date().toISOString(),
+      } satisfies ErrorResponse);
+      return;
+    }
+
+    const proposal = {
+      id: `recompile-${new Date().toISOString().replace(/[-:.TZ]/g, '')}`,
+      learningId: learning.id,
+      version: `proposal-${runtimeRecompilations.length + 1}`,
+      status: 'proposed' as const,
+      rationale: `Review ${learning.outcome} feedback from action ${learning.actionId}`,
+      timestamp: new Date().toISOString(),
+    };
+    runtimeRecompilations.unshift(proposal);
+    runtimeRecompilations.splice(20);
+    recordEvent({
+      type: 'recompile.proposed',
+      stage: 'recompile',
+      message: `Recompile proposal created: ${proposal.version}`,
+      status: 'active',
+      details: { proposalId: proposal.id, learningId: learning.id },
+    });
+    res.status(201).json({ data: proposal, timestamp: new Date().toISOString() });
+  } catch (error) {
+    res.status(400).json({
+      code: 'RECOMPILE_FAILED',
+      message: error instanceof Error ? error.message : 'Recompile proposal failed',
       timestamp: new Date().toISOString(),
     } satisfies ErrorResponse);
   }

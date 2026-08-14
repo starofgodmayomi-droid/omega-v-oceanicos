@@ -31,6 +31,7 @@ Execute the complete Observe → Verify → Attest cycle from the browser.
 - Verify attestation signatures from the Evidence Center
 - Authorize a local action only from a verified attestation
 - Record explicit success, failure, or uncertainty feedback against that action
+- Propose a versioned recompile from recorded learning without claiming automatic code changes
 
 ### Interactive Input
 
@@ -100,6 +101,8 @@ POST /api/act
 GET /api/actions
 POST /api/learn
 GET /api/learning
+POST /api/recompile
+GET /api/recompilations
 ```
 
 **Request:**

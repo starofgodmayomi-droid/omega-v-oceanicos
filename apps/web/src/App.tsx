@@ -57,6 +57,9 @@ export function App(): JSX.Element {
   const [learningStatus, setLearningStatus] = useState<
     'idle' | 'recording' | 'recorded' | 'failed'
   >('idle');
+  const [recompileStatus, setRecompileStatus] = useState<
+    'idle' | 'proposing' | 'proposed' | 'failed'
+  >('idle');
   const [commandOpen, setCommandOpen] = useState(false);
   const claimInputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -215,6 +218,29 @@ export function App(): JSX.Element {
       setError(
         requestError instanceof Error ? requestError.message : 'Learning could not be recorded'
       );
+    }
+  };
+
+  const proposeRecompile = async () => {
+    if (learningStatus !== 'recorded') return;
+    setRecompileStatus('proposing');
+    try {
+      const learningResponse = await fetch('/api/learning');
+      if (!learningResponse.ok) throw new Error('Learning records unavailable');
+      const learning = (await learningResponse.json()) as { data: Array<{ id: string }> };
+      const learningId = learning.data[0]?.id;
+      if (!learningId) throw new Error('No learning record is available');
+      const response = await fetch('/api/recompile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ learningId }),
+      });
+      if (!response.ok) throw new Error('Recompile proposal failed');
+      setRecompileStatus('proposed');
+      await refreshRuntime();
+    } catch (requestError) {
+      setRecompileStatus('failed');
+      setError(requestError instanceof Error ? requestError.message : 'Recompile proposal failed');
     }
   };
 
@@ -577,6 +603,28 @@ export function App(): JSX.Element {
                         </button>
                         {learningStatus === 'recorded' && (
                           <small className="attestation-valid">LEARNING RECORDED</small>
+                        )}
+                        {learningStatus === 'recorded' && (
+                          <button
+                            className="recompile-button"
+                            onClick={proposeRecompile}
+                            disabled={recompileStatus === 'proposing'}
+                          >
+                            {recompileStatus === 'proposing' ? 'Proposing...' : 'Propose recompile'}
+                          </button>
+                        )}
+                        {recompileStatus !== 'idle' && (
+                          <small
+                            className={
+                              recompileStatus === 'proposed'
+                                ? 'attestation-valid'
+                                : 'attestation-invalid'
+                            }
+                          >
+                            {recompileStatus === 'proposed'
+                              ? 'RECOMPILE PROPOSED'
+                              : 'RECOMPILE FAILED'}
+                          </small>
                         )}
                       </div>
                     )}

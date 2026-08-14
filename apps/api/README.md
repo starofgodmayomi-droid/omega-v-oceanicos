@@ -255,6 +255,15 @@ GET /learning
 
 Learning must reference an authorized action and declare a `success`, `failure`, or `uncertain` outcome. The feedback is recorded in the runtime ledger and emitted as a `learning.recorded` event.
 
+### Propose Recompile
+
+```
+POST /recompile
+GET /recompilations
+```
+
+`POST /recompile` creates a versioned `proposed` recompile record from a learning ID. It records rationale and lineage for review; it does not claim that code or production policy was automatically changed.
+
 ### List Rules
 
 ```

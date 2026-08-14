@@ -771,6 +771,19 @@ button {
   opacity: 0.55;
   cursor: wait;
 }
+.recompile-button {
+  border: 1px solid #8d7950;
+  background: #2b2618;
+  color: #e4cb8b;
+  padding: 7px 9px;
+  font:
+    10px 'DM Mono',
+    monospace;
+}
+.recompile-button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
 .command-backdrop {
   position: fixed;
   inset: 0;
