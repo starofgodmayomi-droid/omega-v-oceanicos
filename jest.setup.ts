@@ -23,3 +23,7 @@ beforeAll(() => {
 afterAll(() => {
   console.error = originalError;
 });
+
+// Tests must never rely on a committed default signing key.
+// AttestationService throws without one; supply an explicit test-only key.
+process.env.OMEGA_SIGNING_KEY = process.env.OMEGA_SIGNING_KEY ?? 'test-only-signing-key';
