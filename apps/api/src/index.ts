@@ -31,6 +31,12 @@ type RuntimeEvent = {
 };
 
 const runtimeEvents: RuntimeEvent[] = [];
+const completedRuns: Array<{
+  correlationId: string;
+  observation: ReturnType<Observer['observe']>;
+  verification: ReturnType<VerificationEngine['verify']>;
+  attestation: ReturnType<AttestationService['attest']>;
+}> = [];
 
 const recordEvent = (event: Omit<RuntimeEvent, 'id' | 'timestamp'>): RuntimeEvent => {
   const recorded: RuntimeEvent = {
@@ -96,6 +102,10 @@ app.get('/state', (_req: Request, res: Response) => {
 
 app.get('/events', (_req: Request, res: Response) => {
   res.json({ data: runtimeEvents, timestamp: new Date().toISOString() });
+});
+
+app.get('/runs', (_req: Request, res: Response) => {
+  res.json({ data: completedRuns, timestamp: new Date().toISOString() });
 });
 
 /**
@@ -257,6 +267,8 @@ app.post('/complete-loop', (req: Request, res: Response) => {
 
     // Step 3: Attest
     const attestation = attestationService.attest(verificationResult);
+    completedRuns.unshift({ correlationId, observation, verification: verificationResult, attestation });
+    completedRuns.splice(20);
     recordEvent({
       type: 'attestation.created',
       stage: 'attest',

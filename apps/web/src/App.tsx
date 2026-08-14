@@ -26,11 +26,12 @@ export function App(): JSX.Element {
 
   const refreshRuntime = async () => {
     try {
-      const [stateResponse, eventsResponse] = await Promise.all([fetch('/api/state'), fetch('/api/events')]);
-      if (!stateResponse.ok || !eventsResponse.ok) throw new Error('Runtime unavailable');
+      const [stateResponse, eventsResponse, runsResponse] = await Promise.all([fetch('/api/state'), fetch('/api/events'), fetch('/api/runs')]);
+      if (!stateResponse.ok || !eventsResponse.ok || !runsResponse.ok) throw new Error('Runtime unavailable');
       const state = (await stateResponse.json()) as { data: { mode: string; trust: number | null } };
       const eventData = (await eventsResponse.json()) as { data: RuntimeEvent[] };
-      setMode(state.data.mode); setTrust(state.data.trust); setEvents(eventData.data); setSelectedEvent((current) => current ? eventData.data.find((event) => event.id === current.id) ?? current : null); setError('');
+      const runData = (await runsResponse.json()) as { data: LoopResult[] };
+      setMode(state.data.mode); setTrust(state.data.trust); setEvents(eventData.data); setResult((current) => current ?? runData.data[0] ?? null); setSelectedEvent((current) => current ? eventData.data.find((event) => event.id === current.id) ?? current : null); setError('');
     } catch (requestError) { setError(requestError instanceof Error ? requestError.message : 'Runtime unavailable'); }
   };
 
