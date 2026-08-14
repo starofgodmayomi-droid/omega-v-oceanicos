@@ -1,256 +1,290 @@
-import { Observer } from '@omega-v/observer';
+import { Observer } from '../index';
+import { Observation } from '@omega-v/types';
 
 describe('Observer', () => {
   let observer: Observer;
 
   beforeEach(() => {
-    observer = new Observer(5000); // 5 second deduplication window
+    observer = new Observer(60000);
   });
 
-  describe('Basic Observation', () => {
-    it('should create a normalized observation from a claim', () => {
-      const observation = observer.observe({
-        claim: 'Service X returned HTTP 200',
+  describe('observe()', () => {
+    it('creates a normalized observation from a claim', () => {
+      const result = observer.observe({
+        claim: 'Service is healthy',
         category: 'health-check',
-        source: {
-          system: 'health-check-api',
-          version: '1.2.3',
-          environment: 'production',
-        },
-        observedBy: 'monitoring-system',
-        metadata: {
-          statusCode: 200,
-          responseTime: 45,
-        },
-        confidence: 0.95,
-        confidenceReason: '3 consecutive successful checks',
-      });
-
-      expect(observation).toBeDefined();
-      expect(observation.id).toMatch(/^obs-/);
-      expect(observation.status).toBe('normalized');
-      expect(observation.claim.statement).toBe('Service X returned HTTP 200');
-      expect(observation.confidence).toBe(0.95);
-    });
-
-    it('should include timestamp in ISO format', () => {
-      const before = new Date();
-      const observation = observer.observe({
-        claim: 'Test claim',
         source: {
           system: 'test-system',
           version: '1.0.0',
           environment: 'test',
         },
         observedBy: 'test-observer',
-        metadata: {},
-        confidence: 0.9,
-        confidenceReason: 'Test',
+        metadata: { responseTime: 100, statusCode: 200 },
+        confidence: 0.95,
+        confidenceReason: 'Test observation',
       });
-      const after = new Date();
 
-      const obsTime = new Date(observation.timestamp);
-      expect(obsTime.getTime()).toBeGreaterThanOrEqual(before.getTime());
-      expect(obsTime.getTime()).toBeLessThanOrEqual(after.getTime());
+      expect(result).toBeDefined();
+      expect(result.id).toBeDefined();
+      expect(result.id).toMatch(/^obs-/);
+      expect(result.claim.statement).toBe('Service is healthy');
+      expect(result.claim.category).toBe('health-check');
+      expect(result.status).toBe('normalized');
+      expect(result.confidence).toBe(0.95);
+      expect(result.timestamp).toBeDefined();
     });
-  });
 
-  describe('Input Validation', () => {
-    it('should reject missing claim', () => {
+    it('validates required fields', () => {
       expect(() => {
         observer.observe({
           claim: '',
-          source: {
-            system: 'test',
-            version: '1.0.0',
-            environment: 'test',
-          },
+          source: { system: 'test', version: '1.0', environment: 'test' },
           observedBy: 'test',
           metadata: {},
           confidence: 0.9,
-          confidenceReason: 'Test',
+          confidenceReason: 'test',
         });
-      }).toThrow('Observation validation failed');
-    });
+      }).toThrow();
 
-    it('should reject missing confidenceReason', () => {
       expect(() => {
         observer.observe({
-          claim: 'Test',
-          source: {
-            system: 'test',
-            version: '1.0.0',
-            environment: 'test',
-          },
+          claim: 'test',
+          source: { system: '', version: '1.0', environment: 'test' },
+          observedBy: 'test',
+          metadata: {},
+          confidence: 0.9,
+          confidenceReason: 'test',
+        });
+      }).toThrow();
+
+      expect(() => {
+        observer.observe({
+          claim: 'test',
+          source: { system: 'test', version: '1.0', environment: 'test' },
           observedBy: 'test',
           metadata: {},
           confidence: 0.9,
           confidenceReason: '',
         });
-      }).toThrow('Observation validation failed');
+      }).toThrow();
     });
-  });
 
-  describe('Confidence Clamping', () => {
-    it('should clamp confidence to 1.0 if exceeds', () => {
-      const observation = observer.observe({
-        claim: 'Test',
-        source: {
-          system: 'test',
-          version: '1.0.0',
-          environment: 'test',
-        },
+    it('clamps confidence to 0-1 range', () => {
+      const highConfidence = observer.observe({
+        claim: 'test',
+        source: { system: 'test', version: '1.0', environment: 'test' },
         observedBy: 'test',
         metadata: {},
         confidence: 1.5,
-        confidenceReason: 'Test',
+        confidenceReason: 'test',
       });
+      expect(highConfidence.confidence).toBe(1);
 
-      expect(observation.confidence).toBe(1.0);
-    });
-
-    it('should clamp confidence to 0.0 if negative', () => {
-      const observation = observer.observe({
-        claim: 'Test',
-        source: {
-          system: 'test',
-          version: '1.0.0',
-          environment: 'test',
-        },
+      const lowConfidence = observer.observe({
+        claim: 'test 2',
+        source: { system: 'test', version: '1.0', environment: 'test' },
         observedBy: 'test',
         metadata: {},
         confidence: -0.5,
-        confidenceReason: 'Test',
+        confidenceReason: 'test',
       });
-
-      expect(observation.confidence).toBe(0.0);
+      expect(lowConfidence.confidence).toBe(0);
     });
-  });
 
-  describe('Deduplication', () => {
-    it('should identify duplicate observations', () => {
-      const claim = 'Service is healthy';
-      const source = {
-        system: 'health-check-api',
-        version: '1.2.3',
-        environment: 'production',
-      };
-
+    it('generates unique IDs for each observation', () => {
       const obs1 = observer.observe({
-        claim,
-        source,
+        claim: 'claim 1',
+        source: { system: 'test', version: '1.0', environment: 'test' },
         observedBy: 'test',
-        metadata: { attempt: 1 },
-        confidence: 0.95,
-        confidenceReason: 'First check',
+        metadata: {},
+        confidence: 0.9,
+        confidenceReason: 'test',
       });
 
       const obs2 = observer.observe({
-        claim,
-        source,
+        claim: 'claim 2',
+        source: { system: 'test', version: '1.0', environment: 'test' },
         observedBy: 'test',
-        metadata: { attempt: 2 },
-        confidence: 0.96,
-        confidenceReason: 'Second check',
+        metadata: {},
+        confidence: 0.9,
+        confidenceReason: 'test',
       });
 
-      // Should have same ID (deduplicated)
-      expect(obs2.id).toBe(obs1.id);
+      expect(obs1.id).not.toBe(obs2.id);
+    });
+
+    it('detects duplicate observations within deduplication window', () => {
+      const obs1 = observer.observe({
+        claim: 'duplicate test',
+        source: { system: 'test-sys', version: '1.0', environment: 'test' },
+        observedBy: 'test',
+        metadata: { value: 1 },
+        confidence: 0.9,
+        confidenceReason: 'test',
+      });
+
+      const obs2 = observer.observe({
+        claim: 'duplicate test',
+        source: { system: 'test-sys', version: '1.0', environment: 'test' },
+        observedBy: 'test',
+        metadata: { value: 2 },
+        confidence: 0.8,
+        confidenceReason: 'test',
+      });
+
       expect(obs2.metadata.deduplicated).toBe(true);
+      expect(obs2.metadata.originalId).toBe(obs1.id);
+      expect(obs2.id).toBe(obs1.id);
     });
 
-    it('should not deduplicate different claims', () => {
-      const source = {
-        system: 'test',
-        version: '1.0.0',
-        environment: 'test',
+    it('does not deduplicate observations from different systems', () => {
+      const obs1 = observer.observe({
+        claim: 'same claim',
+        source: { system: 'system-a', version: '1.0', environment: 'test' },
+        observedBy: 'test',
+        metadata: {},
+        confidence: 0.9,
+        confidenceReason: 'test',
+      });
+
+      const obs2 = observer.observe({
+        claim: 'same claim',
+        source: { system: 'system-b', version: '1.0', environment: 'test' },
+        observedBy: 'test',
+        metadata: {},
+        confidence: 0.9,
+        confidenceReason: 'test',
+      });
+
+      expect(obs1.id).not.toBe(obs2.id);
+      expect(obs2.metadata.deduplicated).not.toBe(true);
+    });
+
+    it('uses provided category or defaults to unknown', () => {
+      const withCategory = observer.observe({
+        claim: 'test',
+        category: 'custom-category',
+        source: { system: 'test', version: '1.0', environment: 'test' },
+        observedBy: 'test',
+        metadata: {},
+        confidence: 0.9,
+        confidenceReason: 'test',
+      });
+      expect(withCategory.claim.category).toBe('custom-category');
+
+      const withoutCategory = observer.observe({
+        claim: 'test 2',
+        source: { system: 'test', version: '1.0', environment: 'test' },
+        observedBy: 'test',
+        metadata: {},
+        confidence: 0.9,
+        confidenceReason: 'test',
+      });
+      expect(withoutCategory.claim.category).toBe('unknown');
+    });
+
+    it('preserves metadata through observation', () => {
+      const metadata = {
+        responseTime: 42,
+        statusCode: 200,
+        customField: 'custom-value',
       };
 
-      const obs1 = observer.observe({
-        claim: 'Claim A',
-        source,
+      const result = observer.observe({
+        claim: 'test',
+        source: { system: 'test', version: '1.0', environment: 'test' },
         observedBy: 'test',
-        metadata: {},
+        metadata,
         confidence: 0.9,
-        confidenceReason: 'Test',
+        confidenceReason: 'test',
       });
 
-      const obs2 = observer.observe({
-        claim: 'Claim B',
-        source,
-        observedBy: 'test',
-        metadata: {},
-        confidence: 0.9,
-        confidenceReason: 'Test',
-      });
-
-      expect(obs1.id).not.toBe(obs2.id);
+      expect(result.metadata).toEqual(metadata);
     });
 
-    it('should not deduplicate from different systems', () => {
-      const claim = 'Test claim';
-
-      const obs1 = observer.observe({
-        claim,
-        source: {
-          system: 'system-a',
-          version: '1.0.0',
-          environment: 'test',
-        },
+    it('sets timestamp to current time', () => {
+      const before = new Date().toISOString();
+      const result = observer.observe({
+        claim: 'test',
+        source: { system: 'test', version: '1.0', environment: 'test' },
         observedBy: 'test',
         metadata: {},
         confidence: 0.9,
-        confidenceReason: 'Test',
+        confidenceReason: 'test',
       });
+      const after = new Date().toISOString();
 
-      const obs2 = observer.observe({
-        claim,
-        source: {
-          system: 'system-b',
-          version: '1.0.0',
-          environment: 'test',
-        },
-        observedBy: 'test',
-        metadata: {},
-        confidence: 0.9,
-        confidenceReason: 'Test',
-      });
-
-      expect(obs1.id).not.toBe(obs2.id);
+      expect(result.timestamp >= before).toBe(true);
+      expect(result.timestamp <= after).toBe(true);
     });
   });
 
-  describe('Cache Statistics', () => {
-    it('should report cache size', () => {
+  describe('getCacheStats()', () => {
+    it('returns cache statistics', () => {
       observer.observe({
-        claim: 'Test 1',
-        source: {
-          system: 'test',
-          version: '1.0.0',
-          environment: 'test',
-        },
+        claim: 'test',
+        source: { system: 'test', version: '1.0', environment: 'test' },
         observedBy: 'test',
         metadata: {},
         confidence: 0.9,
-        confidenceReason: 'Test',
+        confidenceReason: 'test',
+      });
+
+      const stats = observer.getCacheStats();
+      expect(stats.size).toBe(1);
+      expect(stats.windowMs).toBe(60000);
+    });
+
+    it('tracks multiple cache entries', () => {
+      observer.observe({
+        claim: 'claim 1',
+        source: { system: 'sys1', version: '1.0', environment: 'test' },
+        observedBy: 'test',
+        metadata: {},
+        confidence: 0.9,
+        confidenceReason: 'test',
       });
 
       observer.observe({
-        claim: 'Test 2',
-        source: {
-          system: 'test',
-          version: '1.0.0',
-          environment: 'test',
-        },
+        claim: 'claim 2',
+        source: { system: 'sys2', version: '1.0', environment: 'test' },
         observedBy: 'test',
         metadata: {},
         confidence: 0.9,
-        confidenceReason: 'Test',
+        confidenceReason: 'test',
       });
 
       const stats = observer.getCacheStats();
       expect(stats.size).toBe(2);
-      expect(stats.windowMs).toBe(5000);
+    });
+  });
+
+  describe('deduplication window expiry', () => {
+    it('expires old cache entries after deduplication window', async () => {
+      const shortWindowObserver = new Observer(100);
+
+      const obs1 = shortWindowObserver.observe({
+        claim: 'will expire',
+        source: { system: 'test', version: '1.0', environment: 'test' },
+        observedBy: 'test',
+        metadata: {},
+        confidence: 0.9,
+        confidenceReason: 'test',
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 150));
+
+      const obs2 = shortWindowObserver.observe({
+        claim: 'will expire',
+        source: { system: 'test', version: '1.0', environment: 'test' },
+        observedBy: 'test',
+        metadata: {},
+        confidence: 0.9,
+        confidenceReason: 'test',
+      });
+
+      expect(obs1.id).not.toBe(obs2.id);
+      expect(obs2.metadata.deduplicated).not.toBe(true);
     });
   });
 });
