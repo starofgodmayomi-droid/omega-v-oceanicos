@@ -19,6 +19,7 @@ npm run dev
 ## Endpoints
 
 ### Health Check
+
 ```
 GET /health
 ```
@@ -26,6 +27,7 @@ GET /health
 Returns API status.
 
 **Response:**
+
 ```json
 {
   "data": { "status": "ok" },
@@ -34,6 +36,7 @@ Returns API status.
 ```
 
 ### Observe
+
 ```
 POST /observe
 ```
@@ -41,6 +44,7 @@ POST /observe
 **Step 1 of verification loop**: Submit an observation.
 
 **Request:**
+
 ```json
 {
   "claim": "Service X returned HTTP 200",
@@ -61,6 +65,7 @@ POST /observe
 ```
 
 **Response:**
+
 ```json
 {
   "data": {
@@ -76,6 +81,7 @@ POST /observe
 ```
 
 ### Verify
+
 ```
 POST /verify
 ```
@@ -83,13 +89,15 @@ POST /verify
 **Step 2 of verification loop**: Verify an observation against rules.
 
 **Request:**
+
 ```json
 {
-  "observation": { /* Observation object from /observe */ }
+  "observation": {/* Observation object from /observe */}
 }
 ```
 
 **Response:**
+
 ```json
 {
   "data": {
@@ -127,6 +135,7 @@ POST /verify
 ```
 
 ### Attest
+
 ```
 POST /attest
 ```
@@ -134,13 +143,15 @@ POST /attest
 **Step 3 of verification loop**: Create a cryptographically signed attestation.
 
 **Request:**
+
 ```json
 {
-  "verificationResult": { /* VerificationResult from /verify */ }
+  "verificationResult": {/* VerificationResult from /verify */}
 }
 ```
 
 **Response:**
+
 ```json
 {
   "data": {
@@ -161,6 +172,7 @@ POST /attest
 ```
 
 ### Complete Loop
+
 ```
 POST /complete-loop
 ```
@@ -170,18 +182,63 @@ Execute the entire verification loop in one request: Observe → Verify → Atte
 **Request:** Same as `/observe`
 
 **Response:**
+
 ```json
 {
   "data": {
-    "observation": { /* Observation from step 1 */ },
-    "verification": { /* VerificationResult from step 2 */ },
-    "attestation": { /* Attestation from step 3 */ }
+    "observation": {/* Observation from step 1 */},
+    "verification": {/* VerificationResult from step 2 */},
+    "attestation": {/* Attestation from step 3 */}
   },
   "timestamp": "2026-08-07T10:30:02Z"
 }
 ```
 
+### Runtime State
+
+```
+GET /state
+GET /events
+GET /runs
+```
+
+These endpoints expose the current in-memory runtime state, recent lifecycle events, and completed observation/verification/attestation runs.
+
+### Event Stream
+
+```
+GET /events/stream
+```
+
+Opens a server-sent event stream. Each complete loop emits observation, verification, and attestation lifecycle events with a correlation ID.
+
+### Verify Attestation
+
+```
+POST /attest/verify
+```
+
+Executes the attestation service's HMAC signature verification.
+
+**Request:**
+
+```json
+{
+  "attestation": {/* Attestation from /complete-loop or /attest */}
+}
+```
+
+**Response:**
+
+```json
+{
+  "data": { "valid": true },
+  "timestamp": "2026-08-14T13:00:00Z"
+}
+```
+
 ### List Rules
+
 ```
 GET /rules
 ```
@@ -189,6 +246,7 @@ GET /rules
 List all registered verification rules.
 
 **Response:**
+
 ```json
 {
   "data": {
@@ -222,12 +280,13 @@ All errors follow this format:
 {
   "code": "ERROR_CODE",
   "message": "Human-readable error message",
-  "details": { /* Optional context */ },
+  "details": {/* Optional context */},
   "timestamp": "2026-08-07T10:30:00Z"
 }
 ```
 
 **Common error codes:**
+
 - `OBSERVATION_FAILED` — Invalid observation input
 - `VERIFICATION_FAILED` — Verification execution error
 - `ATTESTATION_FAILED` — Attestation signing error

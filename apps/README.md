@@ -31,6 +31,7 @@ apps/
 Express REST server exposing the verification loop via HTTP.
 
 **Features:**
+
 - Complete verification loop as REST endpoints
 - Real-time observation capture
 - Rule verification with evidence generation
@@ -39,14 +40,21 @@ Express REST server exposing the verification loop via HTTP.
 - Error handling with proper HTTP status codes
 
 **Endpoints:**
+
 - `GET /health` — API status check
 - `POST /observe` — Capture a claim
 - `POST /verify` — Verify an observation
 - `POST /attest` — Sign a verification result
 - `POST /complete-loop` — Full cycle in one request
+- `POST /attest/verify` — Verify an attestation signature
+- `GET /state` — Current runtime state and service health
+- `GET /events` — Recent lifecycle events
+- `GET /events/stream` — Server-sent lifecycle event stream
+- `GET /runs` — Completed verification runs
 - `GET /rules` — List registered rules
 
 **Quick Start:**
+
 ```bash
 npm run dev       # Start on http://localhost:3000
 npm run build     # Build for production
@@ -54,6 +62,7 @@ npm run test      # Run tests
 ```
 
 **Configuration:**
+
 - `API_PORT` — Server port (default: 3000)
 
 **See also:** [api/README.md](api/README.md)
@@ -63,6 +72,7 @@ npm run test      # Run tests
 React dashboard for visualizing the verification loop in real-time.
 
 **Features:**
+
 - Interactive claim submission
 - Real-time verification execution
 - Step-by-step result visualization (Observation → Verification → Attestation)
@@ -71,6 +81,7 @@ React dashboard for visualizing the verification loop in real-time.
 - Responsive design
 
 **Quick Start:**
+
 ```bash
 npm run dev       # Start on http://localhost:3001
 npm run build     # Build for production
@@ -79,6 +90,7 @@ npm run test      # Run tests
 ```
 
 **Configuration:**
+
 - `VITE_API_URL` — API server URL (default: http://localhost:3000)
 - Proxy configured in `vite.config.ts`
 
@@ -174,6 +186,7 @@ npm run build
 ```
 
 Produces:
+
 - `apps/api/dist/` — Compiled JavaScript
 - `apps/web/dist/` — Optimized React bundle
 
@@ -233,6 +246,7 @@ apps/web/
 ### API
 
 Create `.env` in `apps/api/`:
+
 ```
 API_PORT=3000
 NODE_ENV=development
@@ -241,6 +255,7 @@ NODE_ENV=development
 ### Web
 
 Create `.env.local` in `apps/web/`:
+
 ```
 VITE_API_URL=http://localhost:3000
 VITE_ENV=development
@@ -256,6 +271,7 @@ npm run start
 ```
 
 The compiled app is ready for:
+
 - Docker deployment
 - Kubernetes
 - Serverless (with adapters)
@@ -268,6 +284,7 @@ npm run build
 ```
 
 The `dist/` folder contains:
+
 - Static HTML/CSS/JS
 - Ready for CDN
 - Traditional web server
@@ -276,11 +293,13 @@ The `dist/` folder contains:
 ## Performance
 
 ### API
+
 - No database overhead (stateless, for now)
 - Single-threaded but async I/O
 - Memory efficient
 
 ### Web
+
 - Lazy-loaded React components
 - Optimized bundle (< 200KB gzipped)
 - Hot module reloading in dev
@@ -289,12 +308,14 @@ The `dist/` folder contains:
 ## Security
 
 ### API
+
 - Input validation on all endpoints
 - Error messages don't expose internals
 - HTTPS ready (reverse proxy recommended)
 - CORS configuration available
 
 ### Web
+
 - XSS protection via React's JSX
 - No sensitive data in localStorage (yet)
 - API calls through proxy
@@ -302,6 +323,7 @@ The `dist/` folder contains:
 ## Troubleshooting
 
 ### API won't start
+
 ```bash
 # Check if port 3000 is in use
 lsof -i :3000
@@ -311,6 +333,7 @@ API_PORT=3001 npm run dev
 ```
 
 ### Web dashboard shows errors
+
 ```bash
 # Ensure API is running
 curl http://localhost:3000/health
@@ -320,6 +343,7 @@ curl http://localhost:3000/health
 ```
 
 ### Build failures
+
 ```bash
 # Clear cache
 npm run clean
@@ -334,6 +358,7 @@ npm run build
 ## Contributing
 
 Each app follows these standards:
+
 - TypeScript strict mode
 - ESLint + Prettier formatting
 - Jest unit tests
@@ -353,3 +378,4 @@ Runs on `http://localhost:3001`
 ---
 
 See [../../CONTRIBUTING.md](../../CONTRIBUTING.md) for contribution guidelines.
+```
