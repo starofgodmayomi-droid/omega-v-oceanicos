@@ -309,7 +309,12 @@ app.post('/complete-loop', (req: Request, res: Response) => {
 
     // Step 3: Attest
     const attestation = attestationService.attest(verificationResult);
-    completedRuns.unshift({ correlationId, observation, verification: verificationResult, attestation });
+    completedRuns.unshift({
+      correlationId,
+      observation,
+      verification: verificationResult,
+      attestation,
+    });
     completedRuns.splice(20);
     recordEvent({
       type: 'attestation.created',
