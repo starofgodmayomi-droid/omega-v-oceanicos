@@ -124,13 +124,11 @@ pnpm test        # Test all apps
 ```bash
 # API only
 cd apps/api
-npm install
-npm run dev       # Runs on http://localhost:3000
+pnpm --filter @omega-v/api dev       # Runs on http://localhost:3000
 
 # Web only (requires API running)
 cd apps/web
-npm install
-npm run dev       # Runs on http://localhost:3001
+pnpm --filter @omega-v/web dev       # Runs on http://localhost:3001
 ```
 
 ## Architecture
@@ -168,20 +166,20 @@ Display on Dashboard
 ### Run Tests for All Apps
 
 ```bash
-npm test
+pnpm test
 ```
 
 ### Run Tests for One App
 
 ```bash
-npm test -- apps/api/
-npm test -- apps/web/
+pnpm exec jest apps/api/
+pnpm exec jest apps/web/
 ```
 
 ### Watch Mode
 
 ```bash
-npm run test:watch
+pnpm test:watch
 ```
 
 ## Building
@@ -189,7 +187,7 @@ npm run test:watch
 ### Build All Apps
 
 ```bash
-npm run build
+pnpm build
 ```
 
 Produces:
@@ -200,8 +198,8 @@ Produces:
 ### Build One App
 
 ```bash
-npm run -w @omega-v/api build
-npm run -w @omega-v/web build
+pnpm --filter @omega-v/api build
+pnpm --filter @omega-v/web build
 ```
 
 ## Development
