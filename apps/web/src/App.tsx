@@ -74,6 +74,7 @@ export function App(): JSX.Element {
   const [commandOpen, setCommandOpen] = useState(false);
   const claimInputRef = useRef<HTMLTextAreaElement>(null);
   const commandFirstRef = useRef<HTMLButtonElement>(null);
+  const commandTriggerRef = useRef<HTMLButtonElement>(null);
 
   const refreshRuntime = async () => {
     try {
@@ -117,7 +118,34 @@ export function App(): JSX.Element {
   }, []);
 
   useEffect(() => {
-    if (commandOpen) commandFirstRef.current?.focus();
+    if (commandOpen) {
+      commandFirstRef.current?.focus();
+    } else {
+      commandTriggerRef.current?.focus();
+    }
+  }, [commandOpen]);
+
+  useEffect(() => {
+    if (!commandOpen) return;
+    const handlePaletteKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Tab') return;
+      const palette = document.querySelector<HTMLElement>('.command-palette');
+      if (!palette) return;
+      const focusable = Array.from(
+        palette.querySelectorAll<HTMLElement>(
+          'button:not(:disabled), [tabindex]:not([tabindex="-1"])'
+        )
+      );
+      if (focusable.length === 0) return;
+      const currentIndex = focusable.indexOf(document.activeElement as HTMLElement);
+      const nextIndex = event.shiftKey
+        ? (currentIndex - 1 + focusable.length) % focusable.length
+        : (currentIndex + 1) % focusable.length;
+      event.preventDefault();
+      focusable[nextIndex]?.focus();
+    };
+    document.addEventListener('keydown', handlePaletteKeyDown);
+    return () => document.removeEventListener('keydown', handlePaletteKeyDown);
   }, [commandOpen]);
 
   useEffect(() => {
@@ -345,7 +373,11 @@ export function App(): JSX.Element {
             <span className="trust">
               TRUST <strong>{trust === null ? 'UNKNOWN' : `${(trust * 100).toFixed(1)}%`}</strong>
             </span>
-            <button className="command" onClick={() => setCommandOpen(true)}>
+            <button
+              ref={commandTriggerRef}
+              className="command"
+              onClick={() => setCommandOpen(true)}
+            >
               ⌘ K
             </button>
           </div>
