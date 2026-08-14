@@ -82,10 +82,13 @@ export class Remember {
   }
 
   /**
-   * Recall a single entry by sequential log id.
+   * Recall a single entry by sequential log id (1-based).
    */
   public recall(id: number): EventLogEntry | undefined {
-    return this.entries.find((entry) => entry.id === id);
+    if (!Number.isInteger(id) || id < 1 || id > this.entries.length) {
+      return undefined;
+    }
+    return this.entries[id - 1];
   }
 
   /**
@@ -136,7 +139,7 @@ export class Remember {
 
     results.reverse();
 
-    if (typeof filter.limit === 'number' && filter.limit >= 0) {
+    if (typeof filter.limit === 'number' && filter.limit > 0) {
       return results.slice(0, filter.limit);
     }
 
