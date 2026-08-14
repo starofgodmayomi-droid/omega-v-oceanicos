@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import './App.css';
 
-type RuntimeEvent = { id: string; type: string; stage: string; message: string; status: 'active' | 'passed' | 'failed'; timestamp: string };
+type RuntimeEvent = { id: string; type: string; stage: string; message: string; status: 'active' | 'passed' | 'failed'; timestamp: string; correlationId?: string; details?: Record<string, unknown> };
 type LoopResult = { observation: { id: string; claim: { statement: string }; confidence: number }; verification: { id: string; summary: { passed: boolean; rulesApplied: number; rulesPassed: number; confidence: number }; evidencePath: Array<{ rule: string; passed: boolean; reasoning: string }> }; attestation: { id: string; verified: boolean; signature: string; attestedAt: string } };
 
 const stages = ['observe', 'evidence', 'verify', 'attest', 'act', 'learn', 'recompile'];
@@ -22,6 +22,7 @@ export function App(): JSX.Element {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [activeNav, setActiveNav] = useState('Current');
+  const [selectedEvent, setSelectedEvent] = useState<RuntimeEvent | null>(null);
 
   const refreshRuntime = async () => {
     try {
@@ -29,7 +30,7 @@ export function App(): JSX.Element {
       if (!stateResponse.ok || !eventsResponse.ok) throw new Error('Runtime unavailable');
       const state = (await stateResponse.json()) as { data: { mode: string; trust: number | null } };
       const eventData = (await eventsResponse.json()) as { data: RuntimeEvent[] };
-      setMode(state.data.mode); setTrust(state.data.trust); setEvents(eventData.data); setError('');
+      setMode(state.data.mode); setTrust(state.data.trust); setEvents(eventData.data); setSelectedEvent((current) => current ? eventData.data.find((event) => event.id === current.id) ?? current : null); setError('');
     } catch (requestError) { setError(requestError instanceof Error ? requestError.message : 'Runtime unavailable'); }
   };
 
@@ -52,8 +53,8 @@ export function App(): JSX.Element {
       <section className="hero-grid"><div className="current-panel"><div className="section-kicker">ACTIVE CURRENT <span>LIVE</span></div><div className="current-orbit"><div className="orbit orbit-one" /><div className="orbit orbit-two" /><div className="core"><span>Ω∞v</span><small>CORE</small></div></div><p className="current-caption">The current is the system. Every form returns to evidence.</p><div className="stage-flow">{stages.map((stage, index) => <button className={activeStage === stage ? 'stage active' : 'stage'} key={stage} onClick={() => setMode(stage)}><span>{String(index + 1).padStart(2, '0')}</span>{stage}</button>)}</div></div>
         <div className="intent-panel"><div className="section-kicker">CREATE AN OBSERVATION <span>OPERATOR INPUT</span></div><label htmlFor="claim">What should enter the current?</label><textarea id="claim" value={claim} onChange={(event) => setClaim(event.target.value)} rows={3} /><div className="input-meta"><span>health-check / local</span><button className="run-button" onClick={executeLoop} disabled={loading || !claim.trim()}>{loading ? 'Running current...' : 'Run verification'} <span>↗</span></button></div><div className="truth-note"><span>⊙</span> This action creates real observation, evidence, verification, and attestation records.</div></div></section>
       <section className="metrics-row"><div><span>EVENTS RECORDED</span><strong>{events.length.toString().padStart(2, '0')}</strong></div><div><span>VERIFICATION</span><strong className="green">{result ? (result.verification.summary.passed ? 'PASSED' : 'FAILED') : 'READY'}</strong></div><div><span>SERVICES</span><strong>03 / 03</strong></div><div><span>ENVIRONMENT</span><strong>LOCAL</strong></div></section>
-      <section className="lower-grid"><div className="stream-panel"><div className="panel-heading"><div><span className="section-kicker">UNIVERSAL EVENT STREAM</span><h2>What is happening</h2></div><span className="live-tag">● LIVE</span></div><div className="event-list">{events.length === 0 ? <div className="empty">No observations have entered the current yet.</div> : events.map((event) => <div className="event-row" key={event.id}><span className={`event-marker ${event.status}`} /><time>{timeLabel(event.timestamp)}</time><div><strong>{event.type.replace('.', ' / ').toUpperCase()}</strong><p>{event.message}</p></div><span className="event-stage">{event.stage}</span></div>)}</div></div>
-        <div className="evidence-panel"><div className="panel-heading"><div><span className="section-kicker">LAST ATTESTED PATH</span><h2>Evidence chain</h2></div><span className="seal">◉</span></div>{result ? <div className="chain">{[['OBSERVATION', result.observation.id], ['VERIFICATION', result.verification.id], ['ATTESTATION', result.attestation.id]].map(([label, id]) => <div className="chain-item" key={label}><span className="chain-line" /><div><span>{label}</span><code>{id}</code></div></div>)}</div> : <div className="empty evidence-empty">Run the loop to generate a traceable evidence chain.</div>}<div className="panel-foot">ATTEST ≠ ASSERT <span>Evidence before trust</span></div></div></section>
+      <section className="lower-grid"><div className="stream-panel"><div className="panel-heading"><div><span className="section-kicker">UNIVERSAL EVENT STREAM</span><h2>What is happening</h2></div><span className="live-tag">● LIVE</span></div><div className="event-list">{events.length === 0 ? <div className="empty">No observations have entered the current yet.</div> : events.map((event) => <button className={selectedEvent?.id === event.id ? 'event-row selected' : 'event-row'} key={event.id} onClick={() => setSelectedEvent(event)}><span className={`event-marker ${event.status}`} /><time>{timeLabel(event.timestamp)}</time><div><strong>{event.type.replace('.', ' / ').toUpperCase()}</strong><p>{event.message}</p></div><span className="event-stage">{event.stage}</span></button>)}</div></div>
+        <div className="evidence-panel"><div className="panel-heading"><div><span className="section-kicker">EVENT INSPECTOR</span><h2>{selectedEvent ? selectedEvent.type : 'Evidence chain'}</h2></div><span className="seal">◉</span></div>{selectedEvent ? <div className="event-inspector"><div><span>EVENT ID</span><code>{selectedEvent.id}</code></div><div><span>CORRELATION</span><code>{selectedEvent.correlationId ?? 'not assigned'}</code></div><div><span>PAYLOAD</span><pre>{JSON.stringify(selectedEvent.details ?? {}, null, 2)}</pre></div></div> : result ? <div className="chain">{[['OBSERVATION', result.observation.id], ['VERIFICATION', result.verification.id], ['ATTESTATION', result.attestation.id]].map(([label, id]) => <div className="chain-item" key={label}><span className="chain-line" /><div><span>{label}</span><code>{id}</code></div></div>)}</div> : <div className="empty evidence-empty">Run the loop to generate a traceable evidence chain.</div>}<div className="panel-foot">ATTEST ≠ ASSERT <span>Evidence before trust</span></div></div></section>
     </main></div>;
 }
 
