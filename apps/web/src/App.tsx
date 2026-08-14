@@ -39,6 +39,7 @@ export function App(): JSX.Element {
   const [mode, setMode] = useState('observe');
   const [trust, setTrust] = useState<number | null>(null);
   const [serviceHealth, setServiceHealth] = useState({ ready: 0, total: 0 });
+  const [persistenceMode, setPersistenceMode] = useState<'file' | 'memory' | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [activeNav, setActiveNav] = useState('Current');
@@ -73,7 +74,12 @@ export function App(): JSX.Element {
       if (!stateResponse.ok || !eventsResponse.ok || !runsResponse.ok)
         throw new Error('Runtime unavailable');
       const state = (await stateResponse.json()) as {
-        data: { mode: string; trust: number | null; services: Array<{ status: string }> };
+        data: {
+          mode: string;
+          trust: number | null;
+          persistence: 'file' | 'memory';
+          services: Array<{ status: string }>;
+        };
       };
       const eventData = (await eventsResponse.json()) as { data: RuntimeEvent[] };
       const runData = (await runsResponse.json()) as { data: LoopResult[] };
@@ -82,6 +88,7 @@ export function App(): JSX.Element {
       ).length;
       setMode(state.data.mode);
       setTrust(state.data.trust);
+      setPersistenceMode(state.data.persistence);
       setServiceHealth({ ready: readyServices, total: state.data.services.length });
       setEvents(eventData.data);
       setResult((current) => current ?? runData.data[0] ?? null);
@@ -452,7 +459,7 @@ export function App(): JSX.Element {
           </div>
           <div>
             <span>ENVIRONMENT</span>
-            <strong>LOCAL</strong>
+            <strong>{persistenceMode ? persistenceMode.toUpperCase() : 'UNKNOWN'}</strong>
           </div>
         </section>
         <section className="lower-grid">
