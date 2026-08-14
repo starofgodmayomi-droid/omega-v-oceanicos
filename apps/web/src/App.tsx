@@ -117,16 +117,22 @@ export function App(): JSX.Element {
 
   useEffect(() => {
     const stream = new EventSource('/api/events/stream');
+    stream.onopen = () =>
+      setError((current) => (current.startsWith('Live event stream') ? '' : current));
     stream.onmessage = (message) => {
-      const incoming = JSON.parse(message.data) as RuntimeEvent;
-      setEvents((current) =>
-        [incoming, ...current.filter((event) => event.id !== incoming.id)].slice(0, 40)
-      );
-      setMode(incoming.stage);
-      if (incoming.status === 'passed' || incoming.status === 'failed')
-        setTrust(incoming.status === 'passed' ? 1 : 0);
+      try {
+        const incoming = JSON.parse(message.data) as RuntimeEvent;
+        setEvents((current) =>
+          [incoming, ...current.filter((event) => event.id !== incoming.id)].slice(0, 40)
+        );
+        setMode(incoming.stage);
+        if (incoming.status === 'passed' || incoming.status === 'failed')
+          setTrust(incoming.status === 'passed' ? 1 : 0);
+      } catch {
+        setError('Live event stream returned an unreadable event');
+      }
     };
-    stream.onerror = () => stream.close();
+    stream.onerror = () => setError('Live event stream unavailable; retrying');
     return () => stream.close();
   }, []);
 
