@@ -46,6 +46,9 @@ export function App(): JSX.Element {
   const [attestationStatus, setAttestationStatus] = useState<
     'idle' | 'checking' | 'valid' | 'invalid'
   >('idle');
+  const [actionStatus, setActionStatus] = useState<
+    'idle' | 'authorizing' | 'authorized' | 'denied'
+  >('idle');
   const [commandOpen, setCommandOpen] = useState(false);
   const claimInputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -154,6 +157,30 @@ export function App(): JSX.Element {
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : 'Attestation check failed');
       setAttestationStatus('invalid');
+    }
+  };
+
+  const authorizeAction = async () => {
+    if (!result) return;
+    setActionStatus('authorizing');
+    setError('');
+    try {
+      const response = await fetch('/api/act', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ attestation: result.attestation }),
+      });
+      if (!response.ok) {
+        const payload = (await response.json()) as { message?: string };
+        throw new Error(payload.message ?? 'Action authorization failed');
+      }
+      setActionStatus('authorized');
+      await refreshRuntime();
+    } catch (requestError) {
+      setActionStatus('denied');
+      setError(
+        requestError instanceof Error ? requestError.message : 'Action authorization failed'
+      );
     }
   };
 
@@ -467,6 +494,26 @@ export function App(): JSX.Element {
                         }
                       >
                         {attestationStatus.toUpperCase()}
+                      </small>
+                    )}
+                    <button
+                      className="act-button"
+                      onClick={authorizeAction}
+                      disabled={
+                        actionStatus === 'authorizing' || !result.verification.summary.passed
+                      }
+                    >
+                      {actionStatus === 'authorizing' ? 'Authorizing...' : 'Authorize action'}
+                    </button>
+                    {actionStatus !== 'idle' && (
+                      <small
+                        className={
+                          actionStatus === 'authorized'
+                            ? 'attestation-valid'
+                            : 'attestation-invalid'
+                        }
+                      >
+                        {actionStatus === 'authorized' ? 'ACTION AUTHORIZED' : 'ACTION DENIED'}
                       </small>
                     )}
                   </div>

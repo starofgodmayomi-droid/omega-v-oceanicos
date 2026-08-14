@@ -29,6 +29,7 @@ Execute the complete Observe → Verify → Attest cycle from the browser.
 - Inspect event IDs, correlation IDs, and payloads
 - Recover the latest completed evidence chain after refresh
 - Verify attestation signatures from the Evidence Center
+- Authorize a local action only from a verified attestation
 
 ### Interactive Input
 
@@ -94,6 +95,8 @@ GET /api/events
 GET /api/events/stream
 GET /api/runs
 POST /api/attest/verify
+POST /api/act
+GET /api/actions
 ```
 
 **Request:**

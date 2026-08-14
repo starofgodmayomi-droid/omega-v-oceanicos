@@ -2,7 +2,7 @@ import express, { Express, Request, Response } from 'express';
 import { Observer } from '@omega-v/observer';
 import { VerificationEngine } from '@omega-v/verification';
 import { AttestationService } from '@omega-v/attestation';
-import { SuccessResponse, ErrorResponse } from '@omega-v/types';
+import { Attestation, SuccessResponse, ErrorResponse } from '@omega-v/types';
 
 /**
  * Ω∞v Oceanicos API Server
@@ -37,6 +37,13 @@ const completedRuns: Array<{
   observation: ReturnType<Observer['observe']>;
   verification: ReturnType<VerificationEngine['verify']>;
   attestation: ReturnType<AttestationService['attest']>;
+}> = [];
+const runtimeActions: Array<{
+  id: string;
+  action: string;
+  attestationId: string;
+  status: 'authorized';
+  timestamp: string;
 }> = [];
 
 const recordEvent = (event: Omit<RuntimeEvent, 'id' | 'timestamp'>): RuntimeEvent => {
@@ -123,6 +130,10 @@ app.get('/events/stream', (req: Request, res: Response) => {
 
 app.get('/runs', (_req: Request, res: Response) => {
   res.json({ data: completedRuns, timestamp: new Date().toISOString() });
+});
+
+app.get('/actions', (_req: Request, res: Response) => {
+  res.json({ data: runtimeActions, timestamp: new Date().toISOString() });
 });
 
 /**
@@ -252,6 +263,63 @@ app.post('/attest/verify', (req: Request, res: Response) => {
     res.status(400).json({
       code: 'ATTESTATION_VERIFICATION_FAILED',
       message: error instanceof Error ? error.message : 'Attestation verification failed',
+      timestamp: new Date().toISOString(),
+    } satisfies ErrorResponse);
+  }
+});
+
+app.post('/act', (req: Request, res: Response) => {
+  try {
+    const { attestation, action = 'record-verified-result' } = req.body as {
+      attestation?: Attestation;
+      action?: string;
+    };
+    if (!attestation) {
+      res.status(400).json({
+        code: 'MISSING_ATTESTATION',
+        message: 'Attestation is required to authorize an action',
+        timestamp: new Date().toISOString(),
+      } satisfies ErrorResponse);
+      return;
+    }
+    if (!attestationService.verify(attestation)) {
+      res.status(403).json({
+        code: 'INVALID_ATTESTATION',
+        message: 'Action denied because the attestation signature is invalid',
+        timestamp: new Date().toISOString(),
+      } satisfies ErrorResponse);
+      return;
+    }
+    if (!attestation.verified) {
+      res.status(409).json({
+        code: 'UNVERIFIED_ATTESTATION',
+        message: 'Action denied because verification did not pass',
+        timestamp: new Date().toISOString(),
+      } satisfies ErrorResponse);
+      return;
+    }
+
+    const recordedAction = {
+      id: `act-${new Date().toISOString().replace(/[-:.TZ]/g, '')}`,
+      action,
+      attestationId: attestation.id,
+      status: 'authorized' as const,
+      timestamp: new Date().toISOString(),
+    };
+    runtimeActions.unshift(recordedAction);
+    runtimeActions.splice(20);
+    recordEvent({
+      type: 'action.authorized',
+      stage: 'act',
+      message: `Action authorized: ${action}`,
+      status: 'passed',
+      details: { actionId: recordedAction.id, attestationId: attestation.id },
+    });
+    res.status(201).json({ data: recordedAction, timestamp: new Date().toISOString() });
+  } catch (error) {
+    res.status(400).json({
+      code: 'ACTION_FAILED',
+      message: error instanceof Error ? error.message : 'Action authorization failed',
       timestamp: new Date().toISOString(),
     } satisfies ErrorResponse);
   }

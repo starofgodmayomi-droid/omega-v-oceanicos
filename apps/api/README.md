@@ -237,6 +237,15 @@ Executes the attestation service's HMAC signature verification.
 }
 ```
 
+### Authorize Action
+
+```
+POST /act
+GET /actions
+```
+
+`POST /act` authorizes the local `record-verified-result` action only when the supplied attestation has a valid signature and `verified: true`. Failed verification returns `409`; invalid signatures return `403`. Authorized actions are recorded in the runtime ledger and emitted on the event stream.
+
 ### List Rules
 
 ```

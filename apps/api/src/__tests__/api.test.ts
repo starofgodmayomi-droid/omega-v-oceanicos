@@ -84,4 +84,52 @@ describe('API runtime contracts', () => {
     expect(verificationResponse.status).toBe(200);
     expect(verification.data.valid).toBe(true);
   });
+
+  it('authorizes an action only from a verified attestation', async () => {
+    const loopResponse = await fetch(`${baseUrl}/complete-loop`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        claim: 'API action contract test',
+        category: 'health-check',
+        source: { system: 'api-test', version: '0.1.0', environment: 'test' },
+        observedBy: 'jest',
+        metadata: { responseTime: 42, statusCode: 200 },
+        confidence: 0.95,
+        confidenceReason: 'Executable contract test',
+      }),
+    });
+    const loop = (await loopResponse.json()) as ApiResponse<LoopPayload>;
+    const actionResponse = await fetch(`${baseUrl}/act`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ attestation: loop.data.attestation }),
+    });
+    const action = (await actionResponse.json()) as ApiResponse<{ status: string }>;
+
+    expect(actionResponse.status).toBe(201);
+    expect(action.data.status).toBe('authorized');
+
+    const failedLoopResponse = await fetch(`${baseUrl}/complete-loop`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        claim: 'API action denial contract test',
+        category: 'health-check',
+        source: { system: 'api-test', version: '0.1.0', environment: 'test' },
+        observedBy: 'jest',
+        metadata: { responseTime: 120, statusCode: 200 },
+        confidence: 0.95,
+        confidenceReason: 'Executable contract test',
+      }),
+    });
+    const failedLoop = (await failedLoopResponse.json()) as ApiResponse<LoopPayload>;
+    const deniedResponse = await fetch(`${baseUrl}/act`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ attestation: failedLoop.data.attestation }),
+    });
+
+    expect(deniedResponse.status).toBe(409);
+  });
 });

@@ -707,6 +707,21 @@ button {
   opacity: 0.55;
   cursor: wait;
 }
+.act-button {
+  display: block;
+  margin-top: 10px;
+  border: 1px solid #6a9b47;
+  background: #18301d;
+  color: #b8e58d;
+  padding: 7px 9px;
+  font:
+    10px 'DM Mono',
+    monospace;
+}
+.act-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
 .attestation-valid,
 .attestation-invalid {
   display: block;
