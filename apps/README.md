@@ -375,4 +375,4 @@ Each app follows these standards:
 **Part of:** Ω∞v Oceanicos Formless Intelligence OS  
 **Last Updated:** 2026-08-14
 
-See [../../CONTRIBUTING.md](../../CONTRIBUTING.md) for contribution guidelines.
+See [../CONTRIBUTING.md](../CONTRIBUTING.md) for contribution guidelines.

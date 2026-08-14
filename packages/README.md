@@ -213,4 +213,4 @@ Current version: **0.1.0** (preview/alpha)
 **Status:** In active development  
 **Last Updated:** 2026-08-14
 
-See [../../CONTRIBUTING.md](../../CONTRIBUTING.md) for contribution guidelines.
+See [../CONTRIBUTING.md](../CONTRIBUTING.md) for contribution guidelines.
