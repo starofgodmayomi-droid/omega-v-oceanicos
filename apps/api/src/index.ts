@@ -31,6 +31,7 @@ type RuntimeEvent = {
 };
 
 const runtimeEvents: RuntimeEvent[] = [];
+const eventStreams = new Set<Response>();
 const completedRuns: Array<{
   correlationId: string;
   observation: ReturnType<Observer['observe']>;
@@ -46,6 +47,9 @@ const recordEvent = (event: Omit<RuntimeEvent, 'id' | 'timestamp'>): RuntimeEven
   };
   runtimeEvents.unshift(recorded);
   runtimeEvents.splice(40);
+  for (const stream of eventStreams) {
+    stream.write(`data: ${JSON.stringify(recorded)}\n\n`);
+  }
   return recorded;
 };
 
@@ -102,6 +106,19 @@ app.get('/state', (_req: Request, res: Response) => {
 
 app.get('/events', (_req: Request, res: Response) => {
   res.json({ data: runtimeEvents, timestamp: new Date().toISOString() });
+});
+
+app.get('/events/stream', (req: Request, res: Response) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+  eventStreams.add(res);
+  res.write(`event: ready\ndata: ${JSON.stringify({ connectedAt: new Date().toISOString() })}\n\n`);
+
+  req.on('close', () => {
+    eventStreams.delete(res);
+  });
 });
 
 app.get('/runs', (_req: Request, res: Response) => {

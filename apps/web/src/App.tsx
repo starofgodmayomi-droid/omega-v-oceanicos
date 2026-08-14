@@ -35,7 +35,19 @@ export function App(): JSX.Element {
     } catch (requestError) { setError(requestError instanceof Error ? requestError.message : 'Runtime unavailable'); }
   };
 
-  useEffect(() => { void refreshRuntime(); const timer = window.setInterval(() => void refreshRuntime(), 4000); return () => window.clearInterval(timer); }, []);
+  useEffect(() => { void refreshRuntime(); }, []);
+
+  useEffect(() => {
+    const stream = new EventSource('/api/events/stream');
+    stream.onmessage = (message) => {
+      const incoming = JSON.parse(message.data) as RuntimeEvent;
+      setEvents((current) => [incoming, ...current.filter((event) => event.id !== incoming.id)].slice(0, 40));
+      setMode(incoming.stage);
+      if (incoming.status === 'passed' || incoming.status === 'failed') setTrust(incoming.status === 'passed' ? 1 : 0);
+    };
+    stream.onerror = () => stream.close();
+    return () => stream.close();
+  }, []);
 
   const executeLoop = async () => {
     setLoading(true); setError('');
