@@ -24,3 +24,7 @@ button { cursor: pointer; }
 .event-inspector span { display: block; color: #609187; font: 10px 'DM Mono', monospace; }
 .event-inspector code { display: block; margin-top: 5px; color: #c8e9df; font: 11px 'DM Mono', monospace; overflow-wrap: anywhere; }
 .event-inspector pre { margin: 5px 0 0; padding: 12px; color: #a8d8ca; background: #071613; border: 1px solid #1c4138; font: 10px/1.5 'DM Mono', monospace; overflow: auto; }
+.input-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 13px; }
+.input-controls label { margin: 0; color: #5b8a80; font: 10px 'DM Mono', monospace; }
+.input-controls input { display: block; width: 100%; margin-top: 6px; padding: 8px; background: #071613; border: 1px solid #315950; color: #ebfaf4; outline: 0; }
+.input-controls input:focus { border-color: #71d8b7; }
