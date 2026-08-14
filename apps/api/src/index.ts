@@ -20,6 +20,16 @@ app.use((req: Request, res: Response, next) => {
   const requestId = req.header('x-request-id') || `req-${randomUUID()}`;
   res.locals.requestId = requestId;
   res.setHeader('x-request-id', requestId);
+  const sendJson = res.json.bind(res);
+  res.json = ((body: unknown) => {
+    if (body && typeof body === 'object' && 'code' in body) {
+      return sendJson({
+        ...body,
+        requestId: (body as { requestId?: string }).requestId ?? requestId,
+      });
+    }
+    return sendJson(body);
+  }) as Response['json'];
   next();
 });
 

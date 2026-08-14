@@ -88,6 +88,20 @@ describe('API runtime contracts', () => {
     expect(verification.data.valid).toBe(true);
   });
 
+  it('includes request provenance in error responses', async () => {
+    const response = await fetch(`${baseUrl}/attest/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-request-id': 'error-contract-1' },
+      body: JSON.stringify({}),
+    });
+    const error = (await response.json()) as { code: string; requestId: string };
+
+    expect(response.status).toBe(400);
+    expect(error.code).toBe('MISSING_ATTESTATION');
+    expect(error.requestId).toBe('error-contract-1');
+    expect(response.headers.get('x-request-id')).toBe('error-contract-1');
+  });
+
   it('streams a ready frame and lifecycle events over SSE', async () => {
     const streamResponse = await fetch(`${baseUrl}/events/stream`);
     expect(streamResponse.headers.get('content-type')).toContain('text/event-stream');

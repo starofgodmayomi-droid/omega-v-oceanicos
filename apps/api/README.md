@@ -208,6 +208,8 @@ Set `OMEGA_RUNTIME_STORE_PATH` to choose another JSON store path. Tests use isol
 
 Every response includes an `x-request-id` header. Supplying an existing `x-request-id` reuses it; otherwise the API generates one. Complete-loop events and runs retain that request ID alongside their correlation ID.
 
+Structured error responses also include the request ID in their JSON body, so a failure can be traced from the UI or CLI without relying on log timing.
+
 ### Event Stream
 
 ```
