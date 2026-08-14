@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import express, { Express, Request, Response } from 'express';
@@ -100,10 +100,20 @@ const emptySnapshot = (): RuntimeSnapshot => ({
 const loadSnapshot = (): RuntimeSnapshot => {
   if (!persistenceEnabled) return emptySnapshot();
   try {
+    const parsed = JSON.parse(readFileSync(runtimeStorePath, 'utf8')) as Partial<RuntimeSnapshot>;
+    if (
+      !Array.isArray(parsed.events) ||
+      !Array.isArray(parsed.runs) ||
+      !Array.isArray(parsed.actions) ||
+      !Array.isArray(parsed.learnings) ||
+      !Array.isArray(parsed.recompilations)
+    ) {
+      return emptySnapshot();
+    }
     return {
       ...emptySnapshot(),
-      ...JSON.parse(readFileSync(runtimeStorePath, 'utf8')),
-    } as RuntimeSnapshot;
+      ...parsed,
+    };
   } catch {
     return emptySnapshot();
   }
@@ -112,8 +122,9 @@ const snapshot = loadSnapshot();
 const persistRuntime = (): void => {
   if (!persistenceEnabled) return;
   mkdirSync(dirname(runtimeStorePath), { recursive: true });
+  const temporaryPath = `${runtimeStorePath}.tmp`;
   writeFileSync(
-    runtimeStorePath,
+    temporaryPath,
     JSON.stringify(
       {
         events: runtimeEvents,
@@ -126,6 +137,7 @@ const persistRuntime = (): void => {
       2
     )
   );
+  renameSync(temporaryPath, runtimeStorePath);
 };
 
 const runtimeEvents = snapshot.events;
