@@ -49,6 +49,8 @@ Express REST server exposing the verification loop via HTTP.
 - `POST /attest/verify` — Verify an attestation signature
 - `POST /act` — Authorize an attested action
 - `GET /actions` — List authorized actions
+- `POST /learn` — Record action feedback
+- `GET /learning` — List learning records
 - `GET /state` — Current runtime state and service health
 - `GET /events` — Recent lifecycle events
 - `GET /events/stream` — Server-sent lifecycle event stream

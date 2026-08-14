@@ -30,6 +30,7 @@ Execute the complete Observe → Verify → Attest cycle from the browser.
 - Recover the latest completed evidence chain after refresh
 - Verify attestation signatures from the Evidence Center
 - Authorize a local action only from a verified attestation
+- Record explicit success, failure, or uncertainty feedback against that action
 
 ### Interactive Input
 
@@ -97,6 +98,8 @@ GET /api/runs
 POST /api/attest/verify
 POST /api/act
 GET /api/actions
+POST /api/learn
+GET /api/learning
 ```
 
 **Request:**

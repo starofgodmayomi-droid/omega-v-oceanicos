@@ -45,6 +45,13 @@ const runtimeActions: Array<{
   status: 'authorized';
   timestamp: string;
 }> = [];
+const runtimeLearnings: Array<{
+  id: string;
+  actionId: string;
+  outcome: 'success' | 'failure' | 'uncertain';
+  note: string;
+  timestamp: string;
+}> = [];
 
 const recordEvent = (event: Omit<RuntimeEvent, 'id' | 'timestamp'>): RuntimeEvent => {
   const recorded: RuntimeEvent = {
@@ -134,6 +141,10 @@ app.get('/runs', (_req: Request, res: Response) => {
 
 app.get('/actions', (_req: Request, res: Response) => {
   res.json({ data: runtimeActions, timestamp: new Date().toISOString() });
+});
+
+app.get('/learning', (_req: Request, res: Response) => {
+  res.json({ data: runtimeLearnings, timestamp: new Date().toISOString() });
 });
 
 /**
@@ -320,6 +331,60 @@ app.post('/act', (req: Request, res: Response) => {
     res.status(400).json({
       code: 'ACTION_FAILED',
       message: error instanceof Error ? error.message : 'Action authorization failed',
+      timestamp: new Date().toISOString(),
+    } satisfies ErrorResponse);
+  }
+});
+
+app.post('/learn', (req: Request, res: Response) => {
+  try {
+    const {
+      actionId,
+      outcome,
+      note = '',
+    } = req.body as {
+      actionId?: string;
+      outcome?: 'success' | 'failure' | 'uncertain';
+      note?: string;
+    };
+    if (!actionId || !outcome || !['success', 'failure', 'uncertain'].includes(outcome)) {
+      res.status(400).json({
+        code: 'INVALID_LEARNING',
+        message: 'actionId and a success, failure, or uncertain outcome are required',
+        timestamp: new Date().toISOString(),
+      } satisfies ErrorResponse);
+      return;
+    }
+    if (!runtimeActions.some((action) => action.id === actionId)) {
+      res.status(404).json({
+        code: 'ACTION_NOT_FOUND',
+        message: 'Learning must reference an authorized action',
+        timestamp: new Date().toISOString(),
+      } satisfies ErrorResponse);
+      return;
+    }
+
+    const learning = {
+      id: `learn-${new Date().toISOString().replace(/[-:.TZ]/g, '')}`,
+      actionId,
+      outcome,
+      note,
+      timestamp: new Date().toISOString(),
+    };
+    runtimeLearnings.unshift(learning);
+    runtimeLearnings.splice(20);
+    recordEvent({
+      type: 'learning.recorded',
+      stage: 'learn',
+      message: `Learning recorded: ${outcome}`,
+      status: outcome === 'failure' ? 'failed' : 'passed',
+      details: { learningId: learning.id, actionId },
+    });
+    res.status(201).json({ data: learning, timestamp: new Date().toISOString() });
+  } catch (error) {
+    res.status(400).json({
+      code: 'LEARNING_FAILED',
+      message: error instanceof Error ? error.message : 'Learning recording failed',
       timestamp: new Date().toISOString(),
     } satisfies ErrorResponse);
   }

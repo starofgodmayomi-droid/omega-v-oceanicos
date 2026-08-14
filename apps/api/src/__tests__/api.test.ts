@@ -105,10 +105,28 @@ describe('API runtime contracts', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ attestation: loop.data.attestation }),
     });
-    const action = (await actionResponse.json()) as ApiResponse<{ status: string }>;
+    const action = (await actionResponse.json()) as ApiResponse<{ id: string; status: string }>;
 
     expect(actionResponse.status).toBe(201);
     expect(action.data.status).toBe('authorized');
+
+    const learningResponse = await fetch(`${baseUrl}/learn`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        actionId: action.data.id,
+        outcome: 'success',
+        note: 'The authorized record was accepted by the local runtime.',
+      }),
+    });
+    const learning = (await learningResponse.json()) as ApiResponse<{
+      actionId: string;
+      outcome: string;
+    }>;
+
+    expect(learningResponse.status).toBe(201);
+    expect(learning.data.actionId).toBe(action.data.id);
+    expect(learning.data.outcome).toBe('success');
 
     const failedLoopResponse = await fetch(`${baseUrl}/complete-loop`, {
       method: 'POST',
@@ -131,5 +149,12 @@ describe('API runtime contracts', () => {
     });
 
     expect(deniedResponse.status).toBe(409);
+
+    const missingLearningResponse = await fetch(`${baseUrl}/learn`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ actionId: 'act-missing', outcome: 'success' }),
+    });
+    expect(missingLearningResponse.status).toBe(404);
   });
 });

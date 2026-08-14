@@ -246,6 +246,15 @@ GET /actions
 
 `POST /act` authorizes the local `record-verified-result` action only when the supplied attestation has a valid signature and `verified: true`. Failed verification returns `409`; invalid signatures return `403`. Authorized actions are recorded in the runtime ledger and emitted on the event stream.
 
+### Record Learning
+
+```
+POST /learn
+GET /learning
+```
+
+Learning must reference an authorized action and declare a `success`, `failure`, or `uncertain` outcome. The feedback is recorded in the runtime ledger and emitted as a `learning.recorded` event.
+
 ### List Rules
 
 ```

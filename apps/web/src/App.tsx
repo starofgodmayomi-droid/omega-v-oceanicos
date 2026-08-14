@@ -49,6 +49,14 @@ export function App(): JSX.Element {
   const [actionStatus, setActionStatus] = useState<
     'idle' | 'authorizing' | 'authorized' | 'denied'
   >('idle');
+  const [authorizedActionId, setAuthorizedActionId] = useState<string | null>(null);
+  const [learningOutcome, setLearningOutcome] = useState<'success' | 'failure' | 'uncertain'>(
+    'success'
+  );
+  const [learningNote, setLearningNote] = useState('');
+  const [learningStatus, setLearningStatus] = useState<
+    'idle' | 'recording' | 'recorded' | 'failed'
+  >('idle');
   const [commandOpen, setCommandOpen] = useState(false);
   const claimInputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -174,12 +182,38 @@ export function App(): JSX.Element {
         const payload = (await response.json()) as { message?: string };
         throw new Error(payload.message ?? 'Action authorization failed');
       }
+      const payload = (await response.json()) as { data: { id: string } };
+      setAuthorizedActionId(payload.data.id);
       setActionStatus('authorized');
       await refreshRuntime();
     } catch (requestError) {
       setActionStatus('denied');
       setError(
         requestError instanceof Error ? requestError.message : 'Action authorization failed'
+      );
+    }
+  };
+
+  const recordLearning = async () => {
+    if (!authorizedActionId) return;
+    setLearningStatus('recording');
+    try {
+      const response = await fetch('/api/learn', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          actionId: authorizedActionId,
+          outcome: learningOutcome,
+          note: learningNote,
+        }),
+      });
+      if (!response.ok) throw new Error('Learning could not be recorded');
+      setLearningStatus('recorded');
+      await refreshRuntime();
+    } catch (requestError) {
+      setLearningStatus('failed');
+      setError(
+        requestError instanceof Error ? requestError.message : 'Learning could not be recorded'
       );
     }
   };
@@ -515,6 +549,36 @@ export function App(): JSX.Element {
                       >
                         {actionStatus === 'authorized' ? 'ACTION AUTHORIZED' : 'ACTION DENIED'}
                       </small>
+                    )}
+                    {actionStatus === 'authorized' && (
+                      <div className="learning-controls">
+                        <span>LEARNING FEEDBACK</span>
+                        <select
+                          value={learningOutcome}
+                          onChange={(event) =>
+                            setLearningOutcome(event.target.value as typeof learningOutcome)
+                          }
+                        >
+                          <option value="success">Success</option>
+                          <option value="failure">Failure</option>
+                          <option value="uncertain">Uncertain</option>
+                        </select>
+                        <input
+                          value={learningNote}
+                          onChange={(event) => setLearningNote(event.target.value)}
+                          placeholder="What did the action teach us?"
+                        />
+                        <button
+                          className="learn-button"
+                          onClick={recordLearning}
+                          disabled={learningStatus === 'recording'}
+                        >
+                          {learningStatus === 'recording' ? 'Recording...' : 'Record learning'}
+                        </button>
+                        {learningStatus === 'recorded' && (
+                          <small className="attestation-valid">LEARNING RECORDED</small>
+                        )}
+                      </div>
                     )}
                   </div>
                 </div>
