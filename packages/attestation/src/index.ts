@@ -1,3 +1,4 @@
+import { createHmac, timingSafeEqual } from 'node:crypto';
 import { Attestation, VerificationResult } from '@omega-v/types';
 
 /**
@@ -26,19 +27,6 @@ export class AttestationService {
       algorithm?: string;
     }
   ): Attestation {
-    // Create the payload to sign
-    const payload = {
-      verificationId: verificationResult.id,
-      observationId: verificationResult.observationId,
-      verified: verificationResult.summary.passed,
-      confidence: verificationResult.summary.confidence,
-      ruleVersions: verificationResult.ruleVersions,
-      timestamp: verificationResult.timestamp,
-    };
-
-    // Generate signature (simplified for v0.1.0)
-    const signature = this.generateSignature(payload);
-
     // Create attestation
     const attestation: Attestation = {
       id: this.generateAttestationId(),
@@ -46,7 +34,7 @@ export class AttestationService {
       observationId: verificationResult.observationId,
       verified: verificationResult.summary.passed,
       confidence: verificationResult.summary.confidence,
-      signature,
+      signature: '',
       signingKey: this.signingKey,
       keyVersion: this.keyVersion,
       signingAlgorithm: options?.algorithm || 'HMAC-SHA256',
@@ -56,6 +44,8 @@ export class AttestationService {
       status: 'signed',
     };
 
+    attestation.signature = this.generateSignature(this.createSignaturePayload(attestation));
+
     return attestation;
   }
 
@@ -64,11 +54,7 @@ export class AttestationService {
    * In a real system, this would use the public key
    */
   public verify(attestation: Attestation): boolean {
-    // Simplified verification for v0.1.0
-    // In production, would use HMAC or public key verification
-
-    // Check required fields
-    if (!attestation.signature || !attestation.verificationId) {
+    if (!attestation.signature || !attestation.verificationId || !attestation.observationId) {
       return false;
     }
 
@@ -82,30 +68,27 @@ export class AttestationService {
       return false;
     }
 
-    // In a real system, verify the signature with public key
-    // For now, just verify the structure is correct
-    return true;
+    const expectedSignature = this.generateSignature(this.createSignaturePayload(attestation));
+    const actual = Buffer.from(attestation.signature.replace(/^0x/, ''), 'hex');
+    const expected = Buffer.from(expectedSignature.replace(/^0x/, ''), 'hex');
+    return actual.length === expected.length && timingSafeEqual(actual, expected);
   }
 
-  /**
-   * Generate a cryptographic signature
-   * Simplified for v0.1.0; production would use proper crypto
-   */
   private generateSignature(payload: Record<string, unknown>): string {
-    // Simplified: create a deterministic hash from payload
-    const payloadString = JSON.stringify(payload);
-    const buffer = Buffer.from(payloadString);
+    return `0x${createHmac('sha256', this.signingKey).update(JSON.stringify(payload)).digest('hex')}`;
+  }
 
-    // Create a simple hash (not cryptographically secure for production)
-    let hash = 0;
-    for (let i = 0; i < buffer.length; i++) {
-      const char = buffer[i];
-      hash = (hash << 5) - hash + char;
-      hash = hash & hash; // Convert to 32-bit integer
-    }
-
-    // In production, use proper HMAC-SHA256 or similar
-    return `0x${Math.abs(hash).toString(16).padStart(64, '0')}`;
+  private createSignaturePayload(attestation: Attestation): Record<string, unknown> {
+    return {
+      verificationId: attestation.verificationId,
+      observationId: attestation.observationId,
+      verified: attestation.verified,
+      confidence: attestation.confidence,
+      ruleVersions: attestation.ruleVersions,
+      attestedAt: attestation.attestedAt,
+      attestedBy: attestation.attestedBy,
+      keyVersion: attestation.keyVersion,
+    };
   }
 
   /**
