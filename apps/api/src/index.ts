@@ -684,14 +684,26 @@ app.use((_req: Request, res: Response) => {
 
 const startServer = () =>
   app.listen(port, () => {
-    console.log(`[Ω∞v API] Verification loop server running on http://localhost:${port}`);
-    console.log(`Available endpoints:`);
-    console.log(`  POST   /observe          - Create an observation`);
-    console.log(`  POST   /verify           - Verify an observation`);
-    console.log(`  POST   /attest           - Attest a verification`);
-    console.log(`  POST   /complete-loop    - Execute full loop in one request`);
-    console.log(`  GET    /rules            - List verification rules`);
-    console.log(`  GET    /health           - Health check`);
+    process.stdout.write(
+      [
+        `[Ω∞v API] Verification loop server running on http://localhost:${port}`,
+        'Available endpoints:',
+        '  POST   /observe          - Create an observation',
+        '  POST   /verify           - Verify an observation',
+        '  POST   /attest           - Attest a verification',
+        '  POST   /complete-loop    - Execute full loop in one request',
+        '  GET    /state            - Runtime state',
+        '  GET    /events           - Recent lifecycle events',
+        '  GET    /events/stream    - Live lifecycle events',
+        '  GET    /runs             - Completed runs',
+        '  POST   /act              - Authorize an action',
+        '  POST   /learn            - Record learning',
+        '  POST   /recompile        - Propose a recompile',
+        '  GET    /rules            - List verification rules',
+        '  GET    /health           - Health check',
+        '',
+      ].join('\n')
+    );
   });
 
 if (process.env.NODE_ENV !== 'test') {
