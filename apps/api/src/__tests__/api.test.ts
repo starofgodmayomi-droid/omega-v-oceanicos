@@ -110,6 +110,46 @@ describe('API runtime contracts', () => {
     expect(actionResponse.status).toBe(201);
     expect(action.data.status).toBe('authorized');
 
+    const standaloneObservationResponse = await fetch(`${baseUrl}/observe`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        claim: 'Standalone attestation must not act',
+        category: 'health-check',
+        source: { system: 'api-test', version: '0.1.0', environment: 'test' },
+        observedBy: 'jest',
+        metadata: { responseTime: 42, statusCode: 200 },
+        confidence: 0.95,
+        confidenceReason: 'Executable contract test',
+      }),
+    });
+    const standaloneObservation = (
+      (await standaloneObservationResponse.json()) as ApiResponse<Record<string, unknown>>
+    ).data;
+    const standaloneVerificationResponse = await fetch(`${baseUrl}/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ observation: standaloneObservation }),
+    });
+    const standaloneVerification = (
+      (await standaloneVerificationResponse.json()) as ApiResponse<Record<string, unknown>>
+    ).data;
+    const standaloneAttestationResponse = await fetch(`${baseUrl}/attest`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ verificationResult: standaloneVerification }),
+    });
+    const standaloneAttestation = (
+      (await standaloneAttestationResponse.json()) as ApiResponse<{ id: string; verified: boolean }>
+    ).data;
+    const orphanActionResponse = await fetch(`${baseUrl}/act`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ attestation: standaloneAttestation }),
+    });
+
+    expect(orphanActionResponse.status).toBe(404);
+
     const learningResponse = await fetch(`${baseUrl}/learn`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

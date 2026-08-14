@@ -313,6 +313,14 @@ app.post('/act', (req: Request, res: Response) => {
       } satisfies ErrorResponse);
       return;
     }
+    if (!completedRuns.some((run) => run.attestation.id === attestation.id)) {
+      res.status(404).json({
+        code: 'ATTESTATION_NOT_RECORDED',
+        message: 'Action denied because the attestation has no recorded runtime lineage',
+        timestamp: new Date().toISOString(),
+      } satisfies ErrorResponse);
+      return;
+    }
     if (!attestation.verified) {
       res.status(409).json({
         code: 'UNVERIFIED_ATTESTATION',
