@@ -18,7 +18,7 @@ export function App(): JSX.Element {
   const [events, setEvents] = useState<RuntimeEvent[]>([]);
   const [result, setResult] = useState<LoopResult | null>(null);
   const [mode, setMode] = useState('observe');
-  const [trust, setTrust] = useState(0.984);
+  const [trust, setTrust] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [activeNav, setActiveNav] = useState('Current');
@@ -27,7 +27,7 @@ export function App(): JSX.Element {
     try {
       const [stateResponse, eventsResponse] = await Promise.all([fetch('/api/state'), fetch('/api/events')]);
       if (!stateResponse.ok || !eventsResponse.ok) throw new Error('Runtime unavailable');
-      const state = (await stateResponse.json()) as { data: { mode: string; trust: number } };
+      const state = (await stateResponse.json()) as { data: { mode: string; trust: number | null } };
       const eventData = (await eventsResponse.json()) as { data: RuntimeEvent[] };
       setMode(state.data.mode); setTrust(state.data.trust); setEvents(eventData.data); setError('');
     } catch (requestError) { setError(requestError instanceof Error ? requestError.message : 'Runtime unavailable'); }
@@ -47,7 +47,7 @@ export function App(): JSX.Element {
   const activeStage = stages.includes(mode) ? mode : 'observe';
   return <div className="os-shell">
     <aside className="sidebar"><div className="brand"><span className="brand-mark">Ω∞v</span><span>ECOSYSTEMOS</span></div><div className="side-status"><span className="status-dot" /> Runtime active</div><nav aria-label="Primary navigation">{navGroups.map((group) => <div className="nav-group" key={group.label}><span className="nav-label">{group.label}</span>{group.items.map((item) => <button className={activeNav === item ? 'nav-item active' : 'nav-item'} key={item} onClick={() => setActiveNav(item)}><span className="nav-glyph">{item === 'Current' ? '◈' : '·'}</span>{item}</button>)}</div>)}</nav><div className="sidebar-foot"><span>LOCAL ENVIRONMENT</span><strong>v0.1.0</strong></div></aside>
-    <main className="workspace"><header className="topbar"><div><span className="eyebrow">Current / {activeNav}</span><h1>One root. Infinite forms.</h1></div><div className="top-meta"><span className="mode-pill"><span className="status-dot" /> {mode.toUpperCase()}</span><span className="trust">TRUST <strong>{(trust * 100).toFixed(1)}%</strong></span><button className="command">⌘ K</button></div></header>
+    <main className="workspace"><header className="topbar"><div><span className="eyebrow">Current / {activeNav}</span><h1>One root. Infinite forms.</h1></div><div className="top-meta"><span className="mode-pill"><span className="status-dot" /> {mode.toUpperCase()}</span><span className="trust">TRUST <strong>{trust === null ? 'UNKNOWN' : `${(trust * 100).toFixed(1)}%`}</strong></span><button className="command">⌘ K</button></div></header>
       {error && <div className="error-banner" role="alert"><strong>Runtime boundary</strong><span>{error}. UI is showing the last known state.</span></div>}
       <section className="hero-grid"><div className="current-panel"><div className="section-kicker">ACTIVE CURRENT <span>LIVE</span></div><div className="current-orbit"><div className="orbit orbit-one" /><div className="orbit orbit-two" /><div className="core"><span>Ω∞v</span><small>CORE</small></div></div><p className="current-caption">The current is the system. Every form returns to evidence.</p><div className="stage-flow">{stages.map((stage, index) => <button className={activeStage === stage ? 'stage active' : 'stage'} key={stage} onClick={() => setMode(stage)}><span>{String(index + 1).padStart(2, '0')}</span>{stage}</button>)}</div></div>
         <div className="intent-panel"><div className="section-kicker">CREATE AN OBSERVATION <span>OPERATOR INPUT</span></div><label htmlFor="claim">What should enter the current?</label><textarea id="claim" value={claim} onChange={(event) => setClaim(event.target.value)} rows={3} /><div className="input-meta"><span>health-check / local</span><button className="run-button" onClick={executeLoop} disabled={loading || !claim.trim()}>{loading ? 'Running current...' : 'Run verification'} <span>↗</span></button></div><div className="truth-note"><span>⊙</span> This action creates real observation, evidence, verification, and attestation records.</div></div></section>

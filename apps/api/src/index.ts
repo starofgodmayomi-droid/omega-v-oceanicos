@@ -81,7 +81,7 @@ app.get('/state', (_req: Request, res: Response) => {
     data: {
       status: 'active',
       mode: latest?.stage || 'observing',
-      trust: latest?.status === 'failed' ? 0.72 : 0.984,
+      trust: latest ? (latest.status === 'failed' ? 0 : 1) : null,
       events: runtimeEvents.length,
       lastActivity: latest?.timestamp || null,
       services: [
