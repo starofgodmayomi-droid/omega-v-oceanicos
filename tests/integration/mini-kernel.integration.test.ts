@@ -29,32 +29,37 @@ describe('MINI kernel: Observe → Verify → Remember', () => {
   let mini: MiniKernel;
   let signingKey: string;
 
-  const healthCheckPassed: VerificationRule = {
-    name: 'health-check-passed',
-    version: '1.0.0',
+  // These are the rules the verification engine can actually execute. An
+  // earlier version of this suite registered `health-check-passed` and
+  // `health-check-degraded`, which the engine has no implementation for —
+  // they were reported as passing without ever being evaluated, so the tests
+  // below appeared to exercise rules that never ran.
+  const responseTimeThreshold: VerificationRule = {
+    name: 'response-time-threshold',
+    version: '1.0.5',
     appliesTo: ['health-check'],
-    definition: 'statusCode === 200 && responseTime < 100',
-    description: 'Service is healthy',
-    createdAt: '2026-08-14T00:00:00.000Z',
-    active: true,
-  };
-
-  const healthCheckDegraded: VerificationRule = {
-    name: 'health-check-degraded',
-    version: '1.0.0',
-    appliesTo: ['health-check'],
-    definition: 'responseTime >= 100 && responseTime < 500',
-    description: 'Service is degraded',
+    definition: 'responseTime < 100',
+    description: 'Response time must be below 100ms',
     createdAt: '2026-08-14T00:00:00.000Z',
     active: true,
   };
 
   const statusCodeCheck: VerificationRule = {
     name: 'status-code-check',
-    version: '1.0.0',
+    version: '1.2.0',
     appliesTo: ['health-check'],
     definition: 'statusCode === 200',
     description: 'Status code must be 200',
+    createdAt: '2026-08-14T00:00:00.000Z',
+    active: true,
+  };
+
+  const unimplemented: VerificationRule = {
+    name: 'health-check-degraded',
+    version: '1.0.0',
+    appliesTo: ['degraded-check'],
+    definition: 'responseTime >= 100 && responseTime < 500',
+    description: 'Declared but not executable by this engine',
     createdAt: '2026-08-14T00:00:00.000Z',
     active: true,
   };
@@ -65,7 +70,7 @@ describe('MINI kernel: Observe → Verify → Remember', () => {
     signingKey = 'mini-kernel-integration-key-not-for-production';
 
     mini = new MiniKernel({
-      rules: [healthCheckPassed, healthCheckDegraded, statusCodeCheck],
+      rules: [responseTimeThreshold, statusCodeCheck, unimplemented],
       memory: new Remember(new FileMemoryStore(memoryPath)),
     });
   });
@@ -109,10 +114,32 @@ describe('MINI kernel: Observe → Verify → Remember', () => {
 
       expect(result.verification).toBeDefined();
       expect(result.verification.summary.passed).toBe(true);
-      expect(result.verification.summary.rulesApplied).toBeGreaterThan(0);
-      expect(result.verification.summary.rulesPassed).toBeGreaterThan(0);
+      expect(result.verification.summary.rulesApplied).toBe(2);
+      expect(result.verification.summary.rulesPassed).toBe(2);
       expect(result.verification.evidencePath).toBeDefined();
-      expect(result.verification.evidencePath.length).toBeGreaterThan(0);
+      expect(result.verification.evidencePath.length).toBe(2);
+      // Every rule counted here was executed, not assumed.
+      expect(
+        result.verification.evidencePath.every((step) => step.condition !== 'rule-not-executable')
+      ).toBe(true);
+    });
+
+    it('refuses to pass a rule the engine cannot execute', () => {
+      const result = mini.cycle({
+        claim: 'Service X is degraded',
+        category: 'degraded-check',
+        source: { system: 'integration', version: '1.0.0', environment: 'test' },
+        observedBy: 'mini-kernel-test',
+        metadata: { statusCode: 200, responseTime: 250 },
+        confidence: 0.95,
+        confidenceReason: 'declared rule with no implementation',
+      });
+
+      // This rule is registered and applies, but the engine has no
+      // implementation for it. It must not reach a passing verdict, because
+      // a passing verdict is what an attestation signs.
+      expect(result.verification.summary.passed).toBe(false);
+      expect(result.verification.evidencePath[0].condition).toBe('rule-not-executable');
     });
 
     it('produces evidence paths for failing rules', () => {

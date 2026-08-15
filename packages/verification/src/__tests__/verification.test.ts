@@ -91,14 +91,18 @@ describe('VerificationEngine — status-code-check', () => {
     expect(result.rules[0].confidence).toBeCloseTo(0.1);
   });
 
-  it('defaults a missing status code to 0 and fails', () => {
+  it('reports a missing status code as unevaluated, not as a zero', () => {
     const engine = new VerificationEngine();
     engine.registerRule(rule());
 
     const result = engine.verify(observation({}));
 
-    expect(result.evidencePath[0].value).toBe(0);
     expect(result.summary.passed).toBe(false);
+    // The old behaviour read the absent field as 0 and reported evidence
+    // about a status code that was never observed.
+    expect(result.evidencePath[0].value).toBeNull();
+    expect(result.evidencePath[0].reasoning).toContain('does not carry statusCode');
+    expect(result.rules[0].confidence).toBe(0);
   });
 });
 
@@ -128,28 +132,64 @@ describe('VerificationEngine — response-time-threshold', () => {
     expect(result.evidencePath[0].reasoning).toContain('exceeds');
   });
 
-  it('defaults a missing response time to 0 and passes', () => {
+  it('refuses to pass an observation carrying no timing data', () => {
     const engine = new VerificationEngine();
     engine.registerRule(timing);
 
     const result = engine.verify(observation({}, 'perf'));
 
-    expect(result.evidencePath[0].value).toBe(0);
-    expect(result.summary.passed).toBe(true);
+    // Previously this passed: the absent field was read as 0ms, which is
+    // below the threshold, so an observation with no timing evidence at all
+    // produced a passing timing verdict.
+    expect(result.summary.passed).toBe(false);
+    expect(result.evidencePath[0].value).toBeNull();
+    expect(result.evidencePath[0].severity).toBe('critical');
+    expect(result.evidencePath[0].reasoning).toContain('does not carry responseTime');
   });
 });
 
 describe('VerificationEngine — unknown and empty rule sets', () => {
-  it('passes an unregistered rule name at reduced confidence', () => {
+  it('fails a rule it has no implementation for', () => {
     const engine = new VerificationEngine();
     engine.registerRule(rule({ name: 'entirely-novel-rule' }));
 
     const result = engine.verify(observation({ statusCode: 200 }));
 
-    expect(result.summary.passed).toBe(true);
-    expect(result.rules[0].confidence).toBeCloseTo(0.5);
-    expect(result.evidencePath[0].condition).toBe('unknown-rule');
-    expect(result.evidencePath[0].reasoning).toContain('assuming pass');
+    // The critical property: an unevaluated rule must not report a pass.
+    // That verdict becomes summary.passed, then a signed attestation with
+    // verified:true, then action authorisation — a signature over a claim
+    // nothing checked.
+    expect(result.summary.passed).toBe(false);
+    expect(result.rules[0].confidence).toBe(0);
+    expect(result.evidencePath[0].condition).toBe('rule-not-executable');
+    expect(result.evidencePath[0].severity).toBe('critical');
+    expect(result.evidencePath[0].reasoning).toContain('not evaluated');
+  });
+
+  it('does not let an unimplemented rule reach a passing attestation', () => {
+    const engine = new VerificationEngine();
+    engine.registerRule(rule()); // status-code-check: implemented, will pass
+    engine.registerRule(rule({ name: 'entirely-novel-rule' })); // not implemented
+
+    const result = engine.verify(observation({ statusCode: 200 }));
+
+    // One genuinely passing rule must not carry an unevaluated one over the
+    // line: attestation.verified is derived from summary.passed.
+    expect(result.summary.rulesPassed).toBe(1);
+    expect(result.summary.rulesFailed).toBe(1);
+    expect(result.summary.passed).toBe(false);
+  });
+
+  it('publishes which rules it can execute, separately from what is registered', () => {
+    const engine = new VerificationEngine();
+    engine.registerRule(rule({ name: 'entirely-novel-rule' }));
+
+    expect(engine.getRuleCount()).toBe(1);
+    expect(engine.canExecute('entirely-novel-rule')).toBe(false);
+    expect(engine.canExecute('status-code-check')).toBe(true);
+    expect(engine.getExecutableRuleNames()).toEqual(
+      expect.arrayContaining(['status-code-check', 'response-time-threshold'])
+    );
   });
 
   it('returns a passing result with no evidence when no rules apply', () => {

@@ -225,4 +225,46 @@ describe('API loop: act, learn, recompile', () => {
     expect(loop.data.memory.observationId).toBe(loop.data.observation.id);
     expect(loop.data.memory.verificationId).toBeDefined();
   });
+
+  it('refuses to sign an attestation over evidence it never checked', async () => {
+    // A status code but no timing data. The status rule passes honestly; the
+    // timing rule has nothing to evaluate. The engine used to read the absent
+    // responseTime as 0ms, which is below the threshold, so this produced a
+    // signed attestation with verified:true asserting a latency threshold the
+    // observation never reported — and that attestation was then sufficient
+    // to authorize an action.
+    const loop = (await (
+      await post('/complete-loop', loopInput('status only, no timing', { statusCode: 200 }))
+    ).json()) as Body<
+      Loop & {
+        verification: {
+          summary: { passed: boolean };
+          evidencePath: Array<{ rule: string; passed: boolean; reasoning: string }>;
+        };
+      }
+    >;
+
+    expect(loop.data.verification.summary.passed).toBe(false);
+    expect(loop.data.attestation.verified).toBe(false);
+
+    const timing = loop.data.verification.evidencePath.find(
+      (step) => step.rule === 'response-time-threshold'
+    );
+    expect(timing?.passed).toBe(false);
+    expect(timing?.reasoning).toContain('does not carry responseTime');
+
+    const denied = await post('/act', { attestation: loop.data.attestation });
+    expect(denied.status).toBe(409);
+  });
+
+  it('reports which registered rules the engine can actually execute', async () => {
+    const rules = (await (await fetch(`${baseUrl}/rules`)).json()) as Body<{
+      registered: number;
+      executable: number;
+      rules: Array<{ name: string; executable: boolean }>;
+    }>;
+
+    expect(rules.data.executable).toBe(rules.data.registered);
+    expect(rules.data.rules.every((rule) => rule.executable)).toBe(true);
+  });
 });
