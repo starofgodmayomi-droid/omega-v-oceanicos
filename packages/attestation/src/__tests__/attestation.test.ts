@@ -131,9 +131,7 @@ describe('AttestationService — Ed25519', () => {
     const b = edKeys();
     const service = new AttestationService(privatePem(a.privateKey), '1', ED25519);
     const attestation = service.attest(verificationResult);
-    expect(service.verify({ ...attestation, verified: false })).toBe(
-      false
-    );
+    expect(service.verify({ ...attestation, verified: false })).toBe(false);
     expect(service.verify({ ...attestation, signingAlgorithm: 'HMAC-SHA256' })).toBe(false);
     expect(service.verify({ ...attestation, verifyingPublicKey: publicPem(b.publicKey) })).toBe(false);
   });
@@ -142,13 +140,9 @@ describe('AttestationService — Ed25519', () => {
     const a = edKeys();
     const b = edKeys();
     process.env.OMEGA_ED25519_PUBLIC_KEY = publicPem(b.publicKey);
-    expect(() => new AttestationService(privatePem(a.privateKey), '1', ED25519)).toThrow(
-      InvalidEd25519KeyError
-    );
+    expect(() => new AttestationService(privatePem(a.privateKey), '1', ED25519)).toThrow(InvalidEd25519KeyError);
     delete process.env.OMEGA_ED25519_PUBLIC_KEY;
-    expect(() => new AttestationService('not-a-key', '1', ED25519)).toThrow(
-      InvalidEd25519KeyError
-    );
+    expect(() => new AttestationService('not-a-key', '1', ED25519)).toThrow(InvalidEd25519KeyError);
   });
 
   it('rotates Ed25519 keys without stale public-key state', () => {
