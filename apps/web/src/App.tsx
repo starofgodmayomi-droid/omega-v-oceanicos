@@ -22,9 +22,39 @@ type LoopResult = {
   attestation: { id: string; verified: boolean; signature: string; attestedAt: string };
 };
 
-const stages = ['observe', 'evidence', 'verify', 'attest', 'act', 'learn', 'recompile'];
+const stages = ['observe', 'sense', 'verify', 'attest', 'act', 'learn', 'evolve'];
+const trustStack = [
+  'Dissent',
+  'Verification',
+  'Provenance',
+  'Attestation',
+  'Fallback',
+  'Human routing',
+  'Audit',
+  'Action',
+];
+const oceanicLayers = [
+  {
+    name: 'OceanicOS',
+    detail: 'Environment and operating substrate where the system experiences reality.',
+  },
+  {
+    name: 'Ω∞v Kernel',
+    detail: 'Living daemon translating vision into verified action, memory, and adaptation.',
+  },
+  {
+    name: 'Compiler',
+    detail: 'Runtime recomposition loop: observe, verify, execute, observe consequence, recompile.',
+  },
+];
+const charterPrinciples = [
+  'Autopoiesis',
+  'Non-dual',
+  'Friction-as-fertility',
+  'No terrain dependency',
+];
 const navGroups = [
-  { label: 'Core', items: ['Current', 'Observe', 'Evidence', 'Verify', 'Attest', 'Act'] },
+  { label: 'Core', items: ['Current', 'Observe', 'Sense', 'Verify', 'Attest', 'Act'] },
   { label: 'Intelligence', items: ['AI', 'Agents', 'Knowledge', 'Memory'] },
   { label: 'System', items: ['API', 'Data', 'Runtime', 'Security', 'Governance'] },
 ];
@@ -474,6 +504,35 @@ export function App(): JSX.Element {
                   {stage}
                 </button>
               ))}
+            </div>
+            <div className="kernel-identity">
+              <span className="section-kicker">MASTER EQUATION</span>
+              <div className="equation">💧 Ω∞v ::= 🌎 ⇄ ✓ ↺ ∞</div>
+              <p>VISION → KERNEL → PLATFORM → REALITY → FEEDBACK → EVOLUTION</p>
+              <ul className="trust-stack">
+                {trustStack.map((layer) => (
+                  <li key={layer}>{layer}</li>
+                ))}
+              </ul>
+            </div>
+            <div className="oceanic-layers">
+              <span className="section-kicker">OCEANICOS / Ω∞v</span>
+              <div className="layer-grid">
+                {oceanicLayers.map((layer) => (
+                  <div className="layer-card" key={layer.name}>
+                    <strong>{layer.name}</strong>
+                    <span>{layer.detail}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="charter-panel">
+              <span className="section-kicker">LIVING AGNOSTIC CHARTER</span>
+              <div className="charter-pills">
+                {charterPrinciples.map((principle) => (
+                  <span key={principle}>{principle}</span>
+                ))}
+              </div>
             </div>
           </div>
           <div className="intent-panel">

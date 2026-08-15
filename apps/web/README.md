@@ -20,7 +20,9 @@ npm run dev
 
 ### Real-Time Verification
 
-Execute the complete Observe → Verify → Attest cycle from the browser.
+Execute the Ω∞v kernel loop from the browser: Observe → Sense → Verify → Attest → Learn → Act → Evolve.
+
+This is designed as a living system rather than a terminal workflow: every action feeds the next cycle, preserving the infinite loop of intelligence, evidence, and adaptation.
 
 ### Runtime Inspection
 

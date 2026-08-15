@@ -1,0 +1,26 @@
+services:
+  api:
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.api
+    environment:
+      NODE_ENV: production
+      API_PORT: 3000
+      OMEGA_RUNTIME_STORE_PATH: /var/lib/omega/runtime.json
+    volumes:
+      - omega-runtime:/var/lib/omega
+    ports:
+      - '3000:3000'
+
+  web:
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.web
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - '3001:3001'
+
+volumes:
+  omega-runtime:

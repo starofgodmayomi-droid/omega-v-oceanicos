@@ -308,52 +308,102 @@ select:focus-visible {
 .stage.active span {
   color: #80d8be;
 }
-.intent-panel {
-  padding: 26px;
+.kernel-identity {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid #1f423b;
+}
+.kernel-identity .section-kicker {
+  display: block;
+  margin-bottom: 10px;
+}
+.equation {
+  color: #dffaf1;
+  font:
+    18px/1.4 'DM Mono',
+    monospace;
+  letter-spacing: 0.06em;
+  word-break: break-word;
+}
+.kernel-identity p {
+  margin: 12px 0 0;
+  color: #7ea8a0;
+  font:
+    11px 'DM Mono',
+    monospace;
+  line-height: 1.6;
+}
+.trust-stack {
+  list-style: none;
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
+  gap: 7px;
+  padding: 0;
+  margin: 14px 0 0;
 }
-.intent-panel label {
-  color: #d4e8e3;
-  font-size: 16px;
-  margin: 50px 0 13px;
+.trust-stack li {
+  border: 1px solid #24473f;
+  background: rgba(12, 32, 28, 0.9);
+  color: #9ce5cf;
+  padding: 5px 8px;
+  font:
+    9px 'DM Mono',
+    monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
-.intent-panel textarea {
-  resize: vertical;
-  min-height: 84px;
-  background: #071613;
-  border: 1px solid #315950;
-  color: #ebfaf4;
-  padding: 14px;
-  outline: 0;
-  line-height: 1.5;
+.oceanic-layers {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid #1f423b;
 }
-.intent-panel textarea:focus {
-  border-color: #71d8b7;
-  box-shadow: 0 0 0 2px rgba(113, 216, 183, 0.12);
-}
-.input-meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.layer-grid {
+  display: grid;
   gap: 10px;
-  margin-top: 13px;
-  color: #5b8a80;
+  margin-top: 12px;
+}
+.layer-card {
+  border: 1px solid #22463f;
+  background: rgba(8, 23, 21, 0.8);
+  padding: 12px 12px 10px;
+}
+.layer-card strong {
+  display: block;
+  color: #d9efe9;
   font:
     10px 'DM Mono',
     monospace;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
-.run-button {
-  border: 0;
-  padding: 11px 14px;
-  background: #77dfbd;
-  color: #06221b;
-  font-weight: 800;
+.layer-card span {
+  display: block;
+  margin-top: 6px;
+  color: #78a29a;
   font-size: 11px;
+  line-height: 1.5;
 }
-.run-button:disabled {
-  opacity: 0.45;
-  cursor: wait;
+.charter-panel {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid #1f423b;
+}
+.charter-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.charter-pills span {
+  border: 1px solid #2a5a52;
+  background: rgba(17, 40, 35, 0.8);
+  color: #9de8d3;
+  padding: 6px 8px;
+  font:
+    9px 'DM Mono',
+    monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 .truth-note {
   margin-top: auto;

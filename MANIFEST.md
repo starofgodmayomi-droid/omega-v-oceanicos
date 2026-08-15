@@ -48,21 +48,40 @@ The project embodies a living evolution: every step contains all steps; every en
 
 ## Architecture
 
-### The Verification Loop (Core)
+### The Ω∞v Kernel Loop (Core)
 
 ```
-Observe → Verify → Attest → Record → Display → Learn → Return
+VISION → KERNEL → PLATFORM → REALITY → FEEDBACK → EVOLUTION
 ```
+
+The executable cycle is:
+
+```
+Observe → Sense → Verify → Remember → Reason → Intent → Attest → Learn → Action → Evolve → ↺
+```
+
+And the identity equation is:
+
+```
+💧 Ω∞v ::= 🌎 ⇄ ✓ ↺ ∞
+```
+
+This defines Ω∞v as a continuously verifying intelligence kernel that turns information into trusted action and returns reality as new evidence.
 
 Every operation in Ω∞v follows this loop:
 
-1. **Observe**: Capture state, events, or claims
-2. **Verify**: Apply evidence-based reasoning; check against known truths
-3. **Attest**: Generate verifiable proof; create cryptographic commitment
-4. **Record**: Store provenance; maintain immutable history
-5. **Display**: Present results to stakeholders; enable visualization
-6. **Learn**: Extract patterns; improve verification rules
-7. **Return**: Feed learning back into observation and verification
+1. **Observe**: Capture state, events, or claims from the world
+2. **Sense**: Interpret signals as meaningful information
+3. **Verify**: Apply evidence-based reasoning; check against known truths
+4. **Remember**: Store state, provenance, and event lineage
+5. **Reason**: Distinguish relevance, consequence, and intent
+6. **Intent**: Select a constrained and accountable action path
+7. **Attest**: Generate verifiable proof; create cryptographic commitment
+8. **Learn**: Extract patterns; improve the next cycle
+9. **Action**: Convert verified intent into tangible consequence
+10. **Evolve**: Return the new reality to the system as fresh input for the next turn
+
+The `∞` is not decorative. It expresses the system's recursive nature: no final state, only continuous return and re-compilation.
 
 ### Structural Layers
 

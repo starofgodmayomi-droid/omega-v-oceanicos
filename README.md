@@ -18,21 +18,45 @@ A verification-first full-stack ecosystem for observing, verifying, attesting, a
 
 Ω∞v Oceanicos is a system for building trustworthy software through continuous verification and evidence-based evolution.
 
-### The Core Loop
+### The Ω∞v Kernel Loop
 
 ```
-Observe → Verify → Attest → Record → Display → Learn → Return
+VISION → KERNEL → PLATFORM → REALITY → FEEDBACK → EVOLUTION
 ```
+
+The executable loop is:
+
+```
+Observe → Sense → Verify → Remember → Reason → Intent → Attest → Learn → Action → Evolve → ↺
+```
+
+And the identity equation is:
+
+```
+💧 Ω∞v ::= 🌎 ⇄ ✓ ↺ ∞
+```
+
+This means:
+
+- **💧** = flow, intelligence, information in motion
+- **✓** = verification, attestation, trusted reality
+- **🌎** = embodied reality and consequence
+- **↺** = feedback, recursion, memory, return
+- **∞** = continuous evolution without terminal completion
 
 Every observation:
 
 1. **Observed** with metadata (who, when, what, confidence)
-2. **Verified** against rules with evidence paths
-3. **Attested** with cryptographic signatures
-4. **Recorded** in an immutable event log
-5. **Displayed** to users and systems
-6. **Learned** from to improve future verification
-7. **Returned** to observation with better knowledge
+2. **Sensed** as a live signal from the environment
+3. **Verified** against rules with evidence paths
+4. **Remembered** in the runtime memory and event ledger
+5. **Reasoned** through relevance, consequence, and intent
+6. **Attested** with cryptographic signatures
+7. **Learned** from the result and surrounding feedback
+8. **Acted** on through a verified, constrained system path
+9. **Evolved** into the next cycle without reaching a terminal state
+
+This makes the `∞` meaningful: there is no final state, only continual return and adaptation.
 
 ### Why It Matters
 
