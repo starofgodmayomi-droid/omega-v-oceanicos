@@ -92,10 +92,7 @@ describe('Memory streaming reads', () => {
       ...entries[0],
       data: { ...(entries[0].data as Observation), confidence: 0.1 },
     };
-    writeFileSync(
-      persistPath,
-      `${JSON.stringify(tampered)}\n${JSON.stringify(entries[1])}\n`
-    );
+    writeFileSync(persistPath, `${JSON.stringify(tampered)}\n${JSON.stringify(entries[1])}\n`);
 
     await expect(collect(new Memory({ existingEntries: [], persistPath }))).rejects.toThrow(
       /Streaming halted at entry 1: entry hash does not match/
