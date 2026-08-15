@@ -1,6 +1,14 @@
 import { createHash } from 'node:crypto';
-import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+import {
+  appendFileSync,
+  createReadStream,
+  mkdirSync,
+  readFileSync,
+  renameSync,
+  writeFileSync,
+} from 'node:fs';
 import { dirname } from 'node:path';
+import { createInterface } from 'node:readline';
 import { EventLogEntry } from '@omega-v/types';
 
 /**
@@ -14,13 +22,65 @@ export type EventType = EventLogEntry['type'];
 export const GENESIS_HASH = '0'.repeat(64);
 
 /**
+ * MemoryStore: pluggable persistence contract for the provenance chain.
+ *
+ * Any backend (JSON-lines file, SQLite, object storage, in-memory) can
+ * satisfy this interface and be handed to `Memory`. The chain stays
+ * append-only and hash-chained regardless of the backend.
+ */
+export interface MemoryStore {
+  /**
+   * Load every recorded entry, oldest first.
+   * Returns an empty list when nothing has been persisted yet.
+   */
+  load(): EventLogEntry[];
+
+  /**
+   * Stream entries oldest first without holding the whole chain in memory.
+   * Backends that cannot stream may fall back to `load()`.
+   */
+  stream(): AsyncIterable<EventLogEntry>;
+
+  /**
+   * Append a single entry durably.
+   */
+  append(entry: EventLogEntry): void;
+
+  /**
+   * Replace the entire persisted chain (used for compaction / migration).
+   */
+  save(entries: EventLogEntry[]): void;
+}
+
+/**
+ * Parse one JSON-lines payload into entries, surfacing the line number
+ * of any corruption instead of failing with an opaque error.
+ */
+const parseJsonLines = (raw: string, source: string): EventLogEntry[] =>
+  raw
+    .split('\n')
+    .filter((line) => line.trim().length > 0)
+    .map((line, index) => {
+      try {
+        return JSON.parse(line) as EventLogEntry;
+      } catch (error) {
+        throw new Error(
+          `Refusing to load memory from ${source}: ` +
+            `line ${index + 1} is not valid JSON ` +
+            `(${error instanceof Error ? error.message : String(error)})`
+        );
+      }
+    });
+
+/**
  * FileMemoryStore: durable JSON-lines persistence for the provenance chain.
  *
  * Each line of the backing file is one JSON-serialized EventLogEntry.
- * Writes are atomic (temp file + rename) so a crash mid-write can never
- * leave a truncated chain on disk.
+ * Appends are O(1) (single line) while full rewrites stay atomic
+ * (temp file + rename) so a crash mid-rewrite can never leave a
+ * truncated chain on disk.
  */
-export class FileMemoryStore {
+export class FileMemoryStore implements MemoryStore {
   constructor(private readonly filePath: string) {}
 
   /**
@@ -44,20 +104,47 @@ export class FileMemoryStore {
       return [];
     }
 
-    return raw
-      .split('\n')
-      .filter((line) => line.trim().length > 0)
-      .map((line, index) => {
-        try {
-          return JSON.parse(line) as EventLogEntry;
-        } catch (error) {
-          throw new Error(
-            `Refusing to load memory from ${this.filePath}: ` +
-              `line ${index + 1} is not valid JSON ` +
-              `(${error instanceof Error ? error.message : String(error)})`
-          );
-        }
+    return parseJsonLines(raw, this.filePath);
+  }
+
+  /**
+   * Stream entries oldest first, one JSON-lines row at a time.
+   * Never materializes the full chain, so arbitrarily large logs
+   * can be replayed or audited within a constant memory footprint.
+   */
+  public async *stream(): AsyncIterable<EventLogEntry> {
+    let reader: ReturnType<typeof createInterface>;
+    try {
+      reader = createInterface({
+        input: createReadStream(this.filePath, { encoding: 'utf8' }),
+        crlfDelay: Infinity,
       });
+    } catch {
+      return;
+    }
+
+    let lineNumber = 0;
+    for await (const line of reader) {
+      if (line.trim().length === 0) continue;
+      lineNumber += 1;
+      try {
+        yield JSON.parse(line) as EventLogEntry;
+      } catch (error) {
+        throw new Error(
+          `Refusing to stream memory from ${this.filePath}: ` +
+            `line ${lineNumber} is not valid JSON ` +
+            `(${error instanceof Error ? error.message : String(error)})`
+        );
+      }
+    }
+  }
+
+  /**
+   * Append a single entry as one JSON-lines row.
+   */
+  public append(entry: EventLogEntry): void {
+    mkdirSync(dirname(this.filePath), { recursive: true });
+    appendFileSync(this.filePath, `${JSON.stringify(entry)}\n`);
   }
 
   /**
@@ -88,6 +175,12 @@ export interface MemoryOptions {
    * When omitted, memory stays process-local (the zero-state default).
    */
   persistPath?: string;
+
+  /**
+   * A pluggable persistence backend satisfying the MemoryStore contract.
+   * Takes precedence over `persistPath` when both are provided.
+   */
+  store?: MemoryStore;
 }
 
 /**
@@ -99,7 +192,7 @@ export interface MemoryOptions {
  */
 export class Memory {
   private entries: EventLogEntry[] = [];
-  private readonly store?: FileMemoryStore;
+  private readonly store?: MemoryStore;
 
   /**
    * Create a new memory log.
@@ -113,7 +206,9 @@ export class Memory {
       ? { existingEntries: existingEntriesOrOptions }
       : existingEntriesOrOptions;
 
-    if (options.persistPath) {
+    if (options.store) {
+      this.store = options.store;
+    } else if (options.persistPath) {
       this.store = new FileMemoryStore(options.persistPath);
     }
 
@@ -144,8 +239,8 @@ export class Memory {
     entry.hash = Memory.hashEntry(entry);
 
     this.entries.push(entry);
-    this.store?.save(this.entries);
-    return { ...entry };
+    this.store?.append(entry);
+    return entry;
   }
 
   /**
@@ -186,6 +281,41 @@ export class Memory {
    */
   public export(): EventLogEntry[] {
     return this.entries.map((entry) => ({ ...entry }));
+  }
+
+  /**
+   * Stream entries oldest first, verifying the hash chain incrementally
+   * as each entry is yielded. When the chain is persisted, reads come
+   * straight from the store so arbitrarily large histories can be
+   * replayed without being held in memory; otherwise the in-process
+   * chain is streamed. Streaming stops at the first integrity violation.
+   */
+  public async *stream(): AsyncIterable<EventLogEntry> {
+    let expectedPrevious = GENESIS_HASH;
+    let expectedId = 1;
+
+    const source: AsyncIterable<EventLogEntry> = this.store
+      ? this.store.stream()
+      : (async function* (entries: EventLogEntry[]) {
+          for (const entry of entries) yield { ...entry };
+        })(this.entries);
+
+    for await (const entry of source) {
+      if (entry.id !== expectedId) {
+        throw new Error(
+          `Streaming halted at entry ${entry.id}: expected sequential id ${expectedId}`
+        );
+      }
+      if (entry.previousHash !== expectedPrevious) {
+        throw new Error(`Streaming halted at entry ${entry.id}: hash chain link is broken`);
+      }
+      if (entry.hash !== Memory.hashEntry(entry)) {
+        throw new Error(`Streaming halted at entry ${entry.id}: entry hash does not match`);
+      }
+      expectedPrevious = entry.hash;
+      expectedId += 1;
+      yield { ...entry };
+    }
   }
 
   /**
