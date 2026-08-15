@@ -19,6 +19,7 @@ type LoopResult = {
     summary: { passed: boolean; rulesApplied: number; rulesPassed: number; confidence: number };
     evidencePath: Array<{ rule: string; passed: boolean; reasoning: string }>;
   };
+  memory: { id: string; observationId: string; verificationId: string };
   attestation: { id: string; verified: boolean; signature: string; attestedAt: string };
 };
 
@@ -629,6 +630,14 @@ export function App(): JSX.Element {
                         {step.passed ? 'PASS' : 'FAIL'} / {step.reasoning}
                       </p>
                     ))}
+                  </div>
+                </div>
+                <div className="chain-item">
+                  <span className="chain-line" />
+                  <div>
+                    <span>MEMORY / KERNEL RECORD</span>
+                    <code>{result.memory.id}</code>
+                    <small className="memory-note">Recorded in append-only hash chain</small>
                   </div>
                 </div>
                 <div className="chain-item">

@@ -41,25 +41,34 @@ Execute the complete Observe → Verify → Attest cycle from the browser.
 
 ### Verification Visualization
 
-View each step of the verification loop:
+View each step of the MINI kernel and its earned expansions:
 
-1. **Observation** — The claim captured with metadata
+**MINI Kernel (Observe → Verify → Remember):**
+
+1. **Observation** — The claim captured with metadata (Step 1)
    - Unique ID
    - Claim statement
    - Confidence level
    - Source system
 
-2. **Verification** — Rules applied and evidence generated
+2. **Verification / Evidence** — Rules applied and evidence generated (Step 2)
    - Pass/fail status
    - Rules applied and results
    - Evidence path showing step-by-step reasoning
    - Confidence score
 
-3. **Attestation** — Cryptographic signature proving verification
+3. **Memory / Kernel Record** — Stored in append-only hash chain (Step 3)
+   - Memory ID
+   - Link to observation and verification
+   - Immutable record of the complete cycle
+
+**Earned Expansions:**
+
+4. **Attestation** — Cryptographic signature proving verification (+ ATTEST)
    - Attestation ID
    - Verification status
    - Signed timestamp
-   - Signature preview
+   - Signature verification button
 
 ### Current Console
 

@@ -705,6 +705,15 @@ select:focus-visible {
 .evidence-fail {
   color: #ed9986;
 }
+.memory-note {
+  display: block;
+  margin-top: 6px;
+  color: #547b74;
+  font:
+    9px 'DM Mono',
+    monospace;
+  font-style: italic;
+}
 .verify-button {
   display: block;
   margin-top: 10px;
