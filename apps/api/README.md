@@ -16,6 +16,10 @@ npm run dev
 # Server runs on http://localhost:3000
 ```
 
+The API accepts JSON bodies up to 64 KiB and emits request IDs plus baseline
+security headers on every response. Set `OMEGA_SIGNING_KEY` in deployed
+environments to replace the development signing key.
+
 ## Endpoints
 
 ### Health Check

@@ -7,6 +7,7 @@ services:
       NODE_ENV: production
       API_PORT: 3000
       OMEGA_RUNTIME_STORE_PATH: /var/lib/omega/runtime.json
+      OMEGA_SIGNING_KEY: ${OMEGA_SIGNING_KEY:-key-2026-08-container-dev}
     volumes:
       - omega-runtime:/var/lib/omega
     ports:

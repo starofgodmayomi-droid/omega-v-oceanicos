@@ -15,11 +15,13 @@ const app: Express = express();
 const port = process.env.API_PORT || 3000;
 
 // Middleware
-app.use(express.json());
 app.use((req: Request, res: Response, next) => {
   const requestId = req.header('x-request-id') || `req-${randomUUID()}`;
   res.locals.requestId = requestId;
   res.setHeader('x-request-id', requestId);
+  res.setHeader('x-content-type-options', 'nosniff');
+  res.setHeader('x-frame-options', 'DENY');
+  res.setHeader('referrer-policy', 'no-referrer');
   const sendJson = res.json.bind(res);
   res.json = ((body: unknown) => {
     if (body && typeof body === 'object' && 'code' in body) {
@@ -32,11 +34,14 @@ app.use((req: Request, res: Response, next) => {
   }) as Response['json'];
   next();
 });
+app.use(express.json({ limit: '64kb' }));
 
 // Initialize services
 const observer = new Observer();
 const verificationEngine = new VerificationEngine();
-const attestationService = new AttestationService();
+const attestationService = new AttestationService(
+  process.env.OMEGA_SIGNING_KEY || 'key-2026-08-development-v1'
+);
 
 type RuntimeEvent = {
   id: string;

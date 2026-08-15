@@ -114,6 +114,21 @@ describe('API runtime contracts', () => {
     expect(response.headers.get('x-request-id')).toBe('error-contract-1');
   });
 
+  it('publishes baseline security headers and rejects oversized JSON bodies', async () => {
+    const healthResponse = await fetch(`${baseUrl}/health`);
+    expect(healthResponse.headers.get('x-content-type-options')).toBe('nosniff');
+    expect(healthResponse.headers.get('x-frame-options')).toBe('DENY');
+    expect(healthResponse.headers.get('referrer-policy')).toBe('no-referrer');
+
+    const oversizedResponse = await fetch(`${baseUrl}/observe`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ claim: 'x'.repeat(70_000) }),
+    });
+    expect(oversizedResponse.status).toBe(413);
+    expect(oversizedResponse.headers.get('x-content-type-options')).toBe('nosniff');
+  });
+
   it('streams a ready frame and lifecycle events over SSE', async () => {
     const streamResponse = await fetch(`${baseUrl}/events/stream`);
     expect(streamResponse.headers.get('content-type')).toContain('text/event-stream');
