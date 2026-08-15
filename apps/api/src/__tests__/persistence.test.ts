@@ -1,7 +1,14 @@
 import { mkdtempSync, readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { emptySnapshot, loadSnapshot, saveSnapshot, SNAPSHOT_KEYS } from '../persistence';
+import {
+  appendEvent,
+  emptySnapshot,
+  loadSnapshot,
+  readEventLog,
+  saveSnapshot,
+  SNAPSHOT_KEYS,
+} from '../persistence';
 
 type Snap = Record<(typeof SNAPSHOT_KEYS)[number], unknown[]>;
 
@@ -146,5 +153,113 @@ describe('runtime persistence', () => {
       expect(result.source).toBe('corrupt');
       expect(result.reason).toBeDefined();
     });
+  });
+});
+
+describe('append-only event log', () => {
+  let dir: string;
+  let logPath: string;
+
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), 'omega-log-'));
+    logPath = join(dir, 'runtime.log.jsonl');
+  });
+
+  it('writes nothing and reports not appended when disabled', () => {
+    expect(appendEvent(logPath, { id: 'evt-1' }, false).appended).toBe(false);
+    expect(existsSync(logPath)).toBe(false);
+  });
+
+  it('reports missing rather than empty when no log exists', () => {
+    const result = readEventLog(join(dir, 'absent.jsonl'), true);
+
+    expect(result.source).toBe('missing');
+    expect(result.entries).toEqual([]);
+    expect(result.reason).toBeDefined();
+  });
+
+  it('reports disabled without touching the filesystem', () => {
+    const result = readEventLog(logPath, false);
+
+    expect(result.source).toBe('disabled');
+    expect(result.skipped).toBe(0);
+  });
+
+  it('creates the parent directory on first append', () => {
+    const nested = join(dir, 'deep', 'runtime.log.jsonl');
+
+    expect(appendEvent(nested, { id: 'evt-1' }, true).appended).toBe(true);
+    expect(existsSync(nested)).toBe(true);
+  });
+
+  it('appends without rewriting earlier entries', () => {
+    appendEvent(logPath, { id: 'evt-1' }, true);
+    const afterFirst = readFileSync(logPath, 'utf8');
+
+    appendEvent(logPath, { id: 'evt-2' }, true);
+    const afterSecond = readFileSync(logPath, 'utf8');
+
+    expect(afterSecond.startsWith(afterFirst)).toBe(true);
+  });
+
+  it('preserves every entry in order, beyond the in-memory window', () => {
+    for (let index = 0; index < 120; index += 1) {
+      appendEvent(logPath, { id: `evt-${index}` }, true);
+    }
+
+    const result = readEventLog<{ id: string }>(logPath, true);
+
+    expect(result.source).toBe('restored');
+    expect(result.entries).toHaveLength(120);
+    expect(result.entries[0].id).toBe('evt-0');
+    expect(result.entries[119].id).toBe('evt-119');
+    expect(result.skipped).toBe(0);
+  });
+
+  it('keeps history that the bounded runtime window would have dropped', () => {
+    const window = 40;
+    for (let index = 0; index < window + 5; index += 1) {
+      appendEvent(logPath, { id: `evt-${index}` }, true);
+    }
+
+    const result = readEventLog<{ id: string }>(logPath, true);
+
+    expect(result.entries).toHaveLength(window + 5);
+    expect(result.entries.map((entry) => entry.id)).toContain('evt-0');
+  });
+
+  it('reports a partial read rather than silently dropping a bad line', () => {
+    appendEvent(logPath, { id: 'evt-1' }, true);
+    writeFileSync(logPath, `${readFileSync(logPath, 'utf8')}{ not json\n`);
+    appendEvent(logPath, { id: 'evt-2' }, true);
+
+    const result = readEventLog<{ id: string }>(logPath, true);
+
+    expect(result.source).toBe('partial');
+    expect(result.skipped).toBe(1);
+    expect(result.reason).toContain('1');
+    expect(result.entries.map((entry) => entry.id)).toEqual(['evt-1', 'evt-2']);
+  });
+
+  it('ignores blank lines without counting them as damage', () => {
+    appendEvent(logPath, { id: 'evt-1' }, true);
+    writeFileSync(logPath, `${readFileSync(logPath, 'utf8')}\n\n`);
+
+    const result = readEventLog(logPath, true);
+
+    expect(result.source).toBe('restored');
+    expect(result.skipped).toBe(0);
+    expect(result.entries).toHaveLength(1);
+  });
+
+  it('reports a reason when the append itself fails', () => {
+    // A regular file where a directory is required: mkdirSync raises ENOTDIR.
+    const blocker = join(dir, 'blocker');
+    writeFileSync(blocker, 'not a directory');
+
+    const outcome = appendEvent(join(blocker, 'runtime.log.jsonl'), { id: 'x' }, true);
+
+    expect(outcome.appended).toBe(false);
+    expect(outcome.reason).toBeDefined();
   });
 });

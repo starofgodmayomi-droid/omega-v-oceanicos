@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+import { appendFileSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 
 /**
@@ -112,4 +112,95 @@ export const saveSnapshot = (
   writeFileSync(temporaryPath, JSON.stringify(snapshot, null, 2));
   renameSync(temporaryPath, storePath);
   return true;
+};
+
+/**
+ * Append-only event log.
+ *
+ * Invariant 4 states that nothing is deleted and the event log is
+ * append-only. The runtime arrays do not satisfy that: they are spliced to a
+ * fixed length and the truncated result is what gets persisted, so history
+ * was being destroyed both in memory and on disk.
+ *
+ * These functions provide the durable log the invariant describes. The
+ * in-memory arrays remain a bounded recent window over it.
+ */
+
+export interface AppendOutcome {
+  appended: boolean;
+  reason?: string;
+}
+
+export type EventLogSource = 'disabled' | 'missing' | 'restored' | 'partial';
+
+export interface EventLogRead<T> {
+  entries: T[];
+  source: EventLogSource;
+  /** Lines that could not be parsed. Reported, never silently dropped. */
+  skipped: number;
+  reason?: string;
+}
+
+/**
+ * Append one entry as a single JSON line.
+ *
+ * Uses O_APPEND so concurrent writers interleave whole lines rather than
+ * corrupting each other, and never rewrites existing content.
+ */
+export const appendEvent = (logPath: string, entry: unknown, enabled: boolean): AppendOutcome => {
+  if (!enabled) return { appended: false };
+
+  try {
+    mkdirSync(dirname(logPath), { recursive: true });
+    appendFileSync(logPath, `${JSON.stringify(entry)}\n`);
+    return { appended: true };
+  } catch (error) {
+    return {
+      appended: false,
+      reason: error instanceof Error ? error.message : 'append failed',
+    };
+  }
+};
+
+/**
+ * Read the whole log back.
+ *
+ * A malformed line does not discard the rest of the history; it is counted
+ * and the source becomes 'partial' so the caller knows the read was lossy.
+ */
+export const readEventLog = <T>(logPath: string, enabled: boolean): EventLogRead<T> => {
+  if (!enabled) {
+    return { entries: [], source: 'disabled', skipped: 0 };
+  }
+
+  let raw: string;
+  try {
+    raw = readFileSync(logPath, 'utf8');
+  } catch (error) {
+    return {
+      entries: [],
+      source: 'missing',
+      skipped: 0,
+      reason: error instanceof Error ? error.message : 'log could not be read',
+    };
+  }
+
+  const entries: T[] = [];
+  let skipped = 0;
+
+  for (const line of raw.split('\n')) {
+    if (line.trim() === '') continue;
+    try {
+      entries.push(JSON.parse(line) as T);
+    } catch {
+      skipped += 1;
+    }
+  }
+
+  return {
+    entries,
+    source: skipped > 0 ? 'partial' : 'restored',
+    skipped,
+    reason: skipped > 0 ? `${skipped} line(s) could not be parsed` : undefined,
+  };
 };

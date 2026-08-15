@@ -4,7 +4,7 @@ import { Observer } from '@omega-v/observer';
 import { VerificationEngine } from '@omega-v/verification';
 import { AttestationService } from '@omega-v/attestation';
 import { Attestation, SuccessResponse, ErrorResponse, VerificationRule } from '@omega-v/types';
-import { loadSnapshot, saveSnapshot } from './persistence';
+import { appendEvent, loadSnapshot, readEventLog, saveSnapshot } from './persistence';
 
 /**
  * Ω∞v Oceanicos API Server
@@ -90,6 +90,13 @@ const runtimeStorePath =
   process.env.OMEGA_RUNTIME_STORE_PATH || '/tmp/omega-v-oceanicos/runtime.json';
 
 /**
+ * Durable append-only event log. The runtime arrays below are a bounded
+ * recent window; this file is the history invariant 4 promises.
+ */
+const eventLogPath =
+  process.env.OMEGA_EVENT_LOG_PATH || `${runtimeStorePath.replace(/\.json$/, '')}.log.jsonl`;
+
+/**
  * Persistence defaults off under test and on everywhere else, but the
  * default is now explicitly overridable so the behaviour can be verified
  * rather than assumed.
@@ -125,14 +132,21 @@ const persistRuntime = (): void => {
   );
 };
 
+/** How many recent events the in-memory runtime keeps. Not a history limit. */
+const RECENT_EVENT_WINDOW = 40;
+
 const recordEvent = (event: Omit<RuntimeEvent, 'id' | 'timestamp'>): RuntimeEvent => {
   const recorded: RuntimeEvent = {
     ...event,
     id: `evt-${Date.now()}-${runtimeEvents.length + 1}`,
     timestamp: new Date().toISOString(),
   };
+  // Durable history first: the log is append-only and never truncated.
+  appendEvent(eventLogPath, recorded, persistenceEnabled);
+
+  // The in-memory array is a bounded recent window, not the log itself.
   runtimeEvents.unshift(recorded);
-  runtimeEvents.splice(40);
+  runtimeEvents.splice(RECENT_EVENT_WINDOW);
   persistRuntime();
   for (const stream of eventStreams) {
     stream.write(`data: ${JSON.stringify(recorded)}\n\n`);
@@ -210,7 +224,28 @@ app.get('/state', (_req: Request, res: Response) => {
 });
 
 app.get('/events', (_req: Request, res: Response) => {
-  res.json({ data: runtimeEvents, timestamp: new Date().toISOString() });
+  res.json({
+    data: runtimeEvents,
+    meta: { window: RECENT_EVENT_WINDOW, note: 'recent window; see /log for full history' },
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/**
+ * GET /log - The append-only event history
+ */
+app.get('/log', (_req: Request, res: Response) => {
+  const log = readEventLog<RuntimeEvent>(eventLogPath, persistenceEnabled);
+  res.json({
+    data: log.entries,
+    meta: {
+      source: log.source,
+      skipped: log.skipped,
+      reason: log.reason ?? null,
+      appendOnly: true,
+    },
+    timestamp: new Date().toISOString(),
+  });
 });
 
 app.get('/events/stream', (req: Request, res: Response) => {
