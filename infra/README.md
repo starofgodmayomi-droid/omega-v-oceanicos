@@ -1,55 +1,56 @@
 # Infrastructure
 
-Deployment and infrastructure configuration for Ω∞v Oceanicos.
+## What exists
 
-## Structure
+One deployment artifact: a single container image serving the API and, when
+built, the web client from the same origin.
 
-- **docker/** — Docker configurations
-  - `docker-compose.yml` — Local development stack
-  - `Dockerfile.api` — API server image
-  - `Dockerfile.web` — Web dashboard image
-- **kubernetes/** — Kubernetes manifests (coming soon)
-- **scripts/** — Deployment and automation scripts
-- **terraform/** — Infrastructure as Code (coming soon)
+- **[`../apps/api/Dockerfile`](../apps/api/Dockerfile)** — multi-stage build on
+  `node:20-alpine`, runs as a non-root user, no signing key baked in.
+- **[`../.github/workflows/verify.yml`](../.github/workflows/verify.yml)** — the
+  `docker` job builds the image and smoke tests a running container on every
+  pull request; the `publish` job pushes it to GHCR with a signed provenance
+  attestation on every merge to `main`.
 
-## Quick Start
+The Dockerfile lives beside the application it packages rather than here,
+because it needs the workspace root as its build context and belongs with the
+code it builds.
 
-### Local Development Stack
-
-```bash
-cd infra/docker
-docker-compose up -d
-```
-
-Services:
-- **api**: http://localhost:3000
-- **web**: http://localhost:3001
-- **postgres**: localhost:5432
-- **redis**: localhost:6379
-
-### Environment Setup
+## Running the published image
 
 ```bash
-cp .env.example .env.local
-docker-compose up -d
+docker run -p 3000:3000 \
+  -e OMEGA_SIGNING_KEY="$(openssl rand -hex 32)" \
+  ghcr.io/starofgodmayomi-droid/omega-v-oceanicos-api:latest
 ```
 
-## Production Deployment
-
-### Prerequisites
-
-- Docker & Docker Compose 2.0+
-- Kubernetes 1.25+ (optional)
-- PostgreSQL 14+ (managed or self-hosted)
-
-### Deploy to Production
+Verify its provenance before trusting it:
 
 ```bash
-./scripts/deploy.sh --environment production
+gh attestation verify \
+  oci://ghcr.io/starofgodmayomi-droid/omega-v-oceanicos-api:latest \
+  --repo starofgodmayomi-droid/omega-v-oceanicos
 ```
 
-See [./deploy.md](./deploy.md) for detailed deployment guide (coming soon).
+## Environment
 
----
+| Variable | Required | Default | Purpose |
+| --- | --- | --- | --- |
+| `OMEGA_SIGNING_KEY` | **yes** | none | HMAC key for attestations. The service refuses to start without it. A key shipped in an image is a key held by everyone who pulls it. |
+| `API_PORT` | no | `3000` | Listen port. |
+| `OMEGA_RUNTIME_STORE_PATH` | no | `/var/lib/omega-v/runtime.json` | Runtime snapshot. |
+| `OMEGA_EVENT_LOG_PATH` | no | derived from the store path | Append-only event log. |
+| `OMEGA_MEMORY_PATH` | no | `/tmp/omega-v-oceanicos/memory.jsonl` | Kernel hash chain. |
+| `OMEGA_PERSISTENCE` | no | on outside tests | `on` or `off`, overriding the default. |
+| `OMEGA_WEB_DIST` | no | `apps/web/dist` | Client bundle to serve. |
 
-See [../../CONTRIBUTING.md](../../CONTRIBUTING.md) for infrastructure contribution guidelines.
+## What does not exist
+
+Stated plainly, because this file previously described all of it as though it
+did: there is no Compose file, no Kubernetes manifest, no Terraform, no
+deployment script, no database and no cache. The image has never been deployed
+to a host. Storage is the container filesystem, which means runtime state does
+not survive a restart unless a volume is mounted at the paths above.
+
+The project's own first rule is not to pretend anything exists until it has
+been inspected or built. This file is now subject to it.
