@@ -1,10 +1,4 @@
-import {
-  appendFileSync,
-  mkdirSync,
-  readFileSync,
-  renameSync,
-  writeFileSync,
-} from 'node:fs';
+import { appendFileSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 
 /**
@@ -120,7 +114,6 @@ export const saveSnapshot = (
   return true;
 };
 
-
 /**
  * Append-only event log.
  *
@@ -154,11 +147,7 @@ export interface EventLogRead<T> {
  * Uses O_APPEND so concurrent writers interleave whole lines rather than
  * corrupting each other, and never rewrites existing content.
  */
-export const appendEvent = (
-  logPath: string,
-  entry: unknown,
-  enabled: boolean
-): AppendOutcome => {
+export const appendEvent = (logPath: string, entry: unknown, enabled: boolean): AppendOutcome => {
   if (!enabled) return { appended: false };
 
   try {
