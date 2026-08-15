@@ -106,7 +106,9 @@ describe('AttestationService — signing key handling', () => {
     expect(service.verify({ ...attestation, signature: '' })).toBe(false);
     expect(service.verify({ ...attestation, verificationId: '' })).toBe(false);
     expect(service.verify({ ...attestation, observationId: '' })).toBe(false);
-    expect(service.verify({ ...attestation, status: 'revoked' })).toBe(false);
+    expect(service.verify({ ...attestation, status: 'revoked' })).toBe(
+      false
+    );
   });
 });
 
