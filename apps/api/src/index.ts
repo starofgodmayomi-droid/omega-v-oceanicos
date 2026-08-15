@@ -98,8 +98,11 @@ const persistenceEnabled = process.env.OMEGA_PERSISTENCE
   ? process.env.OMEGA_PERSISTENCE === 'on'
   : process.env.NODE_ENV !== 'test';
 
-const { snapshot, source: persistenceSource, reason: persistenceReason } =
-  loadSnapshot<RuntimeSnapshot>(runtimeStorePath, persistenceEnabled);
+const {
+  snapshot,
+  source: persistenceSource,
+  reason: persistenceReason,
+} = loadSnapshot<RuntimeSnapshot>(runtimeStorePath, persistenceEnabled);
 
 const runtimeEvents = snapshot.events;
 const eventStreams = new Set<Response>();
@@ -121,7 +124,6 @@ const persistRuntime = (): void => {
     persistenceEnabled
   );
 };
-
 
 const recordEvent = (event: Omit<RuntimeEvent, 'id' | 'timestamp'>): RuntimeEvent => {
   const recorded: RuntimeEvent = {

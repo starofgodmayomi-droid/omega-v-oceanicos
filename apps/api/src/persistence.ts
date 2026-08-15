@@ -100,7 +100,11 @@ export const loadSnapshot = <T extends AnySnapshot>(
  *
  * Returns whether anything was written.
  */
-export const saveSnapshot = (storePath: string, snapshot: AnySnapshot, enabled: boolean): boolean => {
+export const saveSnapshot = (
+  storePath: string,
+  snapshot: AnySnapshot,
+  enabled: boolean
+): boolean => {
   if (!enabled) return false;
 
   mkdirSync(dirname(storePath), { recursive: true });
