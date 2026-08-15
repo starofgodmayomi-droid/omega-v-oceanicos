@@ -19,6 +19,13 @@ export default {
   collectCoverageFrom: [
     'packages/*/src/**/*.ts',
     'apps/*/src/**/*.ts',
+    // Known gap, stated rather than hidden: the .ts glob silently excludes
+    // apps/web/src/App.tsx, the largest source file in the repository, from
+    // the coverage denominator. The reported percentage is therefore a
+    // percentage of the server, not of the repo. Covering it needs jsdom and
+    // a component testing setup that does not exist yet; until then the
+    // exclusion is explicit here so the number is not read as more than it is.
+    '!apps/web/src/**',
     '!**/*.d.ts',
     '!**/node_modules/**',
     '!**/dist/**',
