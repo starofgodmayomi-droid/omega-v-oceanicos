@@ -64,9 +64,7 @@ describe('API Ed25519 integration', () => {
     expect(result.data.fingerprint).toBe(result.data.keyId);
     expect(result.data.keyVersion).toBe('test-ed25519-v1');
     expect(result.data.publicKey).toContain('BEGIN PUBLIC KEY');
-    expect(JSON.stringify(result.data)).not.toContain(
-      process.env.OMEGA_ED25519_PRIVATE_KEY!
-    );
+    expect(JSON.stringify(result.data)).not.toContain(process.env.OMEGA_ED25519_PRIVATE_KEY!);
   });
 
   it('signs, verifies, and preserves Ed25519 provenance through the full API loop', async () => {
