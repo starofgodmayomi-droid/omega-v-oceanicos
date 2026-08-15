@@ -1,6 +1,28 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { Attestation, VerificationResult } from '@omega-v/types';
 
+/** Environment variable read when no signing key is passed explicitly. */
+export const SIGNING_KEY_ENV = 'OMEGA_SIGNING_KEY';
+
+/**
+ * Raised when no signing key is available.
+ *
+ * Invariant 3 requires attestations to be unforgeable. A key committed to
+ * source, or a shared default, makes every signature reproducible by anyone
+ * holding the repository. Failing loudly at construction is the only honest
+ * behaviour: a service that silently signs with a public key produces
+ * attestations that assert rather than attest.
+ */
+export class MissingSigningKeyError extends Error {
+  constructor() {
+    super(
+      `No signing key available. Pass one to the AttestationService constructor ` +
+        `or set ${SIGNING_KEY_ENV}. Refusing to sign with a default key.`
+    );
+    this.name = 'MissingSigningKeyError';
+  }
+}
+
 /**
  * AttestationService: Cryptographically signs verification results
  *
@@ -8,13 +30,25 @@ import { Attestation, VerificationResult } from '@omega-v/types';
  * Creates unforgeable proof of verification at a specific time
  */
 export class AttestationService {
+  private signingKey: string;
+  private keyVersion: string;
+
   /**
-   * Create a new attestation service
+   * Create a new attestation service.
+   *
+   * @param signingKey - Secret HMAC key. Falls back to process.env[SIGNING_KEY_ENV].
+   * @param keyVersion - Version label recorded on every attestation.
+   * @throws MissingSigningKeyError when neither a key argument nor the
+   *         environment variable is present.
    */
-  constructor(
-    private signingKey: string = 'key-2026-08-production-v1',
-    private keyVersion: string = '1'
-  ) {}
+  constructor(signingKey?: string, keyVersion: string = '1') {
+    const key = signingKey ?? process.env[SIGNING_KEY_ENV];
+    if (!key) {
+      throw new MissingSigningKeyError();
+    }
+    this.signingKey = key;
+    this.keyVersion = keyVersion;
+  }
 
   /**
    * Attest a verification result
@@ -35,7 +69,7 @@ export class AttestationService {
       verified: verificationResult.summary.passed,
       confidence: verificationResult.summary.confidence,
       signature: '',
-      signingKey: this.signingKey,
+      signingKey: this.keyFingerprint(),
       keyVersion: this.keyVersion,
       signingAlgorithm: options?.algorithm || 'HMAC-SHA256',
       attestedAt: new Date().toISOString(),
@@ -51,7 +85,6 @@ export class AttestationService {
 
   /**
    * Verify an attestation signature
-   * In a real system, this would use the public key
    */
   public verify(attestation: Attestation): boolean {
     if (!attestation.signature || !attestation.verificationId || !attestation.observationId) {
@@ -101,11 +134,23 @@ export class AttestationService {
   }
 
   /**
-   * Get signing key information
+   * Non-reversible identifier for the active key.
+   * Recorded on attestations so signatures can be traced to a key without
+   * publishing the key itself.
    */
-  public getKeyInfo(): { key: string; version: string } {
+  public keyFingerprint(): string {
+    return `sha256:${createHmac('sha256', 'omega-v-key-fingerprint')
+      .update(this.signingKey)
+      .digest('hex')
+      .slice(0, 16)}`;
+  }
+
+  /**
+   * Get non-secret signing key information.
+   */
+  public getKeyInfo(): { fingerprint: string; version: string } {
     return {
-      key: this.signingKey,
+      fingerprint: this.keyFingerprint(),
       version: this.keyVersion,
     };
   }
@@ -114,6 +159,9 @@ export class AttestationService {
    * Rotate to a new signing key
    */
   public rotateKey(newKey: string, newVersion: string): void {
+    if (!newKey) {
+      throw new MissingSigningKeyError();
+    }
     this.signingKey = newKey;
     this.keyVersion = newVersion;
   }
