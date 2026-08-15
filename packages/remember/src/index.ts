@@ -223,7 +223,7 @@ export class Remember {
   }
 }
 
-export { FileMemoryStore, MemoryStore } from './store';
-export type { StoreSource } from './store';
+export { FileMemoryStore } from './store';
+export type { MemoryStore, StoreSource } from './store';
 
 export default Remember;
