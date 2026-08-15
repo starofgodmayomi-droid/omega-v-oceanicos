@@ -3,6 +3,7 @@ import express, { Express, Request, Response } from 'express';
 import { Observer } from '@omega-v/observer';
 import { VerificationEngine } from '@omega-v/verification';
 import { AttestationService } from '@omega-v/attestation';
+import { Remember, FileMemoryStore } from '@omega-v/remember';
 import { Attestation, SuccessResponse, ErrorResponse, VerificationRule } from '@omega-v/types';
 import { appendEvent, loadSnapshot, readEventLog, saveSnapshot } from './persistence.js';
 
@@ -36,6 +37,19 @@ app.use((req: Request, res: Response, next) => {
 const observer = new Observer();
 const verificationEngine = new VerificationEngine();
 const attestationService = new AttestationService();
+
+/**
+ * The MINI kernel's memory, wired into the API.
+ *
+ * packages/remember was fully verified and imported by nothing: the
+ * kernel was an island beside the API's own runtime arrays. This makes
+ * the API a consumer of it, so completed loops enter a hash-chained,
+ * append-only record whose integrity can be checked rather than assumed.
+ */
+const memoryPath = process.env.OMEGA_MEMORY_PATH || '/tmp/omega-v-oceanicos/memory.jsonl';
+const kernelMemory = new Remember(
+  process.env.NODE_ENV === 'test' ? undefined : new FileMemoryStore(memoryPath)
+);
 
 type RuntimeEvent = {
   id: string;
@@ -638,6 +652,11 @@ app.post('/complete-loop', (req: Request, res: Response) => {
       attestation,
     });
     completedRuns.splice(20);
+
+    // Enter the kernel's hash chain. Unlike completedRuns, which is a
+    // bounded window, this is append-only and integrity-checkable.
+    const remembered = kernelMemory.remember(observation, verificationResult);
+
     persistRuntime();
     recordEvent({
       type: 'attestation.created',
@@ -646,7 +665,7 @@ app.post('/complete-loop', (req: Request, res: Response) => {
       status: attestation.verified ? 'passed' : 'failed',
       correlationId,
       requestId,
-      details: { attestationId: attestation.id },
+      details: { attestationId: attestation.id, memoryId: remembered.id },
     });
 
     const response: SuccessResponse<{
@@ -671,6 +690,32 @@ app.post('/complete-loop', (req: Request, res: Response) => {
     };
     res.status(400).json(errorResponse);
   }
+});
+
+/**
+ * GET /memory - The kernel's hash-chained memory
+ */
+app.get('/memory', (_req: Request, res: Response) => {
+  res.json({
+    data: kernelMemory.all(),
+    meta: {
+      size: kernelMemory.size(),
+      appendOnly: true,
+      durable: process.env.NODE_ENV !== 'test',
+    },
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/**
+ * GET /memory/integrity - Recompute the chain and report whether it holds
+ */
+app.get('/memory/integrity', (_req: Request, res: Response) => {
+  const intact = kernelMemory.verifyIntegrity();
+  res.status(intact ? 200 : 409).json({
+    data: { intact, entries: kernelMemory.size() },
+    timestamp: new Date().toISOString(),
+  });
 });
 
 /**
@@ -740,6 +785,8 @@ const startServer = () =>
         '  GET    /events           - Recent lifecycle events',
         '  GET    /events/stream    - Live lifecycle events',
         '  GET    /log              - Append-only event history',
+        '  GET    /memory           - Kernel hash-chained memory',
+        '  GET    /memory/integrity - Verify the memory chain',
         '  GET    /runs             - Completed runs',
         '  POST   /act              - Authorize an action',
         '  POST   /learn            - Record learning',

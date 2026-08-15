@@ -25,6 +25,7 @@ RUN pnpm --filter @omega-v/types build \
  && pnpm --filter @omega-v/observer build \
  && pnpm --filter @omega-v/verification build \
  && pnpm --filter @omega-v/attestation build \
+ && pnpm --filter @omega-v/remember build \
  && pnpm --filter @omega-v/api build
 
 FROM node:20-alpine AS runtime
