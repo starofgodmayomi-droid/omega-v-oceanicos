@@ -214,7 +214,10 @@ describe('API loop: act, learn, recompile', () => {
 
   it('exposes the MINI kernel memory step in complete-loop response', async () => {
     const loop = (await (
-      await post('/complete-loop', loopInput('memory exposed', { statusCode: 200, responseTime: 42 }))
+      await post(
+        '/complete-loop',
+        loopInput('memory exposed', { statusCode: 200, responseTime: 42 })
+      )
     ).json()) as Body<Loop>;
 
     expect(loop.data.memory).toBeDefined();

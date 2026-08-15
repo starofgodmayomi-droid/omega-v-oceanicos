@@ -1,8 +1,14 @@
-import { createHmac, timingSafeEqual } from 'node:crypto';
+import { createHmac, timingSafeEqual, sign, verify } from 'node:crypto';
 import { Attestation, VerificationResult } from '@omega-v/types';
 
 /** Environment variable read when no signing key is passed explicitly. */
 export const SIGNING_KEY_ENV = 'OMEGA_SIGNING_KEY';
+
+/** Environment variable for Ed25519 private key (if using asymmetric signing). */
+export const ED25519_KEY_ENV = 'OMEGA_ED25519_KEY';
+
+/** Supported signing algorithms */
+export type SigningAlgorithm = 'HMAC-SHA256' | 'Ed25519';
 
 /**
  * Raised when no signing key is available.
@@ -14,40 +20,137 @@ export const SIGNING_KEY_ENV = 'OMEGA_SIGNING_KEY';
  * attestations that assert rather than attest.
  */
 export class MissingSigningKeyError extends Error {
-  constructor() {
+  constructor(message?: string) {
     super(
-      `No signing key available. Pass one to the AttestationService constructor ` +
-        `or set ${SIGNING_KEY_ENV}. Refusing to sign with a default key.`
+      message ||
+        `No signing key available. Pass one to the AttestationService constructor ` +
+          `or set ${SIGNING_KEY_ENV}. Refusing to sign with a default key.`
     );
     this.name = 'MissingSigningKeyError';
   }
 }
 
 /**
+ * The exact bytes covered by a signature.
+ *
+ * Shared by the signer and by every verifier, including ones outside this
+ * process. A verifier that reconstructs this differently verifies nothing.
+ */
+function createSignaturePayload(attestation: Attestation): Record<string, unknown> {
+  return {
+    verificationId: attestation.verificationId,
+    observationId: attestation.observationId,
+    verified: attestation.verified,
+    confidence: attestation.confidence,
+    ruleVersions: attestation.ruleVersions,
+    attestedAt: attestation.attestedAt,
+    attestedBy: attestation.attestedBy,
+    keyVersion: attestation.keyVersion,
+  };
+}
+
+/**
+ * Verify an Ed25519 attestation with only the public key.
+ *
+ * This is the point of asymmetric signing: a stranger holding the public key
+ * can check the signature without the ability to produce one. HMAC cannot do
+ * this — verifying an HMAC requires the same secret that signs it, so anyone
+ * who can check an attestation can also forge one.
+ */
+export function verifyEd25519(attestation: Attestation, publicKey: string): boolean {
+  if (!attestation.signature || !attestation.verificationId || !attestation.observationId) {
+    return false;
+  }
+  if (attestation.status !== 'signed') {
+    return false;
+  }
+  if (attestation.signingAlgorithm !== 'Ed25519') {
+    return false;
+  }
+  try {
+    const signature = Buffer.from(attestation.signature.replace(/^0x/, ''), 'hex');
+    const payload = JSON.stringify(createSignaturePayload(attestation));
+    return verify(null, Buffer.from(payload), publicKey, signature);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Configuration for attestation signing
+ */
+export interface AttestationConfig {
+  /** Which algorithm to use for signing */
+  algorithm?: SigningAlgorithm;
+  /** Secret key (HMAC or Ed25519 private key) */
+  signingKey?: string;
+  /** Public key for Ed25519 (optional, used for external verification) */
+  publicKey?: string;
+  /** Version label recorded on every attestation */
+  keyVersion?: string;
+}
+
+/**
  * AttestationService: Cryptographically signs verification results
  *
- * Step 3 of the verification loop
- * Creates unforgeable proof of verification at a specific time
+ * Supports both HMAC-SHA256 (symmetric, backward compatible) and Ed25519 (asymmetric, for external verification).
+ * Attestations include algorithm info so verifiers can use the correct algorithm.
  */
 export class AttestationService {
   private signingKey: string;
+  private publicKey: string | null;
   private keyVersion: string;
+  private algorithm: SigningAlgorithm;
 
   /**
    * Create a new attestation service.
    *
-   * @param signingKey - Secret HMAC key. Falls back to process.env[SIGNING_KEY_ENV].
-   * @param keyVersion - Version label recorded on every attestation.
+   * Accepts an {@link AttestationConfig}, or `(signingKey, keyVersion)` for
+   * compatibility with the original HMAC-only signature.
+   *
+   * Ed25519 verification requires `publicKey`; it is not derived from the
+   * private key, and without it {@link verify} returns false rather than
+   * passing an unchecked signature.
+   *
    * @throws MissingSigningKeyError when neither a key argument nor the
-   *         environment variable is present.
+   *         matching environment variable is present.
    */
-  constructor(signingKey?: string, keyVersion: string = '1') {
-    const key = signingKey ?? process.env[SIGNING_KEY_ENV];
-    if (!key) {
-      throw new MissingSigningKeyError();
+  constructor(config?: AttestationConfig | string, keyVersion?: string) {
+    // Handle backward compatibility: old API was (signingKey, keyVersion)
+    let algorithm: SigningAlgorithm = 'HMAC-SHA256';
+    let signingKey: string | undefined;
+    let publicKey: string | undefined;
+    let version: string;
+
+    if (typeof config === 'string') {
+      // Old API: new AttestationService(key, version)
+      signingKey = config;
+      version = keyVersion || '1';
+    } else {
+      // New API: new AttestationService({ ... })
+      algorithm = config?.algorithm || 'HMAC-SHA256';
+      signingKey = config?.signingKey;
+      publicKey = config?.publicKey;
+      version = config?.keyVersion || '1';
     }
+
+    const key =
+      algorithm === 'Ed25519'
+        ? (signingKey ?? process.env[ED25519_KEY_ENV])
+        : (signingKey ?? process.env[SIGNING_KEY_ENV]);
+
+    if (!key) {
+      const envVar = algorithm === 'Ed25519' ? ED25519_KEY_ENV : SIGNING_KEY_ENV;
+      throw new MissingSigningKeyError(
+        `No ${algorithm} key available. Pass one to the AttestationService constructor ` +
+          `or set ${envVar}. Refusing to sign with a default key.`
+      );
+    }
+
     this.signingKey = key;
-    this.keyVersion = keyVersion;
+    this.keyVersion = version;
+    this.algorithm = algorithm;
+    this.publicKey = publicKey || null;
   }
 
   /**
@@ -58,9 +161,11 @@ export class AttestationService {
     verificationResult: VerificationResult,
     options?: {
       attestedBy?: string;
-      algorithm?: string;
+      algorithm?: SigningAlgorithm;
     }
   ): Attestation {
+    const algorithm = options?.algorithm || this.algorithm;
+
     // Create attestation
     const attestation: Attestation = {
       id: this.generateAttestationId(),
@@ -71,20 +176,24 @@ export class AttestationService {
       signature: '',
       signingKey: this.keyFingerprint(),
       keyVersion: this.keyVersion,
-      signingAlgorithm: options?.algorithm || 'HMAC-SHA256',
+      signingAlgorithm: algorithm,
       attestedAt: new Date().toISOString(),
       attestedBy: options?.attestedBy || 'attestation-service',
       ruleVersions: verificationResult.ruleVersions,
       status: 'signed',
     };
 
-    attestation.signature = this.generateSignature(this.createSignaturePayload(attestation));
+    attestation.signature = this.generateSignature(
+      this.createSignaturePayload(attestation),
+      algorithm
+    );
 
     return attestation;
   }
 
   /**
    * Verify an attestation signature
+   * Auto-detects algorithm from attestation.signingAlgorithm
    */
   public verify(attestation: Attestation): boolean {
     if (!attestation.signature || !attestation.verificationId || !attestation.observationId) {
@@ -101,27 +210,37 @@ export class AttestationService {
       return false;
     }
 
-    const expectedSignature = this.generateSignature(this.createSignaturePayload(attestation));
+    const algorithm = (attestation.signingAlgorithm as SigningAlgorithm) || 'HMAC-SHA256';
+
+    if (algorithm === 'Ed25519') {
+      if (!this.publicKey) {
+        return false;
+      }
+      return verifyEd25519(attestation, this.publicKey);
+    }
+
+    const expectedSignature = this.generateSignature(
+      this.createSignaturePayload(attestation),
+      algorithm
+    );
     const actual = Buffer.from(attestation.signature.replace(/^0x/, ''), 'hex');
     const expected = Buffer.from(expectedSignature.replace(/^0x/, ''), 'hex');
     return actual.length === expected.length && timingSafeEqual(actual, expected);
   }
 
-  private generateSignature(payload: Record<string, unknown>): string {
-    return `0x${createHmac('sha256', this.signingKey).update(JSON.stringify(payload)).digest('hex')}`;
+  private generateSignature(payload: Record<string, unknown>, algorithm: SigningAlgorithm): string {
+    const payloadStr = JSON.stringify(payload);
+
+    if (algorithm === 'Ed25519') {
+      const signatureBuffer = sign(null, Buffer.from(payloadStr), this.signingKey);
+      return `0x${signatureBuffer.toString('hex')}`;
+    } else {
+      return `0x${createHmac('sha256', this.signingKey).update(payloadStr).digest('hex')}`;
+    }
   }
 
   private createSignaturePayload(attestation: Attestation): Record<string, unknown> {
-    return {
-      verificationId: attestation.verificationId,
-      observationId: attestation.observationId,
-      verified: attestation.verified,
-      confidence: attestation.confidence,
-      ruleVersions: attestation.ruleVersions,
-      attestedAt: attestation.attestedAt,
-      attestedBy: attestation.attestedBy,
-      keyVersion: attestation.keyVersion,
-    };
+    return createSignaturePayload(attestation);
   }
 
   /**
@@ -147,23 +266,34 @@ export class AttestationService {
 
   /**
    * Get non-secret signing key information.
+   * For Ed25519, includes the public key if available.
    */
-  public getKeyInfo(): { fingerprint: string; version: string } {
+  public getKeyInfo(): {
+    fingerprint: string;
+    version: string;
+    algorithm: SigningAlgorithm;
+    publicKey?: string;
+  } {
     return {
       fingerprint: this.keyFingerprint(),
       version: this.keyVersion,
+      algorithm: this.algorithm,
+      publicKey: this.publicKey || undefined,
     };
   }
 
   /**
    * Rotate to a new signing key
    */
-  public rotateKey(newKey: string, newVersion: string): void {
+  public rotateKey(newKey: string, newVersion: string, newPublicKey?: string): void {
     if (!newKey) {
       throw new MissingSigningKeyError();
     }
     this.signingKey = newKey;
     this.keyVersion = newVersion;
+    if (newPublicKey) {
+      this.publicKey = newPublicKey;
+    }
   }
 }
 
