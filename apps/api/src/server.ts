@@ -1,22 +1,17 @@
+import { AttestationService } from '@omega-v/attestation';
 import app from './index.js';
 
-/** Public trust metadata is served by the API's configured AttestationService. */
-app.get('/attest/public-key', (_req, res) => {
-  const service = app.locals.attestationService;
-  if (!service) {
-    res.status(503).json({
-      code: 'ED25519_TRUST_UNAVAILABLE',
-      message: 'Attestation service is unavailable',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
+const trustService = new AttestationService();
 
-  const info = service.getKeyInfo();
+/** Public, non-secret attestation verification metadata. */
+app.get('/attest/public-key', (_req, res) => {
+  const info = trustService.getKeyInfo();
+
   if (info.algorithm !== 'Ed25519' || !info.publicKey) {
     res.status(503).json({
       code: 'ED25519_TRUST_UNAVAILABLE',
-      message: 'Ed25519 public-key discovery is unavailable for the configured algorithm',
+      message:
+        'Ed25519 public-key discovery is unavailable while the configured algorithm is not Ed25519',
       timestamp: new Date().toISOString(),
     });
     return;
