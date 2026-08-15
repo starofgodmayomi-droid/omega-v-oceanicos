@@ -1,5 +1,10 @@
-import { generateKeyPairSync } from 'node:crypto';
-import { AttestationService, MissingSigningKeyError, verifyEd25519 } from '../index';
+import { createHmac, generateKeyPairSync } from 'node:crypto';
+import {
+  AttestationService,
+  InvalidSigningKeyError,
+  MissingSigningKeyError,
+  verifyEd25519,
+} from '../index';
 import { Attestation, VerificationResult } from '@omega-v/types';
 
 const verificationResult: VerificationResult = {
@@ -184,26 +189,113 @@ describe('AttestationService — Ed25519 (asymmetric)', () => {
     expect(hmac.verify(attestation)).toBe(true);
   });
 
-  it('fails to verify Ed25519 attestation without public key', () => {
+  it('rejects an attestation signed under a different private key', () => {
     const { privateKey } = generateKeyPairSync('ed25519', {
-      format: 'pem',
       publicKeyEncoding: { type: 'spki', format: 'pem' },
       privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
     });
-    const serviceWithKey = new AttestationService({
+    const signer = new AttestationService({
       algorithm: 'Ed25519',
       signingKey: ed25519Key,
       publicKey: ed25519PublicKey,
       keyVersion: '1',
     });
-    const attestation = serviceWithKey.attest(verificationResult);
-
-    const serviceWithoutPublicKey = new AttestationService({
+    const stranger = new AttestationService({
       algorithm: 'Ed25519',
       signingKey: privateKey,
       keyVersion: '1',
     });
-    expect(serviceWithoutPublicKey.verify(attestation)).toBe(false);
+
+    expect(stranger.verify(signer.attest(verificationResult))).toBe(false);
+  });
+
+  it('derives the public key when only the private key is given', () => {
+    const service = new AttestationService({
+      algorithm: 'Ed25519',
+      signingKey: ed25519Key,
+      keyVersion: '1',
+    });
+
+    expect(service.getKeyInfo().publicKey?.trim()).toBe(ed25519PublicKey.trim());
+    expect(service.verify(service.attest(verificationResult))).toBe(true);
+  });
+
+  it('refuses key material it cannot sign with, at construction', () => {
+    expect(
+      () =>
+        new AttestationService({
+          algorithm: 'Ed25519',
+          signingKey: 'not-a-pem',
+          keyVersion: '1',
+        })
+    ).toThrow(InvalidSigningKeyError);
+  });
+
+  it('refuses a public key that does not belong to the private key', () => {
+    const other = generateKeyPairSync('ed25519', {
+      publicKeyEncoding: { type: 'spki', format: 'pem' },
+      privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
+    });
+
+    expect(
+      () =>
+        new AttestationService({
+          algorithm: 'Ed25519',
+          signingKey: ed25519Key,
+          publicKey: other.publicKey,
+          keyVersion: '1',
+        })
+    ).toThrow(InvalidSigningKeyError);
+  });
+
+  it('re-derives the public key on rotation, leaving nothing stale', () => {
+    const service = new AttestationService({
+      algorithm: 'Ed25519',
+      signingKey: ed25519Key,
+      publicKey: ed25519PublicKey,
+      keyVersion: '1',
+    });
+    const next = generateKeyPairSync('ed25519', {
+      publicKeyEncoding: { type: 'spki', format: 'pem' },
+      privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
+    });
+
+    service.rotateKey(next.privateKey, '2');
+
+    expect(service.getKeyInfo().publicKey?.trim()).toBe(next.publicKey.trim());
+    expect(service.verify(service.attest(verificationResult))).toBe(true);
+  });
+
+  it('leaves the previous key intact when a rotation is rejected', () => {
+    const service = new AttestationService({
+      algorithm: 'Ed25519',
+      signingKey: ed25519Key,
+      publicKey: ed25519PublicKey,
+      keyVersion: '1',
+    });
+
+    expect(() => service.rotateKey('not-a-pem', '2')).toThrow(InvalidSigningKeyError);
+    expect(service.getKeyInfo().version).toBe('1');
+    expect(service.verify(service.attest(verificationResult))).toBe(true);
+  });
+
+  it('fingerprints the public half, so a holder of it can name the key', () => {
+    const service = new AttestationService({
+      algorithm: 'Ed25519',
+      signingKey: ed25519Key,
+      publicKey: ed25519PublicKey,
+      keyVersion: '1',
+    });
+    const attestation = service.attest(verificationResult);
+
+    // Computable by anyone holding only the public key.
+    const independent = createHmac('sha256', 'omega-v-key-fingerprint')
+      .update(ed25519PublicKey)
+      .digest('hex')
+      .slice(0, 16);
+
+    expect(attestation.signingKey).toBe(`sha256:${independent}`);
+    expect(JSON.stringify(attestation)).not.toContain(ed25519Key);
   });
 });
 

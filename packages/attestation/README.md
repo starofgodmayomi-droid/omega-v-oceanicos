@@ -59,10 +59,10 @@ const { privateKey, publicKey } = generateKeyPairSync('ed25519', {
   privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
 });
 
+// publicKey is optional — it is derived from the private key when omitted.
 const service = new AttestationService({
   algorithm: 'Ed25519',
   signingKey: privateKey,
-  publicKey,
   keyVersion: '1',
 });
 
@@ -86,7 +86,7 @@ Accepts either a config object or, for compatibility, `(signingKey, keyVersion)`
 interface AttestationConfig {
   algorithm?: 'HMAC-SHA256' | 'Ed25519'; // default: 'HMAC-SHA256'
   signingKey?: string; // HMAC secret, or Ed25519 private key (PEM)
-  publicKey?: string; // Ed25519 public key (PEM), required to verify
+  publicKey?: string; // Ed25519 public key (PEM); derived when omitted
   keyVersion?: string; // default: '1'
 }
 ```
@@ -97,6 +97,16 @@ When `signingKey` is omitted it falls back to `OMEGA_SIGNING_KEY` for HMAC or
 There is no default key. Construction throws `MissingSigningKeyError` when no
 key is available, because a key shipped in source makes every signature
 reproducible by anyone holding the repository.
+
+An Ed25519 private key is parsed at construction and its public half derived,
+so `OMEGA_ED25519_KEY` alone is enough to both sign and verify. Two failures
+that would otherwise surface much later are caught here instead:
+
+- key material that cannot sign throws `InvalidSigningKeyError` at startup
+  rather than throwing from inside the first `attest()` call
+- a `publicKey` supplied alongside the private key is **checked against the
+  derived one**, not trusted. A mismatch would make every attestation this
+  service signs fail to verify, silently; it throws instead.
 
 ### `attest(verificationResult, options?)`
 
@@ -140,7 +150,7 @@ non-Ed25519 attestations rather than falling back to a weaker check.
 
 ```typescript
 {
-  fingerprint: string;   // sha256:xxxxxxxxxxxxxxxx — never the key itself
+  fingerprint: string;   // sha256:xxxxxxxxxxxxxxxx — never secret material
   version: string;
   algorithm: 'HMAC-SHA256' | 'Ed25519';
   publicKey?: string;    // Ed25519 only; safe to publish
@@ -150,20 +160,34 @@ non-Ed25519 attestations rather than falling back to a weaker check.
 The fingerprint is a non-reversible identifier recorded on every attestation,
 so a signature can be traced to a key without publishing the key.
 
+For Ed25519 it fingerprints the **public** half, which means a holder of the
+public key can compute the same value and confirm which key signed a given
+attestation. HMAC has no public half, so there the secret itself is
+fingerprinted — safe because the digest is one-way and truncated, but not
+independently computable by anyone who lacks the secret.
+
 ### `rotateKey(newKey, newVersion, newPublicKey?)`
 
-Rotates the signing key. Attestations signed under the previous version stop
-verifying against this instance — key version is part of the signed payload,
-so a rotation is a visible break rather than a silent one. Retain the old key
-if old attestations must remain verifiable.
+Rotates the signing key. For Ed25519 the public half is re-derived from the
+new private key, so a rotation cannot leave a stale public key behind;
+`newPublicKey` is checked against the derived value rather than overriding it.
+
+Key material is resolved before anything is mutated, so a rejected rotation
+leaves the service on its previous key rather than in a half-rotated state.
+
+Attestations signed under the previous version stop verifying against this
+instance — key version is part of the signed payload, so a rotation is a
+visible break rather than a silent one. Retain the old key if old
+attestations must remain verifiable.
 
 ## Security
 
 **What holds.** HMAC-SHA256 and Ed25519 are both real implementations over
 `node:crypto`. HMAC comparison is constant-time (`timingSafeEqual`). The
 signed payload is explicit and canonical. The verifying algorithm comes from
-configuration, never from the attestation. No key is ever returned by
-`getKeyInfo`, and no default key exists.
+configuration, never from the attestation. Ed25519 key material is parsed at
+construction, so an unusable key fails at startup. No secret is ever returned
+by `getKeyInfo`, and no default key exists.
 
 **What does not.** Keys are handled as process-local strings: there is no HSM
 integration, no encryption at rest, and no audit log of signing operations.

@@ -1,4 +1,11 @@
-import { createHmac, timingSafeEqual, sign, verify } from 'node:crypto';
+import {
+  createHmac,
+  createPrivateKey,
+  createPublicKey,
+  timingSafeEqual,
+  sign,
+  verify,
+} from 'node:crypto';
 import { Attestation, VerificationResult } from '@omega-v/types';
 
 /** Environment variable read when no signing key is passed explicitly. */
@@ -28,6 +35,58 @@ export class MissingSigningKeyError extends Error {
     );
     this.name = 'MissingSigningKeyError';
   }
+}
+
+/**
+ * Raised when key material is present but unusable.
+ *
+ * Distinct from {@link MissingSigningKeyError}, which means no key was
+ * supplied at all. This one means a key was supplied and cannot do the job:
+ * an Ed25519 private key that will not parse, or a public key that does not
+ * belong to the private key beside it.
+ */
+export class InvalidSigningKeyError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'InvalidSigningKeyError';
+  }
+}
+
+/**
+ * Parse an Ed25519 private key and derive its public half.
+ *
+ * Deriving rather than trusting a separately supplied public key removes a
+ * whole class of misconfiguration: a verifier holding the wrong public key
+ * rejects every attestation it should accept, and does so silently. When a
+ * public key is supplied anyway it is checked, not ignored.
+ */
+function resolvePublicKey(privateKeyPem: string, suppliedPublicKey?: string): string {
+  let derived: string;
+  try {
+    derived = createPublicKey(createPrivateKey(privateKeyPem))
+      .export({ type: 'spki', format: 'pem' })
+      .toString();
+  } catch (error) {
+    throw new InvalidSigningKeyError(
+      `Ed25519 signing key could not be parsed: ${
+        error instanceof Error ? error.message : String(error)
+      }. Expected a PEM-encoded private key.`
+    );
+  }
+
+  if (suppliedPublicKey && normalizePem(suppliedPublicKey) !== normalizePem(derived)) {
+    throw new InvalidSigningKeyError(
+      'Supplied Ed25519 public key does not match the private key. ' +
+        'Every attestation signed by this service would fail to verify against it.'
+    );
+  }
+
+  return derived;
+}
+
+/** PEM comparison that ignores line-ending and trailing-newline differences. */
+function normalizePem(pem: string): string {
+  return pem.replace(/\r\n/g, '\n').trim();
 }
 
 /**
@@ -108,12 +167,16 @@ export class AttestationService {
    * Accepts an {@link AttestationConfig}, or `(signingKey, keyVersion)` for
    * compatibility with the original HMAC-only signature.
    *
-   * Ed25519 verification requires `publicKey`; it is not derived from the
-   * private key, and without it {@link verify} returns false rather than
-   * passing an unchecked signature.
+   * An Ed25519 private key is parsed here and its public half derived, so a
+   * key that cannot sign fails at construction rather than at first use. Any
+   * `publicKey` passed alongside it is checked against the derived one: a
+   * mismatch is a misconfiguration that would make every attestation fail to
+   * verify, and it is better to learn that at startup than in production.
    *
    * @throws MissingSigningKeyError when neither a key argument nor the
    *         matching environment variable is present.
+   * @throws InvalidSigningKeyError when Ed25519 key material cannot be
+   *         parsed, or a supplied public key does not match the private one.
    */
   constructor(config?: AttestationConfig | string, keyVersion?: string) {
     // Handle backward compatibility: old API was (signingKey, keyVersion)
@@ -150,7 +213,7 @@ export class AttestationService {
     this.signingKey = key;
     this.keyVersion = version;
     this.algorithm = algorithm;
-    this.publicKey = publicKey || null;
+    this.publicKey = algorithm === 'Ed25519' ? resolvePublicKey(key, publicKey) : null;
   }
 
   /**
@@ -274,8 +337,15 @@ export class AttestationService {
    * publishing the key itself.
    */
   public keyFingerprint(): string {
+    // For Ed25519 the public half identifies the key just as well and is not
+    // secret, so anyone holding the public key can compute this fingerprint
+    // and confirm which key signed an attestation. HMAC has no public half;
+    // there the secret itself is the only thing available to fingerprint,
+    // and the truncated one-way digest is what keeps that safe.
+    const material =
+      this.algorithm === 'Ed25519' && this.publicKey ? this.publicKey : this.signingKey;
     return `sha256:${createHmac('sha256', 'omega-v-key-fingerprint')
-      .update(this.signingKey)
+      .update(material)
       .digest('hex')
       .slice(0, 16)}`;
   }
@@ -299,17 +369,31 @@ export class AttestationService {
   }
 
   /**
-   * Rotate to a new signing key
+   * Rotate to a new signing key.
+   *
+   * The public half is re-derived from the new private key, so a rotation
+   * cannot leave a stale public key behind. Passing `newPublicKey` checks it
+   * against the derived one rather than overriding it.
+   *
+   * Attestations signed under the previous version stop verifying against
+   * this instance: key version is part of the signed payload, so a rotation
+   * is a visible break rather than a silent one.
+   *
+   * @throws MissingSigningKeyError when no key is supplied.
+   * @throws InvalidSigningKeyError when the new Ed25519 key cannot be parsed,
+   *         or the supplied public key does not match it. The service is left
+   *         on its previous key rather than in a half-rotated state.
    */
   public rotateKey(newKey: string, newVersion: string, newPublicKey?: string): void {
     if (!newKey) {
       throw new MissingSigningKeyError();
     }
+    // Resolve before mutating: a rotation that throws halfway would leave the
+    // service holding a new private key alongside the old public one.
+    const resolved = this.algorithm === 'Ed25519' ? resolvePublicKey(newKey, newPublicKey) : null;
     this.signingKey = newKey;
     this.keyVersion = newVersion;
-    if (newPublicKey) {
-      this.publicKey = newPublicKey;
-    }
+    this.publicKey = resolved;
   }
 }
 
