@@ -253,8 +253,13 @@ describe('append-only event log', () => {
   });
 
   it('reports a reason when the append itself fails', () => {
-    const outcome = appendEvent(join(dir, 'runtime.log.jsonl', 'nested'), { id: 'x' }, true);
+    // A regular file where a directory is required: mkdirSync raises ENOTDIR.
+    const blocker = join(dir, 'blocker');
+    writeFileSync(blocker, 'not a directory');
+
+    const outcome = appendEvent(join(blocker, 'runtime.log.jsonl'), { id: 'x' }, true);
 
     expect(outcome.appended).toBe(false);
+    expect(outcome.reason).toBeDefined();
   });
 });
