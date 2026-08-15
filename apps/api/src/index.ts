@@ -63,9 +63,20 @@ const attestationService = new AttestationService();
  * append-only record whose integrity can be checked rather than assumed.
  */
 const memoryPath = process.env.OMEGA_MEMORY_PATH || '/tmp/omega-v-oceanicos/memory.jsonl';
-const kernelMemory = new Remember(
-  process.env.NODE_ENV === 'test' ? undefined : new FileMemoryStore(memoryPath)
-);
+
+/**
+ * Durability is decided by one flag, not two.
+ *
+ * The runtime store already honoured OMEGA_PERSISTENCE; this checked
+ * NODE_ENV directly, so the kernel's chain was the one piece of state that
+ * could not be switched on the documented way. Anything that cannot be
+ * turned on cannot be verified in the state it ships in.
+ */
+const persistenceEnabled = process.env.OMEGA_PERSISTENCE
+  ? process.env.OMEGA_PERSISTENCE === 'on'
+  : process.env.NODE_ENV !== 'test';
+
+const kernelMemory = new Remember(persistenceEnabled ? new FileMemoryStore(memoryPath) : undefined);
 
 type RuntimeEvent = {
   id: string;
@@ -125,15 +136,6 @@ const runtimeStorePath =
  */
 const eventLogPath =
   process.env.OMEGA_EVENT_LOG_PATH || `${runtimeStorePath.replace(/\.json$/, '')}.log.jsonl`;
-
-/**
- * Persistence defaults off under test and on everywhere else, but the
- * default is now explicitly overridable so the behaviour can be verified
- * rather than assumed.
- */
-const persistenceEnabled = process.env.OMEGA_PERSISTENCE
-  ? process.env.OMEGA_PERSISTENCE === 'on'
-  : process.env.NODE_ENV !== 'test';
 
 const {
   snapshot,
