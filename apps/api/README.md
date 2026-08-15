@@ -2,7 +2,18 @@
 
 REST API backend for Ω∞v Oceanicos.
 
-Exposes the complete verification loop via HTTP endpoints.
+This API exposes the **MINI kernel** (Observe → Verify → Remember) and its earned expansions via HTTP endpoints. Understand the foundation in [packages/mini/README.md](../../packages/mini/README.md) and [docs/MINI.md](../../docs/MINI.md).
+
+## The MINI Foundation
+
+Every endpoint is either:
+- **MINI** (the core verification loop): `/observe`, `/verify`, `/complete-loop`, `/memory`
+- **+ ATTEST** (earned expansion): `/attest`, `/attest/verify`
+- **+ ACT** (authorized actions): `/act`
+- **+ LEARN** (recording outcomes): `/learn`
+- **+ RECOMPILE** (proposing updates): `/recompile`
+
+The smallest useful system is the MINI cycle. Everything else is built on top of it.
 
 ## Quick Start
 
@@ -45,7 +56,77 @@ gh attestation verify \
 `ATTEST ≠ ASSERT` applies to the artifact too. The pipeline claiming a build
 passed is an assertion; a signature a stranger can verify is not.
 
+## Mental Model: The Loop
+
+```
+🌌 VISION
+   ↓
+💧 Ω∞v MINI
+   ├─ 👁 OBSERVE: Capture and normalize claims
+   ├─ ✓ VERIFY: Apply rules; produce evidence paths
+   └─ 🧠 REMEMBER: Store in append-only hash-chained memory
+   ↓
++ ATTEST: Cryptographically sign verification results
+   ↓
++ ACT: Authorize actions gated by verified memory
+   ↓
++ LEARN: Record outcomes to improve the system
+   ↓
++ RECOMPILE: Propose improvements from learning
+```
+
+Every request follows this shape: Observe → Verify → Remember → (optional expansions).
+
 ## Endpoints
+
+### MINI Kernel
+
+#### Complete Loop (Observe → Verify → Remember + ATTEST)
+
+```
+POST /complete-loop
+```
+
+Execute the entire MINI cycle in one request, plus cryptographic attestation.
+
+This is the recommended entry point. It demonstrates the full mental model:
+
+**Request:**
+
+```json
+{
+  "claim": "Service X returned HTTP 200",
+  "category": "health-check",
+  "source": {
+    "system": "health-check-api",
+    "version": "1.2.3",
+    "environment": "production"
+  },
+  "observedBy": "monitoring-system",
+  "metadata": {
+    "statusCode": 200,
+    "responseTime": 45
+  },
+  "confidence": 0.95,
+  "confidenceReason": "3 consecutive checks"
+}
+```
+
+**Response:**
+
+```json
+{
+  "data": {
+    "observation": {/* Step 1: Normalized claim */},
+    "verification": {/* Step 2: Evidence path */},
+    "memory": {/* Step 3: Recorded in append-only chain */},
+    "attestation": {/* + ATTEST: Signed verification */}
+  },
+  "timestamp": "2026-08-07T10:30:02Z"
+}
+```
+
+The response shows all three MINI steps plus the attestation expansion.
 
 ### Health Check
 
@@ -200,28 +281,6 @@ POST /attest
 }
 ```
 
-### Complete Loop
-
-```
-POST /complete-loop
-```
-
-Execute the entire verification loop in one request: Observe → Verify → Attest.
-
-**Request:** Same as `/observe`
-
-**Response:**
-
-```json
-{
-  "data": {
-    "observation": {/* Observation from step 1 */},
-    "verification": {/* VerificationResult from step 2 */},
-    "attestation": {/* Attestation from step 3 */}
-  },
-  "timestamp": "2026-08-07T10:30:02Z"
-}
-```
 
 ### Runtime State
 
