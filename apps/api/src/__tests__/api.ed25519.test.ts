@@ -8,7 +8,7 @@ process.env.OMEGA_ATTESTATION_KEY_VERSION = 'test-ed25519-v1';
 process.env.OMEGA_ED25519_PRIVATE_KEY = privateKey.export({ type: 'pkcs8', format: 'pem' }).toString();
 process.env.OMEGA_PERSISTENCE = 'off';
 
-const { default: app } = await import('../index');
+const { default: app } = await import('../server');
 
 type ApiResponse<T> = { data: T };
 
@@ -39,9 +39,26 @@ describe('API Ed25519 integration', () => {
   });
 
   afterAll(async () => {
-    await new Promise<void>((resolve, reject) =>
-      server.close((error) => (error ? reject(error) : resolve()))
-    );
+    await new Promise<void>((resolve, reject) => server.close((error) => (error ? reject(error) : resolve())));
+  });
+
+  it('discovers only safe public Ed25519 trust metadata', async () => {
+    const response = await fetch(`${baseUrl}/attest/public-key`);
+    const result = (await response.json()) as ApiResponse<{
+      algorithm: string;
+      keyId: string;
+      fingerprint: string;
+      keyVersion: string;
+      publicKey: string;
+    }>;
+
+    expect(response.status).toBe(200);
+    expect(result.data.algorithm).toBe('Ed25519');
+    expect(result.data.keyId).toMatch(/^sha256:/);
+    expect(result.data.fingerprint).toBe(result.data.keyId);
+    expect(result.data.keyVersion).toBe('test-ed25519-v1');
+    expect(result.data.publicKey).toContain('BEGIN PUBLIC KEY');
+    expect(JSON.stringify(result.data)).not.toContain(process.env.OMEGA_ED25519_PRIVATE_KEY!);
   });
 
   it('signs, verifies, and preserves Ed25519 provenance through the full API loop', async () => {
@@ -94,10 +111,7 @@ describe('API Ed25519 integration', () => {
       }),
     });
     const result = (await response.json()) as ApiResponse<LoopPayload>;
-    const tampered = {
-      ...result.data.attestation,
-      confidence: result.data.attestation.verified ? 0.01 : 0.99,
-    };
+    const tampered = { ...result.data.attestation, confidence: result.data.attestation.verified ? 0.01 : 0.99 };
 
     const verificationResponse = await fetch(`${baseUrl}/attest/verify`, {
       method: 'POST',
