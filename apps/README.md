@@ -382,5 +382,5 @@ Runs on `http://localhost:3001`
 
 ---
 
-See [../../CONTRIBUTING.md](../../CONTRIBUTING.md) for contribution guidelines.
+See [../../CONTRIBUTING.md](../CONTRIBUTING.md) for contribution guidelines.
 ```

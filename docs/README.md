@@ -38,36 +38,52 @@ Welcome to the Ω∞v Oceanicos documentation. Start here to understand the proj
 
 ### For Users
 1. Read the README in the root — get oriented
-2. Start with quickstart examples (coming soon)
-3. Explore the CLI or SDK for your language
-4. Join the community discussion
+2. Run the published image — see [Infrastructure](../infra/README.md)
+3. Call the loop — see the [REST API reference](../apps/api/README.md)
+4. Verify the artifact's provenance before trusting it
 
 ---
 
 ## API Reference
 
-- **[REST API](./api/REST.md)** (coming soon)
-- **[SDK Documentation](./sdk/README.md)** (coming soon)
-- **[CLI Reference](./cli/README.md)** (coming soon)
+- **[REST API](../apps/api/README.md)** — every endpoint, with request and
+  response shapes. A test asserts this document describes every route the
+  API actually registers, so it cannot drift from the code.
+- **[Infrastructure](../infra/README.md)** — the image, its environment
+  variables, and what does not exist yet.
+
+There is no SDK and no CLI. Both were listed here as "coming soon" for long
+enough to read as commitments; they are on the [roadmap](./ROADMAP.md) and
+nowhere else.
 
 ---
 
 ## Deep Dives
 
 ### How Verification Works
-- **[Verification Rules](./verification/RULES.md)** — How to write and test rules
-- **[Evidence Paths](./verification/EVIDENCE.md)** — How verification produces provable results
-- **[Attestation](./verification/ATTESTATION.md)** — Cryptographic signing and trust chains
+- **[The verification loop](./VERIFICATION_LOOP.md)** — observe, verify,
+  attest, act, learn, recompile
+- **[Verification rules](../packages/verification/README.md)** — the rule
+  engine and the evidence paths it produces
+- **[Attestation](../packages/attestation/README.md)** — HMAC signing, key
+  fingerprints, and why there is no default key
 
 ### System Design
-- **[Observer Pattern](./system/OBSERVER.md)** — Capturing verifiable observations
-- **[Compiler & IR](./system/COMPILER.md)** — Rule language and bytecode
-- **[Database & Provenance](./system/DATABASE.md)** — Append-only event store
+- **[Observer](../packages/observer/README.md)** — capturing normalized
+  observations
+- **[Memory](../packages/remember/README.md)** — the append-only
+  hash-chained record
+- **[MINI kernel](../packages/mini/README.md)** — observer + verifier +
+  evidence + memory composed into one cycle
+- **[Architecture](./ARCHITECTURE.md)** — how the packages fit together
+
+There is no compiler or IR, and no database: state is a JSON snapshot and
+two append-only files on disk.
 
 ### Community
-- **[Code of Conduct](../CHARTER.md#code-of-conduct)** — How we treat each other
-- **[Release Process](./RELEASES.md)** — How we publish versions (coming soon)
-- **[Roadmap](./ROADMAP.md)** — Earned expansion phases
+- **[Charter](../CHARTER.md)** — how we treat each other
+- **[Contributing](../CONTRIBUTING.md)** — how to propose a change
+- **[Roadmap](./ROADMAP.md)** — earned expansion phases
 
 ---
 
