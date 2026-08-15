@@ -843,5 +843,5 @@ if (process.env.NODE_ENV !== 'test') {
   startServer();
 }
 
-export { app, startServer };
+export { app, startServer, attestationService };
 export default app;
