@@ -47,7 +47,17 @@ export class FileMemoryStore {
     return raw
       .split('\n')
       .filter((line) => line.trim().length > 0)
-      .map((line) => JSON.parse(line) as EventLogEntry);
+      .map((line, index) => {
+        try {
+          return JSON.parse(line) as EventLogEntry;
+        } catch (error) {
+          throw new Error(
+            `Refusing to load memory from ${this.filePath}: ` +
+              `line ${index + 1} is not valid JSON ` +
+              `(${error instanceof Error ? error.message : String(error)})`
+          );
+        }
+      });
   }
 
   /**
@@ -107,7 +117,8 @@ export class Memory {
       this.store = new FileMemoryStore(options.persistPath);
     }
 
-    const initialEntries = options.existingEntries ?? this.store?.load() ?? [];
+    const initialEntries =
+      options.existingEntries !== undefined ? options.existingEntries : (this.store?.load() ?? []);
     if (initialEntries.length > 0 && !Memory.verifyChain(initialEntries)) {
       throw new Error('Refusing to load memory: hash chain integrity check failed');
     }

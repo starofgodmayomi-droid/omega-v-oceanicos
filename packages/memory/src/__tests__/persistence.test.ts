@@ -116,7 +116,7 @@ describe('Memory persistence (FileMemoryStore)', () => {
   it('throws when the persisted file cannot be parsed at all', () => {
     writeFileSync(persistPath, 'this is not json\n');
 
-    expect(() => new Memory({ persistPath })).toThrow();
+    expect(() => new Memory({ persistPath })).toThrow(/line 1 is not valid JSON/);
   });
 
   it('prefers explicit existing entries over the persisted file', () => {
