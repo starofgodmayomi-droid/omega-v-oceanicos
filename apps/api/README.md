@@ -160,7 +160,7 @@ POST /attest
     "verified": true,
     "confidence": 0.95,
     "signature": "0x1a2b3c4d5e6f...",
-    "signingKey": "key-2026-08-production-v1",
+    "signingKey": "sha256:9f2c1a7b4e6d0835",
     "keyVersion": "1",
     "signingAlgorithm": "HMAC-SHA256",
     "attestedAt": "2026-08-07T10:30:02Z",
@@ -204,11 +204,40 @@ GET /runs
 
 These endpoints expose the current runtime state, recent lifecycle events, and completed observation/verification/attestation runs. Local development persists these records to `/tmp/omega-v-oceanicos/runtime.json` by default.
 
-Set `OMEGA_RUNTIME_STORE_PATH` to choose another JSON store path. Tests use isolated memory state and do not write to disk.
+Set `OMEGA_RUNTIME_STORE_PATH` to choose another JSON store path. Persistence
+defaults off under `NODE_ENV=test` and on elsewhere; set `OMEGA_PERSISTENCE`
+to `on` or `off` to override that explicitly.
+
+The API requires a signing key. Set `OMEGA_SIGNING_KEY`, or construct
+`AttestationService` with one. There is no default: a key shipped in source
+would make every attestation forgeable by anyone holding the repository, so
+the service throws `MissingSigningKeyError` rather than sign with one.
 
 Every response includes an `x-request-id` header. Supplying an existing `x-request-id` reuses it; otherwise the API generates one. Complete-loop events and runs retain that request ID alongside their correlation ID.
 
 Structured error responses also include the request ID in their JSON body, so a failure can be traced from the UI or CLI without relying on log timing.
+
+### Provenance Log
+
+```
+GET /log
+```
+
+Returns the durable append-only event history as recorded on disk, one JSON
+line per event. `GET /events` returns only a bounded recent window over this
+log; `/log` returns everything.
+
+The response `meta` block reports how the read went:
+
+- `source` — `restored`, `partial`, `missing`, or `disabled`
+- `skipped` — lines that could not be parsed
+- `reason` — present when the read was lossy
+
+A damaged line is counted and reported rather than silently dropped, so a
+partial history can never be mistaken for a complete one.
+
+Set `OMEGA_EVENT_LOG_PATH` to choose the log location. It defaults to the
+runtime store path with a `.log.jsonl` suffix.
 
 ### Event Stream
 
@@ -276,7 +305,12 @@ GET /recompilations
 GET /rules
 ```
 
-List all registered verification rules.
+List registered verification rules.
+
+Without a query, returns every registered rule. With `?category=x`, returns
+the rules that would apply to an observation in that category. `count`
+reflects what was returned; `registered` always reflects the whole registry,
+so a filtered result cannot be mistaken for an empty one.
 
 **Response:**
 
@@ -284,6 +318,8 @@ List all registered verification rules.
 {
   "data": {
     "count": 2,
+    "registered": 2,
+    "category": null,
     "rules": [
       {
         "name": "response-time-threshold",
