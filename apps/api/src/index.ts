@@ -1,11 +1,10 @@
-import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
-import { dirname } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import express, { Express, Request, Response } from 'express';
 import { Observer } from '@omega-v/observer';
 import { VerificationEngine } from '@omega-v/verification';
 import { AttestationService } from '@omega-v/attestation';
 import { Attestation, SuccessResponse, ErrorResponse, VerificationRule } from '@omega-v/types';
+import { loadSnapshot, saveSnapshot } from './persistence';
 
 /**
  * Ω∞v Oceanicos API Server
@@ -89,56 +88,21 @@ type RuntimeSnapshot = {
 
 const runtimeStorePath =
   process.env.OMEGA_RUNTIME_STORE_PATH || '/tmp/omega-v-oceanicos/runtime.json';
-const persistenceEnabled = process.env.NODE_ENV !== 'test';
-const emptySnapshot = (): RuntimeSnapshot => ({
-  events: [],
-  runs: [],
-  actions: [],
-  learnings: [],
-  recompilations: [],
-});
-const loadSnapshot = (): RuntimeSnapshot => {
-  if (!persistenceEnabled) return emptySnapshot();
-  try {
-    const parsed = JSON.parse(readFileSync(runtimeStorePath, 'utf8')) as Partial<RuntimeSnapshot>;
-    if (
-      !Array.isArray(parsed.events) ||
-      !Array.isArray(parsed.runs) ||
-      !Array.isArray(parsed.actions) ||
-      !Array.isArray(parsed.learnings) ||
-      !Array.isArray(parsed.recompilations)
-    ) {
-      return emptySnapshot();
-    }
-    return {
-      ...emptySnapshot(),
-      ...parsed,
-    };
-  } catch {
-    return emptySnapshot();
-  }
-};
-const snapshot = loadSnapshot();
-const persistRuntime = (): void => {
-  if (!persistenceEnabled) return;
-  mkdirSync(dirname(runtimeStorePath), { recursive: true });
-  const temporaryPath = `${runtimeStorePath}.tmp`;
-  writeFileSync(
-    temporaryPath,
-    JSON.stringify(
-      {
-        events: runtimeEvents,
-        runs: completedRuns,
-        actions: runtimeActions,
-        learnings: runtimeLearnings,
-        recompilations: runtimeRecompilations,
-      },
-      null,
-      2
-    )
-  );
-  renameSync(temporaryPath, runtimeStorePath);
-};
+
+/**
+ * Persistence defaults off under test and on everywhere else, but the
+ * default is now explicitly overridable so the behaviour can be verified
+ * rather than assumed.
+ */
+const persistenceEnabled = process.env.OMEGA_PERSISTENCE
+  ? process.env.OMEGA_PERSISTENCE === 'on'
+  : process.env.NODE_ENV !== 'test';
+
+const {
+  snapshot,
+  source: persistenceSource,
+  reason: persistenceReason,
+} = loadSnapshot<RuntimeSnapshot>(runtimeStorePath, persistenceEnabled);
 
 const runtimeEvents = snapshot.events;
 const eventStreams = new Set<Response>();
@@ -146,6 +110,20 @@ const completedRuns = snapshot.runs;
 const runtimeActions = snapshot.actions;
 const runtimeLearnings = snapshot.learnings;
 const runtimeRecompilations = snapshot.recompilations;
+
+const persistRuntime = (): void => {
+  saveSnapshot(
+    runtimeStorePath,
+    {
+      events: runtimeEvents,
+      runs: completedRuns,
+      actions: runtimeActions,
+      learnings: runtimeLearnings,
+      recompilations: runtimeRecompilations,
+    },
+    persistenceEnabled
+  );
+};
 
 const recordEvent = (event: Omit<RuntimeEvent, 'id' | 'timestamp'>): RuntimeEvent => {
   const recorded: RuntimeEvent = {
@@ -208,6 +186,8 @@ app.get('/state', (_req: Request, res: Response) => {
     data: {
       status: 'active',
       persistence: persistenceEnabled ? 'file' : 'memory',
+      persistenceSource,
+      persistenceReason: persistenceReason ?? null,
       mode: latest?.stage || 'observing',
       trust: latest ? (latest.status === 'failed' ? 0 : 1) : null,
       trustBasis: {
