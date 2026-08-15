@@ -674,25 +674,39 @@ app.post('/complete-loop', (req: Request, res: Response) => {
 });
 
 /**
- * GET /rules - List all registered verification rules
+ * GET /rules - List registered verification rules
+ *
+ * Without a category, returns every registered rule. With ?category=x,
+ * returns the rules that would apply to an observation in that category.
  */
-app.get('/rules', (_req: Request, res: Response) => {
-  const applicableRules = verificationEngine.getApplicableRules({
-    claim: { statement: '', category: '' },
-    source: { system: '', version: '', environment: '' },
-    timestamp: '',
-    observedBy: '',
-    metadata: {},
-    confidence: 0,
-    confidenceReason: '',
-    status: 'normalized',
-    id: '',
-  });
+app.get('/rules', (req: Request, res: Response) => {
+  const category = typeof req.query.category === 'string' ? req.query.category : null;
 
-  const response: SuccessResponse<{ count: number; rules: VerificationRule[] }> = {
+  const rules = category
+    ? verificationEngine.getApplicableRules({
+        claim: { statement: '', category },
+        source: { system: '', version: '', environment: '' },
+        timestamp: '',
+        observedBy: '',
+        metadata: {},
+        confidence: 0,
+        confidenceReason: '',
+        status: 'normalized',
+        id: '',
+      })
+    : verificationEngine.getRules();
+
+  const response: SuccessResponse<{
+    count: number;
+    registered: number;
+    category: string | null;
+    rules: VerificationRule[];
+  }> = {
     data: {
-      count: applicableRules.length,
-      rules: applicableRules,
+      count: rules.length,
+      registered: verificationEngine.getRuleCount(),
+      category,
+      rules,
     },
     timestamp: new Date().toISOString(),
   };

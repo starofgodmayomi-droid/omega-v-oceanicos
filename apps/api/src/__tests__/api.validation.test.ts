@@ -115,4 +115,47 @@ describe('API validation guards', () => {
     expect(response.status).toBe(404);
     expect(((await response.json()) as ErrorBody).code).toBe('LEARNING_NOT_FOUND');
   });
+
+  describe('GET /rules', () => {
+    type RulesBody = {
+      data: {
+        count: number;
+        registered: number;
+        category: string | null;
+        rules: Array<{ name: string; appliesTo: string[] }>;
+      };
+    };
+
+    it('reports the rules that are actually registered', async () => {
+      const response = await fetch(`${baseUrl}/rules`);
+      const body = (await response.json()) as RulesBody;
+
+      expect(response.status).toBe(200);
+      expect(body.data.count).toBeGreaterThan(0);
+      expect(body.data.count).toBe(body.data.registered);
+      expect(body.data.category).toBeNull();
+      expect(body.data.rules.map((r) => r.name).sort()).toEqual([
+        'response-time-threshold',
+        'status-code-check',
+      ]);
+    });
+
+    it('filters to the rules applying to a given category', async () => {
+      const response = await fetch(`${baseUrl}/rules?category=health-check`);
+      const body = (await response.json()) as RulesBody;
+
+      expect(body.data.category).toBe('health-check');
+      expect(body.data.count).toBe(2);
+      expect(body.data.registered).toBe(2);
+    });
+
+    it('returns no rules for a category nothing applies to', async () => {
+      const response = await fetch(`${baseUrl}/rules?category=nothing-matches-this`);
+      const body = (await response.json()) as RulesBody;
+
+      expect(body.data.count).toBe(0);
+      expect(body.data.rules).toEqual([]);
+      expect(body.data.registered).toBe(2);
+    });
+  });
 });

@@ -223,3 +223,34 @@ describe('VerificationEngine — result cache', () => {
     expect(failing.summary.passed).toBe(false);
   });
 });
+
+describe('VerificationEngine — rule listing', () => {
+  it('lists every registered rule regardless of category or active state', () => {
+    const engine = new VerificationEngine();
+    engine.registerRule(rule());
+    engine.registerRule(rule({ name: 'inactive-rule', active: false }));
+    engine.registerRule(rule({ name: 'other-category', appliesTo: ['grpc'] }));
+
+    const listed = engine.getRules();
+
+    expect(listed).toHaveLength(3);
+    expect(listed.map((r) => r.name).sort()).toEqual([
+      'inactive-rule',
+      'other-category',
+      'status-code-check',
+    ]);
+    expect(listed).toHaveLength(engine.getRuleCount());
+  });
+
+  it('returns an empty list before anything is registered', () => {
+    expect(new VerificationEngine().getRules()).toEqual([]);
+  });
+
+  it('lists rules that no observation category would match', () => {
+    const engine = new VerificationEngine();
+    engine.registerRule(rule({ appliesTo: ['health-check'] }));
+
+    expect(engine.getRules()).toHaveLength(1);
+    expect(engine.getApplicableRules(observation({}, ''))).toHaveLength(0);
+  });
+});
