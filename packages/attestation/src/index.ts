@@ -65,10 +65,7 @@ export class AttestationService {
       const supplied = process.env[ED25519_PUBLIC_KEY_ENV];
 
       if (supplied) {
-        const expected = derivedPublicKey.export({
-          type: 'spki',
-          format: 'der',
-        });
+        const expected = derivedPublicKey.export({ type: 'spki', format: 'der' });
         const actual = AttestationService.parseEd25519PublicKey(supplied).export({
           type: 'spki',
           format: 'der',
@@ -119,9 +116,7 @@ export class AttestationService {
       ruleVersions: verificationResult.ruleVersions,
       ...(this.algorithm === ED25519
         ? {
-            verifyingPublicKey: this.publicKey!
-              .export({ type: 'spki', format: 'pem' })
-              .toString(),
+            verifyingPublicKey: this.publicKey!.export({ type: 'spki', format: 'pem' }).toString(),
           }
         : {}),
       status: 'signed',
@@ -155,9 +150,7 @@ export class AttestationService {
       if (this.algorithm === ED25519) {
         if (!attestation.verifyingPublicKey) return false;
 
-        const supplied = AttestationService.parseEd25519PublicKey(
-          attestation.verifyingPublicKey
-        );
+        const supplied = AttestationService.parseEd25519PublicKey(attestation.verifyingPublicKey);
         const expected = this.publicKey!.export({ type: 'spki', format: 'der' });
         const actual = supplied.export({ type: 'spki', format: 'der' });
         if (!expected.equals(actual)) return false;
@@ -170,10 +163,7 @@ export class AttestationService {
         );
       }
 
-      const expected = Buffer.from(
-        this.generateSignature(payload.value).replace(/^0x/, ''),
-        'hex'
-      );
+      const expected = Buffer.from(this.generateSignature(payload.value).replace(/^0x/, ''), 'hex');
       const actual = Buffer.from(attestation.signature.replace(/^0x/, ''), 'hex');
       return actual.length === expected.length && timingSafeEqual(actual, expected);
     } catch {
@@ -207,9 +197,7 @@ export class AttestationService {
       algorithm: this.algorithm,
       ...(this.algorithm === ED25519
         ? {
-            publicKey: this.publicKey!
-              .export({ type: 'spki', format: 'pem' })
-              .toString(),
+            publicKey: this.publicKey!.export({ type: 'spki', format: 'pem' }).toString(),
           }
         : {}),
     };
