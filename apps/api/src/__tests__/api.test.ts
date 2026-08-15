@@ -6,6 +6,7 @@ type ApiResponse<T> = { data: T };
 type LoopPayload = {
   observation: { id: string };
   verification: { summary: { passed: boolean } };
+  memory: { id: string };
   attestation: { id: string; verified: boolean };
 };
 
@@ -64,7 +65,7 @@ describe('API runtime contracts', () => {
       };
     }>;
 
-    expect(events.data).toHaveLength(4);
+    expect(events.data).toHaveLength(6);
     expect(new Set(events.data.map((event) => event.correlationId)).size).toBe(1);
     expect(new Set(events.data.map((event) => event.requestId)).size).toBe(1);
     expect(events.data[0]?.requestId).toBe('request-contract-1');

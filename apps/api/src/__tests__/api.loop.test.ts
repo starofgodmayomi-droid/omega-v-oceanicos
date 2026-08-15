@@ -3,7 +3,13 @@ import app from '../index';
 
 type Body<T> = { data: T; meta?: Record<string, unknown> };
 type Attestation = { id: string; verified: boolean; signature: string };
-type Loop = { observation: { id: string }; verification: unknown; attestation: Attestation };
+type Memory = { id: string; observationId: string; verificationId: string };
+type Loop = {
+  observation: { id: string };
+  verification: unknown;
+  memory: Memory;
+  attestation: Attestation;
+};
 type Action = { id: string; action: string; attestationId: string; status: string };
 type Learning = { id: string; actionId: string; outcome: string };
 type Proposal = { id: string; learningId: string; version: string; status: string };
@@ -204,5 +210,16 @@ describe('API loop: act, learn, recompile', () => {
 
     expect(response.status).toBe(404);
     expect(((await response.json()) as { code: string }).code).toBe('NOT_FOUND');
+  });
+
+  it('exposes the MINI kernel memory step in complete-loop response', async () => {
+    const loop = (await (
+      await post('/complete-loop', loopInput('memory exposed', { statusCode: 200, responseTime: 42 }))
+    ).json()) as Body<Loop>;
+
+    expect(loop.data.memory).toBeDefined();
+    expect(loop.data.memory.id).toBeDefined();
+    expect(loop.data.memory.observationId).toBe(loop.data.observation.id);
+    expect(loop.data.memory.verificationId).toBeDefined();
   });
 });

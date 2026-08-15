@@ -671,11 +671,29 @@ app.post('/complete-loop', (req: Request, res: Response) => {
     });
     completedRuns.splice(20);
 
-    // Enter the kernel's hash chain. Unlike completedRuns, which is a
-    // bounded window, this is append-only and integrity-checkable.
+    // Step 4: Remember (MINI kernel's hash chain)
+    // Unlike completedRuns, which is a bounded window, this is append-only
+    // and integrity-checkable. Remember completes the MINI cycle: Observe → Verify → Remember
+    recordEvent({
+      type: 'memory.entering',
+      stage: 'remember',
+      message: 'Storing in MINI kernel memory (append-only hash chain)',
+      status: 'active',
+      correlationId,
+      requestId,
+    });
     const remembered = kernelMemory.remember(observation, verificationResult);
 
     persistRuntime();
+    recordEvent({
+      type: 'memory.recorded',
+      stage: 'remember',
+      message: 'Verification result stored in MINI kernel',
+      status: 'passed',
+      correlationId,
+      requestId,
+      details: { memoryId: remembered.id },
+    });
     recordEvent({
       type: 'attestation.created',
       stage: 'attest',
@@ -689,11 +707,13 @@ app.post('/complete-loop', (req: Request, res: Response) => {
     const response: SuccessResponse<{
       observation: typeof observation;
       verification: typeof verificationResult;
+      memory: typeof remembered;
       attestation: typeof attestation;
     }> = {
       data: {
         observation,
         verification: verificationResult,
+        memory: remembered,
         attestation,
       },
       timestamp: new Date().toISOString(),
