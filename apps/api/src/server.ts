@@ -1,5 +1,5 @@
-import app from './index.js';
 import { AttestationService } from '@omega-v/attestation';
+import app from './index.js';
 
 const trustService = new AttestationService();
 
@@ -10,7 +10,8 @@ app.get('/attest/public-key', (_req, res) => {
   if (info.algorithm !== 'Ed25519' || !info.publicKey) {
     res.status(503).json({
       code: 'ED25519_TRUST_UNAVAILABLE',
-      message: 'Ed25519 public-key discovery is unavailable while the configured algorithm is not Ed25519',
+      message:
+        'Ed25519 public-key discovery is unavailable while the configured algorithm is not Ed25519',
       timestamp: new Date().toISOString(),
     });
     return;
