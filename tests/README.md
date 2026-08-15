@@ -1,62 +1,43 @@
 # Tests
 
-Integration and end-to-end tests for the Ω∞v Oceanicos system.
+## Where the tests are
 
-## Structure
+Beside the code they test, in `src/__tests__/` within each package and app.
+This directory holds no test files; it exists for cross-package integration
+tests that have not been written yet.
 
-- **integration/** — Full system integration tests
-- **e2e/** — End-to-end user flow tests
-- **fixtures/** — Test data and mocks
+| Suite | Covers |
+| --- | --- |
+| `packages/observer/src/__tests__/` | capture, normalization, deduplication, validation |
+| `packages/verification/src/__tests__/` | rule registry, applicability, evidence paths, caching |
+| `packages/attestation/src/__tests__/` | HMAC signing, verification, key handling, rotation |
+| `packages/remember/src/__tests__/` | hash chain, durable store, tamper and deletion detection |
+| `packages/mini/src/__tests__/` | the kernel cycle, component injection, restart resumption |
+| `apps/api/src/__tests__/` | endpoints, validation guards, persistence, prefix parity, documentation |
+| `apps/web/src/__tests__/` | the client/API contract |
 
-## Running Tests
+## Running them
 
 ```bash
-# Run all tests
-npm run test
-
-# Run integration tests only
-npm run test:integration
-
-# Run with coverage
-npm run test:coverage
-
-# Watch mode
-npm run test:watch
+pnpm test              # everything
+pnpm test:coverage     # with the 70% threshold enforced
+pnpm test:watch        # watch mode
 ```
 
-## Test Philosophy
+## What is verified beyond the suite
 
-Every test verifies:
+The CI `docker` job builds the image and exercises a running container: it
+must refuse to start without `OMEGA_SIGNING_KEY`, then serve `/health`,
+`/rules`, `/complete-loop`, `/log`, the same routes under `/api`, and the web
+client at `/`. Passing tests proved the code runs under a test runner; that
+job is what proves the artifact runs.
 
-1. **Correctness** — Does the code do what it's supposed to?
-2. **Evidence** — Can we prove it works?
-3. **Regression** — Does it still work after changes?
-4. **Specification** — Does it match the design?
+## Known gaps
 
-### Integration Test Template
-
-```typescript
-describe('Verification Loop', () => {
-  it('should observe, verify, attest, and record', async () => {
-    // Arrange
-    const observation = {
-      claim: 'Service is healthy',
-      source: 'health-check',
-      timestamp: new Date().toISOString(),
-      confidence: 0.95,
-    };
-
-    // Act
-    const result = await verificationLoop.execute(observation);
-
-    // Assert
-    expect(result.verified).toBe(true);
-    expect(result.attestation).toBeDefined();
-    expect(result.recordedId).toBeDefined();
-  });
-});
-```
-
----
-
-See [../../CONTRIBUTING.md](../../CONTRIBUTING.md) for test requirements.
+- `apps/web/src/App.tsx` is excluded from the coverage denominator. Covering it
+  needs jsdom and a component testing setup that does not exist here. The
+  exclusion is explicit in `jest.config.js` so the reported percentage is not
+  read as covering more than it does.
+- `pnpm test:integration` matches no tests, because this directory is empty.
+  It passes rather than failing on an empty match, which is honest only for as
+  long as this note stays next to it.
