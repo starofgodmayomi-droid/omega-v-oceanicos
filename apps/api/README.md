@@ -16,6 +16,35 @@ npm run dev
 # Server runs on http://localhost:3000
 ```
 
+## Running the published image
+
+Each commit merged to `main` publishes a container image with signed build
+provenance:
+
+```
+docker pull ghcr.io/starofgodmayomi-droid/omega-v-oceanicos-api:latest
+
+docker run -p 3000:3000 \
+  -e OMEGA_SIGNING_KEY="$(openssl rand -hex 32)" \
+  ghcr.io/starofgodmayomi-droid/omega-v-oceanicos-api:latest
+```
+
+The API refuses to start without `OMEGA_SIGNING_KEY`. That is deliberate:
+a key baked into an image is a key held by everyone who pulls it.
+
+The image carries a provenance attestation recording which commit and which
+workflow produced that exact digest. It can be checked without trusting this
+document:
+
+```
+gh attestation verify \
+  oci://ghcr.io/starofgodmayomi-droid/omega-v-oceanicos-api:latest \
+  --repo starofgodmayomi-droid/omega-v-oceanicos
+```
+
+`ATTEST ≠ ASSERT` applies to the artifact too. The pipeline claiming a build
+passed is an assertion; a signature a stranger can verify is not.
+
 ## Endpoints
 
 ### Health Check
