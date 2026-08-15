@@ -253,4 +253,90 @@ describe('Observer', () => {
       expect(stats.windowMs).toBe(5000);
     });
   });
+
+  describe('Deduplication Window Expiry', () => {
+    const base = {
+      source: { system: 'expiry-test', version: '1.0.0', environment: 'test' },
+      observedBy: 'test',
+      metadata: {},
+      confidence: 0.9,
+      confidenceReason: 'Test',
+    };
+
+    it('stops deduplicating once the window has elapsed', async () => {
+      const shortWindow = new Observer(50);
+
+      const first = shortWindow.observe({ claim: 'will expire', ...base });
+      await new Promise((resolve) => setTimeout(resolve, 120));
+      const second = shortWindow.observe({ claim: 'will expire', ...base });
+
+      expect(second.id).not.toBe(first.id);
+      expect(second.metadata.deduplicated).not.toBe(true);
+    });
+
+    it('evicts expired entries so the cache does not grow unbounded', async () => {
+      const shortWindow = new Observer(50);
+
+      shortWindow.observe({ claim: 'entry one', ...base });
+      shortWindow.observe({ claim: 'entry two', ...base });
+      expect(shortWindow.getCacheStats().size).toBe(2);
+
+      await new Promise((resolve) => setTimeout(resolve, 120));
+      shortWindow.observe({ claim: 'entry three', ...base });
+
+      expect(shortWindow.getCacheStats().size).toBeLessThan(3);
+      expect(shortWindow.getCacheStats().windowMs).toBe(50);
+    });
+  });
+
+  describe('Validation Error Detail', () => {
+    const valid = {
+      claim: 'Test claim',
+      source: { system: 'test', version: '1.0.0', environment: 'test' },
+      observedBy: 'test',
+      metadata: {},
+      confidence: 0.9,
+      confidenceReason: 'Test',
+    };
+
+    it('names source.system when it is missing', () => {
+      expect(() =>
+        observer.observe({ ...valid, source: { system: '', version: '1.0.0', environment: 'test' } })
+      ).toThrow('source.system is required');
+    });
+
+    it('names confidence when it is not a number', () => {
+      expect(() =>
+        observer.observe({ ...valid, confidence: undefined as unknown as number })
+      ).toThrow('confidence is required and must be a number');
+    });
+
+    it('reports every failing field at once, not just the first', () => {
+      expect(() =>
+        observer.observe({
+          claim: '',
+          source: { system: '', version: '1.0.0', environment: 'test' },
+          observedBy: 'test',
+          metadata: {},
+          confidence: undefined as unknown as number,
+          confidenceReason: '',
+        })
+      ).toThrow(/claim is required.*source\.system is required.*confidence is required.*confidenceReason is required/s);
+    });
+  });
+
+  describe('Category Defaulting', () => {
+    it('defaults an omitted category to unknown', () => {
+      const result = observer.observe({
+        claim: 'no category given',
+        source: { system: 'test', version: '1.0.0', environment: 'test' },
+        observedBy: 'test',
+        metadata: {},
+        confidence: 0.9,
+        confidenceReason: 'Test',
+      });
+
+      expect(result.claim.category).toBe('unknown');
+    });
+  });
 });
