@@ -121,6 +121,10 @@ These rules are non-negotiable:
 4. **Every change must be recorded**
    - Nothing is deleted, only marked as superseded
    - Event log is append-only
+   - The durable log (`OMEGA_EVENT_LOG_PATH`, JSON Lines) is never truncated
+     and is served by `GET /log`. The in-memory arrays behind `GET /events`
+     are a bounded recent window over that log, not the log itself. A lossy
+     read is reported as `partial` rather than silently returning less.
 
 5. **Every user action is verifiable**
    - Who? When? What? Why? → Permanently recorded
