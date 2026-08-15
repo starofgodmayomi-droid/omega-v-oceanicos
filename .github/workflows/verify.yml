@@ -75,27 +75,27 @@ jobs:
                     'Ready for review!'
             })
 
-    container-smoke:
-      runs-on: ubuntu-latest
-      needs: verify
+  container-smoke:
+    runs-on: ubuntu-latest
+    needs: verify
 
-      steps:
-        - uses: actions/checkout@v4
+    steps:
+      - uses: actions/checkout@v4
 
-        - name: Build production images
-          run: docker compose -f infra/docker/docker-compose.yml build
+      - name: Build production images
+        run: docker compose -f infra/docker/docker-compose.yml build
 
-        - name: Start and smoke test production stack
-          run: |
-            docker compose -f infra/docker/docker-compose.yml up -d --wait
-            curl --fail http://localhost:3000/health
-            curl --fail http://localhost:3001/
-            curl --fail -X POST http://localhost:3000/complete-loop \
-              -H 'Content-Type: application/json' \
-              -d '{"claim":"CI container is healthy","category":"health-check","source":{"system":"ci","version":"0.1.0","environment":"container"},"observedBy":"ci","metadata":{"responseTime":42,"statusCode":200},"confidence":0.95,"confidenceReason":"CI smoke evidence"}' \
-              | tee /tmp/omega-loop.json
-            node -e "const fs=require('fs'); const payload=JSON.parse(fs.readFileSync('/tmp/omega-loop.json','utf8')); if (!payload.data || !payload.data.verification.summary.passed || !payload.data.attestation.verified) process.exit(1);"
+      - name: Start and smoke test production stack
+        run: |
+          docker compose -f infra/docker/docker-compose.yml up -d --wait
+          curl --fail http://localhost:3000/health
+          curl --fail http://localhost:3001/
+          curl --fail -X POST http://localhost:3000/complete-loop \
+            -H 'Content-Type: application/json' \
+            -d '{"claim":"CI container is healthy","category":"health-check","source":{"system":"ci","version":"0.1.0","environment":"container"},"observedBy":"ci","metadata":{"responseTime":42,"statusCode":200},"confidence":0.95,"confidenceReason":"CI smoke evidence"}' \
+            | tee /tmp/omega-loop.json
+          node -e "const fs=require('fs'); const payload=JSON.parse(fs.readFileSync('/tmp/omega-loop.json','utf8')); if (!payload.data || !payload.data.verification.summary.passed || !payload.data.attestation.verified) process.exit(1);"
 
-        - name: Tear down production stack
-          if: always()
-          run: docker compose -f infra/docker/docker-compose.yml down -v
+      - name: Tear down production stack
+        if: always()
+        run: docker compose -f infra/docker/docker-compose.yml down -v
