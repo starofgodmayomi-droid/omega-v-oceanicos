@@ -1,6 +1,6 @@
 import { generateKeyPairSync } from 'node:crypto';
 import { AttestationService, MissingSigningKeyError, verifyEd25519 } from '../index';
-import { VerificationResult } from '@omega-v/types';
+import { Attestation, VerificationResult } from '@omega-v/types';
 
 const verificationResult: VerificationResult = {
   id: 'ver-test-1',
@@ -134,6 +134,54 @@ describe('AttestationService — Ed25519 (asymmetric)', () => {
     const attestation = hmac.attest(verificationResult);
 
     expect(verifyEd25519(attestation, ed25519PublicKey)).toBe(false);
+  });
+
+  it('does not accept a signature from a trust root it is not configured for', () => {
+    // alg-confusion. A verifier configured for HMAC, which also holds an
+    // Ed25519 public key — the shape of a migration with both configured —
+    // must not accept an Ed25519-signed attestation just because the
+    // attestation says it is Ed25519. Whoever holds that private key is a
+    // different trust root than the HMAC secret this verifier answers for.
+    const hmacVerifier = new AttestationService({
+      algorithm: 'HMAC-SHA256',
+      signingKey: 'test-key',
+      publicKey: ed25519PublicKey,
+      keyVersion: '1',
+    });
+    const otherRoot = new AttestationService({
+      algorithm: 'Ed25519',
+      signingKey: ed25519Key,
+      publicKey: ed25519PublicKey,
+      keyVersion: '1',
+    });
+
+    expect(hmacVerifier.verify(otherRoot.attest(verificationResult))).toBe(false);
+    expect(hmacVerifier.verify(hmacVerifier.attest(verificationResult))).toBe(true);
+  });
+
+  it('rejects a mismatched algorithm claim in both directions', () => {
+    const ed = new AttestationService({
+      algorithm: 'Ed25519',
+      signingKey: ed25519Key,
+      publicKey: ed25519PublicKey,
+      keyVersion: '1',
+    });
+    const hmac = new AttestationService('test-key', '1');
+
+    expect(ed.verify({ ...ed.attest(verificationResult), signingAlgorithm: 'HMAC-SHA256' })).toBe(
+      false
+    );
+    expect(hmac.verify({ ...hmac.attest(verificationResult), signingAlgorithm: 'Ed25519' })).toBe(
+      false
+    );
+  });
+
+  it('still verifies an attestation predating the algorithm field', () => {
+    const hmac = new AttestationService('test-key', '1');
+    const attestation = hmac.attest(verificationResult);
+    delete (attestation as Partial<Attestation>).signingAlgorithm;
+
+    expect(hmac.verify(attestation)).toBe(true);
   });
 
   it('fails to verify Ed25519 attestation without public key', () => {

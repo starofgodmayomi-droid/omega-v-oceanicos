@@ -100,8 +100,11 @@ reproducible by anyone holding the repository.
 
 ### `attest(verificationResult, options?)`
 
-Signs a verification result. `options.attestedBy` sets the attestor identity;
-`options.algorithm` overrides the instance algorithm for one call.
+Signs a verification result. `options.attestedBy` sets the attestor identity.
+
+The algorithm follows the key material and is not a per-call choice — signing
+under an algorithm the service is not configured for would produce an
+attestation that same service cannot verify.
 
 The signature covers exactly: `verificationId`, `observationId`, `verified`,
 `confidence`, `ruleVersions`, `attestedAt`, `attestedBy`, `keyVersion`.
@@ -109,10 +112,21 @@ Changing any of these invalidates the signature.
 
 ### `verify(attestation)`
 
-Verifies an attestation, selecting the algorithm from
-`attestation.signingAlgorithm`. Returns `false` — never throws — when the
-signature is absent, IDs are missing, status is not `signed`, the key version
-does not match, or the signature does not check out.
+Verifies an attestation under **this service's configured algorithm**, never
+the one named in the attestation. An attestation claiming a different
+algorithm is rejected outright.
+
+That direction matters. A verifier that picks its primitive from a field
+inside the untrusted object is the `alg`-confusion pattern: an HMAC-configured
+service that also held an Ed25519 public key would otherwise accept anything
+signed by the holder of that private key — a different trust root than the
+secret it answers for. An attestation with no `signingAlgorithm` at all
+predates the field and is treated as HMAC-SHA256, so older attestations keep
+verifying.
+
+Returns `false` — never throws — when the signature is absent, IDs are
+missing, status is not `signed`, the key version does not match, the
+algorithm does not match, or the signature does not check out.
 
 For Ed25519 this requires the service to hold the public key; without it,
 verification returns `false` rather than silently passing.
@@ -147,7 +161,8 @@ if old attestations must remain verifiable.
 
 **What holds.** HMAC-SHA256 and Ed25519 are both real implementations over
 `node:crypto`. HMAC comparison is constant-time (`timingSafeEqual`). The
-signed payload is explicit and canonical. No key is ever returned by
+signed payload is explicit and canonical. The verifying algorithm comes from
+configuration, never from the attestation. No key is ever returned by
 `getKeyInfo`, and no default key exists.
 
 **What does not.** Keys are handled as process-local strings: there is no HSM

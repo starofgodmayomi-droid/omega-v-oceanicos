@@ -161,10 +161,12 @@ export class AttestationService {
     verificationResult: VerificationResult,
     options?: {
       attestedBy?: string;
-      algorithm?: SigningAlgorithm;
     }
   ): Attestation {
-    const algorithm = options?.algorithm || this.algorithm;
+    // The algorithm follows the key material. It is not a per-call choice:
+    // signing under an algorithm this service is not configured for produces
+    // an attestation this service cannot verify.
+    const algorithm = this.algorithm;
 
     // Create attestation
     const attestation: Attestation = {
@@ -192,8 +194,18 @@ export class AttestationService {
   }
 
   /**
-   * Verify an attestation signature
-   * Auto-detects algorithm from attestation.signingAlgorithm
+   * Verify an attestation signature.
+   *
+   * The algorithm is taken from this service's own configuration, never from
+   * the attestation. An attestation claiming a different algorithm than the
+   * verifier is configured for is rejected rather than verified under the
+   * algorithm it names.
+   *
+   * That distinction is the whole guarantee. Selecting a primitive from a
+   * field inside the untrusted object is how `alg`-confusion works: a
+   * verifier holding an Ed25519 key, asked to check an attestation claiming
+   * HMAC, would otherwise HMAC with its own key material on a path the
+   * submitter chose. Here the submitter chooses nothing.
    */
   public verify(attestation: Attestation): boolean {
     if (!attestation.signature || !attestation.verificationId || !attestation.observationId) {
@@ -210,9 +222,13 @@ export class AttestationService {
       return false;
     }
 
-    const algorithm = (attestation.signingAlgorithm as SigningAlgorithm) || 'HMAC-SHA256';
+    // A missing algorithm predates the field and is HMAC by definition.
+    const claimed = (attestation.signingAlgorithm as SigningAlgorithm) || 'HMAC-SHA256';
+    if (claimed !== this.algorithm) {
+      return false;
+    }
 
-    if (algorithm === 'Ed25519') {
+    if (this.algorithm === 'Ed25519') {
       if (!this.publicKey) {
         return false;
       }
@@ -221,7 +237,7 @@ export class AttestationService {
 
     const expectedSignature = this.generateSignature(
       this.createSignaturePayload(attestation),
-      algorithm
+      this.algorithm
     );
     const actual = Buffer.from(attestation.signature.replace(/^0x/, ''), 'hex');
     const expected = Buffer.from(expectedSignature.replace(/^0x/, ''), 'hex');
