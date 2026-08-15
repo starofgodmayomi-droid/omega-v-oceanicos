@@ -106,9 +106,7 @@ describe('AttestationService — signing key handling', () => {
     expect(service.verify({ ...attestation, signature: '' })).toBe(false);
     expect(service.verify({ ...attestation, verificationId: '' })).toBe(false);
     expect(service.verify({ ...attestation, observationId: '' })).toBe(false);
-    expect(service.verify({ ...attestation, status: 'revoked' })).toBe(
-      false
-    );
+    expect(service.verify({ ...attestation, status: 'revoked' })).toBe(false);
   });
 });
 
@@ -146,7 +144,9 @@ describe('AttestationService — Ed25519', () => {
       InvalidEd25519KeyError
     );
     delete process.env.OMEGA_ED25519_PUBLIC_KEY;
-    expect(() => new AttestationService('not-a-key', '1', ED25519)).toThrow(InvalidEd25519KeyError);
+    expect(() => new AttestationService('not-a-key', '1', ED25519)).toThrow(
+      InvalidEd25519KeyError
+    );
   });
 
   it('rotates Ed25519 keys without stale public-key state', () => {
