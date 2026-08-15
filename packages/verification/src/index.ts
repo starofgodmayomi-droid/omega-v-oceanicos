@@ -237,6 +237,18 @@ export class VerificationEngine {
   }
 
   /**
+   * List every registered rule, regardless of category or active state.
+   *
+   * getApplicableRules answers "which rules apply to this observation";
+   * this answers "what is registered". Conflating the two is how /rules
+   * came to report zero: it queried applicability with an empty category
+   * that no rule could ever match.
+   */
+  public getRules(): VerificationRule[] {
+    return Array.from(this.ruleRegistry.values());
+  }
+
+  /**
    * Get the number of registered rules
    */
   public getRuleCount(): number {
