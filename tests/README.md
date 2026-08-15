@@ -3,8 +3,14 @@
 ## Where the tests are
 
 Beside the code they test, in `src/__tests__/` within each package and app.
-This directory holds no test files; it exists for cross-package integration
-tests that have not been written yet.
+Beside them, this directory holds the cross-package integration suite and the
+guards that check the documentation against the code.
+
+`tests/integration/full-loop.integration.test.ts` runs the API with durability
+switched on, drives it over HTTP, then reads what it wrote back out using
+`packages/remember` and `packages/attestation` directly rather than the API's
+own accessors. A system can agree with itself and still be wrong; here the
+writer and the reader are different code paths.
 
 | Suite | Covers |
 | --- | --- |
