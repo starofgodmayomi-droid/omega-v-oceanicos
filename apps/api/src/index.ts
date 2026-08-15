@@ -739,6 +739,7 @@ const startServer = () =>
         '  GET    /state            - Runtime state',
         '  GET    /events           - Recent lifecycle events',
         '  GET    /events/stream    - Live lifecycle events',
+        '  GET    /log              - Append-only event history',
         '  GET    /runs             - Completed runs',
         '  POST   /act              - Authorize an action',
         '  POST   /learn            - Record learning',
