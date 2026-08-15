@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { MemoryStore } from './store';
+import { MemoryStore } from './store.js';
 import {
   Attestation,
   EventLogEntry,
@@ -223,7 +223,7 @@ export class Remember {
   }
 }
 
-export { FileMemoryStore } from './store';
-export type { MemoryStore, StoreSource } from './store';
+export { FileMemoryStore } from './store.js';
+export type { MemoryStore, StoreSource } from './store.js';
 
 export default Remember;
