@@ -8,6 +8,8 @@ export default {
     '@omega-v/types': '<rootDir>/packages/types/src/index.ts',
     '@omega-v/observer': '<rootDir>/packages/observer/src/index.ts',
     '@omega-v/verification': '<rootDir>/packages/verification/src/index.ts',
+    '@omega-v/remember': '<rootDir>/packages/remember/src/index.ts',
+    '@omega-v/mini': '<rootDir>/packages/mini/src/index.ts',
     '@omega-v/attestation': '<rootDir>/packages/attestation/src/index.ts',
   },
   collectCoverageFrom: [

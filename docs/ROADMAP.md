@@ -1,120 +1,112 @@
 # Ω∞v Oceanicos Roadmap
 
-This document captures the project roadmap for the Ω∞v Oceanicos verification-first ecosystem.
+This roadmap follows the growth law:
+
+```text
+0 → MINI → + → + → + → FULL STACK → ECOSYSTEM → REALITY ↺ ∞
+```
+
+Each phase is **earned**. We do not pretend later layers already exist as architecture just because they appear on the vision diagram.
+
+Canonical model: [MINI.md](./MINI.md).
 
 ## Vision
 
-Ω∞v is a full-stack orchestration system that connects observation, verification, attestation, recording, rendering, learning, and evolution into a trusted intelligence loop.
+Ω∞v is a verification-first system that starts as a living MINI kernel (Observe → Verify → Remember) and expands into a full-stack trusted intelligence ecosystem only when reality verifies each next step.
 
 ## Current Status
 
-- **Phase 0**: Vision — complete
-- **Phase 1**: Constitution — complete
-- **Phase 2**: Monorepo skeleton — complete
-- **Phase 3**: Runtime — in progress
+- **Zero**: acknowledged — complete
+- **MINI kernel**: Observe → Verify → Remember — establishing
+- **Expansions present but not kernel**: attestation, API, web skeletons
 
 ## Phase Breakdown
 
-### Phase 0 — Vision
-Defined the long-term mission, values, and open ecosystem principles.
+### Phase 0 — Zero
+
+Honest origin. No assumed ecosystem, capital, or verified stack.
+
+**Done when**: project admits it starts empty and refuses fake completeness.
 
 ### Phase 1 — Constitution
-Created foundational documents and governance, including:
+
+Foundational documents and governance:
+
 - `CHARTER.md`
 - `MANIFEST.md`
 - `CONTRIBUTING.md`
 - `LICENSE`
 - `README.md`
+- `docs/MINI.md`
 
-### Phase 2 — Monorepo Skeleton
-Built the initial workspace structure and runnable proof-of-concept:
-- `packages/types`
-- `packages/observer`
-- `packages/verification`
-- `packages/attestation`
-- `apps/api`
-- `apps/web`
-- CI workflow
-- `pnpm-workspace.yaml`
+### Phase 2 — MINI kernel (current center of gravity)
 
-### Phase 3 — Runtime
-Current focus:
-- `Observe → Verify → Attest` execution loop
-- Runnable local developer experience
-- Package-level compile/test boundaries
-- `@omega-v/api` and `@omega-v/web`
+Smallest useful living system:
 
-### Phase 4 — Verification Engine
-Next objectives:
-- Build rule execution engine and configurable rule models
-- Add support for extensible verification rule formats
-- Improve evidence path generation and auditing
-- Add policy-driven verification workflows
+```text
+💧 Ω∞v MINI ::= 👁 → ✓ → 🧠
+```
 
-### Phase 5 — Observer
-Next objectives:
-- Add structured observation capture
-- Support event provenance and deduplication
-- Add persistence and append-only event storage
-- Add telemetry and observability metrics
+| Package | Role |
+|---------|------|
+| `@omega-v/types` | Shared contracts |
+| `@omega-v/observer` | 👁 Observe |
+| `@omega-v/verification` | ✓ Verify |
+| `@omega-v/remember` | 🧠 Remember |
+| `@omega-v/mini` | Compose the cycle |
 
-### Phase 6 — Attestation
-Next objectives:
-- Add production-grade cryptographic signing
-- Integrate Sigstore / transparency log support
-- Add key management and rotation
-- Add attestation verification workflows
+**Done when**:
+- [x] Observe normalizes claims
+- [x] Verify produces evidence paths
+- [x] Remember stores append-only hash-chained memory
+- [x] MiniKernel runs one cycle without API/UI
+- [ ] MINI is the documented default mental model everywhere
+- [ ] Integration tests treat MINI as the primary runtime unit
 
-### Phase 7 — API
-Next objectives:
-- Add REST/gRPC API endpoints
-- Add authentication and authorization
-- Add query and history APIs
-- Add API versioning and contract tests
+### Phase 3 — Earned core expansions
 
-### Phase 8 — Web
-Next objectives:
-- Add dashboard visuals and historical views
-- Add workflow orchestration UI
-- Add real-time observability and runtime metrics
-- Add SDK integration examples
+Only after MINI is real:
 
-### Phase 9 — SDK
-Next objectives:
-- Add TypeScript and language SDKs
-- Add client integration patterns
-- Add developer onboarding examples
+| Expansion | Intent |
+|-----------|--------|
+| `+ Reason` | Richer evidence and explanation |
+| `+ Intent` | Explicit goals/policies for cycles |
+| `+ Build` / `+ Test` | Stronger packaging and proof harnesses |
+| `+ Attest` | `@omega-v/attestation` cryptographic proof |
+| `+ Act` | Authorized actions gated by memory/attestation |
 
-### Phase 10 — CLI
-Next objectives:
-- Add CLI tooling for verification workflow
-- Add command-based attestation and audit
-- Add local runtime orchestration
+**Attestation note**: the package may already exist; roadmap treats production-grade attestation workflows as earned completion, not a kernel prerequisite.
 
-### Phase 11 — Mobile
-Next objectives:
-- Add mobile dashboards and alerting
-- Add lightweight edge observation clients
-- Add offline-first capture and sync
+### Phase 4 — Interface expansions
 
-### Phase 12 — Edge
-Next objectives:
-- Add edge runtime support
-- Add lightweight verified agents
-- Add distributed attestation and trust anchors
+| Expansion | Surface |
+|-----------|---------|
+| `+ API` | `apps/api` |
+| `+ Web` | `apps/web` |
+| `+ CLI` | planned |
+| `+ SDK` | planned |
+| `+ Mobile` | planned |
 
-### Phase 13 — VaaS
-Next objectives:
-- Package verification-as-a-service infrastructure
-- Add hosted ingestion, verification, and attestation
-- Add enterprise controls and policy orchestration
+### Phase 5 — Depth expansions
 
-### Phase 14 — Production
-Next objectives:
-- Harden stability, security, and compliance
-- Add observability, metrics, and SLOs
-- Add deployment automation and platform integration
-- Add full ecosystem orchestration
+- Stronger rule engine / compiler / IR
+- Durable multi-process persistence
+- Query and temporal audit APIs
+- Policy-driven verification workflows
+
+### Phase 6 — Distribution expansions
+
+- Edge runtimes
+- Agents
+- Infrastructure (Docker/K8s/cloud)
+- VaaS (verification as a service)
+
+### Phase 7 — Ecosystem expansions
+
+- Governance / trust
+- Community + stewardship
+- Economy / value loops
+- Compound → evolve → return to reality (`∞`)
 
 ## Runbook
 
@@ -124,24 +116,32 @@ Next objectives:
 git clone https://github.com/starofgodmayomi-droid/omega-v-oceanicos.git
 cd omega-v-oceanicos
 pnpm install
-pnpm run dev
+pnpm test -- packages/mini packages/remember
+pnpm run dev   # expansion surfaces (API/Web), optional for MINI work
 ```
 
-### Current Live Ports
+### Current Live Ports (expansions)
 
 - API: `http://localhost:3000`
 - Web: `http://localhost:3001`
 
 ## Workflow Principles
 
-- Build the smallest executable loop first
+- Start from Zero; ship MINI first
+- Build the smallest executable loop before the ecosystem story
 - Keep every package compilable independently
 - Keep each package exporting one public interface
 - Keep the repo runnable from a fresh clone
-- Prioritize runtime over philosophy
+- **Each `+` is earned by the previous layer**
+- Prioritize runtime truth over aspirational diagrams
 
 ## Notes
 
-- `pnpm` is the current workspace package manager
-- The repo is now runnable end-to-end locally
-- The next milestone is runtime persistence and integration tests
+- `pnpm` is the workspace package manager
+- MINI does not require API or Web to be valid
+- Existing API/Web/attestation code is welcome expansion work; it must not redefine the kernel
+- Next milestone: make MINI the default path in apps and docs, then earn `+ Attest` integration against Remember
+
+---
+
+**Last Updated**: 2026-08-14
