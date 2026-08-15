@@ -8,7 +8,8 @@
       "@omega-v/types": ["../../packages/types/dist/index.d.ts"],
       "@omega-v/observer": ["../../packages/observer/dist/index.d.ts"],
       "@omega-v/verification": ["../../packages/verification/dist/index.d.ts"],
-      "@omega-v/attestation": ["../../packages/attestation/dist/index.d.ts"]
+      "@omega-v/attestation": ["../../packages/attestation/dist/index.d.ts"],
+      "@omega-v/remember": ["../../packages/remember/dist/index.d.ts"]
     }
   },
   "include": ["src"]

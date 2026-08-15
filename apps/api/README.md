@@ -217,6 +217,27 @@ Every response includes an `x-request-id` header. Supplying an existing `x-reque
 
 Structured error responses also include the request ID in their JSON body, so a failure can be traced from the UI or CLI without relying on log timing.
 
+### Kernel Memory
+
+```
+GET /memory
+GET /memory/integrity
+```
+
+Every completed loop is entered into the MINI kernel's hash-chained memory
+(`packages/remember`) as three linked records: the observation, the
+verification and the memory record itself. Unlike `GET /runs`, which is a
+bounded window, this chain is append-only.
+
+`GET /memory` returns the chain, with `meta.size` and whether the chain is
+durable in this environment. `GET /memory/integrity` recomputes every hash
+and reports `intact`. It responds `409` rather than `200` when the chain
+does not verify, so a broken chain is a failure and not a field to read past.
+
+Set `OMEGA_MEMORY_PATH` to choose where the chain is written. It defaults
+to `/tmp/omega-v-oceanicos/memory.jsonl`. Under `NODE_ENV=test` the chain
+is in-process only.
+
 ### Provenance Log
 
 ```

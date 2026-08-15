@@ -56,6 +56,9 @@ importers:
       '@omega-v/observer':
         specifier: '*'
         version: link:../../packages/observer
+      '@omega-v/remember':
+        specifier: '*'
+        version: link:../../packages/remember
       '@omega-v/types':
         specifier: '*'
         version: link:../../packages/types
