@@ -280,6 +280,105 @@ describe('API runtime contracts', () => {
     expect(missingLearningResponse.status).toBe(404);
   });
 
+  it('rejects incomplete requests with provenance-bearing errors', async () => {
+    const observeResponse = await fetch(`${baseUrl}/observe`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    const observeError = (await observeResponse.json()) as { code: string };
+
+    expect(observeResponse.status).toBe(400);
+    expect(observeError.code).toBe('OBSERVATION_FAILED');
+
+    const verifyResponse = await fetch(`${baseUrl}/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    const verifyError = (await verifyResponse.json()) as { code: string };
+
+    expect(verifyResponse.status).toBe(400);
+    expect(verifyError.code).toBe('MISSING_OBSERVATION');
+
+    const attestResponse = await fetch(`${baseUrl}/attest`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    const attestError = (await attestResponse.json()) as { code: string };
+
+    expect(attestResponse.status).toBe(400);
+    expect(attestError.code).toBe('MISSING_VERIFICATION');
+
+    const actResponse = await fetch(`${baseUrl}/act`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    const actError = (await actResponse.json()) as { code: string };
+
+    expect(actResponse.status).toBe(400);
+    expect(actError.code).toBe('MISSING_ATTESTATION');
+
+    const invalidAttestationResponse = await fetch(`${baseUrl}/act`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        attestation: {
+          id: 'att-forged',
+          verificationId: 'ver-forged',
+          observationId: 'obs-forged',
+          verified: true,
+          confidence: 1,
+          signature: '0xdeadbeef',
+          signingKey: 'forged-key',
+          keyVersion: '1',
+          signingAlgorithm: 'HMAC-SHA256',
+          attestedAt: new Date().toISOString(),
+          attestedBy: 'forger',
+          ruleVersions: {},
+          status: 'signed',
+        },
+      }),
+    });
+    const invalidAttestationError = (await invalidAttestationResponse.json()) as { code: string };
+
+    expect(invalidAttestationResponse.status).toBe(403);
+    expect(invalidAttestationError.code).toBe('INVALID_ATTESTATION');
+
+    const learnResponse = await fetch(`${baseUrl}/learn`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ actionId: 'act-any', outcome: 'exploded' }),
+    });
+    const learnError = (await learnResponse.json()) as { code: string };
+
+    expect(learnResponse.status).toBe(400);
+    expect(learnError.code).toBe('INVALID_LEARNING');
+
+    const loopFailureResponse = await fetch(`${baseUrl}/complete-loop`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    const loopFailureError = (await loopFailureResponse.json()) as { code: string };
+
+    expect(loopFailureResponse.status).toBe(400);
+    expect(loopFailureError.code).toBe('LOOP_FAILED');
+
+    const state = (await (await fetch(`${baseUrl}/state`)).json()) as ApiResponse<{
+      trustBasis: { recentFailures: number };
+    }>;
+    expect(state.data.trustBasis.recentFailures).toBeGreaterThan(0);
+
+    const notFoundResponse = await fetch(`${baseUrl}/does-not-exist`);
+    const notFoundError = (await notFoundResponse.json()) as { code: string };
+
+    expect(notFoundResponse.status).toBe(404);
+    expect(notFoundError.code).toBe('NOT_FOUND');
+  });
+
   it('remembers each completed loop in the provenance memory chain', async () => {
     const loopResponse = await fetch(`${baseUrl}/complete-loop`, {
       method: 'POST',

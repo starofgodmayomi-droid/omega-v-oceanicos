@@ -38,7 +38,6 @@ app.use((req: Request, res: Response, next) => {
 const observer = new Observer();
 const verificationEngine = new VerificationEngine();
 const attestationService = new AttestationService();
-const memory = new Memory();
 
 type RuntimeEvent = {
   id: string;
@@ -91,6 +90,7 @@ type RuntimeSnapshot = {
 
 const runtimeStorePath =
   process.env.OMEGA_RUNTIME_STORE_PATH || '/tmp/omega-v-oceanicos/runtime.json';
+const memoryStorePath = `${runtimeStorePath}.memory.json`;
 const persistenceEnabled = process.env.NODE_ENV !== 'test';
 const emptySnapshot = (): RuntimeSnapshot => ({
   events: [],
@@ -121,6 +121,8 @@ const loadSnapshot = (): RuntimeSnapshot => {
   }
 };
 const snapshot = loadSnapshot();
+// Provenance memory: durable when persistence is on, in-memory under NODE_ENV=test
+const memory = new Memory(persistenceEnabled ? { persistPath: memoryStorePath } : undefined);
 const persistRuntime = (): void => {
   if (!persistenceEnabled) return;
   mkdirSync(dirname(runtimeStorePath), { recursive: true });
@@ -718,27 +720,29 @@ app.use((_req: Request, res: Response) => {
 
 const startServer = () =>
   app.listen(port, () => {
-    process.stdout.write(
-      [
-        `[Ω∞v API] Verification loop server running on http://localhost:${port}`,
-        'Available endpoints:',
-        '  POST   /observe          - Create an observation',
-        '  POST   /verify           - Verify an observation',
-        '  POST   /attest           - Attest a verification',
-        '  POST   /complete-loop    - Execute full loop in one request',
-        '  GET    /state            - Runtime state',
-        '  GET    /events           - Recent lifecycle events',
-        '  GET    /events/stream    - Live lifecycle events',
-        '  GET    /runs             - Completed runs',
-        '  GET    /memory           - Provenance memory chain',
-        '  POST   /act              - Authorize an action',
-        '  POST   /learn            - Record learning',
-        '  POST   /recompile        - Propose a recompile',
-        '  GET    /rules            - List verification rules',
-        '  GET    /health           - Health check',
-        '',
-      ].join('\n')
-    );
+    const lines: string[] = [
+      `[Ω∞v API] Verification loop server running on http://localhost:${port}`,
+      `Memory persistence: ${
+        persistenceEnabled ? `file (${memoryStorePath})` : 'disabled (in-memory)'
+      }`,
+      'Available endpoints:',
+      '  POST   /observe          - Create an observation',
+      '  POST   /verify           - Verify an observation',
+      '  POST   /attest           - Attest a verification',
+      '  POST   /complete-loop    - Execute full loop in one request',
+      '  GET    /state            - Runtime state',
+      '  GET    /events           - Recent lifecycle events',
+      '  GET    /events/stream    - Live lifecycle events',
+      '  GET    /runs             - Completed runs',
+      '  GET    /memory           - Provenance memory chain',
+      '  POST   /act              - Authorize an action',
+      '  POST   /learn            - Record learning',
+      '  POST   /recompile        - Propose a recompile',
+      '  GET    /rules            - List verification rules',
+      '  GET    /health           - Health check',
+      '',
+    ];
+    process.stdout.write(lines.join('\n'));
   });
 
 if (process.env.NODE_ENV !== 'test') {

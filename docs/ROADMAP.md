@@ -144,4 +144,5 @@ pnpm run dev
 
 - `pnpm` is the current workspace package manager
 - The repo is now runnable end-to-end locally
-- The next milestone is runtime persistence and integration tests
+- `@omega-v/memory` ships a durable JSON-lines persistence adapter; the API persists its provenance chain across restarts
+- The next milestone is streaming reads for large chains and pluggable storage backends (SQLite, object storage)
