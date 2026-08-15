@@ -90,7 +90,7 @@ A cryptographically signed verification result, proving it happened at a specifi
 
 ## API Reference
 
-See [../TYPES.md](../TYPES.md) for complete API documentation.
+See [../TYPES.md](../README.md) for complete API documentation.
 
 ---
 
