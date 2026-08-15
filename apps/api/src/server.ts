@@ -1,11 +1,8 @@
-import { AttestationService } from '@omega-v/attestation';
-import app from './index.js';
-
-const trustService = new AttestationService();
+import { attestationService, app } from './index.js';
 
 /** Public, non-secret attestation verification metadata. */
 app.get('/attest/public-key', (_req, res) => {
-  const info = trustService.getKeyInfo();
+  const info = attestationService.getKeyInfo();
 
   if (info.algorithm !== 'Ed25519' || !info.publicKey) {
     res.status(503).json({
