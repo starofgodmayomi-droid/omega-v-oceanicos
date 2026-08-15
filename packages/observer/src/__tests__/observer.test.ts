@@ -301,7 +301,10 @@ describe('Observer', () => {
 
     it('names source.system when it is missing', () => {
       expect(() =>
-        observer.observe({ ...valid, source: { system: '', version: '1.0.0', environment: 'test' } })
+        observer.observe({
+          ...valid,
+          source: { system: '', version: '1.0.0', environment: 'test' },
+        })
       ).toThrow('source.system is required');
     });
 
@@ -321,7 +324,9 @@ describe('Observer', () => {
           confidence: undefined as unknown as number,
           confidenceReason: '',
         })
-      ).toThrow(/claim is required.*source\.system is required.*confidence is required.*confidenceReason is required/s);
+      ).toThrow(
+        /claim is required.*source\.system is required.*confidence is required.*confidenceReason is required/s
+      );
     });
   });
 
