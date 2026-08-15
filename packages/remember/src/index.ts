@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { MemoryStore } from './store';
 import {
   Attestation,
   EventLogEntry,
@@ -32,6 +33,18 @@ export class Remember {
   private memoryCounter = 0;
 
   /**
+   * @param store - Optional durable backing. Without one, memory is
+   *   in-process only and does not survive a restart, which is the
+   *   previous behaviour and stays the default.
+   */
+  constructor(private readonly store?: MemoryStore) {
+    if (!store) return;
+
+    this.entries = store.load();
+    this.memoryCounter = this.entries.filter((entry) => entry.type === 'MEMORY').length;
+  }
+
+  /**
    * Append a record to memory. Entries are never mutated or deleted.
    */
   public append(item: Rememberable): EventLogEntry {
@@ -55,6 +68,7 @@ export class Remember {
     };
 
     this.entries.push(entry);
+    this.store?.append(entry);
     return entry;
   }
 
@@ -208,5 +222,8 @@ export class Remember {
     return `mem-${new Date().toISOString().split('T')[0]}-${this.memoryCounter}`;
   }
 }
+
+export { FileMemoryStore } from './store';
+export type { MemoryStore, StoreSource } from './store';
 
 export default Remember;
