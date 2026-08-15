@@ -17,16 +17,18 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.json ./
 COPY packages ./packages
 COPY apps/api ./apps/api
+COPY apps/web ./apps/web
 
 RUN pnpm install --frozen-lockfile
 
-# Build only what the API needs. apps/web is a separate artifact.
+# One origin serves both: the API and the static client it talks to.
 RUN pnpm --filter @omega-v/types build \
  && pnpm --filter @omega-v/observer build \
  && pnpm --filter @omega-v/verification build \
  && pnpm --filter @omega-v/attestation build \
  && pnpm --filter @omega-v/remember build \
- && pnpm --filter @omega-v/api build
+ && pnpm --filter @omega-v/api build \
+ && pnpm --filter @omega-v/web build
 
 FROM node:20-alpine AS runtime
 
