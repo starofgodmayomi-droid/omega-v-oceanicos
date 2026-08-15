@@ -34,10 +34,15 @@ describe('web/API contract', () => {
     expect(serverRoutes).toContain(clientPath.replace(/^\/api/, ''));
   });
 
-  it('rewrites the /api prefix the client depends on', () => {
+  it('rewrites the /api prefix the client depends on, in dev and in production', () => {
+    // Development: the Vite dev server rewrites it.
     expect(viteConfig).toContain("'/api'");
     expect(viteConfig).toMatch(/rewrite/);
-    expect(viteConfig).toMatch(/replace\(\/\^\\\/api\//);
+
+    // Production: there is no dev server, so the API strips it itself.
+    // Without this the built bundle calls /api/* and nothing answers.
+    expect(server).toMatch(/req\.url\.startsWith\('\/api\/'\)/);
+    expect(server).toMatch(/req\.url\.slice\(4\)/);
   });
 
   it('records which endpoints the client does not yet use', () => {

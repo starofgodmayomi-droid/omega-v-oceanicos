@@ -217,6 +217,19 @@ Every response includes an `x-request-id` header. Supplying an existing `x-reque
 
 Structured error responses also include the request ID in their JSON body, so a failure can be traced from the UI or CLI without relying on log timing.
 
+### Single Origin
+
+Every endpoint below is also served under an `/api` prefix, and the built web
+client is served from the same origin when present.
+
+The client addresses the API as `/api/...`. In development the Vite dev server
+strips that prefix; in a production build no dev server exists, so the API
+strips it itself. Without that, a built bundle calls `/api/*` and nothing
+answers — the routes work on the development path and not the shipped one.
+
+Set `OMEGA_WEB_DIST` to point at the client bundle. It defaults to
+`apps/web/dist`, and if no build is present the API serves the API alone.
+
 ### Kernel Memory
 
 ```

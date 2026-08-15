@@ -1,4 +1,6 @@
 import { randomUUID } from 'node:crypto';
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import express, { Express, Request, Response } from 'express';
 import { Observer } from '@omega-v/observer';
 import { VerificationEngine } from '@omega-v/verification';
@@ -13,6 +15,20 @@ import { appendEvent, loadSnapshot, readEventLog, saveSnapshot } from './persist
  */
 const app: Express = express();
 const port = process.env.API_PORT || 3000;
+
+/**
+ * The web client addresses the API under /api. In development that prefix
+ * is stripped by the Vite dev server's rewrite rule, which does not exist
+ * in a production build: the built bundle called /api/* and nothing served
+ * it. Stripping the prefix here means one origin serves both, and the
+ * client works identically built or not.
+ */
+app.use((req: Request, _res: Response, next) => {
+  if (req.url === '/api' || req.url.startsWith('/api/')) {
+    req.url = req.url.slice(4) || '/';
+  }
+  next();
+});
 
 // Middleware
 app.use(express.json());
@@ -760,9 +776,32 @@ app.get('/rules', (req: Request, res: Response) => {
 });
 
 /**
- * 404 Handler
+ * Static web client, when a build is present.
+ *
+ * apps/web was not in the image at all and had no production origin. The
+ * bundle is optional: if it has not been built, the API behaves exactly as
+ * before and this is a no-op.
  */
-app.use((_req: Request, res: Response) => {
+const webDistPath = process.env.OMEGA_WEB_DIST || join(process.cwd(), 'apps/web/dist');
+const webBuildPresent = existsSync(join(webDistPath, 'index.html'));
+
+if (webBuildPresent) {
+  app.use(express.static(webDistPath));
+}
+
+/**
+ * 404 Handler
+ *
+ * A single-page client owns its own routes, so an unmatched GET that is not
+ * an API call falls back to index.html. Anything else is a genuine 404 and
+ * still says so in the structured error shape.
+ */
+app.use((req: Request, res: Response) => {
+  if (webBuildPresent && req.method === 'GET' && !req.accepts('json')) {
+    res.sendFile(join(webDistPath, 'index.html'));
+    return;
+  }
+
   const errorResponse: ErrorResponse = {
     code: 'NOT_FOUND',
     message: 'Endpoint not found',

@@ -132,6 +132,16 @@ jobs:
           curl -sf http://localhost:3000/log | tee /tmp/log.json
           grep -q '"appendOnly":true' /tmp/log.json
 
+          # The client addresses the API under /api. In production there is
+          # no dev-server proxy, so the same routes must answer under the
+          # prefix the built bundle actually calls.
+          curl -sf http://localhost:3000/api/health | grep -q '"status":"ok"'
+          curl -sf http://localhost:3000/api/rules  | grep -q '"registered":2'
+
+          # And the client itself must be served from that same origin.
+          curl -sf http://localhost:3000/ | tee /tmp/index.html
+          grep -qi '<div id="root"' /tmp/index.html
+
       - name: Container logs
         if: always()
         run: docker logs omega-smoke || true
