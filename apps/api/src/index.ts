@@ -4,7 +4,7 @@ import { Observer } from '@omega-v/observer';
 import { VerificationEngine } from '@omega-v/verification';
 import { AttestationService } from '@omega-v/attestation';
 import { Attestation, SuccessResponse, ErrorResponse, VerificationRule } from '@omega-v/types';
-import { appendEvent, loadSnapshot, readEventLog, saveSnapshot } from './persistence';
+import { appendEvent, loadSnapshot, readEventLog, saveSnapshot } from './persistence.js';
 
 /**
  * Ω∞v Oceanicos API Server

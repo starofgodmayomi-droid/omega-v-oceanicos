@@ -5,6 +5,10 @@ export default {
   testMatch: ['**/__tests__/**/*.ts', '**/?(*.)+(spec|test).ts'],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   moduleNameMapper: {
+    // The packages are ESM ("type": "module"), so relative imports must
+    // carry a .js extension for Node to resolve them at runtime. Strip it
+    // here so ts-jest still resolves the .ts source.
+    '^(\\.{1,2}/.*)\\.js$': '$1',
     '@omega-v/types': '<rootDir>/packages/types/src/index.ts',
     '@omega-v/observer': '<rootDir>/packages/observer/src/index.ts',
     '@omega-v/verification': '<rootDir>/packages/verification/src/index.ts',
