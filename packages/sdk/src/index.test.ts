@@ -34,6 +34,37 @@ describe('OmegaClient', () => {
     expect(result.data.memory.intact).toBe(true);
   });
 
+  it('sends the optional read token as a bearer header', async () => {
+    const client = new OmegaClient(
+      'http://api.test',
+      async (url, init) => {
+        expect(url).toBe('http://api.test/observability');
+        expect(new Headers(init?.headers).get('authorization')).toBe('Bearer sdk-read-token');
+        return new Response(
+          JSON.stringify({
+            data: {
+              runtime: { mode: 'observe', persistence: 'memory', services: [], lastActivity: null },
+              provenance: {
+                recentEvents: 0,
+                durableEvents: 0,
+                skippedLogEntries: 0,
+                completedRuns: 0,
+                lastRequestId: null,
+                lastCorrelationId: null,
+              },
+              trust: { verificationCoverage: null, attestationValidity: null },
+              memory: { entries: 0, intact: true, appendOnly: true },
+            },
+            timestamp: '2026-08-16T00:00:00.000Z',
+          })
+        );
+      },
+      { readToken: 'sdk-read-token' }
+    );
+
+    await expect(client.getObservability()).resolves.toBeDefined();
+  });
+
   it('exposes events and runs through the same client contract', async () => {
     const paths: string[] = [];
     const client = new OmegaClient('http://api.test', async (url) => {

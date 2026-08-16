@@ -43,6 +43,19 @@ app.use((req: Request, res: Response, next) => {
   res.setHeader('referrer-policy', 'no-referrer');
   res.locals.requestId = requestId;
   res.setHeader('x-request-id', requestId);
+  const configuredReadToken = process.env.OMEGA_READ_TOKEN?.trim();
+  const isReadOnlyRequest = req.method === 'GET' && req.path !== '/health';
+  if (configuredReadToken && isReadOnlyRequest) {
+    const authorization = req.header('authorization') || '';
+    if (authorization !== `Bearer ${configuredReadToken}`) {
+      res.status(401).json({
+        code: 'READ_ACCESS_REQUIRED',
+        message: 'A valid bearer token is required for read-only evidence access',
+        requestId,
+      });
+      return;
+    }
+  }
   const sendJson = res.json.bind(res);
   res.json = ((body: unknown) => {
     if (body && typeof body === 'object' && 'code' in body) {

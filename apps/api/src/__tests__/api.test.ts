@@ -139,6 +139,25 @@ describe('API runtime contracts', () => {
     expect(verification.data.valid).toBe(true);
   });
 
+  it('enforces the opt-in read-only access token boundary', async () => {
+    const previousToken = process.env.OMEGA_READ_TOKEN;
+    process.env.OMEGA_READ_TOKEN = 'contract-read-token';
+    try {
+      const denied = await fetch(`${baseUrl}/observability`);
+      const deniedBody = (await denied.json()) as { code: string; requestId: string };
+      expect(denied.status).toBe(401);
+      expect(deniedBody.code).toBe('READ_ACCESS_REQUIRED');
+
+      const allowed = await fetch(`${baseUrl}/observability`, {
+        headers: { Authorization: 'Bearer contract-read-token' },
+      });
+      expect(allowed.status).toBe(200);
+    } finally {
+      if (previousToken === undefined) delete process.env.OMEGA_READ_TOKEN;
+      else process.env.OMEGA_READ_TOKEN = previousToken;
+    }
+  });
+
   it('sanitizes untrusted request IDs and emits baseline security headers', async () => {
     const response = await fetch(`${baseUrl}/health`, {
       headers: { 'x-request-id': 'bad id with spaces and\\ncontrol' },

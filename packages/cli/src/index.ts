@@ -48,9 +48,9 @@ type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
 
 function usage(): string {
   return [
-    'omega status [--url URL]',
-    'omega events [--url URL] [--limit N]',
-    'omega runs [--url URL] [--limit N]',
+    'omega status [--url URL] [--token TOKEN]',
+    'omega events [--url URL] [--limit N] [--token TOKEN]',
+    'omega runs [--url URL] [--limit N] [--token TOKEN]',
     '',
     'Read live runtime and evidence from the Omega V API.',
     '',
@@ -62,6 +62,16 @@ function usage(): string {
 function baseUrl(argv: string[]): string {
   const index = argv.indexOf('--url');
   return (index >= 0 ? argv[index + 1] : process.env.OMEGA_API_URL) || 'http://localhost:3000';
+}
+
+function readToken(argv: string[]): string | undefined {
+  const index = argv.indexOf('--token');
+  return (index >= 0 ? argv[index + 1] : process.env.OMEGA_READ_TOKEN) || undefined;
+}
+
+function requestInit(argv: string[]): RequestInit | undefined {
+  const token = readToken(argv);
+  return token ? { headers: { Authorization: `Bearer ${token}` } } : undefined;
 }
 
 function percent(value: number | null): string {
@@ -78,7 +88,7 @@ function limit(argv: string[]): number | null {
 async function status(argv: string[], fetchImpl: FetchLike): Promise<number> {
   const endpoint = `${baseUrl(argv).replace(/\/$/, '')}/observability`;
   try {
-    const response = await fetchImpl(endpoint);
+    const response = await fetchImpl(endpoint, requestInit(argv));
     const body = (await response.json()) as ObservabilityResponse | { error?: string };
     if (!response.ok || !('data' in body)) {
       process.stderr.write(`Observability unavailable (${response.status})\n`);
@@ -115,7 +125,7 @@ async function status(argv: string[], fetchImpl: FetchLike): Promise<number> {
 async function runs(argv: string[], fetchImpl: FetchLike): Promise<number> {
   const endpoint = `${baseUrl(argv).replace(/\/$/, '')}/runs`;
   try {
-    const response = await fetchImpl(endpoint);
+    const response = await fetchImpl(endpoint, requestInit(argv));
     const body = (await response.json()) as RunsResponse | { error?: string };
     if (!response.ok || !('data' in body) || !Array.isArray(body.data)) {
       process.stderr.write(`Runs unavailable (${response.status})\n`);
@@ -142,7 +152,7 @@ async function runs(argv: string[], fetchImpl: FetchLike): Promise<number> {
 async function events(argv: string[], fetchImpl: FetchLike): Promise<number> {
   const endpoint = `${baseUrl(argv).replace(/\/$/, '')}/events`;
   try {
-    const response = await fetchImpl(endpoint);
+    const response = await fetchImpl(endpoint, requestInit(argv));
     const body = (await response.json()) as EventsResponse | { error?: string };
     if (!response.ok || !('data' in body) || !Array.isArray(body.data)) {
       process.stderr.write(`Events unavailable (${response.status})\n`);

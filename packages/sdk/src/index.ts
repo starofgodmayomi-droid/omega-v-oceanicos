@@ -49,10 +49,16 @@ export class OmegaApiError extends Error {
 export class OmegaClient {
   private readonly baseUrl: string;
   private readonly fetchImpl: FetchLike;
+  private readonly readToken?: string;
 
-  constructor(baseUrl = 'http://localhost:3000', fetchImpl: FetchLike = globalThis.fetch) {
+  constructor(
+    baseUrl = 'http://localhost:3000',
+    fetchImpl: FetchLike = globalThis.fetch,
+    options: { readToken?: string } = {}
+  ) {
     this.baseUrl = baseUrl.replace(/\/$/, '');
     this.fetchImpl = fetchImpl;
+    this.readToken = options.readToken;
   }
 
   async getObservability(): Promise<Observability> {
@@ -71,7 +77,9 @@ export class OmegaClient {
     const endpoint = `${this.baseUrl}${path}`;
     let response: Response;
     try {
-      response = await this.fetchImpl(endpoint);
+      response = await this.fetchImpl(endpoint, {
+        headers: this.readToken ? { Authorization: `Bearer ${this.readToken}` } : undefined,
+      });
     } catch (error) {
       throw new OmegaApiError(error instanceof Error ? error.message : String(error), 0, endpoint);
     }
