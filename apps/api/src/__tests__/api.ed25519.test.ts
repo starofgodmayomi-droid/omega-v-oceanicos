@@ -10,8 +10,6 @@ process.env.OMEGA_ED25519_PRIVATE_KEY = privateKey
   .toString();
 process.env.OMEGA_PERSISTENCE = 'off';
 
-const { default: app } = await import('../server');
-
 type ApiResponse<T> = { data: T };
 
 type LoopPayload = {
@@ -29,10 +27,12 @@ type LoopPayload = {
 };
 
 describe('API Ed25519 integration', () => {
+  let app: Parameters<typeof createServer>[0];
   let server: Server;
   let baseUrl: string;
 
   beforeAll(async () => {
+    app = (await import('../server')).default;
     server = createServer(app);
     await new Promise<void>((resolve) => server.listen(0, resolve));
     const address = server.address();
