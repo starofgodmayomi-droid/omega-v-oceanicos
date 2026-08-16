@@ -84,7 +84,12 @@ type Revocation = {
   revokedAt: string;
 };
 
-type RevocationsResponse = { data: Revocation[]; timestamp: string };
+type RevocationIntegrity = 'disabled' | 'legacy' | 'intact' | 'mismatch';
+type RevocationsResponse = {
+  data: Revocation[];
+  meta?: { integrity: RevocationIntegrity; digest: string };
+  timestamp: string;
+};
 
 type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
 
@@ -284,7 +289,12 @@ async function verifyAttestation(argv: string[], fetchImpl: FetchLike): Promise<
       body: JSON.stringify({ attestation }),
     });
     const body = (await response.json()) as {
-      data?: { valid: boolean; revoked: boolean; expired: boolean };
+      data?: {
+        valid: boolean;
+        revoked: boolean;
+        expired: boolean;
+        revocationIntegrity: RevocationIntegrity;
+      };
       message?: string;
     };
     if (!response.ok || !body.data) {
@@ -294,9 +304,9 @@ async function verifyAttestation(argv: string[], fetchImpl: FetchLike): Promise<
       return 1;
     }
     process.stdout.write(
-      `VERIFICATION valid=${body.data.valid} revoked=${body.data.revoked} expired=${body.data.expired}\n`
+      `VERIFICATION valid=${body.data.valid} revoked=${body.data.revoked} expired=${body.data.expired} registry=${body.data.revocationIntegrity}\n`
     );
-    return body.data.valid ? 0 : 1;
+    return body.data.valid && body.data.revocationIntegrity !== 'mismatch' ? 0 : 1;
   } catch (error) {
     process.stderr.write(
       `Verification failed: ${error instanceof Error ? error.message : String(error)}\n`
@@ -313,7 +323,9 @@ async function revocations(argv: string[], fetchImpl: FetchLike): Promise<number
       process.stderr.write(`Revocations unavailable (${response.status})\n`);
       return 1;
     }
-    process.stdout.write(`REVOCATIONS   ${body.data.length}\n`);
+    process.stdout.write(
+      `REVOCATIONS   ${body.data.length} integrity=${body.meta?.integrity ?? 'unknown'}\n`
+    );
     for (const entry of body.data) {
       process.stdout.write(
         `${entry.attestationId} revokedBy=${entry.revokedBy} reason=${entry.reason} at=${entry.revokedAt}\n`

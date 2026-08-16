@@ -318,8 +318,7 @@ revoked attestation remains cryptographically inspectable, but
 returns `409 REVOKED_ATTESTATION` rather than authorizing an action. When
 `OMEGA_ATTESTATION_TTL_MS` is configured, expiry is an additional authorization
 predicate: verification reports `expired: true` and `/act` returns
-`409 EXPIRED_ATTESTATION`. Duplicate
-revocation requests are rejected with `409 ATTESTATION_ALREADY_REVOKED`.
+`409 EXPIRED_ATTESTATION`. Duplicate revocation requests are rejected with `409 ATTESTATION_ALREADY_REVOKED`. `GET /attest/revocations` also returns non-secret integrity metadata: `disabled` when persistence is off, `legacy` when an older snapshot has no registry digest, `intact` when the digest matches loaded records, and `mismatch` when it does not. A mismatched registry fails closed with `503 REVOCATION_REGISTRY_INTEGRITY` for verification-sensitive mutation and action paths. This digest is local tamper evidence, not distributed consistency, custody, secure deletion, or proof that both records and digest could not be altered together.
 
 ### Runtime State
 
@@ -637,7 +636,9 @@ curl -X POST http://localhost:3000/complete-loop \
 
 Revocation records are included in the encrypted runtime snapshot when
 persistence is enabled and every revocation also produces an append-only
-`attestation.revoked` event.
+`attestation.revoked` event. The snapshot carries a local SHA-256 registry digest
+for mismatch detection; legacy snapshots without that digest remain visible as
+`legacy` rather than being asserted intact.
 
 ## Testing
 

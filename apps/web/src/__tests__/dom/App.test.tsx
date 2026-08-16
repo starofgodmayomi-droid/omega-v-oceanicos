@@ -237,6 +237,8 @@ describe('dashboard', () => {
     expect(await screen.findByText('ATTESTATION TTL')).toBeInTheDocument();
     expect(screen.getByText('900s')).toBeInTheDocument();
     expect(screen.getByText('REVOCATION / ADMIN')).toBeInTheDocument();
+    expect(screen.getByText('REVOCATION INTEGRITY')).toBeInTheDocument();
+    expect(screen.getByText('DISABLED')).toBeInTheDocument();
     expect(screen.getByText('CURRENT')).toBeInTheDocument();
     expect(screen.getByText('HEALTH')).toBeInTheDocument();
     expect(screen.getAllByText('READY')).toHaveLength(2);

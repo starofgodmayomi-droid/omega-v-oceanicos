@@ -34,6 +34,7 @@ type RuntimePolicy = {
   readAuthConfigured: boolean;
   adminAuthConfigured: boolean;
   revocationEnabled: boolean;
+  revocationIntegrity: 'disabled' | 'legacy' | 'intact' | 'mismatch';
   persistenceEncryption: string;
   persistenceEncryptionKeySource: 'none' | 'current' | 'previous' | 'mixed';
   persistencePreviousKeyConfigured: boolean;
@@ -46,6 +47,7 @@ type RuntimeHealth = {
     memory: { integrity: boolean };
   };
 };
+type RevocationIntegrity = 'disabled' | 'legacy' | 'intact' | 'mismatch';
 type RuntimeRevocation = {
   id: string;
   attestationId: string;
@@ -86,6 +88,7 @@ export function App(): JSX.Element {
   const [events, setEvents] = useState<RuntimeEvent[]>([]);
   const [recentRuns, setRecentRuns] = useState<LoopResult[]>([]);
   const [revocations, setRevocations] = useState<RuntimeRevocation[]>([]);
+  const [revocationIntegrity, setRevocationIntegrity] = useState<RevocationIntegrity | null>(null);
   const [attestationTtlMs, setAttestationTtlMs] = useState<number | null>(null);
   const [policy, setPolicy] = useState<RuntimePolicy | null>(null);
   const [result, setResult] = useState<LoopResult | null>(null);
@@ -180,7 +183,10 @@ export function App(): JSX.Element {
       };
       const eventData = (await eventsResponse.json()) as { data: RuntimeEvent[] };
       const runData = (await runsResponse.json()) as { data: LoopResult[] };
-      const revocationData = (await revocationsResponse.json()) as { data: RuntimeRevocation[] };
+      const revocationData = (await revocationsResponse.json()) as {
+        data: RuntimeRevocation[];
+        meta?: { integrity: RevocationIntegrity; digest: string };
+      };
       const policyData = (await policyResponse.json()) as { data: RuntimePolicy };
       const publicKeyResponse = await fetch('/api/attest/public-key').catch(() => null);
       if (publicKeyResponse?.ok) {
@@ -204,6 +210,7 @@ export function App(): JSX.Element {
       setEvents(eventData.data);
       setRecentRuns(runData.data);
       setRevocations(revocationData.data);
+      setRevocationIntegrity(revocationData.meta?.integrity ?? null);
       setPolicy(policyData.data);
       setResult((current) => current ?? runData.data[0] ?? null);
       setSelectedEvent((current) =>
@@ -683,6 +690,12 @@ export function App(): JSX.Element {
             <span>REVOCATIONS</span>
             <strong className={revocations.length > 0 ? 'red' : ''}>
               {revocations.length.toString().padStart(2, '0')}
+            </strong>
+          </div>
+          <div>
+            <span>REVOCATION INTEGRITY</span>
+            <strong className={revocationIntegrity === 'intact' ? 'green' : ''}>
+              {revocationIntegrity ? revocationIntegrity.toUpperCase() : 'UNKNOWN'}
             </strong>
           </div>
           <div>

@@ -1,5 +1,11 @@
 import { createServer, Server } from 'node:http';
-import app, { constantTimeTokenMatch, isAttestationExpired } from '../index';
+import {
+  app,
+  constantTimeTokenMatch,
+  isAttestationExpired,
+  revocationRegistryDigest,
+  revocationRegistryStatus,
+} from '../index';
 import { Attestation } from '@omega-v/types';
 
 type ApiResponse<T> = { data: T };
@@ -12,6 +18,24 @@ type LoopPayload = {
 };
 
 describe('API runtime contracts', () => {
+  it('makes revocation registry integrity states explicit', () => {
+    const records = [
+      {
+        id: 'rev-1',
+        attestationId: 'att-1',
+        reason: 'review',
+        revokedBy: 'test',
+        revokedAt: '2026-08-16T00:00:00.000Z',
+      },
+    ];
+    const digest = revocationRegistryDigest(records);
+
+    expect(revocationRegistryStatus(false, undefined, digest)).toBe('disabled');
+    expect(revocationRegistryStatus(true, undefined, digest)).toBe('legacy');
+    expect(revocationRegistryStatus(true, digest, digest)).toBe('intact');
+    expect(revocationRegistryStatus(true, digest, `${digest}-tampered`)).toBe('mismatch');
+  });
+
   it('matches bearer tokens without using ordinary string equality', () => {
     expect(constantTimeTokenMatch('same-token', 'same-token')).toBe(true);
     expect(constantTimeTokenMatch('same-token', 'same-tokeN')).toBe(false);
@@ -147,6 +171,7 @@ describe('API runtime contracts', () => {
       readAuthConfigured: boolean;
       adminAuthConfigured: boolean;
       revocationEnabled: boolean;
+      revocationIntegrity: string;
       persistenceEncryption: string;
       persistenceEncryptionKeySource: string;
       persistencePreviousKeyConfigured: boolean;
@@ -159,6 +184,7 @@ describe('API runtime contracts', () => {
     expect(body.data.readAuthConfigured).toBe(false);
     expect(body.data.adminAuthConfigured).toBe(false);
     expect(body.data.revocationEnabled).toBe(true);
+    expect(body.data.revocationIntegrity).toBe('disabled');
     expect(body.data.persistenceEncryption).toBe('disabled');
     expect(body.data.persistenceEncryptionKeySource).toBe('none');
     expect(body.data.persistencePreviousKeyConfigured).toBe(false);

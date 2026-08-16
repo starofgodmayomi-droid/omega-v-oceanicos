@@ -236,7 +236,12 @@ describe('API loop: act, learn, recompile', () => {
     const verification = (await (
       await post('/attest/verify', { attestation: loop.data.attestation })
     ).json()) as Body<{ valid: boolean; revoked: boolean; expired: boolean }>;
-    expect(verification.data).toEqual({ valid: false, revoked: true, expired: false });
+    expect(verification.data).toEqual({
+      valid: false,
+      revoked: true,
+      expired: false,
+      revocationIntegrity: 'disabled',
+    });
 
     const denied = await post('/act', { attestation: loop.data.attestation });
     expect(denied.status).toBe(409);

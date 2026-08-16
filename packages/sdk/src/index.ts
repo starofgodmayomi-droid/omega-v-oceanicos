@@ -67,6 +67,7 @@ export type AttestationPolicy = {
   readAuthConfigured: boolean;
   adminAuthConfigured: boolean;
   revocationEnabled: boolean;
+  revocationIntegrity: 'disabled' | 'legacy' | 'intact' | 'mismatch';
   persistenceEncryption: string;
   persistenceEncryptionKeySource: 'none' | 'current' | 'previous' | 'mixed';
   persistencePreviousKeyConfigured: boolean;
@@ -77,6 +78,7 @@ export type AttestationVerification = {
   valid: boolean;
   revoked: boolean;
   expired: boolean;
+  revocationIntegrity: 'disabled' | 'legacy' | 'intact' | 'mismatch';
 };
 
 export type AttestationRevocation = {
@@ -142,8 +144,16 @@ export class OmegaClient {
     return this.get<{ data: AttestationPolicy; timestamp: string }>('/attest/policy');
   }
 
-  async getRevocations(): Promise<{ data: AttestationRevocation[]; timestamp: string }> {
-    return this.get<{ data: AttestationRevocation[]; timestamp: string }>('/attest/revocations');
+  async getRevocations(): Promise<{
+    data: AttestationRevocation[];
+    meta?: { integrity: 'disabled' | 'legacy' | 'intact' | 'mismatch'; digest: string };
+    timestamp: string;
+  }> {
+    return this.get<{
+      data: AttestationRevocation[];
+      meta?: { integrity: 'disabled' | 'legacy' | 'intact' | 'mismatch'; digest: string };
+      timestamp: string;
+    }>('/attest/revocations');
   }
 
   async verifyAttestation(

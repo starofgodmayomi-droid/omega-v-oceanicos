@@ -225,12 +225,16 @@ blocked on design; each is a decision or a scoped change.
   controlled rotation, and observability reports `current`, `previous`, or
   `mixed` without exposing secrets. HSM/KMS custody, secure deletion,
   automated re-encryption, recovery, and distributed coordination remain open.
-- **Attestation revocation — API increment implemented, capability not
-  complete.** Recorded attestations can now be revoked with an operator reason;
+- **Attestation revocation — local integrity evidence implemented, capability
+  not complete.** Recorded attestations can be revoked with an operator reason;
   revocation is persisted, emitted as an append-only event, visible through the
   API, invalidates verification for authorization purposes, and blocks `/act`.
-  Broader policy administration, expiry, distributed consistency and recovery
-  procedures remain open.
+  A local SHA-256 registry digest now reports `disabled`, `legacy`, `intact`, or
+  `mismatch`; mismatch fails closed for verification-sensitive action and
+  mutation paths. This is tamper evidence over local records, not distributed
+  consistency, custody, secure deletion, or proof that records and digest could
+  not be altered together. Broader policy administration, expiry, distributed
+  consistency and recovery procedures remain open.
 - **Health/readiness observability — contract implemented, deployment health not
   claimed.** `GET /health` remains unauthenticated for probes and returns
   explicit liveness, readiness, memory-integrity, persistence-codec, and

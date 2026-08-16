@@ -188,13 +188,14 @@ describe('omega status CLI', () => {
               revokedAt: '2026-08-16T00:00:00.000Z',
             },
           ],
+          meta: { integrity: 'intact', digest: 'sha256:test' },
           timestamp: '2026-08-16T00:00:00.000Z',
         })
       );
     });
 
     expect(exitCode).toBe(0);
-    expect(output.join('')).toContain('REVOCATIONS   1');
+    expect(output.join('')).toContain('REVOCATIONS   1 integrity=intact');
     expect(output.join('')).toContain('att-1 revokedBy=operator reason=stale evidence');
   });
 
@@ -216,6 +217,7 @@ describe('omega status CLI', () => {
             readAuthConfigured: true,
             adminAuthConfigured: true,
             revocationEnabled: true,
+            revocationIntegrity: 'intact',
             persistenceEncryption: 'aes-256-gcm',
             persistenceEncryptionKeySource: 'previous',
             persistencePreviousKeyConfigured: true,
@@ -247,13 +249,22 @@ describe('omega status CLI', () => {
         expect(new Headers(init?.headers).get('authorization')).toBe('Bearer cli-token');
         expect(JSON.parse(String(init?.body))).toEqual({ attestation: { id: 'att-1' } });
         return new Response(
-          JSON.stringify({ data: { valid: false, revoked: false, expired: true } })
+          JSON.stringify({
+            data: {
+              valid: false,
+              revoked: false,
+              expired: true,
+              revocationIntegrity: 'intact',
+            },
+          })
         );
       }
     );
 
     expect(exitCode).toBe(1);
-    expect(output.join('')).toContain('VERIFICATION valid=false revoked=false expired=true');
+    expect(output.join('')).toContain(
+      'VERIFICATION valid=false revoked=false expired=true registry=intact'
+    );
   });
 
   it('reports unavailable revocations without claiming an empty result', async () => {
