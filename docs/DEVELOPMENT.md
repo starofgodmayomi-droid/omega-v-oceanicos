@@ -41,13 +41,17 @@ npm install
 
 Or with pnpm:
 
-````bash
+```bash
+pnpm install
+```
+
+### 3. Run Verification
 
 The full verification suite checks that everything is working:
 
 ```bash
 pnpm verify
-````
+```
 
 This runs:
 
