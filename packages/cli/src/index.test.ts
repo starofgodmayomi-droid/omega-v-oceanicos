@@ -89,6 +89,43 @@ describe('omega status CLI', () => {
     expect(output.join('')).not.toContain('event-2');
   });
 
+  it('reads recent runs and displays verification and attestation status', async () => {
+    const output: string[] = [];
+    process.stdout.write = ((chunk: string | Uint8Array) => {
+      output.push(String(chunk));
+      return true;
+    }) as typeof process.stdout.write;
+
+    const exitCode = await run(
+      ['runs', '--url', 'http://api.test/', '--limit', '1'],
+      async (url) => {
+        expect(url).toBe('http://api.test/runs');
+        return new Response(
+          JSON.stringify({
+            data: [
+              {
+                observation: { id: 'obs-1' },
+                verification: { id: 'ver-1', summary: { passed: true } },
+                attestation: { id: 'att-1', verified: true },
+              },
+              {
+                observation: { id: 'obs-2' },
+                verification: { id: 'ver-2', summary: { passed: false } },
+                attestation: { id: 'att-2', verified: false },
+              },
+            ],
+            timestamp: '2026-08-16T00:00:00.000Z',
+          })
+        );
+      }
+    );
+
+    expect(exitCode).toBe(0);
+    expect(output.join('')).toContain('RUNS          1/2');
+    expect(output.join('')).toContain('obs-1 verification=PASSED attestation=VALID');
+    expect(output.join('')).not.toContain('obs-2');
+  });
+
   it('fails closed when memory integrity is false', async () => {
     const errors: string[] = [];
     process.stderr.write = ((chunk: string | Uint8Array) => {

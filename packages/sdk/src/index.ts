@@ -28,7 +28,11 @@ export type Observability = {
 };
 
 export type RuntimeEvent = Record<string, unknown>;
-export type RuntimeRun = Record<string, unknown>;
+export type RuntimeRun = {
+  observation: { id: string; claim?: { statement?: string } };
+  verification: { id: string; summary: { passed: boolean; confidence?: number } };
+  attestation: { id: string; verified: boolean; attestedAt?: string };
+};
 export type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
 
 export class OmegaApiError extends Error {

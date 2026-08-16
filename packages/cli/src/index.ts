@@ -35,12 +35,22 @@ type EventsResponse = {
   timestamp: string;
 };
 
+type RunsResponse = {
+  data: Array<{
+    observation: { id: string; claim?: { statement?: string } };
+    verification: { id: string; summary: { passed: boolean; confidence?: number } };
+    attestation: { id: string; verified: boolean; attestedAt?: string };
+  }>;
+  timestamp: string;
+};
+
 type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
 
 function usage(): string {
   return [
     'omega status [--url URL]',
     'omega events [--url URL] [--limit N]',
+    'omega runs [--url URL] [--limit N]',
     '',
     'Read live runtime and evidence from the Omega V API.',
     '',
@@ -102,6 +112,33 @@ async function status(argv: string[], fetchImpl: FetchLike): Promise<number> {
   }
 }
 
+async function runs(argv: string[], fetchImpl: FetchLike): Promise<number> {
+  const endpoint = `${baseUrl(argv).replace(/\/$/, '')}/runs`;
+  try {
+    const response = await fetchImpl(endpoint);
+    const body = (await response.json()) as RunsResponse | { error?: string };
+    if (!response.ok || !('data' in body) || !Array.isArray(body.data)) {
+      process.stderr.write(`Runs unavailable (${response.status})\n`);
+      return 1;
+    }
+
+    const requestedLimit = limit(argv);
+    const entries = requestedLimit === null ? body.data : body.data.slice(0, requestedLimit);
+    process.stdout.write(`RUNS          ${entries.length}/${body.data.length}\n`);
+    for (const entry of entries) {
+      process.stdout.write(
+        `${entry.observation.id} verification=${entry.verification.summary.passed ? 'PASSED' : 'FAILED'} attestation=${entry.attestation.verified ? 'VALID' : 'INVALID'}\n`
+      );
+    }
+    return 0;
+  } catch (error) {
+    process.stderr.write(
+      `Runs unavailable: ${error instanceof Error ? error.message : String(error)}\n`
+    );
+    return 1;
+  }
+}
+
 async function events(argv: string[], fetchImpl: FetchLike): Promise<number> {
   const endpoint = `${baseUrl(argv).replace(/\/$/, '')}/events`;
   try {
@@ -138,6 +175,7 @@ export async function run(
   }
   if (command === 'status') return status(argv, fetchImpl);
   if (command === 'events') return events(argv, fetchImpl);
+  if (command === 'runs') return runs(argv, fetchImpl);
 
   process.stderr.write(`Unknown command: ${command}\n\n${usage()}\n`);
   return 2;

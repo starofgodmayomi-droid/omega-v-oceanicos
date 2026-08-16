@@ -30,4 +30,15 @@ node packages/cli/dist/index.js events --url http://localhost:3000 --limit 10
 
 This command reads `GET /events`, preserves the returned event objects, and optionally limits how many recent entries are printed. It does not mutate runtime state or invent event fields.
 
-Broader evidence export, SDK, and mobile capabilities remain future slices and are not claimed by this package.
+## Run evidence
+
+Read recent completed runs and their verification/attestation status:
+
+```bash
+node packages/cli/dist/index.js runs --url http://localhost:3000
+node packages/cli/dist/index.js runs --url http://localhost:3000 --limit 10
+```
+
+This command reads `GET /runs` and reports only the returned observation ID, verification status, and attestation status.
+
+Broader evidence export and mobile capabilities remain future slices. The typed SDK is available separately as `@omega-v/sdk`.
