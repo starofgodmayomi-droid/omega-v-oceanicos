@@ -66,6 +66,7 @@ export type AttestationPolicy = {
   attestationTtlMs: number | null;
   readAuthConfigured: boolean;
   adminAuthConfigured: boolean;
+  adminOperatorAllowlistConfigured: boolean;
   revocationEnabled: boolean;
   revocationIntegrity: 'disabled' | 'legacy' | 'intact' | 'mismatch';
   persistenceEncryption: string;
@@ -169,13 +170,15 @@ export class OmegaClient {
   async revokeAttestation(
     attestationId: string,
     reason: string,
-    revokedBy = 'sdk-client'
+    revokedBy = 'sdk-client',
+    operatorId?: string
   ): Promise<{ data: AttestationRevocation; timestamp: string }> {
-    return this.post<{ data: AttestationRevocation; timestamp: string }>('/attest/revoke', {
-      attestationId,
-      reason,
-      revokedBy,
-    });
+    return this.post<{ data: AttestationRevocation; timestamp: string }>(
+      '/attest/revoke',
+      { attestationId, reason, revokedBy },
+      this.adminToken,
+      operatorId ? { 'x-omega-operator-id': operatorId } : undefined
+    );
   }
 
   async getEvidenceExport(): Promise<{
@@ -190,7 +193,12 @@ export class OmegaClient {
     }>('/evidence/export');
   }
 
-  private async post<T>(path: string, payload: unknown, bearerToken = this.adminToken): Promise<T> {
+  private async post<T>(
+    path: string,
+    payload: unknown,
+    bearerToken = this.adminToken,
+    extraHeaders?: Record<string, string>
+  ): Promise<T> {
     const endpoint = `${this.baseUrl}${path}`;
     let response: Response;
     try {
@@ -199,6 +207,7 @@ export class OmegaClient {
         headers: {
           'content-type': 'application/json',
           ...(bearerToken ? { Authorization: `Bearer ${bearerToken}` } : {}),
+          ...extraHeaders,
         },
         body: JSON.stringify(payload),
       });

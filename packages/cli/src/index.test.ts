@@ -216,6 +216,7 @@ describe('omega status CLI', () => {
             attestationTtlMs: 900000,
             readAuthConfigured: true,
             adminAuthConfigured: true,
+            adminOperatorAllowlistConfigured: true,
             revocationEnabled: true,
             revocationIntegrity: 'intact',
             persistenceEncryption: 'aes-256-gcm',

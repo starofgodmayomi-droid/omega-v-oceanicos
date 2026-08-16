@@ -5,6 +5,7 @@ import {
   isAttestationExpired,
   revocationRegistryDigest,
   revocationRegistryStatus,
+  operatorIdentityAllowed,
 } from '../index';
 import { Attestation } from '@omega-v/types';
 
@@ -34,6 +35,13 @@ describe('API runtime contracts', () => {
     expect(revocationRegistryStatus(true, undefined, digest)).toBe('legacy');
     expect(revocationRegistryStatus(true, digest, digest)).toBe('intact');
     expect(revocationRegistryStatus(true, digest, `${digest}-tampered`)).toBe('mismatch');
+  });
+
+  it('allows only configured operator identities when an allowlist is present', () => {
+    expect(operatorIdentityAllowed('dashboard-operator', [])).toBe(true);
+    expect(operatorIdentityAllowed('dashboard-operator', ['dashboard-operator'])).toBe(true);
+    expect(operatorIdentityAllowed('unknown-operator', ['dashboard-operator'])).toBe(false);
+    expect(operatorIdentityAllowed(undefined, ['dashboard-operator'])).toBe(false);
   });
 
   it('matches bearer tokens without using ordinary string equality', () => {
@@ -170,6 +178,7 @@ describe('API runtime contracts', () => {
       attestationTtlMs: number | null;
       readAuthConfigured: boolean;
       adminAuthConfigured: boolean;
+      adminOperatorAllowlistConfigured: boolean;
       revocationEnabled: boolean;
       revocationIntegrity: string;
       persistenceEncryption: string;
@@ -183,6 +192,7 @@ describe('API runtime contracts', () => {
     expect(body.data.attestationTtlMs).toBe(null);
     expect(body.data.readAuthConfigured).toBe(false);
     expect(body.data.adminAuthConfigured).toBe(false);
+    expect(body.data.adminOperatorAllowlistConfigured).toBe(false);
     expect(body.data.revocationEnabled).toBe(true);
     expect(body.data.revocationIntegrity).toBe('disabled');
     expect(body.data.persistenceEncryption).toBe('disabled');

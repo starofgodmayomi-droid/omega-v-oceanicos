@@ -40,10 +40,11 @@ Push, PR publication, merge, deployment, and other externally visible actions ar
 | Health-readiness contract       | Unauthenticated `GET /health` exposes liveness, readiness, memory integrity, persistence and codec modes, and non-secret policy. The dashboard renders observed readiness, SDK `getHealth()` is typed, and CLI `health` exits non-zero for degraded or unavailable evidence.                                                                                  |
 | Persistence-key rotation        | `OMEGA_PERSISTENCE_KEY` encrypts new snapshot/event-log writes; optional `OMEGA_PERSISTENCE_KEY_PREVIOUS` permits authenticated fallback reads. API policy/observability, web, SDK, and CLI expose only `none/current/previous/mixed` provenance and previous-key presence.                                                                                   |
 | Revocation integrity evidence   | A persisted local SHA-256 digest now reports `disabled`, `legacy`, `intact`, or `mismatch` across API, web, SDK, CLI, tests, and docs. Mismatch fails closed for verification-sensitive action and mutation paths; distributed consistency remains open.                                                                                                      |
+| Operator identity allowlist     | Optional `OMEGA_ADMIN_OPERATOR_ALLOWLIST` binds revocation to a listed identity. API policy exposes configured presence; web, SDK, and CLI carry the identity boundary; unlisted identities fail closed. Complete identity/authentication remains open.                                                                                                       |
 
 ## Current repository state
 
-The active worktree is `/home/ubuntu/current-main-worktree` on branch `main`, synchronized with merged `origin/main`. Local commits currently include:
+The active worktree is `/home/ubuntu/current-main-worktree` on branch `feat/admin-operator-allowlist`, based on merged `origin/main`. Local commits currently include:
 
 | Commit    | Meaning                                                                                                                                      | Publication state                                      |
 | --------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
@@ -65,6 +66,7 @@ The active worktree is `/home/ubuntu/current-main-worktree` on branch `main`, sy
 | `5e267b5` | PR #34 squash merge: health-readiness contract across API, web, SDK, CLI, tests, and docs                                                    | Merged into `main`; CI green                           |
 | `cae0c65` | PR #36 squash merge: controlled persistence-key rotation fallback across API, web, SDK, CLI, tests, and docs                                 | Merged into `main`; CI green                           |
 | `0cd211d` | PR #38 squash merge: local revocation-registry integrity digest and fail-closed mismatch evidence across API, web, SDK, CLI, tests, and docs | Merged into `main`; CI green                           |
+| pending   | Optional operator-identity allowlist across API, web, SDK, CLI, tests, and docs                                                              | Locally verified; not yet committed or published       |
 
 | |
 | PR #33 is **merged** into `main` as squash commit `fb73ac28990b2b42b6339da2e8ca76007616dd70`, observed at `2026-08-16T14:46:39Z`. The published head `2cc2d21` passed Node 18, Node 20, Windows compatibility, package/smoke, and report checks; attested-artifact publication was skipped as designed. |
@@ -103,10 +105,11 @@ The combined signing-audit and persistence-encryption state passed:
 | Health-readiness verification            | Focused API/web/SDK/CLI tests pass (77 tests); full local coverage/build pass with 337 tests, readiness output, degraded CLI exit behavior, web contract drift, and build all pass.                                                                   |
 | Persistence rotation verification        | Focused API/web/SDK/CLI/persistence tests pass (108 tests); full local coverage/build pass with 339 tests, previous-key snapshot fallback, mixed event-log provenance, active-key write semantics, policy fields, and build all pass.                 |
 | Revocation-integrity verification        | Focused API/web/SDK/CLI tests pass (93 tests); full local coverage/build pass with 340 tests, deterministic disabled/legacy/intact/mismatch status helpers, policy/ledger metadata, CLI output, web rendering, and fail-closed action/mutation paths. |
+| Operator-identity verification           | Focused API/web/SDK/CLI tests pass (94 tests); full local coverage/build pass with 341 tests, allow/deny predicate evidence, policy field, SDK header, CLI `--operator-id`, dashboard identity header, and non-secret documentation.                  |
 
 | `git diff --check` | Passed before the revocation commit |
 
-The last full local verification for the revocation-integrity slice observed 340 passing tests, 71.15% global branch coverage, and a successful build; PR #38’s CI matrix was subsequently observed green and merged. The repository may contain generated build output ignored by Git; only intended source and documentation changes should be committed.
+The last full local verification for the operator-identity allowlist slice observed 341 passing tests, 71.15% global branch coverage, and a successful build. This slice is local-only until its separate publication and merge gates are observed. The repository may contain generated build output ignored by Git; only intended source and documentation changes should be committed.
 
 ## Remaining gaps and uncertainty
 
@@ -116,6 +119,6 @@ The web client exposes revoke and revocation-ledger controls. Stronger administr
 
 ## Next authorized action
 
-1. Reconcile the merged main branch and preserve PR #38’s CI/merge evidence.
-2. Select the next smallest worker-sized slice, prioritizing stronger administrative authorization or distributed coordination.
-3. Keep any new publication, merge, and deployment actions behind separate human gates.
+1. Commit the locally verified operator-identity allowlist slice.
+2. Push it to a new PR under the standing slice-by-slice publication authorization and observe CI.
+3. Mark ready and merge only when repository gates permit; do not claim complete identity or deployment.

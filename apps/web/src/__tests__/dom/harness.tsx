@@ -168,6 +168,7 @@ export function installFetch(overrides: RouteOverrides = {}): jest.Mock {
           attestationTtlMs: null,
           readAuthConfigured: false,
           adminAuthConfigured: false,
+          adminOperatorAllowlistConfigured: false,
           revocationEnabled: true,
           revocationIntegrity: 'disabled',
           persistenceEncryption: 'disabled',

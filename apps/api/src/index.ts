@@ -240,6 +240,24 @@ type RuntimeSnapshot = {
 };
 
 export const ADMIN_TOKEN_ENV = 'OMEGA_ADMIN_TOKEN';
+export const OPERATOR_ALLOWLIST_ENV = 'OMEGA_ADMIN_OPERATOR_ALLOWLIST';
+
+const configuredOperatorAllowlist = (): string[] =>
+  (process.env[OPERATOR_ALLOWLIST_ENV] || '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+export const operatorAllowlistConfigured = (): boolean => configuredOperatorAllowlist().length > 0;
+
+export const operatorIdentityAllowed = (
+  operatorId: string | undefined,
+  allowlist: string[]
+): boolean =>
+  allowlist.length === 0 || (operatorId !== undefined && allowlist.includes(operatorId));
+
+const operatorAllowed = (operatorId: string | undefined): boolean =>
+  operatorIdentityAllowed(operatorId, configuredOperatorAllowlist());
 
 const runtimeStorePath =
   process.env.OMEGA_RUNTIME_STORE_PATH || '/tmp/omega-v-oceanicos/runtime.json';
@@ -771,11 +789,22 @@ app.post('/attest/revoke', (req: Request, res: Response) => {
     attestationId,
     reason,
     revokedBy = 'operator',
+    operatorId: operatorIdFromBody,
   } = req.body as {
     attestationId?: string;
     reason?: string;
     revokedBy?: string;
+    operatorId?: string;
   };
+  const operatorId = req.header('x-omega-operator-id') || operatorIdFromBody;
+  if (!operatorAllowed(operatorId)) {
+    res.status(403).json({
+      code: 'ADMIN_OPERATOR_NOT_ALLOWED',
+      message: 'The operator identity is not allowed to revoke attestations',
+      timestamp: new Date().toISOString(),
+    } satisfies ErrorResponse);
+    return;
+  }
   if (revocationIntegrityStatus === 'mismatch') {
     res.status(503).json({
       code: 'REVOCATION_REGISTRY_INTEGRITY',
@@ -813,7 +842,7 @@ app.post('/attest/revoke', (req: Request, res: Response) => {
     id: `rev-${new Date().toISOString().replace(/[-:.TZ]/g, '')}`,
     attestationId,
     reason,
-    revokedBy,
+    revokedBy: operatorId || revokedBy,
     revokedAt: new Date().toISOString(),
   };
   runtimeRevocations.unshift(revocation);
@@ -845,6 +874,7 @@ app.get('/attest/policy', (_req: Request, res: Response) => {
       adminAuthConfigured: Boolean(process.env[ADMIN_TOKEN_ENV]?.trim()),
       revocationEnabled: true,
       revocationIntegrity: revocationIntegrityStatus,
+      adminOperatorAllowlistConfigured: operatorAllowlistConfigured(),
       persistenceEncryption: persistenceEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
       persistenceEncryptionKeySource,
       persistencePreviousKeyConfigured: previousPersistenceEncryptionConfigured,
