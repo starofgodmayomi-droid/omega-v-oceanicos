@@ -62,6 +62,22 @@ describe('API runtime contracts', () => {
     });
   });
 
+  /**
+   * `parseAuditQuery` validates `from` and `to` as ISO-8601 timestamps before
+   * comparing them. The existing test only supplied two well-formed
+   * timestamps in the wrong order, so the `Number.isNaN(Date.parse(...))`
+   * guards that reject an unparseable `from` or `to` had never returned
+   * their error.
+   */
+  it('rejects audit query timestamps that are not valid ISO-8601', () => {
+    expect(parseAuditQuery({ from: 'not-a-date' })).toEqual({
+      error: 'from must be an ISO-8601 timestamp',
+    });
+    expect(parseAuditQuery({ to: 'not-a-date' })).toEqual({
+      error: 'to must be an ISO-8601 timestamp',
+    });
+  });
+
   it('allows only configured operator identities when an allowlist is present', () => {
     expect(operatorIdentityAllowed('dashboard-operator', [])).toBe(true);
     expect(operatorIdentityAllowed('dashboard-operator', ['dashboard-operator'])).toBe(true);
@@ -226,6 +242,53 @@ describe('API runtime contracts', () => {
     expect(state.data.trustBasis.evidenceQuality).toBe(0.95);
     expect(state.data.trustBasis.verificationCoverage).toBe(1);
     expect(state.data.trustBasis.attestationValidity).toBe(1);
+  });
+
+  /**
+   * `GET /audit/events` filters `sourceEvents` with a predicate over type,
+   * stage, status, and temporal bounds. The one existing audit-events test
+   * ran before any loop populated events, so `sourceEvents` was always
+   * empty and the filter callback body itself never executed. This test
+   * runs after a completed loop (six distinct events across five stages),
+   * so every predicate clause evaluates against real, non-matching and
+   * matching entries.
+   */
+  it('filters bounded audit events by type, stage, and temporal bounds', async () => {
+    const unfiltered = (await (await fetch(`${baseUrl}/audit/events?limit=500`)).json()) as {
+      data: Array<{ type: string; stage: string; timestamp: string }>;
+    };
+    expect(unfiltered.data.length).toBeGreaterThanOrEqual(6);
+
+    const byType = (await (
+      await fetch(`${baseUrl}/audit/events?type=attestation.created&limit=500`)
+    ).json()) as { data: Array<{ type: string }> };
+    expect(byType.data.length).toBeGreaterThan(0);
+    expect(byType.data.every((event) => event.type === 'attestation.created')).toBe(true);
+    expect(byType.data.length).toBeLessThan(unfiltered.data.length);
+
+    const byStage = (await (
+      await fetch(`${baseUrl}/audit/events?stage=attest&limit=500`)
+    ).json()) as { data: Array<{ stage: string }> };
+    expect(byStage.data.length).toBeGreaterThan(0);
+    expect(byStage.data.every((event) => event.stage === 'attest')).toBe(true);
+    expect(byStage.data.length).toBeLessThan(unfiltered.data.length);
+
+    const farPast = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const excludedByTo = (await (
+      await fetch(`${baseUrl}/audit/events?to=${encodeURIComponent(farPast)}&limit=500`)
+    ).json()) as { data: unknown[] };
+    expect(excludedByTo.data).toHaveLength(0);
+
+    const farFuture = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    const excludedByFrom = (await (
+      await fetch(`${baseUrl}/audit/events?from=${encodeURIComponent(farFuture)}&limit=500`)
+    ).json()) as { data: unknown[] };
+    expect(excludedByFrom.data).toHaveLength(0);
+
+    const includedByFrom = (await (
+      await fetch(`${baseUrl}/audit/events?from=${encodeURIComponent(farPast)}&limit=500`)
+    ).json()) as { data: unknown[] };
+    expect(includedByFrom.data.length).toBeGreaterThan(0);
   });
 
   it('exposes non-secret attestation policy configuration', async () => {
