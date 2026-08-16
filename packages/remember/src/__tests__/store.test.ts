@@ -96,6 +96,15 @@ describe('FileMemoryStore', () => {
     expect(current.encryptionKeySource()).toBe('previous');
   });
 
+  it('refuses to append plaintext when only the previous encryption key is configured', () => {
+    const rotationOnly = new FileMemoryStore(path, undefined, 'old-memory-secret');
+
+    expect(() => rotationOnly.append({ type: 'OBSERVATION', data: observation() })).toThrow(
+      'OMEGA_MEMORY_KEY is required when OMEGA_MEMORY_KEY_PREVIOUS is configured'
+    );
+    expect(existsSync(path)).toBe(false);
+  });
+
   it('reads legacy plaintext when encryption is enabled for migration', () => {
     new Remember(new FileMemoryStore(path)).remember(observation(), verification());
 
