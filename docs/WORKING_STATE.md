@@ -50,6 +50,7 @@ Push, PR publication, merge, deployment, and other externally visible actions ar
 | Test-suite reconciliation       | The duplicated command-palette DOM suite was removed while preserving the unique complete suite; focused dashboard tests remain at 47 and production behavior is unchanged.                                                                                                                                                                                   |
 | API SPA fallback coverage       | API tests now cover serving the built SPA bundle and the fallback route; production behavior is unchanged and deployment remains unclaimed.                                                                                                                                                                                                                   |
 | API attestation catch coverage  | API tests now cover the unexpected-failure catch path for `/attest` and `/verify`; production behavior is unchanged and deployment remains unclaimed.                                                                                                                                                                                                         |
+| Memory rotation guard           | `FileMemoryStore` now rejects a rotation-only configuration where `OMEGA_MEMORY_KEY_PREVIOUS` is set without the current `OMEGA_MEMORY_KEY`; focused memory tests cover the fail-closed boundary.                                                                                                                                                             |
 
 ## Current repository state
 
@@ -100,6 +101,7 @@ The active worktree is `/home/ubuntu/current-main-worktree` on branch `main`, sy
 | `0d047fa` | PR #71 squash merge: duplicate command-palette test-suite reconciliation                                                                     | Merged into `main`; CI green                           |
 | `d152bba` | PR #70 squash merge: API SPA static-bundle and fallback-route coverage                                                                       | Merged into `main`; CI green                           |
 | `1b3db22` | PR #73 squash merge: API attest/verify unexpected-failure catch-path coverage                                                                | Merged into `main`; CI green                           |
+| `08f7f58` | PR #75 squash merge: memory rotation-only encryption downgrade guard                                                                         | Merged into `main`; CI green after formatting repair   |
 
 | |
 | PR #33 is **merged** into `main` as squash commit `fb73ac28990b2b42b6339da2e8ca76007616dd70`, observed at `2026-08-16T14:46:39Z`. The published head `2cc2d21` passed Node 18, Node 20, Windows compatibility, package/smoke, and report checks; attested-artifact publication was skipped as designed. |
@@ -122,6 +124,7 @@ The active worktree is `/home/ubuntu/current-main-worktree` on branch `main`, sy
 | PR #70 is **merged** into `main` as squash commit `d152bba0e3805d7cf97db2441a34b676cb7408be`, observed at `2026-08-16T21:41:00Z`; its head passed Node 18, Node 20, Windows compatibility, package/smoke, and report checks; attested-artifact publication was skipped. This is merge evidence only; no deployment is claimed. |
 | PR #71 is **merged** into `main` as squash commit `0d047fa2b59c658c0d06f36724e5c941ae32e323`, observed at `2026-08-16T21:40:38Z`; its head passed Node 18, Node 20, Windows compatibility, package/smoke, and report checks; attested-artifact publication was skipped. This is merge evidence only; no deployment is claimed. |
 | PR #73 is **merged** into `main` as squash commit `1b3db2204b42eb0adc92cca3170aaa9c95180f5e`, observed at `2026-08-16T21:48:35Z`; its head passed Node 18, Node 20, Windows compatibility, package/smoke, and report checks; attested-artifact publication was skipped. This is merge evidence only; no deployment is claimed. |
+| PR #75 is **merged** into `main` as squash commit `08f7f58aa80758b5f1cd154b02873f1a256f8f67`, observed at `2026-08-16T22:49:30Z`; its first CI run exposed formatting drift in `packages/remember/src/store.ts`, the repair was committed and the corrected matrix passed Node 18, Node 20, Windows, package/smoke, and report; attested-artifact publication was skipped. This is merge evidence only; no deployment is claimed. |
 
 PR #32 remains historical Windows-compatibility evidence.
 
@@ -157,7 +160,7 @@ The combined signing-audit and persistence-encryption state passed:
 
 | `git diff --check` | Passed before the revocation commit |
 
-The last full verification before the recent coverage queue observed 25 suites / 416 tests and a successful workspace/Vite build. After PRs #57–#62, the full local gate observed 25 suites / 428 tests passed. PR #63 raised the full gate to 431 tests, PR #66 to 432 tests, PR #68 to 438 tests, PRs #70/#71 to 435 tests, and the post-PR #73 main gate observed 25 suites / 436 tests passed, successful workspace/Vite build, passing format/type-check, and `git diff --check`. PRs #57–#63, #66, #68, #70, #71, and #73 had green Node 18, Node 20, Windows, package/smoke, and report checks as applicable; attested-artifact publication was skipped. The repository may contain generated build output ignored by Git; only intended source and documentation changes should be committed.
+The last full verification before the recent coverage queue observed 25 suites / 416 tests and a successful workspace/Vite build. After PRs #57–#62, the full local gate observed 25 suites / 428 tests passed. PR #63 raised the full gate to 431 tests, PR #66 to 432 tests, PR #68 to 438 tests, PRs #70/#71 to 435 tests, PR #73 to 436 tests, and the post-PR #75 main gate observed 25 suites / 437 tests passed, successful workspace/Vite build, passing format/type-check, and `git diff --check`. PRs #57–#63, #66, #68, #70, #71, #73, and #75 had green Node 18, Node 20, Windows, package/smoke, and report checks as applicable; PR #75 required a formatting repair before its corrected matrix passed; attested-artifact publication was skipped. The repository may contain generated build output ignored by Git; only intended source and documentation changes should be committed.
 
 ## Remaining gaps and uncertainty
 
@@ -167,6 +170,6 @@ The web client exposes revoke and revocation-ledger controls. Stronger administr
 
 ## Next authorized action
 
-1. Reconcile the merged PR #73 evidence in a separate documentation PR.
+1. Reconcile the merged PR #75 evidence in a separate documentation PR.
 2. Select the next smallest production-relevant slice from custody, distributed coordination, identity, data-at-rest, deployment, or mobile gaps.
 3. Keep any new publication, merge, and deployment actions behind separate human gates.
