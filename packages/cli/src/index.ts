@@ -57,6 +57,20 @@ type EventsResponse = {
   timestamp: string;
 };
 
+type AuditResponse = {
+  data: Array<Record<string, unknown>>;
+  meta: {
+    bounded: true;
+    limit: number;
+    total: number;
+    source: string;
+    skipped: number;
+    keySource: string;
+    filters: Record<string, string | null>;
+  };
+  timestamp: string;
+};
+
 type ExportResponse = {
   data: {
     observability: ObservabilityResponse['data'];
@@ -98,6 +112,7 @@ function usage(): string {
     'omega health [--url URL]',
     'omega status [--url URL] [--token TOKEN]',
     'omega events [--url URL] [--limit N] [--token TOKEN]',
+    'omega audit [--type TYPE] [--stage STAGE] [--status STATUS] [--from ISO] [--to ISO] [--limit N] [--url URL] [--token TOKEN]',
     'omega runs [--url URL] [--limit N] [--token TOKEN]',
     'omega export [--url URL] [--token TOKEN]',
     'omega revocations [--url URL] [--token TOKEN]',
@@ -405,6 +420,40 @@ async function evidenceExport(argv: string[], fetchImpl: FetchLike): Promise<num
   }
 }
 
+async function audit(argv: string[], fetchImpl: FetchLike): Promise<number> {
+  const params = new URLSearchParams();
+  for (const name of ['--type', '--stage', '--status', '--from', '--to', '--limit']) {
+    const value = option(argv, name);
+    if (value !== null) params.set(name.slice(2), value);
+  }
+  const suffix = params.toString() ? `?${params.toString()}` : '';
+  const endpoint = `${baseUrl(argv).replace(/\/$/, '')}/audit/events${suffix}`;
+  try {
+    const response = await fetchImpl(endpoint, requestInit(argv));
+    const body = (await response.json()) as AuditResponse | { error?: string; message?: string };
+    if (!response.ok || !('data' in body) || !('meta' in body)) {
+      process.stderr.write(
+        `Audit unavailable (${response.status}): ${'message' in body ? (body.message ?? 'unknown error') : 'unknown error'}\n`
+      );
+      return 1;
+    }
+    process.stdout.write(
+      [
+        `AUDIT         ${body.data.length}/${body.meta.total} source=${body.meta.source} key=${body.meta.keySource}`,
+        `FILTERS       ${JSON.stringify(body.meta.filters)}`,
+        ...body.data.map((entry) => JSON.stringify(entry)),
+        `OBSERVED      ${body.timestamp}`,
+      ].join('\n') + '\n'
+    );
+    return 0;
+  } catch (error) {
+    process.stderr.write(
+      `Audit unavailable: ${error instanceof Error ? error.message : String(error)}\n`
+    );
+    return 1;
+  }
+}
+
 async function events(argv: string[], fetchImpl: FetchLike): Promise<number> {
   const endpoint = `${baseUrl(argv).replace(/\/$/, '')}/events`;
   try {
@@ -442,6 +491,7 @@ export async function run(
   if (command === 'health') return health(argv, fetchImpl);
   if (command === 'status') return status(argv, fetchImpl);
   if (command === 'events') return events(argv, fetchImpl);
+  if (command === 'audit') return audit(argv, fetchImpl);
   if (command === 'runs') return runs(argv, fetchImpl);
   if (command === 'export') return evidenceExport(argv, fetchImpl);
   if (command === 'revocations') return revocations(argv, fetchImpl);

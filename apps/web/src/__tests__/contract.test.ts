@@ -22,7 +22,9 @@ describe('web/API contract', () => {
   // The dev server rewrites /api/* onto the API root, so the client's
   // literals carry a prefix the server never sees.
   const clientPaths = Array.from(
-    new Set(Array.from(client.matchAll(/['"`](\/api\/[a-z0-9/-]+)['"`]/g)).map((m) => m[1]))
+    new Set(
+      Array.from(client.matchAll(/['"`](\/api\/[a-z0-9/-]+)(?:\?[^'"`]+)?['"`]/g)).map((m) => m[1])
+    )
   ).sort();
 
   it('finds paths on both sides', () => {
@@ -57,6 +59,7 @@ describe('web/API contract', () => {
     expect(unused).toEqual([
       '/actions',
       '/attest',
+      '/events',
       '/evidence/export',
       '/log',
       '/memory',

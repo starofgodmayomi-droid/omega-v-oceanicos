@@ -175,6 +175,61 @@ type RuntimeEvent = {
   details?: Record<string, unknown>;
 };
 
+export type AuditQuery = {
+  type?: string;
+  stage?: string;
+  status?: RuntimeEvent['status'];
+  from?: string;
+  to?: string;
+  limit?: number;
+};
+
+const AUDIT_DEFAULT_LIMIT = 100;
+const AUDIT_MAX_LIMIT = 500;
+
+const queryValue = (value: unknown): string | undefined =>
+  typeof value === 'string' ? value : undefined;
+
+export const parseAuditQuery = (
+  query: Record<string, unknown>
+): { query: AuditQuery } | { error: string } => {
+  const type = queryValue(query.type);
+  const stage = queryValue(query.stage);
+  const status = queryValue(query.status);
+  const from = queryValue(query.from);
+  const to = queryValue(query.to);
+  const rawLimit = queryValue(query.limit);
+
+  if (status !== undefined && !['active', 'passed', 'failed'].includes(status)) {
+    return { error: 'status must be active, passed, or failed' };
+  }
+  if (from !== undefined && Number.isNaN(Date.parse(from))) {
+    return { error: 'from must be an ISO-8601 timestamp' };
+  }
+  if (to !== undefined && Number.isNaN(Date.parse(to))) {
+    return { error: 'to must be an ISO-8601 timestamp' };
+  }
+  if (from !== undefined && to !== undefined && Date.parse(from) > Date.parse(to)) {
+    return { error: 'from must not be later than to' };
+  }
+
+  const limit = rawLimit === undefined ? AUDIT_DEFAULT_LIMIT : Number(rawLimit);
+  if (!Number.isInteger(limit) || limit < 1 || limit > AUDIT_MAX_LIMIT) {
+    return { error: `limit must be an integer between 1 and ${AUDIT_MAX_LIMIT}` };
+  }
+
+  return {
+    query: {
+      type,
+      stage,
+      status: status as RuntimeEvent['status'] | undefined,
+      from,
+      to,
+      limit,
+    },
+  };
+};
+
 type CompletedRun = {
   correlationId: string;
   requestId: string;
@@ -588,6 +643,64 @@ app.get('/events', (_req: Request, res: Response) => {
   res.json({
     data: runtimeEvents,
     meta: { window: RECENT_EVENT_WINDOW, note: 'recent window; see /log for full history' },
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/**
+ * GET /audit/events - Bounded temporal queries over the append-only event log.
+ * The result is local evidence and is deliberately bounded; it is not a
+ * distributed audit index or a completeness proof for unpersisted history.
+ */
+app.get('/audit/events', (req: Request, res: Response) => {
+  const parsed = parseAuditQuery(req.query as Record<string, unknown>);
+  if ('error' in parsed) {
+    res.status(400).json({
+      code: 'INVALID_AUDIT_QUERY',
+      message: parsed.error,
+      timestamp: new Date().toISOString(),
+    } satisfies ErrorResponse);
+    return;
+  }
+
+  const durableLog = readEventLog<RuntimeEvent>(
+    eventLogPath,
+    persistenceEnabled,
+    persistenceEncryptionKey,
+    previousPersistenceEncryptionKey
+  );
+  const sourceEvents = persistenceEnabled ? durableLog.entries : runtimeEvents;
+  const { type, stage, status, from, to, limit } = parsed.query;
+  const fromMs = from === undefined ? undefined : Date.parse(from);
+  const toMs = to === undefined ? undefined : Date.parse(to);
+  const matching = sourceEvents.filter((event) => {
+    const timestamp = Date.parse(event.timestamp);
+    return (
+      (type === undefined || event.type === type) &&
+      (stage === undefined || event.stage === stage) &&
+      (status === undefined || event.status === status) &&
+      (fromMs === undefined || timestamp >= fromMs) &&
+      (toMs === undefined || timestamp <= toMs)
+    );
+  });
+
+  res.json({
+    data: matching.slice(0, limit),
+    meta: {
+      bounded: true,
+      limit,
+      total: matching.length,
+      source: persistenceEnabled ? durableLog.source : 'memory',
+      skipped: persistenceEnabled ? durableLog.skipped : 0,
+      keySource: persistenceEnabled ? durableLog.keySource : 'none',
+      filters: {
+        type: type ?? null,
+        stage: stage ?? null,
+        status: status ?? null,
+        from: from ?? null,
+        to: to ?? null,
+      },
+    },
     timestamp: new Date().toISOString(),
   });
 });

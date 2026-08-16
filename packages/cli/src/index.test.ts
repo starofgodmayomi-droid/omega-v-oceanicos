@@ -168,6 +168,57 @@ describe('omega status CLI', () => {
     expect(output.join('')).not.toContain('event-2');
   });
 
+  it('queries bounded audit events and prints local provenance', async () => {
+    const output: string[] = [];
+    process.stdout.write = ((chunk: string | Uint8Array) => {
+      output.push(String(chunk));
+      return true;
+    }) as typeof process.stdout.write;
+
+    const exitCode = await run(
+      ['audit', '--url', 'http://api.test/', '--status', 'passed', '--limit', '2'],
+      async (url, init) => {
+        expect(url).toBe('http://api.test/audit/events?status=passed&limit=2');
+        expect(init).toBeUndefined();
+        return new Response(
+          JSON.stringify({
+            data: [{ id: 'event-1', status: 'passed' }],
+            meta: {
+              bounded: true,
+              limit: 2,
+              total: 1,
+              source: 'memory',
+              skipped: 0,
+              keySource: 'none',
+              filters: { type: null, stage: null, status: 'passed', from: null, to: null },
+            },
+            timestamp: '2026-08-16T00:00:00.000Z',
+          })
+        );
+      }
+    );
+
+    expect(exitCode).toBe(0);
+    expect(output.join('')).toContain('AUDIT         1/1 source=memory key=none');
+    expect(output.join('')).toContain('event-1');
+  });
+
+  it('returns non-zero when audit evidence is unavailable', async () => {
+    const errors: string[] = [];
+    process.stderr.write = ((chunk: string | Uint8Array) => {
+      errors.push(String(chunk));
+      return true;
+    }) as typeof process.stderr.write;
+
+    await expect(
+      run(
+        ['audit'],
+        async () => new Response(JSON.stringify({ message: 'bad query' }), { status: 400 })
+      )
+    ).resolves.toBe(1);
+    expect(errors.join('')).toContain('Audit unavailable (400)');
+  });
+
   it('lists revocations with readable operator evidence', async () => {
     const output: string[] = [];
     process.stdout.write = ((chunk: string | Uint8Array) => {

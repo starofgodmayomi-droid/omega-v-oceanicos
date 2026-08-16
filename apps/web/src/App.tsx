@@ -153,7 +153,7 @@ export function App(): JSX.Element {
       ] = await Promise.all([
         fetch('/api/health'),
         fetch('/api/state'),
-        fetch('/api/events'),
+        fetch('/api/audit/events?limit=40'),
         fetch('/api/runs'),
         fetch('/api/attest/revocations'),
         fetch('/api/attest/policy'),
@@ -184,7 +184,10 @@ export function App(): JSX.Element {
           services: Array<{ status: string }>;
         };
       };
-      const eventData = (await eventsResponse.json()) as { data: RuntimeEvent[] };
+      const eventData = (await eventsResponse.json()) as {
+        data: RuntimeEvent[];
+        meta?: { bounded?: boolean; total?: number };
+      };
       const runData = (await runsResponse.json()) as { data: LoopResult[] };
       const revocationData = (await revocationsResponse.json()) as {
         data: RuntimeRevocation[];

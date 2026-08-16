@@ -94,6 +94,40 @@ describe('OmegaClient', () => {
     });
   });
 
+  it('queries bounded audit events with encoded filters and preserves provenance', async () => {
+    const client = new OmegaClient('http://api.test', async (url, init) => {
+      expect(url).toBe(
+        'http://api.test/audit/events?type=attestation.created&status=passed&limit=2'
+      );
+      expect(new Headers(init?.headers).get('authorization')).toBe(null);
+      return new Response(
+        JSON.stringify({
+          data: [{ id: 'evt-1', type: 'attestation.created', stage: 'attest', status: 'passed' }],
+          meta: {
+            bounded: true,
+            limit: 2,
+            total: 1,
+            source: 'memory',
+            skipped: 0,
+            keySource: 'none',
+            filters: {
+              type: 'attestation.created',
+              stage: null,
+              status: 'passed',
+              from: null,
+              to: null,
+            },
+          },
+          timestamp: '2026-08-16T00:00:00.000Z',
+        })
+      );
+    });
+
+    await expect(
+      client.getAuditEvents({ type: 'attestation.created', status: 'passed', limit: 2 })
+    ).resolves.toMatchObject({ meta: { bounded: true, source: 'memory', total: 1 } });
+  });
+
   it('sends the optional read token as a bearer header', async () => {
     const client = new OmegaClient(
       'http://api.test',

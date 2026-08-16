@@ -97,6 +97,37 @@ export type EvidenceExport = {
   events: RuntimeEvent[];
   runs: RuntimeRun[];
 };
+
+export type AuditQuery = {
+  type?: string;
+  stage?: string;
+  status?: 'active' | 'passed' | 'failed';
+  from?: string;
+  to?: string;
+  limit?: number;
+};
+
+export type AuditEvent = RuntimeEvent;
+
+export type AuditEventsResponse = {
+  data: AuditEvent[];
+  meta: {
+    bounded: true;
+    limit: number;
+    total: number;
+    source: string;
+    skipped: number;
+    keySource: 'none' | 'current' | 'previous' | 'mixed';
+    filters: {
+      type: string | null;
+      stage: string | null;
+      status: string | null;
+      from: string | null;
+      to: string | null;
+    };
+  };
+  timestamp: string;
+};
 export type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
 
 export class OmegaApiError extends Error {
@@ -137,6 +168,15 @@ export class OmegaClient {
 
   async getEvents(): Promise<{ data: RuntimeEvent[] }> {
     return this.get<{ data: RuntimeEvent[] }>('/events');
+  }
+
+  async getAuditEvents(query: AuditQuery = {}): Promise<AuditEventsResponse> {
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries(query)) {
+      if (value !== undefined) params.set(key, String(value));
+    }
+    const suffix = params.toString() ? `?${params.toString()}` : '';
+    return this.get<AuditEventsResponse>(`/audit/events${suffix}`);
   }
 
   async getRuns(): Promise<{ data: RuntimeRun[] }> {

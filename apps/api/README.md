@@ -350,6 +350,26 @@ Structured error responses also include the request ID in their JSON body, so a 
 
 When `OMEGA_READ_TOKEN` is configured, read-only evidence endpoints require `Authorization: Bearer <token>`. This boundary is opt-in so local development remains unchanged when the variable is absent. `/health` remains available without a bearer token for liveness/readiness probes. Missing or invalid read credentials return `401 READ_ACCESS_REQUIRED` with a traceable request ID. Configured read and admin bearer values are compared with a constant-time byte comparison after the bearer scheme is parsed. The API also emits `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, and `Referrer-Policy: no-referrer` on responses.
 
+### Bounded Audit Query
+
+```
+GET /audit/events?type=&stage=&status=&from=&to=&limit=
+```
+
+Returns a bounded, read-only query over the local runtime event log. Supported
+filters are exact `type`, `stage`, and `status` values, inclusive ISO-8601
+`from` and `to` timestamps, and an integer `limit`. The default limit is `100`
+and the maximum is `500`; invalid values return `400 INVALID_AUDIT_QUERY`.
+Results are ordered newest first and include explicit `meta.bounded`, `meta.total`,
+`meta.skipped`, `meta.source`, `meta.keySource`, and normalized filter evidence.
+
+This endpoint is **local evidence only**. It is not a distributed audit index,
+not a completeness proof for unpersisted history, and not a claim that another
+node has observed the same events. When persistence is disabled, the source is
+in-memory; when persistence is enabled, the response reports the observed
+restoration source and skipped records without silently treating partial history
+as complete.
+
 ### Runtime Observability
 
 ```
@@ -660,4 +680,4 @@ npm run start
 
 **Package Status:** Stable (v0.1.0)  
 **Part of:** Ω∞v Oceanicos verification system  
-**Last Updated:** 2026-08-07
+**Last Updated:** 2026-08-16
