@@ -53,6 +53,17 @@ describe('dashboard', () => {
     expect(await screen.findAllByText('Ed25519 / 1')).toHaveLength(2);
   });
 
+  it('reports unavailable public trust metadata without blocking the dashboard', async () => {
+    installFetch({
+      '/api/attest/public-key': () =>
+        json({ message: 'Ed25519 is not configured' }, { status: 503 }),
+    });
+    await renderApp();
+
+    expect(await screen.findByText('Trust unavailable')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /run verification/i })).toBeInTheDocument();
+  });
+
   it('renders all three MINI steps plus the attestation after a run', async () => {
     const user = userEvent.setup();
     await renderApp();
