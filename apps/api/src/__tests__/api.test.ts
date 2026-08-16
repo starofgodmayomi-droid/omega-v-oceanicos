@@ -848,3 +848,82 @@ describe('Runtime persistence failures reach the route handlers that trigger the
     expect(recompile.message).toBe('Recompile proposal failed');
   });
 });
+
+/**
+ * The API optionally serves apps/web's production bundle: `webBuildPresent`
+ * is computed once at module load from `OMEGA_WEB_DIST`, so exercising it
+ * means requiring a freshly isolated copy of the module with that variable
+ * pointed at a real directory, the same technique the persistence-failure
+ * suite above uses for its own load-time condition.
+ *
+ * In every other suite in this file, `OMEGA_WEB_DIST` is unset and no build
+ * exists at the default `apps/web/dist` path in a clean checkout, so
+ * `webBuildPresent` is false and neither the static middleware registration
+ * nor the SPA fallback in the catch-all handler ever runs. That is a real
+ * coverage gap, not just an artifact of this suite's setup: a CI run that
+ * executes tests before the build step (as this repo's `verify:full` does)
+ * exercises the API with no production bundle in earshot.
+ */
+describe('static web client, when a build is present', () => {
+  let server: Server;
+  let baseUrl: string;
+  let distDir: string;
+
+  beforeAll(async () => {
+    distDir = mkdtempSync(join(tmpdir(), 'omega-api-web-dist-'));
+    writeFileSync(join(distDir, 'index.html'), '<!doctype html><title>Omega web</title>');
+    writeFileSync(join(distDir, 'app.js'), 'console.log("omega web bundle");');
+
+    process.env.OMEGA_WEB_DIST = distDir;
+
+    jest.resetModules();
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const isolated = require('../index') as { app: typeof app };
+    server = createServer(isolated.app);
+    await new Promise<void>((resolve) => server.listen(0, resolve));
+    const address = server.address();
+    if (!address || typeof address === 'string') throw new Error('Test server did not start');
+    baseUrl = `http://127.0.0.1:${address.port}`;
+  });
+
+  afterAll(async () => {
+    await new Promise<void>((resolve, reject) =>
+      server.close((error) => (error ? reject(error) : resolve()))
+    );
+    delete process.env.OMEGA_WEB_DIST;
+    rmSync(distDir, { recursive: true, force: true });
+    jest.resetModules();
+  });
+
+  it('serves a built static asset directly from the bundle', async () => {
+    const response = await fetch(`${baseUrl}/app.js`);
+
+    expect(response.status).toBe(200);
+    expect(await response.text()).toBe('console.log("omega web bundle");');
+  });
+
+  it('falls back to index.html for an unmatched client route the browser navigates to', async () => {
+    const response = await fetch(`${baseUrl}/observe/some/client-side/route`, {
+      headers: { Accept: 'text/html' },
+    });
+
+    // A single-page client owns its own routes; the API cannot know whether
+    // "/observe/some/client-side/route" is real, so it hands back the shell
+    // and lets the client's own router decide. Answering with a bare 404
+    // here would break every deep link into the dashboard.
+    expect(response.status).toBe(200);
+    expect(await response.text()).toBe('<!doctype html><title>Omega web</title>');
+  });
+
+  it('still returns a structured JSON 404 for an unmatched API-style request even when a build is present', async () => {
+    const response = await fetch(`${baseUrl}/observe/some/client-side/route`, {
+      headers: { Accept: 'application/json' },
+    });
+
+    // The SPA fallback is for browser navigations only. A caller that asked
+    // for JSON did not get lost in the client router; it hit a route that
+    // genuinely does not exist, and pretending otherwise would hide that.
+    expect(response.status).toBe(404);
+    expect(((await response.json()) as { code: string }).code).toBe('NOT_FOUND');
+  });
+});
