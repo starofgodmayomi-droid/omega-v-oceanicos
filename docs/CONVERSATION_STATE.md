@@ -7,19 +7,26 @@
 Repository: `starofgodmayomi-droid/omega-v-oceanicos`  
 Worktree: `/home/ubuntu/current-main-worktree`  
 Branch: `main`
-Head: `70a66ae2384f943e1fa69434537cd4699adc67b2`
+Head: `bd2061e27a820abc49a67309a65be23a9db6a862`
 Tracking: `origin/main`
-Working tree: post-PR #52 state reconciliation is uncommitted; no deployment is claimed.
+Working tree: bounded temporal audit-query slice plus documentation is uncommitted on `main`; no deployment is claimed.
 
 PR #52 merged as `70a66ae2384f943e1fa69434537cd4699adc67b2` at `2026-08-16T18:31:24Z`; its head was `a9ef77a`. CI was observed green across Node 18, Node 20, Windows compatibility, package/smoke, and report; attested-artifact publication was skipped. No deployment is claimed.
 
 ## Verified evolution lineage
 
-| Slice       | Evidence-bound result                                                                                                                                                                                                                                 |
-| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| PRs #33–#40 | Signing audit, encrypted runtime/memory persistence, revocation controls, TTL, constant-time bearer auth, policy/readiness contracts, controlled key fallback, local registry integrity evidence, and optional operator identity boundary are merged. |
-| PRs #43–#51 | Development quickstart repair, SDK/web/CLI/API/persistence coverage and behavior repairs, stale-base/conflict repairs, and state-record reconciliation are merged. Current main full gate reached 25 suites / 409 tests.                              |
-| PR #52      | API verification, mutation, ledger, and policy responses now expose a local revocation `revision`; dashboard, typed SDK, CLI docs, and API docs carry the same bounded freshness evidence.                                                            |
+| Slice         | Evidence-bound result                                                                                                                                                                                                                                 |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PRs #33–#40   | Signing audit, encrypted runtime/memory persistence, revocation controls, TTL, constant-time bearer auth, policy/readiness contracts, controlled key fallback, local registry integrity evidence, and optional operator identity boundary are merged. |
+| PRs #43–#51   | Development quickstart repair, SDK/web/CLI/API/persistence coverage and behavior repairs, stale-base/conflict repairs, and state-record reconciliation are merged. Current main full gate reached 25 suites / 409 tests.                              |
+| PR #52        | API verification, mutation, ledger, and policy responses now expose a local revocation `revision`; dashboard, typed SDK, CLI docs, and API docs carry the same bounded freshness evidence.                                                            |
+| Pending audit | `GET /audit/events` is implemented end-to-end across API, web, SDK, CLI, tests, and docs with exact filters, inclusive temporal bounds, default limit 100, maximum 500, and explicit local provenance. Distributed indexing remains open.             |
+
+## Bounded audit-query evidence
+
+Focused API/web/SDK/CLI tests passed: **137 tests** after repairing query-aware web/API endpoint drift detection. The first full gate reached **415 passing tests** but stopped at the documentation contract because `/audit/events` was not yet documented in the API README. The API, SDK, CLI, and roadmap/state documentation is now updated; the full coverage/build/format/type/diff gate must be rerun before branching or publication.
+
+The endpoint is bounded local event-log evidence only. Its `source`, `skipped`, `keySource`, `total`, `limit`, and normalized filters are evidence about the local runtime read; they do not prove completeness for unpersisted history, distributed consistency, global ordering, or replica observation.
 
 ## Revocation-freshness evidence
 
@@ -35,6 +42,6 @@ HSM/KMS custody; secure deletion; automated persistence re-encryption; persisten
 
 ## Human gates and next executable loop
 
-The user has authorized slice-by-slice publication and merge. Next: reconcile the merged main documentation, then select the next smallest production-relevant increment. Any publication, merge, or deployment remains separately gated.
+The user has authorized slice-by-slice publication and merge. Next: rerun the full audit-query gate; if green, create a feature branch, commit, push, and open a draft PR. Observe CI before any ready/merge action. After merge, reconcile state documents in a separate documentation PR, then select the next smallest production-relevant increment. Any publication, merge, or deployment remains separately gated.
 
 > One root. One current. Many minds. Infinite forms.

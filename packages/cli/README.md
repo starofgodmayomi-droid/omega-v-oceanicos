@@ -33,6 +33,25 @@ node packages/cli/dist/index.js events --url http://localhost:3000 --limit 10
 
 This command reads `GET /events`, preserves the returned event objects, and optionally limits how many recent entries are printed. It does not mutate runtime state or invent event fields.
 
+## Bounded audit evidence
+
+Query the local event log with explicit temporal and lifecycle filters:
+
+```bash
+node packages/cli/dist/index.js audit --url http://localhost:3000 \
+  --type attestation.created \
+  --status passed \
+  --from 2026-08-16T00:00:00.000Z \
+  --to 2026-08-16T23:59:59.999Z \
+  --limit 40
+```
+
+`omega audit` calls `GET /audit/events` and supports `--type`, `--stage`,
+`--status`, `--from`, `--to`, and `--limit` (1–500; default 100). It prints the
+API’s bounded result count and local `source`/`keySource` provenance. The command
+is read-only and does not treat a bounded local result as a distributed audit
+index or a completeness proof for unpersisted history.
+
 ## Run evidence
 
 Read recent completed runs and their verification/attestation status:

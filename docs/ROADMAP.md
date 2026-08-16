@@ -123,7 +123,7 @@ clock policy and distributed time coordination remain open. The unauthenticated 
 
 - Stronger rule engine / compiler / IR
 - Durable multi-process persistence
-- Query and temporal audit APIs
+- Bounded local query and temporal audit APIs (implemented increment; distributed indexing remains open)
 - Policy-driven verification workflows
 
 ### Phase 6 — Distribution expansions
@@ -247,13 +247,8 @@ blocked on design; each is a decision or a scoped change.
   append-only record sequence. This provides bounded local freshness evidence
   only; it does not coordinate nodes, establish a global order, or prove that
   another replica observed the same state.
-- **Health/readiness observability — contract implemented, deployment health not
-  claimed.** `GET /health` remains unauthenticated for probes and returns
-  explicit liveness, readiness, memory-integrity, persistence-codec, and
-  non-secret policy evidence. The web dashboard, typed SDK, and CLI consume the
-  same response; a degraded memory chain returns `503`, and the CLI fails closed.
-  This does not establish deployment orchestration, distributed health
-  coordination, or production availability.
+- **Health/readiness observability — contract implemented, deployment health not claimed.** `GET /health` remains unauthenticated for probes and returns explicit liveness, readiness, memory-integrity, persistence-codec, and non-secret policy evidence. The web dashboard, typed SDK, and CLI consume the same response; a degraded memory chain returns `503`, and the CLI fails closed. This does not establish deployment orchestration, distributed health coordination, or production availability.
+- **Bounded temporal audit query — local contract implemented, distributed audit not complete.** `GET /audit/events` supports exact type/stage/status filters, inclusive time bounds, and a default limit of `100` capped at `500`. API, dashboard, SDK, and CLI surfaces preserve bounded counts, skipped records, local source, key-source, and normalized filter evidence. Focused and full repository tests verify the contract. This is a local event-log query, not a distributed audit index, completeness proof for unpersisted history, global ordering, or replica consistency.
 
 ---
 

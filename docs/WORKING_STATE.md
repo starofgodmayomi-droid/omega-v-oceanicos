@@ -42,10 +42,11 @@ Push, PR publication, merge, deployment, and other externally visible actions ar
 | Revocation integrity evidence   | A persisted local SHA-256 digest now reports `disabled`, `legacy`, `intact`, or `mismatch` across API, web, SDK, CLI, tests, and docs. Mismatch fails closed for verification-sensitive action and mutation paths; distributed consistency remains open.                                                                                                      |
 | Operator identity allowlist     | Optional `OMEGA_ADMIN_OPERATOR_ALLOWLIST` binds revocation to a listed identity. API policy exposes configured presence; web, SDK, and CLI carry the identity boundary; unlisted identities fail closed. Complete identity/authentication remains open.                                                                                                       |
 | Revocation freshness            | API verification, mutation, ledger, policy, web, SDK, and CLI surfaces expose a local `revision` derived from the append-only registry sequence. This is bounded local freshness evidence; distributed coordination remains open.                                                                                                                             |
+| Bounded temporal audit query    | API `GET /audit/events` now supports exact lifecycle filters, inclusive time bounds, and bounded limits. Web, SDK, and CLI consume the same contract and preserve local source, skipped-record, key-source, count, and normalized-filter evidence; distributed audit indexing remains open.                                                                   |
 
 ## Current repository state
 
-The active worktree is `/home/ubuntu/current-main-worktree` on branch `main`, synchronized with merged `origin/main`. Local commits currently include:
+The active worktree is `/home/ubuntu/current-main-worktree` on branch `main`, synchronized with merged `origin/main`. The bounded temporal audit-query slice is implemented locally and remains uncommitted pending the full gate and publication gate. Local commits currently include:
 
 | Commit    | Meaning                                                                                                                                      | Publication state                                      |
 | --------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
@@ -121,7 +122,7 @@ The combined signing-audit and persistence-encryption state passed:
 
 | `git diff --check` | Passed before the revocation commit |
 
-The last full local verification for the revision slice observed 409 passing tests, a successful workspace/Vite build, passing format/type/diff gates, and a focused revision-contract result of 146 passing tests; PR #52’s CI matrix was subsequently observed green and merged. The repository may contain generated build output ignored by Git; only intended source and documentation changes should be committed.
+The last full local verification for the revision slice observed 409 passing tests, a successful workspace/Vite build, passing format/type/diff gates, and a focused revision-contract result of 146 passing tests; PR #52’s CI matrix was subsequently observed green and merged. The audit-query focused suite currently observes 137 passing tests across API, web, SDK, and CLI after query-aware contract repair. An initial full gate reached 415 passing tests but stopped at the documentation contract because the API README did not yet mention `/audit/events`; documentation has now been updated and the full gate must be rerun. The repository may contain generated build output ignored by Git; only intended source and documentation changes should be committed.
 
 ## Remaining gaps and uncertainty
 
@@ -131,6 +132,7 @@ The web client exposes revoke and revocation-ledger controls. Stronger administr
 
 ## Next authorized action
 
-1. Reconcile the merged main branch and preserve PR #52’s CI/merge evidence.
-2. Select the next smallest production-relevant slice from custody, distributed coordination, identity, data-at-rest, deployment, or mobile gaps.
-3. Keep any new publication, merge, and deployment actions behind separate human gates.
+1. Rerun the full audit-query gate after documentation updates: coverage, build, format, type-check, and diff hygiene.
+2. If green, create the feature branch, commit, push, and open a draft PR for the bounded audit-query slice; observe CI before any ready/merge action.
+3. After merge, reconcile state documents in a separate documentation PR, then select the next smallest production-relevant slice from custody, distributed coordination, identity, data-at-rest, deployment, or mobile gaps.
+4. Keep any new publication, merge, and deployment actions behind separate human gates.

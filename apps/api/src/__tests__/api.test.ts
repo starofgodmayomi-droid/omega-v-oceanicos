@@ -6,6 +6,7 @@ import {
   revocationRegistryDigest,
   revocationRegistryStatus,
   operatorIdentityAllowed,
+  parseAuditQuery,
 } from '../index';
 import { Attestation } from '@omega-v/types';
 
@@ -35,6 +36,30 @@ describe('API runtime contracts', () => {
     expect(revocationRegistryStatus(true, undefined, digest)).toBe('legacy');
     expect(revocationRegistryStatus(true, digest, digest)).toBe('intact');
     expect(revocationRegistryStatus(true, digest, `${digest}-tampered`)).toBe('mismatch');
+  });
+
+  it('parses bounded audit filters and rejects unsafe temporal ranges', () => {
+    expect(parseAuditQuery({ type: 'attestation.created', status: 'passed', limit: '12' })).toEqual(
+      {
+        query: {
+          type: 'attestation.created',
+          stage: undefined,
+          status: 'passed',
+          from: undefined,
+          to: undefined,
+          limit: 12,
+        },
+      }
+    );
+    expect(parseAuditQuery({ limit: '0' })).toEqual({
+      error: 'limit must be an integer between 1 and 500',
+    });
+    expect(parseAuditQuery({ status: 'unknown' })).toEqual({
+      error: 'status must be active, passed, or failed',
+    });
+    expect(parseAuditQuery({ from: '2026-08-17T00:00:00Z', to: '2026-08-16T00:00:00Z' })).toEqual({
+      error: 'from must not be later than to',
+    });
   });
 
   it('allows only configured operator identities when an allowlist is present', () => {
@@ -74,6 +99,38 @@ describe('API runtime contracts', () => {
     await new Promise<void>((resolve, reject) =>
       server.close((error) => (error ? reject(error) : resolve()))
     );
+  });
+
+  it('exposes bounded audit evidence with explicit local provenance', async () => {
+    const response = await fetch(`${baseUrl}/audit/events?status=passed&limit=2`);
+    const body = (await response.json()) as {
+      data: Array<{ status: string }>;
+      meta: {
+        bounded: boolean;
+        limit: number;
+        total: number;
+        source: string;
+        keySource: string;
+        filters: { status: string | null };
+      };
+    };
+
+    expect(response.status).toBe(200);
+    expect(body.meta.bounded).toBe(true);
+    expect(body.meta.limit).toBe(2);
+    expect(body.meta.total).toBeGreaterThanOrEqual(body.data.length);
+    expect(body.meta.source).toBe('memory');
+    expect(body.meta.keySource).toBe('none');
+    expect(body.meta.filters.status).toBe('passed');
+    expect(body.data.every((event) => event.status === 'passed')).toBe(true);
+  });
+
+  it('rejects invalid audit query parameters with a structured error', async () => {
+    const response = await fetch(`${baseUrl}/audit/events?limit=0`);
+    const body = (await response.json()) as { code: string };
+
+    expect(response.status).toBe(400);
+    expect(body.code).toBe('INVALID_AUDIT_QUERY');
   });
 
   it('exposes unauthenticated non-secret liveness and readiness evidence', async () => {
