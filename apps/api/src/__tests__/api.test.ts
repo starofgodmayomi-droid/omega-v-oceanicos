@@ -534,6 +534,42 @@ describe('API runtime contracts', () => {
     expect(response.headers.get('x-request-id')).toBe('error-contract-1');
   });
 
+  /**
+   * `POST /attest/verify`'s handler wraps the whole verification path in a
+   * try/catch, but every prior test only ever reached its success path: a
+   * missing attestation is caught earlier by an explicit guard, and a
+   * well-formed-but-wrong signature makes `AttestationService.verify` return
+   * false rather than throw. The catch block itself, the one that turns an
+   * unexpected exception into ATTESTATION_VERIFICATION_FAILED, had never run.
+   *
+   * `AttestationService.verify` calls `attestation.signature.replace(...)`
+   * directly, with no type guard beyond a truthiness check. A `signature`
+   * that is present and truthy but not a string, here a bare number, passes
+   * that guard and then throws a real TypeError from inside the service,
+   * which is exactly the unexpected-exception path this route's catch
+   * exists to convert into a structured error rather than a raw 500.
+   */
+  it('reports an unexpected verification failure rather than a raw 500', async () => {
+    const response = await fetch(`${baseUrl}/attest/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        attestation: {
+          signature: 12345,
+          verificationId: 'v-malformed',
+          observationId: 'o-malformed',
+          status: 'signed',
+          keyVersion: '1',
+        },
+      }),
+    });
+    const body = (await response.json()) as { code: string; message: string };
+
+    expect(response.status).toBe(400);
+    expect(body.code).toBe('ATTESTATION_VERIFICATION_FAILED');
+    expect(body.message).toBe('attestation.signature.replace is not a function');
+  });
+
   it('streams a ready frame and lifecycle events over SSE', async () => {
     const streamResponse = await fetch(`${baseUrl}/events/stream`);
     expect(streamResponse.headers.get('content-type')).toContain('text/event-stream');
