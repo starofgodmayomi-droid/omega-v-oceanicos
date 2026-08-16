@@ -109,6 +109,17 @@ const persistenceEnabled = process.env.OMEGA_PERSISTENCE
 
 const kernelMemory = new Remember(persistenceEnabled ? new FileMemoryStore(memoryPath) : undefined);
 
+type SigningAuditDetails = {
+  attestationId: string;
+  verificationId: string;
+  algorithm: string;
+  keyVersion: string;
+  keyFingerprint: string;
+  verified: boolean;
+  confidence: number;
+  ruleVersions: Record<string, string>;
+};
+
 type RuntimeEvent = {
   id: string;
   type: string;
@@ -837,7 +848,20 @@ app.post('/complete-loop', (req: Request, res: Response) => {
       status: attestation.verified ? 'passed' : 'failed',
       correlationId,
       requestId,
-      details: { attestationId: attestation.id, memoryId: remembered.id },
+      details: {
+        attestationId: attestation.id,
+        memoryId: remembered.id,
+        signing: {
+          attestationId: attestation.id,
+          verificationId: attestation.verificationId,
+          algorithm: attestation.signingAlgorithm || 'HMAC-SHA256',
+          keyVersion: attestation.keyVersion,
+          keyFingerprint: attestation.signingKey,
+          verified: attestation.verified,
+          confidence: attestation.confidence,
+          ruleVersions: attestation.ruleVersions,
+        } satisfies SigningAuditDetails,
+      },
     });
 
     const response: SuccessResponse<{

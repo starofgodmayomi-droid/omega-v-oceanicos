@@ -97,9 +97,11 @@ key material parsed at construction and the verifying algorithm taken from
 configuration rather than from the attestation. The API now supports an
 explicit Ed25519 configuration, publishes only safe public trust metadata,
 and exposes signing and verification through the HTTP loop. The web, CLI, SDK,
-and integration tests carry that trust surface across the stack. Still not
-earned: HSM/KMS custody, encryption at rest, a signing audit log, and
-revocation.
+and integration tests carry that trust surface across the stack. The API's
+`attestation.created` runtime event now records non-secret signing audit
+metadata, including algorithm, key version, key fingerprint, verification
+identity, confidence and rule versions. Still not earned: HSM/KMS custody,
+encryption at rest, and revocation.
 
 ### Phase 4 — Interface expansions
 
@@ -199,6 +201,12 @@ blocked on design; each is a decision or a scoped change.
   mattered further down the chain than it first looked: the value reached
   `attestation.confidence`, which sits inside the signed payload, so the system
   was issuing unforgeable signatures over a number the submitter chose.
+- ~~**Signing events lacked audit metadata.**~~ **Closed.** The API's
+  `attestation.created` runtime event records non-secret signing metadata,
+  and the regression test verifies its identity, algorithm, key version,
+  fingerprint, confidence, rule versions and verification outcome without
+  exposing the signing secret. Durable persistence remains separately gated by
+  `OMEGA_PERSISTENCE` and is covered by the append-only persistence tests.
 
 ---
 
