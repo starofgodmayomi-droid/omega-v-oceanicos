@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { mkdtempSync, readFileSync, writeFileSync, existsSync, appendFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { Remember, FileMemoryStore } from '../index';
@@ -110,6 +110,28 @@ describe('FileMemoryStore', () => {
     writeFileSync(path, `${readFileSync(path, 'utf8')}{ not json\n`);
 
     const store = new FileMemoryStore(path);
+    const loaded = store.load();
+
+    expect(store.source()).toBe('partial');
+    expect(store.skipped()).toBe(1);
+    expect(loaded).toHaveLength(3);
+  });
+
+  /**
+   * `decryptLine` splits the stored line on `:` and requires an iv, tag, and
+   * ciphertext segment before it will attempt authentication. Every existing
+   * malformed-line test used a value that never had the `omega-memory-v1:`
+   * prefix at all, so the "envelope is incomplete" guard — reached only when
+   * the prefix matches but a segment is missing — had never run.
+   */
+  it('reports a partial load when an encrypted line has an incomplete envelope', () => {
+    new Remember(new FileMemoryStore(path, 'memory-secret')).remember(
+      observation(),
+      verification()
+    );
+    appendFileSync(path, 'omega-memory-v1:only-an-iv\n');
+
+    const store = new FileMemoryStore(path, 'memory-secret');
     const loaded = store.load();
 
     expect(store.source()).toBe('partial');

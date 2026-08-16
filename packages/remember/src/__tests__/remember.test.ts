@@ -70,4 +70,66 @@ describe('Remember', () => {
     expect(memory.recall(1)?.type).toBe('OBSERVATION');
     expect(memory.verifyIntegrity()).toBe(true);
   });
+
+  /**
+   * `recall` guards against non-integer, zero/negative, and out-of-range ids
+   * before indexing into the log. Every prior test only ever recalled an id
+   * it had just appended, so the guard itself — the `undefined` it returns
+   * for an id that was never valid — had no coverage.
+   */
+  it('returns undefined when recalling an id outside the log range', () => {
+    const memory = new Remember();
+    memory.append({ type: 'OBSERVATION', data: observation });
+
+    expect(memory.recall(0)).toBeUndefined();
+    expect(memory.recall(-1)).toBeUndefined();
+    expect(memory.recall(1.5)).toBeUndefined();
+    expect(memory.recall(2)).toBeUndefined();
+  });
+
+  /**
+   * `recallMemory` walks the log backwards looking for a MEMORY entry whose
+   * id matches. Every prior test recalled a memory id it had just remembered,
+   * so the "searched the whole log and found nothing" fallback had no
+   * coverage.
+   */
+  it('returns undefined when recalling a memory id that was never remembered', () => {
+    const memory = new Remember();
+    memory.remember(observation, verification);
+
+    expect(memory.recallMemory('mem-does-not-exist')).toBeUndefined();
+  });
+
+  /**
+   * The memory summary's "verified"/"unverified" wording is picked with a
+   * ternary on `verification.summary.passed`. Every prior test used a
+   * passing verification, so the summary had only ever said "verified".
+   */
+  it('summarizes a failed verification as unverified', () => {
+    const memory = new Remember();
+    const failedVerification: VerificationResult = {
+      ...verification,
+      summary: { ...verification.summary, passed: false },
+    };
+
+    const record = memory.remember(observation, failedVerification);
+
+    expect(record.verified).toBe(false);
+    expect(record.summary).toBe('Service healthy → unverified');
+  });
+
+  /**
+   * `query`'s `filter` parameter defaults to `{}`; every prior call passed
+   * an explicit filter object, so the unfiltered, "give me everything"
+   * default path had no coverage.
+   */
+  it('queries with no filter and returns the full log, newest first', () => {
+    const memory = new Remember();
+    memory.remember(observation, verification);
+
+    const results = memory.query();
+
+    expect(results).toHaveLength(3);
+    expect(results[0].type).toBe('MEMORY');
+  });
 });
