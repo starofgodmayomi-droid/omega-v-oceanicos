@@ -132,11 +132,22 @@ jobs:
           curl -sf http://localhost:3000/log | tee /tmp/log.json
           grep -q '"appendOnly":true' /tmp/log.json
 
+          # Deployment observability must expose the same runtime evidence that
+          # the Navigator consumes, not just a process-level health response.
+          curl -sf http://localhost:3000/state | tee /tmp/state.json
+          grep -q '"status":"active"' /tmp/state.json
+          grep -q '"attestationValidity":1' /tmp/state.json
+
+          curl -sf http://localhost:3000/memory/integrity | tee /tmp/memory-integrity.json
+          grep -q '"intact":true' /tmp/memory-integrity.json
+
           # The client addresses the API under /api. In production there is
           # no dev-server proxy, so the same routes must answer under the
           # prefix the built bundle actually calls.
           curl -sf http://localhost:3000/api/health | grep -q '"status":"ok"'
           curl -sf http://localhost:3000/api/rules  | grep -q '"registered":2'
+          curl -sf http://localhost:3000/api/state | grep -q '"status":"active"'
+          curl -sf http://localhost:3000/api/memory/integrity | grep -q '"intact":true'
 
           # And the client itself must be served from that same origin.
           curl -sf http://localhost:3000/ | tee /tmp/index.html
@@ -155,7 +166,7 @@ jobs:
         run: |
           echo "### 📦 Artifact" >> $GITHUB_STEP_SUMMARY
           echo "\`omega-v-api:ci\` built, refused to start without a signing key," >> $GITHUB_STEP_SUMMARY
-          echo "then served /health, /rules, /complete-loop and /log." >> $GITHUB_STEP_SUMMARY
+          echo "then served /health, /rules, /complete-loop, /log, /state and /memory/integrity." >> $GITHUB_STEP_SUMMARY
           docker image inspect omega-v-api:ci --format 'Image size: {{.Size}} bytes' >> $GITHUB_STEP_SUMMARY
 
   publish:
