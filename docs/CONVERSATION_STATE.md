@@ -7,9 +7,9 @@
 Repository: `starofgodmayomi-droid/omega-v-oceanicos`  
 Worktree: `/home/ubuntu/current-main-worktree`  
 Branch: `main`
-Head: `d152bba0e3805d7cf97db2441a34b676cb7408be`
+Head: `1b3db2204b42eb0adc92cca3170aaa9c95180f5e`
 Tracking: `origin/main`
-Working tree: PRs #54, #55, #57–#63, #66, #68, #70, and #71 are merged into `main`; post-PR #70/#71 state reconciliation is uncommitted on a clean base; no deployment is claimed.
+Working tree: PRs #54, #55, #57–#63, #66, #68, #70, #71, and #73 are merged into `main`; post-PR #73 state reconciliation is uncommitted on a clean base; no deployment is claimed.
 
 PR #52 merged as `70a66ae2384f943e1fa69434537cd4699adc67b2` at `2026-08-16T18:31:24Z`; its head was `a9ef77a`. CI was observed green across Node 18, Node 20, Windows compatibility, package/smoke, and report; attested-artifact publication was skipped. No deployment is claimed.
 
@@ -29,6 +29,8 @@ PR #70 merged as `d152bba0e3805d7cf97db2441a34b676cb7408be` at `2026-08-16T21:41
 
 PR #71 merged as `0d047fa2b59c658c0d06f36724e5c941ae32e323` at `2026-08-16T21:40:38Z`; duplicate command-palette coverage was reconciled with green CI. No deployment is claimed.
 
+PR #73 merged as `1b3db2204b42eb0adc92cca3170aaa9c95180f5e` at `2026-08-16T21:48:35Z`; API attest/verify unexpected-failure catch-path coverage was merged with green CI. No deployment is claimed.
+
 ## Verified evolution lineage
 
 | Slice                      | Evidence-bound result                                                                                                                                                                                                                                 |
@@ -43,10 +45,11 @@ PR #71 merged as `0d047fa2b59c658c0d06f36724e5c941ae32e323` at `2026-08-16T21:40
 | PR #68 web navigation      | Sidebar navigation, stage-pill rendering, and learning feedback/error recovery are covered in DOM tests; production behavior was unchanged.                                                                                                           |
 | PR #70 API coverage        | The API static bundle and SPA fallback route are covered by tests; production behavior was unchanged.                                                                                                                                                 |
 | PR #71 test reconciliation | The duplicated command-palette suite was removed while unique coverage was preserved; production behavior was unchanged.                                                                                                                              |
+| PR #73 API coverage        | The unexpected-failure catch path for `/attest` and `/verify` is covered by tests; production behavior was unchanged.                                                                                                                                 |
 
 ## Bounded audit-query evidence
 
-Focused API/web/SDK/CLI tests passed: **137 tests** after repairing query-aware web/API endpoint drift detection. After PRs #57–#62, the full local gate passed with **25 suites / 428 tests**. The focused PR #63 dashboard suite passed **46 tests**, the rebased PR #66 dashboard suite passed **47 tests**, and PR #68 raised the full main baseline to **25 suites / 438 tests**. PRs #70 and #71 brought the post-merge main baseline to **25 suites / 435 tests** while removing redundant assertions and preserving unique coverage. The post-PR #70/#71 gate passed with successful workspace/Vite build, `format:check`, type-check, and `git diff --check`; both CI matrices were observed green. The post-merge state reconciliation remains a separate documentation-only change.
+Focused API/web/SDK/CLI tests passed: **137 tests** after repairing query-aware web/API endpoint drift detection. After PRs #57–#62, the full local gate passed with **25 suites / 428 tests**. The focused PR #63 dashboard suite passed **46 tests**, the rebased PR #66 dashboard suite passed **47 tests**, and PR #68 raised the full main baseline to **25 suites / 438 tests**. PRs #70 and #71 brought the post-merge main baseline to **25 suites / 435 tests** while removing redundant assertions and preserving unique coverage. PR #73 raised the post-merge baseline to **25 suites / 436 tests**. The post-PR #73 gate passed with successful workspace/Vite build, `format:check`, type-check, and `git diff --check`; PR #73’s CI matrix was observed green. The post-merge state reconciliation remains a separate documentation-only change.
 
 The endpoint is bounded local event-log evidence only. Its `source`, `skipped`, `keySource`, `total`, `limit`, and normalized filters are evidence about the local runtime read; they do not prove completeness for unpersisted history, distributed consistency, global ordering, or replica observation.
 
@@ -64,6 +67,6 @@ HSM/KMS custody; secure deletion; automated persistence re-encryption; persisten
 
 ## Human gates and next executable loop
 
-The user has authorized slice-by-slice publication and merge. Next: commit the post-PR #70/#71 state reconciliation on a documentation branch, open a draft PR, observe CI, and merge only after the same gates. Then select the next smallest production-relevant increment. Any publication, merge, or deployment remains separately gated.
+The user has authorized slice-by-slice publication and merge. Next: commit the post-PR #73 state reconciliation on a documentation branch, open a draft PR, observe CI, and merge only after the same gates. Then select the next smallest production-relevant increment. Any publication, merge, or deployment remains separately gated.
 
 > One root. One current. Many minds. Infinite forms.
