@@ -43,10 +43,12 @@ Push, PR publication, merge, deployment, and other externally visible actions ar
 | Operator identity allowlist     | Optional `OMEGA_ADMIN_OPERATOR_ALLOWLIST` binds revocation to a listed identity. API policy exposes configured presence; web, SDK, and CLI carry the identity boundary; unlisted identities fail closed. Complete identity/authentication remains open.                                                                                                       |
 | Revocation freshness            | API verification, mutation, ledger, policy, web, SDK, and CLI surfaces expose a local `revision` derived from the append-only registry sequence. This is bounded local freshness evidence; distributed coordination remains open.                                                                                                                             |
 | Bounded temporal audit query    | API `GET /audit/events` now supports exact lifecycle filters, inclusive time bounds, and bounded limits. Web, SDK, and CLI consume the same contract and preserve local source, skipped-record, key-source, count, and normalized-filter evidence; distributed audit indexing remains open.                                                                   |
+| Coverage queue #57–#62          | SDK, Remember, API audit validation, API persistence-failure, Ed25519 guard, and CLI audit network-failure branches were added as focused regression slices and merged with green CI.                                                                                                                                                                         |
+| Web stream and inspector        | Dashboard DOM tests now cover stream recovery and runtime refresh on reopen, correlation/request/payload inspector evidence, and restoring the selected run chain after event inspection. Production behavior was unchanged.                                                                                                                                  |
 
 ## Current repository state
 
-The active worktree is `/home/ubuntu/current-main-worktree` on branch `main`, synchronized with merged `origin/main`. The bounded temporal audit-query slice is merged and the worktree is clean. Local commits currently include:
+The active worktree is `/home/ubuntu/current-main-worktree` on branch `main`, synchronized with merged `origin/main`. The bounded temporal audit-query and web coverage slices are merged and the worktree is clean. Local commits currently include:
 
 | Commit    | Meaning                                                                                                                                      | Publication state                                      |
 | --------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
@@ -81,6 +83,13 @@ The active worktree is `/home/ubuntu/current-main-worktree` on branch `main`, sy
 | `70a66ae` | PR #52 squash merge: local revocation registry revision evidence across API, web, SDK, CLI, tests, and docs                                  | Merged into `main`; CI green                           |
 | `66a5221` | PR #54 squash merge: bounded temporal audit-query contract across API, web, SDK, CLI, tests, and docs                                        | Merged into `main`; CI green                           |
 | `74cf523` | PR #55 squash merge: post-PR #54 state reconciliation                                                                                        | Merged into `main`; CI green                           |
+| `030ffb6` | PR #57 squash merge: SDK unfiltered audit default-branch coverage                                                                            | Merged into `main`; CI green                           |
+| `b0e4596` | PR #58 squash merge: Remember recall/query edge-case and malformed-envelope coverage                                                         | Merged into `main`; CI green                           |
+| `e8637f3` | PR #59 squash merge: API audit-query timestamp validation and filter-predicate coverage                                                      | Merged into `main`; CI green                           |
+| `b561a5d` | PR #60 squash merge: API persistence-failure catch-block coverage                                                                            | Merged into `main`; CI green                           |
+| `3298a87` | PR #61 squash merge: Ed25519 verification guard and catch-block coverage                                                                     | Merged into `main`; CI green                           |
+| `2934327` | PR #62 squash merge: CLI audit network-failure catch-block coverage                                                                          | Merged into `main`; CI green                           |
+| `208b48f` | PR #63 squash merge: web stream recovery and event-inspector coverage                                                                        | Merged into `main`; CI green                           |
 
 | |
 | PR #33 is **merged** into `main` as squash commit `fb73ac28990b2b42b6339da2e8ca76007616dd70`, observed at `2026-08-16T14:46:39Z`. The published head `2cc2d21` passed Node 18, Node 20, Windows compatibility, package/smoke, and report checks; attested-artifact publication was skipped as designed. |
@@ -91,6 +100,13 @@ The active worktree is `/home/ubuntu/current-main-worktree` on branch `main`, sy
 | PR #40 is **merged** into `main` as squash commit `ea69684109240aba3032bc7aa1f002f320aff20d`, observed at `2026-08-16T15:42:50Z`. Its head `7ea1521` passed the CI matrix; attested-artifact publication was skipped. This is merge evidence only; no deployment is claimed. |
 | PR #54 is **merged** into `main` as squash commit `66a5221faeb34c2478e8e89265bc8ce565c3d53e`, observed at `2026-08-16T19:36:14Z`. Its head `6b38d2f` passed Node 18, Node 20, Windows compatibility, package/smoke, and report checks; attested-artifact publication was skipped. This is merge evidence only; no deployment is claimed. |
 | PR #55 is **merged** into `main` as squash commit `74cf52341500201791591e77181f665a4105f660`, observed at `2026-08-16T19:41:13Z`. Its head `b511d99` passed Node 18, Node 20, Windows compatibility, package/smoke, and report checks; attested-artifact publication was skipped. This is merge evidence only; no deployment is claimed. |
+| PR #57 is **merged** into `main` as squash commit `030ffb6e83ba7266b8bbf3dfd9773844ea4bb06d`, observed at `2026-08-16T20:02:29Z`; SDK audit default-branch coverage CI was green and attested-artifact publication was skipped. |
+| PR #58 is **merged** into `main` as squash commit `b0e459605bb7575f2dbfeb59b41bb27cebd5216a`, observed at `2026-08-16T20:06:14Z`; Remember edge-case and malformed-envelope coverage CI was green and attested-artifact publication was skipped. |
+| PR #59 is **merged** into `main` as squash commit `e8637f31f9c19999b717e48f0598643831883e29`, observed at `2026-08-16T20:13:35Z`; API audit-query validation/filter coverage CI was green and attested-artifact publication was skipped. |
+| PR #60 is **merged** into `main` as squash commit `b561a5da7db3a6c855227d0bd15c3c1a0d70ca5c`, observed at `2026-08-16T20:30:58Z`; API persistence-failure coverage CI was green and attested-artifact publication was skipped. |
+| PR #61 is **merged** into `main` as squash commit `3298a878259a414531ce793699788b631c190fb3`, observed at `2026-08-16T20:39:11Z`; Ed25519 guard/catch coverage CI was green and attested-artifact publication was skipped. |
+| PR #62 is **merged** into `main` as squash commit `2934327fe120ad4bbe6b67c1a840bd213c9ac655`, observed at `2026-08-16T20:57:13Z`; CLI audit network-failure coverage CI was green and attested-artifact publication was skipped. |
+| PR #63 is **merged** into `main` as squash commit `208b48ffc9b414c956ab2d00cffb6bb7749c335c`, observed at `2026-08-16T21:05:34Z`; its head `7c1414f` passed Node 18, Node 20, Windows compatibility, package/smoke, and report checks; attested-artifact publication was skipped. This is merge evidence only; no deployment is claimed. |
 
 PR #32 remains historical Windows-compatibility evidence.
 
@@ -126,7 +142,7 @@ The combined signing-audit and persistence-encryption state passed:
 
 | `git diff --check` | Passed before the revocation commit |
 
-The last full local verification for the revision slice observed 409 passing tests, a successful workspace/Vite build, passing format/type/diff gates, and a focused revision-contract result of 146 passing tests; PR #52’s CI matrix was subsequently observed green and merged. The audit-query focused suite observed 137 passing tests across API, web, SDK, and CLI after query-aware contract repair. The final full gate observed 25 suites / 416 tests passed, successful workspace/Vite build, passing format/type-check, and `git diff --check`; PR #54’s CI matrix subsequently passed Node 18, Node 20, Windows compatibility, package/smoke, and report checks. The repository may contain generated build output ignored by Git; only intended source and documentation changes should be committed.
+The last full verification before the recent coverage queue observed 25 suites / 416 tests and a successful workspace/Vite build. After PRs #57–#62, the full local gate observed 25 suites / 428 tests passed, with format, type-check, build, and diff hygiene green. The focused web stream/inspector suite observed 46 tests passed; after PR #63, the final full local gate observed 25 suites / 431 tests passed, successful workspace/Vite build, passing format/type-check, and `git diff --check`. PRs #57–#63 each had green Node 18, Node 20, Windows, package/smoke, and report checks as applicable; attested-artifact publication was skipped. The repository may contain generated build output ignored by Git; only intended source and documentation changes should be committed.
 
 ## Remaining gaps and uncertainty
 
@@ -136,5 +152,6 @@ The web client exposes revoke and revocation-ledger controls. Stronger administr
 
 ## Next authorized action
 
-1. Select the next smallest production-relevant slice from custody, distributed coordination, identity, data-at-rest, deployment, or mobile gaps.
-2. Keep any new publication, merge, and deployment actions behind separate human gates.
+1. Reconcile the merged PR #63 coverage evidence in a separate documentation PR.
+2. Select the next smallest production-relevant slice from custody, distributed coordination, identity, data-at-rest, deployment, or mobile gaps.
+3. Keep any new publication, merge, and deployment actions behind separate human gates.
