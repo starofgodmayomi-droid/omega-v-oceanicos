@@ -3,8 +3,18 @@ name: Verification Pipeline
 on:
   push:
     branches: [main, develop]
+  # Every pull request, whatever it targets.
+  #
+  # This was filtered to [main, develop], which meant a pull request based on
+  # another branch ran no jobs at all. Nothing failed, because nothing ran, and
+  # GitHub shows an absence of checks much the way it shows passing ones — so a
+  # stacked pull request looked ready to merge without a single test having
+  # executed against it.
+  #
+  # Unverified is not the same as green. Leaving the filter off costs a little
+  # runner time and removes a class of change that could reach a base branch
+  # without proof.
   pull_request:
-    branches: [main, develop]
 
 permissions:
   contents: read
@@ -64,23 +74,6 @@ jobs:
         run: |
           echo "✓ Verification successful at $(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_STEP_SUMMARY
           echo "All checks passed: lint, type-check, test, build" >> $GITHUB_STEP_SUMMARY
-
-      - name: Comment PR with results
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v6
-        with:
-          script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: '✅ Verification pipeline passed\n\n' +
-                    '- ✓ Linting\n' +
-                    '- ✓ Type checking\n' +
-                    '- ✓ Tests\n' +
-                    '- ✓ Build\n\n' +
-                    'Ready for review!'
-            })
 
   docker:
     name: Package and smoke test
@@ -157,6 +150,59 @@ jobs:
           echo "\`omega-v-api:ci\` built, refused to start without a signing key," >> $GITHUB_STEP_SUMMARY
           echo "then served /health, /rules, /complete-loop and /log." >> $GITHUB_STEP_SUMMARY
           docker image inspect omega-v-api:ci --format 'Image size: {{.Size}} bytes' >> $GITHUB_STEP_SUMMARY
+
+  report:
+    name: Report pipeline result
+    runs-on: ubuntu-latest
+    needs: [verify, docker]
+    # always(), so a failed pipeline is reported rather than passed over in
+    # silence. A comment that only ever appears on success is not a report.
+    if: always() && github.event_name == 'pull_request'
+
+    permissions:
+      pull-requests: write
+
+    steps:
+      # This comment used to live inside the verify job, which runs as a
+      # node-version matrix. It therefore posted once per matrix leg — two
+      # identical "Verification pipeline passed" comments on PR #27 — and the
+      # first appeared while the other leg was still running and before the
+      # docker job had started at all.
+      #
+      # So it announced "Ready for review!" on the strength of one matrix leg,
+      # for a pipeline that had not finished. GREEN = EXECUTABLE_PROOF_ONLY is
+      # this repository's rule, and its own bot was breaking it.
+      #
+      # Here the job depends on everything it speaks for, runs once, and
+      # reports the results it was actually given.
+      - name: Comment PR with the real result
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const verify = '${{ needs.verify.result }}';
+            const docker = '${{ needs.docker.result }}';
+            const ok = verify === 'success' && docker === 'success';
+            const mark = (r) => (r === 'success' ? '✓' : r === 'skipped' ? '–' : '✗');
+
+            const body = [
+              ok
+                ? '✅ Verification pipeline passed'
+                : '❌ Verification pipeline did not pass',
+              '',
+              `- ${mark(verify)} verify (lint, type-check, test, coverage, build) — ${verify}`,
+              `- ${mark(docker)} package and smoke test — ${docker}`,
+              '',
+              ok
+                ? 'Every job this comment names completed successfully.'
+                : 'Details are in the checks tab. This comment reports what ran, not what was hoped for.',
+            ].join('\n');
+
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body,
+            });
 
   publish:
     name: Publish attested artifact
