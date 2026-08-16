@@ -235,6 +235,8 @@ describe('dashboard', () => {
     expect(await screen.findByText('ATTESTATION TTL')).toBeInTheDocument();
     expect(screen.getByText('900s')).toBeInTheDocument();
     expect(screen.getByText('REVOCATION / ADMIN')).toBeInTheDocument();
+    expect(screen.getByText('HEALTH')).toBeInTheDocument();
+    expect(screen.getAllByText('READY')).toHaveLength(2);
   });
 
   it('renders persisted revocation evidence in the ledger', async () => {
@@ -341,7 +343,7 @@ describe('dashboard', () => {
     expect(
       await screen.findByText(/No observations have entered the current yet/)
     ).toBeInTheDocument();
-    expect(screen.getByText('READY')).toBeInTheDocument();
+    expect(screen.getAllByText('READY')).toHaveLength(2);
     expect(screen.queryByText('OBSERVATION')).not.toBeInTheDocument();
   });
 

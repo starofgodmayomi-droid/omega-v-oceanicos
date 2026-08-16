@@ -37,6 +37,13 @@ type RuntimePolicy = {
   persistenceEncryption: string;
   memoryEncryption: string;
 };
+type RuntimeHealth = {
+  status: 'ok';
+  readiness: 'ready' | 'degraded';
+  checks: {
+    memory: { integrity: boolean };
+  };
+};
 type RuntimeRevocation = {
   id: string;
   attestationId: string;
@@ -90,6 +97,7 @@ export function App(): JSX.Element {
     recentFailures: number;
   } | null>(null);
   const [serviceHealth, setServiceHealth] = useState({ ready: 0, total: 0 });
+  const [runtimeHealth, setRuntimeHealth] = useState<RuntimeHealth | null>(null);
   const [persistenceMode, setPersistenceMode] = useState<'file' | 'memory' | null>(null);
   const [publicTrust, setPublicTrust] = useState<PublicTrustMetadata | null>(null);
   const [publicTrustStatus, setPublicTrustStatus] = useState<
@@ -127,15 +135,23 @@ export function App(): JSX.Element {
 
   const refreshRuntime = async () => {
     try {
-      const [stateResponse, eventsResponse, runsResponse, revocationsResponse, policyResponse] =
-        await Promise.all([
-          fetch('/api/state'),
-          fetch('/api/events'),
-          fetch('/api/runs'),
-          fetch('/api/attest/revocations'),
-          fetch('/api/attest/policy'),
-        ]);
+      const [
+        healthResponse,
+        stateResponse,
+        eventsResponse,
+        runsResponse,
+        revocationsResponse,
+        policyResponse,
+      ] = await Promise.all([
+        fetch('/api/health'),
+        fetch('/api/state'),
+        fetch('/api/events'),
+        fetch('/api/runs'),
+        fetch('/api/attest/revocations'),
+        fetch('/api/attest/policy'),
+      ]);
       if (
+        !healthResponse.ok ||
         !stateResponse.ok ||
         !eventsResponse.ok ||
         !runsResponse.ok ||
@@ -143,6 +159,7 @@ export function App(): JSX.Element {
         !policyResponse.ok
       )
         throw new Error('Runtime unavailable');
+      const health = (await healthResponse.json()) as { data: RuntimeHealth };
       const state = (await stateResponse.json()) as {
         data: {
           mode: string;
@@ -175,6 +192,7 @@ export function App(): JSX.Element {
       const readyServices = state.data.services.filter(
         (service) => service.status === 'ready'
       ).length;
+      setRuntimeHealth(health.data);
       setMode(state.data.mode);
       setTrust(state.data.trust);
       setTrustBasis(state.data.trustBasis);
@@ -647,6 +665,12 @@ export function App(): JSX.Element {
               {serviceHealth.total
                 ? `${String(serviceHealth.ready).padStart(2, '0')} / ${String(serviceHealth.total).padStart(2, '0')}`
                 : 'UNKNOWN'}
+            </strong>
+          </div>
+          <div>
+            <span>HEALTH</span>
+            <strong className={runtimeHealth?.readiness === 'ready' ? 'green' : ''}>
+              {runtimeHealth ? runtimeHealth.readiness.toUpperCase() : 'UNKNOWN'}
             </strong>
           </div>
           <div>

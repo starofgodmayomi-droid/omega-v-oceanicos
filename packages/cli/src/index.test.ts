@@ -20,6 +20,85 @@ describe('omega status CLI', () => {
     expect(output.join('')).toContain('omega events [--url URL] [--limit N]');
   });
 
+  it('renders live health readiness and returns success when memory integrity is valid', async () => {
+    const output: string[] = [];
+    process.stdout.write = ((chunk: string | Uint8Array) => {
+      output.push(String(chunk));
+      return true;
+    }) as typeof process.stdout.write;
+
+    const exitCode = await run(['health', '--url', 'http://api.test/'], async (url, init) => {
+      expect(url).toBe('http://api.test/health');
+      expect(init).toBeUndefined();
+      return new Response(
+        JSON.stringify({
+          data: {
+            status: 'ok',
+            readiness: 'ready',
+            checks: {
+              observer: 'ready',
+              verifier: 'ready',
+              attester: 'ready',
+              memory: { status: 'ready', integrity: true, encryption: 'disabled' },
+              persistence: { mode: 'memory', encryption: 'disabled' },
+            },
+            policy: {
+              attestationAlgorithm: 'HMAC-SHA256',
+              attestationTtlMs: null,
+              readAuthConfigured: false,
+              adminAuthConfigured: false,
+              revocationEnabled: true,
+            },
+          },
+          timestamp: '2026-08-16T00:00:00.000Z',
+        })
+      );
+    });
+
+    expect(exitCode).toBe(0);
+    expect(output.join('')).toContain('HEALTH        ok / ready');
+    expect(output.join('')).toContain('MEMORY        ready integrity=true encryption=disabled');
+  });
+
+  it('returns a non-zero exit code when health readiness is degraded', async () => {
+    const output: string[] = [];
+    process.stdout.write = ((chunk: string | Uint8Array) => {
+      output.push(String(chunk));
+      return true;
+    }) as typeof process.stdout.write;
+
+    const exitCode = await run(
+      ['health'],
+      async () =>
+        new Response(
+          JSON.stringify({
+            data: {
+              status: 'ok',
+              readiness: 'degraded',
+              checks: {
+                observer: 'ready',
+                verifier: 'ready',
+                attester: 'ready',
+                memory: { status: 'degraded', integrity: false, encryption: 'aes-256-gcm' },
+                persistence: { mode: 'file', encryption: 'aes-256-gcm' },
+              },
+              policy: {
+                attestationAlgorithm: 'Ed25519',
+                attestationTtlMs: 900000,
+                readAuthConfigured: true,
+                adminAuthConfigured: true,
+                revocationEnabled: true,
+              },
+            },
+            timestamp: '2026-08-16T00:00:00.000Z',
+          })
+        )
+    );
+
+    expect(exitCode).toBe(1);
+    expect(output.join('')).toContain('HEALTH        ok / degraded');
+  });
+
   it('renders live observability evidence and returns success when trust is valid', async () => {
     const output: string[] = [];
     process.stdout.write = ((chunk: string | Uint8Array) => {

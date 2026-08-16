@@ -58,7 +58,6 @@ describe('web/API contract', () => {
       '/actions',
       '/attest',
       '/evidence/export',
-      '/health',
       '/log',
       '/memory',
       '/memory/integrity',

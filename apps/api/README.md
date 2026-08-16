@@ -135,14 +135,31 @@ The response shows all three MINI steps plus the attestation expansion.
 GET /health
 ```
 
-Returns API status.
+Returns unauthenticated liveness and readiness evidence for probes. The response keeps `status: "ok"` for compatibility, adds a `readiness` value, reports observer/verifier/attester availability, memory integrity and codec mode, persistence mode and codec mode, and the non-secret attestation policy. A healthy memory chain returns HTTP `200` with `readiness: "ready"`; an integrity failure returns HTTP `503` with `readiness: "degraded"`. No token, private key, or signing material is returned.
 
 **Response:**
 
 ```json
 {
-  "data": { "status": "ok" },
-  "timestamp": "2026-08-07T10:30:00Z"
+  "data": {
+    "status": "ok",
+    "readiness": "ready",
+    "checks": {
+      "observer": "ready",
+      "verifier": "ready",
+      "attester": "ready",
+      "memory": { "status": "ready", "integrity": true, "encryption": "disabled" },
+      "persistence": { "mode": "memory", "encryption": "disabled" }
+    },
+    "policy": {
+      "attestationAlgorithm": "HMAC-SHA256",
+      "attestationTtlMs": null,
+      "readAuthConfigured": false,
+      "adminAuthConfigured": false,
+      "revocationEnabled": true
+    }
+  },
+  "timestamp": "2026-08-16T10:30:00Z"
 }
 ```
 
@@ -331,7 +348,7 @@ Every response includes an `x-request-id` header. Supplying an existing `x-reque
 
 Structured error responses also include the request ID in their JSON body, so a failure can be traced from the UI or CLI without relying on log timing.
 
-When `OMEGA_READ_TOKEN` is configured, read-only evidence endpoints require `Authorization: Bearer <token>`. This boundary is opt-in so local development remains unchanged when the variable is absent. `/health` remains available for liveness checks. Missing or invalid read credentials return `401 READ_ACCESS_REQUIRED` with a traceable request ID. Configured read and admin bearer values are compared with a constant-time byte comparison after the bearer scheme is parsed. The API also emits `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, and `Referrer-Policy: no-referrer` on responses.
+When `OMEGA_READ_TOKEN` is configured, read-only evidence endpoints require `Authorization: Bearer <token>`. This boundary is opt-in so local development remains unchanged when the variable is absent. `/health` remains available without a bearer token for liveness/readiness probes. Missing or invalid read credentials return `401 READ_ACCESS_REQUIRED` with a traceable request ID. Configured read and admin bearer values are compared with a constant-time byte comparison after the bearer scheme is parsed. The API also emits `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, and `Referrer-Policy: no-referrer` on responses.
 
 ### Runtime Observability
 

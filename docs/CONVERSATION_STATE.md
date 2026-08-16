@@ -1,59 +1,40 @@
 # Ω∞v Oceanicos — Compressed Conversation State
 
-**Purpose.** Continue one evidence-bound repository lineage toward verified reality. Operating laws: evidence over assertion; `ATTEST ≠ ASSERT`; preserve dissent and uncertainty; every change is implemented, integrated, tested, documented, observable, reproducible, and review-gated. Push, PR publication, merge, and deployment are distinct actions. **No merge is claimed.**
+**Purpose.** Preserve one evidence-bound repository lineage toward verified reality. Operating laws remain: evidence over assertion; `ATTEST ≠ ASSERT`; preserve dissent and uncertainty; every change must be implemented, integrated, tested, documented, observable, reproducible, and review-gated. Push, PR publication, merge, and deployment are distinct actions.
 
-## Current lineage
+## Current observed state
 
 Repository: `starofgodmayomi-droid/omega-v-oceanicos`  
 Worktree: `/home/ubuntu/current-main-worktree`  
-Branch: `feat/signing-audit-trail`  
-Remote published head: `9a876f2`  
-Local head: `807b1ee`  
-Local branch state observed: **seven commits ahead**, clean before the interrupted frontend TTL work.
+Base: `origin/main` at `fb73ac28990b2b42b6339da2e8ca76007616dd70`
+Branch: `feat/health-readiness-contract`
+Working tree: health-readiness implementation and documentation changes are uncommitted; no deployment is claimed.
 
-PR #33: draft, open, mergeable, no recorded review decision. Its last published CI run was observed green for Node 18, Node 20, Windows compatibility, package/smoke, and report; attested-artifact publication was skipped. The following seven commits remain unpublished and require explicit publication authorization: `5fb5277`, `150ec2b`, `1affdd7`, `2093081`, `8341170`, `88155d6`, and `807b1ee`. PR #32 is the earlier Windows-compatibility increment; no merge is claimed.
+PR #33 is **merged**. Observed merge time: `2026-08-16T14:46:39Z`. Its published head was `2cc2d21`; GitHub reported green Node 18, Node 20, Windows compatibility, package/smoke, and report checks, with attested-artifact publication skipped. The squash merge commit is `fb73ac2`. PR #32 remains historical Windows-compatibility evidence. No deployment is claimed.
 
-## Verified evolution, oldest to newest
+## Verified evolution lineage
 
-| Slice                        | Result                                                                                                                           | Evidence                                                          |
-| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| PR #23 foundation            | MINI across layers, Ed25519, fail-closed behavior, dashboard tests, reusable evidence-bound workflow                             | Merged history inherited from prior session                       |
-| PR #26 roadmap/CI correction | Roadmap accuracy and falsifiable CI/report claims                                                                                | Merged history inherited from prior session                       |
-| PR #27                       | Crypto-adjacent signature coverage change retained for human review                                                              | Open history inherited from prior session                         |
-| PR #32                       | Windows line-ending and Docker-context fixes plus Windows CI gate                                                                | Published CI green                                                |
-| `c075154`                    | Non-secret signing metadata on `attestation.created`                                                                             | Local tests passed; published before current PR head              |
-| `47a2901`                    | AES-256-GCM runtime snapshot/event-log encryption via `OMEGA_PERSISTENCE_KEY`; plaintext compatibility and corruption visibility | Full local gate and live ciphertext smoke test passed             |
-| `ab9ac4d`                    | Durable revocation registry, append-only `attestation.revoked`, verify invalidation, `/act` denial, duplicate protection         | Full local gate and live revoke smoke test passed                 |
-| `2cbdc72`                    | Web operator revoke control requiring a reason                                                                                   | DOM regression passed                                             |
-| `d4ebd10`                    | Typed SDK and CLI revoke/list interfaces                                                                                         | Full local gate passed                                            |
-| `9a876f2`                    | SDK/CLI failure-path tests repaired CI global branch coverage                                                                    | Node 20 had failed at 68.93%; local repair reached 71.15%         |
-| `5fb5277`                    | Dashboard reads `/attest/revocations`, displays count and persisted ledger                                                       | Full local gate passed at 317 tests                               |
-| `150ec2b`                    | Optional `OMEGA_ADMIN_TOKEN`; distinct admin bearer required for revoke; read token rejected                                     | API/SDK/CLI focused tests and full local gate passed at 318 tests |
-| `1affdd7`                    | MINI kernel-memory JSONL AES-256-GCM via `OMEGA_MEMORY_KEY`; plaintext migration and wrong-key partial reporting                 | Full local gate passed at 321 tests                               |
-| `2093081`                    | `OMEGA_MEMORY_KEY_PREVIOUS` fallback reads; active key encrypts new appends; mixed-key restore visible as `previous`             | Full local gate passed at 322 tests                               |
-| `8341170`                    | Optional `OMEGA_ATTESTATION_TTL_MS`; expired attestations become invalid and `/act` returns `EXPIRED_ATTESTATION`                | Full local gate passed at 323 tests                               |
-| `88155d6`                    | SDK `verifyAttestation()` and CLI `verify --attestation-json`; preserves `valid/revoked/expired`; CLI fails closed               | Full local gate passed at 324 tests                               |
-| `807b1ee`                    | Constant-time read/admin bearer comparison with `timingSafeEqual`, preserving 401/request-ID contracts                           | Full local gate passed at 325 tests                               |
-| pending                      | Whole-system policy contract: API, web, SDK, CLI, docs, and tests                                                                | Local full gate passed at 332 tests; not committed or published   |
+| Slice                      | Evidence-bound result                                                                                                                                                                                                                                                                                                                      |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| MINI and trust foundation  | MINI Observe → Verify → Remember remains the documented kernel; HMAC-SHA256 and opt-in Ed25519 trust surfaces span attestation, API, web, SDK, CLI, and tests.                                                                                                                                                                             |
+| CI and Windows reliability | Formatting drift, stacked-PR trigger gaps, line-ending issues, and Docker context issues were corrected; CI includes Node 18, Node 20, Windows, package/smoke, and report checks.                                                                                                                                                          |
+| PR #33 merged increments   | Signing audit metadata; AES-256-GCM runtime persistence; durable revocation and `/act` denial; web ledger and operator control; SDK/CLI revocation; kernel-memory encryption and controlled previous-key reads; attestation TTL; SDK/CLI verification; constant-time bearer matching; frontend TTL evidence; whole-system policy contract. |
+| Health-readiness branch    | API `/health` now returns non-secret liveness/readiness, memory integrity and codec mode, persistence mode and codec mode, and attestation policy. The web dashboard renders observed readiness, the SDK exposes typed `getHealth()`, and the CLI provides `health` with fail-closed degraded exits.                                       |
 
-## Latest verified local gate
+## Health-readiness evidence
 
-Before the current interrupted frontend work: `pnpm format:check`, `pnpm type-check`, `pnpm test -- --coverage`, `pnpm build`, and `git diff --check` passed. The verified local progression is **325 tests** after constant-time auth, **327 tests** after frontend TTL evidence, and **332 tests** after the policy contract; the latest full gate passed with 71.15% global branch coverage and a successful build.
+Focused cross-surface tests passed: **77 tests** across API, web DOM, web/API contract, SDK, and CLI. The full repository gate passed: `pnpm format:check`, `pnpm type-check`, `pnpm test -- --coverage`, `pnpm build`, and `git diff --check`; observed result was **23 suites / 337 tests**, **71.15% global branch coverage**, and a successful workspace/Vite build. The first focused run exposed a CLI union-narrowing type error, which was corrected; the next run exposed the expected web/API unused-route ledger drift for `/health`, which was corrected; subsequent focused and full gates passed. React/JSDOM emitted existing act-environment warnings during interaction tests; they did not fail the suite.
 
-The frontend TTL slice was verified and committed in `b3f836a`. The next whole-system policy slice is fully verified locally but remains uncommitted: API `GET /attest/policy`, dashboard `REVOCATION / ADMIN` rendering, SDK `getAttestationPolicy()`, CLI `policy`, docs, fixtures, and contract tests. Focused cross-surface tests passed (101 tests); the full gate passed with **23 suites / 332 tests**, 71.15% global branch coverage, formatting, type-check, build, and diff checks. No publication or merge is claimed for the pending policy slice.
+## Acceptance and security boundary
 
-## Open risks and unearned claims
+`GET /health` remains unauthenticated so probes can use it when `OMEGA_READ_TOKEN` is configured. Healthy memory integrity returns `200` with `readiness: "ready"`; a broken chain returns `503` with `readiness: "degraded"`. The API preserves `status: "ok"` for compatibility and never returns tokens, private keys, or signing material. The CLI exits `0` only for ready, intact evidence; it does not claim deployment availability. The dashboard consumes the response and does not infer health from empty state.
 
-HSM/KMS custody; complete data-at-rest coverage; production key rotation/recovery policy; distributed revocation consistency; clock/distributed-time policy; stronger administrative authorization; deployment hardening; mobile surface; and human cryptographic/revocation review remain open. The implemented encryption is not a claim that every datum is encrypted. The TTL policy is local/configured and not a distributed clock guarantee. The admin token is a configured bearer boundary, not a complete identity, role, or custody system.
+## Open risks and uncertainty
 
-## Human gates
+HSM/KMS custody; persistence-key rotation and recovery policy; complete data-at-rest coverage; distributed revocation consistency; clock and distributed-time coordination; stronger administrative authorization; deployment hardening; mobile surface; and human cryptographic/revocation review remain open. Existing encryption increments do not claim that every datum is encrypted. TTL remains local/configured and is not a distributed clock guarantee. The admin token is a configured bearer boundary, not a complete identity or custody system.
 
-A green CI result is evidence of the checked workflow, not a human review decision. Publishing a local commit, opening/updating a PR, merging, and deploying are separate actions. The user has repeatedly authorized continuation and previously authorized selected pushes, but the seven current unpublished commits have not received a clear publication confirmation in the current record. **Do not push or merge them without explicit authorization.**
+## Human gates and next executable loop
 
-## Next executable loop
+The user has explicitly authorized slice-by-slice publication and merge. The current health branch is locally verified but not yet committed or published. Next: update/verify the working-state record, commit the health slice, push it to a new PR under the standing authorization, observe CI, mark ready for review, and merge only if repository gates permit. Deployment remains a separate human gate. After delivery, select the next smallest complete increment, prioritizing key custody/rotation/recovery or distributed revocation consistency.
 
-1. Reconcile `git status`, local head, and PR #33 head.
-2. Finish focused frontend TTL tests and type/format checks.
-3. Keep the observed full gate evidence: 332 tests, 71.15% global branch coverage, build and diff checks passed.
-4. Update `docs/WORKING_STATE.md`, commit the policy slice, and ask for publication authorization.
-5. Continue the next highest-leverage back/front slice only after preserving the evidence and lineage.
+> One root. One current. Many minds. Infinite forms.

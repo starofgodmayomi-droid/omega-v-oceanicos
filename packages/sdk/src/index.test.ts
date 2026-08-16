@@ -1,6 +1,40 @@
 import { OmegaApiError, OmegaClient } from './index';
 
 describe('OmegaClient', () => {
+  it('reads typed health and readiness evidence', async () => {
+    const client = new OmegaClient('http://api.test/', async (url, init) => {
+      expect(url).toBe('http://api.test/health');
+      expect(new Headers(init?.headers).get('authorization')).toBe(null);
+      return new Response(
+        JSON.stringify({
+          data: {
+            status: 'ok',
+            readiness: 'ready',
+            checks: {
+              observer: 'ready',
+              verifier: 'ready',
+              attester: 'ready',
+              memory: { status: 'ready', integrity: true, encryption: 'disabled' },
+              persistence: { mode: 'memory', encryption: 'disabled' },
+            },
+            policy: {
+              attestationAlgorithm: 'HMAC-SHA256',
+              attestationTtlMs: null,
+              readAuthConfigured: false,
+              adminAuthConfigured: false,
+              revocationEnabled: true,
+            },
+          },
+          timestamp: '2026-08-16T00:00:00.000Z',
+        })
+      );
+    });
+
+    await expect(client.getHealth()).resolves.toMatchObject({
+      data: { readiness: 'ready', checks: { memory: { integrity: true } } },
+    });
+  });
+
   it('reads typed observability evidence from the existing contract', async () => {
     const client = new OmegaClient('http://api.test/', async (url) => {
       expect(url).toBe('http://api.test/observability');

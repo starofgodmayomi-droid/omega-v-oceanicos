@@ -135,6 +135,14 @@ const json = (
  */
 export function installFetch(overrides: RouteOverrides = {}): jest.Mock {
   const defaults: RouteOverrides = {
+    '/api/health': () =>
+      json({
+        data: {
+          status: 'ok',
+          readiness: 'ready',
+          checks: { memory: { integrity: true } },
+        },
+      }),
     '/api/state': () => json(stateBody),
     '/api/events': () => json({ data: [] }),
     '/api/runs': () => json({ data: [] }),

@@ -12,7 +12,7 @@ The active workflow is:
 
 > Observe → Map → Evidence → Verify → Remember → Build → Integrate → Test → Attest → Audit → Repair → Recompile.
 
-Push, PR publication, merge, deployment, and other externally visible actions are authorized separately. No merge has been performed in this cycle.
+Push, PR publication, merge, deployment, and other externally visible actions are authorized separately. PR #33 was merged only after the user-authorized ready-for-review gate and GitHub CI completed successfully; deployment remains unclaimed.
 
 ## Verified evolution history
 
@@ -37,33 +37,35 @@ Push, PR publication, merge, deployment, and other externally visible actions ar
 | Constant-time auth matching     | API read and admin bearer gates now parse the bearer scheme and compare token bytes with `timingSafeEqual`, retaining existing 401 codes and request IDs. Direct regression coverage verifies equal, wrong-value, and length-mismatch behavior.                                                                                                               |
 | Frontend TTL policy evidence    | API `/state` now exposes non-secret `attestationTtlMs`; the dashboard renders `ATTESTATION TTL` as `OFF` or seconds, with web fixture and DOM coverage. The frontend consumes backend policy and does not infer expiry.                                                                                                                                       |
 | Whole-system policy contract    | API `GET /attest/policy` exposes non-secret algorithm, TTL, auth-boundary presence, revocation support, and storage codecs. The web dashboard renders `REVOCATION / ADMIN` status; SDK `getAttestationPolicy()` and CLI `policy` consume the same contract.                                                                                                   |
+| Health-readiness contract       | Unauthenticated `GET /health` exposes liveness, readiness, memory integrity, persistence and codec modes, and non-secret policy. The dashboard renders observed readiness, SDK `getHealth()` is typed, and CLI `health` exits non-zero for degraded or unavailable evidence.                                                                                  |
 
 ## Current repository state
 
-The active worktree is `/home/ubuntu/current-main-worktree` on branch `feat/signing-audit-trail`. Local commits currently include:
+The active worktree is `/home/ubuntu/current-main-worktree` on branch `feat/health-readiness-contract`, based on merged `origin/main`. Local commits currently include:
 
-| Commit    | Meaning                                                   | Publication state                                      |
-| --------- | --------------------------------------------------------- | ------------------------------------------------------ |
-| `c075154` | Signing audit metadata                                    | Published on PR #33 branch                             |
-| `47a2901` | Runtime persistence encryption                            | Published on PR #33 branch                             |
-| `ab9ac4d` | Attestation revocation controls                           | Published on PR #33 branch                             |
-| `2cbdc72` | Dashboard revocation control plus compressed state record | Published on PR #33 branch                             |
-| `d4ebd10` | SDK and CLI revocation surfaces                           | Published on PR #33 branch                             |
-| `9a876f2` | Coverage repair for SDK/CLI failure paths                 | Published on PR #33 branch                             |
-| `5fb5277` | Web revocation ledger                                     | Local and not yet published at the time of this record |
-| `150ec2b` | Admin revocation boundary                                 | Local and not yet published at the time of this record |
-| `1affdd7` | Kernel-memory encryption                                  | Local and not yet published at the time of this record |
-| `2093081` | Kernel-memory key rotation                                | Local and not yet published at the time of this record |
-| `8341170` | Attestation expiry policy                                 | Local and not yet published at the time of this record |
-| `88155d6` | SDK/CLI expiry verification                               | Local and not yet published at the time of this record |
-| `807b1ee` | Constant-time auth matching                               | Local and not yet published at the time of this record |
-| `b3f836a` | Frontend TTL policy evidence                              | Local and not yet published at the time of this record |
-| pending   | Whole-system policy contract                              | Locally verified; not yet committed or published       |
+| Commit    | Meaning                                                                                                   | Publication state                                      |
+| --------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| `c075154` | Signing audit metadata                                                                                    | Published on PR #33 branch                             |
+| `47a2901` | Runtime persistence encryption                                                                            | Published on PR #33 branch                             |
+| `ab9ac4d` | Attestation revocation controls                                                                           | Published on PR #33 branch                             |
+| `2cbdc72` | Dashboard revocation control plus compressed state record                                                 | Published on PR #33 branch                             |
+| `d4ebd10` | SDK and CLI revocation surfaces                                                                           | Published on PR #33 branch                             |
+| `9a876f2` | Coverage repair for SDK/CLI failure paths                                                                 | Published on PR #33 branch                             |
+| `5fb5277` | Web revocation ledger                                                                                     | Local and not yet published at the time of this record |
+| `150ec2b` | Admin revocation boundary                                                                                 | Local and not yet published at the time of this record |
+| `1affdd7` | Kernel-memory encryption                                                                                  | Local and not yet published at the time of this record |
+| `2093081` | Kernel-memory key rotation                                                                                | Local and not yet published at the time of this record |
+| `8341170` | Attestation expiry policy                                                                                 | Local and not yet published at the time of this record |
+| `88155d6` | SDK/CLI expiry verification                                                                               | Local and not yet published at the time of this record |
+| `807b1ee` | Constant-time auth matching                                                                               | Local and not yet published at the time of this record |
+| `b3f836a` | Frontend TTL policy evidence                                                                              | Local and not yet published at the time of this record |
+| `fb73ac2` | PR #33 squash merge: signing audit, persistence, revocation, memory, expiry, auth, TTL, and policy slices | Merged into `main`; CI green                           |
+| pending   | Health-readiness contract                                                                                 | Locally verified; not yet committed or published       |
 
 | |
-| PR #33 targets `main`, remains **draft/open/mergeable**, and has no recorded review decision. Its last observed CI run was green across Node 18, Node 20, Windows compatibility, packaging/smoke testing, and report generation; the attested-artifact publication job was correctly skipped. The revocation, interface, and coverage-repair commits were authorized and pushed; the web-ledger, admin-boundary, and kernel-memory commits remain local until their CI publication is separately authorized. |
+| PR #33 is **merged** into `main` as squash commit `fb73ac28990b2b42b6339da2e8ca76007616dd70`, observed at `2026-08-16T14:46:39Z`. The published head `2cc2d21` passed Node 18, Node 20, Windows compatibility, package/smoke, and report checks; attested-artifact publication was skipped as designed. This is merge evidence only; no deployment is claimed. |
 
-PR #32, the Windows compatibility increment, remains open and green from the last observed check. No merge is claimed for either PR.
+PR #32 remains historical Windows-compatibility evidence.
 
 ## Verification evidence
 
@@ -90,10 +92,11 @@ The combined signing-audit and persistence-encryption state passed:
 | Constant-time auth verification          | Full local coverage/build pass with 325 tests; read/admin token boundaries and constant-time comparison cases are covered without changing error contracts.                                                        |
 | Frontend TTL verification                | Full local coverage/build pass with 327 tests; API state propagation, dashboard `900s` rendering, web contract, and DOM behavior are covered.                                                                      |
 | Policy contract verification             | Focused API/web/SDK/CLI tests pass (101 tests); full local coverage/build pass with 332 tests and all policy fields remain non-secret.                                                                             |
+| Health-readiness verification            | Focused API/web/SDK/CLI tests pass (77 tests); full local coverage/build pass with 337 tests, readiness output, degraded CLI exit behavior, web contract drift, and build all pass.                                |
 
 | `git diff --check` | Passed before the revocation commit |
 
-The last full local verification after integrating the whole-system policy contract observed 332 passing tests, 71.15% global branch coverage, and a successful build. The repository may contain generated build output ignored by Git; only intended source and documentation changes should be committed.
+The last full local verification after integrating the health-readiness contract observed 337 passing tests, 71.15% global branch coverage, and a successful build. The repository may contain generated build output ignored by Git; only intended source and documentation changes should be committed.
 
 ## Remaining gaps and uncertainty
 
@@ -103,9 +106,8 @@ The web client exposes revoke and revocation-ledger controls. Stronger administr
 
 ## Next authorized action
 
-1. Commit the locally verified whole-system policy contract slice.
-2. Obtain confirmation to push the resulting local queue to PR #33.
-3. Observe the resulting CI run through the GitHub API.
-4. Keep PR #33 draft and route cryptographic and revocation review to a human.
-5. Continue with the next smallest worker-sized slice, prioritizing key custody/rotation/recovery or distributed revocation consistency, depending on repository evidence and review feedback.
-6. Do not merge or deploy without a separate human authorization.
+1. Commit the locally verified health-readiness contract slice.
+2. Push it to a new PR only under the standing slice-by-slice publication authorization.
+3. Observe CI, preserve any failures, and merge only after the ready-for-review and repository gates permit it.
+4. Continue with the next smallest worker-sized slice, prioritizing key custody/rotation/recovery or distributed revocation consistency.
+5. Do not deploy; deployment remains a separate human gate.
