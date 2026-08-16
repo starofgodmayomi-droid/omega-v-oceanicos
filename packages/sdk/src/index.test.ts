@@ -126,6 +126,22 @@ describe('OmegaClient', () => {
     ]);
   });
 
+  it('preserves API errors from revocation mutations', async () => {
+    const client = new OmegaClient(
+      'http://api.test',
+      async () =>
+        new Response(JSON.stringify({ message: 'operator policy denied' }), { status: 403 })
+    );
+
+    await expect(client.revokeAttestation('att-1', 'policy review')).rejects.toEqual(
+      expect.objectContaining<Partial<OmegaApiError>>({
+        status: 403,
+        endpoint: 'http://api.test/attest/revoke',
+        message: 'operator policy denied',
+      })
+    );
+  });
+
   it('exposes bounded evidence export through the typed client', async () => {
     const client = new OmegaClient('http://api.test', async (url) => {
       expect(url).toBe('http://api.test/evidence/export');

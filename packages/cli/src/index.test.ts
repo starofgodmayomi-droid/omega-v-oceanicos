@@ -119,6 +119,38 @@ describe('omega status CLI', () => {
     expect(output.join('')).toContain('att-1 revokedBy=operator reason=stale evidence');
   });
 
+  it('reports unavailable revocations without claiming an empty result', async () => {
+    const errors: string[] = [];
+    process.stderr.write = ((chunk: string | Uint8Array) => {
+      errors.push(String(chunk));
+      return true;
+    }) as typeof process.stderr.write;
+
+    expect(
+      await run(
+        ['revocations'],
+        async () => new Response(JSON.stringify({ message: 'read denied' }), { status: 403 })
+      )
+    ).toBe(1);
+    expect(errors.join('')).toContain('Revocations unavailable (403)');
+  });
+
+  it('reports a rejected revocation mutation and preserves the API message', async () => {
+    const errors: string[] = [];
+    process.stderr.write = ((chunk: string | Uint8Array) => {
+      errors.push(String(chunk));
+      return true;
+    }) as typeof process.stderr.write;
+
+    expect(
+      await run(
+        ['revoke', 'att-2', '--reason', 'manual review'],
+        async () => new Response(JSON.stringify({ message: 'policy denied' }), { status: 403 })
+      )
+    ).toBe(1);
+    expect(errors.join('')).toContain('Revocation failed (403): policy denied');
+  });
+
   it('revokes an attestation with the required reason and token', async () => {
     const output: string[] = [];
     process.stdout.write = ((chunk: string | Uint8Array) => {

@@ -42,7 +42,7 @@ The active worktree is `/home/ubuntu/current-main-worktree` on branch `feat/sign
 | pending   | SDK and CLI revocation surfaces                           | Locally verified; not yet committed or published       |
 
 | |
-| PR #33 targets `main`, remains **draft/open/mergeable**, and has no recorded review decision. Its last observed CI run was green across Node 18, Node 20, Windows compatibility, packaging/smoke testing, and report generation; the attested-artifact publication job was correctly skipped. The revocation commit still requires explicit authorization before being pushed. |
+| PR #33 targets `main`, remains **draft/open/mergeable**, and has no recorded review decision. Its last observed CI run was green across Node 18, Node 20, Windows compatibility, packaging/smoke testing, and report generation; the attested-artifact publication job was correctly skipped. The revocation and interface commits were authorized and pushed; the subsequent coverage-repair commit is local until its CI publication is separately authorized. |
 
 PR #32, the Windows compatibility increment, remains open and green from the last observed check. No merge is claimed for either PR.
 
@@ -50,21 +50,22 @@ PR #32, the Windows compatibility increment, remains open and green from the las
 
 The combined signing-audit and persistence-encryption state passed:
 
-| Check                                    | Observed result                                                                                                                 |
-| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `pnpm format:check`                      | Passed                                                                                                                          |
-| `pnpm type-check`                        | Passed                                                                                                                          |
-| `pnpm test` before revocation            | 302 tests passed                                                                                                                |
-| `pnpm test` after revocation integration | 23 suites, 305 tests passed                                                                                                     |
-| `pnpm build`                             | Passed for all workspace packages and web Vite build                                                                            |
-| Live encrypted persistence smoke test    | Passed: health, AES-256-GCM observability mode, encrypted snapshot, encrypted event log                                         |
-| Live revocation smoke test               | Passed: revoke, verification invalidation, action denial, duplicate rejection, encrypted files                                  |
-| Web revocation DOM test                  | Passed: reason-gated button, request payload, and visible `ATTESTATION REVOKED` state                                           |
-| SDK/CLI revocation tests                 | Passed: 15 focused tests covering typed SDK requests, bearer propagation, CLI listing, CLI mutation, and missing-reason failure |
+| Check                                    | Observed result                                                                                                                                                                                                    |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `pnpm format:check`                      | Passed                                                                                                                                                                                                             |
+| `pnpm type-check`                        | Passed                                                                                                                                                                                                             |
+| `pnpm test` before revocation            | 302 tests passed                                                                                                                                                                                                   |
+| `pnpm test` after revocation integration | 23 suites, 305 tests passed                                                                                                                                                                                        |
+| `pnpm build`                             | Passed for all workspace packages and web Vite build                                                                                                                                                               |
+| Live encrypted persistence smoke test    | Passed: health, AES-256-GCM observability mode, encrypted snapshot, encrypted event log                                                                                                                            |
+| Live revocation smoke test               | Passed: revoke, verification invalidation, action denial, duplicate rejection, encrypted files                                                                                                                     |
+| Web revocation DOM test                  | Passed: reason-gated button, request payload, and visible `ATTESTATION REVOKED` state                                                                                                                              |
+| SDK/CLI revocation tests                 | Passed: 15 focused tests covering typed SDK requests, bearer propagation, CLI listing, CLI mutation, and missing-reason failure                                                                                    |
+| CI coverage repair                       | PR #33 Node 20 exposed a global branch-coverage regression at 68.93% despite 312 passing tests; SDK/CLI error-path tests raised local coverage to 71.15% with 315 passing tests, preserving the existing 70% gate. |
 
 | `git diff --check` | Passed before the revocation commit |
 
-The last full local verification after integrating SDK and CLI revocation observed 312 passing tests and a successful build. The repository may contain generated build output ignored by Git; only intended source and documentation changes should be committed.
+The last full local verification after integrating SDK/CLI coverage repair observed 315 passing tests, 71.15% global branch coverage, and a successful build. The repository may contain generated build output ignored by Git; only intended source and documentation changes should be committed.
 
 ## Remaining gaps and uncertainty
 
