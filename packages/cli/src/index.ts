@@ -120,7 +120,9 @@ async function events(argv: string[], fetchImpl: FetchLike): Promise<number> {
     }
     return 0;
   } catch (error) {
-    process.stderr.write(`Events unavailable: ${error instanceof Error ? error.message : String(error)}\n`);
+    process.stderr.write(
+      `Events unavailable: ${error instanceof Error ? error.message : String(error)}\n`
+    );
     return 1;
   }
 }

@@ -66,19 +66,22 @@ describe('omega status CLI', () => {
       return true;
     }) as typeof process.stdout.write;
 
-    const exitCode = await run(['events', '--url', 'http://api.test/', '--limit', '1'], async (url) => {
-      expect(url).toBe('http://api.test/events');
-      return new Response(
-        JSON.stringify({
-          data: [
-            { id: 'event-1', stage: 'observe', status: 'verified' },
-            { id: 'event-2', stage: 'verify', status: 'verified' },
-          ],
-          meta: { window: 100 },
-          timestamp: '2026-08-16T00:00:00.000Z',
-        })
-      );
-    });
+    const exitCode = await run(
+      ['events', '--url', 'http://api.test/', '--limit', '1'],
+      async (url) => {
+        expect(url).toBe('http://api.test/events');
+        return new Response(
+          JSON.stringify({
+            data: [
+              { id: 'event-1', stage: 'observe', status: 'verified' },
+              { id: 'event-2', stage: 'verify', status: 'verified' },
+            ],
+            meta: { window: 100 },
+            timestamp: '2026-08-16T00:00:00.000Z',
+          })
+        );
+      }
+    );
 
     expect(exitCode).toBe(0);
     expect(output.join('')).toContain('EVENTS        1/2');
