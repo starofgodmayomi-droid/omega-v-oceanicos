@@ -213,6 +213,12 @@ blocked on design; each is a decision or a scoped change.
   the active algorithm through observability, and reports wrong-key or damaged
   records instead of silently restoring empty state. Kernel memory files,
   key custody, rotation, recovery and broader data-at-rest coverage remain open.
+- **Attestation revocation — API increment implemented, capability not
+  complete.** Recorded attestations can now be revoked with an operator reason;
+  revocation is persisted, emitted as an append-only event, visible through the
+  API, invalidates verification for authorization purposes, and blocks `/act`.
+  Broader policy administration, expiry, distributed consistency and recovery
+  procedures remain open.
 
 ---
 

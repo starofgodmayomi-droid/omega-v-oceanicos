@@ -171,12 +171,20 @@ type RuntimeRecompilation = {
   rationale: string;
   timestamp: string;
 };
+type RuntimeRevocation = {
+  id: string;
+  attestationId: string;
+  reason: string;
+  revokedBy: string;
+  revokedAt: string;
+};
 type RuntimeSnapshot = {
   events: RuntimeEvent[];
   runs: CompletedRun[];
   actions: RuntimeAction[];
   learnings: RuntimeLearning[];
   recompilations: RuntimeRecompilation[];
+  revocations?: RuntimeRevocation[];
 };
 
 const runtimeStorePath =
@@ -201,6 +209,9 @@ const completedRuns = snapshot.runs;
 const runtimeActions = snapshot.actions;
 const runtimeLearnings = snapshot.learnings;
 const runtimeRecompilations = snapshot.recompilations;
+const runtimeRevocations = snapshot.revocations ?? [];
+const isRevoked = (attestationId: string): boolean =>
+  runtimeRevocations.some((revocation) => revocation.attestationId === attestationId);
 
 const persistRuntime = (): void => {
   saveSnapshot(
@@ -211,7 +222,8 @@ const persistRuntime = (): void => {
       actions: runtimeActions,
       learnings: runtimeLearnings,
       recompilations: runtimeRecompilations,
-    },
+      revocations: runtimeRevocations,
+    } as RuntimeSnapshot,
     persistenceEnabled,
     persistenceEncryptionKey
   );
@@ -577,7 +589,10 @@ app.post('/attest/verify', (req: Request, res: Response) => {
     }
 
     res.json({
-      data: { valid: attestationService.verify(attestation) },
+      data: {
+        valid: attestationService.verify(attestation) && !isRevoked(attestation.id),
+        revoked: isRevoked(attestation.id),
+      },
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
@@ -590,6 +605,64 @@ app.post('/attest/verify', (req: Request, res: Response) => {
 });
 
 /** Public, non-secret attestation verification metadata. */
+app.post('/attest/revoke', (req: Request, res: Response) => {
+  const {
+    attestationId,
+    reason,
+    revokedBy = 'operator',
+  } = req.body as {
+    attestationId?: string;
+    reason?: string;
+    revokedBy?: string;
+  };
+  if (!attestationId || !reason) {
+    res.status(400).json({
+      code: 'MISSING_REVOCATION_DETAILS',
+      message: 'attestationId and reason are required to revoke an attestation',
+      timestamp: new Date().toISOString(),
+    } satisfies ErrorResponse);
+    return;
+  }
+  if (!completedRuns.some((run) => run.attestation.id === attestationId)) {
+    res.status(404).json({
+      code: 'ATTESTATION_NOT_RECORDED',
+      message: 'Cannot revoke an attestation with no recorded runtime lineage',
+      timestamp: new Date().toISOString(),
+    } satisfies ErrorResponse);
+    return;
+  }
+  if (isRevoked(attestationId)) {
+    res.status(409).json({
+      code: 'ATTESTATION_ALREADY_REVOKED',
+      message: 'The attestation has already been revoked',
+      timestamp: new Date().toISOString(),
+    } satisfies ErrorResponse);
+    return;
+  }
+
+  const revocation: RuntimeRevocation = {
+    id: `rev-${new Date().toISOString().replace(/[-:.TZ]/g, '')}`,
+    attestationId,
+    reason,
+    revokedBy,
+    revokedAt: new Date().toISOString(),
+  };
+  runtimeRevocations.unshift(revocation);
+  persistRuntime();
+  recordEvent({
+    type: 'attestation.revoked',
+    stage: 'attest',
+    message: 'Attestation revoked',
+    status: 'failed',
+    details: revocation,
+  });
+  res.status(201).json({ data: revocation, timestamp: new Date().toISOString() });
+});
+
+app.get('/attest/revocations', (_req: Request, res: Response) => {
+  res.json({ data: runtimeRevocations, timestamp: new Date().toISOString() });
+});
+
 app.get('/attest/public-key', (_req: Request, res: Response) => {
   const info = attestationService.getKeyInfo();
   if (info.algorithm !== 'Ed25519' || !info.publicKey) {
@@ -639,6 +712,14 @@ app.post('/act', (req: Request, res: Response) => {
       res.status(404).json({
         code: 'ATTESTATION_NOT_RECORDED',
         message: 'Action denied because the attestation has no recorded runtime lineage',
+        timestamp: new Date().toISOString(),
+      } satisfies ErrorResponse);
+      return;
+    }
+    if (isRevoked(attestation.id)) {
+      res.status(409).json({
+        code: 'REVOKED_ATTESTATION',
+        message: 'Action denied because the attestation has been revoked',
         timestamp: new Date().toISOString(),
       } satisfies ErrorResponse);
       return;

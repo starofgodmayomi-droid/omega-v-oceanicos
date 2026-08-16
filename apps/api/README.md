@@ -282,6 +282,21 @@ POST /attest
 }
 ```
 
+### Revoke an Attestation
+
+```
+POST /attest/revoke
+GET /attest/revocations
+```
+
+Revocation is an operator-mediated, append-only control separate from the
+signed attestation payload. `POST /attest/revoke` requires a recorded
+`attestationId`, a human-readable `reason`, and optionally `revokedBy`. A
+revoked attestation remains cryptographically inspectable, but
+`POST /attest/verify` reports `valid: false` with `revoked: true`, and `/act`
+returns `409 REVOKED_ATTESTATION` rather than authorizing an action. Duplicate
+revocation requests are rejected with `409 ATTESTATION_ALREADY_REVOKED`.
+
 ### Runtime State
 
 ```
@@ -587,6 +602,10 @@ curl -X POST http://localhost:3000/complete-loop \
 - `OMEGA_SIGNING_KEY` — Required signing key for attestation; there is no default
 - `OMEGA_PERSISTENCE` — Explicit persistence override: `on` or `off`
 - `OMEGA_PERSISTENCE_KEY` — Optional dedicated secret for AES-256-GCM encryption of runtime snapshot and event-log files; never expose it in logs or API responses
+
+Revocation records are included in the encrypted runtime snapshot when
+persistence is enabled and every revocation also produces an append-only
+`attestation.revoked` event.
 
 ## Testing
 

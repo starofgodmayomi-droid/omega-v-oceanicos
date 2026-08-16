@@ -57,6 +57,8 @@ describe('web/API contract', () => {
     expect(unused).toEqual([
       '/actions',
       '/attest',
+      '/attest/revocations',
+      '/attest/revoke',
       '/evidence/export',
       '/health',
       '/log',

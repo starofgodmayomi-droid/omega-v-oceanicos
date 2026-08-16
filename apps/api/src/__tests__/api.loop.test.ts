@@ -213,6 +213,50 @@ describe('API loop: act, learn, recompile', () => {
     expect(invalid.data.valid).toBe(false);
   });
 
+  it('revokes an attestation before it can authorize an action', async () => {
+    const loop = (await (
+      await post('/complete-loop', loopInput('revocation', { statusCode: 200, responseTime: 6 }))
+    ).json()) as Body<Loop>;
+
+    const revokeResponse = await post('/attest/revoke', {
+      attestationId: loop.data.attestation.id,
+      reason: 'operator review found stale evidence',
+      revokedBy: 'api-loop-test',
+    });
+    const revoked = (await revokeResponse.json()) as Body<{
+      attestationId: string;
+      reason: string;
+      revokedBy: string;
+    }>;
+
+    expect(revokeResponse.status).toBe(201);
+    expect(revoked.data.attestationId).toBe(loop.data.attestation.id);
+    expect(revoked.data.reason).toContain('stale evidence');
+
+    const verification = (await (
+      await post('/attest/verify', { attestation: loop.data.attestation })
+    ).json()) as Body<{ valid: boolean; revoked: boolean }>;
+    expect(verification.data).toEqual({ valid: false, revoked: true });
+
+    const denied = await post('/act', { attestation: loop.data.attestation });
+    expect(denied.status).toBe(409);
+    expect(((await denied.json()) as { code: string }).code).toBe('REVOKED_ATTESTATION');
+
+    const revocations = (await (await fetch(`${baseUrl}/attest/revocations`)).json()) as Body<
+      Array<{ attestationId: string }>
+    >;
+    expect(revocations.data.map((entry) => entry.attestationId)).toContain(
+      loop.data.attestation.id
+    );
+
+    const duplicate = await post('/attest/revoke', {
+      attestationId: loop.data.attestation.id,
+      reason: 'duplicate request',
+    });
+    expect(duplicate.status).toBe(409);
+    expect(((await duplicate.json()) as { code: string }).code).toBe('ATTESTATION_ALREADY_REVOKED');
+  });
+
   it('serves the append-only log and declares how the read went', async () => {
     const response = await fetch(`${baseUrl}/log`);
     const body = (await response.json()) as Body<unknown[]>;
