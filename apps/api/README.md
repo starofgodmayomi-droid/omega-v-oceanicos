@@ -356,7 +356,7 @@ When `OMEGA_READ_TOKEN` is configured, read-only evidence endpoints require `Aut
 GET /observability
 ```
 
-Returns a read-only operational evidence summary composed from the runtime state, durable event log, configured attestation service, and hash-chained memory. It includes runtime mode and persistence, the configured persistence and kernel-memory encryption algorithms or `disabled`, recent and durable event counts, completed runs, request and correlation lineage, verification and attestation validity, and memory integrity. It never returns private keys, seeds, secrets, or raw signing material; the algorithm fields describe configuration only and do not claim key custody, rotation, recovery, or complete data-at-rest coverage.
+Returns a read-only operational evidence summary composed from the runtime state, durable event log, configured attestation service, and hash-chained memory. It includes runtime mode and persistence, the configured persistence and kernel-memory encryption algorithms or `disabled`, active/previous persistence-key configuration and observed `none/current/previous/mixed` source, recent and durable event counts, completed runs, request and correlation lineage, verification and attestation validity, and memory integrity. It never returns private keys, seeds, secrets, or raw signing material; the algorithm and key-source fields describe local configuration and observed reads only. They do not claim HSM/KMS custody, secure deletion, recovery, distributed coordination, or complete data-at-rest coverage.
 
 ### Evidence Export
 
@@ -440,7 +440,7 @@ GET /attest/public-key
 
 Returns safe Ed25519 trust metadata for clients that need to verify attestations. The response includes the algorithm, key identifier, fingerprint, key version, and public key. Private keys, seeds, secrets, and raw signing material are never returned.
 
-`GET /attest/policy` separately exposes non-secret capability configuration: the attestation algorithm, TTL, presence of read/admin boundaries, revocation support, and storage codec names. It never returns token or key values and does not claim custody, rotation, recovery, or distributed policy coordination.
+`GET /attest/policy` separately exposes non-secret capability configuration: the attestation algorithm, TTL, presence of read/admin boundaries, revocation support, storage codec names, persistence-key source, and whether a previous persistence key is configured. It never returns token or key values and does not claim custody, secure deletion, automated re-encryption, recovery, or distributed policy coordination.
 
 **Response:**
 
@@ -628,7 +628,8 @@ curl -X POST http://localhost:3000/complete-loop \
 - `OMEGA_ADMIN_TOKEN` — Optional distinct bearer token required for `POST /attest/revoke`; never reuse or expose a read token as administrative authority
 - `OMEGA_SIGNING_KEY` — Required signing key for attestation; there is no default
 - `OMEGA_PERSISTENCE` — Explicit persistence override: `on` or `off`
-- `OMEGA_PERSISTENCE_KEY` — Optional dedicated secret for AES-256-GCM encryption of runtime snapshot and event-log files; never expose it in logs or API responses
+- `OMEGA_PERSISTENCE_KEY` — Active secret for AES-256-GCM encryption of runtime snapshot and event-log files; new writes always use this key, and it is never exposed in logs or API responses
+- `OMEGA_PERSISTENCE_KEY_PREVIOUS` — Optional previous secret accepted for controlled reads during local key rotation; snapshot/event-log observability reports `previous` or `mixed` without returning either secret. This is fallback compatibility, not custody, secure deletion, automated re-encryption, or recovery policy.
 - `OMEGA_MEMORY_PATH` — Optional JSONL path for the MINI kernel memory chain
 - `OMEGA_MEMORY_KEY` — Optional active secret for AES-256-GCM encryption of new kernel-memory lines
 - `OMEGA_MEMORY_KEY_PREVIOUS` — Optional previous secret accepted during controlled key rotation; new writes still use `OMEGA_MEMORY_KEY`, and mixed-key restoration reports the fallback source without returning either secret

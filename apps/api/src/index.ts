@@ -138,8 +138,10 @@ const persistenceEnabled = process.env.OMEGA_PERSISTENCE
   ? process.env.OMEGA_PERSISTENCE === 'on'
   : process.env.NODE_ENV !== 'test';
 const persistenceEncryptionKey = process.env.OMEGA_PERSISTENCE_KEY;
+const previousPersistenceEncryptionKey = process.env.OMEGA_PERSISTENCE_KEY_PREVIOUS;
 const persistenceEncryptionEnabled =
   persistenceEnabled && encryptionEnabled(persistenceEncryptionKey);
+const previousPersistenceEncryptionConfigured = Boolean(previousPersistenceEncryptionKey?.trim());
 const memoryEncryptionKey = process.env.OMEGA_MEMORY_KEY;
 const memoryEncryptionEnabled = persistenceEnabled && Boolean(memoryEncryptionKey?.trim());
 
@@ -233,7 +235,13 @@ const {
   snapshot,
   source: persistenceSource,
   reason: persistenceReason,
-} = loadSnapshot<RuntimeSnapshot>(runtimeStorePath, persistenceEnabled, persistenceEncryptionKey);
+  keySource: persistenceEncryptionKeySource,
+} = loadSnapshot<RuntimeSnapshot>(
+  runtimeStorePath,
+  persistenceEnabled,
+  persistenceEncryptionKey,
+  previousPersistenceEncryptionKey
+);
 
 const runtimeEvents = snapshot.events;
 const eventStreams = new Set<Response>();
@@ -335,7 +343,12 @@ app.get('/health', (_req: Request, res: Response) => {
       verifier: 'ready';
       attester: 'ready';
       memory: { status: 'ready' | 'degraded'; integrity: boolean; encryption: string };
-      persistence: { mode: 'file' | 'memory'; encryption: string };
+      persistence: {
+        mode: 'file' | 'memory';
+        encryption: string;
+        keySource: string;
+        previousKeyConfigured: boolean;
+      };
     };
     policy: {
       attestationAlgorithm: string;
@@ -360,6 +373,8 @@ app.get('/health', (_req: Request, res: Response) => {
         persistence: {
           mode: persistenceEnabled ? 'file' : 'memory',
           encryption: persistenceEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
+          keySource: persistenceEncryptionKeySource,
+          previousKeyConfigured: previousPersistenceEncryptionConfigured,
         },
       },
       policy: {
@@ -390,6 +405,8 @@ app.get('/state', (_req: Request, res: Response) => {
       status: 'active',
       persistence: persistenceEnabled ? 'file' : 'memory',
       persistenceEncryption: persistenceEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
+      persistenceEncryptionKeySource,
+      persistencePreviousKeyConfigured: previousPersistenceEncryptionConfigured,
       memoryEncryption: memoryEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
       attestationTtlMs: configuredAttestationTtlMs(),
       persistenceSource,
@@ -425,7 +442,8 @@ app.get('/observability', (_req: Request, res: Response) => {
   const durableLog = readEventLog<RuntimeEvent>(
     eventLogPath,
     persistenceEnabled,
-    persistenceEncryptionKey
+    persistenceEncryptionKey,
+    previousPersistenceEncryptionKey
   );
   const attestationValidity = latestRun ? attestationService.verify(latestRun.attestation) : null;
 
@@ -435,6 +453,9 @@ app.get('/observability', (_req: Request, res: Response) => {
         mode: latestEvent?.stage || 'observing',
         persistence: persistenceEnabled ? 'file' : 'memory',
         persistenceEncryption: persistenceEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
+        persistenceEncryptionKeySource,
+        persistencePreviousKeyConfigured: previousPersistenceEncryptionConfigured,
+        eventLogEncryptionKeySource: durableLog.keySource,
         memoryEncryption: memoryEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
         memoryEncryptionKeySource,
         attestationTtlMs: configuredAttestationTtlMs(),
@@ -469,7 +490,8 @@ app.get('/evidence/export', (_req: Request, res: Response) => {
   const durableLog = readEventLog<RuntimeEvent>(
     eventLogPath,
     persistenceEnabled,
-    persistenceEncryptionKey
+    persistenceEncryptionKey,
+    previousPersistenceEncryptionKey
   );
   const latestRun = completedRuns[0];
   const latestEvent = runtimeEvents[0];
@@ -481,6 +503,8 @@ app.get('/evidence/export', (_req: Request, res: Response) => {
         runtime: {
           mode: latestEvent?.stage || 'observing',
           persistence: persistenceEnabled ? 'file' : 'memory',
+          persistenceEncryptionKeySource,
+          persistencePreviousKeyConfigured: previousPersistenceEncryptionConfigured,
           services: ['observer', 'verifier', 'attester'],
           lastActivity: latestEvent?.timestamp || null,
         },
@@ -525,7 +549,8 @@ app.get('/log', (_req: Request, res: Response) => {
   const log = readEventLog<RuntimeEvent>(
     eventLogPath,
     persistenceEnabled,
-    persistenceEncryptionKey
+    persistenceEncryptionKey,
+    previousPersistenceEncryptionKey
   );
   res.json({
     data: log.entries,
@@ -533,6 +558,7 @@ app.get('/log', (_req: Request, res: Response) => {
       source: log.source,
       skipped: log.skipped,
       reason: log.reason ?? null,
+      keySource: log.keySource,
       appendOnly: true,
     },
     timestamp: new Date().toISOString(),
@@ -774,6 +800,8 @@ app.get('/attest/policy', (_req: Request, res: Response) => {
       adminAuthConfigured: Boolean(process.env[ADMIN_TOKEN_ENV]?.trim()),
       revocationEnabled: true,
       persistenceEncryption: persistenceEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
+      persistenceEncryptionKeySource,
+      persistencePreviousKeyConfigured: previousPersistenceEncryptionConfigured,
       memoryEncryption: memoryEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
     },
     timestamp: new Date().toISOString(),

@@ -35,6 +35,8 @@ type RuntimePolicy = {
   adminAuthConfigured: boolean;
   revocationEnabled: boolean;
   persistenceEncryption: string;
+  persistenceEncryptionKeySource: 'none' | 'current' | 'previous' | 'mixed';
+  persistencePreviousKeyConfigured: boolean;
   memoryEncryption: string;
 };
 type RuntimeHealth = {
@@ -694,6 +696,14 @@ export function App(): JSX.Element {
             <strong>
               {policy
                 ? `${policy.revocationEnabled ? 'REVOCATION' : 'NO REVOCATION'} / ${policy.adminAuthConfigured ? 'ADMIN' : 'LOCAL'}`
+                : 'UNKNOWN'}
+            </strong>
+          </div>
+          <div>
+            <span>PERSISTENCE KEY</span>
+            <strong>
+              {policy
+                ? `${policy.persistenceEncryptionKeySource.toUpperCase()}${policy.persistencePreviousKeyConfigured ? ' / PREVIOUS' : ''}`
                 : 'UNKNOWN'}
             </strong>
           </div>

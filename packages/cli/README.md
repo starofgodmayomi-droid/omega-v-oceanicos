@@ -62,7 +62,7 @@ node packages/cli/dist/index.js policy \
   --token "$OMEGA_READ_TOKEN"
 ```
 
-The command prints the API policy JSON without returning token or key values. It reports capability configuration only; it does not claim custody, rotation, recovery, or distributed policy coordination.
+The command prints the API policy JSON without returning token or key values. It includes non-secret persistence key-source fields and whether a previous persistence key is configured. These fields report local fallback provenance only; the command does not claim HSM/KMS custody, secure deletion, automated re-encryption, recovery, or distributed policy coordination.
 
 Verify an attestation using the API’s cryptographic and policy boundary:
 

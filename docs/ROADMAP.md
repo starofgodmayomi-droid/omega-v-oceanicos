@@ -219,6 +219,12 @@ blocked on design; each is a decision or a scoped change.
   the active algorithm through observability, and reports wrong-key or damaged
   records instead of silently restoring empty state. Kernel memory files,
   key custody, rotation, recovery and broader data-at-rest coverage remain open.
+- **Persistence-key rotation — controlled fallback implemented, production policy
+  not complete.** `OMEGA_PERSISTENCE_KEY` encrypts new snapshot/event-log writes;
+  `OMEGA_PERSISTENCE_KEY_PREVIOUS` permits authenticated local reads during a
+  controlled rotation, and observability reports `current`, `previous`, or
+  `mixed` without exposing secrets. HSM/KMS custody, secure deletion,
+  automated re-encryption, recovery, and distributed coordination remain open.
 - **Attestation revocation — API increment implemented, capability not
   complete.** Recorded attestations can now be revoked with an operator reason;
   revocation is persisted, emitted as an append-only event, visible through the

@@ -158,10 +158,20 @@ describe('runtime persistence', () => {
       expect(result.snapshot).toEqual(written);
     });
 
-    it('reports encrypted snapshots as corrupt when the key is wrong', () => {
+    it('restores an encrypted snapshot with the previous key and reports its source', () => {
+      saveSnapshot(storePath, fixture(), true, 'previous-secret');
+
+      const result = loadSnapshot<Snap>(storePath, true, 'current-secret', 'previous-secret');
+
+      expect(result.source).toBe('restored');
+      expect(result.keySource).toBe('previous');
+      expect(result.snapshot).toEqual(fixture());
+    });
+
+    it('reports encrypted snapshots as corrupt when both rotation keys are wrong', () => {
       saveSnapshot(storePath, fixture(), true, 'correct-secret');
 
-      const result = loadSnapshot<Snap>(storePath, true, 'wrong-secret');
+      const result = loadSnapshot<Snap>(storePath, true, 'wrong-secret', 'also-wrong-secret');
 
       expect(result.source).toBe('corrupt');
       expect(result.reason).toBeDefined();
@@ -254,10 +264,21 @@ describe('append-only event log', () => {
     expect(result.skipped).toBe(0);
   });
 
+  it('restores mixed event-log lines and reports previous-key provenance', () => {
+    appendEvent(logPath, { id: 'evt-old' }, true, 'previous-secret');
+    appendEvent(logPath, { id: 'evt-new' }, true, 'current-secret');
+
+    const result = readEventLog<{ id: string }>(logPath, true, 'current-secret', 'previous-secret');
+
+    expect(result.source).toBe('restored');
+    expect(result.keySource).toBe('mixed');
+    expect(result.entries.map((entry) => entry.id)).toEqual(['evt-old', 'evt-new']);
+  });
+
   it('reports an encrypted line as partial when the key is wrong', () => {
     appendEvent(logPath, { id: 'evt-1' }, true, 'correct-secret');
 
-    const result = readEventLog<{ id: string }>(logPath, true, 'wrong-secret');
+    const result = readEventLog<{ id: string }>(logPath, true, 'wrong-secret', 'also-wrong-secret');
 
     expect(result.source).toBe('partial');
     expect(result.skipped).toBe(1);

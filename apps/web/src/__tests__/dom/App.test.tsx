@@ -226,6 +226,8 @@ describe('dashboard', () => {
             adminAuthConfigured: true,
             revocationEnabled: true,
             persistenceEncryption: 'aes-256-gcm',
+            persistenceEncryptionKeySource: 'current',
+            persistencePreviousKeyConfigured: false,
             memoryEncryption: 'aes-256-gcm',
           },
         }),
@@ -235,6 +237,7 @@ describe('dashboard', () => {
     expect(await screen.findByText('ATTESTATION TTL')).toBeInTheDocument();
     expect(screen.getByText('900s')).toBeInTheDocument();
     expect(screen.getByText('REVOCATION / ADMIN')).toBeInTheDocument();
+    expect(screen.getByText('CURRENT')).toBeInTheDocument();
     expect(screen.getByText('HEALTH')).toBeInTheDocument();
     expect(screen.getAllByText('READY')).toHaveLength(2);
   });
