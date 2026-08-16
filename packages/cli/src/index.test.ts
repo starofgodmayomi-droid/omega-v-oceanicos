@@ -119,6 +119,36 @@ describe('omega status CLI', () => {
     expect(output.join('')).toContain('att-1 revokedBy=operator reason=stale evidence');
   });
 
+  it('prints the non-secret backend policy with the read token', async () => {
+    const output: string[] = [];
+    process.stdout.write = ((chunk: string | Uint8Array) => {
+      output.push(String(chunk));
+      return true;
+    }) as typeof process.stdout.write;
+
+    const exitCode = await run(['policy', '--token', 'cli-token'], async (url, init) => {
+      expect(url).toBe('http://localhost:3000/attest/policy');
+      expect(new Headers(init?.headers).get('authorization')).toBe('Bearer cli-token');
+      return new Response(
+        JSON.stringify({
+          data: {
+            attestationAlgorithm: 'HMAC-SHA256',
+            attestationTtlMs: 900000,
+            readAuthConfigured: true,
+            adminAuthConfigured: true,
+            revocationEnabled: true,
+            persistenceEncryption: 'aes-256-gcm',
+            memoryEncryption: 'aes-256-gcm',
+          },
+        })
+      );
+    });
+
+    expect(exitCode).toBe(0);
+    expect(output.join('')).toContain('"attestationTtlMs":900000');
+    expect(output.join('')).not.toMatch(/token|secret|private/i);
+  });
+
   it('prints expired verification status and fails closed', async () => {
     const output: string[] = [];
     process.stdout.write = ((chunk: string | Uint8Array) => {

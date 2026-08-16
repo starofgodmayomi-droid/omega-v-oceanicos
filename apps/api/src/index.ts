@@ -722,6 +722,21 @@ app.get('/attest/revocations', (_req: Request, res: Response) => {
   res.json({ data: runtimeRevocations, timestamp: new Date().toISOString() });
 });
 
+app.get('/attest/policy', (_req: Request, res: Response) => {
+  res.json({
+    data: {
+      attestationAlgorithm: attestationService.getKeyInfo().algorithm,
+      attestationTtlMs: configuredAttestationTtlMs(),
+      readAuthConfigured: Boolean(process.env.OMEGA_READ_TOKEN?.trim()),
+      adminAuthConfigured: Boolean(process.env[ADMIN_TOKEN_ENV]?.trim()),
+      revocationEnabled: true,
+      persistenceEncryption: persistenceEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
+      memoryEncryption: memoryEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
+    },
+    timestamp: new Date().toISOString(),
+  });
+});
+
 app.get('/attest/public-key', (_req: Request, res: Response) => {
   const info = attestationService.getKeyInfo();
   if (info.algorithm !== 'Ed25519' || !info.publicKey) {

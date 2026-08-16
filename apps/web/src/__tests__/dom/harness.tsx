@@ -152,6 +152,18 @@ export function installFetch(overrides: RouteOverrides = {}): jest.Mock {
     '/api/attest/verify': () => json({ data: { valid: true, revoked: false, expired: false } }),
     '/api/attest/revoke': () => json({ data: { id: 'rev-1' } }, { status: 201 }),
     '/api/attest/revocations': () => json({ data: [] }),
+    '/api/attest/policy': () =>
+      json({
+        data: {
+          attestationAlgorithm: 'HMAC-SHA256',
+          attestationTtlMs: null,
+          readAuthConfigured: false,
+          adminAuthConfigured: false,
+          revocationEnabled: true,
+          persistenceEncryption: 'disabled',
+          memoryEncryption: 'disabled',
+        },
+      }),
     '/api/act': () => json({ data: { id: 'act-1', status: 'authorized' } }, { status: 201 }),
     '/api/learning': () => json({ data: [{ id: 'lrn-1' }] }),
     '/api/learn': () => json({ data: { id: 'lrn-1' } }, { status: 201 }),

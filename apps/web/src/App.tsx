@@ -28,6 +28,15 @@ type LoopResult = {
     revoked?: boolean;
   };
 };
+type RuntimePolicy = {
+  attestationAlgorithm: string;
+  attestationTtlMs: number | null;
+  readAuthConfigured: boolean;
+  adminAuthConfigured: boolean;
+  revocationEnabled: boolean;
+  persistenceEncryption: string;
+  memoryEncryption: string;
+};
 type RuntimeRevocation = {
   id: string;
   attestationId: string;
@@ -69,6 +78,7 @@ export function App(): JSX.Element {
   const [recentRuns, setRecentRuns] = useState<LoopResult[]>([]);
   const [revocations, setRevocations] = useState<RuntimeRevocation[]>([]);
   const [attestationTtlMs, setAttestationTtlMs] = useState<number | null>(null);
+  const [policy, setPolicy] = useState<RuntimePolicy | null>(null);
   const [result, setResult] = useState<LoopResult | null>(null);
   const [mode, setMode] = useState('observe');
   const [trust, setTrust] = useState<number | null>(null);
@@ -117,13 +127,21 @@ export function App(): JSX.Element {
 
   const refreshRuntime = async () => {
     try {
-      const [stateResponse, eventsResponse, runsResponse, revocationsResponse] = await Promise.all([
-        fetch('/api/state'),
-        fetch('/api/events'),
-        fetch('/api/runs'),
-        fetch('/api/attest/revocations'),
-      ]);
-      if (!stateResponse.ok || !eventsResponse.ok || !runsResponse.ok || !revocationsResponse.ok)
+      const [stateResponse, eventsResponse, runsResponse, revocationsResponse, policyResponse] =
+        await Promise.all([
+          fetch('/api/state'),
+          fetch('/api/events'),
+          fetch('/api/runs'),
+          fetch('/api/attest/revocations'),
+          fetch('/api/attest/policy'),
+        ]);
+      if (
+        !stateResponse.ok ||
+        !eventsResponse.ok ||
+        !runsResponse.ok ||
+        !revocationsResponse.ok ||
+        !policyResponse.ok
+      )
         throw new Error('Runtime unavailable');
       const state = (await stateResponse.json()) as {
         data: {
@@ -144,6 +162,7 @@ export function App(): JSX.Element {
       const eventData = (await eventsResponse.json()) as { data: RuntimeEvent[] };
       const runData = (await runsResponse.json()) as { data: LoopResult[] };
       const revocationData = (await revocationsResponse.json()) as { data: RuntimeRevocation[] };
+      const policyData = (await policyResponse.json()) as { data: RuntimePolicy };
       const publicKeyResponse = await fetch('/api/attest/public-key').catch(() => null);
       if (publicKeyResponse?.ok) {
         const publicKeyData = (await publicKeyResponse.json()) as { data: PublicTrustMetadata };
@@ -165,6 +184,7 @@ export function App(): JSX.Element {
       setEvents(eventData.data);
       setRecentRuns(runData.data);
       setRevocations(revocationData.data);
+      setPolicy(policyData.data);
       setResult((current) => current ?? runData.data[0] ?? null);
       setSelectedEvent((current) =>
         current ? (eventData.data.find((event) => event.id === current.id) ?? current) : null
@@ -643,6 +663,14 @@ export function App(): JSX.Element {
             <span>ATTESTATION TTL</span>
             <strong>
               {attestationTtlMs === null ? 'OFF' : `${Math.round(attestationTtlMs / 1000)}s`}
+            </strong>
+          </div>
+          <div>
+            <span>POLICY</span>
+            <strong>
+              {policy
+                ? `${policy.revocationEnabled ? 'REVOCATION' : 'NO REVOCATION'} / ${policy.adminAuthConfigured ? 'ADMIN' : 'LOCAL'}`
+                : 'UNKNOWN'}
             </strong>
           </div>
           <div>

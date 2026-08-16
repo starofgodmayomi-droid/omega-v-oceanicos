@@ -34,6 +34,30 @@ describe('OmegaClient', () => {
     expect(result.data.memory.intact).toBe(true);
   });
 
+  it('reads the non-secret attestation policy contract', async () => {
+    const client = new OmegaClient('http://api.test', async (url) => {
+      expect(url).toBe('http://api.test/attest/policy');
+      return new Response(
+        JSON.stringify({
+          data: {
+            attestationAlgorithm: 'HMAC-SHA256',
+            attestationTtlMs: 900000,
+            readAuthConfigured: true,
+            adminAuthConfigured: true,
+            revocationEnabled: true,
+            persistenceEncryption: 'aes-256-gcm',
+            memoryEncryption: 'aes-256-gcm',
+          },
+          timestamp: '2026-08-16T00:00:00.000Z',
+        })
+      );
+    });
+
+    await expect(client.getAttestationPolicy()).resolves.toMatchObject({
+      data: { attestationTtlMs: 900000, adminAuthConfigured: true, revocationEnabled: true },
+    });
+  });
+
   it('sends the optional read token as a bearer header', async () => {
     const client = new OmegaClient(
       'http://api.test',

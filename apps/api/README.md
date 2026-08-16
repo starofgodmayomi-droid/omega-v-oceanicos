@@ -287,6 +287,7 @@ POST /attest
 ```
 POST /attest/revoke
 GET /attest/revocations
+GET /attest/policy
 ```
 
 Revocation is an operator-mediated, append-only control separate from the
@@ -421,6 +422,8 @@ GET /attest/public-key
 ```
 
 Returns safe Ed25519 trust metadata for clients that need to verify attestations. The response includes the algorithm, key identifier, fingerprint, key version, and public key. Private keys, seeds, secrets, and raw signing material are never returned.
+
+`GET /attest/policy` separately exposes non-secret capability configuration: the attestation algorithm, TTL, presence of read/admin boundaries, revocation support, and storage codec names. It never returns token or key values and does not claim custody, rotation, recovery, or distributed policy coordination.
 
 **Response:**
 

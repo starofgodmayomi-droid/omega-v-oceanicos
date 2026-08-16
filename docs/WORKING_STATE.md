@@ -36,6 +36,7 @@ Push, PR publication, merge, deployment, and other externally visible actions ar
 | SDK/CLI expiry verification     | `OmegaClient.verifyAttestation()` and `omega verify --attestation-json` preserve API `valid`, `revoked`, and `expired` status, use the read boundary, and fail closed with a non-zero CLI exit for invalid evidence.                                                                                                                                          |
 | Constant-time auth matching     | API read and admin bearer gates now parse the bearer scheme and compare token bytes with `timingSafeEqual`, retaining existing 401 codes and request IDs. Direct regression coverage verifies equal, wrong-value, and length-mismatch behavior.                                                                                                               |
 | Frontend TTL policy evidence    | API `/state` now exposes non-secret `attestationTtlMs`; the dashboard renders `ATTESTATION TTL` as `OFF` or seconds, with web fixture and DOM coverage. The frontend consumes backend policy and does not infer expiry.                                                                                                                                       |
+| Whole-system policy contract    | API `GET /attest/policy` exposes non-secret algorithm, TTL, auth-boundary presence, revocation support, and storage codecs. The web dashboard renders `REVOCATION / ADMIN` status; SDK `getAttestationPolicy()` and CLI `policy` consume the same contract.                                                                                                   |
 
 ## Current repository state
 
@@ -56,7 +57,8 @@ The active worktree is `/home/ubuntu/current-main-worktree` on branch `feat/sign
 | `8341170` | Attestation expiry policy                                 | Local and not yet published at the time of this record |
 | `88155d6` | SDK/CLI expiry verification                               | Local and not yet published at the time of this record |
 | `807b1ee` | Constant-time auth matching                               | Local and not yet published at the time of this record |
-| pending   | Frontend TTL policy evidence                              | Locally verified; not yet committed or published       |
+| `b3f836a` | Frontend TTL policy evidence                              | Local and not yet published at the time of this record |
+| pending   | Whole-system policy contract                              | Locally verified; not yet committed or published       |
 
 | |
 | PR #33 targets `main`, remains **draft/open/mergeable**, and has no recorded review decision. Its last observed CI run was green across Node 18, Node 20, Windows compatibility, packaging/smoke testing, and report generation; the attested-artifact publication job was correctly skipped. The revocation, interface, and coverage-repair commits were authorized and pushed; the web-ledger, admin-boundary, and kernel-memory commits remain local until their CI publication is separately authorized. |
@@ -87,10 +89,11 @@ The combined signing-audit and persistence-encryption state passed:
 | SDK/CLI verification                     | Full local coverage/build pass with 324 tests; SDK read-token propagation, CLI JSON parsing, expired output, and fail-closed exit behavior are covered.                                                            |
 | Constant-time auth verification          | Full local coverage/build pass with 325 tests; read/admin token boundaries and constant-time comparison cases are covered without changing error contracts.                                                        |
 | Frontend TTL verification                | Full local coverage/build pass with 327 tests; API state propagation, dashboard `900s` rendering, web contract, and DOM behavior are covered.                                                                      |
+| Policy contract verification             | Focused API/web/SDK/CLI tests pass (101 tests); full local coverage/build pass with 332 tests and all policy fields remain non-secret.                                                                             |
 
 | `git diff --check` | Passed before the revocation commit |
 
-The last full local verification after integrating frontend TTL policy evidence observed 327 passing tests, 71.15% global branch coverage, and a successful build. The repository may contain generated build output ignored by Git; only intended source and documentation changes should be committed.
+The last full local verification after integrating the whole-system policy contract observed 332 passing tests, 71.15% global branch coverage, and a successful build. The repository may contain generated build output ignored by Git; only intended source and documentation changes should be committed.
 
 ## Remaining gaps and uncertainty
 
@@ -100,7 +103,7 @@ The web client exposes revoke and revocation-ledger controls. Stronger administr
 
 ## Next authorized action
 
-1. Commit the locally verified frontend TTL policy evidence slice.
+1. Commit the locally verified whole-system policy contract slice.
 2. Obtain confirmation to push the resulting local queue to PR #33.
 3. Observe the resulting CI run through the GitHub API.
 4. Keep PR #33 draft and route cryptographic and revocation review to a human.

@@ -34,6 +34,16 @@ export type RuntimeRun = {
   attestation: { id: string; verified: boolean; attestedAt?: string; revoked?: boolean };
 };
 
+export type AttestationPolicy = {
+  attestationAlgorithm: string;
+  attestationTtlMs: number | null;
+  readAuthConfigured: boolean;
+  adminAuthConfigured: boolean;
+  revocationEnabled: boolean;
+  persistenceEncryption: string;
+  memoryEncryption: string;
+};
+
 export type AttestationVerification = {
   valid: boolean;
   revoked: boolean;
@@ -93,6 +103,10 @@ export class OmegaClient {
 
   async getRuns(): Promise<{ data: RuntimeRun[] }> {
     return this.get<{ data: RuntimeRun[] }>('/runs');
+  }
+
+  async getAttestationPolicy(): Promise<{ data: AttestationPolicy; timestamp: string }> {
+    return this.get<{ data: AttestationPolicy; timestamp: string }>('/attest/policy');
   }
 
   async getRevocations(): Promise<{ data: AttestationRevocation[]; timestamp: string }> {

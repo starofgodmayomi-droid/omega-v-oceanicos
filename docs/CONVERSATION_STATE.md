@@ -34,12 +34,13 @@ PR #33: draft, open, mergeable, no recorded review decision. Its last published 
 | `8341170`                    | Optional `OMEGA_ATTESTATION_TTL_MS`; expired attestations become invalid and `/act` returns `EXPIRED_ATTESTATION`                | Full local gate passed at 323 tests                               |
 | `88155d6`                    | SDK `verifyAttestation()` and CLI `verify --attestation-json`; preserves `valid/revoked/expired`; CLI fails closed               | Full local gate passed at 324 tests                               |
 | `807b1ee`                    | Constant-time read/admin bearer comparison with `timingSafeEqual`, preserving 401/request-ID contracts                           | Full local gate passed at 325 tests                               |
+| pending                      | Whole-system policy contract: API, web, SDK, CLI, docs, and tests                                                                | Local full gate passed at 332 tests; not committed or published   |
 
 ## Latest verified local gate
 
-Before the current interrupted frontend work: `pnpm format:check`, `pnpm type-check`, `pnpm test -- --coverage`, `pnpm build`, and `git diff --check` passed. Latest observed result before the uncommitted frontend slice was **23 suites, 325 tests, 71.15% global branch coverage, build passed**; after the frontend TTL slice, the verified local result is **23 suites, 327 tests, 71.15% global branch coverage, build passed**.
+Before the current interrupted frontend work: `pnpm format:check`, `pnpm type-check`, `pnpm test -- --coverage`, `pnpm build`, and `git diff --check` passed. The verified local progression is **325 tests** after constant-time auth, **327 tests** after frontend TTL evidence, and **332 tests** after the policy contract; the latest full gate passed with 71.15% global branch coverage and a successful build.
 
-The frontend TTL slice is now fully verified locally but remains uncommitted: API `/state.attestationTtlMs`, dashboard TTL state/metric, default web fixture coverage, and a DOM test expecting `900s`. Focused contract/API/dashboard tests passed (49 tests); the full gate passed with **23 suites / 327 tests**, 71.15% global branch coverage, formatting, type-check, build, and diff checks. The current working tree contains only this frontend/API slice plus this compressed record; no publication or merge is claimed.
+The frontend TTL slice was verified and committed in `b3f836a`. The next whole-system policy slice is fully verified locally but remains uncommitted: API `GET /attest/policy`, dashboard `REVOCATION / ADMIN` rendering, SDK `getAttestationPolicy()`, CLI `policy`, docs, fixtures, and contract tests. Focused cross-surface tests passed (101 tests); the full gate passed with **23 suites / 332 tests**, 71.15% global branch coverage, formatting, type-check, build, and diff checks. No publication or merge is claimed for the pending policy slice.
 
 ## Open risks and unearned claims
 
@@ -53,6 +54,6 @@ A green CI result is evidence of the checked workflow, not a human review decisi
 
 1. Reconcile `git status`, local head, and PR #33 head.
 2. Finish focused frontend TTL tests and type/format checks.
-3. Keep the observed full gate evidence: 327 tests, 71.15% global branch coverage, build and diff checks passed.
-4. Update `docs/WORKING_STATE.md`, commit the frontend slice, and ask for publication authorization.
+3. Keep the observed full gate evidence: 332 tests, 71.15% global branch coverage, build and diff checks passed.
+4. Update `docs/WORKING_STATE.md`, commit the policy slice, and ask for publication authorization.
 5. Continue the next highest-leverage back/front slice only after preserving the evidence and lineage.

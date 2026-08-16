@@ -217,11 +217,24 @@ describe('dashboard', () => {
             services: [{ status: 'ready' }, { status: 'ready' }],
           },
         }),
+      '/api/attest/policy': () =>
+        json({
+          data: {
+            attestationAlgorithm: 'HMAC-SHA256',
+            attestationTtlMs: 900000,
+            readAuthConfigured: true,
+            adminAuthConfigured: true,
+            revocationEnabled: true,
+            persistenceEncryption: 'aes-256-gcm',
+            memoryEncryption: 'aes-256-gcm',
+          },
+        }),
     });
     await renderApp();
 
     expect(await screen.findByText('ATTESTATION TTL')).toBeInTheDocument();
     expect(screen.getByText('900s')).toBeInTheDocument();
+    expect(screen.getByText('REVOCATION / ADMIN')).toBeInTheDocument();
   });
 
   it('renders persisted revocation evidence in the ledger', async () => {

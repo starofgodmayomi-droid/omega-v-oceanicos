@@ -91,6 +91,29 @@ describe('API runtime contracts', () => {
     expect(state.data.trustBasis.attestationValidity).toBe(1);
   });
 
+  it('exposes non-secret attestation policy configuration', async () => {
+    const response = await fetch(`${baseUrl}/attest/policy`);
+    const body = (await response.json()) as ApiResponse<{
+      attestationAlgorithm: string;
+      attestationTtlMs: number | null;
+      readAuthConfigured: boolean;
+      adminAuthConfigured: boolean;
+      revocationEnabled: boolean;
+      persistenceEncryption: string;
+      memoryEncryption: string;
+    }>;
+
+    expect(response.status).toBe(200);
+    expect(body.data.attestationAlgorithm).toBe('HMAC-SHA256');
+    expect(body.data.attestationTtlMs).toBe(null);
+    expect(body.data.readAuthConfigured).toBe(false);
+    expect(body.data.adminAuthConfigured).toBe(false);
+    expect(body.data.revocationEnabled).toBe(true);
+    expect(body.data.persistenceEncryption).toBe('disabled');
+    expect(body.data.memoryEncryption).toBe('disabled');
+    expect(JSON.stringify(body)).not.toMatch(/token|secret|private|signing material/i);
+  });
+
   it('reports runtime provenance and memory evidence without secrets', async () => {
     await fetch(`${baseUrl}/complete-loop`, {
       method: 'POST',

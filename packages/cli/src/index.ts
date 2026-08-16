@@ -75,6 +75,7 @@ function usage(): string {
     'omega revocations [--url URL] [--token TOKEN]',
     'omega revoke ATTESTATION_ID --reason REASON [--url URL] [--token TOKEN] [--admin-token TOKEN]',
     'omega verify --attestation-json JSON [--url URL] [--token TOKEN]',
+    'omega policy [--url URL] [--token TOKEN]',
     '',
     'Read live runtime and evidence from the Omega V API.',
     '',
@@ -182,6 +183,26 @@ async function runs(argv: string[], fetchImpl: FetchLike): Promise<number> {
   }
 }
 
+async function policy(argv: string[], fetchImpl: FetchLike): Promise<number> {
+  const endpoint = `${baseUrl(argv).replace(/\/$/, '')}/attest/policy`;
+  try {
+    const response = await fetchImpl(endpoint, requestInit(argv));
+    const body = (await response.json()) as { data?: Record<string, unknown>; message?: string };
+    if (!response.ok || !body.data) {
+      process.stderr.write(
+        `Policy unavailable (${response.status}): ${body.message ?? 'unknown error'}\n`
+      );
+      return 1;
+    }
+    process.stdout.write(`${JSON.stringify(body.data)}\n`);
+    return 0;
+  } catch (error) {
+    process.stderr.write(
+      `Policy unavailable: ${error instanceof Error ? error.message : String(error)}\n`
+    );
+    return 1;
+  }
+}
 async function verifyAttestation(argv: string[], fetchImpl: FetchLike): Promise<number> {
   const rawAttestation = option(argv, '--attestation-json');
   if (!rawAttestation) {
@@ -349,6 +370,7 @@ export async function run(
   if (command === 'export') return evidenceExport(argv, fetchImpl);
   if (command === 'revocations') return revocations(argv, fetchImpl);
   if (command === 'verify') return verifyAttestation(argv, fetchImpl);
+  if (command === 'policy') return policy(argv, fetchImpl);
   if (command === 'revoke') return revoke(argv, fetchImpl);
 
   process.stderr.write(`Unknown command: ${command}\n\n${usage()}\n`);
