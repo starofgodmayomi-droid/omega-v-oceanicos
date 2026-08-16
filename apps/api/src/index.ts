@@ -33,7 +33,14 @@ app.use((req: Request, _res: Response, next) => {
 // Middleware
 app.use(express.json());
 app.use((req: Request, res: Response, next) => {
-  const requestId = req.header('x-request-id') || `req-${randomUUID()}`;
+  const suppliedRequestId = req.header('x-request-id')?.trim();
+  const requestId =
+    suppliedRequestId && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(suppliedRequestId)
+      ? suppliedRequestId
+      : `req-${randomUUID()}`;
+  res.setHeader('x-content-type-options', 'nosniff');
+  res.setHeader('x-frame-options', 'DENY');
+  res.setHeader('referrer-policy', 'no-referrer');
   res.locals.requestId = requestId;
   res.setHeader('x-request-id', requestId);
   const sendJson = res.json.bind(res);

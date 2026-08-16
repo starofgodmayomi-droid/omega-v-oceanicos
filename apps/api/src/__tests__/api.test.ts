@@ -139,6 +139,20 @@ describe('API runtime contracts', () => {
     expect(verification.data.valid).toBe(true);
   });
 
+  it('sanitizes untrusted request IDs and emits baseline security headers', async () => {
+    const response = await fetch(`${baseUrl}/health`, {
+      headers: { 'x-request-id': 'bad id with spaces and\\ncontrol' },
+    });
+
+    const requestId = response.headers.get('x-request-id');
+    expect(response.status).toBe(200);
+    expect(requestId).toMatch(/^req-[0-9a-f-]{36}$/);
+    expect(requestId).not.toContain(' ');
+    expect(response.headers.get('x-content-type-options')).toBe('nosniff');
+    expect(response.headers.get('x-frame-options')).toBe('DENY');
+    expect(response.headers.get('referrer-policy')).toBe('no-referrer');
+  });
+
   it('includes request provenance in error responses', async () => {
     const response = await fetch(`${baseUrl}/attest/verify`, {
       method: 'POST',
