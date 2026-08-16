@@ -1,6 +1,6 @@
 # Ω∞v CLI
 
-The CLI is a read-only client for the real API observability and runtime evidence contracts.
+The CLI is a read-only client for the real API observability and runtime evidence contracts. When the API has `OMEGA_READ_TOKEN` configured, pass `--token TOKEN` or set `OMEGA_READ_TOKEN` so the CLI sends `Authorization: Bearer TOKEN`.
 
 ## Usage
 
@@ -41,4 +41,4 @@ node packages/cli/dist/index.js runs --url http://localhost:3000 --limit 10
 
 This command reads `GET /runs` and reports only the returned observation ID, verification status, and attestation status.
 
-Broader evidence export and mobile capabilities remain future slices. The typed SDK is available separately as `@omega-v/sdk`.
+Broader evidence export and mobile capabilities remain future slices. The typed SDK is available separately as `@omega-v/sdk`, and accepts `{ readToken }` as its third constructor argument when the API read boundary is enabled.
