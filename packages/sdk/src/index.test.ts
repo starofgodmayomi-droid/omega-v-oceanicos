@@ -128,6 +128,37 @@ describe('OmegaClient', () => {
     ).resolves.toMatchObject({ meta: { bounded: true, source: 'memory', total: 1 } });
   });
 
+  /**
+   * `getAuditEvents` takes an optional query and only appends a `?` suffix
+   * when at least one filter is present; the one existing test always
+   * supplied three filters, so neither the default `query = {}` parameter
+   * nor the unfiltered request path had ever run.
+   */
+  it('queries audit events with no filters and requests the bare endpoint', async () => {
+    const client = new OmegaClient('http://api.test', async (url) => {
+      expect(url).toBe('http://api.test/audit/events');
+      return new Response(
+        JSON.stringify({
+          data: [],
+          meta: {
+            bounded: true,
+            limit: 100,
+            total: 0,
+            source: 'memory',
+            skipped: 0,
+            keySource: 'none',
+            filters: { type: null, stage: null, status: null, from: null, to: null },
+          },
+          timestamp: '2026-08-16T00:00:00.000Z',
+        })
+      );
+    });
+
+    await expect(client.getAuditEvents()).resolves.toMatchObject({
+      meta: { bounded: true, total: 0 },
+    });
+  });
+
   it('sends the optional read token as a bearer header', async () => {
     const client = new OmegaClient(
       'http://api.test',
