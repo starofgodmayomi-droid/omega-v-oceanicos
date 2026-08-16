@@ -513,6 +513,93 @@ describe('dashboard', () => {
     ).toBeInTheDocument();
   });
 
+  /**
+   * `navigate` has three branches: the "Current" item, an item matching a
+   * known stage, and everything else (covered by the unwired-section test
+   * above). Only the third branch had ever run; a nav click had never
+   * resolved to a stage, and a stale error from an unwired section had never
+   * been cleared by a later, valid navigation.
+   */
+  it('navigates to a known stage from the sidebar and clears a prior navigation error', async () => {
+    const user = userEvent.setup();
+    await renderApp();
+
+    await user.click(await screen.findByRole('button', { name: /agents/i }));
+    expect(
+      await screen.findByText(/Agents is not connected to the current runtime yet/)
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /Verify$/ }));
+
+    expect(screen.getByText('Current / Verify')).toBeInTheDocument();
+    expect(screen.getByText('VERIFY')).toBeInTheDocument();
+    expect(
+      screen.queryByText(/Agents is not connected to the current runtime yet/)
+    ).not.toBeInTheDocument();
+  });
+
+  it('returns to Current from the sidebar and clears a prior navigation error', async () => {
+    const user = userEvent.setup();
+    await renderApp();
+
+    await user.click(await screen.findByRole('button', { name: /agents/i }));
+    expect(
+      await screen.findByText(/Agents is not connected to the current runtime yet/)
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /Current$/ }));
+
+    expect(screen.getByText('Current / Current')).toBeInTheDocument();
+    expect(screen.getByText('OBSERVE')).toBeInTheDocument();
+    expect(
+      screen.queryByText(/Agents is not connected to the current runtime yet/)
+    ).not.toBeInTheDocument();
+  });
+
+  /**
+   * The stage-flow row lets an operator jump straight to a stage without
+   * going through the sidebar or the command palette. No test had ever
+   * clicked one of its pills, so the handler had no coverage.
+   */
+  it('sets the active stage from a stage-flow pill', async () => {
+    const user = userEvent.setup();
+    await renderApp();
+
+    await user.click(await screen.findByRole('button', { name: /03 verify/i }));
+
+    expect(screen.getByText('VERIFY')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /03 verify/i })).toHaveClass('stage active');
+  });
+
+  /**
+   * The claim textarea and status-code input each carry their own onChange
+   * handler feeding /api/complete-loop's payload, mirroring how responseTime
+   * already had a test. Neither had ever been typed into.
+   */
+  it('sends the operator-edited claim and status code rather than the defaults', async () => {
+    const user = userEvent.setup();
+    const fetchMock = installFetch();
+    await renderApp();
+
+    const claimInput = await screen.findByLabelText(/what should enter the current/i);
+    await user.clear(claimInput);
+    await user.type(claimInput, 'Payments API is degraded');
+
+    const statusCodeInput = screen.getByLabelText(/status code/i);
+    await user.clear(statusCodeInput);
+    await user.type(statusCodeInput, '503');
+
+    await user.click(screen.getByRole('button', { name: /run verification/i }));
+
+    await waitFor(() => {
+      const call = fetchMock.mock.calls.find(([url]) => url === '/api/complete-loop');
+      expect(call).toBeDefined();
+      const body = JSON.parse((call![1] as RequestInit).body as string);
+      expect(body.claim).toBe('Payments API is degraded');
+      expect(body.metadata.statusCode).toBe(503);
+    });
+  });
+
   it('reports a signature check failure from the API rather than showing a stale verdict', async () => {
     const user = userEvent.setup();
     installFetch({
@@ -573,6 +660,33 @@ describe('dashboard', () => {
 
       const learnCall = fetchMock.mock.calls.find(([url]) => url === '/api/learn');
       expect(JSON.parse(String(learnCall?.[1]?.body))).toMatchObject({ outcome: 'success' });
+    });
+
+    /**
+     * The learning-feedback outcome select and note input each carry their
+     * own onChange handler feeding /api/learn's payload. The end-to-end test
+     * above never touches either control, so both handlers, and the
+     * non-default outcome values they enable, had no coverage.
+     */
+    it('sends the operator-selected outcome and note rather than the defaults', async () => {
+      const user = userEvent.setup();
+      const fetchMock = installFetch();
+      await renderApp();
+
+      await authorize(user);
+      await user.selectOptions(screen.getByRole('combobox'), 'failure');
+      await user.type(
+        screen.getByPlaceholderText(/what did the action teach us/i),
+        'Rate limit tripped before the retry backoff kicked in'
+      );
+      await user.click(screen.getByRole('button', { name: /record learning/i }));
+
+      expect(await screen.findByText('LEARNING RECORDED')).toBeInTheDocument();
+      const learnCall = fetchMock.mock.calls.find(([url]) => url === '/api/learn');
+      expect(JSON.parse(String(learnCall?.[1]?.body))).toMatchObject({
+        outcome: 'failure',
+        note: 'Rate limit tripped before the retry backoff kicked in',
+      });
     });
 
     it('denies authorization and surfaces the request id when the API rejects it', async () => {
@@ -756,6 +870,27 @@ describe('command palette', () => {
     await user.click(screen.getByRole('button', { name: '⌘ K' }));
     const dialog = await screen.findByRole('dialog', { name: /command palette/i });
     expect(within(dialog).getByRole('button', { name: /verify attestation/i })).toBeDisabled();
+  });
+
+  /**
+   * The palette's "Verify attestation" command was only ever asserted as
+   * disabled, never actually clicked once a run enabled it. Its own onClick
+   * handler, distinct from the main workspace's identically-named button,
+   * had no coverage.
+   */
+  it('verifies an attestation signature from the palette once a run has produced a result', async () => {
+    const user = userEvent.setup();
+    await renderApp();
+
+    await user.click(await screen.findByRole('button', { name: /run verification/i }));
+    await screen.findByText('ATTESTATION');
+
+    await user.click(screen.getByRole('button', { name: '⌘ K' }));
+    const dialog = await screen.findByRole('dialog', { name: /command palette/i });
+    await user.click(within(dialog).getByRole('button', { name: /verify attestation/i }));
+
+    expect(await screen.findByText('VALID')).toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: /command palette/i })).not.toBeInTheDocument();
   });
 
   it('traps Tab focus within the palette, wrapping in both directions', async () => {
