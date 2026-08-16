@@ -57,9 +57,11 @@ Welcome to the Ω∞v Oceanicos documentation. Start here to understand the proj
 - **[Infrastructure](../infra/README.md)** — the image, its environment
   variables, and what does not exist yet.
 
-There is no SDK and no CLI. Both were listed here as "coming soon" for long
-enough to read as commitments; they are on the [roadmap](./ROADMAP.md) and
-nowhere else.
+The first CLI slice exists as [`@omega-v/cli`](../packages/cli/README.md).
+It provides `omega status`, `omega events`, and `omega runs` as read-only clients
+for real runtime evidence contracts. The first typed SDK slice exists as
+[`@omega-v/sdk`](../packages/sdk/README.md). Mobile and broader integrations
+remain on the [roadmap](./ROADMAP.md).
 
 ---
 

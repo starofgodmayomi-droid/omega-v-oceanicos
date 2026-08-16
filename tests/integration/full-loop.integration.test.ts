@@ -164,6 +164,100 @@ describe('full loop, written by the API and read back by the packages', () => {
     expect(body.data.length).toBeGreaterThan(0);
   });
 
+  it('preserves verified lineage through action, learning, recompilation, and memory', async () => {
+    const loopResponse = await loop('lineage survives the full runtime loop', {
+      statusCode: 200,
+      responseTime: 11,
+    });
+    const loopBody = (await loopResponse.json()) as {
+      data: {
+        attestation: { id: string; verified: boolean; signature: string };
+      };
+    };
+
+    expect(loopResponse.status).toBe(201);
+    expect(loopBody.data.attestation.verified).toBe(true);
+
+    const actionResponse = await fetch(`${baseUrl}/act`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        attestation: loopBody.data.attestation,
+        action: 'record-lineage-proof',
+      }),
+    });
+    const actionBody = (await actionResponse.json()) as {
+      data: { id: string; action: string; attestationId: string; status: string };
+    };
+
+    expect(actionResponse.status).toBe(201);
+    expect(actionBody.data.action).toBe('record-lineage-proof');
+    expect(actionBody.data.attestationId).toBe(loopBody.data.attestation.id);
+    expect(actionBody.data.status).toBe('authorized');
+
+    const learningResponse = await fetch(`${baseUrl}/learn`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        actionId: actionBody.data.id,
+        outcome: 'success',
+        note: 'The attested action completed successfully.',
+      }),
+    });
+    const learningBody = (await learningResponse.json()) as {
+      data: { id: string; actionId: string; outcome: string };
+    };
+
+    expect(learningResponse.status).toBe(201);
+    expect(learningBody.data.actionId).toBe(actionBody.data.id);
+    expect(learningBody.data.outcome).toBe('success');
+
+    const recompileResponse = await fetch(`${baseUrl}/recompile`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ learningId: learningBody.data.id }),
+    });
+    const recompileBody = (await recompileResponse.json()) as {
+      data: { id: string; learningId: string; status: string };
+    };
+
+    expect(recompileResponse.status).toBe(201);
+    expect(recompileBody.data.learningId).toBe(learningBody.data.id);
+    expect(recompileBody.data.status).toBe('proposed');
+
+    const [actionsResponse, learningRecordsResponse, recompilationsResponse, memoryResponse] =
+      await Promise.all([
+        fetch(`${baseUrl}/actions`),
+        fetch(`${baseUrl}/learning`),
+        fetch(`${baseUrl}/recompilations`),
+        fetch(`${baseUrl}/memory`),
+      ]);
+    const actionsBody = (await actionsResponse.json()) as { data: Array<{ id: string }> };
+    const learningRecordsBody = (await learningRecordsResponse.json()) as {
+      data: Array<{ id: string }>;
+    };
+    const recompilationsBody = (await recompilationsResponse.json()) as {
+      data: Array<{ id: string }>;
+    };
+    const memoryBody = (await memoryResponse.json()) as {
+      data: Array<{ type: string }>;
+      meta: { appendOnly: boolean; durable: boolean };
+    };
+
+    expect(actionsBody.data.some(({ id }) => id === actionBody.data.id)).toBe(true);
+    expect(learningRecordsBody.data.some(({ id }) => id === learningBody.data.id)).toBe(true);
+    expect(recompilationsBody.data.some(({ id }) => id === recompileBody.data.id)).toBe(true);
+    expect(memoryBody.meta.appendOnly).toBe(true);
+    expect(memoryBody.meta.durable).toBe(true);
+    expect(memoryBody.data).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ type: 'OBSERVATION' }),
+        expect.objectContaining({ type: 'VERIFICATION' }),
+        expect.objectContaining({ type: 'MEMORY' }),
+      ])
+    );
+  });
+
   it('reports its own chain intact through the endpoint too', async () => {
     const response = await fetch(`${baseUrl}/memory/integrity`);
     const body = (await response.json()) as { data: { intact: boolean; entries: number } };

@@ -33,9 +33,29 @@ app.use((req: Request, _res: Response, next) => {
 // Middleware
 app.use(express.json());
 app.use((req: Request, res: Response, next) => {
-  const requestId = req.header('x-request-id') || `req-${randomUUID()}`;
+  const suppliedRequestId = req.header('x-request-id')?.trim();
+  const requestId =
+    suppliedRequestId && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(suppliedRequestId)
+      ? suppliedRequestId
+      : `req-${randomUUID()}`;
+  res.setHeader('x-content-type-options', 'nosniff');
+  res.setHeader('x-frame-options', 'DENY');
+  res.setHeader('referrer-policy', 'no-referrer');
   res.locals.requestId = requestId;
   res.setHeader('x-request-id', requestId);
+  const configuredReadToken = process.env.OMEGA_READ_TOKEN?.trim();
+  const isReadOnlyRequest = req.method === 'GET' && req.path !== '/health';
+  if (configuredReadToken && isReadOnlyRequest) {
+    const authorization = req.header('authorization') || '';
+    if (authorization !== `Bearer ${configuredReadToken}`) {
+      res.status(401).json({
+        code: 'READ_ACCESS_REQUIRED',
+        message: 'A valid bearer token is required for read-only evidence access',
+        requestId,
+      });
+      return;
+    }
+  }
   const sendJson = res.json.bind(res);
   res.json = ((body: unknown) => {
     if (body && typeof body === 'object' && 'code' in body) {
@@ -49,10 +69,21 @@ app.use((req: Request, res: Response, next) => {
   next();
 });
 
-// Initialize services
+// Initialize services. HMAC remains the default; Ed25519 is opt-in and must
+// receive explicit private-key material so the API never silently changes its
+// signing contract or signs with a public key.
 const observer = new Observer();
 const verificationEngine = new VerificationEngine();
-const attestationService = new AttestationService();
+const configuredAttestationAlgorithm = process.env.OMEGA_ATTESTATION_ALGORITHM;
+const attestationService =
+  configuredAttestationAlgorithm === 'Ed25519'
+    ? new AttestationService({
+        algorithm: 'Ed25519',
+        signingKey: process.env.OMEGA_ED25519_PRIVATE_KEY || process.env.OMEGA_ED25519_KEY,
+        publicKey: process.env.OMEGA_ED25519_PUBLIC_KEY,
+        keyVersion: process.env.OMEGA_ATTESTATION_KEY_VERSION || '1',
+      })
+    : new AttestationService();
 
 /**
  * The MINI kernel's memory, wired into the API.
@@ -255,6 +286,87 @@ app.get('/state', (_req: Request, res: Response) => {
   });
 });
 
+/**
+ * GET /observability - Read-only operational evidence for runtime inspection.
+ * This composes existing state sources and exposes no signing material.
+ */
+app.get('/observability', (_req: Request, res: Response) => {
+  const latestRun = completedRuns[0];
+  const latestEvent = runtimeEvents[0];
+  const durableLog = readEventLog<RuntimeEvent>(eventLogPath, persistenceEnabled);
+  const attestationValidity = latestRun ? attestationService.verify(latestRun.attestation) : null;
+
+  res.json({
+    data: {
+      runtime: {
+        mode: latestEvent?.stage || 'observing',
+        persistence: persistenceEnabled ? 'file' : 'memory',
+        services: ['observer', 'verifier', 'attester'],
+        lastActivity: latestEvent?.timestamp || null,
+      },
+      provenance: {
+        recentEvents: runtimeEvents.length,
+        durableEvents: durableLog.entries.length,
+        skippedLogEntries: durableLog.skipped,
+        completedRuns: completedRuns.length,
+        lastRequestId: latestEvent?.requestId || null,
+        lastCorrelationId: latestEvent?.correlationId || null,
+      },
+      trust: {
+        verificationCoverage: latestRun ? (latestRun.verification.summary.passed ? 1 : 0) : null,
+        attestationValidity,
+      },
+      memory: {
+        entries: kernelMemory.size(),
+        intact: kernelMemory.verifyIntegrity(),
+        appendOnly: true,
+      },
+    },
+    timestamp: new Date().toISOString(),
+  });
+});
+
+app.get('/evidence/export', (_req: Request, res: Response) => {
+  const durableLog = readEventLog<RuntimeEvent>(eventLogPath, persistenceEnabled);
+  const latestRun = completedRuns[0];
+  const latestEvent = runtimeEvents[0];
+  const attestationValidity = latestRun ? attestationService.verify(latestRun.attestation) : null;
+
+  res.json({
+    data: {
+      observability: {
+        runtime: {
+          mode: latestEvent?.stage || 'observing',
+          persistence: persistenceEnabled ? 'file' : 'memory',
+          services: ['observer', 'verifier', 'attester'],
+          lastActivity: latestEvent?.timestamp || null,
+        },
+        provenance: {
+          recentEvents: runtimeEvents.length,
+          durableEvents: durableLog.entries.length,
+          skippedLogEntries: durableLog.skipped,
+          completedRuns: completedRuns.length,
+          lastRequestId: latestEvent?.requestId || null,
+          lastCorrelationId: latestEvent?.correlationId || null,
+        },
+        trust: {
+          verificationCoverage: latestRun ? (latestRun.verification.summary.passed ? 1 : 0) : null,
+          attestationValidity,
+        },
+        memory: {
+          entries: kernelMemory.size(),
+          intact: kernelMemory.verifyIntegrity(),
+          appendOnly: true,
+        },
+      },
+      events: runtimeEvents.slice(0, RECENT_EVENT_WINDOW),
+      runs: completedRuns.slice(0, 10),
+    },
+    meta: { bounded: true, eventWindow: RECENT_EVENT_WINDOW, runWindow: 10 },
+    timestamp: new Date().toISOString(),
+  });
+});
+
 app.get('/events', (_req: Request, res: Response) => {
   res.json({
     data: runtimeEvents,
@@ -439,6 +551,30 @@ app.post('/attest/verify', (req: Request, res: Response) => {
       timestamp: new Date().toISOString(),
     } satisfies ErrorResponse);
   }
+});
+
+/** Public, non-secret attestation verification metadata. */
+app.get('/attest/public-key', (_req: Request, res: Response) => {
+  const info = attestationService.getKeyInfo();
+  if (info.algorithm !== 'Ed25519' || !info.publicKey) {
+    res.status(503).json({
+      code: 'ED25519_TRUST_UNAVAILABLE',
+      message:
+        'Ed25519 public-key discovery is unavailable while the configured algorithm is not Ed25519',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+  res.json({
+    data: {
+      algorithm: info.algorithm,
+      keyId: info.fingerprint,
+      fingerprint: info.fingerprint,
+      keyVersion: info.version,
+      publicKey: info.publicKey,
+    },
+    timestamp: new Date().toISOString(),
+  });
 });
 
 app.post('/act', (req: Request, res: Response) => {
@@ -739,7 +875,7 @@ app.get('/memory', (_req: Request, res: Response) => {
     meta: {
       size: kernelMemory.size(),
       appendOnly: true,
-      durable: process.env.NODE_ENV !== 'test',
+      durable: persistenceEnabled,
     },
     timestamp: new Date().toISOString(),
   });
@@ -876,5 +1012,5 @@ if (process.env.NODE_ENV !== 'test') {
   startServer();
 }
 
-export { app, startServer };
+export { app, startServer, attestationService };
 export default app;
