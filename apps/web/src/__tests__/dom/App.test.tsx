@@ -36,7 +36,7 @@ const renderApp = async (): Promise<ReturnType<typeof render>> => {
  * These render the component. What they defend is narrow and deliberate:
  * the dashboard is the only surface where a human reads a verification
  * verdict, so the thing worth pinning is that it reports the verdict it was
- * given — including when that verdict is a failure.
+ * given, including when that verdict is a failure.
  */
 describe('dashboard', () => {
   beforeEach(() => {
@@ -329,6 +329,68 @@ describe('dashboard', () => {
     });
 
     expect(await screen.findByText(/stream unavailable/i)).toBeInTheDocument();
+  });
+
+  /**
+   * The stream's onopen handler clears a stale "stream unavailable" banner
+   * and re-pulls runtime state, on the theory that a reconnect may have
+   * missed events while it was down. Every prior stream test drove
+   * onmessage or onerror; onopen itself had never fired, so both effects
+   * (clearing the error, triggering the refresh) had no coverage.
+   */
+  it('clears a stale stream error and refreshes runtime when the stream reopens', async () => {
+    const fetchMock = installFetch();
+    await renderApp();
+    await screen.findByRole('button', { name: /run verification/i });
+
+    act(() => {
+      streams()[0].error();
+    });
+    expect(await screen.findByText(/stream unavailable/i)).toBeInTheDocument();
+
+    const healthCallsBeforeReopen = fetchMock.mock.calls.filter(
+      ([url]) => url === '/api/health'
+    ).length;
+
+    act(() => {
+      streams()[0].open();
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText(/stream unavailable/i)).not.toBeInTheDocument();
+    });
+    await waitFor(() => {
+      const healthCallsAfterReopen = fetchMock.mock.calls.filter(
+        ([url]) => url === '/api/health'
+      ).length;
+      expect(healthCallsAfterReopen).toBeGreaterThan(healthCallsBeforeReopen);
+    });
+  });
+
+  /**
+   * A stream message carrying a pass or fail status overrides the trust
+   * figure directly, independent of the next full /api/state refresh. Every
+   * prior stream-message test used status 'active', so this branch had no
+   * coverage.
+   */
+  it('sets trust from a stream event carrying a pass or fail status', async () => {
+    await renderApp();
+    await screen.findByRole('button', { name: /run verification/i });
+
+    expect(await screen.findByText('95.0%')).toBeInTheDocument();
+
+    act(() => {
+      streams()[0].emit('message', {
+        id: 'evt-2',
+        type: 'verification.completed',
+        stage: 'verify',
+        message: 'Verification failed',
+        status: 'failed',
+        timestamp: '2026-08-16T10:31:00.000Z',
+      });
+    });
+
+    expect(await screen.findByText('0.0%')).toBeInTheDocument();
   });
 
   it('closes the event stream on unmount', async () => {
