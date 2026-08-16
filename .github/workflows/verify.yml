@@ -76,7 +76,7 @@ jobs:
         if: success()
         run: |
           echo "✓ Verification successful at $(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_STEP_SUMMARY
-          echo "All checks passed: lint, type-check, test, build" >> $GITHUB_STEP_SUMMARY
+          echo "All checks passed: format, lint, type-check, test, build" >> $GITHUB_STEP_SUMMARY
 
   docker:
     name: Package and smoke test
@@ -192,7 +192,7 @@ jobs:
                 ? '✅ Verification pipeline passed'
                 : '❌ Verification pipeline did not pass',
               '',
-              `- ${mark(verify)} verify (lint, type-check, test, coverage, build) — ${verify}`,
+              `- ${mark(verify)} verify (format, lint, type-check, test, coverage, build) — ${verify}`,
               `- ${mark(docker)} package and smoke test — ${docker}`,
               '',
               ok
