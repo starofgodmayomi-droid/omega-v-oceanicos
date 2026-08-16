@@ -134,9 +134,7 @@ export class FileMemoryStore implements MemoryStore {
 
   public append(entry: EventLogEntry): void {
     if (!this.encryptionSecret && this.previousEncryptionSecret) {
-      throw new Error(
-        `${MEMORY_KEY_ENV} is required when OMEGA_MEMORY_KEY_PREVIOUS is configured`
-      );
+      throw new Error(`${MEMORY_KEY_ENV} is required when OMEGA_MEMORY_KEY_PREVIOUS is configured`);
     }
     mkdirSync(dirname(this.path), { recursive: true });
     const plaintext = JSON.stringify(entry);
