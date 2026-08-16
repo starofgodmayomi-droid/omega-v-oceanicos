@@ -21,6 +21,13 @@ type LoopResult = {
   };
   attestation: { id: string; verified: boolean; signature: string; attestedAt: string };
 };
+type PublicTrustMetadata = {
+  algorithm: string;
+  keyId: string;
+  fingerprint: string;
+  keyVersion: string;
+  publicKey: string;
+};
 
 const stages = ['observe', 'evidence', 'verify', 'attest', 'act', 'learn', 'recompile'];
 const navGroups = [
@@ -57,6 +64,10 @@ export function App(): JSX.Element {
   } | null>(null);
   const [serviceHealth, setServiceHealth] = useState({ ready: 0, total: 0 });
   const [persistenceMode, setPersistenceMode] = useState<'file' | 'memory' | null>(null);
+  const [publicTrust, setPublicTrust] = useState<PublicTrustMetadata | null>(null);
+  const [publicTrustStatus, setPublicTrustStatus] = useState<
+    'loading' | 'available' | 'unavailable'
+  >('loading');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [activeNav, setActiveNav] = useState('Current');
@@ -85,10 +96,11 @@ export function App(): JSX.Element {
 
   const refreshRuntime = async () => {
     try {
-      const [stateResponse, eventsResponse, runsResponse] = await Promise.all([
+      const [stateResponse, eventsResponse, runsResponse, publicKeyResponse] = await Promise.all([
         fetch('/api/state'),
         fetch('/api/events'),
         fetch('/api/runs'),
+        fetch('/api/attest/public-key'),
       ]);
       if (!stateResponse.ok || !eventsResponse.ok || !runsResponse.ok)
         throw new Error('Runtime unavailable');
@@ -109,6 +121,14 @@ export function App(): JSX.Element {
       };
       const eventData = (await eventsResponse.json()) as { data: RuntimeEvent[] };
       const runData = (await runsResponse.json()) as { data: LoopResult[] };
+      if (publicKeyResponse.ok) {
+        const publicKeyData = (await publicKeyResponse.json()) as { data: PublicTrustMetadata };
+        setPublicTrust(publicKeyData.data);
+        setPublicTrustStatus('available');
+      } else {
+        setPublicTrust(null);
+        setPublicTrustStatus('unavailable');
+      }
       const readyServices = state.data.services.filter(
         (service) => service.status === 'ready'
       ).length;
@@ -547,6 +567,17 @@ export function App(): JSX.Element {
           <div>
             <span>ENVIRONMENT</span>
             <strong>{persistenceMode ? persistenceMode.toUpperCase() : 'UNKNOWN'}</strong>
+          </div>
+          <div>
+            <span>TRUST KEY</span>
+            <strong className={publicTrustStatus === 'available' ? 'green' : ''}>
+              {publicTrustStatus === 'available' && publicTrust
+                ? `${publicTrust.algorithm} / ${publicTrust.keyVersion}`
+                : publicTrustStatus === 'loading'
+                  ? 'CHECKING'
+                  : 'UNAVAILABLE'}
+            </strong>
+            {publicTrust && <small title={publicTrust.fingerprint}>{publicTrust.keyId}</small>}
           </div>
         </section>
         <section className="lower-grid">
