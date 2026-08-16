@@ -36,7 +36,7 @@ const renderApp = async (): Promise<ReturnType<typeof render>> => {
  * These render the component. What they defend is narrow and deliberate:
  * the dashboard is the only surface where a human reads a verification
  * verdict, so the thing worth pinning is that it reports the verdict it was
- * given — including when that verdict is a failure.
+ * given, including when that verdict is a failure.
  */
 describe('dashboard', () => {
   beforeEach(() => {
@@ -331,7 +331,13 @@ describe('dashboard', () => {
     expect(await screen.findByText(/stream unavailable/i)).toBeInTheDocument();
   });
 
-  it('clears a stream outage after the connection reopens and refreshes runtime evidence', async () => {
+  /**
+   * A reconnect clears the stale stream banner and re-pulls runtime state.
+   * Both health and state are checked because refreshRuntime reads both
+   * contracts; reopening is evidence that the dashboard did not merely hide
+   * the error without re-observing the backend.
+   */
+  it('clears a stream outage after reopening and refreshes runtime evidence', async () => {
     const fetchMock = installFetch();
     await renderApp();
     await screen.findByRole('button', { name: /run verification/i });
@@ -342,16 +348,40 @@ describe('dashboard', () => {
     expect(await screen.findByText(/stream unavailable/i)).toBeInTheDocument();
 
     const stateCallsBefore = fetchMock.mock.calls.filter(([url]) => url === '/api/state').length;
+    const healthCallsBefore = fetchMock.mock.calls.filter(([url]) => url === '/api/health').length;
     act(() => {
       streams()[0].open();
     });
 
     await waitFor(() => {
+      expect(screen.queryByText(/stream unavailable/i)).not.toBeInTheDocument();
       expect(fetchMock.mock.calls.filter(([url]) => url === '/api/state').length).toBeGreaterThan(
         stateCallsBefore
       );
-      expect(screen.queryByText(/stream unavailable/i)).not.toBeInTheDocument();
+      expect(fetchMock.mock.calls.filter(([url]) => url === '/api/health').length).toBeGreaterThan(
+        healthCallsBefore
+      );
     });
+  });
+
+  it('sets trust from a stream event carrying a pass or fail status', async () => {
+    await renderApp();
+    await screen.findByRole('button', { name: /run verification/i });
+
+    expect(await screen.findByText('95.0%')).toBeInTheDocument();
+
+    act(() => {
+      streams()[0].emit('message', {
+        id: 'evt-2',
+        type: 'verification.completed',
+        stage: 'verify',
+        message: 'Verification failed',
+        status: 'failed',
+        timestamp: '2026-08-16T10:31:00.000Z',
+      });
+    });
+
+    expect(await screen.findByText('0.0%')).toBeInTheDocument();
   });
 
   it('opens the event inspector with correlation, request, and payload evidence', async () => {
