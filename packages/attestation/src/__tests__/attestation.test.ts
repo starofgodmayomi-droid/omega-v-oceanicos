@@ -132,10 +132,10 @@ describe('AttestationService — Ed25519', () => {
     const service = new AttestationService(privatePem(a.privateKey), '1', ED25519);
     const attestation = service.attest(verificationResult);
     expect(service.verify({ ...attestation, verified: false })).toBe(false);
-    expect(service.verify({ ...attestation, signingAlgorithm: 'HMAC-SHA256' })).toBe(
+    expect(service.verify({ ...attestation, signingAlgorithm: 'HMAC-SHA256' })).toBe(false);
+    expect(service.verify({ ...attestation, verifyingPublicKey: publicPem(b.publicKey) })).toBe(
       false
     );
-    expect(service.verify({ ...attestation, verifyingPublicKey: publicPem(b.publicKey) })).toBe(false);
   });
 
   it('rejects mismatched configured public/private keys and malformed keys', () => {
