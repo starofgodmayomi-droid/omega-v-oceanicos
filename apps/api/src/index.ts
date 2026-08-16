@@ -7,7 +7,14 @@ import { VerificationEngine } from '@omega-v/verification';
 import { AttestationService } from '@omega-v/attestation';
 import { Remember, FileMemoryStore } from '@omega-v/remember';
 import { Attestation, SuccessResponse, ErrorResponse, VerificationRule } from '@omega-v/types';
-import { appendEvent, loadSnapshot, readEventLog, saveSnapshot } from './persistence.js';
+import {
+  appendEvent,
+  ENCRYPTION_ALGORITHM,
+  encryptionEnabled,
+  loadSnapshot,
+  readEventLog,
+  saveSnapshot,
+} from './persistence.js';
 
 /**
  * Ω∞v Oceanicos API Server
@@ -106,6 +113,9 @@ const memoryPath = process.env.OMEGA_MEMORY_PATH || '/tmp/omega-v-oceanicos/memo
 const persistenceEnabled = process.env.OMEGA_PERSISTENCE
   ? process.env.OMEGA_PERSISTENCE === 'on'
   : process.env.NODE_ENV !== 'test';
+const persistenceEncryptionKey = process.env.OMEGA_PERSISTENCE_KEY;
+const persistenceEncryptionEnabled =
+  persistenceEnabled && encryptionEnabled(persistenceEncryptionKey);
 
 const kernelMemory = new Remember(persistenceEnabled ? new FileMemoryStore(memoryPath) : undefined);
 
@@ -183,7 +193,7 @@ const {
   snapshot,
   source: persistenceSource,
   reason: persistenceReason,
-} = loadSnapshot<RuntimeSnapshot>(runtimeStorePath, persistenceEnabled);
+} = loadSnapshot<RuntimeSnapshot>(runtimeStorePath, persistenceEnabled, persistenceEncryptionKey);
 
 const runtimeEvents = snapshot.events;
 const eventStreams = new Set<Response>();
@@ -202,7 +212,8 @@ const persistRuntime = (): void => {
       learnings: runtimeLearnings,
       recompilations: runtimeRecompilations,
     },
-    persistenceEnabled
+    persistenceEnabled,
+    persistenceEncryptionKey
   );
 };
 
@@ -216,7 +227,7 @@ const recordEvent = (event: Omit<RuntimeEvent, 'id' | 'timestamp'>): RuntimeEven
     timestamp: new Date().toISOString(),
   };
   // Durable history first: the log is append-only and never truncated.
-  appendEvent(eventLogPath, recorded, persistenceEnabled);
+  appendEvent(eventLogPath, recorded, persistenceEnabled, persistenceEncryptionKey);
 
   // The in-memory array is a bounded recent window, not the log itself.
   runtimeEvents.unshift(recorded);
@@ -274,6 +285,7 @@ app.get('/state', (_req: Request, res: Response) => {
     data: {
       status: 'active',
       persistence: persistenceEnabled ? 'file' : 'memory',
+      persistenceEncryption: persistenceEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
       persistenceSource,
       persistenceReason: persistenceReason ?? null,
       mode: latest?.stage || 'observing',
@@ -304,7 +316,11 @@ app.get('/state', (_req: Request, res: Response) => {
 app.get('/observability', (_req: Request, res: Response) => {
   const latestRun = completedRuns[0];
   const latestEvent = runtimeEvents[0];
-  const durableLog = readEventLog<RuntimeEvent>(eventLogPath, persistenceEnabled);
+  const durableLog = readEventLog<RuntimeEvent>(
+    eventLogPath,
+    persistenceEnabled,
+    persistenceEncryptionKey
+  );
   const attestationValidity = latestRun ? attestationService.verify(latestRun.attestation) : null;
 
   res.json({
@@ -312,6 +328,7 @@ app.get('/observability', (_req: Request, res: Response) => {
       runtime: {
         mode: latestEvent?.stage || 'observing',
         persistence: persistenceEnabled ? 'file' : 'memory',
+        persistenceEncryption: persistenceEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
         services: ['observer', 'verifier', 'attester'],
         lastActivity: latestEvent?.timestamp || null,
       },
@@ -338,7 +355,11 @@ app.get('/observability', (_req: Request, res: Response) => {
 });
 
 app.get('/evidence/export', (_req: Request, res: Response) => {
-  const durableLog = readEventLog<RuntimeEvent>(eventLogPath, persistenceEnabled);
+  const durableLog = readEventLog<RuntimeEvent>(
+    eventLogPath,
+    persistenceEnabled,
+    persistenceEncryptionKey
+  );
   const latestRun = completedRuns[0];
   const latestEvent = runtimeEvents[0];
   const attestationValidity = latestRun ? attestationService.verify(latestRun.attestation) : null;
@@ -390,7 +411,11 @@ app.get('/events', (_req: Request, res: Response) => {
  * GET /log - The append-only event history
  */
 app.get('/log', (_req: Request, res: Response) => {
-  const log = readEventLog<RuntimeEvent>(eventLogPath, persistenceEnabled);
+  const log = readEventLog<RuntimeEvent>(
+    eventLogPath,
+    persistenceEnabled,
+    persistenceEncryptionKey
+  );
   res.json({
     data: log.entries,
     meta: {

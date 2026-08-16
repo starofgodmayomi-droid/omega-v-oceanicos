@@ -1,3 +1,4 @@
+import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'node:crypto';
 import { appendFileSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 
@@ -15,6 +16,58 @@ export const SNAPSHOT_KEYS = ['events', 'runs', 'actions', 'learnings', 'recompi
 export type SnapshotKey = (typeof SNAPSHOT_KEYS)[number];
 
 export type AnySnapshot = Record<SnapshotKey, unknown[]>;
+
+const ENCRYPTED_PREFIX = 'omega-v1';
+const AES_KEY_BYTES = 32;
+const AES_IV_BYTES = 12;
+const AES_TAG_BYTES = 16;
+
+type EncryptionKey = Buffer;
+
+const deriveEncryptionKey = (secret?: string): EncryptionKey | undefined => {
+  if (!secret) return undefined;
+  return createHash('sha256').update(secret, 'utf8').digest();
+};
+
+const encryptText = (plaintext: string, secret?: string): string => {
+  const key = deriveEncryptionKey(secret);
+  if (!key) return plaintext;
+
+  const iv = randomBytes(AES_IV_BYTES);
+  const cipher = createCipheriv('aes-256-gcm', key, iv);
+  const ciphertext = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()]);
+  const tag = cipher.getAuthTag();
+
+  return [
+    ENCRYPTED_PREFIX,
+    iv.toString('base64url'),
+    tag.toString('base64url'),
+    ciphertext.toString('base64url'),
+  ].join(':');
+};
+
+const decryptText = (stored: string, secret?: string): string => {
+  if (!stored.startsWith(`${ENCRYPTED_PREFIX}:`)) return stored;
+
+  const key = deriveEncryptionKey(secret);
+  if (!key) throw new Error('encrypted persistence requires OMEGA_PERSISTENCE_KEY');
+
+  const [, ivEncoded, tagEncoded, ciphertextEncoded] = stored.split(':');
+  if (!ivEncoded || !tagEncoded || !ciphertextEncoded) {
+    throw new Error('encrypted persistence record is malformed');
+  }
+
+  const iv = Buffer.from(ivEncoded, 'base64url');
+  const tag = Buffer.from(tagEncoded, 'base64url');
+  const ciphertext = Buffer.from(ciphertextEncoded, 'base64url');
+  if (iv.length !== AES_IV_BYTES || tag.length !== AES_TAG_BYTES || ciphertext.length === 0) {
+    throw new Error('encrypted persistence record has invalid lengths');
+  }
+
+  const decipher = createDecipheriv('aes-256-gcm', key, iv);
+  decipher.setAuthTag(tag);
+  return Buffer.concat([decipher.update(ciphertext), decipher.final()]).toString('utf8');
+};
 
 /**
  * Why the returned snapshot looks the way it does.
@@ -48,24 +101,38 @@ const hasEveryArray = (value: Partial<AnySnapshot>): boolean =>
  * Read a snapshot from disk.
  *
  * Never throws. The caller learns what happened from `source` rather than
- * having every failure collapse into an empty object.
+ * having every failure collapse into an empty object. When a key is supplied,
+ * encrypted snapshots are authenticated before JSON parsing; legacy plaintext
+ * snapshots remain readable for controlled migration.
  */
 export const loadSnapshot = <T extends AnySnapshot>(
   storePath: string,
-  enabled: boolean
+  enabled: boolean,
+  encryptionSecret?: string
 ): LoadResult<T> => {
   if (!enabled) {
     return { snapshot: emptySnapshot<T>(), source: 'disabled' };
   }
 
-  let raw: string;
+  let stored: string;
   try {
-    raw = readFileSync(storePath, 'utf8');
+    stored = readFileSync(storePath, 'utf8').trim();
   } catch (error) {
     return {
       snapshot: emptySnapshot<T>(),
       source: 'missing',
       reason: error instanceof Error ? error.message : 'store could not be read',
+    };
+  }
+
+  let raw: string;
+  try {
+    raw = decryptText(stored, encryptionSecret);
+  } catch (error) {
+    return {
+      snapshot: emptySnapshot<T>(),
+      source: 'corrupt',
+      reason: error instanceof Error ? error.message : 'store could not be decrypted',
     };
   }
 
@@ -98,18 +165,21 @@ export const loadSnapshot = <T extends AnySnapshot>(
  * Write a snapshot atomically: serialise to a sibling temp file, then rename.
  * A crash mid-write leaves the previous store intact rather than truncated.
  *
- * Returns whether anything was written.
+ * Returns whether anything was written. With an encryption secret, the file
+ * contains an authenticated AES-256-GCM envelope rather than JSON plaintext.
  */
 export const saveSnapshot = (
   storePath: string,
   snapshot: AnySnapshot,
-  enabled: boolean
+  enabled: boolean,
+  encryptionSecret?: string
 ): boolean => {
   if (!enabled) return false;
 
   mkdirSync(dirname(storePath), { recursive: true });
   const temporaryPath = `${storePath}.tmp`;
-  writeFileSync(temporaryPath, JSON.stringify(snapshot, null, 2));
+  const plaintext = JSON.stringify(snapshot, null, 2);
+  writeFileSync(temporaryPath, encryptText(plaintext, encryptionSecret));
   renameSync(temporaryPath, storePath);
   return true;
 };
@@ -145,14 +215,21 @@ export interface EventLogRead<T> {
  * Append one entry as a single JSON line.
  *
  * Uses O_APPEND so concurrent writers interleave whole lines rather than
- * corrupting each other, and never rewrites existing content.
+ * corrupting each other, and never rewrites existing content. Encryption is
+ * applied per line so the append-only boundary remains observable.
  */
-export const appendEvent = (logPath: string, entry: unknown, enabled: boolean): AppendOutcome => {
+export const appendEvent = (
+  logPath: string,
+  entry: unknown,
+  enabled: boolean,
+  encryptionSecret?: string
+): AppendOutcome => {
   if (!enabled) return { appended: false };
 
   try {
     mkdirSync(dirname(logPath), { recursive: true });
-    appendFileSync(logPath, `${JSON.stringify(entry)}\n`);
+    const plaintext = JSON.stringify(entry);
+    appendFileSync(logPath, `${encryptText(plaintext, encryptionSecret)}\n`);
     return { appended: true };
   } catch (error) {
     return {
@@ -165,10 +242,15 @@ export const appendEvent = (logPath: string, entry: unknown, enabled: boolean): 
 /**
  * Read the whole log back.
  *
- * A malformed line does not discard the rest of the history; it is counted
- * and the source becomes 'partial' so the caller knows the read was lossy.
+ * A malformed or unauthenticated line does not discard the rest of the
+ * history; it is counted and the source becomes 'partial' so the caller knows
+ * the read was lossy.
  */
-export const readEventLog = <T>(logPath: string, enabled: boolean): EventLogRead<T> => {
+export const readEventLog = <T>(
+  logPath: string,
+  enabled: boolean,
+  encryptionSecret?: string
+): EventLogRead<T> => {
   if (!enabled) {
     return { entries: [], source: 'disabled', skipped: 0 };
   }
@@ -191,7 +273,7 @@ export const readEventLog = <T>(logPath: string, enabled: boolean): EventLogRead
   for (const line of raw.split('\n')) {
     if (line.trim() === '') continue;
     try {
-      entries.push(JSON.parse(line) as T);
+      entries.push(JSON.parse(decryptText(line.trim(), encryptionSecret)) as T);
     } catch {
       skipped += 1;
     }
@@ -204,3 +286,9 @@ export const readEventLog = <T>(logPath: string, enabled: boolean): EventLogRead
     reason: skipped > 0 ? `${skipped} line(s) could not be parsed` : undefined,
   };
 };
+
+export const ENCRYPTION_FORMAT = ENCRYPTED_PREFIX;
+export const ENCRYPTION_ALGORITHM = 'aes-256-gcm';
+export const encryptionEnabled = (secret?: string): boolean => Boolean(deriveEncryptionKey(secret));
+export const encryptionKeyLength = AES_KEY_BYTES;
+export const encryptionFormat = ENCRYPTED_PREFIX;

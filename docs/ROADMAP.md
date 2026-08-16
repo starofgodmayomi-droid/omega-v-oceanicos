@@ -207,6 +207,12 @@ blocked on design; each is a decision or a scoped change.
   fingerprint, confidence, rule versions and verification outcome without
   exposing the signing secret. Durable persistence remains separately gated by
   `OMEGA_PERSISTENCE` and is covered by the append-only persistence tests.
+- **Runtime persistence encryption — increment implemented, capability not
+  complete.** When `OMEGA_PERSISTENCE_KEY` is configured, the API encrypts and
+  authenticates runtime snapshots and event-log lines with AES-256-GCM, reports
+  the active algorithm through observability, and reports wrong-key or damaged
+  records instead of silently restoring empty state. Kernel memory files,
+  key custody, rotation, recovery and broader data-at-rest coverage remain open.
 
 ---
 

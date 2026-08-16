@@ -92,7 +92,11 @@ describe('API runtime contracts', () => {
 
     const response = await fetch(`${baseUrl}/observability`);
     const body = (await response.json()) as ApiResponse<{
-      runtime: { persistence: string; services: string[] };
+      runtime: {
+        persistence: string;
+        persistenceEncryption: string;
+        services: string[];
+      };
       provenance: {
         durableEvents: number;
         completedRuns: number;
@@ -103,6 +107,7 @@ describe('API runtime contracts', () => {
     }>;
 
     expect(response.status).toBe(200);
+    expect(body.data.runtime.persistenceEncryption).toBe('disabled');
     expect(body.data.runtime.services).toEqual(['observer', 'verifier', 'attester']);
     expect(body.data.provenance.durableEvents).toBeGreaterThanOrEqual(0);
     expect(body.data.provenance.completedRuns).toBeGreaterThan(0);

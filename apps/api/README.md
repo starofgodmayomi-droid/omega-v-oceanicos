@@ -294,7 +294,11 @@ These endpoints expose the current runtime state, recent lifecycle events, and c
 
 Set `OMEGA_RUNTIME_STORE_PATH` to choose another JSON store path. Persistence
 defaults off under `NODE_ENV=test` and on elsewhere; set `OMEGA_PERSISTENCE`
-to `on` or `off` to override that explicitly.
+to `on` or `off` to override that explicitly. Set `OMEGA_PERSISTENCE_KEY`
+to encrypt the runtime snapshot and append-only event log with authenticated
+AES-256-GCM envelopes. The key is never returned by the API. Existing plaintext
+stores remain readable for controlled migration, while all new writes use the
+configured encryption key.
 
 The API requires a signing key. Set `OMEGA_SIGNING_KEY`, or construct
 `AttestationService` with one. There is no default: a key shipped in source
@@ -313,7 +317,7 @@ When `OMEGA_READ_TOKEN` is configured, read-only evidence endpoints require `Aut
 GET /observability
 ```
 
-Returns a read-only operational evidence summary composed from the runtime state, durable event log, configured attestation service, and hash-chained memory. It includes runtime mode and persistence, recent and durable event counts, completed runs, request and correlation lineage, verification and attestation validity, and memory integrity. It never returns private keys, seeds, secrets, or raw signing material.
+Returns a read-only operational evidence summary composed from the runtime state, durable event log, configured attestation service, and hash-chained memory. It includes runtime mode and persistence, the configured persistence encryption algorithm or `disabled`, recent and durable event counts, completed runs, request and correlation lineage, verification and attestation validity, and memory integrity. It never returns private keys, seeds, secrets, or raw signing material.
 
 ### Evidence Export
 
@@ -373,8 +377,10 @@ The response `meta` block reports how the read went:
 - `skipped` — lines that could not be parsed
 - `reason` — present when the read was lossy
 
-A damaged line is counted and reported rather than silently dropped, so a
-partial history can never be mistaken for a complete one.
+A damaged or unauthenticated line is counted and reported rather than silently
+dropped, so a partial history can never be mistaken for a complete one. When
+`OMEGA_PERSISTENCE_KEY` is configured, each line is authenticated and encrypted
+independently so append-only growth remains observable.
 
 Set `OMEGA_EVENT_LOG_PATH` to choose the log location. It defaults to the
 runtime store path with a `.log.jsonl` suffix.
@@ -580,6 +586,7 @@ curl -X POST http://localhost:3000/complete-loop \
 - `OMEGA_READ_TOKEN` — Optional bearer token required for read-only evidence endpoints; unset preserves local development behavior
 - `OMEGA_SIGNING_KEY` — Required signing key for attestation; there is no default
 - `OMEGA_PERSISTENCE` — Explicit persistence override: `on` or `off`
+- `OMEGA_PERSISTENCE_KEY` — Optional dedicated secret for AES-256-GCM encryption of runtime snapshot and event-log files; never expose it in logs or API responses
 
 ## Testing
 
