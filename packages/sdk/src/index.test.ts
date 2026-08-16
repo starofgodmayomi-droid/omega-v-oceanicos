@@ -329,4 +329,171 @@ describe('OmegaClient', () => {
       })
     );
   });
+
+  /**
+   * The constructor's two default parameters (`baseUrl`, `fetchImpl`) had
+   * never actually been left to default: every test in this file supplies
+   * both explicitly. Nothing proved the client is usable out of the box, or
+   * that it really falls back to the global `fetch` rather than silently
+   * requiring one to be injected.
+   */
+  it('falls back to localhost when constructed without a base URL', async () => {
+    const requests: string[] = [];
+    const client = new OmegaClient(undefined, async (url) => {
+      requests.push(url);
+      return new Response(JSON.stringify({ data: [] }));
+    });
+
+    await client.getEvents();
+    expect(requests).toEqual(['http://localhost:3000/events']);
+  });
+
+  it('falls back to the global fetch when no fetch implementation is injected', async () => {
+    const originalFetch = globalThis.fetch;
+    const globalFetchMock = jest.fn().mockResolvedValue(new Response(JSON.stringify({ data: [] })));
+    globalThis.fetch = globalFetchMock as unknown as typeof fetch;
+
+    try {
+      const client = new OmegaClient('http://api.test');
+      await client.getEvents();
+
+      expect(globalFetchMock).toHaveBeenCalledWith(
+        'http://api.test/events',
+        expect.objectContaining({})
+      );
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  /**
+   * `revokeAttestation`'s optional `operatorId` only ever gets exercised as
+   * "omitted" elsewhere in this file, so the branch that actually attaches
+   * the `x-omega-operator-id` header had zero coverage: a revocation
+   * attributed to a specific operator looked, to the test suite, identical
+   * to an anonymous one.
+   */
+  it('attaches the operator id header when a revocation names an operator', async () => {
+    const headers: Array<string | null> = [];
+    const client = new OmegaClient('http://api.test', async (_url, init) => {
+      headers.push(new Headers(init?.headers).get('x-omega-operator-id'));
+      return new Response(
+        JSON.stringify({
+          data: {
+            id: 'rev-3',
+            attestationId: 'att-3',
+            reason: 'named operator review',
+            revokedBy: 'operator-42',
+            revokedAt: '2026-08-16T00:00:00.000Z',
+          },
+          timestamp: '2026-08-16T00:00:00.000Z',
+        }),
+        { status: 201 }
+      );
+    });
+
+    await client.revokeAttestation('att-3', 'named operator review', 'operator-42', 'operator-42');
+    expect(headers).toEqual(['operator-42']);
+  });
+
+  /**
+   * Both `get` and `post` build their thrown `OmegaApiError` message from
+   * `error instanceof Error ? error.message : String(error)`. Every network
+   * failure test so far threw a real `Error`, so the `String(error)`
+   * fallback for a non-Error throw (a rejected fetch can reject with
+   * anything) had never run.
+   */
+  it('stringifies a non-Error network failure on a GET request', async () => {
+    const client = new OmegaClient('http://api.test', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-throw-literal
+      throw 'connection reset';
+    });
+
+    await expect(client.getObservability()).rejects.toEqual(
+      expect.objectContaining<Partial<OmegaApiError>>({
+        message: 'connection reset',
+        status: 0,
+        endpoint: 'http://api.test/observability',
+      })
+    );
+  });
+
+  it('stringifies a non-Error network failure on a POST request', async () => {
+    const client = new OmegaClient('http://api.test', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-throw-literal
+      throw 'connection reset';
+    });
+
+    await expect(client.verifyAttestation({})).rejects.toEqual(
+      expect.objectContaining<Partial<OmegaApiError>>({
+        message: 'connection reset',
+        status: 0,
+        endpoint: 'http://api.test/attest/verify',
+      })
+    );
+  });
+
+  /**
+   * The error-body handling in `get`/`post` has three layers nothing had
+   * reached: an `error` field used when `message` is absent, and a generic
+   * "Request failed with status N" fallback used when the body is not even
+   * a JSON object (so neither field exists to read). Every existing
+   * non-success test supplied `{ message }`, so only the first layer ever
+   * ran.
+   */
+  it('falls back to the API error field on a GET response with no message', async () => {
+    const client = new OmegaClient(
+      'http://api.test',
+      async () => new Response(JSON.stringify({ error: 'observer offline' }), { status: 503 })
+    );
+
+    await expect(client.getObservability()).rejects.toEqual(
+      expect.objectContaining<Partial<OmegaApiError>>({
+        message: 'observer offline',
+        status: 503,
+      })
+    );
+  });
+
+  it('falls back to a generic status message on a GET response with a non-object body', async () => {
+    const client = new OmegaClient(
+      'http://api.test',
+      async () => new Response(JSON.stringify(null), { status: 502 })
+    );
+
+    await expect(client.getObservability()).rejects.toEqual(
+      expect.objectContaining<Partial<OmegaApiError>>({
+        message: 'Request failed with status 502',
+        status: 502,
+      })
+    );
+  });
+
+  it('falls back to the API error field on a POST response with no message', async () => {
+    const client = new OmegaClient(
+      'http://api.test',
+      async () => new Response(JSON.stringify({ error: 'verifier offline' }), { status: 503 })
+    );
+
+    await expect(client.verifyAttestation({})).rejects.toEqual(
+      expect.objectContaining<Partial<OmegaApiError>>({
+        message: 'verifier offline',
+        status: 503,
+      })
+    );
+  });
+
+  it('falls back to a generic status message on a POST response with a non-object body', async () => {
+    const client = new OmegaClient(
+      'http://api.test',
+      async () => new Response(JSON.stringify(null), { status: 502 })
+    );
+
+    await expect(client.verifyAttestation({})).rejects.toEqual(
+      expect.objectContaining<Partial<OmegaApiError>>({
+        message: 'Request failed with status 502',
+        status: 502,
+      })
+    );
+  });
 });
