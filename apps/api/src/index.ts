@@ -671,11 +671,29 @@ app.post('/complete-loop', (req: Request, res: Response) => {
     });
     completedRuns.splice(20);
 
-    // Enter the kernel's hash chain. Unlike completedRuns, which is a
-    // bounded window, this is append-only and integrity-checkable.
+    // Step 4: Remember (MINI kernel's hash chain)
+    // Unlike completedRuns, which is a bounded window, this is append-only
+    // and integrity-checkable. Remember completes the MINI cycle: Observe → Verify → Remember
+    recordEvent({
+      type: 'memory.entering',
+      stage: 'remember',
+      message: 'Storing in MINI kernel memory (append-only hash chain)',
+      status: 'active',
+      correlationId,
+      requestId,
+    });
     const remembered = kernelMemory.remember(observation, verificationResult);
 
     persistRuntime();
+    recordEvent({
+      type: 'memory.recorded',
+      stage: 'remember',
+      message: 'Verification result stored in MINI kernel',
+      status: 'passed',
+      correlationId,
+      requestId,
+      details: { memoryId: remembered.id },
+    });
     recordEvent({
       type: 'attestation.created',
       stage: 'attest',
@@ -689,11 +707,13 @@ app.post('/complete-loop', (req: Request, res: Response) => {
     const response: SuccessResponse<{
       observation: typeof observation;
       verification: typeof verificationResult;
+      memory: typeof remembered;
       attestation: typeof attestation;
     }> = {
       data: {
         observation,
         verification: verificationResult,
+        memory: remembered,
         attestation,
       },
       timestamp: new Date().toISOString(),
@@ -759,17 +779,30 @@ app.get('/rules', (req: Request, res: Response) => {
       })
     : verificationEngine.getRules();
 
+  /**
+   * `executable` distinguishes a rule the engine will actually evaluate from
+   * one it merely holds. A rule's `definition` string is a declaration, not
+   * something this engine interprets, so publishing the rule list without
+   * that flag implies every definition runs. Rules that are not executable
+   * fail verification rather than passing quietly, and a caller is better
+   * off learning that here than from a failed verdict.
+   */
   const response: SuccessResponse<{
     count: number;
     registered: number;
+    executable: number;
     category: string | null;
-    rules: VerificationRule[];
+    rules: Array<VerificationRule & { executable: boolean }>;
   }> = {
     data: {
       count: rules.length,
       registered: verificationEngine.getRuleCount(),
+      executable: rules.filter((rule) => verificationEngine.canExecute(rule.name)).length,
       category,
-      rules,
+      rules: rules.map((rule) => ({
+        ...rule,
+        executable: verificationEngine.canExecute(rule.name),
+      })),
     },
     timestamp: new Date().toISOString(),
   };

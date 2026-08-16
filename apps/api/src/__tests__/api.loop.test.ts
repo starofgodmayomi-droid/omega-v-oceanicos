@@ -3,7 +3,13 @@ import app from '../index';
 
 type Body<T> = { data: T; meta?: Record<string, unknown> };
 type Attestation = { id: string; verified: boolean; signature: string };
-type Loop = { observation: { id: string }; verification: unknown; attestation: Attestation };
+type Memory = { id: string; observationId: string; verificationId: string };
+type Loop = {
+  observation: { id: string };
+  verification: unknown;
+  memory: Memory;
+  attestation: Attestation;
+};
 type Action = { id: string; action: string; attestationId: string; status: string };
 type Learning = { id: string; actionId: string; outcome: string };
 type Proposal = { id: string; learningId: string; version: string; status: string };
@@ -204,5 +210,61 @@ describe('API loop: act, learn, recompile', () => {
 
     expect(response.status).toBe(404);
     expect(((await response.json()) as { code: string }).code).toBe('NOT_FOUND');
+  });
+
+  it('exposes the MINI kernel memory step in complete-loop response', async () => {
+    const loop = (await (
+      await post(
+        '/complete-loop',
+        loopInput('memory exposed', { statusCode: 200, responseTime: 42 })
+      )
+    ).json()) as Body<Loop>;
+
+    expect(loop.data.memory).toBeDefined();
+    expect(loop.data.memory.id).toBeDefined();
+    expect(loop.data.memory.observationId).toBe(loop.data.observation.id);
+    expect(loop.data.memory.verificationId).toBeDefined();
+  });
+
+  it('refuses to sign an attestation over evidence it never checked', async () => {
+    // A status code but no timing data. The status rule passes honestly; the
+    // timing rule has nothing to evaluate. The engine used to read the absent
+    // responseTime as 0ms, which is below the threshold, so this produced a
+    // signed attestation with verified:true asserting a latency threshold the
+    // observation never reported — and that attestation was then sufficient
+    // to authorize an action.
+    const loop = (await (
+      await post('/complete-loop', loopInput('status only, no timing', { statusCode: 200 }))
+    ).json()) as Body<
+      Loop & {
+        verification: {
+          summary: { passed: boolean };
+          evidencePath: Array<{ rule: string; passed: boolean; reasoning: string }>;
+        };
+      }
+    >;
+
+    expect(loop.data.verification.summary.passed).toBe(false);
+    expect(loop.data.attestation.verified).toBe(false);
+
+    const timing = loop.data.verification.evidencePath.find(
+      (step) => step.rule === 'response-time-threshold'
+    );
+    expect(timing?.passed).toBe(false);
+    expect(timing?.reasoning).toContain('does not carry responseTime');
+
+    const denied = await post('/act', { attestation: loop.data.attestation });
+    expect(denied.status).toBe(409);
+  });
+
+  it('reports which registered rules the engine can actually execute', async () => {
+    const rules = (await (await fetch(`${baseUrl}/rules`)).json()) as Body<{
+      registered: number;
+      executable: number;
+      rules: Array<{ name: string; executable: boolean }>;
+    }>;
+
+    expect(rules.data.executable).toBe(rules.data.registered);
+    expect(rules.data.rules.every((rule) => rule.executable)).toBe(true);
   });
 });

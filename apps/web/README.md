@@ -41,25 +41,34 @@ Execute the complete Observe → Verify → Attest cycle from the browser.
 
 ### Verification Visualization
 
-View each step of the verification loop:
+View each step of the MINI kernel and its earned expansions:
 
-1. **Observation** — The claim captured with metadata
+**MINI Kernel (Observe → Verify → Remember):**
+
+1. **Observation** — The claim captured with metadata (Step 1)
    - Unique ID
    - Claim statement
    - Confidence level
    - Source system
 
-2. **Verification** — Rules applied and evidence generated
+2. **Verification / Evidence** — Rules applied and evidence generated (Step 2)
    - Pass/fail status
    - Rules applied and results
    - Evidence path showing step-by-step reasoning
    - Confidence score
 
-3. **Attestation** — Cryptographic signature proving verification
+3. **Memory / Kernel Record** — Stored in append-only hash chain (Step 3)
+   - Memory ID
+   - Link to observation and verification
+   - Immutable record of the complete cycle
+
+**Earned Expansions:**
+
+4. **Attestation** — Cryptographic signature proving verification (+ ATTEST)
    - Attestation ID
    - Verification status
    - Signed timestamp
-   - Signature preview
+   - Signature verification button
 
 ### Current Console
 
@@ -185,9 +194,46 @@ Key colors:
 ## Testing
 
 ```bash
-npm run test
-npm run test:watch
+npm run test                      # whole repo
+npx jest --selectProjects dom     # this dashboard only
 ```
+
+Jest runs two projects. `node` covers the server and packages; `dom` runs
+these component tests under jsdom. They are separate because the repository
+is two runtimes, and running the server suites under jsdom would both slow
+them and hide Node-specific behaviour.
+
+`src/__tests__/contract.test.ts` runs under `node` and is not a component
+test — it reads `App.tsx` as text and checks that the paths the client names
+are paths the server registers. `src/__tests__/dom/App.test.tsx` renders the
+component and asserts what a user sees.
+
+### What the component tests defend
+
+The dashboard is the only surface where a human reads a verification verdict,
+so the assertions concentrate there:
+
+- all three MINI steps plus the attestation render after a run
+- **failing evidence stays visible** — the UI promises "Failures remain
+  visible as evidence", and a dashboard that dropped the failing step would
+  still look correct
+- a failed verification is never displayed as passed
+- an invalid signature reports `INVALID`, never `VALID`
+- API errors surface their `requestId`, so a failure is traceable
+- an unreachable runtime says so rather than rendering empty state as healthy
+- the submitted payload carries the operator's values, not a hardcoded fixture
+
+### Known limitations
+
+- jsdom provides no `fetch` or `Response`. The harness supplies a double
+  implementing only `ok`, `status`, `json()`, and `headers.get()` — the
+  surface `App.tsx` actually consumes. If the component starts reading
+  `text()` or streaming a body, these tests will throw rather than silently
+  pass on a shape a browser would not produce.
+- React still reports "update not wrapped in act" for state changes made by
+  handlers that user-event dispatches as real DOM events. The suite is green
+  and the assertions are correct; the warnings are a true signal that those
+  updates are not batched, so they are left visible rather than filtered.
 
 ## Performance
 

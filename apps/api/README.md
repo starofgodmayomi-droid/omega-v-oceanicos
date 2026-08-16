@@ -2,7 +2,19 @@
 
 REST API backend for Ω∞v Oceanicos.
 
-Exposes the complete verification loop via HTTP endpoints.
+This API exposes the **MINI kernel** (Observe → Verify → Remember) and its earned expansions via HTTP endpoints. Understand the foundation in [packages/mini/README.md](../../packages/mini/README.md) and [docs/MINI.md](../../docs/MINI.md).
+
+## The MINI Foundation
+
+Every endpoint is either:
+
+- **MINI** (the core verification loop): `/observe`, `/verify`, `/complete-loop`, `/memory`
+- **+ ATTEST** (earned expansion): `/attest`, `/attest/verify`
+- **+ ACT** (authorized actions): `/act`
+- **+ LEARN** (recording outcomes): `/learn`
+- **+ RECOMPILE** (proposing updates): `/recompile`
+
+The smallest useful system is the MINI cycle. Everything else is built on top of it.
 
 ## Quick Start
 
@@ -45,7 +57,77 @@ gh attestation verify \
 `ATTEST ≠ ASSERT` applies to the artifact too. The pipeline claiming a build
 passed is an assertion; a signature a stranger can verify is not.
 
+## Mental Model: The Loop
+
+```
+🌌 VISION
+   ↓
+💧 Ω∞v MINI
+   ├─ 👁 OBSERVE: Capture and normalize claims
+   ├─ ✓ VERIFY: Apply rules; produce evidence paths
+   └─ 🧠 REMEMBER: Store in append-only hash-chained memory
+   ↓
++ ATTEST: Cryptographically sign verification results
+   ↓
++ ACT: Authorize actions gated by verified memory
+   ↓
++ LEARN: Record outcomes to improve the system
+   ↓
++ RECOMPILE: Propose improvements from learning
+```
+
+Every request follows this shape: Observe → Verify → Remember → (optional expansions).
+
 ## Endpoints
+
+### MINI Kernel
+
+#### Complete Loop (Observe → Verify → Remember + ATTEST)
+
+```
+POST /complete-loop
+```
+
+Execute the entire MINI cycle in one request, plus cryptographic attestation.
+
+This is the recommended entry point. It demonstrates the full mental model:
+
+**Request:**
+
+```json
+{
+  "claim": "Service X returned HTTP 200",
+  "category": "health-check",
+  "source": {
+    "system": "health-check-api",
+    "version": "1.2.3",
+    "environment": "production"
+  },
+  "observedBy": "monitoring-system",
+  "metadata": {
+    "statusCode": 200,
+    "responseTime": 45
+  },
+  "confidence": 0.95,
+  "confidenceReason": "3 consecutive checks"
+}
+```
+
+**Response:**
+
+```json
+{
+  "data": {
+    "observation": {/* Step 1: Normalized claim */},
+    "verification": {/* Step 2: Evidence path */},
+    "memory": {/* Step 3: Recorded in append-only chain */},
+    "attestation": {/* + ATTEST: Signed verification */}
+  },
+  "timestamp": "2026-08-07T10:30:02Z"
+}
+```
+
+The response shows all three MINI steps plus the attestation expansion.
 
 ### Health Check
 
@@ -195,29 +277,6 @@ POST /attest
     "attestedAt": "2026-08-07T10:30:02Z",
     "attestedBy": "attestation-service",
     "status": "signed"
-  },
-  "timestamp": "2026-08-07T10:30:02Z"
-}
-```
-
-### Complete Loop
-
-```
-POST /complete-loop
-```
-
-Execute the entire verification loop in one request: Observe → Verify → Attest.
-
-**Request:** Same as `/observe`
-
-**Response:**
-
-```json
-{
-  "data": {
-    "observation": {/* Observation from step 1 */},
-    "verification": {/* VerificationResult from step 2 */},
-    "attestation": {/* Attestation from step 3 */}
   },
   "timestamp": "2026-08-07T10:30:02Z"
 }
@@ -375,6 +434,13 @@ the rules that would apply to an observation in that category. `count`
 reflects what was returned; `registered` always reflects the whole registry,
 so a filtered result cannot be mistaken for an empty one.
 
+Each rule carries an `executable` flag, and `executable` counts how many of
+the returned rules the engine can actually evaluate. A rule's `definition`
+is a declaration, not a language the engine interprets — execution is
+implemented per rule name. **A registered rule that is not executable fails
+verification rather than passing quietly**, so this flag tells a caller in
+advance what would otherwise arrive as a failed verdict.
+
 **Response:**
 
 ```json
@@ -382,6 +448,7 @@ so a filtered result cannot be mistaken for an empty one.
   "data": {
     "count": 2,
     "registered": 2,
+    "executable": 2,
     "category": null,
     "rules": [
       {
@@ -389,20 +456,36 @@ so a filtered result cannot be mistaken for an empty one.
         "version": "1.0.5",
         "appliesTo": ["health-check"],
         "description": "Verify response time is below 100ms",
-        "active": true
+        "active": true,
+        "executable": true
       },
       {
         "name": "status-code-check",
         "version": "1.2.0",
         "appliesTo": ["health-check"],
         "description": "Verify HTTP status code is 200 OK",
-        "active": true
+        "active": true,
+        "executable": true
       }
     ]
   },
   "timestamp": "2026-08-07T10:30:00Z"
 }
 ```
+
+### Evidence the engine could not gather
+
+Verification fails when a rule cannot be evaluated — either the engine has no
+implementation for it, or the observation does not carry the metadata the
+rule reads. An observation reporting `statusCode` but no `responseTime` fails
+`response-time-threshold` with `condition: "requires responseTime"` rather
+than passing on an assumed zero.
+
+This matters at this layer specifically: `summary.passed` becomes the
+attestation's `verified` field, that attestation is signed, and `POST /act`
+accepts a signed attestation as authorization. A rule that passed without
+being evaluated would carry an unforgeable signature onto a claim nothing
+checked.
 
 ## Error Handling
 
