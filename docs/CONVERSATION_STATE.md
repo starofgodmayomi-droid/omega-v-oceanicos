@@ -6,26 +6,28 @@
 
 Repository: `starofgodmayomi-droid/omega-v-oceanicos`  
 Worktree: `/home/ubuntu/current-main-worktree`  
-Branch: `main`
-Head: `cae0c65915ba2a2553d7b54d411d2316223639a9`
-Working tree: post-PR #36 documentation reconciliation is uncommitted; no deployment is claimed.
+Branch: `feat/revocation-integrity-evidence`
+Base: merged `origin/main` at `60f031c839138e41b3a89594ad2af6ca2f6f802c`
+Working tree: revocation-integrity implementation and evidence records are uncommitted; no publication, merge, or deployment is claimed for this slice.
 
-PR #33 merged as `fb73ac28990b2b42b6339da2e8ca76007616dd70` at `2026-08-16T14:46:39Z`. PR #34 merged as `5e267b54c2bf831cfdb6004b4948a33c3ee1b114` at `2026-08-16T14:58:55Z`. PR #35 merged as `bd78ac8b398beefd4e6c1648743866ed70328051` at `2026-08-16T15:03:03Z`. PR #36 merged as `cae0c65915ba2a2553d7b54d411d2316223639a9` at `2026-08-16T15:13:50Z`; its head was `c3e197f`. CI for PR #36 was observed green for Node 18, Node 20, Windows compatibility, package/smoke, and report; attested-artifact publication was skipped. No deployment is claimed.
+PR #33 merged as `fb73ac28990b2b42b6339da2e8ca76007616dd70`. PR #34 merged as `5e267b54c2bf831cfdb6004b4948a33c3ee1b114`. PR #35 merged as `bd78ac8b398beefd4e6c1648743866ed70328051`. PR #36 merged as `cae0c65915ba2a2553d7b54d411d2316223639a9` at `2026-08-16T15:13:50Z`. PR #37 merged as `60f031c839138e41b3a89594ad2af6ca2f6f802c` at `2026-08-16T15:17:53Z` to reconcile state records. Observed CI for the delivered runtime slices was green across Node 18, Node 20, Windows compatibility, package/smoke, and report; attested-artifact publication was skipped. No deployment is claimed.
 
 ## Verified evolution lineage
 
-| Slice                            | Evidence-bound result                                                                                                                                                                                                                                                                                                                      |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| MINI and trust foundation        | MINI Observe → Verify → Remember remains the documented kernel; HMAC-SHA256 and opt-in Ed25519 trust surfaces span attestation, API, web, SDK, CLI, and tests.                                                                                                                                                                             |
-| PR #33 merged increments         | Signing audit metadata; AES-256-GCM runtime persistence; durable revocation and `/act` denial; web ledger and operator control; SDK/CLI revocation; kernel-memory encryption and controlled previous-key reads; attestation TTL; SDK/CLI verification; constant-time bearer matching; frontend TTL evidence; whole-system policy contract. |
-| PR #34 and #35 merged increments | API `/health` exposes non-secret liveness/readiness, memory integrity, persistence and codec modes, and attestation policy; web, SDK, and CLI consume it. State records were reconciled through a CI-gated documentation PR.                                                                                                               |
-| PR #36 merged increment          | `OMEGA_PERSISTENCE_KEY` remains the active write key; optional `OMEGA_PERSISTENCE_KEY_PREVIOUS` permits authenticated snapshot/event-log fallback reads; `none/current/previous/mixed` provenance is exposed across API policy/observability, web, SDK, CLI, tests, and docs without secret material.                                      |
+| Slice                              | Evidence-bound result                                                                                                                                                                                                                                                                                                                      |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| MINI and trust foundation          | MINI Observe → Verify → Remember remains the documented kernel; HMAC-SHA256 and opt-in Ed25519 trust surfaces span attestation, API, web, SDK, CLI, and tests.                                                                                                                                                                             |
+| PR #33 merged increments           | Signing audit metadata; AES-256-GCM runtime persistence; durable revocation and `/act` denial; web ledger and operator control; SDK/CLI revocation; kernel-memory encryption and controlled previous-key reads; attestation TTL; SDK/CLI verification; constant-time bearer matching; frontend TTL evidence; whole-system policy contract. |
+| PR #34–#37 merged increments       | API `/health` readiness evidence, state-record reconciliation, and controlled persistence-key fallback with active/previous/mixed provenance across API, web, SDK, CLI, tests, and docs.                                                                                                                                                   |
+| Pending revocation-integrity slice | A local SHA-256 digest is persisted with the revocation registry. API, web, SDK, CLI, tests, and docs expose `disabled`, `legacy`, `intact`, or `mismatch`; mismatch fails closed for verification-sensitive action and mutation paths.                                                                                                    |
 
-## Persistence rotation evidence
+## Revocation-integrity evidence
 
-Focused cross-surface tests passed: **108 tests**. The full local gate passed: `pnpm format:check`, `pnpm type-check`, `pnpm test -- --coverage`, `pnpm build`, and `git diff --check`; observed result was **23 suites / 339 tests**, **71.15% global branch coverage**, and a successful workspace/Vite build. PR #36 CI was subsequently observed green across the repository matrix.
+Focused API, web, SDK, CLI, and contract tests passed: **93 tests**. The full local gate passed: `pnpm test -- --coverage`, `pnpm build`, `pnpm format:check`, `pnpm type-check`, and `git diff --check`; observed result was **23 suites / 340 tests**, **71.15% global branch coverage**, and a successful workspace/Vite build.
 
-The rotation increment supports authenticated previous-key snapshot fallback, active-key writes, mixed event-log reads, fail-closed wrong-key behavior, and non-secret policy/observability fields. It is controlled local fallback compatibility only, not HSM/KMS custody, secure deletion, automated re-encryption, recovery policy, distributed coordination, or a claim that all stored data is encrypted.
+The digest is deterministic over the loaded local registry and is stored in the encrypted runtime snapshot when persistence is enabled. A missing digest is reported as `legacy`; a matching digest is `intact`; a mismatch is visible and causes verification-sensitive action and mutation paths to fail closed. The dashboard renders the observed status, the SDK preserves typed verification and ledger metadata, and the CLI prints registry status. No secrets are emitted.
+
+> This is local tamper evidence, not distributed revocation consistency, HSM/KMS custody, secure deletion, recovery, proof that records and digest could not be altered together, or a claim that all stored data is encrypted.
 
 ## Open risks and uncertainty
 
@@ -33,6 +35,6 @@ HSM/KMS custody; secure deletion; automated persistence re-encryption; persisten
 
 ## Human gates and next executable loop
 
-The user has explicitly authorized slice-by-slice publication and merge. Next: reconcile the merged main documentation, then inspect and select the next smallest complete increment, prioritizing distributed revocation consistency or stronger administrative authorization. Any new publication, merge, or deployment remains separately gated.
+The user has explicitly authorized slice-by-slice publication and merge. Next: commit this locally verified revocation-integrity slice, push it to a new PR, observe CI, mark ready, and merge only if repository gates permit. Deployment remains a separate human gate. After delivery, select the next smallest increment, prioritizing stronger administrative authorization or distributed coordination.
 
 > One root. One current. Many minds. Infinite forms.

@@ -153,6 +153,7 @@ describe('OmegaClient', () => {
                   revokedAt: '2026-08-16T00:00:00.000Z',
                 },
               ],
+              meta: { integrity: 'intact', digest: 'sha256:test' },
               timestamp: '2026-08-16T00:00:00.000Z',
             })
           );
@@ -160,7 +161,12 @@ describe('OmegaClient', () => {
         if (url.endsWith('/attest/verify')) {
           return new Response(
             JSON.stringify({
-              data: { valid: false, revoked: false, expired: true },
+              data: {
+                valid: false,
+                revoked: false,
+                expired: true,
+                revocationIntegrity: 'intact',
+              },
               timestamp: '2026-08-16T00:00:00.000Z',
             })
           );
@@ -184,9 +190,10 @@ describe('OmegaClient', () => {
 
     await expect(client.getRevocations()).resolves.toMatchObject({
       data: [{ attestationId: 'att-1' }],
+      meta: { integrity: 'intact', digest: 'sha256:test' },
     });
     await expect(client.verifyAttestation({ id: 'att-1' })).resolves.toMatchObject({
-      data: { valid: false, revoked: false, expired: true },
+      data: { valid: false, revoked: false, expired: true, revocationIntegrity: 'intact' },
     });
     await expect(
       client.revokeAttestation('att-2', 'manual review', 'sdk-test')

@@ -1,4 +1,5 @@
 import { randomUUID, timingSafeEqual } from 'node:crypto';
+import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import express, { Express, Request, Response } from 'express';
@@ -210,6 +211,24 @@ type RuntimeRevocation = {
   revokedBy: string;
   revokedAt: string;
 };
+type RevocationIntegrityStatus = 'disabled' | 'legacy' | 'intact' | 'mismatch';
+
+export const revocationRegistryDigest = (revocations: RuntimeRevocation[]): string =>
+  `sha256:${createHash('sha256').update(JSON.stringify(revocations), 'utf8').digest('hex')}`;
+
+export const revocationRegistryStatus = (
+  persistenceEnabled: boolean,
+  persistedDigest: string | undefined,
+  currentDigest: string
+): RevocationIntegrityStatus =>
+  !persistenceEnabled
+    ? 'disabled'
+    : persistedDigest === undefined
+      ? 'legacy'
+      : persistedDigest === currentDigest
+        ? 'intact'
+        : 'mismatch';
+
 type RuntimeSnapshot = {
   events: RuntimeEvent[];
   runs: CompletedRun[];
@@ -217,6 +236,7 @@ type RuntimeSnapshot = {
   learnings: RuntimeLearning[];
   recompilations: RuntimeRecompilation[];
   revocations?: RuntimeRevocation[];
+  revocationIntegrity?: string;
 };
 
 export const ADMIN_TOKEN_ENV = 'OMEGA_ADMIN_TOKEN';
@@ -250,6 +270,13 @@ const runtimeActions = snapshot.actions;
 const runtimeLearnings = snapshot.learnings;
 const runtimeRecompilations = snapshot.recompilations;
 const runtimeRevocations = snapshot.revocations ?? [];
+const persistedRevocationDigest = snapshot.revocationIntegrity;
+const currentRevocationDigest = revocationRegistryDigest(runtimeRevocations);
+const revocationIntegrityStatus = revocationRegistryStatus(
+  persistenceEnabled,
+  persistedRevocationDigest,
+  currentRevocationDigest
+);
 const configuredAttestationTtlMs = (): number | null => {
   const raw = process.env.OMEGA_ATTESTATION_TTL_MS?.trim();
   if (!raw) return null;
@@ -280,6 +307,7 @@ const persistRuntime = (): void => {
       learnings: runtimeLearnings,
       recompilations: runtimeRecompilations,
       revocations: runtimeRevocations,
+      revocationIntegrity: revocationRegistryDigest(runtimeRevocations),
     } as RuntimeSnapshot,
     persistenceEnabled,
     persistenceEncryptionKey
@@ -717,9 +745,14 @@ app.post('/attest/verify', (req: Request, res: Response) => {
     const expired = isAttestationExpired(attestation);
     res.json({
       data: {
-        valid: attestationService.verify(attestation) && !revoked && !expired,
+        valid:
+          attestationService.verify(attestation) &&
+          !revoked &&
+          !expired &&
+          revocationIntegrityStatus !== 'mismatch',
         revoked,
         expired,
+        revocationIntegrity: revocationIntegrityStatus,
       },
       timestamp: new Date().toISOString(),
     });
@@ -743,6 +776,14 @@ app.post('/attest/revoke', (req: Request, res: Response) => {
     reason?: string;
     revokedBy?: string;
   };
+  if (revocationIntegrityStatus === 'mismatch') {
+    res.status(503).json({
+      code: 'REVOCATION_REGISTRY_INTEGRITY',
+      message: 'Revocation registry integrity evidence does not match persisted records',
+      timestamp: new Date().toISOString(),
+    } satisfies ErrorResponse);
+    return;
+  }
   if (!attestationId || !reason) {
     res.status(400).json({
       code: 'MISSING_REVOCATION_DETAILS',
@@ -788,7 +829,11 @@ app.post('/attest/revoke', (req: Request, res: Response) => {
 });
 
 app.get('/attest/revocations', (_req: Request, res: Response) => {
-  res.json({ data: runtimeRevocations, timestamp: new Date().toISOString() });
+  res.json({
+    data: runtimeRevocations,
+    meta: { integrity: revocationIntegrityStatus, digest: currentRevocationDigest },
+    timestamp: new Date().toISOString(),
+  });
 });
 
 app.get('/attest/policy', (_req: Request, res: Response) => {
@@ -799,6 +844,7 @@ app.get('/attest/policy', (_req: Request, res: Response) => {
       readAuthConfigured: Boolean(process.env.OMEGA_READ_TOKEN?.trim()),
       adminAuthConfigured: Boolean(process.env[ADMIN_TOKEN_ENV]?.trim()),
       revocationEnabled: true,
+      revocationIntegrity: revocationIntegrityStatus,
       persistenceEncryption: persistenceEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
       persistenceEncryptionKeySource,
       persistencePreviousKeyConfigured: previousPersistenceEncryptionConfigured,
@@ -841,6 +887,14 @@ app.post('/act', (req: Request, res: Response) => {
       res.status(400).json({
         code: 'MISSING_ATTESTATION',
         message: 'Attestation is required to authorize an action',
+        timestamp: new Date().toISOString(),
+      } satisfies ErrorResponse);
+      return;
+    }
+    if (revocationIntegrityStatus === 'mismatch') {
+      res.status(503).json({
+        code: 'REVOCATION_REGISTRY_INTEGRITY',
+        message: 'Action denied because revocation registry integrity evidence is mismatched',
         timestamp: new Date().toISOString(),
       } satisfies ErrorResponse);
       return;

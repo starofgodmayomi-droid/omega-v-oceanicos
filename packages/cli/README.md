@@ -73,9 +73,9 @@ node packages/cli/dist/index.js verify \
   --token "$OMEGA_READ_TOKEN"
 ```
 
-The command prints `valid`, `revoked`, and `expired` status fields without recomputing signatures locally. It exits `0` only when the API reports `valid=true`; invalid, revoked, or expired evidence returns a non-zero status.
+The command prints `valid`, `revoked`, `expired`, and local `registry` integrity status without recomputing signatures locally. It exits `0` only when the API reports `valid=true` and the registry is not `mismatch`; invalid, revoked, expired, or mismatched evidence returns a non-zero status.
 
-List recorded revocations without mutating state:
+List recorded revocations without mutating state. The output includes the API’s `disabled`, `legacy`, `intact`, or `mismatch` registry-integrity status; `mismatch` is evidence of local persisted-record divergence, not a distributed-consistency result.
 
 ```bash
 node packages/cli/dist/index.js revocations --url http://localhost:3000
