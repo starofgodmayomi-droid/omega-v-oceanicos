@@ -79,6 +79,23 @@ describe('FileMemoryStore', () => {
     expect(wrongKey.skipped()).toBe(3);
   });
 
+  it('restores with the previous key and writes new entries with the current key', () => {
+    new Remember(new FileMemoryStore(path, 'old-memory-secret')).remember(
+      observation(),
+      verification()
+    );
+
+    const rotated = new FileMemoryStore(path, 'new-memory-secret', 'old-memory-secret');
+    const restored = new Remember(rotated);
+    expect(restored.size()).toBe(3);
+    expect(rotated.encryptionKeySource()).toBe('previous');
+
+    restored.append({ type: 'OBSERVATION', data: observation('obs-after-rotation') });
+    const current = new FileMemoryStore(path, 'new-memory-secret', 'old-memory-secret');
+    expect(new Remember(current).size()).toBe(4);
+    expect(current.encryptionKeySource()).toBe('previous');
+  });
+
   it('reads legacy plaintext when encryption is enabled for migration', () => {
     new Remember(new FileMemoryStore(path)).remember(observation(), verification());
 

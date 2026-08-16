@@ -47,6 +47,7 @@ const decryptLine = (stored: string, secret?: string): string => {
  * to parse or authenticate is different from a complete restore.
  */
 export type StoreSource = 'missing' | 'partial' | 'restored';
+export type EncryptionKeySource = 'none' | 'current' | 'previous';
 
 /**
  * Pluggable persistence for the chain.
@@ -74,13 +75,17 @@ export interface MemoryStore {
 export class FileMemoryStore implements MemoryStore {
   private lastSource: StoreSource = 'missing';
   private lastSkipped = 0;
+  private lastEncryptionKeySource: EncryptionKeySource = 'none';
   private readonly encryptionSecret?: string;
+  private readonly previousEncryptionSecret?: string;
 
   constructor(
     private readonly path: string,
-    encryptionSecret = process.env[MEMORY_KEY_ENV]
+    encryptionSecret = process.env[MEMORY_KEY_ENV],
+    previousEncryptionSecret = process.env.OMEGA_MEMORY_KEY_PREVIOUS
   ) {
     this.encryptionSecret = encryptionSecret?.trim() || undefined;
+    this.previousEncryptionSecret = previousEncryptionSecret?.trim() || undefined;
   }
 
   public load(): EventLogEntry[] {
@@ -90,16 +95,28 @@ export class FileMemoryStore implements MemoryStore {
     } catch {
       this.lastSource = 'missing';
       this.lastSkipped = 0;
+      this.lastEncryptionKeySource = 'none';
       return [];
     }
 
     const entries: EventLogEntry[] = [];
     let skipped = 0;
+    let usedPreviousKey = false;
+    let usedCurrentKey = false;
 
     for (const line of raw.split('\n')) {
       if (line.trim() === '') continue;
       try {
-        entries.push(JSON.parse(decryptLine(line.trim(), this.encryptionSecret)) as EventLogEntry);
+        const stored = line.trim();
+        let plaintext: string;
+        try {
+          plaintext = decryptLine(stored, this.encryptionSecret);
+          if (stored.startsWith(`${ENCRYPTED_PREFIX}:`)) usedCurrentKey = true;
+        } catch {
+          plaintext = decryptLine(stored, this.previousEncryptionSecret);
+          if (stored.startsWith(`${ENCRYPTED_PREFIX}:`)) usedPreviousKey = true;
+        }
+        entries.push(JSON.parse(plaintext) as EventLogEntry);
       } catch {
         skipped += 1;
       }
@@ -107,6 +124,11 @@ export class FileMemoryStore implements MemoryStore {
 
     this.lastSkipped = skipped;
     this.lastSource = skipped > 0 ? 'partial' : 'restored';
+    this.lastEncryptionKeySource = usedPreviousKey
+      ? 'previous'
+      : usedCurrentKey
+        ? 'current'
+        : 'none';
     return entries;
   }
 
@@ -119,6 +141,11 @@ export class FileMemoryStore implements MemoryStore {
   /** Whether new memory entries are written using authenticated encryption. */
   public encryptionEnabled(): boolean {
     return Boolean(this.encryptionSecret);
+  }
+
+  /** Which key successfully authenticated the most recent encrypted load. */
+  public encryptionKeySource(): EncryptionKeySource {
+    return this.lastEncryptionKeySource;
   }
 
   /** Outcome of the most recent load. */

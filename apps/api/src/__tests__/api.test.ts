@@ -96,6 +96,7 @@ describe('API runtime contracts', () => {
         persistence: string;
         persistenceEncryption: string;
         memoryEncryption: string;
+        memoryEncryptionKeySource: string;
         services: string[];
       };
       provenance: {
@@ -109,12 +110,14 @@ describe('API runtime contracts', () => {
         intact: boolean;
         appendOnly: boolean;
         encryption: string;
+        encryptionKeySource: string;
       };
     }>;
 
     expect(response.status).toBe(200);
     expect(body.data.runtime.persistenceEncryption).toBe('disabled');
     expect(body.data.runtime.memoryEncryption).toBe('disabled');
+    expect(body.data.runtime.memoryEncryptionKeySource).toBe('none');
     expect(body.data.runtime.services).toEqual(['observer', 'verifier', 'attester']);
     expect(body.data.provenance.durableEvents).toBeGreaterThanOrEqual(0);
     expect(body.data.provenance.completedRuns).toBeGreaterThan(0);
@@ -124,6 +127,7 @@ describe('API runtime contracts', () => {
     expect(body.data.memory.intact).toBe(true);
     expect(body.data.memory.appendOnly).toBe(true);
     expect(body.data.memory.encryption).toBe('disabled');
+    expect(body.data.memory.encryptionKeySource).toBe('none');
     expect(JSON.stringify(body)).not.toMatch(/private|secret|seed|signing material/i);
   });
 

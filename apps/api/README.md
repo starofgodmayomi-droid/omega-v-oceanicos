@@ -607,7 +607,8 @@ curl -X POST http://localhost:3000/complete-loop \
 - `OMEGA_PERSISTENCE` — Explicit persistence override: `on` or `off`
 - `OMEGA_PERSISTENCE_KEY` — Optional dedicated secret for AES-256-GCM encryption of runtime snapshot and event-log files; never expose it in logs or API responses
 - `OMEGA_MEMORY_PATH` — Optional JSONL path for the MINI kernel memory chain
-- `OMEGA_MEMORY_KEY` — Optional dedicated secret for AES-256-GCM encryption of new kernel-memory lines; legacy plaintext remains readable for controlled migration, and wrong-key lines are reported as partial rather than silently discarded
+- `OMEGA_MEMORY_KEY` — Optional active secret for AES-256-GCM encryption of new kernel-memory lines
+- `OMEGA_MEMORY_KEY_PREVIOUS` — Optional previous secret accepted during controlled key rotation; new writes still use `OMEGA_MEMORY_KEY`, and mixed-key restoration reports the fallback source without returning either secret
 
 Revocation records are included in the encrypted runtime snapshot when
 persistence is enabled and every revocation also produces an append-only
