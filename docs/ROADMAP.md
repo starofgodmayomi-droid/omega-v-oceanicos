@@ -182,9 +182,11 @@ blocked on design; each is a decision or a scoped change.
   fails with a misleading `EUNSUPPORTEDPROTOCOL workspace:*` raised by pnpm's
   own store layout, not by anything in this repository's manifests. No manifest
   here uses the `workspace:` protocol.
-- **`format:check` is not run by CI** and is failing on 14 files. The verify
-  workflow runs lint, type-check, test, coverage and build, but never
-  `format:check`. A check that never runs is not a check.
+- ~~**`format:check` was not run by CI and failed on 14 files.**~~ **Closed.**
+  The formatting drift was corrected, `pnpm format:check` was added to the
+  verify workflow after dependency installation, and the main-branch workflow
+  now passes it on both supported Node versions. The workflow summaries report
+  formatting explicitly alongside lint, type-check, test, coverage and build.
 - ~~**CI skipped stacked pull requests entirely.**~~ **Closed.** The workflow
   filtered `pull_request` to `[main, develop]`, so a pull request based on any
   other branch ran no jobs at all. Nothing failed because nothing ran, and an
