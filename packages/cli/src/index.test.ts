@@ -219,6 +219,27 @@ describe('omega status CLI', () => {
     expect(errors.join('')).toContain('Audit unavailable (400)');
   });
 
+  /**
+   * `audit`'s try/catch mirrors every other command's: a rejected fetch (a
+   * dropped connection, DNS failure, timeout) is a distinct failure mode
+   * from a non-ok HTTP response, handled by its own branch. Only the non-ok
+   * response case had a test; the catch block itself had never run.
+   */
+  it('reports a network failure while reading audit evidence', async () => {
+    const errors: string[] = [];
+    process.stderr.write = ((chunk: string | Uint8Array) => {
+      errors.push(String(chunk));
+      return true;
+    }) as typeof process.stderr.write;
+
+    expect(
+      await run(['audit'], async () => {
+        throw new TypeError('fetch failed');
+      })
+    ).toBe(1);
+    expect(errors.join('')).toContain('Audit unavailable: fetch failed');
+  });
+
   it('lists revocations with readable operator evidence', async () => {
     const output: string[] = [];
     process.stdout.write = ((chunk: string | Uint8Array) => {
@@ -508,7 +529,7 @@ describe('omega status CLI', () => {
 
   /**
    * Every command's network-failure catch branch, and several of the
-   * non-ok-response branches, ran zero times under test — `packages/cli`
+   * non-ok-response branches, ran zero times under test -- `packages/cli`
    * was the second-lowest-coverage package in the repo (66.44% branch).
    * A CLI operator relies on these error paths to fail closed with a
    * readable message when the API is unreachable or rejects a request;
