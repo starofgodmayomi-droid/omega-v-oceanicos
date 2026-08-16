@@ -529,7 +529,7 @@ describe('omega status CLI', () => {
 
   /**
    * Every command's network-failure catch branch, and several of the
-   * non-ok-response branches, ran zero times under test - `packages/cli`
+   * non-ok-response branches, ran zero times under test. `packages/cli`
    * was the second-lowest-coverage package in the repo (66.44% branch).
    * A CLI operator relies on these error paths to fail closed with a
    * readable message when the API is unreachable or rejects a request;
