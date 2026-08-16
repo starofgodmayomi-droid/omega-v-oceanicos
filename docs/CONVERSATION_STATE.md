@@ -7,9 +7,9 @@
 Repository: `starofgodmayomi-droid/omega-v-oceanicos`  
 Worktree: `/home/ubuntu/current-main-worktree`  
 Branch: `main`
-Head: `0ed38641943e30f672f306f32df71e221a5e9699`
+Head: `d152bba0e3805d7cf97db2441a34b676cb7408be`
 Tracking: `origin/main`
-Working tree: PRs #54, #55, #57–#63, #66, and #68 are merged into `main`; post-PR #68 state reconciliation is uncommitted on a clean base; no deployment is claimed.
+Working tree: PRs #54, #55, #57–#63, #66, #68, #70, and #71 are merged into `main`; post-PR #70/#71 state reconciliation is uncommitted on a clean base; no deployment is claimed.
 
 PR #52 merged as `70a66ae2384f943e1fa69434537cd4699adc67b2` at `2026-08-16T18:31:24Z`; its head was `a9ef77a`. CI was observed green across Node 18, Node 20, Windows compatibility, package/smoke, and report; attested-artifact publication was skipped. No deployment is claimed.
 
@@ -25,22 +25,28 @@ PR #66 merged as `5eb07607ac80869a258e62552a69964194f4ceeb` at `2026-08-16T21:16
 
 PR #68 merged as `0ed38641943e30f672f306f32df71e221a5e9699` at `2026-08-16T21:28:51Z`. CI was observed green across Node 18, Node 20, Windows compatibility, package/smoke, and report; attested-artifact publication was skipped. No deployment is claimed.
 
+PR #70 merged as `d152bba0e3805d7cf97db2441a34b676cb7408be` at `2026-08-16T21:41:00Z`; API SPA static-bundle and fallback-route coverage was merged with green CI. No deployment is claimed.
+
+PR #71 merged as `0d047fa2b59c658c0d06f36724e5c941ae32e323` at `2026-08-16T21:40:38Z`; duplicate command-palette coverage was reconciled with green CI. No deployment is claimed.
+
 ## Verified evolution lineage
 
-| Slice                     | Evidence-bound result                                                                                                                                                                                                                                 |
-| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| PRs #33–#40               | Signing audit, encrypted runtime/memory persistence, revocation controls, TTL, constant-time bearer auth, policy/readiness contracts, controlled key fallback, local registry integrity evidence, and optional operator identity boundary are merged. |
-| PRs #43–#51               | Development quickstart repair, SDK/web/CLI/API/persistence coverage and behavior repairs, stale-base/conflict repairs, and state-record reconciliation are merged. Current main full gate reached 25 suites / 409 tests.                              |
-| PR #52                    | API verification, mutation, ledger, and policy responses now expose a local revocation `revision`; dashboard, typed SDK, CLI docs, and API docs carry the same bounded freshness evidence.                                                            |
-| PR #54 audit              | `GET /audit/events` is merged end-to-end across API, web, SDK, CLI, tests, and docs with exact filters, inclusive temporal bounds, default limit 100, maximum 500, and explicit local provenance. Distributed indexing remains open.                  |
-| PRs #57–#62 coverage      | SDK, Remember, API, attestation, and CLI coverage gaps were closed as small regression slices; all are merged with green CI.                                                                                                                          |
-| PR #63 web coverage       | Dashboard stream recovery, runtime refresh on reopen, event-inspector provenance, and run-chain restoration are covered in DOM tests; production behavior was unchanged.                                                                              |
-| PR #66 web trust coverage | EventSource reopen health/state refresh and pass/fail stream-driven trust updates are covered in DOM tests; production behavior was unchanged.                                                                                                        |
-| PR #68 web navigation     | Sidebar navigation, stage-pill rendering, and learning feedback/error recovery are covered in DOM tests; production behavior was unchanged.                                                                                                           |
+| Slice                      | Evidence-bound result                                                                                                                                                                                                                                 |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PRs #33–#40                | Signing audit, encrypted runtime/memory persistence, revocation controls, TTL, constant-time bearer auth, policy/readiness contracts, controlled key fallback, local registry integrity evidence, and optional operator identity boundary are merged. |
+| PRs #43–#51                | Development quickstart repair, SDK/web/CLI/API/persistence coverage and behavior repairs, stale-base/conflict repairs, and state-record reconciliation are merged. Current main full gate reached 25 suites / 409 tests.                              |
+| PR #52                     | API verification, mutation, ledger, and policy responses now expose a local revocation `revision`; dashboard, typed SDK, CLI docs, and API docs carry the same bounded freshness evidence.                                                            |
+| PR #54 audit               | `GET /audit/events` is merged end-to-end across API, web, SDK, CLI, tests, and docs with exact filters, inclusive temporal bounds, default limit 100, maximum 500, and explicit local provenance. Distributed indexing remains open.                  |
+| PRs #57–#62 coverage       | SDK, Remember, API, attestation, and CLI coverage gaps were closed as small regression slices; all are merged with green CI.                                                                                                                          |
+| PR #63 web coverage        | Dashboard stream recovery, runtime refresh on reopen, event-inspector provenance, and run-chain restoration are covered in DOM tests; production behavior was unchanged.                                                                              |
+| PR #66 web trust coverage  | EventSource reopen health/state refresh and pass/fail stream-driven trust updates are covered in DOM tests; production behavior was unchanged.                                                                                                        |
+| PR #68 web navigation      | Sidebar navigation, stage-pill rendering, and learning feedback/error recovery are covered in DOM tests; production behavior was unchanged.                                                                                                           |
+| PR #70 API coverage        | The API static bundle and SPA fallback route are covered by tests; production behavior was unchanged.                                                                                                                                                 |
+| PR #71 test reconciliation | The duplicated command-palette suite was removed while unique coverage was preserved; production behavior was unchanged.                                                                                                                              |
 
 ## Bounded audit-query evidence
 
-Focused API/web/SDK/CLI tests passed: **137 tests** after repairing query-aware web/API endpoint drift detection. After PRs #57–#62, the full local gate passed with **25 suites / 428 tests**. The focused PR #63 dashboard suite passed **46 tests**, the rebased PR #66 dashboard suite passed **47 tests**, and PR #68 raised the full main baseline to **25 suites / 438 tests**. The post-PR #68 full local gate passed with successful workspace/Vite build, `format:check`, type-check, and `git diff --check`; PR #68’s CI matrix was also observed green. The post-merge state reconciliation remains a separate documentation-only change.
+Focused API/web/SDK/CLI tests passed: **137 tests** after repairing query-aware web/API endpoint drift detection. After PRs #57–#62, the full local gate passed with **25 suites / 428 tests**. The focused PR #63 dashboard suite passed **46 tests**, the rebased PR #66 dashboard suite passed **47 tests**, and PR #68 raised the full main baseline to **25 suites / 438 tests**. PRs #70 and #71 brought the post-merge main baseline to **25 suites / 435 tests** while removing redundant assertions and preserving unique coverage. The post-PR #70/#71 gate passed with successful workspace/Vite build, `format:check`, type-check, and `git diff --check`; both CI matrices were observed green. The post-merge state reconciliation remains a separate documentation-only change.
 
 The endpoint is bounded local event-log evidence only. Its `source`, `skipped`, `keySource`, `total`, `limit`, and normalized filters are evidence about the local runtime read; they do not prove completeness for unpersisted history, distributed consistency, global ordering, or replica observation.
 
@@ -58,6 +64,6 @@ HSM/KMS custody; secure deletion; automated persistence re-encryption; persisten
 
 ## Human gates and next executable loop
 
-The user has authorized slice-by-slice publication and merge. Next: commit the post-PR #68 state reconciliation on a documentation branch, open a draft PR, observe CI, and merge only after the same gates. Then select the next smallest production-relevant increment. Any publication, merge, or deployment remains separately gated.
+The user has authorized slice-by-slice publication and merge. Next: commit the post-PR #70/#71 state reconciliation on a documentation branch, open a draft PR, observe CI, and merge only after the same gates. Then select the next smallest production-relevant increment. Any publication, merge, or deployment remains separately gated.
 
 > One root. One current. Many minds. Infinite forms.
