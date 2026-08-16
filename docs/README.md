@@ -103,7 +103,7 @@ two append-only files on disk.
 A: Follow the [Development Setup](./DEVELOPMENT.md) guide, then read [CONTRIBUTING.md](../CONTRIBUTING.md).
 
 **Q: How do I verify my changes work?**  
-A: Run `npm run verify` locally. See [CONTRIBUTING.md](../CONTRIBUTING.md#development-workflow) for details.
+A: Run `pnpm verify` locally. Windows, macOS, and Linux use the same Node-based lifecycle helpers; CI additionally runs the full compatibility gate on `windows-latest`. See [CONTRIBUTING.md](../CONTRIBUTING.md#development-workflow) for details.
 
 **Q: I found a bug. What do I do?**  
 A: File an issue with reproduction steps. See [CONTRIBUTING.md](../CONTRIBUTING.md#bug-reports).
@@ -135,4 +135,4 @@ See [MINI.md](./MINI.md) and [ROADMAP.md](./ROADMAP.md).
 ---
 
 **Documentation Status**: Living — Zero → MINI → verified expansion  
-**Last Updated**: 2026-08-14
+**Last Updated**: 2026-08-16

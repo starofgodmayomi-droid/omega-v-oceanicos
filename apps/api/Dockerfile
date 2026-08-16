@@ -15,6 +15,7 @@ RUN corepack enable && corepack prepare pnpm@8.8.0 --activate
 WORKDIR /app
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.json ./
+COPY scripts ./scripts
 COPY packages ./packages
 COPY apps/api ./apps/api
 COPY apps/web ./apps/web
