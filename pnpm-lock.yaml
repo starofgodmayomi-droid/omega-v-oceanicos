@@ -144,6 +144,8 @@ importers:
         specifier: 5.3.3
         version: 5.3.3
 
+  packages/cli: {}
+
   packages/mini:
     dependencies:
       '@omega-v/observer':
