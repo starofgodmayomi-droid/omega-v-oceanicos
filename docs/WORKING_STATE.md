@@ -67,6 +67,14 @@ The active worktree is `/home/ubuntu/current-main-worktree` on branch `main`, sy
 | `cae0c65` | PR #36 squash merge: controlled persistence-key rotation fallback across API, web, SDK, CLI, tests, and docs                                 | Merged into `main`; CI green                           |
 | `0cd211d` | PR #38 squash merge: local revocation-registry integrity digest and fail-closed mismatch evidence across API, web, SDK, CLI, tests, and docs | Merged into `main`; CI green                           |
 | `ea69684` | PR #40 squash merge: optional operator-identity allowlist across API, web, SDK, CLI, tests, and docs                                         | Merged into `main`; CI green                           |
+| `d316d71` | PR #43 squash merge: restore development quickstart                                                                                          | Merged into `main`; CI green                           |
+| `8181647` | PR #44 squash merge: SDK network-error coverage                                                                                              | Merged into `main`; CI green                           |
+| `4222fab` | PR #45 squash merge: command-palette focus repair                                                                                            | Merged into `main`; CI green                           |
+| `d00ce10` | PR #46 squash merge: CLI error-path coverage                                                                                                 | Merged into `main`; CI green                           |
+| `e41d9a7` | PR #47 squash merge: API validation/integrity/TTL coverage                                                                                   | Merged into `main`; CI green                           |
+| `3ea5f6f` | PR #48 squash merge: web loop and error-path coverage after rebase repair                                                                    | Merged into `main`; CI green                           |
+| `fdec82f` | PR #49 squash merge: SDK default/error branch coverage after conflict repair                                                                 | Merged into `main`; CI green                           |
+| `af26f2a` | PR #50 squash merge: persistence decrypt and previous-key coverage                                                                           | Merged into `main`; CI green                           |
 
 | |
 | PR #33 is **merged** into `main` as squash commit `fb73ac28990b2b42b6339da2e8ca76007616dd70`, observed at `2026-08-16T14:46:39Z`. The published head `2cc2d21` passed Node 18, Node 20, Windows compatibility, package/smoke, and report checks; attested-artifact publication was skipped as designed. |
@@ -110,7 +118,7 @@ The combined signing-audit and persistence-encryption state passed:
 
 | `git diff --check` | Passed before the revocation commit |
 
-The last full local verification for the operator-identity allowlist slice observed 341 passing tests, 71.15% global branch coverage, and a successful build; PR #40’s CI matrix was subsequently observed green and merged. The repository may contain generated build output ignored by Git; only intended source and documentation changes should be committed.
+The last full local verification after the PR #43–#50 queue observed 409 passing tests, a successful workspace/Vite build, passing format/type/diff gates, and a clean worktree synchronized with `origin/main`. The queue’s CI matrices were observed green after repairing PR #48’s stale-base web failure and PR #49’s SDK test conflict. The repository may contain generated build output ignored by Git; only intended source and documentation changes should be committed.
 
 ## Remaining gaps and uncertainty
 
@@ -120,6 +128,6 @@ The web client exposes revoke and revocation-ledger controls. Stronger administr
 
 ## Next authorized action
 
-1. Reconcile the merged main branch and preserve PR #40’s CI/merge evidence.
-2. Select the next smallest worker-sized slice, keeping identity proofing, distributed authorization, and deployment claims open.
+1. Preserve the observed PR #43–#50 merge and repair evidence.
+2. Select the next smallest production-relevant slice from remaining custody, distributed coordination, identity, data-at-rest, deployment, or mobile gaps.
 3. Keep any new publication, merge, and deployment actions behind separate human gates.
