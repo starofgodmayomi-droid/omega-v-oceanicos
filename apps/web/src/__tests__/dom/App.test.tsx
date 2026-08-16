@@ -392,6 +392,299 @@ describe('dashboard', () => {
     const nav = await screen.findByRole('navigation', { name: /primary navigation/i });
     expect(within(nav).getAllByRole('button').length).toBeGreaterThan(0);
   });
+
+  it('reports navigating to a section not yet wired to the runtime', async () => {
+    const user = userEvent.setup();
+    await renderApp();
+
+    await user.click(await screen.findByRole('button', { name: /agents/i }));
+
+    expect(
+      await screen.findByText(/Agents is not connected to the current runtime yet/)
+    ).toBeInTheDocument();
+  });
+
+  it('reports a signature check failure from the API rather than showing a stale verdict', async () => {
+    const user = userEvent.setup();
+    installFetch({
+      '/api/attest/verify': () => json({ message: 'verification engine offline' }, { status: 503 }),
+    });
+    await renderApp();
+
+    await user.click(await screen.findByRole('button', { name: /run verification/i }));
+    await screen.findByText('ATTESTATION');
+    await user.click(screen.getByRole('button', { name: /verify signature/i }));
+
+    expect(await screen.findByText(/verification engine offline/)).toBeInTheDocument();
+    expect(await screen.findByText('INVALID')).toBeInTheDocument();
+  });
+
+  it('reports a revocation failure from the API and leaves the attestation valid', async () => {
+    const user = userEvent.setup();
+    installFetch({
+      '/api/attest/revoke': () => json({ message: 'revocation policy denied' }, { status: 403 }),
+    });
+    await renderApp();
+
+    await user.click(await screen.findByRole('button', { name: /run verification/i }));
+    await screen.findByText('ATTESTATION');
+    await user.type(screen.getByLabelText(/revocation reason/i), 'testing revocation failure');
+    await user.click(screen.getByRole('button', { name: /revoke attestation/i }));
+
+    expect(await screen.findByText('REVOCATION FAILED')).toBeInTheDocument();
+    expect(await screen.findByText(/revocation policy denied/)).toBeInTheDocument();
+  });
+
+  /**
+   * `authorizeAction`, `recordLearning`, and `proposeRecompile` complete the
+   * MINI kernel loop (Act -> Learn -> Recompile) but had never been clicked
+   * by a test: no test even referenced the "Authorize action" button. All of
+   * their error branches, and most of their success branches, ran zero
+   * times.
+   */
+  describe('act, learn, recompile loop', () => {
+    const authorize = async (user: ReturnType<typeof userEvent.setup>) => {
+      await user.click(await screen.findByRole('button', { name: /run verification/i }));
+      await screen.findByText('ATTESTATION');
+      await user.click(screen.getByRole('button', { name: /authorize action/i }));
+      await screen.findByText('ACTION AUTHORIZED');
+    };
+
+    it('authorizes an action, records learning, and proposes a recompile end to end', async () => {
+      const user = userEvent.setup();
+      const fetchMock = installFetch();
+      await renderApp();
+
+      await authorize(user);
+      await user.click(screen.getByRole('button', { name: /record learning/i }));
+      expect(await screen.findByText('LEARNING RECORDED')).toBeInTheDocument();
+
+      await user.click(screen.getByRole('button', { name: /propose recompile/i }));
+      expect(await screen.findByText('RECOMPILE PROPOSED')).toBeInTheDocument();
+
+      const learnCall = fetchMock.mock.calls.find(([url]) => url === '/api/learn');
+      expect(JSON.parse(String(learnCall?.[1]?.body))).toMatchObject({ outcome: 'success' });
+    });
+
+    it('denies authorization and surfaces the request id when the API rejects it', async () => {
+      const user = userEvent.setup();
+      installFetch({
+        '/api/act': () =>
+          json(
+            { message: 'Action denied because verification did not pass' },
+            { status: 409, headers: { 'x-request-id': 'req-act-99' } }
+          ),
+      });
+      await renderApp();
+
+      await user.click(await screen.findByRole('button', { name: /run verification/i }));
+      await screen.findByText('ATTESTATION');
+      await user.click(screen.getByRole('button', { name: /authorize action/i }));
+
+      expect(await screen.findByText('ACTION DENIED')).toBeInTheDocument();
+      expect(
+        await screen.findByText(/Action denied because verification did not pass \[req-act-99\]/)
+      ).toBeInTheDocument();
+    });
+
+    it('reports a learning recording failure without pretending it was recorded', async () => {
+      const user = userEvent.setup();
+      installFetch({
+        '/api/learn': () => json({ message: 'operator policy denied' }, { status: 403 }),
+      });
+      await renderApp();
+
+      await authorize(user);
+      await user.click(screen.getByRole('button', { name: /record learning/i }));
+
+      expect(await screen.findByText(/operator policy denied/)).toBeInTheDocument();
+      expect(screen.queryByText('LEARNING RECORDED')).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /propose recompile/i })).not.toBeInTheDocument();
+    });
+
+    it('reports when learning records are unavailable while proposing a recompile', async () => {
+      const user = userEvent.setup();
+      installFetch({ '/api/learning': () => json({}, { status: 500 }) });
+      await renderApp();
+
+      await authorize(user);
+      await user.click(screen.getByRole('button', { name: /record learning/i }));
+      await screen.findByText('LEARNING RECORDED');
+      await user.click(screen.getByRole('button', { name: /propose recompile/i }));
+
+      expect(await screen.findByText(/Learning records unavailable/)).toBeInTheDocument();
+      expect(await screen.findByText('RECOMPILE FAILED')).toBeInTheDocument();
+    });
+
+    it('reports when no learning record exists to recompile from', async () => {
+      const user = userEvent.setup();
+      installFetch({ '/api/learning': () => json({ data: [] }) });
+      await renderApp();
+
+      await authorize(user);
+      await user.click(screen.getByRole('button', { name: /record learning/i }));
+      await screen.findByText('LEARNING RECORDED');
+      await user.click(screen.getByRole('button', { name: /propose recompile/i }));
+
+      expect(await screen.findByText(/No learning record is available/)).toBeInTheDocument();
+      expect(await screen.findByText('RECOMPILE FAILED')).toBeInTheDocument();
+    });
+
+    it('reports a recompile proposal failure from the API', async () => {
+      const user = userEvent.setup();
+      installFetch({
+        '/api/recompile': () => json({ message: 'compiler unavailable' }, { status: 500 }),
+      });
+      await renderApp();
+
+      await authorize(user);
+      await user.click(screen.getByRole('button', { name: /record learning/i }));
+      await screen.findByText('LEARNING RECORDED');
+      await user.click(screen.getByRole('button', { name: /propose recompile/i }));
+
+      expect(await screen.findByText('RECOMPILE FAILED')).toBeInTheDocument();
+      expect(await screen.findByText(/compiler unavailable/)).toBeInTheDocument();
+    });
+  });
+});
+
+/**
+ * The command palette (⌘K) was entirely uncovered: opening it, the Tab
+ * focus trap, Escape/backdrop dismissal, and all four quick actions ran zero
+ * times under test. Its commands also share label text with buttons that
+ * already exist in the main workspace ("Run verification" appears both as
+ * the primary action and as a palette command), so every query below is
+ * scoped to the dialog to prove it drives its own action rather than
+ * happening to pass because the other button was clicked instead.
+ */
+describe('command palette', () => {
+  beforeEach(() => {
+    installFetch();
+  });
+
+  const openWithShortcut = async () => {
+    await act(async () => {
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }));
+    });
+    return screen.findByRole('dialog', { name: /command palette/i });
+  };
+
+  it('opens with the ⌘K shortcut, focuses the first command, and closes on Escape', async () => {
+    await renderApp();
+    await screen.findByRole('button', { name: /run verification/i });
+
+    const dialog = await openWithShortcut();
+    expect(within(dialog).getByRole('button', { name: /observe/i })).toHaveFocus();
+
+    await act(async () => {
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    });
+
+    expect(screen.queryByRole('dialog', { name: /command palette/i })).not.toBeInTheDocument();
+  });
+
+  it('closes when the backdrop is clicked and returns focus to the trigger', async () => {
+    const user = userEvent.setup();
+    await renderApp();
+
+    const trigger = screen.getByRole('button', { name: '⌘ K' });
+    await user.click(trigger);
+    const dialog = await screen.findByRole('dialog', { name: /command palette/i });
+
+    // The palette itself stops propagation, so only a click landing on the
+    // backdrop (the dialog's parent) should dismiss it.
+    await user.click(dialog.parentElement as HTMLElement);
+
+    expect(screen.queryByRole('dialog', { name: /command palette/i })).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
+  });
+
+  it('runs verification from the palette command, not the main action button', async () => {
+    const user = userEvent.setup();
+    await renderApp();
+
+    await user.click(screen.getByRole('button', { name: '⌘ K' }));
+    const dialog = await screen.findByRole('dialog', { name: /command palette/i });
+    await user.click(within(dialog).getByRole('button', { name: /run verification/i }));
+
+    expect(await screen.findByText('OBSERVATION')).toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: /command palette/i })).not.toBeInTheDocument();
+  });
+
+  it('refreshes runtime state from the palette', async () => {
+    const user = userEvent.setup();
+    const fetchMock = installFetch();
+    await renderApp();
+    const callsBefore = fetchMock.mock.calls.filter(([url]) => url === '/api/state').length;
+
+    await user.click(screen.getByRole('button', { name: '⌘ K' }));
+    const dialog = await screen.findByRole('dialog', { name: /command palette/i });
+    await user.click(within(dialog).getByRole('button', { name: /refresh runtime/i }));
+
+    await waitFor(() => {
+      const callsAfter = fetchMock.mock.calls.filter(([url]) => url === '/api/state').length;
+      expect(callsAfter).toBeGreaterThan(callsBefore);
+    });
+    expect(screen.queryByRole('dialog', { name: /command palette/i })).not.toBeInTheDocument();
+  });
+
+  it('focuses the operator input via the Observe command', async () => {
+    const user = userEvent.setup();
+    await renderApp();
+
+    await user.click(screen.getByRole('button', { name: '⌘ K' }));
+    const dialog = await screen.findByRole('dialog', { name: /command palette/i });
+    await user.click(within(dialog).getByRole('button', { name: /observe/i }));
+
+    expect(screen.getByLabelText(/what should enter the current/i)).toHaveFocus();
+    expect(screen.queryByRole('dialog', { name: /command palette/i })).not.toBeInTheDocument();
+  });
+
+  it('disables verify attestation from the palette until a run has produced a result', async () => {
+    const user = userEvent.setup();
+    await renderApp();
+
+    await user.click(screen.getByRole('button', { name: '⌘ K' }));
+    const dialog = await screen.findByRole('dialog', { name: /command palette/i });
+    expect(within(dialog).getByRole('button', { name: /verify attestation/i })).toBeDisabled();
+  });
+
+  it('traps Tab focus within the palette, wrapping in both directions', async () => {
+    await renderApp();
+    const dialog = await openWithShortcut();
+
+    // Disabled buttons (Verify attestation, with no result yet) are excluded
+    // from the trap, so the reachable set is Observe -> Run verification ->
+    // Refresh runtime, in that order.
+    const observe = within(dialog).getByRole('button', { name: /observe/i });
+    const run = within(dialog).getByRole('button', { name: /run verification/i });
+    const refresh = within(dialog).getByRole('button', { name: /refresh runtime/i });
+    expect(observe).toHaveFocus();
+
+    await act(async () => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+    });
+    expect(run).toHaveFocus();
+
+    await act(async () => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+    });
+    expect(refresh).toHaveFocus();
+
+    // Forward from the last focusable control wraps back to the first.
+    await act(async () => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+    });
+    expect(observe).toHaveFocus();
+
+    // Backward from the first focusable control wraps to the last.
+    await act(async () => {
+      document.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true })
+      );
+    });
+    expect(refresh).toHaveFocus();
+  });
 });
 
 /**
