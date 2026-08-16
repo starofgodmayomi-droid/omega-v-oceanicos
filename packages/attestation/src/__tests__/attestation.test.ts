@@ -118,6 +118,48 @@ describe('AttestationService — Ed25519 (asymmetric)', () => {
     expect(verifyEd25519({ ...attestation, verified: false }, ed25519PublicKey)).toBe(false);
   });
 
+  /**
+   * `verifyEd25519` is exported and callable directly by any stranger with
+   * only a public key — it has its own guard clauses independent of
+   * `AttestationService.verify`'s. Every existing direct call passed a
+   * genuinely complete, correctly-shaped attestation, so the "missing a
+   * required field" and "wrong status" guards had never returned early.
+   */
+  it('rejects a stranger-verified attestation missing a signature or id, or not in signed status', () => {
+    const service = new AttestationService({
+      algorithm: 'Ed25519',
+      signingKey: ed25519Key,
+      publicKey: ed25519PublicKey,
+      keyVersion: '1',
+    });
+    const attestation = service.attest(verificationResult);
+
+    expect(verifyEd25519({ ...attestation, signature: '' }, ed25519PublicKey)).toBe(false);
+    expect(verifyEd25519({ ...attestation, verificationId: '' }, ed25519PublicKey)).toBe(false);
+    expect(verifyEd25519({ ...attestation, observationId: '' }, ed25519PublicKey)).toBe(false);
+    expect(verifyEd25519({ ...attestation, status: 'revoked' }, ed25519PublicKey)).toBe(false);
+  });
+
+  /**
+   * The signature-check itself is wrapped in try/catch: a public key a
+   * stranger cannot even parse (truncated, corrupted, or simply not a PEM —
+   * a realistic failure mode for key material handled outside this
+   * process) makes `crypto.verify` throw rather than return false. Every
+   * existing test passed a well-formed PEM, so that catch had never run.
+   */
+  it('treats an unparseable public key as a failed verification rather than throwing', () => {
+    const service = new AttestationService({
+      algorithm: 'Ed25519',
+      signingKey: ed25519Key,
+      publicKey: ed25519PublicKey,
+      keyVersion: '1',
+    });
+    const attestation = service.attest(verificationResult);
+
+    expect(() => verifyEd25519(attestation, 'not-a-valid-pem')).not.toThrow();
+    expect(verifyEd25519(attestation, 'not-a-valid-pem')).toBe(false);
+  });
+
   it('rejects an Ed25519 signature under a different public key', () => {
     const other = generateKeyPairSync('ed25519', {
       publicKeyEncoding: { type: 'spki', format: 'pem' },
