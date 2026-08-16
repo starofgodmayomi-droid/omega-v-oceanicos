@@ -74,6 +74,45 @@ describe('API runtime contracts', () => {
     expect(state.data.trustBasis.attestationValidity).toBe(1);
   });
 
+  it('reports runtime provenance and memory evidence without secrets', async () => {
+    await fetch(`${baseUrl}/complete-loop`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-request-id': 'observability-contract-1' },
+      body: JSON.stringify({
+        claim: 'Observability contract test is healthy',
+        category: 'health-check',
+        source: { system: 'api-test', version: '0.1.0', environment: 'test' },
+        observedBy: 'jest',
+        metadata: { responseTime: 42, statusCode: 200 },
+        confidence: 0.95,
+        confidenceReason: 'Executable observability contract test',
+      }),
+    });
+
+    const response = await fetch(`${baseUrl}/observability`);
+    const body = (await response.json()) as ApiResponse<{
+      runtime: { persistence: string; services: string[] };
+      provenance: {
+        durableEvents: number;
+        completedRuns: number;
+        lastRequestId: string | null;
+      };
+      trust: { attestationValidity: number | null };
+      memory: { entries: number; intact: boolean; appendOnly: boolean };
+    }>;
+
+    expect(response.status).toBe(200);
+    expect(body.data.runtime.services).toEqual(['observer', 'verifier', 'attester']);
+    expect(body.data.provenance.durableEvents).toBeGreaterThanOrEqual(0);
+    expect(body.data.provenance.completedRuns).toBeGreaterThan(0);
+    expect(body.data.provenance.lastRequestId).toBe('observability-contract-1');
+    expect(body.data.trust.attestationValidity).toBe(true);
+    expect(body.data.memory.entries).toBeGreaterThan(0);
+    expect(body.data.memory.intact).toBe(true);
+    expect(body.data.memory.appendOnly).toBe(true);
+    expect(JSON.stringify(body)).not.toMatch(/private|secret|seed|signing material/i);
+  });
+
   it('verifies the attestation produced by the loop', async () => {
     const loopResponse = await fetch(`${baseUrl}/complete-loop`, {
       method: 'POST',

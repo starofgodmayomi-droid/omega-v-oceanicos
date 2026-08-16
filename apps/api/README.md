@@ -246,6 +246,14 @@ Every response includes an `x-request-id` header. Supplying an existing `x-reque
 
 Structured error responses also include the request ID in their JSON body, so a failure can be traced from the UI or CLI without relying on log timing.
 
+### Runtime Observability
+
+```
+GET /observability
+```
+
+Returns a read-only operational evidence summary composed from the runtime state, durable event log, configured attestation service, and hash-chained memory. It includes runtime mode and persistence, recent and durable event counts, completed runs, request and correlation lineage, verification and attestation validity, and memory integrity. It never returns private keys, seeds, secrets, or raw signing material.
+
 ### Single Origin
 
 Every endpoint below is also served under an `/api` prefix, and the built web

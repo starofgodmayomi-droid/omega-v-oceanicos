@@ -61,6 +61,7 @@ describe('web/API contract', () => {
       '/log',
       '/memory',
       '/memory/integrity',
+      '/observability',
       '/observe',
       '/recompilations',
       '/rules',

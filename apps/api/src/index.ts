@@ -255,6 +255,46 @@ app.get('/state', (_req: Request, res: Response) => {
   });
 });
 
+/**
+ * GET /observability - Read-only operational evidence for runtime inspection.
+ * This composes existing state sources and exposes no signing material.
+ */
+app.get('/observability', (_req: Request, res: Response) => {
+  const latestRun = completedRuns[0];
+  const latestEvent = runtimeEvents[0];
+  const durableLog = readEventLog<RuntimeEvent>(eventLogPath, persistenceEnabled);
+  const attestationValidity = latestRun ? attestationService.verify(latestRun.attestation) : null;
+
+  res.json({
+    data: {
+      runtime: {
+        mode: latestEvent?.stage || 'observing',
+        persistence: persistenceEnabled ? 'file' : 'memory',
+        services: ['observer', 'verifier', 'attester'],
+        lastActivity: latestEvent?.timestamp || null,
+      },
+      provenance: {
+        recentEvents: runtimeEvents.length,
+        durableEvents: durableLog.entries.length,
+        skippedLogEntries: durableLog.skipped,
+        completedRuns: completedRuns.length,
+        lastRequestId: latestEvent?.requestId || null,
+        lastCorrelationId: latestEvent?.correlationId || null,
+      },
+      trust: {
+        verificationCoverage: latestRun ? (latestRun.verification.summary.passed ? 1 : 0) : null,
+        attestationValidity,
+      },
+      memory: {
+        entries: kernelMemory.size(),
+        intact: kernelMemory.verifyIntegrity(),
+        appendOnly: true,
+      },
+    },
+    timestamp: new Date().toISOString(),
+  });
+});
+
 app.get('/events', (_req: Request, res: Response) => {
   res.json({
     data: runtimeEvents,

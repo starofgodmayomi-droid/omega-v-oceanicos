@@ -138,6 +138,10 @@ jobs:
           grep -q '"status":"active"' /tmp/state.json
           grep -q '"attestationValidity":1' /tmp/state.json
 
+          curl -sf http://localhost:3000/observability | tee /tmp/observability.json
+          grep -q '"intact":true' /tmp/observability.json
+          grep -q '"attestationValidity":true' /tmp/observability.json
+
           curl -sf http://localhost:3000/memory/integrity | tee /tmp/memory-integrity.json
           grep -q '"intact":true' /tmp/memory-integrity.json
 
@@ -147,6 +151,7 @@ jobs:
           curl -sf http://localhost:3000/api/health | grep -q '"status":"ok"'
           curl -sf http://localhost:3000/api/rules  | grep -q '"registered":2'
           curl -sf http://localhost:3000/api/state | grep -q '"status":"active"'
+          curl -sf http://localhost:3000/api/observability | grep -q '"intact":true'
           curl -sf http://localhost:3000/api/memory/integrity | grep -q '"intact":true'
 
           # And the client itself must be served from that same origin.
@@ -166,7 +171,7 @@ jobs:
         run: |
           echo "### 📦 Artifact" >> $GITHUB_STEP_SUMMARY
           echo "\`omega-v-api:ci\` built, refused to start without a signing key," >> $GITHUB_STEP_SUMMARY
-          echo "then served /health, /rules, /complete-loop, /log, /state and /memory/integrity." >> $GITHUB_STEP_SUMMARY
+          echo "then served /health, /rules, /complete-loop, /log, /state, /observability and /memory/integrity." >> $GITHUB_STEP_SUMMARY
           docker image inspect omega-v-api:ci --format 'Image size: {{.Size}} bytes' >> $GITHUB_STEP_SUMMARY
 
   publish:
