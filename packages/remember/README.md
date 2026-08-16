@@ -41,6 +41,12 @@ class Remember {
 }
 ```
 
+## Durable file store
+
+`FileMemoryStore(path, secret?)` persists the hash chain as append-only JSONL. When a secret is supplied, or when `OMEGA_MEMORY_KEY` is configured, each new line is authenticated with AES-256-GCM using the `omega-memory-v1` envelope. During controlled rotation, `OMEGA_MEMORY_KEY_PREVIOUS` permits reads of the prior key while new writes use `OMEGA_MEMORY_KEY`; mixed-key files remain append-only until migration is complete. Legacy plaintext lines remain readable during controlled migration; encrypted lines that cannot authenticate are counted as skipped and reported as a `partial` load rather than silently treated as an empty chain.
+
+The package does not expose the secret or claim key custody. Operators remain responsible for secret provisioning, rotation, recovery, and protection of the memory path.
+
 ## Status
 
 MINI kernel component. Attestation, APIs, and full-stack layers are earned expansions beyond this package.

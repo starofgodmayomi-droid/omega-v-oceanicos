@@ -89,6 +89,179 @@ describe('omega status CLI', () => {
     expect(output.join('')).not.toContain('event-2');
   });
 
+  it('lists revocations with readable operator evidence', async () => {
+    const output: string[] = [];
+    process.stdout.write = ((chunk: string | Uint8Array) => {
+      output.push(String(chunk));
+      return true;
+    }) as typeof process.stdout.write;
+
+    const exitCode = await run(['revocations', '--url', 'http://api.test'], async (url) => {
+      expect(url).toBe('http://api.test/attest/revocations');
+      return new Response(
+        JSON.stringify({
+          data: [
+            {
+              id: 'rev-1',
+              attestationId: 'att-1',
+              reason: 'stale evidence',
+              revokedBy: 'operator',
+              revokedAt: '2026-08-16T00:00:00.000Z',
+            },
+          ],
+          timestamp: '2026-08-16T00:00:00.000Z',
+        })
+      );
+    });
+
+    expect(exitCode).toBe(0);
+    expect(output.join('')).toContain('REVOCATIONS   1');
+    expect(output.join('')).toContain('att-1 revokedBy=operator reason=stale evidence');
+  });
+
+  it('prints the non-secret backend policy with the read token', async () => {
+    const output: string[] = [];
+    process.stdout.write = ((chunk: string | Uint8Array) => {
+      output.push(String(chunk));
+      return true;
+    }) as typeof process.stdout.write;
+
+    const exitCode = await run(['policy', '--token', 'cli-token'], async (url, init) => {
+      expect(url).toBe('http://localhost:3000/attest/policy');
+      expect(new Headers(init?.headers).get('authorization')).toBe('Bearer cli-token');
+      return new Response(
+        JSON.stringify({
+          data: {
+            attestationAlgorithm: 'HMAC-SHA256',
+            attestationTtlMs: 900000,
+            readAuthConfigured: true,
+            adminAuthConfigured: true,
+            revocationEnabled: true,
+            persistenceEncryption: 'aes-256-gcm',
+            memoryEncryption: 'aes-256-gcm',
+          },
+        })
+      );
+    });
+
+    expect(exitCode).toBe(0);
+    expect(output.join('')).toContain('"attestationTtlMs":900000');
+    expect(output.join('')).not.toMatch(/token|secret|private/i);
+  });
+
+  it('prints expired verification status and fails closed', async () => {
+    const output: string[] = [];
+    process.stdout.write = ((chunk: string | Uint8Array) => {
+      output.push(String(chunk));
+      return true;
+    }) as typeof process.stdout.write;
+
+    const exitCode = await run(
+      ['verify', '--attestation-json', '{"id":"att-1"}', '--token', 'cli-token'],
+      async (url, init) => {
+        expect(url).toBe('http://localhost:3000/attest/verify');
+        expect(init?.method).toBe('POST');
+        expect(new Headers(init?.headers).get('authorization')).toBe('Bearer cli-token');
+        expect(JSON.parse(String(init?.body))).toEqual({ attestation: { id: 'att-1' } });
+        return new Response(
+          JSON.stringify({ data: { valid: false, revoked: false, expired: true } })
+        );
+      }
+    );
+
+    expect(exitCode).toBe(1);
+    expect(output.join('')).toContain('VERIFICATION valid=false revoked=false expired=true');
+  });
+
+  it('reports unavailable revocations without claiming an empty result', async () => {
+    const errors: string[] = [];
+    process.stderr.write = ((chunk: string | Uint8Array) => {
+      errors.push(String(chunk));
+      return true;
+    }) as typeof process.stderr.write;
+
+    expect(
+      await run(
+        ['revocations'],
+        async () => new Response(JSON.stringify({ message: 'read denied' }), { status: 403 })
+      )
+    ).toBe(1);
+    expect(errors.join('')).toContain('Revocations unavailable (403)');
+  });
+
+  it('reports a rejected revocation mutation and preserves the API message', async () => {
+    const errors: string[] = [];
+    process.stderr.write = ((chunk: string | Uint8Array) => {
+      errors.push(String(chunk));
+      return true;
+    }) as typeof process.stderr.write;
+
+    expect(
+      await run(
+        ['revoke', 'att-2', '--reason', 'manual review'],
+        async () => new Response(JSON.stringify({ message: 'policy denied' }), { status: 403 })
+      )
+    ).toBe(1);
+    expect(errors.join('')).toContain('Revocation failed (403): policy denied');
+  });
+
+  it('revokes an attestation with the required reason and token', async () => {
+    const output: string[] = [];
+    process.stdout.write = ((chunk: string | Uint8Array) => {
+      output.push(String(chunk));
+      return true;
+    }) as typeof process.stdout.write;
+
+    const exitCode = await run(
+      [
+        'revoke',
+        'att-2',
+        '--reason',
+        'manual review',
+        '--token',
+        'cli-token',
+        '--admin-token',
+        'cli-admin-token',
+      ],
+      async (url, init) => {
+        expect(url).toBe('http://localhost:3000/attest/revoke');
+        expect(init?.method).toBe('POST');
+        expect(new Headers(init?.headers).get('authorization')).toBe('Bearer cli-admin-token');
+        expect(JSON.parse(String(init?.body))).toEqual({
+          attestationId: 'att-2',
+          reason: 'manual review',
+          revokedBy: 'omega-cli',
+        });
+        return new Response(
+          JSON.stringify({
+            data: {
+              id: 'rev-2',
+              attestationId: 'att-2',
+              reason: 'manual review',
+              revokedBy: 'omega-cli',
+              revokedAt: '2026-08-16T00:00:00.000Z',
+            },
+          }),
+          { status: 201 }
+        );
+      }
+    );
+
+    expect(exitCode).toBe(0);
+    expect(output.join('')).toContain('REVOKED       att-2');
+  });
+
+  it('fails closed when revoke has no reason', async () => {
+    const errors: string[] = [];
+    process.stderr.write = ((chunk: string | Uint8Array) => {
+      errors.push(String(chunk));
+      return true;
+    }) as typeof process.stderr.write;
+
+    expect(await run(['revoke', 'att-2'], async () => new Response())).toBe(2);
+    expect(errors.join('')).toContain('--reason REASON');
+  });
+
   it('exports bounded evidence with the bearer token', async () => {
     const output: string[] = [];
     process.stdout.write = ((chunk: string | Uint8Array) => {

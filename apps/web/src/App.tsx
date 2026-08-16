@@ -20,7 +20,29 @@ type LoopResult = {
     evidencePath: Array<{ rule: string; passed: boolean; reasoning: string }>;
   };
   memory: { id: string; observationId: string; verificationId: string };
-  attestation: { id: string; verified: boolean; signature: string; attestedAt: string };
+  attestation: {
+    id: string;
+    verified: boolean;
+    signature: string;
+    attestedAt: string;
+    revoked?: boolean;
+  };
+};
+type RuntimePolicy = {
+  attestationAlgorithm: string;
+  attestationTtlMs: number | null;
+  readAuthConfigured: boolean;
+  adminAuthConfigured: boolean;
+  revocationEnabled: boolean;
+  persistenceEncryption: string;
+  memoryEncryption: string;
+};
+type RuntimeRevocation = {
+  id: string;
+  attestationId: string;
+  reason: string;
+  revokedBy: string;
+  revokedAt: string;
 };
 type PublicTrustMetadata = {
   algorithm: string;
@@ -54,6 +76,9 @@ export function App(): JSX.Element {
   const [statusCode, setStatusCode] = useState('200');
   const [events, setEvents] = useState<RuntimeEvent[]>([]);
   const [recentRuns, setRecentRuns] = useState<LoopResult[]>([]);
+  const [revocations, setRevocations] = useState<RuntimeRevocation[]>([]);
+  const [attestationTtlMs, setAttestationTtlMs] = useState<number | null>(null);
+  const [policy, setPolicy] = useState<RuntimePolicy | null>(null);
   const [result, setResult] = useState<LoopResult | null>(null);
   const [mode, setMode] = useState('observe');
   const [trust, setTrust] = useState<number | null>(null);
@@ -77,6 +102,10 @@ export function App(): JSX.Element {
   const [attestationStatus, setAttestationStatus] = useState<
     'idle' | 'checking' | 'valid' | 'invalid'
   >('idle');
+  const [revocationReason, setRevocationReason] = useState('');
+  const [revocationStatus, setRevocationStatus] = useState<
+    'idle' | 'revoking' | 'revoked' | 'failed'
+  >('idle');
   const [actionStatus, setActionStatus] = useState<
     'idle' | 'authorizing' | 'authorized' | 'denied'
   >('idle');
@@ -98,12 +127,21 @@ export function App(): JSX.Element {
 
   const refreshRuntime = async () => {
     try {
-      const [stateResponse, eventsResponse, runsResponse] = await Promise.all([
-        fetch('/api/state'),
-        fetch('/api/events'),
-        fetch('/api/runs'),
-      ]);
-      if (!stateResponse.ok || !eventsResponse.ok || !runsResponse.ok)
+      const [stateResponse, eventsResponse, runsResponse, revocationsResponse, policyResponse] =
+        await Promise.all([
+          fetch('/api/state'),
+          fetch('/api/events'),
+          fetch('/api/runs'),
+          fetch('/api/attest/revocations'),
+          fetch('/api/attest/policy'),
+        ]);
+      if (
+        !stateResponse.ok ||
+        !eventsResponse.ok ||
+        !runsResponse.ok ||
+        !revocationsResponse.ok ||
+        !policyResponse.ok
+      )
         throw new Error('Runtime unavailable');
       const state = (await stateResponse.json()) as {
         data: {
@@ -117,11 +155,14 @@ export function App(): JSX.Element {
             recentFailures: number;
           };
           persistence: 'file' | 'memory';
+          attestationTtlMs?: number | null;
           services: Array<{ status: string }>;
         };
       };
       const eventData = (await eventsResponse.json()) as { data: RuntimeEvent[] };
       const runData = (await runsResponse.json()) as { data: LoopResult[] };
+      const revocationData = (await revocationsResponse.json()) as { data: RuntimeRevocation[] };
+      const policyData = (await policyResponse.json()) as { data: RuntimePolicy };
       const publicKeyResponse = await fetch('/api/attest/public-key').catch(() => null);
       if (publicKeyResponse?.ok) {
         const publicKeyData = (await publicKeyResponse.json()) as { data: PublicTrustMetadata };
@@ -138,9 +179,12 @@ export function App(): JSX.Element {
       setTrust(state.data.trust);
       setTrustBasis(state.data.trustBasis);
       setPersistenceMode(state.data.persistence);
+      setAttestationTtlMs(state.data.attestationTtlMs ?? null);
       setServiceHealth({ ready: readyServices, total: state.data.services.length });
       setEvents(eventData.data);
       setRecentRuns(runData.data);
+      setRevocations(revocationData.data);
+      setPolicy(policyData.data);
       setResult((current) => current ?? runData.data[0] ?? null);
       setSelectedEvent((current) =>
         current ? (eventData.data.find((event) => event.id === current.id) ?? current) : null
@@ -261,11 +305,41 @@ export function App(): JSX.Element {
       });
       if (!response.ok)
         throw new Error(await describeResponseError(response, 'Attestation check failed'));
-      const payload = (await response.json()) as { data: { valid: boolean } };
+      const payload = (await response.json()) as {
+        data: { valid: boolean; revoked?: boolean };
+      };
       setAttestationStatus(payload.data.valid ? 'valid' : 'invalid');
+      if (payload.data.revoked) setRevocationStatus('revoked');
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : 'Attestation check failed');
       setAttestationStatus('invalid');
+    }
+  };
+
+  const revokeAttestation = async () => {
+    if (!result || !revocationReason.trim()) return;
+    setRevocationStatus('revoking');
+    setError('');
+    try {
+      const response = await fetch('/api/attest/revoke', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          attestationId: result.attestation.id,
+          reason: revocationReason.trim(),
+          revokedBy: 'dashboard-operator',
+        }),
+      });
+      if (!response.ok)
+        throw new Error(await describeResponseError(response, 'Attestation revocation failed'));
+      setRevocationStatus('revoked');
+      setAttestationStatus('invalid');
+      await refreshRuntime();
+    } catch (requestError) {
+      setRevocationStatus('failed');
+      setError(
+        requestError instanceof Error ? requestError.message : 'Attestation revocation failed'
+      );
     }
   };
 
@@ -580,6 +654,26 @@ export function App(): JSX.Element {
             <strong>{persistenceMode ? persistenceMode.toUpperCase() : 'UNKNOWN'}</strong>
           </div>
           <div>
+            <span>REVOCATIONS</span>
+            <strong className={revocations.length > 0 ? 'red' : ''}>
+              {revocations.length.toString().padStart(2, '0')}
+            </strong>
+          </div>
+          <div>
+            <span>ATTESTATION TTL</span>
+            <strong>
+              {attestationTtlMs === null ? 'OFF' : `${Math.round(attestationTtlMs / 1000)}s`}
+            </strong>
+          </div>
+          <div>
+            <span>POLICY</span>
+            <strong>
+              {policy
+                ? `${policy.revocationEnabled ? 'REVOCATION' : 'NO REVOCATION'} / ${policy.adminAuthConfigured ? 'ADMIN' : 'LOCAL'}`
+                : 'UNKNOWN'}
+            </strong>
+          </div>
+          <div>
             <span>TRUST KEY</span>
             <strong className={publicTrustStatus === 'available' ? 'green' : ''}>
               {publicTrustStatus === 'available' && publicTrust
@@ -591,6 +685,28 @@ export function App(): JSX.Element {
             {publicTrust && <small title={publicTrust.fingerprint}>{publicTrust.keyId}</small>}
           </div>
         </section>
+        {revocations.length > 0 && (
+          <section className="revocations-panel">
+            <div className="panel-heading">
+              <div>
+                <span className="section-kicker">REVOCATION LEDGER</span>
+                <h2>Proofs no longer authorize action</h2>
+              </div>
+              <span className="seal">{revocations.length.toString().padStart(2, '0')}</span>
+            </div>
+            <div className="revocation-list">
+              {revocations.slice(0, 5).map((revocation) => (
+                <div className="revocation-row" key={revocation.id}>
+                  <strong>{revocation.attestationId}</strong>
+                  <span>{revocation.reason}</span>
+                  <small>
+                    {revocation.revokedBy} · {timeLabel(revocation.revokedAt)}
+                  </small>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
         <section className="runs-panel">
           <div className="panel-heading">
             <div>
@@ -741,6 +857,44 @@ export function App(): JSX.Element {
                         {attestationStatus.toUpperCase()}
                       </small>
                     )}
+                    <div className="revocation-controls">
+                      <label htmlFor="revocation-reason">Revocation reason</label>
+                      <input
+                        id="revocation-reason"
+                        value={revocationReason}
+                        onChange={(event) => setRevocationReason(event.target.value)}
+                        placeholder="Why should this proof stop authorizing action?"
+                        disabled={revocationStatus === 'revoking' || revocationStatus === 'revoked'}
+                      />
+                      <button
+                        className="revoke-button"
+                        onClick={revokeAttestation}
+                        disabled={
+                          !revocationReason.trim() ||
+                          revocationStatus === 'revoking' ||
+                          revocationStatus === 'revoked'
+                        }
+                      >
+                        {revocationStatus === 'revoking' ? 'Revoking...' : 'Revoke attestation'}
+                      </button>
+                      {revocationStatus !== 'idle' && (
+                        <small
+                          className={
+                            revocationStatus === 'revoked'
+                              ? 'attestation-invalid'
+                              : revocationStatus === 'failed'
+                                ? 'attestation-invalid'
+                                : 'attestation-valid'
+                          }
+                        >
+                          {revocationStatus === 'revoked'
+                            ? 'ATTESTATION REVOKED'
+                            : revocationStatus === 'failed'
+                              ? 'REVOCATION FAILED'
+                              : 'REVOCATION IN PROGRESS'}
+                        </small>
+                      )}
+                    </div>
                     <button
                       className="act-button"
                       onClick={authorizeAction}

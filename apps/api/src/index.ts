@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { randomUUID, timingSafeEqual } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import express, { Express, Request, Response } from 'express';
@@ -7,12 +7,30 @@ import { VerificationEngine } from '@omega-v/verification';
 import { AttestationService } from '@omega-v/attestation';
 import { Remember, FileMemoryStore } from '@omega-v/remember';
 import { Attestation, SuccessResponse, ErrorResponse, VerificationRule } from '@omega-v/types';
-import { appendEvent, loadSnapshot, readEventLog, saveSnapshot } from './persistence.js';
+import {
+  appendEvent,
+  ENCRYPTION_ALGORITHM,
+  encryptionEnabled,
+  loadSnapshot,
+  readEventLog,
+  saveSnapshot,
+} from './persistence.js';
 
 /**
  * Ω∞v Oceanicos API Server
  * Exposes the verification loop via REST endpoints
  */
+export const constantTimeTokenMatch = (supplied: string, expected: string): boolean => {
+  const suppliedBytes = Buffer.from(supplied);
+  const expectedBytes = Buffer.from(expected);
+  return (
+    suppliedBytes.length === expectedBytes.length && timingSafeEqual(suppliedBytes, expectedBytes)
+  );
+};
+
+const bearerToken = (authorization: string): string =>
+  authorization.startsWith('Bearer ') ? authorization.slice('Bearer '.length) : '';
+
 const app: Express = express();
 const port = process.env.API_PORT || 3000;
 
@@ -44,13 +62,26 @@ app.use((req: Request, res: Response, next) => {
   res.locals.requestId = requestId;
   res.setHeader('x-request-id', requestId);
   const configuredReadToken = process.env.OMEGA_READ_TOKEN?.trim();
+  const configuredAdminToken = process.env[ADMIN_TOKEN_ENV]?.trim();
   const isReadOnlyRequest = req.method === 'GET' && req.path !== '/health';
+  const isRevocationRequest = req.method === 'POST' && req.path === '/attest/revoke';
   if (configuredReadToken && isReadOnlyRequest) {
     const authorization = req.header('authorization') || '';
-    if (authorization !== `Bearer ${configuredReadToken}`) {
+    if (!constantTimeTokenMatch(bearerToken(authorization), configuredReadToken)) {
       res.status(401).json({
         code: 'READ_ACCESS_REQUIRED',
         message: 'A valid bearer token is required for read-only evidence access',
+        requestId,
+      });
+      return;
+    }
+  }
+  if (configuredAdminToken && isRevocationRequest) {
+    const authorization = req.header('authorization') || '';
+    if (!constantTimeTokenMatch(bearerToken(authorization), configuredAdminToken)) {
+      res.status(401).json({
+        code: 'ADMIN_ACCESS_REQUIRED',
+        message: 'A valid admin bearer token is required to revoke attestations',
         requestId,
       });
       return;
@@ -106,8 +137,28 @@ const memoryPath = process.env.OMEGA_MEMORY_PATH || '/tmp/omega-v-oceanicos/memo
 const persistenceEnabled = process.env.OMEGA_PERSISTENCE
   ? process.env.OMEGA_PERSISTENCE === 'on'
   : process.env.NODE_ENV !== 'test';
+const persistenceEncryptionKey = process.env.OMEGA_PERSISTENCE_KEY;
+const persistenceEncryptionEnabled =
+  persistenceEnabled && encryptionEnabled(persistenceEncryptionKey);
+const memoryEncryptionKey = process.env.OMEGA_MEMORY_KEY;
+const memoryEncryptionEnabled = persistenceEnabled && Boolean(memoryEncryptionKey?.trim());
 
-const kernelMemory = new Remember(persistenceEnabled ? new FileMemoryStore(memoryPath) : undefined);
+const kernelMemoryStore = persistenceEnabled
+  ? new FileMemoryStore(memoryPath, memoryEncryptionKey)
+  : undefined;
+const kernelMemory = new Remember(kernelMemoryStore);
+const memoryEncryptionKeySource = kernelMemoryStore?.encryptionKeySource() ?? 'none';
+
+type SigningAuditDetails = {
+  attestationId: string;
+  verificationId: string;
+  algorithm: string;
+  keyVersion: string;
+  keyFingerprint: string;
+  verified: boolean;
+  confidence: number;
+  ruleVersions: Record<string, string>;
+};
 
 type RuntimeEvent = {
   id: string;
@@ -150,13 +201,23 @@ type RuntimeRecompilation = {
   rationale: string;
   timestamp: string;
 };
+type RuntimeRevocation = {
+  id: string;
+  attestationId: string;
+  reason: string;
+  revokedBy: string;
+  revokedAt: string;
+};
 type RuntimeSnapshot = {
   events: RuntimeEvent[];
   runs: CompletedRun[];
   actions: RuntimeAction[];
   learnings: RuntimeLearning[];
   recompilations: RuntimeRecompilation[];
+  revocations?: RuntimeRevocation[];
 };
+
+export const ADMIN_TOKEN_ENV = 'OMEGA_ADMIN_TOKEN';
 
 const runtimeStorePath =
   process.env.OMEGA_RUNTIME_STORE_PATH || '/tmp/omega-v-oceanicos/runtime.json';
@@ -172,7 +233,7 @@ const {
   snapshot,
   source: persistenceSource,
   reason: persistenceReason,
-} = loadSnapshot<RuntimeSnapshot>(runtimeStorePath, persistenceEnabled);
+} = loadSnapshot<RuntimeSnapshot>(runtimeStorePath, persistenceEnabled, persistenceEncryptionKey);
 
 const runtimeEvents = snapshot.events;
 const eventStreams = new Set<Response>();
@@ -180,6 +241,26 @@ const completedRuns = snapshot.runs;
 const runtimeActions = snapshot.actions;
 const runtimeLearnings = snapshot.learnings;
 const runtimeRecompilations = snapshot.recompilations;
+const runtimeRevocations = snapshot.revocations ?? [];
+const configuredAttestationTtlMs = (): number | null => {
+  const raw = process.env.OMEGA_ATTESTATION_TTL_MS?.trim();
+  if (!raw) return null;
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+};
+
+export const isAttestationExpired = (
+  attestation: Attestation,
+  now = Date.now(),
+  ttlMs = configuredAttestationTtlMs()
+): boolean => {
+  if (ttlMs === null) return false;
+  const attestedAt = Date.parse(attestation.attestedAt);
+  return !Number.isFinite(attestedAt) || now - attestedAt >= ttlMs;
+};
+
+const isRevoked = (attestationId: string): boolean =>
+  runtimeRevocations.some((revocation) => revocation.attestationId === attestationId);
 
 const persistRuntime = (): void => {
   saveSnapshot(
@@ -190,8 +271,10 @@ const persistRuntime = (): void => {
       actions: runtimeActions,
       learnings: runtimeLearnings,
       recompilations: runtimeRecompilations,
-    },
-    persistenceEnabled
+      revocations: runtimeRevocations,
+    } as RuntimeSnapshot,
+    persistenceEnabled,
+    persistenceEncryptionKey
   );
 };
 
@@ -205,7 +288,7 @@ const recordEvent = (event: Omit<RuntimeEvent, 'id' | 'timestamp'>): RuntimeEven
     timestamp: new Date().toISOString(),
   };
   // Durable history first: the log is append-only and never truncated.
-  appendEvent(eventLogPath, recorded, persistenceEnabled);
+  appendEvent(eventLogPath, recorded, persistenceEnabled, persistenceEncryptionKey);
 
   // The in-memory array is a bounded recent window, not the log itself.
   runtimeEvents.unshift(recorded);
@@ -263,6 +346,9 @@ app.get('/state', (_req: Request, res: Response) => {
     data: {
       status: 'active',
       persistence: persistenceEnabled ? 'file' : 'memory',
+      persistenceEncryption: persistenceEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
+      memoryEncryption: memoryEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
+      attestationTtlMs: configuredAttestationTtlMs(),
       persistenceSource,
       persistenceReason: persistenceReason ?? null,
       mode: latest?.stage || 'observing',
@@ -293,7 +379,11 @@ app.get('/state', (_req: Request, res: Response) => {
 app.get('/observability', (_req: Request, res: Response) => {
   const latestRun = completedRuns[0];
   const latestEvent = runtimeEvents[0];
-  const durableLog = readEventLog<RuntimeEvent>(eventLogPath, persistenceEnabled);
+  const durableLog = readEventLog<RuntimeEvent>(
+    eventLogPath,
+    persistenceEnabled,
+    persistenceEncryptionKey
+  );
   const attestationValidity = latestRun ? attestationService.verify(latestRun.attestation) : null;
 
   res.json({
@@ -301,6 +391,10 @@ app.get('/observability', (_req: Request, res: Response) => {
       runtime: {
         mode: latestEvent?.stage || 'observing',
         persistence: persistenceEnabled ? 'file' : 'memory',
+        persistenceEncryption: persistenceEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
+        memoryEncryption: memoryEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
+        memoryEncryptionKeySource,
+        attestationTtlMs: configuredAttestationTtlMs(),
         services: ['observer', 'verifier', 'attester'],
         lastActivity: latestEvent?.timestamp || null,
       },
@@ -320,6 +414,8 @@ app.get('/observability', (_req: Request, res: Response) => {
         entries: kernelMemory.size(),
         intact: kernelMemory.verifyIntegrity(),
         appendOnly: true,
+        encryption: memoryEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
+        encryptionKeySource: memoryEncryptionKeySource,
       },
     },
     timestamp: new Date().toISOString(),
@@ -327,7 +423,11 @@ app.get('/observability', (_req: Request, res: Response) => {
 });
 
 app.get('/evidence/export', (_req: Request, res: Response) => {
-  const durableLog = readEventLog<RuntimeEvent>(eventLogPath, persistenceEnabled);
+  const durableLog = readEventLog<RuntimeEvent>(
+    eventLogPath,
+    persistenceEnabled,
+    persistenceEncryptionKey
+  );
   const latestRun = completedRuns[0];
   const latestEvent = runtimeEvents[0];
   const attestationValidity = latestRun ? attestationService.verify(latestRun.attestation) : null;
@@ -379,7 +479,11 @@ app.get('/events', (_req: Request, res: Response) => {
  * GET /log - The append-only event history
  */
 app.get('/log', (_req: Request, res: Response) => {
-  const log = readEventLog<RuntimeEvent>(eventLogPath, persistenceEnabled);
+  const log = readEventLog<RuntimeEvent>(
+    eventLogPath,
+    persistenceEnabled,
+    persistenceEncryptionKey
+  );
   res.json({
     data: log.entries,
     meta: {
@@ -540,8 +644,14 @@ app.post('/attest/verify', (req: Request, res: Response) => {
       return;
     }
 
+    const revoked = isRevoked(attestation.id);
+    const expired = isAttestationExpired(attestation);
     res.json({
-      data: { valid: attestationService.verify(attestation) },
+      data: {
+        valid: attestationService.verify(attestation) && !revoked && !expired,
+        revoked,
+        expired,
+      },
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
@@ -554,6 +664,79 @@ app.post('/attest/verify', (req: Request, res: Response) => {
 });
 
 /** Public, non-secret attestation verification metadata. */
+app.post('/attest/revoke', (req: Request, res: Response) => {
+  const {
+    attestationId,
+    reason,
+    revokedBy = 'operator',
+  } = req.body as {
+    attestationId?: string;
+    reason?: string;
+    revokedBy?: string;
+  };
+  if (!attestationId || !reason) {
+    res.status(400).json({
+      code: 'MISSING_REVOCATION_DETAILS',
+      message: 'attestationId and reason are required to revoke an attestation',
+      timestamp: new Date().toISOString(),
+    } satisfies ErrorResponse);
+    return;
+  }
+  if (!completedRuns.some((run) => run.attestation.id === attestationId)) {
+    res.status(404).json({
+      code: 'ATTESTATION_NOT_RECORDED',
+      message: 'Cannot revoke an attestation with no recorded runtime lineage',
+      timestamp: new Date().toISOString(),
+    } satisfies ErrorResponse);
+    return;
+  }
+  if (isRevoked(attestationId)) {
+    res.status(409).json({
+      code: 'ATTESTATION_ALREADY_REVOKED',
+      message: 'The attestation has already been revoked',
+      timestamp: new Date().toISOString(),
+    } satisfies ErrorResponse);
+    return;
+  }
+
+  const revocation: RuntimeRevocation = {
+    id: `rev-${new Date().toISOString().replace(/[-:.TZ]/g, '')}`,
+    attestationId,
+    reason,
+    revokedBy,
+    revokedAt: new Date().toISOString(),
+  };
+  runtimeRevocations.unshift(revocation);
+  persistRuntime();
+  recordEvent({
+    type: 'attestation.revoked',
+    stage: 'attest',
+    message: 'Attestation revoked',
+    status: 'failed',
+    details: revocation,
+  });
+  res.status(201).json({ data: revocation, timestamp: new Date().toISOString() });
+});
+
+app.get('/attest/revocations', (_req: Request, res: Response) => {
+  res.json({ data: runtimeRevocations, timestamp: new Date().toISOString() });
+});
+
+app.get('/attest/policy', (_req: Request, res: Response) => {
+  res.json({
+    data: {
+      attestationAlgorithm: attestationService.getKeyInfo().algorithm,
+      attestationTtlMs: configuredAttestationTtlMs(),
+      readAuthConfigured: Boolean(process.env.OMEGA_READ_TOKEN?.trim()),
+      adminAuthConfigured: Boolean(process.env[ADMIN_TOKEN_ENV]?.trim()),
+      revocationEnabled: true,
+      persistenceEncryption: persistenceEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
+      memoryEncryption: memoryEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
+    },
+    timestamp: new Date().toISOString(),
+  });
+});
+
 app.get('/attest/public-key', (_req: Request, res: Response) => {
   const info = attestationService.getKeyInfo();
   if (info.algorithm !== 'Ed25519' || !info.publicKey) {
@@ -603,6 +786,22 @@ app.post('/act', (req: Request, res: Response) => {
       res.status(404).json({
         code: 'ATTESTATION_NOT_RECORDED',
         message: 'Action denied because the attestation has no recorded runtime lineage',
+        timestamp: new Date().toISOString(),
+      } satisfies ErrorResponse);
+      return;
+    }
+    if (isRevoked(attestation.id)) {
+      res.status(409).json({
+        code: 'REVOKED_ATTESTATION',
+        message: 'Action denied because the attestation has been revoked',
+        timestamp: new Date().toISOString(),
+      } satisfies ErrorResponse);
+      return;
+    }
+    if (isAttestationExpired(attestation)) {
+      res.status(409).json({
+        code: 'EXPIRED_ATTESTATION',
+        message: 'Action denied because the attestation has expired',
         timestamp: new Date().toISOString(),
       } satisfies ErrorResponse);
       return;
@@ -837,7 +1036,20 @@ app.post('/complete-loop', (req: Request, res: Response) => {
       status: attestation.verified ? 'passed' : 'failed',
       correlationId,
       requestId,
-      details: { attestationId: attestation.id, memoryId: remembered.id },
+      details: {
+        attestationId: attestation.id,
+        memoryId: remembered.id,
+        signing: {
+          attestationId: attestation.id,
+          verificationId: attestation.verificationId,
+          algorithm: attestation.signingAlgorithm || 'HMAC-SHA256',
+          keyVersion: attestation.keyVersion,
+          keyFingerprint: attestation.signingKey,
+          verified: attestation.verified,
+          confidence: attestation.confidence,
+          ruleVersions: attestation.ruleVersions,
+        } satisfies SigningAuditDetails,
+      },
     });
 
     const response: SuccessResponse<{

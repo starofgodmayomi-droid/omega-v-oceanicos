@@ -52,6 +52,59 @@ describe('FileMemoryStore', () => {
     expect(existsSync(join(dir, 'deep', 'chain.jsonl'))).toBe(true);
   });
 
+  it('writes authenticated ciphertext and restores the memory chain with the key', () => {
+    const writer = new FileMemoryStore(path, 'memory-secret');
+    new Remember(writer).remember(observation(), verification());
+
+    const stored = readFileSync(path, 'utf8');
+    expect(stored).toContain('omega-memory-v1:');
+    expect(stored).not.toContain('service responded');
+    expect(writer.encryptionEnabled()).toBe(true);
+
+    const restored = new FileMemoryStore(path, 'memory-secret');
+    expect(new Remember(restored).size()).toBe(3);
+    expect(restored.source()).toBe('restored');
+    expect(restored.skipped()).toBe(0);
+  });
+
+  it('reports encrypted lines as partial when the key is wrong', () => {
+    new Remember(new FileMemoryStore(path, 'memory-secret')).remember(
+      observation(),
+      verification()
+    );
+
+    const wrongKey = new FileMemoryStore(path, 'wrong-secret');
+    expect(new Remember(wrongKey).size()).toBe(0);
+    expect(wrongKey.source()).toBe('partial');
+    expect(wrongKey.skipped()).toBe(3);
+  });
+
+  it('restores with the previous key and writes new entries with the current key', () => {
+    new Remember(new FileMemoryStore(path, 'old-memory-secret')).remember(
+      observation(),
+      verification()
+    );
+
+    const rotated = new FileMemoryStore(path, 'new-memory-secret', 'old-memory-secret');
+    const restored = new Remember(rotated);
+    expect(restored.size()).toBe(3);
+    expect(rotated.encryptionKeySource()).toBe('previous');
+
+    restored.append({ type: 'OBSERVATION', data: observation('obs-after-rotation') });
+    const current = new FileMemoryStore(path, 'new-memory-secret', 'old-memory-secret');
+    expect(new Remember(current).size()).toBe(4);
+    expect(current.encryptionKeySource()).toBe('previous');
+  });
+
+  it('reads legacy plaintext when encryption is enabled for migration', () => {
+    new Remember(new FileMemoryStore(path)).remember(observation(), verification());
+
+    const migrated = new FileMemoryStore(path, 'memory-secret');
+    expect(new Remember(migrated).size()).toBe(3);
+    expect(migrated.source()).toBe('restored');
+    expect(migrated.skipped()).toBe(0);
+  });
+
   it('reports a partial load and keeps the entries it could read', () => {
     new Remember(new FileMemoryStore(path)).remember(observation(), verification());
     writeFileSync(path, `${readFileSync(path, 'utf8')}{ not json\n`);

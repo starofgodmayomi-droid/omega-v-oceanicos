@@ -97,19 +97,27 @@ key material parsed at construction and the verifying algorithm taken from
 configuration rather than from the attestation. The API now supports an
 explicit Ed25519 configuration, publishes only safe public trust metadata,
 and exposes signing and verification through the HTTP loop. The web, CLI, SDK,
-and integration tests carry that trust surface across the stack. Still not
-earned: HSM/KMS custody, encryption at rest, a signing audit log, and
-revocation.
+and integration tests carry that trust surface across the stack. The API's
+`attestation.created` runtime event now records non-secret signing audit
+metadata, including algorithm, key version, key fingerprint, verification
+identity, confidence and rule versions. Runtime snapshots and append-only
+logs now have an AES-256-GCM increment when configured, and recorded
+attestations have append-only revocation controls with an opt-in admin bearer
+boundary. Still not earned: HSM/KMS custody, complete data-at-rest coverage,
+key rotation and recovery, distributed revocation consistency, expiry policy,
+and stronger administrative authorization. An opt-in `OMEGA_ATTESTATION_TTL_MS`
+now invalidates expired attestations for verification and action authorization;
+clock policy and distributed time coordination remain open.
 
 ### Phase 4 — Interface expansions
 
-| Expansion  | Surface    |
-| ---------- | ---------- |
-| `+ API`    | `apps/api` |
-| `+ Web`    | `apps/web` |
-| `+ CLI`    | planned    |
-| `+ SDK`    | planned    |
-| `+ Mobile` | planned    |
+| Expansion  | Surface        |
+| ---------- | -------------- |
+| `+ API`    | `apps/api`     |
+| `+ Web`    | `apps/web`     |
+| `+ CLI`    | `packages/cli` |
+| `+ SDK`    | `packages/sdk` |
+| `+ Mobile` | planned        |
 
 ### Phase 5 — Depth expansions
 
@@ -199,6 +207,24 @@ blocked on design; each is a decision or a scoped change.
   mattered further down the chain than it first looked: the value reached
   `attestation.confidence`, which sits inside the signed payload, so the system
   was issuing unforgeable signatures over a number the submitter chose.
+- ~~**Signing events lacked audit metadata.**~~ **Closed.** The API's
+  `attestation.created` runtime event records non-secret signing metadata,
+  and the regression test verifies its identity, algorithm, key version,
+  fingerprint, confidence, rule versions and verification outcome without
+  exposing the signing secret. Durable persistence remains separately gated by
+  `OMEGA_PERSISTENCE` and is covered by the append-only persistence tests.
+- **Runtime persistence encryption — increment implemented, capability not
+  complete.** When `OMEGA_PERSISTENCE_KEY` is configured, the API encrypts and
+  authenticates runtime snapshots and event-log lines with AES-256-GCM, reports
+  the active algorithm through observability, and reports wrong-key or damaged
+  records instead of silently restoring empty state. Kernel memory files,
+  key custody, rotation, recovery and broader data-at-rest coverage remain open.
+- **Attestation revocation — API increment implemented, capability not
+  complete.** Recorded attestations can now be revoked with an operator reason;
+  revocation is persisted, emitted as an append-only event, visible through the
+  API, invalidates verification for authorization purposes, and blocks `/act`.
+  Broader policy administration, expiry, distributed consistency and recovery
+  procedures remain open.
 
 ---
 

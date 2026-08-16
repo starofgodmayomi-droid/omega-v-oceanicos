@@ -282,6 +282,28 @@ POST /attest
 }
 ```
 
+### Revoke an Attestation
+
+```
+POST /attest/revoke
+GET /attest/revocations
+GET /attest/policy
+```
+
+Revocation is an operator-mediated, append-only control separate from the
+signed attestation payload. When `OMEGA_ADMIN_TOKEN` is configured,
+`POST /attest/revoke` requires `Authorization: Bearer <admin token>`; a read
+token is not accepted as mutation authority. The local development default
+leaves this gate unset, while production configuration should set it. The
+request requires a recorded `attestationId`, a human-readable `reason`, and optionally `revokedBy`. A
+revoked attestation remains cryptographically inspectable, but
+`POST /attest/verify` reports `valid: false` with `revoked: true`, and `/act`
+returns `409 REVOKED_ATTESTATION` rather than authorizing an action. When
+`OMEGA_ATTESTATION_TTL_MS` is configured, expiry is an additional authorization
+predicate: verification reports `expired: true` and `/act` returns
+`409 EXPIRED_ATTESTATION`. Duplicate
+revocation requests are rejected with `409 ATTESTATION_ALREADY_REVOKED`.
+
 ### Runtime State
 
 ```
@@ -294,7 +316,11 @@ These endpoints expose the current runtime state, recent lifecycle events, and c
 
 Set `OMEGA_RUNTIME_STORE_PATH` to choose another JSON store path. Persistence
 defaults off under `NODE_ENV=test` and on elsewhere; set `OMEGA_PERSISTENCE`
-to `on` or `off` to override that explicitly.
+to `on` or `off` to override that explicitly. Set `OMEGA_PERSISTENCE_KEY`
+to encrypt the runtime snapshot and append-only event log with authenticated
+AES-256-GCM envelopes. The key is never returned by the API. Existing plaintext
+stores remain readable for controlled migration, while all new writes use the
+configured encryption key.
 
 The API requires a signing key. Set `OMEGA_SIGNING_KEY`, or construct
 `AttestationService` with one. There is no default: a key shipped in source
@@ -305,7 +331,7 @@ Every response includes an `x-request-id` header. Supplying an existing `x-reque
 
 Structured error responses also include the request ID in their JSON body, so a failure can be traced from the UI or CLI without relying on log timing.
 
-When `OMEGA_READ_TOKEN` is configured, read-only evidence endpoints require `Authorization: Bearer <token>`. This boundary is opt-in so local development remains unchanged when the variable is absent. `/health` remains available for liveness checks. Missing or invalid read credentials return `401 READ_ACCESS_REQUIRED` with a traceable request ID. The API also emits `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, and `Referrer-Policy: no-referrer` on responses.
+When `OMEGA_READ_TOKEN` is configured, read-only evidence endpoints require `Authorization: Bearer <token>`. This boundary is opt-in so local development remains unchanged when the variable is absent. `/health` remains available for liveness checks. Missing or invalid read credentials return `401 READ_ACCESS_REQUIRED` with a traceable request ID. Configured read and admin bearer values are compared with a constant-time byte comparison after the bearer scheme is parsed. The API also emits `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, and `Referrer-Policy: no-referrer` on responses.
 
 ### Runtime Observability
 
@@ -313,7 +339,7 @@ When `OMEGA_READ_TOKEN` is configured, read-only evidence endpoints require `Aut
 GET /observability
 ```
 
-Returns a read-only operational evidence summary composed from the runtime state, durable event log, configured attestation service, and hash-chained memory. It includes runtime mode and persistence, recent and durable event counts, completed runs, request and correlation lineage, verification and attestation validity, and memory integrity. It never returns private keys, seeds, secrets, or raw signing material.
+Returns a read-only operational evidence summary composed from the runtime state, durable event log, configured attestation service, and hash-chained memory. It includes runtime mode and persistence, the configured persistence and kernel-memory encryption algorithms or `disabled`, recent and durable event counts, completed runs, request and correlation lineage, verification and attestation validity, and memory integrity. It never returns private keys, seeds, secrets, or raw signing material; the algorithm fields describe configuration only and do not claim key custody, rotation, recovery, or complete data-at-rest coverage.
 
 ### Evidence Export
 
@@ -373,8 +399,10 @@ The response `meta` block reports how the read went:
 - `skipped` — lines that could not be parsed
 - `reason` — present when the read was lossy
 
-A damaged line is counted and reported rather than silently dropped, so a
-partial history can never be mistaken for a complete one.
+A damaged or unauthenticated line is counted and reported rather than silently
+dropped, so a partial history can never be mistaken for a complete one. When
+`OMEGA_PERSISTENCE_KEY` is configured, each line is authenticated and encrypted
+independently so append-only growth remains observable.
 
 Set `OMEGA_EVENT_LOG_PATH` to choose the log location. It defaults to the
 runtime store path with a `.log.jsonl` suffix.
@@ -394,6 +422,8 @@ GET /attest/public-key
 ```
 
 Returns safe Ed25519 trust metadata for clients that need to verify attestations. The response includes the algorithm, key identifier, fingerprint, key version, and public key. Private keys, seeds, secrets, and raw signing material are never returned.
+
+`GET /attest/policy` separately exposes non-secret capability configuration: the attestation algorithm, TTL, presence of read/admin boundaries, revocation support, and storage codec names. It never returns token or key values and does not claim custody, rotation, recovery, or distributed policy coordination.
 
 **Response:**
 
@@ -578,8 +608,18 @@ curl -X POST http://localhost:3000/complete-loop \
 
 - `API_PORT` — Port to run on (default: 3000)
 - `OMEGA_READ_TOKEN` — Optional bearer token required for read-only evidence endpoints; unset preserves local development behavior
+- `OMEGA_ADMIN_TOKEN` — Optional distinct bearer token required for `POST /attest/revoke`; never reuse or expose a read token as administrative authority
 - `OMEGA_SIGNING_KEY` — Required signing key for attestation; there is no default
 - `OMEGA_PERSISTENCE` — Explicit persistence override: `on` or `off`
+- `OMEGA_PERSISTENCE_KEY` — Optional dedicated secret for AES-256-GCM encryption of runtime snapshot and event-log files; never expose it in logs or API responses
+- `OMEGA_MEMORY_PATH` — Optional JSONL path for the MINI kernel memory chain
+- `OMEGA_MEMORY_KEY` — Optional active secret for AES-256-GCM encryption of new kernel-memory lines
+- `OMEGA_MEMORY_KEY_PREVIOUS` — Optional previous secret accepted during controlled key rotation; new writes still use `OMEGA_MEMORY_KEY`, and mixed-key restoration reports the fallback source without returning either secret
+- `OMEGA_ATTESTATION_TTL_MS` — Optional positive lifetime in milliseconds; expired attestations remain cryptographically inspectable but `/attest/verify` reports `expired: true` and `/act` denies with `409 EXPIRED_ATTESTATION`
+
+Revocation records are included in the encrypted runtime snapshot when
+persistence is enabled and every revocation also produces an append-only
+`attestation.revoked` event.
 
 ## Testing
 

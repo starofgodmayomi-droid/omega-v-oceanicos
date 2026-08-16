@@ -49,10 +49,20 @@ type RunsResponse = {
   data: Array<{
     observation: { id: string; claim?: { statement?: string } };
     verification: { id: string; summary: { passed: boolean; confidence?: number } };
-    attestation: { id: string; verified: boolean; attestedAt?: string };
+    attestation: { id: string; verified: boolean; attestedAt?: string; revoked?: boolean };
   }>;
   timestamp: string;
 };
+
+type Revocation = {
+  id: string;
+  attestationId: string;
+  reason: string;
+  revokedBy: string;
+  revokedAt: string;
+};
+
+type RevocationsResponse = { data: Revocation[]; timestamp: string };
 
 type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
 
@@ -62,6 +72,10 @@ function usage(): string {
     'omega events [--url URL] [--limit N] [--token TOKEN]',
     'omega runs [--url URL] [--limit N] [--token TOKEN]',
     'omega export [--url URL] [--token TOKEN]',
+    'omega revocations [--url URL] [--token TOKEN]',
+    'omega revoke ATTESTATION_ID --reason REASON [--url URL] [--token TOKEN] [--admin-token TOKEN]',
+    'omega verify --attestation-json JSON [--url URL] [--token TOKEN]',
+    'omega policy [--url URL] [--token TOKEN]',
     '',
     'Read live runtime and evidence from the Omega V API.',
     '',
@@ -85,8 +99,17 @@ function requestInit(argv: string[]): RequestInit | undefined {
   return token ? { headers: { Authorization: `Bearer ${token}` } } : undefined;
 }
 
+function adminToken(argv: string[]): string | undefined {
+  return option(argv, '--admin-token') || process.env.OMEGA_ADMIN_TOKEN || undefined;
+}
+
 function percent(value: number | null): string {
   return value === null ? 'UNKNOWN' : `${(value * 100).toFixed(0)}%`;
+}
+
+function option(argv: string[], name: string): string | null {
+  const index = argv.indexOf(name);
+  return index >= 0 && argv[index + 1] ? argv[index + 1] : null;
 }
 
 function limit(argv: string[]): number | null {
@@ -160,6 +183,132 @@ async function runs(argv: string[], fetchImpl: FetchLike): Promise<number> {
   }
 }
 
+async function policy(argv: string[], fetchImpl: FetchLike): Promise<number> {
+  const endpoint = `${baseUrl(argv).replace(/\/$/, '')}/attest/policy`;
+  try {
+    const response = await fetchImpl(endpoint, requestInit(argv));
+    const body = (await response.json()) as { data?: Record<string, unknown>; message?: string };
+    if (!response.ok || !body.data) {
+      process.stderr.write(
+        `Policy unavailable (${response.status}): ${body.message ?? 'unknown error'}\n`
+      );
+      return 1;
+    }
+    process.stdout.write(`${JSON.stringify(body.data)}\n`);
+    return 0;
+  } catch (error) {
+    process.stderr.write(
+      `Policy unavailable: ${error instanceof Error ? error.message : String(error)}\n`
+    );
+    return 1;
+  }
+}
+async function verifyAttestation(argv: string[], fetchImpl: FetchLike): Promise<number> {
+  const rawAttestation = option(argv, '--attestation-json');
+  if (!rawAttestation) {
+    process.stderr.write('Usage: omega verify --attestation-json JSON [options]\n');
+    return 2;
+  }
+  let attestation: unknown;
+  try {
+    attestation = JSON.parse(rawAttestation);
+  } catch {
+    process.stderr.write('Invalid JSON supplied to --attestation-json\n');
+    return 2;
+  }
+  const endpoint = `${baseUrl(argv).replace(/\/$/, '')}/attest/verify`;
+  try {
+    const response = await fetchImpl(endpoint, {
+      ...(requestInit(argv) ?? {}),
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        ...((requestInit(argv)?.headers as Record<string, string> | undefined) ?? {}),
+      },
+      body: JSON.stringify({ attestation }),
+    });
+    const body = (await response.json()) as {
+      data?: { valid: boolean; revoked: boolean; expired: boolean };
+      message?: string;
+    };
+    if (!response.ok || !body.data) {
+      process.stderr.write(
+        `Verification failed (${response.status}): ${body.message ?? 'unknown error'}\n`
+      );
+      return 1;
+    }
+    process.stdout.write(
+      `VERIFICATION valid=${body.data.valid} revoked=${body.data.revoked} expired=${body.data.expired}\n`
+    );
+    return body.data.valid ? 0 : 1;
+  } catch (error) {
+    process.stderr.write(
+      `Verification failed: ${error instanceof Error ? error.message : String(error)}\n`
+    );
+    return 1;
+  }
+}
+async function revocations(argv: string[], fetchImpl: FetchLike): Promise<number> {
+  const endpoint = `${baseUrl(argv).replace(/\/$/, '')}/attest/revocations`;
+  try {
+    const response = await fetchImpl(endpoint, requestInit(argv));
+    const body = (await response.json()) as RevocationsResponse | { error?: string };
+    if (!response.ok || !('data' in body) || !Array.isArray(body.data)) {
+      process.stderr.write(`Revocations unavailable (${response.status})\n`);
+      return 1;
+    }
+    process.stdout.write(`REVOCATIONS   ${body.data.length}\n`);
+    for (const entry of body.data) {
+      process.stdout.write(
+        `${entry.attestationId} revokedBy=${entry.revokedBy} reason=${entry.reason} at=${entry.revokedAt}\n`
+      );
+    }
+    return 0;
+  } catch (error) {
+    process.stderr.write(
+      `Revocations unavailable: ${error instanceof Error ? error.message : String(error)}\n`
+    );
+    return 1;
+  }
+}
+
+async function revoke(argv: string[], fetchImpl: FetchLike): Promise<number> {
+  const attestationId = argv[1];
+  const reason = option(argv, '--reason');
+  if (!attestationId || !reason) {
+    process.stderr.write('Usage: omega revoke ATTESTATION_ID --reason REASON [options]\n');
+    return 2;
+  }
+  const endpoint = `${baseUrl(argv).replace(/\/$/, '')}/attest/revoke`;
+  try {
+    const response = await fetchImpl(endpoint, {
+      ...(requestInit(argv) ?? {}),
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        ...(adminToken(argv) ? { Authorization: `Bearer ${adminToken(argv)}` } : {}),
+      },
+      body: JSON.stringify({ attestationId, reason, revokedBy: 'omega-cli' }),
+    });
+    const body = (await response.json()) as { data?: Revocation; message?: string };
+    if (!response.ok || !body.data) {
+      process.stderr.write(
+        `Revocation failed (${response.status}): ${body.message ?? 'unknown error'}\n`
+      );
+      return 1;
+    }
+    process.stdout.write(
+      `REVOKED       ${body.data.attestationId} by=${body.data.revokedBy} reason=${body.data.reason}\n`
+    );
+    return 0;
+  } catch (error) {
+    process.stderr.write(
+      `Revocation failed: ${error instanceof Error ? error.message : String(error)}\n`
+    );
+    return 1;
+  }
+}
+
 async function evidenceExport(argv: string[], fetchImpl: FetchLike): Promise<number> {
   const endpoint = `${baseUrl(argv).replace(/\/$/, '')}/evidence/export`;
   try {
@@ -219,6 +368,10 @@ export async function run(
   if (command === 'events') return events(argv, fetchImpl);
   if (command === 'runs') return runs(argv, fetchImpl);
   if (command === 'export') return evidenceExport(argv, fetchImpl);
+  if (command === 'revocations') return revocations(argv, fetchImpl);
+  if (command === 'verify') return verifyAttestation(argv, fetchImpl);
+  if (command === 'policy') return policy(argv, fetchImpl);
+  if (command === 'revoke') return revoke(argv, fetchImpl);
 
   process.stderr.write(`Unknown command: ${command}\n\n${usage()}\n`);
   return 2;

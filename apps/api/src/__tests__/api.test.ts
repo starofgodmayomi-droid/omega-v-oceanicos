@@ -1,5 +1,6 @@
 import { createServer, Server } from 'node:http';
-import app from '../index';
+import app, { constantTimeTokenMatch, isAttestationExpired } from '../index';
+import { Attestation } from '@omega-v/types';
 
 type ApiResponse<T> = { data: T };
 
@@ -11,6 +12,21 @@ type LoopPayload = {
 };
 
 describe('API runtime contracts', () => {
+  it('matches bearer tokens without using ordinary string equality', () => {
+    expect(constantTimeTokenMatch('same-token', 'same-token')).toBe(true);
+    expect(constantTimeTokenMatch('same-token', 'same-tokeN')).toBe(false);
+    expect(constantTimeTokenMatch('short', 'longer-token')).toBe(false);
+  });
+
+  it('applies an opt-in attestation TTL without changing signature semantics', () => {
+    const attestation = { attestedAt: '2026-08-16T00:00:00.000Z' } as Attestation;
+    const issuedAt = Date.parse(attestation.attestedAt);
+
+    expect(isAttestationExpired(attestation, issuedAt + 999, 1000)).toBe(false);
+    expect(isAttestationExpired(attestation, issuedAt + 1000, 1000)).toBe(true);
+    expect(isAttestationExpired(attestation, issuedAt + 1000, null)).toBe(false);
+  });
+
   let server: Server;
   let baseUrl: string;
 
@@ -75,6 +91,29 @@ describe('API runtime contracts', () => {
     expect(state.data.trustBasis.attestationValidity).toBe(1);
   });
 
+  it('exposes non-secret attestation policy configuration', async () => {
+    const response = await fetch(`${baseUrl}/attest/policy`);
+    const body = (await response.json()) as ApiResponse<{
+      attestationAlgorithm: string;
+      attestationTtlMs: number | null;
+      readAuthConfigured: boolean;
+      adminAuthConfigured: boolean;
+      revocationEnabled: boolean;
+      persistenceEncryption: string;
+      memoryEncryption: string;
+    }>;
+
+    expect(response.status).toBe(200);
+    expect(body.data.attestationAlgorithm).toBe('HMAC-SHA256');
+    expect(body.data.attestationTtlMs).toBe(null);
+    expect(body.data.readAuthConfigured).toBe(false);
+    expect(body.data.adminAuthConfigured).toBe(false);
+    expect(body.data.revocationEnabled).toBe(true);
+    expect(body.data.persistenceEncryption).toBe('disabled');
+    expect(body.data.memoryEncryption).toBe('disabled');
+    expect(JSON.stringify(body)).not.toMatch(/token|secret|private|signing material/i);
+  });
+
   it('reports runtime provenance and memory evidence without secrets', async () => {
     await fetch(`${baseUrl}/complete-loop`, {
       method: 'POST',
@@ -92,17 +131,34 @@ describe('API runtime contracts', () => {
 
     const response = await fetch(`${baseUrl}/observability`);
     const body = (await response.json()) as ApiResponse<{
-      runtime: { persistence: string; services: string[] };
+      runtime: {
+        persistence: string;
+        persistenceEncryption: string;
+        memoryEncryption: string;
+        memoryEncryptionKeySource: string;
+        attestationTtlMs: number | null;
+        services: string[];
+      };
       provenance: {
         durableEvents: number;
         completedRuns: number;
         lastRequestId: string | null;
       };
       trust: { attestationValidity: number | null };
-      memory: { entries: number; intact: boolean; appendOnly: boolean };
+      memory: {
+        entries: number;
+        intact: boolean;
+        appendOnly: boolean;
+        encryption: string;
+        encryptionKeySource: string;
+      };
     }>;
 
     expect(response.status).toBe(200);
+    expect(body.data.runtime.persistenceEncryption).toBe('disabled');
+    expect(body.data.runtime.memoryEncryption).toBe('disabled');
+    expect(body.data.runtime.memoryEncryptionKeySource).toBe('none');
+    expect(body.data.runtime.attestationTtlMs).toBe(null);
     expect(body.data.runtime.services).toEqual(['observer', 'verifier', 'attester']);
     expect(body.data.provenance.durableEvents).toBeGreaterThanOrEqual(0);
     expect(body.data.provenance.completedRuns).toBeGreaterThan(0);
@@ -111,6 +167,8 @@ describe('API runtime contracts', () => {
     expect(body.data.memory.entries).toBeGreaterThan(0);
     expect(body.data.memory.intact).toBe(true);
     expect(body.data.memory.appendOnly).toBe(true);
+    expect(body.data.memory.encryption).toBe('disabled');
+    expect(body.data.memory.encryptionKeySource).toBe('none');
     expect(JSON.stringify(body)).not.toMatch(/private|secret|seed|signing material/i);
   });
 
@@ -158,6 +216,56 @@ describe('API runtime contracts', () => {
 
     expect(verificationResponse.status).toBe(200);
     expect(verification.data.valid).toBe(true);
+  });
+
+  it('enforces the opt-in admin token boundary for revocation', async () => {
+    const previousToken = process.env.OMEGA_ADMIN_TOKEN;
+    process.env.OMEGA_ADMIN_TOKEN = 'contract-admin-token';
+    try {
+      const loopResponse = await fetch(`${baseUrl}/complete-loop`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          claim: 'admin revocation contract',
+          category: 'health-check',
+          source: { system: 'api-test', version: '0.1.0', environment: 'test' },
+          observedBy: 'jest',
+          metadata: { responseTime: 42, statusCode: 200 },
+          confidence: 0.95,
+          confidenceReason: 'Executable admin authorization test',
+        }),
+      });
+      const loop = (await loopResponse.json()) as ApiResponse<LoopPayload>;
+      const payload = { attestationId: loop.data.attestation.id, reason: 'contract review' };
+
+      const denied = await fetch(`${baseUrl}/attest/revoke`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      expect(denied.status).toBe(401);
+      expect(((await denied.json()) as { code: string }).code).toBe('ADMIN_ACCESS_REQUIRED');
+
+      const readTokenDenied = await fetch(`${baseUrl}/attest/revoke`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer read-token' },
+        body: JSON.stringify(payload),
+      });
+      expect(readTokenDenied.status).toBe(401);
+
+      const allowed = await fetch(`${baseUrl}/attest/revoke`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer contract-admin-token',
+        },
+        body: JSON.stringify(payload),
+      });
+      expect(allowed.status).toBe(201);
+    } finally {
+      if (previousToken === undefined) delete process.env.OMEGA_ADMIN_TOKEN;
+      else process.env.OMEGA_ADMIN_TOKEN = previousToken;
+    }
   });
 
   it('enforces the opt-in read-only access token boundary', async () => {

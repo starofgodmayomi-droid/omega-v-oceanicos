@@ -34,6 +34,30 @@ describe('OmegaClient', () => {
     expect(result.data.memory.intact).toBe(true);
   });
 
+  it('reads the non-secret attestation policy contract', async () => {
+    const client = new OmegaClient('http://api.test', async (url) => {
+      expect(url).toBe('http://api.test/attest/policy');
+      return new Response(
+        JSON.stringify({
+          data: {
+            attestationAlgorithm: 'HMAC-SHA256',
+            attestationTtlMs: 900000,
+            readAuthConfigured: true,
+            adminAuthConfigured: true,
+            revocationEnabled: true,
+            persistenceEncryption: 'aes-256-gcm',
+            memoryEncryption: 'aes-256-gcm',
+          },
+          timestamp: '2026-08-16T00:00:00.000Z',
+        })
+      );
+    });
+
+    await expect(client.getAttestationPolicy()).resolves.toMatchObject({
+      data: { attestationTtlMs: 900000, adminAuthConfigured: true, revocationEnabled: true },
+    });
+  });
+
   it('sends the optional read token as a bearer header', async () => {
     const client = new OmegaClient(
       'http://api.test',
@@ -63,6 +87,116 @@ describe('OmegaClient', () => {
     );
 
     await expect(client.getObservability()).resolves.toBeDefined();
+  });
+
+  it('lists and creates attestation revocations through the typed client', async () => {
+    const requests: Array<{
+      url: string;
+      method?: string;
+      body?: string;
+      authorization?: string;
+    }> = [];
+    const client = new OmegaClient(
+      'http://api.test',
+      async (url, init) => {
+        requests.push({
+          url,
+          method: init?.method,
+          body: init?.body?.toString(),
+          authorization: new Headers(init?.headers).get('authorization') ?? undefined,
+        });
+        if (url.endsWith('/attest/revocations')) {
+          return new Response(
+            JSON.stringify({
+              data: [
+                {
+                  id: 'rev-1',
+                  attestationId: 'att-1',
+                  reason: 'stale evidence',
+                  revokedBy: 'operator',
+                  revokedAt: '2026-08-16T00:00:00.000Z',
+                },
+              ],
+              timestamp: '2026-08-16T00:00:00.000Z',
+            })
+          );
+        }
+        if (url.endsWith('/attest/verify')) {
+          return new Response(
+            JSON.stringify({
+              data: { valid: false, revoked: false, expired: true },
+              timestamp: '2026-08-16T00:00:00.000Z',
+            })
+          );
+        }
+        return new Response(
+          JSON.stringify({
+            data: {
+              id: 'rev-2',
+              attestationId: 'att-2',
+              reason: 'manual review',
+              revokedBy: 'sdk-test',
+              revokedAt: '2026-08-16T00:00:00.000Z',
+            },
+            timestamp: '2026-08-16T00:00:00.000Z',
+          }),
+          { status: 201 }
+        );
+      },
+      { readToken: 'sdk-token', adminToken: 'sdk-admin-token' }
+    );
+
+    await expect(client.getRevocations()).resolves.toMatchObject({
+      data: [{ attestationId: 'att-1' }],
+    });
+    await expect(client.verifyAttestation({ id: 'att-1' })).resolves.toMatchObject({
+      data: { valid: false, revoked: false, expired: true },
+    });
+    await expect(
+      client.revokeAttestation('att-2', 'manual review', 'sdk-test')
+    ).resolves.toMatchObject({
+      data: { attestationId: 'att-2' },
+    });
+    expect(requests).toEqual([
+      {
+        url: 'http://api.test/attest/revocations',
+        method: undefined,
+        body: undefined,
+        authorization: 'Bearer sdk-token',
+      },
+      {
+        url: 'http://api.test/attest/verify',
+        method: 'POST',
+        body: JSON.stringify({ attestation: { id: 'att-1' } }),
+        authorization: 'Bearer sdk-token',
+      },
+      {
+        url: 'http://api.test/attest/revoke',
+        method: 'POST',
+        body: JSON.stringify({
+          attestationId: 'att-2',
+          reason: 'manual review',
+          revokedBy: 'sdk-test',
+        }),
+        authorization: 'Bearer sdk-admin-token',
+      },
+    ]);
+  });
+
+  it('preserves API errors from revocation mutations', async () => {
+    const client = new OmegaClient(
+      'http://api.test',
+      async () =>
+        new Response(JSON.stringify({ message: 'operator policy denied' }), { status: 403 })
+    );
+
+    await expect(client.revokeAttestation('att-1', 'policy review')).rejects.toEqual(
+      expect.objectContaining<Partial<OmegaApiError>>({
+        status: 403,
+        endpoint: 'http://api.test/attest/revoke',
+        message: 'operator policy denied',
+      })
+    );
   });
 
   it('exposes bounded evidence export through the typed client', async () => {

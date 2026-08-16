@@ -133,6 +133,41 @@ describe('runtime persistence', () => {
       expect(result.snapshot).toEqual(written);
     });
 
+    it('encrypts snapshots at rest and authenticates the round trip', () => {
+      const written = fixture();
+      const secret = 'runtime-encryption-test-secret';
+
+      expect(saveSnapshot(storePath, written, true, secret)).toBe(true);
+      const stored = readFileSync(storePath, 'utf8');
+      expect(stored.startsWith('omega-v1:')).toBe(true);
+      expect(stored).not.toContain('evt-1');
+
+      const result = loadSnapshot<Snap>(storePath, true, secret);
+
+      expect(result.source).toBe('restored');
+      expect(result.snapshot).toEqual(written);
+    });
+
+    it('reads a legacy plaintext snapshot while encryption is configured', () => {
+      const written = fixture();
+      saveSnapshot(storePath, written, true);
+
+      const result = loadSnapshot<Snap>(storePath, true, 'migration-secret');
+
+      expect(result.source).toBe('restored');
+      expect(result.snapshot).toEqual(written);
+    });
+
+    it('reports encrypted snapshots as corrupt when the key is wrong', () => {
+      saveSnapshot(storePath, fixture(), true, 'correct-secret');
+
+      const result = loadSnapshot<Snap>(storePath, true, 'wrong-secret');
+
+      expect(result.source).toBe('corrupt');
+      expect(result.reason).toBeDefined();
+      expect(result.snapshot).toEqual(emptySnapshot());
+    });
+
     it('overwrites a previously written store', () => {
       saveSnapshot(storePath, fixture(), true);
       saveSnapshot(storePath, emptySnapshot(), true);
@@ -200,6 +235,33 @@ describe('append-only event log', () => {
     const afterSecond = readFileSync(logPath, 'utf8');
 
     expect(afterSecond.startsWith(afterFirst)).toBe(true);
+  });
+
+  it('encrypts each event line without breaking append-only order', () => {
+    const secret = 'event-encryption-test-secret';
+
+    appendEvent(logPath, { id: 'evt-1', claim: 'private event' }, true, secret);
+    appendEvent(logPath, { id: 'evt-2', claim: 'second event' }, true, secret);
+
+    const stored = readFileSync(logPath, 'utf8');
+    expect(stored).toMatch(/^omega-v1:/);
+    expect(stored).not.toContain('private event');
+
+    const result = readEventLog<{ id: string }>(logPath, true, secret);
+
+    expect(result.source).toBe('restored');
+    expect(result.entries.map((entry) => entry.id)).toEqual(['evt-1', 'evt-2']);
+    expect(result.skipped).toBe(0);
+  });
+
+  it('reports an encrypted line as partial when the key is wrong', () => {
+    appendEvent(logPath, { id: 'evt-1' }, true, 'correct-secret');
+
+    const result = readEventLog<{ id: string }>(logPath, true, 'wrong-secret');
+
+    expect(result.source).toBe('partial');
+    expect(result.skipped).toBe(1);
+    expect(result.entries).toEqual([]);
   });
 
   it('preserves every entry in order, beyond the in-memory window', () => {

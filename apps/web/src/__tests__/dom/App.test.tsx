@@ -153,6 +153,34 @@ describe('dashboard', () => {
     expect(await screen.findByText('VALID')).toBeInTheDocument();
   });
 
+  it('revokes an attestation with an explicit operator reason', async () => {
+    const user = userEvent.setup();
+    const fetchMock = installFetch();
+    await renderApp();
+
+    await user.click(await screen.findByRole('button', { name: /run verification/i }));
+    await screen.findByText('ATTESTATION');
+
+    const revokeButton = screen.getByRole('button', { name: /revoke attestation/i });
+    expect(revokeButton).toBeDisabled();
+
+    await user.type(
+      screen.getByLabelText(/revocation reason/i),
+      'Operator review found stale evidence'
+    );
+    expect(revokeButton).toBeEnabled();
+    await user.click(revokeButton);
+
+    expect(await screen.findByText('ATTESTATION REVOKED')).toBeInTheDocument();
+    const call = fetchMock.mock.calls.find(([url]) => url === '/api/attest/revoke');
+    expect(call).toBeDefined();
+    expect(JSON.parse(String(call?.[1]?.body))).toMatchObject({
+      attestationId: 'att-2026-08-16-def',
+      reason: 'Operator review found stale evidence',
+      revokedBy: 'dashboard-operator',
+    });
+  });
+
   it('reports an invalid signature as invalid', async () => {
     const user = userEvent.setup();
     installFetch({
@@ -168,6 +196,71 @@ describe('dashboard', () => {
     // point of asymmetric attestation.
     expect(await screen.findByText('INVALID')).toBeInTheDocument();
     expect(screen.queryByText('VALID')).not.toBeInTheDocument();
+  });
+
+  it('renders the API attestation TTL policy evidence', async () => {
+    installFetch({
+      '/api/state': () =>
+        json({
+          data: {
+            mode: 'observe',
+            trust: 0.95,
+            trustBasis: {
+              evidenceQuality: 0.95,
+              verificationCoverage: 1,
+              attestationValidity: 1,
+              serviceReadiness: 1,
+              recentFailures: 0,
+            },
+            persistence: 'memory',
+            attestationTtlMs: 900000,
+            services: [{ status: 'ready' }, { status: 'ready' }],
+          },
+        }),
+      '/api/attest/policy': () =>
+        json({
+          data: {
+            attestationAlgorithm: 'HMAC-SHA256',
+            attestationTtlMs: 900000,
+            readAuthConfigured: true,
+            adminAuthConfigured: true,
+            revocationEnabled: true,
+            persistenceEncryption: 'aes-256-gcm',
+            memoryEncryption: 'aes-256-gcm',
+          },
+        }),
+    });
+    await renderApp();
+
+    expect(await screen.findByText('ATTESTATION TTL')).toBeInTheDocument();
+    expect(screen.getByText('900s')).toBeInTheDocument();
+    expect(screen.getByText('REVOCATION / ADMIN')).toBeInTheDocument();
+  });
+
+  it('renders persisted revocation evidence in the ledger', async () => {
+    const user = userEvent.setup();
+    installFetch({
+      '/api/attest/revocations': () =>
+        json({
+          data: [
+            {
+              id: 'rev-1',
+              attestationId: 'att-1',
+              reason: 'stale evidence',
+              revokedBy: 'operator',
+              revokedAt: '2026-08-16T10:30:00.000Z',
+            },
+          ],
+        }),
+    });
+    await renderApp();
+
+    expect(await screen.findByText('REVOCATION LEDGER')).toBeInTheDocument();
+    expect(screen.getByText('Proofs no longer authorize action')).toBeInTheDocument();
+    expect(screen.getByText('att-1')).toBeInTheDocument();
+    expect(screen.getByText('stale evidence')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /run verification/i }));
+    expect(await screen.findByText('ATTESTATION')).toBeInTheDocument();
   });
 
   it('sends the operator-supplied evidence rather than a hardcoded payload', async () => {

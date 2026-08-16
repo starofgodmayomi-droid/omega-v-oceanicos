@@ -2,8 +2,34 @@ import { createServer, Server } from 'node:http';
 import app from '../index';
 
 type Body<T> = { data: T; meta?: Record<string, unknown> };
-type Attestation = { id: string; verified: boolean; signature: string };
+type Attestation = {
+  id: string;
+  verified: boolean;
+  confidence: number;
+  signature: string;
+  verificationId: string;
+  signingAlgorithm?: string;
+  signingKey: string;
+  keyVersion: string;
+  ruleVersions: Record<string, string>;
+};
 type Memory = { id: string; observationId: string; verificationId: string };
+type AuditEvent = {
+  type?: string;
+  details?: {
+    attestationId?: string;
+    signing?: {
+      attestationId: string;
+      verificationId: string;
+      algorithm: string;
+      keyVersion: string;
+      keyFingerprint: string;
+      verified: boolean;
+      confidence: number;
+      ruleVersions: Record<string, string>;
+    };
+  };
+};
 type Loop = {
   observation: { id: string };
   verification: unknown;
@@ -187,6 +213,50 @@ describe('API loop: act, learn, recompile', () => {
     expect(invalid.data.valid).toBe(false);
   });
 
+  it('revokes an attestation before it can authorize an action', async () => {
+    const loop = (await (
+      await post('/complete-loop', loopInput('revocation', { statusCode: 200, responseTime: 6 }))
+    ).json()) as Body<Loop>;
+
+    const revokeResponse = await post('/attest/revoke', {
+      attestationId: loop.data.attestation.id,
+      reason: 'operator review found stale evidence',
+      revokedBy: 'api-loop-test',
+    });
+    const revoked = (await revokeResponse.json()) as Body<{
+      attestationId: string;
+      reason: string;
+      revokedBy: string;
+    }>;
+
+    expect(revokeResponse.status).toBe(201);
+    expect(revoked.data.attestationId).toBe(loop.data.attestation.id);
+    expect(revoked.data.reason).toContain('stale evidence');
+
+    const verification = (await (
+      await post('/attest/verify', { attestation: loop.data.attestation })
+    ).json()) as Body<{ valid: boolean; revoked: boolean; expired: boolean }>;
+    expect(verification.data).toEqual({ valid: false, revoked: true, expired: false });
+
+    const denied = await post('/act', { attestation: loop.data.attestation });
+    expect(denied.status).toBe(409);
+    expect(((await denied.json()) as { code: string }).code).toBe('REVOKED_ATTESTATION');
+
+    const revocations = (await (await fetch(`${baseUrl}/attest/revocations`)).json()) as Body<
+      Array<{ attestationId: string }>
+    >;
+    expect(revocations.data.map((entry) => entry.attestationId)).toContain(
+      loop.data.attestation.id
+    );
+
+    const duplicate = await post('/attest/revoke', {
+      attestationId: loop.data.attestation.id,
+      reason: 'duplicate request',
+    });
+    expect(duplicate.status).toBe(409);
+    expect(((await duplicate.json()) as { code: string }).code).toBe('ATTESTATION_ALREADY_REVOKED');
+  });
+
   it('serves the append-only log and declares how the read went', async () => {
     const response = await fetch(`${baseUrl}/log`);
     const body = (await response.json()) as Body<unknown[]>;
@@ -196,6 +266,34 @@ describe('API loop: act, learn, recompile', () => {
     expect(body.meta?.appendOnly).toBe(true);
     expect(['disabled', 'missing', 'restored', 'partial']).toContain(body.meta?.source);
     expect(body.meta?.skipped).toBe(0);
+  });
+
+  it('records non-secret signing metadata in the runtime event record', async () => {
+    const loop = (await (
+      await post(
+        '/complete-loop',
+        loopInput('audit metadata', { statusCode: 200, responseTime: 11 })
+      )
+    ).json()) as Body<Loop>;
+
+    const events = (await (await fetch(`${baseUrl}/events`)).json()) as Body<AuditEvent[]>;
+    const event = events.data.find(
+      (entry) =>
+        entry.type === 'attestation.created' &&
+        entry.details?.attestationId === loop.data.attestation.id
+    );
+
+    expect(event?.details?.signing).toEqual({
+      attestationId: loop.data.attestation.id,
+      verificationId: loop.data.attestation.verificationId,
+      algorithm: loop.data.attestation.signingAlgorithm || 'HMAC-SHA256',
+      keyVersion: loop.data.attestation.keyVersion,
+      keyFingerprint: loop.data.attestation.signingKey,
+      verified: loop.data.attestation.verified,
+      confidence: loop.data.attestation.confidence,
+      ruleVersions: loop.data.attestation.ruleVersions,
+    });
+    expect(JSON.stringify(event)).not.toContain(process.env.OMEGA_SIGNING_KEY || '');
   });
 
   it('declares the bound on the recent event window', async () => {

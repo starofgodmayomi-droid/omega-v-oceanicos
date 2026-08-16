@@ -31,7 +31,31 @@ export type RuntimeEvent = Record<string, unknown>;
 export type RuntimeRun = {
   observation: { id: string; claim?: { statement?: string } };
   verification: { id: string; summary: { passed: boolean; confidence?: number } };
-  attestation: { id: string; verified: boolean; attestedAt?: string };
+  attestation: { id: string; verified: boolean; attestedAt?: string; revoked?: boolean };
+};
+
+export type AttestationPolicy = {
+  attestationAlgorithm: string;
+  attestationTtlMs: number | null;
+  readAuthConfigured: boolean;
+  adminAuthConfigured: boolean;
+  revocationEnabled: boolean;
+  persistenceEncryption: string;
+  memoryEncryption: string;
+};
+
+export type AttestationVerification = {
+  valid: boolean;
+  revoked: boolean;
+  expired: boolean;
+};
+
+export type AttestationRevocation = {
+  id: string;
+  attestationId: string;
+  reason: string;
+  revokedBy: string;
+  revokedAt: string;
 };
 
 export type EvidenceExport = {
@@ -56,15 +80,17 @@ export class OmegaClient {
   private readonly baseUrl: string;
   private readonly fetchImpl: FetchLike;
   private readonly readToken?: string;
+  private readonly adminToken?: string;
 
   constructor(
     baseUrl = 'http://localhost:3000',
     fetchImpl: FetchLike = globalThis.fetch,
-    options: { readToken?: string } = {}
+    options: { readToken?: string; adminToken?: string } = {}
   ) {
     this.baseUrl = baseUrl.replace(/\/$/, '');
     this.fetchImpl = fetchImpl;
     this.readToken = options.readToken;
+    this.adminToken = options.adminToken;
   }
 
   async getObservability(): Promise<Observability> {
@@ -79,6 +105,36 @@ export class OmegaClient {
     return this.get<{ data: RuntimeRun[] }>('/runs');
   }
 
+  async getAttestationPolicy(): Promise<{ data: AttestationPolicy; timestamp: string }> {
+    return this.get<{ data: AttestationPolicy; timestamp: string }>('/attest/policy');
+  }
+
+  async getRevocations(): Promise<{ data: AttestationRevocation[]; timestamp: string }> {
+    return this.get<{ data: AttestationRevocation[]; timestamp: string }>('/attest/revocations');
+  }
+
+  async verifyAttestation(
+    attestation: unknown
+  ): Promise<{ data: AttestationVerification; timestamp: string }> {
+    return this.post<{ data: AttestationVerification; timestamp: string }>(
+      '/attest/verify',
+      { attestation },
+      this.readToken
+    );
+  }
+
+  async revokeAttestation(
+    attestationId: string,
+    reason: string,
+    revokedBy = 'sdk-client'
+  ): Promise<{ data: AttestationRevocation; timestamp: string }> {
+    return this.post<{ data: AttestationRevocation; timestamp: string }>('/attest/revoke', {
+      attestationId,
+      reason,
+      revokedBy,
+    });
+  }
+
   async getEvidenceExport(): Promise<{
     data: EvidenceExport;
     meta: { bounded: boolean; eventWindow: number; runWindow: number };
@@ -89,6 +145,35 @@ export class OmegaClient {
       meta: { bounded: boolean; eventWindow: number; runWindow: number };
       timestamp: string;
     }>('/evidence/export');
+  }
+
+  private async post<T>(path: string, payload: unknown, bearerToken = this.adminToken): Promise<T> {
+    const endpoint = `${this.baseUrl}${path}`;
+    let response: Response;
+    try {
+      response = await this.fetchImpl(endpoint, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          ...(bearerToken ? { Authorization: `Bearer ${bearerToken}` } : {}),
+        },
+        body: JSON.stringify(payload),
+      });
+    } catch (error) {
+      throw new OmegaApiError(error instanceof Error ? error.message : String(error), 0, endpoint);
+    }
+
+    const body = (await response.json()) as unknown;
+    if (!response.ok) {
+      const errorBody =
+        body && typeof body === 'object' ? (body as { error?: string; message?: string }) : {};
+      throw new OmegaApiError(
+        errorBody.message || errorBody.error || `Request failed with status ${response.status}`,
+        response.status,
+        endpoint
+      );
+    }
+    return body as T;
   }
 
   private async get<T>(path: string): Promise<T> {
