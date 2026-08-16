@@ -315,6 +315,47 @@ app.get('/observability', (_req: Request, res: Response) => {
   });
 });
 
+app.get('/evidence/export', (_req: Request, res: Response) => {
+  const durableLog = readEventLog<RuntimeEvent>(eventLogPath, persistenceEnabled);
+  const latestRun = completedRuns[0];
+  const latestEvent = runtimeEvents[0];
+  const attestationValidity = latestRun ? attestationService.verify(latestRun.attestation) : null;
+
+  res.json({
+    data: {
+      observability: {
+        runtime: {
+          mode: latestEvent?.stage || 'observing',
+          persistence: persistenceEnabled ? 'file' : 'memory',
+          services: ['observer', 'verifier', 'attester'],
+          lastActivity: latestEvent?.timestamp || null,
+        },
+        provenance: {
+          recentEvents: runtimeEvents.length,
+          durableEvents: durableLog.entries.length,
+          skippedLogEntries: durableLog.skipped,
+          completedRuns: completedRuns.length,
+          lastRequestId: latestEvent?.requestId || null,
+          lastCorrelationId: latestEvent?.correlationId || null,
+        },
+        trust: {
+          verificationCoverage: latestRun ? (latestRun.verification.summary.passed ? 1 : 0) : null,
+          attestationValidity,
+        },
+        memory: {
+          entries: kernelMemory.size(),
+          intact: kernelMemory.verifyIntegrity(),
+          appendOnly: true,
+        },
+      },
+      events: runtimeEvents.slice(0, RECENT_EVENT_WINDOW),
+      runs: completedRuns.slice(0, 10),
+    },
+    meta: { bounded: true, eventWindow: RECENT_EVENT_WINDOW, runWindow: 10 },
+    timestamp: new Date().toISOString(),
+  });
+});
+
 app.get('/events', (_req: Request, res: Response) => {
   res.json({
     data: runtimeEvents,

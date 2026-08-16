@@ -41,4 +41,12 @@ node packages/cli/dist/index.js runs --url http://localhost:3000 --limit 10
 
 This command reads `GET /runs` and reports only the returned observation ID, verification status, and attestation status.
 
-Broader evidence export and mobile capabilities remain future slices. The typed SDK is available separately as `@omega-v/sdk`, and accepts `{ readToken }` as its third constructor argument when the API read boundary is enabled.
+Export a bounded evidence package directly from the API:
+
+```bash
+node packages/cli/dist/index.js export --url http://localhost:3000 --token "$OMEGA_READ_TOKEN"
+```
+
+This reads `GET /evidence/export`, prints the returned JSON without synthesizing fields, and exits non-zero when the returned memory integrity is invalid.
+
+Mobile capabilities remain future slices. The typed SDK is available separately as `@omega-v/sdk`, and accepts `{ readToken }` as its third constructor argument when the API read boundary is enabled.

@@ -33,6 +33,12 @@ export type RuntimeRun = {
   verification: { id: string; summary: { passed: boolean; confidence?: number } };
   attestation: { id: string; verified: boolean; attestedAt?: string };
 };
+
+export type EvidenceExport = {
+  observability: Observability;
+  events: RuntimeEvent[];
+  runs: RuntimeRun[];
+};
 export type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
 
 export class OmegaApiError extends Error {
@@ -71,6 +77,18 @@ export class OmegaClient {
 
   async getRuns(): Promise<{ data: RuntimeRun[] }> {
     return this.get<{ data: RuntimeRun[] }>('/runs');
+  }
+
+  async getEvidenceExport(): Promise<{
+    data: EvidenceExport;
+    meta: { bounded: boolean; eventWindow: number; runWindow: number };
+    timestamp: string;
+  }> {
+    return this.get<{
+      data: EvidenceExport;
+      meta: { bounded: boolean; eventWindow: number; runWindow: number };
+      timestamp: string;
+    }>('/evidence/export');
   }
 
   private async get<T>(path: string): Promise<T> {

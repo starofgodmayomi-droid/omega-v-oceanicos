@@ -256,6 +256,14 @@ GET /observability
 
 Returns a read-only operational evidence summary composed from the runtime state, durable event log, configured attestation service, and hash-chained memory. It includes runtime mode and persistence, recent and durable event counts, completed runs, request and correlation lineage, verification and attestation validity, and memory integrity. It never returns private keys, seeds, secrets, or raw signing material.
 
+### Evidence Export
+
+```
+GET /evidence/export
+```
+
+Returns a bounded JSON evidence package containing the current observability summary, up to 40 recent events, and up to 10 recent completed runs. The export is read-only, preserves request and correlation lineage, reports explicit memory integrity, and never returns private keys, seeds, or raw signing material. When `OMEGA_READ_TOKEN` is configured, this route requires the bearer token.
+
 ### Single Origin
 
 Every endpoint below is also served under an `/api` prefix, and the built web

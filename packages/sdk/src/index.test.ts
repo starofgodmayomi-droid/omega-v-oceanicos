@@ -65,6 +65,39 @@ describe('OmegaClient', () => {
     await expect(client.getObservability()).resolves.toBeDefined();
   });
 
+  it('exposes bounded evidence export through the typed client', async () => {
+    const client = new OmegaClient('http://api.test', async (url) => {
+      expect(url).toBe('http://api.test/evidence/export');
+      return new Response(
+        JSON.stringify({
+          data: {
+            observability: {
+              runtime: { mode: 'observe', persistence: 'memory', services: [], lastActivity: null },
+              provenance: {
+                recentEvents: 0,
+                durableEvents: 0,
+                skippedLogEntries: 0,
+                completedRuns: 0,
+                lastRequestId: null,
+                lastCorrelationId: null,
+              },
+              trust: { verificationCoverage: null, attestationValidity: null },
+              memory: { entries: 0, intact: true, appendOnly: true },
+            },
+            events: [],
+            runs: [],
+          },
+          meta: { bounded: true, eventWindow: 40, runWindow: 10 },
+          timestamp: '2026-08-16T00:00:00.000Z',
+        })
+      );
+    });
+
+    await expect(client.getEvidenceExport()).resolves.toMatchObject({
+      meta: { bounded: true, runWindow: 10 },
+    });
+  });
+
   it('exposes events and runs through the same client contract', async () => {
     const paths: string[] = [];
     const client = new OmegaClient('http://api.test', async (url) => {

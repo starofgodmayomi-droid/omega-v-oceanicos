@@ -89,6 +89,33 @@ describe('omega status CLI', () => {
     expect(output.join('')).not.toContain('event-2');
   });
 
+  it('exports bounded evidence with the bearer token', async () => {
+    const output: string[] = [];
+    process.stdout.write = ((chunk: string | Uint8Array) => {
+      output.push(String(chunk));
+      return true;
+    }) as typeof process.stdout.write;
+
+    const exitCode = await run(['export', '--token', 'cli-token'], async (url, init) => {
+      expect(url).toBe('http://localhost:3000/evidence/export');
+      expect(new Headers(init?.headers).get('authorization')).toBe('Bearer cli-token');
+      return new Response(
+        JSON.stringify({
+          data: {
+            observability: { memory: { intact: true, appendOnly: true } },
+            events: [],
+            runs: [],
+          },
+          meta: { bounded: true, eventWindow: 40, runWindow: 10 },
+          timestamp: '2026-08-16T00:00:00.000Z',
+        })
+      );
+    });
+
+    expect(exitCode).toBe(0);
+    expect(output.join('')).toContain('"bounded":true');
+  });
+
   it('reads recent runs and displays verification and attestation status', async () => {
     const output: string[] = [];
     process.stdout.write = ((chunk: string | Uint8Array) => {

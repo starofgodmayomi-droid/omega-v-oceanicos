@@ -113,6 +113,26 @@ describe('API runtime contracts', () => {
     expect(JSON.stringify(body)).not.toMatch(/private|secret|seed|signing material/i);
   });
 
+  it('exports bounded evidence without secrets', async () => {
+    const response = await fetch(`${baseUrl}/evidence/export`);
+    const body = (await response.json()) as {
+      data: {
+        observability: { memory: { intact: boolean; appendOnly: boolean } };
+        events: unknown[];
+        runs: unknown[];
+      };
+      meta: { bounded: boolean; eventWindow: number; runWindow: number };
+    };
+
+    expect(response.status).toBe(200);
+    expect(body.meta).toEqual({ bounded: true, eventWindow: 40, runWindow: 10 });
+    expect(body.data.observability.memory.intact).toBe(true);
+    expect(body.data.observability.memory.appendOnly).toBe(true);
+    expect(body.data.events.length).toBeLessThanOrEqual(40);
+    expect(body.data.runs.length).toBeLessThanOrEqual(10);
+    expect(JSON.stringify(body)).not.toMatch(/private|secret|seed|signing material/i);
+  });
+
   it('verifies the attestation produced by the loop', async () => {
     const loopResponse = await fetch(`${baseUrl}/complete-loop`, {
       method: 'POST',

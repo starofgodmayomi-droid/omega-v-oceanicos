@@ -35,6 +35,16 @@ type EventsResponse = {
   timestamp: string;
 };
 
+type ExportResponse = {
+  data: {
+    observability: ObservabilityResponse['data'];
+    events: Array<Record<string, unknown>>;
+    runs: RunsResponse['data'];
+  };
+  meta: { bounded: boolean; eventWindow: number; runWindow: number };
+  timestamp: string;
+};
+
 type RunsResponse = {
   data: Array<{
     observation: { id: string; claim?: { statement?: string } };
@@ -51,6 +61,7 @@ function usage(): string {
     'omega status [--url URL] [--token TOKEN]',
     'omega events [--url URL] [--limit N] [--token TOKEN]',
     'omega runs [--url URL] [--limit N] [--token TOKEN]',
+    'omega export [--url URL] [--token TOKEN]',
     '',
     'Read live runtime and evidence from the Omega V API.',
     '',
@@ -149,6 +160,27 @@ async function runs(argv: string[], fetchImpl: FetchLike): Promise<number> {
   }
 }
 
+async function evidenceExport(argv: string[], fetchImpl: FetchLike): Promise<number> {
+  const endpoint = `${baseUrl(argv).replace(/\/$/, '')}/evidence/export`;
+  try {
+    const response = await fetchImpl(endpoint, requestInit(argv));
+    const body = (await response.json()) as ExportResponse | { error?: string };
+    if (!response.ok || !('data' in body) || !('meta' in body)) {
+      process.stderr.write(`Evidence export unavailable (${response.status})\n`);
+      return 1;
+    }
+    process.stdout.write(`${JSON.stringify(body)}\n`);
+    return body.data.observability.memory.intact && body.data.observability.memory.appendOnly
+      ? 0
+      : 1;
+  } catch (error) {
+    process.stderr.write(
+      `Evidence export unavailable: ${error instanceof Error ? error.message : String(error)}\n`
+    );
+    return 1;
+  }
+}
+
 async function events(argv: string[], fetchImpl: FetchLike): Promise<number> {
   const endpoint = `${baseUrl(argv).replace(/\/$/, '')}/events`;
   try {
@@ -186,6 +218,7 @@ export async function run(
   if (command === 'status') return status(argv, fetchImpl);
   if (command === 'events') return events(argv, fetchImpl);
   if (command === 'runs') return runs(argv, fetchImpl);
+  if (command === 'export') return evidenceExport(argv, fetchImpl);
 
   process.stderr.write(`Unknown command: ${command}\n\n${usage()}\n`);
   return 2;
