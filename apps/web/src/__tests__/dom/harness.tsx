@@ -131,6 +131,16 @@ export function installFetch(overrides: RouteOverrides = {}): jest.Mock {
     '/api/state': () => json(stateBody),
     '/api/events': () => json({ data: [] }),
     '/api/runs': () => json({ data: [] }),
+    '/api/attest/public-key': () =>
+      json({
+        data: {
+          algorithm: 'Ed25519',
+          keyId: 'sha256:test-key',
+          fingerprint: 'sha256:test-key',
+          keyVersion: '1',
+          publicKey: '-----BEGIN PUBLIC KEY-----\\ntest\\n-----END PUBLIC KEY-----',
+        },
+      }),
     '/api/complete-loop': () => json({ data: passingLoop() }, { status: 201 }),
     '/api/attest/verify': () => json({ data: { valid: true } }),
     '/api/act': () => json({ data: { id: 'act-1', status: 'authorized' } }, { status: 201 }),

@@ -50,6 +50,7 @@ describe('dashboard', () => {
     // Persistence and service health come from /api/state, not from defaults.
     expect(await screen.findByText('MEMORY')).toBeInTheDocument();
     expect(await screen.findByText('02 / 02')).toBeInTheDocument();
+    expect(await screen.findAllByText('Ed25519 / 1')).toHaveLength(2);
   });
 
   it('renders all three MINI steps plus the attestation after a run', async () => {
