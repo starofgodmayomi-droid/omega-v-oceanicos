@@ -198,6 +198,32 @@ describe('dashboard', () => {
     expect(screen.queryByText('VALID')).not.toBeInTheDocument();
   });
 
+  it('renders persisted revocation evidence in the ledger', async () => {
+    const user = userEvent.setup();
+    installFetch({
+      '/api/attest/revocations': () =>
+        json({
+          data: [
+            {
+              id: 'rev-1',
+              attestationId: 'att-1',
+              reason: 'stale evidence',
+              revokedBy: 'operator',
+              revokedAt: '2026-08-16T10:30:00.000Z',
+            },
+          ],
+        }),
+    });
+    await renderApp();
+
+    expect(await screen.findByText('REVOCATION LEDGER')).toBeInTheDocument();
+    expect(screen.getByText('Proofs no longer authorize action')).toBeInTheDocument();
+    expect(screen.getByText('att-1')).toBeInTheDocument();
+    expect(screen.getByText('stale evidence')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /run verification/i }));
+    expect(await screen.findByText('ATTESTATION')).toBeInTheDocument();
+  });
+
   it('sends the operator-supplied evidence rather than a hardcoded payload', async () => {
     const user = userEvent.setup();
     const fetchMock = installFetch();

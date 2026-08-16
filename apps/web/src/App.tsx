@@ -28,6 +28,13 @@ type LoopResult = {
     revoked?: boolean;
   };
 };
+type RuntimeRevocation = {
+  id: string;
+  attestationId: string;
+  reason: string;
+  revokedBy: string;
+  revokedAt: string;
+};
 type PublicTrustMetadata = {
   algorithm: string;
   keyId: string;
@@ -60,6 +67,7 @@ export function App(): JSX.Element {
   const [statusCode, setStatusCode] = useState('200');
   const [events, setEvents] = useState<RuntimeEvent[]>([]);
   const [recentRuns, setRecentRuns] = useState<LoopResult[]>([]);
+  const [revocations, setRevocations] = useState<RuntimeRevocation[]>([]);
   const [result, setResult] = useState<LoopResult | null>(null);
   const [mode, setMode] = useState('observe');
   const [trust, setTrust] = useState<number | null>(null);
@@ -108,12 +116,13 @@ export function App(): JSX.Element {
 
   const refreshRuntime = async () => {
     try {
-      const [stateResponse, eventsResponse, runsResponse] = await Promise.all([
+      const [stateResponse, eventsResponse, runsResponse, revocationsResponse] = await Promise.all([
         fetch('/api/state'),
         fetch('/api/events'),
         fetch('/api/runs'),
+        fetch('/api/attest/revocations'),
       ]);
-      if (!stateResponse.ok || !eventsResponse.ok || !runsResponse.ok)
+      if (!stateResponse.ok || !eventsResponse.ok || !runsResponse.ok || !revocationsResponse.ok)
         throw new Error('Runtime unavailable');
       const state = (await stateResponse.json()) as {
         data: {
@@ -132,6 +141,7 @@ export function App(): JSX.Element {
       };
       const eventData = (await eventsResponse.json()) as { data: RuntimeEvent[] };
       const runData = (await runsResponse.json()) as { data: LoopResult[] };
+      const revocationData = (await revocationsResponse.json()) as { data: RuntimeRevocation[] };
       const publicKeyResponse = await fetch('/api/attest/public-key').catch(() => null);
       if (publicKeyResponse?.ok) {
         const publicKeyData = (await publicKeyResponse.json()) as { data: PublicTrustMetadata };
@@ -151,6 +161,7 @@ export function App(): JSX.Element {
       setServiceHealth({ ready: readyServices, total: state.data.services.length });
       setEvents(eventData.data);
       setRecentRuns(runData.data);
+      setRevocations(revocationData.data);
       setResult((current) => current ?? runData.data[0] ?? null);
       setSelectedEvent((current) =>
         current ? (eventData.data.find((event) => event.id === current.id) ?? current) : null
@@ -620,6 +631,12 @@ export function App(): JSX.Element {
             <strong>{persistenceMode ? persistenceMode.toUpperCase() : 'UNKNOWN'}</strong>
           </div>
           <div>
+            <span>REVOCATIONS</span>
+            <strong className={revocations.length > 0 ? 'red' : ''}>
+              {revocations.length.toString().padStart(2, '0')}
+            </strong>
+          </div>
+          <div>
             <span>TRUST KEY</span>
             <strong className={publicTrustStatus === 'available' ? 'green' : ''}>
               {publicTrustStatus === 'available' && publicTrust
@@ -631,6 +648,28 @@ export function App(): JSX.Element {
             {publicTrust && <small title={publicTrust.fingerprint}>{publicTrust.keyId}</small>}
           </div>
         </section>
+        {revocations.length > 0 && (
+          <section className="revocations-panel">
+            <div className="panel-heading">
+              <div>
+                <span className="section-kicker">REVOCATION LEDGER</span>
+                <h2>Proofs no longer authorize action</h2>
+              </div>
+              <span className="seal">{revocations.length.toString().padStart(2, '0')}</span>
+            </div>
+            <div className="revocation-list">
+              {revocations.slice(0, 5).map((revocation) => (
+                <div className="revocation-row" key={revocation.id}>
+                  <strong>{revocation.attestationId}</strong>
+                  <span>{revocation.reason}</span>
+                  <small>
+                    {revocation.revokedBy} · {timeLabel(revocation.revokedAt)}
+                  </small>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
         <section className="runs-panel">
           <div className="panel-heading">
             <div>

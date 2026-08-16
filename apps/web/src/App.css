@@ -391,7 +391,42 @@ select:focus-visible {
     monospace;
   color: #d9ebe6;
 }
-.metrics-row .green {
+.metrics-row .red {
+  color: #ed9986;
+}
+.revocations-panel {
+  margin-top: 18px;
+  padding: 18px;
+  border: 1px solid #4b3931;
+  background: linear-gradient(135deg, rgba(36, 20, 17, 0.9), rgba(13, 22, 20, 0.82));
+}
+.revocation-list {
+  display: grid;
+  gap: 8px;
+}
+.revocation-row {
+  display: grid;
+  grid-template-columns: minmax(130px, 0.8fr) minmax(180px, 1.5fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid #2c302a;
+  color: #d9b1a5;
+  font-size: 12px;
+}
+.revocation-row strong {
+  color: #f1a796;
+  font:
+    10px 'DM Mono',
+    monospace;
+}
+.revocation-row small {
+  color: #a47f73;
+  font:
+    9px 'DM Mono',
+    monospace;
+}
+.green {
   color: #73e5bc;
 }
 .lower-grid {

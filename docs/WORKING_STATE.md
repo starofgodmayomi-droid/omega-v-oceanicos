@@ -28,18 +28,21 @@ Push, PR publication, merge, deployment, and other externally visible actions ar
 | Attestation revocation          | Recorded attestations can be revoked with an operator reason. Revocation is persisted, emitted as `attestation.revoked`, visible through `/attest/revocations`, invalidates `/attest/verify` for authorization purposes, and blocks `/act` with `409 REVOKED_ATTESTATION`. Duplicate requests are rejected. Web/API contract tests track the new routes.      |
 | Dashboard revocation control    | The React dashboard now requires an explicit operator reason before enabling revocation, calls `/api/attest/revoke`, displays `ATTESTATION REVOKED`, and has DOM coverage for the request payload and visible state. The contract inventory now records `/attest/revocations` as the remaining unused read surface.                                           |
 | SDK and CLI revocation surfaces | `OmegaClient` now lists and creates revocations with typed envelopes and API error preservation. The CLI now provides `revocations` and reason-gated `revoke` commands, sends the configured bearer token, and returns nonzero failure codes. Both surfaces document that the API remains authoritative for lineage, policy, persistence, and action denial.  |
+| Web revocation ledger           | The dashboard now reads `/attest/revocations`, shows the revocation count, and renders persisted attestation ID, reason, operator, and timestamp evidence. The web contract and DOM tests cover the connected read surface.                                                                                                                                   |
 
 ## Current repository state
 
 The active worktree is `/home/ubuntu/current-main-worktree` on branch `feat/signing-audit-trail`. Local commits currently include:
 
-| Commit    | Meaning                                                   | Publication state                                      |
-| --------- | --------------------------------------------------------- | ------------------------------------------------------ |
-| `c075154` | Signing audit metadata                                    | Published on PR #33 branch                             |
-| `47a2901` | Runtime persistence encryption                            | Published on PR #33 branch                             |
-| `ab9ac4d` | Attestation revocation controls                           | Local and not yet published at the time of this record |
-| `2cbdc72` | Dashboard revocation control plus compressed state record | Local and not yet published at the time of this record |
-| pending   | SDK and CLI revocation surfaces                           | Locally verified; not yet committed or published       |
+| Commit    | Meaning                                                   | Publication state                                |
+| --------- | --------------------------------------------------------- | ------------------------------------------------ |
+| `c075154` | Signing audit metadata                                    | Published on PR #33 branch                       |
+| `47a2901` | Runtime persistence encryption                            | Published on PR #33 branch                       |
+| `ab9ac4d` | Attestation revocation controls                           | Published on PR #33 branch                       |
+| `2cbdc72` | Dashboard revocation control plus compressed state record | Published on PR #33 branch                       |
+| `d4ebd10` | SDK and CLI revocation surfaces                           | Published on PR #33 branch                       |
+| `9a876f2` | Coverage repair for SDK/CLI failure paths                 | Published on PR #33 branch                       |
+| pending   | Web revocation ledger                                     | Locally verified; not yet committed or published |
 
 | |
 | PR #33 targets `main`, remains **draft/open/mergeable**, and has no recorded review decision. Its last observed CI run was green across Node 18, Node 20, Windows compatibility, packaging/smoke testing, and report generation; the attested-artifact publication job was correctly skipped. The revocation and interface commits were authorized and pushed; the subsequent coverage-repair commit is local until its CI publication is separately authorized. |
@@ -62,20 +65,21 @@ The combined signing-audit and persistence-encryption state passed:
 | Web revocation DOM test                  | Passed: reason-gated button, request payload, and visible `ATTESTATION REVOKED` state                                                                                                                              |
 | SDK/CLI revocation tests                 | Passed: 15 focused tests covering typed SDK requests, bearer propagation, CLI listing, CLI mutation, and missing-reason failure                                                                                    |
 | CI coverage repair                       | PR #33 Node 20 exposed a global branch-coverage regression at 68.93% despite 312 passing tests; SDK/CLI error-path tests raised local coverage to 71.15% with 315 passing tests, preserving the existing 70% gate. |
+| Web ledger verification                  | Full local coverage gate passes with 317 tests; the dashboard ledger and route contract remain covered, and the production web build passes.                                                                       |
 
 | `git diff --check` | Passed before the revocation commit |
 
-The last full local verification after integrating SDK/CLI coverage repair observed 315 passing tests, 71.15% global branch coverage, and a successful build. The repository may contain generated build output ignored by Git; only intended source and documentation changes should be committed.
+The last full local verification after integrating the web revocation ledger observed 317 passing tests, 71.15% global branch coverage, and a successful build. The repository may contain generated build output ignored by Git; only intended source and documentation changes should be committed.
 
 ## Remaining gaps and uncertainty
 
 The following are explicitly **not complete**: HSM/KMS key custody, key rotation and recovery policy for persistence encryption, encryption of the separate kernel-memory file, distributed revocation consistency, expiry policy, administrative authorization policy, and production deployment hardening. The encryption increment protects the API runtime snapshot and event log only; it is not a claim that every stored datum is encrypted.
 
-The web client does not yet expose revocation controls. Its contract test deliberately records the revocation endpoints as existing but unused, preserving that gap rather than hiding it.
+The web client exposes revoke and revocation-ledger controls. Stronger administrative policy, distributed revocation consistency, expiry, and recovery remain open.
 
 ## Next authorized action
 
-1. Obtain confirmation to push commit `ab9ac4d` to PR #33.
+1. Obtain confirmation to push the locally verified web-ledger commit to PR #33.
 2. Observe the resulting CI run through the GitHub API.
 3. Keep PR #33 draft and route cryptographic and revocation review to a human.
 4. Continue with the next smallest worker-sized slice, prioritizing an explicit revocation/admin authorization boundary or kernel-memory encryption, depending on repository evidence and review feedback.
