@@ -7,25 +7,34 @@
 Repository: `starofgodmayomi-droid/omega-v-oceanicos`  
 Worktree: `/home/ubuntu/current-main-worktree`  
 Branch: `main`
-Base: merged `origin/main` at `7c5bf31e66896b1e5f369b659e65163e3bcd7443`
-Working tree: local revocation-freshness implementation and evidence records are uncommitted; no publication, merge, or deployment is claimed for this slice.
+Head: `70a66ae2384f943e1fa69434537cd4699adc67b2`
+Tracking: `origin/main`
+Working tree: post-PR #52 state reconciliation is uncommitted; no deployment is claimed.
 
-PRs #43–#50 are merged. PR #48 initially failed on a stale web branch and was rebased onto current main before green CI and merge. PR #49 initially conflicted and was rebased with both merged operator-header coverage and new SDK branch-coverage cases preserved before green CI and merge. PR #51 reconciled state records and merged with green CI.
+PR #52 merged as `70a66ae2384f943e1fa69434537cd4699adc67b2` at `2026-08-16T18:31:24Z`; its head was `a9ef77a`. CI was observed green across Node 18, Node 20, Windows compatibility, package/smoke, and report; attested-artifact publication was skipped. No deployment is claimed.
 
-## Pending revocation-freshness slice
+## Verified evolution lineage
 
-A deterministic local `revision` derived from the append-only revocation registry sequence is now carried by API verification, mutation, ledger, and policy responses. The dashboard renders count plus revision, the SDK types revision metadata, and API/SDK/CLI documentation bounds it as local freshness evidence only. The existing integrity digest and fail-closed mismatch behavior remain unchanged.
+| Slice       | Evidence-bound result                                                                                                                                                                                                                                 |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PRs #33–#40 | Signing audit, encrypted runtime/memory persistence, revocation controls, TTL, constant-time bearer auth, policy/readiness contracts, controlled key fallback, local registry integrity evidence, and optional operator identity boundary are merged. |
+| PRs #43–#51 | Development quickstart repair, SDK/web/CLI/API/persistence coverage and behavior repairs, stale-base/conflict repairs, and state-record reconciliation are merged. Current main full gate reached 25 suites / 409 tests.                              |
+| PR #52      | API verification, mutation, ledger, and policy responses now expose a local revocation `revision`; dashboard, typed SDK, CLI docs, and API docs carry the same bounded freshness evidence.                                                            |
 
-Focused API/web/SDK/CLI tests passed: **146 tests**. The last full local gate before documentation updates passed: **25 suites / 409 tests**, successful build, format check, type-check, and diff check. The revision slice is not yet committed or published.
+## Revocation-freshness evidence
 
-> A local revision does not coordinate replicas, establish a global order, or prove that another node observed the same revocation state. It is not distributed consistency, recovery, custody, or deployment evidence.
+Focused API/web/SDK/CLI tests passed: **146 tests**. The full local gate passed before the final documentation-only repair: **25 suites / 409 tests**, successful workspace/Vite build, `format:check`, type-check, and `git diff --check`. PR #52 CI was subsequently observed green and merged.
+
+The revision is derived from the append-only local registry sequence. It is a local freshness signal only: it does not coordinate replicas, establish a global order, or prove that another node observed the same revocation state. Existing digest mismatch status and fail-closed behavior remain in force.
+
+> A local revision is not distributed consistency, recovery, custody, authentication, identity proofing, or deployment evidence.
 
 ## Open risks and next priorities
 
-HSM/KMS custody; secure deletion; automated persistence re-encryption; persistence-key recovery; complete data-at-rest coverage; distributed revocation consistency; clock coordination; identity proofing; stronger administrative authorization; deployment hardening; mobile surface; and human cryptographic/revocation review remain open. `format:check` is present in CI and was observed in the current main gate.
+HSM/KMS custody; secure deletion; automated persistence re-encryption; persistence-key recovery; complete data-at-rest coverage; distributed revocation consistency; clock coordination; identity proofing; stronger administrative authorization; deployment hardening; mobile surface; and human cryptographic/revocation review remain open.
 
 ## Human gates and next executable loop
 
-The user has authorized slice-by-slice publication and merge. Next: run the post-documentation full gate, commit this revision slice and evidence, push a new PR, observe CI, mark ready, and merge only if repository gates permit. Deployment remains separate.
+The user has authorized slice-by-slice publication and merge. Next: reconcile the merged main documentation, then select the next smallest production-relevant increment. Any publication, merge, or deployment remains separately gated.
 
 > One root. One current. Many minds. Infinite forms.
