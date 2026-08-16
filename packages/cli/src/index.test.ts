@@ -454,4 +454,285 @@ describe('omega status CLI', () => {
     expect(exitCode).toBe(1);
     expect(errors).toHaveLength(0);
   });
+
+  /**
+   * Every command's network-failure catch branch, and several of the
+   * non-ok-response branches, ran zero times under test — `packages/cli`
+   * was the second-lowest-coverage package in the repo (66.44% branch).
+   * A CLI operator relies on these error paths to fail closed with a
+   * readable message when the API is unreachable or rejects a request;
+   * they deserve the same evidence as the success paths above.
+   */
+  it('reports an unknown command and shows usage', async () => {
+    const errors: string[] = [];
+    process.stderr.write = ((chunk: string | Uint8Array) => {
+      errors.push(String(chunk));
+      return true;
+    }) as typeof process.stderr.write;
+
+    expect(await run(['bogus'], async () => new Response())).toBe(2);
+    expect(errors.join('')).toContain('Unknown command: bogus');
+    expect(errors.join('')).toContain('omega health [--url URL]');
+  });
+
+  it('reports a non-ok health response with the API message', async () => {
+    const errors: string[] = [];
+    process.stderr.write = ((chunk: string | Uint8Array) => {
+      errors.push(String(chunk));
+      return true;
+    }) as typeof process.stderr.write;
+
+    expect(
+      await run(
+        ['health'],
+        async () =>
+          new Response(JSON.stringify({ message: 'service unavailable' }), { status: 503 })
+      )
+    ).toBe(1);
+    expect(errors.join('')).toContain('Health unavailable (503): service unavailable');
+  });
+
+  it('reports a network failure while checking health', async () => {
+    const errors: string[] = [];
+    process.stderr.write = ((chunk: string | Uint8Array) => {
+      errors.push(String(chunk));
+      return true;
+    }) as typeof process.stderr.write;
+
+    expect(
+      await run(['health'], async () => {
+        throw new TypeError('fetch failed');
+      })
+    ).toBe(1);
+    expect(errors.join('')).toContain('Health unavailable: fetch failed');
+  });
+
+  it('reports a non-ok observability response', async () => {
+    const errors: string[] = [];
+    process.stderr.write = ((chunk: string | Uint8Array) => {
+      errors.push(String(chunk));
+      return true;
+    }) as typeof process.stderr.write;
+
+    expect(
+      await run(['status'], async () => new Response(JSON.stringify({}), { status: 500 }))
+    ).toBe(1);
+    expect(errors.join('')).toContain('Observability unavailable (500)');
+  });
+
+  it('reports a network failure while checking status', async () => {
+    const errors: string[] = [];
+    process.stderr.write = ((chunk: string | Uint8Array) => {
+      errors.push(String(chunk));
+      return true;
+    }) as typeof process.stderr.write;
+
+    expect(
+      await run(['status'], async () => {
+        throw new TypeError('fetch failed');
+      })
+    ).toBe(1);
+    expect(errors.join('')).toContain('Observability unavailable: fetch failed');
+  });
+
+  it('reports a non-ok runs response', async () => {
+    const errors: string[] = [];
+    process.stderr.write = ((chunk: string | Uint8Array) => {
+      errors.push(String(chunk));
+      return true;
+    }) as typeof process.stderr.write;
+
+    expect(await run(['runs'], async () => new Response(JSON.stringify({}), { status: 500 }))).toBe(
+      1
+    );
+    expect(errors.join('')).toContain('Runs unavailable (500)');
+  });
+
+  it('reports a network failure while reading runs', async () => {
+    const errors: string[] = [];
+    process.stderr.write = ((chunk: string | Uint8Array) => {
+      errors.push(String(chunk));
+      return true;
+    }) as typeof process.stderr.write;
+
+    expect(
+      await run(['runs'], async () => {
+        throw new TypeError('fetch failed');
+      })
+    ).toBe(1);
+    expect(errors.join('')).toContain('Runs unavailable: fetch failed');
+  });
+
+  it('reports a non-ok policy response with the API message', async () => {
+    const errors: string[] = [];
+    process.stderr.write = ((chunk: string | Uint8Array) => {
+      errors.push(String(chunk));
+      return true;
+    }) as typeof process.stderr.write;
+
+    expect(
+      await run(
+        ['policy'],
+        async () => new Response(JSON.stringify({ message: 'read denied' }), { status: 403 })
+      )
+    ).toBe(1);
+    expect(errors.join('')).toContain('Policy unavailable (403): read denied');
+  });
+
+  it('reports a network failure while reading policy', async () => {
+    const errors: string[] = [];
+    process.stderr.write = ((chunk: string | Uint8Array) => {
+      errors.push(String(chunk));
+      return true;
+    }) as typeof process.stderr.write;
+
+    expect(
+      await run(['policy'], async () => {
+        throw new TypeError('fetch failed');
+      })
+    ).toBe(1);
+    expect(errors.join('')).toContain('Policy unavailable: fetch failed');
+  });
+
+  it('fails closed when verify is called without --attestation-json', async () => {
+    const errors: string[] = [];
+    process.stderr.write = ((chunk: string | Uint8Array) => {
+      errors.push(String(chunk));
+      return true;
+    }) as typeof process.stderr.write;
+
+    expect(await run(['verify'], async () => new Response())).toBe(2);
+    expect(errors.join('')).toContain('Usage: omega verify --attestation-json JSON');
+  });
+
+  it('fails closed when --attestation-json is not valid JSON', async () => {
+    const errors: string[] = [];
+    process.stderr.write = ((chunk: string | Uint8Array) => {
+      errors.push(String(chunk));
+      return true;
+    }) as typeof process.stderr.write;
+
+    expect(
+      await run(['verify', '--attestation-json', '{not json'], async () => new Response())
+    ).toBe(2);
+    expect(errors.join('')).toContain('Invalid JSON supplied to --attestation-json');
+  });
+
+  it('reports a non-ok verify response with the API message', async () => {
+    const errors: string[] = [];
+    process.stderr.write = ((chunk: string | Uint8Array) => {
+      errors.push(String(chunk));
+      return true;
+    }) as typeof process.stderr.write;
+
+    expect(
+      await run(
+        ['verify', '--attestation-json', '{"id":"att-1"}'],
+        async () =>
+          new Response(JSON.stringify({ message: 'malformed attestation' }), { status: 400 })
+      )
+    ).toBe(1);
+    expect(errors.join('')).toContain('Verification failed (400): malformed attestation');
+  });
+
+  it('reports a network failure while verifying an attestation', async () => {
+    const errors: string[] = [];
+    process.stderr.write = ((chunk: string | Uint8Array) => {
+      errors.push(String(chunk));
+      return true;
+    }) as typeof process.stderr.write;
+
+    expect(
+      await run(['verify', '--attestation-json', '{"id":"att-1"}'], async () => {
+        throw new TypeError('fetch failed');
+      })
+    ).toBe(1);
+    expect(errors.join('')).toContain('Verification failed: fetch failed');
+  });
+
+  it('reports a network failure while listing revocations', async () => {
+    const errors: string[] = [];
+    process.stderr.write = ((chunk: string | Uint8Array) => {
+      errors.push(String(chunk));
+      return true;
+    }) as typeof process.stderr.write;
+
+    expect(
+      await run(['revocations'], async () => {
+        throw new TypeError('fetch failed');
+      })
+    ).toBe(1);
+    expect(errors.join('')).toContain('Revocations unavailable: fetch failed');
+  });
+
+  it('reports a network failure while revoking an attestation', async () => {
+    const errors: string[] = [];
+    process.stderr.write = ((chunk: string | Uint8Array) => {
+      errors.push(String(chunk));
+      return true;
+    }) as typeof process.stderr.write;
+
+    expect(
+      await run(['revoke', 'att-2', '--reason', 'manual review'], async () => {
+        throw new TypeError('fetch failed');
+      })
+    ).toBe(1);
+    expect(errors.join('')).toContain('Revocation failed: fetch failed');
+  });
+
+  it('reports a non-ok evidence export response', async () => {
+    const errors: string[] = [];
+    process.stderr.write = ((chunk: string | Uint8Array) => {
+      errors.push(String(chunk));
+      return true;
+    }) as typeof process.stderr.write;
+
+    expect(
+      await run(['export'], async () => new Response(JSON.stringify({}), { status: 500 }))
+    ).toBe(1);
+    expect(errors.join('')).toContain('Evidence export unavailable (500)');
+  });
+
+  it('reports a network failure while exporting evidence', async () => {
+    const errors: string[] = [];
+    process.stderr.write = ((chunk: string | Uint8Array) => {
+      errors.push(String(chunk));
+      return true;
+    }) as typeof process.stderr.write;
+
+    expect(
+      await run(['export'], async () => {
+        throw new TypeError('fetch failed');
+      })
+    ).toBe(1);
+    expect(errors.join('')).toContain('Evidence export unavailable: fetch failed');
+  });
+
+  it('reports a non-ok events response', async () => {
+    const errors: string[] = [];
+    process.stderr.write = ((chunk: string | Uint8Array) => {
+      errors.push(String(chunk));
+      return true;
+    }) as typeof process.stderr.write;
+
+    expect(
+      await run(['events'], async () => new Response(JSON.stringify({}), { status: 500 }))
+    ).toBe(1);
+    expect(errors.join('')).toContain('Events unavailable (500)');
+  });
+
+  it('reports a network failure while reading events', async () => {
+    const errors: string[] = [];
+    process.stderr.write = ((chunk: string | Uint8Array) => {
+      errors.push(String(chunk));
+      return true;
+    }) as typeof process.stderr.write;
+
+    expect(
+      await run(['events'], async () => {
+        throw new TypeError('fetch failed');
+      })
+    ).toBe(1);
+    expect(errors.join('')).toContain('Events unavailable: fetch failed');
+  });
 });
