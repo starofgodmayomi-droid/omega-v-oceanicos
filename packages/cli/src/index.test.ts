@@ -17,7 +17,7 @@ describe('omega status CLI', () => {
     }) as typeof process.stdout.write;
 
     expect(await run(['--help'], async () => new Response())).toBe(0);
-    expect(output.join('')).toContain('omega status [--url URL]');
+    expect(output.join('')).toContain('omega events [--url URL] [--limit N]');
   });
 
   it('renders live observability evidence and returns success when trust is valid', async () => {
@@ -57,6 +57,33 @@ describe('omega status CLI', () => {
     expect(exitCode).toBe(0);
     expect(output.join('')).toContain('attestation=VALID');
     expect(output.join('')).toContain('request=req-1');
+  });
+
+  it('reads recent runtime events and honors the evidence limit', async () => {
+    const output: string[] = [];
+    process.stdout.write = ((chunk: string | Uint8Array) => {
+      output.push(String(chunk));
+      return true;
+    }) as typeof process.stdout.write;
+
+    const exitCode = await run(['events', '--url', 'http://api.test/', '--limit', '1'], async (url) => {
+      expect(url).toBe('http://api.test/events');
+      return new Response(
+        JSON.stringify({
+          data: [
+            { id: 'event-1', stage: 'observe', status: 'verified' },
+            { id: 'event-2', stage: 'verify', status: 'verified' },
+          ],
+          meta: { window: 100 },
+          timestamp: '2026-08-16T00:00:00.000Z',
+        })
+      );
+    });
+
+    expect(exitCode).toBe(0);
+    expect(output.join('')).toContain('EVENTS        1/2');
+    expect(output.join('')).toContain('event-1');
+    expect(output.join('')).not.toContain('event-2');
   });
 
   it('fails closed when memory integrity is false', async () => {
