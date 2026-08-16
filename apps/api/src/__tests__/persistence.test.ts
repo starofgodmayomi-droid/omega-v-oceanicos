@@ -74,6 +74,42 @@ describe('runtime persistence', () => {
       expect(loadSnapshot<Snap>(storePath, true).source).toBe('corrupt');
     });
 
+    /**
+     * `decryptText` has three distinct failure reasons, but every existing
+     * encryption test either round-trips successfully or supplies the wrong
+     * key to an otherwise well-formed record — so only its final fallback
+     * ("could not be decrypted") had ever run. A store that is truncated
+     * below the envelope's structure, or one nobody configured a key for at
+     * all, are different failures with different fixes, and the caller
+     * deserves to tell them apart.
+     */
+    it('reports a specific reason when an encrypted record is missing an envelope segment', () => {
+      writeFileSync(storePath, 'omega-v1:only-one-segment');
+
+      const result = loadSnapshot<Snap>(storePath, true, 'irrelevant-secret');
+
+      expect(result.source).toBe('corrupt');
+      expect(result.reason).toBe('encrypted persistence record is malformed');
+    });
+
+    it('reports a specific reason when an encrypted record has truncated segments', () => {
+      writeFileSync(storePath, 'omega-v1:AAAA:BBBB:CCCC');
+
+      const result = loadSnapshot<Snap>(storePath, true, 'irrelevant-secret');
+
+      expect(result.source).toBe('corrupt');
+      expect(result.reason).toBe('encrypted persistence record has invalid lengths');
+    });
+
+    it('reports a specific reason when an encrypted store has no persistence key configured', () => {
+      saveSnapshot(storePath, fixture(), true, 'was-configured-secret');
+
+      const result = loadSnapshot<Snap>(storePath, true);
+
+      expect(result.source).toBe('corrupt');
+      expect(result.reason).toBe('encrypted persistence requires OMEGA_PERSISTENCE_KEY');
+    });
+
     it('restores every collection from a well-formed store', () => {
       const written = fixture();
       writeFileSync(storePath, JSON.stringify(written));
@@ -273,6 +309,24 @@ describe('append-only event log', () => {
     expect(result.source).toBe('restored');
     expect(result.keySource).toBe('mixed');
     expect(result.entries.map((entry) => entry.id)).toEqual(['evt-old', 'evt-new']);
+  });
+
+  /**
+   * The "mixed" provenance test above always pairs a previous-key line with
+   * a current-key line, so `combineKeySources` had only ever seen sets
+   * containing 'current'. A log rotated once, where every surviving line
+   * still decrypts under the previous key alone, reports a distinct,
+   * narrower provenance ('previous', not 'mixed') that nothing exercised.
+   */
+  it('reports a pure previous-key provenance when every line decrypts under the rotation key', () => {
+    appendEvent(logPath, { id: 'evt-1' }, true, 'previous-secret');
+    appendEvent(logPath, { id: 'evt-2' }, true, 'previous-secret');
+
+    const result = readEventLog<{ id: string }>(logPath, true, undefined, 'previous-secret');
+
+    expect(result.source).toBe('restored');
+    expect(result.keySource).toBe('previous');
+    expect(result.entries.map((entry) => entry.id)).toEqual(['evt-1', 'evt-2']);
   });
 
   it('reports an encrypted line as partial when the key is wrong', () => {
