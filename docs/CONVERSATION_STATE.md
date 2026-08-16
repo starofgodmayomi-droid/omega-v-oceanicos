@@ -7,36 +7,25 @@
 Repository: `starofgodmayomi-droid/omega-v-oceanicos`  
 Worktree: `/home/ubuntu/current-main-worktree`  
 Branch: `main`
-Head: `af26f2a`
-Working tree: clean and synchronized with `origin/main`.
+Base: merged `origin/main` at `7c5bf31e66896b1e5f369b659e65163e3bcd7443`
+Working tree: local revocation-freshness implementation and evidence records are uncommitted; no publication, merge, or deployment is claimed for this slice.
 
-PRs #43–#50 are now merged. PR #48 initially failed because its web coverage branch was based before the command-palette fix; it was rebased onto current main, its focused tests passed, CI reran green, and it was then merged. PR #49 initially conflicted after later main changes; its SDK test conflict was resolved by preserving both the merged operator-header coverage and new branch-coverage cases, the rebased focused test passed, CI reran green, and it was then merged. PR #50 merged after its green CI matrix. No deployment is claimed.
+PRs #43–#50 are merged. PR #48 initially failed on a stale web branch and was rebased onto current main before green CI and merge. PR #49 initially conflicted and was rebased with both merged operator-header coverage and new SDK branch-coverage cases preserved before green CI and merge. PR #51 reconciled state records and merged with green CI.
 
-## Delivered queue evidence
+## Pending revocation-freshness slice
 
-| PR  | Delivered result                                                                                                   |
-| --- | ------------------------------------------------------------------------------------------------------------------ |
-| #43 | Restored the development quickstart `pnpm install` step and dropped heading.                                       |
-| #44 | Covered SDK network-failure branches.                                                                              |
-| #45 | Fixed the web command-palette close effect from stealing focus.                                                    |
-| #46 | Covered CLI network and non-success response branches.                                                             |
-| #47 | Covered API validation catches, revocation-registry mismatch, and TTL expiry.                                      |
-| #48 | Covered web act/learn/recompile, navigation fallback, and attestation error paths after rebase repair.             |
-| #49 | Covered SDK defaults, operator header, non-Error network failures, and error-body fallbacks after conflict repair. |
-| #50 | Covered persistence decrypt malformed/no-key failures and previous-only-key provenance.                            |
+A deterministic local `revision` derived from the append-only revocation registry sequence is now carried by API verification, mutation, ledger, and policy responses. The dashboard renders count plus revision, the SDK types revision metadata, and API/SDK/CLI documentation bounds it as local freshness evidence only. The existing integrity digest and fail-closed mismatch behavior remain unchanged.
 
-## Main verification evidence
+Focused API/web/SDK/CLI tests passed: **146 tests**. The last full local gate before documentation updates passed: **25 suites / 409 tests**, successful build, format check, type-check, and diff check. The revision slice is not yet committed or published.
 
-After PRs #43–#50 were merged, the full local gate passed: `pnpm test -- --coverage`, `pnpm build`, `pnpm format:check`, `pnpm type-check`, and `git diff --check`. Observed result: **25 suites / 409 tests**, successful workspace/Vite build, clean worktree, and current `origin/main` synchronization. The repository’s CI matrix had also been observed green for the delivered PRs; attested-artifact publication remained skipped for pull-request events by design.
-
-> The coverage queue improves evidence of existing behavior. It does not establish HSM/KMS custody, secure deletion, distributed authorization, production deployment, mobile support, or complete data-at-rest coverage.
+> A local revision does not coordinate replicas, establish a global order, or prove that another node observed the same revocation state. It is not distributed consistency, recovery, custody, or deployment evidence.
 
 ## Open risks and next priorities
 
-HSM/KMS custody; secure deletion; automated persistence re-encryption; persistence-key recovery; complete data-at-rest coverage; distributed revocation consistency; clock coordination; identity proofing; stronger administrative authorization; deployment hardening; mobile surface; and human cryptographic/revocation review remain open. `format:check` is present in CI and was observed in the latest gate.
+HSM/KMS custody; secure deletion; automated persistence re-encryption; persistence-key recovery; complete data-at-rest coverage; distributed revocation consistency; clock coordination; identity proofing; stronger administrative authorization; deployment hardening; mobile surface; and human cryptographic/revocation review remain open. `format:check` is present in CI and was observed in the current main gate.
 
 ## Human gates and next executable loop
 
-The user has authorized slice-by-slice publication and merge. The next step is to select the next smallest complete production-relevant increment from the remaining gaps, implement it end to end, verify locally, and route publication, merge, and deployment through separate gates.
+The user has authorized slice-by-slice publication and merge. Next: run the post-documentation full gate, commit this revision slice and evidence, push a new PR, observe CI, mark ready, and merge only if repository gates permit. Deployment remains separate.
 
 > One root. One current. Many minds. Infinite forms.

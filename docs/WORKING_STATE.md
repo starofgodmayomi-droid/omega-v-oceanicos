@@ -41,10 +41,11 @@ Push, PR publication, merge, deployment, and other externally visible actions ar
 | Persistence-key rotation        | `OMEGA_PERSISTENCE_KEY` encrypts new snapshot/event-log writes; optional `OMEGA_PERSISTENCE_KEY_PREVIOUS` permits authenticated fallback reads. API policy/observability, web, SDK, and CLI expose only `none/current/previous/mixed` provenance and previous-key presence.                                                                                   |
 | Revocation integrity evidence   | A persisted local SHA-256 digest now reports `disabled`, `legacy`, `intact`, or `mismatch` across API, web, SDK, CLI, tests, and docs. Mismatch fails closed for verification-sensitive action and mutation paths; distributed consistency remains open.                                                                                                      |
 | Operator identity allowlist     | Optional `OMEGA_ADMIN_OPERATOR_ALLOWLIST` binds revocation to a listed identity. API policy exposes configured presence; web, SDK, and CLI carry the identity boundary; unlisted identities fail closed. Complete identity/authentication remains open.                                                                                                       |
+| Revocation freshness            | API verification, mutation, ledger, policy, web, SDK, and CLI surfaces expose a local `revision` derived from the append-only registry sequence. This is bounded local freshness evidence; distributed coordination remains open.                                                                                                                             |
 
 ## Current repository state
 
-The active worktree is `/home/ubuntu/current-main-worktree` on branch `main`, synchronized with merged `origin/main`. Local commits currently include:
+The active worktree is `/home/ubuntu/current-main-worktree` on branch `feat/revocation-freshness`, based on merged `origin/main`. Local commits currently include:
 
 | Commit    | Meaning                                                                                                                                      | Publication state                                      |
 | --------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
@@ -75,6 +76,8 @@ The active worktree is `/home/ubuntu/current-main-worktree` on branch `main`, sy
 | `3ea5f6f` | PR #48 squash merge: web loop and error-path coverage after rebase repair                                                                    | Merged into `main`; CI green                           |
 | `fdec82f` | PR #49 squash merge: SDK default/error branch coverage after conflict repair                                                                 | Merged into `main`; CI green                           |
 | `af26f2a` | PR #50 squash merge: persistence decrypt and previous-key coverage                                                                           | Merged into `main`; CI green                           |
+| `7c5bf31` | PR #51 squash merge: coverage queue state reconciliation                                                                                     | Merged into `main`; CI green                           |
+| pending   | Local revocation registry revision evidence across API, web, SDK, CLI, tests, and docs                                                       | Locally verified; not yet committed or published       |
 
 | |
 | PR #33 is **merged** into `main` as squash commit `fb73ac28990b2b42b6339da2e8ca76007616dd70`, observed at `2026-08-16T14:46:39Z`. The published head `2cc2d21` passed Node 18, Node 20, Windows compatibility, package/smoke, and report checks; attested-artifact publication was skipped as designed. |
@@ -118,7 +121,7 @@ The combined signing-audit and persistence-encryption state passed:
 
 | `git diff --check` | Passed before the revocation commit |
 
-The last full local verification after the PR #43–#50 queue observed 409 passing tests, a successful workspace/Vite build, passing format/type/diff gates, and a clean worktree synchronized with `origin/main`. The queue’s CI matrices were observed green after repairing PR #48’s stale-base web failure and PR #49’s SDK test conflict. The repository may contain generated build output ignored by Git; only intended source and documentation changes should be committed.
+The last full local verification after the revision implementation observed 409 passing tests, a successful workspace/Vite build, passing format/type/diff gates, and a focused revision-contract result of 146 passing tests. This revision slice is local-only until its separate publication and merge gates are observed. The repository may contain generated build output ignored by Git; only intended source and documentation changes should be committed.
 
 ## Remaining gaps and uncertainty
 
@@ -128,6 +131,6 @@ The web client exposes revoke and revocation-ledger controls. Stronger administr
 
 ## Next authorized action
 
-1. Preserve the observed PR #43–#50 merge and repair evidence.
-2. Select the next smallest production-relevant slice from remaining custody, distributed coordination, identity, data-at-rest, deployment, or mobile gaps.
-3. Keep any new publication, merge, and deployment actions behind separate human gates.
+1. Commit the locally verified revocation-freshness slice.
+2. Push it to a new PR under the standing slice-by-slice publication authorization and observe CI.
+3. Mark ready and merge only when repository gates permit; do not claim distributed consistency or deployment.

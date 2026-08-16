@@ -160,7 +160,7 @@ export function installFetch(overrides: RouteOverrides = {}): jest.Mock {
     '/api/attest/verify': () => json({ data: { valid: true, revoked: false, expired: false } }),
     '/api/attest/revoke': () => json({ data: { id: 'rev-1' } }, { status: 201 }),
     '/api/attest/revocations': () =>
-      json({ data: [], meta: { integrity: 'disabled', digest: 'sha256:test' } }),
+      json({ data: [], meta: { integrity: 'disabled', digest: 'sha256:test', revision: 0 } }),
     '/api/attest/policy': () =>
       json({
         data: {
@@ -171,6 +171,7 @@ export function installFetch(overrides: RouteOverrides = {}): jest.Mock {
           adminOperatorAllowlistConfigured: false,
           revocationEnabled: true,
           revocationIntegrity: 'disabled',
+          revocationRevision: 0,
           persistenceEncryption: 'disabled',
           persistenceEncryptionKeySource: 'none',
           persistencePreviousKeyConfigured: false,

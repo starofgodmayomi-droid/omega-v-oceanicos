@@ -241,6 +241,12 @@ blocked on design; each is a decision or a scoped change.
   configured presence; web, SDK, and CLI carry the identity boundary and fail
   closed for unlisted identities. This does not establish authentication,
   identity proofing, role separation, audit-grade identity, or deployment policy.
+- **Revocation freshness — local revision evidence implemented, distributed
+  consistency not complete.** Ledger, verification, mutation, policy, web, SDK,
+  and CLI surfaces expose a local registry `revision` derived from the
+  append-only record sequence. This provides bounded local freshness evidence
+  only; it does not coordinate nodes, establish a global order, or prove that
+  another replica observed the same state.
 - **Health/readiness observability — contract implemented, deployment health not
   claimed.** `GET /health` remains unauthenticated for probes and returns
   explicit liveness, readiness, memory-integrity, persistence-codec, and
