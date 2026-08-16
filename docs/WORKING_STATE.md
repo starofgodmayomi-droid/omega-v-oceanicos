@@ -80,6 +80,7 @@ The active worktree is `/home/ubuntu/current-main-worktree` on branch `main`, sy
 | `7c5bf31` | PR #51 squash merge: coverage queue state reconciliation                                                                                     | Merged into `main`; CI green                           |
 | `70a66ae` | PR #52 squash merge: local revocation registry revision evidence across API, web, SDK, CLI, tests, and docs                                  | Merged into `main`; CI green                           |
 | `66a5221` | PR #54 squash merge: bounded temporal audit-query contract across API, web, SDK, CLI, tests, and docs                                        | Merged into `main`; CI green                           |
+| `74cf523` | PR #55 squash merge: post-PR #54 state reconciliation                                                                                        | Merged into `main`; CI green                           |
 
 | |
 | PR #33 is **merged** into `main` as squash commit `fb73ac28990b2b42b6339da2e8ca76007616dd70`, observed at `2026-08-16T14:46:39Z`. The published head `2cc2d21` passed Node 18, Node 20, Windows compatibility, package/smoke, and report checks; attested-artifact publication was skipped as designed. |
@@ -89,6 +90,7 @@ The active worktree is `/home/ubuntu/current-main-worktree` on branch `main`, sy
 | PR #38 is **merged** into `main` as squash commit `0cd211d64cafaedebc3ed54a9155c026a913a926`, observed at `2026-08-16T15:29:47Z`. Its head `7d549f0` passed the CI matrix; attested-artifact publication was skipped. |
 | PR #40 is **merged** into `main` as squash commit `ea69684109240aba3032bc7aa1f002f320aff20d`, observed at `2026-08-16T15:42:50Z`. Its head `7ea1521` passed the CI matrix; attested-artifact publication was skipped. This is merge evidence only; no deployment is claimed. |
 | PR #54 is **merged** into `main` as squash commit `66a5221faeb34c2478e8e89265bc8ce565c3d53e`, observed at `2026-08-16T19:36:14Z`. Its head `6b38d2f` passed Node 18, Node 20, Windows compatibility, package/smoke, and report checks; attested-artifact publication was skipped. This is merge evidence only; no deployment is claimed. |
+| PR #55 is **merged** into `main` as squash commit `74cf52341500201791591e77181f665a4105f660`, observed at `2026-08-16T19:41:13Z`. Its head `b511d99` passed Node 18, Node 20, Windows compatibility, package/smoke, and report checks; attested-artifact publication was skipped. This is merge evidence only; no deployment is claimed. |
 
 PR #32 remains historical Windows-compatibility evidence.
 
@@ -134,6 +136,5 @@ The web client exposes revoke and revocation-ledger controls. Stronger administr
 
 ## Next authorized action
 
-1. Reconcile this post-PR #54 state update through a separate documentation PR, preserving the observed merge and CI evidence.
-2. Select the next smallest production-relevant slice from custody, distributed coordination, identity, data-at-rest, deployment, or mobile gaps.
-3. Keep any new publication, merge, and deployment actions behind separate human gates.
+1. Select the next smallest production-relevant slice from custody, distributed coordination, identity, data-at-rest, deployment, or mobile gaps.
+2. Keep any new publication, merge, and deployment actions behind separate human gates.
