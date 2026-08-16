@@ -122,7 +122,8 @@ export class AttestationService {
       status: 'signed',
     };
 
-    attestation.signature = this.generateSignature(this.createSignaturePayload(attestation));
+    const payload = this.createSignaturePayload(attestation);
+    attestation.signature = this.generateSignature(payload.value);
     return attestation;
   }
 
