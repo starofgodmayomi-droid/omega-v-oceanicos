@@ -94,10 +94,11 @@ Only after MINI is real:
 
 Attestation status: signing is implemented for HMAC-SHA256 and Ed25519, with
 key material parsed at construction and the verifying algorithm taken from
-configuration rather than from the attestation. Not yet earned: the API still
-constructs its service as HMAC and publishes no public key, so the Ed25519 path
-is unreachable over HTTP. That is a key-distribution decision, not a coding one.
-Also absent: HSM/KMS custody, encryption at rest, a signing audit log, and
+configuration rather than from the attestation. The API now supports an
+explicit Ed25519 configuration, publishes only safe public trust metadata,
+and exposes signing and verification through the HTTP loop. The web, CLI, SDK,
+and integration tests carry that trust surface across the stack. Still not
+earned: HSM/KMS custody, encryption at rest, a signing audit log, and
 revocation.
 
 ### Phase 4 — Interface expansions
