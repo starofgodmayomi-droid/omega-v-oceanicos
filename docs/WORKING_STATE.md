@@ -43,34 +43,35 @@ Push, PR publication, merge, deployment, and other externally visible actions ar
 
 ## Current repository state
 
-The active worktree is `/home/ubuntu/current-main-worktree` on branch `feat/revocation-integrity-evidence`, based on merged `origin/main`. Local commits currently include:
+The active worktree is `/home/ubuntu/current-main-worktree` on branch `main`, synchronized with merged `origin/main`. Local commits currently include:
 
-| Commit    | Meaning                                                                                                                 | Publication state                                      |
-| --------- | ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
-| `c075154` | Signing audit metadata                                                                                                  | Published on PR #33 branch                             |
-| `47a2901` | Runtime persistence encryption                                                                                          | Published on PR #33 branch                             |
-| `ab9ac4d` | Attestation revocation controls                                                                                         | Published on PR #33 branch                             |
-| `2cbdc72` | Dashboard revocation control plus compressed state record                                                               | Published on PR #33 branch                             |
-| `d4ebd10` | SDK and CLI revocation surfaces                                                                                         | Published on PR #33 branch                             |
-| `9a876f2` | Coverage repair for SDK/CLI failure paths                                                                               | Published on PR #33 branch                             |
-| `5fb5277` | Web revocation ledger                                                                                                   | Local and not yet published at the time of this record |
-| `150ec2b` | Admin revocation boundary                                                                                               | Local and not yet published at the time of this record |
-| `1affdd7` | Kernel-memory encryption                                                                                                | Local and not yet published at the time of this record |
-| `2093081` | Kernel-memory key rotation                                                                                              | Local and not yet published at the time of this record |
-| `8341170` | Attestation expiry policy                                                                                               | Local and not yet published at the time of this record |
-| `88155d6` | SDK/CLI expiry verification                                                                                             | Local and not yet published at the time of this record |
-| `807b1ee` | Constant-time auth matching                                                                                             | Local and not yet published at the time of this record |
-| `b3f836a` | Frontend TTL policy evidence                                                                                            | Local and not yet published at the time of this record |
-| `fb73ac2` | PR #33 squash merge: signing audit, persistence, revocation, memory, expiry, auth, TTL, and policy slices               | Merged into `main`; CI green                           |
-| `5e267b5` | PR #34 squash merge: health-readiness contract across API, web, SDK, CLI, tests, and docs                               | Merged into `main`; CI green                           |
-| `cae0c65` | PR #36 squash merge: controlled persistence-key rotation fallback across API, web, SDK, CLI, tests, and docs            | Merged into `main`; CI green                           |
-| pending   | Local revocation-registry integrity digest and fail-closed mismatch evidence across API, web, SDK, CLI, tests, and docs | Locally verified; not yet committed or published       |
+| Commit    | Meaning                                                                                                                                      | Publication state                                      |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| `c075154` | Signing audit metadata                                                                                                                       | Published on PR #33 branch                             |
+| `47a2901` | Runtime persistence encryption                                                                                                               | Published on PR #33 branch                             |
+| `ab9ac4d` | Attestation revocation controls                                                                                                              | Published on PR #33 branch                             |
+| `2cbdc72` | Dashboard revocation control plus compressed state record                                                                                    | Published on PR #33 branch                             |
+| `d4ebd10` | SDK and CLI revocation surfaces                                                                                                              | Published on PR #33 branch                             |
+| `9a876f2` | Coverage repair for SDK/CLI failure paths                                                                                                    | Published on PR #33 branch                             |
+| `5fb5277` | Web revocation ledger                                                                                                                        | Local and not yet published at the time of this record |
+| `150ec2b` | Admin revocation boundary                                                                                                                    | Local and not yet published at the time of this record |
+| `1affdd7` | Kernel-memory encryption                                                                                                                     | Local and not yet published at the time of this record |
+| `2093081` | Kernel-memory key rotation                                                                                                                   | Local and not yet published at the time of this record |
+| `8341170` | Attestation expiry policy                                                                                                                    | Local and not yet published at the time of this record |
+| `88155d6` | SDK/CLI expiry verification                                                                                                                  | Local and not yet published at the time of this record |
+| `807b1ee` | Constant-time auth matching                                                                                                                  | Local and not yet published at the time of this record |
+| `b3f836a` | Frontend TTL policy evidence                                                                                                                 | Local and not yet published at the time of this record |
+| `fb73ac2` | PR #33 squash merge: signing audit, persistence, revocation, memory, expiry, auth, TTL, and policy slices                                    | Merged into `main`; CI green                           |
+| `5e267b5` | PR #34 squash merge: health-readiness contract across API, web, SDK, CLI, tests, and docs                                                    | Merged into `main`; CI green                           |
+| `cae0c65` | PR #36 squash merge: controlled persistence-key rotation fallback across API, web, SDK, CLI, tests, and docs                                 | Merged into `main`; CI green                           |
+| `0cd211d` | PR #38 squash merge: local revocation-registry integrity digest and fail-closed mismatch evidence across API, web, SDK, CLI, tests, and docs | Merged into `main`; CI green                           |
 
 | |
 | PR #33 is **merged** into `main` as squash commit `fb73ac28990b2b42b6339da2e8ca76007616dd70`, observed at `2026-08-16T14:46:39Z`. The published head `2cc2d21` passed Node 18, Node 20, Windows compatibility, package/smoke, and report checks; attested-artifact publication was skipped as designed. |
 | PR #34 is **merged** into `main` as squash commit `5e267b54c2bf831cfdb6004b4948a33c3ee1b114`, observed at `2026-08-16T14:58:55Z`. Its head `2349be0` passed the same CI matrix, with attested-artifact publication skipped. |
 | PR #35 is **merged** into `main` as squash commit `bd78ac8b398beefd4e6c1648743866ed70328051`, observed at `2026-08-16T15:03:03Z`; it reconciled the state records after PR #34. |
-| PR #36 is **merged** into `main` as squash commit `cae0c65915ba2a2553d7b54d411d2316223639a9`, observed at `2026-08-16T15:13:50Z`. Its head `c3e197f` passed the CI matrix; attested-artifact publication was skipped. This is merge evidence only; no deployment is claimed. |
+| PR #36 is **merged** into `main` as squash commit `cae0c65915ba2a2553d7b54d411d2316223639a9`, observed at `2026-08-16T15:13:50Z`. Its head `c3e197f` passed the CI matrix; attested-artifact publication was skipped. |
+| PR #38 is **merged** into `main` as squash commit `0cd211d64cafaedebc3ed54a9155c026a913a926`, observed at `2026-08-16T15:29:47Z`. Its head `7d549f0` passed the CI matrix; attested-artifact publication was skipped. This is merge evidence only; no deployment is claimed. |
 
 PR #32 remains historical Windows-compatibility evidence.
 
@@ -105,7 +106,7 @@ The combined signing-audit and persistence-encryption state passed:
 
 | `git diff --check` | Passed before the revocation commit |
 
-The last full local verification for the revocation-integrity slice observed 340 passing tests, 71.15% global branch coverage, and a successful build. This slice is local-only until its separate publication and merge gates are observed. The repository may contain generated build output ignored by Git; only intended source and documentation changes should be committed.
+The last full local verification for the revocation-integrity slice observed 340 passing tests, 71.15% global branch coverage, and a successful build; PR #38’s CI matrix was subsequently observed green and merged. The repository may contain generated build output ignored by Git; only intended source and documentation changes should be committed.
 
 ## Remaining gaps and uncertainty
 
@@ -115,7 +116,6 @@ The web client exposes revoke and revocation-ledger controls. Stronger administr
 
 ## Next authorized action
 
-1. Commit the locally verified revocation-integrity evidence slice.
-2. Push it to a new PR under the standing slice-by-slice publication authorization and observe CI.
-3. Mark ready and merge only when repository gates permit; do not claim distributed consistency or deployment.
-4. Select the next smallest worker-sized slice after delivery, prioritizing stronger administrative authorization or distributed coordination.
+1. Reconcile the merged main branch and preserve PR #38’s CI/merge evidence.
+2. Select the next smallest worker-sized slice, prioritizing stronger administrative authorization or distributed coordination.
+3. Keep any new publication, merge, and deployment actions behind separate human gates.
