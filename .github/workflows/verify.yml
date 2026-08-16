@@ -78,6 +78,39 @@ jobs:
           echo "✓ Verification successful at $(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_STEP_SUMMARY
           echo "All checks passed: format, lint, type-check, test, build" >> $GITHUB_STEP_SUMMARY
 
+  windows:
+    name: Windows compatibility
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Enable pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8.8.0
+
+      - name: Use Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check formatting
+        run: pnpm format:check
+
+      - name: Run type checking
+        run: pnpm type-check
+
+      - name: Run tests
+        run: pnpm test
+
+      - name: Build packages
+        run: pnpm build
+
   docker:
     name: Package and smoke test
     runs-on: ubuntu-latest
@@ -173,7 +206,7 @@ jobs:
   report:
     name: Report pipeline result
     runs-on: ubuntu-latest
-    needs: [verify, docker]
+    needs: [verify, windows, docker]
     # always(), so a failed pipeline is reported rather than passed over in
     # silence. A comment that only ever appears on success is not a report.
     if: always() && github.event_name == 'pull_request'
@@ -199,8 +232,9 @@ jobs:
         with:
           script: |
             const verify = '${{ needs.verify.result }}';
+            const windows = '${{ needs.windows.result }}';
             const docker = '${{ needs.docker.result }}';
-            const ok = verify === 'success' && docker === 'success';
+            const ok = verify === 'success' && windows === 'success' && docker === 'success';
             const mark = (r) => (r === 'success' ? '✓' : r === 'skipped' ? '–' : '✗');
 
             const body = [
@@ -209,6 +243,7 @@ jobs:
                 : '❌ Verification pipeline did not pass',
               '',
               `- ${mark(verify)} verify (format, lint, type-check, test, coverage, build) — ${verify}`,
+              `- ${mark(windows)} Windows compatibility (format, type-check, test, build) — ${windows}`,
               `- ${mark(docker)} package and smoke test — ${docker}`,
               '',
               ok
@@ -226,7 +261,7 @@ jobs:
   publish:
     name: Publish attested artifact
     runs-on: ubuntu-latest
-    needs: [verify, docker]
+    needs: [verify, windows, docker]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     permissions:
