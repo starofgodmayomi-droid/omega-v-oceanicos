@@ -33,6 +33,7 @@ type RuntimePolicy = {
   attestationTtlMs: number | null;
   readAuthConfigured: boolean;
   adminAuthConfigured: boolean;
+  adminOperatorAllowlistConfigured: boolean;
   revocationEnabled: boolean;
   revocationIntegrity: 'disabled' | 'legacy' | 'intact' | 'mismatch';
   persistenceEncryption: string;
@@ -350,11 +351,15 @@ export function App(): JSX.Element {
     try {
       const response = await fetch('/api/attest/revoke', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-omega-operator-id': 'dashboard-operator',
+        },
         body: JSON.stringify({
           attestationId: result.attestation.id,
           reason: revocationReason.trim(),
           revokedBy: 'dashboard-operator',
+          operatorId: 'dashboard-operator',
         }),
       });
       if (!response.ok)
@@ -708,7 +713,7 @@ export function App(): JSX.Element {
             <span>POLICY</span>
             <strong>
               {policy
-                ? `${policy.revocationEnabled ? 'REVOCATION' : 'NO REVOCATION'} / ${policy.adminAuthConfigured ? 'ADMIN' : 'LOCAL'}`
+                ? `${policy.revocationEnabled ? 'REVOCATION' : 'NO REVOCATION'} / ${policy.adminAuthConfigured ? 'ADMIN' : 'LOCAL'}${policy.adminOperatorAllowlistConfigured ? ' / IDENTITY' : ''}`
                 : 'UNKNOWN'}
             </strong>
           </div>

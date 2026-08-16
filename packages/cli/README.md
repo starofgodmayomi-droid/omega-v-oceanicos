@@ -81,11 +81,12 @@ List recorded revocations without mutating state. The output includes the API’
 node packages/cli/dist/index.js revocations --url http://localhost:3000
 ```
 
-Revoke a recorded attestation only when an authorized operator has supplied a reason:
+Revoke a recorded attestation only when an authorized operator has supplied a reason. When `OMEGA_ADMIN_OPERATOR_ALLOWLIST` is configured, pass `--operator-id ID`; an unlisted identity returns a non-zero failure and the CLI does not claim authorization.
 
 ```bash
 node packages/cli/dist/index.js revoke attestation-id \
   --reason "Operator review found stale evidence" \
+  --operator-id dashboard-operator \
   --url http://localhost:3000 \
   --token "$OMEGA_READ_TOKEN"
 ```

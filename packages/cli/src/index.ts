@@ -101,7 +101,7 @@ function usage(): string {
     'omega runs [--url URL] [--limit N] [--token TOKEN]',
     'omega export [--url URL] [--token TOKEN]',
     'omega revocations [--url URL] [--token TOKEN]',
-    'omega revoke ATTESTATION_ID --reason REASON [--url URL] [--token TOKEN] [--admin-token TOKEN]',
+    'omega revoke ATTESTATION_ID --reason REASON [--operator-id ID] [--url URL] [--token TOKEN] [--admin-token TOKEN]',
     'omega verify --attestation-json JSON [--url URL] [--token TOKEN]',
     'omega policy [--url URL] [--token TOKEN]',
     '',
@@ -355,8 +355,15 @@ async function revoke(argv: string[], fetchImpl: FetchLike): Promise<number> {
       headers: {
         'content-type': 'application/json',
         ...(adminToken(argv) ? { Authorization: `Bearer ${adminToken(argv)}` } : {}),
+        ...(option(argv, '--operator-id')
+          ? { 'x-omega-operator-id': option(argv, '--operator-id') as string }
+          : {}),
       },
-      body: JSON.stringify({ attestationId, reason, revokedBy: 'omega-cli' }),
+      body: JSON.stringify({
+        attestationId,
+        reason,
+        revokedBy: option(argv, '--operator-id') || 'omega-cli',
+      }),
     });
     const body = (await response.json()) as { data?: Revocation; message?: string };
     if (!response.ok || !body.data) {

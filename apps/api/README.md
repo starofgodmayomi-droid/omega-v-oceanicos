@@ -318,7 +318,8 @@ revoked attestation remains cryptographically inspectable, but
 returns `409 REVOKED_ATTESTATION` rather than authorizing an action. When
 `OMEGA_ATTESTATION_TTL_MS` is configured, expiry is an additional authorization
 predicate: verification reports `expired: true` and `/act` returns
-`409 EXPIRED_ATTESTATION`. Duplicate revocation requests are rejected with `409 ATTESTATION_ALREADY_REVOKED`. `GET /attest/revocations` also returns non-secret integrity metadata: `disabled` when persistence is off, `legacy` when an older snapshot has no registry digest, `intact` when the digest matches loaded records, and `mismatch` when it does not. A mismatched registry fails closed with `503 REVOCATION_REGISTRY_INTEGRITY` for verification-sensitive mutation and action paths. This digest is local tamper evidence, not distributed consistency, custody, secure deletion, or proof that both records and digest could not be altered together.
+`409 EXPIRED_ATTESTATION`. Duplicate revocation requests are rejected with `409 ATTESTATION_ALREADY_REVOKED`. When `OMEGA_ADMIN_OPERATOR_ALLOWLIST` is configured, an unlisted identity fails with `403 ADMIN_OPERATOR_NOT_ALLOWED`; this is an additional local bearer-plus-identity boundary, not a complete identity, authentication, or authorization system.
+`GET /attest/revocations` also returns non-secret integrity metadata: `disabled` when persistence is off, `legacy` when an older snapshot has no registry digest, `intact` when the digest matches loaded records, and `mismatch` when it does not. A mismatched registry fails closed with `503 REVOCATION_REGISTRY_INTEGRITY` for verification-sensitive mutation and action paths. This digest is local tamper evidence, not distributed consistency, custody, secure deletion, or proof that both records and digest could not be altered together.
 
 ### Runtime State
 
@@ -625,6 +626,7 @@ curl -X POST http://localhost:3000/complete-loop \
 - `API_PORT` — Port to run on (default: 3000)
 - `OMEGA_READ_TOKEN` — Optional bearer token required for read-only evidence endpoints; unset preserves local development behavior
 - `OMEGA_ADMIN_TOKEN` — Optional distinct bearer token required for `POST /attest/revoke`; never reuse or expose a read token as administrative authority
+- `OMEGA_ADMIN_OPERATOR_ALLOWLIST` — Optional comma-separated operator identities. When configured, revocation requires `x-omega-operator-id` (or the SDK/CLI equivalent) to match one of these identities; policy exposes only whether the allowlist is configured, not its contents.
 - `OMEGA_SIGNING_KEY` — Required signing key for attestation; there is no default
 - `OMEGA_PERSISTENCE` — Explicit persistence override: `on` or `off`
 - `OMEGA_PERSISTENCE_KEY` — Active secret for AES-256-GCM encryption of runtime snapshot and event-log files; new writes always use this key, and it is never exposed in logs or API responses

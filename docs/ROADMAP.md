@@ -235,6 +235,12 @@ blocked on design; each is a decision or a scoped change.
   consistency, custody, secure deletion, or proof that records and digest could
   not be altered together. Broader policy administration, expiry, distributed
   consistency and recovery procedures remain open.
+- **Operator identity allowlist — optional local boundary implemented, identity
+  system not complete.** `OMEGA_ADMIN_OPERATOR_ALLOWLIST` can require a listed
+  operator identity for revocation mutations. API policy exposes only its
+  configured presence; web, SDK, and CLI carry the identity boundary and fail
+  closed for unlisted identities. This does not establish authentication,
+  identity proofing, role separation, audit-grade identity, or deployment policy.
 - **Health/readiness observability — contract implemented, deployment health not
   claimed.** `GET /health` remains unauthenticated for probes and returns
   explicit liveness, readiness, memory-integrity, persistence-codec, and
