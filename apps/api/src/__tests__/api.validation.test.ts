@@ -158,4 +158,89 @@ describe('API validation guards', () => {
       expect(body.data.registered).toBe(2);
     });
   });
+
+  /**
+   * These four never ran under test. The three POST catch blocks exist to
+   * turn a thrown validation error from the underlying observer, verification,
+   * or attestation package into a structured 400 rather than an unhandled
+   * exception — a guarantee this service makes and had never demonstrated.
+   * The Ed25519 discovery endpoint's failure mode (asked for a public key
+   * this server is not configured to have) was covered only in its success
+   * form, under the Ed25519-specific test file.
+   */
+  it('reports Ed25519 trust as unavailable when the configured algorithm is HMAC', async () => {
+    const response = await fetch(`${baseUrl}/attest/public-key`);
+    expect(response.status).toBe(503);
+    expect(((await response.json()) as ErrorBody).code).toBe('ED25519_TRUST_UNAVAILABLE');
+  });
+
+  it('reports a structured error when an observation fails validation', async () => {
+    const response = await post('/observe', {
+      claim: 'malformed confidence type',
+      source: { system: 'validation-test', version: '0.1.0', environment: 'test' },
+      observedBy: 'jest',
+      metadata: {},
+      confidence: 'not-a-number',
+      confidenceReason: 'exercising the observation validation catch branch',
+    });
+    expect(response.status).toBe(400);
+    expect(((await response.json()) as ErrorBody).code).toBe('OBSERVATION_FAILED');
+  });
+
+  it('reports a structured error when verification is given an observation with no claim', async () => {
+    const response = await post('/verify', { observation: { id: 'obs-malformed' } });
+    expect(response.status).toBe(400);
+    expect(((await response.json()) as ErrorBody).code).toBe('VERIFICATION_FAILED');
+  });
+
+  it('reports a structured error when attestation is given a verification result with no summary', async () => {
+    const response = await post('/attest', { verificationResult: { id: 'ver-malformed' } });
+    expect(response.status).toBe(400);
+    expect(((await response.json()) as ErrorBody).code).toBe('ATTESTATION_FAILED');
+  });
+
+  describe('POST /attest/revoke validation', () => {
+    const originalAllowlist = process.env.OMEGA_ADMIN_OPERATOR_ALLOWLIST;
+
+    afterEach(() => {
+      if (originalAllowlist === undefined) {
+        delete process.env.OMEGA_ADMIN_OPERATOR_ALLOWLIST;
+      } else {
+        process.env.OMEGA_ADMIN_OPERATOR_ALLOWLIST = originalAllowlist;
+      }
+    });
+
+    it('rejects a revocation from an operator outside the configured allowlist', async () => {
+      process.env.OMEGA_ADMIN_OPERATOR_ALLOWLIST = 'trusted-operator';
+
+      const response = await post('/attest/revoke', {
+        attestationId: 'att-1',
+        reason: 'operator not on the allowlist',
+        operatorId: 'untrusted-operator',
+      });
+      const body = (await response.json()) as ErrorBody;
+
+      expect(response.status).toBe(403);
+      expect(body.code).toBe('ADMIN_OPERATOR_NOT_ALLOWED');
+    });
+
+    it('rejects a revocation missing attestationId or reason', async () => {
+      const response = await post('/attest/revoke', {});
+      const body = (await response.json()) as ErrorBody;
+
+      expect(response.status).toBe(400);
+      expect(body.code).toBe('MISSING_REVOCATION_DETAILS');
+    });
+
+    it('rejects revoking an attestation with no recorded runtime lineage', async () => {
+      const response = await post('/attest/revoke', {
+        attestationId: 'att-never-completed-a-run',
+        reason: 'attestation was never part of a completed run',
+      });
+      const body = (await response.json()) as ErrorBody;
+
+      expect(response.status).toBe(404);
+      expect(body.code).toBe('ATTESTATION_NOT_RECORDED');
+    });
+  });
 });
