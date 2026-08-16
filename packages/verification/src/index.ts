@@ -1,5 +1,29 @@
 import { Observation, VerificationResult, VerificationRule, EvidenceStep } from '@omega-v/types';
 
+/**
+ * Confidence in a verification, derived from the rules that actually ran.
+ *
+ * The lowest rule confidence wins. A verification is only as strong as its
+ * weakest applied rule, and averaging would let a confident rule carry a
+ * doubtful one — the direction that overstates trust.
+ *
+ * No rules ran means nothing was checked, which is `0`. That is not the same
+ * as `passed`, which is decided separately: a result can carry `passed: true`
+ * with zero confidence, and that combination is informative rather than
+ * contradictory.
+ *
+ * What this replaces matters more than the formula. The summary used to copy
+ * `observation.confidence` — a number the submitter puts in the request body.
+ * That value reached the attestation and sat inside the signed payload, so the
+ * system issued unforgeable signatures over a confidence figure no rule had
+ * produced. `ATTEST ≠ ASSERT` is the repository's stated principle; on this
+ * field it was `ATTEST ≡ ASSERT`.
+ */
+function deriveConfidence(ruleResults: Array<{ confidence: number }>): number {
+  if (ruleResults.length === 0) return 0;
+  return Math.min(...ruleResults.map((result) => result.confidence));
+}
+
 /** The outcome of executing one rule against one observation. */
 type RuleOutcome = {
   passed: boolean;
@@ -176,7 +200,8 @@ export class VerificationEngine {
       timestamp: new Date().toISOString(),
       summary: {
         passed: allPassed,
-        confidence: observation.confidence,
+        confidence: deriveConfidence(ruleResults),
+        claimedConfidence: observation.confidence,
         rulesApplied: rules.length,
         rulesPassed: ruleResults.filter((r) => r.passed).length,
         rulesFailed: ruleResults.filter((r) => !r.passed).length,

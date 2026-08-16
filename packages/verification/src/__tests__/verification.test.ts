@@ -294,3 +294,89 @@ describe('VerificationEngine — rule listing', () => {
     expect(engine.getApplicableRules(observation({}, ''))).toHaveLength(0);
   });
 });
+
+/**
+ * Confidence must come from the rules, not from the claim.
+ *
+ * The summary used to copy observation.confidence — a number the submitter
+ * writes into the request body. It reached the attestation and sat inside the
+ * signed payload, so the system issued unforgeable signatures over a figure no
+ * rule had produced.
+ *
+ * The default fixtures hid this: for a passing health check the claimed 0.95
+ * and the derived min(0.95, 0.98) are the same number. These tests separate
+ * the two deliberately, because a test that cannot tell them apart is what let
+ * the defect survive.
+ */
+describe('VerificationEngine — confidence is derived, not claimed', () => {
+  const highClaim = (metadata: Record<string, unknown>): Observation => ({
+    ...observation(metadata),
+    confidence: 0.99,
+    confidenceReason: 'the claimant is very sure of itself',
+  });
+
+  it('reports the rule confidence, not the number the claim asserted', () => {
+    const engine = new VerificationEngine();
+    engine.registerRule(rule());
+
+    const result = engine.verify(highClaim({ statusCode: 200 }));
+
+    // status-code-check yields 0.98 when it passes. The claim said 0.99.
+    expect(result.summary.confidence).toBeCloseTo(0.98);
+    expect(result.summary.confidence).not.toBeCloseTo(0.99);
+  });
+
+  it('preserves the claimed number separately rather than discarding it', () => {
+    const engine = new VerificationEngine();
+    engine.registerRule(rule());
+
+    const result = engine.verify(highClaim({ statusCode: 200 }));
+
+    // Still available to weigh — labelled as an input, not as a verdict.
+    expect(result.summary.claimedConfidence).toBeCloseTo(0.99);
+  });
+
+  it('takes the weakest applied rule, not the average', () => {
+    const engine = new VerificationEngine();
+    engine.registerRule(rule()); // status-code-check: 0.98 passing
+    engine.registerRule(rule({ name: 'response-time-threshold' })); // 0.95 passing
+
+    const result = engine.verify(highClaim({ statusCode: 200, responseTime: 42 }));
+
+    expect(result.summary.passed).toBe(true);
+    expect(result.summary.confidence).toBeCloseTo(0.95); // min, not mean (0.965)
+  });
+
+  it('collapses confidence when a rule fails, however sure the claim was', () => {
+    const engine = new VerificationEngine();
+    engine.registerRule(rule());
+
+    const result = engine.verify(highClaim({ statusCode: 500 }));
+
+    // A failing status-code-check yields 0.1. The claim still said 0.99.
+    expect(result.summary.passed).toBe(false);
+    expect(result.summary.confidence).toBeCloseTo(0.1);
+  });
+
+  it('reports zero confidence when nothing was checked', () => {
+    const engine = new VerificationEngine();
+
+    const result = engine.verify(highClaim({ statusCode: 200 }));
+
+    // No rule applied, so no rule produced confidence. This is deliberately
+    // independent of `passed`: nothing was checked is not the same statement
+    // as something failed.
+    expect(result.summary.rulesApplied).toBe(0);
+    expect(result.summary.confidence).toBe(0);
+    expect(result.summary.claimedConfidence).toBeCloseTo(0.99);
+  });
+
+  it('does not let an unevaluable rule inherit the claim confidence', () => {
+    const engine = new VerificationEngine();
+    engine.registerRule(rule({ name: 'entirely-novel-rule' }));
+
+    const result = engine.verify(highClaim({ statusCode: 200 }));
+
+    expect(result.summary.confidence).toBe(0);
+  });
+});
