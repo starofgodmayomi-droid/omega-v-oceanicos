@@ -64,15 +64,17 @@ export class OmegaClient {
   private readonly baseUrl: string;
   private readonly fetchImpl: FetchLike;
   private readonly readToken?: string;
+  private readonly adminToken?: string;
 
   constructor(
     baseUrl = 'http://localhost:3000',
     fetchImpl: FetchLike = globalThis.fetch,
-    options: { readToken?: string } = {}
+    options: { readToken?: string; adminToken?: string } = {}
   ) {
     this.baseUrl = baseUrl.replace(/\/$/, '');
     this.fetchImpl = fetchImpl;
     this.readToken = options.readToken;
+    this.adminToken = options.adminToken;
   }
 
   async getObservability(): Promise<Observability> {
@@ -123,7 +125,7 @@ export class OmegaClient {
         method: 'POST',
         headers: {
           'content-type': 'application/json',
-          ...(this.readToken ? { Authorization: `Bearer ${this.readToken}` } : {}),
+          ...(this.adminToken ? { Authorization: `Bearer ${this.adminToken}` } : {}),
         },
         body: JSON.stringify(payload),
       });

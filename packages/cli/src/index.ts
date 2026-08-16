@@ -73,7 +73,7 @@ function usage(): string {
     'omega runs [--url URL] [--limit N] [--token TOKEN]',
     'omega export [--url URL] [--token TOKEN]',
     'omega revocations [--url URL] [--token TOKEN]',
-    'omega revoke ATTESTATION_ID --reason REASON [--url URL] [--token TOKEN]',
+    'omega revoke ATTESTATION_ID --reason REASON [--url URL] [--token TOKEN] [--admin-token TOKEN]',
     '',
     'Read live runtime and evidence from the Omega V API.',
     '',
@@ -95,6 +95,10 @@ function readToken(argv: string[]): string | undefined {
 function requestInit(argv: string[]): RequestInit | undefined {
   const token = readToken(argv);
   return token ? { headers: { Authorization: `Bearer ${token}` } } : undefined;
+}
+
+function adminToken(argv: string[]): string | undefined {
+  return option(argv, '--admin-token') || process.env.OMEGA_ADMIN_TOKEN || undefined;
 }
 
 function percent(value: number | null): string {
@@ -215,7 +219,7 @@ async function revoke(argv: string[], fetchImpl: FetchLike): Promise<number> {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
-        ...((requestInit(argv)?.headers as Record<string, string> | undefined) ?? {}),
+        ...(adminToken(argv) ? { Authorization: `Bearer ${adminToken(argv)}` } : {}),
       },
       body: JSON.stringify({ attestationId, reason, revokedBy: 'omega-cli' }),
     });

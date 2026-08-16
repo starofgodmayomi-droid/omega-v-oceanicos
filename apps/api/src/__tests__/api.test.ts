@@ -165,6 +165,56 @@ describe('API runtime contracts', () => {
     expect(verification.data.valid).toBe(true);
   });
 
+  it('enforces the opt-in admin token boundary for revocation', async () => {
+    const previousToken = process.env.OMEGA_ADMIN_TOKEN;
+    process.env.OMEGA_ADMIN_TOKEN = 'contract-admin-token';
+    try {
+      const loopResponse = await fetch(`${baseUrl}/complete-loop`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          claim: 'admin revocation contract',
+          category: 'health-check',
+          source: { system: 'api-test', version: '0.1.0', environment: 'test' },
+          observedBy: 'jest',
+          metadata: { responseTime: 42, statusCode: 200 },
+          confidence: 0.95,
+          confidenceReason: 'Executable admin authorization test',
+        }),
+      });
+      const loop = (await loopResponse.json()) as ApiResponse<LoopPayload>;
+      const payload = { attestationId: loop.data.attestation.id, reason: 'contract review' };
+
+      const denied = await fetch(`${baseUrl}/attest/revoke`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      expect(denied.status).toBe(401);
+      expect(((await denied.json()) as { code: string }).code).toBe('ADMIN_ACCESS_REQUIRED');
+
+      const readTokenDenied = await fetch(`${baseUrl}/attest/revoke`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer read-token' },
+        body: JSON.stringify(payload),
+      });
+      expect(readTokenDenied.status).toBe(401);
+
+      const allowed = await fetch(`${baseUrl}/attest/revoke`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer contract-admin-token',
+        },
+        body: JSON.stringify(payload),
+      });
+      expect(allowed.status).toBe(201);
+    } finally {
+      if (previousToken === undefined) delete process.env.OMEGA_ADMIN_TOKEN;
+      else process.env.OMEGA_ADMIN_TOKEN = previousToken;
+    }
+  });
+
   it('enforces the opt-in read-only access token boundary', async () => {
     const previousToken = process.env.OMEGA_READ_TOKEN;
     process.env.OMEGA_READ_TOKEN = 'contract-read-token';

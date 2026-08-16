@@ -100,18 +100,22 @@ and exposes signing and verification through the HTTP loop. The web, CLI, SDK,
 and integration tests carry that trust surface across the stack. The API's
 `attestation.created` runtime event now records non-secret signing audit
 metadata, including algorithm, key version, key fingerprint, verification
-identity, confidence and rule versions. Still not earned: HSM/KMS custody,
-encryption at rest, and revocation.
+identity, confidence and rule versions. Runtime snapshots and append-only
+logs now have an AES-256-GCM increment when configured, and recorded
+attestations have append-only revocation controls with an opt-in admin bearer
+boundary. Still not earned: HSM/KMS custody, complete data-at-rest coverage,
+key rotation and recovery, distributed revocation consistency, expiry policy,
+and stronger administrative authorization.
 
 ### Phase 4 — Interface expansions
 
-| Expansion  | Surface    |
-| ---------- | ---------- |
-| `+ API`    | `apps/api` |
-| `+ Web`    | `apps/web` |
-| `+ CLI`    | planned    |
-| `+ SDK`    | planned    |
-| `+ Mobile` | planned    |
+| Expansion  | Surface        |
+| ---------- | -------------- |
+| `+ API`    | `apps/api`     |
+| `+ Web`    | `apps/web`     |
+| `+ CLI`    | `packages/cli` |
+| `+ SDK`    | `packages/sdk` |
+| `+ Mobile` | planned        |
 
 ### Phase 5 — Depth expansions
 

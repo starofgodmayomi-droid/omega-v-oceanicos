@@ -66,11 +66,21 @@ describe('OmegaClient', () => {
   });
 
   it('lists and creates attestation revocations through the typed client', async () => {
-    const requests: Array<{ url: string; method?: string; body?: string }> = [];
+    const requests: Array<{
+      url: string;
+      method?: string;
+      body?: string;
+      authorization?: string;
+    }> = [];
     const client = new OmegaClient(
       'http://api.test',
       async (url, init) => {
-        requests.push({ url, method: init?.method, body: init?.body?.toString() });
+        requests.push({
+          url,
+          method: init?.method,
+          body: init?.body?.toString(),
+          authorization: new Headers(init?.headers).get('authorization') ?? undefined,
+        });
         if (url.endsWith('/attest/revocations')) {
           return new Response(
             JSON.stringify({
@@ -101,7 +111,7 @@ describe('OmegaClient', () => {
           { status: 201 }
         );
       },
-      { readToken: 'sdk-token' }
+      { readToken: 'sdk-token', adminToken: 'sdk-admin-token' }
     );
 
     await expect(client.getRevocations()).resolves.toMatchObject({
@@ -113,7 +123,12 @@ describe('OmegaClient', () => {
       data: { attestationId: 'att-2' },
     });
     expect(requests).toEqual([
-      { url: 'http://api.test/attest/revocations', method: undefined, body: undefined },
+      {
+        url: 'http://api.test/attest/revocations',
+        method: undefined,
+        body: undefined,
+        authorization: 'Bearer sdk-token',
+      },
       {
         url: 'http://api.test/attest/revoke',
         method: 'POST',
@@ -122,6 +137,7 @@ describe('OmegaClient', () => {
           reason: 'manual review',
           revokedBy: 'sdk-test',
         }),
+        authorization: 'Bearer sdk-admin-token',
       },
     ]);
   });

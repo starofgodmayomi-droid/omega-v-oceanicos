@@ -290,8 +290,11 @@ GET /attest/revocations
 ```
 
 Revocation is an operator-mediated, append-only control separate from the
-signed attestation payload. `POST /attest/revoke` requires a recorded
-`attestationId`, a human-readable `reason`, and optionally `revokedBy`. A
+signed attestation payload. When `OMEGA_ADMIN_TOKEN` is configured,
+`POST /attest/revoke` requires `Authorization: Bearer <admin token>`; a read
+token is not accepted as mutation authority. The local development default
+leaves this gate unset, while production configuration should set it. The
+request requires a recorded `attestationId`, a human-readable `reason`, and optionally `revokedBy`. A
 revoked attestation remains cryptographically inspectable, but
 `POST /attest/verify` reports `valid: false` with `revoked: true`, and `/act`
 returns `409 REVOKED_ATTESTATION` rather than authorizing an action. Duplicate
@@ -599,6 +602,7 @@ curl -X POST http://localhost:3000/complete-loop \
 
 - `API_PORT` — Port to run on (default: 3000)
 - `OMEGA_READ_TOKEN` — Optional bearer token required for read-only evidence endpoints; unset preserves local development behavior
+- `OMEGA_ADMIN_TOKEN` — Optional distinct bearer token required for `POST /attest/revoke`; never reuse or expose a read token as administrative authority
 - `OMEGA_SIGNING_KEY` — Required signing key for attestation; there is no default
 - `OMEGA_PERSISTENCE` — Explicit persistence override: `on` or `off`
 - `OMEGA_PERSISTENCE_KEY` — Optional dedicated secret for AES-256-GCM encryption of runtime snapshot and event-log files; never expose it in logs or API responses

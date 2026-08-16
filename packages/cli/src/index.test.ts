@@ -159,11 +159,20 @@ describe('omega status CLI', () => {
     }) as typeof process.stdout.write;
 
     const exitCode = await run(
-      ['revoke', 'att-2', '--reason', 'manual review', '--token', 'cli-token'],
+      [
+        'revoke',
+        'att-2',
+        '--reason',
+        'manual review',
+        '--token',
+        'cli-token',
+        '--admin-token',
+        'cli-admin-token',
+      ],
       async (url, init) => {
         expect(url).toBe('http://localhost:3000/attest/revoke');
         expect(init?.method).toBe('POST');
-        expect(new Headers(init?.headers).get('authorization')).toBe('Bearer cli-token');
+        expect(new Headers(init?.headers).get('authorization')).toBe('Bearer cli-admin-token');
         expect(JSON.parse(String(init?.body))).toEqual({
           attestationId: 'att-2',
           reason: 'manual review',

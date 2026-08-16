@@ -51,13 +51,26 @@ app.use((req: Request, res: Response, next) => {
   res.locals.requestId = requestId;
   res.setHeader('x-request-id', requestId);
   const configuredReadToken = process.env.OMEGA_READ_TOKEN?.trim();
+  const configuredAdminToken = process.env[ADMIN_TOKEN_ENV]?.trim();
   const isReadOnlyRequest = req.method === 'GET' && req.path !== '/health';
+  const isRevocationRequest = req.method === 'POST' && req.path === '/attest/revoke';
   if (configuredReadToken && isReadOnlyRequest) {
     const authorization = req.header('authorization') || '';
     if (authorization !== `Bearer ${configuredReadToken}`) {
       res.status(401).json({
         code: 'READ_ACCESS_REQUIRED',
         message: 'A valid bearer token is required for read-only evidence access',
+        requestId,
+      });
+      return;
+    }
+  }
+  if (configuredAdminToken && isRevocationRequest) {
+    const authorization = req.header('authorization') || '';
+    if (authorization !== `Bearer ${configuredAdminToken}`) {
+      res.status(401).json({
+        code: 'ADMIN_ACCESS_REQUIRED',
+        message: 'A valid admin bearer token is required to revoke attestations',
         requestId,
       });
       return;
@@ -186,6 +199,8 @@ type RuntimeSnapshot = {
   recompilations: RuntimeRecompilation[];
   revocations?: RuntimeRevocation[];
 };
+
+export const ADMIN_TOKEN_ENV = 'OMEGA_ADMIN_TOKEN';
 
 const runtimeStorePath =
   process.env.OMEGA_RUNTIME_STORE_PATH || '/tmp/omega-v-oceanicos/runtime.json';
