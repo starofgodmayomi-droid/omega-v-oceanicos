@@ -1,5 +1,6 @@
 import { createServer, Server } from 'node:http';
-import app from '../index';
+import app, { isAttestationExpired } from '../index';
+import { Attestation } from '@omega-v/types';
 
 type ApiResponse<T> = { data: T };
 
@@ -11,6 +12,15 @@ type LoopPayload = {
 };
 
 describe('API runtime contracts', () => {
+  it('applies an opt-in attestation TTL without changing signature semantics', () => {
+    const attestation = { attestedAt: '2026-08-16T00:00:00.000Z' } as Attestation;
+    const issuedAt = Date.parse(attestation.attestedAt);
+
+    expect(isAttestationExpired(attestation, issuedAt + 999, 1000)).toBe(false);
+    expect(isAttestationExpired(attestation, issuedAt + 1000, 1000)).toBe(true);
+    expect(isAttestationExpired(attestation, issuedAt + 1000, null)).toBe(false);
+  });
+
   let server: Server;
   let baseUrl: string;
 
@@ -97,6 +107,7 @@ describe('API runtime contracts', () => {
         persistenceEncryption: string;
         memoryEncryption: string;
         memoryEncryptionKeySource: string;
+        attestationTtlMs: number | null;
         services: string[];
       };
       provenance: {
@@ -118,6 +129,7 @@ describe('API runtime contracts', () => {
     expect(body.data.runtime.persistenceEncryption).toBe('disabled');
     expect(body.data.runtime.memoryEncryption).toBe('disabled');
     expect(body.data.runtime.memoryEncryptionKeySource).toBe('none');
+    expect(body.data.runtime.attestationTtlMs).toBe(null);
     expect(body.data.runtime.services).toEqual(['observer', 'verifier', 'attester']);
     expect(body.data.provenance.durableEvents).toBeGreaterThanOrEqual(0);
     expect(body.data.provenance.completedRuns).toBeGreaterThan(0);

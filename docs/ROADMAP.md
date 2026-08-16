@@ -105,7 +105,9 @@ logs now have an AES-256-GCM increment when configured, and recorded
 attestations have append-only revocation controls with an opt-in admin bearer
 boundary. Still not earned: HSM/KMS custody, complete data-at-rest coverage,
 key rotation and recovery, distributed revocation consistency, expiry policy,
-and stronger administrative authorization.
+and stronger administrative authorization. An opt-in `OMEGA_ATTESTATION_TTL_MS`
+now invalidates expired attestations for verification and action authorization;
+clock policy and distributed time coordination remain open.
 
 ### Phase 4 — Interface expansions
 

@@ -231,6 +231,23 @@ const runtimeActions = snapshot.actions;
 const runtimeLearnings = snapshot.learnings;
 const runtimeRecompilations = snapshot.recompilations;
 const runtimeRevocations = snapshot.revocations ?? [];
+const configuredAttestationTtlMs = (): number | null => {
+  const raw = process.env.OMEGA_ATTESTATION_TTL_MS?.trim();
+  if (!raw) return null;
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+};
+
+export const isAttestationExpired = (
+  attestation: Attestation,
+  now = Date.now(),
+  ttlMs = configuredAttestationTtlMs()
+): boolean => {
+  if (ttlMs === null) return false;
+  const attestedAt = Date.parse(attestation.attestedAt);
+  return !Number.isFinite(attestedAt) || now - attestedAt >= ttlMs;
+};
+
 const isRevoked = (attestationId: string): boolean =>
   runtimeRevocations.some((revocation) => revocation.attestationId === attestationId);
 
@@ -365,6 +382,7 @@ app.get('/observability', (_req: Request, res: Response) => {
         persistenceEncryption: persistenceEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
         memoryEncryption: memoryEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
         memoryEncryptionKeySource,
+        attestationTtlMs: configuredAttestationTtlMs(),
         services: ['observer', 'verifier', 'attester'],
         lastActivity: latestEvent?.timestamp || null,
       },
@@ -614,10 +632,13 @@ app.post('/attest/verify', (req: Request, res: Response) => {
       return;
     }
 
+    const revoked = isRevoked(attestation.id);
+    const expired = isAttestationExpired(attestation);
     res.json({
       data: {
-        valid: attestationService.verify(attestation) && !isRevoked(attestation.id),
-        revoked: isRevoked(attestation.id),
+        valid: attestationService.verify(attestation) && !revoked && !expired,
+        revoked,
+        expired,
       },
       timestamp: new Date().toISOString(),
     });
@@ -746,6 +767,14 @@ app.post('/act', (req: Request, res: Response) => {
       res.status(409).json({
         code: 'REVOKED_ATTESTATION',
         message: 'Action denied because the attestation has been revoked',
+        timestamp: new Date().toISOString(),
+      } satisfies ErrorResponse);
+      return;
+    }
+    if (isAttestationExpired(attestation)) {
+      res.status(409).json({
+        code: 'EXPIRED_ATTESTATION',
+        message: 'Action denied because the attestation has expired',
         timestamp: new Date().toISOString(),
       } satisfies ErrorResponse);
       return;

@@ -297,7 +297,10 @@ leaves this gate unset, while production configuration should set it. The
 request requires a recorded `attestationId`, a human-readable `reason`, and optionally `revokedBy`. A
 revoked attestation remains cryptographically inspectable, but
 `POST /attest/verify` reports `valid: false` with `revoked: true`, and `/act`
-returns `409 REVOKED_ATTESTATION` rather than authorizing an action. Duplicate
+returns `409 REVOKED_ATTESTATION` rather than authorizing an action. When
+`OMEGA_ATTESTATION_TTL_MS` is configured, expiry is an additional authorization
+predicate: verification reports `expired: true` and `/act` returns
+`409 EXPIRED_ATTESTATION`. Duplicate
 revocation requests are rejected with `409 ATTESTATION_ALREADY_REVOKED`.
 
 ### Runtime State
@@ -609,6 +612,7 @@ curl -X POST http://localhost:3000/complete-loop \
 - `OMEGA_MEMORY_PATH` — Optional JSONL path for the MINI kernel memory chain
 - `OMEGA_MEMORY_KEY` — Optional active secret for AES-256-GCM encryption of new kernel-memory lines
 - `OMEGA_MEMORY_KEY_PREVIOUS` — Optional previous secret accepted during controlled key rotation; new writes still use `OMEGA_MEMORY_KEY`, and mixed-key restoration reports the fallback source without returning either secret
+- `OMEGA_ATTESTATION_TTL_MS` — Optional positive lifetime in milliseconds; expired attestations remain cryptographically inspectable but `/attest/verify` reports `expired: true` and `/act` denies with `409 EXPIRED_ATTESTATION`
 
 Revocation records are included in the encrypted runtime snapshot when
 persistence is enabled and every revocation also produces an append-only
