@@ -393,3 +393,105 @@ describe('dashboard', () => {
     expect(within(nav).getAllByRole('button').length).toBeGreaterThan(0);
   });
 });
+
+/**
+ * The command palette (⌘K) was entirely uncovered: opening it, the Tab
+ * focus trap, Escape/backdrop dismissal, and all four quick actions ran zero
+ * times under test. Its commands also share label text with buttons that
+ * already exist in the main workspace ("Run verification" appears both as
+ * the primary action and as a palette command), so every query below is
+ * scoped to the dialog to prove it drives its own action rather than
+ * happening to pass because the other button was clicked instead.
+ */
+describe('command palette', () => {
+  beforeEach(() => {
+    installFetch();
+  });
+
+  const openWithShortcut = async () => {
+    await act(async () => {
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }));
+    });
+    return screen.findByRole('dialog', { name: /command palette/i });
+  };
+
+  it('opens with the ⌘K shortcut, focuses the first command, and closes on Escape', async () => {
+    await renderApp();
+    await screen.findByRole('button', { name: /run verification/i });
+
+    const dialog = await openWithShortcut();
+    expect(within(dialog).getByRole('button', { name: /observe/i })).toHaveFocus();
+
+    await act(async () => {
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    });
+
+    expect(screen.queryByRole('dialog', { name: /command palette/i })).not.toBeInTheDocument();
+  });
+
+  it('closes when the backdrop is clicked and returns focus to the trigger', async () => {
+    const user = userEvent.setup();
+    await renderApp();
+
+    const trigger = screen.getByRole('button', { name: '⌘ K' });
+    await user.click(trigger);
+    const dialog = await screen.findByRole('dialog', { name: /command palette/i });
+
+    // The palette itself stops propagation, so only a click landing on the
+    // backdrop (the dialog's parent) should dismiss it.
+    await user.click(dialog.parentElement as HTMLElement);
+
+    expect(screen.queryByRole('dialog', { name: /command palette/i })).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
+  });
+
+  it('runs verification from the palette command, not the main action button', async () => {
+    const user = userEvent.setup();
+    await renderApp();
+
+    await user.click(screen.getByRole('button', { name: '⌘ K' }));
+    const dialog = await screen.findByRole('dialog', { name: /command palette/i });
+    await user.click(within(dialog).getByRole('button', { name: /run verification/i }));
+
+    expect(await screen.findByText('OBSERVATION')).toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: /command palette/i })).not.toBeInTheDocument();
+  });
+
+  it('refreshes runtime state from the palette', async () => {
+    const user = userEvent.setup();
+    const fetchMock = installFetch();
+    await renderApp();
+    const callsBefore = fetchMock.mock.calls.filter(([url]) => url === '/api/state').length;
+
+    await user.click(screen.getByRole('button', { name: '⌘ K' }));
+    const dialog = await screen.findByRole('dialog', { name: /command palette/i });
+    await user.click(within(dialog).getByRole('button', { name: /refresh runtime/i }));
+
+    await waitFor(() => {
+      const callsAfter = fetchMock.mock.calls.filter(([url]) => url === '/api/state').length;
+      expect(callsAfter).toBeGreaterThan(callsBefore);
+    });
+    expect(screen.queryByRole('dialog', { name: /command palette/i })).not.toBeInTheDocument();
+  });
+
+  it('focuses the operator input via the Observe command', async () => {
+    const user = userEvent.setup();
+    await renderApp();
+
+    await user.click(screen.getByRole('button', { name: '⌘ K' }));
+    const dialog = await screen.findByRole('dialog', { name: /command palette/i });
+    await user.click(within(dialog).getByRole('button', { name: /observe/i }));
+
+    expect(screen.getByLabelText(/what should enter the current/i)).toHaveFocus();
+    expect(screen.queryByRole('dialog', { name: /command palette/i })).not.toBeInTheDocument();
+  });
+
+  it('disables verify attestation from the palette until a run has produced a result', async () => {
+    const user = userEvent.setup();
+    await renderApp();
+
+    await user.click(screen.getByRole('button', { name: '⌘ K' }));
+    const dialog = await screen.findByRole('dialog', { name: /command palette/i });
+    expect(within(dialog).getByRole('button', { name: /verify attestation/i })).toBeDisabled();
+  });
+});
