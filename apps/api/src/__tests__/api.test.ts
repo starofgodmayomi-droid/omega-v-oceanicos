@@ -1,4 +1,7 @@
 import { createServer, Server } from 'node:http';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 import {
   app,
   constantTimeTokenMatch,
@@ -695,5 +698,153 @@ describe('API runtime contracts', () => {
       body: JSON.stringify({ actionId: 'act-missing', outcome: 'success' }),
     });
     expect(missingLearningResponse.status).toBe(404);
+  });
+});
+
+/**
+ * Every mutating route persists before it reports success: /complete-loop,
+ * /act, /learn, and /recompile each update in-memory state and then call
+ * `persistRuntime()`, inside the same `try`. A real disk failure there
+ * (ENOSPC, EACCES, a store path that stopped being a directory) has never
+ * been exercised — the four catch blocks that turn it into a 400 have run
+ * zero times in the suite.
+ *
+ * The failure is reproduced for real rather than mocked: the runtime store's
+ * directory is replaced with a plain file part-way through the test, so
+ * `mkdirSync`'s own failure is what each route catches. This mirrors the
+ * technique already used in `persistence.test.ts`'s "reports a reason when
+ * the append itself fails" case.
+ *
+ * `recordEvent()` — called by every one of these routes — persists too, and
+ * runs before `/complete-loop` ever creates an observation. So persistence is
+ * left working for one initial `/complete-loop` call (to obtain a real,
+ * verified attestation the same way every other test in this file does),
+ * then broken, then exercised: a second `/complete-loop` call demonstrates
+ * `LOOP_FAILED`, and the attestation from the first call is carried into
+ * `/act`, whose own success updates `runtimeActions` before its persist call
+ * fails — so `/learn` and, in turn, `/recompile` each still have a valid
+ * precondition to react to even though every persist from this point on
+ * fails.
+ *
+ * Node core errors constructed outside a Jest-sandboxed module realm are not
+ * `instanceof` that realm's `Error` (a documented Jest quirk, confirmed by
+ * direct inspection in this repository: `mkdirSync`'s thrown error has
+ * `constructor.name === 'Error'` but fails `instanceof Error` here). Every
+ * route's fallback branch — `error instanceof Error ? error.message :
+ * '<fallback text>'` — is what actually runs as a result, so that is what
+ * these assertions check. That is a faithful description of this suite's
+ * behaviour; it is a weaker check than asserting the real OS error message,
+ * but the alternative (asserting a message the branch never produces here)
+ * would be asserting something false.
+ */
+describe('Runtime persistence failures reach the route handlers that trigger them', () => {
+  let server: Server;
+  let baseUrl: string;
+  let storeDir: string;
+
+  beforeAll(async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'omega-api-persist-fail-'));
+    storeDir = join(dir, 'store');
+
+    process.env.OMEGA_PERSISTENCE = 'on';
+    process.env.OMEGA_RUNTIME_STORE_PATH = join(storeDir, 'runtime.json');
+
+    jest.resetModules();
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const isolated = require('../index') as { app: typeof app };
+    server = createServer(isolated.app);
+    await new Promise<void>((resolve) => server.listen(0, resolve));
+    const address = server.address();
+    if (!address || typeof address === 'string') throw new Error('Test server did not start');
+    baseUrl = `http://127.0.0.1:${address.port}`;
+  });
+
+  afterAll(async () => {
+    await new Promise<void>((resolve, reject) =>
+      server.close((error) => (error ? reject(error) : resolve()))
+    );
+    delete process.env.OMEGA_PERSISTENCE;
+    delete process.env.OMEGA_RUNTIME_STORE_PATH;
+    jest.resetModules();
+  });
+
+  it('reports LOOP_FAILED, ACTION_FAILED, LEARNING_FAILED, and RECOMPILE_FAILED once the store stops being writable', async () => {
+    const workingLoopResponse = await fetch(`${baseUrl}/complete-loop`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        claim: 'Persistence failure contract test setup',
+        category: 'health-check',
+        source: { system: 'api-test', version: '0.1.0', environment: 'test' },
+        observedBy: 'jest',
+        metadata: { responseTime: 42, statusCode: 200 },
+        confidence: 0.95,
+        confidenceReason: 'Executable contract test',
+      }),
+    });
+    const workingLoop = (await workingLoopResponse.json()) as ApiResponse<LoopPayload>;
+    expect(workingLoopResponse.status).toBe(201);
+    const attestation = workingLoop.data.attestation;
+
+    rmSync(storeDir, { recursive: true, force: true });
+    writeFileSync(storeDir, 'not a directory');
+
+    const brokenLoopResponse = await fetch(`${baseUrl}/complete-loop`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        claim: 'Persistence failure contract test',
+        category: 'health-check',
+        source: { system: 'api-test', version: '0.1.0', environment: 'test' },
+        observedBy: 'jest',
+        metadata: { responseTime: 42, statusCode: 200 },
+        confidence: 0.95,
+        confidenceReason: 'Executable contract test',
+      }),
+    });
+    const brokenLoop = (await brokenLoopResponse.json()) as { code: string; message: string };
+    expect(brokenLoopResponse.status).toBe(400);
+    expect(brokenLoop.code).toBe('LOOP_FAILED');
+    expect(brokenLoop.message).toBe('Verification loop failed');
+
+    const actionResponse = await fetch(`${baseUrl}/act`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ attestation }),
+    });
+    const action = (await actionResponse.json()) as { code: string; message: string };
+    expect(actionResponse.status).toBe(400);
+    expect(action.code).toBe('ACTION_FAILED');
+    expect(action.message).toBe('Action authorization failed');
+
+    const actions = (await (await fetch(`${baseUrl}/actions`)).json()) as ApiResponse<
+      Array<{ id: string }>
+    >;
+    expect(actions.data).toHaveLength(1);
+
+    const learningResponse = await fetch(`${baseUrl}/learn`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ actionId: actions.data[0].id, outcome: 'success' }),
+    });
+    const learning = (await learningResponse.json()) as { code: string; message: string };
+    expect(learningResponse.status).toBe(400);
+    expect(learning.code).toBe('LEARNING_FAILED');
+    expect(learning.message).toBe('Learning recording failed');
+
+    const learnings = (await (await fetch(`${baseUrl}/learning`)).json()) as ApiResponse<
+      Array<{ id: string }>
+    >;
+    expect(learnings.data).toHaveLength(1);
+
+    const recompileResponse = await fetch(`${baseUrl}/recompile`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ learningId: learnings.data[0].id }),
+    });
+    const recompile = (await recompileResponse.json()) as { code: string; message: string };
+    expect(recompileResponse.status).toBe(400);
+    expect(recompile.code).toBe('RECOMPILE_FAILED');
+    expect(recompile.message).toBe('Recompile proposal failed');
   });
 });
