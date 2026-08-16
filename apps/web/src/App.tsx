@@ -52,6 +52,7 @@ export function App(): JSX.Element {
   const [responseTime, setResponseTime] = useState('42');
   const [statusCode, setStatusCode] = useState('200');
   const [events, setEvents] = useState<RuntimeEvent[]>([]);
+  const [recentRuns, setRecentRuns] = useState<LoopResult[]>([]);
   const [result, setResult] = useState<LoopResult | null>(null);
   const [mode, setMode] = useState('observe');
   const [trust, setTrust] = useState<number | null>(null);
@@ -138,6 +139,7 @@ export function App(): JSX.Element {
       setPersistenceMode(state.data.persistence);
       setServiceHealth({ ready: readyServices, total: state.data.services.length });
       setEvents(eventData.data);
+      setRecentRuns(runData.data);
       setResult((current) => current ?? runData.data[0] ?? null);
       setSelectedEvent((current) =>
         current ? (eventData.data.find((event) => event.id === current.id) ?? current) : null
@@ -578,6 +580,43 @@ export function App(): JSX.Element {
                   : 'UNAVAILABLE'}
             </strong>
             {publicTrust && <small title={publicTrust.fingerprint}>{publicTrust.keyId}</small>}
+          </div>
+        </section>
+        <section className="runs-panel">
+          <div className="panel-heading">
+            <div>
+              <span className="section-kicker">RECENT RUN EVIDENCE</span>
+              <h2>What was verified</h2>
+            </div>
+            <span className="seal">{recentRuns.length.toString().padStart(2, '0')}</span>
+          </div>
+          <div className="event-list">
+            {recentRuns.length === 0 ? (
+              <div className="empty">No completed runs are available yet.</div>
+            ) : (
+              recentRuns.slice(0, 5).map((run) => (
+                <button
+                  className="event-row"
+                  key={run.observation.id}
+                  onClick={() => {
+                    setResult(run);
+                    setSelectedEvent(null);
+                  }}
+                >
+                  <span
+                    className={`event-marker ${run.verification.summary.passed ? 'passed' : 'failed'}`}
+                  />
+                  <div>
+                    <strong>{run.observation.id}</strong>
+                    <p>
+                      verification {run.verification.summary.passed ? 'passed' : 'failed'} ·
+                      attestation {run.attestation.verified ? 'valid' : 'invalid'}
+                    </p>
+                  </div>
+                  <span className="event-stage">OPEN</span>
+                </button>
+              ))
+            )}
           </div>
         </section>
         <section className="lower-grid">
