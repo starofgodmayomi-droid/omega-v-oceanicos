@@ -47,6 +47,8 @@ Push, PR publication, merge, deployment, and other externally visible actions ar
 | Web stream and inspector        | Dashboard DOM tests now cover stream recovery and runtime refresh on reopen, correlation/request/payload inspector evidence, and restoring the selected run chain after event inspection. Production behavior was unchanged.                                                                                                                                  |
 | Web stream trust coverage       | Dashboard DOM tests now cover EventSource reopen refreshing health/state evidence and pass/fail stream messages updating the trust figure. Production behavior was unchanged.                                                                                                                                                                                 |
 | Web navigation and learning     | Dashboard DOM tests now cover sidebar navigation, stage-pill rendering, and learning feedback/error recovery. Production behavior was unchanged.                                                                                                                                                                                                              |
+| Test-suite reconciliation       | The duplicated command-palette DOM suite was removed while preserving the unique complete suite; focused dashboard tests remain at 47 and production behavior is unchanged.                                                                                                                                                                                   |
+| API SPA fallback coverage       | API tests now cover serving the built SPA bundle and the fallback route; production behavior is unchanged and deployment remains unclaimed.                                                                                                                                                                                                                   |
 
 ## Current repository state
 
@@ -94,6 +96,8 @@ The active worktree is `/home/ubuntu/current-main-worktree` on branch `main`, sy
 | `208b48f` | PR #63 squash merge: web stream recovery and event-inspector coverage                                                                        | Merged into `main`; CI green                           |
 | `5eb0760` | PR #66 squash merge: web stream-driven trust update coverage                                                                                 | Merged into `main`; CI green                           |
 | `0ed3864` | PR #68 squash merge: web sidebar navigation, stage-pill, and learning-feedback coverage                                                      | Merged into `main`; CI green                           |
+| `0d047fa` | PR #71 squash merge: duplicate command-palette test-suite reconciliation                                                                     | Merged into `main`; CI green                           |
+| `d152bba` | PR #70 squash merge: API SPA static-bundle and fallback-route coverage                                                                       | Merged into `main`; CI green                           |
 
 | |
 | PR #33 is **merged** into `main` as squash commit `fb73ac28990b2b42b6339da2e8ca76007616dd70`, observed at `2026-08-16T14:46:39Z`. The published head `2cc2d21` passed Node 18, Node 20, Windows compatibility, package/smoke, and report checks; attested-artifact publication was skipped as designed. |
@@ -113,6 +117,8 @@ The active worktree is `/home/ubuntu/current-main-worktree` on branch `main`, sy
 | PR #63 is **merged** into `main` as squash commit `208b48ffc9b414c956ab2d00cffb6bb7749c335c`, observed at `2026-08-16T21:05:34Z`; its head `7c1414f` passed Node 18, Node 20, Windows compatibility, package/smoke, and report checks; attested-artifact publication was skipped. This is merge evidence only; no deployment is claimed. |
 | PR #66 is **merged** into `main` as squash commit `5eb07607ac80869a258e62552a69964194f4ceeb`, observed at `2026-08-16T21:16:35Z`; its head `65b1730` passed Node 18, Node 20, Windows compatibility, package/smoke, and report checks; attested-artifact publication was skipped. This is merge evidence only; no deployment is claimed. |
 | PR #68 is **merged** into `main` as squash commit `0ed38641943e30f672f306f32df71e221a5e9699`, observed at `2026-08-16T21:28:51Z`; its head passed Node 18, Node 20, Windows compatibility, package/smoke, and report checks; attested-artifact publication was skipped. This is merge evidence only; no deployment is claimed. |
+| PR #70 is **merged** into `main` as squash commit `d152bba0e3805d7cf97db2441a34b676cb7408be`, observed at `2026-08-16T21:41:00Z`; its head passed Node 18, Node 20, Windows compatibility, package/smoke, and report checks; attested-artifact publication was skipped. This is merge evidence only; no deployment is claimed. |
+| PR #71 is **merged** into `main` as squash commit `0d047fa2b59c658c0d06f36724e5c941ae32e323`, observed at `2026-08-16T21:40:38Z`; its head passed Node 18, Node 20, Windows compatibility, package/smoke, and report checks; attested-artifact publication was skipped. This is merge evidence only; no deployment is claimed. |
 
 PR #32 remains historical Windows-compatibility evidence.
 
@@ -148,7 +154,7 @@ The combined signing-audit and persistence-encryption state passed:
 
 | `git diff --check` | Passed before the revocation commit |
 
-The last full verification before the recent coverage queue observed 25 suites / 416 tests and a successful workspace/Vite build. After PRs #57–#62, the full local gate observed 25 suites / 428 tests passed. PR #63 raised the full gate to 431 tests, PR #66 to 432 tests, and the post-PR #68 full gate observed 25 suites / 438 tests passed, successful workspace/Vite build, passing format/type-check, and `git diff --check`. PRs #57–#63, #66, and #68 had green Node 18, Node 20, Windows, package/smoke, and report checks as applicable; attested-artifact publication was skipped. The repository may contain generated build output ignored by Git; only intended source and documentation changes should be committed.
+The last full verification before the recent coverage queue observed 25 suites / 416 tests and a successful workspace/Vite build. After PRs #57–#62, the full local gate observed 25 suites / 428 tests passed. PR #63 raised the full gate to 431 tests, PR #66 to 432 tests, PR #68 to 438 tests, and the post-PR #70/#71 main gate observed 25 suites / 435 tests passed, successful workspace/Vite build, passing format/type-check, and `git diff --check`. PRs #57–#63, #66, #68, #70, and #71 had green Node 18, Node 20, Windows, package/smoke, and report checks as applicable; attested-artifact publication was skipped. The repository may contain generated build output ignored by Git; only intended source and documentation changes should be committed.
 
 ## Remaining gaps and uncertainty
 
@@ -158,6 +164,6 @@ The web client exposes revoke and revocation-ledger controls. Stronger administr
 
 ## Next authorized action
 
-1. Reconcile the merged PR #68 coverage evidence in a separate documentation PR.
+1. Reconcile the merged PRs #70 and #71 evidence in a separate documentation PR.
 2. Select the next smallest production-relevant slice from custody, distributed coordination, identity, data-at-rest, deployment, or mobile gaps.
 3. Keep any new publication, merge, and deployment actions behind separate human gates.
