@@ -185,11 +185,17 @@ blocked on design; each is a decision or a scoped change.
 - **`format:check` is not run by CI** and is failing on 14 files. The verify
   workflow runs lint, type-check, test, coverage and build, but never
   `format:check`. A check that never runs is not a check.
-- **`summary.confidence` is the claimant's own number.**
-  `packages/verification/src/index.ts:179` sets the verification summary's
-  confidence to `observation.confidence`, so a "verification confidence"
-  reports what the claim asserted about itself rather than what the rules
-  found. Correcting it moves `trustBasis` in both the API and the dashboard.
+- ~~**CI skipped stacked pull requests entirely.**~~ **Closed.** The workflow
+  filtered `pull_request` to `[main, develop]`, so a pull request based on any
+  other branch ran no jobs at all. Nothing failed because nothing ran, and an
+  absence of checks is easily read as passing ones. The filter is removed, so
+  every pull request is verified whatever it targets.
+- ~~**`summary.confidence` is the claimant's own number.**~~ **Closed.** The
+  summary now reports the lowest confidence among the rules that actually ran,
+  and carries the claim's own figure separately as `claimedConfidence`. This
+  mattered further down the chain than it first looked: the value reached
+  `attestation.confidence`, which sits inside the signed payload, so the system
+  was issuing unforgeable signatures over a number the submitter chose.
 
 ---
 

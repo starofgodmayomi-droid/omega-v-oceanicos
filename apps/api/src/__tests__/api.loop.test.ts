@@ -257,6 +257,38 @@ describe('API loop: act, learn, recompile', () => {
     expect(denied.status).toBe(409);
   });
 
+  it('will not sign a confidence the claimant supplied', async () => {
+    // The submitter asserts near-certainty. The rules that actually run yield
+    // 0.95 and 0.98, so the verifier's number is 0.95.
+    //
+    // This is the end of the chain that mattered: summary.confidence flowed
+    // into attestation.confidence, and attestation.confidence sits inside
+    // createSignaturePayload. A claimant-supplied figure was therefore covered
+    // by an unforgeable signature -- ATTEST performing as ASSERT.
+    const loop = (await (
+      await post('/complete-loop', {
+        ...loopInput('claimant asserts near-certainty', { statusCode: 200, responseTime: 42 }),
+        confidence: 0.99,
+      })
+    ).json()) as Body<
+      Loop & {
+        verification: { summary: { confidence: number; claimedConfidence: number } };
+        attestation: Attestation & { confidence: number };
+      }
+    >;
+
+    expect(loop.data.verification.summary.claimedConfidence).toBeCloseTo(0.99);
+    expect(loop.data.verification.summary.confidence).toBeCloseTo(0.95);
+    expect(loop.data.attestation.confidence).toBeCloseTo(0.95);
+    expect(loop.data.attestation.confidence).not.toBeCloseTo(0.99);
+
+    // And the signature still verifies over the honest number.
+    const verified = (await (
+      await post('/attest/verify', { attestation: loop.data.attestation })
+    ).json()) as Body<{ valid: boolean }>;
+    expect(verified.data.valid).toBe(true);
+  });
+
   it('reports which registered rules the engine can actually execute', async () => {
     const rules = (await (await fetch(`${baseUrl}/rules`)).json()) as Body<{
       registered: number;

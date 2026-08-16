@@ -114,7 +114,32 @@ export interface VerificationResult {
   /** Summary of the result */
   summary: {
     passed: boolean;
+
+    /**
+     * Confidence produced by the rules that ran — the lowest of them.
+     *
+     * This is the verifier's number, not the claimant's. It is derived from
+     * rule outcomes and is `0` when no rule ran, because nothing was checked.
+     *
+     * A verification is only as strong as its weakest applied rule, so the
+     * minimum is used rather than a mean: averaging lets a confident rule
+     * carry a doubtful one, which is the direction that produces overstated
+     * trust.
+     */
     confidence: number;
+
+    /**
+     * Confidence the observation asserted about itself, carried through
+     * unchanged.
+     *
+     * Kept separate from `confidence` and never signed as a verification
+     * result. It is an input to be weighed, not evidence — a submitter can
+     * put any number here, and for a while this value *was* `confidence`,
+     * which meant an attestation cryptographically signed a figure no rule
+     * had produced.
+     */
+    claimedConfidence: number;
+
     rulesApplied: number;
     rulesPassed: number;
     rulesFailed: number;
