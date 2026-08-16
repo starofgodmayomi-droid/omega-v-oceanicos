@@ -376,7 +376,7 @@ as complete.
 GET /observability
 ```
 
-Returns a read-only operational evidence summary composed from the runtime state, durable event log, configured attestation service, and hash-chained memory. It includes runtime mode and persistence, the configured persistence and kernel-memory encryption algorithms or `disabled`, active/previous persistence-key configuration and observed `none/current/previous/mixed` source, recent and durable event counts, completed runs, request and correlation lineage, verification and attestation validity, and memory integrity. It never returns private keys, seeds, secrets, or raw signing material; the algorithm and key-source fields describe local configuration and observed reads only. They do not claim HSM/KMS custody, secure deletion, recovery, distributed coordination, or complete data-at-rest coverage.
+Returns a read-only operational evidence summary composed from the runtime state, durable event log, configured attestation service, and hash-chained memory. It includes runtime mode and persistence, the configured persistence and kernel-memory encryption algorithms or `disabled`, active/previous key configuration, observed persistence key-source evidence, and observed kernel-memory key-source evidence (`none`, `current`, `previous`, or `mixed`), recent and durable event counts, completed runs, request and correlation lineage, verification and attestation validity, and memory integrity. It never returns private keys, seeds, secrets, or raw signing material; the algorithm and key-source fields describe local configuration and observed reads only. They do not claim HSM/KMS custody, secure deletion, recovery, distributed coordination, or complete data-at-rest coverage.
 
 ### Evidence Export
 
@@ -653,7 +653,7 @@ curl -X POST http://localhost:3000/complete-loop \
 - `OMEGA_PERSISTENCE_KEY_PREVIOUS` — Optional previous secret accepted for controlled reads during local key rotation; snapshot/event-log observability reports `previous` or `mixed` without returning either secret. This is fallback compatibility, not custody, secure deletion, automated re-encryption, or recovery policy.
 - `OMEGA_MEMORY_PATH` — Optional JSONL path for the MINI kernel memory chain
 - `OMEGA_MEMORY_KEY` — Optional active secret for AES-256-GCM encryption of new kernel-memory lines
-- `OMEGA_MEMORY_KEY_PREVIOUS` — Optional previous secret accepted during controlled key rotation; new writes still use `OMEGA_MEMORY_KEY`, and mixed-key restoration reports the fallback source without returning either secret
+- `OMEGA_MEMORY_KEY_PREVIOUS` — Optional previous secret accepted during controlled key rotation; new writes still use `OMEGA_MEMORY_KEY`. Memory observability reports `current`, `previous`, or `mixed` according to the authenticated encrypted lines restored, without returning either secret.
 - `OMEGA_ATTESTATION_TTL_MS` — Optional positive lifetime in milliseconds; expired attestations remain cryptographically inspectable but `/attest/verify` reports `expired: true` and `/act` denies with `409 EXPIRED_ATTESTATION`
 
 Revocation records are included in the encrypted runtime snapshot when

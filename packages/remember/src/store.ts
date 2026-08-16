@@ -47,7 +47,7 @@ const decryptLine = (stored: string, secret?: string): string => {
  * to parse or authenticate is different from a complete restore.
  */
 export type StoreSource = 'missing' | 'partial' | 'restored';
-export type EncryptionKeySource = 'none' | 'current' | 'previous';
+export type EncryptionKeySource = 'none' | 'current' | 'previous' | 'mixed';
 
 /**
  * Pluggable persistence for the chain.
@@ -125,7 +125,9 @@ export class FileMemoryStore implements MemoryStore {
     this.lastSkipped = skipped;
     this.lastSource = skipped > 0 ? 'partial' : 'restored';
     this.lastEncryptionKeySource = usedPreviousKey
-      ? 'previous'
+      ? usedCurrentKey
+        ? 'mixed'
+        : 'previous'
       : usedCurrentKey
         ? 'current'
         : 'none';

@@ -65,6 +65,7 @@ describe('FileMemoryStore', () => {
     expect(new Remember(restored).size()).toBe(3);
     expect(restored.source()).toBe('restored');
     expect(restored.skipped()).toBe(0);
+    expect(restored.encryptionKeySource()).toBe('current');
   });
 
   it('reports encrypted lines as partial when the key is wrong', () => {
@@ -93,7 +94,7 @@ describe('FileMemoryStore', () => {
     restored.append({ type: 'OBSERVATION', data: observation('obs-after-rotation') });
     const current = new FileMemoryStore(path, 'new-memory-secret', 'old-memory-secret');
     expect(new Remember(current).size()).toBe(4);
-    expect(current.encryptionKeySource()).toBe('previous');
+    expect(current.encryptionKeySource()).toBe('mixed');
   });
 
   it('refuses to append plaintext when only the previous encryption key is configured', () => {
