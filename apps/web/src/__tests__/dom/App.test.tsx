@@ -331,6 +331,85 @@ describe('dashboard', () => {
     expect(await screen.findByText(/stream unavailable/i)).toBeInTheDocument();
   });
 
+  it('clears a stream outage after the connection reopens and refreshes runtime evidence', async () => {
+    const fetchMock = installFetch();
+    await renderApp();
+    await screen.findByRole('button', { name: /run verification/i });
+
+    act(() => {
+      streams()[0].error();
+    });
+    expect(await screen.findByText(/stream unavailable/i)).toBeInTheDocument();
+
+    const stateCallsBefore = fetchMock.mock.calls.filter(([url]) => url === '/api/state').length;
+    act(() => {
+      streams()[0].open();
+    });
+
+    await waitFor(() => {
+      expect(fetchMock.mock.calls.filter(([url]) => url === '/api/state').length).toBeGreaterThan(
+        stateCallsBefore
+      );
+      expect(screen.queryByText(/stream unavailable/i)).not.toBeInTheDocument();
+    });
+  });
+
+  it('opens the event inspector with correlation, request, and payload evidence', async () => {
+    const user = userEvent.setup();
+    await renderApp();
+    await screen.findByRole('button', { name: /run verification/i });
+
+    act(() => {
+      streams()[0].emit('message', {
+        id: 'evt-inspect-1',
+        type: 'attestation.created',
+        stage: 'attest',
+        message: 'Attestation created',
+        status: 'passed',
+        timestamp: '2026-08-16T10:30:00.000Z',
+        correlationId: 'corr-1',
+        requestId: 'req-1',
+        details: { algorithm: 'Ed25519', verified: true },
+      });
+    });
+
+    await user.click(await screen.findByRole('button', { name: /Attestation created/i }));
+
+    expect(await screen.findByText('evt-inspect-1')).toBeInTheDocument();
+    expect(screen.getByText('corr-1')).toBeInTheDocument();
+    expect(screen.getByText('req-1')).toBeInTheDocument();
+    expect(screen.getByText(/"algorithm": "Ed25519"/)).toBeInTheDocument();
+    expect(screen.getByText(/"verified": true/)).toBeInTheDocument();
+  });
+
+  it('restores the selected run evidence chain after inspecting a stream event', async () => {
+    const user = userEvent.setup();
+    installFetch({ '/api/runs': () => json({ data: [passingLoop()] }) });
+    await renderApp();
+    await screen.findByText('MEMORY / KERNEL RECORD');
+
+    act(() => {
+      streams()[0].emit('message', {
+        id: 'evt-before-run',
+        type: 'observation.received',
+        stage: 'observe',
+        message: 'Observation received for selection',
+        status: 'active',
+        timestamp: '2026-08-16T10:30:00.000Z',
+      });
+    });
+    await user.click(
+      await screen.findByRole('button', { name: /Observation received for selection/i })
+    );
+    expect(await screen.findByText('evt-before-run')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /obs-2026-08-16-1 verification passed/i }));
+
+    expect(await screen.findByText('Evidence chain')).toBeInTheDocument();
+    expect(screen.getByText('MEMORY / KERNEL RECORD')).toBeInTheDocument();
+    expect(screen.queryByText('evt-before-run')).not.toBeInTheDocument();
+  });
+
   it('closes the event stream on unmount', async () => {
     const { unmount } = await renderApp();
     await screen.findByRole('button', { name: /run verification/i });
