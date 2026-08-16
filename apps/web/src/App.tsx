@@ -22,6 +22,13 @@ type LoopResult = {
   memory: { id: string; observationId: string; verificationId: string };
   attestation: { id: string; verified: boolean; signature: string; attestedAt: string };
 };
+type PublicTrustMetadata = {
+  algorithm: string;
+  keyId: string;
+  fingerprint: string;
+  keyVersion: string;
+  publicKey: string;
+};
 
 const stages = ['observe', 'evidence', 'verify', 'attest', 'act', 'learn', 'recompile'];
 const navGroups = [
@@ -46,6 +53,7 @@ export function App(): JSX.Element {
   const [responseTime, setResponseTime] = useState('42');
   const [statusCode, setStatusCode] = useState('200');
   const [events, setEvents] = useState<RuntimeEvent[]>([]);
+  const [recentRuns, setRecentRuns] = useState<LoopResult[]>([]);
   const [result, setResult] = useState<LoopResult | null>(null);
   const [mode, setMode] = useState('observe');
   const [trust, setTrust] = useState<number | null>(null);
@@ -58,6 +66,10 @@ export function App(): JSX.Element {
   } | null>(null);
   const [serviceHealth, setServiceHealth] = useState({ ready: 0, total: 0 });
   const [persistenceMode, setPersistenceMode] = useState<'file' | 'memory' | null>(null);
+  const [publicTrust, setPublicTrust] = useState<PublicTrustMetadata | null>(null);
+  const [publicTrustStatus, setPublicTrustStatus] = useState<
+    'loading' | 'available' | 'unavailable'
+  >('loading');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [activeNav, setActiveNav] = useState('Current');
@@ -110,6 +122,15 @@ export function App(): JSX.Element {
       };
       const eventData = (await eventsResponse.json()) as { data: RuntimeEvent[] };
       const runData = (await runsResponse.json()) as { data: LoopResult[] };
+      const publicKeyResponse = await fetch('/api/attest/public-key').catch(() => null);
+      if (publicKeyResponse?.ok) {
+        const publicKeyData = (await publicKeyResponse.json()) as { data: PublicTrustMetadata };
+        setPublicTrust(publicKeyData.data);
+        setPublicTrustStatus('available');
+      } else {
+        setPublicTrust(null);
+        setPublicTrustStatus('unavailable');
+      }
       const readyServices = state.data.services.filter(
         (service) => service.status === 'ready'
       ).length;
@@ -119,6 +140,7 @@ export function App(): JSX.Element {
       setPersistenceMode(state.data.persistence);
       setServiceHealth({ ready: readyServices, total: state.data.services.length });
       setEvents(eventData.data);
+      setRecentRuns(runData.data);
       setResult((current) => current ?? runData.data[0] ?? null);
       setSelectedEvent((current) =>
         current ? (eventData.data.find((event) => event.id === current.id) ?? current) : null
@@ -354,6 +376,14 @@ export function App(): JSX.Element {
         <div className="side-status">
           <span className="status-dot" /> Runtime active
         </div>
+        <div className="side-status trust-status" title={publicTrust?.fingerprint}>
+          <span className="status-dot" />
+          {publicTrustStatus === 'available' && publicTrust
+            ? `${publicTrust.algorithm} / ${publicTrust.keyVersion}`
+            : publicTrustStatus === 'loading'
+              ? 'Trust loading'
+              : 'Trust unavailable'}
+        </div>
         <nav aria-label="Primary navigation">
           {navGroups.map((group) => (
             <div className="nav-group" key={group.label}>
@@ -548,6 +578,54 @@ export function App(): JSX.Element {
           <div>
             <span>ENVIRONMENT</span>
             <strong>{persistenceMode ? persistenceMode.toUpperCase() : 'UNKNOWN'}</strong>
+          </div>
+          <div>
+            <span>TRUST KEY</span>
+            <strong className={publicTrustStatus === 'available' ? 'green' : ''}>
+              {publicTrustStatus === 'available' && publicTrust
+                ? `${publicTrust.algorithm} / ${publicTrust.keyVersion}`
+                : publicTrustStatus === 'loading'
+                  ? 'CHECKING'
+                  : 'UNAVAILABLE'}
+            </strong>
+            {publicTrust && <small title={publicTrust.fingerprint}>{publicTrust.keyId}</small>}
+          </div>
+        </section>
+        <section className="runs-panel">
+          <div className="panel-heading">
+            <div>
+              <span className="section-kicker">RECENT RUN EVIDENCE</span>
+              <h2>What was verified</h2>
+            </div>
+            <span className="seal">{recentRuns.length.toString().padStart(2, '0')}</span>
+          </div>
+          <div className="event-list">
+            {recentRuns.length === 0 ? (
+              <div className="empty">No completed runs are available yet.</div>
+            ) : (
+              recentRuns.slice(0, 5).map((run) => (
+                <button
+                  className="event-row"
+                  key={run.observation.id}
+                  onClick={() => {
+                    setResult(run);
+                    setSelectedEvent(null);
+                  }}
+                >
+                  <span
+                    className={`event-marker ${run.verification.summary.passed ? 'passed' : 'failed'}`}
+                  />
+                  <div>
+                    <strong>{run.observation.id}</strong>
+                    <p>
+                      verification {run.verification.summary.passed ? 'passed' : 'failed'} ·
+                      attestation {run.attestation.verified ? 'valid' : 'invalid'}
+                    </p>
+                  </div>
+                  <span className="event-stage">OPEN</span>
+                </button>
+              ))
+            )}
           </div>
         </section>
         <section className="lower-grid">

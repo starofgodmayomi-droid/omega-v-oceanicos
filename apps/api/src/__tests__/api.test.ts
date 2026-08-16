@@ -75,6 +75,65 @@ describe('API runtime contracts', () => {
     expect(state.data.trustBasis.attestationValidity).toBe(1);
   });
 
+  it('reports runtime provenance and memory evidence without secrets', async () => {
+    await fetch(`${baseUrl}/complete-loop`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-request-id': 'observability-contract-1' },
+      body: JSON.stringify({
+        claim: 'Observability contract test is healthy',
+        category: 'health-check',
+        source: { system: 'api-test', version: '0.1.0', environment: 'test' },
+        observedBy: 'jest',
+        metadata: { responseTime: 42, statusCode: 200 },
+        confidence: 0.95,
+        confidenceReason: 'Executable observability contract test',
+      }),
+    });
+
+    const response = await fetch(`${baseUrl}/observability`);
+    const body = (await response.json()) as ApiResponse<{
+      runtime: { persistence: string; services: string[] };
+      provenance: {
+        durableEvents: number;
+        completedRuns: number;
+        lastRequestId: string | null;
+      };
+      trust: { attestationValidity: number | null };
+      memory: { entries: number; intact: boolean; appendOnly: boolean };
+    }>;
+
+    expect(response.status).toBe(200);
+    expect(body.data.runtime.services).toEqual(['observer', 'verifier', 'attester']);
+    expect(body.data.provenance.durableEvents).toBeGreaterThanOrEqual(0);
+    expect(body.data.provenance.completedRuns).toBeGreaterThan(0);
+    expect(body.data.provenance.lastRequestId).toBe('observability-contract-1');
+    expect(body.data.trust.attestationValidity).toBe(true);
+    expect(body.data.memory.entries).toBeGreaterThan(0);
+    expect(body.data.memory.intact).toBe(true);
+    expect(body.data.memory.appendOnly).toBe(true);
+    expect(JSON.stringify(body)).not.toMatch(/private|secret|seed|signing material/i);
+  });
+
+  it('exports bounded evidence without secrets', async () => {
+    const response = await fetch(`${baseUrl}/evidence/export`);
+    const body = (await response.json()) as {
+      data: {
+        observability: { memory: { intact: boolean; appendOnly: boolean } };
+        events: unknown[];
+        runs: unknown[];
+      };
+      meta: { bounded: boolean; eventWindow: number; runWindow: number };
+    };
+
+    expect(response.status).toBe(200);
+    expect(body.meta).toEqual({ bounded: true, eventWindow: 40, runWindow: 10 });
+    expect(body.data.observability.memory.intact).toBe(true);
+    expect(body.data.observability.memory.appendOnly).toBe(true);
+    expect(body.data.events.length).toBeLessThanOrEqual(40);
+    expect(body.data.runs.length).toBeLessThanOrEqual(10);
+    expect(JSON.stringify(body)).not.toMatch(/private|secret|seed|signing material/i);
+  });
+
   it('verifies the attestation produced by the loop', async () => {
     const loopResponse = await fetch(`${baseUrl}/complete-loop`, {
       method: 'POST',
@@ -99,6 +158,39 @@ describe('API runtime contracts', () => {
 
     expect(verificationResponse.status).toBe(200);
     expect(verification.data.valid).toBe(true);
+  });
+
+  it('enforces the opt-in read-only access token boundary', async () => {
+    const previousToken = process.env.OMEGA_READ_TOKEN;
+    process.env.OMEGA_READ_TOKEN = 'contract-read-token';
+    try {
+      const denied = await fetch(`${baseUrl}/observability`);
+      const deniedBody = (await denied.json()) as { code: string; requestId: string };
+      expect(denied.status).toBe(401);
+      expect(deniedBody.code).toBe('READ_ACCESS_REQUIRED');
+
+      const allowed = await fetch(`${baseUrl}/observability`, {
+        headers: { Authorization: 'Bearer contract-read-token' },
+      });
+      expect(allowed.status).toBe(200);
+    } finally {
+      if (previousToken === undefined) delete process.env.OMEGA_READ_TOKEN;
+      else process.env.OMEGA_READ_TOKEN = previousToken;
+    }
+  });
+
+  it('sanitizes untrusted request IDs and emits baseline security headers', async () => {
+    const response = await fetch(`${baseUrl}/health`, {
+      headers: { 'x-request-id': 'bad id with spaces and\\ncontrol' },
+    });
+
+    const requestId = response.headers.get('x-request-id');
+    expect(response.status).toBe(200);
+    expect(requestId).toMatch(/^req-[0-9a-f-]{36}$/);
+    expect(requestId).not.toContain(' ');
+    expect(response.headers.get('x-content-type-options')).toBe('nosniff');
+    expect(response.headers.get('x-frame-options')).toBe('DENY');
+    expect(response.headers.get('referrer-policy')).toBe('no-referrer');
   });
 
   it('includes request provenance in error responses', async () => {

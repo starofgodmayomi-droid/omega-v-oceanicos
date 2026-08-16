@@ -245,6 +245,11 @@ export class AttestationService {
       attestedAt: new Date().toISOString(),
       attestedBy: options?.attestedBy || 'attestation-service',
       ruleVersions: verificationResult.ruleVersions,
+      ...(algorithm === 'Ed25519' && this.publicKey
+        ? {
+            verifyingPublicKey: this.publicKey,
+          }
+        : {}),
       status: 'signed',
     };
 

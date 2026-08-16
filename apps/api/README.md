@@ -305,6 +305,24 @@ Every response includes an `x-request-id` header. Supplying an existing `x-reque
 
 Structured error responses also include the request ID in their JSON body, so a failure can be traced from the UI or CLI without relying on log timing.
 
+When `OMEGA_READ_TOKEN` is configured, read-only evidence endpoints require `Authorization: Bearer <token>`. This boundary is opt-in so local development remains unchanged when the variable is absent. `/health` remains available for liveness checks. Missing or invalid read credentials return `401 READ_ACCESS_REQUIRED` with a traceable request ID. The API also emits `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, and `Referrer-Policy: no-referrer` on responses.
+
+### Runtime Observability
+
+```
+GET /observability
+```
+
+Returns a read-only operational evidence summary composed from the runtime state, durable event log, configured attestation service, and hash-chained memory. It includes runtime mode and persistence, recent and durable event counts, completed runs, request and correlation lineage, verification and attestation validity, and memory integrity. It never returns private keys, seeds, secrets, or raw signing material.
+
+### Evidence Export
+
+```
+GET /evidence/export
+```
+
+Returns a bounded JSON evidence package containing the current observability summary, up to 40 recent events, and up to 10 recent completed runs. The export is read-only, preserves request and correlation lineage, reports explicit memory integrity, and never returns private keys, seeds, or raw signing material. When `OMEGA_READ_TOKEN` is configured, this route requires the bearer token.
+
 ### Single Origin
 
 Every endpoint below is also served under an `/api` prefix, and the built web
@@ -368,6 +386,29 @@ GET /events/stream
 ```
 
 Opens a server-sent event stream. Each complete loop emits observation, verification, and attestation lifecycle events with a correlation ID.
+
+### Public Attestation Key
+
+```
+GET /attest/public-key
+```
+
+Returns safe Ed25519 trust metadata for clients that need to verify attestations. The response includes the algorithm, key identifier, fingerprint, key version, and public key. Private keys, seeds, secrets, and raw signing material are never returned.
+
+**Response:**
+
+```json
+{
+  "data": {
+    "algorithm": "Ed25519",
+    "keyId": "sha256:...",
+    "fingerprint": "sha256:...",
+    "keyVersion": "test-ed25519-v1",
+    "publicKey": "-----BEGIN PUBLIC KEY-----..."
+  },
+  "timestamp": "2026-08-14T13:00:00Z"
+}
+```
 
 ### Verify Attestation
 
@@ -536,6 +577,9 @@ curl -X POST http://localhost:3000/complete-loop \
 ### Environment Variables
 
 - `API_PORT` — Port to run on (default: 3000)
+- `OMEGA_READ_TOKEN` — Optional bearer token required for read-only evidence endpoints; unset preserves local development behavior
+- `OMEGA_SIGNING_KEY` — Required signing key for attestation; there is no default
+- `OMEGA_PERSISTENCE` — Explicit persistence override: `on` or `off`
 
 ## Testing
 
