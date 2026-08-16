@@ -743,7 +743,7 @@ app.get('/memory', (_req: Request, res: Response) => {
     meta: {
       size: kernelMemory.size(),
       appendOnly: true,
-      durable: process.env.NODE_ENV !== 'test',
+      durable: persistenceEnabled,
     },
     timestamp: new Date().toISOString(),
   });
