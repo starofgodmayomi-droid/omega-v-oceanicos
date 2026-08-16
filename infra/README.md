@@ -34,15 +34,15 @@ gh attestation verify \
 
 ## Environment
 
-| Variable | Required | Default | Purpose |
-| --- | --- | --- | --- |
-| `OMEGA_SIGNING_KEY` | **yes** | none | HMAC key for attestations. The service refuses to start without it. A key shipped in an image is a key held by everyone who pulls it. |
-| `API_PORT` | no | `3000` | Listen port. |
-| `OMEGA_RUNTIME_STORE_PATH` | no | `/var/lib/omega-v/runtime.json` | Runtime snapshot. |
-| `OMEGA_EVENT_LOG_PATH` | no | derived from the store path | Append-only event log. |
-| `OMEGA_MEMORY_PATH` | no | `/tmp/omega-v-oceanicos/memory.jsonl` | Kernel hash chain. |
-| `OMEGA_PERSISTENCE` | no | on outside tests | `on` or `off`, overriding the default. |
-| `OMEGA_WEB_DIST` | no | `apps/web/dist` | Client bundle to serve. |
+| Variable                   | Required | Default                               | Purpose                                                                                                                               |
+| -------------------------- | -------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `OMEGA_SIGNING_KEY`        | **yes**  | none                                  | HMAC key for attestations. The service refuses to start without it. A key shipped in an image is a key held by everyone who pulls it. |
+| `API_PORT`                 | no       | `3000`                                | Listen port.                                                                                                                          |
+| `OMEGA_RUNTIME_STORE_PATH` | no       | `/var/lib/omega-v/runtime.json`       | Runtime snapshot.                                                                                                                     |
+| `OMEGA_EVENT_LOG_PATH`     | no       | derived from the store path           | Append-only event log.                                                                                                                |
+| `OMEGA_MEMORY_PATH`        | no       | `/tmp/omega-v-oceanicos/memory.jsonl` | Kernel hash chain.                                                                                                                    |
+| `OMEGA_PERSISTENCE`        | no       | on outside tests                      | `on` or `off`, overriding the default.                                                                                                |
+| `OMEGA_WEB_DIST`           | no       | `apps/web/dist`                       | Client bundle to serve.                                                                                                               |
 
 ## What does not exist
 

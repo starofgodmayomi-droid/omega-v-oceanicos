@@ -39,12 +39,15 @@ This charter is **not agnostic** about:
 ## How We Observe
 
 ### 1. Everyone Has a Perspective
+
 - A farmer observes weather differently than a meteorologist
 - A user observes performance differently than a developer
 - Each observation is valid if verifiable
 
 ### 2. Observations Include Metadata
+
 Every claim includes:
+
 - **Who** observed? (Observer identity)
 - **When** did they observe? (Timestamp)
 - **Where** was it observed? (Context/system state)
@@ -52,7 +55,9 @@ Every claim includes:
 - **How confident** are they? (Evidence strength)
 
 ### 3. Disagreement Is Data
+
 If two observers report differently:
+
 - Both observations are recorded
 - The verification system finds the root cause
 - The difference becomes part of the evidence
@@ -62,25 +67,33 @@ If two observers report differently:
 ## How We Verify
 
 ### 1. Evidence First
+
 A claim is true if:
+
 - Evidence supports it
 - The evidence path is transparent
 - Independent observers can reproduce it
 
 ### 2. Rules Are Shared
+
 Verification rules must be:
+
 - Public and auditable
 - Versioned with change history
 - Applicable by any system, not just ours
 
 ### 3. Failure Verification Matters
+
 A verification can fail. Failures are:
+
 - Recorded with the same rigor as successes
 - Analyzed for patterns
 - Used to improve future observations
 
 ### 4. Consensus and Dissent Coexist
+
 When we can't agree on interpretation:
+
 - The agreed-upon facts are recorded
 - Each interpretation is documented
 - Future evidence will clarify
@@ -90,17 +103,20 @@ When we can't agree on interpretation:
 ## How We Attest
 
 ### 1. Attestations Are Unforgeable
+
 - Cryptographically signed
 - Include timestamp
 - Include verification rule version
 - Include observer identity
 
 ### 2. Attestations Are Permanent
+
 - Stored in append-only log
 - Cannot be deleted (only superseded)
 - Queryable by anyone
 
 ### 3. Attestations Enable Trust Chains
+
 ```
 User trusts SDK
 └─ SDK trusts Compiler
@@ -135,12 +151,14 @@ Each layer can be verified independently.
 ```
 
 ### Consensus Seeking
+
 - All evidence is presented
 - Dissenting views are documented
 - Decision-makers must address evidence-based objections
 - When stuck, verification drives resolution
 
 ### Conflict Resolution
+
 - Disagreements are reframed as verification questions
 - Experiments provide evidence
 - Trust in the evidence, not in authority
@@ -192,6 +210,7 @@ This charter is not permanent. It evolves when:
 4. **Old practices no longer serve** (intentional sunset)
 
 Changes to this charter require:
+
 - Clear evidence of why change is needed
 - Proposal documented transparently
 - Community input period (see CONTRIBUTING.md)

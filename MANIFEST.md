@@ -15,30 +15,35 @@ The project embodies a living evolution: every step contains all steps; every en
 ## Core Principles
 
 ### 1. Verification Before Everything
+
 - No claim without evidence
 - No evolution without verification
 - Every assertion must be attestable
 - Consensus and dissent both have voice
 
 ### 2. Continuous Observation
+
 - Systems are observed, never final
 - Observation itself is verifiable
 - Observer and observed co-create reality
 - Self-recognition enables distributed trust
 
 ### 3. Evidence-Based Trust
+
 - Trust emerges from verifiable provenance
 - Every action leaves an auditable trail
 - Attestation is permanent, evolution is continuous
 - Accountability is structural, not ceremonial
 
 ### 4. Graceful Pluralism
+
 - One system, many interpreters
 - Quantitative reasoning coexists with qualitative truth
 - Verification creates consensus without forcing uniformity
 - Dissent strengthens rather than fractures
 
 ### 5. Recursive Completeness
+
 - Every component contains the whole system
 - APIs, SDKs, CLIs expose the same verification loop
 - Web, mobile, edge, and community all speak the same language
@@ -101,19 +106,19 @@ Observe → Verify → Remember → Attest → Display → Learn → Return
 
 ### Component Purposes
 
-| Component | Purpose | Output | Layer |
-|-----------|---------|--------|-------|
-| **Observer** | Captures observations from any source | Standardized event stream | MINI |
-| **Verification** | Applies rules to observations | Boolean + evidence path | MINI |
-| **Remember** | Append-only verified memory | MemoryRecord + log chain | MINI |
-| **MiniKernel** | Composes one living cycle | MiniCycleResult | MINI |
-| **Attestation** | Cryptographically signs verification | Signature + timestamp + key | + ATTEST |
-| **Compiler** | Transforms rules into executable form | Oceanicum IR bytecode | later + |
-| **IR** | Portable verification rule representation | Low-level verification ops | later + |
-| **SDK** | Programmatic access to verification | Language bindings | later + |
-| **CLI** | Command-line verification interface | STDOUT + exit codes | later + |
-| **API** | Network-accessible verification | REST/gRPC endpoints | + API |
-| **Dashboard** | Visual verification results | Timeline + status + evidence | + Web |
+| Component        | Purpose                                   | Output                       | Layer    |
+| ---------------- | ----------------------------------------- | ---------------------------- | -------- |
+| **Observer**     | Captures observations from any source     | Standardized event stream    | MINI     |
+| **Verification** | Applies rules to observations             | Boolean + evidence path      | MINI     |
+| **Remember**     | Append-only verified memory               | MemoryRecord + log chain     | MINI     |
+| **MiniKernel**   | Composes one living cycle                 | MiniCycleResult              | MINI     |
+| **Attestation**  | Cryptographically signs verification      | Signature + timestamp + key  | + ATTEST |
+| **Compiler**     | Transforms rules into executable form     | Oceanicum IR bytecode        | later +  |
+| **IR**           | Portable verification rule representation | Low-level verification ops   | later +  |
+| **SDK**          | Programmatic access to verification       | Language bindings            | later +  |
+| **CLI**          | Command-line verification interface       | STDOUT + exit codes          | later +  |
+| **API**          | Network-accessible verification           | REST/gRPC endpoints          | + API    |
+| **Dashboard**    | Visual verification results               | Timeline + status + evidence | + Web    |
 
 ---
 
@@ -160,10 +165,12 @@ These rules are non-negotiable:
 Growth order: **Zero → MINI → earned expansions**. Details in [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ### Phase 0–1: Zero + Constitution
+
 - [x] Admit empty origin (no fake ecosystem)
 - [x] Charter, manifest, contributing, license
 
 ### Phase 2: MINI kernel (Observe → Verify → Remember)
+
 - [x] Observer: Event capture and normalization
 - [x] Verification: Rule engine with evidence paths
 - [x] Remember: Append-only hash-chained memory
@@ -171,14 +178,17 @@ Growth order: **Zero → MINI → earned expansions**. Details in [docs/ROADMAP.
 - [ ] MINI as default mental model across apps/docs
 
 ### Phase 3: Earned core expansions
+
 - [ ] Attestation: Production-grade signing on remembered results
 - [ ] Act: Actions gated by verified memory
 - [ ] Stronger reason/intent/build/test layers
 
 ### Phase 4: Interface expansions
+
 - [ ] API / Web / CLI / SDK / Mobile
 
 ### Phase 5–7: Depth, distribution, ecosystem
+
 - [ ] Compiler/IR, durable stores, edge, VaaS
 - [ ] Governance, stewardship, economy, evolution ↺ ∞
 
@@ -214,6 +224,7 @@ The project succeeds when:
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on:
+
 - How to propose changes
 - How to verify your work
 - How to create attestations

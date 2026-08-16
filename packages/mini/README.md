@@ -43,12 +43,12 @@ const result = mini.cycle({
 
 ## Composition
 
-| Layer | Package | Role |
-|-------|---------|------|
-| 👁 Observe | `@omega-v/observer` | Capture + normalize claims |
-| ✓ Verify | `@omega-v/verification` | Rules + evidence paths |
-| 🧠 Remember | `@omega-v/remember` | Append-only durable memory |
-| 💧 MINI | `@omega-v/mini` | Compose the three |
+| Layer       | Package                 | Role                       |
+| ----------- | ----------------------- | -------------------------- |
+| 👁 Observe   | `@omega-v/observer`     | Capture + normalize claims |
+| ✓ Verify    | `@omega-v/verification` | Rules + evidence paths     |
+| 🧠 Remember | `@omega-v/remember`     | Append-only durable memory |
+| 💧 MINI     | `@omega-v/mini`         | Compose the three          |
 
 ## Earned expansions (not MINI)
 

@@ -25,11 +25,7 @@ npm install @omega-v/types
 ## Usage
 
 ```typescript
-import {
-  Observation,
-  VerificationResult,
-  Attestation,
-} from '@omega-v/types';
+import { Observation, VerificationResult, Attestation } from '@omega-v/types';
 
 const observation: Observation = {
   id: 'obs-123',
@@ -59,9 +55,11 @@ Attestation (earned + ATTEST expansion)
 ## Key Types
 
 ### Observation
+
 Represents a claim about system state with supporting evidence.
 
 **Fields:**
+
 - `id` — Unique identifier
 - `claim` — The statement and category
 - `source` — Where this came from
@@ -71,18 +69,22 @@ Represents a claim about system state with supporting evidence.
 - `status` — Current state (normalized, verified, failed)
 
 ### VerificationResult
+
 Shows whether an observation is true with full evidence trail.
 
 **Fields:**
+
 - `id` — Unique verification ID
 - `evidencePath` — Step-by-step reasoning
 - `summary` — Overall pass/fail and statistics
 - `ruleVersions` — Which rule versions were used
 
 ### Attestation
+
 A cryptographically signed verification result, proving it happened at a specific time.
 
 **Fields:**
+
 - `signature` — Unforgeable proof
 - `signingKey` — Which key created the signature
 - `attestedAt` — When this was signed

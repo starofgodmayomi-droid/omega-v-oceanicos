@@ -21,13 +21,13 @@ packages/
 └── mini/               # 💧 Compose one living cycle
 ```
 
-| Package | Role |
-|---------|------|
-| `@omega-v/types` | Zero-dependency shared types |
-| `@omega-v/observer` | Step 1 — observe |
-| `@omega-v/verification` | Step 2 — verify |
-| `@omega-v/remember` | Step 3 — remember |
-| `@omega-v/mini` | Kernel composition |
+| Package                 | Role                         |
+| ----------------------- | ---------------------------- |
+| `@omega-v/types`        | Zero-dependency shared types |
+| `@omega-v/observer`     | Step 1 — observe             |
+| `@omega-v/verification` | Step 2 — verify              |
+| `@omega-v/remember`     | Step 3 — remember            |
+| `@omega-v/mini`         | Kernel composition           |
 
 ### Quick start (MINI only)
 

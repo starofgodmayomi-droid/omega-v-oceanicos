@@ -28,10 +28,13 @@ Understanding both layers is crucial: start from MINI, then earn the rest.
 ## Step 1: Observe
 
 ### Purpose
+
 Capture a claim, event, or state change and prepare it for verification.
 
 ### Input
+
 Any claim from any source:
+
 - A health check returning a status code
 - A metric exceeding a threshold
 - A user assertion about system behavior
@@ -40,47 +43,50 @@ Any claim from any source:
 ### Process
 
 #### 1.1 Receive the Claim
+
 ```typescript
 const claim = {
-  statement: "Service X returned HTTP 200",
-  source: "health-check-endpoint",
-  timestamp: "2026-08-07T10:30:00Z"
+  statement: 'Service X returned HTTP 200',
+  source: 'health-check-endpoint',
+  timestamp: '2026-08-07T10:30:00Z',
 };
 ```
 
 #### 1.2 Normalize with Metadata
+
 ```typescript
 const observation = {
   // The claim itself
   claim: {
-    statement: "Service X returned HTTP 200",
-    category: "health-check"
+    statement: 'Service X returned HTTP 200',
+    category: 'health-check',
   },
 
   // Source information
   source: {
-    system: "health-check-api",
-    version: "1.2.3",
-    environment: "production"
+    system: 'health-check-api',
+    version: '1.2.3',
+    environment: 'production',
   },
 
   // Temporal data
-  timestamp: "2026-08-07T10:30:00Z",
-  observedBy: "monitoring-system",
+  timestamp: '2026-08-07T10:30:00Z',
+  observedBy: 'monitoring-system',
 
   // Evidence and confidence
   metadata: {
     statusCode: 200,
     responseTime: 45,
     attempts: 3,
-    lastSuccess: "2026-08-07T10:25:00Z"
+    lastSuccess: '2026-08-07T10:25:00Z',
   },
-  confidence: 0.95,  // 0-1 scale
-  confidenceReason: "3 consecutive successful checks"
+  confidence: 0.95, // 0-1 scale
+  confidenceReason: '3 consecutive successful checks',
 };
 ```
 
 #### 1.3 Validate Schema
+
 ```typescript
 // Check that observation includes required fields
 validate(observation, OBSERVATION_SCHEMA);
@@ -88,21 +94,23 @@ validate(observation, OBSERVATION_SCHEMA);
 ```
 
 #### 1.4 Deduplicate
+
 ```typescript
 // Check if we've seen this exact observation recently
 const isDuplicate = store.findSimilar(observation, {
-  timeWindow: 60000,  // 60 seconds
-  threshold: 0.95     // 95% similarity
+  timeWindow: 60000, // 60 seconds
+  threshold: 0.95, // 95% similarity
 });
 
 if (isDuplicate) {
-  return { status: "deduplicated", originalId: isDuplicate.id };
+  return { status: 'deduplicated', originalId: isDuplicate.id };
 }
 ```
 
 ### Output
 
 **Normalized Observation** with ID and timestamp:
+
 ```typescript
 {
   id: "obs-2026-08-07-1234",
@@ -121,9 +129,11 @@ if (isDuplicate) {
 ## Step 2: Verify
 
 ### Purpose
+
 Apply verification rules to the observation and produce evidence of truth or falsehood.
 
 ### Input
+
 - Normalized observation from Step 1
 - Applicable verification rules
 - Rule versions and parameters
@@ -133,7 +143,7 @@ Apply verification rules to the observation and produce evidence of truth or fal
 #### 2.1 Select Applicable Rules
 
 ```typescript
-const applicableRules = rules.filter(rule => {
+const applicableRules = rules.filter((rule) => {
   return rule.appliesTo.includes(observation.claim.category);
 });
 
@@ -170,7 +180,7 @@ for (const rule of applicableRules) {
   const result = verificationEngine.execute({
     observation,
     rule,
-    ruleVersion: rule.version
+    ruleVersion: rule.version,
   });
 
   results.push({
@@ -178,7 +188,7 @@ for (const rule of applicableRules) {
     ruleVersion: rule.version,
     passed: result.passed,
     evidence: result.evidencePath,
-    details: result.details
+    details: result.details,
   });
 }
 ```
@@ -191,30 +201,30 @@ The evidence path is not just "true" or "false" — it's the complete reasoning:
 const evidencePath = [
   {
     step: 1,
-    rule: "response-time-threshold",
-    condition: "metadata.responseTime < 100",
+    rule: 'response-time-threshold',
+    condition: 'metadata.responseTime < 100',
     value: 45,
     threshold: 100,
     passed: true,
-    reasoning: "45ms is less than 100ms threshold"
+    reasoning: '45ms is less than 100ms threshold',
   },
   {
     step: 2,
-    rule: "status-code-check",
-    condition: "metadata.statusCode == 200",
+    rule: 'status-code-check',
+    condition: 'metadata.statusCode == 200',
     value: 200,
     expected: 200,
     passed: true,
-    reasoning: "Status code matches expected value"
+    reasoning: 'Status code matches expected value',
   },
   {
     step: 3,
-    rule: "combined-health-check",
-    condition: "step1.passed AND step2.passed",
+    rule: 'combined-health-check',
+    condition: 'step1.passed AND step2.passed',
     operands: [true, true],
     passed: true,
-    reasoning: "All conditions met: health check passes"
-  }
+    reasoning: 'All conditions met: health check passes',
+  },
 ];
 ```
 
@@ -225,31 +235,34 @@ Failures are **not** errors. They're evidence of problems:
 ```typescript
 const failureResult = {
   passed: false,
-  evidence: [{
-    step: 1,
-    rule: "response-time-threshold",
-    condition: "metadata.responseTime < 100",
-    value: 245,
-    threshold: 100,
-    passed: false,
-    reasoning: "245ms exceeds 100ms threshold",
-    severity: "warning"  // or "critical"
-  }],
-  failureType: "threshold-exceeded",
-  failureSeverity: "warning",
-  suggestedAction: "Investigate performance degradation"
+  evidence: [
+    {
+      step: 1,
+      rule: 'response-time-threshold',
+      condition: 'metadata.responseTime < 100',
+      value: 245,
+      threshold: 100,
+      passed: false,
+      reasoning: '245ms exceeds 100ms threshold',
+      severity: 'warning', // or "critical"
+    },
+  ],
+  failureType: 'threshold-exceeded',
+  failureSeverity: 'warning',
+  suggestedAction: 'Investigate performance degradation',
 };
 ```
 
 ### Output
 
 **Verification Result** with evidence:
+
 ```typescript
 {
   id: "ver-2026-08-07-5678",
   observationId: "obs-2026-08-07-1234",
   timestamp: "2026-08-07T10:30:01Z",
-  
+
   summary: {
     passed: true,
     confidence: 0.95,
@@ -257,15 +270,15 @@ const failureResult = {
     rulesPassed: 3,
     rulesFailed: 0
   },
-  
+
   rules: [
     { name: "response-time-threshold", passed: true, ... },
     { name: "status-code-check", passed: true, ... },
     { name: "combined-health-check", passed: true, ... }
   ],
-  
+
   evidencePath: [...],
-  
+
   ruleVersions: {
     "response-time-threshold": "1.0.5",
     "status-code-check": "1.2.0",
@@ -279,6 +292,7 @@ const failureResult = {
 ## Step 3: Remember (MINI)
 
 ### Purpose
+
 Persist the observation and verification as durable memory without assuming a database or ecosystem.
 
 ### Process
@@ -309,11 +323,13 @@ const result = new MiniKernel({ rules }).cycle(input);
 ## Step 4: Attest (`+ ATTEST` expansion)
 
 ### Purpose
+
 Cryptographically sign the verification result, creating an unforgeable proof.
 
 This step is an **earned expansion**. MINI is complete without it.
 
 ### Input
+
 - Verification result from Step 2
 - Signing key
 - Attestor identity
@@ -324,14 +340,14 @@ This step is an **earned expansion**. MINI is complete without it.
 
 ```typescript
 const payloadToSign = {
-  verificationId: "ver-2026-08-07-5678",
-  observationId: "obs-2026-08-07-1234",
+  verificationId: 'ver-2026-08-07-5678',
+  observationId: 'obs-2026-08-07-1234',
   claim: observation.claim,
   verified: true,
   confidence: 0.95,
   ruleVersions: verification.ruleVersions,
-  timestamp: "2026-08-07T10:30:01Z",
-  verifiedBy: "verification-engine"
+  timestamp: '2026-08-07T10:30:01Z',
+  verifiedBy: 'verification-engine',
 };
 ```
 
@@ -339,10 +355,7 @@ const payloadToSign = {
 
 ```typescript
 // Using the signing key (private key held securely)
-const signature = cryptography.sign(
-  JSON.stringify(payloadToSign),
-  signingKey
-);
+const signature = cryptography.sign(JSON.stringify(payloadToSign), signingKey);
 
 // signature = "0x1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a"
 ```
@@ -352,29 +365,29 @@ const signature = cryptography.sign(
 ```typescript
 const attestation = {
   // The signed content
-  verificationId: "ver-2026-08-07-5678",
-  observationId: "obs-2026-08-07-1234",
+  verificationId: 'ver-2026-08-07-5678',
+  observationId: 'obs-2026-08-07-1234',
   verified: true,
   confidence: 0.95,
 
   // The signature
-  signature: "0x1a2b3c4d5e6f...",
-  
+  signature: '0x1a2b3c4d5e6f...',
+
   // Signature metadata
-  signingKey: "key-2026-08-production-v2",
-  keyVersion: "2",
-  signingAlgorithm: "ECDSA-SHA256",
-  
+  signingKey: 'key-2026-08-production-v2',
+  keyVersion: '2',
+  signingAlgorithm: 'ECDSA-SHA256',
+
   // Temporal data
-  attestedAt: "2026-08-07T10:30:02Z",
-  attestedBy: "attestation-service-1",
-  attestedByKeyVersion: "2",
-  
+  attestedAt: '2026-08-07T10:30:02Z',
+  attestedBy: 'attestation-service-1',
+  attestedByKeyVersion: '2',
+
   // For auditability
   ruleVersions: verification.ruleVersions,
-  
+
   // For verification
-  verifyingPublicKey: publicKey
+  verifyingPublicKey: publicKey,
 };
 ```
 
@@ -400,6 +413,7 @@ console.log(isValid); // true
 ### Output
 
 **Signed Attestation**:
+
 ```typescript
 {
   id: "att-2026-08-07-9012",
@@ -421,9 +435,11 @@ console.log(isValid); // true
 ## Step 5: Record (durable expansion of Remember)
 
 ### Purpose
+
 When multi-process reality demands it, store the complete chain of observation, verification, memory, and attestation beyond in-process Remember.
 
 ### Input
+
 - Observation from Step 1
 - Verification from Step 2
 - Attestation from Step 3
@@ -435,24 +451,24 @@ When multi-process reality demands it, store the complete chain of observation, 
 ```typescript
 // Event log is append-only
 eventStore.append({
-  type: "OBSERVATION",
-  id: "obs-2026-08-07-1234",
+  type: 'OBSERVATION',
+  id: 'obs-2026-08-07-1234',
   data: observation,
-  timestamp: observation.timestamp
+  timestamp: observation.timestamp,
 });
 
 eventStore.append({
-  type: "VERIFICATION",
-  id: "ver-2026-08-07-5678",
+  type: 'VERIFICATION',
+  id: 'ver-2026-08-07-5678',
   data: verification,
-  timestamp: verification.timestamp
+  timestamp: verification.timestamp,
 });
 
 eventStore.append({
-  type: "ATTESTATION",
-  id: "att-2026-08-07-9012",
+  type: 'ATTESTATION',
+  id: 'att-2026-08-07-9012',
   data: attestation,
-  timestamp: attestation.attestedAt
+  timestamp: attestation.attestedAt,
 });
 ```
 
@@ -461,19 +477,19 @@ eventStore.append({
 ```typescript
 // Index for fast querying
 verificationIndex.add({
-  observationId: "obs-2026-08-07-1234",
-  verificationId: "ver-2026-08-07-5678",
-  attestationId: "att-2026-08-07-9012",
+  observationId: 'obs-2026-08-07-1234',
+  verificationId: 'ver-2026-08-07-5678',
+  attestationId: 'att-2026-08-07-9012',
   verified: true,
-  timestamp: "2026-08-07T10:30:02Z",
-  ruleVersions: verification.ruleVersions
+  timestamp: '2026-08-07T10:30:02Z',
+  ruleVersions: verification.ruleVersions,
 });
 
 // Index by observation source
 sourceIndex.add({
-  source: "health-check-api",
-  observationId: "obs-2026-08-07-1234",
-  timestamp: "2026-08-07T10:30:00Z"
+  source: 'health-check-api',
+  observationId: 'obs-2026-08-07-1234',
+  timestamp: '2026-08-07T10:30:00Z',
 });
 ```
 
@@ -482,8 +498,8 @@ sourceIndex.add({
 ```typescript
 // "Was this service healthy at 10:30:00?"
 const result = verificationIndex.query({
-  timestamp: "2026-08-07T10:30:00Z",
-  source: "health-check-api"
+  timestamp: '2026-08-07T10:30:00Z',
+  source: 'health-check-api',
 });
 
 // Returns: Attestation with proof that it was healthy
@@ -492,6 +508,7 @@ const result = verificationIndex.query({
 ### Output
 
 **Recorded Event Chain**:
+
 ```
 Event 1: obs-2026-08-07-1234 (OBSERVATION)
   └─ Event 2: ver-2026-08-07-5678 (VERIFICATION)
@@ -511,14 +528,17 @@ Queryable by:
 ## Step 6: Display
 
 ### Purpose
+
 Make verification results visible to users and systems.
 
 ### Input
+
 - Recorded events from Step 4
 
 ### Channels
 
 #### 5.1 Web Dashboard
+
 ```
 Timeline View:
 ┌─────────────────────────────────────┐
@@ -541,6 +561,7 @@ Click to expand: See full evidence path
 ```
 
 #### 5.2 REST API
+
 ```bash
 GET /verification/ver-2026-08-07-5678
 
@@ -557,6 +578,7 @@ GET /verification/ver-2026-08-07-5678
 ```
 
 #### 5.3 CLI
+
 ```bash
 $ omega query att-2026-08-07-9012
 
@@ -573,6 +595,7 @@ To see full evidence:
 ```
 
 #### 5.4 Alert Systems
+
 ```
 If verification fails:
   → Alert to monitoring system
@@ -591,6 +614,7 @@ If verification fails:
 ## Step 7: Learn
 
 ### Purpose
+
 Extract patterns from verifications and improve future predictions.
 
 ### Process
@@ -640,8 +664,8 @@ const ruleReview = learningEngine.reviewRule("response-time-threshold", {
 
 ```typescript
 const report = learningEngine.generateReport({
-  rules: ["response-time-threshold", "status-code-check"],
-  period: "2026-08-01 to 2026-08-07"
+  rules: ['response-time-threshold', 'status-code-check'],
+  period: '2026-08-01 to 2026-08-07',
 });
 
 // Report includes:
@@ -661,6 +685,7 @@ const report = learningEngine.generateReport({
 ## Step 8: Return
 
 ### Purpose
+
 Close the loop by using learning to improve observation and verification.
 
 ### Process
@@ -670,13 +695,13 @@ Close the loop by using learning to improve observation and verification.
 ```typescript
 // Based on learning, propose rule update
 const newRule = {
-  name: "response-time-threshold",
-  version: "1.0.6",  // Previously 1.0.5
-  threshold: 120,    // Changed from 100
+  name: 'response-time-threshold',
+  version: '1.0.6', // Previously 1.0.5
+  threshold: 120, // Changed from 100
   previousThreshold: 100,
-  reason: "Learning analysis: reduced false positives",
+  reason: 'Learning analysis: reduced false positives',
   confidence: 0.92,
-  appliedAt: "2026-08-08T00:00:00Z"
+  appliedAt: '2026-08-08T00:00:00Z',
 };
 
 // Old rule is versioned, new rule becomes default
@@ -688,15 +713,15 @@ rulesRegistry.addVersion(newRule);
 ```typescript
 // Update what we observe based on learning
 const updatedObservationStrategy = {
-  source: "health-check-api",
-  frequency: "every 5 minutes",  // Previously every 10 minutes
+  source: 'health-check-api',
+  frequency: 'every 5 minutes', // Previously every 10 minutes
   metrics: [
-    "statusCode",
-    "responseTime",
-    "memoryUsage",  // New! Learning showed this predicts failures
-    "cpuUsage"      // New! Learning showed this predicts failures
+    'statusCode',
+    'responseTime',
+    'memoryUsage', // New! Learning showed this predicts failures
+    'cpuUsage', // New! Learning showed this predicts failures
   ],
-  confidence: 0.94
+  confidence: 0.94,
 };
 
 observationConfig.update(updatedObservationStrategy);
@@ -708,8 +733,8 @@ observationConfig.update(updatedObservationStrategy);
 // As we learn, we refine confidence
 const confidenceModel = learningEngine.trainConfidenceModel({
   trainingData: historicalVerifications,
-  features: ["responseTime", "statusCode", "memoryUsage"],
-  labels: ["verified", "failed"]
+  features: ['responseTime', 'statusCode', 'memoryUsage'],
+  labels: ['verified', 'failed'],
 });
 
 // Next observations use improved confidence model
@@ -723,15 +748,15 @@ Next observation uses improved rules, strategies, and confidence models:
 ```typescript
 // New observation comes in
 observer.observe({
-  claim: "Service X returned HTTP 200",
-  source: "health-check-api",
-  timestamp: "2026-08-08T10:30:00Z",
+  claim: 'Service X returned HTTP 200',
+  source: 'health-check-api',
+  timestamp: '2026-08-08T10:30:00Z',
   metadata: {
     statusCode: 200,
     responseTime: 95,
-    memoryUsage: 450,    // ← Newly observed based on learning
-    cpuUsage: 35         // ← Newly observed based on learning
-  }
+    memoryUsage: 450, // ← Newly observed based on learning
+    cpuUsage: 35, // ← Newly observed based on learning
+  },
 });
 
 // Uses updated rules and confidence model → better verification
@@ -772,11 +797,13 @@ Observation 2 (Aug 8, 10:30)
 ## Practical Example: End-to-End
 
 ### Scenario
+
 A health check API reports a service status.
 
 ### Complete Loop
 
 **Step 1: Observe**
+
 ```
 claim: "HTTP 200 from service X"
 timestamp: 10:30:00
@@ -784,6 +811,7 @@ confidence: 0.95 (3 consecutive checks)
 ```
 
 **Step 2: Verify**
+
 ```
 Apply rule "response-time-threshold" v1.0.5
   Condition: responseTime < 100ms
@@ -799,6 +827,7 @@ Overall: PASS (confidence 0.95)
 ```
 
 **Step 3: Attest**
+
 ```
 Sign the verification result
 signature: 0x1a2b3c...
@@ -807,6 +836,7 @@ timestamp: 10:30:02
 ```
 
 **Step 4: Record**
+
 ```
 Append to event log:
   - Observation
@@ -816,6 +846,7 @@ Index for fast queries
 ```
 
 **Step 5: Display**
+
 ```
 Dashboard shows:
   ✓ Healthy (confidence 95%)
@@ -824,6 +855,7 @@ Dashboard shows:
 ```
 
 **Step 6: Learn**
+
 ```
 Over 7 days:
   - 240 verifications
@@ -834,6 +866,7 @@ Over 7 days:
 ```
 
 **Step 7: Return**
+
 ```
 Rules remain at v1.0.5
 Next observation will use same strategy
@@ -845,6 +878,7 @@ System has proven stable
 ## Key Principles
 
 ### 1. Every Step Produces Evidence
+
 - Observation includes metadata
 - Verification shows reasoning
 - Attestation proves authenticity
@@ -852,6 +886,7 @@ System has proven stable
 - Learning extracts wisdom
 
 ### 2. No Step Is Final
+
 - Observations can be revised
 - Verifications can be re-run with new rules
 - Attestations can be audited
@@ -859,6 +894,7 @@ System has proven stable
 - Learning improves future cycles
 
 ### 3. The Loop Is Complete
+
 - Every output becomes input to later steps
 - Learning closes the circle
 - The system verifies itself
