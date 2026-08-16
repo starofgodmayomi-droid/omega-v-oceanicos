@@ -12,15 +12,15 @@ switched on, drives it over HTTP, then reads what it wrote back out using
 own accessors. A system can agree with itself and still be wrong; here the
 writer and the reader are different code paths.
 
-| Suite | Covers |
-| --- | --- |
-| `packages/observer/src/__tests__/` | capture, normalization, deduplication, validation |
-| `packages/verification/src/__tests__/` | rule registry, applicability, evidence paths, caching |
-| `packages/attestation/src/__tests__/` | HMAC signing, verification, key handling, rotation |
-| `packages/remember/src/__tests__/` | hash chain, durable store, tamper and deletion detection |
-| `packages/mini/src/__tests__/` | the kernel cycle, component injection, restart resumption |
-| `apps/api/src/__tests__/` | endpoints, validation guards, persistence, prefix parity, documentation |
-| `apps/web/src/__tests__/` | the client/API contract |
+| Suite                                  | Covers                                                                  |
+| -------------------------------------- | ----------------------------------------------------------------------- |
+| `packages/observer/src/__tests__/`     | capture, normalization, deduplication, validation                       |
+| `packages/verification/src/__tests__/` | rule registry, applicability, evidence paths, caching                   |
+| `packages/attestation/src/__tests__/`  | HMAC signing, verification, key handling, rotation                      |
+| `packages/remember/src/__tests__/`     | hash chain, durable store, tamper and deletion detection                |
+| `packages/mini/src/__tests__/`         | the kernel cycle, component injection, restart resumption               |
+| `apps/api/src/__tests__/`              | endpoints, validation guards, persistence, prefix parity, documentation |
+| `apps/web/src/__tests__/`              | the client/API contract                                                 |
 
 ## Running them
 

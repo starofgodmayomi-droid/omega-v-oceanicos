@@ -24,12 +24,12 @@ No assumed ecosystem, capital, architecture, or unverified trust.
 💧 Ω∞v MINI ::= 👁 OBSERVE → ✓ VERIFY → 🧠 REMEMBER
 ```
 
-| Layer | Package | Role |
-|-------|---------|------|
-| 👁 Observe | `@omega-v/observer` | Capture events and claims; normalize |
-| ✓ Verify | `@omega-v/verification` | Apply rules; produce evidence paths |
-| 🧠 Remember | `@omega-v/remember` | Append-only hash-chained memory |
-| 💧 Compose | `@omega-v/mini` | One living cycle over the three |
+| Layer       | Package                 | Role                                 |
+| ----------- | ----------------------- | ------------------------------------ |
+| 👁 Observe   | `@omega-v/observer`     | Capture events and claims; normalize |
+| ✓ Verify    | `@omega-v/verification` | Apply rules; produce evidence paths  |
+| 🧠 Remember | `@omega-v/remember`     | Append-only hash-chained memory      |
+| 💧 Compose  | `@omega-v/mini`         | One living cycle over the three      |
 
 Shared contracts live in `@omega-v/types`.
 
@@ -109,27 +109,29 @@ The diagram below is the **target composition** after earned expansion — not t
 **Purpose**: Capture observations (events, claims, states) and normalize them.
 
 **Responsibilities**:
+
 - Accept observations from any source
 - Validate observation schema (who, when, what, confidence)
 - Deduplicate similar observations
 - Create normalized event stream
 
 **Example**:
+
 ```typescript
 observer.observe({
-  claim: "Service X is healthy",
+  claim: 'Service X is healthy',
   source: {
-    system: "health-check-api",
-    version: "1.2.3",
-    environment: "production"
+    system: 'health-check-api',
+    version: '1.2.3',
+    environment: 'production',
   },
-  observedBy: "monitor",
+  observedBy: 'monitor',
   metadata: {
     responseTime: 45,
-    statusCode: 200
+    statusCode: 200,
   },
   confidence: 0.95,
-  confidenceReason: "consecutive successful checks"
+  confidenceReason: 'consecutive successful checks',
 });
 ```
 
@@ -142,6 +144,7 @@ observer.observe({
 **Purpose**: Apply verification rules to observations and produce evidence.
 
 **Responsibilities**:
+
 - Load and manage versioned verification rules
 - Execute rules against observations
 - Produce evidence paths (not just true/false)
@@ -156,6 +159,7 @@ observer.observe({
 **Purpose**: Persist verified experience in an append-only, hash-chained log.
 
 **Responsibilities**:
+
 - Store observation + verification as durable memory
 - Maintain integrity via chained hashes
 - Support recall and query without a database assumption
@@ -229,14 +233,15 @@ The expanded loop never replaces MINI; it wraps it.
 ### MINI (always available)
 
 ```typescript
-mini.cycle(input)
-mini.registerRule(rule)
-mini.verifyMemoryIntegrity()
+mini.cycle(input);
+mini.registerRule(rule);
+mini.verifyMemoryIntegrity();
 ```
 
 ### Expansion APIs (when earned)
 
 #### REST API
+
 - `POST /observe` — Submit an observation
 - `POST /verify` — Verify an observation
 - `GET /verification/:id` — Retrieve verification result
@@ -244,6 +249,7 @@ mini.verifyMemoryIntegrity()
 - `GET /rules` — List available rules
 
 #### CLI (planned expansion)
+
 ```bash
 omega observe "claim" --source api --confidence 0.95
 omega verify claim-id --rules health-check
@@ -255,11 +261,13 @@ omega remember verification-id
 ## Concurrency & distribution
 
 ### MINI (single process)
+
 - Sequential cycle execution
 - In-process append-only memory
 - Hash-chain integrity checks
 
 ### Expanded deployments
+
 - Multiple instances, brokers, and distributed stores are later `+` layers
 - Edge and cloud modes must still speak MINI types
 
@@ -268,18 +276,22 @@ omega remember verification-id
 ## Error handling
 
 ### Observation errors
+
 - Invalid schema → Reject with clear error message
 - Duplicate observation → Deduplicate within window
 
 ### Verification errors
+
 - Rule not found / no rules → Result still produced; may pass with zero rules or fail closed by policy
 - Rule execution exception → Record as failed verification evidence
 
 ### Memory errors
+
 - Integrity failure → Surface immediately; do not silently repair history
 - Write failure (future durable backends) → Do not acknowledge completion
 
 ### Attestation errors (expansion)
+
 - Key unavailable → Fail attestation
 - Signature failure → Log and alert
 
@@ -288,10 +300,12 @@ omega remember verification-id
 ## Security considerations
 
 ### MINI
+
 - Memory is hash-chained; tampering is detectable via `verifyIntegrity()`
 - No private keys required for the kernel itself
 
 ### Expansion (attestation / infra)
+
 - Keys never travel inside observations
 - Keys encrypted at rest; rotation tracked
 - Private keys never leave secure location
@@ -301,6 +315,7 @@ omega remember verification-id
 ## Performance characteristics
 
 ### MINI targets (single process)
+
 - **Observe**: sub-10ms typical
 - **Verify**: sub-100ms typical for simple rules
 - **Remember**: append O(1); integrity check O(n)
@@ -312,14 +327,17 @@ Expansion layers publish their own SLOs when earned.
 ## Testing strategy
 
 ### Unit tests
+
 - Each MINI package tested independently
 - Integrity and failure-memory cases required for Remember
 
 ### Kernel tests
+
 - Full MINI cycle: Observe → Verify → Remember
 - Failed verification still remembered
 
 ### Expansion tests
+
 - Attestation, API, Web only after their packages claim readiness
 - Integration tests verify expansions compose with MINI without forking types
 
@@ -328,11 +346,13 @@ Expansion layers publish their own SLOs when earned.
 ## Deployment modes
 
 ### MINI / Development
+
 - In-process kernel
 - No external services required
 - `MiniKernel` runnable from tests or a thin script
 
 ### Expanded production (later)
+
 - API + Web + durable store + key management
 - Only after MINI behavior is proven under real use
 

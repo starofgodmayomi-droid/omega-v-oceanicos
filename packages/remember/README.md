@@ -30,14 +30,14 @@ memory.query({ type: 'MEMORY' });
 
 ```typescript
 class Remember {
-  append(item: Rememberable): EventLogEntry
-  remember(observation, verification): MemoryRecord
-  recall(id: number): EventLogEntry | undefined
-  recallMemory(memoryId: string): MemoryRecord | undefined
-  query(filter?: MemoryQuery): EventLogEntry[]
-  all(): readonly EventLogEntry[]
-  size(): number
-  verifyIntegrity(): boolean
+  append(item: Rememberable): EventLogEntry;
+  remember(observation, verification): MemoryRecord;
+  recall(id: number): EventLogEntry | undefined;
+  recallMemory(memoryId: string): MemoryRecord | undefined;
+  query(filter?: MemoryQuery): EventLogEntry[];
+  all(): readonly EventLogEntry[];
+  size(): number;
+  verifyIntegrity(): boolean;
 }
 ```
 

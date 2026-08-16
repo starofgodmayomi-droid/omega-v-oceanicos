@@ -7,11 +7,13 @@ Welcome to the Ω∞v Oceanicos documentation. Start here to understand the proj
 ## Foundation Documents
 
 ### Getting Started
+
 - **[Charter](../CHARTER.md)** — Our living agnostic principles and decision-making philosophy
 - **[Manifest](../MANIFEST.md)** — Project mission, architecture, and verification loop
 - **[Contributing](../CONTRIBUTING.md)** — How to submit PRs and work within our verification-first culture
 
 ### Development
+
 - **[Development Setup](./DEVELOPMENT.md)** — Get the project running locally
 - **[MINI Kernel](./MINI.md)** — Zero → MINI → verified expansion (canonical growth model)
 - **[Architecture](./ARCHITECTURE.md)** — High-level system design from MINI outward
@@ -23,6 +25,7 @@ Welcome to the Ω∞v Oceanicos documentation. Start here to understand the proj
 ## Learning Paths
 
 ### For New Contributors
+
 1. Read [CHARTER.md](../CHARTER.md) — understand our principles
 2. Read [CONTRIBUTING.md](../CONTRIBUTING.md) — learn our workflow
 3. Run through [DEVELOPMENT.md](./DEVELOPMENT.md) — set up locally
@@ -30,6 +33,7 @@ Welcome to the Ω∞v Oceanicos documentation. Start here to understand the proj
 5. See your work merged and in production — celebrate!
 
 ### For Architects
+
 1. Read [MINI.md](./MINI.md) — Zero → MINI → expansion law
 2. Read [MANIFEST.md](../MANIFEST.md) — understand the vision
 3. Study [ARCHITECTURE.md](./ARCHITECTURE.md) — how components fit together
@@ -37,6 +41,7 @@ Welcome to the Ω∞v Oceanicos documentation. Start here to understand the proj
 5. Explore the codebase and propose improvements only as earned `+` layers
 
 ### For Users
+
 1. Read the README in the root — get oriented
 2. Run the published image — see [Infrastructure](../infra/README.md)
 3. Call the loop — see the [REST API reference](../apps/api/README.md)
@@ -61,6 +66,7 @@ nowhere else.
 ## Deep Dives
 
 ### How Verification Works
+
 - **[The verification loop](./VERIFICATION_LOOP.md)** — observe, verify,
   attest, act, learn, recompile
 - **[Verification rules](../packages/verification/README.md)** — the rule
@@ -69,6 +75,7 @@ nowhere else.
   fingerprints, and why there is no default key
 
 ### System Design
+
 - **[Observer](../packages/observer/README.md)** — capturing normalized
   observations
 - **[Memory](../packages/remember/README.md)** — the append-only
@@ -81,6 +88,7 @@ There is no compiler or IR, and no database: state is a JSON snapshot and
 two append-only files on disk.
 
 ### Community
+
 - **[Charter](../CHARTER.md)** — how we treat each other
 - **[Contributing](../CONTRIBUTING.md)** — how to propose a change
 - **[Roadmap](./ROADMAP.md)** — earned expansion phases

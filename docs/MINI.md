@@ -86,12 +86,12 @@ Zero is honesty about starting conditions.
 
 That is the smallest useful kernel.
 
-| Symbol | Name | Package | Responsibility |
-|--------|------|---------|----------------|
-| 👁 | Observe | `@omega-v/observer` | Capture and normalize claims |
-| ✓ | Verify | `@omega-v/verification` | Apply rules; produce evidence |
-| 🧠 | Remember | `@omega-v/remember` | Append-only durable memory |
-| 💧 | MINI | `@omega-v/mini` | Compose one living cycle |
+| Symbol | Name     | Package                 | Responsibility                |
+| ------ | -------- | ----------------------- | ----------------------------- |
+| 👁      | Observe  | `@omega-v/observer`     | Capture and normalize claims  |
+| ✓      | Verify   | `@omega-v/verification` | Apply rules; produce evidence |
+| 🧠     | Remember | `@omega-v/remember`     | Append-only durable memory    |
+| 💧     | MINI     | `@omega-v/mini`         | Compose one living cycle      |
 
 ### One cycle
 
