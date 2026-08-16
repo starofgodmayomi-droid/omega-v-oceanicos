@@ -310,6 +310,29 @@ GET /events/stream
 
 Opens a server-sent event stream. Each complete loop emits observation, verification, and attestation lifecycle events with a correlation ID.
 
+### Public Attestation Key
+
+```
+GET /attest/public-key
+```
+
+Returns safe Ed25519 trust metadata for clients that need to verify attestations. The response includes the algorithm, key identifier, fingerprint, key version, and public key. Private keys, seeds, secrets, and raw signing material are never returned.
+
+**Response:**
+
+```json
+{
+  "data": {
+    "algorithm": "Ed25519",
+    "keyId": "sha256:...",
+    "fingerprint": "sha256:...",
+    "keyVersion": "test-ed25519-v1",
+    "publicKey": "-----BEGIN PUBLIC KEY-----..."
+  },
+  "timestamp": "2026-08-14T13:00:00Z"
+}
+```
+
 ### Verify Attestation
 
 ```
