@@ -3,8 +3,18 @@ name: Verification Pipeline
 on:
   push:
     branches: [main, develop]
+  # Every pull request, whatever it targets.
+  #
+  # This was filtered to [main, develop], which meant a pull request based on
+  # another branch ran no jobs at all. Nothing failed, because nothing ran, and
+  # GitHub shows an absence of checks much the way it shows passing ones — so a
+  # stacked pull request looked ready to merge without a single test having
+  # executed against it.
+  #
+  # Unverified is not the same as green. Leaving the filter off costs a little
+  # runner time and removes a class of change that could reach a base branch
+  # without proof.
   pull_request:
-    branches: [main, develop]
 
 permissions:
   contents: read
