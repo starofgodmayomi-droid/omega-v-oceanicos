@@ -41,7 +41,7 @@ Push, PR publication, merge, deployment, and other externally visible actions ar
 
 ## Current repository state
 
-The active worktree is `/home/ubuntu/current-main-worktree` on branch `feat/health-readiness-contract`, based on merged `origin/main`. Local commits currently include:
+The active worktree is `/home/ubuntu/current-main-worktree` on branch `main`, synchronized with merged `origin/main`. Local commits currently include:
 
 | Commit    | Meaning                                                                                                   | Publication state                                      |
 | --------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
@@ -60,10 +60,11 @@ The active worktree is `/home/ubuntu/current-main-worktree` on branch `feat/heal
 | `807b1ee` | Constant-time auth matching                                                                               | Local and not yet published at the time of this record |
 | `b3f836a` | Frontend TTL policy evidence                                                                              | Local and not yet published at the time of this record |
 | `fb73ac2` | PR #33 squash merge: signing audit, persistence, revocation, memory, expiry, auth, TTL, and policy slices | Merged into `main`; CI green                           |
-| pending   | Health-readiness contract                                                                                 | Locally verified; not yet committed or published       |
+| `5e267b5` | PR #34 squash merge: health-readiness contract across API, web, SDK, CLI, tests, and docs                 | Merged into `main`; CI green                           |
 
 | |
-| PR #33 is **merged** into `main` as squash commit `fb73ac28990b2b42b6339da2e8ca76007616dd70`, observed at `2026-08-16T14:46:39Z`. The published head `2cc2d21` passed Node 18, Node 20, Windows compatibility, package/smoke, and report checks; attested-artifact publication was skipped as designed. This is merge evidence only; no deployment is claimed. |
+| PR #33 is **merged** into `main` as squash commit `fb73ac28990b2b42b6339da2e8ca76007616dd70`, observed at `2026-08-16T14:46:39Z`. The published head `2cc2d21` passed Node 18, Node 20, Windows compatibility, package/smoke, and report checks; attested-artifact publication was skipped as designed. |
+| PR #34 is **merged** into `main` as squash commit `5e267b54c2bf831cfdb6004b4948a33c3ee1b114`, observed at `2026-08-16T14:58:55Z`. Its head `2349be0` passed the same CI matrix, with attested-artifact publication skipped. This is merge evidence only; no deployment is claimed. |
 
 PR #32 remains historical Windows-compatibility evidence.
 
@@ -106,8 +107,6 @@ The web client exposes revoke and revocation-ledger controls. Stronger administr
 
 ## Next authorized action
 
-1. Commit the locally verified health-readiness contract slice.
-2. Push it to a new PR only under the standing slice-by-slice publication authorization.
-3. Observe CI, preserve any failures, and merge only after the ready-for-review and repository gates permit it.
-4. Continue with the next smallest worker-sized slice, prioritizing key custody/rotation/recovery or distributed revocation consistency.
-5. Do not deploy; deployment remains a separate human gate.
+1. Reconcile the merged main branch and preserve PR #34’s CI/merge evidence.
+2. Select the next smallest worker-sized slice, prioritizing key custody/rotation/recovery or distributed revocation consistency.
+3. Keep any new publication, merge, and deployment actions behind their separate human gates.
