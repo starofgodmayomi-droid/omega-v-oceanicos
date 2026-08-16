@@ -45,7 +45,7 @@ Push, PR publication, merge, deployment, and other externally visible actions ar
 
 ## Current repository state
 
-The active worktree is `/home/ubuntu/current-main-worktree` on branch `feat/revocation-freshness`, based on merged `origin/main`. Local commits currently include:
+The active worktree is `/home/ubuntu/current-main-worktree` on branch `main`, synchronized with merged `origin/main`. Local commits currently include:
 
 | Commit    | Meaning                                                                                                                                      | Publication state                                      |
 | --------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
@@ -77,7 +77,7 @@ The active worktree is `/home/ubuntu/current-main-worktree` on branch `feat/revo
 | `fdec82f` | PR #49 squash merge: SDK default/error branch coverage after conflict repair                                                                 | Merged into `main`; CI green                           |
 | `af26f2a` | PR #50 squash merge: persistence decrypt and previous-key coverage                                                                           | Merged into `main`; CI green                           |
 | `7c5bf31` | PR #51 squash merge: coverage queue state reconciliation                                                                                     | Merged into `main`; CI green                           |
-| pending   | Local revocation registry revision evidence across API, web, SDK, CLI, tests, and docs                                                       | Locally verified; not yet committed or published       |
+| `70a66ae` | PR #52 squash merge: local revocation registry revision evidence across API, web, SDK, CLI, tests, and docs                                  | Merged into `main`; CI green                           |
 
 | |
 | PR #33 is **merged** into `main` as squash commit `fb73ac28990b2b42b6339da2e8ca76007616dd70`, observed at `2026-08-16T14:46:39Z`. The published head `2cc2d21` passed Node 18, Node 20, Windows compatibility, package/smoke, and report checks; attested-artifact publication was skipped as designed. |
@@ -121,7 +121,7 @@ The combined signing-audit and persistence-encryption state passed:
 
 | `git diff --check` | Passed before the revocation commit |
 
-The last full local verification after the revision implementation observed 409 passing tests, a successful workspace/Vite build, passing format/type/diff gates, and a focused revision-contract result of 146 passing tests. This revision slice is local-only until its separate publication and merge gates are observed. The repository may contain generated build output ignored by Git; only intended source and documentation changes should be committed.
+The last full local verification for the revision slice observed 409 passing tests, a successful workspace/Vite build, passing format/type/diff gates, and a focused revision-contract result of 146 passing tests; PR #52’s CI matrix was subsequently observed green and merged. The repository may contain generated build output ignored by Git; only intended source and documentation changes should be committed.
 
 ## Remaining gaps and uncertainty
 
@@ -131,6 +131,6 @@ The web client exposes revoke and revocation-ledger controls. Stronger administr
 
 ## Next authorized action
 
-1. Commit the locally verified revocation-freshness slice.
-2. Push it to a new PR under the standing slice-by-slice publication authorization and observe CI.
-3. Mark ready and merge only when repository gates permit; do not claim distributed consistency or deployment.
+1. Reconcile the merged main branch and preserve PR #52’s CI/merge evidence.
+2. Select the next smallest production-relevant slice from custody, distributed coordination, identity, data-at-rest, deployment, or mobile gaps.
+3. Keep any new publication, merge, and deployment actions behind separate human gates.
