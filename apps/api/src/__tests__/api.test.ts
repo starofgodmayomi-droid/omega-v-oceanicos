@@ -76,7 +76,12 @@ describe('API runtime contracts', () => {
       integrity: true,
       encryption: 'disabled',
     });
-    expect(body.data.checks.persistence).toEqual({ mode: 'memory', encryption: 'disabled' });
+    expect(body.data.checks.persistence).toEqual({
+      mode: 'memory',
+      encryption: 'disabled',
+      keySource: 'none',
+      previousKeyConfigured: false,
+    });
     expect(body.data.policy).toEqual({
       attestationAlgorithm: 'HMAC-SHA256',
       attestationTtlMs: null,
@@ -143,6 +148,8 @@ describe('API runtime contracts', () => {
       adminAuthConfigured: boolean;
       revocationEnabled: boolean;
       persistenceEncryption: string;
+      persistenceEncryptionKeySource: string;
+      persistencePreviousKeyConfigured: boolean;
       memoryEncryption: string;
     }>;
 
@@ -153,6 +160,8 @@ describe('API runtime contracts', () => {
     expect(body.data.adminAuthConfigured).toBe(false);
     expect(body.data.revocationEnabled).toBe(true);
     expect(body.data.persistenceEncryption).toBe('disabled');
+    expect(body.data.persistenceEncryptionKeySource).toBe('none');
+    expect(body.data.persistencePreviousKeyConfigured).toBe(false);
     expect(body.data.memoryEncryption).toBe('disabled');
     expect(JSON.stringify(body)).not.toMatch(/token|secret|private|signing material/i);
   });
@@ -177,6 +186,9 @@ describe('API runtime contracts', () => {
       runtime: {
         persistence: string;
         persistenceEncryption: string;
+        persistenceEncryptionKeySource: string;
+        persistencePreviousKeyConfigured: boolean;
+        eventLogEncryptionKeySource: string;
         memoryEncryption: string;
         memoryEncryptionKeySource: string;
         attestationTtlMs: number | null;
@@ -199,6 +211,9 @@ describe('API runtime contracts', () => {
 
     expect(response.status).toBe(200);
     expect(body.data.runtime.persistenceEncryption).toBe('disabled');
+    expect(body.data.runtime.persistenceEncryptionKeySource).toBe('none');
+    expect(body.data.runtime.persistencePreviousKeyConfigured).toBe(false);
+    expect(body.data.runtime.eventLogEncryptionKeySource).toBe('none');
     expect(body.data.runtime.memoryEncryption).toBe('disabled');
     expect(body.data.runtime.memoryEncryptionKeySource).toBe('none');
     expect(body.data.runtime.attestationTtlMs).toBe(null);

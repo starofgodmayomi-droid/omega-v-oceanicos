@@ -217,6 +217,8 @@ describe('omega status CLI', () => {
             adminAuthConfigured: true,
             revocationEnabled: true,
             persistenceEncryption: 'aes-256-gcm',
+            persistenceEncryptionKeySource: 'previous',
+            persistencePreviousKeyConfigured: true,
             memoryEncryption: 'aes-256-gcm',
           },
         })
@@ -225,6 +227,8 @@ describe('omega status CLI', () => {
 
     expect(exitCode).toBe(0);
     expect(output.join('')).toContain('"attestationTtlMs":900000');
+    expect(output.join('')).toContain('"persistenceEncryptionKeySource":"previous"');
+    expect(output.join('')).not.toMatch(/correct-secret|previous-secret/i);
     expect(output.join('')).not.toMatch(/token|secret|private/i);
   });
 

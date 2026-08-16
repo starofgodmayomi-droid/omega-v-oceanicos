@@ -23,6 +23,10 @@ const AES_IV_BYTES = 12;
 const AES_TAG_BYTES = 16;
 
 type EncryptionKey = Buffer;
+export type EncryptionKeySource = 'none' | 'current' | 'previous' | 'mixed';
+type EncryptionSecrets = string | { current?: string; previous?: string };
+
+type DecryptedText = { plaintext: string; keySource: EncryptionKeySource };
 
 const deriveEncryptionKey = (secret?: string): EncryptionKey | undefined => {
   if (!secret) return undefined;
@@ -46,11 +50,26 @@ const encryptText = (plaintext: string, secret?: string): string => {
   ].join(':');
 };
 
-const decryptText = (stored: string, secret?: string): string => {
-  if (!stored.startsWith(`${ENCRYPTED_PREFIX}:`)) return stored;
+const normalizeSecrets = (secrets?: EncryptionSecrets): { current?: string; previous?: string } =>
+  typeof secrets === 'string' || secrets === undefined
+    ? { current: secrets }
+    : { current: secrets.current, previous: secrets.previous };
 
-  const key = deriveEncryptionKey(secret);
-  if (!key) throw new Error('encrypted persistence requires OMEGA_PERSISTENCE_KEY');
+const combineKeySources = (sources: Set<EncryptionKeySource>): EncryptionKeySource => {
+  if (sources.has('current') && sources.has('previous')) return 'mixed';
+  if (sources.has('current')) return 'current';
+  if (sources.has('previous')) return 'previous';
+  return 'none';
+};
+
+const decryptText = (stored: string, secrets?: EncryptionSecrets): DecryptedText => {
+  if (!stored.startsWith(`${ENCRYPTED_PREFIX}:`)) return { plaintext: stored, keySource: 'none' };
+
+  const { current, previous } = normalizeSecrets(secrets);
+  const candidates: Array<{ secret?: string; source: 'current' | 'previous' }> = [
+    { secret: current, source: 'current' },
+    { secret: previous, source: 'previous' },
+  ];
 
   const [, ivEncoded, tagEncoded, ciphertextEncoded] = stored.split(':');
   if (!ivEncoded || !tagEncoded || !ciphertextEncoded) {
@@ -64,9 +83,28 @@ const decryptText = (stored: string, secret?: string): string => {
     throw new Error('encrypted persistence record has invalid lengths');
   }
 
-  const decipher = createDecipheriv('aes-256-gcm', key, iv);
-  decipher.setAuthTag(tag);
-  return Buffer.concat([decipher.update(ciphertext), decipher.final()]).toString('utf8');
+  let lastError: unknown;
+  for (const candidate of candidates) {
+    const key = deriveEncryptionKey(candidate.secret);
+    if (!key) continue;
+    try {
+      const decipher = createDecipheriv('aes-256-gcm', key, iv);
+      decipher.setAuthTag(tag);
+      return {
+        plaintext: Buffer.concat([decipher.update(ciphertext), decipher.final()]).toString('utf8'),
+        keySource: candidate.source,
+      };
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  if (!current && !previous) {
+    throw new Error('encrypted persistence requires OMEGA_PERSISTENCE_KEY');
+  }
+  throw lastError instanceof Error
+    ? lastError
+    : new Error('encrypted persistence could not be decrypted');
 };
 
 /**
@@ -83,6 +121,7 @@ export interface LoadResult<T extends AnySnapshot> {
   source: SnapshotSource;
   /** Present when source is 'corrupt' or 'missing'. */
   reason?: string;
+  keySource: EncryptionKeySource;
 }
 
 export const emptySnapshot = <T extends AnySnapshot>(): T =>
@@ -108,10 +147,11 @@ const hasEveryArray = (value: Partial<AnySnapshot>): boolean =>
 export const loadSnapshot = <T extends AnySnapshot>(
   storePath: string,
   enabled: boolean,
-  encryptionSecret?: string
+  encryptionSecret?: string,
+  previousEncryptionSecret?: string
 ): LoadResult<T> => {
   if (!enabled) {
-    return { snapshot: emptySnapshot<T>(), source: 'disabled' };
+    return { snapshot: emptySnapshot<T>(), source: 'disabled', keySource: 'none' };
   }
 
   let stored: string;
@@ -122,17 +162,27 @@ export const loadSnapshot = <T extends AnySnapshot>(
       snapshot: emptySnapshot<T>(),
       source: 'missing',
       reason: error instanceof Error ? error.message : 'store could not be read',
+      keySource: 'none',
     };
   }
 
   let raw: string;
+  let keySource: EncryptionKeySource = 'none';
   try {
-    raw = decryptText(stored, encryptionSecret);
+    const decrypted = decryptText(
+      stored,
+      previousEncryptionSecret
+        ? { current: encryptionSecret, previous: previousEncryptionSecret }
+        : encryptionSecret
+    );
+    raw = decrypted.plaintext;
+    keySource = decrypted.keySource;
   } catch (error) {
     return {
       snapshot: emptySnapshot<T>(),
       source: 'corrupt',
       reason: error instanceof Error ? error.message : 'store could not be decrypted',
+      keySource: 'none',
     };
   }
 
@@ -144,6 +194,7 @@ export const loadSnapshot = <T extends AnySnapshot>(
       snapshot: emptySnapshot<T>(),
       source: 'corrupt',
       reason: error instanceof Error ? error.message : 'store was not valid JSON',
+      keySource,
     };
   }
 
@@ -152,12 +203,14 @@ export const loadSnapshot = <T extends AnySnapshot>(
       snapshot: emptySnapshot<T>(),
       source: 'corrupt',
       reason: 'store did not contain every expected collection as an array',
+      keySource,
     };
   }
 
   return {
     snapshot: { ...emptySnapshot<T>(), ...parsed } as T,
     source: 'restored',
+    keySource,
   };
 };
 
@@ -209,6 +262,7 @@ export interface EventLogRead<T> {
   /** Lines that could not be parsed. Reported, never silently dropped. */
   skipped: number;
   reason?: string;
+  keySource: EncryptionKeySource;
 }
 
 /**
@@ -249,10 +303,11 @@ export const appendEvent = (
 export const readEventLog = <T>(
   logPath: string,
   enabled: boolean,
-  encryptionSecret?: string
+  encryptionSecret?: string,
+  previousEncryptionSecret?: string
 ): EventLogRead<T> => {
   if (!enabled) {
-    return { entries: [], source: 'disabled', skipped: 0 };
+    return { entries: [], source: 'disabled', skipped: 0, keySource: 'none' };
   }
 
   let raw: string;
@@ -264,16 +319,25 @@ export const readEventLog = <T>(
       source: 'missing',
       skipped: 0,
       reason: error instanceof Error ? error.message : 'log could not be read',
+      keySource: 'none',
     };
   }
 
   const entries: T[] = [];
+  const keySources = new Set<EncryptionKeySource>();
   let skipped = 0;
 
   for (const line of raw.split('\n')) {
     if (line.trim() === '') continue;
     try {
-      entries.push(JSON.parse(decryptText(line.trim(), encryptionSecret)) as T);
+      const decrypted = decryptText(
+        line.trim(),
+        previousEncryptionSecret
+          ? { current: encryptionSecret, previous: previousEncryptionSecret }
+          : encryptionSecret
+      );
+      keySources.add(decrypted.keySource);
+      entries.push(JSON.parse(decrypted.plaintext) as T);
     } catch {
       skipped += 1;
     }
@@ -284,6 +348,7 @@ export const readEventLog = <T>(
     source: skipped > 0 ? 'partial' : 'restored',
     skipped,
     reason: skipped > 0 ? `${skipped} line(s) could not be parsed` : undefined,
+    keySource: combineKeySources(keySources),
   };
 };
 

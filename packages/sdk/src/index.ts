@@ -7,7 +7,12 @@ export type Health = {
       verifier: 'ready';
       attester: 'ready';
       memory: { status: 'ready' | 'degraded'; integrity: boolean; encryption: string };
-      persistence: { mode: 'file' | 'memory'; encryption: string };
+      persistence: {
+        mode: 'file' | 'memory';
+        encryption: string;
+        keySource: 'none' | 'current' | 'previous' | 'mixed';
+        previousKeyConfigured: boolean;
+      };
     };
     policy: {
       attestationAlgorithm: string;
@@ -63,6 +68,8 @@ export type AttestationPolicy = {
   adminAuthConfigured: boolean;
   revocationEnabled: boolean;
   persistenceEncryption: string;
+  persistenceEncryptionKeySource: 'none' | 'current' | 'previous' | 'mixed';
+  persistencePreviousKeyConfigured: boolean;
   memoryEncryption: string;
 };
 

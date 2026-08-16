@@ -80,6 +80,8 @@ describe('OmegaClient', () => {
             adminAuthConfigured: true,
             revocationEnabled: true,
             persistenceEncryption: 'aes-256-gcm',
+            persistenceEncryptionKeySource: 'previous',
+            persistencePreviousKeyConfigured: true,
             memoryEncryption: 'aes-256-gcm',
           },
           timestamp: '2026-08-16T00:00:00.000Z',

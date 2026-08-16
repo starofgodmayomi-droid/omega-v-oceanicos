@@ -38,10 +38,11 @@ Push, PR publication, merge, deployment, and other externally visible actions ar
 | Frontend TTL policy evidence    | API `/state` now exposes non-secret `attestationTtlMs`; the dashboard renders `ATTESTATION TTL` as `OFF` or seconds, with web fixture and DOM coverage. The frontend consumes backend policy and does not infer expiry.                                                                                                                                       |
 | Whole-system policy contract    | API `GET /attest/policy` exposes non-secret algorithm, TTL, auth-boundary presence, revocation support, and storage codecs. The web dashboard renders `REVOCATION / ADMIN` status; SDK `getAttestationPolicy()` and CLI `policy` consume the same contract.                                                                                                   |
 | Health-readiness contract       | Unauthenticated `GET /health` exposes liveness, readiness, memory integrity, persistence and codec modes, and non-secret policy. The dashboard renders observed readiness, SDK `getHealth()` is typed, and CLI `health` exits non-zero for degraded or unavailable evidence.                                                                                  |
+| Persistence-key rotation        | `OMEGA_PERSISTENCE_KEY` encrypts new snapshot/event-log writes; optional `OMEGA_PERSISTENCE_KEY_PREVIOUS` permits authenticated fallback reads. API policy/observability, web, SDK, and CLI expose only `none/current/previous/mixed` provenance and previous-key presence.                                                                                   |
 
 ## Current repository state
 
-The active worktree is `/home/ubuntu/current-main-worktree` on branch `main`, synchronized with merged `origin/main`. Local commits currently include:
+The active worktree is `/home/ubuntu/current-main-worktree` on branch `feat/persistence-key-rotation`, based on merged `origin/main`. Local commits currently include:
 
 | Commit    | Meaning                                                                                                   | Publication state                                      |
 | --------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
@@ -61,10 +62,12 @@ The active worktree is `/home/ubuntu/current-main-worktree` on branch `main`, sy
 | `b3f836a` | Frontend TTL policy evidence                                                                              | Local and not yet published at the time of this record |
 | `fb73ac2` | PR #33 squash merge: signing audit, persistence, revocation, memory, expiry, auth, TTL, and policy slices | Merged into `main`; CI green                           |
 | `5e267b5` | PR #34 squash merge: health-readiness contract across API, web, SDK, CLI, tests, and docs                 | Merged into `main`; CI green                           |
+| pending   | Controlled persistence-key rotation fallback across API, web, SDK, CLI, tests, and docs                   | Locally verified; not yet committed or published       |
 
 | |
 | PR #33 is **merged** into `main` as squash commit `fb73ac28990b2b42b6339da2e8ca76007616dd70`, observed at `2026-08-16T14:46:39Z`. The published head `2cc2d21` passed Node 18, Node 20, Windows compatibility, package/smoke, and report checks; attested-artifact publication was skipped as designed. |
-| PR #34 is **merged** into `main` as squash commit `5e267b54c2bf831cfdb6004b4948a33c3ee1b114`, observed at `2026-08-16T14:58:55Z`. Its head `2349be0` passed the same CI matrix, with attested-artifact publication skipped. This is merge evidence only; no deployment is claimed. |
+| PR #34 is **merged** into `main` as squash commit `5e267b54c2bf831cfdb6004b4948a33c3ee1b114`, observed at `2026-08-16T14:58:55Z`. Its head `2349be0` passed the same CI matrix, with attested-artifact publication skipped. |
+| PR #35 is **merged** into `main` as squash commit `bd78ac8b398beefd4e6c1648743866ed70328051`, observed at `2026-08-16T15:03:03Z`; it reconciled the state records after PR #34. This is merge evidence only; no deployment is claimed. |
 
 PR #32 remains historical Windows-compatibility evidence.
 
@@ -72,41 +75,43 @@ PR #32 remains historical Windows-compatibility evidence.
 
 The combined signing-audit and persistence-encryption state passed:
 
-| Check                                    | Observed result                                                                                                                                                                                                    |
-| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `pnpm format:check`                      | Passed                                                                                                                                                                                                             |
-| `pnpm type-check`                        | Passed                                                                                                                                                                                                             |
-| `pnpm test` before revocation            | 302 tests passed                                                                                                                                                                                                   |
-| `pnpm test` after revocation integration | 23 suites, 305 tests passed                                                                                                                                                                                        |
-| `pnpm build`                             | Passed for all workspace packages and web Vite build                                                                                                                                                               |
-| Live encrypted persistence smoke test    | Passed: health, AES-256-GCM observability mode, encrypted snapshot, encrypted event log                                                                                                                            |
-| Live revocation smoke test               | Passed: revoke, verification invalidation, action denial, duplicate rejection, encrypted files                                                                                                                     |
-| Web revocation DOM test                  | Passed: reason-gated button, request payload, and visible `ATTESTATION REVOKED` state                                                                                                                              |
-| SDK/CLI revocation tests                 | Passed: 15 focused tests covering typed SDK requests, bearer propagation, CLI listing, CLI mutation, and missing-reason failure                                                                                    |
-| CI coverage repair                       | PR #33 Node 20 exposed a global branch-coverage regression at 68.93% despite 312 passing tests; SDK/CLI error-path tests raised local coverage to 71.15% with 315 passing tests, preserving the existing 70% gate. |
-| Web ledger verification                  | Full local coverage gate passes with 317 tests; the dashboard ledger and route contract remain covered, and the production web build passes.                                                                       |
-| Admin boundary verification              | API, SDK, and CLI focused tests pass; full local coverage/build pass with 318 tests and the configured admin token is distinct from the read token.                                                                |
-| Kernel-memory verification               | Full local coverage/build pass with 321 tests; encrypted lines, wrong-key partial reporting, plaintext migration, and non-secret API mode reporting are covered.                                                   |
-| Key-rotation verification                | Full local coverage/build pass with 322 tests; previous-key fallback, current-key appends, mixed-key restore, and non-secret source reporting are covered.                                                         |
-| Expiry verification                      | Full local coverage/build pass with 323 tests; deterministic TTL semantics, explicit `expired` verification status, and API observability are covered.                                                             |
-| SDK/CLI verification                     | Full local coverage/build pass with 324 tests; SDK read-token propagation, CLI JSON parsing, expired output, and fail-closed exit behavior are covered.                                                            |
-| Constant-time auth verification          | Full local coverage/build pass with 325 tests; read/admin token boundaries and constant-time comparison cases are covered without changing error contracts.                                                        |
-| Frontend TTL verification                | Full local coverage/build pass with 327 tests; API state propagation, dashboard `900s` rendering, web contract, and DOM behavior are covered.                                                                      |
-| Policy contract verification             | Focused API/web/SDK/CLI tests pass (101 tests); full local coverage/build pass with 332 tests and all policy fields remain non-secret.                                                                             |
-| Health-readiness verification            | Focused API/web/SDK/CLI tests pass (77 tests); full local coverage/build pass with 337 tests, readiness output, degraded CLI exit behavior, web contract drift, and build all pass.                                |
+| Check                                    | Observed result                                                                                                                                                                                                                       |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm format:check`                      | Passed                                                                                                                                                                                                                                |
+| `pnpm type-check`                        | Passed                                                                                                                                                                                                                                |
+| `pnpm test` before revocation            | 302 tests passed                                                                                                                                                                                                                      |
+| `pnpm test` after revocation integration | 23 suites, 305 tests passed                                                                                                                                                                                                           |
+| `pnpm build`                             | Passed for all workspace packages and web Vite build                                                                                                                                                                                  |
+| Live encrypted persistence smoke test    | Passed: health, AES-256-GCM observability mode, encrypted snapshot, encrypted event log                                                                                                                                               |
+| Live revocation smoke test               | Passed: revoke, verification invalidation, action denial, duplicate rejection, encrypted files                                                                                                                                        |
+| Web revocation DOM test                  | Passed: reason-gated button, request payload, and visible `ATTESTATION REVOKED` state                                                                                                                                                 |
+| SDK/CLI revocation tests                 | Passed: 15 focused tests covering typed SDK requests, bearer propagation, CLI listing, CLI mutation, and missing-reason failure                                                                                                       |
+| CI coverage repair                       | PR #33 Node 20 exposed a global branch-coverage regression at 68.93% despite 312 passing tests; SDK/CLI error-path tests raised local coverage to 71.15% with 315 passing tests, preserving the existing 70% gate.                    |
+| Web ledger verification                  | Full local coverage gate passes with 317 tests; the dashboard ledger and route contract remain covered, and the production web build passes.                                                                                          |
+| Admin boundary verification              | API, SDK, and CLI focused tests pass; full local coverage/build pass with 318 tests and the configured admin token is distinct from the read token.                                                                                   |
+| Kernel-memory verification               | Full local coverage/build pass with 321 tests; encrypted lines, wrong-key partial reporting, plaintext migration, and non-secret API mode reporting are covered.                                                                      |
+| Key-rotation verification                | Full local coverage/build pass with 322 tests; previous-key fallback, current-key appends, mixed-key restore, and non-secret source reporting are covered.                                                                            |
+| Expiry verification                      | Full local coverage/build pass with 323 tests; deterministic TTL semantics, explicit `expired` verification status, and API observability are covered.                                                                                |
+| SDK/CLI verification                     | Full local coverage/build pass with 324 tests; SDK read-token propagation, CLI JSON parsing, expired output, and fail-closed exit behavior are covered.                                                                               |
+| Constant-time auth verification          | Full local coverage/build pass with 325 tests; read/admin token boundaries and constant-time comparison cases are covered without changing error contracts.                                                                           |
+| Frontend TTL verification                | Full local coverage/build pass with 327 tests; API state propagation, dashboard `900s` rendering, web contract, and DOM behavior are covered.                                                                                         |
+| Policy contract verification             | Focused API/web/SDK/CLI tests pass (101 tests); full local coverage/build pass with 332 tests and all policy fields remain non-secret.                                                                                                |
+| Health-readiness verification            | Focused API/web/SDK/CLI tests pass (77 tests); full local coverage/build pass with 337 tests, readiness output, degraded CLI exit behavior, web contract drift, and build all pass.                                                   |
+| Persistence rotation verification        | Focused API/web/SDK/CLI/persistence tests pass (108 tests); full local coverage/build pass with 339 tests, previous-key snapshot fallback, mixed event-log provenance, active-key write semantics, policy fields, and build all pass. |
 
 | `git diff --check` | Passed before the revocation commit |
 
-The last full local verification after integrating the health-readiness contract observed 337 passing tests, 71.15% global branch coverage, and a successful build. The repository may contain generated build output ignored by Git; only intended source and documentation changes should be committed.
+The last full local verification after integrating controlled persistence-key rotation observed 339 passing tests, 71.15% global branch coverage, and a successful build. The repository may contain generated build output ignored by Git; only intended source and documentation changes should be committed.
 
 ## Remaining gaps and uncertainty
 
-The following are explicitly **not complete**: HSM/KMS key custody, key rotation and recovery policy for persistence encryption, complete data-at-rest coverage beyond the runtime and kernel-memory files, distributed revocation consistency, clock policy and distributed-time coordination, stronger administrative authorization policy, and production deployment hardening. The encryption increment protects the API runtime snapshot and event log only; it is not a claim that every stored datum is encrypted.
+The following are explicitly **not complete**: HSM/KMS key custody, secure deletion, automated persistence re-encryption, persistence-key recovery policy, complete data-at-rest coverage beyond the runtime and kernel-memory files, distributed revocation consistency, clock policy and distributed-time coordination, stronger administrative authorization policy, and production deployment hardening. The encryption increment protects the API runtime snapshot and event log only; it is not a claim that every stored datum is encrypted.
 
 The web client exposes revoke and revocation-ledger controls. Stronger administrative policy, distributed revocation consistency, clock coordination, and recovery remain open.
 
 ## Next authorized action
 
-1. Reconcile the merged main branch and preserve PR #34’s CI/merge evidence.
-2. Select the next smallest worker-sized slice, prioritizing key custody/rotation/recovery or distributed revocation consistency.
-3. Keep any new publication, merge, and deployment actions behind their separate human gates.
+1. Commit the locally verified persistence-key rotation fallback slice.
+2. Push it to a new PR under the standing slice-by-slice publication authorization and observe CI.
+3. Mark ready and merge only when repository gates permit; do not claim custody, recovery, or deployment.
+4. Select the next smallest worker-sized slice after delivery, prioritizing distributed revocation consistency or stronger administrative authorization.

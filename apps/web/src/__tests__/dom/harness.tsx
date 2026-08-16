@@ -169,6 +169,8 @@ export function installFetch(overrides: RouteOverrides = {}): jest.Mock {
           adminAuthConfigured: false,
           revocationEnabled: true,
           persistenceEncryption: 'disabled',
+          persistenceEncryptionKeySource: 'none',
+          persistencePreviousKeyConfigured: false,
           memoryEncryption: 'disabled',
         },
       }),
