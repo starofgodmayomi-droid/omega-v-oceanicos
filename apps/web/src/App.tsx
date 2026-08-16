@@ -230,7 +230,12 @@ export function App(): JSX.Element {
   useEffect(() => {
     if (commandOpen) {
       commandFirstRef.current?.focus();
-    } else {
+    } else if (document.activeElement === document.body) {
+      // A command that moved focus elsewhere on purpose (e.g. "Observe"
+      // focusing the claim textarea) should keep it there. Only reclaim
+      // focus for the trigger when the palette closed without anything else
+      // claiming it (Escape, backdrop click): its own focused button was
+      // just removed from the DOM and focus fell back to <body>.
       commandTriggerRef.current?.focus();
     }
   }, [commandOpen]);
