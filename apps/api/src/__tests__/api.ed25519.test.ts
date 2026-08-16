@@ -129,6 +129,8 @@ describe('API Ed25519 integration', () => {
         },
         observedBy: 'jest',
         metadata: { responseTime: 42, statusCode: 200 },
+        confidence: 0.99,
+        confidenceReason: 'Executable Ed25519 API tamper test',
       }),
     });
     const result = (await response.json()) as ApiResponse<LoopPayload>;

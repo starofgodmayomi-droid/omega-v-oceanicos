@@ -441,6 +441,30 @@ app.post('/attest/verify', (req: Request, res: Response) => {
   }
 });
 
+/** Public, non-secret attestation verification metadata. */
+app.get('/attest/public-key', (_req: Request, res: Response) => {
+  const info = attestationService.getKeyInfo();
+  if (info.algorithm !== 'Ed25519' || !info.publicKey) {
+    res.status(503).json({
+      code: 'ED25519_TRUST_UNAVAILABLE',
+      message:
+        'Ed25519 public-key discovery is unavailable while the configured algorithm is not Ed25519',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+  res.json({
+    data: {
+      algorithm: info.algorithm,
+      keyId: info.fingerprint,
+      fingerprint: info.fingerprint,
+      keyVersion: info.version,
+      publicKey: info.publicKey,
+    },
+    timestamp: new Date().toISOString(),
+  });
+});
+
 app.post('/act', (req: Request, res: Response) => {
   try {
     const { attestation, action = 'record-verified-result' } = req.body as {
