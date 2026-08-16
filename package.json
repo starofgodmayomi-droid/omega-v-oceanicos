@@ -23,8 +23,8 @@
   ],
   "scripts": {
     "dev": "pnpm --parallel --filter @omega-v/api --filter @omega-v/web dev",
-    "build": "pnpm --filter @omega-v/types build && pnpm --filter @omega-v/observer build && pnpm --filter @omega-v/verification build && pnpm --filter @omega-v/remember build && pnpm --filter @omega-v/mini build && pnpm --filter @omega-v/attestation build && pnpm --filter @omega-v/api build && pnpm --filter @omega-v/web build && pnpm --filter @omega-v/cli build",
-    "clean": "pnpm --parallel --filter @omega-v/api --filter @omega-v/web --filter @omega-v/cli --filter @omega-v/attestation --filter @omega-v/mini --filter @omega-v/remember --filter @omega-v/observer --filter @omega-v/verification --filter @omega-v/types clean && rm -rf coverage",
+    "build": "pnpm --filter @omega-v/types build && pnpm --filter @omega-v/observer build && pnpm --filter @omega-v/verification build && pnpm --filter @omega-v/remember build && pnpm --filter @omega-v/mini build && pnpm --filter @omega-v/attestation build && pnpm --filter @omega-v/api build && pnpm --filter @omega-v/web build && pnpm --filter @omega-v/cli build && pnpm --filter @omega-v/sdk build",
+    "clean": "pnpm --parallel --filter @omega-v/api --filter @omega-v/web --filter @omega-v/cli --filter @omega-v/sdk --filter @omega-v/attestation --filter @omega-v/mini --filter @omega-v/remember --filter @omega-v/observer --filter @omega-v/verification --filter @omega-v/types clean && rm -rf coverage",
     "test": "jest",
     "test:fast": "jest --testPathIgnorePatterns=integration",
     "test:watch": "jest --watch",
