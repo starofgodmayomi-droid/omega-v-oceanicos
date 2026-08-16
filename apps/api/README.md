@@ -335,7 +335,7 @@ When `OMEGA_READ_TOKEN` is configured, read-only evidence endpoints require `Aut
 GET /observability
 ```
 
-Returns a read-only operational evidence summary composed from the runtime state, durable event log, configured attestation service, and hash-chained memory. It includes runtime mode and persistence, the configured persistence encryption algorithm or `disabled`, recent and durable event counts, completed runs, request and correlation lineage, verification and attestation validity, and memory integrity. It never returns private keys, seeds, secrets, or raw signing material.
+Returns a read-only operational evidence summary composed from the runtime state, durable event log, configured attestation service, and hash-chained memory. It includes runtime mode and persistence, the configured persistence and kernel-memory encryption algorithms or `disabled`, recent and durable event counts, completed runs, request and correlation lineage, verification and attestation validity, and memory integrity. It never returns private keys, seeds, secrets, or raw signing material; the algorithm fields describe configuration only and do not claim key custody, rotation, recovery, or complete data-at-rest coverage.
 
 ### Evidence Export
 
@@ -606,6 +606,8 @@ curl -X POST http://localhost:3000/complete-loop \
 - `OMEGA_SIGNING_KEY` — Required signing key for attestation; there is no default
 - `OMEGA_PERSISTENCE` — Explicit persistence override: `on` or `off`
 - `OMEGA_PERSISTENCE_KEY` — Optional dedicated secret for AES-256-GCM encryption of runtime snapshot and event-log files; never expose it in logs or API responses
+- `OMEGA_MEMORY_PATH` — Optional JSONL path for the MINI kernel memory chain
+- `OMEGA_MEMORY_KEY` — Optional dedicated secret for AES-256-GCM encryption of new kernel-memory lines; legacy plaintext remains readable for controlled migration, and wrong-key lines are reported as partial rather than silently discarded
 
 Revocation records are included in the encrypted runtime snapshot when
 persistence is enabled and every revocation also produces an append-only

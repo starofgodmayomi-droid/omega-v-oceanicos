@@ -129,8 +129,12 @@ const persistenceEnabled = process.env.OMEGA_PERSISTENCE
 const persistenceEncryptionKey = process.env.OMEGA_PERSISTENCE_KEY;
 const persistenceEncryptionEnabled =
   persistenceEnabled && encryptionEnabled(persistenceEncryptionKey);
+const memoryEncryptionKey = process.env.OMEGA_MEMORY_KEY;
+const memoryEncryptionEnabled = persistenceEnabled && Boolean(memoryEncryptionKey?.trim());
 
-const kernelMemory = new Remember(persistenceEnabled ? new FileMemoryStore(memoryPath) : undefined);
+const kernelMemory = new Remember(
+  persistenceEnabled ? new FileMemoryStore(memoryPath, memoryEncryptionKey) : undefined
+);
 
 type SigningAuditDetails = {
   attestationId: string;
@@ -313,6 +317,7 @@ app.get('/state', (_req: Request, res: Response) => {
       status: 'active',
       persistence: persistenceEnabled ? 'file' : 'memory',
       persistenceEncryption: persistenceEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
+      memoryEncryption: memoryEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
       persistenceSource,
       persistenceReason: persistenceReason ?? null,
       mode: latest?.stage || 'observing',
@@ -356,6 +361,7 @@ app.get('/observability', (_req: Request, res: Response) => {
         mode: latestEvent?.stage || 'observing',
         persistence: persistenceEnabled ? 'file' : 'memory',
         persistenceEncryption: persistenceEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
+        memoryEncryption: memoryEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
         services: ['observer', 'verifier', 'attester'],
         lastActivity: latestEvent?.timestamp || null,
       },
@@ -375,6 +381,7 @@ app.get('/observability', (_req: Request, res: Response) => {
         entries: kernelMemory.size(),
         intact: kernelMemory.verifyIntegrity(),
         appendOnly: true,
+        encryption: memoryEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
       },
     },
     timestamp: new Date().toISOString(),

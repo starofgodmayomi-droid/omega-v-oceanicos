@@ -30,6 +30,7 @@ Push, PR publication, merge, deployment, and other externally visible actions ar
 | SDK and CLI revocation surfaces | `OmegaClient` now lists and creates revocations with typed envelopes and API error preservation. The CLI now provides `revocations` and reason-gated `revoke` commands, sends the configured bearer token, and returns nonzero failure codes. Both surfaces document that the API remains authoritative for lineage, policy, persistence, and action denial.  |
 | Web revocation ledger           | The dashboard now reads `/attest/revocations`, shows the revocation count, and renders persisted attestation ID, reason, operator, and timestamp evidence. The web contract and DOM tests cover the connected read surface.                                                                                                                                   |
 | Admin revocation boundary       | When `OMEGA_ADMIN_TOKEN` is configured, the API requires a distinct bearer credential for `POST /attest/revoke`; read tokens are rejected. SDK and CLI mutation paths send the separate admin token, and API/docs/tests preserve the opt-in local-development behavior.                                                                                       |
+| Kernel-memory encryption        | `FileMemoryStore` now supports authenticated AES-256-GCM JSONL lines through `OMEGA_MEMORY_KEY`, preserves legacy plaintext migration, and reports wrong-key lines as partial. API initialization wires the key and observability exposes only `memoryEncryption`/memory codec mode.                                                                          |
 
 ## Current repository state
 
@@ -44,10 +45,11 @@ The active worktree is `/home/ubuntu/current-main-worktree` on branch `feat/sign
 | `d4ebd10` | SDK and CLI revocation surfaces                           | Published on PR #33 branch                             |
 | `9a876f2` | Coverage repair for SDK/CLI failure paths                 | Published on PR #33 branch                             |
 | `5fb5277` | Web revocation ledger                                     | Local and not yet published at the time of this record |
-| pending   | Admin revocation boundary                                 | Locally verified; not yet committed or published       |
+| `150ec2b` | Admin revocation boundary                                 | Local and not yet published at the time of this record |
+| pending   | Kernel-memory encryption                                  | Locally verified; not yet committed or published       |
 
 | |
-| PR #33 targets `main`, remains **draft/open/mergeable**, and has no recorded review decision. Its last observed CI run was green across Node 18, Node 20, Windows compatibility, packaging/smoke testing, and report generation; the attested-artifact publication job was correctly skipped. The revocation and interface commits were authorized and pushed; the subsequent coverage-repair commit is local until its CI publication is separately authorized. |
+| PR #33 targets `main`, remains **draft/open/mergeable**, and has no recorded review decision. Its last observed CI run was green across Node 18, Node 20, Windows compatibility, packaging/smoke testing, and report generation; the attested-artifact publication job was correctly skipped. The revocation, interface, and coverage-repair commits were authorized and pushed; the web-ledger, admin-boundary, and kernel-memory commits remain local until their CI publication is separately authorized. |
 
 PR #32, the Windows compatibility increment, remains open and green from the last observed check. No merge is claimed for either PR.
 
@@ -69,21 +71,22 @@ The combined signing-audit and persistence-encryption state passed:
 | CI coverage repair                       | PR #33 Node 20 exposed a global branch-coverage regression at 68.93% despite 312 passing tests; SDK/CLI error-path tests raised local coverage to 71.15% with 315 passing tests, preserving the existing 70% gate. |
 | Web ledger verification                  | Full local coverage gate passes with 317 tests; the dashboard ledger and route contract remain covered, and the production web build passes.                                                                       |
 | Admin boundary verification              | API, SDK, and CLI focused tests pass; full local coverage/build pass with 318 tests and the configured admin token is distinct from the read token.                                                                |
+| Kernel-memory verification               | Full local coverage/build pass with 321 tests; encrypted lines, wrong-key partial reporting, plaintext migration, and non-secret API mode reporting are covered.                                                   |
 
 | `git diff --check` | Passed before the revocation commit |
 
-The last full local verification after integrating the admin revocation boundary observed 318 passing tests, 71.15% global branch coverage, and a successful build. The repository may contain generated build output ignored by Git; only intended source and documentation changes should be committed.
+The last full local verification after integrating kernel-memory encryption observed 321 passing tests, 71.15% global branch coverage, and a successful build. The repository may contain generated build output ignored by Git; only intended source and documentation changes should be committed.
 
 ## Remaining gaps and uncertainty
 
-The following are explicitly **not complete**: HSM/KMS key custody, key rotation and recovery policy for persistence encryption, encryption of the separate kernel-memory file, distributed revocation consistency, expiry policy, administrative authorization policy, and production deployment hardening. The encryption increment protects the API runtime snapshot and event log only; it is not a claim that every stored datum is encrypted.
+The following are explicitly **not complete**: HSM/KMS key custody, key rotation and recovery policy for persistence encryption, complete data-at-rest coverage beyond the runtime and kernel-memory files, distributed revocation consistency, expiry policy, stronger administrative authorization policy, and production deployment hardening. The encryption increment protects the API runtime snapshot and event log only; it is not a claim that every stored datum is encrypted.
 
 The web client exposes revoke and revocation-ledger controls. Stronger administrative policy, distributed revocation consistency, expiry, and recovery remain open.
 
 ## Next authorized action
 
-1. Obtain confirmation to push the locally verified admin-boundary commit to PR #33.
+1. Obtain confirmation to push the locally verified kernel-memory encryption commit to PR #33.
 2. Observe the resulting CI run through the GitHub API.
 3. Keep PR #33 draft and route cryptographic and revocation review to a human.
-4. Continue with the next smallest worker-sized slice, prioritizing an explicit revocation/admin authorization boundary or kernel-memory encryption, depending on repository evidence and review feedback.
+4. Continue with the next smallest worker-sized slice, prioritizing key custody/rotation/recovery or distributed revocation consistency, depending on repository evidence and review feedback.
 5. Do not merge or deploy without a separate human authorization.
