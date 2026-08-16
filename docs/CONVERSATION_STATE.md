@@ -7,9 +7,9 @@
 Repository: `starofgodmayomi-droid/omega-v-oceanicos`  
 Worktree: `/home/ubuntu/current-main-worktree`  
 Branch: `main`
-Head: `08f7f58aa80758b5f1cd154b02873f1a256f8f67`
+Head: `3f1e3bc07e800335711bade8e99506098929b9d9`
 Tracking: `origin/main`
-Working tree: PRs #54, #55, #57–#63, #66, #68, #70, #71, #73, and #75 are merged into `main`; post-PR #75 state reconciliation is uncommitted on a clean base; no deployment is claimed.
+Working tree: PRs #54, #55, #57–#63, #66, #68, #70, #71, #73, #75, and #77 are merged into `main`; post-PR #77 state reconciliation is uncommitted on a clean base; no deployment is claimed.
 
 PR #52 merged as `70a66ae2384f943e1fa69434537cd4699adc67b2` at `2026-08-16T18:31:24Z`; its head was `a9ef77a`. CI was observed green across Node 18, Node 20, Windows compatibility, package/smoke, and report; attested-artifact publication was skipped. No deployment is claimed.
 
@@ -33,6 +33,8 @@ PR #73 merged as `1b3db2204b42eb0adc92cca3170aaa9c95180f5e` at `2026-08-16T21:48
 
 PR #75 merged as `08f7f58aa80758b5f1cd154b02873f1a256f8f67` at `2026-08-16T22:49:30Z`; the memory rotation-only encryption downgrade guard was merged after a CI-observed formatting repair and a corrected green matrix. No deployment is claimed.
 
+PR #77 merged as `3f1e3bc07e800335711bade8e99506098929b9d9` at `2026-08-16T23:04:16Z`; kernel-memory provenance now distinguishes current, previous, and mixed authenticated key sources, with green CI. No deployment is claimed.
+
 ## Verified evolution lineage
 
 | Slice                      | Evidence-bound result                                                                                                                                                                                                                                 |
@@ -49,10 +51,11 @@ PR #75 merged as `08f7f58aa80758b5f1cd154b02873f1a256f8f67` at `2026-08-16T22:49
 | PR #71 test reconciliation | The duplicated command-palette suite was removed while unique coverage was preserved; production behavior was unchanged.                                                                                                                              |
 | PR #73 API coverage        | The unexpected-failure catch path for `/attest` and `/verify` is covered by tests; production behavior was unchanged.                                                                                                                                 |
 | PR #75 memory guard        | Rotation-only memory encryption configuration now fails closed; focused tests cover the boundary and no deployment was claimed.                                                                                                                       |
+| PR #77 memory provenance   | Kernel-memory loads distinguish current, previous, and mixed authenticated key sources; custody and recovery remain open.                                                                                                                             |
 
 ## Bounded audit-query evidence
 
-Focused API/web/SDK/CLI tests passed: **137 tests** after repairing query-aware web/API endpoint drift detection. After PRs #57–#62, the full local gate passed with **25 suites / 428 tests**. The focused PR #63 dashboard suite passed **46 tests**, the rebased PR #66 dashboard suite passed **47 tests**, and PR #68 raised the full main baseline to **25 suites / 438 tests**. PRs #70 and #71 brought the post-merge main baseline to **25 suites / 435 tests** while removing redundant assertions and preserving unique coverage. PR #73 raised the post-merge baseline to **25 suites / 436 tests**. PR #75 raised it to **25 suites / 437 tests** and required a formatting repair after the first CI run; the corrected matrix passed. The post-PR #75 gate passed with successful workspace/Vite build, `format:check`, type-check, and `git diff --check`. The post-merge state reconciliation remains a separate documentation-only change.
+Focused API/web/SDK/CLI tests passed: **137 tests** after repairing query-aware web/API endpoint drift detection. After PRs #57–#62, the full local gate passed with **25 suites / 428 tests**. The focused PR #63 dashboard suite passed **46 tests**, the rebased PR #66 dashboard suite passed **47 tests**, and PR #68 raised the full main baseline to **25 suites / 438 tests**. PRs #70 and #71 brought the post-merge main baseline to **25 suites / 435 tests** while removing redundant assertions and preserving unique coverage. PR #73 raised the post-merge baseline to **25 suites / 436 tests**. PRs #75 and #77 retained the post-merge baseline at **25 suites / 437 tests** while adding fail-closed memory rotation and mixed-key provenance evidence. The post-PR #77 gate passed with successful workspace/Vite build, `format:check`, type-check, and `git diff --check`; PR #77’s CI matrix was observed green. The post-merge state reconciliation remains a separate documentation-only change.
 
 The endpoint is bounded local event-log evidence only. Its `source`, `skipped`, `keySource`, `total`, `limit`, and normalized filters are evidence about the local runtime read; they do not prove completeness for unpersisted history, distributed consistency, global ordering, or replica observation.
 
@@ -70,6 +73,6 @@ HSM/KMS custody; secure deletion; automated persistence re-encryption; persisten
 
 ## Human gates and next executable loop
 
-The user has authorized slice-by-slice publication and merge. Next: commit the post-PR #75 state reconciliation on a documentation branch, open a draft PR, observe CI, and merge only after the same gates. Then select the next smallest production-relevant increment. Any publication, merge, or deployment remains separately gated.
+The user has authorized slice-by-slice publication and merge. Next: commit the post-PR #77 state reconciliation on a documentation branch, open a draft PR, observe CI, and merge only after the same gates. Then select the next smallest production-relevant increment. Any publication, merge, or deployment remains separately gated.
 
 > One root. One current. Many minds. Infinite forms.
