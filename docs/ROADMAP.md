@@ -172,17 +172,24 @@ pnpm run dev   # expansion surfaces (API/Web), optional for MINI work
 Recorded here so it is visible rather than rediscovered. None of these is
 blocked on design; each is a decision or a scoped change.
 
-- **`npm install` is documented but cannot work.** Eleven markdown files, this
-  one included above, instruct `npm install`. The workspace uses the
-  `workspace:*` protocol, so npm fails with `EUNSUPPORTEDPROTOCOL`. The
-  "runnable from a fresh clone" principle above is currently false for anyone
-  following the READMEs.
-- **`format:check` is not run by CI** and is failing on 15 files. A check that
-  never runs is not a check.
-- **`summary.confidence` is the claimant's own number.** `VerificationResult`
-  copies `observation.confidence` into its summary, so a "verification
-  confidence" reports what the claim asserted about itself rather than what the
-  rules found. Correcting it moves `trustBasis` in both the API and dashboard.
+- **Two package managers, one lockfile.** `pnpm` is canonical: `pnpm-lock.yaml`
+  is the committed lockfile and CI installs with `pnpm install --frozen-lockfile`.
+  The READMEs mostly say `npm install`, which does work — verified on a clean
+  clone: 671 packages, then 263 tests, build and lint all green. But npm ignores
+  `pnpm-lock.yaml` and there is no `package-lock.json`, so an npm install
+  resolves fresh and can differ from what CI proved. Mixing them in one tree is
+  the actual hazard: running `npm install` over an existing pnpm `node_modules`
+  fails with a misleading `EUNSUPPORTEDPROTOCOL workspace:*` raised by pnpm's
+  own store layout, not by anything in this repository's manifests. No manifest
+  here uses the `workspace:` protocol.
+- **`format:check` is not run by CI** and is failing on 14 files. The verify
+  workflow runs lint, type-check, test, coverage and build, but never
+  `format:check`. A check that never runs is not a check.
+- **`summary.confidence` is the claimant's own number.**
+  `packages/verification/src/index.ts:179` sets the verification summary's
+  confidence to `observation.confidence`, so a "verification confidence"
+  reports what the claim asserted about itself rather than what the rules
+  found. Correcting it moves `trustBasis` in both the API and the dashboard.
 
 ---
 
