@@ -216,6 +216,9 @@ type RevocationIntegrityStatus = 'disabled' | 'legacy' | 'intact' | 'mismatch';
 export const revocationRegistryDigest = (revocations: RuntimeRevocation[]): string =>
   `sha256:${createHash('sha256').update(JSON.stringify(revocations), 'utf8').digest('hex')}`;
 
+export const revocationRegistryRevision = (revocations: RuntimeRevocation[]): number =>
+  revocations.length;
+
 export const revocationRegistryStatus = (
   persistenceEnabled: boolean,
   persistedDigest: string | undefined,
@@ -290,6 +293,7 @@ const runtimeRecompilations = snapshot.recompilations;
 const runtimeRevocations = snapshot.revocations ?? [];
 const persistedRevocationDigest = snapshot.revocationIntegrity;
 const currentRevocationDigest = revocationRegistryDigest(runtimeRevocations);
+const currentRevocationRevision = revocationRegistryRevision(runtimeRevocations);
 const revocationIntegrityStatus = revocationRegistryStatus(
   persistenceEnabled,
   persistedRevocationDigest,
@@ -771,6 +775,7 @@ app.post('/attest/verify', (req: Request, res: Response) => {
         revoked,
         expired,
         revocationIntegrity: revocationIntegrityStatus,
+        revocationRevision: currentRevocationRevision,
       },
       timestamp: new Date().toISOString(),
     });
@@ -854,13 +859,24 @@ app.post('/attest/revoke', (req: Request, res: Response) => {
     status: 'failed',
     details: revocation,
   });
-  res.status(201).json({ data: revocation, timestamp: new Date().toISOString() });
+  res.status(201).json({
+    data: revocation,
+    meta: {
+      revision: revocationRegistryRevision(runtimeRevocations),
+      integrity: revocationIntegrityStatus,
+    },
+    timestamp: new Date().toISOString(),
+  });
 });
 
 app.get('/attest/revocations', (_req: Request, res: Response) => {
   res.json({
     data: runtimeRevocations,
-    meta: { integrity: revocationIntegrityStatus, digest: currentRevocationDigest },
+    meta: {
+      integrity: revocationIntegrityStatus,
+      digest: currentRevocationDigest,
+      revision: currentRevocationRevision,
+    },
     timestamp: new Date().toISOString(),
   });
 });
@@ -874,6 +890,7 @@ app.get('/attest/policy', (_req: Request, res: Response) => {
       adminAuthConfigured: Boolean(process.env[ADMIN_TOKEN_ENV]?.trim()),
       revocationEnabled: true,
       revocationIntegrity: revocationIntegrityStatus,
+      revocationRevision: currentRevocationRevision,
       adminOperatorAllowlistConfigured: operatorAllowlistConfigured(),
       persistenceEncryption: persistenceEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
       persistenceEncryptionKeySource,

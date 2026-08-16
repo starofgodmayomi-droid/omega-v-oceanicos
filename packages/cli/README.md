@@ -75,7 +75,7 @@ node packages/cli/dist/index.js verify \
 
 The command prints `valid`, `revoked`, `expired`, and local `registry` integrity status without recomputing signatures locally. It exits `0` only when the API reports `valid=true` and the registry is not `mismatch`; invalid, revoked, expired, or mismatched evidence returns a non-zero status.
 
-List recorded revocations without mutating state. The output includes the API’s `disabled`, `legacy`, `intact`, or `mismatch` registry-integrity status; `mismatch` is evidence of local persisted-record divergence, not a distributed-consistency result.
+List recorded revocations without mutating state. The output includes the API’s `disabled`, `legacy`, `intact`, or `mismatch` registry-integrity status plus the local registry `revision`; `mismatch` or a revision difference is evidence about local persisted-record freshness, not a distributed-consistency result.
 
 ```bash
 node packages/cli/dist/index.js revocations --url http://localhost:3000

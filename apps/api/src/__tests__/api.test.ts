@@ -181,6 +181,7 @@ describe('API runtime contracts', () => {
       adminOperatorAllowlistConfigured: boolean;
       revocationEnabled: boolean;
       revocationIntegrity: string;
+      revocationRevision: number;
       persistenceEncryption: string;
       persistenceEncryptionKeySource: string;
       persistencePreviousKeyConfigured: boolean;
@@ -195,6 +196,7 @@ describe('API runtime contracts', () => {
     expect(body.data.adminOperatorAllowlistConfigured).toBe(false);
     expect(body.data.revocationEnabled).toBe(true);
     expect(body.data.revocationIntegrity).toBe('disabled');
+    expect(body.data.revocationRevision).toBe(0);
     expect(body.data.persistenceEncryption).toBe('disabled');
     expect(body.data.persistenceEncryptionKeySource).toBe('none');
     expect(body.data.persistencePreviousKeyConfigured).toBe(false);

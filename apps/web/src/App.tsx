@@ -36,6 +36,7 @@ type RuntimePolicy = {
   adminOperatorAllowlistConfigured: boolean;
   revocationEnabled: boolean;
   revocationIntegrity: 'disabled' | 'legacy' | 'intact' | 'mismatch';
+  revocationRevision: number;
   persistenceEncryption: string;
   persistenceEncryptionKeySource: 'none' | 'current' | 'previous' | 'mixed';
   persistencePreviousKeyConfigured: boolean;
@@ -90,6 +91,7 @@ export function App(): JSX.Element {
   const [recentRuns, setRecentRuns] = useState<LoopResult[]>([]);
   const [revocations, setRevocations] = useState<RuntimeRevocation[]>([]);
   const [revocationIntegrity, setRevocationIntegrity] = useState<RevocationIntegrity | null>(null);
+  const [revocationRevision, setRevocationRevision] = useState<number | null>(null);
   const [attestationTtlMs, setAttestationTtlMs] = useState<number | null>(null);
   const [policy, setPolicy] = useState<RuntimePolicy | null>(null);
   const [result, setResult] = useState<LoopResult | null>(null);
@@ -186,7 +188,7 @@ export function App(): JSX.Element {
       const runData = (await runsResponse.json()) as { data: LoopResult[] };
       const revocationData = (await revocationsResponse.json()) as {
         data: RuntimeRevocation[];
-        meta?: { integrity: RevocationIntegrity; digest: string };
+        meta?: { integrity: RevocationIntegrity; digest: string; revision: number };
       };
       const policyData = (await policyResponse.json()) as { data: RuntimePolicy };
       const publicKeyResponse = await fetch('/api/attest/public-key').catch(() => null);
@@ -212,6 +214,7 @@ export function App(): JSX.Element {
       setRecentRuns(runData.data);
       setRevocations(revocationData.data);
       setRevocationIntegrity(revocationData.meta?.integrity ?? null);
+      setRevocationRevision(revocationData.meta?.revision ?? null);
       setPolicy(policyData.data);
       setResult((current) => current ?? runData.data[0] ?? null);
       setSelectedEvent((current) =>
@@ -697,9 +700,9 @@ export function App(): JSX.Element {
             <strong>{persistenceMode ? persistenceMode.toUpperCase() : 'UNKNOWN'}</strong>
           </div>
           <div>
-            <span>REVOCATIONS</span>
+            <span>REVOCATIONS / REVISION</span>
             <strong className={revocations.length > 0 ? 'red' : ''}>
-              {revocations.length.toString().padStart(2, '0')}
+              {revocations.length.toString().padStart(2, '0')} / r{revocationRevision ?? '?'}
             </strong>
           </div>
           <div>

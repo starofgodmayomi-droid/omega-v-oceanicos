@@ -241,6 +241,7 @@ describe('API loop: act, learn, recompile', () => {
       revoked: true,
       expired: false,
       revocationIntegrity: 'disabled',
+      revocationRevision: 0,
     });
 
     const denied = await post('/act', { attestation: loop.data.attestation });

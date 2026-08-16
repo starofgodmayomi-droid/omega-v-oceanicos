@@ -69,6 +69,7 @@ export type AttestationPolicy = {
   adminOperatorAllowlistConfigured: boolean;
   revocationEnabled: boolean;
   revocationIntegrity: 'disabled' | 'legacy' | 'intact' | 'mismatch';
+  revocationRevision: number;
   persistenceEncryption: string;
   persistenceEncryptionKeySource: 'none' | 'current' | 'previous' | 'mixed';
   persistencePreviousKeyConfigured: boolean;
@@ -80,6 +81,7 @@ export type AttestationVerification = {
   revoked: boolean;
   expired: boolean;
   revocationIntegrity: 'disabled' | 'legacy' | 'intact' | 'mismatch';
+  revocationRevision: number;
 };
 
 export type AttestationRevocation = {
@@ -147,12 +149,20 @@ export class OmegaClient {
 
   async getRevocations(): Promise<{
     data: AttestationRevocation[];
-    meta?: { integrity: 'disabled' | 'legacy' | 'intact' | 'mismatch'; digest: string };
+    meta?: {
+      integrity: 'disabled' | 'legacy' | 'intact' | 'mismatch';
+      digest: string;
+      revision: number;
+    };
     timestamp: string;
   }> {
     return this.get<{
       data: AttestationRevocation[];
-      meta?: { integrity: 'disabled' | 'legacy' | 'intact' | 'mismatch'; digest: string };
+      meta?: {
+        integrity: 'disabled' | 'legacy' | 'intact' | 'mismatch';
+        digest: string;
+        revision: number;
+      };
       timestamp: string;
     }>('/attest/revocations');
   }
@@ -172,8 +182,16 @@ export class OmegaClient {
     reason: string,
     revokedBy = 'sdk-client',
     operatorId?: string
-  ): Promise<{ data: AttestationRevocation; timestamp: string }> {
-    return this.post<{ data: AttestationRevocation; timestamp: string }>(
+  ): Promise<{
+    data: AttestationRevocation;
+    meta?: { revision: number; integrity: 'disabled' | 'legacy' | 'intact' | 'mismatch' };
+    timestamp: string;
+  }> {
+    return this.post<{
+      data: AttestationRevocation;
+      meta?: { revision: number; integrity: 'disabled' | 'legacy' | 'intact' | 'mismatch' };
+      timestamp: string;
+    }>(
       '/attest/revoke',
       { attestationId, reason, revokedBy },
       this.adminToken,
