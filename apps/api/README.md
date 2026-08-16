@@ -330,7 +330,7 @@ Every response includes an `x-request-id` header. Supplying an existing `x-reque
 
 Structured error responses also include the request ID in their JSON body, so a failure can be traced from the UI or CLI without relying on log timing.
 
-When `OMEGA_READ_TOKEN` is configured, read-only evidence endpoints require `Authorization: Bearer <token>`. This boundary is opt-in so local development remains unchanged when the variable is absent. `/health` remains available for liveness checks. Missing or invalid read credentials return `401 READ_ACCESS_REQUIRED` with a traceable request ID. The API also emits `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, and `Referrer-Policy: no-referrer` on responses.
+When `OMEGA_READ_TOKEN` is configured, read-only evidence endpoints require `Authorization: Bearer <token>`. This boundary is opt-in so local development remains unchanged when the variable is absent. `/health` remains available for liveness checks. Missing or invalid read credentials return `401 READ_ACCESS_REQUIRED` with a traceable request ID. Configured read and admin bearer values are compared with a constant-time byte comparison after the bearer scheme is parsed. The API also emits `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, and `Referrer-Policy: no-referrer` on responses.
 
 ### Runtime Observability
 

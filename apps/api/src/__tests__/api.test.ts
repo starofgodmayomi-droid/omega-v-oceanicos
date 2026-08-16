@@ -1,5 +1,5 @@
 import { createServer, Server } from 'node:http';
-import app, { isAttestationExpired } from '../index';
+import app, { constantTimeTokenMatch, isAttestationExpired } from '../index';
 import { Attestation } from '@omega-v/types';
 
 type ApiResponse<T> = { data: T };
@@ -12,6 +12,12 @@ type LoopPayload = {
 };
 
 describe('API runtime contracts', () => {
+  it('matches bearer tokens without using ordinary string equality', () => {
+    expect(constantTimeTokenMatch('same-token', 'same-token')).toBe(true);
+    expect(constantTimeTokenMatch('same-token', 'same-tokeN')).toBe(false);
+    expect(constantTimeTokenMatch('short', 'longer-token')).toBe(false);
+  });
+
   it('applies an opt-in attestation TTL without changing signature semantics', () => {
     const attestation = { attestedAt: '2026-08-16T00:00:00.000Z' } as Attestation;
     const issuedAt = Date.parse(attestation.attestedAt);

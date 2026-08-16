@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { randomUUID, timingSafeEqual } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import express, { Express, Request, Response } from 'express';
@@ -20,6 +20,17 @@ import {
  * Ω∞v Oceanicos API Server
  * Exposes the verification loop via REST endpoints
  */
+export const constantTimeTokenMatch = (supplied: string, expected: string): boolean => {
+  const suppliedBytes = Buffer.from(supplied);
+  const expectedBytes = Buffer.from(expected);
+  return (
+    suppliedBytes.length === expectedBytes.length && timingSafeEqual(suppliedBytes, expectedBytes)
+  );
+};
+
+const bearerToken = (authorization: string): string =>
+  authorization.startsWith('Bearer ') ? authorization.slice('Bearer '.length) : '';
+
 const app: Express = express();
 const port = process.env.API_PORT || 3000;
 
@@ -56,7 +67,7 @@ app.use((req: Request, res: Response, next) => {
   const isRevocationRequest = req.method === 'POST' && req.path === '/attest/revoke';
   if (configuredReadToken && isReadOnlyRequest) {
     const authorization = req.header('authorization') || '';
-    if (authorization !== `Bearer ${configuredReadToken}`) {
+    if (!constantTimeTokenMatch(bearerToken(authorization), configuredReadToken)) {
       res.status(401).json({
         code: 'READ_ACCESS_REQUIRED',
         message: 'A valid bearer token is required for read-only evidence access',
@@ -67,7 +78,7 @@ app.use((req: Request, res: Response, next) => {
   }
   if (configuredAdminToken && isRevocationRequest) {
     const authorization = req.header('authorization') || '';
-    if (authorization !== `Bearer ${configuredAdminToken}`) {
+    if (!constantTimeTokenMatch(bearerToken(authorization), configuredAdminToken)) {
       res.status(401).json({
         code: 'ADMIN_ACCESS_REQUIRED',
         message: 'A valid admin bearer token is required to revoke attestations',
