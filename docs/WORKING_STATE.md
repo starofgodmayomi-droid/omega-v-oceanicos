@@ -46,7 +46,7 @@ Push, PR publication, merge, deployment, and other externally visible actions ar
 
 ## Current repository state
 
-The active worktree is `/home/ubuntu/current-main-worktree` on branch `main`, synchronized with merged `origin/main`. The bounded temporal audit-query slice is implemented locally and remains uncommitted pending the full gate and publication gate. Local commits currently include:
+The active worktree is `/home/ubuntu/current-main-worktree` on branch `main`, synchronized with merged `origin/main`. The bounded temporal audit-query slice is merged and the worktree is clean. Local commits currently include:
 
 | Commit    | Meaning                                                                                                                                      | Publication state                                      |
 | --------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
@@ -79,6 +79,7 @@ The active worktree is `/home/ubuntu/current-main-worktree` on branch `main`, sy
 | `af26f2a` | PR #50 squash merge: persistence decrypt and previous-key coverage                                                                           | Merged into `main`; CI green                           |
 | `7c5bf31` | PR #51 squash merge: coverage queue state reconciliation                                                                                     | Merged into `main`; CI green                           |
 | `70a66ae` | PR #52 squash merge: local revocation registry revision evidence across API, web, SDK, CLI, tests, and docs                                  | Merged into `main`; CI green                           |
+| `66a5221` | PR #54 squash merge: bounded temporal audit-query contract across API, web, SDK, CLI, tests, and docs                                        | Merged into `main`; CI green                           |
 
 | |
 | PR #33 is **merged** into `main` as squash commit `fb73ac28990b2b42b6339da2e8ca76007616dd70`, observed at `2026-08-16T14:46:39Z`. The published head `2cc2d21` passed Node 18, Node 20, Windows compatibility, package/smoke, and report checks; attested-artifact publication was skipped as designed. |
@@ -87,6 +88,7 @@ The active worktree is `/home/ubuntu/current-main-worktree` on branch `main`, sy
 | PR #36 is **merged** into `main` as squash commit `cae0c65915ba2a2553d7b54d411d2316223639a9`, observed at `2026-08-16T15:13:50Z`. Its head `c3e197f` passed the CI matrix; attested-artifact publication was skipped. |
 | PR #38 is **merged** into `main` as squash commit `0cd211d64cafaedebc3ed54a9155c026a913a926`, observed at `2026-08-16T15:29:47Z`. Its head `7d549f0` passed the CI matrix; attested-artifact publication was skipped. |
 | PR #40 is **merged** into `main` as squash commit `ea69684109240aba3032bc7aa1f002f320aff20d`, observed at `2026-08-16T15:42:50Z`. Its head `7ea1521` passed the CI matrix; attested-artifact publication was skipped. This is merge evidence only; no deployment is claimed. |
+| PR #54 is **merged** into `main` as squash commit `66a5221faeb34c2478e8e89265bc8ce565c3d53e`, observed at `2026-08-16T19:36:14Z`. Its head `6b38d2f` passed Node 18, Node 20, Windows compatibility, package/smoke, and report checks; attested-artifact publication was skipped. This is merge evidence only; no deployment is claimed. |
 
 PR #32 remains historical Windows-compatibility evidence.
 
@@ -122,7 +124,7 @@ The combined signing-audit and persistence-encryption state passed:
 
 | `git diff --check` | Passed before the revocation commit |
 
-The last full local verification for the revision slice observed 409 passing tests, a successful workspace/Vite build, passing format/type/diff gates, and a focused revision-contract result of 146 passing tests; PR #52’s CI matrix was subsequently observed green and merged. The audit-query focused suite currently observes 137 passing tests across API, web, SDK, and CLI after query-aware contract repair. An initial full gate reached 415 passing tests but stopped at the documentation contract because the API README did not yet mention `/audit/events`; documentation has now been updated and the full gate must be rerun. The repository may contain generated build output ignored by Git; only intended source and documentation changes should be committed.
+The last full local verification for the revision slice observed 409 passing tests, a successful workspace/Vite build, passing format/type/diff gates, and a focused revision-contract result of 146 passing tests; PR #52’s CI matrix was subsequently observed green and merged. The audit-query focused suite observed 137 passing tests across API, web, SDK, and CLI after query-aware contract repair. The final full gate observed 25 suites / 416 tests passed, successful workspace/Vite build, passing format/type-check, and `git diff --check`; PR #54’s CI matrix subsequently passed Node 18, Node 20, Windows compatibility, package/smoke, and report checks. The repository may contain generated build output ignored by Git; only intended source and documentation changes should be committed.
 
 ## Remaining gaps and uncertainty
 
@@ -132,7 +134,6 @@ The web client exposes revoke and revocation-ledger controls. Stronger administr
 
 ## Next authorized action
 
-1. Rerun the full audit-query gate after documentation updates: coverage, build, format, type-check, and diff hygiene.
-2. If green, create the feature branch, commit, push, and open a draft PR for the bounded audit-query slice; observe CI before any ready/merge action.
-3. After merge, reconcile state documents in a separate documentation PR, then select the next smallest production-relevant slice from custody, distributed coordination, identity, data-at-rest, deployment, or mobile gaps.
-4. Keep any new publication, merge, and deployment actions behind separate human gates.
+1. Reconcile this post-PR #54 state update through a separate documentation PR, preserving the observed merge and CI evidence.
+2. Select the next smallest production-relevant slice from custody, distributed coordination, identity, data-at-rest, deployment, or mobile gaps.
+3. Keep any new publication, merge, and deployment actions behind separate human gates.
