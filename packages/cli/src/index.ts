@@ -74,6 +74,7 @@ function usage(): string {
     'omega export [--url URL] [--token TOKEN]',
     'omega revocations [--url URL] [--token TOKEN]',
     'omega revoke ATTESTATION_ID --reason REASON [--url URL] [--token TOKEN] [--admin-token TOKEN]',
+    'omega verify --attestation-json JSON [--url URL] [--token TOKEN]',
     '',
     'Read live runtime and evidence from the Omega V API.',
     '',
@@ -181,6 +182,51 @@ async function runs(argv: string[], fetchImpl: FetchLike): Promise<number> {
   }
 }
 
+async function verifyAttestation(argv: string[], fetchImpl: FetchLike): Promise<number> {
+  const rawAttestation = option(argv, '--attestation-json');
+  if (!rawAttestation) {
+    process.stderr.write('Usage: omega verify --attestation-json JSON [options]\n');
+    return 2;
+  }
+  let attestation: unknown;
+  try {
+    attestation = JSON.parse(rawAttestation);
+  } catch {
+    process.stderr.write('Invalid JSON supplied to --attestation-json\n');
+    return 2;
+  }
+  const endpoint = `${baseUrl(argv).replace(/\/$/, '')}/attest/verify`;
+  try {
+    const response = await fetchImpl(endpoint, {
+      ...(requestInit(argv) ?? {}),
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        ...((requestInit(argv)?.headers as Record<string, string> | undefined) ?? {}),
+      },
+      body: JSON.stringify({ attestation }),
+    });
+    const body = (await response.json()) as {
+      data?: { valid: boolean; revoked: boolean; expired: boolean };
+      message?: string;
+    };
+    if (!response.ok || !body.data) {
+      process.stderr.write(
+        `Verification failed (${response.status}): ${body.message ?? 'unknown error'}\n`
+      );
+      return 1;
+    }
+    process.stdout.write(
+      `VERIFICATION valid=${body.data.valid} revoked=${body.data.revoked} expired=${body.data.expired}\n`
+    );
+    return body.data.valid ? 0 : 1;
+  } catch (error) {
+    process.stderr.write(
+      `Verification failed: ${error instanceof Error ? error.message : String(error)}\n`
+    );
+    return 1;
+  }
+}
 async function revocations(argv: string[], fetchImpl: FetchLike): Promise<number> {
   const endpoint = `${baseUrl(argv).replace(/\/$/, '')}/attest/revocations`;
   try {
@@ -302,6 +348,7 @@ export async function run(
   if (command === 'runs') return runs(argv, fetchImpl);
   if (command === 'export') return evidenceExport(argv, fetchImpl);
   if (command === 'revocations') return revocations(argv, fetchImpl);
+  if (command === 'verify') return verifyAttestation(argv, fetchImpl);
   if (command === 'revoke') return revoke(argv, fetchImpl);
 
   process.stderr.write(`Unknown command: ${command}\n\n${usage()}\n`);

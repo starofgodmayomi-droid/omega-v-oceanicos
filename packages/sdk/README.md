@@ -16,7 +16,8 @@ const events = await client.getEvents();
 const runs = await client.getRuns();
 const evidence = await client.getEvidenceExport();
 const revocations = await client.getRevocations();
+const verification = await client.verifyAttestation(attestation);
 const revoked = await client.revokeAttestation('attestation-id', 'operator review');
 ```
 
-The SDK reads the real `/observability`, `/events`, `/runs`, `/attest/revocations`, and bounded `/evidence/export` contracts. `revokeAttestation()` is an explicit mutation that sends the attestation ID, human-readable reason, and operator identity to `/attest/revoke`; it does not sign, verify, or silently authorize anything. API errors remain typed through `OmegaApiError`, and no values are fabricated. Pass `{ readToken, adminToken }` as the third constructor argument when the API boundaries are enabled. `readToken` is used for reads, while only `adminToken` is sent on revocation mutations. Administrative policy beyond the configured bearer boundary, stronger operator authentication, and mobile bindings remain future slices.
+The SDK reads the real `/observability`, `/events`, `/runs`, `/attest/revocations`, and bounded `/evidence/export` contracts. `revokeAttestation()` is an explicit mutation that sends the attestation ID, human-readable reason, and operator identity to `/attest/revoke`; it does not sign, verify, or silently authorize anything. API errors remain typed through `OmegaApiError`, and no values are fabricated. Pass `{ readToken, adminToken }` as the third constructor argument when the API boundaries are enabled. `readToken` is used for reads and attestation verification, while only `adminToken` is sent on revocation mutations. Verification preserves the API’s `valid`, `revoked`, and `expired` fields; the SDK does not reimplement signature or expiry policy. Administrative policy beyond the configured bearer boundary, stronger operator authentication, and mobile bindings remain future slices.

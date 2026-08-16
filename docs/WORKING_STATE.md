@@ -33,6 +33,7 @@ Push, PR publication, merge, deployment, and other externally visible actions ar
 | Kernel-memory encryption        | `FileMemoryStore` now supports authenticated AES-256-GCM JSONL lines through `OMEGA_MEMORY_KEY`, preserves legacy plaintext migration, and reports wrong-key lines as partial. API initialization wires the key and observability exposes only `memoryEncryption`/memory codec mode.                                                                          |
 | Kernel-memory key rotation      | `OMEGA_MEMORY_KEY_PREVIOUS` permits controlled fallback reads while `OMEGA_MEMORY_KEY` encrypts new appends; mixed-key restore reports `previous` without exposing secrets. Rotation remains operationally gated by custody and recovery policy.                                                                                                              |
 | Attestation expiry policy       | Opt-in `OMEGA_ATTESTATION_TTL_MS` makes expired attestations invalid for verification and denies `/act` with `EXPIRED_ATTESTATION`; the signed payload is unchanged and clock/distributed-time policy remains open.                                                                                                                                           |
+| SDK/CLI expiry verification     | `OmegaClient.verifyAttestation()` and `omega verify --attestation-json` preserve API `valid`, `revoked`, and `expired` status, use the read boundary, and fail closed with a non-zero CLI exit for invalid evidence.                                                                                                                                          |
 
 ## Current repository state
 
@@ -50,7 +51,8 @@ The active worktree is `/home/ubuntu/current-main-worktree` on branch `feat/sign
 | `150ec2b` | Admin revocation boundary                                 | Local and not yet published at the time of this record |
 | `1affdd7` | Kernel-memory encryption                                  | Local and not yet published at the time of this record |
 | `2093081` | Kernel-memory key rotation                                | Local and not yet published at the time of this record |
-| pending   | Attestation expiry policy                                 | Locally verified; not yet committed or published       |
+| `8341170` | Attestation expiry policy                                 | Local and not yet published at the time of this record |
+| pending   | SDK/CLI expiry verification                               | Locally verified; not yet committed or published       |
 
 | |
 | PR #33 targets `main`, remains **draft/open/mergeable**, and has no recorded review decision. Its last observed CI run was green across Node 18, Node 20, Windows compatibility, packaging/smoke testing, and report generation; the attested-artifact publication job was correctly skipped. The revocation, interface, and coverage-repair commits were authorized and pushed; the web-ledger, admin-boundary, and kernel-memory commits remain local until their CI publication is separately authorized. |
@@ -78,10 +80,11 @@ The combined signing-audit and persistence-encryption state passed:
 | Kernel-memory verification               | Full local coverage/build pass with 321 tests; encrypted lines, wrong-key partial reporting, plaintext migration, and non-secret API mode reporting are covered.                                                   |
 | Key-rotation verification                | Full local coverage/build pass with 322 tests; previous-key fallback, current-key appends, mixed-key restore, and non-secret source reporting are covered.                                                         |
 | Expiry verification                      | Full local coverage/build pass with 323 tests; deterministic TTL semantics, explicit `expired` verification status, and API observability are covered.                                                             |
+| SDK/CLI verification                     | Full local coverage/build pass with 324 tests; SDK read-token propagation, CLI JSON parsing, expired output, and fail-closed exit behavior are covered.                                                            |
 
 | `git diff --check` | Passed before the revocation commit |
 
-The last full local verification after integrating attestation expiry observed 323 passing tests, 71.15% global branch coverage, and a successful build. The repository may contain generated build output ignored by Git; only intended source and documentation changes should be committed.
+The last full local verification after integrating SDK/CLI expiry verification observed 324 passing tests, 71.15% global branch coverage, and a successful build. The repository may contain generated build output ignored by Git; only intended source and documentation changes should be committed.
 
 ## Remaining gaps and uncertainty
 
@@ -91,7 +94,7 @@ The web client exposes revoke and revocation-ledger controls. Stronger administr
 
 ## Next authorized action
 
-1. Obtain confirmation to push the locally verified attestation-expiry commit to PR #33.
+1. Obtain confirmation to push the locally verified SDK/CLI expiry-verification commit to PR #33.
 2. Observe the resulting CI run through the GitHub API.
 3. Keep PR #33 draft and route cryptographic and revocation review to a human.
 4. Continue with the next smallest worker-sized slice, prioritizing key custody/rotation/recovery or distributed revocation consistency, depending on repository evidence and review feedback.

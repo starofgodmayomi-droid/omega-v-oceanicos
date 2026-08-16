@@ -34,6 +34,12 @@ export type RuntimeRun = {
   attestation: { id: string; verified: boolean; attestedAt?: string; revoked?: boolean };
 };
 
+export type AttestationVerification = {
+  valid: boolean;
+  revoked: boolean;
+  expired: boolean;
+};
+
 export type AttestationRevocation = {
   id: string;
   attestationId: string;
@@ -93,6 +99,16 @@ export class OmegaClient {
     return this.get<{ data: AttestationRevocation[]; timestamp: string }>('/attest/revocations');
   }
 
+  async verifyAttestation(
+    attestation: unknown
+  ): Promise<{ data: AttestationVerification; timestamp: string }> {
+    return this.post<{ data: AttestationVerification; timestamp: string }>(
+      '/attest/verify',
+      { attestation },
+      this.readToken
+    );
+  }
+
   async revokeAttestation(
     attestationId: string,
     reason: string,
@@ -117,7 +133,7 @@ export class OmegaClient {
     }>('/evidence/export');
   }
 
-  private async post<T>(path: string, payload: unknown): Promise<T> {
+  private async post<T>(path: string, payload: unknown, bearerToken = this.adminToken): Promise<T> {
     const endpoint = `${this.baseUrl}${path}`;
     let response: Response;
     try {
@@ -125,7 +141,7 @@ export class OmegaClient {
         method: 'POST',
         headers: {
           'content-type': 'application/json',
-          ...(this.adminToken ? { Authorization: `Bearer ${this.adminToken}` } : {}),
+          ...(bearerToken ? { Authorization: `Bearer ${bearerToken}` } : {}),
         },
         body: JSON.stringify(payload),
       });

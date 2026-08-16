@@ -97,6 +97,14 @@ describe('OmegaClient', () => {
             })
           );
         }
+        if (url.endsWith('/attest/verify')) {
+          return new Response(
+            JSON.stringify({
+              data: { valid: false, revoked: false, expired: true },
+              timestamp: '2026-08-16T00:00:00.000Z',
+            })
+          );
+        }
         return new Response(
           JSON.stringify({
             data: {
@@ -117,6 +125,9 @@ describe('OmegaClient', () => {
     await expect(client.getRevocations()).resolves.toMatchObject({
       data: [{ attestationId: 'att-1' }],
     });
+    await expect(client.verifyAttestation({ id: 'att-1' })).resolves.toMatchObject({
+      data: { valid: false, revoked: false, expired: true },
+    });
     await expect(
       client.revokeAttestation('att-2', 'manual review', 'sdk-test')
     ).resolves.toMatchObject({
@@ -127,6 +138,12 @@ describe('OmegaClient', () => {
         url: 'http://api.test/attest/revocations',
         method: undefined,
         body: undefined,
+        authorization: 'Bearer sdk-token',
+      },
+      {
+        url: 'http://api.test/attest/verify',
+        method: 'POST',
+        body: JSON.stringify({ attestation: { id: 'att-1' } }),
         authorization: 'Bearer sdk-token',
       },
       {

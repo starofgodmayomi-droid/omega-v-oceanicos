@@ -51,6 +51,17 @@ This reads `GET /evidence/export`, prints the returned JSON without synthesizing
 
 ## Attestation revocation
 
+Verify an attestation using the API’s cryptographic and policy boundary:
+
+```bash
+node packages/cli/dist/index.js verify \
+  --attestation-json "$ATTESTATION_JSON" \
+  --url http://localhost:3000 \
+  --token "$OMEGA_READ_TOKEN"
+```
+
+The command prints `valid`, `revoked`, and `expired` status fields without recomputing signatures locally. It exits `0` only when the API reports `valid=true`; invalid, revoked, or expired evidence returns a non-zero status.
+
 List recorded revocations without mutating state:
 
 ```bash

@@ -119,6 +119,30 @@ describe('omega status CLI', () => {
     expect(output.join('')).toContain('att-1 revokedBy=operator reason=stale evidence');
   });
 
+  it('prints expired verification status and fails closed', async () => {
+    const output: string[] = [];
+    process.stdout.write = ((chunk: string | Uint8Array) => {
+      output.push(String(chunk));
+      return true;
+    }) as typeof process.stdout.write;
+
+    const exitCode = await run(
+      ['verify', '--attestation-json', '{"id":"att-1"}', '--token', 'cli-token'],
+      async (url, init) => {
+        expect(url).toBe('http://localhost:3000/attest/verify');
+        expect(init?.method).toBe('POST');
+        expect(new Headers(init?.headers).get('authorization')).toBe('Bearer cli-token');
+        expect(JSON.parse(String(init?.body))).toEqual({ attestation: { id: 'att-1' } });
+        return new Response(
+          JSON.stringify({ data: { valid: false, revoked: false, expired: true } })
+        );
+      }
+    );
+
+    expect(exitCode).toBe(1);
+    expect(output.join('')).toContain('VERIFICATION valid=false revoked=false expired=true');
+  });
+
   it('reports unavailable revocations without claiming an empty result', async () => {
     const errors: string[] = [];
     process.stderr.write = ((chunk: string | Uint8Array) => {
