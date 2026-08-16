@@ -8,8 +8,11 @@ Build the workspace, then run:
 
 ```bash
 pnpm --filter @omega-v/cli build
+OMEGA_API_URL=http://localhost:3000 node packages/cli/dist/index.js health
 OMEGA_API_URL=http://localhost:3000 node packages/cli/dist/index.js status
 ```
+
+The `health` command reads unauthenticated `GET /health`, prints liveness, readiness, memory-integrity, persistence-codec, and non-secret policy evidence, and exits `0` only when readiness is `ready` and memory integrity is true. A degraded response, HTTP failure, or network failure returns a non-zero status. It does not turn a probe response into a cryptographic or deployment claim.
 
 The status command also accepts `--url`:
 

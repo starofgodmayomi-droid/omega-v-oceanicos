@@ -1,5 +1,27 @@
 #!/usr/bin/env node
 
+type HealthResponse = {
+  data: {
+    status: 'ok';
+    readiness: 'ready' | 'degraded';
+    checks: {
+      observer: 'ready';
+      verifier: 'ready';
+      attester: 'ready';
+      memory: { status: 'ready' | 'degraded'; integrity: boolean; encryption: string };
+      persistence: { mode: 'file' | 'memory'; encryption: string };
+    };
+    policy: {
+      attestationAlgorithm: string;
+      attestationTtlMs: number | null;
+      readAuthConfigured: boolean;
+      adminAuthConfigured: boolean;
+      revocationEnabled: boolean;
+    };
+  };
+  timestamp: string;
+};
+
 type ObservabilityResponse = {
   data: {
     runtime: {
@@ -68,6 +90,7 @@ type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
 
 function usage(): string {
   return [
+    'omega health [--url URL]',
     'omega status [--url URL] [--token TOKEN]',
     'omega events [--url URL] [--limit N] [--token TOKEN]',
     'omega runs [--url URL] [--limit N] [--token TOKEN]',
@@ -117,6 +140,39 @@ function limit(argv: string[]): number | null {
   if (index < 0) return null;
   const value = Number(argv[index + 1]);
   return Number.isInteger(value) && value > 0 ? value : null;
+}
+
+async function health(argv: string[], fetchImpl: FetchLike): Promise<number> {
+  const endpoint = `${baseUrl(argv).replace(/\/$/, '')}/health`;
+  try {
+    const response = await fetchImpl(endpoint);
+    const body = (await response.json()) as HealthResponse | { message?: string };
+    if (!response.ok || !('data' in body)) {
+      const message = 'message' in body ? body.message : undefined;
+      process.stderr.write(
+        `Health unavailable (${response.status}): ${message ?? 'unknown error'}\n`
+      );
+      return 1;
+    }
+
+    const { checks, policy } = body.data;
+    process.stdout.write(
+      [
+        `HEALTH        ${body.data.status} / ${body.data.readiness}`,
+        `CHECKS        observer=${checks.observer} verifier=${checks.verifier} attester=${checks.attester}`,
+        `MEMORY        ${checks.memory.status} integrity=${checks.memory.integrity} encryption=${checks.memory.encryption}`,
+        `PERSISTENCE   ${checks.persistence.mode} encryption=${checks.persistence.encryption}`,
+        `POLICY        algorithm=${policy.attestationAlgorithm} ttl=${policy.attestationTtlMs ?? 'off'} revocation=${policy.revocationEnabled}`,
+        `OBSERVED      ${body.timestamp}`,
+      ].join('\n') + '\n'
+    );
+    return body.data.readiness === 'ready' && checks.memory.integrity ? 0 : 1;
+  } catch (error) {
+    process.stderr.write(
+      `Health unavailable: ${error instanceof Error ? error.message : String(error)}\n`
+    );
+    return 1;
+  }
 }
 
 async function status(argv: string[], fetchImpl: FetchLike): Promise<number> {
@@ -364,6 +420,7 @@ export async function run(
     process.stdout.write(`${usage()}\n`);
     return 0;
   }
+  if (command === 'health') return health(argv, fetchImpl);
   if (command === 'status') return status(argv, fetchImpl);
   if (command === 'events') return events(argv, fetchImpl);
   if (command === 'runs') return runs(argv, fetchImpl);

@@ -44,6 +44,49 @@ describe('API runtime contracts', () => {
     );
   });
 
+  it('exposes unauthenticated non-secret liveness and readiness evidence', async () => {
+    const response = await fetch(`${baseUrl}/health`);
+    const body = (await response.json()) as ApiResponse<{
+      status: string;
+      readiness: string;
+      checks: {
+        observer: string;
+        verifier: string;
+        attester: string;
+        memory: { status: string; integrity: boolean; encryption: string };
+        persistence: { mode: string; encryption: string };
+      };
+      policy: {
+        attestationAlgorithm: string;
+        attestationTtlMs: number | null;
+        readAuthConfigured: boolean;
+        adminAuthConfigured: boolean;
+        revocationEnabled: boolean;
+      };
+    }>;
+
+    expect(response.status).toBe(200);
+    expect(body.data.status).toBe('ok');
+    expect(body.data.readiness).toBe('ready');
+    expect(body.data.checks.observer).toBe('ready');
+    expect(body.data.checks.verifier).toBe('ready');
+    expect(body.data.checks.attester).toBe('ready');
+    expect(body.data.checks.memory).toEqual({
+      status: 'ready',
+      integrity: true,
+      encryption: 'disabled',
+    });
+    expect(body.data.checks.persistence).toEqual({ mode: 'memory', encryption: 'disabled' });
+    expect(body.data.policy).toEqual({
+      attestationAlgorithm: 'HMAC-SHA256',
+      attestationTtlMs: null,
+      readAuthConfigured: false,
+      adminAuthConfigured: false,
+      revocationEnabled: true,
+    });
+    expect(JSON.stringify(body)).not.toMatch(/token|secret|private|signing material/i);
+  });
+
   it('executes the loop and records its runtime lineage', async () => {
     const loopResponse = await fetch(`${baseUrl}/complete-loop`, {
       method: 'POST',

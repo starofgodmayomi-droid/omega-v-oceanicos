@@ -322,14 +322,57 @@ verificationEngine.registerRule({
 });
 
 /**
- * Health check endpoint
+ * Health check endpoint. This remains unauthenticated and exposes only
+ * non-secret liveness/readiness evidence for probes and operators.
  */
 app.get('/health', (_req: Request, res: Response) => {
-  const response: SuccessResponse<{ status: string }> = {
-    data: { status: 'ok' },
+  const memoryIntact = kernelMemory.verifyIntegrity();
+  const response: SuccessResponse<{
+    status: 'ok';
+    readiness: 'ready' | 'degraded';
+    checks: {
+      observer: 'ready';
+      verifier: 'ready';
+      attester: 'ready';
+      memory: { status: 'ready' | 'degraded'; integrity: boolean; encryption: string };
+      persistence: { mode: 'file' | 'memory'; encryption: string };
+    };
+    policy: {
+      attestationAlgorithm: string;
+      attestationTtlMs: number | null;
+      readAuthConfigured: boolean;
+      adminAuthConfigured: boolean;
+      revocationEnabled: true;
+    };
+  }> = {
+    data: {
+      status: 'ok',
+      readiness: memoryIntact ? 'ready' : 'degraded',
+      checks: {
+        observer: 'ready',
+        verifier: 'ready',
+        attester: 'ready',
+        memory: {
+          status: memoryIntact ? 'ready' : 'degraded',
+          integrity: memoryIntact,
+          encryption: memoryEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
+        },
+        persistence: {
+          mode: persistenceEnabled ? 'file' : 'memory',
+          encryption: persistenceEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
+        },
+      },
+      policy: {
+        attestationAlgorithm: attestationService.getKeyInfo().algorithm,
+        attestationTtlMs: configuredAttestationTtlMs(),
+        readAuthConfigured: Boolean(process.env.OMEGA_READ_TOKEN?.trim()),
+        adminAuthConfigured: Boolean(process.env[ADMIN_TOKEN_ENV]?.trim()),
+        revocationEnabled: true,
+      },
+    },
     timestamp: new Date().toISOString(),
   };
-  res.json(response);
+  res.status(memoryIntact ? 200 : 503).json(response);
 });
 
 app.get('/state', (_req: Request, res: Response) => {

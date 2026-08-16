@@ -107,7 +107,7 @@ boundary. Still not earned: HSM/KMS custody, complete data-at-rest coverage,
 key rotation and recovery, distributed revocation consistency, expiry policy,
 and stronger administrative authorization. An opt-in `OMEGA_ATTESTATION_TTL_MS`
 now invalidates expired attestations for verification and action authorization;
-clock policy and distributed time coordination remain open.
+clock policy and distributed time coordination remain open. The unauthenticated `/health` route now exposes non-secret liveness/readiness, memory integrity, persistence codec, and attestation policy evidence; the dashboard, SDK, and CLI consume that contract without claiming deployment health.
 
 ### Phase 4 — Interface expansions
 
@@ -225,6 +225,13 @@ blocked on design; each is a decision or a scoped change.
   API, invalidates verification for authorization purposes, and blocks `/act`.
   Broader policy administration, expiry, distributed consistency and recovery
   procedures remain open.
+- **Health/readiness observability — contract implemented, deployment health not
+  claimed.** `GET /health` remains unauthenticated for probes and returns
+  explicit liveness, readiness, memory-integrity, persistence-codec, and
+  non-secret policy evidence. The web dashboard, typed SDK, and CLI consume the
+  same response; a degraded memory chain returns `503`, and the CLI fails closed.
+  This does not establish deployment orchestration, distributed health
+  coordination, or production availability.
 
 ---
 

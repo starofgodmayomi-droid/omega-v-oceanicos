@@ -1,3 +1,25 @@
+export type Health = {
+  data: {
+    status: 'ok';
+    readiness: 'ready' | 'degraded';
+    checks: {
+      observer: 'ready';
+      verifier: 'ready';
+      attester: 'ready';
+      memory: { status: 'ready' | 'degraded'; integrity: boolean; encryption: string };
+      persistence: { mode: 'file' | 'memory'; encryption: string };
+    };
+    policy: {
+      attestationAlgorithm: string;
+      attestationTtlMs: number | null;
+      readAuthConfigured: boolean;
+      adminAuthConfigured: boolean;
+      revocationEnabled: boolean;
+    };
+  };
+  timestamp: string;
+};
+
 export type Observability = {
   data: {
     runtime: {
@@ -91,6 +113,10 @@ export class OmegaClient {
     this.fetchImpl = fetchImpl;
     this.readToken = options.readToken;
     this.adminToken = options.adminToken;
+  }
+
+  async getHealth(): Promise<Health> {
+    return this.get<Health>('/health');
   }
 
   async getObservability(): Promise<Observability> {
