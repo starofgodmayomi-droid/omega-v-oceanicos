@@ -58,7 +58,6 @@ describe('web/API contract', () => {
       '/actions',
       '/attest',
       '/attest/revocations',
-      '/attest/revoke',
       '/evidence/export',
       '/health',
       '/log',

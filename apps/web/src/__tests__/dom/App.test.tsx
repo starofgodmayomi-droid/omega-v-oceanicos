@@ -153,6 +153,34 @@ describe('dashboard', () => {
     expect(await screen.findByText('VALID')).toBeInTheDocument();
   });
 
+  it('revokes an attestation with an explicit operator reason', async () => {
+    const user = userEvent.setup();
+    const fetchMock = installFetch();
+    await renderApp();
+
+    await user.click(await screen.findByRole('button', { name: /run verification/i }));
+    await screen.findByText('ATTESTATION');
+
+    const revokeButton = screen.getByRole('button', { name: /revoke attestation/i });
+    expect(revokeButton).toBeDisabled();
+
+    await user.type(
+      screen.getByLabelText(/revocation reason/i),
+      'Operator review found stale evidence'
+    );
+    expect(revokeButton).toBeEnabled();
+    await user.click(revokeButton);
+
+    expect(await screen.findByText('ATTESTATION REVOKED')).toBeInTheDocument();
+    const call = fetchMock.mock.calls.find(([url]) => url === '/api/attest/revoke');
+    expect(call).toBeDefined();
+    expect(JSON.parse(String(call?.[1]?.body))).toMatchObject({
+      attestationId: 'att-2026-08-16-def',
+      reason: 'Operator review found stale evidence',
+      revokedBy: 'dashboard-operator',
+    });
+  });
+
   it('reports an invalid signature as invalid', async () => {
     const user = userEvent.setup();
     installFetch({

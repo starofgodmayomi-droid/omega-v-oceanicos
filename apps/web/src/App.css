@@ -729,6 +729,42 @@ select:focus-visible {
   opacity: 0.55;
   cursor: wait;
 }
+.revocation-controls {
+  display: grid;
+  gap: 7px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #4b3931;
+}
+.revocation-controls label {
+  color: #b58b78;
+  font:
+    10px 'DM Mono',
+    monospace;
+}
+.revocation-controls input {
+  width: 100%;
+  padding: 7px;
+  border: 1px solid #65463c;
+  background: #1b100e;
+  color: #f0d1c5;
+  font:
+    10px 'DM Mono',
+    monospace;
+}
+.revoke-button {
+  border: 1px solid #9a5548;
+  background: #321b18;
+  color: #f1a796;
+  padding: 7px 9px;
+  font:
+    10px 'DM Mono',
+    monospace;
+}
+.revoke-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
 .act-button {
   display: block;
   margin-top: 10px;

@@ -15,7 +15,13 @@ export type LoopFixture = {
     evidencePath: Array<{ rule: string; passed: boolean; reasoning: string }>;
   };
   memory: { id: string; observationId: string; verificationId: string };
-  attestation: { id: string; verified: boolean; signature: string; attestedAt: string };
+  attestation: {
+    id: string;
+    verified: boolean;
+    signature: string;
+    attestedAt: string;
+    revoked?: boolean;
+  };
 };
 
 export const passingLoop = (): LoopFixture => ({
@@ -142,7 +148,9 @@ export function installFetch(overrides: RouteOverrides = {}): jest.Mock {
         },
       }),
     '/api/complete-loop': () => json({ data: passingLoop() }, { status: 201 }),
-    '/api/attest/verify': () => json({ data: { valid: true } }),
+    '/api/attest/verify': () => json({ data: { valid: true, revoked: false } }),
+    '/api/attest/revoke': () => json({ data: { id: 'rev-1' } }, { status: 201 }),
+    '/api/attest/revocations': () => json({ data: [] }),
     '/api/act': () => json({ data: { id: 'act-1', status: 'authorized' } }, { status: 201 }),
     '/api/learning': () => json({ data: [{ id: 'lrn-1' }] }),
     '/api/learn': () => json({ data: { id: 'lrn-1' } }, { status: 201 }),

@@ -20,7 +20,13 @@ type LoopResult = {
     evidencePath: Array<{ rule: string; passed: boolean; reasoning: string }>;
   };
   memory: { id: string; observationId: string; verificationId: string };
-  attestation: { id: string; verified: boolean; signature: string; attestedAt: string };
+  attestation: {
+    id: string;
+    verified: boolean;
+    signature: string;
+    attestedAt: string;
+    revoked?: boolean;
+  };
 };
 type PublicTrustMetadata = {
   algorithm: string;
@@ -76,6 +82,10 @@ export function App(): JSX.Element {
   const [selectedEvent, setSelectedEvent] = useState<RuntimeEvent | null>(null);
   const [attestationStatus, setAttestationStatus] = useState<
     'idle' | 'checking' | 'valid' | 'invalid'
+  >('idle');
+  const [revocationReason, setRevocationReason] = useState('');
+  const [revocationStatus, setRevocationStatus] = useState<
+    'idle' | 'revoking' | 'revoked' | 'failed'
   >('idle');
   const [actionStatus, setActionStatus] = useState<
     'idle' | 'authorizing' | 'authorized' | 'denied'
@@ -261,11 +271,41 @@ export function App(): JSX.Element {
       });
       if (!response.ok)
         throw new Error(await describeResponseError(response, 'Attestation check failed'));
-      const payload = (await response.json()) as { data: { valid: boolean } };
+      const payload = (await response.json()) as {
+        data: { valid: boolean; revoked?: boolean };
+      };
       setAttestationStatus(payload.data.valid ? 'valid' : 'invalid');
+      if (payload.data.revoked) setRevocationStatus('revoked');
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : 'Attestation check failed');
       setAttestationStatus('invalid');
+    }
+  };
+
+  const revokeAttestation = async () => {
+    if (!result || !revocationReason.trim()) return;
+    setRevocationStatus('revoking');
+    setError('');
+    try {
+      const response = await fetch('/api/attest/revoke', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          attestationId: result.attestation.id,
+          reason: revocationReason.trim(),
+          revokedBy: 'dashboard-operator',
+        }),
+      });
+      if (!response.ok)
+        throw new Error(await describeResponseError(response, 'Attestation revocation failed'));
+      setRevocationStatus('revoked');
+      setAttestationStatus('invalid');
+      await refreshRuntime();
+    } catch (requestError) {
+      setRevocationStatus('failed');
+      setError(
+        requestError instanceof Error ? requestError.message : 'Attestation revocation failed'
+      );
     }
   };
 
@@ -741,6 +781,44 @@ export function App(): JSX.Element {
                         {attestationStatus.toUpperCase()}
                       </small>
                     )}
+                    <div className="revocation-controls">
+                      <label htmlFor="revocation-reason">Revocation reason</label>
+                      <input
+                        id="revocation-reason"
+                        value={revocationReason}
+                        onChange={(event) => setRevocationReason(event.target.value)}
+                        placeholder="Why should this proof stop authorizing action?"
+                        disabled={revocationStatus === 'revoking' || revocationStatus === 'revoked'}
+                      />
+                      <button
+                        className="revoke-button"
+                        onClick={revokeAttestation}
+                        disabled={
+                          !revocationReason.trim() ||
+                          revocationStatus === 'revoking' ||
+                          revocationStatus === 'revoked'
+                        }
+                      >
+                        {revocationStatus === 'revoking' ? 'Revoking...' : 'Revoke attestation'}
+                      </button>
+                      {revocationStatus !== 'idle' && (
+                        <small
+                          className={
+                            revocationStatus === 'revoked'
+                              ? 'attestation-invalid'
+                              : revocationStatus === 'failed'
+                                ? 'attestation-invalid'
+                                : 'attestation-valid'
+                          }
+                        >
+                          {revocationStatus === 'revoked'
+                            ? 'ATTESTATION REVOKED'
+                            : revocationStatus === 'failed'
+                              ? 'REVOCATION FAILED'
+                              : 'REVOCATION IN PROGRESS'}
+                        </small>
+                      )}
+                    </div>
                     <button
                       className="act-button"
                       onClick={authorizeAction}
