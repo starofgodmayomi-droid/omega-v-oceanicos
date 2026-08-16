@@ -46,6 +46,7 @@ Push, PR publication, merge, deployment, and other externally visible actions ar
 | Coverage queue #57–#62          | SDK, Remember, API audit validation, API persistence-failure, Ed25519 guard, and CLI audit network-failure branches were added as focused regression slices and merged with green CI.                                                                                                                                                                         |
 | Web stream and inspector        | Dashboard DOM tests now cover stream recovery and runtime refresh on reopen, correlation/request/payload inspector evidence, and restoring the selected run chain after event inspection. Production behavior was unchanged.                                                                                                                                  |
 | Web stream trust coverage       | Dashboard DOM tests now cover EventSource reopen refreshing health/state evidence and pass/fail stream messages updating the trust figure. Production behavior was unchanged.                                                                                                                                                                                 |
+| Web navigation and learning     | Dashboard DOM tests now cover sidebar navigation, stage-pill rendering, and learning feedback/error recovery. Production behavior was unchanged.                                                                                                                                                                                                              |
 
 ## Current repository state
 
@@ -92,6 +93,7 @@ The active worktree is `/home/ubuntu/current-main-worktree` on branch `main`, sy
 | `2934327` | PR #62 squash merge: CLI audit network-failure catch-block coverage                                                                          | Merged into `main`; CI green                           |
 | `208b48f` | PR #63 squash merge: web stream recovery and event-inspector coverage                                                                        | Merged into `main`; CI green                           |
 | `5eb0760` | PR #66 squash merge: web stream-driven trust update coverage                                                                                 | Merged into `main`; CI green                           |
+| `0ed3864` | PR #68 squash merge: web sidebar navigation, stage-pill, and learning-feedback coverage                                                      | Merged into `main`; CI green                           |
 
 | |
 | PR #33 is **merged** into `main` as squash commit `fb73ac28990b2b42b6339da2e8ca76007616dd70`, observed at `2026-08-16T14:46:39Z`. The published head `2cc2d21` passed Node 18, Node 20, Windows compatibility, package/smoke, and report checks; attested-artifact publication was skipped as designed. |
@@ -110,6 +112,7 @@ The active worktree is `/home/ubuntu/current-main-worktree` on branch `main`, sy
 | PR #62 is **merged** into `main` as squash commit `2934327fe120ad4bbe6b67c1a840bd213c9ac655`, observed at `2026-08-16T20:57:13Z`; CLI audit network-failure coverage CI was green and attested-artifact publication was skipped. |
 | PR #63 is **merged** into `main` as squash commit `208b48ffc9b414c956ab2d00cffb6bb7749c335c`, observed at `2026-08-16T21:05:34Z`; its head `7c1414f` passed Node 18, Node 20, Windows compatibility, package/smoke, and report checks; attested-artifact publication was skipped. This is merge evidence only; no deployment is claimed. |
 | PR #66 is **merged** into `main` as squash commit `5eb07607ac80869a258e62552a69964194f4ceeb`, observed at `2026-08-16T21:16:35Z`; its head `65b1730` passed Node 18, Node 20, Windows compatibility, package/smoke, and report checks; attested-artifact publication was skipped. This is merge evidence only; no deployment is claimed. |
+| PR #68 is **merged** into `main` as squash commit `0ed38641943e30f672f306f32df71e221a5e9699`, observed at `2026-08-16T21:28:51Z`; its head passed Node 18, Node 20, Windows compatibility, package/smoke, and report checks; attested-artifact publication was skipped. This is merge evidence only; no deployment is claimed. |
 
 PR #32 remains historical Windows-compatibility evidence.
 
@@ -145,7 +148,7 @@ The combined signing-audit and persistence-encryption state passed:
 
 | `git diff --check` | Passed before the revocation commit |
 
-The last full verification before the recent coverage queue observed 25 suites / 416 tests and a successful workspace/Vite build. After PRs #57–#62, the full local gate observed 25 suites / 428 tests passed, with format, type-check, build, and diff hygiene green. The focused web stream/inspector suite observed 46 tests passed; after PR #63, the full local gate observed 25 suites / 431 tests passed. The rebased stream-trust suite observed 47 tests passed; after PR #66, the final full local gate observed 25 suites / 432 tests passed, successful workspace/Vite build, passing format/type-check, and `git diff --check`. PRs #57–#63 and #66 had green Node 18, Node 20, Windows, package/smoke, and report checks as applicable; attested-artifact publication was skipped. The repository may contain generated build output ignored by Git; only intended source and documentation changes should be committed.
+The last full verification before the recent coverage queue observed 25 suites / 416 tests and a successful workspace/Vite build. After PRs #57–#62, the full local gate observed 25 suites / 428 tests passed. PR #63 raised the full gate to 431 tests, PR #66 to 432 tests, and the post-PR #68 full gate observed 25 suites / 438 tests passed, successful workspace/Vite build, passing format/type-check, and `git diff --check`. PRs #57–#63, #66, and #68 had green Node 18, Node 20, Windows, package/smoke, and report checks as applicable; attested-artifact publication was skipped. The repository may contain generated build output ignored by Git; only intended source and documentation changes should be committed.
 
 ## Remaining gaps and uncertainty
 
@@ -155,6 +158,6 @@ The web client exposes revoke and revocation-ledger controls. Stronger administr
 
 ## Next authorized action
 
-1. Reconcile the merged PR #66 coverage evidence in a separate documentation PR.
+1. Reconcile the merged PR #68 coverage evidence in a separate documentation PR.
 2. Select the next smallest production-relevant slice from custody, distributed coordination, identity, data-at-rest, deployment, or mobile gaps.
 3. Keep any new publication, merge, and deployment actions behind separate human gates.
