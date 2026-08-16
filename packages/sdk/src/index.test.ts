@@ -65,6 +65,67 @@ describe('OmegaClient', () => {
     await expect(client.getObservability()).resolves.toBeDefined();
   });
 
+  it('lists and creates attestation revocations through the typed client', async () => {
+    const requests: Array<{ url: string; method?: string; body?: string }> = [];
+    const client = new OmegaClient(
+      'http://api.test',
+      async (url, init) => {
+        requests.push({ url, method: init?.method, body: init?.body?.toString() });
+        if (url.endsWith('/attest/revocations')) {
+          return new Response(
+            JSON.stringify({
+              data: [
+                {
+                  id: 'rev-1',
+                  attestationId: 'att-1',
+                  reason: 'stale evidence',
+                  revokedBy: 'operator',
+                  revokedAt: '2026-08-16T00:00:00.000Z',
+                },
+              ],
+              timestamp: '2026-08-16T00:00:00.000Z',
+            })
+          );
+        }
+        return new Response(
+          JSON.stringify({
+            data: {
+              id: 'rev-2',
+              attestationId: 'att-2',
+              reason: 'manual review',
+              revokedBy: 'sdk-test',
+              revokedAt: '2026-08-16T00:00:00.000Z',
+            },
+            timestamp: '2026-08-16T00:00:00.000Z',
+          }),
+          { status: 201 }
+        );
+      },
+      { readToken: 'sdk-token' }
+    );
+
+    await expect(client.getRevocations()).resolves.toMatchObject({
+      data: [{ attestationId: 'att-1' }],
+    });
+    await expect(
+      client.revokeAttestation('att-2', 'manual review', 'sdk-test')
+    ).resolves.toMatchObject({
+      data: { attestationId: 'att-2' },
+    });
+    expect(requests).toEqual([
+      { url: 'http://api.test/attest/revocations', method: undefined, body: undefined },
+      {
+        url: 'http://api.test/attest/revoke',
+        method: 'POST',
+        body: JSON.stringify({
+          attestationId: 'att-2',
+          reason: 'manual review',
+          revokedBy: 'sdk-test',
+        }),
+      },
+    ]);
+  });
+
   it('exposes bounded evidence export through the typed client', async () => {
     const client = new OmegaClient('http://api.test', async (url) => {
       expect(url).toBe('http://api.test/evidence/export');

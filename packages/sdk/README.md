@@ -14,6 +14,8 @@ const observability = await client.getObservability();
 const events = await client.getEvents();
 const runs = await client.getRuns();
 const evidence = await client.getEvidenceExport();
+const revocations = await client.getRevocations();
+const revoked = await client.revokeAttestation('attestation-id', 'operator review');
 ```
 
-The SDK currently reads the real `/observability`, `/events`, and `/runs` contracts. It preserves API errors through `OmegaApiError`, does not fabricate values, and does not duplicate attestation or verification logic. Pass `{ readToken }` as the third constructor argument when the API has `OMEGA_READ_TOKEN` configured; omit it to preserve local development behavior. `getEvidenceExport()` reads the bounded `/evidence/export` package without mutating state. Mutation methods and mobile bindings remain future slices.
+The SDK reads the real `/observability`, `/events`, `/runs`, `/attest/revocations`, and bounded `/evidence/export` contracts. `revokeAttestation()` is an explicit mutation that sends the attestation ID, human-readable reason, and operator identity to `/attest/revoke`; it does not sign, verify, or silently authorize anything. API errors remain typed through `OmegaApiError`, and no values are fabricated. Pass `{ readToken }` as the third constructor argument when the API read boundary is enabled; the token is also sent on the revocation request. Administrative policy, stronger operator authentication, and mobile bindings remain future slices.

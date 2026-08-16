@@ -31,7 +31,15 @@ export type RuntimeEvent = Record<string, unknown>;
 export type RuntimeRun = {
   observation: { id: string; claim?: { statement?: string } };
   verification: { id: string; summary: { passed: boolean; confidence?: number } };
-  attestation: { id: string; verified: boolean; attestedAt?: string };
+  attestation: { id: string; verified: boolean; attestedAt?: string; revoked?: boolean };
+};
+
+export type AttestationRevocation = {
+  id: string;
+  attestationId: string;
+  reason: string;
+  revokedBy: string;
+  revokedAt: string;
 };
 
 export type EvidenceExport = {
@@ -79,6 +87,22 @@ export class OmegaClient {
     return this.get<{ data: RuntimeRun[] }>('/runs');
   }
 
+  async getRevocations(): Promise<{ data: AttestationRevocation[]; timestamp: string }> {
+    return this.get<{ data: AttestationRevocation[]; timestamp: string }>('/attest/revocations');
+  }
+
+  async revokeAttestation(
+    attestationId: string,
+    reason: string,
+    revokedBy = 'sdk-client'
+  ): Promise<{ data: AttestationRevocation; timestamp: string }> {
+    return this.post<{ data: AttestationRevocation; timestamp: string }>('/attest/revoke', {
+      attestationId,
+      reason,
+      revokedBy,
+    });
+  }
+
   async getEvidenceExport(): Promise<{
     data: EvidenceExport;
     meta: { bounded: boolean; eventWindow: number; runWindow: number };
@@ -89,6 +113,35 @@ export class OmegaClient {
       meta: { bounded: boolean; eventWindow: number; runWindow: number };
       timestamp: string;
     }>('/evidence/export');
+  }
+
+  private async post<T>(path: string, payload: unknown): Promise<T> {
+    const endpoint = `${this.baseUrl}${path}`;
+    let response: Response;
+    try {
+      response = await this.fetchImpl(endpoint, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          ...(this.readToken ? { Authorization: `Bearer ${this.readToken}` } : {}),
+        },
+        body: JSON.stringify(payload),
+      });
+    } catch (error) {
+      throw new OmegaApiError(error instanceof Error ? error.message : String(error), 0, endpoint);
+    }
+
+    const body = (await response.json()) as unknown;
+    if (!response.ok) {
+      const errorBody =
+        body && typeof body === 'object' ? (body as { error?: string; message?: string }) : {};
+      throw new OmegaApiError(
+        errorBody.message || errorBody.error || `Request failed with status ${response.status}`,
+        response.status,
+        endpoint
+      );
+    }
+    return body as T;
   }
 
   private async get<T>(path: string): Promise<T> {

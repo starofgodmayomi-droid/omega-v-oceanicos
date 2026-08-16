@@ -1,6 +1,6 @@
 # Ω∞v CLI
 
-The CLI is a read-only client for the real API observability and runtime evidence contracts. When the API has `OMEGA_READ_TOKEN` configured, pass `--token TOKEN` or set `OMEGA_READ_TOKEN` so the CLI sends `Authorization: Bearer TOKEN`.
+The CLI reads the real API observability and runtime evidence contracts and exposes one explicit operator mutation for attestation revocation. When the API has `OMEGA_READ_TOKEN` configured, pass `--token TOKEN` or set `OMEGA_READ_TOKEN` so the CLI sends `Authorization: Bearer TOKEN`; this token is not a substitute for stronger administrative policy.
 
 ## Usage
 
@@ -48,5 +48,24 @@ node packages/cli/dist/index.js export --url http://localhost:3000 --token "$OME
 ```
 
 This reads `GET /evidence/export`, prints the returned JSON without synthesizing fields, and exits non-zero when the returned memory integrity is invalid.
+
+## Attestation revocation
+
+List recorded revocations without mutating state:
+
+```bash
+node packages/cli/dist/index.js revocations --url http://localhost:3000
+```
+
+Revoke a recorded attestation only when an authorized operator has supplied a reason:
+
+```bash
+node packages/cli/dist/index.js revoke attestation-id \
+  --reason "Operator review found stale evidence" \
+  --url http://localhost:3000 \
+  --token "$OMEGA_READ_TOKEN"
+```
+
+The command calls `POST /attest/revoke`, sends `revokedBy=omega-cli`, prints the recorded revocation, and returns a non-zero status for API failure. The API remains the authority for lineage, duplicate protection, persistence, and action denial; the CLI does not claim that a revocation is a cryptographic alteration of the original attestation.
 
 Mobile capabilities remain future slices. The typed SDK is available separately as `@omega-v/sdk`, and accepts `{ readToken }` as its third constructor argument when the API read boundary is enabled.
