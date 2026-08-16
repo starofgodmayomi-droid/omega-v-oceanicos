@@ -76,6 +76,12 @@ remain on the [roadmap](./ROADMAP.md).
 - **[Attestation](../packages/attestation/README.md)** — HMAC signing, key
   fingerprints, and why there is no default key
 
+### Decisions
+
+- **[1. Serve the web client from the API's origin](./decisions/0001-single-origin-deployment.md)**
+  — why one container rather than two, what it costs, and the alternative that
+  is preserved on a branch rather than deleted
+
 ### System Design
 
 - **[Observer](../packages/observer/README.md)** — capturing normalized
