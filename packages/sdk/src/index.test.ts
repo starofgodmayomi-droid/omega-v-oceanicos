@@ -301,4 +301,32 @@ describe('OmegaClient', () => {
       })
     );
   });
+
+  it('wraps a network failure on a GET request as a status-0 API error', async () => {
+    const client = new OmegaClient('http://api.test', async () => {
+      throw new TypeError('fetch failed');
+    });
+
+    await expect(client.getObservability()).rejects.toEqual(
+      expect.objectContaining<Partial<OmegaApiError>>({
+        message: 'fetch failed',
+        status: 0,
+        endpoint: 'http://api.test/observability',
+      })
+    );
+  });
+
+  it('wraps a network failure on a POST request as a status-0 API error', async () => {
+    const client = new OmegaClient('http://api.test', async () => {
+      throw new TypeError('fetch failed');
+    });
+
+    await expect(client.verifyAttestation({})).rejects.toEqual(
+      expect.objectContaining<Partial<OmegaApiError>>({
+        message: 'fetch failed',
+        status: 0,
+        endpoint: 'http://api.test/attest/verify',
+      })
+    );
+  });
 });
