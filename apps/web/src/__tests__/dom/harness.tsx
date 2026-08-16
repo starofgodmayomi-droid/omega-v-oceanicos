@@ -87,6 +87,7 @@ const stateBody = {
       recentFailures: 0,
     },
     persistence: 'memory' as const,
+    attestationTtlMs: null,
     services: [{ status: 'ready' }, { status: 'ready' }],
   },
 };
@@ -148,7 +149,7 @@ export function installFetch(overrides: RouteOverrides = {}): jest.Mock {
         },
       }),
     '/api/complete-loop': () => json({ data: passingLoop() }, { status: 201 }),
-    '/api/attest/verify': () => json({ data: { valid: true, revoked: false } }),
+    '/api/attest/verify': () => json({ data: { valid: true, revoked: false, expired: false } }),
     '/api/attest/revoke': () => json({ data: { id: 'rev-1' } }, { status: 201 }),
     '/api/attest/revocations': () => json({ data: [] }),
     '/api/act': () => json({ data: { id: 'act-1', status: 'authorized' } }, { status: 201 }),

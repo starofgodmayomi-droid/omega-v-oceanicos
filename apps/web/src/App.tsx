@@ -68,6 +68,7 @@ export function App(): JSX.Element {
   const [events, setEvents] = useState<RuntimeEvent[]>([]);
   const [recentRuns, setRecentRuns] = useState<LoopResult[]>([]);
   const [revocations, setRevocations] = useState<RuntimeRevocation[]>([]);
+  const [attestationTtlMs, setAttestationTtlMs] = useState<number | null>(null);
   const [result, setResult] = useState<LoopResult | null>(null);
   const [mode, setMode] = useState('observe');
   const [trust, setTrust] = useState<number | null>(null);
@@ -136,6 +137,7 @@ export function App(): JSX.Element {
             recentFailures: number;
           };
           persistence: 'file' | 'memory';
+          attestationTtlMs?: number | null;
           services: Array<{ status: string }>;
         };
       };
@@ -158,6 +160,7 @@ export function App(): JSX.Element {
       setTrust(state.data.trust);
       setTrustBasis(state.data.trustBasis);
       setPersistenceMode(state.data.persistence);
+      setAttestationTtlMs(state.data.attestationTtlMs ?? null);
       setServiceHealth({ ready: readyServices, total: state.data.services.length });
       setEvents(eventData.data);
       setRecentRuns(runData.data);
@@ -634,6 +637,12 @@ export function App(): JSX.Element {
             <span>REVOCATIONS</span>
             <strong className={revocations.length > 0 ? 'red' : ''}>
               {revocations.length.toString().padStart(2, '0')}
+            </strong>
+          </div>
+          <div>
+            <span>ATTESTATION TTL</span>
+            <strong>
+              {attestationTtlMs === null ? 'OFF' : `${Math.round(attestationTtlMs / 1000)}s`}
             </strong>
           </div>
           <div>

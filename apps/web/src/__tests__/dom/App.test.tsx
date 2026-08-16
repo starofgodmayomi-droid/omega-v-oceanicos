@@ -198,6 +198,32 @@ describe('dashboard', () => {
     expect(screen.queryByText('VALID')).not.toBeInTheDocument();
   });
 
+  it('renders the API attestation TTL policy evidence', async () => {
+    installFetch({
+      '/api/state': () =>
+        json({
+          data: {
+            mode: 'observe',
+            trust: 0.95,
+            trustBasis: {
+              evidenceQuality: 0.95,
+              verificationCoverage: 1,
+              attestationValidity: 1,
+              serviceReadiness: 1,
+              recentFailures: 0,
+            },
+            persistence: 'memory',
+            attestationTtlMs: 900000,
+            services: [{ status: 'ready' }, { status: 'ready' }],
+          },
+        }),
+    });
+    await renderApp();
+
+    expect(await screen.findByText('ATTESTATION TTL')).toBeInTheDocument();
+    expect(screen.getByText('900s')).toBeInTheDocument();
+  });
+
   it('renders persisted revocation evidence in the ledger', async () => {
     const user = userEvent.setup();
     installFetch({

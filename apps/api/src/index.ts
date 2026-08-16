@@ -348,6 +348,7 @@ app.get('/state', (_req: Request, res: Response) => {
       persistence: persistenceEnabled ? 'file' : 'memory',
       persistenceEncryption: persistenceEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
       memoryEncryption: memoryEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
+      attestationTtlMs: configuredAttestationTtlMs(),
       persistenceSource,
       persistenceReason: persistenceReason ?? null,
       mode: latest?.stage || 'observing',
