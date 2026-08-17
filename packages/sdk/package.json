@@ -8,7 +8,7 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "clean": "rm -rf dist",
+    "clean": "node ../../scripts/rimraf.cjs dist",
     "test": "jest --runInBand"
   },
   "engines": {
