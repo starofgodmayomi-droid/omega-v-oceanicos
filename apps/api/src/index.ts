@@ -14,6 +14,7 @@ import {
   encryptionEnabled,
   loadSnapshot,
   readEventLog,
+  eventLogReady,
   saveSnapshot,
   persistenceReady,
 } from './persistence.js';
@@ -442,6 +443,13 @@ verificationEngine.registerRule({
  */
 app.get('/health', (_req: Request, res: Response) => {
   const memoryIntact = kernelMemory.verifyIntegrity();
+  const durableLog = readEventLog<RuntimeEvent>(
+    eventLogPath,
+    persistenceEnabled,
+    persistenceEncryptionKey,
+    previousPersistenceEncryptionKey
+  );
+  const durableLogIsReady = eventLogReady(persistenceEnabled, durableLog.source);
   const response: SuccessResponse<{
     status: 'ok';
     readiness: 'ready' | 'degraded';
@@ -455,6 +463,8 @@ app.get('/health', (_req: Request, res: Response) => {
         encryption: string;
         keySource: string;
         previousKeyConfigured: boolean;
+        eventLogSource: string;
+        skippedLogEntries: number;
       };
     };
     policy: {
@@ -467,7 +477,7 @@ app.get('/health', (_req: Request, res: Response) => {
   }> = {
     data: {
       status: 'ok',
-      readiness: memoryIntact && persistenceIsReady ? 'ready' : 'degraded',
+      readiness: memoryIntact && persistenceIsReady && durableLogIsReady ? 'ready' : 'degraded',
       checks: {
         observer: 'ready',
         verifier: 'ready',
@@ -482,6 +492,8 @@ app.get('/health', (_req: Request, res: Response) => {
           encryption: persistenceEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
           keySource: persistenceEncryptionKeySource,
           previousKeyConfigured: previousPersistenceEncryptionConfigured,
+          eventLogSource: durableLog.source,
+          skippedLogEntries: durableLog.skipped,
         },
       },
       policy: {
@@ -494,12 +506,19 @@ app.get('/health', (_req: Request, res: Response) => {
     },
     timestamp: new Date().toISOString(),
   };
-  res.status(memoryIntact && persistenceIsReady ? 200 : 503).json(response);
+  res.status(memoryIntact && persistenceIsReady && durableLogIsReady ? 200 : 503).json(response);
 });
 
 app.get('/state', (_req: Request, res: Response) => {
   const latest = runtimeEvents[0];
   const memoryIntact = kernelMemory.verifyIntegrity();
+  const durableLog = readEventLog<RuntimeEvent>(
+    eventLogPath,
+    persistenceEnabled,
+    persistenceEncryptionKey,
+    previousPersistenceEncryptionKey
+  );
+  const durableLogIsReady = eventLogReady(persistenceEnabled, durableLog.source);
   const latestRun = completedRuns[0];
   const recentFailures = runtimeEvents.filter((event) => event.status === 'failed').length;
   const verificationCoverage = latestRun ? (latestRun.verification.summary.passed ? 1 : 0) : null;
@@ -525,10 +544,13 @@ app.get('/state', (_req: Request, res: Response) => {
         evidenceQuality: latestRun ? latestRun.verification.summary.confidence : null,
         verificationCoverage,
         attestationValidity,
-        serviceReadiness: memoryIntact && persistenceIsReady ? 1 : 0,
+        serviceReadiness: memoryIntact && persistenceIsReady && durableLogIsReady ? 1 : 0,
         recentFailures,
       },
       events: runtimeEvents.length,
+      durableEvents: durableLog.entries.length,
+      skippedLogEntries: durableLog.skipped,
+      eventLogSource: durableLog.source,
       lastActivity: latest?.timestamp || null,
       services: [
         { name: 'observer', status: 'ready' },

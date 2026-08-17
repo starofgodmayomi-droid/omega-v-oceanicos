@@ -219,6 +219,12 @@ blocked on design; each is a decision or a scoped change.
   the active algorithm through observability, and reports wrong-key or damaged
   records instead of silently restoring empty state. Kernel memory files,
   key custody, rotation, recovery and broader data-at-rest coverage remain open.
+- **Partial event-log recovery — degraded readiness implemented, recovery policy
+  not complete.** A malformed or unauthenticated durable-log line remains visible
+  as `source: partial` with `skippedLogEntries > 0`; enabled partial recovery now
+  makes `/health` return HTTP 503 with `readiness: degraded`, and `/state`
+  reports `trustBasis.serviceReadiness: 0`. Missing logs remain valid cold starts;
+  repair, operator acknowledgement, and distributed recovery remain open.
 - **Persistence-key rotation — controlled fallback implemented, production policy
   not complete.** `OMEGA_PERSISTENCE_KEY` encrypts new snapshot/event-log writes;
   `OMEGA_PERSISTENCE_KEY_PREVIOUS` permits authenticated local reads during a

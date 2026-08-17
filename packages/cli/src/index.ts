@@ -9,7 +9,12 @@ type HealthResponse = {
       verifier: 'ready';
       attester: 'ready';
       memory: { status: 'ready' | 'degraded'; integrity: boolean; encryption: string };
-      persistence: { mode: 'file' | 'memory'; encryption: string };
+      persistence: {
+        mode: 'file' | 'memory';
+        encryption: string;
+        eventLogSource: 'disabled' | 'missing' | 'restored' | 'partial';
+        skippedLogEntries: number;
+      };
     };
     policy: {
       attestationAlgorithm: string;
@@ -186,7 +191,7 @@ async function health(argv: string[], fetchImpl: FetchLike): Promise<number> {
         `HEALTH        ${body.data.status} / ${body.data.readiness}`,
         `CHECKS        observer=${checks.observer} verifier=${checks.verifier} attester=${checks.attester}`,
         `MEMORY        ${checks.memory.status} integrity=${checks.memory.integrity} encryption=${checks.memory.encryption}`,
-        `PERSISTENCE   ${checks.persistence.mode} encryption=${checks.persistence.encryption}`,
+        `PERSISTENCE   ${checks.persistence.mode} encryption=${checks.persistence.encryption} log=${checks.persistence.eventLogSource} skipped=${checks.persistence.skippedLogEntries}`,
         `POLICY        algorithm=${policy.attestationAlgorithm} ttl=${policy.attestationTtlMs ?? 'off'} revocation=${policy.revocationEnabled}`,
         `OBSERVED      ${body.timestamp}`,
       ].join('\n') + '\n'

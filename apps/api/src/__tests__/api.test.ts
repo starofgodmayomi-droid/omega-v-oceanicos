@@ -162,7 +162,12 @@ describe('API runtime contracts', () => {
         verifier: string;
         attester: string;
         memory: { status: string; integrity: boolean; encryption: string };
-        persistence: { mode: string; encryption: string };
+        persistence: {
+          mode: string;
+          encryption: string;
+          eventLogSource: string;
+          skippedLogEntries: number;
+        };
       };
       policy: {
         attestationAlgorithm: string;
@@ -189,6 +194,8 @@ describe('API runtime contracts', () => {
       encryption: 'disabled',
       keySource: 'none',
       previousKeyConfigured: false,
+      eventLogSource: 'disabled',
+      skippedLogEntries: 0,
     });
     expect(body.data.policy).toEqual({
       attestationAlgorithm: 'HMAC-SHA256',
@@ -882,6 +889,74 @@ describe('Runtime persistence failures reach the route handlers that trigger the
     expect(recompileResponse.status).toBe(400);
     expect(recompile.code).toBe('RECOMPILE_FAILED');
     expect(recompile.message).toBe('Recompile proposal failed');
+  });
+});
+
+/**
+ * A partial durable log is inspectable but not production-ready: the API must
+ * expose the loss at both the probe boundary and the state trust boundary.
+ */
+describe('partial durable-log recovery readiness', () => {
+  let server: Server;
+  let baseUrl: string;
+  let dir: string;
+
+  beforeAll(async () => {
+    dir = mkdtempSync(join(tmpdir(), 'omega-api-partial-log-'));
+    const storePath = join(dir, 'runtime.json');
+    const logPath = join(dir, 'runtime.log.jsonl');
+    writeFileSync(logPath, '{ not json\\n');
+
+    process.env.OMEGA_PERSISTENCE = 'on';
+    process.env.OMEGA_RUNTIME_STORE_PATH = storePath;
+    process.env.OMEGA_EVENT_LOG_PATH = logPath;
+
+    jest.resetModules();
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const isolated = require('../index') as { app: typeof app };
+    server = createServer(isolated.app);
+    await new Promise<void>((resolve) => server.listen(0, resolve));
+    const address = server.address();
+    if (!address || typeof address === 'string') throw new Error('Test server did not start');
+    baseUrl = `http://127.0.0.1:${address.port}`;
+  });
+
+  afterAll(async () => {
+    await new Promise<void>((resolve, reject) =>
+      server.close((error) => (error ? reject(error) : resolve()))
+    );
+    delete process.env.OMEGA_PERSISTENCE;
+    delete process.env.OMEGA_RUNTIME_STORE_PATH;
+    delete process.env.OMEGA_EVENT_LOG_PATH;
+    rmSync(dir, { recursive: true, force: true });
+    jest.resetModules();
+  });
+
+  it('fails health readiness closed and carries the skipped-line evidence into state', async () => {
+    const healthResponse = await fetch(`${baseUrl}/health`);
+    const health = (await healthResponse.json()) as ApiResponse<{
+      readiness: string;
+      checks: { persistence: { eventLogSource: string; skippedLogEntries: number } };
+    }>;
+
+    expect(healthResponse.status).toBe(503);
+    expect(health.data.readiness).toBe('degraded');
+    expect(health.data.checks.persistence).toMatchObject({
+      eventLogSource: 'partial',
+      skippedLogEntries: 1,
+    });
+
+    const stateResponse = await fetch(`${baseUrl}/state`);
+    const state = (await stateResponse.json()) as ApiResponse<{
+      eventLogSource: string;
+      skippedLogEntries: number;
+      trustBasis: { serviceReadiness: number };
+    }>;
+
+    expect(stateResponse.status).toBe(200);
+    expect(state.data.eventLogSource).toBe('partial');
+    expect(state.data.skippedLogEntries).toBe(1);
+    expect(state.data.trustBasis.serviceReadiness).toBe(0);
   });
 });
 
