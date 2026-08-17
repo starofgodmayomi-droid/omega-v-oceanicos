@@ -78,7 +78,10 @@ jobs:
       - name: Run the built CLI entrypoint
         run: |
           node packages/cli/dist/cli.js --help > /tmp/cli-help.txt
-          grep -qi 'usage' /tmp/cli-help.txt
+          # The help text lists commands; it does not contain the word
+          # "usage". Assert what it actually prints.
+          grep -q 'omega health' /tmp/cli-help.txt
+          grep -q 'OMEGA_API_URL' /tmp/cli-help.txt
 
           set +e
           node packages/cli/dist/cli.js definitely-not-a-command > /dev/null 2>&1
