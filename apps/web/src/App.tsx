@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { verifyAttestation, type VerificationOutcome } from './verify';
+// Aliased: App already has a verifyAttestation that asks the API. This one
+// asks nobody, which is the distinction the panel exists to make visible.
+import { verifyAttestation as verifyEnvelopeLocally, type VerificationOutcome } from './verify';
 import './App.css';
 
 type RuntimeEvent = {
@@ -497,7 +499,7 @@ export function App(): JSX.Element {
     setOfflineResult(null);
     try {
       const parsed = JSON.parse(offlineAttestation) as Record<string, unknown>;
-      setOfflineResult(await verifyAttestation(parsed, offlinePublicKey));
+      setOfflineResult(await verifyEnvelopeLocally(parsed, offlinePublicKey));
     } catch (parseError) {
       setOfflineResult({
         valid: false,
