@@ -13,6 +13,8 @@ export type Health = {
         keySource: 'none' | 'current' | 'previous' | 'mixed';
         previousKeyConfigured: boolean;
         eventLogSource: 'disabled' | 'missing' | 'restored' | 'partial';
+        eventLogReason: string | null;
+        eventLogKeySource: 'none' | 'current' | 'previous' | 'mixed';
         skippedLogEntries: number;
       };
     };
@@ -33,6 +35,8 @@ export type RuntimeState = {
     readiness: 'ready' | 'degraded';
     persistence: 'file' | 'memory';
     eventLogSource: 'disabled' | 'missing' | 'restored' | 'partial';
+    eventLogReason: string | null;
+    eventLogKeySource: 'none' | 'current' | 'previous' | 'mixed';
     skippedLogEntries: number;
     trustBasis: { serviceReadiness: 0 | 1 };
   };
@@ -46,6 +50,10 @@ export type Observability = {
       persistence: string;
       services: string[];
       lastActivity: string | null;
+      eventLogSource: 'disabled' | 'missing' | 'restored' | 'partial';
+      skippedLogEntries: number;
+      eventLogReason: string | null;
+      eventLogEncryptionKeySource: 'none' | 'current' | 'previous' | 'mixed';
     };
     provenance: {
       recentEvents: number;

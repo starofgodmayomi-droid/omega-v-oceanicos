@@ -45,6 +45,8 @@ describe('OmegaClient', () => {
             readiness: 'degraded',
             persistence: 'file',
             eventLogSource: 'partial',
+            eventLogReason: '1 line(s) could not be parsed',
+            eventLogKeySource: 'none',
             skippedLogEntries: 1,
             trustBasis: { serviceReadiness: 0 },
           },
@@ -57,6 +59,8 @@ describe('OmegaClient', () => {
       data: {
         readiness: 'degraded',
         eventLogSource: 'partial',
+        eventLogReason: '1 line(s) could not be parsed',
+        eventLogKeySource: 'none',
         skippedLogEntries: 1,
         trustBasis: { serviceReadiness: 0 },
       },

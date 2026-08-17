@@ -496,6 +496,8 @@ app.get('/health', (_req: Request, res: Response) => {
         keySource: string;
         previousKeyConfigured: boolean;
         eventLogSource: string;
+        eventLogReason: string | null;
+        eventLogKeySource: string;
         skippedLogEntries: number;
       };
     };
@@ -525,6 +527,8 @@ app.get('/health', (_req: Request, res: Response) => {
           keySource: persistenceEncryptionKeySource,
           previousKeyConfigured: previousPersistenceEncryptionConfigured,
           eventLogSource: durableLog.source,
+          eventLogReason: durableLog.reason ?? null,
+          eventLogKeySource: durableLog.keySource,
           skippedLogEntries: durableLog.skipped,
         },
       },
@@ -584,6 +588,8 @@ app.get('/state', (_req: Request, res: Response) => {
       durableEvents: durableLog.entries.length,
       skippedLogEntries: durableLog.skipped,
       eventLogSource: durableLog.source,
+      eventLogReason: durableLog.reason ?? null,
+      eventLogKeySource: durableLog.keySource,
       lastActivity: latest?.timestamp || null,
       services: [
         { name: 'observer', status: 'ready' },
@@ -619,6 +625,9 @@ app.get('/observability', (_req: Request, res: Response) => {
         persistenceEncryptionKeySource,
         persistencePreviousKeyConfigured: previousPersistenceEncryptionConfigured,
         eventLogEncryptionKeySource: durableLog.keySource,
+        eventLogSource: durableLog.source,
+        skippedLogEntries: durableLog.skipped,
+        eventLogReason: durableLog.reason ?? null,
         memoryEncryption: memoryEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
         memoryEncryptionKeySource,
         attestationTtlMs: configuredAttestationTtlMs(),
