@@ -82,6 +82,9 @@ remain on the [roadmap](./ROADMAP.md).
   payload, its exact byte serialisation, and how to verify one **without
   running any code from this project**. Ships a reference verifier in Python
   that imports nothing from here.
+- **[Browser verifier walkthrough](./BROWSER-VERIFIER.md)** — generate a
+  temporary Ed25519 key pair, create a real local attestation, and verify it
+  in the dashboard without sending the check to the API.
 
 ### Decisions
 
