@@ -15,6 +15,7 @@ import {
   loadSnapshot,
   readEventLog,
   saveSnapshot,
+  persistenceReady,
 } from './persistence.js';
 
 /**
@@ -346,6 +347,7 @@ const runtimeActions = snapshot.actions;
 const runtimeLearnings = snapshot.learnings;
 const runtimeRecompilations = snapshot.recompilations;
 const runtimeRevocations = snapshot.revocations ?? [];
+const persistenceIsReady = persistenceReady(persistenceEnabled, persistenceSource);
 const persistedRevocationDigest = snapshot.revocationIntegrity;
 const currentRevocationDigest = revocationRegistryDigest(runtimeRevocations);
 const currentRevocationRevision = revocationRegistryRevision(runtimeRevocations);
@@ -465,13 +467,13 @@ app.get('/health', (_req: Request, res: Response) => {
   }> = {
     data: {
       status: 'ok',
-      readiness: memoryIntact ? 'ready' : 'degraded',
+      readiness: memoryIntact && persistenceIsReady ? 'ready' : 'degraded',
       checks: {
         observer: 'ready',
         verifier: 'ready',
         attester: 'ready',
         memory: {
-          status: memoryIntact ? 'ready' : 'degraded',
+          status: memoryIntact && persistenceIsReady ? 'ready' : 'degraded',
           integrity: memoryIntact,
           encryption: memoryEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
         },
@@ -492,11 +494,12 @@ app.get('/health', (_req: Request, res: Response) => {
     },
     timestamp: new Date().toISOString(),
   };
-  res.status(memoryIntact ? 200 : 503).json(response);
+  res.status(memoryIntact && persistenceIsReady ? 200 : 503).json(response);
 });
 
 app.get('/state', (_req: Request, res: Response) => {
   const latest = runtimeEvents[0];
+  const memoryIntact = kernelMemory.verifyIntegrity();
   const latestRun = completedRuns[0];
   const recentFailures = runtimeEvents.filter((event) => event.status === 'failed').length;
   const verificationCoverage = latestRun ? (latestRun.verification.summary.passed ? 1 : 0) : null;
@@ -522,7 +525,7 @@ app.get('/state', (_req: Request, res: Response) => {
         evidenceQuality: latestRun ? latestRun.verification.summary.confidence : null,
         verificationCoverage,
         attestationValidity,
-        serviceReadiness: 1,
+        serviceReadiness: memoryIntact && persistenceIsReady ? 1 : 0,
         recentFailures,
       },
       events: runtimeEvents.length,

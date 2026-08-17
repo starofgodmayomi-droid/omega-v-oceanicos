@@ -7,6 +7,7 @@ import {
   loadSnapshot,
   readEventLog,
   saveSnapshot,
+  persistenceReady,
   SNAPSHOT_KEYS,
 } from '../persistence';
 
@@ -21,6 +22,13 @@ const fixture = (): Snap => ({
 });
 
 describe('runtime persistence', () => {
+  it('fails readiness closed for corrupt enabled snapshots but permits a missing cold start', () => {
+    expect(persistenceReady(false, 'corrupt')).toBe(true);
+    expect(persistenceReady(true, 'missing')).toBe(true);
+    expect(persistenceReady(true, 'restored')).toBe(true);
+    expect(persistenceReady(true, 'corrupt')).toBe(false);
+  });
+
   let dir: string;
   let storePath: string;
 
