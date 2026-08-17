@@ -1,7 +1,14 @@
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { App } from '../../App';
-import { failingLoop, installFetch, json, passingLoop, type FakeResponse } from './harness';
+import {
+  failingLoop,
+  installFetch,
+  json,
+  passingLoop,
+  splitDissensus,
+  type FakeResponse,
+} from './harness';
 
 /** The EventSource instances App.tsx opened, installed by jest.setup.dom.ts. */
 type Stream = {
@@ -1039,5 +1046,87 @@ describe('independent verification panel', () => {
     await user.click(screen.getByLabelText(/attestation json/i));
     await user.paste('{}');
     expect(button).toBeDisabled();
+  });
+});
+
+describe('dissent ledger', () => {
+  const withSplit = (): void => {
+    installFetch({
+      '/api/dissensus': () =>
+        json({ data: [splitDissensus()], meta: { window: 40, unresolved: 1 } }),
+    });
+  };
+
+  it('shows nothing when no reconciliation has been recorded', async () => {
+    installFetch();
+    await renderApp();
+
+    expect(screen.queryByText(/where the verifiers did not agree/i)).not.toBeInTheDocument();
+  });
+
+  it('renders a split as DISSENTING rather than as a failure', async () => {
+    withSplit();
+    await renderApp();
+
+    const panel = await screen.findByText(/where the verifiers did not agree/i);
+    const section = panel.closest('section') as HTMLElement;
+
+    // A split is the system working, not an error. The word FAILED belongs
+    // to the objecting opinion, never to the verdict.
+    expect(within(section).getByText('DISSENTING')).toBeInTheDocument();
+    expect(within(section).queryByText('SPLIT')).not.toBeInTheDocument();
+  });
+
+  it('shows every opinion, and marks the one that objected', async () => {
+    withSplit();
+    await renderApp();
+
+    const section = (await screen.findByText(/where the verifiers did not agree/i)).closest(
+      'section'
+    ) as HTMLElement;
+
+    // Both sides are visible. Showing only the majority would be the
+    // erasure the engine refuses to perform.
+    expect(within(section).getByText(/rules: PASSED/)).toBeInTheDocument();
+    const objector = within(section).getByText(/model: FAILED/);
+    expect(objector).toBeInTheDocument();
+    expect(objector).toHaveClass('is-objecting');
+  });
+
+  it('says a human was routed to, and why', async () => {
+    withSplit();
+    await renderApp();
+
+    const section = (await screen.findByText(/where the verifiers did not agree/i)).closest(
+      'section'
+    ) as HTMLElement;
+
+    expect(within(section).getByText('ROUTED TO HUMAN')).toBeInTheDocument();
+    expect(within(section).getByText(/1 passed, 1 failed/)).toBeInTheDocument();
+  });
+
+  it('states that the confidence shown is the minimum, not the mean', async () => {
+    withSplit();
+    await renderApp();
+
+    const section = (await screen.findByText(/where the verifiers did not agree/i)).closest(
+      'section'
+    ) as HTMLElement;
+
+    // 0.6 is the minimum; the mean of 0.9 and 0.6 would read 0.75 and
+    // overstate how much the verifiers actually supported the claim.
+    expect(within(section).getByText(/confidence 0\.6/)).toBeInTheDocument();
+    expect(within(section).getByText(/never the mean/i)).toBeInTheDocument();
+  });
+
+  it('counts the unresolved reconciliations in the panel seal', async () => {
+    withSplit();
+    await renderApp();
+
+    const section = (await screen.findByText(/where the verifiers did not agree/i)).closest(
+      'section'
+    ) as HTMLElement;
+
+    expect(within(section).getByText('01')).toBeInTheDocument();
   });
 });

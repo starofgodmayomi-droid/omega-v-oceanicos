@@ -4,6 +4,25 @@ import { useEffect, useRef, useState } from 'react';
 import { verifyAttestation as verifyEnvelopeLocally, type VerificationOutcome } from './verify';
 import './App.css';
 
+type DissentingOpinion = {
+  verifierId: string;
+  verifierVersion: string;
+  passed: boolean | null;
+  confidence: number;
+  reason: string;
+};
+
+type RuntimeDissensus = {
+  id: string;
+  verdict: 'AGREED' | 'SPLIT' | 'UNKNOWN';
+  routing: 'AUTO' | 'HUMAN';
+  confidence: number;
+  reason: string;
+  opinions: DissentingOpinion[];
+  dissenting: DissentingOpinion[];
+  timestamp: string;
+};
+
 type RuntimeEvent = {
   id: string;
   type: string;
@@ -125,6 +144,11 @@ export function App(): JSX.Element {
   const [offlinePublicKey, setOfflinePublicKey] = useState('');
   const [offlineResult, setOfflineResult] = useState<VerificationOutcome | null>(null);
   const [offlineChecking, setOfflineChecking] = useState(false);
+  // Dissent is a first-class runtime state, not an error surface. §IV
+  // requires the interface to expose it; leaving it in a JSON field would
+  // mean an operator only learns of a disagreement by going looking.
+  const [dissensus, setDissensus] = useState<RuntimeDissensus[]>([]);
+  const [unresolvedDissent, setUnresolvedDissent] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [activeNav, setActiveNav] = useState('Current');
@@ -164,6 +188,7 @@ export function App(): JSX.Element {
         runsResponse,
         revocationsResponse,
         policyResponse,
+        dissensusResponse,
       ] = await Promise.all([
         fetch('/api/health'),
         fetch('/api/state'),
@@ -171,6 +196,7 @@ export function App(): JSX.Element {
         fetch('/api/runs'),
         fetch('/api/attest/revocations'),
         fetch('/api/attest/policy'),
+        fetch('/api/dissensus'),
       ]);
       if (
         !healthResponse.ok ||
@@ -178,7 +204,8 @@ export function App(): JSX.Element {
         !eventsResponse.ok ||
         !runsResponse.ok ||
         !revocationsResponse.ok ||
-        !policyResponse.ok
+        !policyResponse.ok ||
+        !dissensusResponse.ok
       )
         throw new Error('Runtime unavailable');
       const health = (await healthResponse.json()) as { data: RuntimeHealth };
@@ -233,6 +260,12 @@ export function App(): JSX.Element {
       setRevocations(revocationData.data);
       setRevocationIntegrity(revocationData.meta?.integrity ?? null);
       setRevocationRevision(revocationData.meta?.revision ?? null);
+      const dissensusData = (await dissensusResponse.json()) as {
+        data: RuntimeDissensus[];
+        meta?: { unresolved?: number };
+      };
+      setDissensus(dissensusData.data);
+      setUnresolvedDissent(dissensusData.meta?.unresolved ?? 0);
       setPolicy(policyData.data);
       setResult((current) => current ?? runData.data[0] ?? null);
       setSelectedEvent((current) =>
@@ -875,6 +908,57 @@ export function App(): JSX.Element {
             </div>
           )}
         </section>
+        {dissensus.length > 0 && (
+          <section className="dissensus-panel">
+            <div className="panel-heading">
+              <div>
+                <span className="section-kicker">DISSENT LEDGER</span>
+                <h2>Where the verifiers did not agree</h2>
+              </div>
+              <span className="seal">{unresolvedDissent.toString().padStart(2, '0')}</span>
+            </div>
+            <p className="dissensus-note">
+              Disagreement is preserved, not resolved. A split does not stop an action; it is
+              recorded against it, so the question is not only whether something was authorized but
+              whether it was contested at the time.
+            </p>
+            <div className="dissensus-list">
+              {dissensus.slice(0, 5).map((entry) => (
+                <div className={`dissensus-row is-${entry.verdict.toLowerCase()}`} key={entry.id}>
+                  <div className="dissensus-verdict">
+                    <strong>{entry.verdict === 'SPLIT' ? 'DISSENTING' : entry.verdict}</strong>
+                    <small>{entry.routing === 'HUMAN' ? 'ROUTED TO HUMAN' : 'AUTOMATIC'}</small>
+                  </div>
+                  <span className="dissensus-reason">{entry.reason}</span>
+                  <div className="dissensus-opinions">
+                    {entry.opinions.map((opinion) => {
+                      const objecting = entry.dissenting.some(
+                        (candidate) => candidate.verifierId === opinion.verifierId
+                      );
+                      return (
+                        <span
+                          className={`dissensus-opinion ${objecting ? 'is-objecting' : ''}`}
+                          key={`${entry.id}-${opinion.verifierId}`}
+                          title={opinion.reason}
+                        >
+                          {opinion.verifierId}:{' '}
+                          {opinion.passed === null
+                            ? 'UNKNOWN'
+                            : opinion.passed
+                              ? 'PASSED'
+                              : 'FAILED'}
+                        </span>
+                      );
+                    })}
+                  </div>
+                  <small className="dissensus-confidence">
+                    confidence {entry.confidence} · minimum across verifiers, never the mean
+                  </small>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
         <section className="runs-panel">
           <div className="panel-heading">
             <div>
