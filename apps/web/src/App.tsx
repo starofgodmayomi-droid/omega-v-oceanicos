@@ -50,6 +50,10 @@ type RuntimeHealth = {
   readiness: 'ready' | 'degraded';
   checks: {
     memory: { integrity: boolean };
+    persistence?: {
+      eventLogSource: 'disabled' | 'missing' | 'restored' | 'partial';
+      skippedLogEntries: number;
+    };
   };
 };
 type RevocationIntegrity = 'disabled' | 'legacy' | 'intact' | 'mismatch';
@@ -731,6 +735,18 @@ export function App(): JSX.Element {
           <div>
             <span>ENVIRONMENT</span>
             <strong>{persistenceMode ? persistenceMode.toUpperCase() : 'UNKNOWN'}</strong>
+          </div>
+          <div>
+            <span>EVENT LOG</span>
+            <strong
+              className={
+                runtimeHealth?.checks.persistence?.eventLogSource === 'partial' ? 'red' : 'green'
+              }
+            >
+              {runtimeHealth?.checks.persistence
+                ? `${runtimeHealth.checks.persistence.eventLogSource.toUpperCase()} / ${runtimeHealth.checks.persistence.skippedLogEntries} SKIPPED`
+                : 'UNKNOWN'}
+            </strong>
           </div>
           <div>
             <span>REVOCATIONS / REVISION</span>

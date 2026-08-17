@@ -12,6 +12,8 @@ export type Health = {
         encryption: string;
         keySource: 'none' | 'current' | 'previous' | 'mixed';
         previousKeyConfigured: boolean;
+        eventLogSource: 'disabled' | 'missing' | 'restored' | 'partial';
+        skippedLogEntries: number;
       };
     };
     policy: {

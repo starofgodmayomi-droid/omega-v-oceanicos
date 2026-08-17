@@ -264,6 +264,13 @@ export interface AppendOutcome {
 
 export type EventLogSource = 'disabled' | 'missing' | 'restored' | 'partial';
 
+/**
+ * Partial durable-log recovery is usable for inspection but not ready for
+ * production claims because one or more historical entries were skipped.
+ */
+export const eventLogReady = (enabled: boolean, source: EventLogSource): boolean =>
+  !enabled || source !== 'partial';
+
 export interface EventLogRead<T> {
   entries: T[];
   source: EventLogSource;

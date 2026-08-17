@@ -8,6 +8,7 @@ import {
   readEventLog,
   saveSnapshot,
   persistenceReady,
+  eventLogReady,
   SNAPSHOT_KEYS,
 } from '../persistence';
 
@@ -27,6 +28,13 @@ describe('runtime persistence', () => {
     expect(persistenceReady(true, 'missing')).toBe(true);
     expect(persistenceReady(true, 'restored')).toBe(true);
     expect(persistenceReady(true, 'corrupt')).toBe(false);
+  });
+
+  it('fails readiness closed for partial enabled event logs but permits cold starts', () => {
+    expect(eventLogReady(false, 'partial')).toBe(true);
+    expect(eventLogReady(true, 'missing')).toBe(true);
+    expect(eventLogReady(true, 'restored')).toBe(true);
+    expect(eventLogReady(true, 'partial')).toBe(false);
   });
 
   let dir: string;

@@ -135,7 +135,7 @@ The response shows all three MINI steps plus the attestation expansion.
 GET /health
 ```
 
-Returns unauthenticated liveness and readiness evidence for probes. The response keeps `status: "ok"` for compatibility, adds a `readiness` value, reports observer/verifier/attester availability, memory integrity and codec mode, persistence mode and codec mode, and the non-secret attestation policy. A healthy memory chain and usable persistence snapshot return HTTP `200` with `readiness: "ready"`; a memory-integrity failure or enabled corrupt persistence snapshot returns HTTP `503` with `readiness: "degraded"`. An enabled but missing store is treated as a valid cold start and remains observable through the persistence source fields. No token, private key, or signing material is returned.
+Returns unauthenticated liveness and readiness evidence for probes. The response keeps `status: "ok"` for compatibility, adds a `readiness` value, reports observer/verifier/attester availability, memory integrity and codec mode, persistence mode and codec mode, durable event-log source, skipped log entries, and the non-secret attestation policy. A healthy memory chain, usable persistence snapshot, and complete durable log return HTTP `200` with `readiness: "ready"`; a memory-integrity failure, enabled corrupt persistence snapshot, or enabled partial event log returns HTTP `503` with `readiness: "degraded"`. An enabled but missing store or log is treated as a valid cold start and remains observable through the persistence source fields. No token, private key, or signing material is returned.
 
 **Response:**
 
@@ -329,7 +329,7 @@ GET /events
 GET /runs
 ```
 
-These endpoints expose the current runtime state, recent lifecycle events, and completed observation/verification/attestation runs. Local development persists these records to `/tmp/omega-v-oceanicos/runtime.json` by default.
+These endpoints expose the current runtime state, recent lifecycle events, and completed observation/verification/attestation runs. The state response includes `eventLogSource`, `skippedLogEntries`, and `trustBasis.serviceReadiness`; an enabled partial durable log sets the readiness value to `0` while preserving the inspectable entries. Local development persists these records to `/tmp/omega-v-oceanicos/runtime.json` by default.
 
 Set `OMEGA_RUNTIME_STORE_PATH` to choose another JSON store path. Persistence
 defaults off under `NODE_ENV=test` and on elsewhere; set `OMEGA_PERSISTENCE`
