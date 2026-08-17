@@ -1,4 +1,17 @@
-# Ω∞v Oceanicos
+<p align="center">
+  <img src="apps/web/public/omega-mark.svg" alt="Ω∞v" width="88" height="88" />
+</p>
+
+<h1 align="center">Ω∞v Oceanicos</h1>
+
+<p align="center"><strong>One root. One current. Infinite forms.</strong></p>
+
+<p align="center">
+  <a href="docs/spec/ATTESTATION-ENVELOPE.md">Attestation envelope</a> ·
+  <a href="docs/BRAND.md">Brand</a> ·
+  <a href="apps/api/README.md">API</a> ·
+  <a href="docs/decisions/0001-single-origin-deployment.md">Decisions</a>
+</p>
 
 [![Verification Pipeline](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/actions/workflows/verify.yml/badge.svg)](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/actions/workflows/verify.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
