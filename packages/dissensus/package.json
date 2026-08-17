@@ -1,7 +1,7 @@
 {
   "name": "@omega-v/dissensus",
   "version": "0.1.0",
-  "description": "Reconciliation of plural verifier opinions for \u03a9\u221ev Oceanicos",
+  "description": "Reconciliation of plural verifier opinions for Ω∞v Oceanicos",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -12,8 +12,12 @@
     "test:watch": "jest --watch",
     "clean": "node ../../scripts/rimraf.cjs dist \"*.tsbuildinfo\""
   },
-  "keywords": ["dissent", "verification", "oceanicos"],
-  "author": "\u03a9\u221ev Community",
+  "keywords": [
+    "dissent",
+    "verification",
+    "oceanicos"
+  ],
+  "author": "Ω∞v Community",
   "license": "Apache-2.0",
   "devDependencies": {
     "@types/jest": "^29.5.0",
