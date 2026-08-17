@@ -38,6 +38,32 @@ configure({
     });
     return result;
   },
+
+  /**
+   * Raised from the 1000ms default for one specific reason.
+   *
+   * The offline verification panel awaits real Ed25519 importKey and verify.
+   * Node dispatches those to the libuv threadpool, and with four jest
+   * workers competing on a CI runner that can exceed a second. It is the
+   * only place in this suite that waits on actual cryptography, and it is
+   * the place that flaked: run 336 failed on `Unable to find role="status"`
+   * and the identical commit passed on re-run with no change.
+   *
+   * Stated as a hypothesis rather than a conclusion. I could not reproduce
+   * it deterministically, and the reasoning is circumstantial: the timing,
+   * the single suite involved, and the absence of any other candidate.
+   *
+   * What would falsify it: a flake in a test that awaits no cryptography, or
+   * a recurrence here after this change. Either means the cause is
+   * elsewhere and this raised the ceiling on a real bug instead of fixing a
+   * scheduling artefact.
+   *
+   * This is not permission for slow tests. A non-crypto assertion needing
+   * more than a second is a defect, and raising this number rather than
+   * fixing such a case would be exactly the fabricated GREEN the charter
+   * refuses.
+   */
+  asyncUtilTimeout: 5000,
 });
 
 // jsdom implements neither of these, and App.tsx uses both: EventSource for
