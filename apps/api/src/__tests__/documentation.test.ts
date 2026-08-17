@@ -49,3 +49,54 @@ describe('API documentation', () => {
     }
   });
 });
+
+/**
+ * The startup banner is the first thing an operator reads, and it is a
+ * documentation surface with no guard.
+ *
+ * It has now drifted twice. GET /log was added in one change and reached
+ * the banner only later; by this commit the banner advertised 16 of the
+ * 27 routes the server actually registers, omitting /attest/verify,
+ * /attest/public-key, /attest/revocations and /observability — four
+ * endpoints the CLI itself calls. An operator reading the banner would
+ * conclude they do not exist.
+ *
+ * documentation.test.ts already asserts the README describes every route.
+ * This applies the same rule to the banner, so the two cannot diverge
+ * again without failing here.
+ */
+describe('startup banner', () => {
+  const root = process.cwd();
+  const source = readFileSync(join(root, 'apps/api/src/index.ts'), 'utf8');
+
+  const registered = Array.from(source.matchAll(/app\.(get|post)\('([^']+)'/g)).map((match) => ({
+    method: match[1].toUpperCase(),
+    path: match[2],
+  }));
+
+  const banner = source.slice(
+    source.indexOf('Available endpoints:'),
+    source.indexOf("].join('\\n')", source.indexOf('Available endpoints:'))
+  );
+
+  it('finds a banner to check', () => {
+    expect(banner).toContain('Available endpoints:');
+    expect(registered.length).toBeGreaterThan(20);
+  });
+
+  it.each(registered.map((route) => [`${route.method} ${route.path}`, route.method, route.path]))(
+    'advertises %s',
+    (_label, method, path) => {
+      expect(banner).toMatch(new RegExp(`${method}\\s+${path.replace(/\//g, '\\/')}(\\s|')`));
+    }
+  );
+
+  it('advertises nothing the server does not serve', () => {
+    const advertised = Array.from(banner.matchAll(/(GET|POST)\s+(\/[a-zA-Z0-9/-]*)/g)).map(
+      (match) => `${match[1]} ${match[2]}`
+    );
+    const real = new Set(registered.map((route) => `${route.method} ${route.path}`));
+
+    expect(advertised.filter((entry) => !real.has(entry))).toEqual([]);
+  });
+});
