@@ -1503,6 +1503,17 @@ const startServer = () =>
         '  POST   /recompile        - Propose a recompile',
         '  GET    /rules            - List verification rules',
         '  GET    /health           - Health check',
+        '  GET    /observability    - Runtime, trust and provenance summary',
+        '  GET    /actions          - Authorized actions',
+        '  GET    /learning         - Recorded learnings',
+        '  GET    /recompilations   - Proposed recompiles',
+        '  GET    /audit/events     - Queryable audit trail',
+        '  GET    /evidence/export  - Bounded evidence bundle',
+        '  POST   /attest/verify    - Verify an attestation signature',
+        '  GET    /attest/policy    - Non-secret attestation policy',
+        '  GET    /attest/public-key - Public verification key',
+        '  GET    /attest/revocations - Revoked attestations',
+        '  POST   /attest/revoke    - Revoke an attestation',
         '',
       ].join('\n')
     );
