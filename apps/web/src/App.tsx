@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { verifyAttestation, type VerificationOutcome } from './verify';
 import './App.css';
 
 type RuntimeEvent = {
@@ -111,6 +112,13 @@ export function App(): JSX.Element {
   const [publicTrustStatus, setPublicTrustStatus] = useState<
     'loading' | 'available' | 'unavailable'
   >('loading');
+  // Offline verification. Nothing here touches the API: an attestation and
+  // a public key are all that is needed, which is the point — the person
+  // checking a claim should not have to trust the service that made it.
+  const [offlineAttestation, setOfflineAttestation] = useState('');
+  const [offlinePublicKey, setOfflinePublicKey] = useState('');
+  const [offlineResult, setOfflineResult] = useState<VerificationOutcome | null>(null);
+  const [offlineChecking, setOfflineChecking] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [activeNav, setActiveNav] = useState('Current');
@@ -483,6 +491,26 @@ export function App(): JSX.Element {
     }
     setError(`${item} is not connected to the current runtime yet`);
   };
+
+  const checkOffline = async (): Promise<void> => {
+    setOfflineChecking(true);
+    setOfflineResult(null);
+    try {
+      const parsed = JSON.parse(offlineAttestation) as Record<string, unknown>;
+      setOfflineResult(await verifyAttestation(parsed, offlinePublicKey));
+    } catch (parseError) {
+      setOfflineResult({
+        valid: false,
+        stage: 'shape',
+        reason: `attestation is not valid JSON: ${
+          parseError instanceof Error ? parseError.message : String(parseError)
+        }`,
+      });
+    } finally {
+      setOfflineChecking(false);
+    }
+  };
+
   return (
     <div className="os-shell">
       <aside className="sidebar">
@@ -770,6 +798,58 @@ export function App(): JSX.Element {
             </div>
           </section>
         )}
+        <section className="offline-verify-panel">
+          <div className="panel-heading">
+            <div>
+              <span className="section-kicker">INDEPENDENT VERIFICATION</span>
+              <h2>Check a proof without trusting this page</h2>
+            </div>
+          </div>
+          <p className="offline-verify-note">
+            Paste an attestation and the public key it claims to be signed by. The check runs
+            entirely in your browser against the published envelope specification. No request is
+            sent, and the private key is never involved.
+          </p>
+          <label htmlFor="offline-attestation">Attestation JSON</label>
+          <textarea
+            id="offline-attestation"
+            value={offlineAttestation}
+            onChange={(event) => setOfflineAttestation(event.target.value)}
+            placeholder={'{ "verificationId": "ver-...", "signature": "0x...", ... }'}
+            rows={6}
+          />
+          <label htmlFor="offline-public-key">Public key (PEM)</label>
+          <textarea
+            id="offline-public-key"
+            value={offlinePublicKey}
+            onChange={(event) => setOfflinePublicKey(event.target.value)}
+            placeholder={'-----BEGIN PUBLIC KEY-----'}
+            rows={4}
+          />
+          <button
+            type="button"
+            onClick={checkOffline}
+            disabled={offlineChecking || !offlineAttestation || !offlinePublicKey}
+          >
+            {offlineChecking ? 'Checking...' : 'Verify locally'}
+          </button>
+          {offlineResult && (
+            <div
+              className={`offline-verify-result ${offlineResult.valid ? 'is-valid' : 'is-invalid'}`}
+              role="status"
+            >
+              <strong>{offlineResult.valid ? 'VALID' : 'INVALID'}</strong>
+              <span>{offlineResult.reason}</span>
+              <small>rejected at: {offlineResult.stage}</small>
+              {offlineResult.valid && (
+                <small>
+                  This proves origin and integrity only. It does not prove the verification was
+                  correct, nor that the attestation has since been revoked or has expired.
+                </small>
+              )}
+            </div>
+          )}
+        </section>
         <section className="runs-panel">
           <div className="panel-heading">
             <div>

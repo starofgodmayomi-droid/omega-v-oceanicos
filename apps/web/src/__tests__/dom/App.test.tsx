@@ -959,3 +959,85 @@ describe('command palette', () => {
     });
   });
 });
+
+describe('independent verification panel', () => {
+  it('verifies a real attestation entirely in the browser', async () => {
+    installFetch();
+    await renderApp();
+
+    const { generateKeyPairSync, sign } = await import('node:crypto');
+    const pair = generateKeyPairSync('ed25519');
+    const publicKeyPem = pair.publicKey.export({ type: 'spki', format: 'pem' }).toString();
+
+    const attestation: Record<string, unknown> = {
+      verificationId: 'ver-panel-1',
+      observationId: 'obs-panel-1',
+      verified: true,
+      confidence: 0.95,
+      ruleVersions: { 'status-code-check': '1.0.0' },
+      attestedAt: '2026-08-17T00:00:00.000Z',
+      attestedBy: 'attestation-service',
+      keyVersion: '1',
+      signingAlgorithm: 'Ed25519',
+      status: 'signed',
+      signature: '',
+    };
+    const payload: Record<string, unknown> = {};
+    for (const field of [
+      'verificationId',
+      'observationId',
+      'verified',
+      'confidence',
+      'ruleVersions',
+      'attestedAt',
+      'attestedBy',
+      'keyVersion',
+    ]) {
+      payload[field] = attestation[field];
+    }
+    attestation.signature = `0x${sign(null, Buffer.from(JSON.stringify(payload)), pair.privateKey).toString('hex')}`;
+
+    const user = userEvent.setup();
+    await user.click(screen.getByLabelText(/attestation json/i));
+    await user.paste(JSON.stringify(attestation));
+    await user.click(screen.getByLabelText(/public key/i));
+    await user.paste(publicKeyPem);
+    await user.click(screen.getByRole('button', { name: /verify locally/i }));
+
+    const result = await screen.findByRole('status');
+    expect(within(result).getByText('VALID')).toBeInTheDocument();
+    // The panel must never let a valid signature read as a valid decision.
+    expect(
+      within(result).getByText(/does not prove the verification was correct/i)
+    ).toBeInTheDocument();
+  });
+
+  it('reports invalid JSON without claiming the signature was forged', async () => {
+    installFetch();
+    await renderApp();
+
+    const user = userEvent.setup();
+    await user.click(screen.getByLabelText(/attestation json/i));
+    await user.paste('{ not json');
+    await user.click(screen.getByLabelText(/public key/i));
+    await user.paste('-----BEGIN PUBLIC KEY-----\nAAAA\n-----END PUBLIC KEY-----');
+    await user.click(screen.getByRole('button', { name: /verify locally/i }));
+
+    const result = await screen.findByRole('status');
+    expect(within(result).getByText('INVALID')).toBeInTheDocument();
+    expect(within(result).getByText(/not valid JSON/i)).toBeInTheDocument();
+  });
+
+  it('keeps the verify control disabled until both inputs are present', async () => {
+    installFetch();
+    await renderApp();
+
+    const button = screen.getByRole('button', { name: /verify locally/i });
+    expect(button).toBeDisabled();
+
+    const user = userEvent.setup();
+    await user.click(screen.getByLabelText(/attestation json/i));
+    await user.paste('{}');
+    expect(button).toBeDisabled();
+  });
+});
