@@ -52,6 +52,7 @@ Push, PR publication, merge, deployment, and other externally visible actions ar
 | API attestation catch coverage  | API tests now cover the unexpected-failure catch path for `/attest` and `/verify`; production behavior is unchanged and deployment remains unclaimed.                                                                                                                                                                                                         |
 | Memory rotation guard           | `FileMemoryStore` now rejects a rotation-only configuration where `OMEGA_MEMORY_KEY_PREVIOUS` is set without the current `OMEGA_MEMORY_KEY`; focused memory tests cover the fail-closed boundary.                                                                                                                                                             |
 | Memory mixed-key provenance     | Kernel-memory loads now distinguish `current`, `previous`, and `mixed` authenticated key sources; current-key and mixed-key restore assertions plus package/API documentation preserve bounded local evidence.                                                                                                                                                |
+| Persistence readiness boundary  | An enabled corrupt runtime snapshot now degrades API health to `503` and sets `/state` service-readiness to `0`; an enabled missing store remains a valid cold start. Existing web, SDK, and CLI health consumers preserve the fail-closed readiness contract.                                                                                                |
 
 ## Current repository state
 
@@ -104,6 +105,7 @@ The active worktree is `/home/ubuntu/current-main-worktree` on branch `main`, sy
 | `1b3db22` | PR #73 squash merge: API attest/verify unexpected-failure catch-path coverage                                                                | Merged into `main`; CI green                           |
 | `08f7f58` | PR #75 squash merge: memory rotation-only encryption downgrade guard                                                                         | Merged into `main`; CI green after formatting repair   |
 | `3f1e3bc` | PR #77 squash merge: memory mixed-key rotation provenance                                                                                    | Merged into `main`; CI green                           |
+| `d19c6ae` | PR #79 squash merge: persistence-corruption readiness boundary                                                                               | Merged into `main`; CI green                           |
 
 | |
 | PR #33 is **merged** into `main` as squash commit `fb73ac28990b2b42b6339da2e8ca76007616dd70`, observed at `2026-08-16T14:46:39Z`. The published head `2cc2d21` passed Node 18, Node 20, Windows compatibility, package/smoke, and report checks; attested-artifact publication was skipped as designed. |
@@ -128,6 +130,7 @@ The active worktree is `/home/ubuntu/current-main-worktree` on branch `main`, sy
 | PR #73 is **merged** into `main` as squash commit `1b3db2204b42eb0adc92cca3170aaa9c95180f5e`, observed at `2026-08-16T21:48:35Z`; its head passed Node 18, Node 20, Windows compatibility, package/smoke, and report checks; attested-artifact publication was skipped. This is merge evidence only; no deployment is claimed. |
 | PR #75 is **merged** into `main` as squash commit `08f7f58aa80758b5f1cd154b02873f1a256f8f67`, observed at `2026-08-16T22:49:30Z`; its first CI run exposed formatting drift in `packages/remember/src/store.ts`, the repair was committed and the corrected matrix passed Node 18, Node 20, Windows, package/smoke, and report; attested-artifact publication was skipped. This is merge evidence only; no deployment is claimed. |
 | PR #77 is **merged** into `main` as squash commit `3f1e3bc07e800335711bade8e99506098929b9d9`, observed at `2026-08-16T23:04:16Z`; its corrected kernel-memory mixed-key provenance contract passed Node 18, Node 20, Windows, package/smoke, and report; attested-artifact publication was skipped. This is merge evidence only; no deployment is claimed. |
+| PR #79 is **merged** into `main` as squash commit `d19c6ae3187d45de1cbc427d71745e88be0a8b8a`, observed at `2026-08-17T02:31:51Z`; its persistence-readiness boundary passed Node 18, Node 20, Windows, package/smoke, and report; attested-artifact publication was skipped. This is merge evidence only; no deployment is claimed. |
 
 PR #32 remains historical Windows-compatibility evidence.
 
@@ -163,7 +166,7 @@ The combined signing-audit and persistence-encryption state passed:
 
 | `git diff --check` | Passed before the revocation commit |
 
-The last full verification before the recent coverage queue observed 25 suites / 416 tests and a successful workspace/Vite build. After PRs #57–#62, the full local gate observed 25 suites / 428 tests passed. PR #63 raised the full gate to 431 tests, PR #66 to 432 tests, PR #68 to 438 tests, PRs #70/#71 to 435 tests, PR #73 to 436 tests, and PRs #75/#77 retained the post-merge main baseline at 25 suites / 437 tests with the memory rotation guard and mixed-key provenance evidence. The post-PR #77 gate passed successful workspace/Vite build, format/type-check, and `git diff --check`. PRs #57–#63, #66, #68, #70, #71, #73, #75, and #77 had green Node 18, Node 20, Windows, package/smoke, and report checks as applicable; PR #75 required a formatting repair before its corrected matrix passed; attested-artifact publication was skipped. The repository may contain generated build output ignored by Git; only intended source and documentation changes should be committed.
+The last full verification before the recent coverage queue observed 25 suites / 416 tests and a successful workspace/Vite build. After PRs #57–#62, the full local gate observed 25 suites / 428 tests passed. PR #63 raised the full gate to 431 tests, PR #66 to 432 tests, PR #68 to 438 tests, PRs #70/#71 to 435 tests, PRs #73/#75/#77 retained 436/437/437 tests, and the post-PR #79 main gate observed 25 suites / 438 tests passed, successful workspace/Vite build, passing format/type-check, and `git diff --check`. PRs #57–#63, #66, #68, #70, #71, #73, #75, #77, and #79 had green Node 18, Node 20, Windows, package/smoke, and report checks as applicable; PR #75 required a formatting repair before its corrected matrix passed; attested-artifact publication was skipped. The repository may contain generated build output ignored by Git; only intended source and documentation changes should be committed.
 
 ## Remaining gaps and uncertainty
 
@@ -173,6 +176,6 @@ The web client exposes revoke and revocation-ledger controls. Stronger administr
 
 ## Next authorized action
 
-1. Reconcile the merged PR #77 evidence in a separate documentation PR.
+1. Reconcile the merged PR #79 evidence in a separate documentation PR.
 2. Select the next smallest production-relevant slice from custody, distributed coordination, identity, data-at-rest, deployment, or mobile gaps.
 3. Keep any new publication, merge, and deployment actions behind separate human gates.
