@@ -808,3 +808,152 @@ describe('omega status CLI', () => {
     expect(errors.join('')).toContain('Events unavailable: fetch failed');
   });
 });
+
+describe('omega CLI argument parsing', () => {
+  const originalWrite = process.stdout.write;
+  const originalError = process.stderr.write;
+  const originalUrl = process.env.OMEGA_API_URL;
+  const originalToken = process.env.OMEGA_READ_TOKEN;
+
+  const capture = (): string[] => {
+    const output: string[] = [];
+    process.stdout.write = ((chunk: string | Uint8Array) => {
+      output.push(String(chunk));
+      return true;
+    }) as typeof process.stdout.write;
+    return output;
+  };
+
+  afterEach(() => {
+    process.stdout.write = originalWrite;
+    process.stderr.write = originalError;
+    if (originalUrl === undefined) delete process.env.OMEGA_API_URL;
+    else process.env.OMEGA_API_URL = originalUrl;
+    if (originalToken === undefined) delete process.env.OMEGA_READ_TOKEN;
+    else process.env.OMEGA_READ_TOKEN = originalToken;
+  });
+
+  const runsPayload = (count: number): string =>
+    JSON.stringify({
+      data: Array.from({ length: count }, (_unused, index) => ({
+        observation: { id: `obs-${index}` },
+        verification: { summary: { passed: true } },
+        attestation: { verified: true },
+      })),
+      timestamp: '2026-08-17T00:00:00.000Z',
+    });
+
+  it('applies --limit when it is a positive integer', async () => {
+    const output = capture();
+    const exitCode = await run(
+      ['runs', '--url', 'http://api.test', '--limit', '2'],
+      async () => new Response(runsPayload(5))
+    );
+
+    expect(exitCode).toBe(0);
+    expect(output.join('')).toContain('RUNS          2/5');
+  });
+
+  // A limit the parser cannot use is ignored rather than rejected, so the
+  // command returns everything. Pinning that: silently returning more rows
+  // than asked for is surprising, and it should not change by accident.
+  it.each([
+    ['a non-numeric value', 'abc'],
+    ['zero', '0'],
+    ['a negative value', '-3'],
+    ['a fractional value', '2.5'],
+  ])('ignores --limit given %s and returns every entry', async (_label, value) => {
+    const output = capture();
+    const exitCode = await run(
+      ['runs', '--url', 'http://api.test', '--limit', value],
+      async () => new Response(runsPayload(5))
+    );
+
+    expect(exitCode).toBe(0);
+    expect(output.join('')).toContain('RUNS          5/5');
+  });
+
+  it('ignores a trailing --limit with no value', async () => {
+    const output = capture();
+    const exitCode = await run(
+      ['runs', '--url', 'http://api.test', '--limit'],
+      async () => new Response(runsPayload(3))
+    );
+
+    expect(exitCode).toBe(0);
+    expect(output.join('')).toContain('RUNS          3/3');
+  });
+
+  it('falls back to OMEGA_API_URL when --url has no value', async () => {
+    process.env.OMEGA_API_URL = 'http://from-env.test';
+    capture();
+
+    const exitCode = await run(['runs', '--url'], async (url) => {
+      expect(url).toBe('http://from-env.test/runs');
+      return new Response(runsPayload(1));
+    });
+
+    expect(exitCode).toBe(0);
+  });
+
+  it('falls back to OMEGA_READ_TOKEN when --token has no value', async () => {
+    process.env.OMEGA_READ_TOKEN = 'token-from-env';
+    capture();
+
+    const exitCode = await run(
+      ['runs', '--url', 'http://api.test', '--token'],
+      async (_url, init) => {
+        expect((init?.headers as Record<string, string>)?.Authorization).toBe(
+          'Bearer token-from-env'
+        );
+        return new Response(runsPayload(1));
+      }
+    );
+
+    expect(exitCode).toBe(0);
+  });
+
+  it('falls back to localhost when neither flag nor environment is set', async () => {
+    delete process.env.OMEGA_API_URL;
+    capture();
+
+    const exitCode = await run(['runs'], async (url) => {
+      expect(url).toBe('http://localhost:3000/runs');
+      return new Response(runsPayload(1));
+    });
+
+    expect(exitCode).toBe(0);
+  });
+
+  it('strips a trailing slash rather than producing a doubled path', async () => {
+    capture();
+
+    const exitCode = await run(['runs', '--url', 'http://api.test/'], async (url) => {
+      expect(url).toBe('http://api.test/runs');
+      return new Response(runsPayload(1));
+    });
+
+    expect(exitCode).toBe(0);
+  });
+
+  it('renders failed verification and invalid attestation without softening them', async () => {
+    const output = capture();
+    const exitCode = await run(['runs', '--url', 'http://api.test'], async () => {
+      return new Response(
+        JSON.stringify({
+          data: [
+            {
+              observation: { id: 'obs-bad' },
+              verification: { summary: { passed: false } },
+              attestation: { verified: false },
+            },
+          ],
+          timestamp: '2026-08-17T00:00:00.000Z',
+        })
+      );
+    });
+
+    expect(exitCode).toBe(0);
+    expect(output.join('')).toContain('obs-bad verification=FAILED attestation=INVALID');
+  });
+});
