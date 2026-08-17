@@ -72,6 +72,24 @@ jobs:
       - name: Build packages
         run: pnpm build
 
+      # The published bin is the file users actually execute, and nothing
+      # imports it, so a broken entrypoint would ship silently. This runs
+      # the built artifact rather than the source.
+      - name: Run the built CLI entrypoint
+        run: |
+          node packages/cli/dist/cli.js --help > /tmp/cli-help.txt
+          grep -qi 'usage' /tmp/cli-help.txt
+
+          set +e
+          node packages/cli/dist/cli.js definitely-not-a-command > /dev/null 2>&1
+          status=$?
+          set -e
+          if [ "$status" -ne 2 ]; then
+            echo "::error::Unknown command exited $status, expected 2"
+            exit 1
+          fi
+          echo "Built CLI starts, prints usage, and rejects unknown commands."
+
       - name: Create verification attestation
         if: success()
         run: |
