@@ -135,7 +135,7 @@ The response shows all three MINI steps plus the attestation expansion.
 GET /health
 ```
 
-Returns unauthenticated liveness and readiness evidence for probes. The response keeps `status: "ok"` for compatibility, adds a `readiness` value, reports observer/verifier/attester availability, memory integrity and codec mode, persistence mode and codec mode, and the non-secret attestation policy. A healthy memory chain returns HTTP `200` with `readiness: "ready"`; an integrity failure returns HTTP `503` with `readiness: "degraded"`. No token, private key, or signing material is returned.
+Returns unauthenticated liveness and readiness evidence for probes. The response keeps `status: "ok"` for compatibility, adds a `readiness` value, reports observer/verifier/attester availability, memory integrity and codec mode, persistence mode and codec mode, and the non-secret attestation policy. A healthy memory chain and usable persistence snapshot return HTTP `200` with `readiness: "ready"`; a memory-integrity failure or enabled corrupt persistence snapshot returns HTTP `503` with `readiness: "degraded"`. An enabled but missing store is treated as a valid cold start and remains observable through the persistence source fields. No token, private key, or signing material is returned.
 
 **Response:**
 

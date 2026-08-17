@@ -116,6 +116,14 @@ const decryptText = (stored: string, secrets?: EncryptionSecrets): DecryptedText
  */
 export type SnapshotSource = 'disabled' | 'missing' | 'corrupt' | 'restored';
 
+/**
+ * Whether the runtime has a usable persisted snapshot for readiness purposes.
+ * An enabled but missing store is a valid cold start; an enabled corrupt store
+ * is not silently treated as ready because the loaded runtime is incomplete.
+ */
+export const persistenceReady = (enabled: boolean, source: SnapshotSource): boolean =>
+  !enabled || source !== 'corrupt';
+
 export interface LoadResult<T extends AnySnapshot> {
   snapshot: T;
   source: SnapshotSource;
