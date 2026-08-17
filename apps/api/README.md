@@ -399,6 +399,31 @@ answers — the routes work on the development path and not the shipped one.
 Set `OMEGA_WEB_DIST` to point at the client bundle. It defaults to
 `apps/web/dist`, and if no build is present the API serves the API alone.
 
+### Dissensus
+
+```
+POST /dissensus
+GET  /dissensus
+```
+
+Reconciles several verifiers' opinions without resolving them. Returns a
+verdict of `AGREED`, `SPLIT` or `UNKNOWN`, the minimum confidence across
+opinions, and every opinion received — including the ones that disagree.
+
+There is no majority vote and no averaging. Two verifiers passing and one
+failing is `SPLIT`, not `AGREED`, because reporting agreement there would
+discard the objection.
+
+**A split does not block `/act`.** Pass `dissensusId` when authorizing and
+the action records `status: "authorized-with-dissent"`, the objecting
+opinions, and `requiresHumanReview` when routing says so. The action
+proceeds because blocking would force resolution before evidence exists;
+the dissent is attached permanently because erasing it would let the record
+claim the action was uncontested.
+
+Referencing a `dissensusId` that was never recorded is refused with `404`,
+for the same reason an attestation without runtime lineage is.
+
 ### Kernel Memory
 
 ```

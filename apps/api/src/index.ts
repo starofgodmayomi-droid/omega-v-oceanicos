@@ -7,6 +7,7 @@ import { Observer } from '@omega-v/observer';
 import { VerificationEngine } from '@omega-v/verification';
 import { AttestationService } from '@omega-v/attestation';
 import { Remember, FileMemoryStore } from '@omega-v/remember';
+import { reconcile, STRICT_POLICY, type Dissensus, type Opinion } from '@omega-v/dissensus';
 import { Attestation, SuccessResponse, ErrorResponse, VerificationRule } from '@omega-v/types';
 import {
   appendEvent,
@@ -152,6 +153,15 @@ const kernelMemoryStore = persistenceEnabled
   ? new FileMemoryStore(memoryPath, memoryEncryptionKey)
   : undefined;
 const kernelMemory = new Remember(kernelMemoryStore);
+
+/**
+ * Recorded reconciliations, newest first.
+ *
+ * A split is kept rather than resolved. Actions taken while verifiers
+ * disagreed carry the disagreement, so the record answers "was this
+ * contested at the time" rather than only "was it authorized".
+ */
+const runtimeDissensus: Array<Dissensus & { id: string; timestamp: string }> = [];
 const memoryEncryptionKeySource = kernelMemoryStore?.encryptionKeySource() ?? 'none';
 
 type SigningAuditDetails = {
@@ -243,7 +253,17 @@ type RuntimeAction = {
   id: string;
   action: string;
   attestationId: string;
-  status: 'authorized';
+  // An action taken while verifiers disagreed is a distinct state, not a
+  // footnote on an ordinary authorization. The type says so, because the
+  // record has to survive the question "was this contested at the time".
+  status: 'authorized' | 'authorized-with-dissent';
+  dissensusId: string | null;
+  dissent: {
+    verdict: Dissensus['verdict'];
+    routing: Dissensus['routing'];
+    dissenting: Opinion[];
+  } | null;
+  requiresHumanReview: boolean;
   timestamp: string;
 };
 type RuntimeLearning = {
@@ -1065,9 +1085,14 @@ app.get('/attest/public-key', (_req: Request, res: Response) => {
 
 app.post('/act', (req: Request, res: Response) => {
   try {
-    const { attestation, action = 'record-verified-result' } = req.body as {
+    const {
+      attestation,
+      action = 'record-verified-result',
+      dissensusId,
+    } = req.body as {
       attestation?: Attestation;
       action?: string;
+      dissensusId?: string;
     };
     if (!attestation) {
       res.status(400).json({
@@ -1126,11 +1151,43 @@ app.post('/act', (req: Request, res: Response) => {
       return;
     }
 
+    // A recorded disagreement does not block the action. It travels with
+    // it. Blocking would force resolution before evidence exists, which is
+    // the one thing the dissent model refuses to do; erasing it would let
+    // the record claim the action was uncontested. Neither is acceptable,
+    // so the action proceeds and carries the objection permanently.
+    const contested = dissensusId
+      ? runtimeDissensus.find((entry) => entry.id === dissensusId)
+      : undefined;
+
+    if (dissensusId && !contested) {
+      res.status(404).json({
+        code: 'DISSENSUS_NOT_RECORDED',
+        message: 'Action denied because the referenced reconciliation has no recorded lineage',
+        timestamp: new Date().toISOString(),
+      } satisfies ErrorResponse);
+      return;
+    }
+
+    const disputed = contested !== undefined && contested.verdict !== 'AGREED';
+
     const recordedAction = {
       id: `act-${new Date().toISOString().replace(/[-:.TZ]/g, '')}`,
       action,
       attestationId: attestation.id,
-      status: 'authorized' as const,
+      status: (disputed ? 'authorized-with-dissent' : 'authorized') as
+        'authorized' | 'authorized-with-dissent',
+      dissensusId: contested?.id ?? null,
+      dissent: contested
+        ? {
+            verdict: contested.verdict,
+            routing: contested.routing,
+            dissenting: contested.dissenting,
+          }
+        : null,
+      // Routing is advice to operators, not a gate. It is recorded so the
+      // question "did anyone review this" has an answer later.
+      requiresHumanReview: contested?.routing === 'HUMAN',
       timestamp: new Date().toISOString(),
     };
     runtimeActions.unshift(recordedAction);
@@ -1139,9 +1196,16 @@ app.post('/act', (req: Request, res: Response) => {
     recordEvent({
       type: 'action.authorized',
       stage: 'act',
-      message: `Action authorized: ${action}`,
-      status: 'passed',
-      details: { actionId: recordedAction.id, attestationId: attestation.id },
+      message: disputed
+        ? `Action authorized over recorded dissent: ${action}`
+        : `Action authorized: ${action}`,
+      status: disputed ? 'active' : 'passed',
+      details: {
+        actionId: recordedAction.id,
+        attestationId: attestation.id,
+        dissensusId: recordedAction.dissensusId,
+        requiresHumanReview: recordedAction.requiresHumanReview,
+      },
       requestId: res.locals.requestId,
     });
     res.status(201).json({ data: recordedAction, timestamp: new Date().toISOString() });
@@ -1416,6 +1480,72 @@ app.get('/memory/integrity', (_req: Request, res: Response) => {
 });
 
 /**
+ * POST /dissensus - Reconcile several verifiers without resolving them
+ */
+app.post('/dissensus', (req: Request, res: Response) => {
+  try {
+    const { opinions } = req.body as { opinions?: Opinion[] };
+
+    if (!Array.isArray(opinions)) {
+      res.status(400).json({
+        code: 'MISSING_OPINIONS',
+        message: 'An array of verifier opinions is required',
+        timestamp: new Date().toISOString(),
+      } satisfies ErrorResponse);
+      return;
+    }
+
+    const reconciled = reconcile(opinions, STRICT_POLICY);
+    const recorded = {
+      ...reconciled,
+      id: `dis-${new Date().toISOString().replace(/[-:.TZ]/g, '')}`,
+      timestamp: new Date().toISOString(),
+    };
+
+    runtimeDissensus.unshift(recorded);
+    runtimeDissensus.splice(RECENT_EVENT_WINDOW);
+    persistRuntime();
+
+    recordEvent({
+      type: 'dissensus.reconciled',
+      stage: 'verify',
+      message: `${reconciled.verdict}: ${reconciled.reason}`,
+      // A split is not a failure of the system; it is the system working.
+      status: reconciled.verdict === 'AGREED' ? 'passed' : 'active',
+      details: {
+        dissensusId: recorded.id,
+        verdict: reconciled.verdict,
+        routing: reconciled.routing,
+        dissenting: reconciled.dissenting.map((entry) => entry.verifierId),
+      },
+      requestId: res.locals.requestId,
+    });
+
+    res.status(201).json({ data: recorded, timestamp: new Date().toISOString() });
+  } catch (error) {
+    res.status(400).json({
+      code: 'DISSENSUS_FAILED',
+      message: error instanceof Error ? error.message : 'Reconciliation failed',
+      timestamp: new Date().toISOString(),
+    } satisfies ErrorResponse);
+  }
+});
+
+/**
+ * GET /dissensus - Recorded reconciliations, disagreements included
+ */
+app.get('/dissensus', (_req: Request, res: Response) => {
+  res.json({
+    data: runtimeDissensus,
+    meta: {
+      window: RECENT_EVENT_WINDOW,
+      unresolved: runtimeDissensus.filter((entry) => entry.verdict !== 'AGREED').length,
+    },
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/**
  * GET /rules - List registered verification rules
  *
  * Without a category, returns every registered rule. With ?category=x,
@@ -1524,6 +1654,8 @@ const startServer = () =>
         '  POST   /act              - Authorize an action',
         '  POST   /learn            - Record learning',
         '  POST   /recompile        - Propose a recompile',
+        '  POST   /dissensus        - Reconcile plural verifier opinions',
+        '  GET    /dissensus        - Recorded reconciliations',
         '  GET    /rules            - List verification rules',
         '  GET    /health           - Health check',
         '  GET    /observability    - Runtime, trust and provenance summary',
