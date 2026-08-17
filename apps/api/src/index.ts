@@ -253,7 +253,17 @@ type RuntimeAction = {
   id: string;
   action: string;
   attestationId: string;
-  status: 'authorized';
+  // An action taken while verifiers disagreed is a distinct state, not a
+  // footnote on an ordinary authorization. The type says so, because the
+  // record has to survive the question "was this contested at the time".
+  status: 'authorized' | 'authorized-with-dissent';
+  dissensusId: string | null;
+  dissent: {
+    verdict: Dissensus['verdict'];
+    routing: Dissensus['routing'];
+    dissenting: Opinion[];
+  } | null;
+  requiresHumanReview: boolean;
   timestamp: string;
 };
 type RuntimeLearning = {
