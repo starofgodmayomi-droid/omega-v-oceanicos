@@ -6,6 +6,8 @@
  */
 import '@testing-library/jest-dom';
 import { act, configure } from '@testing-library/react';
+import { webcrypto } from 'node:crypto';
+import { TextDecoder as NodeTextDecoder, TextEncoder as NodeTextEncoder } from 'node:util';
 
 jest.setTimeout(30000);
 
@@ -106,17 +108,20 @@ class MockEventSource {
 (globalThis as unknown as { EventSource: unknown }).EventSource = MockEventSource;
 (globalThis as unknown as { MockEventSource: unknown }).MockEventSource = MockEventSource;
 
-// jsdom ships no WebCrypto, so `crypto.subtle` is undefined and the offline
-// verification panel correctly reports that it cannot verify. Real browsers
-// do implement it, so the absence is an artefact of the test environment,
-// not of the product. Node's implementation is installed here so the DOM
-// suite exercises the same path a browser would.
+// jsdom implements neither WebCrypto nor the TextEncoder/TextDecoder pair,
+// so the offline verification panel correctly reported that it could not
+// verify. Real browsers implement all three, so the absence is an artefact
+// of the test environment, not of the product. Node's implementations are
+// installed here so the DOM suite exercises the same path a browser would.
 //
 // Note what this does NOT do: it does not stub verification. Signatures are
 // checked for real, and a forged one still fails.
 if (!globalThis.crypto?.subtle) {
-  const { webcrypto } = require('node:crypto');
   Object.defineProperty(globalThis, 'crypto', { value: webcrypto, configurable: true });
+}
+
+if (typeof globalThis.TextEncoder === 'undefined') {
+  Object.assign(globalThis, { TextEncoder: NodeTextEncoder, TextDecoder: NodeTextDecoder });
 }
 
 if (!Element.prototype.scrollIntoView) {
