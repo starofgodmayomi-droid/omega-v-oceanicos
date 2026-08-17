@@ -177,4 +177,27 @@ describe('API dissensus', () => {
     expect(response.status).toBe(404);
     expect(((await response.json()) as { code: string }).code).toBe('DISSENSUS_NOT_RECORDED');
   });
+
+  it('reports the policy each reconciliation was judged under', async () => {
+    const body = (await (
+      await post('/dissensus', { opinions: [opinion(), opinion({ verifierId: 'model' })] })
+    ).json()) as Body<Recorded & { policy: { provenance: string; minimumConfidence: number } }>;
+
+    expect(body.data.policy.minimumConfidence).toBeGreaterThan(0);
+    // A verdict without its threshold is unreadable: HUMAN could mean the
+    // verifiers disagreed or that the bar was set high.
+    expect(body.data.policy.provenance).toBe('default');
+  });
+
+  it('admits the threshold was chosen rather than measured', async () => {
+    const body = (await (await fetch(`${baseUrl}/dissensus`)).json()) as Body<Recorded[]> & {
+      meta?: { policy?: { provenance: string } };
+    };
+
+    // 'derived' would mean the number came from recorded outcomes. None
+    // have been collected, so claiming it would be the exact overstatement
+    // this system exists to prevent.
+    expect(body.meta?.policy?.provenance).toBe('default');
+    expect(body.meta?.policy?.provenance).not.toBe('derived');
+  });
 });

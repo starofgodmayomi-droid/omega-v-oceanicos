@@ -424,6 +424,27 @@ claim the action was uncontested.
 Referencing a `dissensusId` that was never recorded is refused with `404`,
 for the same reason an attestation without runtime lineage is.
 
+#### Routing policy
+
+`OMEGA_DISSENSUS_MIN_CONFIDENCE`, `OMEGA_DISSENSUS_QUORUM` and
+`OMEGA_DISSENSUS_HUMAN_ON_SPLIT` set the routing policy. Unset, the built-in
+values apply.
+
+Every reconciliation reports the policy it was judged under, including a
+`provenance` field of `default`, `configured` or `derived`:
+
+- **`default`** — the numbers were chosen by an author. The current
+  `minimumConfidence` of `0.7` is one of these. It was not measured, and
+  reporting it without saying so would let a chosen number read as evidence.
+- **`configured`** — an operator set them and is answerable for them.
+- **`derived`** — computed from recorded outcomes. **Nothing produces this
+  yet**, because no outcome data has been collected.
+
+Values are refused rather than clamped. A confidence outside `0..1`, a
+non-integer quorum, or a split flag that is not exactly `true` or `false`
+fails at startup with the variable named. Clamping would invent a number
+nobody chose and then route human review by it.
+
 ### Kernel Memory
 
 ```

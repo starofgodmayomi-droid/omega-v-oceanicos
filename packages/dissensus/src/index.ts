@@ -31,6 +31,24 @@ export interface Opinion {
   reason: string;
 }
 
+/**
+ * Where a policy's numbers came from.
+ *
+ * This matters more than it looks. A threshold chosen by whoever wrote the
+ * code and a threshold derived from observed outcomes are different kinds
+ * of claim, and a reader cannot tell them apart from the number alone.
+ * Every other unearned figure in this system was removed for exactly that
+ * reason; this one is declared instead, because a routing threshold has to
+ * exist before there is any data to derive it from.
+ */
+export type PolicyProvenance =
+  /** Chosen by an author. Not measured. Not evidence. */
+  | 'default'
+  /** Set by an operator who accepted responsibility for it. */
+  | 'configured'
+  /** Computed from recorded outcomes. Nothing produces this yet. */
+  | 'derived';
+
 export interface DissensusPolicy {
   /** Route to a human whenever verifiers disagree at all. */
   humanOnSplit: boolean;
@@ -38,6 +56,89 @@ export interface DissensusPolicy {
   minimumConfidence: number;
   /** Opinions required before any verdict may be reported. */
   quorum: number;
+  /** How these numbers were arrived at. Never inferred from the values. */
+  provenance: PolicyProvenance;
+}
+
+export class InvalidPolicyError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'InvalidPolicyError';
+  }
+}
+
+/**
+ * Build a policy from strings, refusing anything unusable.
+ *
+ * Values are not clamped. Clamping an out-of-range threshold would invent a
+ * number nobody chose and then apply it to routing decisions, which is the
+ * failure this whole module exists to avoid.
+ */
+export function policyFromEnvironment(
+  env: Record<string, string | undefined> = {}
+): DissensusPolicy {
+  const raw = {
+    minimumConfidence: env.OMEGA_DISSENSUS_MIN_CONFIDENCE,
+    quorum: env.OMEGA_DISSENSUS_QUORUM,
+    humanOnSplit: env.OMEGA_DISSENSUS_HUMAN_ON_SPLIT,
+  };
+
+  if (
+    raw.minimumConfidence === undefined &&
+    raw.quorum === undefined &&
+    raw.humanOnSplit === undefined
+  ) {
+    return STRICT_POLICY;
+  }
+
+  // Number('') is 0, and 0 is a valid confidence. Left to coerce, an empty
+  // variable would silently install the most permissive threshold possible
+  // and nothing would ever route to a human on low confidence. An empty
+  // value is a mistake, not a setting.
+  const blank = (value: string | undefined): boolean => value !== undefined && value.trim() === '';
+
+  if (blank(raw.minimumConfidence) || blank(raw.quorum) || blank(raw.humanOnSplit)) {
+    throw new InvalidPolicyError('dissensus policy variables must not be set to an empty value');
+  }
+
+  const minimumConfidence =
+    raw.minimumConfidence === undefined
+      ? STRICT_POLICY.minimumConfidence
+      : Number(raw.minimumConfidence);
+
+  if (!Number.isFinite(minimumConfidence) || minimumConfidence < 0 || minimumConfidence > 1) {
+    throw new InvalidPolicyError(
+      `OMEGA_DISSENSUS_MIN_CONFIDENCE must be between 0 and 1, received ${JSON.stringify(
+        raw.minimumConfidence
+      )}`
+    );
+  }
+
+  const quorum = raw.quorum === undefined ? STRICT_POLICY.quorum : Number(raw.quorum);
+
+  if (!Number.isInteger(quorum) || quorum < 1) {
+    throw new InvalidPolicyError(
+      `OMEGA_DISSENSUS_QUORUM must be a positive integer, received ${JSON.stringify(raw.quorum)}`
+    );
+  }
+
+  if (raw.humanOnSplit !== undefined && !['true', 'false'].includes(raw.humanOnSplit)) {
+    throw new InvalidPolicyError(
+      `OMEGA_DISSENSUS_HUMAN_ON_SPLIT must be "true" or "false", received ${JSON.stringify(
+        raw.humanOnSplit
+      )}`
+    );
+  }
+
+  return {
+    minimumConfidence,
+    quorum,
+    humanOnSplit:
+      raw.humanOnSplit === undefined ? STRICT_POLICY.humanOnSplit : raw.humanOnSplit === 'true',
+    // An operator set these, so they are answerable for them. That is a
+    // stronger claim than 'default' and a weaker one than 'derived'.
+    provenance: 'configured',
+  };
 }
 
 /**
@@ -49,12 +150,18 @@ export interface DissensusPolicy {
  */
 export const STRICT_POLICY: DissensusPolicy = {
   humanOnSplit: true,
+  // Chosen, not measured. There is no outcome data to derive it from yet,
+  // and pretending otherwise would make it look like evidence. The
+  // provenance field says so wherever this policy is reported.
   minimumConfidence: 0.7,
   quorum: 2,
+  provenance: 'default',
 };
 
 export interface Dissensus {
   verdict: Verdict;
+  /** The policy applied, including where its numbers came from. */
+  policy: DissensusPolicy;
   routing: Routing;
   /** null whenever the verdict is not AGREED. */
   agreed: boolean | null;
@@ -81,7 +188,7 @@ const duplicateIds = (opinions: Opinion[]): string[] => {
 };
 
 export function reconcile(opinions: Opinion[], policy: DissensusPolicy = STRICT_POLICY): Dissensus {
-  const base = { opinions, dissenting: [] as Opinion[], agreed: null, confidence: 0 };
+  const base = { opinions, policy, dissenting: [] as Opinion[], agreed: null, confidence: 0 };
 
   // One verifier answering twice is not two verifiers agreeing. Counting it
   // as agreement would manufacture consensus from a configuration mistake.
@@ -148,6 +255,7 @@ export function reconcile(opinions: Opinion[], policy: DissensusPolicy = STRICT_
 
     return {
       opinions,
+      policy,
       verdict: split ? 'SPLIT' : 'UNKNOWN',
       routing: policy.humanOnSplit ? 'HUMAN' : 'AUTO',
       agreed: null,
@@ -164,6 +272,7 @@ export function reconcile(opinions: Opinion[], policy: DissensusPolicy = STRICT_
   if (confidence < policy.minimumConfidence) {
     return {
       opinions,
+      policy,
       verdict: 'AGREED',
       routing: 'HUMAN',
       agreed,
@@ -175,6 +284,7 @@ export function reconcile(opinions: Opinion[], policy: DissensusPolicy = STRICT_
 
   return {
     opinions,
+    policy,
     verdict: 'AGREED',
     routing: 'AUTO',
     agreed,
