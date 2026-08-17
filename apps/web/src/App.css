@@ -983,3 +983,67 @@ select:focus-visible {
 .offline-verify-result small {
   opacity: 0.8;
 }
+
+/* Dissent ledger.
+   The objecting opinion is marked, not hidden, and a split reads as
+   DISSENTING rather than as a failure — it is the system working. */
+.dissensus-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.dissensus-note {
+  margin: 0;
+  opacity: 0.75;
+  max-width: 62ch;
+}
+
+.dissensus-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.dissensus-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.65rem 0.9rem;
+  border-left: 3px solid var(--omega-unknown);
+}
+
+.dissensus-row.is-split {
+  border-left-color: var(--omega-dissent);
+}
+
+.dissensus-row.is-agreed {
+  border-left-color: var(--omega-verified);
+}
+
+.dissensus-verdict {
+  display: flex;
+  gap: 0.6rem;
+  align-items: baseline;
+}
+
+.dissensus-opinions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.dissensus-opinion {
+  font-size: 0.75rem;
+  padding: 0.1rem 0.4rem;
+  border: 1px solid var(--omega-abyss-edge);
+}
+
+.dissensus-opinion.is-objecting {
+  border-color: var(--omega-dissent);
+  color: var(--omega-dissent);
+}
+
+.dissensus-confidence {
+  opacity: 0.7;
+}

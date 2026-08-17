@@ -133,6 +133,41 @@ const json = (
  * Install a fetch double. `overrides` is keyed by path and wins over the
  * defaults, so a test states only the route it cares about.
  */
+/** A reconciliation where one verifier objected. */
+export const splitDissensus = () => ({
+  id: 'dis-20260817T000000',
+  verdict: 'SPLIT' as const,
+  routing: 'HUMAN' as const,
+  confidence: 0.6,
+  reason: 'verifiers disagree: 1 passed, 1 failed',
+  opinions: [
+    {
+      verifierId: 'rules',
+      verifierVersion: '1.0.0',
+      passed: true,
+      confidence: 0.9,
+      reason: 'status code is 200',
+    },
+    {
+      verifierId: 'model',
+      verifierVersion: '2026-08',
+      passed: false,
+      confidence: 0.6,
+      reason: 'source unreachable',
+    },
+  ],
+  dissenting: [
+    {
+      verifierId: 'model',
+      verifierVersion: '2026-08',
+      passed: false,
+      confidence: 0.6,
+      reason: 'source unreachable',
+    },
+  ],
+  timestamp: '2026-08-17T00:00:00.000Z',
+});
+
 export function installFetch(overrides: RouteOverrides = {}): jest.Mock {
   const defaults: RouteOverrides = {
     '/api/health': () =>
@@ -147,6 +182,7 @@ export function installFetch(overrides: RouteOverrides = {}): jest.Mock {
     '/api/audit/events?limit=40': () =>
       json({ data: [], meta: { bounded: true, limit: 40, total: 0 } }),
     '/api/runs': () => json({ data: [] }),
+    '/api/dissensus': () => json({ data: [], meta: { window: 40, unresolved: 0 } }),
     '/api/attest/public-key': () =>
       json({
         data: {
