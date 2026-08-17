@@ -29,6 +29,7 @@ Execute the complete Observe → Verify → Attest cycle from the browser.
 - Inspect event IDs, correlation IDs, and payloads
 - Recover the latest completed evidence chain after refresh
 - Verify attestation signatures from the Evidence Center
+- Follow the [independent browser-verifier walkthrough](../../docs/BROWSER-VERIFIER.md) with a real temporary Ed25519 key pair
 - Authorize a local action only from a verified attestation
 - Record explicit success, failure, or uncertainty feedback against that action
 - Propose a versioned recompile from recorded learning without claiming automatic code changes
