@@ -195,6 +195,8 @@ describe('API runtime contracts', () => {
       keySource: 'none',
       previousKeyConfigured: false,
       eventLogSource: 'disabled',
+      eventLogReason: null,
+      eventLogKeySource: 'none',
       skippedLogEntries: 0,
     });
     expect(body.data.policy).toEqual({
@@ -939,13 +941,22 @@ describe('partial durable-log recovery readiness', () => {
     const healthResponse = await fetch(`${baseUrl}/health`);
     const health = (await healthResponse.json()) as ApiResponse<{
       readiness: string;
-      checks: { persistence: { eventLogSource: string; skippedLogEntries: number } };
+      checks: {
+        persistence: {
+          eventLogSource: string;
+          eventLogReason: string | null;
+          eventLogKeySource: string;
+          skippedLogEntries: number;
+        };
+      };
     }>;
 
     expect(healthResponse.status).toBe(503);
     expect(health.data.readiness).toBe('degraded');
     expect(health.data.checks.persistence).toMatchObject({
       eventLogSource: 'partial',
+      eventLogReason: '1 line(s) could not be parsed',
+      eventLogKeySource: 'none',
       skippedLogEntries: 1,
     });
 
@@ -953,6 +964,8 @@ describe('partial durable-log recovery readiness', () => {
     const state = (await stateResponse.json()) as ApiResponse<{
       readiness: 'ready' | 'degraded';
       eventLogSource: string;
+      eventLogReason: string | null;
+      eventLogKeySource: string;
       skippedLogEntries: number;
       trustBasis: { serviceReadiness: number };
     }>;
@@ -960,6 +973,8 @@ describe('partial durable-log recovery readiness', () => {
     expect(stateResponse.status).toBe(200);
     expect(state.data.readiness).toBe('degraded');
     expect(state.data.eventLogSource).toBe('partial');
+    expect(state.data.eventLogReason).toBe('1 line(s) could not be parsed');
+    expect(state.data.eventLogKeySource).toBe('none');
     expect(state.data.skippedLogEntries).toBe(1);
     expect(state.data.trustBasis.serviceReadiness).toBe(0);
   });

@@ -361,7 +361,7 @@ filters are exact `type`, `stage`, and `status` values, inclusive ISO-8601
 `from` and `to` timestamps, and an integer `limit`. The default limit is `100`
 and the maximum is `500`; invalid values return `400 INVALID_AUDIT_QUERY`.
 Results are ordered newest first and include explicit `meta.bounded`, `meta.total`,
-`meta.skipped`, `meta.source`, `meta.keySource`, and normalized filter evidence.
+`meta.skipped`, `meta.source`, `meta.reason`, `meta.keySource`, and normalized filter evidence. The health, state, and observability responses expose the same durable-log provenance as `eventLogSource`, `skippedLogEntries`, `eventLogReason`, and the authenticated event-log key source.
 
 This endpoint is **local evidence only**. It is not a distributed audit index,
 not a completeness proof for unpersisted history, and not a claim that another
@@ -376,7 +376,7 @@ as complete.
 GET /observability
 ```
 
-Returns a read-only operational evidence summary composed from the runtime state, durable event log, configured attestation service, and hash-chained memory. It includes runtime mode and persistence, the configured persistence and kernel-memory encryption algorithms or `disabled`, active/previous key configuration, observed persistence key-source evidence, and observed kernel-memory key-source evidence (`none`, `current`, `previous`, or `mixed`), recent and durable event counts, completed runs, request and correlation lineage, verification and attestation validity, and memory integrity. It never returns private keys, seeds, secrets, or raw signing material; the algorithm and key-source fields describe local configuration and observed reads only. They do not claim HSM/KMS custody, secure deletion, recovery, distributed coordination, or complete data-at-rest coverage.
+Returns a read-only operational evidence summary composed from the runtime state, durable event log, configured attestation service, and hash-chained memory. It includes runtime mode and persistence, the configured persistence and kernel-memory encryption algorithms or `disabled`, active/previous key configuration, observed persistence key-source evidence, durable-log source/skipped/reason/key-source evidence, and observed kernel-memory key-source evidence (`none`, `current`, `previous`, or `mixed`), recent and durable event counts, completed runs, request and correlation lineage, verification and attestation validity, and memory integrity. It never returns private keys, seeds, secrets, or raw signing material; the algorithm and key-source fields describe local configuration and observed reads only. They do not claim HSM/KMS custody, secure deletion, recovery, distributed coordination, or complete data-at-rest coverage.
 
 ### Evidence Export
 

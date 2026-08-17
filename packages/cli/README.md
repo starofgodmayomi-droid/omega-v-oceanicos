@@ -20,7 +20,7 @@ The status command also accepts `--url`:
 node packages/cli/dist/index.js status --url http://localhost:3000
 ```
 
-It reads `GET /observability` and prints runtime, service, trust, memory, provenance, lineage, and observation timestamp fields returned by the API. It does not synthesize missing values. The process exits with status `1` when the API is unavailable, memory integrity is false, append-only status is false, or attestation validity is explicitly false.
+It reads `GET /observability` and `GET /state`, then prints runtime, explicit state readiness, durable-log source/skipped/reason/key-source provenance, trust, memory, provenance, lineage, and observation timestamp fields returned by the API. It renders missing recovery fields as `unknown` and fails closed rather than inventing readiness. The process exits with status `1` when the API is unavailable, explicit state readiness is not `ready`, memory integrity is false, append-only status is false, or attestation validity is explicitly false.
 
 ## Event evidence
 

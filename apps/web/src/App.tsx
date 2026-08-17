@@ -71,6 +71,8 @@ type RuntimeHealth = {
     memory: { integrity: boolean };
     persistence?: {
       eventLogSource: 'disabled' | 'missing' | 'restored' | 'partial';
+      eventLogReason: string | null;
+      eventLogKeySource: 'none' | 'current' | 'previous' | 'mixed';
       skippedLogEntries: number;
     };
   };
@@ -772,6 +774,26 @@ export function App(): JSX.Element {
               {trustBasis ? (trustBasis.serviceReadiness === 1 ? 'READY' : 'DEGRADED') : 'UNKNOWN'}
             </strong>
           </div>
+          <div>
+            <span>EVENT LOG</span>
+            <strong>
+              {runtimeHealth?.checks.persistence
+                ? `${runtimeHealth.checks.persistence.eventLogSource.toUpperCase()} / ${runtimeHealth.checks.persistence.skippedLogEntries}`
+                : 'UNKNOWN'}
+            </strong>
+          </div>
+          <div>
+            <span>LOG KEY</span>
+            <strong>
+              {runtimeHealth?.checks.persistence?.eventLogKeySource?.toUpperCase() ?? 'UNKNOWN'}
+            </strong>
+          </div>
+          {runtimeHealth?.checks.persistence?.eventLogReason ? (
+            <div>
+              <span>LOG REASON</span>
+              <strong>{runtimeHealth.checks.persistence.eventLogReason}</strong>
+            </div>
+          ) : null}
           <div>
             <span>ENVIRONMENT</span>
             <strong>{persistenceMode ? persistenceMode.toUpperCase() : 'UNKNOWN'}</strong>
