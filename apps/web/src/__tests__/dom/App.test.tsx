@@ -929,4 +929,33 @@ describe('command palette', () => {
     });
     expect(refresh).toHaveFocus();
   });
+
+  it('clears a stale stream error and refreshes runtime when the stream reopens', async () => {
+    const fetchMock = installFetch();
+    await renderApp();
+    await screen.findByRole('button', { name: /run verification/i });
+
+    act(() => {
+      streams()[0].error();
+    });
+    expect(await screen.findByText(/stream unavailable/i)).toBeInTheDocument();
+
+    const healthCallsBeforeReopen = fetchMock.mock.calls.filter(
+      ([url]) => url === '/api/health'
+    ).length;
+
+    act(() => {
+      streams()[0].open();
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText(/stream unavailable/i)).not.toBeInTheDocument();
+    });
+    await waitFor(() => {
+      const healthCallsAfterReopen = fetchMock.mock.calls.filter(
+        ([url]) => url === '/api/health'
+      ).length;
+      expect(healthCallsAfterReopen).toBeGreaterThan(healthCallsBeforeReopen);
+    });
+  });
 });
