@@ -142,6 +142,15 @@ The active worktree is `/home/ubuntu/current-main-worktree` on branch `main`, sy
 | PR #97 is **merged** into `main` as squash commit `2d8397ac4b395e46bb0c971a16fa6aa27c7115b8`, observed at `2026-08-17T04:57:23Z`; the reproducible browser-verifier walkthrough passed Node 18, Node 20, Windows, package/smoke, and report; attested-artifact publication was skipped. This is merge evidence only; no deployment is claimed. |
 | PR #99 is **merged** into `main` as squash commit `e11d3fe`, observed at `2026-08-17T05:29:57Z`; partial durable-log recovery now fails readiness closed across API, SDK, CLI, dashboard, tests, and docs. Node 18, Node 20, Windows, package/smoke, and report checks passed; attested-artifact publication was skipped. This is merge evidence only; no deployment is claimed. |
 | PR #100 is **merged** into `main` as squash commit `c44f310`, observed at `2026-08-17T09:06:02Z`; the explicit `/state` readiness contract is consumed across API, SDK, CLI, dashboard, tests, and docs. Node 18, Node 20, Windows, package/smoke, and report checks passed; attested-artifact publication was skipped. This is merge evidence only; no deployment is claimed. |
+| PR #101 is **merged** into `main` as squash commit `152c39a`, observed at `2026-08-17T09:11:34Z`; state records were reconciled after PR #100 with green CI. No deployment is claimed. |
+| PR #102 is **merged** into `main` as squash commit `9848883`, observed at `2026-08-17T09:12:20Z`; the attestation specification worked example is executable and verified on every run. No deployment is claimed. |
+| PR #103 is **merged** into `main` as squash commit `2dceecf`, observed at `2026-08-17T22:20:00Z`; durable-log recovery provenance is exposed across API, SDK, CLI, dashboard, tests, and docs after rebase onto current main. CI passed Node 18, Node 20, Windows, package/smoke, and report; attested-artifact publication was skipped. No deployment is claimed. |
+| PR #104 is **merged** into `main` as squash commit `216ce09`, observed at `2026-08-17T09:23:29Z`; the ecosystem brand system and named palette were merged with green CI. No deployment is claimed. |
+| PR #105 is **merged** into `main` as squash commit `4c1885f`, observed at `2026-08-17T09:33:20Z`; the dissensus engine preserves competing interpretations with green CI. No deployment is claimed. |
+| PR #106 is **merged** into `main` as squash commit `a834ecc`, observed at `2026-08-17T09:53:29Z`; actions can proceed over dissent while carrying dissent evidence with green CI. No deployment is claimed. |
+| PR #107 is **merged** into `main` as squash commit `40bbcd8`, observed at `2026-08-17T10:01:24Z`; operator-facing verifier disagreement evidence was merged with green CI. No deployment is claimed. |
+| PR #108 is **merged** into `main` as squash commit `70c2be1`, observed at `2026-08-17T10:14:50Z`; routing thresholds now carry policy provenance with green CI. No deployment is claimed. |
+| PR #109 is **merged** into `main` as squash commit `d28b754`, observed at `2026-08-17T17:01:11Z`; the crypto-bearing DOM test flake was isolated and explained with green CI. No deployment is claimed. |
 
 PR #32 remains historical Windows-compatibility evidence.
 
@@ -177,7 +186,7 @@ The combined signing-audit and persistence-encryption state passed:
 
 | `git diff --check` | Passed before the revocation commit |
 
-The last full verification before the recent coverage queue observed 25 suites / 416 tests and a successful workspace/Vite build. After PRs #57–#62, the full local gate observed 25 suites / 428 tests passed. PR #63 raised the full gate to 431 tests, PR #66 to 432 tests, PR #68 to 438 tests, PRs #70/#71 to 435 tests, PRs #73/#75/#77 retained 436/437/437 tests, PR #79 retained 438 tests, the post-PR #97 main gate observed 30 suites / 556 tests passed, the PR #99 gate observed 30 suites / 558 tests passed with the partial-log health/state regression, and the PR #100 gate observed 30 suites / 559 tests passed with explicit `/state` readiness coverage, successful workspace/Vite build, passing format/type-check, and `git diff --check`. PRs #57–#63, #66, #68, #70, #71, #73, #75, #77, #79, and #97 had green Node 18, Node 20, Windows, package/smoke, and report checks as applicable; PR #75 required a formatting repair before its corrected matrix passed; attested-artifact publication was skipped. The repository may contain generated build output ignored by Git; only intended source and documentation changes should be committed.
+The last full verification before the recent coverage queue observed 25 suites / 416 tests and a successful workspace/Vite build. After PRs #57–#62, the full local gate observed 25 suites / 428 tests passed. PR #63 raised the full gate to 431 tests, PR #66 to 432 tests, PR #68 to 438 tests, PRs #70/#71 to 435 tests, PRs #73/#75/#77 retained 436/437/437 tests, PR #79 retained 438 tests, the post-PR #97 main gate observed 30 suites / 556 tests passed, the PR #99 gate observed 30 suites / 558 tests passed with the partial-log health/state regression, the PR #100 gate observed 30 suites / 559 tests passed with explicit `/state` readiness coverage, and the post-PR #109 main gate observed 34 suites / 643 tests passed after PRs #102–#109. PRs #57–#63, #66, #68, #70, #71, #73, #75, #77, #79, and #97 had green Node 18, Node 20, Windows, package/smoke, and report checks as applicable; PR #75 required a formatting repair before its corrected matrix passed; attested-artifact publication was skipped. The repository may contain generated build output ignored by Git; only intended source and documentation changes should be committed.
 
 ## Remaining gaps and uncertainty
 
@@ -187,6 +196,6 @@ The web client exposes revoke and revocation-ledger controls. Stronger administr
 
 ## Next authorized action
 
-1. Reconcile the merged PR #100 evidence in a documentation-only change, then select the next smallest production-relevant slice.
+1. Reconcile the merged PR #102–#109 evidence in a documentation-only change, then select the next smallest production-relevant slice.
 2. Verify the next slice across API, SDK, CLI, dashboard, tests, documentation, Node versions, and Windows.
 3. Keep any new publication, merge, and deployment actions behind separate human gates.
