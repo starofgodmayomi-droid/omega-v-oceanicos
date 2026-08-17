@@ -65,6 +65,9 @@ importers:
       '@omega-v/attestation':
         specifier: '*'
         version: link:../../packages/attestation
+      '@omega-v/dissensus':
+        specifier: '*'
+        version: link:../../packages/dissensus
       '@omega-v/observer':
         specifier: '*'
         version: link:../../packages/observer
