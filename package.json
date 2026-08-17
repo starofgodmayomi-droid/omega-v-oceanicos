@@ -23,7 +23,7 @@
   ],
   "scripts": {
     "dev": "pnpm --parallel --filter @omega-v/api --filter @omega-v/web dev",
-    "build": "pnpm --filter @omega-v/types build && pnpm --filter @omega-v/observer build && pnpm --filter @omega-v/verification build && pnpm --filter @omega-v/remember build && pnpm --filter @omega-v/mini build && pnpm --filter @omega-v/attestation build && pnpm --filter @omega-v/api build && pnpm --filter @omega-v/web build && pnpm --filter @omega-v/cli build && pnpm --filter @omega-v/sdk build",
+    "build": "pnpm --filter @omega-v/types build && pnpm --filter @omega-v/observer build && pnpm --filter @omega-v/verification build && pnpm --filter @omega-v/remember build && pnpm --filter @omega-v/mini build && pnpm --filter @omega-v/attestation build && pnpm --filter @omega-v/dissensus build && pnpm --filter @omega-v/api build && pnpm --filter @omega-v/web build && pnpm --filter @omega-v/cli build && pnpm --filter @omega-v/sdk build",
     "clean": "node scripts/clean.cjs",
     "test": "jest",
     "test:fast": "jest --testPathIgnorePatterns=integration",
