@@ -940,3 +940,46 @@ select:focus-visible {
     10px 'DM Mono',
     monospace;
 }
+
+/* Independent verification panel.
+   Deliberately plain: this is the one surface a stranger uses to disbelieve
+   the rest of the page, so it should read as an instrument rather than a
+   product feature. */
+.offline-verify-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.offline-verify-note {
+  margin: 0;
+  opacity: 0.75;
+  max-width: 60ch;
+}
+
+.offline-verify-panel textarea {
+  width: 100%;
+  font-family: inherit;
+  font-size: 0.85rem;
+  resize: vertical;
+}
+
+.offline-verify-result {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.75rem 1rem;
+  border-left: 3px solid currentColor;
+}
+
+.offline-verify-result.is-valid {
+  color: #2f9e6d;
+}
+
+.offline-verify-result.is-invalid {
+  color: #c2453f;
+}
+
+.offline-verify-result small {
+  opacity: 0.8;
+}
