@@ -94,3 +94,75 @@ pulls it.
 This is version 1. Any change to the payload field set or their order is a
 new version, because it invalidates every signature made under this one.
 Additive, non-breaking changes go outside the signed payload.
+
+## A worked example
+
+Everything below is real. The attestation was signed by the key printed
+beside it, and a test in this repository verifies this exact pair on every
+run — so if the document ever drifts from the format, the pipeline fails
+rather than the reader.
+
+The private key was generated for this example and then discarded. It signs
+nothing else and protects nothing.
+
+**Attestation**
+
+```json
+{
+  "id": "att-2026-08-17-example",
+  "verificationId": "ver-2026-08-17-example",
+  "observationId": "obs-2026-08-17-example",
+  "verified": true,
+  "confidence": 0.95,
+  "ruleVersions": {
+    "status-code-check": "1.0.0",
+    "response-time-threshold": "1.0.0"
+  },
+  "attestedAt": "2026-08-17T00:00:00.000Z",
+  "attestedBy": "attestation-service",
+  "keyVersion": "1",
+  "signingAlgorithm": "Ed25519",
+  "signingKey": "sha256:example0000000000",
+  "status": "signed",
+  "signature": "0x0d263fe7998aa98d7c6d6160ed71327602032c797daa769cf8547a24b7ffbc5883825d1c41748e584fd60726275ab74d4c7793bb5757458ad37a95cac1619705"
+}
+```
+
+**Public key**
+
+```
+-----BEGIN PUBLIC KEY-----
+MCowBQYDK2VwAyEAz/+EZ7jBqA5Vfh+iyjVZcKRebbnc3f1s5HSYThBEjEo=
+-----END PUBLIC KEY-----
+```
+
+**Check it three ways.**
+
+In a browser, with no install: open the dashboard and paste both into the
+independent verification panel.
+
+With the reference implementation:
+
+```
+pip install cryptography
+python docs/spec/verify_attestation.py attestation.json public_key.pem
+```
+
+With nothing but OpenSSL, to prove the format needs no special tooling:
+
+```
+# the signed payload is the eight fields, in the order published above,
+# serialised with no whitespace
+printf '%s' "$PAYLOAD" > payload.bin
+printf '%s' "$SIGNATURE_HEX" | xxd -r -p > sig.bin
+openssl pkeyutl -verify -pubin -inkey public_key.pem \
+  -rawin -in payload.bin -sigfile sig.bin
+```
+
+**Now break it.** Change `"verified": true` to `false` and check again. The
+signature fails, because `verified` is one of the eight signed fields.
+
+Then change `"id"` to anything you like. The signature still passes —
+`id` is not signed. That is not a flaw, it is the reason this document
+lists exactly which fields the signature covers, and the reason no trust
+decision should rest on the others.
