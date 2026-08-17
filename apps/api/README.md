@@ -329,7 +329,7 @@ GET /events
 GET /runs
 ```
 
-These endpoints expose the current runtime state, recent lifecycle events, and completed observation/verification/attestation runs. The state response includes `eventLogSource`, `skippedLogEntries`, and `trustBasis.serviceReadiness`; an enabled partial durable log sets the readiness value to `0` while preserving the inspectable entries. Local development persists these records to `/tmp/omega-v-oceanicos/runtime.json` by default.
+These endpoints expose the current runtime state, recent lifecycle events, and completed observation/verification/attestation runs. The state response includes an explicit `readiness` value (`ready` or `degraded`), `eventLogSource`, `skippedLogEntries`, and `trustBasis.serviceReadiness`; these values are one contract, so an enabled partial durable log reports `degraded` and readiness `0` while preserving inspectable entries. The typed SDK exposes `getState()`, the CLI status command renders the same readiness evidence, and the dashboard shows it separately from probe health. Local development persists these records to `/tmp/omega-v-oceanicos/runtime.json` by default.
 
 Set `OMEGA_RUNTIME_STORE_PATH` to choose another JSON store path. Persistence
 defaults off under `NODE_ENV=test` and on elsewhere; set `OMEGA_PERSISTENCE`

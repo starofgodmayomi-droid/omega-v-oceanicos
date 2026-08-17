@@ -27,6 +27,18 @@ export type Health = {
   timestamp: string;
 };
 
+export type RuntimeState = {
+  data: {
+    status: 'active';
+    readiness: 'ready' | 'degraded';
+    persistence: 'file' | 'memory';
+    eventLogSource: 'disabled' | 'missing' | 'restored' | 'partial';
+    skippedLogEntries: number;
+    trustBasis: { serviceReadiness: 0 | 1 };
+  };
+  timestamp: string;
+};
+
 export type Observability = {
   data: {
     runtime: {
@@ -162,6 +174,10 @@ export class OmegaClient {
 
   async getHealth(): Promise<Health> {
     return this.get<Health>('/health');
+  }
+
+  async getState(): Promise<RuntimeState> {
+    return this.get<RuntimeState>('/state');
   }
 
   async getObservability(): Promise<Observability> {

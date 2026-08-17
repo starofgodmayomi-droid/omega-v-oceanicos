@@ -235,6 +235,7 @@ describe('API runtime contracts', () => {
       Array<{ observation: { id: string } }>
     >;
     const state = (await (await fetch(`${baseUrl}/state`)).json()) as ApiResponse<{
+      readiness: 'ready' | 'degraded';
       trustBasis: {
         evidenceQuality: number | null;
         verificationCoverage: number | null;
@@ -249,9 +250,11 @@ describe('API runtime contracts', () => {
     expect(new Set(events.data.map((event) => event.requestId)).size).toBe(1);
     expect(events.data[0]?.requestId).toBe('request-contract-1');
     expect(runs.data[0]?.observation.id).toBe(loop.data.observation.id);
+    expect(state.data.readiness).toBe('ready');
     expect(state.data.trustBasis.evidenceQuality).toBe(0.95);
     expect(state.data.trustBasis.verificationCoverage).toBe(1);
     expect(state.data.trustBasis.attestationValidity).toBe(1);
+    expect(state.data.trustBasis.serviceReadiness).toBe(1);
   });
 
   /**
@@ -948,12 +951,14 @@ describe('partial durable-log recovery readiness', () => {
 
     const stateResponse = await fetch(`${baseUrl}/state`);
     const state = (await stateResponse.json()) as ApiResponse<{
+      readiness: 'ready' | 'degraded';
       eventLogSource: string;
       skippedLogEntries: number;
       trustBasis: { serviceReadiness: number };
     }>;
 
     expect(stateResponse.status).toBe(200);
+    expect(state.data.readiness).toBe('degraded');
     expect(state.data.eventLogSource).toBe('partial');
     expect(state.data.skippedLogEntries).toBe(1);
     expect(state.data.trustBasis.serviceReadiness).toBe(0);

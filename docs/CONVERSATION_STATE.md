@@ -7,9 +7,9 @@
 Repository: `starofgodmayomi-droid/omega-v-oceanicos`  
 Worktree: `/home/ubuntu/current-main-worktree`  
 Branch: `main`
-Head: `2d8397ac4b395e46bb0c971a16fa6aa27c7115b8`
+Head: `e11d3fe`
 Tracking: `origin/main`
-Working tree: PRs #54, #55, #57–#63, #66, #68, #70, #71, #73, #75, #77, #79, #94, #95, #96, and #97 are merged into `main`; post-PR #97 state reconciliation is uncommitted on a clean base; no deployment is claimed.
+Working tree: PRs #54, #55, #57–#63, #66, #68, #70, #71, #73, #75, #77, #79, #94, #95, #96, #97, and #99 are merged into `main`; the explicit `/state` readiness slice is in progress on the post-PR #99 base; no deployment is claimed.
 
 PR #52 merged as `70a66ae2384f943e1fa69434537cd4699adc67b2` at `2026-08-16T18:31:24Z`; its head was `a9ef77a`. CI was observed green across Node 18, Node 20, Windows compatibility, package/smoke, and report; attested-artifact publication was skipped. No deployment is claimed.
 
@@ -43,7 +43,7 @@ PR #95 merged as `6e7454319e5ca108ae8d43ff584865c5253ae999` at `2026-08-17T04:28
 
 PR #96 merged as `3f39c09874c5478b8daf27a395006b27e193a6b2` at `2026-08-17T04:43:24Z`; the independent dashboard verification panel was merged with green CI. No deployment is claimed.
 
-PR #97 merged as `2d8397ac4b395e46bb0c971a16fa6aa27c7115b8` at `2026-08-17T04:57:23Z`; the reproducible browser-verifier walkthrough was merged with green CI. No deployment is claimed.
+PR #97 merged as `2d8397ac4b395e46bb0c971a16fa6aa27c7115b8` at `2026-08-17T04:57:23Z`; the reproducible browser-verifier walkthrough was merged with green CI. PR #99 merged as `e11d3fe` at `2026-08-17T05:29:57Z`; partial durable-log recovery now degrades API health/state readiness across API, SDK, CLI, dashboard, tests, and docs with green CI. No deployment is claimed.
 
 ## Verified evolution lineage
 
@@ -63,11 +63,12 @@ PR #97 merged as `2d8397ac4b395e46bb0c971a16fa6aa27c7115b8` at `2026-08-17T04:57
 | PR #75 memory guard              | Rotation-only memory encryption configuration now fails closed; focused tests cover the boundary and no deployment was claimed.                                                                                                                       |
 | PR #77 memory provenance         | Kernel-memory loads distinguish current, previous, and mixed authenticated key sources; custody and recovery remain open.                                                                                                                             |
 | PR #79 persistence readiness     | Corrupt enabled snapshots fail closed through health/state readiness; missing stores remain valid cold starts.                                                                                                                                        |
+| PR #99 partial-log readiness     | Malformed enabled event-log lines fail closed through health/state readiness; skipped entries remain inspectable and missing logs remain valid cold starts across API, SDK, CLI, dashboard, tests, and docs.                                          |
 | PRs #94–#97 browser verification | The envelope specification, independent Python verifier, browser WebCrypto verifier, dashboard panel, and real-key walkthrough are merged; signature origin/integrity remains distinct from correctness, revocation, expiry, and deployment trust.    |
 
 ## Bounded audit-query evidence
 
-Focused API/web/SDK/CLI tests passed: **137 tests** after repairing query-aware web/API endpoint drift detection. After PRs #57–#62, the full local gate passed with **25 suites / 428 tests**. The focused PR #63 dashboard suite passed **46 tests**, the rebased PR #66 dashboard suite passed **47 tests**, and PR #68 raised the full main baseline to **25 suites / 438 tests**. PRs #70 and #71 brought the post-merge main baseline to **25 suites / 435 tests** while removing redundant assertions and preserving unique coverage. PR #73 raised the post-merge baseline to **25 suites / 436 tests**. PRs #75 and #77 retained the post-merge baseline at **25 suites / 437 tests** while adding fail-closed memory rotation and mixed-key provenance evidence. PR #79 retained **25 suites / 438 tests** while adding the persistence-corruption readiness boundary. PRs #94–#96 added the signed-envelope specification, browser verifier, and independent dashboard panel. The post-PR #97 gate observed **30 suites / 556 tests** with successful workspace/Vite build, `format:check`, type-check, and `git diff --check`; PR #97’s CI matrix was observed green. The post-merge state reconciliation remains a separate documentation-only change.
+Focused API/web/SDK/CLI tests passed: **137 tests** after repairing query-aware web/API endpoint drift detection. After PRs #57–#62, the full local gate passed with **25 suites / 428 tests**. The focused PR #63 dashboard suite passed **46 tests**, the rebased PR #66 dashboard suite passed **47 tests**, and PR #68 raised the full main baseline to **25 suites / 438 tests**. PRs #70 and #71 brought the post-merge main baseline to **25 suites / 435 tests** while removing redundant assertions and preserving unique coverage. PR #73 raised the post-merge baseline to **25 suites / 436 tests**. PRs #75 and #77 retained the post-merge baseline at **25 suites / 437 tests** while adding fail-closed memory rotation and mixed-key provenance evidence. PR #79 retained **25 suites / 438 tests** while adding the persistence-corruption readiness boundary. PRs #94–#96 added the signed-envelope specification, browser verifier, and independent dashboard panel. The post-PR #97 gate observed **30 suites / 556 tests** with successful workspace/Vite build, `format:check`, type-check, and `git diff --check`; PR #97’s CI matrix was observed green. PR #99 observed **30 suites / 558 tests**, including malformed-log `/health` 503 and `/state` readiness regressions, with successful build, type-check, formatting, and green Node 18, Node 20, Windows, package/smoke, and report checks.
 
 The endpoint is bounded local event-log evidence only. Its `source`, `skipped`, `keySource`, `total`, `limit`, and normalized filters are evidence about the local runtime read; they do not prove completeness for unpersisted history, distributed consistency, global ordering, or replica observation.
 
@@ -85,6 +86,6 @@ HSM/KMS custody; secure deletion; automated persistence re-encryption; persisten
 
 ## Human gates and next executable loop
 
-The user has authorized slice-by-slice publication and merge. Next: commit the post-PR #97 state reconciliation on a documentation branch, open a draft PR, observe CI, and merge only after the same gates. Then select the next smallest production-relevant increment. Any publication, merge, or deployment remains separately gated.
+The user has authorized slice-by-slice publication and merge. PR #99 is merged after explicit authorization and green CI. Next: complete the explicit `/state` readiness contract across API, SDK, CLI, dashboard, tests, and docs; publish it through a draft PR, observe CI, and merge only after the same gates. Any publication, merge, or deployment remains separately gated.
 
 > One root. One current. Many minds. Infinite forms.

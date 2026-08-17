@@ -35,6 +35,34 @@ describe('OmegaClient', () => {
     });
   });
 
+  it('reads typed explicit state readiness evidence', async () => {
+    const client = new OmegaClient('http://api.test/', async (url) => {
+      expect(url).toBe('http://api.test/state');
+      return new Response(
+        JSON.stringify({
+          data: {
+            status: 'active',
+            readiness: 'degraded',
+            persistence: 'file',
+            eventLogSource: 'partial',
+            skippedLogEntries: 1,
+            trustBasis: { serviceReadiness: 0 },
+          },
+          timestamp: '2026-08-16T00:00:00.000Z',
+        })
+      );
+    });
+
+    await expect(client.getState()).resolves.toMatchObject({
+      data: {
+        readiness: 'degraded',
+        eventLogSource: 'partial',
+        skippedLogEntries: 1,
+        trustBasis: { serviceReadiness: 0 },
+      },
+    });
+  });
+
   it('reads typed observability evidence from the existing contract', async () => {
     const client = new OmegaClient('http://api.test/', async (url) => {
       expect(url).toBe('http://api.test/observability');

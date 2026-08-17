@@ -107,6 +107,14 @@ describe('omega status CLI', () => {
     }) as typeof process.stdout.write;
 
     const exitCode = await run(['status', '--url', 'http://api.test/'], async (url) => {
+      if (url.endsWith('/state')) {
+        return new Response(
+          JSON.stringify({
+            data: { readiness: 'ready', trustBasis: { serviceReadiness: 1 } },
+            timestamp: '2026-08-16T00:00:00.000Z',
+          })
+        );
+      }
       expect(url).toBe('http://api.test/observability');
       return new Response(
         JSON.stringify({
@@ -134,6 +142,7 @@ describe('omega status CLI', () => {
     });
 
     expect(exitCode).toBe(0);
+    expect(output.join('')).toContain('STATE         ready service=1');
     expect(output.join('')).toContain('attestation=VALID');
     expect(output.join('')).toContain('request=req-1');
   });
