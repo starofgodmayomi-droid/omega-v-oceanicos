@@ -78,6 +78,11 @@ describe('OmegaClient', () => {
               persistence: 'file',
               services: ['attester'],
               lastActivity: null,
+              eventLogSource: 'restored',
+              skippedLogEntries: 0,
+              eventLogReason: null,
+              eventLogEncryptionKeySource: 'current',
+              persistenceRotationPending: false,
             },
             provenance: {
               recentEvents: 4,
@@ -98,6 +103,7 @@ describe('OmegaClient', () => {
     const result = await client.getObservability();
     expect(result.data.trust.attestationValidity).toBe(true);
     expect(result.data.memory.intact).toBe(true);
+    expect(result.data.runtime.persistenceRotationPending).toBe(false);
   });
 
   it('reads the non-secret attestation policy contract', async () => {

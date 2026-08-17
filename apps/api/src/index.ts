@@ -24,6 +24,7 @@ import {
   eventLogReady,
   saveSnapshot,
   persistenceReady,
+  persistenceRotationPending,
 } from './persistence.js';
 
 /**
@@ -482,6 +483,11 @@ app.get('/health', (_req: Request, res: Response) => {
     previousPersistenceEncryptionKey
   );
   const durableLogIsReady = eventLogReady(persistenceEnabled, durableLog.source);
+  const rotationPending = persistenceRotationPending(
+    previousPersistenceEncryptionConfigured,
+    persistenceEncryptionKeySource,
+    durableLog.keySource
+  );
   const response: SuccessResponse<{
     status: 'ok';
     readiness: 'ready' | 'degraded';
@@ -498,6 +504,7 @@ app.get('/health', (_req: Request, res: Response) => {
         eventLogSource: string;
         eventLogReason: string | null;
         eventLogKeySource: string;
+        rotationPending: boolean;
         skippedLogEntries: number;
       };
     };
@@ -529,6 +536,7 @@ app.get('/health', (_req: Request, res: Response) => {
           eventLogSource: durableLog.source,
           eventLogReason: durableLog.reason ?? null,
           eventLogKeySource: durableLog.keySource,
+          rotationPending,
           skippedLogEntries: durableLog.skipped,
         },
       },
@@ -555,6 +563,11 @@ app.get('/state', (_req: Request, res: Response) => {
     previousPersistenceEncryptionKey
   );
   const durableLogIsReady = eventLogReady(persistenceEnabled, durableLog.source);
+  const rotationPending = persistenceRotationPending(
+    previousPersistenceEncryptionConfigured,
+    persistenceEncryptionKeySource,
+    durableLog.keySource
+  );
   const latestRun = completedRuns[0];
   const recentFailures = runtimeEvents.filter((event) => event.status === 'failed').length;
   const verificationCoverage = latestRun ? (latestRun.verification.summary.passed ? 1 : 0) : null;
@@ -590,6 +603,7 @@ app.get('/state', (_req: Request, res: Response) => {
       eventLogSource: durableLog.source,
       eventLogReason: durableLog.reason ?? null,
       eventLogKeySource: durableLog.keySource,
+      persistenceRotationPending: rotationPending,
       lastActivity: latest?.timestamp || null,
       services: [
         { name: 'observer', status: 'ready' },
@@ -615,6 +629,11 @@ app.get('/observability', (_req: Request, res: Response) => {
     previousPersistenceEncryptionKey
   );
   const attestationValidity = latestRun ? attestationService.verify(latestRun.attestation) : null;
+  const rotationPending = persistenceRotationPending(
+    previousPersistenceEncryptionConfigured,
+    persistenceEncryptionKeySource,
+    durableLog.keySource
+  );
 
   res.json({
     data: {
@@ -628,6 +647,7 @@ app.get('/observability', (_req: Request, res: Response) => {
         eventLogSource: durableLog.source,
         skippedLogEntries: durableLog.skipped,
         eventLogReason: durableLog.reason ?? null,
+        persistenceRotationPending: rotationPending,
         memoryEncryption: memoryEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
         memoryEncryptionKeySource,
         attestationTtlMs: configuredAttestationTtlMs(),
