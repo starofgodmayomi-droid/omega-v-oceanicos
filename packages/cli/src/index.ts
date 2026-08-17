@@ -27,6 +27,14 @@ type HealthResponse = {
   timestamp: string;
 };
 
+type StateResponse = {
+  data: {
+    readiness: 'ready' | 'degraded';
+    trustBasis: { serviceReadiness: 0 | 1 };
+  };
+  timestamp: string;
+};
+
 type ObservabilityResponse = {
   data: {
     runtime: {
@@ -208,16 +216,24 @@ async function health(argv: string[], fetchImpl: FetchLike): Promise<number> {
 async function status(argv: string[], fetchImpl: FetchLike): Promise<number> {
   const endpoint = `${baseUrl(argv).replace(/\/$/, '')}/observability`;
   try {
-    const response = await fetchImpl(endpoint, requestInit(argv));
+    const [response, stateResponse] = await Promise.all([
+      fetchImpl(endpoint, requestInit(argv)),
+      fetchImpl(`${baseUrl(argv).replace(/\/$/, '')}/state`, requestInit(argv)),
+    ]);
     const body = (await response.json()) as ObservabilityResponse | { error?: string };
-    if (!response.ok || !('data' in body)) {
+    const stateBody = (await stateResponse.json()) as StateResponse | { error?: string };
+    if (!response.ok || !stateResponse.ok || !('data' in body)) {
       process.stderr.write(`Observability unavailable (${response.status})\n`);
       return 1;
     }
 
+    const stateData = 'data' in stateBody ? stateBody.data : undefined;
+    const stateReadiness = stateData?.readiness ?? 'unknown';
+    const stateServiceReadiness = stateData?.trustBasis?.serviceReadiness ?? 'unknown';
     const { runtime, provenance, trust, memory } = body.data;
     process.stdout.write(
       [
+        `STATE         ${stateReadiness} service=${stateServiceReadiness}`,
         `RUNTIME       ${runtime.mode} / ${runtime.persistence}`,
         `SERVICES      ${runtime.services.join(', ')}`,
         `TRUST         verification=${percent(trust.verificationCoverage)} attestation=${
@@ -233,7 +249,12 @@ async function status(argv: string[], fetchImpl: FetchLike): Promise<number> {
         `OBSERVED      ${body.timestamp}`,
       ].join('\n') + '\n'
     );
-    return trust.attestationValidity === false || !memory.intact || !memory.appendOnly ? 1 : 0;
+    return stateReadiness !== 'ready' ||
+      trust.attestationValidity === false ||
+      !memory.intact ||
+      !memory.appendOnly
+      ? 1
+      : 0;
   } catch (error) {
     process.stderr.write(
       `Observability unavailable: ${error instanceof Error ? error.message : String(error)}\n`

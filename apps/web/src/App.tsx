@@ -185,6 +185,7 @@ export function App(): JSX.Element {
       const state = (await stateResponse.json()) as {
         data: {
           mode: string;
+          readiness: 'ready' | 'degraded';
           trust: number | null;
           trustBasis: {
             evidenceQuality: number | null;
@@ -730,6 +731,12 @@ export function App(): JSX.Element {
             <span>HEALTH</span>
             <strong className={runtimeHealth?.readiness === 'ready' ? 'green' : ''}>
               {runtimeHealth ? runtimeHealth.readiness.toUpperCase() : 'UNKNOWN'}
+            </strong>
+          </div>
+          <div>
+            <span>STATE READINESS</span>
+            <strong className={trustBasis?.serviceReadiness === 1 ? 'green' : ''}>
+              {trustBasis ? (trustBasis.serviceReadiness === 1 ? 'READY' : 'DEGRADED') : 'UNKNOWN'}
             </strong>
           </div>
           <div>

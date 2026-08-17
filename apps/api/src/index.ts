@@ -530,6 +530,7 @@ app.get('/state', (_req: Request, res: Response) => {
   res.json({
     data: {
       status: 'active',
+      readiness: memoryIntact && persistenceIsReady && durableLogIsReady ? 'ready' : 'degraded',
       persistence: persistenceEnabled ? 'file' : 'memory',
       persistenceEncryption: persistenceEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
       persistenceEncryptionKeySource,
