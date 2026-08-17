@@ -264,6 +264,17 @@ describe('policy provenance', () => {
     );
   });
 
+  it.each([
+    ['confidence', 'OMEGA_DISSENSUS_MIN_CONFIDENCE'],
+    ['quorum', 'OMEGA_DISSENSUS_QUORUM'],
+    ['split flag', 'OMEGA_DISSENSUS_HUMAN_ON_SPLIT'],
+  ])('refuses an empty %s rather than coercing it', (_label, variable) => {
+    // Number('') is 0 and 0 is a valid confidence, so an empty value would
+    // otherwise install the most permissive threshold there is.
+    expect(() => policyFromEnvironment({ [variable]: '' })).toThrow(InvalidPolicyError);
+    expect(() => policyFromEnvironment({ [variable]: '   ' })).toThrow(InvalidPolicyError);
+  });
+
   it('refuses an ambiguous split flag rather than guessing', () => {
     // 'yes' probably means true. Probably is not good enough for a flag
     // that decides whether a human is consulted.

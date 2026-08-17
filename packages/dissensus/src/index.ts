@@ -91,6 +91,16 @@ export function policyFromEnvironment(
     return STRICT_POLICY;
   }
 
+  // Number('') is 0, and 0 is a valid confidence. Left to coerce, an empty
+  // variable would silently install the most permissive threshold possible
+  // and nothing would ever route to a human on low confidence. An empty
+  // value is a mistake, not a setting.
+  const blank = (value: string | undefined): boolean => value !== undefined && value.trim() === '';
+
+  if (blank(raw.minimumConfidence) || blank(raw.quorum) || blank(raw.humanOnSplit)) {
+    throw new InvalidPolicyError('dissensus policy variables must not be set to an empty value');
+  }
+
   const minimumConfidence =
     raw.minimumConfidence === undefined
       ? STRICT_POLICY.minimumConfidence
