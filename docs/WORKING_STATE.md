@@ -141,6 +141,7 @@ The active worktree is `/home/ubuntu/current-main-worktree` on branch `main`, sy
 | PR #96 is **merged** into `main` as squash commit `3f39c09874c5478b8daf27a395006b27e193a6b2`, observed at `2026-08-17T04:43:24Z`; the independent dashboard verification panel passed CI; no deployment is claimed. |
 | PR #97 is **merged** into `main` as squash commit `2d8397ac4b395e46bb0c971a16fa6aa27c7115b8`, observed at `2026-08-17T04:57:23Z`; the reproducible browser-verifier walkthrough passed Node 18, Node 20, Windows, package/smoke, and report; attested-artifact publication was skipped. This is merge evidence only; no deployment is claimed. |
 | PR #99 is **merged** into `main` as squash commit `e11d3fe`, observed at `2026-08-17T05:29:57Z`; partial durable-log recovery now fails readiness closed across API, SDK, CLI, dashboard, tests, and docs. Node 18, Node 20, Windows, package/smoke, and report checks passed; attested-artifact publication was skipped. This is merge evidence only; no deployment is claimed. |
+| PR #100 is **merged** into `main` as squash commit `c44f310`, observed at `2026-08-17T09:06:02Z`; the explicit `/state` readiness contract is consumed across API, SDK, CLI, dashboard, tests, and docs. Node 18, Node 20, Windows, package/smoke, and report checks passed; attested-artifact publication was skipped. This is merge evidence only; no deployment is claimed. |
 
 PR #32 remains historical Windows-compatibility evidence.
 
@@ -176,7 +177,7 @@ The combined signing-audit and persistence-encryption state passed:
 
 | `git diff --check` | Passed before the revocation commit |
 
-The last full verification before the recent coverage queue observed 25 suites / 416 tests and a successful workspace/Vite build. After PRs #57–#62, the full local gate observed 25 suites / 428 tests passed. PR #63 raised the full gate to 431 tests, PR #66 to 432 tests, PR #68 to 438 tests, PRs #70/#71 to 435 tests, PRs #73/#75/#77 retained 436/437/437 tests, PR #79 retained 438 tests, the post-PR #97 main gate observed 30 suites / 556 tests passed, and the PR #99 gate observed 30 suites / 558 tests passed with the partial-log health/state regression, successful workspace/Vite build, passing format/type-check, and `git diff --check`. PRs #57–#63, #66, #68, #70, #71, #73, #75, #77, #79, and #97 had green Node 18, Node 20, Windows, package/smoke, and report checks as applicable; PR #75 required a formatting repair before its corrected matrix passed; attested-artifact publication was skipped. The repository may contain generated build output ignored by Git; only intended source and documentation changes should be committed.
+The last full verification before the recent coverage queue observed 25 suites / 416 tests and a successful workspace/Vite build. After PRs #57–#62, the full local gate observed 25 suites / 428 tests passed. PR #63 raised the full gate to 431 tests, PR #66 to 432 tests, PR #68 to 438 tests, PRs #70/#71 to 435 tests, PRs #73/#75/#77 retained 436/437/437 tests, PR #79 retained 438 tests, the post-PR #97 main gate observed 30 suites / 556 tests passed, the PR #99 gate observed 30 suites / 558 tests passed with the partial-log health/state regression, and the PR #100 gate observed 30 suites / 559 tests passed with explicit `/state` readiness coverage, successful workspace/Vite build, passing format/type-check, and `git diff --check`. PRs #57–#63, #66, #68, #70, #71, #73, #75, #77, #79, and #97 had green Node 18, Node 20, Windows, package/smoke, and report checks as applicable; PR #75 required a formatting repair before its corrected matrix passed; attested-artifact publication was skipped. The repository may contain generated build output ignored by Git; only intended source and documentation changes should be committed.
 
 ## Remaining gaps and uncertainty
 
@@ -186,6 +187,6 @@ The web client exposes revoke and revocation-ledger controls. Stronger administr
 
 ## Next authorized action
 
-1. Reconcile the merged PR #99 evidence and begin the explicit `/state` readiness slice.
+1. Reconcile the merged PR #100 evidence in a documentation-only change, then select the next smallest production-relevant slice.
 2. Verify the next slice across API, SDK, CLI, dashboard, tests, documentation, Node versions, and Windows.
 3. Keep any new publication, merge, and deployment actions behind separate human gates.
