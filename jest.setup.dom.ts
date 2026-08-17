@@ -106,6 +106,19 @@ class MockEventSource {
 (globalThis as unknown as { EventSource: unknown }).EventSource = MockEventSource;
 (globalThis as unknown as { MockEventSource: unknown }).MockEventSource = MockEventSource;
 
+// jsdom ships no WebCrypto, so `crypto.subtle` is undefined and the offline
+// verification panel correctly reports that it cannot verify. Real browsers
+// do implement it, so the absence is an artefact of the test environment,
+// not of the product. Node's implementation is installed here so the DOM
+// suite exercises the same path a browser would.
+//
+// Note what this does NOT do: it does not stub verification. Signatures are
+// checked for real, and a forged one still fails.
+if (!globalThis.crypto?.subtle) {
+  const { webcrypto } = require('node:crypto');
+  Object.defineProperty(globalThis, 'crypto', { value: webcrypto, configurable: true });
+}
+
 if (!Element.prototype.scrollIntoView) {
   Element.prototype.scrollIntoView = function scrollIntoView(): void {
     /* jsdom has no layout; nothing to do */

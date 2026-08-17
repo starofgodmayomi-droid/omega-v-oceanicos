@@ -163,4 +163,23 @@ describe('browser attestation verifier', () => {
     // Sorted order would put attestedAt first; it does not.
     expect(published.startsWith('{"verificationId"')).toBe(true);
   });
+
+  it('says it cannot verify rather than calling an attestation invalid', async () => {
+    // The distinction that matters: a runtime without Ed25519 must not
+    // report a good signature as forged. Simulated by handing the verifier
+    // a SubtleCrypto that has none.
+    const withoutEd25519 = {
+      importKey: async () => {
+        throw new Error('Unrecognized name.');
+      },
+    } as unknown as SubtleCrypto;
+
+    expect(await canVerify(withoutEd25519)).toBe(false);
+
+    const result = await verifyAttestation(signed(), publicKeyPem, withoutEd25519);
+
+    expect(result.valid).toBe(false);
+    expect(result.stage).toBe('crypto');
+    expect(result.reason).toContain('could not verify');
+  });
 });
