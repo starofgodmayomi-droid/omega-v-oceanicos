@@ -76,6 +76,13 @@ remain on the [roadmap](./ROADMAP.md).
 - **[Attestation](../packages/attestation/README.md)** — HMAC signing, key
   fingerprints, and why there is no default key
 
+### Specifications
+
+- **[Attestation Envelope v1](./spec/ATTESTATION-ENVELOPE.md)** — the signed
+  payload, its exact byte serialisation, and how to verify one **without
+  running any code from this project**. Ships a reference verifier in Python
+  that imports nothing from here.
+
 ### Decisions
 
 - **[1. Serve the web client from the API's origin](./decisions/0001-single-origin-deployment.md)**
