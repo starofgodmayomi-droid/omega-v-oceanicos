@@ -7,7 +7,13 @@ import { Observer } from '@omega-v/observer';
 import { VerificationEngine } from '@omega-v/verification';
 import { AttestationService } from '@omega-v/attestation';
 import { Remember, FileMemoryStore } from '@omega-v/remember';
-import { reconcile, STRICT_POLICY, type Dissensus, type Opinion } from '@omega-v/dissensus';
+import {
+  policyFromEnvironment,
+  reconcile,
+  type Dissensus,
+  type DissensusPolicy,
+  type Opinion,
+} from '@omega-v/dissensus';
 import { Attestation, SuccessResponse, ErrorResponse, VerificationRule } from '@omega-v/types';
 import {
   appendEvent,
@@ -162,6 +168,12 @@ const kernelMemory = new Remember(kernelMemoryStore);
  * contested at the time" rather than only "was it authorized".
  */
 const runtimeDissensus: Array<Dissensus & { id: string; timestamp: string }> = [];
+
+/**
+ * Resolved once at startup so a malformed value fails loudly here rather
+ * than silently changing how disagreements route, request by request.
+ */
+const dissensusPolicy: DissensusPolicy = policyFromEnvironment(process.env);
 const memoryEncryptionKeySource = kernelMemoryStore?.encryptionKeySource() ?? 'none';
 
 type SigningAuditDetails = {
@@ -1495,7 +1507,7 @@ app.post('/dissensus', (req: Request, res: Response) => {
       return;
     }
 
-    const reconciled = reconcile(opinions, STRICT_POLICY);
+    const reconciled = reconcile(opinions, dissensusPolicy);
     const recorded = {
       ...reconciled,
       id: `dis-${new Date().toISOString().replace(/[-:.TZ]/g, '')}`,
@@ -1540,6 +1552,9 @@ app.get('/dissensus', (_req: Request, res: Response) => {
     meta: {
       window: RECENT_EVENT_WINDOW,
       unresolved: runtimeDissensus.filter((entry) => entry.verdict !== 'AGREED').length,
+      // Reported so a reader can tell whether the routing threshold was
+      // measured or merely chosen. It has never been measured.
+      policy: dissensusPolicy,
     },
     timestamp: new Date().toISOString(),
   });

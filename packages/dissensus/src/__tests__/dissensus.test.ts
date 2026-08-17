@@ -1,4 +1,11 @@
-import { reconcile, STRICT_POLICY, type Opinion, type DissensusPolicy } from '../index';
+import {
+  InvalidPolicyError,
+  policyFromEnvironment,
+  reconcile,
+  STRICT_POLICY,
+  type DissensusPolicy,
+  type Opinion,
+} from '../index';
 
 const opinion = (over: Partial<Opinion> = {}): Opinion => ({
   verifierId: 'rules',
@@ -9,7 +16,12 @@ const opinion = (over: Partial<Opinion> = {}): Opinion => ({
   ...over,
 });
 
-const loose: DissensusPolicy = { humanOnSplit: false, minimumConfidence: 0, quorum: 1 };
+const loose: DissensusPolicy = {
+  humanOnSplit: false,
+  minimumConfidence: 0,
+  quorum: 1,
+  provenance: 'configured',
+};
 
 describe('reconcile — agreement', () => {
   it('agrees and routes automatically when every verifier passes', () => {
@@ -176,5 +188,105 @@ describe('the strict policy', () => {
     const split = [opinion({ passed: true }), opinion({ verifierId: 'model', passed: false })];
 
     expect(reconcile(split)).toEqual(reconcile(split, STRICT_POLICY));
+  });
+});
+
+describe('policy provenance', () => {
+  it('marks the built-in threshold as chosen rather than measured', () => {
+    // 0.7 was picked by whoever wrote the module. Nothing observed it.
+    expect(STRICT_POLICY.provenance).toBe('default');
+  });
+
+  it('reports the policy alongside every verdict', () => {
+    const result = reconcile([opinion(), opinion({ verifierId: 'model' })]);
+
+    // A routing decision without its threshold is unreadable: a reader
+    // cannot tell whether HUMAN meant "they disagreed" or "the bar was high".
+    expect(result.policy).toEqual(STRICT_POLICY);
+    expect(result.policy.provenance).toBe('default');
+  });
+
+  it('carries the policy through every branch, including refusals', () => {
+    expect(reconcile([]).policy.provenance).toBe('default');
+    expect(reconcile([opinion(), opinion()]).policy).toBeDefined();
+    expect(
+      reconcile([opinion({ confidence: 5 }), opinion({ verifierId: 'm' })]).policy
+    ).toBeDefined();
+  });
+
+  it('returns the default policy when nothing is configured', () => {
+    expect(policyFromEnvironment({})).toEqual(STRICT_POLICY);
+  });
+
+  it('marks an operator-set policy as configured, not default', () => {
+    const policy = policyFromEnvironment({ OMEGA_DISSENSUS_MIN_CONFIDENCE: '0.9' });
+
+    expect(policy.minimumConfidence).toBe(0.9);
+    // Someone accepted responsibility for this number. That is a stronger
+    // claim than 'default' and a weaker one than 'derived'.
+    expect(policy.provenance).toBe('configured');
+  });
+
+  it('keeps unset fields at their defaults while marking the rest configured', () => {
+    const policy = policyFromEnvironment({ OMEGA_DISSENSUS_QUORUM: '3' });
+
+    expect(policy.quorum).toBe(3);
+    expect(policy.minimumConfidence).toBe(STRICT_POLICY.minimumConfidence);
+    expect(policy.humanOnSplit).toBe(STRICT_POLICY.humanOnSplit);
+  });
+
+  it('accepts an explicit decision to proceed on splits', () => {
+    expect(policyFromEnvironment({ OMEGA_DISSENSUS_HUMAN_ON_SPLIT: 'false' }).humanOnSplit).toBe(
+      false
+    );
+  });
+
+  it.each([
+    ['above one', '1.5'],
+    ['negative', '-0.1'],
+    ['not a number', 'high'],
+    ['empty', ''],
+  ])('refuses a %s confidence rather than clamping it', (_label, value) => {
+    // Clamping would invent a number nobody chose and then route on it.
+    expect(() => policyFromEnvironment({ OMEGA_DISSENSUS_MIN_CONFIDENCE: value })).toThrow(
+      InvalidPolicyError
+    );
+  });
+
+  it.each([
+    ['zero', '0'],
+    ['negative', '-2'],
+    ['fractional', '2.5'],
+    ['not a number', 'two'],
+  ])('refuses a %s quorum', (_label, value) => {
+    expect(() => policyFromEnvironment({ OMEGA_DISSENSUS_QUORUM: value })).toThrow(
+      InvalidPolicyError
+    );
+  });
+
+  it('refuses an ambiguous split flag rather than guessing', () => {
+    // 'yes' probably means true. Probably is not good enough for a flag
+    // that decides whether a human is consulted.
+    expect(() => policyFromEnvironment({ OMEGA_DISSENSUS_HUMAN_ON_SPLIT: 'yes' })).toThrow(
+      InvalidPolicyError
+    );
+  });
+
+  it('names the variable in the error, so an operator can fix it', () => {
+    expect(() => policyFromEnvironment({ OMEGA_DISSENSUS_QUORUM: 'two' })).toThrow(
+      /OMEGA_DISSENSUS_QUORUM/
+    );
+  });
+
+  it('has no way to report a derived policy yet, and does not pretend otherwise', () => {
+    const provenances = [
+      STRICT_POLICY.provenance,
+      policyFromEnvironment({ OMEGA_DISSENSUS_QUORUM: '2' }).provenance,
+    ];
+
+    // 'derived' exists in the type because it is the goal. Nothing produces
+    // it, because no outcome data has been collected. When /learn feeds
+    // back, this expectation is what should change.
+    expect(provenances).not.toContain('derived');
   });
 });
