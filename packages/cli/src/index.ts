@@ -128,13 +128,18 @@ function usage(): string {
 }
 
 function baseUrl(argv: string[]): string {
-  const index = argv.indexOf('--url');
-  return (index >= 0 ? argv[index + 1] : process.env.OMEGA_API_URL) || 'http://localhost:3000';
+  // option() treats a flag with no value as absent, which is what
+  // adminToken already does. Reading argv directly meant a trailing --url
+  // selected the flag branch, found undefined, and fell through to
+  // localhost — silently ignoring a configured OMEGA_API_URL.
+  return option(argv, '--url') || process.env.OMEGA_API_URL || 'http://localhost:3000';
 }
 
 function readToken(argv: string[]): string | undefined {
-  const index = argv.indexOf('--token');
-  return (index >= 0 ? argv[index + 1] : process.env.OMEGA_READ_TOKEN) || undefined;
+  // Same shape as baseUrl: a trailing --token must not discard a
+  // configured OMEGA_READ_TOKEN and silently send an unauthenticated
+  // request.
+  return option(argv, '--token') || process.env.OMEGA_READ_TOKEN || undefined;
 }
 
 function requestInit(argv: string[]): RequestInit | undefined {

@@ -813,6 +813,7 @@ describe('omega CLI argument parsing', () => {
   const originalWrite = process.stdout.write;
   const originalError = process.stderr.write;
   const originalUrl = process.env.OMEGA_API_URL;
+  const originalToken = process.env.OMEGA_READ_TOKEN;
 
   const capture = (): string[] => {
     const output: string[] = [];
@@ -828,6 +829,8 @@ describe('omega CLI argument parsing', () => {
     process.stderr.write = originalError;
     if (originalUrl === undefined) delete process.env.OMEGA_API_URL;
     else process.env.OMEGA_API_URL = originalUrl;
+    if (originalToken === undefined) delete process.env.OMEGA_READ_TOKEN;
+    else process.env.OMEGA_READ_TOKEN = originalToken;
   });
 
   const runsPayload = (count: number): string =>
@@ -889,6 +892,23 @@ describe('omega CLI argument parsing', () => {
       expect(url).toBe('http://from-env.test/runs');
       return new Response(runsPayload(1));
     });
+
+    expect(exitCode).toBe(0);
+  });
+
+  it('falls back to OMEGA_READ_TOKEN when --token has no value', async () => {
+    process.env.OMEGA_READ_TOKEN = 'token-from-env';
+    capture();
+
+    const exitCode = await run(
+      ['runs', '--url', 'http://api.test', '--token'],
+      async (_url, init) => {
+        expect((init?.headers as Record<string, string>)?.Authorization).toBe(
+          'Bearer token-from-env'
+        );
+        return new Response(runsPayload(1));
+      }
+    );
 
     expect(exitCode).toBe(0);
   });
