@@ -79,9 +79,16 @@ describe('packages document themselves', () => {
   });
 
   it('names no package that does not exist', () => {
-    const named = Array.from(index.matchAll(/@omega-v\/([a-z-]+)/g)).map((match) => match[1]);
+    // Fenced blocks are stripped first. The index contains an "Add a New
+    // Package" example naming @omega-v/my-package, which is a template for
+    // the reader rather than a claim that the package exists. Prose and
+    // tables make claims; code samples demonstrate. Checking the samples
+    // would fail on a placeholder that is doing its job.
+    const claims = index.replace(/```[\s\S]*?```/g, '');
+    const named = Array.from(claims.matchAll(/@omega-v\/([a-z-]+)/g)).map((match) => match[1]);
     const real = new Set(packages);
 
+    expect(named.length).toBeGreaterThan(0);
     expect(named.filter((name) => !real.has(name))).toEqual([]);
   });
 });
