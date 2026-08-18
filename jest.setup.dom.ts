@@ -40,28 +40,28 @@ configure({
   },
 
   /**
-   * Raised from the 1000ms default for one specific reason.
+   * Raised from the 1000ms default, and the reason recorded here has been
+   * falsified.
    *
-   * The offline verification panel awaits real Ed25519 importKey and verify.
-   * Node dispatches those to the libuv threadpool, and with four jest
-   * workers competing on a CI runner that can exceed a second. It is the
-   * only place in this suite that waits on actual cryptography, and it is
-   * the place that flaked: run 336 failed on `Unable to find role="status"`
-   * and the identical commit passed on re-run with no change.
+   * The original hypothesis was that the offline verification panel awaits
+   * real Ed25519 importKey and verify, that Node dispatches those to the
+   * libuv threadpool, and that CI contention pushed it past a second. The
+   * comment recorded what would disprove that: a recurrence after the
+   * change.
    *
-   * Stated as a hypothesis rather than a conclusion. I could not reproduce
-   * it deterministically, and the reasoning is circumstantial: the timing,
-   * the single suite involved, and the absence of any other candidate.
+   * It recurred, on run 350, on verify (18.x) and on Windows, at five
+   * seconds. Five times the budget is not contention. The cause is
+   * elsewhere, and the honest reading is that this timeout is now masking
+   * how often the real defect fires rather than fixing it.
    *
-   * What would falsify it: a flake in a test that awaits no cryptography, or
-   * a recurrence here after this change. Either means the cause is
-   * elsewhere and this raised the ceiling on a real bug instead of fixing a
-   * scheduling artefact.
+   * The value stays only because lowering it would trade one unreliable
+   * signal for another while the actual cause is unknown. It is not
+   * evidence of anything, and it should be removed once the cause is found.
    *
-   * This is not permission for slow tests. A non-crypto assertion needing
-   * more than a second is a defect, and raising this number rather than
-   * fixing such a case would be exactly the fabricated GREEN the charter
-   * refuses.
+   * What is known: the failure is always the same assertion — findByRole
+   * 'status' after a user-event click on an async handler — and never a
+   * test that awaits no cryptography. The next step is to make that
+   * boundary deterministic rather than timed, not to raise this again.
    */
   asyncUtilTimeout: 5000,
 });

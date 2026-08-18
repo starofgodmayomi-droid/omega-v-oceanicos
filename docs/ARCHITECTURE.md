@@ -47,9 +47,18 @@ Each `+` is optional until the previous layer is real:
 
 Present in repo today as expansion surfaces (not MINI prerequisites):
 
-- `@omega-v/attestation` — `+ ATTEST`
+- `@omega-v/attestation` — `+ ATTEST` (HMAC-SHA256 and Ed25519; see
+  [the envelope specification](spec/ATTESTATION-ENVELOPE.md))
+- `@omega-v/dissensus` — `+ DISSENT` (reconcile plural verifiers without
+  resolving them)
+- `@omega-v/sdk` — `+ SDK`
+- `@omega-v/cli` — `+ CLI`
 - `apps/api` — `+ API`
 - `apps/web` — `+ Web`
+
+`+ CLI` and `+ SDK` appear in the earned-expansion list above and are also
+listed here, because they have since been earned. The list above is the
+sequence; this list is the state.
 
 ---
 
