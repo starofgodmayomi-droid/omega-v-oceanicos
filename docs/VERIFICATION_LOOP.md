@@ -354,8 +354,10 @@ const payloadToSign = {
 #### 3.2 Compute Signature
 
 ```typescript
-// Using the signing key (private key held securely)
-const signature = cryptography.sign(JSON.stringify(payloadToSign), signingKey);
+// Ed25519 over the UTF-8 bytes of the eight signed fields. The verifier
+// takes its algorithm from its own configuration, never from the
+// attestation being verified.
+const signature = sign(null, Buffer.from(JSON.stringify(payloadToSign)), privateKey);
 
 // signature = "0x1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a"
 ```
@@ -364,30 +366,23 @@ const signature = cryptography.sign(JSON.stringify(payloadToSign), signingKey);
 
 ```typescript
 const attestation = {
-  // The signed content
+  // The eight signed fields, in the order the signature covers them.
+  // See docs/spec/ATTESTATION-ENVELOPE.md — key order is part of the format.
   verificationId: 'ver-2026-08-07-5678',
   observationId: 'obs-2026-08-07-1234',
   verified: true,
   confidence: 0.95,
-
-  // The signature
-  signature: '0x1a2b3c4d5e6f...',
-
-  // Signature metadata
-  signingKey: 'key-2026-08-production-v2',
-  keyVersion: '2',
-  signingAlgorithm: 'ECDSA-SHA256',
-
-  // Temporal data
-  attestedAt: '2026-08-07T10:30:02Z',
-  attestedBy: 'attestation-service-1',
-  attestedByKeyVersion: '2',
-
-  // For auditability
   ruleVersions: verification.ruleVersions,
+  attestedAt: '2026-08-07T10:30:02Z',
+  attestedBy: 'attestation-service',
+  keyVersion: '1',
 
-  // For verification
-  verifyingPublicKey: publicKey,
+  // Not signed. Do not rest a trust decision on these.
+  id: 'att-2026-08-07-9012',
+  signature: '0x1a2b3c4d5e6f...',
+  signingKey: 'sha256:9f2c1a7b4e6d0835', // a fingerprint, never the key
+  signingAlgorithm: 'Ed25519', // or 'HMAC-SHA256'
+  status: 'signed',
 };
 ```
 
@@ -420,10 +415,10 @@ console.log(isValid); // true
   verificationId: "ver-2026-08-07-5678",
   observationId: "obs-2026-08-07-1234",
   signature: "0x1a2b3c4d5e6f...",
-  signingKey: "key-2026-08-production-v2",
-  keyVersion: "2",
+  signingKey: "sha256:9f2c1a7b4e6d0835",
+  keyVersion: "1",
   attestedAt: "2026-08-07T10:30:02Z",
-  attestedBy: "attestation-service-1",
+  attestedBy: "attestation-service",
   verified: true,
   confidence: 0.95,
   status: "signed"
@@ -831,7 +826,7 @@ Overall: PASS (confidence 0.95)
 ```
 Sign the verification result
 signature: 0x1a2b3c...
-signingKey: key-2026-08-production-v2
+signingKey: sha256:9f2c1a7b4e6d0835 (fingerprint, not the key)
 timestamp: 10:30:02
 ```
 

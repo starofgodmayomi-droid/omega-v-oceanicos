@@ -1,5 +1,5 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
-import { join, dirname } from 'node:path';
+import { join, dirname, relative } from 'node:path';
 
 /**
  * Directory READMEs must not describe siblings that do not exist.
@@ -142,4 +142,69 @@ describe('apps document themselves', () => {
       expect(index).not.toMatch(new RegExp(`${shipped}\\s*\\(future\\)`));
     }
   });
+});
+
+/**
+ * No document may describe cryptography the system does not implement, or
+ * print anything shaped like a signing key.
+ *
+ * docs/VERIFICATION_LOOP.md claimed `signingAlgorithm: 'ECDSA-SHA256'`,
+ * which has never existed here — the system supports HMAC-SHA256 and
+ * Ed25519. It also printed `key-2026-08-production-v2` twice, the same
+ * key-shaped literal removed from the API README once already, and showed
+ * envelope fields (`attestedByKeyVersion`, `verifyingPublicKey`) that the
+ * real attestation does not have.
+ *
+ * Those are not omissions. A reader implementing from that document would
+ * have built the wrong verifier, which is worse than having no document.
+ */
+describe('documents describe the cryptography that exists', () => {
+  const root = process.cwd();
+
+  const markdown = (from: string): string[] =>
+    readdirSync(from).flatMap((entry) => {
+      if (['node_modules', '.git', 'dist', 'coverage'].includes(entry)) return [];
+      const full = join(from, entry);
+      if (statSync(full).isDirectory()) return markdown(full);
+      return entry.endsWith('.md') ? [full] : [];
+    });
+
+  const documents = markdown(root);
+
+  it('finds documents to check', () => {
+    expect(documents.length).toBeGreaterThan(10);
+  });
+
+  it.each(documents.map((file) => [relative(root, file), file]))(
+    '%s names no algorithm the system cannot perform',
+    (_label, file) => {
+      const text = readFileSync(file, 'utf8');
+      // Only these two are implemented. RSA/ECDSA/DSA in a signingAlgorithm
+      // position would send an implementer down a path that does not exist.
+      const claimed = Array.from(
+        text.matchAll(/signingAlgorithm['":\s]+['"]?([A-Za-z0-9-]+)/g)
+      ).map((match) => match[1]);
+
+      expect(claimed.filter((name) => !['Ed25519', 'HMAC-SHA256'].includes(name))).toEqual([]);
+    }
+  );
+
+  it.each(documents.map((file) => [relative(root, file), file]))(
+    '%s prints no key-shaped literal',
+    (_label, file) => {
+      const text = readFileSync(file, 'utf8');
+
+      // A signingKey value must be a fingerprint or an env reference, never
+      // something that reads like a usable secret.
+      const values = Array.from(text.matchAll(/signingKey['":\s]+['"]?([^\s'",)]+)/g)).map(
+        (match) => match[1]
+      );
+
+      const suspicious = values.filter(
+        (value) => !value.startsWith('sha256:') && !value.startsWith('OMEGA_') && value !== 'null'
+      );
+
+      expect(suspicious).toEqual([]);
+    }
+  );
 });
