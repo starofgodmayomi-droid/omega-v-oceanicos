@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 
 /**
@@ -41,5 +41,54 @@ describe('directory READMEs describe real contents', () => {
     const missing = claimed.filter((token) => !existsSync(join(base, token.replace(/\/$/, ''))));
 
     expect(missing).toEqual([]);
+  });
+});
+
+/**
+ * Every package documents itself, and the index knows every package.
+ *
+ * packages/dissensus shipped with no README while all nine siblings had
+ * one, and packages/README.md listed only attestation under earned
+ * expansions while sdk, cli and dissensus all existed. Nothing caught
+ * either: the guard above checks two directory READMEs, and this gap sat
+ * one level below it.
+ *
+ * A package with no README is not a documentation preference. It is a unit
+ * of the system that cannot explain what it is for, which is the same
+ * failure as an endpoint missing from the startup banner.
+ */
+describe('packages document themselves', () => {
+  const packagesDir = join(process.cwd(), 'packages');
+
+  const packages = readdirSync(packagesDir).filter((entry) =>
+    statSync(join(packagesDir, entry)).isDirectory()
+  );
+
+  const index = readFileSync(join(packagesDir, 'README.md'), 'utf8');
+
+  it('finds the packages it is meant to check', () => {
+    expect(packages.length).toBeGreaterThanOrEqual(8);
+  });
+
+  it.each(packages)('packages/%s has a README', (name) => {
+    expect(existsSync(join(packagesDir, name, 'README.md'))).toBe(true);
+  });
+
+  it.each(packages)('packages/README.md names %s', (name) => {
+    expect(index.includes(`${name}/`) || index.includes(`@omega-v/${name}`)).toBe(true);
+  });
+
+  it('names no package that does not exist', () => {
+    // Fenced blocks are stripped first. The index contains an "Add a New
+    // Package" example naming @omega-v/my-package, which is a template for
+    // the reader rather than a claim that the package exists. Prose and
+    // tables make claims; code samples demonstrate. Checking the samples
+    // would fail on a placeholder that is doing its job.
+    const claims = index.replace(/```[\s\S]*?```/g, '');
+    const named = Array.from(claims.matchAll(/@omega-v\/([a-z-]+)/g)).map((match) => match[1]);
+    const real = new Set(packages);
+
+    expect(named.length).toBeGreaterThan(0);
+    expect(named.filter((name) => !real.has(name))).toEqual([]);
   });
 });

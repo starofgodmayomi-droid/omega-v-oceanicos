@@ -52,8 +52,18 @@ These packages are **not** the kernel. They expand MINI when earned:
 
 ```
 packages/
-└── attestation/        # + ATTEST — cryptographic signing
+├── attestation/        # + ATTEST — cryptographic signing
+├── dissensus/          # + DISSENT — reconcile plural verifiers
+├── sdk/                # + SDK — typed client
+└── cli/                # + CLI — operator commands
 ```
+
+| Package                | Expansion                                |
+| ---------------------- | ---------------------------------------- |
+| `@omega-v/attestation` | `+ ATTEST` — signatures others can check |
+| `@omega-v/dissensus`   | `+ DISSENT` — disagreement preserved     |
+| `@omega-v/sdk`         | `+ SDK` — typed access                   |
+| `@omega-v/cli`         | `+ CLI` — operator surface               |
 
 Apps (`apps/api`, `apps/web`) are interface expansions (`+ API`, `+ Web`).
 
