@@ -196,12 +196,15 @@ describe('documents describe the cryptography that exists', () => {
 
       // A signingKey value must be a fingerprint or an env reference, never
       // something that reads like a usable secret.
-      const values = Array.from(text.matchAll(/signingKey['":\s]+['"]?([^\s'",)]+)/g)).map(
+      // Only quoted literals. `signingKey: privateKey` in an example is a
+      // variable reference, not a secret, and flagging it would push
+      // authors toward vaguer examples rather than safer ones.
+      const values = Array.from(text.matchAll(/signingKey['"]?\s*[:=]\s*['"]([^'"]+)['"]/g)).map(
         (match) => match[1]
       );
 
       const suspicious = values.filter(
-        (value) => !value.startsWith('sha256:') && !value.startsWith('OMEGA_') && value !== 'null'
+        (value) => !value.startsWith('sha256:') && !value.startsWith('OMEGA_')
       );
 
       expect(suspicious).toEqual([]);
