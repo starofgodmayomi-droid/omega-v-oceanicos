@@ -222,24 +222,39 @@ describe('the current, broken and recovered', () => {
     expect((await get<{ intact: boolean }>('/memory/integrity')).data.intact).toBe(true);
   });
 
-  it('kept every stage of the journey in the durable log', async () => {
-    const log = await get<Array<{ type: string }>>('/log');
-    const types = new Set(log.data.map((entry) => entry.type));
+  it('kept every stage of the journey in the runtime record', async () => {
+    const events = await get<Array<{ type: string }>>('/events');
+    const types = new Set(events.data.map((entry) => entry.type));
 
-    // The whole current, including the parts that went wrong.
+    // The whole current, including the parts that went wrong. Note what is
+    // absent from this list and present in the journey: nothing. A record
+    // that drops the revocation and the dissent would describe a cleaner
+    // system than the one that ran.
     for (const stage of [
-      'observation.captured',
-      'verification.completed',
+      'observation.received',
+      'verification.started',
       'attestation.created',
       'attestation.revoked',
       'dissensus.reconciled',
       'action.authorized',
       'learning.recorded',
-      'recompilation.proposed',
+      'recompile.proposed',
+      'memory.recorded',
     ]) {
-      expect(Array.from(types).some((type) => type.startsWith(stage.split('.')[0]))).toBe(true);
+      expect(types).toContain(stage);
     }
+  });
 
-    expect(log.meta?.source).not.toBe('partial');
+  it('does not pretend to a durable log it is not keeping', async () => {
+    const log = await get<unknown[]>('/log');
+
+    // Persistence is off under NODE_ENV=test, so the log is empty — and it
+    // says `disabled` rather than `restored` with nothing in it. An empty
+    // log that reports success is indistinguishable from a log that lost
+    // everything, which is the distinction this endpoint exists to make.
+    expect(log.meta?.appendOnly).toBe(true);
+    expect(log.meta?.source).toBe('disabled');
+    expect(log.data).toEqual([]);
+    expect(log.meta?.skipped).toBe(0);
   });
 });
