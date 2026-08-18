@@ -7,11 +7,11 @@ User-facing applications and services for the Ω∞v Oceanicos verification ecos
 Applications expose the core verification loop to end users through different interfaces:
 
 ```
-Web Dashboard    REST API    CLI (future)    Mobile (future)
-      ↓           ↓             ↓                ↓
-   React UI   Express.js   Command-line    iOS/Android
-      └─────────────┬──────────────┐──────────────┘
-                    ↓
+Web Dashboard    REST API      CLI           SDK        Mobile (future)
+      ↓             ↓            ↓             ↓              ↓
+   React UI    Express.js    omega(1)    TypeScript     iOS/Android
+      └─────────────┴──────┬──────┴──────────────┘
+                           ↓
         Shared Verification Loop
         (Observer → Verify → Attest)
 ```
@@ -41,23 +41,14 @@ Express REST server exposing the verification loop via HTTP.
 
 **Endpoints:**
 
-- `GET /health` — API status check
-- `POST /observe` — Capture a claim
-- `POST /verify` — Verify an observation
-- `POST /attest` — Sign a verification result
-- `POST /complete-loop` — Full cycle in one request
-- `POST /attest/verify` — Verify an attestation signature
-- `POST /act` — Authorize an attested action
-- `GET /actions` — List authorized actions
-- `POST /learn` — Record action feedback
-- `GET /learning` — List learning records
-- `POST /recompile` — Propose a change from learning
-- `GET /recompilations` — List recompile proposals
-- `GET /state` — Current runtime state and service health
-- `GET /events` — Recent lifecycle events
-- `GET /events/stream` — Server-sent lifecycle event stream
-- `GET /runs` — Completed verification runs
-- `GET /rules` — List registered rules
+The full list, with request and response shapes, lives in
+[api/README.md](api/README.md). It is not repeated here on purpose: a second
+copy drifts from the first, and this one already had — it listed 17 endpoints
+while the server registered 29.
+
+A test asserts that `api/README.md` documents every route the API actually
+registers, so there is exactly one description of the surface and it cannot
+fall behind the code.
 
 **Quick Start:**
 
@@ -71,6 +62,9 @@ npm run test      # Run tests
 
 - `API_PORT` — Server port (default: 3000)
 - `OMEGA_RUNTIME_STORE_PATH` — Local runtime snapshot path (default: `/tmp/omega-v-oceanicos/runtime.json`)
+- `OMEGA_SIGNING_KEY` — Required. The service refuses to start without it.
+- Further variables are documented in [api/README.md](api/README.md) rather
+  than duplicated here.
 
 **See also:** [api/README.md](api/README.md)
 

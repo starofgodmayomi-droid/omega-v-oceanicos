@@ -92,3 +92,54 @@ describe('packages document themselves', () => {
     expect(named.filter((name) => !real.has(name))).toEqual([]);
   });
 });
+
+/**
+ * Apps document themselves, and no directory keeps a second copy of the
+ * API surface.
+ *
+ * apps/README.md listed 17 endpoints while the server registered 29, and
+ * described the CLI as "future" after it had shipped. Both are the same
+ * defect: a duplicated description drifts from the thing it describes, and
+ * the copy is always the one that rots.
+ *
+ * The endpoint list now lives in exactly one place, guarded by
+ * documentation.test.ts. This asserts nobody reintroduces a second.
+ */
+describe('apps document themselves', () => {
+  const appsDir = join(process.cwd(), 'apps');
+
+  const apps = readdirSync(appsDir).filter((entry) => statSync(join(appsDir, entry)).isDirectory());
+
+  const index = readFileSync(join(appsDir, 'README.md'), 'utf8');
+
+  it('finds the apps it is meant to check', () => {
+    expect(apps.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it.each(apps)('apps/%s has a README', (name) => {
+    expect(existsSync(join(appsDir, name, 'README.md'))).toBe(true);
+  });
+
+  it.each(apps)('apps/README.md names %s', (name) => {
+    expect(index).toContain(name);
+  });
+
+  it('keeps no second copy of the endpoint list', () => {
+    // A handful of route mentions in prose is fine; a list is not. The
+    // canonical description is apps/api/README.md, which a test already
+    // holds to the routes the server registers.
+    const routeLines = index
+      .split('\n')
+      .filter((line) => /^\s*[-*]\s+`?(GET|POST)\s+\//.test(line));
+
+    expect(routeLines).toEqual([]);
+  });
+
+  it('does not describe a shipped surface as future', () => {
+    // packages/cli and packages/sdk both exist. Calling them future was
+    // true once and quietly stopped being true.
+    for (const shipped of ['CLI', 'SDK']) {
+      expect(index).not.toMatch(new RegExp(`${shipped}\\s*\\(future\\)`));
+    }
+  });
+});
