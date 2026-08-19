@@ -9,6 +9,7 @@ import {
   saveSnapshot,
   persistenceReady,
   eventLogReady,
+  persistenceRotationPending,
   SNAPSHOT_KEYS,
 } from '../persistence';
 
@@ -28,6 +29,13 @@ describe('runtime persistence', () => {
     expect(persistenceReady(true, 'missing')).toBe(true);
     expect(persistenceReady(true, 'restored')).toBe(true);
     expect(persistenceReady(true, 'corrupt')).toBe(false);
+  });
+
+  it('reports rotation pending only when a configured previous key was used', () => {
+    expect(persistenceRotationPending(false, 'previous')).toBe(false);
+    expect(persistenceRotationPending(true, 'none', 'current')).toBe(false);
+    expect(persistenceRotationPending(true, 'previous')).toBe(true);
+    expect(persistenceRotationPending(true, 'current', 'mixed')).toBe(true);
   });
 
   it('fails readiness closed for partial enabled event logs but permits cold starts', () => {

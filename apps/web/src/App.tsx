@@ -73,6 +73,7 @@ type RuntimeHealth = {
       eventLogSource: 'disabled' | 'missing' | 'restored' | 'partial';
       eventLogReason: string | null;
       eventLogKeySource: 'none' | 'current' | 'previous' | 'mixed';
+      rotationPending: boolean;
       skippedLogEntries: number;
     };
   };
@@ -786,6 +787,16 @@ export function App(): JSX.Element {
             <span>LOG KEY</span>
             <strong>
               {runtimeHealth?.checks.persistence?.eventLogKeySource?.toUpperCase() ?? 'UNKNOWN'}
+            </strong>
+          </div>
+          <div>
+            <span>ROTATION</span>
+            <strong>
+              {runtimeHealth?.checks.persistence
+                ? runtimeHealth.checks.persistence.rotationPending
+                  ? 'PENDING'
+                  : 'CURRENT'
+                : 'UNKNOWN'}
             </strong>
           </div>
           {runtimeHealth?.checks.persistence?.eventLogReason ? (

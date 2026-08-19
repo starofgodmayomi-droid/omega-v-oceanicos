@@ -15,6 +15,7 @@ type HealthResponse = {
         eventLogSource: 'disabled' | 'missing' | 'restored' | 'partial';
         eventLogReason: string | null;
         eventLogKeySource: 'none' | 'current' | 'previous' | 'mixed';
+        rotationPending: boolean;
         skippedLogEntries: number;
       };
     };
@@ -48,6 +49,7 @@ type ObservabilityResponse = {
       skippedLogEntries: number;
       eventLogReason: string | null;
       eventLogEncryptionKeySource: 'none' | 'current' | 'previous' | 'mixed';
+      persistenceRotationPending: boolean;
     };
     provenance: {
       recentEvents: number;
@@ -205,7 +207,7 @@ async function health(argv: string[], fetchImpl: FetchLike): Promise<number> {
         `HEALTH        ${body.data.status} / ${body.data.readiness}`,
         `CHECKS        observer=${checks.observer} verifier=${checks.verifier} attester=${checks.attester}`,
         `MEMORY        ${checks.memory.status} integrity=${checks.memory.integrity} encryption=${checks.memory.encryption}`,
-        `PERSISTENCE   ${checks.persistence.mode} encryption=${checks.persistence.encryption} log=${checks.persistence.eventLogSource} skipped=${checks.persistence.skippedLogEntries} key=${checks.persistence.eventLogKeySource}`,
+        `PERSISTENCE   ${checks.persistence.mode} encryption=${checks.persistence.encryption} log=${checks.persistence.eventLogSource} skipped=${checks.persistence.skippedLogEntries} key=${checks.persistence.eventLogKeySource} rotation=${checks.persistence.rotationPending}`,
         `LOG REASON    ${checks.persistence.eventLogReason ?? 'none'}`,
         `POLICY        algorithm=${policy.attestationAlgorithm} ttl=${policy.attestationTtlMs ?? 'off'} revocation=${policy.revocationEnabled}`,
         `OBSERVED      ${body.timestamp}`,
@@ -251,7 +253,7 @@ async function status(argv: string[], fetchImpl: FetchLike): Promise<number> {
               : 'INVALID'
         }`,
         `MEMORY        entries=${memory.entries} intact=${memory.intact} appendOnly=${memory.appendOnly}`,
-        `EVENT LOG     ${runtime.eventLogSource ?? 'unknown'} skipped=${runtime.skippedLogEntries ?? 'unknown'} key=${runtime.eventLogEncryptionKeySource ?? 'unknown'}`,
+        `EVENT LOG     ${runtime.eventLogSource ?? 'unknown'} skipped=${runtime.skippedLogEntries ?? 'unknown'} key=${runtime.eventLogEncryptionKeySource ?? 'unknown'} rotation=${runtime.persistenceRotationPending ?? 'unknown'}`,
         `LOG REASON    ${runtime.eventLogReason ?? 'none'}`,
         `PROVENANCE    recent=${provenance.recentEvents} durable=${provenance.durableEvents} runs=${provenance.completedRuns}`,
         `LINEAGE       request=${provenance.lastRequestId || 'none'} correlation=${provenance.lastCorrelationId || 'none'}`,

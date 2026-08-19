@@ -225,15 +225,7 @@ blocked on design; each is a decision or a scoped change.
   makes `/health` return HTTP 503 with `readiness: degraded`, and `/state`
   reports `trustBasis.serviceReadiness: 0`. Missing logs remain valid cold starts;
   repair, operator acknowledgement, and distributed recovery remain open.
-- **Persistence-key rotation — controlled fallback implemented, production policy
-  not complete.** `OMEGA_PERSISTENCE_KEY` encrypts new snapshot/event-log writes;
-  `OMEGA_PERSISTENCE_KEY_PREVIOUS` permits authenticated local reads during a
-  controlled rotation, and observability reports `current`, `previous`, or
-  `mixed` without exposing secrets. Kernel-memory rotation now also rejects a
-  rotation-only configuration and reports `current`, `previous`, or `mixed`
-  according to the authenticated lines restored. HSM/KMS custody, secure
-  deletion, automated re-encryption, recovery, and distributed coordination
-  remain open.
+- **Persistence-key rotation — controlled fallback and pending evidence implemented, production policy not complete.** `OMEGA_PERSISTENCE_KEY` encrypts new snapshot/event-log writes; `OMEGA_PERSISTENCE_KEY_PREVIOUS` permits authenticated local reads during a controlled rotation, and observability reports `current`, `previous`, or `mixed` without exposing secrets. Health, state, observability, SDK, CLI, dashboard, and tests now expose `persistenceRotationPending` when a configured previous key authenticated restored local persistence. This is diagnostic evidence only; HSM/KMS custody, secure deletion, automated re-encryption, recovery, and distributed coordination remain open.
 - **Attestation revocation — local integrity evidence implemented, capability
   not complete.** Recorded attestations can be revoked with an operator reason;
   revocation is persisted, emitted as an append-only event, visible through the

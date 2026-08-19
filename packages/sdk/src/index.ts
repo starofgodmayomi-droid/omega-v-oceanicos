@@ -15,6 +15,7 @@ export type Health = {
         eventLogSource: 'disabled' | 'missing' | 'restored' | 'partial';
         eventLogReason: string | null;
         eventLogKeySource: 'none' | 'current' | 'previous' | 'mixed';
+        rotationPending: boolean;
         skippedLogEntries: number;
       };
     };
@@ -37,6 +38,7 @@ export type RuntimeState = {
     eventLogSource: 'disabled' | 'missing' | 'restored' | 'partial';
     eventLogReason: string | null;
     eventLogKeySource: 'none' | 'current' | 'previous' | 'mixed';
+    persistenceRotationPending: boolean;
     skippedLogEntries: number;
     trustBasis: { serviceReadiness: 0 | 1 };
   };
@@ -54,6 +56,7 @@ export type Observability = {
       skippedLogEntries: number;
       eventLogReason: string | null;
       eventLogEncryptionKeySource: 'none' | 'current' | 'previous' | 'mixed';
+      persistenceRotationPending: boolean;
     };
     provenance: {
       recentEvents: number;

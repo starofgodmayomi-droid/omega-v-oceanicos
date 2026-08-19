@@ -128,6 +128,7 @@ describe('omega status CLI', () => {
               skippedLogEntries: 0,
               eventLogReason: null,
               eventLogEncryptionKeySource: 'current',
+              persistenceRotationPending: false,
             },
             provenance: {
               recentEvents: 4,
@@ -147,7 +148,9 @@ describe('omega status CLI', () => {
 
     expect(exitCode).toBe(0);
     expect(output.join('')).toContain('STATE         ready service=1');
-    expect(output.join('')).toContain('EVENT LOG     restored skipped=0 key=current');
+    expect(output.join('')).toContain(
+      'EVENT LOG     restored skipped=0 key=current rotation=false'
+    );
     expect(output.join('')).toContain('LOG REASON    none');
     expect(output.join('')).toContain('attestation=VALID');
     expect(output.join('')).toContain('request=req-1');

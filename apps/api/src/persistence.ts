@@ -24,6 +24,17 @@ const AES_TAG_BYTES = 16;
 
 type EncryptionKey = Buffer;
 export type EncryptionKeySource = 'none' | 'current' | 'previous' | 'mixed';
+
+/**
+ * A rotation is pending when a configured previous key was actually needed to
+ * authenticate any restored local persistence. This is diagnostic evidence;
+ * it does not perform or claim automated re-encryption.
+ */
+export const persistenceRotationPending = (
+  previousKeyConfigured: boolean,
+  ...sources: EncryptionKeySource[]
+): boolean =>
+  previousKeyConfigured && sources.some((source) => source === 'previous' || source === 'mixed');
 type EncryptionSecrets = string | { current?: string; previous?: string };
 
 type DecryptedText = { plaintext: string; keySource: EncryptionKeySource };
