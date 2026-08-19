@@ -12,7 +12,13 @@ import {
   parseAuditQuery,
 } from '../index';
 import { Attestation } from '@omega-v/types';
-import { appendEvent, loadSnapshot, readEventLog, saveSnapshot } from '../persistence';
+import {
+  appendEvent,
+  loadSnapshot,
+  readEventLog,
+  reencryptionJournalPath,
+  saveSnapshot,
+} from '../persistence';
 
 type ApiResponse<T> = { data: T };
 
@@ -202,6 +208,7 @@ describe('API runtime contracts', () => {
       operatorAction: 'none',
       acknowledgement: null,
       reencrypt: null,
+      reencryptionRecovery: { status: 'none', reason: null },
       skippedLogEntries: 0,
     });
     expect(body.data.policy).toEqual({
@@ -1121,6 +1128,55 @@ describe('persistence re-encryption boundary', () => {
         expect.objectContaining({ type: 'persistence.rotation.reencrypted' }),
       ])
     );
+  });
+});
+
+describe('persistence re-encryption journal startup boundary', () => {
+  let server: Server;
+  let baseUrl: string;
+  let dir: string;
+
+  beforeAll(async () => {
+    dir = mkdtempSync(join(tmpdir(), 'omega-api-reencrypt-journal-'));
+    const storePath = join(dir, 'runtime.json');
+    writeFileSync(reencryptionJournalPath(storePath), '{ malformed journal');
+    process.env.OMEGA_PERSISTENCE = 'on';
+    process.env.OMEGA_RUNTIME_STORE_PATH = storePath;
+    process.env.OMEGA_EVENT_LOG_PATH = join(dir, 'runtime.log.jsonl');
+
+    jest.resetModules();
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const isolated = require('../index') as { app: typeof app };
+    server = createServer(isolated.app);
+    await new Promise<void>((resolve) => server.listen(0, resolve));
+    const address = server.address();
+    if (!address || typeof address === 'string') throw new Error('Test server did not start');
+    baseUrl = `http://127.0.0.1:${address.port}`;
+  });
+
+  afterAll(async () => {
+    await new Promise<void>((resolve, reject) =>
+      server.close((error) => (error ? reject(error) : resolve()))
+    );
+    delete process.env.OMEGA_PERSISTENCE;
+    delete process.env.OMEGA_RUNTIME_STORE_PATH;
+    delete process.env.OMEGA_EVENT_LOG_PATH;
+    rmSync(dir, { recursive: true, force: true });
+    jest.resetModules();
+  });
+
+  it('fails readiness closed and exposes blocked journal evidence', async () => {
+    const response = await fetch(`${baseUrl}/health`);
+    const body = (await response.json()) as ApiResponse<{
+      readiness: string;
+      checks: { persistence: { reencryptionRecovery: { status: string; reason: string | null } } };
+    }>;
+    expect(response.status).toBe(503);
+    expect(body.data.readiness).toBe('degraded');
+    expect(body.data.checks.persistence.reencryptionRecovery).toMatchObject({
+      status: 'blocked',
+      reason: 're-encryption journal is unreadable',
+    });
   });
 });
 

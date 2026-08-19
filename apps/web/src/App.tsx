@@ -97,6 +97,10 @@ type RuntimeHealth = {
         snapshotKeySource: string;
         eventLogKeySource: string;
       } | null;
+      reencryptionRecovery: {
+        status: 'none' | 'recovered' | 'blocked';
+        reason: string | null;
+      };
       skippedLogEntries: number;
     };
   };
@@ -850,6 +854,20 @@ export function App(): JSX.Element {
                 {runtimeHealth.checks.persistence.reencrypt.snapshotRecords} SNAPSHOT /{' '}
                 {runtimeHealth.checks.persistence.reencrypt.eventRecords} EVENTS /{' '}
                 {runtimeHealth.checks.persistence.reencrypt.operatorId}
+              </strong>
+            </div>
+          ) : null}
+          {runtimeHealth?.checks.persistence?.reencryptionRecovery.status !== 'none' ? (
+            <div>
+              <span>ROTATION RECOVERY</span>
+              <strong
+                className={
+                  runtimeHealth?.checks.persistence?.reencryptionRecovery.status === 'blocked'
+                    ? 'red'
+                    : 'green'
+                }
+              >
+                {runtimeHealth?.checks.persistence?.reencryptionRecovery.status.toUpperCase()}
               </strong>
             </div>
           ) : null}

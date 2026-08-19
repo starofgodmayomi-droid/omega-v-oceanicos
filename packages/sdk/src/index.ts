@@ -6,6 +6,10 @@ export type PersistenceAcknowledgement = {
   acknowledgedAt: string;
   requestId: string;
 };
+export type ReencryptionRecovery = {
+  status: 'none' | 'recovered' | 'blocked';
+  reason: string | null;
+};
 export type PersistenceReencryption = {
   operatorId: string;
   reason: string;
@@ -43,6 +47,7 @@ export type Health = {
         skippedLogEntries: number;
         acknowledgement: PersistenceAcknowledgement | null;
         reencrypt: PersistenceReencryption | null;
+        reencryptionRecovery: ReencryptionRecovery;
       };
     };
     policy: {
@@ -73,6 +78,7 @@ export type RuntimeState = {
     skippedLogEntries: number;
     persistenceAcknowledgement: PersistenceAcknowledgement | null;
     persistenceReencryption: PersistenceReencryption | null;
+    reencryptionRecovery: ReencryptionRecovery;
     trustBasis: { serviceReadiness: 0 | 1 };
   };
   timestamp: string;
@@ -97,6 +103,7 @@ export type Observability = {
         | 'review-partial-recovery-and-key-rotation';
       persistenceAcknowledgement: PersistenceAcknowledgement | null;
       persistenceReencryption: PersistenceReencryption | null;
+      reencryptionRecovery: ReencryptionRecovery;
     };
     provenance: {
       recentEvents: number;

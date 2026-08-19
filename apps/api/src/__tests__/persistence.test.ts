@@ -7,6 +7,8 @@ import {
   reencryptPersistence,
   loadSnapshot,
   readEventLog,
+  reencryptionJournalPath,
+  reconcileReencryptionJournal,
   saveSnapshot,
   persistenceReady,
   eventLogReady,
@@ -331,6 +333,49 @@ describe('runtime persistence', () => {
       ).toThrow('complete authenticated local evidence');
       expect(readFileSync(storePath, 'utf8')).toBe(snapshotBefore);
       expect(readFileSync(logPath, 'utf8')).toBe(logBefore);
+    });
+
+    it('recovers a staged re-encryption transaction and removes its journal', () => {
+      const logPath = join(dir, 'runtime.log.jsonl');
+      const stagedSnapshot = `${storePath}.staged`;
+      const stagedLog = `${logPath}.staged`;
+      writeFileSync(stagedSnapshot, JSON.stringify(fixture()));
+      writeFileSync(stagedLog, '{"id":"evt-recovered"}\n');
+      const journalPath = reencryptionJournalPath(storePath);
+      writeFileSync(
+        journalPath,
+        JSON.stringify({
+          version: 1,
+          storePath,
+          logPath,
+          snapshotTemporaryPath: stagedSnapshot,
+          logTemporaryPath: stagedLog,
+          phase: 'staged',
+        })
+      );
+
+      expect(reconcileReencryptionJournal(journalPath)).toEqual({ status: 'recovered' });
+      expect(existsSync(journalPath)).toBe(false);
+      expect(readFileSync(storePath, 'utf8')).toContain('evt-1');
+      expect(readFileSync(logPath, 'utf8')).toContain('evt-recovered');
+    });
+
+    it('blocks startup reconciliation when a journal artifact is missing', () => {
+      const journalPath = reencryptionJournalPath(storePath);
+      writeFileSync(
+        journalPath,
+        JSON.stringify({
+          version: 1,
+          storePath,
+          logPath: join(dir, 'runtime.log.jsonl'),
+          snapshotTemporaryPath: `${storePath}.missing`,
+          logTemporaryPath: `${storePath}.missing-log`,
+          phase: 'staged',
+        })
+      );
+
+      expect(reconcileReencryptionJournal(journalPath)).toMatchObject({ status: 'blocked' });
+      expect(existsSync(journalPath)).toBe(true);
     });
   });
 });

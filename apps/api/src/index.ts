@@ -27,6 +27,8 @@ import {
   persistenceRotationPending,
   persistenceOperatorAction,
   reencryptPersistence,
+  reencryptionJournalPath,
+  reconcileReencryptionJournal,
 } from './persistence.js';
 
 /**
@@ -374,6 +376,9 @@ const runtimeStorePath =
  */
 const eventLogPath =
   process.env.OMEGA_EVENT_LOG_PATH || `${runtimeStorePath.replace(/\.json$/, '')}.log.jsonl`;
+const reencryptionRecovery = reconcileReencryptionJournal(
+  reencryptionJournalPath(runtimeStorePath)
+);
 
 const {
   snapshot,
@@ -448,7 +453,9 @@ let persistenceReencryption: PersistenceReencryption | null =
   typeof persistedReencryptionDetails.eventLogKeySource === 'string'
     ? (persistedReencryptionDetails as PersistenceReencryption)
     : null;
-const persistenceIsReady = persistenceReady(persistenceEnabled, persistenceSource);
+const persistenceIsReady =
+  persistenceReady(persistenceEnabled, persistenceSource) &&
+  reencryptionRecovery.status !== 'blocked';
 const persistedRevocationDigest = snapshot.revocationIntegrity;
 const currentRevocationDigest = revocationRegistryDigest(runtimeRevocations);
 const currentRevocationRevision = revocationRegistryRevision(runtimeRevocations);
@@ -732,6 +739,7 @@ app.get('/health', (_req: Request, res: Response) => {
         operatorAction: string;
         acknowledgement: PersistenceAcknowledgement | null;
         reencrypt: PersistenceReencryption | null;
+        reencryptionRecovery: { status: 'none' | 'recovered' | 'blocked'; reason: string | null };
         skippedLogEntries: number;
       };
     };
@@ -767,6 +775,10 @@ app.get('/health', (_req: Request, res: Response) => {
           operatorAction,
           acknowledgement: persistenceAcknowledgement,
           reencrypt: persistenceReencryption,
+          reencryptionRecovery: {
+            status: reencryptionRecovery.status,
+            reason: reencryptionRecovery.reason ?? null,
+          },
           skippedLogEntries: durableLog.skipped,
         },
       },
@@ -822,7 +834,8 @@ app.get('/state', (_req: Request, res: Response) => {
       memoryEncryption: memoryEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
       attestationTtlMs: configuredAttestationTtlMs(),
       persistenceSource,
-      persistenceReason: persistenceReason ?? null,
+      persistenceReason: persistenceReason ?? reencryptionRecovery.reason ?? null,
+      reencryptionRecovery,
       mode: latest?.stage || 'observing',
       trust: latest ? (latest.status === 'failed' ? 0 : 1) : null,
       trustBasis: {
@@ -894,6 +907,7 @@ app.get('/observability', (_req: Request, res: Response) => {
         operatorAction,
         persistenceAcknowledgement,
         persistenceReencryption,
+        reencryptionRecovery,
         memoryEncryption: memoryEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
         memoryEncryptionKeySource,
         attestationTtlMs: configuredAttestationTtlMs(),
