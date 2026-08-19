@@ -40,6 +40,13 @@ export type PersistenceRecoveryPolicy = {
   reference: string | null;
   reason: string | null;
 };
+export type PersistenceDeletionMode =
+  'unavailable' | 'unlink-only' | 'overwrite-unlink' | 'invalid';
+export type PersistenceDeletionPolicy = {
+  mode: PersistenceDeletionMode;
+  reason: string | null;
+  verified: false;
+};
 export type PersistenceCoverage = {
   complete: false;
   surfaces: Array<{
@@ -88,6 +95,17 @@ export const persistenceCoverage = (input: {
  * Parses a declared recovery policy without verifying the referenced operator
  * or custodian. Invalid declarations remain visible and never become ready.
  */
+export const parsePersistenceDeletionPolicy = (mode?: string): PersistenceDeletionPolicy => {
+  const normalizedMode = mode?.trim() || 'unavailable';
+  if (normalizedMode === 'unavailable') {
+    return { mode: 'unavailable', reason: null, verified: false };
+  }
+  if (normalizedMode === 'unlink-only' || normalizedMode === 'overwrite-unlink') {
+    return { mode: normalizedMode, reason: null, verified: false };
+  }
+  return { mode: 'invalid', reason: 'unsupported deletion policy mode', verified: false };
+};
+
 export const parsePersistenceRecoveryPolicy = (
   mode?: string,
   reference?: string

@@ -16,6 +16,7 @@ import {
   persistenceOperatorAction,
   persistenceKeyFingerprint,
   parsePersistenceRecoveryPolicy,
+  parsePersistenceDeletionPolicy,
   persistenceCoverage,
   SNAPSHOT_KEYS,
 } from '../persistence';
@@ -64,6 +65,29 @@ describe('runtime persistence', () => {
     });
     expect(parsePersistenceRecoveryPolicy('unknown', 'record-7').mode).toBe('invalid');
     expect(parsePersistenceRecoveryPolicy('external-reference').mode).toBe('invalid');
+  });
+
+  it('parses secure-deletion capability declarations without claiming verified erasure', () => {
+    expect(parsePersistenceDeletionPolicy()).toEqual({
+      mode: 'unavailable',
+      reason: null,
+      verified: false,
+    });
+    expect(parsePersistenceDeletionPolicy('unlink-only')).toEqual({
+      mode: 'unlink-only',
+      reason: null,
+      verified: false,
+    });
+    expect(parsePersistenceDeletionPolicy('overwrite-unlink')).toEqual({
+      mode: 'overwrite-unlink',
+      reason: null,
+      verified: false,
+    });
+    expect(parsePersistenceDeletionPolicy('secure-wipe')).toEqual({
+      mode: 'invalid',
+      reason: 'unsupported deletion policy mode',
+      verified: false,
+    });
   });
 
   it('reports bounded local data-at-rest coverage without claiming completeness', () => {
