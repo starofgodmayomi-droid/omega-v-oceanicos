@@ -40,6 +40,49 @@ export type PersistenceRecoveryPolicy = {
   reference: string | null;
   reason: string | null;
 };
+export type PersistenceCoverage = {
+  complete: false;
+  surfaces: Array<{
+    name: 'runtime-snapshot' | 'event-log' | 'kernel-memory';
+    encryption: 'aes-256-gcm' | 'disabled';
+    keySource: EncryptionKeySource;
+    evidence: 'runtime-observed';
+  }>;
+  unverifiedSurfaces: string[];
+};
+
+export const persistenceCoverage = (input: {
+  enabled: boolean;
+  snapshotEncrypted: boolean;
+  snapshotKeySource: EncryptionKeySource;
+  eventLogEncrypted: boolean;
+  eventLogKeySource: EncryptionKeySource;
+  memoryEncrypted: boolean;
+  memoryKeySource: EncryptionKeySource;
+}): PersistenceCoverage => ({
+  complete: false,
+  surfaces: [
+    {
+      name: 'runtime-snapshot',
+      encryption: input.enabled && input.snapshotEncrypted ? 'aes-256-gcm' : 'disabled',
+      keySource: input.enabled ? input.snapshotKeySource : 'none',
+      evidence: 'runtime-observed',
+    },
+    {
+      name: 'event-log',
+      encryption: input.enabled && input.eventLogEncrypted ? 'aes-256-gcm' : 'disabled',
+      keySource: input.enabled ? input.eventLogKeySource : 'none',
+      evidence: 'runtime-observed',
+    },
+    {
+      name: 'kernel-memory',
+      encryption: input.enabled && input.memoryEncrypted ? 'aes-256-gcm' : 'disabled',
+      keySource: input.enabled ? input.memoryKeySource : 'none',
+      evidence: 'runtime-observed',
+    },
+  ],
+  unverifiedSurfaces: ['databases', 'object storage', 'backups', 'external services'],
+});
 
 /**
  * Parses a declared recovery policy without verifying the referenced operator

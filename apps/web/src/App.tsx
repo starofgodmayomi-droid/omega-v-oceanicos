@@ -104,6 +104,11 @@ type RuntimeHealth = {
         reason: string | null;
       };
       recoveryPolicy: { mode: string; reference: string | null; reason: string | null };
+      coverage: {
+        complete: false;
+        surfaces: Array<{ name: string; encryption: string; keySource: string; evidence: string }>;
+        unverifiedSurfaces: string[];
+      };
       skippedLogEntries: number;
     };
   };
@@ -845,6 +850,14 @@ export function App(): JSX.Element {
             <span>LOG KEY</span>
             <strong>
               {runtimeHealth?.checks.persistence?.eventLogKeySource?.toUpperCase() ?? 'UNKNOWN'}
+            </strong>
+          </div>
+          <div>
+            <span>AT-REST COVERAGE</span>
+            <strong>
+              {runtimeHealth?.checks.persistence
+                ? `${runtimeHealth.checks.persistence.coverage.surfaces.map((surface) => `${surface.name}:${surface.encryption}`).join(' / ')} / UNVERIFIED: ${runtimeHealth.checks.persistence.coverage.unverifiedSurfaces.join(', ')}`
+                : 'UNKNOWN'}
             </strong>
           </div>
           <div>

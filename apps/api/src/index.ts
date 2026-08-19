@@ -31,6 +31,7 @@ import {
   reconcileReencryptionJournal,
   persistenceKeyFingerprint,
   parsePersistenceRecoveryPolicy,
+  persistenceCoverage,
 } from './persistence.js';
 
 /**
@@ -180,7 +181,6 @@ const persistenceRecoveryPolicy = parsePersistenceRecoveryPolicy(
 );
 const memoryEncryptionKey = process.env.OMEGA_MEMORY_KEY;
 const memoryEncryptionEnabled = persistenceEnabled && Boolean(memoryEncryptionKey?.trim());
-
 const kernelMemoryStore = persistenceEnabled
   ? new FileMemoryStore(memoryPath, memoryEncryptionKey)
   : undefined;
@@ -401,7 +401,15 @@ const {
   persistenceEncryptionKey,
   previousPersistenceEncryptionKey
 );
-
+const localPersistenceCoverage = persistenceCoverage({
+  enabled: persistenceEnabled,
+  snapshotEncrypted: persistenceEncryptionEnabled,
+  snapshotKeySource: persistenceEncryptionKeySource,
+  eventLogEncrypted: persistenceEncryptionEnabled,
+  eventLogKeySource: 'none',
+  memoryEncrypted: memoryEncryptionEnabled,
+  memoryKeySource: memoryEncryptionKeySource,
+});
 const runtimeEvents = snapshot.events;
 const eventStreams = new Set<Response>();
 const completedRuns = snapshot.runs;
@@ -754,6 +762,16 @@ app.get('/health', (_req: Request, res: Response) => {
         reencrypt: PersistenceReencryption | null;
         reencryptionRecovery: { status: 'none' | 'recovered' | 'blocked'; reason: string | null };
         recoveryPolicy: { mode: string; reference: string | null; reason: string | null };
+        coverage: {
+          complete: false;
+          surfaces: Array<{
+            name: string;
+            encryption: string;
+            keySource: string;
+            evidence: string;
+          }>;
+          unverifiedSurfaces: string[];
+        };
         skippedLogEntries: number;
       };
     };
@@ -796,6 +814,14 @@ app.get('/health', (_req: Request, res: Response) => {
             reason: reencryptionRecovery.reason ?? null,
           },
           recoveryPolicy: persistenceRecoveryPolicy,
+          coverage: {
+            ...localPersistenceCoverage,
+            surfaces: localPersistenceCoverage.surfaces.map((surface) =>
+              surface.name === 'event-log'
+                ? { ...surface, keySource: durableLog.keySource }
+                : surface
+            ),
+          },
           skippedLogEntries: durableLog.skipped,
         },
       },
@@ -856,6 +882,12 @@ app.get('/state', (_req: Request, res: Response) => {
       persistenceReason: persistenceReason ?? reencryptionRecovery.reason ?? null,
       reencryptionRecovery,
       recoveryPolicy: persistenceRecoveryPolicy,
+      coverage: {
+        ...localPersistenceCoverage,
+        surfaces: localPersistenceCoverage.surfaces.map((surface) =>
+          surface.name === 'event-log' ? { ...surface, keySource: durableLog.keySource } : surface
+        ),
+      },
       mode: latest?.stage || 'observing',
       trust: latest ? (latest.status === 'failed' ? 0 : 1) : null,
       trustBasis: {
@@ -929,6 +961,12 @@ app.get('/observability', (_req: Request, res: Response) => {
         persistenceReencryption,
         reencryptionRecovery,
         recoveryPolicy: persistenceRecoveryPolicy,
+        coverage: {
+          ...localPersistenceCoverage,
+          surfaces: localPersistenceCoverage.surfaces.map((surface) =>
+            surface.name === 'event-log' ? { ...surface, keySource: durableLog.keySource } : surface
+          ),
+        },
         memoryEncryption: memoryEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
         memoryEncryptionKeySource,
         attestationTtlMs: configuredAttestationTtlMs(),

@@ -212,6 +212,30 @@ describe('API runtime contracts', () => {
       reencrypt: null,
       reencryptionRecovery: { status: 'none', reason: null },
       recoveryPolicy: { mode: 'unavailable', reference: null, reason: null },
+      coverage: {
+        complete: false,
+        surfaces: [
+          {
+            name: 'runtime-snapshot',
+            encryption: 'disabled',
+            keySource: 'none',
+            evidence: 'runtime-observed',
+          },
+          {
+            name: 'event-log',
+            encryption: 'disabled',
+            keySource: 'none',
+            evidence: 'runtime-observed',
+          },
+          {
+            name: 'kernel-memory',
+            encryption: 'disabled',
+            keySource: 'none',
+            evidence: 'runtime-observed',
+          },
+        ],
+        unverifiedSurfaces: ['databases', 'object storage', 'backups', 'external services'],
+      },
       skippedLogEntries: 0,
     });
     expect(body.data.policy).toEqual({

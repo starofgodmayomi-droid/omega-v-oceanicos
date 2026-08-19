@@ -16,6 +16,7 @@ import {
   persistenceOperatorAction,
   persistenceKeyFingerprint,
   parsePersistenceRecoveryPolicy,
+  persistenceCoverage,
   SNAPSHOT_KEYS,
 } from '../persistence';
 
@@ -63,6 +64,34 @@ describe('runtime persistence', () => {
     });
     expect(parsePersistenceRecoveryPolicy('unknown', 'record-7').mode).toBe('invalid');
     expect(parsePersistenceRecoveryPolicy('external-reference').mode).toBe('invalid');
+  });
+
+  it('reports bounded local data-at-rest coverage without claiming completeness', () => {
+    const coverage = persistenceCoverage({
+      enabled: true,
+      snapshotEncrypted: true,
+      snapshotKeySource: 'current',
+      eventLogEncrypted: true,
+      eventLogKeySource: 'mixed',
+      memoryEncrypted: false,
+      memoryKeySource: 'none',
+    });
+    expect(coverage.complete).toBe(false);
+    expect(coverage.surfaces).toEqual([
+      expect.objectContaining({
+        name: 'runtime-snapshot',
+        encryption: 'aes-256-gcm',
+        keySource: 'current',
+      }),
+      expect.objectContaining({ name: 'event-log', encryption: 'aes-256-gcm', keySource: 'mixed' }),
+      expect.objectContaining({ name: 'kernel-memory', encryption: 'disabled', keySource: 'none' }),
+    ]);
+    expect(coverage.unverifiedSurfaces).toEqual([
+      'databases',
+      'object storage',
+      'backups',
+      'external services',
+    ]);
   });
 
   it('reports rotation pending only when a configured previous key was used', () => {
