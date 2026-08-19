@@ -40,30 +40,27 @@ configure({
   },
 
   /**
-   * Raised from the 1000ms default, and the reason recorded here has been
-   * falsified.
+   * Lowered back to 2000ms, because the reason it was raised turned out to
+   * be wrong.
    *
-   * The original hypothesis was that the offline verification panel awaits
-   * real Ed25519 importKey and verify, that Node dispatches those to the
-   * libuv threadpool, and that CI contention pushed it past a second. The
-   * comment recorded what would disprove that: a recurrence after the
-   * change.
+   * The first hypothesis was Ed25519 on the libuv threadpool under CI
+   * contention. That comment recorded its own falsifier — a recurrence
+   * after the change — and it recurred at five seconds, on run 350, on
+   * verify (18.x) and on Windows. Five times the budget is not contention.
    *
-   * It recurred, on run 350, on verify (18.x) and on Windows, at five
-   * seconds. Five times the budget is not contention. The cause is
-   * elsewhere, and the honest reading is that this timeout is now masking
-   * how often the real defect fires rather than fixing it.
+   * The likelier cause was never timing. The panel's verify control is
+   * disabled until both fields hold text, so a paste that had not yet
+   * landed made the click a silent no-op: no handler ran, no result
+   * rendered, and the failure surfaced as findByRole('status') timing out
+   * rather than as the paste failing. The tests now wait for the control to
+   * be enabled before clicking, which makes the precondition explicit.
    *
-   * The value stays only because lowering it would trade one unreliable
-   * signal for another while the actual cause is unknown. It is not
-   * evidence of anything, and it should be removed once the cause is found.
-   *
-   * What is known: the failure is always the same assertion — findByRole
-   * 'status' after a user-event click on an async handler — and never a
-   * test that awaits no cryptography. The next step is to make that
-   * boundary deterministic rather than timed, not to raise this again.
+   * 2000ms leaves headroom for real Ed25519 work without concealing a
+   * second silent no-op for five seconds. If the flake returns after this,
+   * both explanations are wrong and the next step is capturing the DOM at
+   * failure rather than adjusting this number again.
    */
-  asyncUtilTimeout: 5000,
+  asyncUtilTimeout: 2000,
 });
 
 // jsdom implements neither of these, and App.tsx uses both: EventSource for
