@@ -369,6 +369,94 @@ select:focus-visible {
   font-size: 15px;
   margin-right: 7px;
 }
+.workspace.evidence-mode > section:not(.evidence-view) {
+  display: none;
+}
+.evidence-view {
+  margin-top: 18px;
+  padding: 22px;
+  border: 1px solid var(--omega-abyss-edge);
+  background: var(--omega-abyss-raised);
+}
+.evidence-view-note,
+.evidence-limitation {
+  max-width: 820px;
+  color: var(--omega-foam-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.evidence-chain,
+.evidence-view-grid {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+}
+.evidence-chain {
+  grid-template-columns: repeat(3, 1fr);
+}
+.evidence-view-grid {
+  grid-template-columns: 1.2fr 0.8fr;
+}
+.evidence-chain-card,
+.evidence-subpanel {
+  padding: 16px;
+  border: 1px solid var(--omega-abyss-edge);
+  background: var(--omega-abyss-raised);
+}
+.evidence-chain-card h3,
+.evidence-subpanel h3 {
+  margin: 10px 0;
+  color: var(--omega-foam);
+  font-size: 16px;
+}
+.evidence-chain-card p,
+.evidence-subpanel p {
+  color: var(--omega-current-dim);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.evidence-state {
+  display: inline-block;
+  color: var(--omega-current);
+  font:
+    10px 'DM Mono',
+    monospace;
+  letter-spacing: 0.4px;
+}
+.evidence-event-list,
+.evidence-dissent-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+.evidence-event,
+.evidence-dissent {
+  display: grid;
+  gap: 4px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--omega-abyss-edge);
+}
+.evidence-event strong,
+.evidence-dissent strong {
+  color: var(--omega-foam);
+  font:
+    11px 'DM Mono',
+    monospace;
+}
+.evidence-event span,
+.evidence-dissent span,
+.evidence-event small,
+.evidence-dissent small {
+  color: var(--omega-current-dim);
+  font-size: 11px;
+  line-height: 1.4;
+}
+.evidence-dissent strong {
+  color: var(--omega-dissent);
+}
+.evidence-empty {
+  margin-top: 18px;
+}
 .metrics-row {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -584,6 +672,13 @@ select:focus-visible {
   }
 }
 @media (max-width: 620px) {
+  .evidence-chain,
+  .evidence-view-grid {
+    grid-template-columns: 1fr;
+  }
+  .evidence-view {
+    padding: 16px;
+  }
   .os-shell {
     display: block;
   }

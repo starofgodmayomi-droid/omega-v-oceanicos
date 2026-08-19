@@ -579,6 +579,9 @@ export function App(): React.JSX.Element {
     setError(`${item} is not connected to the current runtime yet`);
   };
 
+  const evidenceRun = result ?? recentRuns[0] ?? null;
+  const evidenceEvents = events.slice(0, 8);
+
   const checkOffline = async (): Promise<void> => {
     setOfflineChecking(true);
     setOfflineResult(null);
@@ -638,7 +641,7 @@ export function App(): React.JSX.Element {
           <strong>v0.1.0</strong>
         </div>
       </aside>
-      <main className="workspace">
+      <main className={activeNav === 'Evidence' ? 'workspace evidence-mode' : 'workspace'}>
         <header className="topbar">
           <div>
             <span className="eyebrow">Current / {activeNav}</span>
@@ -695,6 +698,10 @@ export function App(): React.JSX.Element {
                 <strong>Refresh runtime</strong>
                 <span>Read the latest API state and event ledger</span>
               </button>
+              <button onClick={() => runCommand(() => navigate('Evidence'))}>
+                <strong>Open evidence</strong>
+                <span>Follow the recorded observation and verification lineage</span>
+              </button>
               <button onClick={() => runCommand(() => void verifyAttestation())} disabled={!result}>
                 <strong>Verify attestation</strong>
                 <span>
@@ -710,6 +717,135 @@ export function App(): React.JSX.Element {
             <span>{error}. UI is showing the last known state.</span>
           </div>
         )}
+        {activeNav === 'Evidence' ? (
+          <section className="evidence-view" aria-labelledby="evidence-view-title">
+            <div className="panel-heading">
+              <div>
+                <span className="section-kicker">READ-ONLY LINEAGE</span>
+                <h2 id="evidence-view-title">Evidence timeline</h2>
+              </div>
+              <button className="run-button" onClick={() => navigate('Current')}>
+                Return to Current
+              </button>
+            </div>
+            <p className="evidence-view-note">
+              This view follows recorded runtime artifacts. It does not turn a claim into truth or
+              infer verification from a missing record.
+            </p>
+            {evidenceRun ? (
+              <div className="evidence-chain">
+                <article className="evidence-chain-card">
+                  <span className="section-kicker">01 / OBSERVATION</span>
+                  <h3>{evidenceRun.observation.claim.statement}</h3>
+                  <p>
+                    <strong>Observed:</strong> {evidenceRun.observation.id}
+                  </p>
+                  <span className="evidence-state">
+                    OBSERVED · confidence {evidenceRun.observation.confidence}
+                  </span>
+                </article>
+                <article className="evidence-chain-card">
+                  <span className="section-kicker">02 / VERIFICATION</span>
+                  <h3>{evidenceRun.verification.summary.passed ? 'VERIFIED' : 'FAILED'}</h3>
+                  <p>
+                    {evidenceRun.verification.summary.rulesPassed} of{' '}
+                    {evidenceRun.verification.summary.rulesApplied} rules passed; confidence{' '}
+                    {evidenceRun.verification.summary.confidence}
+                  </p>
+                  <span className="evidence-state">
+                    {evidenceRun.verification.id} ·{' '}
+                    {evidenceRun.verification.summary.passed ? 'VERIFIED' : 'UNVERIFIED'}
+                  </span>
+                </article>
+                <article className="evidence-chain-card">
+                  <span className="section-kicker">03 / ATTESTATION</span>
+                  <h3>
+                    {evidenceRun.attestation.revoked
+                      ? 'REVOKED'
+                      : evidenceRun.attestation.verified
+                        ? 'ATTESTED'
+                        : 'UNVERIFIED'}
+                  </h3>
+                  <p>
+                    {evidenceRun.attestation.id} · signed at{' '}
+                    {timeLabel(evidenceRun.attestation.attestedAt)}
+                  </p>
+                  <span className="evidence-state">
+                    {evidenceRun.attestation.revoked
+                      ? 'REVOKED'
+                      : evidenceRun.attestation.verified
+                        ? 'ATTESTED'
+                        : 'UNKNOWN'}
+                  </span>
+                </article>
+              </div>
+            ) : (
+              <div className="empty evidence-empty">
+                No completed run is available to trace yet.
+              </div>
+            )}
+            <div className="evidence-view-grid">
+              <section className="evidence-subpanel" aria-labelledby="evidence-events-title">
+                <div className="panel-heading">
+                  <div>
+                    <span className="section-kicker">ACTIVITY</span>
+                    <h3 id="evidence-events-title">Recent recorded events</h3>
+                  </div>
+                  <span className="seal">{evidenceEvents.length.toString().padStart(2, '0')}</span>
+                </div>
+                {evidenceEvents.length === 0 ? (
+                  <p className="empty">No events are available in the bounded recent window.</p>
+                ) : (
+                  <div className="evidence-event-list">
+                    {evidenceEvents.map((event) => (
+                      <div className="evidence-event" key={event.id}>
+                        <strong>{event.type}</strong>
+                        <span>
+                          {event.status.toUpperCase()} · {timeLabel(event.timestamp)}
+                        </span>
+                        <small>
+                          {event.correlationId
+                            ? `correlation ${event.correlationId}`
+                            : 'correlation UNKNOWN'}{' '}
+                          · {event.requestId ? `request ${event.requestId}` : 'request UNKNOWN'}
+                        </small>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+              <section className="evidence-subpanel" aria-labelledby="evidence-uncertainty-title">
+                <div className="panel-heading">
+                  <div>
+                    <span className="section-kicker">DISSENT / LIMITS</span>
+                    <h3 id="evidence-uncertainty-title">What remains uncertain</h3>
+                  </div>
+                  <span className="seal">{unresolvedDissent.toString().padStart(2, '0')}</span>
+                </div>
+                {dissensus.length > 0 ? (
+                  <div className="evidence-dissent-list">
+                    {dissensus.slice(0, 3).map((entry) => (
+                      <div className="evidence-dissent" key={entry.id}>
+                        <strong>{entry.verdict}</strong>
+                        <span>{entry.reason}</span>
+                        <small>
+                          {entry.routing === 'HUMAN' ? 'ROUTED TO HUMAN' : 'AUTOMATIC'} · confidence{' '}
+                          {entry.confidence}
+                        </small>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="empty">No dissent is recorded in the current bounded view.</p>
+                )}
+                <p className="evidence-limitation">
+                  Runtime readiness, custody labels, and local event history are bounded evidence;
+                  they are not proof of distributed recovery, completeness, or future truth.
+                </p>
+              </section>
+            </div>
+          </section>
+        ) : null}
         <section className="hero-grid">
           <div className="current-panel">
             <div className="section-kicker">
