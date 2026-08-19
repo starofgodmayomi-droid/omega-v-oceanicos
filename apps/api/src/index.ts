@@ -30,6 +30,7 @@ import {
   reencryptionJournalPath,
   reconcileReencryptionJournal,
   persistenceKeyFingerprint,
+  parsePersistenceRecoveryPolicy,
 } from './persistence.js';
 
 /**
@@ -172,6 +173,10 @@ const previousPersistenceEncryptionConfigured = Boolean(previousPersistenceEncry
 const persistenceCurrentKeyFingerprint = persistenceKeyFingerprint(persistenceEncryptionKey);
 const persistencePreviousKeyFingerprint = persistenceKeyFingerprint(
   previousPersistenceEncryptionKey
+);
+const persistenceRecoveryPolicy = parsePersistenceRecoveryPolicy(
+  process.env.OMEGA_PERSISTENCE_RECOVERY_MODE,
+  process.env.OMEGA_PERSISTENCE_RECOVERY_REFERENCE
 );
 const memoryEncryptionKey = process.env.OMEGA_MEMORY_KEY;
 const memoryEncryptionEnabled = persistenceEnabled && Boolean(memoryEncryptionKey?.trim());
@@ -460,7 +465,8 @@ let persistenceReencryption: PersistenceReencryption | null =
     : null;
 const persistenceIsReady =
   persistenceReady(persistenceEnabled, persistenceSource) &&
-  reencryptionRecovery.status !== 'blocked';
+  reencryptionRecovery.status !== 'blocked' &&
+  persistenceRecoveryPolicy.mode !== 'invalid';
 const persistedRevocationDigest = snapshot.revocationIntegrity;
 const currentRevocationDigest = revocationRegistryDigest(runtimeRevocations);
 const currentRevocationRevision = revocationRegistryRevision(runtimeRevocations);
@@ -747,6 +753,7 @@ app.get('/health', (_req: Request, res: Response) => {
         acknowledgement: PersistenceAcknowledgement | null;
         reencrypt: PersistenceReencryption | null;
         reencryptionRecovery: { status: 'none' | 'recovered' | 'blocked'; reason: string | null };
+        recoveryPolicy: { mode: string; reference: string | null; reason: string | null };
         skippedLogEntries: number;
       };
     };
@@ -788,6 +795,7 @@ app.get('/health', (_req: Request, res: Response) => {
             status: reencryptionRecovery.status,
             reason: reencryptionRecovery.reason ?? null,
           },
+          recoveryPolicy: persistenceRecoveryPolicy,
           skippedLogEntries: durableLog.skipped,
         },
       },
@@ -847,6 +855,7 @@ app.get('/state', (_req: Request, res: Response) => {
       persistenceSource,
       persistenceReason: persistenceReason ?? reencryptionRecovery.reason ?? null,
       reencryptionRecovery,
+      recoveryPolicy: persistenceRecoveryPolicy,
       mode: latest?.stage || 'observing',
       trust: latest ? (latest.status === 'failed' ? 0 : 1) : null,
       trustBasis: {
@@ -919,6 +928,7 @@ app.get('/observability', (_req: Request, res: Response) => {
         persistenceAcknowledgement,
         persistenceReencryption,
         reencryptionRecovery,
+        recoveryPolicy: persistenceRecoveryPolicy,
         memoryEncryption: memoryEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
         memoryEncryptionKeySource,
         attestationTtlMs: configuredAttestationTtlMs(),

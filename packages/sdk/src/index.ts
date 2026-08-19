@@ -50,6 +50,7 @@ export type Health = {
         acknowledgement: PersistenceAcknowledgement | null;
         reencrypt: PersistenceReencryption | null;
         reencryptionRecovery: ReencryptionRecovery;
+        recoveryPolicy: { mode: string; reference: string | null; reason: string | null };
       };
     };
     policy: {
@@ -83,6 +84,7 @@ export type RuntimeState = {
     persistenceAcknowledgement: PersistenceAcknowledgement | null;
     persistenceReencryption: PersistenceReencryption | null;
     reencryptionRecovery: ReencryptionRecovery;
+    recoveryPolicy: { mode: string; reference: string | null; reason: string | null };
     trustBasis: { serviceReadiness: 0 | 1 };
   };
   timestamp: string;
@@ -110,6 +112,7 @@ export type Observability = {
       persistenceAcknowledgement: PersistenceAcknowledgement | null;
       persistenceReencryption: PersistenceReencryption | null;
       reencryptionRecovery: ReencryptionRecovery;
+      recoveryPolicy: { mode: string; reference: string | null; reason: string | null };
     };
     provenance: {
       recentEvents: number;

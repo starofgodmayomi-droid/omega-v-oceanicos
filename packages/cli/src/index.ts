@@ -49,6 +49,7 @@ type HealthResponse = {
           | 'review-partial-recovery-and-key-rotation';
         acknowledgement: PersistenceAcknowledgement | null;
         reencryptionRecovery: ReencryptionRecovery;
+        recoveryPolicy: { mode: string; reference: string | null; reason: string | null };
         skippedLogEntries: number;
       };
     };
@@ -255,6 +256,7 @@ async function health(argv: string[], fetchImpl: FetchLike): Promise<number> {
         `LOG REASON    ${checks.persistence.eventLogReason ?? 'none'}`,
         `ACTION       ${checks.persistence.operatorAction ?? 'unknown'}`,
         `ROTATION     recovery=${checks.persistence.reencryptionRecovery?.status ?? 'unknown'} reason=${checks.persistence.reencryptionRecovery?.reason ?? 'none'}`,
+        `RECOVERY     policy=${checks.persistence.recoveryPolicy?.mode ?? 'unknown'} reference=${checks.persistence.recoveryPolicy?.reference ?? 'none'} reason=${checks.persistence.recoveryPolicy?.reason ?? 'none'}`,
         `POLICY        algorithm=${policy.attestationAlgorithm} ttl=${policy.attestationTtlMs ?? 'off'} revocation=${policy.revocationEnabled}`,
         `OBSERVED      ${body.timestamp}`,
       ].join('\n') + '\n'

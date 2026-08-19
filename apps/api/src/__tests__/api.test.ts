@@ -211,6 +211,7 @@ describe('API runtime contracts', () => {
       acknowledgement: null,
       reencrypt: null,
       reencryptionRecovery: { status: 'none', reason: null },
+      recoveryPolicy: { mode: 'unavailable', reference: null, reason: null },
       skippedLogEntries: 0,
     });
     expect(body.data.policy).toEqual({
