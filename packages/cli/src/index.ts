@@ -16,6 +16,11 @@ type HealthResponse = {
         eventLogReason: string | null;
         eventLogKeySource: 'none' | 'current' | 'previous' | 'mixed';
         rotationPending: boolean;
+        operatorAction:
+          | 'none'
+          | 'review-partial-recovery'
+          | 'review-key-rotation'
+          | 'review-partial-recovery-and-key-rotation';
         skippedLogEntries: number;
       };
     };
@@ -50,6 +55,11 @@ type ObservabilityResponse = {
       eventLogReason: string | null;
       eventLogEncryptionKeySource: 'none' | 'current' | 'previous' | 'mixed';
       persistenceRotationPending: boolean;
+      operatorAction:
+        | 'none'
+        | 'review-partial-recovery'
+        | 'review-key-rotation'
+        | 'review-partial-recovery-and-key-rotation';
     };
     provenance: {
       recentEvents: number;
@@ -209,6 +219,7 @@ async function health(argv: string[], fetchImpl: FetchLike): Promise<number> {
         `MEMORY        ${checks.memory.status} integrity=${checks.memory.integrity} encryption=${checks.memory.encryption}`,
         `PERSISTENCE   ${checks.persistence.mode} encryption=${checks.persistence.encryption} log=${checks.persistence.eventLogSource} skipped=${checks.persistence.skippedLogEntries} key=${checks.persistence.eventLogKeySource} rotation=${checks.persistence.rotationPending}`,
         `LOG REASON    ${checks.persistence.eventLogReason ?? 'none'}`,
+        `ACTION       ${checks.persistence.operatorAction ?? 'unknown'}`,
         `POLICY        algorithm=${policy.attestationAlgorithm} ttl=${policy.attestationTtlMs ?? 'off'} revocation=${policy.revocationEnabled}`,
         `OBSERVED      ${body.timestamp}`,
       ].join('\n') + '\n'
@@ -255,6 +266,7 @@ async function status(argv: string[], fetchImpl: FetchLike): Promise<number> {
         `MEMORY        entries=${memory.entries} intact=${memory.intact} appendOnly=${memory.appendOnly}`,
         `EVENT LOG     ${runtime.eventLogSource ?? 'unknown'} skipped=${runtime.skippedLogEntries ?? 'unknown'} key=${runtime.eventLogEncryptionKeySource ?? 'unknown'} rotation=${runtime.persistenceRotationPending ?? 'unknown'}`,
         `LOG REASON    ${runtime.eventLogReason ?? 'none'}`,
+        `ACTION       ${runtime.operatorAction ?? 'unknown'}`,
         `PROVENANCE    recent=${provenance.recentEvents} durable=${provenance.durableEvents} runs=${provenance.completedRuns}`,
         `LINEAGE       request=${provenance.lastRequestId || 'none'} correlation=${provenance.lastCorrelationId || 'none'}`,
         `OBSERVED      ${body.timestamp}`,

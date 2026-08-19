@@ -198,6 +198,7 @@ describe('API runtime contracts', () => {
       eventLogReason: null,
       eventLogKeySource: 'none',
       rotationPending: false,
+      operatorAction: 'none',
       skippedLogEntries: 0,
     });
     expect(body.data.policy).toEqual({
@@ -364,6 +365,7 @@ describe('API runtime contracts', () => {
         persistencePreviousKeyConfigured: boolean;
         eventLogEncryptionKeySource: string;
         persistenceRotationPending: boolean;
+        operatorAction: string;
         memoryEncryption: string;
         memoryEncryptionKeySource: string;
         attestationTtlMs: number | null;
@@ -390,6 +392,7 @@ describe('API runtime contracts', () => {
     expect(body.data.runtime.persistencePreviousKeyConfigured).toBe(false);
     expect(body.data.runtime.eventLogEncryptionKeySource).toBe('none');
     expect(body.data.runtime.persistenceRotationPending).toBe(false);
+    expect(body.data.runtime.operatorAction).toBe('none');
     expect(body.data.runtime.memoryEncryption).toBe('disabled');
     expect(body.data.runtime.memoryEncryptionKeySource).toBe('none');
     expect(body.data.runtime.attestationTtlMs).toBe(null);

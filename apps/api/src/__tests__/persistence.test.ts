@@ -10,6 +10,7 @@ import {
   persistenceReady,
   eventLogReady,
   persistenceRotationPending,
+  persistenceOperatorAction,
   SNAPSHOT_KEYS,
 } from '../persistence';
 
@@ -36,6 +37,16 @@ describe('runtime persistence', () => {
     expect(persistenceRotationPending(true, 'none', 'current')).toBe(false);
     expect(persistenceRotationPending(true, 'previous')).toBe(true);
     expect(persistenceRotationPending(true, 'current', 'mixed')).toBe(true);
+  });
+
+  it('routes operator action from recovery and rotation evidence without authorizing repair', () => {
+    expect(persistenceOperatorAction('restored', 'restored', false)).toBe('none');
+    expect(persistenceOperatorAction('corrupt', 'restored', false)).toBe('review-partial-recovery');
+    expect(persistenceOperatorAction('restored', 'partial', false)).toBe('review-partial-recovery');
+    expect(persistenceOperatorAction('restored', 'restored', true)).toBe('review-key-rotation');
+    expect(persistenceOperatorAction('corrupt', 'partial', true)).toBe(
+      'review-partial-recovery-and-key-rotation'
+    );
   });
 
   it('fails readiness closed for partial enabled event logs but permits cold starts', () => {

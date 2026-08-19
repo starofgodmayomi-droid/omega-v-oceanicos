@@ -83,6 +83,7 @@ describe('OmegaClient', () => {
               eventLogReason: null,
               eventLogEncryptionKeySource: 'current',
               persistenceRotationPending: false,
+              operatorAction: 'none',
             },
             provenance: {
               recentEvents: 4,
@@ -104,6 +105,7 @@ describe('OmegaClient', () => {
     expect(result.data.trust.attestationValidity).toBe(true);
     expect(result.data.memory.intact).toBe(true);
     expect(result.data.runtime.persistenceRotationPending).toBe(false);
+    expect(result.data.runtime.operatorAction).toBe('none');
   });
 
   it('reads the non-secret attestation policy contract', async () => {
