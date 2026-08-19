@@ -149,6 +149,58 @@ describe('OmegaClient', () => {
     });
   });
 
+  it('re-encrypts persistence with admin provenance and record counts', async () => {
+    const client = new OmegaClient(
+      'http://api.test',
+      async (url, init) => {
+        expect(url).toBe('http://api.test/persistence/reencrypt');
+        expect(init?.method).toBe('POST');
+        expect(new Headers(init?.headers).get('authorization')).toBe('Bearer admin-token');
+        expect(new Headers(init?.headers).get('x-omega-operator-id')).toBe('operator-7');
+        expect(JSON.parse(String(init?.body))).toEqual({
+          reason: 'Rotate local ciphertext to the current key',
+          operatorId: 'operator-7',
+        });
+        return new Response(
+          JSON.stringify({
+            data: {
+              reencrypted: {
+                operatorId: 'operator-7',
+                reason: 'Rotate local ciphertext to the current key',
+                action: 'review-key-rotation',
+                reencryptedAt: '2026-08-19T00:00:00.000Z',
+                requestId: 'req-reencrypt-1',
+                snapshotRecords: 4,
+                eventRecords: 9,
+                snapshotKeySource: 'previous',
+                eventLogKeySource: 'mixed',
+              },
+              eventId: 'evt-reencrypt-1',
+            },
+            timestamp: '2026-08-19T00:00:00.000Z',
+          })
+        );
+      },
+      { adminToken: 'admin-token' }
+    );
+
+    await expect(
+      client.reencryptPersistence('Rotate local ciphertext to the current key', 'operator-7')
+    ).resolves.toMatchObject({
+      data: {
+        eventId: 'evt-reencrypt-1',
+        reencrypted: {
+          operatorId: 'operator-7',
+          action: 'review-key-rotation',
+          snapshotRecords: 4,
+          eventRecords: 9,
+          snapshotKeySource: 'previous',
+          eventLogKeySource: 'mixed',
+        },
+      },
+    });
+  });
+
   it('reads the non-secret attestation policy contract', async () => {
     const client = new OmegaClient('http://api.test', async (url) => {
       expect(url).toBe('http://api.test/attest/policy');

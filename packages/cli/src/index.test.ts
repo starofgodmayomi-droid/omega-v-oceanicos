@@ -876,6 +876,56 @@ describe('omega CLI persistence acknowledgement', () => {
     expect(exitCode).toBe(0);
     expect(output.join('')).toContain('ACKNOWLEDGED action=review-partial-recovery');
   });
+
+  it('re-encrypts persistence with admin provenance and record counts', async () => {
+    const output: string[] = [];
+    process.stdout.write = ((chunk: string | Uint8Array) => {
+      output.push(String(chunk));
+      return true;
+    }) as typeof process.stdout.write;
+
+    const exitCode = await run(
+      [
+        'reencrypt-persistence',
+        '--reason',
+        'Rotate local ciphertext to the current key',
+        '--operator-id',
+        'operator-7',
+        '--admin-token',
+        'admin-token',
+        '--url',
+        'http://api.test/',
+      ],
+      async (url, init) => {
+        expect(url).toBe('http://api.test/persistence/reencrypt');
+        expect(init?.method).toBe('POST');
+        expect(new Headers(init?.headers).get('authorization')).toBe('Bearer admin-token');
+        expect(new Headers(init?.headers).get('x-omega-operator-id')).toBe('operator-7');
+        expect(JSON.parse(String(init?.body))).toEqual({
+          reason: 'Rotate local ciphertext to the current key',
+          operatorId: 'operator-7',
+        });
+        return new Response(
+          JSON.stringify({
+            data: {
+              reencrypted: {
+                action: 'review-key-rotation',
+                operatorId: 'operator-7',
+                snapshotRecords: 4,
+                eventRecords: 9,
+              },
+              eventId: 'evt-reencrypt-1',
+            },
+          })
+        );
+      }
+    );
+
+    expect(exitCode).toBe(0);
+    expect(output.join('')).toContain(
+      'REENCRYPTED snapshot=4 events=9 operator=operator-7 event=evt-reencrypt-1'
+    );
+  });
 });
 
 describe('omega CLI argument parsing', () => {
