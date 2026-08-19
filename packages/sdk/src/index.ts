@@ -68,6 +68,7 @@ export type Health = {
       attestationTtlMs: number | null;
       readAuthConfigured: boolean;
       adminAuthConfigured: boolean;
+      adminOperatorAllowlistRequired: boolean;
       revocationEnabled: boolean;
     };
   };
@@ -168,6 +169,7 @@ export type AttestationPolicy = {
   readAuthConfigured: boolean;
   adminAuthConfigured: boolean;
   adminOperatorAllowlistConfigured: boolean;
+  adminOperatorAllowlistRequired: boolean;
   revocationEnabled: boolean;
   revocationIntegrity: 'disabled' | 'legacy' | 'intact' | 'mismatch';
   revocationRevision: number;

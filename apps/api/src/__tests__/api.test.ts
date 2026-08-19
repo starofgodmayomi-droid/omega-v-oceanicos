@@ -30,6 +30,13 @@ type LoopPayload = {
 };
 
 describe('API runtime contracts', () => {
+  it('supports optional allowlists while failing closed when allowlists are required', () => {
+    expect(operatorIdentityAllowed(undefined, [])).toBe(true);
+    expect(operatorIdentityAllowed('operator-a', [], true)).toBe(false);
+    expect(operatorIdentityAllowed('operator-a', ['operator-a'], true)).toBe(true);
+    expect(operatorIdentityAllowed('operator-b', ['operator-a'], true)).toBe(false);
+  });
+
   it('makes revocation registry integrity states explicit', () => {
     const records = [
       {
@@ -243,6 +250,7 @@ describe('API runtime contracts', () => {
       attestationTtlMs: null,
       readAuthConfigured: false,
       adminAuthConfigured: false,
+      adminOperatorAllowlistRequired: false,
       revocationEnabled: true,
     });
     expect(JSON.stringify(body)).not.toMatch(/token|secret|private|signing material/i);

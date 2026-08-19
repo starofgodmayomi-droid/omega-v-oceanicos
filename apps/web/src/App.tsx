@@ -56,6 +56,7 @@ type RuntimePolicy = {
   readAuthConfigured: boolean;
   adminAuthConfigured: boolean;
   adminOperatorAllowlistConfigured: boolean;
+  adminOperatorAllowlistRequired: boolean;
   revocationEnabled: boolean;
   revocationIntegrity: 'disabled' | 'legacy' | 'intact' | 'mismatch';
   revocationRevision: number;
@@ -947,7 +948,7 @@ export function App(): JSX.Element {
             <span>POLICY</span>
             <strong>
               {policy
-                ? `${policy.revocationEnabled ? 'REVOCATION' : 'NO REVOCATION'} / ${policy.adminAuthConfigured ? 'ADMIN' : 'LOCAL'}${policy.adminOperatorAllowlistConfigured ? ' / IDENTITY' : ''}`
+                ? `${policy.revocationEnabled ? 'REVOCATION' : 'NO REVOCATION'} / ${policy.adminAuthConfigured ? 'ADMIN' : 'LOCAL'}${policy.adminOperatorAllowlistRequired ? ' / ALLOWLIST REQUIRED' : policy.adminOperatorAllowlistConfigured ? ' / IDENTITY OPTIONAL' : ''}`
                 : 'UNKNOWN'}
             </strong>
           </div>
