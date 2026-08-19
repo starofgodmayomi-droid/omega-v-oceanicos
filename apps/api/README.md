@@ -54,8 +54,25 @@ gh attestation verify \
   --repo starofgodmayomi-droid/omega-v-oceanicos
 ```
 
+The image also carries a signed SPDX inventory of everything inside it, so
+the question "does this ship a package with a known vulnerability" can be
+answered without pulling and unpacking the image:
+
+```
+gh attestation verify \
+  oci://ghcr.io/starofgodmayomi-droid/omega-v-oceanicos-api:latest \
+  --repo starofgodmayomi-droid/omega-v-oceanicos \
+  --predicate-type https://spdx.dev/Document
+```
+
+Both attestations are bound to the image **digest**, not to the `latest`
+tag. A tag moves; an attestation bound to one would describe whatever it
+points at today rather than what was actually built.
+
 `ATTEST ≠ ASSERT` applies to the artifact too. The pipeline claiming a build
-passed is an assertion; a signature a stranger can verify is not.
+passed is an assertion; a signature a stranger can verify is not. Provenance
+says who built it, the inventory says what is in it, and neither requires
+trusting this document.
 
 ## Mental Model: The Loop
 

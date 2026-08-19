@@ -67,4 +67,34 @@ describe('supply chain and static analysis', () => {
       expect(workflow).toMatch(/^permissions:/m);
     }
   });
+
+  it('publishes an inventory of the image, not only its provenance', () => {
+    const workflow = readFileSync(join(root, '.github/workflows/verify.yml'), 'utf8');
+
+    // Provenance answers "who built this". It does not answer "what is
+    // inside it", and a consumer asking whether the image ships a package
+    // with a known CVE had no way to find out without pulling and
+    // unpacking it.
+    expect(workflow).toContain('anchore/sbom-action');
+    expect(workflow).toContain('spdx-json');
+  });
+
+  it('signs the inventory rather than shipping it unsigned', () => {
+    const workflow = readFileSync(join(root, '.github/workflows/verify.yml'), 'utf8');
+
+    // An unsigned SBOM is a file anyone could have written afterwards.
+    // Attested and pushed to the registry, it is evidence bound to the
+    // digest it describes.
+    expect(workflow).toContain('actions/attest-sbom');
+    expect(workflow).toMatch(/attest-sbom[\s\S]{0,400}push-to-registry:\s*true/);
+  });
+
+  it('binds both attestations to the digest, not to a mutable tag', () => {
+    const workflow = readFileSync(join(root, '.github/workflows/verify.yml'), 'utf8');
+
+    // `latest` moves. A digest does not, and an attestation bound to a tag
+    // would describe whatever that tag points at today.
+    const digestSubjects = workflow.match(/subject-digest:\s*\$\{\{ steps\.push\.outputs\.digest/g);
+    expect(digestSubjects?.length).toBeGreaterThanOrEqual(2);
+  });
 });
