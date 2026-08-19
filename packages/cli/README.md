@@ -26,6 +26,20 @@ It reads `GET /observability` and `GET /state`, then prints runtime, explicit st
 
 Use `omega acknowledge-persistence --reason REASON --operator-id ID --admin-token TOKEN` to record human review of a currently pending local persistence action. The API requires the admin bearer token, applies the configured operator allowlist, validates the reason length, appends an active evidence event, and leaves readiness unchanged.
 
+## Persistence re-encryption
+
+Use `omega reencrypt-persistence --reason REASON --operator-id ID --admin-token TOKEN` to rewrite complete local snapshot and event-log ciphertext from `OMEGA_PERSISTENCE_KEY_PREVIOUS` to `OMEGA_PERSISTENCE_KEY`.
+
+```bash
+node packages/cli/dist/index.js reencrypt-persistence \
+  --reason "Rotate complete local persistence to the current key" \
+  --operator-id rotation-operator \
+  --admin-token "$OMEGA_ADMIN_TOKEN" \
+  --url http://localhost:3000
+```
+
+The command is admin-authenticated and respects `OMEGA_ADMIN_OPERATOR_ALLOWLIST`. The API validates all local evidence before rewriting; corrupt or partial persistence returns a non-zero result and is not silently treated as complete. Success prints snapshot/event record counts and the audit event ID. This is local ciphertext rotation evidence only: it does not prove distributed recovery, HSM/KMS custody, secure deletion, or deployment authorization.
+
 ## Event evidence
 
 Read recent runtime events directly from the API:

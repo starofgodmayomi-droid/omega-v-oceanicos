@@ -67,6 +67,7 @@ describe('web/API contract', () => {
       '/observability',
       '/observe',
       '/persistence/acknowledge',
+      '/persistence/reencrypt',
       '/recompilations',
       '/rules',
       '/verify',

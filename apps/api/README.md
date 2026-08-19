@@ -338,6 +338,38 @@ predicate: verification reports `expired: true` and `/act` returns
 `409 EXPIRED_ATTESTATION`. Duplicate revocation requests are rejected with `409 ATTESTATION_ALREADY_REVOKED`. When `OMEGA_ADMIN_OPERATOR_ALLOWLIST` is configured, an unlisted identity fails with `403 ADMIN_OPERATOR_NOT_ALLOWED`; this is an additional local bearer-plus-identity boundary, not a complete identity, authentication, or authorization system.
 `GET /attest/revocations` also returns non-secret integrity metadata: `disabled` when persistence is off, `legacy` when an older snapshot has no registry digest, `intact` when the digest matches loaded records, and `mismatch` when it does not. The response also exposes a local monotonic-in-process `revision` derived from the append-only registry length; verification and mutation responses carry the same revision evidence. A mismatched registry fails closed with `503 REVOCATION_REGISTRY_INTEGRITY` for verification-sensitive mutation and action paths. This digest and revision are local freshness/tamper-evidence signals, not distributed consistency, custody, secure deletion, or proof that another node has observed the same registry state.
 
+### Persistence Re-encryption
+
+```
+POST /persistence/reencrypt
+```
+
+This operator mutation closes the local ciphertext-rotation gap without
+pretending that a local rewrite is distributed recovery. It is available only
+when persistence is enabled, both current and previous persistence keys are
+configured, and the runtime has complete restored evidence using the previous
+key. The request requires a reason of 8–1000 characters and an operator identity;
+when configured, `OMEGA_ADMIN_TOKEN` must be supplied as a distinct bearer
+credential and `OMEGA_ADMIN_OPERATOR_ALLOWLIST` must contain the identity.
+
+The operation validates the snapshot and every event-log line before writing
+sibling temporary files and renaming them into place. A corrupt snapshot or
+partial log returns `409 PERSISTENCE_REENCRYPTION_FAILED` and leaves the
+original files untouched. Success emits `persistence.rotation.reencrypted`,
+returns the observed source key categories and logical record counts, and
+exposes the latest non-secret result through health, state, observability, the
+SDK, CLI, and dashboard. The event log remains logically append-only; its
+ciphertext is deliberately rewritten as a controlled rotation operation.
+
+**Request:**
+
+```json
+{
+  "reason": "Rotate complete local persistence to the current key",
+  "operatorId": "rotation-operator"
+}
+```
+
 ### Runtime State
 
 ```
@@ -354,7 +386,14 @@ to `on` or `off` to override that explicitly. Set `OMEGA_PERSISTENCE_KEY`
 to encrypt the runtime snapshot and append-only event log with authenticated
 AES-256-GCM envelopes. The key is never returned by the API. Existing plaintext
 stores remain readable for controlled migration, while all new writes use the
-configured encryption key.
+configured encryption key. When rotating keys, set both `OMEGA_PERSISTENCE_KEY`
+and `OMEGA_PERSISTENCE_KEY_PREVIOUS`; the authenticated `POST
+/persistence/reencrypt` mutation can then rewrite complete local snapshot and
+event-log evidence under the current key. It requires the admin bearer token and
+an allowlisted `x-omega-operator-id`, refuses corrupt or partial evidence, and
+returns non-secret record counts and observed key sources. It preserves logical
+event history but does not prove distributed recovery, custody, secure deletion,
+or deployment authorization.
 
 The API requires a signing key. Set `OMEGA_SIGNING_KEY`, or construct
 `AttestationService` with one. There is no default: a key shipped in source

@@ -6,6 +6,17 @@ export type PersistenceAcknowledgement = {
   acknowledgedAt: string;
   requestId: string;
 };
+export type PersistenceReencryption = {
+  operatorId: string;
+  reason: string;
+  action: 'review-key-rotation';
+  reencryptedAt: string;
+  requestId: string;
+  snapshotRecords: number;
+  eventRecords: number;
+  snapshotKeySource: 'none' | 'current' | 'previous' | 'mixed';
+  eventLogKeySource: 'none' | 'current' | 'previous' | 'mixed';
+};
 
 export type Health = {
   data: {
@@ -31,6 +42,7 @@ export type Health = {
         rotationPending: boolean;
         skippedLogEntries: number;
         acknowledgement: PersistenceAcknowledgement | null;
+        reencrypt: PersistenceReencryption | null;
       };
     };
     policy: {
@@ -60,6 +72,7 @@ export type RuntimeState = {
       | 'review-partial-recovery-and-key-rotation';
     skippedLogEntries: number;
     persistenceAcknowledgement: PersistenceAcknowledgement | null;
+    persistenceReencryption: PersistenceReencryption | null;
     trustBasis: { serviceReadiness: 0 | 1 };
   };
   timestamp: string;
@@ -83,6 +96,7 @@ export type Observability = {
         | 'review-key-rotation'
         | 'review-partial-recovery-and-key-rotation';
       persistenceAcknowledgement: PersistenceAcknowledgement | null;
+      persistenceReencryption: PersistenceReencryption | null;
     };
     provenance: {
       recentEvents: number;
@@ -312,6 +326,23 @@ export class OmegaClient {
     );
   }
 
+  async reencryptPersistence(
+    reason: string,
+    operatorId?: string
+  ): Promise<{
+    data: { reencrypted: PersistenceReencryption; eventId: string };
+    timestamp: string;
+  }> {
+    return this.post<{
+      data: { reencrypted: PersistenceReencryption; eventId: string };
+      timestamp: string;
+    }>(
+      '/persistence/reencrypt',
+      { reason, operatorId },
+      this.adminToken,
+      operatorId ? { 'x-omega-operator-id': operatorId } : undefined
+    );
+  }
   async getEvidenceExport(): Promise<{
     data: EvidenceExport;
     meta: { bounded: boolean; eventWindow: number; runWindow: number };
