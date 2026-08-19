@@ -1009,7 +1009,15 @@ describe('independent verification panel', () => {
     await user.paste(JSON.stringify(attestation));
     await user.click(screen.getByLabelText(/public key/i));
     await user.paste(publicKeyPem);
-    await user.click(screen.getByRole('button', { name: /verify locally/i }));
+
+    // The control is disabled until both fields hold something. Clicking it
+    // before then is a silent no-op: no handler, no crypto, no result, and
+    // a failure that reads as "role=status not found" rather than "the
+    // paste did not land". Waiting for enabled makes the precondition
+    // explicit instead of assumed.
+    const verify = screen.getByRole('button', { name: /verify locally/i });
+    await waitFor(() => expect(verify).toBeEnabled());
+    await user.click(verify);
 
     const result = await screen.findByRole('status');
     expect(within(result).getByText('VALID')).toBeInTheDocument();
@@ -1028,7 +1036,10 @@ describe('independent verification panel', () => {
     await user.paste('{ not json');
     await user.click(screen.getByLabelText(/public key/i));
     await user.paste('-----BEGIN PUBLIC KEY-----\nAAAA\n-----END PUBLIC KEY-----');
-    await user.click(screen.getByRole('button', { name: /verify locally/i }));
+
+    const verifyMalformed = screen.getByRole('button', { name: /verify locally/i });
+    await waitFor(() => expect(verifyMalformed).toBeEnabled());
+    await user.click(verifyMalformed);
 
     const result = await screen.findByRole('status');
     expect(within(result).getByText('INVALID')).toBeInTheDocument();
