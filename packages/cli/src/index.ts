@@ -8,6 +8,10 @@ type PersistenceAcknowledgement = {
   acknowledgedAt: string;
   requestId: string;
 };
+type ReencryptionRecovery = {
+  status: 'none' | 'recovered' | 'blocked';
+  reason: string | null;
+};
 type PersistenceReencryption = {
   operatorId: string;
   reason: string;
@@ -42,6 +46,7 @@ type HealthResponse = {
           | 'review-key-rotation'
           | 'review-partial-recovery-and-key-rotation';
         acknowledgement: PersistenceAcknowledgement | null;
+        reencryptionRecovery: ReencryptionRecovery;
         skippedLogEntries: number;
       };
     };
@@ -81,6 +86,7 @@ type ObservabilityResponse = {
         | 'review-partial-recovery'
         | 'review-key-rotation'
         | 'review-partial-recovery-and-key-rotation';
+      reencryptionRecovery: ReencryptionRecovery;
     };
     provenance: {
       recentEvents: number;
@@ -243,6 +249,7 @@ async function health(argv: string[], fetchImpl: FetchLike): Promise<number> {
         `PERSISTENCE   ${checks.persistence.mode} encryption=${checks.persistence.encryption} log=${checks.persistence.eventLogSource} skipped=${checks.persistence.skippedLogEntries} key=${checks.persistence.eventLogKeySource} rotation=${checks.persistence.rotationPending}`,
         `LOG REASON    ${checks.persistence.eventLogReason ?? 'none'}`,
         `ACTION       ${checks.persistence.operatorAction ?? 'unknown'}`,
+        `ROTATION     recovery=${checks.persistence.reencryptionRecovery?.status ?? 'unknown'} reason=${checks.persistence.reencryptionRecovery?.reason ?? 'none'}`,
         `POLICY        algorithm=${policy.attestationAlgorithm} ttl=${policy.attestationTtlMs ?? 'off'} revocation=${policy.revocationEnabled}`,
         `OBSERVED      ${body.timestamp}`,
       ].join('\n') + '\n'
@@ -290,6 +297,7 @@ async function status(argv: string[], fetchImpl: FetchLike): Promise<number> {
         `EVENT LOG     ${runtime.eventLogSource ?? 'unknown'} skipped=${runtime.skippedLogEntries ?? 'unknown'} key=${runtime.eventLogEncryptionKeySource ?? 'unknown'} rotation=${runtime.persistenceRotationPending ?? 'unknown'}`,
         `LOG REASON    ${runtime.eventLogReason ?? 'none'}`,
         `ACTION       ${runtime.operatorAction ?? 'unknown'}`,
+        `ROTATION     recovery=${runtime.reencryptionRecovery?.status ?? 'unknown'} reason=${runtime.reencryptionRecovery?.reason ?? 'none'}`,
         `PROVENANCE    recent=${provenance.recentEvents} durable=${provenance.durableEvents} runs=${provenance.completedRuns}`,
         `LINEAGE       request=${provenance.lastRequestId || 'none'} correlation=${provenance.lastCorrelationId || 'none'}`,
         `OBSERVED      ${body.timestamp}`,

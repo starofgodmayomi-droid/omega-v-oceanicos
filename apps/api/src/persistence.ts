@@ -1,6 +1,7 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes, randomUUID } from 'node:crypto';
 import {
   appendFileSync,
+  existsSync,
   mkdirSync,
   readFileSync,
   renameSync,
@@ -294,6 +295,71 @@ export type PersistenceReencryptionResult = {
   eventLogKeySource: EncryptionKeySource;
 };
 
+export type ReencryptionRecoveryResult = {
+  status: 'none' | 'recovered' | 'blocked';
+  reason?: string;
+};
+
+type ReencryptionJournal = {
+  version: 1;
+  storePath: string;
+  logPath: string;
+  snapshotTemporaryPath: string;
+  logTemporaryPath: string;
+  phase: 'staged' | 'snapshot-committed';
+};
+
+export const reencryptionJournalPath = (storePath: string): string =>
+  `${storePath}.reencryption-journal.json`;
+
+/**
+ * Reconciles an interrupted local re-encryption before the runtime reads its
+ * stores. The journal is local crash evidence, not distributed coordination.
+ * Missing or malformed transaction artifacts remain blocked rather than being
+ * guessed into a ready state.
+ */
+export const reconcileReencryptionJournal = (journalPath: string): ReencryptionRecoveryResult => {
+  if (!existsSync(journalPath)) return { status: 'none' };
+
+  let journal: ReencryptionJournal;
+  try {
+    journal = JSON.parse(readFileSync(journalPath, 'utf8')) as ReencryptionJournal;
+  } catch {
+    return { status: 'blocked', reason: 're-encryption journal is unreadable' };
+  }
+  if (
+    journal.version !== 1 ||
+    typeof journal.storePath !== 'string' ||
+    typeof journal.logPath !== 'string' ||
+    typeof journal.snapshotTemporaryPath !== 'string' ||
+    typeof journal.logTemporaryPath !== 'string' ||
+    (journal.phase !== 'staged' && journal.phase !== 'snapshot-committed')
+  ) {
+    return { status: 'blocked', reason: 're-encryption journal is malformed' };
+  }
+  if (!existsSync(journal.logTemporaryPath)) {
+    return {
+      status: 'blocked',
+      reason: 're-encryption transaction is missing its staged event log',
+    };
+  }
+  if (journal.phase === 'staged' && !existsSync(journal.snapshotTemporaryPath)) {
+    return {
+      status: 'blocked',
+      reason: 're-encryption transaction is missing its staged snapshot',
+    };
+  }
+
+  try {
+    if (journal.phase === 'staged') renameSync(journal.snapshotTemporaryPath, journal.storePath);
+    renameSync(journal.logTemporaryPath, journal.logPath);
+    unlinkSync(journalPath);
+    return { status: 'recovered' };
+  } catch {
+    return { status: 'blocked', reason: 're-encryption transaction could not be committed' };
+  }
+};
+
 /**
  * Re-encrypts authenticated local persistence from the configured previous key
  * into the current key. Logical event history is preserved, but ciphertext is
@@ -351,34 +417,34 @@ export const reencryptPersistence = (
 
   const snapshotTemporaryPath = `${storePath}.${randomUUID()}.reencrypt.tmp`;
   const logTemporaryPath = `${logPath}.${randomUUID()}.reencrypt.tmp`;
-  try {
-    mkdirSync(dirname(storePath), { recursive: true });
-    mkdirSync(dirname(logPath), { recursive: true });
-    writeFileSync(
-      snapshotTemporaryPath,
-      encryptText(JSON.stringify(snapshotResult.snapshot, null, 2), currentEncryptionSecret)
-    );
-    writeFileSync(
-      logTemporaryPath,
-      eventLogResult.entries
-        .map((entry) => encryptText(JSON.stringify(entry), currentEncryptionSecret))
-        .join('\n') + (eventLogResult.entries.length > 0 ? '\n' : '')
-    );
-    renameSync(snapshotTemporaryPath, storePath);
-    renameSync(logTemporaryPath, logPath);
-  } catch (error) {
-    try {
-      unlinkSync(snapshotTemporaryPath);
-    } catch {
-      // Best-effort cleanup; the original store remains authoritative.
-    }
-    try {
-      unlinkSync(logTemporaryPath);
-    } catch {
-      // Best-effort cleanup; the original log remains authoritative.
-    }
-    throw error;
-  }
+  const journalPath = reencryptionJournalPath(storePath);
+  const journal: ReencryptionJournal = {
+    version: 1,
+    storePath,
+    logPath,
+    snapshotTemporaryPath,
+    logTemporaryPath,
+    phase: 'staged',
+  };
+  mkdirSync(dirname(storePath), { recursive: true });
+  mkdirSync(dirname(logPath), { recursive: true });
+  writeFileSync(
+    snapshotTemporaryPath,
+    encryptText(JSON.stringify(snapshotResult.snapshot, null, 2), currentEncryptionSecret)
+  );
+  writeFileSync(
+    logTemporaryPath,
+    eventLogResult.entries
+      .map((entry) => encryptText(JSON.stringify(entry), currentEncryptionSecret))
+      .join('\n') + (eventLogResult.entries.length > 0 ? '\n' : '')
+  );
+  writeFileSync(journalPath, JSON.stringify(journal), { mode: 0o600 });
+  renameSync(snapshotTemporaryPath, storePath);
+  writeFileSync(journalPath, JSON.stringify({ ...journal, phase: 'snapshot-committed' }), {
+    mode: 0o600,
+  });
+  renameSync(logTemporaryPath, logPath);
+  unlinkSync(journalPath);
 
   return {
     rewritten: true,

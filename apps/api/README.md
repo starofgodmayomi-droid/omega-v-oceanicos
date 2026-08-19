@@ -359,7 +359,14 @@ original files untouched. Success emits `persistence.rotation.reencrypted`,
 returns the observed source key categories and logical record counts, and
 exposes the latest non-secret result through health, state, observability, the
 SDK, CLI, and dashboard. The event log remains logically append-only; its
-ciphertext is deliberately rewritten as a controlled rotation operation.
+ciphertext is deliberately rewritten as a controlled rotation operation. The
+operation writes a mode-600 local transaction journal before committing the
+staged files. On restart, the API reconciles a complete journal transaction
+before loading readiness evidence; a malformed or incomplete journal leaves
+readiness degraded and is surfaced as `reencryptionRecovery.status: "blocked"`.
+A recovered journal is reported as `"recovered"` and then removed. This journal
+is crash-recovery evidence for one local process, not distributed coordination
+or proof of replica consistency.
 
 **Request:**
 
