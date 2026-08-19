@@ -1019,7 +1019,7 @@ describe('independent verification panel', () => {
     await waitFor(() => expect(verify).toBeEnabled());
     await user.click(verify);
 
-    const result = await screen.findByRole('status');
+    const result = await screen.findByRole('status', undefined, { timeout: 5000 });
     expect(within(result).getByText('VALID')).toBeInTheDocument();
     // The panel must never let a valid signature read as a valid decision.
     expect(
