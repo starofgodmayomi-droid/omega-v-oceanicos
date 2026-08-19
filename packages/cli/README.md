@@ -20,7 +20,11 @@ The status command also accepts `--url`:
 node packages/cli/dist/index.js status --url http://localhost:3000
 ```
 
-It reads `GET /observability` and `GET /state`, then prints runtime, explicit state readiness, durable-log source/skipped/reason/key-source provenance, persistence rotation-pending evidence, operator-action routing, trust, memory, provenance, lineage, and observation timestamp fields returned by the API. It renders missing recovery fields as `unknown`, does not treat `persistenceRotationPending` or `operatorAction` as proof that automated re-encryption, acknowledgement, repair, or authorization occurred, and fails closed rather than inventing readiness. The process exits with status `1` when the API is unavailable, explicit state readiness is not `ready`, memory integrity is false, append-only status is false, or attestation validity is explicitly false.
+It reads `GET /observability` and `GET /state`, then prints runtime, explicit state readiness, durable-log source/skipped/reason/key-source provenance, persistence rotation-pending evidence, operator-action routing, trust, memory, provenance, lineage, and observation timestamp fields returned by the API. It renders missing recovery fields as `unknown`, does not treat `persistenceRotationPending` or `operatorAction` as proof that automated re-encryption, acknowledgement, repair, or authorization occurred. `acknowledge-persistence` is an admin-authenticated, allowlist-aware mutation that records human review evidence; it does not claim recovery, and fails closed rather than inventing readiness. The process exits with status `1` when the API is unavailable, explicit state readiness is not `ready`, memory integrity is false, append-only status is false, or attestation validity is explicitly false.
+
+## Persistence acknowledgement
+
+Use `omega acknowledge-persistence --reason REASON --operator-id ID --admin-token TOKEN` to record human review of a currently pending local persistence action. The API requires the admin bearer token, applies the configured operator allowlist, validates the reason length, appends an active evidence event, and leaves readiness unchanged.
 
 ## Event evidence
 

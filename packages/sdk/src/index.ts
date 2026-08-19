@@ -1,3 +1,12 @@
+export type PersistenceAcknowledgement = {
+  operatorId: string;
+  reason: string;
+  action:
+    'review-partial-recovery' | 'review-key-rotation' | 'review-partial-recovery-and-key-rotation';
+  acknowledgedAt: string;
+  requestId: string;
+};
+
 export type Health = {
   data: {
     status: 'ok';
@@ -21,6 +30,7 @@ export type Health = {
         eventLogKeySource: 'none' | 'current' | 'previous' | 'mixed';
         rotationPending: boolean;
         skippedLogEntries: number;
+        acknowledgement: PersistenceAcknowledgement | null;
       };
     };
     policy: {
@@ -49,6 +59,7 @@ export type RuntimeState = {
       | 'review-key-rotation'
       | 'review-partial-recovery-and-key-rotation';
     skippedLogEntries: number;
+    persistenceAcknowledgement: PersistenceAcknowledgement | null;
     trustBasis: { serviceReadiness: 0 | 1 };
   };
   timestamp: string;
@@ -71,6 +82,7 @@ export type Observability = {
         | 'review-partial-recovery'
         | 'review-key-rotation'
         | 'review-partial-recovery-and-key-rotation';
+      persistenceAcknowledgement: PersistenceAcknowledgement | null;
     };
     provenance: {
       recentEvents: number;
@@ -277,6 +289,24 @@ export class OmegaClient {
     }>(
       '/attest/revoke',
       { attestationId, reason, revokedBy },
+      this.adminToken,
+      operatorId ? { 'x-omega-operator-id': operatorId } : undefined
+    );
+  }
+
+  async acknowledgePersistenceReview(
+    reason: string,
+    operatorId?: string
+  ): Promise<{
+    data: { acknowledgement: PersistenceAcknowledgement; eventId: string };
+    timestamp: string;
+  }> {
+    return this.post<{
+      data: { acknowledgement: PersistenceAcknowledgement; eventId: string };
+      timestamp: string;
+    }>(
+      '/persistence/acknowledge',
+      { reason, operatorId },
       this.adminToken,
       operatorId ? { 'x-omega-operator-id': operatorId } : undefined
     );
