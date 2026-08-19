@@ -29,6 +29,7 @@ import {
   reencryptPersistence,
   reencryptionJournalPath,
   reconcileReencryptionJournal,
+  persistenceKeyFingerprint,
 } from './persistence.js';
 
 /**
@@ -168,6 +169,10 @@ const previousPersistenceEncryptionKey = process.env.OMEGA_PERSISTENCE_KEY_PREVI
 const persistenceEncryptionEnabled =
   persistenceEnabled && encryptionEnabled(persistenceEncryptionKey);
 const previousPersistenceEncryptionConfigured = Boolean(previousPersistenceEncryptionKey?.trim());
+const persistenceCurrentKeyFingerprint = persistenceKeyFingerprint(persistenceEncryptionKey);
+const persistencePreviousKeyFingerprint = persistenceKeyFingerprint(
+  previousPersistenceEncryptionKey
+);
 const memoryEncryptionKey = process.env.OMEGA_MEMORY_KEY;
 const memoryEncryptionEnabled = persistenceEnabled && Boolean(memoryEncryptionKey?.trim());
 
@@ -731,6 +736,8 @@ app.get('/health', (_req: Request, res: Response) => {
         mode: 'file' | 'memory';
         encryption: string;
         keySource: string;
+        currentKeyFingerprint: string | null;
+        previousKeyFingerprint: string | null;
         previousKeyConfigured: boolean;
         eventLogSource: string;
         eventLogReason: string | null;
@@ -767,6 +774,8 @@ app.get('/health', (_req: Request, res: Response) => {
           mode: persistenceEnabled ? 'file' : 'memory',
           encryption: persistenceEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
           keySource: persistenceEncryptionKeySource,
+          currentKeyFingerprint: persistenceCurrentKeyFingerprint,
+          previousKeyFingerprint: persistencePreviousKeyFingerprint,
           previousKeyConfigured: previousPersistenceEncryptionConfigured,
           eventLogSource: durableLog.source,
           eventLogReason: durableLog.reason ?? null,
@@ -830,6 +839,8 @@ app.get('/state', (_req: Request, res: Response) => {
       persistence: persistenceEnabled ? 'file' : 'memory',
       persistenceEncryption: persistenceEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
       persistenceEncryptionKeySource,
+      persistenceCurrentKeyFingerprint,
+      persistencePreviousKeyFingerprint,
       persistencePreviousKeyConfigured: previousPersistenceEncryptionConfigured,
       memoryEncryption: memoryEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
       attestationTtlMs: configuredAttestationTtlMs(),
@@ -1354,6 +1365,8 @@ app.get('/attest/policy', (_req: Request, res: Response) => {
       adminOperatorAllowlistConfigured: operatorAllowlistConfigured(),
       persistenceEncryption: persistenceEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
       persistenceEncryptionKeySource,
+      persistenceCurrentKeyFingerprint,
+      persistencePreviousKeyFingerprint,
       persistencePreviousKeyConfigured: previousPersistenceEncryptionConfigured,
       memoryEncryption: memoryEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
     },

@@ -14,6 +14,7 @@ import {
   eventLogReady,
   persistenceRotationPending,
   persistenceOperatorAction,
+  persistenceKeyFingerprint,
   SNAPSHOT_KEYS,
 } from '../persistence';
 
@@ -33,6 +34,14 @@ describe('runtime persistence', () => {
     expect(persistenceReady(true, 'missing')).toBe(true);
     expect(persistenceReady(true, 'restored')).toBe(true);
     expect(persistenceReady(true, 'corrupt')).toBe(false);
+  });
+
+  it('exposes only a deterministic non-secret key fingerprint', () => {
+    const fingerprint = persistenceKeyFingerprint('current-secret');
+    expect(fingerprint).toHaveLength(16);
+    expect(fingerprint).not.toContain('current-secret');
+    expect(persistenceKeyFingerprint('current-secret')).toBe(fingerprint);
+    expect(persistenceKeyFingerprint()).toBeNull();
   });
 
   it('reports rotation pending only when a configured previous key was used', () => {

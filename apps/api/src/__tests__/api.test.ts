@@ -200,6 +200,8 @@ describe('API runtime contracts', () => {
       mode: 'memory',
       encryption: 'disabled',
       keySource: 'none',
+      currentKeyFingerprint: null,
+      previousKeyFingerprint: null,
       previousKeyConfigured: false,
       eventLogSource: 'disabled',
       eventLogReason: null,
