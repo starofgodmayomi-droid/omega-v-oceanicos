@@ -48,10 +48,23 @@ describe('governance describes the real surface', () => {
     expect(governance).toMatch(/Admin-gated/);
   });
 
-  it('claims no control the middleware does not implement', () => {
-    const named = Array.from(governance.matchAll(/`(OMEGA_[A-Z_]+)`/g)).map((match) => match[1]);
-    const implemented = new Set(Array.from(source.matchAll(/OMEGA_[A-Z_]+/g)).map((m) => m[0]));
+  it('claims no control the system does not implement', () => {
+    // Scoped to every module that reads configuration, not only the API.
+    // OMEGA_SIGNING_KEY is enforced in packages/attestation and the
+    // dissensus policy variables in packages/dissensus; checking the API
+    // file alone would flag a control that genuinely exists.
+    const modules = [
+      'apps/api/src/index.ts',
+      'packages/attestation/src/index.ts',
+      'packages/dissensus/src/index.ts',
+    ]
+      .map((path) => readFileSync(join(root, path), 'utf8'))
+      .join('\n');
 
+    const named = Array.from(governance.matchAll(/`(OMEGA_[A-Z_]+)`/g)).map((match) => match[1]);
+    const implemented = new Set(Array.from(modules.matchAll(/OMEGA_[A-Z_]+/g)).map((m) => m[0]));
+
+    expect(named.length).toBeGreaterThan(0);
     expect(named.filter((variable) => !implemented.has(variable))).toEqual([]);
   });
 
