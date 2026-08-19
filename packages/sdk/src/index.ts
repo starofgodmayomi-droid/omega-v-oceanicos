@@ -39,6 +39,8 @@ export type Health = {
           | 'review-key-rotation'
           | 'review-partial-recovery-and-key-rotation';
         keySource: 'none' | 'current' | 'previous' | 'mixed';
+        currentKeyFingerprint: string | null;
+        previousKeyFingerprint: string | null;
         previousKeyConfigured: boolean;
         eventLogSource: 'disabled' | 'missing' | 'restored' | 'partial';
         eventLogReason: string | null;
@@ -66,6 +68,8 @@ export type RuntimeState = {
     status: 'active';
     readiness: 'ready' | 'degraded';
     persistence: 'file' | 'memory';
+    persistenceCurrentKeyFingerprint: string | null;
+    persistencePreviousKeyFingerprint: string | null;
     eventLogSource: 'disabled' | 'missing' | 'restored' | 'partial';
     eventLogReason: string | null;
     eventLogKeySource: 'none' | 'current' | 'previous' | 'mixed';
@@ -95,6 +99,8 @@ export type Observability = {
       skippedLogEntries: number;
       eventLogReason: string | null;
       eventLogEncryptionKeySource: 'none' | 'current' | 'previous' | 'mixed';
+      persistenceCurrentKeyFingerprint: string | null;
+      persistencePreviousKeyFingerprint: string | null;
       persistenceRotationPending: boolean;
       operatorAction:
         | 'none'

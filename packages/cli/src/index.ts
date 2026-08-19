@@ -39,6 +39,8 @@ type HealthResponse = {
         eventLogSource: 'disabled' | 'missing' | 'restored' | 'partial';
         eventLogReason: string | null;
         eventLogKeySource: 'none' | 'current' | 'previous' | 'mixed';
+        currentKeyFingerprint: string | null;
+        previousKeyFingerprint: string | null;
         rotationPending: boolean;
         operatorAction:
           | 'none'
@@ -80,6 +82,8 @@ type ObservabilityResponse = {
       skippedLogEntries: number;
       eventLogReason: string | null;
       eventLogEncryptionKeySource: 'none' | 'current' | 'previous' | 'mixed';
+      persistenceCurrentKeyFingerprint: string | null;
+      persistencePreviousKeyFingerprint: string | null;
       persistenceRotationPending: boolean;
       operatorAction:
         | 'none'
@@ -247,6 +251,7 @@ async function health(argv: string[], fetchImpl: FetchLike): Promise<number> {
         `CHECKS        observer=${checks.observer} verifier=${checks.verifier} attester=${checks.attester}`,
         `MEMORY        ${checks.memory.status} integrity=${checks.memory.integrity} encryption=${checks.memory.encryption}`,
         `PERSISTENCE   ${checks.persistence.mode} encryption=${checks.persistence.encryption} log=${checks.persistence.eventLogSource} skipped=${checks.persistence.skippedLogEntries} key=${checks.persistence.eventLogKeySource} rotation=${checks.persistence.rotationPending}`,
+        `KEY ID        current=${checks.persistence.currentKeyFingerprint ?? 'none'} previous=${checks.persistence.previousKeyFingerprint ?? 'none'} custody=unverified-local`,
         `LOG REASON    ${checks.persistence.eventLogReason ?? 'none'}`,
         `ACTION       ${checks.persistence.operatorAction ?? 'unknown'}`,
         `ROTATION     recovery=${checks.persistence.reencryptionRecovery?.status ?? 'unknown'} reason=${checks.persistence.reencryptionRecovery?.reason ?? 'none'}`,
@@ -295,6 +300,7 @@ async function status(argv: string[], fetchImpl: FetchLike): Promise<number> {
         }`,
         `MEMORY        entries=${memory.entries} intact=${memory.intact} appendOnly=${memory.appendOnly}`,
         `EVENT LOG     ${runtime.eventLogSource ?? 'unknown'} skipped=${runtime.skippedLogEntries ?? 'unknown'} key=${runtime.eventLogEncryptionKeySource ?? 'unknown'} rotation=${runtime.persistenceRotationPending ?? 'unknown'}`,
+        `KEY ID        current=${runtime.persistenceCurrentKeyFingerprint ?? 'none'} previous=${runtime.persistencePreviousKeyFingerprint ?? 'none'} custody=unverified-local`,
         `LOG REASON    ${runtime.eventLogReason ?? 'none'}`,
         `ACTION       ${runtime.operatorAction ?? 'unknown'}`,
         `ROTATION     recovery=${runtime.reencryptionRecovery?.status ?? 'unknown'} reason=${runtime.reencryptionRecovery?.reason ?? 'none'}`,

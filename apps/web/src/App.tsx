@@ -73,6 +73,8 @@ type RuntimeHealth = {
       eventLogSource: 'disabled' | 'missing' | 'restored' | 'partial';
       eventLogReason: string | null;
       eventLogKeySource: 'none' | 'current' | 'previous' | 'mixed';
+      currentKeyFingerprint: string | null;
+      previousKeyFingerprint: string | null;
       rotationPending: boolean;
       operatorAction:
         | 'none'
@@ -838,6 +840,20 @@ export function App(): JSX.Element {
               <strong>{runtimeHealth.checks.persistence.eventLogReason}</strong>
             </div>
           ) : null}
+          <div>
+            <span>LOG KEY</span>
+            <strong>
+              {runtimeHealth?.checks.persistence?.eventLogKeySource?.toUpperCase() ?? 'UNKNOWN'}
+            </strong>
+          </div>
+          <div>
+            <span>KEY IDENTITY</span>
+            <strong>
+              {runtimeHealth?.checks.persistence
+                ? `${runtimeHealth.checks.persistence.currentKeyFingerprint ?? 'NONE'} / ${runtimeHealth.checks.persistence.previousKeyFingerprint ?? 'NONE'} / UNVERIFIED LOCAL`
+                : 'UNKNOWN'}
+            </strong>
+          </div>
           {runtimeHealth?.checks.persistence?.acknowledgement ? (
             <div>
               <span>ACKNOWLEDGED</span>
