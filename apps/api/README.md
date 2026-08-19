@@ -760,6 +760,7 @@ curl -X POST http://localhost:3000/complete-loop \
 - `OMEGA_ADMIN_TOKEN` — Optional distinct bearer token required for `POST /attest/revoke`; never reuse or expose a read token as administrative authority
 - `OMEGA_ADMIN_OPERATOR_ALLOWLIST` — Optional comma-separated operator identities. When configured, revocation requires `x-omega-operator-id` (or the SDK/CLI equivalent) to match one of these identities; policy exposes only whether the allowlist is configured, not its contents.
 - `OMEGA_ADMIN_REQUIRE_ALLOWLIST` — Set to `on` to fail closed for all admin mutations unless the operator allowlist is configured and the supplied identity is listed; unset preserves the optional-allowlist behavior.
+- `OMEGA_PERSISTENCE_DELETION_MODE` — Optional declaration of `unlink-only` or `overwrite-unlink` cleanup behavior. `unavailable` is the default; invalid values degrade readiness. The API always reports `verified: false`: this is capability/configuration evidence, not proof of secure erasure, filesystem behavior, backups, replicas, or custody.
 - `OMEGA_SIGNING_KEY` — Required signing key for attestation; there is no default
 - `OMEGA_PERSISTENCE` — Explicit persistence override: `on` or `off`
 - `OMEGA_PERSISTENCE_KEY` — Active secret for AES-256-GCM encryption of runtime snapshot and event-log files; new writes always use this key, and it is never exposed in logs or API responses

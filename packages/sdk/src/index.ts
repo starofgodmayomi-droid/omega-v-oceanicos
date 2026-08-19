@@ -51,6 +51,7 @@ export type Health = {
         reencrypt: PersistenceReencryption | null;
         reencryptionRecovery: ReencryptionRecovery;
         recoveryPolicy: { mode: string; reference: string | null; reason: string | null };
+        deletionPolicy: { mode: string; reason: string | null; verified: false };
         coverage: {
           complete: false;
           surfaces: Array<{
@@ -96,6 +97,7 @@ export type RuntimeState = {
     persistenceReencryption: PersistenceReencryption | null;
     reencryptionRecovery: ReencryptionRecovery;
     recoveryPolicy: { mode: string; reference: string | null; reason: string | null };
+    deletionPolicy: { mode: string; reason: string | null; verified: false };
     coverage: {
       complete: false;
       surfaces: Array<{ name: string; encryption: string; keySource: string; evidence: string }>;
@@ -129,6 +131,7 @@ export type Observability = {
       persistenceReencryption: PersistenceReencryption | null;
       reencryptionRecovery: ReencryptionRecovery;
       recoveryPolicy: { mode: string; reference: string | null; reason: string | null };
+      deletionPolicy: { mode: string; reason: string | null; verified: false };
       coverage: {
         complete: false;
         surfaces: Array<{ name: string; encryption: string; keySource: string; evidence: string }>;

@@ -8,14 +8,15 @@ registers, so it cannot quietly fall behind the code.
 
 ## The three controls
 
-| Variable                         | Effect when set                                                                                                           | Effect when unset                 |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
-| `OMEGA_READ_TOKEN`               | Every `GET` except `/health` requires a matching bearer token                                                             | All reads are open                |
-| `OMEGA_ADMIN_TOKEN`              | `POST /attest/revoke`, `POST /persistence/acknowledge`, and `POST /persistence/reencrypt` require a matching bearer token | Those mutations need no token     |
-| `OMEGA_ADMIN_OPERATOR_ALLOWLIST` | All three admin mutations require `x-omega-operator-id` from the list                                                     | Any operator identity is accepted |
-| `OMEGA_ADMIN_REQUIRE_ALLOWLIST`  | When `on`, all three admin mutations fail closed unless the operator allowlist is configured and the identity is listed   | Allowlist remains optional        |
+| Variable                          | Effect when set                                                                                                           | Effect when unset                                |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| `OMEGA_READ_TOKEN`                | Every `GET` except `/health` requires a matching bearer token                                                             | All reads are open                               |
+| `OMEGA_ADMIN_TOKEN`               | `POST /attest/revoke`, `POST /persistence/acknowledge`, and `POST /persistence/reencrypt` require a matching bearer token | Those mutations need no token                    |
+| `OMEGA_ADMIN_OPERATOR_ALLOWLIST`  | All three admin mutations require `x-omega-operator-id` from the list                                                     | Any operator identity is accepted                |
+| `OMEGA_ADMIN_REQUIRE_ALLOWLIST`   | When `on`, all three admin mutations fail closed unless the operator allowlist is configured and the identity is listed   | Allowlist remains optional                       |
+| `OMEGA_PERSISTENCE_DELETION_MODE` | Declares `unlink-only` or `overwrite-unlink`; invalid values degrade readiness and every mode reports `verified:false`    | `unavailable`; no erasure capability is declared |
 
-Tokens are compared with `timingSafeEqual`. The three original controls default to **off**; `OMEGA_ADMIN_REQUIRE_ALLOWLIST=on` is an explicit fail-closed hardening decision. An unconfigured deployment is fully open, and that is a deployment decision
+Tokens are compared with `timingSafeEqual`. The three original controls default to **off**; `OMEGA_ADMIN_REQUIRE_ALLOWLIST=on` is an explicit fail-closed hardening decision. `OMEGA_PERSISTENCE_DELETION_MODE` is a separate local capability declaration and never proves secure erasure, backup deletion, replica deletion, or custody. An unconfigured deployment is fully open, and that is a deployment decision
 rather than a safe default. It is stated here rather than discovered.
 
 ## What is gated

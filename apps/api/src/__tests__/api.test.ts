@@ -219,6 +219,7 @@ describe('API runtime contracts', () => {
       reencrypt: null,
       reencryptionRecovery: { status: 'none', reason: null },
       recoveryPolicy: { mode: 'unavailable', reference: null, reason: null },
+      deletionPolicy: { mode: 'unavailable', reason: null, verified: false },
       coverage: {
         complete: false,
         surfaces: [

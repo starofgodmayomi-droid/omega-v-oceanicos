@@ -105,6 +105,7 @@ type RuntimeHealth = {
         reason: string | null;
       };
       recoveryPolicy: { mode: string; reference: string | null; reason: string | null };
+      deletionPolicy: { mode: string; reason: string | null; verified: false };
       coverage: {
         complete: false;
         surfaces: Array<{ name: string; encryption: string; keySource: string; evidence: string }>;
@@ -851,6 +852,14 @@ export function App(): JSX.Element {
             <span>LOG KEY</span>
             <strong>
               {runtimeHealth?.checks.persistence?.eventLogKeySource?.toUpperCase() ?? 'UNKNOWN'}
+            </strong>
+          </div>
+          <div>
+            <span>SECURE DELETION</span>
+            <strong>
+              {runtimeHealth?.checks.persistence
+                ? `${runtimeHealth.checks.persistence.deletionPolicy.mode.toUpperCase()} / VERIFIED=${runtimeHealth.checks.persistence.deletionPolicy.verified} / ${runtimeHealth.checks.persistence.deletionPolicy.reason ?? 'CAPABILITY ONLY'}`
+                : 'UNKNOWN'}
             </strong>
           </div>
           <div>
