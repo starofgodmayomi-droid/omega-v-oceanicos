@@ -827,6 +827,57 @@ describe('omega status CLI', () => {
   });
 });
 
+describe('omega CLI persistence acknowledgement', () => {
+  const originalWrite = process.stdout.write;
+
+  afterEach(() => {
+    process.stdout.write = originalWrite;
+  });
+
+  it('acknowledges persistence review with admin provenance', async () => {
+    const output: string[] = [];
+    process.stdout.write = ((chunk: string | Uint8Array) => {
+      output.push(String(chunk));
+      return true;
+    }) as typeof process.stdout.write;
+
+    const exitCode = await run(
+      [
+        'acknowledge-persistence',
+        '--reason',
+        'Review malformed local log before repair',
+        '--operator-id',
+        'operator-7',
+        '--admin-token',
+        'admin-token',
+        '--url',
+        'http://api.test/',
+      ],
+      async (url, init) => {
+        expect(url).toBe('http://api.test/persistence/acknowledge');
+        expect(init?.method).toBe('POST');
+        expect(new Headers(init?.headers).get('authorization')).toBe('Bearer admin-token');
+        expect(new Headers(init?.headers).get('x-omega-operator-id')).toBe('operator-7');
+        expect(JSON.parse(String(init?.body))).toEqual({
+          reason: 'Review malformed local log before repair',
+          operatorId: 'operator-7',
+        });
+        return new Response(
+          JSON.stringify({
+            data: {
+              acknowledgement: { action: 'review-partial-recovery', operatorId: 'operator-7' },
+              eventId: 'evt-ack-1',
+            },
+          })
+        );
+      }
+    );
+
+    expect(exitCode).toBe(0);
+    expect(output.join('')).toContain('ACKNOWLEDGED action=review-partial-recovery');
+  });
+});
+
 describe('omega CLI argument parsing', () => {
   const originalWrite = process.stdout.write;
   const originalError = process.stderr.write;

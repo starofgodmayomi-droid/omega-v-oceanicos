@@ -77,6 +77,8 @@ app.use((req: Request, res: Response, next) => {
   const configuredAdminToken = process.env[ADMIN_TOKEN_ENV]?.trim();
   const isReadOnlyRequest = req.method === 'GET' && req.path !== '/health';
   const isRevocationRequest = req.method === 'POST' && req.path === '/attest/revoke';
+  const isPersistenceAcknowledgementRequest =
+    req.method === 'POST' && req.path === '/persistence/acknowledge';
   if (configuredReadToken && isReadOnlyRequest) {
     const authorization = req.header('authorization') || '';
     if (!constantTimeTokenMatch(bearerToken(authorization), configuredReadToken)) {
@@ -88,12 +90,14 @@ app.use((req: Request, res: Response, next) => {
       return;
     }
   }
-  if (configuredAdminToken && isRevocationRequest) {
+  if (configuredAdminToken && (isRevocationRequest || isPersistenceAcknowledgementRequest)) {
     const authorization = req.header('authorization') || '';
     if (!constantTimeTokenMatch(bearerToken(authorization), configuredAdminToken)) {
       res.status(401).json({
         code: 'ADMIN_ACCESS_REQUIRED',
-        message: 'A valid admin bearer token is required to revoke attestations',
+        message: isPersistenceAcknowledgementRequest
+          ? 'A valid admin bearer token is required to acknowledge persistence review'
+          : 'A valid admin bearer token is required to revoke attestations',
         requestId,
       });
       return;
@@ -382,6 +386,32 @@ const runtimeActions = snapshot.actions;
 const runtimeLearnings = snapshot.learnings;
 const runtimeRecompilations = snapshot.recompilations;
 const runtimeRevocations = snapshot.revocations ?? [];
+type PersistenceAcknowledgement = {
+  operatorId: string;
+  reason: string;
+  action: string;
+  acknowledgedAt: string;
+  requestId: string;
+};
+const persistedAcknowledgementEvent = [...runtimeEvents].find(
+  (event) => event.type === 'persistence.recovery.acknowledged' && event.details
+);
+const persistedAcknowledgementDetails = persistedAcknowledgementEvent?.details;
+let persistenceAcknowledgement: PersistenceAcknowledgement | null =
+  persistedAcknowledgementDetails &&
+  typeof persistedAcknowledgementDetails.operatorId === 'string' &&
+  typeof persistedAcknowledgementDetails.reason === 'string' &&
+  typeof persistedAcknowledgementDetails.action === 'string' &&
+  typeof persistedAcknowledgementDetails.acknowledgedAt === 'string' &&
+  typeof persistedAcknowledgementDetails.requestId === 'string'
+    ? {
+        operatorId: persistedAcknowledgementDetails.operatorId,
+        reason: persistedAcknowledgementDetails.reason,
+        action: persistedAcknowledgementDetails.action,
+        acknowledgedAt: persistedAcknowledgementDetails.acknowledgedAt,
+        requestId: persistedAcknowledgementDetails.requestId,
+      }
+    : null;
 const persistenceIsReady = persistenceReady(persistenceEnabled, persistenceSource);
 const persistedRevocationDigest = snapshot.revocationIntegrity;
 const currentRevocationDigest = revocationRegistryDigest(runtimeRevocations);
@@ -450,6 +480,72 @@ const recordEvent = (event: Omit<RuntimeEvent, 'id' | 'timestamp'>): RuntimeEven
   return recorded;
 };
 
+app.post('/persistence/acknowledge', (req: Request, res: Response) => {
+  const { reason, operatorId: operatorIdFromBody } = req.body as {
+    reason?: string;
+    operatorId?: string;
+  };
+  const operatorId = req.header('x-omega-operator-id') || operatorIdFromBody;
+  if (!operatorAllowed(operatorId)) {
+    res.status(403).json({
+      code: 'ADMIN_OPERATOR_NOT_ALLOWED',
+      message: 'The operator identity is not allowed to acknowledge persistence review',
+      timestamp: new Date().toISOString(),
+    } satisfies ErrorResponse);
+    return;
+  }
+  const normalizedReason = typeof reason === 'string' ? reason.trim() : '';
+  if (normalizedReason.length < 8 || normalizedReason.length > 1000) {
+    res.status(400).json({
+      code: 'INVALID_ACKNOWLEDGEMENT_REASON',
+      message: 'A persistence acknowledgement reason between 8 and 1000 characters is required',
+      timestamp: new Date().toISOString(),
+    } satisfies ErrorResponse);
+    return;
+  }
+  const durableLog = readEventLog<RuntimeEvent>(
+    eventLogPath,
+    persistenceEnabled,
+    persistenceEncryptionKey,
+    previousPersistenceEncryptionKey
+  );
+  const rotationPending = persistenceRotationPending(
+    previousPersistenceEncryptionConfigured,
+    persistenceEncryptionKeySource,
+    durableLog.keySource
+  );
+  const action = persistenceOperatorAction(persistenceSource, durableLog.source, rotationPending);
+  if (action === 'none') {
+    res.status(409).json({
+      code: 'PERSISTENCE_ACK_NOT_REQUIRED',
+      message: 'No persistence review action is currently pending',
+      timestamp: new Date().toISOString(),
+    } satisfies ErrorResponse);
+    return;
+  }
+  const requestId = res.locals.requestId as string;
+  const acknowledgement: PersistenceAcknowledgement = {
+    operatorId: operatorId as string,
+    reason: normalizedReason,
+    action,
+    acknowledgedAt: new Date().toISOString(),
+    requestId,
+  };
+  persistenceAcknowledgement = acknowledgement;
+  const event = recordEvent({
+    type: 'persistence.recovery.acknowledged',
+    stage: 'persistence',
+    status: 'active',
+    message: 'Operator acknowledged the persistence review boundary',
+    requestId,
+    details: acknowledgement,
+  });
+  res.status(201).json({
+    data: { acknowledgement, eventId: event.id },
+    timestamp: new Date().toISOString(),
+  });
+});
+
 // Register default rules
 verificationEngine.registerRule({
   name: 'response-time-threshold',
@@ -512,6 +608,7 @@ app.get('/health', (_req: Request, res: Response) => {
         eventLogKeySource: string;
         rotationPending: boolean;
         operatorAction: string;
+        acknowledgement: PersistenceAcknowledgement | null;
         skippedLogEntries: number;
       };
     };
@@ -545,6 +642,7 @@ app.get('/health', (_req: Request, res: Response) => {
           eventLogKeySource: durableLog.keySource,
           rotationPending,
           operatorAction,
+          acknowledgement: persistenceAcknowledgement,
           skippedLogEntries: durableLog.skipped,
         },
       },
@@ -618,6 +716,7 @@ app.get('/state', (_req: Request, res: Response) => {
       eventLogKeySource: durableLog.keySource,
       persistenceRotationPending: rotationPending,
       operatorAction,
+      persistenceAcknowledgement,
       lastActivity: latest?.timestamp || null,
       services: [
         { name: 'observer', status: 'ready' },
@@ -668,6 +767,7 @@ app.get('/observability', (_req: Request, res: Response) => {
         eventLogReason: durableLog.reason ?? null,
         persistenceRotationPending: rotationPending,
         operatorAction,
+        persistenceAcknowledgement,
         memoryEncryption: memoryEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
         memoryEncryptionKeySource,
         attestationTtlMs: configuredAttestationTtlMs(),
@@ -1733,6 +1833,7 @@ const startServer = () =>
         '  GET    /attest/public-key - Public verification key',
         '  GET    /attest/revocations - Revoked attestations',
         '  POST   /attest/revoke    - Revoke an attestation',
+        '  POST   /persistence/acknowledge - Record persistence review',
         '',
       ].join('\n')
     );
