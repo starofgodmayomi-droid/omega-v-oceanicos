@@ -86,6 +86,11 @@ remain on the [roadmap](./ROADMAP.md).
   temporary Ed25519 key pair, create a real local attestation, and verify it
   in the dashboard without sending the check to the API.
 
+### Governance
+
+- **[Governance](./GOVERNANCE.md)** — who may do what, which writes are
+  unauthenticated, and what the loop enforces regardless of tokens
+
 ### Decisions
 
 - **[1. Serve the web client from the API's origin](./decisions/0001-single-origin-deployment.md)**
