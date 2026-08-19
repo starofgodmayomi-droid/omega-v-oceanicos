@@ -1378,6 +1378,7 @@ app.get('/attest/policy', (_req: Request, res: Response) => {
       persistenceCurrentKeyFingerprint,
       persistencePreviousKeyFingerprint,
       persistencePreviousKeyConfigured: previousPersistenceEncryptionConfigured,
+      recoveryPolicy: persistenceRecoveryPolicy,
       memoryEncryption: memoryEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
     },
     timestamp: new Date().toISOString(),

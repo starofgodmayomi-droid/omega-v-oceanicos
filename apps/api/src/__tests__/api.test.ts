@@ -335,6 +335,7 @@ describe('API runtime contracts', () => {
       persistenceEncryption: string;
       persistenceEncryptionKeySource: string;
       persistencePreviousKeyConfigured: boolean;
+      recoveryPolicy: { mode: string; reference: string | null; reason: string | null };
       memoryEncryption: string;
     }>;
 
@@ -350,6 +351,11 @@ describe('API runtime contracts', () => {
     expect(body.data.persistenceEncryption).toBe('disabled');
     expect(body.data.persistenceEncryptionKeySource).toBe('none');
     expect(body.data.persistencePreviousKeyConfigured).toBe(false);
+    expect(body.data.recoveryPolicy).toEqual({
+      mode: 'unavailable',
+      reference: null,
+      reason: null,
+    });
     expect(body.data.memoryEncryption).toBe('disabled');
     expect(JSON.stringify(body)).not.toMatch(/token|secret|private|signing material/i);
   });
