@@ -9,6 +9,7 @@
 <p align="center">
   <a href="docs/spec/ATTESTATION-ENVELOPE.md">Attestation envelope</a> ·
   <a href="docs/BRAND.md">Brand</a> ·
+  <a href="SECURITY.md">Security</a> ·
   <a href="apps/api/README.md">API</a> ·
   <a href="docs/decisions/0001-single-origin-deployment.md">Decisions</a>
 </p>
