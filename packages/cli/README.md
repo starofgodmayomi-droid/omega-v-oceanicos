@@ -38,7 +38,7 @@ node packages/cli/dist/index.js reencrypt-persistence \
   --url http://localhost:3000
 ```
 
-The command is admin-authenticated and respects `OMEGA_ADMIN_OPERATOR_ALLOWLIST`. The API validates all local evidence before rewriting; corrupt or partial persistence returns a non-zero result and is not silently treated as complete. Success prints snapshot/event record counts and the audit event ID. This is local ciphertext rotation evidence only: it does not prove distributed recovery, HSM/KMS custody, secure deletion, or deployment authorization.
+The command is admin-authenticated and respects `OMEGA_ADMIN_OPERATOR_ALLOWLIST`. The API validates all local evidence before rewriting; corrupt or partial persistence returns a non-zero result and is not silently treated as complete. Success prints snapshot/event record counts and the audit event ID. `health` and `status` also print `ROTATION recovery=none|recovered|blocked`; a blocked journal is a non-ready local startup condition, while `recovered` records that a complete staged transaction was reconciled. This is local ciphertext rotation evidence only: it does not prove distributed recovery, HSM/KMS custody, secure deletion, or deployment authorization.
 
 ## Event evidence
 
