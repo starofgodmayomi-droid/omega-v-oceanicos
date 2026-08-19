@@ -188,6 +188,164 @@ describe('dashboard', () => {
     });
   });
 
+  it('acknowledges pending persistence review with operator provenance and refreshes evidence', async () => {
+    const user = userEvent.setup();
+    let healthCalls = 0;
+    const fetchMock = installFetch({
+      '/api/health': () => {
+        healthCalls += 1;
+        return json({
+          data: {
+            status: 'ok',
+            readiness: 'degraded',
+            checks: {
+              memory: { integrity: true },
+              persistence:
+                healthCalls === 1
+                  ? {
+                      eventLogSource: 'partial',
+                      eventLogReason: 'one malformed line',
+                      eventLogKeySource: 'none',
+                      currentKeyFingerprint: null,
+                      previousKeyFingerprint: null,
+                      rotationPending: false,
+                      operatorAction: 'review-partial-recovery',
+                      acknowledgement: null,
+                      reencrypt: null,
+                      reencryptionRecovery: { status: 'none', reason: null },
+                      recoveryPolicy: { mode: 'unavailable', reference: null, reason: null },
+                      skippedLogEntries: 1,
+                    }
+                  : {
+                      eventLogSource: 'partial',
+                      eventLogReason: 'one malformed line',
+                      eventLogKeySource: 'none',
+                      currentKeyFingerprint: null,
+                      previousKeyFingerprint: null,
+                      rotationPending: false,
+                      operatorAction: 'review-partial-recovery',
+                      acknowledgement: {
+                        operatorId: 'dashboard-operator',
+                        reason: 'Reviewed the malformed local event log',
+                        action: 'review-partial-recovery',
+                        acknowledgedAt: '2026-08-19T21:00:00.000Z',
+                        requestId: 'req-ack-1',
+                      },
+                      reencrypt: null,
+                      reencryptionRecovery: { status: 'none', reason: null },
+                      recoveryPolicy: { mode: 'unavailable', reference: null, reason: null },
+                      skippedLogEntries: 1,
+                    },
+            },
+          },
+        });
+      },
+      '/api/persistence/acknowledge': () =>
+        json(
+          {
+            data: {
+              acknowledgement: {
+                operatorId: 'dashboard-operator',
+                reason: 'Reviewed the malformed local event log',
+                action: 'review-partial-recovery',
+                acknowledgedAt: '2026-08-19T21:00:00.000Z',
+                requestId: 'req-ack-1',
+              },
+              eventId: 'evt-ack-1',
+            },
+          },
+          { status: 201 }
+        ),
+    });
+    await renderApp();
+
+    const acknowledgeButton = await screen.findByRole('button', {
+      name: /acknowledge persistence review/i,
+    });
+    expect(acknowledgeButton).toBeDisabled();
+    await user.type(
+      screen.getByLabelText(/acknowledgement reason/i),
+      'Reviewed the malformed local event log'
+    );
+    expect(acknowledgeButton).toBeEnabled();
+    await user.click(acknowledgeButton);
+
+    const healthRefreshes = healthCalls;
+    expect(healthRefreshes).toBeGreaterThan(1);
+    expect(
+      await screen.findByText(/dashboard-operator \/ REVIEW-PARTIAL-RECOVERY/)
+    ).toBeInTheDocument();
+    const call = fetchMock.mock.calls.find(([url]) => url === '/api/persistence/acknowledge');
+    expect(call).toBeDefined();
+    expect(call?.[1]).toMatchObject({
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-omega-operator-id': 'dashboard-operator',
+      },
+    });
+    expect(JSON.parse(String(call?.[1]?.body))).toEqual({
+      reason: 'Reviewed the malformed local event log',
+      operatorId: 'dashboard-operator',
+    });
+    expect(healthCalls).toBeGreaterThan(1);
+    expect(
+      await screen.findByText(/dashboard-operator \/ REVIEW-PARTIAL-RECOVERY/)
+    ).toBeInTheDocument();
+  });
+
+  it('keeps the persistence acknowledgement actionable and traceable when the API rejects it', async () => {
+    const user = userEvent.setup();
+    const fetchMock = installFetch({
+      '/api/health': () =>
+        json({
+          data: {
+            status: 'ok',
+            readiness: 'degraded',
+            checks: {
+              memory: { integrity: true },
+              persistence: {
+                eventLogSource: 'partial',
+                eventLogReason: 'one malformed line',
+                eventLogKeySource: 'none',
+                currentKeyFingerprint: null,
+                previousKeyFingerprint: null,
+                rotationPending: false,
+                operatorAction: 'review-partial-recovery',
+                acknowledgement: null,
+                reencrypt: null,
+                reencryptionRecovery: { status: 'none', reason: null },
+                recoveryPolicy: { mode: 'unavailable', reference: null, reason: null },
+                skippedLogEntries: 1,
+              },
+            },
+          },
+        }),
+      '/api/persistence/acknowledge': () =>
+        json(
+          {
+            code: 'ADMIN_OPERATOR_NOT_ALLOWED',
+            message: 'dashboard operator is not allowlisted',
+            requestId: 'req-ack-denied',
+          },
+          { status: 403 }
+        ),
+    });
+    await renderApp();
+    await user.type(
+      screen.getByLabelText(/acknowledgement reason/i),
+      'Reviewed the malformed local event log'
+    );
+    await user.click(screen.getByRole('button', { name: /acknowledge persistence review/i }));
+
+    expect(await screen.findByText(/dashboard operator is not allowlisted/)).toBeInTheDocument();
+    expect(screen.getByText(/req-ack-denied/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /acknowledge persistence review/i })).toBeEnabled();
+    expect(
+      fetchMock.mock.calls.filter(([url]) => url === '/api/persistence/acknowledge')
+    ).toHaveLength(1);
+  });
+
   it('reports an invalid signature as invalid', async () => {
     const user = userEvent.setup();
     installFetch({

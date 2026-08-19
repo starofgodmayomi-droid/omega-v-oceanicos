@@ -125,6 +125,7 @@ type PublicTrustMetadata = {
 };
 
 const stages = ['observe', 'evidence', 'verify', 'attest', 'act', 'learn', 'recompile'];
+const DASHBOARD_OPERATOR_ID = 'dashboard-operator';
 const navGroups = [
   { label: 'Core', items: ['Current', 'Observe', 'Evidence', 'Verify', 'Attest', 'Act'] },
   { label: 'Intelligence', items: ['AI', 'Agents', 'Knowledge', 'Memory'] },
@@ -190,6 +191,10 @@ export function App(): JSX.Element {
     'idle' | 'checking' | 'valid' | 'invalid'
   >('idle');
   const [revocationReason, setRevocationReason] = useState('');
+  const [persistenceAcknowledgementReason, setPersistenceAcknowledgementReason] = useState('');
+  const [persistenceAcknowledgementStatus, setPersistenceAcknowledgementStatus] = useState<
+    'idle' | 'acknowledging' | 'acknowledged' | 'failed'
+  >('idle');
   const [revocationStatus, setRevocationStatus] = useState<
     'idle' | 'revoking' | 'revoked' | 'failed'
   >('idle');
@@ -463,6 +468,47 @@ export function App(): JSX.Element {
       setRevocationStatus('failed');
       setError(
         requestError instanceof Error ? requestError.message : 'Attestation revocation failed'
+      );
+    }
+  };
+
+  const acknowledgePersistenceReview = async () => {
+    const reason = persistenceAcknowledgementReason.trim();
+    const persistence = runtimeHealth?.checks.persistence;
+    if (
+      !persistence ||
+      persistence.operatorAction === 'none' ||
+      persistenceAcknowledgementStatus === 'acknowledging' ||
+      reason.length < 8 ||
+      reason.length > 1000
+    )
+      return;
+    setPersistenceAcknowledgementStatus('acknowledging');
+    setError('');
+    try {
+      const response = await fetch('/api/persistence/acknowledge', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-omega-operator-id': DASHBOARD_OPERATOR_ID,
+        },
+        body: JSON.stringify({
+          reason,
+          operatorId: DASHBOARD_OPERATOR_ID,
+        }),
+      });
+      if (!response.ok)
+        throw new Error(
+          await describeResponseError(response, 'Persistence review acknowledgement failed')
+        );
+      setPersistenceAcknowledgementStatus('acknowledged');
+      await refreshRuntime();
+    } catch (requestError) {
+      setPersistenceAcknowledgementStatus('failed');
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : 'Persistence review acknowledgement failed'
       );
     }
   };
@@ -1083,6 +1129,64 @@ export function App(): JSX.Element {
             </div>
           </section>
         )}
+        {runtimeHealth?.checks.persistence &&
+        runtimeHealth.checks.persistence.operatorAction !== 'none' &&
+        !runtimeHealth.checks.persistence.acknowledgement ? (
+          <section className="persistence-review-panel" aria-labelledby="persistence-review-title">
+            <div className="panel-heading">
+              <div>
+                <span className="section-kicker">OPERATOR REVIEW</span>
+                <h2 id="persistence-review-title">Persistence evidence needs acknowledgement</h2>
+              </div>
+              <span className="seal">REVIEW</span>
+            </div>
+            <p className="persistence-review-note">
+              This records that a human reviewed the recovery boundary. It does not repair
+              persistence, restore skipped records, or prove that recovery is complete.
+            </p>
+            <div className="persistence-review-controls">
+              <label htmlFor="persistence-acknowledgement-reason">Acknowledgement reason</label>
+              <textarea
+                id="persistence-acknowledgement-reason"
+                aria-describedby="persistence-acknowledgement-help"
+                value={persistenceAcknowledgementReason}
+                onChange={(event) => setPersistenceAcknowledgementReason(event.target.value)}
+                placeholder="Describe the evidence reviewed and the operator decision."
+                rows={3}
+                disabled={persistenceAcknowledgementStatus === 'acknowledging'}
+              />
+              <small id="persistence-acknowledgement-help">
+                Enter 8–1000 characters. Operator identity: {DASHBOARD_OPERATOR_ID}.
+              </small>
+              <button
+                className="acknowledge-button"
+                onClick={acknowledgePersistenceReview}
+                disabled={
+                  persistenceAcknowledgementStatus === 'acknowledging' ||
+                  persistenceAcknowledgementReason.trim().length < 8 ||
+                  persistenceAcknowledgementReason.trim().length > 1000
+                }
+              >
+                {persistenceAcknowledgementStatus === 'acknowledging'
+                  ? 'Acknowledging review...'
+                  : 'Acknowledge persistence review'}
+              </button>
+              <div
+                className="persistence-review-status"
+                role={persistenceAcknowledgementStatus === 'failed' ? 'alert' : 'status'}
+                aria-live="polite"
+              >
+                {persistenceAcknowledgementStatus === 'acknowledging'
+                  ? 'Recording the acknowledgement with the runtime...'
+                  : persistenceAcknowledgementStatus === 'acknowledged'
+                    ? 'Acknowledgement recorded; refreshing server evidence.'
+                    : persistenceAcknowledgementStatus === 'failed'
+                      ? 'Acknowledgement failed. Review the error details and try again.'
+                      : ''}
+              </div>
+            </div>
+          </section>
+        ) : null}
         <section className="runs-panel">
           <div className="panel-heading">
             <div>

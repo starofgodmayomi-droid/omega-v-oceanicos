@@ -394,6 +394,66 @@ select:focus-visible {
 .metrics-row .red {
   color: #ed9986;
 }
+.persistence-review-panel {
+  margin-top: 18px;
+  padding: 18px;
+  border: 1px solid var(--omega-abyss-edge);
+  background: linear-gradient(135deg, rgba(36, 20, 17, 0.9), rgba(13, 22, 20, 0.82));
+}
+.persistence-review-note {
+  max-width: 760px;
+  margin: 14px 0;
+  color: var(--omega-foam-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.persistence-review-controls {
+  display: grid;
+  max-width: 760px;
+  gap: 8px;
+}
+.persistence-review-controls label,
+.persistence-review-controls small {
+  color: var(--omega-current-dim);
+  font:
+    10px 'DM Mono',
+    monospace;
+}
+.persistence-review-controls textarea {
+  width: 100%;
+  padding: 9px;
+  border: 1px solid var(--omega-abyss-edge);
+  background: var(--omega-abyss);
+  color: var(--omega-foam);
+  font:
+    11px 'DM Mono',
+    monospace;
+  resize: vertical;
+}
+.acknowledge-button {
+  width: fit-content;
+  border: 1px solid var(--omega-dissent);
+  background: var(--omega-abyss-raised);
+  color: var(--omega-dissent);
+  padding: 8px 11px;
+  font:
+    10px 'DM Mono',
+    monospace;
+}
+.acknowledge-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.persistence-review-status {
+  min-height: 16px;
+  color: var(--omega-current-dim);
+  font:
+    10px 'DM Mono',
+    monospace;
+}
+.persistence-review-status[role='alert'] {
+  color: var(--omega-dissent);
+}
 .revocations-panel {
   margin-top: 18px;
   padding: 18px;
