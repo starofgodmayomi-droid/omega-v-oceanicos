@@ -1,0 +1,56 @@
+# Dependency updates.
+#
+# Section XIX names dependency integrity and supply chain as things to test
+# continuously. Secret scanning covers what this repository commits; nothing
+# watched what it depends on, so a known CVE in express, react or the jest
+# toolchain would have sat unnoticed indefinitely.
+#
+# Grouped deliberately. Ten separate pull requests for one toolchain bump is
+# how dependency updates get ignored, and an ignored update is the same as no
+# update with extra noise.
+version: 2
+
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      typescript-toolchain:
+        patterns:
+          - typescript
+          - ts-jest
+          - ts-node
+          - '@types/*'
+      testing:
+        patterns:
+          - jest
+          - jest-*
+          - '@testing-library/*'
+      linting:
+        patterns:
+          - eslint
+          - eslint-*
+          - '@typescript-eslint/*'
+          - prettier
+      react:
+        patterns:
+          - react
+          - react-dom
+          - vite
+          - '@vitejs/*'
+    commit-message:
+      prefix: 'deps'
+      include: scope
+
+  # The pipeline is the observer. An unmaintained action in it is a hole in
+  # the thing that checks everything else.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    commit-message:
+      prefix: 'ci'
