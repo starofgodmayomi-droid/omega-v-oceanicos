@@ -32,6 +32,7 @@ import {
   persistenceKeyFingerprint,
   parsePersistenceRecoveryPolicy,
   parsePersistenceDeletionPolicy,
+  parsePersistenceCustodyPolicy,
   persistenceCoverage,
 } from './persistence.js';
 
@@ -183,7 +184,12 @@ const persistenceRecoveryPolicy = parsePersistenceRecoveryPolicy(
 const persistenceDeletionPolicy = parsePersistenceDeletionPolicy(
   process.env.OMEGA_PERSISTENCE_DELETION_MODE
 );
+const persistenceCustodyPolicy = parsePersistenceCustodyPolicy(
+  process.env.OMEGA_PERSISTENCE_CUSTODY_MODE,
+  process.env.OMEGA_PERSISTENCE_CUSTODY_REFERENCE
+);
 const deletionPolicyReady = persistenceDeletionPolicy.mode !== 'invalid';
+const custodyPolicyReady = persistenceCustodyPolicy.mode !== 'invalid';
 const memoryEncryptionKey = process.env.OMEGA_MEMORY_KEY;
 const memoryEncryptionEnabled = persistenceEnabled && Boolean(memoryEncryptionKey?.trim());
 const kernelMemoryStore = persistenceEnabled
@@ -773,6 +779,12 @@ app.get('/health', (_req: Request, res: Response) => {
         reencryptionRecovery: { status: 'none' | 'recovered' | 'blocked'; reason: string | null };
         recoveryPolicy: { mode: string; reference: string | null; reason: string | null };
         deletionPolicy: { mode: string; reason: string | null; verified: false };
+        custodyPolicy: {
+          mode: string;
+          reference: string | null;
+          reason: string | null;
+          verified: false;
+        };
         coverage: {
           complete: false;
           surfaces: Array<{
@@ -798,7 +810,11 @@ app.get('/health', (_req: Request, res: Response) => {
     data: {
       status: 'ok',
       readiness:
-        memoryIntact && persistenceIsReady && durableLogIsReady && deletionPolicyReady
+        memoryIntact &&
+        persistenceIsReady &&
+        durableLogIsReady &&
+        deletionPolicyReady &&
+        custodyPolicyReady
           ? 'ready'
           : 'degraded',
       checks: {
@@ -830,6 +846,7 @@ app.get('/health', (_req: Request, res: Response) => {
           },
           recoveryPolicy: persistenceRecoveryPolicy,
           deletionPolicy: persistenceDeletionPolicy,
+          custodyPolicy: persistenceCustodyPolicy,
           coverage: {
             ...localPersistenceCoverage,
             surfaces: localPersistenceCoverage.surfaces.map((surface) =>
@@ -887,7 +904,11 @@ app.get('/state', (_req: Request, res: Response) => {
     data: {
       status: 'active',
       readiness:
-        memoryIntact && persistenceIsReady && durableLogIsReady && deletionPolicyReady
+        memoryIntact &&
+        persistenceIsReady &&
+        durableLogIsReady &&
+        deletionPolicyReady &&
+        custodyPolicyReady
           ? 'ready'
           : 'degraded',
       persistence: persistenceEnabled ? 'file' : 'memory',

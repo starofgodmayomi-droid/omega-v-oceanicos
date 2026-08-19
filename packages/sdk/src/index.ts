@@ -52,6 +52,12 @@ export type Health = {
         reencryptionRecovery: ReencryptionRecovery;
         recoveryPolicy: { mode: string; reference: string | null; reason: string | null };
         deletionPolicy: { mode: string; reason: string | null; verified: false };
+        custodyPolicy: {
+          mode: string;
+          reference: string | null;
+          reason: string | null;
+          verified: false;
+        };
         coverage: {
           complete: false;
           surfaces: Array<{
@@ -98,6 +104,12 @@ export type RuntimeState = {
     reencryptionRecovery: ReencryptionRecovery;
     recoveryPolicy: { mode: string; reference: string | null; reason: string | null };
     deletionPolicy: { mode: string; reason: string | null; verified: false };
+    custodyPolicy: {
+      mode: string;
+      reference: string | null;
+      reason: string | null;
+      verified: false;
+    };
     coverage: {
       complete: false;
       surfaces: Array<{ name: string; encryption: string; keySource: string; evidence: string }>;
@@ -132,6 +144,12 @@ export type Observability = {
       reencryptionRecovery: ReencryptionRecovery;
       recoveryPolicy: { mode: string; reference: string | null; reason: string | null };
       deletionPolicy: { mode: string; reason: string | null; verified: false };
+      custodyPolicy: {
+        mode: string;
+        reference: string | null;
+        reason: string | null;
+        verified: false;
+      };
       coverage: {
         complete: false;
         surfaces: Array<{ name: string; encryption: string; keySource: string; evidence: string }>;

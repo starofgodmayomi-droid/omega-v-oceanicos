@@ -107,6 +107,12 @@ type RuntimeHealth = {
       };
       recoveryPolicy: { mode: string; reference: string | null; reason: string | null };
       deletionPolicy: { mode: string; reason: string | null; verified: false };
+      custodyPolicy: {
+        mode: string;
+        reference: string | null;
+        reason: string | null;
+        verified: false;
+      };
       coverage: {
         complete: false;
         surfaces: Array<{ name: string; encryption: string; keySource: string; evidence: string }>;
@@ -860,6 +866,14 @@ export function App(): React.JSX.Element {
             <strong>
               {runtimeHealth?.checks.persistence
                 ? `${runtimeHealth.checks.persistence.deletionPolicy.mode.toUpperCase()} / VERIFIED=${runtimeHealth.checks.persistence.deletionPolicy.verified} / ${runtimeHealth.checks.persistence.deletionPolicy.reason ?? 'CAPABILITY ONLY'}`
+                : 'UNKNOWN'}
+            </strong>
+          </div>
+          <div>
+            <span>KEY CUSTODY</span>
+            <strong>
+              {runtimeHealth?.checks.persistence
+                ? `${runtimeHealth.checks.persistence.custodyPolicy.mode.toUpperCase()} / ${runtimeHealth.checks.persistence.custodyPolicy.reference ?? 'NO REFERENCE'} / VERIFIED=${runtimeHealth.checks.persistence.custodyPolicy.verified} / ${runtimeHealth.checks.persistence.custodyPolicy.reason ?? 'DECLARATION ONLY'}`
                 : 'UNKNOWN'}
             </strong>
           </div>

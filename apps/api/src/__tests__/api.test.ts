@@ -220,6 +220,12 @@ describe('API runtime contracts', () => {
       reencryptionRecovery: { status: 'none', reason: null },
       recoveryPolicy: { mode: 'unavailable', reference: null, reason: null },
       deletionPolicy: { mode: 'unavailable', reason: null, verified: false },
+      custodyPolicy: {
+        mode: 'unverified-local',
+        reference: null,
+        reason: null,
+        verified: false,
+      },
       coverage: {
         complete: false,
         surfaces: [
