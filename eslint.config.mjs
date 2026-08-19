@@ -99,6 +99,17 @@ export default [
       // Tests reach for `any` when constructing deliberately malformed input,
       // which is the point of those tests.
       '@typescript-eslint/no-explicit-any': 'off',
+
+      // Tests assign to process.env and globalThis during setup. The rule
+      // reads an assignment after an await as a race; these suites run
+      // sequentially, so it reports a hazard that cannot occur here. Left on
+      // everywhere else, where the hazard is real.
+      'require-atomic-updates': 'off',
+
+      // Several suites load modules with require() to control when a module
+      // is evaluated relative to environment setup. That is deliberate, and
+      // the previous config permitted it under the rule's old name.
+      '@typescript-eslint/no-require-imports': 'off',
     },
   },
 

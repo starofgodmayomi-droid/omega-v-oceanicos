@@ -677,7 +677,7 @@ describe('OmegaClient', () => {
    */
   it('stringifies a non-Error network failure on a GET request', async () => {
     const client = new OmegaClient('http://api.test', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-throw-literal
+      // eslint-disable-next-line @typescript-eslint/only-throw-error
       throw 'connection reset';
     });
 
@@ -692,7 +692,7 @@ describe('OmegaClient', () => {
 
   it('stringifies a non-Error network failure on a POST request', async () => {
     const client = new OmegaClient('http://api.test', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-throw-literal
+      // eslint-disable-next-line @typescript-eslint/only-throw-error
       throw 'connection reset';
     });
 
