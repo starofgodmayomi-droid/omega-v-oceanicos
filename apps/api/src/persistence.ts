@@ -135,6 +135,29 @@ export type SnapshotSource = 'disabled' | 'missing' | 'corrupt' | 'restored';
 export const persistenceReady = (enabled: boolean, source: SnapshotSource): boolean =>
   !enabled || source !== 'corrupt';
 
+export type PersistenceOperatorAction =
+  | 'none'
+  | 'review-partial-recovery'
+  | 'review-key-rotation'
+  | 'review-partial-recovery-and-key-rotation';
+
+/**
+ * Classifies the next human review boundary from already-observable local
+ * evidence. It routes attention; it does not repair, acknowledge, or authorize
+ * persistence changes.
+ */
+export const persistenceOperatorAction = (
+  snapshotSource: SnapshotSource,
+  eventLogSource: EventLogSource,
+  rotationPending: boolean
+): PersistenceOperatorAction => {
+  const partialRecovery = snapshotSource === 'corrupt' || eventLogSource === 'partial';
+  if (partialRecovery && rotationPending) return 'review-partial-recovery-and-key-rotation';
+  if (partialRecovery) return 'review-partial-recovery';
+  if (rotationPending) return 'review-key-rotation';
+  return 'none';
+};
+
 export interface LoadResult<T extends AnySnapshot> {
   snapshot: T;
   source: SnapshotSource;

@@ -74,6 +74,11 @@ type RuntimeHealth = {
       eventLogReason: string | null;
       eventLogKeySource: 'none' | 'current' | 'previous' | 'mixed';
       rotationPending: boolean;
+      operatorAction:
+        | 'none'
+        | 'review-partial-recovery'
+        | 'review-key-rotation'
+        | 'review-partial-recovery-and-key-rotation';
       skippedLogEntries: number;
     };
   };
@@ -797,6 +802,12 @@ export function App(): JSX.Element {
                   ? 'PENDING'
                   : 'CURRENT'
                 : 'UNKNOWN'}
+            </strong>
+          </div>
+          <div>
+            <span>ACTION</span>
+            <strong>
+              {runtimeHealth?.checks.persistence?.operatorAction?.toUpperCase() ?? 'UNKNOWN'}
             </strong>
           </div>
           {runtimeHealth?.checks.persistence?.eventLogReason ? (

@@ -9,7 +9,11 @@ export type Health = {
       memory: { status: 'ready' | 'degraded'; integrity: boolean; encryption: string };
       persistence: {
         mode: 'file' | 'memory';
-        encryption: string;
+        operatorAction:
+          | 'none'
+          | 'review-partial-recovery'
+          | 'review-key-rotation'
+          | 'review-partial-recovery-and-key-rotation';
         keySource: 'none' | 'current' | 'previous' | 'mixed';
         previousKeyConfigured: boolean;
         eventLogSource: 'disabled' | 'missing' | 'restored' | 'partial';
@@ -39,6 +43,11 @@ export type RuntimeState = {
     eventLogReason: string | null;
     eventLogKeySource: 'none' | 'current' | 'previous' | 'mixed';
     persistenceRotationPending: boolean;
+    operatorAction:
+      | 'none'
+      | 'review-partial-recovery'
+      | 'review-key-rotation'
+      | 'review-partial-recovery-and-key-rotation';
     skippedLogEntries: number;
     trustBasis: { serviceReadiness: 0 | 1 };
   };
@@ -57,6 +66,11 @@ export type Observability = {
       eventLogReason: string | null;
       eventLogEncryptionKeySource: 'none' | 'current' | 'previous' | 'mixed';
       persistenceRotationPending: boolean;
+      operatorAction:
+        | 'none'
+        | 'review-partial-recovery'
+        | 'review-key-rotation'
+        | 'review-partial-recovery-and-key-rotation';
     };
     provenance: {
       recentEvents: number;

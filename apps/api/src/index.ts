@@ -25,6 +25,7 @@ import {
   saveSnapshot,
   persistenceReady,
   persistenceRotationPending,
+  persistenceOperatorAction,
 } from './persistence.js';
 
 /**
@@ -488,6 +489,11 @@ app.get('/health', (_req: Request, res: Response) => {
     persistenceEncryptionKeySource,
     durableLog.keySource
   );
+  const operatorAction = persistenceOperatorAction(
+    persistenceSource,
+    durableLog.source,
+    rotationPending
+  );
   const response: SuccessResponse<{
     status: 'ok';
     readiness: 'ready' | 'degraded';
@@ -505,6 +511,7 @@ app.get('/health', (_req: Request, res: Response) => {
         eventLogReason: string | null;
         eventLogKeySource: string;
         rotationPending: boolean;
+        operatorAction: string;
         skippedLogEntries: number;
       };
     };
@@ -537,6 +544,7 @@ app.get('/health', (_req: Request, res: Response) => {
           eventLogReason: durableLog.reason ?? null,
           eventLogKeySource: durableLog.keySource,
           rotationPending,
+          operatorAction,
           skippedLogEntries: durableLog.skipped,
         },
       },
@@ -567,6 +575,11 @@ app.get('/state', (_req: Request, res: Response) => {
     previousPersistenceEncryptionConfigured,
     persistenceEncryptionKeySource,
     durableLog.keySource
+  );
+  const operatorAction = persistenceOperatorAction(
+    persistenceSource,
+    durableLog.source,
+    rotationPending
   );
   const latestRun = completedRuns[0];
   const recentFailures = runtimeEvents.filter((event) => event.status === 'failed').length;
@@ -604,6 +617,7 @@ app.get('/state', (_req: Request, res: Response) => {
       eventLogReason: durableLog.reason ?? null,
       eventLogKeySource: durableLog.keySource,
       persistenceRotationPending: rotationPending,
+      operatorAction,
       lastActivity: latest?.timestamp || null,
       services: [
         { name: 'observer', status: 'ready' },
@@ -634,6 +648,11 @@ app.get('/observability', (_req: Request, res: Response) => {
     persistenceEncryptionKeySource,
     durableLog.keySource
   );
+  const operatorAction = persistenceOperatorAction(
+    persistenceSource,
+    durableLog.source,
+    rotationPending
+  );
 
   res.json({
     data: {
@@ -648,6 +667,7 @@ app.get('/observability', (_req: Request, res: Response) => {
         skippedLogEntries: durableLog.skipped,
         eventLogReason: durableLog.reason ?? null,
         persistenceRotationPending: rotationPending,
+        operatorAction,
         memoryEncryption: memoryEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
         memoryEncryptionKeySource,
         attestationTtlMs: configuredAttestationTtlMs(),
