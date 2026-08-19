@@ -32,6 +32,15 @@ const AES_TAG_BYTES = 16;
 
 type EncryptionKey = Buffer;
 export type EncryptionKeySource = 'none' | 'current' | 'previous' | 'mixed';
+export type PersistenceKeyFingerprint = string | null;
+
+/**
+ * Returns a short, non-secret identifier for configured key equality checks.
+ * It is provenance about the local configured secret only; it is not custody,
+ * key recovery, HSM/KMS, or deployment evidence.
+ */
+export const persistenceKeyFingerprint = (secret?: string): PersistenceKeyFingerprint =>
+  secret ? createHash('sha256').update(secret, 'utf8').digest('hex').slice(0, 16) : null;
 
 /**
  * A rotation is pending when a configured previous key was actually needed to

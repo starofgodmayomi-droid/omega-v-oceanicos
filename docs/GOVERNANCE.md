@@ -24,7 +24,7 @@ rather than a safe default. It is stated here rather than discovered.
 set. `/health` stays open so a load balancer can probe it without holding a
 credential.
 
-**Admin-gated** — `POST /attest/revoke`, `POST /persistence/acknowledge`, and `POST /persistence/reencrypt`, by token and by operator identity. Revocation changes what an existing attestation means; persistence acknowledgement records a human review event and does not change readiness or claim repair; re-encryption rewrites authenticated local ciphertext only after complete previous-key evidence, records non-secret counts and key-source provenance, and uses a local transaction journal to reconcile or block interrupted startup; it does not prove distributed recovery or authorize deployment.
+**Admin-gated** — `POST /attest/revoke`, `POST /persistence/acknowledge`, and `POST /persistence/reencrypt`, by token and by operator identity. Revocation changes what an existing attestation means; persistence acknowledgement records a human review event and does not change readiness or claim repair; re-encryption rewrites authenticated local ciphertext only after complete previous-key evidence, records non-secret counts and key-source provenance, and uses a local transaction journal to reconcile or block interrupted startup; it does not prove distributed recovery or authorize deployment. Deterministic short fingerprints for configured local current/previous secrets are configuration-equality evidence only; they never prove custody, HSM/KMS control, recovery, or secure deletion.
 
 ## What is not gated
 

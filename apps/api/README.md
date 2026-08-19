@@ -364,9 +364,12 @@ operation writes a mode-600 local transaction journal before committing the
 staged files. On restart, the API reconciles a complete journal transaction
 before loading readiness evidence; a malformed or incomplete journal leaves
 readiness degraded and is surfaced as `reencryptionRecovery.status: "blocked"`.
-A recovered journal is reported as `"recovered"` and then removed. This journal
-is crash-recovery evidence for one local process, not distributed coordination
-or proof of replica consistency.
+A recovered journal is reported as `"recovered"` and then removed. This journal is crash-recovery evidence for one local process, not distributed coordination
+or proof of replica consistency. Health, state, and observability also expose
+`persistenceCurrentKeyFingerprint` and `persistencePreviousKeyFingerprint` (or
+`null`) as deterministic short identifiers of configured local secrets. They
+support equality checks during rotation but are not secrets and do not prove
+custody, HSM/KMS control, recovery, secure deletion, or deployment authorization.
 
 **Request:**
 
