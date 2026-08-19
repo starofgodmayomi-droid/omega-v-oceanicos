@@ -33,6 +33,43 @@ const AES_TAG_BYTES = 16;
 type EncryptionKey = Buffer;
 export type EncryptionKeySource = 'none' | 'current' | 'previous' | 'mixed';
 export type PersistenceKeyFingerprint = string | null;
+export type PersistenceRecoveryMode =
+  'unavailable' | 'operator-provided' | 'external-reference' | 'invalid';
+export type PersistenceRecoveryPolicy = {
+  mode: PersistenceRecoveryMode;
+  reference: string | null;
+  reason: string | null;
+};
+
+/**
+ * Parses a declared recovery policy without verifying the referenced operator
+ * or custodian. Invalid declarations remain visible and never become ready.
+ */
+export const parsePersistenceRecoveryPolicy = (
+  mode?: string,
+  reference?: string
+): PersistenceRecoveryPolicy => {
+  const normalizedMode = mode?.trim() || 'unavailable';
+  const normalizedReference = reference?.trim() || null;
+  if (normalizedMode === 'unavailable') {
+    return { mode: 'unavailable', reference: null, reason: null };
+  }
+  if (normalizedMode !== 'operator-provided' && normalizedMode !== 'external-reference') {
+    return { mode: 'invalid', reference: null, reason: 'unsupported recovery policy mode' };
+  }
+  if (
+    !normalizedReference ||
+    normalizedReference.length > 256 ||
+    /[\r\n]/.test(normalizedReference)
+  ) {
+    return {
+      mode: 'invalid',
+      reference: null,
+      reason: 'recovery policy reference is missing or invalid',
+    };
+  }
+  return { mode: normalizedMode, reference: normalizedReference, reason: null };
+};
 
 /**
  * Returns a short, non-secret identifier for configured key equality checks.

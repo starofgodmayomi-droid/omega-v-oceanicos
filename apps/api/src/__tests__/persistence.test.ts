@@ -15,6 +15,7 @@ import {
   persistenceRotationPending,
   persistenceOperatorAction,
   persistenceKeyFingerprint,
+  parsePersistenceRecoveryPolicy,
   SNAPSHOT_KEYS,
 } from '../persistence';
 
@@ -42,6 +43,26 @@ describe('runtime persistence', () => {
     expect(fingerprint).not.toContain('current-secret');
     expect(persistenceKeyFingerprint('current-secret')).toBe(fingerprint);
     expect(persistenceKeyFingerprint()).toBeNull();
+  });
+
+  it('parses bounded recovery policy declarations without claiming verification', () => {
+    expect(parsePersistenceRecoveryPolicy()).toEqual({
+      mode: 'unavailable',
+      reference: null,
+      reason: null,
+    });
+    expect(parsePersistenceRecoveryPolicy('operator-provided', 'operator-7')).toEqual({
+      mode: 'operator-provided',
+      reference: 'operator-7',
+      reason: null,
+    });
+    expect(parsePersistenceRecoveryPolicy('external-reference', 'vault-record-7')).toEqual({
+      mode: 'external-reference',
+      reference: 'vault-record-7',
+      reason: null,
+    });
+    expect(parsePersistenceRecoveryPolicy('unknown', 'record-7').mode).toBe('invalid');
+    expect(parsePersistenceRecoveryPolicy('external-reference').mode).toBe('invalid');
   });
 
   it('reports rotation pending only when a configured previous key was used', () => {

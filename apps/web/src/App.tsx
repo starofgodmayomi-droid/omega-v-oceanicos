@@ -103,6 +103,7 @@ type RuntimeHealth = {
         status: 'none' | 'recovered' | 'blocked';
         reason: string | null;
       };
+      recoveryPolicy: { mode: string; reference: string | null; reason: string | null };
       skippedLogEntries: number;
     };
   };
@@ -873,6 +874,14 @@ export function App(): JSX.Element {
               </strong>
             </div>
           ) : null}
+          <div>
+            <span>RECOVERY POLICY</span>
+            <strong>
+              {runtimeHealth?.checks.persistence
+                ? `${runtimeHealth.checks.persistence.recoveryPolicy.mode.toUpperCase()} / ${runtimeHealth.checks.persistence.recoveryPolicy.reference ?? 'NONE'} / DECLARATION ONLY`
+                : 'UNKNOWN'}
+            </strong>
+          </div>
           {runtimeHealth?.checks.persistence?.reencryptionRecovery.status !== 'none' ? (
             <div>
               <span>ROTATION RECOVERY</span>
