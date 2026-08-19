@@ -199,6 +199,7 @@ describe('API runtime contracts', () => {
       eventLogKeySource: 'none',
       rotationPending: false,
       operatorAction: 'none',
+      acknowledgement: null,
       skippedLogEntries: 0,
     });
     expect(body.data.policy).toEqual({
@@ -921,6 +922,7 @@ describe('partial durable-log recovery readiness', () => {
     process.env.OMEGA_PERSISTENCE = 'on';
     process.env.OMEGA_RUNTIME_STORE_PATH = storePath;
     process.env.OMEGA_EVENT_LOG_PATH = logPath;
+    process.env.OMEGA_ADMIN_OPERATOR_ALLOWLIST = 'jest-operator';
 
     jest.resetModules();
     // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -939,6 +941,7 @@ describe('partial durable-log recovery readiness', () => {
     delete process.env.OMEGA_PERSISTENCE;
     delete process.env.OMEGA_RUNTIME_STORE_PATH;
     delete process.env.OMEGA_EVENT_LOG_PATH;
+    delete process.env.OMEGA_ADMIN_OPERATOR_ALLOWLIST;
     rmSync(dir, { recursive: true, force: true });
     jest.resetModules();
   });
@@ -983,6 +986,48 @@ describe('partial durable-log recovery readiness', () => {
     expect(state.data.eventLogKeySource).toBe('none');
     expect(state.data.skippedLogEntries).toBe(1);
     expect(state.data.trustBasis.serviceReadiness).toBe(0);
+
+    const denied = await fetch(`${baseUrl}/persistence/acknowledge`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-omega-operator-id': 'unknown' },
+      body: JSON.stringify({ reason: 'Review malformed local log', operatorId: 'unknown' }),
+    });
+    expect(denied.status).toBe(403);
+
+    const invalid = await fetch(`${baseUrl}/persistence/acknowledge`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-omega-operator-id': 'jest-operator' },
+      body: JSON.stringify({ reason: 'short', operatorId: 'jest-operator' }),
+    });
+    expect(invalid.status).toBe(400);
+
+    const acknowledged = await fetch(`${baseUrl}/persistence/acknowledge`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-omega-operator-id': 'jest-operator' },
+      body: JSON.stringify({
+        reason: 'Review malformed local log before repair',
+        operatorId: 'jest-operator',
+      }),
+    });
+    const acknowledgement = (await acknowledged.json()) as ApiResponse<{
+      acknowledgement: { operatorId: string; action: string; reason: string };
+      eventId: string;
+    }>;
+    expect(acknowledged.status).toBe(201);
+    expect(acknowledgement.data.acknowledgement).toMatchObject({
+      operatorId: 'jest-operator',
+      action: 'review-partial-recovery',
+      reason: 'Review malformed local log before repair',
+    });
+    expect(acknowledgement.data.eventId).toMatch(/^evt-/);
+
+    const observability = (await (await fetch(`${baseUrl}/observability`)).json()) as ApiResponse<{
+      runtime: { persistenceAcknowledgement: { operatorId: string; action: string } | null };
+    }>;
+    expect(observability.data.runtime.persistenceAcknowledgement).toMatchObject({
+      operatorId: 'jest-operator',
+      action: 'review-partial-recovery',
+    });
   });
 });
 

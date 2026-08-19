@@ -79,6 +79,13 @@ type RuntimeHealth = {
         | 'review-partial-recovery'
         | 'review-key-rotation'
         | 'review-partial-recovery-and-key-rotation';
+      acknowledgement: {
+        operatorId: string;
+        reason: string;
+        action: string;
+        acknowledgedAt: string;
+        requestId: string;
+      } | null;
       skippedLogEntries: number;
     };
   };
@@ -814,6 +821,15 @@ export function App(): JSX.Element {
             <div>
               <span>LOG REASON</span>
               <strong>{runtimeHealth.checks.persistence.eventLogReason}</strong>
+            </div>
+          ) : null}
+          {runtimeHealth?.checks.persistence?.acknowledgement ? (
+            <div>
+              <span>ACKNOWLEDGED</span>
+              <strong>
+                {runtimeHealth.checks.persistence.acknowledgement.operatorId} /{' '}
+                {runtimeHealth.checks.persistence.acknowledgement.action.toUpperCase()}
+              </strong>
             </div>
           ) : null}
           <div>

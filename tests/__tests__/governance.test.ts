@@ -28,23 +28,23 @@ describe('governance describes the real surface', () => {
 
   const writes = routes.filter((route) => route.method === 'POST');
 
-  // The middleware gates exactly one write, by path.
-  const ADMIN_GATED = '/attest/revoke';
+  // The middleware gates these writes, by path.
+  const ADMIN_GATED = ['/attest/revoke', '/persistence/acknowledge'];
 
   it('finds the surface it is meant to describe', () => {
     expect(writes.length).toBeGreaterThanOrEqual(8);
-    expect(writes.map((route) => route.path)).toContain(ADMIN_GATED);
+    expect(writes.map((route) => route.path)).toEqual(expect.arrayContaining(ADMIN_GATED));
   });
 
-  it.each(writes.filter((route) => route.path !== ADMIN_GATED).map((route) => route.path))(
+  it.each(writes.filter((route) => !ADMIN_GATED.includes(route.path)).map((route) => route.path))(
     'names %s among the writes that are not gated',
     (path) => {
       expect(governance).toContain(`POST ${path}`);
     }
   );
 
-  it('names the admin-gated write as gated', () => {
-    expect(governance).toContain(ADMIN_GATED);
+  it('names the admin-gated writes as gated', () => {
+    for (const path of ADMIN_GATED) expect(governance).toContain(path);
     expect(governance).toMatch(/Admin-gated/);
   });
 

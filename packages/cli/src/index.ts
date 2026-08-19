@@ -1,5 +1,14 @@
 #!/usr/bin/env node
 
+type PersistenceAcknowledgement = {
+  operatorId: string;
+  reason: string;
+  action:
+    'review-partial-recovery' | 'review-key-rotation' | 'review-partial-recovery-and-key-rotation';
+  acknowledgedAt: string;
+  requestId: string;
+};
+
 type HealthResponse = {
   data: {
     status: 'ok';
@@ -21,6 +30,7 @@ type HealthResponse = {
           | 'review-partial-recovery'
           | 'review-key-rotation'
           | 'review-partial-recovery-and-key-rotation';
+        acknowledgement: PersistenceAcknowledgement | null;
         skippedLogEntries: number;
       };
     };
@@ -148,6 +158,7 @@ function usage(): string {
     'omega export [--url URL] [--token TOKEN]',
     'omega revocations [--url URL] [--token TOKEN]',
     'omega revoke ATTESTATION_ID --reason REASON [--operator-id ID] [--url URL] [--token TOKEN] [--admin-token TOKEN]',
+    'omega acknowledge-persistence --reason REASON --operator-id ID [--url URL] [--admin-token TOKEN]',
     'omega verify --attestation-json JSON [--url URL] [--token TOKEN]',
     'omega policy [--url URL] [--token TOKEN]',
     '',
@@ -409,6 +420,41 @@ async function revocations(argv: string[], fetchImpl: FetchLike): Promise<number
   }
 }
 
+async function acknowledgePersistence(argv: string[], fetchImpl: FetchLike): Promise<number> {
+  const reason = option(argv, '--reason');
+  const operatorId = option(argv, '--operator-id');
+  if (!reason || !operatorId) {
+    process.stderr.write(
+      'Usage: omega acknowledge-persistence --reason REASON --operator-id ID [options]\n'
+    );
+    return 2;
+  }
+  const response = await fetchImpl(`${baseUrl(argv).replace(/\/$/, '')}/persistence/acknowledge`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      ...(adminToken(argv) ? { Authorization: `Bearer ${adminToken(argv)}` } : {}),
+      'x-omega-operator-id': operatorId,
+    },
+    body: JSON.stringify({ reason, operatorId }),
+  });
+  const body = (await response.json()) as {
+    data?: { acknowledgement: PersistenceAcknowledgement; eventId: string };
+    code?: string;
+    message?: string;
+  };
+  if (!response.ok || !body.data) {
+    process.stderr.write(
+      `${body.code ?? 'PERSISTENCE_ACKNOWLEDGEMENT_FAILED'}: ${body.message ?? 'request failed'}\n`
+    );
+    return 1;
+  }
+  process.stdout.write(
+    `ACKNOWLEDGED action=${body.data.acknowledgement.action} operator=${body.data.acknowledgement.operatorId} event=${body.data.eventId}\n`
+  );
+  return 0;
+}
+
 async function revoke(argv: string[], fetchImpl: FetchLike): Promise<number> {
   const attestationId = argv[1];
   const reason = option(argv, '--reason');
@@ -552,6 +598,7 @@ export async function run(
   if (command === 'verify') return verifyAttestation(argv, fetchImpl);
   if (command === 'policy') return policy(argv, fetchImpl);
   if (command === 'revoke') return revoke(argv, fetchImpl);
+  if (command === 'acknowledge-persistence') return acknowledgePersistence(argv, fetchImpl);
 
   process.stderr.write(`Unknown command: ${command}\n\n${usage()}\n`);
   return 2;

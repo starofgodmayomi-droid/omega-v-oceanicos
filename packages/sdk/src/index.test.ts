@@ -108,6 +108,47 @@ describe('OmegaClient', () => {
     expect(result.data.runtime.operatorAction).toBe('none');
   });
 
+  it('acknowledges persistence review with admin provenance', async () => {
+    const client = new OmegaClient(
+      'http://api.test',
+      async (url, init) => {
+        expect(url).toBe('http://api.test/persistence/acknowledge');
+        expect(init?.method).toBe('POST');
+        expect(new Headers(init?.headers).get('authorization')).toBe('Bearer admin-token');
+        expect(new Headers(init?.headers).get('x-omega-operator-id')).toBe('operator-7');
+        expect(JSON.parse(String(init?.body))).toEqual({
+          reason: 'Review malformed local log before repair',
+          operatorId: 'operator-7',
+        });
+        return new Response(
+          JSON.stringify({
+            data: {
+              acknowledgement: {
+                operatorId: 'operator-7',
+                reason: 'Review malformed local log before repair',
+                action: 'review-partial-recovery',
+                acknowledgedAt: '2026-08-19T00:00:00.000Z',
+                requestId: 'req-ack-1',
+              },
+              eventId: 'evt-ack-1',
+            },
+            timestamp: '2026-08-19T00:00:00.000Z',
+          })
+        );
+      },
+      { adminToken: 'admin-token' }
+    );
+
+    await expect(
+      client.acknowledgePersistenceReview('Review malformed local log before repair', 'operator-7')
+    ).resolves.toMatchObject({
+      data: {
+        eventId: 'evt-ack-1',
+        acknowledgement: { operatorId: 'operator-7', action: 'review-partial-recovery' },
+      },
+    });
+  });
+
   it('reads the non-secret attestation policy contract', async () => {
     const client = new OmegaClient('http://api.test', async (url) => {
       expect(url).toBe('http://api.test/attest/policy');
