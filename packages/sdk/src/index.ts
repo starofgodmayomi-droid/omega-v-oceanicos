@@ -136,6 +136,14 @@ export type Observability = {
 };
 
 export type RuntimeEvent = Record<string, unknown>;
+export type EventsResponse = {
+  data: RuntimeEvent[];
+  meta: {
+    window: number;
+    note: string;
+  };
+  timestamp: string;
+};
 export type RuntimeRun = {
   observation: { id: string; claim?: { statement?: string } };
   verification: { id: string; summary: { passed: boolean; confidence?: number } };
@@ -251,8 +259,8 @@ export class OmegaClient {
     return this.get<Observability>('/observability');
   }
 
-  async getEvents(): Promise<{ data: RuntimeEvent[] }> {
-    return this.get<{ data: RuntimeEvent[] }>('/events');
+  async getEvents(): Promise<EventsResponse> {
+    return this.get<EventsResponse>('/events');
   }
 
   async getAuditEvents(query: AuditQuery = {}): Promise<AuditEventsResponse> {
