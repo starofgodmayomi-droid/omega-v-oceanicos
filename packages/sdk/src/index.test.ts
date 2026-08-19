@@ -35,6 +35,51 @@ describe('OmegaClient', () => {
     });
   });
 
+  it('reads typed persistence key identity evidence from health', async () => {
+    const client = new OmegaClient('http://api.test/', async (url) => {
+      expect(url).toBe('http://api.test/health');
+      return new Response(
+        JSON.stringify({
+          data: {
+            status: 'ok',
+            readiness: 'ready',
+            checks: {
+              observer: 'ready',
+              verifier: 'ready',
+              attester: 'ready',
+              memory: { status: 'ready', integrity: true, encryption: 'aes-256-gcm' },
+              persistence: {
+                mode: 'file',
+                encryption: 'aes-256-gcm',
+                currentKeyFingerprint: 'current-fingerprint',
+                previousKeyFingerprint: 'previous-fingerprint',
+              },
+            },
+            policy: {
+              attestationAlgorithm: 'Ed25519',
+              attestationTtlMs: 900000,
+              readAuthConfigured: true,
+              adminAuthConfigured: true,
+              revocationEnabled: true,
+            },
+          },
+          timestamp: '2026-08-19T00:00:00.000Z',
+        })
+      );
+    });
+
+    await expect(client.getHealth()).resolves.toMatchObject({
+      data: {
+        checks: {
+          persistence: {
+            currentKeyFingerprint: 'current-fingerprint',
+            previousKeyFingerprint: 'previous-fingerprint',
+          },
+        },
+      },
+    });
+  });
+
   it('reads typed explicit state readiness evidence', async () => {
     const client = new OmegaClient('http://api.test/', async (url) => {
       expect(url).toBe('http://api.test/state');
@@ -63,6 +108,35 @@ describe('OmegaClient', () => {
         eventLogKeySource: 'none',
         skippedLogEntries: 1,
         trustBasis: { serviceReadiness: 0 },
+      },
+    });
+  });
+
+  it('reads typed persistence key identity evidence from state', async () => {
+    const client = new OmegaClient('http://api.test/', async (url) => {
+      expect(url).toBe('http://api.test/state');
+      return new Response(
+        JSON.stringify({
+          data: {
+            status: 'active',
+            readiness: 'ready',
+            persistence: 'file',
+            eventLogSource: 'restored',
+            eventLogReason: null,
+            eventLogKeySource: 'current',
+            persistenceCurrentKeyFingerprint: 'current-fingerprint',
+            persistencePreviousKeyFingerprint: 'previous-fingerprint',
+            trustBasis: { serviceReadiness: 1 },
+          },
+          timestamp: '2026-08-19T00:00:00.000Z',
+        })
+      );
+    });
+
+    await expect(client.getState()).resolves.toMatchObject({
+      data: {
+        persistenceCurrentKeyFingerprint: 'current-fingerprint',
+        persistencePreviousKeyFingerprint: 'previous-fingerprint',
       },
     });
   });

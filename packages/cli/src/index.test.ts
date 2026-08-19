@@ -60,6 +60,55 @@ describe('omega status CLI', () => {
     expect(output.join('')).toContain('MEMORY        ready integrity=true encryption=disabled');
   });
 
+  it('renders redacted persistence key identity evidence from health', async () => {
+    const output: string[] = [];
+    process.stdout.write = ((chunk: string | Uint8Array) => {
+      output.push(String(chunk));
+      return true;
+    }) as typeof process.stdout.write;
+
+    const exitCode = await run(['health', '--url', 'http://api.test/'], async (url) => {
+      expect(url).toBe('http://api.test/health');
+      return new Response(
+        JSON.stringify({
+          data: {
+            status: 'ok',
+            readiness: 'ready',
+            checks: {
+              observer: 'ready',
+              verifier: 'ready',
+              attester: 'ready',
+              memory: { status: 'ready', integrity: true, encryption: 'aes-256-gcm' },
+              persistence: {
+                mode: 'file',
+                encryption: 'aes-256-gcm',
+                eventLogSource: 'restored',
+                skippedLogEntries: 0,
+                eventLogKeySource: 'current',
+                rotationPending: false,
+                currentKeyFingerprint: 'current-fingerprint',
+                previousKeyFingerprint: 'previous-fingerprint',
+              },
+            },
+            policy: {
+              attestationAlgorithm: 'Ed25519',
+              attestationTtlMs: 900000,
+              readAuthConfigured: true,
+              adminAuthConfigured: true,
+              revocationEnabled: true,
+            },
+          },
+          timestamp: '2026-08-19T00:00:00.000Z',
+        })
+      );
+    });
+
+    expect(exitCode).toBe(0);
+    expect(output.join('')).toContain(
+      'KEY ID        current=current-fingerprint previous=previous-fingerprint custody=unverified-local'
+    );
+  });
+
   it('returns a non-zero exit code when health readiness is degraded', async () => {
     const output: string[] = [];
     process.stdout.write = ((chunk: string | Uint8Array) => {
