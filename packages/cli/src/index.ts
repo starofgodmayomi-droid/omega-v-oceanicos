@@ -8,6 +8,17 @@ type PersistenceAcknowledgement = {
   acknowledgedAt: string;
   requestId: string;
 };
+type PersistenceReencryption = {
+  operatorId: string;
+  reason: string;
+  action: 'review-key-rotation';
+  reencryptedAt: string;
+  requestId: string;
+  snapshotRecords: number;
+  eventRecords: number;
+  snapshotKeySource: string;
+  eventLogKeySource: string;
+};
 
 type HealthResponse = {
   data: {
@@ -159,6 +170,7 @@ function usage(): string {
     'omega revocations [--url URL] [--token TOKEN]',
     'omega revoke ATTESTATION_ID --reason REASON [--operator-id ID] [--url URL] [--token TOKEN] [--admin-token TOKEN]',
     'omega acknowledge-persistence --reason REASON --operator-id ID [--url URL] [--admin-token TOKEN]',
+    'omega reencrypt-persistence --reason REASON --operator-id ID [--url URL] [--admin-token TOKEN]',
     'omega verify --attestation-json JSON [--url URL] [--token TOKEN]',
     'omega policy [--url URL] [--token TOKEN]',
     '',
@@ -455,6 +467,48 @@ async function acknowledgePersistence(argv: string[], fetchImpl: FetchLike): Pro
   return 0;
 }
 
+async function reencryptPersistence(argv: string[], fetchImpl: FetchLike): Promise<number> {
+  const reason = option(argv, '--reason');
+  const operatorId = option(argv, '--operator-id');
+  if (!reason || !operatorId) {
+    process.stderr.write(
+      'Usage: omega reencrypt-persistence --reason REASON --operator-id ID [options]\n'
+    );
+    return 2;
+  }
+  try {
+    const response = await fetchImpl(`${baseUrl(argv).replace(/\/$/, '')}/persistence/reencrypt`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        ...(adminToken(argv) ? { Authorization: `Bearer ${adminToken(argv)}` } : {}),
+        'x-omega-operator-id': operatorId,
+      },
+      body: JSON.stringify({ reason, operatorId }),
+    });
+    const body = (await response.json()) as {
+      data?: { reencrypted: PersistenceReencryption; eventId: string };
+      code?: string;
+      message?: string;
+    };
+    if (!response.ok || !body.data) {
+      process.stderr.write(
+        `${body.code ?? 'PERSISTENCE_REENCRYPTION_FAILED'}: ${body.message ?? 'request failed'}\n`
+      );
+      return 1;
+    }
+    const result = body.data.reencrypted;
+    process.stdout.write(
+      `REENCRYPTED snapshot=${result.snapshotRecords} events=${result.eventRecords} operator=${result.operatorId} event=${body.data.eventId}\n`
+    );
+    return 0;
+  } catch (error) {
+    process.stderr.write(
+      `Persistence re-encryption failed: ${error instanceof Error ? error.message : String(error)}\n`
+    );
+    return 1;
+  }
+}
 async function revoke(argv: string[], fetchImpl: FetchLike): Promise<number> {
   const attestationId = argv[1];
   const reason = option(argv, '--reason');
@@ -599,6 +653,7 @@ export async function run(
   if (command === 'policy') return policy(argv, fetchImpl);
   if (command === 'revoke') return revoke(argv, fetchImpl);
   if (command === 'acknowledge-persistence') return acknowledgePersistence(argv, fetchImpl);
+  if (command === 'reencrypt-persistence') return reencryptPersistence(argv, fetchImpl);
 
   process.stderr.write(`Unknown command: ${command}\n\n${usage()}\n`);
   return 2;

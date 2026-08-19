@@ -26,6 +26,7 @@ import {
   persistenceReady,
   persistenceRotationPending,
   persistenceOperatorAction,
+  reencryptPersistence,
 } from './persistence.js';
 
 /**
@@ -79,6 +80,8 @@ app.use((req: Request, res: Response, next) => {
   const isRevocationRequest = req.method === 'POST' && req.path === '/attest/revoke';
   const isPersistenceAcknowledgementRequest =
     req.method === 'POST' && req.path === '/persistence/acknowledge';
+  const isPersistenceReencryptionRequest =
+    req.method === 'POST' && req.path === '/persistence/reencrypt';
   if (configuredReadToken && isReadOnlyRequest) {
     const authorization = req.header('authorization') || '';
     if (!constantTimeTokenMatch(bearerToken(authorization), configuredReadToken)) {
@@ -90,14 +93,19 @@ app.use((req: Request, res: Response, next) => {
       return;
     }
   }
-  if (configuredAdminToken && (isRevocationRequest || isPersistenceAcknowledgementRequest)) {
+  if (
+    configuredAdminToken &&
+    (isRevocationRequest || isPersistenceAcknowledgementRequest || isPersistenceReencryptionRequest)
+  ) {
     const authorization = req.header('authorization') || '';
     if (!constantTimeTokenMatch(bearerToken(authorization), configuredAdminToken)) {
       res.status(401).json({
         code: 'ADMIN_ACCESS_REQUIRED',
-        message: isPersistenceAcknowledgementRequest
-          ? 'A valid admin bearer token is required to acknowledge persistence review'
-          : 'A valid admin bearer token is required to revoke attestations',
+        message: isPersistenceReencryptionRequest
+          ? 'A valid admin bearer token is required to re-encrypt persistence'
+          : isPersistenceAcknowledgementRequest
+            ? 'A valid admin bearer token is required to acknowledge persistence review'
+            : 'A valid admin bearer token is required to revoke attestations',
         requestId,
       });
       return;
@@ -393,6 +401,17 @@ type PersistenceAcknowledgement = {
   acknowledgedAt: string;
   requestId: string;
 };
+type PersistenceReencryption = {
+  operatorId: string;
+  reason: string;
+  action: 'review-key-rotation';
+  reencryptedAt: string;
+  requestId: string;
+  snapshotRecords: number;
+  eventRecords: number;
+  snapshotKeySource: string;
+  eventLogKeySource: string;
+};
 const persistedAcknowledgementEvent = [...runtimeEvents].find(
   (event) => event.type === 'persistence.recovery.acknowledged' && event.details
 );
@@ -411,6 +430,23 @@ let persistenceAcknowledgement: PersistenceAcknowledgement | null =
         acknowledgedAt: persistedAcknowledgementDetails.acknowledgedAt,
         requestId: persistedAcknowledgementDetails.requestId,
       }
+    : null;
+const persistedReencryptionEvent = [...runtimeEvents].find(
+  (event) => event.type === 'persistence.rotation.reencrypted' && event.details
+);
+const persistedReencryptionDetails = persistedReencryptionEvent?.details;
+let persistenceReencryption: PersistenceReencryption | null =
+  persistedReencryptionDetails &&
+  typeof persistedReencryptionDetails.operatorId === 'string' &&
+  typeof persistedReencryptionDetails.reason === 'string' &&
+  persistedReencryptionDetails.action === 'review-key-rotation' &&
+  typeof persistedReencryptionDetails.reencryptedAt === 'string' &&
+  typeof persistedReencryptionDetails.requestId === 'string' &&
+  typeof persistedReencryptionDetails.snapshotRecords === 'number' &&
+  typeof persistedReencryptionDetails.eventRecords === 'number' &&
+  typeof persistedReencryptionDetails.snapshotKeySource === 'string' &&
+  typeof persistedReencryptionDetails.eventLogKeySource === 'string'
+    ? (persistedReencryptionDetails as PersistenceReencryption)
     : null;
 const persistenceIsReady = persistenceReady(persistenceEnabled, persistenceSource);
 const persistedRevocationDigest = snapshot.revocationIntegrity;
@@ -545,7 +581,93 @@ app.post('/persistence/acknowledge', (req: Request, res: Response) => {
     timestamp: new Date().toISOString(),
   });
 });
-
+app.post('/persistence/reencrypt', (req: Request, res: Response) => {
+  const { reason, operatorId: operatorIdFromBody } = req.body as {
+    reason?: string;
+    operatorId?: string;
+  };
+  const operatorId = req.header('x-omega-operator-id') || operatorIdFromBody;
+  if (!operatorAllowed(operatorId)) {
+    res.status(403).json({
+      code: 'ADMIN_OPERATOR_NOT_ALLOWED',
+      message: 'The operator identity is not allowed to re-encrypt persistence',
+      timestamp: new Date().toISOString(),
+    } satisfies ErrorResponse);
+    return;
+  }
+  const normalizedReason = typeof reason === 'string' ? reason.trim() : '';
+  if (normalizedReason.length < 8 || normalizedReason.length > 1000) {
+    res.status(400).json({
+      code: 'INVALID_REENCRYPTION_REASON',
+      message: 'A persistence re-encryption reason between 8 and 1000 characters is required',
+      timestamp: new Date().toISOString(),
+    } satisfies ErrorResponse);
+    return;
+  }
+  const durableLog = readEventLog<RuntimeEvent>(
+    eventLogPath,
+    persistenceEnabled,
+    persistenceEncryptionKey,
+    previousPersistenceEncryptionKey
+  );
+  const rotationPending = persistenceRotationPending(
+    previousPersistenceEncryptionConfigured,
+    persistenceEncryptionKeySource,
+    durableLog.keySource
+  );
+  const action = persistenceOperatorAction(persistenceSource, durableLog.source, rotationPending);
+  if (action !== 'review-key-rotation') {
+    res.status(409).json({
+      code: 'PERSISTENCE_REENCRYPTION_NOT_READY',
+      message: 'Re-encryption requires complete persistence with a pending key rotation',
+      action,
+      timestamp: new Date().toISOString(),
+    } satisfies ErrorResponse & { action: string });
+    return;
+  }
+  let result;
+  try {
+    result = reencryptPersistence(
+      runtimeStorePath,
+      eventLogPath,
+      persistenceEnabled,
+      persistenceEncryptionKey,
+      previousPersistenceEncryptionKey
+    );
+  } catch {
+    res.status(409).json({
+      code: 'PERSISTENCE_REENCRYPTION_FAILED',
+      message: 'Persistence re-encryption refused because local evidence was incomplete',
+      timestamp: new Date().toISOString(),
+    } satisfies ErrorResponse);
+    return;
+  }
+  const reencryptedAt = new Date().toISOString();
+  const requestId = res.locals.requestId as string;
+  persistenceReencryption = {
+    operatorId: operatorId as string,
+    reason: normalizedReason,
+    action: 'review-key-rotation',
+    reencryptedAt,
+    requestId,
+    snapshotRecords: result.snapshotRecords,
+    eventRecords: result.eventRecords,
+    snapshotKeySource: result.snapshotKeySource,
+    eventLogKeySource: result.eventLogKeySource,
+  };
+  const event = recordEvent({
+    type: 'persistence.rotation.reencrypted',
+    stage: 'persistence',
+    status: 'passed',
+    message: 'Operator re-encrypted local persistence with the current key',
+    requestId,
+    details: persistenceReencryption,
+  });
+  res.status(201).json({
+    data: { reencrypted: persistenceReencryption, eventId: event.id },
+    timestamp: new Date().toISOString(),
+  });
+});
 // Register default rules
 verificationEngine.registerRule({
   name: 'response-time-threshold',
@@ -609,6 +731,7 @@ app.get('/health', (_req: Request, res: Response) => {
         rotationPending: boolean;
         operatorAction: string;
         acknowledgement: PersistenceAcknowledgement | null;
+        reencrypt: PersistenceReencryption | null;
         skippedLogEntries: number;
       };
     };
@@ -643,6 +766,7 @@ app.get('/health', (_req: Request, res: Response) => {
           rotationPending,
           operatorAction,
           acknowledgement: persistenceAcknowledgement,
+          reencrypt: persistenceReencryption,
           skippedLogEntries: durableLog.skipped,
         },
       },
@@ -717,6 +841,7 @@ app.get('/state', (_req: Request, res: Response) => {
       persistenceRotationPending: rotationPending,
       operatorAction,
       persistenceAcknowledgement,
+      persistenceReencryption,
       lastActivity: latest?.timestamp || null,
       services: [
         { name: 'observer', status: 'ready' },
@@ -768,6 +893,7 @@ app.get('/observability', (_req: Request, res: Response) => {
         persistenceRotationPending: rotationPending,
         operatorAction,
         persistenceAcknowledgement,
+        persistenceReencryption,
         memoryEncryption: memoryEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
         memoryEncryptionKeySource,
         attestationTtlMs: configuredAttestationTtlMs(),
@@ -1834,6 +1960,7 @@ const startServer = () =>
         '  GET    /attest/revocations - Revoked attestations',
         '  POST   /attest/revoke    - Revoke an attestation',
         '  POST   /persistence/acknowledge - Record persistence review',
+        '  POST   /persistence/reencrypt - Re-encrypt local persistence',
         '',
       ].join('\n')
     );

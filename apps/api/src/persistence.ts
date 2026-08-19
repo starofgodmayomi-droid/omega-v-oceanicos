@@ -1,5 +1,12 @@
-import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'node:crypto';
-import { appendFileSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+import { createCipheriv, createDecipheriv, createHash, randomBytes, randomUUID } from 'node:crypto';
+import {
+  appendFileSync,
+  mkdirSync,
+  readFileSync,
+  renameSync,
+  unlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import { dirname } from 'node:path';
 
 /**
@@ -277,6 +284,112 @@ export const saveSnapshot = (
   writeFileSync(temporaryPath, encryptText(plaintext, encryptionSecret));
   renameSync(temporaryPath, storePath);
   return true;
+};
+
+export type PersistenceReencryptionResult = {
+  rewritten: boolean;
+  snapshotRecords: number;
+  eventRecords: number;
+  snapshotKeySource: EncryptionKeySource;
+  eventLogKeySource: EncryptionKeySource;
+};
+
+/**
+ * Re-encrypts authenticated local persistence from the configured previous key
+ * into the current key. Logical event history is preserved, but ciphertext is
+ * rewritten through sibling temporary files and renamed only after both inputs
+ * have been fully validated. Partial/corrupt evidence is never rewritten.
+ */
+export const reencryptPersistence = (
+  storePath: string,
+  logPath: string,
+  enabled: boolean,
+  currentEncryptionSecret?: string,
+  previousEncryptionSecret?: string
+): PersistenceReencryptionResult => {
+  if (!enabled || !currentEncryptionSecret || !previousEncryptionSecret) {
+    return {
+      rewritten: false,
+      snapshotRecords: 0,
+      eventRecords: 0,
+      snapshotKeySource: 'none',
+      eventLogKeySource: 'none',
+    };
+  }
+
+  const snapshotResult = loadSnapshot<AnySnapshot>(
+    storePath,
+    enabled,
+    currentEncryptionSecret,
+    previousEncryptionSecret
+  );
+  const eventLogResult = readEventLog<unknown>(
+    logPath,
+    enabled,
+    currentEncryptionSecret,
+    previousEncryptionSecret
+  );
+
+  if (snapshotResult.source === 'corrupt' || eventLogResult.source === 'partial') {
+    throw new Error('persistence re-encryption requires complete authenticated local evidence');
+  }
+
+  const shouldRewrite =
+    snapshotResult.keySource === 'previous' ||
+    snapshotResult.keySource === 'mixed' ||
+    eventLogResult.keySource === 'previous' ||
+    eventLogResult.keySource === 'mixed';
+  if (!shouldRewrite) {
+    return {
+      rewritten: false,
+      snapshotRecords: 0,
+      eventRecords: 0,
+      snapshotKeySource: snapshotResult.keySource,
+      eventLogKeySource: eventLogResult.keySource,
+    };
+  }
+
+  const snapshotTemporaryPath = `${storePath}.${randomUUID()}.reencrypt.tmp`;
+  const logTemporaryPath = `${logPath}.${randomUUID()}.reencrypt.tmp`;
+  try {
+    mkdirSync(dirname(storePath), { recursive: true });
+    mkdirSync(dirname(logPath), { recursive: true });
+    writeFileSync(
+      snapshotTemporaryPath,
+      encryptText(JSON.stringify(snapshotResult.snapshot, null, 2), currentEncryptionSecret)
+    );
+    writeFileSync(
+      logTemporaryPath,
+      eventLogResult.entries
+        .map((entry) => encryptText(JSON.stringify(entry), currentEncryptionSecret))
+        .join('\n') + (eventLogResult.entries.length > 0 ? '\n' : '')
+    );
+    renameSync(snapshotTemporaryPath, storePath);
+    renameSync(logTemporaryPath, logPath);
+  } catch (error) {
+    try {
+      unlinkSync(snapshotTemporaryPath);
+    } catch {
+      // Best-effort cleanup; the original store remains authoritative.
+    }
+    try {
+      unlinkSync(logTemporaryPath);
+    } catch {
+      // Best-effort cleanup; the original log remains authoritative.
+    }
+    throw error;
+  }
+
+  return {
+    rewritten: true,
+    snapshotRecords: Object.values(snapshotResult.snapshot).reduce(
+      (total, collection) => total + collection.length,
+      0
+    ),
+    eventRecords: eventLogResult.entries.length,
+    snapshotKeySource: snapshotResult.keySource,
+    eventLogKeySource: eventLogResult.keySource,
+  };
 };
 
 /**
