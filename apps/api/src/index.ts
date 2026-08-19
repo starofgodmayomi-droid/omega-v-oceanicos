@@ -367,15 +367,20 @@ const configuredOperatorAllowlist = (): string[] =>
     .filter(Boolean);
 
 export const operatorAllowlistConfigured = (): boolean => configuredOperatorAllowlist().length > 0;
-
+export const adminOperatorAllowlistRequired = (): boolean =>
+  process.env.OMEGA_ADMIN_REQUIRE_ALLOWLIST?.trim() === 'on';
 export const operatorIdentityAllowed = (
   operatorId: string | undefined,
-  allowlist: string[]
+  allowlist: string[],
+  requireAllowlist = false
 ): boolean =>
-  allowlist.length === 0 || (operatorId !== undefined && allowlist.includes(operatorId));
+  !(requireAllowlist && allowlist.length === 0) &&
+  (allowlist.length === 0 || (operatorId !== undefined && allowlist.includes(operatorId)));
 
-const operatorAllowed = (operatorId: string | undefined): boolean =>
-  operatorIdentityAllowed(operatorId, configuredOperatorAllowlist());
+const operatorAllowed = (operatorId: string | undefined): boolean => {
+  const allowlist = configuredOperatorAllowlist();
+  return operatorIdentityAllowed(operatorId, allowlist, adminOperatorAllowlistRequired());
+};
 
 const runtimeStorePath =
   process.env.OMEGA_RUNTIME_STORE_PATH || '/tmp/omega-v-oceanicos/runtime.json';
@@ -780,6 +785,7 @@ app.get('/health', (_req: Request, res: Response) => {
       attestationTtlMs: number | null;
       readAuthConfigured: boolean;
       adminAuthConfigured: boolean;
+      adminOperatorAllowlistRequired: boolean;
       revocationEnabled: true;
     };
   }> = {
@@ -830,6 +836,7 @@ app.get('/health', (_req: Request, res: Response) => {
         attestationTtlMs: configuredAttestationTtlMs(),
         readAuthConfigured: Boolean(process.env.OMEGA_READ_TOKEN?.trim()),
         adminAuthConfigured: Boolean(process.env[ADMIN_TOKEN_ENV]?.trim()),
+        adminOperatorAllowlistRequired: adminOperatorAllowlistRequired(),
         revocationEnabled: true,
       },
     },
@@ -1411,6 +1418,7 @@ app.get('/attest/policy', (_req: Request, res: Response) => {
       revocationIntegrity: revocationIntegrityStatus,
       revocationRevision: currentRevocationRevision,
       adminOperatorAllowlistConfigured: operatorAllowlistConfigured(),
+      adminOperatorAllowlistRequired: adminOperatorAllowlistRequired(),
       persistenceEncryption: persistenceEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
       persistenceEncryptionKeySource,
       persistenceCurrentKeyFingerprint,

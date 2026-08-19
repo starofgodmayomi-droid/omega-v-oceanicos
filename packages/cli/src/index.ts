@@ -68,6 +68,7 @@ type HealthResponse = {
       attestationTtlMs: number | null;
       readAuthConfigured: boolean;
       adminAuthConfigured: boolean;
+      adminOperatorAllowlistRequired: boolean;
       revocationEnabled: boolean;
     };
   };
@@ -269,7 +270,7 @@ async function health(argv: string[], fetchImpl: FetchLike): Promise<number> {
         `RECOVERY     policy=${checks.persistence.recoveryPolicy?.mode ?? 'unknown'} reference=${checks.persistence.recoveryPolicy?.reference ?? 'none'} reason=${checks.persistence.recoveryPolicy?.reason ?? 'none'}`,
         `COVERAGE     ${checks.persistence.coverage?.surfaces?.map((surface) => `${surface.name}=${surface.encryption}/${surface.keySource}`).join(', ') ?? 'unknown'}`,
         `UNVERIFIED   ${checks.persistence.coverage?.unverifiedSurfaces?.join(', ') ?? 'unknown'} complete=${checks.persistence.coverage?.complete ?? 'unknown'}`,
-        `POLICY        algorithm=${policy.attestationAlgorithm} ttl=${policy.attestationTtlMs ?? 'off'} revocation=${policy.revocationEnabled}`,
+        `POLICY        algorithm=${policy.attestationAlgorithm} ttl=${policy.attestationTtlMs ?? 'off'} adminAllowlistRequired=${policy.adminOperatorAllowlistRequired ?? 'unknown'} revocation=${policy.revocationEnabled}`,
         `OBSERVED      ${body.timestamp}`,
       ].join('\n') + '\n'
     );

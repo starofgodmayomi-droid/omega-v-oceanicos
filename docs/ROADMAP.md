@@ -238,9 +238,11 @@ blocked on design; each is a decision or a scoped change.
   consistency and recovery procedures remain open.
 - **Operator identity allowlist — optional local boundary implemented, identity
   system not complete.** `OMEGA_ADMIN_OPERATOR_ALLOWLIST` can require a listed
-  operator identity for revocation mutations. API policy exposes only its
-  configured presence; web, SDK, and CLI carry the identity boundary and fail
-  closed for unlisted identities. This does not establish authentication,
+  operator identity for revocation mutations. `OMEGA_ADMIN_REQUIRE_ALLOWLIST=on`
+  additionally fails closed when the allowlist is absent, while the default
+  remains backward-compatible and optional. API policy exposes only configured
+  presence and requirement state; web, SDK, and CLI carry the identity boundary
+  and fail closed for unlisted identities. This does not establish authentication,
   identity proofing, role separation, audit-grade identity, or deployment policy.
 - **Revocation freshness — local revision evidence implemented, distributed
   consistency not complete.** Ledger, verification, mutation, policy, web, SDK,
