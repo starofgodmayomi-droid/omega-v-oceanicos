@@ -12,6 +12,7 @@ import {
   parseAuditQuery,
 } from '../index';
 import { Attestation } from '@omega-v/types';
+import { appendEvent, loadSnapshot, readEventLog, saveSnapshot } from '../persistence';
 
 type ApiResponse<T> = { data: T };
 
@@ -200,6 +201,7 @@ describe('API runtime contracts', () => {
       rotationPending: false,
       operatorAction: 'none',
       acknowledgement: null,
+      reencrypt: null,
       skippedLogEntries: 0,
     });
     expect(body.data.policy).toEqual({
@@ -1028,6 +1030,97 @@ describe('partial durable-log recovery readiness', () => {
       operatorId: 'jest-operator',
       action: 'review-partial-recovery',
     });
+  });
+});
+
+describe('persistence re-encryption boundary', () => {
+  let server: Server;
+  let baseUrl: string;
+  let dir: string;
+  let storePath: string;
+  let logPath: string;
+
+  beforeAll(async () => {
+    dir = mkdtempSync(join(tmpdir(), 'omega-api-reencrypt-'));
+    storePath = join(dir, 'runtime.json');
+    logPath = join(dir, 'runtime.log.jsonl');
+    const snapshot = {
+      events: [],
+      runs: [],
+      actions: [],
+      learnings: [],
+      recompilations: [],
+    };
+    saveSnapshot(storePath, snapshot, true, 'previous-secret');
+    appendEvent(logPath, { id: 'evt-previous' }, true, 'previous-secret');
+    process.env.OMEGA_PERSISTENCE = 'on';
+    process.env.OMEGA_PERSISTENCE_KEY = 'current-secret';
+    process.env.OMEGA_PERSISTENCE_KEY_PREVIOUS = 'previous-secret';
+    process.env.OMEGA_RUNTIME_STORE_PATH = storePath;
+    process.env.OMEGA_EVENT_LOG_PATH = logPath;
+    process.env.OMEGA_ADMIN_OPERATOR_ALLOWLIST = 'rotation-operator';
+
+    jest.resetModules();
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const isolated = require('../index') as { app: typeof app };
+    server = createServer(isolated.app);
+    await new Promise<void>((resolve) => server.listen(0, resolve));
+    const address = server.address();
+    if (!address || typeof address === 'string') throw new Error('Test server did not start');
+    baseUrl = `http://127.0.0.1:${address.port}`;
+  });
+
+  afterAll(async () => {
+    await new Promise<void>((resolve, reject) =>
+      server.close((error) => (error ? reject(error) : resolve()))
+    );
+    for (const name of [
+      'OMEGA_PERSISTENCE',
+      'OMEGA_PERSISTENCE_KEY',
+      'OMEGA_PERSISTENCE_KEY_PREVIOUS',
+      'OMEGA_RUNTIME_STORE_PATH',
+      'OMEGA_EVENT_LOG_PATH',
+      'OMEGA_ADMIN_OPERATOR_ALLOWLIST',
+    ]) {
+      delete process.env[name];
+    }
+    rmSync(dir, { recursive: true, force: true });
+    jest.resetModules();
+  });
+
+  it('re-encrypts complete previous-key evidence and emits non-secret completion metadata', async () => {
+    const response = await fetch(`${baseUrl}/persistence/reencrypt`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-omega-operator-id': 'rotation-operator' },
+      body: JSON.stringify({
+        reason: 'Rotate complete local persistence to the current key',
+        operatorId: 'rotation-operator',
+      }),
+    });
+    const body = (await response.json()) as ApiResponse<{
+      reencrypted: {
+        operatorId: string;
+        action: string;
+        snapshotRecords: number;
+        eventRecords: number;
+      };
+      eventId: string;
+    }>;
+    expect(response.status).toBe(201);
+    expect(body.data.reencrypted).toMatchObject({
+      operatorId: 'rotation-operator',
+      action: 'review-key-rotation',
+      snapshotRecords: 0,
+      eventRecords: 1,
+    });
+    expect(body.data.eventId).toMatch(/^evt-/);
+    expect(loadSnapshot(storePath, true, 'current-secret').keySource).toBe('current');
+    expect(readEventLog<{ id: string }>(logPath, true, 'current-secret').entries).toEqual(
+      expect.arrayContaining([
+        { id: 'evt-previous' },
+        expect.objectContaining({ type: 'persistence.rotation.reencrypted' }),
+      ])
+    );
   });
 });
 

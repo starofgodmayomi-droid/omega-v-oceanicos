@@ -8,11 +8,11 @@ registers, so it cannot quietly fall behind the code.
 
 ## The three controls
 
-| Variable                         | Effect when set                                                                           | Effect when unset                 |
-| -------------------------------- | ----------------------------------------------------------------------------------------- | --------------------------------- |
-| `OMEGA_READ_TOKEN`               | Every `GET` except `/health` requires a matching bearer token                             | All reads are open                |
-| `OMEGA_ADMIN_TOKEN`              | `POST /attest/revoke` and `POST /persistence/acknowledge` require a matching bearer token | Those mutations need no token     |
-| `OMEGA_ADMIN_OPERATOR_ALLOWLIST` | Both admin mutations require `x-omega-operator-id` from the list                          | Any operator identity is accepted |
+| Variable                         | Effect when set                                                                                                           | Effect when unset                 |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
+| `OMEGA_READ_TOKEN`               | Every `GET` except `/health` requires a matching bearer token                                                             | All reads are open                |
+| `OMEGA_ADMIN_TOKEN`              | `POST /attest/revoke`, `POST /persistence/acknowledge`, and `POST /persistence/reencrypt` require a matching bearer token | Those mutations need no token     |
+| `OMEGA_ADMIN_OPERATOR_ALLOWLIST` | All three admin mutations require `x-omega-operator-id` from the list                                                     | Any operator identity is accepted |
 
 Tokens are compared with `timingSafeEqual`. All three default to **off**: an
 unconfigured deployment is fully open, and that is a deployment decision
@@ -24,7 +24,7 @@ rather than a safe default. It is stated here rather than discovered.
 set. `/health` stays open so a load balancer can probe it without holding a
 credential.
 
-**Admin-gated** — `POST /attest/revoke` and `POST /persistence/acknowledge`, by token and by operator identity. Revocation changes what an existing attestation means; persistence acknowledgement records a human review event and does not change readiness or claim repair.
+**Admin-gated** — `POST /attest/revoke`, `POST /persistence/acknowledge`, and `POST /persistence/reencrypt`, by token and by operator identity. Revocation changes what an existing attestation means; persistence acknowledgement records a human review event and does not change readiness or claim repair; re-encryption rewrites authenticated local ciphertext only after complete previous-key evidence, records non-secret counts and key-source provenance, and does not prove distributed recovery or authorize deployment.
 
 ## What is not gated
 
@@ -69,7 +69,7 @@ cannot do is make the system attest to something it did not verify.
 ## What is deliberately absent
 
 There are no user accounts, no roles, no per-caller identity beyond the
-operator header on revocation and persistence acknowledgement, and no rate limiting. `x-omega-operator-id` is
+operator header on revocation, persistence acknowledgement, and persistence re-encryption, and no rate limiting. `x-omega-operator-id` is
 an assertion by the caller, checked against an allowlist — it is not
 authentication, and the allowlist is the only thing standing behind it.
 

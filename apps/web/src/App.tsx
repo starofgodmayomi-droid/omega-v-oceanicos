@@ -86,6 +86,17 @@ type RuntimeHealth = {
         acknowledgedAt: string;
         requestId: string;
       } | null;
+      reencrypt: {
+        operatorId: string;
+        reason: string;
+        action: string;
+        reencryptedAt: string;
+        requestId: string;
+        snapshotRecords: number;
+        eventRecords: number;
+        snapshotKeySource: string;
+        eventLogKeySource: string;
+      } | null;
       skippedLogEntries: number;
     };
   };
@@ -829,6 +840,16 @@ export function App(): JSX.Element {
               <strong>
                 {runtimeHealth.checks.persistence.acknowledgement.operatorId} /{' '}
                 {runtimeHealth.checks.persistence.acknowledgement.action.toUpperCase()}
+              </strong>
+            </div>
+          ) : null}
+          {runtimeHealth?.checks.persistence?.reencrypt ? (
+            <div>
+              <span>REENCRYPTED</span>
+              <strong>
+                {runtimeHealth.checks.persistence.reencrypt.snapshotRecords} SNAPSHOT /{' '}
+                {runtimeHealth.checks.persistence.reencrypt.eventRecords} EVENTS /{' '}
+                {runtimeHealth.checks.persistence.reencrypt.operatorId}
               </strong>
             </div>
           ) : null}

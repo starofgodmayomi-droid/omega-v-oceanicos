@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import {
   appendEvent,
   emptySnapshot,
+  reencryptPersistence,
   loadSnapshot,
   readEventLog,
   saveSnapshot,
@@ -268,6 +269,68 @@ describe('runtime persistence', () => {
 
       expect(result.source).toBe('corrupt');
       expect(result.reason).toBeDefined();
+    });
+
+    it('re-encrypts a previous-key snapshot and event log under the current key', () => {
+      const logPath = join(dir, 'runtime.log.jsonl');
+      saveSnapshot(storePath, fixture(), true, 'previous-secret');
+      appendEvent(logPath, { id: 'evt-old' }, true, 'previous-secret');
+
+      const result = reencryptPersistence(
+        storePath,
+        logPath,
+        true,
+        'current-secret',
+        'previous-secret'
+      );
+
+      expect(result).toMatchObject({
+        rewritten: true,
+        snapshotRecords: 5,
+        eventRecords: 1,
+        snapshotKeySource: 'previous',
+        eventLogKeySource: 'previous',
+      });
+      expect(loadSnapshot<Snap>(storePath, true, 'current-secret').keySource).toBe('current');
+      expect(readEventLog<{ id: string }>(logPath, true, 'current-secret').entries).toEqual([
+        { id: 'evt-old' },
+      ]);
+      expect(loadSnapshot<Snap>(storePath, true, 'current-secret', 'previous-secret').source).toBe(
+        'restored'
+      );
+    });
+
+    it('does not rewrite stores already authenticated by the current key', () => {
+      const logPath = join(dir, 'runtime.log.jsonl');
+      saveSnapshot(storePath, fixture(), true, 'current-secret');
+      appendEvent(logPath, { id: 'evt-current' }, true, 'current-secret');
+
+      const result = reencryptPersistence(
+        storePath,
+        logPath,
+        true,
+        'current-secret',
+        'previous-secret'
+      );
+
+      expect(result.rewritten).toBe(false);
+      expect(result.snapshotKeySource).toBe('current');
+      expect(result.eventLogKeySource).toBe('current');
+    });
+
+    it('refuses to rewrite when the event log is partial', () => {
+      const logPath = join(dir, 'runtime.log.jsonl');
+      saveSnapshot(storePath, fixture(), true, 'previous-secret');
+      appendEvent(logPath, { id: 'evt-old' }, true, 'previous-secret');
+      appendEvent(logPath, { id: 'evt-bad' }, true, 'wrong-secret');
+      const snapshotBefore = readFileSync(storePath, 'utf8');
+      const logBefore = readFileSync(logPath, 'utf8');
+
+      expect(() =>
+        reencryptPersistence(storePath, logPath, true, 'current-secret', 'previous-secret')
+      ).toThrow('complete authenticated local evidence');
+      expect(readFileSync(storePath, 'utf8')).toBe(snapshotBefore);
+      expect(readFileSync(logPath, 'utf8')).toBe(logBefore);
     });
   });
 });
