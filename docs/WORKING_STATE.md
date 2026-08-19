@@ -54,7 +54,7 @@ Push, PR publication, merge, deployment, and other externally visible actions ar
 | Memory mixed-key provenance     | Kernel-memory loads now distinguish `current`, `previous`, and `mixed` authenticated key sources; current-key and mixed-key restore assertions plus package/API documentation preserve bounded local evidence.                                                                                                                                                |
 | Persistence readiness boundary  | An enabled corrupt runtime snapshot now degrades API health to `503` and sets `/state` service-readiness to `0`; an enabled missing store remains a valid cold start. Existing web, SDK, and CLI health consumers preserve the fail-closed readiness contract.                                                                                                |
 | Independent browser verifier    | PRs #94–#96 publish the signed-envelope specification, implement WebCrypto Ed25519 verification, and add the dashboard panel; PR #97 adds a reproducible real-key walkthrough. The browser proves signed-field origin/integrity only, not observation correctness, revocation, expiry, or deployment trust.                                                   |
-| Persistence acknowledgement     | PR #133 adds an authenticated `POST /persistence/acknowledge` review boundary across API, SDK, CLI, dashboard, tests, governance, and docs. It records operator review evidence for degraded persistence without repairing state, changing readiness, authorizing action, or proving recovery. |
+| Persistence acknowledgement     | PR #133 adds an authenticated `POST /persistence/acknowledge` review boundary across API, SDK, CLI, dashboard, tests, governance, and docs. It records operator review evidence for degraded persistence without repairing state, changing readiness, authorizing action, or proving recovery.                                                                |
 
 ## Current repository state
 
@@ -112,7 +112,7 @@ The active worktree is `/home/ubuntu/current-main-worktree` on branch `main`, sy
 | `6e74543` | PR #95 squash merge: browser-local Ed25519 verifier module                                                                                   | Merged into `main`; CI green                           |
 | `3f39c09` | PR #96 squash merge: independent dashboard verification panel                                                                                | Merged into `main`; CI green                           |
 | `2d8397a` | PR #97 squash merge: browser-verifier walkthrough documentation                                                                              | Merged into `main`; CI green                           |
-| `c56eeac` | PR #133 squash merge: authenticated persistence review acknowledgement across API, SDK, CLI, dashboard, tests, governance, and docs                   | Merged into `main`; CI green; publication skipped       |
+| `c56eeac` | PR #133 squash merge: authenticated persistence review acknowledgement across API, SDK, CLI, dashboard, tests, governance, and docs          | Merged into `main`; CI green; publication skipped      |
 
 | |
 | PR #33 is **merged** into `main` as squash commit `fb73ac28990b2b42b6339da2e8ca76007616dd70`, observed at `2026-08-16T14:46:39Z`. The published head `2cc2d21` passed Node 18, Node 20, Windows compatibility, package/smoke, and report checks; attested-artifact publication was skipped as designed. |
