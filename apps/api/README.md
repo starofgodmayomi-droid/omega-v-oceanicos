@@ -369,7 +369,7 @@ or proof of replica consistency. Health, state, and observability also expose
 `persistenceCurrentKeyFingerprint` and `persistencePreviousKeyFingerprint` (or
 `null`) as deterministic short identifiers of configured local secrets. They
 support equality checks during rotation but are not secrets and do not prove
-custody, HSM/KMS control, recovery, secure deletion, or deployment authorization.
+custody, HSM/KMS control, recovery, secure deletion, or deployment authorization. Health, state, and observability also expose a coverage inventory for the runtime snapshot, event log, and kernel-memory file with `runtime-observed` evidence and `complete: false`; databases, object storage, backups, and external services remain explicitly unverified.
 
 **Request:**
 

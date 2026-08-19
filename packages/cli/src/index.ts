@@ -50,6 +50,16 @@ type HealthResponse = {
         acknowledgement: PersistenceAcknowledgement | null;
         reencryptionRecovery: ReencryptionRecovery;
         recoveryPolicy: { mode: string; reference: string | null; reason: string | null };
+        coverage: {
+          complete: false;
+          surfaces: Array<{
+            name: string;
+            encryption: string;
+            keySource: string;
+            evidence: string;
+          }>;
+          unverifiedSurfaces: string[];
+        };
         skippedLogEntries: number;
       };
     };
@@ -257,6 +267,8 @@ async function health(argv: string[], fetchImpl: FetchLike): Promise<number> {
         `ACTION       ${checks.persistence.operatorAction ?? 'unknown'}`,
         `ROTATION     recovery=${checks.persistence.reencryptionRecovery?.status ?? 'unknown'} reason=${checks.persistence.reencryptionRecovery?.reason ?? 'none'}`,
         `RECOVERY     policy=${checks.persistence.recoveryPolicy?.mode ?? 'unknown'} reference=${checks.persistence.recoveryPolicy?.reference ?? 'none'} reason=${checks.persistence.recoveryPolicy?.reason ?? 'none'}`,
+        `COVERAGE     ${checks.persistence.coverage?.surfaces?.map((surface) => `${surface.name}=${surface.encryption}/${surface.keySource}`).join(', ') ?? 'unknown'}`,
+        `UNVERIFIED   ${checks.persistence.coverage?.unverifiedSurfaces?.join(', ') ?? 'unknown'} complete=${checks.persistence.coverage?.complete ?? 'unknown'}`,
         `POLICY        algorithm=${policy.attestationAlgorithm} ttl=${policy.attestationTtlMs ?? 'off'} revocation=${policy.revocationEnabled}`,
         `OBSERVED      ${body.timestamp}`,
       ].join('\n') + '\n'
