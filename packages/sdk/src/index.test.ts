@@ -547,14 +547,25 @@ describe('OmegaClient', () => {
     });
   });
 
-  it('exposes events and runs through the same client contract', async () => {
+  it('preserves the bounded events response envelope and exposes runs through the same contract', async () => {
     const paths: string[] = [];
     const client = new OmegaClient('http://api.test', async (url) => {
       paths.push(url);
-      return new Response(JSON.stringify({ data: [] }));
+      const body = url.endsWith('/events')
+        ? {
+            data: [{ id: 'evt-1', type: 'observation.created' }],
+            meta: { window: 40, note: 'recent window; see /log for full history' },
+            timestamp: '2026-08-16T00:00:00.000Z',
+          }
+        : { data: [] };
+      return new Response(JSON.stringify(body));
     });
 
-    await client.getEvents();
+    await expect(client.getEvents()).resolves.toEqual({
+      data: [{ id: 'evt-1', type: 'observation.created' }],
+      meta: { window: 40, note: 'recent window; see /log for full history' },
+      timestamp: '2026-08-16T00:00:00.000Z',
+    });
     await client.getRuns();
     expect(paths).toEqual(['http://api.test/events', 'http://api.test/runs']);
   });
