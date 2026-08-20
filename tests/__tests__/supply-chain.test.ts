@@ -97,4 +97,29 @@ describe('supply chain and static analysis', () => {
     const digestSubjects = workflow.match(/subject-digest:\s*\$\{\{ steps\.push\.outputs\.digest/g);
     expect(digestSubjects?.length).toBeGreaterThanOrEqual(2);
   });
+
+  it('keeps peer-coupled packages in one group', () => {
+    const config = readFileSync(join(root, '.github/dependabot.yml'), 'utf8');
+
+    // React and @testing-library/react are peer-coupled. Splitting them
+    // produced a pull request that installed react 19 transitively while
+    // apps/web still declared ^18.2.0 — two copies of React in one tree,
+    // failing on Windows and passing on Linux. Neither half could be green
+    // alone, so neither could ever land.
+    expect(config).toContain('testing-and-react:');
+
+    const group = config.slice(config.indexOf('testing-and-react:'), config.indexOf('linting:'));
+    for (const pkg of ['react', 'react-dom', '@testing-library/*', 'jest']) {
+      expect(group).toContain(pkg);
+    }
+  });
+
+  it('does not let the typings group claim React typings first', () => {
+    const config = readFileSync(join(root, '.github/dependabot.yml'), 'utf8');
+
+    // Groups match in order, so '@types/*' would take @types/react before
+    // the React group saw it, reintroducing the same split one level down.
+    expect(config).toContain('exclude-patterns:');
+    expect(config).toMatch(/exclude-patterns:[\s\S]{0,120}@types\/react/);
+  });
 });
