@@ -35,7 +35,7 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Initialise CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@v4
         with:
           languages: javascript-typescript
           # security-extended reaches further than the default suite. The
@@ -44,6 +44,6 @@ jobs:
           queries: security-extended
 
       - name: Analyse
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@v4
         with:
           category: '/language:javascript-typescript'
