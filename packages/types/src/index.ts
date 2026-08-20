@@ -423,3 +423,71 @@ export interface SuccessResponse<T> {
   /** When was this created? */
   timestamp: string;
 }
+
+/**
+ * A bounded local job ledger record. This is operational evidence, not a
+ * distributed queue or proof of durable execution.
+ */
+export type LocalJobState = 'queued' | 'running' | 'succeeded' | 'failed' | 'unknown';
+
+export type LocalJobEventType = 'created' | 'started' | 'completed' | 'failed' | 'unknown';
+
+export interface LocalJobProvenance {
+  source: 'local' | 'api' | 'unknown';
+  actor: string | null;
+  requestId: string | null;
+  correlationId: string | null;
+  observedAt: string;
+  schemaVersion: '1';
+}
+
+export interface LocalJob {
+  id: string;
+  kind: 'synthetic-observe';
+  state: LocalJobState;
+  idempotencyKey: string;
+  payloadDigest: string;
+  sourceUri: string;
+  actor: string;
+  workerId: string | null;
+  attempt: number;
+  createdAt: string;
+  updatedAt: string;
+  finishedAt: string | null;
+  resultSummary: string | null;
+  errorClass: string | null;
+  provenance: LocalJobProvenance;
+}
+
+export interface LocalJobEvent {
+  id: string;
+  jobId: string;
+  type: LocalJobEventType;
+  sequence: number;
+  at: string;
+  provenance: LocalJobProvenance;
+  details: {
+    state: LocalJobState;
+    message: string;
+  };
+}
+
+export interface LocalJobLedgerStatus {
+  enabled: boolean;
+  durable: false;
+  source: 'memory';
+  counts: Record<LocalJobState, number>;
+  recentWindow: number;
+}
+
+export type LocalJobCreateInput = {
+  kind: 'synthetic-observe';
+  idempotencyKey: string;
+  sourceUri: string;
+  actor: string;
+};
+
+export type LocalJobMutationResult = {
+  job: LocalJob;
+  event: LocalJobEvent;
+};

@@ -28,6 +28,8 @@ credential.
 
 **Admin-gated** — `POST /attest/revoke`, `POST /persistence/acknowledge`, and `POST /persistence/reencrypt`, by token and by operator identity. Revocation changes what an existing attestation means; persistence acknowledgement records a human review event and does not change readiness or claim repair; re-encryption rewrites authenticated local ciphertext only after complete previous-key evidence, records non-secret counts and key-source provenance, and uses a local transaction journal to reconcile or block interrupted startup; it does not prove distributed recovery or authorize deployment. Deterministic short fingerprints for configured local current/previous secrets are configuration-equality evidence only; they never prove custody, HSM/KMS control, recovery, or secure deletion. Recovery policy declarations (`unavailable`, `operator-provided`, or `external-reference`) expose bounded configuration labels only; unsupported or malformed declarations are invalid and fail readiness closed, while valid labels never verify an operator, custodian, recovery material, or external system. Custody declarations follow the same boundary and always report `verified:false`.
 
+**Local-job-gated** — `POST /jobs`, `POST /jobs/:jobId/claim`, `POST /jobs/:jobId/complete`, and `POST /jobs/:jobId/fail` require `OMEGA_LOCAL_JOB_LEDGER=on`, `OMEGA_LOCAL_JOB_LEDGER_TOKEN`, a matching bearer token, and loopback transport. `GET /jobs` and `GET /jobs/:jobId` use the same token and loopback gate. The ledger is in-memory, bounded, and `durable:false`; it is not a queue, crawler, scheduler, or proof of durable execution.
+
 ## What is not gated
 
 **Every other write.** These accept requests from anyone who can reach the

@@ -796,3 +796,25 @@ npm run start
 **Package Status:** Stable (v0.1.0)  
 **Part of:** Ω∞v Oceanicos verification system  
 **Last Updated:** 2026-08-16
+
+## Local Job Ledger (Opt-In, Local-Only)
+
+The API includes a deliberately small job boundary for deterministic local integrations. It is **disabled by default** and never starts a timer, subprocess, shell command, crawler, or network client. To opt in for a local development process, set `OMEGA_LOCAL_JOB_LEDGER=on` and provide `OMEGA_LOCAL_JOB_LEDGER_TOKEN`; requests must arrive over loopback and use `Authorization: Bearer <token>`.
+
+This ledger accepts only `synthetic-observe` jobs whose `sourceUri` begins with `local://`. It is an in-memory, bounded operational evidence surface with `durable: false` and `source: "memory"`. Restarting the process clears jobs and counters. It is not a distributed queue, scheduler, crawler, vector index, retry system, or proof of durable execution.
+
+The lifecycle is `queued → running → succeeded|failed`. Submission requires an idempotency key and an operator identity header. A worker claims a queued job with `x-omega-worker-id`, and completion or failure requires the same worker identity. Terminal jobs cannot be changed. Lifecycle events are copied into the existing bounded runtime event stream with request, correlation, sequence, and provenance fields; job payloads, tokens, filesystem paths, and shell/network instructions are not returned.
+
+```bash
+export OMEGA_LOCAL_JOB_LEDGER=on
+export OMEGA_LOCAL_JOB_LEDGER_TOKEN='local-development-only'
+export OMEGA_ADMIN_OPERATOR_ALLOWLIST='local-operator'
+
+curl -sS -X POST http://127.0.0.1:3000/jobs \
+  -H 'Authorization: Bearer local-development-only' \
+  -H 'x-omega-operator-id: local-operator' \
+  -H 'Content-Type: application/json' \
+  -d '{"kind":"synthetic-observe","idempotencyKey":"demo-1","sourceUri":"local://fixture/demo"}'
+```
+
+The endpoint set is `POST /jobs`, `GET /jobs`, `GET /jobs/:jobId`, `POST /jobs/:jobId/claim`, `POST /jobs/:jobId/complete`, and `POST /jobs/:jobId/fail`. External URLs, shell execution, arbitrary worker payloads, and production deployment are intentionally outside this slice and require separate security and infrastructure review.

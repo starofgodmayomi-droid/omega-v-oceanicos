@@ -92,7 +92,7 @@ describe('startup banner', () => {
   );
 
   it('advertises nothing the server does not serve', () => {
-    const advertised = Array.from(banner.matchAll(/(GET|POST)\s+(\/[a-zA-Z0-9/-]*)/g)).map(
+    const advertised = Array.from(banner.matchAll(/(GET|POST)\s+(\/[a-zA-Z0-9:/-]*)/g)).map(
       (match) => `${match[1]} ${match[2]}`
     );
     const real = new Set(registered.map((route) => `${route.method} ${route.path}`));
