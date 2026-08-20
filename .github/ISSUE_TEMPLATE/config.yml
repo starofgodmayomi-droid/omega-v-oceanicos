@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/starofgodmayomi-droid/omega-v-oceanicos/security/advisories/new
+    about: Report privately. A public issue about a signature flaw tells everyone how to forge it.
+  - name: Verify an attestation yourself
+    url: https://github.com/starofgodmayomi-droid/omega-v-oceanicos/blob/main/docs/spec/ATTESTATION-ENVELOPE.md
+    about: The envelope is published with a worked example and a reference verifier that imports nothing from this project.
