@@ -260,7 +260,7 @@ jobs:
       # Here the job depends on everything it speaks for, runs once, and
       # reports the results it was actually given.
       - name: Comment PR with the real result
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const verify = '${{ needs.verify.result }}';
