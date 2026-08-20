@@ -1,3 +1,4 @@
+import type * as React from 'react';
 import { useEffect, useRef, useState } from 'react';
 // Aliased: App already has a verifyAttestation that asks the API. This one
 // asks nobody, which is the distinction the panel exists to make visible.
@@ -149,7 +150,7 @@ const describeResponseError = async (response: Response, fallback: string): Prom
   return `${body.message ?? fallback}${requestId ? ` [${requestId}]` : ''}`;
 };
 
-export function App(): JSX.Element {
+export function App(): React.JSX.Element {
   const [claim, setClaim] = useState('Service X is healthy');
   const [responseTime, setResponseTime] = useState('42');
   const [statusCode, setStatusCode] = useState('200');
