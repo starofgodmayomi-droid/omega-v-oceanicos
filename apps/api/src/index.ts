@@ -637,6 +637,8 @@ const jobErrorStatus = (code: LocalJobError['code']): number =>
       : code === 'JOB_IDEMPOTENCY_CONFLICT'
         ? 409
         : 400;
+const jobPathValue = (value: string | string[] | undefined): string =>
+  typeof value === 'string' ? value : '';
 const jobError = (error: unknown, res: Response): void => {
   if (error instanceof LocalJobError) {
     res.status(jobErrorStatus(error.code)).json({
@@ -698,7 +700,7 @@ app.get('/jobs', (req: Request, res: Response) => {
 });
 app.get('/jobs/:jobId', (req: Request, res: Response) => {
   if (!jobLedgerAccess(req, res)) return;
-  const job = localJobLedger.get(req.params.jobId);
+  const job = localJobLedger.get(jobPathValue(req.params.jobId));
   if (!job) {
     res.status(404).json({
       code: 'JOB_NOT_FOUND',
@@ -721,7 +723,7 @@ app.post('/jobs/:jobId/claim', (req: Request, res: Response) => {
   const workerId = req.header('x-omega-worker-id')?.trim() || '';
   try {
     const result = localJobLedger.claim(
-      req.params.jobId,
+      jobPathValue(req.params.jobId),
       workerId,
       jobProvenance(req, res, workerId)
     );
@@ -739,7 +741,7 @@ app.post('/jobs/:jobId/complete', (req: Request, res: Response) => {
   const workerId = req.header('x-omega-worker-id')?.trim() || '';
   try {
     const result = localJobLedger.complete(
-      req.params.jobId,
+      jobPathValue(req.params.jobId),
       workerId,
       req.body?.resultSummary,
       jobProvenance(req, res, workerId)
@@ -758,7 +760,7 @@ app.post('/jobs/:jobId/fail', (req: Request, res: Response) => {
   const workerId = req.header('x-omega-worker-id')?.trim() || '';
   try {
     const result = localJobLedger.fail(
-      req.params.jobId,
+      jobPathValue(req.params.jobId),
       workerId,
       req.body?.errorClass,
       jobProvenance(req, res, workerId)
