@@ -27,7 +27,8 @@
       "@omega-v/remember": ["./packages/remember/src/index.ts"],
       "@omega-v/mini": ["./packages/mini/src/index.ts"],
       "@omega-v/attestation": ["./packages/attestation/src/index.ts"],
-      "@omega-v/dissensus": ["./packages/dissensus/src/index.ts"]
+      "@omega-v/dissensus": ["./packages/dissensus/src/index.ts"],
+      "@omega-v/lexicon": ["./packages/lexicon/src/index.ts"]
     }
   },
   "include": ["packages/*/src", "apps/*/src"],
