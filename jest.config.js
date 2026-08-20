@@ -10,6 +10,7 @@ const moduleNameMapper = {
   '@omega-v/mini': '<rootDir>/packages/mini/src/index.ts',
   '@omega-v/attestation': '<rootDir>/packages/attestation/src/index.ts',
   '@omega-v/dissensus': '<rootDir>/packages/dissensus/src/index.ts',
+  '@omega-v/lexicon': '<rootDir>/packages/lexicon/src/index.ts',
   '\\.css$': '<rootDir>/tests/style-stub.cjs',
 };
 
