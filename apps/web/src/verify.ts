@@ -44,6 +44,25 @@ export function buildSignedBytes(attestation: Record<string, unknown>): Uint8Arr
   return new TextEncoder().encode(JSON.stringify(payload));
 }
 
+/**
+ * WebCrypto takes a BufferSource backed by an ArrayBuffer.
+ *
+ * TypeScript made Uint8Array generic over its backing buffer, so a plain
+ * `Uint8Array` is `Uint8Array<ArrayBufferLike>` — which includes
+ * SharedArrayBuffer and is therefore not assignable to BufferSource. Every
+ * array reaching this function is built here from a plain ArrayBuffer, so
+ * the narrowing is true by construction rather than assumed.
+ *
+ * Written as a copy rather than a cast: it costs a few dozen bytes, it is
+ * correct on TypeScript 5 and 6 alike, and an assertion here would be the
+ * one place a lie about memory layout would not be caught.
+ */
+function asBufferSource(view: Uint8Array): BufferSource {
+  const copy = new Uint8Array(new ArrayBuffer(view.byteLength));
+  copy.set(view);
+  return copy;
+}
+
 /** Decode a `0x`-prefixed hex signature. Returns null when malformed. */
 export function decodeSignature(signature: string): Uint8Array | null {
   const hex = signature.startsWith('0x') ? signature.slice(2) : signature;
@@ -167,12 +186,18 @@ export async function verifyAttestation(
   }
 
   try {
-    const key = await implementation.importKey('spki', der, { name: 'Ed25519' }, false, ['verify']);
+    const key = await implementation.importKey(
+      'spki',
+      asBufferSource(der),
+      { name: 'Ed25519' },
+      false,
+      ['verify']
+    );
     const ok = await implementation.verify(
       { name: 'Ed25519' },
       key,
-      signature,
-      buildSignedBytes(attestation)
+      asBufferSource(signature),
+      asBufferSource(buildSignedBytes(attestation))
     );
 
     return ok
