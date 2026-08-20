@@ -61,7 +61,6 @@ describe('web/API contract', () => {
       '/attest',
       '/events',
       '/evidence/export',
-      '/jobs',
       '/jobs/:jobId',
       '/jobs/:jobId/claim',
       '/jobs/:jobId/complete',

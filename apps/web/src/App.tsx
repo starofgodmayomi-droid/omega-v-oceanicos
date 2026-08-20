@@ -137,6 +137,29 @@ type PublicTrustMetadata = {
   keyVersion: string;
   publicKey: string;
 };
+type LocalJobState = 'queued' | 'running' | 'succeeded' | 'failed' | 'unknown';
+type LocalJobsView = {
+  status: 'loading' | 'disabled' | 'unauthorized' | 'available' | 'error';
+  jobs: Array<{
+    id: string;
+    state: LocalJobState;
+    attempt: number;
+    workerId: string | null;
+    createdAt: string;
+    updatedAt: string;
+    finishedAt: string | null;
+    errorClass: string | null;
+    provenance: { requestId: string | null; correlationId: string | null };
+  }>;
+  ledger: {
+    enabled: boolean;
+    durable: false;
+    source: 'memory';
+    counts: Record<LocalJobState, number>;
+    recentWindow: number;
+  } | null;
+  message: string | null;
+};
 
 const stages = ['observe', 'evidence', 'verify', 'attest', 'act', 'learn', 'recompile'];
 const navGroups = [
@@ -161,6 +184,12 @@ export function App(): React.JSX.Element {
   const [responseTime, setResponseTime] = useState('42');
   const [statusCode, setStatusCode] = useState('200');
   const [events, setEvents] = useState<RuntimeEvent[]>([]);
+  const [localJobs, setLocalJobs] = useState<LocalJobsView>({
+    status: 'loading',
+    jobs: [],
+    ledger: null,
+    message: null,
+  });
   const [recentRuns, setRecentRuns] = useState<LoopResult[]>([]);
   const [revocations, setRevocations] = useState<RuntimeRevocation[]>([]);
   const [revocationIntegrity, setRevocationIntegrity] = useState<RevocationIntegrity | null>(null);
@@ -236,6 +265,7 @@ export function App(): React.JSX.Element {
         revocationsResponse,
         policyResponse,
         dissensusResponse,
+        jobsResponse,
       ] = await Promise.all([
         fetch('/api/health'),
         fetch('/api/state'),
@@ -244,6 +274,7 @@ export function App(): React.JSX.Element {
         fetch('/api/attest/revocations'),
         fetch('/api/attest/policy'),
         fetch('/api/dissensus'),
+        fetch('/api/jobs?limit=20').catch(() => null),
       ]);
       if (
         !healthResponse.ok ||
@@ -283,6 +314,54 @@ export function App(): React.JSX.Element {
         meta?: { integrity: RevocationIntegrity; digest: string; revision: number };
       };
       const policyData = (await policyResponse.json()) as { data: RuntimePolicy };
+      if (!jobsResponse) {
+        setLocalJobs({
+          status: 'error',
+          jobs: [],
+          ledger: null,
+          message: 'Local jobs unavailable',
+        });
+      } else if (jobsResponse.ok) {
+        const jobsData = (await jobsResponse.json()) as {
+          data?: { jobs?: LocalJobsView['jobs']; status?: LocalJobsView['ledger'] };
+        };
+        if (Array.isArray(jobsData.data?.jobs) && jobsData.data.status) {
+          setLocalJobs({
+            status: jobsData.data.status.enabled ? 'available' : 'disabled',
+            jobs: jobsData.data.status.enabled ? jobsData.data.jobs : [],
+            ledger: jobsData.data.status,
+            message: jobsData.data.status.enabled ? null : 'Local jobs are disabled by default.',
+          });
+        } else {
+          setLocalJobs({
+            status: 'error',
+            jobs: [],
+            ledger: null,
+            message: 'Invalid local jobs evidence',
+          });
+        }
+      } else {
+        const jobsError = (await jobsResponse.json().catch(() => ({}))) as {
+          code?: string;
+          message?: string;
+        };
+        setLocalJobs({
+          status:
+            jobsError.code === 'LOCAL_JOB_DISABLED'
+              ? 'disabled'
+              : jobsResponse.status === 401 || jobsResponse.status === 403
+                ? 'unauthorized'
+                : 'error',
+          jobs: [],
+          ledger: null,
+          message:
+            jobsError.code === 'LOCAL_JOB_DISABLED'
+              ? 'Local jobs are disabled by default.'
+              : jobsResponse.status === 401 || jobsResponse.status === 403
+                ? 'Local job read access is unavailable.'
+                : (jobsError.message ?? 'Local jobs unavailable'),
+        });
+      }
       const publicKeyResponse = await fetch('/api/attest/public-key').catch(() => null);
       if (publicKeyResponse?.ok) {
         const publicKeyData = (await publicKeyResponse.json()) as { data: PublicTrustMetadata };
@@ -1257,6 +1336,85 @@ export function App(): React.JSX.Element {
             </div>
           </section>
         )}
+        <section className="jobs-panel" aria-labelledby="local-jobs-title">
+          <div className="panel-heading">
+            <div>
+              <span className="section-kicker">LOCAL JOB EVIDENCE</span>
+              <h2 id="local-jobs-title">Local jobs</h2>
+            </div>
+            <span className="seal">READ-ONLY</span>
+          </div>
+          <p className="jobs-description">
+            Bounded local worker evidence. This view never starts, claims, retries, or deletes work.
+          </p>
+          {localJobs.status === 'loading' && (
+            <p className="jobs-state">Loading local job evidence…</p>
+          )}
+          {localJobs.status === 'disabled' && (
+            <p className="jobs-state jobs-state-muted">
+              {localJobs.message} Local evidence is <strong>durable=false</strong> and absent until
+              explicitly enabled.
+            </p>
+          )}
+          {localJobs.status === 'unauthorized' && (
+            <p className="jobs-state jobs-state-warning">
+              {localJobs.message} No credentials or job details are shown in this read-only view.
+            </p>
+          )}
+          {localJobs.status === 'error' && (
+            <p className="jobs-state jobs-state-warning">
+              {localJobs.message ?? 'Local jobs unavailable.'}
+            </p>
+          )}
+          {localJobs.status === 'available' && localJobs.ledger && (
+            <>
+              <div className="jobs-contract" aria-live="polite">
+                <span>source={localJobs.ledger.source}</span>
+                <span>storage=memory</span>
+                <strong>durable=false</strong>
+                <span>window={localJobs.ledger.recentWindow}</span>
+              </div>
+              <div className="jobs-counts" aria-label="Local job counts">
+                <span>queued {localJobs.ledger.counts.queued}</span>
+                <span>running {localJobs.ledger.counts.running}</span>
+                <span>succeeded {localJobs.ledger.counts.succeeded}</span>
+                <span>failed {localJobs.ledger.counts.failed}</span>
+                <span>unknown {localJobs.ledger.counts.unknown}</span>
+              </div>
+              {localJobs.jobs.length === 0 ? (
+                <p className="jobs-state jobs-state-muted">
+                  The local ledger is enabled but contains no jobs.
+                </p>
+              ) : (
+                <div className="jobs-list" role="list" aria-label="Recent local jobs">
+                  {localJobs.jobs.map((job) => (
+                    <article className="job-card" key={job.id} role="listitem">
+                      <div className="job-card-heading">
+                        <strong>{job.id}</strong>
+                        <span className={`job-state job-state-${job.state}`}>{job.state}</span>
+                      </div>
+                      <p>
+                        attempt {job.attempt} · worker {job.workerId ?? 'none'} · updated{' '}
+                        {timeLabel(job.updatedAt)}
+                      </p>
+                      <small>
+                        created {timeLabel(job.createdAt)} · finished{' '}
+                        {job.finishedAt ? timeLabel(job.finishedAt) : 'not terminal'}
+                      </small>
+                      {job.errorClass && (
+                        <small className="jobs-error">error class: {job.errorClass}</small>
+                      )}
+                      <small className="jobs-provenance">
+                        request {job.provenance.requestId ?? 'unknown'} · correlation{' '}
+                        {job.provenance.correlationId ?? 'unknown'}
+                      </small>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </section>
         <section className="runs-panel">
           <div className="panel-heading">
             <div>

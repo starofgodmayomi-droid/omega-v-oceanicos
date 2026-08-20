@@ -1184,3 +1184,67 @@ describe('dissent ledger', () => {
     expect(within(section).getByText('01')).toBeInTheDocument();
   });
 });
+
+describe('read-only local job evidence', () => {
+  beforeEach(() => {
+    installFetch();
+  });
+
+  it('renders the disabled boundary without worker controls', async () => {
+    await renderApp();
+    const panel = await screen.findByRole('region', { name: /local jobs/i });
+    expect(within(panel).getByText(/local jobs are disabled/i)).toBeInTheDocument();
+    expect(within(panel).getByText(/durable=false/i)).toBeInTheDocument();
+    expect(
+      within(panel).queryByRole('button', { name: /start|claim|retry|delete|cancel/i })
+    ).not.toBeInTheDocument();
+  });
+
+  it('renders bounded running and terminal evidence as read-only text', async () => {
+    installFetch({
+      '/api/jobs?limit=20': () =>
+        json({
+          data: {
+            jobs: [
+              {
+                id: 'job-running',
+                state: 'running',
+                attempt: 1,
+                workerId: 'worker-a',
+                createdAt: '2026-08-20T00:00:00.000Z',
+                updatedAt: '2026-08-20T00:01:00.000Z',
+                finishedAt: null,
+                errorClass: null,
+                provenance: { requestId: 'req-job', correlationId: 'corr-job' },
+              },
+              {
+                id: 'job-failed',
+                state: 'failed',
+                attempt: 1,
+                workerId: 'worker-b',
+                createdAt: '2026-08-20T00:00:00.000Z',
+                updatedAt: '2026-08-20T00:02:00.000Z',
+                finishedAt: '2026-08-20T00:02:00.000Z',
+                errorClass: 'fixture_failure',
+                provenance: { requestId: 'req-failed', correlationId: null },
+              },
+            ],
+            status: {
+              enabled: true,
+              durable: false,
+              source: 'memory',
+              counts: { queued: 0, running: 1, succeeded: 0, failed: 1, unknown: 0 },
+              recentWindow: 40,
+            },
+          },
+        }),
+    });
+    await renderApp();
+    const panel = await screen.findByRole('region', { name: /local jobs/i });
+    expect(within(panel).getByText('job-running')).toBeInTheDocument();
+    expect(within(panel).getByText('job-failed')).toBeInTheDocument();
+    expect(within(panel).getByText(/error class: fixture_failure/i)).toBeInTheDocument();
+    expect(within(panel).getByText(/durable=false/i)).toBeInTheDocument();
+    expect(within(panel).queryByRole('button')).not.toBeInTheDocument();
+  });
+});

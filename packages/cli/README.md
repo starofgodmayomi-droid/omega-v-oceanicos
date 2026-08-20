@@ -131,3 +131,16 @@ node packages/cli/dist/index.js revoke attestation-id \
 The command calls `POST /attest/revoke`, sends `revokedBy=omega-cli`, and uses `--admin-token TOKEN` or `OMEGA_ADMIN_TOKEN` for the distinct administrative bearer credential. `--token` remains the read-only credential and is not reused for this mutation. The command prints the recorded revocation and returns a non-zero status for API failure. The API remains the authority for lineage, duplicate protection, persistence, and action denial; the CLI does not claim that a revocation is a cryptographic alteration of the original attestation.
 
 Mobile capabilities remain future slices. The typed SDK is available separately as `@omega-v/sdk`, and accepts `{ readToken }` as its third constructor argument when the API read boundary is enabled.
+
+## Local job evidence
+
+Read the bounded local worker ledger without starting or mutating work:
+
+```bash
+node packages/cli/dist/index.js jobs \
+  --url http://localhost:3000 \
+  --token "$OMEGA_READ_TOKEN" \
+  --limit 20
+```
+
+`omega jobs` calls only `GET /jobs`. It prints safe identifiers, lifecycle state, attempts, worker labels, timestamps, bounded counts, `source=memory`, and `durable=false`. The command rejects invalid limits outside 1–40, never sends worker headers or a request body, and returns a non-zero result for disabled, unauthorized, malformed, or contradictory evidence. A successful local job state is not a claim of durable execution, queue delivery, restart recovery, external crawling, or vector indexing.

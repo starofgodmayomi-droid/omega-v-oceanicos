@@ -252,13 +252,67 @@ export type AuditEventsResponse = {
   };
   timestamp: string;
 };
+
+export type LocalJobState = 'queued' | 'running' | 'succeeded' | 'failed' | 'unknown';
+export type LocalJobEventType = 'created' | 'started' | 'completed' | 'failed' | 'unknown';
+export type LocalJobProvenance = {
+  source: 'local' | 'api' | 'unknown';
+  actor: string | null;
+  requestId: string | null;
+  correlationId: string | null;
+  observedAt: string;
+  schemaVersion: '1';
+};
+export type LocalJob = {
+  id: string;
+  kind: 'synthetic-observe';
+  state: LocalJobState;
+  idempotencyKey: string;
+  payloadDigest: string;
+  sourceUri: string;
+  actor: string;
+  workerId: string | null;
+  attempt: number;
+  createdAt: string;
+  updatedAt: string;
+  finishedAt: string | null;
+  resultSummary: string | null;
+  errorClass: string | null;
+  provenance: LocalJobProvenance;
+};
+export type LocalJobEvent = {
+  id: string;
+  jobId: string;
+  type: LocalJobEventType;
+  sequence: number;
+  at: string;
+  provenance: LocalJobProvenance;
+  details: { state: LocalJobState; message: string };
+};
+export type LocalJobLedgerStatus = {
+  enabled: boolean;
+  durable: false;
+  source: 'memory';
+  counts: Record<LocalJobState, number>;
+  recentWindow: number;
+};
+export type LocalJobsResponse = {
+  data: { jobs: LocalJob[]; status: LocalJobLedgerStatus };
+  timestamp: string;
+};
+export type LocalJobResponse = {
+  data: { job: LocalJob; events: LocalJobEvent[]; status: LocalJobLedgerStatus };
+  timestamp: string;
+};
 export type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
 
 export class OmegaApiError extends Error {
   constructor(
     message: string,
     readonly status: number,
-    readonly endpoint: string
+    readonly endpoint: string,
+    readonly code?: string,
+    readonly timestamp?: string
   ) {
     super(message);
     this.name = 'OmegaApiError';
@@ -313,6 +367,21 @@ export class OmegaClient {
 
   async getAttestationPolicy(): Promise<{ data: AttestationPolicy; timestamp: string }> {
     return this.get<{ data: AttestationPolicy; timestamp: string }>('/attest/policy');
+  }
+
+  async getJobs(query: { limit?: number; state?: LocalJobState } = {}): Promise<LocalJobsResponse> {
+    const params = new URLSearchParams();
+    if (query.limit !== undefined) params.set('limit', String(query.limit));
+    if (query.state !== undefined) params.set('state', query.state);
+    const suffix = params.toString() ? `?${params.toString()}` : '';
+    return this.get<LocalJobsResponse>(`/jobs${suffix}`);
+  }
+
+  async getJob(jobId: string): Promise<LocalJobResponse> {
+    if (!jobId.trim()) {
+      throw new OmegaApiError('jobId is required', 400, `${this.baseUrl}/jobs`, 'JOB_INVALID');
+    }
+    return this.get<LocalJobResponse>(`/jobs/${encodeURIComponent(jobId)}`);
   }
 
   async getRevocations(): Promise<{
@@ -439,11 +508,15 @@ export class OmegaClient {
     const body = (await response.json()) as unknown;
     if (!response.ok) {
       const errorBody =
-        body && typeof body === 'object' ? (body as { error?: string; message?: string }) : {};
+        body && typeof body === 'object'
+          ? (body as { code?: string; error?: string; message?: string; timestamp?: string })
+          : {};
       throw new OmegaApiError(
         errorBody.message || errorBody.error || `Request failed with status ${response.status}`,
         response.status,
-        endpoint
+        endpoint,
+        errorBody.code,
+        errorBody.timestamp
       );
     }
     return body as T;
@@ -463,12 +536,16 @@ export class OmegaClient {
     const body = (await response.json()) as unknown;
     if (!response.ok) {
       const errorBody =
-        body && typeof body === 'object' ? (body as { error?: string; message?: string }) : {};
+        body && typeof body === 'object'
+          ? (body as { code?: string; error?: string; message?: string; timestamp?: string })
+          : {};
       const detail = errorBody.message || errorBody.error;
       throw new OmegaApiError(
         detail || `Request failed with status ${response.status}`,
         response.status,
-        endpoint
+        endpoint,
+        errorBody.code,
+        errorBody.timestamp
       );
     }
     return body as T;

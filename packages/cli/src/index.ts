@@ -171,6 +171,29 @@ type RunsResponse = {
   timestamp: string;
 };
 
+type LocalJobState = 'queued' | 'running' | 'succeeded' | 'failed' | 'unknown';
+type LocalJobsResponse = {
+  data: {
+    jobs: Array<{
+      id: string;
+      state: LocalJobState;
+      attempt: number;
+      workerId: string | null;
+      createdAt: string;
+      updatedAt: string;
+      finishedAt: string | null;
+      errorClass: string | null;
+    }>;
+    status: {
+      enabled: boolean;
+      durable: false;
+      source: 'memory';
+      counts: Record<LocalJobState, number>;
+      recentWindow: number;
+    };
+  };
+  timestamp: string;
+};
 type Revocation = {
   id: string;
   attestationId: string;
@@ -195,6 +218,7 @@ function usage(): string {
     'omega events [--url URL] [--limit N] [--token TOKEN]',
     'omega audit [--type TYPE] [--stage STAGE] [--status STATUS] [--from ISO] [--to ISO] [--limit N] [--url URL] [--token TOKEN]',
     'omega runs [--url URL] [--limit N] [--token TOKEN]',
+    'omega jobs [--url URL] [--limit N] [--token TOKEN]',
     'omega export [--url URL] [--token TOKEN]',
     'omega revocations [--url URL] [--token TOKEN]',
     'omega revoke ATTESTATION_ID --reason REASON [--operator-id ID] [--url URL] [--token TOKEN] [--admin-token TOKEN]',
@@ -369,6 +393,51 @@ async function runs(argv: string[], fetchImpl: FetchLike): Promise<number> {
   } catch (error) {
     process.stderr.write(
       `Runs unavailable: ${error instanceof Error ? error.message : String(error)}\n`
+    );
+    return 1;
+  }
+}
+
+async function jobs(argv: string[], fetchImpl: FetchLike): Promise<number> {
+  const endpoint = `${baseUrl(argv).replace(/\/$/, '')}/jobs`;
+  const limitIndex = argv.indexOf('--limit');
+  const requestedLimit = limitIndex < 0 ? 20 : Number(argv[limitIndex + 1]);
+  if (!Number.isInteger(requestedLimit) || requestedLimit < 1 || requestedLimit > 40) {
+    process.stderr.write('Jobs --limit must be an integer between 1 and 40\n');
+    return 2;
+  }
+  try {
+    const response = await fetchImpl(`${endpoint}?limit=${requestedLimit}`, requestInit(argv));
+    const body = (await response.json()) as LocalJobsResponse | { code?: string; message?: string };
+    if (!response.ok || !('data' in body) || !Array.isArray(body.data.jobs)) {
+      const code = 'code' in body ? body.code : undefined;
+      const message = 'message' in body ? body.message : undefined;
+      process.stderr.write(
+        `Jobs unavailable (${response.status})${code ? ` ${code}` : ''}: ${message ?? 'unknown error'}\n`
+      );
+      return 1;
+    }
+    if (body.data.status.durable !== false || body.data.status.source !== 'memory') {
+      process.stderr.write('Jobs response contradicted the local non-durable contract\n');
+      return 1;
+    }
+    const jobsToShow = body.data.jobs.slice(0, requestedLimit);
+    const { status } = body.data;
+    process.stdout.write(
+      `JOBS          ${jobsToShow.length}/${body.data.jobs.length} source=${status.source} storage=memory durable=false enabled=${status.enabled}\n`
+    );
+    process.stdout.write(
+      `COUNTS        queued=${status.counts.queued} running=${status.counts.running} succeeded=${status.counts.succeeded} failed=${status.counts.failed} unknown=${status.counts.unknown} window=${status.recentWindow}\n`
+    );
+    for (const job of jobsToShow) {
+      process.stdout.write(
+        `${job.id} state=${job.state} attempt=${job.attempt} worker=${job.workerId ?? 'none'} created=${job.createdAt} updated=${job.updatedAt} finished=${job.finishedAt ?? 'none'} error=${job.errorClass ?? 'none'}\n`
+      );
+    }
+    return 0;
+  } catch (error) {
+    process.stderr.write(
+      `Jobs unavailable: ${error instanceof Error ? error.message : String(error)}\n`
     );
     return 1;
   }
@@ -685,6 +754,7 @@ export async function run(
   if (command === 'events') return events(argv, fetchImpl);
   if (command === 'audit') return audit(argv, fetchImpl);
   if (command === 'runs') return runs(argv, fetchImpl);
+  if (command === 'jobs') return jobs(argv, fetchImpl);
   if (command === 'export') return evidenceExport(argv, fetchImpl);
   if (command === 'revocations') return revocations(argv, fetchImpl);
   if (command === 'verify') return verifyAttestation(argv, fetchImpl);
