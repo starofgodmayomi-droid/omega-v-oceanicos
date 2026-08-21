@@ -92,3 +92,7 @@ The root `pnpm smoke:api` command is a local reproducibility control. It builds 
 ## Coordination declaration boundary
 
 Persistence accepts `local-single-process`, `operator-coordinated`, and `external-coordinator` declarations, requiring a non-empty reference for the latter two. API health/readiness, observability/state, SDK, CLI, dashboard, and operator documentation preserve the same mode, reference, reason, and `verified:false` provenance. Invalid declarations degrade readiness. This evidence does not prove distributed consistency, leader election, replica agreement, global ordering, external coordinator control, or deployment availability.
+
+## Container healthcheck boundary
+
+The published container declares a Docker healthcheck against the unauthenticated `/health` route and fails on an unreachable service or non-2xx response. This is local process and API-probe evidence only; it does not prove deployment availability, replica agreement, persistence durability, external coordination, or production authorization.

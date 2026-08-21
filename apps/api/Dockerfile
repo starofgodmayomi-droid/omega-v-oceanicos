@@ -52,6 +52,10 @@ USER omega
 
 EXPOSE 3000
 
+# Container orchestration may use this local probe, while readiness remains
+# governed by the API's explicit /health response and its non-secret evidence.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 CMD node -e "fetch('http://127.0.0.1:' + (process.env.API_PORT || 3000) + '/health').then((response) => { if (!response.ok) process.exit(1); }).catch(() => process.exit(1))"
+
 # No default signing key is baked in, and none should be. The service
 # throws MissingSigningKeyError at startup unless OMEGA_SIGNING_KEY is
 # supplied, because a key shipped in an image is a key everyone has.

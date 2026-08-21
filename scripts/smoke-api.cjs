@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-disable @typescript-eslint/no-var-requires */
 const { spawn } = require('node:child_process');
 const { request } = require('node:http');
 const { resolve } = require('node:path');
