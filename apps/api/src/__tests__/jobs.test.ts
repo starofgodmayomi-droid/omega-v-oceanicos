@@ -26,7 +26,7 @@ describe('LocalJobLedger', () => {
       counts: { queued: 0, running: 0, succeeded: 0, failed: 0, unknown: 0 },
       recentWindow: 40,
     });
-    expect(() => ledger.create(input, provenance)).toThrowError(
+    expect(() => ledger.create(input, provenance)).toThrow(
       expect.objectContaining({ code: 'JOB_INVALID' })
     );
   });
@@ -37,40 +37,40 @@ describe('LocalJobLedger', () => {
     expect(created.job.state).toBe('queued');
     expect(created.event.type).toBe('created');
     expect(created.job.provenance).toEqual(provenance);
-    expect(() => ledger.create(input, provenance)).toThrowError(
+    expect(() => ledger.create(input, provenance)).toThrow(
       expect.objectContaining({ code: 'JOB_DUPLICATE' })
     );
-    expect(() =>
-      ledger.create({ ...input, sourceUri: 'local://fixture/two' }, provenance)
-    ).toThrowError(expect.objectContaining({ code: 'JOB_IDEMPOTENCY_CONFLICT' }));
+    expect(() => ledger.create({ ...input, sourceUri: 'local://fixture/two' }, provenance)).toThrow(
+      expect.objectContaining({ code: 'JOB_IDEMPOTENCY_CONFLICT' })
+    );
   });
 
   it('enforces claim ownership and terminal transitions', () => {
     const ledger = new LocalJobLedger(true);
     const created = ledger.create(input, provenance);
-    expect(() =>
-      ledger.complete(created.job.id, 'worker-a', 'before claim', provenance)
-    ).toThrowError(expect.objectContaining({ code: 'JOB_CLAIM_REQUIRED' }));
+    expect(() => ledger.complete(created.job.id, 'worker-a', 'before claim', provenance)).toThrow(
+      expect.objectContaining({ code: 'JOB_CLAIM_REQUIRED' })
+    );
     const claimed = ledger.claim(created.job.id, 'worker-a', provenance);
     expect(claimed.job.state).toBe('running');
     expect(claimed.job.attempt).toBe(1);
-    expect(() => ledger.claim(created.job.id, 'worker-b', provenance)).toThrowError(
+    expect(() => ledger.claim(created.job.id, 'worker-b', provenance)).toThrow(
       expect.objectContaining({ code: 'JOB_NOT_CLAIMABLE' })
     );
     const completed = ledger.complete(created.job.id, 'worker-a', 'synthetic result', provenance);
     expect(completed.job.state).toBe('succeeded');
-    expect(() => ledger.fail(created.job.id, 'worker-a', 'late_failure', provenance)).toThrowError(
+    expect(() => ledger.fail(created.job.id, 'worker-a', 'late_failure', provenance)).toThrow(
       expect.objectContaining({ code: 'JOB_TERMINAL' })
     );
   });
 
   it('keeps bounded status and rejects unsafe source or limits', () => {
     const ledger = new LocalJobLedger(true);
-    expect(() =>
-      ledger.create({ ...input, sourceUri: 'https://example.com' }, provenance)
-    ).toThrowError(expect.objectContaining({ code: 'JOB_INVALID' }));
-    expect(() => ledger.list(0)).toThrowError(LocalJobError);
-    expect(() => ledger.list(41)).toThrowError(LocalJobError);
+    expect(() => ledger.create({ ...input, sourceUri: 'https://example.com' }, provenance)).toThrow(
+      expect.objectContaining({ code: 'JOB_INVALID' })
+    );
+    expect(() => ledger.list(0)).toThrow(LocalJobError);
+    expect(() => ledger.list(41)).toThrow(LocalJobError);
     expect(ledger.recentEvents(40)).toHaveLength(0);
   });
 });
