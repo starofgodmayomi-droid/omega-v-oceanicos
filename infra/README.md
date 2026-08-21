@@ -54,3 +54,7 @@ not survive a restart unless a volume is mounted at the paths above.
 
 The project's own first rule is not to pretend anything exists until it has
 been inspected or built. This file is now subject to it.
+
+## Container healthcheck
+
+The image declares a Docker `HEALTHCHECK` that requests `http://127.0.0.1:${API_PORT:-3000}/health` every 30 seconds after a 15-second start period. Docker marks the container unhealthy when the service is unreachable or the route returns a non-2xx response, including explicit degraded readiness. This is local process and API-probe evidence only; it does not prove deployment availability, replica agreement, persistence durability, external coordination, or production authorization.

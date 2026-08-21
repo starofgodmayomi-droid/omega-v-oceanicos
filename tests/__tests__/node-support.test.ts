@@ -69,4 +69,9 @@ describe('the supported Node version is one claim, not three', () => {
     expect(matrix).not.toContain(18);
     expect(matrix.length).toBeGreaterThanOrEqual(2);
   });
+
+  it('declares a local healthcheck against the unauthenticated health route', () => {
+    expect(dockerfile).toMatch(/HEALTHCHECK[\s\S]*127\.0\.0\.1[\s\S]*\/health/);
+    expect(dockerfile).toMatch(/response\.ok/);
+  });
 });
