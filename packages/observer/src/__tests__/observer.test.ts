@@ -33,6 +33,35 @@ describe('Observer', () => {
       expect(observation.confidence).toBe(0.95);
     });
 
+    it('preserves bounded parent and lineage provenance', () => {
+      const observation = observer.observe({
+        claim: 'Child state follows parent state',
+        source: { system: 'lineage-test', version: '1.0.0', environment: 'test' },
+        observedBy: 'test-observer',
+        metadata: {},
+        confidence: 0.8,
+        confidenceReason: 'Lineage fixture',
+        parentId: 'obs-parent-1',
+        lineage: ['obs-root-1', 'obs-parent-1'],
+      });
+      expect(observation.parentId).toBe('obs-parent-1');
+      expect(observation.lineage).toEqual(['obs-root-1', 'obs-parent-1']);
+    });
+
+    it('rejects invalid or oversized lineage provenance', () => {
+      expect(() =>
+        observer.observe({
+          claim: 'Invalid lineage',
+          source: { system: 'lineage-test', version: '1.0.0', environment: 'test' },
+          observedBy: 'test-observer',
+          metadata: {},
+          confidence: 0.8,
+          confidenceReason: 'Invalid fixture',
+          lineage: Array.from({ length: 33 }, (_, index) => `obs-${index}`),
+        })
+      ).toThrow('lineage must contain at most 32');
+    });
+
     it('should include timestamp in ISO format', () => {
       const before = new Date();
       const observation = observer.observe({

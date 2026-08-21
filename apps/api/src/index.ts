@@ -1463,8 +1463,17 @@ app.get('/recompilations', (_req: Request, res: Response) => {
  */
 app.post('/observe', (req: Request, res: Response) => {
   try {
-    const { claim, category, source, observedBy, metadata, confidence, confidenceReason } =
-      req.body;
+    const {
+      claim,
+      category,
+      source,
+      observedBy,
+      metadata,
+      confidence,
+      confidenceReason,
+      parentId,
+      lineage,
+    } = req.body;
 
     const observation = observer.observe({
       claim,
@@ -1474,6 +1483,8 @@ app.post('/observe', (req: Request, res: Response) => {
       metadata,
       confidence,
       confidenceReason,
+      parentId,
+      lineage,
     });
 
     const response: SuccessResponse<typeof observation> = {
@@ -1981,8 +1992,17 @@ app.post('/complete-loop', (req: Request, res: Response) => {
   const correlationId = `loop-${Date.now()}`;
   const requestId = res.locals.requestId as string;
   try {
-    const { claim, category, source, observedBy, metadata, confidence, confidenceReason } =
-      req.body;
+    const {
+      claim,
+      category,
+      source,
+      observedBy,
+      metadata,
+      confidence,
+      confidenceReason,
+      parentId,
+      lineage,
+    } = req.body;
 
     // Step 1: Observe
     recordEvent({
@@ -2001,8 +2021,9 @@ app.post('/complete-loop', (req: Request, res: Response) => {
       metadata,
       confidence,
       confidenceReason,
+      parentId,
+      lineage,
     });
-
     // Step 2: Verify
     recordEvent({
       type: 'verification.started',

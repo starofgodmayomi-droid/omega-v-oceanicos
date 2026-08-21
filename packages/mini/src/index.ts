@@ -19,6 +19,8 @@ export type MiniObserveInput = {
   metadata: Record<string, unknown>;
   confidence: number;
   confidenceReason: string;
+  parentId?: string;
+  lineage?: string[];
 };
 
 export type MiniKernelOptions = {
