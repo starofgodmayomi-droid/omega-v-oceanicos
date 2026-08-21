@@ -18,6 +18,7 @@ import {
   parsePersistenceRecoveryPolicy,
   parsePersistenceDeletionPolicy,
   parsePersistenceCustodyPolicy,
+  parsePersistenceCoordinationPolicy,
   persistenceCoverage,
   SNAPSHOT_KEYS,
 } from '../persistence';
@@ -93,6 +94,36 @@ describe('runtime persistence', () => {
       reason: 'unsupported custody policy mode',
       verified: false,
     });
+  });
+
+  it('parses coordination declarations without claiming distributed consistency', () => {
+    expect(parsePersistenceCoordinationPolicy()).toEqual({
+      mode: 'local-single-process',
+      reference: null,
+      reason: null,
+      verified: false,
+    });
+    expect(parsePersistenceCoordinationPolicy('operator-coordinated', 'operator-record-8')).toEqual(
+      {
+        mode: 'operator-coordinated',
+        reference: 'operator-record-8',
+        reason: null,
+        verified: false,
+      }
+    );
+    expect(
+      parsePersistenceCoordinationPolicy('external-coordinator', 'coordinator-8').verified
+    ).toBe(false);
+    expect(parsePersistenceCoordinationPolicy('external-coordinator').mode).toBe('invalid');
+    expect(parsePersistenceCoordinationPolicy('unknown', 'record-8')).toEqual({
+      mode: 'invalid',
+      reference: null,
+      reason: 'unsupported coordination policy mode',
+      verified: false,
+    });
+    expect(parsePersistenceCoordinationPolicy('external-coordinator', 'line\nbreak').mode).toBe(
+      'invalid'
+    );
   });
 
   it('parses secure-deletion capability declarations without claiming verified erasure', () => {

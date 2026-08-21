@@ -55,6 +55,14 @@ export type PersistenceCustodyPolicy = {
   reason: string | null;
   verified: false;
 };
+export type PersistenceCoordinationMode =
+  'local-single-process' | 'operator-coordinated' | 'external-coordinator' | 'invalid';
+export type PersistenceCoordinationPolicy = {
+  mode: PersistenceCoordinationMode;
+  reference: string | null;
+  reason: string | null;
+  verified: false;
+};
 export type PersistenceCoverage = {
   complete: false;
   surfaces: Array<{
@@ -144,6 +152,38 @@ export const parsePersistenceCustodyPolicy = (
       mode: 'invalid',
       reference: null,
       reason: 'custody policy reference is missing or invalid',
+      verified: false,
+    };
+  }
+  return { mode: normalizedMode, reference: normalizedReference, reason: null, verified: false };
+};
+
+export const parsePersistenceCoordinationPolicy = (
+  mode?: string,
+  reference?: string
+): PersistenceCoordinationPolicy => {
+  const normalizedMode = mode?.trim() || 'local-single-process';
+  const normalizedReference = reference?.trim() || null;
+  if (normalizedMode === 'local-single-process') {
+    return { mode: normalizedMode, reference: null, reason: null, verified: false };
+  }
+  if (normalizedMode !== 'operator-coordinated' && normalizedMode !== 'external-coordinator') {
+    return {
+      mode: 'invalid',
+      reference: null,
+      reason: 'unsupported coordination policy mode',
+      verified: false,
+    };
+  }
+  if (
+    !normalizedReference ||
+    normalizedReference.length > 256 ||
+    /[\r\n]/.test(normalizedReference)
+  ) {
+    return {
+      mode: 'invalid',
+      reference: null,
+      reason: 'coordination policy reference is missing or invalid',
       verified: false,
     };
   }

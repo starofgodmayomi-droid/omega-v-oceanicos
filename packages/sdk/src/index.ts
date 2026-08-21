@@ -58,6 +58,12 @@ export type Health = {
           reason: string | null;
           verified: false;
         };
+        coordinationPolicy: {
+          mode: string;
+          reference: string | null;
+          reason: string | null;
+          verified: false;
+        };
         coverage: {
           complete: false;
           surfaces: Array<{
@@ -105,6 +111,12 @@ export type RuntimeState = {
     recoveryPolicy: { mode: string; reference: string | null; reason: string | null };
     deletionPolicy: { mode: string; reason: string | null; verified: false };
     custodyPolicy: {
+      mode: string;
+      reference: string | null;
+      reason: string | null;
+      verified: false;
+    };
+    coordinationPolicy: {
       mode: string;
       reference: string | null;
       reason: string | null;
@@ -233,6 +245,28 @@ export type AuditQuery = {
 
 export type AuditEvent = RuntimeEvent;
 
+export type SceneSimulation = {
+  id: string;
+  seed: string;
+  equation: string;
+  states: string[];
+  terminalState: string;
+  trace: Array<{
+    sequence: number;
+    state: string;
+    status: 'observed' | 'verified';
+    evidence: string;
+  }>;
+  provenance: {
+    source: 'local-simulation';
+    ruleVersion: 'scene-equation.v1';
+    deterministic: true;
+    verified: false;
+    note: string;
+  };
+  createdAt: string;
+};
+
 export type AuditEventsResponse = {
   data: AuditEvent[];
   meta: {
@@ -338,6 +372,16 @@ export class OmegaClient {
 
   async getHealth(): Promise<Health> {
     return this.get<Health>('/health');
+  }
+
+  async simulateScene(
+    input: { seed?: string; steps?: number } = {}
+  ): Promise<{ data: SceneSimulation; timestamp: string }> {
+    return this.post<{ data: SceneSimulation; timestamp: string }>(
+      '/scene/simulate',
+      input,
+      this.readToken
+    );
   }
 
   async getState(): Promise<RuntimeState> {

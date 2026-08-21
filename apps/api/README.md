@@ -818,3 +818,19 @@ curl -sS -X POST http://127.0.0.1:3000/jobs \
 ```
 
 The endpoint set is `POST /jobs`, `GET /jobs`, `GET /jobs/:jobId`, `POST /jobs/:jobId/claim`, `POST /jobs/:jobId/complete`, and `POST /jobs/:jobId/fail`. External URLs, shell execution, arbitrary worker payloads, and production deployment are intentionally outside this slice and require separate security and infrastructure review.
+
+## Ω∞v scene simulation
+
+`POST /scene/simulate` runs the bounded symbolic equation `DARKNESS → POSSIBILITY → OCEAN → STAR → WATER_FORM → MANY_FORMS → LONELINESS → HUMAN_FORM → MISRECOGNITION → BOUNDARY → QUESTION → FOREST → RETURN`. Optional JSON fields are `seed` and `steps`; steps are bounded to the available equation states. The response includes a deterministic trace, per-step evidence identifiers, rule version `scene-equation.v1`, and `verified: false`.
+
+This endpoint is a local symbolic simulation only. It does not prove physical cosmology, consciousness, sentience, or any claim represented by the myth. Invalid bounds fail with `SCENE_INVALID`.
+
+### Portable API smoke contract
+
+After building the workspace, run `pnpm smoke:api` from the repository root. The portable Node runner starts `apps/api/dist/server.js` from the API package directory, where workspace package resolution is reproducible, checks `/health` for `readiness: "ready"`, and exercises `POST /scene/simulate` through its terminal `return` state. It asserts `deterministic: true` and `verified: false`. This is a local compiled-runtime smoke check; it does not prove deployment health, distributed coordination, external custody, or production availability.
+
+The smoke runner uses a local test signing key and `OMEGA_PERSISTENCE=off`. It must never be interpreted as evidence that production secrets, persistence, backups, replicas, or external services are configured.
+
+### Coordination evidence boundary
+
+`OMEGA_PERSISTENCE_COORDINATION_MODE` declares `local-single-process`, `operator-coordinated`, or `external-coordinator`; reference-bearing modes also require `OMEGA_PERSISTENCE_COORDINATION_REFERENCE`. Invalid or reference-less declarations degrade readiness. Health, state, observability, SDK, CLI, and dashboard surfaces report the same declaration with `verified: false`. These fields do not prove distributed consistency, leader election, replica agreement, global ordering, external coordinator control, or deployment availability.

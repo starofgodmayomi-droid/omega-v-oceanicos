@@ -146,6 +146,51 @@ describe('local job ledger HTTP contract', () => {
     }
   });
 
+  it('runs the bounded scene equation and preserves its non-cosmological boundary', async () => {
+    const runtime = await startServer(false);
+    try {
+      const response = await fetch(`${runtime.baseUrl}/scene/simulate`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ seed: 'api-scene', steps: 4 }),
+      });
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as {
+        data: {
+          states: string[];
+          terminalState: string;
+          provenance: { deterministic: boolean; verified: boolean };
+        };
+      };
+      expect(body.data.states).toEqual(['darkness', 'possibility', 'ocean', 'star']);
+      expect(body.data.terminalState).toBe('star');
+      expect(body.data.provenance).toEqual({
+        source: 'local-simulation',
+        ruleVersion: 'scene-equation.v1',
+        deterministic: true,
+        verified: false,
+        note: 'Symbolic simulation evidence only; it is not a claim about physical cosmology or consciousness.',
+      });
+    } finally {
+      runtime.cleanup();
+    }
+  });
+
+  it('rejects unsafe scene bounds without creating a claim of execution', async () => {
+    const runtime = await startServer(false);
+    try {
+      const response = await fetch(`${runtime.baseUrl}/scene/simulate`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ steps: 0 }),
+      });
+      expect(response.status).toBe(400);
+      expect(await response.json()).toMatchObject({ code: 'SCENE_INVALID' });
+    } finally {
+      runtime.cleanup();
+    }
+  });
+
   it('rejects invalid input and unauthorized mutation without creating work', async () => {
     const runtime = await startServer(true);
     try {

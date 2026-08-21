@@ -208,10 +208,60 @@ select:focus-visible {
 }
 .current-panel,
 .intent-panel,
+.architecture-panel,
 .stream-panel,
 .evidence-panel {
   border: 1px solid #1b3b35;
   background: rgba(10, 29, 26, 0.76);
+}
+.architecture-panel {
+  border: 1px solid var(--omega-abyss-edge);
+  background: rgba(10, 29, 26, 0.76);
+  padding: 22px;
+  grid-column: 1 / -1;
+}
+.architecture-panel h2 {
+  margin: 10px 0 6px;
+  font-size: 22px;
+  font-weight: 500;
+}
+.architecture-layers {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 16px;
+}
+.architecture-layer {
+  min-height: 76px;
+  border: 1px solid var(--omega-abyss-edge);
+  background: rgba(5, 20, 18, 0.75);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 12px;
+}
+.architecture-layer strong,
+.architecture-layer span,
+.architecture-layer small {
+  display: block;
+}
+.architecture-layer strong {
+  color: var(--omega-foam-muted);
+  font-size: 13px;
+}
+.architecture-layer span {
+  color: var(--omega-current-dim);
+  font-size: 11px;
+  line-height: 1.45;
+  margin-top: 6px;
+}
+.architecture-layer small {
+  color: var(--omega-current-bright);
+  font:
+    9px 'DM Mono',
+    monospace;
+  letter-spacing: 1px;
 }
 .current-panel {
   min-height: 405px;
@@ -734,6 +784,9 @@ select:focus-visible {
   }
   .metrics-row div:nth-child(-n + 2) {
     border-bottom: 1px solid #1b3b35;
+  }
+  .architecture-layers {
+    grid-template-columns: 1fr;
   }
   .stage-flow {
     overflow-x: auto;

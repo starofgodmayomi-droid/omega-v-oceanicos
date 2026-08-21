@@ -24,6 +24,12 @@ type RuntimeDissensus = {
   timestamp: string;
 };
 
+type SceneSimulation = {
+  states: string[];
+  terminalState: string;
+  provenance: { ruleVersion: string; deterministic: boolean; verified: boolean; note: string };
+};
+
 type RuntimeEvent = {
   id: string;
   type: string;
@@ -113,6 +119,12 @@ type RuntimeHealth = {
         reason: string | null;
         verified: false;
       };
+      coordinationPolicy: {
+        mode: string;
+        reference: string | null;
+        reason: string | null;
+        verified: false;
+      };
       coverage: {
         complete: false;
         surfaces: Array<{ name: string; encryption: string; keySource: string; evidence: string }>;
@@ -162,6 +174,13 @@ type LocalJobsView = {
 };
 
 const stages = ['observe', 'evidence', 'verify', 'attest', 'act', 'learn', 'recompile'];
+const architectureLayers = [
+  { name: 'Experience', surfaces: 'Web · CLI · SDK · API', status: 'observed' },
+  { name: 'Evidence', surfaces: 'Observe · Verify · Attest · Dissent', status: 'observed' },
+  { name: 'Memory', surfaces: 'Events · Provenance · Persistence', status: 'observed' },
+  { name: 'Governance', surfaces: 'Identity · Policy · Audit · Human gate', status: 'bounded' },
+  { name: 'Infrastructure', surfaces: 'Runtime · Build · CI · Deployment', status: 'partial' },
+];
 const navGroups = [
   { label: 'Core', items: ['Current', 'Observe', 'Evidence', 'Verify', 'Attest', 'Act'] },
   { label: 'Intelligence', items: ['AI', 'Agents', 'Knowledge', 'Memory'] },
@@ -251,6 +270,8 @@ export function App(): React.JSX.Element {
     'idle' | 'proposing' | 'proposed' | 'failed'
   >('idle');
   const [commandOpen, setCommandOpen] = useState(false);
+  const [sceneSimulation, setSceneSimulation] = useState<SceneSimulation | null>(null);
+  const [sceneLoading, setSceneLoading] = useState(false);
   const claimInputRef = useRef<HTMLTextAreaElement>(null);
   const commandFirstRef = useRef<HTMLButtonElement>(null);
   const commandTriggerRef = useRef<HTMLButtonElement>(null);
@@ -680,6 +701,25 @@ export function App(): React.JSX.Element {
     }
   };
 
+  const runSceneSimulation = async () => {
+    setSceneLoading(true);
+    try {
+      const response = await fetch('/api/scene/simulate', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ seed: 'dashboard-opening-scene' }),
+      });
+      const body = (await response.json()) as { data?: SceneSimulation; message?: string };
+      if (!response.ok || !body.data)
+        throw new Error(body.message ?? 'Scene simulation unavailable');
+      setSceneSimulation(body.data);
+    } catch (sceneError) {
+      setError(sceneError instanceof Error ? sceneError.message : 'Scene simulation unavailable');
+    } finally {
+      setSceneLoading(false);
+    }
+  };
+
   return (
     <div className="os-shell">
       <aside className="sidebar">
@@ -954,6 +994,55 @@ export function App(): React.JSX.Element {
               ))}
             </div>
           </div>
+          <section className="architecture-panel" aria-labelledby="architecture-title">
+            <div className="section-kicker">
+              WHOLE SYSTEM <span>OBSERVED SURFACES</span>
+            </div>
+            <h2 id="architecture-title">Architecture current</h2>
+            <p className="current-caption">
+              A compact map of the layers currently represented by the repository. Labels do not
+              imply production completeness.
+            </p>
+            <div className="architecture-layers">
+              {architectureLayers.map((layer) => (
+                <div className="architecture-layer" key={layer.name}>
+                  <div>
+                    <strong>{layer.name}</strong>
+                    <span>{layer.surfaces}</span>
+                  </div>
+                  <small>{layer.status.toUpperCase()}</small>
+                </div>
+              ))}
+            </div>
+          </section>
+          <section className="intent-panel" aria-labelledby="scene-simulation-title">
+            <div className="section-kicker">
+              SCENE EQUATION <span>SYMBOLIC SIMULATION</span>
+            </div>
+            <h2 id="scene-simulation-title">One current, infinite forms</h2>
+            <p className="current-caption">
+              Run the opening myth as a bounded evidence trace. This does not verify cosmology or
+              consciousness.
+            </p>
+            <button
+              className="run-button"
+              onClick={() => void runSceneSimulation()}
+              disabled={sceneLoading}
+            >
+              {sceneLoading ? 'Simulating…' : 'Run scene equation'}
+            </button>
+            {sceneSimulation && (
+              <div className="evidence-chain-card" aria-live="polite">
+                <strong>{sceneSimulation.terminalState.toUpperCase()}</strong>
+                <p>{sceneSimulation.states.join(' → ')}</p>
+                <small>
+                  {sceneSimulation.provenance.ruleVersion} · deterministic=
+                  {String(sceneSimulation.provenance.deterministic)} · verified=
+                  {String(sceneSimulation.provenance.verified)}
+                </small>
+              </div>
+            )}
+          </section>
           <div className="intent-panel">
             <div className="section-kicker">
               CREATE AN OBSERVATION <span>OPERATOR INPUT</span>
@@ -1089,6 +1178,14 @@ export function App(): React.JSX.Element {
             <strong>
               {runtimeHealth?.checks.persistence
                 ? `${runtimeHealth.checks.persistence.custodyPolicy.mode.toUpperCase()} / ${runtimeHealth.checks.persistence.custodyPolicy.reference ?? 'NO REFERENCE'} / VERIFIED=${runtimeHealth.checks.persistence.custodyPolicy.verified} / ${runtimeHealth.checks.persistence.custodyPolicy.reason ?? 'DECLARATION ONLY'}`
+                : 'UNKNOWN'}
+            </strong>
+          </div>
+          <div>
+            <span>COORDINATION</span>
+            <strong>
+              {runtimeHealth?.checks.persistence
+                ? `${runtimeHealth.checks.persistence.coordinationPolicy.mode.toUpperCase()} / ${runtimeHealth.checks.persistence.coordinationPolicy.reference ?? 'NO REFERENCE'} / VERIFIED=${runtimeHealth.checks.persistence.coordinationPolicy.verified} / ${runtimeHealth.checks.persistence.coordinationPolicy.reason ?? 'DECLARATION ONLY'}`
                 : 'UNKNOWN'}
             </strong>
           </div>

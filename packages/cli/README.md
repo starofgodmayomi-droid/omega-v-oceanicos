@@ -144,3 +144,9 @@ node packages/cli/dist/index.js jobs \
 ```
 
 `omega jobs` calls only `GET /jobs`. It prints safe identifiers, lifecycle state, attempts, worker labels, timestamps, bounded counts, `source=memory`, and `durable=false`. The command rejects invalid limits outside 1–40, never sends worker headers or a request body, and returns a non-zero result for disabled, unauthorized, malformed, or contradictory evidence. A successful local job state is not a claim of durable execution, queue delivery, restart recovery, external crawling, or vector indexing.
+
+## Scene equation simulation
+
+`omega scene [--seed SEED] [--steps N]` calls `POST /scene/simulate` and renders the bounded Ω∞v scene trace, terminal state, rule version, deterministic flag, and `verified=false` boundary. This is symbolic local-simulation evidence only; it is not proof of cosmology, consciousness, sentience, or execution in an external world.
+
+The health output also prints `COORDINATION policy=local-single-process|operator-coordinated|external-coordinator|invalid reference=... verified=false`. This is a bounded declaration of the configured coordination boundary; it does not prove distributed consistency, leader election, replica agreement, external coordinator control, or deployment availability.

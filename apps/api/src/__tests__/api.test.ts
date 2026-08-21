@@ -226,6 +226,12 @@ describe('API runtime contracts', () => {
         reason: null,
         verified: false,
       },
+      coordinationPolicy: {
+        mode: 'local-single-process',
+        reference: null,
+        reason: null,
+        verified: false,
+      },
       coverage: {
         complete: false,
         surfaces: [

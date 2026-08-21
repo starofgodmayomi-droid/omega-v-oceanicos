@@ -80,3 +80,15 @@ authentication, and the allowlist is the only thing standing behind it.
 Recording that these do not exist is the point. A governance document listing
 only the controls that are present would describe a stricter system than the
 one that runs.
+
+## Symbolic scene simulation
+
+`POST /scene/simulate` is a bounded, unauthenticated local simulation route. It accepts only a bounded seed and step count, emits deterministic trace evidence under `scene-equation.v1`, and always reports `verified:false`. The route, SDK method, CLI command, and dashboard control expose the same boundary: symbolic narrative states are simulation data, not scientific, cosmological, consciousness, sentience, deployment, or external-execution proof.
+
+## Portable runtime smoke evidence
+
+The root `pnpm smoke:api` command is a local reproducibility control. It builds the workspace, starts the compiled API from the `apps/api` package directory, checks health readiness, and exercises the bounded scene route. Its result is evidence that this local compiled package graph served the tested contract under a local signing key with persistence disabled. It is not deployment authorization, distributed readiness, production availability, external custody, backup or replica evidence, or proof that a remote environment runs the same state.
+
+## Coordination declaration boundary
+
+Persistence accepts `local-single-process`, `operator-coordinated`, and `external-coordinator` declarations, requiring a non-empty reference for the latter two. API health/readiness, observability/state, SDK, CLI, dashboard, and operator documentation preserve the same mode, reference, reason, and `verified:false` provenance. Invalid declarations degrade readiness. This evidence does not prove distributed consistency, leader election, replica agreement, global ordering, external coordinator control, or deployment availability.

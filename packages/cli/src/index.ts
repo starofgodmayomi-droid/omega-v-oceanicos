@@ -57,6 +57,12 @@ type HealthResponse = {
           reason: string | null;
           verified: false;
         };
+        coordinationPolicy: {
+          mode: string;
+          reference: string | null;
+          reason: string | null;
+          verified: false;
+        };
         coverage: {
           complete: false;
           surfaces: Array<{
@@ -226,6 +232,7 @@ function usage(): string {
     'omega reencrypt-persistence --reason REASON --operator-id ID [--url URL] [--admin-token TOKEN]',
     'omega verify --attestation-json JSON [--url URL] [--token TOKEN]',
     'omega policy [--url URL] [--token TOKEN]',
+    'omega scene [--seed SEED] [--steps N] [--url URL] [--token TOKEN]',
     '',
     'Read live runtime and evidence from the Omega V API.',
     '',
@@ -301,6 +308,7 @@ async function health(argv: string[], fetchImpl: FetchLike): Promise<number> {
         `RECOVERY     policy=${checks.persistence.recoveryPolicy?.mode ?? 'unknown'} reference=${checks.persistence.recoveryPolicy?.reference ?? 'none'} reason=${checks.persistence.recoveryPolicy?.reason ?? 'none'}`,
         `DELETION     policy=${checks.persistence.deletionPolicy?.mode ?? 'unknown'} verified=${checks.persistence.deletionPolicy?.verified ?? 'unknown'} reason=${checks.persistence.deletionPolicy?.reason ?? 'none'}`,
         `CUSTODY      policy=${checks.persistence.custodyPolicy?.mode ?? 'unknown'} reference=${checks.persistence.custodyPolicy?.reference ?? 'none'} verified=${checks.persistence.custodyPolicy?.verified ?? 'unknown'} reason=${checks.persistence.custodyPolicy?.reason ?? 'none'}`,
+        `COORDINATION  policy=${checks.persistence.coordinationPolicy?.mode ?? 'unknown'} reference=${checks.persistence.coordinationPolicy?.reference ?? 'none'} verified=${checks.persistence.coordinationPolicy?.verified ?? 'unknown'} reason=${checks.persistence.coordinationPolicy?.reason ?? 'none'}`,
         `COVERAGE     ${checks.persistence.coverage?.surfaces?.map((surface) => `${surface.name}=${surface.encryption}/${surface.keySource}`).join(', ') ?? 'unknown'}`,
         `UNVERIFIED   ${checks.persistence.coverage?.unverifiedSurfaces?.join(', ') ?? 'unknown'} complete=${checks.persistence.coverage?.complete ?? 'unknown'}`,
         `POLICY        algorithm=${policy.attestationAlgorithm} ttl=${policy.attestationTtlMs ?? 'off'} adminAllowlistRequired=${policy.adminOperatorAllowlistRequired ?? 'unknown'} revocation=${policy.revocationEnabled}`,
@@ -715,6 +723,51 @@ async function audit(argv: string[], fetchImpl: FetchLike): Promise<number> {
   }
 }
 
+async function scene(argv: string[], fetchImpl: FetchLike): Promise<number> {
+  const seed = option(argv, '--seed');
+  const steps = option(argv, '--steps');
+  const endpoint = `${baseUrl(argv).replace(/\/$/, '')}/scene/simulate`;
+  try {
+    const response = await fetchImpl(endpoint, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', ...(requestInit(argv)?.headers ?? {}) },
+      body: JSON.stringify({
+        ...(seed ? { seed } : {}),
+        ...(steps ? { steps: Number(steps) } : {}),
+      }),
+    });
+    const body = (await response.json()) as {
+      data?: {
+        equation: string;
+        states: string[];
+        terminalState: string;
+        provenance: { ruleVersion: string; verified: boolean; deterministic: boolean };
+      };
+      message?: string;
+    };
+    if (!response.ok || !body.data) {
+      process.stderr.write(
+        `Scene unavailable (${response.status}): ${body.message ?? 'unknown error'}\\n`
+      );
+      return 1;
+    }
+    process.stdout.write(
+      [
+        `SCENE         ${body.data.terminalState} states=${body.data.states.length}`,
+        `EQUATION      ${body.data.equation}`,
+        `TRACE         ${body.data.states.join(' → ')}`,
+        `PROVENANCE    rule=${body.data.provenance.ruleVersion} deterministic=${body.data.provenance.deterministic} verified=${body.data.provenance.verified}`,
+      ].join('\\n') + '\\n'
+    );
+    return 0;
+  } catch (error) {
+    process.stderr.write(
+      `Scene unavailable: ${error instanceof Error ? error.message : String(error)}\\n`
+    );
+    return 1;
+  }
+}
+
 async function events(argv: string[], fetchImpl: FetchLike): Promise<number> {
   const endpoint = `${baseUrl(argv).replace(/\/$/, '')}/events`;
   try {
@@ -759,6 +812,7 @@ export async function run(
   if (command === 'revocations') return revocations(argv, fetchImpl);
   if (command === 'verify') return verifyAttestation(argv, fetchImpl);
   if (command === 'policy') return policy(argv, fetchImpl);
+  if (command === 'scene') return scene(argv, fetchImpl);
   if (command === 'revoke') return revoke(argv, fetchImpl);
   if (command === 'acknowledge-persistence') return acknowledgePersistence(argv, fetchImpl);
   if (command === 'reencrypt-persistence') return reencryptPersistence(argv, fetchImpl);

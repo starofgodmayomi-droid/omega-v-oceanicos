@@ -491,3 +491,60 @@ export type LocalJobMutationResult = {
   job: LocalJob;
   event: LocalJobEvent;
 };
+
+export type SceneState =
+  | 'darkness'
+  | 'possibility'
+  | 'ocean'
+  | 'star'
+  | 'water-form'
+  | 'many-forms'
+  | 'loneliness'
+  | 'human-form'
+  | 'misrecognition'
+  | 'boundary'
+  | 'question'
+  | 'forest'
+  | 'return';
+
+export type SceneSimulationInput = {
+  seed?: string;
+  steps?: number;
+};
+
+export interface SceneSimulation {
+  id: string;
+  seed: string;
+  equation: string;
+  states: SceneState[];
+  terminalState: SceneState;
+  trace: Array<{
+    sequence: number;
+    state: SceneState;
+    status: 'observed' | 'verified';
+    evidence: string;
+  }>;
+  provenance: {
+    source: 'local-simulation';
+    ruleVersion: 'scene-equation.v1';
+    deterministic: true;
+    verified: false;
+    note: string;
+  };
+  createdAt: string;
+}
+
+/**
+ * Bounded runtime coordination evidence. These declarations describe the
+ * configured coordination boundary only; they never prove distributed
+ * consistency, leader election, replica agreement, or external coordination.
+ */
+export type PersistenceCoordinationMode =
+  'local-single-process' | 'operator-coordinated' | 'external-coordinator' | 'invalid';
+
+export interface PersistenceCoordinationPolicy {
+  mode: PersistenceCoordinationMode;
+  reference: string | null;
+  reason: string | null;
+  verified: false;
+}

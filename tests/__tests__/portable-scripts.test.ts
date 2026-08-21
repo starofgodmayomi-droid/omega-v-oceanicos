@@ -59,6 +59,17 @@ describe('package scripts are portable', () => {
     }
   );
 
+  it('exposes the portable API smoke contract', () => {
+    const scripts = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).scripts as Record<
+      string,
+      string
+    >;
+    expect(scripts['smoke:api']).toBe('pnpm build && node scripts/smoke-api.cjs');
+    expect(readFileSync(join(root, 'scripts/smoke-api.cjs'), 'utf8')).toContain(
+      "spawn(process.execPath, ['dist/server.js']"
+    );
+  });
+
   it('routes every clean script through the portable remover', () => {
     const cleaners = files
       .map((file) => JSON.parse(readFileSync(file, 'utf8')).scripts?.clean)

@@ -3,17 +3,14 @@ import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import express, { Express, Request, Response } from 'express';
-import { Observer } from '@omega-v/observer';
-import { VerificationEngine } from '@omega-v/verification';
-import { AttestationService } from '@omega-v/attestation';
-import { Remember, FileMemoryStore } from '@omega-v/remember';
-import {
-  policyFromEnvironment,
-  reconcile,
-  type Dissensus,
-  type DissensusPolicy,
-  type Opinion,
-} from '@omega-v/dissensus';
+import Observer from '@omega-v/observer';
+import VerificationEngine from '@omega-v/verification';
+import AttestationService from '@omega-v/attestation';
+import Remember, { FileMemoryStore } from '@omega-v/remember';
+import * as DissensusModule from '@omega-v/dissensus';
+import type { Dissensus, DissensusPolicy, Opinion } from '@omega-v/dissensus';
+
+const { policyFromEnvironment, reconcile } = DissensusModule;
 import {
   Attestation,
   ErrorResponse,
@@ -24,6 +21,7 @@ import {
   VerificationRule,
 } from '@omega-v/types';
 import { LocalJobError, LocalJobLedger, LOCAL_JOB_WINDOW } from './jobs.js';
+import { simulateScene } from './scene.js';
 import {
   appendEvent,
   ENCRYPTION_ALGORITHM,
@@ -42,6 +40,7 @@ import {
   parsePersistenceRecoveryPolicy,
   parsePersistenceDeletionPolicy,
   parsePersistenceCustodyPolicy,
+  parsePersistenceCoordinationPolicy,
   persistenceCoverage,
 } from './persistence.js';
 
@@ -197,8 +196,13 @@ const persistenceCustodyPolicy = parsePersistenceCustodyPolicy(
   process.env.OMEGA_PERSISTENCE_CUSTODY_MODE,
   process.env.OMEGA_PERSISTENCE_CUSTODY_REFERENCE
 );
+const persistenceCoordinationPolicy = parsePersistenceCoordinationPolicy(
+  process.env.OMEGA_PERSISTENCE_COORDINATION_MODE,
+  process.env.OMEGA_PERSISTENCE_COORDINATION_REFERENCE
+);
 const deletionPolicyReady = persistenceDeletionPolicy.mode !== 'invalid';
 const custodyPolicyReady = persistenceCustodyPolicy.mode !== 'invalid';
+const coordinationPolicyReady = persistenceCoordinationPolicy.mode !== 'invalid';
 const memoryEncryptionKey = process.env.OMEGA_MEMORY_KEY;
 const memoryEncryptionEnabled = persistenceEnabled && Boolean(memoryEncryptionKey?.trim());
 const kernelMemoryStore = persistenceEnabled
@@ -775,6 +779,24 @@ app.post('/jobs/:jobId/fail', (req: Request, res: Response) => {
   }
 });
 
+app.post('/scene/simulate', (req: Request, res: Response) => {
+  try {
+    const seed = typeof req.body?.seed === 'string' ? req.body.seed : undefined;
+    const steps = req.body?.steps === undefined ? undefined : Number(req.body.steps);
+    const simulation = simulateScene({ seed, steps });
+    res.json({
+      data: simulation,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    res.status(400).json({
+      code: 'SCENE_INVALID',
+      message: error instanceof Error ? error.message : 'The scene simulation request is invalid',
+      timestamp: new Date().toISOString(),
+    } satisfies ErrorResponse);
+  }
+});
+
 app.post('/persistence/acknowledge', (req: Request, res: Response) => {
   const { reason, operatorId: operatorIdFromBody } = req.body as {
     reason?: string;
@@ -1002,6 +1024,12 @@ app.get('/health', (_req: Request, res: Response) => {
           reason: string | null;
           verified: false;
         };
+        coordinationPolicy: {
+          mode: string;
+          reference: string | null;
+          reason: string | null;
+          verified: false;
+        };
         coverage: {
           complete: false;
           surfaces: Array<{
@@ -1031,7 +1059,8 @@ app.get('/health', (_req: Request, res: Response) => {
         persistenceIsReady &&
         durableLogIsReady &&
         deletionPolicyReady &&
-        custodyPolicyReady
+        custodyPolicyReady &&
+        coordinationPolicyReady
           ? 'ready'
           : 'degraded',
       checks: {
@@ -1064,6 +1093,7 @@ app.get('/health', (_req: Request, res: Response) => {
           recoveryPolicy: persistenceRecoveryPolicy,
           deletionPolicy: persistenceDeletionPolicy,
           custodyPolicy: persistenceCustodyPolicy,
+          coordinationPolicy: persistenceCoordinationPolicy,
           coverage: {
             ...localPersistenceCoverage,
             surfaces: localPersistenceCoverage.surfaces.map((surface) =>
@@ -1125,7 +1155,8 @@ app.get('/state', (_req: Request, res: Response) => {
         persistenceIsReady &&
         durableLogIsReady &&
         deletionPolicyReady &&
-        custodyPolicyReady
+        custodyPolicyReady &&
+        coordinationPolicyReady
           ? 'ready'
           : 'degraded',
       persistence: persistenceEnabled ? 'file' : 'memory',
@@ -1141,6 +1172,8 @@ app.get('/state', (_req: Request, res: Response) => {
       reencryptionRecovery,
       recoveryPolicy: persistenceRecoveryPolicy,
       deletionPolicy: persistenceDeletionPolicy,
+      custodyPolicy: persistenceCustodyPolicy,
+      coordinationPolicy: persistenceCoordinationPolicy,
       coverage: {
         ...localPersistenceCoverage,
         surfaces: localPersistenceCoverage.surfaces.map((surface) =>
@@ -2304,6 +2337,7 @@ const startServer = () =>
         '  POST   /jobs/:jobId/claim - Claim a local job (opt-in)',
         '  POST   /jobs/:jobId/complete - Complete a local job (opt-in)',
         '  POST   /jobs/:jobId/fail - Fail a local job (opt-in)',
+        '  POST   /scene/simulate   - Run bounded Ω∞v scene simulation',
         '',
       ].join('\n')
     );
