@@ -21,7 +21,13 @@ describe('the supported Node version is one claim, not three', () => {
 
   const declared = Number((manifest.engines?.node ?? '').replace(/[^\d.]/g, '').split('.')[0]);
 
-  const matrix = Array.from(workflow.matchAll(/(\d+)\.x/g)).map((match) => Number(match[1]));
+  // Only the node-version line. A first version of this matched every
+  // `\d+\.x` in the file and swallowed the comment explaining that 18.x had
+  // been removed — reporting a floor of 18 from prose describing its own
+  // absence. The test was right about what it read; it was reading the
+  // wrong thing.
+  const matrixLine = (workflow.match(/node-version:\s*\[([^\]]+)\]/) ?? [])[1] ?? '';
+  const matrix = Array.from(matrixLine.matchAll(/(\d+)\.x/g)).map((match) => Number(match[1]));
 
   const image = Number((dockerfile.match(/FROM node:(\d+)/) ?? [])[1]);
 
@@ -56,5 +62,11 @@ describe('the supported Node version is one claim, not three', () => {
     // Otherwise the next LTS becomes a surprise on the day it turns
     // default, rather than a red pull request beforehand.
     expect(Math.max(...matrix)).toBeGreaterThan(image);
+  });
+
+  it('reads the matrix from the matrix, not from prose about it', () => {
+    // Guards the mistake that produced this test's own first red run.
+    expect(matrix).not.toContain(18);
+    expect(matrix.length).toBeGreaterThanOrEqual(2);
   });
 });
