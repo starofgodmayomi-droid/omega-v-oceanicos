@@ -122,4 +122,29 @@ describe('supply chain and static analysis', () => {
     expect(config).toContain('exclude-patterns:');
     expect(config).toMatch(/exclude-patterns:[\s\S]{0,120}@types\/react/);
   });
+
+  it('holds a dependency the toolchain cannot accept, with a reason and a way out', () => {
+    const config = readFileSync(join(root, '.github/dependabot.yml'), 'utf8');
+
+    // TypeScript 7 is held because @typescript-eslint/parser refuses to
+    // load against it — "typescript-eslint does not support TS 7.0" — and
+    // linting is a required stage, so no change to this repository can make
+    // the bump pass. Proposing it weekly would train us to look past a red
+    // pipeline, which is the habit this project can least afford.
+    expect(config).toContain('ignore:');
+    expect(config).toMatch(/dependency-name:\s*typescript/);
+    expect(config).toMatch(/versions:\s*\['>=7\.0\.0'\]/);
+  });
+
+  it('records why a hold exists and when to remove it', () => {
+    const config = readFileSync(join(root, '.github/dependabot.yml'), 'utf8');
+    const hold = config.slice(config.indexOf('ignore:'), config.indexOf('commit-message'));
+
+    // An ignore rule with no reason is indistinguishable from one added to
+    // silence an inconvenient failure. This one names the upstream tracking
+    // issue and the condition that retires it.
+    expect(hold).toMatch(/typescript-eslint/);
+    expect(hold).toMatch(/10940/);
+    expect(hold).toMatch(/Remove this entry/i);
+  });
 });

@@ -59,6 +59,24 @@ updates:
           - eslint-*
           - '@typescript-eslint/*'
           - prettier
+    ignore:
+      # TypeScript 7 is held, not skipped.
+      #
+      # @typescript-eslint/parser refuses to load against it and says so
+      # directly: "typescript-eslint does not support TS 7.0." Linting is a
+      # required stage, so the bump cannot pass however the repository is
+      # changed — this is an upstream gap, tracked at
+      # typescript-eslint/typescript-eslint#10940 for TS >= 7.1.
+      #
+      # Proposing it weekly would train us to look past a red pipeline,
+      # which is the habit this project can least afford. Remove this entry
+      # once typescript-eslint supports TS 7 and let the bump be judged on
+      # its own evidence.
+      #
+      # Minor and patch updates within TypeScript 6 still arrive normally.
+      - dependency-name: typescript
+        versions: ['>=7.0.0']
+
     commit-message:
       prefix: 'deps'
       include: scope
