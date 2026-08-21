@@ -17,6 +17,8 @@ import {
   persistenceKeyFingerprint,
   parsePersistenceRecoveryPolicy,
   parsePersistenceDeletionPolicy,
+  parsePersistenceCustodyPolicy,
+  parsePersistenceCoordinationPolicy,
   persistenceCoverage,
   SNAPSHOT_KEYS,
 } from '../persistence';
@@ -65,6 +67,63 @@ describe('runtime persistence', () => {
     });
     expect(parsePersistenceRecoveryPolicy('unknown', 'record-7').mode).toBe('invalid');
     expect(parsePersistenceRecoveryPolicy('external-reference').mode).toBe('invalid');
+  });
+
+  it('parses custody policy declarations without claiming verified custody', () => {
+    expect(parsePersistenceCustodyPolicy()).toEqual({
+      mode: 'unverified-local',
+      reference: null,
+      reason: null,
+      verified: false,
+    });
+    expect(parsePersistenceCustodyPolicy('operator-managed', 'operator-record-7')).toEqual({
+      mode: 'operator-managed',
+      reference: 'operator-record-7',
+      reason: null,
+      verified: false,
+    });
+    expect(parsePersistenceCustodyPolicy('hsm-kms', 'kms-key-7').verified).toBe(false);
+    expect(parsePersistenceCustodyPolicy('external-reference', 'vault-record-7').reference).toBe(
+      'vault-record-7'
+    );
+    expect(parsePersistenceCustodyPolicy('hsm-kms').mode).toBe('invalid');
+    expect(parsePersistenceCustodyPolicy('hsm-kms', 'line\nbreak').mode).toBe('invalid');
+    expect(parsePersistenceCustodyPolicy('unknown', 'record-7')).toEqual({
+      mode: 'invalid',
+      reference: null,
+      reason: 'unsupported custody policy mode',
+      verified: false,
+    });
+  });
+
+  it('parses coordination declarations without claiming distributed consistency', () => {
+    expect(parsePersistenceCoordinationPolicy()).toEqual({
+      mode: 'local-single-process',
+      reference: null,
+      reason: null,
+      verified: false,
+    });
+    expect(parsePersistenceCoordinationPolicy('operator-coordinated', 'operator-record-8')).toEqual(
+      {
+        mode: 'operator-coordinated',
+        reference: 'operator-record-8',
+        reason: null,
+        verified: false,
+      }
+    );
+    expect(
+      parsePersistenceCoordinationPolicy('external-coordinator', 'coordinator-8').verified
+    ).toBe(false);
+    expect(parsePersistenceCoordinationPolicy('external-coordinator').mode).toBe('invalid');
+    expect(parsePersistenceCoordinationPolicy('unknown', 'record-8')).toEqual({
+      mode: 'invalid',
+      reference: null,
+      reason: 'unsupported coordination policy mode',
+      verified: false,
+    });
+    expect(parsePersistenceCoordinationPolicy('external-coordinator', 'line\nbreak').mode).toBe(
+      'invalid'
+    );
   });
 
   it('parses secure-deletion capability declarations without claiming verified erasure', () => {

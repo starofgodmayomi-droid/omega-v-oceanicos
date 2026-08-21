@@ -28,8 +28,18 @@ describe('governance describes the real surface', () => {
 
   const writes = routes.filter((route) => route.method === 'POST');
 
-  // The middleware gates these writes, by path.
-  const ADMIN_GATED = ['/attest/revoke', '/persistence/acknowledge'];
+  // These writes are protected either by the global admin middleware or by
+  // the local job route gate, which additionally requires a bearer token and
+  // loopback transport when the feature is explicitly enabled.
+  const ADMIN_GATED = [
+    '/attest/revoke',
+    '/persistence/acknowledge',
+    '/persistence/reencrypt',
+    '/jobs',
+    '/jobs/:jobId/claim',
+    '/jobs/:jobId/complete',
+    '/jobs/:jobId/fail',
+  ];
 
   it('finds the surface it is meant to describe', () => {
     expect(writes.length).toBeGreaterThanOrEqual(8);

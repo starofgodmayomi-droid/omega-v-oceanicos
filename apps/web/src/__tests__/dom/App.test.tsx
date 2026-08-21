@@ -509,6 +509,45 @@ describe('dashboard', () => {
     expect(within(nav).getAllByRole('button').length).toBeGreaterThan(0);
   });
 
+  it('opens the read-only Evidence timeline from the primary navigation', async () => {
+    const user = userEvent.setup();
+    installFetch({
+      '/api/runs': () => json({ data: [passingLoop()] }),
+      '/api/audit/events?limit=40': () =>
+        json({
+          data: [
+            {
+              id: 'evt-evidence-1',
+              type: 'observation.created',
+              stage: 'observe',
+              message: 'Observation recorded',
+              status: 'passed',
+              timestamp: '2026-08-19T21:00:00.000Z',
+              correlationId: 'corr-evidence-1',
+              requestId: 'req-evidence-1',
+            },
+          ],
+          meta: { bounded: true, limit: 40, total: 1 },
+        }),
+    });
+    await renderApp();
+    const nav = await screen.findByRole('navigation', { name: /primary navigation/i });
+    await user.click(within(nav).getByRole('button', { name: /evidence/i }));
+
+    const evidenceView = await screen.findByRole('region', { name: /evidence timeline/i });
+    expect(
+      within(evidenceView).getByRole('heading', { name: /evidence timeline/i })
+    ).toBeInTheDocument();
+    expect(within(evidenceView).getByText('Service X is healthy')).toBeInTheDocument();
+    expect(within(evidenceView).getByText(/correlation corr-evidence-1/)).toBeInTheDocument();
+    expect(
+      within(evidenceView).getByText(/bounded evidence; they are not proof/)
+    ).toBeInTheDocument();
+    expect(
+      within(evidenceView).getByRole('button', { name: /return to current/i })
+    ).toBeInTheDocument();
+  });
+
   it('reports navigating to a section not yet wired to the runtime', async () => {
     const user = userEvent.setup();
     await renderApp();
@@ -906,10 +945,11 @@ describe('command palette', () => {
 
     // Disabled buttons (Verify attestation, with no result yet) are excluded
     // from the trap, so the reachable set is Observe -> Run verification ->
-    // Refresh runtime, in that order.
+    // Refresh runtime -> Open evidence, in that order.
     const observe = within(dialog).getByRole('button', { name: /observe/i });
     const run = within(dialog).getByRole('button', { name: /run verification/i });
     const refresh = within(dialog).getByRole('button', { name: /refresh runtime/i });
+    const openEvidence = within(dialog).getByRole('button', { name: /open evidence/i });
     expect(observe).toHaveFocus();
 
     await act(async () => {
@@ -921,8 +961,12 @@ describe('command palette', () => {
       document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
     });
     expect(refresh).toHaveFocus();
-
+    await act(async () => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+    });
+    expect(openEvidence).toHaveFocus();
     // Forward from the last focusable control wraps back to the first.
+
     await act(async () => {
       document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
     });
@@ -934,9 +978,8 @@ describe('command palette', () => {
         new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true })
       );
     });
-    expect(refresh).toHaveFocus();
+    expect(openEvidence).toHaveFocus();
   });
-
   it('clears a stale stream error and refreshes runtime when the stream reopens', async () => {
     const fetchMock = installFetch();
     await renderApp();
@@ -1139,5 +1182,69 @@ describe('dissent ledger', () => {
     ) as HTMLElement;
 
     expect(within(section).getByText('01')).toBeInTheDocument();
+  });
+});
+
+describe('read-only local job evidence', () => {
+  beforeEach(() => {
+    installFetch();
+  });
+
+  it('renders the disabled boundary without worker controls', async () => {
+    await renderApp();
+    const panel = await screen.findByRole('region', { name: /local jobs/i });
+    expect(within(panel).getByText(/local jobs are disabled/i)).toBeInTheDocument();
+    expect(within(panel).getByText(/durable=false/i)).toBeInTheDocument();
+    expect(
+      within(panel).queryByRole('button', { name: /start|claim|retry|delete|cancel/i })
+    ).not.toBeInTheDocument();
+  });
+
+  it('renders bounded running and terminal evidence as read-only text', async () => {
+    installFetch({
+      '/api/jobs?limit=20': () =>
+        json({
+          data: {
+            jobs: [
+              {
+                id: 'job-running',
+                state: 'running',
+                attempt: 1,
+                workerId: 'worker-a',
+                createdAt: '2026-08-20T00:00:00.000Z',
+                updatedAt: '2026-08-20T00:01:00.000Z',
+                finishedAt: null,
+                errorClass: null,
+                provenance: { requestId: 'req-job', correlationId: 'corr-job' },
+              },
+              {
+                id: 'job-failed',
+                state: 'failed',
+                attempt: 1,
+                workerId: 'worker-b',
+                createdAt: '2026-08-20T00:00:00.000Z',
+                updatedAt: '2026-08-20T00:02:00.000Z',
+                finishedAt: '2026-08-20T00:02:00.000Z',
+                errorClass: 'fixture_failure',
+                provenance: { requestId: 'req-failed', correlationId: null },
+              },
+            ],
+            status: {
+              enabled: true,
+              durable: false,
+              source: 'memory',
+              counts: { queued: 0, running: 1, succeeded: 0, failed: 1, unknown: 0 },
+              recentWindow: 40,
+            },
+          },
+        }),
+    });
+    await renderApp();
+    const panel = await screen.findByRole('region', { name: /local jobs/i });
+    expect(within(panel).getByText('job-running')).toBeInTheDocument();
+    expect(within(panel).getByText('job-failed')).toBeInTheDocument();
+    expect(within(panel).getByText(/error class: fixture_failure/i)).toBeInTheDocument();
+    expect(within(panel).getByText(/durable=false/i)).toBeInTheDocument();
+    expect(within(panel).queryByRole('button')).not.toBeInTheDocument();
   });
 });

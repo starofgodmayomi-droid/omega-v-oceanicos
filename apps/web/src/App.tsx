@@ -24,6 +24,12 @@ type RuntimeDissensus = {
   timestamp: string;
 };
 
+type SceneSimulation = {
+  states: string[];
+  terminalState: string;
+  provenance: { ruleVersion: string; deterministic: boolean; verified: boolean; note: string };
+};
+
 type RuntimeEvent = {
   id: string;
   type: string;
@@ -107,6 +113,18 @@ type RuntimeHealth = {
       };
       recoveryPolicy: { mode: string; reference: string | null; reason: string | null };
       deletionPolicy: { mode: string; reason: string | null; verified: false };
+      custodyPolicy: {
+        mode: string;
+        reference: string | null;
+        reason: string | null;
+        verified: false;
+      };
+      coordinationPolicy: {
+        mode: string;
+        reference: string | null;
+        reason: string | null;
+        verified: false;
+      };
       coverage: {
         complete: false;
         surfaces: Array<{ name: string; encryption: string; keySource: string; evidence: string }>;
@@ -131,8 +149,38 @@ type PublicTrustMetadata = {
   keyVersion: string;
   publicKey: string;
 };
+type LocalJobState = 'queued' | 'running' | 'succeeded' | 'failed' | 'unknown';
+type LocalJobsView = {
+  status: 'loading' | 'disabled' | 'unauthorized' | 'available' | 'error';
+  jobs: Array<{
+    id: string;
+    state: LocalJobState;
+    attempt: number;
+    workerId: string | null;
+    createdAt: string;
+    updatedAt: string;
+    finishedAt: string | null;
+    errorClass: string | null;
+    provenance: { requestId: string | null; correlationId: string | null };
+  }>;
+  ledger: {
+    enabled: boolean;
+    durable: false;
+    source: 'memory';
+    counts: Record<LocalJobState, number>;
+    recentWindow: number;
+  } | null;
+  message: string | null;
+};
 
 const stages = ['observe', 'evidence', 'verify', 'attest', 'act', 'learn', 'recompile'];
+const architectureLayers = [
+  { name: 'Experience', surfaces: 'Web · CLI · SDK · API', status: 'observed' },
+  { name: 'Evidence', surfaces: 'Observe · Verify · Attest · Dissent', status: 'observed' },
+  { name: 'Memory', surfaces: 'Events · Provenance · Persistence', status: 'observed' },
+  { name: 'Governance', surfaces: 'Identity · Policy · Audit · Human gate', status: 'bounded' },
+  { name: 'Infrastructure', surfaces: 'Runtime · Build · CI · Deployment', status: 'partial' },
+];
 const navGroups = [
   { label: 'Core', items: ['Current', 'Observe', 'Evidence', 'Verify', 'Attest', 'Act'] },
   { label: 'Intelligence', items: ['AI', 'Agents', 'Knowledge', 'Memory'] },
@@ -155,6 +203,12 @@ export function App(): React.JSX.Element {
   const [responseTime, setResponseTime] = useState('42');
   const [statusCode, setStatusCode] = useState('200');
   const [events, setEvents] = useState<RuntimeEvent[]>([]);
+  const [localJobs, setLocalJobs] = useState<LocalJobsView>({
+    status: 'loading',
+    jobs: [],
+    ledger: null,
+    message: null,
+  });
   const [recentRuns, setRecentRuns] = useState<LoopResult[]>([]);
   const [revocations, setRevocations] = useState<RuntimeRevocation[]>([]);
   const [revocationIntegrity, setRevocationIntegrity] = useState<RevocationIntegrity | null>(null);
@@ -216,6 +270,8 @@ export function App(): React.JSX.Element {
     'idle' | 'proposing' | 'proposed' | 'failed'
   >('idle');
   const [commandOpen, setCommandOpen] = useState(false);
+  const [sceneSimulation, setSceneSimulation] = useState<SceneSimulation | null>(null);
+  const [sceneLoading, setSceneLoading] = useState(false);
   const claimInputRef = useRef<HTMLTextAreaElement>(null);
   const commandFirstRef = useRef<HTMLButtonElement>(null);
   const commandTriggerRef = useRef<HTMLButtonElement>(null);
@@ -230,6 +286,7 @@ export function App(): React.JSX.Element {
         revocationsResponse,
         policyResponse,
         dissensusResponse,
+        jobsResponse,
       ] = await Promise.all([
         fetch('/api/health'),
         fetch('/api/state'),
@@ -238,6 +295,7 @@ export function App(): React.JSX.Element {
         fetch('/api/attest/revocations'),
         fetch('/api/attest/policy'),
         fetch('/api/dissensus'),
+        fetch('/api/jobs?limit=20').catch(() => null),
       ]);
       if (
         !healthResponse.ok ||
@@ -277,6 +335,54 @@ export function App(): React.JSX.Element {
         meta?: { integrity: RevocationIntegrity; digest: string; revision: number };
       };
       const policyData = (await policyResponse.json()) as { data: RuntimePolicy };
+      if (!jobsResponse) {
+        setLocalJobs({
+          status: 'error',
+          jobs: [],
+          ledger: null,
+          message: 'Local jobs unavailable',
+        });
+      } else if (jobsResponse.ok) {
+        const jobsData = (await jobsResponse.json()) as {
+          data?: { jobs?: LocalJobsView['jobs']; status?: LocalJobsView['ledger'] };
+        };
+        if (Array.isArray(jobsData.data?.jobs) && jobsData.data.status) {
+          setLocalJobs({
+            status: jobsData.data.status.enabled ? 'available' : 'disabled',
+            jobs: jobsData.data.status.enabled ? jobsData.data.jobs : [],
+            ledger: jobsData.data.status,
+            message: jobsData.data.status.enabled ? null : 'Local jobs are disabled by default.',
+          });
+        } else {
+          setLocalJobs({
+            status: 'error',
+            jobs: [],
+            ledger: null,
+            message: 'Invalid local jobs evidence',
+          });
+        }
+      } else {
+        const jobsError = (await jobsResponse.json().catch(() => ({}))) as {
+          code?: string;
+          message?: string;
+        };
+        setLocalJobs({
+          status:
+            jobsError.code === 'LOCAL_JOB_DISABLED'
+              ? 'disabled'
+              : jobsResponse.status === 401 || jobsResponse.status === 403
+                ? 'unauthorized'
+                : 'error',
+          jobs: [],
+          ledger: null,
+          message:
+            jobsError.code === 'LOCAL_JOB_DISABLED'
+              ? 'Local jobs are disabled by default.'
+              : jobsResponse.status === 401 || jobsResponse.status === 403
+                ? 'Local job read access is unavailable.'
+                : (jobsError.message ?? 'Local jobs unavailable'),
+        });
+      }
       const publicKeyResponse = await fetch('/api/attest/public-key').catch(() => null);
       if (publicKeyResponse?.ok) {
         const publicKeyData = (await publicKeyResponse.json()) as { data: PublicTrustMetadata };
@@ -573,6 +679,9 @@ export function App(): React.JSX.Element {
     setError(`${item} is not connected to the current runtime yet`);
   };
 
+  const evidenceRun = result ?? recentRuns[0] ?? null;
+  const evidenceEvents = events.slice(0, 8);
+
   const checkOffline = async (): Promise<void> => {
     setOfflineChecking(true);
     setOfflineResult(null);
@@ -589,6 +698,25 @@ export function App(): React.JSX.Element {
       });
     } finally {
       setOfflineChecking(false);
+    }
+  };
+
+  const runSceneSimulation = async () => {
+    setSceneLoading(true);
+    try {
+      const response = await fetch('/api/scene/simulate', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ seed: 'dashboard-opening-scene' }),
+      });
+      const body = (await response.json()) as { data?: SceneSimulation; message?: string };
+      if (!response.ok || !body.data)
+        throw new Error(body.message ?? 'Scene simulation unavailable');
+      setSceneSimulation(body.data);
+    } catch (sceneError) {
+      setError(sceneError instanceof Error ? sceneError.message : 'Scene simulation unavailable');
+    } finally {
+      setSceneLoading(false);
     }
   };
 
@@ -632,7 +760,7 @@ export function App(): React.JSX.Element {
           <strong>v0.1.0</strong>
         </div>
       </aside>
-      <main className="workspace">
+      <main className={activeNav === 'Evidence' ? 'workspace evidence-mode' : 'workspace'}>
         <header className="topbar">
           <div>
             <span className="eyebrow">Current / {activeNav}</span>
@@ -689,6 +817,10 @@ export function App(): React.JSX.Element {
                 <strong>Refresh runtime</strong>
                 <span>Read the latest API state and event ledger</span>
               </button>
+              <button onClick={() => runCommand(() => navigate('Evidence'))}>
+                <strong>Open evidence</strong>
+                <span>Follow the recorded observation and verification lineage</span>
+              </button>
               <button onClick={() => runCommand(() => void verifyAttestation())} disabled={!result}>
                 <strong>Verify attestation</strong>
                 <span>
@@ -704,6 +836,135 @@ export function App(): React.JSX.Element {
             <span>{error}. UI is showing the last known state.</span>
           </div>
         )}
+        {activeNav === 'Evidence' ? (
+          <section className="evidence-view" aria-labelledby="evidence-view-title">
+            <div className="panel-heading">
+              <div>
+                <span className="section-kicker">READ-ONLY LINEAGE</span>
+                <h2 id="evidence-view-title">Evidence timeline</h2>
+              </div>
+              <button className="run-button" onClick={() => navigate('Current')}>
+                Return to Current
+              </button>
+            </div>
+            <p className="evidence-view-note">
+              This view follows recorded runtime artifacts. It does not turn a claim into truth or
+              infer verification from a missing record.
+            </p>
+            {evidenceRun ? (
+              <div className="evidence-chain">
+                <article className="evidence-chain-card">
+                  <span className="section-kicker">01 / OBSERVATION</span>
+                  <h3>{evidenceRun.observation.claim.statement}</h3>
+                  <p>
+                    <strong>Observed:</strong> {evidenceRun.observation.id}
+                  </p>
+                  <span className="evidence-state">
+                    OBSERVED · confidence {evidenceRun.observation.confidence}
+                  </span>
+                </article>
+                <article className="evidence-chain-card">
+                  <span className="section-kicker">02 / VERIFICATION</span>
+                  <h3>{evidenceRun.verification.summary.passed ? 'VERIFIED' : 'FAILED'}</h3>
+                  <p>
+                    {evidenceRun.verification.summary.rulesPassed} of{' '}
+                    {evidenceRun.verification.summary.rulesApplied} rules passed; confidence{' '}
+                    {evidenceRun.verification.summary.confidence}
+                  </p>
+                  <span className="evidence-state">
+                    {evidenceRun.verification.id} ·{' '}
+                    {evidenceRun.verification.summary.passed ? 'VERIFIED' : 'UNVERIFIED'}
+                  </span>
+                </article>
+                <article className="evidence-chain-card">
+                  <span className="section-kicker">03 / ATTESTATION</span>
+                  <h3>
+                    {evidenceRun.attestation.revoked
+                      ? 'REVOKED'
+                      : evidenceRun.attestation.verified
+                        ? 'ATTESTED'
+                        : 'UNVERIFIED'}
+                  </h3>
+                  <p>
+                    {evidenceRun.attestation.id} · signed at{' '}
+                    {timeLabel(evidenceRun.attestation.attestedAt)}
+                  </p>
+                  <span className="evidence-state">
+                    {evidenceRun.attestation.revoked
+                      ? 'REVOKED'
+                      : evidenceRun.attestation.verified
+                        ? 'ATTESTED'
+                        : 'UNKNOWN'}
+                  </span>
+                </article>
+              </div>
+            ) : (
+              <div className="empty evidence-empty">
+                No completed run is available to trace yet.
+              </div>
+            )}
+            <div className="evidence-view-grid">
+              <section className="evidence-subpanel" aria-labelledby="evidence-events-title">
+                <div className="panel-heading">
+                  <div>
+                    <span className="section-kicker">ACTIVITY</span>
+                    <h3 id="evidence-events-title">Recent recorded events</h3>
+                  </div>
+                  <span className="seal">{evidenceEvents.length.toString().padStart(2, '0')}</span>
+                </div>
+                {evidenceEvents.length === 0 ? (
+                  <p className="empty">No events are available in the bounded recent window.</p>
+                ) : (
+                  <div className="evidence-event-list">
+                    {evidenceEvents.map((event) => (
+                      <div className="evidence-event" key={event.id}>
+                        <strong>{event.type}</strong>
+                        <span>
+                          {event.status.toUpperCase()} · {timeLabel(event.timestamp)}
+                        </span>
+                        <small>
+                          {event.correlationId
+                            ? `correlation ${event.correlationId}`
+                            : 'correlation UNKNOWN'}{' '}
+                          · {event.requestId ? `request ${event.requestId}` : 'request UNKNOWN'}
+                        </small>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+              <section className="evidence-subpanel" aria-labelledby="evidence-uncertainty-title">
+                <div className="panel-heading">
+                  <div>
+                    <span className="section-kicker">DISSENT / LIMITS</span>
+                    <h3 id="evidence-uncertainty-title">What remains uncertain</h3>
+                  </div>
+                  <span className="seal">{unresolvedDissent.toString().padStart(2, '0')}</span>
+                </div>
+                {dissensus.length > 0 ? (
+                  <div className="evidence-dissent-list">
+                    {dissensus.slice(0, 3).map((entry) => (
+                      <div className="evidence-dissent" key={entry.id}>
+                        <strong>{entry.verdict}</strong>
+                        <span>{entry.reason}</span>
+                        <small>
+                          {entry.routing === 'HUMAN' ? 'ROUTED TO HUMAN' : 'AUTOMATIC'} · confidence{' '}
+                          {entry.confidence}
+                        </small>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="empty">No dissent is recorded in the current bounded view.</p>
+                )}
+                <p className="evidence-limitation">
+                  Runtime readiness, custody labels, and local event history are bounded evidence;
+                  they are not proof of distributed recovery, completeness, or future truth.
+                </p>
+              </section>
+            </div>
+          </section>
+        ) : null}
         <section className="hero-grid">
           <div className="current-panel">
             <div className="section-kicker">
@@ -733,6 +994,55 @@ export function App(): React.JSX.Element {
               ))}
             </div>
           </div>
+          <section className="architecture-panel" aria-labelledby="architecture-title">
+            <div className="section-kicker">
+              WHOLE SYSTEM <span>OBSERVED SURFACES</span>
+            </div>
+            <h2 id="architecture-title">Architecture current</h2>
+            <p className="current-caption">
+              A compact map of the layers currently represented by the repository. Labels do not
+              imply production completeness.
+            </p>
+            <div className="architecture-layers">
+              {architectureLayers.map((layer) => (
+                <div className="architecture-layer" key={layer.name}>
+                  <div>
+                    <strong>{layer.name}</strong>
+                    <span>{layer.surfaces}</span>
+                  </div>
+                  <small>{layer.status.toUpperCase()}</small>
+                </div>
+              ))}
+            </div>
+          </section>
+          <section className="intent-panel" aria-labelledby="scene-simulation-title">
+            <div className="section-kicker">
+              SCENE EQUATION <span>SYMBOLIC SIMULATION</span>
+            </div>
+            <h2 id="scene-simulation-title">One current, infinite forms</h2>
+            <p className="current-caption">
+              Run the opening myth as a bounded evidence trace. This does not verify cosmology or
+              consciousness.
+            </p>
+            <button
+              className="run-button"
+              onClick={() => void runSceneSimulation()}
+              disabled={sceneLoading}
+            >
+              {sceneLoading ? 'Simulating…' : 'Run scene equation'}
+            </button>
+            {sceneSimulation && (
+              <div className="evidence-chain-card" aria-live="polite">
+                <strong>{sceneSimulation.terminalState.toUpperCase()}</strong>
+                <p>{sceneSimulation.states.join(' → ')}</p>
+                <small>
+                  {sceneSimulation.provenance.ruleVersion} · deterministic=
+                  {String(sceneSimulation.provenance.deterministic)} · verified=
+                  {String(sceneSimulation.provenance.verified)}
+                </small>
+              </div>
+            )}
+          </section>
           <div className="intent-panel">
             <div className="section-kicker">
               CREATE AN OBSERVATION <span>OPERATOR INPUT</span>
@@ -860,6 +1170,22 @@ export function App(): React.JSX.Element {
             <strong>
               {runtimeHealth?.checks.persistence
                 ? `${runtimeHealth.checks.persistence.deletionPolicy.mode.toUpperCase()} / VERIFIED=${runtimeHealth.checks.persistence.deletionPolicy.verified} / ${runtimeHealth.checks.persistence.deletionPolicy.reason ?? 'CAPABILITY ONLY'}`
+                : 'UNKNOWN'}
+            </strong>
+          </div>
+          <div>
+            <span>KEY CUSTODY</span>
+            <strong>
+              {runtimeHealth?.checks.persistence
+                ? `${runtimeHealth.checks.persistence.custodyPolicy.mode.toUpperCase()} / ${runtimeHealth.checks.persistence.custodyPolicy.reference ?? 'NO REFERENCE'} / VERIFIED=${runtimeHealth.checks.persistence.custodyPolicy.verified} / ${runtimeHealth.checks.persistence.custodyPolicy.reason ?? 'DECLARATION ONLY'}`
+                : 'UNKNOWN'}
+            </strong>
+          </div>
+          <div>
+            <span>COORDINATION</span>
+            <strong>
+              {runtimeHealth?.checks.persistence
+                ? `${runtimeHealth.checks.persistence.coordinationPolicy.mode.toUpperCase()} / ${runtimeHealth.checks.persistence.coordinationPolicy.reference ?? 'NO REFERENCE'} / VERIFIED=${runtimeHealth.checks.persistence.coordinationPolicy.verified} / ${runtimeHealth.checks.persistence.coordinationPolicy.reason ?? 'DECLARATION ONLY'}`
                 : 'UNKNOWN'}
             </strong>
           </div>
@@ -1107,6 +1433,85 @@ export function App(): React.JSX.Element {
             </div>
           </section>
         )}
+        <section className="jobs-panel" aria-labelledby="local-jobs-title">
+          <div className="panel-heading">
+            <div>
+              <span className="section-kicker">LOCAL JOB EVIDENCE</span>
+              <h2 id="local-jobs-title">Local jobs</h2>
+            </div>
+            <span className="seal">READ-ONLY</span>
+          </div>
+          <p className="jobs-description">
+            Bounded local worker evidence. This view never starts, claims, retries, or deletes work.
+          </p>
+          {localJobs.status === 'loading' && (
+            <p className="jobs-state">Loading local job evidence…</p>
+          )}
+          {localJobs.status === 'disabled' && (
+            <p className="jobs-state jobs-state-muted">
+              {localJobs.message} Local evidence is <strong>durable=false</strong> and absent until
+              explicitly enabled.
+            </p>
+          )}
+          {localJobs.status === 'unauthorized' && (
+            <p className="jobs-state jobs-state-warning">
+              {localJobs.message} No credentials or job details are shown in this read-only view.
+            </p>
+          )}
+          {localJobs.status === 'error' && (
+            <p className="jobs-state jobs-state-warning">
+              {localJobs.message ?? 'Local jobs unavailable.'}
+            </p>
+          )}
+          {localJobs.status === 'available' && localJobs.ledger && (
+            <>
+              <div className="jobs-contract" aria-live="polite">
+                <span>source={localJobs.ledger.source}</span>
+                <span>storage=memory</span>
+                <strong>durable=false</strong>
+                <span>window={localJobs.ledger.recentWindow}</span>
+              </div>
+              <div className="jobs-counts" aria-label="Local job counts">
+                <span>queued {localJobs.ledger.counts.queued}</span>
+                <span>running {localJobs.ledger.counts.running}</span>
+                <span>succeeded {localJobs.ledger.counts.succeeded}</span>
+                <span>failed {localJobs.ledger.counts.failed}</span>
+                <span>unknown {localJobs.ledger.counts.unknown}</span>
+              </div>
+              {localJobs.jobs.length === 0 ? (
+                <p className="jobs-state jobs-state-muted">
+                  The local ledger is enabled but contains no jobs.
+                </p>
+              ) : (
+                <div className="jobs-list" role="list" aria-label="Recent local jobs">
+                  {localJobs.jobs.map((job) => (
+                    <article className="job-card" key={job.id} role="listitem">
+                      <div className="job-card-heading">
+                        <strong>{job.id}</strong>
+                        <span className={`job-state job-state-${job.state}`}>{job.state}</span>
+                      </div>
+                      <p>
+                        attempt {job.attempt} · worker {job.workerId ?? 'none'} · updated{' '}
+                        {timeLabel(job.updatedAt)}
+                      </p>
+                      <small>
+                        created {timeLabel(job.createdAt)} · finished{' '}
+                        {job.finishedAt ? timeLabel(job.finishedAt) : 'not terminal'}
+                      </small>
+                      {job.errorClass && (
+                        <small className="jobs-error">error class: {job.errorClass}</small>
+                      )}
+                      <small className="jobs-provenance">
+                        request {job.provenance.requestId ?? 'unknown'} · correlation{' '}
+                        {job.provenance.correlationId ?? 'unknown'}
+                      </small>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </section>
         <section className="runs-panel">
           <div className="panel-heading">
             <div>

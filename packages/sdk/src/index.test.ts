@@ -769,3 +769,72 @@ describe('OmegaClient', () => {
     );
   });
 });
+
+describe('OmegaClient local job evidence', () => {
+  const status = {
+    enabled: true,
+    durable: false as const,
+    source: 'memory' as const,
+    counts: { queued: 1, running: 0, succeeded: 0, failed: 0, unknown: 0 },
+    recentWindow: 40,
+  };
+
+  it('reads bounded jobs with query and bearer token', async () => {
+    const client = new OmegaClient(
+      'http://api.test/',
+      async (url, init) => {
+        expect(url).toBe('http://api.test/jobs?limit=2&state=running');
+        expect(new Headers(init?.headers).get('authorization')).toBe('Bearer read-token');
+        expect(init?.method).toBeUndefined();
+        return new Response(
+          JSON.stringify({ data: { jobs: [], status }, timestamp: '2026-08-20T00:00:00.000Z' })
+        );
+      },
+      { readToken: 'read-token' }
+    );
+    await expect(client.getJobs({ limit: 2, state: 'running' })).resolves.toMatchObject({
+      data: { status: { durable: false, source: 'memory', recentWindow: 40 } },
+    });
+  });
+
+  it('encodes job identifiers and preserves event sequence/provenance', async () => {
+    const client = new OmegaClient('http://api.test', async (url) => {
+      expect(url).toBe('http://api.test/jobs/job%2Fwith%20space');
+      return new Response(
+        JSON.stringify({
+          data: {
+            job: { id: 'job/with space', state: 'succeeded', provenance: { source: 'api' } },
+            events: [{ id: 'event-1', jobId: 'job/with space', sequence: 1, type: 'created' }],
+            status,
+          },
+          timestamp: '2026-08-20T00:00:00.000Z',
+        })
+      );
+    });
+    await expect(client.getJob('job/with space')).resolves.toMatchObject({
+      data: { events: [{ sequence: 1, type: 'created' }], status: { durable: false } },
+    });
+  });
+
+  it('preserves structured disabled errors', async () => {
+    const client = new OmegaClient(
+      'http://api.test',
+      async () =>
+        new Response(
+          JSON.stringify({
+            code: 'LOCAL_JOB_DISABLED',
+            message: 'The local job ledger is disabled',
+            timestamp: '2026-08-20T00:00:00.000Z',
+          }),
+          { status: 404 }
+        )
+    );
+    await expect(client.getJobs()).rejects.toEqual(
+      expect.objectContaining({
+        code: 'LOCAL_JOB_DISABLED',
+        status: 404,
+        timestamp: '2026-08-20T00:00:00.000Z',
+      })
+    );
+  });
+});

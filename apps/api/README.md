@@ -761,6 +761,7 @@ curl -X POST http://localhost:3000/complete-loop \
 - `OMEGA_ADMIN_OPERATOR_ALLOWLIST` — Optional comma-separated operator identities. When configured, revocation requires `x-omega-operator-id` (or the SDK/CLI equivalent) to match one of these identities; policy exposes only whether the allowlist is configured, not its contents.
 - `OMEGA_ADMIN_REQUIRE_ALLOWLIST` — Set to `on` to fail closed for all admin mutations unless the operator allowlist is configured and the supplied identity is listed; unset preserves the optional-allowlist behavior.
 - `OMEGA_PERSISTENCE_DELETION_MODE` — Optional declaration of `unlink-only` or `overwrite-unlink` cleanup behavior. `unavailable` is the default; invalid values degrade readiness. The API always reports `verified: false`: this is capability/configuration evidence, not proof of secure erasure, filesystem behavior, backups, replicas, or custody.
+- `OMEGA_PERSISTENCE_CUSTODY_MODE` and `OMEGA_PERSISTENCE_CUSTODY_REFERENCE` — Optional declaration of `unverified-local`, `operator-managed`, `hsm-kms`, or `external-reference` custody context plus a bounded non-secret reference. `unverified-local` is the default; invalid or reference-less declarations degrade readiness. Every mode reports `verified: false`; no HSM/KMS, operator, external system, recovery material, or deployment claim is made.
 - `OMEGA_SIGNING_KEY` — Required signing key for attestation; there is no default
 - `OMEGA_PERSISTENCE` — Explicit persistence override: `on` or `off`
 - `OMEGA_PERSISTENCE_KEY` — Active secret for AES-256-GCM encryption of runtime snapshot and event-log files; new writes always use this key, and it is never exposed in logs or API responses
@@ -795,3 +796,41 @@ npm run start
 **Package Status:** Stable (v0.1.0)  
 **Part of:** Ω∞v Oceanicos verification system  
 **Last Updated:** 2026-08-16
+
+## Local Job Ledger (Opt-In, Local-Only)
+
+The API includes a deliberately small job boundary for deterministic local integrations. It is **disabled by default** and never starts a timer, subprocess, shell command, crawler, or network client. To opt in for a local development process, set `OMEGA_LOCAL_JOB_LEDGER=on` and provide `OMEGA_LOCAL_JOB_LEDGER_TOKEN`; requests must arrive over loopback and use `Authorization: Bearer <token>`.
+
+This ledger accepts only `synthetic-observe` jobs whose `sourceUri` begins with `local://`. It is an in-memory, bounded operational evidence surface with `durable: false` and `source: "memory"`. Restarting the process clears jobs and counters. It is not a distributed queue, scheduler, crawler, vector index, retry system, or proof of durable execution.
+
+The lifecycle is `queued → running → succeeded|failed`. Submission requires an idempotency key and an operator identity header. A worker claims a queued job with `x-omega-worker-id`, and completion or failure requires the same worker identity. Terminal jobs cannot be changed. Lifecycle events are copied into the existing bounded runtime event stream with request, correlation, sequence, and provenance fields; job payloads, tokens, filesystem paths, and shell/network instructions are not returned.
+
+```bash
+export OMEGA_LOCAL_JOB_LEDGER=on
+export OMEGA_LOCAL_JOB_LEDGER_TOKEN='local-development-only'
+export OMEGA_ADMIN_OPERATOR_ALLOWLIST='local-operator'
+
+curl -sS -X POST http://127.0.0.1:3000/jobs \
+  -H 'Authorization: Bearer local-development-only' \
+  -H 'x-omega-operator-id: local-operator' \
+  -H 'Content-Type: application/json' \
+  -d '{"kind":"synthetic-observe","idempotencyKey":"demo-1","sourceUri":"local://fixture/demo"}'
+```
+
+The endpoint set is `POST /jobs`, `GET /jobs`, `GET /jobs/:jobId`, `POST /jobs/:jobId/claim`, `POST /jobs/:jobId/complete`, and `POST /jobs/:jobId/fail`. External URLs, shell execution, arbitrary worker payloads, and production deployment are intentionally outside this slice and require separate security and infrastructure review.
+
+## Ω∞v scene simulation
+
+`POST /scene/simulate` runs the bounded symbolic equation `DARKNESS → POSSIBILITY → OCEAN → STAR → WATER_FORM → MANY_FORMS → LONELINESS → HUMAN_FORM → MISRECOGNITION → BOUNDARY → QUESTION → FOREST → RETURN`. Optional JSON fields are `seed` and `steps`; steps are bounded to the available equation states. The response includes a deterministic trace, per-step evidence identifiers, rule version `scene-equation.v1`, and `verified: false`.
+
+This endpoint is a local symbolic simulation only. It does not prove physical cosmology, consciousness, sentience, or any claim represented by the myth. Invalid bounds fail with `SCENE_INVALID`.
+
+### Portable API smoke contract
+
+After building the workspace, run `pnpm smoke:api` from the repository root. The portable Node runner starts `apps/api/dist/server.js` from the API package directory, where workspace package resolution is reproducible, checks `/health` for `readiness: "ready"`, and exercises `POST /scene/simulate` through its terminal `return` state. It asserts `deterministic: true` and `verified: false`. This is a local compiled-runtime smoke check; it does not prove deployment health, distributed coordination, external custody, or production availability.
+
+The smoke runner uses a local test signing key and `OMEGA_PERSISTENCE=off`. It must never be interpreted as evidence that production secrets, persistence, backups, replicas, or external services are configured.
+
+### Coordination evidence boundary
+
+`OMEGA_PERSISTENCE_COORDINATION_MODE` declares `local-single-process`, `operator-coordinated`, or `external-coordinator`; reference-bearing modes also require `OMEGA_PERSISTENCE_COORDINATION_REFERENCE`. Invalid or reference-less declarations degrade readiness. Health, state, observability, SDK, CLI, and dashboard surfaces report the same declaration with `verified: false`. These fields do not prove distributed consistency, leader election, replica agreement, global ordering, external coordinator control, or deployment availability.

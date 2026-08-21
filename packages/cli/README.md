@@ -38,7 +38,7 @@ node packages/cli/dist/index.js reencrypt-persistence \
   --url http://localhost:3000
 ```
 
-The command is admin-authenticated and respects `OMEGA_ADMIN_OPERATOR_ALLOWLIST`. The API validates all local evidence before rewriting; corrupt or partial persistence returns a non-zero result and is not silently treated as complete. Success prints snapshot/event record counts and the audit event ID. `health` and `status` also print `ROTATION recovery=none|recovered|blocked`; a blocked journal is a non-ready local startup condition, while `recovered` records that a complete staged transaction was reconciled. This is local ciphertext rotation evidence only. `health` and `status` print `KEY ID current=... previous=... custody=unverified-local`; those short fingerprints identify configured local secrets for equality checks but do not prove distributed recovery, HSM/KMS custody, secure deletion, or deployment authorization. The API may also report `RECOVERY policy=unavailable|operator-provided|external-reference|invalid`; a reference is a bounded label only, and `invalid` makes readiness fail closed. The CLI does not verify an operator, custodian, recovery material, or external system. `health` also prints `COVERAGE` for runtime-snapshot, event-log, and kernel-memory observations and `UNVERIFIED` for databases, object storage, backups, and external services; `complete=false` is intentional. `health` and `status` also print `DELETION policy=unavailable|unlink-only|overwrite-unlink|invalid verified=false`; invalid policy degrades readiness, and no mode proves secure erasure or removes evidence from backups, replicas, or external systems.
+The command is admin-authenticated and respects `OMEGA_ADMIN_OPERATOR_ALLOWLIST`. The API validates all local evidence before rewriting; corrupt or partial persistence returns a non-zero result and is not silently treated as complete. Success prints snapshot/event record counts and the audit event ID. `health` and `status` also print `ROTATION recovery=none|recovered|blocked`; a blocked journal is a non-ready local startup condition, while `recovered` records that a complete staged transaction was reconciled. This is local ciphertext rotation evidence only. `health` and `status` print `KEY ID current=... previous=... custody=unverified-local`; those short fingerprints identify configured local secrets for equality checks but do not prove distributed recovery, HSM/KMS custody, secure deletion, or deployment authorization. The API may also report `RECOVERY policy=unavailable|operator-provided|external-reference|invalid`; a reference is a bounded label only, and `invalid` makes readiness fail closed. The CLI does not verify an operator, custodian, recovery material, or external system. `health` also prints `COVERAGE` for runtime-snapshot, event-log, and kernel-memory observations and `UNVERIFIED` for databases, object storage, backups, and external services; `complete=false` is intentional. `health` and `status` also print `DELETION policy=unavailable|unlink-only|overwrite-unlink|invalid verified=false`; invalid policy degrades readiness, and no mode proves secure erasure or removes evidence from backups, replicas, or external systems. They also print `CUSTODY policy=unverified-local|operator-managed|hsm-kms|external-reference|invalid reference=... verified=false`; invalid or reference-less modes degrade readiness, and no output proves HSM/KMS custody, operator identity, external recovery material, or deployment authorization.
 
 ## Event evidence
 
@@ -131,3 +131,22 @@ node packages/cli/dist/index.js revoke attestation-id \
 The command calls `POST /attest/revoke`, sends `revokedBy=omega-cli`, and uses `--admin-token TOKEN` or `OMEGA_ADMIN_TOKEN` for the distinct administrative bearer credential. `--token` remains the read-only credential and is not reused for this mutation. The command prints the recorded revocation and returns a non-zero status for API failure. The API remains the authority for lineage, duplicate protection, persistence, and action denial; the CLI does not claim that a revocation is a cryptographic alteration of the original attestation.
 
 Mobile capabilities remain future slices. The typed SDK is available separately as `@omega-v/sdk`, and accepts `{ readToken }` as its third constructor argument when the API read boundary is enabled.
+
+## Local job evidence
+
+Read the bounded local worker ledger without starting or mutating work:
+
+```bash
+node packages/cli/dist/index.js jobs \
+  --url http://localhost:3000 \
+  --token "$OMEGA_READ_TOKEN" \
+  --limit 20
+```
+
+`omega jobs` calls only `GET /jobs`. It prints safe identifiers, lifecycle state, attempts, worker labels, timestamps, bounded counts, `source=memory`, and `durable=false`. The command rejects invalid limits outside 1–40, never sends worker headers or a request body, and returns a non-zero result for disabled, unauthorized, malformed, or contradictory evidence. A successful local job state is not a claim of durable execution, queue delivery, restart recovery, external crawling, or vector indexing.
+
+## Scene equation simulation
+
+`omega scene [--seed SEED] [--steps N]` calls `POST /scene/simulate` and renders the bounded Ω∞v scene trace, terminal state, rule version, deterministic flag, and `verified=false` boundary. This is symbolic local-simulation evidence only; it is not proof of cosmology, consciousness, sentience, or execution in an external world.
+
+The health output also prints `COORDINATION policy=local-single-process|operator-coordinated|external-coordinator|invalid reference=... verified=false`. This is a bounded declaration of the configured coordination boundary; it does not prove distributed consistency, leader election, replica agreement, external coordinator control, or deployment availability.

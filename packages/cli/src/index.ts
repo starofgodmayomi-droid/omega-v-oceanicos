@@ -51,6 +51,18 @@ type HealthResponse = {
         reencryptionRecovery: ReencryptionRecovery;
         recoveryPolicy: { mode: string; reference: string | null; reason: string | null };
         deletionPolicy: { mode: string; reason: string | null; verified: false };
+        custodyPolicy: {
+          mode: string;
+          reference: string | null;
+          reason: string | null;
+          verified: false;
+        };
+        coordinationPolicy: {
+          mode: string;
+          reference: string | null;
+          reason: string | null;
+          verified: false;
+        };
         coverage: {
           complete: false;
           surfaces: Array<{
@@ -165,6 +177,29 @@ type RunsResponse = {
   timestamp: string;
 };
 
+type LocalJobState = 'queued' | 'running' | 'succeeded' | 'failed' | 'unknown';
+type LocalJobsResponse = {
+  data: {
+    jobs: Array<{
+      id: string;
+      state: LocalJobState;
+      attempt: number;
+      workerId: string | null;
+      createdAt: string;
+      updatedAt: string;
+      finishedAt: string | null;
+      errorClass: string | null;
+    }>;
+    status: {
+      enabled: boolean;
+      durable: false;
+      source: 'memory';
+      counts: Record<LocalJobState, number>;
+      recentWindow: number;
+    };
+  };
+  timestamp: string;
+};
 type Revocation = {
   id: string;
   attestationId: string;
@@ -189,6 +224,7 @@ function usage(): string {
     'omega events [--url URL] [--limit N] [--token TOKEN]',
     'omega audit [--type TYPE] [--stage STAGE] [--status STATUS] [--from ISO] [--to ISO] [--limit N] [--url URL] [--token TOKEN]',
     'omega runs [--url URL] [--limit N] [--token TOKEN]',
+    'omega jobs [--url URL] [--limit N] [--token TOKEN]',
     'omega export [--url URL] [--token TOKEN]',
     'omega revocations [--url URL] [--token TOKEN]',
     'omega revoke ATTESTATION_ID --reason REASON [--operator-id ID] [--url URL] [--token TOKEN] [--admin-token TOKEN]',
@@ -196,6 +232,7 @@ function usage(): string {
     'omega reencrypt-persistence --reason REASON --operator-id ID [--url URL] [--admin-token TOKEN]',
     'omega verify --attestation-json JSON [--url URL] [--token TOKEN]',
     'omega policy [--url URL] [--token TOKEN]',
+    'omega scene [--seed SEED] [--steps N] [--url URL] [--token TOKEN]',
     '',
     'Read live runtime and evidence from the Omega V API.',
     '',
@@ -270,6 +307,8 @@ async function health(argv: string[], fetchImpl: FetchLike): Promise<number> {
         `ROTATION     recovery=${checks.persistence.reencryptionRecovery?.status ?? 'unknown'} reason=${checks.persistence.reencryptionRecovery?.reason ?? 'none'}`,
         `RECOVERY     policy=${checks.persistence.recoveryPolicy?.mode ?? 'unknown'} reference=${checks.persistence.recoveryPolicy?.reference ?? 'none'} reason=${checks.persistence.recoveryPolicy?.reason ?? 'none'}`,
         `DELETION     policy=${checks.persistence.deletionPolicy?.mode ?? 'unknown'} verified=${checks.persistence.deletionPolicy?.verified ?? 'unknown'} reason=${checks.persistence.deletionPolicy?.reason ?? 'none'}`,
+        `CUSTODY      policy=${checks.persistence.custodyPolicy?.mode ?? 'unknown'} reference=${checks.persistence.custodyPolicy?.reference ?? 'none'} verified=${checks.persistence.custodyPolicy?.verified ?? 'unknown'} reason=${checks.persistence.custodyPolicy?.reason ?? 'none'}`,
+        `COORDINATION  policy=${checks.persistence.coordinationPolicy?.mode ?? 'unknown'} reference=${checks.persistence.coordinationPolicy?.reference ?? 'none'} verified=${checks.persistence.coordinationPolicy?.verified ?? 'unknown'} reason=${checks.persistence.coordinationPolicy?.reason ?? 'none'}`,
         `COVERAGE     ${checks.persistence.coverage?.surfaces?.map((surface) => `${surface.name}=${surface.encryption}/${surface.keySource}`).join(', ') ?? 'unknown'}`,
         `UNVERIFIED   ${checks.persistence.coverage?.unverifiedSurfaces?.join(', ') ?? 'unknown'} complete=${checks.persistence.coverage?.complete ?? 'unknown'}`,
         `POLICY        algorithm=${policy.attestationAlgorithm} ttl=${policy.attestationTtlMs ?? 'off'} adminAllowlistRequired=${policy.adminOperatorAllowlistRequired ?? 'unknown'} revocation=${policy.revocationEnabled}`,
@@ -362,6 +401,51 @@ async function runs(argv: string[], fetchImpl: FetchLike): Promise<number> {
   } catch (error) {
     process.stderr.write(
       `Runs unavailable: ${error instanceof Error ? error.message : String(error)}\n`
+    );
+    return 1;
+  }
+}
+
+async function jobs(argv: string[], fetchImpl: FetchLike): Promise<number> {
+  const endpoint = `${baseUrl(argv).replace(/\/$/, '')}/jobs`;
+  const limitIndex = argv.indexOf('--limit');
+  const requestedLimit = limitIndex < 0 ? 20 : Number(argv[limitIndex + 1]);
+  if (!Number.isInteger(requestedLimit) || requestedLimit < 1 || requestedLimit > 40) {
+    process.stderr.write('Jobs --limit must be an integer between 1 and 40\n');
+    return 2;
+  }
+  try {
+    const response = await fetchImpl(`${endpoint}?limit=${requestedLimit}`, requestInit(argv));
+    const body = (await response.json()) as LocalJobsResponse | { code?: string; message?: string };
+    if (!response.ok || !('data' in body) || !Array.isArray(body.data.jobs)) {
+      const code = 'code' in body ? body.code : undefined;
+      const message = 'message' in body ? body.message : undefined;
+      process.stderr.write(
+        `Jobs unavailable (${response.status})${code ? ` ${code}` : ''}: ${message ?? 'unknown error'}\n`
+      );
+      return 1;
+    }
+    if (body.data.status.durable !== false || body.data.status.source !== 'memory') {
+      process.stderr.write('Jobs response contradicted the local non-durable contract\n');
+      return 1;
+    }
+    const jobsToShow = body.data.jobs.slice(0, requestedLimit);
+    const { status } = body.data;
+    process.stdout.write(
+      `JOBS          ${jobsToShow.length}/${body.data.jobs.length} source=${status.source} storage=memory durable=false enabled=${status.enabled}\n`
+    );
+    process.stdout.write(
+      `COUNTS        queued=${status.counts.queued} running=${status.counts.running} succeeded=${status.counts.succeeded} failed=${status.counts.failed} unknown=${status.counts.unknown} window=${status.recentWindow}\n`
+    );
+    for (const job of jobsToShow) {
+      process.stdout.write(
+        `${job.id} state=${job.state} attempt=${job.attempt} worker=${job.workerId ?? 'none'} created=${job.createdAt} updated=${job.updatedAt} finished=${job.finishedAt ?? 'none'} error=${job.errorClass ?? 'none'}\n`
+      );
+    }
+    return 0;
+  } catch (error) {
+    process.stderr.write(
+      `Jobs unavailable: ${error instanceof Error ? error.message : String(error)}\n`
     );
     return 1;
   }
@@ -639,6 +723,51 @@ async function audit(argv: string[], fetchImpl: FetchLike): Promise<number> {
   }
 }
 
+async function scene(argv: string[], fetchImpl: FetchLike): Promise<number> {
+  const seed = option(argv, '--seed');
+  const steps = option(argv, '--steps');
+  const endpoint = `${baseUrl(argv).replace(/\/$/, '')}/scene/simulate`;
+  try {
+    const response = await fetchImpl(endpoint, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', ...(requestInit(argv)?.headers ?? {}) },
+      body: JSON.stringify({
+        ...(seed ? { seed } : {}),
+        ...(steps ? { steps: Number(steps) } : {}),
+      }),
+    });
+    const body = (await response.json()) as {
+      data?: {
+        equation: string;
+        states: string[];
+        terminalState: string;
+        provenance: { ruleVersion: string; verified: boolean; deterministic: boolean };
+      };
+      message?: string;
+    };
+    if (!response.ok || !body.data) {
+      process.stderr.write(
+        `Scene unavailable (${response.status}): ${body.message ?? 'unknown error'}\\n`
+      );
+      return 1;
+    }
+    process.stdout.write(
+      [
+        `SCENE         ${body.data.terminalState} states=${body.data.states.length}`,
+        `EQUATION      ${body.data.equation}`,
+        `TRACE         ${body.data.states.join(' → ')}`,
+        `PROVENANCE    rule=${body.data.provenance.ruleVersion} deterministic=${body.data.provenance.deterministic} verified=${body.data.provenance.verified}`,
+      ].join('\\n') + '\\n'
+    );
+    return 0;
+  } catch (error) {
+    process.stderr.write(
+      `Scene unavailable: ${error instanceof Error ? error.message : String(error)}\\n`
+    );
+    return 1;
+  }
+}
+
 async function events(argv: string[], fetchImpl: FetchLike): Promise<number> {
   const endpoint = `${baseUrl(argv).replace(/\/$/, '')}/events`;
   try {
@@ -678,10 +807,12 @@ export async function run(
   if (command === 'events') return events(argv, fetchImpl);
   if (command === 'audit') return audit(argv, fetchImpl);
   if (command === 'runs') return runs(argv, fetchImpl);
+  if (command === 'jobs') return jobs(argv, fetchImpl);
   if (command === 'export') return evidenceExport(argv, fetchImpl);
   if (command === 'revocations') return revocations(argv, fetchImpl);
   if (command === 'verify') return verifyAttestation(argv, fetchImpl);
   if (command === 'policy') return policy(argv, fetchImpl);
+  if (command === 'scene') return scene(argv, fetchImpl);
   if (command === 'revoke') return revoke(argv, fetchImpl);
   if (command === 'acknowledge-persistence') return acknowledgePersistence(argv, fetchImpl);
   if (command === 'reencrypt-persistence') return reencryptPersistence(argv, fetchImpl);

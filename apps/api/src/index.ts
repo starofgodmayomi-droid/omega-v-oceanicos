@@ -3,18 +3,25 @@ import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import express, { Express, Request, Response } from 'express';
-import { Observer } from '@omega-v/observer';
-import { VerificationEngine } from '@omega-v/verification';
-import { AttestationService } from '@omega-v/attestation';
-import { Remember, FileMemoryStore } from '@omega-v/remember';
+import Observer from '@omega-v/observer';
+import VerificationEngine from '@omega-v/verification';
+import AttestationService from '@omega-v/attestation';
+import Remember, { FileMemoryStore } from '@omega-v/remember';
+import * as DissensusModule from '@omega-v/dissensus';
+import type { Dissensus, DissensusPolicy, Opinion } from '@omega-v/dissensus';
+
+const { policyFromEnvironment, reconcile } = DissensusModule;
 import {
-  policyFromEnvironment,
-  reconcile,
-  type Dissensus,
-  type DissensusPolicy,
-  type Opinion,
-} from '@omega-v/dissensus';
-import { Attestation, SuccessResponse, ErrorResponse, VerificationRule } from '@omega-v/types';
+  Attestation,
+  ErrorResponse,
+  LocalJobCreateInput,
+  LocalJobEvent,
+  LocalJobState,
+  SuccessResponse,
+  VerificationRule,
+} from '@omega-v/types';
+import { LocalJobError, LocalJobLedger, LOCAL_JOB_WINDOW } from './jobs.js';
+import { simulateScene } from './scene.js';
 import {
   appendEvent,
   ENCRYPTION_ALGORITHM,
@@ -32,6 +39,8 @@ import {
   persistenceKeyFingerprint,
   parsePersistenceRecoveryPolicy,
   parsePersistenceDeletionPolicy,
+  parsePersistenceCustodyPolicy,
+  parsePersistenceCoordinationPolicy,
   persistenceCoverage,
 } from './persistence.js';
 
@@ -183,7 +192,17 @@ const persistenceRecoveryPolicy = parsePersistenceRecoveryPolicy(
 const persistenceDeletionPolicy = parsePersistenceDeletionPolicy(
   process.env.OMEGA_PERSISTENCE_DELETION_MODE
 );
+const persistenceCustodyPolicy = parsePersistenceCustodyPolicy(
+  process.env.OMEGA_PERSISTENCE_CUSTODY_MODE,
+  process.env.OMEGA_PERSISTENCE_CUSTODY_REFERENCE
+);
+const persistenceCoordinationPolicy = parsePersistenceCoordinationPolicy(
+  process.env.OMEGA_PERSISTENCE_COORDINATION_MODE,
+  process.env.OMEGA_PERSISTENCE_COORDINATION_REFERENCE
+);
 const deletionPolicyReady = persistenceDeletionPolicy.mode !== 'invalid';
+const custodyPolicyReady = persistenceCustodyPolicy.mode !== 'invalid';
+const coordinationPolicyReady = persistenceCoordinationPolicy.mode !== 'invalid';
 const memoryEncryptionKey = process.env.OMEGA_MEMORY_KEY;
 const memoryEncryptionEnabled = persistenceEnabled && Boolean(memoryEncryptionKey?.trim());
 const kernelMemoryStore = persistenceEnabled
@@ -427,6 +446,7 @@ const runtimeActions = snapshot.actions;
 const runtimeLearnings = snapshot.learnings;
 const runtimeRecompilations = snapshot.recompilations;
 const runtimeRevocations = snapshot.revocations ?? [];
+const localJobLedger = new LocalJobLedger();
 type PersistenceAcknowledgement = {
   operatorId: string;
   reason: string;
@@ -551,6 +571,231 @@ const recordEvent = (event: Omit<RuntimeEvent, 'id' | 'timestamp'>): RuntimeEven
   }
   return recorded;
 };
+
+const loopbackAddress = (address: string | undefined): boolean => {
+  if (!address) return false;
+  const normalized = address.replace(/^::ffff:/, '');
+  return normalized === '127.0.0.1' || normalized === '::1';
+};
+const jobLedgerAccess = (req: Request, res: Response): boolean => {
+  if (!localJobLedger.isEnabled()) {
+    res.status(404).json({
+      code: 'LOCAL_JOB_DISABLED',
+      message: 'The local job ledger is disabled',
+      timestamp: new Date().toISOString(),
+    } satisfies ErrorResponse);
+    return false;
+  }
+  if (!loopbackAddress(req.socket.remoteAddress)) {
+    res.status(403).json({
+      code: 'LOCAL_JOB_LOOPBACK_ONLY',
+      message: 'The local job ledger accepts loopback requests only',
+      timestamp: new Date().toISOString(),
+    } satisfies ErrorResponse);
+    return false;
+  }
+  const configuredToken = process.env.OMEGA_LOCAL_JOB_LEDGER_TOKEN?.trim();
+  if (
+    !configuredToken ||
+    !constantTimeTokenMatch(bearerToken(req.header('authorization') || ''), configuredToken)
+  ) {
+    res.status(401).json({
+      code: 'LOCAL_JOB_ACCESS_REQUIRED',
+      message: 'A local job ledger bearer token is required',
+      timestamp: new Date().toISOString(),
+    } satisfies ErrorResponse);
+    return false;
+  }
+  return true;
+};
+const jobProvenance = (req: Request, res: Response, actor: string | null) => ({
+  source: 'api' as const,
+  actor,
+  requestId: (res.locals.requestId as string | undefined) ?? null,
+  correlationId: req.header('x-correlation-id')?.trim() || null,
+  observedAt: new Date().toISOString(),
+  schemaVersion: '1' as const,
+});
+const recordJobEvent = (event: LocalJobEvent): RuntimeEvent =>
+  recordEvent({
+    type: `job.${event.type}`,
+    stage: 'job',
+    message: event.details.message,
+    status: event.type === 'failed' ? 'failed' : 'passed',
+    correlationId: event.provenance.correlationId ?? undefined,
+    requestId: event.provenance.requestId ?? undefined,
+    details: {
+      jobId: event.jobId,
+      eventId: event.id,
+      sequence: event.sequence,
+      state: event.details.state,
+      durable: false,
+      source: 'memory',
+    },
+  });
+const jobErrorStatus = (code: LocalJobError['code']): number =>
+  code === 'JOB_NOT_FOUND'
+    ? 404
+    : code === 'JOB_DUPLICATE'
+      ? 409
+      : code === 'JOB_IDEMPOTENCY_CONFLICT'
+        ? 409
+        : 400;
+const jobPathValue = (value: string | string[] | undefined): string =>
+  typeof value === 'string' ? value : '';
+const jobError = (error: unknown, res: Response): void => {
+  if (error instanceof LocalJobError) {
+    res.status(jobErrorStatus(error.code)).json({
+      code: error.code,
+      message: error.message,
+      timestamp: new Date().toISOString(),
+    } satisfies ErrorResponse);
+    return;
+  }
+  res.status(400).json({
+    code: 'JOB_INVALID',
+    message: 'The local job request could not be processed',
+    timestamp: new Date().toISOString(),
+  } satisfies ErrorResponse);
+};
+app.post('/jobs', (req: Request, res: Response) => {
+  if (!jobLedgerAccess(req, res)) return;
+  const actor = req.header('x-omega-operator-id')?.trim() || null;
+  const input = {
+    kind: req.body?.kind,
+    idempotencyKey: req.body?.idempotencyKey,
+    sourceUri: req.body?.sourceUri,
+    actor: actor ?? '',
+  } as LocalJobCreateInput;
+  try {
+    const result = localJobLedger.create(input, jobProvenance(req, res, actor));
+    const event = recordJobEvent(result.event);
+    res.status(201).json({
+      data: { job: result.job, event: result.event, runtimeEventId: event.id },
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    if (error instanceof LocalJobError && error.code === 'JOB_DUPLICATE') {
+      res.status(409).json({
+        code: error.code,
+        message: 'The idempotency key already identifies an existing local job',
+        jobId: error.message,
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+    jobError(error, res);
+  }
+});
+app.get('/jobs', (req: Request, res: Response) => {
+  if (!jobLedgerAccess(req, res)) return;
+  try {
+    const rawLimit = req.query.limit;
+    const limit = rawLimit === undefined ? LOCAL_JOB_WINDOW : Number(rawLimit);
+    const state = typeof req.query.state === 'string' ? req.query.state : undefined;
+    const jobs = localJobLedger.list(limit, state as LocalJobState | undefined);
+    res.json({
+      data: { jobs, status: localJobLedger.status() },
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    jobError(error, res);
+  }
+});
+app.get('/jobs/:jobId', (req: Request, res: Response) => {
+  if (!jobLedgerAccess(req, res)) return;
+  const job = localJobLedger.get(jobPathValue(req.params.jobId));
+  if (!job) {
+    res.status(404).json({
+      code: 'JOB_NOT_FOUND',
+      message: 'Job not found',
+      timestamp: new Date().toISOString(),
+    } satisfies ErrorResponse);
+    return;
+  }
+  res.json({
+    data: {
+      job,
+      events: localJobLedger.recentEvents().filter((event) => event.jobId === job.id),
+      status: localJobLedger.status(),
+    },
+    timestamp: new Date().toISOString(),
+  });
+});
+app.post('/jobs/:jobId/claim', (req: Request, res: Response) => {
+  if (!jobLedgerAccess(req, res)) return;
+  const workerId = req.header('x-omega-worker-id')?.trim() || '';
+  try {
+    const result = localJobLedger.claim(
+      jobPathValue(req.params.jobId),
+      workerId,
+      jobProvenance(req, res, workerId)
+    );
+    const event = recordJobEvent(result.event);
+    res.json({
+      data: { job: result.job, event: result.event, runtimeEventId: event.id },
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    jobError(error, res);
+  }
+});
+app.post('/jobs/:jobId/complete', (req: Request, res: Response) => {
+  if (!jobLedgerAccess(req, res)) return;
+  const workerId = req.header('x-omega-worker-id')?.trim() || '';
+  try {
+    const result = localJobLedger.complete(
+      jobPathValue(req.params.jobId),
+      workerId,
+      req.body?.resultSummary,
+      jobProvenance(req, res, workerId)
+    );
+    const event = recordJobEvent(result.event);
+    res.json({
+      data: { job: result.job, event: result.event, runtimeEventId: event.id },
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    jobError(error, res);
+  }
+});
+app.post('/jobs/:jobId/fail', (req: Request, res: Response) => {
+  if (!jobLedgerAccess(req, res)) return;
+  const workerId = req.header('x-omega-worker-id')?.trim() || '';
+  try {
+    const result = localJobLedger.fail(
+      jobPathValue(req.params.jobId),
+      workerId,
+      req.body?.errorClass,
+      jobProvenance(req, res, workerId)
+    );
+    const event = recordJobEvent(result.event);
+    res.json({
+      data: { job: result.job, event: result.event, runtimeEventId: event.id },
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    jobError(error, res);
+  }
+});
+
+app.post('/scene/simulate', (req: Request, res: Response) => {
+  try {
+    const seed = typeof req.body?.seed === 'string' ? req.body.seed : undefined;
+    const steps = req.body?.steps === undefined ? undefined : Number(req.body.steps);
+    const simulation = simulateScene({ seed, steps });
+    res.json({
+      data: simulation,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    res.status(400).json({
+      code: 'SCENE_INVALID',
+      message: error instanceof Error ? error.message : 'The scene simulation request is invalid',
+      timestamp: new Date().toISOString(),
+    } satisfies ErrorResponse);
+  }
+});
 
 app.post('/persistence/acknowledge', (req: Request, res: Response) => {
   const { reason, operatorId: operatorIdFromBody } = req.body as {
@@ -773,6 +1018,18 @@ app.get('/health', (_req: Request, res: Response) => {
         reencryptionRecovery: { status: 'none' | 'recovered' | 'blocked'; reason: string | null };
         recoveryPolicy: { mode: string; reference: string | null; reason: string | null };
         deletionPolicy: { mode: string; reason: string | null; verified: false };
+        custodyPolicy: {
+          mode: string;
+          reference: string | null;
+          reason: string | null;
+          verified: false;
+        };
+        coordinationPolicy: {
+          mode: string;
+          reference: string | null;
+          reason: string | null;
+          verified: false;
+        };
         coverage: {
           complete: false;
           surfaces: Array<{
@@ -798,7 +1055,12 @@ app.get('/health', (_req: Request, res: Response) => {
     data: {
       status: 'ok',
       readiness:
-        memoryIntact && persistenceIsReady && durableLogIsReady && deletionPolicyReady
+        memoryIntact &&
+        persistenceIsReady &&
+        durableLogIsReady &&
+        deletionPolicyReady &&
+        custodyPolicyReady &&
+        coordinationPolicyReady
           ? 'ready'
           : 'degraded',
       checks: {
@@ -830,6 +1092,8 @@ app.get('/health', (_req: Request, res: Response) => {
           },
           recoveryPolicy: persistenceRecoveryPolicy,
           deletionPolicy: persistenceDeletionPolicy,
+          custodyPolicy: persistenceCustodyPolicy,
+          coordinationPolicy: persistenceCoordinationPolicy,
           coverage: {
             ...localPersistenceCoverage,
             surfaces: localPersistenceCoverage.surfaces.map((surface) =>
@@ -887,7 +1151,12 @@ app.get('/state', (_req: Request, res: Response) => {
     data: {
       status: 'active',
       readiness:
-        memoryIntact && persistenceIsReady && durableLogIsReady && deletionPolicyReady
+        memoryIntact &&
+        persistenceIsReady &&
+        durableLogIsReady &&
+        deletionPolicyReady &&
+        custodyPolicyReady &&
+        coordinationPolicyReady
           ? 'ready'
           : 'degraded',
       persistence: persistenceEnabled ? 'file' : 'memory',
@@ -903,6 +1172,8 @@ app.get('/state', (_req: Request, res: Response) => {
       reencryptionRecovery,
       recoveryPolicy: persistenceRecoveryPolicy,
       deletionPolicy: persistenceDeletionPolicy,
+      custodyPolicy: persistenceCustodyPolicy,
+      coordinationPolicy: persistenceCoordinationPolicy,
       coverage: {
         ...localPersistenceCoverage,
         surfaces: localPersistenceCoverage.surfaces.map((surface) =>
@@ -995,6 +1266,7 @@ app.get('/observability', (_req: Request, res: Response) => {
         services: ['observer', 'verifier', 'attester'],
         lastActivity: latestEvent?.timestamp || null,
       },
+      jobs: localJobLedger.status(),
       provenance: {
         recentEvents: runtimeEvents.length,
         durableEvents: durableLog.entries.length,
@@ -2059,6 +2331,13 @@ const startServer = () =>
         '  POST   /attest/revoke    - Revoke an attestation',
         '  POST   /persistence/acknowledge - Record persistence review',
         '  POST   /persistence/reencrypt - Re-encrypt local persistence',
+        '  POST   /jobs             - Submit a local synthetic job (opt-in)',
+        '  GET    /jobs             - List bounded local jobs (opt-in)',
+        '  GET    /jobs/:jobId      - Read a local job and its events (opt-in)',
+        '  POST   /jobs/:jobId/claim - Claim a local job (opt-in)',
+        '  POST   /jobs/:jobId/complete - Complete a local job (opt-in)',
+        '  POST   /jobs/:jobId/fail - Fail a local job (opt-in)',
+        '  POST   /scene/simulate   - Run bounded Ω∞v scene simulation',
         '',
       ].join('\n')
     );

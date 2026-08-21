@@ -47,6 +47,22 @@ export type PersistenceDeletionPolicy = {
   reason: string | null;
   verified: false;
 };
+export type PersistenceCustodyMode =
+  'unverified-local' | 'operator-managed' | 'hsm-kms' | 'external-reference' | 'invalid';
+export type PersistenceCustodyPolicy = {
+  mode: PersistenceCustodyMode;
+  reference: string | null;
+  reason: string | null;
+  verified: false;
+};
+export type PersistenceCoordinationMode =
+  'local-single-process' | 'operator-coordinated' | 'external-coordinator' | 'invalid';
+export type PersistenceCoordinationPolicy = {
+  mode: PersistenceCoordinationMode;
+  reference: string | null;
+  reason: string | null;
+  verified: false;
+};
 export type PersistenceCoverage = {
   complete: false;
   surfaces: Array<{
@@ -104,6 +120,74 @@ export const parsePersistenceDeletionPolicy = (mode?: string): PersistenceDeleti
     return { mode: normalizedMode, reason: null, verified: false };
   }
   return { mode: 'invalid', reason: 'unsupported deletion policy mode', verified: false };
+};
+
+export const parsePersistenceCustodyPolicy = (
+  mode?: string,
+  reference?: string
+): PersistenceCustodyPolicy => {
+  const normalizedMode = mode?.trim() || 'unverified-local';
+  const normalizedReference = reference?.trim() || null;
+  if (normalizedMode === 'unverified-local') {
+    return { mode: normalizedMode, reference: null, reason: null, verified: false };
+  }
+  if (
+    normalizedMode !== 'operator-managed' &&
+    normalizedMode !== 'hsm-kms' &&
+    normalizedMode !== 'external-reference'
+  ) {
+    return {
+      mode: 'invalid',
+      reference: null,
+      reason: 'unsupported custody policy mode',
+      verified: false,
+    };
+  }
+  if (
+    !normalizedReference ||
+    normalizedReference.length > 256 ||
+    /[\r\n]/.test(normalizedReference)
+  ) {
+    return {
+      mode: 'invalid',
+      reference: null,
+      reason: 'custody policy reference is missing or invalid',
+      verified: false,
+    };
+  }
+  return { mode: normalizedMode, reference: normalizedReference, reason: null, verified: false };
+};
+
+export const parsePersistenceCoordinationPolicy = (
+  mode?: string,
+  reference?: string
+): PersistenceCoordinationPolicy => {
+  const normalizedMode = mode?.trim() || 'local-single-process';
+  const normalizedReference = reference?.trim() || null;
+  if (normalizedMode === 'local-single-process') {
+    return { mode: normalizedMode, reference: null, reason: null, verified: false };
+  }
+  if (normalizedMode !== 'operator-coordinated' && normalizedMode !== 'external-coordinator') {
+    return {
+      mode: 'invalid',
+      reference: null,
+      reason: 'unsupported coordination policy mode',
+      verified: false,
+    };
+  }
+  if (
+    !normalizedReference ||
+    normalizedReference.length > 256 ||
+    /[\r\n]/.test(normalizedReference)
+  ) {
+    return {
+      mode: 'invalid',
+      reference: null,
+      reason: 'coordination policy reference is missing or invalid',
+      verified: false,
+    };
+  }
+  return { mode: normalizedMode, reference: normalizedReference, reason: null, verified: false };
 };
 
 export const parsePersistenceRecoveryPolicy = (

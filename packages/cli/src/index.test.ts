@@ -1125,3 +1125,119 @@ describe('omega CLI argument parsing', () => {
     expect(output.join('')).toContain('obs-bad verification=FAILED attestation=INVALID');
   });
 });
+
+describe('omega jobs CLI', () => {
+  const capture = () => {
+    const output: string[] = [];
+    const errors: string[] = [];
+    const stdout = process.stdout.write;
+    const stderr = process.stderr.write;
+    process.stdout.write = ((chunk: string | Uint8Array) => {
+      output.push(String(chunk));
+      return true;
+    }) as typeof process.stdout.write;
+    process.stderr.write = ((chunk: string | Uint8Array) => {
+      errors.push(String(chunk));
+      return true;
+    }) as typeof process.stderr.write;
+    return {
+      output,
+      errors,
+      restore: () => {
+        process.stdout.write = stdout;
+        process.stderr.write = stderr;
+      },
+    };
+  };
+
+  const payload = (count = 2) => ({
+    data: {
+      jobs: Array.from({ length: count }, (_, index) => ({
+        id: `job-${index + 1}`,
+        state: index === 0 ? 'running' : 'succeeded',
+        attempt: index + 1,
+        workerId: index === 0 ? 'worker-a' : null,
+        createdAt: '2026-08-20T00:00:00.000Z',
+        updatedAt: '2026-08-20T00:01:00.000Z',
+        finishedAt: index === 0 ? null : '2026-08-20T00:02:00.000Z',
+        errorClass: null,
+      })),
+      status: {
+        enabled: true,
+        durable: false,
+        source: 'memory',
+        counts: { queued: 0, running: 1, succeeded: 1, failed: 0, unknown: 0 },
+        recentWindow: 40,
+      },
+    },
+    timestamp: '2026-08-20T00:02:00.000Z',
+  });
+
+  it('prints bounded local evidence and sends only a GET read request', async () => {
+    const io = capture();
+    try {
+      const exitCode = await run(
+        ['jobs', '--url', 'http://api.test', '--limit', '1', '--token', 'read-token'],
+        async (url, init) => {
+          expect(url).toBe('http://api.test/jobs?limit=1');
+          expect(init?.method).toBeUndefined();
+          expect(new Headers(init?.headers).get('authorization')).toBe('Bearer read-token');
+          expect(new Headers(init?.headers).get('x-omega-worker-id')).toBe(null);
+          return new Response(JSON.stringify(payload()));
+        }
+      );
+      expect(exitCode).toBe(0);
+      expect(io.output.join('')).toContain(
+        'JOBS          1/2 source=memory storage=memory durable=false enabled=true'
+      );
+      expect(io.output.join('')).toContain('job-1 state=running');
+      expect(io.output.join('')).not.toContain('job-2 state=succeeded');
+    } finally {
+      io.restore();
+    }
+  });
+
+  it.each(['0', '-1', '1.5', 'abc'])(
+    'rejects unsafe --limit %s without contacting the API',
+    async (value) => {
+      const io = capture();
+      try {
+        const exitCode = await run(['jobs', '--limit', value], async () => {
+          throw new Error('request should not be made');
+        });
+        expect(exitCode).toBe(2);
+        expect(io.errors.join('')).toContain('between 1 and 40');
+      } finally {
+        io.restore();
+      }
+    }
+  );
+
+  it('fails closed on contradictory durability metadata', async () => {
+    const io = capture();
+    try {
+      const exitCode = await run(
+        ['jobs', '--url', 'http://api.test'],
+        async () =>
+          new Response(
+            JSON.stringify({
+              data: {
+                jobs: [],
+                status: {
+                  enabled: true,
+                  durable: true,
+                  source: 'memory',
+                  counts: {},
+                  recentWindow: 40,
+                },
+              },
+            })
+          )
+      );
+      expect(exitCode).toBe(1);
+      expect(io.errors.join('')).toContain('contradicted the local non-durable contract');
+    } finally {
+      io.restore();
+    }
+  });
+});
