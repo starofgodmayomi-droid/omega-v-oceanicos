@@ -126,7 +126,9 @@ This is the recommended entry point. It demonstrates the full mental model:
     "responseTime": 45
   },
   "confidence": 0.95,
-  "confidenceReason": "3 consecutive checks"
+  "confidenceReason": "3 consecutive checks",
+  "parentId": "obs-parent-1",
+  "lineage": ["obs-root-1", "obs-parent-1"]
 }
 ```
 
@@ -186,7 +188,7 @@ Returns unauthenticated liveness and readiness evidence for probes. The response
 POST /observe
 ```
 
-**Step 1 of verification loop**: Submit an observation.
+**Step 1 of verification loop**: Submit an observation. Optional `parentId` and bounded `lineage` fields preserve local predecessor evidence; the API accepts at most 32 non-empty lineage identifiers. These fields do not prove causality, distributed ordering, or external execution.
 
 **Request:**
 
@@ -205,7 +207,9 @@ POST /observe
     "responseTime": 45
   },
   "confidence": 0.95,
-  "confidenceReason": "3 consecutive checks"
+  "confidenceReason": "3 consecutive checks",
+  "parentId": "obs-parent-1",
+  "lineage": ["obs-root-1", "obs-parent-1"]
 }
 ```
 

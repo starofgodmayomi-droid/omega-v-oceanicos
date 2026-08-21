@@ -35,6 +35,10 @@ export interface Observation {
   confidence: number;
   confidenceReason: string;
 
+  /** Optional immediate predecessor in the evidence lineage */
+  parentId?: string;
+  /** Optional bounded lineage of predecessor observation identifiers */
+  lineage?: string[];
   /** Status of the observation */
   status: 'normalized' | 'verified' | 'failed';
 }

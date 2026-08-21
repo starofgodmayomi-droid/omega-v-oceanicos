@@ -269,6 +269,46 @@ describe('API runtime contracts', () => {
     expect(JSON.stringify(body)).not.toMatch(/token|secret|private|signing material/i);
   });
 
+  it('propagates bounded observation parent and lineage provenance', async () => {
+    const response = await fetch(`${baseUrl}/observe`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        claim: 'Lineage API contract',
+        source: { system: 'api-test', version: '0.1.0', environment: 'test' },
+        observedBy: 'jest',
+        metadata: {},
+        confidence: 0.9,
+        confidenceReason: 'Lineage contract test',
+        parentId: 'obs-parent-api',
+        lineage: ['obs-root-api', 'obs-parent-api'],
+      }),
+    });
+    const body = (await response.json()) as ApiResponse<{
+      parentId?: string;
+      lineage?: string[];
+    }>;
+    expect(response.status).toBe(201);
+    expect(body.data.parentId).toBe('obs-parent-api');
+    expect(body.data.lineage).toEqual(['obs-root-api', 'obs-parent-api']);
+
+    const rejected = await fetch(`${baseUrl}/observe`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        claim: 'Oversized lineage API contract',
+        source: { system: 'api-test', version: '0.1.0', environment: 'test' },
+        observedBy: 'jest',
+        metadata: {},
+        confidence: 0.9,
+        confidenceReason: 'Lineage contract test',
+        lineage: Array.from({ length: 33 }, (_, index) => `obs-${index}`),
+      }),
+    });
+    expect(rejected.status).toBe(400);
+    expect(((await rejected.json()) as { message: string }).message).toMatch(/lineage/);
+  });
+
   it('executes the loop and records its runtime lineage', async () => {
     const loopResponse = await fetch(`${baseUrl}/complete-loop`, {
       method: 'POST',

@@ -96,3 +96,7 @@ Persistence accepts `local-single-process`, `operator-coordinated`, and `externa
 ## Container healthcheck boundary
 
 The published container declares a Docker healthcheck against the unauthenticated `/health` route and fails on an unreachable service or non-2xx response. This is local process and API-probe evidence only; it does not prove deployment availability, replica agreement, persistence durability, external coordination, or production authorization.
+
+## Observation lineage boundary
+
+The Observer and API now preserve optional `parentId` and a bounded `lineage` array of at most 32 non-empty observation identifiers. Invalid lineage input fails closed. This is local predecessor evidence for tracing state transitions; it does not prove causality, distributed ordering, replica agreement, external execution, or truth. The fields remain distinct from verification and attestation.
