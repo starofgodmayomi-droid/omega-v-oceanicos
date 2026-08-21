@@ -29,7 +29,15 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [18.x, 20.x]
+        # 20.x is what the published container runs. 22.x is the next LTS,
+        # so a break arrives as a red pull request rather than as a
+        # surprise on the day it becomes the default.
+        #
+        # 18.x was removed: it reached end of life in April 2025, the image
+        # has always been node:20-alpine, and the build toolchain now needs
+        # node:util styleText, which landed in 20.12. Testing a runtime we
+        # neither ship nor can support was proving nothing.
+        node-version: [20.x, 22.x]
 
     steps:
       - uses: actions/checkout@v7
