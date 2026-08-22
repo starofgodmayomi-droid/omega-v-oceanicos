@@ -205,6 +205,52 @@ describe('omega status CLI', () => {
     expect(output.join('')).toContain('request=req-1');
   });
 
+  /**
+   * `status`'s attestation line has three states: unknown (null), valid, and
+   * invalid. Only null and true had ever been rendered, so the ternary's
+   * false branch, an attestation that actually failed verification, had
+   * never printed and its non-zero exit code had never been checked either.
+   */
+  it('reports an invalid attestation in the trust summary rather than hiding it', async () => {
+    const output: string[] = [];
+    process.stdout.write = ((chunk: string | Uint8Array) => {
+      output.push(String(chunk));
+      return true;
+    }) as typeof process.stdout.write;
+
+    const exitCode = await run(['status'], async (url) => {
+      if (url.endsWith('/state')) {
+        return new Response(
+          JSON.stringify({
+            data: { readiness: 'ready', trustBasis: { serviceReadiness: 1 } },
+            timestamp: '2026-08-16T00:00:00.000Z',
+          })
+        );
+      }
+      return new Response(
+        JSON.stringify({
+          data: {
+            runtime: { mode: 'attest', persistence: 'memory', services: [], lastActivity: null },
+            provenance: {
+              recentEvents: 1,
+              durableEvents: 1,
+              skippedLogEntries: 0,
+              completedRuns: 1,
+              lastRequestId: null,
+              lastCorrelationId: null,
+            },
+            trust: { verificationCoverage: 1, attestationValidity: false },
+            memory: { entries: 1, intact: true, appendOnly: true },
+          },
+          timestamp: '2026-08-16T00:00:00.000Z',
+        })
+      );
+    });
+
+    expect(exitCode).toBe(1);
+    expect(output.join('')).toContain('attestation=INVALID');
+  });
+
   it('reads recent runtime events and honors the evidence limit', async () => {
     const output: string[] = [];
     process.stdout.write = ((chunk: string | Uint8Array) => {
@@ -233,6 +279,38 @@ describe('omega status CLI', () => {
     expect(output.join('')).toContain('EVENTS        1/2');
     expect(output.join('')).toContain('event-1');
     expect(output.join('')).not.toContain('event-2');
+  });
+
+  /**
+   * Without `--limit`, `events` takes the `requestedLimit === null` branch
+   * and shows every entry. The only prior `events` test always passed
+   * `--limit 1`, so this branch had never run.
+   */
+  it('shows every event when no limit is given', async () => {
+    const output: string[] = [];
+    process.stdout.write = ((chunk: string | Uint8Array) => {
+      output.push(String(chunk));
+      return true;
+    }) as typeof process.stdout.write;
+
+    const exitCode = await run(['events', '--url', 'http://api.test/'], async (url) => {
+      expect(url).toBe('http://api.test/events');
+      return new Response(
+        JSON.stringify({
+          data: [
+            { id: 'event-1', stage: 'observe', status: 'verified' },
+            { id: 'event-2', stage: 'verify', status: 'verified' },
+          ],
+          meta: { window: 100 },
+          timestamp: '2026-08-16T00:00:00.000Z',
+        })
+      );
+    });
+
+    expect(exitCode).toBe(0);
+    expect(output.join('')).toContain('EVENTS        2/2');
+    expect(output.join('')).toContain('event-1');
+    expect(output.join('')).toContain('event-2');
   });
 
   it('queries bounded audit events and prints local provenance', async () => {
@@ -407,6 +485,41 @@ describe('omega status CLI', () => {
     );
   });
 
+  /**
+   * `verify`'s exit code is `valid && revocationIntegrity !== 'mismatch' ? 0
+   * : 1`. The only existing verify test exercised an expired,
+   * `valid: false` attestation (exit 1). A genuinely successful
+   * verification, valid and with an uncompromised registry, had never been
+   * tested, so the ternary's success branch had never actually run.
+   */
+  it('reports a successful verification and exits zero', async () => {
+    const output: string[] = [];
+    process.stdout.write = ((chunk: string | Uint8Array) => {
+      output.push(String(chunk));
+      return true;
+    }) as typeof process.stdout.write;
+
+    const exitCode = await run(
+      ['verify', '--attestation-json', '{"id":"att-1"}', '--token', 'cli-token'],
+      async () =>
+        new Response(
+          JSON.stringify({
+            data: {
+              valid: true,
+              revoked: false,
+              expired: false,
+              revocationIntegrity: 'intact',
+            },
+          })
+        )
+    );
+
+    expect(exitCode).toBe(0);
+    expect(output.join('')).toContain(
+      'VERIFICATION valid=true revoked=false expired=false registry=intact'
+    );
+  });
+
   it('reports unavailable revocations without claiming an empty result', async () => {
     const errors: string[] = [];
     process.stderr.write = ((chunk: string | Uint8Array) => {
@@ -485,6 +598,57 @@ describe('omega status CLI', () => {
     expect(output.join('')).toContain('REVOKED       att-2');
   });
 
+  /**
+   * `revoke` defaults `revokedBy` to `'omega-cli'` and omits the
+   * `x-omega-operator-id` header when no `--operator-id` is supplied. The
+   * only existing revoke-success test relied on that default, so the
+   * conditional's true branch, an operator id actually flowing into both
+   * the request header and the body, had never run.
+   */
+  it('attributes a revocation to the supplied operator id', async () => {
+    const output: string[] = [];
+    process.stdout.write = ((chunk: string | Uint8Array) => {
+      output.push(String(chunk));
+      return true;
+    }) as typeof process.stdout.write;
+
+    const exitCode = await run(
+      [
+        'revoke',
+        'att-2',
+        '--reason',
+        'manual review',
+        '--admin-token',
+        'cli-admin-token',
+        '--operator-id',
+        'operator-9',
+      ],
+      async (url, init) => {
+        expect(new Headers(init?.headers).get('x-omega-operator-id')).toBe('operator-9');
+        expect(JSON.parse(String(init?.body))).toEqual({
+          attestationId: 'att-2',
+          reason: 'manual review',
+          revokedBy: 'operator-9',
+        });
+        return new Response(
+          JSON.stringify({
+            data: {
+              id: 'rev-3',
+              attestationId: 'att-2',
+              reason: 'manual review',
+              revokedBy: 'operator-9',
+              revokedAt: '2026-08-16T00:00:00.000Z',
+            },
+          }),
+          { status: 201 }
+        );
+      }
+    );
+
+    expect(exitCode).toBe(0);
+    expect(output.join('')).toContain('REVOKED       att-2 by=operator-9');
+  });
+
   it('fails closed when revoke has no reason', async () => {
     const errors: string[] = [];
     process.stderr.write = ((chunk: string | Uint8Array) => {
@@ -523,6 +687,39 @@ describe('omega status CLI', () => {
     expect(output.join('')).toContain('"bounded":true');
   });
 
+  /**
+   * Export's exit code is fail-closed on the underlying memory integrity,
+   * not just on HTTP status: a 200 response bundling a compromised memory
+   * ledger (`intact: false`) must still report failure to the caller. Only
+   * the `intact: true` success path had ever been tested.
+   */
+  it('fails closed when exported evidence reports compromised memory integrity', async () => {
+    const output: string[] = [];
+    process.stdout.write = ((chunk: string | Uint8Array) => {
+      output.push(String(chunk));
+      return true;
+    }) as typeof process.stdout.write;
+
+    const exitCode = await run(
+      ['export', '--token', 'cli-token'],
+      async () =>
+        new Response(
+          JSON.stringify({
+            data: {
+              observability: { memory: { intact: false, appendOnly: true } },
+              events: [],
+              runs: [],
+            },
+            meta: { bounded: true, eventWindow: 40, runWindow: 10 },
+            timestamp: '2026-08-16T00:00:00.000Z',
+          })
+        )
+    );
+
+    expect(exitCode).toBe(1);
+    expect(output.join('')).toContain('"intact":false');
+  });
+
   it('reads recent runs and displays verification and attestation status', async () => {
     const output: string[] = [];
     process.stdout.write = ((chunk: string | Uint8Array) => {
@@ -558,6 +755,47 @@ describe('omega status CLI', () => {
     expect(output.join('')).toContain('RUNS          1/2');
     expect(output.join('')).toContain('obs-1 verification=PASSED attestation=VALID');
     expect(output.join('')).not.toContain('obs-2');
+  });
+
+  /**
+   * Without `--limit`, every run entry is shown (`requestedLimit === null`
+   * branch), including failed verifications and invalid attestations. The
+   * only prior `runs` test always passed `--limit 1`, which truncated the
+   * response before the second (failed/invalid) entry, its rendering, and
+   * the no-limit branch itself were ever exercised.
+   */
+  it('shows every run and renders failed verification and invalid attestation status', async () => {
+    const output: string[] = [];
+    process.stdout.write = ((chunk: string | Uint8Array) => {
+      output.push(String(chunk));
+      return true;
+    }) as typeof process.stdout.write;
+
+    const exitCode = await run(['runs', '--url', 'http://api.test/'], async (url) => {
+      expect(url).toBe('http://api.test/runs');
+      return new Response(
+        JSON.stringify({
+          data: [
+            {
+              observation: { id: 'obs-1' },
+              verification: { id: 'ver-1', summary: { passed: true } },
+              attestation: { id: 'att-1', verified: true },
+            },
+            {
+              observation: { id: 'obs-2' },
+              verification: { id: 'ver-2', summary: { passed: false } },
+              attestation: { id: 'att-2', verified: false },
+            },
+          ],
+          timestamp: '2026-08-16T00:00:00.000Z',
+        })
+      );
+    });
+
+    expect(exitCode).toBe(0);
+    expect(output.join('')).toContain('RUNS          2/2');
+    expect(output.join('')).toContain('obs-1 verification=PASSED attestation=VALID');
+    expect(output.join('')).toContain('obs-2 verification=FAILED attestation=INVALID');
   });
 
   it('fails closed when memory integrity is false', async () => {
@@ -612,6 +850,52 @@ describe('omega status CLI', () => {
     expect(await run(['bogus'], async () => new Response())).toBe(2);
     expect(errors.join('')).toContain('Unknown command: bogus');
     expect(errors.join('')).toContain('omega health [--url URL]');
+  });
+
+  /**
+   * `run()` falls back to `'status'` when argv is empty (`argv[0] || 'status'`),
+   * so a bare `omega` invocation is documented to behave like `omega status`.
+   * Every other test supplies an explicit command, so this fallback itself
+   * had never actually run.
+   */
+  it('defaults to the status command when no command is given', async () => {
+    const output: string[] = [];
+    process.stdout.write = ((chunk: string | Uint8Array) => {
+      output.push(String(chunk));
+      return true;
+    }) as typeof process.stdout.write;
+
+    const exitCode = await run([], async (url) => {
+      if (url.endsWith('/state')) {
+        return new Response(
+          JSON.stringify({
+            data: { readiness: 'ready', trustBasis: { serviceReadiness: 1 } },
+            timestamp: '2026-08-16T00:00:00.000Z',
+          })
+        );
+      }
+      return new Response(
+        JSON.stringify({
+          data: {
+            runtime: { mode: 'observe', persistence: 'memory', services: [], lastActivity: null },
+            provenance: {
+              recentEvents: 0,
+              durableEvents: 0,
+              skippedLogEntries: 0,
+              completedRuns: 0,
+              lastRequestId: null,
+              lastCorrelationId: null,
+            },
+            trust: { verificationCoverage: null, attestationValidity: null },
+            memory: { entries: 0, intact: true, appendOnly: true },
+          },
+          timestamp: '2026-08-16T00:00:00.000Z',
+        })
+      );
+    });
+
+    expect(exitCode).toBe(0);
+    expect(output.join('')).toContain('RUNTIME       observe / memory');
   });
 
   it('reports a non-ok health response with the API message', async () => {
