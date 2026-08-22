@@ -283,6 +283,17 @@ describe('Observer', () => {
     });
   });
 
+  describe('Default Construction', () => {
+    it('falls back to a 60 second deduplication window when none is given', () => {
+      // Every other Observer in this file is constructed with an explicit
+      // window (5000 or 50 ms), so the constructor's own default value had
+      // never actually been the one supplying the window.
+      const defaultObserver = new Observer();
+
+      expect(defaultObserver.getCacheStats().windowMs).toBe(60000);
+    });
+  });
+
   describe('Deduplication Window Expiry', () => {
     const base = {
       source: { system: 'expiry-test', version: '1.0.0', environment: 'test' },
@@ -341,6 +352,19 @@ describe('Observer', () => {
       expect(() =>
         observer.observe({ ...valid, confidence: undefined as unknown as number })
       ).toThrow('confidence is required and must be a number');
+    });
+
+    it('rejects a blank parentId rather than recording a broken lineage link', () => {
+      // The lineage fixture above always supplies a real parentId. A
+      // caller-supplied but empty parentId is a distinct, reachable case:
+      // the field was named but points at nothing, which would break the
+      // provenance chain silently if it were accepted.
+      expect(() =>
+        observer.observe({
+          ...valid,
+          parentId: '   ',
+        })
+      ).toThrow('parentId must be a non-empty string when provided');
     });
 
     it('reports every failing field at once, not just the first', () => {
