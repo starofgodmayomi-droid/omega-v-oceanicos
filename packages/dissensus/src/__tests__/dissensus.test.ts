@@ -91,6 +91,21 @@ describe('reconcile — disagreement', () => {
     expect(result.dissenting.map((entry) => entry.verifierId)).toEqual(['second-model']);
   });
 
+  it('carries the minority as the passing side when failures are the majority', () => {
+    // The 2-1 case above always had passes outnumbering failures, so the
+    // minority there was the failing side. That leaves the mirror case
+    // untested: when failures outnumber passes, the minority computation
+    // has to swing the other way and single out the pass instead.
+    const result = reconcile([
+      opinion({ verifierId: 'rules', passed: false }),
+      opinion({ verifierId: 'model', passed: false }),
+      opinion({ verifierId: 'second-model', passed: true, reason: 'lone dissent' }),
+    ]);
+
+    expect(result.verdict).toBe('SPLIT');
+    expect(result.dissenting.map((entry) => entry.verifierId)).toEqual(['second-model']);
+  });
+
   it('keeps every opinion, including the ones it disagrees with', () => {
     const opinions = [opinion({ passed: true }), opinion({ verifierId: 'model', passed: false })];
 
@@ -216,6 +231,14 @@ describe('policy provenance', () => {
 
   it('returns the default policy when nothing is configured', () => {
     expect(policyFromEnvironment({})).toEqual(STRICT_POLICY);
+  });
+
+  it('returns the default policy when called with no argument at all', () => {
+    // Every other case here, including the one above, passes an explicit
+    // object, even an empty one. Calling with nothing is what actually
+    // exercises the parameter's own default value rather than a value
+    // supplied by the caller, and that had never run.
+    expect(policyFromEnvironment()).toEqual(STRICT_POLICY);
   });
 
   it('marks an operator-set policy as configured, not default', () => {
