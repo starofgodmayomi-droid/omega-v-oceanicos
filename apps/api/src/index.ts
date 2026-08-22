@@ -406,6 +406,20 @@ const operatorAllowed = (operatorId: string | undefined): boolean => {
   return operatorIdentityAllowed(operatorId, allowlist, adminOperatorAllowlistRequired());
 };
 
+/**
+ * In strict admin mode, a body field cannot stand in for request identity.
+ * The dedicated header is still only an asserted identity; authentication and
+ * identity proofing remain outside this local boundary.
+ */
+const requestOperatorId = (
+  req: Request,
+  bodyOperatorId: string | undefined
+): string | undefined => {
+  const headerOperatorId = req.header('x-omega-operator-id');
+  if (adminOperatorAllowlistRequired() && !headerOperatorId) return undefined;
+  return headerOperatorId || bodyOperatorId;
+};
+
 const runtimeStorePath =
   process.env.OMEGA_RUNTIME_STORE_PATH || '/tmp/omega-v-oceanicos/runtime.json';
 
@@ -802,7 +816,7 @@ app.post('/persistence/acknowledge', (req: Request, res: Response) => {
     reason?: string;
     operatorId?: string;
   };
-  const operatorId = req.header('x-omega-operator-id') || operatorIdFromBody;
+  const operatorId = requestOperatorId(req, operatorIdFromBody);
   if (!operatorAllowed(operatorId)) {
     res.status(403).json({
       code: 'ADMIN_OPERATOR_NOT_ALLOWED',
@@ -867,7 +881,7 @@ app.post('/persistence/reencrypt', (req: Request, res: Response) => {
     reason?: string;
     operatorId?: string;
   };
-  const operatorId = req.header('x-omega-operator-id') || operatorIdFromBody;
+  const operatorId = requestOperatorId(req, operatorIdFromBody);
   if (!operatorAllowed(operatorId)) {
     res.status(403).json({
       code: 'ADMIN_OPERATOR_NOT_ALLOWED',
@@ -1625,7 +1639,7 @@ app.post('/attest/revoke', (req: Request, res: Response) => {
     revokedBy?: string;
     operatorId?: string;
   };
-  const operatorId = req.header('x-omega-operator-id') || operatorIdFromBody;
+  const operatorId = requestOperatorId(req, operatorIdFromBody);
   if (!operatorAllowed(operatorId)) {
     res.status(403).json({
       code: 'ADMIN_OPERATOR_NOT_ALLOWED',

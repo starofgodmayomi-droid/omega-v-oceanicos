@@ -100,3 +100,7 @@ The published container declares a Docker healthcheck against the unauthenticate
 ## Observation lineage boundary
 
 The Observer and API now preserve optional `parentId` and a bounded `lineage` array of at most 32 non-empty observation identifiers. Invalid lineage input fails closed. This is local predecessor evidence for tracing state transitions; it does not prove causality, distributed ordering, replica agreement, external execution, or truth. The fields remain distinct from verification and attestation.
+
+## Strict operator identity source boundary
+
+When `OMEGA_ADMIN_REQUIRE_ALLOWLIST=on`, all three administrative mutations require `x-omega-operator-id`; a JSON body `operatorId` cannot substitute for the dedicated request identity field. Optional local-development mode retains the legacy body fallback for compatibility. The header is still a caller assertion checked against the configured allowlist, not authentication, identity proofing, or evidence of the human behind the request.

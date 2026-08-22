@@ -201,12 +201,18 @@ describe('API validation guards', () => {
 
   describe('POST /attest/revoke validation', () => {
     const originalAllowlist = process.env.OMEGA_ADMIN_OPERATOR_ALLOWLIST;
+    const originalRequireAllowlist = process.env.OMEGA_ADMIN_REQUIRE_ALLOWLIST;
 
     afterEach(() => {
       if (originalAllowlist === undefined) {
         delete process.env.OMEGA_ADMIN_OPERATOR_ALLOWLIST;
       } else {
         process.env.OMEGA_ADMIN_OPERATOR_ALLOWLIST = originalAllowlist;
+      }
+      if (originalRequireAllowlist === undefined) {
+        delete process.env.OMEGA_ADMIN_REQUIRE_ALLOWLIST;
+      } else {
+        process.env.OMEGA_ADMIN_REQUIRE_ALLOWLIST = originalRequireAllowlist;
       }
     });
 
@@ -222,6 +228,33 @@ describe('API validation guards', () => {
 
       expect(response.status).toBe(403);
       expect(body.code).toBe('ADMIN_OPERATOR_NOT_ALLOWED');
+    });
+
+    it('requires the dedicated operator header in strict allowlist mode', async () => {
+      process.env.OMEGA_ADMIN_OPERATOR_ALLOWLIST = 'trusted-operator';
+      process.env.OMEGA_ADMIN_REQUIRE_ALLOWLIST = 'on';
+
+      const bodyOnly = await post('/attest/revoke', {
+        attestationId: 'att-1',
+        reason: 'body identity must not satisfy strict mode',
+        operatorId: 'trusted-operator',
+      });
+      expect(bodyOnly.status).toBe(403);
+      expect(((await bodyOnly.json()) as ErrorBody).code).toBe('ADMIN_OPERATOR_NOT_ALLOWED');
+
+      const withHeader = await fetch(`${baseUrl}/attest/revoke`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-omega-operator-id': 'trusted-operator',
+        },
+        body: JSON.stringify({
+          attestationId: 'att-1',
+          reason: 'header identity reaches the recorded-lineage guard',
+        }),
+      });
+      expect(withHeader.status).toBe(404);
+      expect(((await withHeader.json()) as ErrorBody).code).toBe('ATTESTATION_NOT_RECORDED');
     });
 
     it('rejects a revocation missing attestationId or reason', async () => {
