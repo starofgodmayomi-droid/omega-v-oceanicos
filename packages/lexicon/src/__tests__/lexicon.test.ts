@@ -97,6 +97,15 @@ describe('resolution', () => {
     expect(say('FAILED', 'en').label).toBe('Failed');
   });
 
+  it('defaults to English when called with no locale argument at all', () => {
+    // Every other case here, including the fallback tests below, passes a
+    // locale explicitly, even an empty string or an unknown code. Omitting
+    // the argument entirely is what actually exercises `locale`'s default
+    // parameter rather than a value chosen inside the function body, and
+    // that had never run.
+    expect(say('FAILED')).toEqual(LOCALES[DEFAULT_LOCALE].terms.FAILED);
+  });
+
   it('falls back rather than hiding a verdict', () => {
     // A missing translation must never take a verdict off the screen.
     expect(say('DISSENTING', 'fr')).toEqual(LOCALES[DEFAULT_LOCALE].terms.DISSENTING);
