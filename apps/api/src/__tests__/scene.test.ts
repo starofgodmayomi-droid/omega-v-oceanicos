@@ -32,4 +32,16 @@ describe('Ω∞v scene equation simulation', () => {
     expect(() => simulateScene({ steps: 33 })).toThrow(/between 1 and 32/);
     expect(() => simulateScene({ steps: 1.5 })).toThrow(/between 1 and 32/);
   });
+
+  it('falls back to the default seed and full walk when called with no input at all', () => {
+    // Every other call in this file passes an explicit input object, even
+    // just to override the seed. Omitting the argument entirely is what
+    // actually exercises simulateScene's own default parameter, distinct
+    // from boundedSeed's internal fallback for an undefined seed field.
+    const result = simulateScene();
+
+    expect(result.seed).toBe('omega-v-scene');
+    expect(result.states).toEqual(sceneStates());
+    expect(result.terminalState).toBe('return');
+  });
 });
