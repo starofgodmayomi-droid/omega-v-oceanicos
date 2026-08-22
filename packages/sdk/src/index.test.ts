@@ -223,6 +223,43 @@ describe('OmegaClient', () => {
     });
   });
 
+  it('acknowledges persistence review without an operator id header when none is given', async () => {
+    // The test above always names an operator, so the operator-id header
+    // has only ever been attached, never omitted. operatorId is optional;
+    // this exercises the branch where the caller does not supply one.
+    const client = new OmegaClient(
+      'http://api.test',
+      async (url, init) => {
+        expect(url).toBe('http://api.test/persistence/acknowledge');
+        expect(new Headers(init?.headers).has('x-omega-operator-id')).toBe(false);
+        expect(JSON.parse(String(init?.body))).toEqual({
+          reason: 'Review malformed local log before repair',
+          operatorId: undefined,
+        });
+        return new Response(
+          JSON.stringify({
+            data: {
+              acknowledgement: {
+                operatorId: null,
+                reason: 'Review malformed local log before repair',
+                action: 'review-partial-recovery',
+                acknowledgedAt: '2026-08-19T00:00:00.000Z',
+                requestId: 'req-ack-2',
+              },
+              eventId: 'evt-ack-2',
+            },
+            timestamp: '2026-08-19T00:00:00.000Z',
+          })
+        );
+      },
+      { adminToken: 'admin-token' }
+    );
+
+    await expect(
+      client.acknowledgePersistenceReview('Review malformed local log before repair')
+    ).resolves.toMatchObject({ data: { eventId: 'evt-ack-2' } });
+  });
+
   it('re-encrypts persistence with admin provenance and record counts', async () => {
     const client = new OmegaClient(
       'http://api.test',
@@ -273,6 +310,44 @@ describe('OmegaClient', () => {
         },
       },
     });
+  });
+
+  it('re-encrypts persistence without an operator id header when none is given', async () => {
+    const client = new OmegaClient(
+      'http://api.test',
+      async (url, init) => {
+        expect(url).toBe('http://api.test/persistence/reencrypt');
+        expect(new Headers(init?.headers).has('x-omega-operator-id')).toBe(false);
+        expect(JSON.parse(String(init?.body))).toEqual({
+          reason: 'Rotate local ciphertext to the current key',
+          operatorId: undefined,
+        });
+        return new Response(
+          JSON.stringify({
+            data: {
+              reencrypted: {
+                operatorId: null,
+                reason: 'Rotate local ciphertext to the current key',
+                action: 'review-key-rotation',
+                reencryptedAt: '2026-08-19T00:00:00.000Z',
+                requestId: 'req-reencrypt-2',
+                snapshotRecords: 1,
+                eventRecords: 2,
+                snapshotKeySource: 'current',
+                eventLogKeySource: 'current',
+              },
+              eventId: 'evt-reencrypt-2',
+            },
+            timestamp: '2026-08-19T00:00:00.000Z',
+          })
+        );
+      },
+      { adminToken: 'admin-token' }
+    );
+
+    await expect(
+      client.reencryptPersistence('Rotate local ciphertext to the current key')
+    ).resolves.toMatchObject({ data: { eventId: 'evt-reencrypt-2' } });
   });
 
   it('reads the non-secret attestation policy contract', async () => {
@@ -364,6 +439,35 @@ describe('OmegaClient', () => {
     await expect(client.getAuditEvents()).resolves.toMatchObject({
       meta: { bounded: true, total: 0 },
     });
+  });
+
+  it('skips a query field that is explicitly undefined rather than stringifying it', async () => {
+    // Every filtered call above supplies a real value for every field it
+    // names. Naming a field but leaving its value undefined is a distinct
+    // case: the loop that builds the query string has to notice and skip
+    // it, rather than serializing the literal string "undefined".
+    const client = new OmegaClient('http://api.test', async (url) => {
+      expect(url).toBe('http://api.test/audit/events?status=passed');
+      return new Response(
+        JSON.stringify({
+          data: [],
+          meta: {
+            bounded: true,
+            limit: 100,
+            total: 0,
+            source: 'memory',
+            skipped: 0,
+            keySource: 'none',
+            filters: { type: null, stage: null, status: 'passed', from: null, to: null },
+          },
+          timestamp: '2026-08-16T00:00:00.000Z',
+        })
+      );
+    });
+
+    await expect(
+      client.getAuditEvents({ type: undefined, status: 'passed' })
+    ).resolves.toMatchObject({ meta: { total: 0 } });
   });
 
   it('sends the optional read token as a bearer header', async () => {
@@ -677,7 +781,6 @@ describe('OmegaClient', () => {
    */
   it('stringifies a non-Error network failure on a GET request', async () => {
     const client = new OmegaClient('http://api.test', async () => {
-      // eslint-disable-next-line @typescript-eslint/only-throw-error
       throw 'connection reset';
     });
 
@@ -692,7 +795,6 @@ describe('OmegaClient', () => {
 
   it('stringifies a non-Error network failure on a POST request', async () => {
     const client = new OmegaClient('http://api.test', async () => {
-      // eslint-disable-next-line @typescript-eslint/only-throw-error
       throw 'connection reset';
     });
 
@@ -755,6 +857,46 @@ describe('OmegaClient', () => {
     );
   });
 
+  it('simulates a scene with no input, exercising the default empty request body', async () => {
+    // Every scene-related call elsewhere in this repo passes an explicit
+    // input object. Omitting the argument entirely is what actually
+    // exercises simulateScene's default parameter, and it had never run.
+    const client = new OmegaClient(
+      'http://api.test',
+      async (url, init) => {
+        expect(url).toBe('http://api.test/scene/simulate');
+        expect(init?.method).toBe('POST');
+        expect(new Headers(init?.headers).get('authorization')).toBe('Bearer read-token');
+        expect(JSON.parse(String(init?.body))).toEqual({});
+        return new Response(
+          JSON.stringify({
+            data: {
+              id: 'scene-1',
+              seed: 'auto',
+              equation: 'x',
+              states: ['start'],
+              terminalState: 'start',
+              trace: [],
+              provenance: {
+                source: 'local-simulation',
+                ruleVersion: 'scene-equation.v1',
+                deterministic: true,
+                verified: false,
+                note: 'fixture',
+              },
+            },
+            timestamp: '2026-08-22T00:00:00.000Z',
+          })
+        );
+      },
+      { readToken: 'read-token' }
+    );
+
+    await expect(client.simulateScene()).resolves.toMatchObject({
+      data: { id: 'scene-1', terminalState: 'start' },
+    });
+  });
+
   it('falls back to a generic status message on a POST response with a non-object body', async () => {
     const client = new OmegaClient(
       'http://api.test',
@@ -814,6 +956,23 @@ describe('OmegaClient local job evidence', () => {
     await expect(client.getJob('job/with space')).resolves.toMatchObject({
       data: { events: [{ sequence: 1, type: 'created' }], status: { durable: false } },
     });
+  });
+
+  it('refuses to look up a job by a blank id without making a request', async () => {
+    const fetchImpl = jest.fn();
+    const client = new OmegaClient('http://api.test', fetchImpl);
+
+    await expect(client.getJob('   ')).rejects.toEqual(
+      expect.objectContaining({
+        message: 'jobId is required',
+        status: 400,
+        code: 'JOB_INVALID',
+        endpoint: 'http://api.test/jobs',
+      })
+    );
+    // The validation has to happen before any network call, not after a
+    // failed one: an empty id is a caller mistake, not a server rejection.
+    expect(fetchImpl).not.toHaveBeenCalled();
   });
 
   it('preserves structured disabled errors', async () => {
