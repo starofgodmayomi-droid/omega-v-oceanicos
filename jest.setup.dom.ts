@@ -131,17 +131,13 @@ class MockEventSource {
 (globalThis as unknown as { EventSource: unknown }).EventSource = MockEventSource;
 (globalThis as unknown as { MockEventSource: unknown }).MockEventSource = MockEventSource;
 
-// jsdom implements neither WebCrypto nor the TextEncoder/TextDecoder pair,
-// so the offline verification panel correctly reported that it could not
-// verify. Real browsers implement all three, so the absence is an artefact
-// of the test environment, not of the product. Node's implementations are
-// installed here so the DOM suite exercises the same path a browser would.
-//
-// Note what this does NOT do: it does not stub verification. Signatures are
-// checked for real, and a forged one still fails.
-if (!globalThis.crypto?.subtle) {
-  Object.defineProperty(globalThis, 'crypto', { value: webcrypto, configurable: true });
-}
+// jsdom's crypto surface varies across Node/jsdom versions: some releases
+// expose a partial `crypto.subtle` object even though the async Ed25519
+// implementation is not reliable for this suite. Install Node's real
+// WebCrypto implementation unconditionally so Node 20, Node 22, and local
+// runs exercise the same actual primitive. This is not a verification stub:
+// signatures are checked for real, and a forged one still fails.
+Object.defineProperty(globalThis, 'crypto', { value: webcrypto, configurable: true });
 
 if (typeof globalThis.TextEncoder === 'undefined') {
   Object.assign(globalThis, { TextEncoder: NodeTextEncoder, TextDecoder: NodeTextDecoder });
