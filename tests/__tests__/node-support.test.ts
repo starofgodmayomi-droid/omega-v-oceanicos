@@ -15,6 +15,7 @@ describe('the supported Node version is one claim, not three', () => {
   const root = process.cwd();
   const manifest = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')) as {
     engines?: { node?: string };
+    scripts?: Record<string, string>;
   };
   const workflow = readFileSync(join(root, '.github/workflows/verify.yml'), 'utf8');
   const dockerfile = readFileSync(join(root, 'apps/api/Dockerfile'), 'utf8');
@@ -81,6 +82,12 @@ describe('the supported Node version is one claim, not three', () => {
     expect(workflow).toMatch(/OMEGA_ADMIN_TOKEN=ci-smoke-admin-token/);
     expect(workflow).toMatch(/Authorization: Bearer ci-smoke-read-token/);
     expect(workflow).toMatch(/Authorization: Bearer ci-smoke-admin-token/);
+  });
+
+  it('runs browser-sensitive release tests in-band', () => {
+    expect(manifest.scripts?.test).toContain('--runInBand');
+    expect(manifest.scripts?.['test:fast']).toContain('--runInBand');
+    expect(manifest.scripts?.['test:coverage']).toContain('--runInBand');
   });
 
   it('hosts an encrypted local-ledger restart smoke in CI', () => {
