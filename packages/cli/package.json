@@ -25,7 +25,8 @@
     "@omega-v/types": "*",
     "@omega-v/sdk": "*",
     "@omega-v/agents": "*",
-    "@omega-v/edge": "*"
+    "@omega-v/edge": "*",
+    "@omega-v/analytics": "*"
   },
   "devDependencies": {
     "@types/jest": "^29.5.0",

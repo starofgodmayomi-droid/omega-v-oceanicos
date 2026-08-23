@@ -1,6 +1,7 @@
 import { OceanicosClient } from '@omega-v/sdk';
 import { FormlessSwarm } from '@omega-v/agents';
 import { EdgeObserver } from '@omega-v/edge';
+import { VerificationAnalyticsEngine } from '@omega-v/analytics';
 
 export interface CLIResult {
   success: boolean;
@@ -98,6 +99,17 @@ export class OceanicosCLI {
         };
       }
 
+      case 'analytics': {
+        const entries = this.client.getLogEntries();
+        const analytics = new VerificationAnalyticsEngine();
+        const summary = analytics.analyzeLogs(entries);
+        return {
+          success: true,
+          message: `[Ω∞v CLI] Verification Analytics & Efficacy (Pass Rate: ${(summary.overallPassRate * 100).toFixed(0)}%)`,
+          output: summary,
+        };
+      }
+
       case 'help':
       default: {
         return {
@@ -107,6 +119,7 @@ Commands:
   omega-v loop [claim]     Execute complete verification loop
   omega-v swarm [claim]    Execute multi-agent Formless Swarm cycle
   omega-v edge [claim]     Capture & flush Merkle edge observation batch
+  omega-v analytics        Compute rule efficacy & pattern analytics
   omega-v metrics          Show system health and metrics
   omega-v log              Display event provenance log
   omega-v integrity        Verify event hash chain integrity

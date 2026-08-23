@@ -40,4 +40,12 @@ describe('OceanicosCLI', () => {
     expect(res.message).toContain('Edge Observation Batch Synced');
     expect(res.output).toHaveProperty('merkleRoot');
   });
+
+  it('should execute analytics command for pattern extraction', async () => {
+    await cli.run(['loop', 'Analytics input claim']);
+    const res = await cli.run(['analytics']);
+    expect(res.success).toBe(true);
+    expect(res.message).toContain('Verification Analytics');
+    expect(res.output).toHaveProperty('overallPassRate');
+  });
 });
