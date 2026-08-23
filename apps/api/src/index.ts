@@ -16,6 +16,7 @@ import { TelemetryTracer, VerificationSLOEngine } from '@omega-v/telemetry';
 import { VaaSGate } from '@omega-v/vaas';
 import { VerificationReplayEngine } from '@omega-v/replay';
 import { FormalContractEngine } from '@omega-v/contract';
+import { OceanicosAuthEngine } from '@omega-v/auth';
 import {
   SuccessResponse,
   ErrorResponse,
@@ -62,6 +63,7 @@ const sloEngine = new VerificationSLOEngine();
 const vaasGate = new VaaSGate();
 const replayEngine = new VerificationReplayEngine();
 const contractEngine = new FormalContractEngine();
+const authEngine = new OceanicosAuthEngine();
 
 // Register default rules
 verificationEngine.registerRule({
@@ -961,6 +963,79 @@ app.post('/contracts/verify', (req: Request, res: Response) => {
       timestamp: new Date().toISOString(),
     });
   }
+});
+
+/** GET /auth/identities — List all registered DID documents (Section XXXII) */
+app.get('/auth/identities', (_req: Request, res: Response) => {
+  res.json({
+    data: { identities: authEngine.listIdentities() },
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /auth/identities — Register a new Decentralized Identity (DID) (Section XXXII) */
+app.post('/auth/identities', (req: Request, res: Response) => {
+  const { type, capabilities, secret, did } = req.body || {};
+  if (!type) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'type is required for DID identity creation',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  const created = authEngine.createIdentity(type, capabilities, secret, did);
+  res.status(201).json({
+    data: created,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /auth/token — Issue a cryptographic bearer token for a DID */
+app.post('/auth/token', (req: Request, res: Response) => {
+  const { did, secret, expiresInMs } = req.body || {};
+  if (!did || !secret) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'did and secret are required for token issuance',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const token = authEngine.issueToken(did, secret, expiresInMs);
+    res.json({
+      data: { token, did },
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(401).json({
+      code: 'AUTH_FAILED',
+      message: err instanceof Error ? err.message : 'Token issuance failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** POST /auth/verify — Verify bearer token and check capabilities */
+app.post('/auth/verify', (req: Request, res: Response) => {
+  const { token, requiredCapability } = req.body || {};
+  if (!token) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'token is required for verification',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  const result = authEngine.verifyToken(token, requiredCapability);
+  res.status(result.valid ? 200 : 403).json({
+    data: result,
+    timestamp: new Date().toISOString(),
+  });
 });
 
 /**

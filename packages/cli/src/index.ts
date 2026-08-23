@@ -7,6 +7,7 @@ import { TelemetryTracer, VerificationSLOEngine } from '@omega-v/telemetry';
 import { VaaSGate } from '@omega-v/vaas';
 import { VerificationReplayEngine } from '@omega-v/replay';
 import { FormalContractEngine } from '@omega-v/contract';
+import { OceanicosAuthEngine } from '@omega-v/auth';
 
 export interface CLIResult {
   success: boolean;
@@ -256,6 +257,42 @@ export class OceanicosCLI {
         };
       }
 
+      case 'auth': {
+        const auth = new OceanicosAuthEngine();
+        const subCommand = args[1] || 'list';
+
+        if (subCommand === 'create') {
+          const type = (args[2] as any) || 'AGENT';
+          const identity = auth.createIdentity(type, ['observe:write', 'verify:execute']);
+          const token = auth.issueToken(identity.did, identity.secret);
+
+          return {
+            success: true,
+            message: `[Ω∞v CLI] DID Created: ${identity.did} (Type: ${identity.document.type})`,
+            output: {
+              did: identity.did,
+              secret: identity.secret,
+              publicKey: identity.document.publicKey,
+              capabilities: identity.document.capabilities,
+              token,
+            },
+          };
+        }
+
+        const identities = auth.listIdentities();
+        return {
+          success: true,
+          message: `[Ω∞v CLI] Registered DIDs: ${identities.length}`,
+          output: identities.map((i) => ({
+            did: i.did,
+            type: i.type,
+            capabilities: i.capabilities,
+            epoch: i.epoch,
+            revoked: i.revoked,
+          })),
+        };
+      }
+
       case 'help':
       default: {
         return {
@@ -272,6 +309,7 @@ Commands:
   omega-v vaas register [name] [tier] Register multi-tenant VaaS organization
   omega-v replay [claim] [label]    Capture & replay verification snapshot with diff
   omega-v contract [list|verify]    List formal contracts or verify sample payload
+  omega-v auth [list|create]        List DIDs or create decentralized identity
   omega-v metrics                   Show system health and metrics
   omega-v log                       Display event provenance log
   omega-v integrity                 Verify event hash chain integrity

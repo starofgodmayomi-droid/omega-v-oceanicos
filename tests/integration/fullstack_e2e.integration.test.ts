@@ -14,6 +14,7 @@ import { TelemetryTracer, VerificationSLOEngine } from '@omega-v/telemetry';
 import { VaaSGate } from '@omega-v/vaas';
 import { VerificationReplayEngine } from '@omega-v/replay';
 import { FormalContractEngine } from '@omega-v/contract';
+import { OceanicosAuthEngine } from '@omega-v/auth';
 import app from '../../apps/api/src/index';
 
 describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => {
@@ -405,6 +406,44 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       const compat = contractEngine.checkCompatibility(customContract, compatibleUpdate);
       expect(compat.compatible).toBe(true);
       expect(compat.breakingChanges).toHaveLength(0);
+    });
+  });
+
+  describe('13. Decentralized Identity (DID) & Capability Auth E2E', () => {
+    it('should create DIDs, issue cryptographic tokens, enforce capabilities, and test key rotation', () => {
+      const auth = new OceanicosAuthEngine();
+
+      // Verify system bootstrap
+      expect(auth.getIdentity('did:omega:system:root')?.type).toBe('SYSTEM');
+      expect(auth.getIdentity('did:omega:verifier:core')?.type).toBe('VERIFIER');
+
+      // Create new agent DID
+      const agentId = auth.createIdentity('AGENT', ['observe:write', 'verify:execute']);
+      expect(agentId.did).toMatch(/^did:omega:agent:/);
+      expect(agentId.document.capabilities).toContain('observe:write');
+
+      // Issue token
+      const token = auth.issueToken(agentId.did, agentId.secret);
+      expect(token).toMatch(/^Ω∞v-TOKEN-v1\./);
+
+      // Verify valid token with permitted capability
+      const allowed = auth.verifyToken(token, 'observe:write');
+      expect(allowed.valid).toBe(true);
+      expect(allowed.subject?.did).toBe(agentId.did);
+
+      // Deny token with unpermitted capability
+      const denied = auth.verifyToken(token, 'attest:sign');
+      expect(denied.valid).toBe(false);
+      expect(denied.error).toContain('Insufficient capabilities');
+
+      // Test key rotation
+      const newSecret = auth.rotateSecret(agentId.did, agentId.secret);
+      expect(newSecret).not.toBe(agentId.secret);
+      expect(auth.getIdentity(agentId.did)?.epoch).toBe(2);
+
+      // New token with rotated secret
+      const newToken = auth.issueToken(agentId.did, newSecret);
+      expect(auth.verifyToken(newToken).valid).toBe(true);
     });
   });
 });

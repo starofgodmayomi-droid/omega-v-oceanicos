@@ -48,7 +48,8 @@
       "@omega-v/telemetry": ["packages/telemetry/src/index.ts"],
       "@omega-v/vaas": ["packages/vaas/src/index.ts"],
       "@omega-v/replay": ["packages/replay/src/index.ts"],
-      "@omega-v/contract": ["packages/contract/src/index.ts"]
+      "@omega-v/contract": ["packages/contract/src/index.ts"],
+      "@omega-v/auth": ["packages/auth/src/index.ts"]
     }
   },
   "include": ["packages/*/src", "apps/*/src", "tests"],

@@ -153,6 +153,20 @@ interface ReplaySummaryData {
   tags: string[];
 }
 
+interface FormalContractItem {
+  id: string;
+  name: string;
+  version: string;
+  category: string;
+  description: string;
+  fields: Record<
+    string,
+    { type: string; required?: boolean; min?: number; max?: number; enum?: (string | number)[] }
+  >;
+  invariants: { name: string; kind: string; description: string; expression: string }[];
+  active: boolean;
+}
+
 interface RuleEfficacy {
   ruleName: string;
   totalExecutions: number;
@@ -332,6 +346,16 @@ export function App(): JSX.Element {
     apiKey: string;
     tenant: Tenant;
   } | null>(null);
+  const [contracts, setContracts] = useState<FormalContractItem[]>([]);
+  const [selectedContractName, setSelectedContractName] = useState<string>(
+    'canonical-observation-contract'
+  );
+  const [contractTestResult, setContractTestResult] = useState<{
+    valid: boolean;
+    contractName: string;
+    violations: { field?: string; invariant?: string; message: string }[];
+  } | null>(null);
+  const [contractTestLoading, setContractTestLoading] = useState(false);
 
   // ── Poll log + metrics ──
   const fetchState = useCallback(async () => {
@@ -350,6 +374,7 @@ export function App(): JSX.Element {
         sloRes,
         vaasRes,
         replayRes,
+        contractsRes,
       ] = await Promise.all([
         fetch(`${API_BASE}/log?limit=30`),
         fetch(`${API_BASE}/metrics`),
@@ -364,6 +389,7 @@ export function App(): JSX.Element {
         fetch(`${API_BASE}/telemetry/slo`),
         fetch(`${API_BASE}/vaas/tenants`),
         fetch(`${API_BASE}/replay`),
+        fetch(`${API_BASE}/contracts`),
       ]);
       if (!logRes.ok || !metricsRes.ok) throw new Error('API error');
 
@@ -391,6 +417,9 @@ export function App(): JSX.Element {
         const rData = (await replayRes.json()).data;
         setReplaySnapshots(rData.snapshots as ReplaySnapshotItem[]);
         setReplaySummary(rData.summary as ReplaySummaryData);
+      }
+      if (contractsRes.ok) {
+        setContracts((await contractsRes.json()).data.contracts as FormalContractItem[]);
       }
     } catch {
       setApiOnline(false);
@@ -1976,6 +2005,274 @@ export function App(): JSX.Element {
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                 No snapshots captured yet. Click "Capture Snapshot" to freeze the current
                 verification state.
+              </div>
+            )}
+          </div>
+
+          {/* ── Formal Schema & Behavioral Contract Explorer (Section XXXI) ── */}
+          <div
+            style={{
+              background: 'var(--bg-card)',
+              border: '1px solid rgba(56, 178, 172, 0.3)',
+              borderRadius: 'var(--radius)',
+              padding: 20,
+              marginBottom: 24,
+            }}
+          >
+            <div
+              style={{
+                fontWeight: 700,
+                fontSize: '0.95rem',
+                color: 'var(--accent-green)',
+                marginBottom: 14,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span>📜 Formal Schema & Behavioral Contract Registry</span>
+                <span
+                  style={{
+                    fontSize: '0.72rem',
+                    background: 'rgba(56, 178, 172, 0.15)',
+                    color: 'var(--accent-green)',
+                    padding: '2px 8px',
+                    borderRadius: 4,
+                  }}
+                >
+                  {contracts.length} Registered Contracts
+                </span>
+              </div>
+            </div>
+
+            {/* Contract cards */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                gap: 12,
+                marginBottom: 16,
+              }}
+            >
+              {contracts.map((c) => (
+                <div
+                  key={c.id}
+                  style={{
+                    background: 'var(--bg-surface)',
+                    border:
+                      selectedContractName === c.name
+                        ? '1px solid var(--accent-green)'
+                        : '1px solid var(--border)',
+                    borderRadius: 'var(--radius-sm)',
+                    padding: 14,
+                    cursor: 'pointer',
+                    transition: 'border-color 0.2s',
+                  }}
+                  onClick={() => setSelectedContractName(c.name)}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: 6,
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontWeight: 700,
+                        fontSize: '0.85rem',
+                        color: 'var(--text-primary)',
+                        fontFamily: 'var(--font-mono)',
+                      }}
+                    >
+                      {c.name}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: '0.68rem',
+                        fontFamily: 'var(--font-mono)',
+                        color: 'var(--accent-green)',
+                        background: 'rgba(56, 178, 172, 0.12)',
+                        padding: '2px 6px',
+                        borderRadius: 3,
+                      }}
+                    >
+                      v{c.version}
+                    </span>
+                  </div>
+                  <div
+                    style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', marginBottom: 8 }}
+                  >
+                    {c.description}
+                  </div>
+                  <div
+                    style={{
+                      display: 'flex',
+                      gap: 10,
+                      fontSize: '0.7rem',
+                      color: 'var(--text-muted)',
+                    }}
+                  >
+                    <span>📐 {Object.keys(c.fields).length} Fields</span>
+                    <span>⚖ {c.invariants.length} Invariants</span>
+                    <span>🏷 {c.category}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Live Interactive Contract Tester */}
+            {contracts.find((c) => c.name === selectedContractName) && (
+              <div
+                style={{
+                  background: 'var(--bg-surface)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius-sm)',
+                  padding: 14,
+                }}
+              >
+                {(() => {
+                  const contract = contracts.find((c) => c.name === selectedContractName)!;
+                  return (
+                    <div>
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          marginBottom: 10,
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontSize: '0.82rem',
+                            fontWeight: 600,
+                            color: 'var(--text-primary)',
+                          }}
+                        >
+                          Inspect & Test:{' '}
+                          <code style={{ color: 'var(--accent-green)' }}>{contract.name}</code>
+                        </span>
+                        <button
+                          type="button"
+                          className="btn btn-primary"
+                          disabled={contractTestLoading}
+                          style={{ padding: '4px 10px', fontSize: '0.75rem' }}
+                          onClick={async () => {
+                            setContractTestLoading(true);
+                            try {
+                              const samplePayload =
+                                contract.category === 'health-check'
+                                  ? { responseTime: 45, statusCode: 200 }
+                                  : {
+                                      claim: 'Interactive dashboard formal verification claim',
+                                      category: 'observation',
+                                      observedBy: 'web-dashboard',
+                                      confidence: 0.98,
+                                    };
+                              const res = await fetch(`${API_BASE}/contracts/verify`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                  contractIdOrName: contract.name,
+                                  data: samplePayload,
+                                }),
+                              });
+                              if (res.ok) {
+                                const data = await res.json();
+                                setContractTestResult(data.data);
+                              }
+                            } catch (e) {
+                              console.error(e);
+                            } finally {
+                              setContractTestLoading(false);
+                            }
+                          }}
+                        >
+                          🧪 Verify Sample Payload
+                        </button>
+                      </div>
+
+                      {/* Invariants list */}
+                      <div style={{ marginBottom: 10 }}>
+                        <span
+                          style={{
+                            fontSize: '0.72rem',
+                            color: 'var(--text-muted)',
+                            textTransform: 'uppercase',
+                          }}
+                        >
+                          Enforced Invariants:
+                        </span>
+                        <div
+                          style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 4 }}
+                        >
+                          {contract.invariants.map((inv) => (
+                            <div
+                              key={inv.name}
+                              style={{
+                                fontSize: '0.72rem',
+                                color: 'var(--text-secondary)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 6,
+                              }}
+                            >
+                              <span
+                                style={{
+                                  color: 'var(--accent-primary)',
+                                  fontFamily: 'var(--font-mono)',
+                                }}
+                              >
+                                [{inv.kind}]
+                              </span>
+                              <span>{inv.name}:</span>
+                              <code
+                                style={{
+                                  color: 'var(--accent-amber)',
+                                  fontFamily: 'var(--font-mono)',
+                                }}
+                              >
+                                {inv.expression}
+                              </code>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Test result feedback */}
+                      {contractTestResult && contractTestResult.contractName === contract.name && (
+                        <div
+                          style={{
+                            background: contractTestResult.valid
+                              ? 'rgba(56, 178, 172, 0.12)'
+                              : 'rgba(252, 129, 129, 0.12)',
+                            border: `1px solid ${contractTestResult.valid ? 'var(--accent-green)' : 'var(--accent-red)'}`,
+                            borderRadius: 'var(--radius-sm)',
+                            padding: '8px 12px',
+                            fontSize: '0.74rem',
+                            marginTop: 8,
+                          }}
+                        >
+                          <span
+                            style={{
+                              fontWeight: 700,
+                              color: contractTestResult.valid
+                                ? 'var(--accent-green)'
+                                : 'var(--accent-red)',
+                            }}
+                          >
+                            {contractTestResult.valid
+                              ? '✓ Contract Verified (All constraints and invariants passed)'
+                              : '✗ Contract Violated'}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             )}
           </div>
