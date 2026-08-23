@@ -88,6 +88,8 @@ describe('the supported Node version is one claim, not three', () => {
     expect(workflow).toMatch(/OMEGA_LOCAL_JOB_LEDGER_PATH=\/tmp\/omega-ledger\/jobs\.json/);
     expect(workflow).toMatch(/OMEGA_LOCAL_JOB_LEDGER_KEY=ci-smoke-ledger-key/);
     expect(workflow).toMatch(/x-omega-local-job-token: ci-smoke-job-token/);
+    expect(workflow).toMatch(/Job creation returned HTTP \$status/);
+    expect(workflow).toMatch(/test -s \/tmp\/job\.json/);
     expect(workflow).toMatch(/-v \"\$RUNNER_TEMP\/omega-ledger:\/tmp\/omega-ledger\"/);
     expect(workflow).toMatch(/docker rm -f omega-smoke/);
     expect(workflow).toMatch(/local:\/\/ci-restart/);

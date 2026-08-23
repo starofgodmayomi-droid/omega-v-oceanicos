@@ -204,14 +204,20 @@ jobs:
           grep -q '"name":"local-job-ledger","encryption":"aes-256-gcm","keySource":"current"' /tmp/health.json
           grep -q '"complete":false' /tmp/health.json
 
-          curl -sf -X POST http://localhost:3000/jobs \
+          status=$(curl -sS -o /tmp/job.json -w '%{http_code}' -X POST http://localhost:3000/jobs \
             -H 'Authorization: Bearer ci-smoke-admin-token' \
             -H 'x-omega-local-job-token: ci-smoke-job-token' \
             -H 'x-omega-operator-id: ci-smoke-operator' \
             -H 'Content-Type: application/json' \
-            -d '{"kind":"synthetic-observe","idempotencyKey":"ci-restart-1","sourceUri":"local://ci-restart"}' \
-            | tee /tmp/job.json
-          job_id=$(node -e "process.stdout.write(JSON.parse(require('fs').readFileSync('/tmp/job.json','utf8')).data.job.id)")
+            -d '{"kind":"synthetic-observe","idempotencyKey":"ci-restart-1","sourceUri":"local://ci-restart"}')
+          if [ "$status" != "201" ]; then
+            echo "::error::Job creation returned HTTP $status"
+            cat /tmp/job.json
+            exit 1
+          fi
+          test -s /tmp/job.json
+          cat /tmp/job.json
+          job_id=$(node -e "const body=JSON.parse(require('fs').readFileSync('/tmp/job.json','utf8')); if (!body.data?.job?.id) process.exit(1); process.stdout.write(body.data.job.id)")
           curl -sf -H 'Authorization: Bearer ci-smoke-read-token' \
             -H 'x-omega-local-job-token: ci-smoke-job-token' \
             "http://localhost:3000/jobs/$job_id" | tee /tmp/job-before-restart.json
