@@ -48,4 +48,11 @@ describe('OceanicosCLI', () => {
     expect(res.message).toContain('Verification Analytics');
     expect(res.output).toHaveProperty('overallPassRate');
   });
+
+  it('should return scheduler status on scheduler command without subcommand', async () => {
+    const res = await cli.run(['scheduler']);
+    expect(res.success).toBe(true);
+    expect(res.message).toContain('Scheduler available');
+    expect(res.output).toHaveProperty('status', 'IDLE');
+  });
 });

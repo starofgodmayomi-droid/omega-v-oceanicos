@@ -2,6 +2,7 @@ import { OceanicosClient } from '@omega-v/sdk';
 import { FormlessSwarm } from '@omega-v/agents';
 import { EdgeObserver } from '@omega-v/edge';
 import { VerificationAnalyticsEngine } from '@omega-v/analytics';
+import { VerificationScheduler } from '@omega-v/scheduler';
 
 export interface CLIResult {
   success: boolean;
@@ -110,20 +111,48 @@ export class OceanicosCLI {
         };
       }
 
+      case 'scheduler': {
+        const subCmd = args[1] || 'status';
+        const intervalMs = args[2] ? Number(args[2]) : 10000;
+        const claim = args[3] || 'Ω∞v CLI scheduled loop';
+
+        const sched = new VerificationScheduler(this.client, { intervalMs, claim, maxRuns: 1 });
+
+        if (subCmd === 'run') {
+          sched.start();
+          // Wait for one run to complete
+          await new Promise<void>((resolve) => setTimeout(resolve, intervalMs + 500));
+          sched.stop();
+          const state = sched.getState();
+          return {
+            success: state.totalRuns > 0,
+            message: `[Ω∞v CLI] Scheduler: ${state.totalRuns} runs | ${state.passedRuns} passed | ${state.failedRuns} failed`,
+            output: state,
+          };
+        }
+
+        return {
+          success: true,
+          message: '[Ω∞v CLI] Scheduler available. Use: omega-v scheduler run [intervalMs] [claim]',
+          output: { status: 'IDLE', usage: 'omega-v scheduler run [intervalMs] [claim]' },
+        };
+      }
+
       case 'help':
       default: {
         return {
           success: true,
           message: `Ω∞v Oceanicos CLI v0.1.0
 Commands:
-  omega-v loop [claim]     Execute complete verification loop
-  omega-v swarm [claim]    Execute multi-agent Formless Swarm cycle
-  omega-v edge [claim]     Capture & flush Merkle edge observation batch
-  omega-v analytics        Compute rule efficacy & pattern analytics
-  omega-v metrics          Show system health and metrics
-  omega-v log              Display event provenance log
-  omega-v integrity        Verify event hash chain integrity
-  omega-v help             Show this help menu`,
+  omega-v loop [claim]              Execute complete verification loop
+  omega-v swarm [claim]             Execute multi-agent Formless Swarm cycle
+  omega-v edge [claim]              Capture & flush Merkle edge observation batch
+  omega-v analytics                 Compute rule efficacy & pattern analytics
+  omega-v scheduler run [ms] [claim] Run one autonomous scheduled loop
+  omega-v metrics                   Show system health and metrics
+  omega-v log                       Display event provenance log
+  omega-v integrity                 Verify event hash chain integrity
+  omega-v help                      Show this help menu`,
         };
       }
     }

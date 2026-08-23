@@ -43,9 +43,10 @@
       "@omega-v/green": ["packages/green/src/index.ts"],
       "@omega-v/human": ["packages/human/src/index.ts"],
       "@omega-v/edge": ["packages/edge/src/index.ts"],
-      "@omega-v/analytics": ["packages/analytics/src/index.ts"]
+      "@omega-v/analytics": ["packages/analytics/src/index.ts"],
+      "@omega-v/scheduler": ["packages/scheduler/src/index.ts"]
     }
   },
-  "include": ["packages/*/src", "apps/*/src"],
+  "include": ["packages/*/src", "apps/*/src", "tests"],
   "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts"]
 }

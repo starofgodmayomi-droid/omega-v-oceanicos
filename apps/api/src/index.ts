@@ -11,6 +11,7 @@ import { ProvenanceGraph } from '@omega-v/graph';
 import { SecurityEngine } from '@omega-v/security';
 import { EvolutionEngine } from '@omega-v/evolution';
 import { VerificationAnalyticsEngine } from '@omega-v/analytics';
+import { VerificationScheduler } from '@omega-v/scheduler';
 import {
   SuccessResponse,
   ErrorResponse,
@@ -47,6 +48,11 @@ const store = new ProvenanceStore();
 const frictionTracker = new FrictionTracker();
 const securityEngine = new SecurityEngine();
 const evolutionEngine = new EvolutionEngine();
+const scheduler = new VerificationScheduler(undefined, {
+  intervalMs: 30000,
+  claim: 'Ω∞v autonomous scheduled verification loop',
+  maxRuns: 0,
+});
 
 // Register default rules
 verificationEngine.registerRule({
@@ -666,6 +672,61 @@ app.get('/analytics', (_req: Request, res: Response) => {
 
   res.json({
     data: { summary, proposals },
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** GET /scheduler — Return current autonomous scheduler state (Section XXVII) */
+app.get('/scheduler', (_req: Request, res: Response) => {
+  res.json({
+    data: scheduler.getState(),
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /scheduler/start — Start the autonomous verification scheduler */
+app.post('/scheduler/start', (req: Request, res: Response) => {
+  const { intervalMs, claim } = req.body || {};
+  if (intervalMs || claim) {
+    scheduler.reconfigure({
+      ...(intervalMs ? { intervalMs: Number(intervalMs) } : {}),
+      ...(claim ? { claim: String(claim) } : {}),
+    });
+  }
+  scheduler.start();
+  res.json({
+    data: scheduler.getState(),
+    message: 'Scheduler started',
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /scheduler/pause — Pause the autonomous scheduler */
+app.post('/scheduler/pause', (_req: Request, res: Response) => {
+  scheduler.pause();
+  res.json({
+    data: scheduler.getState(),
+    message: 'Scheduler paused',
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /scheduler/resume — Resume the paused scheduler */
+app.post('/scheduler/resume', (_req: Request, res: Response) => {
+  scheduler.resume();
+  res.json({
+    data: scheduler.getState(),
+    message: 'Scheduler resumed',
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /scheduler/stop — Stop the autonomous scheduler */
+app.post('/scheduler/stop', (_req: Request, res: Response) => {
+  scheduler.stop();
+  res.json({
+    data: scheduler.getState(),
+    message: 'Scheduler stopped',
     timestamp: new Date().toISOString(),
   });
 });

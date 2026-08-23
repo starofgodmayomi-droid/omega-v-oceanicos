@@ -1,12 +1,9 @@
 {
-  "name": "@omega-v/cli",
+  "name": "@omega-v/scheduler",
   "version": "0.1.0",
-  "description": "Command line tool for Ω∞v Oceanicos verification loop",
+  "description": "Autonomous periodic verification scheduler — runs the Ω∞v kernel loop on a configurable cadence",
   "type": "module",
   "main": "dist/index.js",
-  "bin": {
-    "omega-v": "dist/bin.js"
-  },
   "scripts": {
     "build": "tsc",
     "watch": "tsc --watch",
@@ -14,8 +11,9 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "keywords": [
-    "cli",
-    "terminal",
+    "scheduler",
+    "cron",
+    "autonomous",
     "verification",
     "oceanicos"
   ],
@@ -23,11 +21,7 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@omega-v/types": "*",
-    "@omega-v/sdk": "*",
-    "@omega-v/agents": "*",
-    "@omega-v/edge": "*",
-    "@omega-v/analytics": "*",
-    "@omega-v/scheduler": "*"
+    "@omega-v/sdk": "*"
   },
   "devDependencies": {
     "@types/jest": "^29.5.0",
