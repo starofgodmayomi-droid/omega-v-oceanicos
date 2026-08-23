@@ -30,7 +30,7 @@ npm run dev
 
 ## Authentication boundary
 
-The API defaults to `OMEGA_AUTH_MODE=local`, preserving local-development behavior and the existing opt-in token gates. For a network-exposed deployment, set `OMEGA_AUTH_MODE=required` together with both `OMEGA_READ_TOKEN` and `OMEGA_ADMIN_TOKEN`. The service refuses to initialize if either required bearer token is missing or blank.
+The API defaults to `OMEGA_AUTH_MODE=local`, preserving local-development behavior and the existing opt-in token gates. For a network-exposed deployment, set `OMEGA_AUTH_MODE=required` together with both `OMEGA_READ_TOKEN` and `OMEGA_ADMIN_TOKEN`. The service refuses to initialize if either required bearer token is missing or blank, or if both roles are configured with the same bearer value; required mode fails closed rather than allowing a read credential to authorize mutations.
 
 In required mode, unauthenticated `GET /health` remains available for local process probes. All other `GET` routes and `POST /attest/verify` require the read bearer token. Every other non-health request requires the admin bearer token. These are shared-secret credentials, not identity proofing; production deployments should place them behind an approved secret store and identity or gateway boundary. The API reports only the non-secret mode label (`local` or `required`) through health, state, and attestation-policy responses.
 
