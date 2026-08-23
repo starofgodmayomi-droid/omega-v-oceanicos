@@ -12,6 +12,7 @@ import { VerificationAnalyticsEngine } from '@omega-v/analytics';
 import { VerificationScheduler } from '@omega-v/scheduler';
 import { TelemetryTracer, VerificationSLOEngine } from '@omega-v/telemetry';
 import { VaaSGate } from '@omega-v/vaas';
+import { VerificationReplayEngine } from '@omega-v/replay';
 import app from '../../apps/api/src/index';
 
 describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => {
@@ -279,6 +280,59 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       const rate = vaas.checkRateLimit(creds.tenant.id);
       expect(rate.allowed).toBe(true);
       expect(rate.remaining).toBeLessThan(50);
+    });
+  });
+
+  describe('11. Verification Replay Engine E2E', () => {
+    it('should capture, diff, and replay verification snapshots with regression detection', async () => {
+      const replayEngine = new VerificationReplayEngine();
+
+      // Capture two snapshots from different claims
+      const resultA = await sdk.runLoop({
+        claim: 'E2E Replay Baseline Alpha',
+        category: 'e2e-replay',
+        observedBy: 'e2e-test',
+        sourceSystem: 'jest',
+      });
+
+      const resultB = await sdk.runLoop({
+        claim: 'E2E Replay Baseline Beta',
+        category: 'e2e-replay',
+        observedBy: 'e2e-test',
+        sourceSystem: 'jest',
+      });
+
+      const snapA = replayEngine.capture('E2E Replay Baseline Alpha', resultA, 'Alpha', ['e2e']);
+      const snapB = replayEngine.capture('E2E Replay Baseline Beta', resultB, 'Beta', ['e2e']);
+
+      expect(snapA.fingerprint).toHaveLength(64);
+      expect(snapB.fingerprint).toHaveLength(64);
+      expect(snapA.status).toBe('CAPTURED');
+
+      // Diff them
+      const diff = replayEngine.diff(snapA.id, snapB.id);
+      expect(diff.snapshotA).toBe(snapA.id);
+      expect(diff.snapshotB).toBe(snapB.id);
+      expect(diff.regressionDetected).toBe(false); // both should pass
+      expect(diff.changes.length).toBeGreaterThanOrEqual(1); // at least signature diff
+
+      // Replay snapshot A
+      const replayResult = await replayEngine.replay(snapA.id, sdk);
+      expect(replayResult.original.id).toBe(snapA.id);
+      expect(replayResult.replayed.tags).toContain('replay');
+      expect(replayResult.diff.regressionDetected).toBe(false);
+      expect(replayResult.durationMs).toBeGreaterThanOrEqual(0);
+
+      // Query
+      expect(replayEngine.getSnapshots().length).toBeGreaterThanOrEqual(3); // A, B, replayed
+      expect(replayEngine.getSnapshotsByTag('e2e')).toHaveLength(3); // A, B, and replayed (inherits tags)
+      expect(replayEngine.getSnapshotsByTag('replay')).toHaveLength(1);
+
+      const summary = replayEngine.getSummary();
+      expect(summary.totalSnapshots).toBeGreaterThanOrEqual(3);
+      expect(summary.totalReplays).toBe(1);
+      expect(summary.tags).toContain('e2e');
+      expect(summary.tags).toContain('replay');
     });
   });
 });

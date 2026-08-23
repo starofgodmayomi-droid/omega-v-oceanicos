@@ -5,6 +5,7 @@ import { VerificationAnalyticsEngine } from '@omega-v/analytics';
 import { VerificationScheduler } from '@omega-v/scheduler';
 import { TelemetryTracer, VerificationSLOEngine } from '@omega-v/telemetry';
 import { VaaSGate } from '@omega-v/vaas';
+import { VerificationReplayEngine } from '@omega-v/replay';
 
 export interface CLIResult {
   success: boolean;
@@ -190,6 +191,38 @@ export class OceanicosCLI {
         };
       }
 
+      case 'replay': {
+        const replayEngine = new VerificationReplayEngine();
+        const claim = args[1] || 'CLI Replay verification snapshot';
+        const label = args[2] || undefined;
+
+        // Phase 1: Capture a baseline snapshot
+        const baselineResult = await this.client.runLoop({
+          claim,
+          category: 'replay-cli',
+          observedBy: 'cli-replay',
+          sourceSystem: 'omega-v-cli',
+        });
+        const baseline = replayEngine.capture(claim, baselineResult, label || 'Baseline', ['cli']);
+
+        // Phase 2: Replay the snapshot
+        const replayResult = await replayEngine.replay(baseline.id, this.client);
+
+        return {
+          success: !replayResult.diff.regressionDetected,
+          message: `[Ω∞v CLI] Replay ${replayResult.diff.regressionDetected ? 'REGRESSION DETECTED' : 'OK — no regression'}. ` +
+            `Changes: ${replayResult.diff.changes.length}, Duration: ${replayResult.durationMs}ms`,
+          output: {
+            baselineId: baseline.id,
+            replayedId: replayResult.replayed.id,
+            identical: replayResult.diff.identical,
+            regressionDetected: replayResult.diff.regressionDetected,
+            changes: replayResult.diff.changes.length,
+            durationMs: replayResult.durationMs,
+          },
+        };
+      }
+
       case 'help':
       default: {
         return {
@@ -204,6 +237,7 @@ Commands:
   omega-v slo [targetRate]          Evaluate Service Level Objective & error budget
   omega-v trace [name]              Generate W3C distributed trace context
   omega-v vaas register [name] [tier] Register multi-tenant VaaS organization
+  omega-v replay [claim] [label]    Capture & replay verification snapshot with diff
   omega-v metrics                   Show system health and metrics
   omega-v log                       Display event provenance log
   omega-v integrity                 Verify event hash chain integrity

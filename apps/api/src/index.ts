@@ -14,6 +14,7 @@ import { VerificationAnalyticsEngine } from '@omega-v/analytics';
 import { VerificationScheduler } from '@omega-v/scheduler';
 import { TelemetryTracer, VerificationSLOEngine } from '@omega-v/telemetry';
 import { VaaSGate } from '@omega-v/vaas';
+import { VerificationReplayEngine } from '@omega-v/replay';
 import {
   SuccessResponse,
   ErrorResponse,
@@ -58,6 +59,7 @@ const scheduler = new VerificationScheduler(undefined, {
 const tracer = new TelemetryTracer();
 const sloEngine = new VerificationSLOEngine();
 const vaasGate = new VaaSGate();
+const replayEngine = new VerificationReplayEngine();
 
 // Register default rules
 verificationEngine.registerRule({
@@ -754,6 +756,14 @@ app.get('/telemetry/spans', (_req: Request, res: Response) => {
   });
 });
 
+/** GET /vaas/tenants — List all registered multi-tenant organizations (Section XXIX) */
+app.get('/vaas/tenants', (_req: Request, res: Response) => {
+  res.json({
+    data: { tenants: vaasGate.getTenants() },
+    timestamp: new Date().toISOString(),
+  });
+});
+
 /** POST /vaas/tenants — Register a new multi-tenant organization in VaaS (Section XXIX) */
 app.post('/vaas/tenants', (req: Request, res: Response) => {
   const { name, tier, quotaPerMinute } = req.body || {};
@@ -800,6 +810,89 @@ app.post('/vaas/verify', async (req: Request, res: Response) => {
     res.status(statusCode).json({
       code: statusCode === 429 ? 'RATE_LIMIT_EXCEEDED' : 'UNAUTHORIZED',
       message,
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** GET /replay — List all replay snapshots and summary (Section XXX) */
+app.get('/replay', (_req: Request, res: Response) => {
+  res.json({
+    data: {
+      snapshots: replayEngine.getSnapshots(),
+      summary: replayEngine.getSummary(),
+    },
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /replay/capture — Capture a new replay snapshot from a fresh verification run */
+app.post('/replay/capture', async (req: Request, res: Response) => {
+  const { claim, label, tags, metadata } = req.body || {};
+  if (!claim) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'claim is required for replay capture',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const client = new OceanicosClient();
+    const result = await client.runLoop({
+      claim,
+      category: 'replay-capture',
+      observedBy: 'replay-api',
+      sourceSystem: 'omega-v-api',
+      metadata: metadata || {},
+    });
+    const snapshot = replayEngine.capture(claim, result, label, tags || [], metadata || {});
+    res.status(201).json({
+      data: snapshot,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(500).json({
+      code: 'REPLAY_CAPTURE_FAILED',
+      message: err instanceof Error ? err.message : 'Replay capture failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** POST /replay/:id/replay — Replay a captured snapshot and return diff */
+app.post('/replay/:id/replay', async (req: Request, res: Response) => {
+  try {
+    const client = new OceanicosClient();
+    const result = await replayEngine.replay(req.params.id, client);
+    res.json({
+      data: result,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Replay failed';
+    const statusCode = message.includes('not found') ? 404 : 500;
+    res.status(statusCode).json({
+      code: statusCode === 404 ? 'SNAPSHOT_NOT_FOUND' : 'REPLAY_FAILED',
+      message,
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** GET /replay/:idA/diff/:idB — Compute a diff between two snapshots */
+app.get('/replay/:idA/diff/:idB', (req: Request, res: Response) => {
+  try {
+    const diff = replayEngine.diff(req.params.idA, req.params.idB);
+    res.json({
+      data: diff,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(404).json({
+      code: 'DIFF_FAILED',
+      message: err instanceof Error ? err.message : 'Diff computation failed',
       timestamp: new Date().toISOString(),
     });
   }

@@ -30,6 +30,7 @@ export default {
     '@omega-v/scheduler': '<rootDir>/packages/scheduler/src/index.ts',
     '@omega-v/telemetry': '<rootDir>/packages/telemetry/src/index.ts',
     '@omega-v/vaas': '<rootDir>/packages/vaas/src/index.ts',
+    '@omega-v/replay': '<rootDir>/packages/replay/src/index.ts',
   },
   collectCoverageFrom: [
     'packages/*/src/**/*.ts',
