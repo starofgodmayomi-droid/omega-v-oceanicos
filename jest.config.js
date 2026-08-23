@@ -28,6 +28,7 @@ export default {
     '@omega-v/edge': '<rootDir>/packages/edge/src/index.ts',
     '@omega-v/analytics': '<rootDir>/packages/analytics/src/index.ts',
     '@omega-v/scheduler': '<rootDir>/packages/scheduler/src/index.ts',
+    '@omega-v/telemetry': '<rootDir>/packages/telemetry/src/index.ts',
   },
   collectCoverageFrom: [
     'packages/*/src/**/*.ts',

@@ -12,6 +12,7 @@ import { SecurityEngine } from '@omega-v/security';
 import { EvolutionEngine } from '@omega-v/evolution';
 import { VerificationAnalyticsEngine } from '@omega-v/analytics';
 import { VerificationScheduler } from '@omega-v/scheduler';
+import { TelemetryTracer, VerificationSLOEngine } from '@omega-v/telemetry';
 import {
   SuccessResponse,
   ErrorResponse,
@@ -53,6 +54,8 @@ const scheduler = new VerificationScheduler(undefined, {
   claim: 'Ω∞v autonomous scheduled verification loop',
   maxRuns: 0,
 });
+const tracer = new TelemetryTracer();
+const sloEngine = new VerificationSLOEngine();
 
 // Register default rules
 verificationEngine.registerRule({
@@ -727,6 +730,24 @@ app.post('/scheduler/stop', (_req: Request, res: Response) => {
   res.json({
     data: scheduler.getState(),
     message: 'Scheduler stopped',
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** GET /telemetry/slo — Service Level Objective and Error Budget Evaluation (Section XXVIII) */
+app.get('/telemetry/slo', (_req: Request, res: Response) => {
+  const metrics = store.getMetrics();
+  const evaluation = sloEngine.evaluateSLO(metrics);
+  res.json({
+    data: evaluation,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** GET /telemetry/spans — Distributed Provenance Spans and Trace Activity */
+app.get('/telemetry/spans', (_req: Request, res: Response) => {
+  res.json({
+    data: { spans: tracer.getSpans() },
     timestamp: new Date().toISOString(),
   });
 });

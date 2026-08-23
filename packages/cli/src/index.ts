@@ -3,6 +3,7 @@ import { FormlessSwarm } from '@omega-v/agents';
 import { EdgeObserver } from '@omega-v/edge';
 import { VerificationAnalyticsEngine } from '@omega-v/analytics';
 import { VerificationScheduler } from '@omega-v/scheduler';
+import { TelemetryTracer, VerificationSLOEngine } from '@omega-v/telemetry';
 
 export interface CLIResult {
   success: boolean;
@@ -138,6 +139,34 @@ export class OceanicosCLI {
         };
       }
 
+      case 'slo': {
+        const targetRate = args[1] ? Number(args[1]) : 0.99;
+        const metrics = this.client.getMetrics();
+        const sloEngine = new VerificationSLOEngine();
+        const evaluation = sloEngine.evaluateSLO(metrics, targetRate);
+        return {
+          success: evaluation.isHealthy,
+          message: `[Ω∞v CLI] Verification SLO: ${evaluation.isHealthy ? 'HEALTHY' : 'DEGRADED'} (Pass Rate: ${(evaluation.actualPassRate * 100).toFixed(1)}% / Target: ${(targetRate * 100).toFixed(1)}%)`,
+          output: evaluation,
+        };
+      }
+
+      case 'trace': {
+        const tracer = new TelemetryTracer();
+        const span = tracer.startSpan('cli-trace-span', undefined, {
+          command: args[1] || 'default',
+        });
+        tracer.addEvent(span, 'cli_invocation');
+        tracer.endSpan(span, 'OK');
+        const traceContext = { traceId: span.traceId, spanId: span.spanId, traceFlags: 1 };
+        const traceparent = tracer.injectTraceparent(traceContext);
+        return {
+          success: true,
+          message: `[Ω∞v CLI] Trace Context Generated: ${traceparent}`,
+          output: { span, traceparent },
+        };
+      }
+
       case 'help':
       default: {
         return {
@@ -149,6 +178,8 @@ Commands:
   omega-v edge [claim]              Capture & flush Merkle edge observation batch
   omega-v analytics                 Compute rule efficacy & pattern analytics
   omega-v scheduler run [ms] [claim] Run one autonomous scheduled loop
+  omega-v slo [targetRate]          Evaluate Service Level Objective & error budget
+  omega-v trace [name]              Generate W3C distributed trace context
   omega-v metrics                   Show system health and metrics
   omega-v log                       Display event provenance log
   omega-v integrity                 Verify event hash chain integrity

@@ -55,4 +55,19 @@ describe('OceanicosCLI', () => {
     expect(res.message).toContain('Scheduler available');
     expect(res.output).toHaveProperty('status', 'IDLE');
   });
+
+  it('should execute slo command and evaluate error budget', async () => {
+    await cli.run(['loop', 'SLO verification test']);
+    const res = await cli.run(['slo', '0.95']);
+    expect(res.message).toContain('Verification SLO');
+    expect(res.output).toHaveProperty('targetPassRate', 0.95);
+  });
+
+  it('should execute trace command and output W3C traceparent', async () => {
+    const res = await cli.run(['trace', 'cli-test-span']);
+    expect(res.success).toBe(true);
+    expect(res.message).toContain('Trace Context Generated');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((res.output as any).traceparent).toMatch(/^00-[a-f0-9]{32}-[a-f0-9]{16}-01$/);
+  });
 });
