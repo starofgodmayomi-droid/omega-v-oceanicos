@@ -623,6 +623,38 @@ app.post('/human', (req: Request, res: Response) => {
   res.status(201).json({ data: input, timestamp: new Date().toISOString() });
 });
 
+/** POST /edge/batch — Sync edge observation batch with Merkle verification (Section XII) */
+app.post('/edge/batch', (req: Request, res: Response) => {
+  const { batchId, nodeId, merkleRoot, observations } = req.body;
+  if (!batchId || !nodeId || !merkleRoot || !Array.isArray(observations)) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'batchId, nodeId, merkleRoot, and observations array required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  const recordedObservations = [];
+  for (const obs of observations) {
+    store.recordObservation(obs);
+    recordedObservations.push(obs.id);
+  }
+
+  res.status(201).json({
+    data: {
+      batchId,
+      nodeId,
+      merkleRoot,
+      receivedCount: observations.length,
+      recordedCount: recordedObservations.length,
+      status: 'ingested',
+      syncedAt: new Date().toISOString(),
+    },
+    timestamp: new Date().toISOString(),
+  });
+});
+
 /**
  * 404 Handler
  */

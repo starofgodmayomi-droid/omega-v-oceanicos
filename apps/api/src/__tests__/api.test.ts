@@ -31,5 +31,6 @@ describe('Ω∞v Oceanicos API Server', () => {
     expect(routes).toContain('/security/audit');
     expect(routes).toContain('/evolution/proposals');
     expect(routes).toContain('/evolution/recompile');
+    expect(routes).toContain('/edge/batch');
   });
 });
