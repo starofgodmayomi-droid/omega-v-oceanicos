@@ -28,6 +28,22 @@ npm run dev
 # Server runs on http://localhost:3000
 ```
 
+## Authentication boundary
+
+The API defaults to `OMEGA_AUTH_MODE=local`, preserving local-development behavior and the existing opt-in token gates. For a network-exposed deployment, set `OMEGA_AUTH_MODE=required` together with both `OMEGA_READ_TOKEN` and `OMEGA_ADMIN_TOKEN`. The service refuses to initialize if either required bearer token is missing or blank.
+
+In required mode, unauthenticated `GET /health` remains available for local process probes. All other `GET` routes and `POST /attest/verify` require the read bearer token. Every other non-health request requires the admin bearer token. These are shared-secret credentials, not identity proofing; production deployments should place them behind an approved secret store and identity or gateway boundary. The API reports only the non-secret mode label (`local` or `required`) through health, state, and attestation-policy responses.
+
+```bash
+# Local compatibility mode (default)
+export OMEGA_AUTH_MODE=local
+
+# Required mode for an exposed deployment
+export OMEGA_AUTH_MODE=required
+export OMEGA_READ_TOKEN='read-secret-from-protected-storage'
+export OMEGA_ADMIN_TOKEN='admin-secret-from-protected-storage'
+```
+
 ## Running the published image
 
 Each commit merged to `main` publishes a container image with signed build
@@ -38,6 +54,9 @@ docker pull ghcr.io/starofgodmayomi-droid/omega-v-oceanicos-api:latest
 
 docker run -p 3000:3000 \
   -e OMEGA_SIGNING_KEY="$(openssl rand -hex 32)" \
+  -e OMEGA_AUTH_MODE=required \
+  -e OMEGA_READ_TOKEN="$(openssl rand -hex 32)" \
+  -e OMEGA_ADMIN_TOKEN="$(openssl rand -hex 32)" \
   ghcr.io/starofgodmayomi-droid/omega-v-oceanicos-api:latest
 ```
 
@@ -770,6 +789,9 @@ curl -X POST http://localhost:3000/complete-loop \
 - `OMEGA_PERSISTENCE` — Explicit persistence override: `on` or `off`
 - `OMEGA_PERSISTENCE_KEY` — Active secret for AES-256-GCM encryption of runtime snapshot and event-log files; new writes always use this key, and it is never exposed in logs or API responses
 - `OMEGA_PERSISTENCE_KEY_PREVIOUS` — Optional previous secret accepted for controlled reads during local key rotation; snapshot/event-log observability reports `previous` or `mixed` without returning either secret. This is fallback compatibility, not custody, secure deletion, automated re-encryption, or recovery policy. `OMEGA_PERSISTENCE_RECOVERY_MODE` may be `operator-provided` or `external-reference`, with `OMEGA_PERSISTENCE_RECOVERY_REFERENCE` as a bounded non-secret label; omitted configuration is `unavailable`, and invalid declarations degrade readiness. The resulting mode, reference, and parse reason are declaration evidence only: the API does not verify the operator, custodian, recovery material, or external system.
+- `OMEGA_LOCAL_JOB_LEDGER` — Set to `on` to enable the bounded local job ledger; it remains disabled by default and never starts external workers or network activity
+- `OMEGA_LOCAL_JOB_LEDGER_TOKEN` — Dedicated token required by the loopback-only local job endpoints when the ledger is enabled. In `OMEGA_AUTH_MODE=local`, it may be supplied as the bearer token for backward compatibility. In `OMEGA_AUTH_MODE=required`, keep the global `Authorization` bearer role (`read` for GET or `admin` for mutations) and send this dedicated value in `x-omega-local-job-token`; the two credentials remain separate.
+- `OMEGA_LOCAL_JOB_LEDGER_PATH` and `OMEGA_LOCAL_JOB_LEDGER_KEY` — Optional paired settings for AES-256-GCM encrypted, atomic, single-process job-ledger persistence. Missing storage is an empty cold start; malformed or unauthenticated storage fails closed. These settings do not provide backup, recovery, distributed durability, or key custody.
 - `OMEGA_MEMORY_PATH` — Optional JSONL path for the MINI kernel memory chain
 - `OMEGA_MEMORY_KEY` — Optional active secret for AES-256-GCM encryption of new kernel-memory lines
 - `OMEGA_MEMORY_KEY_PREVIOUS` — Optional previous secret accepted during controlled key rotation; new writes still use `OMEGA_MEMORY_KEY`. Memory observability reports `current`, `previous`, or `mixed` according to the authenticated encrypted lines restored, without returning either secret.
@@ -803,15 +825,17 @@ npm run start
 
 ## Local Job Ledger (Opt-In, Local-Only)
 
-The API includes a deliberately small job boundary for deterministic local integrations. It is **disabled by default** and never starts a timer, subprocess, shell command, crawler, or network client. To opt in for a local development process, set `OMEGA_LOCAL_JOB_LEDGER=on` and provide `OMEGA_LOCAL_JOB_LEDGER_TOKEN`; requests must arrive over loopback and use `Authorization: Bearer <token>`.
+The API includes a deliberately small job boundary for deterministic local integrations. It is **disabled by default** and never starts a timer, subprocess, shell command, crawler, or network client. To opt in for a local development process, set `OMEGA_LOCAL_JOB_LEDGER=on` and provide `OMEGA_LOCAL_JOB_LEDGER_TOKEN`; requests must arrive over loopback. In local authentication mode, the dedicated value may remain `Authorization: Bearer <token>`. In required authentication mode, the normal global bearer credential remains in `Authorization` (`read` for GET or `admin` for mutations), and the dedicated ledger value must be sent separately as `x-omega-local-job-token`. This separation avoids collapsing API role authentication and local-ledger boundary authentication into one credential.
 
-This ledger accepts only `synthetic-observe` jobs whose `sourceUri` begins with `local://`. It is an in-memory, bounded operational evidence surface with `durable: false` and `source: "memory"`. Restarting the process clears jobs and counters. It is not a distributed queue, scheduler, crawler, vector index, retry system, or proof of durable execution.
+This ledger accepts only `synthetic-observe` jobs whose `sourceUri` begins with `local://`. It is an in-memory, bounded operational evidence surface by default with `durable: false`, `source: "memory"`, and `encryption: "disabled"`; restarting the process clears jobs and counters. For a single local process that needs restart continuity, also set `OMEGA_LOCAL_JOB_LEDGER_PATH` and `OMEGA_LOCAL_JOB_LEDGER_KEY`. The ledger then writes jobs, idempotency records, and bounded lifecycle events as an AES-256-GCM authenticated envelope, reports `durable: true`, `source: "file"`, and `encryption: "aes-256-gcm"`, and restores them on startup. A missing file is an empty cold start; malformed, unauthenticated, or incompatible storage fails closed. This is local single-process persistence, not a distributed queue, scheduler, crawler, vector index, retry system, backup, recovery service, or proof of durable execution.
 
 The lifecycle is `queued → running → succeeded|failed`. Submission requires an idempotency key and an operator identity header. A worker claims a queued job with `x-omega-worker-id`, and completion or failure requires the same worker identity. Terminal jobs cannot be changed. Lifecycle events are copied into the existing bounded runtime event stream with request, correlation, sequence, and provenance fields; job payloads, tokens, filesystem paths, and shell/network instructions are not returned.
 
 ```bash
 export OMEGA_LOCAL_JOB_LEDGER=on
 export OMEGA_LOCAL_JOB_LEDGER_TOKEN='local-development-only'
+export OMEGA_LOCAL_JOB_LEDGER_PATH='/tmp/omega-v-oceanicos/local-jobs.json'
+export OMEGA_LOCAL_JOB_LEDGER_KEY='local-development-ledger-key'
 export OMEGA_ADMIN_OPERATOR_ALLOWLIST='local-operator'
 
 curl -sS -X POST http://127.0.0.1:3000/jobs \

@@ -478,8 +478,9 @@ export interface LocalJobEvent {
 
 export interface LocalJobLedgerStatus {
   enabled: boolean;
-  durable: false;
-  source: 'memory';
+  durable: boolean;
+  source: 'memory' | 'file';
+  encryption: 'disabled' | 'aes-256-gcm';
   counts: Record<LocalJobState, number>;
   recentWindow: number;
 }

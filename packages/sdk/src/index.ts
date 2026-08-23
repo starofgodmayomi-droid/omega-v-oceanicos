@@ -79,6 +79,7 @@ export type Health = {
     policy: {
       attestationAlgorithm: string;
       attestationTtlMs: number | null;
+      authMode: 'local' | 'required';
       readAuthConfigured: boolean;
       adminAuthConfigured: boolean;
       adminOperatorAllowlistRequired: boolean;
@@ -92,6 +93,7 @@ export type RuntimeState = {
   data: {
     status: 'active';
     readiness: 'ready' | 'degraded';
+    authMode: 'local' | 'required';
     persistence: 'file' | 'memory';
     persistenceCurrentKeyFingerprint: string | null;
     persistencePreviousKeyFingerprint: string | null;
@@ -199,6 +201,7 @@ export type RuntimeRun = {
 export type AttestationPolicy = {
   attestationAlgorithm: string;
   attestationTtlMs: number | null;
+  authMode: 'local' | 'required';
   readAuthConfigured: boolean;
   adminAuthConfigured: boolean;
   adminOperatorAllowlistConfigured: boolean;
@@ -325,8 +328,9 @@ export type LocalJobEvent = {
 };
 export type LocalJobLedgerStatus = {
   enabled: boolean;
-  durable: false;
-  source: 'memory';
+  durable: boolean;
+  source: 'memory' | 'file';
+  encryption: 'disabled' | 'aes-256-gcm';
   counts: Record<LocalJobState, number>;
   recentWindow: number;
 };
@@ -358,16 +362,18 @@ export class OmegaClient {
   private readonly fetchImpl: FetchLike;
   private readonly readToken?: string;
   private readonly adminToken?: string;
+  private readonly localJobToken?: string;
 
   constructor(
     baseUrl = 'http://localhost:3000',
     fetchImpl: FetchLike = globalThis.fetch,
-    options: { readToken?: string; adminToken?: string } = {}
+    options: { readToken?: string; adminToken?: string; localJobToken?: string } = {}
   ) {
     this.baseUrl = baseUrl.replace(/\/$/, '');
     this.fetchImpl = fetchImpl;
     this.readToken = options.readToken;
     this.adminToken = options.adminToken;
+    this.localJobToken = options.localJobToken;
   }
 
   async getHealth(): Promise<Health> {
@@ -418,14 +424,14 @@ export class OmegaClient {
     if (query.limit !== undefined) params.set('limit', String(query.limit));
     if (query.state !== undefined) params.set('state', query.state);
     const suffix = params.toString() ? `?${params.toString()}` : '';
-    return this.get<LocalJobsResponse>(`/jobs${suffix}`);
+    return this.get<LocalJobsResponse>(`/jobs${suffix}`, this.localJobHeaders());
   }
 
   async getJob(jobId: string): Promise<LocalJobResponse> {
     if (!jobId.trim()) {
       throw new OmegaApiError('jobId is required', 400, `${this.baseUrl}/jobs`, 'JOB_INVALID');
     }
-    return this.get<LocalJobResponse>(`/jobs/${encodeURIComponent(jobId)}`);
+    return this.get<LocalJobResponse>(`/jobs/${encodeURIComponent(jobId)}`, this.localJobHeaders());
   }
 
   async getRevocations(): Promise<{
@@ -566,12 +572,22 @@ export class OmegaClient {
     return body as T;
   }
 
-  private async get<T>(path: string): Promise<T> {
+  private localJobHeaders(): Record<string, string> | undefined {
+    return this.localJobToken ? { 'x-omega-local-job-token': this.localJobToken } : undefined;
+  }
+
+  private async get<T>(path: string, extraHeaders?: Record<string, string>): Promise<T> {
     const endpoint = `${this.baseUrl}${path}`;
     let response: Response;
     try {
       response = await this.fetchImpl(endpoint, {
-        headers: this.readToken ? { Authorization: `Bearer ${this.readToken}` } : undefined,
+        headers:
+          this.readToken || extraHeaders
+            ? {
+                ...(this.readToken ? { Authorization: `Bearer ${this.readToken}` } : {}),
+                ...extraHeaders,
+              }
+            : undefined,
       });
     } catch (error) {
       throw new OmegaApiError(error instanceof Error ? error.message : String(error), 0, endpoint);

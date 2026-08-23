@@ -74,4 +74,25 @@ describe('the supported Node version is one claim, not three', () => {
     expect(dockerfile).toMatch(/HEALTHCHECK[\s\S]*127\.0\.0\.1[\s\S]*\/health/);
     expect(dockerfile).toMatch(/response\.ok/);
   });
+
+  it('ships the production image with required authentication enabled', () => {
+    expect(dockerfile).toMatch(/ENV OMEGA_AUTH_MODE=required/);
+    expect(workflow).toMatch(/OMEGA_READ_TOKEN=ci-smoke-read-token/);
+    expect(workflow).toMatch(/OMEGA_ADMIN_TOKEN=ci-smoke-admin-token/);
+    expect(workflow).toMatch(/Authorization: Bearer ci-smoke-read-token/);
+    expect(workflow).toMatch(/Authorization: Bearer ci-smoke-admin-token/);
+  });
+
+  it('hosts an encrypted local-ledger restart smoke in CI', () => {
+    expect(workflow).toMatch(/OMEGA_LOCAL_JOB_LEDGER=on/);
+    expect(workflow).toMatch(/OMEGA_LOCAL_JOB_LEDGER_PATH=\/tmp\/omega-ledger\/jobs\.json/);
+    expect(workflow).toMatch(/OMEGA_LOCAL_JOB_LEDGER_KEY=ci-smoke-ledger-key/);
+    expect(workflow).toMatch(/x-omega-local-job-token: ci-smoke-job-token/);
+    expect(workflow).toMatch(/-v \"\$RUNNER_TEMP\/omega-ledger:\/tmp\/omega-ledger\"/);
+    expect(workflow).toMatch(/docker rm -f omega-smoke/);
+    expect(workflow).toMatch(/local:\/\/ci-restart/);
+    expect(workflow).toMatch(/The encrypted local-ledger volume contains plaintext job payload/);
+    expect(workflow).toMatch(/job-after-restart\.json/);
+    expect(workflow).toMatch(/\"encryption\":\"aes-256-gcm\"/);
+  });
 });

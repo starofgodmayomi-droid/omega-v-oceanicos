@@ -36,6 +36,9 @@ FROM node:20-alpine AS runtime
 
 ENV NODE_ENV=production
 ENV API_PORT=3000
+# Exposed images require caller authentication by default. Local source runs can
+# explicitly choose OMEGA_AUTH_MODE=local when they are not network-exposed.
+ENV OMEGA_AUTH_MODE=required
 
 # The API writes its runtime store and append-only log under this path.
 ENV OMEGA_RUNTIME_STORE_PATH=/var/lib/omega-v/runtime.json

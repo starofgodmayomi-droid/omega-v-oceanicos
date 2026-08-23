@@ -82,6 +82,8 @@ export const persistenceCoverage = (input: {
   eventLogKeySource: EncryptionKeySource;
   memoryEncrypted: boolean;
   memoryKeySource: EncryptionKeySource;
+  jobLedgerEncrypted: boolean;
+  jobLedgerKeySource: EncryptionKeySource;
 }): PersistenceCoverage => ({
   complete: false,
   surfaces: [
@@ -105,8 +107,8 @@ export const persistenceCoverage = (input: {
     },
     {
       name: 'local-job-ledger',
-      encryption: 'disabled',
-      keySource: 'none',
+      encryption: input.jobLedgerEncrypted ? 'aes-256-gcm' : 'disabled',
+      keySource: input.jobLedgerKeySource,
       evidence: 'runtime-observed',
     },
   ],

@@ -229,6 +229,7 @@ describe('dashboard', () => {
           data: {
             attestationAlgorithm: 'HMAC-SHA256',
             attestationTtlMs: 900000,
+            authMode: 'required',
             readAuthConfigured: true,
             adminAuthConfigured: true,
             revocationEnabled: true,
@@ -244,6 +245,7 @@ describe('dashboard', () => {
     expect(await screen.findByText('ATTESTATION TTL')).toBeInTheDocument();
     expect(screen.getByText('900s')).toBeInTheDocument();
     expect(screen.getByText('REVOCATION / ADMIN')).toBeInTheDocument();
+    expect(screen.getByText('REQUIRED')).toBeInTheDocument();
     expect(screen.getByText('REVOCATION INTEGRITY')).toBeInTheDocument();
     expect(screen.getByText('DISABLED')).toBeInTheDocument();
     expect(screen.getByText('CURRENT')).toBeInTheDocument();
@@ -1231,8 +1233,9 @@ describe('read-only local job evidence', () => {
             ],
             status: {
               enabled: true,
-              durable: false,
-              source: 'memory',
+              durable: true,
+              source: 'file',
+              encryption: 'aes-256-gcm',
               counts: { queued: 0, running: 1, succeeded: 0, failed: 1, unknown: 0 },
               recentWindow: 40,
             },
@@ -1243,8 +1246,10 @@ describe('read-only local job evidence', () => {
     const panel = await screen.findByRole('region', { name: /local jobs/i });
     expect(within(panel).getByText('job-running')).toBeInTheDocument();
     expect(within(panel).getByText('job-failed')).toBeInTheDocument();
+    expect(within(panel).getByText('storage=file')).toBeInTheDocument();
+    expect(within(panel).getByText('encryption=aes-256-gcm')).toBeInTheDocument();
     expect(within(panel).getByText(/error class: fixture_failure/i)).toBeInTheDocument();
-    expect(within(panel).getByText(/durable=false/i)).toBeInTheDocument();
+    expect(within(panel).getByText(/durable=true/i)).toBeInTheDocument();
     expect(within(panel).queryByRole('button')).not.toBeInTheDocument();
   });
 });

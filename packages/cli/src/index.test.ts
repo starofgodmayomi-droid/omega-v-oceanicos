@@ -1450,6 +1450,7 @@ describe('omega jobs CLI', () => {
         enabled: true,
         durable: false,
         source: 'memory',
+        encryption: 'disabled',
         counts: { queued: 0, running: 1, succeeded: 1, failed: 0, unknown: 0 },
         recentWindow: 40,
       },
@@ -1461,18 +1462,30 @@ describe('omega jobs CLI', () => {
     const io = capture();
     try {
       const exitCode = await run(
-        ['jobs', '--url', 'http://api.test', '--limit', '1', '--token', 'read-token'],
+        [
+          'jobs',
+          '--url',
+          'http://api.test',
+          '--limit',
+          '1',
+          '--token',
+          'read-token',
+          '--job-token',
+          'job-token',
+        ],
         async (url, init) => {
           expect(url).toBe('http://api.test/jobs?limit=1');
           expect(init?.method).toBeUndefined();
-          expect(new Headers(init?.headers).get('authorization')).toBe('Bearer read-token');
-          expect(new Headers(init?.headers).get('x-omega-worker-id')).toBe(null);
+          const headers = new Headers(init?.headers);
+          expect(headers.get('authorization')).toBe('Bearer read-token');
+          expect(headers.get('x-omega-local-job-token')).toBe('job-token');
+          expect(headers.get('x-omega-worker-id')).toBe(null);
           return new Response(JSON.stringify(payload()));
         }
       );
       expect(exitCode).toBe(0);
       expect(io.output.join('')).toContain(
-        'JOBS          1/2 source=memory storage=memory durable=false enabled=true'
+        'JOBS          1/2 source=memory storage=memory durable=false encryption=disabled enabled=true'
       );
       expect(io.output.join('')).toContain('job-1 state=running');
       expect(io.output.join('')).not.toContain('job-2 state=succeeded');
@@ -1511,6 +1524,7 @@ describe('omega jobs CLI', () => {
                   enabled: true,
                   durable: true,
                   source: 'memory',
+                  encryption: 'disabled',
                   counts: {},
                   recentWindow: 40,
                 },

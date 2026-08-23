@@ -1,4 +1,6 @@
-import { createHash, randomUUID } from 'node:crypto';
+import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+import { createCipheriv, createDecipheriv, createHash, randomBytes, randomUUID } from 'node:crypto';
+import { dirname } from 'node:path';
 import type {
   LocalJob,
   LocalJobCreateInput,
@@ -15,6 +17,27 @@ export const LOCAL_JOB_MAX_IDEMPOTENCY_KEY = 128;
 export const LOCAL_JOB_MAX_ACTOR = 96;
 export const LOCAL_JOB_MAX_SOURCE_URI = 256;
 export const LOCAL_JOB_MAX_RESULT_SUMMARY = 500;
+
+export type LocalJobLedgerOptions = {
+  enabled?: boolean;
+  storagePath?: string;
+  encryptionKey?: string;
+};
+
+type StoredLedger = {
+  version: 1;
+  jobs: LocalJob[];
+  idempotency: Record<string, { digest: string; jobId: string }>;
+  events: LocalJobEvent[];
+};
+
+type LedgerEnvelope = {
+  version: 1;
+  algorithm: 'aes-256-gcm';
+  iv: string;
+  tag: string;
+  ciphertext: string;
+};
 
 export class LocalJobError extends Error {
   constructor(
@@ -44,12 +67,37 @@ const validSourceUri = (value: string): boolean =>
 
 const nowIso = (): string => new Date().toISOString();
 
+const deriveEncryptionKey = (raw: string): Buffer =>
+  createHash('sha256').update(raw, 'utf8').digest();
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
 export class LocalJobLedger {
   private readonly jobs = new Map<string, LocalJob>();
   private readonly idempotency = new Map<string, { digest: string; jobId: string }>();
   private readonly events: LocalJobEvent[] = [];
+  private readonly enabled: boolean;
+  private readonly storagePath: string | null;
+  private readonly encryptionKey: Buffer | null;
 
-  constructor(private readonly enabled = process.env.OMEGA_LOCAL_JOB_LEDGER === 'on') {}
+  constructor(enabledOrOptions: boolean | LocalJobLedgerOptions = {}) {
+    const options =
+      typeof enabledOrOptions === 'boolean' ? { enabled: enabledOrOptions } : enabledOrOptions;
+    this.enabled = options.enabled ?? process.env.OMEGA_LOCAL_JOB_LEDGER === 'on';
+    this.storagePath =
+      (options.storagePath ?? process.env.OMEGA_LOCAL_JOB_LEDGER_PATH)?.trim() || null;
+    const rawEncryptionKey =
+      (options.encryptionKey ?? process.env.OMEGA_LOCAL_JOB_LEDGER_KEY?.trim()) || null;
+
+    if (this.enabled && Boolean(this.storagePath) !== Boolean(rawEncryptionKey)) {
+      throw new Error(
+        'OMEGA_LOCAL_JOB_LEDGER_PATH and OMEGA_LOCAL_JOB_LEDGER_KEY must be configured together'
+      );
+    }
+    this.encryptionKey = rawEncryptionKey ? deriveEncryptionKey(rawEncryptionKey) : null;
+    if (this.enabled && this.storagePath) this.restore();
+  }
 
   isEnabled(): boolean {
     return this.enabled;
@@ -64,10 +112,12 @@ export class LocalJobLedger {
       unknown: 0,
     };
     for (const job of this.jobs.values()) counts[job.state] += 1;
+    const fileBacked = this.enabled && Boolean(this.storagePath && this.encryptionKey);
     return {
       enabled: this.enabled,
-      durable: false,
-      source: 'memory',
+      durable: fileBacked,
+      source: fileBacked ? 'file' : 'memory',
+      encryption: fileBacked ? 'aes-256-gcm' : 'disabled',
       counts,
       recentWindow: LOCAL_JOB_WINDOW,
     };
@@ -130,6 +180,7 @@ export class LocalJobLedger {
       provenance,
       'Job accepted into local evidence ledger'
     );
+    this.persist();
     return { job, event };
   }
 
@@ -161,6 +212,7 @@ export class LocalJobLedger {
     job.attempt += 1;
     job.updatedAt = nowIso();
     const event = this.addEvent(job, 'started', provenance, 'Job claimed by local worker');
+    this.persist();
     return { job, event };
   }
 
@@ -182,6 +234,7 @@ export class LocalJobLedger {
     job.updatedAt = nowIso();
     job.finishedAt = job.updatedAt;
     const event = this.addEvent(job, 'completed', provenance, 'Job completed by local worker');
+    this.persist();
     return { job, event };
   }
 
@@ -200,6 +253,7 @@ export class LocalJobLedger {
     job.updatedAt = nowIso();
     job.finishedAt = job.updatedAt;
     const event = this.addEvent(job, 'failed', provenance, 'Job failed with a bounded error class');
+    this.persist();
     return { job, event };
   }
 
@@ -243,5 +297,99 @@ export class LocalJobLedger {
     if (this.events.length > LOCAL_JOB_WINDOW)
       this.events.splice(0, this.events.length - LOCAL_JOB_WINDOW);
     return event;
+  }
+
+  private persist(): void {
+    if (!this.storagePath || !this.encryptionKey) return;
+    const payload: StoredLedger = {
+      version: 1,
+      jobs: [...this.jobs.values()],
+      idempotency: Object.fromEntries(this.idempotency),
+      events: this.events,
+    };
+    const iv = randomBytes(12);
+    const cipher = createCipheriv('aes-256-gcm', this.encryptionKey, iv);
+    const ciphertext = Buffer.concat([
+      cipher.update(JSON.stringify(payload), 'utf8'),
+      cipher.final(),
+    ]);
+    const envelope: LedgerEnvelope = {
+      version: 1,
+      algorithm: 'aes-256-gcm',
+      iv: iv.toString('base64'),
+      tag: cipher.getAuthTag().toString('base64'),
+      ciphertext: ciphertext.toString('base64'),
+    };
+    mkdirSync(dirname(this.storagePath), { recursive: true });
+    const temporaryPath = `${this.storagePath}.${randomUUID()}.tmp`;
+    writeFileSync(temporaryPath, JSON.stringify(envelope), { encoding: 'utf8', mode: 0o600 });
+    renameSync(temporaryPath, this.storagePath);
+  }
+
+  private restore(): void {
+    if (!this.storagePath || !this.encryptionKey || !existsSync(this.storagePath)) return;
+    let envelope: unknown;
+    try {
+      envelope = JSON.parse(readFileSync(this.storagePath, 'utf8'));
+    } catch (error) {
+      throw new Error(`Local job ledger storage is unreadable: ${String(error)}`);
+    }
+    if (
+      !isRecord(envelope) ||
+      envelope.version !== 1 ||
+      envelope.algorithm !== 'aes-256-gcm' ||
+      typeof envelope.iv !== 'string' ||
+      typeof envelope.tag !== 'string' ||
+      typeof envelope.ciphertext !== 'string'
+    ) {
+      throw new Error('Local job ledger storage has an invalid authenticated envelope');
+    }
+    let stored: unknown;
+    try {
+      const decipher = createDecipheriv(
+        'aes-256-gcm',
+        this.encryptionKey,
+        Buffer.from(envelope.iv, 'base64')
+      );
+      decipher.setAuthTag(Buffer.from(envelope.tag, 'base64'));
+      stored = JSON.parse(
+        Buffer.concat([
+          decipher.update(Buffer.from(envelope.ciphertext, 'base64')),
+          decipher.final(),
+        ]).toString('utf8')
+      );
+    } catch (error) {
+      throw new Error(`Local job ledger storage failed authentication: ${String(error)}`);
+    }
+    if (
+      !isRecord(stored) ||
+      stored.version !== 1 ||
+      !Array.isArray(stored.jobs) ||
+      !isRecord(stored.idempotency) ||
+      !Array.isArray(stored.events)
+    ) {
+      throw new Error('Local job ledger storage has an invalid payload');
+    }
+    for (const job of stored.jobs) {
+      if (!isRecord(job) || typeof job.id !== 'string' || typeof job.idempotencyKey !== 'string') {
+        throw new Error('Local job ledger storage contains an invalid job');
+      }
+      this.jobs.set(job.id, job as unknown as LocalJob);
+    }
+    for (const [key, value] of Object.entries(stored.idempotency)) {
+      if (!isRecord(value) || typeof value.digest !== 'string' || typeof value.jobId !== 'string') {
+        throw new Error('Local job ledger storage contains an invalid idempotency record');
+      }
+      this.idempotency.set(key, { digest: value.digest, jobId: value.jobId });
+    }
+    for (const event of stored.events) {
+      if (!isRecord(event) || typeof event.id !== 'string' || typeof event.jobId !== 'string') {
+        throw new Error('Local job ledger storage contains an invalid event');
+      }
+      this.events.push(event as unknown as LocalJobEvent);
+    }
+    if (this.events.length > LOCAL_JOB_WINDOW) {
+      this.events.splice(0, this.events.length - LOCAL_JOB_WINDOW);
+    }
   }
 }
