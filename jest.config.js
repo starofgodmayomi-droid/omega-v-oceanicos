@@ -33,6 +33,7 @@ export default {
     '@omega-v/replay': '<rootDir>/packages/replay/src/index.ts',
     '@omega-v/contract': '<rootDir>/packages/contract/src/index.ts',
     '@omega-v/auth': '<rootDir>/packages/auth/src/index.ts',
+    '@omega-v/federation': '<rootDir>/packages/federation/src/index.ts',
   },
   collectCoverageFrom: [
     'packages/*/src/**/*.ts',

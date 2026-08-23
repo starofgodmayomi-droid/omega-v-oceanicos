@@ -15,6 +15,7 @@ import { VaaSGate } from '@omega-v/vaas';
 import { VerificationReplayEngine } from '@omega-v/replay';
 import { FormalContractEngine } from '@omega-v/contract';
 import { OceanicosAuthEngine } from '@omega-v/auth';
+import { FederationMeshEngine } from '@omega-v/federation';
 import app from '../../apps/api/src/index';
 
 describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => {
@@ -444,6 +445,53 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       // New token with rotated secret
       const newToken = auth.issueToken(agentId.did, newSecret);
       expect(auth.verifyToken(newToken).valid).toBe(true);
+    });
+  });
+
+  describe('14. Cross-Mesh Inter-Cluster Verification Federation E2E', () => {
+    it('should register peers, export cross-cluster proof, verify remote proof, and calculate mesh summary', async () => {
+      const mesh = new FederationMeshEngine('cluster-e2e-primary');
+
+      // Check default bootstrap peers
+      expect(mesh.getPeers().length).toBeGreaterThanOrEqual(2);
+
+      // Register new peer
+      const peer = mesh.registerPeer({
+        clusterName: 'Ω∞v-AP-Singapore-Cluster',
+        endpoint: 'https://ap-singapore.omega-v.network',
+        publicKey: '0x04e1239847aefb374928174628a89f72b94e823c1',
+        trustScore: 0.98,
+      });
+
+      expect(peer.clusterName).toBe('Ω∞v-AP-Singapore-Cluster');
+
+      // Export proof from local verification result
+      const loopResult = await sdk.runLoop({
+        claim: 'Cross-Cluster Inter-Mesh Federation E2E Claim',
+        category: 'e2e-mesh',
+      });
+
+      const proof = mesh.exportProof(
+        'Cross-Cluster Inter-Mesh Federation E2E Claim',
+        loopResult,
+        'Ω∞v-AP-Singapore-Cluster'
+      );
+
+      expect(proof.proofId).toMatch(/^proof-mesh-/);
+      expect(proof.originCluster).toBe('cluster-e2e-primary');
+      expect(proof.targetCluster).toBe('Ω∞v-AP-Singapore-Cluster');
+      expect(proof.verificationMerkleRoot).toHaveLength(64);
+      expect(proof.attestationSignature).toMatch(/^0x/);
+
+      // Verify remote proof
+      const remoteVerification = mesh.verifyRemoteProof(proof);
+      expect(remoteVerification.valid).toBe(true);
+      expect(remoteVerification.trustScore).toBeGreaterThan(0);
+
+      // Verify summary
+      const summary = mesh.getMeshSummary();
+      expect(summary.totalPeers).toBeGreaterThanOrEqual(3);
+      expect(summary.totalProofsExchanged).toBeGreaterThanOrEqual(1);
     });
   });
 });

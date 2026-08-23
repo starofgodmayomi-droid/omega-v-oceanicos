@@ -8,6 +8,7 @@ import { VaaSGate } from '@omega-v/vaas';
 import { VerificationReplayEngine } from '@omega-v/replay';
 import { FormalContractEngine } from '@omega-v/contract';
 import { OceanicosAuthEngine } from '@omega-v/auth';
+import { FederationMeshEngine } from '@omega-v/federation';
 
 export interface CLIResult {
   success: boolean;
@@ -293,6 +294,35 @@ export class OceanicosCLI {
         };
       }
 
+      case 'federation': {
+        const mesh = new FederationMeshEngine();
+        const subCommand = args[1] || 'peers';
+
+        if (subCommand === 'export') {
+          const claim = args[2] || 'CLI Federated Mesh Claim';
+          const loopResult = await this.client.runLoop({ claim });
+          const proof = mesh.exportProof(claim, loopResult);
+
+          return {
+            success: true,
+            message: `[Ω∞v CLI] Cross-Cluster Proof Exported: ${proof.proofId} (Origin: ${proof.originCluster})`,
+            output: proof,
+          };
+        }
+
+        const peers = mesh.getPeers();
+        const summary = mesh.getMeshSummary();
+
+        return {
+          success: true,
+          message: `[Ω∞v CLI] Federated Mesh Peers: ${peers.length} active (Avg Trust: ${summary.avgTrustScore})`,
+          output: {
+            summary,
+            peers,
+          },
+        };
+      }
+
       case 'help':
       default: {
         return {
@@ -310,6 +340,7 @@ Commands:
   omega-v replay [claim] [label]    Capture & replay verification snapshot with diff
   omega-v contract [list|verify]    List formal contracts or verify sample payload
   omega-v auth [list|create]        List DIDs or create decentralized identity
+  omega-v federation [peers|export] List mesh peers or export cross-cluster proof
   omega-v metrics                   Show system health and metrics
   omega-v log                       Display event provenance log
   omega-v integrity                 Verify event hash chain integrity

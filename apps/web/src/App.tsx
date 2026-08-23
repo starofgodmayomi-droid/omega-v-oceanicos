@@ -167,6 +167,16 @@ interface FormalContractItem {
   active: boolean;
 }
 
+interface DIDIdentityItem {
+  did: string;
+  type: 'AGENT' | 'VERIFIER' | 'HUMAN' | 'SERVICE' | 'SYSTEM';
+  publicKey: string;
+  capabilities: string[];
+  createdAt: string;
+  revoked: boolean;
+  epoch: number;
+}
+
 interface RuleEfficacy {
   ruleName: string;
   totalExecutions: number;
@@ -356,6 +366,15 @@ export function App(): JSX.Element {
     violations: { field?: string; invariant?: string; message: string }[];
   } | null>(null);
   const [contractTestLoading, setContractTestLoading] = useState(false);
+  const [identities, setIdentities] = useState<DIDIdentityItem[]>([]);
+  const [newIdentityType, setNewIdentityType] = useState<
+    'AGENT' | 'VERIFIER' | 'HUMAN' | 'SERVICE'
+  >('AGENT');
+  const [createdIdentity, setCreatedIdentity] = useState<{
+    did: string;
+    secret: string;
+    token?: string;
+  } | null>(null);
 
   // ── Poll log + metrics ──
   const fetchState = useCallback(async () => {
@@ -375,6 +394,7 @@ export function App(): JSX.Element {
         vaasRes,
         replayRes,
         contractsRes,
+        authRes,
       ] = await Promise.all([
         fetch(`${API_BASE}/log?limit=30`),
         fetch(`${API_BASE}/metrics`),
@@ -390,6 +410,7 @@ export function App(): JSX.Element {
         fetch(`${API_BASE}/vaas/tenants`),
         fetch(`${API_BASE}/replay`),
         fetch(`${API_BASE}/contracts`),
+        fetch(`${API_BASE}/auth/identities`),
       ]);
       if (!logRes.ok || !metricsRes.ok) throw new Error('API error');
 
@@ -420,6 +441,9 @@ export function App(): JSX.Element {
       }
       if (contractsRes.ok) {
         setContracts((await contractsRes.json()).data.contracts as FormalContractItem[]);
+      }
+      if (authRes.ok) {
+        setIdentities((await authRes.json()).data.identities as DIDIdentityItem[]);
       }
     } catch {
       setApiOnline(false);
@@ -2275,6 +2299,233 @@ export function App(): JSX.Element {
                 })()}
               </div>
             )}
+          </div>
+
+          {/* ── Decentralized Identity (DID) & Capability Auth Engine (Section XXXII) ── */}
+          <div
+            style={{
+              background: 'var(--bg-card)',
+              border: '1px solid rgba(159, 122, 234, 0.3)',
+              borderRadius: 'var(--radius)',
+              padding: 20,
+              marginBottom: 24,
+            }}
+          >
+            <div
+              style={{
+                fontWeight: 700,
+                fontSize: '0.95rem',
+                color: 'var(--accent-secondary)',
+                marginBottom: 14,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span>🔐 Decentralized Identity (DID) & Capability Auth Engine</span>
+                <span
+                  style={{
+                    fontSize: '0.72rem',
+                    background: 'rgba(159, 122, 234, 0.15)',
+                    color: 'var(--accent-secondary)',
+                    padding: '2px 8px',
+                    borderRadius: 4,
+                  }}
+                >
+                  {identities.length} Active DIDs
+                </span>
+              </div>
+            </div>
+
+            {/* Create DID Form */}
+            <div
+              style={{
+                display: 'flex',
+                gap: 10,
+                marginBottom: 14,
+                flexWrap: 'wrap',
+              }}
+            >
+              <select
+                value={newIdentityType}
+                onChange={(e) =>
+                  setNewIdentityType(e.target.value as 'AGENT' | 'VERIFIER' | 'HUMAN' | 'SERVICE')
+                }
+                style={{
+                  background: 'var(--bg-surface)',
+                  border: '1px solid var(--border)',
+                  color: 'var(--text-primary)',
+                  borderRadius: 'var(--radius-sm)',
+                  padding: '8px 12px',
+                  fontSize: '0.85rem',
+                }}
+              >
+                <option value="AGENT">AGENT (observe:write, verify:execute)</option>
+                <option value="VERIFIER">VERIFIER (verify:execute, attest:sign)</option>
+                <option value="HUMAN">HUMAN (governance:vote, observe:write)</option>
+                <option value="SERVICE">SERVICE (observe:write)</option>
+              </select>
+              <button
+                type="button"
+                className="btn btn-primary"
+                style={{ padding: '8px 16px', fontSize: '0.82rem' }}
+                onClick={async () => {
+                  try {
+                    const capabilitiesMap: Record<string, string[]> = {
+                      AGENT: ['observe:write', 'verify:execute'],
+                      VERIFIER: ['verify:execute', 'attest:sign'],
+                      HUMAN: ['governance:vote', 'observe:write'],
+                      SERVICE: ['observe:write'],
+                    };
+                    const res = await fetch(`${API_BASE}/auth/identities`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        type: newIdentityType,
+                        capabilities: capabilitiesMap[newIdentityType] || ['observe:write'],
+                      }),
+                    });
+                    if (res.ok) {
+                      const data = await res.json();
+                      // Issue a token automatically
+                      const tokenRes = await fetch(`${API_BASE}/auth/token`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          did: data.data.did,
+                          secret: data.data.secret,
+                        }),
+                      });
+                      const tokenData = tokenRes.ok
+                        ? (await tokenRes.json()).data.token
+                        : undefined;
+                      setCreatedIdentity({
+                        did: data.data.did,
+                        secret: data.data.secret,
+                        token: tokenData,
+                      });
+                      await fetchState();
+                    }
+                  } catch (e) {
+                    console.error(e);
+                  }
+                }}
+              >
+                + Issue Decentralized Identity (DID)
+              </button>
+            </div>
+
+            {/* Credential notification */}
+            {createdIdentity && (
+              <div
+                style={{
+                  background: 'rgba(159, 122, 234, 0.12)',
+                  border: '1px solid var(--accent-secondary)',
+                  borderRadius: 'var(--radius-sm)',
+                  padding: '10px 14px',
+                  marginBottom: 14,
+                  fontSize: '0.78rem',
+                }}
+              >
+                <div style={{ color: 'var(--accent-secondary)', fontWeight: 700, marginBottom: 4 }}>
+                  ✓ DID Issued:{' '}
+                  <code style={{ fontFamily: 'var(--font-mono)' }}>{createdIdentity.did}</code>
+                </div>
+                <div style={{ color: 'var(--text-secondary)', marginBottom: 2 }}>
+                  Secret:{' '}
+                  <code style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)' }}>
+                    {createdIdentity.secret}
+                  </code>
+                </div>
+                {createdIdentity.token && (
+                  <div style={{ color: 'var(--text-secondary)' }}>
+                    Bearer Token:{' '}
+                    <code
+                      style={{
+                        fontFamily: 'var(--font-mono)',
+                        color: 'var(--accent-green)',
+                        wordBreak: 'break-all',
+                      }}
+                    >
+                      {createdIdentity.token}
+                    </code>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* List of Identities */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+                gap: 10,
+              }}
+            >
+              {identities.map((id) => (
+                <div
+                  key={id.did}
+                  style={{
+                    background: 'var(--bg-surface)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 'var(--radius-sm)',
+                    padding: 12,
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: 4,
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontWeight: 600,
+                        fontSize: '0.82rem',
+                        fontFamily: 'var(--font-mono)',
+                      }}
+                    >
+                      {id.did.length > 26 ? `${id.did.slice(0, 24)}…` : id.did}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: '0.65rem',
+                        fontWeight: 700,
+                        color: 'var(--accent-secondary)',
+                        background: 'rgba(159,122,234,0.15)',
+                        padding: '2px 6px',
+                        borderRadius: 3,
+                      }}
+                    >
+                      {id.type}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: 6 }}>
+                    Epoch: {id.epoch} · {id.revoked ? '❌ Revoked' : '✓ Active'}
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                    {id.capabilities.map((cap) => (
+                      <span
+                        key={cap}
+                        style={{
+                          fontSize: '0.65rem',
+                          background: 'var(--bg-card)',
+                          color: 'var(--text-secondary)',
+                          border: '1px solid var(--border)',
+                          padding: '1px 5px',
+                          borderRadius: 3,
+                        }}
+                      >
+                        {cap}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Timeline */}

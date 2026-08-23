@@ -17,6 +17,7 @@ import { VaaSGate } from '@omega-v/vaas';
 import { VerificationReplayEngine } from '@omega-v/replay';
 import { FormalContractEngine } from '@omega-v/contract';
 import { OceanicosAuthEngine } from '@omega-v/auth';
+import { FederationMeshEngine } from '@omega-v/federation';
 import {
   SuccessResponse,
   ErrorResponse,
@@ -64,6 +65,7 @@ const vaasGate = new VaaSGate();
 const replayEngine = new VerificationReplayEngine();
 const contractEngine = new FormalContractEngine();
 const authEngine = new OceanicosAuthEngine();
+const federationEngine = new FederationMeshEngine();
 
 // Register default rules
 verificationEngine.registerRule({
@@ -1034,6 +1036,96 @@ app.post('/auth/verify', (req: Request, res: Response) => {
   const result = authEngine.verifyToken(token, requiredCapability);
   res.status(result.valid ? 200 : 403).json({
     data: result,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** GET /federation/peers — List all registered mesh peers and summary (Section XXXIII) */
+app.get('/federation/peers', (_req: Request, res: Response) => {
+  res.json({
+    data: {
+      peers: federationEngine.getPeers(),
+      summary: federationEngine.getMeshSummary(),
+    },
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /federation/peers — Register a remote cluster peer in the verification mesh */
+app.post('/federation/peers', (req: Request, res: Response) => {
+  const { clusterName, endpoint, publicKey, trustScore } = req.body || {};
+  if (!clusterName || !endpoint || !publicKey) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'clusterName, endpoint, and publicKey are required for peer registration',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  const peer = federationEngine.registerPeer({
+    clusterName,
+    endpoint,
+    publicKey,
+    trustScore,
+  });
+
+  res.status(201).json({
+    data: peer,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /federation/proofs/export — Export a cross-cluster verification proof */
+app.post('/federation/proofs/export', async (req: Request, res: Response) => {
+  const { claim, targetCluster } = req.body || {};
+  if (!claim) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'claim is required for cross-cluster proof export',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const client = new OceanicosClient();
+    const result = await client.runLoop({
+      claim,
+      category: 'mesh-federation',
+      observedBy: 'api-federation',
+      sourceSystem: 'omega-v-api',
+    });
+
+    const proof = federationEngine.exportProof(claim, result, targetCluster);
+    res.status(201).json({
+      data: proof,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(500).json({
+      code: 'PROOF_EXPORT_FAILED',
+      message: err instanceof Error ? err.message : 'Failed to export proof',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** POST /federation/proofs/verify — Verify an incoming remote proof */
+app.post('/federation/proofs/verify', (req: Request, res: Response) => {
+  const { proof } = req.body || {};
+  if (!proof) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'proof object is required for verification',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  const verification = federationEngine.verifyRemoteProof(proof);
+  res.json({
+    data: verification,
     timestamp: new Date().toISOString(),
   });
 });
