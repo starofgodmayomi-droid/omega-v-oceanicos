@@ -20,6 +20,7 @@ import { VerificationBenchmarkEngine } from '@omega-v/benchmark';
 import { OceanicosNotaryEngine } from '@omega-v/notary';
 import { OceanicosSandboxEngine } from '@omega-v/sandbox';
 import { OceanicosPolicyEngine } from '@omega-v/policy';
+import { OceanicosZKEngine } from '@omega-v/zk';
 import app from '../../apps/api/src/index';
 
 describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => {
@@ -609,6 +610,40 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       const failReceipt = policyEngine.evaluate('enterprise-sla-policy', nonCompliantCtx);
       expect(failReceipt.compliant).toBe(false);
       expect(failReceipt.failedRules).toBe(3);
+    });
+  });
+
+  describe('19. Zero-Knowledge Succinct Privacy Proofs & Verifier E2E', () => {
+    it('should generate and verify succinct ZK range and membership proofs without revealing secret witnesses', () => {
+      const zkEngine = new OceanicosZKEngine();
+
+      // Ensure circuits exist
+      const circuits = zkEngine.getCircuits();
+      expect(circuits.length).toBeGreaterThanOrEqual(3);
+
+      // Generate Range proof (Secret confidence = 0.98, proven >= 0.90)
+      const secretConfidence = 0.98;
+      const rangeProof = zkEngine.generateRangeProof('circuit-confidence-range', secretConfidence);
+
+      expect(rangeProof.proofId).toMatch(/^zkproof-/);
+      expect(rangeProof.commitment).toHaveLength(64);
+      expect(rangeProof.proofToken).toMatch(/^0x/);
+
+      // Verify Range proof
+      const rangeVerification = zkEngine.verifyProof(rangeProof);
+      expect(rangeVerification.valid).toBe(true);
+
+      // Generate Membership proof (Secret region = 'us-east-1')
+      const memberProof = zkEngine.generateMembershipProof('circuit-authorized-region', 'us-east-1');
+      expect(memberProof.circuitType).toBe('MEMBERSHIP');
+
+      // Verify Membership proof
+      const memberVerification = zkEngine.verifyProof(memberProof);
+      expect(memberVerification.valid).toBe(true);
+
+      // Tampered proof detection
+      const tamperedProof = { ...memberProof, commitment: 'f'.repeat(64) };
+      expect(zkEngine.verifyProof(tamperedProof).valid).toBe(false);
     });
   });
 });

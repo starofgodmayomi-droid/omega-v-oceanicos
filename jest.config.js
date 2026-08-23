@@ -38,6 +38,7 @@ export default {
     '@omega-v/notary': '<rootDir>/packages/notary/src/index.ts',
     '@omega-v/sandbox': '<rootDir>/packages/sandbox/src/index.ts',
     '@omega-v/policy': '<rootDir>/packages/policy/src/index.ts',
+    '@omega-v/zk': '<rootDir>/packages/zk/src/index.ts',
   },
   collectCoverageFrom: [
     'packages/*/src/**/*.ts',

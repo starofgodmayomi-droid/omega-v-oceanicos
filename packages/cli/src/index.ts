@@ -13,6 +13,7 @@ import { VerificationBenchmarkEngine } from '@omega-v/benchmark';
 import { OceanicosNotaryEngine } from '@omega-v/notary';
 import { OceanicosSandboxEngine } from '@omega-v/sandbox';
 import { OceanicosPolicyEngine } from '@omega-v/policy';
+import { OceanicosZKEngine } from '@omega-v/zk';
 
 export interface CLIResult {
   success: boolean;
@@ -409,6 +410,33 @@ export class OceanicosCLI {
         };
       }
 
+      case 'zk': {
+        const zkEngine = new OceanicosZKEngine();
+        const subCommand = args[1] || 'circuits';
+
+        if (subCommand === 'prove') {
+          const circuitId = args[2] || 'circuit-confidence-range';
+          const witness = args[3] !== undefined ? Number(args[3]) : 0.96;
+          const proof = zkEngine.generateRangeProof(circuitId, witness);
+          const verification = zkEngine.verifyProof(proof);
+
+          return {
+            success: verification.valid,
+            message: verification.valid
+              ? `[Ω∞v CLI] Zero-Knowledge Proof Generated & Verified (${proof.circuitId}, Commitment: ${proof.commitment.slice(0, 16)}…, Token: ${proof.proofToken.slice(0, 20)}…)`
+              : `[Ω∞v CLI] ZK Proof Verification Failed: ${verification.reason}`,
+            output: { proof, verification },
+          };
+        }
+
+        const circuits = zkEngine.getCircuits();
+        return {
+          success: true,
+          message: `[Ω∞v CLI] Registered Zero-Knowledge Circuits: ${circuits.length} circuits active`,
+          output: circuits,
+        };
+      }
+
       case 'help':
       default: {
         return {
@@ -431,6 +459,7 @@ Commands:
   omega-v notary [summary|anchor]   Notarize attestation into Merkle transparency log
   omega-v sandbox [expression]      Execute rule expression in isolated deterministic sandbox
   omega-v policy [list|evaluate]    List declarative policy documents or evaluate context
+  omega-v zk [circuits|prove]       Generate and verify zero-knowledge succinct privacy proofs
   omega-v metrics                   Show system health and metrics
   omega-v log                       Display event provenance log
   omega-v integrity                 Verify event hash chain integrity

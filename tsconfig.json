@@ -54,7 +54,8 @@
       "@omega-v/benchmark": ["packages/benchmark/src/index.ts"],
       "@omega-v/notary": ["packages/notary/src/index.ts"],
       "@omega-v/sandbox": ["packages/sandbox/src/index.ts"],
-      "@omega-v/policy": ["packages/policy/src/index.ts"]
+      "@omega-v/policy": ["packages/policy/src/index.ts"],
+      "@omega-v/zk": ["packages/zk/src/index.ts"]
     }
   },
   "include": ["packages/*/src", "apps/*/src", "tests"],

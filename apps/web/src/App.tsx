@@ -254,6 +254,24 @@ interface PolicyItem {
   active: boolean;
 }
 
+interface ZKCircuitItem {
+  circuitId: string;
+  name: string;
+  type: string;
+  description: string;
+  publicParameters: Record<string, unknown>;
+}
+
+interface ZKProofItem {
+  proofId: string;
+  circuitId: string;
+  circuitType: string;
+  commitment: string;
+  publicInputs: Record<string, unknown>;
+  proofToken: string;
+  timestamp: string;
+}
+
 interface RuleEfficacy {
   ruleName: string;
   totalExecutions: number;
@@ -496,6 +514,12 @@ export function App(): JSX.Element {
     signature: string;
   } | null>(null);
   const [evaluatingPolicy, setEvaluatingPolicy] = useState(false);
+  const [zkCircuits, setZkCircuits] = useState<ZKCircuitItem[]>([]);
+  const [selectedZKCircuit, setSelectedZKCircuit] = useState('circuit-confidence-range');
+  const [zkWitness, setZkWitness] = useState('0.96');
+  const [generatedProof, setGeneratedProof] = useState<ZKProofItem | null>(null);
+  const [zkVerified, setZkVerified] = useState<boolean | null>(null);
+  const [provingZK, setProvingZK] = useState(false);
 
   // ── Poll log + metrics ──
   const fetchState = useCallback(async () => {
@@ -522,6 +546,7 @@ export function App(): JSX.Element {
         notarySealsRes,
         sandRes,
         polRes,
+        zkRes,
       ] = await Promise.all([
         fetch(`${API_BASE}/log?limit=30`),
         fetch(`${API_BASE}/metrics`),
@@ -544,6 +569,7 @@ export function App(): JSX.Element {
         fetch(`${API_BASE}/notary/seals`),
         fetch(`${API_BASE}/sandbox/stats`),
         fetch(`${API_BASE}/policies`),
+        fetch(`${API_BASE}/zk/circuits`),
       ]);
       if (!logRes.ok || !metricsRes.ok) throw new Error('API error');
 
@@ -598,6 +624,9 @@ export function App(): JSX.Element {
       }
       if (polRes.ok) {
         setPolicies((await polRes.json()).data.policies as PolicyItem[]);
+      }
+      if (zkRes.ok) {
+        setZkCircuits((await zkRes.json()).data.circuits as ZKCircuitItem[]);
       }
     } catch {
       setApiOnline(false);
@@ -3512,6 +3541,206 @@ export function App(): JSX.Element {
                   <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: 4 }}>
                     Domain: <span style={{ color: 'var(--text-secondary)' }}>{pol.domain}</span> ·
                     Rules: {pol.rules.length}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ── Zero-Knowledge Succinct Privacy Proofs (Section XXXVIII) ── */}
+          <div
+            style={{
+              background: 'var(--bg-card)',
+              border: '1px solid rgba(129, 140, 248, 0.3)',
+              borderRadius: 'var(--radius)',
+              padding: 20,
+              marginBottom: 20,
+            }}
+          >
+            <div className="section-header">
+              <div className="section-title">🔐 Zero-Knowledge Privacy Proofs</div>
+              <span className="section-badge">{zkCircuits.length} circuits</span>
+            </div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 14 }}>
+              Generate and verify succinct zero-knowledge proofs — prove statements without revealing private witnesses.
+            </div>
+
+            {/* Circuit selector + witness input */}
+            <div style={{ display: 'flex', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
+              <select
+                value={selectedZKCircuit}
+                onChange={(e) => setSelectedZKCircuit(e.target.value)}
+                style={{
+                  flex: 1,
+                  minWidth: 200,
+                  background: 'var(--bg-surface)',
+                  color: 'var(--text-primary)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius-sm)',
+                  padding: '6px 10px',
+                  fontSize: '0.8rem',
+                }}
+              >
+                {zkCircuits.map((c) => (
+                  <option key={c.circuitId} value={c.circuitId}>
+                    {c.name} ({c.type})
+                  </option>
+                ))}
+              </select>
+              <input
+                type="text"
+                value={zkWitness}
+                onChange={(e) => setZkWitness(e.target.value)}
+                placeholder="Private witness (e.g. 0.96)"
+                style={{
+                  width: 160,
+                  background: 'var(--bg-surface)',
+                  color: 'var(--text-primary)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius-sm)',
+                  padding: '6px 10px',
+                  fontSize: '0.8rem',
+                }}
+              />
+              <button
+                onClick={async () => {
+                  setProvingZK(true);
+                  setZkVerified(null);
+                  setGeneratedProof(null);
+                  try {
+                    const circuit = zkCircuits.find((c) => c.circuitId === selectedZKCircuit);
+                    const witnessValue = circuit?.type === 'MEMBERSHIP' ? zkWitness : Number(zkWitness);
+                    const proveRes = await fetch(`${API_BASE}/zk/prove`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ circuitId: selectedZKCircuit, witness: witnessValue }),
+                    });
+                    if (!proveRes.ok) throw new Error('Proving failed');
+                    const proof = (await proveRes.json()).data as ZKProofItem;
+                    setGeneratedProof(proof);
+                    // Auto-verify
+                    const verifyRes = await fetch(`${API_BASE}/zk/verify`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ proof }),
+                    });
+                    if (verifyRes.ok) {
+                      const result = (await verifyRes.json()).data;
+                      setZkVerified(result.valid);
+                    }
+                  } catch {
+                    setZkVerified(false);
+                  } finally {
+                    setProvingZK(false);
+                  }
+                }}
+                disabled={provingZK || zkCircuits.length === 0}
+                style={{
+                  background: provingZK
+                    ? 'var(--bg-surface)'
+                    : 'linear-gradient(135deg, #818cf8, #6366f1)',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 'var(--radius-sm)',
+                  padding: '6px 16px',
+                  fontSize: '0.8rem',
+                  fontWeight: 600,
+                  cursor: provingZK ? 'not-allowed' : 'pointer',
+                  opacity: provingZK ? 0.6 : 1,
+                }}
+              >
+                {provingZK ? '⏳ Proving…' : '🔏 Generate & Verify Proof'}
+              </button>
+            </div>
+
+            {/* Proof result */}
+            {generatedProof && (
+              <div
+                style={{
+                  background: 'var(--bg-surface)',
+                  border: `1px solid ${zkVerified ? 'rgba(72, 187, 120, 0.4)' : 'rgba(245, 101, 101, 0.4)'}`,
+                  borderRadius: 'var(--radius-sm)',
+                  padding: 14,
+                  marginBottom: 14,
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: 8,
+                  }}
+                >
+                  <span style={{ fontWeight: 700, fontSize: '0.85rem' }}>
+                    {zkVerified === true ? '✅' : zkVerified === false ? '❌' : '⏳'} ZK Proof{' '}
+                    {zkVerified === true ? 'VERIFIED' : zkVerified === false ? 'FAILED' : 'PENDING'}
+                  </span>
+                  <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
+                    {generatedProof.proofId}
+                  </span>
+                </div>
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
+                    gap: '6px 16px',
+                    fontSize: '0.73rem',
+                    color: 'var(--text-secondary)',
+                  }}
+                >
+                  <div>
+                    Circuit: <span style={{ color: 'var(--accent-teal)' }}>{generatedProof.circuitId}</span>
+                  </div>
+                  <div>
+                    Type: <span style={{ color: 'var(--accent-purple)' }}>{generatedProof.circuitType}</span>
+                  </div>
+                  <div style={{ gridColumn: '1 / -1', fontFamily: 'monospace', fontSize: '0.65rem' }}>
+                    Commitment: {generatedProof.commitment.slice(0, 32)}…
+                  </div>
+                  <div style={{ gridColumn: '1 / -1', fontFamily: 'monospace', fontSize: '0.65rem' }}>
+                    Token: {generatedProof.proofToken.slice(0, 32)}…
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Circuit list */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+                gap: 10,
+              }}
+            >
+              {zkCircuits.map((c) => (
+                <div
+                  key={c.circuitId}
+                  style={{
+                    background: 'var(--bg-surface)',
+                    border: `1px solid ${selectedZKCircuit === c.circuitId ? 'rgba(129, 140, 248, 0.5)' : 'var(--border)'}`,
+                    borderRadius: 'var(--radius-sm)',
+                    padding: 12,
+                    cursor: 'pointer',
+                  }}
+                  onClick={() => setSelectedZKCircuit(c.circuitId)}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                    <span style={{ fontWeight: 600, fontSize: '0.8rem' }}>{c.name}</span>
+                    <span
+                      style={{
+                        fontSize: '0.65rem',
+                        color: '#818cf8',
+                        background: 'rgba(129, 140, 248, 0.15)',
+                        padding: '1px 6px',
+                        borderRadius: 3,
+                      }}
+                    >
+                      {c.type}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                    {c.description}
                   </div>
                 </div>
               ))}

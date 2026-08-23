@@ -22,6 +22,7 @@ import { VerificationBenchmarkEngine } from '@omega-v/benchmark';
 import { OceanicosNotaryEngine } from '@omega-v/notary';
 import { OceanicosSandboxEngine } from '@omega-v/sandbox';
 import { OceanicosPolicyEngine } from '@omega-v/policy';
+import { OceanicosZKEngine } from '@omega-v/zk';
 import {
   SuccessResponse,
   ErrorResponse,
@@ -74,6 +75,7 @@ const benchmarkEngine = new VerificationBenchmarkEngine();
 const notaryEngine = new OceanicosNotaryEngine();
 const sandboxEngine = new OceanicosSandboxEngine();
 const policyEngine = new OceanicosPolicyEngine();
+const zkEngine = new OceanicosZKEngine();
 
 // Register default rules
 verificationEngine.registerRule({
@@ -1349,6 +1351,83 @@ app.post('/policies/evaluate', (req: Request, res: Response) => {
       timestamp: new Date().toISOString(),
     });
   }
+});
+
+/** GET /zk/circuits — List all registered zero-knowledge circuits (Section XXXVIII) */
+app.get('/zk/circuits', (_req: Request, res: Response) => {
+  res.json({
+    data: { circuits: zkEngine.getCircuits() },
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /zk/prove — Generate a zero-knowledge range/membership proof */
+app.post('/zk/prove', (req: Request, res: Response) => {
+  const { circuitId, witness, salt } = req.body || {};
+  if (!circuitId || witness === undefined) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'circuitId and witness are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const circuit = zkEngine.getCircuit(circuitId);
+    if (!circuit) {
+      res.status(404).json({
+        code: 'NOT_FOUND',
+        message: `Circuit '${circuitId}' not found`,
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    let proof;
+    if (circuit.type === 'RANGE') {
+      proof = zkEngine.generateRangeProof(circuitId, Number(witness), salt);
+    } else if (circuit.type === 'MEMBERSHIP') {
+      proof = zkEngine.generateMembershipProof(circuitId, String(witness), salt);
+    } else {
+      res.status(400).json({
+        code: 'UNSUPPORTED_CIRCUIT',
+        message: `Unsupported circuit type: ${circuit.type}`,
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    res.json({
+      data: proof,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'PROVING_FAILED',
+      message: err instanceof Error ? err.message : 'Zero-knowledge proving failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** POST /zk/verify — Cryptographically verify a zero-knowledge proof */
+app.post('/zk/verify', (req: Request, res: Response) => {
+  const { proof } = req.body || {};
+  if (!proof) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'proof object is required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  const result = zkEngine.verifyProof(proof);
+  res.json({
+    data: result,
+    timestamp: new Date().toISOString(),
+  });
 });
 
 /**
