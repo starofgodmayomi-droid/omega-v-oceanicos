@@ -343,7 +343,7 @@ jobs:
           check_api /api/memory/integrity ci-smoke-read-token '"intact":true'
 
           # And the client itself must be served from that same origin.
-          curl -sf http://localhost:3000/ | tee /tmp/index.html
+          curl -sf -H 'Accept: text/html' http://localhost:3000/ | tee /tmp/index.html
           grep -qi '<div id="root"' /tmp/index.html
 
       - name: Container logs
