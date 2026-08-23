@@ -1,5 +1,8 @@
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { createServer, type Server } from 'node:http';
 import { createRequire } from 'node:module';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 import type { Express } from 'express';
 
 const requireFromModule = createRequire(__filename);
@@ -27,6 +30,7 @@ const ENVIRONMENT_KEYS = [
   'OMEGA_PERSISTENCE',
   'OMEGA_RUNTIME_STORE_PATH',
   'OMEGA_EVENT_LOG_PATH',
+  'OMEGA_WEB_DIST',
 ] as const;
 
 const originalEnvironment = new Map<string, string | undefined>();
@@ -116,6 +120,41 @@ describe('required API authentication profile', () => {
       expect((await read.json()).data.authMode).toBe('required');
     } finally {
       await stopApi(server);
+    }
+  });
+
+  it('keeps the SPA shell and assets behind the same read boundary as API reads', async () => {
+    const distDir = mkdtempSync(join(tmpdir(), 'omega-required-auth-web-dist-'));
+    writeFileSync(join(distDir, 'index.html'), '<!doctype html><title>Omega required</title>');
+    writeFileSync(join(distDir, 'app.js'), 'console.log("required web bundle");');
+    process.env.OMEGA_WEB_DIST = distDir;
+
+    const { server, baseUrl } = await startApi();
+    try {
+      const anonymousShell = await fetch(`${baseUrl}/`, {
+        headers: { Accept: 'text/html' },
+      });
+      expect(anonymousShell.status).toBe(401);
+      expect((await anonymousShell.json()).code).toBe('READ_ACCESS_REQUIRED');
+
+      const anonymousAsset = await fetch(`${baseUrl}/app.js`);
+      expect(anonymousAsset.status).toBe(401);
+
+      const authenticatedShell = await fetch(`${baseUrl}/`, {
+        headers: { Accept: 'text/html', authorization: 'Bearer read-token' },
+      });
+      expect(authenticatedShell.status).toBe(200);
+      expect(await authenticatedShell.text()).toContain('<title>Omega required</title>');
+
+      const authenticatedAsset = await fetch(`${baseUrl}/app.js`, {
+        headers: { authorization: 'Bearer read-token' },
+      });
+      expect(authenticatedAsset.status).toBe(200);
+      expect(await authenticatedAsset.text()).toContain('required web bundle');
+    } finally {
+      await stopApi(server);
+      delete process.env.OMEGA_WEB_DIST;
+      rmSync(distDir, { recursive: true, force: true });
     }
   });
 
