@@ -1,3 +1,4 @@
+import * as crypto from 'crypto';
 import express, { Express, Request, Response } from 'express';
 import { Observer } from '@omega-v/observer';
 import { VerificationEngine } from '@omega-v/verification';
@@ -27,6 +28,7 @@ import { OceanicosGatewayEngine } from '@omega-v/gateway';
 import { OceanicosWebhookEngine } from '@omega-v/webhook';
 import { OceanicosOracleEngine } from '@omega-v/oracle';
 import { OceanicosStateVault } from '@omega-v/vault';
+import { OceanicosDisputeEngine } from '@omega-v/dispute';
 import {
   SuccessResponse,
   ErrorResponse,
@@ -84,6 +86,7 @@ const gatewayEngine = new OceanicosGatewayEngine();
 const webhookEngine = new OceanicosWebhookEngine();
 const oracleEngine = new OceanicosOracleEngine();
 const stateVault = new OceanicosStateVault();
+const disputeEngine = new OceanicosDisputeEngine();
 
 // Register default rules
 verificationEngine.registerRule({
@@ -1646,6 +1649,77 @@ app.post('/vault/restore', (req: Request, res: Response) => {
     data: result,
     timestamp: new Date().toISOString(),
   });
+});
+
+/** GET /disputes — List all dispute cases & arbitration statistics (Section XLIII) */
+app.get('/disputes', (_req: Request, res: Response) => {
+  res.json({
+    data: {
+      cases: disputeEngine.getCases(),
+      stats: disputeEngine.getStats(),
+    },
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /disputes — Raise a new dispute challenge */
+app.post('/disputes', (req: Request, res: Response) => {
+  const { targetEventHash, claimantDid, challengerDid, stakeAmount, reason } = req.body || {};
+  if (!targetEventHash || !claimantDid || !challengerDid || stakeAmount === undefined || !reason) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'targetEventHash, claimantDid, challengerDid, stakeAmount, and reason are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  const disputeCase = disputeEngine.raiseDispute({
+    targetEventHash,
+    claimantDid,
+    challengerDid,
+    stakeAmount: Number(stakeAmount),
+    reason,
+  });
+
+  res.json({
+    data: disputeCase,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /disputes/vote — Cast a juror vote on an open dispute case */
+app.post('/disputes/vote', (req: Request, res: Response) => {
+  const { caseId, jurorDid, choice, weight, rationale, signature } = req.body || {};
+  if (!caseId || !jurorDid || !choice || weight === undefined) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'caseId, jurorDid, choice, and weight are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const updated = disputeEngine.castVote(caseId, {
+      jurorDid,
+      choice,
+      weight: Number(weight),
+      rationale: rationale || 'Jury deliberation vote',
+      signature: signature || `0x${crypto.randomBytes(32).toString('hex')}`,
+    });
+
+    res.json({
+      data: updated,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'VOTE_FAILED',
+      message: err instanceof Error ? err.message : 'Vote failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
 });
 
 /**

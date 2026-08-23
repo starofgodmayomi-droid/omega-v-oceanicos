@@ -1,0 +1,31 @@
+{
+  "name": "@omega-v/dispute",
+  "version": "0.1.0",
+  "description": "Verifiable Decentralized Dispute Resolution, Evidence Submissions & Arbitration Jury Engine for Ω∞v Oceanicos",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "test": "jest",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "keywords": [
+    "dispute-resolution",
+    "arbitration",
+    "challenge-window",
+    "jury-quorum",
+    "oceanicos"
+  ],
+  "author": "Ω∞v Community",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@omega-v/types": "*"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.0",
+    "jest": "^29.5.0",
+    "ts-jest": "^29.1.0",
+    "typescript": "^5.0.0"
+  }
+}

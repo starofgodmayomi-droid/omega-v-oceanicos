@@ -356,6 +356,27 @@ interface VaultStatsData {
   healthy: boolean;
 }
 
+interface DisputeCaseItem {
+  caseId: string;
+  targetEventHash: string;
+  claimantDid: string;
+  challengerDid: string;
+  stakeAmount: number;
+  reason: string;
+  status: string;
+  evidenceCount?: number;
+  createdAt: string;
+}
+
+interface DisputeStatsData {
+  totalCases: number;
+  activeChallenges: number;
+  upheldCases: number;
+  overturnedCases: number;
+  dismissedCases: number;
+  totalStaked: number;
+}
+
 interface RuleEfficacy {
   ruleName: string;
   totalExecutions: number;
@@ -621,6 +642,10 @@ export function App(): JSX.Element {
   const [vaultStats, setVaultStats] = useState<VaultStatsData | null>(null);
   const [creatingCheckpoint, setCreatingCheckpoint] = useState(false);
   const [vaultResult, setVaultResult] = useState<string | null>(null);
+  const [disputes, setDisputes] = useState<DisputeCaseItem[]>([]);
+  const [disputeStats, setDisputeStats] = useState<DisputeStatsData | null>(null);
+  const [raisingDispute, setRaisingDispute] = useState(false);
+  const [disputeResult, setDisputeResult] = useState<string | null>(null);
 
   // ── Poll log + metrics ──
   const fetchState = useCallback(async () => {
@@ -654,6 +679,7 @@ export function App(): JSX.Element {
         orcFeedsRes,
         orcRecRes,
         vaultRes,
+        dispRes,
       ] = await Promise.all([
         fetch(`${API_BASE}/log?limit=30`),
         fetch(`${API_BASE}/metrics`),
@@ -683,6 +709,7 @@ export function App(): JSX.Element {
         fetch(`${API_BASE}/oracle/feeds`),
         fetch(`${API_BASE}/oracle/receipts`),
         fetch(`${API_BASE}/vault/checkpoints`),
+        fetch(`${API_BASE}/disputes`),
       ]);
       if (!logRes.ok || !metricsRes.ok) throw new Error('API error');
 
@@ -764,6 +791,11 @@ export function App(): JSX.Element {
         const vData = (await vaultRes.json()).data;
         setCheckpoints(vData.checkpoints as StateCheckpointItem[]);
         setVaultStats(vData.stats as VaultStatsData);
+      }
+      if (dispRes && dispRes.ok) {
+        const dData = (await dispRes.json()).data;
+        setDisputes(dData.cases as DisputeCaseItem[]);
+        setDisputeStats(dData.stats as DisputeStatsData);
       }
     } catch {
       setApiOnline(false);
@@ -4770,6 +4802,221 @@ export function App(): JSX.Element {
                     </div>
                     <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>
                       {chk.totalEvents} events · {chk.totalRules} rules · {chk.payloadSize} bytes
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* ── Decentralized Dispute Resolution & Jury Arbitration (Section XLIII) ── */}
+          <div
+            style={{
+              background: 'var(--bg-card)',
+              border: '1px solid rgba(245, 101, 101, 0.3)',
+              borderRadius: 'var(--radius)',
+              padding: 20,
+              marginBottom: 20,
+            }}
+          >
+            <div className="section-header">
+              <div className="section-title">⚖️ Decentralized Dispute Arbitration</div>
+              <span className="section-badge">
+                {disputeStats?.activeChallenges || 0} active · {disputeStats?.totalStaked || 0}{' '}
+                staked
+              </span>
+            </div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 14 }}>
+              Challenge window staking, cryptographic counter-evidence dossiers, multi-juror quorum
+              voting, and enforceable arbitration rulings.
+            </div>
+
+            {/* Dispute stats row */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+                gap: 10,
+                marginBottom: 14,
+              }}
+            >
+              <div
+                style={{
+                  background: 'var(--bg-surface)',
+                  padding: 10,
+                  borderRadius: 'var(--radius-sm)',
+                }}
+              >
+                <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>TOTAL CASES</div>
+                <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--accent-teal)' }}>
+                  {disputeStats?.totalCases || 0}
+                </div>
+              </div>
+              <div
+                style={{
+                  background: 'var(--bg-surface)',
+                  padding: 10,
+                  borderRadius: 'var(--radius-sm)',
+                }}
+              >
+                <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
+                  ACTIVE CHALLENGES
+                </div>
+                <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--accent-red)' }}>
+                  {disputeStats?.activeChallenges || 0}
+                </div>
+              </div>
+              <div
+                style={{
+                  background: 'var(--bg-surface)',
+                  padding: 10,
+                  borderRadius: 'var(--radius-sm)',
+                }}
+              >
+                <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>OVERTURNED</div>
+                <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#f6ad55' }}>
+                  {disputeStats?.overturnedCases || 0}
+                </div>
+              </div>
+              <div
+                style={{
+                  background: 'var(--bg-surface)',
+                  padding: 10,
+                  borderRadius: 'var(--radius-sm)',
+                }}
+              >
+                <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>TOTAL STAKED</div>
+                <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--accent-purple)' }}>
+                  {disputeStats?.totalStaked || 0}
+                </div>
+              </div>
+            </div>
+
+            {/* Raise Dispute Action */}
+            <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
+              <button
+                onClick={async () => {
+                  setRaisingDispute(true);
+                  setDisputeResult(null);
+                  try {
+                    const res = await fetch(`${API_BASE}/disputes`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        targetEventHash:
+                          '0x' + Math.random().toString(16).slice(2).padStart(64, '0'),
+                        claimantDid: 'did:omega:agent:node-primary',
+                        challengerDid: 'did:omega:auditor:sentinel-1',
+                        stakeAmount: 500,
+                        reason: 'Observation latency claim contradicts telemetry log trace',
+                      }),
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                      setDisputeResult(
+                        `✅ Case Raised: ${data.data.caseId} (Staked: ${data.data.stakeAmount}, Status: ${data.data.status})`
+                      );
+                    } else {
+                      setDisputeResult(`❌ Error: ${data.message || 'Challenge failed'}`);
+                    }
+                    fetchState();
+                  } catch {
+                    setDisputeResult('❌ Failed to raise dispute challenge');
+                  } finally {
+                    setRaisingDispute(false);
+                  }
+                }}
+                disabled={raisingDispute}
+                style={{
+                  background: raisingDispute
+                    ? 'var(--bg-surface)'
+                    : 'linear-gradient(135deg, #f56565, #c53030)',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 'var(--radius-sm)',
+                  padding: '6px 16px',
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                  cursor: raisingDispute ? 'not-allowed' : 'pointer',
+                  opacity: raisingDispute ? 0.6 : 1,
+                }}
+              >
+                {raisingDispute ? '⏳ Submitting…' : '⚖️ Raise Dispute Challenge'}
+              </button>
+              {disputeResult && (
+                <div
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: 'var(--radius-sm)',
+                    background: 'var(--bg-surface)',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}
+                >
+                  {disputeResult}
+                </div>
+              )}
+            </div>
+
+            {/* Cases List */}
+            {disputes.length > 0 && (
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                  gap: 10,
+                }}
+              >
+                {disputes.slice(0, 4).map((c) => (
+                  <div
+                    key={c.caseId}
+                    style={{
+                      background: 'var(--bg-surface)',
+                      border: '1px solid var(--border)',
+                      borderRadius: 'var(--radius-sm)',
+                      padding: 12,
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        marginBottom: 4,
+                      }}
+                    >
+                      <span
+                        style={{ fontWeight: 600, fontSize: '0.8rem', color: 'var(--accent-red)' }}
+                      >
+                        {c.caseId}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: '0.65rem',
+                          color:
+                            c.status === 'OVERTURNED'
+                              ? '#f6ad55'
+                              : c.status === 'UPHELD'
+                                ? 'var(--accent-teal)'
+                                : 'var(--accent-red)',
+                          background: 'rgba(255, 255, 255, 0.05)',
+                          padding: '1px 6px',
+                          borderRadius: 3,
+                          fontWeight: 600,
+                        }}
+                      >
+                        {c.status}
+                      </span>
+                    </div>
+                    <div
+                      style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: 6 }}
+                    >
+                      {c.reason}
+                    </div>
+                    <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>
+                      Stake: {c.stakeAmount} tokens · Target: {c.targetEventHash.slice(0, 16)}…
                     </div>
                   </div>
                 ))}

@@ -25,6 +25,7 @@ import { OceanicosGatewayEngine } from '@omega-v/gateway';
 import { OceanicosWebhookEngine } from '@omega-v/webhook';
 import { OceanicosOracleEngine } from '@omega-v/oracle';
 import { OceanicosStateVault } from '@omega-v/vault';
+import { OceanicosDisputeEngine } from '@omega-v/dispute';
 import app from '../../apps/api/src/index';
 
 describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => {
@@ -867,6 +868,75 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       expect(stats.totalCheckpoints).toBe(1);
       expect(stats.latestEpoch).toBe(1);
       expect(stats.healthy).toBe(true);
+    });
+  });
+
+  describe('24. Decentralized Dispute Resolution, Challenge Windows & Arbitration Jury E2E', () => {
+    it('should raise dispute challenges, accept counter-evidence dossiers, collect jury quorum votes, and execute rulings', () => {
+      const disputeEngine = new OceanicosDisputeEngine();
+
+      // Ensure canonical cases exist
+      const initialCases = disputeEngine.getCases();
+      expect(initialCases.length).toBeGreaterThanOrEqual(1);
+
+      // 1. Raise new dispute case
+      const disputeCase = disputeEngine.raiseDispute({
+        targetEventHash: '0xevent_hash_under_dispute_999',
+        claimantDid: 'did:omega:agent:node-primary',
+        challengerDid: 'did:omega:auditor:sentinel-1',
+        stakeAmount: 500,
+        reason: 'Observation throughput contradicted by edge telemetry log trace',
+      });
+
+      expect(disputeCase.caseId).toMatch(/^disp-/);
+      expect(disputeCase.status).toBe('CHALLENGE_OPEN');
+
+      // 2. Submit counter-evidence
+      const evidence = disputeEngine.submitEvidence(disputeCase.caseId, {
+        submitterDid: 'did:omega:auditor:sentinel-1',
+        evidenceType: 'OBSERVATION_DIFF',
+        description: 'Distributed p99 observation snapshot shows 1200ms latency',
+        contentHash: '0xhash_evidence_dossier_diff',
+        signature: '0xsig_counter_evidence',
+      });
+      expect(evidence.evidenceId).toMatch(/^ev-/);
+
+      // 3. Multi-juror arbitration voting
+      disputeEngine.castVote(disputeCase.caseId, {
+        jurorDid: 'did:omega:juror:council-1',
+        choice: 'OVERTURN_ATTESTATION',
+        weight: 1.5,
+        rationale: 'Evidence diff verified against edge ledger',
+        signature: '0xj1_sig',
+      });
+
+      disputeEngine.castVote(disputeCase.caseId, {
+        jurorDid: 'did:omega:juror:council-2',
+        choice: 'UPHOLD_ATTESTATION',
+        weight: 1.0,
+        rationale: 'Telemetry diff within 5% tolerance',
+        signature: '0xj2_sig',
+      });
+
+      // 3rd vote triggers automated resolution quorum
+      const resolved = disputeEngine.castVote(disputeCase.caseId, {
+        jurorDid: 'did:omega:juror:council-3',
+        choice: 'OVERTURN_ATTESTATION',
+        weight: 2.0,
+        rationale: 'Concur with council-1 evidence assessment',
+        signature: '0xj3_sig',
+      });
+
+      // 4. Verify ruling
+      expect(resolved.status).toBe('OVERTURNED');
+      expect(resolved.ruling).toBeDefined();
+      expect(resolved.ruling!.overturnWeight).toBe(3.5);
+      expect(resolved.ruling!.upholdWeight).toBe(1.0);
+      expect(resolved.ruling!.rulingReceiptHash).toMatch(/^0x/);
+
+      // Stats check
+      const stats = disputeEngine.getStats();
+      expect(stats.overturnedCases).toBeGreaterThanOrEqual(1);
     });
   });
 });

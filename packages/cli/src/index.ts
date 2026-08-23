@@ -18,6 +18,7 @@ import { OceanicosGatewayEngine } from '@omega-v/gateway';
 import { OceanicosWebhookEngine } from '@omega-v/webhook';
 import { OceanicosOracleEngine } from '@omega-v/oracle';
 import { OceanicosStateVault } from '@omega-v/vault';
+import { OceanicosDisputeEngine } from '@omega-v/dispute';
 
 export interface CLIResult {
   success: boolean;
@@ -581,6 +582,36 @@ export class OceanicosCLI {
         };
       }
 
+      case 'dispute': {
+        const dispute = new OceanicosDisputeEngine();
+        const subCommand = args[1] || 'list';
+
+        if (subCommand === 'raise') {
+          const targetEventHash = args[2] || '0xdefault_event_hash_123';
+          const reason = args.slice(3).join(' ') || 'Disputed attestation confidence bounds';
+          const newCase = dispute.raiseDispute({
+            targetEventHash,
+            claimantDid: 'did:omega:agent:node-primary',
+            challengerDid: 'did:omega:challenger:cli-operator',
+            stakeAmount: 500,
+            reason,
+          });
+          return {
+            success: true,
+            message: `[Ω∞v CLI] Dispute Case Raised: ${newCase.caseId} (Staked: ${newCase.stakeAmount}, Status: ${newCase.status})`,
+            output: newCase,
+          };
+        }
+
+        const cases = dispute.getCases();
+        const stats = dispute.getStats();
+        return {
+          success: true,
+          message: `[Ω∞v CLI] Dispute Registry: ${cases.length} cases (${stats.activeChallenges} active challenges, ${stats.totalStaked} tokens staked)`,
+          output: { cases, stats },
+        };
+      }
+
       case 'help':
       default: {
         return {
@@ -608,6 +639,7 @@ Commands:
   omega-v webhook [list|register|trigger] Manage real-time verification event webhooks
   omega-v oracle [feeds|aggregate]  Compute multi-source external state consensus receipts
   omega-v vault [checkpoints|create] Manage cryptographic state checkpoints & disaster recovery
+  omega-v dispute [list|raise]      Verifiable decentralized dispute resolution & jury arbitration
   omega-v metrics                   Show system health and metrics
   omega-v log                       Display event provenance log
   omega-v integrity                 Verify event hash chain integrity

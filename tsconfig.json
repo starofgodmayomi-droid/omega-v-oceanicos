@@ -59,7 +59,8 @@
       "@omega-v/gateway": ["packages/gateway/src/index.ts"],
       "@omega-v/webhook": ["packages/webhook/src/index.ts"],
       "@omega-v/oracle": ["packages/oracle/src/index.ts"],
-      "@omega-v/vault": ["packages/vault/src/index.ts"]
+      "@omega-v/vault": ["packages/vault/src/index.ts"],
+      "@omega-v/dispute": ["packages/dispute/src/index.ts"]
     }
   },
   "include": ["packages/*/src", "apps/*/src", "tests"],
