@@ -11,6 +11,7 @@ import { EdgeObserver } from '@omega-v/edge';
 import { VerificationAnalyticsEngine } from '@omega-v/analytics';
 import { VerificationScheduler } from '@omega-v/scheduler';
 import { TelemetryTracer, VerificationSLOEngine } from '@omega-v/telemetry';
+import { VaaSGate } from '@omega-v/vaas';
 import app from '../../apps/api/src/index';
 
 describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => {
@@ -250,6 +251,34 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       expect(evaluation.targetPassRate).toBe(0.99);
       expect(evaluation.errorBudgetRemaining).toBeGreaterThanOrEqual(0);
       expect(typeof evaluation.evaluatedAt).toBe('string');
+    });
+  });
+
+  describe('10. Multi-Tenant VaaS Gateway E2E', () => {
+    it('should register tenant, enforce quotas, and execute authenticated verification', async () => {
+      const vaas = new VaaSGate();
+      const creds = vaas.registerTenant('E2E Cloud Corp', 'PRO', 50);
+
+      expect(creds.tenant.name).toBe('E2E Cloud Corp');
+      expect(creds.apiKey).toMatch(/^vaas_pro_/);
+
+      const auth = vaas.authenticate(creds.apiKey);
+      expect(auth?.tenantId).toBe(creds.tenant.id);
+
+      const result = await vaas.executeVerification(
+        creds.apiKey,
+        sdk,
+        'E2E Multi-Tenant SLA Observation',
+        { complianceStandard: 'SOC2-Type-II' }
+      );
+
+      expect(result.tenantId).toBe(creds.tenant.id);
+      expect(result.verification.summary.passed).toBe(true);
+      expect(result.attestation.signature).toBeDefined();
+
+      const rate = vaas.checkRateLimit(creds.tenant.id);
+      expect(rate.allowed).toBe(true);
+      expect(rate.remaining).toBeLessThan(50);
     });
   });
 });

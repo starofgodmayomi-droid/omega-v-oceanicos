@@ -40,5 +40,7 @@ describe('Ω∞v Oceanicos API Server', () => {
     expect(routes).toContain('/scheduler/stop');
     expect(routes).toContain('/telemetry/slo');
     expect(routes).toContain('/telemetry/spans');
+    expect(routes).toContain('/vaas/tenants');
+    expect(routes).toContain('/vaas/verify');
   });
 });

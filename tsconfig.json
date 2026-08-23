@@ -45,7 +45,8 @@
       "@omega-v/edge": ["packages/edge/src/index.ts"],
       "@omega-v/analytics": ["packages/analytics/src/index.ts"],
       "@omega-v/scheduler": ["packages/scheduler/src/index.ts"],
-      "@omega-v/telemetry": ["packages/telemetry/src/index.ts"]
+      "@omega-v/telemetry": ["packages/telemetry/src/index.ts"],
+      "@omega-v/vaas": ["packages/vaas/src/index.ts"]
     }
   },
   "include": ["packages/*/src", "apps/*/src", "tests"],

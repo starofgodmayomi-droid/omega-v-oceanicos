@@ -70,4 +70,11 @@ describe('OceanicosCLI', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expect((res.output as any).traceparent).toMatch(/^00-[a-f0-9]{32}-[a-f0-9]{16}-01$/);
   });
+
+  it('should execute vaas register command and return tenant credentials', async () => {
+    const res = await cli.run(['vaas', 'register', 'Stark Industries', 'ENTERPRISE']);
+    expect(res.success).toBe(true);
+    expect(res.message).toContain('VaaS Tenant Registered');
+    expect(res.output).toHaveProperty('apiKey');
+  });
 });

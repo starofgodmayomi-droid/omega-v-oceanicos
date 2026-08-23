@@ -13,6 +13,7 @@ import { EvolutionEngine } from '@omega-v/evolution';
 import { VerificationAnalyticsEngine } from '@omega-v/analytics';
 import { VerificationScheduler } from '@omega-v/scheduler';
 import { TelemetryTracer, VerificationSLOEngine } from '@omega-v/telemetry';
+import { VaaSGate } from '@omega-v/vaas';
 import {
   SuccessResponse,
   ErrorResponse,
@@ -56,6 +57,7 @@ const scheduler = new VerificationScheduler(undefined, {
 });
 const tracer = new TelemetryTracer();
 const sloEngine = new VerificationSLOEngine();
+const vaasGate = new VaaSGate();
 
 // Register default rules
 verificationEngine.registerRule({
@@ -750,6 +752,57 @@ app.get('/telemetry/spans', (_req: Request, res: Response) => {
     data: { spans: tracer.getSpans() },
     timestamp: new Date().toISOString(),
   });
+});
+
+/** POST /vaas/tenants — Register a new multi-tenant organization in VaaS (Section XXIX) */
+app.post('/vaas/tenants', (req: Request, res: Response) => {
+  const { name, tier, quotaPerMinute } = req.body || {};
+  if (!name) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'Tenant name is required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  const credentials = vaasGate.registerTenant(name, tier, quotaPerMinute);
+  res.status(201).json({
+    data: credentials,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /vaas/verify — Execute tenant-isolated verification with rate limiting */
+app.post('/vaas/verify', async (req: Request, res: Response) => {
+  const apiKey = (req.headers['x-vaas-api-key'] as string) || req.body?.apiKey;
+  const { claim, metadata } = req.body || {};
+
+  if (!apiKey || !claim) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'apiKey and claim are required for VaaS verification',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const client = new OceanicosClient();
+    const result = await vaasGate.executeVerification(apiKey, client, claim, metadata);
+    res.json({
+      data: result,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'VaaS Verification Error';
+    const statusCode = message.includes('Quota Exceeded') ? 429 : 401;
+    res.status(statusCode).json({
+      code: statusCode === 429 ? 'RATE_LIMIT_EXCEEDED' : 'UNAUTHORIZED',
+      message,
+      timestamp: new Date().toISOString(),
+    });
+  }
 });
 
 /**

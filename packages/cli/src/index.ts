@@ -4,6 +4,7 @@ import { EdgeObserver } from '@omega-v/edge';
 import { VerificationAnalyticsEngine } from '@omega-v/analytics';
 import { VerificationScheduler } from '@omega-v/scheduler';
 import { TelemetryTracer, VerificationSLOEngine } from '@omega-v/telemetry';
+import { VaaSGate } from '@omega-v/vaas';
 
 export interface CLIResult {
   success: boolean;
@@ -167,6 +168,28 @@ export class OceanicosCLI {
         };
       }
 
+      case 'vaas': {
+        const subCmd = args[1] || 'register';
+        const vaasGate = new VaaSGate();
+
+        if (subCmd === 'register') {
+          const tenantName = args[2] || 'Default Organization';
+          const tier = (args[3] as 'FREE' | 'PRO' | 'ENTERPRISE') || 'PRO';
+          const creds = vaasGate.registerTenant(tenantName, tier);
+          return {
+            success: true,
+            message: `[Ω∞v CLI] VaaS Tenant Registered: ${creds.tenant.name} (${creds.tenant.id})`,
+            output: creds,
+          };
+        }
+
+        return {
+          success: true,
+          message: '[Ω∞v CLI] VaaS Gateway: Use omega-v vaas register [name] [tier]',
+          output: { usage: 'omega-v vaas register [name] [tier]' },
+        };
+      }
+
       case 'help':
       default: {
         return {
@@ -180,6 +203,7 @@ Commands:
   omega-v scheduler run [ms] [claim] Run one autonomous scheduled loop
   omega-v slo [targetRate]          Evaluate Service Level Objective & error budget
   omega-v trace [name]              Generate W3C distributed trace context
+  omega-v vaas register [name] [tier] Register multi-tenant VaaS organization
   omega-v metrics                   Show system health and metrics
   omega-v log                       Display event provenance log
   omega-v integrity                 Verify event hash chain integrity
