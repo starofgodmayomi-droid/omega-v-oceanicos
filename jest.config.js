@@ -35,6 +35,7 @@ export default {
     '@omega-v/auth': '<rootDir>/packages/auth/src/index.ts',
     '@omega-v/federation': '<rootDir>/packages/federation/src/index.ts',
     '@omega-v/benchmark': '<rootDir>/packages/benchmark/src/index.ts',
+    '@omega-v/notary': '<rootDir>/packages/notary/src/index.ts',
   },
   collectCoverageFrom: [
     'packages/*/src/**/*.ts',

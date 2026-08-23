@@ -10,6 +10,7 @@ import { FormalContractEngine } from '@omega-v/contract';
 import { OceanicosAuthEngine } from '@omega-v/auth';
 import { FederationMeshEngine } from '@omega-v/federation';
 import { VerificationBenchmarkEngine } from '@omega-v/benchmark';
+import { OceanicosNotaryEngine } from '@omega-v/notary';
 
 export interface CLIResult {
   success: boolean;
@@ -337,6 +338,30 @@ export class OceanicosCLI {
         };
       }
 
+      case 'notary': {
+        const notary = new OceanicosNotaryEngine();
+        const subCommand = args[1] || 'summary';
+
+        if (subCommand === 'anchor') {
+          const claim = args[2] || 'CLI Notarization Claim';
+          const loopResult = await this.client.runLoop({ claim });
+          const seal = notary.anchorAttestation(loopResult.attestation);
+
+          return {
+            success: true,
+            message: `[Ω∞v CLI] Notarization Seal Created: ${seal.sealId} (Merkle Root: ${seal.merkleRoot.slice(0, 16)}…)`,
+            output: seal,
+          };
+        }
+
+        const summary = notary.getSummary();
+        return {
+          success: true,
+          message: `[Ω∞v CLI] Notary Merkle Tree: ${summary.treeSize} leaves (Root: ${summary.merkleRoot.slice(0, 16)}…, Seals: ${summary.totalSeals})`,
+          output: summary,
+        };
+      }
+
       case 'help':
       default: {
         return {
@@ -356,6 +381,7 @@ Commands:
   omega-v auth [list|create]        List DIDs or create decentralized identity
   omega-v federation [peers|export] List mesh peers or export cross-cluster proof
   omega-v benchmark [iterations]    Run verification performance & latency quantile profiling
+  omega-v notary [summary|anchor]   Notarize attestation into Merkle transparency log
   omega-v metrics                   Show system health and metrics
   omega-v log                       Display event provenance log
   omega-v integrity                 Verify event hash chain integrity

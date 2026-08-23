@@ -17,6 +17,7 @@ import { FormalContractEngine } from '@omega-v/contract';
 import { OceanicosAuthEngine } from '@omega-v/auth';
 import { FederationMeshEngine } from '@omega-v/federation';
 import { VerificationBenchmarkEngine } from '@omega-v/benchmark';
+import { OceanicosNotaryEngine } from '@omega-v/notary';
 import app from '../../apps/api/src/index';
 
 describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => {
@@ -515,6 +516,37 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
 
       const cached = benchmark.getLatestResults();
       expect(Object.keys(cached).length).toBe(4);
+    });
+  });
+
+  describe('16. Merkle Transparency Log & Cryptographic Notarization E2E', () => {
+    it('should anchor verification attestation, compute Merkle root, and verify RFC-6962 inclusion proof', async () => {
+      const notary = new OceanicosNotaryEngine();
+
+      // Loop execution
+      const loopResult = await sdk.runLoop({
+        claim: 'Notary Merkle Transparency Log E2E Claim',
+        category: 'e2e-notary',
+      });
+
+      // Anchor attestation
+      const seal = notary.anchorAttestation(loopResult.attestation);
+      expect(seal.sealId).toMatch(/^seal-/);
+      expect(seal.leafIndex).toBe(1);
+      expect(seal.leafHash).toHaveLength(64);
+      expect(seal.merkleRoot).toHaveLength(64);
+      expect(seal.notarySignature).toMatch(/^0x/);
+
+      // Generate & verify inclusion proof
+      const proof = notary.generateInclusionProof(1);
+      expect(proof.leafIndex).toBe(1);
+      expect(proof.merkleRoot).toBe(notary.getMerkleRoot());
+      expect(notary.verifyInclusionProof(proof)).toBe(true);
+
+      // Verify summary
+      const summary = notary.getSummary();
+      expect(summary.totalSeals).toBeGreaterThanOrEqual(2);
+      expect(summary.treeSize).toBeGreaterThanOrEqual(2);
     });
   });
 });

@@ -19,6 +19,7 @@ import { FormalContractEngine } from '@omega-v/contract';
 import { OceanicosAuthEngine } from '@omega-v/auth';
 import { FederationMeshEngine } from '@omega-v/federation';
 import { VerificationBenchmarkEngine } from '@omega-v/benchmark';
+import { OceanicosNotaryEngine } from '@omega-v/notary';
 import {
   SuccessResponse,
   ErrorResponse,
@@ -68,6 +69,7 @@ const contractEngine = new FormalContractEngine();
 const authEngine = new OceanicosAuthEngine();
 const federationEngine = new FederationMeshEngine();
 const benchmarkEngine = new VerificationBenchmarkEngine();
+const notaryEngine = new OceanicosNotaryEngine();
 
 // Register default rules
 verificationEngine.registerRule({
@@ -1157,6 +1159,103 @@ app.post('/benchmark/run', async (req: Request, res: Response) => {
       timestamp: new Date().toISOString(),
     });
   }
+});
+
+/** GET /notary/summary — Merkle tree transparency root and seal statistics (Section XXXV) */
+app.get('/notary/summary', (_req: Request, res: Response) => {
+  res.json({
+    data: notaryEngine.getSummary(),
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** GET /notary/seals — List all notarization seals */
+app.get('/notary/seals', (_req: Request, res: Response) => {
+  res.json({
+    data: { seals: notaryEngine.getAllSeals() },
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /notary/anchor — Anchor a verification claim into the Merkle tree */
+app.post('/notary/anchor', async (req: Request, res: Response) => {
+  const { claim } = req.body || {};
+  if (!claim) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'claim is required for notarization',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const client = new OceanicosClient();
+    const result = await client.runLoop({
+      claim,
+      category: 'notarization',
+      observedBy: 'notary-api',
+      sourceSystem: 'omega-v-notary',
+    });
+
+    const seal = notaryEngine.anchorAttestation(result.attestation);
+    res.status(201).json({
+      data: seal,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(500).json({
+      code: 'NOTARIZATION_FAILED',
+      message: err instanceof Error ? err.message : 'Notarization failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** POST /notary/proof — Generate Merkle inclusion proof */
+app.post('/notary/proof', (req: Request, res: Response) => {
+  const { leafIndex } = req.body || {};
+  if (typeof leafIndex !== 'number') {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'leafIndex (number) is required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const proof = notaryEngine.generateInclusionProof(leafIndex);
+    res.json({
+      data: proof,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'INVALID_INDEX',
+      message: err instanceof Error ? err.message : 'Failed to generate proof',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** POST /notary/verify-proof — Verify Merkle inclusion proof */
+app.post('/notary/verify-proof', (req: Request, res: Response) => {
+  const { proof } = req.body || {};
+  if (!proof) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'proof object is required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  const valid = notaryEngine.verifyInclusionProof(proof);
+  res.json({
+    data: { valid, verifiedAt: new Date().toISOString() },
+    timestamp: new Date().toISOString(),
+  });
 });
 
 /**

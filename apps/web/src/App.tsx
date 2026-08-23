@@ -212,6 +212,23 @@ interface BenchmarkResultItem {
   timestamp: string;
 }
 
+interface NotarySealItem {
+  sealId: string;
+  treeHeight: number;
+  leafIndex: number;
+  leafHash: string;
+  merkleRoot: string;
+  timestamp: string;
+  notarySignature: string;
+}
+
+interface NotarySummaryData {
+  treeSize: number;
+  merkleRoot: string;
+  totalSeals: number;
+  lastNotarizedAt: string;
+}
+
 interface RuleEfficacy {
   ruleName: string;
   totalExecutions: number;
@@ -421,6 +438,10 @@ export function App(): JSX.Element {
   } | null>(null);
   const [benchmarks, setBenchmarks] = useState<Record<string, BenchmarkResultItem> | null>(null);
   const [runningBenchmark, setRunningBenchmark] = useState(false);
+  const [notarySummary, setNotarySummary] = useState<NotarySummaryData | null>(null);
+  const [notarySeals, setNotarySeals] = useState<NotarySealItem[]>([]);
+  const [anchoringNotary, setAnchoringNotary] = useState(false);
+  const [verifiedInclusionProof, setVerifiedInclusionProof] = useState<boolean | null>(null);
 
   // ── Poll log + metrics ──
   const fetchState = useCallback(async () => {
@@ -443,6 +464,8 @@ export function App(): JSX.Element {
         authRes,
         fedRes,
         benchRes,
+        notarySumRes,
+        notarySealsRes,
       ] = await Promise.all([
         fetch(`${API_BASE}/log?limit=30`),
         fetch(`${API_BASE}/metrics`),
@@ -461,6 +484,8 @@ export function App(): JSX.Element {
         fetch(`${API_BASE}/auth/identities`),
         fetch(`${API_BASE}/federation/peers`),
         fetch(`${API_BASE}/benchmark`),
+        fetch(`${API_BASE}/notary/summary`),
+        fetch(`${API_BASE}/notary/seals`),
       ]);
       if (!logRes.ok || !metricsRes.ok) throw new Error('API error');
 
@@ -503,6 +528,12 @@ export function App(): JSX.Element {
       if (benchRes.ok) {
         const bData = (await benchRes.json()).data;
         setBenchmarks(bData.results as Record<string, BenchmarkResultItem>);
+      }
+      if (notarySumRes.ok) {
+        setNotarySummary((await notarySumRes.json()).data as NotarySummaryData);
+      }
+      if (notarySealsRes.ok) {
+        setNotarySeals((await notarySealsRes.json()).data.seals as NotarySealItem[]);
       }
     } catch {
       setApiOnline(false);
@@ -2879,6 +2910,207 @@ export function App(): JSX.Element {
                 and engine throughput.
               </div>
             )}
+          </div>
+
+          {/* ── RFC-6962 Merkle Notary & Transparency Log (Section XXXV) ── */}
+          <div
+            style={{
+              background: 'var(--bg-card)',
+              border: '1px solid rgba(72, 187, 120, 0.3)',
+              borderRadius: 'var(--radius)',
+              padding: 20,
+              marginBottom: 24,
+            }}
+          >
+            <div
+              style={{
+                fontWeight: 700,
+                fontSize: '0.95rem',
+                color: 'var(--accent-green)',
+                marginBottom: 14,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span>📜 RFC-6962 Merkle Notary & Public Transparency Log</span>
+                {notarySummary && (
+                  <span
+                    style={{
+                      fontSize: '0.72rem',
+                      background: 'rgba(72, 187, 120, 0.15)',
+                      color: 'var(--accent-green)',
+                      padding: '2px 8px',
+                      borderRadius: 4,
+                    }}
+                  >
+                    Tree Size: {notarySummary.treeSize} Leaves · Root:{' '}
+                    {notarySummary.merkleRoot.slice(0, 12)}…
+                  </span>
+                )}
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  style={{ padding: '4px 10px', fontSize: '0.75rem' }}
+                  onClick={async () => {
+                    if (!notarySummary || notarySummary.treeSize === 0) return;
+                    try {
+                      const proofRes = await fetch(`${API_BASE}/notary/proof`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ leafIndex: 0 }),
+                      });
+                      if (proofRes.ok) {
+                        const pData = (await proofRes.json()).data;
+                        const vRes = await fetch(`${API_BASE}/notary/verify-proof`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ proof: pData }),
+                        });
+                        if (vRes.ok) {
+                          const vData = (await vRes.json()).data;
+                          setVerifiedInclusionProof(vData.valid);
+                        }
+                      }
+                    } catch (e) {
+                      console.error(e);
+                    }
+                  }}
+                >
+                  🔍 Verify Inclusion Proof
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  disabled={anchoringNotary}
+                  style={{ padding: '4px 12px', fontSize: '0.75rem' }}
+                  onClick={async () => {
+                    setAnchoringNotary(true);
+                    try {
+                      const res = await fetch(`${API_BASE}/notary/anchor`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          claim: claim || 'Web Notarized Verification Seal',
+                        }),
+                      });
+                      if (res.ok) {
+                        await fetchState();
+                      }
+                    } catch (e) {
+                      console.error(e);
+                    } finally {
+                      setAnchoringNotary(false);
+                    }
+                  }}
+                >
+                  {anchoringNotary ? '⏳ Anchoring…' : '+ Anchor Attestation'}
+                </button>
+              </div>
+            </div>
+
+            {/* Inclusion proof verification badge */}
+            {verifiedInclusionProof !== null && (
+              <div
+                style={{
+                  background: verifiedInclusionProof
+                    ? 'rgba(72, 187, 120, 0.12)'
+                    : 'rgba(245, 101, 101, 0.12)',
+                  border: `1px solid ${verifiedInclusionProof ? 'var(--accent-green)' : 'var(--accent-red)'}`,
+                  borderRadius: 'var(--radius-sm)',
+                  padding: '8px 12px',
+                  marginBottom: 12,
+                  fontSize: '0.78rem',
+                  fontWeight: 600,
+                  color: verifiedInclusionProof ? 'var(--accent-green)' : 'var(--accent-red)',
+                }}
+              >
+                {verifiedInclusionProof
+                  ? '✓ Cryptographic RFC-6962 Inclusion Proof Verified (Leaf exists in Merkle Root without tampering)'
+                  : '✗ Inclusion Proof Failed Verification'}
+              </div>
+            )}
+
+            {/* Recent seals list */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                gap: 10,
+              }}
+            >
+              {notarySeals
+                .slice(-4)
+                .reverse()
+                .map((seal) => (
+                  <div
+                    key={seal.sealId}
+                    style={{
+                      background: 'var(--bg-surface)',
+                      border: '1px solid var(--border)',
+                      borderRadius: 'var(--radius-sm)',
+                      padding: 12,
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        marginBottom: 4,
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontWeight: 600,
+                          fontSize: '0.8rem',
+                          fontFamily: 'var(--font-mono)',
+                        }}
+                      >
+                        {seal.sealId}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: '0.65rem',
+                          color: 'var(--accent-green)',
+                          background: 'rgba(72, 187, 120, 0.15)',
+                          padding: '1px 6px',
+                          borderRadius: 3,
+                        }}
+                      >
+                        Leaf #{seal.leafIndex}
+                      </span>
+                    </div>
+                    <div
+                      style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: 4 }}
+                    >
+                      Leaf Hash:{' '}
+                      <code
+                        style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)' }}
+                      >
+                        {seal.leafHash.slice(0, 24)}…
+                      </code>
+                    </div>
+                    <div
+                      style={{
+                        fontSize: '0.68rem',
+                        color: 'var(--text-muted)',
+                        wordBreak: 'break-all',
+                      }}
+                    >
+                      Signature:{' '}
+                      <code
+                        style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent-amber)' }}
+                      >
+                        {seal.notarySignature.slice(0, 32)}…
+                      </code>
+                    </div>
+                  </div>
+                ))}
+            </div>
           </div>
 
           {/* Timeline */}
