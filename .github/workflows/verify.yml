@@ -343,11 +343,16 @@ jobs:
           check_api /api/memory/integrity ci-smoke-read-token '"intact":true'
 
           # And the client itself must be served from that same origin.
-          page_status=$(curl -sS -o /tmp/index.html -w '%{http_code}' \
-            -H 'Accept: text/html' http://localhost:3000/)
-          if [ "$page_status" != "200" ]; then
-            echo "::error::Root SPA request returned HTTP $page_status"
-            cat /tmp/index.html
+          set +e
+          curl -sS -D /tmp/index.headers -o /tmp/index.html -w '%{http_code}' \
+            -H 'Accept: text/html' http://localhost:3000/ > /tmp/index.status
+          page_curl_exit=$?
+          set -e
+          page_status=$(cat /tmp/index.status)
+          if [ "$page_curl_exit" -ne 0 ] || [ "$page_status" != "200" ]; then
+            echo "::error::Root SPA curl failed with exit $page_curl_exit and HTTP $page_status"
+            cat /tmp/index.headers || true
+            cat /tmp/index.html || true
             exit 1
           fi
           if ! grep -qi '<div id="root"' /tmp/index.html; then

@@ -112,7 +112,10 @@ describe('the supported Node version is one claim, not three', () => {
     expect(workflow).toMatch(/check_api\(\) \{/);
     expect(workflow).toMatch(/API prefix \$path returned HTTP \$status/);
     expect(workflow).toMatch(/Accept: text\/html.*http:\/\/localhost:3000\//);
-    expect(workflow).toMatch(/Root SPA request returned HTTP \$page_status/);
+    expect(workflow).toMatch(
+      /Root SPA curl failed with exit \$page_curl_exit and HTTP \$page_status/
+    );
+    expect(workflow).toMatch(/index\.headers/);
     expect(workflow).toMatch(/Root SPA response did not contain the root mount/);
     expect(workflow).toMatch(/\"encryption\":\"aes-256-gcm\"/);
   });
