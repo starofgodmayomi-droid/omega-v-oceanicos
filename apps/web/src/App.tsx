@@ -308,6 +308,35 @@ interface WebhookStatsData {
   successRate: number;
 }
 
+interface OracleFeedItem {
+  feedId: string;
+  name: string;
+  description: string;
+  aggregation: string;
+  heartbeatMs: number;
+  minResponses: number;
+  active: boolean;
+}
+
+interface OracleReceiptItem {
+  receiptId: string;
+  feedId: string;
+  aggregatedValue: unknown;
+  strategyUsed: string;
+  participants: number;
+  variance: number;
+  computedAt: string;
+  oracleSignature: string;
+}
+
+interface OracleStatsData {
+  totalFeeds: number;
+  activeFeeds: number;
+  totalProviders: number;
+  activeProviders: number;
+  totalConsensusReceipts: number;
+}
+
 interface RuleEfficacy {
   ruleName: string;
   totalExecutions: number;
@@ -564,6 +593,11 @@ export function App(): JSX.Element {
   const [webhookStats, setWebhookStats] = useState<WebhookStatsData | null>(null);
   const [triggeringWebhook, setTriggeringWebhook] = useState(false);
   const [webhookResult, setWebhookResult] = useState<string | null>(null);
+  const [oracleFeeds, setOracleFeeds] = useState<OracleFeedItem[]>([]);
+  const [oracleReceipts, setOracleReceipts] = useState<OracleReceiptItem[]>([]);
+  const [oracleStats, setOracleStats] = useState<OracleStatsData | null>(null);
+  const [aggregatingOracle, setAggregatingOracle] = useState(false);
+  const [oracleResult, setOracleResult] = useState<string | null>(null);
 
   // ── Poll log + metrics ──
   const fetchState = useCallback(async () => {
@@ -594,6 +628,8 @@ export function App(): JSX.Element {
         gwStatsRes,
         gwAnomRes,
         whRes,
+        orcFeedsRes,
+        orcRecRes,
       ] = await Promise.all([
         fetch(`${API_BASE}/log?limit=30`),
         fetch(`${API_BASE}/metrics`),
@@ -620,6 +656,8 @@ export function App(): JSX.Element {
         fetch(`${API_BASE}/gateway/stats`),
         fetch(`${API_BASE}/gateway/anomalies`),
         fetch(`${API_BASE}/webhooks`),
+        fetch(`${API_BASE}/oracle/feeds`),
+        fetch(`${API_BASE}/oracle/receipts`),
       ]);
       if (!logRes.ok || !metricsRes.ok) throw new Error('API error');
 
@@ -688,6 +726,14 @@ export function App(): JSX.Element {
         const whData = (await whRes.json()).data;
         setWebhooks(whData.subscriptions as WebhookSubItem[]);
         setWebhookStats(whData.stats as WebhookStatsData);
+      }
+      if (orcFeedsRes && orcFeedsRes.ok) {
+        const oData = (await orcFeedsRes.json()).data;
+        setOracleFeeds(oData.feeds as OracleFeedItem[]);
+        setOracleStats(oData.stats as OracleStatsData);
+      }
+      if (orcRecRes && orcRecRes.ok) {
+        setOracleReceipts((await orcRecRes.json()).data.receipts as OracleReceiptItem[]);
       }
     } catch {
       setApiOnline(false);
@@ -4247,6 +4293,266 @@ export function App(): JSX.Element {
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* ── Multi-Source Cryptographic Consensus Oracle (Section XLI) ── */}
+          <div
+            style={{
+              background: 'var(--bg-card)',
+              border: '1px solid rgba(237, 137, 54, 0.3)',
+              borderRadius: 'var(--radius)',
+              padding: 20,
+              marginBottom: 20,
+            }}
+          >
+            <div className="section-header">
+              <div className="section-title">🔮 Multi-Source Consensus Oracle</div>
+              <span className="section-badge">
+                {oracleStats?.activeFeeds || 0} feeds · {oracleStats?.activeProviders || 0}{' '}
+                providers
+              </span>
+            </div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 14 }}>
+              Decentralized multi-provider quorum aggregation (Median, Majority Vote) with signed
+              cryptographic consensus receipts.
+            </div>
+
+            {/* Oracle stats row */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+                gap: 10,
+                marginBottom: 14,
+              }}
+            >
+              <div
+                style={{
+                  background: 'var(--bg-surface)',
+                  padding: 10,
+                  borderRadius: 'var(--radius-sm)',
+                }}
+              >
+                <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>ACTIVE FEEDS</div>
+                <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--accent-teal)' }}>
+                  {oracleStats?.activeFeeds || 0}
+                </div>
+              </div>
+              <div
+                style={{
+                  background: 'var(--bg-surface)',
+                  padding: 10,
+                  borderRadius: 'var(--radius-sm)',
+                }}
+              >
+                <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>PROVIDERS</div>
+                <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#ed8936' }}>
+                  {oracleStats?.activeProviders || 0}
+                </div>
+              </div>
+              <div
+                style={{
+                  background: 'var(--bg-surface)',
+                  padding: 10,
+                  borderRadius: 'var(--radius-sm)',
+                }}
+              >
+                <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
+                  CONSENSUS RECEIPTS
+                </div>
+                <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--accent-purple)' }}>
+                  {oracleStats?.totalConsensusReceipts || 0}
+                </div>
+              </div>
+            </div>
+
+            {/* Aggregate Test Action */}
+            <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
+              <button
+                onClick={async () => {
+                  setAggregatingOracle(true);
+                  setOracleResult(null);
+                  try {
+                    const res = await fetch(`${API_BASE}/oracle/aggregate`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        feedId: 'feed-eth-usd',
+                        reports: [
+                          {
+                            providerId: 'prov-node-alpha',
+                            feedId: 'feed-eth-usd',
+                            value: 3260,
+                            timestamp: new Date().toISOString(),
+                            signature: 's1',
+                          },
+                          {
+                            providerId: 'prov-node-beta',
+                            feedId: 'feed-eth-usd',
+                            value: 3275,
+                            timestamp: new Date().toISOString(),
+                            signature: 's2',
+                          },
+                          {
+                            providerId: 'prov-node-gamma',
+                            feedId: 'feed-eth-usd',
+                            value: 3250,
+                            timestamp: new Date().toISOString(),
+                            signature: 's3',
+                          },
+                        ],
+                      }),
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                      setOracleResult(
+                        `✅ Consensus Value: $${data.data.aggregatedValue} (${data.data.strategyUsed}, ${data.data.participants} providers)`
+                      );
+                    } else {
+                      setOracleResult(`❌ Error: ${data.message || 'Aggregation failed'}`);
+                    }
+                    fetchState();
+                  } catch {
+                    setOracleResult('❌ Failed to aggregate oracle reports');
+                  } finally {
+                    setAggregatingOracle(false);
+                  }
+                }}
+                disabled={aggregatingOracle}
+                style={{
+                  background: aggregatingOracle
+                    ? 'var(--bg-surface)'
+                    : 'linear-gradient(135deg, #ed8936, #dd6b20)',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 'var(--radius-sm)',
+                  padding: '6px 16px',
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                  cursor: aggregatingOracle ? 'not-allowed' : 'pointer',
+                  opacity: aggregatingOracle ? 0.6 : 1,
+                }}
+              >
+                {aggregatingOracle ? '⏳ Aggregating…' : '🔮 Compute Quorum Consensus'}
+              </button>
+              {oracleResult && (
+                <div
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: 'var(--radius-sm)',
+                    background: 'var(--bg-surface)',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}
+                >
+                  {oracleResult}
+                </div>
+              )}
+            </div>
+
+            {/* Feeds List */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                gap: 10,
+              }}
+            >
+              {oracleFeeds.map((feed) => (
+                <div
+                  key={feed.feedId}
+                  style={{
+                    background: 'var(--bg-surface)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 'var(--radius-sm)',
+                    padding: 12,
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: 4,
+                    }}
+                  >
+                    <span style={{ fontWeight: 600, fontSize: '0.8rem' }}>{feed.name}</span>
+                    <span
+                      style={{
+                        fontSize: '0.65rem',
+                        color: '#ed8936',
+                        background: 'rgba(237, 137, 54, 0.15)',
+                        padding: '1px 6px',
+                        borderRadius: 3,
+                        fontWeight: 600,
+                      }}
+                    >
+                      {feed.aggregation}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: 6 }}>
+                    {feed.description}
+                  </div>
+                  <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>
+                    Heartbeat: {feed.heartbeatMs / 1000}s · Min Quorum: {feed.minResponses}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Recent Consensus Receipts */}
+            {oracleReceipts.length > 0 && (
+              <div style={{ marginTop: 14 }}>
+                <div
+                  style={{
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    marginBottom: 6,
+                    color: '#ed8936',
+                  }}
+                >
+                  📜 Recent Cryptographic Consensus Receipts ({oracleReceipts.length})
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {oracleReceipts.slice(-3).map((r) => (
+                    <div
+                      key={r.receiptId}
+                      style={{
+                        background: 'var(--bg-surface)',
+                        border: '1px solid rgba(237, 137, 54, 0.25)',
+                        borderRadius: 'var(--radius-sm)',
+                        padding: '8px 12px',
+                        fontSize: '0.72rem',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <div>
+                        <span style={{ fontWeight: 600, color: 'var(--accent-teal)' }}>
+                          {r.feedId}
+                        </span>
+                        : {String(r.aggregatedValue)}{' '}
+                        <span style={{ color: 'var(--text-muted)' }}>
+                          ({r.strategyUsed}, {r.participants} nodes)
+                        </span>
+                      </div>
+                      <span
+                        style={{
+                          fontFamily: 'monospace',
+                          fontSize: '0.65rem',
+                          color: 'var(--text-muted)',
+                        }}
+                      >
+                        {r.receiptId}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Timeline */}

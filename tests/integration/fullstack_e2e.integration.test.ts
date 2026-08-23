@@ -23,6 +23,7 @@ import { OceanicosPolicyEngine } from '@omega-v/policy';
 import { OceanicosZKEngine } from '@omega-v/zk';
 import { OceanicosGatewayEngine } from '@omega-v/gateway';
 import { OceanicosWebhookEngine } from '@omega-v/webhook';
+import { OceanicosOracleEngine } from '@omega-v/oracle';
 import app from '../../apps/api/src/index';
 
 describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => {
@@ -730,6 +731,82 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       const stats = webhookEngine.getStats();
       expect(stats.successfulDeliveries).toBeGreaterThanOrEqual(2);
       expect(stats.successRate).toBe(100);
+    });
+  });
+
+  describe('22. Multi-Source Consensus Oracle & External State Verification E2E', () => {
+    it('should aggregate multi-provider reports, compute median/majority quorum, and generate cryptographically signed receipts', () => {
+      const oracle = new OceanicosOracleEngine();
+
+      // Ensure feeds exist
+      const feeds = oracle.getFeeds();
+      expect(feeds.length).toBeGreaterThanOrEqual(2);
+
+      // Median aggregation
+      const ethReports = [
+        {
+          providerId: 'prov-node-alpha',
+          feedId: 'feed-eth-usd',
+          value: 3250,
+          timestamp: new Date().toISOString(),
+          signature: 's1',
+        },
+        {
+          providerId: 'prov-node-beta',
+          feedId: 'feed-eth-usd',
+          value: 3260,
+          timestamp: new Date().toISOString(),
+          signature: 's2',
+        },
+        {
+          providerId: 'prov-node-gamma',
+          feedId: 'feed-eth-usd',
+          value: 3240,
+          timestamp: new Date().toISOString(),
+          signature: 's3',
+        },
+      ];
+
+      const receipt = oracle.aggregateReports('feed-eth-usd', ethReports);
+      expect(receipt.aggregatedValue).toBe(3250); // Median of [3240, 3250, 3260]
+      expect(receipt.participants).toBe(3);
+      expect(receipt.oracleSignature).toMatch(/^0x/);
+
+      // Verify cryptographic authenticity
+      expect(oracle.verifyReceipt(receipt)).toBe(true);
+
+      // Majority vote aggregation
+      const healthReports = [
+        {
+          providerId: 'prov-node-alpha',
+          feedId: 'feed-cluster-health',
+          value: true,
+          timestamp: new Date().toISOString(),
+          signature: 's1',
+        },
+        {
+          providerId: 'prov-node-beta',
+          feedId: 'feed-cluster-health',
+          value: true,
+          timestamp: new Date().toISOString(),
+          signature: 's2',
+        },
+        {
+          providerId: 'prov-node-gamma',
+          feedId: 'feed-cluster-health',
+          value: false,
+          timestamp: new Date().toISOString(),
+          signature: 's3',
+        },
+      ];
+
+      const healthReceipt = oracle.aggregateReports('feed-cluster-health', healthReports);
+      expect(healthReceipt.aggregatedValue).toBe(true);
+      expect(oracle.verifyReceipt(healthReceipt)).toBe(true);
+
+      // Tampered detection
+      const tampered = { ...healthReceipt, aggregatedValue: false };
+      expect(oracle.verifyReceipt(tampered)).toBe(false);
     });
   });
 });

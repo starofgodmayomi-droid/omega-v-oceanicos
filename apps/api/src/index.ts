@@ -25,6 +25,7 @@ import { OceanicosPolicyEngine } from '@omega-v/policy';
 import { OceanicosZKEngine } from '@omega-v/zk';
 import { OceanicosGatewayEngine } from '@omega-v/gateway';
 import { OceanicosWebhookEngine } from '@omega-v/webhook';
+import { OceanicosOracleEngine } from '@omega-v/oracle';
 import {
   SuccessResponse,
   ErrorResponse,
@@ -80,6 +81,7 @@ const policyEngine = new OceanicosPolicyEngine();
 const zkEngine = new OceanicosZKEngine();
 const gatewayEngine = new OceanicosGatewayEngine();
 const webhookEngine = new OceanicosWebhookEngine();
+const oracleEngine = new OceanicosOracleEngine();
 
 // Register default rules
 verificationEngine.registerRule({
@@ -1545,6 +1547,53 @@ app.post('/webhooks/dispatch', async (req: Request, res: Response) => {
 app.get('/webhooks/deliveries', (_req: Request, res: Response) => {
   res.json({
     data: { deliveries: webhookEngine.getDeliveryHistory() },
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** GET /oracle/feeds — List oracle feeds, providers and engine stats (Section XLI) */
+app.get('/oracle/feeds', (_req: Request, res: Response) => {
+  res.json({
+    data: {
+      feeds: oracleEngine.getFeeds(),
+      providers: oracleEngine.getProviders(),
+      stats: oracleEngine.getStats(),
+    },
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /oracle/aggregate — Compute and cryptographically attest multi-source oracle consensus */
+app.post('/oracle/aggregate', (req: Request, res: Response) => {
+  const { feedId, reports } = req.body || {};
+  if (!feedId || !reports || !Array.isArray(reports)) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'feedId and reports array are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const receipt = oracleEngine.aggregateReports(feedId, reports);
+    res.json({
+      data: receipt,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'AGGREGATION_FAILED',
+      message: err instanceof Error ? err.message : 'Oracle aggregation failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** GET /oracle/receipts — List recent signed oracle consensus receipts */
+app.get('/oracle/receipts', (_req: Request, res: Response) => {
+  res.json({
+    data: { receipts: oracleEngine.getReceipts() },
     timestamp: new Date().toISOString(),
   });
 });

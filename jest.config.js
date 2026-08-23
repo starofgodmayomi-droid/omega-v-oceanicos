@@ -41,6 +41,7 @@ export default {
     '@omega-v/zk': '<rootDir>/packages/zk/src/index.ts',
     '@omega-v/gateway': '<rootDir>/packages/gateway/src/index.ts',
     '@omega-v/webhook': '<rootDir>/packages/webhook/src/index.ts',
+    '@omega-v/oracle': '<rootDir>/packages/oracle/src/index.ts',
   },
   collectCoverageFrom: [
     'packages/*/src/**/*.ts',

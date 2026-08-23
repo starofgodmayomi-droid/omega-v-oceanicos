@@ -16,6 +16,7 @@ import { OceanicosPolicyEngine } from '@omega-v/policy';
 import { OceanicosZKEngine } from '@omega-v/zk';
 import { OceanicosGatewayEngine } from '@omega-v/gateway';
 import { OceanicosWebhookEngine } from '@omega-v/webhook';
+import { OceanicosOracleEngine } from '@omega-v/oracle';
 
 export interface CLIResult {
   success: boolean;
@@ -504,6 +505,47 @@ export class OceanicosCLI {
         };
       }
 
+      case 'oracle': {
+        const oracle = new OceanicosOracleEngine();
+        const subCommand = args[1] || 'feeds';
+
+        if (subCommand === 'aggregate') {
+          const feedId = args[2] || 'feed-eth-usd';
+          const val1 = Number(args[3] || 3200);
+          const val2 = Number(args[4] || 3220);
+          const reports = [
+            {
+              providerId: 'prov-node-alpha',
+              feedId,
+              value: val1,
+              timestamp: new Date().toISOString(),
+              signature: 'sig_a',
+            },
+            {
+              providerId: 'prov-node-beta',
+              feedId,
+              value: val2,
+              timestamp: new Date().toISOString(),
+              signature: 'sig_b',
+            },
+          ];
+          const receipt = oracle.aggregateReports(feedId, reports);
+          return {
+            success: true,
+            message: `[Ω∞v CLI] Oracle Consensus Computed: ${feedId} = ${receipt.aggregatedValue} (${receipt.strategyUsed}, ${receipt.participants} providers)`,
+            output: receipt,
+          };
+        }
+
+        const feeds = oracle.getFeeds();
+        const stats = oracle.getStats();
+        return {
+          success: true,
+          message: `[Ω∞v CLI] Active Oracle Feeds: ${feeds.length} feeds, ${stats.totalProviders} providers, ${stats.totalConsensusReceipts} receipts`,
+          output: { feeds, stats },
+        };
+      }
+
       case 'help':
       default: {
         return {
@@ -529,6 +571,7 @@ Commands:
   omega-v zk [circuits|prove]       Generate and verify zero-knowledge succinct privacy proofs
   omega-v gateway [stats|request]   Inspect API gateway rate limits & anomaly alerts
   omega-v webhook [list|register|trigger] Manage real-time verification event webhooks
+  omega-v oracle [feeds|aggregate]  Compute multi-source external state consensus receipts
   omega-v metrics                   Show system health and metrics
   omega-v log                       Display event provenance log
   omega-v integrity                 Verify event hash chain integrity
