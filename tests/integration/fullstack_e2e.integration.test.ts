@@ -9,6 +9,7 @@ import { FormlessSwarm } from '@omega-v/agents';
 import { OceanicosCLI } from '@omega-v/cli';
 import { EdgeObserver } from '@omega-v/edge';
 import { VerificationAnalyticsEngine } from '@omega-v/analytics';
+import { VerificationScheduler } from '@omega-v/scheduler';
 import app from '../../apps/api/src/index';
 
 describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => {
@@ -190,6 +191,36 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       const rules = localVE.getRules();
       const proposals = analyticsEngine.generateAdaptationProposals(summary, rules);
       expect(Array.isArray(proposals)).toBe(true);
+    });
+  });
+
+  describe('8. Autonomous Verification Scheduler E2E', () => {
+    it('should autonomously drive the verification loop on a schedule', async () => {
+      let runCallbackTriggered = false;
+      const scheduler = new VerificationScheduler(sdk, {
+        intervalMs: 50,
+        claim: 'Autonomous E2E Scheduled Claim',
+        maxRuns: 2,
+        onRun: (res) => {
+          runCallbackTriggered = true;
+          expect(res.passed).toBe(true);
+          expect(res.signature).toBeDefined();
+        },
+      });
+
+      scheduler.start();
+      expect(scheduler.getState().status).toBe('RUNNING');
+
+      // Wait for at least 1 run to execute
+      await new Promise<void>((resolve) => setTimeout(resolve, 150));
+      scheduler.stop();
+
+      const state = scheduler.getState();
+      expect(state.status).toBe('STOPPED');
+      expect(state.totalRuns).toBeGreaterThanOrEqual(1);
+      expect(state.passedRuns).toBeGreaterThanOrEqual(1);
+      expect(state.lastRunAt).toBeDefined();
+      expect(runCallbackTriggered).toBe(true);
     });
   });
 });

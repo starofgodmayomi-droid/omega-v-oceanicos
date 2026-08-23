@@ -835,161 +835,307 @@ export function App(): JSX.Element {
           )}
 
           {/* ── Autonomous Scheduler Control Panel (Phase 13) ── */}
-          {schedulerData && (() => {
-            const statusColors: Record<string, string> = {
-              IDLE: 'var(--text-muted)',
-              RUNNING: 'var(--accent-green)',
-              PAUSED: 'var(--accent-amber)',
-              STOPPED: 'var(--accent-red)',
-            };
-            const statusIcons: Record<string, string> = {
-              IDLE: '○', RUNNING: '▶', PAUSED: '⏸', STOPPED: '■',
-            };
-            const doSchedulerAction = async (action: string, body?: object) => {
-              setSchedulerActionLoading(true);
-              try {
-                await fetch(`${API_BASE}/scheduler/${action}`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: body ? JSON.stringify(body) : undefined,
-                });
-                await fetchState();
-              } finally {
-                setSchedulerActionLoading(false);
-              }
-            };
-            const passRate = schedulerData.totalRuns > 0
-              ? ((schedulerData.passedRuns / schedulerData.totalRuns) * 100).toFixed(0)
-              : '—';
+          {schedulerData &&
+            (() => {
+              const statusColors: Record<string, string> = {
+                IDLE: 'var(--text-muted)',
+                RUNNING: 'var(--accent-green)',
+                PAUSED: 'var(--accent-amber)',
+                STOPPED: 'var(--accent-red)',
+              };
+              const statusIcons: Record<string, string> = {
+                IDLE: '○',
+                RUNNING: '▶',
+                PAUSED: '⏸',
+                STOPPED: '■',
+              };
+              const doSchedulerAction = async (action: string, body?: object) => {
+                setSchedulerActionLoading(true);
+                try {
+                  await fetch(`${API_BASE}/scheduler/${action}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: body ? JSON.stringify(body) : undefined,
+                  });
+                  await fetchState();
+                } finally {
+                  setSchedulerActionLoading(false);
+                }
+              };
+              const passRate =
+                schedulerData.totalRuns > 0
+                  ? ((schedulerData.passedRuns / schedulerData.totalRuns) * 100).toFixed(0)
+                  : '—';
 
-            return (
-              <div
-                style={{
-                  background: 'var(--bg-card)',
-                  border: `1px solid ${statusColors[schedulerData.status]}44`,
-                  borderRadius: 'var(--radius)',
-                  padding: 20,
-                  marginBottom: 24,
-                }}
-              >
-                {/* Header */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-                  <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <span>⏱ Autonomous Scheduler</span>
-                    <span style={{
-                      fontSize: '0.72rem',
-                      fontWeight: 700,
-                      color: statusColors[schedulerData.status],
-                      background: `${statusColors[schedulerData.status]}18`,
-                      padding: '2px 8px',
-                      borderRadius: 4,
-                      letterSpacing: '0.06em',
-                    }}>
-                      {statusIcons[schedulerData.status]} {schedulerData.status}
-                    </span>
-                  </div>
-                  {/* Control buttons */}
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    {(schedulerData.status === 'IDLE' || schedulerData.status === 'STOPPED') && (
-                      <button
-                        id="scheduler-start-btn"
-                        onClick={() => doSchedulerAction('start')}
-                        disabled={schedulerActionLoading}
-                        style={{ background: 'var(--accent-green)', color: '#0f172a', border: 'none', borderRadius: 6, padding: '5px 12px', fontWeight: 700, fontSize: '0.78rem', cursor: 'pointer' }}
+              return (
+                <div
+                  style={{
+                    background: 'var(--bg-card)',
+                    border: `1px solid ${statusColors[schedulerData.status]}44`,
+                    borderRadius: 'var(--radius)',
+                    padding: 20,
+                    marginBottom: 24,
+                  }}
+                >
+                  {/* Header */}
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      marginBottom: 14,
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontWeight: 700,
+                        fontSize: '0.95rem',
+                        color: 'var(--text-primary)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 10,
+                      }}
+                    >
+                      <span>⏱ Autonomous Scheduler</span>
+                      <span
+                        style={{
+                          fontSize: '0.72rem',
+                          fontWeight: 700,
+                          color: statusColors[schedulerData.status],
+                          background: `${statusColors[schedulerData.status]}18`,
+                          padding: '2px 8px',
+                          borderRadius: 4,
+                          letterSpacing: '0.06em',
+                        }}
                       >
-                        ▶ Start
-                      </button>
-                    )}
-                    {schedulerData.status === 'RUNNING' && (
-                      <button
-                        id="scheduler-pause-btn"
-                        onClick={() => doSchedulerAction('pause')}
-                        disabled={schedulerActionLoading}
-                        style={{ background: 'var(--accent-amber)', color: '#0f172a', border: 'none', borderRadius: 6, padding: '5px 12px', fontWeight: 700, fontSize: '0.78rem', cursor: 'pointer' }}
-                      >
-                        ⏸ Pause
-                      </button>
-                    )}
-                    {schedulerData.status === 'PAUSED' && (
-                      <button
-                        id="scheduler-resume-btn"
-                        onClick={() => doSchedulerAction('resume')}
-                        disabled={schedulerActionLoading}
-                        style={{ background: 'var(--accent-primary)', color: '#0f172a', border: 'none', borderRadius: 6, padding: '5px 12px', fontWeight: 700, fontSize: '0.78rem', cursor: 'pointer' }}
-                      >
-                        ▶ Resume
-                      </button>
-                    )}
-                    {(schedulerData.status === 'RUNNING' || schedulerData.status === 'PAUSED') && (
-                      <button
-                        id="scheduler-stop-btn"
-                        onClick={() => doSchedulerAction('stop')}
-                        disabled={schedulerActionLoading}
-                        style={{ background: 'var(--bg-surface)', color: 'var(--accent-red)', border: '1px solid var(--accent-red)', borderRadius: 6, padding: '5px 12px', fontWeight: 700, fontSize: '0.78rem', cursor: 'pointer' }}
-                      >
-                        ■ Stop
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {/* Stats row */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: 10, marginBottom: 14 }}>
-                  {[
-                    { label: 'Total Runs', value: schedulerData.totalRuns, icon: '🔄' },
-                    { label: 'Passed', value: schedulerData.passedRuns, icon: '✅' },
-                    { label: 'Failed', value: schedulerData.failedRuns, icon: '❌' },
-                    { label: 'Pass Rate', value: `${passRate}%`, icon: '🎯' },
-                  ].map((s) => (
-                    <div key={s.label} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '10px 12px', textAlign: 'center' }}>
-                      <div style={{ fontSize: '1rem', marginBottom: 3 }}>{s.icon}</div>
-                      <div style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text-primary)' }}>{s.value}</div>
-                      <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: 2 }}>{s.label}</div>
+                        {statusIcons[schedulerData.status]} {schedulerData.status}
+                      </span>
                     </div>
-                  ))}
-                </div>
-
-                {/* Last / Next run timestamps */}
-                {(schedulerData.lastRunAt || schedulerData.nextRunAt) && (
-                  <div style={{ display: 'flex', gap: 16, fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: 12, flexWrap: 'wrap' }}>
-                    {schedulerData.lastRunAt && (
-                      <span>⏱ Last run: <strong style={{ color: 'var(--text-secondary)' }}>{new Date(schedulerData.lastRunAt).toLocaleTimeString()}</strong></span>
-                    )}
-                    {schedulerData.nextRunAt && (
-                      <span>🕐 Next run: <strong style={{ color: 'var(--accent-primary)' }}>{new Date(schedulerData.nextRunAt).toLocaleTimeString()}</strong></span>
-                    )}
-                  </div>
-                )}
-
-                {/* Run history */}
-                {schedulerData.history.length > 0 && (
-                  <div>
-                    <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>
-                      Recent Runs
+                    {/* Control buttons */}
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      {(schedulerData.status === 'IDLE' || schedulerData.status === 'STOPPED') && (
+                        <button
+                          id="scheduler-start-btn"
+                          onClick={() => doSchedulerAction('start')}
+                          disabled={schedulerActionLoading}
+                          style={{
+                            background: 'var(--accent-green)',
+                            color: '#0f172a',
+                            border: 'none',
+                            borderRadius: 6,
+                            padding: '5px 12px',
+                            fontWeight: 700,
+                            fontSize: '0.78rem',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          ▶ Start
+                        </button>
+                      )}
+                      {schedulerData.status === 'RUNNING' && (
+                        <button
+                          id="scheduler-pause-btn"
+                          onClick={() => doSchedulerAction('pause')}
+                          disabled={schedulerActionLoading}
+                          style={{
+                            background: 'var(--accent-amber)',
+                            color: '#0f172a',
+                            border: 'none',
+                            borderRadius: 6,
+                            padding: '5px 12px',
+                            fontWeight: 700,
+                            fontSize: '0.78rem',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          ⏸ Pause
+                        </button>
+                      )}
+                      {schedulerData.status === 'PAUSED' && (
+                        <button
+                          id="scheduler-resume-btn"
+                          onClick={() => doSchedulerAction('resume')}
+                          disabled={schedulerActionLoading}
+                          style={{
+                            background: 'var(--accent-primary)',
+                            color: '#0f172a',
+                            border: 'none',
+                            borderRadius: 6,
+                            padding: '5px 12px',
+                            fontWeight: 700,
+                            fontSize: '0.78rem',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          ▶ Resume
+                        </button>
+                      )}
+                      {(schedulerData.status === 'RUNNING' ||
+                        schedulerData.status === 'PAUSED') && (
+                        <button
+                          id="scheduler-stop-btn"
+                          onClick={() => doSchedulerAction('stop')}
+                          disabled={schedulerActionLoading}
+                          style={{
+                            background: 'var(--bg-surface)',
+                            color: 'var(--accent-red)',
+                            border: '1px solid var(--accent-red)',
+                            borderRadius: 6,
+                            padding: '5px 12px',
+                            fontWeight: 700,
+                            fontSize: '0.78rem',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          ■ Stop
+                        </button>
+                      )}
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 160, overflowY: 'auto' }}>
-                      {[...schedulerData.history].reverse().map((r) => (
-                        <div key={r.runIndex} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 8px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', fontSize: '0.72rem' }}>
-                          <span style={{ color: r.passed ? 'var(--accent-green)' : 'var(--accent-red)', fontWeight: 700 }}>
-                            {r.passed ? '✓' : '✗'}
-                          </span>
-                          <span style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
-                            #{r.runIndex}
-                          </span>
-                          <span style={{ color: 'var(--text-secondary)', flex: 1 }}>
-                            {new Date(r.completedAt).toLocaleTimeString()}
-                          </span>
-                          <span style={{ color: r.passed ? 'var(--accent-green)' : 'var(--accent-amber)' }}>
-                            {(r.confidence * 100).toFixed(0)}% conf
-                          </span>
+                  </div>
+
+                  {/* Stats row */}
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))',
+                      gap: 10,
+                      marginBottom: 14,
+                    }}
+                  >
+                    {[
+                      { label: 'Total Runs', value: schedulerData.totalRuns, icon: '🔄' },
+                      { label: 'Passed', value: schedulerData.passedRuns, icon: '✅' },
+                      { label: 'Failed', value: schedulerData.failedRuns, icon: '❌' },
+                      { label: 'Pass Rate', value: `${passRate}%`, icon: '🎯' },
+                    ].map((s) => (
+                      <div
+                        key={s.label}
+                        style={{
+                          background: 'var(--bg-surface)',
+                          border: '1px solid var(--border)',
+                          borderRadius: 'var(--radius-sm)',
+                          padding: '10px 12px',
+                          textAlign: 'center',
+                        }}
+                      >
+                        <div style={{ fontSize: '1rem', marginBottom: 3 }}>{s.icon}</div>
+                        <div
+                          style={{
+                            fontWeight: 700,
+                            fontSize: '1rem',
+                            color: 'var(--text-primary)',
+                          }}
+                        >
+                          {s.value}
                         </div>
-                      ))}
-                    </div>
+                        <div
+                          style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: 2 }}
+                        >
+                          {s.label}
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                )}
-              </div>
-            );
-          })()}
+
+                  {/* Last / Next run timestamps */}
+                  {(schedulerData.lastRunAt || schedulerData.nextRunAt) && (
+                    <div
+                      style={{
+                        display: 'flex',
+                        gap: 16,
+                        fontSize: '0.72rem',
+                        color: 'var(--text-muted)',
+                        marginBottom: 12,
+                        flexWrap: 'wrap',
+                      }}
+                    >
+                      {schedulerData.lastRunAt && (
+                        <span>
+                          ⏱ Last run:{' '}
+                          <strong style={{ color: 'var(--text-secondary)' }}>
+                            {new Date(schedulerData.lastRunAt).toLocaleTimeString()}
+                          </strong>
+                        </span>
+                      )}
+                      {schedulerData.nextRunAt && (
+                        <span>
+                          🕐 Next run:{' '}
+                          <strong style={{ color: 'var(--accent-primary)' }}>
+                            {new Date(schedulerData.nextRunAt).toLocaleTimeString()}
+                          </strong>
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Run history */}
+                  {schedulerData.history.length > 0 && (
+                    <div>
+                      <div
+                        style={{
+                          fontSize: '0.75rem',
+                          fontWeight: 600,
+                          color: 'var(--text-secondary)',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.06em',
+                          marginBottom: 6,
+                        }}
+                      >
+                        Recent Runs
+                      </div>
+                      <div
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: 4,
+                          maxHeight: 160,
+                          overflowY: 'auto',
+                        }}
+                      >
+                        {[...schedulerData.history].reverse().map((r) => (
+                          <div
+                            key={r.runIndex}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 8,
+                              padding: '5px 8px',
+                              background: 'var(--bg-surface)',
+                              borderRadius: 'var(--radius-sm)',
+                              fontSize: '0.72rem',
+                            }}
+                          >
+                            <span
+                              style={{
+                                color: r.passed ? 'var(--accent-green)' : 'var(--accent-red)',
+                                fontWeight: 700,
+                              }}
+                            >
+                              {r.passed ? '✓' : '✗'}
+                            </span>
+                            <span
+                              style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}
+                            >
+                              #{r.runIndex}
+                            </span>
+                            <span style={{ color: 'var(--text-secondary)', flex: 1 }}>
+                              {new Date(r.completedAt).toLocaleTimeString()}
+                            </span>
+                            <span
+                              style={{
+                                color: r.passed ? 'var(--accent-green)' : 'var(--accent-amber)',
+                              }}
+                            >
+                              {(r.confidence * 100).toFixed(0)}% conf
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
           {/* ── Rule Efficacy & Analytics Engine (Phase 4) ── */}
           {analyticsData && (
