@@ -253,6 +253,12 @@ describe('API runtime contracts', () => {
             keySource: 'none',
             evidence: 'runtime-observed',
           },
+          {
+            name: 'local-job-ledger',
+            encryption: 'disabled',
+            keySource: 'none',
+            evidence: 'runtime-observed',
+          },
         ],
         unverifiedSurfaces: ['databases', 'object storage', 'backups', 'external services'],
       },

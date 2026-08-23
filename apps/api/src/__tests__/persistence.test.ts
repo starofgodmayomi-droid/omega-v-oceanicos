@@ -168,6 +168,11 @@ describe('runtime persistence', () => {
       }),
       expect.objectContaining({ name: 'event-log', encryption: 'aes-256-gcm', keySource: 'mixed' }),
       expect.objectContaining({ name: 'kernel-memory', encryption: 'disabled', keySource: 'none' }),
+      expect.objectContaining({
+        name: 'local-job-ledger',
+        encryption: 'disabled',
+        keySource: 'none',
+      }),
     ]);
     expect(coverage.unverifiedSurfaces).toEqual([
       'databases',

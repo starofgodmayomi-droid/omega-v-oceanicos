@@ -66,7 +66,7 @@ export type PersistenceCoordinationPolicy = {
 export type PersistenceCoverage = {
   complete: false;
   surfaces: Array<{
-    name: 'runtime-snapshot' | 'event-log' | 'kernel-memory';
+    name: 'runtime-snapshot' | 'event-log' | 'kernel-memory' | 'local-job-ledger';
     encryption: 'aes-256-gcm' | 'disabled';
     keySource: EncryptionKeySource;
     evidence: 'runtime-observed';
@@ -101,6 +101,12 @@ export const persistenceCoverage = (input: {
       name: 'kernel-memory',
       encryption: input.enabled && input.memoryEncrypted ? 'aes-256-gcm' : 'disabled',
       keySource: input.enabled ? input.memoryKeySource : 'none',
+      evidence: 'runtime-observed',
+    },
+    {
+      name: 'local-job-ledger',
+      encryption: 'disabled',
+      keySource: 'none',
       evidence: 'runtime-observed',
     },
   ],
