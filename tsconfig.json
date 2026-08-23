@@ -7,6 +7,12 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
+    // Explicit because TypeScript 6 requires it: TS5011 reports that the
+    // common source directory is inferred, and that inference moves as
+    // files are added. Every package config overrides this with its own
+    // rootDir of src, so nothing about emit layout changes — this fixes the
+    // root configuration that ts-jest type-checks against.
+    "rootDir": ".",
     "outDir": "./dist",
     "strict": true,
     "esModuleInterop": true,
