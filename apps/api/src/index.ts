@@ -26,6 +26,7 @@ import { OceanicosZKEngine } from '@omega-v/zk';
 import { OceanicosGatewayEngine } from '@omega-v/gateway';
 import { OceanicosWebhookEngine } from '@omega-v/webhook';
 import { OceanicosOracleEngine } from '@omega-v/oracle';
+import { OceanicosStateVault } from '@omega-v/vault';
 import {
   SuccessResponse,
   ErrorResponse,
@@ -82,6 +83,7 @@ const zkEngine = new OceanicosZKEngine();
 const gatewayEngine = new OceanicosGatewayEngine();
 const webhookEngine = new OceanicosWebhookEngine();
 const oracleEngine = new OceanicosOracleEngine();
+const stateVault = new OceanicosStateVault();
 
 // Register default rules
 verificationEngine.registerRule({
@@ -1594,6 +1596,54 @@ app.post('/oracle/aggregate', (req: Request, res: Response) => {
 app.get('/oracle/receipts', (_req: Request, res: Response) => {
   res.json({
     data: { receipts: oracleEngine.getReceipts() },
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** GET /vault/checkpoints — List all sealed state checkpoints & vault statistics (Section XLII) */
+app.get('/vault/checkpoints', (_req: Request, res: Response) => {
+  res.json({
+    data: {
+      checkpoints: stateVault.getCheckpoints(),
+      stats: stateVault.getStats(),
+    },
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /vault/checkpoint — Create a new sealed state checkpoint */
+app.post('/vault/checkpoint', (req: Request, res: Response) => {
+  const { label } = req.body || {};
+  const events = store.getEntries();
+  const rules = verificationEngine.getRules();
+
+  const checkpoint = stateVault.createCheckpoint(
+    label || `State Checkpoint ${new Date().toISOString()}`,
+    events,
+    rules
+  );
+
+  res.json({
+    data: checkpoint,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /vault/restore — Verify and restore system state from a vault checkpoint */
+app.post('/vault/restore', (req: Request, res: Response) => {
+  const { checkpointId } = req.body || {};
+  if (!checkpointId) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'checkpointId is required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  const result = stateVault.restoreCheckpoint(checkpointId);
+  res.status(result.restored ? 200 : 400).json({
+    data: result,
     timestamp: new Date().toISOString(),
   });
 });

@@ -17,6 +17,7 @@ import { OceanicosZKEngine } from '@omega-v/zk';
 import { OceanicosGatewayEngine } from '@omega-v/gateway';
 import { OceanicosWebhookEngine } from '@omega-v/webhook';
 import { OceanicosOracleEngine } from '@omega-v/oracle';
+import { OceanicosStateVault } from '@omega-v/vault';
 
 export interface CLIResult {
   success: boolean;
@@ -546,6 +547,40 @@ export class OceanicosCLI {
         };
       }
 
+      case 'vault': {
+        const vault = new OceanicosStateVault();
+        const subCommand = args[1] || 'checkpoints';
+
+        if (subCommand === 'create') {
+          const label = args.slice(2).join(' ') || 'Manual CLI Checkpoint';
+          const sampleRules = [
+            {
+              name: 'response-time-threshold',
+              version: '1.0.5',
+              appliesTo: ['health-check'],
+              definition: 'responseTime < 100',
+              description: 'Verify response time is below 100ms',
+              createdAt: new Date().toISOString(),
+              active: true,
+            },
+          ];
+          const checkpoint = vault.createCheckpoint(label, [], sampleRules);
+          return {
+            success: true,
+            message: `[Ω∞v CLI] Sealed State Checkpoint Created: ${checkpoint.checkpointId} (Epoch ${checkpoint.epoch}, Root: ${checkpoint.merkleRoot.slice(0, 16)}…, Size: ${checkpoint.payloadSize}B)`,
+            output: checkpoint,
+          };
+        }
+
+        const checkpoints = vault.getCheckpoints();
+        const stats = vault.getStats();
+        return {
+          success: true,
+          message: `[Ω∞v CLI] State Vault: ${checkpoints.length} checkpoints, Latest Epoch: ${stats.latestEpoch}, Total Size: ${stats.totalVaultBytes}B`,
+          output: { checkpoints, stats },
+        };
+      }
+
       case 'help':
       default: {
         return {
@@ -572,6 +607,7 @@ Commands:
   omega-v gateway [stats|request]   Inspect API gateway rate limits & anomaly alerts
   omega-v webhook [list|register|trigger] Manage real-time verification event webhooks
   omega-v oracle [feeds|aggregate]  Compute multi-source external state consensus receipts
+  omega-v vault [checkpoints|create] Manage cryptographic state checkpoints & disaster recovery
   omega-v metrics                   Show system health and metrics
   omega-v log                       Display event provenance log
   omega-v integrity                 Verify event hash chain integrity

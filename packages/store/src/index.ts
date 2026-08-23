@@ -79,6 +79,13 @@ export class ProvenanceStore {
   }
 
   /**
+   * Get all entries in the log
+   */
+  public getEntries(): EventLogEntry[] {
+    return [...this.log];
+  }
+
+  /**
    * Get a specific entry by sequential ID
    */
   public getEntry(id: number): EventLogEntry | undefined {

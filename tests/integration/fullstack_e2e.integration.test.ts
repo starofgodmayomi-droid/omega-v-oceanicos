@@ -24,6 +24,7 @@ import { OceanicosZKEngine } from '@omega-v/zk';
 import { OceanicosGatewayEngine } from '@omega-v/gateway';
 import { OceanicosWebhookEngine } from '@omega-v/webhook';
 import { OceanicosOracleEngine } from '@omega-v/oracle';
+import { OceanicosStateVault } from '@omega-v/vault';
 import app from '../../apps/api/src/index';
 
 describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => {
@@ -807,6 +808,65 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       // Tampered detection
       const tampered = { ...healthReceipt, aggregatedValue: false };
       expect(oracle.verifyReceipt(tampered)).toBe(false);
+    });
+  });
+
+  describe('23. Merkle State Vault, Checkpoint Backup & Disaster Recovery E2E', () => {
+    it('should create cryptographically sealed state checkpoints, verify Merkle roots, and restore state', () => {
+      const vault = new OceanicosStateVault();
+
+      // Sample events and rules
+      const events: any[] = [
+        {
+          id: 1,
+          type: 'OBSERVATION',
+          recordedAt: new Date().toISOString(),
+          hash: 'hash-evt-001',
+          previousHash: '0',
+          data: { claim: { statement: 'all services green' } },
+        },
+        {
+          id: 2,
+          type: 'VERIFICATION',
+          recordedAt: new Date().toISOString(),
+          hash: 'hash-evt-002',
+          previousHash: 'hash-evt-001',
+          data: { summary: { passed: true, rulesApplied: 2, rulesPassed: 2 } },
+        },
+      ];
+
+      const rules: any[] = [
+        {
+          name: 'uptime-slo',
+          version: '1.0.0',
+          definition: 'uptime >= 0.999',
+          createdAt: new Date().toISOString(),
+          active: true,
+        },
+      ];
+
+      // Create sealed checkpoint
+      const checkpoint = vault.createCheckpoint('Production E2E Snapshot', events, rules);
+      expect(checkpoint.checkpointId).toMatch(/^chk-/);
+      expect(checkpoint.epoch).toBe(1);
+      expect(checkpoint.merkleRoot).toHaveLength(64);
+      expect(checkpoint.signature).toMatch(/^0x/);
+
+      // Verify integrity
+      expect(vault.verifyCheckpoint(checkpoint)).toBe(true);
+
+      // Disaster recovery restoration
+      const restoreResult = vault.restoreCheckpoint(checkpoint.checkpointId);
+      expect(restoreResult.restored).toBe(true);
+      expect(restoreResult.eventsRestored).toBe(2);
+      expect(restoreResult.rulesRestored).toBe(1);
+      expect(restoreResult.headHashVerified).toBe(true);
+
+      // Vault statistics
+      const stats = vault.getStats();
+      expect(stats.totalCheckpoints).toBe(1);
+      expect(stats.latestEpoch).toBe(1);
+      expect(stats.healthy).toBe(true);
     });
   });
 });

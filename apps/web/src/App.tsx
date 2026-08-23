@@ -337,6 +337,25 @@ interface OracleStatsData {
   totalConsensusReceipts: number;
 }
 
+interface StateCheckpointItem {
+  checkpointId: string;
+  label: string;
+  epoch: number;
+  merkleRoot: string;
+  totalEvents: number;
+  totalRules: number;
+  payloadSize: number;
+  sealedAt: string;
+  signature: string;
+}
+
+interface VaultStatsData {
+  totalCheckpoints: number;
+  latestEpoch: number;
+  totalVaultBytes: number;
+  healthy: boolean;
+}
+
 interface RuleEfficacy {
   ruleName: string;
   totalExecutions: number;
@@ -598,6 +617,10 @@ export function App(): JSX.Element {
   const [oracleStats, setOracleStats] = useState<OracleStatsData | null>(null);
   const [aggregatingOracle, setAggregatingOracle] = useState(false);
   const [oracleResult, setOracleResult] = useState<string | null>(null);
+  const [checkpoints, setCheckpoints] = useState<StateCheckpointItem[]>([]);
+  const [vaultStats, setVaultStats] = useState<VaultStatsData | null>(null);
+  const [creatingCheckpoint, setCreatingCheckpoint] = useState(false);
+  const [vaultResult, setVaultResult] = useState<string | null>(null);
 
   // ── Poll log + metrics ──
   const fetchState = useCallback(async () => {
@@ -630,6 +653,7 @@ export function App(): JSX.Element {
         whRes,
         orcFeedsRes,
         orcRecRes,
+        vaultRes,
       ] = await Promise.all([
         fetch(`${API_BASE}/log?limit=30`),
         fetch(`${API_BASE}/metrics`),
@@ -658,6 +682,7 @@ export function App(): JSX.Element {
         fetch(`${API_BASE}/webhooks`),
         fetch(`${API_BASE}/oracle/feeds`),
         fetch(`${API_BASE}/oracle/receipts`),
+        fetch(`${API_BASE}/vault/checkpoints`),
       ]);
       if (!logRes.ok || !metricsRes.ok) throw new Error('API error');
 
@@ -734,6 +759,11 @@ export function App(): JSX.Element {
       }
       if (orcRecRes && orcRecRes.ok) {
         setOracleReceipts((await orcRecRes.json()).data.receipts as OracleReceiptItem[]);
+      }
+      if (vaultRes && vaultRes.ok) {
+        const vData = (await vaultRes.json()).data;
+        setCheckpoints(vData.checkpoints as StateCheckpointItem[]);
+        setVaultStats(vData.stats as VaultStatsData);
       }
     } catch {
       setApiOnline(false);
@@ -4551,6 +4581,198 @@ export function App(): JSX.Element {
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+          </div>
+
+          {/* ── Cryptographic State Vault & Disaster Recovery (Section XLII) ── */}
+          <div
+            style={{
+              background: 'var(--bg-card)',
+              border: '1px solid rgba(129, 140, 248, 0.3)',
+              borderRadius: 'var(--radius)',
+              padding: 20,
+              marginBottom: 20,
+            }}
+          >
+            <div className="section-header">
+              <div className="section-title">🏛️ Cryptographic State Vault & Recovery</div>
+              <span className="section-badge">
+                {vaultStats?.totalCheckpoints || 0} checkpoints · Epoch{' '}
+                {vaultStats?.latestEpoch || 0}
+              </span>
+            </div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 14 }}>
+              Deterministic state checkpointing, Merkle root state proofs, HMAC integrity seals, and
+              zero-loss disaster recovery.
+            </div>
+
+            {/* Stats row */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+                gap: 10,
+                marginBottom: 14,
+              }}
+            >
+              <div
+                style={{
+                  background: 'var(--bg-surface)',
+                  padding: 10,
+                  borderRadius: 'var(--radius-sm)',
+                }}
+              >
+                <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>CHECKPOINTS</div>
+                <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--accent-teal)' }}>
+                  {vaultStats?.totalCheckpoints || 0}
+                </div>
+              </div>
+              <div
+                style={{
+                  background: 'var(--bg-surface)',
+                  padding: 10,
+                  borderRadius: 'var(--radius-sm)',
+                }}
+              >
+                <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>LATEST EPOCH</div>
+                <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--accent-purple)' }}>
+                  {vaultStats?.latestEpoch || 0}
+                </div>
+              </div>
+              <div
+                style={{
+                  background: 'var(--bg-surface)',
+                  padding: 10,
+                  borderRadius: 'var(--radius-sm)',
+                }}
+              >
+                <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>VAULT STORAGE</div>
+                <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#818cf8' }}>
+                  {vaultStats?.totalVaultBytes || 0} B
+                </div>
+              </div>
+            </div>
+
+            {/* Create Checkpoint Action */}
+            <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
+              <button
+                onClick={async () => {
+                  setCreatingCheckpoint(true);
+                  setVaultResult(null);
+                  try {
+                    const res = await fetch(`${API_BASE}/vault/checkpoint`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        label: `Dashboard State Snapshot #${(vaultStats?.totalCheckpoints || 0) + 1}`,
+                      }),
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                      setVaultResult(
+                        `✅ Checkpoint Sealed: ${data.data.checkpointId} (Epoch ${data.data.epoch}, Root: ${data.data.merkleRoot.slice(0, 12)}…)`
+                      );
+                    } else {
+                      setVaultResult(`❌ Error: ${data.message || 'Checkpoint failed'}`);
+                    }
+                    fetchState();
+                  } catch {
+                    setVaultResult('❌ Failed to seal state checkpoint');
+                  } finally {
+                    setCreatingCheckpoint(false);
+                  }
+                }}
+                disabled={creatingCheckpoint}
+                style={{
+                  background: creatingCheckpoint
+                    ? 'var(--bg-surface)'
+                    : 'linear-gradient(135deg, #818cf8, #6366f1)',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 'var(--radius-sm)',
+                  padding: '6px 16px',
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                  cursor: creatingCheckpoint ? 'not-allowed' : 'pointer',
+                  opacity: creatingCheckpoint ? 0.6 : 1,
+                }}
+              >
+                {creatingCheckpoint ? '⏳ Sealing…' : '🏛️ Seal State Checkpoint'}
+              </button>
+              {vaultResult && (
+                <div
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: 'var(--radius-sm)',
+                    background: 'var(--bg-surface)',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}
+                >
+                  {vaultResult}
+                </div>
+              )}
+            </div>
+
+            {/* Checkpoints List */}
+            {checkpoints.length > 0 && (
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                  gap: 10,
+                }}
+              >
+                {checkpoints.slice(0, 4).map((chk) => (
+                  <div
+                    key={chk.checkpointId}
+                    style={{
+                      background: 'var(--bg-surface)',
+                      border: '1px solid var(--border)',
+                      borderRadius: 'var(--radius-sm)',
+                      padding: 12,
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        marginBottom: 4,
+                      }}
+                    >
+                      <span style={{ fontWeight: 600, fontSize: '0.8rem' }}>{chk.label}</span>
+                      <span
+                        style={{
+                          fontSize: '0.65rem',
+                          color: '#818cf8',
+                          background: 'rgba(129, 140, 248, 0.15)',
+                          padding: '1px 6px',
+                          borderRadius: 3,
+                          fontWeight: 600,
+                        }}
+                      >
+                        EPOCH {chk.epoch}
+                      </span>
+                    </div>
+                    <div
+                      style={{
+                        fontSize: '0.68rem',
+                        color: 'var(--text-muted)',
+                        fontFamily: 'monospace',
+                        marginBottom: 4,
+                      }}
+                    >
+                      Root: {chk.merkleRoot.slice(0, 24)}…
+                    </div>
+                    <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>
+                      {chk.totalEvents} events · {chk.totalRules} rules · {chk.payloadSize} bytes
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
