@@ -34,6 +34,10 @@ The API defaults to `OMEGA_AUTH_MODE=local`, preserving local-development behavi
 
 In required mode, unauthenticated `GET /health` remains available for local process probes. All other `GET` routes and `POST /attest/verify` require the read bearer token. Every other non-health request requires the admin bearer token. These are shared-secret credentials, not identity proofing; production deployments should place them behind an approved secret store and identity or gateway boundary. The API reports only the non-secret mode label (`local` or `required`) through health, state, and attestation-policy responses.
 
+The single-origin dashboard follows that same boundary. In required mode, the SPA shell, static assets, deep-link HTML fallback, API reads, and the server-sent event stream are not anonymous browser resources; they require the read credential. Dashboard mutations require the admin credential. A normal browser navigation or `EventSource` cannot manufacture an `Authorization` header, and this repository does not provide user accounts, login, cookie sessions, or gateway credential injection. Therefore the published image is an **API-and-SPA artifact**, not a turnkey browser deployment: expose it only behind an approved identity/gateway layer that authenticates the operator and injects the appropriate read/admin credentials, or add and review a dedicated browser session design before using the dashboard on a network. Do not make the static shell public as a workaround, because that would not solve unauthenticated API access and could create a misleading security boundary.
+
+The executable contract is covered by the required-auth regression suite: anonymous HTML and asset requests receive `401 READ_ACCESS_REQUIRED`, while requests carrying the read bearer receive the shell or asset. This proves the boundary; it does not prove that a particular gateway, identity provider, cookie session, or browser deployment is configured.
+
 ```bash
 # Local compatibility mode (default)
 export OMEGA_AUTH_MODE=local
