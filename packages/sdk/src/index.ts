@@ -223,4 +223,9 @@ export class OceanicosClient {
   }
 }
 
+export { Observer } from '@omega-v/observer';
+export { VerificationEngine } from '@omega-v/verification';
+export { AttestationService } from '@omega-v/attestation';
+export { ProvenanceStore } from '@omega-v/store';
+
 export default OceanicosClient;

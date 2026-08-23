@@ -177,6 +177,24 @@ interface DIDIdentityItem {
   epoch: number;
 }
 
+interface MeshPeerItem {
+  nodeId: string;
+  clusterName: string;
+  endpoint: string;
+  publicKey: string;
+  trustScore: number;
+  status: 'ONLINE' | 'PEERED' | 'UNREACHABLE' | 'REVOKED';
+  lastSeen: string;
+}
+
+interface MeshSummaryData {
+  clusterId: string;
+  totalPeers: number;
+  activePeers: number;
+  totalProofsExchanged: number;
+  avgTrustScore: number;
+}
+
 interface RuleEfficacy {
   ruleName: string;
   totalExecutions: number;
@@ -375,6 +393,15 @@ export function App(): JSX.Element {
     secret: string;
     token?: string;
   } | null>(null);
+  const [meshPeers, setMeshPeers] = useState<MeshPeerItem[]>([]);
+  const [meshSummary, setMeshSummary] = useState<MeshSummaryData | null>(null);
+  const [meshExporting, setMeshExporting] = useState(false);
+  const [exportedProof, setExportedProof] = useState<{
+    proofId: string;
+    originCluster: string;
+    verificationMerkleRoot: string;
+    attestationSignature: string;
+  } | null>(null);
 
   // ── Poll log + metrics ──
   const fetchState = useCallback(async () => {
@@ -395,6 +422,7 @@ export function App(): JSX.Element {
         replayRes,
         contractsRes,
         authRes,
+        fedRes,
       ] = await Promise.all([
         fetch(`${API_BASE}/log?limit=30`),
         fetch(`${API_BASE}/metrics`),
@@ -411,6 +439,7 @@ export function App(): JSX.Element {
         fetch(`${API_BASE}/replay`),
         fetch(`${API_BASE}/contracts`),
         fetch(`${API_BASE}/auth/identities`),
+        fetch(`${API_BASE}/federation/peers`),
       ]);
       if (!logRes.ok || !metricsRes.ok) throw new Error('API error');
 
@@ -444,6 +473,11 @@ export function App(): JSX.Element {
       }
       if (authRes.ok) {
         setIdentities((await authRes.json()).data.identities as DIDIdentityItem[]);
+      }
+      if (fedRes.ok) {
+        const fData = (await fedRes.json()).data;
+        setMeshPeers(fData.peers as MeshPeerItem[]);
+        setMeshSummary(fData.summary as MeshSummaryData);
       }
     } catch {
       setApiOnline(false);
@@ -2522,6 +2556,169 @@ export function App(): JSX.Element {
                         {cap}
                       </span>
                     ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ── Cross-Mesh Verification Federation Engine (Section XXXIII) ── */}
+          <div
+            style={{
+              background: 'var(--bg-card)',
+              border: '1px solid rgba(99, 179, 237, 0.3)',
+              borderRadius: 'var(--radius)',
+              padding: 20,
+              marginBottom: 24,
+            }}
+          >
+            <div
+              style={{
+                fontWeight: 700,
+                fontSize: '0.95rem',
+                color: 'var(--accent-primary)',
+                marginBottom: 14,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span>🌐 Cross-Mesh Inter-Cluster Verification Federation</span>
+                {meshSummary && (
+                  <span
+                    style={{
+                      fontSize: '0.72rem',
+                      background: 'rgba(99, 179, 237, 0.15)',
+                      color: 'var(--accent-primary)',
+                      padding: '2px 8px',
+                      borderRadius: 4,
+                    }}
+                  >
+                    {meshSummary.activePeers} Active Mesh Peers · Avg Trust:{' '}
+                    {meshSummary.avgTrustScore}
+                  </span>
+                )}
+              </div>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                disabled={meshExporting}
+                style={{ padding: '4px 10px', fontSize: '0.75rem' }}
+                onClick={async () => {
+                  setMeshExporting(true);
+                  try {
+                    const res = await fetch(`${API_BASE}/federation/proofs/export`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        claim: claim || 'Web Mesh Inter-Cluster Verification Claim',
+                        targetCluster: 'global-mesh',
+                      }),
+                    });
+                    if (res.ok) {
+                      const data = await res.json();
+                      setExportedProof(data.data);
+                      await fetchState();
+                    }
+                  } catch (e) {
+                    console.error(e);
+                  } finally {
+                    setMeshExporting(false);
+                  }
+                }}
+              >
+                📡 Export Mesh Proof
+              </button>
+            </div>
+
+            {/* Exported proof notification */}
+            {exportedProof && (
+              <div
+                style={{
+                  background: 'rgba(99, 179, 237, 0.12)',
+                  border: '1px solid var(--accent-primary)',
+                  borderRadius: 'var(--radius-sm)',
+                  padding: '10px 14px',
+                  marginBottom: 14,
+                  fontSize: '0.78rem',
+                }}
+              >
+                <div style={{ color: 'var(--accent-primary)', fontWeight: 700, marginBottom: 4 }}>
+                  ✓ Federated Proof Exported: {exportedProof.proofId}
+                </div>
+                <div style={{ color: 'var(--text-secondary)', marginBottom: 2 }}>
+                  Origin Cluster:{' '}
+                  <code style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)' }}>
+                    {exportedProof.originCluster}
+                  </code>
+                </div>
+                <div style={{ color: 'var(--text-secondary)' }}>
+                  Merkle Root:{' '}
+                  <code style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent-green)' }}>
+                    {exportedProof.verificationMerkleRoot.slice(0, 32)}…
+                  </code>
+                </div>
+              </div>
+            )}
+
+            {/* Mesh peers grid */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+                gap: 10,
+              }}
+            >
+              {meshPeers.map((peer) => (
+                <div
+                  key={peer.nodeId}
+                  style={{
+                    background: 'var(--bg-surface)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 'var(--radius-sm)',
+                    padding: 12,
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: 4,
+                    }}
+                  >
+                    <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{peer.clusterName}</span>
+                    <span
+                      style={{
+                        fontSize: '0.65rem',
+                        fontWeight: 700,
+                        color: 'var(--accent-green)',
+                        background: 'rgba(56, 178, 172, 0.12)',
+                        padding: '2px 6px',
+                        borderRadius: 3,
+                      }}
+                    >
+                      {peer.status}
+                    </span>
+                  </div>
+                  <div
+                    style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginBottom: 4 }}
+                  >
+                    {peer.endpoint}
+                  </div>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      fontSize: '0.7rem',
+                      color: 'var(--text-muted)',
+                    }}
+                  >
+                    <span>Node ID: {peer.nodeId}</span>
+                    <span style={{ color: 'var(--accent-primary)', fontWeight: 600 }}>
+                      Trust: {(peer.trustScore * 100).toFixed(0)}%
+                    </span>
                   </div>
                 </div>
               ))}

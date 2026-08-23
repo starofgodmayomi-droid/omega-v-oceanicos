@@ -23,7 +23,12 @@
     "@omega-v/observer": "*",
     "@omega-v/verification": "*",
     "@omega-v/attestation": "*",
-    "@omega-v/store": "*"
+    "@omega-v/store": "*",
+    "@omega-v/contract": "*",
+    "@omega-v/auth": "*",
+    "@omega-v/replay": "*",
+    "@omega-v/vaas": "*",
+    "@omega-v/federation": "*"
   },
   "devDependencies": {
     "@types/jest": "^29.5.0",
