@@ -31,7 +31,7 @@ They remain expansions. The kernel is still Observe → Verify → Remember, and
 
 ### Post-repair release checkpoint — 2026-08-23
 
-The final integrated revision is `2eea0e5`, after PR #182 repaired the observed hosted Node 20 DOM/WebCrypto failure. The post-merge Verification Pipeline and Security Analysis both completed successfully, including Node 20, Node 22, Windows compatibility, package/smoke, and main-branch publication. The final GHCR image is attested at digest `sha256:d76aafac19b32243f7952eb2638f9bb49de21fe3ba343966319c407d6d7eebc5`.
+The final integrated revision is `059537f`, after PR #182 repaired the observed hosted Node 20 DOM/WebCrypto failure and PR #184 reconciled the final records. The post-merge Verification Pipeline and Security Analysis both completed successfully, including Node 20, Node 22, Windows compatibility, package/smoke, and main-branch publication. The final GHCR image is attested at digest `sha256:a7c27a6784f9c309f98555c911b9a30c63313e4825737000376922e64710f9f7`.
 
 This milestone is **verified integration and artifact publication, not deployment**. The repository contains no downstream hosting workflow or infrastructure manifest, and no production URL, running target, production logs, gateway identity configuration, or post-deployment browser/ledger smoke was observed. Required mode continues to protect the SPA shell, assets, API reads, SSE stream, and mutations; a network dashboard requires an approved identity/gateway boundary or a separately reviewed browser-session design.
 
