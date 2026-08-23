@@ -10,6 +10,7 @@ import { FrictionTracker } from '@omega-v/friction';
 import { ProvenanceGraph } from '@omega-v/graph';
 import { SecurityEngine } from '@omega-v/security';
 import { EvolutionEngine } from '@omega-v/evolution';
+import { VerificationAnalyticsEngine } from '@omega-v/analytics';
 import {
   SuccessResponse,
   ErrorResponse,
@@ -651,6 +652,20 @@ app.post('/edge/batch', (req: Request, res: Response) => {
       status: 'ingested',
       syncedAt: new Date().toISOString(),
     },
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** GET /analytics — Rule efficacy analytics and pattern extraction (Section XXVI) */
+app.get('/analytics', (_req: Request, res: Response) => {
+  const events = store.query({ limit: 1000 }).events;
+  const rules = verificationEngine.getRules();
+  const analyticsEngine = new VerificationAnalyticsEngine();
+  const summary = analyticsEngine.analyzeLogs(events);
+  const proposals = analyticsEngine.generateAdaptationProposals(summary, rules);
+
+  res.json({
+    data: { summary, proposals },
     timestamp: new Date().toISOString(),
   });
 });
