@@ -18,6 +18,7 @@ import { VerificationReplayEngine } from '@omega-v/replay';
 import { FormalContractEngine } from '@omega-v/contract';
 import { OceanicosAuthEngine } from '@omega-v/auth';
 import { FederationMeshEngine } from '@omega-v/federation';
+import { VerificationBenchmarkEngine } from '@omega-v/benchmark';
 import {
   SuccessResponse,
   ErrorResponse,
@@ -66,6 +67,7 @@ const replayEngine = new VerificationReplayEngine();
 const contractEngine = new FormalContractEngine();
 const authEngine = new OceanicosAuthEngine();
 const federationEngine = new FederationMeshEngine();
+const benchmarkEngine = new VerificationBenchmarkEngine();
 
 // Register default rules
 verificationEngine.registerRule({
@@ -1128,6 +1130,33 @@ app.post('/federation/proofs/verify', (req: Request, res: Response) => {
     data: verification,
     timestamp: new Date().toISOString(),
   });
+});
+
+/** GET /benchmark — Return latest benchmark results (Section XXXIV) */
+app.get('/benchmark', (_req: Request, res: Response) => {
+  res.json({
+    data: { results: benchmarkEngine.getLatestResults() },
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /benchmark/run — Run performance and latency profiling suite */
+app.post('/benchmark/run', async (req: Request, res: Response) => {
+  const { iterations } = req.body || {};
+  try {
+    const client = new OceanicosClient();
+    const results = await benchmarkEngine.runSuite(client, iterations || 20);
+    res.json({
+      data: results,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(500).json({
+      code: 'BENCHMARK_FAILED',
+      message: err instanceof Error ? err.message : 'Benchmark execution failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
 });
 
 /**

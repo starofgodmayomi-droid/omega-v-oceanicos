@@ -9,6 +9,7 @@ import { VerificationReplayEngine } from '@omega-v/replay';
 import { FormalContractEngine } from '@omega-v/contract';
 import { OceanicosAuthEngine } from '@omega-v/auth';
 import { FederationMeshEngine } from '@omega-v/federation';
+import { VerificationBenchmarkEngine } from '@omega-v/benchmark';
 
 export interface CLIResult {
   success: boolean;
@@ -323,6 +324,19 @@ export class OceanicosCLI {
         };
       }
 
+      case 'benchmark': {
+        const benchmark = new VerificationBenchmarkEngine();
+        const iterations = parseInt(args[1] || '20', 10);
+        const results = await benchmark.runSuite(this.client, iterations);
+        const loopBench = results.loop;
+
+        return {
+          success: true,
+          message: `[Ω∞v CLI] Benchmark Complete: ${loopBench.throughputOpsSec} ops/sec (P50: ${loopBench.latency.p50Ms}ms, P99: ${loopBench.latency.p99Ms}ms, Iterations: ${loopBench.iterations})`,
+          output: results,
+        };
+      }
+
       case 'help':
       default: {
         return {
@@ -341,6 +355,7 @@ Commands:
   omega-v contract [list|verify]    List formal contracts or verify sample payload
   omega-v auth [list|create]        List DIDs or create decentralized identity
   omega-v federation [peers|export] List mesh peers or export cross-cluster proof
+  omega-v benchmark [iterations]    Run verification performance & latency quantile profiling
   omega-v metrics                   Show system health and metrics
   omega-v log                       Display event provenance log
   omega-v integrity                 Verify event hash chain integrity

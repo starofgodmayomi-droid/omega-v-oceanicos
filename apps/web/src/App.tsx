@@ -195,6 +195,23 @@ interface MeshSummaryData {
   avgTrustScore: number;
 }
 
+interface BenchmarkResultItem {
+  testName: string;
+  iterations: number;
+  totalDurationMs: number;
+  throughputOpsSec: number;
+  latency: {
+    minMs: number;
+    avgMs: number;
+    p50Ms: number;
+    p90Ms: number;
+    p99Ms: number;
+    maxMs: number;
+  };
+  memoryUsageMb: number;
+  timestamp: string;
+}
+
 interface RuleEfficacy {
   ruleName: string;
   totalExecutions: number;
@@ -402,6 +419,8 @@ export function App(): JSX.Element {
     verificationMerkleRoot: string;
     attestationSignature: string;
   } | null>(null);
+  const [benchmarks, setBenchmarks] = useState<Record<string, BenchmarkResultItem> | null>(null);
+  const [runningBenchmark, setRunningBenchmark] = useState(false);
 
   // ── Poll log + metrics ──
   const fetchState = useCallback(async () => {
@@ -423,6 +442,7 @@ export function App(): JSX.Element {
         contractsRes,
         authRes,
         fedRes,
+        benchRes,
       ] = await Promise.all([
         fetch(`${API_BASE}/log?limit=30`),
         fetch(`${API_BASE}/metrics`),
@@ -440,6 +460,7 @@ export function App(): JSX.Element {
         fetch(`${API_BASE}/contracts`),
         fetch(`${API_BASE}/auth/identities`),
         fetch(`${API_BASE}/federation/peers`),
+        fetch(`${API_BASE}/benchmark`),
       ]);
       if (!logRes.ok || !metricsRes.ok) throw new Error('API error');
 
@@ -478,6 +499,10 @@ export function App(): JSX.Element {
         const fData = (await fedRes.json()).data;
         setMeshPeers(fData.peers as MeshPeerItem[]);
         setMeshSummary(fData.summary as MeshSummaryData);
+      }
+      if (benchRes.ok) {
+        const bData = (await benchRes.json()).data;
+        setBenchmarks(bData.results as Record<string, BenchmarkResultItem>);
       }
     } catch {
       setApiOnline(false);
@@ -2723,6 +2748,137 @@ export function App(): JSX.Element {
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* ── Micro-Benchmark & Latency Quantile Profiling (Section XXXIV) ── */}
+          <div
+            style={{
+              background: 'var(--bg-card)',
+              border: '1px solid rgba(236, 201, 75, 0.3)',
+              borderRadius: 'var(--radius)',
+              padding: 20,
+              marginBottom: 24,
+            }}
+          >
+            <div
+              style={{
+                fontWeight: 700,
+                fontSize: '0.95rem',
+                color: 'var(--accent-amber)',
+                marginBottom: 14,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span>⚡ Micro-Benchmark & Latency Quantile Profiling Engine</span>
+                {benchmarks && benchmarks.loop && (
+                  <span
+                    style={{
+                      fontSize: '0.72rem',
+                      background: 'rgba(236, 201, 75, 0.15)',
+                      color: 'var(--accent-amber)',
+                      padding: '2px 8px',
+                      borderRadius: 4,
+                    }}
+                  >
+                    {benchmarks.loop.throughputOpsSec} Ops/Sec · P50:{' '}
+                    {benchmarks.loop.latency.p50Ms}ms · P99: {benchmarks.loop.latency.p99Ms}ms
+                  </span>
+                )}
+              </div>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                disabled={runningBenchmark}
+                style={{ padding: '4px 12px', fontSize: '0.75rem' }}
+                onClick={async () => {
+                  setRunningBenchmark(true);
+                  try {
+                    const res = await fetch(`${API_BASE}/benchmark/run`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ iterations: 20 }),
+                    });
+                    if (res.ok) {
+                      const data = await res.json();
+                      setBenchmarks(data.data);
+                      await fetchState();
+                    }
+                  } catch (e) {
+                    console.error(e);
+                  } finally {
+                    setRunningBenchmark(false);
+                  }
+                }}
+              >
+                {runningBenchmark ? '⏳ Profiling Engine…' : '⚡ Run Stress Benchmark'}
+              </button>
+            </div>
+
+            {benchmarks ? (
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+                  gap: 12,
+                }}
+              >
+                {Object.entries(benchmarks).map(([key, b]) => (
+                  <div
+                    key={key}
+                    style={{
+                      background: 'var(--bg-surface)',
+                      border: '1px solid var(--border)',
+                      borderRadius: 'var(--radius-sm)',
+                      padding: 12,
+                    }}
+                  >
+                    <div style={{ fontWeight: 600, fontSize: '0.82rem', marginBottom: 4 }}>
+                      {b.testName}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: '1.1rem',
+                        fontWeight: 700,
+                        color: 'var(--accent-green)',
+                        marginBottom: 6,
+                      }}
+                    >
+                      {b.throughputOpsSec}{' '}
+                      <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                        ops/sec
+                      </span>
+                    </div>
+                    <div
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(3, 1fr)',
+                        gap: 4,
+                        fontSize: '0.68rem',
+                        color: 'var(--text-secondary)',
+                      }}
+                    >
+                      <div>
+                        P50: <strong>{b.latency.p50Ms}ms</strong>
+                      </div>
+                      <div>
+                        P90: <strong>{b.latency.p90Ms}ms</strong>
+                      </div>
+                      <div>
+                        P99: <strong>{b.latency.p99Ms}ms</strong>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                Click "Run Stress Benchmark" to compute real-time latency quantiles (P50/P90/P99)
+                and engine throughput.
+              </div>
+            )}
           </div>
 
           {/* Timeline */}

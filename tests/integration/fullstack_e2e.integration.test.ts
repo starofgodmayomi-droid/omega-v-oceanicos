@@ -16,6 +16,7 @@ import { VerificationReplayEngine } from '@omega-v/replay';
 import { FormalContractEngine } from '@omega-v/contract';
 import { OceanicosAuthEngine } from '@omega-v/auth';
 import { FederationMeshEngine } from '@omega-v/federation';
+import { VerificationBenchmarkEngine } from '@omega-v/benchmark';
 import app from '../../apps/api/src/index';
 
 describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => {
@@ -492,6 +493,28 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       const summary = mesh.getMeshSummary();
       expect(summary.totalPeers).toBeGreaterThanOrEqual(3);
       expect(summary.totalProofsExchanged).toBeGreaterThanOrEqual(1);
+    });
+  });
+
+  describe('15. Verification Micro-Benchmark & Latency Quantile Profiling E2E', () => {
+    it('should profile loop execution, rule evaluation, and calculate P50/P90/P99 latency quantiles', async () => {
+      const benchmark = new VerificationBenchmarkEngine();
+
+      const results = await benchmark.runSuite(sdk, 5);
+
+      expect(results.loop).toBeDefined();
+      expect(results.loop.iterations).toBe(5);
+      expect(results.loop.throughputOpsSec).toBeGreaterThan(0);
+      expect(results.loop.latency.p50Ms).toBeGreaterThanOrEqual(0);
+      expect(results.loop.latency.p90Ms).toBeGreaterThanOrEqual(results.loop.latency.p50Ms);
+      expect(results.loop.latency.p99Ms).toBeGreaterThanOrEqual(results.loop.latency.p90Ms);
+
+      expect(results.rules.throughputOpsSec).toBeGreaterThan(0);
+      expect(results.attestation.throughputOpsSec).toBeGreaterThan(0);
+      expect(results.store.throughputOpsSec).toBeGreaterThan(0);
+
+      const cached = benchmark.getLatestResults();
+      expect(Object.keys(cached).length).toBe(4);
     });
   });
 });

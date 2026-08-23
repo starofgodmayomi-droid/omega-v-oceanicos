@@ -50,7 +50,8 @@
       "@omega-v/replay": ["packages/replay/src/index.ts"],
       "@omega-v/contract": ["packages/contract/src/index.ts"],
       "@omega-v/auth": ["packages/auth/src/index.ts"],
-      "@omega-v/federation": ["packages/federation/src/index.ts"]
+      "@omega-v/federation": ["packages/federation/src/index.ts"],
+      "@omega-v/benchmark": ["packages/benchmark/src/index.ts"]
     }
   },
   "include": ["packages/*/src", "apps/*/src", "tests"],
