@@ -41,7 +41,8 @@
       "@omega-v/governance": ["packages/governance/src/index.ts"],
       "@omega-v/evidence": ["packages/evidence/src/index.ts"],
       "@omega-v/green": ["packages/green/src/index.ts"],
-      "@omega-v/human": ["packages/human/src/index.ts"]
+      "@omega-v/human": ["packages/human/src/index.ts"],
+      "@omega-v/edge": ["packages/edge/src/index.ts"]
     }
   },
   "include": ["packages/*/src", "apps/*/src"],

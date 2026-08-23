@@ -25,6 +25,7 @@ export default {
     '@omega-v/evidence': '<rootDir>/packages/evidence/src/index.ts',
     '@omega-v/green': '<rootDir>/packages/green/src/index.ts',
     '@omega-v/human': '<rootDir>/packages/human/src/index.ts',
+    '@omega-v/edge': '<rootDir>/packages/edge/src/index.ts',
   },
   collectCoverageFrom: [
     'packages/*/src/**/*.ts',

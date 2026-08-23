@@ -1,5 +1,6 @@
 import { OceanicosClient } from '@omega-v/sdk';
 import { FormlessSwarm } from '@omega-v/agents';
+import { EdgeObserver } from '@omega-v/edge';
 
 export interface CLIResult {
   success: boolean;
@@ -81,6 +82,22 @@ export class OceanicosCLI {
         };
       }
 
+      case 'edge': {
+        const claim = args[1] || 'CLI Edge Observation';
+        const edge = new EdgeObserver({ nodeId: 'cli-edge-node-1' });
+        edge.capture(claim, 'cli-edge');
+        const syncResult = await edge.flush();
+        return {
+          success: syncResult.success,
+          message: `[Ω∞v CLI] Edge Observation Batch Synced: ${syncResult.batchId}`,
+          output: {
+            batchId: syncResult.batchId,
+            merkleRoot: syncResult.merkleRoot,
+            syncedCount: syncResult.syncedCount,
+          },
+        };
+      }
+
       case 'help':
       default: {
         return {
@@ -89,6 +106,7 @@ export class OceanicosCLI {
 Commands:
   omega-v loop [claim]     Execute complete verification loop
   omega-v swarm [claim]    Execute multi-agent Formless Swarm cycle
+  omega-v edge [claim]     Capture & flush Merkle edge observation batch
   omega-v metrics          Show system health and metrics
   omega-v log              Display event provenance log
   omega-v integrity        Verify event hash chain integrity

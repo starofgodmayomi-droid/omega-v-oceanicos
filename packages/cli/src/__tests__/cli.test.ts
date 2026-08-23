@@ -33,4 +33,11 @@ describe('OceanicosCLI', () => {
     expect(res.message).toContain('Formless Swarm Cycle');
     expect(res.output).toHaveProperty('agentsCount', 6);
   });
+
+  it('should execute edge command with Merkle batching', async () => {
+    const res = await cli.run(['edge', 'CLI Edge Batch Check']);
+    expect(res.success).toBe(true);
+    expect(res.message).toContain('Edge Observation Batch Synced');
+    expect(res.output).toHaveProperty('merkleRoot');
+  });
 });
