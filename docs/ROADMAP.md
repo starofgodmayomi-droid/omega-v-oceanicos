@@ -29,7 +29,13 @@ listed under each phase below.
 They remain expansions. The kernel is still Observe → Verify → Remember, and
 [MINI.md](./MINI.md) governs that definition.
 
-### Release checkpoint — 2026-08-23
+### Post-repair release checkpoint — 2026-08-23
+
+The final integrated revision is `2eea0e5`, after PR #182 repaired the observed hosted Node 20 DOM/WebCrypto failure. The post-merge Verification Pipeline and Security Analysis both completed successfully, including Node 20, Node 22, Windows compatibility, package/smoke, and main-branch publication. The final GHCR image is attested at digest `sha256:d76aafac19b32243f7952eb2638f9bb49de21fe3ba343966319c407d6d7eebc5`.
+
+This milestone is **verified integration and artifact publication, not deployment**. The repository contains no downstream hosting workflow or infrastructure manifest, and no production URL, running target, production logs, gateway identity configuration, or post-deployment browser/ledger smoke was observed. Required mode continues to protect the SPA shell, assets, API reads, SSE stream, and mutations; a network dashboard requires an approved identity/gateway boundary or a separately reviewed browser-session design.
+
+### Prior release checkpoint before PR182 — 2026-08-23
 
 The required-auth and encrypted local-job-ledger slice is integrated on `main` at `99e83d5`. The follow-up browser-boundary regression is also integrated: required mode protects the SPA shell and assets with the same read boundary as API reads, while mutations remain admin-only. This is an explicit security contract, not browser identity proofing. The shipped dashboard still requires an approved identity/gateway layer that injects the appropriate credentials, or a separately designed browser session; the repository currently provides neither.
 

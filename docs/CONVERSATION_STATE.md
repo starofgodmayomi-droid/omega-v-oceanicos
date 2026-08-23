@@ -2,7 +2,15 @@
 
 **Purpose.** Preserve one evidence-bound repository lineage toward verified reality. Operating laws remain: evidence over assertion; `ATTEST ≠ ASSERT`; preserve dissent and uncertainty; every change must be implemented, integrated, tested, documented, observable, reproducible, and review-gated. Push, PR publication, merge, and deployment are distinct actions.
 
-## Final observed state — 2026-08-23
+## Post-repair final observed state — 2026-08-23
+
+`main` is finally integrated at `2eea0e5c23759b6b00ac632a985a1349e2983d3a` (`2eea0e5`) after PR #182 repaired the observed Node 20 DOM/WebCrypto test failure. Post-merge Verification Pipeline [32620729250](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/actions/runs/32620729250) completed successfully across Node 20, Node 22, Windows compatibility, package/smoke, and attested publication. Security Analysis [32620729309](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/actions/runs/32620729309) completed successfully. The repair unconditionally installs Node’s real WebCrypto implementation in the DOM harness; the real Ed25519 verification path remains exercised.
+
+The final verified artifact is `ghcr.io/starofgodmayomi-droid/omega-v-oceanicos-api:2eea0e5c23759b6b00ac632a985a1349e2983d3a` at digest `sha256:d76aafac19b32243f7952eb2638f9bb49de21fe3ba343966319c407d6d7eebc5`. `gh attestation verify` succeeded against the repository and `.github/workflows/verify.yml@refs/heads/main`; the publication log records SBOM attestation [42393519](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/attestations/42393519) and Rekor entry [2569444167](https://search.sigstore.dev?logIndex=2569444167).
+
+The final repository state is **verified integrated and artifact-published, but not deployed**. No downstream hosting workflow, infrastructure manifest, deployment URL, running instance, production logs, gateway identity configuration, or post-deployment browser/ledger smoke was observed. Required mode protects the SPA shell, assets, API reads, SSE stream, and mutations; an approved identity/gateway boundary or separately reviewed browser session remains required for network dashboard use. Safety stashes remain preserved.
+
+## Prior observed state before PR182 — 2026-08-23
 
 `main` is now at `99e83d56e919930dca075cfc5fc6faa44eb30352` (`99e83d5`). PR #178 merged at `671333c`; PR #180 merged at `99e83d5`. Both pull requests were observed non-draft, mergeable, and clean with no repository-required review decision blocking integration. The post-merge Verification Pipeline [32619682962](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/actions/runs/32619682962) and Security Analysis [32619682989](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/actions/runs/32619682989) completed successfully. Verification covered Node 20, Node 22, Windows compatibility, package/smoke, and the main-branch publication job.
 
