@@ -28,4 +28,33 @@ describe('OceanicosClient (SDK)', () => {
     expect(metrics.totalObservations).toBe(2);
     expect(metrics.totalAttestations).toBe(2);
   });
+
+  it('should register custom rules and query events through SDK', async () => {
+    const client = new OceanicosClient();
+    client.registerRule({
+      name: 'custom-sdk-rule',
+      version: '1.0.0',
+      appliesTo: ['custom-check'],
+      definition: 'status == true',
+      description: 'Custom rule via SDK',
+      createdAt: new Date().toISOString(),
+      active: true,
+    });
+
+    const rules = client.getRules();
+    expect(rules.some((r) => r.name === 'custom-sdk-rule')).toBe(true);
+
+    await client.runLoop({ claim: 'Custom Claim', category: 'custom-check' });
+    const query = client.queryEvents({ type: 'OBSERVATION' });
+    expect(query.events.length).toBeGreaterThan(0);
+
+    const exported = client.exportChain();
+    expect(exported.integrity.valid).toBe(true);
+    expect(exported.events.length).toBe(3);
+
+    expect(client.getStore()).toBeDefined();
+    expect(client.getVerificationEngine()).toBeDefined();
+    expect(client.getObserver()).toBeDefined();
+    expect(client.getAttestationService()).toBeDefined();
+  });
 });

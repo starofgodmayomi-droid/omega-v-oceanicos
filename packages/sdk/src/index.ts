@@ -8,6 +8,8 @@ import {
   Attestation,
   EventLogEntry,
   SystemMetrics,
+  VerificationRule,
+  QueryResult,
 } from '@omega-v/types';
 
 export interface OceanicosClientOptions {
@@ -127,6 +129,51 @@ export class OceanicosClient {
   }
 
   /**
+   * Register custom verification rule
+   */
+  public registerRule(rule: VerificationRule): void {
+    this.verificationEngine.registerRule(rule);
+  }
+
+  /**
+   * Get all registered verification rules
+   */
+  public getRules(): VerificationRule[] {
+    return this.verificationEngine.getRules();
+  }
+
+  /**
+   * Query recorded provenance events
+   */
+  public queryEvents(options?: {
+    type?: 'OBSERVATION' | 'VERIFICATION' | 'ATTESTATION';
+    since?: string;
+    limit?: number;
+    offset?: number;
+  }): QueryResult {
+    return this.store.query(options);
+  }
+
+  /**
+   * Export entire provenance chain with integrity summary
+   */
+  public exportChain(): {
+    events: EventLogEntry[];
+    integrity: { valid: boolean; totalEvents: number; brokenAt?: number };
+  } {
+    const events = this.store.query().events;
+    const chainIntegrity = this.store.verifyChainIntegrity();
+    return {
+      events,
+      integrity: {
+        valid: chainIntegrity.valid,
+        brokenAt: chainIntegrity.brokenAt,
+        totalEvents: events.length,
+      },
+    };
+  }
+
+  /**
    * Get total events recorded in local store
    */
   public getLogEntries(): EventLogEntry[] {
@@ -143,8 +190,36 @@ export class OceanicosClient {
   /**
    * Verify local chain integrity
    */
-  public verifyIntegrity(): { valid: boolean } {
+  public verifyIntegrity(): { valid: boolean; totalEvents?: number } {
     return this.store.verifyChainIntegrity();
+  }
+
+  /**
+   * Access underlying ProvenanceStore
+   */
+  public getStore(): ProvenanceStore {
+    return this.store;
+  }
+
+  /**
+   * Access underlying VerificationEngine
+   */
+  public getVerificationEngine(): VerificationEngine {
+    return this.verificationEngine;
+  }
+
+  /**
+   * Access underlying Observer
+   */
+  public getObserver(): Observer {
+    return this.observer;
+  }
+
+  /**
+   * Access underlying AttestationService
+   */
+  public getAttestationService(): AttestationService {
+    return this.attestationService;
   }
 }
 
