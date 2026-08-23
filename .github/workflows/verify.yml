@@ -235,7 +235,14 @@ jobs:
           grep -q '"source":"file"' /tmp/job-before-restart.json
           grep -q '"encryption":"aes-256-gcm"' /tmp/job-before-restart.json
 
-          if grep -R -q -E 'local://ci-restart|ci-restart-1' "$RUNNER_TEMP/omega-ledger/jobs.json"; then
+          # The volume is owned by the image user, so the host runner cannot
+          # read it directly after the ownership fix. Inspect it read-only
+          # through the image as root; this is a CI confidentiality assertion,
+          # not a production permission model.
+          if docker run --rm --user 0:0 \
+            -v "$RUNNER_TEMP/omega-ledger:/tmp/omega-ledger:ro" \
+            --entrypoint sh omega-v-api:ci \
+            -c "grep -R -q -E 'local://ci-restart|ci-restart-1' /tmp/omega-ledger"; then
             echo "::error::The encrypted local-ledger volume contains plaintext job payload."
             exit 1
           fi

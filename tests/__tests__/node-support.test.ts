@@ -103,6 +103,8 @@ describe('the supported Node version is one claim, not three', () => {
     expect(workflow).toMatch(
       /sudo chown \"\$ledger_uid:\$ledger_gid\" \"\$RUNNER_TEMP\/omega-ledger\"/
     );
+    expect(workflow).toMatch(/docker run --rm --user 0:0/);
+    expect(workflow).toMatch(/omega-ledger:\/tmp\/omega-ledger:ro/);
     expect(workflow).toMatch(/docker rm -f omega-smoke/);
     expect(workflow).toMatch(/local:\/\/ci-restart/);
     expect(workflow).toMatch(/The encrypted local-ledger volume contains plaintext job payload/);
