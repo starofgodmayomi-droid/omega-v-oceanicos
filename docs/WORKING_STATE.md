@@ -4,7 +4,15 @@
 
 This record compresses the prior evolution cycle into observable repository state. It distinguishes completed implementation from CI evidence, human review, and remaining production gaps.
 
-## Final integrated-release checkpoint — 2026-08-23
+## Post-repair final integrated-release checkpoint — 2026-08-23
+
+The final authorized release loop is integrated on `main` at `2eea0e5c23759b6b00ac632a985a1349e2983d3a` (`2eea0e5`). PR #182 repaired the observed hosted Node 20 DOM/WebCrypto failure after its full hosted matrix succeeded. Post-merge Verification Pipeline [32620729250](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/actions/runs/32620729250) completed successfully across Node 20, Node 22, Windows compatibility, package/smoke, and attested publication. Security Analysis [32620729309](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/actions/runs/32620729309) completed successfully.
+
+The final artifact is `ghcr.io/starofgodmayomi-droid/omega-v-oceanicos-api:2eea0e5c23759b6b00ac632a985a1349e2983d3a` at digest `sha256:d76aafac19b32243f7952eb2638f9bb49de21fe3ba343966319c407d6d7eebc5`. Its signed SLSA provenance was independently verified with `gh attestation verify` against this repository and `.github/workflows/verify.yml@refs/heads/main`; the SBOM attestation is recorded at [42393519](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/attestations/42393519), with Rekor entry [2569444167](https://search.sigstore.dev?logIndex=2569444167).
+
+The repository is **verified integrated and artifact-published, not deployed**. The repository-defined workflow has no downstream hosting or rollout step, and no deployment URL, running target, production logs, gateway identity configuration, or post-deployment browser/ledger smoke was observed. Required mode protects the SPA shell, assets, API reads, SSE stream, and mutations; network dashboard use still requires an approved identity/gateway credential boundary or a separately reviewed browser-session design. Safety stashes remain preserved.
+
+## Prior integrated-release checkpoint before PR182 — 2026-08-23
 
 The authorized release loop is integrated on `main` at `99e83d56e919930dca075cfc5fc6faa44eb30352` (`99e83d5`). PR #178 merged as `671333c` and PR #180 merged as `99e83d5`; both were observed as `MERGEABLE`, `CLEAN`, non-draft, with no additional review decision required by the repository. The post-merge Verification Pipeline run [32619682962](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/actions/runs/32619682962) completed successfully across Node 20, Node 22, Windows compatibility, package/smoke, and the publication job. Security Analysis run [32619682989](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/actions/runs/32619682989) also completed successfully.
 
