@@ -229,6 +229,13 @@ interface NotarySummaryData {
   lastNotarizedAt: string;
 }
 
+interface SandboxStatsData {
+  totalRuns: number;
+  successfulRuns: number;
+  violationsBlocked: number;
+  avgExecutionTimeMs: number;
+}
+
 interface RuleEfficacy {
   ruleName: string;
   totalExecutions: number;
@@ -442,6 +449,17 @@ export function App(): JSX.Element {
   const [notarySeals, setNotarySeals] = useState<NotarySealItem[]>([]);
   const [anchoringNotary, setAnchoringNotary] = useState(false);
   const [verifiedInclusionProof, setVerifiedInclusionProof] = useState<boolean | null>(null);
+  const [sandboxStats, setSandboxStats] = useState<SandboxStatsData | null>(null);
+  const [sandboxCode, setSandboxCode] = useState('responseTime < 100 && statusCode === 200');
+  const [sandboxResult, setSandboxResult] = useState<{
+    success: boolean;
+    result: unknown;
+    executionTimeMs: number;
+    gasConsumed: number;
+    error?: string;
+    violation?: string;
+  } | null>(null);
+  const [sandboxExecuting, setSandboxExecuting] = useState(false);
 
   // ── Poll log + metrics ──
   const fetchState = useCallback(async () => {
@@ -466,6 +484,7 @@ export function App(): JSX.Element {
         benchRes,
         notarySumRes,
         notarySealsRes,
+        sandRes,
       ] = await Promise.all([
         fetch(`${API_BASE}/log?limit=30`),
         fetch(`${API_BASE}/metrics`),
@@ -486,6 +505,7 @@ export function App(): JSX.Element {
         fetch(`${API_BASE}/benchmark`),
         fetch(`${API_BASE}/notary/summary`),
         fetch(`${API_BASE}/notary/seals`),
+        fetch(`${API_BASE}/sandbox/stats`),
       ]);
       if (!logRes.ok || !metricsRes.ok) throw new Error('API error');
 
@@ -534,6 +554,9 @@ export function App(): JSX.Element {
       }
       if (notarySealsRes.ok) {
         setNotarySeals((await notarySealsRes.json()).data.seals as NotarySealItem[]);
+      }
+      if (sandRes.ok) {
+        setSandboxStats((await sandRes.json()).data as SandboxStatsData);
       }
     } catch {
       setApiOnline(false);
@@ -3111,6 +3134,137 @@ export function App(): JSX.Element {
                   </div>
                 ))}
             </div>
+          </div>
+
+          {/* ── Isolated Deterministic Rule Execution Sandbox (Section XXXVI) ── */}
+          <div
+            style={{
+              background: 'var(--bg-card)',
+              border: '1px solid rgba(237, 100, 166, 0.3)',
+              borderRadius: 'var(--radius)',
+              padding: 20,
+              marginBottom: 24,
+            }}
+          >
+            <div
+              style={{
+                fontWeight: 700,
+                fontSize: '0.95rem',
+                color: 'var(--accent-pink)',
+                marginBottom: 14,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span>🛡️ Isolated Deterministic Rule Execution Sandbox</span>
+                {sandboxStats && (
+                  <span
+                    style={{
+                      fontSize: '0.72rem',
+                      background: 'rgba(237, 100, 166, 0.15)',
+                      color: 'var(--accent-pink)',
+                      padding: '2px 8px',
+                      borderRadius: 4,
+                    }}
+                  >
+                    {sandboxStats.totalRuns} Runs · {sandboxStats.violationsBlocked} Blocked
+                    Violations · Avg Time: {sandboxStats.avgExecutionTimeMs}ms
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Sandbox input controls */}
+            <div style={{ display: 'flex', gap: 10, marginBottom: 12, flexWrap: 'wrap' }}>
+              <input
+                type="text"
+                value={sandboxCode}
+                onChange={(e) => setSandboxCode(e.target.value)}
+                placeholder="Enter safe rule expression (e.g. responseTime < 100 && statusCode === 200)"
+                style={{
+                  flex: 1,
+                  minWidth: 280,
+                  background: 'var(--bg-surface)',
+                  border: '1px solid var(--border)',
+                  color: 'var(--text-primary)',
+                  borderRadius: 'var(--radius-sm)',
+                  padding: '8px 12px',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '0.82rem',
+                }}
+              />
+              <button
+                type="button"
+                className="btn btn-secondary"
+                disabled={sandboxExecuting}
+                style={{ padding: '8px 14px', fontSize: '0.8rem' }}
+                onClick={async () => {
+                  setSandboxExecuting(true);
+                  try {
+                    const res = await fetch(`${API_BASE}/sandbox/execute`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        code: sandboxCode,
+                        context: { responseTime: 45, statusCode: 200, confidence: 0.95 },
+                      }),
+                    });
+                    if (res.ok) {
+                      const data = await res.json();
+                      setSandboxResult(data.data);
+                      await fetchState();
+                    }
+                  } catch (e) {
+                    console.error(e);
+                  } finally {
+                    setSandboxExecuting(false);
+                  }
+                }}
+              >
+                {sandboxExecuting ? '⏳ Executing…' : '⚡ Run in Sandbox'}
+              </button>
+            </div>
+
+            {/* Sandbox result card */}
+            {sandboxResult && (
+              <div
+                style={{
+                  background: sandboxResult.success
+                    ? 'rgba(72, 187, 120, 0.12)'
+                    : 'rgba(245, 101, 101, 0.12)',
+                  border: `1px solid ${sandboxResult.success ? 'var(--accent-green)' : 'var(--accent-red)'}`,
+                  borderRadius: 'var(--radius-sm)',
+                  padding: 12,
+                  fontSize: '0.78rem',
+                }}
+              >
+                <div
+                  style={{
+                    fontWeight: 700,
+                    color: sandboxResult.success ? 'var(--accent-green)' : 'var(--accent-red)',
+                    marginBottom: 4,
+                  }}
+                >
+                  {sandboxResult.success
+                    ? `✓ Execution Succeeded: Result = ${JSON.stringify(sandboxResult.result)}`
+                    : `✗ Sandbox Blocked: ${sandboxResult.error} (${sandboxResult.violation})`}
+                </div>
+                <div
+                  style={{
+                    display: 'flex',
+                    gap: 16,
+                    color: 'var(--text-muted)',
+                    fontSize: '0.72rem',
+                  }}
+                >
+                  <span>Execution Time: {sandboxResult.executionTimeMs}ms</span>
+                  <span>Gas Consumed: {sandboxResult.gasConsumed} units</span>
+                  <span>Isolated Scope: Strict Mode (Frozen Globals)</span>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Timeline */}

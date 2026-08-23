@@ -20,6 +20,7 @@ import { OceanicosAuthEngine } from '@omega-v/auth';
 import { FederationMeshEngine } from '@omega-v/federation';
 import { VerificationBenchmarkEngine } from '@omega-v/benchmark';
 import { OceanicosNotaryEngine } from '@omega-v/notary';
+import { OceanicosSandboxEngine } from '@omega-v/sandbox';
 import {
   SuccessResponse,
   ErrorResponse,
@@ -70,6 +71,7 @@ const authEngine = new OceanicosAuthEngine();
 const federationEngine = new FederationMeshEngine();
 const benchmarkEngine = new VerificationBenchmarkEngine();
 const notaryEngine = new OceanicosNotaryEngine();
+const sandboxEngine = new OceanicosSandboxEngine();
 
 // Register default rules
 verificationEngine.registerRule({
@@ -1254,6 +1256,33 @@ app.post('/notary/verify-proof', (req: Request, res: Response) => {
   const valid = notaryEngine.verifyInclusionProof(proof);
   res.json({
     data: { valid, verifiedAt: new Date().toISOString() },
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** GET /sandbox/stats — Return sandbox execution telemetry and blocked violations (Section XXXVI) */
+app.get('/sandbox/stats', (_req: Request, res: Response) => {
+  res.json({
+    data: sandboxEngine.getStats(),
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /sandbox/execute — Execute expression in safe deterministic sandbox */
+app.post('/sandbox/execute', (req: Request, res: Response) => {
+  const { code, context, options } = req.body || {};
+  if (!code) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'code expression is required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  const result = sandboxEngine.executeExpression(code, context || {}, options || {});
+  res.json({
+    data: result,
     timestamp: new Date().toISOString(),
   });
 });

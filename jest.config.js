@@ -36,6 +36,7 @@ export default {
     '@omega-v/federation': '<rootDir>/packages/federation/src/index.ts',
     '@omega-v/benchmark': '<rootDir>/packages/benchmark/src/index.ts',
     '@omega-v/notary': '<rootDir>/packages/notary/src/index.ts',
+    '@omega-v/sandbox': '<rootDir>/packages/sandbox/src/index.ts',
   },
   collectCoverageFrom: [
     'packages/*/src/**/*.ts',

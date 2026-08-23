@@ -18,6 +18,7 @@ import { OceanicosAuthEngine } from '@omega-v/auth';
 import { FederationMeshEngine } from '@omega-v/federation';
 import { VerificationBenchmarkEngine } from '@omega-v/benchmark';
 import { OceanicosNotaryEngine } from '@omega-v/notary';
+import { OceanicosSandboxEngine } from '@omega-v/sandbox';
 import app from '../../apps/api/src/index';
 
 describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => {
@@ -547,6 +548,32 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       const summary = notary.getSummary();
       expect(summary.totalSeals).toBeGreaterThanOrEqual(2);
       expect(summary.treeSize).toBeGreaterThanOrEqual(2);
+    });
+  });
+
+  describe('17. Isolated Deterministic Sandbox & Watchdog Profiling E2E', () => {
+    it('should safely execute benign verification expressions, block forbidden tokens, and track stats', () => {
+      const sandbox = new OceanicosSandboxEngine();
+
+      // Safe execution
+      const benignRes = sandbox.executeExpression('responseTime < 50 && statusCode === 200', {
+        responseTime: 25,
+        statusCode: 200,
+      });
+      expect(benignRes.success).toBe(true);
+      expect(benignRes.result).toBe(true);
+      expect(benignRes.gasConsumed).toBeGreaterThan(0);
+
+      // Block dangerous identifier
+      const maliciousRes = sandbox.executeExpression('process.exit(1)', {});
+      expect(maliciousRes.success).toBe(false);
+      expect(maliciousRes.violation).toBe('FORBIDDEN_IDENTIFIER');
+
+      // Check stats
+      const stats = sandbox.getStats();
+      expect(stats.totalRuns).toBe(2);
+      expect(stats.successfulRuns).toBe(1);
+      expect(stats.violationsBlocked).toBe(1);
     });
   });
 });

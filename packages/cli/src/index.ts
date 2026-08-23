@@ -11,6 +11,7 @@ import { OceanicosAuthEngine } from '@omega-v/auth';
 import { FederationMeshEngine } from '@omega-v/federation';
 import { VerificationBenchmarkEngine } from '@omega-v/benchmark';
 import { OceanicosNotaryEngine } from '@omega-v/notary';
+import { OceanicosSandboxEngine } from '@omega-v/sandbox';
 
 export interface CLIResult {
   success: boolean;
@@ -362,6 +363,21 @@ export class OceanicosCLI {
         };
       }
 
+      case 'sandbox': {
+        const sandbox = new OceanicosSandboxEngine();
+        const code = args.slice(1).join(' ') || 'responseTime < 100 && statusCode === 200';
+        const context = { responseTime: 45, statusCode: 200 };
+        const result = sandbox.executeExpression(code, context);
+
+        return {
+          success: result.success,
+          message: result.success
+            ? `[Ω∞v CLI] Sandbox Execution Succeeded: Result = ${JSON.stringify(result.result)} (${result.executionTimeMs}ms, Gas: ${result.gasConsumed})`
+            : `[Ω∞v CLI] Sandbox Violation / Error: ${result.error} (Type: ${result.violation})`,
+          output: result,
+        };
+      }
+
       case 'help':
       default: {
         return {
@@ -382,6 +398,7 @@ Commands:
   omega-v federation [peers|export] List mesh peers or export cross-cluster proof
   omega-v benchmark [iterations]    Run verification performance & latency quantile profiling
   omega-v notary [summary|anchor]   Notarize attestation into Merkle transparency log
+  omega-v sandbox [expression]      Execute rule expression in isolated deterministic sandbox
   omega-v metrics                   Show system health and metrics
   omega-v log                       Display event provenance log
   omega-v integrity                 Verify event hash chain integrity
