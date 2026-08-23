@@ -178,6 +178,16 @@ jobs:
           mkdir -p "$RUNNER_TEMP/omega-ledger"
           chmod 700 "$RUNNER_TEMP/omega-ledger"
 
+      # The image runs as the non-root `omega` user. A runner-created 0700
+      # directory is otherwise owned by the host runner, so the first job
+      # write fails inside the container with a generic JOB_INVALID response.
+      - name: Grant image user access to encrypted local-ledger volume
+        run: |
+          ledger_uid=$(docker run --rm --entrypoint sh omega-v-api:ci -c 'id -u')
+          ledger_gid=$(docker run --rm --entrypoint sh omega-v-api:ci -c 'id -g')
+          sudo chown "$ledger_uid:$ledger_gid" "$RUNNER_TEMP/omega-ledger"
+          stat -c '%U:%G %a %n' "$RUNNER_TEMP/omega-ledger"
+
       - name: Start the container
         run: |
           docker run -d --name omega-smoke \
