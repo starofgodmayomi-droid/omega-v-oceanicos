@@ -14,8 +14,16 @@ type TestServer = {
   cleanup: () => void;
 };
 
-const startServer = async (enabled: boolean): Promise<TestServer> => {
+const startServer = async (
+  enabled: boolean,
+  authMode: 'local' | 'required' = 'local'
+): Promise<TestServer> => {
   const directory = mkdtempSync(join(tmpdir(), 'omega-local-jobs-'));
+  process.env.OMEGA_AUTH_MODE = authMode;
+  if (authMode === 'required') {
+    process.env.OMEGA_READ_TOKEN = 'read-token';
+    process.env.OMEGA_ADMIN_TOKEN = 'admin-token';
+  }
   process.env.OMEGA_LOCAL_JOB_LEDGER = enabled ? 'on' : '';
   process.env.OMEGA_LOCAL_JOB_LEDGER_TOKEN = 'job-test-token';
   process.env.OMEGA_PERSISTENCE = 'off';
@@ -51,6 +59,9 @@ describe('local job ledger HTTP contract', () => {
   const original = { ...process.env };
   afterEach(() => {
     for (const key of [
+      'OMEGA_AUTH_MODE',
+      'OMEGA_READ_TOKEN',
+      'OMEGA_ADMIN_TOKEN',
       'OMEGA_LOCAL_JOB_LEDGER',
       'OMEGA_LOCAL_JOB_LEDGER_TOKEN',
       'OMEGA_PERSISTENCE',
@@ -139,8 +150,55 @@ describe('local job ledger HTTP contract', () => {
         enabled: true,
         durable: false,
         source: 'memory',
+        encryption: 'disabled',
         counts: { succeeded: 1 },
       });
+    } finally {
+      runtime.cleanup();
+    }
+  });
+
+  it('accepts a dedicated local token alongside required global auth', async () => {
+    const runtime = await startServer(true, 'required');
+    try {
+      const missingDedicatedToken = await fetch(`${runtime.baseUrl}/jobs`, {
+        method: 'POST',
+        headers: { ...jsonHeaders, authorization: 'Bearer admin-token' },
+        body: JSON.stringify({
+          kind: 'synthetic-observe',
+          idempotencyKey: 'required-job-missing-local-token',
+          sourceUri: 'local://fixture/required-missing-token',
+        }),
+      });
+      expect(missingDedicatedToken.status).toBe(401);
+      expect(await missingDedicatedToken.json()).toMatchObject({
+        code: 'LOCAL_JOB_ACCESS_REQUIRED',
+      });
+
+      const createResponse = await fetch(`${runtime.baseUrl}/jobs`, {
+        method: 'POST',
+        headers: {
+          ...jsonHeaders,
+          authorization: 'Bearer admin-token',
+          'x-omega-local-job-token': 'job-test-token',
+        },
+        body: JSON.stringify({
+          kind: 'synthetic-observe',
+          idempotencyKey: 'required-job-1',
+          sourceUri: 'local://fixture/required',
+        }),
+      });
+      expect(createResponse.status).toBe(201);
+      const created = (await createResponse.json()) as { data: { job: { id: string } } };
+
+      const readResponse = await fetch(`${runtime.baseUrl}/jobs/${created.data.job.id}`, {
+        headers: {
+          authorization: 'Bearer read-token',
+          'x-omega-local-job-token': 'job-test-token',
+        },
+      });
+      expect(readResponse.status).toBe(200);
+      expect((await readResponse.json()).data.job.id).toBe(created.data.job.id);
     } finally {
       runtime.cleanup();
     }

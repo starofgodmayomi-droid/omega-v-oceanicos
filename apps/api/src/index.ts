@@ -59,6 +59,52 @@ export const constantTimeTokenMatch = (supplied: string, expected: string): bool
 const bearerToken = (authorization: string): string =>
   authorization.startsWith('Bearer ') ? authorization.slice('Bearer '.length) : '';
 
+export const AUTH_MODE_ENV = 'OMEGA_AUTH_MODE';
+export type ApiAuthMode = 'local' | 'required';
+
+/**
+ * Authentication mode for the API boundary.
+ *
+ * `local` preserves the historical development behavior and existing opt-in
+ * token gates. `required` is the deployment profile: it is fail-closed at
+ * startup unless both read and admin bearer tokens are configured, then it
+ * authenticates every non-health request.
+ */
+export const parseAuthMode = (value?: string): ApiAuthMode => {
+  const normalized = value?.trim() || 'local';
+  if (normalized !== 'local' && normalized !== 'required') {
+    throw new Error(
+      `${AUTH_MODE_ENV} must be "local" or "required", received ${JSON.stringify(value)}`
+    );
+  }
+  return normalized;
+};
+
+const authMode = parseAuthMode(process.env[AUTH_MODE_ENV]);
+
+export const missingRequiredAuthTokens = (
+  mode: ApiAuthMode,
+  readToken?: string,
+  adminToken?: string
+): string[] =>
+  mode === 'required'
+    ? [
+        !readToken?.trim() ? 'OMEGA_READ_TOKEN' : null,
+        !adminToken?.trim() ? 'OMEGA_ADMIN_TOKEN' : null,
+      ].filter((name): name is string => name !== null)
+    : [];
+
+const missingAuthTokens = missingRequiredAuthTokens(
+  authMode,
+  process.env.OMEGA_READ_TOKEN,
+  process.env.OMEGA_ADMIN_TOKEN
+);
+if (missingAuthTokens.length > 0) {
+  throw new Error(
+    `${AUTH_MODE_ENV}=required needs configured bearer tokens: ${missingAuthTokens.join(', ')}`
+  );
+}
+
 const app: Express = express();
 const port = process.env.API_PORT || 3000;
 
@@ -91,15 +137,29 @@ app.use((req: Request, res: Response, next) => {
   res.setHeader('x-request-id', requestId);
   const configuredReadToken = process.env.OMEGA_READ_TOKEN?.trim();
   const configuredAdminToken = process.env[ADMIN_TOKEN_ENV]?.trim();
-  const isReadOnlyRequest = req.method === 'GET' && req.path !== '/health';
+  const readTokenForComparison = configuredReadToken ?? '';
+  const adminTokenForComparison = configuredAdminToken ?? '';
+  const isHealthRequest = req.method === 'GET' && req.path === '/health';
+  const isReadOnlyRequest =
+    (req.method === 'GET' && !isHealthRequest) ||
+    (authMode === 'required' && req.method === 'POST' && req.path === '/attest/verify');
   const isRevocationRequest = req.method === 'POST' && req.path === '/attest/revoke';
   const isPersistenceAcknowledgementRequest =
     req.method === 'POST' && req.path === '/persistence/acknowledge';
   const isPersistenceReencryptionRequest =
     req.method === 'POST' && req.path === '/persistence/reencrypt';
-  if (configuredReadToken && isReadOnlyRequest) {
+  const isRequiredAdminRequest = authMode === 'required' && !isHealthRequest && !isReadOnlyRequest;
+  const requiresReadAuth =
+    isReadOnlyRequest && (authMode === 'required' || Boolean(configuredReadToken));
+  const requiresAdminAuth =
+    isRequiredAdminRequest ||
+    (Boolean(configuredAdminToken) &&
+      (isRevocationRequest ||
+        isPersistenceAcknowledgementRequest ||
+        isPersistenceReencryptionRequest));
+  if (requiresReadAuth) {
     const authorization = req.header('authorization') || '';
-    if (!constantTimeTokenMatch(bearerToken(authorization), configuredReadToken)) {
+    if (!constantTimeTokenMatch(bearerToken(authorization), readTokenForComparison)) {
       res.status(401).json({
         code: 'READ_ACCESS_REQUIRED',
         message: 'A valid bearer token is required for read-only evidence access',
@@ -108,19 +168,18 @@ app.use((req: Request, res: Response, next) => {
       return;
     }
   }
-  if (
-    configuredAdminToken &&
-    (isRevocationRequest || isPersistenceAcknowledgementRequest || isPersistenceReencryptionRequest)
-  ) {
+  if (requiresAdminAuth) {
     const authorization = req.header('authorization') || '';
-    if (!constantTimeTokenMatch(bearerToken(authorization), configuredAdminToken)) {
+    if (!constantTimeTokenMatch(bearerToken(authorization), adminTokenForComparison)) {
       res.status(401).json({
         code: 'ADMIN_ACCESS_REQUIRED',
         message: isPersistenceReencryptionRequest
           ? 'A valid admin bearer token is required to re-encrypt persistence'
           : isPersistenceAcknowledgementRequest
             ? 'A valid admin bearer token is required to acknowledge persistence review'
-            : 'A valid admin bearer token is required to revoke attestations',
+            : isRevocationRequest
+              ? 'A valid admin bearer token is required to revoke attestations'
+              : 'A valid admin bearer token is required for API mutations',
         requestId,
       });
       return;
@@ -444,6 +503,12 @@ const {
   persistenceEncryptionKey,
   previousPersistenceEncryptionKey
 );
+const localJobLedger = new LocalJobLedger({
+  enabled: process.env.OMEGA_LOCAL_JOB_LEDGER === 'on',
+  storagePath: process.env.OMEGA_LOCAL_JOB_LEDGER_PATH,
+  encryptionKey: process.env.OMEGA_LOCAL_JOB_LEDGER_KEY,
+});
+const localJobLedgerStatus = localJobLedger.status();
 const localPersistenceCoverage = persistenceCoverage({
   enabled: persistenceEnabled,
   snapshotEncrypted: persistenceEncryptionEnabled,
@@ -452,6 +517,8 @@ const localPersistenceCoverage = persistenceCoverage({
   eventLogKeySource: 'none',
   memoryEncrypted: memoryEncryptionEnabled,
   memoryKeySource: memoryEncryptionKeySource,
+  jobLedgerEncrypted: localJobLedgerStatus.encryption === 'aes-256-gcm',
+  jobLedgerKeySource: localJobLedgerStatus.encryption === 'aes-256-gcm' ? 'current' : 'none',
 });
 const runtimeEvents = snapshot.events;
 const eventStreams = new Set<Response>();
@@ -460,7 +527,6 @@ const runtimeActions = snapshot.actions;
 const runtimeLearnings = snapshot.learnings;
 const runtimeRecompilations = snapshot.recompilations;
 const runtimeRevocations = snapshot.revocations ?? [];
-const localJobLedger = new LocalJobLedger();
 type PersistenceAcknowledgement = {
   operatorId: string;
   reason: string;
@@ -609,13 +675,16 @@ const jobLedgerAccess = (req: Request, res: Response): boolean => {
     return false;
   }
   const configuredToken = process.env.OMEGA_LOCAL_JOB_LEDGER_TOKEN?.trim();
-  if (
-    !configuredToken ||
-    !constantTimeTokenMatch(bearerToken(req.header('authorization') || ''), configuredToken)
-  ) {
+  const suppliedLocalToken =
+    req.header('x-omega-local-job-token')?.trim() ||
+    (authMode === 'local' ? bearerToken(req.header('authorization') || '') : '');
+  if (!configuredToken || !constantTimeTokenMatch(suppliedLocalToken, configuredToken)) {
     res.status(401).json({
       code: 'LOCAL_JOB_ACCESS_REQUIRED',
-      message: 'A local job ledger bearer token is required',
+      message:
+        authMode === 'required'
+          ? 'A local job ledger token is required in x-omega-local-job-token'
+          : 'A local job ledger bearer token is required',
       timestamp: new Date().toISOString(),
     } satisfies ErrorResponse);
     return false;
@@ -643,8 +712,9 @@ const recordJobEvent = (event: LocalJobEvent): RuntimeEvent =>
       eventId: event.id,
       sequence: event.sequence,
       state: event.details.state,
-      durable: false,
-      source: 'memory',
+      durable: localJobLedger.status().durable,
+      source: localJobLedger.status().source,
+      encryption: localJobLedger.status().encryption,
     },
   });
 const jobErrorStatus = (code: LocalJobError['code']): number =>
@@ -1060,6 +1130,7 @@ app.get('/health', (_req: Request, res: Response) => {
     policy: {
       attestationAlgorithm: string;
       attestationTtlMs: number | null;
+      authMode: ApiAuthMode;
       readAuthConfigured: boolean;
       adminAuthConfigured: boolean;
       adminOperatorAllowlistRequired: boolean;
@@ -1122,6 +1193,7 @@ app.get('/health', (_req: Request, res: Response) => {
       policy: {
         attestationAlgorithm: attestationService.getKeyInfo().algorithm,
         attestationTtlMs: configuredAttestationTtlMs(),
+        authMode,
         readAuthConfigured: Boolean(process.env.OMEGA_READ_TOKEN?.trim()),
         adminAuthConfigured: Boolean(process.env[ADMIN_TOKEN_ENV]?.trim()),
         adminOperatorAllowlistRequired: adminOperatorAllowlistRequired(),
@@ -1181,6 +1253,7 @@ app.get('/state', (_req: Request, res: Response) => {
       persistencePreviousKeyConfigured: previousPersistenceEncryptionConfigured,
       memoryEncryption: memoryEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
       attestationTtlMs: configuredAttestationTtlMs(),
+      authMode,
       persistenceSource,
       persistenceReason: persistenceReason ?? reencryptionRecovery.reason ?? null,
       reencryptionRecovery,
@@ -1724,6 +1797,7 @@ app.get('/attest/policy', (_req: Request, res: Response) => {
     data: {
       attestationAlgorithm: attestationService.getKeyInfo().algorithm,
       attestationTtlMs: configuredAttestationTtlMs(),
+      authMode,
       readAuthConfigured: Boolean(process.env.OMEGA_READ_TOKEN?.trim()),
       adminAuthConfigured: Boolean(process.env[ADMIN_TOKEN_ENV]?.trim()),
       revocationEnabled: true,

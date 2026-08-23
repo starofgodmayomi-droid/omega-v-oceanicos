@@ -79,6 +79,7 @@ type HealthResponse = {
     policy: {
       attestationAlgorithm: string;
       attestationTtlMs: number | null;
+      authMode: 'local' | 'required';
       readAuthConfigured: boolean;
       adminAuthConfigured: boolean;
       adminOperatorAllowlistRequired: boolean;
@@ -192,8 +193,9 @@ type LocalJobsResponse = {
     }>;
     status: {
       enabled: boolean;
-      durable: false;
-      source: 'memory';
+      durable: boolean;
+      source: 'memory' | 'file';
+      encryption: 'disabled' | 'aes-256-gcm';
       counts: Record<LocalJobState, number>;
       recentWindow: number;
     };
@@ -224,7 +226,7 @@ function usage(): string {
     'omega events [--url URL] [--limit N] [--token TOKEN]',
     'omega audit [--type TYPE] [--stage STAGE] [--status STATUS] [--from ISO] [--to ISO] [--limit N] [--url URL] [--token TOKEN]',
     'omega runs [--url URL] [--limit N] [--token TOKEN]',
-    'omega jobs [--url URL] [--limit N] [--token TOKEN]',
+    'omega jobs [--url URL] [--limit N] [--token TOKEN] [--job-token TOKEN]',
     'omega export [--url URL] [--token TOKEN]',
     'omega revocations [--url URL] [--token TOKEN]',
     'omega revoke ATTESTATION_ID --reason REASON [--operator-id ID] [--url URL] [--token TOKEN] [--admin-token TOKEN]',
@@ -259,6 +261,19 @@ function readToken(argv: string[]): string | undefined {
 function requestInit(argv: string[]): RequestInit | undefined {
   const token = readToken(argv);
   return token ? { headers: { Authorization: `Bearer ${token}` } } : undefined;
+}
+
+function localJobToken(argv: string[]): string | undefined {
+  return option(argv, '--job-token') || process.env.OMEGA_LOCAL_JOB_LEDGER_TOKEN || undefined;
+}
+
+function jobRequestInit(argv: string[]): RequestInit | undefined {
+  const token = localJobToken(argv);
+  const init = requestInit(argv);
+  if (!token) return init;
+  const headers = new Headers(init?.headers);
+  headers.set('x-omega-local-job-token', token);
+  return { ...init, headers };
 }
 
 function adminToken(argv: string[]): string | undefined {
@@ -311,7 +326,7 @@ async function health(argv: string[], fetchImpl: FetchLike): Promise<number> {
         `COORDINATION  policy=${checks.persistence.coordinationPolicy?.mode ?? 'unknown'} reference=${checks.persistence.coordinationPolicy?.reference ?? 'none'} verified=${checks.persistence.coordinationPolicy?.verified ?? 'unknown'} reason=${checks.persistence.coordinationPolicy?.reason ?? 'none'}`,
         `COVERAGE     ${checks.persistence.coverage?.surfaces?.map((surface) => `${surface.name}=${surface.encryption}/${surface.keySource}`).join(', ') ?? 'unknown'}`,
         `UNVERIFIED   ${checks.persistence.coverage?.unverifiedSurfaces?.join(', ') ?? 'unknown'} complete=${checks.persistence.coverage?.complete ?? 'unknown'}`,
-        `POLICY        algorithm=${policy.attestationAlgorithm} ttl=${policy.attestationTtlMs ?? 'off'} adminAllowlistRequired=${policy.adminOperatorAllowlistRequired ?? 'unknown'} revocation=${policy.revocationEnabled}`,
+        `POLICY        algorithm=${policy.attestationAlgorithm} authMode=${policy.authMode ?? 'unknown'} ttl=${policy.attestationTtlMs ?? 'off'} adminAllowlistRequired=${policy.adminOperatorAllowlistRequired ?? 'unknown'} revocation=${policy.revocationEnabled}`,
         `OBSERVED      ${body.timestamp}`,
       ].join('\n') + '\n'
     );
@@ -415,7 +430,7 @@ async function jobs(argv: string[], fetchImpl: FetchLike): Promise<number> {
     return 2;
   }
   try {
-    const response = await fetchImpl(`${endpoint}?limit=${requestedLimit}`, requestInit(argv));
+    const response = await fetchImpl(`${endpoint}?limit=${requestedLimit}`, jobRequestInit(argv));
     const body = (await response.json()) as LocalJobsResponse | { code?: string; message?: string };
     if (!response.ok || !('data' in body) || !Array.isArray(body.data.jobs)) {
       const code = 'code' in body ? body.code : undefined;
@@ -432,7 +447,7 @@ async function jobs(argv: string[], fetchImpl: FetchLike): Promise<number> {
     const jobsToShow = body.data.jobs.slice(0, requestedLimit);
     const { status } = body.data;
     process.stdout.write(
-      `JOBS          ${jobsToShow.length}/${body.data.jobs.length} source=${status.source} storage=memory durable=false enabled=${status.enabled}\n`
+      `JOBS          ${jobsToShow.length}/${body.data.jobs.length} source=${status.source} storage=${status.source} durable=${status.durable} encryption=${status.encryption} enabled=${status.enabled}\n`
     );
     process.stdout.write(
       `COUNTS        queued=${status.counts.queued} running=${status.counts.running} succeeded=${status.counts.succeeded} failed=${status.counts.failed} unknown=${status.counts.unknown} window=${status.recentWindow}\n`

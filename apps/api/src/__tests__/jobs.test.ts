@@ -1,3 +1,6 @@
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { LocalJobError, LocalJobLedger } from '../jobs';
 
 const provenance = {
@@ -17,12 +20,21 @@ const input = {
 };
 
 describe('LocalJobLedger', () => {
+  const withStorage = (run: (storagePath: string) => void): void => {
+    const directory = mkdtempSync(join(tmpdir(), 'omega-job-ledger-'));
+    try {
+      run(join(directory, 'ledger.json'));
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  };
   it('is disabled by default and does not accept work', () => {
     const ledger = new LocalJobLedger(false);
     expect(ledger.status()).toEqual({
       enabled: false,
       durable: false,
       source: 'memory',
+      encryption: 'disabled',
       counts: { queued: 0, running: 0, succeeded: 0, failed: 0, unknown: 0 },
       recentWindow: 40,
     });
@@ -72,5 +84,59 @@ describe('LocalJobLedger', () => {
     expect(() => ledger.list(0)).toThrow(LocalJobError);
     expect(() => ledger.list(41)).toThrow(LocalJobError);
     expect(ledger.recentEvents(40)).toHaveLength(0);
+  });
+
+  it('persists an encrypted ledger and restores jobs, idempotency, and events', () => {
+    withStorage((storagePath) => {
+      const first = new LocalJobLedger({
+        enabled: true,
+        storagePath,
+        encryptionKey: 'local-job-test-key',
+      });
+      const created = first.create(input, provenance);
+      expect(first.status()).toMatchObject({
+        enabled: true,
+        durable: true,
+        source: 'file',
+        encryption: 'aes-256-gcm',
+      });
+      expect(readFileSync(storagePath, 'utf8')).not.toContain('local://fixture/one');
+
+      const restored = new LocalJobLedger({
+        enabled: true,
+        storagePath,
+        encryptionKey: 'local-job-test-key',
+      });
+      expect(restored.get(created.job.id)).toEqual(created.job);
+      expect(restored.recentEvents()).toEqual([created.event]);
+      expect(() => restored.create(input, provenance)).toThrow(
+        expect.objectContaining({ code: 'JOB_DUPLICATE' })
+      );
+    });
+  });
+
+  it('requires paired storage and encryption configuration and rejects tampering', () => {
+    expect(
+      () => new LocalJobLedger({ enabled: true, storagePath: '/tmp/omega-ledger.json' })
+    ).toThrow(/must be configured together/);
+    withStorage((storagePath) => {
+      const ledger = new LocalJobLedger({
+        enabled: true,
+        storagePath,
+        encryptionKey: 'local-job-test-key',
+      });
+      ledger.create(input, provenance);
+      const envelope = JSON.parse(readFileSync(storagePath, 'utf8')) as { ciphertext: string };
+      envelope.ciphertext = `${envelope.ciphertext.slice(0, -2)}aa`;
+      writeFileSync(storagePath, JSON.stringify(envelope));
+      expect(
+        () =>
+          new LocalJobLedger({
+            enabled: true,
+            storagePath,
+            encryptionKey: 'local-job-test-key',
+          })
+      ).toThrow(/failed authentication/);
+    });
   });
 });

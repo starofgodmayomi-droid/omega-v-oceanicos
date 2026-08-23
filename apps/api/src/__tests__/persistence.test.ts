@@ -158,6 +158,8 @@ describe('runtime persistence', () => {
       eventLogKeySource: 'mixed',
       memoryEncrypted: false,
       memoryKeySource: 'none',
+      jobLedgerEncrypted: false,
+      jobLedgerKeySource: 'none',
     });
     expect(coverage.complete).toBe(false);
     expect(coverage.surfaces).toEqual([
@@ -180,6 +182,27 @@ describe('runtime persistence', () => {
       'backups',
       'external services',
     ]);
+
+    const encrypted = persistenceCoverage({
+      enabled: true,
+      snapshotEncrypted: false,
+      snapshotKeySource: 'none',
+      eventLogEncrypted: false,
+      eventLogKeySource: 'none',
+      memoryEncrypted: false,
+      memoryKeySource: 'none',
+      jobLedgerEncrypted: true,
+      jobLedgerKeySource: 'current',
+    });
+    expect(encrypted.surfaces).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: 'local-job-ledger',
+          encryption: 'aes-256-gcm',
+          keySource: 'current',
+        }),
+      ])
+    );
   });
 
   it('reports rotation pending only when a configured previous key was used', () => {

@@ -190,6 +190,7 @@ export function installFetch(overrides: RouteOverrides = {}): jest.Mock {
             enabled: false,
             durable: false,
             source: 'memory',
+            encryption: 'disabled',
             counts: { queued: 0, running: 0, succeeded: 0, failed: 0, unknown: 0 },
             recentWindow: 40,
           },
@@ -216,6 +217,7 @@ export function installFetch(overrides: RouteOverrides = {}): jest.Mock {
         data: {
           attestationAlgorithm: 'HMAC-SHA256',
           attestationTtlMs: null,
+          authMode: 'local',
           readAuthConfigured: false,
           adminAuthConfigured: false,
           adminOperatorAllowlistConfigured: false,

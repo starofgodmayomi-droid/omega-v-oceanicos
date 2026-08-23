@@ -60,6 +60,7 @@ type LoopResult = {
 type RuntimePolicy = {
   attestationAlgorithm: string;
   attestationTtlMs: number | null;
+  authMode?: 'local' | 'required';
   readAuthConfigured: boolean;
   adminAuthConfigured: boolean;
   adminOperatorAllowlistConfigured: boolean;
@@ -165,8 +166,9 @@ type LocalJobsView = {
   }>;
   ledger: {
     enabled: boolean;
-    durable: false;
-    source: 'memory';
+    durable: boolean;
+    source: 'memory' | 'file';
+    encryption: 'disabled' | 'aes-256-gcm';
     counts: Record<LocalJobState, number>;
     recentWindow: number;
   } | null;
@@ -1289,6 +1291,10 @@ export function App(): React.JSX.Element {
             </strong>
           </div>
           <div>
+            <span>AUTH MODE</span>
+            <strong>{policy ? (policy.authMode ?? 'unknown').toUpperCase() : 'UNKNOWN'}</strong>
+          </div>
+          <div>
             <span>PERSISTENCE KEY</span>
             <strong>
               {policy
@@ -1467,8 +1473,9 @@ export function App(): React.JSX.Element {
             <>
               <div className="jobs-contract" aria-live="polite">
                 <span>source={localJobs.ledger.source}</span>
-                <span>storage=memory</span>
-                <strong>durable=false</strong>
+                <span>storage={localJobs.ledger.source}</span>
+                <strong>durable={String(localJobs.ledger.durable)}</strong>
+                <span>encryption={localJobs.ledger.encryption}</span>
                 <span>window={localJobs.ledger.recentWindow}</span>
               </div>
               <div className="jobs-counts" aria-label="Local job counts">

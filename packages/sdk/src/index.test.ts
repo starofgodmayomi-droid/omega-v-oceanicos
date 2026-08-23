@@ -926,13 +926,15 @@ describe('OmegaClient local job evidence', () => {
       'http://api.test/',
       async (url, init) => {
         expect(url).toBe('http://api.test/jobs?limit=2&state=running');
-        expect(new Headers(init?.headers).get('authorization')).toBe('Bearer read-token');
+        const headers = new Headers(init?.headers);
+        expect(headers.get('authorization')).toBe('Bearer read-token');
+        expect(headers.get('x-omega-local-job-token')).toBe('job-token');
         expect(init?.method).toBeUndefined();
         return new Response(
           JSON.stringify({ data: { jobs: [], status }, timestamp: '2026-08-20T00:00:00.000Z' })
         );
       },
-      { readToken: 'read-token' }
+      { readToken: 'read-token', localJobToken: 'job-token' }
     );
     await expect(client.getJobs({ limit: 2, state: 'running' })).resolves.toMatchObject({
       data: { status: { durable: false, source: 'memory', recentWindow: 40 } },

@@ -267,6 +267,7 @@ describe('API runtime contracts', () => {
     expect(body.data.policy).toEqual({
       attestationAlgorithm: 'HMAC-SHA256',
       attestationTtlMs: null,
+      authMode: 'local',
       readAuthConfigured: false,
       adminAuthConfigured: false,
       adminOperatorAllowlistRequired: false,
