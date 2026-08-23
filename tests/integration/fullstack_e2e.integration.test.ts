@@ -7,6 +7,7 @@ import { OceanicumVM } from '@omega-v/ir';
 import { OceanicosClient } from '@omega-v/sdk';
 import { FormlessSwarm } from '@omega-v/agents';
 import { OceanicosCLI } from '@omega-v/cli';
+import { EdgeObserver } from '@omega-v/edge';
 import app from '../../apps/api/src/index';
 
 describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => {
@@ -128,7 +129,34 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
     });
   });
 
-  describe('5. Express REST API Integration', () => {
+  describe('5. Edge Observer & Merkle Batch Ingestion', () => {
+    it('should buffer edge observations, compute Merkle root, and flush batch', async () => {
+      const edge = new EdgeObserver({
+        nodeId: 'e2e-edge-node-1',
+        environment: 'e2e-field',
+      });
+
+      edge.capture('Edge E2E Claim 1', 'edge-e2e');
+      edge.capture('Edge E2E Claim 2', 'edge-e2e');
+
+      expect(edge.getBufferSize()).toBe(2);
+
+      const merkleRoot = edge.computeMerkleRoot();
+      expect(merkleRoot).toMatch(/^0x[a-f0-9]{64}$/);
+
+      const flushRes = await edge.flush(async (batch) => {
+        expect(batch.observations).toHaveLength(2);
+        expect(batch.merkleRoot).toBe(merkleRoot);
+        return true;
+      });
+
+      expect(flushRes.success).toBe(true);
+      expect(flushRes.syncedCount).toBe(2);
+      expect(edge.getBufferSize()).toBe(0);
+    });
+  });
+
+  describe('6. Express REST API Integration', () => {
     it('should export defined Express API application handler', () => {
       expect(app).toBeDefined();
       expect(typeof app).toBe('function');
