@@ -190,7 +190,7 @@ jobs:
             -e OMEGA_LOCAL_JOB_LEDGER_PATH=/tmp/omega-ledger/jobs.json \
             -e OMEGA_LOCAL_JOB_LEDGER_KEY=ci-smoke-ledger-key \
             -v "$RUNNER_TEMP/omega-ledger:/tmp/omega-ledger" \
-            -p 3000:3000 omega-v-api:ci
+            --network host omega-v-api:ci
 
       - name: Smoke test the running service
         run: |
@@ -241,7 +241,7 @@ jobs:
             -e OMEGA_LOCAL_JOB_LEDGER_PATH=/tmp/omega-ledger/jobs.json \
             -e OMEGA_LOCAL_JOB_LEDGER_KEY=ci-smoke-ledger-key \
             -v "$RUNNER_TEMP/omega-ledger:/tmp/omega-ledger" \
-            -p 3000:3000 omega-v-api:ci
+            --network host omega-v-api:ci
           for attempt in $(seq 1 30); do
             if curl -sf http://localhost:3000/health > /dev/null; then break; fi
             sleep 1

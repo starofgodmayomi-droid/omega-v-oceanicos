@@ -91,6 +91,7 @@ describe('the supported Node version is one claim, not three', () => {
     expect(workflow).toMatch(/Job creation returned HTTP \$status/);
     expect(workflow).toMatch(/test -s \/tmp\/job\.json/);
     expect(workflow).toMatch(/-v \"\$RUNNER_TEMP\/omega-ledger:\/tmp\/omega-ledger\"/);
+    expect(workflow).toMatch(/--network host omega-v-api:ci/);
     expect(workflow).toMatch(/docker rm -f omega-smoke/);
     expect(workflow).toMatch(/local:\/\/ci-restart/);
     expect(workflow).toMatch(/The encrypted local-ledger volume contains plaintext job payload/);
