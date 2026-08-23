@@ -290,6 +290,24 @@ interface AnomalyAlertItem {
   detectedAt: string;
 }
 
+interface WebhookSubItem {
+  id: string;
+  name: string;
+  url: string;
+  events: string[];
+  active: boolean;
+  maxRetries: number;
+}
+
+interface WebhookStatsData {
+  totalSubscriptions: number;
+  activeSubscriptions: number;
+  totalDispatches: number;
+  successfulDeliveries: number;
+  failedDeliveries: number;
+  successRate: number;
+}
+
 interface RuleEfficacy {
   ruleName: string;
   totalExecutions: number;
@@ -542,6 +560,10 @@ export function App(): JSX.Element {
   const [gatewayAnomalies, setGatewayAnomalies] = useState<AnomalyAlertItem[]>([]);
   const [testingGateway, setTestingGateway] = useState(false);
   const [gatewayResult, setGatewayResult] = useState<string | null>(null);
+  const [webhooks, setWebhooks] = useState<WebhookSubItem[]>([]);
+  const [webhookStats, setWebhookStats] = useState<WebhookStatsData | null>(null);
+  const [triggeringWebhook, setTriggeringWebhook] = useState(false);
+  const [webhookResult, setWebhookResult] = useState<string | null>(null);
 
   // ── Poll log + metrics ──
   const fetchState = useCallback(async () => {
@@ -571,6 +593,7 @@ export function App(): JSX.Element {
         zkRes,
         gwStatsRes,
         gwAnomRes,
+        whRes,
       ] = await Promise.all([
         fetch(`${API_BASE}/log?limit=30`),
         fetch(`${API_BASE}/metrics`),
@@ -596,6 +619,7 @@ export function App(): JSX.Element {
         fetch(`${API_BASE}/zk/circuits`),
         fetch(`${API_BASE}/gateway/stats`),
         fetch(`${API_BASE}/gateway/anomalies`),
+        fetch(`${API_BASE}/webhooks`),
       ]);
       if (!logRes.ok || !metricsRes.ok) throw new Error('API error');
 
@@ -659,6 +683,11 @@ export function App(): JSX.Element {
       }
       if (gwAnomRes && gwAnomRes.ok) {
         setGatewayAnomalies((await gwAnomRes.json()).data.anomalies as AnomalyAlertItem[]);
+      }
+      if (whRes && whRes.ok) {
+        const whData = (await whRes.json()).data;
+        setWebhooks(whData.subscriptions as WebhookSubItem[]);
+        setWebhookStats(whData.stats as WebhookStatsData);
       }
     } catch {
       setApiOnline(false);
@@ -3996,6 +4025,228 @@ export function App(): JSX.Element {
                 </div>
               </div>
             )}
+          </div>
+
+          {/* ── Real-Time Verification Event Webhooks (Section XL) ── */}
+          <div
+            style={{
+              background: 'var(--bg-card)',
+              border: '1px solid rgba(56, 178, 172, 0.3)',
+              borderRadius: 'var(--radius)',
+              padding: 20,
+              marginBottom: 20,
+            }}
+          >
+            <div className="section-header">
+              <div className="section-title">📡 Real-Time Verification Event Webhooks</div>
+              <span className="section-badge">
+                {webhookStats?.activeSubscriptions || 0} active · {webhookStats?.successRate || 100}
+                % delivery
+              </span>
+            </div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 14 }}>
+              Push verification attestations, policy violations, and anomaly alerts to external
+              systems with HMAC-SHA256 signatures.
+            </div>
+
+            {/* Stats row */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+                gap: 10,
+                marginBottom: 14,
+              }}
+            >
+              <div
+                style={{
+                  background: 'var(--bg-surface)',
+                  padding: 10,
+                  borderRadius: 'var(--radius-sm)',
+                }}
+              >
+                <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>SUBSCRIPTIONS</div>
+                <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--accent-teal)' }}>
+                  {webhookStats?.totalSubscriptions || 0}
+                </div>
+              </div>
+              <div
+                style={{
+                  background: 'var(--bg-surface)',
+                  padding: 10,
+                  borderRadius: 'var(--radius-sm)',
+                }}
+              >
+                <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
+                  TOTAL DISPATCHES
+                </div>
+                <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--accent-purple)' }}>
+                  {webhookStats?.totalDispatches || 0}
+                </div>
+              </div>
+              <div
+                style={{
+                  background: 'var(--bg-surface)',
+                  padding: 10,
+                  borderRadius: 'var(--radius-sm)',
+                }}
+              >
+                <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>SUCCESSFUL</div>
+                <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--accent-teal)' }}>
+                  {webhookStats?.successfulDeliveries || 0}
+                </div>
+              </div>
+              <div
+                style={{
+                  background: 'var(--bg-surface)',
+                  padding: 10,
+                  borderRadius: 'var(--radius-sm)',
+                }}
+              >
+                <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>SUCCESS RATE</div>
+                <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#38b2ac' }}>
+                  {webhookStats?.successRate || 100}%
+                </div>
+              </div>
+            </div>
+
+            {/* Test Trigger Button */}
+            <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
+              <button
+                onClick={async () => {
+                  setTriggeringWebhook(true);
+                  setWebhookResult(null);
+                  try {
+                    const res = await fetch(`${API_BASE}/webhooks/dispatch`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        event: 'ATTESTATION_CREATED',
+                        data: {
+                          claim: 'Dashboard simulated verification event',
+                          timestamp: new Date().toISOString(),
+                          confidence: 0.995,
+                        },
+                      }),
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                      setWebhookResult(`✅ Dispatched to ${data.data.count} subscriber(s)`);
+                    } else {
+                      setWebhookResult(`❌ Error: ${data.message || 'Failed'}`);
+                    }
+                    fetchState();
+                  } catch {
+                    setWebhookResult('❌ Failed to trigger webhook');
+                  } finally {
+                    setTriggeringWebhook(false);
+                  }
+                }}
+                disabled={triggeringWebhook}
+                style={{
+                  background: triggeringWebhook
+                    ? 'var(--bg-surface)'
+                    : 'linear-gradient(135deg, #38b2ac, #319795)',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 'var(--radius-sm)',
+                  padding: '6px 16px',
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                  cursor: triggeringWebhook ? 'not-allowed' : 'pointer',
+                  opacity: triggeringWebhook ? 0.6 : 1,
+                }}
+              >
+                {triggeringWebhook ? '⏳ Dispatching…' : '🚀 Test Webhook Dispatch'}
+              </button>
+              {webhookResult && (
+                <div
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: 'var(--radius-sm)',
+                    background: 'var(--bg-surface)',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}
+                >
+                  {webhookResult}
+                </div>
+              )}
+            </div>
+
+            {/* Subscriptions List */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                gap: 10,
+              }}
+            >
+              {webhooks.map((sub) => (
+                <div
+                  key={sub.id}
+                  style={{
+                    background: 'var(--bg-surface)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 'var(--radius-sm)',
+                    padding: 12,
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: 4,
+                    }}
+                  >
+                    <span style={{ fontWeight: 600, fontSize: '0.8rem' }}>{sub.name}</span>
+                    <span
+                      style={{
+                        fontSize: '0.65rem',
+                        color: sub.active ? '#38b2ac' : 'var(--text-muted)',
+                        background: sub.active
+                          ? 'rgba(56, 178, 172, 0.15)'
+                          : 'rgba(255, 255, 255, 0.05)',
+                        padding: '1px 6px',
+                        borderRadius: 3,
+                        fontWeight: 600,
+                      }}
+                    >
+                      {sub.active ? 'ACTIVE' : 'DISABLED'}
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      fontSize: '0.7rem',
+                      color: 'var(--text-secondary)',
+                      fontFamily: 'monospace',
+                      marginBottom: 6,
+                    }}
+                  >
+                    {sub.url}
+                  </div>
+                  <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                    {sub.events.map((ev) => (
+                      <span
+                        key={ev}
+                        style={{
+                          fontSize: '0.6rem',
+                          background: 'rgba(255, 255, 255, 0.05)',
+                          padding: '1px 5px',
+                          borderRadius: 3,
+                          color: 'var(--text-muted)',
+                        }}
+                      >
+                        {ev}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Timeline */}

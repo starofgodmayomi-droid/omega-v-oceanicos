@@ -40,6 +40,7 @@ export default {
     '@omega-v/policy': '<rootDir>/packages/policy/src/index.ts',
     '@omega-v/zk': '<rootDir>/packages/zk/src/index.ts',
     '@omega-v/gateway': '<rootDir>/packages/gateway/src/index.ts',
+    '@omega-v/webhook': '<rootDir>/packages/webhook/src/index.ts',
   },
   collectCoverageFrom: [
     'packages/*/src/**/*.ts',

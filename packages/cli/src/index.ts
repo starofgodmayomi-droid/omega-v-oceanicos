@@ -15,6 +15,7 @@ import { OceanicosSandboxEngine } from '@omega-v/sandbox';
 import { OceanicosPolicyEngine } from '@omega-v/policy';
 import { OceanicosZKEngine } from '@omega-v/zk';
 import { OceanicosGatewayEngine } from '@omega-v/gateway';
+import { OceanicosWebhookEngine } from '@omega-v/webhook';
 
 export interface CLIResult {
   success: boolean;
@@ -462,6 +463,47 @@ export class OceanicosCLI {
         };
       }
 
+      case 'webhook': {
+        const webhook = new OceanicosWebhookEngine();
+        const subCommand = args[1] || 'list';
+
+        if (subCommand === 'register') {
+          const name = args[2] || 'Custom CLI Webhook';
+          const url = args[3] || 'https://example.com/webhook';
+          const sub = webhook.registerSubscription({
+            name,
+            url,
+            events: ['ALL'],
+          });
+          return {
+            success: true,
+            message: `[Ω∞v CLI] Registered Webhook '${sub.name}' (${sub.id} -> ${sub.url})`,
+            output: sub,
+          };
+        }
+
+        if (subCommand === 'trigger') {
+          const eventType = (args[2] as any) || 'ATTESTATION_CREATED';
+          const attempts = await webhook.dispatchEvent(eventType, {
+            source: 'CLI Trigger',
+            timestamp: new Date().toISOString(),
+          });
+          return {
+            success: true,
+            message: `[Ω∞v CLI] Dispatched '${eventType}' to ${attempts.length} active webhooks`,
+            output: attempts,
+          };
+        }
+
+        const subs = webhook.getSubscriptions();
+        const stats = webhook.getStats();
+        return {
+          success: true,
+          message: `[Ω∞v CLI] Active Webhook Subscriptions: ${subs.length} subs, ${stats.totalDispatches} dispatches (${stats.successRate}% success rate)`,
+          output: { subscriptions: subs, stats },
+        };
+      }
+
       case 'help':
       default: {
         return {
@@ -486,6 +528,7 @@ Commands:
   omega-v policy [list|evaluate]    List declarative policy documents or evaluate context
   omega-v zk [circuits|prove]       Generate and verify zero-knowledge succinct privacy proofs
   omega-v gateway [stats|request]   Inspect API gateway rate limits & anomaly alerts
+  omega-v webhook [list|register|trigger] Manage real-time verification event webhooks
   omega-v metrics                   Show system health and metrics
   omega-v log                       Display event provenance log
   omega-v integrity                 Verify event hash chain integrity

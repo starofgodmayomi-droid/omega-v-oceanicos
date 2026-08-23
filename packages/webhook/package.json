@@ -1,0 +1,32 @@
+{
+  "name": "@omega-v/webhook",
+  "version": "0.1.0",
+  "description": "Real-Time Verification Event Webhook Dispatcher with HMAC Signatures & Exponential Backoff for Ω∞v Oceanicos",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "test": "jest",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "keywords": [
+    "webhooks",
+    "event-bus",
+    "push-notifications",
+    "hmac-signatures",
+    "exponential-backoff",
+    "oceanicos"
+  ],
+  "author": "Ω∞v Community",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@omega-v/types": "*"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.0",
+    "jest": "^29.5.0",
+    "ts-jest": "^29.1.0",
+    "typescript": "^5.0.0"
+  }
+}

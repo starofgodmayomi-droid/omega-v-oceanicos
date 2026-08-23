@@ -22,6 +22,7 @@ import { OceanicosSandboxEngine } from '@omega-v/sandbox';
 import { OceanicosPolicyEngine } from '@omega-v/policy';
 import { OceanicosZKEngine } from '@omega-v/zk';
 import { OceanicosGatewayEngine } from '@omega-v/gateway';
+import { OceanicosWebhookEngine } from '@omega-v/webhook';
 import app from '../../apps/api/src/index';
 
 describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => {
@@ -687,6 +688,48 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       expect(anomalies.length).toBeGreaterThanOrEqual(2); // REPLAY_ATTACK + RATE_SPIKE
       const stats = gateway.getStats();
       expect(stats.blockedRequests).toBeGreaterThanOrEqual(1);
+    });
+  });
+
+  describe('21. Real-Time Webhooks & Push Attestation Delivery E2E', () => {
+    it('should dispatch signed HMAC verification events, manage subscriptions, and record delivery receipts', async () => {
+      const webhookEngine = new OceanicosWebhookEngine();
+
+      // Bootstrap check
+      const subs = webhookEngine.getSubscriptions();
+      expect(subs.length).toBeGreaterThanOrEqual(2);
+
+      // Register new custom webhook
+      const customSub = webhookEngine.registerSubscription({
+        id: 'sub-e2e-listener',
+        name: 'E2E Test Listener',
+        url: 'https://e2e.oceanicos.internal/hook',
+        events: ['ATTESTATION_CREATED', 'POLICY_VIOLATED'],
+        secret: 'whsec_e2e_secret_test_123',
+      });
+      expect(customSub.id).toBe('sub-e2e-listener');
+
+      // Dispatch event
+      const attempts = await webhookEngine.dispatchEvent('ATTESTATION_CREATED', {
+        claim: 'system-uptime > 99.99%',
+        attestedBy: 'Ω∞v-Primary-Attestor',
+        confidence: 0.999,
+      });
+
+      expect(attempts.length).toBeGreaterThanOrEqual(2);
+      expect(attempts.some((a) => a.subscriptionId === 'sub-e2e-listener')).toBe(true);
+
+      // Verify HMAC signature
+      const attempt = attempts.find((a) => a.subscriptionId === 'sub-e2e-listener')!;
+      expect(attempt.signature).toMatch(/^sha256=[a-f0-9]{64}$/);
+      expect(attempt.status).toBe('SUCCESS');
+
+      // Delivery history & stats
+      const history = webhookEngine.getDeliveryHistory();
+      expect(history.length).toBeGreaterThanOrEqual(2);
+      const stats = webhookEngine.getStats();
+      expect(stats.successfulDeliveries).toBeGreaterThanOrEqual(2);
+      expect(stats.successRate).toBe(100);
     });
   });
 });

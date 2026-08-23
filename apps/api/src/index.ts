@@ -24,6 +24,7 @@ import { OceanicosSandboxEngine } from '@omega-v/sandbox';
 import { OceanicosPolicyEngine } from '@omega-v/policy';
 import { OceanicosZKEngine } from '@omega-v/zk';
 import { OceanicosGatewayEngine } from '@omega-v/gateway';
+import { OceanicosWebhookEngine } from '@omega-v/webhook';
 import {
   SuccessResponse,
   ErrorResponse,
@@ -78,6 +79,7 @@ const sandboxEngine = new OceanicosSandboxEngine();
 const policyEngine = new OceanicosPolicyEngine();
 const zkEngine = new OceanicosZKEngine();
 const gatewayEngine = new OceanicosGatewayEngine();
+const webhookEngine = new OceanicosWebhookEngine();
 
 // Register default rules
 verificationEngine.registerRule({
@@ -1471,6 +1473,78 @@ app.post('/gateway/request', (req: Request, res: Response) => {
 app.get('/gateway/anomalies', (_req: Request, res: Response) => {
   res.json({
     data: { anomalies: gatewayEngine.getAnomalies() },
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** GET /webhooks — List all webhook subscriptions & delivery stats (Section XL) */
+app.get('/webhooks', (_req: Request, res: Response) => {
+  res.json({
+    data: {
+      subscriptions: webhookEngine.getSubscriptions(),
+      stats: webhookEngine.getStats(),
+    },
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /webhooks — Register a new webhook subscription */
+app.post('/webhooks', (req: Request, res: Response) => {
+  const { name, url, events, secret, maxRetries } = req.body || {};
+  if (!name || !url || !events || !Array.isArray(events)) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'name, url, and events array are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  const sub = webhookEngine.registerSubscription({
+    name,
+    url,
+    events,
+    secret,
+    maxRetries,
+  });
+
+  res.json({
+    data: sub,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /webhooks/dispatch — Trigger a verification event to active webhook subscribers */
+app.post('/webhooks/dispatch', async (req: Request, res: Response) => {
+  const { event, data } = req.body || {};
+  if (!event || !data) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'event and data payload are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const attempts = await webhookEngine.dispatchEvent(event, data);
+    res.json({
+      data: { attempts, count: attempts.length },
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(500).json({
+      code: 'DISPATCH_ERROR',
+      message: err instanceof Error ? err.message : 'Dispatch failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** GET /webhooks/deliveries — Get historical delivery attempts */
+app.get('/webhooks/deliveries', (_req: Request, res: Response) => {
+  res.json({
+    data: { deliveries: webhookEngine.getDeliveryHistory() },
     timestamp: new Date().toISOString(),
   });
 });
