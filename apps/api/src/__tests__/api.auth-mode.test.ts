@@ -14,6 +14,11 @@ type LoadedApi = {
     readToken?: string,
     adminToken?: string
   ) => string[];
+  invalidRequiredAuthTokenConfiguration: (
+    mode: 'local' | 'required',
+    readToken?: string,
+    adminToken?: string
+  ) => string | null;
   parseAuthMode: (value?: string) => 'local' | 'required';
 };
 
@@ -94,6 +99,24 @@ describe('required API authentication profile', () => {
     jest.resetModules();
     expect(() => requireFromModule('../index')).toThrow(
       /OMEGA_AUTH_MODE=required needs configured bearer tokens/
+    );
+  });
+
+  it('rejects identical read and admin tokens in required mode', () => {
+    const { invalidRequiredAuthTokenConfiguration } = loadRequiredApi();
+    expect(invalidRequiredAuthTokenConfiguration('local', 'same-token', 'same-token')).toBeNull();
+    expect(
+      invalidRequiredAuthTokenConfiguration('required', 'read-token', 'admin-token')
+    ).toBeNull();
+    expect(invalidRequiredAuthTokenConfiguration('required', ' same-token ', 'same-token')).toBe(
+      'OMEGA_READ_TOKEN and OMEGA_ADMIN_TOKEN must be distinct'
+    );
+
+    process.env.OMEGA_READ_TOKEN = 'same-token';
+    process.env.OMEGA_ADMIN_TOKEN = 'same-token';
+    jest.resetModules();
+    expect(() => requireFromModule('../index')).toThrow(
+      /OMEGA_AUTH_MODE=required OMEGA_READ_TOKEN and OMEGA_ADMIN_TOKEN must be distinct/
     );
   });
 

@@ -94,6 +94,24 @@ export const missingRequiredAuthTokens = (
       ].filter((name): name is string => name !== null)
     : [];
 
+export const invalidRequiredAuthTokenConfiguration = (
+  mode: ApiAuthMode,
+  readToken?: string,
+  adminToken?: string
+): string | null => {
+  const normalizedReadToken = readToken?.trim();
+  const normalizedAdminToken = adminToken?.trim();
+  if (
+    mode === 'required' &&
+    normalizedReadToken &&
+    normalizedAdminToken &&
+    normalizedReadToken === normalizedAdminToken
+  ) {
+    return 'OMEGA_READ_TOKEN and OMEGA_ADMIN_TOKEN must be distinct';
+  }
+  return null;
+};
+
 const missingAuthTokens = missingRequiredAuthTokens(
   authMode,
   process.env.OMEGA_READ_TOKEN,
@@ -103,6 +121,15 @@ if (missingAuthTokens.length > 0) {
   throw new Error(
     `${AUTH_MODE_ENV}=required needs configured bearer tokens: ${missingAuthTokens.join(', ')}`
   );
+}
+
+const invalidAuthTokenConfiguration = invalidRequiredAuthTokenConfiguration(
+  authMode,
+  process.env.OMEGA_READ_TOKEN,
+  process.env.OMEGA_ADMIN_TOKEN
+);
+if (invalidAuthTokenConfiguration) {
+  throw new Error(`${AUTH_MODE_ENV}=required ${invalidAuthTokenConfiguration}`);
 }
 
 const app: Express = express();
