@@ -98,6 +98,35 @@ interface LearningData {
   historyCount: number;
 }
 
+interface RuleEfficacy {
+  ruleName: string;
+  totalExecutions: number;
+  passCount: number;
+  failCount: number;
+  efficacyScore: number;
+  avgConfidence: number;
+}
+
+interface AnalyticsProposal {
+  ruleName: string;
+  currentEfficacy: number;
+  recommendedAction: string;
+  rationale: string;
+}
+
+interface AnalyticsData {
+  summary: {
+    totalEvents: number;
+    totalVerifications: number;
+    overallPassRate: number;
+    avgConfidence: number;
+    anomaliesDetected: number;
+    ruleEfficacyMap: Record<string, RuleEfficacy>;
+    analyzedAt: string;
+  };
+  proposals: AnalyticsProposal[];
+}
+
 const MOOD_ICONS: Record<string, string> = {
   OPTIMAL_FLOW: '🌊',
   HIGH_INTEGRITY: '💎',
@@ -234,21 +263,32 @@ export function App(): JSX.Element {
   const [greenState, setGreenState] = useState<GreenData | null>(null);
   const [governanceData, setGovernanceData] = useState<GovernanceData | null>(null);
   const [learningData, setLearningData] = useState<LearningData | null>(null);
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
 
   // ── Poll log + metrics ──
   const fetchState = useCallback(async () => {
     try {
-      const [logRes, metricsRes, moodRes, frictionRes, dissentRes, greenRes, govRes, learnRes] =
-        await Promise.all([
-          fetch(`${API_BASE}/log?limit=30`),
-          fetch(`${API_BASE}/metrics`),
-          fetch(`${API_BASE}/mood`),
-          fetch(`${API_BASE}/friction`),
-          fetch(`${API_BASE}/dissent`),
-          fetch(`${API_BASE}/green`),
-          fetch(`${API_BASE}/governance`),
-          fetch(`${API_BASE}/learning`),
-        ]);
+      const [
+        logRes,
+        metricsRes,
+        moodRes,
+        frictionRes,
+        dissentRes,
+        greenRes,
+        govRes,
+        learnRes,
+        analyticsRes,
+      ] = await Promise.all([
+        fetch(`${API_BASE}/log?limit=30`),
+        fetch(`${API_BASE}/metrics`),
+        fetch(`${API_BASE}/mood`),
+        fetch(`${API_BASE}/friction`),
+        fetch(`${API_BASE}/dissent`),
+        fetch(`${API_BASE}/green`),
+        fetch(`${API_BASE}/governance`),
+        fetch(`${API_BASE}/learning`),
+        fetch(`${API_BASE}/analytics`),
+      ]);
       if (!logRes.ok || !metricsRes.ok) throw new Error('API error');
 
       const logData = await logRes.json();
@@ -267,6 +307,7 @@ export function App(): JSX.Element {
       if (greenRes.ok) setGreenState((await greenRes.json()).data as GreenData);
       if (govRes.ok) setGovernanceData((await govRes.json()).data as GovernanceData);
       if (learnRes.ok) setLearningData((await learnRes.json()).data as LearningData);
+      if (analyticsRes.ok) setAnalyticsData((await analyticsRes.json()).data as AnalyticsData);
     } catch {
       setApiOnline(false);
     }
@@ -765,6 +806,243 @@ export function App(): JSX.Element {
                   );
                 })}
               </div>
+            </div>
+          )}
+
+          {/* ── Rule Efficacy & Analytics Engine (Phase 4) ── */}
+          {analyticsData && (
+            <div
+              style={{
+                background: 'var(--bg-card)',
+                border: '1px solid rgba(99,179,237,0.3)',
+                borderRadius: 'var(--radius)',
+                padding: 20,
+                marginBottom: 24,
+              }}
+            >
+              <div
+                style={{
+                  fontWeight: 700,
+                  fontSize: '0.95rem',
+                  color: 'var(--accent-primary)',
+                  marginBottom: 14,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                }}
+              >
+                <span>📊 Rule Efficacy & Analytics Engine</span>
+                <span
+                  style={{
+                    fontSize: '0.72rem',
+                    background: 'rgba(99,179,237,0.12)',
+                    color: 'var(--accent-primary)',
+                    padding: '2px 8px',
+                    borderRadius: 4,
+                  }}
+                >
+                  {(analyticsData.summary.overallPassRate * 100).toFixed(0)}% Pass Rate ·{' '}
+                  {analyticsData.summary.totalVerifications} Verifications
+                </span>
+              </div>
+
+              {/* Summary metrics row */}
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+                  gap: 10,
+                  marginBottom: 16,
+                }}
+              >
+                {[
+                  { label: 'Total Events', value: analyticsData.summary.totalEvents, icon: '📋' },
+                  {
+                    label: 'Avg Confidence',
+                    value: `${(analyticsData.summary.avgConfidence * 100).toFixed(0)}%`,
+                    icon: '🎯',
+                  },
+                  {
+                    label: 'Anomalies',
+                    value: analyticsData.summary.anomaliesDetected,
+                    icon: '⚠️',
+                  },
+                  { label: 'Rules Active', value: analyticsData.proposals.length, icon: '📐' },
+                ].map((m) => (
+                  <div
+                    key={m.label}
+                    style={{
+                      background: 'var(--bg-surface)',
+                      border: '1px solid var(--border)',
+                      borderRadius: 'var(--radius-sm)',
+                      padding: '10px 12px',
+                      textAlign: 'center',
+                    }}
+                  >
+                    <div style={{ fontSize: '1.1rem', marginBottom: 4 }}>{m.icon}</div>
+                    <div
+                      style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text-primary)' }}
+                    >
+                      {m.value}
+                    </div>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                      {m.label}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Per-rule efficacy bars */}
+              {Object.values(analyticsData.summary.ruleEfficacyMap).length > 0 && (
+                <div style={{ marginBottom: 14 }}>
+                  <div
+                    style={{
+                      fontSize: '0.78rem',
+                      fontWeight: 600,
+                      color: 'var(--text-secondary)',
+                      marginBottom: 8,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.06em',
+                    }}
+                  >
+                    Per-Rule Efficacy
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {Object.values(analyticsData.summary.ruleEfficacyMap).map((r) => (
+                      <div key={r.ruleName}>
+                        <div
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            fontSize: '0.74rem',
+                            marginBottom: 3,
+                          }}
+                        >
+                          <span
+                            style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}
+                          >
+                            {r.ruleName}
+                          </span>
+                          <span
+                            style={{
+                              color:
+                                r.efficacyScore > 0.7
+                                  ? 'var(--accent-green)'
+                                  : r.efficacyScore > 0.4
+                                    ? 'var(--accent-amber)'
+                                    : 'var(--accent-red)',
+                              fontWeight: 700,
+                            }}
+                          >
+                            {(r.efficacyScore * 100).toFixed(0)}% ({r.passCount}/{r.totalExecutions}
+                            )
+                          </span>
+                        </div>
+                        <div
+                          style={{
+                            background: 'var(--bg-surface)',
+                            borderRadius: 4,
+                            height: 6,
+                            overflow: 'hidden',
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: `${r.efficacyScore * 100}%`,
+                              height: '100%',
+                              background:
+                                r.efficacyScore > 0.7
+                                  ? 'var(--accent-green)'
+                                  : r.efficacyScore > 0.4
+                                    ? 'var(--accent-amber)'
+                                    : 'var(--accent-red)',
+                              borderRadius: 4,
+                              transition: 'width 0.4s ease',
+                            }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Adaptation proposals */}
+              {analyticsData.proposals.length > 0 && (
+                <div>
+                  <div
+                    style={{
+                      fontSize: '0.78rem',
+                      fontWeight: 600,
+                      color: 'var(--text-secondary)',
+                      marginBottom: 8,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.06em',
+                    }}
+                  >
+                    Adaptation Proposals
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {analyticsData.proposals.map((p) => {
+                      const actionColors: Record<string, string> = {
+                        MAINTAIN: 'var(--accent-green)',
+                        INCREASE_CONFIDENCE_THRESHOLD: 'var(--accent-primary)',
+                        REDUCE_STRICTNESS: 'var(--accent-amber)',
+                        DEPRECATE: 'var(--accent-red)',
+                      };
+                      return (
+                        <div
+                          key={p.ruleName}
+                          style={{
+                            background: 'var(--bg-surface)',
+                            border: '1px solid var(--border)',
+                            borderRadius: 'var(--radius-sm)',
+                            padding: '8px 12px',
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            gap: 10,
+                          }}
+                        >
+                          <span
+                            style={{
+                              fontSize: '0.68rem',
+                              fontWeight: 700,
+                              color: actionColors[p.recommendedAction] || 'var(--text-muted)',
+                              background: 'rgba(0,0,0,0.2)',
+                              padding: '2px 6px',
+                              borderRadius: 4,
+                              whiteSpace: 'nowrap',
+                              marginTop: 1,
+                            }}
+                          >
+                            {p.recommendedAction.replace(/_/g, ' ')}
+                          </span>
+                          <div>
+                            <div
+                              style={{
+                                fontFamily: 'var(--font-mono)',
+                                fontSize: '0.75rem',
+                                color: 'var(--text-primary)',
+                              }}
+                            >
+                              {p.ruleName}
+                            </div>
+                            <div
+                              style={{
+                                fontSize: '0.7rem',
+                                color: 'var(--text-muted)',
+                                marginTop: 2,
+                              }}
+                            >
+                              {p.rationale}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

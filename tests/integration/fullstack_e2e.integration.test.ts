@@ -8,6 +8,7 @@ import { OceanicosClient } from '@omega-v/sdk';
 import { FormlessSwarm } from '@omega-v/agents';
 import { OceanicosCLI } from '@omega-v/cli';
 import { EdgeObserver } from '@omega-v/edge';
+import { VerificationAnalyticsEngine } from '@omega-v/analytics';
 import app from '../../apps/api/src/index';
 
 describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => {
@@ -160,6 +161,35 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
     it('should export defined Express API application handler', () => {
       expect(app).toBeDefined();
       expect(typeof app).toBe('function');
+    });
+  });
+
+  describe('7. Verification Analytics Engine E2E', () => {
+    it('should compute rule efficacy and adaptation proposals over real provenance log', async () => {
+      // Generate 3 real verification loop entries so analytics has data to analyze
+      for (let i = 0; i < 3; i++) {
+        await sdk.runLoop({ claim: `E2E Analytics Claim ${i}` });
+      }
+
+      const events = sdk.getLogEntries();
+      const verificationEvents = events.filter((e) => e.type === 'VERIFICATION');
+      expect(verificationEvents.length).toBeGreaterThanOrEqual(3);
+
+      const analyticsEngine = new VerificationAnalyticsEngine();
+      const summary = analyticsEngine.analyzeLogs(events);
+
+      expect(summary.totalEvents).toBeGreaterThan(0);
+      expect(summary.totalVerifications).toBeGreaterThanOrEqual(3);
+      expect(summary.overallPassRate).toBeGreaterThanOrEqual(0);
+      expect(summary.overallPassRate).toBeLessThanOrEqual(1);
+      expect(summary.avgConfidence).toBeGreaterThan(0);
+      expect(typeof summary.analyzedAt).toBe('string');
+
+      // Use a fresh VerificationEngine to get rule definitions
+      const localVE = new VerificationEngine();
+      const rules = localVE.getRules();
+      const proposals = analyticsEngine.generateAdaptationProposals(summary, rules);
+      expect(Array.isArray(proposals)).toBe(true);
     });
   });
 });
