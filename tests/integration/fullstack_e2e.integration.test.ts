@@ -13,6 +13,7 @@ import { VerificationScheduler } from '@omega-v/scheduler';
 import { TelemetryTracer, VerificationSLOEngine } from '@omega-v/telemetry';
 import { VaaSGate } from '@omega-v/vaas';
 import { VerificationReplayEngine } from '@omega-v/replay';
+import { FormalContractEngine } from '@omega-v/contract';
 import app from '../../apps/api/src/index';
 
 describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => {
@@ -333,6 +334,77 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       expect(summary.totalReplays).toBe(1);
       expect(summary.tags).toContain('e2e');
       expect(summary.tags).toContain('replay');
+    });
+  });
+
+  describe('12. Formal Schema & Behavioral Contract Engine E2E', () => {
+    it('should register contracts, verify valid payloads, flag schema violations, and test compatibility', () => {
+      const contractEngine = new FormalContractEngine();
+
+      // Verify canonical observation contract
+      const validObs = contractEngine.verify(
+        {
+          claim: 'E2E Contract Formal Verification Claim',
+          category: 'e2e-contract',
+          observedBy: 'e2e-observer',
+          confidence: 0.99,
+        },
+        'canonical-observation-contract'
+      );
+
+      expect(validObs.valid).toBe(true);
+      expect(validObs.violations).toHaveLength(0);
+      expect(validObs.fieldsEvaluated).toBe(4);
+      expect(validObs.invariantsEvaluated).toBe(2);
+
+      // Verify health SLA contract violation
+      const violatedSLA = contractEngine.verify(
+        {
+          responseTime: 450, // exceeds SLA invariant < 200ms
+          statusCode: 200,
+        },
+        'health-sla-contract'
+      );
+
+      expect(violatedSLA.valid).toBe(false);
+      expect(violatedSLA.violations.some((v) => v.invariant === 'low-latency-sla')).toBe(true);
+
+      // Register new custom contract
+      const customContract = contractEngine.registerContract({
+        name: 'e2e-settlement-contract',
+        version: '1.0.0',
+        category: 'e2e',
+        description: 'E2E test settlement contract',
+        fields: {
+          txId: { type: 'string', required: true, min: 5 },
+          amount: { type: 'number', required: true, min: 1 },
+        },
+        invariants: [
+          {
+            name: 'non-zero-amount',
+            kind: 'PRECONDITION',
+            description: 'Amount must be greater than zero',
+            expression: 'amount > 0',
+          },
+        ],
+        active: true,
+      });
+
+      expect(contractEngine.getContract('e2e-settlement-contract')?.id).toBe(customContract.id);
+
+      // Test compatibility check
+      const compatibleUpdate = {
+        ...customContract,
+        version: '1.1.0',
+        fields: {
+          ...customContract.fields,
+          notes: { type: 'string' as const, required: false },
+        },
+      };
+
+      const compat = contractEngine.checkCompatibility(customContract, compatibleUpdate);
+      expect(compat.compatible).toBe(true);
+      expect(compat.breakingChanges).toHaveLength(0);
     });
   });
 });

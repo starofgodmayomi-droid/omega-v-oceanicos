@@ -15,6 +15,7 @@ import { VerificationScheduler } from '@omega-v/scheduler';
 import { TelemetryTracer, VerificationSLOEngine } from '@omega-v/telemetry';
 import { VaaSGate } from '@omega-v/vaas';
 import { VerificationReplayEngine } from '@omega-v/replay';
+import { FormalContractEngine } from '@omega-v/contract';
 import {
   SuccessResponse,
   ErrorResponse,
@@ -60,6 +61,7 @@ const tracer = new TelemetryTracer();
 const sloEngine = new VerificationSLOEngine();
 const vaasGate = new VaaSGate();
 const replayEngine = new VerificationReplayEngine();
+const contractEngine = new FormalContractEngine();
 
 // Register default rules
 verificationEngine.registerRule({
@@ -893,6 +895,69 @@ app.get('/replay/:idA/diff/:idB', (req: Request, res: Response) => {
     res.status(404).json({
       code: 'DIFF_FAILED',
       message: err instanceof Error ? err.message : 'Diff computation failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** GET /contracts — List all registered formal contracts (Section XXXI) */
+app.get('/contracts', (_req: Request, res: Response) => {
+  res.json({
+    data: { contracts: contractEngine.getContracts() },
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /contracts — Register a new formal contract (Section XXXI) */
+app.post('/contracts', (req: Request, res: Response) => {
+  const { name, version, category, description, fields, invariants } = req.body || {};
+  if (!name || !fields) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'name and fields are required for contract registration',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  const contract = contractEngine.registerContract({
+    name,
+    version: version || '1.0.0',
+    category: category || 'general',
+    description: description || '',
+    fields,
+    invariants: invariants || [],
+    active: true,
+  });
+
+  res.status(201).json({
+    data: contract,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /contracts/verify — Verify payload data against a contract schema and invariants */
+app.post('/contracts/verify', (req: Request, res: Response) => {
+  const { data, contractIdOrName, context } = req.body || {};
+  if (!data || !contractIdOrName) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'data and contractIdOrName are required for contract verification',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const result = contractEngine.verify(data, contractIdOrName, context);
+    res.json({
+      data: result,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(404).json({
+      code: 'CONTRACT_NOT_FOUND',
+      message: err instanceof Error ? err.message : 'Contract verification failed',
       timestamp: new Date().toISOString(),
     });
   }

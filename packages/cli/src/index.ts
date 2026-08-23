@@ -6,6 +6,7 @@ import { VerificationScheduler } from '@omega-v/scheduler';
 import { TelemetryTracer, VerificationSLOEngine } from '@omega-v/telemetry';
 import { VaaSGate } from '@omega-v/vaas';
 import { VerificationReplayEngine } from '@omega-v/replay';
+import { FormalContractEngine } from '@omega-v/contract';
 
 export interface CLIResult {
   success: boolean;
@@ -224,6 +225,37 @@ export class OceanicosCLI {
         };
       }
 
+      case 'contract': {
+        const engine = new FormalContractEngine();
+        const subCommand = args[1] || 'list';
+
+        if (subCommand === 'verify') {
+          const contractIdOrName = args[2] || 'health-sla-contract';
+          const sampleData = { responseTime: 45, statusCode: 200 };
+          const result = engine.verify(sampleData, contractIdOrName);
+
+          return {
+            success: result.valid,
+            message: `[Ω∞v CLI] Contract '${result.contractName}' Verification: ${result.valid ? 'VALID (PASSED)' : 'VIOLATED (FAILED)'}`,
+            output: result,
+          };
+        }
+
+        const contracts = engine.getContracts();
+        return {
+          success: true,
+          message: `[Ω∞v CLI] Formal Contracts Registered: ${contracts.length}`,
+          output: contracts.map((c) => ({
+            id: c.id,
+            name: c.name,
+            version: c.version,
+            category: c.category,
+            fields: Object.keys(c.fields).length,
+            invariants: c.invariants.length,
+          })),
+        };
+      }
+
       case 'help':
       default: {
         return {
@@ -239,6 +271,7 @@ Commands:
   omega-v trace [name]              Generate W3C distributed trace context
   omega-v vaas register [name] [tier] Register multi-tenant VaaS organization
   omega-v replay [claim] [label]    Capture & replay verification snapshot with diff
+  omega-v contract [list|verify]    List formal contracts or verify sample payload
   omega-v metrics                   Show system health and metrics
   omega-v log                       Display event provenance log
   omega-v integrity                 Verify event hash chain integrity
