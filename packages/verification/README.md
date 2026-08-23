@@ -31,14 +31,15 @@ engine.registerRule({
 // Verify an observation
 const result = engine.verify(observation);
 
-console.log(result.summary.passed);           // true/false
-console.log(result.evidencePath);             // Step-by-step reasoning
-console.log(result.ruleVersions);             // Which rule versions were used
+console.log(result.summary.passed); // true/false
+console.log(result.evidencePath); // Step-by-step reasoning
+console.log(result.ruleVersions); // Which rule versions were used
 ```
 
 ## Features
 
 ### Rule Registration
+
 Register custom verification rules:
 
 ```typescript
@@ -54,6 +55,7 @@ engine.registerRule({
 ```
 
 ### Rule Matching
+
 Automatically applies only relevant rules:
 
 ```typescript
@@ -67,6 +69,7 @@ const applicableRules = engine.getApplicableRules(observation);
 ```
 
 ### Evidence Paths
+
 Every verification produces a detailed evidence trail:
 
 ```typescript
@@ -82,6 +85,7 @@ Every verification produces a detailed evidence trail:
 ```
 
 ### Caching
+
 Results are cached by observation ID (default TTL: 60 seconds):
 
 ```typescript
@@ -119,6 +123,7 @@ Verify an observation against all applicable rules.
 **Returns:** `VerificationResult`
 
 **Result includes:**
+
 - `summary` — Overall pass/fail and statistics
 - `rules` — Results from each rule
 - `evidencePath` — Step-by-step reasoning
@@ -144,6 +149,7 @@ The engine comes with example rules for demonstration:
 ## Implementing Custom Rules
 
 In v0.1.0, rules are implemented as built-in examples. Future versions will support:
+
 - Rule language (DSL) with compiler
 - Bytecode execution
 - User-defined rule functions

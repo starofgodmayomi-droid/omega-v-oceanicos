@@ -88,7 +88,9 @@ export class SecurityEngine {
       allowed: hasPermission,
       subjectId: subject.id,
       requiredPermission,
-      reason: hasPermission ? 'Permission granted' : `Missing required permission: ${requiredPermission}`,
+      reason: hasPermission
+        ? 'Permission granted'
+        : `Missing required permission: ${requiredPermission}`,
       timestamp,
     };
 

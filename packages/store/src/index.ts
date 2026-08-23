@@ -112,7 +112,12 @@ export class ProvenanceStore {
         return { valid: false, brokenAt: entry.id };
       }
 
-      const recomputed = this.computeHash(entry.type, entry.data, entry.recordedAt, entry.previousHash);
+      const recomputed = this.computeHash(
+        entry.type,
+        entry.data,
+        entry.recordedAt,
+        entry.previousHash
+      );
       if (entry.hash !== recomputed) {
         return { valid: false, brokenAt: entry.id };
       }
@@ -160,9 +165,7 @@ export class ProvenanceStore {
     this.sequenceCounter++;
     const recordedAt = new Date().toISOString();
     const previousHash =
-      this.log.length === 0
-        ? ProvenanceStore.GENESIS_HASH
-        : this.log[this.log.length - 1].hash;
+      this.log.length === 0 ? ProvenanceStore.GENESIS_HASH : this.log[this.log.length - 1].hash;
 
     const hash = this.computeHash(type, data, recordedAt, previousHash);
 

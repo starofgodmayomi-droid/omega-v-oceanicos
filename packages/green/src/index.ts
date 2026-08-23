@@ -30,9 +30,12 @@ export class GreenEngine {
 
     // 3. LINEAGE_EXISTS
     // Verify that the lineage connects this verification back to the original observation
-    const lineageExists = lineageEvents.length > 0 && 
-      lineageEvents.some(e => e.type === 'OBSERVATION' && e.data.id === verification.observationId);
-    
+    const lineageExists =
+      lineageEvents.length > 0 &&
+      lineageEvents.some(
+        (e) => e.type === 'OBSERVATION' && e.data.id === verification.observationId
+      );
+
     if (allChecksPassed && evidenceExists && !lineageExists) {
       reason = 'Unbroken lineage to original observation does not exist.';
     }
@@ -45,12 +48,21 @@ export class GreenEngine {
 
     // 5. NO_HIDDEN_CRITICAL_FAILURE
     // Scan evidence path for critical failures even if overall result passed
-    const noCriticalFailures = !verification.evidencePath.some(e => e.severity === 'critical' && !e.passed);
-    if (allChecksPassed && evidenceExists && lineageExists && attestationExists && !noCriticalFailures) {
+    const noCriticalFailures = !verification.evidencePath.some(
+      (e) => e.severity === 'critical' && !e.passed
+    );
+    if (
+      allChecksPassed &&
+      evidenceExists &&
+      lineageExists &&
+      attestationExists &&
+      !noCriticalFailures
+    ) {
       reason = 'Hidden critical failure detected in evidence path.';
     }
 
-    const isGreen = allChecksPassed && evidenceExists && lineageExists && attestationExists && noCriticalFailures;
+    const isGreen =
+      allChecksPassed && evidenceExists && lineageExists && attestationExists && noCriticalFailures;
 
     return {
       isGreen,
@@ -60,7 +72,7 @@ export class GreenEngine {
       attestationExists,
       noCriticalFailures,
       reason,
-      evaluatedAt: new Date().toISOString()
+      evaluatedAt: new Date().toISOString(),
     };
   }
 }

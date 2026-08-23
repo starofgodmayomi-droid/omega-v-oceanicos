@@ -4,7 +4,11 @@ export class MoodEvaluator {
   /**
    * Evaluate the current system mood from measurable telemetry (Pillar 19)
    */
-  public evaluate(metrics: SystemMetrics, integrityValid: boolean, dissentCount: number = 0): SystemMood {
+  public evaluate(
+    metrics: SystemMetrics,
+    integrityValid: boolean,
+    dissentCount: number = 0
+  ): SystemMood {
     const confidence = metrics.systemConfidence || 0.87;
     const successRate = metrics.successRate ?? 1.0;
     const verificationHealth = integrityValid ? successRate : 0.0;

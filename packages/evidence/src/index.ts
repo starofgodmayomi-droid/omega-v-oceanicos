@@ -56,7 +56,7 @@ export class EvidenceEngine {
   private hashLineage(events: EventLogEntry[]): string {
     if (events.length === 0) return 'empty';
     // Simplified: Just hash the IDs and individual hashes together
-    const combined = events.map(e => `${e.id}:${e.hash}`).join('|');
+    const combined = events.map((e) => `${e.id}:${e.hash}`).join('|');
     return crypto.createHash('sha256').update(combined).digest('hex');
   }
 }

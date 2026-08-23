@@ -11,7 +11,13 @@
     "test": "jest",
     "clean": "rm -rf dist *.tsbuildinfo"
   },
-  "keywords": ["agents", "swarm", "formless", "provenance", "oceanicos"],
+  "keywords": [
+    "agents",
+    "swarm",
+    "formless",
+    "provenance",
+    "oceanicos"
+  ],
   "author": "Ω∞v Community",
   "license": "Apache-2.0",
   "dependencies": {

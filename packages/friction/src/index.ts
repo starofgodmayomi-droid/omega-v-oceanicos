@@ -1,4 +1,9 @@
-import { FrictionEvent, FrictionCategory, DissentRecord, DissentInterpretation } from '@omega-v/types';
+import {
+  FrictionEvent,
+  FrictionCategory,
+  DissentRecord,
+  DissentInterpretation,
+} from '@omega-v/types';
 
 /**
  * FrictionTracker: Converts system friction into observable evidence (Pillar 20)
@@ -88,7 +93,10 @@ export class FrictionTracker {
   }
 
   /** Query all friction events */
-  public getFriction(opts?: { status?: FrictionEvent['status']; category?: FrictionCategory }): FrictionEvent[] {
+  public getFriction(opts?: {
+    status?: FrictionEvent['status'];
+    category?: FrictionCategory;
+  }): FrictionEvent[] {
     let result = [...this.events];
     if (opts?.status) result = result.filter((e) => e.status === opts.status);
     if (opts?.category) result = result.filter((e) => e.category === opts.category);

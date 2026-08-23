@@ -94,7 +94,11 @@ describe('FrictionTracker (Pillars 20-21)', () => {
     it('should compute friction and dissent metrics', () => {
       tracker.record({ category: 'ERROR', source: 'a', description: 'err' });
       tracker.record({ category: 'LATENCY', source: 'b', description: 'slow' });
-      const e3 = tracker.record({ category: 'CONTRADICTION', source: 'c', description: 'conflict' });
+      const e3 = tracker.record({
+        category: 'CONTRADICTION',
+        source: 'c',
+        description: 'conflict',
+      });
       tracker.diagnose(e3.id, 'conflicting evidence');
       tracker.recordDissent('claim-1', [
         { position: 'X', source: 's', evidence: [], confidence: 0.8 },

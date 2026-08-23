@@ -24,7 +24,7 @@ export class HumanEngine {
       contextId,
       payload,
       rationale,
-      recordedAt: new Date().toISOString()
+      recordedAt: new Date().toISOString(),
     };
 
     this.humanInputs.set(input.id, input);
@@ -42,7 +42,7 @@ export class HumanEngine {
    * Get all human inputs for a specific context (e.g. a specific governance decision or verification)
    */
   public getInputsForContext(contextId: string): HumanInput[] {
-    return Array.from(this.humanInputs.values()).filter(input => input.contextId === contextId);
+    return Array.from(this.humanInputs.values()).filter((input) => input.contextId === contextId);
   }
 }
 

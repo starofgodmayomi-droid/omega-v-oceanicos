@@ -18,15 +18,24 @@ export class GovernanceEngine {
    * Request authorization for an action under governance constraints
    */
   public requestAction(
-    action: GovernanceAction, 
-    requestedBy: string, 
+    action: GovernanceAction,
+    requestedBy: string,
     context: { confidence?: number; risk?: number; [key: string]: unknown }
   ): GovernanceDecision {
-    const applicableRules = Array.from(this.rules.values()).filter(r => r.action === action && r.active);
+    const applicableRules = Array.from(this.rules.values()).filter(
+      (r) => r.action === action && r.active
+    );
 
     if (applicableRules.length === 0) {
       // Fail closed: If no rule allows it, deny it.
-      return this.createDecision(action, requestedBy, context, false, 'No active governance rules permit this action.', false);
+      return this.createDecision(
+        action,
+        requestedBy,
+        context,
+        false,
+        'No active governance rules permit this action.',
+        false
+      );
     }
 
     let requiresHumanApproval = false;
@@ -37,7 +46,7 @@ export class GovernanceEngine {
       if (rule.requiresHumanApproval) {
         requiresHumanApproval = true;
       }
-      
+
       const confidence = context.confidence ?? 0;
       if (confidence < rule.minimumConfidenceThreshold) {
         allowed = false;
@@ -54,19 +63,26 @@ export class GovernanceEngine {
     }
 
     if (allowed && requiresHumanApproval) {
-        allowed = false;
-        reason = 'Action requires human approval before proceeding.';
+      allowed = false;
+      reason = 'Action requires human approval before proceeding.';
     }
 
-    return this.createDecision(action, requestedBy, context, allowed, reason, requiresHumanApproval);
+    return this.createDecision(
+      action,
+      requestedBy,
+      context,
+      allowed,
+      reason,
+      requiresHumanApproval
+    );
   }
 
   private createDecision(
-    action: GovernanceAction, 
-    requestedBy: string, 
-    context: Record<string, unknown>, 
-    allowed: boolean, 
-    reason: string, 
+    action: GovernanceAction,
+    requestedBy: string,
+    context: Record<string, unknown>,
+    allowed: boolean,
+    reason: string,
     requiresHumanApproval: boolean
   ): GovernanceDecision {
     return {
@@ -77,7 +93,7 @@ export class GovernanceEngine {
       allowed,
       reason,
       requiresHumanApproval,
-      decidedAt: new Date().toISOString()
+      decidedAt: new Date().toISOString(),
     };
   }
 }

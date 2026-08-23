@@ -43,11 +43,12 @@ export class ProvenanceGraph {
       const e = events[i];
       const nodeId = `event-${e.id}`;
       const dataAny = e.data as any; // eslint-disable-line @typescript-eslint/no-explicit-any
-      const label = e.type === 'OBSERVATION'
-        ? dataAny.claim?.statement ?? 'Observation'
-        : e.type === 'VERIFICATION'
-        ? `Verified (${dataAny.summary?.passed ? 'PASSED' : 'FAILED'})`
-        : `Signed Attestation (${dataAny.signature?.slice(0, 10)}…)`;
+      const label =
+        e.type === 'OBSERVATION'
+          ? (dataAny.claim?.statement ?? 'Observation')
+          : e.type === 'VERIFICATION'
+            ? `Verified (${dataAny.summary?.passed ? 'PASSED' : 'FAILED'})`
+            : `Signed Attestation (${dataAny.signature?.slice(0, 10)}…)`;
 
       this.addNode({
         id: nodeId,
@@ -61,11 +62,12 @@ export class ProvenanceGraph {
       // Chain edge from previous event in hash-chain
       if (i > 0) {
         const prevNodeId = `event-${events[i - 1].id}`;
-        const relation = e.type === 'VERIFICATION'
-          ? 'VERIFIED_BY'
-          : e.type === 'ATTESTATION'
-          ? 'ATTESTED_BY'
-          : 'PRODUCED';
+        const relation =
+          e.type === 'VERIFICATION'
+            ? 'VERIFIED_BY'
+            : e.type === 'ATTESTATION'
+              ? 'ATTESTED_BY'
+              : 'PRODUCED';
 
         this.addEdge({
           id: `edge-${prevNodeId}-${nodeId}`,
@@ -89,7 +91,11 @@ export class ProvenanceGraph {
   }
 
   /** General BFS traversal */
-  private bfs(startId: string, direction: 'FORWARD' | 'BACKWARD', maxDepth: number): GraphTraversalResult {
+  private bfs(
+    startId: string,
+    direction: 'FORWARD' | 'BACKWARD',
+    maxDepth: number
+  ): GraphTraversalResult {
     const visitedNodes = new Set<string>();
     const visitedEdges = new Set<string>();
     const queue: { id: string; depth: number }[] = [{ id: startId, depth: 0 }];
@@ -103,18 +109,18 @@ export class ProvenanceGraph {
 
       if (depth >= maxDepth) continue;
 
-      const neighbors = direction === 'FORWARD'
-        ? this.adjacencyForward.get(id)
-        : this.adjacencyBackward.get(id);
+      const neighbors =
+        direction === 'FORWARD' ? this.adjacencyForward.get(id) : this.adjacencyBackward.get(id);
 
       if (!neighbors) continue;
 
       for (const nextId of neighbors) {
         // Find corresponding edge
         for (const edge of this.edges.values()) {
-          const isMatch = direction === 'FORWARD'
-            ? edge.sourceId === id && edge.targetId === nextId
-            : edge.sourceId === nextId && edge.targetId === id;
+          const isMatch =
+            direction === 'FORWARD'
+              ? edge.sourceId === id && edge.targetId === nextId
+              : edge.sourceId === nextId && edge.targetId === id;
           if (isMatch) visitedEdges.add(edge.id);
         }
 

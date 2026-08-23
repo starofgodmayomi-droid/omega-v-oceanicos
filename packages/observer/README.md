@@ -35,32 +35,37 @@ const observation = observer.observe({
   confidenceReason: '3 consecutive successful checks',
 });
 
-console.log(observation.id);     // obs-2026-08-07-1
+console.log(observation.id); // obs-2026-08-07-1
 console.log(observation.status); // normalized
 ```
 
 ## Features
 
 ### Validation
+
 All observations are validated against the required schema:
+
 - `claim` — Required, must be a string
 - `source.system` — Required, identifies the source
 - `confidence` — Must be between 0 and 1
 - `confidenceReason` — Required, explains the confidence level
 
 ### Deduplication
+
 Automatically identifies duplicate observations within a time window (default: 60 seconds).
 
 ```typescript
-const obs1 = observer.observe({ /* ... */ });
-const obs2 = observer.observe({ /* same claim */ });
+const obs1 = observer.observe({/* ... */});
+const obs2 = observer.observe({/* same claim */});
 
 // obs2.id === obs1.id (deduplicated)
 // obs2.metadata.deduplicated === true
 ```
 
 ### Normalization
+
 Converts raw observations into a standardized format:
+
 - Adds unique ID
 - Adds timestamp
 - Clamps confidence to 0-1
@@ -83,6 +88,7 @@ new Observer(deduplicationWindow?: number)
 Observe a claim and normalize it for verification.
 
 **Parameters:**
+
 ```typescript
 {
   claim: string;
@@ -106,10 +112,11 @@ Observe a claim and normalize it for verification.
 Get information about the deduplication cache.
 
 **Returns:**
+
 ```typescript
 {
-  size: number;        // Number of cached observations
-  windowMs: number;    // Deduplication window in ms
+  size: number; // Number of cached observations
+  windowMs: number; // Deduplication window in ms
 }
 ```
 
@@ -120,8 +127,8 @@ Invalid observations throw an error:
 ```typescript
 try {
   observer.observe({
-    claim: '',  // Empty claim
-    source: { /* ... */ },
+    claim: '', // Empty claim
+    source: {/* ... */},
     // ...
   });
 } catch (error) {
@@ -137,6 +144,7 @@ npm test
 ```
 
 Tests cover:
+
 - Basic observation creation
 - Input validation
 - Confidence clamping

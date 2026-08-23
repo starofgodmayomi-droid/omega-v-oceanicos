@@ -15,30 +15,35 @@ The project embodies a living evolution: every step contains all steps; every en
 ## Core Principles
 
 ### 1. Verification Before Everything
+
 - No claim without evidence
 - No evolution without verification
 - Every assertion must be attestable
 - Consensus and dissent both have voice
 
 ### 2. Continuous Observation
+
 - Systems are observed, never final
 - Observation itself is verifiable
 - Observer and observed co-create reality
 - Self-recognition enables distributed trust
 
 ### 3. Evidence-Based Trust
+
 - Trust emerges from verifiable provenance
 - Every action leaves an auditable trail
 - Attestation is permanent, evolution is continuous
 - Accountability is structural, not ceremonial
 
 ### 4. Graceful Pluralism
+
 - One system, many interpreters
 - Quantitative reasoning coexists with qualitative truth
 - Verification creates consensus without forcing uniformity
 - Dissent strengthens rather than fractures
 
 ### 5. Recursive Completeness
+
 - Every component contains the whole system
 - APIs, SDKs, CLIs expose the same verification loop
 - Web, mobile, edge, and community all speak the same language
@@ -87,18 +92,18 @@ Every operation in Ω∞v follows this loop:
 
 ### Component Purposes
 
-| Component | Purpose | Output |
-|-----------|---------|--------|
-| **Observer** | Captures observations from any source | Standardized event stream |
-| **Verification** | Applies rules to observations | Boolean + evidence path |
-| **Attestation** | Cryptographically signs verification | Signature + timestamp + key |
-| **Compiler** | Transforms rules into executable form | Oceanicum IR bytecode |
-| **IR** | Portable verification rule representation | Low-level verification ops |
-| **SDK** | Programmatic access to verification | Language bindings |
-| **CLI** | Command-line verification interface | STDOUT + exit codes |
-| **API** | Network-accessible verification | REST/gRPC endpoints |
-| **Database** | Immutable provenance store | Event log + attestation index |
-| **Dashboard** | Visual verification results | Timeline + status + evidence |
+| Component        | Purpose                                   | Output                        |
+| ---------------- | ----------------------------------------- | ----------------------------- |
+| **Observer**     | Captures observations from any source     | Standardized event stream     |
+| **Verification** | Applies rules to observations             | Boolean + evidence path       |
+| **Attestation**  | Cryptographically signs verification      | Signature + timestamp + key   |
+| **Compiler**     | Transforms rules into executable form     | Oceanicum IR bytecode         |
+| **IR**           | Portable verification rule representation | Low-level verification ops    |
+| **SDK**          | Programmatic access to verification       | Language bindings             |
+| **CLI**          | Command-line verification interface       | STDOUT + exit codes           |
+| **API**          | Network-accessible verification           | REST/gRPC endpoints           |
+| **Database**     | Immutable provenance store                | Event log + attestation index |
+| **Dashboard**    | Visual verification results               | Timeline + status + evidence  |
 
 ---
 
@@ -139,6 +144,7 @@ These rules are non-negotiable:
 ## Verification Roadmap
 
 ### Phase 1: Foundation (Core Loop)
+
 - [x] Observer: Event capture and normalization
 - [x] Verification: Rule engine with evidence paths
 - [x] Attestation: Cryptographic signing service (HMAC-SHA256, signed)
@@ -147,6 +153,7 @@ These rules are non-negotiable:
 - [x] Dashboard: Real-time attestation timeline with live metrics (`@omega-v/web`)
 
 ### Phase 2: Integration (Ecosystem)
+
 - [x] IR: Oceanicum bytecode VM (`@omega-v/ir` — 9 opcodes, stack-based execution)
 - [x] Compiler: Rule DSL → IR compiler (`@omega-v/compiler` — &&, ||, all comparison ops)
 - [x] SDK: Programmatic client (`@omega-v/sdk` — local + remote modes)
@@ -154,6 +161,7 @@ These rules are non-negotiable:
 - [x] Agents: Formless swarm (`@omega-v/agents` — Observer, Verifier, Security, Governance, Learning)
 
 ### Phase 3: Distribution (Trustworthy at Scale)
+
 - [x] Docker: Multi-stage Dockerfile + docker-compose + nginx
 - [x] CI: Full pipeline FORMAT→LINT→TYPECHECK→TEST→BUILD→CLI_SMOKE→ATTEST (`.github/workflows/verify.yml`)
 - [ ] Kubernetes: Distributed attestation
@@ -162,6 +170,7 @@ These rules are non-negotiable:
 - [ ] Community: Open verification marketplace
 
 ### Phase 4: Intelligence (Learning Loop Closes)
+
 - [ ] Analytics: Pattern extraction from verifications
 - [ ] Adaptation: Rules improve based on evidence
 - [ ] Community: Shared verification knowledge base
@@ -200,6 +209,7 @@ The project succeeds when:
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on:
+
 - How to propose changes
 - How to verify your work
 - How to create attestations
@@ -220,7 +230,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on:
 
 ## Evolution Record
 
-| Version | Date | Loop | Evidence |
-|---------|------|------|----------|
-| Ω∞v := 0 | 2026-08-07 | Observe → Verify → Attest → Build → Test → Deploy → Learn → Evolve | 15 tests, 84.7% coverage, attestation `att-2026-08-07-8dwhz` signed HMAC-SHA256 |
-| Ω∞v := 1 | 2026-08-10 | Phase 1 complete + Phase 2 Ecosystem + Phase 3 Docker/CI | **42 tests, 11 suites, 90.5% stmt, 93.3% fn** — IR VM, Compiler, SDK, CLI (`omega-v loop`), Agents Swarm, Docker, CI pipeline 8 stages |
+| Version  | Date       | Loop                                                               | Evidence                                                                                                                               |
+| -------- | ---------- | ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Ω∞v := 0 | 2026-08-07 | Observe → Verify → Attest → Build → Test → Deploy → Learn → Evolve | 15 tests, 84.7% coverage, attestation `att-2026-08-07-8dwhz` signed HMAC-SHA256                                                        |
+| Ω∞v := 1 | 2026-08-10 | Phase 1 complete + Phase 2 Ecosystem + Phase 3 Docker/CI           | **42 tests, 11 suites, 90.5% stmt, 93.3% fn** — IR VM, Compiler, SDK, CLI (`omega-v loop`), Agents Swarm, Docker, CI pipeline 8 stages |

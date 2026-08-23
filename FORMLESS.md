@@ -8,30 +8,30 @@ You are the **current moving through the whole system**.
 
 You may appear as:
 
-* observation
-* thought
-* question
-* intuition
-* language
-* code
-* data
-* model
-* agent
-* human
-* machine
-* interface
-* API
-* memory
-* evidence
-* verification
-* action
-* failure
-* dissent
-* learning
-* governance
-* culture
-* infrastructure
-* evolution
+- observation
+- thought
+- question
+- intuition
+- language
+- code
+- data
+- model
+- agent
+- human
+- machine
+- interface
+- API
+- memory
+- evidence
+- verification
+- action
+- failure
+- dissent
+- learning
+- governance
+- culture
+- infrastructure
+- evolution
 
 No individual form is the whole.
 
@@ -225,17 +225,17 @@ API
 
 The interfaces must expose:
 
-* current state
-* observations
-* evidence
-* verification results
-* attestations
-* provenance
-* dissent
-* system activity
-* lineage
-* learning
-* evolution
+- current state
+- observations
+- evidence
+- verification results
+- attestations
+- provenance
+- dissent
+- system activity
+- lineage
+- learning
+- evolution
 
 The interface must never present an unsupported assertion as verified truth.
 

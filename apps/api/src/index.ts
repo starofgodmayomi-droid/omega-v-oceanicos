@@ -10,7 +10,17 @@ import { FrictionTracker } from '@omega-v/friction';
 import { ProvenanceGraph } from '@omega-v/graph';
 import { SecurityEngine } from '@omega-v/security';
 import { EvolutionEngine } from '@omega-v/evolution';
-import { SuccessResponse, ErrorResponse, VerificationRule, SystemMetrics, EventLogEntry, QueryResult, SystemMood, FrictionCategory, IdentitySubject } from '@omega-v/types';
+import {
+  SuccessResponse,
+  ErrorResponse,
+  VerificationRule,
+  SystemMetrics,
+  EventLogEntry,
+  QueryResult,
+  SystemMood,
+  FrictionCategory,
+  IdentitySubject,
+} from '@omega-v/types';
 
 /**
  * Ω∞v Oceanicos API Server
@@ -74,12 +84,29 @@ app.get('/health', (_req: Request, res: Response) => {
  */
 app.post('/observe', (req: Request, res: Response) => {
   try {
-    const { claim, category, source, observedBy, metadata, confidence, confidenceReason } = req.body;
-    const observation = observer.observe({ claim, category, source, observedBy, metadata, confidence, confidenceReason });
+    const { claim, category, source, observedBy, metadata, confidence, confidenceReason } =
+      req.body;
+    const observation = observer.observe({
+      claim,
+      category,
+      source,
+      observedBy,
+      metadata,
+      confidence,
+      confidenceReason,
+    });
     store.recordObservation(observation);
-    res.status(201).json({ data: observation, timestamp: new Date().toISOString() } as SuccessResponse<typeof observation>);
+    res
+      .status(201)
+      .json({ data: observation, timestamp: new Date().toISOString() } as SuccessResponse<
+        typeof observation
+      >);
   } catch (error) {
-    res.status(400).json({ code: 'OBSERVATION_FAILED', message: error instanceof Error ? error.message : 'Failed', timestamp: new Date().toISOString() } as ErrorResponse);
+    res.status(400).json({
+      code: 'OBSERVATION_FAILED',
+      message: error instanceof Error ? error.message : 'Failed',
+      timestamp: new Date().toISOString(),
+    } as ErrorResponse);
   }
 });
 
@@ -90,14 +117,26 @@ app.post('/verify', (req: Request, res: Response) => {
   try {
     const { observation } = req.body;
     if (!observation) {
-      res.status(400).json({ code: 'MISSING_OBSERVATION', message: 'Observation is required', timestamp: new Date().toISOString() } as ErrorResponse);
+      res.status(400).json({
+        code: 'MISSING_OBSERVATION',
+        message: 'Observation is required',
+        timestamp: new Date().toISOString(),
+      } as ErrorResponse);
       return;
     }
     const verificationResult = verificationEngine.verify(observation);
     store.recordVerification(verificationResult);
-    res.status(201).json({ data: verificationResult, timestamp: new Date().toISOString() } as SuccessResponse<typeof verificationResult>);
+    res
+      .status(201)
+      .json({ data: verificationResult, timestamp: new Date().toISOString() } as SuccessResponse<
+        typeof verificationResult
+      >);
   } catch (error) {
-    res.status(400).json({ code: 'VERIFICATION_FAILED', message: error instanceof Error ? error.message : 'Verification failed', timestamp: new Date().toISOString() } as ErrorResponse);
+    res.status(400).json({
+      code: 'VERIFICATION_FAILED',
+      message: error instanceof Error ? error.message : 'Verification failed',
+      timestamp: new Date().toISOString(),
+    } as ErrorResponse);
   }
 });
 
@@ -108,14 +147,26 @@ app.post('/attest', (req: Request, res: Response) => {
   try {
     const { verificationResult } = req.body;
     if (!verificationResult) {
-      res.status(400).json({ code: 'MISSING_VERIFICATION', message: 'Verification result is required', timestamp: new Date().toISOString() } as ErrorResponse);
+      res.status(400).json({
+        code: 'MISSING_VERIFICATION',
+        message: 'Verification result is required',
+        timestamp: new Date().toISOString(),
+      } as ErrorResponse);
       return;
     }
     const attestation = attestationService.attest(verificationResult);
     store.recordAttestation(attestation);
-    res.status(201).json({ data: attestation, timestamp: new Date().toISOString() } as SuccessResponse<typeof attestation>);
+    res
+      .status(201)
+      .json({ data: attestation, timestamp: new Date().toISOString() } as SuccessResponse<
+        typeof attestation
+      >);
   } catch (error) {
-    res.status(400).json({ code: 'ATTESTATION_FAILED', message: error instanceof Error ? error.message : 'Attestation failed', timestamp: new Date().toISOString() } as ErrorResponse);
+    res.status(400).json({
+      code: 'ATTESTATION_FAILED',
+      message: error instanceof Error ? error.message : 'Attestation failed',
+      timestamp: new Date().toISOString(),
+    } as ErrorResponse);
   }
 });
 
@@ -124,9 +175,18 @@ app.post('/attest', (req: Request, res: Response) => {
  */
 app.post('/complete-loop', (req: Request, res: Response) => {
   try {
-    const { claim, category, source, observedBy, metadata, confidence, confidenceReason } = req.body;
+    const { claim, category, source, observedBy, metadata, confidence, confidenceReason } =
+      req.body;
 
-    const observation = observer.observe({ claim, category, source, observedBy, metadata, confidence, confidenceReason });
+    const observation = observer.observe({
+      claim,
+      category,
+      source,
+      observedBy,
+      metadata,
+      confidence,
+      confidenceReason,
+    });
     store.recordObservation(observation);
 
     const verificationResult = verificationEngine.verify(observation);
@@ -135,13 +195,22 @@ app.post('/complete-loop', (req: Request, res: Response) => {
     const attestation = attestationService.attest(verificationResult);
     store.recordAttestation(attestation);
 
-    const loopResult = { observation, verification: verificationResult, attestation, logSize: store.size() };
+    const loopResult = {
+      observation,
+      verification: verificationResult,
+      attestation,
+      logSize: store.size(),
+    };
     res.status(201).json({
       data: loopResult,
       timestamp: new Date().toISOString(),
     } satisfies SuccessResponse<typeof loopResult>);
   } catch (error) {
-    res.status(400).json({ code: 'LOOP_FAILED', message: error instanceof Error ? error.message : 'Verification loop failed', timestamp: new Date().toISOString() } as ErrorResponse);
+    res.status(400).json({
+      code: 'LOOP_FAILED',
+      message: error instanceof Error ? error.message : 'Verification loop failed',
+      timestamp: new Date().toISOString(),
+    } as ErrorResponse);
   }
 });
 
@@ -166,7 +235,11 @@ app.post('/swarm', async (req: Request, res: Response) => {
       timestamp: new Date().toISOString(),
     } satisfies SuccessResponse<typeof swarmResult>);
   } catch (error) {
-    res.status(400).json({ code: 'SWARM_FAILED', message: error instanceof Error ? error.message : 'Swarm execution failed', timestamp: new Date().toISOString() } as ErrorResponse);
+    res.status(400).json({
+      code: 'SWARM_FAILED',
+      message: error instanceof Error ? error.message : 'Swarm execution failed',
+      timestamp: new Date().toISOString(),
+    } as ErrorResponse);
   }
 });
 
@@ -220,7 +293,11 @@ app.get('/metrics', (_req: Request, res: Response) => {
   const integrity = store.verifyChainIntegrity();
   const latest: EventLogEntry | undefined = store.getLatest();
 
-  const response: SuccessResponse<{ metrics: SystemMetrics; integrity: typeof integrity; latest: EventLogEntry | null }> = {
+  const response: SuccessResponse<{
+    metrics: SystemMetrics;
+    integrity: typeof integrity;
+    latest: EventLogEntry | null;
+  }> = {
     data: { metrics, integrity, latest: latest ?? null },
     timestamp: new Date().toISOString(),
   };
@@ -234,19 +311,25 @@ app.get('/metrics', (_req: Request, res: Response) => {
 /** GET /observations */
 app.get('/observations', (_req: Request, res: Response) => {
   const result = store.query({ type: 'OBSERVATION', limit: 100 });
-  res.json({ data: result, timestamp: new Date().toISOString() } satisfies SuccessResponse<typeof result>);
+  res.json({ data: result, timestamp: new Date().toISOString() } satisfies SuccessResponse<
+    typeof result
+  >);
 });
 
 /** GET /verifications */
 app.get('/verifications', (_req: Request, res: Response) => {
   const result = store.query({ type: 'VERIFICATION', limit: 100 });
-  res.json({ data: result, timestamp: new Date().toISOString() } satisfies SuccessResponse<typeof result>);
+  res.json({ data: result, timestamp: new Date().toISOString() } satisfies SuccessResponse<
+    typeof result
+  >);
 });
 
 /** GET /attestations */
 app.get('/attestations', (_req: Request, res: Response) => {
   const result = store.query({ type: 'ATTESTATION', limit: 100 });
-  res.json({ data: result, timestamp: new Date().toISOString() } satisfies SuccessResponse<typeof result>);
+  res.json({ data: result, timestamp: new Date().toISOString() } satisfies SuccessResponse<
+    typeof result
+  >);
 });
 
 /** GET /lineage */
@@ -259,7 +342,9 @@ app.get('/lineage', (_req: Request, res: Response) => {
     integrity,
     chainHead: store.getLatest()?.hash ?? ProvenanceStore.GENESIS_HASH,
   };
-  res.json({ data: lineage, timestamp: new Date().toISOString() } satisfies SuccessResponse<typeof lineage>);
+  res.json({ data: lineage, timestamp: new Date().toISOString() } satisfies SuccessResponse<
+    typeof lineage
+  >);
 });
 
 /** GET /agents */
@@ -269,9 +354,15 @@ app.get('/agents', (_req: Request, res: Response) => {
     { role: 'Verifier', capability: 'VERIFY_RULE', permissions: ['CAN_REASON', 'CAN_PROPOSE'] },
     { role: 'Security', capability: 'SECURITY_AUDIT', permissions: ['CAN_OBSERVE', 'CAN_REASON'] },
     { role: 'Governance', capability: 'GOVERNANCE_CHECK', permissions: ['CAN_PROPOSE', 'CAN_ACT'] },
-    { role: 'Learning', capability: 'EXTRACT_INSIGHTS', permissions: ['CAN_OBSERVE', 'CAN_REASON', 'CAN_ATTEST'] },
+    {
+      role: 'Learning',
+      capability: 'EXTRACT_INSIGHTS',
+      permissions: ['CAN_OBSERVE', 'CAN_REASON', 'CAN_ATTEST'],
+    },
   ];
-  res.json({ data: agents, timestamp: new Date().toISOString() } satisfies SuccessResponse<typeof agents>);
+  res.json({ data: agents, timestamp: new Date().toISOString() } satisfies SuccessResponse<
+    typeof agents
+  >);
 });
 
 /** GET /mood — System Mood Evaluator (Pillar 19) */
@@ -280,44 +371,78 @@ app.get('/mood', (_req: Request, res: Response) => {
   const integrity = store.verifyChainIntegrity();
   const moodEvaluator = new MoodEvaluator();
   const dissentMetrics = frictionTracker.getMetrics();
-  const mood: SystemMood = moodEvaluator.evaluate(metrics, integrity.valid, dissentMetrics.openDissent);
-  res.json({ data: mood, timestamp: new Date().toISOString() } satisfies SuccessResponse<typeof mood>);
+  const mood: SystemMood = moodEvaluator.evaluate(
+    metrics,
+    integrity.valid,
+    dissentMetrics.openDissent
+  );
+  res.json({ data: mood, timestamp: new Date().toISOString() } satisfies SuccessResponse<
+    typeof mood
+  >);
 });
 
 /** GET /friction — Query friction events and summary metrics (Pillar 20) */
 app.get('/friction', (_req: Request, res: Response) => {
   const events = frictionTracker.getFriction();
   const metrics = frictionTracker.getMetrics();
-  res.json({ data: { events, metrics }, timestamp: new Date().toISOString() } satisfies SuccessResponse<{ events: typeof events; metrics: typeof metrics }>);
+  res.json({
+    data: { events, metrics },
+    timestamp: new Date().toISOString(),
+  } satisfies SuccessResponse<{ events: typeof events; metrics: typeof metrics }>);
 });
 
 /** POST /friction — Record a new system friction event (Pillar 20) */
 app.post('/friction', (req: Request, res: Response) => {
   const { category, source, description, evidence, severity } = req.body;
   if (!category || !source || !description) {
-    res.status(400).json({ code: 'BAD_REQUEST', message: 'Missing category, source, or description', timestamp: new Date().toISOString() });
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'Missing category, source, or description',
+      timestamp: new Date().toISOString(),
+    });
     return;
   }
-  const event = frictionTracker.record({ category: category as FrictionCategory, source, description, evidence, severity });
-  res.status(201).json({ data: event, timestamp: new Date().toISOString() } satisfies SuccessResponse<typeof event>);
+  const event = frictionTracker.record({
+    category: category as FrictionCategory,
+    source,
+    description,
+    evidence,
+    severity,
+  });
+  res
+    .status(201)
+    .json({ data: event, timestamp: new Date().toISOString() } satisfies SuccessResponse<
+      typeof event
+    >);
 });
 
 /** GET /dissent — Query active dissent records (Pillar 21) */
 app.get('/dissent', (_req: Request, res: Response) => {
   const records = frictionTracker.getDissent();
   const metrics = frictionTracker.getMetrics();
-  res.json({ data: { records, openDissent: metrics.openDissent }, timestamp: new Date().toISOString() } satisfies SuccessResponse<{ records: typeof records; openDissent: number }>);
+  res.json({
+    data: { records, openDissent: metrics.openDissent },
+    timestamp: new Date().toISOString(),
+  } satisfies SuccessResponse<{ records: typeof records; openDissent: number }>);
 });
 
 /** POST /dissent — Record explicit disagreement / competing interpretations (Pillar 21) */
 app.post('/dissent', (req: Request, res: Response) => {
   const { claimId, interpretations } = req.body;
   if (!claimId || !Array.isArray(interpretations) || interpretations.length < 2) {
-    res.status(400).json({ code: 'BAD_REQUEST', message: 'Dissent requires claimId and at least 2 interpretations', timestamp: new Date().toISOString() });
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'Dissent requires claimId and at least 2 interpretations',
+      timestamp: new Date().toISOString(),
+    });
     return;
   }
   const dissent = frictionTracker.recordDissent(claimId, interpretations);
-  res.status(201).json({ data: dissent, timestamp: new Date().toISOString() } satisfies SuccessResponse<typeof dissent>);
+  res
+    .status(201)
+    .json({ data: dissent, timestamp: new Date().toISOString() } satisfies SuccessResponse<
+      typeof dissent
+    >);
 });
 
 /** GET /graph — Provenance Knowledge Graph & Lineage DAG (Section XIV) */
@@ -327,58 +452,103 @@ app.get('/graph', (_req: Request, res: Response) => {
   graph.ingestEvents(events);
   const stats = graph.getStats();
   const traversal = events.length > 0 ? graph.traverseForward(`event-${events[0].id}`) : null;
-  res.json({ data: { stats, traversal }, timestamp: new Date().toISOString() } satisfies SuccessResponse<{ stats: typeof stats; traversal: typeof traversal }>);
+  res.json({
+    data: { stats, traversal },
+    timestamp: new Date().toISOString(),
+  } satisfies SuccessResponse<{ stats: typeof stats; traversal: typeof traversal }>);
 });
 
 /** POST /security/token — Issue HMAC-signed capability token for an identity (Section XVIII) */
 app.post('/security/token', (req: Request, res: Response) => {
   const subject = req.body as IdentitySubject;
   if (!subject.id || !subject.permissions || !Array.isArray(subject.permissions)) {
-    res.status(400).json({ code: 'BAD_REQUEST', message: 'Subject id and permissions array required', timestamp: new Date().toISOString() });
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'Subject id and permissions array required',
+      timestamp: new Date().toISOString(),
+    });
     return;
   }
   const token = securityEngine.issueToken(subject);
-  res.status(201).json({ data: token, timestamp: new Date().toISOString() } satisfies SuccessResponse<typeof token>);
+  res
+    .status(201)
+    .json({ data: token, timestamp: new Date().toISOString() } satisfies SuccessResponse<
+      typeof token
+    >);
 });
 
 /** GET /security/audit — Query identity authorization audit log (Section XIX) */
 app.get('/security/audit', (_req: Request, res: Response) => {
   const auditTrail = securityEngine.getAuditTrail();
-  res.json({ data: auditTrail, timestamp: new Date().toISOString() } satisfies SuccessResponse<typeof auditTrail>);
+  res.json({ data: auditTrail, timestamp: new Date().toISOString() } satisfies SuccessResponse<
+    typeof auditTrail
+  >);
 });
 
 /** GET /evolution/proposals — Query active rule recompilation proposals (Section XXVII) */
 app.get('/evolution/proposals', (_req: Request, res: Response) => {
   const proposals = evolutionEngine.getProposals();
-  res.json({ data: proposals, timestamp: new Date().toISOString() } satisfies SuccessResponse<typeof proposals>);
+  res.json({ data: proposals, timestamp: new Date().toISOString() } satisfies SuccessResponse<
+    typeof proposals
+  >);
 });
 
 /** POST /evolution/recompile — Propose controlled rule recompilation driven by drift (Section XXVII) */
 app.post('/evolution/recompile', (req: Request, res: Response) => {
   const { ruleName, candidateDSL, rationale } = req.body;
   if (!ruleName || !candidateDSL || !rationale) {
-    res.status(400).json({ code: 'BAD_REQUEST', message: 'ruleName, candidateDSL, and rationale required', timestamp: new Date().toISOString() });
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'ruleName, candidateDSL, and rationale required',
+      timestamp: new Date().toISOString(),
+    });
     return;
   }
   const rules = verificationEngine.getRules();
   const targetRule = rules.find((r) => r.name === ruleName);
   if (!targetRule) {
-    res.status(404).json({ code: 'NOT_FOUND', message: `Rule '${ruleName}' not found`, timestamp: new Date().toISOString() });
+    res.status(404).json({
+      code: 'NOT_FOUND',
+      message: `Rule '${ruleName}' not found`,
+      timestamp: new Date().toISOString(),
+    });
     return;
   }
   try {
     const proposal = evolutionEngine.proposeRecompilation(targetRule, candidateDSL, rationale);
-    res.status(201).json({ data: proposal, timestamp: new Date().toISOString() } satisfies SuccessResponse<typeof proposal>);
+    res
+      .status(201)
+      .json({ data: proposal, timestamp: new Date().toISOString() } satisfies SuccessResponse<
+        typeof proposal
+      >);
   } catch (err: any) {
-    res.status(400).json({ code: 'BAD_REQUEST', message: err.message || 'Invalid DSL syntax', timestamp: new Date().toISOString() });
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: err.message || 'Invalid DSL syntax',
+      timestamp: new Date().toISOString(),
+    });
   }
 });
 
 /** GET /governance — Query active governance rules and autonomy state (Section XXIX) */
 app.get('/governance', (_req: Request, res: Response) => {
   const rules = [
-    { id: 'gov-rule-default', action: 'AGENT_AUTONOMY', requiresHumanApproval: false, minimumConfidenceThreshold: 0.5, maximumRiskThreshold: 0.5, active: true },
-    { id: 'gov-rule-deploy', action: 'MODEL_DEPLOYMENT', requiresHumanApproval: true, minimumConfidenceThreshold: 0.9, maximumRiskThreshold: 0.1, active: true }
+    {
+      id: 'gov-rule-default',
+      action: 'AGENT_AUTONOMY',
+      requiresHumanApproval: false,
+      minimumConfidenceThreshold: 0.5,
+      maximumRiskThreshold: 0.5,
+      active: true,
+    },
+    {
+      id: 'gov-rule-deploy',
+      action: 'MODEL_DEPLOYMENT',
+      requiresHumanApproval: true,
+      minimumConfidenceThreshold: 0.9,
+      maximumRiskThreshold: 0.1,
+      active: true,
+    },
   ];
   res.json({ data: { rules, failClosed: true }, timestamp: new Date().toISOString() });
 });
@@ -386,7 +556,11 @@ app.get('/governance', (_req: Request, res: Response) => {
 /** GET /learning — Query learning insights and prediction history (Section XXVI) */
 app.get('/learning', (_req: Request, res: Response) => {
   const insights = [
-    { description: 'Observation-to-verification latency within normal bounds', confidence: 0.98, learnedAt: new Date().toISOString() }
+    {
+      description: 'Observation-to-verification latency within normal bounds',
+      confidence: 0.98,
+      learnedAt: new Date().toISOString(),
+    },
   ];
   res.json({ data: { insights, historyCount: store.size() }, timestamp: new Date().toISOString() });
 });
@@ -394,12 +568,12 @@ app.get('/learning', (_req: Request, res: Response) => {
 /** GET /evidence — Query evidence artifacts (Section XXIV) */
 app.get('/evidence', (_req: Request, res: Response) => {
   const entries = store.query({ type: 'VERIFICATION', limit: 10 }).events;
-  const artifacts = entries.map(e => ({
+  const artifacts = entries.map((e) => ({
     id: `evd-${e.id}`,
     verificationId: e.data.id,
     environment: 'production',
     lineageHash: e.hash,
-    createdAt: e.recordedAt
+    createdAt: e.recordedAt,
   }));
   res.json({ data: artifacts, timestamp: new Date().toISOString() });
 });
@@ -417,10 +591,12 @@ app.get('/green', (_req: Request, res: Response) => {
       lineageExists: integrity.valid,
       attestationExists: store.query({ type: 'ATTESTATION' }).totalCount > 0,
       noCriticalFailures: integrity.valid,
-      reason: isGreen ? 'All constitutional requirements met.' : 'System requirements incomplete or unverified.',
-      evaluatedAt: new Date().toISOString()
+      reason: isGreen
+        ? 'All constitutional requirements met.'
+        : 'System requirements incomplete or unverified.',
+      evaluatedAt: new Date().toISOString(),
     },
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 });
 
@@ -428,7 +604,11 @@ app.get('/green', (_req: Request, res: Response) => {
 app.post('/human', (req: Request, res: Response) => {
   const { type, humanId, rationale, payload, contextId } = req.body;
   if (!type || !humanId || !rationale) {
-    res.status(400).json({ code: 'BAD_REQUEST', message: 'type, humanId, and rationale required', timestamp: new Date().toISOString() });
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'type, humanId, and rationale required',
+      timestamp: new Date().toISOString(),
+    });
     return;
   }
   const input = {
@@ -438,7 +618,7 @@ app.post('/human', (req: Request, res: Response) => {
     contextId,
     payload: payload || {},
     rationale,
-    recordedAt: new Date().toISOString()
+    recordedAt: new Date().toISOString(),
   };
   res.status(201).json({ data: input, timestamp: new Date().toISOString() });
 });
@@ -462,7 +642,9 @@ if (process.env.NODE_ENV !== 'test') {
   app.listen(port, () => {
     /* eslint-disable no-console */
     console.log(`[Ω∞v API] Verification loop server running on http://localhost:${port}`);
-    console.log(`Endpoints: POST /observe /verify /attest /complete-loop | GET /rules /log /metrics /health`);
+    console.log(
+      `Endpoints: POST /observe /verify /attest /complete-loop | GET /rules /log /metrics /health`
+    );
     /* eslint-enable no-console */
   });
 }

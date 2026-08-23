@@ -19,14 +19,17 @@ npm run dev
 ## Features
 
 ### Real-Time Verification
+
 Execute the complete Observe → Verify → Attest cycle from the browser.
 
 ### Interactive Input
+
 - Submit custom claims
 - Watch them flow through the verification pipeline
 - See results instantly
 
 ### Verification Visualization
+
 View each step of the verification loop:
 
 1. **Observation** — The claim captured with metadata
@@ -48,6 +51,7 @@ View each step of the verification loop:
    - Signature preview
 
 ### Clean UI
+
 - Gradient background with Ω∞v branding
 - Step-by-step visualization
 - Color-coded results (blue for observation, green for verification, yellow for attestation)
@@ -75,10 +79,11 @@ View each step of the verification loop:
 The dashboard communicates with the API server:
 
 ```typescript
-POST /api/complete-loop
+POST / api / complete - loop;
 ```
 
 **Request:**
+
 ```json
 {
   "claim": "Service X is healthy",
@@ -100,6 +105,7 @@ POST /api/complete-loop
 ### Proxy Setup
 
 In `vite.config.ts`:
+
 ```typescript
 proxy: {
   '/api': {
@@ -139,12 +145,14 @@ The built files are in the `dist/` directory.
 ## Styling
 
 The dashboard uses pure CSS with:
+
 - Gradient background (purple to indigo)
 - Card-based layout
 - Hover effects and transitions
 - Mobile-responsive design
 
 Key colors:
+
 - Primary: `#667eea` (indigo)
 - Secondary: `#764ba2` (purple)
 - Success: `#16a34a` (green)
@@ -186,6 +194,7 @@ npm run test:watch
 **Problem:** Dashboard shows "Error" when running verification
 
 **Solution:**
+
 1. Ensure API server is running on http://localhost:3000
 2. Check that proxy is configured in vite.config.ts
 3. Verify CORS headers from API
@@ -195,6 +204,7 @@ npm run test:watch
 **Problem:** `EADDRINUSE: address already in use :::3001`
 
 **Solution:**
+
 ```bash
 # Change port in vite.config.ts
 server: {
@@ -207,6 +217,7 @@ server: {
 **Problem:** Dashboard shows without styling
 
 **Solution:**
+
 ```bash
 # Clear cache and rebuild
 npm run clean

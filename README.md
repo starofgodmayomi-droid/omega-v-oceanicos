@@ -26,6 +26,7 @@ Observe → Verify → Attest → Record → Display → Learn → Return
 ```
 
 Every observation:
+
 1. **Observed** with metadata (who, when, what, confidence)
 2. **Verified** against rules with evidence paths
 3. **Attested** with cryptographic signatures
@@ -46,18 +47,23 @@ Most systems assert correctness. We verify it.
 ## Key Principles
 
 ### 1. Verification Before Everything
+
 No claim without evidence. No evolution without verification.
 
 ### 2. Continuous Observation
+
 Systems are never final. Observation is ongoing.
 
 ### 3. Evidence-Based Trust
+
 Trust emerges from verifiable provenance, not authority.
 
 ### 4. Graceful Pluralism
+
 One system, many interpreters. Consensus and dissent both matter.
 
 ### 5. Recursive Completeness
+
 Every component contains the whole verification loop.
 
 ---
@@ -145,21 +151,25 @@ See [CHARTER.md](CHARTER.md#code-of-conduct) for full details.
 ## Technology Stack
 
 ### Languages
+
 - TypeScript (core, SDKs, tests)
 - Potentially: Python, Go, Rust (SDKs)
 
 ### Runtime & Frameworks
+
 - Node.js 18+ (backend)
 - React (web dashboard)
 - Express or Fastify (API)
 - PostgreSQL (production) or SQLite (development)
 
 ### DevOps
+
 - Docker (containerization)
 - GitHub Actions (CI/CD)
 - Kubernetes (orchestration, optional)
 
 ### Testing & Quality
+
 - Jest (unit & integration tests)
 - ESLint + Prettier (code quality)
 - TypeScript (type safety)
@@ -197,11 +207,13 @@ We welcome contributions in all areas:
 ## About the Name
 
 **Ω∞v** represents:
+
 - **Ω** (Omega) — The end and the infinite return
 - **∞** (Infinity) — Continuous becoming and evolution
 - **v** (Lowercase) — Humility and pluralism (no authority imposing meaning)
 
 **Oceanicos** represents:
+
 - The vast, interconnected system of observations and verifications
 - Currents of formless intelligence flowing through evidence
 - The observer within the ocean, recognizing their reflection

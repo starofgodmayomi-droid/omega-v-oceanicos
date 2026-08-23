@@ -7,473 +7,509 @@
  * It includes metadata that makes it verifiable and traceable
  */
 export interface Observation {
-    /** Unique identifier for this observation */
-    id: string;
-    /** The claim being made */
-    claim: {
-        statement: string;
-        category: string;
-    };
-    /** Information about where this observation came from */
-    source: {
-        system: string;
-        version: string;
-        environment: string;
-    };
-    /** When was this observed? */
-    timestamp: string;
-    observedBy: string;
-    /** Additional data supporting the observation */
-    metadata: Record<string, unknown>;
-    /** How confident are we in this observation? (0-1) */
-    confidence: number;
-    confidenceReason: string;
-    /** Status of the observation */
-    status: 'normalized' | 'verified' | 'failed';
+  /** Unique identifier for this observation */
+  id: string;
+  /** The claim being made */
+  claim: {
+    statement: string;
+    category: string;
+  };
+  /** Information about where this observation came from */
+  source: {
+    system: string;
+    version: string;
+    environment: string;
+  };
+  /** When was this observed? */
+  timestamp: string;
+  observedBy: string;
+  /** Additional data supporting the observation */
+  metadata: Record<string, unknown>;
+  /** How confident are we in this observation? (0-1) */
+  confidence: number;
+  confidenceReason: string;
+  /** Status of the observation */
+  status: 'normalized' | 'verified' | 'failed';
 }
 /**
  * A verification rule defines how to test an observation
  */
 export interface VerificationRule {
-    /** Unique name of this rule */
-    name: string;
-    /** Version for tracking rule evolution */
-    version: string;
-    /** Which observation categories does this apply to? */
-    appliesTo: string[];
-    /** The rule definition (high-level) */
-    definition: string;
-    /** Compiled bytecode (if applicable) */
-    bytecode?: string;
-    /** Human-readable description */
-    description: string;
-    /** When was this rule created? */
-    createdAt: string;
-    /** Is this rule currently active? */
-    active: boolean;
+  /** Unique name of this rule */
+  name: string;
+  /** Version for tracking rule evolution */
+  version: string;
+  /** Which observation categories does this apply to? */
+  appliesTo: string[];
+  /** The rule definition (high-level) */
+  definition: string;
+  /** Compiled bytecode (if applicable) */
+  bytecode?: string;
+  /** Human-readable description */
+  description: string;
+  /** When was this rule created? */
+  createdAt: string;
+  /** Is this rule currently active? */
+  active: boolean;
 }
 /**
  * A single step in the evidence path showing how verification was done
  */
 export interface EvidenceStep {
-    /** Step number in the verification sequence */
-    step: number;
-    /** Which rule produced this step? */
-    rule: string;
-    /** The condition being tested */
-    condition: string;
-    /** What was the actual value? */
-    value: unknown;
-    /** What was expected? */
-    expected?: unknown;
-    /** Did this step pass? */
-    passed: boolean;
-    /** Human-readable explanation */
-    reasoning: string;
-    /** How severe is a failure? (if failed) */
-    severity?: 'info' | 'warning' | 'critical';
+  /** Step number in the verification sequence */
+  step: number;
+  /** Which rule produced this step? */
+  rule: string;
+  /** The condition being tested */
+  condition: string;
+  /** What was the actual value? */
+  value: unknown;
+  /** What was expected? */
+  expected?: unknown;
+  /** Did this step pass? */
+  passed: boolean;
+  /** Human-readable explanation */
+  reasoning: string;
+  /** How severe is a failure? (if failed) */
+  severity?: 'info' | 'warning' | 'critical';
 }
 /**
  * A verification result shows whether an observation is true
  * It includes the evidence path that proves or disproves the claim
  */
 export interface VerificationResult {
-    /** Unique identifier for this verification */
-    id: string;
-    /** Which observation did we verify? */
-    observationId: string;
-    /** When was this verification performed? */
-    timestamp: string;
-    /** Summary of the result */
-    summary: {
-        passed: boolean;
-        confidence: number;
-        rulesApplied: number;
-        rulesPassed: number;
-        rulesFailed: number;
-    };
-    /** Results from each rule */
-    rules: Array<{
-        name: string;
-        passed: boolean;
-        confidence: number;
-        details?: string;
-    }>;
-    /** Complete evidence showing the reasoning */
-    evidencePath: EvidenceStep[];
-    /** Which rule versions were used? */
-    ruleVersions: Record<string, string>;
-    /** Status of this verification */
-    status: 'pending' | 'completed' | 'failed';
+  /** Unique identifier for this verification */
+  id: string;
+  /** Which observation did we verify? */
+  observationId: string;
+  /** When was this verification performed? */
+  timestamp: string;
+  /** Summary of the result */
+  summary: {
+    passed: boolean;
+    confidence: number;
+    rulesApplied: number;
+    rulesPassed: number;
+    rulesFailed: number;
+  };
+  /** Results from each rule */
+  rules: Array<{
+    name: string;
+    passed: boolean;
+    confidence: number;
+    details?: string;
+  }>;
+  /** Complete evidence showing the reasoning */
+  evidencePath: EvidenceStep[];
+  /** Which rule versions were used? */
+  ruleVersions: Record<string, string>;
+  /** Status of this verification */
+  status: 'pending' | 'completed' | 'failed';
 }
 /**
  * An attestation is a cryptographically signed verification result
  * It creates unforgeable proof that a verification happened at a specific time
  */
 export interface Attestation {
-    /** Unique identifier for this attestation */
-    id: string;
-    /** Which verification result is being attested? */
-    verificationId: string;
-    /** Which observation is being attested? */
-    observationId: string;
-    /** Was the verification successful? */
-    verified: boolean;
-    /** Confidence in the verification */
-    confidence: number;
-    /** The cryptographic signature */
-    signature: string;
-    /** Which key signed this? */
-    signingKey: string;
-    /** Version of the signing key */
-    keyVersion: string;
-    /** Algorithm used for signing */
-    signingAlgorithm: string;
-    /** When was this signed? */
-    attestedAt: string;
-    /** Which service performed the attestation? */
-    attestedBy: string;
-    /** Rule versions used at time of attestation */
-    ruleVersions: Record<string, string>;
-    /** Public key for verification */
-    verifyingPublicKey?: string;
-    /** Status of the attestation */
-    status: 'signed' | 'revoked' | 'expired';
+  /** Unique identifier for this attestation */
+  id: string;
+  /** Which verification result is being attested? */
+  verificationId: string;
+  /** Which observation is being attested? */
+  observationId: string;
+  /** Was the verification successful? */
+  verified: boolean;
+  /** Confidence in the verification */
+  confidence: number;
+  /** The cryptographic signature */
+  signature: string;
+  /** Which key signed this? */
+  signingKey: string;
+  /** Version of the signing key */
+  keyVersion: string;
+  /** Algorithm used for signing */
+  signingAlgorithm: string;
+  /** When was this signed? */
+  attestedAt: string;
+  /** Which service performed the attestation? */
+  attestedBy: string;
+  /** Rule versions used at time of attestation */
+  ruleVersions: Record<string, string>;
+  /** Public key for verification */
+  verifyingPublicKey?: string;
+  /** Status of the attestation */
+  status: 'signed' | 'revoked' | 'expired';
 }
 /**
  * A recorded event in the immutable event log
  * The system maintains an append-only log of all observations, verifications, and attestations
  */
 export interface EventLogEntry {
-    /** Sequential ID in the event log */
-    id: number;
-    /** Type of event */
-    type: 'OBSERVATION' | 'VERIFICATION' | 'ATTESTATION';
-    /** The actual data */
-    data: Observation | VerificationResult | Attestation;
-    /** When was this recorded? */
-    recordedAt: string;
-    /** Immutable hash for integrity checking */
-    hash: string;
-    /** Hash of the previous entry (creating a chain) */
-    previousHash: string;
+  /** Sequential ID in the event log */
+  id: number;
+  /** Type of event */
+  type: 'OBSERVATION' | 'VERIFICATION' | 'ATTESTATION';
+  /** The actual data */
+  data: Observation | VerificationResult | Attestation;
+  /** When was this recorded? */
+  recordedAt: string;
+  /** Immutable hash for integrity checking */
+  hash: string;
+  /** Hash of the previous entry (creating a chain) */
+  previousHash: string;
 }
 /**
  * A query result from the event store
  * Allows temporal and categorical searches through the verification history
  */
 export interface QueryResult {
-    /** Events matching the query */
-    events: EventLogEntry[];
-    /** Total count of matching events */
-    totalCount: number;
-    /** Pagination information */
-    pagination: {
-        offset: number;
-        limit: number;
-        hasMore: boolean;
-    };
-    /** When was this query executed? */
-    queriedAt: string;
+  /** Events matching the query */
+  events: EventLogEntry[];
+  /** Total count of matching events */
+  totalCount: number;
+  /** Pagination information */
+  pagination: {
+    offset: number;
+    limit: number;
+    hasMore: boolean;
+  };
+  /** When was this query executed? */
+  queriedAt: string;
 }
 /**
  * Configuration for the verification engine
  */
 export interface VerificationConfig {
-    /** Rules to apply */
-    rules: VerificationRule[];
-    /** Observation categories to process */
-    categories: string[];
-    /** Enable caching of verification results */
-    enableCache: boolean;
-    /** Cache TTL in milliseconds */
-    cacheTtl: number;
-    /** Maximum number of parallel verifications */
-    maxConcurrency: number;
-    /** Enable learning from verification results */
-    enableLearning: boolean;
+  /** Rules to apply */
+  rules: VerificationRule[];
+  /** Observation categories to process */
+  categories: string[];
+  /** Enable caching of verification results */
+  enableCache: boolean;
+  /** Cache TTL in milliseconds */
+  cacheTtl: number;
+  /** Maximum number of parallel verifications */
+  maxConcurrency: number;
+  /** Enable learning from verification results */
+  enableLearning: boolean;
 }
 /**
  * Options for attestation
  */
 export interface AttestationOptions {
-    /** The verification result to attest */
-    verificationResult: VerificationResult;
-    /** Signing key to use */
-    signingKey?: string;
-    /** Identity of the attestor */
-    attestedBy: string;
-    /** Algorithm for signing */
-    algorithm?: string;
+  /** The verification result to attest */
+  verificationResult: VerificationResult;
+  /** Signing key to use */
+  signingKey?: string;
+  /** Identity of the attestor */
+  attestedBy: string;
+  /** Algorithm for signing */
+  algorithm?: string;
 }
 /**
  * Learning insight extracted from verification history
  */
 export interface LearningInsight {
-    /** What was learned? */
-    description: string;
-    /** Confidence in this learning (0-1) */
-    confidence: number;
-    /** Which rule does this apply to? */
-    affectedRule?: string;
-    /** Recommended action */
-    recommendation?: string;
-    /** When was this learned? */
-    learnedAt: string;
+  /** What was learned? */
+  description: string;
+  /** Confidence in this learning (0-1) */
+  confidence: number;
+  /** Which rule does this apply to? */
+  affectedRule?: string;
+  /** Recommended action */
+  recommendation?: string;
+  /** When was this learned? */
+  learnedAt: string;
 }
 /**
  * System health and metrics
  */
 export interface SystemMetrics {
-    /** Total observations processed */
-    totalObservations: number;
-    /** Total verifications performed */
-    totalVerifications: number;
-    /** Average verification time (ms) */
-    avgVerificationTime: number;
-    /** Verification success rate (0-1) */
-    successRate: number;
-    /** Total attestations created */
-    totalAttestations: number;
-    /** Current system confidence */
-    systemConfidence: number;
-    /** When were these metrics last updated? */
-    lastUpdated: string;
+  /** Total observations processed */
+  totalObservations: number;
+  /** Total verifications performed */
+  totalVerifications: number;
+  /** Average verification time (ms) */
+  avgVerificationTime: number;
+  /** Verification success rate (0-1) */
+  successRate: number;
+  /** Total attestations created */
+  totalAttestations: number;
+  /** Current system confidence */
+  systemConfidence: number;
+  /** When were these metrics last updated? */
+  lastUpdated: string;
 }
 /**
  * Error response structure
  */
 export interface ErrorResponse {
-    /** Error code for categorization */
-    code: string;
-    /** Human-readable error message */
-    message: string;
-    /** Additional context */
-    details?: Record<string, unknown>;
-    /** When did the error occur? */
-    timestamp: string;
-    /** Request ID for tracing */
-    requestId?: string;
+  /** Error code for categorization */
+  code: string;
+  /** Human-readable error message */
+  message: string;
+  /** Additional context */
+  details?: Record<string, unknown>;
+  /** When did the error occur? */
+  timestamp: string;
+  /** Request ID for tracing */
+  requestId?: string;
 }
 /**
  * Success response structure
  */
 export interface SuccessResponse<T> {
-    /** The returned data */
-    data: T;
-    /** Additional metadata */
-    meta?: Record<string, unknown>;
-    /** When was this created? */
-    timestamp: string;
+  /** The returned data */
+  data: T;
+  /** Additional metadata */
+  meta?: Record<string, unknown>;
+  /** When was this created? */
+  timestamp: string;
 }
 /**
  * SystemMood: Measurable system state (Pillar 19)
  */
-export type MoodState = 'OPTIMAL_FLOW' | 'HIGH_INTEGRITY' | 'EVIDENCE_SEARCH' | 'FRICTION_DETECTED' | 'RECOMPILING';
+export type MoodState =
+  'OPTIMAL_FLOW' | 'HIGH_INTEGRITY' | 'EVIDENCE_SEARCH' | 'FRICTION_DETECTED' | 'RECOMPILING';
 export interface SystemMood {
-    state: MoodState;
-    confidence: number;
-    uncertainty: number;
-    verificationHealth: number;
-    evidenceQuality: number;
-    errorRate: number;
-    dissentCount: number;
-    description: string;
-    evaluatedAt: string;
+  state: MoodState;
+  confidence: number;
+  uncertainty: number;
+  verificationHealth: number;
+  evidenceQuality: number;
+  errorRate: number;
+  dissentCount: number;
+  description: string;
+  evaluatedAt: string;
 }
 /**
  * VerificationStatus: Granular verification outcomes (Pillar 10)
  * Never collapse these into a single boolean.
  */
-export type VerificationStatus = 'VERIFIED' | 'PARTIALLY_VERIFIED' | 'UNVERIFIED' | 'CONTRADICTED' | 'UNKNOWN' | 'DISSENT';
+export type VerificationStatus =
+  'VERIFIED' | 'PARTIALLY_VERIFIED' | 'UNVERIFIED' | 'CONTRADICTED' | 'UNKNOWN' | 'DISSENT';
 /**
  * FrictionEvent: Observable system friction (Pillar 20)
  * Friction is information, not failure.
  */
-export type FrictionCategory = 'ERROR' | 'LATENCY' | 'CONTRADICTION' | 'MISSING_EVIDENCE' | 'PERMISSION_FAILURE' | 'TEST_FAILURE' | 'SECURITY_ISSUE' | 'MODEL_DISAGREEMENT' | 'HUMAN_DISAGREEMENT';
+export type FrictionCategory =
+  | 'ERROR'
+  | 'LATENCY'
+  | 'CONTRADICTION'
+  | 'MISSING_EVIDENCE'
+  | 'PERMISSION_FAILURE'
+  | 'TEST_FAILURE'
+  | 'SECURITY_ISSUE'
+  | 'MODEL_DISAGREEMENT'
+  | 'HUMAN_DISAGREEMENT';
 export interface FrictionEvent {
-    id: string;
-    category: FrictionCategory;
-    source: string;
-    description: string;
-    evidence: string[];
-    severity: 'info' | 'warning' | 'critical';
-    status: 'OPEN' | 'DIAGNOSED' | 'RESOLVED' | 'LEARNING';
-    correlationId?: string;
-    diagnosis?: string;
-    resolution?: string;
-    recordedAt: string;
+  id: string;
+  category: FrictionCategory;
+  source: string;
+  description: string;
+  evidence: string[];
+  severity: 'info' | 'warning' | 'critical';
+  status: 'OPEN' | 'DIAGNOSED' | 'RESOLVED' | 'LEARNING';
+  correlationId?: string;
+  diagnosis?: string;
+  resolution?: string;
+  recordedAt: string;
 }
 /**
  * DissentRecord: Explicit disagreement representation (Pillar 21)
  * Do not manufacture consensus. Do not suppress minority results.
  */
 export interface DissentRecord {
-    id: string;
-    claimId: string;
-    interpretations: DissentInterpretation[];
-    status: 'OPEN' | 'RESOLVED' | 'ACCEPTED';
-    recordedAt: string;
+  id: string;
+  claimId: string;
+  interpretations: DissentInterpretation[];
+  status: 'OPEN' | 'RESOLVED' | 'ACCEPTED';
+  recordedAt: string;
 }
 export interface DissentInterpretation {
-    position: string;
-    source: string;
-    evidence: string[];
-    confidence: number;
+  position: string;
+  source: string;
+  evidence: string[];
+  confidence: number;
 }
 /**
  * Provenance Graph Types (Section XIV)
  * Bidirectional cause-and-effect lineage graph.
  */
 export interface ProvenanceGraphNode {
-    id: string;
-    type: 'OBSERVATION' | 'VERIFICATION' | 'ATTESTATION' | 'ACTION' | 'OUTCOME' | 'LEARNING' | 'FRICTION' | 'DISSENT';
-    label: string;
-    hash: string;
-    recordedAt: string;
-    metadata: Record<string, unknown>;
+  id: string;
+  type:
+    | 'OBSERVATION'
+    | 'VERIFICATION'
+    | 'ATTESTATION'
+    | 'ACTION'
+    | 'OUTCOME'
+    | 'LEARNING'
+    | 'FRICTION'
+    | 'DISSENT';
+  label: string;
+  hash: string;
+  recordedAt: string;
+  metadata: Record<string, unknown>;
 }
 export interface ProvenanceGraphEdge {
-    id: string;
-    sourceId: string;
-    targetId: string;
-    relation: 'PRODUCED' | 'VERIFIED_BY' | 'ATTESTED_BY' | 'RESULTED_IN' | 'SUPERSEDES' | 'CONTRADICTS';
-    timestamp: string;
+  id: string;
+  sourceId: string;
+  targetId: string;
+  relation:
+    'PRODUCED' | 'VERIFIED_BY' | 'ATTESTED_BY' | 'RESULTED_IN' | 'SUPERSEDES' | 'CONTRADICTS';
+  timestamp: string;
 }
 export interface GraphTraversalResult {
-    rootId: string;
-    direction: 'FORWARD' | 'BACKWARD' | 'BIDIRECTIONAL';
-    nodes: ProvenanceGraphNode[];
-    edges: ProvenanceGraphEdge[];
-    depth: number;
+  rootId: string;
+  direction: 'FORWARD' | 'BACKWARD' | 'BIDIRECTIONAL';
+  nodes: ProvenanceGraphNode[];
+  edges: ProvenanceGraphEdge[];
+  depth: number;
 }
 /**
  * Security & Authorization Types (Sections XVIII & XIX)
  * Least privilege, capability scoping, identity verification.
  */
-export type SecurityPermission = 'CAN_OBSERVE' | 'CAN_VERIFY' | 'CAN_ATTEST' | 'CAN_PROPOSE' | 'CAN_ACT' | 'CAN_AUDIT' | 'CAN_RECOMPILE';
+export type SecurityPermission =
+  | 'CAN_OBSERVE'
+  | 'CAN_VERIFY'
+  | 'CAN_ATTEST'
+  | 'CAN_PROPOSE'
+  | 'CAN_ACT'
+  | 'CAN_AUDIT'
+  | 'CAN_RECOMPILE';
 export interface IdentitySubject {
-    id: string;
-    type: 'HUMAN' | 'AGENT' | 'SYSTEM';
-    name: string;
-    permissions: SecurityPermission[];
-    issuedAt: string;
+  id: string;
+  type: 'HUMAN' | 'AGENT' | 'SYSTEM';
+  name: string;
+  permissions: SecurityPermission[];
+  issuedAt: string;
 }
 export interface SecurityToken {
-    subjectId: string;
-    permissions: SecurityPermission[];
-    signature: string;
-    expiresAt: string;
+  subjectId: string;
+  permissions: SecurityPermission[];
+  signature: string;
+  expiresAt: string;
 }
 export interface AuthorizationResult {
-    allowed: boolean;
-    subjectId: string;
-    requiredPermission: SecurityPermission;
-    reason: string;
-    timestamp: string;
+  allowed: boolean;
+  subjectId: string;
+  requiredPermission: SecurityPermission;
+  reason: string;
+  timestamp: string;
 }
 /**
  * Evolution & Recompilation Types (Section XXVII)
  * Controlled rule updates driven by drift detection and evidence.
  */
 export interface DriftAnalysis {
-    ruleName: string;
-    totalExecutions: number;
-    failureRate: number;
-    driftDetected: boolean;
-    recommendedAction: 'MAINTAIN' | 'ADJUST_THRESHOLD' | 'RECOMPILE_DSL';
+  ruleName: string;
+  totalExecutions: number;
+  failureRate: number;
+  driftDetected: boolean;
+  recommendedAction: 'MAINTAIN' | 'ADJUST_THRESHOLD' | 'RECOMPILE_DSL';
 }
 export interface EvolutionProposal {
-    id: string;
-    targetRule: string;
-    previousDefinition: string;
-    candidateDefinition: string;
-    rationale: string;
-    simulatedSuccessRate: number;
-    status: 'PROPOSED' | 'TESTED' | 'PROMOTED' | 'REJECTED';
-    proposedAt: string;
+  id: string;
+  targetRule: string;
+  previousDefinition: string;
+  candidateDefinition: string;
+  rationale: string;
+  simulatedSuccessRate: number;
+  status: 'PROPOSED' | 'TESTED' | 'PROMOTED' | 'REJECTED';
+  proposedAt: string;
 }
 /**
  * Learning Engine Types (Section XXVI)
  * Learning must be grounded in observed outcomes compared to predictions.
  */
 export interface Prediction {
-    id: string;
-    expectedOutcome: string;
-    confidence: number;
-    basedOnRule: string;
-    madeAt: string;
+  id: string;
+  expectedOutcome: string;
+  confidence: number;
+  basedOnRule: string;
+  madeAt: string;
 }
 export interface LearningEvent {
-    id: string;
-    predictionId: string;
-    prediction: Prediction;
-    actualOutcome: string;
-    error: number;
-    insight: LearningInsight;
-    recordedAt: string;
+  id: string;
+  predictionId: string;
+  prediction: Prediction;
+  actualOutcome: string;
+  error: number;
+  insight: LearningInsight;
+  recordedAt: string;
 }
 /**
  * Governance Engine Types (Section XXIX)
  * Governance constrains power.
  */
-export type GovernanceAction = 'AGENT_AUTONOMY' | 'DATA_ACCESS' | 'MODEL_DEPLOYMENT' | 'EMERGENCY_ACTION' | 'ROLLBACK';
+export type GovernanceAction =
+  'AGENT_AUTONOMY' | 'DATA_ACCESS' | 'MODEL_DEPLOYMENT' | 'EMERGENCY_ACTION' | 'ROLLBACK';
 export interface GovernanceRule {
-    id: string;
-    action: GovernanceAction;
-    requiresHumanApproval: boolean;
-    minimumConfidenceThreshold: number;
-    maximumRiskThreshold: number;
-    active: boolean;
+  id: string;
+  action: GovernanceAction;
+  requiresHumanApproval: boolean;
+  minimumConfidenceThreshold: number;
+  maximumRiskThreshold: number;
+  active: boolean;
 }
 export interface GovernanceDecision {
-    id: string;
-    action: GovernanceAction;
-    requestedBy: string;
-    context: Record<string, unknown>;
-    allowed: boolean;
-    reason: string;
-    requiresHumanApproval: boolean;
-    decidedAt: string;
+  id: string;
+  action: GovernanceAction;
+  requestedBy: string;
+  context: Record<string, unknown>;
+  allowed: boolean;
+  reason: string;
+  requiresHumanApproval: boolean;
+  decidedAt: string;
 }
 /**
  * Evidence Artifact Types (Section XXIV)
  */
 export interface EvidenceArtifact {
-    id: string;
-    verificationId: string;
-    commitHash?: string;
-    environment: string;
-    toolVersions: Record<string, string>;
-    lineageHash: string;
-    payload: Record<string, unknown>;
-    createdAt: string;
+  id: string;
+  verificationId: string;
+  commitHash?: string;
+  environment: string;
+  toolVersions: Record<string, string>;
+  lineageHash: string;
+  payload: Record<string, unknown>;
+  createdAt: string;
 }
 /**
  * GREEN Rule Types (Section XXV)
  */
 export interface GreenEvaluation {
-    isGreen: boolean;
-    allChecksPassed: boolean;
-    evidenceExists: boolean;
-    lineageExists: boolean;
-    attestationExists: boolean;
-    noCriticalFailures: boolean;
-    reason: string;
-    evaluatedAt: string;
+  isGreen: boolean;
+  allChecksPassed: boolean;
+  evidenceExists: boolean;
+  lineageExists: boolean;
+  attestationExists: boolean;
+  noCriticalFailures: boolean;
+  reason: string;
+  evaluatedAt: string;
 }
 /**
  * Human Intelligence Types (Section XXVIII)
  * Humans are participants in the loop.
  */
-export type HumanActionType = 'DREAM' | 'THOUGHT' | 'INTENTION' | 'VALUE_JUDGMENT' | 'ACTION' | 'FEEDBACK' | 'DISSENT' | 'APPROVAL';
+export type HumanActionType =
+  | 'DREAM'
+  | 'THOUGHT'
+  | 'INTENTION'
+  | 'VALUE_JUDGMENT'
+  | 'ACTION'
+  | 'FEEDBACK'
+  | 'DISSENT'
+  | 'APPROVAL';
 export interface HumanInput {
-    id: string;
-    type: HumanActionType;
-    humanId: string;
-    contextId?: string;
-    payload: Record<string, unknown>;
-    rationale: string;
-    recordedAt: string;
+  id: string;
+  type: HumanActionType;
+  humanId: string;
+  contextId?: string;
+  payload: Record<string, unknown>;
+  rationale: string;
+  recordedAt: string;
 }
 //# sourceMappingURL=index.d.ts.map

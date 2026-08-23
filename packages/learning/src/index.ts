@@ -11,7 +11,11 @@ export class LearningEngine {
   /**
    * Make a prediction about a future verification result based on a rule
    */
-  public makePrediction(expectedOutcome: string, confidence: number, basedOnRule: string): Prediction {
+  public makePrediction(
+    expectedOutcome: string,
+    confidence: number,
+    basedOnRule: string
+  ): Prediction {
     const prediction: Prediction = {
       id: `pred-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       expectedOutcome,
@@ -35,7 +39,7 @@ export class LearningEngine {
 
     const actualOutcome = result.summary.passed ? 'PASS' : 'FAIL';
     const isMatch = prediction.expectedOutcome === actualOutcome;
-    
+
     // Error is 0 if it matches, up to 1 based on confidence if it doesn't match
     // High confidence + mismatch = high error (max 1.0)
     // Low confidence + mismatch = lower error
@@ -43,18 +47,18 @@ export class LearningEngine {
 
     let recommendation = 'MAINTAIN';
     if (error > 0.8) {
-        recommendation = 'IMMEDIATE_REVISION_REQUIRED';
+      recommendation = 'IMMEDIATE_REVISION_REQUIRED';
     } else if (error > 0.5) {
-        recommendation = 'REVIEW_RULE_ASSUMPTIONS';
+      recommendation = 'REVIEW_RULE_ASSUMPTIONS';
     } else if (error > 0) {
-        recommendation = 'MONITOR_DRIFT';
+      recommendation = 'MONITOR_DRIFT';
     }
 
     const insight: LearningInsight = {
-      description: isMatch 
+      description: isMatch
         ? `Prediction validated for rule '${prediction.basedOnRule}'.`
         : `Prediction failed for rule '${prediction.basedOnRule}'. Expected ${prediction.expectedOutcome}, got ${actualOutcome}.`,
-      confidence: isMatch ? prediction.confidence : (1 - error),
+      confidence: isMatch ? prediction.confidence : 1 - error,
       affectedRule: prediction.basedOnRule,
       recommendation,
       learnedAt: new Date().toISOString(),

@@ -7,7 +7,8 @@ import { EvidenceEngine } from '@omega-v/evidence';
 import { GreenEngine } from '@omega-v/green';
 import { HumanEngine } from '@omega-v/human';
 
-export type AgentRole = 'Observer' | 'Verifier' | 'Builder' | 'Security' | 'Governance' | 'Learning' | 'Human';
+export type AgentRole =
+  'Observer' | 'Verifier' | 'Builder' | 'Security' | 'Governance' | 'Learning' | 'Human';
 
 export interface AgentActionResult {
   agentRole: AgentRole;
@@ -22,7 +23,10 @@ export interface AgentActionResult {
  * "Agents are temporary forms of the current." — FORMLESS.md Section XIII
  */
 export abstract class FormlessAgent {
-  constructor(public readonly role: AgentRole, protected sdk: OceanicosClient) {}
+  constructor(
+    public readonly role: AgentRole,
+    protected sdk: OceanicosClient
+  ) {}
 
   public abstract executeTask(input: Record<string, unknown>): Promise<AgentActionResult>;
 }
@@ -69,7 +73,11 @@ export class VerifierAgent extends FormlessAgent {
       agentRole: this.role,
       timestamp: new Date().toISOString(),
       action: 'VERIFY_RULE',
-      evidence: { programName: program.name, vmSteps: vmRes.steps.length, stackTop: vmRes.stackTop },
+      evidence: {
+        programName: program.name,
+        vmSteps: vmRes.steps.length,
+        stackTop: vmRes.stackTop,
+      },
       verified: vmRes.passed,
     };
   }
@@ -117,7 +125,10 @@ export class GovernanceAgent extends FormlessAgent {
   public async executeTask(input: Record<string, unknown>): Promise<AgentActionResult> {
     const confidence = (input.confidence as number) ?? 0.8;
     const risk = (input.risk as number) ?? 0.1;
-    const decision = this.engine.requestAction('AGENT_AUTONOMY', 'GovernanceAgent', { confidence, risk });
+    const decision = this.engine.requestAction('AGENT_AUTONOMY', 'GovernanceAgent', {
+      confidence,
+      risk,
+    });
 
     return {
       agentRole: this.role,
@@ -185,7 +196,11 @@ export class HumanAgent extends FormlessAgent {
       agentRole: this.role,
       timestamp: new Date().toISOString(),
       action: 'HUMAN_INPUT',
-      evidence: { humanInputId: humanInput.id, type: humanInput.type, rationale: humanInput.rationale },
+      evidence: {
+        humanInputId: humanInput.id,
+        type: humanInput.type,
+        rationale: humanInput.rationale,
+      },
       verified: true,
     };
   }
@@ -260,19 +275,38 @@ export class FormlessSwarm {
     });
 
     // 5. Learning Agent (fed with verification result)
-    const learnRes = await this.learningAgent.executeTask({ verificationResult: fullLoopResult.verification });
+    const learnRes = await this.learningAgent.executeTask({
+      verificationResult: fullLoopResult.verification,
+    });
     results.push(learnRes);
 
     // 6. Human Agent
-    const humRes = await this.humanAgent.executeTask({ type: 'APPROVAL', rationale: 'Swarm cycle verified by human proxy' });
+    const humRes = await this.humanAgent.executeTask({
+      type: 'APPROVAL',
+      rationale: 'Swarm cycle verified by human proxy',
+    });
     results.push(humRes);
 
     // Generate Evidence Artifact
     const artifact = this.evidenceEngine.generateArtifact(
       fullLoopResult.verification,
       [
-        { id: 1, type: 'OBSERVATION', data: fullLoopResult.observation, recordedAt: new Date().toISOString(), hash: 'hash1', previousHash: '0' },
-        { id: 2, type: 'VERIFICATION', data: fullLoopResult.verification, recordedAt: new Date().toISOString(), hash: 'hash2', previousHash: 'hash1' }
+        {
+          id: 1,
+          type: 'OBSERVATION',
+          data: fullLoopResult.observation,
+          recordedAt: new Date().toISOString(),
+          hash: 'hash1',
+          previousHash: '0',
+        },
+        {
+          id: 2,
+          type: 'VERIFICATION',
+          data: fullLoopResult.verification,
+          recordedAt: new Date().toISOString(),
+          hash: 'hash2',
+          previousHash: 'hash1',
+        },
       ],
       'swarm-env',
       { '@omega-v/agents': '1.0.0' }
@@ -282,7 +316,16 @@ export class FormlessSwarm {
     const greenEval = this.greenEngine.evaluateGreen(
       fullLoopResult.verification,
       true,
-      [{ id: 1, type: 'OBSERVATION', data: fullLoopResult.observation, recordedAt: new Date().toISOString(), hash: 'hash1', previousHash: '0' }],
+      [
+        {
+          id: 1,
+          type: 'OBSERVATION',
+          data: fullLoopResult.observation,
+          recordedAt: new Date().toISOString(),
+          hash: 'hash1',
+          previousHash: '0',
+        },
+      ],
       fullLoopResult.attestation
     );
 
@@ -299,4 +342,3 @@ export class FormlessSwarm {
 }
 
 export default FormlessSwarm;
-

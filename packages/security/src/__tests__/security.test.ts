@@ -26,7 +26,10 @@ describe('SecurityEngine (Sections XVIII & XIX)', () => {
 
     it('should reject tampered token signatures', () => {
       const token = engine.issueToken(subject);
-      const tampered: SecurityToken = { ...token, signature: '0000000000000000000000000000000000000000000000000000000000000000' };
+      const tampered: SecurityToken = {
+        ...token,
+        signature: '0000000000000000000000000000000000000000000000000000000000000000',
+      };
       expect(engine.verifyToken(tampered)).toBe(false);
     });
 

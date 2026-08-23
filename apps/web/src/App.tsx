@@ -82,7 +82,14 @@ interface GreenData {
 }
 
 interface GovernanceData {
-  rules: { id: string; action: string; requiresHumanApproval: boolean; minimumConfidenceThreshold: number; maximumRiskThreshold: number; active: boolean }[];
+  rules: {
+    id: string;
+    action: string;
+    requiresHumanApproval: boolean;
+    minimumConfidenceThreshold: number;
+    maximumRiskThreshold: number;
+    active: boolean;
+  }[];
   failClosed: boolean;
 }
 
@@ -90,7 +97,6 @@ interface LearningData {
   insights: { description: string; confidence: number; learnedAt: string }[];
   historyCount: number;
 }
-
 
 const MOOD_ICONS: Record<string, string> = {
   OPTIMAL_FLOW: '🌊',
@@ -118,7 +124,13 @@ const POLL_INTERVAL = 3000;
 function EntryIcon({ type, data }: { type: string; data: LogEntry['data'] }) {
   if (type === 'OBSERVATION') return <div className="entry-icon observation">👁</div>;
   if (type === 'VERIFICATION')
-    return <div className={`entry-icon ${data.summary?.passed ? 'verification-pass' : 'verification-fail'}`}>{data.summary?.passed ? '✓' : '✗'}</div>;
+    return (
+      <div
+        className={`entry-icon ${data.summary?.passed ? 'verification-pass' : 'verification-fail'}`}
+      >
+        {data.summary?.passed ? '✓' : '✗'}
+      </div>
+    );
   return <div className="entry-icon attestation">🔏</div>;
 }
 
@@ -131,7 +143,9 @@ function TimelineEntry({ entry }: { entry: LogEntry }) {
       <EntryIcon type={entry.type} data={entry.data} />
       <div className="entry-body">
         <div className="entry-header">
-          <span className={`entry-type ${entry.type}${isFailed ? ' failed' : ''}`}>{entry.type}</span>
+          <span className={`entry-type ${entry.type}${isFailed ? ' failed' : ''}`}>
+            {entry.type}
+          </span>
           <span className="entry-id">#{entry.id}</span>
           <span className="entry-timestamp">{time}</span>
         </div>
@@ -140,17 +154,26 @@ function TimelineEntry({ entry }: { entry: LogEntry }) {
           <>
             <div className="entry-claim">{entry.data.claim.statement}</div>
             <div className="entry-details">
-              <span className="entry-detail"><strong>Category:</strong> {entry.data.claim.category}</span>
-              <span className="entry-detail"><strong>Confidence:</strong> {((entry.data.confidence ?? 0) * 100).toFixed(0)}%</span>
+              <span className="entry-detail">
+                <strong>Category:</strong> {entry.data.claim.category}
+              </span>
+              <span className="entry-detail">
+                <strong>Confidence:</strong> {((entry.data.confidence ?? 0) * 100).toFixed(0)}%
+              </span>
             </div>
           </>
         )}
 
         {entry.type === 'VERIFICATION' && entry.data.summary && (
           <>
-            <div className="entry-claim">{entry.data.summary.passed ? 'Verification PASSED' : 'Verification FAILED'}</div>
+            <div className="entry-claim">
+              {entry.data.summary.passed ? 'Verification PASSED' : 'Verification FAILED'}
+            </div>
             <div className="entry-details">
-              <span className="entry-detail"><strong>Rules:</strong> {entry.data.summary.rulesPassed}/{entry.data.summary.rulesApplied} passed</span>
+              <span className="entry-detail">
+                <strong>Rules:</strong> {entry.data.summary.rulesPassed}/
+                {entry.data.summary.rulesApplied} passed
+              </span>
             </div>
             {entry.data.evidencePath && (
               <div className="evidence-pills">
@@ -166,19 +189,27 @@ function TimelineEntry({ entry }: { entry: LogEntry }) {
 
         {entry.type === 'ATTESTATION' && (
           <>
-            <div className="entry-claim">{entry.data.verified ? 'Attested & Signed' : 'Attestation Rejected'}</div>
-            <div className="entry-details">
-              <span className="entry-detail"><strong>Algorithm:</strong> {entry.data.signingAlgorithm}</span>
+            <div className="entry-claim">
+              {entry.data.verified ? 'Attested & Signed' : 'Attestation Rejected'}
             </div>
-            {entry.data.signature && (
-              <span className="signature-chip">{entry.data.signature}</span>
-            )}
+            <div className="entry-details">
+              <span className="entry-detail">
+                <strong>Algorithm:</strong> {entry.data.signingAlgorithm}
+              </span>
+            </div>
+            {entry.data.signature && <span className="signature-chip">{entry.data.signature}</span>}
           </>
         )}
 
         <div className="entry-detail" style={{ marginTop: 4 }}>
           <strong>Hash:</strong>&nbsp;
-          <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.68rem', color: '#475569' }}>
+          <span
+            style={{
+              fontFamily: 'JetBrains Mono, monospace',
+              fontSize: '0.68rem',
+              color: '#475569',
+            }}
+          >
             {entry.hash.slice(0, 18)}…
           </span>
         </div>
@@ -207,16 +238,17 @@ export function App(): JSX.Element {
   // ── Poll log + metrics ──
   const fetchState = useCallback(async () => {
     try {
-      const [logRes, metricsRes, moodRes, frictionRes, dissentRes, greenRes, govRes, learnRes] = await Promise.all([
-        fetch(`${API_BASE}/log?limit=30`),
-        fetch(`${API_BASE}/metrics`),
-        fetch(`${API_BASE}/mood`),
-        fetch(`${API_BASE}/friction`),
-        fetch(`${API_BASE}/dissent`),
-        fetch(`${API_BASE}/green`),
-        fetch(`${API_BASE}/governance`),
-        fetch(`${API_BASE}/learning`),
-      ]);
+      const [logRes, metricsRes, moodRes, frictionRes, dissentRes, greenRes, govRes, learnRes] =
+        await Promise.all([
+          fetch(`${API_BASE}/log?limit=30`),
+          fetch(`${API_BASE}/metrics`),
+          fetch(`${API_BASE}/mood`),
+          fetch(`${API_BASE}/friction`),
+          fetch(`${API_BASE}/dissent`),
+          fetch(`${API_BASE}/green`),
+          fetch(`${API_BASE}/governance`),
+          fetch(`${API_BASE}/learning`),
+        ]);
       if (!logRes.ok || !metricsRes.ok) throw new Error('API error');
 
       const logData = await logRes.json();
@@ -315,7 +347,10 @@ export function App(): JSX.Element {
           </div>
         </div>
         <div className="header-status">
-          <span className={`status-dot${apiOnline ? '' : ' offline'}`} style={!apiOnline ? { background: '#fc8181', boxShadow: '0 0 8px #fc8181' } : {}} />
+          <span
+            className={`status-dot${apiOnline ? '' : ' offline'}`}
+            style={!apiOnline ? { background: '#fc8181', boxShadow: '0 0 8px #fc8181' } : {}}
+          />
           {apiOnline ? 'API Online' : 'API Offline'}
         </div>
       </header>
@@ -328,19 +363,21 @@ export function App(): JSX.Element {
             <div className="panel-title">Verification Loop</div>
             <div className="loop-indicator" style={{ marginTop: 12 }}>
               <div>Observe</div>
-              <div className="arrow">  ↓</div>
+              <div className="arrow"> ↓</div>
               <div>Verify</div>
-              <div className="arrow">  ↓</div>
+              <div className="arrow"> ↓</div>
               <div>Attest</div>
-              <div className="arrow">  ↓</div>
+              <div className="arrow"> ↓</div>
               <div>Record</div>
-              <div className="arrow">  ↓</div>
+              <div className="arrow"> ↓</div>
               <div>Learn → ∞</div>
             </div>
           </div>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="claim-input">Claim to Observe</label>
+            <label className="form-label" htmlFor="claim-input">
+              Claim to Observe
+            </label>
             <input
               id="claim-input"
               className="form-input"
@@ -373,7 +410,16 @@ export function App(): JSX.Element {
           </div>
 
           {error && (
-            <div style={{ fontSize: '0.8rem', color: 'var(--accent-red)', padding: '10px 14px', background: 'rgba(252,129,129,0.06)', border: '1px solid rgba(252,129,129,0.2)', borderRadius: 8 }}>
+            <div
+              style={{
+                fontSize: '0.8rem',
+                color: 'var(--accent-red)',
+                padding: '10px 14px',
+                background: 'rgba(252,129,129,0.06)',
+                border: '1px solid rgba(252,129,129,0.2)',
+                borderRadius: 8,
+              }}
+            >
               ✗ {error}
             </div>
           )}
@@ -414,11 +460,21 @@ export function App(): JSX.Element {
 
           {/* ── Mood Indicator (Pillar 19) ── */}
           {mood && (
-            <div className="mood-card" style={{ borderColor: MOOD_COLORS[mood.state] || '#38b2ac' }}>
+            <div
+              className="mood-card"
+              style={{ borderColor: MOOD_COLORS[mood.state] || '#38b2ac' }}
+            >
               <div className="mood-header">
                 <span className="mood-icon">{MOOD_ICONS[mood.state] || '💧'}</span>
-                <span className="mood-state" style={{ color: MOOD_COLORS[mood.state] || '#38b2ac' }}>{mood.state.replace(/_/g, ' ')}</span>
-                <span className="mood-confidence">{(mood.confidence * 100).toFixed(0)}% confidence</span>
+                <span
+                  className="mood-state"
+                  style={{ color: MOOD_COLORS[mood.state] || '#38b2ac' }}
+                >
+                  {mood.state.replace(/_/g, ' ')}
+                </span>
+                <span className="mood-confidence">
+                  {(mood.confidence * 100).toFixed(0)}% confidence
+                </span>
               </div>
               <div className="mood-desc">{mood.description}</div>
               <div className="mood-dims">
@@ -426,37 +482,89 @@ export function App(): JSX.Element {
                 <span>Evidence: {(mood.evidenceQuality * 100).toFixed(0)}%</span>
                 <span>Error: {(mood.errorRate * 100).toFixed(1)}%</span>
                 <span>Uncertainty: {(mood.uncertainty * 100).toFixed(0)}%</span>
-                {mood.dissentCount > 0 && <span style={{ color: '#ed8936' }}>Dissent: {mood.dissentCount}</span>}
+                {mood.dissentCount > 0 && (
+                  <span style={{ color: '#ed8936' }}>Dissent: {mood.dissentCount}</span>
+                )}
               </div>
             </div>
           )}
 
           {/* ── GREEN Rule Evaluation Banner (Pillar 25) ── */}
           {greenState && (
-            <div style={{
-              background: greenState.isGreen ? 'rgba(56, 178, 172, 0.08)' : 'rgba(237, 137, 54, 0.08)',
-              border: `1px solid ${greenState.isGreen ? 'var(--accent-green)' : 'var(--accent-amber)'}`,
-              borderRadius: 'var(--radius)',
-              padding: 16,
-              marginBottom: 20,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between'
-            }}>
+            <div
+              style={{
+                background: greenState.isGreen
+                  ? 'rgba(56, 178, 172, 0.08)'
+                  : 'rgba(237, 137, 54, 0.08)',
+                border: `1px solid ${greenState.isGreen ? 'var(--accent-green)' : 'var(--accent-amber)'}`,
+                borderRadius: 'var(--radius)',
+                padding: 16,
+                marginBottom: 20,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
               <div>
-                <div style={{ fontWeight: 700, fontSize: '0.95rem', color: greenState.isGreen ? 'var(--accent-green)' : 'var(--accent-amber)', display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span>{greenState.isGreen ? '🟢 SYSTEM STATE: GREEN (Pillar 25 Verified)' : '🟠 SYSTEM STATE: UNVERIFIED / INITIALIZING'}</span>
+                <div
+                  style={{
+                    fontWeight: 700,
+                    fontSize: '0.95rem',
+                    color: greenState.isGreen ? 'var(--accent-green)' : 'var(--accent-amber)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                  }}
+                >
+                  <span>
+                    {greenState.isGreen
+                      ? '🟢 SYSTEM STATE: GREEN (Pillar 25 Verified)'
+                      : '🟠 SYSTEM STATE: UNVERIFIED / INITIALIZING'}
+                  </span>
                 </div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: 4 }}>{greenState.reason}</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: 4 }}>
+                  {greenState.reason}
+                </div>
               </div>
-              <div style={{ display: 'flex', gap: 8, fontSize: '0.72rem', fontFamily: 'var(--font-mono)' }}>
-                <span style={{ padding: '4px 8px', background: greenState.allChecksPassed ? 'rgba(56, 178, 172, 0.2)' : 'rgba(237, 137, 54, 0.2)', borderRadius: 4 }}>
+              <div
+                style={{
+                  display: 'flex',
+                  gap: 8,
+                  fontSize: '0.72rem',
+                  fontFamily: 'var(--font-mono)',
+                }}
+              >
+                <span
+                  style={{
+                    padding: '4px 8px',
+                    background: greenState.allChecksPassed
+                      ? 'rgba(56, 178, 172, 0.2)'
+                      : 'rgba(237, 137, 54, 0.2)',
+                    borderRadius: 4,
+                  }}
+                >
                   Checks: {greenState.allChecksPassed ? 'PASS' : 'PENDING'}
                 </span>
-                <span style={{ padding: '4px 8px', background: greenState.lineageExists ? 'rgba(56, 178, 172, 0.2)' : 'rgba(237, 137, 54, 0.2)', borderRadius: 4 }}>
+                <span
+                  style={{
+                    padding: '4px 8px',
+                    background: greenState.lineageExists
+                      ? 'rgba(56, 178, 172, 0.2)'
+                      : 'rgba(237, 137, 54, 0.2)',
+                    borderRadius: 4,
+                  }}
+                >
                   Lineage: {greenState.lineageExists ? 'INTACT' : 'BROKEN'}
                 </span>
-                <span style={{ padding: '4px 8px', background: greenState.attestationExists ? 'rgba(56, 178, 172, 0.2)' : 'rgba(237, 137, 54, 0.2)', borderRadius: 4 }}>
+                <span
+                  style={{
+                    padding: '4px 8px',
+                    background: greenState.attestationExists
+                      ? 'rgba(56, 178, 172, 0.2)'
+                      : 'rgba(237, 137, 54, 0.2)',
+                    borderRadius: 4,
+                  }}
+                >
                   Attest: {greenState.attestationExists ? 'SIGNED' : 'MISSING'}
                 </span>
               </div>
@@ -465,16 +573,62 @@ export function App(): JSX.Element {
 
           {/* ── Governance & Learning Engines (Pillars 26 & 29) ── */}
           {(governanceData || learningData) && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16, marginBottom: 24 }}>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                gap: 16,
+                marginBottom: 24,
+              }}
+            >
               {governanceData && (
-                <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: 16 }}>
-                  <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div
+                  style={{
+                    background: 'var(--bg-card)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 'var(--radius)',
+                    padding: 16,
+                  }}
+                >
+                  <div
+                    style={{
+                      fontWeight: 700,
+                      fontSize: '0.9rem',
+                      color: 'var(--text-primary)',
+                      marginBottom: 8,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                    }}
+                  >
                     <span>⚖ Governance Engine (Pillar 29)</span>
-                    <span style={{ fontSize: '0.68rem', background: 'rgba(99, 179, 237, 0.15)', color: '#63b3ed', padding: '2px 6px', borderRadius: 4 }}>FAIL-CLOSED</span>
+                    <span
+                      style={{
+                        fontSize: '0.68rem',
+                        background: 'rgba(99, 179, 237, 0.15)',
+                        color: '#63b3ed',
+                        padding: '2px 6px',
+                        borderRadius: 4,
+                      }}
+                    >
+                      FAIL-CLOSED
+                    </span>
                   </div>
-                  {governanceData.rules.map(r => (
-                    <div key={r.id} style={{ fontSize: '0.78rem', borderBottom: '1px solid var(--border-subtle)', padding: '6px 0', display: 'flex', justifyContent: 'space-between' }}>
-                      <span><strong>{r.action}</strong> ({r.requiresHumanApproval ? 'Human Required' : 'Auto'})</span>
+                  {governanceData.rules.map((r) => (
+                    <div
+                      key={r.id}
+                      style={{
+                        fontSize: '0.78rem',
+                        borderBottom: '1px solid var(--border-subtle)',
+                        padding: '6px 0',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                      }}
+                    >
+                      <span>
+                        <strong>{r.action}</strong> (
+                        {r.requiresHumanApproval ? 'Human Required' : 'Auto'})
+                      </span>
                       <span style={{ color: 'var(--accent-green)' }}>Active</span>
                     </div>
                   ))}
@@ -482,14 +636,51 @@ export function App(): JSX.Element {
               )}
 
               {learningData && (
-                <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: 16 }}>
-                  <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div
+                  style={{
+                    background: 'var(--bg-card)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 'var(--radius)',
+                    padding: 16,
+                  }}
+                >
+                  <div
+                    style={{
+                      fontWeight: 700,
+                      fontSize: '0.9rem',
+                      color: 'var(--text-primary)',
+                      marginBottom: 8,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                    }}
+                  >
                     <span>🧠 Learning Engine (Pillar 26)</span>
-                    <span style={{ fontSize: '0.68rem', background: 'rgba(159, 122, 234, 0.15)', color: '#9f7aea', padding: '2px 6px', borderRadius: 4 }}>CLOSED-LOOP</span>
+                    <span
+                      style={{
+                        fontSize: '0.68rem',
+                        background: 'rgba(159, 122, 234, 0.15)',
+                        color: '#9f7aea',
+                        padding: '2px 6px',
+                        borderRadius: 4,
+                      }}
+                    >
+                      CLOSED-LOOP
+                    </span>
                   </div>
                   {learningData.insights.map((ins, i) => (
-                    <div key={i} style={{ fontSize: '0.78rem', padding: '4px 0', color: 'var(--text-secondary)' }}>
-                      💡 {ins.description} <span style={{ color: 'var(--accent-green)' }}>({(ins.confidence * 100).toFixed(0)}%)</span>
+                    <div
+                      key={i}
+                      style={{
+                        fontSize: '0.78rem',
+                        padding: '4px 0',
+                        color: 'var(--text-secondary)',
+                      }}
+                    >
+                      💡 {ins.description}{' '}
+                      <span style={{ color: 'var(--accent-green)' }}>
+                        ({(ins.confidence * 100).toFixed(0)}%)
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -497,16 +688,49 @@ export function App(): JSX.Element {
             </div>
           )}
           {swarmResult && (
-            <div style={{ background: 'var(--bg-card)', border: '1px solid var(--accent-secondary)', borderRadius: 'var(--radius)', padding: 20, marginBottom: 24 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-                <span style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--accent-secondary)' }}>
-                  🐝 Formless Swarm Execution Complete ({swarmResult.agentResults.length} Agents Verified)
+            <div
+              style={{
+                background: 'var(--bg-card)',
+                border: '1px solid var(--accent-secondary)',
+                borderRadius: 'var(--radius)',
+                padding: 20,
+                marginBottom: 24,
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: 14,
+                }}
+              >
+                <span
+                  style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--accent-secondary)' }}
+                >
+                  🐝 Formless Swarm Execution Complete ({swarmResult.agentResults.length} Agents
+                  Verified)
                 </span>
-                <span style={{ fontSize: '0.75rem', fontFamily: 'var(--font-mono)', background: 'rgba(159, 122, 234, 0.15)', color: 'var(--accent-secondary)', padding: '4px 8px', borderRadius: 6 }}>
+                <span
+                  style={{
+                    fontSize: '0.75rem',
+                    fontFamily: 'var(--font-mono)',
+                    background: 'rgba(159, 122, 234, 0.15)',
+                    color: 'var(--accent-secondary)',
+                    padding: '4px 8px',
+                    borderRadius: 6,
+                  }}
+                >
                   {swarmResult.fullLoopResult.attestation.signature.slice(0, 20)}…
                 </span>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 10 }}>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+                  gap: 10,
+                }}
+              >
                 {swarmResult.agentResults.map((agent: any, idx: number) => {
                   const roleIcons: Record<string, string> = {
                     Observer: '👁',
@@ -517,10 +741,24 @@ export function App(): JSX.Element {
                     Human: '👤',
                   };
                   return (
-                    <div key={idx} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: 12 }}>
-                      <div style={{ fontSize: '1.2rem', marginBottom: 4 }}>{roleIcons[agent.agentRole] || '🤖'}</div>
-                      <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>{agent.agentRole} Agent</div>
-                      <div style={{ fontSize: '0.72rem', color: 'var(--accent-green)', marginTop: 4 }}>
+                    <div
+                      key={idx}
+                      style={{
+                        background: 'var(--bg-surface)',
+                        border: '1px solid var(--border)',
+                        borderRadius: 'var(--radius-sm)',
+                        padding: 12,
+                      }}
+                    >
+                      <div style={{ fontSize: '1.2rem', marginBottom: 4 }}>
+                        {roleIcons[agent.agentRole] || '🤖'}
+                      </div>
+                      <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>
+                        {agent.agentRole} Agent
+                      </div>
+                      <div
+                        style={{ fontSize: '0.72rem', color: 'var(--accent-green)', marginTop: 4 }}
+                      >
                         ✓ {agent.action}
                       </div>
                     </div>
@@ -532,31 +770,111 @@ export function App(): JSX.Element {
 
           {/* ── Friction & Dissent Ledger (Pillars 20-21) ── */}
           {(frictionList.length > 0 || dissentList.length > 0) && (
-            <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: 20, marginBottom: 24 }}>
-              <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--accent-amber)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div
+              style={{
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius)',
+                padding: 20,
+                marginBottom: 24,
+              }}
+            >
+              <div
+                style={{
+                  fontWeight: 700,
+                  fontSize: '0.95rem',
+                  color: 'var(--accent-amber)',
+                  marginBottom: 12,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                }}
+              >
                 <span>⚡ Friction & Dissent Ledger (Pillars 20–21)</span>
-                <span style={{ fontSize: '0.72rem', background: 'rgba(237,137,54,0.15)', color: 'var(--accent-amber)', padding: '2px 8px', borderRadius: 4 }}>
+                <span
+                  style={{
+                    fontSize: '0.72rem',
+                    background: 'rgba(237,137,54,0.15)',
+                    color: 'var(--accent-amber)',
+                    padding: '2px 8px',
+                    borderRadius: 4,
+                  }}
+                >
                   {frictionList.length} Friction | {dissentList.length} Dissent
                 </span>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12 }}>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+                  gap: 12,
+                }}
+              >
                 {frictionList.map((f) => (
-                  <div key={f.id} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: 12 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', marginBottom: 4 }}>
-                      <span style={{ fontWeight: 600, color: 'var(--accent-red)' }}>⚡ {f.category}</span>
-                      <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>{f.status}</span>
+                  <div
+                    key={f.id}
+                    style={{
+                      background: 'var(--bg-surface)',
+                      border: '1px solid var(--border)',
+                      borderRadius: 'var(--radius-sm)',
+                      padding: 12,
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        fontSize: '0.75rem',
+                        marginBottom: 4,
+                      }}
+                    >
+                      <span style={{ fontWeight: 600, color: 'var(--accent-red)' }}>
+                        ⚡ {f.category}
+                      </span>
+                      <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
+                        {f.status}
+                      </span>
                     </div>
-                    <div style={{ fontSize: '0.82rem', color: 'var(--text-primary)', marginBottom: 4 }}>{f.description}</div>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Source: {f.source}</div>
+                    <div
+                      style={{ fontSize: '0.82rem', color: 'var(--text-primary)', marginBottom: 4 }}
+                    >
+                      {f.description}
+                    </div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                      Source: {f.source}
+                    </div>
                   </div>
                 ))}
                 {dissentList.map((d) => (
-                  <div key={d.id} style={{ background: 'var(--bg-surface)', border: '1px solid rgba(159,122,234,0.3)', borderRadius: 'var(--radius-sm)', padding: 12 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', marginBottom: 4 }}>
-                      <span style={{ fontWeight: 600, color: 'var(--accent-secondary)' }}>⚖ DISSENT ({d.interpretations.length} Views)</span>
-                      <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent-secondary)' }}>{d.status}</span>
+                  <div
+                    key={d.id}
+                    style={{
+                      background: 'var(--bg-surface)',
+                      border: '1px solid rgba(159,122,234,0.3)',
+                      borderRadius: 'var(--radius-sm)',
+                      padding: 12,
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        fontSize: '0.75rem',
+                        marginBottom: 4,
+                      }}
+                    >
+                      <span style={{ fontWeight: 600, color: 'var(--accent-secondary)' }}>
+                        ⚖ DISSENT ({d.interpretations.length} Views)
+                      </span>
+                      <span
+                        style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent-secondary)' }}
+                      >
+                        {d.status}
+                      </span>
                     </div>
-                    <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>Claim: {d.claimId}</div>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                      Claim: {d.claimId}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -575,10 +893,14 @@ export function App(): JSX.Element {
                 <div className="empty-state">
                   <div className="empty-state-icon">📋</div>
                   <div className="empty-state-title">No events recorded yet</div>
-                  <div className="empty-state-text">Run the verification loop to observe the first event.</div>
+                  <div className="empty-state-text">
+                    Run the verification loop to observe the first event.
+                  </div>
                 </div>
               ) : (
-                log.map((entry) => <TimelineEntry key={`${entry.type}-${entry.id}`} entry={entry} />)
+                log.map((entry) => (
+                  <TimelineEntry key={`${entry.type}-${entry.id}`} entry={entry} />
+                ))
               )}
             </div>
           </div>
@@ -586,7 +908,8 @@ export function App(): JSX.Element {
       </main>
 
       <footer className="footer">
-        Attest, don't assert. Evidence before trust. Verification before evolution. — Ω∞v Oceanicos v0.1.0
+        Attest, don't assert. Evidence before trust. Verification before evolution. — Ω∞v Oceanicos
+        v0.1.0
       </footer>
     </div>
   );

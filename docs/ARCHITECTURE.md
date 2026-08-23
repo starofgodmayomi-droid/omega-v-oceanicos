@@ -58,12 +58,14 @@ The Ω∞v Oceanicos system is designed around a single principle: **every compo
 **Purpose**: Capture observations (events, claims, states) and normalize them.
 
 **Responsibilities**:
+
 - Accept observations from any source (API, CLI, SDK, real-time events)
 - Validate observation schema (who, when, what, where, confidence)
 - Deduplicate similar observations
 - Create normalized event stream
 
 **Example**:
+
 ```typescript
 observer.observe({
   claim: "Service X is healthy",
@@ -87,6 +89,7 @@ observer.observe({
 **Purpose**: Apply verification rules to observations and produce evidence.
 
 **Responsibilities**:
+
 - Load and manage versioned verification rules
 - Execute rules against observations
 - Produce evidence paths (not just true/false)
@@ -94,10 +97,11 @@ observer.observe({
 - Support multiple verification strategies (deterministic, probabilistic, consensus)
 
 **Example**:
+
 ```typescript
 verification.verify(event, {
-  rules: ["health-check", "response-time-threshold"],
-  ruleVersion: "1.2.0"
+  rules: ['health-check', 'response-time-threshold'],
+  ruleVersion: '1.2.0',
 });
 
 // Returns:
@@ -121,6 +125,7 @@ verification.verify(event, {
 **Purpose**: Cryptographically sign verification results and create unforgeable proof.
 
 **Responsibilities**:
+
 - Generate or load signing keys
 - Sign verification results with timestamp
 - Include attestation metadata (key ID, rule version, signer identity)
@@ -128,6 +133,7 @@ verification.verify(event, {
 - Enable signature verification
 
 **Example**:
+
 ```typescript
 const attestation = await attestation.attest(verificationResult);
 
@@ -151,6 +157,7 @@ const attestation = await attestation.attest(verificationResult);
 **Purpose**: Transform high-level rule definitions into portable bytecode.
 
 **Responsibilities**:
+
 - Parse rule language (domain-specific language, DSL)
 - Generate bytecode (Oceanicum Intermediate Representation)
 - Validate rule syntax and semantics
@@ -158,6 +165,7 @@ const attestation = await attestation.attest(verificationResult);
 - Enable portable execution across platforms
 
 **Example**:
+
 ```
 Rule Language:
 ┌─────────────────────────┐
@@ -190,6 +198,7 @@ Rule Language:
 **Purpose**: Store observations, verifications, and attestations immutably.
 
 **Responsibilities**:
+
 - Maintain append-only event log
 - Index verification results for querying
 - Store signed attestations
@@ -197,6 +206,7 @@ Rule Language:
 - Support temporal queries (what was true at time T?)
 
 **Storage Model**:
+
 ```
 Event Store:
   ID | Timestamp | Type | Observation | Source | Confidence
@@ -280,6 +290,7 @@ Attestation Store:
 ### Public APIs
 
 #### REST API
+
 - `POST /observe` — Submit an observation
 - `POST /verify` — Verify an observation
 - `GET /verification/:id` — Retrieve verification result
@@ -287,12 +298,14 @@ Attestation Store:
 - `GET /rules` — List available rules
 
 #### SDK
+
 - `observer.observe(claim)` — Programmatic observation
 - `verification.verify(claim, rules)` — Programmatic verification
 - `attestation.attest(result)` — Programmatic attestation
 - `store.query(filter)` — Query the event store
 
 #### CLI
+
 ```bash
 omega observe "claim" --source api --confidence 0.95
 omega verify claim-id --rules health-check
@@ -305,17 +318,20 @@ omega query attestations --since 2026-08-07
 ## Concurrency & Distribution
 
 ### Single Instance
+
 - Event loop processes observations sequentially
 - In-memory verification results are cached
 - Append-only writes ensure consistency
 
 ### Multiple Instances
+
 - Events are propagated through event broker (Kafka, RabbitMQ)
 - Verification results are consensus-based when needed
 - Attestations are anchored to a single authority (or distributed consensus)
 - Database is distributed (PostgreSQL replication, or distributed store)
 
 ### Edge Deployment
+
 - Lightweight verifier runs at the edge
 - Observations are submitted to central system
 - Attestations are signed by the edge node
@@ -326,21 +342,25 @@ omega query attestations --since 2026-08-07
 ## Error Handling
 
 ### Observation Errors
+
 - Invalid schema → Reject with clear error message
 - Unknown source → Accept but flag for review
 - Duplicate observation → Deduplicate (same event, different times)
 
 ### Verification Errors
+
 - Rule not found → Fail gracefully, return error
 - Rule execution exception → Catch and record as failed verification
 - Timeout → Record timeout as verification failure
 
 ### Attestation Errors
+
 - Key unavailable → Fail attestation (don't sign without authority)
 - Clock skew → Use server time, not client time
 - Signature failure → Log and alert (security issue)
 
 ### Storage Errors
+
 - Write failure → Return error, don't acknowledge completion
 - Read failure → Return stale cached result, log issue
 - Replication lag → Return with freshness timestamp
@@ -350,17 +370,20 @@ omega query attestations --since 2026-08-07
 ## Security Considerations
 
 ### Key Management
+
 - Keys are never transmitted in observation or verification
 - Keys are stored encrypted at rest
 - Key rotation is tracked (which key created which attestation?)
 - Private keys never leave their secure location
 
 ### Attestation Trust
+
 - Attestations are signed with private key
 - Verifiers use public key to check signatures
 - Compromise of one key → revoke and re-sign (but history remains)
 
 ### Audit Trail
+
 - All operations are logged
 - Logs are stored separately from database
 - Logs are immutable (append-only)
@@ -371,22 +394,27 @@ omega query attestations --since 2026-08-07
 ## Performance Characteristics
 
 ### Observation
+
 - **Latency**: < 10ms (in-memory)
 - **Throughput**: 10,000+ observations/second (single instance)
 
 ### Verification
+
 - **Latency**: < 100ms (typical rule execution)
 - **Cache hit rate**: 80%+ (same rule on similar observations)
 
 ### Attestation
+
 - **Latency**: < 50ms (signature generation)
 - **Throughput**: 1,000+ attestations/second (single instance)
 
 ### Storage Query
+
 - **Latency**: < 100ms (indexed query)
 - **Memory**: O(1) per query (streaming results)
 
 ### Scalability
+
 - **Horizontal**: Add more instances, shard by observation source
 - **Vertical**: Add CPU, RAM for verification caching
 - **Temporal**: Archive old data, keep recent in hot storage
@@ -396,21 +424,25 @@ omega query attestations --since 2026-08-07
 ## Testing Strategy
 
 ### Unit Tests
+
 - Each component is tested independently
 - Mock external dependencies
 - Tests verify behavior and correctness
 
 ### Integration Tests
+
 - Full loop: Observation → Verification → Attestation → Storage → Query
 - Uses real database and storage
 - Tests interaction between components
 
 ### Property-Based Tests
+
 - Invariants: "Every attestation has a signature"
 - Determinism: "Same observation + same rule = same result"
 - Causality: "Verification happens after observation"
 
 ### Performance Tests
+
 - Latency: Verify all operations meet SLAs
 - Throughput: Verify system handles expected load
 - Memory: Verify no memory leaks
@@ -420,18 +452,21 @@ omega query attestations --since 2026-08-07
 ## Deployment Modes
 
 ### Development
+
 - Single container
 - SQLite database
 - File-based event log
 - In-memory attestation signing
 
 ### Production
+
 - Docker Compose or Kubernetes
 - PostgreSQL with replication
 - Message broker for events
 - HSM (Hardware Security Module) for keys
 
 ### Edge
+
 - Lightweight container
 - Local SQLite cache
 - HTTP/gRPC to central system

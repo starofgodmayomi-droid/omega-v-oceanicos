@@ -22,6 +22,7 @@ docker-compose up -d
 ```
 
 Services:
+
 - **api**: http://localhost:3000
 - **web**: http://localhost:3001
 - **postgres**: localhost:5432

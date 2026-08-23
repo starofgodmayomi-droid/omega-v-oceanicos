@@ -99,14 +99,19 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       expect(swarmResult.agentResults).toHaveLength(6);
 
       const roles = swarmResult.agentResults.map((a) => a.agentRole);
-      expect(roles).toEqual(['Observer', 'Verifier', 'Security', 'Governance', 'Learning', 'Human']);
+      expect(roles).toEqual([
+        'Observer',
+        'Verifier',
+        'Security',
+        'Governance',
+        'Learning',
+        'Human',
+      ]);
     });
   });
 
   describe('4. Oceanicos CLI Commands', () => {
     it('should execute omega-v loop, swarm, metrics, log, and integrity via CLI', async () => {
-      const cli = new OceanicosCLI();
-
       const swarmRes = await cli.run(['swarm', 'CLI Swarm Claim']);
       expect(swarmRes.success).toBe(true);
       expect(swarmRes.output).toHaveProperty('agentsCount', 6);

@@ -355,7 +355,8 @@ export interface SuccessResponse<T> {
 /**
  * SystemMood: Measurable system state (Pillar 19)
  */
-export type MoodState = 'OPTIMAL_FLOW' | 'HIGH_INTEGRITY' | 'EVIDENCE_SEARCH' | 'FRICTION_DETECTED' | 'RECOMPILING';
+export type MoodState =
+  'OPTIMAL_FLOW' | 'HIGH_INTEGRITY' | 'EVIDENCE_SEARCH' | 'FRICTION_DETECTED' | 'RECOMPILING';
 
 export interface SystemMood {
   state: MoodState;
@@ -374,12 +375,7 @@ export interface SystemMood {
  * Never collapse these into a single boolean.
  */
 export type VerificationStatus =
-  | 'VERIFIED'
-  | 'PARTIALLY_VERIFIED'
-  | 'UNVERIFIED'
-  | 'CONTRADICTED'
-  | 'UNKNOWN'
-  | 'DISSENT';
+  'VERIFIED' | 'PARTIALLY_VERIFIED' | 'UNVERIFIED' | 'CONTRADICTED' | 'UNKNOWN' | 'DISSENT';
 
 /**
  * FrictionEvent: Observable system friction (Pillar 20)
@@ -435,7 +431,15 @@ export interface DissentInterpretation {
  */
 export interface ProvenanceGraphNode {
   id: string;
-  type: 'OBSERVATION' | 'VERIFICATION' | 'ATTESTATION' | 'ACTION' | 'OUTCOME' | 'LEARNING' | 'FRICTION' | 'DISSENT';
+  type:
+    | 'OBSERVATION'
+    | 'VERIFICATION'
+    | 'ATTESTATION'
+    | 'ACTION'
+    | 'OUTCOME'
+    | 'LEARNING'
+    | 'FRICTION'
+    | 'DISSENT';
   label: string;
   hash: string;
   recordedAt: string;
@@ -446,7 +450,8 @@ export interface ProvenanceGraphEdge {
   id: string;
   sourceId: string;
   targetId: string;
-  relation: 'PRODUCED' | 'VERIFIED_BY' | 'ATTESTED_BY' | 'RESULTED_IN' | 'SUPERSEDES' | 'CONTRADICTS';
+  relation:
+    'PRODUCED' | 'VERIFIED_BY' | 'ATTESTED_BY' | 'RESULTED_IN' | 'SUPERSEDES' | 'CONTRADICTS';
   timestamp: string;
 }
 
@@ -543,12 +548,8 @@ export interface LearningEvent {
  * Governance Engine Types (Section XXIX)
  * Governance constrains power.
  */
-export type GovernanceAction = 
-  | 'AGENT_AUTONOMY'
-  | 'DATA_ACCESS'
-  | 'MODEL_DEPLOYMENT'
-  | 'EMERGENCY_ACTION'
-  | 'ROLLBACK';
+export type GovernanceAction =
+  'AGENT_AUTONOMY' | 'DATA_ACCESS' | 'MODEL_DEPLOYMENT' | 'EMERGENCY_ACTION' | 'ROLLBACK';
 
 export interface GovernanceRule {
   id: string;
@@ -602,14 +603,14 @@ export interface GreenEvaluation {
  * Human Intelligence Types (Section XXVIII)
  * Humans are participants in the loop.
  */
-export type HumanActionType = 
-  | 'DREAM' 
-  | 'THOUGHT' 
-  | 'INTENTION' 
-  | 'VALUE_JUDGMENT' 
-  | 'ACTION' 
-  | 'FEEDBACK' 
-  | 'DISSENT' 
+export type HumanActionType =
+  | 'DREAM'
+  | 'THOUGHT'
+  | 'INTENTION'
+  | 'VALUE_JUDGMENT'
+  | 'ACTION'
+  | 'FEEDBACK'
+  | 'DISSENT'
   | 'APPROVAL';
 
 export interface HumanInput {
@@ -621,6 +622,3 @@ export interface HumanInput {
   rationale: string;
   recordedAt: string;
 }
-
-
-

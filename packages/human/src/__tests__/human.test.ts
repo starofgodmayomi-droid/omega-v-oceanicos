@@ -8,8 +8,14 @@ describe('HumanEngine (Section XXVIII Human Intelligence)', () => {
   });
 
   it('should record a human input', () => {
-    const input = engine.recordInput('APPROVAL', 'user-123', 'I approve this deployment', { action: 'deploy' }, 'gov-456');
-    
+    const input = engine.recordInput(
+      'APPROVAL',
+      'user-123',
+      'I approve this deployment',
+      { action: 'deploy' },
+      'gov-456'
+    );
+
     expect(input.id).toContain('hum-');
     expect(input.type).toBe('APPROVAL');
     expect(input.humanId).toBe('user-123');
@@ -24,7 +30,7 @@ describe('HumanEngine (Section XXVIII Human Intelligence)', () => {
 
     const gov456Inputs = engine.getInputsForContext('gov-456');
     expect(gov456Inputs).toHaveLength(2);
-    expect(gov456Inputs.map(i => i.type)).toContain('APPROVAL');
-    expect(gov456Inputs.map(i => i.type)).toContain('DISSENT');
+    expect(gov456Inputs.map((i) => i.type)).toContain('APPROVAL');
+    expect(gov456Inputs.map((i) => i.type)).toContain('DISSENT');
   });
 });

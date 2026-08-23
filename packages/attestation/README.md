@@ -20,25 +20,28 @@ const attestationService = new AttestationService();
 // Attest a verification result
 const attestation = attestationService.attest(verificationResult);
 
-console.log(attestation.id);            // att-2026-08-07-abc123
-console.log(attestation.signature);     // 0x1a2b3c4d5e6f...
-console.log(attestation.attestedAt);    // 2026-08-07T10:30:02Z
+console.log(attestation.id); // att-2026-08-07-abc123
+console.log(attestation.signature); // 0x1a2b3c4d5e6f...
+console.log(attestation.attestedAt); // 2026-08-07T10:30:02Z
 
 // Verify the attestation
 const isValid = attestationService.verify(attestation);
-console.log(isValid);                   // true/false
+console.log(isValid); // true/false
 ```
 
 ## Features
 
 ### Attestation Signing
+
 Creates a cryptographic signature proving:
+
 - Which verification was performed
 - When it was performed
 - Which rule versions were applied
 - Who performed the attestation
 
 ### Signature Verification
+
 Verify that an attestation is authentic:
 
 ```typescript
@@ -47,12 +50,13 @@ const isValid = attestationService.verify(attestation);
 ```
 
 ### Key Management
+
 Support for key versioning and rotation:
 
 ```typescript
 // Get current key info
 const keyInfo = attestationService.getKeyInfo();
-console.log(keyInfo.key);     // key-2026-08-production-v1
+console.log(keyInfo.key); // key-2026-08-production-v1
 console.log(keyInfo.version); // 1
 
 // Rotate to a new key
@@ -77,6 +81,7 @@ new AttestationService(signingKey?: string, keyVersion?: string)
 Create a signed attestation for a verification result.
 
 **Parameters:**
+
 ```typescript
 verificationResult: VerificationResult
 options?: {
@@ -88,6 +93,7 @@ options?: {
 **Returns:** `Attestation`
 
 **Attestation includes:**
+
 - `id` — Unique attestation ID
 - `signature` — Cryptographic signature
 - `signingKey` — Which key was used
@@ -102,6 +108,7 @@ Verify that an attestation is authentic.
 **Returns:** `boolean`
 
 **Checks:**
+
 - Required fields are present
 - Signature is not empty
 - Status is 'signed'
@@ -112,10 +119,11 @@ Verify that an attestation is authentic.
 Get information about the current signing key.
 
 **Returns:**
+
 ```typescript
 {
-  key: string;      // Key identifier
-  version: string;  // Key version
+  key: string; // Key identifier
+  version: string; // Key version
 }
 ```
 
@@ -124,23 +132,28 @@ Get information about the current signing key.
 Rotate to a new signing key.
 
 **Parameters:**
+
 - `newKey` — New key identifier
 - `newVersion` — New key version
 
 ## Security Considerations
 
 ### Current Implementation (v0.1.0)
+
 - Simplified HMAC-like signature generation
 - Not cryptographically secure for production use
 
 ### Production Requirements
+
 Future versions will implement:
+
 - Proper HMAC-SHA256 or ECDSA signatures
 - Hardware Security Module (HSM) integration
 - Key derivation and rotation policies
 - Audit logging for all signing operations
 
 ### Best Practices
+
 - Never expose private keys
 - Store keys encrypted at rest
 - Rotate keys regularly

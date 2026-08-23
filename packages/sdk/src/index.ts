@@ -2,7 +2,13 @@ import { Observer } from '@omega-v/observer';
 import { VerificationEngine } from '@omega-v/verification';
 import { AttestationService } from '@omega-v/attestation';
 import { ProvenanceStore } from '@omega-v/store';
-import { Observation, VerificationResult, Attestation, EventLogEntry, SystemMetrics } from '@omega-v/types';
+import {
+  Observation,
+  VerificationResult,
+  Attestation,
+  EventLogEntry,
+  SystemMetrics,
+} from '@omega-v/types';
 
 export interface OceanicosClientOptions {
   /** Mode of operation: 'local' (embedded engine) or 'remote' (REST API) */

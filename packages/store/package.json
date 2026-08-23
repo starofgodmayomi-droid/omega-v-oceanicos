@@ -11,7 +11,12 @@
     "test": "jest",
     "clean": "rm -rf dist *.tsbuildinfo"
   },
-  "keywords": ["provenance", "event-log", "append-only", "oceanicos"],
+  "keywords": [
+    "provenance",
+    "event-log",
+    "append-only",
+    "oceanicos"
+  ],
   "author": "Ω∞v Community",
   "license": "Apache-2.0",
   "dependencies": {

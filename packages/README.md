@@ -30,6 +30,7 @@ packages/
 Shared TypeScript interfaces and types used across all packages.
 
 **Key Types:**
+
 - `Observation` — A claim with metadata about what was observed
 - `VerificationRule` — A rule for testing observations
 - `VerificationResult` — Rules applied with evidence
@@ -37,6 +38,7 @@ Shared TypeScript interfaces and types used across all packages.
 - `EventLogEntry` — Immutable event log record
 
 **Why separate?**
+
 - Zero dependencies (pure types)
 - Fast compilation
 - Used by all other packages
@@ -48,16 +50,18 @@ Shared TypeScript interfaces and types used across all packages.
 Step 1 of the verification loop: Capture claims and prepare them for verification.
 
 **Features:**
+
 - Claim validation
 - Automatic deduplication
 - Confidence normalization (0-1)
 - Metadata attachment
 
 **Main export:**
+
 ```typescript
 class Observer {
-  observe(input: ObservationInput): Observation
-  getCacheStats(): { size: number; windowMs: number }
+  observe(input: ObservationInput): Observation;
+  getCacheStats(): { size: number; windowMs: number };
 }
 ```
 
@@ -68,17 +72,19 @@ class Observer {
 Step 2 of the verification loop: Apply rules to observations and produce evidence.
 
 **Features:**
+
 - Rule registration and management
 - Automatic rule matching by category
 - Evidence path generation (step-by-step reasoning)
 - Result caching
 
 **Main export:**
+
 ```typescript
 class VerificationEngine {
-  registerRule(rule: VerificationRule): void
-  verify(observation: Observation): VerificationResult
-  getApplicableRules(observation: Observation): VerificationRule[]
+  registerRule(rule: VerificationRule): void;
+  verify(observation: Observation): VerificationResult;
+  getApplicableRules(observation: Observation): VerificationRule[];
 }
 ```
 
@@ -89,17 +95,19 @@ class VerificationEngine {
 Step 3 of the verification loop: Sign verification results and create unforgeable proof.
 
 **Features:**
+
 - Cryptographic signature generation
 - Signature verification
 - Key versioning
 - Key rotation support
 
 **Main export:**
+
 ```typescript
 class AttestationService {
-  attest(result: VerificationResult): Attestation
-  verify(attestation: Attestation): boolean
-  rotateKey(newKey: string, newVersion: string): void
+  attest(result: VerificationResult): Attestation;
+  verify(attestation: Attestation): boolean;
+  rotateKey(newKey: string, newVersion: string): void;
 }
 ```
 
@@ -172,6 +180,7 @@ npm run -w @omega-v/observer build
 ## Testing
 
 Each package includes:
+
 - 70%+ code coverage for branches, functions, lines
 - Unit tests for all public APIs
 - Validation tests for error cases
@@ -180,6 +189,7 @@ Each package includes:
 ## Type Safety
 
 All packages use strict TypeScript:
+
 ```json
 {
   "compilerOptions": {
@@ -195,6 +205,7 @@ All packages use strict TypeScript:
 ## Documentation
 
 Each package includes:
+
 - `README.md` — Quick start and features
 - Inline JSDoc comments on all public APIs
 - Examples in type definitions
@@ -202,6 +213,7 @@ Each package includes:
 ## Versioning
 
 Packages follow semantic versioning:
+
 - **MAJOR** — Breaking API changes
 - **MINOR** — New features (backward compatible)
 - **PATCH** — Bug fixes
@@ -214,13 +226,14 @@ Current version: **0.1.0** (preview/alpha)
 **Last Updated:** 2026-08-07
 
 export interface PublicAPI {
-  // Single responsibility
+// Single responsibility
 }
 
 export class Implementation implements PublicAPI {
-  // Single, testable behavior
+// Single, testable behavior
 }
-```
+
+````
 
 ## Shared Types
 
@@ -235,7 +248,7 @@ export interface Observation {
   confidence: number;
   metadata: Record<string, unknown>;
 }
-```
+````
 
 ---
 

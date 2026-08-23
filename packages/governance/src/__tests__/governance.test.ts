@@ -25,27 +25,39 @@ describe('GovernanceEngine (Section XXIX Governance)', () => {
 
   it('should allow action if confidence and risk thresholds are met', () => {
     engine.registerRule(mockRule);
-    const decision = engine.requestAction('MODEL_DEPLOYMENT', 'user1', { confidence: 0.95, risk: 0.1 });
+    const decision = engine.requestAction('MODEL_DEPLOYMENT', 'user1', {
+      confidence: 0.95,
+      risk: 0.1,
+    });
     expect(decision.allowed).toBe(true);
   });
 
   it('should deny action if confidence is too low', () => {
     engine.registerRule(mockRule);
-    const decision = engine.requestAction('MODEL_DEPLOYMENT', 'user1', { confidence: 0.8, risk: 0.1 });
+    const decision = engine.requestAction('MODEL_DEPLOYMENT', 'user1', {
+      confidence: 0.8,
+      risk: 0.1,
+    });
     expect(decision.allowed).toBe(false);
     expect(decision.reason).toContain('Confidence');
   });
 
   it('should deny action if risk is too high', () => {
     engine.registerRule(mockRule);
-    const decision = engine.requestAction('MODEL_DEPLOYMENT', 'user1', { confidence: 0.95, risk: 0.5 });
+    const decision = engine.requestAction('MODEL_DEPLOYMENT', 'user1', {
+      confidence: 0.95,
+      risk: 0.5,
+    });
     expect(decision.allowed).toBe(false);
     expect(decision.reason).toContain('Risk');
   });
 
   it('should deny action and indicate human approval is required', () => {
     engine.registerRule({ ...mockRule, requiresHumanApproval: true });
-    const decision = engine.requestAction('MODEL_DEPLOYMENT', 'user1', { confidence: 0.95, risk: 0.1 });
+    const decision = engine.requestAction('MODEL_DEPLOYMENT', 'user1', {
+      confidence: 0.95,
+      risk: 0.1,
+    });
     expect(decision.allowed).toBe(false);
     expect(decision.requiresHumanApproval).toBe(true);
     expect(decision.reason).toContain('requires human approval');
