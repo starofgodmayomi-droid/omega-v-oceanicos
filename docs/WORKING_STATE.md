@@ -4,6 +4,16 @@
 
 This record compresses the prior evolution cycle into observable repository state. It distinguishes completed implementation from CI evidence, human review, and remaining production gaps.
 
+## Final integrated-release checkpoint — 2026-08-23
+
+The authorized release loop is integrated on `main` at `99e83d56e919930dca075cfc5fc6faa44eb30352` (`99e83d5`). PR #178 merged as `671333c` and PR #180 merged as `99e83d5`; both were observed as `MERGEABLE`, `CLEAN`, non-draft, with no additional review decision required by the repository. The post-merge Verification Pipeline run [32619682962](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/actions/runs/32619682962) completed successfully across Node 20, Node 22, Windows compatibility, package/smoke, and the publication job. Security Analysis run [32619682989](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/actions/runs/32619682989) also completed successfully.
+
+The main-branch workflow published `ghcr.io/starofgodmayomi-droid/omega-v-oceanicos-api:99e83d56e919930dca075cfc5fc6faa44eb30352` at digest `sha256:f87f49461085318a7d18785484ef1663c713b2fd164dc13007a67d553b7fbbc8`. The digest’s signed SLSA provenance was independently verified with `gh attestation verify`; the attestation matched repository `starofgodmayomi-droid/omega-v-oceanicos`, workflow `.github/workflows/verify.yml@refs/heads/main`, and the GitHub Actions OIDC issuer. The workflow’s job log records the signed SBOM attestation at [attestations/42391636](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/attestations/42391636) and the Rekor transparency entry at [logIndex 2569411240](https://search.sigstore.dev?logIndex=2569411240).
+
+The local post-merge compiled runtime was rebuilt from the merged-main `tsconfig.json`; `pnpm build`, `pnpm smoke:api`, and `/tmp/run-omega-auth-fix-smoke.sh` succeeded. The final follow-up local gate observed 45 suites / 941 tests with `pnpm verify`, `pnpm test:coverage`, and `pnpm test:integration` passing; integration was 3 suites / 28 tests, audit reported no known vulnerabilities, and `git diff --check` passed. The new regression proves that required mode returns `401 READ_ACCESS_REQUIRED` for anonymous SPA shell/assets and serves them with the read bearer.
+
+The repository has **published and attested an image, not deployed a running service**. `.github/workflows/verify.yml` contains verification and GHCR publication but no downstream hosting, infrastructure, or rollout step. No deployment URL, running target, production logs, gateway identity configuration, or post-deployment browser smoke was observed. The required-mode browser boundary is now explicit: the image protects the SPA shell, static assets, API reads, SSE stream, and mutations; an approved identity/gateway credential injection layer or a separately reviewed browser session design is still required for network dashboard use. Local Docker remains unavailable, so container execution evidence is hosted-CI-only.
+
 ## Mission and operating contract
 
 Ω∞v Oceanicos is a verification-first TypeScript monorepo organized around the MINI kernel: **Observe → Verify → Remember**. The governing rule is **ATTEST ≠ ASSERT**: claims must remain evidence-bound, uncertainty must be visible, lineage must be preserved, and external actions must remain behind human authorization gates.

@@ -29,6 +29,12 @@ listed under each phase below.
 They remain expansions. The kernel is still Observe → Verify → Remember, and
 [MINI.md](./MINI.md) governs that definition.
 
+### Release checkpoint — 2026-08-23
+
+The required-auth and encrypted local-job-ledger slice is integrated on `main` at `99e83d5`. The follow-up browser-boundary regression is also integrated: required mode protects the SPA shell and assets with the same read boundary as API reads, while mutations remain admin-only. This is an explicit security contract, not browser identity proofing. The shipped dashboard still requires an approved identity/gateway layer that injects the appropriate credentials, or a separately designed browser session; the repository currently provides neither.
+
+Main-branch Verification Pipeline and Security Analysis completed successfully after both merges. The workflow published and attested `ghcr.io/starofgodmayomi-droid/omega-v-oceanicos-api` at digest `sha256:f87f49461085318a7d18785484ef1663c713b2fd164dc13007a67d553b7fbbc8`. The repository has no downstream deployment workflow or infrastructure manifest, so **artifact publication is verified but deployment remains blocked/unverified**. No production URL, running target, production logs, gateway configuration, or post-deployment smoke is claimed.
+
 ## Phase Breakdown
 
 ### Phase 0 — Zero

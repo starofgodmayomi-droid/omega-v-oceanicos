@@ -2,6 +2,16 @@
 
 **Purpose.** Preserve one evidence-bound repository lineage toward verified reality. Operating laws remain: evidence over assertion; `ATTEST ≠ ASSERT`; preserve dissent and uncertainty; every change must be implemented, integrated, tested, documented, observable, reproducible, and review-gated. Push, PR publication, merge, and deployment are distinct actions.
 
+## Final observed state — 2026-08-23
+
+`main` is now at `99e83d56e919930dca075cfc5fc6faa44eb30352` (`99e83d5`). PR #178 merged at `671333c`; PR #180 merged at `99e83d5`. Both pull requests were observed non-draft, mergeable, and clean with no repository-required review decision blocking integration. The post-merge Verification Pipeline [32619682962](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/actions/runs/32619682962) and Security Analysis [32619682989](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/actions/runs/32619682989) completed successfully. Verification covered Node 20, Node 22, Windows compatibility, package/smoke, and the main-branch publication job.
+
+The verified published artifact is `ghcr.io/starofgodmayomi-droid/omega-v-oceanicos-api:99e83d56e919930dca075cfc5fc6faa44eb30352` at digest `sha256:f87f49461085318a7d18785484ef1663c713b2fd164dc13007a67d553b7fbbc8`. `gh attestation verify` succeeded against the repository and main-branch workflow using the GitHub Actions OIDC policy. The publication log records signed SBOM attestation [42391636](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/attestations/42391636) and Rekor entry [2569411240](https://search.sigstore.dev?logIndex=2569411240).
+
+The final browser-boundary slice is merged and tested. Required mode intentionally returns `401 READ_ACCESS_REQUIRED` for anonymous SPA HTML/assets and serves them with the read bearer; the dashboard API reads and SSE stream remain protected, while mutations require the admin bearer. The repository provides no login, cookie session, identity provider, or gateway injection. Therefore the artifact is not a turnkey browser deployment; an approved identity/gateway boundary or separately reviewed browser-session design remains required.
+
+The repository still has **no observed deployment target or downstream deployment workflow**. The image publication is not deployment. No deployment URL, running instance, production logs, gateway configuration, or post-deployment browser/ledger smoke exists in evidence. Local Docker is unavailable; container execution and restart/confidentiality evidence came from hosted CI. The safety stashes remain preserved.
+
 ## Current observed state
 
 Repository: `starofgodmayomi-droid/omega-v-oceanicos`  
