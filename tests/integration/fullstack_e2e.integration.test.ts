@@ -10,6 +10,7 @@ import { OceanicosCLI } from '@omega-v/cli';
 import { EdgeObserver } from '@omega-v/edge';
 import { VerificationAnalyticsEngine } from '@omega-v/analytics';
 import { VerificationScheduler } from '@omega-v/scheduler';
+import { TelemetryTracer, VerificationSLOEngine } from '@omega-v/telemetry';
 import app from '../../apps/api/src/index';
 
 describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => {
@@ -221,6 +222,34 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       expect(state.passedRuns).toBeGreaterThanOrEqual(1);
       expect(state.lastRunAt).toBeDefined();
       expect(runCallbackTriggered).toBe(true);
+    });
+  });
+
+  describe('9. Distributed Telemetry & SLO Engine E2E', () => {
+    it('should generate W3C traceparent headers and evaluate verification SLO error budget', () => {
+      const tracer = new TelemetryTracer();
+      const parentSpan = tracer.startSpan('e2e-root-span', undefined, { suite: 'fullstack' });
+      const context = { traceId: parentSpan.traceId, spanId: parentSpan.spanId, traceFlags: 1 };
+      const traceparent = tracer.injectTraceparent(context);
+
+      expect(traceparent).toMatch(/^00-[a-f0-9]{32}-[a-f0-9]{16}-01$/);
+
+      const extracted = tracer.extractTraceparent(traceparent);
+      expect(extracted).not.toBeNull();
+
+      const childSpan = tracer.startSpan('e2e-child-span', extracted || undefined);
+      tracer.endSpan(childSpan, 'OK');
+      tracer.endSpan(parentSpan, 'OK');
+
+      expect(tracer.getSpans()).toHaveLength(2);
+
+      const metrics = sdk.getMetrics();
+      const sloEngine = new VerificationSLOEngine();
+      const evaluation = sloEngine.evaluateSLO(metrics, 0.99);
+
+      expect(evaluation.targetPassRate).toBe(0.99);
+      expect(evaluation.errorBudgetRemaining).toBeGreaterThanOrEqual(0);
+      expect(typeof evaluation.evaluatedAt).toBe('string');
     });
   });
 });

@@ -118,6 +118,15 @@ interface SchedulerData {
   history: ScheduledRun[];
 }
 
+interface SLOData {
+  targetPassRate: number;
+  actualPassRate: number;
+  errorBudgetRemaining: number;
+  isHealthy: boolean;
+  totalVerifications: number;
+  evaluatedAt: string;
+}
+
 interface RuleEfficacy {
   ruleName: string;
   totalExecutions: number;
@@ -286,6 +295,7 @@ export function App(): JSX.Element {
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
   const [schedulerData, setSchedulerData] = useState<SchedulerData | null>(null);
   const [schedulerActionLoading, setSchedulerActionLoading] = useState(false);
+  const [sloData, setSloData] = useState<SLOData | null>(null);
 
   // ── Poll log + metrics ──
   const fetchState = useCallback(async () => {
@@ -301,6 +311,7 @@ export function App(): JSX.Element {
         learnRes,
         analyticsRes,
         schedulerRes,
+        sloRes,
       ] = await Promise.all([
         fetch(`${API_BASE}/log?limit=30`),
         fetch(`${API_BASE}/metrics`),
@@ -312,6 +323,7 @@ export function App(): JSX.Element {
         fetch(`${API_BASE}/learning`),
         fetch(`${API_BASE}/analytics`),
         fetch(`${API_BASE}/scheduler`),
+        fetch(`${API_BASE}/telemetry/slo`),
       ]);
       if (!logRes.ok || !metricsRes.ok) throw new Error('API error');
 
@@ -333,6 +345,7 @@ export function App(): JSX.Element {
       if (learnRes.ok) setLearningData((await learnRes.json()).data as LearningData);
       if (analyticsRes.ok) setAnalyticsData((await analyticsRes.json()).data as AnalyticsData);
       if (schedulerRes.ok) setSchedulerData((await schedulerRes.json()).data as SchedulerData);
+      if (sloRes.ok) setSloData((await sloRes.json()).data as SLOData);
     } catch {
       setApiOnline(false);
     }
@@ -551,6 +564,83 @@ export function App(): JSX.Element {
                 {mood.dissentCount > 0 && (
                   <span style={{ color: '#ed8936' }}>Dissent: {mood.dissentCount}</span>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* ── Telemetry SLO & Error Budget (Phase 14) ── */}
+          {sloData && (
+            <div
+              style={{
+                background: sloData.isHealthy
+                  ? 'rgba(56, 178, 172, 0.06)'
+                  : 'rgba(245, 101, 101, 0.06)',
+                border: `1px solid ${sloData.isHealthy ? 'rgba(56, 178, 172, 0.3)' : 'rgba(245, 101, 101, 0.3)'}`,
+                borderRadius: 'var(--radius)',
+                padding: '14px 18px',
+                marginBottom: 20,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: 12,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontSize: '1.2rem' }}>{sloData.isHealthy ? '🎯' : '⚠️'}</span>
+                <div>
+                  <div
+                    style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)' }}
+                  >
+                    Verification SLO: {sloData.isHealthy ? 'HEALTHY' : 'DEGRADED'}
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                    Target: {(sloData.targetPassRate * 100).toFixed(0)}% · Actual:{' '}
+                    {(sloData.actualPassRate * 100).toFixed(1)}% · Total:{' '}
+                    {sloData.totalVerifications}
+                  </div>
+                </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ textAlign: 'right' }}>
+                  <div
+                    style={{
+                      fontSize: '0.68rem',
+                      color: 'var(--text-muted)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                    }}
+                  >
+                    Error Budget
+                  </div>
+                  <div
+                    style={{
+                      fontWeight: 700,
+                      fontSize: '0.95rem',
+                      color: sloData.isHealthy ? 'var(--accent-green)' : 'var(--accent-red)',
+                    }}
+                  >
+                    {(sloData.errorBudgetRemaining * 100).toFixed(0)}% remaining
+                  </div>
+                </div>
+                <div
+                  style={{
+                    width: 60,
+                    height: 8,
+                    background: 'var(--bg-surface)',
+                    borderRadius: 4,
+                    overflow: 'hidden',
+                  }}
+                >
+                  <div
+                    style={{
+                      width: `${sloData.errorBudgetRemaining * 100}%`,
+                      height: '100%',
+                      background: sloData.isHealthy ? 'var(--accent-green)' : 'var(--accent-red)',
+                      borderRadius: 4,
+                    }}
+                  />
+                </div>
               </div>
             </div>
           )}

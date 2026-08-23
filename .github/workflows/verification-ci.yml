@@ -30,7 +30,7 @@ jobs:
       - name: 2. ESLint Code Quality Gate
         run: npx eslint . --ext .ts,.tsx,.js,.jsx --max-warnings 10
 
-      - name: 3. Full-Stack Jest Test Suite (25 Suites / 110+ Specs)
+      - name: 3. Full-Stack Jest Test Suite (26 Suites / 119+ Specs)
         run: npx jest --no-cache --verbose --coverage
 
       - name: 4. Ω∞v CLI Swarm Verification
@@ -39,7 +39,10 @@ jobs:
       - name: 5. Ω∞v CLI Analytics Verification
         run: npx tsx packages/cli/src/bin.ts analytics
 
-      - name: 6. Export Verification Evidence Artifact
+      - name: 6. Ω∞v CLI Telemetry SLO Verification
+        run: npx tsx packages/cli/src/bin.ts slo 0.95
+
+      - name: 7. Export Verification Evidence Artifact
         run: |
           mkdir -p artifacts
           node -e "
@@ -48,8 +51,8 @@ jobs:
               pipeline: 'Ω∞v Continuous Verification',
               timestamp: new Date().toISOString(),
               status: 'VERIFIED',
-              testSuites: 25,
-              testsTotal: 110,
+              testSuites: 26,
+              testsTotal: 119,
               greenRuleSatisfied: true,
               packages: [
                 '@omega-v/types', '@omega-v/observer', '@omega-v/verification',
@@ -59,7 +62,7 @@ jobs:
                 '@omega-v/graph', '@omega-v/security', '@omega-v/evolution',
                 '@omega-v/learning', '@omega-v/governance', '@omega-v/evidence',
                 '@omega-v/green', '@omega-v/human', '@omega-v/edge',
-                '@omega-v/analytics', '@omega-v/scheduler'
+                '@omega-v/analytics', '@omega-v/scheduler', '@omega-v/telemetry'
               ],
               provenance: {
                 commit: process.env.GITHUB_SHA || 'local',
@@ -71,7 +74,7 @@ jobs:
             console.log(JSON.stringify(artifact, null, 2));
           "
 
-      - name: 7. Upload Evidence Artifacts
+      - name: 8. Upload Evidence Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: verification-evidence
