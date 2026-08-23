@@ -343,8 +343,18 @@ jobs:
           check_api /api/memory/integrity ci-smoke-read-token '"intact":true'
 
           # And the client itself must be served from that same origin.
-          curl -sf -H 'Accept: text/html' http://localhost:3000/ | tee /tmp/index.html
-          grep -qi '<div id="root"' /tmp/index.html
+          page_status=$(curl -sS -o /tmp/index.html -w '%{http_code}' \
+            -H 'Accept: text/html' http://localhost:3000/)
+          if [ "$page_status" != "200" ]; then
+            echo "::error::Root SPA request returned HTTP $page_status"
+            cat /tmp/index.html
+            exit 1
+          fi
+          if ! grep -qi '<div id="root"' /tmp/index.html; then
+            echo "::error::Root SPA response did not contain the root mount"
+            cat /tmp/index.html
+            exit 1
+          fi
 
       - name: Container logs
         if: always()
