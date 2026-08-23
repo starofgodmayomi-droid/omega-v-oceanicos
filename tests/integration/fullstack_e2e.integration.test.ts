@@ -21,6 +21,7 @@ import { OceanicosNotaryEngine } from '@omega-v/notary';
 import { OceanicosSandboxEngine } from '@omega-v/sandbox';
 import { OceanicosPolicyEngine } from '@omega-v/policy';
 import { OceanicosZKEngine } from '@omega-v/zk';
+import { OceanicosGatewayEngine } from '@omega-v/gateway';
 import app from '../../apps/api/src/index';
 
 describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => {
@@ -634,7 +635,10 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       expect(rangeVerification.valid).toBe(true);
 
       // Generate Membership proof (Secret region = 'us-east-1')
-      const memberProof = zkEngine.generateMembershipProof('circuit-authorized-region', 'us-east-1');
+      const memberProof = zkEngine.generateMembershipProof(
+        'circuit-authorized-region',
+        'us-east-1'
+      );
       expect(memberProof.circuitType).toBe('MEMBERSHIP');
 
       // Verify Membership proof
@@ -644,6 +648,45 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       // Tampered proof detection
       const tamperedProof = { ...memberProof, commitment: 'f'.repeat(64) };
       expect(zkEngine.verifyProof(tamperedProof).valid).toBe(false);
+    });
+  });
+
+  describe('20. Adaptive Gateway, Rate Limiting & Anomaly Defense E2E', () => {
+    it('should throttle abusive traffic, detect replay attacks, and track gateway stats', () => {
+      const gateway = new OceanicosGatewayEngine();
+
+      // Register test clients
+      gateway.registerClient('tenant-free', 'FREE');
+      gateway.registerClient('tenant-pro', 'PRO');
+
+      // Normal traffic within limit
+      const decision1 = gateway.processRequest('tenant-free');
+      expect(decision1.allowed).toBe(true);
+      expect(decision1.remainingRequests).toBe(29);
+
+      // Request signing & anti-replay
+      const signedReq = gateway.signRequest('tenant-pro', 'verify:payload:data');
+      const verifyResult1 = gateway.verifySignedRequest(signedReq);
+      expect(verifyResult1.valid).toBe(true);
+
+      // Replay attack attempt
+      const replayResult = gateway.verifySignedRequest(signedReq);
+      expect(replayResult.valid).toBe(false);
+      expect(replayResult.reason).toContain('Replay attack');
+
+      // Exhaust rate limit for FREE tenant
+      for (let i = 0; i < 29; i++) {
+        gateway.processRequest('tenant-free');
+      }
+      const throttledDecision = gateway.processRequest('tenant-free');
+      expect(throttledDecision.allowed).toBe(false);
+      expect(throttledDecision.retryAfterMs).toBeGreaterThan(0);
+
+      // Verify anomalies & stats
+      const anomalies = gateway.getAnomalies();
+      expect(anomalies.length).toBeGreaterThanOrEqual(2); // REPLAY_ATTACK + RATE_SPIKE
+      const stats = gateway.getStats();
+      expect(stats.blockedRequests).toBeGreaterThanOrEqual(1);
     });
   });
 });

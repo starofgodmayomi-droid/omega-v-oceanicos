@@ -23,6 +23,7 @@ import { OceanicosNotaryEngine } from '@omega-v/notary';
 import { OceanicosSandboxEngine } from '@omega-v/sandbox';
 import { OceanicosPolicyEngine } from '@omega-v/policy';
 import { OceanicosZKEngine } from '@omega-v/zk';
+import { OceanicosGatewayEngine } from '@omega-v/gateway';
 import {
   SuccessResponse,
   ErrorResponse,
@@ -76,6 +77,7 @@ const notaryEngine = new OceanicosNotaryEngine();
 const sandboxEngine = new OceanicosSandboxEngine();
 const policyEngine = new OceanicosPolicyEngine();
 const zkEngine = new OceanicosZKEngine();
+const gatewayEngine = new OceanicosGatewayEngine();
 
 // Register default rules
 verificationEngine.registerRule({
@@ -1426,6 +1428,49 @@ app.post('/zk/verify', (req: Request, res: Response) => {
   const result = zkEngine.verifyProof(proof);
   res.json({
     data: result,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** GET /gateway/stats — Return API gateway traffic, rate limits and anomaly stats (Section XXXIX) */
+app.get('/gateway/stats', (_req: Request, res: Response) => {
+  res.json({
+    data: gatewayEngine.getStats(),
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** GET /gateway/clients — List registered gateway client rate limit states */
+app.get('/gateway/clients', (_req: Request, res: Response) => {
+  res.json({
+    data: { clients: gatewayEngine.getAllClients(), tierConfigs: gatewayEngine.getTierConfigs() },
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /gateway/request — Process request through rate limiter and anomaly guard */
+app.post('/gateway/request', (req: Request, res: Response) => {
+  const { clientId } = req.body || {};
+  if (!clientId) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'clientId is required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  const decision = gatewayEngine.processRequest(clientId);
+  res.status(decision.allowed ? 200 : 429).json({
+    data: decision,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** GET /gateway/anomalies — Get list of detected anomaly alerts */
+app.get('/gateway/anomalies', (_req: Request, res: Response) => {
+  res.json({
+    data: { anomalies: gatewayEngine.getAnomalies() },
     timestamp: new Date().toISOString(),
   });
 });

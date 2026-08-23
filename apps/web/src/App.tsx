@@ -272,6 +272,24 @@ interface ZKProofItem {
   timestamp: string;
 }
 
+interface GatewayStatsData {
+  totalRequests: number;
+  allowedRequests: number;
+  blockedRequests: number;
+  anomaliesDetected: number;
+  activeClients: number;
+  avgRequestsPerMinute: number;
+}
+
+interface AnomalyAlertItem {
+  alertId: string;
+  clientId: string;
+  type: string;
+  severity: string;
+  description: string;
+  detectedAt: string;
+}
+
 interface RuleEfficacy {
   ruleName: string;
   totalExecutions: number;
@@ -520,6 +538,10 @@ export function App(): JSX.Element {
   const [generatedProof, setGeneratedProof] = useState<ZKProofItem | null>(null);
   const [zkVerified, setZkVerified] = useState<boolean | null>(null);
   const [provingZK, setProvingZK] = useState(false);
+  const [gatewayStats, setGatewayStats] = useState<GatewayStatsData | null>(null);
+  const [gatewayAnomalies, setGatewayAnomalies] = useState<AnomalyAlertItem[]>([]);
+  const [testingGateway, setTestingGateway] = useState(false);
+  const [gatewayResult, setGatewayResult] = useState<string | null>(null);
 
   // ── Poll log + metrics ──
   const fetchState = useCallback(async () => {
@@ -547,6 +569,8 @@ export function App(): JSX.Element {
         sandRes,
         polRes,
         zkRes,
+        gwStatsRes,
+        gwAnomRes,
       ] = await Promise.all([
         fetch(`${API_BASE}/log?limit=30`),
         fetch(`${API_BASE}/metrics`),
@@ -570,6 +594,8 @@ export function App(): JSX.Element {
         fetch(`${API_BASE}/sandbox/stats`),
         fetch(`${API_BASE}/policies`),
         fetch(`${API_BASE}/zk/circuits`),
+        fetch(`${API_BASE}/gateway/stats`),
+        fetch(`${API_BASE}/gateway/anomalies`),
       ]);
       if (!logRes.ok || !metricsRes.ok) throw new Error('API error');
 
@@ -627,6 +653,12 @@ export function App(): JSX.Element {
       }
       if (zkRes.ok) {
         setZkCircuits((await zkRes.json()).data.circuits as ZKCircuitItem[]);
+      }
+      if (gwStatsRes && gwStatsRes.ok) {
+        setGatewayStats((await gwStatsRes.json()).data as GatewayStatsData);
+      }
+      if (gwAnomRes && gwAnomRes.ok) {
+        setGatewayAnomalies((await gwAnomRes.json()).data.anomalies as AnomalyAlertItem[]);
       }
     } catch {
       setApiOnline(false);
@@ -3562,7 +3594,8 @@ export function App(): JSX.Element {
               <span className="section-badge">{zkCircuits.length} circuits</span>
             </div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 14 }}>
-              Generate and verify succinct zero-knowledge proofs — prove statements without revealing private witnesses.
+              Generate and verify succinct zero-knowledge proofs — prove statements without
+              revealing private witnesses.
             </div>
 
             {/* Circuit selector + witness input */}
@@ -3609,7 +3642,8 @@ export function App(): JSX.Element {
                   setGeneratedProof(null);
                   try {
                     const circuit = zkCircuits.find((c) => c.circuitId === selectedZKCircuit);
-                    const witnessValue = circuit?.type === 'MEMBERSHIP' ? zkWitness : Number(zkWitness);
+                    const witnessValue =
+                      circuit?.type === 'MEMBERSHIP' ? zkWitness : Number(zkWitness);
                     const proveRes = await fetch(`${API_BASE}/zk/prove`, {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
@@ -3690,15 +3724,23 @@ export function App(): JSX.Element {
                   }}
                 >
                   <div>
-                    Circuit: <span style={{ color: 'var(--accent-teal)' }}>{generatedProof.circuitId}</span>
+                    Circuit:{' '}
+                    <span style={{ color: 'var(--accent-teal)' }}>{generatedProof.circuitId}</span>
                   </div>
                   <div>
-                    Type: <span style={{ color: 'var(--accent-purple)' }}>{generatedProof.circuitType}</span>
+                    Type:{' '}
+                    <span style={{ color: 'var(--accent-purple)' }}>
+                      {generatedProof.circuitType}
+                    </span>
                   </div>
-                  <div style={{ gridColumn: '1 / -1', fontFamily: 'monospace', fontSize: '0.65rem' }}>
+                  <div
+                    style={{ gridColumn: '1 / -1', fontFamily: 'monospace', fontSize: '0.65rem' }}
+                  >
                     Commitment: {generatedProof.commitment.slice(0, 32)}…
                   </div>
-                  <div style={{ gridColumn: '1 / -1', fontFamily: 'monospace', fontSize: '0.65rem' }}>
+                  <div
+                    style={{ gridColumn: '1 / -1', fontFamily: 'monospace', fontSize: '0.65rem' }}
+                  >
                     Token: {generatedProof.proofToken.slice(0, 32)}…
                   </div>
                 </div>
@@ -3725,7 +3767,14 @@ export function App(): JSX.Element {
                   }}
                   onClick={() => setSelectedZKCircuit(c.circuitId)}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: 4,
+                    }}
+                  >
                     <span style={{ fontWeight: 600, fontSize: '0.8rem' }}>{c.name}</span>
                     <span
                       style={{
@@ -3745,6 +3794,208 @@ export function App(): JSX.Element {
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* ── Adaptive Gateway, Rate Limiting & Anomaly Defense (Section XXXIX) ── */}
+          <div
+            style={{
+              background: 'var(--bg-card)',
+              border: '1px solid rgba(246, 173, 85, 0.3)',
+              borderRadius: 'var(--radius)',
+              padding: 20,
+              marginBottom: 20,
+            }}
+          >
+            <div className="section-header">
+              <div className="section-title">🛡️ Adaptive Gateway & Anomaly Defense</div>
+              <span className="section-badge">
+                {gatewayStats?.totalRequests || 0} reqs · {gatewayAnomalies.length} alerts
+              </span>
+            </div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 14 }}>
+              Sliding-window rate limiting, HMAC-SHA256 request signing, anti-replay guards, and
+              real-time anomaly alerts.
+            </div>
+
+            {/* Gateway stats grid */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+                gap: 10,
+                marginBottom: 14,
+              }}
+            >
+              <div
+                style={{
+                  background: 'var(--bg-surface)',
+                  padding: 10,
+                  borderRadius: 'var(--radius-sm)',
+                }}
+              >
+                <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>ALLOWED REQS</div>
+                <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--accent-teal)' }}>
+                  {gatewayStats?.allowedRequests || 0}
+                </div>
+              </div>
+              <div
+                style={{
+                  background: 'var(--bg-surface)',
+                  padding: 10,
+                  borderRadius: 'var(--radius-sm)',
+                }}
+              >
+                <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>BLOCKED (429)</div>
+                <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--accent-red)' }}>
+                  {gatewayStats?.blockedRequests || 0}
+                </div>
+              </div>
+              <div
+                style={{
+                  background: 'var(--bg-surface)',
+                  padding: 10,
+                  borderRadius: 'var(--radius-sm)',
+                }}
+              >
+                <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>ANOMALIES</div>
+                <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#f6ad55' }}>
+                  {gatewayStats?.anomaliesDetected || 0}
+                </div>
+              </div>
+              <div
+                style={{
+                  background: 'var(--bg-surface)',
+                  padding: 10,
+                  borderRadius: 'var(--radius-sm)',
+                }}
+              >
+                <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
+                  ACTIVE CLIENTS
+                </div>
+                <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--accent-purple)' }}>
+                  {gatewayStats?.activeClients || 0}
+                </div>
+              </div>
+            </div>
+
+            {/* Test Request Form */}
+            <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
+              <button
+                onClick={async () => {
+                  setTestingGateway(true);
+                  setGatewayResult(null);
+                  try {
+                    const res = await fetch(`${API_BASE}/gateway/request`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ clientId: 'dashboard-tester' }),
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                      setGatewayResult(`✅ Allowed (${data.data.remainingRequests} remaining)`);
+                    } else {
+                      setGatewayResult(
+                        `⛔ Throttled: ${data.data?.reason || 'Rate limit exceeded'}`
+                      );
+                    }
+                    fetchState();
+                  } catch {
+                    setGatewayResult('❌ Gateway connection error');
+                  } finally {
+                    setTestingGateway(false);
+                  }
+                }}
+                disabled={testingGateway}
+                style={{
+                  background: testingGateway
+                    ? 'var(--bg-surface)'
+                    : 'linear-gradient(135deg, #f6ad55, #ed8936)',
+                  color: '#1a202c',
+                  border: 'none',
+                  borderRadius: 'var(--radius-sm)',
+                  padding: '6px 16px',
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                  cursor: testingGateway ? 'not-allowed' : 'pointer',
+                  opacity: testingGateway ? 0.6 : 1,
+                }}
+              >
+                {testingGateway ? '⏳ Testing…' : '⚡ Simulate Gateway Request'}
+              </button>
+              {gatewayResult && (
+                <div
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: 'var(--radius-sm)',
+                    background: 'var(--bg-surface)',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}
+                >
+                  {gatewayResult}
+                </div>
+              )}
+            </div>
+
+            {/* Anomalies Feed */}
+            {gatewayAnomalies.length > 0 && (
+              <div style={{ marginTop: 10 }}>
+                <div
+                  style={{
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    marginBottom: 6,
+                    color: '#f6ad55',
+                  }}
+                >
+                  🚨 Recent Anomaly Alerts
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {gatewayAnomalies.slice(-3).map((a) => (
+                    <div
+                      key={a.alertId}
+                      style={{
+                        background: 'var(--bg-surface)',
+                        border: '1px solid rgba(246, 173, 85, 0.3)',
+                        borderRadius: 'var(--radius-sm)',
+                        padding: '8px 12px',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        fontSize: '0.75rem',
+                      }}
+                    >
+                      <div>
+                        <span style={{ fontWeight: 600, color: '#f6ad55', marginRight: 8 }}>
+                          [{a.type}]
+                        </span>
+                        <span style={{ color: 'var(--text-secondary)' }}>{a.description}</span>
+                      </div>
+                      <span
+                        style={{
+                          fontSize: '0.65rem',
+                          background:
+                            a.severity === 'CRITICAL' || a.severity === 'HIGH'
+                              ? 'rgba(245, 101, 101, 0.2)'
+                              : 'rgba(246, 173, 85, 0.2)',
+                          color:
+                            a.severity === 'CRITICAL' || a.severity === 'HIGH'
+                              ? 'var(--accent-red)'
+                              : '#f6ad55',
+                          padding: '1px 6px',
+                          borderRadius: 3,
+                          fontWeight: 600,
+                        }}
+                      >
+                        {a.severity}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Timeline */}

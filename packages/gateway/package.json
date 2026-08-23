@@ -1,0 +1,32 @@
+{
+  "name": "@omega-v/gateway",
+  "version": "0.1.0",
+  "description": "Adaptive Rate Limiter, Request Signing, and Anomaly Detection Gateway for Ω∞v Oceanicos",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "test": "jest",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "keywords": [
+    "rate-limiter",
+    "api-gateway",
+    "throttling",
+    "anomaly-detection",
+    "request-signing",
+    "oceanicos"
+  ],
+  "author": "Ω∞v Community",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@omega-v/types": "*"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.0",
+    "jest": "^29.5.0",
+    "ts-jest": "^29.1.0",
+    "typescript": "^5.0.0"
+  }
+}

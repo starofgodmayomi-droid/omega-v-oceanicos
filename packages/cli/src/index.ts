@@ -14,6 +14,7 @@ import { OceanicosNotaryEngine } from '@omega-v/notary';
 import { OceanicosSandboxEngine } from '@omega-v/sandbox';
 import { OceanicosPolicyEngine } from '@omega-v/policy';
 import { OceanicosZKEngine } from '@omega-v/zk';
+import { OceanicosGatewayEngine } from '@omega-v/gateway';
 
 export interface CLIResult {
   success: boolean;
@@ -437,6 +438,30 @@ export class OceanicosCLI {
         };
       }
 
+      case 'gateway': {
+        const gateway = new OceanicosGatewayEngine();
+        const subCommand = args[1] || 'stats';
+
+        if (subCommand === 'request') {
+          const clientId = args[2] || 'cli-client';
+          const decision = gateway.processRequest(clientId);
+          return {
+            success: decision.allowed,
+            message: decision.allowed
+              ? `[Ω∞v CLI] Gateway Request ALLOWED for client '${clientId}' (${decision.remainingRequests} remaining)`
+              : `[Ω∞v CLI] Gateway Request BLOCKED: ${decision.reason}`,
+            output: decision,
+          };
+        }
+
+        const stats = gateway.getStats();
+        return {
+          success: true,
+          message: `[Ω∞v CLI] Gateway Status: ${stats.totalRequests} requests, ${stats.allowedRequests} allowed, ${stats.blockedRequests} blocked, ${stats.anomaliesDetected} anomalies`,
+          output: stats,
+        };
+      }
+
       case 'help':
       default: {
         return {
@@ -460,6 +485,7 @@ Commands:
   omega-v sandbox [expression]      Execute rule expression in isolated deterministic sandbox
   omega-v policy [list|evaluate]    List declarative policy documents or evaluate context
   omega-v zk [circuits|prove]       Generate and verify zero-knowledge succinct privacy proofs
+  omega-v gateway [stats|request]   Inspect API gateway rate limits & anomaly alerts
   omega-v metrics                   Show system health and metrics
   omega-v log                       Display event provenance log
   omega-v integrity                 Verify event hash chain integrity

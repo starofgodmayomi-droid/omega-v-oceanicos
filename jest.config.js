@@ -39,6 +39,7 @@ export default {
     '@omega-v/sandbox': '<rootDir>/packages/sandbox/src/index.ts',
     '@omega-v/policy': '<rootDir>/packages/policy/src/index.ts',
     '@omega-v/zk': '<rootDir>/packages/zk/src/index.ts',
+    '@omega-v/gateway': '<rootDir>/packages/gateway/src/index.ts',
   },
   collectCoverageFrom: [
     'packages/*/src/**/*.ts',

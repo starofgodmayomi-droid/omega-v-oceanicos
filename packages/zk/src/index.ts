@@ -68,7 +68,8 @@ export class OceanicosZKEngine {
       circuitId: 'circuit-authorized-region',
       name: 'Jurisdiction Set Membership Proof',
       type: 'MEMBERSHIP',
-      description: 'Proves server is in an allowed sovereign jurisdiction without disclosing exact datacenter',
+      description:
+        'Proves server is in an allowed sovereign jurisdiction without disclosing exact datacenter',
       publicParameters: { allowedSet: ['us-east-1', 'us-west-2', 'eu-central-1', 'eu-west-1'] },
     });
   }
@@ -89,11 +90,7 @@ export class OceanicosZKEngine {
   /**
    * Generate a Zero-Knowledge Range Proof
    */
-  public generateRangeProof(
-    circuitId: string,
-    witness: number,
-    salt?: string
-  ): ZKProof {
+  public generateRangeProof(circuitId: string, witness: number, salt?: string): ZKProof {
     const circuit = this.circuits.get(circuitId);
     if (!circuit || circuit.type !== 'RANGE') {
       throw new Error(`Invalid circuit '${circuitId}' for Range Proof`);
@@ -144,11 +141,7 @@ export class OceanicosZKEngine {
   /**
    * Generate a Zero-Knowledge Set Membership Proof
    */
-  public generateMembershipProof(
-    circuitId: string,
-    witness: string,
-    salt?: string
-  ): ZKProof {
+  public generateMembershipProof(circuitId: string, witness: string, salt?: string): ZKProof {
     const circuit = this.circuits.get(circuitId);
     if (!circuit || circuit.type !== 'MEMBERSHIP') {
       throw new Error(`Invalid circuit '${circuitId}' for Membership Proof`);
@@ -223,13 +216,17 @@ export class OceanicosZKEngine {
       const max = proof.publicInputs.maxThreshold;
       challenge = crypto
         .createHash('sha256')
-        .update(`${proof.proofId}:${proof.circuitId}:${proof.commitment}:${min}:${max}:${proof.timestamp}`)
+        .update(
+          `${proof.proofId}:${proof.circuitId}:${proof.commitment}:${min}:${max}:${proof.timestamp}`
+        )
         .digest('hex');
     } else if (proof.circuitType === 'MEMBERSHIP') {
       const allowed = proof.publicInputs.allowedSet;
       challenge = crypto
         .createHash('sha256')
-        .update(`${proof.proofId}:${proof.circuitId}:${proof.commitment}:${JSON.stringify(allowed)}:${proof.timestamp}`)
+        .update(
+          `${proof.proofId}:${proof.circuitId}:${proof.commitment}:${JSON.stringify(allowed)}:${proof.timestamp}`
+        )
         .digest('hex');
     } else {
       challenge = crypto
