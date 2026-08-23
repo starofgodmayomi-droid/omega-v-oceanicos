@@ -342,10 +342,14 @@ jobs:
           check_api /api/observability ci-smoke-read-token '"intact":true'
           check_api /api/memory/integrity ci-smoke-read-token '"intact":true'
 
-          # And the client itself must be served from that same origin.
+          # And the client itself must be served from that same origin. In
+          # required mode, the root document is a non-health GET and therefore
+          # needs the read bearer just like the API evidence routes.
           set +e
           curl -sS -D /tmp/index.headers -o /tmp/index.html -w '%{http_code}' \
-            -H 'Accept: text/html' http://localhost:3000/ > /tmp/index.status
+            -H 'Accept: text/html' \
+            -H 'Authorization: Bearer ci-smoke-read-token' \
+            http://localhost:3000/ > /tmp/index.status
           page_curl_exit=$?
           set -e
           page_status=$(cat /tmp/index.status)
