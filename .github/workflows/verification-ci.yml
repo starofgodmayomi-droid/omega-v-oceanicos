@@ -30,7 +30,7 @@ jobs:
       - name: 2. ESLint Code Quality Gate
         run: npx eslint . --ext .ts,.tsx,.js,.jsx --max-warnings 10
 
-      - name: 3. Full-Stack Jest Test Suite (27 Suites / 125+ Specs)
+      - name: 3. Full-Stack Jest Test Suite (28 Suites / 138+ Specs)
         run: npx jest --no-cache --verbose --coverage
 
       - name: 4. Ω∞v CLI Swarm Verification
@@ -45,7 +45,10 @@ jobs:
       - name: 7. Ω∞v CLI VaaS Gateway Verification
         run: npx tsx packages/cli/src/bin.ts vaas register "CI Verification Corp" PRO
 
-      - name: 8. Export Verification Evidence Artifact
+      - name: 8. Ω∞v CLI Replay Verification
+        run: npx tsx packages/cli/src/bin.ts replay "CI Replay Verification Pipeline" "CI Baseline"
+
+      - name: 9. Export Verification Evidence Artifact
         run: |
           mkdir -p artifacts
           node -e "
@@ -54,8 +57,8 @@ jobs:
               pipeline: 'Ω∞v Continuous Verification',
               timestamp: new Date().toISOString(),
               status: 'VERIFIED',
-              testSuites: 27,
-              testsTotal: 125,
+              testSuites: 28,
+              testsTotal: 138,
               greenRuleSatisfied: true,
               packages: [
                 '@omega-v/types', '@omega-v/observer', '@omega-v/verification',
@@ -66,7 +69,7 @@ jobs:
                 '@omega-v/learning', '@omega-v/governance', '@omega-v/evidence',
                 '@omega-v/green', '@omega-v/human', '@omega-v/edge',
                 '@omega-v/analytics', '@omega-v/scheduler', '@omega-v/telemetry',
-                '@omega-v/vaas'
+                '@omega-v/vaas', '@omega-v/replay'
               ],
               provenance: {
                 commit: process.env.GITHUB_SHA || 'local',
@@ -78,7 +81,7 @@ jobs:
             console.log(JSON.stringify(artifact, null, 2));
           "
 
-      - name: 9. Upload Evidence Artifacts
+      - name: 10. Upload Evidence Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: verification-evidence

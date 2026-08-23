@@ -127,6 +127,32 @@ interface SLOData {
   evaluatedAt: string;
 }
 
+interface Tenant {
+  id: string;
+  name: string;
+  tier: 'FREE' | 'PRO' | 'ENTERPRISE';
+  quotaPerMinute: number;
+  active: boolean;
+  createdAt: string;
+}
+
+interface ReplaySnapshotItem {
+  id: string;
+  label: string;
+  claim: string;
+  fingerprint: string;
+  capturedAt: string;
+  tags: string[];
+  status: string;
+}
+
+interface ReplaySummaryData {
+  totalSnapshots: number;
+  totalReplays: number;
+  uniqueClaims: number;
+  tags: string[];
+}
+
 interface RuleEfficacy {
   ruleName: string;
   totalExecutions: number;
@@ -296,6 +322,16 @@ export function App(): JSX.Element {
   const [schedulerData, setSchedulerData] = useState<SchedulerData | null>(null);
   const [schedulerActionLoading, setSchedulerActionLoading] = useState(false);
   const [sloData, setSloData] = useState<SLOData | null>(null);
+  const [tenants, setTenants] = useState<Tenant[]>([]);
+  const [replaySnapshots, setReplaySnapshots] = useState<ReplaySnapshotItem[]>([]);
+  const [replaySummary, setReplaySummary] = useState<ReplaySummaryData | null>(null);
+  const [replayLoading, setReplayLoading] = useState(false);
+  const [vaasTenantName, setVaasTenantName] = useState('');
+  const [vaasTenantTier, setVaasTenantTier] = useState<'FREE' | 'PRO' | 'ENTERPRISE'>('PRO');
+  const [vaasCreatedCreds, setVaasCreatedCreds] = useState<{
+    apiKey: string;
+    tenant: Tenant;
+  } | null>(null);
 
   // ── Poll log + metrics ──
   const fetchState = useCallback(async () => {
@@ -312,6 +348,8 @@ export function App(): JSX.Element {
         analyticsRes,
         schedulerRes,
         sloRes,
+        vaasRes,
+        replayRes,
       ] = await Promise.all([
         fetch(`${API_BASE}/log?limit=30`),
         fetch(`${API_BASE}/metrics`),
@@ -324,6 +362,8 @@ export function App(): JSX.Element {
         fetch(`${API_BASE}/analytics`),
         fetch(`${API_BASE}/scheduler`),
         fetch(`${API_BASE}/telemetry/slo`),
+        fetch(`${API_BASE}/vaas/tenants`),
+        fetch(`${API_BASE}/replay`),
       ]);
       if (!logRes.ok || !metricsRes.ok) throw new Error('API error');
 
@@ -346,6 +386,12 @@ export function App(): JSX.Element {
       if (analyticsRes.ok) setAnalyticsData((await analyticsRes.json()).data as AnalyticsData);
       if (schedulerRes.ok) setSchedulerData((await schedulerRes.json()).data as SchedulerData);
       if (sloRes.ok) setSloData((await sloRes.json()).data as SLOData);
+      if (vaasRes.ok) setTenants((await vaasRes.json()).data.tenants as Tenant[]);
+      if (replayRes.ok) {
+        const rData = (await replayRes.json()).data;
+        setReplaySnapshots(rData.snapshots as ReplaySnapshotItem[]);
+        setReplaySummary(rData.summary as ReplaySummaryData);
+      }
     } catch {
       setApiOnline(false);
     }
@@ -1576,6 +1622,363 @@ export function App(): JSX.Element {
               </div>
             </div>
           )}
+
+          {/* ── Multi-Tenant VaaS Gateway (Section XXIX) ── */}
+          <div
+            style={{
+              background: 'var(--bg-card)',
+              border: '1px solid rgba(237, 137, 54, 0.3)',
+              borderRadius: 'var(--radius)',
+              padding: 20,
+              marginBottom: 24,
+            }}
+          >
+            <div
+              style={{
+                fontWeight: 700,
+                fontSize: '0.95rem',
+                color: 'var(--accent-amber)',
+                marginBottom: 14,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span>🏢 Verification-as-a-Service (VaaS) Multi-Tenant Gateway</span>
+                <span
+                  style={{
+                    fontSize: '0.72rem',
+                    background: 'rgba(237, 137, 54, 0.15)',
+                    color: 'var(--accent-amber)',
+                    padding: '2px 8px',
+                    borderRadius: 4,
+                  }}
+                >
+                  {tenants.length} Active Tenants
+                </span>
+              </div>
+            </div>
+
+            {/* Tenant Registration Form */}
+            <div
+              style={{
+                display: 'flex',
+                gap: 10,
+                marginBottom: 14,
+                flexWrap: 'wrap',
+              }}
+            >
+              <input
+                type="text"
+                placeholder="New Tenant / Organization Name..."
+                value={vaasTenantName}
+                onChange={(e) => setVaasTenantName(e.target.value)}
+                style={{
+                  flex: 1,
+                  minWidth: 200,
+                  background: 'var(--bg-surface)',
+                  border: '1px solid var(--border)',
+                  color: 'var(--text-primary)',
+                  borderRadius: 'var(--radius-sm)',
+                  padding: '8px 12px',
+                  fontSize: '0.85rem',
+                }}
+              />
+              <select
+                value={vaasTenantTier}
+                onChange={(e) => setVaasTenantTier(e.target.value as 'FREE' | 'PRO' | 'ENTERPRISE')}
+                style={{
+                  background: 'var(--bg-surface)',
+                  border: '1px solid var(--border)',
+                  color: 'var(--text-primary)',
+                  borderRadius: 'var(--radius-sm)',
+                  padding: '8px 12px',
+                  fontSize: '0.85rem',
+                }}
+              >
+                <option value="FREE">FREE (60 req/min)</option>
+                <option value="PRO">PRO (600 req/min)</option>
+                <option value="ENTERPRISE">ENTERPRISE (6000 req/min)</option>
+              </select>
+              <button
+                type="button"
+                className="btn btn-primary"
+                style={{ padding: '8px 16px', fontSize: '0.82rem' }}
+                onClick={async () => {
+                  if (!vaasTenantName.trim()) return;
+                  try {
+                    const res = await fetch(`${API_BASE}/vaas/tenants`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ name: vaasTenantName, tier: vaasTenantTier }),
+                    });
+                    if (res.ok) {
+                      const data = await res.json();
+                      setVaasCreatedCreds(data.data);
+                      setVaasTenantName('');
+                      await fetchState();
+                    }
+                  } catch (e) {
+                    console.error(e);
+                  }
+                }}
+              >
+                + Register Tenant
+              </button>
+            </div>
+
+            {/* Credential notification if created */}
+            {vaasCreatedCreds && (
+              <div
+                style={{
+                  background: 'rgba(56, 178, 172, 0.12)',
+                  border: '1px solid var(--accent-green)',
+                  borderRadius: 'var(--radius-sm)',
+                  padding: '10px 14px',
+                  marginBottom: 14,
+                  fontSize: '0.78rem',
+                }}
+              >
+                <div style={{ color: 'var(--accent-green)', fontWeight: 700, marginBottom: 4 }}>
+                  ✓ Tenant Registered: {vaasCreatedCreds.tenant.name} ({vaasCreatedCreds.tenant.id})
+                </div>
+                <div style={{ color: 'var(--text-secondary)' }}>
+                  API Key:{' '}
+                  <code style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)' }}>
+                    {vaasCreatedCreds.apiKey}
+                  </code>
+                </div>
+              </div>
+            )}
+
+            {/* Tenants list */}
+            {tenants.length > 0 ? (
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                  gap: 10,
+                }}
+              >
+                {tenants.map((t) => {
+                  const tierColors: Record<string, string> = {
+                    FREE: 'var(--text-muted)',
+                    PRO: 'var(--accent-primary)',
+                    ENTERPRISE: 'var(--accent-secondary)',
+                  };
+                  return (
+                    <div
+                      key={t.id}
+                      style={{
+                        background: 'var(--bg-surface)',
+                        border: '1px solid var(--border)',
+                        borderRadius: 'var(--radius-sm)',
+                        padding: 12,
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          marginBottom: 4,
+                        }}
+                      >
+                        <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{t.name}</span>
+                        <span
+                          style={{
+                            fontSize: '0.65rem',
+                            fontWeight: 700,
+                            color: tierColors[t.tier] || 'var(--text-muted)',
+                            background: 'rgba(0,0,0,0.2)',
+                            padding: '2px 6px',
+                            borderRadius: 4,
+                          }}
+                        >
+                          {t.tier}
+                        </span>
+                      </div>
+                      <div
+                        style={{
+                          fontSize: '0.72rem',
+                          color: 'var(--text-muted)',
+                          fontFamily: 'var(--font-mono)',
+                        }}
+                      >
+                        ID: {t.id}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: '0.72rem',
+                          color: 'var(--text-secondary)',
+                          marginTop: 4,
+                        }}
+                      >
+                        Quota: {t.quotaPerMinute} req/min
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                No external tenants registered yet. Use form above to provision VaaS access.
+              </div>
+            )}
+          </div>
+
+          {/* ── Verification Replay & Regression Engine (Section XXX) ── */}
+          <div
+            style={{
+              background: 'var(--bg-card)',
+              border: '1px solid rgba(159, 122, 234, 0.3)',
+              borderRadius: 'var(--radius)',
+              padding: 20,
+              marginBottom: 24,
+            }}
+          >
+            <div
+              style={{
+                fontWeight: 700,
+                fontSize: '0.95rem',
+                color: 'var(--accent-secondary)',
+                marginBottom: 14,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span>⏪ Verification Replay & Temporal Diff Engine</span>
+                {replaySummary && (
+                  <span
+                    style={{
+                      fontSize: '0.72rem',
+                      background: 'rgba(159, 122, 234, 0.15)',
+                      color: 'var(--accent-secondary)',
+                      padding: '2px 8px',
+                      borderRadius: 4,
+                    }}
+                  >
+                    {replaySummary.totalSnapshots} Snapshots · {replaySummary.totalReplays} Replays
+                  </span>
+                )}
+              </div>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                disabled={replayLoading}
+                style={{ padding: '4px 10px', fontSize: '0.75rem' }}
+                onClick={async () => {
+                  setReplayLoading(true);
+                  try {
+                    await fetch(`${API_BASE}/replay/capture`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        claim: claim || 'Web Replay Baseline Snapshot',
+                        label: `Snapshot ${replaySnapshots.length + 1}`,
+                        tags: ['web-ui'],
+                      }),
+                    });
+                    await fetchState();
+                  } catch (e) {
+                    console.error(e);
+                  } finally {
+                    setReplayLoading(false);
+                  }
+                }}
+              >
+                📸 Capture Snapshot
+              </button>
+            </div>
+
+            {replaySnapshots.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {replaySnapshots.slice(0, 5).map((snap) => (
+                  <div
+                    key={snap.id}
+                    style={{
+                      background: 'var(--bg-surface)',
+                      border: '1px solid var(--border)',
+                      borderRadius: 'var(--radius-sm)',
+                      padding: '10px 14px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: 12,
+                    }}
+                  >
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div
+                        style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}
+                      >
+                        <span
+                          style={{
+                            fontWeight: 600,
+                            fontSize: '0.82rem',
+                            color: 'var(--text-primary)',
+                          }}
+                        >
+                          {snap.label}
+                        </span>
+                        <span
+                          style={{
+                            fontSize: '0.65rem',
+                            fontFamily: 'var(--font-mono)',
+                            color: 'var(--accent-secondary)',
+                            background: 'rgba(159,122,234,0.12)',
+                            padding: '1px 6px',
+                            borderRadius: 3,
+                          }}
+                        >
+                          {snap.status}
+                        </span>
+                      </div>
+                      <div
+                        style={{
+                          fontSize: '0.74rem',
+                          color: 'var(--text-secondary)',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                      >
+                        Claim: {snap.claim}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      disabled={replayLoading}
+                      style={{ padding: '4px 8px', fontSize: '0.72rem', whiteSpace: 'nowrap' }}
+                      onClick={async () => {
+                        setReplayLoading(true);
+                        try {
+                          await fetch(`${API_BASE}/replay/${snap.id}/replay`, {
+                            method: 'POST',
+                          });
+                          await fetchState();
+                        } catch (e) {
+                          console.error(e);
+                        } finally {
+                          setReplayLoading(false);
+                        }
+                      }}
+                    >
+                      ▶ Replay & Diff
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                No snapshots captured yet. Click "Capture Snapshot" to freeze the current
+                verification state.
+              </div>
+            )}
+          </div>
 
           {/* Timeline */}
           <div className="timeline-section">

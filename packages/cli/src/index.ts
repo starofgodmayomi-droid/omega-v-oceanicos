@@ -210,7 +210,8 @@ export class OceanicosCLI {
 
         return {
           success: !replayResult.diff.regressionDetected,
-          message: `[Ω∞v CLI] Replay ${replayResult.diff.regressionDetected ? 'REGRESSION DETECTED' : 'OK — no regression'}. ` +
+          message:
+            `[Ω∞v CLI] Replay ${replayResult.diff.regressionDetected ? 'REGRESSION DETECTED' : 'OK — no regression'}. ` +
             `Changes: ${replayResult.diff.changes.length}, Duration: ${replayResult.durationMs}ms`,
           output: {
             baselineId: baseline.id,

@@ -1,5 +1,5 @@
 import { VerificationReplayEngine } from '@omega-v/replay';
-import { OceanicosClient, FullLoopResult } from '@omega-v/sdk';
+import { OceanicosClient } from '@omega-v/sdk';
 
 describe('@omega-v/replay — VerificationReplayEngine', () => {
   let engine: VerificationReplayEngine;
@@ -125,9 +125,7 @@ describe('@omega-v/replay — VerificationReplayEngine', () => {
     });
 
     it('should throw when replaying a nonexistent snapshot', async () => {
-      await expect(engine.replay('no-such-id', sdk)).rejects.toThrow(
-        'Replay snapshot not found'
-      );
+      await expect(engine.replay('no-such-id', sdk)).rejects.toThrow('Replay snapshot not found');
     });
   });
 

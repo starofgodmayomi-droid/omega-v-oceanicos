@@ -113,10 +113,7 @@ export class VerificationReplayEngine {
   /**
    * Replay a snapshot: re-execute the same claim and diff against the original
    */
-  public async replay(
-    snapshotId: string,
-    client: OceanicosClient
-  ): Promise<ReplayResult> {
+  public async replay(snapshotId: string, client: OceanicosClient): Promise<ReplayResult> {
     const original = this.snapshots.get(snapshotId);
     if (!original) {
       throw new Error(`Replay snapshot not found: ${snapshotId}`);
@@ -161,9 +158,7 @@ export class VerificationReplayEngine {
     const a = this.snapshots.get(snapshotAId);
     const b = this.snapshots.get(snapshotBId);
     if (!a || !b) {
-      throw new Error(
-        `Cannot diff: snapshot(s) not found (${snapshotAId}, ${snapshotBId})`
-      );
+      throw new Error(`Cannot diff: snapshot(s) not found (${snapshotAId}, ${snapshotBId})`);
     }
 
     const changes: ReplayChange[] = [];
@@ -197,8 +192,7 @@ export class VerificationReplayEngine {
         path: 'verification.summary.rulesPassed',
         valueA: rulesA.rulesPassed,
         valueB: rulesB.rulesPassed,
-        severity:
-          rulesA.rulesPassed > rulesB.rulesPassed ? 'REGRESSION' : 'WARNING',
+        severity: rulesA.rulesPassed > rulesB.rulesPassed ? 'REGRESSION' : 'WARNING',
       });
     }
 
