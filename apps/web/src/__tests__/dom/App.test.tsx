@@ -1064,7 +1064,10 @@ describe('independent verification panel', () => {
     await waitFor(() => expect(verify).toBeEnabled());
     await user.click(verify);
 
-    const result = await screen.findByRole('status', undefined, { timeout: 5000 });
+    // Coverage instrumentation makes the real WebCrypto verification path
+    // slower in hosted Node 20/22 runs. Keep this a bounded assertion-specific
+    // budget; a missing or stalled result still fails the test.
+    const result = await screen.findByRole('status', undefined, { timeout: 15_000 });
     expect(within(result).getByText('VALID')).toBeInTheDocument();
     // The panel must never let a valid signature read as a valid decision.
     expect(
