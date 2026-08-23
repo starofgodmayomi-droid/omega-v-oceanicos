@@ -236,6 +236,24 @@ interface SandboxStatsData {
   avgExecutionTimeMs: number;
 }
 
+interface PolicyRuleItem {
+  id: string;
+  name: string;
+  field: string;
+  operator: string;
+  value: unknown;
+  severity: string;
+}
+
+interface PolicyItem {
+  id: string;
+  name: string;
+  domain: string;
+  version: string;
+  rules: PolicyRuleItem[];
+  active: boolean;
+}
+
 interface RuleEfficacy {
   ruleName: string;
   totalExecutions: number;
@@ -460,6 +478,24 @@ export function App(): JSX.Element {
     violation?: string;
   } | null>(null);
   const [sandboxExecuting, setSandboxExecuting] = useState(false);
+  const [policies, setPolicies] = useState<PolicyItem[]>([]);
+  const [selectedPolicyId, setSelectedPolicyId] = useState('enterprise-sla-policy');
+  const [policyReceipt, setPolicyReceipt] = useState<{
+    receiptId: string;
+    policyName: string;
+    compliant: boolean;
+    passedRules: number;
+    failedRules: number;
+    ruleResults: Array<{
+      name: string;
+      field: string;
+      operator: string;
+      passed: boolean;
+      reason?: string;
+    }>;
+    signature: string;
+  } | null>(null);
+  const [evaluatingPolicy, setEvaluatingPolicy] = useState(false);
 
   // ── Poll log + metrics ──
   const fetchState = useCallback(async () => {
@@ -485,6 +521,7 @@ export function App(): JSX.Element {
         notarySumRes,
         notarySealsRes,
         sandRes,
+        polRes,
       ] = await Promise.all([
         fetch(`${API_BASE}/log?limit=30`),
         fetch(`${API_BASE}/metrics`),
@@ -506,6 +543,7 @@ export function App(): JSX.Element {
         fetch(`${API_BASE}/notary/summary`),
         fetch(`${API_BASE}/notary/seals`),
         fetch(`${API_BASE}/sandbox/stats`),
+        fetch(`${API_BASE}/policies`),
       ]);
       if (!logRes.ok || !metricsRes.ok) throw new Error('API error');
 
@@ -557,6 +595,9 @@ export function App(): JSX.Element {
       }
       if (sandRes.ok) {
         setSandboxStats((await sandRes.json()).data as SandboxStatsData);
+      }
+      if (polRes.ok) {
+        setPolicies((await polRes.json()).data.policies as PolicyItem[]);
       }
     } catch {
       setApiOnline(false);
@@ -3265,6 +3306,216 @@ export function App(): JSX.Element {
                 </div>
               </div>
             )}
+          </div>
+
+          {/* ── Declarative Policy & Compliance Guard (Section XXXVII) ── */}
+          <div
+            style={{
+              background: 'var(--bg-card)',
+              border: '1px solid rgba(129, 230, 217, 0.3)',
+              borderRadius: 'var(--radius)',
+              padding: 20,
+              marginBottom: 24,
+            }}
+          >
+            <div
+              style={{
+                fontWeight: 700,
+                fontSize: '0.95rem',
+                color: 'var(--accent-teal)',
+                marginBottom: 14,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span>📜 Declarative Policy Bundles & Compliance Guard</span>
+                <span
+                  style={{
+                    fontSize: '0.72rem',
+                    background: 'rgba(129, 230, 217, 0.15)',
+                    color: 'var(--accent-teal)',
+                    padding: '2px 8px',
+                    borderRadius: 4,
+                  }}
+                >
+                  {policies.length} Active Policy Bundles
+                </span>
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <select
+                  value={selectedPolicyId}
+                  onChange={(e) => setSelectedPolicyId(e.target.value)}
+                  style={{
+                    background: 'var(--bg-surface)',
+                    border: '1px solid var(--border)',
+                    color: 'var(--text-primary)',
+                    borderRadius: 'var(--radius-sm)',
+                    padding: '4px 8px',
+                    fontSize: '0.75rem',
+                  }}
+                >
+                  {policies.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  disabled={evaluatingPolicy}
+                  style={{ padding: '4px 12px', fontSize: '0.75rem' }}
+                  onClick={async () => {
+                    setEvaluatingPolicy(true);
+                    try {
+                      const res = await fetch(`${API_BASE}/policies/evaluate`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          policyId: selectedPolicyId,
+                          context: {
+                            confidence: 0.96,
+                            metadata: { responseTime: 30, region: 'us-east-1' },
+                            source: { environment: 'production' },
+                          },
+                        }),
+                      });
+                      if (res.ok) {
+                        const data = await res.json();
+                        setPolicyReceipt(data.data);
+                        await fetchState();
+                      }
+                    } catch (e) {
+                      console.error(e);
+                    } finally {
+                      setEvaluatingPolicy(false);
+                    }
+                  }}
+                >
+                  {evaluatingPolicy ? '⏳ Evaluating…' : '⚖️ Evaluate Compliance'}
+                </button>
+              </div>
+            </div>
+
+            {/* Compliance Receipt Badge */}
+            {policyReceipt && (
+              <div
+                style={{
+                  background: policyReceipt.compliant
+                    ? 'rgba(72, 187, 120, 0.12)'
+                    : 'rgba(245, 101, 101, 0.12)',
+                  border: `1px solid ${policyReceipt.compliant ? 'var(--accent-green)' : 'var(--accent-red)'}`,
+                  borderRadius: 'var(--radius-sm)',
+                  padding: 12,
+                  marginBottom: 12,
+                  fontSize: '0.78rem',
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: 6,
+                  }}
+                >
+                  <span
+                    style={{
+                      fontWeight: 700,
+                      color: policyReceipt.compliant ? 'var(--accent-green)' : 'var(--accent-red)',
+                    }}
+                  >
+                    {policyReceipt.compliant
+                      ? `✓ Policy Compliant (${policyReceipt.passedRules}/${policyReceipt.passedRules + policyReceipt.failedRules} rules passed)`
+                      : `✗ Policy Non-Compliant (${policyReceipt.failedRules} violations)`}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: '0.68rem',
+                      fontFamily: 'var(--font-mono)',
+                      color: 'var(--text-muted)',
+                    }}
+                  >
+                    Receipt: {policyReceipt.receiptId}
+                  </span>
+                </div>
+                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: 4 }}>
+                  Signature:{' '}
+                  <code style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent-amber)' }}>
+                    {policyReceipt.signature.slice(0, 32)}…
+                  </code>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 6 }}>
+                  {policyReceipt.ruleResults.map((r, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        fontSize: '0.7rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        color: r.passed ? 'var(--accent-green)' : 'var(--accent-red)',
+                      }}
+                    >
+                      <span>{r.passed ? '✓' : '✗'}</span>
+                      <span style={{ fontWeight: 600 }}>{r.name}:</span>
+                      <span style={{ color: 'var(--text-secondary)' }}>
+                        {r.field} {r.operator} {r.reason ? `(${r.reason})` : ''}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Policy list preview */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                gap: 10,
+              }}
+            >
+              {policies.map((pol) => (
+                <div
+                  key={pol.id}
+                  style={{
+                    background: 'var(--bg-surface)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 'var(--radius-sm)',
+                    padding: 12,
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: 4,
+                    }}
+                  >
+                    <span style={{ fontWeight: 600, fontSize: '0.8rem' }}>{pol.name}</span>
+                    <span
+                      style={{
+                        fontSize: '0.65rem',
+                        color: 'var(--accent-teal)',
+                        background: 'rgba(129, 230, 217, 0.15)',
+                        padding: '1px 6px',
+                        borderRadius: 3,
+                      }}
+                    >
+                      v{pol.version}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: 4 }}>
+                    Domain: <span style={{ color: 'var(--text-secondary)' }}>{pol.domain}</span> ·
+                    Rules: {pol.rules.length}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Timeline */}

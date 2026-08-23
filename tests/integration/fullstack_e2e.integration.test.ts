@@ -19,6 +19,7 @@ import { FederationMeshEngine } from '@omega-v/federation';
 import { VerificationBenchmarkEngine } from '@omega-v/benchmark';
 import { OceanicosNotaryEngine } from '@omega-v/notary';
 import { OceanicosSandboxEngine } from '@omega-v/sandbox';
+import { OceanicosPolicyEngine } from '@omega-v/policy';
 import app from '../../apps/api/src/index';
 
 describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => {
@@ -574,6 +575,40 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       expect(stats.totalRuns).toBe(2);
       expect(stats.successfulRuns).toBe(1);
       expect(stats.violationsBlocked).toBe(1);
+    });
+  });
+
+  describe('18. Declarative Policy Bundles & Compliance Receipts E2E', () => {
+    it('should evaluate production contexts against policy rules and issue signed receipts', () => {
+      const policyEngine = new OceanicosPolicyEngine();
+
+      // Ensure canonical policies are available
+      const policies = policyEngine.getPolicies();
+      expect(policies.length).toBeGreaterThanOrEqual(2);
+
+      // Evaluate compliant context against enterprise SLA policy
+      const compliantCtx = {
+        confidence: 0.98,
+        metadata: { responseTime: 22, region: 'us-east-1' },
+        source: { environment: 'production' },
+      };
+
+      const receipt = policyEngine.evaluate('enterprise-sla-policy', compliantCtx);
+      expect(receipt.receiptId).toMatch(/^receipt-pol-/);
+      expect(receipt.compliant).toBe(true);
+      expect(receipt.passedRules).toBe(3);
+      expect(receipt.failedRules).toBe(0);
+      expect(receipt.signature).toMatch(/^0x/);
+
+      // Evaluate non-compliant context
+      const nonCompliantCtx = {
+        confidence: 0.8, // Fails < 0.90
+        metadata: { responseTime: 250 }, // Fails > 100
+        source: { environment: 'dev' }, // Fails not in production/staging
+      };
+      const failReceipt = policyEngine.evaluate('enterprise-sla-policy', nonCompliantCtx);
+      expect(failReceipt.compliant).toBe(false);
+      expect(failReceipt.failedRules).toBe(3);
     });
   });
 });

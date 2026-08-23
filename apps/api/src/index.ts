@@ -21,6 +21,7 @@ import { FederationMeshEngine } from '@omega-v/federation';
 import { VerificationBenchmarkEngine } from '@omega-v/benchmark';
 import { OceanicosNotaryEngine } from '@omega-v/notary';
 import { OceanicosSandboxEngine } from '@omega-v/sandbox';
+import { OceanicosPolicyEngine } from '@omega-v/policy';
 import {
   SuccessResponse,
   ErrorResponse,
@@ -72,6 +73,7 @@ const federationEngine = new FederationMeshEngine();
 const benchmarkEngine = new VerificationBenchmarkEngine();
 const notaryEngine = new OceanicosNotaryEngine();
 const sandboxEngine = new OceanicosSandboxEngine();
+const policyEngine = new OceanicosPolicyEngine();
 
 // Register default rules
 verificationEngine.registerRule({
@@ -1285,6 +1287,68 @@ app.post('/sandbox/execute', (req: Request, res: Response) => {
     data: result,
     timestamp: new Date().toISOString(),
   });
+});
+
+/** GET /policies — List all registered declarative policy documents (Section XXXVII) */
+app.get('/policies', (_req: Request, res: Response) => {
+  res.json({
+    data: { policies: policyEngine.getPolicies() },
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /policies — Register a new policy document */
+app.post('/policies', (req: Request, res: Response) => {
+  const { id, name, domain, version, rules, active } = req.body || {};
+  if (!id || !name || !rules || !Array.isArray(rules)) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'id, name, and rules (array) are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  const doc = policyEngine.registerPolicy({
+    id,
+    name,
+    domain: domain || 'general',
+    version: version || '1.0.0',
+    rules,
+    active: active ?? true,
+  });
+
+  res.status(201).json({
+    data: doc,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /policies/evaluate — Evaluate context against a policy and return compliance receipt */
+app.post('/policies/evaluate', (req: Request, res: Response) => {
+  const { policyId, context } = req.body || {};
+  if (!policyId || !context) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'policyId and context object are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const receipt = policyEngine.evaluate(policyId, context);
+    res.json({
+      data: receipt,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'EVALUATION_FAILED',
+      message: err instanceof Error ? err.message : 'Policy evaluation failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
 });
 
 /**

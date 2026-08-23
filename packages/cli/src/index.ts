@@ -12,6 +12,7 @@ import { FederationMeshEngine } from '@omega-v/federation';
 import { VerificationBenchmarkEngine } from '@omega-v/benchmark';
 import { OceanicosNotaryEngine } from '@omega-v/notary';
 import { OceanicosSandboxEngine } from '@omega-v/sandbox';
+import { OceanicosPolicyEngine } from '@omega-v/policy';
 
 export interface CLIResult {
   success: boolean;
@@ -378,6 +379,36 @@ export class OceanicosCLI {
         };
       }
 
+      case 'policy': {
+        const policyEngine = new OceanicosPolicyEngine();
+        const subCommand = args[1] || 'list';
+
+        if (subCommand === 'evaluate') {
+          const policyId = args[2] || 'enterprise-sla-policy';
+          const context = {
+            confidence: 0.95,
+            metadata: { responseTime: 35, region: 'us-east-1' },
+            source: { environment: 'production' },
+          };
+          const receipt = policyEngine.evaluate(policyId, context);
+
+          return {
+            success: receipt.compliant,
+            message: receipt.compliant
+              ? `[Ω∞v CLI] Policy Compliance PASSED: ${receipt.policyName} (${receipt.passedRules}/${receipt.ruleResults.length} rules passed, Receipt: ${receipt.receiptId})`
+              : `[Ω∞v CLI] Policy Compliance FAILED: ${receipt.policyName} (${receipt.failedRules} rules failed)`,
+            output: receipt,
+          };
+        }
+
+        const policies = policyEngine.getPolicies();
+        return {
+          success: true,
+          message: `[Ω∞v CLI] Registered Declarative Policies: ${policies.length} bundles loaded`,
+          output: policies,
+        };
+      }
+
       case 'help':
       default: {
         return {
@@ -399,6 +430,7 @@ Commands:
   omega-v benchmark [iterations]    Run verification performance & latency quantile profiling
   omega-v notary [summary|anchor]   Notarize attestation into Merkle transparency log
   omega-v sandbox [expression]      Execute rule expression in isolated deterministic sandbox
+  omega-v policy [list|evaluate]    List declarative policy documents or evaluate context
   omega-v metrics                   Show system health and metrics
   omega-v log                       Display event provenance log
   omega-v integrity                 Verify event hash chain integrity
