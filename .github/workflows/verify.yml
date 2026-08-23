@@ -312,12 +312,35 @@ jobs:
 
           # The client addresses the API under /api. In production there is
           # no dev-server proxy, so the same routes must answer under the
-          # prefix the built bundle actually calls.
-          curl -sf http://localhost:3000/api/health | grep -q '"status":"ok"'
-          curl -sf -H 'Authorization: Bearer ci-smoke-read-token' http://localhost:3000/api/rules  | grep -q '"registered":2'
-          curl -sf -H 'Authorization: Bearer ci-smoke-read-token' http://localhost:3000/api/state | grep -q '"status":"active"'
-          curl -sf -H 'Authorization: Bearer ci-smoke-read-token' http://localhost:3000/api/observability | grep -q '"intact":true'
-          curl -sf -H 'Authorization: Bearer ci-smoke-read-token' http://localhost:3000/api/memory/integrity | grep -q '"intact":true'
+          # prefix the built bundle actually calls. Capture status and body
+          # for each assertion so a future route or auth regression is named.
+          check_api() {
+            local path="$1"
+            local token="$2"
+            local pattern="$3"
+            local response=/tmp/api-response.json
+            local status
+            if [ -n "$token" ]; then
+              status=$(curl -sS -o "$response" -w '%{http_code}' -H "Authorization: Bearer $token" "http://localhost:3000$path")
+            else
+              status=$(curl -sS -o "$response" -w '%{http_code}' "http://localhost:3000$path")
+            fi
+            if [ "$status" != "200" ]; then
+              echo "::error::API prefix $path returned HTTP $status"
+              cat "$response"
+              exit 1
+            fi
+            if ! grep -q "$pattern" "$response"; then
+              echo "::error::API prefix $path did not contain expected evidence: $pattern"
+              cat "$response"
+              exit 1
+            fi
+          }
+          check_api /api/health '' '"status":"ok"'
+          check_api /api/rules ci-smoke-read-token '"registered":2'
+          check_api /api/state ci-smoke-read-token '"status":"active"'
+          check_api /api/observability ci-smoke-read-token '"intact":true'
+          check_api /api/memory/integrity ci-smoke-read-token '"intact":true'
 
           # And the client itself must be served from that same origin.
           curl -sf http://localhost:3000/ | tee /tmp/index.html

@@ -109,6 +109,8 @@ describe('the supported Node version is one claim, not three', () => {
     expect(workflow).toMatch(/local:\/\/ci-restart/);
     expect(workflow).toMatch(/The encrypted local-ledger volume contains plaintext job payload/);
     expect(workflow).toMatch(/job-after-restart\.json/);
+    expect(workflow).toMatch(/check_api\(\) \{/);
+    expect(workflow).toMatch(/API prefix \$path returned HTTP \$status/);
     expect(workflow).toMatch(/\"encryption\":\"aes-256-gcm\"/);
   });
 });
