@@ -31,11 +31,11 @@ They remain expansions. The kernel is still Observe → Verify → Remember, and
 
 ### Post-repair release checkpoint — 2026-08-23
 
-The final integrated revision is `9aba67a`, after PR #185 extended the bounded WebCrypto status wait from 15 seconds to 30 seconds for slower hosted coverage runs without weakening the `VALID` or non-proof assertions. The post-merge Verification Pipeline and Security Analysis both completed successfully, including Node 20, Node 22, Windows compatibility, package/smoke, and main-branch publication. The workflow’s artifact publication completed, but this record does not claim or repeat an artifact digest without directly observed digest evidence.
+The final integrated revision is `0006a26`, after PR #185 extended the bounded WebCrypto status wait from 15 seconds to 30 seconds for slower hosted coverage runs without weakening the `VALID` or non-proof assertions and PR #187 reconciled the final state records. The post-merge Verification Pipeline [32637473790](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/actions/runs/32637473790) and Security Analysis [32637473792](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/actions/runs/32637473792) both completed successfully, including Node 20, Node 22, Windows compatibility, package/smoke, and main-branch publication. The workflow’s artifact publication completed, but this record does not claim or repeat an artifact digest without directly observed digest evidence.
 
 This milestone is **verified integration and artifact publication, not deployment**. The repository contains no downstream hosting workflow or infrastructure manifest, and no production URL, running target, production logs, gateway identity configuration, or post-deployment browser/ledger smoke was observed. Required mode continues to protect the SPA shell, assets, API reads, SSE stream, and mutations; a network dashboard requires an approved identity/gateway boundary or a separately reviewed browser-session design.
 
-### Prior release checkpoint before PR185 — 2026-08-23
+### Prior release checkpoint before PR187 — 2026-08-23
 
 The required-auth and encrypted local-job-ledger slice is integrated on `main` at `99e83d5`. The follow-up browser-boundary regression is also integrated: required mode protects the SPA shell and assets with the same read boundary as API reads, while mutations remain admin-only. This is an explicit security contract, not browser identity proofing. The shipped dashboard still requires an approved identity/gateway layer that injects the appropriate credentials, or a separately designed browser session; the repository currently provides neither.
 
