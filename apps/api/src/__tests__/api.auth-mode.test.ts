@@ -20,6 +20,7 @@ type LoadedApi = {
     adminToken?: string
   ) => string | null;
   parseAuthMode: (value?: string) => 'local' | 'required';
+  constantTimeTokenMatch: (supplied: string, expected: string) => boolean;
 };
 
 type StartedApi = {
@@ -80,6 +81,66 @@ const stopApi = async (server: Server): Promise<void> => {
   );
   jest.resetModules();
 };
+
+describe('an unconfigured token is not a token everyone knows', () => {
+  /**
+   * `constantTimeTokenMatch('', '')` used to return true. Both buffers are
+   * zero-length, so the length check passes and timingSafeEqual compares two
+   * empty buffers and agrees.
+   *
+   * That only matters because the auth middleware re-reads process.env on
+   * every request. Startup refuses to boot required mode without both
+   * tokens, but nothing carries that guarantee forward, so clearing the
+   * variable on a running process left `expected` empty — and a request with
+   * no Authorization header supplied an equally empty token.
+   */
+  it('refuses an empty expected token outright', () => {
+    const { constantTimeTokenMatch } = loadRequiredApi();
+
+    expect(constantTimeTokenMatch('', '')).toBe(false);
+    expect(constantTimeTokenMatch('anything', '')).toBe(false);
+    // A configured token still works exactly as before.
+    expect(constantTimeTokenMatch('read-token', 'read-token')).toBe(true);
+    expect(constantTimeTokenMatch('wrong', 'read-token')).toBe(false);
+  });
+
+  it('keeps read evidence closed when the token is cleared on a running server', async () => {
+    const { server, baseUrl } = await startApi();
+    try {
+      const guarded = await fetch(`${baseUrl}/state`);
+      expect(guarded.status).toBe(401);
+
+      // The operator, a failed secret refresh, or a config reload empties it.
+      delete process.env.OMEGA_READ_TOKEN;
+
+      const afterClearing = await fetch(`${baseUrl}/state`);
+      // Measured at 200 before the guard: the server answered with evidence
+      // to a caller carrying no credential at all.
+      expect(afterClearing.status).toBe(401);
+    } finally {
+      process.env.OMEGA_READ_TOKEN = 'read-token';
+      await stopApi(server);
+    }
+  });
+
+  it('keeps mutations closed when the admin token is cleared on a running server', async () => {
+    const { server, baseUrl } = await startApi();
+    try {
+      delete process.env.OMEGA_ADMIN_TOKEN;
+
+      const response = await fetch(`${baseUrl}/attest/revoke`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ attestationId: 'att-whatever', reason: 'probe' }),
+      });
+
+      expect(response.status).toBe(401);
+    } finally {
+      process.env.OMEGA_ADMIN_TOKEN = 'admin-token';
+      await stopApi(server);
+    }
+  });
+});
 
 describe('required API authentication profile', () => {
   it('parses only local or required mode and names missing credentials', () => {

@@ -49,6 +49,23 @@ import {
  * Exposes the verification loop via REST endpoints
  */
 export const constantTimeTokenMatch = (supplied: string, expected: string): boolean => {
+  // An unconfigured token is not a token that everyone knows. Without this
+  // guard, `expected` of '' matches a request carrying no Authorization
+  // header at all — both sides are zero-length, so the length check passes
+  // and timingSafeEqual compares two empty buffers and returns true.
+  //
+  // Startup refuses to boot OMEGA_AUTH_MODE=required without both tokens,
+  // but this middleware re-reads process.env on every request, so that
+  // guarantee does not survive the variable being cleared or emptied later.
+  // Measured before this guard: with the token configured an unauthenticated
+  // GET /state returned 401; after deleting OMEGA_READ_TOKEN at runtime the
+  // same request returned 200 and the evidence with it.
+  //
+  // Failing closed here defends every caller regardless of how the empty
+  // value arose, rather than relying on each call site to notice.
+  if (expected.length === 0) {
+    return false;
+  }
   const suppliedBytes = Buffer.from(supplied);
   const expectedBytes = Buffer.from(expected);
   return (
