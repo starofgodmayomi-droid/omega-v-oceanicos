@@ -97,6 +97,10 @@ remain on the [roadmap](./ROADMAP.md).
   — why one container rather than two, what it costs, and the alternative that
   is preserved on a branch rather than deleted
 
+- **[2. Diagnose dependency upgrades on main, not inside the proposal](./decisions/0002-dependency-upgrade-policy.md)**
+  — why seven of nine failing bumps were this repository not being ready, and
+  what to do about the one that was genuinely upstream
+
 ### System Design
 
 - **[Observer](../packages/observer/README.md)** — capturing normalized
