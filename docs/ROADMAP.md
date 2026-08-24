@@ -208,6 +208,16 @@ blocked on design; each is a decision or a scoped change.
   verify workflow after dependency installation, and the main-branch workflow
   now passes it on both supported Node versions. The workflow summaries report
   formatting explicitly alongside lint, type-check, test, coverage and build.
+- ~~**Lint warnings were reported but never enforced.**~~ **Closed.** `pnpm lint`
+  ran `eslint .`, which exits 0 on warnings, so the verify job passed while six
+  unused `eslint-disable` directives sat in the tree and the workflow summary
+  reported lint among the checks that passed. It was true that lint ran and
+  false that it had nothing to say. The directives suppressed
+  `@typescript-eslint/no-var-requires`, a rule removed in typescript-eslint v8
+  and already switched off for those files by name, so they claimed an
+  exception nothing required. They are deleted and the script now runs
+  `--max-warnings 0`, verified by reintroducing one directive and watching the
+  command fail.
 - ~~**CI skipped stacked pull requests entirely.**~~ **Closed.** The workflow
   filtered `pull_request` to `[main, develop]`, so a pull request based on any
   other branch ran no jobs at all. Nothing failed because nothing ran, and an

@@ -909,7 +909,6 @@ describe('Runtime persistence failures reach the route handlers that trigger the
     process.env.OMEGA_RUNTIME_STORE_PATH = join(storeDir, 'runtime.json');
 
     jest.resetModules();
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const isolated = require('../index') as { app: typeof app };
     server = createServer(isolated.app);
     await new Promise<void>((resolve) => server.listen(0, resolve));
@@ -1029,7 +1028,6 @@ describe('partial durable-log recovery readiness', () => {
     process.env.OMEGA_ADMIN_OPERATOR_ALLOWLIST = 'jest-operator';
 
     jest.resetModules();
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const isolated = require('../index') as { app: typeof app };
     server = createServer(isolated.app);
     await new Promise<void>((resolve) => server.listen(0, resolve));
@@ -1163,7 +1161,6 @@ describe('persistence re-encryption boundary', () => {
     process.env.OMEGA_ADMIN_OPERATOR_ALLOWLIST = 'rotation-operator';
 
     jest.resetModules();
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const isolated = require('../index') as { app: typeof app };
     server = createServer(isolated.app);
     await new Promise<void>((resolve) => server.listen(0, resolve));
@@ -1240,7 +1237,6 @@ describe('persistence re-encryption journal startup boundary', () => {
     process.env.OMEGA_EVENT_LOG_PATH = join(dir, 'runtime.log.jsonl');
 
     jest.resetModules();
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const isolated = require('../index') as { app: typeof app };
     server = createServer(isolated.app);
     await new Promise<void>((resolve) => server.listen(0, resolve));
@@ -1303,7 +1299,6 @@ describe('static web client, when a build is present', () => {
     process.env.OMEGA_WEB_DIST = distDir;
 
     jest.resetModules();
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const isolated = require('../index') as { app: typeof app };
     server = createServer(isolated.app);
     await new Promise<void>((resolve) => server.listen(0, resolve));
