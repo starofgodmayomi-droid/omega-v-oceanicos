@@ -63,6 +63,39 @@ configure({
   asyncUtilTimeout: 2000,
 });
 
+/**
+ * Report what escapes the test, because the last flake left no trace of its
+ * cause.
+ *
+ * CI has intermittently failed a trailing block of this file with the
+ * container rendered as `<body><div /></body>` — nothing mounted, rather
+ * than a shell missing one panel. The note on asyncUtilTimeout above asked
+ * that the next step be capturing the DOM at failure instead of raising the
+ * number again. The DOM was captured, and it is empty, which is the part no
+ * existing output explains.
+ *
+ * What has been ruled out by measurement, so nobody repeats it:
+ *   - not gradual slowness: every test here passes with asyncUtilTimeout
+ *     lowered to 150ms, so a normal mount finishes an order of magnitude
+ *     inside even the old budget. The failure is bimodal, not marginal.
+ *   - not an unmocked route on mount: every path App fetches while mounting
+ *     is in the harness defaults. `/api/scene/simulate` is not, but it is
+ *     reached only from a user-triggered handler that already catches.
+ *   - not an early return or error boundary: App has neither.
+ *
+ * An empty container implies the tree never committed or was torn down, and
+ * an error thrown from an effect does exactly that while surfacing as a
+ * rejection rather than a failed assertion. These handlers make that visible
+ * the next time it happens instead of leaving another empty DOM to puzzle
+ * over. They change no behaviour and silence nothing.
+ */
+const reportEscaped = (label: string) => (value: unknown) => {
+  // eslint-disable-next-line no-console
+  console.error(`${label}:`, value instanceof Error ? (value.stack ?? value.message) : value);
+};
+process.on('unhandledRejection', reportEscaped('dom test unhandled rejection'));
+process.on('uncaughtException', reportEscaped('dom test uncaught exception'));
+
 // jsdom implements neither of these, and App.tsx uses both: EventSource for
 // the lifecycle stream, scrollIntoView when focusing a result. Absent stubs
 // surface as unrelated crashes inside render, so they are provided here
