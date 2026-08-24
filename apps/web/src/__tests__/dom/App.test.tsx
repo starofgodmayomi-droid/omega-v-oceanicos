@@ -1067,13 +1067,25 @@ describe('independent verification panel', () => {
     // Coverage instrumentation makes the real WebCrypto verification path
     // slower in hosted Node 20/22 runs. Keep this a bounded assertion-specific
     // budget; a missing or stalled result still fails the test.
+    //
+    // That last sentence only holds while this budget is reachable. It equalled
+    // the suite-wide jest.setTimeout(30000), and this test spends seconds
+    // before reaching here on renderApp, key generation, four userEvent
+    // interactions and a waitFor — so jest always expired first and the wait
+    // could never reach its own limit. See the explicit per-test timeout below.
     const result = await screen.findByRole('status', undefined, { timeout: 30_000 });
     expect(within(result).getByText('VALID')).toBeInTheDocument();
     // The panel must never let a valid signature read as a valid decision.
     expect(
       within(result).getByText(/does not prove the verification was correct/i)
     ).toBeInTheDocument();
-  });
+    // Total budget must exceed the 30s assertion budget above, or that budget
+    // is unreachable and a stalled WebCrypto path is killed by jest instead of
+    // failing on its own terms. The difference is not cosmetic: a jest timeout
+    // aborts the test inside act(), which left every later test in this file
+    // rendering an empty container — one stall became ten failures, and the
+    // reported error named none of them.
+  }, 90_000);
 
   it('reports invalid JSON without claiming the signature was forged', async () => {
     installFetch();
