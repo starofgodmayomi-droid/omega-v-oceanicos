@@ -59,18 +59,17 @@ jobs:
       - name: Check formatting
         run: pnpm format:check
 
-      # ESLint 10 calls util.styleText, which arrived in Node 20.12. It cannot
-      # run on Node 18 at all — the failure is a TypeError inside ESLint's own
-      # formatter, not a finding about this code.
+      # Runs on every matrix version. ESLint 10 calls util.styleText, added in
+      # Node 20.12, and the matrix floor is 20.x — so there is no version here
+      # it cannot execute on.
       #
-      # Node 18 stays in the matrix on purpose. Tests, type-check, build and
-      # coverage still run there, so what the product supports is unchanged;
-      # only the linter, which is development tooling and not part of the
-      # shipped artifact, is restricted to where it can execute. Dropping 18
-      # entirely would quietly narrow a support claim to satisfy a dev
-      # dependency.
+      # This step used to carry `if: matrix.node-version != '18.x'`, with a
+      # comment arguing that Node 18 stayed in the matrix on purpose. #162
+      # then removed 18 (end of life April 2025, the published container is
+      # node:20-alpine, and Vite 8 could not build there), which left the
+      # guard always true and the comment asserting a matrix entry that no
+      # longer existed. A reader would have believed 18 was still covered.
       - name: Run linting
-        if: matrix.node-version != '18.x'
         run: pnpm lint
 
       - name: Run type checking
