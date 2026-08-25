@@ -27,6 +27,14 @@ type RuntimeDissensus = {
 type SceneSimulation = {
   states: string[];
   terminalState: string;
+  branches: Array<{
+    index: number;
+    perspective: string;
+    terminalState: string;
+    states: string[];
+  }>;
+  branchCount: number;
+  continuation: string;
   provenance: { ruleVersion: string; deterministic: boolean; verified: boolean; note: string };
 };
 
@@ -709,7 +717,7 @@ export function App(): React.JSX.Element {
       const response = await fetch('/api/scene/simulate', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ seed: 'dashboard-opening-scene' }),
+        body: JSON.stringify({ seed: 'dashboard-opening-scene', branches: 3 }),
       });
       const body = (await response.json()) as { data?: SceneSimulation; message?: string };
       if (!response.ok || !body.data)
@@ -1037,8 +1045,16 @@ export function App(): React.JSX.Element {
               <div className="evidence-chain-card" aria-live="polite">
                 <strong>{sceneSimulation.terminalState.toUpperCase()}</strong>
                 <p>{sceneSimulation.states.join(' → ')}</p>
+                <p>
+                  {sceneSimulation.branches.map((branch) => (
+                    <span key={branch.index}>
+                      {branch.perspective}: {branch.terminalState.toUpperCase()}{' '}
+                    </span>
+                  ))}
+                </p>
                 <small>
-                  {sceneSimulation.provenance.ruleVersion} · deterministic=
+                  {sceneSimulation.provenance.ruleVersion} · branches={sceneSimulation.branchCount}{' '}
+                  · {sceneSimulation.continuation} · deterministic=
                   {String(sceneSimulation.provenance.deterministic)} · verified=
                   {String(sceneSimulation.provenance.verified)}
                 </small>

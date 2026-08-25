@@ -877,9 +877,22 @@ describe('OmegaClient', () => {
               states: ['start'],
               terminalState: 'start',
               trace: [],
+              branches: [
+                {
+                  id: 'scene-branch-1',
+                  index: 0,
+                  perspective: 'point-of-view-1',
+                  states: ['start'],
+                  terminalState: 'start',
+                  trace: [],
+                  divergenceEvidence: 'fixture',
+                },
+              ],
+              branchCount: 1,
+              continuation: 'bounded-sample-of-infinite-potential',
               provenance: {
                 source: 'local-simulation',
-                ruleVersion: 'scene-equation.v1',
+                ruleVersion: 'scene-equation.v2',
                 deterministic: true,
                 verified: false,
                 note: 'fixture',

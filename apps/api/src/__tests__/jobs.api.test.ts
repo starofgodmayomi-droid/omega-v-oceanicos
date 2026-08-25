@@ -210,24 +210,31 @@ describe('local job ledger HTTP contract', () => {
       const response = await fetch(`${runtime.baseUrl}/scene/simulate`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ seed: 'api-scene', steps: 4 }),
+        body: JSON.stringify({ seed: 'api-scene', steps: 4, branches: 3 }),
       });
       expect(response.status).toBe(200);
       const body = (await response.json()) as {
         data: {
           states: string[];
           terminalState: string;
+          branches: Array<{ perspective: string; states: string[] }>;
+          branchCount: number;
+          continuation: string;
           provenance: { deterministic: boolean; verified: boolean };
         };
       };
       expect(body.data.states).toEqual(['darkness', 'possibility', 'ocean', 'star']);
       expect(body.data.terminalState).toBe('star');
+      expect(body.data.branchCount).toBe(3);
+      expect(body.data.continuation).toBe('bounded-sample-of-infinite-potential');
+      expect(body.data.branches).toHaveLength(3);
+      expect(body.data.branches[0].states).toEqual(body.data.states);
       expect(body.data.provenance).toEqual({
         source: 'local-simulation',
-        ruleVersion: 'scene-equation.v1',
+        ruleVersion: 'scene-equation.v2',
         deterministic: true,
         verified: false,
-        note: 'Symbolic simulation evidence only; it is not a claim about physical cosmology or consciousness.',
+        note: 'Bounded symbolic perspectives only; this is not a claim about physical multiverses, cosmology, or consciousness.',
       });
     } finally {
       runtime.cleanup();

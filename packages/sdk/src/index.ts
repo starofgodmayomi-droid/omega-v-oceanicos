@@ -260,9 +260,25 @@ export type SceneSimulation = {
     status: 'observed' | 'verified';
     evidence: string;
   }>;
+  branches: Array<{
+    id: string;
+    index: number;
+    perspective: string;
+    states: string[];
+    terminalState: string;
+    trace: Array<{
+      sequence: number;
+      state: string;
+      status: 'observed' | 'verified';
+      evidence: string;
+    }>;
+    divergenceEvidence: string;
+  }>;
+  branchCount: number;
+  continuation: 'bounded-sample-of-infinite-potential';
   provenance: {
     source: 'local-simulation';
-    ruleVersion: 'scene-equation.v1';
+    ruleVersion: 'scene-equation.v2';
     deterministic: true;
     verified: false;
     note: string;
@@ -381,7 +397,7 @@ export class OmegaClient {
   }
 
   async simulateScene(
-    input: { seed?: string; steps?: number } = {}
+    input: { seed?: string; steps?: number; branches?: number } = {}
   ): Promise<{ data: SceneSimulation; timestamp: string }> {
     return this.post<{ data: SceneSimulation; timestamp: string }>(
       '/scene/simulate',

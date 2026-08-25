@@ -515,6 +515,24 @@ export type SceneState =
 export type SceneSimulationInput = {
   seed?: string;
   steps?: number;
+  branches?: number;
+};
+
+export type SceneTrace = Array<{
+  sequence: number;
+  state: SceneState;
+  status: 'observed' | 'verified';
+  evidence: string;
+}>;
+
+export type SceneBranch = {
+  id: string;
+  index: number;
+  perspective: string;
+  states: SceneState[];
+  terminalState: SceneState;
+  trace: SceneTrace;
+  divergenceEvidence: string;
 };
 
 export interface SceneSimulation {
@@ -523,15 +541,13 @@ export interface SceneSimulation {
   equation: string;
   states: SceneState[];
   terminalState: SceneState;
-  trace: Array<{
-    sequence: number;
-    state: SceneState;
-    status: 'observed' | 'verified';
-    evidence: string;
-  }>;
+  trace: SceneTrace;
+  branches: SceneBranch[];
+  branchCount: number;
+  continuation: 'bounded-sample-of-infinite-potential';
   provenance: {
     source: 'local-simulation';
-    ruleVersion: 'scene-equation.v1';
+    ruleVersion: 'scene-equation.v2';
     deterministic: true;
     verified: false;
     note: string;
