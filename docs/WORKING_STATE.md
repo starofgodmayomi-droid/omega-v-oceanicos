@@ -323,3 +323,11 @@ A bounded containment slice is prepared locally in `apps/web/src/verify.ts`: `im
 Observed local evidence for this slice: focused verifier tests passed (28 tests), the complete DOM project passed (60 tests), targeted ESLint passed with zero warnings, targeted Prettier passed, TypeScript type-check passed, and `git diff --check` passed. The change is uncommitted and unpublished; hosted verification is still required before any merge decision.
 
 Dissent preserved: explicit test cleanup, broader React lifecycle changes, and merely increasing the Jest budget were not selected because current evidence does not distinguish them as the responsible surface. The next discriminator is hosted CI on this bounded timeout slice.
+
+## Post-merge WebCrypto containment checkpoint — 2026-08-25
+
+PR #202 was authorized and squash-merged into `main` as `ca74342e422dd04e618b6a4793fe7abd2cbd8b16` (`ca74342`). The previously failing hosted Node 22 verification passed on the repaired PR head. The post-merge main Verification Pipeline [32890916962](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/actions/runs/32890916962) passed Node 20, Node 22, Windows compatibility, package/smoke, and attested artifact publication. Security Analysis [32890916948](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/actions/runs/32890916948) also passed.
+
+The bounded timeout prevents an indefinitely pending browser-side WebCrypto operation from leaving the dashboard in `Checking...`; it does not cancel an already-started primitive, establish the root cause of the earlier hosted stall, or expand the verifier’s trust claim. The verifier still reports only signature-origin/integrity evidence and retains the distinction between cryptographic validity and correctness, revocation, expiry, distributed consistency, and deployment reality.
+
+The local checkout was synchronized to `origin/main` at `ca74342` and observed clean before this documentation-only evidence update. The update itself is currently uncommitted and not published. No deployment or running production target was observed.
