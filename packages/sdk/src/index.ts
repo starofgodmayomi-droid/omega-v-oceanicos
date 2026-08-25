@@ -73,6 +73,7 @@ export type Health = {
             evidence: string;
           }>;
           unverifiedSurfaces: string[];
+          unverifiedReasons: string[];
         };
       };
     };
@@ -128,6 +129,7 @@ export type RuntimeState = {
       complete: false;
       surfaces: Array<{ name: string; encryption: string; keySource: string; evidence: string }>;
       unverifiedSurfaces: string[];
+      unverifiedReasons: string[];
     };
     trustBasis: { serviceReadiness: 0 | 1 };
   };
@@ -168,6 +170,7 @@ export type Observability = {
         complete: false;
         surfaces: Array<{ name: string; encryption: string; keySource: string; evidence: string }>;
         unverifiedSurfaces: string[];
+        unverifiedReasons: string[];
       };
     };
     provenance: {

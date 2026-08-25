@@ -138,6 +138,7 @@ type RuntimeHealth = {
         complete: false;
         surfaces: Array<{ name: string; encryption: string; keySource: string; evidence: string }>;
         unverifiedSurfaces: string[];
+        unverifiedReasons: string[];
       };
       skippedLogEntries: number;
     };
@@ -1211,7 +1212,7 @@ export function App(): React.JSX.Element {
             <span>AT-REST COVERAGE</span>
             <strong>
               {runtimeHealth?.checks.persistence
-                ? `${runtimeHealth.checks.persistence.coverage.surfaces.map((surface) => `${surface.name}:${surface.encryption}`).join(' / ')} / UNVERIFIED: ${runtimeHealth.checks.persistence.coverage.unverifiedSurfaces.join(', ')}`
+                ? `${runtimeHealth.checks.persistence.coverage.surfaces.map((surface) => `${surface.name}:${surface.encryption}`).join(' / ')} / UNVERIFIED: ${runtimeHealth.checks.persistence.coverage.unverifiedSurfaces.join(', ')} / WHY: ${runtimeHealth.checks.persistence.coverage.unverifiedReasons.join(' | ')}`
                 : 'UNKNOWN'}
             </strong>
           </div>

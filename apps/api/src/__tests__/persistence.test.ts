@@ -182,6 +182,12 @@ describe('runtime persistence', () => {
       'backups',
       'external services',
     ]);
+    expect(coverage.unverifiedReasons).toEqual([
+      'no database persistence adapter is configured',
+      'no object-storage persistence adapter is configured',
+      'backup encryption and restore evidence are not connected to this runtime',
+      'external-service persistence and key custody are outside this process boundary',
+    ]);
 
     const encrypted = persistenceCoverage({
       enabled: true,

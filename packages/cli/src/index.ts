@@ -72,6 +72,7 @@ type HealthResponse = {
             evidence: string;
           }>;
           unverifiedSurfaces: string[];
+          unverifiedReasons: string[];
         };
         skippedLogEntries: number;
       };
@@ -326,6 +327,7 @@ async function health(argv: string[], fetchImpl: FetchLike): Promise<number> {
         `COORDINATION  policy=${checks.persistence.coordinationPolicy?.mode ?? 'unknown'} reference=${checks.persistence.coordinationPolicy?.reference ?? 'none'} verified=${checks.persistence.coordinationPolicy?.verified ?? 'unknown'} reason=${checks.persistence.coordinationPolicy?.reason ?? 'none'}`,
         `COVERAGE     ${checks.persistence.coverage?.surfaces?.map((surface) => `${surface.name}=${surface.encryption}/${surface.keySource}`).join(', ') ?? 'unknown'}`,
         `UNVERIFIED   ${checks.persistence.coverage?.unverifiedSurfaces?.join(', ') ?? 'unknown'} complete=${checks.persistence.coverage?.complete ?? 'unknown'}`,
+        `WHY          ${checks.persistence.coverage?.unverifiedReasons?.join(' | ') ?? 'unknown'}`,
         `POLICY        algorithm=${policy.attestationAlgorithm} authMode=${policy.authMode ?? 'unknown'} ttl=${policy.attestationTtlMs ?? 'off'} adminAllowlistRequired=${policy.adminOperatorAllowlistRequired ?? 'unknown'} revocation=${policy.revocationEnabled}`,
         `OBSERVED      ${body.timestamp}`,
       ].join('\n') + '\n'
