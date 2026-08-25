@@ -88,6 +88,19 @@ const waitForHealth = async () => {
     if (health.body?.data?.readiness !== 'ready') {
       throw new Error(`health readiness was ${health.body?.data?.readiness}`);
     }
+    const coverage = health.body?.data?.checks?.persistence?.coverage;
+    const expectedUnverifiedReasons = [
+      'no database persistence adapter is configured',
+      'no object-storage persistence adapter is configured',
+      'backup encryption and restore evidence are not connected to this runtime',
+      'external-service persistence and key custody are outside this process boundary',
+    ];
+    if (
+      JSON.stringify(coverage?.unverifiedReasons) !== JSON.stringify(expectedUnverifiedReasons) ||
+      coverage?.complete !== false
+    ) {
+      throw new Error('persistence coverage evidence boundary did not match the contract');
+    }
     if (scene.terminalState !== 'return' || scene.provenance?.verified !== false) {
       throw new Error('scene simulation evidence boundary did not match the contract');
     }
