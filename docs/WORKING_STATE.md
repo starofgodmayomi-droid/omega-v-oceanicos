@@ -313,3 +313,13 @@ The simulation is an executable symbolic model, not an observation of a physical
 The coordination declaration now carries `evidence=runtime-observed`, `scope=single-process`, an explicit bounded limitation list, and `verified=false` across persistence, API health/state, SDK, CLI, Web, and tests. The declaration remains a local observation boundary and does not claim distributed consistency, leader election, replica agreement, global ordering, external coordinator control, deployment availability, or production orchestration.
 
 Local verification passed `pnpm format:check`, `pnpm lint`, `pnpm type-check`, focused API/persistence tests with 81 tests, `pnpm test:coverage` with 46 suites and 950 tests, `pnpm build`, `pnpm smoke:api`, and `git diff --check`. The change remains local and unpublished; the next stop is the human publication gate.
+
+## Bounded WebCrypto failure containment checkpoint — 2026-08-25
+
+Hosted PR #202 showed the same Node 22 failure twice in `apps/web/src/__tests__/dom/App.test.tsx`: the real attestation panel remained in `Checking...` and the 30-second status assertion timed out, while Node 20, Windows, CodeQL, and the rest of the observed matrix passed. The captured DOM was rendered rather than empty; the unresolved operation was the browser-side WebCrypto path. Three repeated local Node 22 DOM-suite runs passed, so the hosted behavior remains environment-sensitive and was not claimed fixed by recurrence alone.
+
+A bounded containment slice is prepared locally in `apps/web/src/verify.ts`: `importKey` and `verify` now each have a 2-second timeout and return the existing structured `stage: crypto` failure contract instead of allowing the dashboard to remain indefinitely in `Checking...`. `apps/web/src/__tests__/verify.test.ts` adds a never-settling WebCrypto regression test. This does not cancel the underlying primitive, prove the cause of the hosted stall, or claim distributed or production execution.
+
+Observed local evidence for this slice: focused verifier tests passed (28 tests), the complete DOM project passed (60 tests), targeted ESLint passed with zero warnings, targeted Prettier passed, TypeScript type-check passed, and `git diff --check` passed. The change is uncommitted and unpublished; hosted verification is still required before any merge decision.
+
+Dissent preserved: explicit test cleanup, broader React lifecycle changes, and merely increasing the Jest budget were not selected because current evidence does not distinguish them as the responsible surface. The next discriminator is hosted CI on this bounded timeout slice.
