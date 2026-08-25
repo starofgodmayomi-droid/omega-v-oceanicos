@@ -894,7 +894,8 @@ app.post('/scene/simulate', (req: Request, res: Response) => {
   try {
     const seed = typeof req.body?.seed === 'string' ? req.body.seed : undefined;
     const steps = req.body?.steps === undefined ? undefined : Number(req.body.steps);
-    const simulation = simulateScene({ seed, steps });
+    const branches = req.body?.branches === undefined ? undefined : Number(req.body.branches);
+    const simulation = simulateScene({ seed, steps, branches });
     res.json({
       data: simulation,
       timestamp: new Date().toISOString(),
@@ -2473,7 +2474,7 @@ const startServer = () =>
         '  POST   /jobs/:jobId/claim - Claim a local job (opt-in)',
         '  POST   /jobs/:jobId/complete - Complete a local job (opt-in)',
         '  POST   /jobs/:jobId/fail - Fail a local job (opt-in)',
-        '  POST   /scene/simulate   - Run bounded Ω∞v scene simulation',
+        '  POST   /scene/simulate   - Run bounded Ω∞v multiverse perspective simulation',
         '',
       ].join('\n')
     );

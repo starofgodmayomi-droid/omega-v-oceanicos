@@ -1,5 +1,11 @@
 import { createHash } from 'node:crypto';
-import type { SceneSimulation, SceneSimulationInput, SceneState } from '@omega-v/types';
+import type {
+  SceneBranch,
+  SceneSimulation,
+  SceneSimulationInput,
+  SceneState,
+  SceneTrace,
+} from '@omega-v/types';
 
 const SCENE_STATES: readonly SceneState[] = [
   'darkness',
@@ -19,6 +25,9 @@ const SCENE_STATES: readonly SceneState[] = [
 
 const DEFAULT_SEED = 'omega-v-scene';
 const MAX_STEPS = 32;
+const MAX_BRANCHES = 8;
+const EQUATION =
+  'DARKNESS→POSSIBILITY→OCEAN→STAR→WATER_FORM→MANY_FORMS→LONELINESS→HUMAN_FORM→MISRECOGNITION→BOUNDARY→QUESTION→FOREST→RETURN';
 
 const digest = (value: string): string =>
   `sha256:${createHash('sha256').update(value, 'utf8').digest('hex').slice(0, 16)}`;
@@ -36,35 +45,74 @@ const boundedSteps = (steps: number | undefined): number => {
   return Math.min(steps, SCENE_STATES.length);
 };
 
+const boundedBranches = (branches: number | undefined): number => {
+  if (branches === undefined) return 1;
+  if (!Number.isInteger(branches) || branches < 1 || branches > MAX_BRANCHES) {
+    throw new Error(`branches must be an integer between 1 and ${MAX_BRANCHES}`);
+  }
+  return branches;
+};
+
+const branchStates = (seed: string, branchIndex: number, steps: number): SceneState[] => {
+  if (branchIndex === 0) return SCENE_STATES.slice(0, steps);
+  const available = SCENE_STATES.slice(1);
+  const offset =
+    createHash('sha256').update(`${seed}:branch:${branchIndex}`, 'utf8').digest().readUInt32BE(0) %
+    available.length;
+  return Array.from({ length: steps }, (_, sequence) =>
+    sequence === 0 ? 'darkness' : available[(offset + sequence - 1) % available.length]
+  );
+};
+
+const traceFor = (seed: string, branchIndex: number, states: SceneState[]): SceneTrace =>
+  states.map((state, sequence) => ({
+    sequence,
+    state,
+    status: sequence === 0 ? ('observed' as const) : ('verified' as const),
+    evidence: `scene:${state}:${digest(`${seed}:branch:${branchIndex}:${sequence}:${state}`)}`,
+  }));
+
+const branchFor = (seed: string, branchIndex: number, steps: number): SceneBranch => {
+  const states = branchStates(seed, branchIndex, steps);
+  return {
+    id: `scene-branch-${digest(`${seed}:branch:${branchIndex}:${steps}`)}`,
+    index: branchIndex,
+    perspective: `point-of-view-${branchIndex + 1}`,
+    states,
+    terminalState: states[states.length - 1] ?? 'darkness',
+    trace: traceFor(seed, branchIndex, states),
+    divergenceEvidence: `scene:divergence:${digest(`${seed}:branch:${branchIndex}`)}`,
+  };
+};
+
 export const sceneStates = (): readonly SceneState[] => SCENE_STATES;
 
 export const simulateScene = (input: SceneSimulationInput = {}): SceneSimulation => {
   const seed = boundedSeed(input.seed);
   const steps = boundedSteps(input.steps);
-  const states = SCENE_STATES.slice(0, steps);
+  const branchCount = boundedBranches(input.branches);
+  const branches = Array.from({ length: branchCount }, (_, branchIndex) =>
+    branchFor(seed, branchIndex, steps)
+  );
+  const primary = branches[0];
   const startedAt = new Date().toISOString();
-  const trace = states.map((state, index) => ({
-    sequence: index,
-    state,
-    status: index === 0 ? ('observed' as const) : ('verified' as const),
-    evidence: `scene:${state}:${digest(`${seed}:${index}:${state}`)}`,
-  }));
-  const terminalState = states[states.length - 1] ?? 'darkness';
 
   return {
-    id: `scene-${digest(`${seed}:${steps}`)}`,
+    id: `scene-${digest(`${seed}:${steps}:${branchCount}`)}`,
     seed,
-    equation:
-      'DARKNESS→POSSIBILITY→OCEAN→STAR→WATER_FORM→MANY_FORMS→LONELINESS→HUMAN_FORM→MISRECOGNITION→BOUNDARY→QUESTION→FOREST→RETURN',
-    states,
-    terminalState,
-    trace,
+    equation: EQUATION,
+    states: primary.states,
+    terminalState: primary.terminalState,
+    trace: primary.trace,
+    branches,
+    branchCount,
+    continuation: 'bounded-sample-of-infinite-potential',
     provenance: {
       source: 'local-simulation',
-      ruleVersion: 'scene-equation.v1',
+      ruleVersion: 'scene-equation.v2',
       deterministic: true,
       verified: false,
-      note: 'Symbolic simulation evidence only; it is not a claim about physical cosmology or consciousness.',
+      note: 'Bounded symbolic perspectives only; this is not a claim about physical multiverses, cosmology, or consciousness.',
     },
     createdAt: startedAt,
   };

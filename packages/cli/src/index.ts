@@ -234,7 +234,7 @@ function usage(): string {
     'omega reencrypt-persistence --reason REASON --operator-id ID [--url URL] [--admin-token TOKEN]',
     'omega verify --attestation-json JSON [--url URL] [--token TOKEN]',
     'omega policy [--url URL] [--token TOKEN]',
-    'omega scene [--seed SEED] [--steps N] [--url URL] [--token TOKEN]',
+    'omega scene [--seed SEED] [--steps N] [--branches N] [--url URL] [--token TOKEN]',
     '',
     'Read live runtime and evidence from the Omega V API.',
     '',
@@ -741,6 +741,7 @@ async function audit(argv: string[], fetchImpl: FetchLike): Promise<number> {
 async function scene(argv: string[], fetchImpl: FetchLike): Promise<number> {
   const seed = option(argv, '--seed');
   const steps = option(argv, '--steps');
+  const branches = option(argv, '--branches');
   const endpoint = `${baseUrl(argv).replace(/\/$/, '')}/scene/simulate`;
   try {
     const response = await fetchImpl(endpoint, {
@@ -749,6 +750,7 @@ async function scene(argv: string[], fetchImpl: FetchLike): Promise<number> {
       body: JSON.stringify({
         ...(seed ? { seed } : {}),
         ...(steps ? { steps: Number(steps) } : {}),
+        ...(branches ? { branches: Number(branches) } : {}),
       }),
     });
     const body = (await response.json()) as {
@@ -756,6 +758,9 @@ async function scene(argv: string[], fetchImpl: FetchLike): Promise<number> {
         equation: string;
         states: string[];
         terminalState: string;
+        branches: Array<{ perspective: string; terminalState: string }>;
+        branchCount: number;
+        continuation: string;
         provenance: { ruleVersion: string; verified: boolean; deterministic: boolean };
       };
       message?: string;
@@ -768,9 +773,11 @@ async function scene(argv: string[], fetchImpl: FetchLike): Promise<number> {
     }
     process.stdout.write(
       [
-        `SCENE         ${body.data.terminalState} states=${body.data.states.length}`,
+        `SCENE         ${body.data.terminalState} states=${body.data.states.length} branches=${body.data.branchCount}`,
         `EQUATION      ${body.data.equation}`,
         `TRACE         ${body.data.states.join(' → ')}`,
+        `PERSPECTIVES  ${body.data.branches.map((branch) => `${branch.perspective}=${branch.terminalState}`).join(', ')}`,
+        `CONTINUATION  ${body.data.continuation}`,
         `PROVENANCE    rule=${body.data.provenance.ruleVersion} deterministic=${body.data.provenance.deterministic} verified=${body.data.provenance.verified}`,
       ].join('\\n') + '\\n'
     );

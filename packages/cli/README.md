@@ -147,6 +147,6 @@ node packages/cli/dist/index.js jobs \
 
 ## Scene equation simulation
 
-`omega scene [--seed SEED] [--steps N]` calls `POST /scene/simulate` and renders the bounded Ω∞v scene trace, terminal state, rule version, deterministic flag, and `verified=false` boundary. This is symbolic local-simulation evidence only; it is not proof of cosmology, consciousness, sentience, or execution in an external world.
+`omega scene [--seed SEED] [--steps N] [--branches N]` calls `POST /scene/simulate` and renders the bounded Ω∞v scene trace, terminal state, finite point-of-view branches, continuation marker, rule version, deterministic flag, and `verified=false` boundary. Branches are bounded to a finite sample of infinite potential, not an assertion that infinite worlds were observed. This is symbolic local-simulation evidence only; it is not proof of cosmology, consciousness, sentience, or execution in an external world.
 
 The health output also prints `COORDINATION policy=local-single-process|operator-coordinated|external-coordinator|invalid reference=... verified=false`. This is a bounded declaration of the configured coordination boundary; it does not prove distributed consistency, leader election, replica agreement, external coordinator control, or deployment availability.
