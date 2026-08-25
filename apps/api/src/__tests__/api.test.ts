@@ -261,6 +261,12 @@ describe('API runtime contracts', () => {
           },
         ],
         unverifiedSurfaces: ['databases', 'object storage', 'backups', 'external services'],
+        unverifiedReasons: [
+          'no database persistence adapter is configured',
+          'no object-storage persistence adapter is configured',
+          'backup encryption and restore evidence are not connected to this runtime',
+          'external-service persistence and key custody are outside this process boundary',
+        ],
       },
       skippedLogEntries: 0,
     });

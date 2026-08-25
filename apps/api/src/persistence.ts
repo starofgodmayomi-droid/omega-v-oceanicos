@@ -72,6 +72,7 @@ export type PersistenceCoverage = {
     evidence: 'runtime-observed';
   }>;
   unverifiedSurfaces: string[];
+  unverifiedReasons: string[];
 };
 
 export const persistenceCoverage = (input: {
@@ -113,6 +114,12 @@ export const persistenceCoverage = (input: {
     },
   ],
   unverifiedSurfaces: ['databases', 'object storage', 'backups', 'external services'],
+  unverifiedReasons: [
+    'no database persistence adapter is configured',
+    'no object-storage persistence adapter is configured',
+    'backup encryption and restore evidence are not connected to this runtime',
+    'external-service persistence and key custody are outside this process boundary',
+  ],
 });
 
 /**

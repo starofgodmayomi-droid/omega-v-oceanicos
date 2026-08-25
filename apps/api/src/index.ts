@@ -1151,6 +1151,7 @@ app.get('/health', (_req: Request, res: Response) => {
             evidence: string;
           }>;
           unverifiedSurfaces: string[];
+          unverifiedReasons: string[];
         };
         skippedLogEntries: number;
       };
