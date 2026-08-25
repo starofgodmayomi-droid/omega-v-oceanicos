@@ -132,6 +132,9 @@ type RuntimeHealth = {
         mode: string;
         reference: string | null;
         reason: string | null;
+        evidence: 'runtime-observed';
+        scope: 'single-process';
+        limitations: string[];
         verified: false;
       };
       coverage: {
@@ -1204,7 +1207,7 @@ export function App(): React.JSX.Element {
             <span>COORDINATION</span>
             <strong>
               {runtimeHealth?.checks.persistence
-                ? `${runtimeHealth.checks.persistence.coordinationPolicy.mode.toUpperCase()} / ${runtimeHealth.checks.persistence.coordinationPolicy.reference ?? 'NO REFERENCE'} / VERIFIED=${runtimeHealth.checks.persistence.coordinationPolicy.verified} / ${runtimeHealth.checks.persistence.coordinationPolicy.reason ?? 'DECLARATION ONLY'}`
+                ? `${runtimeHealth.checks.persistence.coordinationPolicy.mode.toUpperCase()} / ${runtimeHealth.checks.persistence.coordinationPolicy.scope} / ${runtimeHealth.checks.persistence.coordinationPolicy.evidence} / VERIFIED=${runtimeHealth.checks.persistence.coordinationPolicy.verified} / ${runtimeHealth.checks.persistence.coordinationPolicy.reason ?? 'DECLARATION ONLY'} / LIMITS=${runtimeHealth.checks.persistence.coordinationPolicy.limitations.join(' | ')}`
                 : 'UNKNOWN'}
             </strong>
           </div>
