@@ -10,6 +10,25 @@
  * specification is the contract, not this repository.
  */
 
+const WEB_CRYPTO_TIMEOUT_MS = 2_000;
+
+const withTimeout = async <T>(promise: Promise<T>, operation: string): Promise<T> =>
+  new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(`WebCrypto ${operation} timed out after ${WEB_CRYPTO_TIMEOUT_MS}ms`));
+    }, WEB_CRYPTO_TIMEOUT_MS);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error: unknown) => {
+        clearTimeout(timer);
+        reject(error);
+      }
+    );
+  });
+
 /** The eight fields the signature covers, in the order the spec publishes. */
 export const SIGNED_FIELDS = [
   'verificationId',
@@ -186,18 +205,18 @@ export async function verifyAttestation(
   }
 
   try {
-    const key = await implementation.importKey(
-      'spki',
-      asBufferSource(der),
-      { name: 'Ed25519' },
-      false,
-      ['verify']
+    const key = await withTimeout(
+      implementation.importKey('spki', asBufferSource(der), { name: 'Ed25519' }, false, ['verify']),
+      'importing the public key'
     );
-    const ok = await implementation.verify(
-      { name: 'Ed25519' },
-      key,
-      asBufferSource(signature),
-      asBufferSource(buildSignedBytes(attestation))
+    const ok = await withTimeout(
+      implementation.verify(
+        { name: 'Ed25519' },
+        key,
+        asBufferSource(signature),
+        asBufferSource(buildSignedBytes(attestation))
+      ),
+      'verifying the signature'
     );
 
     return ok

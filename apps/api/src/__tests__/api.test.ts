@@ -230,6 +230,13 @@ describe('API runtime contracts', () => {
         mode: 'local-single-process',
         reference: null,
         reason: null,
+        evidence: 'runtime-observed',
+        scope: 'single-process',
+        limitations: [
+          'does not prove distributed consistency',
+          'does not prove leader election or replica agreement',
+          'does not prove global ordering or external coordinator control',
+        ],
         verified: false,
       },
       coverage: {

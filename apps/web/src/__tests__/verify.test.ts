@@ -164,6 +164,20 @@ describe('browser attestation verifier', () => {
     expect(published.startsWith('{"verificationId"')).toBe(true);
   });
 
+  it('returns a bounded crypto failure when WebCrypto stalls', async () => {
+    const stalled = {
+      importKey: () => new Promise<CryptoKey>(() => undefined),
+    } as unknown as SubtleCrypto;
+
+    const result = await verifyAttestation(signed(), publicKeyPem, stalled);
+
+    expect(result).toEqual({
+      valid: false,
+      stage: 'crypto',
+      reason: 'could not verify: WebCrypto importing the public key timed out after 2000ms',
+    });
+  });
+
   it('says it cannot verify rather than calling an attestation invalid', async () => {
     // The distinction that matters: a runtime without Ed25519 must not
     // report a good signature as forged. Simulated by handing the verifier

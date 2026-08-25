@@ -1140,6 +1140,9 @@ app.get('/health', (_req: Request, res: Response) => {
           mode: string;
           reference: string | null;
           reason: string | null;
+          evidence: 'runtime-observed';
+          scope: 'single-process';
+          limitations: string[];
           verified: false;
         };
         coverage: {

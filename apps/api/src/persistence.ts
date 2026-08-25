@@ -61,6 +61,9 @@ export type PersistenceCoordinationPolicy = {
   mode: PersistenceCoordinationMode;
   reference: string | null;
   reason: string | null;
+  evidence: 'runtime-observed';
+  scope: 'single-process';
+  limitations: string[];
   verified: false;
 };
 export type PersistenceCoverage = {
@@ -173,6 +176,17 @@ export const parsePersistenceCustodyPolicy = (
   return { mode: normalizedMode, reference: normalizedReference, reason: null, verified: false };
 };
 
+const coordinationEvidence = {
+  evidence: 'runtime-observed' as const,
+  scope: 'single-process' as const,
+  limitations: [
+    'does not prove distributed consistency',
+    'does not prove leader election or replica agreement',
+    'does not prove global ordering or external coordinator control',
+  ],
+  verified: false as const,
+};
+
 export const parsePersistenceCoordinationPolicy = (
   mode?: string,
   reference?: string
@@ -180,14 +194,14 @@ export const parsePersistenceCoordinationPolicy = (
   const normalizedMode = mode?.trim() || 'local-single-process';
   const normalizedReference = reference?.trim() || null;
   if (normalizedMode === 'local-single-process') {
-    return { mode: normalizedMode, reference: null, reason: null, verified: false };
+    return { mode: normalizedMode, reference: null, reason: null, ...coordinationEvidence };
   }
   if (normalizedMode !== 'operator-coordinated' && normalizedMode !== 'external-coordinator') {
     return {
       mode: 'invalid',
       reference: null,
       reason: 'unsupported coordination policy mode',
-      verified: false,
+      ...coordinationEvidence,
     };
   }
   if (
@@ -199,10 +213,15 @@ export const parsePersistenceCoordinationPolicy = (
       mode: 'invalid',
       reference: null,
       reason: 'coordination policy reference is missing or invalid',
-      verified: false,
+      ...coordinationEvidence,
     };
   }
-  return { mode: normalizedMode, reference: normalizedReference, reason: null, verified: false };
+  return {
+    mode: normalizedMode,
+    reference: normalizedReference,
+    reason: null,
+    ...coordinationEvidence,
+  };
 };
 
 export const parsePersistenceRecoveryPolicy = (

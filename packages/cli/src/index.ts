@@ -61,6 +61,9 @@ type HealthResponse = {
           mode: string;
           reference: string | null;
           reason: string | null;
+          evidence: 'runtime-observed';
+          scope: 'single-process';
+          limitations: string[];
           verified: false;
         };
         coverage: {
@@ -324,7 +327,8 @@ async function health(argv: string[], fetchImpl: FetchLike): Promise<number> {
         `RECOVERY     policy=${checks.persistence.recoveryPolicy?.mode ?? 'unknown'} reference=${checks.persistence.recoveryPolicy?.reference ?? 'none'} reason=${checks.persistence.recoveryPolicy?.reason ?? 'none'}`,
         `DELETION     policy=${checks.persistence.deletionPolicy?.mode ?? 'unknown'} verified=${checks.persistence.deletionPolicy?.verified ?? 'unknown'} reason=${checks.persistence.deletionPolicy?.reason ?? 'none'}`,
         `CUSTODY      policy=${checks.persistence.custodyPolicy?.mode ?? 'unknown'} reference=${checks.persistence.custodyPolicy?.reference ?? 'none'} verified=${checks.persistence.custodyPolicy?.verified ?? 'unknown'} reason=${checks.persistence.custodyPolicy?.reason ?? 'none'}`,
-        `COORDINATION  policy=${checks.persistence.coordinationPolicy?.mode ?? 'unknown'} reference=${checks.persistence.coordinationPolicy?.reference ?? 'none'} verified=${checks.persistence.coordinationPolicy?.verified ?? 'unknown'} reason=${checks.persistence.coordinationPolicy?.reason ?? 'none'}`,
+        `COORDINATION  policy=${checks.persistence.coordinationPolicy?.mode ?? 'unknown'} scope=${checks.persistence.coordinationPolicy?.scope ?? 'unknown'} evidence=${checks.persistence.coordinationPolicy?.evidence ?? 'unknown'} verified=${checks.persistence.coordinationPolicy?.verified ?? 'unknown'} reason=${checks.persistence.coordinationPolicy?.reason ?? 'none'}`,
+        `COORDINATION-LIMITS ${checks.persistence.coordinationPolicy?.limitations?.join(' | ') ?? 'unknown'}`,
         `COVERAGE     ${checks.persistence.coverage?.surfaces?.map((surface) => `${surface.name}=${surface.encryption}/${surface.keySource}`).join(', ') ?? 'unknown'}`,
         `UNVERIFIED   ${checks.persistence.coverage?.unverifiedSurfaces?.join(', ') ?? 'unknown'} complete=${checks.persistence.coverage?.complete ?? 'unknown'}`,
         `WHY          ${checks.persistence.coverage?.unverifiedReasons?.join(' | ') ?? 'unknown'}`,

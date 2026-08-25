@@ -62,6 +62,9 @@ export type Health = {
           mode: string;
           reference: string | null;
           reason: string | null;
+          evidence: 'runtime-observed';
+          scope: 'single-process';
+          limitations: string[];
           verified: false;
         };
         coverage: {
@@ -123,6 +126,9 @@ export type RuntimeState = {
       mode: string;
       reference: string | null;
       reason: string | null;
+      evidence: 'runtime-observed';
+      scope: 'single-process';
+      limitations: string[];
       verified: false;
     };
     coverage: {

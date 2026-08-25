@@ -322,3 +322,11 @@ Local verification passed formatting, type-checking, full coverage, and diff hyg
 The next production gap remains bounded by evidence: broader data-at-rest coverage, HSM/KMS custody, secure deletion and recovery, distributed coordination and revocation consistency, identity proofing, deployment beyond the local healthcheck, mobile support, or the TypeScript 7.0.2 upstream blocker. The untrusted localStorage/service-worker prototype is not an accepted production design, and the hosted WebCrypto timeout remains an explicitly recorded intermittent risk.
 
 **Last Updated**: 2026-08-25
+
+## Bounded coordination evidence — local checkpoint — 2026-08-25
+
+The coordination declaration now carries explicit runtime evidence fields across persistence, API health/state, SDK contracts, CLI output, Web dashboard rendering, and tests: `evidence=runtime-observed`, `scope=single-process`, a bounded limitation list, and `verified=false`. Invalid or reference-less declarations remain fail-closed according to the existing readiness contract. This is local process evidence only; it does not prove distributed consistency, leader election, replica agreement, global ordering, external coordinator control, deployment availability, or production orchestration.
+
+Local verification passed formatting, lint, type-check, focused API/persistence tests (81 tests), full coverage with 46 suites and 950 tests, build, API smoke, and diff hygiene. No branch has been pushed or published for this slice.
+
+**Last Updated**: 2026-08-25

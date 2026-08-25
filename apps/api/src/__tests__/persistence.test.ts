@@ -101,6 +101,13 @@ describe('runtime persistence', () => {
       mode: 'local-single-process',
       reference: null,
       reason: null,
+      evidence: 'runtime-observed',
+      scope: 'single-process',
+      limitations: [
+        'does not prove distributed consistency',
+        'does not prove leader election or replica agreement',
+        'does not prove global ordering or external coordinator control',
+      ],
       verified: false,
     });
     expect(parsePersistenceCoordinationPolicy('operator-coordinated', 'operator-record-8')).toEqual(
@@ -108,6 +115,13 @@ describe('runtime persistence', () => {
         mode: 'operator-coordinated',
         reference: 'operator-record-8',
         reason: null,
+        evidence: 'runtime-observed',
+        scope: 'single-process',
+        limitations: [
+          'does not prove distributed consistency',
+          'does not prove leader election or replica agreement',
+          'does not prove global ordering or external coordinator control',
+        ],
         verified: false,
       }
     );
@@ -119,6 +133,13 @@ describe('runtime persistence', () => {
       mode: 'invalid',
       reference: null,
       reason: 'unsupported coordination policy mode',
+      evidence: 'runtime-observed',
+      scope: 'single-process',
+      limitations: [
+        'does not prove distributed consistency',
+        'does not prove leader election or replica agreement',
+        'does not prove global ordering or external coordinator control',
+      ],
       verified: false,
     });
     expect(parsePersistenceCoordinationPolicy('external-coordinator', 'line\nbreak').mode).toBe(
