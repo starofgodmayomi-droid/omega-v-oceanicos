@@ -68,12 +68,24 @@ describe('the pipeline report says what happened', () => {
     expect(report).toContain("job.conclusion ?? 'no conclusion'");
   });
 
-  it('counts only success as a pass', () => {
+  it('counts only success as a pass, among the jobs that were meant to run', () => {
     // Skipped and cancelled are not failures, but neither is evidence that
     // anything was checked. A cancelled matrix leg reading as a pass is
     // exactly how a red pipeline was once reported green here.
-    expect(report).toMatch(/every\(\(job\) => stateOf\(job\) === 'success'\)/);
-    expect(report).toMatch(/jobs\.length > 0/);
+    expect(config).toMatch(/required\.every\(\(job\) => stateOf\(job\) === 'success'\)/);
+    expect(config).toMatch(/required\.length > 0/);
+  });
+
+  it('does not count the publish job, which is skipped on every pull request', () => {
+    // The first version of this report counted every observed job, which
+    // would have marked every pull request as failed: `Publish attested
+    // artifact` is gated on a push to main and skips here by design. It is
+    // still listed with its real state — excluded from the verdict, not
+    // from the record.
+    const publish = workflow.slice(workflow.indexOf('  publish:'));
+    expect(publish).toMatch(/if:.*github\.event_name == 'push'/);
+    expect(config).toContain("new Set(['Publish attested artifact'])");
+    expect(config).toContain('jobs.filter((job) => !NOT_REQUIRED_ON_PULL_REQUESTS.has(job.name))');
   });
 
   it('names every job it observed, not a fixed list of three', () => {

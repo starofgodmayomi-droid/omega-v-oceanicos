@@ -448,9 +448,21 @@ jobs:
             const stateOf = (job) =>
               job.status === 'completed' ? (job.conclusion ?? 'no conclusion') : job.status;
 
-            // Only `success` counts. Skipped and cancelled are not failures,
-            // but neither is evidence that anything was checked.
-            const ok = jobs.length > 0 && jobs.every((job) => stateOf(job) === 'success');
+            // `Publish attested artifact` is gated on a push to main, so it
+            // is skipped on every pull request by design. It is listed with
+            // its real state but not counted, because a job that was never
+            // meant to run here is not a missing check.
+            //
+            // Named explicitly rather than inferred: if it is renamed, it
+            // becomes required and every pull request goes red, which is a
+            // loud wrong answer rather than a quiet one.
+            const NOT_REQUIRED_ON_PULL_REQUESTS = new Set(['Publish attested artifact']);
+            const required = jobs.filter((job) => !NOT_REQUIRED_ON_PULL_REQUESTS.has(job.name));
+
+            // Of the jobs that were meant to run, only `success` counts. A
+            // skipped or cancelled one is not a failure, but neither is it
+            // evidence that anything was checked.
+            const ok = required.length > 0 && required.every((job) => stateOf(job) === 'success');
             const mark = (state) =>
               state === 'success' ? '✓' : state === 'skipped' ? '–' : '✗';
 
