@@ -36,7 +36,15 @@ def signed_bytes(attestation):
     payload = {field: attestation[field] for field in SIGNED_FIELDS}
     # separators removes the whitespace json.dumps adds by default;
     # sort_keys stays off on purpose.
-    return json.dumps(payload, separators=(",", ":")).encode("utf-8")
+    #
+    # ensure_ascii=False is not cosmetic. Python escapes non-ASCII to
+    # \uXXXX by default; JavaScript's JSON.stringify emits the character
+    # and the signer encodes the result as UTF-8. With the default, an
+    # attestedBy of "Ω∞v-attestation-service" produced 219 bytes here
+    # against the signer's 212, and this verifier rejected a genuine
+    # attestation with "signature does not match this public key" — the
+    # same words it uses for a forgery.
+    return json.dumps(payload, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
 
 
 def verify(attestation, public_key_pem, expected_algorithm="Ed25519"):

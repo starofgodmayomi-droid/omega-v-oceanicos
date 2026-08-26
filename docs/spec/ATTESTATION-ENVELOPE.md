@@ -43,6 +43,16 @@ Serialise these eight keys in the order listed above, with no whitespace,
 and no other fields. `ruleVersions` is serialised in its own insertion
 order.
 
+**Non-ASCII characters are encoded, not escaped.** `JSON.stringify` emits
+`Ω` as the character itself and the signer encodes the result as UTF-8. A
+verifier that escapes it to `\u03a9` — which is the default in several
+JSON libraries, Python's included — computes different bytes and rejects
+valid attestations. The reference verifier shipped alongside this document
+did exactly that until an `attestedBy` of `"Ω∞v-attestation-service"`
+produced 219 bytes against the signer's 212. It reported the genuine
+attestation as `signature does not match this public key`, which is the
+same sentence it uses for a forgery.
+
 Fields **outside** the payload — `id`, `signature`, `signingKey`,
 `signingAlgorithm`, `status` — are not signed. Do not rely on them for
 trust decisions beyond the explicit checks below.
