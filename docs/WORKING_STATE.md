@@ -331,3 +331,9 @@ PR #202 was authorized and squash-merged into `main` as `ca74342e422dd04e618b6a4
 The bounded timeout prevents an indefinitely pending browser-side WebCrypto operation from leaving the dashboard in `Checking...`; it does not cancel an already-started primitive, establish the root cause of the earlier hosted stall, or expand the verifier’s trust claim. The verifier still reports only signature-origin/integrity evidence and retains the distinction between cryptographic validity and correctness, revocation, expiry, distributed consistency, and deployment reality.
 
 The local checkout was synchronized to `origin/main` at `ca74342` and observed clean before this documentation-only evidence update. The update itself is currently uncommitted and not published. No deployment or running production target was observed.
+
+## GitHub governance audit checkpoint — 2026-08-26
+
+Observed through the GitHub API for `starofgodmayomi-droid/omega-v-oceanicos`: the repository is public, `main` is the default branch, secret scanning and push protection are enabled, and the repository security policy is present. Dependabot security updates, secret-scanning non-provider patterns, and secret-scanning validity checks are disabled. The API reported that `main` is not branch-protected; required reviews and required status checks therefore remain a governance configuration gap rather than an assumed control.
+
+No repository setting was changed. These observations are configuration evidence only: they do not prove that secrets are absent, that all dependencies are safe, that hosted checks cannot be bypassed, or that the repository is deployed securely. Enabling branch protection or security automation would be an externally visible governance change and remains human-authorized work.
