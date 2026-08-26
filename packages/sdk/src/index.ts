@@ -369,6 +369,39 @@ export type LocalJobResponse = {
 };
 export type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
 
+/**
+ * What `/rules` publishes about the engine's rule set.
+ *
+ * `executable` is the field that matters. A rule's `definition` is a
+ * declaration, not something the engine interprets, so a rule list without
+ * that flag reads as though every entry runs. Rules the engine cannot
+ * execute fail verification rather than passing quietly — which is the
+ * right direction, but it means an operator otherwise learns about a
+ * misconfigured rule from a failed verdict instead of from the rule list.
+ *
+ * `registered` is every rule the engine holds; `count` is how many this
+ * response returned, which differs when a category filter is applied.
+ */
+export interface RulesResponse {
+  data: {
+    count: number;
+    registered: number;
+    executable: number;
+    category: string | null;
+    rules: Array<{
+      name: string;
+      version: string;
+      appliesTo: string[];
+      definition: string;
+      description: string;
+      createdAt: string;
+      active: boolean;
+      executable: boolean;
+    }>;
+  };
+  timestamp: string;
+}
+
 export class OmegaApiError extends Error {
   constructor(
     message: string,
@@ -434,6 +467,13 @@ export class OmegaClient {
     }
     const suffix = params.toString() ? `?${params.toString()}` : '';
     return this.get<AuditEventsResponse>(`/audit/events${suffix}`);
+  }
+
+  async getRules(query: { category?: string } = {}): Promise<RulesResponse> {
+    const params = new URLSearchParams();
+    if (query.category !== undefined) params.set('category', query.category);
+    const suffix = params.toString() ? `?${params.toString()}` : '';
+    return this.get<RulesResponse>(`/rules${suffix}`);
   }
 
   async getRuns(): Promise<{ data: RuntimeRun[] }> {
