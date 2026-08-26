@@ -63,7 +63,13 @@ spec = importlib.util.spec_from_file_location('reference_verifier', sys.argv[1])
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 
-sys.stdout.write(module.signed_bytes(json.load(sys.stdin)).hex())
+# Read and write bytes explicitly. Python's text streams use the locale
+# encoding, which is cp1252 on a Windows runner: the first version of this
+# driver used json.load(sys.stdin) and decoded the four UTF-8 bytes of an
+# emoji as four cp1252 characters, so the test failed on Windows only and
+# blamed the verifier for the harness's own mis-decoding.
+payload = json.loads(sys.stdin.buffer.read().decode('utf-8'))
+sys.stdout.write(module.signed_bytes(payload).hex())
 `;
 
   // Windows runners ship python.exe rather than python3; both are tried
@@ -72,9 +78,15 @@ sys.stdout.write(module.signed_bytes(json.load(sys.stdin)).hex())
     (candidate) => spawnSync(candidate, ['--version']).status === 0
   );
 
-  const referenceBytes = (attestation: Record<string, unknown>): string => {
+  const referenceBytes = (
+    attestation: Record<string, unknown>,
+    env: NodeJS.ProcessEnv = process.env
+  ): string => {
     const result = spawnSync(interpreter as string, ['-c', driver, script], {
-      input: JSON.stringify(attestation),
+      env,
+      // The driver reads stdin as bytes, so the input is handed over as
+      // bytes rather than left to the child's locale encoding.
+      input: Buffer.from(JSON.stringify(attestation), 'utf8'),
       encoding: 'utf8',
     });
     if (result.status !== 0) {
@@ -131,6 +143,19 @@ sys.stdout.write(module.signed_bytes(json.load(sys.stdin)).hex())
       // surface, and they are not covered by the case above.
       const subject = attestation('attestation-service 🌊');
       expect(referenceBytes(subject)).toBe(signerBytes(subject));
+    });
+
+    it('does not depend on the locale encoding of the child process', () => {
+      // The Windows runner reported this suite red once, and the harness was
+      // at fault rather than the verifier: Python's text streams use the
+      // locale encoding, cp1252 there, so json.load(sys.stdin) decoded the
+      // four UTF-8 bytes of an emoji as four cp1252 characters. Forcing a
+      // non-UTF-8 encoding here reproduces that on any platform, so the
+      // regression cannot come back only on Windows.
+      const subject = attestation('attestation-service 🌊');
+      expect(referenceBytes(subject, { ...process.env, PYTHONIOENCODING: 'cp1252' })).toBe(
+        signerBytes(subject)
+      );
     });
 
     it('covers only the eight signed fields', () => {
