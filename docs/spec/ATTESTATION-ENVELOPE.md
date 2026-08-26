@@ -53,6 +53,20 @@ produced 219 bytes against the signer's 212. It reported the genuine
 attestation as `signature does not match this public key`, which is the
 same sentence it uses for a forgery.
 
+**Numbers are serialised as JavaScript serialises them.** JSON has one
+number type; `JSON.stringify` writes `1` for a value of one whether the
+source text said `1` or `1.0`, while several libraries preserve the float
+form and write `1.0`. Those are different bytes and the signature covers
+only one of them. A producer that emits `"confidence": 1.0` will not agree
+with a verifier that reads it into an integer, so emit the JavaScript form.
+This signer always does; the hazard is for third-party producers and for
+tools that re-serialise an attestation in transit.
+
+**Unpaired surrogates are escaped, not encoded.** `JSON.stringify` has been
+well-formed since ES2019: it emits a lone surrogate as `\uXXXX` rather than
+raw. A verifier that encodes it directly will produce different bytes, or
+fail outright — UTF-8 cannot represent one.
+
 Fields **outside** the payload — `id`, `signature`, `signingKey`,
 `signingAlgorithm`, `status` — are not signed. Do not rely on them for
 trust decisions beyond the explicit checks below.

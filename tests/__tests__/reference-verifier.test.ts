@@ -159,6 +159,23 @@ sys.stdout.write(module.signed_bytes(payload).hex())
       );
     });
 
+    it('agrees on an unpaired surrogate, which JavaScript escapes', () => {
+      // The case ensure_ascii=False created rather than solved, found by
+      // testing the divergence classes an earlier version of this branch
+      // said it had reasoned about but not exercised.
+      //
+      // ES2019 made JSON.stringify well-formed: an unpaired surrogate is
+      // emitted as a \uXXXX escape. Python cannot encode one as UTF-8 and
+      // raises outright, so with ensure_ascii=False and no error handler
+      // the reference failed on input the signer handles cleanly — while
+      // the default it replaced had handled this one correctly.
+      //
+      // Neither setting is right on its own. This asserts both directions
+      // are covered at once.
+      const subject = attestation(`attestation-service ${JSON.parse('"\\ud800"')}`);
+      expect(referenceBytes(subject)).toBe(signerBytes(subject));
+    });
+
     it('agrees with the specification about its own published example', () => {
       // The other cases here are payloads this file invented. This one is
       // the attestation the document shows a reader, extracted from the
