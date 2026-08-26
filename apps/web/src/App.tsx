@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 // Aliased: App already has a verifyAttestation that asks the API. This one
 // asks nobody, which is the distinction the panel exists to make visible.
 import { verifyAttestation as verifyEnvelopeLocally, type VerificationOutcome } from './verify';
+import { evidenceStepClassName, evidenceStepLabel } from './evidence-step';
 import { eventLogTone, recoveryTone, verificationTone } from './status-tone';
 import './App.css';
 
@@ -55,7 +56,12 @@ type LoopResult = {
   verification: {
     id: string;
     summary: { passed: boolean; rulesApplied: number; rulesPassed: number; confidence: number };
-    evidencePath: Array<{ rule: string; passed: boolean; reasoning: string }>;
+    evidencePath: Array<{
+      rule: string;
+      passed: boolean;
+      reasoning: string;
+      evaluated?: boolean;
+    }>;
   };
   memory: { id: string; observationId: string; verificationId: string };
   attestation: {
@@ -1643,11 +1649,8 @@ export function App(): React.JSX.Element {
                     <span>VERIFICATION / EVIDENCE</span>
                     <code>{result.verification.id}</code>
                     {result.verification.evidencePath.map((step) => (
-                      <p
-                        className={step.passed ? 'evidence-pass' : 'evidence-fail'}
-                        key={step.rule}
-                      >
-                        {step.passed ? 'PASS' : 'FAIL'} / {step.reasoning}
+                      <p className={evidenceStepClassName(step)} key={step.rule}>
+                        {evidenceStepLabel(step)} / {step.reasoning}
                       </p>
                     ))}
                   </div>

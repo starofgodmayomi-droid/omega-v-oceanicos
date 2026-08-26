@@ -878,7 +878,8 @@ select:focus-visible {
   border-color: #71d8b7;
 }
 .evidence-pass,
-.evidence-fail {
+.evidence-fail,
+.evidence-unevaluated {
   margin: 8px 0 0;
   color: #78dcb9;
   font:
@@ -887,6 +888,20 @@ select:focus-visible {
 }
 .evidence-fail {
   color: #ed9986;
+}
+/*
+ * Deliberately not the failure red. A rule the engine could not run is not
+ * a rule that found something wrong, and colouring it like one restates
+ * the conflation the label was added to remove.
+ *
+ * --omega-unknown, because the brand system already named this state and a
+ * step the engine did not evaluate is exactly that. A new literal here
+ * would also have pushed the colour debt in brand.md from 109 to 110,
+ * which brand.test.ts refuses — correctly: the token existed and was the
+ * better answer.
+ */
+.evidence-unevaluated {
+  color: var(--omega-unknown);
 }
 .memory-note {
   display: block;
