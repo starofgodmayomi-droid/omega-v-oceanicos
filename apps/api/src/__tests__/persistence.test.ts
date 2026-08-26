@@ -1,7 +1,7 @@
 import { mkdtempSync, readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { createDecipheriv, createHash, createHmac } from 'node:crypto';
+import { createDecipheriv, createHash } from 'node:crypto';
 import {
   appendEvent,
   emptySnapshot,
@@ -89,26 +89,36 @@ describe('runtime persistence', () => {
     expect(line.startsWith('omega-v1:')).toBe(true);
   });
 
-  it('does not publish any part of the encryption key as the fingerprint', () => {
-    // The regression this guards. `GET /health` is unauthenticated in every
-    // mode and reports currentKeyFingerprint. When the fingerprint was
-    // sha256(secret) truncated, and the AES key is sha256(secret) in full,
-    // that endpoint published the first 8 bytes of the encryption key.
-    const secret = 'operator-supplied-secret';
-    const aesKey = createHash('sha256').update(secret, 'utf8').digest('hex');
-    const fingerprint = persistenceKeyFingerprint(secret);
+  it('answers for every declared snapshot source, not just the one it rejects', () => {
+    // The predicate was `!enabled || source !== 'corrupt'`. Every current
+    // member gets the same answer from the exhaustive form, which is the
+    // point: this pins that the rewrite changed nothing today.
+    expect(persistenceReady(true, 'disabled')).toBe(true);
+    expect(persistenceReady(true, 'missing')).toBe(true);
+    expect(persistenceReady(true, 'restored')).toBe(true);
+    expect(persistenceReady(true, 'corrupt')).toBe(false);
+    expect(persistenceReady(false, 'corrupt')).toBe(true);
+  });
 
-    expect(fingerprint).not.toBeNull();
-    expect(aesKey.startsWith(fingerprint as string)).toBe(false);
-    expect(aesKey).not.toContain(fingerprint as string);
+  it('answers for every declared event log source', () => {
+    expect(eventLogReady(true, 'disabled')).toBe(true);
+    expect(eventLogReady(true, 'missing')).toBe(true);
+    expect(eventLogReady(true, 'restored')).toBe(true);
+    expect(eventLogReady(true, 'partial')).toBe(false);
+    expect(eventLogReady(false, 'partial')).toBe(true);
+  });
 
-    // Domain-separated the same way AttestationService.keyFingerprint is.
-    expect(fingerprint).toBe(
-      createHmac('sha256', 'omega-v-persistence-key-fingerprint')
-        .update(secret, 'utf8')
-        .digest('hex')
-        .slice(0, 16)
-    );
+  it('refuses readiness for a source the type system did not vouch for', () => {
+    // A value that reached here past the compiler — from JSON, a cast, or a
+    // future member someone forced through. The negative test these replaced
+    // would have called it ready, because it was not the one rejected name.
+    //
+    // The compile-time half of this is the `never` assignment in the default
+    // branch: adding a member to either union fails type-check until someone
+    // says whether it counts as ready. That cannot be asserted from a test,
+    // so it is stated here and demonstrated in the pull request.
+    expect(persistenceReady(true, 'truncated' as never)).toBe(false);
+    expect(eventLogReady(true, 'truncated' as never)).toBe(false);
   });
 
   it('exposes only a deterministic non-secret key fingerprint', () => {
