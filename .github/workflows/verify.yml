@@ -405,6 +405,9 @@ jobs:
     if: always() && github.event_name == 'pull_request'
 
     permissions:
+      # actions: read, because the report now asks the API what each job
+      # actually did rather than reading three aggregate needs.* results.
+      actions: read
       pull-requests: write
 
     steps:
@@ -420,28 +423,47 @@ jobs:
       #
       # Here the job depends on everything it speaks for, runs once, and
       # reports the results it was actually given.
+      # needs.verify.result is one word for a whole matrix. When 20.x fails
+      # and 22.x passes it reads `failure`, and the leg that passed leaves no
+      # trace in the comment — which is the same loss fail-fast: false was
+      # turned off to prevent. The report now asks the API what each job did
+      # and prints the answers, so a cancelled leg reads `cancelled` and a
+      # job still running reads as still running rather than as absent.
       - name: Comment PR with the real result
         uses: actions/github-script@v9
         with:
           script: |
-            const verify = '${{ needs.verify.result }}';
-            const windows = '${{ needs.windows.result }}';
-            const docker = '${{ needs.docker.result }}';
-            const ok = verify === 'success' && windows === 'success' && docker === 'success';
-            const mark = (r) => (r === 'success' ? '✓' : r === 'skipped' ? '–' : '✗');
+            const { data } = await github.rest.actions.listJobsForWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.runId,
+              per_page: 100,
+            });
+
+            // This job is mid-run by definition and cannot report on itself.
+            const jobs = data.jobs.filter((job) => job.name !== 'Report pipeline result');
+
+            // A job that has not completed has no conclusion. Saying so is
+            // the point: "still running" is neither a pass nor a failure.
+            const stateOf = (job) =>
+              job.status === 'completed' ? (job.conclusion ?? 'no conclusion') : job.status;
+
+            // Only `success` counts. Skipped and cancelled are not failures,
+            // but neither is evidence that anything was checked.
+            const ok = jobs.length > 0 && jobs.every((job) => stateOf(job) === 'success');
+            const mark = (state) =>
+              state === 'success' ? '✓' : state === 'skipped' ? '–' : '✗';
 
             const body = [
               ok
                 ? '✅ Verification pipeline passed'
                 : '❌ Verification pipeline did not pass',
               '',
-              `- ${mark(verify)} verify (format, lint, type-check, test, coverage, build) — ${verify}`,
-              `- ${mark(windows)} Windows compatibility (format, type-check, test, build) — ${windows}`,
-              `- ${mark(docker)} package and smoke test — ${docker}`,
+              ...jobs.map((job) => `- ${mark(stateOf(job))} ${job.name} — ${stateOf(job)}`),
               '',
               ok
-                ? 'Every job this comment names completed successfully.'
-                : 'Details are in the checks tab. This comment reports what ran, not what was hoped for.',
+                ? `Every job in run ${context.runId} completed successfully.`
+                : `Read as: only \`success\` is a pass. Run ${context.runId}.`,
             ].join('\n');
 
             await github.rest.issues.createComment({
