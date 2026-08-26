@@ -1,4 +1,5 @@
 import { spawnSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 /**
@@ -156,6 +157,20 @@ sys.stdout.write(module.signed_bytes(payload).hex())
       expect(referenceBytes(subject, { ...process.env, PYTHONIOENCODING: 'cp1252' })).toBe(
         signerBytes(subject)
       );
+    });
+
+    it('agrees with the specification about its own published example', () => {
+      // The other cases here are payloads this file invented. This one is
+      // the attestation the document shows a reader, extracted from the
+      // markdown rather than from a fixture kept beside it, so the
+      // document, the reference and the signer are tied to one another
+      // rather than each to a private copy.
+      const spec = readFileSync(join(process.cwd(), 'docs/spec/ATTESTATION-ENVELOPE.md'), 'utf8');
+      const match = spec.match(/\*\*Attestation\*\*\s*```json\s*([\s\S]*?)```/);
+      if (!match) throw new Error('no attestation example found in the specification');
+
+      const published = JSON.parse(match[1]) as Record<string, unknown>;
+      expect(referenceBytes(published)).toBe(signerBytes(published));
     });
 
     it('covers only the eight signed fields', () => {
