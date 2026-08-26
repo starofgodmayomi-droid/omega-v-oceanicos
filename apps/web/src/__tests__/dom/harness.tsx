@@ -39,12 +39,20 @@ export const passingLoop = (): LoopFixture => ({
     id: 'ver-2026-08-16-abc',
     summary: { passed: true, rulesApplied: 2, rulesPassed: 2, confidence: 0.95 },
     evidencePath: [
+      // `evaluated` is set on every step because the engine sets it on
+      // every step. fixture-contract.test.tsx fails if one is missing.
       {
         rule: 'response-time-threshold',
         passed: true,
+        evaluated: true,
         reasoning: 'Response time 42ms is below 100ms threshold',
       },
-      { rule: 'status-code-check', passed: true, reasoning: 'Status code is 200 (expected)' },
+      {
+        rule: 'status-code-check',
+        passed: true,
+        evaluated: true,
+        reasoning: 'Status code is 200 (expected)',
+      },
     ],
   },
   memory: {
