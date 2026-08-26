@@ -28,6 +28,22 @@ jobs:
       pull-requests: write
 
     strategy:
+      # Keep every matrix leg running after one fails.
+      #
+      # With the default (fail-fast: true), GitHub cancels the siblings the
+      # instant one leg goes red. On 832d820 that produced `12:39:32 failure
+      # verify (20.x)` and `12:39:32 cancelled verify (22.x)` — the same
+      # second — so the run said nothing at all about Node 22. A cancelled
+      # leg is not a passing leg and not a failing one; it is no evidence,
+      # and it was read here as success.
+      #
+      # This matrix exists precisely to tell a version-specific break from a
+      # general one, which is the one question a cancelled sibling makes
+      # unanswerable. The cost is runner minutes on a pull request that is
+      # already failing — the same trade already accepted when the
+      # pull_request branch filter was removed above.
+      fail-fast: false
+
       matrix:
         # 20.x is what the published container runs. 22.x is the next LTS,
         # so a break arrives as a red pull request rather than as a
