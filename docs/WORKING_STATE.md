@@ -338,11 +338,21 @@ Observed through the GitHub API for `starofgodmayomi-droid/omega-v-oceanicos`: t
 
 No repository setting was changed. These observations are configuration evidence only: they do not prove that secrets are absent, that all dependencies are safe, that hosted checks cannot be bypassed, or that the repository is deployed securely. Enabling branch protection or security automation would be an externally visible governance change and remains human-authorized work.
 
+## Accessible independent verification checkpoint — 2026-08-27
+
+The independent verification panel now connects both input textareas to its user guidance through `aria-describedby`, marks the verification action as busy while browser verification is running, and announces the structured result through a polite atomic live region. This improves keyboard and assistive-technology observability without changing the cryptographic claim: a valid result still proves only signature origin and integrity, not decision correctness, revocation, expiry, distributed consistency, or deployment reality.
+
+The slice was isolated on `feat/accessible-independent-verification` from `origin/main` at `ca74342`; it contains the Web dashboard markup, its focused DOM regression test, and this lineage record. Local verification passed the focused DOM project with 61 tests, targeted formatting, zero-warning lint, TypeScript type-check, and `git diff --check`. Hosted verification and publication remain separately gated; no merge or deployment is claimed.
+
+## WebCrypto harness diagnosis carried forward — 2026-08-27
+
+PR #205 provides a deterministic test-harness diagnosis for the hosted Windows failure: browser crypto operations settle promptly, but a React state update can be queued inside the async `findByRole` scope created by the test. The resulting `act()` deadlock leaves the rendered verification result unavailable until the query timeout. The repair is limited to the DOM test harness and retains the defensive browser-crypto timeout; it does not claim that a cryptographic primitive stalled or that the application was deployed.
+
 ## The "WebCrypto stall" was not WebCrypto — 2026-08-26
 
 The intermittent DOM failure recorded above as an environment-sensitive hosted WebCrypto risk has a cause, and it is not WebCrypto. `jest.setup.dom.ts` configured a custom Testing Library `asyncWrapper` that ran every `findBy*` and `waitFor` inside `act()`. That override inverts a deliberate decision in `@testing-library/react`, which configures its own `asyncWrapper` to switch the act environment **off** for those helpers — its source carries the comment _"We just want to run `waitFor` without IS_REACT_ACT_ENVIRONMENT"_.
 
-Running them inside `act()` produces a circular wait. The helper opens an act scope and waits for the DOM to change; a state update arriving during that scope is queued on the act queue; the act queue is flushed when the act callback resolves; the callback resolves only when the DOM changes. Nothing breaks the cycle, and the update sits one flush away from being rendered for the entire budget.
+Running them inside `act()` produces a circular wait. The helper opens an act scope and waits for the DOM to change; a state update arriving during that scope is queued on the act queue; the act queue is flushed when the act callback resolves — which cannot happen until the DOM changes. Nothing breaks the cycle, and the update sits one flush away from being rendered for the entire budget.
 
 Measured on `claude/matrix-keep-both-signals` (identical to `main` apart from a workflow setting), with an allocation-only trace inside `apps/web/src/verify.ts` and `checkOffline`:
 
@@ -382,4 +392,4 @@ Two hosted confirmations followed, on branches that carry none of this change ex
 
 Neither diff touches `apps/web`. Both had been red across days for a failure that was never theirs, and both went green on the same two-file port.
 
-The #204 failure is worth keeping for a second reason: it failed on **Windows while both Linux legs passed**. The older records repeatedly attribute Windows DOM failures to WebCrypto or to hosted contention. They are the same deadlock, and the platform difference is timing, not cryptography — the deadlock bites only when the state update lands inside the `findBy*` scope rather than during the interaction that opened it.
+The #204 failure is worth keeping for a second reason: it failed on **Windows while both Linux legs passed**. The older records repeatedly attribute Windows DOM failures to WebCrypto or to hosted contention. They are the same deadlock, and the platform difference is timing, not cryptography — the deadlock bites only when the state update lands inside the `findBy*` scope rather than during the interaction that opened it, which is a matter of microseconds.
