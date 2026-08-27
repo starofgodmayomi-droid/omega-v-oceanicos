@@ -1363,7 +1363,7 @@ export function App(): React.JSX.Element {
               <h2>Check a proof without trusting this page</h2>
             </div>
           </div>
-          <p className="offline-verify-note">
+          <p id="offline-verify-description" className="offline-verify-note">
             Paste an attestation and the public key it claims to be signed by. The check runs
             entirely in your browser against the published envelope specification. No request is
             sent, and the private key is never involved.
@@ -1373,6 +1373,7 @@ export function App(): React.JSX.Element {
             id="offline-attestation"
             value={offlineAttestation}
             onChange={(event) => setOfflineAttestation(event.target.value)}
+            aria-describedby="offline-verify-description"
             placeholder={'{ "verificationId": "ver-...", "signature": "0x...", ... }'}
             rows={6}
           />
@@ -1381,12 +1382,14 @@ export function App(): React.JSX.Element {
             id="offline-public-key"
             value={offlinePublicKey}
             onChange={(event) => setOfflinePublicKey(event.target.value)}
+            aria-describedby="offline-verify-description"
             placeholder={'-----BEGIN PUBLIC KEY-----'}
             rows={4}
           />
           <button
             type="button"
             onClick={checkOffline}
+            aria-busy={offlineChecking}
             disabled={offlineChecking || !offlineAttestation || !offlinePublicKey}
           >
             {offlineChecking ? 'Checking...' : 'Verify locally'}
@@ -1395,6 +1398,8 @@ export function App(): React.JSX.Element {
             <div
               className={`offline-verify-result ${offlineResult.valid ? 'is-valid' : 'is-invalid'}`}
               role="status"
+              aria-live="polite"
+              aria-atomic="true"
             >
               <strong>{offlineResult.valid ? 'VALID' : 'INVALID'}</strong>
               <span>{offlineResult.reason}</span>

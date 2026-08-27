@@ -1013,6 +1013,22 @@ describe('command palette', () => {
 });
 
 describe('independent verification panel', () => {
+  it('connects inputs to guidance and announces verification results', async () => {
+    installFetch();
+    await renderApp();
+
+    const description = screen.getByText(/the check runs entirely in your browser/i);
+    expect(description).toHaveAttribute('id', 'offline-verify-description');
+
+    const attestation = screen.getByLabelText(/attestation json/i);
+    const publicKey = screen.getByLabelText(/public key/i);
+    expect(attestation).toHaveAttribute('aria-describedby', 'offline-verify-description');
+    expect(publicKey).toHaveAttribute('aria-describedby', 'offline-verify-description');
+
+    const button = screen.getByRole('button', { name: /verify locally/i });
+    expect(button).toHaveAttribute('aria-busy', 'false');
+  });
+
   it('verifies a real attestation entirely in the browser', async () => {
     installFetch();
     await renderApp();

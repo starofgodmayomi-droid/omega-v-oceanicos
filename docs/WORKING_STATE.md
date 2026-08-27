@@ -323,3 +323,9 @@ A bounded containment slice is prepared locally in `apps/web/src/verify.ts`: `im
 Observed local evidence for this slice: focused verifier tests passed (28 tests), the complete DOM project passed (60 tests), targeted ESLint passed with zero warnings, targeted Prettier passed, TypeScript type-check passed, and `git diff --check` passed. The change is uncommitted and unpublished; hosted verification is still required before any merge decision.
 
 Dissent preserved: explicit test cleanup, broader React lifecycle changes, and merely increasing the Jest budget were not selected because current evidence does not distinguish them as the responsible surface. The next discriminator is hosted CI on this bounded timeout slice.
+
+## Accessible independent verification checkpoint — 2026-08-27
+
+The independent verification panel now connects both input textareas to its user guidance through `aria-describedby`, marks the verification action as busy while browser verification is running, and announces the structured result through a polite atomic live region. This improves keyboard and assistive-technology observability without changing the cryptographic claim: a valid result still proves only signature origin and integrity, not decision correctness, revocation, expiry, distributed consistency, or deployment reality.
+
+The slice is isolated on `feat/accessible-independent-verification` from `origin/main` at `ca74342`; it contains only the Web dashboard markup, its focused DOM regression test, and this lineage record. Local verification passed the focused DOM project with 61 tests, targeted formatting, zero-warning lint, TypeScript type-check, and `git diff --check`. Hosted verification and publication remain unrequested; no merge or deployment is claimed.
