@@ -324,6 +324,20 @@ Observed local evidence for this slice: focused verifier tests passed (28 tests)
 
 Dissent preserved: explicit test cleanup, broader React lifecycle changes, and merely increasing the Jest budget were not selected because current evidence does not distinguish them as the responsible surface. The next discriminator is hosted CI on this bounded timeout slice.
 
+## Post-merge WebCrypto containment checkpoint — 2026-08-25
+
+PR #202 was authorized and squash-merged into `main` as `ca74342e422dd04e618b6a4793fe7abd2cbd8b16` (`ca74342`). The previously failing hosted Node 22 verification passed on the repaired PR head. The post-merge main Verification Pipeline [32890916962](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/actions/runs/32890916962) passed Node 20, Node 22, Windows compatibility, package/smoke, and attested artifact publication. Security Analysis [32890916948](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/actions/runs/32890916948) also passed.
+
+The bounded timeout prevents an indefinitely pending browser-side WebCrypto operation from leaving the dashboard in `Checking...`; it does not cancel an already-started primitive, establish the root cause of the earlier hosted stall, or expand the verifier’s trust claim. The verifier still reports only signature-origin/integrity evidence and retains the distinction between cryptographic validity and correctness, revocation, expiry, distributed consistency, and deployment reality.
+
+The local checkout was synchronized to `origin/main` at `ca74342` and observed clean before this documentation-only evidence update. The update itself is currently uncommitted and not published. No deployment or running production target was observed.
+
+## GitHub governance audit checkpoint — 2026-08-26
+
+Observed through the GitHub API for `starofgodmayomi-droid/omega-v-oceanicos`: the repository is public, `main` is the default branch, secret scanning and push protection are enabled, and the repository security policy is present. Dependabot security updates, secret-scanning non-provider patterns, and secret-scanning validity checks are disabled. The API reported that `main` is not branch-protected; required reviews and required status checks therefore remain a governance configuration gap rather than an assumed control.
+
+No repository setting was changed. These observations are configuration evidence only: they do not prove that secrets are absent, that all dependencies are safe, that hosted checks cannot be bypassed, or that the repository is deployed securely. Enabling branch protection or security automation would be an externally visible governance change and remains human-authorized work.
+
 ## Accessible independent verification checkpoint — 2026-08-27
 
 The independent verification panel now connects both input textareas to its user guidance through `aria-describedby`, marks the verification action as busy while browser verification is running, and announces the structured result through a polite atomic live region. This improves keyboard and assistive-technology observability without changing the cryptographic claim: a valid result still proves only signature origin and integrity, not decision correctness, revocation, expiry, distributed consistency, or deployment reality.
