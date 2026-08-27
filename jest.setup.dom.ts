@@ -5,40 +5,50 @@
  * DOM matchers, and the DOM suites do not need a signing key.
  */
 import '@testing-library/jest-dom';
-import { act, configure } from '@testing-library/react';
+import { configure } from '@testing-library/react';
 import { webcrypto } from 'node:crypto';
 import { TextDecoder as NodeTextDecoder, TextEncoder as NodeTextEncoder } from 'node:util';
 
 jest.setTimeout(30000);
 
-// React 18 only routes updates through act() when this flag is set. Without
-// it, user-event dispatches real DOM events whose handlers update state
-// outside any act scope, and React warns on every one.
+// React only routes updates through act() when this flag is set. Without it,
+// user-event dispatches real DOM events whose handlers update state outside
+// any act scope, and React warns on every one. Testing Library turns the
+// flag off for the duration of its async helpers and restores it after —
+// see the note on asyncWrapper below for why that matters.
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 /**
- * Every async Testing Library helper runs inside act().
+ * Testing Library's async helpers are left alone.
  *
- * The component's handlers await fetch, so a state update lands on a
- * microtask after the triggering interaction's own act scope has closed.
+ * This block used to override `asyncWrapper` so that every `findBy*` and
+ * `waitFor` ran inside `act()`. That inverts a deliberate decision in
+ * `@testing-library/react`, whose own configuration disables the act
+ * environment for exactly those helpers — its source says "We just want to
+ * run `waitFor` without IS_REACT_ACT_ENVIRONMENT".
  *
- * Known rough edge, left visible rather than muted: this plus the flag above
- * clears the `ReactDOMTestUtils.act is deprecated` warnings, but React still
- * reports "update not wrapped in act" for state changes made by handlers
- * that user-event dispatches as real DOM events. The assertions are correct
- * and the suite is green; the warnings are a true signal that those updates
- * are not batched, so they stay in the output instead of being filtered into
- * silence.
+ * Wrapping them in act() instead creates a circular wait: the helper opens
+ * an act scope and waits for the DOM to change, the state update that would
+ * change it is queued on the act queue, and that queue is flushed when the
+ * act callback resolves — which cannot happen until the DOM changes. The
+ * update sits one flush away for the entire budget.
+ *
+ * It only bites when the update lands inside the helper's scope rather than
+ * during the interaction that started it, so it presented as an intermittent
+ * hosted failure of the browser verification panel and was recorded as a
+ * WebCrypto stall. It was not one. An instrumented run showed importKey and
+ * verify settling 37ms after the click, the assertion then waiting its full
+ * 30 seconds, and one bare `act(async () => {})` rendering the VALID result
+ * immediately.
+ *
+ * `act-async-wrapper.test.tsx` forces that ordering deterministically and
+ * fails if this override comes back.
+ *
+ * The original reason for the override — `ReactDOMTestUtils.act is
+ * deprecated` warnings — no longer applies: Testing Library uses `React.act`
+ * whenever it exists, and this workspace is on React 19.
  */
 configure({
-  asyncWrapper: async (callback) => {
-    let result: unknown;
-    await act(async () => {
-      result = await callback();
-    });
-    return result;
-  },
-
   /**
    * Lowered back to 2000ms, because the reason it was raised turned out to
    * be wrong.
@@ -48,17 +58,18 @@ configure({
    * after the change — and it recurred at five seconds, on run 350, on
    * verify (18.x) and on Windows. Five times the budget is not contention.
    *
-   * The likelier cause was never timing. The panel's verify control is
-   * disabled until both fields hold text, so a paste that had not yet
-   * landed made the click a silent no-op: no handler ran, no result
-   * rendered, and the failure surfaced as findByRole('status') timing out
-   * rather than as the paste failing. The tests now wait for the control to
-   * be enabled before clicking, which makes the precondition explicit.
+   * The second was a paste that had not landed, making the click on a
+   * still-disabled control a silent no-op. The tests now wait for the
+   * control to be enabled, which makes that precondition explicit and is
+   * worth keeping — but it was not the cause either.
    *
-   * 2000ms leaves headroom for real Ed25519 work without concealing a
-   * second silent no-op for five seconds. If the flake returns after this,
-   * both explanations are wrong and the next step is capturing the DOM at
-   * failure rather than adjusting this number again.
+   * The cause was the act-wrapping asyncWrapper described above, and no
+   * value of this number could have fixed it: the wait never ends, so a
+   * larger budget only buys a longer wait. That is why raising it from 15s
+   * to 30s in PR #185 changed nothing.
+   *
+   * 2000ms is kept because it is a reasonable budget for real Ed25519 work
+   * and short enough that a genuine stall is reported quickly.
    */
   asyncUtilTimeout: 2000,
 });
