@@ -103,6 +103,32 @@ describe('attestation envelope specification v1', () => {
     expect(spec).toContain('are not signed');
   });
 
+  it('signs non-ASCII fields as UTF-8, the way the specification requires', () => {
+    // attestedBy is caller-supplied, and this project's own name is not
+    // ASCII. The signer emits the character and encodes UTF-8; a verifier
+    // that escapes it to \\uXXXX first computes different bytes and rejects
+    // a genuine attestation. The shipped Python reference did exactly that
+    // until it was fixed, and nothing on this side of the format would
+    // have caught it: every existing case here is ASCII.
+    const attestedBy = 'Ω∞v-attestation-service 🌊';
+    const nonAscii = service.attest(verificationResult, { attestedBy });
+
+    expect(nonAscii.attestedBy).toBe(attestedBy);
+
+    const bytes = bytesFromSpec(nonAscii as unknown as Record<string, unknown>);
+    const signature = Buffer.from(nonAscii.signature.replace(/^0x/, ''), 'hex');
+
+    // Rebuilt from the specification's field list rather than from the
+    // signer's helper, so this fails if the two ever disagree.
+    expect(nodeVerify(null, bytes, publicKey, signature)).toBe(true);
+
+    // The character survives as itself. If the signer ever escaped it, the
+    // byte length would grow and the assertion above would already be red,
+    // but stating it separately says which property is load-bearing.
+    expect(bytes.includes(Buffer.from('Ω', 'utf8'))).toBe(true);
+    expect(bytes.includes(Buffer.from('\\u03a9'))).toBe(false);
+  });
+
   it('ships a reference verifier that does not import this project', () => {
     const reference = readFileSync(join(root, 'docs/spec/verify_attestation.py'), 'utf8');
 
