@@ -9,6 +9,116 @@ describe('omega status CLI', () => {
     process.stderr.write = originalError;
   });
 
+  it('marks which rules the engine can actually evaluate', async () => {
+    const output: string[] = [];
+    process.stdout.write = ((chunk: string | Uint8Array) => {
+      output.push(String(chunk));
+      return true;
+    }) as typeof process.stdout.write;
+
+    const exitCode = await run(['rules', '--url', 'http://api.test/'], async (url) => {
+      expect(url).toBe('http://api.test/rules');
+      return new Response(
+        JSON.stringify({
+          data: {
+            count: 2,
+            registered: 2,
+            executable: 1,
+            category: null,
+            rules: [
+              { name: 'status-code-check', version: '1.0.0', active: true, executable: true },
+              { name: 'declared-only', version: '1.0.0', active: true, executable: false },
+            ],
+          },
+          timestamp: '2026-08-16T00:00:00.000Z',
+        })
+      );
+    });
+
+    const text = output.join('');
+    expect(exitCode).toBe(0);
+    expect(text).toContain('matched=2 registered=2 executable=1');
+    expect(text).toContain('declared-only v1.0.0 active=true executable=false');
+    // The whole point: a rule that cannot run must not read as one that
+    // passes. An operator seeing only the list would have no reason to look.
+    expect(text).toContain('1 of 2 matched rules cannot be evaluated');
+  });
+
+  it('says nothing extra when every matched rule is executable', async () => {
+    // The warning has to mean something when it appears, so it must not
+    // appear by default.
+    const output: string[] = [];
+    process.stdout.write = ((chunk: string | Uint8Array) => {
+      output.push(String(chunk));
+      return true;
+    }) as typeof process.stdout.write;
+
+    const exitCode = await run(
+      ['rules', '--url', 'http://api.test/'],
+      async () =>
+        new Response(
+          JSON.stringify({
+            data: {
+              count: 1,
+              registered: 1,
+              executable: 1,
+              category: null,
+              rules: [
+                { name: 'status-code-check', version: '1.0.0', active: true, executable: true },
+              ],
+            },
+            timestamp: '2026-08-16T00:00:00.000Z',
+          })
+        )
+    );
+
+    expect(exitCode).toBe(0);
+    expect(output.join('')).not.toContain('cannot be evaluated');
+  });
+
+  it('sends a category filter and reports the engine total alongside the match', async () => {
+    const output: string[] = [];
+    process.stdout.write = ((chunk: string | Uint8Array) => {
+      output.push(String(chunk));
+      return true;
+    }) as typeof process.stdout.write;
+
+    const exitCode = await run(
+      ['rules', '--category', 'health-check', '--url', 'http://api.test/'],
+      async (url) => {
+        expect(url).toBe('http://api.test/rules?category=health-check');
+        return new Response(
+          JSON.stringify({
+            data: { count: 0, registered: 2, executable: 0, category: 'health-check', rules: [] },
+            timestamp: '2026-08-16T00:00:00.000Z',
+          })
+        );
+      }
+    );
+
+    expect(exitCode).toBe(0);
+    // "No rules matched this category" and "no rules at all" are different
+    // facts, and an operator acts differently on each.
+    expect(output.join('')).toContain('matched=0 registered=2 executable=0 category=health-check');
+  });
+
+  it('reports an unavailable rule list as a failure rather than an empty one', async () => {
+    const errors: string[] = [];
+    process.stderr.write = ((chunk: string | Uint8Array) => {
+      errors.push(String(chunk));
+      return true;
+    }) as typeof process.stderr.write;
+
+    const exitCode = await run(
+      ['rules', '--url', 'http://api.test/'],
+      async () => new Response(JSON.stringify({ error: 'nope' }), { status: 503 })
+    );
+
+    // An empty rule list and an unreachable API must not look the same.
+    expect(exitCode).toBe(1);
+    expect(errors.join('')).toContain('Rules unavailable (503)');
+  });
+
   it('prints help without contacting the API', async () => {
     const output: string[] = [];
     process.stdout.write = ((chunk: string | Uint8Array) => {

@@ -232,6 +232,7 @@ function usage(): string {
     'omega runs [--url URL] [--limit N] [--token TOKEN]',
     'omega jobs [--url URL] [--limit N] [--token TOKEN] [--job-token TOKEN]',
     'omega export [--url URL] [--token TOKEN]',
+    'omega rules [--category CATEGORY] [--url URL] [--token TOKEN]',
     'omega revocations [--url URL] [--token TOKEN]',
     'omega revoke ATTESTATION_ID --reason REASON [--operator-id ID] [--url URL] [--token TOKEN] [--admin-token TOKEN]',
     'omega acknowledge-persistence --reason REASON --operator-id ID [--url URL] [--admin-token TOKEN]',
@@ -542,6 +543,69 @@ async function verifyAttestation(argv: string[], fetchImpl: FetchLike): Promise<
     return 1;
   }
 }
+type RulesResponse = {
+  data: {
+    count: number;
+    registered: number;
+    executable: number;
+    category: string | null;
+    rules: Array<{ name: string; version: string; active: boolean; executable: boolean }>;
+  };
+};
+
+/**
+ * Print the rule set, marking which rules the engine can actually run.
+ *
+ * A rule the engine holds but cannot execute fails verification rather than
+ * passing quietly. That is the right direction and it is also the reason
+ * this command exists: without it the only way to discover a rule the
+ * engine will not evaluate is to submit an observation and read the
+ * failure. The API has published `executable` since the rule list was
+ * added; nothing on this side asked for it.
+ *
+ * REGISTERED counts every rule the engine holds. MATCHED is how many this
+ * response returned, which differs when --category filters them.
+ */
+async function rules(argv: string[], fetchImpl: FetchLike): Promise<number> {
+  const category = option(argv, '--category');
+  const params = category ? `?category=${encodeURIComponent(category)}` : '';
+  const endpoint = `${baseUrl(argv).replace(/\/$/, '')}/rules${params}`;
+  try {
+    const response = await fetchImpl(endpoint, requestInit(argv));
+    const body = (await response.json()) as RulesResponse | { error?: string };
+    if (!response.ok || !('data' in body) || !Array.isArray(body.data.rules)) {
+      process.stderr.write(`Rules unavailable (${response.status})\n`);
+      return 1;
+    }
+    const { count, registered, executable, rules: entries } = body.data;
+    process.stdout.write(
+      `RULES         matched=${count} registered=${registered} executable=${executable} category=${
+        body.data.category ?? 'all'
+      }\n`
+    );
+    for (const rule of entries) {
+      // Spelled out rather than shown as a tick: "executable=false" is the
+      // fact an operator needs to act on, and a symbol invites skimming.
+      process.stdout.write(
+        `${rule.name} v${rule.version} active=${rule.active} executable=${rule.executable}\n`
+      );
+    }
+    // Said once, plainly, when it applies. A rule that cannot run is not a
+    // rule that passes.
+    if (executable < count) {
+      process.stdout.write(
+        `NOTE          ${count - executable} of ${count} matched rules cannot be evaluated by this engine and will fail verification\n`
+      );
+    }
+    return 0;
+  } catch (error) {
+    process.stderr.write(
+      `Rules unavailable: ${error instanceof Error ? error.message : String(error)}\n`
+    );
+    return 1;
+  }
+}
+
 async function revocations(argv: string[], fetchImpl: FetchLike): Promise<number> {
   const endpoint = `${baseUrl(argv).replace(/\/$/, '')}/attest/revocations`;
   try {
@@ -837,6 +901,7 @@ export async function run(
   if (command === 'runs') return runs(argv, fetchImpl);
   if (command === 'jobs') return jobs(argv, fetchImpl);
   if (command === 'export') return evidenceExport(argv, fetchImpl);
+  if (command === 'rules') return rules(argv, fetchImpl);
   if (command === 'revocations') return revocations(argv, fetchImpl);
   if (command === 'verify') return verifyAttestation(argv, fetchImpl);
   if (command === 'policy') return policy(argv, fetchImpl);

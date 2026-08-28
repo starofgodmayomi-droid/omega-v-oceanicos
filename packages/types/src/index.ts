@@ -94,6 +94,22 @@ export interface EvidenceStep {
   /** Did this step pass? */
   passed: boolean;
 
+  /**
+   * Did the engine actually run this rule?
+   *
+   * `passed: false` covers two facts that are not the same: the rule ran
+   * and the claim did not hold, and the rule could not be run at all. Both
+   * must deny an action — an unevaluated rule is never a passing rule —
+   * but a reader acts differently on each. One says the system checked and
+   * found something wrong; the other says the system did not check.
+   *
+   * Optional so evidence recorded before this field existed stays readable.
+   * Absent means unknown, and unknown must not be rendered as evaluated:
+   * treating a missing signal as the favourable one is the defect this
+   * whole field exists to expose.
+   */
+  evaluated?: boolean;
+
   /** Human-readable explanation */
   reasoning: string;
 
