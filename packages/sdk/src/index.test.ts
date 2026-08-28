@@ -1021,6 +1021,25 @@ describe('OmegaClient local job evidence', () => {
     });
   });
 
+  it('sends the local-job header without an Authorization header when no read token is configured', async () => {
+    const client = new OmegaClient(
+      'http://api.test/',
+      async (url, init) => {
+        expect(url).toBe('http://api.test/jobs');
+        const headers = new Headers(init?.headers);
+        expect(headers.get('authorization')).toBeNull();
+        expect(headers.get('x-omega-local-job-token')).toBe('job-token-only');
+        return new Response(
+          JSON.stringify({ data: { jobs: [], status }, timestamp: '2026-08-20T00:00:00.000Z' })
+        );
+      },
+      { localJobToken: 'job-token-only' }
+    );
+    await expect(client.getJobs()).resolves.toMatchObject({
+      data: { status: { durable: false, source: 'memory', recentWindow: 40 } },
+    });
+  });
+
   it('encodes job identifiers and preserves event sequence/provenance', async () => {
     const client = new OmegaClient('http://api.test', async (url) => {
       expect(url).toBe('http://api.test/jobs/job%2Fwith%20space');
