@@ -1,6 +1,7 @@
 import { mkdtempSync, readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { createDecipheriv, createHash } from 'node:crypto';
 import {
   appendEvent,
   emptySnapshot,
@@ -39,6 +40,53 @@ describe('runtime persistence', () => {
     expect(persistenceReady(true, 'missing')).toBe(true);
     expect(persistenceReady(true, 'restored')).toBe(true);
     expect(persistenceReady(true, 'corrupt')).toBe(false);
+  });
+
+  it('derives the AES key as an unsalted sha256 of the configured secret', () => {
+    // Not a defect, and not a change — this pins what the derivation *is*,
+    // because nothing stated it anywhere and the surfaces that report
+    // `encryption: aes-256-gcm` describe the cipher without describing the
+    // key.
+    //
+    // Decrypted here with a key derived independently, so a pass means the
+    // shipped code really does use sha256(secret) with no salt and no
+    // stretching. If someone replaces the derivation, this fails and the
+    // documentation that now records it has to be updated with it.
+    const logPath = join(mkdtempSync(join(tmpdir(), 'omega-kdf-')), 'events.log');
+    const secret = 'operator-supplied-secret';
+    appendEvent(logPath, { id: 'evt-kdf' }, true, secret);
+
+    const [prefix, ivEncoded, tagEncoded, ciphertextEncoded] = readFileSync(logPath, 'utf8')
+      .trim()
+      .split(':');
+    expect(prefix).toBe('omega-v1');
+
+    const key = createHash('sha256').update(secret, 'utf8').digest();
+    const decipher = createDecipheriv('aes-256-gcm', key, Buffer.from(ivEncoded, 'base64url'));
+    decipher.setAuthTag(Buffer.from(tagEncoded, 'base64url'));
+    const plaintext = Buffer.concat([
+      decipher.update(Buffer.from(ciphertextEncoded, 'base64url')),
+      decipher.final(),
+    ]).toString('utf8');
+
+    expect(JSON.parse(plaintext)).toEqual({ id: 'evt-kdf' });
+  });
+
+  it('accepts a secret of any length, which is why the derivation is documented', () => {
+    // A single character is accepted and produces a well-formed AES-256-GCM
+    // record. The cipher is genuinely AES-256; the key behind it carries
+    // whatever entropy the operator's secret had, and an offline attacker
+    // needs one sha256 per guess with no salt to prevent precomputation.
+    //
+    // Recorded as behaviour rather than fixed here: adding a minimum length
+    // would be a startup-breaking change for existing deployments, and a
+    // length floor is a poor proxy for entropy — stating it would risk
+    // implying that clearing the floor is sufficient.
+    const logPath = join(mkdtempSync(join(tmpdir(), 'omega-kdf-weak-')), 'events.log');
+    expect(appendEvent(logPath, { id: 'evt-weak' }, true, 'x').appended).toBe(true);
+
+    const line = readFileSync(logPath, 'utf8').trim();
+    expect(line.startsWith('omega-v1:')).toBe(true);
   });
 
   it('exposes only a deterministic non-secret key fingerprint', () => {
