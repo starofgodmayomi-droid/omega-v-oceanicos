@@ -21,6 +21,7 @@ import {
   parsePersistenceCoordinationPolicy,
   persistenceCoverage,
   SNAPSHOT_KEYS,
+  encryptionEnabled,
 } from '../persistence';
 
 type Snap = Record<(typeof SNAPSHOT_KEYS)[number], unknown[]>;
@@ -232,6 +233,71 @@ describe('runtime persistence', () => {
     );
   });
 
+  it('reports every surface as disabled and keyless when persistence itself is off', () => {
+    // Every persistenceCoverage call above passes enabled: true, so the
+    // disabled side of the snapshot, event-log, and kernel-memory encryption
+    // and keySource ternaries had never actually run. The job ledger is
+    // intentionally excluded from this "enabled" gate (its own field controls
+    // it directly), so it is left encrypted here to isolate the other three.
+    const coverage = persistenceCoverage({
+      enabled: false,
+      snapshotEncrypted: true,
+      snapshotKeySource: 'current',
+      eventLogEncrypted: true,
+      eventLogKeySource: 'mixed',
+      memoryEncrypted: true,
+      memoryKeySource: 'current',
+      jobLedgerEncrypted: true,
+      jobLedgerKeySource: 'current',
+    });
+    expect(coverage.surfaces).toEqual([
+      expect.objectContaining({
+        name: 'runtime-snapshot',
+        encryption: 'disabled',
+        keySource: 'none',
+      }),
+      expect.objectContaining({ name: 'event-log', encryption: 'disabled', keySource: 'none' }),
+      expect.objectContaining({ name: 'kernel-memory', encryption: 'disabled', keySource: 'none' }),
+      expect.objectContaining({
+        name: 'local-job-ledger',
+        encryption: 'aes-256-gcm',
+        keySource: 'current',
+      }),
+    ]);
+  });
+
+  it('reports kernel-memory as encrypted when it is the surface that is actually encrypted', () => {
+    // Every persistenceCoverage call above leaves memoryEncrypted false, so
+    // kernel-memory's own encrypted branch, distinct from the other
+    // surfaces, had never run.
+    const coverage = persistenceCoverage({
+      enabled: true,
+      snapshotEncrypted: false,
+      snapshotKeySource: 'none',
+      eventLogEncrypted: false,
+      eventLogKeySource: 'none',
+      memoryEncrypted: true,
+      memoryKeySource: 'current',
+      jobLedgerEncrypted: false,
+      jobLedgerKeySource: 'none',
+    });
+    expect(coverage.surfaces).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: 'kernel-memory',
+          encryption: 'aes-256-gcm',
+          keySource: 'current',
+        }),
+      ])
+    );
+  });
+
+  it('reports whether a configured secret actually turns encryption on', () => {
+    expect(encryptionEnabled('a-real-secret')).toBe(true);
+    expect(encryptionEnabled(undefined)).toBe(false);
+    expect(encryptionEnabled('')).toBe(false);
+  });
+
   it('reports rotation pending only when a configured previous key was used', () => {
     expect(persistenceRotationPending(false, 'previous')).toBe(false);
     expect(persistenceRotationPending(true, 'none', 'current')).toBe(false);
@@ -312,7 +378,7 @@ describe('runtime persistence', () => {
     /**
      * `decryptText` has three distinct failure reasons, but every existing
      * encryption test either round-trips successfully or supplies the wrong
-     * key to an otherwise well-formed record — so only its final fallback
+     * key to an otherwise well-formed record, so only its final fallback
      * ("could not be decrypted") had ever run. A store that is truncated
      * below the envelope's structure, or one nobody configured a key for at
      * all, are different failures with different fixes, and the caller
@@ -517,6 +583,51 @@ describe('runtime persistence', () => {
       expect(result.eventLogKeySource).toBe('current');
     });
 
+    it('does nothing when disabled or when either encryption key is missing', () => {
+      // Every other reencryptPersistence test here supplies enabled: true and
+      // both keys, so the guard clause itself, the thing that decides whether
+      // any of this runs at all, had never actually been the reason nothing
+      // happened.
+      const logPath = join(dir, 'runtime.log.jsonl');
+      const expected = {
+        rewritten: false,
+        snapshotRecords: 0,
+        eventRecords: 0,
+        snapshotKeySource: 'none',
+        eventLogKeySource: 'none',
+      };
+
+      expect(
+        reencryptPersistence(storePath, logPath, false, 'current-secret', 'previous-secret')
+      ).toEqual(expected);
+      expect(reencryptPersistence(storePath, logPath, true, undefined, 'previous-secret')).toEqual(
+        expected
+      );
+      expect(reencryptPersistence(storePath, logPath, true, 'current-secret', undefined)).toEqual(
+        expected
+      );
+    });
+
+    it('re-encrypts a snapshot whose event log has no entries yet, without adding a stray newline', () => {
+      // The re-encryption tests above always append at least one event, so
+      // the "join entries, then add a trailing newline only if there were
+      // any" branch had only ever taken the "there were entries" side.
+      const logPath = join(dir, 'runtime.log.jsonl');
+      saveSnapshot(storePath, fixture(), true, 'previous-secret');
+
+      const result = reencryptPersistence(
+        storePath,
+        logPath,
+        true,
+        'current-secret',
+        'previous-secret'
+      );
+
+      expect(result.rewritten).toBe(true);
+      expect(result.eventRecords).toBe(0);
+      expect(readFileSync(logPath, 'utf8')).toBe('');
+    });
+
     it('refuses to rewrite when the event log is partial', () => {
       const logPath = join(dir, 'runtime.log.jsonl');
       saveSnapshot(storePath, fixture(), true, 'previous-secret');
@@ -573,6 +684,157 @@ describe('runtime persistence', () => {
 
       expect(reconcileReencryptionJournal(journalPath)).toMatchObject({ status: 'blocked' });
       expect(existsSync(journalPath)).toBe(true);
+    });
+
+    it('reports nothing to reconcile when no journal was ever left behind', () => {
+      // Every other reconcileReencryptionJournal test here writes a journal
+      // file first. The ordinary startup case, no interrupted transaction at
+      // all, is what actually exercises the existsSync guard's own early
+      // return, and that had never run.
+      const journalPath = reencryptionJournalPath(storePath);
+
+      expect(reconcileReencryptionJournal(journalPath)).toEqual({ status: 'none' });
+    });
+
+    it('blocks reconciliation when the journal file is not valid JSON', () => {
+      const journalPath = reencryptionJournalPath(storePath);
+      writeFileSync(journalPath, '{ not valid json');
+
+      expect(reconcileReencryptionJournal(journalPath)).toEqual({
+        status: 'blocked',
+        reason: 're-encryption journal is unreadable',
+      });
+    });
+
+    it('blocks reconciliation when the journal fails structural validation', () => {
+      const journalPath = reencryptionJournalPath(storePath);
+      writeFileSync(
+        journalPath,
+        JSON.stringify({
+          version: 2,
+          storePath,
+          logPath: join(dir, 'runtime.log.jsonl'),
+          snapshotTemporaryPath: `${storePath}.staged`,
+          logTemporaryPath: `${storePath}.staged-log`,
+          phase: 'staged',
+        })
+      );
+
+      expect(reconcileReencryptionJournal(journalPath)).toEqual({
+        status: 'blocked',
+        reason: 're-encryption journal is malformed',
+      });
+    });
+
+    it('blocks reconciliation when every other field is valid but the phase is not a recognised value', () => {
+      // The malformed-journal case above fails on its very first check (a
+      // wrong version), so the phase check at the end of that same
+      // condition, reached only once every earlier check has already
+      // passed, had never actually been the reason a journal was rejected.
+      const journalPath = reencryptionJournalPath(storePath);
+      writeFileSync(
+        journalPath,
+        JSON.stringify({
+          version: 1,
+          storePath,
+          logPath: join(dir, 'runtime.log.jsonl'),
+          snapshotTemporaryPath: `${storePath}.staged`,
+          logTemporaryPath: `${storePath}.staged-log`,
+          phase: 'not-a-real-phase',
+        })
+      );
+
+      expect(reconcileReencryptionJournal(journalPath)).toEqual({
+        status: 'blocked',
+        reason: 're-encryption journal is malformed',
+      });
+    });
+
+    it('blocks reconciliation when only the staged snapshot is missing and the staged log is present', () => {
+      // The "journal artifact is missing" case above is missing its staged
+      // log, which is checked first and blocks before the snapshot check
+      // ever runs. Leaving the log in place isolates the snapshot's own
+      // existsSync check as the reason reconciliation is blocked.
+      const logPath = join(dir, 'runtime.log.jsonl');
+      const stagedLog = `${logPath}.staged`;
+      writeFileSync(stagedLog, '{"id":"evt"}\n');
+      const journalPath = reencryptionJournalPath(storePath);
+      writeFileSync(
+        journalPath,
+        JSON.stringify({
+          version: 1,
+          storePath,
+          logPath,
+          snapshotTemporaryPath: `${storePath}.staged`,
+          logTemporaryPath: stagedLog,
+          phase: 'staged',
+        })
+      );
+
+      expect(reconcileReencryptionJournal(journalPath)).toEqual({
+        status: 'blocked',
+        reason: 're-encryption transaction is missing its staged snapshot',
+      });
+    });
+
+    it('recovers a snapshot-committed transaction without re-renaming the already-committed snapshot', () => {
+      // Every recovery case above uses phase 'staged', which renames the
+      // staged snapshot into place as part of recovery. A crash recorded as
+      // 'snapshot-committed' means that rename already happened before the
+      // crash, so recovery must skip it and only finish the log rename, a
+      // distinct path that had never run.
+      const logPath = join(dir, 'runtime.log.jsonl');
+      const stagedLog = `${logPath}.staged`;
+      writeFileSync(storePath, JSON.stringify(fixture()));
+      writeFileSync(stagedLog, '{"id":"evt-recovered"}\n');
+      const journalPath = reencryptionJournalPath(storePath);
+      writeFileSync(
+        journalPath,
+        JSON.stringify({
+          version: 1,
+          storePath,
+          logPath,
+          snapshotTemporaryPath: `${storePath}.staged`, // never created; must not be touched
+          logTemporaryPath: stagedLog,
+          phase: 'snapshot-committed',
+        })
+      );
+
+      expect(reconcileReencryptionJournal(journalPath)).toEqual({ status: 'recovered' });
+      expect(existsSync(journalPath)).toBe(false);
+      expect(readFileSync(storePath, 'utf8')).toContain('evt-1');
+      expect(readFileSync(logPath, 'utf8')).toContain('evt-recovered');
+    });
+
+    it('blocks reconciliation when the final commit fails partway through', () => {
+      // Every successful recovery above commits cleanly. A destination that
+      // cannot actually receive the rename, here the log path is itself a
+      // directory, exercises the commit step's own catch block, which
+      // reports a blocked transaction rather than letting the exception
+      // escape uncaught.
+      const logPath = join(dir, 'runtime.log.jsonl');
+      mkdirSync(logPath);
+      const stagedSnapshot = `${storePath}.staged`;
+      const stagedLog = `${logPath}.staged`;
+      writeFileSync(stagedSnapshot, JSON.stringify(fixture()));
+      writeFileSync(stagedLog, '{"id":"evt"}\n');
+      const journalPath = reencryptionJournalPath(storePath);
+      writeFileSync(
+        journalPath,
+        JSON.stringify({
+          version: 1,
+          storePath,
+          logPath,
+          snapshotTemporaryPath: stagedSnapshot,
+          logTemporaryPath: stagedLog,
+          phase: 'staged',
+        })
+      );
+
+      expect(reconcileReencryptionJournal(journalPath)).toEqual({
+        status: 'blocked',
+        reason: 're-encryption transaction could not be committed',
+      });
     });
   });
 });
