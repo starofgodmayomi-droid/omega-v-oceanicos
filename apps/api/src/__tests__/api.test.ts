@@ -1285,6 +1285,254 @@ describe('persistence re-encryption journal startup boundary', () => {
 });
 
 /**
+ * The admin-auth middleware picks a specific denial message for each of the
+ * two persistence review mutations before falling back to a generic one for
+ * every other admin-gated route. The only existing admin-auth-denial test in
+ * this file targets `/attest/revoke`, so it already exercises the
+ * revocation-specific message and the generic fallback -- but nothing ever
+ * sent an unauthenticated request to `/persistence/reencrypt` or
+ * `/persistence/acknowledge`, so their dedicated messages had never been
+ * produced.
+ */
+describe('persistence review admin auth messaging', () => {
+  let server: Server;
+  let baseUrl: string;
+
+  beforeAll(async () => {
+    process.env.OMEGA_ADMIN_TOKEN = 'contract-admin-token';
+
+    jest.resetModules();
+    const isolated = require('../index') as { app: typeof app };
+    server = createServer(isolated.app);
+    await new Promise<void>((resolve) => server.listen(0, resolve));
+    const address = server.address();
+    if (!address || typeof address === 'string') throw new Error('Test server did not start');
+    baseUrl = `http://127.0.0.1:${address.port}`;
+  });
+
+  afterAll(async () => {
+    await new Promise<void>((resolve, reject) =>
+      server.close((error) => (error ? reject(error) : resolve()))
+    );
+    delete process.env.OMEGA_ADMIN_TOKEN;
+    jest.resetModules();
+  });
+
+  it('names re-encryption specifically when the admin token is missing', async () => {
+    const response = await fetch(`${baseUrl}/persistence/reencrypt`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ reason: 'Attempt re-encryption without a token' }),
+    });
+    const body = (await response.json()) as { code: string; message: string };
+    expect(response.status).toBe(401);
+    expect(body.code).toBe('ADMIN_ACCESS_REQUIRED');
+    expect(body.message).toBe('A valid admin bearer token is required to re-encrypt persistence');
+  });
+
+  it('names acknowledgement specifically when the admin token is missing', async () => {
+    const response = await fetch(`${baseUrl}/persistence/acknowledge`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ reason: 'Attempt acknowledgement without a token' }),
+    });
+    const body = (await response.json()) as { code: string; message: string };
+    expect(response.status).toBe(401);
+    expect(body.code).toBe('ADMIN_ACCESS_REQUIRED');
+    expect(body.message).toBe(
+      'A valid admin bearer token is required to acknowledge persistence review'
+    );
+  });
+});
+
+/**
+ * `persistenceAcknowledgement` and `persistenceReencryption` are seeded once
+ * at module load by scanning the restored snapshot's events for
+ * `persistence.recovery.acknowledged` / `persistence.rotation.reencrypted`
+ * entries whose `details` payload has the full expected shape (index.ts
+ * ~L575-609). Every other suite in this file only ever observes those
+ * fields being *set* on a server that is still running from the POST that
+ * created them -- none of them restart the process against a store that
+ * already carries a persisted acknowledgement or re-encryption record, so
+ * the startup rehydration branch, and its full-shape guard, had never
+ * actually executed.
+ */
+describe('persistence acknowledgement and re-encryption rehydrate after restart', () => {
+  it('restores a persisted acknowledgement into a freshly booted process', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'omega-api-ack-rehydrate-'));
+    const storePath = join(dir, 'runtime.json');
+    const logPath = join(dir, 'runtime.log.jsonl');
+    // A malformed log line makes the durable log 'partial', which is a
+    // pending review action that /persistence/acknowledge will accept.
+    writeFileSync(logPath, '{ not json\\n');
+
+    process.env.OMEGA_PERSISTENCE = 'on';
+    process.env.OMEGA_RUNTIME_STORE_PATH = storePath;
+    process.env.OMEGA_EVENT_LOG_PATH = logPath;
+    process.env.OMEGA_ADMIN_OPERATOR_ALLOWLIST = 'rehydrate-operator';
+
+    let server: Server | undefined;
+    try {
+      jest.resetModules();
+      const first = require('../index') as { app: typeof app };
+      server = createServer(first.app);
+      await new Promise<void>((resolve) => server!.listen(0, resolve));
+      let address = server.address();
+      if (!address || typeof address === 'string') throw new Error('Test server did not start');
+      const firstUrl = `http://127.0.0.1:${address.port}`;
+
+      const acknowledged = await fetch(`${firstUrl}/persistence/acknowledge`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'x-omega-operator-id': 'rehydrate-operator',
+        },
+        body: JSON.stringify({ reason: 'Persisted acknowledgement restart coverage' }),
+      });
+      expect(acknowledged.status).toBe(201);
+      const acknowledgement = (
+        (await acknowledged.json()) as ApiResponse<{
+          acknowledgement: {
+            operatorId: string;
+            action: string;
+            reason: string;
+            acknowledgedAt: string;
+            requestId: string;
+          };
+        }>
+      ).data.acknowledgement;
+
+      await new Promise<void>((resolve, reject) =>
+        server!.close((error) => (error ? reject(error) : resolve()))
+      );
+
+      // Reboot a fresh process against the same store: this is the only way
+      // to exercise the startup rehydration path at all.
+      jest.resetModules();
+      const second = require('../index') as { app: typeof app };
+      server = createServer(second.app);
+      await new Promise<void>((resolve) => server!.listen(0, resolve));
+      address = server.address();
+      if (!address || typeof address === 'string') throw new Error('Test server did not start');
+      const secondUrl = `http://127.0.0.1:${address.port}`;
+
+      const health = (await (await fetch(`${secondUrl}/health`)).json()) as ApiResponse<{
+        checks: { persistence: { acknowledgement: typeof acknowledgement | null } };
+      }>;
+      expect(health.data.checks.persistence.acknowledgement).toEqual(acknowledgement);
+
+      const observability = (await (
+        await fetch(`${secondUrl}/observability`)
+      ).json()) as ApiResponse<{
+        runtime: { persistenceAcknowledgement: typeof acknowledgement | null };
+      }>;
+      expect(observability.data.runtime.persistenceAcknowledgement).toEqual(acknowledgement);
+    } finally {
+      if (server) {
+        await new Promise<void>((resolve, reject) =>
+          server!.close((error) => (error ? reject(error) : resolve()))
+        );
+      }
+      delete process.env.OMEGA_PERSISTENCE;
+      delete process.env.OMEGA_RUNTIME_STORE_PATH;
+      delete process.env.OMEGA_EVENT_LOG_PATH;
+      delete process.env.OMEGA_ADMIN_OPERATOR_ALLOWLIST;
+      rmSync(dir, { recursive: true, force: true });
+      jest.resetModules();
+    }
+  });
+
+  it('restores a persisted re-encryption record into a freshly booted process', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'omega-api-reencrypt-rehydrate-'));
+    const storePath = join(dir, 'runtime.json');
+    const logPath = join(dir, 'runtime.log.jsonl');
+    const snapshot = { events: [], runs: [], actions: [], learnings: [], recompilations: [] };
+    saveSnapshot(storePath, snapshot, true, 'previous-secret');
+    appendEvent(logPath, { id: 'evt-previous' }, true, 'previous-secret');
+
+    process.env.OMEGA_PERSISTENCE = 'on';
+    process.env.OMEGA_PERSISTENCE_KEY = 'current-secret';
+    process.env.OMEGA_PERSISTENCE_KEY_PREVIOUS = 'previous-secret';
+    process.env.OMEGA_RUNTIME_STORE_PATH = storePath;
+    process.env.OMEGA_EVENT_LOG_PATH = logPath;
+    process.env.OMEGA_ADMIN_OPERATOR_ALLOWLIST = 'rotation-operator';
+
+    let server: Server | undefined;
+    try {
+      jest.resetModules();
+      const first = require('../index') as { app: typeof app };
+      server = createServer(first.app);
+      await new Promise<void>((resolve) => server!.listen(0, resolve));
+      let address = server.address();
+      if (!address || typeof address === 'string') throw new Error('Test server did not start');
+      const firstUrl = `http://127.0.0.1:${address.port}`;
+
+      const reencrypted = await fetch(`${firstUrl}/persistence/reencrypt`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'x-omega-operator-id': 'rotation-operator',
+        },
+        body: JSON.stringify({ reason: 'Persisted re-encryption restart coverage' }),
+      });
+      expect(reencrypted.status).toBe(201);
+      const reencryption = (
+        (await reencrypted.json()) as ApiResponse<{
+          reencrypted: {
+            operatorId: string;
+            action: string;
+            reencryptedAt: string;
+            requestId: string;
+            snapshotRecords: number;
+            eventRecords: number;
+            snapshotKeySource: string;
+            eventLogKeySource: string;
+          };
+        }>
+      ).data.reencrypted;
+
+      await new Promise<void>((resolve, reject) =>
+        server!.close((error) => (error ? reject(error) : resolve()))
+      );
+
+      jest.resetModules();
+      const second = require('../index') as { app: typeof app };
+      server = createServer(second.app);
+      await new Promise<void>((resolve) => server!.listen(0, resolve));
+      address = server.address();
+      if (!address || typeof address === 'string') throw new Error('Test server did not start');
+      const secondUrl = `http://127.0.0.1:${address.port}`;
+
+      const health = (await (await fetch(`${secondUrl}/health`)).json()) as ApiResponse<{
+        checks: { persistence: { reencrypt: typeof reencryption | null } };
+      }>;
+      expect(health.data.checks.persistence.reencrypt).toEqual(reencryption);
+
+      const observability = (await (
+        await fetch(`${secondUrl}/observability`)
+      ).json()) as ApiResponse<{
+        runtime: { persistenceReencryption: typeof reencryption | null };
+      }>;
+      expect(observability.data.runtime.persistenceReencryption).toEqual(reencryption);
+    } finally {
+      if (server) {
+        await new Promise<void>((resolve, reject) =>
+          server!.close((error) => (error ? reject(error) : resolve()))
+        );
+      }
+      delete process.env.OMEGA_PERSISTENCE;
+      delete process.env.OMEGA_PERSISTENCE_KEY;
+      delete process.env.OMEGA_PERSISTENCE_KEY_PREVIOUS;
+      delete process.env.OMEGA_RUNTIME_STORE_PATH;
+      delete process.env.OMEGA_EVENT_LOG_PATH;
+      delete process.env.OMEGA_ADMIN_OPERATOR_ALLOWLIST;
+      rmSync(dir, { recursive: true, force: true });
+      jest.resetModules();
+    }
+  });
+});
+
+/**
  * The API optionally serves apps/web's production bundle: `webBuildPresent`
  * is computed once at module load from `OMEGA_WEB_DIST`, so exercising it
  * means requiring a freshly isolated copy of the module with that variable
