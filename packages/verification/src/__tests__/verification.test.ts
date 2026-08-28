@@ -103,6 +103,10 @@ describe('VerificationEngine — status-code-check', () => {
     expect(result.evidencePath[0].value).toBeNull();
     expect(result.evidencePath[0].reasoning).toContain('does not carry statusCode');
     expect(result.rules[0].confidence).toBe(0);
+    // Absent input and a failed check are both `passed: false`, and they
+    // are not the same fact. This one is the engine saying it could not
+    // look, which a reader must be able to see without reading prose.
+    expect(result.evidencePath[0].evaluated).toBe(false);
   });
 });
 
@@ -164,6 +168,28 @@ describe('VerificationEngine — unknown and empty rule sets', () => {
     expect(result.evidencePath[0].condition).toBe('rule-not-executable');
     expect(result.evidencePath[0].severity).toBe('critical');
     expect(result.evidencePath[0].reasoning).toContain('not evaluated');
+    // Machine-readable, not only prose. A reader of the evidence has to be
+    // able to tell "checked and wrong" from "not checked" without parsing
+    // an English sentence.
+    expect(result.evidencePath[0].evaluated).toBe(false);
+  });
+
+  it('marks a rule that ran as evaluated, whether or not it passed', () => {
+    // The flag must distinguish evaluation from outcome. If it tracked
+    // `passed` it would carry no information at all.
+    const engine = new VerificationEngine();
+    engine.registerRule(rule());
+
+    const failing = engine.verify(observation({ statusCode: 500 }));
+    expect(failing.summary.passed).toBe(false);
+    const failingStep = failing.evidencePath.find((entry) => entry.rule === 'status-code-check');
+    expect(failingStep?.passed).toBe(false);
+    expect(failingStep?.evaluated).toBe(true);
+
+    const passing = engine.verify(observation({ statusCode: 200 }));
+    const passingStep = passing.evidencePath.find((entry) => entry.rule === 'status-code-check');
+    expect(passingStep?.passed).toBe(true);
+    expect(passingStep?.evaluated).toBe(true);
   });
 
   it('does not let an unimplemented rule reach a passing attestation', () => {

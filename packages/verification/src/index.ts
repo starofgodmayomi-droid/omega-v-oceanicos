@@ -76,6 +76,7 @@ const RULE_IMPLEMENTATIONS: Record<string, RuleImplementation> = {
               ? `Response time ${responseTime}ms is below ${threshold}ms threshold`
               : `Response time ${responseTime}ms exceeds ${threshold}ms threshold`,
             severity: passed ? undefined : 'warning',
+            evaluated: true,
           },
         ],
       };
@@ -103,6 +104,7 @@ const RULE_IMPLEMENTATIONS: Record<string, RuleImplementation> = {
               ? `Status code is ${statusCode} (expected)`
               : `Status code is ${statusCode} (expected ${expected})`,
             severity: passed ? undefined : 'critical',
+            evaluated: true,
           },
         ],
       };
@@ -262,6 +264,7 @@ export class VerificationEngine {
               `not evaluated. An unevaluated rule is recorded as a failure rather ` +
               `than assumed to pass.`,
             severity: 'critical',
+            evaluated: false,
           },
         ],
       };
@@ -289,6 +292,7 @@ export class VerificationEngine {
               `could not be evaluated. Absent input is recorded as a failure rather ` +
               `than read as a passing value.`,
             severity: 'critical',
+            evaluated: false,
           },
         ],
       };

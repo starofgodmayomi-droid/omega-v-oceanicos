@@ -44,7 +44,52 @@ const signed = (overrides: Record<string, unknown> = {}): Record<string, unknown
   return attestation;
 };
 
+/**
+ * Signed from the specification's own field list rather than from the
+ * module's `buildSignedBytes`. Using the helper for both sides would make
+ * the browser agree with itself, which proves nothing about whether it
+ * agrees with the format.
+ */
+const signedFromSpec = (overrides: Record<string, unknown> = {}): Record<string, unknown> => {
+  const attestation = { ...base(), ...overrides };
+  const payload: Record<string, unknown> = {};
+  for (const field of SIGNED_FIELDS) payload[field] = attestation[field];
+  attestation.signature = `0x${sign(null, Buffer.from(JSON.stringify(payload)), privateKey).toString('hex')}`;
+  return attestation;
+};
+
 describe('browser attestation verifier', () => {
+  it('verifies an attestation whose signed fields are not ASCII', async () => {
+    // Every other case in this file is ASCII, and so was every case on the
+    // Python side — which is how a reference verifier that escaped
+    // non-ASCII to \uXXXX shipped and rejected genuine attestations while
+    // reporting them as forged. `attestedBy` is caller-supplied and this
+    // project's own name is not ASCII, so the gap was reachable.
+    //
+    // The signature is built from the specification's field list, so a
+    // pass means the browser agrees with the format rather than with its
+    // own helper.
+    const result = await verifyAttestation(
+      signedFromSpec({ attestedBy: 'Ω∞v-attestation-service 🌊' }),
+      publicKeyPem,
+      subtle
+    );
+
+    expect(result.valid).toBe(true);
+  });
+
+  it('rejects a tampered non-ASCII field like any other', async () => {
+    // Guards the direction that matters: the case above must pass because
+    // the bytes match, not because non-ASCII input weakens the check.
+    const attestation = signedFromSpec({ attestedBy: 'Ω∞v-attestation-service 🌊' });
+    attestation.attestedBy = 'Ω∞v-attestation-service 🌋';
+
+    const result = await verifyAttestation(attestation, publicKeyPem, subtle);
+
+    expect(result.valid).toBe(false);
+    expect(result.stage).toBe('signature');
+  });
+
   it('reports whether this environment can verify Ed25519 at all', async () => {
     // Recorded rather than asserted true: a runtime without Ed25519 must
     // say so instead of silently reporting every attestation invalid.

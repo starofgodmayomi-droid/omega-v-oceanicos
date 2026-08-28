@@ -323,3 +323,73 @@ A bounded containment slice is prepared locally in `apps/web/src/verify.ts`: `im
 Observed local evidence for this slice: focused verifier tests passed (28 tests), the complete DOM project passed (60 tests), targeted ESLint passed with zero warnings, targeted Prettier passed, TypeScript type-check passed, and `git diff --check` passed. The change is uncommitted and unpublished; hosted verification is still required before any merge decision.
 
 Dissent preserved: explicit test cleanup, broader React lifecycle changes, and merely increasing the Jest budget were not selected because current evidence does not distinguish them as the responsible surface. The next discriminator is hosted CI on this bounded timeout slice.
+
+## Post-merge WebCrypto containment checkpoint — 2026-08-25
+
+PR #202 was authorized and squash-merged into `main` as `ca74342e422dd04e618b6a4793fe7abd2cbd8b16` (`ca74342`). The previously failing hosted Node 22 verification passed on the repaired PR head. The post-merge main Verification Pipeline [32890916962](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/actions/runs/32890916962) passed Node 20, Node 22, Windows compatibility, package/smoke, and attested artifact publication. Security Analysis [32890916948](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/actions/runs/32890916948) also passed.
+
+The bounded timeout prevents an indefinitely pending browser-side WebCrypto operation from leaving the dashboard in `Checking...`; it does not cancel an already-started primitive, establish the root cause of the earlier hosted stall, or expand the verifier’s trust claim. The verifier still reports only signature-origin/integrity evidence and retains the distinction between cryptographic validity and correctness, revocation, expiry, distributed consistency, and deployment reality.
+
+The local checkout was synchronized to `origin/main` at `ca74342` and observed clean before this documentation-only evidence update. The update itself is currently uncommitted and not published. No deployment or running production target was observed.
+
+## GitHub governance audit checkpoint — 2026-08-26
+
+Observed through the GitHub API for `starofgodmayomi-droid/omega-v-oceanicos`: the repository is public, `main` is the default branch, secret scanning and push protection are enabled, and the repository security policy is present. Dependabot security updates, secret-scanning non-provider patterns, and secret-scanning validity checks are disabled. The API reported that `main` is not branch-protected; required reviews and required status checks therefore remain a governance configuration gap rather than an assumed control.
+
+No repository setting was changed. These observations are configuration evidence only: they do not prove that secrets are absent, that all dependencies are safe, that hosted checks cannot be bypassed, or that the repository is deployed securely. Enabling branch protection or security automation would be an externally visible governance change and remains human-authorized work.
+
+## Accessible independent verification checkpoint — 2026-08-27
+
+The independent verification panel now connects both input textareas to its user guidance through `aria-describedby`, marks the verification action as busy while browser verification is running, and announces the structured result through a polite atomic live region. This improves keyboard and assistive-technology observability without changing the cryptographic claim: a valid result still proves only signature origin and integrity, not decision correctness, revocation, expiry, distributed consistency, or deployment reality.
+
+The slice was isolated on `feat/accessible-independent-verification` from `origin/main` at `ca74342`; it contains the Web dashboard markup, its focused DOM regression test, and this lineage record. Local verification passed the focused DOM project with 61 tests, targeted formatting, zero-warning lint, TypeScript type-check, and `git diff --check`. Hosted verification and publication remain separately gated; no merge or deployment is claimed.
+
+## WebCrypto harness diagnosis carried forward — 2026-08-27
+
+PR #205 provides a deterministic test-harness diagnosis for the hosted Windows failure: browser crypto operations settle promptly, but a React state update can be queued inside the async `findByRole` scope created by the test. The resulting `act()` deadlock leaves the rendered verification result unavailable until the query timeout. The repair is limited to the DOM test harness and retains the defensive browser-crypto timeout; it does not claim that a cryptographic primitive stalled or that the application was deployed.
+
+## The "WebCrypto stall" was not WebCrypto — 2026-08-26
+
+The intermittent DOM failure recorded above as an environment-sensitive hosted WebCrypto risk has a cause, and it is not WebCrypto. `jest.setup.dom.ts` configured a custom Testing Library `asyncWrapper` that ran every `findBy*` and `waitFor` inside `act()`. That override inverts a deliberate decision in `@testing-library/react`, which configures its own `asyncWrapper` to switch the act environment **off** for those helpers — its source carries the comment _"We just want to run `waitFor` without IS_REACT_ACT_ENVIRONMENT"_.
+
+Running them inside `act()` produces a circular wait. The helper opens an act scope and waits for the DOM to change; a state update arriving during that scope is queued on the act queue; the act queue is flushed when the act callback resolves — which cannot happen until the DOM changes. Nothing breaks the cycle, and the update sits one flush away from being rendered for the entire budget.
+
+Measured on `claude/matrix-keep-both-signals` (identical to `main` apart from a workflow setting), with an allocation-only trace inside `apps/web/src/verify.ts` and `checkOffline`:
+
+```
+837186 handler entered
+837190 scheduled importing the public key
+837208 settled importing the public key
+837209 scheduled verifying the signature
+837223 settled verifying the signature
+837223 handler got outcome signature
+837223 handler finally
+now=867242
+afterBareActFlush=FOUND: VALID signature is valid for this public key
+```
+
+Both WebCrypto operations settled **37ms** after the click, and the component called `setOfflineResult` and `setOfflineChecking(false)` in the same millisecond. `findByRole('status')` then waited its full **30 seconds** and reported the panel still disabled and reading `Checking...`. A single bare `act(async () => {})` in the failure handler rendered the `VALID` result immediately. The verification had already succeeded; only the render was withheld.
+
+This explains the parts that never fitted:
+
+- why PR #185's raise from 15s to 30s changed nothing — the wait cannot end, so a larger budget only buys a longer wait
+- why the DOM captured at failure was fully rendered rather than empty
+- why local reproduction was unreliable and the failure looked environment-sensitive — the deadlock only bites when the update lands inside the `findBy*` scope rather than during the click that started it, which is a matter of microseconds
+- why the 2-second `withTimeout` bound merged in `ca74342` did not contain it — the crypto path was never the thing that stalled
+
+The fix removes the override. `apps/web/src/__tests__/dom/act-async-wrapper.test.tsx` reproduces the deadlock deterministically by releasing a state update after the wait has already started: it fails with the override present and passes without it. The DOM project then ran **50 consecutive times with no failure**; the measured rate before the fix was 4 failures in 69 runs (≈6%).
+
+Corrections to the record above, stated rather than quietly edited: the 2026-08-25 checkpoint's classification of an "intermittent hosted WebCrypto coverage risk" was wrong about the subsystem, and the containment slice's claim that a 2-second timeout prevents the dashboard "remaining indefinitely in `Checking...`" was falsified by a hosted run that did exactly that with the slice merged (PR #193, Verification Pipeline run 32969741922, `verify (20.x)`).
+
+The `withTimeout` bound in `apps/web/src/verify.ts` is kept. It is a reasonable defensive limit on a real external primitive and its regression test still holds; it simply never addressed this failure.
+
+Two hosted confirmations followed, on branches that carry none of this change except the ported harness fix:
+
+| pull request                            | before the port                                 | after the port                          |
+| --------------------------------------- | ----------------------------------------------- | --------------------------------------- |
+| #193 (`apps/api` only)                  | `verify (20.x)` failed, run 32969741922         | all eight checks green, run 32981828788 |
+| #204 (one workflow file, one test file) | `Windows compatibility` failed, run 32982533176 | all eight checks green, run 32983406038 |
+
+Neither diff touches `apps/web`. Both had been red across days for a failure that was never theirs, and both went green on the same two-file port.
+
+The #204 failure is worth keeping for a second reason: it failed on **Windows while both Linux legs passed**. The older records repeatedly attribute Windows DOM failures to WebCrypto or to hosted contention. They are the same deadlock, and the platform difference is timing, not cryptography — the deadlock bites only when the state update lands inside the `findBy*` scope rather than during the interaction that opened it, which is a matter of microseconds.

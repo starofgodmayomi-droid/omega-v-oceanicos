@@ -10,6 +10,7 @@ Build the workspace, then run:
 pnpm --filter @omega-v/cli build
 OMEGA_API_URL=http://localhost:3000 node packages/cli/dist/index.js health
 OMEGA_API_URL=http://localhost:3000 node packages/cli/dist/index.js status
+OMEGA_API_URL=http://localhost:3000 node packages/cli/dist/index.js rules
 ```
 
 The `health` command reads unauthenticated `GET /health`, prints liveness, readiness, memory-integrity, persistence-codec, and non-secret policy evidence, and exits `0` only when readiness is `ready` and memory integrity is true. A degraded response—including an enabled corrupt runtime snapshot—HTTP failure, or network failure returns a non-zero status; an enabled missing store remains a valid cold start when the API reports it as ready. It does not turn a probe response into a cryptographic or deployment claim.
@@ -131,6 +132,20 @@ node packages/cli/dist/index.js revoke attestation-id \
 The command calls `POST /attest/revoke`, sends `revokedBy=omega-cli`, and uses `--admin-token TOKEN` or `OMEGA_ADMIN_TOKEN` for the distinct administrative bearer credential. `--token` remains the read-only credential and is not reused for this mutation. The command prints the recorded revocation and returns a non-zero status for API failure. The API remains the authority for lineage, duplicate protection, persistence, and action denial; the CLI does not claim that a revocation is a cryptographic alteration of the original attestation.
 
 Mobile capabilities remain future slices. The typed SDK is available separately as `@omega-v/sdk`, and accepts `{ readToken }` as its third constructor argument when the API read boundary is enabled.
+
+## Rule capability
+
+`omega rules [--category CATEGORY]` calls `GET /rules` and prints each rule with `active` and, more importantly, `executable`.
+
+The two are different claims. `active` says the engine holds the rule and will apply it. `executable` says the engine can actually evaluate it — a rule's `definition` is a declaration this engine does not interpret, so a rule list without that flag reads as though every entry runs.
+
+A rule that is not executable fails verification rather than passing quietly, which is the correct direction: an unevaluated rule must never be reported as a rule that passed. The consequence is that without this command the only way to discover a misconfigured rule is to submit an observation and read the failure. `omega rules` moves that discovery earlier.
+
+Output reports `matched` (rules in this response), `registered` (every rule the engine holds), and `executable`. Those differ under `--category`, which is deliberate: "no rules matched this category" and "no rules at all" are different facts and an operator acts differently on each. When any matched rule cannot be evaluated, the command says so explicitly rather than leaving the reader to compare two numbers.
+
+An unreachable or malformed response exits non-zero rather than printing an empty list, because an empty rule set and an unavailable API must not look the same.
+
+This reports what the engine declares about itself. It is not a claim that any rule is correct, that its logic matches its description, or that a passing verification is a sound decision.
 
 ## Local job evidence
 
