@@ -96,6 +96,42 @@ describe('browser attestation verifier', () => {
     expect(typeof (await canVerify(subtle))).toBe('boolean');
   });
 
+  it('falls back to the global crypto object when no subtle is given', async () => {
+    // Every other call in this file passes `subtle` explicitly, so the
+    // `subtle ?? globalThis.crypto?.subtle` fallback never actually runs.
+    // Jest's own Node runtime supplies a real WebCrypto object, so this
+    // exercises the fallback with the same implementation the explicit
+    // calls use, not a stand-in.
+    expect(typeof (await canVerify())).toBe('boolean');
+  });
+
+  describe('without a global crypto object', () => {
+    let originalCrypto: PropertyDescriptor | undefined;
+
+    beforeEach(() => {
+      originalCrypto = Object.getOwnPropertyDescriptor(globalThis, 'crypto');
+      Object.defineProperty(globalThis, 'crypto', { value: undefined, configurable: true });
+    });
+
+    afterEach(() => {
+      if (originalCrypto) Object.defineProperty(globalThis, 'crypto', originalCrypto);
+    });
+
+    it('canVerify reports false rather than throwing when nothing is available', async () => {
+      expect(await canVerify()).toBe(false);
+    });
+
+    it('verifyAttestation reports the missing implementation before touching cryptography', async () => {
+      const result = await verifyAttestation(signed(), publicKeyPem);
+
+      expect(result).toEqual({
+        valid: false,
+        stage: 'crypto',
+        reason: 'this environment has no WebCrypto',
+      });
+    });
+  });
+
   it('verifies a signature it did not produce', async () => {
     const result = await verifyAttestation(signed(), publicKeyPem, subtle);
 
@@ -180,12 +216,17 @@ describe('browser attestation verifier', () => {
       expect((der as Uint8Array).length).toBeGreaterThan(30);
     });
 
-    it.each(['', 'not a pem', '-----BEGIN PUBLIC KEY-----\n-----END PUBLIC KEY-----'])(
-      'rejects malformed key %p',
-      (value) => {
-        expect(pemToDer(value)).toBeNull();
-      }
-    );
+    it.each([
+      '',
+      'not a pem',
+      '-----BEGIN PUBLIC KEY-----\n-----END PUBLIC KEY-----',
+      // Well-formed PEM markers around a body that is not valid base64 at
+      // all, rather than merely the wrong key type — atob() itself throws,
+      // which is the only way into the function's catch block.
+      '-----BEGIN PUBLIC KEY-----\n!!!\n-----END PUBLIC KEY-----',
+    ])('rejects malformed key %p', (value) => {
+      expect(pemToDer(value)).toBeNull();
+    });
 
     it('reports a bad key without claiming the signature was forged', async () => {
       const result = await verifyAttestation(signed(), 'not a key', subtle);
@@ -197,6 +238,25 @@ describe('browser attestation verifier', () => {
     it('preflight passes a well-formed attestation through to cryptography', () => {
       expect(preflight(signed())).toBeNull();
     });
+
+    it.each(['signature', 'verificationId', 'observationId'] as const)(
+      'flags an empty %s as a shape failure, distinct from a missing one',
+      (field) => {
+        // `base()` already carries signature: ''; the other two required
+        // fields start populated. A non-empty placeholder signature keeps
+        // that first check from firing for every case, so each iteration
+        // isolates the one field it names. An empty string is still
+        // `field in attestation`, so this is a different check from the
+        // `missing` scan a few lines below it.
+        const attestation = { ...base(), signature: '0xplaceholder', [field]: '' };
+
+        const result = preflight(attestation);
+
+        expect(result).not.toBeNull();
+        expect(result?.stage).toBe('shape');
+        expect(result?.reason).toBe(`${field} is empty`);
+      }
+    );
   });
 
   it('builds the same bytes as the published field order, not sorted order', () => {
@@ -240,5 +300,42 @@ describe('browser attestation verifier', () => {
     expect(result.valid).toBe(false);
     expect(result.stage).toBe('crypto');
     expect(result.reason).toContain('could not verify');
+  });
+
+  it('rejects a signature that is not valid hex before touching cryptography', async () => {
+    // decodeSignature() is unit-tested directly above, but verifyAttestation
+    // has its own branch on the null it can return, and nothing here drove
+    // an attestation through the full function with a malformed signature.
+    const attestation = signed();
+    attestation.signature = 'not hex at all';
+
+    const result = await verifyAttestation(attestation, publicKeyPem, subtle);
+
+    expect(result).toEqual({
+      valid: false,
+      stage: 'signature',
+      reason: 'signature is not valid hex',
+    });
+  });
+
+  it('stringifies a non-Error thrown by WebCrypto rather than crashing', async () => {
+    // WebCrypto is contractually supposed to reject with a DOMException
+    // (which satisfies `instanceof Error`), but the catch block has no way
+    // to enforce that on whatever implementation it is handed. A thrown
+    // plain string exercises the branch that must not call `.message` on
+    // something that lacks it.
+    const throwsAString = {
+      importKey: async () => {
+        throw 'boom';
+      },
+    } as unknown as SubtleCrypto;
+
+    const result = await verifyAttestation(signed(), publicKeyPem, throwsAString);
+
+    expect(result).toEqual({
+      valid: false,
+      stage: 'crypto',
+      reason: 'could not verify: boom',
+    });
   });
 });
