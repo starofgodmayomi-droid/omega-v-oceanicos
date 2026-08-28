@@ -1,6 +1,73 @@
 import { OmegaApiError, OmegaClient } from './index';
 
 describe('OmegaClient', () => {
+  it('reads which rules the engine can actually execute', async () => {
+    // The flag is the reason this method exists. A rule the engine holds
+    // but cannot run fails verification rather than passing quietly, and
+    // without this an SDK consumer only learns that from a failed verdict.
+    const client = new OmegaClient('http://api.test/', async (url) => {
+      expect(url).toBe('http://api.test/rules');
+      return new Response(
+        JSON.stringify({
+          data: {
+            count: 2,
+            registered: 2,
+            executable: 1,
+            category: null,
+            rules: [
+              {
+                name: 'status-code-check',
+                version: '1.0.0',
+                appliesTo: ['health-check'],
+                definition: 'statusCode === 200',
+                description: 'Status code is 200',
+                createdAt: '2026-08-16T00:00:00.000Z',
+                active: true,
+                executable: true,
+              },
+              {
+                name: 'declared-only',
+                version: '1.0.0',
+                appliesTo: ['health-check'],
+                definition: 'something the engine does not interpret',
+                description: 'Declared but not implemented',
+                createdAt: '2026-08-16T00:00:00.000Z',
+                active: true,
+                executable: false,
+              },
+            ],
+          },
+          timestamp: '2026-08-16T00:00:00.000Z',
+        })
+      );
+    });
+
+    const response = await client.getRules();
+
+    expect(response.data.executable).toBe(1);
+    expect(response.data.registered).toBe(2);
+    expect(response.data.rules.map((rule) => rule.executable)).toEqual([true, false]);
+  });
+
+  it('passes a category filter through as a query parameter', async () => {
+    // registered stays at the engine total while count reflects the
+    // filter, so a caller can tell "no matching rules" from "no rules".
+    const client = new OmegaClient('http://api.test/', async (url) => {
+      expect(url).toBe('http://api.test/rules?category=health-check');
+      return new Response(
+        JSON.stringify({
+          data: { count: 0, registered: 2, executable: 0, category: 'health-check', rules: [] },
+          timestamp: '2026-08-16T00:00:00.000Z',
+        })
+      );
+    });
+
+    const response = await client.getRules({ category: 'health-check' });
+
+    expect(response.data.count).toBe(0);
+    expect(response.data.registered).toBe(2);
+  });
+
   it('reads typed health and readiness evidence', async () => {
     const client = new OmegaClient('http://api.test/', async (url, init) => {
       expect(url).toBe('http://api.test/health');

@@ -10,6 +10,7 @@ Requires: pip install cryptography
     python verify_attestation.py attestation.json public_key.pem
 """
 
+import codecs
 import json
 import sys
 
@@ -31,12 +32,43 @@ SIGNED_FIELDS = (
 )
 
 
+def _escape_lone_surrogates(error):
+    """Encode an unpaired surrogate the way JSON.stringify does.
+
+    ES2019 made JSON.stringify well-formed: a lone surrogate is emitted as
+    a \\uXXXX escape rather than raw. Python cannot encode one as UTF-8 at
+    all and raises, so without this the verifier fails on input JavaScript
+    handles cleanly.
+    """
+    unencodable = error.object[error.start : error.end]
+    return ("".join(f"\\u{ord(char):04x}" for char in unencodable), error.end)
+
+
+codecs.register_error("js-lone-surrogate", _escape_lone_surrogates)
+
+
 def signed_bytes(attestation):
     """Rebuild the exact bytes the signer covered."""
     payload = {field: attestation[field] for field in SIGNED_FIELDS}
     # separators removes the whitespace json.dumps adds by default;
     # sort_keys stays off on purpose.
-    return json.dumps(payload, separators=(",", ":")).encode("utf-8")
+    #
+    # ensure_ascii=False is not cosmetic. Python escapes non-ASCII to
+    # \uXXXX by default; JavaScript's JSON.stringify emits the character
+    # and the signer encodes the result as UTF-8. With the default, an
+    # attestedBy of "Ω∞v-attestation-service" produced 219 bytes here
+    # against the signer's 212, and this verifier rejected a genuine
+    # attestation with "signature does not match this public key" — the
+    # same words it uses for a forgery.
+    #
+    # The error handler covers the case ensure_ascii=False creates rather
+    # than solves. JavaScript escapes an unpaired surrogate; Python cannot
+    # encode one and raises. Escaping it here reproduces the signer's bytes
+    # for that input too, so neither setting trades one broken case for
+    # another.
+    return json.dumps(payload, separators=(",", ":"), ensure_ascii=False).encode(
+        "utf-8", "js-lone-surrogate"
+    )
 
 
 def verify(attestation, public_key_pem, expected_algorithm="Ed25519"):
