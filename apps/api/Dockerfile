@@ -29,6 +29,7 @@ RUN pnpm --filter @omega-v/types build \
  && pnpm --filter @omega-v/attestation build \
  && pnpm --filter @omega-v/dissensus build \
  && pnpm --filter @omega-v/remember build \
+ && pnpm --filter @omega-v/mini build \
  && pnpm --filter @omega-v/api build \
  && pnpm --filter @omega-v/web build
 
