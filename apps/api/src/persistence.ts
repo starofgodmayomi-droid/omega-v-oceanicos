@@ -1,4 +1,11 @@
-import { createCipheriv, createDecipheriv, createHash, randomBytes, randomUUID } from 'node:crypto';
+import {
+  createCipheriv,
+  createDecipheriv,
+  createHash,
+  createHmac,
+  randomBytes,
+  randomUUID,
+} from 'node:crypto';
 import {
   appendFileSync,
   existsSync,
@@ -255,8 +262,32 @@ export const parsePersistenceRecoveryPolicy = (
  * It is provenance about the local configured secret only; it is not custody,
  * key recovery, HSM/KMS, or deployment evidence.
  */
+/**
+ * A stable, non-secret label for whichever persistence key is configured.
+ *
+ * This used to be `sha256(secret)` truncated to 16 hex characters. The AES
+ * key is `sha256(secret)` in full, so the published fingerprint was byte for
+ * byte the first 8 bytes of the encryption key — and it is served on
+ * `GET /health`, which is unauthenticated in every mode.
+ *
+ * Domain-separated with an HMAC label now, the same construction
+ * `AttestationService.keyFingerprint` already uses. That is where the pattern
+ * came from: this repository had the right shape in one place and the wrong
+ * one in the other.
+ *
+ * What this does not fix, and cannot: the value is still a deterministic
+ * function of the secret, so anyone who can read it may hash candidate
+ * secrets and compare. That is inherent to publishing a stable key
+ * identifier, and it is why the derivation note in apps/api/README.md asks
+ * for a high-entropy secret rather than a memorable one.
+ */
 export const persistenceKeyFingerprint = (secret?: string): PersistenceKeyFingerprint =>
-  secret ? createHash('sha256').update(secret, 'utf8').digest('hex').slice(0, 16) : null;
+  secret
+    ? createHmac('sha256', 'omega-v-persistence-key-fingerprint')
+        .update(secret, 'utf8')
+        .digest('hex')
+        .slice(0, 16)
+    : null;
 
 /**
  * A rotation is pending when a configured previous key was actually needed to
