@@ -49,3 +49,7 @@ docker-compose.override.yml
 # Cache
 .eslintcache
 .prettier-ignore
+
+# Python bytecode, from running the reference verifier locally
+__pycache__/
+*.pyc
