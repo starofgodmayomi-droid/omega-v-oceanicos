@@ -108,4 +108,13 @@ export class MiniKernel {
   }
 }
 
+export { OperatingSystemKernel } from './os.js';
+export type {
+  OperatingSystemEvent,
+  OperatingSystemOptions,
+  OperatingSystemSnapshot,
+  OperatingSystemState,
+  OperatingSystemTask,
+} from './os.js';
+
 export default MiniKernel;

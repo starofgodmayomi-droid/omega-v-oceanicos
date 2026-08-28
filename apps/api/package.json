@@ -26,6 +26,7 @@
     "@omega-v/attestation": "*",
     "@omega-v/dissensus": "*",
     "@omega-v/remember": "*",
+    "@omega-v/mini": "*",
     "express": "^5.2.1"
   },
   "devDependencies": {

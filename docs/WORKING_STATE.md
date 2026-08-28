@@ -1,6 +1,16 @@
 # Ω∞v Oceanicos Working State
 
-**Updated:** 2026-08-23
+**Updated:** 2026-08-28
+
+## Local OS kernel and API slice — build/verify checkpoint — 2026-08-28
+
+A new finite `OperatingSystemKernel` is implemented in `packages/mini/src/os.ts` and exported from `@omega-v/mini`. It models the lifecycle states `offline`, `booting`, `ready`, `degraded`, `stopping`, and `stopped`; admits only typed bounded task kinds; fails closed at the configured task limit; clears work on stop; and retains a bounded event trace. Task identifiers and event sequence numbers are deterministic within a kernel instance, including after trace eviction. No arbitrary shell execution, remote mutation, deployment, or credential handling is part of this slice.
+
+The API now boots one kernel instance at process initialization and exposes its read-only snapshot at `GET /os`. The endpoint returns the finite lifecycle state, bounded tasks, and event trace in the repository's normal `{ data, timestamp }` envelope. A contract test verifies the ready boot trace and empty task set. This is an implementation and local-verification claim only; it is not a CI, remote-branch, merge, deployment, or production-runtime claim.
+
+Observed local evidence in isolated worktree `/tmp/omega-os-kernel-slice` against base `55e8a952` includes: formatting check passed; ESLint passed with zero warnings; TypeScript no-emit type-check passed; focused API/kernel/documentation/web contract tests passed (`142 tests`); the complete Jest gate passed (`51 suites`, `1007 tests`) with forced exit to close existing open-handle behavior; the repository build passed; `pnpm smoke:api` returned `health: ready`, `deterministic: true`, `terminalState: return`, `verified: false`; and `git diff --check` passed. This is completed local evidence for the isolated slice, not CI or production evidence.
+
+Remote mutation remains human-gated. No push, PR publication, merge, deployment, or main-branch mutation is authorized by this checkpoint. Rollback is deletion of the isolated worktree changes or reset of the unpublished local commit; the base lineage remains preserved.
 
 This record compresses the prior evolution cycle into observable repository state. It distinguishes completed implementation from CI evidence, human review, and remaining production gaps.
 

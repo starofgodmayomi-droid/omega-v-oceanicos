@@ -134,6 +134,24 @@ describe('API runtime contracts', () => {
     );
   });
 
+  it('exposes a bounded ready operating-system snapshot', async () => {
+    const response = await fetch(`${baseUrl}/os`);
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as {
+      data: {
+        state: string;
+        tasks: unknown[];
+        events: Array<{ sequence: number; state: string }>;
+      };
+    };
+    expect(body.data.state).toBe('ready');
+    expect(body.data.tasks).toEqual([]);
+    expect(body.data.events).toEqual([
+      { sequence: 1, state: 'booting', type: 'boot' },
+      { sequence: 2, state: 'ready', type: 'boot' },
+    ]);
+  });
+
   it('exposes bounded audit evidence with explicit local provenance', async () => {
     const response = await fetch(`${baseUrl}/audit/events?status=passed&limit=2`);
     const body = (await response.json()) as {
