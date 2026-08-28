@@ -450,7 +450,24 @@ deliberately weak and are for local development and CI only.
 
 This is recorded rather than repaired. Replacing the derivation with a proper
 KDF would make every existing encrypted store unreadable, so it needs a
-versioned envelope and a migration path, not a one-line change. Existing plaintext
+versioned envelope and a migration path, not a one-line change.
+
+**The key fingerprint is a label, not key material.** `GET /health` is
+unauthenticated in every mode and reports `currentKeyFingerprint` so an
+operator can tell which key is loaded and see a rotation take effect. That
+value is `hmac-sha256('omega-v-persistence-key-fingerprint', secret)`
+truncated to 16 hex characters — the same domain-separated construction
+`AttestationService.keyFingerprint` uses.
+
+It was previously `sha256(secret)` truncated. Since the AES key is
+`sha256(secret)` in full, the unauthenticated endpoint was publishing the
+first eight bytes of the encryption key. Domain separation removes that.
+
+What remains, and cannot be removed while a stable identifier is published:
+the fingerprint is a deterministic function of the secret, so anyone able to
+read it can hash candidate secrets and compare. A high-entropy secret is what
+makes that irrelevant, which is the same reason the derivation note above
+asks for one. Existing plaintext
 stores remain readable for controlled migration, while all new writes use the
 configured encryption key. When rotating keys, set both `OMEGA_PERSISTENCE_KEY`
 and `OMEGA_PERSISTENCE_KEY_PREVIOUS`; the authenticated `POST
@@ -820,7 +837,7 @@ curl -X POST http://localhost:3000/complete-loop \
 - `OMEGA_PERSISTENCE_CUSTODY_MODE` and `OMEGA_PERSISTENCE_CUSTODY_REFERENCE` — Optional declaration of `unverified-local`, `operator-managed`, `hsm-kms`, or `external-reference` custody context plus a bounded non-secret reference. `unverified-local` is the default; invalid or reference-less declarations degrade readiness. Every mode reports `verified: false`; no HSM/KMS, operator, external system, recovery material, or deployment claim is made.
 - `OMEGA_SIGNING_KEY` — Required signing key for attestation; there is no default
 - `OMEGA_PERSISTENCE` — Explicit persistence override: `on` or `off`
-- `OMEGA_PERSISTENCE_KEY` — Active secret for AES-256-GCM encryption of runtime snapshot and event-log files; new writes always use this key, and it is never exposed in logs or API responses. The AES key is an unsalted `sha256` of this value with no minimum length, so the protection is bounded by the secret's entropy — see the derivation note above
+- `OMEGA_PERSISTENCE_KEY` — Active secret for AES-256-GCM encryption of runtime snapshot and event-log files; new writes always use this key, and it is never exposed in logs or API responses. The AES key is an unsalted `sha256` of this value with no minimum length, so the protection is bounded by the secret's entropy — see the derivation note above. The secret itself is never returned; the `currentKeyFingerprint` reported by `/health` is a domain-separated HMAC label, not a slice of the key
 - `OMEGA_PERSISTENCE_KEY_PREVIOUS` — Optional previous secret accepted for controlled reads during local key rotation; snapshot/event-log observability reports `previous` or `mixed` without returning either secret. This is fallback compatibility, not custody, secure deletion, automated re-encryption, or recovery policy. `OMEGA_PERSISTENCE_RECOVERY_MODE` may be `operator-provided` or `external-reference`, with `OMEGA_PERSISTENCE_RECOVERY_REFERENCE` as a bounded non-secret label; omitted configuration is `unavailable`, and invalid declarations degrade readiness. The resulting mode, reference, and parse reason are declaration evidence only: the API does not verify the operator, custodian, recovery material, or external system.
 - `OMEGA_LOCAL_JOB_LEDGER` — Set to `on` to enable the bounded local job ledger; it remains disabled by default and never starts external workers or network activity
 - `OMEGA_LOCAL_JOB_LEDGER_TOKEN` — Dedicated token required by the loopback-only local job endpoints when the ledger is enabled. In `OMEGA_AUTH_MODE=local`, it may be supplied as the bearer token for backward compatibility. In `OMEGA_AUTH_MODE=required`, keep the global `Authorization` bearer role (`read` for GET or `admin` for mutations) and send this dedicated value in `x-omega-local-job-token`; the two credentials remain separate.

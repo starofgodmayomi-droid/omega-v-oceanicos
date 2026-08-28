@@ -1,7 +1,7 @@
 import { mkdtempSync, readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { createDecipheriv, createHash } from 'node:crypto';
+import { createDecipheriv, createHash, createHmac } from 'node:crypto';
 import {
   appendEvent,
   emptySnapshot,
@@ -87,6 +87,28 @@ describe('runtime persistence', () => {
 
     const line = readFileSync(logPath, 'utf8').trim();
     expect(line.startsWith('omega-v1:')).toBe(true);
+  });
+
+  it('does not publish any part of the encryption key as the fingerprint', () => {
+    // The regression this guards. `GET /health` is unauthenticated in every
+    // mode and reports currentKeyFingerprint. When the fingerprint was
+    // sha256(secret) truncated, and the AES key is sha256(secret) in full,
+    // that endpoint published the first 8 bytes of the encryption key.
+    const secret = 'operator-supplied-secret';
+    const aesKey = createHash('sha256').update(secret, 'utf8').digest('hex');
+    const fingerprint = persistenceKeyFingerprint(secret);
+
+    expect(fingerprint).not.toBeNull();
+    expect(aesKey.startsWith(fingerprint as string)).toBe(false);
+    expect(aesKey).not.toContain(fingerprint as string);
+
+    // Domain-separated the same way AttestationService.keyFingerprint is.
+    expect(fingerprint).toBe(
+      createHmac('sha256', 'omega-v-persistence-key-fingerprint')
+        .update(secret, 'utf8')
+        .digest('hex')
+        .slice(0, 16)
+    );
   });
 
   it('exposes only a deterministic non-secret key fingerprint', () => {
