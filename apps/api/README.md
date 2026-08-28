@@ -363,7 +363,14 @@ returns `409 REVOKED_ATTESTATION` rather than authorizing an action. When
 `OMEGA_ATTESTATION_TTL_MS` is configured, expiry is an additional authorization
 predicate: verification reports `expired: true` and `/act` returns
 `409 EXPIRED_ATTESTATION`. Duplicate revocation requests are rejected with `409 ATTESTATION_ALREADY_REVOKED`. When `OMEGA_ADMIN_OPERATOR_ALLOWLIST` is configured, an unlisted identity fails with `403 ADMIN_OPERATOR_NOT_ALLOWED`; this is an additional local bearer-plus-identity boundary, not a complete identity, authentication, or authorization system.
-`GET /attest/revocations` also returns non-secret integrity metadata: `disabled` when persistence is off, `legacy` when an older snapshot has no registry digest, `intact` when the digest matches loaded records, and `mismatch` when it does not. The response also exposes a local monotonic-in-process `revision` derived from the append-only registry length; verification and mutation responses carry the same revision evidence. A mismatched registry fails closed with `503 REVOCATION_REGISTRY_INTEGRITY` for verification-sensitive mutation and action paths. This digest and revision are local freshness/tamper-evidence signals, not distributed consistency, custody, secure deletion, or proof that another node has observed the same registry state.
+`GET /attest/revocations` also returns non-secret integrity metadata: `disabled` when persistence is off, `legacy` when an older snapshot has no registry digest, `intact` when the digest matches loaded records, and `mismatch` when it does not. The response also exposes a local monotonic-in-process `revision` derived from the append-only registry length; verification and mutation responses carry the same revision evidence. A mismatched registry fails closed with `503 REVOCATION_REGISTRY_INTEGRITY` for verification-sensitive mutation and action paths. This digest and revision are local freshness and **corruption**-evidence signals, not distributed consistency, custody, secure deletion, or proof that another node has observed the same registry state.
+
+They are deliberately not described as tamper-evidence. The digest is an unkeyed `sha256` stored in the same snapshot as the records it covers, so anyone able to rewrite that file can drop a revocation and recompute the digest over what remains; the result reports `intact` and is indistinguishable from an honest registry. What the digest does catch is a partial write, a truncation, or bit rot.
+
+Two further consequences follow, both covered by tests in `apps/api/src/__tests__/api.test.ts`:
+
+- **Deleting the digest is more permissive than corrupting it.** `/act` and `/attest/verify` deny on `mismatch` only. Dropping revocations while leaving the digest yields `mismatch` and fails closed; dropping the digest as well yields `legacy` and is accepted. `legacy` exists so snapshots written before the digest stay readable, which is a real need — the cost is that absence is treated as benign, and absence is what an editor produces most easily.
+- **Authentication comes from the envelope, not the digest.** When `OMEGA_PERSISTENCE_KEY` is configured the snapshot is an AES-256-GCM envelope whose authentication tag a rewriter cannot forge without the key. That is what makes the file tamper-evident. With persistence enabled and no key the snapshot is plaintext on disk and every field in it, digest included, is whatever the last writer chose.
 
 ### Persistence Re-encryption
 
@@ -443,7 +450,24 @@ deliberately weak and are for local development and CI only.
 
 This is recorded rather than repaired. Replacing the derivation with a proper
 KDF would make every existing encrypted store unreadable, so it needs a
-versioned envelope and a migration path, not a one-line change. Existing plaintext
+versioned envelope and a migration path, not a one-line change.
+
+**The key fingerprint is a label, not key material.** `GET /health` is
+unauthenticated in every mode and reports `currentKeyFingerprint` so an
+operator can tell which key is loaded and see a rotation take effect. That
+value is `hmac-sha256('omega-v-persistence-key-fingerprint', secret)`
+truncated to 16 hex characters — the same domain-separated construction
+`AttestationService.keyFingerprint` uses.
+
+It was previously `sha256(secret)` truncated. Since the AES key is
+`sha256(secret)` in full, the unauthenticated endpoint was publishing the
+first eight bytes of the encryption key. Domain separation removes that.
+
+What remains, and cannot be removed while a stable identifier is published:
+the fingerprint is a deterministic function of the secret, so anyone able to
+read it can hash candidate secrets and compare. A high-entropy secret is what
+makes that irrelevant, which is the same reason the derivation note above
+asks for one. Existing plaintext
 stores remain readable for controlled migration, while all new writes use the
 configured encryption key. When rotating keys, set both `OMEGA_PERSISTENCE_KEY`
 and `OMEGA_PERSISTENCE_KEY_PREVIOUS`; the authenticated `POST
@@ -813,7 +837,7 @@ curl -X POST http://localhost:3000/complete-loop \
 - `OMEGA_PERSISTENCE_CUSTODY_MODE` and `OMEGA_PERSISTENCE_CUSTODY_REFERENCE` — Optional declaration of `unverified-local`, `operator-managed`, `hsm-kms`, or `external-reference` custody context plus a bounded non-secret reference. `unverified-local` is the default; invalid or reference-less declarations degrade readiness. Every mode reports `verified: false`; no HSM/KMS, operator, external system, recovery material, or deployment claim is made.
 - `OMEGA_SIGNING_KEY` — Required signing key for attestation; there is no default
 - `OMEGA_PERSISTENCE` — Explicit persistence override: `on` or `off`
-- `OMEGA_PERSISTENCE_KEY` — Active secret for AES-256-GCM encryption of runtime snapshot and event-log files; new writes always use this key, and it is never exposed in logs or API responses. The AES key is an unsalted `sha256` of this value with no minimum length, so the protection is bounded by the secret's entropy — see the derivation note above
+- `OMEGA_PERSISTENCE_KEY` — Active secret for AES-256-GCM encryption of runtime snapshot and event-log files; new writes always use this key, and it is never exposed in logs or API responses. The AES key is an unsalted `sha256` of this value with no minimum length, so the protection is bounded by the secret's entropy — see the derivation note above. The secret itself is never returned; the `currentKeyFingerprint` reported by `/health` is a domain-separated HMAC label, not a slice of the key
 - `OMEGA_PERSISTENCE_KEY_PREVIOUS` — Optional previous secret accepted for controlled reads during local key rotation; snapshot/event-log observability reports `previous` or `mixed` without returning either secret. This is fallback compatibility, not custody, secure deletion, automated re-encryption, or recovery policy. `OMEGA_PERSISTENCE_RECOVERY_MODE` may be `operator-provided` or `external-reference`, with `OMEGA_PERSISTENCE_RECOVERY_REFERENCE` as a bounded non-secret label; omitted configuration is `unavailable`, and invalid declarations degrade readiness. The resulting mode, reference, and parse reason are declaration evidence only: the API does not verify the operator, custodian, recovery material, or external system.
 - `OMEGA_LOCAL_JOB_LEDGER` — Set to `on` to enable the bounded local job ledger; it remains disabled by default and never starts external workers or network activity
 - `OMEGA_LOCAL_JOB_LEDGER_TOKEN` — Dedicated token required by the loopback-only local job endpoints when the ledger is enabled. In `OMEGA_AUTH_MODE=local`, it may be supplied as the bearer token for backward compatibility. In `OMEGA_AUTH_MODE=required`, keep the global `Authorization` bearer role (`read` for GET or `admin` for mutations) and send this dedicated value in `x-omega-local-job-token`; the two credentials remain separate.
@@ -827,7 +851,8 @@ Revocation records are included in the encrypted runtime snapshot when
 persistence is enabled and every revocation also produces an append-only
 `attestation.revoked` event. The snapshot carries a local SHA-256 registry digest
 for mismatch detection; legacy snapshots without that digest remain visible as
-`legacy` rather than being asserted intact.
+`legacy` rather than being asserted intact. That digest detects corruption
+rather than editing — see the boundary note under `GET /attest/revocations`.
 
 ## Testing
 
