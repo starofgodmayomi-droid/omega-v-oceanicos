@@ -21,7 +21,7 @@ Boot is idempotent. Stop is idempotent. Admission fails closed while offline or 
 
 The kernel retains a bounded event trace. Event sequence numbers are monotonic even when older entries are evicted. Task identifiers are deterministic within a kernel instance (`task-1`, `task-2`, and so on). Returned snapshots copy task inputs and event arrays so callers cannot mutate kernel state through an alias.
 
-These properties are tested in `packages/mini/src/os.test.ts`, including lifecycle boundaries, task limits, stop behavior, trace eviction, and deterministic identifiers. The API contract test in `apps/api/src/__tests__/api.test.ts` verifies that `GET /os` returns a ready boot trace with no admitted work.
+These properties are tested in `packages/mini/src/os.test.ts`, including lifecycle boundaries, task limits, stop behavior, trace eviction, and deterministic identifiers. The API contract test in `apps/api/src/__tests__/api.test.ts` verifies that `GET /os` returns a ready boot trace with no admitted work. SDK and CLI tests verify typed consumption, URL construction, bearer propagation, and operator-readable output.
 
 ## API surface
 
@@ -41,7 +41,7 @@ These properties are tested in `packages/mini/src/os.test.ts`, including lifecyc
 }
 ```
 
-The endpoint is read-only. Future mutation endpoints must use explicit typed commands, policy checks, audit events, and a human authorization gate before any remote or consequential action.
+The endpoint is read-only. The SDK exposes the same contract through `OmegaClient.getOperatingSystem()`, and the CLI exposes it through `omega os [--url URL] [--token TOKEN]`. Both surfaces preserve the read bearer boundary and return failure rather than treating an unavailable snapshot as empty evidence. Future mutation endpoints must use explicit typed commands, policy checks, audit events, and a human authorization gate before any remote or consequential action.
 
 ## Verification status
 

@@ -147,6 +147,33 @@ describe('OmegaClient', () => {
     });
   });
 
+  it('reads the bounded OS snapshot with the read bearer', async () => {
+    const client = new OmegaClient(
+      'http://api.test/',
+      async (url, init) => {
+        expect(url).toBe('http://api.test/os');
+        expect(new Headers(init?.headers).get('authorization')).toBe('Bearer read-token');
+        return new Response(
+          JSON.stringify({
+            data: {
+              state: 'ready',
+              tasks: [],
+              events: [
+                { sequence: 1, type: 'boot', state: 'booting' },
+                { sequence: 2, type: 'boot', state: 'ready' },
+              ],
+            },
+            timestamp: '2026-08-28T00:00:00.000Z',
+          })
+        );
+      },
+      { readToken: 'read-token' }
+    );
+    await expect(client.getOperatingSystem()).resolves.toMatchObject({
+      data: { state: 'ready', tasks: [], events: [{ sequence: 1 }, { sequence: 2 }] },
+    });
+  });
+
   it('reads typed explicit state readiness evidence', async () => {
     const client = new OmegaClient('http://api.test/', async (url) => {
       expect(url).toBe('http://api.test/state');

@@ -1,3 +1,23 @@
+export type OperatingSystemState =
+  'offline' | 'booting' | 'ready' | 'degraded' | 'stopping' | 'stopped';
+export type OperatingSystemTask = {
+  id: string;
+  kind: 'observe' | 'verify' | 'remember' | 'report' | 'recompile';
+  input: Record<string, unknown>;
+  requestedBy: string;
+};
+export type OperatingSystemEvent = {
+  sequence: number;
+  type: 'boot' | 'admit' | 'complete' | 'degrade' | 'stop';
+  state: OperatingSystemState;
+  taskId?: string;
+  reason?: string;
+};
+export type OperatingSystemSnapshot = {
+  state: OperatingSystemState;
+  tasks: OperatingSystemTask[];
+  events: OperatingSystemEvent[];
+};
 export type PersistenceAcknowledgement = {
   operatorId: string;
   reason: string;
@@ -448,6 +468,9 @@ export class OmegaClient {
     );
   }
 
+  async getOperatingSystem(): Promise<{ data: OperatingSystemSnapshot; timestamp: string }> {
+    return this.get<{ data: OperatingSystemSnapshot; timestamp: string }>('/os');
+  }
   async getState(): Promise<RuntimeState> {
     return this.get<RuntimeState>('/state');
   }

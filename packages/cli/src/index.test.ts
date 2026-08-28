@@ -9,6 +9,38 @@ describe('omega status CLI', () => {
     process.stderr.write = originalError;
   });
 
+  it('renders the bounded operating-system snapshot', async () => {
+    const output: string[] = [];
+    process.stdout.write = ((chunk: string | Uint8Array) => {
+      output.push(String(chunk));
+      return true;
+    }) as typeof process.stdout.write;
+
+    const exitCode = await run(
+      ['os', '--url', 'http://api.test/', '--token', 'read-token'],
+      async (url, init) => {
+        expect(url).toBe('http://api.test/os');
+        expect(new Headers(init?.headers).get('authorization')).toBe('Bearer read-token');
+        return new Response(
+          JSON.stringify({
+            data: {
+              state: 'ready',
+              tasks: [],
+              events: [
+                { sequence: 1, type: 'boot', state: 'booting' },
+                { sequence: 2, type: 'boot', state: 'ready' },
+              ],
+            },
+            timestamp: '2026-08-28T00:00:00.000Z',
+          })
+        );
+      }
+    );
+
+    expect(exitCode).toBe(0);
+    expect(output.join('')).toContain('OS            state=ready tasks=0 events=2');
+  });
+
   it('marks which rules the engine can actually evaluate', async () => {
     const output: string[] = [];
     process.stdout.write = ((chunk: string | Uint8Array) => {

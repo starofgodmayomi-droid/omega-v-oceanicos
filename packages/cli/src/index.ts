@@ -227,6 +227,7 @@ function usage(): string {
   return [
     'omega health [--url URL]',
     'omega status [--url URL] [--token TOKEN]',
+    'omega os [--url URL] [--token TOKEN]',
     'omega events [--url URL] [--limit N] [--token TOKEN]',
     'omega audit [--type TYPE] [--stage STAGE] [--status STATUS] [--from ISO] [--to ISO] [--limit N] [--url URL] [--token TOKEN]',
     'omega runs [--url URL] [--limit N] [--token TOKEN]',
@@ -344,6 +345,29 @@ async function health(argv: string[], fetchImpl: FetchLike): Promise<number> {
     );
     return 1;
   }
+}
+
+async function operatingSystem(argv: string[], fetchImpl: FetchLike): Promise<number> {
+  const endpoint = `${baseUrl(argv).replace(/\/$/, '')}/os`;
+  const response = await fetchImpl(endpoint, requestInit(argv));
+  const body = (await response.json()) as {
+    data?: {
+      state?: string;
+      tasks?: unknown[];
+      events?: Array<{ sequence: number; type: string; state: string }>;
+    };
+    message?: string;
+  };
+  if (!response.ok || !body.data) {
+    process.stderr.write(
+      `OS snapshot unavailable (${response.status}): ${body.message ?? 'unknown error'}\n`
+    );
+    return 1;
+  }
+  process.stdout.write(
+    `OS            state=${body.data.state ?? 'unknown'} tasks=${body.data.tasks?.length ?? 0} events=${body.data.events?.length ?? 0}\n`
+  );
+  return 0;
 }
 
 async function status(argv: string[], fetchImpl: FetchLike): Promise<number> {
@@ -896,6 +920,7 @@ export async function run(
   }
   if (command === 'health') return health(argv, fetchImpl);
   if (command === 'status') return status(argv, fetchImpl);
+  if (command === 'os') return operatingSystem(argv, fetchImpl);
   if (command === 'events') return events(argv, fetchImpl);
   if (command === 'audit') return audit(argv, fetchImpl);
   if (command === 'runs') return runs(argv, fetchImpl);
