@@ -1290,4 +1290,71 @@ describe('read-only local job evidence', () => {
     expect(within(panel).getByText(/durable=true/i)).toBeInTheDocument();
     expect(within(panel).queryByRole('button')).not.toBeInTheDocument();
   });
+
+  it('reports local jobs unavailable when the jobs request itself fails', async () => {
+    installFetch({
+      '/api/jobs?limit=20': () => Promise.reject(new Error('network down')),
+    });
+    await renderApp();
+    const panel = await screen.findByRole('region', { name: /local jobs/i });
+    expect(within(panel).getByText('Local jobs unavailable')).toBeInTheDocument();
+  });
+
+  it('reports invalid local jobs evidence rather than rendering a malformed ledger', async () => {
+    installFetch({
+      '/api/jobs?limit=20': () => json({ data: { jobs: 'not-an-array' } }),
+    });
+    await renderApp();
+    const panel = await screen.findByRole('region', { name: /local jobs/i });
+    expect(within(panel).getByText('Invalid local jobs evidence')).toBeInTheDocument();
+  });
+
+  it('reports jobs disabled from an explicit LOCAL_JOB_DISABLED error code', async () => {
+    installFetch({
+      '/api/jobs?limit=20': () =>
+        json(
+          { code: 'LOCAL_JOB_DISABLED', message: 'ignored in favor of the fixed copy' },
+          { status: 503 }
+        ),
+    });
+    await renderApp();
+    const panel = await screen.findByRole('region', { name: /local jobs/i });
+    expect(within(panel).getByText(/local jobs are disabled by default/i)).toBeInTheDocument();
+  });
+
+  it('reports read access unavailable on a 401 without leaking the error body', async () => {
+    installFetch({
+      '/api/jobs?limit=20': () => json({}, { status: 401 }),
+    });
+    await renderApp();
+    const panel = await screen.findByRole('region', { name: /local jobs/i });
+    expect(within(panel).getByText(/local job read access is unavailable/i)).toBeInTheDocument();
+  });
+
+  it('reports read access unavailable on a 403 as well as a 401', async () => {
+    installFetch({
+      '/api/jobs?limit=20': () => json({}, { status: 403 }),
+    });
+    await renderApp();
+    const panel = await screen.findByRole('region', { name: /local jobs/i });
+    expect(within(panel).getByText(/local job read access is unavailable/i)).toBeInTheDocument();
+  });
+
+  it('surfaces the server-provided error message for an otherwise unclassified failure', async () => {
+    installFetch({
+      '/api/jobs?limit=20': () => json({ message: 'ledger backend unreachable' }, { status: 500 }),
+    });
+    await renderApp();
+    const panel = await screen.findByRole('region', { name: /local jobs/i });
+    expect(within(panel).getByText('ledger backend unreachable')).toBeInTheDocument();
+  });
+
+  it('falls back to a generic message when an unclassified failure carries none of its own', async () => {
+    installFetch({
+      '/api/jobs?limit=20': () => json({}, { status: 500 }),
+    });
+    await renderApp();
+    const panel = await screen.findByRole('region', { name: /local jobs/i });
+    expect(within(panel).getByText('Local jobs unavailable')).toBeInTheDocument();
+  });
 });
