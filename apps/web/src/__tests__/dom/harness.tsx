@@ -12,7 +12,12 @@ export type LoopFixture = {
   verification: {
     id: string;
     summary: { passed: boolean; rulesApplied: number; rulesPassed: number; confidence: number };
-    evidencePath: Array<{ rule: string; passed: boolean; reasoning: string }>;
+    evidencePath: Array<{
+      rule: string;
+      passed: boolean;
+      reasoning: string;
+      evaluated?: boolean;
+    }>;
   };
   memory: { id: string; observationId: string; verificationId: string };
   attestation: {
@@ -34,12 +39,20 @@ export const passingLoop = (): LoopFixture => ({
     id: 'ver-2026-08-16-abc',
     summary: { passed: true, rulesApplied: 2, rulesPassed: 2, confidence: 0.95 },
     evidencePath: [
+      // `evaluated` is set on every step because the engine sets it on
+      // every step. fixture-contract.test.tsx fails if one is missing.
       {
         rule: 'response-time-threshold',
         passed: true,
+        evaluated: true,
         reasoning: 'Response time 42ms is below 100ms threshold',
       },
-      { rule: 'status-code-check', passed: true, reasoning: 'Status code is 200 (expected)' },
+      {
+        rule: 'status-code-check',
+        passed: true,
+        evaluated: true,
+        reasoning: 'Status code is 200 (expected)',
+      },
     ],
   },
   memory: {
@@ -63,12 +76,24 @@ export const failingLoop = (): LoopFixture => {
       ...loop.verification,
       summary: { passed: false, rulesApplied: 2, rulesPassed: 1, confidence: 0.5 },
       evidencePath: [
+        // Shaped the way the engine actually shapes it. A rule it could not
+        // run reports `evaluated: false` alongside `passed: false`; this
+        // fixture carried only the second half, so the dashboard rendered it
+        // as a plain failure and the test asserted a view the real system
+        // no longer produces. A fixture that drifts from the contract tests
+        // the fixture.
         {
           rule: 'response-time-threshold',
           passed: false,
+          evaluated: false,
           reasoning: 'Observation does not carry responseTime, so it could not be evaluated',
         },
-        { rule: 'status-code-check', passed: true, reasoning: 'Status code is 200 (expected)' },
+        {
+          rule: 'status-code-check',
+          passed: true,
+          evaluated: true,
+          reasoning: 'Status code is 200 (expected)',
+        },
       ],
     },
     attestation: { ...loop.attestation, verified: false },

@@ -101,11 +101,55 @@ describe('dashboard', () => {
     await user.click(await screen.findByRole('button', { name: /run verification/i }));
 
     // The UI claims "Failures remain visible as evidence". A dashboard that
-    // quietly dropped the failing step would still look correct.
-    const failed = await screen.findByText(/FAIL \/ Observation does not carry responseTime/);
-    expect(failed).toBeInTheDocument();
+    // quietly dropped the step would still look correct.
+    //
+    // It reads NOT EVALUATED rather than FAIL because the engine could not
+    // run that rule at all — the observation carried no responseTime. Both
+    // deny the action; only one of them means the system checked.
+    const unevaluated = await screen.findByText(
+      /NOT EVALUATED \/ Observation does not carry responseTime/
+    );
+    expect(unevaluated).toBeInTheDocument();
+    expect(unevaluated).toHaveClass('evidence-unevaluated');
     expect(screen.getByText(/PASS \/ Status code is 200/)).toBeInTheDocument();
     expect(screen.getByText('FAILED')).toBeInTheDocument();
+  });
+
+  it('does not colour a failed verification like a passing one', async () => {
+    // The unit tests for these decisions cover the decision. This covers
+    // the wiring: that the cell an operator glances at actually receives
+    // it. The cell was `className="green"` unconditionally, so FAILED
+    // rendered in the same green as PASSED.
+    const user = userEvent.setup();
+    installFetch({
+      '/api/complete-loop': () => json({ data: failingLoop() }, { status: 201 }),
+    });
+    await renderApp();
+
+    await user.click(await screen.findByRole('button', { name: /run verification/i }));
+
+    const cell = await screen.findByText('FAILED');
+    expect(cell).not.toHaveClass('green');
+  });
+
+  it('does not colour an unknown event log as a healthy one', async () => {
+    // The default health fixture carries no persistence block, so the cell
+    // renders UNKNOWN. The previous test was `source === 'partial' ? red :
+    // green`, and `undefined !== 'partial'`, so unknown came out green.
+    await renderApp();
+
+    const cells = await screen.findAllByText('UNKNOWN');
+    for (const cell of cells) {
+      expect(cell).not.toHaveClass('green');
+    }
+  });
+
+  it('omits the rotation recovery row entirely when health is absent', async () => {
+    // It used to render with no text and the green class: a positive
+    // signal with nothing behind it.
+    await renderApp();
+
+    expect(screen.queryByText('ROTATION RECOVERY')).not.toBeInTheDocument();
   });
 
   it('does not report a failed verification as passed', async () => {
