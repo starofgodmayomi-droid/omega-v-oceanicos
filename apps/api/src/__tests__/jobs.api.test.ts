@@ -344,7 +344,7 @@ describe('local job ledger HTTP contract', () => {
     }
   });
 
-  it('rejects a real non-loopback peer and a peer with no socket address at all', async () => {
+  it('rejects a real non-loopback TCP peer', async () => {
     const runtime = await startServer(true);
     try {
       const address = runtime.server.address();
@@ -362,21 +362,29 @@ describe('local job ledger HTTP contract', () => {
     } finally {
       runtime.cleanup();
     }
-
-    const unix = await startUnixServer();
-    try {
-      const noAddress = await rawRequest({
-        socketPath: unix.socketPath,
-        path: '/jobs',
-        method: 'GET',
-        headers: { authorization: 'Bearer job-test-token' },
-      });
-      expect(noAddress.status).toBe(403);
-      expect(noAddress.json).toMatchObject({ code: 'LOCAL_JOB_LOOPBACK_ONLY' });
-    } finally {
-      unix.cleanup();
-    }
   });
+
+  // Unix domain sockets are a POSIX concept: Windows would need a distinct
+  // named-pipe-based server to exercise the same "no remoteAddress at all"
+  // code path, so this is skipped there rather than run unverified.
+  (process.platform === 'win32' ? it.skip : it)(
+    'rejects a peer with no socket address at all',
+    async () => {
+      const unix = await startUnixServer();
+      try {
+        const noAddress = await rawRequest({
+          socketPath: unix.socketPath,
+          path: '/jobs',
+          method: 'GET',
+          headers: { authorization: 'Bearer job-test-token' },
+        });
+        expect(noAddress.status).toBe(403);
+        expect(noAddress.json).toMatchObject({ code: 'LOCAL_JOB_LOOPBACK_ONLY' });
+      } finally {
+        unix.cleanup();
+      }
+    }
+  );
 
   it('requires ledger authorization independently on every job-scoped route', async () => {
     const runtime = await startServer(true);
