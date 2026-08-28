@@ -363,7 +363,14 @@ returns `409 REVOKED_ATTESTATION` rather than authorizing an action. When
 `OMEGA_ATTESTATION_TTL_MS` is configured, expiry is an additional authorization
 predicate: verification reports `expired: true` and `/act` returns
 `409 EXPIRED_ATTESTATION`. Duplicate revocation requests are rejected with `409 ATTESTATION_ALREADY_REVOKED`. When `OMEGA_ADMIN_OPERATOR_ALLOWLIST` is configured, an unlisted identity fails with `403 ADMIN_OPERATOR_NOT_ALLOWED`; this is an additional local bearer-plus-identity boundary, not a complete identity, authentication, or authorization system.
-`GET /attest/revocations` also returns non-secret integrity metadata: `disabled` when persistence is off, `legacy` when an older snapshot has no registry digest, `intact` when the digest matches loaded records, and `mismatch` when it does not. The response also exposes a local monotonic-in-process `revision` derived from the append-only registry length; verification and mutation responses carry the same revision evidence. A mismatched registry fails closed with `503 REVOCATION_REGISTRY_INTEGRITY` for verification-sensitive mutation and action paths. This digest and revision are local freshness/tamper-evidence signals, not distributed consistency, custody, secure deletion, or proof that another node has observed the same registry state.
+`GET /attest/revocations` also returns non-secret integrity metadata: `disabled` when persistence is off, `legacy` when an older snapshot has no registry digest, `intact` when the digest matches loaded records, and `mismatch` when it does not. The response also exposes a local monotonic-in-process `revision` derived from the append-only registry length; verification and mutation responses carry the same revision evidence. A mismatched registry fails closed with `503 REVOCATION_REGISTRY_INTEGRITY` for verification-sensitive mutation and action paths. This digest and revision are local freshness and **corruption**-evidence signals, not distributed consistency, custody, secure deletion, or proof that another node has observed the same registry state.
+
+They are deliberately not described as tamper-evidence. The digest is an unkeyed `sha256` stored in the same snapshot as the records it covers, so anyone able to rewrite that file can drop a revocation and recompute the digest over what remains; the result reports `intact` and is indistinguishable from an honest registry. What the digest does catch is a partial write, a truncation, or bit rot.
+
+Two further consequences follow, both covered by tests in `apps/api/src/__tests__/api.test.ts`:
+
+- **Deleting the digest is more permissive than corrupting it.** `/act` and `/attest/verify` deny on `mismatch` only. Dropping revocations while leaving the digest yields `mismatch` and fails closed; dropping the digest as well yields `legacy` and is accepted. `legacy` exists so snapshots written before the digest stay readable, which is a real need — the cost is that absence is treated as benign, and absence is what an editor produces most easily.
+- **Authentication comes from the envelope, not the digest.** When `OMEGA_PERSISTENCE_KEY` is configured the snapshot is an AES-256-GCM envelope whose authentication tag a rewriter cannot forge without the key. That is what makes the file tamper-evident. With persistence enabled and no key the snapshot is plaintext on disk and every field in it, digest included, is whatever the last writer chose.
 
 ### Persistence Re-encryption
 
@@ -827,7 +834,8 @@ Revocation records are included in the encrypted runtime snapshot when
 persistence is enabled and every revocation also produces an append-only
 `attestation.revoked` event. The snapshot carries a local SHA-256 registry digest
 for mismatch detection; legacy snapshots without that digest remain visible as
-`legacy` rather than being asserted intact.
+`legacy` rather than being asserted intact. That digest detects corruption
+rather than editing — see the boundary note under `GET /attest/revocations`.
 
 ## Testing
 
