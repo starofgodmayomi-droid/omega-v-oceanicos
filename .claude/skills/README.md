@@ -12,6 +12,7 @@ its source.
 | `omega-v-ufi`                         | `3ef1fda3a9e84115495948c5f9510b22b946442a5847f701c1e922628e73bc45` | 2026-08-16 |
 | `omega-global-good-fullstack`         | `094759e83a3aec27b6884c3b55e19b8021f8771a40d6f036e334c0e2e15af79b` | 2026-08-27 |
 | `omega-global-good-fullstack-builder` | `96d5c00b13c80d343230f301c9c87b08f6d12278d541e06480db818749c40422` | 2026-08-27 |
+| `omega-full-stack-max`                | `ec5b6a72fd453e20243813424991be79d0f718e301e18b9e54ed0417f5082cd1` | 2026-08-28 |
 
 Verify an installed skill still matches what was recorded:
 
@@ -91,3 +92,38 @@ The same observation settles where skills load from. Neither skill was
 available while `skills/omega-global-good-fullstack/SKILL.md` was the only
 copy in the tree; both appeared once written under `.claude/skills/`. A copy
 under `skills/` alone is published, not loaded.
+
+## omega-full-stack-max
+
+Supplied 2026-08-28. A consolidation: its own closing paragraph names the
+eleven source skills it draws together, `omega-global-good-fullstack` and
+`omega-global-good-fullstack-builder` among them, and states that the
+sources "remain preserved and authoritative for specialized details" rather
+than being replaced. Both are therefore left installed above.
+
+What it adds over the builder skill is a longer kernel — `FRAME → OBSERVE →
+MAP → EVIDENCE → DISTINGUISH → HYPOTHESIZE → ...` — an explicit stance on
+connected services (read first, preview side effects, act minimally, verify
+the consequence), and one sentence that is the sharpest statement of the
+constraint the other two circle around:
+
+> Maximum means maximum verified value per unit of risk, complexity, cost,
+> time, and resource use — not maximum autonomy.
+
+### Loading
+
+Observed on 2026-08-28: checking out this branch made
+`omega-global-good-fullstack` and `omega-global-good-fullstack-builder`
+available to the running session, which is consistent with the note under
+the builder skill above and against the older `omega-v-ufi` note.
+
+`omega-full-stack-max` itself also loaded mid-session, but **not at the
+moment it was written**. It was absent from the session's skill list
+immediately after the file was created, and this paragraph originally
+recorded that absence. It then appeared a few tool calls later, which
+falsified the sentence before it was committed.
+
+So the rule is narrower than "installed skills load immediately": a skill
+written mid-session becomes available after some delay, not synchronously
+with the write. The length of that delay, and what ends it, were not
+established — only that it is neither zero nor a full session.
