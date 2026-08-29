@@ -817,6 +817,133 @@ describe('dashboard', () => {
       expect(await screen.findByText(/compiler unavailable/)).toBeInTheDocument();
     });
   });
+
+  /**
+   * Every handler that talks to the API — refreshRuntime, executeLoop,
+   * verifyAttestation, revokeAttestation, authorizeAction, recordLearning,
+   * proposeRecompile — ends its catch block with the same shape:
+   * `requestError instanceof Error ? requestError.message : '<fallback>'`.
+   * Every test above throws through `describeResponseError`, which always
+   * produces a real `Error`, so the `instanceof Error` check had only ever
+   * been exercised as true: the fallback half of each ternary had never run.
+   *
+   * `fetch()` itself can reject with something that is not an `Error` (a
+   * string, a plain object) depending on the environment and what threw, so
+   * the fallback is real defensive behaviour, not dead code. Each test below
+   * makes exactly one route reject with a non-Error value and checks the
+   * dashboard shows the hardcoded fallback message for that handler instead
+   * of leaking the rejection value or crashing on `.message` of a value that
+   * doesn't have one.
+   */
+  describe('non-Error rejection fallbacks', () => {
+    it('reports the generic runtime message when refreshRuntime rejects with a non-Error value', async () => {
+      installFetch({
+        '/api/health': () => Promise.reject('ECONNRESET'),
+      });
+      await renderApp();
+
+      expect(await screen.findByText(/Runtime unavailable/)).toBeInTheDocument();
+      expect(screen.queryByText(/ECONNRESET/)).not.toBeInTheDocument();
+    });
+
+    it('reports the generic loop message when the verification loop rejects with a non-Error value', async () => {
+      const user = userEvent.setup();
+      installFetch({
+        '/api/complete-loop': () => Promise.reject('socket hang up'),
+      });
+      await renderApp();
+
+      await user.click(await screen.findByRole('button', { name: /run verification/i }));
+
+      expect(await screen.findByText(/The loop failed/)).toBeInTheDocument();
+      expect(screen.queryByText(/socket hang up/)).not.toBeInTheDocument();
+    });
+
+    it('reports the generic check message when attestation verification rejects with a non-Error value', async () => {
+      const user = userEvent.setup();
+      installFetch({
+        '/api/attest/verify': () => Promise.reject({ reason: 'offline' }),
+      });
+      await renderApp();
+
+      await user.click(await screen.findByRole('button', { name: /run verification/i }));
+      await screen.findByText('ATTESTATION');
+      await user.click(screen.getByRole('button', { name: /verify signature/i }));
+
+      expect(await screen.findByText(/Attestation check failed/)).toBeInTheDocument();
+      expect(await screen.findByText('INVALID')).toBeInTheDocument();
+    });
+
+    it('reports the generic revocation message when revocation rejects with a non-Error value', async () => {
+      const user = userEvent.setup();
+      installFetch({
+        '/api/attest/revoke': () => Promise.reject('socket hang up'),
+      });
+      await renderApp();
+
+      await user.click(await screen.findByRole('button', { name: /run verification/i }));
+      await screen.findByText('ATTESTATION');
+      await user.type(screen.getByLabelText(/revocation reason/i), 'testing non-Error rejection');
+      await user.click(screen.getByRole('button', { name: /revoke attestation/i }));
+
+      expect(await screen.findByText('REVOCATION FAILED')).toBeInTheDocument();
+      expect(await screen.findByText(/Attestation revocation failed/)).toBeInTheDocument();
+      expect(screen.queryByText(/socket hang up/)).not.toBeInTheDocument();
+    });
+
+    it('reports the generic authorization message when authorizeAction rejects with a non-Error value', async () => {
+      const user = userEvent.setup();
+      installFetch({
+        '/api/act': () => Promise.reject('socket hang up'),
+      });
+      await renderApp();
+
+      await user.click(await screen.findByRole('button', { name: /run verification/i }));
+      await screen.findByText('ATTESTATION');
+      await user.click(screen.getByRole('button', { name: /authorize action/i }));
+
+      expect(await screen.findByText('ACTION DENIED')).toBeInTheDocument();
+      expect(await screen.findByText(/Action authorization failed/)).toBeInTheDocument();
+      expect(screen.queryByText(/socket hang up/)).not.toBeInTheDocument();
+    });
+
+    it('reports the generic learning message when recordLearning rejects with a non-Error value', async () => {
+      const user = userEvent.setup();
+      installFetch({
+        '/api/learn': () => Promise.reject({ reason: 'offline' }),
+      });
+      await renderApp();
+
+      await user.click(await screen.findByRole('button', { name: /run verification/i }));
+      await screen.findByText('ATTESTATION');
+      await user.click(screen.getByRole('button', { name: /authorize action/i }));
+      await screen.findByText('ACTION AUTHORIZED');
+      await user.click(screen.getByRole('button', { name: /record learning/i }));
+
+      expect(await screen.findByText(/Learning could not be recorded/)).toBeInTheDocument();
+      expect(screen.queryByText('LEARNING RECORDED')).not.toBeInTheDocument();
+    });
+
+    it('reports the generic recompile message when proposeRecompile rejects with a non-Error value', async () => {
+      const user = userEvent.setup();
+      installFetch({
+        '/api/recompile': () => Promise.reject('socket hang up'),
+      });
+      await renderApp();
+
+      await user.click(await screen.findByRole('button', { name: /run verification/i }));
+      await screen.findByText('ATTESTATION');
+      await user.click(screen.getByRole('button', { name: /authorize action/i }));
+      await screen.findByText('ACTION AUTHORIZED');
+      await user.click(screen.getByRole('button', { name: /record learning/i }));
+      await screen.findByText('LEARNING RECORDED');
+      await user.click(screen.getByRole('button', { name: /propose recompile/i }));
+
+      expect(await screen.findByText('RECOMPILE FAILED')).toBeInTheDocument();
+      expect(await screen.findByText(/Recompile proposal failed/)).toBeInTheDocument();
+      expect(screen.queryByText(/socket hang up/)).not.toBeInTheDocument();
+    });
+  });
 });
 
 /**
