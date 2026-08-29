@@ -1485,3 +1485,113 @@ describe('read-only local job evidence', () => {
     expect(within(panel).getByText('Local jobs unavailable')).toBeInTheDocument();
   });
 });
+
+/**
+ * `runSceneSimulation` (the "Run scene equation" button) had no test at all:
+ * every statement in its body, and both arms of every branch inside it, were
+ * unexercised. That includes two independently-thrown fallback messages
+ * (`body.message ?? 'Scene simulation unavailable'` when the API responds,
+ * and `sceneError instanceof Error ? ... : 'Scene simulation unavailable'`
+ * when the request itself rejects with something that isn't an `Error`) that
+ * look identical in the rendered banner but are reached by different code
+ * paths, plus the `sceneLoading` ternary that only ever rendered its
+ * "not loading" half.
+ */
+describe('scene equation simulation', () => {
+  const sceneSimulationFixture = {
+    states: ['spark', 'divergence', 'convergence'],
+    terminalState: 'convergence',
+    branches: [
+      {
+        index: 0,
+        perspective: 'observer-a',
+        terminalState: 'convergence',
+        states: ['spark', 'convergence'],
+      },
+      {
+        index: 1,
+        perspective: 'observer-b',
+        terminalState: 'divergence',
+        states: ['spark', 'divergence'],
+      },
+    ],
+    branchCount: 2,
+    continuation: 'stable',
+    provenance: { ruleVersion: 'scene-v1', deterministic: true, verified: true, note: 'seeded' },
+  };
+
+  beforeEach(() => {
+    installFetch();
+  });
+
+  it('shows the loading state while in flight, then renders the returned simulation', async () => {
+    const user = userEvent.setup();
+    let resolveSimulate!: (response: FakeResponse) => void;
+    installFetch({
+      '/api/scene/simulate': () =>
+        new Promise<FakeResponse>((resolve) => (resolveSimulate = resolve)),
+    });
+    await renderApp();
+
+    const button = screen.getByRole('button', { name: /run scene equation/i });
+    await user.click(button);
+
+    // The consequent half of `sceneLoading ? 'Simulating…' : 'Run scene
+    // equation'` had never rendered: every prior test only ever saw the
+    // settled, non-loading label.
+    expect(await screen.findByRole('button', { name: /simulating/i })).toBeDisabled();
+
+    resolveSimulate(json({ data: sceneSimulationFixture }));
+
+    expect(await screen.findByRole('button', { name: /run scene equation/i })).toBeEnabled();
+    expect(screen.getByText('CONVERGENCE')).toBeInTheDocument();
+    expect(screen.getByText('spark → divergence → convergence')).toBeInTheDocument();
+    expect(screen.getByText(/observer-a: CONVERGENCE/)).toBeInTheDocument();
+    expect(screen.getByText(/observer-b: DIVERGENCE/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/scene-v1 · branches=2 · stable · deterministic=true · verified=true/)
+    ).toBeInTheDocument();
+  });
+
+  it('reports the API-provided message when the response is not ok', async () => {
+    const user = userEvent.setup();
+    installFetch({
+      '/api/scene/simulate': () =>
+        json({ message: 'scene branch limit exceeded' }, { status: 500 }),
+    });
+    await renderApp();
+
+    await user.click(screen.getByRole('button', { name: /run scene equation/i }));
+
+    expect(await screen.findByText(/scene branch limit exceeded/)).toBeInTheDocument();
+    expect(screen.queryByText('CONVERGENCE')).not.toBeInTheDocument();
+  });
+
+  it('falls back to a generic message when the response is ok but carries no data', async () => {
+    const user = userEvent.setup();
+    installFetch({
+      // 200 with no `data` and no `message`: `!response.ok` is false, so the
+      // `!body.data` half of the `||` must be what trips the throw, and the
+      // `??` fallback (not the API-provided message) must supply the text.
+      '/api/scene/simulate': () => json({}),
+    });
+    await renderApp();
+
+    await user.click(screen.getByRole('button', { name: /run scene equation/i }));
+
+    expect(await screen.findByText(/Scene simulation unavailable/)).toBeInTheDocument();
+  });
+
+  it('reports the generic scene message when the request rejects with a non-Error value', async () => {
+    const user = userEvent.setup();
+    installFetch({
+      '/api/scene/simulate': () => Promise.reject('scene-offline'),
+    });
+    await renderApp();
+
+    await user.click(screen.getByRole('button', { name: /run scene equation/i }));
+
+    expect(await screen.findByText(/Scene simulation unavailable/)).toBeInTheDocument();
+    expect(screen.queryByText(/scene-offline/)).not.toBeInTheDocument();
+  });
+});
