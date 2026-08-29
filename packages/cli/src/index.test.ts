@@ -1268,6 +1268,115 @@ describe('omega status CLI', () => {
     ).toBe(1);
     expect(errors.join('')).toContain('Events unavailable: fetch failed');
   });
+
+  /**
+   * Every catch block above ends with the same shape:
+   * `error instanceof Error ? error.message : String(error)`. Every
+   * network-failure test above throws a real `Error`, so the fallback half
+   * of that ternary had never run for any command — and for `rules`, which
+   * had no network-failure test of any kind, the entire catch block had
+   * never run at all. `fetchImpl` is caller-supplied, not the platform
+   * `fetch`, so nothing guarantees it rejects with an `Error` instance; a
+   * non-Error rejection (a string, a plain object) must still produce a
+   * readable message instead of `undefined` or a crash on `.message`.
+   */
+  it('reports the raw rejection value when checking status fails with a non-Error throw', async () => {
+    const errors: string[] = [];
+    process.stderr.write = ((chunk: string | Uint8Array) => {
+      errors.push(String(chunk));
+      return true;
+    }) as typeof process.stderr.write;
+
+    expect(await run(['status'], async () => Promise.reject('ECONNRESET'))).toBe(1);
+    expect(errors.join('')).toContain('Observability unavailable: ECONNRESET');
+  });
+
+  it('reports the raw rejection value when reading runs fails with a non-Error throw', async () => {
+    const errors: string[] = [];
+    process.stderr.write = ((chunk: string | Uint8Array) => {
+      errors.push(String(chunk));
+      return true;
+    }) as typeof process.stderr.write;
+
+    expect(await run(['runs'], async () => Promise.reject('ECONNRESET'))).toBe(1);
+    expect(errors.join('')).toContain('Runs unavailable: ECONNRESET');
+  });
+
+  it('reports a network failure while reading rules', async () => {
+    const errors: string[] = [];
+    process.stderr.write = ((chunk: string | Uint8Array) => {
+      errors.push(String(chunk));
+      return true;
+    }) as typeof process.stderr.write;
+
+    expect(
+      await run(['rules', '--url', 'http://api.test/'], async () => {
+        throw new TypeError('fetch failed');
+      })
+    ).toBe(1);
+    expect(errors.join('')).toContain('Rules unavailable: fetch failed');
+  });
+
+  it('reports the raw rejection value when reading rules fails with a non-Error throw', async () => {
+    const errors: string[] = [];
+    process.stderr.write = ((chunk: string | Uint8Array) => {
+      errors.push(String(chunk));
+      return true;
+    }) as typeof process.stderr.write;
+
+    expect(
+      await run(['rules', '--url', 'http://api.test/'], async () => Promise.reject('ECONNRESET'))
+    ).toBe(1);
+    expect(errors.join('')).toContain('Rules unavailable: ECONNRESET');
+  });
+
+  it('reports the raw rejection value when reading policy fails with a non-Error throw', async () => {
+    const errors: string[] = [];
+    process.stderr.write = ((chunk: string | Uint8Array) => {
+      errors.push(String(chunk));
+      return true;
+    }) as typeof process.stderr.write;
+
+    expect(await run(['policy'], async () => Promise.reject('ECONNRESET'))).toBe(1);
+    expect(errors.join('')).toContain('Policy unavailable: ECONNRESET');
+  });
+
+  it('reports the raw rejection value when verifying an attestation fails with a non-Error throw', async () => {
+    const errors: string[] = [];
+    process.stderr.write = ((chunk: string | Uint8Array) => {
+      errors.push(String(chunk));
+      return true;
+    }) as typeof process.stderr.write;
+
+    expect(
+      await run(['verify', '--attestation-json', '{"id":"att-1"}'], async () =>
+        Promise.reject('ECONNRESET')
+      )
+    ).toBe(1);
+    expect(errors.join('')).toContain('Verification failed: ECONNRESET');
+  });
+
+  it('reports the raw rejection value when listing revocations fails with a non-Error throw', async () => {
+    const errors: string[] = [];
+    process.stderr.write = ((chunk: string | Uint8Array) => {
+      errors.push(String(chunk));
+      return true;
+    }) as typeof process.stderr.write;
+
+    expect(await run(['revocations'], async () => Promise.reject('ECONNRESET'))).toBe(1);
+    expect(errors.join('')).toContain('Revocations unavailable: ECONNRESET');
+  });
+
+  it('reports the raw rejection value when reading events fails with a non-Error throw', async () => {
+    const errors: string[] = [];
+    process.stderr.write = ((chunk: string | Uint8Array) => {
+      errors.push(String(chunk));
+      return true;
+    }) as typeof process.stderr.write;
+
+    expect(await run(['events'], async () => Promise.reject('ECONNRESET'))).toBe(1);
+    expect(errors.join('')).toContain('Events unavailable: ECONNRESET');
+  });
 });
 
 describe('omega CLI persistence acknowledgement', () => {
@@ -1644,6 +1753,94 @@ describe('omega jobs CLI', () => {
       );
       expect(exitCode).toBe(1);
       expect(io.errors.join('')).toContain('contradicted the local non-durable contract');
+    } finally {
+      io.restore();
+    }
+  });
+
+  /**
+   * `jobs` was the one command whose non-ok / malformed-body branch had
+   * never been exercised: no test made the API reject the request or
+   * return a body without a `data.jobs` array, so the `code`/`message`
+   * formatting in the resulting error line, and the network-failure catch
+   * block below it, had zero coverage.
+   */
+  it('reports the API error code and message when the jobs endpoint rejects the request', async () => {
+    const io = capture();
+    try {
+      const exitCode = await run(
+        ['jobs', '--url', 'http://api.test'],
+        async () =>
+          new Response(
+            JSON.stringify({ code: 'RATE_LIMITED', message: 'Too many local job reads' }),
+            { status: 429 }
+          )
+      );
+      expect(exitCode).toBe(1);
+      expect(io.errors.join('')).toContain(
+        'Jobs unavailable (429) RATE_LIMITED: Too many local job reads'
+      );
+    } finally {
+      io.restore();
+    }
+  });
+
+  it('falls back to a generic message when the jobs endpoint omits both code and message', async () => {
+    const io = capture();
+    try {
+      const exitCode = await run(
+        ['jobs', '--url', 'http://api.test'],
+        async () => new Response(JSON.stringify({}), { status: 500 })
+      );
+      expect(exitCode).toBe(1);
+      expect(io.errors.join('')).toContain('Jobs unavailable (500): unknown error');
+    } finally {
+      io.restore();
+    }
+  });
+
+  it('reports a network failure while listing jobs', async () => {
+    const io = capture();
+    try {
+      const exitCode = await run(['jobs', '--url', 'http://api.test'], async () => {
+        throw new TypeError('fetch failed');
+      });
+      expect(exitCode).toBe(1);
+      expect(io.errors.join('')).toContain('Jobs unavailable: fetch failed');
+    } finally {
+      io.restore();
+    }
+  });
+
+  it('reports the raw rejection value when listing jobs fails with a non-Error throw', async () => {
+    const io = capture();
+    try {
+      const exitCode = await run(['jobs', '--url', 'http://api.test'], async () =>
+        Promise.reject('ECONNRESET')
+      );
+      expect(exitCode).toBe(1);
+      expect(io.errors.join('')).toContain('Jobs unavailable: ECONNRESET');
+    } finally {
+      io.restore();
+    }
+  });
+
+  /**
+   * The one existing success test limits the printed list to `job-1`, which
+   * always has a `workerId`, so `workerId ?? 'none'` had only ever taken its
+   * defined-value branch. A queued job with no worker assigned yet is the
+   * ordinary case this fallback exists for.
+   */
+  it('shows "none" for a job with no worker assigned yet', async () => {
+    const io = capture();
+    try {
+      const exitCode = await run(
+        ['jobs', '--url', 'http://api.test'],
+        async () => new Response(JSON.stringify(payload(2)))
+      );
+      expect(exitCode).toBe(0);
+      expect(io.output.join('')).toContain('job-2 state=succeeded');
+      expect(io.output.join('')).toContain('worker=none');
     } finally {
       io.restore();
     }
