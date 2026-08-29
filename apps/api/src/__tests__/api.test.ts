@@ -1146,6 +1146,121 @@ describe('partial durable-log recovery readiness', () => {
   });
 });
 
+/**
+ * Every other suite that exercises `/persistence/acknowledge` and
+ * `/persistence/reencrypt` starts from a store that already needs review
+ * (a malformed log, or previous-key evidence pending rotation), so both
+ * handlers' "there is nothing to do" branches -- action === 'none' on
+ * acknowledge, and action !== 'review-key-rotation' on reencrypt -- had
+ * never fired, and reencrypt's own operator-allowlist and reason-validation
+ * branches had never fired either (only acknowledge's twins had, above).
+ * This suite boots against a clean, fully-caught-up local store (no log,
+ * no snapshot, no previous key configured) where `persistenceOperatorAction`
+ * always resolves to 'none', to close that whole cluster.
+ */
+describe('persistence review endpoints with nothing pending', () => {
+  let server: Server;
+  let baseUrl: string;
+  let dir: string;
+
+  beforeAll(async () => {
+    dir = mkdtempSync(join(tmpdir(), 'omega-api-nothing-pending-'));
+    const storePath = join(dir, 'runtime.json');
+    const logPath = join(dir, 'runtime.log.jsonl');
+
+    process.env.OMEGA_PERSISTENCE = 'on';
+    process.env.OMEGA_RUNTIME_STORE_PATH = storePath;
+    process.env.OMEGA_EVENT_LOG_PATH = logPath;
+    process.env.OMEGA_ADMIN_OPERATOR_ALLOWLIST = 'caught-up-operator';
+
+    jest.resetModules();
+    const isolated = require('../index') as { app: typeof app };
+    server = createServer(isolated.app);
+    await new Promise<void>((resolve) => server.listen(0, resolve));
+    const address = server.address();
+    if (!address || typeof address === 'string') throw new Error('Test server did not start');
+    baseUrl = `http://127.0.0.1:${address.port}`;
+  });
+
+  afterAll(async () => {
+    await new Promise<void>((resolve, reject) =>
+      server.close((error) => (error ? reject(error) : resolve()))
+    );
+    delete process.env.OMEGA_PERSISTENCE;
+    delete process.env.OMEGA_RUNTIME_STORE_PATH;
+    delete process.env.OMEGA_EVENT_LOG_PATH;
+    delete process.env.OMEGA_ADMIN_OPERATOR_ALLOWLIST;
+    rmSync(dir, { recursive: true, force: true });
+    jest.resetModules();
+  });
+
+  it('rejects an operator outside the allowlist from re-encryption, same as acknowledgement', async () => {
+    const response = await fetch(`${baseUrl}/persistence/reencrypt`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-omega-operator-id': 'not-listed' },
+      body: JSON.stringify({
+        reason: 'Attempt re-encryption as an unlisted operator',
+        operatorId: 'not-listed',
+      }),
+    });
+    const body = (await response.json()) as { code: string };
+    expect(response.status).toBe(403);
+    expect(body.code).toBe('ADMIN_OPERATOR_NOT_ALLOWED');
+  });
+
+  it('rejects a missing or non-string re-encryption reason before checking readiness', async () => {
+    const response = await fetch(`${baseUrl}/persistence/reencrypt`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-omega-operator-id': 'caught-up-operator',
+      },
+      // No `reason` field at all: normalizedReason must fall back to '' via
+      // the non-string branch of the `typeof reason === 'string'` ternary,
+      // which then fails the length >= 8 check.
+      body: JSON.stringify({ operatorId: 'caught-up-operator' }),
+    });
+    const body = (await response.json()) as { code: string };
+    expect(response.status).toBe(400);
+    expect(body.code).toBe('INVALID_REENCRYPTION_REASON');
+  });
+
+  it('reports nothing pending to acknowledge when the local store is fully caught up', async () => {
+    const response = await fetch(`${baseUrl}/persistence/acknowledge`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-omega-operator-id': 'caught-up-operator',
+      },
+      body: JSON.stringify({
+        reason: 'Attempt acknowledgement with nothing pending',
+        operatorId: 'caught-up-operator',
+      }),
+    });
+    const body = (await response.json()) as { code: string };
+    expect(response.status).toBe(409);
+    expect(body.code).toBe('PERSISTENCE_ACK_NOT_REQUIRED');
+  });
+
+  it('reports re-encryption is not ready when no key rotation is pending', async () => {
+    const response = await fetch(`${baseUrl}/persistence/reencrypt`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-omega-operator-id': 'caught-up-operator',
+      },
+      body: JSON.stringify({
+        reason: 'Attempt re-encryption with nothing pending',
+        operatorId: 'caught-up-operator',
+      }),
+    });
+    const body = (await response.json()) as { code: string; action: string };
+    expect(response.status).toBe(409);
+    expect(body.code).toBe('PERSISTENCE_REENCRYPTION_NOT_READY');
+    expect(body.action).toBe('none');
+  });
+});
+
 describe('persistence re-encryption boundary', () => {
   let server: Server;
   let baseUrl: string;
