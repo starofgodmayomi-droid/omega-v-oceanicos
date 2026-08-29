@@ -302,6 +302,29 @@ describe('local job ledger HTTP contract', () => {
     }
   });
 
+  it('defaults steps to the full bounded sequence when the field is omitted', async () => {
+    const runtime = await startServer(false);
+    try {
+      const response = await fetch(`${runtime.baseUrl}/scene/simulate`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ seed: 'api-scene-default-steps' }),
+      });
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as {
+        data: { states: string[]; terminalState: string; branchCount: number };
+      };
+      // 13 is the full length of the bounded scene-state sequence: with no
+      // `steps` field at all, the handler must pass `undefined` through
+      // rather than coercing a missing field to some other falsy default.
+      expect(body.data.states).toHaveLength(13);
+      expect(body.data.terminalState).toBe('return');
+      expect(body.data.branchCount).toBe(1);
+    } finally {
+      runtime.cleanup();
+    }
+  });
+
   it('rejects unsafe scene bounds without creating a claim of execution', async () => {
     const runtime = await startServer(false);
     try {
