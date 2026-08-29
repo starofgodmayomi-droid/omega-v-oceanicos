@@ -1116,6 +1116,19 @@ describe('partial durable-log recovery readiness', () => {
     });
     expect(invalid.status).toBe(400);
 
+    // A non-string `reason` (the body is untyped JSON from the wire) must be
+    // rejected the same way a too-short one is, not coerced or allowed
+    // through: the handler treats anything that isn't a string as empty
+    // rather than calling `.trim()` on it.
+    const wrongType = await fetch(`${baseUrl}/persistence/acknowledge`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-omega-operator-id': 'jest-operator' },
+      body: JSON.stringify({ reason: 12345, operatorId: 'jest-operator' }),
+    });
+    const wrongTypeBody = (await wrongType.json()) as { code: string };
+    expect(wrongType.status).toBe(400);
+    expect(wrongTypeBody.code).toBe('INVALID_ACKNOWLEDGEMENT_REASON');
+
     const acknowledged = await fetch(`${baseUrl}/persistence/acknowledge`, {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-omega-operator-id': 'jest-operator' },
