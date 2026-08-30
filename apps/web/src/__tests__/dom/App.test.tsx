@@ -250,7 +250,7 @@ describe('dashboard', () => {
     expect(screen.getByText('DISABLED')).toBeInTheDocument();
     expect(screen.getByText('CURRENT')).toBeInTheDocument();
     expect(screen.getByText('HEALTH')).toBeInTheDocument();
-    expect(screen.getAllByText('READY')).toHaveLength(3);
+    expect(screen.getAllByText('READY')).toHaveLength(4);
   });
 
   it('renders persisted revocation evidence in the ledger', async () => {
@@ -466,7 +466,7 @@ describe('dashboard', () => {
     expect(
       await screen.findByText(/No observations have entered the current yet/)
     ).toBeInTheDocument();
-    expect(screen.getAllByText('READY')).toHaveLength(3);
+    expect(screen.getAllByText('READY')).toHaveLength(4);
     expect(screen.queryByText('OBSERVATION')).not.toBeInTheDocument();
   });
 

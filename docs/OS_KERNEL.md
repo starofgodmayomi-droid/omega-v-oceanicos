@@ -41,7 +41,7 @@ These properties are tested in `packages/mini/src/os.test.ts`, including lifecyc
 }
 ```
 
-The endpoint is read-only. The SDK exposes the same contract through `OmegaClient.getOperatingSystem()`, and the CLI exposes it through `omega os [--url URL] [--token TOKEN]`. Both surfaces preserve the read bearer boundary and return failure rather than treating an unavailable snapshot as empty evidence. Future mutation endpoints must use explicit typed commands, policy checks, audit events, and a human authorization gate before any remote or consequential action.
+The endpoint is read-only. The SDK exposes the same contract through `OmegaClient.getOperatingSystem()`, the CLI exposes it through `omega os [--url URL] [--token TOKEN]`, and the web dashboard renders the snapshot as a non-authoritative Builder kernel panel. All surfaces preserve the read bearer boundary and return failure rather than treating an unavailable snapshot as empty evidence. Future mutation endpoints must use explicit typed commands, policy checks, audit events, and a human authorization gate before any remote or consequential action.
 
 ## Verification status
 
@@ -49,4 +49,4 @@ The slice was implemented in isolated worktree `/tmp/omega-os-kernel-slice` from
 
 ## Lineage and rollback
 
-This work remains unpublished and is not a claim about `main`, CI, a merged pull request, a deployment, or production behavior. The isolated worktree preserves the base lineage. Rollback is deleting the isolated worktree changes or resetting the unpublished local commit. Push, pull-request publication, merge, and deployment require explicit human authorization.
+The web-panel continuation is locally verified in `/tmp/omega-os-kernel-slice` and is not yet published. The earlier OS/API/SDK/CLI commits are present on PR #219, but the current session’s GitHub connector is disabled, so remote status cannot be refreshed here. This work remains not a claim about `main`, a merged pull request, a deployment, or production behavior. Rollback is deleting the isolated worktree changes or resetting the unpublished local commit. Push, pull-request publication, merge, and deployment require explicit human authorization.

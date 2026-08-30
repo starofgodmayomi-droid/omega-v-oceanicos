@@ -179,6 +179,17 @@ export function installFetch(overrides: RouteOverrides = {}): jest.Mock {
         },
       }),
     '/api/state': () => json(stateBody),
+    '/api/os': () =>
+      json({
+        data: {
+          state: 'ready',
+          tasks: [],
+          events: [
+            { sequence: 1, type: 'boot', state: 'booting' },
+            { sequence: 2, type: 'boot', state: 'ready' },
+          ],
+        },
+      }),
     '/api/audit/events?limit=40': () =>
       json({ data: [], meta: { bounded: true, limit: 40, total: 0 } }),
     '/api/runs': () => json({ data: [] }),
