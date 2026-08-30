@@ -50,6 +50,15 @@ describe('dashboard', () => {
     installFetch();
   });
 
+  it('renders the bounded Builder kernel snapshot', async () => {
+    await renderApp();
+
+    expect(await screen.findByRole('heading', { name: 'Builder kernel' })).toBeInTheDocument();
+    expect(screen.getByText('BOUNDED READ-ONLY SNAPSHOT')).toBeInTheDocument();
+    expect(screen.getByText('tasks=0 · events=2')).toBeInTheDocument();
+    expect(screen.getByText(/last sequence=2 · deterministic local trace/)).toBeInTheDocument();
+  });
+
   it('renders the runtime once state resolves', async () => {
     await renderApp();
 
