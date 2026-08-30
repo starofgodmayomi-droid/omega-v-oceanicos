@@ -650,10 +650,20 @@ describe('API runtime contracts', () => {
       expect(denied.status).toBe(401);
       expect(deniedBody.code).toBe('READ_ACCESS_REQUIRED');
 
+      const deniedOs = await fetch(`${baseUrl}/os`);
+      const deniedOsBody = (await deniedOs.json()) as { code: string; requestId: string };
+      expect(deniedOs.status).toBe(401);
+      expect(deniedOsBody.code).toBe('READ_ACCESS_REQUIRED');
+
       const allowed = await fetch(`${baseUrl}/observability`, {
         headers: { Authorization: 'Bearer contract-read-token' },
       });
       expect(allowed.status).toBe(200);
+
+      const allowedOs = await fetch(`${baseUrl}/os`, {
+        headers: { Authorization: 'Bearer contract-read-token' },
+      });
+      expect(allowedOs.status).toBe(200);
     } finally {
       if (previousToken === undefined) delete process.env.OMEGA_READ_TOKEN;
       else process.env.OMEGA_READ_TOKEN = previousToken;
