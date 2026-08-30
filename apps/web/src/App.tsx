@@ -324,7 +324,7 @@ export function App(): React.JSX.Element {
       ] = await Promise.all([
         fetch('/api/health'),
         fetch('/api/state'),
-        fetch('/api/os'),
+        fetch('/api/os').catch(() => null),
         fetch('/api/audit/events?limit=40'),
         fetch('/api/runs'),
         fetch('/api/attest/revocations'),
@@ -335,7 +335,6 @@ export function App(): React.JSX.Element {
       if (
         !healthResponse.ok ||
         !stateResponse.ok ||
-        !osResponse.ok ||
         !eventsResponse.ok ||
         !runsResponse.ok ||
         !revocationsResponse.ok ||
@@ -361,7 +360,9 @@ export function App(): React.JSX.Element {
           services: Array<{ status: string }>;
         };
       };
-      const osData = (await osResponse.json()) as { data: OperatingSystemSnapshot };
+      const osData = osResponse?.ok
+        ? ((await osResponse.json()) as { data: OperatingSystemSnapshot })
+        : null;
       const eventData = (await eventsResponse.json()) as {
         data: RuntimeEvent[];
         meta?: { bounded?: boolean; total?: number };
@@ -433,7 +434,7 @@ export function App(): React.JSX.Element {
         (service) => service.status === 'ready'
       ).length;
       setRuntimeHealth(health.data);
-      setOsSnapshot(osData.data);
+      setOsSnapshot(osData?.data ?? null);
       setMode(state.data.mode);
       setTrust(state.data.trust);
       setTrustBasis(state.data.trustBasis);

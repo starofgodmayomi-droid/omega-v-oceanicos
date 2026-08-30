@@ -59,6 +59,15 @@ describe('dashboard', () => {
     expect(screen.getByText(/last sequence=2 · deterministic local trace/)).toBeInTheDocument();
   });
 
+  it('keeps the dashboard usable when the OS snapshot is unavailable', async () => {
+    installFetch({ '/api/os': () => json({ message: 'kernel unavailable' }, { status: 503 }) });
+    await renderApp();
+
+    expect(await screen.findByRole('heading', { name: 'Builder kernel' })).toBeInTheDocument();
+    expect(screen.getAllByText('UNKNOWN').length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: /run verification/i })).toBeInTheDocument();
+  });
+
   it('renders the runtime once state resolves', async () => {
     await renderApp();
 
