@@ -161,6 +161,8 @@ importers:
 
   packages/cli: {}
 
+  packages/coordination: {}
+
   packages/dissensus:
     devDependencies:
       '@types/jest':

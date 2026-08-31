@@ -23,7 +23,7 @@
   ],
   "scripts": {
     "dev": "pnpm --parallel --filter @omega-v/api --filter @omega-v/web dev",
-    "build": "pnpm --filter @omega-v/types build && pnpm --filter @omega-v/observer build && pnpm --filter @omega-v/verification build && pnpm --filter @omega-v/remember build && pnpm --filter @omega-v/mini build && pnpm --filter @omega-v/attestation build && pnpm --filter @omega-v/dissensus build && pnpm --filter @omega-v/lexicon build && pnpm --filter @omega-v/api build && pnpm --filter @omega-v/web build && pnpm --filter @omega-v/cli build && pnpm --filter @omega-v/sdk build",
+    "build": "pnpm --filter @omega-v/types build && pnpm --filter @omega-v/observer build && pnpm --filter @omega-v/verification build && pnpm --filter @omega-v/remember build && pnpm --filter @omega-v/mini build && pnpm --filter @omega-v/attestation build && pnpm --filter @omega-v/dissensus build && pnpm --filter @omega-v/lexicon build && pnpm --filter @omega-v/coordination build && pnpm --filter @omega-v/api build && pnpm --filter @omega-v/web build && pnpm --filter @omega-v/cli build && pnpm --filter @omega-v/sdk build",
     "smoke:api": "pnpm build && node scripts/smoke-api.cjs",
     "clean": "node scripts/clean.cjs",
     "test": "jest --runInBand",
@@ -37,7 +37,7 @@
     "format:check": "prettier --check .",
     "format:fix": "prettier --write .",
     "verify": "pnpm lint && pnpm type-check && pnpm test && pnpm build",
-    "verify:fast": "pnpm lint && pnpm type-check && pnpm test:fast",
+    "verify:fast": "pnpm lint && pnpm type-check && pnpm test:fast && pnpm --filter @omega-v/coordination build",
     "verify:full": "pnpm lint && pnpm type-check && pnpm test:coverage && pnpm test:integration && pnpm build",
     "docs:build": "echo 'Documentation build (coming soon)'",
     "docs:test": "echo 'Documentation test (coming soon)'",

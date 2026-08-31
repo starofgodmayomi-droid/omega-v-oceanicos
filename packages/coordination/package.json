@@ -1,0 +1,21 @@
+{
+  "name": "@omega-v/coordination",
+  "version": "0.1.0",
+  "description": "Bounded, auditable parallel workers and builders for Ω∞v Oceanicos",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "cd ../.. && jest --runInBand packages/coordination/src/index.test.ts",
+    "clean": "node ../../scripts/rimraf.cjs dist \"*.tsbuildinfo\""
+  },
+  "keywords": [
+    "workers",
+    "builders",
+    "orchestration",
+    "audit"
+  ],
+  "author": "Ω∞v Community",
+  "license": "Apache-2.0"
+}
