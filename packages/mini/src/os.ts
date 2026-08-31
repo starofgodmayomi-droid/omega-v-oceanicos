@@ -25,6 +25,13 @@ export type OperatingSystemOptions = {
   maxEvents?: number;
 };
 
+export type OperatingSystemCapabilities = {
+  shellExecution: false;
+  remoteMutation: false;
+  credentialHandling: false;
+  humanAuthorizationRequired: true;
+};
+
 export type OperatingSystemSnapshot = {
   state: OperatingSystemState;
   tasks: OperatingSystemTask[];
@@ -33,10 +40,17 @@ export type OperatingSystemSnapshot = {
     maxTasks: number;
     maxEvents: number;
   };
+  capabilities: OperatingSystemCapabilities;
 };
 
 const DEFAULT_MAX_TASKS = 32;
 const DEFAULT_MAX_EVENTS = 128;
+const OPERATING_SYSTEM_CAPABILITIES: OperatingSystemCapabilities = {
+  shellExecution: false,
+  remoteMutation: false,
+  credentialHandling: false,
+  humanAuthorizationRequired: true,
+};
 
 /**
  * A finite, deterministic control-plane kernel.
@@ -132,6 +146,7 @@ export class OperatingSystemKernel {
       tasks: this.tasks.map((task) => ({ ...task, input: { ...task.input } })),
       events: this.events.map((event) => ({ ...event })),
       limits: { maxTasks: this.maxTasks, maxEvents: this.maxEvents },
+      capabilities: { ...OPERATING_SYSTEM_CAPABILITIES },
     };
   }
 

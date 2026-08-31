@@ -355,6 +355,12 @@ async function operatingSystem(argv: string[], fetchImpl: FetchLike): Promise<nu
       state?: string;
       tasks?: unknown[];
       events?: Array<{ sequence: number; type: string; state: string }>;
+      capabilities?: {
+        shellExecution?: boolean;
+        remoteMutation?: boolean;
+        credentialHandling?: boolean;
+        humanAuthorizationRequired?: boolean;
+      };
     };
     message?: string;
   };
@@ -365,7 +371,8 @@ async function operatingSystem(argv: string[], fetchImpl: FetchLike): Promise<nu
     return 1;
   }
   process.stdout.write(
-    `OS            state=${body.data.state ?? 'unknown'} tasks=${body.data.tasks?.length ?? 0} events=${body.data.events?.length ?? 0}\n`
+    `OS            state=${body.data.state ?? 'unknown'} tasks=${body.data.tasks?.length ?? 0} events=${body.data.events?.length ?? 0}\n` +
+      `CAPABILITIES shell=${body.data.capabilities?.shellExecution === false ? 'DISABLED' : 'UNKNOWN'} remote=${body.data.capabilities?.remoteMutation === false ? 'DISABLED' : 'UNKNOWN'} credentials=${body.data.capabilities?.credentialHandling === false ? 'DISABLED' : 'UNKNOWN'} human_gate=${body.data.capabilities?.humanAuthorizationRequired === true ? 'REQUIRED' : 'UNKNOWN'}\n`
   );
   return 0;
 }

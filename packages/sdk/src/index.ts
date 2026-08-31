@@ -17,6 +17,13 @@ export type OperatingSystemSnapshot = {
   state: OperatingSystemState;
   tasks: OperatingSystemTask[];
   events: OperatingSystemEvent[];
+  limits: { maxTasks: number; maxEvents: number };
+  capabilities: {
+    shellExecution: false;
+    remoteMutation: false;
+    credentialHandling: false;
+    humanAuthorizationRequired: true;
+  };
 };
 export type PersistenceAcknowledgement = {
   operatorId: string;

@@ -21,7 +21,7 @@ Boot is idempotent. Stop is idempotent. Admission fails closed while offline or 
 
 The kernel retains a bounded event trace. Event sequence numbers are monotonic even when older entries are evicted. Task identifiers are deterministic within a kernel instance (`task-1`, `task-2`, and so on). Returned snapshots copy task inputs and event arrays so callers cannot mutate kernel state through an alias.
 
-These properties are tested in `packages/mini/src/os.test.ts`, including lifecycle boundaries, task limits, stop behavior, trace eviction, and deterministic identifiers. The API contract test in `apps/api/src/__tests__/api.test.ts` verifies that `GET /os` returns a ready boot trace with no admitted work. SDK and CLI tests verify typed consumption, URL construction, bearer propagation, and operator-readable output.
+These properties are tested in `packages/mini/src/os.test.ts`, including lifecycle boundaries, task limits, stop behavior, trace eviction, deterministic identifiers, and the explicit capability boundary. The API contract test in `apps/api/src/__tests__/api.test.ts` verifies that `GET /os` returns a ready boot trace with no admitted work. SDK and CLI tests verify typed consumption, URL construction, bearer propagation, capability output, and operator-readable output.
 
 ## API surface
 
@@ -35,7 +35,13 @@ These properties are tested in `packages/mini/src/os.test.ts`, including lifecyc
     "events": [
       { "sequence": 1, "type": "boot", "state": "booting" },
       { "sequence": 2, "type": "boot", "state": "ready" }
-    ]
+    ],
+    "capabilities": {
+      "shellExecution": false,
+      "remoteMutation": false,
+      "credentialHandling": false,
+      "humanAuthorizationRequired": true
+    }
   },
   "timestamp": "..."
 }

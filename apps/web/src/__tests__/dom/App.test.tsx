@@ -63,6 +63,11 @@ describe('dashboard', () => {
     expect(screen.getByText('BOUNDED READ-ONLY SNAPSHOT')).toBeInTheDocument();
     expect(screen.getByText('tasks=0 · events=2')).toBeInTheDocument();
     expect(screen.getByText(/last sequence=2 · deterministic local trace/)).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /shell=DISABLED · remote=DISABLED · credentials=DISABLED · human gate=REQUIRED/
+      )
+    ).toBeInTheDocument();
   });
 
   it('keeps the dashboard usable when the OS snapshot is unavailable', async () => {

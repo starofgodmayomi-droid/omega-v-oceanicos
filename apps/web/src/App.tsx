@@ -35,6 +35,12 @@ type OperatingSystemSnapshot = {
     taskId?: string;
     reason?: string;
   }>;
+  capabilities: {
+    shellExecution: false;
+    remoteMutation: false;
+    credentialHandling: false;
+    humanAuthorizationRequired: true;
+  };
 };
 
 type SceneSimulation = {
@@ -1083,6 +1089,9 @@ export function App(): React.JSX.Element {
               ) : (
                 <small>No bounded kernel events are available.</small>
               )}
+              <small className="capability-line">
+                shell=DISABLED · remote=DISABLED · credentials=DISABLED · human gate=REQUIRED
+              </small>
             </div>
           </section>
           <section className="intent-panel" aria-labelledby="scene-simulation-title">

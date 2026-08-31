@@ -10,6 +10,15 @@ describe('OperatingSystemKernel', () => {
     expect(os.snapshot().events.map((event) => event.state)).toEqual(['booting', 'ready']);
   });
 
+  it('declares finite read-only capabilities', () => {
+    expect(new OperatingSystemKernel().snapshot().capabilities).toEqual({
+      shellExecution: false,
+      remoteMutation: false,
+      credentialHandling: false,
+      humanAuthorizationRequired: true,
+    });
+  });
+
   it('admits typed bounded tasks and completes them', () => {
     const os = new OperatingSystemKernel({ maxTasks: 1 });
     os.boot();
