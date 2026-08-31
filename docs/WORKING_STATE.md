@@ -1,6 +1,16 @@
 # Ω∞v Oceanicos Working State
 
-**Updated:** 2026-08-28
+**Updated:** 2026-08-31
+
+## Current local Universal Builder OS continuation — 2026-08-31
+
+The bounded OS surface now spans the MINI kernel, API `GET /os`, typed SDK `getOperatingSystem()`, CLI `omega os`, and a read-only web Builder kernel panel. The web panel renders deterministic lifecycle/task/trace evidence, isolates an unavailable OS snapshot as `UNKNOWN` without taking down the rest of the dashboard, and carries no mutation authority. API coverage proves that `/os` obeys the opt-in read bearer boundary: anonymous access is rejected when `OMEGA_READ_TOKEN` is configured, while the configured read token succeeds.
+
+The latest local lineage is isolated in `/tmp/omega-os-kernel-slice` at `8af0205` for documentation reconciliation, with the latest code/test checkpoint at `1d6ebb8`. The local gates observed across the continuation include focused web/API/kernel/security tests, the full Jest suite, ESLint, TypeScript no-emit checking, formatting, workspace build, API smoke, and `git diff --check`. API smoke returned `health: ready`, `deterministic: true`, `terminalState: return`, and `verified: false`. These are local worktree observations only.
+
+The implementation sequence remains reversible and evidence-bound: `696d322` added the web panel, `6e001cd` pinned its DOM evidence, `0db5eac` covered OS read authentication, `1d6ebb8` isolated OS snapshot failure, and `8af0205` reconciled the architecture note. The concurrent worker review found no new arbitrary shell, credential-handling, remote-mutation, or unbounded-loop behavior in the affected OS surfaces; its scan output remains diagnostic rather than a complete security audit.
+
+The current GitHub connector is disabled. The local continuation has not been published, PR #219 has not been refreshed from these latest local commits, and no merge or deployment has occurred. Remote status, hosted CI, artifact publication, production behavior, distributed consistency, and external execution remain unverified. Publication, merge, and deployment require separate explicit human authorization and available connector access. Rollback is removal of the isolated worktree or reset of its unpublished commits.
 
 ## Local OS kernel and API slice — build/verify checkpoint — 2026-08-28
 
