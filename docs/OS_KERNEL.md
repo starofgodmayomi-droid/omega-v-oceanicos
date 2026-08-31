@@ -45,7 +45,7 @@ The endpoint is read-only. The SDK exposes the same contract through `OmegaClien
 
 ## Verification status
 
-The slice was implemented in isolated worktree `/tmp/omega-os-kernel-slice` from base `55e8a952`. Formatting, lint, TypeScript no-emit checking, focused API/kernel tests, build, and API smoke passed. The smoke output reported `health: ready`, `deterministic: true`, `terminalState: return`, and `verified: false`. A post-integration full-suite rerun was interrupted before an aggregate result; therefore no claim of a completed full-suite attestation is made here.
+The slice was implemented in isolated worktree `/tmp/omega-os-kernel-slice` from base `55e8a952`. The latest local verification passed formatting, lint, TypeScript no-emit checking, the full Jest suite, the focused OS/API/SDK/CLI/Web contracts, the full workspace build, and API smoke. The smoke output reported `health: ready`, `deterministic: true`, `terminalState: return`, and `verified: false`. Full local verification proves only this isolated worktree and does not establish hosted CI, deployment, distributed consistency, or external execution.
 
 ## Lineage and rollback
 
