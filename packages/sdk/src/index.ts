@@ -201,6 +201,13 @@ export type Observability = {
 };
 
 export type RuntimeEvent = Record<string, unknown>;
+export type RuntimeSnapshot = {
+  health: Health;
+  state: RuntimeState;
+  observability: Observability;
+  runs: RuntimeRun[];
+  observedAt: string;
+};
 export type RuntimeRun = {
   observation: { id: string; claim?: { statement?: string } };
   verification: { id: string; summary: { passed: boolean; confidence?: number } };
@@ -478,6 +485,27 @@ export class OmegaClient {
 
   async getRuns(): Promise<{ data: RuntimeRun[] }> {
     return this.get<{ data: RuntimeRun[] }>('/runs');
+  }
+
+  /**
+   * Read the client-facing runtime surfaces as one consistent snapshot.
+   * Promise.all keeps the read path low-overhead while preserving the
+   * server's existing independent endpoint contracts.
+   */
+  async getRuntimeSnapshot(): Promise<RuntimeSnapshot> {
+    const [health, state, observability, runs] = await Promise.all([
+      this.getHealth(),
+      this.getState(),
+      this.getObservability(),
+      this.getRuns(),
+    ]);
+    return {
+      health,
+      state,
+      observability,
+      runs: runs.data,
+      observedAt: new Date().toISOString(),
+    };
   }
 
   async getAttestationPolicy(): Promise<{ data: AttestationPolicy; timestamp: string }> {
