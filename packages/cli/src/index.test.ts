@@ -30,6 +30,7 @@ describe('omega status CLI', () => {
                 { sequence: 1, type: 'boot', state: 'booting' },
                 { sequence: 2, type: 'boot', state: 'ready' },
               ],
+              limits: { maxTasks: 32, maxEvents: 128 },
               capabilities: {
                 shellExecution: false,
                 remoteMutation: false,
@@ -45,6 +46,7 @@ describe('omega status CLI', () => {
 
     expect(exitCode).toBe(0);
     expect(output.join('')).toContain('OS            state=ready tasks=0 events=2');
+    expect(output.join('')).toContain('LIMITS maxTasks=32 maxEvents=128');
     expect(output.join('')).toContain(
       'CAPABILITIES shell=DISABLED remote=DISABLED credentials=DISABLED human_gate=REQUIRED'
     );

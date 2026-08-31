@@ -35,6 +35,7 @@ type OperatingSystemSnapshot = {
     taskId?: string;
     reason?: string;
   }>;
+  limits: { maxTasks: number; maxEvents: number };
   capabilities: {
     shellExecution: false;
     remoteMutation: false;
@@ -1089,6 +1090,10 @@ export function App(): React.JSX.Element {
               ) : (
                 <small>No bounded kernel events are available.</small>
               )}
+              <small className="capability-line">
+                limits=tasks≤{osSnapshot?.limits?.maxTasks ?? 'UNKNOWN'} · events≤
+                {osSnapshot?.limits?.maxEvents ?? 'UNKNOWN'}
+              </small>
               <small className="capability-line">
                 shell=DISABLED · remote=DISABLED · credentials=DISABLED · human gate=REQUIRED
               </small>
