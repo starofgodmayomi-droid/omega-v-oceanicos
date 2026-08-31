@@ -41,7 +41,7 @@ These properties are tested in `packages/mini/src/os.test.ts`, including lifecyc
 }
 ```
 
-The endpoint is read-only. The SDK exposes the same contract through `OmegaClient.getOperatingSystem()`, the CLI exposes it through `omega os [--url URL] [--token TOKEN]`, and the web dashboard renders the snapshot as a non-authoritative Builder kernel panel. All surfaces preserve the read bearer boundary and return failure rather than treating an unavailable snapshot as empty evidence. Future mutation endpoints must use explicit typed commands, policy checks, audit events, and a human authorization gate before any remote or consequential action.
+The endpoint is read-only. The SDK exposes the same contract through `OmegaClient.getOperatingSystem()`, the CLI exposes it through `omega os [--url URL] [--token TOKEN]`, and the web dashboard renders the snapshot as a non-authoritative Builder kernel panel. The dashboard’s control-room ribbon explicitly labels `ROOT: LOCAL`, `MODE: READ-ONLY`, and `AUTHORITY: HUMAN-GATED`; these are interface labels, not proof of external execution or authorization. All surfaces preserve the read bearer boundary and return failure rather than treating an unavailable snapshot as empty evidence. Future mutation endpoints must use explicit typed commands, policy checks, audit events, and a human authorization gate before any remote or consequential action.
 
 ## Verification status
 

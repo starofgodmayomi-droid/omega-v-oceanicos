@@ -829,6 +829,13 @@ export function App(): React.JSX.Element {
             </button>
           </div>
         </header>
+        <div className="control-ribbon" role="region" aria-label="Builder control room status">
+          <span className="control-ribbon-title">OMEGA_MAX_RUN</span>
+          <span>STATE: {osSnapshot?.state?.toUpperCase() ?? 'UNKNOWN'}</span>
+          <span>ROOT: LOCAL</span>
+          <span>MODE: READ-ONLY</span>
+          <span>AUTHORITY: HUMAN-GATED</span>
+        </div>
         {commandOpen && (
           <div className="command-backdrop" onClick={() => setCommandOpen(false)}>
             <div

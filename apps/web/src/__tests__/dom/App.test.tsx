@@ -54,6 +54,12 @@ describe('dashboard', () => {
     await renderApp();
 
     expect(await screen.findByRole('heading', { name: 'Builder kernel' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Builder control room status' })).toHaveTextContent(
+      'OMEGA_MAX_RUN'
+    );
+    expect(screen.getByText('ROOT: LOCAL')).toBeInTheDocument();
+    expect(screen.getByText('MODE: READ-ONLY')).toBeInTheDocument();
+    expect(screen.getByText('AUTHORITY: HUMAN-GATED')).toBeInTheDocument();
     expect(screen.getByText('BOUNDED READ-ONLY SNAPSHOT')).toBeInTheDocument();
     expect(screen.getByText('tasks=0 · events=2')).toBeInTheDocument();
     expect(screen.getByText(/last sequence=2 · deterministic local trace/)).toBeInTheDocument();
