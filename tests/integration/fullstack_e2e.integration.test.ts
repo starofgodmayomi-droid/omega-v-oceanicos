@@ -44,6 +44,7 @@ import { OceanicosStakingEngine } from '@omega-v/staking';
 import { OceanicosKernel } from '@omega-v/kernel';
 import { OceanicosMempoolEngine } from '@omega-v/mempool';
 import { OceanicosThresholdAttestorEngine } from '@omega-v/attestor';
+import { OceanicosGovernorEngine } from '@omega-v/governor';
 import app from '../../apps/api/src/index';
 
 describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => {
@@ -1954,6 +1955,62 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       expect(stats.totalAttestors).toBe(3);
       expect(stats.activeAttestors).toBe(3);
       expect(stats.completedQCs).toBe(1);
+    });
+  });
+
+  describe('43. On-Chain Timelocked Decentralized Autonomous Governance E2E', () => {
+    it('should create proposal, vote with power, queue in timelock, and execute with cryptographic receipt', () => {
+      const governor = new OceanicosGovernorEngine('e2e-governor-secret', 50, 0);
+
+      // 1. Propose DAO action
+      const p = governor.propose({
+        proposerDid: 'did:omega:agent:dao-lead',
+        title: 'Adjust Protocol Gas Limits',
+        description: 'Increase block gas target to 30M for scalability',
+        actions: [
+          { targetService: 'mempool', actionType: 'UPDATE_LIMIT', parameters: { gasTarget: 30000000 } },
+        ],
+        quorumPower: 40,
+      });
+
+      expect(p.proposalId).toMatch(/^gov-/);
+      expect(p.status).toBe('ACTIVE');
+
+      // 2. Cast Votes
+      const v1 = governor.castVote({
+        proposalId: p.proposalId,
+        voterDid: 'did:omega:voter:alice',
+        choice: 'FOR',
+        votingPower: 35,
+        reason: 'Essential for high volume',
+      });
+      const v2 = governor.castVote({
+        proposalId: p.proposalId,
+        voterDid: 'did:omega:voter:bob',
+        choice: 'FOR',
+        votingPower: 25,
+      });
+
+      expect(v1.voteHash).toMatch(/^0x/);
+      expect(v2.voteHash).toMatch(/^0x/);
+
+      // 3. Queue Proposal
+      const queued = governor.queueProposal(p.proposalId);
+      expect(queued.status).toBe('QUEUED');
+      expect(queued.forVotes).toBe(60);
+
+      // 4. Execute Proposal
+      const receipt = governor.executeProposal(p.proposalId, 'did:omega:executor:relay-agent');
+      expect(receipt.proposalId).toBe(p.proposalId);
+      expect(receipt.executionHash).toMatch(/^0x/);
+      expect(receipt.executedActionsCount).toBe(1);
+
+      // 5. Check stats
+      const stats = governor.getStats();
+      expect(stats.totalProposals).toBe(1);
+      expect(stats.executedProposals).toBe(1);
+      expect(stats.totalVotesCast).toBe(2);
+      expect(stats.cumulativeVotingPower).toBe(60);
     });
   });
 });

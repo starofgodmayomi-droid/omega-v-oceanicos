@@ -78,7 +78,8 @@
       "@omega-v/staking": ["packages/staking/src/index.ts"],
       "@omega-v/kernel": ["packages/kernel/src/index.ts"],
       "@omega-v/mempool": ["packages/mempool/src/index.ts"],
-      "@omega-v/attestor": ["packages/attestor/src/index.ts"]
+      "@omega-v/attestor": ["packages/attestor/src/index.ts"],
+      "@omega-v/governor": ["packages/governor/src/index.ts"]
     }
   },
   "include": ["packages/*/src", "apps/*/src", "tests"],

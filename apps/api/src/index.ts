@@ -47,6 +47,7 @@ import { OceanicosStakingEngine } from '@omega-v/staking';
 import { OceanicosKernel } from '@omega-v/kernel';
 import { OceanicosMempoolEngine } from '@omega-v/mempool';
 import { OceanicosThresholdAttestorEngine } from '@omega-v/attestor';
+import { OceanicosGovernorEngine } from '@omega-v/governor';
 import {
   SuccessResponse,
   ErrorResponse,
@@ -123,6 +124,7 @@ const stakingEngine = new OceanicosStakingEngine();
 const kernelEngine = new OceanicosKernel();
 const mempoolEngine = new OceanicosMempoolEngine();
 const attestorEngine = new OceanicosThresholdAttestorEngine();
+const governorEngine = new OceanicosGovernorEngine();
 
 // Register default rules
 verificationEngine.registerRule({
@@ -4218,6 +4220,196 @@ app.post('/attestor/qcs/verify', (req: Request, res: Response) => {
 /** GET /attestor/stats — Threshold attestor telemetry */
 app.get('/attestor/stats', (_req: Request, res: Response) => {
   const stats = attestorEngine.getStats();
+  res.json({
+    data: stats,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/**
+ * Section 43 Endpoints: On-Chain Timelocked Decentralized Autonomous Governance
+ * /governor/proposals, /governor/proposals/:proposalId, /governor/proposals/vote, /governor/proposals/queue, /governor/proposals/execute, /governor/proposals/cancel, /governor/stats
+ */
+
+/** GET /governor/proposals — List governance proposals */
+app.get('/governor/proposals', (req: Request, res: Response) => {
+  const status = typeof req.query.status === 'string' ? (req.query.status as any) : undefined;
+  const proposals = governorEngine.getProposals(status);
+  res.json({
+    data: proposals,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** GET /governor/proposals/:proposalId — Get single proposal */
+app.get('/governor/proposals/:proposalId', (req: Request, res: Response) => {
+  const proposal = governorEngine.getProposal(req.params.proposalId);
+  if (!proposal) {
+    res.status(404).json({
+      code: 'PROPOSAL_NOT_FOUND',
+      message: `Proposal ${req.params.proposalId} not found`,
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+  res.json({
+    data: proposal,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /governor/proposals — Create governance proposal */
+app.post('/governor/proposals', (req: Request, res: Response) => {
+  const { proposerDid, title, description, actions, votingPeriodMs, timelockDelayMs, quorumPower } = req.body;
+  if (!proposerDid || !title || !description || !Array.isArray(actions)) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'proposerDid, title, description, and actions (array) are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const proposal = governorEngine.propose({
+      proposerDid,
+      title,
+      description,
+      actions,
+      votingPeriodMs,
+      timelockDelayMs,
+      quorumPower,
+    });
+    res.status(201).json({
+      data: proposal,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'PROPOSAL_CREATION_FAILED',
+      message: err instanceof Error ? err.message : 'Proposal creation failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** POST /governor/proposals/vote — Cast vote on proposal */
+app.post('/governor/proposals/vote', (req: Request, res: Response) => {
+  const { proposalId, voterDid, choice, votingPower, reason } = req.body;
+  if (!proposalId || !voterDid || !choice || typeof votingPower !== 'number') {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'proposalId, voterDid, choice (FOR|AGAINST|ABSTAIN), and votingPower (number) are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const vote = governorEngine.castVote({
+      proposalId,
+      voterDid,
+      choice,
+      votingPower,
+      reason,
+    });
+    res.json({
+      data: vote,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'VOTE_FAILED',
+      message: err instanceof Error ? err.message : 'Vote failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** POST /governor/proposals/queue — Queue proposal in timelock */
+app.post('/governor/proposals/queue', (req: Request, res: Response) => {
+  const { proposalId } = req.body;
+  if (!proposalId) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'proposalId is required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const proposal = governorEngine.queueProposal(proposalId);
+    res.json({
+      data: proposal,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'QUEUE_FAILED',
+      message: err instanceof Error ? err.message : 'Queue failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** POST /governor/proposals/execute — Execute queued proposal */
+app.post('/governor/proposals/execute', (req: Request, res: Response) => {
+  const { proposalId, executorDid } = req.body;
+  if (!proposalId || !executorDid) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'proposalId and executorDid are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const receipt = governorEngine.executeProposal(proposalId, executorDid);
+    res.json({
+      data: receipt,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'EXECUTION_FAILED',
+      message: err instanceof Error ? err.message : 'Execution failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** POST /governor/proposals/cancel — Cancel proposal */
+app.post('/governor/proposals/cancel', (req: Request, res: Response) => {
+  const { proposalId, callerDid } = req.body;
+  if (!proposalId || !callerDid) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'proposalId and callerDid are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const proposal = governorEngine.cancelProposal(proposalId, callerDid);
+    res.json({
+      data: proposal,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'CANCEL_FAILED',
+      message: err instanceof Error ? err.message : 'Cancel failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** GET /governor/stats — Governance telemetry */
+app.get('/governor/stats', (_req: Request, res: Response) => {
+  const stats = governorEngine.getStats();
   res.json({
     data: stats,
     timestamp: new Date().toISOString(),

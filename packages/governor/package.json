@@ -1,0 +1,11 @@
+{
+  "name": "@omega-v/governor",
+  "version": "0.1.0",
+  "description": "On-Chain Timelocked Decentralized Governance, Verifiable Vote Aggregation & Execution Proofs for Ω∞v Oceanicos",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "test": "jest"
+  }
+}

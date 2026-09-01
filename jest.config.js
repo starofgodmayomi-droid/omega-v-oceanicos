@@ -62,6 +62,7 @@ export default {
     '@omega-v/kernel': '<rootDir>/packages/kernel/src/index.ts',
     '@omega-v/mempool': '<rootDir>/packages/mempool/src/index.ts',
     '@omega-v/attestor': '<rootDir>/packages/attestor/src/index.ts',
+    '@omega-v/governor': '<rootDir>/packages/governor/src/index.ts',
   },
   collectCoverageFrom: [
     'packages/*/src/**/*.ts',
