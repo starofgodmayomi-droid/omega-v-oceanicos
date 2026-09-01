@@ -20,13 +20,13 @@
   "author": "Ω∞v Community",
   "license": "Apache-2.0",
   "dependencies": {
-    "@omega-v/types": "*",
-    "@omega-v/observer": "*",
-    "@omega-v/verification": "*",
-    "@omega-v/attestation": "*",
-    "@omega-v/dissensus": "*",
-    "@omega-v/remember": "*",
-    "@omega-v/mini": "*",
+    "@omega-v/types": "workspace:*",
+    "@omega-v/observer": "workspace:*",
+    "@omega-v/verification": "workspace:*",
+    "@omega-v/attestation": "workspace:*",
+    "@omega-v/dissensus": "workspace:*",
+    "@omega-v/remember": "workspace:*",
+    "@omega-v/mini": "workspace:*",
     "express": "^5.2.1"
   },
   "devDependencies": {

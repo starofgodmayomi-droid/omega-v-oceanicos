@@ -11,11 +11,12 @@
     "url": "https://github.com/starofgodmayomi-droid/omega-v-oceanicos.git"
   },
   "type": "module",
-  "packageManager": "pnpm@8.8.0",
+  "packageManager": "pnpm@10.34.5",
   "pnpm": {
     "overrides": {
-      "typescript": "5.3.3"
-    }
+      "typescript": "6.0.3"
+    },
+    "onlyBuiltDependencies": ["@parcel/watcher", "esbuild", "unrs-resolver"]
   },
   "workspaces": [
     "apps/*",
@@ -50,7 +51,7 @@
     "@testing-library/react": "16.3.2",
     "@testing-library/user-event": "14.6.5",
     "@types/jest": "^30.0.0",
-    "@types/node": "^20.0.0",
+    "@types/node": "^22.0.0",
     "@typescript-eslint/eslint-plugin": "^8.67.0",
     "@typescript-eslint/parser": "^8.67.0",
     "eslint": "^10.8.1",
@@ -64,7 +65,7 @@
     "typescript": "^5.0.0"
   },
   "engines": {
-    "node": ">=20.12.0",
+    "node": ">=22.0.0",
     "npm": ">=9.0.0"
   }
 }
