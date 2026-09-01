@@ -27,6 +27,8 @@
     "@omega-v/dissensus": "workspace:*",
     "@omega-v/remember": "workspace:*",
     "@omega-v/mini": "workspace:*",
+    "@omega-v/runtime": "workspace:*",
+    "@omega-v/coordination": "workspace:*",
     "express": "^5.2.1"
   },
   "devDependencies": {

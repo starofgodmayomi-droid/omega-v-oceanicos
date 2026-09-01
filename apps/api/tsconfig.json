@@ -10,7 +10,9 @@
       "@omega-v/verification": ["../../packages/verification/dist/index.d.ts"],
       "@omega-v/attestation": ["../../packages/attestation/dist/index.d.ts"],
       "@omega-v/dissensus": ["../../packages/dissensus/dist/index.d.ts"],
-      "@omega-v/remember": ["../../packages/remember/dist/index.d.ts"]
+      "@omega-v/remember": ["../../packages/remember/dist/index.d.ts"],
+      "@omega-v/runtime": ["../../packages/runtime/dist/index.d.ts"],
+      "@omega-v/coordination": ["../../packages/coordination/dist/index.d.ts"]
     }
   },
   "include": ["src"]

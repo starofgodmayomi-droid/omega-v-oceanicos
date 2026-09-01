@@ -5,7 +5,11 @@
     "rootDir": "src",
     "declaration": true,
     "declarationMap": true,
-    "sourceMap": true
+    "sourceMap": true,
+    "paths": {
+      "@omega-v/runtime": ["../runtime/dist/index.d.ts"],
+      "@omega-v/coordination": ["../coordination/dist/index.d.ts"]
+    }
   },
   "include": ["src/**/*.ts"]
 }

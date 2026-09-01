@@ -10,6 +10,8 @@ import Remember, { FileMemoryStore } from '@omega-v/remember';
 import * as DissensusModule from '@omega-v/dissensus';
 import { OperatingSystemKernel } from '@omega-v/mini';
 import type { Dissensus, DissensusPolicy, Opinion } from '@omega-v/dissensus';
+import { AgentLoop } from '@omega-v/runtime';
+import type { AgentLoopResult } from '@omega-v/runtime';
 
 const { policyFromEnvironment, reconcile } = DissensusModule;
 import {
@@ -18,7 +20,10 @@ import {
   LocalJobCreateInput,
   LocalJobEvent,
   LocalJobState,
+  MemoryRecord,
+  Observation,
   SuccessResponse,
+  VerificationResult,
   VerificationRule,
 } from '@omega-v/types';
 import { LocalJobError, LocalJobLedger, LOCAL_JOB_WINDOW } from './jobs.js';
@@ -553,6 +558,7 @@ const localPersistenceCoverage = persistenceCoverage({
 const runtimeEvents = snapshot.events;
 const eventStreams = new Set<Response>();
 const completedRuns = snapshot.runs;
+const agentRuns: AgentLoopResult[] = [];
 const runtimeActions = snapshot.actions;
 const runtimeLearnings = snapshot.learnings;
 const runtimeRecompilations = snapshot.recompilations;
@@ -1573,6 +1579,10 @@ app.get('/runs', (_req: Request, res: Response) => {
   res.json({ data: completedRuns, timestamp: new Date().toISOString() });
 });
 
+app.get('/agent/runs', (_req: Request, res: Response) => {
+  res.json({ data: agentRuns, timestamp: new Date().toISOString() });
+});
+
 app.get('/actions', (_req: Request, res: Response) => {
   res.json({ data: runtimeActions, timestamp: new Date().toISOString() });
 });
@@ -2115,9 +2125,9 @@ app.post('/recompile', (req: Request, res: Response) => {
 
 /**
  * POST /complete-loop - Execute the complete verification loop
- * Observe → Verify → Attest in one request
+ * Observe → Verify → Attest → Remember, orchestrated by the AgentLoop runtime.
  */
-app.post('/complete-loop', (req: Request, res: Response) => {
+app.post('/complete-loop', async (req: Request, res: Response) => {
   const correlationId = `loop-${Date.now()}`;
   const requestId = res.locals.requestId as string;
   try {
@@ -2133,52 +2143,153 @@ app.post('/complete-loop', (req: Request, res: Response) => {
       lineage,
     } = req.body;
 
-    // Step 1: Observe
-    recordEvent({
-      type: 'observation.received',
-      stage: 'observe',
-      message: 'Observation received from the workspace',
-      status: 'active',
-      correlationId,
-      requestId,
-    });
-    const observation = observer.observe({
-      claim,
-      category,
-      source,
-      observedBy,
-      metadata,
-      confidence,
-      confidenceReason,
-      parentId,
-      lineage,
-    });
-    // Step 2: Verify
-    recordEvent({
-      type: 'verification.started',
-      stage: 'verify',
-      message: 'Evidence checks started',
-      status: 'active',
-      correlationId,
-      requestId,
-      details: { claim },
-    });
-    const verificationResult = verificationEngine.verify(observation);
+    // Each module is a closure over the API's live services. AgentLoop
+    // is the runtime orchestrator: it runs the modules in sequence,
+    // records per-module elapsed time, stops at the first failure, and
+    // returns a structured trace that serves as execution evidence.
+    const agentLoop = new AgentLoop([
+      {
+        id: 'observe',
+        execute: () => {
+          recordEvent({
+            type: 'observation.received',
+            stage: 'observe',
+            message: 'Observation received from the workspace',
+            status: 'active',
+            correlationId,
+            requestId,
+          });
+          return observer.observe({
+            claim,
+            category,
+            source,
+            observedBy,
+            metadata,
+            confidence,
+            confidenceReason,
+            parentId,
+            lineage,
+          });
+        },
+      },
+      {
+        id: 'verify',
+        execute: ({ values }) => {
+          const observation = values['observe'] as Observation;
+          recordEvent({
+            type: 'verification.started',
+            stage: 'verify',
+            message: 'Evidence checks started',
+            status: 'active',
+            correlationId,
+            requestId,
+            details: { claim },
+          });
+          const verificationResult = verificationEngine.verify(observation);
+          recordEvent({
+            type: verificationResult.summary.passed
+              ? 'verification.passed'
+              : 'verification.failed',
+            stage: 'verify',
+            message: verificationResult.summary.passed
+              ? 'All applicable rules passed'
+              : 'Verification found a failed rule',
+            status: verificationResult.summary.passed ? 'passed' : 'failed',
+            correlationId,
+            requestId,
+            details: { rulesApplied: verificationResult.summary.rulesApplied },
+          });
+          return verificationResult;
+        },
+      },
+      {
+        id: 'attest',
+        execute: ({ values }) => {
+          const verificationResult = values['verify'] as VerificationResult;
+          return attestationService.attest(verificationResult);
+        },
+      },
+      {
+        id: 'remember',
+        execute: ({ values }) => {
+          const observation = values['observe'] as Observation;
+          const verificationResult = values['verify'] as VerificationResult;
+          const attestation = values['attest'] as Attestation;
+          recordEvent({
+            type: 'memory.entering',
+            stage: 'remember',
+            message: 'Storing in MINI kernel memory (append-only hash chain)',
+            status: 'active',
+            correlationId,
+            requestId,
+          });
+          // Unlike completedRuns, which is a bounded window, this is
+          // append-only and integrity-checkable. Remember completes the
+          // MINI cycle: Observe → Verify → Remember
+          const remembered = kernelMemory.remember(observation, verificationResult);
+          persistRuntime();
+          recordEvent({
+            type: 'memory.recorded',
+            stage: 'remember',
+            message: 'Verification result stored in MINI kernel',
+            status: 'passed',
+            correlationId,
+            requestId,
+            details: { memoryId: remembered.id },
+          });
+          recordEvent({
+            type: 'attestation.created',
+            stage: 'attest',
+            message: 'Verification result signed and recorded',
+            status: attestation.verified ? 'passed' : 'failed',
+            correlationId,
+            requestId,
+            details: {
+              attestationId: attestation.id,
+              memoryId: remembered.id,
+              signing: {
+                attestationId: attestation.id,
+                verificationId: attestation.verificationId,
+                algorithm: attestation.signingAlgorithm || 'HMAC-SHA256',
+                keyVersion: attestation.keyVersion,
+                keyFingerprint: attestation.signingKey,
+                verified: attestation.verified,
+                confidence: attestation.confidence,
+                ruleVersions: attestation.ruleVersions,
+              } satisfies SigningAuditDetails,
+            },
+          });
+          return remembered;
+        },
+      },
+    ]);
 
-    recordEvent({
-      type: verificationResult.summary.passed ? 'verification.passed' : 'verification.failed',
-      stage: 'verify',
-      message: verificationResult.summary.passed
-        ? 'All applicable rules passed'
-        : 'Verification found a failed rule',
-      status: verificationResult.summary.passed ? 'passed' : 'failed',
-      correlationId,
-      requestId,
-      details: { rulesApplied: verificationResult.summary.rulesApplied },
-    });
+    // `input` is metadata for the trace, not a data pipe — the actual
+    // request fields are captured above as module closures.
+    const claimInput =
+      typeof claim === 'string' && claim.trim().length > 0 ? claim.slice(0, 2000) : 'pending';
+    const agentResult = await agentLoop.run(claimInput, correlationId);
 
-    // Step 3: Attest
-    const attestation = attestationService.attest(verificationResult);
+    // Retain a bounded window of agent run traces for observability.
+    agentRuns.unshift(agentResult);
+    agentRuns.splice(20);
+
+    if (agentResult.state === 'failed') {
+      const failedStep = agentResult.trace.find((t) => t.state === 'failed');
+      const errorResponse: ErrorResponse = {
+        code: 'LOOP_FAILED',
+        message: failedStep?.message ?? 'Verification loop failed',
+        timestamp: new Date().toISOString(),
+      };
+      res.status(400).json(errorResponse);
+      return;
+    }
+
+    const observation = agentResult.context.values['observe'] as Observation;
+    const verificationResult = agentResult.context.values['verify'] as VerificationResult;
+    const attestation = agentResult.context.values['attest'] as Attestation;
+    const remembered = agentResult.context.values['remember'] as MemoryRecord;
+
     completedRuns.unshift({
       correlationId,
       requestId,
@@ -2188,63 +2299,31 @@ app.post('/complete-loop', (req: Request, res: Response) => {
     });
     completedRuns.splice(20);
 
-    // Step 4: Remember (MINI kernel's hash chain)
-    // Unlike completedRuns, which is a bounded window, this is append-only
-    // and integrity-checkable. Remember completes the MINI cycle: Observe → Verify → Remember
-    recordEvent({
-      type: 'memory.entering',
-      stage: 'remember',
-      message: 'Storing in MINI kernel memory (append-only hash chain)',
-      status: 'active',
-      correlationId,
-      requestId,
-    });
-    const remembered = kernelMemory.remember(observation, verificationResult);
-
-    persistRuntime();
-    recordEvent({
-      type: 'memory.recorded',
-      stage: 'remember',
-      message: 'Verification result stored in MINI kernel',
-      status: 'passed',
-      correlationId,
-      requestId,
-      details: { memoryId: remembered.id },
-    });
-    recordEvent({
-      type: 'attestation.created',
-      stage: 'attest',
-      message: 'Verification result signed and recorded',
-      status: attestation.verified ? 'passed' : 'failed',
-      correlationId,
-      requestId,
-      details: {
-        attestationId: attestation.id,
-        memoryId: remembered.id,
-        signing: {
-          attestationId: attestation.id,
-          verificationId: attestation.verificationId,
-          algorithm: attestation.signingAlgorithm || 'HMAC-SHA256',
-          keyVersion: attestation.keyVersion,
-          keyFingerprint: attestation.signingKey,
-          verified: attestation.verified,
-          confidence: attestation.confidence,
-          ruleVersions: attestation.ruleVersions,
-        } satisfies SigningAuditDetails,
-      },
-    });
-
     const response: SuccessResponse<{
       observation: typeof observation;
       verification: typeof verificationResult;
       memory: typeof remembered;
       attestation: typeof attestation;
+      agentRun: {
+        runId: string;
+        state: 'succeeded' | 'failed';
+        trace: AgentLoopResult['trace'];
+        elapsedMs: number;
+        limitations: string[];
+      };
     }> = {
       data: {
         observation,
         verification: verificationResult,
         memory: remembered,
         attestation,
+        agentRun: {
+          runId: agentResult.runId,
+          state: agentResult.state,
+          trace: agentResult.trace,
+          elapsedMs: agentResult.elapsedMs,
+          limitations: agentResult.limitations,
+        },
       },
       timestamp: new Date().toISOString(),
     };
@@ -2462,6 +2541,7 @@ const startServer = () =>
         '  GET    /memory           - Kernel hash-chained memory',
         '  GET    /memory/integrity - Verify the memory chain',
         '  GET    /runs             - Completed runs',
+        '  GET    /agent/runs       - AgentLoop run traces',
         '  POST   /act              - Authorize an action',
         '  POST   /learn            - Record learning',
         '  POST   /recompile        - Propose a recompile',

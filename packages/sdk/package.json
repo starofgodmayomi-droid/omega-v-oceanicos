@@ -11,6 +11,10 @@
     "clean": "node ../../scripts/rimraf.cjs dist",
     "test": "jest --runInBand"
   },
+  "dependencies": {
+    "@omega-v/runtime": "workspace:*",
+    "@omega-v/coordination": "workspace:*"
+  },
   "engines": {
     "node": ">=18.0.0"
   }
