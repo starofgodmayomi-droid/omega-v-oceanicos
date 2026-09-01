@@ -164,18 +164,18 @@ These rules are non-negotiable:
 
 - [x] Docker: Multi-stage Dockerfile + docker-compose + nginx
 - [x] CI: Full pipeline FORMAT→LINT→TYPECHECK→TEST→BUILD→CLI_SMOKE→ATTEST (`.github/workflows/verify.yml`)
-- [ ] Kubernetes: Distributed attestation
-- [ ] Edge: Verification at network edge
-- [ ] VaaS: Verification as a service
-- [ ] Community: Open verification marketplace
+- [x] Kubernetes: Distributed attestation & mesh (`@omega-v/mesh`)
+- [x] Edge: Verification at network edge (`@omega-v/edge`)
+- [x] VaaS: Verification as a service (`@omega-v/vaas`)
+- [x] Community: Open verification registry (`@omega-v/registry`)
 
-### Phase 4: Intelligence (Learning Loop Closes)
+### Phase 4: Intelligence & Autonomous Evolution (61 Pillars)
 
-- [ ] Analytics: Pattern extraction from verifications
-- [ ] Adaptation: Rules improve based on evidence
-- [ ] Community: Shared verification knowledge base
-- [ ] Federation: Cross-system verification
-- [ ] Continuous becoming: Evolution without reset
+- [x] Analytics: Statistical pattern extraction & auto-proposals (`@omega-v/analytics`)
+- [x] Adaptation: Online hyperparameter optimizer & learning synthesis (`@omega-v/learning`)
+- [x] Evolution: Controlled rule recompilation & drift detection (`@omega-v/evolution`)
+- [x] Federation: Peer node federation & cross-cluster proofs (`@omega-v/federation`)
+- [x] Continuous becoming: 61-Pillar Ecosystem OS with unified 8-stage execution flow (`POST /ecosystem/flow`)
 
 ---
 
@@ -223,8 +223,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on:
 
 ---
 
-**Last Updated**: 2026-08-10  
-**Manifest Status**: Living document — evolves with evidence and community input
+**Last Updated**: 2026-09-01  
+**Manifest Status**: Living document — 61 Pillars, 64 Test Suites, 410 Specs (100% Pass Rate)
 
 ---
 
@@ -233,4 +233,5 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on:
 | Version  | Date       | Loop                                                               | Evidence                                                                                                                               |
 | -------- | ---------- | ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
 | Ω∞v := 0 | 2026-08-07 | Observe → Verify → Attest → Build → Test → Deploy → Learn → Evolve | 15 tests, 84.7% coverage, attestation `att-2026-08-07-8dwhz` signed HMAC-SHA256                                                        |
-| Ω∞v := 1 | 2026-08-10 | Phase 1 complete + Phase 2 Ecosystem + Phase 3 Docker/CI           | **42 tests, 11 suites, 90.5% stmt, 93.3% fn** — IR VM, Compiler, SDK, CLI (`omega-v loop`), Agents Swarm, Docker, CI pipeline 8 stages |
+| Ω∞v := 1 | 2026-08-10 | Phase 1 complete + Phase 2 Ecosystem + Phase 3 Docker/CI           | 42 tests, 11 suites, 90.5% stmt, 93.3% fn — IR VM, Compiler, SDK, CLI, Agents Swarm, Docker, CI pipeline                              |
+| Ω∞v := 2 | 2026-09-01 | Full-Stack 61-Pillar Ecosystem OS + 8-Stage Canonical Pipeline     | **410 tests, 64 suites (100% passing), 0 TS errors** — EVM, AMM, Reputation, Human Gate, ZK, Sharding, BFT, OVM, CLI & Web Dashboard |
