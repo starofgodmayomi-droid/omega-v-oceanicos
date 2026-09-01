@@ -72,7 +72,8 @@
       "@omega-v/sequencer": ["packages/sequencer/src/index.ts"],
       "@omega-v/da": ["packages/da/src/index.ts"],
       "@omega-v/rollup": ["packages/rollup/src/index.ts"],
-      "@omega-v/intent": ["packages/intent/src/index.ts"]
+      "@omega-v/intent": ["packages/intent/src/index.ts"],
+      "@omega-v/orchestrator": ["packages/orchestrator/src/index.ts"]
     }
   },
   "include": ["packages/*/src", "apps/*/src", "tests"],

@@ -56,6 +56,7 @@ export default {
     '@omega-v/da': '<rootDir>/packages/da/src/index.ts',
     '@omega-v/rollup': '<rootDir>/packages/rollup/src/index.ts',
     '@omega-v/intent': '<rootDir>/packages/intent/src/index.ts',
+    '@omega-v/orchestrator': '<rootDir>/packages/orchestrator/src/index.ts',
   },
   collectCoverageFrom: [
     'packages/*/src/**/*.ts',

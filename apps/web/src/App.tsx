@@ -742,6 +742,35 @@ interface IntentStatsData {
   avgSolverEfficiency: number;
 }
 
+interface OrchestratedTaskItem {
+  taskId: string;
+  name: string;
+  assignedAgentDid: string;
+  executionMode: string;
+  status: string;
+  resultWitness?: string;
+  executionDurationMs?: number;
+}
+
+interface ParallelBatchReceiptItem {
+  batchId: string;
+  taskCount: number;
+  completedCount: number;
+  stateDeltaHash: string;
+  batchAttestation: string;
+  dispatchedAt: string;
+  completedAt?: string;
+}
+
+interface OrchestratorStatsData {
+  totalDispatchedTasks: number;
+  completedTasks: number;
+  activeParallelBatches: number;
+  registeredAgents: number;
+  speculativeRollbacks: number;
+  avgTaskExecutionMs: number;
+}
+
 interface RuleEfficacy {
   ruleName: string;
   totalExecutions: number;
@@ -1104,6 +1133,9 @@ export function App(): JSX.Element {
   const [submittingBid, setSubmittingBid] = useState(false);
   const [settlingIntent, setSettlingIntent] = useState(false);
   const [intentResult, setIntentResult] = useState<string | null>(null);
+  const [orchestratedTasks, setOrchestratedTasks] = useState<OrchestratedTaskItem[]>([]);
+  const [parallelBatches, setParallelBatches] = useState<ParallelBatchReceiptItem[]>([]);
+  const [orchestratorStats, setOrchestratorStats] = useState<OrchestratorStatsData | null>(null);
 
   // ── Poll log + metrics ──
   const fetchState = useCallback(async () => {
@@ -1170,6 +1202,9 @@ export function App(): JSX.Element {
         intListRes,
         intBidsRes,
         intStatsRes,
+        orchTasksRes,
+        orchBatchesRes,
+        orchStatsRes,
       ] = await Promise.all([
         fetch(`${API_BASE}/log?limit=30`),
         fetch(`${API_BASE}/metrics`),
@@ -1232,6 +1267,9 @@ export function App(): JSX.Element {
         fetch(`${API_BASE}/intent/intents`),
         fetch(`${API_BASE}/intent/bids`),
         fetch(`${API_BASE}/intent/stats`),
+        fetch(`${API_BASE}/orchestrator/tasks`),
+        fetch(`${API_BASE}/orchestrator/batches`),
+        fetch(`${API_BASE}/orchestrator/stats`),
       ]);
       if (!logRes.ok || !metricsRes.ok) throw new Error('API error');
 
@@ -1414,6 +1452,15 @@ export function App(): JSX.Element {
       }
       if (intStatsRes && intStatsRes.ok) {
         setIntentStats((await intStatsRes.json()).data as IntentStatsData);
+      }
+      if (orchTasksRes && orchTasksRes.ok) {
+        setOrchestratedTasks((await orchTasksRes.json()).data as OrchestratedTaskItem[]);
+      }
+      if (orchBatchesRes && orchBatchesRes.ok) {
+        setParallelBatches((await orchBatchesRes.json()).data as ParallelBatchReceiptItem[]);
+      }
+      if (orchStatsRes && orchStatsRes.ok) {
+        setOrchestratorStats((await orchStatsRes.json()).data as OrchestratorStatsData);
       }
     } catch {
       setApiOnline(false);
@@ -7888,6 +7935,99 @@ export function App(): JSX.Element {
                       </div>
                       <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontFamily: 'JetBrains Mono, monospace' }}>
                         Route: {b.proposedRoute.join(' ➔ ')}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Section 37: Decentralized Multi-Agent Swarm Orchestrator & Parallel Worker Dispatcher ── */}
+          <div className="card" style={{ gridColumn: '1 / -1' }}>
+            <div className="section-header" style={{ marginBottom: 16 }}>
+              <div className="section-title">🐝 Swarm Orchestrator &amp; Parallel Worker Dispatcher</div>
+              <span className="section-badge">{orchestratedTasks.length} tasks · {parallelBatches.length} batches</span>
+            </div>
+
+            {/* Stats Row */}
+            {orchestratorStats && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 10, marginBottom: 18 }}>
+                {[
+                  { label: 'Dispatched Tasks', value: orchestratorStats.totalDispatchedTasks, icon: '📤' },
+                  { label: 'Completed', value: orchestratorStats.completedTasks, icon: '✅' },
+                  { label: 'Active Batches', value: orchestratorStats.activeParallelBatches, icon: '⚡' },
+                  { label: 'Agents', value: orchestratorStats.registeredAgents, icon: '🤖' },
+                  { label: 'Rollbacks', value: orchestratorStats.speculativeRollbacks, icon: '🔄' },
+                  { label: 'Avg Exec (ms)', value: `${orchestratorStats.avgTaskExecutionMs.toFixed(1)}`, icon: '⏱️' },
+                ].map((s) => (
+                  <div key={s.label} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '10px 12px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '1.1rem' }}>{s.icon}</div>
+                    <div style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--accent-purple)' }}>{s.value}</div>
+                    <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{s.label}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Parallel Batches & Orchestrated Tasks */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              <div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Parallel Batches ({parallelBatches.length})
+                </div>
+                <div style={{ display: 'grid', gap: 8 }}>
+                  {parallelBatches.slice(-4).reverse().map((b) => (
+                    <div
+                      key={b.batchId}
+                      style={{
+                        background: 'var(--bg-surface)',
+                        border: '1px solid var(--border)',
+                        borderRadius: 'var(--radius-sm)',
+                        padding: 10,
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
+                        <span style={{ fontWeight: 700, fontSize: '0.78rem', color: 'var(--text-primary)' }}>
+                          {b.batchId.slice(0, 16)}…
+                        </span>
+                        <span style={{ fontSize: '0.62rem', padding: '1px 6px', borderRadius: 3, background: b.completedAt ? 'rgba(72,187,120,0.15)' : 'rgba(237,137,54,0.15)', color: b.completedAt ? 'var(--accent-green)' : 'var(--accent-orange)', fontWeight: 700 }}>
+                          {b.completedAt ? 'COMPLETED' : 'IN PROGRESS'}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>
+                        Tasks: {b.completedCount}/{b.taskCount} · Hash: {b.stateDeltaHash.slice(0, 16)}…
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Orchestrated Tasks ({orchestratedTasks.length})
+                </div>
+                <div style={{ display: 'grid', gap: 8 }}>
+                  {orchestratedTasks.slice(-4).reverse().map((t) => (
+                    <div
+                      key={t.taskId}
+                      style={{
+                        background: 'var(--bg-surface)',
+                        border: '1px solid var(--border)',
+                        borderRadius: 'var(--radius-sm)',
+                        padding: 10,
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
+                        <span style={{ fontWeight: 700, fontSize: '0.78rem', color: 'var(--text-primary)' }}>
+                          {t.name}
+                        </span>
+                        <span style={{ fontSize: '0.62rem', padding: '1px 6px', borderRadius: 3, background: t.status === 'COMPLETED' ? 'rgba(72,187,120,0.15)' : t.status === 'ROLLED_BACK' ? 'rgba(245,101,101,0.15)' : 'rgba(237,137,54,0.15)', color: t.status === 'COMPLETED' ? 'var(--accent-green)' : t.status === 'ROLLED_BACK' ? 'var(--accent-red)' : 'var(--accent-orange)', fontWeight: 700 }}>
+                          {t.status}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontFamily: 'JetBrains Mono, monospace' }}>
+                        Agent: {t.assignedAgentDid.split(':').pop()} · Mode: {t.executionMode}{t.executionDurationMs ? ` · ${t.executionDurationMs}ms` : ''}
                       </div>
                     </div>
                   ))}

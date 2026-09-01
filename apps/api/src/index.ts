@@ -41,6 +41,7 @@ import { OceanicosSequencerEngine } from '@omega-v/sequencer';
 import { OceanicosDAEngine } from '@omega-v/da';
 import { OceanicosRollupEngine } from '@omega-v/rollup';
 import { OceanicosIntentEngine } from '@omega-v/intent';
+import { OceanicosOrchestratorEngine } from '@omega-v/orchestrator';
 import {
   SuccessResponse,
   ErrorResponse,
@@ -111,6 +112,7 @@ const sequencerEngine = new OceanicosSequencerEngine();
 const daEngine = new OceanicosDAEngine();
 const rollupEngine = new OceanicosRollupEngine();
 const intentEngine = new OceanicosIntentEngine();
+const orchestratorEngine = new OceanicosOrchestratorEngine();
 
 // Register default rules
 verificationEngine.registerRule({
@@ -3499,6 +3501,117 @@ app.get('/intent/bids', (req: Request, res: Response) => {
 /** GET /intent/stats — Intent engine telemetry metrics */
 app.get('/intent/stats', (_req: Request, res: Response) => {
   const stats = intentEngine.getStats();
+  res.json({
+    data: stats,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/**
+ * Section 37 Endpoints: Decentralized Multi-Agent Swarm Orchestrator & Parallel Worker Dispatcher
+ * /orchestrator/tasks, /orchestrator/tasks/dispatch, /orchestrator/batches/dispatch, /orchestrator/tasks/attest, /orchestrator/batches, /orchestrator/stats
+ */
+
+/** GET /orchestrator/tasks — List all orchestrated tasks */
+app.get('/orchestrator/tasks', (req: Request, res: Response) => {
+  const batchId = typeof req.query.batchId === 'string' ? req.query.batchId : undefined;
+  const tasks = orchestratorEngine.getTasks(batchId);
+  res.json({
+    data: tasks,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /orchestrator/tasks/dispatch — Dispatch single orchestrated task */
+app.post('/orchestrator/tasks/dispatch', (req: Request, res: Response) => {
+  const { name, assignedAgentDid, payload, executionMode, dependencies } = req.body;
+  if (!name || !assignedAgentDid) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'name and assignedAgentDid are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  const task = orchestratorEngine.dispatchTask({
+    name,
+    assignedAgentDid,
+    payload,
+    executionMode,
+    dependencies,
+  });
+
+  res.status(201).json({
+    data: task,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /orchestrator/batches/dispatch — Dispatch parallel multi-task worker batch */
+app.post('/orchestrator/batches/dispatch', (req: Request, res: Response) => {
+  const { batchName, tasks } = req.body;
+  if (!batchName || !Array.isArray(tasks) || tasks.length === 0) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'batchName and non-empty tasks array are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  const batch = orchestratorEngine.dispatchParallelBatch({ batchName, tasks });
+  res.status(201).json({
+    data: batch,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /orchestrator/tasks/attest — Submit worker task attestation */
+app.post('/orchestrator/tasks/attest', (req: Request, res: Response) => {
+  const { taskId, agentDid, resultWitness, durationMs, hasConflict } = req.body;
+  if (!taskId || !agentDid || !resultWitness) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'taskId, agentDid, and resultWitness are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const task = orchestratorEngine.submitTaskAttestation({
+      taskId,
+      agentDid,
+      resultWitness,
+      durationMs,
+      hasConflict,
+    });
+    res.json({
+      data: task,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'TASK_ATTESTATION_FAILED',
+      message: err instanceof Error ? err.message : 'Attestation failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** GET /orchestrator/batches — List all parallel batch receipts */
+app.get('/orchestrator/batches', (_req: Request, res: Response) => {
+  const batches = orchestratorEngine.getBatches();
+  res.json({
+    data: batches,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** GET /orchestrator/stats — Orchestrator telemetry metrics */
+app.get('/orchestrator/stats', (_req: Request, res: Response) => {
+  const stats = orchestratorEngine.getStats();
   res.json({
     data: stats,
     timestamp: new Date().toISOString(),

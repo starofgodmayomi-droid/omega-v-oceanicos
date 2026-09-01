@@ -38,6 +38,7 @@ import { OceanicosSequencerEngine } from '@omega-v/sequencer';
 import { OceanicosDAEngine } from '@omega-v/da';
 import { OceanicosRollupEngine } from '@omega-v/rollup';
 import { OceanicosIntentEngine } from '@omega-v/intent';
+import { OceanicosOrchestratorEngine } from '@omega-v/orchestrator';
 import app from '../../apps/api/src/index';
 
 describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => {
@@ -1591,7 +1592,51 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       expect(stats.registeredSolvers).toBe(2);
     });
   });
+
+  describe('37. Multi-Agent Swarm Orchestrator & Parallel Worker Dispatcher E2E', () => {
+    it('should dispatch parallel multi-task batches, execute with worker agents, and attest completion', () => {
+      const orchestrator = new OceanicosOrchestratorEngine('e2e-orchestrator-key');
+
+      // 1. Dispatch parallel worker batch
+      const batch = orchestrator.dispatchParallelBatch({
+        batchName: 'Autonomous Full-Stack Verification Run',
+        tasks: [
+          { name: 'Verify ZK Constraints', assignedAgentDid: 'did:omega:worker:zk' },
+          { name: 'Verify Consensus Quorum', assignedAgentDid: 'did:omega:worker:consensus' },
+          { name: 'Verify Layer-2 State Diff', assignedAgentDid: 'did:omega:worker:rollup' },
+        ],
+      });
+
+      expect(batch.batchId).toMatch(/^batch-/);
+      expect(batch.taskCount).toBe(3);
+      expect(batch.stateDeltaHash).toMatch(/^0x/);
+
+      // 2. Worker agents attest task executions
+      const tasks = orchestrator.getTasks(batch.batchId);
+      for (const t of tasks) {
+        orchestrator.submitTaskAttestation({
+          taskId: t.taskId,
+          agentDid: t.assignedAgentDid,
+          resultWitness: `E2E_VERIFIED_${t.name.toUpperCase().replace(/\s+/g, '_')}`,
+          durationMs: 30,
+        });
+      }
+
+      // 3. Verify batch completion
+      const updatedBatches = orchestrator.getBatches();
+      expect(updatedBatches[0].completedCount).toBe(3);
+      expect(updatedBatches[0].completedAt).toBeDefined();
+
+      // 4. Check orchestrator metrics
+      const stats = orchestrator.getStats();
+      expect(stats.totalDispatchedTasks).toBe(3);
+      expect(stats.completedTasks).toBe(3);
+      expect(stats.registeredAgents).toBe(3);
+      expect(stats.avgTaskExecutionMs).toBe(30);
+    });
+  });
 });
+
 
 
 
