@@ -1,0 +1,11 @@
+{
+  "name": "@omega-v/relay",
+  "version": "0.1.0",
+  "description": "Decentralized Cross-Shard & Cross-Rollup Packet Relaying, Merkle Delivery Receipts & Replay Protection for Ω∞v Oceanicos",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "test": "jest"
+  }
+}

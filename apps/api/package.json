@@ -78,6 +78,7 @@
     "@omega-v/mempool": "*",
     "@omega-v/attestor": "*",
     "@omega-v/governor": "*",
+    "@omega-v/relay": "*",
     "express": "^4.18.2"
   },
   "devDependencies": {

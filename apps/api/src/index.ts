@@ -48,6 +48,7 @@ import { OceanicosKernel } from '@omega-v/kernel';
 import { OceanicosMempoolEngine } from '@omega-v/mempool';
 import { OceanicosThresholdAttestorEngine } from '@omega-v/attestor';
 import { OceanicosGovernorEngine } from '@omega-v/governor';
+import { OceanicosRelayEngine } from '@omega-v/relay';
 import {
   SuccessResponse,
   ErrorResponse,
@@ -125,6 +126,7 @@ const kernelEngine = new OceanicosKernel();
 const mempoolEngine = new OceanicosMempoolEngine();
 const attestorEngine = new OceanicosThresholdAttestorEngine();
 const governorEngine = new OceanicosGovernorEngine();
+const relayEngine = new OceanicosRelayEngine();
 
 // Register default rules
 verificationEngine.registerRule({
@@ -4410,6 +4412,162 @@ app.post('/governor/proposals/cancel', (req: Request, res: Response) => {
 /** GET /governor/stats — Governance telemetry */
 app.get('/governor/stats', (_req: Request, res: Response) => {
   const stats = governorEngine.getStats();
+  res.json({
+    data: stats,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/**
+ * Section 44 Endpoints: Decentralized Cross-Shard & Cross-Rollup Message Relaying
+ * /relay/packets, /relay/dispatch, /relay/relay, /relay/acknowledge, /relay/receipts, /relay/relayers, /relay/relayers/register, /relay/stats
+ */
+
+/** GET /relay/packets — List cross-domain packets */
+app.get('/relay/packets', (req: Request, res: Response) => {
+  const status = typeof req.query.status === 'string' ? (req.query.status as any) : undefined;
+  const packets = relayEngine.getPackets(status);
+  res.json({
+    data: packets,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /relay/dispatch — Dispatch packet from source domain */
+app.post('/relay/dispatch', (req: Request, res: Response) => {
+  const { sourceDomain, targetDomain, senderDid, recipientDid, payload } = req.body;
+  if (!sourceDomain || !targetDomain || !senderDid || !recipientDid) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'sourceDomain, targetDomain, senderDid, and recipientDid are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const packet = relayEngine.dispatchPacket({
+      sourceDomain,
+      targetDomain,
+      senderDid,
+      recipientDid,
+      payload: payload ?? {},
+    });
+    res.status(201).json({
+      data: packet,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'DISPATCH_FAILED',
+      message: err instanceof Error ? err.message : 'Dispatch failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** POST /relay/relay — Relay packet to destination */
+app.post('/relay/relay', (req: Request, res: Response) => {
+  const { packetId, relayerDid } = req.body;
+  if (!packetId || !relayerDid) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'packetId and relayerDid are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const packet = relayEngine.relayPacket(packetId, relayerDid);
+    res.json({
+      data: packet,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'RELAY_FAILED',
+      message: err instanceof Error ? err.message : 'Relay failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** POST /relay/acknowledge — Acknowledge delivery with receipt hash */
+app.post('/relay/acknowledge', (req: Request, res: Response) => {
+  const { packetId, targetReceiptHash } = req.body;
+  if (!packetId || !targetReceiptHash) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'packetId and targetReceiptHash are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const receipt = relayEngine.acknowledgeDelivery(packetId, targetReceiptHash);
+    res.json({
+      data: receipt,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'ACKNOWLEDGE_FAILED',
+      message: err instanceof Error ? err.message : 'Acknowledgment failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** GET /relay/receipts — List all delivery receipts */
+app.get('/relay/receipts', (_req: Request, res: Response) => {
+  const receipts = relayEngine.getReceipts();
+  res.json({
+    data: receipts,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** GET /relay/relayers — List relayer nodes */
+app.get('/relay/relayers', (_req: Request, res: Response) => {
+  const relayers = relayEngine.getRelayers();
+  res.json({
+    data: relayers,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /relay/relayers/register — Register relayer node */
+app.post('/relay/relayers/register', (req: Request, res: Response) => {
+  const { relayerDid, moniker, stakeAmount } = req.body;
+  if (!relayerDid || !moniker) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'relayerDid and moniker are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const relayer = relayEngine.registerRelayer({ relayerDid, moniker, stakeAmount });
+    res.status(201).json({
+      data: relayer,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'RELAYER_REGISTRATION_FAILED',
+      message: err instanceof Error ? err.message : 'Registration failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** GET /relay/stats — Relay telemetry */
+app.get('/relay/stats', (_req: Request, res: Response) => {
+  const stats = relayEngine.getStats();
   res.json({
     data: stats,
     timestamp: new Date().toISOString(),

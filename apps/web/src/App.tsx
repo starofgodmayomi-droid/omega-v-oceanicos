@@ -1001,6 +1001,49 @@ interface GovernorStatsData {
   cumulativeVotingPower: number;
 }
 
+interface RelayPacketItem {
+  packetId: string;
+  sourceDomain: string;
+  targetDomain: string;
+  sequenceNonce: number;
+  senderDid: string;
+  recipientDid: string;
+  status: string;
+  relayedBy?: string;
+  targetReceiptHash?: string;
+  packetHash: string;
+  dispatchedAt: string;
+}
+
+interface DeliveryReceiptItem {
+  receiptId: string;
+  packetId: string;
+  sourceDomain: string;
+  targetDomain: string;
+  relayerDid: string;
+  targetReceiptHash: string;
+  ackProof: string;
+  timestamp: string;
+}
+
+interface RelayerNodeItem {
+  relayerDid: string;
+  moniker: string;
+  stakeAmount: number;
+  packetsRelayed: number;
+  status: string;
+  registeredAt: string;
+}
+
+interface RelayStatsData {
+  totalPackets: number;
+  dispatchedCount: number;
+  relayedCount: number;
+  acknowledgedCount: number;
+  activeRelayers: number;
+  totalChannels: number;
+}
+
 interface RuleEfficacy {
   ruleName: string;
   totalExecutions: number;
@@ -1382,6 +1425,10 @@ export function App(): JSX.Element {
   const [attestorStats, setAttestorStats] = useState<AttestorStatsData | null>(null);
   const [govProposals, setGovProposals] = useState<GovernorProposalItem[]>([]);
   const [governorStats, setGovernorStats] = useState<GovernorStatsData | null>(null);
+  const [relayPackets, setRelayPackets] = useState<RelayPacketItem[]>([]);
+  const [relayReceipts, setRelayReceipts] = useState<DeliveryReceiptItem[]>([]);
+  const [relayerNodes, setRelayerNodes] = useState<RelayerNodeItem[]>([]);
+  const [relayStats, setRelayStats] = useState<RelayStatsData | null>(null);
 
   // ── Poll log + metrics ──
   const fetchState = useCallback(async () => {
@@ -1467,6 +1514,10 @@ export function App(): JSX.Element {
         attStatsRes,
         govPropsRes,
         govStatsRes,
+        relPacketsRes,
+        relReceiptsRes,
+        relRelayersRes,
+        relStatsRes,
       ] = await Promise.all([
         fetch(`${API_BASE}/log?limit=30`),
         fetch(`${API_BASE}/metrics`),
@@ -1548,6 +1599,10 @@ export function App(): JSX.Element {
         fetch(`${API_BASE}/attestor/stats`),
         fetch(`${API_BASE}/governor/proposals`),
         fetch(`${API_BASE}/governor/stats`),
+        fetch(`${API_BASE}/relay/packets`),
+        fetch(`${API_BASE}/relay/receipts`),
+        fetch(`${API_BASE}/relay/relayers`),
+        fetch(`${API_BASE}/relay/stats`),
       ]);
       if (!logRes.ok || !metricsRes.ok) throw new Error('API error');
 
@@ -1787,6 +1842,18 @@ export function App(): JSX.Element {
       }
       if (govStatsRes && govStatsRes.ok) {
         setGovernorStats((await govStatsRes.json()).data as GovernorStatsData);
+      }
+      if (relPacketsRes && relPacketsRes.ok) {
+        setRelayPackets((await relPacketsRes.json()).data as RelayPacketItem[]);
+      }
+      if (relReceiptsRes && relReceiptsRes.ok) {
+        setRelayReceipts((await relReceiptsRes.json()).data as DeliveryReceiptItem[]);
+      }
+      if (relRelayersRes && relRelayersRes.ok) {
+        setRelayerNodes((await relRelayersRes.json()).data as RelayerNodeItem[]);
+      }
+      if (relStatsRes && relStatsRes.ok) {
+        setRelayStats((await relStatsRes.json()).data as RelayStatsData);
       }
     } catch {
       setApiOnline(false);
@@ -8747,6 +8814,74 @@ export function App(): JSX.Element {
                     </div>
                   </div>
                 ))}
+              </div>
+            </div>
+          </div>
+          {/* ── Section 44: Decentralized Cross-Shard & Cross-Rollup Message Relaying ── */}
+          <div className="card" style={{ gridColumn: '1 / -1' }}>
+            <div className="section-header" style={{ marginBottom: 16 }}>
+              <div className="section-title">📡 Cross-Shard &amp; Cross-Rollup Message Relaying</div>
+              <span className="section-badge">{relayPackets.length} packets · {relayerNodes.length} relayers · {relayReceipts.length} receipts</span>
+            </div>
+
+            {/* Relay Stats */}
+            {relayStats && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 10, marginBottom: 18 }}>
+                {[
+                  { label: 'Total Packets', value: relayStats.totalPackets, icon: '📦' },
+                  { label: 'Dispatched', value: relayStats.dispatchedCount, icon: '🛫' },
+                  { label: 'Relayed', value: relayStats.relayedCount, icon: '🛰️' },
+                  { label: 'Acknowledged', value: relayStats.acknowledgedCount, icon: '🛬' },
+                  { label: 'Active Relayers', value: relayStats.activeRelayers, icon: '🏃' },
+                  { label: 'Active Channels', value: relayStats.totalChannels, icon: '🌐' },
+                ].map((s) => (
+                  <div key={s.label} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '10px 12px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '1.1rem' }}>{s.icon}</div>
+                    <div style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--accent-purple)' }}>{s.value}</div>
+                    <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{s.label}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Packets & Delivery Receipts */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              <div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Cross-Domain Packets ({relayPackets.length})
+                </div>
+                <div style={{ display: 'grid', gap: 8 }}>
+                  {relayPackets.slice(-4).reverse().map((p) => (
+                    <div key={p.packetId} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: 10 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
+                        <span style={{ fontWeight: 700, fontSize: '0.78rem', color: 'var(--text-primary)' }}>{p.sourceDomain} → {p.targetDomain} (#{p.sequenceNonce})</span>
+                        <span style={{ fontSize: '0.62rem', padding: '1px 6px', borderRadius: 3, background: p.status === 'ACKNOWLEDGED' ? 'rgba(72,187,120,0.15)' : p.status === 'RELAYED' ? 'rgba(56,178,172,0.15)' : 'rgba(237,137,54,0.15)', color: p.status === 'ACKNOWLEDGED' ? 'var(--accent-green)' : p.status === 'RELAYED' ? 'var(--accent-cyan)' : 'var(--accent-orange)', fontWeight: 700 }}>{p.status}</span>
+                      </div>
+                      <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontFamily: 'JetBrains Mono, monospace' }}>
+                        From: {p.senderDid.split(':').pop()} · Packet: {p.packetId} · Hash: {p.packetHash.slice(0, 14)}…
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Delivery Receipts ({relayReceipts.length})
+                </div>
+                <div style={{ display: 'grid', gap: 8 }}>
+                  {relayReceipts.slice(-4).reverse().map((r) => (
+                    <div key={r.receiptId} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: 10 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
+                        <span style={{ fontWeight: 700, fontSize: '0.78rem', color: 'var(--accent-green)' }}>{r.receiptId}</span>
+                        <span style={{ fontSize: '0.62rem', color: 'var(--accent-cyan)', fontFamily: 'JetBrains Mono, monospace' }}>by {r.relayerDid.split(':').pop()}</span>
+                      </div>
+                      <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontFamily: 'JetBrains Mono, monospace' }}>
+                        Packet: {r.packetId} · AckProof: {r.ackProof.slice(0, 14)}…
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>

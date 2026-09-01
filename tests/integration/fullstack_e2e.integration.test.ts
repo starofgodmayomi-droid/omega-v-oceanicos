@@ -45,6 +45,7 @@ import { OceanicosKernel } from '@omega-v/kernel';
 import { OceanicosMempoolEngine } from '@omega-v/mempool';
 import { OceanicosThresholdAttestorEngine } from '@omega-v/attestor';
 import { OceanicosGovernorEngine } from '@omega-v/governor';
+import { OceanicosRelayEngine } from '@omega-v/relay';
 import app from '../../apps/api/src/index';
 
 describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => {
@@ -2011,6 +2012,52 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       expect(stats.executedProposals).toBe(1);
       expect(stats.totalVotesCast).toBe(2);
       expect(stats.cumulativeVotingPower).toBe(60);
+    });
+  });
+
+  describe('44. Decentralized Cross-Shard & Cross-Rollup Message Relaying E2E', () => {
+    it('should dispatch packets with monotonic sequence, relay across domains, and issue verified delivery receipts', () => {
+      const relay = new OceanicosRelayEngine('e2e-relay-secret');
+
+      // 1. Register Relayer
+      const relayer = relay.registerRelayer({
+        relayerDid: 'did:omega:relayer:hermes',
+        moniker: 'Hermes Primary Relayer',
+        stakeAmount: 10000,
+      });
+      expect(relayer.relayerDid).toBe('did:omega:relayer:hermes');
+
+      // 2. Dispatch cross-shard packet
+      const packet = relay.dispatchPacket({
+        sourceDomain: 'shard-01-compute',
+        targetDomain: 'rollup-evm-settlement',
+        senderDid: 'did:omega:agent:executor',
+        recipientDid: 'did:omega:contract:state-receiver',
+        payload: { command: 'APPLY_STATE_ROOT', root: '0xstate123' },
+      });
+
+      expect(packet.packetId).toMatch(/^pkt-/);
+      expect(packet.sequenceNonce).toBe(1);
+      expect(packet.status).toBe('DISPATCHED');
+      expect(relay.verifyPacket(packet.packetId)).toBe(true);
+
+      // 3. Relay packet
+      const relayed = relay.relayPacket(packet.packetId, 'did:omega:relayer:hermes');
+      expect(relayed.status).toBe('RELAYED');
+      expect(relayed.relayedBy).toBe('did:omega:relayer:hermes');
+
+      // 4. Acknowledge Delivery & Issue Receipt
+      const receipt = relay.acknowledgeDelivery(packet.packetId, '0xdestination_execution_receipt_hash_001');
+      expect(receipt.receiptId).toMatch(/^rcpt-/);
+      expect(receipt.ackProof).toMatch(/^0x/);
+      expect(receipt.targetReceiptHash).toBe('0xdestination_execution_receipt_hash_001');
+
+      // 5. Check stats
+      const stats = relay.getStats();
+      expect(stats.totalPackets).toBe(1);
+      expect(stats.acknowledgedCount).toBe(1);
+      expect(stats.activeRelayers).toBe(1);
+      expect(stats.totalChannels).toBe(1);
     });
   });
 });
