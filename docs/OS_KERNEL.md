@@ -15,13 +15,13 @@ The Universal Builder OS begins as a finite control-plane kernel rather than an 
 | `stopping` | Shutdown is being recorded                            | `stopped`                  |
 | `stopped`  | Terminal state; admitted work has been cleared        | none                       |
 
-Boot is idempotent. Stop is idempotent. Admission fails closed while offline or stopped and when the finite task bound has been reached. A task contains only a typed kind, copied input, and requesting identity. The current allowed kinds are `observe`, `verify`, `remember`, and `report`. Runtime admission also fails closed for unsupported task kinds, blank or overlong requester identities, and task inputs containing more than 64 top-level keys. These checks protect the runtime boundary even when callers bypass TypeScript compile-time types.
+Boot is idempotent. Stop is idempotent. Admission fails closed while offline or stopped and when the finite task bound has been reached. A task contains only a typed kind, copied input, and requesting identity. The current allowed kinds are `observe`, `verify`, `remember`, and `report`. Runtime admission also fails closed for unsupported task kinds, blank or overlong requester identities, and task inputs containing more than 64 top-level keys. These checks protect the runtime boundary even when callers bypass TypeScript compile-time types. Admitted inputs are deeply cloned and reject cyclic graphs or graphs deeper than 8 levels or larger than 256 object/array nodes, preventing retained kernel state from sharing mutable nested references with callers.
 
 ## Evidence and determinism
 
 The kernel retains a bounded event trace. Event sequence numbers are monotonic even when older entries are evicted. Task identifiers are deterministic within a kernel instance (`task-1`, `task-2`, and so on). Returned snapshots copy task inputs and event arrays so callers cannot mutate kernel state through an alias.
 
-These properties are tested in `packages/mini/src/os.test.ts`, including lifecycle boundaries, task limits, stop behavior, trace eviction, deterministic identifiers, runtime admission validation, and the explicit capability boundary.
+These properties are tested in `packages/mini/src/os.test.ts`, including lifecycle boundaries, task limits, stop behavior, trace eviction, deterministic identifiers, runtime admission validation, deep input isolation, finite input-graph rejection, and the explicit capability boundary.
 The API contract test in `apps/api/src/__tests__/api.test.ts` verifies that `GET /os` returns a ready boot trace with no admitted work. SDK and CLI tests verify typed consumption, URL construction, bearer propagation, capability output, and operator-readable output.
 
 ## API surface

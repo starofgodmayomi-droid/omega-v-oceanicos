@@ -49,6 +49,8 @@ export type OperatingSystemSnapshot = {
 const DEFAULT_MAX_TASKS = 32;
 const DEFAULT_MAX_EVENTS = 128;
 const MAX_TASK_INPUT_KEYS = 64;
+const MAX_TASK_INPUT_NODES = 256;
+const MAX_TASK_INPUT_DEPTH = 8;
 const MAX_REQUESTER_LENGTH = 128;
 const OPERATING_SYSTEM_TASK_KINDS: readonly OperatingSystemTaskKind[] = [
   'observe',
@@ -134,12 +136,12 @@ export class OperatingSystemKernel {
     const task: OperatingSystemTask = {
       id: `task-${this.nextTaskSequence++}`,
       kind,
-      input: { ...input },
+      input: cloneTaskInput(input),
       requestedBy,
     };
     this.tasks.push(task);
     this.record({ type: 'admit', state: this.state, taskId: task.id });
-    return { ...task, input: { ...task.input } };
+    return { ...task, input: cloneTaskInput(task.input) };
   }
 
   public complete(taskId: string): OperatingSystemSnapshot {
@@ -172,7 +174,7 @@ export class OperatingSystemKernel {
     return {
       snapshotVersion: 'os.snapshot.v1',
       state: this.state,
-      tasks: this.tasks.map((task) => ({ ...task, input: { ...task.input } })),
+      tasks: this.tasks.map((task) => ({ ...task, input: cloneTaskInput(task.input) })),
       events: this.events.map((event) => ({ ...event })),
       limits: { maxTasks: this.maxTasks, maxEvents: this.maxEvents },
       capabilities: { ...OPERATING_SYSTEM_CAPABILITIES },
@@ -194,6 +196,34 @@ function isBoundedTaskInput(input: Record<string, unknown>): boolean {
     !Array.isArray(input) &&
     Object.keys(input).length <= MAX_TASK_INPUT_KEYS
   );
+}
+
+function cloneTaskInput(input: Record<string, unknown>): Record<string, unknown> {
+  const seen = new WeakSet<object>();
+  let nodes = 0;
+
+  const clone = (value: unknown, depth: number): unknown => {
+    if (value === null || typeof value !== 'object') return value;
+    if (depth > MAX_TASK_INPUT_DEPTH) {
+      throw new Error(`operating system task input exceeds depth ${MAX_TASK_INPUT_DEPTH}`);
+    }
+    if (seen.has(value)) throw new Error('operating system task input must not be cyclic');
+    seen.add(value);
+    nodes += 1;
+    if (nodes > MAX_TASK_INPUT_NODES) {
+      throw new Error(`operating system task input exceeds ${MAX_TASK_INPUT_NODES} nodes`);
+    }
+
+    if (Array.isArray(value)) return value.map((item) => clone(item, depth + 1));
+
+    const result: Record<string, unknown> = {};
+    for (const [key, nested] of Object.entries(value)) {
+      result[key] = clone(nested, depth + 1);
+    }
+    return result;
+  };
+
+  return clone(input, 0) as Record<string, unknown>;
 }
 
 export default OperatingSystemKernel;

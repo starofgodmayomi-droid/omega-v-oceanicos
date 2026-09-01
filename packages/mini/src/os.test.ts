@@ -50,6 +50,34 @@ describe('OperatingSystemKernel', () => {
     ).toThrow('task input must contain at most 64 keys');
   });
 
+  it('deeply isolates task input snapshots', () => {
+    const os = new OperatingSystemKernel();
+    os.boot();
+    const input = { nested: { values: ['before'] } };
+    const task = os.admit('observe', input, 'operator');
+
+    input.nested.values[0] = 'after';
+    (task.input.nested as { values: string[] }).values[0] = 'returned-mutation';
+
+    expect(os.snapshot().tasks[0]?.input).toEqual({ nested: { values: ['before'] } });
+  });
+
+  it('rejects cyclic and overly deep task inputs', () => {
+    const os = new OperatingSystemKernel();
+    os.boot();
+    const cyclic: Record<string, unknown> = {};
+    cyclic.self = cyclic;
+    expect(() => os.admit('observe', cyclic, 'operator')).toThrow('must not be cyclic');
+
+    let deep: Record<string, unknown> = {};
+    const root = deep;
+    for (let index = 0; index < 9; index += 1) {
+      deep.next = {};
+      deep = deep.next as Record<string, unknown>;
+    }
+    expect(() => os.admit('observe', root, 'operator')).toThrow('exceeds depth 8');
+  });
+
   it('fails closed when the task bound is reached', () => {
     const os = new OperatingSystemKernel({ maxTasks: 1 });
     os.boot();
