@@ -79,6 +79,7 @@
     "@omega-v/attestor": "*",
     "@omega-v/governor": "*",
     "@omega-v/relay": "*",
+    "@omega-v/evm": "*",
     "express": "^4.18.2"
   },
   "devDependencies": {

@@ -49,6 +49,7 @@ import { OceanicosMempoolEngine } from '@omega-v/mempool';
 import { OceanicosThresholdAttestorEngine } from '@omega-v/attestor';
 import { OceanicosGovernorEngine } from '@omega-v/governor';
 import { OceanicosRelayEngine } from '@omega-v/relay';
+import { OceanicosVirtualMachine } from '@omega-v/evm';
 import {
   SuccessResponse,
   ErrorResponse,
@@ -127,6 +128,7 @@ const mempoolEngine = new OceanicosMempoolEngine();
 const attestorEngine = new OceanicosThresholdAttestorEngine();
 const governorEngine = new OceanicosGovernorEngine();
 const relayEngine = new OceanicosRelayEngine();
+const evmEngine = new OceanicosVirtualMachine();
 
 // Register default rules
 verificationEngine.registerRule({
@@ -4568,6 +4570,146 @@ app.post('/relay/relayers/register', (req: Request, res: Response) => {
 /** GET /relay/stats — Relay telemetry */
 app.get('/relay/stats', (_req: Request, res: Response) => {
   const stats = relayEngine.getStats();
+  res.json({
+    data: stats,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/**
+ * Section 45 Endpoints: Oceanic Verifiable Virtual Machine (OVM)
+ * /evm/execute, /evm/contracts/deploy, /evm/contracts, /evm/contracts/:address, /evm/contracts/call, /evm/history, /evm/stats
+ */
+
+/** POST /evm/execute — Execute bytecode instructions */
+app.post('/evm/execute', (req: Request, res: Response) => {
+  const { callerDid, code, gasLimit, initialStorage } = req.body;
+  if (!callerDid || !Array.isArray(code)) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'callerDid and code (array) are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const trace = evmEngine.execute({
+      callerDid,
+      code,
+      gasLimit,
+      initialStorage,
+    });
+    res.json({
+      data: trace,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'VM_EXECUTION_FAILED',
+      message: err instanceof Error ? err.message : 'Execution failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** POST /evm/contracts/deploy — Deploy smart contract */
+app.post('/evm/contracts/deploy', (req: Request, res: Response) => {
+  const { deployerDid, name, code, initialStorage } = req.body;
+  if (!deployerDid || !name || !Array.isArray(code)) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'deployerDid, name, and code (array) are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const contract = evmEngine.deployContract({
+      deployerDid,
+      name,
+      code,
+      initialStorage,
+    });
+    res.status(201).json({
+      data: contract,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'CONTRACT_DEPLOYMENT_FAILED',
+      message: err instanceof Error ? err.message : 'Deployment failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** GET /evm/contracts — List deployed contracts */
+app.get('/evm/contracts', (_req: Request, res: Response) => {
+  const contracts = evmEngine.getContracts();
+  res.json({
+    data: contracts,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** GET /evm/contracts/:address — Get deployed contract */
+app.get('/evm/contracts/:address', (req: Request, res: Response) => {
+  const contract = evmEngine.getContract(req.params.address);
+  if (!contract) {
+    res.status(404).json({
+      code: 'CONTRACT_NOT_FOUND',
+      message: `Contract ${req.params.address} not found`,
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+  res.json({
+    data: contract,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /evm/contracts/call — Call deployed smart contract */
+app.post('/evm/contracts/call', (req: Request, res: Response) => {
+  const { callerDid, contractAddress, gasLimit } = req.body;
+  if (!callerDid || !contractAddress) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'callerDid and contractAddress are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const trace = evmEngine.callContract({ callerDid, contractAddress, gasLimit });
+    res.json({
+      data: trace,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'CONTRACT_CALL_FAILED',
+      message: err instanceof Error ? err.message : 'Contract call failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** GET /evm/history — List execution history */
+app.get('/evm/history', (_req: Request, res: Response) => {
+  const history = evmEngine.getExecutionHistory();
+  res.json({
+    data: history,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** GET /evm/stats — OVM telemetry & state trie root */
+app.get('/evm/stats', (_req: Request, res: Response) => {
+  const stats = evmEngine.getStats();
   res.json({
     data: stats,
     timestamp: new Date().toISOString(),

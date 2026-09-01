@@ -46,6 +46,7 @@ import { OceanicosMempoolEngine } from '@omega-v/mempool';
 import { OceanicosThresholdAttestorEngine } from '@omega-v/attestor';
 import { OceanicosGovernorEngine } from '@omega-v/governor';
 import { OceanicosRelayEngine } from '@omega-v/relay';
+import { OceanicosVirtualMachine } from '@omega-v/evm';
 import app from '../../apps/api/src/index';
 
 describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => {
@@ -2058,6 +2059,63 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       expect(stats.acknowledgedCount).toBe(1);
       expect(stats.activeRelayers).toBe(1);
       expect(stats.totalChannels).toBe(1);
+    });
+  });
+
+  describe('45. Oceanic Verifiable Virtual Machine (OVM) E2E', () => {
+    it('should deploy smart contract, execute stack bytecode with gas metering, and mutate storage trie', () => {
+      const ovm = new OceanicosVirtualMachine('e2e-ovm-secret');
+
+      // 1. Deploy Staking Vault Contract
+      const contract = ovm.deployContract({
+        deployerDid: 'did:omega:agent:core-dev',
+        name: 'VaultStakingLogic',
+        code: [
+          'PUSH totalStaked',
+          'SLOAD',
+          'PUSH 500',
+          'ADD',
+          'PUSH totalStaked',
+          'SWAP',
+          'SSTORE',
+          'PUSH totalStaked',
+          'SLOAD',
+          'PUSH DepositEvent',
+          'PUSH 500',
+          'LOG',
+          'RETURN',
+        ],
+        initialStorage: { totalStaked: '1000' },
+      });
+
+      expect(contract.address).toMatch(/^0x/);
+      expect(contract.codeHash).toMatch(/^0x/);
+
+      // 2. Call contract
+      const trace = ovm.callContract({
+        callerDid: 'did:omega:agent:user-alpha',
+        contractAddress: contract.address,
+        gasLimit: 50000,
+      });
+
+      expect(trace.success).toBe(true);
+      expect(trace.returnValue).toBe('1500'); // 1000 + 500 = 1500
+      expect(trace.gasUsed).toBeGreaterThan(0);
+      expect(trace.storageRoot).toMatch(/^0x/);
+      expect(trace.logs).toHaveLength(1);
+      expect(trace.logs[0].topic).toBe('DepositEvent');
+      expect(trace.traceHash).toMatch(/^0x/);
+
+      // 3. Verify updated storage
+      const updatedContract = ovm.getContract(contract.address)!;
+      expect(updatedContract.storage['totalStaked']).toBe('1500');
+
+      // 4. Check stats
+      const stats = ovm.getStats();
+      expect(stats.totalExecutions).toBe(1);
+      expect(stats.successfulExecutions).toBe(1);
+      expect(stats.deployedContractsCount).toBe(1);
+      expect(stats.currentGlobalStateRoot).toMatch(/^0x/);
     });
   });
 });

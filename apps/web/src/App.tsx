@@ -1044,6 +1044,38 @@ interface RelayStatsData {
   totalChannels: number;
 }
 
+interface DeployedContractItem {
+  address: string;
+  name: string;
+  deployerDid: string;
+  code: string[];
+  codeHash: string;
+  storage: Record<string, string>;
+  storageRoot: string;
+  deployedAt: string;
+}
+
+interface ExecutionTraceItem {
+  executionId: string;
+  callerDid: string;
+  contractAddress?: string;
+  success: boolean;
+  returnValue?: string;
+  gasUsed: number;
+  storageRoot: string;
+  traceHash: string;
+  executedAt: string;
+}
+
+interface VMStatsData {
+  totalExecutions: number;
+  successfulExecutions: number;
+  revertedExecutions: number;
+  totalGasConsumed: number;
+  deployedContractsCount: number;
+  currentGlobalStateRoot: string;
+}
+
 interface RuleEfficacy {
   ruleName: string;
   totalExecutions: number;
@@ -1429,6 +1461,9 @@ export function App(): JSX.Element {
   const [relayReceipts, setRelayReceipts] = useState<DeliveryReceiptItem[]>([]);
   const [relayerNodes, setRelayerNodes] = useState<RelayerNodeItem[]>([]);
   const [relayStats, setRelayStats] = useState<RelayStatsData | null>(null);
+  const [vmContracts, setVmContracts] = useState<DeployedContractItem[]>([]);
+  const [vmHistory, setVmHistory] = useState<ExecutionTraceItem[]>([]);
+  const [vmStats, setVmStats] = useState<VMStatsData | null>(null);
 
   // ── Poll log + metrics ──
   const fetchState = useCallback(async () => {
@@ -1518,6 +1553,9 @@ export function App(): JSX.Element {
         relReceiptsRes,
         relRelayersRes,
         relStatsRes,
+        vmContractsRes,
+        vmHistoryRes,
+        vmStatsRes,
       ] = await Promise.all([
         fetch(`${API_BASE}/log?limit=30`),
         fetch(`${API_BASE}/metrics`),
@@ -1603,6 +1641,9 @@ export function App(): JSX.Element {
         fetch(`${API_BASE}/relay/receipts`),
         fetch(`${API_BASE}/relay/relayers`),
         fetch(`${API_BASE}/relay/stats`),
+        fetch(`${API_BASE}/evm/contracts`),
+        fetch(`${API_BASE}/evm/history`),
+        fetch(`${API_BASE}/evm/stats`),
       ]);
       if (!logRes.ok || !metricsRes.ok) throw new Error('API error');
 
@@ -1854,6 +1895,15 @@ export function App(): JSX.Element {
       }
       if (relStatsRes && relStatsRes.ok) {
         setRelayStats((await relStatsRes.json()).data as RelayStatsData);
+      }
+      if (vmContractsRes && vmContractsRes.ok) {
+        setVmContracts((await vmContractsRes.json()).data as DeployedContractItem[]);
+      }
+      if (vmHistoryRes && vmHistoryRes.ok) {
+        setVmHistory((await vmHistoryRes.json()).data as ExecutionTraceItem[]);
+      }
+      if (vmStatsRes && vmStatsRes.ok) {
+        setVmStats((await vmStatsRes.json()).data as VMStatsData);
       }
     } catch {
       setApiOnline(false);
@@ -8878,6 +8928,74 @@ export function App(): JSX.Element {
                       </div>
                       <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontFamily: 'JetBrains Mono, monospace' }}>
                         Packet: {r.packetId} · AckProof: {r.ackProof.slice(0, 14)}…
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+          {/* ── Section 45: Oceanic Verifiable Virtual Machine (OVM) ── */}
+          <div className="card" style={{ gridColumn: '1 / -1' }}>
+            <div className="section-header" style={{ marginBottom: 16 }}>
+              <div className="section-title">⚙️ Oceanic Verifiable Virtual Machine (OVM)</div>
+              <span className="section-badge">{vmContracts.length} contracts · {vmHistory.length} traces</span>
+            </div>
+
+            {/* VM Stats */}
+            {vmStats && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 10, marginBottom: 18 }}>
+                {[
+                  { label: 'Total Executions', value: vmStats.totalExecutions, icon: '⚡' },
+                  { label: 'Successful', value: vmStats.successfulExecutions, icon: '✅' },
+                  { label: 'Reverted', value: vmStats.revertedExecutions, icon: '⚠️' },
+                  { label: 'Gas Consumed', value: vmStats.totalGasConsumed, icon: '⛽' },
+                  { label: 'Contracts Deployed', value: vmStats.deployedContractsCount, icon: '📜' },
+                  { label: 'Global State Trie', value: vmStats.currentGlobalStateRoot.slice(0, 10) + '…', icon: '🌳' },
+                ].map((s) => (
+                  <div key={s.label} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '10px 12px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '1.1rem' }}>{s.icon}</div>
+                    <div style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--accent-cyan)' }}>{s.value}</div>
+                    <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{s.label}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Contracts & Execution History */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              <div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Deployed Smart Contracts ({vmContracts.length})
+                </div>
+                <div style={{ display: 'grid', gap: 8 }}>
+                  {vmContracts.slice(-4).reverse().map((c) => (
+                    <div key={c.address} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: 10 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
+                        <span style={{ fontWeight: 700, fontSize: '0.78rem', color: 'var(--text-primary)' }}>{c.name}</span>
+                        <span style={{ fontSize: '0.62rem', color: 'var(--accent-green)', fontFamily: 'JetBrains Mono, monospace' }}>{c.address.slice(0, 12)}…</span>
+                      </div>
+                      <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontFamily: 'JetBrains Mono, monospace' }}>
+                        Deployer: {c.deployerDid.split(':').pop()} · Instructions: {c.code.length} · Trie: {c.storageRoot.slice(0, 12)}…
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Execution Traces ({vmHistory.length})
+                </div>
+                <div style={{ display: 'grid', gap: 8 }}>
+                  {vmHistory.slice(-4).reverse().map((t) => (
+                    <div key={t.executionId} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: 10 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
+                        <span style={{ fontWeight: 700, fontSize: '0.78rem', color: 'var(--text-primary)' }}>{t.callerDid.split(':').pop()}</span>
+                        <span style={{ fontSize: '0.62rem', padding: '1px 6px', borderRadius: 3, background: t.success ? 'rgba(72,187,120,0.15)' : 'rgba(229,62,62,0.15)', color: t.success ? 'var(--accent-green)' : 'var(--accent-red)', fontWeight: 700 }}>{t.success ? 'SUCCESS' : 'REVERTED'}</span>
+                      </div>
+                      <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontFamily: 'JetBrains Mono, monospace' }}>
+                        Gas: {t.gasUsed} · RetVal: {t.returnValue ?? 'none'} · Trace: {t.traceHash.slice(0, 12)}…
                       </div>
                     </div>
                   ))}

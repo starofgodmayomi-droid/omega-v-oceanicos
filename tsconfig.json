@@ -80,7 +80,8 @@
       "@omega-v/mempool": ["packages/mempool/src/index.ts"],
       "@omega-v/attestor": ["packages/attestor/src/index.ts"],
       "@omega-v/governor": ["packages/governor/src/index.ts"],
-      "@omega-v/relay": ["packages/relay/src/index.ts"]
+      "@omega-v/relay": ["packages/relay/src/index.ts"],
+      "@omega-v/evm": ["packages/evm/src/index.ts"]
     }
   },
   "include": ["packages/*/src", "apps/*/src", "tests"],
