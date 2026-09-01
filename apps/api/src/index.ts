@@ -38,6 +38,7 @@ import { OceanicosMeshEngine } from '@omega-v/mesh';
 import { OceanicosShardingEngine } from '@omega-v/sharding';
 import { OceanicosBridgeEngine } from '@omega-v/bridge';
 import { OceanicosSequencerEngine } from '@omega-v/sequencer';
+import { OceanicosDAEngine } from '@omega-v/da';
 import {
   SuccessResponse,
   ErrorResponse,
@@ -105,6 +106,7 @@ const meshEngine = new OceanicosMeshEngine();
 const shardingEngine = new OceanicosShardingEngine();
 const bridgeEngine = new OceanicosBridgeEngine();
 const sequencerEngine = new OceanicosSequencerEngine();
+const daEngine = new OceanicosDAEngine();
 
 // Register default rules
 verificationEngine.registerRule({
@@ -3118,6 +3120,92 @@ app.get('/sequencer/batches', (_req: Request, res: Response) => {
 /** GET /sequencer/stats — Sequencer engine metrics */
 app.get('/sequencer/stats', (_req: Request, res: Response) => {
   const stats = sequencerEngine.getStats();
+  res.json({
+    data: stats,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/**
+ * Section 34 Endpoints: Data Availability Sampling & Erasure Coding
+ * /da/blobs, /da/blobs/submit, /da/blobs/sample, /da/blobs/verify-kzg, /da/stats
+ */
+
+/** GET /da/blobs — List all data blobs */
+app.get('/da/blobs', (req: Request, res: Response) => {
+  const namespace = typeof req.query.namespace === 'string' ? req.query.namespace : undefined;
+  const blobs = daEngine.getBlobs(namespace);
+  res.json({
+    data: blobs,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /da/blobs/submit — Submit data blob for erasure encoding and KZG commitment */
+app.post('/da/blobs/submit', (req: Request, res: Response) => {
+  const { namespace, submitterDid, rawData } = req.body;
+  if (!namespace || !submitterDid || !rawData) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'namespace, submitterDid, and rawData are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  const blob = daEngine.submitBlob({
+    namespace,
+    submitterDid,
+    rawData,
+  });
+
+  res.status(201).json({
+    data: blob,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /da/blobs/sample — Perform random Data Availability Sampling */
+app.post('/da/blobs/sample', (req: Request, res: Response) => {
+  const { blobId, sampleCount } = req.body;
+  if (!blobId) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'blobId is required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  const sample = daEngine.sampleBlob(blobId, typeof sampleCount === 'number' ? sampleCount : 4);
+  res.json({
+    data: sample,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /da/blobs/verify-kzg — Verify KZG commitment proof */
+app.post('/da/blobs/verify-kzg', (req: Request, res: Response) => {
+  const { blobId } = req.body;
+  if (!blobId) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'blobId is required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  const valid = daEngine.verifyCommitment(blobId);
+  res.json({
+    data: { blobId, valid },
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** GET /da/stats — Data availability layer statistics */
+app.get('/da/stats', (_req: Request, res: Response) => {
+  const stats = daEngine.getStats();
   res.json({
     data: stats,
     timestamp: new Date().toISOString(),

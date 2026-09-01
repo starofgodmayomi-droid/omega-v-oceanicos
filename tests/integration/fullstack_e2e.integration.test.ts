@@ -35,6 +35,7 @@ import { OceanicosMeshEngine } from '@omega-v/mesh';
 import { OceanicosShardingEngine } from '@omega-v/sharding';
 import { OceanicosBridgeEngine } from '@omega-v/bridge';
 import { OceanicosSequencerEngine } from '@omega-v/sequencer';
+import { OceanicosDAEngine } from '@omega-v/da';
 import app from '../../apps/api/src/index';
 
 describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => {
@@ -1459,6 +1460,39 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       expect(stats.pendingMempoolTxs).toBe(0);
       expect(stats.totalBatchesSealed).toBe(1);
       expect(stats.avgBatchSize).toBe(2);
+    });
+  });
+
+  describe('34. Data Availability Sampling & KZG Erasure Coding E2E', () => {
+    it('should submit blobs, generate erasure parity chunks with KZG proofs, sample availability, and verify confidence', () => {
+      const daEngine = new OceanicosDAEngine('e2e-da-key', 64);
+
+      // 1. Submit blob
+      const blob = daEngine.submitBlob({
+        namespace: 'rollup:settlement:alpha',
+        submitterDid: 'did:omega:sequencer:primary',
+        rawData: 'State diff root proof with 1024 transactions rollup payload verified against base chain',
+      });
+
+      expect(blob.blobId).toMatch(/^blob-/);
+      expect(blob.status).toBe('COMMITTED');
+      expect(blob.chunkCount).toBeGreaterThan(0);
+      expect(blob.parityChunkCount).toBe(blob.chunkCount);
+
+      // 2. Verify KZG commitment
+      const kzgValid = daEngine.verifyCommitment(blob.blobId);
+      expect(kzgValid).toBe(true);
+
+      // 3. Random DAS sampling
+      const sample = daEngine.sampleBlob(blob.blobId, 4);
+      expect(sample.allAvailable).toBe(true);
+      expect(sample.confidence).toBeGreaterThan(90);
+
+      // 4. Check stats
+      const stats = daEngine.getStats();
+      expect(stats.totalBlobs).toBe(1);
+      expect(stats.samplesPerformed).toBe(1);
+      expect(stats.namespaceCount).toBe(1);
     });
   });
 });

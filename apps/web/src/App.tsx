@@ -658,6 +658,29 @@ interface SequencerStatsData {
   vdfIterationsDifficulty: number;
 }
 
+interface DataBlobItem {
+  blobId: string;
+  namespace: string;
+  submitterDid: string;
+  rawDataHash: string;
+  sizeBytes: number;
+  chunkCount: number;
+  parityChunkCount: number;
+  status: string;
+  kzgCommitment: string;
+  submittedAt: string;
+}
+
+interface DAStatsData {
+  totalBlobs: number;
+  totalBytesStored: number;
+  totalChunks: number;
+  totalParityChunks: number;
+  samplesPerformed: number;
+  availabilityConfidence: number;
+  namespaceCount: number;
+}
+
 interface RuleEfficacy {
   ruleName: string;
   totalExecutions: number;
@@ -991,6 +1014,14 @@ export function App(): JSX.Element {
   const [submittingTx, setSubmittingTx] = useState(false);
   const [sealingBatch, setSealingBatch] = useState(false);
   const [sequencerResult, setSequencerResult] = useState<string | null>(null);
+  const [daBlobs, setDaBlobs] = useState<DataBlobItem[]>([]);
+  const [daStats, setDaStats] = useState<DAStatsData | null>(null);
+  const [daNamespace, setDaNamespace] = useState('rollup:state-diffs:mainnet');
+  const [daSubmitterDid, setDaSubmitterDid] = useState('did:omega:sequencer:alpha');
+  const [daRawData, setDaRawData] = useState('Compressed Merkle tree transaction batches with KZG polynomial witness proofs');
+  const [submittingDaBlob, setSubmittingDaBlob] = useState(false);
+  const [samplingBlob, setSamplingBlob] = useState(false);
+  const [daResult, setDaResult] = useState<string | null>(null);
 
   // ── Poll log + metrics ──
   const fetchState = useCallback(async () => {
@@ -1049,6 +1080,8 @@ export function App(): JSX.Element {
         seqMemRes,
         seqBatchRes,
         seqStatsRes,
+        daBlobsRes,
+        daStatsRes,
       ] = await Promise.all([
         fetch(`${API_BASE}/log?limit=30`),
         fetch(`${API_BASE}/metrics`),
@@ -1103,6 +1136,8 @@ export function App(): JSX.Element {
         fetch(`${API_BASE}/sequencer/mempool`),
         fetch(`${API_BASE}/sequencer/batches`),
         fetch(`${API_BASE}/sequencer/stats`),
+        fetch(`${API_BASE}/da/blobs`),
+        fetch(`${API_BASE}/da/stats`),
       ]);
       if (!logRes.ok || !metricsRes.ok) throw new Error('API error');
 
@@ -1261,6 +1296,12 @@ export function App(): JSX.Element {
       }
       if (seqStatsRes && seqStatsRes.ok) {
         setSequencerStats((await seqStatsRes.json()).data as SequencerStatsData);
+      }
+      if (daBlobsRes && daBlobsRes.ok) {
+        setDaBlobs((await daBlobsRes.json()).data as DataBlobItem[]);
+      }
+      if (daStatsRes && daStatsRes.ok) {
+        setDaStats((await daStatsRes.json()).data as DAStatsData);
       }
     } catch {
       setApiOnline(false);
@@ -7123,6 +7164,172 @@ export function App(): JSX.Element {
                     </div>
                   ))}
                 </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ═══ Section 34: Data Availability & Erasure Coding ═══ */}
+          <div className="card" style={{ gridColumn: '1 / -1' }}>
+            <div className="section-header" style={{ marginBottom: 18 }}>
+              <div className="section-title">📦 Data Availability Sampling & KZG Erasure Coding</div>
+              <span className="section-badge">
+                {daStats ? `${daStats.totalBlobs} blobs · ${daStats.totalBytesStored.toLocaleString()} bytes · ${daStats.availabilityConfidence}% DAS confidence` : 'Loading…'}
+              </span>
+            </div>
+
+            {/* DA Stats Row */}
+            {daStats && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 10, marginBottom: 16 }}>
+                <div style={{ background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', border: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Total Blobs</div>
+                  <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--accent-teal)' }}>{daStats.totalBlobs}</div>
+                </div>
+                <div style={{ background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', border: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Stored Bytes</div>
+                  <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--accent-purple)' }}>{daStats.totalBytesStored.toLocaleString()} B</div>
+                </div>
+                <div style={{ background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', border: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Erasure Chunks</div>
+                  <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--accent-blue)' }}>{daStats.totalChunks + daStats.totalParityChunks}</div>
+                </div>
+                <div style={{ background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', border: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>DAS Confidence</div>
+                  <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--accent-green)' }}>{daStats.availabilityConfidence}%</div>
+                </div>
+              </div>
+            )}
+
+            {/* Submit Blob Controls */}
+            <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+              <div style={{ flex: 1, minWidth: 140 }}>
+                <label style={{ display: 'block', fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Submitter DID</label>
+                <input
+                  type="text"
+                  value={daSubmitterDid}
+                  onChange={(e) => setDaSubmitterDid(e.target.value)}
+                  style={{ width: '100%', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '8px 10px', color: 'var(--text-primary)', fontFamily: 'JetBrains Mono, monospace', fontSize: '0.75rem' }}
+                />
+              </div>
+              <div style={{ flex: 1, minWidth: 140 }}>
+                <label style={{ display: 'block', fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Namespace</label>
+                <input
+                  type="text"
+                  value={daNamespace}
+                  onChange={(e) => setDaNamespace(e.target.value)}
+                  style={{ width: '100%', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '8px 10px', color: 'var(--text-primary)', fontFamily: 'JetBrains Mono, monospace', fontSize: '0.75rem' }}
+                />
+              </div>
+              <div style={{ flex: 2, minWidth: 220 }}>
+                <label style={{ display: 'block', fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Blob Raw Payload</label>
+                <input
+                  type="text"
+                  value={daRawData}
+                  onChange={(e) => setDaRawData(e.target.value)}
+                  style={{ width: '100%', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '8px 10px', color: 'var(--text-primary)', fontFamily: 'JetBrains Mono, monospace', fontSize: '0.75rem' }}
+                />
+              </div>
+              <button
+                className="cta-button"
+                disabled={submittingDaBlob}
+                onClick={async () => {
+                  setSubmittingDaBlob(true);
+                  setDaResult(null);
+                  try {
+                    const res = await fetch(`${API_BASE}/da/blobs/submit`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        namespace: daNamespace,
+                        submitterDid: daSubmitterDid,
+                        rawData: daRawData,
+                      }),
+                    });
+                    const data = await res.json();
+                    if (!res.ok) { setDaResult(`❌ ${data.message}`); return; }
+                    setDaResult(`✅ Encoded & committed blob [${data.data.blobId}] · ${data.data.chunkCount} data + ${data.data.parityChunkCount} parity shards · KZG: ${data.data.kzgCommitment.slice(0, 18)}…`);
+                    fetchState();
+                  } catch (err) {
+                    setDaResult(`❌ ${err instanceof Error ? err.message : 'Blob submission failed'}`);
+                  } finally {
+                    setSubmittingDaBlob(false);
+                  }
+                }}
+                style={{ minWidth: 140 }}
+              >
+                {submittingDaBlob ? '⏳ Encoding…' : '📦 Commit Data Blob'}
+              </button>
+              {daBlobs.length > 0 && (
+                <button
+                  className="cta-button"
+                  disabled={samplingBlob}
+                  onClick={async () => {
+                    setSamplingBlob(true);
+                    setDaResult(null);
+                    try {
+                      const latestBlob = daBlobs[daBlobs.length - 1];
+                      const res = await fetch(`${API_BASE}/da/blobs/sample`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          blobId: latestBlob.blobId,
+                          sampleCount: 4,
+                        }),
+                      });
+                      const data = await res.json();
+                      if (!res.ok) { setDaResult(`❌ ${data.message}`); return; }
+                      setDaResult(`✅ Sampled 4 random chunks for [${latestBlob.blobId}] · Availability Confidence: ${data.data.confidence}% · All Available: ${data.data.allAvailable}`);
+                      fetchState();
+                    } catch (err) {
+                      setDaResult(`❌ ${err instanceof Error ? err.message : 'Sampling failed'}`);
+                    } finally {
+                      setSamplingBlob(false);
+                    }
+                  }}
+                  style={{ minWidth: 140, background: 'var(--accent-teal)' }}
+                >
+                  {samplingBlob ? '⏳ Sampling…' : '🎯 Run DAS Sample'}
+                </button>
+              )}
+            </div>
+
+            {daResult && (
+              <div style={{ fontSize: '0.78rem', padding: '6px 10px', borderRadius: 'var(--radius-sm)', background: daResult.startsWith('✅') ? 'rgba(72,187,120,0.1)' : 'rgba(229,62,62,0.1)', color: daResult.startsWith('✅') ? 'var(--accent-green)' : 'var(--accent-red)', marginBottom: 14, fontFamily: 'JetBrains Mono, monospace' }}>
+                {daResult}
+              </div>
+            )}
+
+            {/* Blobs Grid */}
+            <div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Committed Data Blobs ({daBlobs.length})
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 10 }}>
+                {daBlobs.slice(-4).reverse().map((b) => (
+                  <div
+                    key={b.blobId}
+                    style={{
+                      background: 'var(--bg-surface)',
+                      border: '1px solid var(--border)',
+                      borderRadius: 'var(--radius-sm)',
+                      padding: 12,
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <span style={{ fontWeight: 700, fontSize: '0.8rem', color: 'var(--text-primary)' }}>
+                        {b.namespace}
+                      </span>
+                      <span style={{ fontSize: '0.65rem', padding: '1px 6px', borderRadius: 3, background: b.status === 'AVAILABLE' ? 'rgba(72,187,120,0.15)' : 'rgba(99,179,237,0.15)', color: b.status === 'AVAILABLE' ? 'var(--accent-green)' : 'var(--accent-blue)', fontWeight: 700 }}>
+                        {b.status}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontFamily: 'JetBrains Mono, monospace', marginBottom: 2 }}>
+                      {b.blobId} · {b.sizeBytes} B
+                    </div>
+                    <div style={{ fontSize: '0.65rem', color: 'var(--accent-teal)' }}>
+                      🧩 {b.chunkCount} data + {b.parityChunkCount} parity chunks · KZG verified
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
