@@ -42,6 +42,7 @@ import { OceanicosDAEngine } from '@omega-v/da';
 import { OceanicosRollupEngine } from '@omega-v/rollup';
 import { OceanicosIntentEngine } from '@omega-v/intent';
 import { OceanicosOrchestratorEngine } from '@omega-v/orchestrator';
+import { OceanicosDHTEngine } from '@omega-v/dht';
 import {
   SuccessResponse,
   ErrorResponse,
@@ -113,6 +114,7 @@ const daEngine = new OceanicosDAEngine();
 const rollupEngine = new OceanicosRollupEngine();
 const intentEngine = new OceanicosIntentEngine();
 const orchestratorEngine = new OceanicosOrchestratorEngine();
+const dhtEngine = new OceanicosDHTEngine();
 
 // Register default rules
 verificationEngine.registerRule({
@@ -3612,6 +3614,91 @@ app.get('/orchestrator/batches', (_req: Request, res: Response) => {
 /** GET /orchestrator/stats — Orchestrator telemetry metrics */
 app.get('/orchestrator/stats', (_req: Request, res: Response) => {
   const stats = orchestratorEngine.getStats();
+  res.json({
+    data: stats,
+    timestamp: new Date().toISOString(),
+  });
+});
+/**
+ * Section 38 Endpoints: Distributed Hash Table (DHT) — Kademlia Overlay Network
+ * /dht/nodes, /dht/nodes/register, /dht/records, /dht/records/put, /dht/lookup, /dht/stats
+ */
+
+/** GET /dht/nodes — List all DHT overlay nodes */
+app.get('/dht/nodes', (_req: Request, res: Response) => {
+  const nodes = dhtEngine.getNodes();
+  res.json({
+    data: nodes,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /dht/nodes/register — Register new Kademlia node */
+app.post('/dht/nodes/register', (req: Request, res: Response) => {
+  const { did, address } = req.body;
+  if (!did || !address) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'did and address are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+  const node = dhtEngine.registerNode({ did, address });
+  res.status(201).json({
+    data: node,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** GET /dht/records — List all DHT records */
+app.get('/dht/records', (_req: Request, res: Response) => {
+  const records = dhtEngine.getRecords();
+  res.json({
+    data: records,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /dht/records/put — Store a key-value record in the DHT */
+app.post('/dht/records/put', (req: Request, res: Response) => {
+  const { key, value, publisherDid, ttlMs, replicationFactor } = req.body;
+  if (!key || !value || !publisherDid) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'key, value, and publisherDid are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+  const record = dhtEngine.putRecord({ key, value, publisherDid, ttlMs, replicationFactor });
+  res.status(201).json({
+    data: record,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** GET /dht/lookup — Perform Kademlia lookup by key */
+app.get('/dht/lookup', (req: Request, res: Response) => {
+  const key = typeof req.query.key === 'string' ? req.query.key : '';
+  if (!key) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'key query parameter is required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+  const result = dhtEngine.lookup(key);
+  res.json({
+    data: result,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** GET /dht/stats — DHT telemetry metrics */
+app.get('/dht/stats', (_req: Request, res: Response) => {
+  const stats = dhtEngine.getStats();
   res.json({
     data: stats,
     timestamp: new Date().toISOString(),

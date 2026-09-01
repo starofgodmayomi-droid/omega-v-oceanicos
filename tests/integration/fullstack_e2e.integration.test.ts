@@ -39,6 +39,7 @@ import { OceanicosDAEngine } from '@omega-v/da';
 import { OceanicosRollupEngine } from '@omega-v/rollup';
 import { OceanicosIntentEngine } from '@omega-v/intent';
 import { OceanicosOrchestratorEngine } from '@omega-v/orchestrator';
+import { OceanicosDHTEngine } from '@omega-v/dht';
 import app from '../../apps/api/src/index';
 
 describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => {
@@ -1635,7 +1636,50 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       expect(stats.avgTaskExecutionMs).toBe(30);
     });
   });
+
+  describe('38. Distributed Hash Table (DHT) — Kademlia Overlay Network E2E', () => {
+    it('should register nodes, store records with replication, and perform verified lookups', () => {
+      const dht = new OceanicosDHTEngine('e2e-dht-secret');
+
+      // 1. Register DHT overlay nodes
+      dht.registerNode({ did: 'did:omega:dht:alpha', address: '10.0.0.1:9000' });
+      dht.registerNode({ did: 'did:omega:dht:beta', address: '10.0.0.2:9000' });
+      dht.registerNode({ did: 'did:omega:dht:gamma', address: '10.0.0.3:9000' });
+
+      expect(dht.getNodes()).toHaveLength(3);
+
+      // 2. Store content-addressed records
+      const record = dht.putRecord({
+        key: 'omega:state:epoch-42',
+        value: '0xdeadbeef_state_root',
+        publisherDid: 'did:omega:sequencer:main',
+        replicationFactor: 3,
+      });
+
+      expect(record.lookupProof).toMatch(/^0x/);
+      expect(record.replicationFactor).toBe(3);
+
+      // 3. Lookup with verification proof
+      const result = dht.lookup('omega:state:epoch-42');
+      expect(result.found).toBe(true);
+      expect(result.value).toBe('0xdeadbeef_state_root');
+      expect(result.hops).toBeGreaterThanOrEqual(1);
+      expect(result.verificationProof).toMatch(/^0x/);
+
+      // 4. Miss lookup
+      const miss = dht.lookup('nonexistent');
+      expect(miss.found).toBe(false);
+
+      // 5. Stats
+      const stats = dht.getStats();
+      expect(stats.totalNodes).toBe(3);
+      expect(stats.totalRecords).toBe(1);
+      expect(stats.totalLookups).toBe(2);
+      expect(stats.cacheHitRate).toBe(0.5);
+    });
+  });
 });
+
 
 
 

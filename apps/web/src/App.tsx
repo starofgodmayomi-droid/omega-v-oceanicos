@@ -771,6 +771,37 @@ interface OrchestratorStatsData {
   avgTaskExecutionMs: number;
 }
 
+interface DHTNodeItem {
+  nodeId: string;
+  did: string;
+  address: string;
+  bucketIndex: number;
+  lastSeen: string;
+  storedKeys: number;
+}
+
+interface DHTRecordItem {
+  key: string;
+  value: string;
+  publisherDid: string;
+  ttlMs: number;
+  replicationFactor: number;
+  storedAt: string;
+  expiresAt: string;
+  lookupProof: string;
+}
+
+interface DHTStatsData {
+  totalNodes: number;
+  totalRecords: number;
+  totalLookups: number;
+  cacheHitRate: number;
+  avgLookupHops: number;
+  avgLookupDurationMs: number;
+  replicatedRecords: number;
+  expiredRecords: number;
+}
+
 interface RuleEfficacy {
   ruleName: string;
   totalExecutions: number;
@@ -1136,6 +1167,9 @@ export function App(): JSX.Element {
   const [orchestratedTasks, setOrchestratedTasks] = useState<OrchestratedTaskItem[]>([]);
   const [parallelBatches, setParallelBatches] = useState<ParallelBatchReceiptItem[]>([]);
   const [orchestratorStats, setOrchestratorStats] = useState<OrchestratorStatsData | null>(null);
+  const [dhtNodes, setDhtNodes] = useState<DHTNodeItem[]>([]);
+  const [dhtRecords, setDhtRecords] = useState<DHTRecordItem[]>([]);
+  const [dhtStats, setDhtStats] = useState<DHTStatsData | null>(null);
 
   // ── Poll log + metrics ──
   const fetchState = useCallback(async () => {
@@ -1205,6 +1239,9 @@ export function App(): JSX.Element {
         orchTasksRes,
         orchBatchesRes,
         orchStatsRes,
+        dhtNodesRes,
+        dhtRecordsRes,
+        dhtStatsRes,
       ] = await Promise.all([
         fetch(`${API_BASE}/log?limit=30`),
         fetch(`${API_BASE}/metrics`),
@@ -1270,6 +1307,9 @@ export function App(): JSX.Element {
         fetch(`${API_BASE}/orchestrator/tasks`),
         fetch(`${API_BASE}/orchestrator/batches`),
         fetch(`${API_BASE}/orchestrator/stats`),
+        fetch(`${API_BASE}/dht/nodes`),
+        fetch(`${API_BASE}/dht/records`),
+        fetch(`${API_BASE}/dht/stats`),
       ]);
       if (!logRes.ok || !metricsRes.ok) throw new Error('API error');
 
@@ -1461,6 +1501,15 @@ export function App(): JSX.Element {
       }
       if (orchStatsRes && orchStatsRes.ok) {
         setOrchestratorStats((await orchStatsRes.json()).data as OrchestratorStatsData);
+      }
+      if (dhtNodesRes && dhtNodesRes.ok) {
+        setDhtNodes((await dhtNodesRes.json()).data as DHTNodeItem[]);
+      }
+      if (dhtRecordsRes && dhtRecordsRes.ok) {
+        setDhtRecords((await dhtRecordsRes.json()).data as DHTRecordItem[]);
+      }
+      if (dhtStatsRes && dhtStatsRes.ok) {
+        setDhtStats((await dhtStatsRes.json()).data as DHTStatsData);
       }
     } catch {
       setApiOnline(false);
@@ -8028,6 +8077,74 @@ export function App(): JSX.Element {
                       </div>
                       <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontFamily: 'JetBrains Mono, monospace' }}>
                         Agent: {t.assignedAgentDid.split(':').pop()} · Mode: {t.executionMode}{t.executionDurationMs ? ` · ${t.executionDurationMs}ms` : ''}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+          {/* ── Section 38: Distributed Hash Table (DHT) — Kademlia Overlay Network ── */}
+          <div className="card" style={{ gridColumn: '1 / -1' }}>
+            <div className="section-header" style={{ marginBottom: 16 }}>
+              <div className="section-title">🌐 Distributed Hash Table (DHT) — Kademlia Overlay</div>
+              <span className="section-badge">{dhtNodes.length} nodes · {dhtRecords.length} records</span>
+            </div>
+
+            {/* Stats Row */}
+            {dhtStats && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 10, marginBottom: 18 }}>
+                {[
+                  { label: 'Nodes', value: dhtStats.totalNodes, icon: '🖧' },
+                  { label: 'Records', value: dhtStats.totalRecords, icon: '📦' },
+                  { label: 'Lookups', value: dhtStats.totalLookups, icon: '🔍' },
+                  { label: 'Cache Hit', value: `${(dhtStats.cacheHitRate * 100).toFixed(0)}%`, icon: '🎯' },
+                  { label: 'Avg Hops', value: dhtStats.avgLookupHops.toFixed(1), icon: '🔗' },
+                  { label: 'Replicated', value: dhtStats.replicatedRecords, icon: '♻️' },
+                  { label: 'Expired', value: dhtStats.expiredRecords, icon: '⏰' },
+                ].map((s) => (
+                  <div key={s.label} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '10px 12px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '1.1rem' }}>{s.icon}</div>
+                    <div style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--accent-cyan)' }}>{s.value}</div>
+                    <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{s.label}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Nodes & Records */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              <div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Overlay Nodes ({dhtNodes.length})
+                </div>
+                <div style={{ display: 'grid', gap: 8 }}>
+                  {dhtNodes.slice(-4).reverse().map((n) => (
+                    <div key={n.nodeId} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: 10 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
+                        <span style={{ fontWeight: 700, fontSize: '0.78rem', color: 'var(--text-primary)' }}>{n.nodeId.slice(0, 16)}…</span>
+                        <span style={{ fontSize: '0.62rem', color: 'var(--accent-cyan)', fontWeight: 600 }}>Bucket #{n.bucketIndex}</span>
+                      </div>
+                      <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontFamily: 'JetBrains Mono, monospace' }}>
+                        {n.address} · {n.storedKeys} keys
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Stored Records ({dhtRecords.length})
+                </div>
+                <div style={{ display: 'grid', gap: 8 }}>
+                  {dhtRecords.slice(-4).reverse().map((r) => (
+                    <div key={r.key} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: 10 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
+                        <span style={{ fontWeight: 700, fontSize: '0.78rem', color: 'var(--text-primary)' }}>{r.key}</span>
+                        <span style={{ fontSize: '0.62rem', color: 'var(--accent-green)', fontWeight: 600 }}>Repl ×{r.replicationFactor}</span>
+                      </div>
+                      <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontFamily: 'JetBrains Mono, monospace' }}>
+                        {r.value.slice(0, 24)}… · Proof: {r.lookupProof.slice(0, 16)}…
                       </div>
                     </div>
                   ))}
