@@ -42,6 +42,7 @@ import { OceanicosOrchestratorEngine } from '@omega-v/orchestrator';
 import { OceanicosDHTEngine } from '@omega-v/dht';
 import { OceanicosStakingEngine } from '@omega-v/staking';
 import { OceanicosKernel } from '@omega-v/kernel';
+import { OceanicosMempoolEngine } from '@omega-v/mempool';
 import app from '../../apps/api/src/index';
 
 describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => {
@@ -1831,6 +1832,69 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       expect(stats.humanGatedAuthorizations).toBe(1);
       expect(stats.preservedDissentCount).toBe(1);
       expect(stats.recompilationsTriggered).toBe(1);
+    });
+  });
+
+  describe('41. High-Throughput Transaction Mempool & MEV Bundle Engine E2E', () => {
+    it('should submit transactions, handle RBF gas bumping, manage MEV bundles, and harvest priority batches', () => {
+      const mempool = new OceanicosMempoolEngine('e2e-mempool-secret');
+
+      // 1. Submit transactions with nonce sequencing
+      const txA0 = mempool.submitTransaction({
+        senderDid: 'did:omega:agent:trader-01',
+        nonce: 0,
+        gasPriceGwei: 30,
+        gasLimit: 25000,
+        payload: { intent: 'swap' },
+      });
+      const txA1 = mempool.submitTransaction({
+        senderDid: 'did:omega:agent:trader-01',
+        nonce: 1,
+        gasPriceGwei: 60,
+        gasLimit: 25000,
+        payload: { intent: 'stake' },
+      });
+      const txB0 = mempool.submitTransaction({
+        senderDid: 'did:omega:agent:arbitrageur',
+        nonce: 0,
+        gasPriceGwei: 80,
+        gasLimit: 35000,
+        payload: { intent: 'arb' },
+      });
+
+      expect(txA0.status).toBe('PENDING');
+      expect(txA1.status).toBe('QUEUED');
+      expect(txB0.status).toBe('PENDING');
+
+      // 2. Submit MEV Bundle
+      const bundle = mempool.submitBundle({
+        searcherDid: 'did:omega:searcher:prime',
+        txHashes: [txB0.txHash],
+        bidTipGwei: 25,
+        targetBlockEpoch: 10,
+      });
+      expect(bundle.bundleId).toMatch(/^mev-/);
+      expect(bundle.status).toBe('SIMULATED');
+
+      // 3. Harvest priority block batch
+      const harvest1 = mempool.popBatch({ maxGas: 60000 });
+      expect(harvest1.includedTxCount).toBe(2);
+      expect(harvest1.transactions[0].senderDid).toBe('did:omega:agent:arbitrageur');
+      expect(harvest1.transactions[1].senderDid).toBe('did:omega:agent:trader-01');
+      expect(harvest1.harvestAttestation).toMatch(/^0x/);
+
+      // 4. Verify queued txA1 was unblocked to PENDING and harvest it
+      const txA1Updated = mempool.getTransactions().find((t) => t.txHash === txA1.txHash)!;
+      expect(txA1Updated.status).toBe('PENDING');
+
+      const harvest2 = mempool.popBatch({ maxGas: 50000 });
+      expect(harvest2.includedTxCount).toBe(1);
+
+      // 5. Check stats
+      const stats = mempool.getStats();
+      expect(stats.includedCount).toBe(3);
+      expect(stats.activeBundles).toBe(1);
+      expect(stats.mempoolMerkleRoot).toMatch(/^0x/);
     });
   });
 });

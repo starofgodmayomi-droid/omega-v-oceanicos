@@ -1,0 +1,11 @@
+{
+  "name": "@omega-v/mempool",
+  "version": "0.1.0",
+  "description": "High-Throughput Priority Transaction Mempool, MEV Bundle Bidding & Nonce Queuing for Ω∞v Oceanicos",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "test": "jest"
+  }
+}

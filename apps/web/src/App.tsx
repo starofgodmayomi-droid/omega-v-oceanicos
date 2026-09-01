@@ -904,6 +904,39 @@ interface KernelStatsData {
   currentRootStateHash: string;
 }
 
+interface MempoolTxItem {
+  txHash: string;
+  senderDid: string;
+  nonce: number;
+  gasPriceGwei: number;
+  gasLimit: number;
+  status: string;
+  receivedAt: string;
+  admissionProof: string;
+}
+
+interface MEVBundleItem {
+  bundleId: string;
+  searcherDid: string;
+  txHashes: string[];
+  bidTipGwei: number;
+  targetBlockEpoch: number;
+  status: string;
+  bundleProof: string;
+  submittedAt: string;
+}
+
+interface MempoolStatsData {
+  pendingCount: number;
+  queuedCount: number;
+  includedCount: number;
+  replacedCount: number;
+  droppedCount: number;
+  activeBundles: number;
+  medianGasPriceGwei: number;
+  mempoolMerkleRoot: string;
+}
+
 interface RuleEfficacy {
   ruleName: string;
   totalExecutions: number;
@@ -1277,6 +1310,9 @@ export function App(): JSX.Element {
   const [stakingStats, setStakingStats] = useState<StakingStatsData | null>(null);
   const [canonicalStates, setCanonicalStates] = useState<CanonicalStateItem[]>([]);
   const [kernelStats, setKernelStats] = useState<KernelStatsData | null>(null);
+  const [liveMempoolTxs, setLiveMempoolTxs] = useState<MempoolTxItem[]>([]);
+  const [mevBundles, setMevBundles] = useState<MEVBundleItem[]>([]);
+  const [mempoolStats, setMempoolStats] = useState<MempoolStatsData | null>(null);
 
   // ── Poll log + metrics ──
   const fetchState = useCallback(async () => {
@@ -1354,6 +1390,9 @@ export function App(): JSX.Element {
         stkStatsRes,
         krnStatesRes,
         krnStatsRes,
+        mpTxsRes,
+        mpBundlesRes,
+        mpStatsRes,
       ] = await Promise.all([
         fetch(`${API_BASE}/log?limit=30`),
         fetch(`${API_BASE}/metrics`),
@@ -1427,6 +1466,9 @@ export function App(): JSX.Element {
         fetch(`${API_BASE}/staking/stats`),
         fetch(`${API_BASE}/kernel/states`),
         fetch(`${API_BASE}/kernel/stats`),
+        fetch(`${API_BASE}/mempool/transactions`),
+        fetch(`${API_BASE}/mempool/bundles`),
+        fetch(`${API_BASE}/mempool/stats`),
       ]);
       if (!logRes.ok || !metricsRes.ok) throw new Error('API error');
 
@@ -1642,6 +1684,15 @@ export function App(): JSX.Element {
       }
       if (krnStatsRes && krnStatsRes.ok) {
         setKernelStats((await krnStatsRes.json()).data as KernelStatsData);
+      }
+      if (mpTxsRes && mpTxsRes.ok) {
+        setLiveMempoolTxs((await mpTxsRes.json()).data as MempoolTxItem[]);
+      }
+      if (mpBundlesRes && mpBundlesRes.ok) {
+        setMevBundles((await mpBundlesRes.json()).data as MEVBundleItem[]);
+      }
+      if (mpStatsRes && mpStatsRes.ok) {
+        setMempoolStats((await mpStatsRes.json()).data as MempoolStatsData);
       }
     } catch {
       setApiOnline(false);
@@ -8416,6 +8467,74 @@ export function App(): JSX.Element {
                     )}
                   </div>
                 ))}
+              </div>
+            </div>
+          </div>
+          {/* ── Section 41: High-Throughput Transaction Mempool & MEV Bundle Engine ── */}
+          <div className="card" style={{ gridColumn: '1 / -1' }}>
+            <div className="section-header" style={{ marginBottom: 16 }}>
+              <div className="section-title">⚡ Transaction Mempool &amp; MEV Protection Bundles</div>
+              <span className="section-badge">{liveMempoolTxs.length} txs · {mevBundles.length} bundles</span>
+            </div>
+
+            {/* Mempool Stats */}
+            {mempoolStats && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 10, marginBottom: 18 }}>
+                {[
+                  { label: 'Pending Txs', value: mempoolStats.pendingCount, icon: '⏳' },
+                  { label: 'Queued (Nonce)', value: mempoolStats.queuedCount, icon: '📋' },
+                  { label: 'Included in Blocks', value: mempoolStats.includedCount, icon: '🧱' },
+                  { label: 'Replaced (RBF)', value: mempoolStats.replacedCount, icon: '🔁' },
+                  { label: 'MEV Bundles', value: mempoolStats.activeBundles, icon: '🛡️' },
+                  { label: 'Median Gas', value: `${mempoolStats.medianGasPriceGwei} Gwei`, icon: '⛽' },
+                ].map((s) => (
+                  <div key={s.label} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '10px 12px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '1.1rem' }}>{s.icon}</div>
+                    <div style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--accent-purple)' }}>{s.value}</div>
+                    <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{s.label}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Transactions & Bundles */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              <div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Live Transactions ({liveMempoolTxs.length})
+                </div>
+                <div style={{ display: 'grid', gap: 8 }}>
+                  {liveMempoolTxs.slice(-4).reverse().map((tx) => (
+                    <div key={tx.txHash} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: 10 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
+                        <span style={{ fontWeight: 700, fontSize: '0.78rem', color: 'var(--text-primary)' }}>{tx.senderDid.split(':').pop()} (nonce #{tx.nonce})</span>
+                        <span style={{ fontSize: '0.62rem', padding: '1px 6px', borderRadius: 3, background: tx.status === 'INCLUDED' ? 'rgba(72,187,120,0.15)' : tx.status === 'PENDING' ? 'rgba(56,178,172,0.15)' : 'rgba(237,137,54,0.15)', color: tx.status === 'INCLUDED' ? 'var(--accent-green)' : tx.status === 'PENDING' ? 'var(--accent-cyan)' : 'var(--accent-orange)', fontWeight: 700 }}>{tx.status}</span>
+                      </div>
+                      <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontFamily: 'JetBrains Mono, monospace' }}>
+                        Gas: {tx.gasPriceGwei} Gwei · Limit: {tx.gasLimit} · Hash: {tx.txHash.slice(0, 16)}…
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  MEV Protection Bundles ({mevBundles.length})
+                </div>
+                <div style={{ display: 'grid', gap: 8 }}>
+                  {mevBundles.slice(-4).reverse().map((b) => (
+                    <div key={b.bundleId} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: 10 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
+                        <span style={{ fontWeight: 700, fontSize: '0.78rem', color: 'var(--accent-purple)' }}>{b.searcherDid.split(':').pop()}</span>
+                        <span style={{ fontSize: '0.65rem', color: 'var(--accent-orange)', fontWeight: 700 }}>+{b.bidTipGwei} Gwei Tip</span>
+                      </div>
+                      <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontFamily: 'JetBrains Mono, monospace' }}>
+                        Txs: {b.txHashes.length} · Epoch: #{b.targetBlockEpoch} · Proof: {b.bundleProof.slice(0, 16)}…
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>

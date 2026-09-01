@@ -45,6 +45,7 @@ import { OceanicosOrchestratorEngine } from '@omega-v/orchestrator';
 import { OceanicosDHTEngine } from '@omega-v/dht';
 import { OceanicosStakingEngine } from '@omega-v/staking';
 import { OceanicosKernel } from '@omega-v/kernel';
+import { OceanicosMempoolEngine } from '@omega-v/mempool';
 import {
   SuccessResponse,
   ErrorResponse,
@@ -119,6 +120,7 @@ const orchestratorEngine = new OceanicosOrchestratorEngine();
 const dhtEngine = new OceanicosDHTEngine();
 const stakingEngine = new OceanicosStakingEngine();
 const kernelEngine = new OceanicosKernel();
+const mempoolEngine = new OceanicosMempoolEngine();
 
 // Register default rules
 verificationEngine.registerRule({
@@ -3964,6 +3966,116 @@ app.get('/kernel/states/:stateId/lineage', (req: Request, res: Response) => {
 /** GET /kernel/stats — Kernel telemetry & root state hash */
 app.get('/kernel/stats', (_req: Request, res: Response) => {
   const stats = kernelEngine.getStats();
+  res.json({
+    data: stats,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/**
+ * Section 41 Endpoints: High-Throughput Transaction Mempool & MEV Bundle Engine
+ * /mempool/transactions, /mempool/submit, /mempool/bundles/submit, /mempool/bundles, /mempool/harvest, /mempool/stats
+ */
+
+/** GET /mempool/transactions — List transactions in mempool */
+app.get('/mempool/transactions', (req: Request, res: Response) => {
+  const senderDid = typeof req.query.senderDid === 'string' ? req.query.senderDid : undefined;
+  const status = typeof req.query.status === 'string' ? (req.query.status as any) : undefined;
+  const txs = mempoolEngine.getTransactions({ senderDid, status });
+  res.json({
+    data: txs,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /mempool/submit — Submit transaction to mempool with RBF */
+app.post('/mempool/submit', (req: Request, res: Response) => {
+  const { senderDid, nonce, gasPriceGwei, gasLimit, payload } = req.body;
+  if (!senderDid || typeof nonce !== 'number' || typeof gasPriceGwei !== 'number' || typeof gasLimit !== 'number') {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'senderDid, nonce (number), gasPriceGwei (number), and gasLimit (number) are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const tx = mempoolEngine.submitTransaction({
+      senderDid,
+      nonce,
+      gasPriceGwei,
+      gasLimit,
+      payload: payload ?? {},
+    });
+    res.status(201).json({
+      data: tx,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'MEMPOOL_SUBMISSION_FAILED',
+      message: err instanceof Error ? err.message : 'Submission failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** POST /mempool/bundles/submit — Submit MEV protection bundle */
+app.post('/mempool/bundles/submit', (req: Request, res: Response) => {
+  const { searcherDid, txHashes, bidTipGwei, targetBlockEpoch } = req.body;
+  if (!searcherDid || !Array.isArray(txHashes) || typeof bidTipGwei !== 'number' || typeof targetBlockEpoch !== 'number') {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'searcherDid, txHashes (array), bidTipGwei (number), and targetBlockEpoch (number) are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const bundle = mempoolEngine.submitBundle({
+      searcherDid,
+      txHashes,
+      bidTipGwei,
+      targetBlockEpoch,
+    });
+    res.status(201).json({
+      data: bundle,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'BUNDLE_SUBMISSION_FAILED',
+      message: err instanceof Error ? err.message : 'Bundle submission failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** GET /mempool/bundles — List all MEV bundles */
+app.get('/mempool/bundles', (_req: Request, res: Response) => {
+  const bundles = mempoolEngine.getBundles();
+  res.json({
+    data: bundles,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /mempool/harvest — Harvest block proposal batch */
+app.post('/mempool/harvest', (req: Request, res: Response) => {
+  const maxGas = typeof req.body.maxGas === 'number' ? req.body.maxGas : undefined;
+  const maxCount = typeof req.body.maxCount === 'number' ? req.body.maxCount : undefined;
+  const receipt = mempoolEngine.popBatch({ maxGas, maxCount });
+  res.json({
+    data: receipt,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** GET /mempool/stats — Mempool telemetry & Merkle root */
+app.get('/mempool/stats', (_req: Request, res: Response) => {
+  const stats = mempoolEngine.getStats();
   res.json({
     data: stats,
     timestamp: new Date().toISOString(),
