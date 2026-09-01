@@ -54,6 +54,7 @@ The repository contains 35 modular, type-safe, independently tested pillars form
 | **XXXIII** | [`@omega-v/sequencer`](packages/sequencer) | MEV-Resistant Fair Ordering & Verifiable Delay Functions (VDF) | 4/4 passing |
 | **XXXIV** | [`@omega-v/da`](packages/da) | Data Availability Sampling (DAS) & Reed-Solomon KZG Proofs | 5/5 passing |
 | **XXXV** | [`@omega-v/rollup`](packages/rollup) | Layer-2 Optimistic & ZK-Validity Execution Engine & State Machine | 6/6 passing |
+| **XXXVI** | [`@omega-v/intent`](packages/intent) | Verifiable AI Agent Intent Solver & Composable Settlement Engine | 5/5 passing |
 
 ---
 
@@ -74,8 +75,8 @@ npx tsc --noEmit
 npx jest --no-coverage
 ```
 
-* **Test Suites**: `52 passed, 52 total` (**100% Pass Rate**)
-* **Test Specs**: `330 passed, 330 total` (**100% Pass Rate**)
+* **Test Suites**: `53 passed, 53 total` (**100% Pass Rate**)
+* **Test Specs**: `336 passed, 336 total` (**100% Pass Rate**)
 * **TypeScript Errors**: `0 errors`
 
 ---
