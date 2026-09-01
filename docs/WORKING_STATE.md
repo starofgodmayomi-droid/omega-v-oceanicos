@@ -2,6 +2,12 @@
 
 **Updated:** 2026-09-01
 
+## Web Builder kernel event-observability checkpoint — 2026-09-01
+
+The read-only Web Builder kernel panel now displays the latest bounded OS event type and any recorded rejection reason alongside sequence, task/event counts, schema, finite limits, and capability boundaries. This makes rejected admissions legible at the operator surface without adding worker controls, mutation authority, shell access, credential handling, remote actions, or deployment behavior.
+
+Local evidence in `/tmp/omega-os-next-slice` includes 81 Web DOM/contract tests passing, formatting, lint, type-check, and the Web production build passing. The change remains uncommitted at this checkpoint; no push, PR publication, merge, or deployment has occurred.
+
 ## Rejected-admission evidence checkpoint — 2026-09-01
 
 The bounded OS kernel now records failed task admissions as `reject` events with bounded reasons. Unsupported kinds, invalid requester identities, oversized inputs, cyclic or overly deep input graphs, and task-limit exhaustion remain visible in the read-only event trace without creating admitted work. The SDK event union now includes `reject`, keeping the typed consumer contract aligned with the kernel.
