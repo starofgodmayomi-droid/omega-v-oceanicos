@@ -134,6 +134,28 @@ describe('API runtime contracts', () => {
     );
   });
 
+  it('exposes a bounded ready operating-system snapshot', async () => {
+    const response = await fetch(`${baseUrl}/os`);
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as {
+      data: {
+        snapshotVersion: string;
+        state: string;
+        tasks: unknown[];
+        events: Array<{ sequence: number; state: string }>;
+        limits: { maxTasks: number; maxEvents: number };
+      };
+    };
+    expect(body.data.snapshotVersion).toBe('os.snapshot.v1');
+    expect(body.data.state).toBe('ready');
+    expect(body.data.tasks).toEqual([]);
+    expect(body.data.limits).toEqual({ maxTasks: 32, maxEvents: 128 });
+    expect(body.data.events).toEqual([
+      { sequence: 1, state: 'booting', type: 'boot' },
+      { sequence: 2, state: 'ready', type: 'boot' },
+    ]);
+  });
+
   it('exposes bounded audit evidence with explicit local provenance', async () => {
     const response = await fetch(`${baseUrl}/audit/events?status=passed&limit=2`);
     const body = (await response.json()) as {
@@ -632,10 +654,20 @@ describe('API runtime contracts', () => {
       expect(denied.status).toBe(401);
       expect(deniedBody.code).toBe('READ_ACCESS_REQUIRED');
 
+      const deniedOs = await fetch(`${baseUrl}/os`);
+      const deniedOsBody = (await deniedOs.json()) as { code: string; requestId: string };
+      expect(deniedOs.status).toBe(401);
+      expect(deniedOsBody.code).toBe('READ_ACCESS_REQUIRED');
+
       const allowed = await fetch(`${baseUrl}/observability`, {
         headers: { Authorization: 'Bearer contract-read-token' },
       });
       expect(allowed.status).toBe(200);
+
+      const allowedOs = await fetch(`${baseUrl}/os`, {
+        headers: { Authorization: 'Bearer contract-read-token' },
+      });
+      expect(allowedOs.status).toBe(200);
     } finally {
       if (previousToken === undefined) delete process.env.OMEGA_READ_TOKEN;
       else process.env.OMEGA_READ_TOKEN = previousToken;

@@ -8,6 +8,7 @@ import VerificationEngine from '@omega-v/verification';
 import AttestationService from '@omega-v/attestation';
 import Remember, { FileMemoryStore } from '@omega-v/remember';
 import * as DissensusModule from '@omega-v/dissensus';
+import { OperatingSystemKernel } from '@omega-v/mini';
 import type { Dissensus, DissensusPolicy, Opinion } from '@omega-v/dissensus';
 
 const { policyFromEnvironment, reconcile } = DissensusModule;
@@ -228,6 +229,8 @@ app.use((req: Request, res: Response, next) => {
 // Initialize services. HMAC remains the default; Ed25519 is opt-in and must
 // receive explicit private-key material so the API never silently changes its
 // signing contract or signs with a public key.
+const operatingSystem = new OperatingSystemKernel();
+operatingSystem.boot();
 const observer = new Observer();
 const verificationEngine = new VerificationEngine();
 const configuredAttestationAlgorithm = process.env.OMEGA_ATTESTATION_ALGORITHM;
@@ -1237,6 +1240,12 @@ app.get('/health', (_req: Request, res: Response) => {
   res.status(memoryIntact && persistenceIsReady && durableLogIsReady ? 200 : 503).json(response);
 });
 
+app.get('/os', (_req: Request, res: Response) => {
+  res.json({
+    data: operatingSystem.snapshot(),
+    timestamp: new Date().toISOString(),
+  });
+});
 app.get('/state', (_req: Request, res: Response) => {
   const latest = runtimeEvents[0];
   const memoryIntact = kernelMemory.verifyIntegrity();
@@ -2445,6 +2454,7 @@ const startServer = () =>
         '  POST   /verify           - Verify an observation',
         '  POST   /attest           - Attest a verification',
         '  POST   /complete-loop    - Execute full loop in one request',
+        '  GET    /os               - Bounded operating-system snapshot',
         '  GET    /state            - Runtime state',
         '  GET    /events           - Recent lifecycle events',
         '  GET    /events/stream    - Live lifecycle events',

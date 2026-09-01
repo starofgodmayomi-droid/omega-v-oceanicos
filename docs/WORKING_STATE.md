@@ -1,6 +1,26 @@
 # Ω∞v Oceanicos Working State
 
-**Updated:** 2026-08-23
+**Updated:** 2026-08-31
+
+## Current local Universal Builder OS continuation — 2026-08-31
+
+The bounded OS surface now spans the MINI kernel, API `GET /os`, typed SDK `getOperatingSystem()`, CLI `omega os`, and a read-only web Builder kernel panel. The web panel renders deterministic lifecycle/task/trace evidence, isolates an unavailable snapshot as `UNKNOWN` without taking down the rest of the dashboard, and carries no mutation authority. The snapshot now declares `shellExecution: false`, `remoteMutation: false`, `credentialHandling: false`, and `humanAuthorizationRequired: true`; API coverage proves that `/os` obeys the opt-in read bearer boundary: anonymous access is rejected when `OMEGA_READ_TOKEN` is configured, while the configured read token succeeds.
+
+The latest local lineage is isolated in `/tmp/omega-os-kernel-slice` at `82df062` for the API schema-contract verification. The local gates observed across the continuation include focused kernel/API/SDK/CLI/Web tests (`231 tests`), ESLint, TypeScript no-emit checking, formatting, workspace build, API smoke, and `git diff --check`. The OS contract now exposes `snapshotVersion: os.snapshot.v1`, `maxTasks: 32`, and `maxEvents: 128`. API smoke returned `health: ready`, `deterministic: true`, `terminalState: return`, and `verified: false`. These are local worktree observations only.
+
+The implementation sequence remains reversible and evidence-bound: `696d322` added the web panel, `6e001cd` pinned its DOM evidence, `0db5eac` covered OS read authentication, `1d6ebb8` isolated OS snapshot failure, `ef3ff93` added the control-room ribbon, and `2dd5c4b` exposed explicit OS capability metadata across kernel, SDK, CLI, Web, tests, and documentation. The concurrent worker review found no new arbitrary shell, credential-handling, remote-mutation, or unbounded-loop behavior in the affected OS surfaces; its scan output remains diagnostic rather than a complete security audit.
+
+The GitHub connector is currently enabled and remote inspection is available. PR #219 remains open at remote head `d4dc151`, while the latest local commits are ahead and have not been pushed. No merge or deployment has occurred. Hosted CI for the remote head, artifact publication, production behavior, distributed consistency, and external execution remain unverified for the latest local commits. Pushing the local commits requires explicit authorization for this new remote mutation; merge and deployment remain separate gates. Rollback is removal of the isolated worktree or reset of its unpublished commits.
+
+## Local OS kernel and API slice — build/verify checkpoint — 2026-08-28
+
+A new finite `OperatingSystemKernel` is implemented in `packages/mini/src/os.ts` and exported from `@omega-v/mini`. It models the lifecycle states `offline`, `booting`, `ready`, `degraded`, `stopping`, and `stopped`; admits only typed bounded task kinds; fails closed at the configured task limit; clears work on stop; and retains a bounded event trace. Task identifiers and event sequence numbers are deterministic within a kernel instance, including after trace eviction. No arbitrary shell execution, remote mutation, deployment, or credential handling is part of this slice.
+
+The API now boots one kernel instance at process initialization and exposes its read-only snapshot at `GET /os`. The endpoint returns the finite lifecycle state, bounded tasks, and event trace in the repository's normal `{ data, timestamp }` envelope. A contract test verifies the ready boot trace and empty task set. This is an implementation and local-verification claim only; it is not a CI, remote-branch, merge, deployment, or production-runtime claim.
+
+Observed local evidence in isolated worktree `/tmp/omega-os-kernel-slice` against base `55e8a952` includes: formatting check passed; ESLint passed with zero warnings; TypeScript no-emit type-check passed; focused API/kernel/documentation/web contract tests passed (`142 tests`); the complete Jest gate passed (`51 suites`, `1007 tests`) with forced exit to close existing open-handle behavior; the repository build passed; `pnpm smoke:api` returned `health: ready`, `deterministic: true`, `terminalState: return`, `verified: false`; and `git diff --check` passed. This is completed local evidence for the isolated slice, not CI or production evidence.
+
+Remote mutation remains human-gated. No push, PR publication, merge, deployment, or main-branch mutation is authorized by this checkpoint. Rollback is deletion of the isolated worktree changes or reset of the unpublished local commit; the base lineage remains preserved.
 
 This record compresses the prior evolution cycle into observable repository state. It distinguishes completed implementation from CI evidence, human review, and remaining production gaps.
 

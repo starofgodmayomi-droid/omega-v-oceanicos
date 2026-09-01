@@ -56,7 +56,9 @@ packages/
 ├── dissensus/          # + DISSENT — reconcile plural verifiers
 ├── lexicon/            # + LEGIBILITY — verdicts in Naijá and English
 ├── sdk/                # + SDK — typed client
-└── cli/                # + CLI — operator commands
+├── cli/                # + CLI — operator commands
+├── coordination/       # + COORDINATION — bounded coordination contracts
+└── runtime/            # + RUNTIME — bounded agent execution loop
 ```
 
 | Package                | Expansion                                      |

@@ -171,6 +171,14 @@ This is the recommended entry point. It demonstrates the full mental model:
 
 The response shows all three MINI steps plus the attestation expansion.
 
+### Operating System Snapshot
+
+```
+GET /os
+```
+
+Returns the finite, read-only `OperatingSystemKernel` snapshot with lifecycle state, bounded admitted tasks, and a monotonic bounded event trace. This is a local control-plane surface; it does not execute commands, prove deployment state, or authorize remote actions.
+
 ### Health Check
 
 ```

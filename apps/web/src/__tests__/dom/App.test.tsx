@@ -50,6 +50,37 @@ describe('dashboard', () => {
     installFetch();
   });
 
+  it('renders the bounded Builder kernel snapshot', async () => {
+    await renderApp();
+
+    expect(await screen.findByRole('heading', { name: 'Builder kernel' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Builder control room status' })).toHaveTextContent(
+      'OMEGA_MAX_RUN'
+    );
+    expect(screen.getByText('ROOT: LOCAL')).toBeInTheDocument();
+    expect(screen.getByText('MODE: READ-ONLY')).toBeInTheDocument();
+    expect(screen.getByText('AUTHORITY: HUMAN-GATED')).toBeInTheDocument();
+    expect(screen.getByText('BOUNDED READ-ONLY SNAPSHOT')).toBeInTheDocument();
+    expect(screen.getByText('tasks=0 · events=2')).toBeInTheDocument();
+    expect(screen.getByText(/schema=os\.snapshot\.v1/)).toBeInTheDocument();
+    expect(screen.getByText(/limits=tasks≤32 · events≤128/)).toBeInTheDocument();
+    expect(screen.getByText(/last sequence=2 · deterministic local trace/)).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /shell=DISABLED · remote=DISABLED · credentials=DISABLED · human gate=REQUIRED/
+      )
+    ).toBeInTheDocument();
+  });
+
+  it('keeps the dashboard usable when the OS snapshot is unavailable', async () => {
+    installFetch({ '/api/os': () => json({ message: 'kernel unavailable' }, { status: 503 }) });
+    await renderApp();
+
+    expect(await screen.findByRole('heading', { name: 'Builder kernel' })).toBeInTheDocument();
+    expect(screen.getAllByText('UNKNOWN').length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: /run verification/i })).toBeInTheDocument();
+  });
+
   it('renders the runtime once state resolves', async () => {
     await renderApp();
 
@@ -250,7 +281,7 @@ describe('dashboard', () => {
     expect(screen.getByText('DISABLED')).toBeInTheDocument();
     expect(screen.getByText('CURRENT')).toBeInTheDocument();
     expect(screen.getByText('HEALTH')).toBeInTheDocument();
-    expect(screen.getAllByText('READY')).toHaveLength(3);
+    expect(screen.getAllByText('READY')).toHaveLength(4);
   });
 
   it('renders persisted revocation evidence in the ledger', async () => {
@@ -466,7 +497,7 @@ describe('dashboard', () => {
     expect(
       await screen.findByText(/No observations have entered the current yet/)
     ).toBeInTheDocument();
-    expect(screen.getAllByText('READY')).toHaveLength(3);
+    expect(screen.getAllByText('READY')).toHaveLength(4);
     expect(screen.queryByText('OBSERVATION')).not.toBeInTheDocument();
   });
 

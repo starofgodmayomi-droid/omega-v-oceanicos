@@ -68,6 +68,9 @@ importers:
       '@omega-v/dissensus':
         specifier: '*'
         version: link:../../packages/dissensus
+      '@omega-v/mini':
+        specifier: '*'
+        version: link:../../packages/mini
       '@omega-v/observer':
         specifier: '*'
         version: link:../../packages/observer

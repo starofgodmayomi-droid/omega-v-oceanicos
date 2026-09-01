@@ -25,6 +25,26 @@ type RuntimeDissensus = {
   timestamp: string;
 };
 
+type OperatingSystemSnapshot = {
+  snapshotVersion: 'os.snapshot.v1';
+  state: 'offline' | 'booting' | 'ready' | 'degraded' | 'stopping' | 'stopped';
+  tasks: Array<{ id: string; kind: string; requestedBy: string }>;
+  events: Array<{
+    sequence: number;
+    type: string;
+    state: string;
+    taskId?: string;
+    reason?: string;
+  }>;
+  limits: { maxTasks: number; maxEvents: number };
+  capabilities: {
+    shellExecution: false;
+    remoteMutation: false;
+    credentialHandling: false;
+    humanAuthorizationRequired: true;
+  };
+};
+
 type SceneSimulation = {
   states: string[];
   terminalState: string;
@@ -292,6 +312,7 @@ export function App(): React.JSX.Element {
   const [commandOpen, setCommandOpen] = useState(false);
   const [sceneSimulation, setSceneSimulation] = useState<SceneSimulation | null>(null);
   const [sceneLoading, setSceneLoading] = useState(false);
+  const [osSnapshot, setOsSnapshot] = useState<OperatingSystemSnapshot | null>(null);
   const claimInputRef = useRef<HTMLTextAreaElement>(null);
   const commandFirstRef = useRef<HTMLButtonElement>(null);
   const commandTriggerRef = useRef<HTMLButtonElement>(null);
@@ -301,6 +322,7 @@ export function App(): React.JSX.Element {
       const [
         healthResponse,
         stateResponse,
+        osResponse,
         eventsResponse,
         runsResponse,
         revocationsResponse,
@@ -310,6 +332,7 @@ export function App(): React.JSX.Element {
       ] = await Promise.all([
         fetch('/api/health'),
         fetch('/api/state'),
+        fetch('/api/os').catch(() => null),
         fetch('/api/audit/events?limit=40'),
         fetch('/api/runs'),
         fetch('/api/attest/revocations'),
@@ -345,6 +368,9 @@ export function App(): React.JSX.Element {
           services: Array<{ status: string }>;
         };
       };
+      const osData = osResponse?.ok
+        ? ((await osResponse.json()) as { data: OperatingSystemSnapshot })
+        : null;
       const eventData = (await eventsResponse.json()) as {
         data: RuntimeEvent[];
         meta?: { bounded?: boolean; total?: number };
@@ -416,6 +442,7 @@ export function App(): React.JSX.Element {
         (service) => service.status === 'ready'
       ).length;
       setRuntimeHealth(health.data);
+      setOsSnapshot(osData?.data ?? null);
       setMode(state.data.mode);
       setTrust(state.data.trust);
       setTrustBasis(state.data.trustBasis);
@@ -810,6 +837,13 @@ export function App(): React.JSX.Element {
             </button>
           </div>
         </header>
+        <div className="control-ribbon" role="region" aria-label="Builder control room status">
+          <span className="control-ribbon-title">OMEGA_MAX_RUN</span>
+          <span>STATE: {osSnapshot?.state?.toUpperCase() ?? 'UNKNOWN'}</span>
+          <span>ROOT: LOCAL</span>
+          <span>MODE: READ-ONLY</span>
+          <span>AUTHORITY: HUMAN-GATED</span>
+        </div>
         {commandOpen && (
           <div className="command-backdrop" onClick={() => setCommandOpen(false)}>
             <div
@@ -1033,6 +1067,38 @@ export function App(): React.JSX.Element {
                   <small>{layer.status.toUpperCase()}</small>
                 </div>
               ))}
+            </div>
+          </section>
+          <section className="intent-panel" aria-labelledby="os-snapshot-title">
+            <div className="section-kicker">
+              OPERATING SYSTEM <span>BOUNDED READ-ONLY SNAPSHOT</span>
+            </div>
+            <h2 id="os-snapshot-title">Builder kernel</h2>
+            <p className="current-caption">
+              A finite local lifecycle and trace. This reports runtime evidence; it does not grant
+              authority or prove external execution.
+            </p>
+            <div className="evidence-chain-card" aria-live="polite">
+              <strong>{osSnapshot?.state?.toUpperCase() ?? 'UNKNOWN'}</strong>
+              <p>
+                tasks={osSnapshot?.tasks.length ?? 0} · events={osSnapshot?.events.length ?? 0}
+              </p>
+              {osSnapshot?.events.length ? (
+                <small>
+                  last sequence={osSnapshot.events[osSnapshot.events.length - 1]?.sequence ?? 0} ·
+                  deterministic local trace
+                </small>
+              ) : (
+                <small>No bounded kernel events are available.</small>
+              )}
+              <small className="capability-line">
+                schema={osSnapshot?.snapshotVersion ?? 'UNKNOWN'} · limits=tasks≤
+                {osSnapshot?.limits?.maxTasks ?? 'UNKNOWN'} · events≤
+                {osSnapshot?.limits?.maxEvents ?? 'UNKNOWN'}
+              </small>
+              <small className="capability-line">
+                shell=DISABLED · remote=DISABLED · credentials=DISABLED · human gate=REQUIRED
+              </small>
             </div>
           </section>
           <section className="intent-panel" aria-labelledby="scene-simulation-title">
