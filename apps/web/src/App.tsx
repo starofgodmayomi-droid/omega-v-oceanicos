@@ -2100,6 +2100,8 @@ export function App(): JSX.Element {
 
   const [ecosystemLoading, setEcosystemLoading] = useState(false);
   const [ecosystemResult, setEcosystemResult] = useState<any | null>(null);
+  const [grandLoading, setGrandLoading] = useState(false);
+  const [grandResult, setGrandResult] = useState<any | null>(null);
 
   const runEcosystemFlow = async () => {
     setEcosystemLoading(true);
@@ -2124,6 +2126,32 @@ export function App(): JSX.Element {
       setError(err instanceof Error ? err.message : 'Failed to execute Ecosystem Flow');
     } finally {
       setEcosystemLoading(false);
+    }
+  };
+
+  const runGrandFlow = async () => {
+    setGrandLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`${API_BASE}/ecosystem/grand-flow`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          intentClaim: claim || 'Grand continuum full-stack state transition from lowest telemetry to max recompilation',
+          actorDid: 'did:omega:agent:universal-operator',
+          ruleDefinition: 'responseTime < 100 && statusCode == 200',
+          metadata: { responseTime: Math.round(15 + Math.random() * 20), statusCode: 200 },
+          swapAmount: 100,
+        }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      setGrandResult(data.data);
+      await fetchState();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to execute Grand Flow');
+    } finally {
+      setGrandLoading(false);
     }
   };
 
@@ -2187,7 +2215,7 @@ export function App(): JSX.Element {
               id="run-loop-btn"
               className={`btn-run${loading ? ' running' : ''}`}
               onClick={runLoop}
-              disabled={loading || swarmLoading || ecosystemLoading || !apiOnline || !claim.trim()}
+              disabled={loading || swarmLoading || ecosystemLoading || grandLoading || !apiOnline || !claim.trim()}
             >
               {loading ? '⟳  Executing Loop…' : '▶  Run Single Verification'}
             </button>
@@ -2197,7 +2225,7 @@ export function App(): JSX.Element {
               className={`btn-run${swarmLoading ? ' running' : ''}`}
               style={{ background: 'linear-gradient(135deg, var(--accent-secondary), #805ad5)' }}
               onClick={runSwarm}
-              disabled={loading || swarmLoading || ecosystemLoading || !apiOnline || !claim.trim()}
+              disabled={loading || swarmLoading || ecosystemLoading || grandLoading || !apiOnline || !claim.trim()}
             >
               {swarmLoading ? '⚡ Executing 5-Agent Swarm…' : '🐝 Run Formless Swarm (5-Agent)'}
             </button>
@@ -2207,11 +2235,45 @@ export function App(): JSX.Element {
               className={`btn-run${ecosystemLoading ? ' running' : ''}`}
               style={{ background: 'linear-gradient(135deg, #319795, #2b6cb0)' }}
               onClick={runEcosystemFlow}
-              disabled={loading || swarmLoading || ecosystemLoading || !apiOnline || !claim.trim()}
+              disabled={loading || swarmLoading || ecosystemLoading || grandLoading || !apiOnline || !claim.trim()}
             >
               {ecosystemLoading ? '🌊 Executing 8-Stage Pipeline…' : '🌊 Full-Stack Ecosystem Flow'}
             </button>
+
+            <button
+              id="run-grand-flow-btn"
+              className={`btn-run${grandLoading ? ' running' : ''}`}
+              style={{ background: 'linear-gradient(135deg, #d69e2e, #dd6b20, #e53e3e)' }}
+              onClick={runGrandFlow}
+              disabled={loading || swarmLoading || ecosystemLoading || grandLoading || !apiOnline || !claim.trim()}
+            >
+              {grandLoading ? '🌌 Executing Grand Continuum…' : '🌌 Grand Continuum Flow (Lowest → Max)'}
+            </button>
           </div>
+
+          {grandResult && (
+            <div
+              style={{
+                fontSize: '0.72rem',
+                color: 'var(--text-primary)',
+                padding: '12px 14px',
+                background: 'rgba(221,107,32,0.09)',
+                border: '1px solid rgba(221,107,32,0.3)',
+                borderRadius: 8,
+                marginTop: 6,
+                fontFamily: 'JetBrains Mono, monospace',
+              }}
+            >
+              <div style={{ fontWeight: 700, color: '#f6ad55', marginBottom: 4 }}>
+                🌌 Grand Flow: {grandResult.canonicalState?.stateId}
+              </div>
+              <div>DA Blob: {grandResult.executionForm?.daBlobId?.slice(0, 16)}… · EVM Gas: {grandResult.executionForm?.evmGasUsed}</div>
+              <div>Swap Out: {grandResult.executionForm?.swapReceipt?.amountOut?.toFixed(2)} OMEGA · Rep: {grandResult.canonicalState?.newReputationScore}</div>
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.65rem', marginTop: 3 }}>
+                Vault Epoch {grandResult.maxForm?.vaultEpoch} · Nodes: {grandResult.maxForm?.provenanceNodesCount} · Edges: {grandResult.maxForm?.provenanceEdgesCount} · Drift: {grandResult.maxForm?.driftDetected ? 'DETECTED' : 'CLEAN'}
+              </div>
+            </div>
+          )}
 
           {ecosystemResult && (
             <div

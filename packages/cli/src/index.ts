@@ -89,6 +89,22 @@ export class OceanicosCLI {
         };
       }
 
+      case 'grand-flow': {
+        const claim = args[1] || 'CLI Grand Continuum Full-Stack Execution Flow';
+        const result = await this.client.runGrandFlow({
+          intentClaim: claim,
+          actorDid: 'did:omega:agent:cli-universal-operator',
+          ruleDefinition: 'responseTime < 100 && statusCode == 200',
+          metadata: { responseTime: 20, statusCode: 200 },
+          swapAmount: 100,
+        });
+        return {
+          success: result.intermediateForm.verificationPassed,
+          message: `[Ω∞v CLI] Grand Continuum Flow: ${result.intermediateForm.verificationPassed ? 'PASSED' : 'FAILED'} (State: ${result.canonicalState.stateId}, Vault Epoch: ${result.maxForm.vaultEpoch})`,
+          output: result,
+        };
+      }
+
       case 'metrics': {
         const metrics = this.client.getMetrics();
         return {
@@ -636,6 +652,7 @@ export class OceanicosCLI {
 Commands:
   omega-v loop [claim]              Execute complete verification loop
   omega-v ecosystem [claim]         Execute unified 8-stage canonical ecosystem OS flow
+  omega-v grand-flow [claim]        Execute full grand continuum flow (lowest to max form)
   omega-v swarm [claim]             Execute multi-agent Formless Swarm cycle
   omega-v edge [claim]              Capture & flush Merkle edge observation batch
   omega-v analytics                 Compute rule efficacy & pattern analytics

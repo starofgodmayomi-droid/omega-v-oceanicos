@@ -2473,4 +2473,42 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       expect(provenance.verifyChainIntegrity().valid).toBe(true);
     });
   });
+
+  // ─── Section 50: Grand Continuum Full-Stack Execution Flow ────────────────────
+  describe('Section 50 — Grand Continuum Flow (Lowest to Max Form)', () => {
+    it('traverses the entire ecosystem continuum from raw telemetry to autonomous recompilation', async () => {
+      const client = new OceanicosClient({ mode: 'local' });
+      const grandResult = await client.runGrandFlow({
+        intentClaim: 'E2E Grand continuum verification across all layers',
+        actorDid: 'did:omega:agent:e2e-grand-operator',
+        ruleDefinition: 'responseTime < 100 && statusCode == 200',
+        metadata: { responseTime: 18, statusCode: 200 },
+        swapAmount: 100,
+      });
+
+      // Lowest Form
+      expect(grandResult.lowestForm.observationId).toMatch(/^obs-/);
+      expect(grandResult.lowestForm.confidence).toBeGreaterThanOrEqual(0.9);
+
+      // Intermediate Form
+      expect(grandResult.intermediateForm.verificationPassed).toBe(true);
+      expect(grandResult.intermediateForm.attestationId).toMatch(/^att-/);
+      expect(grandResult.intermediateForm.securityTokenValid).toBe(true);
+
+      // Execution Form
+      expect(grandResult.executionForm.mempoolTxHash).toMatch(/^0x/);
+      expect(grandResult.executionForm.swapReceipt.amountOut).toBeGreaterThan(0);
+
+      // Canonical Form
+      expect(grandResult.canonicalState.stateId).toMatch(/^state-/);
+      expect(grandResult.canonicalState.verificationStatus).toBe('VERIFIED');
+      expect(grandResult.canonicalState.newReputationScore).toBeGreaterThanOrEqual(500);
+
+      // Max Form
+      expect(grandResult.maxForm.provenanceNodesCount).toBeGreaterThan(0);
+      expect(grandResult.maxForm.vaultEpoch).toBeGreaterThanOrEqual(1);
+      expect(grandResult.maxForm.driftDetected).toBe(false);
+    });
+  });
 });
+

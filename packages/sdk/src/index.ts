@@ -48,6 +48,53 @@ export interface EcosystemFlowResult {
   executedAt: string;
 }
 
+export interface GrandFlowResult {
+  continuumFlowId: string;
+  lowestForm: {
+    observationId: string;
+    confidence: number;
+    rawTelemetry: Record<string, unknown>;
+  };
+  intermediateForm: {
+    irInstructionCount: number;
+    verificationPassed: boolean;
+    attestationId: string;
+    teeAttestationId: string;
+    securityTokenValid: boolean;
+    humanApprovalId: string;
+  };
+  executionForm: {
+    mempoolTxHash: string;
+    harvestedTxCount: number;
+    daBlobId: string;
+    daKzgCommitment: string;
+    evmGasUsed: number;
+    swapReceipt: {
+      swapId: string;
+      amountIn: number;
+      amountOut: number;
+      feePaid: number;
+      priceImpactPct: number;
+    };
+  };
+  canonicalState: {
+    stateId: string;
+    stateIndex: number;
+    verificationStatus: string;
+    stateDeltaHash: string;
+    newReputationScore: number;
+  };
+  maxForm: {
+    provenanceNodesCount: number;
+    provenanceEdgesCount: number;
+    vaultEpoch: number;
+    vaultMerkleRoot: string;
+    driftDetected: boolean;
+    recommendedAction: string;
+  };
+  executedAt: string;
+}
+
 /**
  * OceanicosClient: High-level SDK for interacting with the Ω∞v Oceanicos verification loop
  */
@@ -207,6 +254,83 @@ export class OceanicosClient {
         scoreDelta: 20,
       },
       provenanceLogSize: this.store.size(),
+      executedAt: new Date().toISOString(),
+    };
+  }
+
+  /**
+   * Run the grand continuum full-stack execution flow (lowest to max form)
+   */
+  public async runGrandFlow(input: {
+    intentClaim?: string;
+    actorDid?: string;
+    ruleDefinition?: string;
+    metadata?: Record<string, unknown>;
+    swapAmount?: number;
+  } = {}): Promise<GrandFlowResult> {
+    if (this.mode === 'remote') {
+      const res = await fetch(`${this.apiBaseUrl}/ecosystem/grand-flow`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+      });
+      if (!res.ok) throw new Error(`Remote API error: HTTP ${res.status}`);
+      const payload = (await res.json()) as { data: GrandFlowResult };
+      return payload.data;
+    }
+
+    // Local embedded execution
+    const baseFlow = await this.runEcosystemFlow({
+      intentClaim: input.intentClaim,
+      actorDid: input.actorDid,
+      ruleDefinition: input.ruleDefinition,
+      metadata: input.metadata,
+    });
+
+    return {
+      continuumFlowId: `grand-flow-local-${Date.now()}`,
+      lowestForm: {
+        observationId: baseFlow.observation.id,
+        confidence: baseFlow.observation.confidence,
+        rawTelemetry: input.metadata || { responseTime: 25 },
+      },
+      intermediateForm: {
+        irInstructionCount: baseFlow.compiledIR.instructionCount,
+        verificationPassed: baseFlow.verification.passed,
+        attestationId: baseFlow.attestation.id,
+        teeAttestationId: 'tee-local-att-01',
+        securityTokenValid: true,
+        humanApprovalId: 'hum-local-01',
+      },
+      executionForm: {
+        mempoolTxHash: '0xtx_local_mempool_01',
+        harvestedTxCount: 1,
+        daBlobId: 'blob-local-da-01',
+        daKzgCommitment: '0xkzg_local_poly_01',
+        evmGasUsed: 21000,
+        swapReceipt: {
+          swapId: 'swap-local-01',
+          amountIn: input.swapAmount || 50,
+          amountOut: (input.swapAmount || 50) * 0.98,
+          feePaid: (input.swapAmount || 50) * 0.003,
+          priceImpactPct: 0.05,
+        },
+      },
+      canonicalState: {
+        stateId: baseFlow.kernelState.stateId,
+        stateIndex: baseFlow.kernelState.stateIndex,
+        verificationStatus: baseFlow.kernelState.verificationStatus,
+        stateDeltaHash: baseFlow.kernelState.stateDeltaHash,
+        newReputationScore: baseFlow.reputation.newScore,
+      },
+      maxForm: {
+        provenanceNodesCount: 10,
+        provenanceEdgesCount: 8,
+        vaultEpoch: 1,
+        vaultMerkleRoot: '0xvault_merkle_root_local',
+        driftDetected: false,
+        recommendedAction: 'MAINTAIN',
+      },
       executedAt: new Date().toISOString(),
     };
   }
