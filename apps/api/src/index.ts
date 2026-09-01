@@ -34,6 +34,7 @@ import { OceanicosPipelineEngine } from '@omega-v/pipeline';
 import { OceanicosRegistryEngine } from '@omega-v/registry';
 import { OceanicosEnclaveEngine } from '@omega-v/enclave';
 import { OceanicosConsensusEngine } from '@omega-v/consensus';
+import { OceanicosMeshEngine } from '@omega-v/mesh';
 import {
   SuccessResponse,
   ErrorResponse,
@@ -97,6 +98,7 @@ const pipelineEngine = new OceanicosPipelineEngine();
 const registryEngine = new OceanicosRegistryEngine();
 const enclaveEngine = new OceanicosEnclaveEngine();
 const consensusEngine = new OceanicosConsensusEngine();
+const meshEngine = new OceanicosMeshEngine();
 
 // Register default rules
 verificationEngine.registerRule({
@@ -2558,6 +2560,156 @@ app.post('/consensus/slash', (req: Request, res: Response) => {
 /** GET /consensus/stats — Consensus metrics */
 app.get('/consensus/stats', (_req: Request, res: Response) => {
   const stats = consensusEngine.getStats();
+  res.json({
+    data: stats,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/**
+ * Section 30 Endpoints: Peer-to-Peer Gossip Protocol & Verifiable Message Propagation
+ * /mesh/peers, /mesh/peers/add, /mesh/peers/ban, /mesh/gossip, /mesh/gossip/verify, /mesh/sync, /mesh/stats
+ */
+
+/** GET /mesh/peers — List connected p2p mesh peers */
+app.get('/mesh/peers', (_req: Request, res: Response) => {
+  const peers = meshEngine.getPeers();
+  res.json({
+    data: peers,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /mesh/peers/add — Add new mesh peer node */
+app.post('/mesh/peers/add', (req: Request, res: Response) => {
+  const { did, endpoint, region } = req.body;
+  if (!did || !endpoint) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'did and endpoint are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  const peer = meshEngine.addPeer({ did, endpoint, region });
+  res.status(201).json({
+    data: peer,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /mesh/peers/ban — Ban rogue mesh peer */
+app.post('/mesh/peers/ban', (req: Request, res: Response) => {
+  const { did, reason } = req.body;
+  if (!did) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'did is required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const peer = meshEngine.banPeer(did, reason || 'Byzantine misbehavior');
+    res.json({
+      data: peer,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(404).json({
+      code: 'PEER_NOT_FOUND',
+      message: err instanceof Error ? err.message : 'Peer not found',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** POST /mesh/gossip — Broadcast gossip message across network */
+app.post('/mesh/gossip', (req: Request, res: Response) => {
+  const { senderDid, type, payload, ttl } = req.body;
+  if (!senderDid || !type || !payload) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'senderDid, type, and payload are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const receipt = meshEngine.gossip({ senderDid, type, payload, ttl });
+    res.status(201).json({
+      data: receipt,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'GOSSIP_FAILED',
+      message: err instanceof Error ? err.message : 'Gossip failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** POST /mesh/gossip/verify — Cryptographically verify signed gossip message */
+app.post('/mesh/gossip/verify', (req: Request, res: Response) => {
+  const { messageId } = req.body;
+  if (!messageId) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'messageId is required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const verification = meshEngine.verifyGossipSignature(messageId);
+    res.json({
+      data: verification,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(404).json({
+      code: 'MESSAGE_NOT_FOUND',
+      message: err instanceof Error ? err.message : 'Message not found',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** POST /mesh/sync — Trigger Merkle block sync with peer */
+app.post('/mesh/sync', (req: Request, res: Response) => {
+  const { peerDid, merkleRoot, blocksRequested } = req.body;
+  if (!peerDid || !merkleRoot || typeof blocksRequested !== 'number') {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'peerDid, merkleRoot, and numerical blocksRequested are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const syncState = meshEngine.requestSync({ peerDid, merkleRoot, blocksRequested });
+    res.json({
+      data: syncState,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'SYNC_FAILED',
+      message: err instanceof Error ? err.message : 'Sync request failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** GET /mesh/stats — Mesh network statistics */
+app.get('/mesh/stats', (_req: Request, res: Response) => {
+  const stats = meshEngine.getStats();
   res.json({
     data: stats,
     timestamp: new Date().toISOString(),

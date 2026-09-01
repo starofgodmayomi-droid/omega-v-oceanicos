@@ -564,6 +564,26 @@ interface ConsensusStatsData {
   lastBlockHash: string;
 }
 
+interface P2PMeshPeerItem {
+  peerId: string;
+  did: string;
+  endpoint: string;
+  status: string;
+  latencyMs: number;
+  messagesReceived: number;
+  messagesSent: number;
+  region: string;
+}
+
+interface P2PMeshStatsData {
+  totalPeers: number;
+  connectedPeers: number;
+  totalMessagesGossiped: number;
+  totalSyncs: number;
+  avgLatencyMs: number;
+  networkPartitions: number;
+}
+
 interface RuleEfficacy {
   ruleName: string;
   totalExecutions: number;
@@ -868,6 +888,12 @@ export function App(): JSX.Element {
   const [candidateStateRoot, setCandidateStateRoot] = useState('0x6000_STATE_ROOT_LEAF');
   const [proposingBlock, setProposingBlock] = useState(false);
   const [consensusResult, setConsensusResult] = useState<string | null>(null);
+  const [p2pMeshPeers, setP2PMeshPeers] = useState<P2PMeshPeerItem[]>([]);
+  const [p2pMeshStats, setP2PMeshStats] = useState<P2PMeshStatsData | null>(null);
+  const [gossipSenderDid, setGossipSenderDid] = useState('did:omega:peer:alpha-seed');
+  const [gossipType, setGossipType] = useState('BLOCK_ANNOUNCE');
+  const [gossipingMessage, setGossipingMessage] = useState(false);
+  const [gossipResult, setGossipResult] = useState<string | null>(null);
 
   // ── Poll log + metrics ──
   const fetchState = useCallback(async () => {
@@ -916,6 +942,8 @@ export function App(): JSX.Element {
         conChainRes,
         conValRes,
         conStatsRes,
+        meshPeersRes,
+        meshStatsRes,
       ] = await Promise.all([
         fetch(`${API_BASE}/log?limit=30`),
         fetch(`${API_BASE}/metrics`),
@@ -960,6 +988,8 @@ export function App(): JSX.Element {
         fetch(`${API_BASE}/consensus/chain`),
         fetch(`${API_BASE}/consensus/validators`),
         fetch(`${API_BASE}/consensus/stats`),
+        fetch(`${API_BASE}/mesh/peers`),
+        fetch(`${API_BASE}/mesh/stats`),
       ]);
       if (!logRes.ok || !metricsRes.ok) throw new Error('API error');
 
@@ -1088,6 +1118,12 @@ export function App(): JSX.Element {
       }
       if (conStatsRes && conStatsRes.ok) {
         setConsensusStats((await conStatsRes.json()).data as ConsensusStatsData);
+      }
+      if (meshPeersRes && meshPeersRes.ok) {
+        setP2PMeshPeers((await meshPeersRes.json()).data as P2PMeshPeerItem[]);
+      }
+      if (meshStatsRes && meshStatsRes.ok) {
+        setP2PMeshStats((await meshStatsRes.json()).data as P2PMeshStatsData);
       }
     } catch {
       setApiOnline(false);
@@ -6317,6 +6353,146 @@ export function App(): JSX.Element {
                     <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>
                       Proposer: {blk.proposerDid.split(':').pop()}
                       {blk.quorumCertificate && <span style={{ color: 'var(--accent-green)', marginLeft: 8 }}>✓ QC</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* ═══ Section 30: P2P Gossip Mesh ═══ */}
+          <div className="card" style={{ gridColumn: '1 / -1' }}>
+            <div className="section-header" style={{ marginBottom: 18 }}>
+              <div className="section-title">🌐 P2P Mesh Gossip Network</div>
+              <span className="section-badge">
+                {p2pMeshStats ? `${p2pMeshStats.connectedPeers}/${p2pMeshStats.totalPeers} peers · ${p2pMeshStats.avgLatencyMs}ms latency` : 'Loading…'}
+              </span>
+            </div>
+
+            {/* Mesh Stats Row */}
+            {p2pMeshStats && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 10, marginBottom: 16 }}>
+                <div style={{ background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', border: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Connected Peers</div>
+                  <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--accent-teal)' }}>{p2pMeshStats.connectedPeers} / {p2pMeshStats.totalPeers}</div>
+                </div>
+                <div style={{ background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', border: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Messages Gossiped</div>
+                  <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--accent-purple)' }}>{p2pMeshStats.totalMessagesGossiped}</div>
+                </div>
+                <div style={{ background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', border: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Avg Latency</div>
+                  <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--accent-green)' }}>{p2pMeshStats.avgLatencyMs} ms</div>
+                </div>
+                <div style={{ background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', border: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Merkle Syncs</div>
+                  <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--accent-blue)' }}>{p2pMeshStats.totalSyncs}</div>
+                </div>
+                <div style={{ background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', border: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Partitions</div>
+                  <div style={{ fontSize: '1.3rem', fontWeight: 700, color: p2pMeshStats.networkPartitions > 0 ? 'var(--accent-red)' : 'var(--accent-green)' }}>{p2pMeshStats.networkPartitions}</div>
+                </div>
+              </div>
+            )}
+
+            {/* Gossip Broadcast Form */}
+            <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+              <div style={{ flex: 1, minWidth: 200 }}>
+                <label style={{ display: 'block', fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Origin Peer</label>
+                <select
+                  value={gossipSenderDid}
+                  onChange={(e) => setGossipSenderDid(e.target.value)}
+                  style={{ width: '100%', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '8px 10px', color: 'var(--text-primary)', fontFamily: 'JetBrains Mono, monospace', fontSize: '0.75rem' }}
+                >
+                  {p2pMeshPeers.map((p) => (
+                    <option key={p.did} value={p.did}>{p.did} ({p.region})</option>
+                  ))}
+                </select>
+              </div>
+              <div style={{ flex: 1, minWidth: 160 }}>
+                <label style={{ display: 'block', fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Gossip Message Type</label>
+                <select
+                  value={gossipType}
+                  onChange={(e) => setGossipType(e.target.value)}
+                  style={{ width: '100%', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '8px 10px', color: 'var(--text-primary)', fontFamily: 'JetBrains Mono, monospace', fontSize: '0.75rem' }}
+                >
+                  <option value="BLOCK_ANNOUNCE">BLOCK_ANNOUNCE</option>
+                  <option value="TX_PROPAGATE">TX_PROPAGATE</option>
+                  <option value="ATTESTATION_SHARE">ATTESTATION_SHARE</option>
+                  <option value="PEER_DISCOVERY">PEER_DISCOVERY</option>
+                  <option value="HEARTBEAT">HEARTBEAT</option>
+                </select>
+              </div>
+              <button
+                className="cta-button"
+                disabled={gossipingMessage}
+                onClick={async () => {
+                  setGossipingMessage(true);
+                  setGossipResult(null);
+                  try {
+                    const res = await fetch(`${API_BASE}/mesh/gossip`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        senderDid: gossipSenderDid,
+                        type: gossipType,
+                        payload: { timestamp: new Date().toISOString(), network: 'omega-v-mainnet' },
+                        ttl: 8,
+                      }),
+                    });
+                    const data = await res.json();
+                    if (!res.ok) { setGossipResult(`❌ ${data.message}`); return; }
+                    setGossipResult(`✅ Propagated ${gossipType} to ${data.data.reachedPeers}/${data.data.totalPeers} peers in ${data.data.avgHops} hops (ratio: ${(data.data.propagationRatio * 100).toFixed(0)}%)`);
+                    fetchState();
+                  } catch (err) {
+                    setGossipResult(`❌ ${err instanceof Error ? err.message : 'Gossip failed'}`);
+                  } finally {
+                    setGossipingMessage(false);
+                  }
+                }}
+                style={{ minWidth: 150 }}
+              >
+                {gossipingMessage ? '⏳ Gossiping…' : '📡 Broadcast Gossip'}
+              </button>
+            </div>
+
+            {gossipResult && (
+              <div style={{ fontSize: '0.78rem', padding: '6px 10px', borderRadius: 'var(--radius-sm)', background: gossipResult.startsWith('✅') ? 'rgba(72,187,120,0.1)' : 'rgba(229,62,62,0.1)', color: gossipResult.startsWith('✅') ? 'var(--accent-green)' : 'var(--accent-red)', marginBottom: 14, fontFamily: 'JetBrains Mono, monospace' }}>
+                {gossipResult}
+              </div>
+            )}
+
+            {/* Mesh Topology Grid */}
+            <div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Mesh Topology & Nodes ({p2pMeshPeers.length})
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 10 }}>
+                {p2pMeshPeers.map((peer) => (
+                  <div
+                    key={peer.peerId}
+                    style={{
+                      background: 'var(--bg-surface)',
+                      border: `1px solid ${peer.status === 'BANNED' ? 'var(--accent-red)' : 'var(--border)'}`,
+                      borderRadius: 'var(--radius-sm)',
+                      padding: 12,
+                      opacity: peer.status === 'BANNED' ? 0.6 : 1,
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <span style={{ fontWeight: 600, fontSize: '0.78rem', color: 'var(--text-primary)' }}>
+                        {peer.did.split(':').pop()}
+                      </span>
+                      <span style={{ fontSize: '0.65rem', padding: '1px 6px', borderRadius: 3, background: peer.status === 'CONNECTED' ? 'rgba(72,187,120,0.15)' : 'rgba(229,62,62,0.15)', color: peer.status === 'CONNECTED' ? 'var(--accent-green)' : 'var(--accent-red)', fontWeight: 700 }}>
+                        {peer.status}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontFamily: 'JetBrains Mono, monospace', marginBottom: 2 }}>
+                      {peer.endpoint}
+                    </div>
+                    <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', display: 'flex', justifyContent: 'space-between' }}>
+                      <span>🌍 {peer.region}</span>
+                      <span>⚡ {peer.latencyMs}ms · 📥 {peer.messagesReceived} · 📤 {peer.messagesSent}</span>
                     </div>
                   </div>
                 ))}

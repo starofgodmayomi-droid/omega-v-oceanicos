@@ -31,6 +31,7 @@ import { OceanicosPipelineEngine } from '@omega-v/pipeline';
 import { OceanicosRegistryEngine } from '@omega-v/registry';
 import { OceanicosEnclaveEngine } from '@omega-v/enclave';
 import { OceanicosConsensusEngine } from '@omega-v/consensus';
+import { OceanicosMeshEngine } from '@omega-v/mesh';
 import app from '../../apps/api/src/index';
 
 describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => {
@@ -1258,7 +1259,62 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       expect(stats.totalSlashedValidators).toBe(1);
     });
   });
+
+  describe('30. Peer-to-Peer Gossip Protocol & Verifiable Message Propagation E2E', () => {
+    it('should manage peers across regions, propagate signed epidemic gossip, verify message integrity, and sync state', () => {
+      const meshEngine = new OceanicosMeshEngine('e2e-mesh-gossip-key');
+
+      // 1. Initial network check
+      const peers = meshEngine.getPeers();
+      expect(peers.length).toBe(3);
+      expect(peers.every((p) => p.status === 'CONNECTED')).toBe(true);
+
+      // 2. Add dynamic peer
+      const edgePeer = meshEngine.addPeer({
+        did: 'did:omega:peer:tokyo-edge-01',
+        endpoint: 'wss://tokyo.mesh.omega-v.io:9944',
+        region: 'ap-northeast-1',
+      });
+      expect(edgePeer.did).toBe('did:omega:peer:tokyo-edge-01');
+      expect(meshEngine.getPeers().length).toBe(4);
+
+      // 3. Gossip verifiable message
+      const receipt = meshEngine.gossip({
+        senderDid: 'did:omega:peer:alpha-seed',
+        type: 'ATTESTATION_SHARE',
+        payload: { attestationId: 'att-e2e-001', claimHash: '0x999aaa888' },
+        ttl: 6,
+      });
+
+      expect(receipt.messageId).toMatch(/^msg-/);
+      expect(receipt.reachedPeers).toBeGreaterThanOrEqual(1);
+
+      // 4. Verify cryptographic signature on gossiped message
+      const verification = meshEngine.verifyGossipSignature(receipt.messageId);
+      expect(verification.valid).toBe(true);
+
+      // 5. Trigger Merkle sync
+      const sync = meshEngine.requestSync({
+        peerDid: 'did:omega:peer:beta-seed',
+        merkleRoot: '0xroot_e2e_state_hash',
+        blocksRequested: 50,
+      });
+      expect(sync.status).toBe('COMPLETE');
+      expect(sync.blocksSynced).toBe(50);
+
+      // 6. Ban misbehaving peer
+      const banned = meshEngine.banPeer('did:omega:peer:tokyo-edge-01', 'Signature mismatch');
+      expect(banned.status).toBe('BANNED');
+
+      // 7. Check mesh aggregate stats
+      const stats = meshEngine.getStats();
+      expect(stats.totalPeers).toBe(4);
+      expect(stats.connectedPeers).toBe(3);
+      expect(stats.totalMessagesGossiped).toBe(1);
+    });
+  });
 });
+
 
 
 
