@@ -2098,6 +2098,35 @@ export function App(): JSX.Element {
     }
   };
 
+  const [ecosystemLoading, setEcosystemLoading] = useState(false);
+  const [ecosystemResult, setEcosystemResult] = useState<any | null>(null);
+
+  const runEcosystemFlow = async () => {
+    setEcosystemLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`${API_BASE}/ecosystem/flow`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          intentClaim: claim || 'Autonomous verified state transition across ecosystem OS',
+          actorDid: 'did:omega:agent:lead-orchestrator',
+          ruleDefinition: 'responseTime < 100',
+          metadata: { responseTime: Math.round(18 + Math.random() * 30), statusCode: 200 },
+          confidence: 0.98,
+        }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      setEcosystemResult(data.data);
+      await fetchState();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to execute Ecosystem Flow');
+    } finally {
+      setEcosystemLoading(false);
+    }
+  };
+
   const successPct = metrics ? (metrics.successRate * 100).toFixed(0) : '—';
   const confPct = metrics ? (metrics.systemConfidence * 100).toFixed(0) : '—';
 
@@ -2158,7 +2187,7 @@ export function App(): JSX.Element {
               id="run-loop-btn"
               className={`btn-run${loading ? ' running' : ''}`}
               onClick={runLoop}
-              disabled={loading || swarmLoading || !apiOnline || !claim.trim()}
+              disabled={loading || swarmLoading || ecosystemLoading || !apiOnline || !claim.trim()}
             >
               {loading ? '⟳  Executing Loop…' : '▶  Run Single Verification'}
             </button>
@@ -2168,11 +2197,44 @@ export function App(): JSX.Element {
               className={`btn-run${swarmLoading ? ' running' : ''}`}
               style={{ background: 'linear-gradient(135deg, var(--accent-secondary), #805ad5)' }}
               onClick={runSwarm}
-              disabled={loading || swarmLoading || !apiOnline || !claim.trim()}
+              disabled={loading || swarmLoading || ecosystemLoading || !apiOnline || !claim.trim()}
             >
               {swarmLoading ? '⚡ Executing 5-Agent Swarm…' : '🐝 Run Formless Swarm (5-Agent)'}
             </button>
+
+            <button
+              id="run-ecosystem-flow-btn"
+              className={`btn-run${ecosystemLoading ? ' running' : ''}`}
+              style={{ background: 'linear-gradient(135deg, #319795, #2b6cb0)' }}
+              onClick={runEcosystemFlow}
+              disabled={loading || swarmLoading || ecosystemLoading || !apiOnline || !claim.trim()}
+            >
+              {ecosystemLoading ? '🌊 Executing 8-Stage Pipeline…' : '🌊 Full-Stack Ecosystem Flow'}
+            </button>
           </div>
+
+          {ecosystemResult && (
+            <div
+              style={{
+                fontSize: '0.72rem',
+                color: 'var(--text-primary)',
+                padding: '10px 12px',
+                background: 'rgba(49,151,149,0.08)',
+                border: '1px solid rgba(49,151,149,0.25)',
+                borderRadius: 8,
+                marginTop: 6,
+                fontFamily: 'JetBrains Mono, monospace',
+              }}
+            >
+              <div style={{ fontWeight: 700, color: 'var(--accent-teal)', marginBottom: 4 }}>
+                ✓ Ecosystem State {ecosystemResult.kernelState?.stateId}
+              </div>
+              <div>IR: {ecosystemResult.compiledIR?.instructionCount} ops · Status: {ecosystemResult.kernelState?.verificationStatus}</div>
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.65rem', marginTop: 2 }}>
+                Hash: {ecosystemResult.kernelState?.stateDeltaHash?.slice(0, 16)}… · Rep: {ecosystemResult.reputation?.newScore}
+              </div>
+            </div>
+          )}
 
           {error && (
             <div

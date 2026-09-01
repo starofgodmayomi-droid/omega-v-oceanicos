@@ -2363,4 +2363,114 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       expect(vj.contextId).toBe('ctx-ethics-review-2026');
     });
   });
+
+  // ─── Section 49: Unified 8-Stage Canonical Ecosystem OS Execution Flow ───────
+  describe('Section 49 — Unified 8-Stage Canonical Ecosystem OS Execution Flow', () => {
+    it('executes full pipeline: compile → observe → verify → attest → kernel_state → reputation → provenance', () => {
+      const compiler = new RuleCompiler();
+      const obs = new Observer();
+      const verifier = new VerificationEngine();
+      const att = new AttestationService();
+      const kernel = new OceanicosKernel();
+      const rep = new OceanicosReputationEngine();
+      const provenance = new ProvenanceStore();
+
+      // 1. Compile DSL rule into IR Program
+      const ir = compiler.compile('latency-safety-rule', 'responseTime < 100 && statusCode == 200');
+      expect(ir.name).toBe('latency-safety-rule');
+      expect(ir.instructions.length).toBeGreaterThanOrEqual(4);
+
+      // 2. Deterministic Observation
+      const observation = obs.observe({
+        claim: 'Autonomous high-frequency trade verification',
+        category: 'health-check',
+        source: { system: 'ecosystem-flow-test', version: '0.1.0', environment: 'test' },
+        observedBy: 'did:omega:agent:lead-orchestrator',
+        metadata: { responseTime: 25, statusCode: 200 },
+        confidence: 0.99,
+        confidenceReason: 'Simulated multi-sensor hardware telemetry',
+      });
+      provenance.recordObservation(observation);
+      expect(observation.id).toMatch(/^obs-/);
+      expect(observation.status).toBe('normalized');
+
+      // 3. Invariant Verification
+      const verification = verifier.verify(observation);
+      provenance.recordVerification(verification);
+      expect(verification.summary.passed).toBe(true);
+
+      // 4. Cryptographic Attestation
+      const attestation = att.attest(verification);
+      provenance.recordAttestation(attestation);
+      expect(attestation.signature).toMatch(/^0x/);
+
+      // 5. Canonical Kernel State Transition
+      const kernelState = kernel.transition({
+        intent: {
+          claim: observation.claim.statement,
+          actors: ['did:omega:agent:lead-orchestrator'],
+          inputs: observation.metadata,
+          expectedOutputs: { passed: true },
+          constraints: ['LATENCY_BOUND'],
+          permissions: ['CAN_OBSERVE', 'CAN_VERIFY'],
+          dependencies: [],
+          maxRiskScore: 0.05,
+          economicTarget: { targetValue: 1000, resourceBudget: 50 },
+        },
+        observation: {
+          source: 'ecosystem-flow-test',
+          observedAt: observation.timestamp,
+          rawTelemetry: observation.metadata,
+          epistemicType: 'FACT',
+          confidence: observation.confidence,
+        },
+        evidenceItems: [
+          {
+            claim: observation.claim.statement,
+            source: 'verification-engine',
+            observationId: observation.id,
+            commandOrTest: 'verifier.verify',
+            status: 'PASSED',
+            confidence: 0.99,
+          },
+        ],
+        actionPlan: {
+          targetService: 'canonical-kernel-ledger',
+          payload: { attestation: attestation.signature },
+          isDestructive: false,
+          isFinancial: false,
+          gasLimit: 50000,
+          reversibility: 'REVERSIBLE',
+        },
+        autoAuthorizeIfNonDestructive: true,
+      });
+
+      expect(kernelState.stateId).toMatch(/^state-/);
+      expect(kernelState.verificationStatus).toBe('VERIFIED');
+      expect(kernelState.stateDeltaHash).toMatch(/^0x/);
+
+      // 6. Reputation Ledger Update
+      rep.registerAgent({
+        agentDid: 'did:omega:agent:lead-orchestrator',
+        moniker: 'LeadOrchestrator',
+        initialScore: 500,
+      });
+      const repReceipt = rep.submitFeedback({
+        fromDid: 'did:omega:kernel:core',
+        targetDid: 'did:omega:agent:lead-orchestrator',
+        scoreDelta: 25,
+        reason: 'Optimal verified loop performance',
+      });
+      expect(repReceipt.newScore).toBe(525);
+      expect(repReceipt.feedbackProof).toMatch(/^0x/);
+
+      // 7. Provenance Integrity
+      expect(provenance.size()).toBe(3);
+      const events = provenance.getEntries();
+      expect(events[0].type).toBe('OBSERVATION');
+      expect(events[1].type).toBe('VERIFICATION');
+      expect(events[2].type).toBe('ATTESTATION');
+      expect(provenance.verifyChainIntegrity().valid).toBe(true);
+    });
+  });
 });

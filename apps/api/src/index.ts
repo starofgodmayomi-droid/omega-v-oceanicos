@@ -4,6 +4,7 @@ import { Observer } from '@omega-v/observer';
 import { VerificationEngine } from '@omega-v/verification';
 import { AttestationService } from '@omega-v/attestation';
 import { ProvenanceStore } from '@omega-v/store';
+import { RuleCompiler } from '@omega-v/compiler';
 import { OceanicosClient } from '@omega-v/sdk';
 import { FormlessSwarm } from '@omega-v/agents';
 import { MoodEvaluator } from '@omega-v/mood';
@@ -136,6 +137,7 @@ const ammEngine = new OceanicosAMMEngine();
 const reputationEngine = new OceanicosReputationEngine();
 const humanEngine = new HumanEngine();
 const humanAuditLog: ReturnType<typeof humanEngine.recordInput>[] = [];
+const ruleCompiler = new RuleCompiler();
 
 // Register default rules
 verificationEngine.registerRule({
@@ -299,6 +301,150 @@ app.post('/complete-loop', (req: Request, res: Response) => {
     res.status(400).json({
       code: 'LOOP_FAILED',
       message: error instanceof Error ? error.message : 'Verification loop failed',
+      timestamp: new Date().toISOString(),
+    } as ErrorResponse);
+  }
+});
+
+/**
+ * POST /ecosystem/flow — Unified 8-Stage Canonical Ecosystem OS Execution Flow
+ *
+ * INTENT → COMPILE → OBSERVE → VERIFY → ATTEST → KERNEL_STATE → REPUTATION → PROVENANCE
+ */
+app.post('/ecosystem/flow', (req: Request, res: Response) => {
+  try {
+    const {
+      intentClaim = 'Autonomous verified state transition across ecosystem OS',
+      actorDid = 'did:omega:agent:lead-orchestrator',
+      ruleDefinition = 'responseTime < 100',
+      category = 'ecosystem-flow',
+      metadata = { responseTime: 28, statusCode: 200 },
+      confidence = 0.98,
+    } = req.body;
+
+    // 1. Compile DSL Rule into Oceanicum IR Program
+    const compiledIR = ruleCompiler.compile('ecosystem-intent-rule', ruleDefinition);
+
+    // 2. Deterministic Observation
+    const observation = observer.observe({
+      claim: intentClaim,
+      category,
+      source: { system: 'ecosystem-flow-engine', version: '0.1.0', environment: 'production' },
+      observedBy: actorDid,
+      metadata,
+      confidence,
+      confidenceReason: 'Autonomous multi-stage ecosystem verification pipeline',
+    });
+    store.recordObservation(observation);
+
+    // 3. Formal Invariant Verification
+    const verification = verificationEngine.verify(observation);
+    store.recordVerification(verification);
+
+    // 4. Cryptographic HMAC/ECDSA Attestation
+    const attestation = attestationService.attest(verification);
+    store.recordAttestation(attestation);
+
+    // 5. Canonical Kernel State Transition (S_n -> S_{n+1})
+    const kernelState = kernelEngine.transition({
+      intent: {
+        claim: intentClaim,
+        actors: [actorDid],
+        inputs: metadata,
+        expectedOutputs: { verified: verification.summary.passed },
+        constraints: ['LATENCY_BOUND', 'CONFIDENCE_THRESHOLD'],
+        permissions: ['CAN_OBSERVE', 'CAN_VERIFY', 'CAN_ACT'],
+        dependencies: [],
+        maxRiskScore: 0.1,
+        economicTarget: { targetValue: 100, resourceBudget: 500 },
+      },
+      observation: {
+        source: 'ecosystem-flow-engine',
+        observedAt: observation.timestamp,
+        rawTelemetry: metadata,
+        epistemicType: 'FACT',
+        confidence,
+      },
+      evidenceItems: [
+        {
+          claim: intentClaim,
+          source: 'verification-engine',
+          observationId: observation.id,
+          commandOrTest: 'ruleCompiler.compile && verificationEngine.verify',
+          status: verification.summary.passed ? 'PASSED' : 'FAILED',
+          confidence,
+        },
+      ],
+      actionPlan: {
+        targetService: 'canonical-kernel-ledger',
+        payload: { attestationSignature: attestation.signature, metadata },
+        isDestructive: false,
+        isFinancial: false,
+        gasLimit: 100000,
+        reversibility: 'REVERSIBLE',
+      },
+      autoAuthorizeIfNonDestructive: true,
+    });
+
+    // 6. Reputation & Feedback Update (weighted by outcome)
+    let agentRep = reputationEngine.getAgent(actorDid);
+    if (!agentRep) {
+      agentRep = reputationEngine.registerAgent({
+        agentDid: actorDid,
+        moniker: actorDid.split(':').pop() || 'Agent',
+        initialScore: 500,
+      });
+    }
+    const feedbackReceipt = reputationEngine.submitFeedback({
+      fromDid: 'did:omega:kernel:canonical-state',
+      targetDid: actorDid,
+      scoreDelta: verification.summary.passed ? 20 : -30,
+      reason: `Ecosystem execution result: ${verification.summary.passed ? 'PASSED' : 'FAILED'}`,
+    });
+
+    // 7. Assemble Unified Result Package
+    const flowResult = {
+      flowId: `flow-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      compiledIR: {
+        name: compiledIR.name,
+        instructionCount: compiledIR.instructions.length,
+      },
+      observation: {
+        id: observation.id,
+        status: observation.status,
+        confidence: observation.confidence,
+      },
+      verification: {
+        passed: verification.summary.passed,
+        rulesEvaluated: verification.summary.rulesApplied,
+      },
+      attestation: {
+        id: attestation.id,
+        signature: attestation.signature,
+      },
+      kernelState: {
+        stateId: kernelState.stateId,
+        stateIndex: kernelState.stateIndex,
+        verificationStatus: kernelState.verificationStatus,
+        stateDeltaHash: kernelState.stateDeltaHash,
+      },
+      reputation: {
+        agentDid: actorDid,
+        newScore: feedbackReceipt.newScore,
+        scoreDelta: feedbackReceipt.scoreDelta,
+      },
+      provenanceLogSize: store.size(),
+      executedAt: new Date().toISOString(),
+    };
+
+    res.status(201).json({
+      data: flowResult,
+      timestamp: new Date().toISOString(),
+    } satisfies SuccessResponse<typeof flowResult>);
+  } catch (error) {
+    res.status(400).json({
+      code: 'ECOSYSTEM_FLOW_FAILED',
+      message: error instanceof Error ? error.message : 'Ecosystem flow failed',
       timestamp: new Date().toISOString(),
     } as ErrorResponse);
   }
