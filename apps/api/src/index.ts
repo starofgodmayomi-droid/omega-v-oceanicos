@@ -33,6 +33,7 @@ import { OceanicosWorkerPool } from '@omega-v/worker';
 import { OceanicosPipelineEngine } from '@omega-v/pipeline';
 import { OceanicosRegistryEngine } from '@omega-v/registry';
 import { OceanicosEnclaveEngine } from '@omega-v/enclave';
+import { OceanicosConsensusEngine } from '@omega-v/consensus';
 import {
   SuccessResponse,
   ErrorResponse,
@@ -95,6 +96,7 @@ const workerPool = new OceanicosWorkerPool();
 const pipelineEngine = new OceanicosPipelineEngine();
 const registryEngine = new OceanicosRegistryEngine();
 const enclaveEngine = new OceanicosEnclaveEngine();
+const consensusEngine = new OceanicosConsensusEngine();
 
 // Register default rules
 verificationEngine.registerRule({
@@ -2380,6 +2382,182 @@ app.post('/enclave/execute', (req: Request, res: Response) => {
 /** GET /enclave/stats — Enclave engine statistics */
 app.get('/enclave/stats', (_req: Request, res: Response) => {
   const stats = enclaveEngine.getStats();
+  res.json({
+    data: stats,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/**
+ * Section 29 Endpoints: Byzantine Fault Tolerant (BFT) State Machine Consensus
+ * /consensus/chain, /consensus/validators, /consensus/validators/register,
+ * /consensus/propose, /consensus/vote, /consensus/finalize, /consensus/slash, /consensus/stats
+ */
+
+/** GET /consensus/chain — List all finalized blocks */
+app.get('/consensus/chain', (_req: Request, res: Response) => {
+  const chain = consensusEngine.getChain();
+  res.json({
+    data: chain,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** GET /consensus/validators — List active validators and stakes */
+app.get('/consensus/validators', (_req: Request, res: Response) => {
+  const validators = consensusEngine.getValidators();
+  res.json({
+    data: validators,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /consensus/validators/register — Register new validator */
+app.post('/consensus/validators/register', (req: Request, res: Response) => {
+  const { did, stake } = req.body;
+  if (!did || typeof stake !== 'number' || stake <= 0) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'did and positive numerical stake are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  const validator = consensusEngine.registerValidator({ did, stake });
+  res.status(201).json({
+    data: validator,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /consensus/propose — Propose candidate block */
+app.post('/consensus/propose', (req: Request, res: Response) => {
+  const { proposerDid, transactions, stateRoot, attestationProofs } = req.body;
+  if (!proposerDid || !Array.isArray(transactions) || !stateRoot) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'proposerDid, transactions array, and stateRoot are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const block = consensusEngine.proposeBlock({
+      proposerDid,
+      transactions,
+      stateRoot,
+      attestationProofs,
+    });
+    res.status(201).json({
+      data: block,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'PROPOSE_FAILED',
+      message: err instanceof Error ? err.message : 'Block proposal failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** POST /consensus/vote — Cast vote for Quorum Certificate */
+app.post('/consensus/vote', (req: Request, res: Response) => {
+  const { validatorDid, blockHash, blockHeight, viewNumber, voteType } = req.body;
+  if (!validatorDid || !blockHash || typeof blockHeight !== 'number') {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'validatorDid, blockHash, and blockHeight are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const result = consensusEngine.castVote({
+      validatorDid,
+      blockHash,
+      blockHeight,
+      viewNumber,
+      voteType,
+    });
+    res.json({
+      data: result,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'VOTE_FAILED',
+      message: err instanceof Error ? err.message : 'Voting failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** POST /consensus/finalize — Finalize block with Quorum Certificate */
+app.post('/consensus/finalize', (req: Request, res: Response) => {
+  const { block, qc } = req.body;
+  if (!block || !qc) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'block and qc are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const finalized = consensusEngine.finalizeBlock(block, qc);
+    res.json({
+      data: finalized,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'FINALIZE_FAILED',
+      message: err instanceof Error ? err.message : 'Block finalization failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** POST /consensus/slash — Slash Byzantine validator for equivocation */
+app.post('/consensus/slash', (req: Request, res: Response) => {
+  const { validatorDid, blockHeight, blockHashA, blockHashB } = req.body;
+  if (!validatorDid || typeof blockHeight !== 'number' || !blockHashA || !blockHashB) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'validatorDid, blockHeight, blockHashA, and blockHashB are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const record = consensusEngine.detectEquivocation({
+      validatorDid,
+      blockHeight,
+      blockHashA,
+      blockHashB,
+    });
+    res.json({
+      data: record,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'SLASH_FAILED',
+      message: err instanceof Error ? err.message : 'Slashing failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** GET /consensus/stats — Consensus metrics */
+app.get('/consensus/stats', (_req: Request, res: Response) => {
+  const stats = consensusEngine.getStats();
   res.json({
     data: stats,
     timestamp: new Date().toISOString(),

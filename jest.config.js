@@ -48,6 +48,7 @@ export default {
     '@omega-v/pipeline': '<rootDir>/packages/pipeline/src/index.ts',
     '@omega-v/registry': '<rootDir>/packages/registry/src/index.ts',
     '@omega-v/enclave': '<rootDir>/packages/enclave/src/index.ts',
+    '@omega-v/consensus': '<rootDir>/packages/consensus/src/index.ts',
   },
   collectCoverageFrom: [
     'packages/*/src/**/*.ts',

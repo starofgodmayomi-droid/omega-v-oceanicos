@@ -530,6 +530,40 @@ interface EnclaveStatsData {
   supportedTypes: string[];
 }
 
+interface ConsensusBlockItem {
+  height: number;
+  previousBlockHash: string;
+  stateRoot: string;
+  proposerDid: string;
+  timestamp: string;
+  blockHash: string;
+  quorumCertificate?: {
+    qcId: string;
+    type: string;
+    quorumReached: boolean;
+    accumulatedStake: number;
+  };
+}
+
+interface ValidatorNodeItem {
+  validatorId: string;
+  did: string;
+  stake: number;
+  status: string;
+  blocksProposed: number;
+  votesCount: number;
+}
+
+interface ConsensusStatsData {
+  chainHeight: number;
+  totalBlocks: number;
+  activeValidators: number;
+  totalStaked: number;
+  totalQCs: number;
+  totalSlashedValidators: number;
+  lastBlockHash: string;
+}
+
 interface RuleEfficacy {
   ruleName: string;
   totalExecutions: number;
@@ -827,6 +861,13 @@ export function App(): JSX.Element {
   const [enclaveUserData, setEnclaveUserData] = useState('Zero-knowledge proof verification witness');
   const [generatingAttestation, setGeneratingAttestation] = useState(false);
   const [enclaveResult, setEnclaveResult] = useState<string | null>(null);
+  const [consensusBlocks, setConsensusBlocks] = useState<ConsensusBlockItem[]>([]);
+  const [consensusValidators, setConsensusValidators] = useState<ValidatorNodeItem[]>([]);
+  const [consensusStats, setConsensusStats] = useState<ConsensusStatsData | null>(null);
+  const [proposerDid, setProposerDid] = useState('did:omega:validator:genesis-alpha');
+  const [candidateStateRoot, setCandidateStateRoot] = useState('0x6000_STATE_ROOT_LEAF');
+  const [proposingBlock, setProposingBlock] = useState(false);
+  const [consensusResult, setConsensusResult] = useState<string | null>(null);
 
   // ── Poll log + metrics ──
   const fetchState = useCallback(async () => {
@@ -872,6 +913,9 @@ export function App(): JSX.Element {
         regStatsRes,
         encInstRes,
         encStatsRes,
+        conChainRes,
+        conValRes,
+        conStatsRes,
       ] = await Promise.all([
         fetch(`${API_BASE}/log?limit=30`),
         fetch(`${API_BASE}/metrics`),
@@ -913,6 +957,9 @@ export function App(): JSX.Element {
         fetch(`${API_BASE}/registry/stats`),
         fetch(`${API_BASE}/enclave/instances`),
         fetch(`${API_BASE}/enclave/stats`),
+        fetch(`${API_BASE}/consensus/chain`),
+        fetch(`${API_BASE}/consensus/validators`),
+        fetch(`${API_BASE}/consensus/stats`),
       ]);
       if (!logRes.ok || !metricsRes.ok) throw new Error('API error');
 
@@ -1032,6 +1079,15 @@ export function App(): JSX.Element {
       }
       if (encStatsRes && encStatsRes.ok) {
         setEnclaveStats((await encStatsRes.json()).data as EnclaveStatsData);
+      }
+      if (conChainRes && conChainRes.ok) {
+        setConsensusBlocks((await conChainRes.json()).data as ConsensusBlockItem[]);
+      }
+      if (conValRes && conValRes.ok) {
+        setConsensusValidators((await conValRes.json()).data as ValidatorNodeItem[]);
+      }
+      if (conStatsRes && conStatsRes.ok) {
+        setConsensusStats((await conStatsRes.json()).data as ConsensusStatsData);
       }
     } catch {
       setApiOnline(false);
@@ -6102,6 +6158,165 @@ export function App(): JSX.Element {
                     <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', display: 'flex', gap: 10 }}>
                       <span>🔒 {enc.sealedDataCount} sealed objects</span>
                       <span style={{ color: 'var(--accent-teal)' }}>● {enc.status}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* ═══ Section 29: BFT Consensus ═══ */}
+          <div className="card" style={{ gridColumn: '1 / -1' }}>
+            <div className="section-header" style={{ marginBottom: 18 }}>
+              <div className="section-title">⛓ BFT Consensus Engine</div>
+              <span className="section-badge">
+                {consensusStats ? `Height ${consensusStats.chainHeight} · ${consensusStats.activeValidators} validators` : 'Loading…'}
+              </span>
+            </div>
+
+            {/* Stats Row */}
+            {consensusStats && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 10, marginBottom: 16 }}>
+                <div style={{ background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', border: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Chain Height</div>
+                  <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--accent-purple)' }}>{consensusStats.chainHeight}</div>
+                </div>
+                <div style={{ background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', border: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Total Blocks</div>
+                  <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--accent-teal)' }}>{consensusStats.totalBlocks}</div>
+                </div>
+                <div style={{ background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', border: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Total Staked</div>
+                  <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--accent-green)' }}>{(consensusStats.totalStaked / 1000).toFixed(0)}K</div>
+                </div>
+                <div style={{ background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', border: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Quorum Certs</div>
+                  <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--accent-blue)' }}>{consensusStats.totalQCs}</div>
+                </div>
+                <div style={{ background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', border: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Slashed</div>
+                  <div style={{ fontSize: '1.3rem', fontWeight: 700, color: consensusStats.totalSlashedValidators > 0 ? 'var(--accent-red)' : 'var(--accent-green)' }}>{consensusStats.totalSlashedValidators}</div>
+                </div>
+              </div>
+            )}
+
+            {/* Propose Block Form */}
+            <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+              <div style={{ flex: 1, minWidth: 200 }}>
+                <label style={{ display: 'block', fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Proposer DID</label>
+                <input
+                  type="text"
+                  value={proposerDid}
+                  onChange={(e) => setProposerDid(e.target.value)}
+                  style={{ width: '100%', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '8px 10px', color: 'var(--text-primary)', fontFamily: 'JetBrains Mono, monospace', fontSize: '0.75rem' }}
+                />
+              </div>
+              <div style={{ flex: 1, minWidth: 200 }}>
+                <label style={{ display: 'block', fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>State Root</label>
+                <input
+                  type="text"
+                  value={candidateStateRoot}
+                  onChange={(e) => setCandidateStateRoot(e.target.value)}
+                  style={{ width: '100%', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '8px 10px', color: 'var(--text-primary)', fontFamily: 'JetBrains Mono, monospace', fontSize: '0.75rem' }}
+                />
+              </div>
+              <button
+                className="cta-button"
+                disabled={proposingBlock}
+                onClick={async () => {
+                  setProposingBlock(true);
+                  setConsensusResult(null);
+                  try {
+                    const propRes = await fetch(`${API_BASE}/consensus/propose`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ proposerDid, transactions: [{ op: 'STATE_TRANSITION' }], stateRoot: candidateStateRoot }),
+                    });
+                    const propData = await propRes.json();
+                    if (!propRes.ok) { setConsensusResult(`❌ ${propData.message}`); return; }
+                    setConsensusResult(`✅ Block proposed at height ${propData.data.height} — hash: ${propData.data.blockHash.slice(0, 24)}…`);
+                    fetchState();
+                  } catch (err) {
+                    setConsensusResult(`❌ ${err instanceof Error ? err.message : 'Proposal failed'}`);
+                  } finally {
+                    setProposingBlock(false);
+                  }
+                }}
+                style={{ minWidth: 140 }}
+              >
+                {proposingBlock ? '⏳ Proposing…' : '📦 Propose Block'}
+              </button>
+            </div>
+
+            {consensusResult && (
+              <div style={{ fontSize: '0.78rem', padding: '6px 10px', borderRadius: 'var(--radius-sm)', background: consensusResult.startsWith('✅') ? 'rgba(72,187,120,0.1)' : 'rgba(229,62,62,0.1)', color: consensusResult.startsWith('✅') ? 'var(--accent-green)' : 'var(--accent-red)', marginBottom: 14, fontFamily: 'JetBrains Mono, monospace' }}>
+                {consensusResult}
+              </div>
+            )}
+
+            {/* Validators Grid */}
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Active Validators ({consensusValidators.length})
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 10 }}>
+                {consensusValidators.map((val) => (
+                  <div
+                    key={val.validatorId}
+                    style={{
+                      background: 'var(--bg-surface)',
+                      border: `1px solid ${val.status === 'SLASHED' ? 'var(--accent-red)' : 'var(--border)'}`,
+                      borderRadius: 'var(--radius-sm)',
+                      padding: 12,
+                      opacity: val.status === 'SLASHED' ? 0.6 : 1,
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <span style={{ fontWeight: 600, fontSize: '0.78rem', color: 'var(--text-primary)' }}>
+                        {val.did.split(':').pop()}
+                      </span>
+                      <span style={{ fontSize: '0.65rem', padding: '1px 6px', borderRadius: 3, background: val.status === 'ACTIVE' ? 'rgba(72,187,120,0.15)' : 'rgba(229,62,62,0.15)', color: val.status === 'ACTIVE' ? 'var(--accent-green)' : 'var(--accent-red)', fontWeight: 700 }}>
+                        {val.status}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontFamily: 'JetBrains Mono, monospace' }}>
+                      Stake: {(val.stake / 1000).toFixed(0)}K · Proposed: {val.blocksProposed} · Votes: {val.votesCount}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Chain Blocks */}
+            <div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Finalized Chain ({consensusBlocks.length} blocks)
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 10 }}>
+                {consensusBlocks.slice(-6).reverse().map((blk) => (
+                  <div
+                    key={blk.blockHash}
+                    style={{
+                      background: 'var(--bg-surface)',
+                      border: '1px solid var(--border)',
+                      borderRadius: 'var(--radius-sm)',
+                      padding: 12,
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <span style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--accent-purple)' }}>
+                        #{blk.height}
+                      </span>
+                      <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>
+                        {new Date(blk.timestamp).toLocaleTimeString()}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontFamily: 'JetBrains Mono, monospace', marginBottom: 2 }}>
+                      Hash: {blk.blockHash.slice(0, 28)}…
+                    </div>
+                    <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>
+                      Proposer: {blk.proposerDid.split(':').pop()}
+                      {blk.quorumCertificate && <span style={{ color: 'var(--accent-green)', marginLeft: 8 }}>✓ QC</span>}
                     </div>
                   </div>
                 ))}

@@ -30,6 +30,7 @@ import { OceanicosWorkerPool } from '@omega-v/worker';
 import { OceanicosPipelineEngine } from '@omega-v/pipeline';
 import { OceanicosRegistryEngine } from '@omega-v/registry';
 import { OceanicosEnclaveEngine } from '@omega-v/enclave';
+import { OceanicosConsensusEngine } from '@omega-v/consensus';
 import app from '../../apps/api/src/index';
 
 describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => {
@@ -1192,7 +1193,73 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       expect(enclaveStats.totalAttestations).toBeGreaterThanOrEqual(2);
     });
   });
+
+  describe('29. Byzantine Fault Tolerant (BFT) State Machine Consensus E2E', () => {
+    it('should propose candidate blocks, achieve 2/3+1 Quorum Certificate, finalize block, and slash Byzantine equivocators', () => {
+      const consensusEngine = new OceanicosConsensusEngine('e2e-consensus-key');
+
+      // 1. Genesis block check
+      const chain = consensusEngine.getChain();
+      expect(chain.length).toBe(1);
+      expect(chain[0].height).toBe(0);
+
+      // 2. Propose block at height 1
+      const candidateBlock = consensusEngine.proposeBlock({
+        proposerDid: 'did:omega:validator:genesis-alpha',
+        transactions: [{ txId: 'tx-201', operation: 'REGISTER_VALID_IDENTITY', subject: 'did:omega:agent:01' }],
+        stateRoot: '0x1234567890abcdef1234567890abcdef',
+        attestationProofs: ['proof-genesis-v6-01'],
+      });
+
+      expect(candidateBlock.height).toBe(1);
+      expect(candidateBlock.blockHash).toMatch(/^0x/);
+
+      // 3. Vote and achieve Quorum Certificate
+      consensusEngine.castVote({
+        validatorDid: 'did:omega:validator:genesis-alpha',
+        blockHash: candidateBlock.blockHash,
+        blockHeight: 1,
+      });
+
+      const { qc, quorumReached } = consensusEngine.castVote({
+        validatorDid: 'did:omega:validator:genesis-beta',
+        blockHash: candidateBlock.blockHash,
+        blockHeight: 1,
+      });
+
+      expect(quorumReached).toBe(true);
+      expect(qc.quorumReached).toBe(true);
+
+      // 4. Finalize block
+      const finalized = consensusEngine.finalizeBlock(candidateBlock, qc);
+      expect(finalized.quorumCertificate).toBeDefined();
+      expect(consensusEngine.getChain().length).toBe(2);
+      expect(consensusEngine.getChain()[1].height).toBe(1);
+
+      // 5. Detect and slash Byzantine equivocation
+      const slash = consensusEngine.detectEquivocation({
+        validatorDid: 'did:omega:validator:genesis-gamma',
+        blockHeight: 1,
+        blockHashA: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        blockHashB: '0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+      });
+
+      expect(slash.recordId).toMatch(/^slash-/);
+      expect(slash.slashedStake).toBe(200000);
+
+      const gamma = consensusEngine.getValidators().find((v) => v.did === 'did:omega:validator:genesis-gamma')!;
+      expect(gamma.status).toBe('SLASHED');
+      expect(gamma.stake).toBe(0);
+
+      // 6. Check consensus stats
+      const stats = consensusEngine.getStats();
+      expect(stats.chainHeight).toBe(1);
+      expect(stats.totalBlocks).toBe(2);
+      expect(stats.totalSlashedValidators).toBe(1);
+    });
+  });
 });
+
 
 
 
