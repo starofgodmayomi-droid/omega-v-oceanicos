@@ -80,6 +80,7 @@
     "@omega-v/governor": "*",
     "@omega-v/relay": "*",
     "@omega-v/evm": "*",
+    "@omega-v/amm": "*",
     "express": "^4.18.2"
   },
   "devDependencies": {

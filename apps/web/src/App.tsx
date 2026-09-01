@@ -1076,6 +1076,40 @@ interface VMStatsData {
   currentGlobalStateRoot: string;
 }
 
+interface LiquidityPoolItem {
+  poolId: string;
+  tokenA: string;
+  tokenB: string;
+  reserveA: number;
+  reserveB: number;
+  totalLpShares: number;
+  feeBps: number;
+  kInvariant: number;
+  createdAt: string;
+}
+
+interface SwapReceiptItem {
+  swapId: string;
+  poolId: string;
+  traderDid: string;
+  tokenIn: string;
+  amountIn: number;
+  tokenOut: string;
+  amountOut: number;
+  feePaid: number;
+  priceImpactPct: number;
+  swapProof: string;
+  executedAt: string;
+}
+
+interface AMMStatsData {
+  totalPools: number;
+  totalSwaps: number;
+  totalLiquidityPositions: number;
+  cumulativeVolume: number;
+  totalFeesCollected: number;
+}
+
 interface RuleEfficacy {
   ruleName: string;
   totalExecutions: number;
@@ -1464,6 +1498,9 @@ export function App(): JSX.Element {
   const [vmContracts, setVmContracts] = useState<DeployedContractItem[]>([]);
   const [vmHistory, setVmHistory] = useState<ExecutionTraceItem[]>([]);
   const [vmStats, setVmStats] = useState<VMStatsData | null>(null);
+  const [ammPools, setAmmPools] = useState<LiquidityPoolItem[]>([]);
+  const [ammSwaps, setAmmSwaps] = useState<SwapReceiptItem[]>([]);
+  const [ammStats, setAmmStats] = useState<AMMStatsData | null>(null);
 
   // ── Poll log + metrics ──
   const fetchState = useCallback(async () => {
@@ -1556,6 +1593,9 @@ export function App(): JSX.Element {
         vmContractsRes,
         vmHistoryRes,
         vmStatsRes,
+        ammPoolsRes,
+        ammSwapsRes,
+        ammStatsRes,
       ] = await Promise.all([
         fetch(`${API_BASE}/log?limit=30`),
         fetch(`${API_BASE}/metrics`),
@@ -1644,6 +1684,9 @@ export function App(): JSX.Element {
         fetch(`${API_BASE}/evm/contracts`),
         fetch(`${API_BASE}/evm/history`),
         fetch(`${API_BASE}/evm/stats`),
+        fetch(`${API_BASE}/amm/pools`),
+        fetch(`${API_BASE}/amm/swaps`),
+        fetch(`${API_BASE}/amm/stats`),
       ]);
       if (!logRes.ok || !metricsRes.ok) throw new Error('API error');
 
@@ -1904,6 +1947,15 @@ export function App(): JSX.Element {
       }
       if (vmStatsRes && vmStatsRes.ok) {
         setVmStats((await vmStatsRes.json()).data as VMStatsData);
+      }
+      if (ammPoolsRes && ammPoolsRes.ok) {
+        setAmmPools((await ammPoolsRes.json()).data as LiquidityPoolItem[]);
+      }
+      if (ammSwapsRes && ammSwapsRes.ok) {
+        setAmmSwaps((await ammSwapsRes.json()).data as SwapReceiptItem[]);
+      }
+      if (ammStatsRes && ammStatsRes.ok) {
+        setAmmStats((await ammStatsRes.json()).data as AMMStatsData);
       }
     } catch {
       setApiOnline(false);
@@ -8996,6 +9048,73 @@ export function App(): JSX.Element {
                       </div>
                       <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontFamily: 'JetBrains Mono, monospace' }}>
                         Gas: {t.gasUsed} · RetVal: {t.returnValue ?? 'none'} · Trace: {t.traceHash.slice(0, 12)}…
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+          {/* ── Section 46: Verifiable Automated Market Maker (AMM) & Liquidity Pools ── */}
+          <div className="card" style={{ gridColumn: '1 / -1' }}>
+            <div className="section-header" style={{ marginBottom: 16 }}>
+              <div className="section-title">📊 Automated Market Maker (AMM) &amp; Liquidity Pools</div>
+              <span className="section-badge">{ammPools.length} pools · {ammSwaps.length} swaps</span>
+            </div>
+
+            {/* AMM Stats */}
+            {ammStats && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 10, marginBottom: 18 }}>
+                {[
+                  { label: 'Active Pools', value: ammStats.totalPools, icon: '🏊' },
+                  { label: 'Swaps Executed', value: ammStats.totalSwaps, icon: '🔄' },
+                  { label: 'LP Positions', value: ammStats.totalLiquidityPositions, icon: '🤝' },
+                  { label: 'Cumulative Vol', value: ammStats.cumulativeVolume.toFixed(2), icon: '📈' },
+                  { label: 'Fees Collected', value: ammStats.totalFeesCollected.toFixed(4), icon: '💰' },
+                ].map((s) => (
+                  <div key={s.label} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '10px 12px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '1.1rem' }}>{s.icon}</div>
+                    <div style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--accent-green)' }}>{s.value}</div>
+                    <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{s.label}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Pools & Swaps */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              <div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Liquidity Pools ({ammPools.length})
+                </div>
+                <div style={{ display: 'grid', gap: 8 }}>
+                  {ammPools.slice(-4).reverse().map((p) => (
+                    <div key={p.poolId} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: 10 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
+                        <span style={{ fontWeight: 700, fontSize: '0.78rem', color: 'var(--accent-purple)' }}>{p.tokenA}/{p.tokenB} ({p.feeBps} bps)</span>
+                        <span style={{ fontSize: '0.62rem', color: 'var(--accent-cyan)', fontFamily: 'JetBrains Mono, monospace' }}>LP: {p.totalLpShares.toFixed(2)}</span>
+                      </div>
+                      <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontFamily: 'JetBrains Mono, monospace' }}>
+                        Reserves: {p.reserveA.toFixed(2)} {p.tokenA} · {p.reserveB.toFixed(2)} {p.tokenB} · k: {p.kInvariant.toFixed(0)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Swap Execution Receipts ({ammSwaps.length})
+                </div>
+                <div style={{ display: 'grid', gap: 8 }}>
+                  {ammSwaps.slice(-4).reverse().map((s) => (
+                    <div key={s.swapId} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: 10 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
+                        <span style={{ fontWeight: 700, fontSize: '0.78rem', color: 'var(--text-primary)' }}>{s.amountIn.toFixed(2)} {s.tokenIn} → {s.amountOut.toFixed(2)} {s.tokenOut}</span>
+                        <span style={{ fontSize: '0.62rem', padding: '1px 6px', borderRadius: 3, background: 'rgba(72,187,120,0.15)', color: 'var(--accent-green)', fontWeight: 700 }}>Fee: {s.feePaid.toFixed(4)}</span>
+                      </div>
+                      <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontFamily: 'JetBrains Mono, monospace' }}>
+                        Trader: {s.traderDid.split(':').pop()} · Impact: {s.priceImpactPct.toFixed(2)}% · Proof: {s.swapProof.slice(0, 12)}…
                       </div>
                     </div>
                   ))}

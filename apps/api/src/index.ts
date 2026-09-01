@@ -50,6 +50,7 @@ import { OceanicosThresholdAttestorEngine } from '@omega-v/attestor';
 import { OceanicosGovernorEngine } from '@omega-v/governor';
 import { OceanicosRelayEngine } from '@omega-v/relay';
 import { OceanicosVirtualMachine } from '@omega-v/evm';
+import { OceanicosAMMEngine } from '@omega-v/amm';
 import {
   SuccessResponse,
   ErrorResponse,
@@ -129,6 +130,7 @@ const attestorEngine = new OceanicosThresholdAttestorEngine();
 const governorEngine = new OceanicosGovernorEngine();
 const relayEngine = new OceanicosRelayEngine();
 const evmEngine = new OceanicosVirtualMachine();
+const ammEngine = new OceanicosAMMEngine();
 
 // Register default rules
 verificationEngine.registerRule({
@@ -4710,6 +4712,235 @@ app.get('/evm/history', (_req: Request, res: Response) => {
 /** GET /evm/stats — OVM telemetry & state trie root */
 app.get('/evm/stats', (_req: Request, res: Response) => {
   const stats = evmEngine.getStats();
+  res.json({
+    data: stats,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/**
+ * Section 46 Endpoints: Verifiable Automated Market Maker (AMM)
+ * /amm/pools, /amm/pools/:poolId, /amm/pools/create, /amm/liquidity/add, /amm/liquidity/remove, /amm/quote, /amm/swap, /amm/swaps, /amm/stats
+ */
+
+/** GET /amm/pools — List all liquidity pools */
+app.get('/amm/pools', (_req: Request, res: Response) => {
+  const pools = ammEngine.getPools();
+  res.json({
+    data: pools.map((p) => ({
+      poolId: p.poolId,
+      tokenA: p.tokenA,
+      tokenB: p.tokenB,
+      reserveA: p.reserveA,
+      reserveB: p.reserveB,
+      totalLpShares: p.totalLpShares,
+      feeBps: p.feeBps,
+      kInvariant: p.kInvariant,
+      createdAt: p.createdAt,
+    })),
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** GET /amm/pools/:poolId — Get pool details */
+app.get('/amm/pools/:poolId', (req: Request, res: Response) => {
+  const pool = ammEngine.getPool(req.params.poolId);
+  if (!pool) {
+    res.status(404).json({
+      code: 'POOL_NOT_FOUND',
+      message: `Pool ${req.params.poolId} not found`,
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+  res.json({
+    data: {
+      poolId: pool.poolId,
+      tokenA: pool.tokenA,
+      tokenB: pool.tokenB,
+      reserveA: pool.reserveA,
+      reserveB: pool.reserveB,
+      totalLpShares: pool.totalLpShares,
+      feeBps: pool.feeBps,
+      kInvariant: pool.kInvariant,
+      createdAt: pool.createdAt,
+    },
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /amm/pools/create — Create liquidity pool */
+app.post('/amm/pools/create', (req: Request, res: Response) => {
+  const { tokenA, tokenB, initialA, initialB, creatorDid, feeBps } = req.body;
+  if (!tokenA || !tokenB || !initialA || !initialB || !creatorDid) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'tokenA, tokenB, initialA, initialB, and creatorDid are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const pool = ammEngine.createPool({
+      tokenA,
+      tokenB,
+      initialA: Number(initialA),
+      initialB: Number(initialB),
+      creatorDid,
+      feeBps: feeBps ? Number(feeBps) : undefined,
+    });
+    res.status(201).json({
+      data: pool,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'CREATE_POOL_FAILED',
+      message: err instanceof Error ? err.message : 'Create pool failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** POST /amm/liquidity/add — Add liquidity */
+app.post('/amm/liquidity/add', (req: Request, res: Response) => {
+  const { poolId, amountA, amountB, providerDid, minShares } = req.body;
+  if (!poolId || !amountA || !amountB || !providerDid) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'poolId, amountA, amountB, and providerDid are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const receipt = ammEngine.addLiquidity({
+      poolId,
+      amountA: Number(amountA),
+      amountB: Number(amountB),
+      providerDid,
+      minShares: minShares ? Number(minShares) : undefined,
+    });
+    res.json({
+      data: receipt,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'ADD_LIQUIDITY_FAILED',
+      message: err instanceof Error ? err.message : 'Add liquidity failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** POST /amm/liquidity/remove — Remove liquidity */
+app.post('/amm/liquidity/remove', (req: Request, res: Response) => {
+  const { poolId, sharesToBurn, providerDid, minA, minB } = req.body;
+  if (!poolId || !sharesToBurn || !providerDid) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'poolId, sharesToBurn, and providerDid are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const receipt = ammEngine.removeLiquidity({
+      poolId,
+      sharesToBurn: Number(sharesToBurn),
+      providerDid,
+      minA: minA ? Number(minA) : undefined,
+      minB: minB ? Number(minB) : undefined,
+    });
+    res.json({
+      data: receipt,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'REMOVE_LIQUIDITY_FAILED',
+      message: err instanceof Error ? err.message : 'Remove liquidity failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** GET /amm/quote — Get swap quote preview */
+app.get('/amm/quote', (req: Request, res: Response) => {
+  const { poolId, tokenIn, amountIn } = req.query;
+  if (!poolId || !tokenIn || !amountIn) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'poolId, tokenIn, and amountIn query params are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const quote = ammEngine.getAmountOut(String(poolId), String(tokenIn), Number(amountIn));
+    res.json({
+      data: quote,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'QUOTE_FAILED',
+      message: err instanceof Error ? err.message : 'Quote failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** POST /amm/swap — Execute constant product swap */
+app.post('/amm/swap', (req: Request, res: Response) => {
+  const { poolId, tokenIn, amountIn, traderDid, minAmountOut } = req.body;
+  if (!poolId || !tokenIn || !amountIn || !traderDid) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'poolId, tokenIn, amountIn, and traderDid are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const swap = ammEngine.swap({
+      poolId,
+      tokenIn,
+      amountIn: Number(amountIn),
+      traderDid,
+      minAmountOut: minAmountOut ? Number(minAmountOut) : undefined,
+    });
+    res.json({
+      data: swap,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'SWAP_FAILED',
+      message: err instanceof Error ? err.message : 'Swap failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** GET /amm/swaps — List executed swaps */
+app.get('/amm/swaps', (_req: Request, res: Response) => {
+  const swaps = ammEngine.getSwaps();
+  res.json({
+    data: swaps,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** GET /amm/stats — AMM telemetry */
+app.get('/amm/stats', (_req: Request, res: Response) => {
+  const stats = ammEngine.getStats();
   res.json({
     data: stats,
     timestamp: new Date().toISOString(),

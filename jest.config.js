@@ -65,6 +65,7 @@ export default {
     '@omega-v/governor': '<rootDir>/packages/governor/src/index.ts',
     '@omega-v/relay': '<rootDir>/packages/relay/src/index.ts',
     '@omega-v/evm': '<rootDir>/packages/evm/src/index.ts',
+    '@omega-v/amm': '<rootDir>/packages/amm/src/index.ts',
   },
   collectCoverageFrom: [
     'packages/*/src/**/*.ts',

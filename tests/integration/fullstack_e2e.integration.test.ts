@@ -47,6 +47,7 @@ import { OceanicosThresholdAttestorEngine } from '@omega-v/attestor';
 import { OceanicosGovernorEngine } from '@omega-v/governor';
 import { OceanicosRelayEngine } from '@omega-v/relay';
 import { OceanicosVirtualMachine } from '@omega-v/evm';
+import { OceanicosAMMEngine } from '@omega-v/amm';
 import app from '../../apps/api/src/index';
 
 describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => {
@@ -2116,6 +2117,58 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       expect(stats.successfulExecutions).toBe(1);
       expect(stats.deployedContractsCount).toBe(1);
       expect(stats.currentGlobalStateRoot).toMatch(/^0x/);
+    });
+  });
+
+  describe('46. Verifiable Automated Market Maker (AMM) & Liquidity Pools E2E', () => {
+    it('should create liquidity pool, execute constant product swap with proof, and collect fees', () => {
+      const amm = new OceanicosAMMEngine('e2e-amm-secret');
+
+      // 1. Create Pool
+      const pool = amm.createPool({
+        tokenA: 'ETH',
+        tokenB: 'USDC',
+        initialA: 20,
+        initialB: 60000,
+        creatorDid: 'did:omega:agent:genesis-lp',
+        feeBps: 30,
+      });
+
+      expect(pool.poolId).toBe('pool-ETH-USDC-30');
+      expect(pool.reserveA).toBe(20);
+      expect(pool.reserveB).toBe(60000);
+
+      // 2. Add Liquidity
+      const addReceipt = amm.addLiquidity({
+        poolId: pool.poolId,
+        amountA: 10,
+        amountB: 30000,
+        providerDid: 'did:omega:agent:secondary-lp',
+      });
+      expect(addReceipt.lpShares).toBeGreaterThan(0);
+      expect(addReceipt.receiptProof).toMatch(/^0x/);
+
+      // 3. Execute Swap
+      const swap = amm.swap({
+        poolId: pool.poolId,
+        tokenIn: 'ETH',
+        amountIn: 2,
+        traderDid: 'did:omega:agent:arbitrageur',
+        minAmountOut: 5000,
+      });
+
+      expect(swap.swapId).toMatch(/^swp-/);
+      expect(swap.tokenOut).toBe('USDC');
+      expect(swap.amountOut).toBeGreaterThan(5000);
+      expect(swap.swapProof).toMatch(/^0x/);
+      expect(swap.kAfter).toBeGreaterThanOrEqual(swap.kBefore);
+
+      // 4. Check stats
+      const stats = amm.getStats();
+      expect(stats.totalPools).toBe(1);
+      expect(stats.totalSwaps).toBe(1);
+      expect(stats.cumulativeVolume).toBe(2);
+      expect(stats.totalFeesCollected).toBeGreaterThan(0);
     });
   });
 });

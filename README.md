@@ -13,9 +13,9 @@ $$\Omega\infty v ::= \text{REALITY} \rightleftarrows \text{OBSERVE} \rightleftar
 
 ---
 
-## 🏛️ 45-Pillar Full-Stack Architecture Matrix
+## 🏛️ 46-Pillar Full-Stack Architecture Matrix
 
-The repository contains 45 modular, type-safe, independently tested pillars forming the complete bridge between intention and verified consequence.
+The repository contains 46 modular, type-safe, independently tested pillars forming the complete bridge between intention and verified consequence.
 
 | Pillar | Package | Core Functionality | Test Suite |
 | :---: | :--- | :--- | :---: |
@@ -64,13 +64,14 @@ The repository contains 45 modular, type-safe, independently tested pillars form
 | **XLIII** | [`@omega-v/governor`](packages/governor) | On-Chain Timelocked Decentralized Governance, Proposal Lifecycle & Execution Proofs | 5/5 passing |
 | **XLIV** | [`@omega-v/relay`](packages/relay) | Decentralized Cross-Shard & Cross-Rollup Message Relaying & Merkle Delivery Receipts | 5/5 passing |
 | **XLV** | [`@omega-v/evm`](packages/evm) | Oceanic Verifiable Virtual Machine (OVM), Stack Execution & State Trie Commitments | 6/6 passing |
+| **XLVI** | [`@omega-v/amm`](packages/amm) | Verifiable Automated Market Maker (AMM), Constant Product Invariant & Swap Proofs | 5/5 passing |
 
 ---
 
 ## 🚀 Applications
 
-* **`apps/api`**: Express TypeScript REST backend exposing complete verification endpoints for all 45 pillars (`http://localhost:3000`).
-* **`apps/web`**: React / Vite / TypeScript comprehensive control console featuring 45 live operational sections with real-time polling (`http://localhost:5173`).
+* **`apps/api`**: Express TypeScript REST backend exposing complete verification endpoints for all 46 pillars (`http://localhost:3000`).
+* **`apps/web`**: React / Vite / TypeScript comprehensive control console featuring 46 live operational sections with real-time polling (`http://localhost:5173`).
 
 ---
 
@@ -80,12 +81,12 @@ The repository contains 45 modular, type-safe, independently tested pillars form
 # Verify entire monorepo TypeScript compilation
 npx tsc --noEmit
 
-# Run all 62 Jest test suites across all 45 pillars
+# Run all 63 Jest test suites across all 46 pillars
 npx jest --no-coverage
 ```
 
-* **Test Suites**: `62 passed, 62 total` (**100% Pass Rate**)
-* **Test Specs**: `391 passed, 391 total` (**100% Pass Rate**)
+* **Test Suites**: `63 passed, 63 total` (**100% Pass Rate**)
+* **Test Specs**: `397 passed, 397 total` (**100% Pass Rate**)
 * **TypeScript Errors**: `0 errors`
 
 ---
