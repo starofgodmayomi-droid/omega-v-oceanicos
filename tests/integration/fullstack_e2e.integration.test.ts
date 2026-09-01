@@ -33,6 +33,7 @@ import { OceanicosEnclaveEngine } from '@omega-v/enclave';
 import { OceanicosConsensusEngine } from '@omega-v/consensus';
 import { OceanicosMeshEngine } from '@omega-v/mesh';
 import { OceanicosShardingEngine } from '@omega-v/sharding';
+import { OceanicosBridgeEngine } from '@omega-v/bridge';
 import app from '../../apps/api/src/index';
 
 describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => {
@@ -1361,7 +1362,64 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       expect(shardingStats.committedCrossShardTxs).toBe(1);
     });
   });
+
+  describe('32. Cross-Chain Cryptographic Bridge & Light Client Relays E2E', () => {
+    it('should track foreign chain light clients, verify Merkle inclusion proofs, and relay cross-chain transfers', () => {
+      const bridgeEngine = new OceanicosBridgeEngine('e2e-bridge-key');
+
+      // 1. Initial registered light clients
+      const chains = bridgeEngine.getChains();
+      expect(chains.length).toBe(3);
+
+      // 2. Submit new block header
+      const headerRes = bridgeEngine.submitHeader({
+        chainId: 'chain-eth-mainnet',
+        height: 19850005,
+        blockHash: '0xethblock19850005',
+        previousBlockHash: '0xethblock19850004',
+        stateRoot: '0xstateroot19850005',
+        signatures: ['sig-validator-alpha'],
+      });
+      expect(headerRes.accepted).toBe(true);
+      expect(headerRes.latestHeight).toBe(19850005);
+
+      // 3. Initiate cross-chain bridge transfer
+      const transfer = bridgeEngine.initiateTransfer({
+        sourceChain: 'chain-eth-mainnet',
+        targetChain: 'chain-cosmos-hub',
+        senderDid: 'did:omega:agent:bridge-trader',
+        recipientAddress: 'cosmos1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq',
+        assetSymbol: 'USDC',
+        amount: 75000,
+        lockTxHash: '0xlock_tx_e2e_proof',
+      });
+      expect(transfer.transferId).toMatch(/^brg-/);
+      expect(transfer.status).toBe('INITIALIZED');
+
+      // 4. Relayer submits Merkle inclusion proof
+      const relayed = bridgeEngine.relayTransfer({
+        transferId: transfer.transferId,
+        relayerDid: 'did:omega:relayer:eth-primary',
+        merkleProof: '0xmerkle_path_proof_data',
+      });
+      expect(relayed.status).toBe('RELAYED');
+      expect(relayed.merkleProof).toBeDefined();
+
+      // 5. Destination chain finalization
+      const finalized = bridgeEngine.finalizeTransfer(transfer.transferId);
+      expect(finalized.status).toBe('FINALIZED');
+      expect(finalized.mintTxHash).toMatch(/^0x/);
+
+      // 6. Check bridge statistics
+      const stats = bridgeEngine.getStats();
+      expect(stats.supportedChains).toBe(3);
+      expect(stats.totalTransfers).toBe(1);
+      expect(stats.finalizedTransfers).toBe(1);
+      expect(stats.totalVolumeLocked).toBe(75000);
+    });
+  });
 });
+
 
 
 

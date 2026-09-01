@@ -36,6 +36,7 @@ import { OceanicosEnclaveEngine } from '@omega-v/enclave';
 import { OceanicosConsensusEngine } from '@omega-v/consensus';
 import { OceanicosMeshEngine } from '@omega-v/mesh';
 import { OceanicosShardingEngine } from '@omega-v/sharding';
+import { OceanicosBridgeEngine } from '@omega-v/bridge';
 import {
   SuccessResponse,
   ErrorResponse,
@@ -101,6 +102,7 @@ const enclaveEngine = new OceanicosEnclaveEngine();
 const consensusEngine = new OceanicosConsensusEngine();
 const meshEngine = new OceanicosMeshEngine();
 const shardingEngine = new OceanicosShardingEngine();
+const bridgeEngine = new OceanicosBridgeEngine();
 
 // Register default rules
 verificationEngine.registerRule({
@@ -2878,6 +2880,166 @@ app.post('/sharding/rebalance/split', (req: Request, res: Response) => {
 /** GET /sharding/stats — Sharding engine statistics */
 app.get('/sharding/stats', (_req: Request, res: Response) => {
   const stats = shardingEngine.getStats();
+  res.json({
+    data: stats,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/**
+ * Section 32 Endpoints: Cross-Chain Bridge & Light Client Relays
+ * /bridge/chains, /bridge/headers/submit, /bridge/transfers/initiate,
+ * /bridge/transfers/relay, /bridge/transfers/finalize, /bridge/transfers, /bridge/stats
+ */
+
+/** GET /bridge/chains — List connected chain light clients */
+app.get('/bridge/chains', (_req: Request, res: Response) => {
+  const chains = bridgeEngine.getChains();
+  res.json({
+    data: chains,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /bridge/headers/submit — Submit verified foreign block header */
+app.post('/bridge/headers/submit', (req: Request, res: Response) => {
+  const { chainId, height, blockHash, previousBlockHash, stateRoot, signatures } = req.body;
+  if (!chainId || typeof height !== 'number' || !blockHash || !stateRoot) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'chainId, height, blockHash, and stateRoot are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const result = bridgeEngine.submitHeader({
+      chainId,
+      height,
+      blockHash,
+      previousBlockHash: previousBlockHash || '0x0',
+      stateRoot,
+      signatures: signatures || [],
+    });
+    res.status(201).json({
+      data: result,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'SUBMIT_HEADER_FAILED',
+      message: err instanceof Error ? err.message : 'Header submission failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** POST /bridge/transfers/initiate — Lock and initiate cross-chain bridge transfer */
+app.post('/bridge/transfers/initiate', (req: Request, res: Response) => {
+  const { sourceChain, targetChain, senderDid, recipientAddress, assetSymbol, amount, lockTxHash } = req.body;
+  if (!sourceChain || !targetChain || !senderDid || !recipientAddress || typeof amount !== 'number') {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'sourceChain, targetChain, senderDid, recipientAddress, and numerical amount are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const transfer = bridgeEngine.initiateTransfer({
+      sourceChain,
+      targetChain,
+      senderDid,
+      recipientAddress,
+      assetSymbol: assetSymbol || 'USDC',
+      amount,
+      lockTxHash: lockTxHash || `0xlock_${Date.now()}`,
+    });
+    res.status(201).json({
+      data: transfer,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'INITIATE_FAILED',
+      message: err instanceof Error ? err.message : 'Initiate transfer failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** POST /bridge/transfers/relay — Submit relayer Merkle proof */
+app.post('/bridge/transfers/relay', (req: Request, res: Response) => {
+  const { transferId, relayerDid, merkleProof } = req.body;
+  if (!transferId || !relayerDid || !merkleProof) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'transferId, relayerDid, and merkleProof are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const transfer = bridgeEngine.relayTransfer({
+      transferId,
+      relayerDid,
+      merkleProof,
+    });
+    res.json({
+      data: transfer,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'RELAY_FAILED',
+      message: err instanceof Error ? err.message : 'Relay transfer failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** POST /bridge/transfers/finalize — Finalize mint/release on destination */
+app.post('/bridge/transfers/finalize', (req: Request, res: Response) => {
+  const { transferId } = req.body;
+  if (!transferId) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'transferId is required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const transfer = bridgeEngine.finalizeTransfer(transferId);
+    res.json({
+      data: transfer,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'FINALIZE_FAILED',
+      message: err instanceof Error ? err.message : 'Finalize transfer failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** GET /bridge/transfers — List recent bridge transfers */
+app.get('/bridge/transfers', (_req: Request, res: Response) => {
+  const transfers = bridgeEngine.getTransfers();
+  res.json({
+    data: transfers,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** GET /bridge/stats — Bridge statistics */
+app.get('/bridge/stats', (_req: Request, res: Response) => {
+  const stats = bridgeEngine.getStats();
   res.json({
     data: stats,
     timestamp: new Date().toISOString(),

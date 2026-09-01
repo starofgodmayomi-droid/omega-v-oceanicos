@@ -603,6 +603,34 @@ interface ShardingStatsData {
   rebalanceEventsCount: number;
 }
 
+interface BridgeChainItem {
+  chainId: string;
+  network: string;
+  latestBlockHeight: number;
+  latestStateRoot: string;
+  activeRelayers: string[];
+}
+
+interface BridgeTransferItem {
+  transferId: string;
+  sourceChain: string;
+  targetChain: string;
+  senderDid: string;
+  recipientAddress: string;
+  assetSymbol: string;
+  amount: number;
+  status: string;
+}
+
+interface BridgeStatsData {
+  supportedChains: number;
+  totalTransfers: number;
+  finalizedTransfers: number;
+  totalVolumeLocked: number;
+  activeRelayers: number;
+  latestRelayedHeight: number;
+}
+
 interface RuleEfficacy {
   ruleName: string;
   totalExecutions: number;
@@ -919,6 +947,15 @@ export function App(): JSX.Element {
   const [stateValue, setStateValue] = useState('{"balance": 25000, "role": "LEAD_ORCHESTRATOR"}');
   const [puttingState, setPuttingState] = useState(false);
   const [shardingResult, setShardingResult] = useState<string | null>(null);
+  const [bridgeChains, setBridgeChains] = useState<BridgeChainItem[]>([]);
+  const [bridgeTransfers, setBridgeTransfers] = useState<BridgeTransferItem[]>([]);
+  const [bridgeStats, setBridgeStats] = useState<BridgeStatsData | null>(null);
+  const [bridgeSourceChain, setBridgeSourceChain] = useState('chain-eth-mainnet');
+  const [bridgeTargetChain, setBridgeTargetChain] = useState('chain-cosmos-hub');
+  const [bridgeAsset, setBridgeAsset] = useState('USDC');
+  const [bridgeAmount, setBridgeAmount] = useState('10000');
+  const [initiatingBridgeTransfer, setInitiatingBridgeTransfer] = useState(false);
+  const [bridgeResult, setBridgeResult] = useState<string | null>(null);
 
   // ── Poll log + metrics ──
   const fetchState = useCallback(async () => {
@@ -971,6 +1008,9 @@ export function App(): JSX.Element {
         meshStatsRes,
         shardListRes,
         shardStatsRes,
+        brgChainRes,
+        brgTxRes,
+        brgStatsRes,
       ] = await Promise.all([
         fetch(`${API_BASE}/log?limit=30`),
         fetch(`${API_BASE}/metrics`),
@@ -1019,6 +1059,9 @@ export function App(): JSX.Element {
         fetch(`${API_BASE}/mesh/stats`),
         fetch(`${API_BASE}/sharding/shards`),
         fetch(`${API_BASE}/sharding/stats`),
+        fetch(`${API_BASE}/bridge/chains`),
+        fetch(`${API_BASE}/bridge/transfers`),
+        fetch(`${API_BASE}/bridge/stats`),
       ]);
       if (!logRes.ok || !metricsRes.ok) throw new Error('API error');
 
@@ -1159,6 +1202,15 @@ export function App(): JSX.Element {
       }
       if (shardStatsRes && shardStatsRes.ok) {
         setShardingStats((await shardStatsRes.json()).data as ShardingStatsData);
+      }
+      if (brgChainRes && brgChainRes.ok) {
+        setBridgeChains((await brgChainRes.json()).data as BridgeChainItem[]);
+      }
+      if (brgTxRes && brgTxRes.ok) {
+        setBridgeTransfers((await brgTxRes.json()).data as BridgeTransferItem[]);
+      }
+      if (brgStatsRes && brgStatsRes.ok) {
+        setBridgeStats((await brgStatsRes.json()).data as BridgeStatsData);
       }
     } catch {
       setApiOnline(false);
@@ -6654,6 +6706,190 @@ export function App(): JSX.Element {
                     <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', display: 'flex', justifyContent: 'space-between' }}>
                       <span>📦 {sh.stateCount} keys</span>
                       <span>🛡 {sh.assignedValidators.length} validators</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* ═══ Section 32: Cross-Chain Bridge ═══ */}
+          <div className="card" style={{ gridColumn: '1 / -1' }}>
+            <div className="section-header" style={{ marginBottom: 18 }}>
+              <div className="section-title">🌉 Cross-Chain Cryptographic Bridge & Light Clients</div>
+              <span className="section-badge">
+                {bridgeStats ? `${bridgeStats.supportedChains} chains · ${bridgeStats.finalizedTransfers} finalized · $${(bridgeStats.totalVolumeLocked / 1000).toFixed(0)}K volume` : 'Loading…'}
+              </span>
+            </div>
+
+            {/* Bridge Stats Row */}
+            {bridgeStats && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 10, marginBottom: 16 }}>
+                <div style={{ background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', border: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Light Clients</div>
+                  <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--accent-purple)' }}>{bridgeStats.supportedChains}</div>
+                </div>
+                <div style={{ background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', border: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Total Transfers</div>
+                  <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--accent-teal)' }}>{bridgeStats.totalTransfers}</div>
+                </div>
+                <div style={{ background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', border: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Finalized</div>
+                  <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--accent-green)' }}>{bridgeStats.finalizedTransfers}</div>
+                </div>
+                <div style={{ background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', border: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Active Relayers</div>
+                  <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--accent-blue)' }}>{bridgeStats.activeRelayers}</div>
+                </div>
+              </div>
+            )}
+
+            {/* Initiate Bridge Transfer Form */}
+            <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+              <div style={{ flex: 1, minWidth: 150 }}>
+                <label style={{ display: 'block', fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Source Chain</label>
+                <select
+                  value={bridgeSourceChain}
+                  onChange={(e) => setBridgeSourceChain(e.target.value)}
+                  style={{ width: '100%', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '8px 10px', color: 'var(--text-primary)', fontFamily: 'JetBrains Mono, monospace', fontSize: '0.75rem' }}
+                >
+                  {bridgeChains.map((c) => (
+                    <option key={c.chainId} value={c.chainId}>{c.network} ({c.chainId})</option>
+                  ))}
+                </select>
+              </div>
+              <div style={{ flex: 1, minWidth: 150 }}>
+                <label style={{ display: 'block', fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Target Chain</label>
+                <select
+                  value={bridgeTargetChain}
+                  onChange={(e) => setBridgeTargetChain(e.target.value)}
+                  style={{ width: '100%', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '8px 10px', color: 'var(--text-primary)', fontFamily: 'JetBrains Mono, monospace', fontSize: '0.75rem' }}
+                >
+                  {bridgeChains.map((c) => (
+                    <option key={c.chainId} value={c.chainId}>{c.network} ({c.chainId})</option>
+                  ))}
+                </select>
+              </div>
+              <div style={{ flex: 1, minWidth: 100 }}>
+                <label style={{ display: 'block', fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Asset Symbol</label>
+                <input
+                  type="text"
+                  value={bridgeAsset}
+                  onChange={(e) => setBridgeAsset(e.target.value)}
+                  style={{ width: '100%', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '8px 10px', color: 'var(--text-primary)', fontFamily: 'JetBrains Mono, monospace', fontSize: '0.75rem' }}
+                />
+              </div>
+              <div style={{ flex: 1, minWidth: 100 }}>
+                <label style={{ display: 'block', fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Amount</label>
+                <input
+                  type="number"
+                  value={bridgeAmount}
+                  onChange={(e) => setBridgeAmount(e.target.value)}
+                  style={{ width: '100%', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '8px 10px', color: 'var(--text-primary)', fontFamily: 'JetBrains Mono, monospace', fontSize: '0.75rem' }}
+                />
+              </div>
+              <button
+                className="cta-button"
+                disabled={initiatingBridgeTransfer}
+                onClick={async () => {
+                  setInitiatingBridgeTransfer(true);
+                  setBridgeResult(null);
+                  try {
+                    const res = await fetch(`${API_BASE}/bridge/transfers/initiate`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        sourceChain: bridgeSourceChain,
+                        targetChain: bridgeTargetChain,
+                        senderDid: 'did:omega:agent:trader-alpha',
+                        recipientAddress: '0xrecipient_cross_chain_address',
+                        assetSymbol: bridgeAsset,
+                        amount: parseFloat(bridgeAmount) || 1000,
+                      }),
+                    });
+                    const data = await res.json();
+                    if (!res.ok) { setBridgeResult(`❌ ${data.message}`); return; }
+                    setBridgeResult(`✅ Initiated bridge transfer [${data.data.transferId}] — Locked ${data.data.amount} ${data.data.assetSymbol} on ${data.data.sourceChain}`);
+                    fetchState();
+                  } catch (err) {
+                    setBridgeResult(`❌ ${err instanceof Error ? err.message : 'Bridge transfer failed'}`);
+                  } finally {
+                    setInitiatingBridgeTransfer(false);
+                  }
+                }}
+                style={{ minWidth: 150 }}
+              >
+                {initiatingBridgeTransfer ? '⏳ Transferring…' : '🌉 Bridge Asset'}
+              </button>
+            </div>
+
+            {bridgeResult && (
+              <div style={{ fontSize: '0.78rem', padding: '6px 10px', borderRadius: 'var(--radius-sm)', background: bridgeResult.startsWith('✅') ? 'rgba(72,187,120,0.1)' : 'rgba(229,62,62,0.1)', color: bridgeResult.startsWith('✅') ? 'var(--accent-green)' : 'var(--accent-red)', marginBottom: 14, fontFamily: 'JetBrains Mono, monospace' }}>
+                {bridgeResult}
+              </div>
+            )}
+
+            {/* Connected Chains & Light Clients */}
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Foreign Chain Light Clients ({bridgeChains.length})
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 10 }}>
+                {bridgeChains.map((c) => (
+                  <div
+                    key={c.chainId}
+                    style={{
+                      background: 'var(--bg-surface)',
+                      border: '1px solid var(--border)',
+                      borderRadius: 'var(--radius-sm)',
+                      padding: 12,
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <span style={{ fontWeight: 700, fontSize: '0.82rem', color: 'var(--accent-purple)' }}>
+                        {c.network}
+                      </span>
+                      <span style={{ fontSize: '0.65rem', padding: '1px 6px', borderRadius: 3, background: 'rgba(102,126,234,0.15)', color: 'var(--accent-blue)', fontWeight: 700 }}>
+                        Height #{c.latestBlockHeight.toLocaleString()}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontFamily: 'JetBrains Mono, monospace', marginBottom: 2 }}>
+                      State Root: {c.latestStateRoot.slice(0, 24)}…
+                    </div>
+                    <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>
+                      🛡 Relayers: {c.activeRelayers.length} active
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Recent Transfers */}
+            <div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Cross-Chain Transfers ({bridgeTransfers.length})
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 10 }}>
+                {bridgeTransfers.slice(-4).reverse().map((t) => (
+                  <div
+                    key={t.transferId}
+                    style={{
+                      background: 'var(--bg-surface)',
+                      border: '1px solid var(--border)',
+                      borderRadius: 'var(--radius-sm)',
+                      padding: 12,
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <span style={{ fontWeight: 600, fontSize: '0.78rem', color: 'var(--text-primary)' }}>
+                        {t.amount} {t.assetSymbol}
+                      </span>
+                      <span style={{ fontSize: '0.65rem', padding: '1px 6px', borderRadius: 3, background: t.status === 'FINALIZED' ? 'rgba(72,187,120,0.15)' : 'rgba(237,137,54,0.15)', color: t.status === 'FINALIZED' ? 'var(--accent-green)' : 'var(--accent-orange)', fontWeight: 700 }}>
+                        {t.status}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontFamily: 'JetBrains Mono, monospace' }}>
+                      {t.sourceChain.split('-')[1]?.toUpperCase()} ➔ {t.targetChain.split('-')[1]?.toUpperCase()}
                     </div>
                   </div>
                 ))}

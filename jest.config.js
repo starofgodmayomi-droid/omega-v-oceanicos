@@ -51,6 +51,7 @@ export default {
     '@omega-v/consensus': '<rootDir>/packages/consensus/src/index.ts',
     '@omega-v/mesh': '<rootDir>/packages/mesh/src/index.ts',
     '@omega-v/sharding': '<rootDir>/packages/sharding/src/index.ts',
+    '@omega-v/bridge': '<rootDir>/packages/bridge/src/index.ts',
   },
   collectCoverageFrom: [
     'packages/*/src/**/*.ts',
