@@ -73,6 +73,22 @@ export class OceanicosCLI {
         };
       }
 
+      case 'ecosystem': {
+        const claim = args[1] || 'CLI Unified Ecosystem OS Flow';
+        const result = await this.client.runEcosystemFlow({
+          intentClaim: claim,
+          actorDid: 'did:omega:agent:cli-operator',
+          ruleDefinition: 'responseTime < 100',
+          metadata: { responseTime: 25, statusCode: 200 },
+          confidence: 0.98,
+        });
+        return {
+          success: result.verification.passed,
+          message: `[Ω∞v CLI] Unified Ecosystem Flow: ${result.verification.passed ? 'PASSED' : 'FAILED'} (State: ${result.kernelState.stateId}, Status: ${result.kernelState.verificationStatus})`,
+          output: result,
+        };
+      }
+
       case 'metrics': {
         const metrics = this.client.getMetrics();
         return {
@@ -619,6 +635,7 @@ export class OceanicosCLI {
           message: `Ω∞v Oceanicos CLI v0.1.0
 Commands:
   omega-v loop [claim]              Execute complete verification loop
+  omega-v ecosystem [claim]         Execute unified 8-stage canonical ecosystem OS flow
   omega-v swarm [claim]             Execute multi-agent Formless Swarm cycle
   omega-v edge [claim]              Capture & flush Merkle edge observation batch
   omega-v analytics                 Compute rule efficacy & pattern analytics

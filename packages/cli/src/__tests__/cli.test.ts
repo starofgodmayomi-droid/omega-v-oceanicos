@@ -77,4 +77,13 @@ describe('OceanicosCLI', () => {
     expect(res.message).toContain('VaaS Tenant Registered');
     expect(res.output).toHaveProperty('apiKey');
   });
+
+  it('should execute ecosystem command with unified 8-stage flow', async () => {
+    const res = await cli.run(['ecosystem', 'CLI full-stack state transition']);
+    expect(res.success).toBe(true);
+    expect(res.message).toContain('Unified Ecosystem Flow: PASSED');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((res.output as any).kernelState).toHaveProperty('verificationStatus', 'VERIFIED');
+  });
 });
+
