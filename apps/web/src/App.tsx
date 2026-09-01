@@ -631,6 +631,33 @@ interface BridgeStatsData {
   latestRelayedHeight: number;
 }
 
+interface EncryptedMempoolTxItem {
+  txHash: string;
+  senderDid: string;
+  encryptedPayload: string;
+  gasLimit: number;
+  receivedTimestamp: number;
+  status: string;
+  fairSequenceNumber?: number;
+}
+
+interface SequencerBatchReceiptItem {
+  batchNumber: number;
+  txCount: number;
+  transactionsRoot: string;
+  stateDeltaRoot: string;
+  timestamp: string;
+}
+
+interface SequencerStatsData {
+  totalMempoolTxs: number;
+  pendingMempoolTxs: number;
+  totalBatchesSealed: number;
+  avgBatchSize: number;
+  latestBatchNumber: number;
+  vdfIterationsDifficulty: number;
+}
+
 interface RuleEfficacy {
   ruleName: string;
   totalExecutions: number;
@@ -956,6 +983,14 @@ export function App(): JSX.Element {
   const [bridgeAmount, setBridgeAmount] = useState('10000');
   const [initiatingBridgeTransfer, setInitiatingBridgeTransfer] = useState(false);
   const [bridgeResult, setBridgeResult] = useState<string | null>(null);
+  const [mempoolTxs, setMempoolTxs] = useState<EncryptedMempoolTxItem[]>([]);
+  const [sequencerBatches, setSequencerBatches] = useState<SequencerBatchReceiptItem[]>([]);
+  const [sequencerStats, setSequencerStats] = useState<SequencerStatsData | null>(null);
+  const [encryptedSenderDid, setEncryptedSenderDid] = useState('did:omega:agent:trader-01');
+  const [encryptedTxPayload, setEncryptedTxPayload] = useState('0xencrypted_trade_intent_swap_eth_for_omega_v');
+  const [submittingTx, setSubmittingTx] = useState(false);
+  const [sealingBatch, setSealingBatch] = useState(false);
+  const [sequencerResult, setSequencerResult] = useState<string | null>(null);
 
   // ── Poll log + metrics ──
   const fetchState = useCallback(async () => {
@@ -1011,6 +1046,9 @@ export function App(): JSX.Element {
         brgChainRes,
         brgTxRes,
         brgStatsRes,
+        seqMemRes,
+        seqBatchRes,
+        seqStatsRes,
       ] = await Promise.all([
         fetch(`${API_BASE}/log?limit=30`),
         fetch(`${API_BASE}/metrics`),
@@ -1062,6 +1100,9 @@ export function App(): JSX.Element {
         fetch(`${API_BASE}/bridge/chains`),
         fetch(`${API_BASE}/bridge/transfers`),
         fetch(`${API_BASE}/bridge/stats`),
+        fetch(`${API_BASE}/sequencer/mempool`),
+        fetch(`${API_BASE}/sequencer/batches`),
+        fetch(`${API_BASE}/sequencer/stats`),
       ]);
       if (!logRes.ok || !metricsRes.ok) throw new Error('API error');
 
@@ -1211,6 +1252,15 @@ export function App(): JSX.Element {
       }
       if (brgStatsRes && brgStatsRes.ok) {
         setBridgeStats((await brgStatsRes.json()).data as BridgeStatsData);
+      }
+      if (seqMemRes && seqMemRes.ok) {
+        setMempoolTxs((await seqMemRes.json()).data as EncryptedMempoolTxItem[]);
+      }
+      if (seqBatchRes && seqBatchRes.ok) {
+        setSequencerBatches((await seqBatchRes.json()).data as SequencerBatchReceiptItem[]);
+      }
+      if (seqStatsRes && seqStatsRes.ok) {
+        setSequencerStats((await seqStatsRes.json()).data as SequencerStatsData);
       }
     } catch {
       setApiOnline(false);
@@ -6893,6 +6943,186 @@ export function App(): JSX.Element {
                     </div>
                   </div>
                 ))}
+              </div>
+            </div>
+          </div>
+
+          {/* ═══ Section 33: MEV-Resistant Sequencer ═══ */}
+          <div className="card" style={{ gridColumn: '1 / -1' }}>
+            <div className="section-header" style={{ marginBottom: 18 }}>
+              <div className="section-title">⏱️ MEV-Resistant Sequencer & VDF Batches</div>
+              <span className="section-badge">
+                {sequencerStats ? `${sequencerStats.totalBatchesSealed} batches sealed · ${sequencerStats.pendingMempoolTxs} pending txs · ${sequencerStats.vdfIterationsDifficulty} iters` : 'Loading…'}
+              </span>
+            </div>
+
+            {/* Sequencer Stats Row */}
+            {sequencerStats && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 10, marginBottom: 16 }}>
+                <div style={{ background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', border: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Total Batches</div>
+                  <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--accent-purple)' }}>{sequencerStats.totalBatchesSealed}</div>
+                </div>
+                <div style={{ background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', border: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Pending Mempool</div>
+                  <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--accent-orange)' }}>{sequencerStats.pendingMempoolTxs}</div>
+                </div>
+                <div style={{ background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', border: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Total Ingested</div>
+                  <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--accent-teal)' }}>{sequencerStats.totalMempoolTxs}</div>
+                </div>
+                <div style={{ background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', border: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Avg Batch Size</div>
+                  <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--accent-green)' }}>{sequencerStats.avgBatchSize} txs</div>
+                </div>
+              </div>
+            )}
+
+            {/* Submit Encrypted Tx & Seal Batch Controls */}
+            <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+              <div style={{ flex: 1, minWidth: 160 }}>
+                <label style={{ display: 'block', fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Sender DID</label>
+                <input
+                  type="text"
+                  value={encryptedSenderDid}
+                  onChange={(e) => setEncryptedSenderDid(e.target.value)}
+                  style={{ width: '100%', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '8px 10px', color: 'var(--text-primary)', fontFamily: 'JetBrains Mono, monospace', fontSize: '0.75rem' }}
+                />
+              </div>
+              <div style={{ flex: 2, minWidth: 240 }}>
+                <label style={{ display: 'block', fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Encrypted Calldata Payload</label>
+                <input
+                  type="text"
+                  value={encryptedTxPayload}
+                  onChange={(e) => setEncryptedTxPayload(e.target.value)}
+                  style={{ width: '100%', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '8px 10px', color: 'var(--text-primary)', fontFamily: 'JetBrains Mono, monospace', fontSize: '0.75rem' }}
+                />
+              </div>
+              <button
+                className="cta-button"
+                disabled={submittingTx}
+                onClick={async () => {
+                  setSubmittingTx(true);
+                  setSequencerResult(null);
+                  try {
+                    const res = await fetch(`${API_BASE}/sequencer/mempool/submit`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        senderDid: encryptedSenderDid,
+                        encryptedPayload: encryptedTxPayload,
+                      }),
+                    });
+                    const data = await res.json();
+                    if (!res.ok) { setSequencerResult(`❌ ${data.message}`); return; }
+                    setSequencerResult(`✅ Ingested encrypted transaction [${data.data.txHash.slice(0, 24)}…] into fair-ordered mempool`);
+                    fetchState();
+                  } catch (err) {
+                    setSequencerResult(`❌ ${err instanceof Error ? err.message : 'Tx submission failed'}`);
+                  } finally {
+                    setSubmittingTx(false);
+                  }
+                }}
+                style={{ minWidth: 140 }}
+              >
+                {submittingTx ? '⏳ Ingesting…' : '🔒 Submit Encrypted Tx'}
+              </button>
+              <button
+                className="cta-button"
+                disabled={sealingBatch}
+                onClick={async () => {
+                  setSealingBatch(true);
+                  setSequencerResult(null);
+                  try {
+                    const res = await fetch(`${API_BASE}/sequencer/batch/seal`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ maxTxs: 20 }),
+                    });
+                    const data = await res.json();
+                    if (!res.ok) { setSequencerResult(`❌ ${data.message}`); return; }
+                    setSequencerResult(`✅ Sealed Batch #${data.data.batchNumber} (${data.data.txCount} txs) · VDF proof verified · TxRoot: ${data.data.transactionsRoot.slice(0, 20)}…`);
+                    fetchState();
+                  } catch (err) {
+                    setSequencerResult(`❌ ${err instanceof Error ? err.message : 'Batch seal failed'}`);
+                  } finally {
+                    setSealingBatch(false);
+                  }
+                }}
+                style={{ minWidth: 140, background: 'var(--accent-purple)' }}
+              >
+                {sealingBatch ? '⏳ Computing VDF…' : '⚡ Seal VDF Batch'}
+              </button>
+            </div>
+
+            {sequencerResult && (
+              <div style={{ fontSize: '0.78rem', padding: '6px 10px', borderRadius: 'var(--radius-sm)', background: sequencerResult.startsWith('✅') ? 'rgba(72,187,120,0.1)' : 'rgba(229,62,62,0.1)', color: sequencerResult.startsWith('✅') ? 'var(--accent-green)' : 'var(--accent-red)', marginBottom: 14, fontFamily: 'JetBrains Mono, monospace' }}>
+                {sequencerResult}
+              </div>
+            )}
+
+            {/* Mempool & Sealed Batches Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
+              <div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Encrypted Mempool ({mempoolTxs.length})
+                </div>
+                <div style={{ display: 'grid', gap: 8 }}>
+                  {mempoolTxs.slice(-4).reverse().map((tx) => (
+                    <div
+                      key={tx.txHash}
+                      style={{
+                        background: 'var(--bg-surface)',
+                        border: '1px solid var(--border)',
+                        borderRadius: 'var(--radius-sm)',
+                        padding: 10,
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+                        <span style={{ fontWeight: 600, fontSize: '0.75rem', color: 'var(--text-primary)', fontFamily: 'JetBrains Mono, monospace' }}>
+                          {tx.txHash.slice(0, 18)}…
+                        </span>
+                        <span style={{ fontSize: '0.62rem', padding: '1px 6px', borderRadius: 3, background: tx.status === 'ORDERED' ? 'rgba(72,187,120,0.15)' : 'rgba(237,137,54,0.15)', color: tx.status === 'ORDERED' ? 'var(--accent-green)' : 'var(--accent-orange)', fontWeight: 700 }}>
+                          {tx.status} {tx.fairSequenceNumber ? `#${tx.fairSequenceNumber}` : ''}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
+                        Sender: {tx.senderDid.split(':').pop()} · Gas: {tx.gasLimit.toLocaleString()}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Sealed Batches ({sequencerBatches.length})
+                </div>
+                <div style={{ display: 'grid', gap: 8 }}>
+                  {sequencerBatches.slice(-4).reverse().map((b) => (
+                    <div
+                      key={b.batchNumber}
+                      style={{
+                        background: 'var(--bg-surface)',
+                        border: '1px solid var(--border)',
+                        borderRadius: 'var(--radius-sm)',
+                        padding: 10,
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+                        <span style={{ fontWeight: 700, fontSize: '0.8rem', color: 'var(--accent-purple)' }}>
+                          Batch #{b.batchNumber}
+                        </span>
+                        <span style={{ fontSize: '0.65rem', color: 'var(--accent-green)', fontWeight: 600 }}>
+                          {b.txCount} txs · ✓ VDF
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontFamily: 'JetBrains Mono, monospace' }}>
+                        Root: {b.transactionsRoot.slice(0, 22)}…
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>

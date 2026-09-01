@@ -34,6 +34,7 @@ import { OceanicosConsensusEngine } from '@omega-v/consensus';
 import { OceanicosMeshEngine } from '@omega-v/mesh';
 import { OceanicosShardingEngine } from '@omega-v/sharding';
 import { OceanicosBridgeEngine } from '@omega-v/bridge';
+import { OceanicosSequencerEngine } from '@omega-v/sequencer';
 import app from '../../apps/api/src/index';
 
 describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => {
@@ -1418,7 +1419,50 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       expect(stats.totalVolumeLocked).toBe(75000);
     });
   });
+
+  describe('33. MEV-Resistant Fair Sequencer & VDF Settlement Batches E2E', () => {
+    it('should submit encrypted transactions, compute VDF, seal fair batches, and verify cryptographic batch receipts', () => {
+      const sequencerEngine = new OceanicosSequencerEngine('e2e-sequencer-key', 200);
+
+      // 1. Submit encrypted transactions
+      const tx1 = sequencerEngine.submitEncryptedTx({
+        senderDid: 'did:omega:agent:user-alpha',
+        encryptedPayload: '0xencrypted_tx_data_alpha',
+        gasLimit: 120000,
+      });
+
+      const tx2 = sequencerEngine.submitEncryptedTx({
+        senderDid: 'did:omega:agent:user-beta',
+        encryptedPayload: '0xencrypted_tx_data_beta',
+        gasLimit: 90000,
+      });
+
+      expect(tx1.txHash).toMatch(/^0x/);
+      expect(tx1.status).toBe('PENDING');
+      expect(sequencerEngine.getMempool().length).toBe(2);
+
+      // 2. Seal batch with VDF
+      const batch = sequencerEngine.sealBatch(10);
+      expect(batch.batchNumber).toBe(1);
+      expect(batch.txCount).toBe(2);
+      expect(batch.transactionsRoot).toMatch(/^0x/);
+      expect(batch.stateDeltaRoot).toMatch(/^0x/);
+      expect(batch.vdfProof.iterations).toBe(200);
+
+      // 3. Verify batch receipt
+      const verification = sequencerEngine.verifyBatchReceipt(batch);
+      expect(verification.valid).toBe(true);
+
+      // 4. Check sequencer metrics
+      const stats = sequencerEngine.getStats();
+      expect(stats.totalMempoolTxs).toBe(2);
+      expect(stats.pendingMempoolTxs).toBe(0);
+      expect(stats.totalBatchesSealed).toBe(1);
+      expect(stats.avgBatchSize).toBe(2);
+    });
+  });
 });
+
 
 
 

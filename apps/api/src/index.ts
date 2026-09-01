@@ -37,6 +37,7 @@ import { OceanicosConsensusEngine } from '@omega-v/consensus';
 import { OceanicosMeshEngine } from '@omega-v/mesh';
 import { OceanicosShardingEngine } from '@omega-v/sharding';
 import { OceanicosBridgeEngine } from '@omega-v/bridge';
+import { OceanicosSequencerEngine } from '@omega-v/sequencer';
 import {
   SuccessResponse,
   ErrorResponse,
@@ -103,6 +104,7 @@ const consensusEngine = new OceanicosConsensusEngine();
 const meshEngine = new OceanicosMeshEngine();
 const shardingEngine = new OceanicosShardingEngine();
 const bridgeEngine = new OceanicosBridgeEngine();
+const sequencerEngine = new OceanicosSequencerEngine();
 
 // Register default rules
 verificationEngine.registerRule({
@@ -3040,6 +3042,82 @@ app.get('/bridge/transfers', (_req: Request, res: Response) => {
 /** GET /bridge/stats — Bridge statistics */
 app.get('/bridge/stats', (_req: Request, res: Response) => {
   const stats = bridgeEngine.getStats();
+  res.json({
+    data: stats,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/**
+ * Section 33 Endpoints: MEV-Resistant Sequencer & VDF Fair Batching
+ * /sequencer/mempool, /sequencer/mempool/submit, /sequencer/batch/seal, /sequencer/batches, /sequencer/stats
+ */
+
+/** GET /sequencer/mempool — List all encrypted mempool transactions */
+app.get('/sequencer/mempool', (_req: Request, res: Response) => {
+  const mempool = sequencerEngine.getMempool();
+  res.json({
+    data: mempool,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /sequencer/mempool/submit — Submit encrypted transaction for fair ordering */
+app.post('/sequencer/mempool/submit', (req: Request, res: Response) => {
+  const { senderDid, encryptedPayload, ephemeralPublicKey, gasLimit } = req.body;
+  if (!senderDid || !encryptedPayload) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'senderDid and encryptedPayload are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  const tx = sequencerEngine.submitEncryptedTx({
+    senderDid,
+    encryptedPayload,
+    ephemeralPublicKey,
+    gasLimit,
+  });
+
+  res.status(201).json({
+    data: tx,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /sequencer/batch/seal — Seal pending mempool into VDF-attested batch */
+app.post('/sequencer/batch/seal', (req: Request, res: Response) => {
+  const maxTxs = typeof req.body.maxTxs === 'number' ? req.body.maxTxs : 50;
+
+  try {
+    const batch = sequencerEngine.sealBatch(maxTxs);
+    res.status(201).json({
+      data: batch,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'SEAL_BATCH_FAILED',
+      message: err instanceof Error ? err.message : 'Batch seal failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** GET /sequencer/batches — List all sealed sequencer batches */
+app.get('/sequencer/batches', (_req: Request, res: Response) => {
+  const batches = sequencerEngine.getBatches();
+  res.json({
+    data: batches,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** GET /sequencer/stats — Sequencer engine metrics */
+app.get('/sequencer/stats', (_req: Request, res: Response) => {
+  const stats = sequencerEngine.getStats();
   res.json({
     data: stats,
     timestamp: new Date().toISOString(),

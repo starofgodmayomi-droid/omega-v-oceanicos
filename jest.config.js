@@ -52,6 +52,7 @@ export default {
     '@omega-v/mesh': '<rootDir>/packages/mesh/src/index.ts',
     '@omega-v/sharding': '<rootDir>/packages/sharding/src/index.ts',
     '@omega-v/bridge': '<rootDir>/packages/bridge/src/index.ts',
+    '@omega-v/sequencer': '<rootDir>/packages/sequencer/src/index.ts',
   },
   collectCoverageFrom: [
     'packages/*/src/**/*.ts',

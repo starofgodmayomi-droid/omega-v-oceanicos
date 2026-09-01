@@ -68,7 +68,8 @@
       "@omega-v/consensus": ["packages/consensus/src/index.ts"],
       "@omega-v/mesh": ["packages/mesh/src/index.ts"],
       "@omega-v/sharding": ["packages/sharding/src/index.ts"],
-      "@omega-v/bridge": ["packages/bridge/src/index.ts"]
+      "@omega-v/bridge": ["packages/bridge/src/index.ts"],
+      "@omega-v/sequencer": ["packages/sequencer/src/index.ts"]
     }
   },
   "include": ["packages/*/src", "apps/*/src", "tests"],
