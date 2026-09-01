@@ -13,9 +13,9 @@ $$\Omega\infty v ::= \text{REALITY} \rightleftarrows \text{OBSERVE} \rightleftar
 
 ---
 
-## 🏛️ 48-Pillar Full-Stack Architecture Matrix
+## 🏛️ 61-Pillar Full-Stack Architecture Matrix
 
-The repository contains 48 modular, type-safe, independently tested pillars forming the complete bridge between intention and verified consequence.
+The repository contains 61 modular, type-safe, independently tested pillars forming the complete bridge between intention and verified consequence.
 
 | Pillar | Package | Core Functionality | Test Suite |
 | :---: | :--- | :--- | :---: |
@@ -67,13 +67,26 @@ The repository contains 48 modular, type-safe, independently tested pillars form
 | **XLVI** | [`@omega-v/amm`](packages/amm) | Verifiable Automated Market Maker (AMM), Constant Product Invariant & Swap Proofs | 5/5 passing |
 | **XLVII** | [`@omega-v/reputation`](packages/reputation) | Verifiable Agent Reputation & Trust Scoring, Sybil-Resistant Feedback Attestations, Decay Dynamics & Slashing Lineage | 5/5 passing |
 | **XLVIII** | [`@omega-v/human`](packages/human) | Attributable Human Authorization Gate, Value Judgment & Operator Override Lineage | 4/4 passing |
+| **XLIX** | [`@omega-v/oracle`](packages/oracle) | Multi-Source Consensus Oracle, Variance Thresholding & Price Feeds | 7/7 passing |
+| **L** | [`@omega-v/webhook`](packages/webhook) | Real-Time Verification Webhook Engine, HMAC-SHA256 Delivery & Retries | 9/9 passing |
+| **LI** | [`@omega-v/vault`](packages/vault) | Cryptographic State Vault, Checkpoint Roots & Disaster Recovery | 5/5 passing |
+| **LII** | [`@omega-v/dispute`](packages/dispute) | Decentralized Dispute Arbitration, Counter-Evidence Dossiers & Jury Voting | 6/6 passing |
+| **LIII** | [`@omega-v/graph`](packages/graph) | Provenance Knowledge Graph & Bidirectional Causal Lineage Traversal | 3/3 passing |
+| **LIV** | [`@omega-v/security`](packages/security) | Capability Tokens, Role-Based Access Control & Security Audits | 7/7 passing |
+| **LV** | [`@omega-v/evolution`](packages/evolution) | Controlled Rule Recompilation & Drift Detection Engine | 5/5 passing |
+| **LVI** | [`@omega-v/compiler`](packages/compiler) | Ω∞v DSL Rule Compiler, Syntax AST & Bytecode Generation | 8/8 passing |
+| **LVII** | [`@omega-v/ir`](packages/ir) | Oceanicum Intermediate Representation (IR) Stack Execution Machine | 4/4 passing |
+| **LVIII** | [`@omega-v/agents`](packages/agents) | Formless Swarm Multi-Intelligence Consensus & Swarm Reasoning | 4/4 passing |
+| **LIX** | [`@omega-v/edge`](packages/edge) | Decentralized Edge Observation Nodes & Micro-Telemetry Streaming | 5/5 passing |
+| **LX** | [`@omega-v/cli`](packages/cli) | Oceanic Verification Command-Line Interface (CLI) | 10/10 passing |
+| **LXI** | [`@omega-v/sdk`](packages/sdk) | Full-Stack Oceanicos Client SDK & Verification Session Harness | 3/3 passing |
 
 ---
 
 ## 🚀 Applications
 
-* **`apps/api`**: Express TypeScript REST backend exposing complete verification endpoints for all 48 pillars (`http://localhost:3000`).
-* **`apps/web`**: React / Vite / TypeScript comprehensive control console featuring 48 live operational sections with real-time polling (`http://localhost:5173`).
+* **`apps/api`**: Express TypeScript REST backend exposing complete verification endpoints for all 61 pillars (`http://localhost:3000`).
+* **`apps/web`**: React / Vite / TypeScript comprehensive control console featuring 61 live operational sections with real-time polling (`http://localhost:5173`).
 
 ---
 
@@ -83,7 +96,7 @@ The repository contains 48 modular, type-safe, independently tested pillars form
 # Verify entire monorepo TypeScript compilation
 npx tsc --noEmit
 
-# Run all 64 Jest test suites across all 48 pillars
+# Run all 64 Jest test suites across all 61 pillars
 npx jest --no-coverage
 ```
 
