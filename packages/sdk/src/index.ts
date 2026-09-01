@@ -1,8 +1,9 @@
 export type OperatingSystemState =
   'offline' | 'booting' | 'ready' | 'degraded' | 'stopping' | 'stopped';
+export type OperatingSystemTaskKind = 'observe' | 'verify' | 'remember' | 'report';
 export type OperatingSystemTask = {
   id: string;
-  kind: 'observe' | 'verify' | 'remember' | 'report' | 'recompile';
+  kind: OperatingSystemTaskKind;
   input: Record<string, unknown>;
   requestedBy: string;
 };

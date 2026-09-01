@@ -2,6 +2,12 @@
 
 **Updated:** 2026-09-01
 
+## OS task-kind contract alignment checkpoint — 2026-09-01
+
+The typed SDK contract is now aligned with the MINI kernel’s authoritative `OperatingSystemTaskKind` union: `observe`, `verify`, `remember`, and `report`. The stale SDK-only `recompile` member was removed, and `@omega-v/mini` now exports `OperatingSystemTaskKind` for downstream type reuse. This is a compile-time contract correction; the public `/os` snapshot and runtime capabilities remain unchanged.
+
+Focused SDK/MINI tests passed with 49 tests, the prerequisite package builds and MINI/SDK builds passed, TypeScript no-emit checking passed, and `git diff --check` passed. The earlier full local gate remains recorded at 59 suites / 1,148 tests with 3 integration suites / 28 tests and the complete workspace build passing. No push, PR publication, merge, or deployment has occurred.
+
 ## Bounded OS task-admission hardening checkpoint — 2026-09-01
 
 The local Universal Builder OS kernel now validates task admission at runtime, not only through TypeScript types. Unsupported task kinds, blank or overlong requester identities, and task inputs with more than 64 top-level keys fail closed before task creation. Admitted task inputs are deeply cloned and reject cyclic graphs, graphs deeper than 8 levels, or graphs larger than 256 object/array nodes, preventing mutable nested references from escaping into retained kernel state. The public OS snapshot contract remains unchanged, and no API, SDK, CLI, Web, shell, credential, remote-mutation, deployment, or authorization capability was added by this slice.
