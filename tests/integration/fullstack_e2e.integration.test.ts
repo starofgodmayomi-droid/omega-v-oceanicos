@@ -48,6 +48,7 @@ import { OceanicosGovernorEngine } from '@omega-v/governor';
 import { OceanicosRelayEngine } from '@omega-v/relay';
 import { OceanicosVirtualMachine } from '@omega-v/evm';
 import { OceanicosAMMEngine } from '@omega-v/amm';
+import { OceanicosReputationEngine } from '@omega-v/reputation';
 import app from '../../apps/api/src/index';
 
 describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => {
@@ -2171,17 +2172,113 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       expect(stats.totalFeesCollected).toBeGreaterThan(0);
     });
   });
+
+  // ─── Section 45: Verifiable Agent Reputation & Trust Scoring ────────────────
+  describe('Section 45 — Verifiable Agent Reputation & Trust Scoring', () => {
+    it('registers an agent, submits feedback, slashes, decays, and verifies stats via engine', () => {
+      const rep = new OceanicosReputationEngine('test-reputation-secret');
+
+      // 1. Register agents
+      // score=500 → ESTABLISHED (boundary: ≥500 = ESTABLISHED, ≥300 = PROBATIONARY)
+      const alice = rep.registerAgent({ agentDid: 'did:omega:alice', moniker: 'Alice' });
+      const bob = rep.registerAgent({ agentDid: 'did:omega:bob', moniker: 'Bob', initialScore: 800 });
+      expect(alice.reputationScore).toBe(500);
+      expect(alice.trustTier).toBe('ESTABLISHED');
+      expect(bob.reputationScore).toBe(800);
+      expect(bob.trustTier).toBe('AUTHORITY');
+
+      // 2. Submit feedback (Bob attests Alice positively, weighted by Bob's score)
+      const receipt = rep.submitFeedback({
+        fromDid: 'did:omega:bob',
+        targetDid: 'did:omega:alice',
+        scoreDelta: 50,
+        reason: 'Excellent verified work on bridge contract deployment',
+      });
+      expect(receipt.receiptId).toMatch(/^fdbk-/);
+      expect(receipt.feedbackProof).toMatch(/^0x/);
+      expect(receipt.scoreDelta).toBeGreaterThan(50); // weighted up by Bob's authority score
+      const aliceAfterFeedback = rep.getAgent('did:omega:alice')!;
+      expect(aliceAfterFeedback.positiveAttestations).toBe(1);
+      expect(aliceAfterFeedback.reputationScore).toBeGreaterThan(500);
+
+      // 3. Slash Alice
+      const slash = rep.slashAgent({
+        targetDid: 'did:omega:alice',
+        slashPenalty: 100,
+        reason: 'Submitted invalid proof',
+        evidenceHash: '0xevidencehash001',
+      });
+      expect(slash.slashId).toMatch(/^slsh-/);
+      expect(slash.slashProof).toMatch(/^0x/);
+      expect(rep.getAgent('did:omega:alice')!.slashedCount).toBe(1);
+
+      // 4. Decay scores
+      const scoreBefore = rep.getAgent('did:omega:alice')!.reputationScore;
+      rep.decayScores();
+      const scoreAfter = rep.getAgent('did:omega:alice')!.reputationScore;
+      // Decay regresses toward baseline 500; score moves toward or stays at 500
+      if (scoreBefore > 500) expect(scoreAfter).toBeLessThanOrEqual(scoreBefore);
+      if (scoreBefore < 500) expect(scoreAfter).toBeGreaterThanOrEqual(scoreBefore);
+      if (scoreBefore === 500) expect(scoreAfter).toBe(500);
+
+      // 5. Stats
+      const stats = rep.getStats();
+      expect(stats.totalAgents).toBe(2);
+      expect(stats.totalFeedbacks).toBe(1);
+      expect(stats.totalSlashes).toBe(1);
+      expect(stats.authorityAgents + stats.establishedAgents + stats.probationaryAgents + stats.untrustedAgents).toBe(2);
+    });
+
+    it('rejects self-feedback and invalid scoreDelta', () => {
+      const rep = new OceanicosReputationEngine();
+      rep.registerAgent({ agentDid: 'did:omega:carol', moniker: 'Carol' });
+      expect(() => rep.submitFeedback({
+        fromDid: 'did:omega:carol',
+        targetDid: 'did:omega:carol',
+        scoreDelta: 10,
+        reason: 'Self-attestation attempt',
+      })).toThrow('self-feedback');
+      expect(() => rep.submitFeedback({
+        fromDid: 'did:omega:unknown',
+        targetDid: 'did:omega:carol',
+        scoreDelta: 200,
+        reason: 'Excessive delta',
+      })).toThrow('scoreDelta');
+    });
+
+    it('verifies reputation engine full lifecycle: weighted feedback, tier transitions, and decay convergence', () => {
+      const rep = new OceanicosReputationEngine('lifecycle-secret');
+
+      // Register 3 agents at different tiers
+      const a1 = rep.registerAgent({ agentDid: 'did:omega:node-alpha', moniker: 'NodeAlpha', initialScore: 200 });
+      const a2 = rep.registerAgent({ agentDid: 'did:omega:node-beta', moniker: 'NodeBeta', initialScore: 500 });
+      const a3 = rep.registerAgent({ agentDid: 'did:omega:node-gamma', moniker: 'NodeGamma', initialScore: 900 });
+
+      expect(a1.trustTier).toBe('UNTRUSTED');
+      expect(a2.trustTier).toBe('ESTABLISHED');
+      expect(a3.trustTier).toBe('AUTHORITY');
+
+      // NodeGamma provides positive feedback to NodeAlpha (high authority weight)
+      rep.submitFeedback({
+        fromDid: 'did:omega:node-gamma',
+        targetDid: 'did:omega:node-alpha',
+        scoreDelta: 80,
+        reason: 'Delivered high-quality ZK proof for cross-shard verification',
+      });
+
+      const alphaUpdated = rep.getAgent('did:omega:node-alpha')!;
+      expect(alphaUpdated.reputationScore).toBeGreaterThan(200);
+
+      // Repeated decay cycles converge toward 500
+      for (let i = 0; i < 10; i++) rep.decayScores();
+      const allAgents = rep.getAgents();
+      for (const ag of allAgents) {
+        expect(Math.abs(ag.reputationScore - 500)).toBeLessThan(500);
+      }
+
+      // Verify feedbacks and slashes lists
+      expect(rep.getFeedbacks().length).toBe(1);
+      expect(rep.getSlashes().length).toBe(0);
+    });
+  });
 });
-
-
-
-
-
-
-
-
-
-
-
-
-

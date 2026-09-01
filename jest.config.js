@@ -66,6 +66,7 @@ export default {
     '@omega-v/relay': '<rootDir>/packages/relay/src/index.ts',
     '@omega-v/evm': '<rootDir>/packages/evm/src/index.ts',
     '@omega-v/amm': '<rootDir>/packages/amm/src/index.ts',
+    '@omega-v/reputation': '<rootDir>/packages/reputation/src/index.ts',
   },
   collectCoverageFrom: [
     'packages/*/src/**/*.ts',

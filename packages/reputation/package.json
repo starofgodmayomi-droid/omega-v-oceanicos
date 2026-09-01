@@ -1,0 +1,11 @@
+{
+  "name": "@omega-v/reputation",
+  "version": "0.1.0",
+  "description": "Verifiable On-Chain Agent Reputation, EigenTrust Scoring & Sybil-Resistant Feedback for Ω∞v Oceanicos",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "test": "jest"
+  }
+}

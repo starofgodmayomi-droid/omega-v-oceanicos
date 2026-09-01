@@ -1110,6 +1110,42 @@ interface AMMStatsData {
   totalFeesCollected: number;
 }
 
+interface AgentReputationItem {
+  agentDid: string;
+  moniker: string;
+  reputationScore: number;
+  trustTier: string;
+  positiveAttestations: number;
+  negativeAttestations: number;
+  slashedCount: number;
+  feedbackHistoryCount: number;
+  registeredAt: string;
+  lastUpdated: string;
+}
+
+interface FeedbackReceiptItem {
+  receiptId: string;
+  fromDid: string;
+  targetDid: string;
+  scoreDelta: number;
+  newScore: number;
+  reason: string;
+  contextHash: string;
+  feedbackProof: string;
+  timestamp: string;
+}
+
+interface ReputationStatsData {
+  totalAgents: number;
+  authorityAgents: number;
+  establishedAgents: number;
+  probationaryAgents: number;
+  untrustedAgents: number;
+  totalFeedbacks: number;
+  totalSlashes: number;
+  averageReputationScore: number;
+}
+
 interface RuleEfficacy {
   ruleName: string;
   totalExecutions: number;
@@ -1501,6 +1537,9 @@ export function App(): JSX.Element {
   const [ammPools, setAmmPools] = useState<LiquidityPoolItem[]>([]);
   const [ammSwaps, setAmmSwaps] = useState<SwapReceiptItem[]>([]);
   const [ammStats, setAmmStats] = useState<AMMStatsData | null>(null);
+  const [repAgents, setRepAgents] = useState<AgentReputationItem[]>([]);
+  const [repFeedbacks, setRepFeedbacks] = useState<FeedbackReceiptItem[]>([]);
+  const [repStats, setRepStats] = useState<ReputationStatsData | null>(null);
 
   // ── Poll log + metrics ──
   const fetchState = useCallback(async () => {
@@ -1596,6 +1635,9 @@ export function App(): JSX.Element {
         ammPoolsRes,
         ammSwapsRes,
         ammStatsRes,
+        repAgentsRes,
+        repFeedbacksRes,
+        repStatsRes,
       ] = await Promise.all([
         fetch(`${API_BASE}/log?limit=30`),
         fetch(`${API_BASE}/metrics`),
@@ -1687,6 +1729,9 @@ export function App(): JSX.Element {
         fetch(`${API_BASE}/amm/pools`),
         fetch(`${API_BASE}/amm/swaps`),
         fetch(`${API_BASE}/amm/stats`),
+        fetch(`${API_BASE}/reputation/agents`),
+        fetch(`${API_BASE}/reputation/feedbacks`),
+        fetch(`${API_BASE}/reputation/stats`),
       ]);
       if (!logRes.ok || !metricsRes.ok) throw new Error('API error');
 
@@ -1956,6 +2001,15 @@ export function App(): JSX.Element {
       }
       if (ammStatsRes && ammStatsRes.ok) {
         setAmmStats((await ammStatsRes.json()).data as AMMStatsData);
+      }
+      if (repAgentsRes && repAgentsRes.ok) {
+        setRepAgents((await repAgentsRes.json()).data as AgentReputationItem[]);
+      }
+      if (repFeedbacksRes && repFeedbacksRes.ok) {
+        setRepFeedbacks((await repFeedbacksRes.json()).data as FeedbackReceiptItem[]);
+      }
+      if (repStatsRes && repStatsRes.ok) {
+        setRepStats((await repStatsRes.json()).data as ReputationStatsData);
       }
     } catch {
       setApiOnline(false);
@@ -9118,6 +9172,77 @@ export function App(): JSX.Element {
                       </div>
                     </div>
                   ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Section 45: Verifiable Agent Reputation & Trust Scoring ── */}
+          <div className="card" style={{ gridColumn: '1 / -1' }}>
+            <div className="section-header" style={{ marginBottom: 16 }}>
+              <div className="section-title">⭐ Agent Reputation & Trust Scoring</div>
+              <span className="section-badge">{repAgents.length} agents · {repFeedbacks.length} feedbacks</span>
+            </div>
+
+            {repStats && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10, marginBottom: 18 }}>
+                {[
+                  { label: 'Total Agents', value: repStats.totalAgents, color: 'var(--accent-blue)' },
+                  { label: 'Authority', value: repStats.authorityAgents, color: '#f6ad55' },
+                  { label: 'Avg Score', value: repStats.averageReputationScore, color: 'var(--accent-green)' },
+                  { label: 'Slashes', value: repStats.totalSlashes, color: '#fc8181' },
+                ].map((m) => (
+                  <div key={m.label} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '1.5rem', fontWeight: 800, color: m.color }}>{m.value}</div>
+                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: 2 }}>{m.label}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+              <div>
+                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Agent Ledger</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {repAgents.slice(0, 5).map((a) => {
+                    const tierColor = a.trustTier === 'AUTHORITY' ? '#f6ad55' : a.trustTier === 'ESTABLISHED' ? 'var(--accent-green)' : a.trustTier === 'PROBATIONARY' ? '#63b3ed' : '#fc8181';
+                    return (
+                      <div key={a.agentDid} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: 10 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                          <span style={{ fontWeight: 700, fontSize: '0.78rem', color: 'var(--text-primary)' }}>{a.moniker}</span>
+                          <span style={{ fontSize: '0.62rem', padding: '1px 6px', borderRadius: 3, background: `${tierColor}22`, color: tierColor, fontWeight: 700 }}>{a.trustTier}</span>
+                        </div>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                          <div style={{ flex: 1, height: 4, background: 'var(--border)', borderRadius: 99 }}>
+                            <div style={{ width: `${(a.reputationScore / 1000) * 100}%`, height: '100%', background: tierColor, borderRadius: 99, transition: 'width 0.5s' }} />
+                          </div>
+                          <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', minWidth: 34, textAlign: 'right' }}>{a.reputationScore}/1000</span>
+                        </div>
+                        <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', marginTop: 3, fontFamily: 'JetBrains Mono, monospace' }}>
+                          +{a.positiveAttestations} / -{a.negativeAttestations} · slashed: {a.slashedCount}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {repAgents.length === 0 && <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', padding: '12px 0' }}>No agents registered yet. POST /reputation/agents to register.</div>}
+                </div>
+              </div>
+
+              <div>
+                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Recent Feedback Attestations</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {repFeedbacks.slice(-5).reverse().map((f) => (
+                    <div key={f.receiptId} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: 10 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
+                        <span style={{ fontWeight: 700, fontSize: '0.78rem', color: 'var(--text-primary)' }}>{f.reason.slice(0, 36)}{f.reason.length > 36 ? '…' : ''}</span>
+                        <span style={{ fontSize: '0.68rem', padding: '1px 7px', borderRadius: 3, background: f.scoreDelta >= 0 ? 'rgba(72,187,120,0.15)' : 'rgba(252,129,129,0.15)', color: f.scoreDelta >= 0 ? 'var(--accent-green)' : '#fc8181', fontWeight: 700 }}>{f.scoreDelta >= 0 ? '+' : ''}{f.scoreDelta}</span>
+                      </div>
+                      <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', fontFamily: 'JetBrains Mono, monospace' }}>
+                        from: {f.fromDid.split(':').pop()} → target: {f.targetDid.split(':').pop()} · new score: {f.newScore}
+                      </div>
+                    </div>
+                  ))}
+                  {repFeedbacks.length === 0 && <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', padding: '12px 0' }}>No feedbacks yet. POST /reputation/feedback to attest.</div>}
                 </div>
               </div>
             </div>

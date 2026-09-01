@@ -51,6 +51,7 @@ import { OceanicosGovernorEngine } from '@omega-v/governor';
 import { OceanicosRelayEngine } from '@omega-v/relay';
 import { OceanicosVirtualMachine } from '@omega-v/evm';
 import { OceanicosAMMEngine } from '@omega-v/amm';
+import { OceanicosReputationEngine } from '@omega-v/reputation';
 import {
   SuccessResponse,
   ErrorResponse,
@@ -131,6 +132,7 @@ const governorEngine = new OceanicosGovernorEngine();
 const relayEngine = new OceanicosRelayEngine();
 const evmEngine = new OceanicosVirtualMachine();
 const ammEngine = new OceanicosAMMEngine();
+const reputationEngine = new OceanicosReputationEngine();
 
 // Register default rules
 verificationEngine.registerRule({
@@ -4941,6 +4943,170 @@ app.get('/amm/swaps', (_req: Request, res: Response) => {
 /** GET /amm/stats — AMM telemetry */
 app.get('/amm/stats', (_req: Request, res: Response) => {
   const stats = ammEngine.getStats();
+  res.json({
+    data: stats,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/**
+ * Section 47 Endpoints: Verifiable Agent Reputation & Trust Scoring
+ * /reputation/agents, /reputation/agents/:agentDid, /reputation/agents/register, /reputation/feedback, /reputation/feedbacks, /reputation/slash, /reputation/slashes, /reputation/decay, /reputation/stats
+ */
+
+/** GET /reputation/agents — List registered agents */
+app.get('/reputation/agents', (_req: Request, res: Response) => {
+  const agents = reputationEngine.getAgents();
+  res.json({
+    data: agents,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** GET /reputation/agents/:agentDid — Get agent reputation */
+app.get('/reputation/agents/:agentDid', (req: Request, res: Response) => {
+  const agent = reputationEngine.getAgent(req.params.agentDid);
+  if (!agent) {
+    res.status(404).json({
+      code: 'AGENT_NOT_FOUND',
+      message: `Agent ${req.params.agentDid} not found`,
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+  res.json({
+    data: agent,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /reputation/agents/register — Register agent profile */
+app.post('/reputation/agents/register', (req: Request, res: Response) => {
+  const { agentDid, moniker, initialScore } = req.body;
+  if (!agentDid || !moniker) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'agentDid and moniker are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const agent = reputationEngine.registerAgent({
+      agentDid,
+      moniker,
+      initialScore: initialScore ? Number(initialScore) : undefined,
+    });
+    res.status(201).json({
+      data: agent,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'REGISTRATION_FAILED',
+      message: err instanceof Error ? err.message : 'Registration failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** POST /reputation/feedback — Submit feedback attestation */
+app.post('/reputation/feedback', (req: Request, res: Response) => {
+  const { fromDid, targetDid, scoreDelta, reason, contextHash } = req.body;
+  if (!fromDid || !targetDid || scoreDelta === undefined || !reason) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'fromDid, targetDid, scoreDelta, and reason are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const receipt = reputationEngine.submitFeedback({
+      fromDid,
+      targetDid,
+      scoreDelta: Number(scoreDelta),
+      reason,
+      contextHash,
+    });
+    res.json({
+      data: receipt,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'FEEDBACK_FAILED',
+      message: err instanceof Error ? err.message : 'Feedback failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** GET /reputation/feedbacks — List feedback receipts */
+app.get('/reputation/feedbacks', (_req: Request, res: Response) => {
+  const feedbacks = reputationEngine.getFeedbacks();
+  res.json({
+    data: feedbacks,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /reputation/slash — Slash agent reputation */
+app.post('/reputation/slash', (req: Request, res: Response) => {
+  const { targetDid, slashPenalty, reason, evidenceHash } = req.body;
+  if (!targetDid || !slashPenalty || !reason || !evidenceHash) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'targetDid, slashPenalty, reason, and evidenceHash are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const slash = reputationEngine.slashAgent({
+      targetDid,
+      slashPenalty: Number(slashPenalty),
+      reason,
+      evidenceHash,
+    });
+    res.json({
+      data: slash,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'SLASH_FAILED',
+      message: err instanceof Error ? err.message : 'Slash failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** GET /reputation/slashes — List slashing receipts */
+app.get('/reputation/slashes', (_req: Request, res: Response) => {
+  const slashes = reputationEngine.getSlashes();
+  res.json({
+    data: slashes,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /reputation/decay — Trigger decay cycle */
+app.post('/reputation/decay', (req: Request, res: Response) => {
+  const { decayFactor } = req.body;
+  reputationEngine.decayScores(decayFactor ? Number(decayFactor) : undefined);
+  res.json({
+    data: { status: 'DECAYED' },
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** GET /reputation/stats — Reputation telemetry */
+app.get('/reputation/stats', (_req: Request, res: Response) => {
+  const stats = reputationEngine.getStats();
   res.json({
     data: stats,
     timestamp: new Date().toISOString(),

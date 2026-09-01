@@ -82,7 +82,8 @@
       "@omega-v/governor": ["packages/governor/src/index.ts"],
       "@omega-v/relay": ["packages/relay/src/index.ts"],
       "@omega-v/evm": ["packages/evm/src/index.ts"],
-      "@omega-v/amm": ["packages/amm/src/index.ts"]
+      "@omega-v/amm": ["packages/amm/src/index.ts"],
+      "@omega-v/reputation": ["packages/reputation/src/index.ts"]
     }
   },
   "include": ["packages/*/src", "apps/*/src", "tests"],
