@@ -2,6 +2,12 @@
 
 **Updated:** 2026-09-01
 
+## CLI Builder kernel event-observability checkpoint — 2026-09-01
+
+The `omega os` command now renders the latest bounded event type, sequence number, and optional rejection reason in addition to state, task/event counts, schema, limits, and capabilities. This aligns the CLI with the read-only Web Builder kernel panel and preserves the human-gated control boundary.
+
+Local evidence includes 82 CLI tests passing, formatting, lint, type-check, and the CLI build passing. The change is local and uncommitted at this checkpoint; no GitHub push, PR publication, merge, or deployment has occurred.
+
 ## Web Builder kernel event-observability checkpoint — 2026-09-01
 
 The read-only Web Builder kernel panel now displays the latest bounded OS event type and any recorded rejection reason alongside sequence, task/event counts, schema, finite limits, and capability boundaries. This makes rejected admissions legible at the operator surface without adding worker controls, mutation authority, shell access, credential handling, remote actions, or deployment behavior.
