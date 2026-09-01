@@ -52,6 +52,7 @@ import { OceanicosRelayEngine } from '@omega-v/relay';
 import { OceanicosVirtualMachine } from '@omega-v/evm';
 import { OceanicosAMMEngine } from '@omega-v/amm';
 import { OceanicosReputationEngine } from '@omega-v/reputation';
+import { HumanEngine } from '@omega-v/human';
 import {
   SuccessResponse,
   ErrorResponse,
@@ -133,6 +134,8 @@ const relayEngine = new OceanicosRelayEngine();
 const evmEngine = new OceanicosVirtualMachine();
 const ammEngine = new OceanicosAMMEngine();
 const reputationEngine = new OceanicosReputationEngine();
+const humanEngine = new HumanEngine();
+const humanAuditLog: ReturnType<typeof humanEngine.recordInput>[] = [];
 
 // Register default rules
 verificationEngine.registerRule({
@@ -5109,6 +5112,52 @@ app.get('/reputation/stats', (_req: Request, res: Response) => {
   const stats = reputationEngine.getStats();
   res.json({
     data: stats,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/**
+ * Section 48 — Human Authorization Gate
+ * Records attributable human participation events in the verification loop.
+ */
+
+/** POST /human/authorize — Record a human approval decision (APPROVAL type) */
+app.post('/human/authorize', (req: Request, res: Response) => {
+  const { humanId, rationale, payload, contextId } = req.body;
+  if (!humanId || !rationale) {
+    return res.status(400).json({ code: 'MISSING_FIELDS', message: 'humanId and rationale required', timestamp: new Date().toISOString() });
+  }
+  const input = humanEngine.recordInput('APPROVAL', humanId, rationale, payload ?? {}, contextId);
+  humanAuditLog.push(input);
+  return res.status(201).json({ data: { ...input, type: 'AUTHORIZE' }, timestamp: new Date().toISOString() });
+});
+
+/** POST /human/override — Record a human action override (ACTION type) */
+app.post('/human/override', (req: Request, res: Response) => {
+  const { humanId, rationale, payload, contextId } = req.body;
+  if (!humanId || !rationale) {
+    return res.status(400).json({ code: 'MISSING_FIELDS', message: 'humanId and rationale required', timestamp: new Date().toISOString() });
+  }
+  const input = humanEngine.recordInput('ACTION', humanId, rationale, payload ?? {}, contextId);
+  humanAuditLog.push(input);
+  return res.status(201).json({ data: { ...input, type: 'OVERRIDE' }, timestamp: new Date().toISOString() });
+});
+
+/** POST /human/reject — Record a human dissent/rejection (DISSENT type) */
+app.post('/human/reject', (req: Request, res: Response) => {
+  const { humanId, rationale, payload, contextId } = req.body;
+  if (!humanId || !rationale) {
+    return res.status(400).json({ code: 'MISSING_FIELDS', message: 'humanId and rationale required', timestamp: new Date().toISOString() });
+  }
+  const input = humanEngine.recordInput('DISSENT', humanId, rationale, payload ?? {}, contextId);
+  humanAuditLog.push(input);
+  return res.status(201).json({ data: { ...input, type: 'REJECT' }, timestamp: new Date().toISOString() });
+});
+
+/** GET /human/inputs — List all recorded human inputs */
+app.get('/human/inputs', (_req: Request, res: Response) => {
+  res.json({
+    data: humanAuditLog,
     timestamp: new Date().toISOString(),
   });
 });

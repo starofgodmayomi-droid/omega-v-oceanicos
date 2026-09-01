@@ -49,6 +49,7 @@ import { OceanicosRelayEngine } from '@omega-v/relay';
 import { OceanicosVirtualMachine } from '@omega-v/evm';
 import { OceanicosAMMEngine } from '@omega-v/amm';
 import { OceanicosReputationEngine } from '@omega-v/reputation';
+import { HumanEngine } from '@omega-v/human';
 import app from '../../apps/api/src/index';
 
 describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => {
@@ -2279,6 +2280,87 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       // Verify feedbacks and slashes lists
       expect(rep.getFeedbacks().length).toBe(1);
       expect(rep.getSlashes().length).toBe(0);
+    });
+  });
+
+  // ─── Section 48: Human Authorization Gate ────────────────────────────────────
+  describe('Section 48 — Human Authorization Gate', () => {
+    it('records authorization, override, and dissent events with attributed provenance', () => {
+      const human = new HumanEngine();
+
+      // APPROVAL (authorize)
+      const approval = human.recordInput(
+        'APPROVAL',
+        'did:human:operator-01',
+        'Manual review confirmed proposal meets safety and evidence thresholds',
+        { proposalId: 'prop-xyz-001', riskScore: 0.12 },
+        'ctx-governance-round-3'
+      );
+      expect(approval.id).toMatch(/^hum-/);
+      expect(approval.type).toBe('APPROVAL');
+      expect(approval.humanId).toBe('did:human:operator-01');
+      expect(approval.contextId).toBe('ctx-governance-round-3');
+      expect(approval.recordedAt).toBeTruthy();
+
+      // DISSENT (reject)
+      const dissent = human.recordInput(
+        'DISSENT',
+        'did:human:auditor-02',
+        'Evidence confidence below 0.9 threshold — action must be blocked pending additional verification',
+        { proposalId: 'prop-xyz-001', confidence: 0.76 },
+        'ctx-governance-round-3'
+      );
+      expect(dissent.type).toBe('DISSENT');
+      expect(dissent.humanId).toBe('did:human:auditor-02');
+
+      // ACTION (override)
+      const action = human.recordInput(
+        'ACTION',
+        'did:human:admin-00',
+        'Emergency override: system drift detected, manual rollback authorized',
+        { targetVersion: 'v2.1.3', rollbackReason: 'memory_leak_critical' }
+      );
+      expect(action.type).toBe('ACTION');
+
+      // Context lookup — both approval and dissent share same contextId
+      const contextInputs = human.getInputsForContext('ctx-governance-round-3');
+      expect(contextInputs.length).toBe(2);
+      expect(contextInputs.map((i) => i.type)).toContain('APPROVAL');
+      expect(contextInputs.map((i) => i.type)).toContain('DISSENT');
+
+      // Individual lookup
+      const fetched = human.getInput(approval.id);
+      expect(fetched).toBeDefined();
+      expect(fetched!.rationale).toContain('safety');
+    });
+
+    it('enforces attribution: every human action has humanId and rationale', () => {
+      const human = new HumanEngine();
+      const fb = human.recordInput('FEEDBACK', 'did:human:reviewer-05', 'Verification results look correct');
+      expect(fb.humanId).toBe('did:human:reviewer-05');
+      expect(fb.rationale).toBeTruthy();
+      expect(fb.id).toMatch(/^hum-/);
+    });
+
+    it('supports full value-judgment workflow with payload evidence', () => {
+      const human = new HumanEngine();
+
+      const vj = human.recordInput(
+        'VALUE_JUDGMENT',
+        'did:human:ethics-board',
+        'Autonomous action poses low risk to user sovereignty; approved under charter Section 11',
+        {
+          actionType: 'deploy-new-policy',
+          impactedUsers: 1200,
+          evidenceHash: '0xabc123',
+          riskTier: 'LOW',
+        },
+        'ctx-ethics-review-2026'
+      );
+
+      expect(vj.type).toBe('VALUE_JUDGMENT');
+      expect((vj.payload as { riskTier: string }).riskTier).toBe('LOW');
+      expect(vj.contextId).toBe('ctx-ethics-review-2026');
     });
   });
 });

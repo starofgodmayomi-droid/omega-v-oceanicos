@@ -1146,6 +1146,16 @@ interface ReputationStatsData {
   averageReputationScore: number;
 }
 
+interface HumanInputItem {
+  id: string;
+  type: string;
+  humanId: string;
+  contextId?: string;
+  payload: Record<string, unknown>;
+  rationale: string;
+  recordedAt: string;
+}
+
 interface RuleEfficacy {
   ruleName: string;
   totalExecutions: number;
@@ -1540,6 +1550,12 @@ export function App(): JSX.Element {
   const [repAgents, setRepAgents] = useState<AgentReputationItem[]>([]);
   const [repFeedbacks, setRepFeedbacks] = useState<FeedbackReceiptItem[]>([]);
   const [repStats, setRepStats] = useState<ReputationStatsData | null>(null);
+  const [humanInputs, setHumanInputs] = useState<HumanInputItem[]>([]);
+  const [humanActionType, setHumanActionType] = useState('AUTHORIZE');
+  const [humanActorId, setHumanActorId] = useState('did:human:operator-01');
+  const [humanRationale, setHumanRationale] = useState('Manual review and approval of autonomous verification proposal');
+  const [submittingHumanAction, setSubmittingHumanAction] = useState(false);
+  const [humanActionResult, setHumanActionResult] = useState<string | null>(null);
 
   // ── Poll log + metrics ──
   const fetchState = useCallback(async () => {
@@ -1638,6 +1654,7 @@ export function App(): JSX.Element {
         repAgentsRes,
         repFeedbacksRes,
         repStatsRes,
+        humanInputsRes,
       ] = await Promise.all([
         fetch(`${API_BASE}/log?limit=30`),
         fetch(`${API_BASE}/metrics`),
@@ -1732,6 +1749,7 @@ export function App(): JSX.Element {
         fetch(`${API_BASE}/reputation/agents`),
         fetch(`${API_BASE}/reputation/feedbacks`),
         fetch(`${API_BASE}/reputation/stats`),
+        fetch(`${API_BASE}/human/inputs`),
       ]);
       if (!logRes.ok || !metricsRes.ok) throw new Error('API error');
 
@@ -2010,6 +2028,9 @@ export function App(): JSX.Element {
       }
       if (repStatsRes && repStatsRes.ok) {
         setRepStats((await repStatsRes.json()).data as ReputationStatsData);
+      }
+      if (humanInputsRes && humanInputsRes.ok) {
+        setHumanInputs((await humanInputsRes.json()).data as HumanInputItem[]);
       }
     } catch {
       setApiOnline(false);
@@ -9177,7 +9198,7 @@ export function App(): JSX.Element {
             </div>
           </div>
 
-          {/* ── Section 45: Verifiable Agent Reputation & Trust Scoring ── */}
+          {/* ── Section 47: Verifiable Agent Reputation & Trust Scoring ── */}
           <div className="card" style={{ gridColumn: '1 / -1' }}>
             <div className="section-header" style={{ marginBottom: 16 }}>
               <div className="section-title">⭐ Agent Reputation & Trust Scoring</div>
@@ -9243,6 +9264,107 @@ export function App(): JSX.Element {
                     </div>
                   ))}
                   {repFeedbacks.length === 0 && <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', padding: '12px 0' }}>No feedbacks yet. POST /reputation/feedback to attest.</div>}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Section 48: Human Authorization Gate ── */}
+          <div className="card" style={{ gridColumn: '1 / -1' }}>
+            <div className="section-header" style={{ marginBottom: 16 }}>
+              <div className="section-title">👤 Human Authorization Gate</div>
+              <span className="section-badge">{humanInputs.length} decisions recorded</span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              {/* Action Panel */}
+              <div>
+                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Record Human Decision</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    {['AUTHORIZE', 'OVERRIDE', 'REJECT'].map((t) => (
+                      <button
+                        key={t}
+                        onClick={() => setHumanActionType(t)}
+                        style={{ flex: 1, padding: '6px 0', borderRadius: 'var(--radius-sm)', border: `1px solid ${humanActionType === t ? 'var(--accent-blue)' : 'var(--border)'}`, background: humanActionType === t ? 'rgba(99,179,237,0.15)' : 'var(--bg-surface)', color: humanActionType === t ? 'var(--accent-blue)' : 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}
+                      >
+                        {t === 'AUTHORIZE' ? '✅' : t === 'OVERRIDE' ? '⚠️' : '❌'} {t}
+                      </button>
+                    ))}
+                  </div>
+                  <input
+                    value={humanActorId}
+                    onChange={(e) => setHumanActorId(e.target.value)}
+                    placeholder="Human DID (e.g. did:human:operator-01)"
+                    style={{ width: '100%', padding: '8px 10px', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', fontSize: '0.75rem', boxSizing: 'border-box' }}
+                  />
+                  <textarea
+                    value={humanRationale}
+                    onChange={(e) => setHumanRationale(e.target.value)}
+                    rows={3}
+                    placeholder="Rationale for decision..."
+                    style={{ width: '100%', padding: '8px 10px', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', fontSize: '0.75rem', resize: 'vertical', boxSizing: 'border-box' }}
+                  />
+                  <button
+                    disabled={submittingHumanAction || !humanActorId || !humanRationale}
+                    onClick={async () => {
+                      setSubmittingHumanAction(true);
+                      setHumanActionResult(null);
+                      try {
+                        const endpoint = humanActionType === 'AUTHORIZE' ? '/human/authorize' : humanActionType === 'OVERRIDE' ? '/human/override' : '/human/reject';
+                        const res = await fetch(`${API_BASE}${endpoint}`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ humanId: humanActorId, rationale: humanRationale }),
+                        });
+                        const data = await res.json();
+                        if (res.ok) {
+                          setHumanActionResult(`✅ ${data.data.type} recorded · ID: ${data.data.id}`);
+                          await fetchState();
+                        } else {
+                          setHumanActionResult(`❌ Error: ${data.message}`);
+                        }
+                      } catch {
+                        setHumanActionResult('❌ Failed to record decision');
+                      } finally {
+                        setSubmittingHumanAction(false);
+                      }
+                    }}
+                    style={{ padding: '9px 14px', borderRadius: 'var(--radius-sm)', border: 'none', background: humanActionType === 'AUTHORIZE' ? 'var(--accent-green)' : humanActionType === 'OVERRIDE' ? '#ed8936' : '#fc8181', color: '#fff', fontWeight: 700, fontSize: '0.78rem', cursor: submittingHumanAction ? 'not-allowed' : 'pointer', opacity: submittingHumanAction ? 0.6 : 1 }}
+                  >
+                    {submittingHumanAction ? '⏳ Submitting…' : `👤 Record ${humanActionType}`}
+                  </button>
+                  {humanActionResult && (
+                    <div style={{ fontSize: '0.72rem', padding: '6px 10px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-surface)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontFamily: 'JetBrains Mono, monospace' }}>
+                      {humanActionResult}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Decision Log */}
+              <div>
+                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Human Decision Log</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {humanInputs.slice(-6).reverse().map((h) => {
+                    const typeColor = h.type === 'AUTHORIZE' ? 'var(--accent-green)' : h.type === 'OVERRIDE' ? '#f6ad55' : '#fc8181';
+                    const typeIcon = h.type === 'AUTHORIZE' ? '✅' : h.type === 'OVERRIDE' ? '⚠️' : '❌';
+                    return (
+                      <div key={h.id} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: 10 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 }}>
+                          <span style={{ fontWeight: 700, fontSize: '0.75rem', color: typeColor }}>{typeIcon} {h.type}</span>
+                          <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>{new Date(h.recordedAt).toLocaleTimeString()}</span>
+                        </div>
+                        <div style={{ fontSize: '0.68rem', color: 'var(--text-primary)', marginBottom: 2 }}>{h.rationale.slice(0, 72)}{h.rationale.length > 72 ? '…' : ''}</div>
+                        <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', fontFamily: 'JetBrains Mono, monospace' }}>by: {h.humanId.split(':').pop()} · {h.id.slice(0, 18)}</div>
+                      </div>
+                    );
+                  })}
+                  {humanInputs.length === 0 && (
+                    <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', padding: '12px 0' }}>
+                      No human decisions recorded yet. Use the action panel to authorize, override, or reject an autonomous action.
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
