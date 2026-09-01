@@ -32,6 +32,7 @@ import { OceanicosRegistryEngine } from '@omega-v/registry';
 import { OceanicosEnclaveEngine } from '@omega-v/enclave';
 import { OceanicosConsensusEngine } from '@omega-v/consensus';
 import { OceanicosMeshEngine } from '@omega-v/mesh';
+import { OceanicosShardingEngine } from '@omega-v/sharding';
 import app from '../../apps/api/src/index';
 
 describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => {
@@ -1313,7 +1314,55 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       expect(stats.totalMessagesGossiped).toBe(1);
     });
   });
+
+  describe('31. Adaptive State Sharding & Cross-Shard Atomic 2PC E2E', () => {
+    it('should route state keys, compute per-shard Merkle roots, execute 2PC transactions, and split partitions', () => {
+      const shardingEngine = new OceanicosShardingEngine('e2e-sharding-key');
+
+      // 1. Genesis shards
+      const initialShards = shardingEngine.getShards();
+      expect(initialShards.length).toBe(2);
+      expect(initialShards[0].slotEnd).toBe(511);
+      expect(initialShards[1].slotStart).toBe(512);
+
+      // 2. Put state in partitioned shard
+      const putRes = shardingEngine.putState('user:vault:101', { balance: 5000 });
+      expect(putRes.shardId).toBeDefined();
+      expect(putRes.merkleRoot).toMatch(/^0x/);
+
+      const retrieved = shardingEngine.getState('user:vault:101');
+      expect(retrieved?.value).toEqual({ balance: 5000 });
+
+      // 3. Cross-shard atomic Two-Phase Commit (2PC)
+      const tx = shardingEngine.prepareCrossShardTx({
+        key: 'state:bridge:01',
+        sourceShardId: 'shard-00',
+        targetShardId: 'shard-01',
+        sourceValue: { locked: true },
+        targetValue: { minted: true },
+      });
+
+      expect(tx.state).toBe('PREPARED');
+      expect(tx.prepareProofs.length).toBe(2);
+
+      const committed = shardingEngine.commitCrossShardTx(tx.txId);
+      expect(committed.state).toBe('COMMITTED');
+      expect(committed.commitProof).toBeDefined();
+
+      // 4. Trigger automated shard split / rebalance
+      const splitEvent = shardingEngine.splitShard('shard-00');
+      expect(splitEvent.childShardA).toBe('shard-00-a');
+      expect(splitEvent.childShardB).toBe('shard-00-b');
+
+      // 5. Verify stats
+      const shardingStats = shardingEngine.getStats();
+      expect(shardingStats.totalShards).toBe(4);
+      expect(shardingStats.activeShards).toBe(3);
+      expect(shardingStats.committedCrossShardTxs).toBe(1);
+    });
+  });
 });
+
 
 
 

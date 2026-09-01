@@ -66,7 +66,8 @@
       "@omega-v/registry": ["packages/registry/src/index.ts"],
       "@omega-v/enclave": ["packages/enclave/src/index.ts"],
       "@omega-v/consensus": ["packages/consensus/src/index.ts"],
-      "@omega-v/mesh": ["packages/mesh/src/index.ts"]
+      "@omega-v/mesh": ["packages/mesh/src/index.ts"],
+      "@omega-v/sharding": ["packages/sharding/src/index.ts"]
     }
   },
   "include": ["packages/*/src", "apps/*/src", "tests"],

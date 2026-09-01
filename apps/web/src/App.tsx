@@ -584,6 +584,25 @@ interface P2PMeshStatsData {
   networkPartitions: number;
 }
 
+interface ShardPartitionItem {
+  shardId: string;
+  slotStart: number;
+  slotEnd: number;
+  assignedValidators: string[];
+  stateCount: number;
+  merkleRoot: string;
+  status: string;
+}
+
+interface ShardingStatsData {
+  totalShards: number;
+  activeShards: number;
+  totalStateKeys: number;
+  totalCrossShardTxs: number;
+  committedCrossShardTxs: number;
+  rebalanceEventsCount: number;
+}
+
 interface RuleEfficacy {
   ruleName: string;
   totalExecutions: number;
@@ -894,6 +913,12 @@ export function App(): JSX.Element {
   const [gossipType, setGossipType] = useState('BLOCK_ANNOUNCE');
   const [gossipingMessage, setGossipingMessage] = useState(false);
   const [gossipResult, setGossipResult] = useState<string | null>(null);
+  const [shards, setShards] = useState<ShardPartitionItem[]>([]);
+  const [shardingStats, setShardingStats] = useState<ShardingStatsData | null>(null);
+  const [stateKey, setStateKey] = useState('agent:wallet:alpha');
+  const [stateValue, setStateValue] = useState('{"balance": 25000, "role": "LEAD_ORCHESTRATOR"}');
+  const [puttingState, setPuttingState] = useState(false);
+  const [shardingResult, setShardingResult] = useState<string | null>(null);
 
   // ── Poll log + metrics ──
   const fetchState = useCallback(async () => {
@@ -944,6 +969,8 @@ export function App(): JSX.Element {
         conStatsRes,
         meshPeersRes,
         meshStatsRes,
+        shardListRes,
+        shardStatsRes,
       ] = await Promise.all([
         fetch(`${API_BASE}/log?limit=30`),
         fetch(`${API_BASE}/metrics`),
@@ -990,6 +1017,8 @@ export function App(): JSX.Element {
         fetch(`${API_BASE}/consensus/stats`),
         fetch(`${API_BASE}/mesh/peers`),
         fetch(`${API_BASE}/mesh/stats`),
+        fetch(`${API_BASE}/sharding/shards`),
+        fetch(`${API_BASE}/sharding/stats`),
       ]);
       if (!logRes.ok || !metricsRes.ok) throw new Error('API error');
 
@@ -1124,6 +1153,12 @@ export function App(): JSX.Element {
       }
       if (meshStatsRes && meshStatsRes.ok) {
         setP2PMeshStats((await meshStatsRes.json()).data as P2PMeshStatsData);
+      }
+      if (shardListRes && shardListRes.ok) {
+        setShards((await shardListRes.json()).data as ShardPartitionItem[]);
+      }
+      if (shardStatsRes && shardStatsRes.ok) {
+        setShardingStats((await shardStatsRes.json()).data as ShardingStatsData);
       }
     } catch {
       setApiOnline(false);
@@ -6493,6 +6528,132 @@ export function App(): JSX.Element {
                     <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', display: 'flex', justifyContent: 'space-between' }}>
                       <span>🌍 {peer.region}</span>
                       <span>⚡ {peer.latencyMs}ms · 📥 {peer.messagesReceived} · 📤 {peer.messagesSent}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* ═══ Section 31: Adaptive State Sharding ═══ */}
+          <div className="card" style={{ gridColumn: '1 / -1' }}>
+            <div className="section-header" style={{ marginBottom: 18 }}>
+              <div className="section-title">🧩 Adaptive State Sharding & 2PC Engine</div>
+              <span className="section-badge">
+                {shardingStats ? `${shardingStats.activeShards}/${shardingStats.totalShards} active shards · ${shardingStats.totalStateKeys} state keys` : 'Loading…'}
+              </span>
+            </div>
+
+            {/* Sharding Stats Row */}
+            {shardingStats && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 10, marginBottom: 16 }}>
+                <div style={{ background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', border: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Active Shards</div>
+                  <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--accent-teal)' }}>{shardingStats.activeShards} / {shardingStats.totalShards}</div>
+                </div>
+                <div style={{ background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', border: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>State Keys</div>
+                  <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--accent-purple)' }}>{shardingStats.totalStateKeys}</div>
+                </div>
+                <div style={{ background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', border: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Cross-Shard Txs</div>
+                  <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--accent-green)' }}>{shardingStats.committedCrossShardTxs} / {shardingStats.totalCrossShardTxs}</div>
+                </div>
+                <div style={{ background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', border: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Rebalances</div>
+                  <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--accent-blue)' }}>{shardingStats.rebalanceEventsCount}</div>
+                </div>
+              </div>
+            )}
+
+            {/* Put Sharded State Form */}
+            <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+              <div style={{ flex: 1, minWidth: 200 }}>
+                <label style={{ display: 'block', fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>State Key</label>
+                <input
+                  type="text"
+                  value={stateKey}
+                  onChange={(e) => setStateKey(e.target.value)}
+                  style={{ width: '100%', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '8px 10px', color: 'var(--text-primary)', fontFamily: 'JetBrains Mono, monospace', fontSize: '0.75rem' }}
+                />
+              </div>
+              <div style={{ flex: 2, minWidth: 260 }}>
+                <label style={{ display: 'block', fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>JSON State Value</label>
+                <input
+                  type="text"
+                  value={stateValue}
+                  onChange={(e) => setStateValue(e.target.value)}
+                  style={{ width: '100%', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '8px 10px', color: 'var(--text-primary)', fontFamily: 'JetBrains Mono, monospace', fontSize: '0.75rem' }}
+                />
+              </div>
+              <button
+                className="cta-button"
+                disabled={puttingState}
+                onClick={async () => {
+                  setPuttingState(true);
+                  setShardingResult(null);
+                  try {
+                    let parsedVal: unknown;
+                    try { parsedVal = JSON.parse(stateValue); } catch { parsedVal = stateValue; }
+
+                    const res = await fetch(`${API_BASE}/sharding/state/put`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ key: stateKey, value: parsedVal }),
+                    });
+                    const data = await res.json();
+                    if (!res.ok) { setShardingResult(`❌ ${data.message}`); return; }
+                    setShardingResult(`✅ Stored in [${data.data.shardId}] — Merkle root: ${data.data.merkleRoot.slice(0, 24)}…`);
+                    fetchState();
+                  } catch (err) {
+                    setShardingResult(`❌ ${err instanceof Error ? err.message : 'Put state failed'}`);
+                  } finally {
+                    setPuttingState(false);
+                  }
+                }}
+                style={{ minWidth: 150 }}
+              >
+                {puttingState ? '⏳ Storing…' : '💾 Put Shard State'}
+              </button>
+            </div>
+
+            {shardingResult && (
+              <div style={{ fontSize: '0.78rem', padding: '6px 10px', borderRadius: 'var(--radius-sm)', background: shardingResult.startsWith('✅') ? 'rgba(72,187,120,0.1)' : 'rgba(229,62,62,0.1)', color: shardingResult.startsWith('✅') ? 'var(--accent-green)' : 'var(--accent-red)', marginBottom: 14, fontFamily: 'JetBrains Mono, monospace' }}>
+                {shardingResult}
+              </div>
+            )}
+
+            {/* Shard Partitions Grid */}
+            <div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Active Shard Partitions ({shards.length})
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 10 }}>
+                {shards.map((sh) => (
+                  <div
+                    key={sh.shardId}
+                    style={{
+                      background: 'var(--bg-surface)',
+                      border: `1px solid ${sh.status === 'ACTIVE' ? 'var(--border)' : 'rgba(255,255,255,0.05)'}`,
+                      borderRadius: 'var(--radius-sm)',
+                      padding: 12,
+                      opacity: sh.status === 'ACTIVE' ? 1 : 0.5,
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <span style={{ fontWeight: 700, fontSize: '0.82rem', color: 'var(--accent-teal)' }}>
+                        {sh.shardId}
+                      </span>
+                      <span style={{ fontSize: '0.65rem', padding: '1px 6px', borderRadius: 3, background: sh.status === 'ACTIVE' ? 'rgba(72,187,120,0.15)' : 'rgba(237,137,54,0.15)', color: sh.status === 'ACTIVE' ? 'var(--accent-green)' : 'var(--accent-orange)', fontWeight: 700 }}>
+                        {sh.status} (Slots {sh.slotStart}-{sh.slotEnd})
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontFamily: 'JetBrains Mono, monospace', marginBottom: 2 }}>
+                      Merkle Root: {sh.merkleRoot.slice(0, 24)}…
+                    </div>
+                    <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', display: 'flex', justifyContent: 'space-between' }}>
+                      <span>📦 {sh.stateCount} keys</span>
+                      <span>🛡 {sh.assignedValidators.length} validators</span>
                     </div>
                   </div>
                 ))}

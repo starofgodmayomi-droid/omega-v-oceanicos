@@ -35,6 +35,7 @@ import { OceanicosRegistryEngine } from '@omega-v/registry';
 import { OceanicosEnclaveEngine } from '@omega-v/enclave';
 import { OceanicosConsensusEngine } from '@omega-v/consensus';
 import { OceanicosMeshEngine } from '@omega-v/mesh';
+import { OceanicosShardingEngine } from '@omega-v/sharding';
 import {
   SuccessResponse,
   ErrorResponse,
@@ -99,6 +100,7 @@ const registryEngine = new OceanicosRegistryEngine();
 const enclaveEngine = new OceanicosEnclaveEngine();
 const consensusEngine = new OceanicosConsensusEngine();
 const meshEngine = new OceanicosMeshEngine();
+const shardingEngine = new OceanicosShardingEngine();
 
 // Register default rules
 verificationEngine.registerRule({
@@ -2710,6 +2712,172 @@ app.post('/mesh/sync', (req: Request, res: Response) => {
 /** GET /mesh/stats — Mesh network statistics */
 app.get('/mesh/stats', (_req: Request, res: Response) => {
   const stats = meshEngine.getStats();
+  res.json({
+    data: stats,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/**
+ * Section 31 Endpoints: Adaptive State Sharding & Cross-Shard 2PC
+ * /sharding/shards, /sharding/state/put, /sharding/state/get,
+ * /sharding/cross-shard/prepare, /sharding/cross-shard/commit, /sharding/rebalance/split, /sharding/stats
+ */
+
+/** GET /sharding/shards — List all active and splitting shard partitions */
+app.get('/sharding/shards', (_req: Request, res: Response) => {
+  const shards = shardingEngine.getShards();
+  res.json({
+    data: shards,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /sharding/state/put — Put state in appropriate shard partition */
+app.post('/sharding/state/put', (req: Request, res: Response) => {
+  const { key, value } = req.body;
+  if (!key || value === undefined) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'key and value are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const result = shardingEngine.putState(key, value);
+    res.status(201).json({
+      data: result,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'PUT_STATE_FAILED',
+      message: err instanceof Error ? err.message : 'Put state failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** GET /sharding/state/get — Query state across shards by key */
+app.get('/sharding/state/get', (req: Request, res: Response) => {
+  const key = req.query.key as string;
+  if (!key) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'query parameter key is required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  const result = shardingEngine.getState(key);
+  if (!result) {
+    res.status(404).json({
+      code: 'STATE_NOT_FOUND',
+      message: `Key '${key}' not found in any shard`,
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  res.json({
+    data: result,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /sharding/cross-shard/prepare — Phase 1 of 2PC cross-shard transaction */
+app.post('/sharding/cross-shard/prepare', (req: Request, res: Response) => {
+  const { key, sourceShardId, targetShardId, sourceValue, targetValue } = req.body;
+  if (!key || !sourceShardId || !targetShardId) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'key, sourceShardId, and targetShardId are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const tx = shardingEngine.prepareCrossShardTx({
+      key,
+      sourceShardId,
+      targetShardId,
+      sourceValue,
+      targetValue,
+    });
+    res.status(201).json({
+      data: tx,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'PREPARE_FAILED',
+      message: err instanceof Error ? err.message : 'Prepare cross-shard tx failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** POST /sharding/cross-shard/commit — Phase 2 of 2PC cross-shard transaction */
+app.post('/sharding/cross-shard/commit', (req: Request, res: Response) => {
+  const { txId } = req.body;
+  if (!txId) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'txId is required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const tx = shardingEngine.commitCrossShardTx(txId);
+    res.json({
+      data: tx,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'COMMIT_FAILED',
+      message: err instanceof Error ? err.message : 'Commit cross-shard tx failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** POST /sharding/rebalance/split — Split shard partition */
+app.post('/sharding/rebalance/split', (req: Request, res: Response) => {
+  const { shardId } = req.body;
+  if (!shardId) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'shardId is required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const event = shardingEngine.splitShard(shardId);
+    res.json({
+      data: event,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'SPLIT_FAILED',
+      message: err instanceof Error ? err.message : 'Shard split failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** GET /sharding/stats — Sharding engine statistics */
+app.get('/sharding/stats', (_req: Request, res: Response) => {
+  const stats = shardingEngine.getStats();
   res.json({
     data: stats,
     timestamp: new Date().toISOString(),
