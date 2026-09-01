@@ -30,6 +30,7 @@ import { OceanicosOracleEngine } from '@omega-v/oracle';
 import { OceanicosStateVault } from '@omega-v/vault';
 import { OceanicosDisputeEngine } from '@omega-v/dispute';
 import { OceanicosWorkerPool } from '@omega-v/worker';
+import { OceanicosPipelineEngine } from '@omega-v/pipeline';
 import {
   SuccessResponse,
   ErrorResponse,
@@ -89,6 +90,7 @@ const oracleEngine = new OceanicosOracleEngine();
 const stateVault = new OceanicosStateVault();
 const disputeEngine = new OceanicosDisputeEngine();
 const workerPool = new OceanicosWorkerPool();
+const pipelineEngine = new OceanicosPipelineEngine();
 
 // Register default rules
 verificationEngine.registerRule({
@@ -1934,6 +1936,99 @@ app.post('/workers/verify-reproducibility', (req: Request, res: Response) => {
 /** GET /workers/stats — Builder engine & worker pool statistics */
 app.get('/workers/stats', (_req: Request, res: Response) => {
   const stats = workerPool.getStats();
+  res.json({
+    data: stats,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/**
+ * Section 26 Endpoints: Automated CI/CD Pipeline Orchestration Engine
+ * /pipelines, /pipelines/:runId, /pipelines/execute, /pipelines/verify, /pipelines/stats
+ */
+
+/** GET /pipelines — List all pipeline runs */
+app.get('/pipelines', (_req: Request, res: Response) => {
+  const runs = pipelineEngine.getRuns();
+  res.json({
+    data: runs,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** GET /pipelines/:runId — Get specific pipeline run */
+app.get('/pipelines/:runId', (req: Request, res: Response) => {
+  const run = pipelineEngine.getRun(req.params.runId);
+  if (!run) {
+    res.status(404).json({
+      code: 'NOT_FOUND',
+      message: `Pipeline run '${req.params.runId}' not found`,
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+  res.json({
+    data: run,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /pipelines/execute — Trigger and execute multi-stage verifiable pipeline */
+app.post('/pipelines/execute', async (req: Request, res: Response) => {
+  const { name, version, triggeredBy, stages } = req.body;
+  if (!name || !Array.isArray(stages) || stages.length === 0) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'name and non-empty stages array are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const result = await pipelineEngine.executePipeline({
+      name,
+      version,
+      triggeredBy,
+      stages,
+      workerPool,
+    });
+
+    res.status(201).json({
+      data: result,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'PIPELINE_EXECUTION_FAILED',
+      message: err instanceof Error ? err.message : 'Pipeline execution failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** POST /pipelines/verify — Verify cryptographic signature of completed pipeline run */
+app.post('/pipelines/verify', (req: Request, res: Response) => {
+  const { run } = req.body;
+  if (!run || !run.pipelineSignature) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'Pipeline run with pipelineSignature is required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  const valid = pipelineEngine.verifyRunSignature(run);
+  res.json({
+    data: { valid, runId: run.runId },
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** GET /pipelines/stats — Aggregate pipeline orchestration metrics */
+app.get('/pipelines/stats', (_req: Request, res: Response) => {
+  const stats = pipelineEngine.getStats();
   res.json({
     data: stats,
     timestamp: new Date().toISOString(),

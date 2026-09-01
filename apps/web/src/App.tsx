@@ -433,6 +433,39 @@ interface WorkerStatsData {
   reproducibilityRate: number;
 }
 
+interface PipelineStageItem {
+  stageId: string;
+  name: string;
+  capability: string;
+  dependsOn: string[];
+  status: string;
+  parallelism: number;
+  attestations: Array<{ attestationId: string; slsaLevel: string }>;
+}
+
+interface PipelineRunItem {
+  runId: string;
+  name: string;
+  version: string;
+  triggeredBy: string;
+  status: string;
+  stages: PipelineStageItem[];
+  inputHash: string;
+  pipelineSignature?: string;
+  durationMs?: number;
+  createdAt: string;
+}
+
+interface PipelineStatsData {
+  totalRuns: number;
+  successfulRuns: number;
+  failedRuns: number;
+  rolledBackRuns: number;
+  avgDurationMs: number;
+  totalStagesExecuted: number;
+  totalAttestations: number;
+}
+
 interface RuleEfficacy {
   ruleName: string;
   totalExecutions: number;
@@ -710,6 +743,12 @@ export function App(): JSX.Element {
   const [workerJobCap, setWorkerJobCap] = useState('COMPILE');
   const [submittingWorkerJob, setSubmittingWorkerJob] = useState(false);
   const [workerResult, setWorkerResult] = useState<string | null>(null);
+  const [pipelines, setPipelines] = useState<PipelineRunItem[]>([]);
+  const [pipelineStats, setPipelineStats] = useState<PipelineStatsData | null>(null);
+  const [pipelineName, setPipelineName] = useState('Production Core Release Pipeline');
+  const [pipelineVersion, setPipelineVersion] = useState('6.2.0');
+  const [executingPipeline, setExecutingPipeline] = useState(false);
+  const [pipelineResult, setPipelineResult] = useState<string | null>(null);
 
   // ── Poll log + metrics ──
   const fetchState = useCallback(async () => {
@@ -748,6 +787,8 @@ export function App(): JSX.Element {
         wJobsRes,
         wAttRes,
         wStatsRes,
+        pipeRes,
+        pipeStatsRes,
       ] = await Promise.all([
         fetch(`${API_BASE}/log?limit=30`),
         fetch(`${API_BASE}/metrics`),
@@ -782,6 +823,8 @@ export function App(): JSX.Element {
         fetch(`${API_BASE}/workers/jobs`),
         fetch(`${API_BASE}/workers/attestations`),
         fetch(`${API_BASE}/workers/stats`),
+        fetch(`${API_BASE}/pipelines`),
+        fetch(`${API_BASE}/pipelines/stats`),
       ]);
       if (!logRes.ok || !metricsRes.ok) throw new Error('API error');
 
@@ -880,6 +923,12 @@ export function App(): JSX.Element {
       }
       if (wStatsRes && wStatsRes.ok) {
         setWorkerStats((await wStatsRes.json()).data as WorkerStatsData);
+      }
+      if (pipeRes && pipeRes.ok) {
+        setPipelines((await pipeRes.json()).data as PipelineRunItem[]);
+      }
+      if (pipeStatsRes && pipeStatsRes.ok) {
+        setPipelineStats((await pipeStatsRes.json()).data as PipelineStatsData);
       }
     } catch {
       setApiOnline(false);
@@ -5357,6 +5406,218 @@ export function App(): JSX.Element {
                       <div style={{ fontSize: '0.63rem', color: 'var(--text-secondary)', marginTop: 2, fontFamily: 'JetBrains Mono, monospace' }}>
                         sig: {a.builderSignature.slice(0, 22)}…
                       </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Section 26 — Automated Verified CI/CD Pipeline Orchestration */}
+          <div
+            style={{
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius)',
+              padding: 20,
+              marginBottom: 24,
+            }}
+          >
+            <div className="section-header" style={{ marginBottom: 16 }}>
+              <div className="section-title">🚀 Verified CI/CD Pipeline Orchestrator</div>
+              {pipelineStats && (
+                <span
+                  className="section-badge"
+                  style={{
+                    background: 'rgba(56,178,172,0.15)',
+                    color: 'var(--accent-teal)',
+                  }}
+                >
+                  {pipelineStats.successfulRuns}/{pipelineStats.totalRuns} SUCCESS ·{' '}
+                  {pipelineStats.totalStagesExecuted} STAGES ·{' '}
+                  {pipelineStats.totalAttestations} SEALS
+                </span>
+              )}
+            </div>
+
+            {/* Pipeline Trigger Console */}
+            <div
+              style={{
+                display: 'flex',
+                gap: 10,
+                marginBottom: 16,
+                flexWrap: 'wrap',
+                alignItems: 'center',
+              }}
+            >
+              <input
+                value={pipelineName}
+                onChange={(e) => setPipelineName(e.target.value)}
+                placeholder="Pipeline name…"
+                style={{
+                  flex: '1 1 200px',
+                  background: 'var(--bg-surface)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 6,
+                  color: 'var(--text-primary)',
+                  padding: '7px 12px',
+                  fontSize: '0.82rem',
+                }}
+              />
+              <input
+                value={pipelineVersion}
+                onChange={(e) => setPipelineVersion(e.target.value)}
+                placeholder="v1.0.0"
+                style={{
+                  width: 90,
+                  background: 'var(--bg-surface)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 6,
+                  color: 'var(--text-primary)',
+                  padding: '7px 10px',
+                  fontSize: '0.82rem',
+                }}
+              />
+              <button
+                disabled={executingPipeline || !pipelineName.trim()}
+                onClick={async () => {
+                  setExecutingPipeline(true);
+                  setPipelineResult(null);
+                  try {
+                    const r = await fetch(`${API_BASE}/pipelines/execute`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        name: pipelineName,
+                        version: pipelineVersion,
+                        triggeredBy: 'did:omega:operator:dashboard',
+                        stages: [
+                          {
+                            stageId: 'stage-compile',
+                            name: 'Compile Bytecode & VM Kernel',
+                            capability: 'COMPILE',
+                            dependsOn: [],
+                            jobPayload: { opt: 3 },
+                          },
+                          {
+                            stageId: 'stage-verify',
+                            name: 'Run Verification & Invariant Checks',
+                            capability: 'VERIFY',
+                            dependsOn: ['stage-compile'],
+                            gate: { policy: 'REQUIRE_ATTESTATION', rollbackOnFail: true },
+                            jobPayload: { strict: true },
+                          },
+                          {
+                            stageId: 'stage-attest',
+                            name: 'Issue Merkle Release Attestation',
+                            capability: 'ATTEST',
+                            dependsOn: ['stage-verify'],
+                            gate: { policy: 'AUTO_PASS' },
+                            jobPayload: { release: true },
+                          },
+                        ],
+                      }),
+                    });
+                    const d = await r.json();
+                    if (r.ok) {
+                      setPipelineResult(`✅ Pipeline executed: ${d.data.run.runId} (${d.data.stagesPassed} stages passed, sig: ${d.data.pipelineSignature.slice(0, 16)}…)`);
+                      setTimeout(fetchState, 400);
+                    } else {
+                      setPipelineResult(`❌ ${d.message || 'Pipeline execution failed'}`);
+                    }
+                  } catch {
+                    setPipelineResult('❌ Network error');
+                  } finally {
+                    setExecutingPipeline(false);
+                  }
+                }}
+                className="btn-primary"
+                style={{ fontSize: '0.82rem', padding: '7px 16px', whiteSpace: 'nowrap' }}
+              >
+                {executingPipeline ? '⏳ Orchestrating…' : '⚡ Run Verified CI Pipeline'}
+              </button>
+            </div>
+            {pipelineResult && (
+              <div
+                style={{
+                  fontSize: '0.78rem',
+                  color: pipelineResult.startsWith('✅') ? 'var(--accent-green)' : 'var(--accent-red)',
+                  marginBottom: 14,
+                  fontFamily: 'JetBrains Mono, monospace',
+                }}
+              >
+                {pipelineResult}
+              </div>
+            )}
+
+            {/* Pipeline Runs List */}
+            {pipelines.length > 0 && (
+              <div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Recent Pipeline Runs ({pipelines.length})
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 240, overflowY: 'auto' }}>
+                  {pipelines.slice(-5).reverse().map((run) => (
+                    <div
+                      key={run.runId}
+                      style={{
+                        background: 'var(--bg-surface)',
+                        border: `1px solid ${run.status === 'SUCCESS' ? 'rgba(72,187,120,0.3)' : run.status === 'ROLLED_BACK' ? 'rgba(252,129,74,0.3)' : 'var(--border)'}`,
+                        borderRadius: 'var(--radius-sm)',
+                        padding: 12,
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                        <div>
+                          <span style={{ fontWeight: 600, fontSize: '0.82rem', color: 'var(--text-primary)', marginRight: 8 }}>
+                            {run.name}
+                          </span>
+                          <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>
+                            v{run.version} · {run.runId}
+                          </span>
+                        </div>
+                        <span
+                          style={{
+                            fontSize: '0.65rem',
+                            padding: '2px 7px',
+                            borderRadius: 3,
+                            background: run.status === 'SUCCESS' ? 'rgba(72,187,120,0.15)' : run.status === 'ROLLED_BACK' ? 'rgba(252,129,74,0.15)' : 'rgba(245,101,101,0.15)',
+                            color: run.status === 'SUCCESS' ? 'var(--accent-green)' : run.status === 'ROLLED_BACK' ? '#fc814a' : 'var(--accent-red)',
+                            fontWeight: 700,
+                          }}
+                        >
+                          {run.status}
+                        </span>
+                      </div>
+
+                      {/* Stage DAG Badges */}
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center', marginBottom: 4 }}>
+                        {run.stages.map((st, idx) => (
+                          <div key={st.stageId} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <span
+                              style={{
+                                fontSize: '0.68rem',
+                                padding: '2px 6px',
+                                borderRadius: 3,
+                                background: st.status === 'SUCCESS' ? 'rgba(72,187,120,0.1)' : 'rgba(255,255,255,0.05)',
+                                color: st.status === 'SUCCESS' ? 'var(--accent-green)' : 'var(--text-muted)',
+                                border: '1px solid var(--border)',
+                              }}
+                            >
+                              {st.status === 'SUCCESS' ? '✓ ' : ''}{st.name}
+                            </span>
+                            {idx < run.stages.length - 1 && (
+                              <span style={{ color: 'var(--text-muted)', fontSize: '0.65rem' }}>➔</span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+
+                      {run.pipelineSignature && (
+                        <div style={{ fontSize: '0.63rem', color: 'var(--text-muted)', fontFamily: 'JetBrains Mono, monospace' }}>
+                          sig: {run.pipelineSignature.slice(0, 24)}… {run.durationMs ? `(${run.durationMs}ms)` : ''}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

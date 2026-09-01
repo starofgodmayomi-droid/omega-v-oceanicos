@@ -27,6 +27,7 @@ import { OceanicosOracleEngine } from '@omega-v/oracle';
 import { OceanicosStateVault } from '@omega-v/vault';
 import { OceanicosDisputeEngine } from '@omega-v/dispute';
 import { OceanicosWorkerPool } from '@omega-v/worker';
+import { OceanicosPipelineEngine } from '@omega-v/pipeline';
 import app from '../../apps/api/src/index';
 
 describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => {
@@ -1016,5 +1017,65 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       expect(poolStats.reproducibilityRate).toBe(1.0);
     });
   });
+
+  describe('26. Automated Verified CI/CD Pipeline Orchestrator E2E', () => {
+    it('should orchestrate a multi-stage dependency DAG, evaluate stage gates, collect SLSA attestations, and cryptographically sign run', async () => {
+      const pool = new OceanicosWorkerPool('e2e-pipeline-key');
+      const pipelineEngine = new OceanicosPipelineEngine('e2e-pipeline-key');
+
+      // Execute 3-stage verifiable CI pipeline
+      const result = await pipelineEngine.executePipeline({
+        name: 'Full-Stack Kernel Release CI',
+        version: '6.1.0',
+        triggeredBy: 'did:omega:agent:ci-controller',
+        workerPool: pool,
+        stages: [
+          {
+            stageId: 'stage-compile-kernel',
+            name: 'Compile Bytecode & VM Instructions',
+            capability: 'COMPILE',
+            dependsOn: [],
+            jobPayload: { target: 'WASM_64' },
+          },
+          {
+            stageId: 'stage-run-verifications',
+            name: 'Execute Verification Suite & Gate Check',
+            capability: 'VERIFY',
+            dependsOn: ['stage-compile-kernel'],
+            gate: { policy: 'REQUIRE_ATTESTATION', rollbackOnFail: true },
+            jobPayload: { suites: 42 },
+          },
+          {
+            stageId: 'stage-seal-release',
+            name: 'Cryptographic Attestation & Merkle Seal',
+            capability: 'ATTEST',
+            dependsOn: ['stage-run-verifications'],
+            gate: { policy: 'AUTO_PASS', rollbackOnFail: false },
+            jobPayload: { tag: 'v6.1.0-release' },
+          },
+        ],
+      });
+
+      // Assert complete pipeline run success
+      expect(result.run.status).toBe('SUCCESS');
+      expect(result.stagesExecuted).toBe(3);
+      expect(result.stagesPassed).toBe(3);
+      expect(result.stagesFailed).toBe(0);
+      expect(result.totalAttestations).toBe(3);
+      expect(result.rollbackTriggered).toBe(false);
+      expect(result.pipelineSignature).toMatch(/^0x/);
+
+      // Verify cryptographic authenticity
+      expect(pipelineEngine.verifyRunSignature(result.run)).toBe(true);
+
+      // Verify statistics
+      const stats = pipelineEngine.getStats();
+      expect(stats.totalRuns).toBe(1);
+      expect(stats.successfulRuns).toBe(1);
+      expect(stats.totalStagesExecuted).toBe(3);
+      expect(stats.totalAttestations).toBe(3);
+    });
+  });
 });
+
 
