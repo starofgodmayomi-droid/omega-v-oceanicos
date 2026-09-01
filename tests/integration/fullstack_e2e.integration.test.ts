@@ -26,6 +26,7 @@ import { OceanicosWebhookEngine } from '@omega-v/webhook';
 import { OceanicosOracleEngine } from '@omega-v/oracle';
 import { OceanicosStateVault } from '@omega-v/vault';
 import { OceanicosDisputeEngine } from '@omega-v/dispute';
+import { OceanicosWorkerPool } from '@omega-v/worker';
 import app from '../../apps/api/src/index';
 
 describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => {
@@ -939,4 +940,81 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       expect(stats.overturnedCases).toBeGreaterThanOrEqual(1);
     });
   });
+
+  describe('25. Verifiable Worker Pool, Reproducible Builds & SLSA Attestations E2E', () => {
+    it('should register worker capabilities, lease build tasks, generate SLSA-L3 attestations, and verify multi-builder reproducibility', () => {
+      const pool = new OceanicosWorkerPool('e2e-worker-pool-key');
+
+      // 1. Verify canonical workers exist
+      const workers = pool.getWorkers();
+      expect(workers.length).toBeGreaterThanOrEqual(2);
+
+      // 2. Submit high-priority compilation job
+      const job = pool.submitJob({
+        name: 'E2E Reproducible Bytecode Build',
+        requiredCapability: 'COMPILE',
+        payload: { targetArch: 'x86_64', optLevel: 3 },
+        priority: 1,
+      });
+
+      expect(job.status).toBe('QUEUED');
+      expect(job.inputFingerprint).toHaveLength(64);
+
+      // 3. Lease job to capability-matching worker
+      const leased = pool.leaseJob('worker-node-primary-01');
+      expect(leased).not.toBeNull();
+      expect(leased!.jobId).toBe(job.jobId);
+      expect(leased!.assignedWorkerId).toBe('worker-node-primary-01');
+
+      // 4. Complete build and generate signed SLSA-L3 attestation
+      const artifacts = [
+        {
+          name: 'oceanicum-core.wasm',
+          path: 'dist/oceanicum-core.wasm',
+          contentHash: 'hash-wasm-binary-001',
+          sizeBytes: 65536,
+          mimeType: 'application/wasm',
+        },
+      ];
+
+      const { job: completedJob, attestation } = pool.completeJob(
+        job.jobId,
+        'worker-node-primary-01',
+        { exitCode: 0, memoryUsedMb: 64 },
+        artifacts
+      );
+
+      expect(completedJob.status).toBe('COMPLETED');
+      expect(attestation.slsaLevel).toBe('SLSA_BUILD_L3');
+      expect(attestation.outputMerkleRoot).toHaveLength(64);
+      expect(attestation.builderSignature).toMatch(/^0x/);
+
+      // 5. Verify cryptographic validity of build attestation
+      expect(pool.verifyAttestation(attestation)).toBe(true);
+
+      // 6. Cross-verify multi-builder reproducibility
+      const secondaryJob = pool.submitJob({
+        name: 'E2E Reproducible Bytecode Build',
+        requiredCapability: 'COMPILE',
+        payload: { targetArch: 'x86_64', optLevel: 3 },
+      });
+      pool.leaseJob('worker-node-edge-02');
+      const { attestation: secondaryAttestation } = pool.completeJob(
+        secondaryJob.jobId,
+        'worker-node-edge-02',
+        { exitCode: 0, memoryUsedMb: 64 },
+        artifacts
+      );
+
+      const repro = pool.verifyBuildReproducibility([attestation, secondaryAttestation]);
+      expect(repro.reproducible).toBe(true);
+      expect(repro.discrepancyCount).toBe(0);
+
+      // 7. Check pool metrics
+      const poolStats = pool.getStats();
+      expect(poolStats.completedJobs).toBeGreaterThanOrEqual(2);
+      expect(poolStats.reproducibilityRate).toBe(1.0);
+    });
+  });
 });
+

@@ -29,6 +29,7 @@ import { OceanicosWebhookEngine } from '@omega-v/webhook';
 import { OceanicosOracleEngine } from '@omega-v/oracle';
 import { OceanicosStateVault } from '@omega-v/vault';
 import { OceanicosDisputeEngine } from '@omega-v/dispute';
+import { OceanicosWorkerPool } from '@omega-v/worker';
 import {
   SuccessResponse,
   ErrorResponse,
@@ -87,6 +88,7 @@ const webhookEngine = new OceanicosWebhookEngine();
 const oracleEngine = new OceanicosOracleEngine();
 const stateVault = new OceanicosStateVault();
 const disputeEngine = new OceanicosDisputeEngine();
+const workerPool = new OceanicosWorkerPool();
 
 // Register default rules
 verificationEngine.registerRule({
@@ -1720,6 +1722,222 @@ app.post('/disputes/vote', (req: Request, res: Response) => {
       timestamp: new Date().toISOString(),
     });
   }
+});
+
+/**
+ * Section 25 Endpoints: Verifiable Worker Pool & Autonomous Builder Engine
+ * /workers, /workers/register, /workers/heartbeat, /workers/jobs, /workers/jobs/submit,
+ * /workers/jobs/lease, /workers/jobs/complete, /workers/jobs/fail, /workers/attestations,
+ * /workers/verify-reproducibility, /workers/stats
+ */
+
+/** GET /workers — List registered builder & worker nodes */
+app.get('/workers', (_req: Request, res: Response) => {
+  const workers = workerPool.getWorkers();
+  res.json({
+    data: workers,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /workers/register — Register or update a worker node */
+app.post('/workers/register', (req: Request, res: Response) => {
+  const { workerId, name, capabilities, maxConcurrency, cpuCores, memoryMb } = req.body;
+  if (!workerId || !name || !Array.isArray(capabilities)) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'workerId, name, and capabilities array are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  const worker = workerPool.registerWorker({
+    workerId,
+    name,
+    capabilities,
+    maxConcurrency,
+    cpuCores,
+    memoryMb,
+  });
+
+  res.status(201).json({
+    data: worker,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /workers/heartbeat — Submit worker heartbeat */
+app.post('/workers/heartbeat', (req: Request, res: Response) => {
+  const { workerId } = req.body;
+  if (!workerId) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'workerId is required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  const success = workerPool.heartbeat(workerId);
+  if (!success) {
+    res.status(404).json({
+      code: 'NOT_FOUND',
+      message: `Worker '${workerId}' not found`,
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  res.json({
+    data: { workerId, status: 'HEARTBEAT_ACCEPTED' },
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** GET /workers/jobs — Query all builder jobs */
+app.get('/workers/jobs', (_req: Request, res: Response) => {
+  const jobs = workerPool.getJobs();
+  res.json({
+    data: jobs,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /workers/jobs/submit — Enqueue a new verifiable build task */
+app.post('/workers/jobs/submit', (req: Request, res: Response) => {
+  const { name, requiredCapability, payload, priority, maxRetries } = req.body;
+  if (!name || !requiredCapability || !payload) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'name, requiredCapability, and payload are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  const job = workerPool.submitJob({
+    name,
+    requiredCapability,
+    payload,
+    priority: priority ? Number(priority) : undefined,
+    maxRetries: maxRetries ? Number(maxRetries) : undefined,
+  });
+
+  res.status(201).json({
+    data: job,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /workers/jobs/lease — Worker leases available capability-matched job */
+app.post('/workers/jobs/lease', (req: Request, res: Response) => {
+  const { workerId, leaseDurationMs } = req.body;
+  if (!workerId) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'workerId is required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  const job = workerPool.leaseJob(workerId, leaseDurationMs ? Number(leaseDurationMs) : undefined);
+  res.json({
+    data: job,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /workers/jobs/complete — Complete build job and generate SLSA-L3 Attestation */
+app.post('/workers/jobs/complete', (req: Request, res: Response) => {
+  const { jobId, workerId, output, artifacts } = req.body;
+  if (!jobId || !workerId || !output) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'jobId, workerId, and output are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const result = workerPool.completeJob(jobId, workerId, output, artifacts || []);
+    res.json({
+      data: result,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'COMPLETE_FAILED',
+      message: err instanceof Error ? err.message : 'Failed to complete job',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** POST /workers/jobs/fail — Report worker job failure with retry backoff */
+app.post('/workers/jobs/fail', (req: Request, res: Response) => {
+  const { jobId, workerId, error } = req.body;
+  if (!jobId || !workerId || !error) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'jobId, workerId, and error are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const job = workerPool.failJob(jobId, workerId, error);
+    res.json({
+      data: job,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'FAIL_JOB_FAILED',
+      message: err instanceof Error ? err.message : 'Failed to report job failure',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** GET /workers/attestations — List all cryptographic build attestations */
+app.get('/workers/attestations', (_req: Request, res: Response) => {
+  const attestations = workerPool.getAttestations();
+  res.json({
+    data: attestations,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /workers/verify-reproducibility — Cross-verify multiple builder attestations */
+app.post('/workers/verify-reproducibility', (req: Request, res: Response) => {
+  const { attestations } = req.body;
+  if (!Array.isArray(attestations) || attestations.length === 0) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'attestations array is required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  const result = workerPool.verifyBuildReproducibility(attestations);
+  res.json({
+    data: result,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** GET /workers/stats — Builder engine & worker pool statistics */
+app.get('/workers/stats', (_req: Request, res: Response) => {
+  const stats = workerPool.getStats();
+  res.json({
+    data: stats,
+    timestamp: new Date().toISOString(),
+  });
 });
 
 /**

@@ -377,6 +377,62 @@ interface DisputeStatsData {
   totalStaked: number;
 }
 
+interface WorkerNodeItem {
+  workerId: string;
+  name: string;
+  capabilities: string[];
+  maxConcurrency: number;
+  activeJobs: number;
+  status: string;
+  registeredAt: string;
+  lastHeartbeatAt: string;
+  resourceMetrics: {
+    cpuCores: number;
+    memoryMb: number;
+    avgExecutionTimeMs: number;
+    jobsCompleted: number;
+    jobsFailed: number;
+  };
+}
+
+interface BuildJobItem {
+  jobId: string;
+  name: string;
+  requiredCapability: string;
+  inputFingerprint: string;
+  status: string;
+  priority: number;
+  assignedWorkerId?: string;
+  retries: number;
+  maxRetries: number;
+  createdAt: string;
+  completedAt?: string;
+}
+
+interface BuildAttestationItem {
+  attestationId: string;
+  jobId: string;
+  workerId: string;
+  inputFingerprint: string;
+  outputMerkleRoot: string;
+  executionTimeMs: number;
+  slsaLevel: string;
+  builderSignature: string;
+  timestamp: string;
+}
+
+interface WorkerStatsData {
+  totalWorkers: number;
+  onlineWorkers: number;
+  busyWorkers: number;
+  queuedJobs: number;
+  runningJobs: number;
+  completedJobs: number;
+  failedJobs: number;
+  avgDurationMs: number;
+  reproducibilityRate: number;
+}
+
 interface RuleEfficacy {
   ruleName: string;
   totalExecutions: number;
@@ -646,6 +702,14 @@ export function App(): JSX.Element {
   const [disputeStats, setDisputeStats] = useState<DisputeStatsData | null>(null);
   const [raisingDispute, setRaisingDispute] = useState(false);
   const [disputeResult, setDisputeResult] = useState<string | null>(null);
+  const [workers, setWorkers] = useState<WorkerNodeItem[]>([]);
+  const [workerJobs, setWorkerJobs] = useState<BuildJobItem[]>([]);
+  const [workerAttestations, setWorkerAttestations] = useState<BuildAttestationItem[]>([]);
+  const [workerStats, setWorkerStats] = useState<WorkerStatsData | null>(null);
+  const [workerJobName, setWorkerJobName] = useState('Reproducible Oceanicum WASM Compilation');
+  const [workerJobCap, setWorkerJobCap] = useState('COMPILE');
+  const [submittingWorkerJob, setSubmittingWorkerJob] = useState(false);
+  const [workerResult, setWorkerResult] = useState<string | null>(null);
 
   // ── Poll log + metrics ──
   const fetchState = useCallback(async () => {
@@ -680,6 +744,10 @@ export function App(): JSX.Element {
         orcRecRes,
         vaultRes,
         dispRes,
+        workersRes,
+        wJobsRes,
+        wAttRes,
+        wStatsRes,
       ] = await Promise.all([
         fetch(`${API_BASE}/log?limit=30`),
         fetch(`${API_BASE}/metrics`),
@@ -710,6 +778,10 @@ export function App(): JSX.Element {
         fetch(`${API_BASE}/oracle/receipts`),
         fetch(`${API_BASE}/vault/checkpoints`),
         fetch(`${API_BASE}/disputes`),
+        fetch(`${API_BASE}/workers`),
+        fetch(`${API_BASE}/workers/jobs`),
+        fetch(`${API_BASE}/workers/attestations`),
+        fetch(`${API_BASE}/workers/stats`),
       ]);
       if (!logRes.ok || !metricsRes.ok) throw new Error('API error');
 
@@ -796,6 +868,18 @@ export function App(): JSX.Element {
         const dData = (await dispRes.json()).data;
         setDisputes(dData.cases as DisputeCaseItem[]);
         setDisputeStats(dData.stats as DisputeStatsData);
+      }
+      if (workersRes && workersRes.ok) {
+        setWorkers((await workersRes.json()).data as WorkerNodeItem[]);
+      }
+      if (wJobsRes && wJobsRes.ok) {
+        setWorkerJobs((await wJobsRes.json()).data as BuildJobItem[]);
+      }
+      if (wAttRes && wAttRes.ok) {
+        setWorkerAttestations((await wAttRes.json()).data as BuildAttestationItem[]);
+      }
+      if (wStatsRes && wStatsRes.ok) {
+        setWorkerStats((await wStatsRes.json()).data as WorkerStatsData);
       }
     } catch {
       setApiOnline(false);
@@ -5020,6 +5104,262 @@ export function App(): JSX.Element {
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+
+          {/* Section 25 — Worker Pool & Autonomous Builder Engine */}
+          <div
+            style={{
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius)',
+              padding: 20,
+              marginBottom: 24,
+            }}
+          >
+            <div className="section-header" style={{ marginBottom: 16 }}>
+              <div className="section-title">🔨 Worker Pool &amp; Autonomous Builder Engine</div>
+              {workerStats && (
+                <span
+                  className="section-badge"
+                  style={{
+                    background:
+                      workerStats.reproducibilityRate >= 1.0
+                        ? 'rgba(72,187,120,0.15)'
+                        : 'rgba(252,129,74,0.15)',
+                    color:
+                      workerStats.reproducibilityRate >= 1.0 ? 'var(--accent-green)' : '#fc814a',
+                  }}
+                >
+                  {workerStats.onlineWorkers}/{workerStats.totalWorkers} ONLINE ·{' '}
+                  {workerStats.completedJobs} BUILT · REPRO{' '}
+                  {(workerStats.reproducibilityRate * 100).toFixed(0)}%
+                </span>
+              )}
+            </div>
+
+            {/* Submit job control */}
+            <div
+              style={{
+                display: 'flex',
+                gap: 10,
+                marginBottom: 16,
+                flexWrap: 'wrap',
+                alignItems: 'center',
+              }}
+            >
+              <input
+                value={workerJobName}
+                onChange={(e) => setWorkerJobName(e.target.value)}
+                placeholder="Build job name…"
+                style={{
+                  flex: '1 1 220px',
+                  background: 'var(--bg-surface)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 6,
+                  color: 'var(--text-primary)',
+                  padding: '7px 12px',
+                  fontSize: '0.82rem',
+                }}
+              />
+              <select
+                value={workerJobCap}
+                onChange={(e) => setWorkerJobCap(e.target.value)}
+                style={{
+                  background: 'var(--bg-surface)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 6,
+                  color: 'var(--text-primary)',
+                  padding: '7px 10px',
+                  fontSize: '0.82rem',
+                }}
+              >
+                {['COMPILE', 'VERIFY', 'ATTEST', 'BENCHMARK', 'CONTAINER_BUILD', 'ZKP_GEN', 'REPLAY'].map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+              <button
+                disabled={submittingWorkerJob || !workerJobName.trim()}
+                onClick={async () => {
+                  setSubmittingWorkerJob(true);
+                  setWorkerResult(null);
+                  try {
+                    const r = await fetch(`${API_BASE}/workers/jobs/submit`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        name: workerJobName,
+                        requiredCapability: workerJobCap,
+                        payload: { submittedAt: new Date().toISOString(), source: 'dashboard' },
+                        priority: 3,
+                      }),
+                    });
+                    const d = await r.json();
+                    if (r.ok) {
+                      setWorkerResult(`✅ Job queued: ${d.data.jobId} (fingerprint: ${d.data.inputFingerprint.slice(0, 12)}…)`);
+                      setTimeout(fetchState, 400);
+                    } else {
+                      setWorkerResult(`❌ ${d.message || 'Job submission failed'}`);
+                    }
+                  } catch {
+                    setWorkerResult('❌ Network error');
+                  } finally {
+                    setSubmittingWorkerJob(false);
+                  }
+                }}
+                className="btn-primary"
+                style={{ fontSize: '0.82rem', padding: '7px 16px', whiteSpace: 'nowrap' }}
+              >
+                {submittingWorkerJob ? '⏳ Queuing…' : '🔨 Submit Build Job'}
+              </button>
+            </div>
+            {workerResult && (
+              <div
+                style={{
+                  fontSize: '0.78rem',
+                  color: workerResult.startsWith('✅') ? 'var(--accent-green)' : 'var(--accent-red)',
+                  marginBottom: 14,
+                  fontFamily: 'JetBrains Mono, monospace',
+                }}
+              >
+                {workerResult}
+              </div>
+            )}
+
+            {/* Worker Nodes */}
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Registered Builder Nodes
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 10 }}>
+                {workers.map((w) => (
+                  <div
+                    key={w.workerId}
+                    style={{
+                      background: 'var(--bg-surface)',
+                      border: `1px solid ${w.status === 'BUSY' ? 'var(--accent-teal)' : w.status === 'OFFLINE' ? 'var(--accent-red)' : 'var(--border)'}`,
+                      borderRadius: 'var(--radius-sm)',
+                      padding: 12,
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <span style={{ fontWeight: 600, fontSize: '0.8rem', color: 'var(--text-primary)' }}>
+                        {w.name.length > 28 ? w.name.slice(0, 28) + '…' : w.name}
+                      </span>
+                      <span style={{
+                        fontSize: '0.65rem',
+                        padding: '1px 6px',
+                        borderRadius: 3,
+                        background: w.status === 'BUSY' ? 'rgba(49,151,149,0.15)' : w.status === 'IDLE' ? 'rgba(72,187,120,0.15)' : 'rgba(245,101,101,0.15)',
+                        color: w.status === 'BUSY' ? 'var(--accent-teal)' : w.status === 'IDLE' ? 'var(--accent-green)' : 'var(--accent-red)',
+                        fontWeight: 700,
+                      }}>
+                        {w.status}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginBottom: 6 }}>
+                      {w.capabilities.join(' · ')}
+                    </div>
+                    <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', display: 'flex', gap: 12 }}>
+                      <span>⚡ {w.resourceMetrics.cpuCores} cores</span>
+                      <span>🧠 {(w.resourceMetrics.memoryMb / 1024).toFixed(0)} GB</span>
+                      <span>✅ {w.resourceMetrics.jobsCompleted} built</span>
+                      <span>🔄 {w.activeJobs}/{w.maxConcurrency} active</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Job Queue */}
+            {workerJobs.length > 0 && (
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Build Job Queue ({workerJobs.length})
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 200, overflowY: 'auto' }}>
+                  {workerJobs.slice(-8).reverse().map((j) => (
+                    <div
+                      key={j.jobId}
+                      style={{
+                        background: 'var(--bg-surface)',
+                        border: '1px solid var(--border)',
+                        borderRadius: 4,
+                        padding: '8px 12px',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        gap: 8,
+                      }}
+                    >
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {j.name}
+                        </div>
+                        <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
+                          {j.requiredCapability} · P{j.priority} · {j.inputFingerprint.slice(0, 10)}…
+                        </div>
+                      </div>
+                      <span style={{
+                        fontSize: '0.65rem',
+                        padding: '2px 7px',
+                        borderRadius: 3,
+                        background:
+                          j.status === 'COMPLETED' ? 'rgba(72,187,120,0.15)' :
+                          j.status === 'FAILED' ? 'rgba(245,101,101,0.15)' :
+                          j.status === 'LEASED' ? 'rgba(49,151,149,0.15)' :
+                          'rgba(255,255,255,0.07)',
+                        color:
+                          j.status === 'COMPLETED' ? 'var(--accent-green)' :
+                          j.status === 'FAILED' ? 'var(--accent-red)' :
+                          j.status === 'LEASED' ? 'var(--accent-teal)' :
+                          'var(--text-secondary)',
+                        fontWeight: 700,
+                        whiteSpace: 'nowrap',
+                      }}>
+                        {j.status}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* SLSA Attestations */}
+            {workerAttestations.length > 0 && (
+              <div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  SLSA-L3 Build Attestations ({workerAttestations.length})
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 180, overflowY: 'auto' }}>
+                  {workerAttestations.slice(-5).reverse().map((a) => (
+                    <div
+                      key={a.attestationId}
+                      style={{
+                        background: 'var(--bg-surface)',
+                        border: '1px solid rgba(72,187,120,0.2)',
+                        borderRadius: 4,
+                        padding: '8px 12px',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--accent-green)', fontFamily: 'JetBrains Mono, monospace' }}>
+                          {a.attestationId.slice(0, 22)}…
+                        </span>
+                        <span style={{ fontSize: '0.65rem', color: 'var(--accent-green)', fontWeight: 700 }}>
+                          {a.slsaLevel}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontFamily: 'JetBrains Mono, monospace' }}>
+                        merkle: {a.outputMerkleRoot.slice(0, 20)}… · {a.executionTimeMs}ms
+                      </div>
+                      <div style={{ fontSize: '0.63rem', color: 'var(--text-secondary)', marginTop: 2, fontFamily: 'JetBrains Mono, monospace' }}>
+                        sig: {a.builderSignature.slice(0, 22)}…
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>

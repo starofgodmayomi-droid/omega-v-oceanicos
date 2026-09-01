@@ -44,6 +44,7 @@ export default {
     '@omega-v/oracle': '<rootDir>/packages/oracle/src/index.ts',
     '@omega-v/vault': '<rootDir>/packages/vault/src/index.ts',
     '@omega-v/dispute': '<rootDir>/packages/dispute/src/index.ts',
+    '@omega-v/worker': '<rootDir>/packages/worker/src/index.ts',
   },
   collectCoverageFrom: [
     'packages/*/src/**/*.ts',
