@@ -2,6 +2,14 @@
 
 **Updated:** 2026-09-01
 
+## Bounded OS task-admission hardening checkpoint — 2026-09-01
+
+The local Universal Builder OS kernel now validates task admission at runtime, not only through TypeScript types. Unsupported task kinds, blank or overlong requester identities, and task inputs with more than 64 top-level keys fail closed before task creation. The public OS snapshot contract remains unchanged, and no API, SDK, CLI, Web, shell, credential, remote-mutation, deployment, or authorization capability was added by this slice.
+
+In isolated worktree `/tmp/omega-os-next-slice` from `origin/main` `a43a7a7`, the focused kernel suite passed with 8 tests and the repository fast verification gate passed with 56 suites and 1,118 tests. Formatting, lint, type-check, the MINI build, coordination/runtime builds, and `git diff --check` passed. The initial MINI-only build exposed the expected prerequisite-package ordering issue in the isolated worktree; rebuilding `types`, `observer`, `verification`, and `remember` first resolved it, after which the declared fast gate completed successfully. This checkpoint is local evidence only.
+
+The changes are currently uncommitted in `packages/mini/src/os.ts`, `packages/mini/src/os.test.ts`, and this state record. No push, PR publication, merge, or deployment has occurred. Remote mutation remains human-gated; rollback is removal of the isolated worktree delta or reset before commit.
+
 ## Bounded coordination/runtime package inventory checkpoint — 2026-09-01
 
 From merged `origin/main` at `a43a7a7`, the package expansion inventory was reconciled with the already-merged `@omega-v/coordination` and `@omega-v/runtime` packages. `packages/README.md` now documents both earned expansions alongside the existing package tree: coordination provides bounded workers/builders, while runtime provides a bounded agent loop and memory fabric. This is documentation alignment only; it does not grant shell, credential, remote-mutation, deployment, or autonomous authorization capabilities.

@@ -32,6 +32,24 @@ describe('OperatingSystemKernel', () => {
     expect(os.snapshot().tasks).toHaveLength(0);
   });
 
+  it('rejects invalid task boundaries at runtime', () => {
+    const os = new OperatingSystemKernel();
+    os.boot();
+
+    expect(() => os.admit('execute' as never, {}, 'operator')).toThrow(
+      'unsupported operating system task kind'
+    );
+    expect(() => os.admit('observe', {}, '   ')).toThrow('task requester must be');
+    expect(() => os.admit('observe', {}, 'x'.repeat(129))).toThrow('task requester must be');
+    expect(() =>
+      os.admit(
+        'observe',
+        Object.fromEntries(Array.from({ length: 65 }, (_, index) => [`key-${index}`, index])),
+        'operator'
+      )
+    ).toThrow('task input must contain at most 64 keys');
+  });
+
   it('fails closed when the task bound is reached', () => {
     const os = new OperatingSystemKernel({ maxTasks: 1 });
     os.boot();

@@ -3,9 +3,11 @@ export type OperatingSystemState =
   'offline' | 'booting' | 'ready' | 'degraded' | 'stopping' | 'stopped';
 
 /** A bounded task admitted to the OS kernel. Arbitrary shell execution is intentionally excluded. */
+export type OperatingSystemTaskKind = 'observe' | 'verify' | 'remember' | 'report';
+
 export type OperatingSystemTask = {
   id: string;
-  kind: 'observe' | 'verify' | 'remember' | 'report';
+  kind: OperatingSystemTaskKind;
   input: Record<string, unknown>;
   requestedBy: string;
 };
@@ -46,6 +48,14 @@ export type OperatingSystemSnapshot = {
 
 const DEFAULT_MAX_TASKS = 32;
 const DEFAULT_MAX_EVENTS = 128;
+const MAX_TASK_INPUT_KEYS = 64;
+const MAX_REQUESTER_LENGTH = 128;
+const OPERATING_SYSTEM_TASK_KINDS: readonly OperatingSystemTaskKind[] = [
+  'observe',
+  'verify',
+  'remember',
+  'report',
+];
 const OPERATING_SYSTEM_CAPABILITIES: OperatingSystemCapabilities = {
   shellExecution: false,
   remoteMutation: false,
@@ -92,12 +102,29 @@ export class OperatingSystemKernel {
   }
 
   public admit(
-    kind: OperatingSystemTask['kind'],
+    kind: OperatingSystemTaskKind,
     input: Record<string, unknown>,
     requestedBy: string
   ): OperatingSystemTask {
     if (this.state !== 'ready') {
       throw new Error(`cannot admit task while operating system is ${this.state}`);
+    }
+    if (!OPERATING_SYSTEM_TASK_KINDS.includes(kind)) {
+      throw new Error(`unsupported operating system task kind: ${String(kind)}`);
+    }
+    if (!isBoundedTaskInput(input)) {
+      throw new Error(
+        `operating system task input must contain at most ${MAX_TASK_INPUT_KEYS} keys`
+      );
+    }
+    if (
+      typeof requestedBy !== 'string' ||
+      requestedBy.trim().length === 0 ||
+      requestedBy.length > MAX_REQUESTER_LENGTH
+    ) {
+      throw new Error(
+        `operating system task requester must be 1-${MAX_REQUESTER_LENGTH} characters`
+      );
     }
     if (this.tasks.length >= this.maxTasks) {
       this.state = 'degraded';
@@ -158,6 +185,15 @@ export class OperatingSystemKernel {
       this.events.splice(0, this.events.length - this.maxEvents);
     }
   }
+}
+
+function isBoundedTaskInput(input: Record<string, unknown>): boolean {
+  return (
+    typeof input === 'object' &&
+    input !== null &&
+    !Array.isArray(input) &&
+    Object.keys(input).length <= MAX_TASK_INPUT_KEYS
+  );
 }
 
 export default OperatingSystemKernel;
