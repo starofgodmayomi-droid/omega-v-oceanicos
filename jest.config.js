@@ -59,6 +59,7 @@ export default {
     '@omega-v/orchestrator': '<rootDir>/packages/orchestrator/src/index.ts',
     '@omega-v/dht': '<rootDir>/packages/dht/src/index.ts',
     '@omega-v/staking': '<rootDir>/packages/staking/src/index.ts',
+    '@omega-v/kernel': '<rootDir>/packages/kernel/src/index.ts',
   },
   collectCoverageFrom: [
     'packages/*/src/**/*.ts',

@@ -1,0 +1,11 @@
+{
+  "name": "@omega-v/kernel",
+  "version": "0.1.0",
+  "description": "Oceanic Finite State Machine Kernel — Canonical Verification-First Full-Stack Transition Loop for Ω∞v Oceanicos",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "test": "jest"
+  }
+}

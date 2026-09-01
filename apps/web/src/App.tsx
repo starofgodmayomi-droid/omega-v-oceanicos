@@ -839,6 +839,71 @@ interface StakingStatsData {
   effectiveAPR: number;
 }
 
+interface CanonicalStateItem {
+  stateId: string;
+  stateIndex: number;
+  parentStateHash: string;
+  intent: {
+    claim: string;
+    actors: string[];
+    maxRiskScore: number;
+    economicTarget: {
+      targetValue: number;
+      resourceBudget: number;
+    };
+  };
+  observation: {
+    source: string;
+    epistemicType: string;
+    confidence: number;
+  };
+  verificationStatus: string;
+  evidence: Array<{
+    claim: string;
+    status: string;
+    proofWitness: string;
+  }>;
+  dissent: Array<{
+    agentOrModelDid: string;
+    dissentingHypothesis: string;
+    conflictWeight: number;
+  }>;
+  authorization: {
+    requiresHumanApproval: boolean;
+    isAuthorized: boolean;
+    authorizedByDid?: string;
+  };
+  action: {
+    targetService: string;
+    status: string;
+    isDestructive: boolean;
+    isFinancial: boolean;
+    reversibility: string;
+  };
+  consequence?: {
+    observedStatus: string;
+    verifiedValueGenerated: number;
+    efficiencyRatio: number;
+  };
+  learning?: {
+    recompileTriggered: boolean;
+    rewardSignal: number;
+  };
+  stateDeltaHash: string;
+  attestationSignature: string;
+  createdAt: string;
+}
+
+interface KernelStatsData {
+  totalTransitions: number;
+  verifiedStates: number;
+  humanGatedAuthorizations: number;
+  preservedDissentCount: number;
+  recompilationsTriggered: number;
+  avgEfficiencyRatio: number;
+  currentRootStateHash: string;
+}
+
 interface RuleEfficacy {
   ruleName: string;
   totalExecutions: number;
@@ -1210,6 +1275,8 @@ export function App(): JSX.Element {
   const [stakingValidators, setStakingValidators] = useState<StakingValidatorItem[]>([]);
   const [stakingDelegations, setStakingDelegations] = useState<StakingDelegationItem[]>([]);
   const [stakingStats, setStakingStats] = useState<StakingStatsData | null>(null);
+  const [canonicalStates, setCanonicalStates] = useState<CanonicalStateItem[]>([]);
+  const [kernelStats, setKernelStats] = useState<KernelStatsData | null>(null);
 
   // ── Poll log + metrics ──
   const fetchState = useCallback(async () => {
@@ -1285,6 +1352,8 @@ export function App(): JSX.Element {
         stkValRes,
         stkDelRes,
         stkStatsRes,
+        krnStatesRes,
+        krnStatsRes,
       ] = await Promise.all([
         fetch(`${API_BASE}/log?limit=30`),
         fetch(`${API_BASE}/metrics`),
@@ -1356,6 +1425,8 @@ export function App(): JSX.Element {
         fetch(`${API_BASE}/staking/validators`),
         fetch(`${API_BASE}/staking/delegations`),
         fetch(`${API_BASE}/staking/stats`),
+        fetch(`${API_BASE}/kernel/states`),
+        fetch(`${API_BASE}/kernel/stats`),
       ]);
       if (!logRes.ok || !metricsRes.ok) throw new Error('API error');
 
@@ -1565,6 +1636,12 @@ export function App(): JSX.Element {
       }
       if (stkStatsRes && stkStatsRes.ok) {
         setStakingStats((await stkStatsRes.json()).data as StakingStatsData);
+      }
+      if (krnStatesRes && krnStatesRes.ok) {
+        setCanonicalStates((await krnStatesRes.json()).data as CanonicalStateItem[]);
+      }
+      if (krnStatsRes && krnStatsRes.ok) {
+        setKernelStats((await krnStatsRes.json()).data as KernelStatsData);
       }
     } catch {
       setApiOnline(false);
@@ -8273,6 +8350,72 @@ export function App(): JSX.Element {
                     </div>
                   ))}
                 </div>
+              </div>
+            </div>
+          </div>
+          {/* ── Section 40: Oceanic Finite State Machine Kernel — Canonical Verification Loop ── */}
+          <div className="card" style={{ gridColumn: '1 / -1' }}>
+            <div className="section-header" style={{ marginBottom: 16 }}>
+              <div className="section-title">💧 Canonical State Machine Kernel · Sₙ ➔ Action ➔ Consequence ➔ Sₙ₊₁</div>
+              <span className="section-badge">{canonicalStates.length} transitions · {kernelStats?.preservedDissentCount || 0} dissents preserved</span>
+            </div>
+
+            {/* Constitutional Kernel Axioms Banner */}
+            <div style={{ background: 'rgba(56,178,172,0.08)', border: '1px solid rgba(56,178,172,0.25)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', marginBottom: 18, fontSize: '0.68rem', color: 'var(--text-secondary)', fontFamily: 'JetBrains Mono, monospace' }}>
+              <strong style={{ color: 'var(--accent-cyan)' }}>CONSTITUTIONAL INVARIANTS:</strong> TRUTH &gt; PERSUASION · EVIDENCE &gt; ASSUMPTION · UNCERTAINTY ➔ VERIFY · FACT ≠ INFERENCE ≠ SPECULATION · ATTEST ≠ ASSERT · DISSENT = PRESERVE · HUMAN AGENCY = FINAL
+            </div>
+
+            {/* Kernel Stats */}
+            {kernelStats && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 10, marginBottom: 18 }}>
+                {[
+                  { label: 'Total Transitions', value: kernelStats.totalTransitions, icon: '🔄' },
+                  { label: 'Verified States', value: kernelStats.verifiedStates, icon: '✅' },
+                  { label: 'Human Gated', value: kernelStats.humanGatedAuthorizations, icon: '👤' },
+                  { label: 'Preserved Dissent', value: kernelStats.preservedDissentCount, icon: '⚡' },
+                  { label: 'Recompilations', value: kernelStats.recompilationsTriggered, icon: '⚙️' },
+                  { label: 'Avg Efficiency', value: `${kernelStats.avgEfficiencyRatio.toFixed(2)}x`, icon: '🎯' },
+                ].map((s) => (
+                  <div key={s.label} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '10px 12px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '1.1rem' }}>{s.icon}</div>
+                    <div style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--accent-cyan)' }}>{s.value}</div>
+                    <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{s.label}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Canonical Transitions List */}
+            <div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Canonical State Lineage ({canonicalStates.length})
+              </div>
+              <div style={{ display: 'grid', gap: 10 }}>
+                {canonicalStates.slice(-4).reverse().map((s) => (
+                  <div key={s.stateId} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: 12 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <span style={{ fontWeight: 700, fontSize: '0.82rem', color: 'var(--text-primary)' }}>
+                        S#{s.stateIndex}: {s.intent.claim}
+                      </span>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <span style={{ fontSize: '0.62rem', padding: '1px 6px', borderRadius: 3, background: s.verificationStatus === 'VERIFIED' ? 'rgba(72,187,120,0.15)' : s.verificationStatus === 'DISSENT_CONTAINED' ? 'rgba(237,137,54,0.15)' : 'rgba(245,101,101,0.15)', color: s.verificationStatus === 'VERIFIED' ? 'var(--accent-green)' : s.verificationStatus === 'DISSENT_CONTAINED' ? 'var(--accent-orange)' : 'var(--accent-red)', fontWeight: 700 }}>
+                          {s.verificationStatus}
+                        </span>
+                        <span style={{ fontSize: '0.62rem', padding: '1px 6px', borderRadius: 3, background: s.authorization.isAuthorized ? 'rgba(72,187,120,0.15)' : 'rgba(245,101,101,0.15)', color: s.authorization.isAuthorized ? 'var(--accent-green)' : 'var(--accent-red)', fontWeight: 700 }}>
+                          {s.authorization.isAuthorized ? 'AUTH: APPROVED' : 'AUTH: GATED'}
+                        </span>
+                      </div>
+                    </div>
+                    <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', marginBottom: 4 }}>
+                      Observation: {s.observation.source} ({s.observation.epistemicType}) · Evidence: {s.evidence.length} items · Dissent: {s.dissent.length} records · Target: {s.action.targetService}
+                    </div>
+                    {s.consequence && (
+                      <div style={{ fontSize: '0.65rem', color: 'var(--accent-cyan)', fontFamily: 'JetBrains Mono, monospace' }}>
+                        Consequence: {s.consequence.observedStatus} · Value: +{s.consequence.verifiedValueGenerated} · Efficiency: {s.consequence.efficiencyRatio}x {s.learning?.recompileTriggered ? '· 🔄 Recompiled' : ''}
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
           </div>

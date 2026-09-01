@@ -74,6 +74,7 @@
     "@omega-v/orchestrator": "*",
     "@omega-v/dht": "*",
     "@omega-v/staking": "*",
+    "@omega-v/kernel": "*",
     "express": "^4.18.2"
   },
   "devDependencies": {

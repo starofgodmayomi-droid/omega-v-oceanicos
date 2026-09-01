@@ -41,6 +41,7 @@ import { OceanicosIntentEngine } from '@omega-v/intent';
 import { OceanicosOrchestratorEngine } from '@omega-v/orchestrator';
 import { OceanicosDHTEngine } from '@omega-v/dht';
 import { OceanicosStakingEngine } from '@omega-v/staking';
+import { OceanicosKernel } from '@omega-v/kernel';
 import app from '../../apps/api/src/index';
 
 describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => {
@@ -1736,6 +1737,100 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       expect(stats.jailedValidators).toBe(1);
       expect(stats.totalDelegations).toBe(1);
       expect(stats.totalSlashedAmount).toBe(100);
+    });
+  });
+
+  describe('40. Oceanic Finite State Machine Kernel — Canonical Verification Loop E2E', () => {
+    it('should compile canonical state Sn, preserve dissent, gate human approval, record consequence, and reconstruct lineage', () => {
+      const kernel = new OceanicosKernel('e2e-kernel-secret');
+
+      // 1. Compile state transition with dissent and sensitive financial action
+      const state = kernel.transition({
+        intent: {
+          claim: 'Atomic Multi-Hop Liquidity Rebalance',
+          actors: ['did:omega:agent:liquidity-mgr'],
+          inputs: { route: ['USDC', 'ETH', 'DAI'], amount: 250000 },
+          expectedOutputs: { netYieldBps: 35 },
+          constraints: ['max-slippage < 0.005'],
+          permissions: ['REBALANCE_TREASURY'],
+          dependencies: ['dht-state-epoch-42'],
+          maxRiskScore: 0.2,
+          economicTarget: { targetValue: 875, resourceBudget: 40 },
+        },
+        observation: {
+          source: 'oracle:multi-source-depth',
+          observedAt: new Date().toISOString(),
+          rawTelemetry: { aggregateDepth: 12000000 },
+          epistemicType: 'FACT',
+          confidence: 0.99,
+        },
+        evidenceItems: [
+          {
+            claim: 'Proof-of-depth satisfies invariant',
+            source: 'depth-verifier',
+            observationId: 'obs-d1',
+            commandOrTest: 'verifyDepthInvariant()',
+            status: 'PASSED',
+            confidence: 0.99,
+          },
+        ],
+        dissentItems: [
+          {
+            agentOrModelDid: 'did:omega:model:volatility-watch',
+            dissentingHypothesis: 'Gas spike expected in next 3 blocks',
+            conflictWeight: 0.3,
+          },
+        ],
+        actionPlan: {
+          targetService: 'intent-solver',
+          payload: { routeId: 'route-opt-1' },
+          isDestructive: false,
+          isFinancial: true,
+          gasLimit: 85000,
+          reversibility: 'REVERSIBLE',
+        },
+      });
+
+      expect(state.verificationStatus).toBe('DISSENT_CONTAINED');
+      expect(state.dissent).toHaveLength(1);
+      expect(state.authorization.requiresHumanApproval).toBe(true);
+      expect(state.authorization.isAuthorized).toBe(false);
+
+      // 2. Human Authorization Gate
+      const authed = kernel.authorizeAction({
+        stateId: state.stateId,
+        authorizerDid: 'did:omega:human:officer-prime',
+        authorizationSignature: '0xsignature_officer_prime_attested',
+      });
+      expect(authed.authorization.isAuthorized).toBe(true);
+      expect(authed.action.status).toBe('READY');
+
+      // 3. Consequence & Adaptive Recompilation
+      const settled = kernel.applyConsequence({
+        stateId: state.stateId,
+        observedStatus: 'SUCCESS',
+        realizedEffects: { realizedYieldBps: 38, gasUsed: 72000 },
+        executionDurationMs: 80,
+        verifiedValueGenerated: 950,
+        resourceCost: 30,
+      });
+
+      expect(settled.consequence?.observedStatus).toBe('SUCCESS');
+      expect(settled.consequence?.efficiencyRatio).toBeGreaterThan(0);
+      expect(settled.learning?.recompileTriggered).toBe(true);
+
+      // 4. Lineage verification
+      const lineage = kernel.getStateLineage(state.stateId);
+      expect(lineage).toHaveLength(1);
+      expect(lineage[0].stateId).toBe(state.stateId);
+
+      // 5. Kernel stats
+      const stats = kernel.getStats();
+      expect(stats.totalTransitions).toBe(1);
+      expect(stats.verifiedStates).toBe(1);
+      expect(stats.humanGatedAuthorizations).toBe(1);
+      expect(stats.preservedDissentCount).toBe(1);
+      expect(stats.recompilationsTriggered).toBe(1);
     });
   });
 });

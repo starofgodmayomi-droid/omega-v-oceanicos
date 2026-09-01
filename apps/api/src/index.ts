@@ -44,6 +44,7 @@ import { OceanicosIntentEngine } from '@omega-v/intent';
 import { OceanicosOrchestratorEngine } from '@omega-v/orchestrator';
 import { OceanicosDHTEngine } from '@omega-v/dht';
 import { OceanicosStakingEngine } from '@omega-v/staking';
+import { OceanicosKernel } from '@omega-v/kernel';
 import {
   SuccessResponse,
   ErrorResponse,
@@ -117,6 +118,7 @@ const intentEngine = new OceanicosIntentEngine();
 const orchestratorEngine = new OceanicosOrchestratorEngine();
 const dhtEngine = new OceanicosDHTEngine();
 const stakingEngine = new OceanicosStakingEngine();
+const kernelEngine = new OceanicosKernel();
 
 // Register default rules
 verificationEngine.registerRule({
@@ -3834,6 +3836,134 @@ app.get('/staking/epochs', (_req: Request, res: Response) => {
 /** GET /staking/stats — Staking telemetry metrics */
 app.get('/staking/stats', (_req: Request, res: Response) => {
   const stats = stakingEngine.getStats();
+  res.json({
+    data: stats,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/**
+ * Section 40 Endpoints: Oceanic Finite State Machine Kernel — Canonical Verification Loop
+ * /kernel/transition, /kernel/authorize, /kernel/consequence, /kernel/states, /kernel/states/:stateId/lineage, /kernel/stats
+ */
+
+/** POST /kernel/transition — Execute canonical state transition Sn */
+app.post('/kernel/transition', (req: Request, res: Response) => {
+  const { intent, observation, evidenceItems, dissentItems, actionPlan, autoAuthorizeIfNonDestructive } = req.body;
+  if (!intent || !observation || !Array.isArray(evidenceItems) || !actionPlan) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'intent, observation, evidenceItems (array), and actionPlan are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const state = kernelEngine.transition({
+      intent,
+      observation,
+      evidenceItems,
+      dissentItems,
+      actionPlan,
+      autoAuthorizeIfNonDestructive,
+    });
+    res.status(201).json({
+      data: state,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'STATE_TRANSITION_FAILED',
+      message: err instanceof Error ? err.message : 'Transition failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** POST /kernel/authorize — Human DID authorization for gated actions */
+app.post('/kernel/authorize', (req: Request, res: Response) => {
+  const { stateId, authorizerDid, authorizationSignature } = req.body;
+  if (!stateId || !authorizerDid || !authorizationSignature) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'stateId, authorizerDid, and authorizationSignature are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const state = kernelEngine.authorizeAction({ stateId, authorizerDid, authorizationSignature });
+    res.json({
+      data: state,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'AUTHORIZATION_FAILED',
+      message: err instanceof Error ? err.message : 'Authorization failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** POST /kernel/consequence — Record measured consequence and trigger adaptive learning */
+app.post('/kernel/consequence', (req: Request, res: Response) => {
+  const { stateId, observedStatus, realizedEffects, sideEffects, executionDurationMs, verifiedValueGenerated, resourceCost } = req.body;
+  if (!stateId || !observedStatus || typeof executionDurationMs !== 'number' || typeof verifiedValueGenerated !== 'number') {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'stateId, observedStatus, executionDurationMs, and verifiedValueGenerated are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const state = kernelEngine.applyConsequence({
+      stateId,
+      observedStatus,
+      realizedEffects: realizedEffects ?? {},
+      sideEffects,
+      executionDurationMs,
+      verifiedValueGenerated,
+      resourceCost,
+    });
+    res.json({
+      data: state,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'CONSEQUENCE_APPLICATION_FAILED',
+      message: err instanceof Error ? err.message : 'Consequence recording failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** GET /kernel/states — List all canonical state nodes */
+app.get('/kernel/states', (_req: Request, res: Response) => {
+  const states = kernelEngine.getStates();
+  res.json({
+    data: states,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** GET /kernel/states/:stateId/lineage — Get verifiable parent-to-child lineage */
+app.get('/kernel/states/:stateId/lineage', (req: Request, res: Response) => {
+  const lineage = kernelEngine.getStateLineage(req.params.stateId);
+  res.json({
+    data: lineage,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** GET /kernel/stats — Kernel telemetry & root state hash */
+app.get('/kernel/stats', (_req: Request, res: Response) => {
+  const stats = kernelEngine.getStats();
   res.json({
     data: stats,
     timestamp: new Date().toISOString(),
