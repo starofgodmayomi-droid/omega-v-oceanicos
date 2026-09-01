@@ -1,6 +1,12 @@
 # Ω∞v Oceanicos Working State
 
-**Updated:** 2026-08-31
+**Updated:** 2026-09-01
+
+## Bounded coordination/runtime package inventory checkpoint — 2026-09-01
+
+From merged `origin/main` at `a43a7a7`, the package expansion inventory was reconciled with the already-merged `@omega-v/coordination` and `@omega-v/runtime` packages. `packages/README.md` now documents both earned expansions alongside the existing package tree: coordination provides bounded workers/builders, while runtime provides a bounded agent loop and memory fabric. This is documentation alignment only; it does not grant shell, credential, remote-mutation, deployment, or autonomous authorization capabilities.
+
+Local evidence in isolated worktree `/tmp/omega-os-next-slice` includes 150 focused tests passing across docs, brand, coordination, and runtime contracts; Prettier check passed; ESLint passed with zero warnings; TypeScript no-emit checking passed; both coordination and runtime package builds passed; and `git diff --check` passed. Dependencies were installed from the existing frozen lockfile. The working tree contains uncommitted documentation deltas in `packages/README.md`, `docs/WORKING_STATE.md`, and `docs/OS_KERNEL.md`; no commit, push, PR publication, merge, or deployment has occurred for this checkpoint. Remote mutation remains human-gated and rollback is removal of the isolated worktree delta.
 
 ## Current local Universal Builder OS continuation — 2026-08-31
 
