@@ -161,7 +161,6 @@ export class OceanicosPipelineEngine {
     // Execute stages in topological order
     const order = this.topologicalSort(stages);
     let rollbackTriggered = false;
-    let rollbackStageId: string | undefined;
     let totalAttestations = 0;
 
     for (const stageId of order) {
@@ -258,7 +257,6 @@ export class OceanicosPipelineEngine {
 
         if (stage.gate.rollbackOnFail) {
           rollbackTriggered = true;
-          rollbackStageId = stageId;
           run.status = 'ROLLED_BACK';
           run.rollbackStageId = stageId;
           // Mark remaining pending stages SKIPPED
