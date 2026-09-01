@@ -40,6 +40,7 @@ import { OceanicosRollupEngine } from '@omega-v/rollup';
 import { OceanicosIntentEngine } from '@omega-v/intent';
 import { OceanicosOrchestratorEngine } from '@omega-v/orchestrator';
 import { OceanicosDHTEngine } from '@omega-v/dht';
+import { OceanicosStakingEngine } from '@omega-v/staking';
 import app from '../../apps/api/src/index';
 
 describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => {
@@ -1676,6 +1677,65 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       expect(stats.totalRecords).toBe(1);
       expect(stats.totalLookups).toBe(2);
       expect(stats.cacheHitRate).toBe(0.5);
+    });
+  });
+
+  describe('39. Proof-of-Stake Delegation & Slashing Engine E2E', () => {
+    it('should register validators, process delegations, slash Byzantine actors, and distribute verifiable epoch rewards', () => {
+      const staking = new OceanicosStakingEngine('e2e-staking-secret');
+
+      // 1. Register validators
+      const v1 = staking.registerValidator({
+        validatorDid: 'did:omega:val:prime',
+        moniker: 'Prime Sentinel',
+        selfStake: 500,
+        commissionRate: 0.05,
+      });
+      const v2 = staking.registerValidator({
+        validatorDid: 'did:omega:val:rogue',
+        moniker: 'Rogue Node',
+        selfStake: 500,
+        commissionRate: 0.10,
+      });
+
+      expect(v1.totalStake).toBe(500);
+      expect(v2.totalStake).toBe(500);
+
+      // 2. Process delegations
+      const del = staking.delegate({
+        delegatorDid: 'did:omega:user:carol',
+        validatorDid: 'did:omega:val:prime',
+        amount: 300,
+      });
+
+      expect(del.delegationId).toMatch(/^del-/);
+      expect(del.attestationProof).toMatch(/^0x/);
+
+      // 3. Slash Byzantine validator
+      const slash = staking.slashValidator({
+        validatorDid: 'did:omega:val:rogue',
+        reason: 'DOUBLE_SIGN',
+        evidenceProof: '0xdouble_sign_equivocation_proof',
+      });
+
+      expect(slash.slashedAmount).toBe(100); // 20% of 500
+      expect(slash.slashFraction).toBe(0.20);
+      const rogue = staking.getValidators().find((v) => v.validatorDid === 'did:omega:val:rogue')!;
+      expect(rogue.status).toBe('JAILED');
+
+      // 4. Advance epoch and distribute rewards
+      const epochReceipt = staking.advanceEpoch(1000);
+      expect(epochReceipt.epoch).toBe(1);
+      expect(epochReceipt.totalRewardsDistributed).toBe(1000);
+      expect(epochReceipt.distributionAttestation).toMatch(/^0x/);
+
+      // 5. Verify stats
+      const stats = staking.getStats();
+      expect(stats.currentEpoch).toBe(2);
+      expect(stats.activeValidators).toBe(1);
+      expect(stats.jailedValidators).toBe(1);
+      expect(stats.totalDelegations).toBe(1);
+      expect(stats.totalSlashedAmount).toBe(100);
     });
   });
 });

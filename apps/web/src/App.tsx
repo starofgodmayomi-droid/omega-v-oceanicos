@@ -802,6 +802,43 @@ interface DHTStatsData {
   expiredRecords: number;
 }
 
+interface StakingValidatorItem {
+  validatorDid: string;
+  moniker: string;
+  selfStake: number;
+  delegatedStake: number;
+  totalStake: number;
+  commissionRate: number;
+  status: string;
+  accumulatedRewards: number;
+  slashCount: number;
+  joinedEpoch: number;
+  lastActiveEpoch: number;
+}
+
+interface StakingDelegationItem {
+  delegationId: string;
+  delegatorDid: string;
+  validatorDid: string;
+  amount: number;
+  shares: number;
+  delegatedAtEpoch: number;
+  attestationProof: string;
+}
+
+interface StakingStatsData {
+  currentEpoch: number;
+  totalStaked: number;
+  totalSelfStake: number;
+  totalDelegatedStake: number;
+  activeValidators: number;
+  jailedValidators: number;
+  totalDelegations: number;
+  totalSlashedAmount: number;
+  totalRewardsDistributed: number;
+  effectiveAPR: number;
+}
+
 interface RuleEfficacy {
   ruleName: string;
   totalExecutions: number;
@@ -1170,6 +1207,9 @@ export function App(): JSX.Element {
   const [dhtNodes, setDhtNodes] = useState<DHTNodeItem[]>([]);
   const [dhtRecords, setDhtRecords] = useState<DHTRecordItem[]>([]);
   const [dhtStats, setDhtStats] = useState<DHTStatsData | null>(null);
+  const [stakingValidators, setStakingValidators] = useState<StakingValidatorItem[]>([]);
+  const [stakingDelegations, setStakingDelegations] = useState<StakingDelegationItem[]>([]);
+  const [stakingStats, setStakingStats] = useState<StakingStatsData | null>(null);
 
   // ── Poll log + metrics ──
   const fetchState = useCallback(async () => {
@@ -1242,6 +1282,9 @@ export function App(): JSX.Element {
         dhtNodesRes,
         dhtRecordsRes,
         dhtStatsRes,
+        stkValRes,
+        stkDelRes,
+        stkStatsRes,
       ] = await Promise.all([
         fetch(`${API_BASE}/log?limit=30`),
         fetch(`${API_BASE}/metrics`),
@@ -1310,6 +1353,9 @@ export function App(): JSX.Element {
         fetch(`${API_BASE}/dht/nodes`),
         fetch(`${API_BASE}/dht/records`),
         fetch(`${API_BASE}/dht/stats`),
+        fetch(`${API_BASE}/staking/validators`),
+        fetch(`${API_BASE}/staking/delegations`),
+        fetch(`${API_BASE}/staking/stats`),
       ]);
       if (!logRes.ok || !metricsRes.ok) throw new Error('API error');
 
@@ -1510,6 +1556,15 @@ export function App(): JSX.Element {
       }
       if (dhtStatsRes && dhtStatsRes.ok) {
         setDhtStats((await dhtStatsRes.json()).data as DHTStatsData);
+      }
+      if (stkValRes && stkValRes.ok) {
+        setStakingValidators((await stkValRes.json()).data as StakingValidatorItem[]);
+      }
+      if (stkDelRes && stkDelRes.ok) {
+        setStakingDelegations((await stkDelRes.json()).data as StakingDelegationItem[]);
+      }
+      if (stkStatsRes && stkStatsRes.ok) {
+        setStakingStats((await stkStatsRes.json()).data as StakingStatsData);
       }
     } catch {
       setApiOnline(false);
@@ -8145,6 +8200,75 @@ export function App(): JSX.Element {
                       </div>
                       <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontFamily: 'JetBrains Mono, monospace' }}>
                         {r.value.slice(0, 24)}… · Proof: {r.lookupProof.slice(0, 16)}…
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+          {/* ── Section 39: Proof-of-Stake Delegation & Slashing Engine ── */}
+          <div className="card" style={{ gridColumn: '1 / -1' }}>
+            <div className="section-header" style={{ marginBottom: 16 }}>
+              <div className="section-title">🥩 Proof-of-Stake Delegation &amp; Slashing Engine</div>
+              <span className="section-badge">{stakingValidators.length} validators · {stakingDelegations.length} delegations</span>
+            </div>
+
+            {/* Stats Row */}
+            {stakingStats && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 10, marginBottom: 18 }}>
+                {[
+                  { label: 'Current Epoch', value: `#${stakingStats.currentEpoch}`, icon: '⏳' },
+                  { label: 'Total Staked', value: stakingStats.totalStaked.toLocaleString(), icon: '💰' },
+                  { label: 'Active Validators', value: stakingStats.activeValidators, icon: '🛡️' },
+                  { label: 'Jailed', value: stakingStats.jailedValidators, icon: '🔒' },
+                  { label: 'Slashed Total', value: stakingStats.totalSlashedAmount.toLocaleString(), icon: '⚡' },
+                  { label: 'Rewards Minted', value: stakingStats.totalRewardsDistributed.toLocaleString(), icon: '🎁' },
+                  { label: 'Effective APR', value: `${stakingStats.effectiveAPR}%`, icon: '📈' },
+                ].map((s) => (
+                  <div key={s.label} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '10px 12px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '1.1rem' }}>{s.icon}</div>
+                    <div style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--accent-orange)' }}>{s.value}</div>
+                    <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{s.label}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Validators & Delegations */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              <div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Active Validators ({stakingValidators.length})
+                </div>
+                <div style={{ display: 'grid', gap: 8 }}>
+                  {stakingValidators.slice(-4).reverse().map((v) => (
+                    <div key={v.validatorDid} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: 10 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
+                        <span style={{ fontWeight: 700, fontSize: '0.78rem', color: 'var(--text-primary)' }}>{v.moniker}</span>
+                        <span style={{ fontSize: '0.62rem', padding: '1px 6px', borderRadius: 3, background: v.status === 'ACTIVE' ? 'rgba(72,187,120,0.15)' : 'rgba(245,101,101,0.15)', color: v.status === 'ACTIVE' ? 'var(--accent-green)' : 'var(--accent-red)', fontWeight: 700 }}>{v.status}</span>
+                      </div>
+                      <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
+                        Stake: {v.totalStake.toLocaleString()} (Self: {v.selfStake} · Del: {v.delegatedStake}) · Comm: {(v.commissionRate * 100).toFixed(0)}%
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Staking Delegations ({stakingDelegations.length})
+                </div>
+                <div style={{ display: 'grid', gap: 8 }}>
+                  {stakingDelegations.slice(-4).reverse().map((d) => (
+                    <div key={d.delegationId} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: 10 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
+                        <span style={{ fontWeight: 700, fontSize: '0.78rem', color: 'var(--accent-purple)' }}>{d.delegatorDid.split(':').pop()} ➔ {d.validatorDid.split(':').pop()}</span>
+                        <span style={{ fontSize: '0.65rem', color: 'var(--accent-orange)', fontWeight: 700 }}>+{d.amount}</span>
+                      </div>
+                      <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontFamily: 'JetBrains Mono, monospace' }}>
+                        Epoch #{d.delegatedAtEpoch} · Proof: {d.attestationProof.slice(0, 16)}…
                       </div>
                     </div>
                   ))}

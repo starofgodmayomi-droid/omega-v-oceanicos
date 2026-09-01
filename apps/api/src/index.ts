@@ -43,6 +43,7 @@ import { OceanicosRollupEngine } from '@omega-v/rollup';
 import { OceanicosIntentEngine } from '@omega-v/intent';
 import { OceanicosOrchestratorEngine } from '@omega-v/orchestrator';
 import { OceanicosDHTEngine } from '@omega-v/dht';
+import { OceanicosStakingEngine } from '@omega-v/staking';
 import {
   SuccessResponse,
   ErrorResponse,
@@ -115,6 +116,7 @@ const rollupEngine = new OceanicosRollupEngine();
 const intentEngine = new OceanicosIntentEngine();
 const orchestratorEngine = new OceanicosOrchestratorEngine();
 const dhtEngine = new OceanicosDHTEngine();
+const stakingEngine = new OceanicosStakingEngine();
 
 // Register default rules
 verificationEngine.registerRule({
@@ -3699,6 +3701,139 @@ app.get('/dht/lookup', (req: Request, res: Response) => {
 /** GET /dht/stats — DHT telemetry metrics */
 app.get('/dht/stats', (_req: Request, res: Response) => {
   const stats = dhtEngine.getStats();
+  res.json({
+    data: stats,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/**
+ * Section 39 Endpoints: Proof-of-Stake Delegation, Validator Staking & Slashing Engine
+ * /staking/validators, /staking/validators/register, /staking/delegations, /staking/delegate, /staking/slash, /staking/epoch/advance, /staking/epochs, /staking/stats
+ */
+
+/** GET /staking/validators — List all staking validators */
+app.get('/staking/validators', (_req: Request, res: Response) => {
+  const validators = stakingEngine.getValidators();
+  res.json({
+    data: validators,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /staking/validators/register — Register new PoS validator */
+app.post('/staking/validators/register', (req: Request, res: Response) => {
+  const { validatorDid, moniker, selfStake, commissionRate } = req.body;
+  if (!validatorDid || !moniker || typeof selfStake !== 'number') {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'validatorDid, moniker, and selfStake (number) are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const val = stakingEngine.registerValidator({ validatorDid, moniker, selfStake, commissionRate });
+    res.status(201).json({
+      data: val,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'VALIDATOR_REGISTRATION_FAILED',
+      message: err instanceof Error ? err.message : 'Registration failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** GET /staking/delegations — List delegations */
+app.get('/staking/delegations', (req: Request, res: Response) => {
+  const delegatorDid = typeof req.query.delegatorDid === 'string' ? req.query.delegatorDid : undefined;
+  const delegations = stakingEngine.getDelegations(delegatorDid);
+  res.json({
+    data: delegations,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /staking/delegate — Delegate stake to a validator */
+app.post('/staking/delegate', (req: Request, res: Response) => {
+  const { delegatorDid, validatorDid, amount } = req.body;
+  if (!delegatorDid || !validatorDid || typeof amount !== 'number') {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'delegatorDid, validatorDid, and amount (number) are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const delegation = stakingEngine.delegate({ delegatorDid, validatorDid, amount });
+    res.status(201).json({
+      data: delegation,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'DELEGATION_FAILED',
+      message: err instanceof Error ? err.message : 'Delegation failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** POST /staking/slash — Slash a misbehaving validator */
+app.post('/staking/slash', (req: Request, res: Response) => {
+  const { validatorDid, reason, evidenceProof } = req.body;
+  if (!validatorDid || !reason || !evidenceProof) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'validatorDid, reason, and evidenceProof are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const record = stakingEngine.slashValidator({ validatorDid, reason, evidenceProof });
+    res.json({
+      data: record,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'SLASH_FAILED',
+      message: err instanceof Error ? err.message : 'Slash execution failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** POST /staking/epoch/advance — Roll epoch and distribute staking rewards */
+app.post('/staking/epoch/advance', (req: Request, res: Response) => {
+  const mintRewards = typeof req.body.mintRewards === 'number' ? req.body.mintRewards : 1000;
+  const receipt = stakingEngine.advanceEpoch(mintRewards);
+  res.json({
+    data: receipt,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** GET /staking/epochs — List epoch distribution receipts */
+app.get('/staking/epochs', (_req: Request, res: Response) => {
+  const receipts = stakingEngine.getEpochReceipts();
+  res.json({
+    data: receipts,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** GET /staking/stats — Staking telemetry metrics */
+app.get('/staking/stats', (_req: Request, res: Response) => {
+  const stats = stakingEngine.getStats();
   res.json({
     data: stats,
     timestamp: new Date().toISOString(),

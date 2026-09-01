@@ -74,7 +74,8 @@
       "@omega-v/rollup": ["packages/rollup/src/index.ts"],
       "@omega-v/intent": ["packages/intent/src/index.ts"],
       "@omega-v/orchestrator": ["packages/orchestrator/src/index.ts"],
-      "@omega-v/dht": ["packages/dht/src/index.ts"]
+      "@omega-v/dht": ["packages/dht/src/index.ts"],
+      "@omega-v/staking": ["packages/staking/src/index.ts"]
     }
   },
   "include": ["packages/*/src", "apps/*/src", "tests"],
