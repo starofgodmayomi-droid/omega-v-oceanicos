@@ -681,6 +681,36 @@ interface DAStatsData {
   namespaceCount: number;
 }
 
+interface L2AccountItem {
+  address: string;
+  nonce: number;
+  balance: number;
+  storageRoot: string;
+}
+
+interface RollupBlockItem {
+  blockHeight: number;
+  rollupType: string;
+  txCount: number;
+  preStateRoot: string;
+  postStateRoot: string;
+  batchCommitment: string;
+  status: string;
+  proposerDid: string;
+  proposedAt: string;
+}
+
+interface RollupStatsData {
+  totalBlocks: number;
+  finalizedBlocks: number;
+  totalL2Transactions: number;
+  activeAccounts: number;
+  totalL2ValueLocked: number;
+  openChallenges: number;
+  latestPreStateRoot: string;
+  latestPostStateRoot: string;
+}
+
 interface RuleEfficacy {
   ruleName: string;
   totalExecutions: number;
@@ -1022,6 +1052,15 @@ export function App(): JSX.Element {
   const [submittingDaBlob, setSubmittingDaBlob] = useState(false);
   const [samplingBlob, setSamplingBlob] = useState(false);
   const [daResult, setDaResult] = useState<string | null>(null);
+  const [rollupAccounts, setRollupAccounts] = useState<L2AccountItem[]>([]);
+  const [rollupBlocks, setRollupBlocks] = useState<RollupBlockItem[]>([]);
+  const [rollupStats, setRollupStats] = useState<RollupStatsData | null>(null);
+  const [l2TxFrom, setL2TxFrom] = useState('0xAlice');
+  const [l2TxTo, setL2TxTo] = useState('0xBob');
+  const [l2TxValue, setL2TxValue] = useState('5000');
+  const [submittingL2Tx, setSubmittingL2Tx] = useState(false);
+  const [producingBlock, setProducingBlock] = useState(false);
+  const [rollupResult, setRollupResult] = useState<string | null>(null);
 
   // ── Poll log + metrics ──
   const fetchState = useCallback(async () => {
@@ -1082,6 +1121,9 @@ export function App(): JSX.Element {
         seqStatsRes,
         daBlobsRes,
         daStatsRes,
+        rlpAccRes,
+        rlpBlkRes,
+        rlpStatsRes,
       ] = await Promise.all([
         fetch(`${API_BASE}/log?limit=30`),
         fetch(`${API_BASE}/metrics`),
@@ -1138,6 +1180,9 @@ export function App(): JSX.Element {
         fetch(`${API_BASE}/sequencer/stats`),
         fetch(`${API_BASE}/da/blobs`),
         fetch(`${API_BASE}/da/stats`),
+        fetch(`${API_BASE}/rollup/accounts`),
+        fetch(`${API_BASE}/rollup/blocks`),
+        fetch(`${API_BASE}/rollup/stats`),
       ]);
       if (!logRes.ok || !metricsRes.ok) throw new Error('API error');
 
@@ -1302,6 +1347,15 @@ export function App(): JSX.Element {
       }
       if (daStatsRes && daStatsRes.ok) {
         setDaStats((await daStatsRes.json()).data as DAStatsData);
+      }
+      if (rlpAccRes && rlpAccRes.ok) {
+        setRollupAccounts((await rlpAccRes.json()).data as L2AccountItem[]);
+      }
+      if (rlpBlkRes && rlpBlkRes.ok) {
+        setRollupBlocks((await rlpBlkRes.json()).data as RollupBlockItem[]);
+      }
+      if (rlpStatsRes && rlpStatsRes.ok) {
+        setRollupStats((await rlpStatsRes.json()).data as RollupStatsData);
       }
     } catch {
       setApiOnline(false);
@@ -7330,6 +7384,200 @@ export function App(): JSX.Element {
                     </div>
                   </div>
                 ))}
+              </div>
+            </div>
+          </div>
+
+          {/* ═══ Section 35: Layer-2 Rollup Execution Engine ═══ */}
+          <div className="card" style={{ gridColumn: '1 / -1' }}>
+            <div className="section-header" style={{ marginBottom: 18 }}>
+              <div className="section-title">⚡ Layer-2 Rollup Execution & State Machine</div>
+              <span className="section-badge">
+                {rollupStats ? `${rollupStats.totalBlocks} blocks · ${rollupStats.totalL2Transactions} txs · ${rollupStats.activeAccounts} accounts · ${rollupStats.openChallenges} challenges` : 'Loading…'}
+              </span>
+            </div>
+
+            {/* Rollup Stats Row */}
+            {rollupStats && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 10, marginBottom: 16 }}>
+                <div style={{ background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', border: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Total Blocks</div>
+                  <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--accent-purple)' }}>{rollupStats.totalBlocks}</div>
+                </div>
+                <div style={{ background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', border: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>L2 Transactions</div>
+                  <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--accent-teal)' }}>{rollupStats.totalL2Transactions}</div>
+                </div>
+                <div style={{ background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', border: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Total Value Locked</div>
+                  <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--accent-green)' }}>{rollupStats.totalL2ValueLocked.toLocaleString()} Ω</div>
+                </div>
+                <div style={{ background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', border: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Post State Root</div>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--accent-orange)', fontFamily: 'JetBrains Mono, monospace' }}>{rollupStats.latestPostStateRoot.slice(0, 16)}…</div>
+                </div>
+              </div>
+            )}
+
+            {/* Submit L2 Tx & Produce Block Controls */}
+            <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+              <div style={{ flex: 1, minWidth: 120 }}>
+                <label style={{ display: 'block', fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>From (Sender)</label>
+                <input
+                  type="text"
+                  value={l2TxFrom}
+                  onChange={(e) => setL2TxFrom(e.target.value)}
+                  style={{ width: '100%', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '8px 10px', color: 'var(--text-primary)', fontFamily: 'JetBrains Mono, monospace', fontSize: '0.75rem' }}
+                />
+              </div>
+              <div style={{ flex: 1, minWidth: 120 }}>
+                <label style={{ display: 'block', fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>To (Recipient)</label>
+                <input
+                  type="text"
+                  value={l2TxTo}
+                  onChange={(e) => setL2TxTo(e.target.value)}
+                  style={{ width: '100%', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '8px 10px', color: 'var(--text-primary)', fontFamily: 'JetBrains Mono, monospace', fontSize: '0.75rem' }}
+                />
+              </div>
+              <div style={{ flex: 1, minWidth: 100 }}>
+                <label style={{ display: 'block', fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Value (Ω)</label>
+                <input
+                  type="number"
+                  value={l2TxValue}
+                  onChange={(e) => setL2TxValue(e.target.value)}
+                  style={{ width: '100%', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '8px 10px', color: 'var(--text-primary)', fontFamily: 'JetBrains Mono, monospace', fontSize: '0.75rem' }}
+                />
+              </div>
+              <button
+                className="cta-button"
+                disabled={submittingL2Tx}
+                onClick={async () => {
+                  setSubmittingL2Tx(true);
+                  setRollupResult(null);
+                  try {
+                    const res = await fetch(`${API_BASE}/rollup/tx/submit`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        from: l2TxFrom,
+                        to: l2TxTo,
+                        value: Number(l2TxValue),
+                      }),
+                    });
+                    const data = await res.json();
+                    if (!res.ok) { setRollupResult(`❌ ${data.message}`); return; }
+                    setRollupResult(`✅ Ingested L2 transaction [${data.data.txHash.slice(0, 20)}…] from ${l2TxFrom} to ${l2TxTo}`);
+                    fetchState();
+                  } catch (err) {
+                    setRollupResult(`❌ ${err instanceof Error ? err.message : 'L2 tx failed'}`);
+                  } finally {
+                    setSubmittingL2Tx(false);
+                  }
+                }}
+                style={{ minWidth: 130 }}
+              >
+                {submittingL2Tx ? '⏳ Submitting…' : '💸 Send L2 Tx'}
+              </button>
+              <button
+                className="cta-button"
+                disabled={producingBlock}
+                onClick={async () => {
+                  setProducingBlock(true);
+                  setRollupResult(null);
+                  try {
+                    const res = await fetch(`${API_BASE}/rollup/blocks/produce`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        proposerDid: 'did:omega:sequencer:primary',
+                        rollupType: 'OPTIMISTIC',
+                        maxTxs: 20,
+                      }),
+                    });
+                    const data = await res.json();
+                    if (!res.ok) { setRollupResult(`❌ ${data.message}`); return; }
+                    setRollupResult(`✅ Produced Rollup Block #${data.data.blockHeight} (${data.data.txCount} txs) · PostRoot: ${data.data.postStateRoot.slice(0, 18)}…`);
+                    fetchState();
+                  } catch (err) {
+                    setRollupResult(`❌ ${err instanceof Error ? err.message : 'Block production failed'}`);
+                  } finally {
+                    setProducingBlock(false);
+                  }
+                }}
+                style={{ minWidth: 140, background: 'var(--accent-purple)' }}
+              >
+                {producingBlock ? '⏳ Producing…' : '⚡ Produce L2 Block'}
+              </button>
+            </div>
+
+            {rollupResult && (
+              <div style={{ fontSize: '0.78rem', padding: '6px 10px', borderRadius: 'var(--radius-sm)', background: rollupResult.startsWith('✅') ? 'rgba(72,187,120,0.1)' : 'rgba(229,62,62,0.1)', color: rollupResult.startsWith('✅') ? 'var(--accent-green)' : 'var(--accent-red)', marginBottom: 14, fontFamily: 'JetBrains Mono, monospace' }}>
+                {rollupResult}
+              </div>
+            )}
+
+            {/* Accounts & Blocks Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
+              <div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  L2 Accounts ({rollupAccounts.length})
+                </div>
+                <div style={{ display: 'grid', gap: 8 }}>
+                  {rollupAccounts.map((acc) => (
+                    <div
+                      key={acc.address}
+                      style={{
+                        background: 'var(--bg-surface)',
+                        border: '1px solid var(--border)',
+                        borderRadius: 'var(--radius-sm)',
+                        padding: 10,
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
+                        <span style={{ fontWeight: 700, fontSize: '0.78rem', color: 'var(--text-primary)' }}>
+                          {acc.address}
+                        </span>
+                        <span style={{ fontWeight: 700, fontSize: '0.78rem', color: 'var(--accent-green)' }}>
+                          {acc.balance.toLocaleString()} Ω
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
+                        Nonce: #{acc.nonce}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Rollup Blocks ({rollupBlocks.length})
+                </div>
+                <div style={{ display: 'grid', gap: 8 }}>
+                  {rollupBlocks.slice(-4).reverse().map((b) => (
+                    <div
+                      key={b.blockHeight}
+                      style={{
+                        background: 'var(--bg-surface)',
+                        border: '1px solid var(--border)',
+                        borderRadius: 'var(--radius-sm)',
+                        padding: 10,
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+                        <span style={{ fontWeight: 700, fontSize: '0.8rem', color: 'var(--accent-purple)' }}>
+                          Block #{b.blockHeight} ({b.rollupType})
+                        </span>
+                        <span style={{ fontSize: '0.65rem', padding: '1px 6px', borderRadius: 3, background: b.status === 'FINALIZED' ? 'rgba(72,187,120,0.15)' : 'rgba(99,179,237,0.15)', color: b.status === 'FINALIZED' ? 'var(--accent-green)' : 'var(--accent-blue)', fontWeight: 700 }}>
+                          {b.status}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontFamily: 'JetBrains Mono, monospace' }}>
+                        {b.txCount} txs · PostRoot: {b.postStateRoot.slice(0, 18)}…
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>

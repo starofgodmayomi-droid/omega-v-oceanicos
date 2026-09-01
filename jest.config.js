@@ -54,6 +54,7 @@ export default {
     '@omega-v/bridge': '<rootDir>/packages/bridge/src/index.ts',
     '@omega-v/sequencer': '<rootDir>/packages/sequencer/src/index.ts',
     '@omega-v/da': '<rootDir>/packages/da/src/index.ts',
+    '@omega-v/rollup': '<rootDir>/packages/rollup/src/index.ts',
   },
   collectCoverageFrom: [
     'packages/*/src/**/*.ts',

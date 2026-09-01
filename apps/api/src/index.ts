@@ -39,6 +39,7 @@ import { OceanicosShardingEngine } from '@omega-v/sharding';
 import { OceanicosBridgeEngine } from '@omega-v/bridge';
 import { OceanicosSequencerEngine } from '@omega-v/sequencer';
 import { OceanicosDAEngine } from '@omega-v/da';
+import { OceanicosRollupEngine } from '@omega-v/rollup';
 import {
   SuccessResponse,
   ErrorResponse,
@@ -107,6 +108,7 @@ const shardingEngine = new OceanicosShardingEngine();
 const bridgeEngine = new OceanicosBridgeEngine();
 const sequencerEngine = new OceanicosSequencerEngine();
 const daEngine = new OceanicosDAEngine();
+const rollupEngine = new OceanicosRollupEngine();
 
 // Register default rules
 verificationEngine.registerRule({
@@ -3206,6 +3208,174 @@ app.post('/da/blobs/verify-kzg', (req: Request, res: Response) => {
 /** GET /da/stats — Data availability layer statistics */
 app.get('/da/stats', (_req: Request, res: Response) => {
   const stats = daEngine.getStats();
+  res.json({
+    data: stats,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/**
+ * Section 35 Endpoints: Layer-2 Rollup Execution Engine & State Transitions
+ * /rollup/accounts, /rollup/tx/submit, /rollup/blocks/produce, /rollup/blocks/commit-l1, /rollup/blocks/finalize, /rollup/blocks/challenge, /rollup/blocks, /rollup/stats
+ */
+
+/** GET /rollup/accounts — List all L2 accounts */
+app.get('/rollup/accounts', (_req: Request, res: Response) => {
+  const accounts = rollupEngine.getAccounts();
+  res.json({
+    data: accounts,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /rollup/tx/submit — Submit L2 transaction */
+app.post('/rollup/tx/submit', (req: Request, res: Response) => {
+  const { from, to, value, calldata, signature } = req.body;
+  if (!from || !to || typeof value !== 'number') {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'from, to, and numerical value are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const tx = rollupEngine.submitL2Transaction({ from, to, value, calldata, signature });
+    res.status(201).json({
+      data: tx,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'L2_TX_FAILED',
+      message: err instanceof Error ? err.message : 'L2 tx failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** POST /rollup/blocks/produce — Produce L2 block from pending transactions */
+app.post('/rollup/blocks/produce', (req: Request, res: Response) => {
+  const { proposerDid, rollupType, maxTxs } = req.body;
+  if (!proposerDid) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'proposerDid is required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  const block = rollupEngine.produceBlock({
+    proposerDid,
+    rollupType: rollupType === 'VALIDITY_ZK' ? 'VALIDITY_ZK' : 'OPTIMISTIC',
+    maxTxs: typeof maxTxs === 'number' ? maxTxs : 20,
+  });
+
+  res.status(201).json({
+    data: block,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /rollup/blocks/commit-l1 — Commit proposed block to L1 */
+app.post('/rollup/blocks/commit-l1', (req: Request, res: Response) => {
+  const { blockHeight, l1TxHash } = req.body;
+  if (typeof blockHeight !== 'number') {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'blockHeight is required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const block = rollupEngine.commitToL1(blockHeight, l1TxHash);
+    res.json({
+      data: block,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'COMMIT_L1_FAILED',
+      message: err instanceof Error ? err.message : 'Commit to L1 failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** POST /rollup/blocks/finalize — Finalize L2 block */
+app.post('/rollup/blocks/finalize', (req: Request, res: Response) => {
+  const { blockHeight } = req.body;
+  if (typeof blockHeight !== 'number') {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'blockHeight is required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const block = rollupEngine.finalizeBlock(blockHeight);
+    res.json({
+      data: block,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'FINALIZE_BLOCK_FAILED',
+      message: err instanceof Error ? err.message : 'Finalize block failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** POST /rollup/blocks/challenge — Challenge disputed block state root */
+app.post('/rollup/blocks/challenge', (req: Request, res: Response) => {
+  const { blockHeight, challengerDid, disputedPostStateRoot } = req.body;
+  if (typeof blockHeight !== 'number' || !challengerDid || !disputedPostStateRoot) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'blockHeight, challengerDid, and disputedPostStateRoot are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const challenge = rollupEngine.challengeBlock({
+      blockHeight,
+      challengerDid,
+      disputedPostStateRoot,
+    });
+    res.status(201).json({
+      data: challenge,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'CHALLENGE_FAILED',
+      message: err instanceof Error ? err.message : 'Challenge failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** GET /rollup/blocks — List all L2 rollup blocks */
+app.get('/rollup/blocks', (_req: Request, res: Response) => {
+  const blocks = rollupEngine.getBlocks();
+  res.json({
+    data: blocks,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** GET /rollup/stats — Rollup execution engine metrics */
+app.get('/rollup/stats', (_req: Request, res: Response) => {
+  const stats = rollupEngine.getStats();
   res.json({
     data: stats,
     timestamp: new Date().toISOString(),

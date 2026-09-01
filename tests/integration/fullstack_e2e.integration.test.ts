@@ -36,6 +36,7 @@ import { OceanicosShardingEngine } from '@omega-v/sharding';
 import { OceanicosBridgeEngine } from '@omega-v/bridge';
 import { OceanicosSequencerEngine } from '@omega-v/sequencer';
 import { OceanicosDAEngine } from '@omega-v/da';
+import { OceanicosRollupEngine } from '@omega-v/rollup';
 import app from '../../apps/api/src/index';
 
 describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => {
@@ -1495,7 +1496,50 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       expect(stats.namespaceCount).toBe(1);
     });
   });
+
+  describe('35. Layer-2 Rollup Execution Engine & State Transition Proofs E2E', () => {
+    it('should submit L2 transactions, produce state-transitioned blocks, commit to L1, and verify finality', () => {
+      const rollupEngine = new OceanicosRollupEngine('e2e-rollup-key');
+
+      // 1. Submit L2 transactions
+      const tx1 = rollupEngine.submitL2Transaction({
+        from: '0xAlice',
+        to: '0xBob',
+        value: 12000,
+        calldata: '0xcalldata_transfer',
+      });
+      expect(tx1.txHash).toMatch(/^0x/);
+      expect(tx1.status).toBe('PENDING');
+
+      // 2. Produce block
+      const block = rollupEngine.produceBlock({
+        proposerDid: 'did:omega:sequencer:primary',
+        rollupType: 'OPTIMISTIC',
+      });
+      expect(block.blockHeight).toBe(1);
+      expect(block.txCount).toBe(1);
+      expect(block.status).toBe('PROPOSED');
+      expect(block.preStateRoot).toMatch(/^0x/);
+      expect(block.postStateRoot).toMatch(/^0x/);
+      expect(block.batchCommitment).toMatch(/^0x/);
+
+      // 3. Commit to L1 & finalize
+      const committed = rollupEngine.commitToL1(block.blockHeight, '0xETH_L1_BATCH_HASH');
+      expect(committed.status).toBe('COMMITTED_L1');
+
+      const finalized = rollupEngine.finalizeBlock(block.blockHeight);
+      expect(finalized.status).toBe('FINALIZED');
+
+      // 4. Check L2 stats
+      const stats = rollupEngine.getStats();
+      expect(stats.totalBlocks).toBe(1);
+      expect(stats.finalizedBlocks).toBe(1);
+      expect(stats.totalL2Transactions).toBe(1);
+      expect(stats.activeAccounts).toBe(2);
+    });
+  });
 });
+
 
 
 
