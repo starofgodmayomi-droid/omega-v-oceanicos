@@ -14,6 +14,7 @@ export type OperatingSystemEvent = {
   reason?: string;
 };
 export type OperatingSystemSnapshot = {
+  snapshotVersion: 'os.snapshot.v1';
   state: OperatingSystemState;
   tasks: OperatingSystemTask[];
   events: OperatingSystemEvent[];

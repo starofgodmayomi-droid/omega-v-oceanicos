@@ -182,6 +182,7 @@ export function installFetch(overrides: RouteOverrides = {}): jest.Mock {
     '/api/os': () =>
       json({
         data: {
+          snapshotVersion: 'os.snapshot.v1',
           state: 'ready',
           tasks: [],
           events: [

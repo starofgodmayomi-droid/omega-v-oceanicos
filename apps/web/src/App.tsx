@@ -26,6 +26,7 @@ type RuntimeDissensus = {
 };
 
 type OperatingSystemSnapshot = {
+  snapshotVersion: 'os.snapshot.v1';
   state: 'offline' | 'booting' | 'ready' | 'degraded' | 'stopping' | 'stopped';
   tasks: Array<{ id: string; kind: string; requestedBy: string }>;
   events: Array<{
@@ -1091,7 +1092,8 @@ export function App(): React.JSX.Element {
                 <small>No bounded kernel events are available.</small>
               )}
               <small className="capability-line">
-                limits=tasks≤{osSnapshot?.limits?.maxTasks ?? 'UNKNOWN'} · events≤
+                schema={osSnapshot?.snapshotVersion ?? 'UNKNOWN'} · limits=tasks≤
+                {osSnapshot?.limits?.maxTasks ?? 'UNKNOWN'} · events≤
                 {osSnapshot?.limits?.maxEvents ?? 'UNKNOWN'}
               </small>
               <small className="capability-line">

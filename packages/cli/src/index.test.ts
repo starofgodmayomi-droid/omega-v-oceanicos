@@ -24,6 +24,7 @@ describe('omega status CLI', () => {
         return new Response(
           JSON.stringify({
             data: {
+              snapshotVersion: 'os.snapshot.v1',
               state: 'ready',
               tasks: [],
               events: [
@@ -46,6 +47,7 @@ describe('omega status CLI', () => {
 
     expect(exitCode).toBe(0);
     expect(output.join('')).toContain('OS            state=ready tasks=0 events=2');
+    expect(output.join('')).toContain('SCHEMA os.snapshot.v1');
     expect(output.join('')).toContain('LIMITS maxTasks=32 maxEvents=128');
     expect(output.join('')).toContain(
       'CAPABILITIES shell=DISABLED remote=DISABLED credentials=DISABLED human_gate=REQUIRED'

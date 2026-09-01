@@ -33,6 +33,7 @@ export type OperatingSystemCapabilities = {
 };
 
 export type OperatingSystemSnapshot = {
+  snapshotVersion: 'os.snapshot.v1';
   state: OperatingSystemState;
   tasks: OperatingSystemTask[];
   events: OperatingSystemEvent[];
@@ -142,6 +143,7 @@ export class OperatingSystemKernel {
 
   public snapshot(): OperatingSystemSnapshot {
     return {
+      snapshotVersion: 'os.snapshot.v1',
       state: this.state,
       tasks: this.tasks.map((task) => ({ ...task, input: { ...task.input } })),
       events: this.events.map((event) => ({ ...event })),
