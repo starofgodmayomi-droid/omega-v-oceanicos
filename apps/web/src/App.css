@@ -1333,13 +1333,13 @@ select:focus-visible {
 
 /* Ω∞v control-room theme: visual atmosphere only; runtime semantics remain evidence-bound. */
 :root {
-  --control-void: #02070d;
+  --control-void: rgb(2 7 13);
   --control-surface: rgba(5, 15, 25, 0.92);
   --control-surface-raised: rgba(8, 24, 37, 0.94);
   --control-edge: rgba(91, 201, 231, 0.34);
-  --control-edge-bright: #86e9ff;
-  --control-cyan: #a9f3ff;
-  --control-muted: #7395a4;
+  --control-edge-bright: rgb(134 233 255);
+  --control-cyan: rgb(169 243 255);
+  --control-muted: rgb(115 149 164);
   --control-grid: rgba(91, 201, 231, 0.055);
 }
 
@@ -1354,7 +1354,7 @@ body {
     linear-gradient(var(--control-grid) 1px, transparent 1px),
     linear-gradient(90deg, var(--control-grid) 1px, transparent 1px),
     radial-gradient(circle at 68% -12%, rgba(26, 103, 132, 0.42), transparent 36%),
-    radial-gradient(circle at 18% 38%, rgba(11, 66, 87, 0.2), transparent 28%), #02070d;
+    radial-gradient(circle at 18% 38%, rgba(11, 66, 87, 0.2), transparent 28%), var(--control-void);
   background-size:
     32px 32px,
     32px 32px,
@@ -1411,16 +1411,16 @@ body {
 .section-kicker,
 .metrics-row span,
 .sidebar-foot span {
-  color: #5f8798;
+  color: rgb(95 135 152);
 }
 
 .nav-item {
-  color: #82a6b4;
+  color: rgb(130 166 180);
 }
 
 .nav-item:hover,
 .nav-item.active {
-  color: #e6fbff;
+  color: rgb(230 251 255);
   background: rgba(36, 105, 132, 0.24);
   box-shadow: inset 2px 0 0 var(--control-edge-bright);
 }
