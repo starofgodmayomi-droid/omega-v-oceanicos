@@ -46,6 +46,7 @@ export default {
     '@omega-v/dispute': '<rootDir>/packages/dispute/src/index.ts',
     '@omega-v/worker': '<rootDir>/packages/worker/src/index.ts',
     '@omega-v/pipeline': '<rootDir>/packages/pipeline/src/index.ts',
+    '@omega-v/registry': '<rootDir>/packages/registry/src/index.ts',
   },
   collectCoverageFrom: [
     'packages/*/src/**/*.ts',

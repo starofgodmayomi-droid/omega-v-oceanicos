@@ -28,6 +28,7 @@ import { OceanicosStateVault } from '@omega-v/vault';
 import { OceanicosDisputeEngine } from '@omega-v/dispute';
 import { OceanicosWorkerPool } from '@omega-v/worker';
 import { OceanicosPipelineEngine } from '@omega-v/pipeline';
+import { OceanicosRegistryEngine } from '@omega-v/registry';
 import app from '../../apps/api/src/index';
 
 describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => {
@@ -1076,6 +1077,70 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       expect(stats.totalAttestations).toBe(3);
     });
   });
+
+  describe('27. Decentralized Verifiable Package & Artifact Registry E2E', () => {
+    it('should publish signed package releases, verify zero-trust tarball integrity, deprecate versions, and issue security advisories', () => {
+      const registry = new OceanicosRegistryEngine('e2e-registry-key');
+
+      // 1. Verify canonical packages exist
+      const initialPkgs = registry.getAllPackages();
+      expect(initialPkgs.length).toBeGreaterThanOrEqual(2);
+
+      // 2. Publish new verified release
+      const rawTarball = Buffer.from('OCEANICOS_PACKAGE_BINARY_V1');
+      const release = registry.publishPackage({
+        name: '@omega-v/e2e-security-module',
+        version: '1.0.0',
+        publisherDid: 'did:omega:publisher:release-bot',
+        description: 'E2E verified security adapter',
+        tarballContent: rawTarball,
+        dependencies: { '@omega-v/types': '^0.1.0' },
+        slsaAttestationId: 'att-slsa-e2e-001',
+      });
+
+      expect(release.name).toBe('@omega-v/e2e-security-module');
+      expect(release.version).toBe('1.0.0');
+      expect(release.tarballHash).toHaveLength(64);
+      expect(release.manifestMerkleRoot).toHaveLength(64);
+      expect(release.publisherSignature).toMatch(/^0x/);
+
+      // 3. Zero-trust download verification
+      const verifyValid = registry.verifyPackageIntegrity('@omega-v/e2e-security-module', '1.0.0', rawTarball);
+      expect(verifyValid.valid).toBe(true);
+      expect(verifyValid.matchesExpected).toBe(true);
+      expect(verifyValid.signatureValid).toBe(true);
+
+      // Tampered download fails
+      const verifyTampered = registry.verifyPackageIntegrity('@omega-v/e2e-security-module', '1.0.0', Buffer.from('TAMPERED_PAYLOAD'));
+      expect(verifyTampered.valid).toBe(false);
+      expect(verifyTampered.matchesExpected).toBe(false);
+
+      // 4. Issue security vulnerability advisory
+      const advisory = registry.publishAdvisory({
+        packageName: '@omega-v/e2e-security-module',
+        affectedVersions: ['1.0.0'],
+        severity: 'MEDIUM',
+        title: 'Buffer padding inconsistency in raw serialization',
+        description: 'Unchecked byte length allowed 1 extra padding byte in edge cases',
+        reportedBy: 'did:omega:auditor:sentinel',
+        patchedIn: '1.0.1',
+      });
+      expect(advisory.advisoryId).toMatch(/^adv-/);
+      expect(advisory.signature).toMatch(/^0x/);
+
+      // 5. Deprecate affected release
+      const deprecated = registry.deprecatePackage('@omega-v/e2e-security-module', '1.0.0', 'Superseded by 1.0.1 due to advisory');
+      expect(deprecated.deprecated).toBe(true);
+      expect(deprecated.deprecationReason).toContain('Superseded');
+
+      // 6. Verify registry metrics
+      const registryStats = registry.getStats();
+      expect(registryStats.totalPackages).toBeGreaterThanOrEqual(3);
+      expect(registryStats.totalAdvisories).toBeGreaterThanOrEqual(1);
+      expect(registryStats.verifiedPackagesRatio).toBe(1.0);
+    });
+  });
 });
+
 
 

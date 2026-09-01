@@ -31,6 +31,7 @@ import { OceanicosStateVault } from '@omega-v/vault';
 import { OceanicosDisputeEngine } from '@omega-v/dispute';
 import { OceanicosWorkerPool } from '@omega-v/worker';
 import { OceanicosPipelineEngine } from '@omega-v/pipeline';
+import { OceanicosRegistryEngine } from '@omega-v/registry';
 import {
   SuccessResponse,
   ErrorResponse,
@@ -91,6 +92,7 @@ const stateVault = new OceanicosStateVault();
 const disputeEngine = new OceanicosDisputeEngine();
 const workerPool = new OceanicosWorkerPool();
 const pipelineEngine = new OceanicosPipelineEngine();
+const registryEngine = new OceanicosRegistryEngine();
 
 // Register default rules
 verificationEngine.registerRule({
@@ -2029,6 +2031,176 @@ app.post('/pipelines/verify', (req: Request, res: Response) => {
 /** GET /pipelines/stats — Aggregate pipeline orchestration metrics */
 app.get('/pipelines/stats', (_req: Request, res: Response) => {
   const stats = pipelineEngine.getStats();
+  res.json({
+    data: stats,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/**
+ * Section 27 Endpoints: Decentralized Verifiable Package & Artifact Registry Engine
+ * /registry/packages, /registry/packages/:name, /registry/packages/:name/:version,
+ * /registry/publish, /registry/verify, /registry/deprecate, /registry/advisories, /registry/stats
+ */
+
+/** GET /registry/packages — List all published packages */
+app.get('/registry/packages', (_req: Request, res: Response) => {
+  const packages = registryEngine.getAllPackages();
+  res.json({
+    data: packages,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** GET /registry/packages/:name — Get package metadata */
+app.get('/registry/packages/:name', (req: Request, res: Response) => {
+  const pkg = registryEngine.getPackage(req.params.name);
+  if (!pkg) {
+    res.status(404).json({
+      code: 'NOT_FOUND',
+      message: `Package '${req.params.name}' not found`,
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+  res.json({
+    data: pkg,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** GET /registry/packages/:name/:version — Get specific package release */
+app.get('/registry/packages/:name/:version', (req: Request, res: Response) => {
+  const release = registryEngine.getPackageVersion(req.params.name, req.params.version);
+  if (!release) {
+    res.status(404).json({
+      code: 'NOT_FOUND',
+      message: `Release '${req.params.name}@${req.params.version}' not found`,
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+  res.json({
+    data: release,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /registry/publish — Publish new package version */
+app.post('/registry/publish', (req: Request, res: Response) => {
+  const { name, version, publisherDid, description, tarballContent, dependencies, slsaAttestationId } = req.body;
+  if (!name || !version || !publisherDid || !description || !tarballContent) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'name, version, publisherDid, description, and tarballContent are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  const release = registryEngine.publishPackage({
+    name,
+    version,
+    publisherDid,
+    description,
+    tarballContent,
+    dependencies,
+    slsaAttestationId,
+  });
+
+  res.status(201).json({
+    data: release,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /registry/verify — Verify package integrity and publisher signature */
+app.post('/registry/verify', (req: Request, res: Response) => {
+  const { name, version, tarballContent } = req.body;
+  if (!name || !version || !tarballContent) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'name, version, and tarballContent are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  const result = registryEngine.verifyPackageIntegrity(name, version, tarballContent);
+  res.json({
+    data: result,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /registry/deprecate — Deprecate package version */
+app.post('/registry/deprecate', (req: Request, res: Response) => {
+  const { name, version, reason } = req.body;
+  if (!name || !version || !reason) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'name, version, and reason are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const release = registryEngine.deprecatePackage(name, version, reason);
+    res.json({
+      data: release,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'DEPRECATE_FAILED',
+      message: err instanceof Error ? err.message : 'Deprecation failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** GET /registry/advisories — List security advisories */
+app.get('/registry/advisories', (req: Request, res: Response) => {
+  const packageName = typeof req.query.package === 'string' ? req.query.package : undefined;
+  const advisories = registryEngine.getAdvisories(packageName);
+  res.json({
+    data: advisories,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /registry/advisories — Publish security advisory */
+app.post('/registry/advisories', (req: Request, res: Response) => {
+  const { packageName, affectedVersions, severity, title, description, reportedBy, patchedIn } = req.body;
+  if (!packageName || !Array.isArray(affectedVersions) || !severity || !title || !description || !reportedBy) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'packageName, affectedVersions array, severity, title, description, and reportedBy are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  const advisory = registryEngine.publishAdvisory({
+    packageName,
+    affectedVersions,
+    severity,
+    title,
+    description,
+    reportedBy,
+    patchedIn,
+  });
+
+  res.status(201).json({
+    data: advisory,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** GET /registry/stats — Registry statistics */
+app.get('/registry/stats', (_req: Request, res: Response) => {
+  const stats = registryEngine.getStats();
   res.json({
     data: stats,
     timestamp: new Date().toISOString(),

@@ -466,6 +466,52 @@ interface PipelineStatsData {
   totalAttestations: number;
 }
 
+interface RegistryReleaseItem {
+  name: string;
+  version: string;
+  publisherDid: string;
+  description: string;
+  tarballHash: string;
+  sizeBytes: number;
+  manifestMerkleRoot: string;
+  publisherSignature: string;
+  publishedAt: string;
+  deprecated: boolean;
+  deprecationReason?: string;
+  downloadsCount: number;
+}
+
+interface RegistryPackageItem {
+  name: string;
+  description: string;
+  latestVersion: string;
+  maintainers: string[];
+  versions: Record<string, RegistryReleaseItem>;
+  totalDownloads: number;
+  updatedAt: string;
+}
+
+interface RegistryAdvisoryItem {
+  advisoryId: string;
+  packageName: string;
+  affectedVersions: string[];
+  severity: string;
+  title: string;
+  description: string;
+  reportedBy: string;
+  reportedAt: string;
+  patchedIn?: string;
+  signature: string;
+}
+
+interface RegistryStatsData {
+  totalPackages: number;
+  totalReleases: number;
+  totalDownloads: number;
+  totalAdvisories: number;
+  verifiedPackagesRatio: number;
+}
+
 interface RuleEfficacy {
   ruleName: string;
   totalExecutions: number;
@@ -749,6 +795,14 @@ export function App(): JSX.Element {
   const [pipelineVersion, setPipelineVersion] = useState('6.2.0');
   const [executingPipeline, setExecutingPipeline] = useState(false);
   const [pipelineResult, setPipelineResult] = useState<string | null>(null);
+  const [registryPackages, setRegistryPackages] = useState<RegistryPackageItem[]>([]);
+  const [registryAdvisories, setRegistryAdvisories] = useState<RegistryAdvisoryItem[]>([]);
+  const [registryStats, setRegistryStats] = useState<RegistryStatsData | null>(null);
+  const [newPkgName, setNewPkgName] = useState('@omega-v/analytics-plugin');
+  const [newPkgVersion, setNewPkgVersion] = useState('1.0.0');
+  const [newPkgDesc, setNewPkgDesc] = useState('High-throughput telemetry analytics plugin');
+  const [publishingPkg, setPublishingPkg] = useState(false);
+  const [registryResult, setRegistryResult] = useState<string | null>(null);
 
   // ── Poll log + metrics ──
   const fetchState = useCallback(async () => {
@@ -789,6 +843,9 @@ export function App(): JSX.Element {
         wStatsRes,
         pipeRes,
         pipeStatsRes,
+        regPkgsRes,
+        regAdvRes,
+        regStatsRes,
       ] = await Promise.all([
         fetch(`${API_BASE}/log?limit=30`),
         fetch(`${API_BASE}/metrics`),
@@ -825,6 +882,9 @@ export function App(): JSX.Element {
         fetch(`${API_BASE}/workers/stats`),
         fetch(`${API_BASE}/pipelines`),
         fetch(`${API_BASE}/pipelines/stats`),
+        fetch(`${API_BASE}/registry/packages`),
+        fetch(`${API_BASE}/registry/advisories`),
+        fetch(`${API_BASE}/registry/stats`),
       ]);
       if (!logRes.ok || !metricsRes.ok) throw new Error('API error');
 
@@ -929,6 +989,15 @@ export function App(): JSX.Element {
       }
       if (pipeStatsRes && pipeStatsRes.ok) {
         setPipelineStats((await pipeStatsRes.json()).data as PipelineStatsData);
+      }
+      if (regPkgsRes && regPkgsRes.ok) {
+        setRegistryPackages((await regPkgsRes.json()).data as RegistryPackageItem[]);
+      }
+      if (regAdvRes && regAdvRes.ok) {
+        setRegistryAdvisories((await regAdvRes.json()).data as RegistryAdvisoryItem[]);
+      }
+      if (regStatsRes && regStatsRes.ok) {
+        setRegistryStats((await regStatsRes.json()).data as RegistryStatsData);
       }
     } catch {
       setApiOnline(false);
@@ -5618,6 +5687,223 @@ export function App(): JSX.Element {
                           sig: {run.pipelineSignature.slice(0, 24)}… {run.durationMs ? `(${run.durationMs}ms)` : ''}
                         </div>
                       )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Section 27 — Decentralized Verifiable Package & Artifact Registry */}
+          <div
+            style={{
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius)',
+              padding: 20,
+              marginBottom: 24,
+            }}
+          >
+            <div className="section-header" style={{ marginBottom: 16 }}>
+              <div className="section-title">📦 Verifiable Package &amp; Artifact Registry</div>
+              {registryStats && (
+                <span
+                  className="section-badge"
+                  style={{
+                    background: 'rgba(159,122,234,0.15)',
+                    color: '#9f7aea',
+                  }}
+                >
+                  {registryStats.totalPackages} PACKAGES · {registryStats.totalReleases} RELEASES ·{' '}
+                  {registryStats.totalDownloads} VERIFIED DL
+                </span>
+              )}
+            </div>
+
+            {/* Publish Package Console */}
+            <div
+              style={{
+                display: 'flex',
+                gap: 10,
+                marginBottom: 16,
+                flexWrap: 'wrap',
+                alignItems: 'center',
+              }}
+            >
+              <input
+                value={newPkgName}
+                onChange={(e) => setNewPkgName(e.target.value)}
+                placeholder="@omega-v/package-name"
+                style={{
+                  flex: '1 1 180px',
+                  background: 'var(--bg-surface)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 6,
+                  color: 'var(--text-primary)',
+                  padding: '7px 12px',
+                  fontSize: '0.82rem',
+                }}
+              />
+              <input
+                value={newPkgVersion}
+                onChange={(e) => setNewPkgVersion(e.target.value)}
+                placeholder="1.0.0"
+                style={{
+                  width: 80,
+                  background: 'var(--bg-surface)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 6,
+                  color: 'var(--text-primary)',
+                  padding: '7px 10px',
+                  fontSize: '0.82rem',
+                }}
+              />
+              <input
+                value={newPkgDesc}
+                onChange={(e) => setNewPkgDesc(e.target.value)}
+                placeholder="Package description…"
+                style={{
+                  flex: '2 1 240px',
+                  background: 'var(--bg-surface)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 6,
+                  color: 'var(--text-primary)',
+                  padding: '7px 12px',
+                  fontSize: '0.82rem',
+                }}
+              />
+              <button
+                disabled={publishingPkg || !newPkgName.trim()}
+                onClick={async () => {
+                  setPublishingPkg(true);
+                  setRegistryResult(null);
+                  try {
+                    const r = await fetch(`${API_BASE}/registry/publish`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        name: newPkgName,
+                        version: newPkgVersion,
+                        publisherDid: 'did:omega:developer:dashboard',
+                        description: newPkgDesc,
+                        tarballContent: `ARTIFACT_PAYLOAD_${newPkgName}_${newPkgVersion}`,
+                        dependencies: { '@omega-v/types': '^0.1.0' },
+                        slsaAttestationId: `att-slsa-${Date.now()}`,
+                      }),
+                    });
+                    const d = await r.json();
+                    if (r.ok) {
+                      setRegistryResult(`✅ Published: ${d.data.name}@${d.data.version} (hash: ${d.data.tarballHash.slice(0, 16)}…, sig: ${d.data.publisherSignature.slice(0, 16)}…)`);
+                      setTimeout(fetchState, 400);
+                    } else {
+                      setRegistryResult(`❌ ${d.message || 'Publishing failed'}`);
+                    }
+                  } catch {
+                    setRegistryResult('❌ Network error');
+                  } finally {
+                    setPublishingPkg(false);
+                  }
+                }}
+                className="btn-primary"
+                style={{ fontSize: '0.82rem', padding: '7px 16px', whiteSpace: 'nowrap' }}
+              >
+                {publishingPkg ? '⏳ Signing…' : '📦 Publish Release'}
+              </button>
+            </div>
+            {registryResult && (
+              <div
+                style={{
+                  fontSize: '0.78rem',
+                  color: registryResult.startsWith('✅') ? 'var(--accent-green)' : 'var(--accent-red)',
+                  marginBottom: 14,
+                  fontFamily: 'JetBrains Mono, monospace',
+                }}
+              >
+                {registryResult}
+              </div>
+            )}
+
+            {/* Published Packages Grid */}
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Published Packages &amp; Manifests ({registryPackages.length})
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 10 }}>
+                {registryPackages.map((pkg) => {
+                  const latest = pkg.versions[pkg.latestVersion];
+                  return (
+                    <div
+                      key={pkg.name}
+                      style={{
+                        background: 'var(--bg-surface)',
+                        border: '1px solid var(--border)',
+                        borderRadius: 'var(--radius-sm)',
+                        padding: 12,
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                        <span style={{ fontWeight: 600, fontSize: '0.82rem', color: 'var(--text-primary)' }}>
+                          {pkg.name}
+                        </span>
+                        <span
+                          style={{
+                            fontSize: '0.68rem',
+                            color: 'var(--accent-teal)',
+                            background: 'rgba(56,178,172,0.1)',
+                            padding: '1px 6px',
+                            borderRadius: 3,
+                            fontWeight: 700,
+                          }}
+                        >
+                          v{pkg.latestVersion}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: 6 }}>
+                        {pkg.description}
+                      </div>
+                      <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                        <span>📥 {pkg.totalDownloads} dl</span>
+                        <span>📚 {Object.keys(pkg.versions).length} versions</span>
+                        {latest && (
+                          <span style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                            hash: {latest.tarballHash.slice(0, 10)}…
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Security Advisories */}
+            {registryAdvisories.length > 0 && (
+              <div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Security Vulnerability Advisories ({registryAdvisories.length})
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 150, overflowY: 'auto' }}>
+                  {registryAdvisories.map((adv) => (
+                    <div
+                      key={adv.advisoryId}
+                      style={{
+                        background: 'var(--bg-surface)',
+                        border: '1px solid rgba(245,101,101,0.25)',
+                        borderRadius: 4,
+                        padding: '8px 12px',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
+                        <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--accent-red)' }}>
+                          [{adv.severity}] {adv.title}
+                        </span>
+                        <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
+                          {adv.packageName} ({adv.affectedVersions.join(', ')})
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>
+                        {adv.description}
+                      </div>
                     </div>
                   ))}
                 </div>

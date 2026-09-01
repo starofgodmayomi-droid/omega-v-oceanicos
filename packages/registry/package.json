@@ -1,0 +1,33 @@
+{
+  "name": "@omega-v/registry",
+  "version": "0.1.0",
+  "description": "Decentralized Verifiable Package & Artifact Registry for Ω∞v Oceanicos — Signed Manifests, Provenance Verification, Tamper-Evident Downloads",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "test": "jest",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "keywords": [
+    "registry",
+    "packages",
+    "artifacts",
+    "provenance",
+    "tamper-evident",
+    "oceanicos"
+  ],
+  "author": "Ω∞v Community",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@omega-v/types": "*"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.0",
+    "jest": "^29.5.0",
+    "ts-jest": "^29.1.0",
+    "typescript": "^5.0.0"
+  }
+}
