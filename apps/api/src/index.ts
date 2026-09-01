@@ -46,6 +46,7 @@ import { OceanicosDHTEngine } from '@omega-v/dht';
 import { OceanicosStakingEngine } from '@omega-v/staking';
 import { OceanicosKernel } from '@omega-v/kernel';
 import { OceanicosMempoolEngine } from '@omega-v/mempool';
+import { OceanicosThresholdAttestorEngine } from '@omega-v/attestor';
 import {
   SuccessResponse,
   ErrorResponse,
@@ -121,6 +122,7 @@ const dhtEngine = new OceanicosDHTEngine();
 const stakingEngine = new OceanicosStakingEngine();
 const kernelEngine = new OceanicosKernel();
 const mempoolEngine = new OceanicosMempoolEngine();
+const attestorEngine = new OceanicosThresholdAttestorEngine();
 
 // Register default rules
 verificationEngine.registerRule({
@@ -4076,6 +4078,146 @@ app.post('/mempool/harvest', (req: Request, res: Response) => {
 /** GET /mempool/stats — Mempool telemetry & Merkle root */
 app.get('/mempool/stats', (_req: Request, res: Response) => {
   const stats = mempoolEngine.getStats();
+  res.json({
+    data: stats,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/**
+ * Section 42 Endpoints: Decentralized Threshold Multi-Signature Attestation Network
+ * /attestor/nodes, /attestor/nodes/register, /attestor/sessions/create, /attestor/sessions/share, /attestor/sessions, /attestor/qcs, /attestor/qcs/verify, /attestor/stats
+ */
+
+/** GET /attestor/nodes — List attestor nodes */
+app.get('/attestor/nodes', (_req: Request, res: Response) => {
+  const nodes = attestorEngine.getAttestors();
+  res.json({
+    data: nodes,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /attestor/nodes/register — Register attestor node */
+app.post('/attestor/nodes/register', (req: Request, res: Response) => {
+  const { nodeDid, moniker, publicKey, weight } = req.body;
+  if (!nodeDid || !moniker || !publicKey) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'nodeDid, moniker, and publicKey are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const node = attestorEngine.registerAttestor({ nodeDid, moniker, publicKey, weight });
+    res.status(201).json({
+      data: node,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'ATTESTOR_REGISTRATION_FAILED',
+      message: err instanceof Error ? err.message : 'Registration failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** POST /attestor/sessions/create — Create new threshold attestation session */
+app.post('/attestor/sessions/create', (req: Request, res: Response) => {
+  const { subjectHash, domain, payload, ttlMs } = req.body;
+  if (!subjectHash || !domain) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'subjectHash and domain are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const session = attestorEngine.createSession({ subjectHash, domain, payload, ttlMs });
+    res.status(201).json({
+      data: session,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'SESSION_CREATION_FAILED',
+      message: err instanceof Error ? err.message : 'Session creation failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** POST /attestor/sessions/share — Submit signature share */
+app.post('/attestor/sessions/share', (req: Request, res: Response) => {
+  const { sessionId, nodeDid, shareSignature } = req.body;
+  if (!sessionId || !nodeDid || !shareSignature) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'sessionId, nodeDid, and shareSignature are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const result = attestorEngine.submitShare({ sessionId, nodeDid, shareSignature });
+    res.json({
+      data: result,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'SHARE_SUBMISSION_FAILED',
+      message: err instanceof Error ? err.message : 'Share submission failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** GET /attestor/sessions — List all attestation sessions */
+app.get('/attestor/sessions', (_req: Request, res: Response) => {
+  const sessions = attestorEngine.getSessions();
+  res.json({
+    data: sessions,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** GET /attestor/qcs — List all Quorum Certificates */
+app.get('/attestor/qcs', (_req: Request, res: Response) => {
+  const qcs = attestorEngine.getQCs();
+  res.json({
+    data: qcs,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /attestor/qcs/verify — Verify Quorum Certificate */
+app.post('/attestor/qcs/verify', (req: Request, res: Response) => {
+  const { qc } = req.body;
+  if (!qc) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'qc object is required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+  const valid = attestorEngine.verifyQC(qc);
+  res.json({
+    data: { valid },
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** GET /attestor/stats — Threshold attestor telemetry */
+app.get('/attestor/stats', (_req: Request, res: Response) => {
+  const stats = attestorEngine.getStats();
   res.json({
     data: stats,
     timestamp: new Date().toISOString(),

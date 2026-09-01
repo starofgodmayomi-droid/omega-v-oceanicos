@@ -43,6 +43,7 @@ import { OceanicosDHTEngine } from '@omega-v/dht';
 import { OceanicosStakingEngine } from '@omega-v/staking';
 import { OceanicosKernel } from '@omega-v/kernel';
 import { OceanicosMempoolEngine } from '@omega-v/mempool';
+import { OceanicosThresholdAttestorEngine } from '@omega-v/attestor';
 import app from '../../apps/api/src/index';
 
 describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => {
@@ -1895,6 +1896,64 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       expect(stats.includedCount).toBe(3);
       expect(stats.activeBundles).toBe(1);
       expect(stats.mempoolMerkleRoot).toMatch(/^0x/);
+    });
+  });
+
+  describe('42. Decentralized Threshold Multi-Signature Attestation Network E2E', () => {
+    it('should register attestor nodes, create threshold session, gather signature shares, and aggregate valid QC', () => {
+      const attestor = new OceanicosThresholdAttestorEngine('e2e-attestor-secret', 0.67);
+
+      // 1. Register 3 attestor nodes (total weight = 30; 67% threshold => 21 required)
+      attestor.registerAttestor({ nodeDid: 'did:omega:attestor:01', moniker: 'QC Sentinel 1', publicKey: '0x01', weight: 10 });
+      attestor.registerAttestor({ nodeDid: 'did:omega:attestor:02', moniker: 'QC Sentinel 2', publicKey: '0x02', weight: 10 });
+      attestor.registerAttestor({ nodeDid: 'did:omega:attestor:03', moniker: 'QC Sentinel 3', publicKey: '0x03', weight: 10 });
+
+      expect(attestor.getAttestors()).toHaveLength(3);
+
+      // 2. Create threshold attestation session
+      const session = attestor.createSession({
+        subjectHash: '0xcanonical_checkpoint_epoch_100',
+        domain: 'STATE_FINALITY',
+        payload: { epoch: 100, verifiedStates: 42 },
+      });
+
+      expect(session.sessionId).toMatch(/^ses-/);
+      expect(session.requiredWeight).toBe(21);
+      expect(session.status).toBe('COLLECTING');
+
+      // 3. Submit shares
+      const s1 = attestor.submitShare({
+        sessionId: session.sessionId,
+        nodeDid: 'did:omega:attestor:01',
+        shareSignature: '0xshare_sig_01',
+      });
+      expect(s1.session.status).toBe('COLLECTING');
+
+      const s2 = attestor.submitShare({
+        sessionId: session.sessionId,
+        nodeDid: 'did:omega:attestor:02',
+        shareSignature: '0xshare_sig_02',
+      });
+      expect(s2.session.status).toBe('COLLECTING');
+
+      const s3 = attestor.submitShare({
+        sessionId: session.sessionId,
+        nodeDid: 'did:omega:attestor:03',
+        shareSignature: '0xshare_sig_03',
+      });
+      expect(s3.session.status).toBe('ATTESTED');
+      expect(s3.qc).toBeDefined();
+      expect(s3.qc?.accumulatedWeight).toBe(30);
+
+      // 4. Verify Quorum Certificate
+      const isValid = attestor.verifyQC(s3.qc!);
+      expect(isValid).toBe(true);
+
+      // 5. Check stats
+      const stats = attestor.getStats();
+      expect(stats.totalAttestors).toBe(3);
+      expect(stats.activeAttestors).toBe(3);
+      expect(stats.completedQCs).toBe(1);
     });
   });
 });

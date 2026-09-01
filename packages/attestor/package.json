@@ -1,0 +1,11 @@
+{
+  "name": "@omega-v/attestor",
+  "version": "0.1.0",
+  "description": "Decentralized Threshold Multi-Signature Attestation Network & Quorum Certificates for Ω∞v Oceanicos",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "test": "jest"
+  }
+}

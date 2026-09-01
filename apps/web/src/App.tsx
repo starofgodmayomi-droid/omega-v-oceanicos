@@ -937,6 +937,41 @@ interface MempoolStatsData {
   mempoolMerkleRoot: string;
 }
 
+interface AttestorNodeItem {
+  nodeDid: string;
+  moniker: string;
+  publicKey: string;
+  weight: number;
+  status: string;
+  sharesContributed: number;
+  registeredEpoch: number;
+  lastSeenAt: string;
+}
+
+interface QuorumCertificateItem {
+  qcId: string;
+  sessionId: string;
+  subjectHash: string;
+  domain: string;
+  accumulatedWeight: number;
+  thresholdWeight: number;
+  signers: string[];
+  aggregatedSignature: string;
+  qcProof: string;
+  epoch: number;
+  issuedAt: string;
+}
+
+interface AttestorStatsData {
+  totalAttestors: number;
+  activeAttestors: number;
+  totalWeight: number;
+  thresholdFraction: number;
+  totalSessions: number;
+  completedQCs: number;
+  activeSessions: number;
+}
+
 interface RuleEfficacy {
   ruleName: string;
   totalExecutions: number;
@@ -1313,6 +1348,9 @@ export function App(): JSX.Element {
   const [liveMempoolTxs, setLiveMempoolTxs] = useState<MempoolTxItem[]>([]);
   const [mevBundles, setMevBundles] = useState<MEVBundleItem[]>([]);
   const [mempoolStats, setMempoolStats] = useState<MempoolStatsData | null>(null);
+  const [attestorNodes, setAttestorNodes] = useState<AttestorNodeItem[]>([]);
+  const [quorumCerts, setQuorumCerts] = useState<QuorumCertificateItem[]>([]);
+  const [attestorStats, setAttestorStats] = useState<AttestorStatsData | null>(null);
 
   // ── Poll log + metrics ──
   const fetchState = useCallback(async () => {
@@ -1393,6 +1431,9 @@ export function App(): JSX.Element {
         mpTxsRes,
         mpBundlesRes,
         mpStatsRes,
+        attNodesRes,
+        attQCsRes,
+        attStatsRes,
       ] = await Promise.all([
         fetch(`${API_BASE}/log?limit=30`),
         fetch(`${API_BASE}/metrics`),
@@ -1469,6 +1510,9 @@ export function App(): JSX.Element {
         fetch(`${API_BASE}/mempool/transactions`),
         fetch(`${API_BASE}/mempool/bundles`),
         fetch(`${API_BASE}/mempool/stats`),
+        fetch(`${API_BASE}/attestor/nodes`),
+        fetch(`${API_BASE}/attestor/qcs`),
+        fetch(`${API_BASE}/attestor/stats`),
       ]);
       if (!logRes.ok || !metricsRes.ok) throw new Error('API error');
 
@@ -1693,6 +1737,15 @@ export function App(): JSX.Element {
       }
       if (mpStatsRes && mpStatsRes.ok) {
         setMempoolStats((await mpStatsRes.json()).data as MempoolStatsData);
+      }
+      if (attNodesRes && attNodesRes.ok) {
+        setAttestorNodes((await attNodesRes.json()).data as AttestorNodeItem[]);
+      }
+      if (attQCsRes && attQCsRes.ok) {
+        setQuorumCerts((await attQCsRes.json()).data as QuorumCertificateItem[]);
+      }
+      if (attStatsRes && attStatsRes.ok) {
+        setAttestorStats((await attStatsRes.json()).data as AttestorStatsData);
       }
     } catch {
       setApiOnline(false);
@@ -8531,6 +8584,74 @@ export function App(): JSX.Element {
                       </div>
                       <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontFamily: 'JetBrains Mono, monospace' }}>
                         Txs: {b.txHashes.length} · Epoch: #{b.targetBlockEpoch} · Proof: {b.bundleProof.slice(0, 16)}…
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+          {/* ── Section 42: Decentralized Threshold Multi-Signature Attestation Network ── */}
+          <div className="card" style={{ gridColumn: '1 / -1' }}>
+            <div className="section-header" style={{ marginBottom: 16 }}>
+              <div className="section-title">🛡️ Threshold Multi-Signature Attestation Network &amp; Quorum Certificates</div>
+              <span className="section-badge">{attestorNodes.length} attestors · {quorumCerts.length} QCs</span>
+            </div>
+
+            {/* Attestor Stats */}
+            {attestorStats && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 10, marginBottom: 18 }}>
+                {[
+                  { label: 'Attestor Nodes', value: attestorStats.totalAttestors, icon: '🖧' },
+                  { label: 'Active Nodes', value: attestorStats.activeAttestors, icon: '🟢' },
+                  { label: 'Total Weight', value: attestorStats.totalWeight, icon: '⚖️' },
+                  { label: 'Threshold', value: `${(attestorStats.thresholdFraction * 100).toFixed(0)}% Quorum`, icon: '🎯' },
+                  { label: 'Total Sessions', value: attestorStats.totalSessions, icon: '🔄' },
+                  { label: 'Quorum Certs (QCs)', value: attestorStats.completedQCs, icon: '📜' },
+                ].map((s) => (
+                  <div key={s.label} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '10px 12px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '1.1rem' }}>{s.icon}</div>
+                    <div style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--accent-green)' }}>{s.value}</div>
+                    <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{s.label}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Attestors & Quorum Certificates */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              <div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Attestor Nodes ({attestorNodes.length})
+                </div>
+                <div style={{ display: 'grid', gap: 8 }}>
+                  {attestorNodes.slice(-4).reverse().map((n) => (
+                    <div key={n.nodeDid} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: 10 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
+                        <span style={{ fontWeight: 700, fontSize: '0.78rem', color: 'var(--text-primary)' }}>{n.moniker}</span>
+                        <span style={{ fontSize: '0.62rem', padding: '1px 6px', borderRadius: 3, background: 'rgba(72,187,120,0.15)', color: 'var(--accent-green)', fontWeight: 700 }}>Weight: {n.weight}</span>
+                      </div>
+                      <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontFamily: 'JetBrains Mono, monospace' }}>
+                        DID: {n.nodeDid.split(':').pop()} · Shares: {n.sharesContributed} · PubKey: {n.publicKey.slice(0, 16)}…
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Quorum Certificates ({quorumCerts.length})
+                </div>
+                <div style={{ display: 'grid', gap: 8 }}>
+                  {quorumCerts.slice(-4).reverse().map((qc) => (
+                    <div key={qc.qcId} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: 10 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
+                        <span style={{ fontWeight: 700, fontSize: '0.78rem', color: 'var(--accent-cyan)' }}>{qc.domain}</span>
+                        <span style={{ fontSize: '0.62rem', padding: '1px 6px', borderRadius: 3, background: 'rgba(56,178,172,0.15)', color: 'var(--accent-cyan)', fontWeight: 700 }}>Weight: {qc.accumulatedWeight}/{qc.thresholdWeight}</span>
+                      </div>
+                      <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontFamily: 'JetBrains Mono, monospace' }}>
+                        Subject: {qc.subjectHash.slice(0, 16)}… · Signers: {qc.signers.length} · QC: {qc.qcId}
                       </div>
                     </div>
                   ))}

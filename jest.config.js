@@ -61,6 +61,7 @@ export default {
     '@omega-v/staking': '<rootDir>/packages/staking/src/index.ts',
     '@omega-v/kernel': '<rootDir>/packages/kernel/src/index.ts',
     '@omega-v/mempool': '<rootDir>/packages/mempool/src/index.ts',
+    '@omega-v/attestor': '<rootDir>/packages/attestor/src/index.ts',
   },
   collectCoverageFrom: [
     'packages/*/src/**/*.ts',
