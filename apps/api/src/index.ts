@@ -40,6 +40,7 @@ import { OceanicosBridgeEngine } from '@omega-v/bridge';
 import { OceanicosSequencerEngine } from '@omega-v/sequencer';
 import { OceanicosDAEngine } from '@omega-v/da';
 import { OceanicosRollupEngine } from '@omega-v/rollup';
+import { OceanicosIntentEngine } from '@omega-v/intent';
 import {
   SuccessResponse,
   ErrorResponse,
@@ -109,6 +110,7 @@ const bridgeEngine = new OceanicosBridgeEngine();
 const sequencerEngine = new OceanicosSequencerEngine();
 const daEngine = new OceanicosDAEngine();
 const rollupEngine = new OceanicosRollupEngine();
+const intentEngine = new OceanicosIntentEngine();
 
 // Register default rules
 verificationEngine.registerRule({
@@ -3376,6 +3378,127 @@ app.get('/rollup/blocks', (_req: Request, res: Response) => {
 /** GET /rollup/stats — Rollup execution engine metrics */
 app.get('/rollup/stats', (_req: Request, res: Response) => {
   const stats = rollupEngine.getStats();
+  res.json({
+    data: stats,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/**
+ * Section 36 Endpoints: Verifiable AI Agent Intent Solver & Composable Settlement
+ * /intent/intents, /intent/intents/submit, /intent/bids/submit, /intent/intents/settle, /intent/bids, /intent/stats
+ */
+
+/** GET /intent/intents — List all intents */
+app.get('/intent/intents', (_req: Request, res: Response) => {
+  const intents = intentEngine.getIntents();
+  res.json({
+    data: intents,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /intent/intents/submit — Submit user intent */
+app.post('/intent/intents/submit', (req: Request, res: Response) => {
+  const { userDid, intentDescription, sourceAsset, targetAsset, minTargetAmount, maxBudget, deadlineMs } = req.body;
+  if (!userDid || !intentDescription || !sourceAsset || !targetAsset || typeof minTargetAmount !== 'number' || typeof maxBudget !== 'number') {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'userDid, intentDescription, sourceAsset, targetAsset, minTargetAmount, and maxBudget are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  const intent = intentEngine.submitIntent({
+    userDid,
+    intentDescription,
+    sourceAsset,
+    targetAsset,
+    minTargetAmount,
+    maxBudget,
+    deadlineMs,
+  });
+
+  res.status(201).json({
+    data: intent,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /intent/bids/submit — Submit solver bid for intent */
+app.post('/intent/bids/submit', (req: Request, res: Response) => {
+  const { intentId, solverDid, proposedRoute, guaranteedOutput, estimatedFee } = req.body;
+  if (!intentId || !solverDid || !Array.isArray(proposedRoute) || typeof guaranteedOutput !== 'number' || typeof estimatedFee !== 'number') {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'intentId, solverDid, proposedRoute array, guaranteedOutput, and estimatedFee are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const bid = intentEngine.submitSolverBid({
+      intentId,
+      solverDid,
+      proposedRoute,
+      guaranteedOutput,
+      estimatedFee,
+    });
+    res.status(201).json({
+      data: bid,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'SUBMIT_BID_FAILED',
+      message: err instanceof Error ? err.message : 'Bid submission failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** POST /intent/intents/settle — Settle intent with winning solver */
+app.post('/intent/intents/settle', (req: Request, res: Response) => {
+  const { intentId } = req.body;
+  if (!intentId) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'intentId is required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const receipt = intentEngine.settleIntent(intentId);
+    res.json({
+      data: receipt,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'SETTLE_INTENT_FAILED',
+      message: err instanceof Error ? err.message : 'Settlement failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** GET /intent/bids — List all solver bids */
+app.get('/intent/bids', (req: Request, res: Response) => {
+  const intentId = typeof req.query.intentId === 'string' ? req.query.intentId : undefined;
+  const bids = intentEngine.getBids(intentId);
+  res.json({
+    data: bids,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** GET /intent/stats — Intent engine telemetry metrics */
+app.get('/intent/stats', (_req: Request, res: Response) => {
+  const stats = intentEngine.getStats();
   res.json({
     data: stats,
     timestamp: new Date().toISOString(),

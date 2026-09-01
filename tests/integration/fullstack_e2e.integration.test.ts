@@ -37,6 +37,7 @@ import { OceanicosBridgeEngine } from '@omega-v/bridge';
 import { OceanicosSequencerEngine } from '@omega-v/sequencer';
 import { OceanicosDAEngine } from '@omega-v/da';
 import { OceanicosRollupEngine } from '@omega-v/rollup';
+import { OceanicosIntentEngine } from '@omega-v/intent';
 import app from '../../apps/api/src/index';
 
 describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => {
@@ -1538,7 +1539,60 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       expect(stats.activeAccounts).toBe(2);
     });
   });
+
+  describe('36. Verifiable AI Agent Intent Solver & Composable Settlement E2E', () => {
+    it('should submit user intents, accept competitive solver bids with witness proofs, select optimal routes, and settle', () => {
+      const intentEngine = new OceanicosIntentEngine('e2e-intent-key');
+
+      // 1. Submit intent
+      const intent = intentEngine.submitIntent({
+        userDid: 'did:omega:agent:trader-01',
+        intentDescription: 'Swap 500 USDC for maximum SOL across Solana & Arbitrum',
+        sourceAsset: 'USDC',
+        targetAsset: 'SOL',
+        minTargetAmount: 3.5,
+        maxBudget: 500,
+      });
+      expect(intent.intentId).toMatch(/^intent-/);
+      expect(intent.status).toBe('AUCTION_OPEN');
+
+      // 2. Submit solver bids
+      const bid1 = intentEngine.submitSolverBid({
+        intentId: intent.intentId,
+        solverDid: 'did:omega:solver:route-a',
+        proposedRoute: ['USDC@Arb', 'Celer', 'SOL@Sol'],
+        guaranteedOutput: 3.6,
+        estimatedFee: 1.0,
+      });
+
+      const bid2 = intentEngine.submitSolverBid({
+        intentId: intent.intentId,
+        solverDid: 'did:omega:solver:route-b',
+        proposedRoute: ['USDC@Arb', 'Uniswap', 'Wormhole', 'SOL@Sol'],
+        guaranteedOutput: 3.8,
+        estimatedFee: 0.5,
+      });
+
+      expect(bid1.solutionWitnessProof).toMatch(/^0x/);
+      expect(bid2.solutionWitnessProof).toMatch(/^0x/);
+
+      // 3. Settle intent with winning solver (route-b)
+      const receipt = intentEngine.settleIntent(intent.intentId);
+      expect(receipt.settlementId).toMatch(/^stl-/);
+      expect(receipt.solverDid).toBe('did:omega:solver:route-b');
+      expect(receipt.finalOutputAmount).toBe(3.8);
+      expect(receipt.attestationSignature).toMatch(/^0x/);
+
+      // 4. Verify stats
+      const stats = intentEngine.getStats();
+      expect(stats.totalIntents).toBe(1);
+      expect(stats.settledIntents).toBe(1);
+      expect(stats.activeBids).toBe(2);
+      expect(stats.registeredSolvers).toBe(2);
+    });
+  });
 });
+
 
 
 

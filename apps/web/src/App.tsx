@@ -711,6 +711,37 @@ interface RollupStatsData {
   latestPostStateRoot: string;
 }
 
+interface UserIntentItem {
+  intentId: string;
+  userDid: string;
+  intentDescription: string;
+  sourceAsset: string;
+  targetAsset: string;
+  minTargetAmount: number;
+  maxBudget: number;
+  status: string;
+  selectedBidId?: string;
+  settlementTxHash?: string;
+}
+
+interface SolverBidItem {
+  bidId: string;
+  intentId: string;
+  solverDid: string;
+  proposedRoute: string[];
+  guaranteedOutput: number;
+  estimatedFee: number;
+}
+
+interface IntentStatsData {
+  totalIntents: number;
+  settledIntents: number;
+  activeBids: number;
+  registeredSolvers: number;
+  totalVolumeSettled: number;
+  avgSolverEfficiency: number;
+}
+
 interface RuleEfficacy {
   ruleName: string;
   totalExecutions: number;
@@ -1061,6 +1092,18 @@ export function App(): JSX.Element {
   const [submittingL2Tx, setSubmittingL2Tx] = useState(false);
   const [producingBlock, setProducingBlock] = useState(false);
   const [rollupResult, setRollupResult] = useState<string | null>(null);
+  const [userIntents, setUserIntents] = useState<UserIntentItem[]>([]);
+  const [solverBids, setSolverBids] = useState<SolverBidItem[]>([]);
+  const [intentStats, setIntentStats] = useState<IntentStatsData | null>(null);
+  const [intentDesc, setIntentDesc] = useState('Swap 1000 USDC for maximum ETH across Arbitrum & Base');
+  const [sourceAsset, setSourceAsset] = useState('USDC');
+  const [targetAsset, setTargetAsset] = useState('ETH');
+  const [minTargetAmt, setMinTargetAmt] = useState('0.35');
+  const [maxBudgetAmt, setMaxBudgetAmt] = useState('1000');
+  const [submittingIntent, setSubmittingIntent] = useState(false);
+  const [submittingBid, setSubmittingBid] = useState(false);
+  const [settlingIntent, setSettlingIntent] = useState(false);
+  const [intentResult, setIntentResult] = useState<string | null>(null);
 
   // ── Poll log + metrics ──
   const fetchState = useCallback(async () => {
@@ -1124,6 +1167,9 @@ export function App(): JSX.Element {
         rlpAccRes,
         rlpBlkRes,
         rlpStatsRes,
+        intListRes,
+        intBidsRes,
+        intStatsRes,
       ] = await Promise.all([
         fetch(`${API_BASE}/log?limit=30`),
         fetch(`${API_BASE}/metrics`),
@@ -1183,6 +1229,9 @@ export function App(): JSX.Element {
         fetch(`${API_BASE}/rollup/accounts`),
         fetch(`${API_BASE}/rollup/blocks`),
         fetch(`${API_BASE}/rollup/stats`),
+        fetch(`${API_BASE}/intent/intents`),
+        fetch(`${API_BASE}/intent/bids`),
+        fetch(`${API_BASE}/intent/stats`),
       ]);
       if (!logRes.ok || !metricsRes.ok) throw new Error('API error');
 
@@ -1356,6 +1405,15 @@ export function App(): JSX.Element {
       }
       if (rlpStatsRes && rlpStatsRes.ok) {
         setRollupStats((await rlpStatsRes.json()).data as RollupStatsData);
+      }
+      if (intListRes && intListRes.ok) {
+        setUserIntents((await intListRes.json()).data as UserIntentItem[]);
+      }
+      if (intBidsRes && intBidsRes.ok) {
+        setSolverBids((await intBidsRes.json()).data as SolverBidItem[]);
+      }
+      if (intStatsRes && intStatsRes.ok) {
+        setIntentStats((await intStatsRes.json()).data as IntentStatsData);
       }
     } catch {
       setApiOnline(false);
@@ -7574,6 +7632,262 @@ export function App(): JSX.Element {
                       </div>
                       <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontFamily: 'JetBrains Mono, monospace' }}>
                         {b.txCount} txs · PostRoot: {b.postStateRoot.slice(0, 18)}…
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ═══ Section 36: Verifiable AI Agent Intent Solver ═══ */}
+          <div className="card" style={{ gridColumn: '1 / -1' }}>
+            <div className="section-header" style={{ marginBottom: 18 }}>
+              <div className="section-title">🧠 Verifiable AI Agent Intent Solver & Composable Settlement</div>
+              <span className="section-badge">
+                {intentStats ? `${intentStats.totalIntents} intents · ${intentStats.settledIntents} settled · ${intentStats.activeBids} solver bids · ${intentStats.avgSolverEfficiency}% efficiency` : 'Loading…'}
+              </span>
+            </div>
+
+            {/* Intent Stats Row */}
+            {intentStats && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 10, marginBottom: 16 }}>
+                <div style={{ background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', border: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Total Intents</div>
+                  <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--accent-teal)' }}>{intentStats.totalIntents}</div>
+                </div>
+                <div style={{ background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', border: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Settled Volume</div>
+                  <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--accent-green)' }}>{intentStats.totalVolumeSettled.toLocaleString()}</div>
+                </div>
+                <div style={{ background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', border: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Active Solvers</div>
+                  <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--accent-purple)' }}>{intentStats.registeredSolvers}</div>
+                </div>
+                <div style={{ background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', border: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Efficiency</div>
+                  <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--accent-blue)' }}>{intentStats.avgSolverEfficiency}%</div>
+                </div>
+              </div>
+            )}
+
+            {/* Submit Intent Controls */}
+            <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+              <div style={{ flex: 2, minWidth: 200 }}>
+                <label style={{ display: 'block', fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Intent Goal & Constraints</label>
+                <input
+                  type="text"
+                  value={intentDesc}
+                  onChange={(e) => setIntentDesc(e.target.value)}
+                  style={{ width: '100%', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '8px 10px', color: 'var(--text-primary)', fontFamily: 'JetBrains Mono, monospace', fontSize: '0.75rem' }}
+                />
+              </div>
+              <div style={{ flex: 1, minWidth: 90 }}>
+                <label style={{ display: 'block', fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>From Asset</label>
+                <input
+                  type="text"
+                  value={sourceAsset}
+                  onChange={(e) => setSourceAsset(e.target.value)}
+                  style={{ width: '100%', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '8px 10px', color: 'var(--text-primary)', fontFamily: 'JetBrains Mono, monospace', fontSize: '0.75rem' }}
+                />
+              </div>
+              <div style={{ flex: 1, minWidth: 90 }}>
+                <label style={{ display: 'block', fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>To Asset</label>
+                <input
+                  type="text"
+                  value={targetAsset}
+                  onChange={(e) => setTargetAsset(e.target.value)}
+                  style={{ width: '100%', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '8px 10px', color: 'var(--text-primary)', fontFamily: 'JetBrains Mono, monospace', fontSize: '0.75rem' }}
+                />
+              </div>
+              <div style={{ flex: 1, minWidth: 90 }}>
+                <label style={{ display: 'block', fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Min Target</label>
+                <input
+                  type="number"
+                  value={minTargetAmt}
+                  onChange={(e) => setMinTargetAmt(e.target.value)}
+                  style={{ width: '100%', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '8px 10px', color: 'var(--text-primary)', fontFamily: 'JetBrains Mono, monospace', fontSize: '0.75rem' }}
+                />
+              </div>
+              <div style={{ flex: 1, minWidth: 90 }}>
+                <label style={{ display: 'block', fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Max Budget</label>
+                <input
+                  type="number"
+                  value={maxBudgetAmt}
+                  onChange={(e) => setMaxBudgetAmt(e.target.value)}
+                  style={{ width: '100%', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '8px 10px', color: 'var(--text-primary)', fontFamily: 'JetBrains Mono, monospace', fontSize: '0.75rem' }}
+                />
+              </div>
+              <button
+                className="cta-button"
+                disabled={submittingIntent}
+                onClick={async () => {
+                  setSubmittingIntent(true);
+                  setIntentResult(null);
+                  try {
+                    const res = await fetch(`${API_BASE}/intent/intents/submit`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        userDid: 'did:omega:agent:trader-alpha',
+                        intentDescription: intentDesc,
+                        sourceAsset,
+                        targetAsset,
+                        minTargetAmount: Number(minTargetAmt),
+                        maxBudget: Number(maxBudgetAmt),
+                      }),
+                    });
+                    const data = await res.json();
+                    if (!res.ok) { setIntentResult(`❌ ${data.message}`); return; }
+                    setIntentResult(`✅ Published user intent [${data.data.intentId}] · Auction open for competitive AI solver bidding`);
+                    fetchState();
+                  } catch (err) {
+                    setIntentResult(`❌ ${err instanceof Error ? err.message : 'Intent submission failed'}`);
+                  } finally {
+                    setSubmittingIntent(false);
+                  }
+                }}
+                style={{ minWidth: 130 }}
+              >
+                {submittingIntent ? '⏳ Submitting…' : '🎯 Submit Intent'}
+              </button>
+            </div>
+
+            {/* Solvers & Settlement Action Row */}
+            {userIntents.length > 0 && (
+              <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
+                <button
+                  className="cta-button"
+                  disabled={submittingBid}
+                  onClick={async () => {
+                    setSubmittingBid(true);
+                    setIntentResult(null);
+                    try {
+                      const latest = userIntents[userIntents.length - 1];
+                      const res = await fetch(`${API_BASE}/intent/bids/submit`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          intentId: latest.intentId,
+                          solverDid: 'did:omega:solver:prime-mev-guard',
+                          proposedRoute: [latest.sourceAsset, 'UniswapV3', 'CrossChainBridge', latest.targetAsset],
+                          guaranteedOutput: latest.minTargetAmount * 1.05,
+                          estimatedFee: 1.5,
+                        }),
+                      });
+                      const data = await res.json();
+                      if (!res.ok) { setIntentResult(`❌ ${data.message}`); return; }
+                      setIntentResult(`✅ Solver bid submitted [${data.data.bidId}] with guaranteed output ${data.data.guaranteedOutput} ${latest.targetAsset}`);
+                      fetchState();
+                    } catch (err) {
+                      setIntentResult(`❌ ${err instanceof Error ? err.message : 'Bid submission failed'}`);
+                    } finally {
+                      setSubmittingBid(false);
+                    }
+                  }}
+                  style={{ minWidth: 140, background: 'var(--accent-purple)' }}
+                >
+                  {submittingBid ? '⏳ Bidding…' : '🤖 AI Solver Bids'}
+                </button>
+                <button
+                  className="cta-button"
+                  disabled={settlingIntent}
+                  onClick={async () => {
+                    setSettlingIntent(true);
+                    setIntentResult(null);
+                    try {
+                      const latest = userIntents[userIntents.length - 1];
+                      const res = await fetch(`${API_BASE}/intent/intents/settle`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          intentId: latest.intentId,
+                        }),
+                      });
+                      const data = await res.json();
+                      if (!res.ok) { setIntentResult(`❌ ${data.message}`); return; }
+                      setIntentResult(`✅ Settled intent [${latest.intentId}] · Solver: ${data.data.solverDid} · Output: ${data.data.finalOutputAmount} · Attestation: ${data.data.attestationSignature.slice(0, 18)}…`);
+                      fetchState();
+                    } catch (err) {
+                      setIntentResult(`❌ ${err instanceof Error ? err.message : 'Settlement failed'}`);
+                    } finally {
+                      setSettlingIntent(false);
+                    }
+                  }}
+                  style={{ minWidth: 140, background: 'var(--accent-teal)' }}
+                >
+                  {settlingIntent ? '⏳ Settling…' : '⚡ Settle Optimal Intent'}
+                </button>
+              </div>
+            )}
+
+            {intentResult && (
+              <div style={{ fontSize: '0.78rem', padding: '6px 10px', borderRadius: 'var(--radius-sm)', background: intentResult.startsWith('✅') ? 'rgba(72,187,120,0.1)' : 'rgba(229,62,62,0.1)', color: intentResult.startsWith('✅') ? 'var(--accent-green)' : 'var(--accent-red)', marginBottom: 14, fontFamily: 'JetBrains Mono, monospace' }}>
+                {intentResult}
+              </div>
+            )}
+
+            {/* Intents & Bids Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
+              <div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Active Intents ({userIntents.length})
+                </div>
+                <div style={{ display: 'grid', gap: 8 }}>
+                  {userIntents.slice(-4).reverse().map((i) => (
+                    <div
+                      key={i.intentId}
+                      style={{
+                        background: 'var(--bg-surface)',
+                        border: '1px solid var(--border)',
+                        borderRadius: 'var(--radius-sm)',
+                        padding: 10,
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
+                        <span style={{ fontWeight: 700, fontSize: '0.78rem', color: 'var(--text-primary)' }}>
+                          {i.sourceAsset} ➔ {i.targetAsset}
+                        </span>
+                        <span style={{ fontSize: '0.62rem', padding: '1px 6px', borderRadius: 3, background: i.status === 'SETTLED' ? 'rgba(72,187,120,0.15)' : 'rgba(237,137,54,0.15)', color: i.status === 'SETTLED' ? 'var(--accent-green)' : 'var(--accent-orange)', fontWeight: 700 }}>
+                          {i.status}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', marginBottom: 2 }}>
+                        {i.intentDescription}
+                      </div>
+                      <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
+                        Min: {i.minTargetAmount} {i.targetAsset} · Budget: {i.maxBudget} {i.sourceAsset}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Solver Solution Bids ({solverBids.length})
+                </div>
+                <div style={{ display: 'grid', gap: 8 }}>
+                  {solverBids.slice(-4).reverse().map((b) => (
+                    <div
+                      key={b.bidId}
+                      style={{
+                        background: 'var(--bg-surface)',
+                        border: '1px solid var(--border)',
+                        borderRadius: 'var(--radius-sm)',
+                        padding: 10,
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+                        <span style={{ fontWeight: 700, fontSize: '0.78rem', color: 'var(--accent-purple)' }}>
+                          {b.solverDid.split(':').pop()}
+                        </span>
+                        <span style={{ fontSize: '0.65rem', color: 'var(--accent-green)', fontWeight: 600 }}>
+                          Output: {b.guaranteedOutput} (Fee: {b.estimatedFee})
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontFamily: 'JetBrains Mono, monospace' }}>
+                        Route: {b.proposedRoute.join(' ➔ ')}
                       </div>
                     </div>
                   ))}
