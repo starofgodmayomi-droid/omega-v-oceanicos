@@ -63,7 +63,8 @@
       "@omega-v/dispute": ["packages/dispute/src/index.ts"],
       "@omega-v/worker": ["packages/worker/src/index.ts"],
       "@omega-v/pipeline": ["packages/pipeline/src/index.ts"],
-      "@omega-v/registry": ["packages/registry/src/index.ts"]
+      "@omega-v/registry": ["packages/registry/src/index.ts"],
+      "@omega-v/enclave": ["packages/enclave/src/index.ts"]
     }
   },
   "include": ["packages/*/src", "apps/*/src", "tests"],

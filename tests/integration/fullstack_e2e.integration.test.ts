@@ -29,6 +29,7 @@ import { OceanicosDisputeEngine } from '@omega-v/dispute';
 import { OceanicosWorkerPool } from '@omega-v/worker';
 import { OceanicosPipelineEngine } from '@omega-v/pipeline';
 import { OceanicosRegistryEngine } from '@omega-v/registry';
+import { OceanicosEnclaveEngine } from '@omega-v/enclave';
 import app from '../../apps/api/src/index';
 
 describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => {
@@ -1140,7 +1141,59 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       expect(registryStats.verifiedPackagesRatio).toBe(1.0);
     });
   });
+
+  describe('28. Hardware TEE Confidential Computing & Remote Attestation E2E', () => {
+    it('should provision hardware enclaves, generate/verify remote attestation reports, seal state to MRENCLAVE, and execute confidential code', () => {
+      const enclaveEngine = new OceanicosEnclaveEngine('e2e-hw-root-key');
+
+      // 1. Verify canonical enclaves exist
+      const enclaves = enclaveEngine.getEnclaves();
+      expect(enclaves.length).toBeGreaterThanOrEqual(2);
+
+      // 2. Generate and verify Remote Attestation Report
+      const report = enclaveEngine.generateRemoteAttestation(
+        'enclave-sgx-primary-01',
+        { computation: 'E2E zero-knowledge proof verification', witnessHash: '0xabc123' },
+        'nonce-e2e-random-999'
+      );
+
+      expect(report.reportId).toMatch(/^att-rep-/);
+      expect(report.mrEnclave).toHaveLength(64);
+      expect(report.hardwareSignature).toMatch(/^0x/);
+
+      const verification = enclaveEngine.verifyRemoteAttestation(report);
+      expect(verification.valid).toBe(true);
+      expect(verification.trusted).toBe(true);
+
+      // 3. Seal and unseal sensitive oracle secret
+      const sensitiveSecret = { masterKey: '0xsuper_secret_oracle_signing_key', threshold: 3 };
+      const sealed = enclaveEngine.sealData('enclave-sgx-primary-01', sensitiveSecret);
+
+      expect(sealed.sealId).toMatch(/^seal-/);
+      expect(sealed.mrEnclaveConstraint).toBe(report.mrEnclave);
+      expect(sealed.ciphertext).toBeDefined();
+
+      const unsealed = enclaveEngine.unsealData('enclave-sgx-primary-01', sealed);
+      expect(JSON.parse(unsealed)).toEqual(sensitiveSecret);
+
+      // 4. Confidential execution inside isolated enclave
+      const execResult = enclaveEngine.executeConfidentialCode('enclave-sgx-primary-01', 'VERIFY_EVIDENCE_ISOLATED', {
+        evidenceId: 'ev-001',
+        strict: true,
+      });
+
+      expect(execResult.verified).toBe(true);
+      expect(execResult.executionId).toMatch(/^exec-/);
+      expect(enclaveEngine.verifyRemoteAttestation(execResult.attestationReport).valid).toBe(true);
+
+      // 5. Check enclave metrics
+      const enclaveStats = enclaveEngine.getStats();
+      expect(enclaveStats.totalEnclaves).toBeGreaterThanOrEqual(2);
+      expect(enclaveStats.totalAttestations).toBeGreaterThanOrEqual(2);
+    });
+  });
 });
+
 
 
 

@@ -512,6 +512,24 @@ interface RegistryStatsData {
   verifiedPackagesRatio: number;
 }
 
+interface EnclaveInstanceItem {
+  enclaveId: string;
+  type: string;
+  name: string;
+  mrEnclave: string;
+  mrSigner: string;
+  status: string;
+  sealedDataCount: number;
+}
+
+interface EnclaveStatsData {
+  totalEnclaves: number;
+  readyEnclaves: number;
+  totalAttestations: number;
+  totalSealedObjects: number;
+  supportedTypes: string[];
+}
+
 interface RuleEfficacy {
   ruleName: string;
   totalExecutions: number;
@@ -803,6 +821,12 @@ export function App(): JSX.Element {
   const [newPkgDesc, setNewPkgDesc] = useState('High-throughput telemetry analytics plugin');
   const [publishingPkg, setPublishingPkg] = useState(false);
   const [registryResult, setRegistryResult] = useState<string | null>(null);
+  const [enclaves, setEnclaves] = useState<EnclaveInstanceItem[]>([]);
+  const [enclaveStats, setEnclaveStats] = useState<EnclaveStatsData | null>(null);
+  const [selectedEnclaveId, setSelectedEnclaveId] = useState('enclave-sgx-primary-01');
+  const [enclaveUserData, setEnclaveUserData] = useState('Zero-knowledge proof verification witness');
+  const [generatingAttestation, setGeneratingAttestation] = useState(false);
+  const [enclaveResult, setEnclaveResult] = useState<string | null>(null);
 
   // ── Poll log + metrics ──
   const fetchState = useCallback(async () => {
@@ -846,6 +870,8 @@ export function App(): JSX.Element {
         regPkgsRes,
         regAdvRes,
         regStatsRes,
+        encInstRes,
+        encStatsRes,
       ] = await Promise.all([
         fetch(`${API_BASE}/log?limit=30`),
         fetch(`${API_BASE}/metrics`),
@@ -885,6 +911,8 @@ export function App(): JSX.Element {
         fetch(`${API_BASE}/registry/packages`),
         fetch(`${API_BASE}/registry/advisories`),
         fetch(`${API_BASE}/registry/stats`),
+        fetch(`${API_BASE}/enclave/instances`),
+        fetch(`${API_BASE}/enclave/stats`),
       ]);
       if (!logRes.ok || !metricsRes.ok) throw new Error('API error');
 
@@ -998,6 +1026,12 @@ export function App(): JSX.Element {
       }
       if (regStatsRes && regStatsRes.ok) {
         setRegistryStats((await regStatsRes.json()).data as RegistryStatsData);
+      }
+      if (encInstRes && encInstRes.ok) {
+        setEnclaves((await encInstRes.json()).data as EnclaveInstanceItem[]);
+      }
+      if (encStatsRes && encStatsRes.ok) {
+        setEnclaveStats((await encStatsRes.json()).data as EnclaveStatsData);
       }
     } catch {
       setApiOnline(false);
@@ -5909,6 +5943,170 @@ export function App(): JSX.Element {
                 </div>
               </div>
             )}
+          </div>
+
+          {/* Section 28 — Hardware TEE Confidential Computing & Remote Attestation */}
+          <div
+            style={{
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius)',
+              padding: 20,
+              marginBottom: 24,
+            }}
+          >
+            <div className="section-header" style={{ marginBottom: 16 }}>
+              <div className="section-title">🛡️ Hardware TEE Confidential Enclave &amp; Attestation</div>
+              {enclaveStats && (
+                <span
+                  className="section-badge"
+                  style={{
+                    background: 'rgba(72,187,120,0.15)',
+                    color: 'var(--accent-green)',
+                  }}
+                >
+                  {enclaveStats.readyEnclaves}/{enclaveStats.totalEnclaves} READY ·{' '}
+                  {enclaveStats.totalAttestations} HW ATTESTATIONS ·{' '}
+                  {enclaveStats.totalSealedObjects} SEALED
+                </span>
+              )}
+            </div>
+
+            {/* Remote Attestation Console */}
+            <div
+              style={{
+                display: 'flex',
+                gap: 10,
+                marginBottom: 16,
+                flexWrap: 'wrap',
+                alignItems: 'center',
+              }}
+            >
+              <select
+                value={selectedEnclaveId}
+                onChange={(e) => setSelectedEnclaveId(e.target.value)}
+                style={{
+                  background: 'var(--bg-surface)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 6,
+                  color: 'var(--text-primary)',
+                  padding: '7px 10px',
+                  fontSize: '0.82rem',
+                }}
+              >
+                {enclaves.map((enc) => (
+                  <option key={enc.enclaveId} value={enc.enclaveId}>
+                    [{enc.type}] {enc.name}
+                  </option>
+                ))}
+              </select>
+              <input
+                value={enclaveUserData}
+                onChange={(e) => setEnclaveUserData(e.target.value)}
+                placeholder="User data to bind into hardware report…"
+                style={{
+                  flex: '1 1 240px',
+                  background: 'var(--bg-surface)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 6,
+                  color: 'var(--text-primary)',
+                  padding: '7px 12px',
+                  fontSize: '0.82rem',
+                }}
+              />
+              <button
+                disabled={generatingAttestation || !selectedEnclaveId}
+                onClick={async () => {
+                  setGeneratingAttestation(true);
+                  setEnclaveResult(null);
+                  try {
+                    const r = await fetch(`${API_BASE}/enclave/attest`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        enclaveId: selectedEnclaveId,
+                        userData: { claim: enclaveUserData, timestamp: new Date().toISOString() },
+                      }),
+                    });
+                    const d = await r.json();
+                    if (r.ok) {
+                      setEnclaveResult(`✅ Remote Attestation issued: ${d.data.reportId} (MRENCLAVE: ${d.data.mrEnclave.slice(0, 16)}…, sig: ${d.data.hardwareSignature.slice(0, 16)}…)`);
+                      setTimeout(fetchState, 400);
+                    } else {
+                      setEnclaveResult(`❌ ${d.message || 'Attestation failed'}`);
+                    }
+                  } catch {
+                    setEnclaveResult('❌ Network error');
+                  } finally {
+                    setGeneratingAttestation(false);
+                  }
+                }}
+                className="btn-primary"
+                style={{ fontSize: '0.82rem', padding: '7px 16px', whiteSpace: 'nowrap' }}
+              >
+                {generatingAttestation ? '⏳ Attesting…' : '🛡️ Generate HW Attestation'}
+              </button>
+            </div>
+            {enclaveResult && (
+              <div
+                style={{
+                  fontSize: '0.78rem',
+                  color: enclaveResult.startsWith('✅') ? 'var(--accent-green)' : 'var(--accent-red)',
+                  marginBottom: 14,
+                  fontFamily: 'JetBrains Mono, monospace',
+                }}
+              >
+                {enclaveResult}
+              </div>
+            )}
+
+            {/* Enclave Instances Grid */}
+            <div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Provisioned Hardware Enclaves ({enclaves.length})
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 10 }}>
+                {enclaves.map((enc) => (
+                  <div
+                    key={enc.enclaveId}
+                    style={{
+                      background: 'var(--bg-surface)',
+                      border: '1px solid var(--border)',
+                      borderRadius: 'var(--radius-sm)',
+                      padding: 12,
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <span style={{ fontWeight: 600, fontSize: '0.82rem', color: 'var(--text-primary)' }}>
+                        {enc.name}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: '0.65rem',
+                          padding: '1px 6px',
+                          borderRadius: 3,
+                          background: 'rgba(72,187,120,0.15)',
+                          color: 'var(--accent-green)',
+                          fontWeight: 700,
+                        }}
+                      >
+                        {enc.type}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontFamily: 'JetBrains Mono, monospace', marginBottom: 4 }}>
+                      MRENCLAVE: {enc.mrEnclave.slice(0, 20)}…
+                    </div>
+                    <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontFamily: 'JetBrains Mono, monospace', marginBottom: 6 }}>
+                      MRSIGNER: {enc.mrSigner.slice(0, 20)}…
+                    </div>
+                    <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', display: 'flex', gap: 10 }}>
+                      <span>🔒 {enc.sealedDataCount} sealed objects</span>
+                      <span style={{ color: 'var(--accent-teal)' }}>● {enc.status}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
 
           {/* Timeline */}

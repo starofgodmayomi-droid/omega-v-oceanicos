@@ -32,6 +32,7 @@ import { OceanicosDisputeEngine } from '@omega-v/dispute';
 import { OceanicosWorkerPool } from '@omega-v/worker';
 import { OceanicosPipelineEngine } from '@omega-v/pipeline';
 import { OceanicosRegistryEngine } from '@omega-v/registry';
+import { OceanicosEnclaveEngine } from '@omega-v/enclave';
 import {
   SuccessResponse,
   ErrorResponse,
@@ -93,6 +94,7 @@ const disputeEngine = new OceanicosDisputeEngine();
 const workerPool = new OceanicosWorkerPool();
 const pipelineEngine = new OceanicosPipelineEngine();
 const registryEngine = new OceanicosRegistryEngine();
+const enclaveEngine = new OceanicosEnclaveEngine();
 
 // Register default rules
 verificationEngine.registerRule({
@@ -2201,6 +2203,183 @@ app.post('/registry/advisories', (req: Request, res: Response) => {
 /** GET /registry/stats — Registry statistics */
 app.get('/registry/stats', (_req: Request, res: Response) => {
   const stats = registryEngine.getStats();
+  res.json({
+    data: stats,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/**
+ * Section 28 Endpoints: Hardware TEE Confidential Computing & Remote Attestation
+ * /enclave/instances, /enclave/provision, /enclave/attest, /enclave/verify,
+ * /enclave/seal, /enclave/unseal, /enclave/execute, /enclave/stats
+ */
+
+/** GET /enclave/instances — List provisioned hardware enclaves */
+app.get('/enclave/instances', (_req: Request, res: Response) => {
+  const enclaves = enclaveEngine.getEnclaves();
+  res.json({
+    data: enclaves,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /enclave/provision — Provision new TEE enclave */
+app.post('/enclave/provision', (req: Request, res: Response) => {
+  const { enclaveId, type, name, codePayload, authorSignerKey } = req.body;
+  if (!type || !name || !codePayload || !authorSignerKey) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'type, name, codePayload, and authorSignerKey are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  const enclave = enclaveEngine.provisionEnclave({
+    enclaveId,
+    type,
+    name,
+    codePayload,
+    authorSignerKey,
+  });
+
+  res.status(201).json({
+    data: enclave,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /enclave/attest — Generate remote attestation report */
+app.post('/enclave/attest', (req: Request, res: Response) => {
+  const { enclaveId, userData, hardwareNonce } = req.body;
+  if (!enclaveId || !userData) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'enclaveId and userData are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const report = enclaveEngine.generateRemoteAttestation(enclaveId, userData, hardwareNonce);
+    res.json({
+      data: report,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'ATTESTATION_FAILED',
+      message: err instanceof Error ? err.message : 'Attestation generation failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** POST /enclave/verify — Verify remote attestation report */
+app.post('/enclave/verify', (req: Request, res: Response) => {
+  const { report } = req.body;
+  if (!report || !report.hardwareSignature) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'report with hardwareSignature is required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  const result = enclaveEngine.verifyRemoteAttestation(report);
+  res.json({
+    data: result,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/** POST /enclave/seal — Seal state bound to MRENCLAVE */
+app.post('/enclave/seal', (req: Request, res: Response) => {
+  const { enclaveId, plaintext } = req.body;
+  if (!enclaveId || !plaintext) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'enclaveId and plaintext are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const sealed = enclaveEngine.sealData(enclaveId, plaintext);
+    res.json({
+      data: sealed,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'SEAL_FAILED',
+      message: err instanceof Error ? err.message : 'Data sealing failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** POST /enclave/unseal — Unseal state inside enclave */
+app.post('/enclave/unseal', (req: Request, res: Response) => {
+  const { enclaveId, sealed } = req.body;
+  if (!enclaveId || !sealed || !sealed.ciphertext) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'enclaveId and sealed state object are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const decrypted = enclaveEngine.unsealData(enclaveId, sealed);
+    res.json({
+      data: { plaintext: decrypted },
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'UNSEAL_FAILED',
+      message: err instanceof Error ? err.message : 'Unsealing failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** POST /enclave/execute — Execute confidential code in enclave memory */
+app.post('/enclave/execute', (req: Request, res: Response) => {
+  const { enclaveId, operationName, inputs } = req.body;
+  if (!enclaveId || !operationName) {
+    res.status(400).json({
+      code: 'BAD_REQUEST',
+      message: 'enclaveId and operationName are required',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const result = enclaveEngine.executeConfidentialCode(enclaveId, operationName, inputs || {});
+    res.json({
+      data: result,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    res.status(400).json({
+      code: 'EXECUTION_FAILED',
+      message: err instanceof Error ? err.message : 'Confidential execution failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/** GET /enclave/stats — Enclave engine statistics */
+app.get('/enclave/stats', (_req: Request, res: Response) => {
+  const stats = enclaveEngine.getStats();
   res.json({
     data: stats,
     timestamp: new Date().toISOString(),
