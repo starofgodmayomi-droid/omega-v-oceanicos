@@ -1,7 +1,7 @@
 {
   "name": "@omega-v/orchestrator",
   "version": "0.1.0",
-  "description": "Decentralized Multi-Agent Swarm Orchestrator & Parallel Worker Execution Dispatcher for Ω∞v Oceanicos",
+  "description": "Multi-Agent Swarm Orchestrator & Parallel Worker Dispatcher for Ω∞v Oceanicos",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

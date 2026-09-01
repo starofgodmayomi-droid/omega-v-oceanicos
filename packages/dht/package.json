@@ -1,8 +1,10 @@
 {
   "name": "@omega-v/dht",
   "version": "0.1.0",
-  "private": true,
+  "description": "Distributed Hash Table, Kademlia-Style Content-Addressable Routing for Ω∞v Oceanicos",
+  "type": "module",
   "main": "src/index.ts",
+  "types": "src/index.ts",
   "scripts": {
     "test": "jest"
   }
