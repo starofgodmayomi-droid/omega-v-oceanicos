@@ -14,7 +14,7 @@ export type OperatingSystemTask = {
 
 export type OperatingSystemEvent = {
   sequence: number;
-  type: 'boot' | 'admit' | 'complete' | 'degrade' | 'stop';
+  type: 'boot' | 'admit' | 'complete' | 'degrade' | 'reject' | 'stop';
   state: OperatingSystemState;
   taskId?: string;
   reason?: string;
@@ -109,29 +109,35 @@ export class OperatingSystemKernel {
     requestedBy: string
   ): OperatingSystemTask {
     if (this.state !== 'ready') {
-      throw new Error(`cannot admit task while operating system is ${this.state}`);
+      const reason = `cannot admit task while operating system is ${this.state}`;
+      this.record({ type: 'reject', state: this.state, reason });
+      throw new Error(reason);
     }
     if (!OPERATING_SYSTEM_TASK_KINDS.includes(kind)) {
-      throw new Error(`unsupported operating system task kind: ${String(kind)}`);
+      const reason = `unsupported operating system task kind: ${String(kind)}`;
+      this.record({ type: 'reject', state: this.state, reason });
+      throw new Error(reason);
     }
     if (!isBoundedTaskInput(input)) {
-      throw new Error(
-        `operating system task input must contain at most ${MAX_TASK_INPUT_KEYS} keys`
-      );
+      const reason = `operating system task input must contain at most ${MAX_TASK_INPUT_KEYS} keys`;
+      this.record({ type: 'reject', state: this.state, reason });
+      throw new Error(reason);
     }
     if (
       typeof requestedBy !== 'string' ||
       requestedBy.trim().length === 0 ||
       requestedBy.length > MAX_REQUESTER_LENGTH
     ) {
-      throw new Error(
-        `operating system task requester must be 1-${MAX_REQUESTER_LENGTH} characters`
-      );
+      const reason = `operating system task requester must be 1-${MAX_REQUESTER_LENGTH} characters`;
+      this.record({ type: 'reject', state: this.state, reason });
+      throw new Error(reason);
     }
     if (this.tasks.length >= this.maxTasks) {
       this.state = 'degraded';
       this.record({ type: 'degrade', state: 'degraded', reason: 'task limit reached' });
-      throw new Error('operating system task limit reached');
+      const reason = 'operating system task limit reached';
+      this.record({ type: 'reject', state: this.state, reason });
+      throw new Error(reason);
     }
     const task: OperatingSystemTask = {
       id: `task-${this.nextTaskSequence++}`,

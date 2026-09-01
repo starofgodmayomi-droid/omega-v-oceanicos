@@ -9,7 +9,7 @@ export type OperatingSystemTask = {
 };
 export type OperatingSystemEvent = {
   sequence: number;
-  type: 'boot' | 'admit' | 'complete' | 'degrade' | 'stop';
+  type: 'boot' | 'admit' | 'complete' | 'degrade' | 'reject' | 'stop';
   state: OperatingSystemState;
   taskId?: string;
   reason?: string;

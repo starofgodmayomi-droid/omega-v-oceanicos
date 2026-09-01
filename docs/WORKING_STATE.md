@@ -2,6 +2,12 @@
 
 **Updated:** 2026-09-01
 
+## Rejected-admission evidence checkpoint — 2026-09-01
+
+The bounded OS kernel now records failed task admissions as `reject` events with bounded reasons. Unsupported kinds, invalid requester identities, oversized inputs, cyclic or overly deep input graphs, and task-limit exhaustion remain visible in the read-only event trace without creating admitted work. The SDK event union now includes `reject`, keeping the typed consumer contract aligned with the kernel.
+
+Focused MINI/SDK verification passed 49 tests, affected package builds and type-check passed, and the kernel tests now cover inspectable rejection evidence. The change is local and does not authorize shell execution, credential handling, remote mutation, deployment, or autonomous action. No push, PR publication, merge, or deployment has occurred.
+
 ## OS task-kind contract alignment checkpoint — 2026-09-01
 
 The typed SDK contract is now aligned with the MINI kernel’s authoritative `OperatingSystemTaskKind` union: `observe`, `verify`, `remember`, and `report`. The stale SDK-only `recompile` member was removed, and `@omega-v/mini` now exports `OperatingSystemTaskKind` for downstream type reuse. This is a compile-time contract correction; the public `/os` snapshot and runtime capabilities remain unchanged.

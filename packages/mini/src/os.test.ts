@@ -39,7 +39,13 @@ describe('OperatingSystemKernel', () => {
     expect(() => os.admit('execute' as never, {}, 'operator')).toThrow(
       'unsupported operating system task kind'
     );
+    expect(os.snapshot().events.at(-1)).toMatchObject({
+      type: 'reject',
+      state: 'ready',
+      reason: 'unsupported operating system task kind: execute',
+    });
     expect(() => os.admit('observe', {}, '   ')).toThrow('task requester must be');
+    expect(os.snapshot().events.at(-1)?.type).toBe('reject');
     expect(() => os.admit('observe', {}, 'x'.repeat(129))).toThrow('task requester must be');
     expect(() =>
       os.admit(
@@ -85,6 +91,12 @@ describe('OperatingSystemKernel', () => {
 
     expect(() => os.admit('report', {}, 'operator')).toThrow('task limit reached');
     expect(os.snapshot().state).toBe('degraded');
+    expect(
+      os
+        .snapshot()
+        .events.slice(-2)
+        .map((event) => event.type)
+    ).toEqual(['degrade', 'reject']);
   });
 
   it('retains only the configured finite event trace', () => {

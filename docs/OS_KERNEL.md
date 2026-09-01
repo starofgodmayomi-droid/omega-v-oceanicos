@@ -19,9 +19,9 @@ Boot is idempotent. Stop is idempotent. Admission fails closed while offline or 
 
 ## Evidence and determinism
 
-The kernel retains a bounded event trace. Event sequence numbers are monotonic even when older entries are evicted. Task identifiers are deterministic within a kernel instance (`task-1`, `task-2`, and so on). Returned snapshots copy task inputs and event arrays so callers cannot mutate kernel state through an alias.
+The kernel retains a bounded event trace. Rejected admissions are recorded as `reject` events with a bounded reason, so failed requests remain inspectable without creating work. Event sequence numbers are monotonic even when older entries are evicted. Task identifiers are deterministic within a kernel instance (`task-1`, `task-2`, and so on). Returned snapshots copy task inputs and event arrays so callers cannot mutate kernel state through an alias.
 
-These properties are tested in `packages/mini/src/os.test.ts`, including lifecycle boundaries, task limits, stop behavior, trace eviction, deterministic identifiers, runtime admission validation, deep input isolation, finite input-graph rejection, and the explicit capability boundary.
+These properties are tested in `packages/mini/src/os.test.ts`, including lifecycle boundaries, task limits, stop behavior, trace eviction, deterministic identifiers, runtime admission validation, rejected-admission evidence, deep input isolation, finite input-graph rejection, and the explicit capability boundary.
 The API contract test in `apps/api/src/__tests__/api.test.ts` verifies that `GET /os` returns a ready boot trace with no admitted work. SDK and CLI tests verify typed consumption, URL construction, bearer propagation, capability output, and operator-readable output.
 
 ## API surface
