@@ -139,13 +139,17 @@ describe('API runtime contracts', () => {
     expect(response.status).toBe(200);
     const body = (await response.json()) as {
       data: {
+        snapshotVersion: string;
         state: string;
         tasks: unknown[];
         events: Array<{ sequence: number; state: string }>;
+        limits: { maxTasks: number; maxEvents: number };
       };
     };
+    expect(body.data.snapshotVersion).toBe('os.snapshot.v1');
     expect(body.data.state).toBe('ready');
     expect(body.data.tasks).toEqual([]);
+    expect(body.data.limits).toEqual({ maxTasks: 32, maxEvents: 128 });
     expect(body.data.events).toEqual([
       { sequence: 1, state: 'booting', type: 'boot' },
       { sequence: 2, state: 'ready', type: 'boot' },
