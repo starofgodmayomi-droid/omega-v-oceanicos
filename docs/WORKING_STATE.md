@@ -2,6 +2,12 @@
 
 **Updated:** 2026-09-02
 
+## Core package verification alignment checkpoint — 2026-09-02
+
+The remaining core packages now invoke the repository’s authoritative root Jest project from their package test scripts: attestation, dissensus, lexicon, observer, remember, and verification. This removes package-local ESM/parser drift while keeping each command scoped to its own test directory. The packages expose a reproducible worker boundary without claiming independent root-relative documentation coverage.
+
+Observed package evidence: attestation 30 tests, dissensus 11 tests, lexicon 23 tests, observer 20 tests, remember 24 tests, and verification 28 tests passed. Formatting, lint, type-check, and diff checks passed. No push, PR publication, merge, or deployment has occurred.
+
 ## SDK/CLI package-local verification checkpoint — 2026-09-02
 
 The SDK and CLI packages now have explicit local Jest configurations matching the repository’s TypeScript/ESM resolution. `pnpm --filter @omega-v/sdk test` passes 39 tests. `pnpm --filter @omega-v/cli test` passes 131 package-scoped tests; its repository-root `cli-entrypoint.test.ts` is intentionally excluded from the package-local project because it resolves files relative to the monorepo root and remains covered by the root verification project. This scope is explicit rather than silently claiming package-local coverage of the root-dependent test.
