@@ -2,6 +2,7 @@ import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { App } from '../../App';
 import {
+  agreedDissensus,
   failingLoop,
   installFetch,
   json,
@@ -978,6 +979,137 @@ describe('dashboard', () => {
 });
 
 /**
+ * The Evidence view's own fallback and negative-case rendering had never
+ * run under test: only its single "everything present and passing" path
+ * had (the "opens the read-only Evidence timeline" test above). A
+ * read-only lineage view is exactly the surface where silently rendering
+ * the wrong verdict -- showing a failed run as VERIFIED, an unverified
+ * attestation as ATTESTED, or a stray reconciliation entry as agreement --
+ * would be the harm this dashboard exists to prevent.
+ */
+describe('evidence timeline', () => {
+  const openEvidence = async (): Promise<HTMLElement> => {
+    const user = userEvent.setup();
+    await renderApp();
+    const nav = await screen.findByRole('navigation', { name: /primary navigation/i });
+    await user.click(within(nav).getByRole('button', { name: /evidence/i }));
+    return screen.findByRole('region', { name: /evidence timeline/i });
+  };
+
+  it('reports no traceable run or events when none have been recorded', async () => {
+    installFetch();
+    const evidenceView = await openEvidence();
+
+    expect(
+      within(evidenceView).getByText('No completed run is available to trace yet.')
+    ).toBeInTheDocument();
+    expect(
+      within(evidenceView).getByText('No events are available in the bounded recent window.')
+    ).toBeInTheDocument();
+  });
+
+  it('reports a failed verification and an unverified attestation, not their passing labels', async () => {
+    installFetch({
+      '/api/runs': () => json({ data: [failingLoop()] }),
+      '/api/audit/events?limit=40': () =>
+        json({
+          data: [
+            {
+              id: 'evt-no-provenance',
+              type: 'observation.created',
+              stage: 'observe',
+              message: 'Observation recorded',
+              status: 'passed',
+              timestamp: '2026-08-19T21:00:00.000Z',
+            },
+          ],
+          meta: { bounded: true, limit: 40, total: 1 },
+        }),
+    });
+    const evidenceView = await openEvidence();
+
+    // The verification card must say FAILED, never VERIFIED.
+    expect(within(evidenceView).getByText('FAILED')).toBeInTheDocument();
+    expect(within(evidenceView).queryByText('VERIFIED')).not.toBeInTheDocument();
+
+    // Both the verification-id line and the attestation card read
+    // UNVERIFIED -- failingLoop()'s attestation is unverified but not
+    // revoked, so the attestation card is in the middle of three states,
+    // distinct from both REVOKED and ATTESTED.
+    expect(within(evidenceView).getAllByText(/UNVERIFIED/)).toHaveLength(2);
+    expect(within(evidenceView).getByText('UNKNOWN')).toBeInTheDocument();
+    expect(within(evidenceView).queryByText('ATTESTED')).not.toBeInTheDocument();
+    expect(within(evidenceView).queryByText('REVOKED')).not.toBeInTheDocument();
+
+    // An event with no correlation or request id must say so explicitly,
+    // never fall back to blank text or fabricate an id.
+    expect(within(evidenceView).getByText(/correlation UNKNOWN/)).toBeInTheDocument();
+    expect(within(evidenceView).getByText(/request UNKNOWN/)).toBeInTheDocument();
+
+    // The bottom "recent run evidence" panel derives from the same /api/runs
+    // data and must report the same failure, not silently show it passing.
+    expect(screen.getByText(/verification failed/)).toBeInTheDocument();
+    expect(screen.getByText(/attestation invalid/)).toBeInTheDocument();
+  });
+
+  it('reports a revoked attestation distinctly from an unverified one', async () => {
+    const revokedLoop = {
+      ...passingLoop(),
+      attestation: { ...passingLoop().attestation, revoked: true },
+    };
+    installFetch({ '/api/runs': () => json({ data: [revokedLoop] }) });
+    const evidenceView = await openEvidence();
+
+    // revoked wins over verified: the attestation was checked and passed at
+    // the time, then later revoked, and the view must lead with that.
+    expect(within(evidenceView).getAllByText('REVOKED')).toHaveLength(2);
+    expect(within(evidenceView).queryByText('UNVERIFIED')).not.toBeInTheDocument();
+    expect(within(evidenceView).queryByText('ATTESTED')).not.toBeInTheDocument();
+  });
+
+  it('renders both a human-routed and an automatically-resolved reconciliation', async () => {
+    installFetch({
+      '/api/dissensus': () =>
+        json({
+          data: [splitDissensus(), agreedDissensus()],
+          meta: { window: 40, unresolved: 1 },
+        }),
+    });
+    const evidenceView = await openEvidence();
+
+    expect(within(evidenceView).getByText('SPLIT')).toBeInTheDocument();
+    expect(within(evidenceView).getByText('AGREED')).toBeInTheDocument();
+    expect(within(evidenceView).getByText(/ROUTED TO HUMAN/)).toBeInTheDocument();
+    expect(within(evidenceView).getByText(/AUTOMATIC/)).toBeInTheDocument();
+    expect(within(evidenceView).queryByText(/no dissent is recorded/i)).not.toBeInTheDocument();
+  });
+
+  it('returns to Current from the Evidence view, and reaches Evidence from the command palette', async () => {
+    const user = userEvent.setup();
+    installFetch({ '/api/runs': () => json({ data: [passingLoop()] }) });
+    await renderApp();
+
+    // Reach Evidence through the command palette's own "Open evidence"
+    // command, distinct from the primary-navigation button already covered
+    // above -- both call the same navigate('Evidence'), but only the nav
+    // button's onClick had ever run.
+    await user.click(await screen.findByRole('button', { name: '⌘ K' }));
+    const dialog = await screen.findByRole('dialog', { name: /command palette/i });
+    await user.click(within(dialog).getByRole('button', { name: /open evidence/i }));
+
+    const evidenceView = await screen.findByRole('region', { name: /evidence timeline/i });
+    expect(screen.queryByRole('dialog', { name: /command palette/i })).not.toBeInTheDocument();
+
+    // The Evidence view's own "Return to Current" button, not the primary
+    // navigation, must also drive navigate('Current').
+    await user.click(within(evidenceView).getByRole('button', { name: /return to current/i }));
+
+    expect(screen.queryByRole('region', { name: /evidence timeline/i })).not.toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /run verification/i })).toBeInTheDocument();
+  });
+});
+
+/**
  * The command palette (⌘K) was entirely uncovered: opening it, the Tab
  * focus trap, Escape/backdrop dismissal, and all four quick actions ran zero
  * times under test. Its commands also share label text with buttons that
@@ -1380,6 +1512,42 @@ describe('dissent ledger', () => {
     ) as HTMLElement;
 
     expect(within(section).getByText('01')).toBeInTheDocument();
+  });
+
+  /**
+   * Every prior test in this block used a SPLIT/HUMAN reconciliation, so the
+   * three branches below never ran: a non-SPLIT verdict rendered as itself
+   * (not folded into "DISSENTING"), automatic routing rendered as
+   * "AUTOMATIC" rather than "ROUTED TO HUMAN", and an opinion a verifier
+   * abstained on (passed: null) rendered as "UNKNOWN" rather than
+   * PASSED/FAILED. A dashboard that always showed "ROUTED TO HUMAN" or
+   * silently guessed PASSED for an abstaining verifier would misreport both
+   * how the reconciliation resolved and what the verifier actually said.
+   */
+  it('renders an automatically-resolved reconciliation and an abstaining opinion', async () => {
+    installFetch({
+      '/api/dissensus': () =>
+        json({ data: [agreedDissensus()], meta: { window: 40, unresolved: 0 } }),
+    });
+    await renderApp();
+
+    const section = (await screen.findByText(/where the verifiers did not agree/i)).closest(
+      'section'
+    ) as HTMLElement;
+
+    // AGREED is not SPLIT, so it must not be rewritten as "DISSENTING".
+    expect(within(section).getByText('AGREED')).toBeInTheDocument();
+    expect(within(section).queryByText('DISSENTING')).not.toBeInTheDocument();
+
+    // AUTO routing must not be reported as having gone to a human.
+    expect(within(section).getByText('AUTOMATIC')).toBeInTheDocument();
+    expect(within(section).queryByText('ROUTED TO HUMAN')).not.toBeInTheDocument();
+
+    // A null opinion is an abstention, not a pass or a fail.
+    const abstained = within(section).getByText(/model: UNKNOWN/);
+    expect(abstained).toBeInTheDocument();
+    expect(abstained).not.toHaveClass('is-objecting');
+    expect(within(section).getByText(/rules: PASSED/)).toBeInTheDocument();
   });
 });
 
