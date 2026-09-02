@@ -168,6 +168,39 @@ export const splitDissensus = () => ({
   timestamp: '2026-08-17T00:00:00.000Z',
 });
 
+/**
+ * A reconciliation that resolved without a human: every verifier that could
+ * render an opinion agreed, and one abstained rather than voting either way.
+ * This is the counterpart to `splitDissensus` -- it exercises the AGREED
+ * verdict, AUTO routing, and a null (abstained) opinion, none of which a
+ * SPLIT/HUMAN fixture alone can reach.
+ */
+export const agreedDissensus = () => ({
+  id: 'dis-20260818T000000',
+  verdict: 'AGREED' as const,
+  routing: 'AUTO' as const,
+  confidence: 0.9,
+  reason: 'verifiers agree: 2 passed, 0 failed',
+  opinions: [
+    {
+      verifierId: 'rules',
+      verifierVersion: '1.0.0',
+      passed: true,
+      confidence: 0.95,
+      reason: 'status code is 200',
+    },
+    {
+      verifierId: 'model',
+      verifierVersion: '2026-08',
+      passed: null,
+      confidence: 0,
+      reason: 'model verifier abstained: no response payload to score',
+    },
+  ],
+  dissenting: [],
+  timestamp: '2026-08-18T00:00:00.000Z',
+});
+
 export function installFetch(overrides: RouteOverrides = {}): jest.Mock {
   const defaults: RouteOverrides = {
     '/api/health': () =>
@@ -217,7 +250,7 @@ export function installFetch(overrides: RouteOverrides = {}): jest.Mock {
           keyId: 'sha256:test-key',
           fingerprint: 'sha256:test-key',
           keyVersion: '1',
-          publicKey: '-----BEGIN PUBLIC KEY-----\\ntest\\n-----END PUBLIC KEY-----',
+          publicKey: '-----BEGIN PUBLIC KEY-----\ntest\n-----END PUBLIC KEY-----',
         },
       }),
     '/api/complete-loop': () => json({ data: passingLoop() }, { status: 201 }),
