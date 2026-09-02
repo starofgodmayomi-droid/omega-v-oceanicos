@@ -105,6 +105,24 @@ describe('browser attestation verifier', () => {
     expect(typeof (await canVerify())).toBe('boolean');
   });
 
+  it('verifies a real attestation through the global crypto fallback, with no subtle argument', async () => {
+    // Every verifyAttestation call elsewhere in this file passes `subtle`
+    // explicitly, so `subtle ?? globalThis.crypto?.subtle` always
+    // short-circuits on the left operand. The "without a global crypto
+    // object" cases below cover the other extreme by forcing
+    // globalThis.crypto to undefined, which makes `globalThis.crypto?.subtle`
+    // short-circuit to undefined via optional chaining before ever reading
+    // a live `.subtle` off a real object. Neither exercises the fallback
+    // actually resolving to a working implementation and completing a
+    // verification — which is exactly the call shape a real browser caller
+    // uses: verifyAttestation(attestation, pem), relying on
+    // window.crypto.subtle with nothing passed as the third argument.
+    const result = await verifyAttestation(signed(), publicKeyPem);
+
+    expect(result.valid).toBe(true);
+    expect(result.reason).toContain('valid');
+  });
+
   describe('without a global crypto object', () => {
     let originalCrypto: PropertyDescriptor | undefined;
 
