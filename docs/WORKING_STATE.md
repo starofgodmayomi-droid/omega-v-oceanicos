@@ -2,6 +2,12 @@
 
 **Updated:** 2026-09-01
 
+## MINI package-local verification checkpoint — 2026-09-02
+
+The MINI package now has an explicit local Jest configuration matching the monorepo’s TypeScript/ESM mapping. `pnpm --filter @omega-v/mini test` runs both the OS kernel and MINI contract suites directly, passing 19 tests, instead of falling through to an unconfigured Babel parser. This improves reproducibility without changing runtime behavior or authority boundaries.
+
+The initial package-wide command exposed a real verification gap; after adding the configuration, the package-local gate passed. No push, PR publication, merge, or deployment has occurred.
+
 ## CLI Builder kernel event-observability checkpoint — 2026-09-01
 
 The `omega os` command now renders the latest bounded event type, sequence number, and optional rejection reason in addition to state, task/event counts, schema, limits, and capabilities. This aligns the CLI with the read-only Web Builder kernel panel and preserves the human-gated control boundary.
