@@ -63,7 +63,7 @@ describe('dashboard', () => {
     expect(screen.getByText('AUTHORITY: HUMAN-GATED')).toBeInTheDocument();
     expect(screen.getByText('BOUNDED READ-ONLY SNAPSHOT')).toBeInTheDocument();
     expect(screen.getByText('tasks=0 · events=2')).toBeInTheDocument();
-    expect(screen.getByText(/schema=os\\.snapshot\\.v1/)).toBeInTheDocument();
+    expect(screen.getByText(/schema=os\.snapshot\.v1/)).toBeInTheDocument();
     expect(screen.getByText(/limits=tasks≤32 · events≤128/)).toBeInTheDocument();
     expect(screen.getByText(/last sequence=2 · deterministic local trace/)).toBeInTheDocument();
     expect(
@@ -134,9 +134,9 @@ describe('dashboard', () => {
 
     // The UI claims "Failures remain visible as evidence". A dashboard that
     // quietly dropped the failing step would still look correct.
-    const failed = await screen.findByText(/FAIL \\/ Observation does not carry responseTime/);
+    const failed = await screen.findByText(/FAIL \/ Observation does not carry responseTime/);
     expect(failed).toBeInTheDocument();
-    expect(screen.getByText(/PASS \\/ Status code is 200/)).toBeInTheDocument();
+    expect(screen.getByText(/PASS \/ Status code is 200/)).toBeInTheDocument();
     expect(screen.getByText('FAILED')).toBeInTheDocument();
   });
 
@@ -786,7 +786,7 @@ describe('dashboard', () => {
 
       expect(await screen.findByText('ACTION DENIED')).toBeInTheDocument();
       expect(
-        await screen.findByText(/Action denied because verification did not pass \\[req-act-99\\]/)
+        await screen.findByText(/Action denied because verification did not pass \[req-act-99\]/)
       ).toBeInTheDocument();
     });
 
@@ -1384,7 +1384,7 @@ describe('independent verification panel', () => {
       result = await screen.findByRole('status', undefined, { timeout: 30_000 });
     } catch (error) {
       throw new Error(
-        `${error instanceof Error ? error.message : String(error)}\\nDOM at WebCrypto timeout:\\n${document.body.innerHTML}`
+        `${error instanceof Error ? error.message : String(error)}\nDOM at WebCrypto timeout:\n${document.body.innerHTML}`
       );
     }
     expect(within(result).getByText('VALID')).toBeInTheDocument();
@@ -1408,7 +1408,7 @@ describe('independent verification panel', () => {
     await user.click(screen.getByLabelText(/attestation json/i));
     await user.paste('{ not json');
     await user.click(screen.getByLabelText(/public key/i));
-    await user.paste('-----BEGIN PUBLIC KEY-----\\nAAAA\\n-----END PUBLIC KEY-----');
+    await user.paste('-----BEGIN PUBLIC KEY-----\nAAAA\n-----END PUBLIC KEY-----');
 
     const verifyMalformed = screen.getByRole('button', { name: /verify locally/i });
     await waitFor(() => expect(verifyMalformed).toBeEnabled());
@@ -1499,7 +1499,7 @@ describe('dissent ledger', () => {
 
     // 0.6 is the minimum; the mean of 0.9 and 0.6 would read 0.75 and
     // overstate how much the verifiers actually supported the claim.
-    expect(within(section).getByText(/confidence 0\\.6/)).toBeInTheDocument();
+    expect(within(section).getByText(/confidence 0\.6/)).toBeInTheDocument();
     expect(within(section).getByText(/never the mean/i)).toBeInTheDocument();
   });
 
