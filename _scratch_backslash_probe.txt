@@ -1,2 +1,0 @@
-line one has one backslash before dot: a\.b
-line two has a literal newline above, not backslash-n text
