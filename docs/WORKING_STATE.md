@@ -1,6 +1,12 @@
 # Ω∞v Oceanicos Working State
 
-**Updated:** 2026-09-01
+**Updated:** 2026-09-02
+
+## SDK/CLI package-local verification checkpoint — 2026-09-02
+
+The SDK and CLI packages now have explicit local Jest configurations matching the repository’s TypeScript/ESM resolution. `pnpm --filter @omega-v/sdk test` passes 39 tests. `pnpm --filter @omega-v/cli test` passes 131 package-scoped tests; its repository-root `cli-entrypoint.test.ts` is intentionally excluded from the package-local project because it resolves files relative to the monorepo root and remains covered by the root verification project. This scope is explicit rather than silently claiming package-local coverage of the root-dependent test.
+
+Formatting, lint, type-check, and SDK/CLI builds pass. The change remains local; no GitHub push, PR publication, merge, or deployment has occurred.
 
 ## MINI package-local verification checkpoint — 2026-09-02
 
