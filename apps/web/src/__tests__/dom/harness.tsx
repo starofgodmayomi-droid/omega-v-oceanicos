@@ -250,7 +250,7 @@ export function installFetch(overrides: RouteOverrides = {}): jest.Mock {
           keyId: 'sha256:test-key',
           fingerprint: 'sha256:test-key',
           keyVersion: '1',
-          publicKey: '-----BEGIN PUBLIC KEY-----\ntest\n-----END PUBLIC KEY-----',
+          publicKey: '-----BEGIN PUBLIC KEY-----\\ntest\\n-----END PUBLIC KEY-----',
         },
       }),
     '/api/complete-loop': () => json({ data: passingLoop() }, { status: 201 }),
