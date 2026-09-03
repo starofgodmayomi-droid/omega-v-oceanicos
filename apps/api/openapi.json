@@ -1,0 +1,513 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Ω∞v Oceanicos Verification API",
+    "description": "Complete verification loop API: Observe → Verify → Attest → Record → Query → Learn",
+    "version": "0.1.0",
+    "contact": {
+      "name": "Ω∞v Community",
+      "url": "https://github.com/starofgodmayomi-droid/omega-v-oceanicos"
+    },
+    "license": {
+      "name": "Apache-2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0.html"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Development server"
+    },
+    {
+      "url": "https://api.oceanicos.com",
+      "description": "Production server"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Health check endpoint",
+        "description": "Returns the health status of the API server",
+        "operationId": "healthCheck",
+        "tags": ["System"],
+        "responses": {
+          "200": {
+            "description": "Server is healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string",
+                          "example": "ok"
+                        }
+                      }
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/complete-loop": {
+      "post": {
+        "summary": "Execute complete verification loop",
+        "description": "Execute the full verification workflow: Observe → Verify → Attest → Record in a single request",
+        "operationId": "executeLoop",
+        "tags": ["Verification"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["claim", "category", "source", "observedBy", "confidence"],
+                "properties": {
+                  "claim": {
+                    "type": "string",
+                    "description": "The claim to verify",
+                    "example": "Service response time is under 100ms"
+                  },
+                  "category": {
+                    "type": "string",
+                    "description": "Category of the claim",
+                    "example": "performance"
+                  },
+                  "source": {
+                    "type": "object",
+                    "required": ["system", "version", "environment"],
+                    "properties": {
+                      "system": {
+                        "type": "string",
+                        "example": "health-check"
+                      },
+                      "version": {
+                        "type": "string",
+                        "example": "1.0.0"
+                      },
+                      "environment": {
+                        "type": "string",
+                        "enum": ["production", "staging", "development"],
+                        "example": "production"
+                      }
+                    }
+                  },
+                  "observedBy": {
+                    "type": "string",
+                    "description": "Who/what made this observation",
+                    "example": "monitoring-service"
+                  },
+                  "metadata": {
+                    "type": "object",
+                    "description": "Additional metadata",
+                    "example": {
+                      "responseTime": 45,
+                      "timestamp": "2026-09-03T10:00:00Z"
+                    }
+                  },
+                  "confidence": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1,
+                    "description": "Confidence level of the observation",
+                    "example": 0.95
+                  },
+                  "confidenceReason": {
+                    "type": "string",
+                    "description": "Reason for the confidence level",
+                    "example": "Based on 1000 samples with 95% accuracy"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Verification loop executed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "observation": {
+                          "type": "object",
+                          "description": "Observation record"
+                        },
+                        "verification": {
+                          "type": "object",
+                          "description": "Verification result"
+                        },
+                        "attestation": {
+                          "type": "object",
+                          "description": "Cryptographic attestation"
+                        }
+                      }
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request or verification failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/query/observations": {
+      "get": {
+        "summary": "Query observations",
+        "description": "Retrieve observations from the event log with pagination",
+        "operationId": "queryObservations",
+        "tags": ["Query"],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum number of results",
+            "schema": {
+              "type": "integer",
+              "default": 50,
+              "minimum": 1,
+              "maximum": 1000
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "Number of results to skip",
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of observations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "total": {
+                          "type": "integer"
+                        },
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "type": "object"
+                          }
+                        }
+                      }
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/query/verifications": {
+      "get": {
+        "summary": "Query verifications",
+        "description": "Retrieve verification results from the event log with pagination",
+        "operationId": "queryVerifications",
+        "tags": ["Query"],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 50
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of verifications"
+          }
+        }
+      }
+    },
+    "/query/attestations": {
+      "get": {
+        "summary": "Query attestations",
+        "description": "Retrieve attestations from the event log with pagination",
+        "operationId": "queryAttestations",
+        "tags": ["Query"],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 50
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of attestations"
+          }
+        }
+      }
+    },
+    "/query/trace/{id}": {
+      "get": {
+        "summary": "Get complete trace for an observation",
+        "description": "Retrieve the full trace including observation, verifications, and attestations for a given observation ID",
+        "operationId": "getTrace",
+        "tags": ["Query"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Observation ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Trace data including all related events"
+          },
+          "404": {
+            "description": "Observation not found"
+          }
+        }
+      }
+    },
+    "/integrity": {
+      "get": {
+        "summary": "Verify event log integrity",
+        "description": "Verify the cryptographic integrity of the event log",
+        "operationId": "verifyIntegrity",
+        "tags": ["System"],
+        "responses": {
+          "200": {
+            "description": "Integrity verification result"
+          }
+        }
+      }
+    },
+    "/metrics": {
+      "get": {
+        "summary": "Get system metrics (Prometheus format)",
+        "description": "Retrieve system metrics in Prometheus text format for monitoring and alerting",
+        "operationId": "getPrometheusMetrics",
+        "tags": ["Monitoring"],
+        "produces": ["text/plain"],
+        "responses": {
+          "200": {
+            "description": "Prometheus metrics",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/metrics/json": {
+      "get": {
+        "summary": "Get system metrics (JSON format)",
+        "description": "Retrieve system metrics as JSON for integration with other systems",
+        "operationId": "getMetricsJSON",
+        "tags": ["Monitoring"],
+        "responses": {
+          "200": {
+            "description": "System metrics in JSON format",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "totalObservations": {
+                          "type": "integer"
+                        },
+                        "totalVerifications": {
+                          "type": "integer"
+                        },
+                        "successRate": {
+                          "type": "number"
+                        },
+                        "systemConfidence": {
+                          "type": "number"
+                        }
+                      }
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/graphql": {
+      "post": {
+        "summary": "GraphQL query endpoint",
+        "description": "Execute GraphQL queries against the verification data",
+        "operationId": "executeGraphQL",
+        "tags": ["GraphQL"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["query"],
+                "properties": {
+                  "query": {
+                    "type": "string",
+                    "description": "GraphQL query string",
+                    "example": "{ observations(limit: 10) { total items } }"
+                  },
+                  "variables": {
+                    "type": "object",
+                    "description": "Query variables"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "GraphQL query result"
+          }
+        }
+      }
+    },
+    "/graphql/schema": {
+      "get": {
+        "summary": "GraphQL schema introspection",
+        "description": "Retrieve the GraphQL schema for introspection",
+        "operationId": "getGraphQLSchema",
+        "tags": ["GraphQL"],
+        "responses": {
+          "200": {
+            "description": "GraphQL schema introspection result"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "required": ["code", "message", "timestamp"],
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Error code",
+            "example": "VERIFICATION_FAILED"
+          },
+          "message": {
+            "type": "string",
+            "description": "Error message",
+            "example": "Verification failed for claim"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "System",
+      "description": "System health and status endpoints"
+    },
+    {
+      "name": "Verification",
+      "description": "Verification loop execution endpoints"
+    },
+    {
+      "name": "Query",
+      "description": "Event log query endpoints"
+    },
+    {
+      "name": "Monitoring",
+      "description": "System metrics and monitoring endpoints"
+    },
+    {
+      "name": "GraphQL",
+      "description": "GraphQL API endpoints"
+    }
+  ]
+}

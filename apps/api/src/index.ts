@@ -1,5 +1,6 @@
 import express, { Express, Request, Response } from 'express';
 import { createServer } from 'http';
+import swaggerUi from 'swagger-ui-express';
 import { VerificationRuntime, createVerificationSchema, getSchemaIntrospection } from '@omega-v/runtime';
 import { SuccessResponse, ErrorResponse } from '@omega-v/types';
 import {
@@ -11,6 +12,7 @@ import {
   errorHandler,
 } from './middleware';
 import { initializeWebSocketServer } from './websocket';
+import { loadOpenAPISpec, swaggerUIOptions } from './openapi';
 
 /**
  * Ω∞v Oceanicos API Server
@@ -30,6 +32,14 @@ app.use(validateJSON);
 app.use(requestSizeLimits('1mb'));
 app.use(requestLogging);
 app.use(createRateLimitMiddleware(200, 60000));
+
+// Setup API documentation (OpenAPI/Swagger)
+const openAPISpec = loadOpenAPISpec();
+app.use('/api-docs', swaggerUi.serve);
+app.get('/api-docs', swaggerUi.setup(openAPISpec, swaggerUIOptions));
+app.get('/openapi.json', (_req: Request, res: Response) => {
+  res.json(openAPISpec);
+});
 
 // Initialize unified runtime with optional persistent storage
 const runtime = new VerificationRuntime();
@@ -367,7 +377,8 @@ initializeWebSocketServer(httpServer, broadcaster);
 
 httpServer.listen(port, () => {
   console.log(`[Ω∞v API] Verification loop server running on http://localhost:${port}`);
-  console.log(`WebSocket endpoint available at ws://localhost:${port}/ws`);
+  console.log(`📚 API Documentation available at http://localhost:${port}/api-docs`);
+  console.log(`🔌 WebSocket endpoint available at ws://localhost:${port}/ws`);
   console.log(`Available REST endpoints:`);
   console.log(`  POST   /complete-loop          - Execute full loop in one request`);
   console.log(`  GET    /query/observations     - Query observations with pagination`);
