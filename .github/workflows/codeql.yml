@@ -1,0 +1,49 @@
+# Static security analysis.
+#
+# The Verification Pipeline proves the code satisfies its own tests. It says
+# nothing about injection paths, unsafe deserialisation, or the handling of
+# untrusted input — and this service parses attestations supplied by callers
+# and reads a persisted chain from disk.
+#
+# Section XIX: security is part of verification, not an afterthought.
+name: Security Analysis
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Weekly, because a vulnerability disclosed after a merge does not wait
+    # for the next commit to become relevant.
+    - cron: '17 4 * * 1'
+
+permissions:
+  contents: read
+
+jobs:
+  codeql:
+    name: CodeQL
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Initialise CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: javascript-typescript
+          # security-extended reaches further than the default suite. The
+          # cost is a longer run and some false positives; the alternative is
+          # a security job that mostly agrees with us.
+          queries: security-extended
+
+      - name: Analyse
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: '/language:javascript-typescript'

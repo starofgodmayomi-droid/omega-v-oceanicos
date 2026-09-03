@@ -1,0 +1,30 @@
+{
+  "name": "@omega-v/lexicon",
+  "version": "0.1.0",
+  "description": "Verdict states in the languages their readers speak, for Ω∞v Oceanicos",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "test": "cd ../.. && jest --runInBand packages/lexicon/src/__tests__",
+    "test:watch": "jest --watch",
+    "clean": "node ../../scripts/rimraf.cjs dist \"*.tsbuildinfo\""
+  },
+  "keywords": [
+    "i18n",
+    "naija",
+    "pidgin",
+    "verification",
+    "oceanicos"
+  ],
+  "author": "Ω∞v Community",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "jest": "^30.4.2",
+    "ts-jest": "^29.1.0",
+    "typescript": "^5.0.0"
+  }
+}

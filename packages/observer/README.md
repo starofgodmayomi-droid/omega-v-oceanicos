@@ -35,35 +35,41 @@ const observation = observer.observe({
   confidenceReason: '3 consecutive successful checks',
 });
 
-console.log(observation.id);     // obs-2026-08-07-1
+console.log(observation.id); // obs-2026-08-07-1
 console.log(observation.status); // normalized
 ```
 
 ## Features
 
 ### Validation
+
 All observations are validated against the required schema:
+
 - `claim` — Required, must be a string
 - `source.system` — Required, identifies the source
 - `confidence` — Must be between 0 and 1
 - `confidenceReason` — Required, explains the confidence level
 
 ### Deduplication
+
 Automatically identifies duplicate observations within a time window (default: 60 seconds).
 
 ```typescript
-const obs1 = observer.observe({ /* ... */ });
-const obs2 = observer.observe({ /* same claim */ });
+const obs1 = observer.observe({/* ... */});
+const obs2 = observer.observe({/* same claim */});
 
 // obs2.id === obs1.id (deduplicated)
 // obs2.metadata.deduplicated === true
 ```
 
 ### Normalization
+
 Converts raw observations into a standardized format:
+
 - Adds unique ID
 - Adds timestamp
 - Clamps confidence to 0-1
+- Preserves optional parent and bounded lineage identifiers
 - Marks as 'normalized' status
 
 ## API
@@ -83,6 +89,7 @@ new Observer(deduplicationWindow?: number)
 Observe a claim and normalize it for verification.
 
 **Parameters:**
+
 ```typescript
 {
   claim: string;
@@ -96,6 +103,8 @@ Observe a claim and normalize it for verification.
   metadata: Record<string, unknown>;
   confidence: number;        // 0-1
   confidenceReason: string;
+  parentId?: string;          // immediate predecessor observation
+  lineage?: string[];         // at most 32 predecessor identifiers
 }
 ```
 
@@ -106,22 +115,25 @@ Observe a claim and normalize it for verification.
 Get information about the deduplication cache.
 
 **Returns:**
+
 ```typescript
 {
-  size: number;        // Number of cached observations
-  windowMs: number;    // Deduplication window in ms
+  size: number; // Number of cached observations
+  windowMs: number; // Deduplication window in ms
 }
 ```
 
 ## Error Handling
+
+When supplied, `parentId` must be a non-empty string and `lineage` must contain no more than 32 non-empty string identifiers. These fields preserve local provenance only; they do not prove causality, distributed ordering, or external execution.
 
 Invalid observations throw an error:
 
 ```typescript
 try {
   observer.observe({
-    claim: '',  // Empty claim
-    source: { /* ... */ },
+    claim: '', // Empty claim
+    source: {/* ... */},
     // ...
   });
 } catch (error) {
@@ -137,6 +149,7 @@ npm test
 ```
 
 Tests cover:
+
 - Basic observation creation
 - Input validation
 - Confidence clamping

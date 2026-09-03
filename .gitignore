@@ -1,7 +1,6 @@
 # Dependencies
 node_modules/
 package-lock.json
-pnpm-lock.yaml
 yarn.lock
 
 # Build outputs
@@ -50,3 +49,7 @@ docker-compose.override.yml
 # Cache
 .eslintcache
 .prettier-ignore
+
+# Python bytecode, from running the reference verifier locally
+__pycache__/
+*.pyc

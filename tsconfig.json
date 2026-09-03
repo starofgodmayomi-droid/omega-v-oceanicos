@@ -1,18 +1,24 @@
 {
   "compilerOptions": {
     "target": "ES2020",
-    "module": "ES2020",
+    "module": "ESNext",
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "jsx": "react-jsx",
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
+    // Explicit because TypeScript 6 requires it: TS5011 reports that the
+    // common source directory is inferred, and that inference moves as
+    // files are added. Every package config overrides this with its own
+    // rootDir of src, so nothing about emit layout changes — this fixes the
+    // root configuration that ts-jest type-checks against.
+    "rootDir": ".",
     "outDir": "./dist",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noImplicitAny": true,
@@ -20,15 +26,15 @@
     "noUnusedParameters": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
-    "baseUrl": ".",
     "paths": {
-      "@omega-v/types": ["packages/types/src/index.ts"],
-      "@omega-v/observer": ["packages/observer/src/index.ts"],
-      "@omega-v/verification": ["packages/verification/src/index.ts"],
-      "@omega-v/attestation": ["packages/attestation/src/index.ts"],
-      "@omega-v/recorder": ["packages/recorder/src/index.ts"],
-      "@omega-v/runtime": ["packages/runtime/src/index.ts"],
-      "@omega-v/persistence": ["packages/persistence/src/index.ts"]
+      "@omega-v/types": ["./packages/types/src/index.ts"],
+      "@omega-v/observer": ["./packages/observer/src/index.ts"],
+      "@omega-v/verification": ["./packages/verification/src/index.ts"],
+      "@omega-v/remember": ["./packages/remember/src/index.ts"],
+      "@omega-v/mini": ["./packages/mini/src/index.ts"],
+      "@omega-v/attestation": ["./packages/attestation/src/index.ts"],
+      "@omega-v/dissensus": ["./packages/dissensus/src/index.ts"],
+      "@omega-v/lexicon": ["./packages/lexicon/src/index.ts"]
     }
   },
   "include": ["packages/*/src", "apps/*/src"],

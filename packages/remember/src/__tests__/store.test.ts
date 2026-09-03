@@ -1,0 +1,234 @@
+import { mkdtempSync, readFileSync, writeFileSync, existsSync, appendFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
+import { Remember, FileMemoryStore } from '../index';
+import { Observation, VerificationResult } from '@omega-v/types';
+
+const observation = (id = 'obs-1'): Observation => ({
+  id,
+  claim: { statement: 'service responded', category: 'health-check' },
+  source: { system: 'test', version: '1.0.0', environment: 'test' },
+  timestamp: '2026-08-15T00:00:00.000Z',
+  observedBy: 'store-test',
+  metadata: { statusCode: 200 },
+  confidence: 0.9,
+  confidenceReason: 'fixture',
+  status: 'normalized',
+});
+
+const verification = (id = 'ver-1'): VerificationResult => ({
+  id,
+  observationId: 'obs-1',
+  timestamp: '2026-08-15T00:00:00.000Z',
+  summary: { passed: true, confidence: 0.9, rulesApplied: 1, rulesPassed: 1, rulesFailed: 0 },
+  rules: [{ name: 'status-code-check', passed: true, confidence: 0.9 }],
+  evidencePath: [],
+  ruleVersions: { 'status-code-check': '1.0.0' },
+  status: 'completed',
+});
+
+describe('FileMemoryStore', () => {
+  let dir: string;
+  let path: string;
+
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), 'omega-remember-'));
+    path = join(dir, 'chain.jsonl');
+  });
+
+  it('reports missing instead of throwing on a chain never written', () => {
+    const store = new FileMemoryStore(path);
+
+    expect(() => store.load()).not.toThrow();
+    expect(store.load()).toEqual([]);
+    expect(store.source()).toBe('missing');
+    expect(store.skipped()).toBe(0);
+  });
+
+  it('creates the parent directory on first append', () => {
+    const nested = new FileMemoryStore(join(dir, 'deep', 'chain.jsonl'));
+    new Remember(nested).remember(observation(), verification());
+
+    expect(existsSync(join(dir, 'deep', 'chain.jsonl'))).toBe(true);
+  });
+
+  it('writes authenticated ciphertext and restores the memory chain with the key', () => {
+    const writer = new FileMemoryStore(path, 'memory-secret');
+    new Remember(writer).remember(observation(), verification());
+
+    const stored = readFileSync(path, 'utf8');
+    expect(stored).toContain('omega-memory-v1:');
+    expect(stored).not.toContain('service responded');
+    expect(writer.encryptionEnabled()).toBe(true);
+
+    const restored = new FileMemoryStore(path, 'memory-secret');
+    expect(new Remember(restored).size()).toBe(3);
+    expect(restored.source()).toBe('restored');
+    expect(restored.skipped()).toBe(0);
+    expect(restored.encryptionKeySource()).toBe('current');
+  });
+
+  it('reports encrypted lines as partial when the key is wrong', () => {
+    new Remember(new FileMemoryStore(path, 'memory-secret')).remember(
+      observation(),
+      verification()
+    );
+
+    const wrongKey = new FileMemoryStore(path, 'wrong-secret');
+    expect(new Remember(wrongKey).size()).toBe(0);
+    expect(wrongKey.source()).toBe('partial');
+    expect(wrongKey.skipped()).toBe(3);
+  });
+
+  it('restores with the previous key and writes new entries with the current key', () => {
+    new Remember(new FileMemoryStore(path, 'old-memory-secret')).remember(
+      observation(),
+      verification()
+    );
+
+    const rotated = new FileMemoryStore(path, 'new-memory-secret', 'old-memory-secret');
+    const restored = new Remember(rotated);
+    expect(restored.size()).toBe(3);
+    expect(rotated.encryptionKeySource()).toBe('previous');
+
+    restored.append({ type: 'OBSERVATION', data: observation('obs-after-rotation') });
+    const current = new FileMemoryStore(path, 'new-memory-secret', 'old-memory-secret');
+    expect(new Remember(current).size()).toBe(4);
+    expect(current.encryptionKeySource()).toBe('mixed');
+  });
+
+  it('refuses to append plaintext when only the previous encryption key is configured', () => {
+    const rotationOnly = new FileMemoryStore(path, undefined, 'old-memory-secret');
+
+    expect(() => rotationOnly.append({ type: 'OBSERVATION', data: observation() })).toThrow(
+      'OMEGA_MEMORY_KEY is required when OMEGA_MEMORY_KEY_PREVIOUS is configured'
+    );
+    expect(existsSync(path)).toBe(false);
+  });
+
+  it('reads legacy plaintext when encryption is enabled for migration', () => {
+    new Remember(new FileMemoryStore(path)).remember(observation(), verification());
+
+    const migrated = new FileMemoryStore(path, 'memory-secret');
+    expect(new Remember(migrated).size()).toBe(3);
+    expect(migrated.source()).toBe('restored');
+    expect(migrated.skipped()).toBe(0);
+  });
+
+  it('reports a partial load and keeps the entries it could read', () => {
+    new Remember(new FileMemoryStore(path)).remember(observation(), verification());
+    writeFileSync(path, `${readFileSync(path, 'utf8')}{ not json\n`);
+
+    const store = new FileMemoryStore(path);
+    const loaded = store.load();
+
+    expect(store.source()).toBe('partial');
+    expect(store.skipped()).toBe(1);
+    expect(loaded).toHaveLength(3);
+  });
+
+  /**
+   * `decryptLine` splits the stored line on `:` and requires an iv, tag, and
+   * ciphertext segment before it will attempt authentication. Every existing
+   * malformed-line test used a value that never had the `omega-memory-v1:`
+   * prefix at all, so the "envelope is incomplete" guard — reached only when
+   * the prefix matches but a segment is missing — had never run.
+   */
+  it('reports a partial load when an encrypted line has an incomplete envelope', () => {
+    new Remember(new FileMemoryStore(path, 'memory-secret')).remember(
+      observation(),
+      verification()
+    );
+    appendFileSync(path, 'omega-memory-v1:only-an-iv\n');
+
+    const store = new FileMemoryStore(path, 'memory-secret');
+    const loaded = store.load();
+
+    expect(store.source()).toBe('partial');
+    expect(store.skipped()).toBe(1);
+    expect(loaded).toHaveLength(3);
+  });
+});
+
+describe('Remember with durable backing', () => {
+  let dir: string;
+  let path: string;
+
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), 'omega-remember-'));
+    path = join(dir, 'chain.jsonl');
+  });
+
+  it('is in-process only when constructed without a store', () => {
+    const first = new Remember();
+    first.remember(observation(), verification());
+
+    expect(first.size()).toBe(3);
+    expect(new Remember().size()).toBe(0);
+  });
+
+  it('restores the chain across instances', () => {
+    const first = new Remember(new FileMemoryStore(path));
+    first.remember(observation(), verification());
+    expect(first.size()).toBe(3);
+
+    const second = new Remember(new FileMemoryStore(path));
+
+    expect(second.size()).toBe(3);
+    expect(second.all().map((entry) => entry.hash)).toEqual(first.all().map((e) => e.hash));
+  });
+
+  it('keeps the restored chain verifiable', () => {
+    new Remember(new FileMemoryStore(path)).remember(observation(), verification());
+
+    expect(new Remember(new FileMemoryStore(path)).verifyIntegrity()).toBe(true);
+  });
+
+  it('continues the hash chain rather than restarting it', () => {
+    const first = new Remember(new FileMemoryStore(path));
+    first.remember(observation('obs-1'), verification('ver-1'));
+    const lastHash = first.all()[first.size() - 1].hash;
+
+    const second = new Remember(new FileMemoryStore(path));
+    const appended = second.append({ type: 'OBSERVATION', data: observation('obs-2') });
+
+    expect(appended.previousHash).toBe(lastHash);
+    expect(appended.id).toBe(4);
+    expect(second.verifyIntegrity()).toBe(true);
+  });
+
+  it('does not reissue memory ids after a restore', () => {
+    const first = new Remember(new FileMemoryStore(path));
+    const firstMemory = first.remember(observation('obs-1'), verification('ver-1'));
+
+    const second = new Remember(new FileMemoryStore(path));
+    const secondMemory = second.remember(observation('obs-2'), verification('ver-2'));
+
+    expect(secondMemory.id).not.toBe(firstMemory.id);
+    expect(second.recallMemory(firstMemory.id)).toBeDefined();
+  });
+
+  it('detects tampering with the chain on disk', () => {
+    new Remember(new FileMemoryStore(path)).remember(observation(), verification());
+
+    const lines = readFileSync(path, 'utf8').trim().split('\n');
+    const tampered = JSON.parse(lines[0]);
+    tampered.data.confidence = 0.1;
+    lines[0] = JSON.stringify(tampered);
+    writeFileSync(path, `${lines.join('\n')}\n`);
+
+    const reloaded = new Remember(new FileMemoryStore(path));
+
+    expect(reloaded.size()).toBe(3);
+    expect(reloaded.verifyIntegrity()).toBe(false);
+  });
+
+  it('detects a deleted entry, since the chain no longer links', () => {
+    new Remember(new FileMemoryStore(path)).remember(observation(), verification());
+
+    const lines = readFileSync(path, 'utf8').trim().split('\n');
+    writeFileSync(path, `${[lines[0], lines[2]].join('\n')}\n`);
+
+    expect(new Remember(new FileMemoryStore(path)).verifyIntegrity()).toBe(false);
+  });
+});

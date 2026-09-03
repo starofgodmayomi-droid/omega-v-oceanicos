@@ -2,450 +2,380 @@
 
 The Ω∞v Oceanicos system is designed around a single principle: **every component should strengthen the verification loop**.
 
+Architecture does **not** begin as a giant ecosystem. It begins at **ZERO**, becomes a **MINI** kernel, and expands only when reality verifies the next step.
+
+See [MINI.md](./MINI.md) for the canonical growth model.
+
 ---
 
-## System Layers
+## Growth spine
+
+```text
+0 → MINI (👁 → ✓ → 🧠) → earned +layers → FULL STACK → ECOSYSTEM → 🌎 ↺ ∞
+```
+
+### Zero
+
+No assumed ecosystem, capital, architecture, or unverified trust.
+
+### MINI kernel (current foundation)
+
+```text
+💧 Ω∞v MINI ::= 👁 OBSERVE → ✓ VERIFY → 🧠 REMEMBER
+```
+
+| Layer       | Package                 | Role                                 |
+| ----------- | ----------------------- | ------------------------------------ |
+| 👁 Observe   | `@omega-v/observer`     | Capture events and claims; normalize |
+| ✓ Verify    | `@omega-v/verification` | Apply rules; produce evidence paths  |
+| 🧠 Remember | `@omega-v/remember`     | Append-only hash-chained memory      |
+| 💧 Compose  | `@omega-v/mini`         | One living cycle over the three      |
+
+Shared contracts live in `@omega-v/types`.
+
+### Earned expansions (not the kernel)
+
+Each `+` is optional until the previous layer is real:
+
+```text
++ Reason · + Intent · + Build · + Test · + Attest · + Act
++ API · + CLI · + SDK · + Web · + Mobile
++ AI · + Agents · + Data · + Infrastructure
++ Security · + Governance · + Community
++ Stewardship · + Economy · + Evolution
+```
+
+Present in repo today as expansion surfaces (not MINI prerequisites):
+
+- `@omega-v/attestation` — `+ ATTEST` (HMAC-SHA256 and Ed25519; see
+  [the envelope specification](spec/ATTESTATION-ENVELOPE.md))
+- `@omega-v/dissensus` — `+ DISSENT` (reconcile plural verifiers without
+  resolving them)
+- `@omega-v/sdk` — `+ SDK`
+- `@omega-v/cli` — `+ CLI`
+- `apps/api` — `+ API`
+- `apps/web` — `+ Web`
+
+`+ CLI` and `+ SDK` appear in the earned-expansion list above and are also
+listed here, because they have since been earned. The list above is the
+sequence; this list is the state.
+
+---
+
+## System layers (expanded view)
+
+The diagram below is the **target composition** after earned expansion — not the starting assumption.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  User Interfaces (Web Dashboard, Mobile, CLI)              │
+│  User Interfaces (Web Dashboard, Mobile, CLI)              │  ← earned +
 │  Entry points for observation and result visualization     │
 └─────────────────────────┬───────────────────────────────────┘
                           │
 ┌─────────────────────────┴───────────────────────────────────┐
-│  APIs & SDKs (REST, gRPC, JavaScript, Python, etc.)       │
+│  APIs & SDKs (REST, gRPC, JavaScript, Python, etc.)       │  ← earned +
 │  Public contracts for interaction                          │
 └─────────────────────────┬───────────────────────────────────┘
                           │
 ┌─────────────────────────┴───────────────────────────────────┐
-│  Verification Engine                                        │
-│  ├─ Observer: Captures events and claims                   │
-│  ├─ Verification Rules: Apply logic to observations        │
-│  ├─ Attestation: Cryptographically sign results            │
-│  └─ Evidence Path: Track proof of verification             │
+│  Expansion: Attestation                                      │  ← earned +
+│  Cryptographically sign remembered verification results     │
 └─────────────────────────┬───────────────────────────────────┘
                           │
 ┌─────────────────────────┴───────────────────────────────────┐
-│  Compiler & Intermediate Representation (IR)               │
+│  💧 MINI KERNEL                                              │  ← foundation
+│  ├─ 👁 Observer: Captures events and claims                 │
+│  ├─ ✓ Verification: Apply logic; produce evidence           │
+│  └─ 🧠 Remember: Append-only verified memory                │
+└─────────────────────────┬───────────────────────────────────┘
+                          │
+┌─────────────────────────┴───────────────────────────────────┐
+│  Compiler & Intermediate Representation (IR)               │  ← later +
 │  ├─ Rule Language Parser                                   │
 │  ├─ Bytecode Generator                                     │
 │  └─ Runtime Bytecode Interpreter                           │
 └─────────────────────────┬───────────────────────────────────┘
                           │
 ┌─────────────────────────┴───────────────────────────────────┐
-│  Persistence Layer                                          │
-│  ├─ Event Store (Append-only observation log)              │
-│  ├─ Verification Index (Query verification results)        │
-│  ├─ Attestation Store (Signatures and proofs)              │
-│  └─ Rules Registry (Versioned verification rules)          │
+│  Persistence Layer (beyond in-process Remember)             │  ← later +
+│  ├─ Durable event store                                     │
+│  ├─ Verification index                                      │
+│  └─ Attestation store                                       │
 └─────────────────────────┬───────────────────────────────────┘
                           │
 ┌─────────────────────────┴───────────────────────────────────┐
-│  Infrastructure                                             │
-│  ├─ Docker: Containerized services                         │
-│  ├─ Kubernetes: Distributed orchestration                  │
-│  ├─ Edge: Lightweight verification at network edge         │
-│  └─ Cloud: Serverless verification services               │
+│  Infrastructure                                             │  ← later +
+│  ├─ Docker · Kubernetes · Edge · Cloud                      │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Core Components
+## Core components
 
-### 1. Observer
+### 1. Observer (👁 MINI)
 
 **Purpose**: Capture observations (events, claims, states) and normalize them.
 
 **Responsibilities**:
-- Accept observations from any source (API, CLI, SDK, real-time events)
-- Validate observation schema (who, when, what, where, confidence)
+
+- Accept observations from any source
+- Validate observation schema (who, when, what, confidence)
 - Deduplicate similar observations
 - Create normalized event stream
 
 **Example**:
+
 ```typescript
 observer.observe({
-  claim: "Service X is healthy",
-  source: "health-check-api",
-  timestamp: 2026-08-07T10:30:00Z,
+  claim: 'Service X is healthy',
+  source: {
+    system: 'health-check-api',
+    version: '1.2.3',
+    environment: 'production',
+  },
+  observedBy: 'monitor',
   metadata: {
     responseTime: 45,
     statusCode: 200,
-    version: "1.2.3"
   },
-  confidence: 0.95
+  confidence: 0.95,
+  confidenceReason: 'consecutive successful checks',
 });
 ```
 
-**Output**: Standardized Event object, ready for verification.
+**Output**: Standardized `Observation`, ready for verification.
 
 ---
 
-### 2. Verification Engine
+### 2. Verification Engine (✓ MINI)
 
 **Purpose**: Apply verification rules to observations and produce evidence.
 
 **Responsibilities**:
+
 - Load and manage versioned verification rules
 - Execute rules against observations
 - Produce evidence paths (not just true/false)
 - Handle rule errors gracefully
-- Support multiple verification strategies (deterministic, probabilistic, consensus)
 
-**Example**:
-```typescript
-verification.verify(event, {
-  rules: ["health-check", "response-time-threshold"],
-  ruleVersion: "1.2.0"
-});
-
-// Returns:
-// {
-//   success: true,
-//   evidence: [
-//     { rule: "health-check", passed: true, details: {...} },
-//     { rule: "response-time-threshold", passed: true, details: {...} }
-//   ],
-//   confidence: 0.95,
-//   ruleVersion: "1.2.0"
-// }
-```
-
-**Output**: Verification result with evidence path.
+**Output**: `VerificationResult` with evidence path.
 
 ---
 
-### 3. Attestation Service
+### 3. Remember (🧠 MINI)
 
-**Purpose**: Cryptographically sign verification results and create unforgeable proof.
+**Purpose**: Persist verified experience in an append-only, hash-chained log.
 
 **Responsibilities**:
-- Generate or load signing keys
-- Sign verification results with timestamp
-- Include attestation metadata (key ID, rule version, signer identity)
-- Support key rotation
-- Enable signature verification
 
-**Example**:
-```typescript
-const attestation = await attestation.attest(verificationResult);
+- Store observation + verification as durable memory
+- Maintain integrity via chained hashes
+- Support recall and query without a database assumption
+- Record failures with the same rigor as successes
 
-// Returns:
-// {
-//   verificationId: "v-2026-08-07-1234",
-//   signature: "0x1a2b3c...",
-//   signingKey: "key-v2",
-//   timestamp: 2026-08-07T10:30:05Z,
-//   ruleVersion: "1.2.0",
-//   signer: "api-server-1"
-// }
-```
-
-**Output**: Signed attestation object.
+**Output**: `MemoryRecord` + `EventLogEntry[]`.
 
 ---
 
-### 4. Compiler & IR
+### 4. MiniKernel (💧 compose)
+
+**Purpose**: Run one living cycle without requiring API, UI, or cloud.
+
+```typescript
+import { MiniKernel } from '@omega-v/mini';
+
+const mini = new MiniKernel({ rules: [...] });
+const { observation, verification, memory } = mini.cycle(input);
+```
+
+---
+
+### 5. Attestation Service (`+ ATTEST`)
+
+**Purpose**: Cryptographically sign verification results after MINI memory exists.
+
+**Status**: Expansion package. Useful and present, but not part of the MINI definition.
+
+**Output**: Signed `Attestation`.
+
+---
+
+### 6. Compiler & IR (later `+`)
 
 **Purpose**: Transform high-level rule definitions into portable bytecode.
 
-**Responsibilities**:
-- Parse rule language (domain-specific language, DSL)
-- Generate bytecode (Oceanicum Intermediate Representation)
-- Validate rule syntax and semantics
-- Support rule versioning
-- Enable portable execution across platforms
-
-**Example**:
-```
-Rule Language:
-┌─────────────────────────┐
-│ when response_time < 100 │
-│ and status_code == 200   │
-│ then is_healthy          │
-└─────────────────────────┘
-              ↓
-         Compiler
-              ↓
-      Bytecode (IR)
-┌─────────────────────────┐
-│ LOAD response_time       │
-│ CONST 100               │
-│ LT                      │
-│ LOAD status_code        │
-│ CONST 200               │
-│ EQ                      │
-│ AND                     │
-│ STORE is_healthy        │
-└─────────────────────────┘
-```
-
-**Output**: Portable bytecode that can run anywhere.
+Not required for MINI. Simple in-process rules are enough for the kernel.
 
 ---
 
-### 5. Persistence Layer
+### 7. Persistence beyond Remember (later `+`)
 
-**Purpose**: Store observations, verifications, and attestations immutably.
+**Purpose**: Durable, multi-process stores (PostgreSQL, object storage, brokers).
 
-**Responsibilities**:
-- Maintain append-only event log
-- Index verification results for querying
-- Store signed attestations
-- Manage rule versioning
-- Support temporal queries (what was true at time T?)
-
-**Storage Model**:
-```
-Event Store:
-  ID | Timestamp | Type | Observation | Source | Confidence
-  1  | 10:30:00  | CLAIM | "Health OK" | API    | 0.95
-  2  | 10:30:05  | CLAIM | "Health OK" | API    | 0.96
-  ...
-
-Verification Index:
-  Event ID | Rule | Version | Result | Confidence | Timestamp
-  1        | health-check | 1.2.0 | true | 0.95 | 10:30:01
-  2        | health-check | 1.2.0 | true | 0.96 | 10:30:06
-  ...
-
-Attestation Store:
-  Verification ID | Signature | Key ID | Timestamp | Signer
-  v-1             | 0x1a2b... | key-v2 | 10:30:01  | server-1
-  v-2             | 0x3c4d... | key-v2 | 10:30:06  | server-1
-  ...
-```
-
-**Output**: Queryable, immutable history.
+MINI Remember is in-process and honest about that boundary. External persistence is earned when multi-instance reality demands it.
 
 ---
 
-## Data Flow
+## Data flow
 
-### The Verification Loop
+### MINI cycle (foundation)
 
 ```
-1. OBSERVE
-   ┌──────────────────────┐
-   │ Event from any source│
-   └──────────────────────┘
-            ↓
-2. NORMALIZE
-   ┌──────────────────────┐
-   │ Add metadata, schema │
-   └──────────────────────┘
-            ↓
-3. VERIFY
-   ┌──────────────────────┐
-   │ Apply rules, produce │
-   │ evidence path        │
-   └──────────────────────┘
-            ↓
-4. ATTEST
-   ┌──────────────────────┐
-   │ Cryptographic sign   │
-   │ the verification     │
-   └──────────────────────┘
-            ↓
-5. RECORD
-   ┌──────────────────────┐
-   │ Append to event log  │
-   │ Index for queries    │
-   └──────────────────────┘
-            ↓
-6. DISPLAY
-   ┌──────────────────────┐
-   │ Show to users via UI,│
-   │ API, or CLI          │
-   └──────────────────────┘
-            ↓
-7. LEARN
-   ┌──────────────────────┐
-   │ Extract patterns,    │
-   │ improve rules        │
-   └──────────────────────┘
-            ↓
-8. RETURN
-   ┌──────────────────────┐
-   │ Feed learning back   │
-   │ into observation     │
-   └──────────────────────┘
+1. OBSERVE   → normalize claim
+2. VERIFY    → evidence path
+3. REMEMBER  → append-only memory
 ```
+
+### Expanded loop (after earned layers)
+
+```
+Observe → Verify → Remember → Attest → Display → Learn → Return
+```
+
+The expanded loop never replaces MINI; it wraps it.
 
 ---
 
-## Interface Boundaries
+## Interface boundaries
 
-### Public APIs
+### MINI (always available)
+
+```typescript
+mini.cycle(input);
+mini.registerRule(rule);
+mini.verifyMemoryIntegrity();
+```
+
+### Expansion APIs (when earned)
 
 #### REST API
+
 - `POST /observe` — Submit an observation
 - `POST /verify` — Verify an observation
 - `GET /verification/:id` — Retrieve verification result
 - `GET /attestations` — Query attestations
 - `GET /rules` — List available rules
 
-#### SDK
-- `observer.observe(claim)` — Programmatic observation
-- `verification.verify(claim, rules)` — Programmatic verification
-- `attestation.attest(result)` — Programmatic attestation
-- `store.query(filter)` — Query the event store
+#### CLI (planned expansion)
 
-#### CLI
 ```bash
 omega observe "claim" --source api --confidence 0.95
 omega verify claim-id --rules health-check
-omega attest verification-id
-omega query attestations --since 2026-08-07
+omega remember verification-id
 ```
 
 ---
 
-## Concurrency & Distribution
+## Concurrency & distribution
 
-### Single Instance
-- Event loop processes observations sequentially
-- In-memory verification results are cached
-- Append-only writes ensure consistency
+### MINI (single process)
 
-### Multiple Instances
-- Events are propagated through event broker (Kafka, RabbitMQ)
-- Verification results are consensus-based when needed
-- Attestations are anchored to a single authority (or distributed consensus)
-- Database is distributed (PostgreSQL replication, or distributed store)
+- Sequential cycle execution
+- In-process append-only memory
+- Hash-chain integrity checks
 
-### Edge Deployment
-- Lightweight verifier runs at the edge
-- Observations are submitted to central system
-- Attestations are signed by the edge node
-- Periodic sync with central authority
+### Expanded deployments
+
+- Multiple instances, brokers, and distributed stores are later `+` layers
+- Edge and cloud modes must still speak MINI types
 
 ---
 
-## Error Handling
+## Error handling
 
-### Observation Errors
+### Observation errors
+
 - Invalid schema → Reject with clear error message
-- Unknown source → Accept but flag for review
-- Duplicate observation → Deduplicate (same event, different times)
+- Duplicate observation → Deduplicate within window
 
-### Verification Errors
-- Rule not found → Fail gracefully, return error
-- Rule execution exception → Catch and record as failed verification
-- Timeout → Record timeout as verification failure
+### Verification errors
 
-### Attestation Errors
-- Key unavailable → Fail attestation (don't sign without authority)
-- Clock skew → Use server time, not client time
-- Signature failure → Log and alert (security issue)
+- Rule not found / no rules → Result still produced; may pass with zero rules or fail closed by policy
+- Rule execution exception → Record as failed verification evidence
 
-### Storage Errors
-- Write failure → Return error, don't acknowledge completion
-- Read failure → Return stale cached result, log issue
-- Replication lag → Return with freshness timestamp
+### Memory errors
 
----
+- Integrity failure → Surface immediately; do not silently repair history
+- Write failure (future durable backends) → Do not acknowledge completion
 
-## Security Considerations
+### Attestation errors (expansion)
 
-### Key Management
-- Keys are never transmitted in observation or verification
-- Keys are stored encrypted at rest
-- Key rotation is tracked (which key created which attestation?)
-- Private keys never leave their secure location
-
-### Attestation Trust
-- Attestations are signed with private key
-- Verifiers use public key to check signatures
-- Compromise of one key → revoke and re-sign (but history remains)
-
-### Audit Trail
-- All operations are logged
-- Logs are stored separately from database
-- Logs are immutable (append-only)
-- Access to logs is audited
+- Key unavailable → Fail attestation
+- Signature failure → Log and alert
 
 ---
 
-## Performance Characteristics
+## Security considerations
 
-### Observation
-- **Latency**: < 10ms (in-memory)
-- **Throughput**: 10,000+ observations/second (single instance)
+### MINI
 
-### Verification
-- **Latency**: < 100ms (typical rule execution)
-- **Cache hit rate**: 80%+ (same rule on similar observations)
+- Memory is hash-chained; tampering is detectable via `verifyIntegrity()`
+- No private keys required for the kernel itself
 
-### Attestation
-- **Latency**: < 50ms (signature generation)
-- **Throughput**: 1,000+ attestations/second (single instance)
+### Expansion (attestation / infra)
 
-### Storage Query
-- **Latency**: < 100ms (indexed query)
-- **Memory**: O(1) per query (streaming results)
-
-### Scalability
-- **Horizontal**: Add more instances, shard by observation source
-- **Vertical**: Add CPU, RAM for verification caching
-- **Temporal**: Archive old data, keep recent in hot storage
+- Keys never travel inside observations
+- Keys encrypted at rest; rotation tracked
+- Private keys never leave secure location
 
 ---
 
-## Testing Strategy
+## Performance characteristics
 
-### Unit Tests
-- Each component is tested independently
-- Mock external dependencies
-- Tests verify behavior and correctness
+### MINI targets (single process)
 
-### Integration Tests
-- Full loop: Observation → Verification → Attestation → Storage → Query
-- Uses real database and storage
-- Tests interaction between components
+- **Observe**: sub-10ms typical
+- **Verify**: sub-100ms typical for simple rules
+- **Remember**: append O(1); integrity check O(n)
 
-### Property-Based Tests
-- Invariants: "Every attestation has a signature"
-- Determinism: "Same observation + same rule = same result"
-- Causality: "Verification happens after observation"
-
-### Performance Tests
-- Latency: Verify all operations meet SLAs
-- Throughput: Verify system handles expected load
-- Memory: Verify no memory leaks
+Expansion layers publish their own SLOs when earned.
 
 ---
 
-## Deployment Modes
+## Testing strategy
 
-### Development
-- Single container
-- SQLite database
-- File-based event log
-- In-memory attestation signing
+### Unit tests
 
-### Production
-- Docker Compose or Kubernetes
-- PostgreSQL with replication
-- Message broker for events
-- HSM (Hardware Security Module) for keys
+- Each MINI package tested independently
+- Integrity and failure-memory cases required for Remember
 
-### Edge
-- Lightweight container
-- Local SQLite cache
-- HTTP/gRPC to central system
-- Local signing keys (rotated frequently)
+### Kernel tests
+
+- Full MINI cycle: Observe → Verify → Remember
+- Failed verification still remembered
+
+### Expansion tests
+
+- Attestation, API, Web only after their packages claim readiness
+- Integration tests verify expansions compose with MINI without forking types
+
+---
+
+## Deployment modes
+
+### MINI / Development
+
+- In-process kernel
+- No external services required
+- `MiniKernel` runnable from tests or a thin script
+
+### Expanded production (later)
+
+- API + Web + durable store + key management
+- Only after MINI behavior is proven under real use
 
 ---
 
 ## References
 
+- [MINI.md](./MINI.md) — Zero → MINI → expansion
 - [MANIFEST.md](../MANIFEST.md) — System principles and invariants
 - [CHARTER.md](../CHARTER.md) — How we make architectural decisions
-- [VERIFICATION_LOOP.md](./VERIFICATION_LOOP.md) — Detailed algorithm walkthrough
+- [VERIFICATION_LOOP.md](./VERIFICATION_LOOP.md) — Detailed workflow including post-MINI steps
+- [ROADMAP.md](./ROADMAP.md) — Earned expansion phases
 
 ---
 
-**Last Updated**: 2026-08-07  
-**Status**: Living — Evolves as implementation progresses
+**Last Updated**: 2026-08-14  
+**Status**: Living — kernel-first; expands with evidence

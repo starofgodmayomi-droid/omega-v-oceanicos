@@ -1,0 +1,33 @@
+{
+  "name": "@omega-v/remember",
+  "version": "0.1.0",
+  "description": "Append-only memory for the Ω∞v MINI kernel (Observe → Verify → Remember)",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "test": "cd ../.. && jest --runInBand packages/remember/src/__tests__",
+    "test:watch": "jest --watch",
+    "clean": "node ../../scripts/rimraf.cjs dist \"*.tsbuildinfo\""
+  },
+  "keywords": [
+    "memory",
+    "remember",
+    "event-log",
+    "oceanicos",
+    "mini-kernel"
+  ],
+  "author": "Ω∞v Community",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@omega-v/types": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "jest": "^30.4.2",
+    "ts-jest": "^29.1.0",
+    "typescript": "^5.0.0"
+  }
+}

@@ -1,242 +1,124 @@
 # Packages
 
-Shared libraries and core verification loop components.
+Shared libraries for the Ω∞v growth spine:
 
-## Overview
-
-The verification loop is built on three core packages that can be used independently or together:
-
-```
-Observation → Verification → Attestation
-    ↓            ↓               ↓
-@omega-v/   @omega-v/        @omega-v/
-observer    verification     attestation
+```text
+0 → MINI (👁 → ✓ → 🧠) → earned +expansions
 ```
 
-## Structure
+## MINI kernel
+
+```text
+💧 Ω∞v MINI ::= 👁 Observe → ✓ Verify → 🧠 Remember
+```
 
 ```
 packages/
-├── types/              # Shared type definitions for entire ecosystem
-├── observer/           # Step 1: Capture and normalize observations
-├── verification/       # Step 2: Apply rules and generate evidence
-└── attestation/        # Step 3: Cryptographically sign results
+├── types/              # Shared contracts
+├── observer/           # 👁 Capture and normalize observations
+├── verification/       # ✓ Apply rules and generate evidence
+├── remember/           # 🧠 Append-only hash-chained memory
+└── mini/               # 💧 Compose one living cycle
 ```
 
-## Packages
+| Package                 | Role                         |
+| ----------------------- | ---------------------------- |
+| `@omega-v/types`        | Zero-dependency shared types |
+| `@omega-v/observer`     | Step 1 — observe             |
+| `@omega-v/verification` | Step 2 — verify              |
+| `@omega-v/remember`     | Step 3 — remember            |
+| `@omega-v/mini`         | Kernel composition           |
 
-### @omega-v/types
+### Quick start (MINI only)
 
-Shared TypeScript interfaces and types used across all packages.
-
-**Key Types:**
-- `Observation` — A claim with metadata about what was observed
-- `VerificationRule` — A rule for testing observations
-- `VerificationResult` — Rules applied with evidence
-- `Attestation` — Signed verification result
-- `EventLogEntry` — Immutable event log record
-
-**Why separate?**
-- Zero dependencies (pure types)
-- Fast compilation
-- Used by all other packages
-
-**See also:** [types/README.md](types/README.md)
-
-### @omega-v/observer
-
-Step 1 of the verification loop: Capture claims and prepare them for verification.
-
-**Features:**
-- Claim validation
-- Automatic deduplication
-- Confidence normalization (0-1)
-- Metadata attachment
-
-**Main export:**
 ```typescript
-class Observer {
-  observe(input: ObservationInput): Observation
-  getCacheStats(): { size: number; windowMs: number }
-}
+import { MiniKernel } from '@omega-v/mini';
+
+const mini = new MiniKernel({ rules: [/* VerificationRule */] });
+const { observation, verification, memory } = mini.cycle({
+  claim: 'Service healthy',
+  category: 'health-check',
+  source: { system: 'api', version: '1.0.0', environment: 'test' },
+  observedBy: 'dev',
+  metadata: { statusCode: 200, responseTime: 40 },
+  confidence: 0.95,
+  confidenceReason: 'checks passed',
+});
 ```
 
-**See also:** [observer/README.md](observer/README.md)
+## Earned expansions
 
-### @omega-v/verification
+These packages are **not** the kernel. They expand MINI when earned:
 
-Step 2 of the verification loop: Apply rules to observations and produce evidence.
-
-**Features:**
-- Rule registration and management
-- Automatic rule matching by category
-- Evidence path generation (step-by-step reasoning)
-- Result caching
-
-**Main export:**
-```typescript
-class VerificationEngine {
-  registerRule(rule: VerificationRule): void
-  verify(observation: Observation): VerificationResult
-  getApplicableRules(observation: Observation): VerificationRule[]
-}
+```
+packages/
+├── attestation/        # + ATTEST — cryptographic signing
+├── dissensus/          # + DISSENT — reconcile plural verifiers
+├── lexicon/            # + LEGIBILITY — verdicts in Naijá and English
+├── sdk/                # + SDK — typed client
+├── cli/                # + CLI — operator commands
+├── coordination/       # + COORDINATION — bounded coordination contracts
+└── runtime/            # + RUNTIME — bounded agent execution loop
 ```
 
-**See also:** [verification/README.md](verification/README.md)
+| Package                 | Expansion                                       |
+| ----------------------- | ----------------------------------------------- |
+| `@omega-v/attestation`  | `+ ATTEST` — signatures others can check        |
+| `@omega-v/dissensus`    | `+ DISSENT` — disagreement preserved            |
+| `@omega-v/lexicon`      | `+ LEGIBILITY` — verdicts in Naijá and English  |
+| `@omega-v/sdk`          | `+ SDK` — typed access                          |
+| `@omega-v/cli`          | `+ CLI` — operator surface                      |
+| `@omega-v/coordination` | `+ COORDINATION` — bounded workers and builders |
+| `@omega-v/runtime`      | `+ RUNTIME` — bounded agent loop and memory     |
 
-### @omega-v/attestation
-
-Step 3 of the verification loop: Sign verification results and create unforgeable proof.
-
-**Features:**
-- Cryptographic signature generation
-- Signature verification
-- Key versioning
-- Key rotation support
-
-**Main export:**
-```typescript
-class AttestationService {
-  attest(result: VerificationResult): Attestation
-  verify(attestation: Attestation): boolean
-  rotateKey(newKey: string, newVersion: string): void
-}
-```
-
-**See also:** [attestation/README.md](attestation/README.md)
+Apps (`apps/api`, `apps/web`) are interface expansions (`+ API`, `+ Web`).
 
 ## Installation
 
-### Use Individual Packages
+### From monorepo
 
 ```bash
-# Just observation
-npm install @omega-v/types @omega-v/observer
-
-# Full loop
-npm install @omega-v/types @omega-v/observer @omega-v/verification @omega-v/attestation
+pnpm install
+pnpm --filter @omega-v/mini build
+pnpm test -- packages/mini packages/remember
 ```
 
-### Use from Monorepo
+### Mental model
 
-```bash
-# Install all
-npm install
-
-# Build all packages
-npm run build
-
-# Test all packages
-npm run test
-```
+1. Prefer `@omega-v/mini` for the default runtime unit
+2. Use observer / verification / remember directly when testing a single leg
+3. Reach for attestation/API/web only when the expansion is intentionally in scope
 
 ## Development
 
 ### Add a New Package
 
+Only add a package when the previous layer has evidence it works.
+
 ```bash
 mkdir packages/my-package
-cd packages/my-package
-
-# Create package.json
-cat > package.json << EOF
-{
-  "name": "@omega-v/my-package",
-  "version": "0.1.0",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "scripts": {
-    "build": "tsc",
-    "test": "jest"
-  }
-}
-EOF
-
-# Create src/index.ts
-mkdir src
-touch src/index.ts
+# package.json name: @omega-v/my-package
 ```
 
-### Run Tests for One Package
+Wire:
 
-```bash
-npm test -- packages/observer/
-```
-
-### Build One Package
-
-```bash
-npm run -w @omega-v/observer build
-```
+1. `package.json` scripts (`build`, `clean`)
+2. Root `package.json` build order if needed
+3. `jest.config.js` + root `tsconfig.json` path mappings
+4. README stating whether it is MINI or an earned `+`
 
 ## Testing
 
-Each package includes:
-- 70%+ code coverage for branches, functions, lines
-- Unit tests for all public APIs
-- Validation tests for error cases
-- Integration tests (coming soon)
+Each MINI package includes unit tests. Kernel tests live in `packages/mini`.
 
-## Type Safety
-
-All packages use strict TypeScript:
-```json
-{
-  "compilerOptions": {
-    "strict": true,
-    "noImplicitAny": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noImplicitReturns": true
-  }
-}
-```
-
-## Documentation
-
-Each package includes:
-- `README.md` — Quick start and features
-- Inline JSDoc comments on all public APIs
-- Examples in type definitions
+Coverage thresholds are enforced globally via root Jest config.
 
 ## Versioning
 
-Packages follow semantic versioning:
-- **MAJOR** — Breaking API changes
-- **MINOR** — New features (backward compatible)
-- **PATCH** — Bug fixes
-
-Current version: **0.1.0** (preview/alpha)
+Semantic versioning. Current: **0.1.0** (MINI establishing).
 
 ---
 
-**Status:** In active development  
-**Last Updated:** 2026-08-07
-
-export interface PublicAPI {
-  // Single responsibility
-}
-
-export class Implementation implements PublicAPI {
-  // Single, testable behavior
-}
-```
-
-## Shared Types
-
-Common types are in `packages/types/`:
-
-```typescript
-export interface Observation {
-  id: string;
-  claim: string;
-  source: string;
-  timestamp: string;
-  confidence: number;
-  metadata: Record<string, unknown>;
-}
-```
-
----
-
-See [../../CONTRIBUTING.md](../../CONTRIBUTING.md) for contribution guidelines.
+**Status:** MINI kernel establishing  
+**Last Updated:** 2026-08-14  
+**See also:** [docs/MINI.md](../docs/MINI.md)

@@ -1,8 +1,14 @@
 # @omega-v/attestation
 
-Cryptographic attestation service for Ω∞v Oceanicos.
+Cryptographic attestation for Ω∞v Oceanicos.
 
-**Step 3 of the verification loop**: Sign verification results and create unforgeable proof.
+**An earned expansion (+ ATTEST) on the MINI kernel.** MINI (Observe → Verify →
+Remember) is complete without it. Attestation adds one thing: proof that a
+particular verification happened, at a particular time, under particular rule
+versions — in a form that survives leaving this process.
+
+`ATTEST ≠ ASSERT`. A service reporting that it verified something is an
+assertion. A signature someone else can check is not.
 
 ## Installation
 
@@ -10,141 +16,187 @@ Cryptographic attestation service for Ω∞v Oceanicos.
 npm install @omega-v/attestation
 ```
 
+## Choosing an algorithm
+
+Two algorithms are supported, and the choice is not cosmetic.
+
+|                | HMAC-SHA256                            | Ed25519                                |
+| -------------- | -------------------------------------- | -------------------------------------- |
+| Key material   | one shared secret                      | private key signs, public key verifies |
+| Who can verify | anyone holding the signing secret      | anyone, from the public key alone      |
+| Who can forge  | anyone holding the signing secret      | only the private key holder            |
+| Use it for     | verification inside one trust boundary | attestations that leave this system    |
+
+HMAC is the default because it is what the existing runtime uses. It is
+genuine HMAC-SHA256 over a canonical payload, compared in constant time — not
+a placeholder. But every HMAC verifier is also an HMAC forger, because both
+operations need the same secret. If an attestation is meant to convince
+someone outside this system, that property defeats the purpose, and Ed25519
+is the correct choice.
+
 ## Usage
+
+### HMAC-SHA256
 
 ```typescript
 import { AttestationService } from '@omega-v/attestation';
 
-const attestationService = new AttestationService();
+// Reads OMEGA_SIGNING_KEY when no key is passed.
+const service = new AttestationService();
 
-// Attest a verification result
-const attestation = attestationService.attest(verificationResult);
-
-console.log(attestation.id);            // att-2026-08-07-abc123
-console.log(attestation.signature);     // 0x1a2b3c4d5e6f...
-console.log(attestation.attestedAt);    // 2026-08-07T10:30:02Z
-
-// Verify the attestation
-const isValid = attestationService.verify(attestation);
-console.log(isValid);                   // true/false
+const attestation = service.attest(verificationResult);
+service.verify(attestation); // true
 ```
 
-## Features
-
-### Attestation Signing
-Creates a cryptographic signature proving:
-- Which verification was performed
-- When it was performed
-- Which rule versions were applied
-- Who performed the attestation
-
-### Signature Verification
-Verify that an attestation is authentic:
+### Ed25519
 
 ```typescript
-const isValid = attestationService.verify(attestation);
-// Checks signature, key version, and status
+import { generateKeyPairSync } from 'node:crypto';
+import { AttestationService, verifyEd25519 } from '@omega-v/attestation';
+
+const { privateKey, publicKey } = generateKeyPairSync('ed25519', {
+  publicKeyEncoding: { type: 'spki', format: 'pem' },
+  privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
+});
+
+// publicKey is optional — it is derived from the private key when omitted.
+const service = new AttestationService({
+  algorithm: 'Ed25519',
+  signingKey: privateKey,
+  keyVersion: '1',
+});
+
+const attestation = service.attest(verificationResult);
+
+// Verified by someone holding only the public key — no signing capability.
+verifyEd25519(attestation, publicKey); // true
 ```
 
-### Key Management
-Support for key versioning and rotation:
-
-```typescript
-// Get current key info
-const keyInfo = attestationService.getKeyInfo();
-console.log(keyInfo.key);     // key-2026-08-production-v1
-console.log(keyInfo.version); // 1
-
-// Rotate to a new key
-attestationService.rotateKey('key-2026-08-production-v2', '2');
-```
+`verifyEd25519` is a standalone function precisely because it needs nothing
+but the attestation and a public key. It has no access to a signing key and
+cannot produce a signature.
 
 ## API
 
-### Constructor
+### `new AttestationService(config?, keyVersion?)`
+
+Accepts either a config object or, for compatibility, `(signingKey, keyVersion)`.
 
 ```typescript
-new AttestationService(signingKey?: string, keyVersion?: string)
-```
-
-- `signingKey` — Signing key identifier (default: 'key-2026-08-production-v1')
-- `keyVersion` — Key version string (default: '1')
-
-### Methods
-
-#### `attest(verificationResult, options?)`
-
-Create a signed attestation for a verification result.
-
-**Parameters:**
-```typescript
-verificationResult: VerificationResult
-options?: {
-  attestedBy?: string;        // Identity of attestor (default: 'attestation-service')
-  algorithm?: string;          // Signing algorithm (default: 'HMAC-SHA256')
+interface AttestationConfig {
+  algorithm?: 'HMAC-SHA256' | 'Ed25519'; // default: 'HMAC-SHA256'
+  signingKey?: string; // HMAC secret, or Ed25519 private key (PEM)
+  publicKey?: string; // Ed25519 public key (PEM); derived when omitted
+  keyVersion?: string; // default: '1'
 }
 ```
 
-**Returns:** `Attestation`
+When `signingKey` is omitted it falls back to `OMEGA_SIGNING_KEY` for HMAC or
+`OMEGA_ED25519_KEY` for Ed25519.
 
-**Attestation includes:**
-- `id` — Unique attestation ID
-- `signature` — Cryptographic signature
-- `signingKey` — Which key was used
-- `attestedAt` — When it was signed
-- All fields from the verification result
+There is no default key. Construction throws `MissingSigningKeyError` when no
+key is available, because a key shipped in source makes every signature
+reproducible by anyone holding the repository.
 
-#### `verify(attestation)`
+An Ed25519 private key is parsed at construction and its public half derived,
+so `OMEGA_ED25519_KEY` alone is enough to both sign and verify. Two failures
+that would otherwise surface much later are caught here instead:
 
-Verify that an attestation is authentic.
+- key material that cannot sign throws `InvalidSigningKeyError` at startup
+  rather than throwing from inside the first `attest()` call
+- a `publicKey` supplied alongside the private key is **checked against the
+  derived one**, not trusted. A mismatch would make every attestation this
+  service signs fail to verify, silently; it throws instead.
 
-**Parameters:** `Attestation`  
-**Returns:** `boolean`
+### `attest(verificationResult, options?)`
 
-**Checks:**
-- Required fields are present
-- Signature is not empty
-- Status is 'signed'
-- Key version matches
+Signs a verification result. `options.attestedBy` sets the attestor identity.
 
-#### `getKeyInfo()`
+The algorithm follows the key material and is not a per-call choice — signing
+under an algorithm the service is not configured for would produce an
+attestation that same service cannot verify.
 
-Get information about the current signing key.
+The signature covers exactly: `verificationId`, `observationId`, `verified`,
+`confidence`, `ruleVersions`, `attestedAt`, `attestedBy`, `keyVersion`.
+Changing any of these invalidates the signature.
 
-**Returns:**
+### `verify(attestation)`
+
+Verifies an attestation under **this service's configured algorithm**, never
+the one named in the attestation. An attestation claiming a different
+algorithm is rejected outright.
+
+That direction matters. A verifier that picks its primitive from a field
+inside the untrusted object is the `alg`-confusion pattern: an HMAC-configured
+service that also held an Ed25519 public key would otherwise accept anything
+signed by the holder of that private key — a different trust root than the
+secret it answers for. An attestation with no `signingAlgorithm` at all
+predates the field and is treated as HMAC-SHA256, so older attestations keep
+verifying.
+
+Returns `false` — never throws — when the signature is absent, IDs are
+missing, status is not `signed`, the key version does not match, the
+algorithm does not match, or the signature does not check out.
+
+For Ed25519 this requires the service to hold the public key; without it,
+verification returns `false` rather than silently passing.
+
+### `verifyEd25519(attestation, publicKey)`
+
+Standalone Ed25519 verification from a public key alone. Returns `false` for
+non-Ed25519 attestations rather than falling back to a weaker check.
+
+### `getKeyInfo()`
+
 ```typescript
 {
-  key: string;      // Key identifier
-  version: string;  // Key version
+  fingerprint: string;   // sha256:xxxxxxxxxxxxxxxx — never secret material
+  version: string;
+  algorithm: 'HMAC-SHA256' | 'Ed25519';
+  publicKey?: string;    // Ed25519 only; safe to publish
 }
 ```
 
-#### `rotateKey(newKey, newVersion)`
+The fingerprint is a non-reversible identifier recorded on every attestation,
+so a signature can be traced to a key without publishing the key.
 
-Rotate to a new signing key.
+For Ed25519 it fingerprints the **public** half, which means a holder of the
+public key can compute the same value and confirm which key signed a given
+attestation. HMAC has no public half, so there the secret itself is
+fingerprinted — safe because the digest is one-way and truncated, but not
+independently computable by anyone who lacks the secret.
 
-**Parameters:**
-- `newKey` — New key identifier
-- `newVersion` — New key version
+### `rotateKey(newKey, newVersion, newPublicKey?)`
 
-## Security Considerations
+Rotates the signing key. For Ed25519 the public half is re-derived from the
+new private key, so a rotation cannot leave a stale public key behind;
+`newPublicKey` is checked against the derived value rather than overriding it.
 
-### Current Implementation (v0.1.0)
-- Simplified HMAC-like signature generation
-- Not cryptographically secure for production use
+Key material is resolved before anything is mutated, so a rejected rotation
+leaves the service on its previous key rather than in a half-rotated state.
 
-### Production Requirements
-Future versions will implement:
-- Proper HMAC-SHA256 or ECDSA signatures
-- Hardware Security Module (HSM) integration
-- Key derivation and rotation policies
-- Audit logging for all signing operations
+Attestations signed under the previous version stop verifying against this
+instance — key version is part of the signed payload, so a rotation is a
+visible break rather than a silent one. Retain the old key if old
+attestations must remain verifiable.
 
-### Best Practices
-- Never expose private keys
-- Store keys encrypted at rest
-- Rotate keys regularly
-- Maintain audit logs of all attestations
+## Security
+
+**What holds.** HMAC-SHA256 and Ed25519 are both real implementations over
+`node:crypto`. HMAC comparison is constant-time (`timingSafeEqual`). The
+signed payload is explicit and canonical. The verifying algorithm comes from
+configuration, never from the attestation. Ed25519 key material is parsed at
+construction, so an unusable key fails at startup. No secret is ever returned
+by `getKeyInfo`, and no default key exists.
+
+**What does not.** Keys are handled as process-local strings: there is no HSM
+integration, no encryption at rest, and no audit log of signing operations.
+Key rotation is a method call, not a policy. Nothing here revokes an
+attestation once issued.
+
+**Operationally.** Keep private keys out of source and out of images. Prefer
+Ed25519 for anything a third party is meant to check. Treat a `keyVersion`
+change as a migration, not a config tweak.
 
 ## Testing
 
@@ -154,8 +206,7 @@ npm test
 
 ---
 
-**Package Status:** Alpha (v0.1.0)  
-**Part of:** Ω∞v Oceanicos verification loop  
-**Next:** Production-grade cryptography  
-**Security:** Not suitable for production use yet  
-**Last Updated:** 2026-08-07
+**Package Status:** Beta (v0.1.0)
+**Part of:** Ω∞v Oceanicos — an earned expansion on the MINI kernel
+**Next:** Key custody (HSM/KMS), revocation, signing audit log
+**Last Updated:** 2026-08-15

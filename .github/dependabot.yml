@@ -1,0 +1,92 @@
+# Dependency updates.
+#
+# Section XIX names dependency integrity and supply chain as things to test
+# continuously. Secret scanning covers what this repository commits; nothing
+# watched what it depends on, so a known CVE in express, react or the jest
+# toolchain would have sat unnoticed indefinitely.
+#
+# Grouped deliberately. Ten separate pull requests for one toolchain bump is
+# how dependency updates get ignored, and an ignored update is the same as no
+# update with extra noise.
+version: 2
+
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      typescript-toolchain:
+        patterns:
+          - typescript
+          - ts-jest
+          - ts-node
+          - '@types/*'
+        # '@types/*' would otherwise claim the React typings first — groups
+        # match in order — and split them back out of the group that has to
+        # move with React itself.
+        exclude-patterns:
+          - '@types/react'
+          - '@types/react-dom'
+      # jest and the DOM harness move together, and so does React.
+      #
+      # These were two groups until the testing bump installed react 19
+      # transitively — @testing-library/react takes React as a peer — while
+      # apps/web still declared ^18.2.0. Two copies of React in one tree,
+      # and React said so: "A React Element from an older version of React
+      # was rendered."
+      #
+      # It failed on Windows and passed on Linux, which is worse than a
+      # clean failure: the same split existed on both and only one platform
+      # surfaced it. Peer-coupled packages must be proposed as one change,
+      # because neither half can be green alone.
+      testing-and-react:
+        patterns:
+          - jest
+          - jest-*
+          - '@testing-library/*'
+          - react
+          - react-dom
+          - '@types/react'
+          - '@types/react-dom'
+          - vite
+          - '@vitejs/*'
+      linting:
+        patterns:
+          - eslint
+          - eslint-*
+          - '@typescript-eslint/*'
+          - prettier
+    ignore:
+      # TypeScript 7 is held, not skipped.
+      #
+      # @typescript-eslint/parser refuses to load against it and says so
+      # directly: "typescript-eslint does not support TS 7.0." Linting is a
+      # required stage, so the bump cannot pass however the repository is
+      # changed — this is an upstream gap, tracked at
+      # typescript-eslint/typescript-eslint#10940 for TS >= 7.1.
+      #
+      # Proposing it weekly would train us to look past a red pipeline,
+      # which is the habit this project can least afford. Remove this entry
+      # once typescript-eslint supports TS 7 and let the bump be judged on
+      # its own evidence.
+      #
+      # Minor and patch updates within TypeScript 6 still arrive normally.
+      - dependency-name: typescript
+        versions: ['>=7.0.0']
+
+    commit-message:
+      prefix: 'deps'
+      include: scope
+
+  # The pipeline is the observer. An unmaintained action in it is a hole in
+  # the thing that checks everything else.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    commit-message:
+      prefix: 'ci'

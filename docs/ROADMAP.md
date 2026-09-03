@@ -1,120 +1,156 @@
 # Ω∞v Oceanicos Roadmap
 
-This document captures the project roadmap for the Ω∞v Oceanicos verification-first ecosystem.
+This roadmap follows the growth law:
+
+```text
+0 → MINI → + → + → + → FULL STACK → ECOSYSTEM → REALITY ↺ ∞
+```
+
+Each phase is **earned**. We do not pretend later layers already exist as architecture just because they appear on the vision diagram.
+
+Canonical model: [MINI.md](./MINI.md).
 
 ## Vision
 
-Ω∞v is a full-stack orchestration system that connects observation, verification, attestation, recording, rendering, learning, and evolution into a trusted intelligence loop.
+Ω∞v is a verification-first system that starts as a living MINI kernel (Observe → Verify → Remember) and expands into a full-stack trusted intelligence ecosystem only when reality verifies each next step.
 
 ## Current Status
 
-- **Phase 0**: Vision — complete
-- **Phase 1**: Constitution — complete
-- **Phase 2**: Monorepo skeleton — complete
-- **Phase 3**: Runtime — in progress
+- **Zero**: acknowledged — complete
+- **MINI kernel**: Observe → Verify → Remember — complete (see Phase 2)
+- **Expansions present but not kernel**: attestation, API, web
+
+The expansions are implemented rather than sketched: attestation signs with
+HMAC-SHA256 or Ed25519, the API serves the loop plus Act/Learn/Recompile over
+HTTP, and the web dashboard renders the evidence chain. That says what exists,
+not what it is worth — none of it is production-hardened, and the open gaps are
+listed under each phase below.
+
+They remain expansions. The kernel is still Observe → Verify → Remember, and
+[MINI.md](./MINI.md) governs that definition.
+
+### Post-repair release checkpoint — 2026-08-23
+
+The final integrated revision is `2c017ab`, after PR #185 extended the bounded WebCrypto status wait from 15 seconds to 30 seconds for slower hosted coverage runs without weakening the `VALID` or non-proof assertions, PR #187 reconciled the final state records, and PR #189 made required-mode read/admin bearer tokens fail closed when identical. The post-merge Verification Pipeline [32639141845](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/actions/runs/32639141845) and Security Analysis [32639141883](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/actions/runs/32639141883) both completed successfully, including Node 20, Node 22, Windows compatibility, package/smoke, and main-branch publication. The workflow’s artifact publication completed, but this record does not claim or repeat an artifact digest without directly observed digest evidence.
+
+This milestone is **verified integration and artifact publication, not deployment**. The repository contains no downstream hosting workflow or infrastructure manifest, and no production URL, running target, production logs, gateway identity configuration, or post-deployment browser/ledger smoke was observed. Required mode continues to protect the SPA shell, assets, API reads, SSE stream, and mutations; a network dashboard requires an approved identity/gateway boundary or a separately reviewed browser-session design.
+
+### Prior release checkpoint before PR187 — 2026-08-23
+
+The required-auth and encrypted local-job-ledger slice is integrated on `main` at `99e83d5`. The follow-up browser-boundary regression is also integrated: required mode protects the SPA shell and assets with the same read boundary as API reads, while mutations remain admin-only. This is an explicit security contract, not browser identity proofing. The shipped dashboard still requires an approved identity/gateway layer that injects the appropriate credentials, or a separately designed browser session; the repository currently provides neither.
+
+Main-branch Verification Pipeline and Security Analysis completed successfully after both merges. The workflow published and attested `ghcr.io/starofgodmayomi-droid/omega-v-oceanicos-api` at digest `sha256:f87f49461085318a7d18785484ef1663c713b2fd164dc13007a67d553b7fbbc8`. The repository has no downstream deployment workflow or infrastructure manifest, so **artifact publication is verified but deployment remains blocked/unverified**. No production URL, running target, production logs, gateway configuration, or post-deployment smoke is claimed.
 
 ## Phase Breakdown
 
-### Phase 0 — Vision
-Defined the long-term mission, values, and open ecosystem principles.
+### Phase 0 — Zero
+
+Honest origin. No assumed ecosystem, capital, or verified stack.
+
+**Done when**: project admits it starts empty and refuses fake completeness.
 
 ### Phase 1 — Constitution
-Created foundational documents and governance, including:
+
+Foundational documents and governance:
+
 - `CHARTER.md`
 - `MANIFEST.md`
 - `CONTRIBUTING.md`
 - `LICENSE`
 - `README.md`
+- `docs/MINI.md`
 
-### Phase 2 — Monorepo Skeleton
-Built the initial workspace structure and runnable proof-of-concept:
-- `packages/types`
-- `packages/observer`
-- `packages/verification`
-- `packages/attestation`
-- `apps/api`
-- `apps/web`
-- CI workflow
-- `pnpm-workspace.yaml`
+### Phase 2 — MINI kernel (complete)
 
-### Phase 3 — Runtime
-Current focus:
-- `Observe → Verify → Attest` execution loop
-- Runnable local developer experience
-- Package-level compile/test boundaries
-- `@omega-v/api` and `@omega-v/web`
+Smallest useful living system:
 
-### Phase 4 — Verification Engine
-Next objectives:
-- Build rule execution engine and configurable rule models
-- Add support for extensible verification rule formats
-- Improve evidence path generation and auditing
-- Add policy-driven verification workflows
+```text
+💧 Ω∞v MINI ::= 👁 → ✓ → 🧠
+```
 
-### Phase 5 — Observer
-Next objectives:
-- Add structured observation capture
-- Support event provenance and deduplication
-- Add persistence and append-only event storage
-- Add telemetry and observability metrics
+| Package                 | Role              |
+| ----------------------- | ----------------- |
+| `@omega-v/types`        | Shared contracts  |
+| `@omega-v/observer`     | 👁 Observe         |
+| `@omega-v/verification` | ✓ Verify          |
+| `@omega-v/remember`     | 🧠 Remember       |
+| `@omega-v/mini`         | Compose the cycle |
 
-### Phase 6 — Attestation
-Next objectives:
-- Add production-grade cryptographic signing
-- Integrate Sigstore / transparency log support
-- Add key management and rotation
-- Add attestation verification workflows
+**Done when**:
 
-### Phase 7 — API
-Next objectives:
-- Add REST/gRPC API endpoints
-- Add authentication and authorization
-- Add query and history APIs
-- Add API versioning and contract tests
+- [x] Observe normalizes claims
+- [x] Verify produces evidence paths
+- [x] Remember stores append-only hash-chained memory
+- [x] MiniKernel runs one cycle without API/UI
+- [x] MINI is the documented default mental model everywhere
+- [x] Integration tests treat MINI as the primary runtime unit
 
-### Phase 8 — Web
-Next objectives:
-- Add dashboard visuals and historical views
-- Add workflow orchestration UI
-- Add real-time observability and runtime metrics
-- Add SDK integration examples
+Each tick above is anchored to evidence by
+`tests/__tests__/roadmap-claims.test.ts`, which fails if a box is checked while
+the thing it claims is absent. That test checks evidence anchors, not the full
+meaning of each sentence — see its header for what it does and does not decide.
 
-### Phase 9 — SDK
-Next objectives:
-- Add TypeScript and language SDKs
-- Add client integration patterns
-- Add developer onboarding examples
+### Phase 3 — Earned core expansions
 
-### Phase 10 — CLI
-Next objectives:
-- Add CLI tooling for verification workflow
-- Add command-based attestation and audit
-- Add local runtime orchestration
+Only after MINI is real:
 
-### Phase 11 — Mobile
-Next objectives:
-- Add mobile dashboards and alerting
-- Add lightweight edge observation clients
-- Add offline-first capture and sync
+| Expansion            | Intent                                         |
+| -------------------- | ---------------------------------------------- |
+| `+ Reason`           | Richer evidence and explanation                |
+| `+ Intent`           | Explicit goals/policies for cycles             |
+| `+ Build` / `+ Test` | Stronger packaging and proof harnesses         |
+| `+ Attest`           | `@omega-v/attestation` cryptographic proof     |
+| `+ Act`              | Authorized actions gated by memory/attestation |
 
-### Phase 12 — Edge
-Next objectives:
-- Add edge runtime support
-- Add lightweight verified agents
-- Add distributed attestation and trust anchors
+**Attestation note**: the package may already exist; roadmap treats production-grade attestation workflows as earned completion, not a kernel prerequisite.
 
-### Phase 13 — VaaS
-Next objectives:
-- Package verification-as-a-service infrastructure
-- Add hosted ingestion, verification, and attestation
-- Add enterprise controls and policy orchestration
+Attestation status: signing is implemented for HMAC-SHA256 and Ed25519, with
+key material parsed at construction and the verifying algorithm taken from
+configuration rather than from the attestation. The API now supports an
+explicit Ed25519 configuration, publishes only safe public trust metadata,
+and exposes signing and verification through the HTTP loop. The web, CLI, SDK,
+and integration tests carry that trust surface across the stack. The API's
+`attestation.created` runtime event now records non-secret signing audit
+metadata, including algorithm, key version, key fingerprint, verification
+identity, confidence and rule versions. Runtime snapshots and append-only
+logs now have an AES-256-GCM increment when configured, and recorded
+attestations have append-only revocation controls with an opt-in admin bearer
+boundary. Still not earned: HSM/KMS custody, complete data-at-rest coverage,
+key rotation and recovery, distributed revocation consistency, expiry policy,
+and stronger administrative authorization. An opt-in `OMEGA_ATTESTATION_TTL_MS`
+now invalidates expired attestations for verification and action authorization;
+clock policy and distributed time coordination remain open. The unauthenticated `/health` route now exposes non-secret liveness/readiness, memory integrity, persistence codec, and attestation policy evidence; the dashboard, SDK, and CLI consume that contract without claiming deployment health.
 
-### Phase 14 — Production
-Next objectives:
-- Harden stability, security, and compliance
-- Add observability, metrics, and SLOs
-- Add deployment automation and platform integration
-- Add full ecosystem orchestration
+### Phase 4 — Interface expansions
+
+| Expansion  | Surface        |
+| ---------- | -------------- |
+| `+ API`    | `apps/api`     |
+| `+ Web`    | `apps/web`     |
+| `+ CLI`    | `packages/cli` |
+| `+ SDK`    | `packages/sdk` |
+| `+ Mobile` | planned        |
+
+### Phase 5 — Depth expansions
+
+- Stronger rule engine / compiler / IR
+- Durable multi-process persistence
+- Bounded local query and temporal audit APIs (implemented increment; distributed indexing remains open)
+- Policy-driven verification workflows
+
+### Phase 6 — Distribution expansions
+
+- Edge runtimes
+- Agents
+- Infrastructure (Docker/K8s/cloud)
+- VaaS (verification as a service)
+
+### Phase 7 — Ecosystem expansions
+
+- Governance / trust
+- Community + stewardship
+- Economy / value loops
+- Compound → evolve → return to reality (`∞`)
 
 ## Runbook
 
@@ -124,24 +160,173 @@ Next objectives:
 git clone https://github.com/starofgodmayomi-droid/omega-v-oceanicos.git
 cd omega-v-oceanicos
 pnpm install
-pnpm run dev
+pnpm test -- packages/mini packages/remember
+pnpm run dev   # expansion surfaces (API/Web), optional for MINI work
 ```
 
-### Current Live Ports
+### Current Live Ports (expansions)
 
 - API: `http://localhost:3000`
 - Web: `http://localhost:3001`
 
 ## Workflow Principles
 
-- Build the smallest executable loop first
+- Start from Zero; ship MINI first
+- Build the smallest executable loop before the ecosystem story
 - Keep every package compilable independently
 - Keep each package exporting one public interface
 - Keep the repo runnable from a fresh clone
-- Prioritize runtime over philosophy
+- **Each `+` is earned by the previous layer**
+- Prioritize runtime truth over aspirational diagrams
 
 ## Notes
 
-- `pnpm` is the current workspace package manager
-- The repo is now runnable end-to-end locally
-- The next milestone is runtime persistence and integration tests
+- `pnpm` is the workspace package manager
+- MINI does not require API or Web to be valid
+- Existing API/Web/attestation code is welcome expansion work; it must not redefine the kernel
+- Previous milestone (complete): make MINI the default path in apps and docs,
+  and enter completed loops into Remember. `/complete-loop` now returns the
+  memory record alongside the observation, verification and attestation.
+
+### Known drift, not yet closed
+
+Recorded here so it is visible rather than rediscovered. None of these is
+blocked on design; each is a decision or a scoped change.
+
+- **Two package managers, one lockfile.** `pnpm` is canonical: `pnpm-lock.yaml`
+  is the committed lockfile and CI installs with `pnpm install --frozen-lockfile`.
+  The READMEs mostly say `npm install`, which does work — verified on a clean
+  clone: 671 packages, then 263 tests, build and lint all green. But npm ignores
+  `pnpm-lock.yaml` and there is no `package-lock.json`, so an npm install
+  resolves fresh and can differ from what CI proved. Mixing them in one tree is
+  the actual hazard: running `npm install` over an existing pnpm `node_modules`
+  fails with a misleading `EUNSUPPORTEDPROTOCOL workspace:*` raised by pnpm's
+  own store layout, not by anything in this repository's manifests. No manifest
+  here uses the `workspace:` protocol.
+- ~~**`format:check` was not run by CI and failed on 14 files.**~~ **Closed.**
+  The formatting drift was corrected, `pnpm format:check` was added to the
+  verify workflow after dependency installation, and the main-branch workflow
+  now passes it on both supported Node versions. The workflow summaries report
+  formatting explicitly alongside lint, type-check, test, coverage and build.
+- ~~**Lint warnings were reported but never enforced.**~~ **Closed.** `pnpm lint`
+  ran `eslint .`, which exits 0 on warnings, so the verify job passed while six
+  unused `eslint-disable` directives sat in the tree and the workflow summary
+  reported lint among the checks that passed. It was true that lint ran and
+  false that it had nothing to say. The directives suppressed
+  `@typescript-eslint/no-var-requires`, a rule removed in typescript-eslint v8
+  and already switched off for those files by name, so they claimed an
+  exception nothing required. They are deleted and the script now runs
+  `--max-warnings 0`, verified by reintroducing one directive and watching the
+  command fail.
+- ~~**CI skipped stacked pull requests entirely.**~~ **Closed.** The workflow
+  filtered `pull_request` to `[main, develop]`, so a pull request based on any
+  other branch ran no jobs at all. Nothing failed because nothing ran, and an
+  absence of checks is easily read as passing ones. The filter is removed, so
+  every pull request is verified whatever it targets.
+- ~~**`summary.confidence` is the claimant's own number.**~~ **Closed.** The
+  summary now reports the lowest confidence among the rules that actually ran,
+  and carries the claim's own figure separately as `claimedConfidence`. This
+  mattered further down the chain than it first looked: the value reached
+  `attestation.confidence`, which sits inside the signed payload, so the system
+  was issuing unforgeable signatures over a number the submitter chose.
+- ~~**Signing events lacked audit metadata.**~~ **Closed.** The API's
+  `attestation.created` runtime event records non-secret signing metadata,
+  and the regression test verifies its identity, algorithm, key version,
+  fingerprint, confidence, rule versions and verification outcome without
+  exposing the signing secret. Durable persistence remains separately gated by
+  `OMEGA_PERSISTENCE` and is covered by the append-only persistence tests.
+- **Runtime persistence encryption — increment implemented, capability not
+  complete.** When `OMEGA_PERSISTENCE_KEY` is configured, the API encrypts and
+  authenticates runtime snapshots and event-log lines with AES-256-GCM, reports
+  the active algorithm through observability, and reports wrong-key or damaged
+  records instead of silently restoring empty state. Kernel memory files,
+  key custody, rotation, recovery and broader data-at-rest coverage remain open.
+- **Partial event-log recovery — degraded readiness implemented, recovery policy
+  not complete.** A malformed or unauthenticated durable-log line remains visible
+  as `source: partial` with `skippedLogEntries > 0`; enabled partial recovery now
+  makes `/health` return HTTP 503 with `readiness: degraded`, and `/state`
+  reports `trustBasis.serviceReadiness: 0`. Missing logs remain valid cold starts;
+  repair, operator acknowledgement, and distributed recovery remain open.
+- **Persistence-key rotation — authenticated local re-encryption implemented; custody and distributed recovery remain open.** `OMEGA_PERSISTENCE_KEY` encrypts new snapshot/event-log writes; `OMEGA_PERSISTENCE_KEY_PREVIOUS` permits authenticated local reads during a controlled rotation, and observability reports `current`, `previous`, or `mixed` without exposing secrets. Health, state, observability, SDK, CLI, dashboard, and tests expose pending rotation and the authenticated `POST /persistence/reencrypt` boundary. The mutation requires an admin bearer token and allowlisted operator, refuses corrupt or partial local evidence, rewrites snapshot/log ciphertext under the current key through a mode-600 local transaction journal, preserves logical event history, and emits non-secret record-count/key-source evidence. Startup reconciles complete staged journals and fails readiness closed for malformed or incomplete journal artifacts. Health, state, observability, SDK, CLI, and dashboard also expose deterministic 16-character fingerprints for the configured current and previous local secrets, or `null` when absent. These fingerprints support local configuration equality checks only. A bounded `OMEGA_PERSISTENCE_RECOVERY_MODE` declaration now reports `unavailable`, `operator-provided`, `external-reference`, or `invalid`; invalid declarations fail readiness closed, and references remain labels rather than verified custodian evidence. HSM/KMS custody, secure deletion, key recovery, and distributed coordination remain open. The custody-policy slice adds bounded `unverified-local`, `operator-managed`, `hsm-kms`, and `external-reference` declarations with `verified:false`; invalid or reference-less declarations degrade readiness, and no mode proves an actual custodian, HSM/KMS, recovery material, or deployment. `OMEGA_PERSISTENCE_DELETION_MODE` now exposes bounded `unavailable`, `unlink-only`, `overwrite-unlink`, or `invalid` capability evidence with `verified:false`; it does not prove secure erasure or affect backups, replicas, or external systems. The coverage inventory reports only runtime snapshot, event log, and kernel-memory observations with `complete: false`; databases, object storage, backups, and external services remain explicitly unverified. The inventory now also includes the in-memory local-job ledger as `encryption: disabled`, `keySource: none`, and runtime-observed non-durable state; complete data-at-rest coverage remains false.
+- **Custody evidence — declaration boundary implemented, actual custody not complete.** `OMEGA_PERSISTENCE_CUSTODY_MODE` and `OMEGA_PERSISTENCE_CUSTODY_REFERENCE` expose bounded local labels across API, SDK, CLI, dashboard, tests, governance, and docs. Invalid or reference-less declarations fail readiness; every mode reports `verified:false`. This does not establish HSM/KMS control, operator identity, external recovery material, or deployment authorization.
+- **Attestation revocation — local integrity evidence implemented, capability
+  not complete.** Recorded attestations can be revoked with an operator reason;
+  revocation is persisted, emitted as an append-only event, visible through the
+  API, invalidates verification for authorization purposes, and blocks `/act`.
+  A local SHA-256 registry digest now reports `disabled`, `legacy`, `intact`, or
+  `mismatch`; mismatch fails closed for verification-sensitive action and
+  mutation paths. This is tamper evidence over local records, not distributed
+  consistency, custody, secure deletion, or proof that records and digest could
+  not be altered together. Broader policy administration, expiry, distributed
+  consistency and recovery procedures remain open.
+- **Operator identity allowlist — optional local boundary implemented, identity
+  system not complete.** `OMEGA_ADMIN_OPERATOR_ALLOWLIST` can require a listed
+  operator identity for revocation mutations. `OMEGA_ADMIN_REQUIRE_ALLOWLIST=on`
+  additionally fails closed when the allowlist is absent, while the default
+  remains backward-compatible and optional. API policy exposes only configured
+  presence and requirement state; web, SDK, and CLI carry the identity boundary
+  and fail closed for unlisted identities. This does not establish authentication,
+  identity proofing, role separation, audit-grade identity, or deployment policy.
+- **Revocation freshness — local revision evidence implemented, distributed
+  consistency not complete.** Ledger, verification, mutation, policy, web, SDK,
+  and CLI surfaces expose a local registry `revision` derived from the
+  append-only record sequence. This provides bounded local freshness evidence
+  only; it does not coordinate nodes, establish a global order, or prove that
+  another replica observed the same state.
+- **Health/readiness observability — local recovery boundary implemented, deployment health not claimed.** `GET /health` remains unauthenticated for probes and returns explicit liveness, readiness, memory-integrity, persistence-codec, and non-secret policy evidence. An enabled corrupt runtime snapshot or partial event log now degrades readiness with HTTP `503`, while an enabled missing store or log remains a valid cold start; the web dashboard, typed SDK, and CLI consume the same readiness response and fail closed when degraded.
+- **State readiness contract — explicit cross-surface signal implemented, distributed readiness not complete.** `GET /state` now returns `readiness: ready | degraded` alongside `trustBasis.serviceReadiness`, `eventLogSource`, and `skippedLogEntries`. The SDK exposes `getState()`, the CLI status command renders the contract, and the dashboard shows state readiness separately from probe health. This does not establish deployment orchestration, distributed health coordination, or production availability.
+- **Durable-log recovery provenance — local diagnostics, operator-action routing, and human acknowledgement evidence implemented; repair policy not complete.** Health, state, observability, SDK, CLI, dashboard, and operator docs expose the durable-log source, skipped count, reason, authenticated key source, `operatorAction` routing hint, and latest acknowledgement from the same runtime read. Admin-authenticated, allowlist-aware acknowledgement records an active append-only event and leaves readiness unchanged. It proves review evidence only; it does not repair, authorize, deploy, prove recovery, or establish custody or distributed completeness.
+- **Bounded temporal audit query — local contract implemented, distributed audit not complete.** `GET /audit/events` supports exact type/stage/status filters, inclusive time bounds, and a default limit of `100` capped at `500`. API, dashboard, SDK, and CLI surfaces preserve bounded counts, skipped records, local source, key-source, and normalized filter evidence. Focused and full repository tests verify the contract. This is a local event-log query, not a distributed audit index, completeness proof for unpersisted history, global ordering, or replica consistency.
+
+---
+
+**Last Updated**: 2026-08-23
+
+- **Symbolic scene simulation — bounded full-stack increment implemented.** The Ω∞v scene equation is represented by a deterministic, bounded API simulation with shared types, SDK access, CLI rendering, dashboard control, focused unit/API/Web tests, and explicit `verified:false` provenance. It is a narrative/domain simulation only and does not establish physical cosmology, consciousness, sentience, external execution, deployment, or scientific truth. The next production gaps remain custody, recovery, distributed coordination, mobile, and deployment hardening.
+
+- **Portable compiled-runtime smoke — local reproducibility implemented, deployment health not complete.** The root `pnpm smoke:api` command builds the workspace, starts the compiled API from `apps/api` so workspace package resolution is reproducible, checks `readiness: ready`, and exercises the bounded scene endpoint through `return` with `deterministic: true` and `verified: false`. It provides local runtime evidence only; deployment orchestration, distributed coordination, external custody, persistence, backups, replicas, and production availability remain unverified.
+
+- **TypeScript 7.0.2 migration — upstream toolchain compatibility remains open.** PR #125 rebased onto the green `main` baseline and produced authoritative failures in Node 22 lint (`@typescript-eslint/parser` 8.67.0 rejects TypeScript 7.0) and Windows tests (`ts-jest` 29.4.12 cannot use the TypeScript 7 compiler API). The earlier commit labels called this TypeScript 6; that naming error is preserved as lineage dissent, while the observed dependency is TypeScript 7.0.2. No bypass, compatibility shim, or false green result is accepted until the parser and transformer ecosystem supports the compiler API or an explicitly designed dual-compiler strategy is verified. See [typescript-eslint#10940](https://github.com/typescript-eslint/typescript-eslint/issues/10940).
+
+- **Coordination declaration boundary — full-stack evidence implemented, distributed proof remains open.** Persistence policy parsing, API health/readiness and observability/state responses, shared SDK contract, CLI output, web dashboard panel, tests, and operator documentation now carry the same bounded coordination declaration. Reference-bearing modes require a reference; malformed or reference-less declarations fail closed for readiness. The declaration is always `verified:false` and does not prove distributed consistency, leader election, replica agreement, global ordering, external coordinator control, deployment availability, or production orchestration.
+- **Current verification evidence — focused contract gate green.** The coordination slice currently passes 4 suites and 143 tests covering persistence policy parsing, API contracts, job routes, and dashboard behavior; type-check and lint also pass. The repository-wide gate now passes 41 suites and 844 tests, alongside format, type-check, lint, build, and compiled-runtime smoke evidence; merge and publication state remain separate human-controlled actions.
+
+- **Container healthcheck — bounded deployment-hardening increment implemented, host deployment remains unverified.** The API image now declares a Docker `HEALTHCHECK` against `/health`, with a regression test, infrastructure documentation, and explicit non-proof language. Format, type-check, build, 2 suites / 16 focused tests, and `pnpm smoke:api` passed locally. The local Docker daemon was unavailable, so image build and runtime health status remain CI-only evidence; no deployment or availability claim is made.
+
+- **Observation lineage — bounded local predecessor evidence implemented across shared types, Observer, MINI input, API observe/complete-loop routes, tests, and operator docs.** Optional `parentId` and at most 32 non-empty `lineage` identifiers are preserved; malformed or oversized lineage fails closed. The focused API/Observer gate passed 2 suites / 49 tests, and the repository gate passed 44 suites / 911 tests with format, type-check, build, and compiled-runtime smoke evidence. This does not prove causality, distributed ordering, replica agreement, external execution, or truth; distributed coordination remains open.
+
+- **Local-job-ledger coverage — explicit in-memory surface added to the data-at-rest inventory.** The API coverage contract, health response, persistence tests, and operator documentation now identify the local job ledger as `encryption: disabled`, `keySource: none`, and runtime-observed non-durable state. SDK, CLI, and Web consume the same coverage response. The inventory remains `complete:false`; databases, object storage, backups, and external services remain unverified.
+
+- **Encrypted local-job-ledger persistence — opt-in single-process durability implemented.** When `OMEGA_LOCAL_JOB_LEDGER_PATH` and `OMEGA_LOCAL_JOB_LEDGER_KEY` are paired with the enabled ledger, jobs, idempotency records, and bounded lifecycle events are restored from and atomically written as an AES-256-GCM authenticated envelope. Missing storage is an empty cold start; malformed or unauthenticated storage fails closed. API, SDK, CLI, dashboard, tests, and operator docs expose `durable`, `source`, and `encryption` evidence consistently. The compiled API restart smoke restored a job and confirmed no plaintext payload; distributed durability, backups, recovery, HSM/KMS custody, secure deletion, and deployment remain unverified.
+
+- **Data-at-rest coverage integration — local-job-ledger inventory now reflects runtime configuration.** The API coverage inventory derives the `local-job-ledger` surface from the live ledger status, reporting `disabled`/`none` in memory mode and `aes-256-gcm`/`current` in paired file-backed mode. Persistence tests and the compiled restart smoke verify the encrypted inventory evidence while retaining `complete:false` and the explicit unverified database, object-storage, backup, and external-service boundaries.
+
+The identity-hardening slice is now merged: `OMEGA_ADMIN_REQUIRE_ALLOWLIST=on` requires `x-omega-operator-id` across all three administrative mutations, preventing a JSON body `operatorId` from substituting for the dedicated request identity field. Optional local-development fallback remains compatible. Focused API validation passed 21 tests, and authoritative CI passed after a transient Web attestation DOM failure cleared on rerun. The header remains a caller assertion checked against an allowlist, not authentication or identity proofing. The next smallest production gap is broader data-at-rest coverage, deployment hardening beyond the local healthcheck, mobile support, or distributed coordination evidence.
+
+- **Required API authentication profile — bounded production boundary implemented.** `OMEGA_AUTH_MODE=required` fails closed at startup unless both `OMEGA_READ_TOKEN` and `OMEGA_ADMIN_TOKEN` are configured. Unauthenticated `GET /health` remains available for liveness; all other reads and `POST /attest/verify` require the read bearer token, while other non-health requests require the admin bearer token. The non-secret mode is exposed through health/state/policy, and SDK, CLI, and dashboard contracts consume it. Focused auth coverage passed 4 tests; the serial repository gate passed 45 suites / 934 tests, build, integration, and compiled required-mode runtime smoke passed. These shared-secret controls do not establish identity proofing, OAuth/OIDC, gateway configuration, rate limiting, secret custody, or deployment proof; the parallel `pnpm verify` path retains the known environment-sensitive DOM flake.
+
+- **Container required-auth hardening — shipped image default updated.** The Docker runtime now declares `OMEGA_AUTH_MODE=required`, and the CI container smoke supplies separate read/admin tokens while asserting public health, protected reads, rejected read-token mutations, and successful admin mutations. The local Docker daemon was unavailable, so image build and container execution remain hosted-CI-only; this does not prove deployment availability or gateway identity integration.
+
+- **Hosted CI encrypted-ledger smoke — container restart evidence added, deployment still unverified.** The Docker package/smoke job now mounts a runner-temporary ledger directory, enables the opt-in AES-256-GCM local job ledger with CI-only credentials, creates and reads a job, removes and recreates the same container with the same mounted volume/key, and verifies the job is restored with `durable:true`, `source:file`, and `encryption:aes-256-gcm`. The smoke also asserts that the mounted envelope does not contain the test URI or idempotency key in plaintext and that the health coverage inventory remains `complete:false`. This is hosted CI artifact/runtime evidence only; local Docker is unavailable, and gateway identity, backups, key custody, distributed durability, deployment availability, and production authorization remain open.
+
+- **Required-mode local-job authorization repair — dual credential boundary implemented.** The required global middleware correctly keeps `Authorization` for the API role (`read` on job reads and `admin` on job mutations), while the loopback job guard now accepts the separately configured `OMEGA_LOCAL_JOB_LEDGER_TOKEN` through `x-omega-local-job-token`. Local mode retains the prior bearer-token compatibility path. API, SDK, CLI, CI smoke, regression tests, and operator documentation carry the separated contract. The compiled required-mode regression passed; the hosted Docker workflow has not yet run remotely. This remains a local loopback/shared-secret boundary, not identity proofing, gateway enforcement, distributed authorization, or deployment proof.
+
+- **Hosted CI feedback — deterministic gates and loopback smoke repair.** PR #178 first exposed a real required-mode credential collision in the container smoke; the dual `Authorization` plus `x-omega-local-job-token` repair was implemented and locally verified. The next hosted rerun exposed the intentional loopback-only ledger boundary through Docker bridge networking (`403 LOCAL_JOB_LOOPBACK_ONLY`), so the CI launches now use host networking and the smoke fails with an explicit HTTP/body diagnostic before parsing. The same PR’s parallel Jest execution also reproduced the known browser/WebCrypto status-rendering flake on both Node 20 and Node 22; normal `test`, `test:fast`, and `test:coverage` scripts now run Jest in-band, with an infrastructure contract protecting that release behavior. Local verification passed 45 suites / 940 tests, coverage, integration, build, audit, and the default verify gate. The latest hosted Docker smoke must still be rerun; no deployment or production availability is claimed.
+
+## Bounded multiverse simulation — merged checkpoint — 2026-08-25
+
+The symbolic scene equation now supports a deterministic finite sample of plural perspectives. The API, SDK, CLI, Web dashboard, shared types, and tests carry bounded `branches` from 1 through 8, preserve the primary trace, expose divergence evidence, and label the continuation as `bounded-sample-of-infinite-potential`. The implementation is recorded at main revision `29a2f88` after PR #198 was authorized and merged.
+
+Local verification passed formatting, type-checking, full coverage, and diff hygiene with 45 suites and 946 tests. Pull-request verification passed Node 20, Node 22, Windows, package/smoke, and CodeQL; post-merge main verification passed the same runtime and packaging gates plus attested artifact publication; Security Analysis passed. These are repository execution results, not proof that infinite worlds, cosmology, consciousness, or external reality were observed.
+
+The next production gap remains bounded by evidence: broader data-at-rest coverage, HSM/KMS custody, secure deletion and recovery, distributed coordination and revocation consistency, identity proofing, deployment beyond the local healthcheck, mobile support, or the TypeScript 7.0.2 upstream blocker. The untrusted localStorage/service-worker prototype is not an accepted production design, and the hosted WebCrypto timeout remains an explicitly recorded intermittent risk.
+
+**Last Updated**: 2026-08-25
+
+## Bounded coordination evidence — local checkpoint — 2026-08-25
+
+The coordination declaration now carries explicit runtime evidence fields across persistence, API health/state, SDK contracts, CLI output, Web dashboard rendering, and tests: `evidence=runtime-observed`, `scope=single-process`, a bounded limitation list, and `verified=false`. Invalid or reference-less declarations remain fail-closed according to the existing readiness contract. This is local process evidence only; it does not prove distributed consistency, leader election, replica agreement, global ordering, external coordinator control, deployment availability, or production orchestration.
+
+Local verification passed formatting, lint, type-check, focused API/persistence tests (81 tests), full coverage with 46 suites and 950 tests, build, API smoke, and diff hygiene. No branch has been pushed or published for this slice.
+
+**Last Updated**: 2026-08-25

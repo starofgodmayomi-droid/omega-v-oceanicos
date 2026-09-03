@@ -3,34 +3,72 @@ name: Verification Pipeline
 on:
   push:
     branches: [main, develop]
+  # Every pull request, whatever it targets.
+  #
+  # This was filtered to [main, develop], which meant a pull request based on
+  # another branch ran no jobs at all. Nothing failed, because nothing ran, and
+  # GitHub shows an absence of checks much the way it shows passing ones — so a
+  # stacked pull request looked ready to merge without a single test having
+  # executed against it.
+  #
+  # Unverified is not the same as green. Leaving the filter off costs a little
+  # runner time and removes a class of change that could reach a base branch
+  # without proof.
   pull_request:
-    branches: [main, develop]
+
+permissions:
+  contents: read
 
 jobs:
   verify:
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: read
+      pull-requests: write
+
     strategy:
       matrix:
-        node-version: [18.x, 20.x]
+        # 22.x is what the published container runs. 24.x is the next LTS,
+        # so a break arrives as a red pull request rather than as a
+        # surprise on the day it becomes the default.
+        #
+        # 20.x was removed: the project now requires Node 22+ (engines field
+        # in package.json), the image has moved to node:22-alpine, and
+        # testing a runtime below the declared floor proves compatibility the
+        # project does not promise.
+        node-version: [22.x, 24.x]
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
+
+      - name: Enable pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.34.5
 
       - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'pnpm'
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 8
-
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
+      - name: Check formatting
+        run: pnpm format:check
+
+      # Runs on every matrix version. ESLint 10 calls util.styleText, added in
+      # Node 20.12, and the matrix floor is 22.x — so there is no version here
+      # it cannot execute on.
+      #
+      # This step used to carry `if: matrix.node-version != '18.x'`, with a
+      # comment arguing that Node 18 stayed in the matrix on purpose. #162
+      # then removed 18 (end of life April 2025, the published container is
+      # node:22-alpine, and Vite 8 could not build there), which left the
+      # guard always true and the comment asserting a matrix entry that no
+      # longer existed. A reader would have believed 18 was still covered.
       - name: Run linting
         run: pnpm lint
 
@@ -40,11 +78,17 @@ jobs:
       - name: Run tests
         run: pnpm test
 
+      # The root test suite proves repository coverage, while this command
+      # proves every package/application entrypoint remains independently
+      # runnable from its own declared worker boundary.
+      - name: Run package-worker verification
+        run: pnpm test:packages
+
       - name: Generate coverage report
         run: pnpm test:coverage
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v7
         with:
           files: ./coverage/lcov.info
           fail_ci_if_error: false
@@ -52,25 +96,433 @@ jobs:
       - name: Build packages
         run: pnpm build
 
+      # The published bin is the file users actually execute, and nothing
+      # imports it, so a broken entrypoint would ship silently. This runs
+      # the built artifact rather than the source.
+      - name: Run the built CLI entrypoint
+        run: |
+          node packages/cli/dist/cli.js --help > /tmp/cli-help.txt
+          # The help text lists commands; it does not contain the word
+          # "usage". Assert what it actually prints.
+          grep -q 'omega health' /tmp/cli-help.txt
+          grep -q 'OMEGA_API_URL' /tmp/cli-help.txt
+
+          set +e
+          node packages/cli/dist/cli.js definitely-not-a-command > /dev/null 2>&1
+          status=$?
+          set -e
+          if [ "$status" -ne 2 ]; then
+            echo "::error::Unknown command exited $status, expected 2"
+            exit 1
+          fi
+          echo "Built CLI starts, prints usage, and rejects unknown commands."
+
       - name: Create verification attestation
         if: success()
         run: |
           echo "✓ Verification successful at $(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_STEP_SUMMARY
-          echo "All checks passed: lint, type-check, test, build" >> $GITHUB_STEP_SUMMARY
+          echo "All checks passed: format, lint, type-check, test, build" >> $GITHUB_STEP_SUMMARY
 
-      - name: Comment PR with results
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v6
+  windows:
+    name: Windows compatibility
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Enable pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.34.5
+
+      - name: Use Node.js 22.x
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22.x
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check formatting
+        run: pnpm format:check
+
+      - name: Run type checking
+        run: pnpm type-check
+
+      - name: Run tests
+        run: pnpm test
+
+      - name: Build packages
+        run: pnpm build
+
+  docker:
+    name: Package and smoke test
+    runs-on: ubuntu-latest
+    needs: verify
+
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build the API image
+        run: docker build -f apps/api/Dockerfile -t omega-v-api:ci .
+
+      - name: Refuse to start without a signing key
+        run: |
+          if docker run --rm omega-v-api:ci; then
+            echo "::error::Container started with no OMEGA_SIGNING_KEY. Attestations would be forgeable."
+            exit 1
+          fi
+          echo "Container exited non-zero without a signing key, as required."
+
+      - name: Prepare encrypted local-ledger volume
+        run: |
+          mkdir -p "$RUNNER_TEMP/omega-ledger"
+          chmod 700 "$RUNNER_TEMP/omega-ledger"
+
+      # The image runs as the non-root `omega` user. A runner-created 0700
+      # directory is otherwise owned by the host runner, so the first job
+      # write fails inside the container with a generic JOB_INVALID response.
+      - name: Grant image user access to encrypted local-ledger volume
+        run: |
+          ledger_uid=$(docker run --rm --entrypoint sh omega-v-api:ci -c 'id -u')
+          ledger_gid=$(docker run --rm --entrypoint sh omega-v-api:ci -c 'id -g')
+          sudo chown "$ledger_uid:$ledger_gid" "$RUNNER_TEMP/omega-ledger"
+          stat -c '%U:%G %a %n' "$RUNNER_TEMP/omega-ledger"
+
+      - name: Start the container
+        run: |
+          docker run -d --name omega-smoke \
+            -e OMEGA_SIGNING_KEY=ci-smoke-key-not-for-production \
+            -e OMEGA_AUTH_MODE=required \
+            -e OMEGA_READ_TOKEN=ci-smoke-read-token \
+            -e OMEGA_ADMIN_TOKEN=ci-smoke-admin-token \
+            -e OMEGA_LOCAL_JOB_LEDGER=on \
+            -e OMEGA_LOCAL_JOB_LEDGER_TOKEN=ci-smoke-job-token \
+            -e OMEGA_LOCAL_JOB_LEDGER_PATH=/tmp/omega-ledger/jobs.json \
+            -e OMEGA_LOCAL_JOB_LEDGER_KEY=ci-smoke-ledger-key \
+            -v "$RUNNER_TEMP/omega-ledger:/tmp/omega-ledger" \
+            --network host omega-v-api:ci
+
+      - name: Smoke test the running service
+        run: |
+          for attempt in $(seq 1 30); do
+            if curl -sf http://localhost:3000/health > /dev/null; then break; fi
+            sleep 1
+          done
+
+          curl -sf http://localhost:3000/health | tee /tmp/health.json
+          grep -q '"status":"ok"' /tmp/health.json
+          grep -q '"name":"local-job-ledger","encryption":"aes-256-gcm","keySource":"current"' /tmp/health.json
+          grep -q '"complete":false' /tmp/health.json
+
+          status=$(curl -sS -o /tmp/job.json -w '%{http_code}' -X POST http://localhost:3000/jobs \
+            -H 'Authorization: Bearer ci-smoke-admin-token' \
+            -H 'x-omega-local-job-token: ci-smoke-job-token' \
+            -H 'x-omega-operator-id: ci-smoke-operator' \
+            -H 'Content-Type: application/json' \
+            -d '{"kind":"synthetic-observe","idempotencyKey":"ci-restart-1","sourceUri":"local://ci-restart"}')
+          if [ "$status" != "201" ]; then
+            echo "::error::Job creation returned HTTP $status"
+            cat /tmp/job.json
+            exit 1
+          fi
+          test -s /tmp/job.json
+          cat /tmp/job.json
+          job_id=$(node -e "const body=JSON.parse(require('fs').readFileSync('/tmp/job.json','utf8')); if (!body.data?.job?.id) process.exit(1); process.stdout.write(body.data.job.id)")
+          curl -sf -H 'Authorization: Bearer ci-smoke-read-token' \
+            -H 'x-omega-local-job-token: ci-smoke-job-token' \
+            "http://localhost:3000/jobs/$job_id" | tee /tmp/job-before-restart.json
+          grep -q '"durable":true' /tmp/job-before-restart.json
+          grep -q '"source":"file"' /tmp/job-before-restart.json
+          grep -q '"encryption":"aes-256-gcm"' /tmp/job-before-restart.json
+
+          # The volume is owned by the image user, so the host runner cannot
+          # read it directly after the ownership fix. Inspect it read-only
+          # through the image as root; this is a CI confidentiality assertion,
+          # not a production permission model.
+          if docker run --rm --user 0:0 \
+            -v "$RUNNER_TEMP/omega-ledger:/tmp/omega-ledger:ro" \
+            --entrypoint sh omega-v-api:ci \
+            -c "grep -R -q -E 'local://ci-restart|ci-restart-1' /tmp/omega-ledger"; then
+            echo "::error::The encrypted local-ledger volume contains plaintext job payload."
+            exit 1
+          fi
+
+          docker rm -f omega-smoke
+          docker run -d --name omega-smoke \
+            -e OMEGA_SIGNING_KEY=ci-smoke-key-not-for-production \
+            -e OMEGA_AUTH_MODE=required \
+            -e OMEGA_READ_TOKEN=ci-smoke-read-token \
+            -e OMEGA_ADMIN_TOKEN=ci-smoke-admin-token \
+            -e OMEGA_LOCAL_JOB_LEDGER=on \
+            -e OMEGA_LOCAL_JOB_LEDGER_TOKEN=ci-smoke-job-token \
+            -e OMEGA_LOCAL_JOB_LEDGER_PATH=/tmp/omega-ledger/jobs.json \
+            -e OMEGA_LOCAL_JOB_LEDGER_KEY=ci-smoke-ledger-key \
+            -v "$RUNNER_TEMP/omega-ledger:/tmp/omega-ledger" \
+            --network host omega-v-api:ci
+          for attempt in $(seq 1 30); do
+            if curl -sf http://localhost:3000/health > /dev/null; then break; fi
+            sleep 1
+          done
+          curl -sf -H 'Authorization: Bearer ci-smoke-read-token' \
+            -H 'x-omega-local-job-token: ci-smoke-job-token' \
+            "http://localhost:3000/jobs/$job_id" | tee /tmp/job-after-restart.json
+          grep -q "\"id\":\"$job_id\"" /tmp/job-after-restart.json
+          grep -q '"durable":true' /tmp/job-after-restart.json
+          grep -q '"source":"file"' /tmp/job-after-restart.json
+          grep -q '"encryption":"aes-256-gcm"' /tmp/job-after-restart.json
+
+          curl -sf -H 'Authorization: Bearer ci-smoke-read-token' http://localhost:3000/rules | tee /tmp/rules.json
+          grep -q '"registered":2' /tmp/rules.json
+
+          if [ "$(curl -sS -o /tmp/state-unauthenticated.json -w '%{http_code}' http://localhost:3000/state)" != "401" ]; then
+            echo "::error::Unauthenticated state read was not rejected."
+            exit 1
+          fi
+
+          if [ "$(curl -sS -o /tmp/loop-read-token.json -w '%{http_code}' -X POST http://localhost:3000/complete-loop \
+            -H 'Content-Type: application/json' \
+            -H 'Authorization: Bearer ci-smoke-read-token' \
+            -d '{}')" != "401" ]; then
+            echo "::error::Read token was accepted for a state-changing mutation."
+            exit 1
+          fi
+
+          curl -sf -X POST http://localhost:3000/complete-loop \
+            -H 'Content-Type: application/json' \
+            -H 'Authorization: Bearer ci-smoke-admin-token' \
+            -d '{"claim":"container is healthy","category":"health-check","source":{"system":"ci-smoke","version":"0.1.0","environment":"ci"},"observedBy":"github-actions","metadata":{"statusCode":200,"responseTime":12},"confidence":0.95,"confidenceReason":"smoke test"}' \
+            | tee /tmp/loop.json
+          grep -q '"verified":true' /tmp/loop.json
+
+          curl -sf -H 'Authorization: Bearer ci-smoke-read-token' http://localhost:3000/log | tee /tmp/log.json
+          grep -q '"appendOnly":true' /tmp/log.json
+
+          # Deployment observability must expose the same runtime evidence that
+          # the Navigator consumes, not just a process-level health response.
+          curl -sf -H 'Authorization: Bearer ci-smoke-read-token' http://localhost:3000/state | tee /tmp/state.json
+          grep -q '"status":"active"' /tmp/state.json
+          grep -q '"attestationValidity":1' /tmp/state.json
+
+          curl -sf -H 'Authorization: Bearer ci-smoke-read-token' http://localhost:3000/observability | tee /tmp/observability.json
+          grep -q '"intact":true' /tmp/observability.json
+          grep -q '"attestationValidity":true' /tmp/observability.json
+
+          curl -sf -H 'Authorization: Bearer ci-smoke-read-token' http://localhost:3000/memory/integrity | tee /tmp/memory-integrity.json
+          grep -q '"intact":true' /tmp/memory-integrity.json
+
+          # The client addresses the API under /api. In production there is
+          # no dev-server proxy, so the same routes must answer under the
+          # prefix the built bundle actually calls. Capture status and body
+          # for each assertion so a future route or auth regression is named.
+          check_api() {
+            local path="$1"
+            local token="$2"
+            local pattern="$3"
+            local response=/tmp/api-response.json
+            local status
+            if [ -n "$token" ]; then
+              status=$(curl -sS -o "$response" -w '%{http_code}' -H "Authorization: Bearer $token" "http://localhost:3000$path")
+            else
+              status=$(curl -sS -o "$response" -w '%{http_code}' "http://localhost:3000$path")
+            fi
+            if [ "$status" != "200" ]; then
+              echo "::error::API prefix $path returned HTTP $status"
+              cat "$response"
+              exit 1
+            fi
+            if ! grep -q "$pattern" "$response"; then
+              echo "::error::API prefix $path did not contain expected evidence: $pattern"
+              cat "$response"
+              exit 1
+            fi
+          }
+          check_api /api/health '' '"status":"ok"'
+          check_api /api/rules ci-smoke-read-token '"registered":2'
+          check_api /api/state ci-smoke-read-token '"status":"active"'
+          check_api /api/observability ci-smoke-read-token '"intact":true'
+          check_api /api/memory/integrity ci-smoke-read-token '"intact":true'
+
+          # And the client itself must be served from that same origin. In
+          # required mode, the root document is a non-health GET and therefore
+          # needs the read bearer just like the API evidence routes.
+          set +e
+          curl -sS -D /tmp/index.headers -o /tmp/index.html -w '%{http_code}' \
+            -H 'Accept: text/html' \
+            -H 'Authorization: Bearer ci-smoke-read-token' \
+            http://localhost:3000/ > /tmp/index.status
+          page_curl_exit=$?
+          set -e
+          page_status=$(cat /tmp/index.status)
+          if [ "$page_curl_exit" -ne 0 ] || [ "$page_status" != "200" ]; then
+            echo "::error::Root SPA curl failed with exit $page_curl_exit and HTTP $page_status"
+            cat /tmp/index.headers || true
+            cat /tmp/index.html || true
+            exit 1
+          fi
+          if ! grep -qi '<div id="root"' /tmp/index.html; then
+            echo "::error::Root SPA response did not contain the root mount"
+            cat /tmp/index.html
+            exit 1
+          fi
+
+      - name: Container logs
+        if: always()
+        run: docker logs omega-smoke || true
+
+      - name: Stop the container
+        if: always()
+        run: docker rm -f omega-smoke || true
+
+      - name: Record the artifact
+        if: success()
+        run: |
+          echo "### 📦 Artifact" >> $GITHUB_STEP_SUMMARY
+          echo "\`omega-v-api:ci\` built, refused to start without a signing key," >> $GITHUB_STEP_SUMMARY
+          echo "then served /health, /rules, /complete-loop, /log, /state, /observability and /memory/integrity." >> $GITHUB_STEP_SUMMARY
+          docker image inspect omega-v-api:ci --format 'Image size: {{.Size}} bytes' >> $GITHUB_STEP_SUMMARY
+
+  report:
+    name: Report pipeline result
+    runs-on: ubuntu-latest
+    needs: [verify, windows, docker]
+    # always(), so a failed pipeline is reported rather than passed over in
+    # silence. A comment that only ever appears on success is not a report.
+    if: always() && github.event_name == 'pull_request'
+
+    permissions:
+      pull-requests: write
+
+    steps:
+      # This comment used to live inside the verify job, which runs as a
+      # node-version matrix. It therefore posted once per matrix leg — two
+      # identical "Verification pipeline passed" comments on PR #27 — and the
+      # first appeared while the other leg was still running and before the
+      # docker job had started at all.
+      #
+      # So it announced "Ready for review!" on the strength of one matrix leg,
+      # for a pipeline that had not finished. GREEN = EXECUTABLE_PROOF_ONLY is
+      # this repository's rule, and its own bot was breaking it.
+      #
+      # Here the job depends on everything it speaks for, runs once, and
+      # reports the results it was actually given.
+      - name: Comment PR with the real result
+        uses: actions/github-script@v9
         with:
           script: |
-            github.rest.issues.createComment({
+            const verify = '${{ needs.verify.result }}';
+            const windows = '${{ needs.windows.result }}';
+            const docker = '${{ needs.docker.result }}';
+            const ok = verify === 'success' && windows === 'success' && docker === 'success';
+            const mark = (r) => (r === 'success' ? '✓' : r === 'skipped' ? '–' : '✗');
+
+            const body = [
+              ok
+                ? '✅ Verification pipeline passed'
+                : '❌ Verification pipeline did not pass',
+              '',
+              `- ${mark(verify)} verify (format, lint, type-check, test, coverage, build) — ${verify}`,
+              `- ${mark(windows)} Windows compatibility (format, type-check, test, build) — ${windows}`,
+              `- ${mark(docker)} package and smoke test — ${docker}`,
+              '',
+              ok
+                ? 'Every job this comment names completed successfully.'
+                : 'Details are in the checks tab. This comment reports what ran, not what was hoped for.',
+            ].join('\n');
+
+            await github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '✅ Verification pipeline passed\n\n' +
-                    '- ✓ Linting\n' +
-                    '- ✓ Type checking\n' +
-                    '- ✓ Tests\n' +
-                    '- ✓ Build\n\n' +
-                    'Ready for review!'
-            })
+              body,
+            });
+
+  publish:
+    name: Publish attested artifact
+    runs-on: ubuntu-latest
+    needs: [verify, windows, docker]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Log in to the container registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Derive image name
+        id: image
+        run: echo "name=ghcr.io/${GITHUB_REPOSITORY,,}-api" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push
+        id: push
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.image.outputs.name }}:latest
+            ${{ steps.image.outputs.name }}:${{ github.sha }}
+
+      # ATTEST ≠ ASSERT. The pipeline says the artifact passed; this is the
+      # part that can be checked by someone who was not here. Produces a
+      # signed, verifiable record of which commit and which workflow built
+      # this exact digest.
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-name: ${{ steps.image.outputs.name }}
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true
+
+      # Provenance says who built the image. It says nothing about what is
+      # inside it. A consumer asking "does this ship a package with a known
+      # CVE" had no way to answer without pulling and unpacking the image.
+      - name: Generate an SBOM for the published image
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ steps.image.outputs.name }}@${{ steps.push.outputs.digest }}
+          format: spdx-json
+          output-file: sbom.spdx.json
+          upload-artifact: false
+
+      # Signed, so the inventory is evidence rather than a file anyone
+      # could have written afterwards.
+      - name: Attest the SBOM
+        uses: actions/attest-sbom@v4
+        with:
+          subject-name: ${{ steps.image.outputs.name }}
+          subject-digest: ${{ steps.push.outputs.digest }}
+          sbom-path: sbom.spdx.json
+          push-to-registry: true
+
+      - name: Record the published artifact
+        run: |
+          echo "### 🚀 Published" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Signed provenance and a signed SPDX inventory are attached to the digest." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "\`${{ steps.image.outputs.name }}:${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Digest: \`${{ steps.push.outputs.digest }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Verify the provenance without trusting this summary:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "gh attestation verify oci://${{ steps.image.outputs.name }}:${{ github.sha }} \\" >> $GITHUB_STEP_SUMMARY
+          echo "  --repo ${{ github.repository }}" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY

@@ -15,30 +15,35 @@ The project embodies a living evolution: every step contains all steps; every en
 ## Core Principles
 
 ### 1. Verification Before Everything
+
 - No claim without evidence
 - No evolution without verification
 - Every assertion must be attestable
 - Consensus and dissent both have voice
 
 ### 2. Continuous Observation
+
 - Systems are observed, never final
 - Observation itself is verifiable
 - Observer and observed co-create reality
 - Self-recognition enables distributed trust
 
 ### 3. Evidence-Based Trust
+
 - Trust emerges from verifiable provenance
 - Every action leaves an auditable trail
 - Attestation is permanent, evolution is continuous
 - Accountability is structural, not ceremonial
 
 ### 4. Graceful Pluralism
+
 - One system, many interpreters
 - Quantitative reasoning coexists with qualitative truth
 - Verification creates consensus without forcing uniformity
 - Dissent strengthens rather than fractures
 
 ### 5. Recursive Completeness
+
 - Every component contains the whole system
 - APIs, SDKs, CLIs expose the same verification loop
 - Web, mobile, edge, and community all speak the same language
@@ -48,57 +53,72 @@ The project embodies a living evolution: every step contains all steps; every en
 
 ## Architecture
 
-### The Verification Loop (Core)
+Architecture begins at **ZERO**, becomes **MINI**, and expands only when reality verifies the next step.
 
-```
-Observe → Verify → Attest → Record → Display → Learn → Return
+See [docs/MINI.md](docs/MINI.md).
+
+### Growth law
+
+```text
+0 → MINI → + → + → + → FULL STACK → ECOSYSTEM → REALITY ↺ ∞
 ```
 
-Every operation in Ω∞v follows this loop:
+### The MINI Kernel (Core)
+
+```text
+💧 Ω∞v MINI ::= 👁 Observe → ✓ Verify → 🧠 Remember
+```
+
+Every MINI operation follows this loop:
 
 1. **Observe**: Capture state, events, or claims
-2. **Verify**: Apply evidence-based reasoning; check against known truths
-3. **Attest**: Generate verifiable proof; create cryptographic commitment
-4. **Record**: Store provenance; maintain immutable history
-5. **Display**: Present results to stakeholders; enable visualization
-6. **Learn**: Extract patterns; improve verification rules
-7. **Return**: Feed learning back into observation and verification
+2. **Verify**: Apply evidence-based reasoning; produce an evidence path
+3. **Remember**: Store verified experience in append-only memory
+
+### Expanded loop (earned layers wrap MINI)
+
+```
+Observe → Verify → Remember → Attest → Display → Learn → Return
+```
 
 ### Structural Layers
 
 ```
 ┌─────────────────────────────────────────┐
-│  User Interfaces (Web, Mobile, CLI)     │  ← Presentation
+│  User Interfaces (Web, Mobile, CLI)     │  ← earned +
 ├─────────────────────────────────────────┤
-│  SDKs & APIs                            │  ← Integration
+│  SDKs & APIs                            │  ← earned +
 ├─────────────────────────────────────────┤
-│  Verification Engine                    │  ← Core Logic
-│  • Observer                             │
-│  • Verification Rules                   │
-│  • Attestation Service                  │
+│  Attestation                            │  ← earned + ATTEST
 ├─────────────────────────────────────────┤
-│  Compiler → IR → Runtime                │  ← Execution
+│  💧 MINI KERNEL                         │  ← foundation
+│  • 👁 Observer                          │
+│  • ✓ Verification Rules                 │
+│  • 🧠 Remember                          │
 ├─────────────────────────────────────────┤
-│  Persistence Layer (Database, Events)   │  ← Storage
+│  Compiler → IR → Runtime                │  ← later +
 ├─────────────────────────────────────────┤
-│  Deployment (Docker, Kubernetes, Edge)  │  ← Infrastructure
+│  External Persistence                   │  ← later +
+├─────────────────────────────────────────┤
+│  Deployment (Docker, Kubernetes, Edge)  │  ← later +
 └─────────────────────────────────────────┘
 ```
 
 ### Component Purposes
 
-| Component | Purpose | Output |
-|-----------|---------|--------|
-| **Observer** | Captures observations from any source | Standardized event stream |
-| **Verification** | Applies rules to observations | Boolean + evidence path |
-| **Attestation** | Cryptographically signs verification | Signature + timestamp + key |
-| **Compiler** | Transforms rules into executable form | Oceanicum IR bytecode |
-| **IR** | Portable verification rule representation | Low-level verification ops |
-| **SDK** | Programmatic access to verification | Language bindings |
-| **CLI** | Command-line verification interface | STDOUT + exit codes |
-| **API** | Network-accessible verification | REST/gRPC endpoints |
-| **Database** | Immutable provenance store | Event log + attestation index |
-| **Dashboard** | Visual verification results | Timeline + status + evidence |
+| Component        | Purpose                                   | Output                       | Layer    |
+| ---------------- | ----------------------------------------- | ---------------------------- | -------- |
+| **Observer**     | Captures observations from any source     | Standardized event stream    | MINI     |
+| **Verification** | Applies rules to observations             | Boolean + evidence path      | MINI     |
+| **Remember**     | Append-only verified memory               | MemoryRecord + log chain     | MINI     |
+| **MiniKernel**   | Composes one living cycle                 | MiniCycleResult              | MINI     |
+| **Attestation**  | Cryptographically signs verification      | Signature + timestamp + key  | + ATTEST |
+| **Compiler**     | Transforms rules into executable form     | Oceanicum IR bytecode        | later +  |
+| **IR**           | Portable verification rule representation | Low-level verification ops   | later +  |
+| **SDK**          | Programmatic access to verification       | Language bindings            | later +  |
+| **CLI**          | Command-line verification interface       | STDOUT + exit codes          | later +  |
+| **API**          | Network-accessible verification           | REST/gRPC endpoints          | + API    |
+| **Dashboard**    | Visual verification results               | Timeline + status + evidence | + Web    |
 
 ---
 
@@ -121,6 +141,10 @@ These rules are non-negotiable:
 4. **Every change must be recorded**
    - Nothing is deleted, only marked as superseded
    - Event log is append-only
+   - The durable log (`OMEGA_EVENT_LOG_PATH`, JSON Lines) is never truncated
+     and is served by `GET /log`. The in-memory arrays behind `GET /events`
+     are a bounded recent window over that log, not the log itself. A lossy
+     read is reported as `partial` rather than silently returning less.
 
 5. **Every user action is verifiable**
    - Who? When? What? Why? → Permanently recorded
@@ -138,33 +162,35 @@ These rules are non-negotiable:
 
 ## Verification Roadmap
 
-### Phase 1: Foundation (Core Loop)
-- [ ] Observer: Event capture and normalization
-- [ ] Verification: Rule engine with evidence paths
-- [ ] Attestation: Cryptographic signing service
-- [ ] Database: Append-only provenance store
-- [ ] Dashboard: Timeline view of attestations
+Growth order: **Zero → MINI → earned expansions**. Details in [docs/ROADMAP.md](docs/ROADMAP.md).
 
-### Phase 2: Integration (Ecosystem)
-- [ ] Compiler: Rule language → IR
-- [ ] IR: Bytecode representation
-- [ ] SDK: Programmatic interface
-- [ ] CLI: Command-line tool
-- [ ] API: Network service
+### Phase 0–1: Zero + Constitution
 
-### Phase 3: Distribution (Trustworthy at Scale)
-- [ ] Docker: Containerized verification
-- [ ] Kubernetes: Distributed attestation
-- [ ] Edge: Verification at network edge
-- [ ] VaaS: Verification as a service
-- [ ] Community: Open verification marketplace
+- [x] Admit empty origin (no fake ecosystem)
+- [x] Charter, manifest, contributing, license
 
-### Phase 4: Intelligence (Learning Loop Closes)
-- [ ] Analytics: Pattern extraction from verifications
-- [ ] Adaptation: Rules improve based on evidence
-- [ ] Community: Shared verification knowledge base
-- [ ] Federation: Cross-system verification
-- [ ] Continuous becoming: Evolution without reset
+### Phase 2: MINI kernel (Observe → Verify → Remember)
+
+- [x] Observer: Event capture and normalization
+- [x] Verification: Rule engine with evidence paths
+- [x] Remember: Append-only hash-chained memory
+- [x] MiniKernel: One living cycle without API/UI
+- [ ] MINI as default mental model across apps/docs
+
+### Phase 3: Earned core expansions
+
+- [ ] Attestation: Production-grade signing on remembered results
+- [ ] Act: Actions gated by verified memory
+- [ ] Stronger reason/intent/build/test layers
+
+### Phase 4: Interface expansions
+
+- [ ] API / Web / CLI / SDK / Mobile
+
+### Phase 5–7: Depth, distribution, ecosystem
+
+- [ ] Compiler/IR, durable stores, edge, VaaS
+- [ ] Governance, stewardship, economy, evolution ↺ ∞
 
 ---
 
@@ -198,6 +224,7 @@ The project succeeds when:
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on:
+
 - How to propose changes
 - How to verify your work
 - How to create attestations
@@ -211,5 +238,5 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on:
 
 ---
 
-**Last Updated**: 2026-08-07  
-**Manifest Status**: Living document — evolves with evidence and community input
+**Last Updated**: 2026-08-14  
+**Manifest Status**: Living document — Zero → MINI → verified expansion
