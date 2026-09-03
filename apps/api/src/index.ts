@@ -512,4 +512,5 @@ httpServer.listen(port, () => {
   console.log(`  - Audit trail for observation/verification/attestation events`);
 });
 
+export { app };
 export default app;
