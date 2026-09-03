@@ -13,6 +13,12 @@ import {
 } from './middleware';
 import { initializeWebSocketServer } from './websocket';
 import { loadOpenAPISpec, swaggerUIOptions } from './openapi';
+import {
+  initializeLogging,
+  getLoggingContext,
+  requestLoggingMiddleware,
+  auditLoggingMiddleware,
+} from './logging-middleware';
 
 /**
  * Ω∞v Oceanicos API Server
@@ -25,6 +31,9 @@ const port = process.env.API_PORT || 3000;
 const persistenceEnabled = process.env.PERSISTENCE_ENABLED === 'true';
 const dbPath = process.env.DB_PATH || './events.db';
 
+// Initialize logging system
+initializeLogging();
+
 // Security and validation middleware
 app.use(securityHeaders);
 app.use(express.json({ limit: '1mb' }));
@@ -32,6 +41,10 @@ app.use(validateJSON);
 app.use(requestSizeLimits('1mb'));
 app.use(requestLogging);
 app.use(createRateLimitMiddleware(200, 60000));
+
+// Logging middleware
+app.use(requestLoggingMiddleware);
+app.use(auditLoggingMiddleware);
 
 // Setup API documentation (OpenAPI/Swagger)
 const openAPISpec = loadOpenAPISpec();
@@ -117,6 +130,9 @@ app.post('/complete-loop', (req: Request, res: Response) => {
     const { claim, category, source, observedBy, metadata, confidence, confidenceReason } =
       req.body;
 
+    const auditLogger = (req as any).locals?.auditLogger;
+    const correlationId = (req as any).locals?.correlationId;
+
     const result = runtime.executeLoop({
       claim,
       category,
@@ -126,6 +142,43 @@ app.post('/complete-loop', (req: Request, res: Response) => {
       confidence,
       confidenceReason,
     });
+
+    if (auditLogger) {
+      auditLogger.auditObservation(
+        result.observation.id,
+        observedBy,
+        'success',
+        {
+          claim,
+          category,
+          confidence,
+          correlationId,
+        },
+      );
+
+      auditLogger.auditVerification(
+        result.verification.id,
+        result.observation.id,
+        result.verification.summary.passed,
+        observedBy,
+        {
+          confidence: result.verification.summary.confidence,
+          rulesApplied: result.verification.rules.length,
+          correlationId,
+        },
+      );
+
+      auditLogger.auditAttestation(
+        result.attestation.id,
+        result.verification.id,
+        result.attestation.verified,
+        observedBy,
+        {
+          algorithm: result.attestation.signingAlgorithm,
+          correlationId,
+        },
+      );
+    }
 
     const response: SuccessResponse<typeof result> = {
       data: result,
@@ -278,6 +331,42 @@ app.get('/integrity', (_req: Request, res: Response) => {
 });
 
 /**
+ * GET /audit - Query audit trail
+ */
+app.get('/audit', (req: Request, res: Response) => {
+  try {
+    const { type, actor, limit } = req.query;
+    const auditLogger = getLoggingContext().auditLogger;
+
+    let entries: any[] = [];
+
+    if (type) {
+      entries = auditLogger.getEntriesByType(type as any, limit ? parseInt(limit as string) : 50);
+    } else {
+      entries = auditLogger.getEntries(limit ? parseInt(limit as string) : 50);
+    }
+
+    if (actor) {
+      entries = entries.filter(e => e.actor === actor);
+    }
+
+    const response: SuccessResponse<typeof entries> = {
+      data: entries,
+      timestamp: new Date().toISOString(),
+    };
+
+    res.json(response);
+  } catch (error) {
+    const errorResponse: ErrorResponse = {
+      code: 'AUDIT_QUERY_FAILED',
+      message: error instanceof Error ? error.message : 'Audit query failed',
+      timestamp: new Date().toISOString(),
+    };
+    res.status(400).json(errorResponse);
+  }
+});
+
+/**
  * GET /metrics - Get system metrics (Prometheus format)
  */
 app.get('/metrics', (_req: Request, res: Response) => {
@@ -410,12 +499,17 @@ httpServer.listen(port, () => {
   console.log(`  GET    /query/attestations     - Query attestations with pagination`);
   console.log(`  GET    /query/trace/:id        - Get complete trace for observation`);
   console.log(`  GET    /integrity              - Verify event log integrity`);
+  console.log(`  GET    /audit                  - Query audit trail (type/actor filters)`);
   console.log(`  GET    /metrics                - Get system metrics (Prometheus format)`);
   console.log(`  GET    /metrics/json           - Get system metrics (JSON format)`);
   console.log(`  POST   /graphql                - GraphQL query endpoint`);
   console.log(`  GET    /graphql/schema         - GraphQL schema introspection`);
   console.log(`  GET    /health                 - Quick health check`);
   console.log(`  GET    /health/detailed        - Detailed component health status`);
+  console.log(`\n📋 Logging:`);
+  console.log(`  - Correlation ID tracking via X-Correlation-ID header`);
+  console.log(`  - Request/response logging with duration and size metrics`);
+  console.log(`  - Audit trail for observation/verification/attestation events`);
 });
 
 export default app;
