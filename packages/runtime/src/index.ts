@@ -726,5 +726,24 @@ export type {
   SearchResults,
   SearchAuditLog,
 } from './search';
+export {
+  TenantManager,
+  ContextPropagator,
+  QuotaManager,
+  IsolationManager,
+  TenantAuditor,
+  TenantHub,
+} from './multitenancy';
+export type {
+  QuotaMetric,
+  IsolationLevel,
+  TenantStatus,
+  Tenant,
+  TenantContext,
+  QuotaLimit,
+  TenantQuotas,
+  IsolationPolicy,
+  TenantAuditEvent,
+} from './multitenancy';
 
 export default VerificationRuntime;
