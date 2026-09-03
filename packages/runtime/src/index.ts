@@ -5,6 +5,7 @@ import { EventLog } from '@omega-v/recorder';
 import PrometheusMetricsCollector from './prometheus-metrics';
 import { TraceManager } from './tracing';
 import { EventBroadcaster } from './websocket';
+import { HealthChecker, HealthChecks } from './health';
 import {
   Observation,
   VerificationRule,
@@ -28,6 +29,7 @@ export class VerificationRuntime {
   private metricsCollector: PrometheusMetricsCollector;
   private traceManager: TraceManager;
   private eventBroadcaster: EventBroadcaster;
+  private healthChecker: HealthChecker;
 
   private executionStats = {
     totalExecutions: 0,
@@ -53,6 +55,43 @@ export class VerificationRuntime {
     this.metricsCollector = new PrometheusMetricsCollector();
     this.traceManager = new TraceManager();
     this.eventBroadcaster = new EventBroadcaster();
+    this.healthChecker = new HealthChecker();
+
+    this.initializeHealthChecks();
+  }
+
+  /**
+   * Initialize health checks for all components
+   */
+  private initializeHealthChecks(): void {
+    this.healthChecker.registerCheck(
+      'observer',
+      HealthChecks.alive('observer'),
+    );
+    this.healthChecker.registerCheck(
+      'verification-engine',
+      HealthChecks.alive('verification-engine'),
+    );
+    this.healthChecker.registerCheck(
+      'attestation-service',
+      HealthChecks.alive('attestation-service'),
+    );
+    this.healthChecker.registerCheck(
+      'event-log',
+      HealthChecks.alive('event-log'),
+    );
+    this.healthChecker.registerCheck(
+      'metrics',
+      HealthChecks.alive('metrics'),
+    );
+    this.healthChecker.registerCheck(
+      'memory',
+      HealthChecks.memory('memory', { threshold: 0.9 }),
+    );
+    this.healthChecker.registerCheck(
+      'execution-health',
+      HealthChecks.counter('execution-health', () => this.executionStats.totalExecutions),
+    );
   }
 
   /**
@@ -336,6 +375,20 @@ export class VerificationRuntime {
   }
 
   /**
+   * Get the health checker instance (for system health monitoring)
+   */
+  public getHealthChecker(): HealthChecker {
+    return this.healthChecker;
+  }
+
+  /**
+   * Run all health checks and get system status
+   */
+  public async checkHealth() {
+    return this.healthChecker.runChecks();
+  }
+
+  /**
    * Export complete event log for audit/backup
    */
   public exportEventLog() {
@@ -369,5 +422,10 @@ export {
 } from './graphql';
 export { EventBroadcaster, createMessage, parseFilter, generateEventId } from './websocket';
 export type { VerificationEvent, Subscriber, WebSocketMessage } from './websocket';
+export {
+  HealthChecker,
+  HealthChecks,
+} from './health';
+export type { HealthStatus, ComponentHealth, SystemHealth, HealthCheckFunction } from './health';
 
 export default VerificationRuntime;

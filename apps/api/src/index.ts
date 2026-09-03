@@ -74,7 +74,7 @@ runtime.registerRule({
 });
 
 /**
- * Health check endpoint
+ * Quick health check endpoint
  */
 app.get('/health', (_req: Request, res: Response) => {
   const response: SuccessResponse<{ status: string }> = {
@@ -82,6 +82,30 @@ app.get('/health', (_req: Request, res: Response) => {
     timestamp: new Date().toISOString(),
   };
   res.json(response);
+});
+
+/**
+ * Detailed health check endpoint with component status
+ */
+app.get('/health/detailed', async (_req: Request, res: Response) => {
+  try {
+    const healthStatus = await runtime.checkHealth();
+
+    const response: SuccessResponse<typeof healthStatus> = {
+      data: healthStatus,
+      timestamp: new Date().toISOString(),
+    };
+
+    const statusCode = healthStatus.status === 'healthy' ? 200 : healthStatus.status === 'degraded' ? 206 : 503;
+    res.status(statusCode).json(response);
+  } catch (error) {
+    const errorResponse: ErrorResponse = {
+      code: 'HEALTH_CHECK_FAILED',
+      message: error instanceof Error ? error.message : 'Health check failed',
+      timestamp: new Date().toISOString(),
+    };
+    res.status(503).json(errorResponse);
+  }
 });
 
 /**
@@ -390,7 +414,8 @@ httpServer.listen(port, () => {
   console.log(`  GET    /metrics/json           - Get system metrics (JSON format)`);
   console.log(`  POST   /graphql                - GraphQL query endpoint`);
   console.log(`  GET    /graphql/schema         - GraphQL schema introspection`);
-  console.log(`  GET    /health                 - Health check`);
+  console.log(`  GET    /health                 - Quick health check`);
+  console.log(`  GET    /health/detailed        - Detailed component health status`);
 });
 
 export default app;
