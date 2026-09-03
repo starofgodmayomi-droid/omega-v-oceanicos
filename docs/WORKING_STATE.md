@@ -1,6 +1,12 @@
 # Ω∞v Oceanicos Working State
 
-**Updated:** 2026-09-02
+**Updated:** 2026-09-03
+
+## Root package-worker orchestration checkpoint — 2026-09-03
+
+After PR #245 merged as `faf7115`, the root workspace now exposes `pnpm test:packages`, a bounded sequential orchestration command covering MINI, SDK, CLI, API, Web, attestation, dissensus, lexicon, observer, remember, verification, coordination, and runtime. It provides one reproducible entrypoint for the multi-surface worker/builder verification loop while retaining each package’s explicit test scope.
+
+Observed evidence: all listed package and application test commands passed, including coordination’s bounded worker tests and runtime’s bounded loop/memory tests. No deployment was performed; publication and merge were completed only under explicit user authorization.
 
 ## Web package-local DOM verification checkpoint — 2026-09-02
 
