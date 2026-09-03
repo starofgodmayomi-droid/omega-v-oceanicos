@@ -4,6 +4,7 @@ import { AttestationService } from '@omega-v/attestation';
 import { EventLog } from '@omega-v/recorder';
 import PrometheusMetricsCollector from './prometheus-metrics';
 import { TraceManager } from './tracing';
+import { EventBroadcaster } from './websocket';
 import {
   Observation,
   VerificationRule,
@@ -26,6 +27,7 @@ export class VerificationRuntime {
   private eventLog: EventLog;
   private metricsCollector: PrometheusMetricsCollector;
   private traceManager: TraceManager;
+  private eventBroadcaster: EventBroadcaster;
 
   private executionStats = {
     totalExecutions: 0,
@@ -50,6 +52,7 @@ export class VerificationRuntime {
     this.eventLog = new EventLog();
     this.metricsCollector = new PrometheusMetricsCollector();
     this.traceManager = new TraceManager();
+    this.eventBroadcaster = new EventBroadcaster();
   }
 
   /**
@@ -98,6 +101,18 @@ export class VerificationRuntime {
     this.traceManager.endSpan(observeSpan!);
 
     this.metricsCollector.incrementObservations();
+    this.eventBroadcaster.publish({
+      type: 'observation',
+      timestamp: new Date().toISOString(),
+      id: observation.id,
+      data: {
+        claim: observation.claim.statement,
+        category: observation.claim.category,
+        confidence: observation.confidence,
+        source: observation.source,
+      },
+      source: 'runtime',
+    });
 
     // Step 2: VERIFY - Apply verification rules
     const verifySpan = this.traceManager.createChildSpan(traceId, 'verify');
@@ -112,6 +127,19 @@ export class VerificationRuntime {
 
     this.metricsCollector.incrementVerifications(verification.summary.passed);
     this.metricsCollector.recordVerificationDuration(verifyDuration);
+    this.eventBroadcaster.publish({
+      type: 'verification',
+      timestamp: new Date().toISOString(),
+      id: verification.id,
+      data: {
+        observationId: observation.id,
+        passed: verification.summary.passed,
+        confidence: verification.summary.confidence,
+        duration_ms: verifyDuration,
+        rulesApplied: verification.rules.length,
+      },
+      source: 'runtime',
+    });
 
     // Step 3: ATTEST - Create cryptographic proof
     const attestSpan = this.traceManager.createChildSpan(traceId, 'attest');
@@ -126,6 +154,18 @@ export class VerificationRuntime {
 
     this.metricsCollector.incrementAttestations(attestation.verified);
     this.metricsCollector.recordAttestationDuration(attestDuration);
+    this.eventBroadcaster.publish({
+      type: 'attestation',
+      timestamp: new Date().toISOString(),
+      id: attestation.id,
+      data: {
+        verificationId: verification.id,
+        verified: attestation.verified,
+        algorithm: attestation.signingAlgorithm,
+        duration_ms: attestDuration,
+      },
+      source: 'runtime',
+    });
 
     // Step 4: RECORD - Store in immutable event log
     this.eventLog.recordObservation(observation);
@@ -289,6 +329,13 @@ export class VerificationRuntime {
   }
 
   /**
+   * Get the event broadcaster instance (for WebSocket integration)
+   */
+  public getEventBroadcaster(): EventBroadcaster {
+    return this.eventBroadcaster;
+  }
+
+  /**
    * Export complete event log for audit/backup
    */
   public exportEventLog() {
@@ -320,5 +367,7 @@ export {
   createVerificationSchema,
   getSchemaIntrospection,
 } from './graphql';
+export { EventBroadcaster, createMessage, parseFilter, generateEventId } from './websocket';
+export type { VerificationEvent, Subscriber, WebSocketMessage } from './websocket';
 
 export default VerificationRuntime;

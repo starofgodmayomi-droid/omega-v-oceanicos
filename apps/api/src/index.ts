@@ -1,4 +1,5 @@
 import express, { Express, Request, Response } from 'express';
+import { createServer } from 'http';
 import { VerificationRuntime, createVerificationSchema, getSchemaIntrospection } from '@omega-v/runtime';
 import { SuccessResponse, ErrorResponse } from '@omega-v/types';
 import {
@@ -9,6 +10,7 @@ import {
   requestLogging,
   errorHandler,
 } from './middleware';
+import { initializeWebSocketServer } from './websocket';
 
 /**
  * Ω∞v Oceanicos API Server
@@ -357,11 +359,16 @@ app.use((_req: Request, res: Response) => {
 app.use(errorHandler);
 
 /**
- * Start the server
+ * Start the server with WebSocket support
  */
-app.listen(port, () => {
+const httpServer = createServer(app);
+const broadcaster = runtime.getEventBroadcaster();
+initializeWebSocketServer(httpServer, broadcaster);
+
+httpServer.listen(port, () => {
   console.log(`[Ω∞v API] Verification loop server running on http://localhost:${port}`);
-  console.log(`Available endpoints:`);
+  console.log(`WebSocket endpoint available at ws://localhost:${port}/ws`);
+  console.log(`Available REST endpoints:`);
   console.log(`  POST   /complete-loop          - Execute full loop in one request`);
   console.log(`  GET    /query/observations     - Query observations with pagination`);
   console.log(`  GET    /query/verifications    - Query verifications with pagination`);
