@@ -507,5 +507,15 @@ export type {
   TokenBucketConfig,
   TierConfig,
 } from './rate-limiter';
+export {
+  RequestSignature,
+  WebhookSignature,
+  OutboundRequestSigner,
+} from './request-signature';
+export type {
+  SignatureConfig,
+  SignatureVerifyResult,
+  RequestSignatureOptions,
+} from './request-signature';
 
 export default VerificationRuntime;
