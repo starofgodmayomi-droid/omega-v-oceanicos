@@ -115,6 +115,21 @@ describe('LocalJobLedger', () => {
     expect(ledger.recentEvents(40)).toHaveLength(0);
   });
 
+  it('rejects a non-integer limit, distinct from an out-of-range integer limit', () => {
+    // GET /jobs?limit=... does Number(rawLimit) before calling list(), so a
+    // query like ?limit=abc (NaN) or ?limit=2.5 reaches this exact branch --
+    // the !Number.isInteger(limit) operand, which list(0)/list(41) above
+    // never actually make true.
+    const ledger = new LocalJobLedger(true);
+    expect(() => ledger.list(Number.NaN)).toThrow(
+      expect.objectContaining({
+        code: 'JOB_INVALID',
+        message: expect.stringContaining('integer'),
+      })
+    );
+    expect(() => ledger.list(2.5)).toThrow(expect.objectContaining({ code: 'JOB_INVALID' }));
+  });
+
   it('persists an encrypted ledger and restores jobs, idempotency, and events', () => {
     withStorage((storagePath) => {
       const first = new LocalJobLedger({
@@ -142,6 +157,15 @@ describe('LocalJobLedger', () => {
         expect.objectContaining({ code: 'JOB_DUPLICATE' })
       );
     });
+  });
+
+  it('requires paired storage and encryption configuration in the reverse direction too', () => {
+    // The sibling test below only exercises storagePath-set/encryptionKey-omitted.
+    // Boolean(storagePath) !== Boolean(encryptionKey) is also true, and must
+    // still throw, when it's the encryptionKey that's supplied alone.
+    expect(() => new LocalJobLedger({ enabled: true, encryptionKey: 'some-key' })).toThrow(
+      /must be configured together/
+    );
   });
 
   it('requires paired storage and encryption configuration and rejects tampering', () => {
@@ -181,6 +205,44 @@ describe('LocalJobLedger', () => {
       if (priorFlag === undefined) delete process.env.OMEGA_LOCAL_JOB_LEDGER;
       else process.env.OMEGA_LOCAL_JOB_LEDGER = priorFlag;
     }
+  });
+
+  it('persists via environment-driven storage path and encryption key, not just the enabled flag', () => {
+    // Every other persistence test constructs storagePath/encryptionKey as
+    // explicit constructor options. This proves the process.env fallback for
+    // OMEGA_LOCAL_JOB_LEDGER_PATH / OMEGA_LOCAL_JOB_LEDGER_KEY actually wires
+    // up file-backed persistence end-to-end, not just the enabled flag.
+    withStorage((storagePath) => {
+      const priorFlag = process.env.OMEGA_LOCAL_JOB_LEDGER;
+      const priorPath = process.env.OMEGA_LOCAL_JOB_LEDGER_PATH;
+      const priorKey = process.env.OMEGA_LOCAL_JOB_LEDGER_KEY;
+      try {
+        process.env.OMEGA_LOCAL_JOB_LEDGER = 'on';
+        process.env.OMEGA_LOCAL_JOB_LEDGER_PATH = storagePath;
+        process.env.OMEGA_LOCAL_JOB_LEDGER_KEY = ledgerKey;
+
+        const first = new LocalJobLedger();
+        expect(first.status()).toMatchObject({
+          enabled: true,
+          durable: true,
+          source: 'file',
+          encryption: 'aes-256-gcm',
+        });
+        const created = first.create(input, provenance);
+        expect(readFileSync(storagePath, 'utf8')).not.toContain('local://fixture/one');
+
+        const restored = new LocalJobLedger();
+        expect(restored.status().source).toBe('file');
+        expect(restored.get(created.job.id)).toEqual(created.job);
+      } finally {
+        if (priorFlag === undefined) delete process.env.OMEGA_LOCAL_JOB_LEDGER;
+        else process.env.OMEGA_LOCAL_JOB_LEDGER = priorFlag;
+        if (priorPath === undefined) delete process.env.OMEGA_LOCAL_JOB_LEDGER_PATH;
+        else process.env.OMEGA_LOCAL_JOB_LEDGER_PATH = priorPath;
+        if (priorKey === undefined) delete process.env.OMEGA_LOCAL_JOB_LEDGER_KEY;
+        else process.env.OMEGA_LOCAL_JOB_LEDGER_KEY = priorKey;
+      }
+    });
   });
 
   it('lists the default window of jobs when no limit is supplied', () => {
@@ -229,6 +291,15 @@ describe('LocalJobLedger', () => {
     expect(() =>
       ledger.fail(created.job.id, 'worker-a', 'not a bounded identifier!', provenance)
     ).toThrow(expect.objectContaining({ code: 'JOB_INVALID' }));
+    // Mirrors the resultSummary length-boundary case above: errorClass reuses
+    // the same 500-char bound via validIdentifier, but only its invalid-character
+    // case was previously exercised, never the length boundary itself.
+    expect(() => ledger.fail(created.job.id, 'worker-a', 'a'.repeat(501), provenance)).toThrow(
+      expect.objectContaining({
+        code: 'JOB_INVALID',
+        message: expect.stringContaining('errorClass'),
+      })
+    );
     const failed = ledger.fail(created.job.id, 'worker-a', 'synthetic_failure', provenance);
     expect(failed.job.state).toBe('failed');
     expect(failed.job.errorClass).toBe('synthetic_failure');
@@ -347,6 +418,53 @@ describe('LocalJobLedger', () => {
       expect(
         () => new LocalJobLedger({ enabled: true, storagePath, encryptionKey: ledgerKey })
       ).toThrow(/invalid event/);
+    });
+  });
+
+  it('restores a job with a corrupted state field without validating it (documents a real gap)', () => {
+    // restore()'s job validation (lines 373-378) only checks that job.id and
+    // job.idempotencyKey are strings -- unlike the idempotency and event
+    // records restored just below, it never checks that `state` is one of
+    // the five valid LocalJobState values. status() then does
+    // `counts[job.state] += 1` unconditionally, so a corrupted state that
+    // still passes the id/idempotencyKey check silently produces a NaN count
+    // under a bogus key instead of restore() raising the same kind of
+    // "invalid job" error the sibling malformed-record tests assert for.
+    withStorage((storagePath) => {
+      writeEncryptedEnvelope(storagePath, {
+        version: 1,
+        jobs: [
+          {
+            id: 'job-corrupt-state',
+            kind: 'synthetic-observe',
+            state: 'not-a-real-state',
+            idempotencyKey: 'job-key-corrupt',
+            payloadDigest: digestFor(input),
+            sourceUri: input.sourceUri,
+            actor: input.actor,
+            workerId: null,
+            attempt: 0,
+            createdAt: provenance.observedAt,
+            updatedAt: provenance.observedAt,
+            finishedAt: null,
+            resultSummary: null,
+            errorClass: null,
+            provenance,
+          },
+        ],
+        idempotency: {},
+        events: [],
+      });
+      const ledger = new LocalJobLedger({ enabled: true, storagePath, encryptionKey: ledgerKey });
+      // The corrupted record is accepted into the ledger rather than rejected...
+      expect(ledger.get('job-corrupt-state')).toBeDefined();
+      const counts = ledger.status().counts as unknown as Record<string, number>;
+      // ...the five known states stay untouched by it...
+      expect(counts).toMatchObject({ queued: 0, running: 0, succeeded: 0, failed: 0, unknown: 0 });
+      // ...but status() silently created a bogus counts key with NaN, instead
+      // of restore() catching the malformed state up front the way it does
+      // for malformed idempotency and event records.
+      expect(counts['not-a-real-state']).toBeNaN();
     });
   });
 
