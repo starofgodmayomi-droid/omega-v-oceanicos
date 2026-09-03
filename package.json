@@ -18,7 +18,7 @@
   ],
   "scripts": {
     "dev": "pnpm --parallel --filter @omega-v/api --filter @omega-v/web dev",
-    "build": "pnpm --parallel --filter @omega-v/types --filter @omega-v/observer --filter @omega-v/verification --filter @omega-v/attestation --filter @omega-v/recorder --filter @omega-v/runtime --filter @omega-v/api --filter @omega-v/web build",
+    "build": "pnpm --parallel --filter @omega-v/types --filter @omega-v/observer --filter @omega-v/verification --filter @omega-v/attestation --filter @omega-v/recorder --filter @omega-v/runtime --filter @omega-v/persistence --filter @omega-v/api --filter @omega-v/web build",
     "clean": "pnpm --parallel --filter @omega-v/api --filter @omega-v/web --filter @omega-v/attestation --filter @omega-v/observer --filter @omega-v/verification --filter @omega-v/types clean && rm -rf coverage",
     "test": "jest",
     "test:fast": "jest --testPathIgnorePatterns=integration",

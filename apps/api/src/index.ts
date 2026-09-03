@@ -10,12 +10,21 @@ import { SuccessResponse, ErrorResponse } from '@omega-v/types';
  */
 const app: Express = express();
 const port = process.env.API_PORT || 3000;
+const persistenceEnabled = process.env.PERSISTENCE_ENABLED === 'true';
+const dbPath = process.env.DB_PATH || './events.db';
 
 // Middleware
 app.use(express.json());
 
-// Initialize unified runtime
+// Initialize unified runtime with optional persistent storage
 const runtime = new VerificationRuntime();
+
+// Persistent storage is available via:
+// const eventLog = new SQLiteEventLog({ dbPath });
+// Future: integrate with VerificationRuntime for full persistence
+if (persistenceEnabled) {
+  console.log(`[Ω∞v API] Persistent storage configured at ${dbPath} (coming in next phase)`);
+}
 
 // Register default verification rules
 runtime.registerRule({

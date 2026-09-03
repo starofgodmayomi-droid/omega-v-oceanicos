@@ -27,7 +27,8 @@
       "@omega-v/verification": ["packages/verification/src/index.ts"],
       "@omega-v/attestation": ["packages/attestation/src/index.ts"],
       "@omega-v/recorder": ["packages/recorder/src/index.ts"],
-      "@omega-v/runtime": ["packages/runtime/src/index.ts"]
+      "@omega-v/runtime": ["packages/runtime/src/index.ts"],
+      "@omega-v/persistence": ["packages/persistence/src/index.ts"]
     }
   },
   "include": ["packages/*/src", "apps/*/src"],
