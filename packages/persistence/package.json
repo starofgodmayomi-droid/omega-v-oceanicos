@@ -19,7 +19,7 @@
   "author": "Ω∞v Community",
   "license": "Apache-2.0",
   "dependencies": {
-    "@omega-v/types": "*",
+    "@omega-v/types": "workspace:*",
     "better-sqlite3": "^9.2.2"
   },
   "devDependencies": {
