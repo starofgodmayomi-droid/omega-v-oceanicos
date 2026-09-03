@@ -3,6 +3,7 @@ import { VerificationEngine } from '@omega-v/verification';
 import { AttestationService } from '@omega-v/attestation';
 import { EventLog } from '@omega-v/recorder';
 import PrometheusMetricsCollector from './prometheus-metrics';
+import { TraceManager } from './tracing';
 import {
   Observation,
   VerificationRule,
@@ -24,6 +25,7 @@ export class VerificationRuntime {
   private attestationService: AttestationService;
   private eventLog: EventLog;
   private metricsCollector: PrometheusMetricsCollector;
+  private traceManager: TraceManager;
 
   private executionStats = {
     totalExecutions: 0,
@@ -47,6 +49,7 @@ export class VerificationRuntime {
     this.attestationService = new AttestationService();
     this.eventLog = new EventLog();
     this.metricsCollector = new PrometheusMetricsCollector();
+    this.traceManager = new TraceManager();
   }
 
   /**
@@ -74,8 +77,13 @@ export class VerificationRuntime {
     attestation: Attestation;
   } {
     const loopStartTime = Date.now();
+    const traceId = this.traceManager.createTrace('verification-loop');
+    const loopSpan = this.traceManager.getCurrentSpan();
+    loopSpan?.setAttribute('claim', input.claim);
+    loopSpan?.setAttribute('category', input.category);
 
     // Step 1: OBSERVE - Create normalized observation
+    const observeSpan = this.traceManager.createChildSpan(traceId, 'observe');
     const observation = this.observer.observe({
       claim: input.claim,
       category: input.category,
@@ -85,21 +93,36 @@ export class VerificationRuntime {
       confidence: input.confidence,
       confidenceReason: input.confidenceReason,
     });
+    observeSpan?.setAttribute('observation.id', observation.id);
+    observeSpan?.setAttribute('observation.confidence', observation.confidence);
+    this.traceManager.endSpan(observeSpan!);
 
     this.metricsCollector.incrementObservations();
 
     // Step 2: VERIFY - Apply verification rules
+    const verifySpan = this.traceManager.createChildSpan(traceId, 'verify');
     const verifyStartTime = Date.now();
     const verification = this.verificationEngine.verify(observation);
     const verifyDuration = Date.now() - verifyStartTime;
+    verifySpan?.setAttribute('verification.id', verification.id);
+    verifySpan?.setAttribute('verification.passed', verification.summary.passed);
+    verifySpan?.setAttribute('verification.confidence', verification.summary.confidence);
+    verifySpan?.setAttribute('duration_ms', verifyDuration);
+    this.traceManager.endSpan(verifySpan!);
 
     this.metricsCollector.incrementVerifications(verification.summary.passed);
     this.metricsCollector.recordVerificationDuration(verifyDuration);
 
     // Step 3: ATTEST - Create cryptographic proof
+    const attestSpan = this.traceManager.createChildSpan(traceId, 'attest');
     const attestStartTime = Date.now();
     const attestation = this.attestationService.attest(verification);
     const attestDuration = Date.now() - attestStartTime;
+    attestSpan?.setAttribute('attestation.id', attestation.id);
+    attestSpan?.setAttribute('attestation.verified', attestation.verified);
+    attestSpan?.setAttribute('attestation.algorithm', attestation.signingAlgorithm);
+    attestSpan?.setAttribute('duration_ms', attestDuration);
+    this.traceManager.endSpan(attestSpan!);
 
     this.metricsCollector.incrementAttestations(attestation.verified);
     this.metricsCollector.recordAttestationDuration(attestDuration);
@@ -143,6 +166,12 @@ export class VerificationRuntime {
         ? this.executionStats.totalConfidence / this.executionStats.totalExecutions
         : 0;
     this.metricsCollector.setSystemConfidence(avgConfidence);
+
+    // End main loop span
+    loopSpan?.setAttribute('duration_ms', loopDuration);
+    loopSpan?.setAttribute('success', verification.summary.passed);
+    loopSpan?.setStatus(verification.summary.passed ? 'success' : 'error');
+    this.traceManager.endSpan(loopSpan!);
 
     return {
       observation,
@@ -253,6 +282,13 @@ export class VerificationRuntime {
   }
 
   /**
+   * Get the trace manager instance (for advanced usage)
+   */
+  public getTraceManager(): TraceManager {
+    return this.traceManager;
+  }
+
+  /**
    * Export complete event log for audit/backup
    */
   public exportEventLog() {
@@ -260,6 +296,24 @@ export class VerificationRuntime {
   }
 }
 
-export { RateLimiter, CircuitBreaker, retryWithBackoff, GracefulShutdown, VerificationError } from './resilience';
+export {
+  RateLimiter,
+  CircuitBreaker,
+  retryWithBackoff,
+  GracefulShutdown,
+  VerificationError,
+} from './resilience';
+export {
+  TraceManager,
+  Span,
+  ConsoleTraceExporter,
+  InMemoryTraceExporter,
+  JaegerTraceExporter,
+  generateTraceId,
+  generateSpanId,
+  generateCorrelationId,
+  parseTraceContext,
+  formatTraceContext,
+} from './tracing';
 
 export default VerificationRuntime;
