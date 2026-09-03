@@ -591,5 +591,22 @@ export type {
   ComplianceFinding,
   HealthMetric,
 } from './monitoring';
+export {
+  CryptoManager,
+  KeyManager,
+  FieldEncryption,
+  EncryptionAuditor,
+  EncryptionHub,
+} from './encryption';
+export type {
+  EncryptionAlgorithm,
+  KeyType,
+  KeyStatus,
+  EncryptedData,
+  DecryptedData,
+  KeyMetadata,
+  FieldEncryptionConfig,
+  EncryptionAuditLog,
+} from './encryption';
 
 export default VerificationRuntime;
