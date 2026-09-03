@@ -608,5 +608,23 @@ export type {
   FieldEncryptionConfig,
   EncryptionAuditLog,
 } from './encryption';
+export {
+  NotificationTemplateManager,
+  RecipientManager,
+  NotificationQueue,
+  NotificationDispatcher,
+  NotificationAuditor,
+  NotificationHub,
+} from './notifications';
+export type {
+  NotificationChannel,
+  NotificationPriority,
+  DeliveryStatus,
+  NotificationTemplate,
+  NotificationRecipient,
+  NotificationPayload,
+  NotificationDelivery,
+  NotificationAuditLog as NotificationAuditEntry,
+} from './notifications';
 
 export default VerificationRuntime;
