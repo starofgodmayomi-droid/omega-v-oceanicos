@@ -1,6 +1,14 @@
 import express, { Express, Request, Response } from 'express';
 import { VerificationRuntime } from '@omega-v/runtime';
 import { SuccessResponse, ErrorResponse } from '@omega-v/types';
+import {
+  securityHeaders,
+  validateJSON,
+  requestSizeLimits,
+  createRateLimitMiddleware,
+  requestLogging,
+  errorHandler,
+} from './middleware';
 
 /**
  * Ω∞v Oceanicos API Server
@@ -13,8 +21,13 @@ const port = process.env.API_PORT || 3000;
 const persistenceEnabled = process.env.PERSISTENCE_ENABLED === 'true';
 const dbPath = process.env.DB_PATH || './events.db';
 
-// Middleware
-app.use(express.json());
+// Security and validation middleware
+app.use(securityHeaders);
+app.use(express.json({ limit: '1mb' }));
+app.use(validateJSON);
+app.use(requestSizeLimits('1mb'));
+app.use(requestLogging);
+app.use(createRateLimitMiddleware(200, 60000));
 
 // Initialize unified runtime with optional persistent storage
 const runtime = new VerificationRuntime();
@@ -279,6 +292,11 @@ app.use((_req: Request, res: Response) => {
   };
   res.status(404).json(errorResponse);
 });
+
+/**
+ * Error handling middleware (must be last)
+ */
+app.use(errorHandler);
 
 /**
  * Start the server

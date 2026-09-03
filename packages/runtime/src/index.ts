@@ -260,4 +260,6 @@ export class VerificationRuntime {
   }
 }
 
+export { RateLimiter, CircuitBreaker, retryWithBackoff, GracefulShutdown, VerificationError } from './resilience';
+
 export default VerificationRuntime;
