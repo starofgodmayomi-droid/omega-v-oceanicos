@@ -478,7 +478,7 @@ describe('LocalJobLedger', () => {
         at: provenance.observedAt,
         provenance,
         details: { state: 'queued', message: 'restored fixture' },
-      }]);
+      }));
       writeEncryptedEnvelope(storagePath, { version: 1, jobs: [], idempotency: {}, events });
       const ledger = new LocalJobLedger({ enabled: true, storagePath, encryptionKey: ledgerKey });
       expect(ledger.recentEvents(LOCAL_JOB_WINDOW + 5)).toHaveLength(LOCAL_JOB_WINDOW);
