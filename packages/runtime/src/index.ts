@@ -315,5 +315,10 @@ export {
   parseTraceContext,
   formatTraceContext,
 } from './tracing';
+export {
+  GraphQLSchema,
+  createVerificationSchema,
+  getSchemaIntrospection,
+} from './graphql';
 
 export default VerificationRuntime;

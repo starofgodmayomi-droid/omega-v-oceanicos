@@ -1,5 +1,5 @@
 import express, { Express, Request, Response } from 'express';
-import { VerificationRuntime } from '@omega-v/runtime';
+import { VerificationRuntime, createVerificationSchema, getSchemaIntrospection } from '@omega-v/runtime';
 import { SuccessResponse, ErrorResponse } from '@omega-v/types';
 import {
   securityHeaders,
@@ -31,6 +31,7 @@ app.use(createRateLimitMiddleware(200, 60000));
 
 // Initialize unified runtime with optional persistent storage
 const runtime = new VerificationRuntime();
+const graphqlSchema = createVerificationSchema();
 
 // Persistent storage is available via:
 // const eventLog = new SQLiteEventLog({ dbPath });
@@ -282,6 +283,63 @@ app.get('/metrics/json', (_req: Request, res: Response) => {
 });
 
 /**
+ * POST /graphql - GraphQL query endpoint
+ */
+app.post('/graphql', async (req: Request, res: Response) => {
+  try {
+    const { query } = req.body;
+
+    if (!query || typeof query !== 'string') {
+      res.status(400).json({
+        code: 'INVALID_QUERY',
+        message: 'Query must be a string',
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    const result = await graphqlSchema.execute(query);
+
+    const response: SuccessResponse<typeof result> = {
+      data: result,
+      timestamp: new Date().toISOString(),
+    };
+
+    res.json(response);
+  } catch (error) {
+    const errorResponse: ErrorResponse = {
+      code: 'GRAPHQL_ERROR',
+      message: error instanceof Error ? error.message : 'GraphQL query failed',
+      timestamp: new Date().toISOString(),
+    };
+    res.status(400).json(errorResponse);
+  }
+});
+
+/**
+ * GET /graphql/schema - GraphQL schema introspection
+ */
+app.get('/graphql/schema', (_req: Request, res: Response) => {
+  try {
+    const introspection = getSchemaIntrospection(graphqlSchema);
+
+    const response: SuccessResponse<typeof introspection> = {
+      data: introspection,
+      timestamp: new Date().toISOString(),
+    };
+
+    res.json(response);
+  } catch (error) {
+    const errorResponse: ErrorResponse = {
+      code: 'INTROSPECTION_FAILED',
+      message: error instanceof Error ? error.message : 'Schema introspection failed',
+      timestamp: new Date().toISOString(),
+    };
+    res.status(400).json(errorResponse);
+  }
+});
+
+/**
  * 404 Handler
  */
 app.use((_req: Request, res: Response) => {
@@ -312,6 +370,8 @@ app.listen(port, () => {
   console.log(`  GET    /integrity              - Verify event log integrity`);
   console.log(`  GET    /metrics                - Get system metrics (Prometheus format)`);
   console.log(`  GET    /metrics/json           - Get system metrics (JSON format)`);
+  console.log(`  POST   /graphql                - GraphQL query endpoint`);
+  console.log(`  GET    /graphql/schema         - GraphQL schema introspection`);
   console.log(`  GET    /health                 - Health check`);
 });
 
