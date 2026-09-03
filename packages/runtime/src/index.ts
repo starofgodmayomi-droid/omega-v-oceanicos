@@ -548,5 +548,26 @@ export type {
   VersionNegotiationOptions,
   VersionFeature,
 } from './api-versioning';
+export {
+  EventStore,
+  EventAggregate,
+  CommandBus,
+  EventProjection,
+  SagaOrchestrator,
+  EventReplayer,
+} from './event-sourcing';
+export type {
+  DomainEvent,
+  EventType,
+  AggregateId,
+  EventVersion,
+  EventStoreConfig,
+  EventSnapshot,
+  Projection,
+  CommandResult,
+  CommandHandler,
+  SagaStep,
+  SagaInstance,
+} from './event-sourcing';
 
 export default VerificationRuntime;
