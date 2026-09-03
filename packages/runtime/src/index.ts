@@ -495,5 +495,17 @@ export {
 export type { HealthStatus, ComponentHealth, SystemHealth, HealthCheckFunction } from './health';
 export { Cache, QueryCache } from './cache';
 export type { CacheEntry, CacheStats, CacheConfig, QueryCacheConfig } from './cache';
+export {
+  SlidingWindowRateLimiter,
+  TokenBucket,
+  TieredRateLimiter,
+} from './rate-limiter';
+export type {
+  RateLimitConfig,
+  RateLimitStatus,
+  RateLimiterStats,
+  TokenBucketConfig,
+  TierConfig,
+} from './rate-limiter';
 
 export default VerificationRuntime;
