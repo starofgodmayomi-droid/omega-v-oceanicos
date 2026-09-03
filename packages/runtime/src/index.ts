@@ -663,5 +663,28 @@ export type {
   Insight,
   Report,
 } from './analytics';
+export {
+  RoleManager,
+  ResourceManager,
+  AttributeManager,
+  PolicyEngine,
+  AccessDecisionPoint,
+  AuthorizationHub,
+} from './authorization';
+export type {
+  PermissionAction,
+  ResourceType,
+  PolicyEffect,
+  RoleType,
+  Permission,
+  Role,
+  Resource,
+  PolicyStatement,
+  Policy,
+  UserAttribute,
+  AccessRequest,
+  AccessDecision,
+  AccessAuditLog,
+} from './authorization';
 
 export default VerificationRuntime;
