@@ -31,6 +31,7 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --runInBand --coverage",
     "test:integration": "jest --testPathPatterns=integration --passWithNoTests",
+    "test:packages": "pnpm --filter @omega-v/mini test && pnpm --filter @omega-v/sdk test && pnpm --filter @omega-v/cli test && pnpm --filter @omega-v/api test && pnpm --filter @omega-v/web test && pnpm --filter @omega-v/attestation test && pnpm --filter @omega-v/dissensus test && pnpm --filter @omega-v/lexicon test && pnpm --filter @omega-v/observer test && pnpm --filter @omega-v/remember test && pnpm --filter @omega-v/verification test && pnpm --filter @omega-v/coordination test && pnpm --filter @omega-v/runtime test",
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix",
     "type-check": "tsc --noEmit",

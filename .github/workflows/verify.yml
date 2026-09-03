@@ -78,6 +78,12 @@ jobs:
       - name: Run tests
         run: pnpm test
 
+      # The root test suite proves repository coverage, while this command
+      # proves every package/application entrypoint remains independently
+      # runnable from its own declared worker boundary.
+      - name: Run package-worker verification
+        run: pnpm test:packages
+
       - name: Generate coverage report
         run: pnpm test:coverage
 
