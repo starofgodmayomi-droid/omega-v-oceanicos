@@ -103,15 +103,9 @@ export function listJobsEndpoint(queue: JobQueue) {
   return (req: Request, res: Response) => {
     const { status, type, limit = 50, offset = 0 } = req.query;
 
-    const jobs = queue.getJobs(
-      status as JobStatus | undefined,
-      type as string | undefined,
-    );
+    const jobs = queue.getJobs(status as JobStatus | undefined, type as string | undefined);
 
-    const paginated = jobs.slice(
-      Number(offset),
-      Number(offset) + Number(limit),
-    );
+    const paginated = jobs.slice(Number(offset), Number(offset) + Number(limit));
 
     res.json({
       total: jobs.length,
@@ -206,10 +200,7 @@ export function deadLetterQueueEndpoint(queue: JobQueue) {
     const { limit = 50, offset = 0 } = req.query;
     const deadLetter = queue.getDeadLetterQueue();
 
-    const paginated = deadLetter.slice(
-      Number(offset),
-      Number(offset) + Number(limit),
-    );
+    const paginated = deadLetter.slice(Number(offset), Number(offset) + Number(limit));
 
     res.json({
       total: deadLetter.length,
@@ -231,10 +222,7 @@ export function deadLetterQueueEndpoint(queue: JobQueue) {
 /**
  * Batch job endpoint
  */
-export function batchJobEndpoint(
-  queue: JobQueue,
-  processor: BatchJobProcessor,
-) {
+export function batchJobEndpoint(queue: JobQueue, processor: BatchJobProcessor) {
   return async (req: Request, res: Response) => {
     const { type, items, priority = 'normal', waitForCompletion = false } = req.body;
 
@@ -276,7 +264,7 @@ export function batchJobEndpoint(
  */
 export function initializeJobQueueMiddleware(
   queue: JobQueue,
-  options: { enableEndpoints?: boolean } = {},
+  options: { enableEndpoints?: boolean } = {}
 ) {
   const endpoints = [];
 
@@ -321,7 +309,7 @@ export async function pollJobStatus(
   jobId: string,
   queue: JobQueue,
   timeout: number = 300000,
-  interval: number = 100,
+  interval: number = 100
 ): Promise<Job | null> {
   const startTime = Date.now();
 

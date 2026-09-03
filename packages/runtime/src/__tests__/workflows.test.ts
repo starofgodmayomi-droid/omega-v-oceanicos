@@ -35,7 +35,16 @@ describe('Advanced Workflow Orchestration System', () => {
         metadata: { duration: 10 },
       };
 
-      const result = await executor.executeStep(step, { workflowId: 'w1', executionId: 'e1', currentStep: 0, status: 'running', input: {}, output: {}, variables: {}, startTime: Date.now() });
+      const result = await executor.executeStep(step, {
+        workflowId: 'w1',
+        executionId: 'e1',
+        currentStep: 0,
+        status: 'running',
+        input: {},
+        output: {},
+        variables: {},
+        startTime: Date.now(),
+      });
 
       expect(result.delayed).toBe(10);
     });
@@ -48,7 +57,16 @@ describe('Advanced Workflow Orchestration System', () => {
         metadata: { value: true },
       };
 
-      const result = await executor.executeStep(step, { workflowId: 'w1', executionId: 'e1', currentStep: 0, status: 'running', input: {}, output: {}, variables: {}, startTime: Date.now() });
+      const result = await executor.executeStep(step, {
+        workflowId: 'w1',
+        executionId: 'e1',
+        currentStep: 0,
+        status: 'running',
+        input: {},
+        output: {},
+        variables: {},
+        startTime: Date.now(),
+      });
 
       expect(result.decision).toBe(true);
     });
@@ -64,7 +82,16 @@ describe('Advanced Workflow Orchestration System', () => {
         handler: 'handler1',
       };
 
-      const result = await executor.executeStep(step, { workflowId: 'w1', executionId: 'e1', currentStep: 0, status: 'running', input: {}, output: {}, variables: {}, startTime: Date.now() });
+      const result = await executor.executeStep(step, {
+        workflowId: 'w1',
+        executionId: 'e1',
+        currentStep: 0,
+        status: 'running',
+        input: {},
+        output: {},
+        variables: {},
+        startTime: Date.now(),
+      });
 
       expect(result.result).toBe('success');
     });
@@ -77,7 +104,16 @@ describe('Advanced Workflow Orchestration System', () => {
         condition: () => false,
       };
 
-      const result = await executor.executeStep(step, { workflowId: 'w1', executionId: 'e1', currentStep: 0, status: 'running', input: {}, output: {}, variables: {}, startTime: Date.now() });
+      const result = await executor.executeStep(step, {
+        workflowId: 'w1',
+        executionId: 'e1',
+        currentStep: 0,
+        status: 'running',
+        input: {},
+        output: {},
+        variables: {},
+        startTime: Date.now(),
+      });
 
       expect(result.skipped).toBe(true);
     });
@@ -101,7 +137,16 @@ describe('Advanced Workflow Orchestration System', () => {
         maxRetries: 3,
       };
 
-      const { result, retryCount } = await executor.executeWithRetry(step, { workflowId: 'w1', executionId: 'e1', currentStep: 0, status: 'running', input: {}, output: {}, variables: {}, startTime: Date.now() });
+      const { result, retryCount } = await executor.executeWithRetry(step, {
+        workflowId: 'w1',
+        executionId: 'e1',
+        currentStep: 0,
+        status: 'running',
+        input: {},
+        output: {},
+        variables: {},
+        startTime: Date.now(),
+      });
 
       expect(result.success).toBe(true);
       expect(retryCount).toBe(2);

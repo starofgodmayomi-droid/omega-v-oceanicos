@@ -158,7 +158,11 @@ export class ContextPropagator {
   private contexts: Map<string, TenantContext> = new Map();
   private requestMap: Map<string, string> = new Map(); // requestId -> contextId
 
-  establishContext(tenantId: string, userId: string, metadata: Record<string, any> = {}): TenantContext {
+  establishContext(
+    tenantId: string,
+    userId: string,
+    metadata: Record<string, any> = {}
+  ): TenantContext {
     const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const correlationId = `cor_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
@@ -345,11 +349,7 @@ export class IsolationManager {
     return true;
   }
 
-  validateCrossTenantAccess(
-    fromTenant: string,
-    toTenant: string,
-    permission: string,
-  ): boolean {
+  validateCrossTenantAccess(fromTenant: string, toTenant: string, permission: string): boolean {
     if (fromTenant === toTenant) return true;
 
     const policy = this.policies.get(fromTenant);
@@ -399,7 +399,7 @@ export class TenantAuditor {
     event: string,
     userId?: string,
     resourceId?: string,
-    changes?: Record<string, any>,
+    changes?: Record<string, any>
   ): TenantAuditEvent {
     const auditEvent: TenantAuditEvent = {
       id: `audit_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -421,18 +421,18 @@ export class TenantAuditor {
   }
 
   getEventsByTenant(tenantId: string, limit: number = 100): TenantAuditEvent[] {
-    return this.events
-      .filter((e) => e.tenantId === tenantId)
-      .slice(-limit);
+    return this.events.filter((e) => e.tenantId === tenantId).slice(-limit);
   }
 
   getEventsByUser(tenantId: string, userId: string, limit: number = 100): TenantAuditEvent[] {
-    return this.events
-      .filter((e) => e.tenantId === tenantId && e.userId === userId)
-      .slice(-limit);
+    return this.events.filter((e) => e.tenantId === tenantId && e.userId === userId).slice(-limit);
   }
 
-  getEventsByResource(tenantId: string, resourceId: string, limit: number = 100): TenantAuditEvent[] {
+  getEventsByResource(
+    tenantId: string,
+    resourceId: string,
+    limit: number = 100
+  ): TenantAuditEvent[] {
     return this.events
       .filter((e) => e.tenantId === tenantId && e.resourceId === resourceId)
       .slice(-limit);
@@ -507,7 +507,11 @@ export class TenantHub {
     return tenant;
   }
 
-  establishContext(tenantId: string, userId: string, metadata: Record<string, any> = {}): TenantContext {
+  establishContext(
+    tenantId: string,
+    userId: string,
+    metadata: Record<string, any> = {}
+  ): TenantContext {
     const context = this.contextPropagator.establishContext(tenantId, userId, metadata);
     this.auditor.logEvent(tenantId, 'context_established', userId);
     return context;
@@ -517,7 +521,11 @@ export class TenantHub {
     return this.quotaManager.initializeQuotas(tenantId, limits);
   }
 
-  createIsolationPolicy(tenantId: string, level: IsolationLevel, rules: Map<string, any>): IsolationPolicy {
+  createIsolationPolicy(
+    tenantId: string,
+    level: IsolationLevel,
+    rules: Map<string, any>
+  ): IsolationPolicy {
     const policy = this.isolationManager.createPolicy(tenantId, level, rules);
     this.auditor.logEvent(tenantId, 'isolation_policy_created');
     return policy;

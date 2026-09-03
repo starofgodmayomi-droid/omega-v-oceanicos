@@ -47,13 +47,13 @@ describe('Health Check System', () => {
       healthChecker.registerCheck('healthy', HealthChecks.alive('healthy'));
       healthChecker.registerCheck(
         'unhealthy',
-        HealthChecks.threshold('unhealthy', async () => false),
+        HealthChecks.threshold('unhealthy', async () => false)
       );
 
       const result = await healthChecker.runChecks();
 
       expect(result.status).toBe('unhealthy');
-      expect(result.components.find(c => c.name === 'unhealthy')!.status).toBe('unhealthy');
+      expect(result.components.find((c) => c.name === 'unhealthy')!.status).toBe('unhealthy');
     });
 
     it('should determine degraded status when any component is degraded', async () => {
@@ -147,9 +147,13 @@ describe('Health Check System', () => {
     });
 
     it('should create response time check', async () => {
-      const check = HealthChecks.responseTime('response-time', async () => {
-        await new Promise(resolve => setTimeout(resolve, 10));
-      }, { threshold: 100 });
+      const check = HealthChecks.responseTime(
+        'response-time',
+        async () => {
+          await new Promise((resolve) => setTimeout(resolve, 10));
+        },
+        { threshold: 100 }
+      );
 
       healthChecker.registerCheck('response-time', check);
       const result = await healthChecker.runChecks();
@@ -159,9 +163,13 @@ describe('Health Check System', () => {
     });
 
     it('should detect slow response times', async () => {
-      const check = HealthChecks.responseTime('response-time', async () => {
-        await new Promise(resolve => setTimeout(resolve, 50));
-      }, { threshold: 10 });
+      const check = HealthChecks.responseTime(
+        'response-time',
+        async () => {
+          await new Promise((resolve) => setTimeout(resolve, 50));
+        },
+        { threshold: 10 }
+      );
 
       healthChecker.registerCheck('response-time', check);
       const result = await healthChecker.runChecks();
@@ -197,7 +205,7 @@ describe('Health Check System', () => {
 
     it('should include component response times', async () => {
       const slowCheck = HealthChecks.responseTime('slow', async () => {
-        await new Promise(resolve => setTimeout(resolve, 5));
+        await new Promise((resolve) => setTimeout(resolve, 5));
       });
 
       healthChecker.registerCheck('slow', slowCheck);
@@ -275,8 +283,8 @@ describe('Health Check System', () => {
       const result = await healthChecker.runChecks();
 
       expect(result.status).toBe('degraded');
-      expect(result.components.filter(c => c.status === 'healthy')).toHaveLength(2);
-      expect(result.components.filter(c => c.status === 'degraded')).toHaveLength(1);
+      expect(result.components.filter((c) => c.status === 'healthy')).toHaveLength(2);
+      expect(result.components.filter((c) => c.status === 'degraded')).toHaveLength(1);
     });
   });
 });

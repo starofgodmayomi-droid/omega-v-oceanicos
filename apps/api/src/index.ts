@@ -1,7 +1,11 @@
 import express, { Express, Request, Response } from 'express';
 import { createServer } from 'http';
 import swaggerUi from 'swagger-ui-express';
-import { VerificationRuntime, createVerificationSchema, getSchemaIntrospection } from '@omega-v/runtime';
+import {
+  VerificationRuntime,
+  createVerificationSchema,
+  getSchemaIntrospection,
+} from '@omega-v/runtime';
 import { SuccessResponse, ErrorResponse } from '@omega-v/types';
 import {
   securityHeaders,
@@ -109,7 +113,8 @@ app.get('/health/detailed', async (_req: Request, res: Response) => {
       timestamp: new Date().toISOString(),
     };
 
-    const statusCode = healthStatus.status === 'healthy' ? 200 : healthStatus.status === 'degraded' ? 206 : 503;
+    const statusCode =
+      healthStatus.status === 'healthy' ? 200 : healthStatus.status === 'degraded' ? 206 : 503;
     res.status(statusCode).json(response);
   } catch (error) {
     const errorResponse: ErrorResponse = {
@@ -144,17 +149,12 @@ app.post('/complete-loop', (req: Request, res: Response) => {
     });
 
     if (auditLogger) {
-      auditLogger.auditObservation(
-        result.observation.id,
-        observedBy,
-        'success',
-        {
-          claim,
-          category,
-          confidence,
-          correlationId,
-        },
-      );
+      auditLogger.auditObservation(result.observation.id, observedBy, 'success', {
+        claim,
+        category,
+        confidence,
+        correlationId,
+      });
 
       auditLogger.auditVerification(
         result.verification.id,
@@ -165,7 +165,7 @@ app.post('/complete-loop', (req: Request, res: Response) => {
           confidence: result.verification.summary.confidence,
           rulesApplied: result.verification.rules.length,
           correlationId,
-        },
+        }
       );
 
       auditLogger.auditAttestation(
@@ -176,7 +176,7 @@ app.post('/complete-loop', (req: Request, res: Response) => {
         {
           algorithm: result.attestation.signingAlgorithm,
           correlationId,
-        },
+        }
       );
     }
 
@@ -347,7 +347,7 @@ app.get('/audit', (req: Request, res: Response) => {
     }
 
     if (actor) {
-      entries = entries.filter(e => e.actor === actor);
+      entries = entries.filter((e) => e.actor === actor);
     }
 
     const response: SuccessResponse<typeof entries> = {

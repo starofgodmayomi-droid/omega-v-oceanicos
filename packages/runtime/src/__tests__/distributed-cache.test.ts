@@ -336,9 +336,12 @@ describe('Distributed Cache', () => {
     });
 
     it('should maintain cache consistency across operations', async () => {
-      const cache = new DistributedCache<{ value: number }>({
-        value: 0,
-      } as any, 5000);
+      const cache = new DistributedCache<{ value: number }>(
+        {
+          value: 0,
+        } as any,
+        5000
+      );
 
       const object = { value: 100 };
       await cache.set('obj', object);

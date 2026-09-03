@@ -208,14 +208,11 @@ export class TokenBucket {
 
     const timeSinceRefill = now - bucket.lastRefillAt;
     const refillCount = Math.floor(
-      (timeSinceRefill / this.config.refillIntervalMs) * this.config.refillRate,
+      (timeSinceRefill / this.config.refillIntervalMs) * this.config.refillRate
     );
 
     if (refillCount > 0) {
-      bucket.tokens = Math.min(
-        this.config.capacity,
-        bucket.tokens + refillCount,
-      );
+      bucket.tokens = Math.min(this.config.capacity, bucket.tokens + refillCount);
       bucket.lastRefillAt = now + (timeSinceRefill % this.config.refillIntervalMs);
     }
 
@@ -272,12 +269,9 @@ export class TokenBucket {
 
     const timeSinceRefill = now - bucket.lastRefillAt;
     const refillCount = Math.floor(
-      (timeSinceRefill / this.config.refillIntervalMs) * this.config.refillRate,
+      (timeSinceRefill / this.config.refillIntervalMs) * this.config.refillRate
     );
-    const currentTokens = Math.min(
-      this.config.capacity,
-      bucket.tokens + refillCount,
-    );
+    const currentTokens = Math.min(this.config.capacity, bucket.tokens + refillCount);
     const resetAt = bucket.lastRefillAt + this.config.refillIntervalMs;
 
     return {
@@ -330,7 +324,7 @@ export class TieredRateLimiter {
         new SlidingWindowRateLimiter({
           maxRequests: tier.maxRequests,
           windowMs: tier.windowMs,
-        }),
+        })
       );
     }
   }

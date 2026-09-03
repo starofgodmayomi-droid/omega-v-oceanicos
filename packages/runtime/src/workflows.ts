@@ -93,7 +93,10 @@ export interface WorkflowDefinitionRegistry {
 export class StepExecutor {
   private handlers: Map<string, (context: WorkflowContext, input: any) => Promise<any>> = new Map();
 
-  registerHandler(name: string, handler: (context: WorkflowContext, input: any) => Promise<any>): void {
+  registerHandler(
+    name: string,
+    handler: (context: WorkflowContext, input: any) => Promise<any>
+  ): void {
     this.handlers.set(name, handler);
   }
 
@@ -127,7 +130,7 @@ export class StepExecutor {
   async executeWithRetry(
     step: StepDefinition,
     context: WorkflowContext,
-    currentRetry: number = 0,
+    currentRetry: number = 0
   ): Promise<{ result: any; retryCount: number }> {
     try {
       const result = await this.executeStep(step, context);
@@ -255,7 +258,7 @@ export class WorkflowEngine {
 
   constructor(
     private stepExecutor: StepExecutor,
-    private taskManager: TaskManager,
+    private taskManager: TaskManager
   ) {}
 
   registerWorkflow(definition: WorkflowDefinition): void {
@@ -348,13 +351,19 @@ export class WorkflowEngine {
     this.taskManager.startStepExecution(stepExecution.id);
 
     try {
-      const { result, retryCount } = await this.stepExecutor.executeWithRetry(step, execution.context);
+      const { result, retryCount } = await this.stepExecutor.executeWithRetry(
+        step,
+        execution.context
+      );
       stepExecution.retryCount = retryCount;
 
       this.taskManager.completeStepExecution(stepExecution.id, result);
       execution.context.output[step.id] = result;
     } catch (error) {
-      this.taskManager.failStepExecution(stepExecution.id, error instanceof Error ? error.message : String(error));
+      this.taskManager.failStepExecution(
+        stepExecution.id,
+        error instanceof Error ? error.message : String(error)
+      );
       execution.status = 'failed';
     }
 
@@ -430,7 +439,12 @@ export class WorkflowEngine {
 export class WorkflowAuditor {
   private logs: Map<string, WorkflowAuditLog[]> = new Map();
 
-  logEvent(executionId: string, event: string, status: StepStatus | WorkflowStatus, details?: Record<string, any>): WorkflowAuditLog {
+  logEvent(
+    executionId: string,
+    event: string,
+    status: StepStatus | WorkflowStatus,
+    details?: Record<string, any>
+  ): WorkflowAuditLog {
     const log: WorkflowAuditLog = {
       id: `audit_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       executionId,
@@ -448,7 +462,13 @@ export class WorkflowAuditor {
     return log;
   }
 
-  logStepEvent(executionId: string, stepId: string, event: string, status: StepStatus, details?: Record<string, any>): WorkflowAuditLog {
+  logStepEvent(
+    executionId: string,
+    stepId: string,
+    event: string,
+    status: StepStatus,
+    details?: Record<string, any>
+  ): WorkflowAuditLog {
     const log: WorkflowAuditLog = {
       id: `audit_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       executionId,

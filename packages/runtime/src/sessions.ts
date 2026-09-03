@@ -4,7 +4,14 @@
  */
 
 export type SessionStatus = 'active' | 'expired' | 'invalidated' | 'suspended';
-export type ContextEventType = 'session_created' | 'session_refreshed' | 'session_expired' | 'session_invalidated' | 'context_updated' | 'device_detected' | 'location_updated';
+export type ContextEventType =
+  | 'session_created'
+  | 'session_refreshed'
+  | 'session_expired'
+  | 'session_invalidated'
+  | 'context_updated'
+  | 'device_detected'
+  | 'location_updated';
 
 export interface SessionMetadata {
   id: string;
@@ -90,7 +97,7 @@ export class SessionManager {
     tokenHash: string,
     ipAddress: string,
     userAgent: string,
-    expiresIn: number = 3600000,
+    expiresIn: number = 3600000
   ): SessionMetadata {
     const sessionId = `sess_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const now = Date.now();
@@ -198,7 +205,7 @@ export class SessionManager {
     latitude: number,
     longitude: number,
     country: string,
-    city: string,
+    city: string
   ): boolean {
     const session = this.sessions.get(sessionId);
     if (!session) return false;
@@ -212,7 +219,7 @@ export class SessionManager {
 
   getActiveSessions(): SessionMetadata[] {
     return Array.from(this.sessions.values()).filter(
-      (s) => s.status === 'active' && s.expiresAt > Date.now(),
+      (s) => s.status === 'active' && s.expiresAt > Date.now()
     );
   }
 
@@ -239,7 +246,7 @@ export class ContextManager {
     sessionId: string,
     ipAddress: string,
     userAgent: string,
-    requestId: string,
+    requestId: string
   ): UserContext {
     const correlationId = `corr_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
@@ -320,7 +327,7 @@ export class DeviceTracker {
     os: string,
     osVersion: string,
     browser: string,
-    browserVersion: string,
+    browserVersion: string
   ): DeviceInfo {
     const deviceId = `dev_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const now = Date.now();
@@ -353,7 +360,9 @@ export class DeviceTracker {
 
   getUserDevices(userId: string): DeviceInfo[] {
     const deviceIds = this.userDevices.get(userId) || new Set();
-    return Array.from(deviceIds).map((id) => this.devices.get(id)!).filter(Boolean);
+    return Array.from(deviceIds)
+      .map((id) => this.devices.get(id)!)
+      .filter(Boolean);
   }
 
   updateLastSeen(deviceId: string): boolean {
@@ -415,7 +424,7 @@ export class LocationTracker {
     country: string,
     city: string,
     region: string,
-    timezone: string,
+    timezone: string
   ): LocationInfo {
     const location: LocationInfo = {
       sessionId,
@@ -451,7 +460,12 @@ export class LocationTracker {
     const lastLocation = this.lastLocation.get(sessionId);
     if (!lastLocation) return false;
 
-    const distance = this.calculateDistance(lastLocation.latitude, lastLocation.longitude, latitude, longitude);
+    const distance = this.calculateDistance(
+      lastLocation.latitude,
+      lastLocation.longitude,
+      latitude,
+      longitude
+    );
     const timeDiff = Date.now() - lastLocation.timestamp;
 
     if (distance === 0) return false;
@@ -472,7 +486,10 @@ export class LocationTracker {
     const dLon = ((lon2 - lon1) * Math.PI) / 180;
     const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      Math.cos((lat1 * Math.PI) / 180) *
+        Math.cos((lat2 * Math.PI) / 180) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
   }
@@ -495,7 +512,7 @@ export class SessionAuditor {
     eventType: ContextEventType,
     ipAddress: string,
     deviceId?: string,
-    details?: Record<string, any>,
+    details?: Record<string, any>
   ): SessionContextEvent {
     const event: SessionContextEvent = {
       id: `event_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -576,16 +593,22 @@ export class SessionHub {
     tokenHash: string,
     ipAddress: string,
     userAgent: string,
-    expiresIn: number = 3600000,
+    expiresIn: number = 3600000
   ): { session: SessionMetadata; context: UserContext } {
-    const session = this.sessionManager.createSession(userId, tokenHash, ipAddress, userAgent, expiresIn);
+    const session = this.sessionManager.createSession(
+      userId,
+      tokenHash,
+      ipAddress,
+      userAgent,
+      expiresIn
+    );
 
     const context = this.contextManager.establishContext(
       userId,
       session.id,
       ipAddress,
       userAgent,
-      `req_${Date.now()}`,
+      `req_${Date.now()}`
     );
 
     this.auditor.logEvent(session.id, userId, 'session_created', ipAddress);
@@ -600,9 +623,16 @@ export class SessionHub {
     os: string,
     osVersion: string,
     browser: string,
-    browserVersion: string,
+    browserVersion: string
   ): DeviceInfo {
-    const device = this.deviceTracker.registerDevice(userId, type, os, osVersion, browser, browserVersion);
+    const device = this.deviceTracker.registerDevice(
+      userId,
+      type,
+      os,
+      osVersion,
+      browser,
+      browserVersion
+    );
     this.sessionManager.setDeviceInfo(sessionId, device.deviceId);
     this.deviceTracker.trustDevice(device.deviceId);
     this.auditor.logEvent(sessionId, userId, 'device_detected', '', device.deviceId);
@@ -619,7 +649,7 @@ export class SessionHub {
     country: string,
     city: string,
     region: string,
-    timezone: string,
+    timezone: string
   ): LocationInfo {
     const isAnomaly = this.locationTracker.detectAnomalies(sessionId, latitude, longitude);
 
@@ -632,7 +662,7 @@ export class SessionHub {
       country,
       city,
       region,
-      timezone,
+      timezone
     );
 
     location.isAnomaly = isAnomaly;
@@ -656,7 +686,8 @@ export class SessionHub {
   } {
     const session = this.sessionManager.getSession(sessionId);
     const context = session ? this.contextManager.getContext(sessionId) : undefined;
-    const device = session && session.deviceId ? this.deviceTracker.getDevice(session.deviceId) : undefined;
+    const device =
+      session && session.deviceId ? this.deviceTracker.getDevice(session.deviceId) : undefined;
     const lastLocation = this.locationTracker.getLastLocation(sessionId);
     const events = this.auditor.getSessionEvents(sessionId);
 

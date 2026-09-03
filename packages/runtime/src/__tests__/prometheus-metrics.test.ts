@@ -140,7 +140,7 @@ describe('PrometheusMetricsCollector', () => {
 
     it('should calculate histogram statistics correctly', () => {
       const durations = [10, 20, 30, 40, 50];
-      durations.forEach(d => collector.recordLoopDuration(d));
+      durations.forEach((d) => collector.recordLoopDuration(d));
 
       const metrics = collector.generateMetricsJSON();
       expect(metrics.histograms.loop_duration_ms.count).toBe(5);
@@ -351,7 +351,7 @@ describe('PrometheusMetricsCollector', () => {
   describe('Histogram Bucket Distribution', () => {
     it('should correctly categorize durations into buckets', () => {
       const testDurations = [1, 5, 10, 50, 100, 500, 1000, 5000];
-      testDurations.forEach(d => collector.recordLoopDuration(d));
+      testDurations.forEach((d) => collector.recordLoopDuration(d));
 
       const prometheus = collector.generatePrometheusMetrics();
 

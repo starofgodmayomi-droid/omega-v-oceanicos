@@ -546,9 +546,7 @@ describe('Rate Limiting System', () => {
     });
 
     it('should handle tiered limiter with single tier', () => {
-      const limiter = new TieredRateLimiter([
-        { name: 'default', maxRequests: 10, windowMs: 1000 },
-      ]);
+      const limiter = new TieredRateLimiter([{ name: 'default', maxRequests: 10, windowMs: 1000 }]);
 
       for (let i = 0; i < 10; i++) {
         limiter.checkLimit('user-1', 'default');

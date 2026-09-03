@@ -50,7 +50,7 @@ export class DistributedCache<T = any> {
     maxLocalSize: number = 10000,
     ttl: number = 300000,
     redisClient?: any,
-    keyPrefix: string = 'cache:',
+    keyPrefix: string = 'cache:'
   ) {
     this.maxLocalSize = maxLocalSize;
     this.ttl = ttl;
@@ -178,8 +178,7 @@ export class DistributedCache<T = any> {
 
     const avgAccessTime =
       this.stats.accessTimes.length > 0
-        ? this.stats.accessTimes.reduce((a, b) => a + b, 0) /
-          this.stats.accessTimes.length
+        ? this.stats.accessTimes.reduce((a, b) => a + b, 0) / this.stats.accessTimes.length
         : 0;
 
     let memoryUsage = 0;
@@ -241,7 +240,7 @@ export class DistributedCache<T = any> {
     if (this.localCache.size > this.maxLocalSize) {
       // Remove oldest/least accessed items
       const sorted = Array.from(this.localCache.entries()).sort(
-        ([, a], [, b]) => a.lastAccessed - b.lastAccessed,
+        ([, a], [, b]) => a.lastAccessed - b.lastAccessed
       );
 
       const toRemove = sorted.length - this.maxLocalSize;
@@ -275,7 +274,7 @@ export class DistributedCache<T = any> {
       await this.redisClient.setex(
         this.keyPrefix + key,
         Math.floor(this.ttl / 1000),
-        JSON.stringify(value),
+        JSON.stringify(value)
       );
     } catch {
       // Remote write failed
@@ -326,18 +325,9 @@ export class DistributedCacheManager {
   /**
    * Create or get a named cache
    */
-  getCache<T>(
-    name: string,
-    maxSize: number = 10000,
-    ttl: number = 300000,
-  ): DistributedCache<T> {
+  getCache<T>(name: string, maxSize: number = 10000, ttl: number = 300000): DistributedCache<T> {
     if (!this.caches.has(name)) {
-      const cache = new DistributedCache<T>(
-        maxSize,
-        ttl,
-        this.redisClient,
-        `cache:${name}:`,
-      );
+      const cache = new DistributedCache<T>(maxSize, ttl, this.redisClient, `cache:${name}:`);
       this.caches.set(name, cache);
     }
 
@@ -398,13 +388,13 @@ export class RedisClient {
       // Dynamic import to avoid dependency if not using Redis
       const redis = await import('redis');
       this.client = redis.createClient({
-        host: this.config.host,
-        port: this.config.port,
-        password: this.config.password,
-        db: this.config.db || 0,
         socket: {
+          host: this.config.host,
+          port: this.config.port,
           connectTimeout: this.config.connectionTimeout || 5000,
         },
+        password: this.config.password,
+        database: this.config.db || 0,
       });
 
       this.client.on('error', (err: Error) => this.handleError(err));
@@ -431,11 +421,7 @@ export class RedisClient {
   /**
    * Set value with expiration
    */
-  async setex(
-    key: string,
-    seconds: number,
-    value: string,
-  ): Promise<void> {
+  async setex(key: string, seconds: number, value: string): Promise<void> {
     if (!this.connected) return;
     await this.client.setEx(key, seconds, value);
   }

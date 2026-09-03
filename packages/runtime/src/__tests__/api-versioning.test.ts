@@ -171,9 +171,7 @@ describe('API Versioning', () => {
         features: new Set(['feature-a']),
       };
       registry.registerVersion(metadata);
-      expect(() => registry.registerVersion(metadata)).toThrow(
-        'Version 1.0.0 already registered',
-      );
+      expect(() => registry.registerVersion(metadata)).toThrow('Version 1.0.0 already registered');
     });
 
     it('should register and retrieve features', () => {
@@ -553,11 +551,7 @@ describe('API Versioning', () => {
       });
       migration.registerMigration('1.0.0', '2.0.0', transform);
 
-      const result = migration.migrate(
-        { user_id: '123', name: 'John' },
-        '1.0.0',
-        '2.0.0',
-      );
+      const result = migration.migrate({ user_id: '123', name: 'John' }, '1.0.0', '2.0.0');
       expect(result.userId).toBe('123');
       expect(result.user_id).toBeUndefined();
       expect(result.name).toBe('John');
@@ -570,9 +564,9 @@ describe('API Versioning', () => {
     });
 
     it('should throw when no migration path exists', () => {
-      expect(() =>
-        migration.migrate({ id: '1' }, '1.0.0', '2.0.0'),
-      ).toThrow('No migration registered from 1.0.0 to 2.0.0');
+      expect(() => migration.migrate({ id: '1' }, '1.0.0', '2.0.0')).toThrow(
+        'No migration registered from 1.0.0 to 2.0.0'
+      );
     });
 
     it('should support chained migrations', () => {
@@ -609,7 +603,7 @@ describe('API Versioning', () => {
       const result = migration.migrate(
         { user_id: '123', created: '2024-01-01', data: { value: 'test' } },
         '1.0.0',
-        '2.0.0',
+        '2.0.0'
       );
 
       expect(result.metadata.userId).toBe('123');
@@ -633,7 +627,7 @@ describe('API Versioning', () => {
           ],
         },
         '1.0.0',
-        '2.0.0',
+        '2.0.0'
       );
 
       expect(result.items).toHaveLength(2);

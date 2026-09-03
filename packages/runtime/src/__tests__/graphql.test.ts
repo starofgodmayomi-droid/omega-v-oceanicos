@@ -113,7 +113,7 @@ describe('GraphQL Schema', () => {
       const customSchema = new GraphQLSchema();
 
       customSchema.defineQuery('asyncField', async () => {
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise((resolve) => setTimeout(resolve, 10));
         return { delayed: true };
       });
 
@@ -166,7 +166,7 @@ describe('GraphQL Schema', () => {
       const introspection = getSchemaIntrospection(schema);
 
       const healthField = introspection.__schema.queryType.fields.find(
-        (f: any) => f.name === 'health',
+        (f: any) => f.name === 'health'
       );
 
       expect(healthField.description).toBeDefined();
@@ -176,7 +176,7 @@ describe('GraphQL Schema', () => {
       const introspection = getSchemaIntrospection(schema);
 
       const observationsField = introspection.__schema.queryType.fields.find(
-        (f: any) => f.name === 'observations',
+        (f: any) => f.name === 'observations'
       );
 
       expect(observationsField.args).toBeDefined();

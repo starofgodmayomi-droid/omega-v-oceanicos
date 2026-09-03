@@ -80,9 +80,8 @@ export class CryptoManager {
       throw new Error('Master key not configured');
     }
 
-    const iv = this.algorithm === 'chacha20-poly1305'
-      ? crypto.randomBytes(12)
-      : crypto.randomBytes(16);
+    const iv =
+      this.algorithm === 'chacha20-poly1305' ? crypto.randomBytes(12) : crypto.randomBytes(16);
     let ciphertext: string;
     let tag: string;
 
@@ -208,7 +207,7 @@ export class KeyManager {
   generateSymmetricKey(
     keyId: string,
     algorithm: EncryptionAlgorithm = 'aes-256-gcm',
-    expiresIn?: number,
+    expiresIn?: number
   ): KeyMetadata {
     const key = crypto.randomBytes(32);
     const now = Date.now();
@@ -350,10 +349,7 @@ export class FieldEncryption {
   /**
    * Encrypt object fields
    */
-  encryptObject(
-    obj: Record<string, any>,
-    configName: string,
-  ): Record<string, any> {
+  encryptObject(obj: Record<string, any>, configName: string): Record<string, any> {
     const config = this.configs.get(configName);
     if (!config) {
       throw new Error(`Config not found: ${configName}`);
@@ -419,7 +415,7 @@ export class EncryptionAuditor {
     keyId: string,
     actor: string,
     status: 'success' | 'failure' = 'success',
-    details?: Record<string, any>,
+    details?: Record<string, any>
   ): EncryptionAuditLog {
     const log: EncryptionAuditLog = {
       id: `audit_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -438,10 +434,7 @@ export class EncryptionAuditor {
   /**
    * Get audit logs
    */
-  getLogs(
-    operation?: EncryptionAuditLog['operation'],
-    limit: number = 100,
-  ): EncryptionAuditLog[] {
+  getLogs(operation?: EncryptionAuditLog['operation'], limit: number = 100): EncryptionAuditLog[] {
     let filtered = this.logs;
 
     if (operation) {
@@ -455,18 +448,14 @@ export class EncryptionAuditor {
    * Get logs by key
    */
   getLogsByKey(keyId: string, limit: number = 100): EncryptionAuditLog[] {
-    return this.logs
-      .filter((l) => l.keyId === keyId)
-      .slice(-limit);
+    return this.logs.filter((l) => l.keyId === keyId).slice(-limit);
   }
 
   /**
    * Get failed operations
    */
   getFailedOperations(limit: number = 100): EncryptionAuditLog[] {
-    return this.logs
-      .filter((l) => l.status === 'failure')
-      .slice(-limit);
+    return this.logs.filter((l) => l.status === 'failure').slice(-limit);
   }
 
   /**
@@ -524,11 +513,7 @@ export class EncryptionHub {
   /**
    * Encrypt with audit logging
    */
-  encryptWithAudit(
-    plaintext: string,
-    keyId: string,
-    actor: string,
-  ): EncryptedData {
+  encryptWithAudit(plaintext: string, keyId: string, actor: string): EncryptedData {
     try {
       const result = this.crypto.encrypt(plaintext, keyId);
       this.auditor.logOperation('encrypt', keyId, actor, 'success');

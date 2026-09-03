@@ -56,7 +56,10 @@ describe('Advanced Encryption & Key Management', () => {
     it('should fail to decrypt with wrong key', () => {
       const encrypted = crypto.encrypt('secret', 'key1');
 
-      const wrongCrypto = new CryptoManager('aes-256-gcm', Buffer.alloc(32, 'wrong').toString('hex'));
+      const wrongCrypto = new CryptoManager(
+        'aes-256-gcm',
+        Buffer.alloc(32, 'wrong').toString('hex')
+      );
       expect(() => wrongCrypto.decrypt(encrypted)).toThrow();
     });
 

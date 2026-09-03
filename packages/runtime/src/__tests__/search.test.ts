@@ -99,7 +99,12 @@ describe('Advanced Search & Indexing System', () => {
 
     it('should get index stats', () => {
       builder.createIndex('docs', 'keyword');
-      const doc: Document = { id: 'doc1', content: 'Test content here', metadata: {}, indexed: false };
+      const doc: Document = {
+        id: 'doc1',
+        content: 'Test content here',
+        metadata: {},
+        indexed: false,
+      };
 
       builder.addDocument('docs', doc);
 
@@ -474,9 +479,24 @@ describe('Advanced Search & Indexing System', () => {
       hub.createIndex('articles');
 
       const docs: Document[] = [
-        { id: '1', content: 'JavaScript tutorial for beginners', metadata: { type: 'tutorial' }, indexed: false },
-        { id: '2', content: 'Advanced JavaScript patterns', metadata: { type: 'guide' }, indexed: false },
-        { id: '3', content: 'Python basics reference', metadata: { type: 'tutorial' }, indexed: false },
+        {
+          id: '1',
+          content: 'JavaScript tutorial for beginners',
+          metadata: { type: 'tutorial' },
+          indexed: false,
+        },
+        {
+          id: '2',
+          content: 'Advanced JavaScript patterns',
+          metadata: { type: 'guide' },
+          indexed: false,
+        },
+        {
+          id: '3',
+          content: 'Python basics reference',
+          metadata: { type: 'tutorial' },
+          indexed: false,
+        },
       ];
 
       docs.forEach((doc) => hub.index('articles', doc));

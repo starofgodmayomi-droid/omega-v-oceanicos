@@ -162,7 +162,9 @@ describe('Advanced Authorization & Access Control System', () => {
     });
 
     it('should update resource', () => {
-      const resource = resourceManager.createResource('attestation', 'user1', { status: 'pending' });
+      const resource = resourceManager.createResource('attestation', 'user1', {
+        status: 'pending',
+      });
 
       const result = resourceManager.updateResource(resource.id, { status: 'completed' });
 
@@ -345,7 +347,13 @@ describe('Advanced Authorization & Access Control System', () => {
 
     it('should get policies for user', () => {
       const stmts: PolicyStatement[] = [
-        { id: 'stmt1', effect: 'allow', actions: ['read'], resources: ['observation'], priority: 100 },
+        {
+          id: 'stmt1',
+          effect: 'allow',
+          actions: ['read'],
+          resources: ['observation'],
+          priority: 100,
+        },
       ];
       const policy1 = policyEngine.createPolicy('policy1', stmts);
       const policy2 = policyEngine.createPolicy('policy2', stmts);
@@ -384,7 +392,13 @@ describe('Advanced Authorization & Access Control System', () => {
 
     it('should allow access with valid policy', () => {
       const stmts: PolicyStatement[] = [
-        { id: 'stmt1', effect: 'allow', actions: ['read'], resources: ['observation'], priority: 100 },
+        {
+          id: 'stmt1',
+          effect: 'allow',
+          actions: ['read'],
+          resources: ['observation'],
+          priority: 100,
+        },
       ];
       const policy = policyEngine.createPolicy('allow-read', stmts);
       policyEngine.attachPolicyToUser('user1', policy.id);
@@ -411,7 +425,13 @@ describe('Advanced Authorization & Access Control System', () => {
 
     it('should deny access to non-owned resource', () => {
       const stmts: PolicyStatement[] = [
-        { id: 'stmt1', effect: 'allow', actions: ['update'], resources: ['observation'], priority: 100 },
+        {
+          id: 'stmt1',
+          effect: 'allow',
+          actions: ['update'],
+          resources: ['observation'],
+          priority: 100,
+        },
       ];
       const policy = policyEngine.createPolicy('allow-update', stmts);
       policyEngine.attachPolicyToUser('user1', policy.id);
@@ -430,7 +450,13 @@ describe('Advanced Authorization & Access Control System', () => {
 
     it('should allow access to owned resource', () => {
       const stmts: PolicyStatement[] = [
-        { id: 'stmt1', effect: 'allow', actions: ['update'], resources: ['observation'], priority: 100 },
+        {
+          id: 'stmt1',
+          effect: 'allow',
+          actions: ['update'],
+          resources: ['observation'],
+          priority: 100,
+        },
       ];
       const policy = policyEngine.createPolicy('allow-update', stmts);
       policyEngine.attachPolicyToUser('user1', policy.id);
@@ -450,7 +476,13 @@ describe('Advanced Authorization & Access Control System', () => {
 
     it('should track audit logs', () => {
       const stmts: PolicyStatement[] = [
-        { id: 'stmt1', effect: 'allow', actions: ['read'], resources: ['observation'], priority: 100 },
+        {
+          id: 'stmt1',
+          effect: 'allow',
+          actions: ['read'],
+          resources: ['observation'],
+          priority: 100,
+        },
       ];
       const policy = policyEngine.createPolicy('allow-read', stmts);
       policyEngine.attachPolicyToUser('user1', policy.id);
@@ -471,7 +503,13 @@ describe('Advanced Authorization & Access Control System', () => {
 
     it('should cache decisions', () => {
       const stmts: PolicyStatement[] = [
-        { id: 'stmt1', effect: 'allow', actions: ['read'], resources: ['observation'], priority: 100 },
+        {
+          id: 'stmt1',
+          effect: 'allow',
+          actions: ['read'],
+          resources: ['observation'],
+          priority: 100,
+        },
       ];
       const policy = policyEngine.createPolicy('allow-read', stmts);
       policyEngine.attachPolicyToUser('user1', policy.id);
@@ -531,7 +569,13 @@ describe('Advanced Authorization & Access Control System', () => {
     it('should authorize access', () => {
       const policyEngine = hub.getPolicyEngine();
       const stmts: PolicyStatement[] = [
-        { id: 'stmt1', effect: 'allow', actions: ['read'], resources: ['observation'], priority: 100 },
+        {
+          id: 'stmt1',
+          effect: 'allow',
+          actions: ['read'],
+          resources: ['observation'],
+          priority: 100,
+        },
       ];
       const policy = policyEngine.createPolicy('allow-read', stmts);
       policyEngine.attachPolicyToUser('user1', policy.id);
@@ -548,7 +592,13 @@ describe('Advanced Authorization & Access Control System', () => {
     it('should check access convenience method', () => {
       const policyEngine = hub.getPolicyEngine();
       const stmts: PolicyStatement[] = [
-        { id: 'stmt1', effect: 'allow', actions: ['create'], resources: ['verification'], priority: 100 },
+        {
+          id: 'stmt1',
+          effect: 'allow',
+          actions: ['create'],
+          resources: ['verification'],
+          priority: 100,
+        },
       ];
       const policy = policyEngine.createPolicy('allow-create', stmts);
       policyEngine.attachPolicyToUser('user1', policy.id);
@@ -573,7 +623,13 @@ describe('Advanced Authorization & Access Control System', () => {
       const resource = resourceManager.createResource('observation', 'user1', { org: 'acme' });
 
       const stmts: PolicyStatement[] = [
-        { id: 'stmt1', effect: 'allow', actions: ['update'], resources: ['observation'], priority: 100 },
+        {
+          id: 'stmt1',
+          effect: 'allow',
+          actions: ['update'],
+          resources: ['observation'],
+          priority: 100,
+        },
       ];
       const policy = policyEngine.createPolicy('allow-update-obs', stmts);
       policyEngine.attachPolicyToUser('user1', policy.id);

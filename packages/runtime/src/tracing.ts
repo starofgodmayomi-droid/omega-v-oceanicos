@@ -132,9 +132,9 @@ export class TraceManager {
   }
 
   private exportTrace(spans: Span[]): void {
-    const traceData = spans.map(s => s.toJSON());
-    this.exporters.forEach(exporter => {
-      exporter.export(traceData).catch(e => console.error('Trace export error:', e));
+    const traceData = spans.map((s) => s.toJSON());
+    this.exporters.forEach((exporter) => {
+      exporter.export(traceData).catch((e) => console.error('Trace export error:', e));
     });
   }
 
@@ -187,11 +187,9 @@ export class JaegerTraceExporter implements TraceExporter {
   async export(spans: Array<TraceContext & { events: TraceEvent[] }>): Promise<void> {
     try {
       const payload = {
-        resourceSpans: spans.map(span => ({
+        resourceSpans: spans.map((span) => ({
           resource: {
-            attributes: [
-              { key: 'service.name', value: { stringValue: 'omega-v' } },
-          ],
+            attributes: [{ key: 'service.name', value: { stringValue: 'omega-v' } }],
           },
           scopeSpans: [
             {

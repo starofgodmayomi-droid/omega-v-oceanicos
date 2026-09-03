@@ -48,14 +48,9 @@ export function registerTemplateEndpoint(hub: NotificationHub) {
     }
 
     try {
-      const template = hub.getTemplateManager().registerTemplate(
-        id,
-        name,
-        channel as NotificationChannel,
-        body,
-        subject,
-        variables || [],
-      );
+      const template = hub
+        .getTemplateManager()
+        .registerTemplate(id, name, channel as NotificationChannel, body, subject, variables || []);
 
       res.status(201).json({
         id: template.id,
@@ -329,7 +324,7 @@ export async function sendNotificationEndpoint(hub: NotificationHub) {
         variables || {},
         (channels || ['email']) as NotificationChannel[],
         (priority || 'normal') as NotificationPriority,
-        actor,
+        actor
       );
 
       const status = hub.getNotificationStatus(payload.id);
@@ -383,7 +378,7 @@ export async function scheduleNotificationEndpoint(hub: NotificationHub) {
         (channels || ['email']) as NotificationChannel[],
         scheduledFor,
         (priority || 'normal') as NotificationPriority,
-        actor,
+        actor
       );
 
       res.status(201).json({
@@ -503,7 +498,7 @@ export function getAuditLogsEndpoint(hub: NotificationHub) {
  */
 export function initializeNotificationMiddleware(
   options: NotificationMiddlewareOptions,
-  enableEndpoints?: boolean,
+  enableEndpoints?: boolean
 ) {
   const endpoints = [];
 
@@ -534,12 +529,18 @@ export function initializeNotificationMiddleware(
         req.params.recipientId = recipientId;
         return getRecipientEndpoint(options.hub)(req, res);
       }
-      if (req.method === 'POST' && req.path.match(/^\/api\/notifications\/recipients\/[^\/]+\/verify$/)) {
+      if (
+        req.method === 'POST' &&
+        req.path.match(/^\/api\/notifications\/recipients\/[^\/]+\/verify$/)
+      ) {
         const recipientId = req.path.split('/')[4];
         req.params.recipientId = recipientId;
         return verifyRecipientEndpoint(options.hub)(req, res);
       }
-      if (req.method === 'PUT' && req.path.match(/^\/api\/notifications\/recipients\/[^\/]+\/preferences$/)) {
+      if (
+        req.method === 'PUT' &&
+        req.path.match(/^\/api\/notifications\/recipients\/[^\/]+\/preferences$/)
+      ) {
         const recipientId = req.path.split('/')[4];
         req.params.recipientId = recipientId;
         return updateRecipientPreferencesEndpoint(options.hub)(req, res);
@@ -552,7 +553,11 @@ export function initializeNotificationMiddleware(
       if (req.method === 'POST' && req.path === '/api/notifications/schedule') {
         return scheduleNotificationEndpoint(options.hub)(req, res);
       }
-      if (req.method === 'GET' && req.path.match(/^\/api\/notifications\/[^\/]+$/) && !req.path.includes('/verify')) {
+      if (
+        req.method === 'GET' &&
+        req.path.match(/^\/api\/notifications\/[^\/]+$/) &&
+        !req.path.includes('/verify')
+      ) {
         const notificationId = req.path.split('/')[3];
         req.params.notificationId = notificationId;
         return getNotificationStatusEndpoint(options.hub)(req, res);

@@ -301,7 +301,7 @@ export class AlertManager {
    */
   getActiveAlerts(): Alert[] {
     return Array.from(this.alerts.values()).filter(
-      (a) => a.status === 'triggered' || a.status === 'acknowledged',
+      (a) => a.status === 'triggered' || a.status === 'acknowledged'
     );
   }
 
@@ -466,7 +466,8 @@ export class ComplianceAuditor {
       id: `report_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       framework,
       period: { start: monthAgo, end: now },
-      complianceLevel: successRate >= 95 ? 'compliant' : successRate >= 80 ? 'warning' : 'non-compliant',
+      complianceLevel:
+        successRate >= 95 ? 'compliant' : successRate >= 80 ? 'warning' : 'non-compliant',
       findings,
       score: Math.min(100, Math.round(successRate)),
       generatedAt: now,

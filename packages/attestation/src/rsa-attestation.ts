@@ -169,7 +169,9 @@ export class RSAAttestationService {
   }
 
   private verify(data: string, signature: string, publicKey: string): boolean {
-    const verifier = crypto.createVerify(this.algorithm === 'RSA-SHA256' ? 'RSA-SHA256' : 'RSA-SHA512');
+    const verifier = crypto.createVerify(
+      this.algorithm === 'RSA-SHA256' ? 'RSA-SHA256' : 'RSA-SHA512'
+    );
     verifier.update(data);
     verifier.end();
     return verifier.verify(publicKey, signature, 'hex');

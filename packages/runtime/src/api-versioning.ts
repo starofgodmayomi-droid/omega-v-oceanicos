@@ -83,7 +83,7 @@ export function compareVersions(v1: Version, v2: Version): number {
 export function isVersionSupported(
   version: Version,
   minVersion: Version,
-  maxVersion?: Version,
+  maxVersion?: Version
 ): boolean {
   if (compareVersions(version, minVersion) < 0) {
     return false;
@@ -193,7 +193,7 @@ export class VersionRegistry {
    */
   getSupportedVersions(): VersionMetadata[] {
     return Array.from(this.versions.values()).filter(
-      (v) => !v.deprecated || (v.sunsetDate && new Date(v.sunsetDate) > new Date()),
+      (v) => !v.deprecated || (v.sunsetDate && new Date(v.sunsetDate) > new Date())
     );
   }
 
@@ -226,10 +226,7 @@ export class VersionNegotiator {
   private registry: VersionRegistry;
   private options: Required<VersionNegotiationOptions>;
 
-  constructor(
-    registry: VersionRegistry,
-    options: VersionNegotiationOptions = {},
-  ) {
+  constructor(registry: VersionRegistry, options: VersionNegotiationOptions = {}) {
     this.registry = registry;
     this.options = {
       sources: options.sources || ['header', 'url', 'query'],
@@ -253,12 +250,9 @@ export class VersionNegotiator {
     source: VersionSource | 'default';
   } {
     // Try header-based version
-    if (
-      this.options.sources.includes('header') &&
-      context.headers
-    ) {
+    if (this.options.sources.includes('header') && context.headers) {
       const headerValue = Object.entries(context.headers).find(
-        ([key]) => key.toLowerCase() === this.options.headerName.toLowerCase(),
+        ([key]) => key.toLowerCase() === this.options.headerName.toLowerCase()
       )?.[1];
 
       if (headerValue) {
@@ -283,10 +277,7 @@ export class VersionNegotiator {
     }
 
     // Try query parameter
-    if (
-      this.options.sources.includes('query') &&
-      context.query
-    ) {
+    if (this.options.sources.includes('query') && context.query) {
       const queryVersion = context.query[this.options.queryParam];
       if (queryVersion) {
         const supportedVersions = this.registry.getSupportedVersions();
@@ -326,10 +317,7 @@ export class FeatureFlagManager {
   /**
    * Check if feature is available in version
    */
-  isFeatureAvailable(
-    versionStr: string,
-    featureName: string,
-  ): boolean {
+  isFeatureAvailable(versionStr: string, featureName: string): boolean {
     // Check overrides first
     const overrideSet = this.overrides.get(versionStr);
     if (overrideSet?.has(featureName)) {
@@ -372,9 +360,7 @@ export class FeatureFlagManager {
   getDeprecatedFeatures(versionStr: string): string[] {
     const deprecated: string[] = [];
 
-    for (const [featureName, feature] of Array.from(
-      this.registry['featureRegistry'],
-    )) {
+    for (const [featureName, feature] of Array.from(this.registry['featureRegistry'])) {
       if (!feature.deprecated) continue;
 
       const addedVersion = parseVersion(feature.addedIn);
@@ -405,11 +391,7 @@ export class VersionMigration {
   /**
    * Register migration from one version to another
    */
-  registerMigration(
-    fromVersion: string,
-    toVersion: string,
-    transform: (data: any) => any,
-  ): void {
+  registerMigration(fromVersion: string, toVersion: string, transform: (data: any) => any): void {
     const key = `${fromVersion}->${toVersion}`;
     this.migrations.set(key, transform);
   }
@@ -417,11 +399,7 @@ export class VersionMigration {
   /**
    * Migrate data from one version format to another
    */
-  migrate(
-    data: any,
-    fromVersion: string,
-    toVersion: string,
-  ): any {
+  migrate(data: any, fromVersion: string, toVersion: string): any {
     if (fromVersion === toVersion) {
       return data;
     }
@@ -430,9 +408,7 @@ export class VersionMigration {
     const migration = this.migrations.get(key);
 
     if (!migration) {
-      throw new Error(
-        `No migration registered from ${fromVersion} to ${toVersion}`,
-      );
+      throw new Error(`No migration registered from ${fromVersion} to ${toVersion}`);
     }
 
     return migration(data);

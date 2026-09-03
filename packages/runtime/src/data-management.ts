@@ -82,7 +82,7 @@ export class DataStore {
     tenantId: string,
     data: Record<string, any>,
     userId: string,
-    metadata: Record<string, any> = {},
+    metadata: Record<string, any> = {}
   ): DataRecord {
     const record: DataRecord = {
       id,
@@ -115,11 +115,15 @@ export class DataStore {
     return this.records.get(recordId);
   }
 
-  update(recordId: string, data: Record<string, any>, userId: string, changes: Record<string, any> = {}): DataRecord | undefined {
+  update(
+    recordId: string,
+    data: Record<string, any>,
+    userId: string,
+    changes: Record<string, any> = {}
+  ): DataRecord | undefined {
     const record = this.records.get(recordId);
     if (!record || record.deleted) return undefined;
 
-    const oldData = record.data;
     record.data = { ...record.data, ...data };
     record.version++;
     record.updatedAt = Date.now();
@@ -166,7 +170,7 @@ export class DataStore {
     data: Record<string, any>,
     changeType: ChangeType,
     userId: string,
-    changes: Record<string, any>,
+    changes: Record<string, any>
   ): void {
     const versionRecord: DataVersion = {
       id: `ver_${recordId}_${version}_${Date.now()}`,
@@ -226,7 +230,7 @@ export class SnapshotManager {
     data: Record<string, any>,
     label: string,
     userId: string,
-    description?: string,
+    description?: string
   ): DataSnapshot {
     const snapshot: DataSnapshot = {
       id: `snap_${recordId}_${label}_${Date.now()}`,
@@ -260,7 +264,7 @@ export class SnapshotManager {
   }
 
   deleteSnapshot(snapshotId: string): boolean {
-    for (const [recordId, snapshots] of this.snapshots.entries()) {
+    for (const snapshots of this.snapshots.values()) {
       const index = snapshots.findIndex((s) => s.id === snapshotId);
       if (index !== -1) {
         snapshots.splice(index, 1);
@@ -289,7 +293,12 @@ export class RetentionManager {
     return this.policies.get(recordId);
   }
 
-  shouldRetainVersion(recordId: string, versionAge: number, versionNumber: number, totalVersions: number): boolean {
+  shouldRetainVersion(
+    recordId: string,
+    versionAge: number,
+    versionNumber: number,
+    totalVersions: number
+  ): boolean {
     const policy = this.policies.get(recordId);
     if (!policy) return true;
 
@@ -314,7 +323,9 @@ export class RetentionManager {
     if (!policy || policy.policy === 'keep-all') return versions;
 
     const now = Date.now();
-    return versions.filter((v) => this.shouldRetainVersion(recordId, now - v.changedAt, v.version, versions.length));
+    return versions.filter((v) =>
+      this.shouldRetainVersion(recordId, now - v.changedAt, v.version, versions.length)
+    );
   }
 
   async clear(): Promise<void> {
@@ -351,15 +362,11 @@ export class DataAuditor {
   }
 
   getOperations(recordId: string, limit: number = 100): typeof this.logs {
-    return this.logs
-      .filter((l) => l.recordId === recordId)
-      .slice(-limit);
+    return this.logs.filter((l) => l.recordId === recordId).slice(-limit);
   }
 
   getUserOperations(tenantId: string, userId: string, limit: number = 100): typeof this.logs {
-    return this.logs
-      .filter((l) => l.tenantId === tenantId && l.userId === userId)
-      .slice(-limit);
+    return this.logs.filter((l) => l.tenantId === tenantId && l.userId === userId).slice(-limit);
   }
 
   getStats(tenantId: string): Record<string, any> {
@@ -421,7 +428,7 @@ export class DataHub {
     tenantId: string,
     data: Record<string, any>,
     userId: string,
-    metadata?: Record<string, any>,
+    metadata?: Record<string, any>
   ): DataRecord {
     const record = this.store.create(id, type, tenantId, data, userId, metadata);
     this.auditor.logOperation(id, 'create', userId, tenantId);
@@ -432,7 +439,13 @@ export class DataHub {
     return this.store.read(recordId);
   }
 
-  update(recordId: string, data: Record<string, any>, userId: string, tenantId: string, changes?: Record<string, any>): DataRecord | undefined {
+  update(
+    recordId: string,
+    data: Record<string, any>,
+    userId: string,
+    tenantId: string,
+    changes?: Record<string, any>
+  ): DataRecord | undefined {
     const record = this.store.update(recordId, data, userId, changes);
     if (record) {
       this.auditor.logOperation(recordId, 'update', userId, tenantId);
@@ -456,11 +469,24 @@ export class DataHub {
     return record;
   }
 
-  snapshot(recordId: string, version: number, label: string, userId: string, description?: string): DataSnapshot | undefined {
+  snapshot(
+    recordId: string,
+    version: number,
+    label: string,
+    userId: string,
+    description?: string
+  ): DataSnapshot | undefined {
     const record = this.store.read(recordId);
     if (!record) return undefined;
 
-    const snapshot = this.snapshotManager.createSnapshot(recordId, version, record.data, label, userId, description);
+    const snapshot = this.snapshotManager.createSnapshot(
+      recordId,
+      version,
+      record.data,
+      label,
+      userId,
+      description
+    );
     this.auditor.logOperation(recordId, 'snapshot', userId, record.tenantId);
     return snapshot;
   }

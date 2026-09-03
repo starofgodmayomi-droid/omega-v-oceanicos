@@ -227,9 +227,39 @@ describe('RetentionManager', () => {
     manager.setPolicy('doc1', { policy: 'keep-recent', keepVersions: 2 });
 
     const versions = [
-      { id: 'v1', recordId: 'doc1', version: 1, data: {}, changeType: 'create' as ChangeType, changedBy: 'user1', changedAt: Date.now(), changes: {}, snapshot: false },
-      { id: 'v2', recordId: 'doc1', version: 2, data: {}, changeType: 'update' as ChangeType, changedBy: 'user1', changedAt: Date.now(), changes: {}, snapshot: false },
-      { id: 'v3', recordId: 'doc1', version: 3, data: {}, changeType: 'update' as ChangeType, changedBy: 'user1', changedAt: Date.now(), changes: {}, snapshot: false },
+      {
+        id: 'v1',
+        recordId: 'doc1',
+        version: 1,
+        data: {},
+        changeType: 'create' as ChangeType,
+        changedBy: 'user1',
+        changedAt: Date.now(),
+        changes: {},
+        snapshot: false,
+      },
+      {
+        id: 'v2',
+        recordId: 'doc1',
+        version: 2,
+        data: {},
+        changeType: 'update' as ChangeType,
+        changedBy: 'user1',
+        changedAt: Date.now(),
+        changes: {},
+        snapshot: false,
+      },
+      {
+        id: 'v3',
+        recordId: 'doc1',
+        version: 3,
+        data: {},
+        changeType: 'update' as ChangeType,
+        changedBy: 'user1',
+        changedAt: Date.now(),
+        changes: {},
+        snapshot: false,
+      },
     ];
 
     const pruned = manager.pruneVersions('doc1', versions);
@@ -418,7 +448,13 @@ describe('DataHub', () => {
     // Verify audit trail
     const ops = hub.getAuditor().getOperations('doc1');
     expect(ops.length).toBe(5);
-    expect(ops.map((op) => op.operation)).toEqual(['create', 'update', 'snapshot', 'delete', 'restore']);
+    expect(ops.map((op) => op.operation)).toEqual([
+      'create',
+      'update',
+      'snapshot',
+      'delete',
+      'restore',
+    ]);
   });
 
   test('should clear all managers', async () => {

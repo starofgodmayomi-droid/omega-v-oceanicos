@@ -51,25 +51,23 @@ export class HealthChecker {
     const startTime = Date.now();
     const results: ComponentHealth[] = [];
 
-    const checkPromises = Array.from(this.checks.entries()).map(
-      async ([name, checkFn]) => {
-        try {
-          const result = await checkFn();
-          this.lastResults.set(name, result);
-          return result;
-        } catch (error) {
-          const result: ComponentHealth = {
-            name,
-            status: 'unhealthy',
-            timestamp: new Date().toISOString(),
-            responseTime: Date.now() - startTime,
-            message: error instanceof Error ? error.message : 'Unknown error',
-          };
-          this.lastResults.set(name, result);
-          return result;
-        }
-      },
-    );
+    const checkPromises = Array.from(this.checks.entries()).map(async ([name, checkFn]) => {
+      try {
+        const result = await checkFn();
+        this.lastResults.set(name, result);
+        return result;
+      } catch (error) {
+        const result: ComponentHealth = {
+          name,
+          status: 'unhealthy',
+          timestamp: new Date().toISOString(),
+          responseTime: Date.now() - startTime,
+          message: error instanceof Error ? error.message : 'Unknown error',
+        };
+        this.lastResults.set(name, result);
+        return result;
+      }
+    });
 
     const checkResults = await Promise.all(checkPromises);
     results.push(...checkResults);
@@ -108,12 +106,12 @@ export class HealthChecker {
       return 'healthy';
     }
 
-    const hasUnhealthy = components.some(c => c.status === 'unhealthy');
+    const hasUnhealthy = components.some((c) => c.status === 'unhealthy');
     if (hasUnhealthy) {
       return 'unhealthy';
     }
 
-    const hasDegraded = components.some(c => c.status === 'degraded');
+    const hasDegraded = components.some((c) => c.status === 'degraded');
     if (hasDegraded) {
       return 'degraded';
     }
@@ -155,7 +153,7 @@ export const HealthChecks = {
   threshold: (
     name: string,
     check: () => Promise<boolean>,
-    _options: { healthy?: boolean; responseTimeThreshold?: number } = {},
+    _options: { healthy?: boolean; responseTimeThreshold?: number } = {}
   ): HealthCheckFunction => {
     return async () => {
       const startTime = Date.now();
@@ -215,7 +213,7 @@ export const HealthChecks = {
   responseTime: (
     name: string,
     check: () => Promise<void>,
-    options: { threshold?: number } = {},
+    options: { threshold?: number } = {}
   ): HealthCheckFunction => {
     const threshold = options.threshold || 1000;
 
@@ -252,7 +250,7 @@ export const HealthChecks = {
   counter: (
     name: string,
     getCount: () => number,
-    _options: { interval?: number; threshold?: number } = {},
+    _options: { interval?: number; threshold?: number } = {}
   ): HealthCheckFunction => {
     let lastCount = 0;
     let lastCheckTime = Date.now();
@@ -269,8 +267,7 @@ export const HealthChecks = {
       const interval = 60000;
       const threshold = 0;
 
-      const status =
-        timeDiff < interval && countDiff < threshold ? 'degraded' : 'healthy';
+      const status = timeDiff < interval && countDiff < threshold ? 'degraded' : 'healthy';
 
       return {
         name,

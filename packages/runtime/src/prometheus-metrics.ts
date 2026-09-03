@@ -103,7 +103,13 @@ export class PrometheusMetricsCollector {
   }
 
   // Histogram statistics
-  private calculateHistogramStats(durations: number[]): { count: number; sum: number; min: number; max: number; avg: number } {
+  private calculateHistogramStats(durations: number[]): {
+    count: number;
+    sum: number;
+    min: number;
+    max: number;
+    avg: number;
+  } {
     if (durations.length === 0) {
       return { count: 0, sum: 0, min: 0, max: 0, avg: 0 };
     }
@@ -123,22 +129,70 @@ export class PrometheusMetricsCollector {
     let output = '';
 
     // Counter metrics
-    output += this.formatCounter('omega_observations_total', this.counters.get('observations_total') || 0, 'Total observations recorded');
-    output += this.formatCounter('omega_verifications_total', this.counters.get('verifications_total') || 0, 'Total verifications performed');
-    output += this.formatCounter('omega_verifications_passed_total', this.counters.get('verifications_passed_total') || 0, 'Total passed verifications');
-    output += this.formatCounter('omega_verifications_failed_total', this.counters.get('verifications_failed_total') || 0, 'Total failed verifications');
-    output += this.formatCounter('omega_attestations_total', this.counters.get('attestations_total') || 0, 'Total attestations created');
-    output += this.formatCounter('omega_attestations_verified_total', this.counters.get('attestations_verified_total') || 0, 'Total verified attestations');
+    output += this.formatCounter(
+      'omega_observations_total',
+      this.counters.get('observations_total') || 0,
+      'Total observations recorded'
+    );
+    output += this.formatCounter(
+      'omega_verifications_total',
+      this.counters.get('verifications_total') || 0,
+      'Total verifications performed'
+    );
+    output += this.formatCounter(
+      'omega_verifications_passed_total',
+      this.counters.get('verifications_passed_total') || 0,
+      'Total passed verifications'
+    );
+    output += this.formatCounter(
+      'omega_verifications_failed_total',
+      this.counters.get('verifications_failed_total') || 0,
+      'Total failed verifications'
+    );
+    output += this.formatCounter(
+      'omega_attestations_total',
+      this.counters.get('attestations_total') || 0,
+      'Total attestations created'
+    );
+    output += this.formatCounter(
+      'omega_attestations_verified_total',
+      this.counters.get('attestations_verified_total') || 0,
+      'Total verified attestations'
+    );
 
     // Gauge metrics
-    output += this.formatGauge('omega_system_confidence', this.gauges.get('system_confidence') || 0, 'Current system confidence (0-1)');
-    output += this.formatGauge('omega_success_rate', this.gauges.get('success_rate') || 0, 'Current success rate (0-1)');
-    output += this.formatGauge('omega_event_log_size', this.gauges.get('event_log_size') || 0, 'Current event log size');
+    output += this.formatGauge(
+      'omega_system_confidence',
+      this.gauges.get('system_confidence') || 0,
+      'Current system confidence (0-1)'
+    );
+    output += this.formatGauge(
+      'omega_success_rate',
+      this.gauges.get('success_rate') || 0,
+      'Current success rate (0-1)'
+    );
+    output += this.formatGauge(
+      'omega_event_log_size',
+      this.gauges.get('event_log_size') || 0,
+      'Current event log size'
+    );
 
     // Histogram metrics
-    output += this.formatHistogram('omega_loop_duration_ms', this.histograms.get('loop_duration_ms') || [], 'Verification loop duration in milliseconds');
-    output += this.formatHistogram('omega_verification_duration_ms', this.histograms.get('verification_duration_ms') || [], 'Verification duration in milliseconds');
-    output += this.formatHistogram('omega_attestation_duration_ms', this.histograms.get('attestation_duration_ms') || [], 'Attestation duration in milliseconds');
+    output += this.formatHistogram(
+      'omega_loop_duration_ms',
+      this.histograms.get('loop_duration_ms') || [],
+      'Verification loop duration in milliseconds'
+    );
+    output += this.formatHistogram(
+      'omega_verification_duration_ms',
+      this.histograms.get('verification_duration_ms') || [],
+      'Verification duration in milliseconds'
+    );
+    output += this.formatHistogram(
+      'omega_attestation_duration_ms',
+      this.histograms.get('attestation_duration_ms') || [],
+      'Attestation duration in milliseconds'
+    );
 
     // System uptime
     const uptimeMs = Date.now() - this.startTime;
@@ -157,9 +211,15 @@ export class PrometheusMetricsCollector {
       counters: Object.fromEntries(this.counters),
       gauges: Object.fromEntries(this.gauges),
       histograms: {
-        loop_duration_ms: this.calculateHistogramStats(this.histograms.get('loop_duration_ms') || []),
-        verification_duration_ms: this.calculateHistogramStats(this.histograms.get('verification_duration_ms') || []),
-        attestation_duration_ms: this.calculateHistogramStats(this.histograms.get('attestation_duration_ms') || []),
+        loop_duration_ms: this.calculateHistogramStats(
+          this.histograms.get('loop_duration_ms') || []
+        ),
+        verification_duration_ms: this.calculateHistogramStats(
+          this.histograms.get('verification_duration_ms') || []
+        ),
+        attestation_duration_ms: this.calculateHistogramStats(
+          this.histograms.get('attestation_duration_ms') || []
+        ),
       },
       uptime_ms: Date.now() - this.startTime,
     };
@@ -182,7 +242,7 @@ export class PrometheusMetricsCollector {
     // Histogram buckets (in milliseconds)
     const buckets = [1, 5, 10, 50, 100, 500, 1000, Infinity];
     for (const bucket of buckets) {
-      const count = durations.filter(d => d <= bucket).length;
+      const count = durations.filter((d) => d <= bucket).length;
       if (bucket === Infinity) {
         output += `${name}_bucket{le="+Inf"} ${count}\n`;
       } else {

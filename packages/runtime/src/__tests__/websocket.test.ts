@@ -73,7 +73,11 @@ describe('WebSocket Event Broadcasting', () => {
     it('should filter events based on subscriber filter', () => {
       const events: VerificationEvent[] = [];
 
-      broadcaster.subscribe('test-1', (event) => events.push(event), (event) => event.type === 'observation');
+      broadcaster.subscribe(
+        'test-1',
+        (event) => events.push(event),
+        (event) => event.type === 'observation'
+      );
 
       const obsEvent: VerificationEvent = {
         type: 'observation',
@@ -149,7 +153,7 @@ describe('WebSocket Event Broadcasting', () => {
 
       const obsHistory = broadcaster.getHistoryByType('observation');
       expect(obsHistory).toHaveLength(2);
-      expect(obsHistory.every(e => e.type === 'observation')).toBe(true);
+      expect(obsHistory.every((e) => e.type === 'observation')).toBe(true);
     });
 
     it('should track metrics', () => {
@@ -352,8 +356,16 @@ describe('WebSocket Event Broadcasting', () => {
       const obsEvents: VerificationEvent[] = [];
       const verEvents: VerificationEvent[] = [];
 
-      broadcaster.subscribe('obs-sub', (event) => obsEvents.push(event), (event) => event.type === 'observation');
-      broadcaster.subscribe('ver-sub', (event) => verEvents.push(event), (event) => event.type === 'verification');
+      broadcaster.subscribe(
+        'obs-sub',
+        (event) => obsEvents.push(event),
+        (event) => event.type === 'observation'
+      );
+      broadcaster.subscribe(
+        'ver-sub',
+        (event) => verEvents.push(event),
+        (event) => event.type === 'verification'
+      );
 
       broadcaster.publish({
         type: 'observation',

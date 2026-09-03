@@ -36,9 +36,7 @@ export class RequestSignature {
 
   constructor(config: SignatureConfig = {}) {
     this.algorithm = config.algorithm || 'sha256';
-    this.includedHeaders = new Set(
-      config.includedHeaders || ['content-type', 'x-api-version'],
-    );
+    this.includedHeaders = new Set(config.includedHeaders || ['content-type', 'x-api-version']);
     this.clockSkew = config.clockSkew || 300000; // 5 minutes default
   }
 
@@ -47,7 +45,7 @@ export class RequestSignature {
    */
   signRequest(
     secret: string,
-    options: RequestSignatureOptions,
+    options: RequestSignatureOptions
   ): {
     signature: string;
     timestamp: number;
@@ -61,13 +59,10 @@ export class RequestSignature {
       options.path,
       options.headers,
       body,
-      timestamp,
+      timestamp
     );
 
-    const signature = crypto
-      .createHmac(this.algorithm, secret)
-      .update(signatureData)
-      .digest('hex');
+    const signature = crypto.createHmac(this.algorithm, secret).update(signatureData).digest('hex');
 
     const signatureHeader = `hmac-${this.algorithm}=${signature},timestamp=${timestamp}`;
 
@@ -84,7 +79,7 @@ export class RequestSignature {
   verifyRequest(
     secret: string,
     options: RequestSignatureOptions,
-    signatureHeader: string,
+    signatureHeader: string
   ): SignatureVerifyResult {
     const parsed = this.parseSignatureHeader(signatureHeader);
 
@@ -117,7 +112,7 @@ export class RequestSignature {
       options.path,
       options.headers,
       body,
-      timestamp,
+      timestamp
     );
 
     const expectedSignature = crypto
@@ -130,7 +125,7 @@ export class RequestSignature {
     try {
       valid = crypto.timingSafeEqual(
         Buffer.from(providedSignature),
-        Buffer.from(expectedSignature),
+        Buffer.from(expectedSignature)
       );
     } catch {
       // timingSafeEqual throws if buffers have different lengths
@@ -152,13 +147,9 @@ export class RequestSignature {
     path: string,
     headers: Record<string, string>,
     body: string,
-    timestamp: number,
+    timestamp: number
   ): string {
-    const parts: string[] = [
-      method.toUpperCase(),
-      path,
-      timestamp.toString(),
-    ];
+    const parts: string[] = [method.toUpperCase(), path, timestamp.toString()];
 
     // Include selected headers in signature
     const selectedHeaders = this.selectHeaders(headers);
@@ -167,10 +158,7 @@ export class RequestSignature {
     }
 
     // Include body hash
-    const bodyHash = crypto
-      .createHash(this.algorithm)
-      .update(body)
-      .digest('hex');
+    const bodyHash = crypto.createHash(this.algorithm).update(body).digest('hex');
     parts.push(`body=${bodyHash}`);
 
     return parts.join('\n');
@@ -179,9 +167,7 @@ export class RequestSignature {
   /**
    * Select headers to include in signature
    */
-  private selectHeaders(
-    headers: Record<string, string>,
-  ): Record<string, string> {
+  private selectHeaders(headers: Record<string, string>): Record<string, string> {
     const selected: Record<string, string> = {};
 
     for (const [key, value] of Object.entries(headers)) {
@@ -197,9 +183,7 @@ export class RequestSignature {
   /**
    * Parse signature header
    */
-  private parseSignatureHeader(
-    header: string,
-  ): { signature: string; timestamp: number } | null {
+  private parseSignatureHeader(header: string): { signature: string; timestamp: number } | null {
     try {
       const parts = header.split(',');
       let signature: string | undefined;
@@ -242,21 +226,11 @@ export class WebhookSignature {
   /**
    * Verify GitHub webhook signature
    */
-  static verifyGitHub(
-    payload: string | Buffer,
-    signature: string,
-    secret: string,
-  ): boolean {
-    const hmac = crypto
-      .createHmac('sha256', secret)
-      .update(payload)
-      .digest('hex');
+  static verifyGitHub(payload: string | Buffer, signature: string, secret: string): boolean {
+    const hmac = crypto.createHmac('sha256', secret).update(payload).digest('hex');
 
     const expectedSignature = `sha256=${hmac}`;
-    return crypto.timingSafeEqual(
-      Buffer.from(signature),
-      Buffer.from(expectedSignature),
-    );
+    return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature));
   }
 
   /**
@@ -266,7 +240,7 @@ export class WebhookSignature {
     body: string,
     signature: string,
     secret: string,
-    tolerance: number = 300, // 5 minutes
+    tolerance: number = 300 // 5 minutes
   ): boolean {
     try {
       const parts = signature.split(',');
@@ -290,15 +264,9 @@ export class WebhookSignature {
 
       // Verify signature
       const signedContent = `${timestamp}.${body}`;
-      const expectedHash = crypto
-        .createHmac('sha256', secret)
-        .update(signedContent)
-        .digest('hex');
+      const expectedHash = crypto.createHmac('sha256', secret).update(signedContent).digest('hex');
 
-      return crypto.timingSafeEqual(
-        Buffer.from(hash),
-        Buffer.from(expectedHash),
-      );
+      return crypto.timingSafeEqual(Buffer.from(hash), Buffer.from(expectedHash));
     } catch {
       return false;
     }
@@ -310,10 +278,7 @@ export class WebhookSignature {
   static signStripe(payload: string, secret: string): string {
     const timestamp = Math.floor(Date.now() / 1000);
     const signedContent = `${timestamp}.${payload}`;
-    const signature = crypto
-      .createHmac('sha256', secret)
-      .update(signedContent)
-      .digest('hex');
+    const signature = crypto.createHmac('sha256', secret).update(signedContent).digest('hex');
 
     return `t=${timestamp},${signature}`;
   }
@@ -325,31 +290,18 @@ export class WebhookSignature {
     payload: string | Buffer,
     signature: string,
     secret: string,
-    algorithm: string = 'sha256',
+    algorithm: string = 'sha256'
   ): boolean {
-    const hmac = crypto
-      .createHmac(algorithm, secret)
-      .update(payload)
-      .digest('hex');
+    const hmac = crypto.createHmac(algorithm, secret).update(payload).digest('hex');
 
-    return crypto.timingSafeEqual(
-      Buffer.from(signature),
-      Buffer.from(hmac),
-    );
+    return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(hmac));
   }
 
   /**
    * Generate generic HMAC signature
    */
-  static signHMAC(
-    payload: string | Buffer,
-    secret: string,
-    algorithm: string = 'sha256',
-  ): string {
-    return crypto
-      .createHmac(algorithm, secret)
-      .update(payload)
-      .digest('hex');
+  static signHMAC(payload: string | Buffer, secret: string, algorithm: string = 'sha256'): string {
+    return crypto.createHmac(algorithm, secret).update(payload).digest('hex');
   }
 }
 
@@ -374,7 +326,7 @@ export class OutboundRequestSigner {
     method: string,
     path: string,
     headers: Record<string, string>,
-    body: string | Buffer = '',
+    body: string | Buffer = ''
   ): Record<string, string> {
     const signResult = this.signer.signRequest(this.apiSecret, {
       method,
@@ -398,7 +350,7 @@ export class OutboundRequestSigner {
     method: string,
     path: string,
     headers: Record<string, string> = {},
-    body: string | Buffer = '',
+    body: string | Buffer = ''
   ): {
     method: string;
     path: string;

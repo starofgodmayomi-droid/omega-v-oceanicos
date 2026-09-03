@@ -61,12 +61,7 @@ export class AuthManager {
   /**
    * Register a new user
    */
-  registerUser(
-    id: string,
-    username: string,
-    email?: string,
-    roles?: UserRole[],
-  ): AuthUser {
+  registerUser(id: string, username: string, email?: string, roles?: UserRole[]): AuthUser {
     if (this.users.has(id)) {
       throw new Error(`User ${id} already exists`);
     }
@@ -232,7 +227,7 @@ export class AuthManager {
   hasAnyRole(userId: string, roles: UserRole[]): boolean {
     const user = this.users.get(userId);
     if (!user) return false;
-    return roles.some(role => user.roles.includes(role));
+    return roles.some((role) => user.roles.includes(role));
   }
 
   /**
@@ -241,7 +236,7 @@ export class AuthManager {
   hasAllRoles(userId: string, roles: UserRole[]): boolean {
     const user = this.users.get(userId);
     if (!user) return false;
-    return roles.every(role => user.roles.includes(role));
+    return roles.every((role) => user.roles.includes(role));
   }
 
   /**
@@ -255,7 +250,7 @@ export class AuthManager {
    * List API keys for user
    */
   listAPIKeys(userId: string): APIKey[] {
-    return Array.from(this.apiKeys.values()).filter(key => key.userId === userId);
+    return Array.from(this.apiKeys.values()).filter((key) => key.userId === userId);
   }
 
   private generateSecret(): string {
@@ -300,9 +295,7 @@ export class AuthManager {
       throw new Error('Invalid token signature');
     }
 
-    const payload = JSON.parse(
-      Buffer.from(encodedPayload, 'base64').toString('utf-8'),
-    );
+    const payload = JSON.parse(Buffer.from(encodedPayload, 'base64').toString('utf-8'));
 
     return payload as TokenPayload;
   }

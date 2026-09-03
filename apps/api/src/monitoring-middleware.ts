@@ -52,7 +52,8 @@ export function attachMonitoringMiddleware(options: MonitoringMiddlewareOptions)
  */
 export function registerAlertRuleEndpoint(hub: MonitoringHub) {
   return (req: Request, res: Response) => {
-    const { id, name, description, enabled, severity, thresholds, actions, cooldownPeriod } = req.body;
+    const { id, name, description, enabled, severity, thresholds, actions, cooldownPeriod } =
+      req.body;
 
     if (!id || !name || !severity || !thresholds) {
       return res.status(400).json({
@@ -528,7 +529,7 @@ export function getSystemHealthEndpoint(hub: MonitoringHub) {
  */
 export function initializeMonitoringMiddleware(
   options: MonitoringMiddlewareOptions,
-  enableEndpoints?: boolean,
+  enableEndpoints?: boolean
 ) {
   const endpoints = [];
 
@@ -574,7 +575,10 @@ export function initializeMonitoringMiddleware(
       if (req.method === 'POST' && req.path === '/api/monitoring/compliance/reports') {
         return generateComplianceReportEndpoint(options.hub)(req, res);
       }
-      if (req.method === 'GET' && req.path.match(/^\/api\/monitoring\/compliance\/reports\/[^\/]+$/)) {
+      if (
+        req.method === 'GET' &&
+        req.path.match(/^\/api\/monitoring\/compliance\/reports\/[^\/]+$/)
+      ) {
         const reportId = req.path.split('/')[5];
         req.params.reportId = reportId;
         return getComplianceReportEndpoint(options.hub)(req, res);

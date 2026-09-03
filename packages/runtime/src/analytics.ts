@@ -82,7 +82,12 @@ export class AnalyticsCollector {
   private metrics: Metric[] = [];
   private eventTypeIndex: Map<string, AnalyticsEvent[]> = new Map();
 
-  recordEvent(eventType: string, metadata: Record<string, any>, userId?: string, sessionId?: string): AnalyticsEvent {
+  recordEvent(
+    eventType: string,
+    metadata: Record<string, any>,
+    userId?: string,
+    sessionId?: string
+  ): AnalyticsEvent {
     const event: AnalyticsEvent = {
       id: `evt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       eventType,
@@ -102,7 +107,12 @@ export class AnalyticsCollector {
     return event;
   }
 
-  recordMetric(name: string, value: number, type: MetricType = 'gauge', labels?: Record<string, string>): Metric {
+  recordMetric(
+    name: string,
+    value: number,
+    type: MetricType = 'gauge',
+    labels?: Record<string, string>
+  ): Metric {
     const metric: Metric = {
       name,
       type,
@@ -116,7 +126,7 @@ export class AnalyticsCollector {
   }
 
   getEvents(eventType?: string, since?: number, limit: number = 1000): AnalyticsEvent[] {
-    let filtered = eventType ? (this.eventTypeIndex.get(eventType) || []) : this.events;
+    let filtered = eventType ? this.eventTypeIndex.get(eventType) || [] : this.events;
 
     if (since) {
       filtered = filtered.filter((e) => e.timestamp >= since);
@@ -225,7 +235,11 @@ export class MetricsAggregator {
 export class TrendDetector {
   private trends: Map<string, Trend[]> = new Map();
 
-  detectTrend(aggregated: AggregatedMetric[], period: AggregationPeriod, minDuration: number = 3): Trend | undefined {
+  detectTrend(
+    aggregated: AggregatedMetric[],
+    period: AggregationPeriod,
+    minDuration: number = 3
+  ): Trend | undefined {
     if (aggregated.length < minDuration) return undefined;
 
     const recent = aggregated.slice(-minDuration);
@@ -307,7 +321,7 @@ export class InsightEngine {
     metricName: string,
     currentValue: number,
     expectedValue: number,
-    tolerance: number = 0.2,
+    tolerance: number = 0.2
   ): Insight | undefined {
     const deviation = Math.abs(currentValue - expectedValue) / expectedValue;
 
@@ -329,8 +343,15 @@ export class InsightEngine {
     return insight;
   }
 
-  detectCorrelation(metric1: Metric[], metric2: Metric[], threshold: number = 0.7): Insight | undefined {
-    const correlation = this.calculateCorrelation(metric1.map((m) => m.value), metric2.map((m) => m.value));
+  detectCorrelation(
+    metric1: Metric[],
+    metric2: Metric[],
+    threshold: number = 0.7
+  ): Insight | undefined {
+    const correlation = this.calculateCorrelation(
+      metric1.map((m) => m.value),
+      metric2.map((m) => m.value)
+    );
 
     if (Math.abs(correlation) < threshold) return undefined;
 
@@ -414,7 +435,7 @@ export class ReportGenerator {
     endTime: number,
     metrics: Record<string, AggregatedMetric>,
     trends: Trend[],
-    insights: Insight[],
+    insights: Insight[]
   ): Report {
     const report: Report = {
       id: `report_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -433,7 +454,7 @@ export class ReportGenerator {
   private generateSummary(
     metrics: Record<string, AggregatedMetric>,
     trends: Trend[],
-    insights: Insight[],
+    insights: Insight[]
   ): string {
     const metricCount = Object.keys(metrics).length;
     const trendCount = trends.length;
@@ -486,7 +507,7 @@ export class AnalyticsHub {
     eventType: string,
     metadata: Record<string, any>,
     userId?: string,
-    sessionId?: string,
+    sessionId?: string
   ): AnalyticsEvent {
     const event = this.collector.recordEvent(eventType, metadata, userId, sessionId);
 
@@ -500,16 +521,18 @@ export class AnalyticsHub {
   analyzeMetrics(
     metricName: string,
     period: AggregationPeriod = '1h',
-    since?: number,
+    since?: number
   ): {
     aggregated: AggregatedMetric | undefined;
     trend: Trend | undefined;
   } {
     const metrics = this.collector.getMetrics(metricName, since);
-    const aggregated = metrics.length > 0 ? this.aggregator.aggregate(metrics, metricName, period) : undefined;
+    const aggregated =
+      metrics.length > 0 ? this.aggregator.aggregate(metrics, metricName, period) : undefined;
 
     const allAggregated = this.aggregator.getAggregated(metricName);
-    const trend = allAggregated.length > 0 ? this.trendDetector.detectTrend(allAggregated, period) : undefined;
+    const trend =
+      allAggregated.length > 0 ? this.trendDetector.detectTrend(allAggregated, period) : undefined;
 
     return { aggregated, trend };
   }
@@ -521,7 +544,9 @@ export class AnalyticsHub {
       if (metrics.length > 0) {
         const values = metrics.map((m) => m.value);
         const avg = values.reduce((a, b) => a + b, 0) / values.length;
-        const stdDev = Math.sqrt(values.reduce((sq, n) => sq + Math.pow(n - avg, 2), 0) / values.length);
+        const stdDev = Math.sqrt(
+          values.reduce((sq, n) => sq + Math.pow(n - avg, 2), 0) / values.length
+        );
 
         const lastValue = values[values.length - 1];
         if (Math.abs(lastValue - avg) > 3 * stdDev) {
@@ -538,7 +563,7 @@ export class AnalyticsHub {
     title: string,
     startTime: number,
     endTime: number,
-    metricNames: string[],
+    metricNames: string[]
   ): Report {
     const metrics: Record<string, AggregatedMetric> = {};
 
@@ -552,7 +577,14 @@ export class AnalyticsHub {
     const trends = this.trendDetector.getTrends();
     const insights = this.insightEngine.getInsights();
 
-    return this.reportGenerator.generateReport(title, startTime, endTime, metrics, trends, insights);
+    return this.reportGenerator.generateReport(
+      title,
+      startTime,
+      endTime,
+      metrics,
+      trends,
+      insights
+    );
   }
 
   async clear(): Promise<void> {

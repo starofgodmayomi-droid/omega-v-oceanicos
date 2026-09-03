@@ -3,7 +3,8 @@
  * Enables non-blocking request processing and background job management
  */
 
-export type JobStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'retrying' | 'dead-letter';
+export type JobStatus =
+  'pending' | 'processing' | 'completed' | 'failed' | 'retrying' | 'dead-letter';
 export type JobPriority = 'low' | 'normal' | 'high' | 'critical';
 
 export interface Job<T = any> {
@@ -90,7 +91,7 @@ export class JobQueue {
       maxRetries?: number;
       retryDelay?: number;
       tags?: string[];
-    } = {},
+    } = {}
   ): Promise<string> {
     const jobId = this.generateJobId();
     const job: Job<T> = {
@@ -180,14 +181,10 @@ export class JobQueue {
 
     const avgProcessingTime =
       this.stats.processingTimes.length > 0
-        ? this.stats.processingTimes.reduce((a, b) => a + b, 0) /
-          this.stats.processingTimes.length
+        ? this.stats.processingTimes.reduce((a, b) => a + b, 0) / this.stats.processingTimes.length
         : 0;
 
-    const successRate =
-      this.stats.processed > 0
-        ? completed / this.stats.processed
-        : 0;
+    const successRate = this.stats.processed > 0 ? completed / this.stats.processed : 0;
 
     return {
       pending,
@@ -224,14 +221,10 @@ export class JobQueue {
   private async processJobs(): Promise<void> {
     if (this.processing.size >= this.config.maxConcurrent) return;
 
-    const pending = this.getJobs('pending')
-      .sort((a, b) => {
-        const priorityOrder = { critical: 0, high: 1, normal: 2, low: 3 };
-        return (
-          priorityOrder[a.priority] - priorityOrder[b.priority] ||
-          a.createdAt - b.createdAt
-        );
-      });
+    const pending = this.getJobs('pending').sort((a, b) => {
+      const priorityOrder = { critical: 0, high: 1, normal: 2, low: 3 };
+      return priorityOrder[a.priority] - priorityOrder[b.priority] || a.createdAt - b.createdAt;
+    });
 
     for (const job of pending) {
       if (this.processing.size >= this.config.maxConcurrent) break;
@@ -256,10 +249,7 @@ export class JobQueue {
       }
 
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(
-          () => reject(new Error('Job processing timeout')),
-          this.config.processingTimeout,
-        ),
+        setTimeout(() => reject(new Error('Job processing timeout')), this.config.processingTimeout)
       );
 
       const result = await Promise.race([handler(job), timeoutPromise]);
@@ -276,12 +266,15 @@ export class JobQueue {
 
       if (job.attempts <= job.maxRetries) {
         job.status = 'retrying';
-        setTimeout(() => {
-          if (this.jobs.has(job.id)) {
-            job.status = 'pending';
-            this.processJobs();
-          }
-        }, job.retryDelay * Math.pow(2, job.attempts - 1));
+        setTimeout(
+          () => {
+            if (this.jobs.has(job.id)) {
+              job.status = 'pending';
+              this.processJobs();
+            }
+          },
+          job.retryDelay * Math.pow(2, job.attempts - 1)
+        );
       } else {
         job.status = 'failed';
         job.completedAt = Date.now();
@@ -353,11 +346,7 @@ export class DistributedJobQueue extends JobQueue {
     if (!this.persistence) return;
 
     try {
-      await this.persistence.setex(
-        `job:${job.id}`,
-        86400,
-        JSON.stringify(job),
-      );
+      await this.persistence.setex(`job:${job.id}`, 86400, JSON.stringify(job));
     } catch {
       // Persistence failed, job stays in memory
     }
@@ -380,7 +369,7 @@ export class PriorityJobQueue extends JobQueue {
       retryDelay?: number;
       escalateAfter?: number;
       tags?: string[];
-    } = {},
+    } = {}
   ): Promise<string> {
     const jobId = await this.enqueue(type, payload, options);
     const job = this.getJob(jobId);
@@ -402,10 +391,7 @@ export class PriorityJobQueue extends JobQueue {
   getJobsByPriority(status?: JobStatus): Job[] {
     const priorityOrder = { critical: 0, high: 1, normal: 2, low: 3 };
     return this.getJobs(status).sort((a, b) => {
-      return (
-        priorityOrder[a.priority] - priorityOrder[b.priority] ||
-        a.createdAt - b.createdAt
-      );
+      return priorityOrder[a.priority] - priorityOrder[b.priority] || a.createdAt - b.createdAt;
     });
   }
 }
@@ -432,7 +418,7 @@ export class BatchJobProcessor {
       priority?: JobPriority;
       maxRetries?: number;
       tags?: string[];
-    },
+    }
   ): Promise<string[]> {
     const jobIds: string[] = [];
 
@@ -455,7 +441,7 @@ export class BatchJobProcessor {
       priority?: JobPriority;
       maxRetries?: number;
       tags?: string[];
-    },
+    }
   ): Promise<string[]> {
     const jobIds: string[] = [];
     const delayMs = 1000 / itemsPerSecond;
