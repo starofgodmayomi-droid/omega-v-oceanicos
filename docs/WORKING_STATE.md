@@ -2,6 +2,12 @@
 
 **Updated:** 2026-09-02
 
+## Web package-local DOM verification checkpoint — 2026-09-02
+
+The Web package now has an explicit Jest/jsdom configuration for the control-room dashboard tests. `pnpm --filter @omega-v/web test` runs the three DOM suites directly and passes 84 tests. The package-local project intentionally scopes itself to `src/__tests__/dom/**/*.test.tsx`; root-relative Web contract and specification tests remain owned by the monorepo root verification project. This makes the visual control-room surface independently reproducible without overstating package-local coverage.
+
+No runtime authority changed. Formatting, package-local DOM tests, and the broader root verification remain separate evidence layers; no push, PR publication, merge, or deployment has occurred.
+
 ## Core package verification alignment checkpoint — 2026-09-02
 
 The remaining core packages now invoke the repository’s authoritative root Jest project from their package test scripts: attestation, dissensus, lexicon, observer, remember, and verification. This removes package-local ESM/parser drift while keeping each command scoped to its own test directory. The packages expose a reproducible worker boundary without claiming independent root-relative documentation coverage.
