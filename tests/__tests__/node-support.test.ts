@@ -32,6 +32,22 @@ describe('the supported Node version is one claim, not three', () => {
 
   const image = Number((dockerfile.match(/FROM node:(\d+)/) ?? [])[1]);
 
+  // Comment-stripped, because the workflow now explains fail-fast in prose
+  // that contains the literal string `fail-fast: true`. Reading the file
+  // whole would find that first and report the opposite of what is
+  // configured — the same way the matrix read above once reported a floor
+  // of 18 from a comment describing 18's removal. Configuration is read
+  // from configuration.
+  const workflowConfig = workflow
+    .split('\n')
+    .filter((line) => !/^\s*#/.test(line))
+    .join('\n');
+
+  const failFast = Array.from(workflowConfig.matchAll(/^\s*fail-fast:\s*(\S+)\s*$/gm)).map(
+    (match) => match[1]
+  );
+  const matrixBlocks = Array.from(workflowConfig.matchAll(/^\s*matrix:\s*$/gm));
+
   it('declares an engine range to check', () => {
     expect(declared).toBeGreaterThan(0);
     expect(matrix.length).toBeGreaterThan(0);
@@ -63,6 +79,22 @@ describe('the supported Node version is one claim, not three', () => {
     // Otherwise the next LTS becomes a surprise on the day it turns
     // default, rather than a red pull request beforehand.
     expect(Math.max(...matrix)).toBeGreaterThan(image);
+  });
+
+  it('keeps both matrix legs reporting when one of them fails', () => {
+    // A cancelled leg is not a passing leg. With fail-fast at its default,
+    // GitHub cancels the siblings the moment one goes red: on 832d820 the
+    // run recorded `failure verify (20.x)` and `cancelled verify (22.x)` in
+    // the same second, and the cancellation was read here as a pass.
+    //
+    // That is the same defect the tests above exist for — an absence of
+    // evidence taken as evidence. It costs the matrix its only purpose,
+    // which is telling a version-specific break from a general one.
+    //
+    // Counted against the matrices rather than asserted once, so a second
+    // matrix added without the setting fails instead of inheriting the
+    // default silently.
+    expect(failFast).toEqual(matrixBlocks.map(() => 'false'));
   });
 
   it('reads the matrix from the matrix, not from prose about it', () => {
