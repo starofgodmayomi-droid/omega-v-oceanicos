@@ -246,7 +246,7 @@ describe('Multi-Tenant Architecture', () => {
     });
 
     it('should create isolation policy', () => {
-      const rules = new Map([['rule1', 'value1']]);
+      const rules = new Map<string, any>([['rule1', 'value1']]);
       const policy = manager.createPolicy('tenant1', 'logical', rules);
 
       expect(policy.tenantId).toBe('tenant1');
@@ -255,7 +255,7 @@ describe('Multi-Tenant Architecture', () => {
     });
 
     it('should get policy', () => {
-      const rules = new Map([['rule1', 'value1']]);
+      const rules = new Map<string, any>([['rule1', 'value1']]);
       manager.createPolicy('tenant1', 'logical', rules);
       const policy = manager.getPolicy('tenant1');
 
@@ -264,7 +264,7 @@ describe('Multi-Tenant Architecture', () => {
     });
 
     it('should enforce isolation', () => {
-      const rules = new Map();
+      const rules = new Map<string, any>();
       manager.createPolicy('tenant1', 'logical', rules);
 
       expect(manager.enforceIsolation('tenant1', 'tenant1')).toBe(true);
@@ -272,7 +272,7 @@ describe('Multi-Tenant Architecture', () => {
     });
 
     it('should validate cross-tenant access', () => {
-      const rules = new Map([['crossTenantPermissions', new Set(['read'])]]);
+      const rules = new Map<string, any>([['crossTenantPermissions', new Set(['read'])]]);
       manager.createPolicy('tenant1', 'logical', rules);
 
       expect(manager.validateCrossTenantAccess('tenant1', 'tenant2', 'read')).toBe(true);
@@ -280,7 +280,7 @@ describe('Multi-Tenant Architecture', () => {
     });
 
     it('should add isolation rule', () => {
-      const rules = new Map();
+      const rules = new Map<string, any>();
       manager.createPolicy('tenant1', 'logical', rules);
       const result = manager.addIsolationRule('tenant1', 'newRule', 'newValue');
 
@@ -290,7 +290,7 @@ describe('Multi-Tenant Architecture', () => {
     });
 
     it('should disable isolation', () => {
-      const rules = new Map();
+      const rules = new Map<string, any>();
       manager.createPolicy('tenant1', 'logical', rules);
       const result = manager.disableIsolation('tenant1');
 
@@ -300,7 +300,7 @@ describe('Multi-Tenant Architecture', () => {
     });
 
     it('should enable isolation', () => {
-      const rules = new Map();
+      const rules = new Map<string, any>();
       manager.createPolicy('tenant1', 'logical', rules);
       manager.disableIsolation('tenant1');
       const result = manager.enableIsolation('tenant1');
@@ -455,7 +455,7 @@ describe('Multi-Tenant Architecture', () => {
 
     it('should create isolation policy with audit', () => {
       const tenant = hub.createTenant('acme', 'user1');
-      const rules = new Map();
+      const rules = new Map<string, any>();
       const policy = hub.createIsolationPolicy(tenant.id, 'logical', rules);
 
       expect(policy.tenantId).toBe(tenant.id);
@@ -476,7 +476,7 @@ describe('Multi-Tenant Architecture', () => {
 
     it('should enforce isolation', () => {
       const tenant = hub.createTenant('acme', 'user1');
-      const rules = new Map();
+      const rules = new Map<string, any>();
       hub.createIsolationPolicy(tenant.id, 'logical', rules);
 
       expect(hub.enforceIsolation(tenant.id, tenant.id)).toBe(true);
@@ -500,7 +500,7 @@ describe('Multi-Tenant Architecture', () => {
       ]);
       hub.initializeQuotas(tenant.id, limits);
 
-      const rules = new Map([['level', 'logical']]);
+      const rules = new Map<string, any>([['level', 'logical']]);
       hub.createIsolationPolicy(tenant.id, 'logical', rules);
 
       const ctx1 = hub.establishContext(tenant.id, 'user1');
