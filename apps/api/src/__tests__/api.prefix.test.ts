@@ -57,6 +57,24 @@ describe('API prefix parity', () => {
     expect(response.status).toBe(201);
   });
 
+  it('rewrites a bare /api (no trailing path) to root rather than an empty path', async () => {
+    // req.url.slice(4) on the literal string '/api' yields '', not '/'; the
+    // handler's `|| '/'` fallback is the only thing standing between that
+    // and every downstream route seeing an empty, unroutable req.url. Every
+    // other case in this file requests /api<subpath>, which never exercises
+    // the empty-string branch of that fallback.
+    const bare = await fetch(`${baseUrl}/`);
+    const prefixed = await fetch(`${baseUrl}/api`);
+    const bareBody = (await bare.json()) as { code: string; message: string };
+    const prefixedBody = (await prefixed.json()) as { code: string; message: string };
+
+    expect(bare.status).toBe(404);
+    expect(prefixed.status).toBe(bare.status);
+    expect(prefixedBody.code).toBe(bareBody.code);
+    expect(prefixedBody.code).toBe('NOT_FOUND');
+    expect(prefixedBody.message).toBe(bareBody.message);
+  });
+
   it('does not strip a path that merely begins with the letters api', () => {
     // /apiary must not become /ry.
     expect('/apiary'.startsWith('/api/')).toBe(false);

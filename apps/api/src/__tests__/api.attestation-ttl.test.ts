@@ -69,4 +69,55 @@ describe('API attestation TTL enforcement', () => {
     expect(actResponse.status).toBe(409);
     expect(actBody.code).toBe('EXPIRED_ATTESTATION');
   });
+
+  it('treats a malformed TTL as unbounded rather than as an immediate expiry', async () => {
+    // configuredAttestationTtlMs() re-reads OMEGA_ATTESTATION_TTL_MS on every
+    // call rather than caching it at boot, so mutating it here for a single
+    // request is genuine coverage of the live route, not a stale fixture.
+    const loopResponse = await fetch(`${baseUrl}/complete-loop`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        claim: 'invalid TTL falls back to unbounded',
+        category: 'health-check',
+        source: { system: 'ttl-test', version: '0.1.0', environment: 'test' },
+        observedBy: 'jest',
+        metadata: { responseTime: 42, statusCode: 200 },
+        confidence: 0.99,
+        confidenceReason: 'Executable invalid-TTL fallback test',
+      }),
+    });
+    const loopBody = (await loopResponse.json()) as {
+      data: { attestation: Record<string, unknown> };
+    };
+    expect(loopResponse.status).toBe(201);
+
+    await new Promise((resolve) => setTimeout(resolve, 10));
+
+    const previousTtl = process.env.OMEGA_ATTESTATION_TTL_MS;
+    for (const invalidValue of ['not-a-number', '0', '-5']) {
+      process.env.OMEGA_ATTESTATION_TTL_MS = invalidValue;
+      try {
+        const policyResponse = await fetch(`${baseUrl}/attest/policy`);
+        const policy = (await policyResponse.json()) as {
+          data: { attestationTtlMs: number | null };
+        };
+        expect(policyResponse.status).toBe(200);
+        expect(policy.data.attestationTtlMs).toBeNull();
+
+        const actResponse = await fetch(`${baseUrl}/act`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ attestation: loopBody.data.attestation }),
+        });
+        const actBody = (await actResponse.json()) as { data?: { status: string }; code?: string };
+
+        expect(actBody.code).not.toBe('EXPIRED_ATTESTATION');
+        expect(actResponse.status).toBe(201);
+        expect(actBody.data?.status).toBe('authorized');
+      } finally {
+        process.env.OMEGA_ATTESTATION_TTL_MS = previousTtl;
+      }
+    }
+  });
 });
