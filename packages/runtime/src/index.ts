@@ -569,5 +569,27 @@ export type {
   SagaStep,
   SagaInstance,
 } from './event-sourcing';
+export {
+  AlertManager,
+  SLAManager,
+  ComplianceAuditor,
+  HealthMonitor,
+  MonitoringHub,
+} from './monitoring';
+export type {
+  AlertSeverity,
+  AlertStatus,
+  ComplianceLevel,
+  MetricThreshold,
+  AlertRule,
+  AlertAction,
+  Alert,
+  SLAConfig,
+  SLAStatus,
+  ComplianceLog,
+  ComplianceReport,
+  ComplianceFinding,
+  HealthMetric,
+} from './monitoring';
 
 export default VerificationRuntime;
