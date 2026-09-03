@@ -265,6 +265,78 @@ describe('omega status CLI', () => {
     );
   });
 
+  it('renders per-surface encryption coverage evidence from health when checks.persistence.coverage.surfaces is populated', async () => {
+    const output: string[] = [];
+    process.stdout.write = ((chunk: string | Uint8Array) => {
+      output.push(String(chunk));
+      return true;
+    }) as typeof process.stdout.write;
+
+    const exitCode = await run(['health', '--url', 'http://api.test/'], async (url) => {
+      expect(url).toBe('http://api.test/health');
+      return new Response(
+        JSON.stringify({
+          data: {
+            status: 'ok',
+            readiness: 'ready',
+            checks: {
+              observer: 'ready',
+              verifier: 'ready',
+              attester: 'ready',
+              memory: { status: 'ready', integrity: true, encryption: 'aes-256-gcm' },
+              persistence: {
+                mode: 'file',
+                encryption: 'aes-256-gcm',
+                eventLogSource: 'restored',
+                skippedLogEntries: 0,
+                eventLogKeySource: 'current',
+                rotationPending: false,
+                coverage: {
+                  complete: false,
+                  surfaces: [
+                    {
+                      name: 'memory',
+                      encryption: 'aes-256-gcm',
+                      keySource: 'current',
+                      evidence: 'live-read',
+                    },
+                    {
+                      name: 'eventLog',
+                      encryption: 'aes-256-gcm',
+                      keySource: 'previous',
+                      evidence: 'restored-read',
+                    },
+                  ],
+                  unverifiedSurfaces: ['snapshots'],
+                  unverifiedReasons: ['snapshot store not probed'],
+                },
+              },
+            },
+            policy: {
+              attestationAlgorithm: 'Ed25519',
+              attestationTtlMs: 900000,
+              readAuthConfigured: true,
+              adminAuthConfigured: true,
+              revocationEnabled: true,
+            },
+          },
+          timestamp: '2026-08-19T00:00:00.000Z',
+        })
+      );
+    });
+
+    expect(exitCode).toBe(0);
+    const text = output.join('');
+    // This is the actual content of the coverage evidence line an operator
+    // reads: which surfaces were verified, with what encryption and key
+    // source — not merely that the line printed *something*.
+    expect(text).toContain(
+      'COVERAGE     memory=aes-256-gcm/current, eventLog=aes-256-gcm/previous'
+    );
+    expect(text).toContain('UNVERIFIED   snapshots complete=false');
+    expect(text).toContain('WHY          snapshot store not probed');
+  });
+
   it('returns a non-zero exit code when health readiness is degraded', async () => {
     const output: string[] = [];
     process.stdout.write = ((chunk: string | Uint8Array) => {
