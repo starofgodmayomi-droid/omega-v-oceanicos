@@ -464,6 +464,29 @@ describe('local job ledger HTTP contract', () => {
     }
   });
 
+  it('rejects an out-of-range or non-numeric limit with 400 JOB_INVALID rather than silently clamping it', async () => {
+    const runtime = await startServer(true);
+    try {
+      for (const limit of ['0', 'abc', '41', '-1']) {
+        const response = await fetch(`${runtime.baseUrl}/jobs?limit=${limit}`, {
+          headers: jsonHeaders,
+        });
+        expect(response.status).toBe(400);
+        expect(await response.json()).toMatchObject({ code: 'JOB_INVALID' });
+      }
+
+      // A genuinely valid boundary value (the maximum window) still succeeds,
+      // proving the rejection above is about validity, not the query param
+      // being present at all.
+      const validBoundary = await fetch(`${runtime.baseUrl}/jobs?limit=40`, {
+        headers: jsonHeaders,
+      });
+      expect(validBoundary.status).toBe(200);
+    } finally {
+      runtime.cleanup();
+    }
+  });
+
   it('reports 404 for an unknown job on both the read route and a mutation route', async () => {
     const runtime = await startServer(true);
     try {
@@ -703,6 +726,94 @@ describe('local job ledger HTTP contract', () => {
       });
     } finally {
       runtime.cleanup();
+    }
+  });
+});
+
+/**
+ * No test in this suite (or anywhere else under __tests__) ever sets
+ * `OMEGA_LOCAL_JOB_LEDGER_KEY`, so the ledger is always in-memory-only and
+ * `localJobLedgerStatus.encryption` is always 'none' -- the encrypted,
+ * file-backed branch of the persistence coverage report (surfaced on both
+ * `/health` and `/observability`) had never actually been observed.
+ */
+describe('local job ledger encrypted-coverage reporting', () => {
+  it('reports the local-job-ledger surface as aes-256-gcm with a current key source once encryption is configured', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'omega-local-jobs-encrypted-'));
+    const original = { ...process.env };
+    try {
+      process.env.OMEGA_AUTH_MODE = 'local';
+      process.env.OMEGA_LOCAL_JOB_LEDGER = 'on';
+      process.env.OMEGA_LOCAL_JOB_LEDGER_PATH = join(directory, 'ledger.jsonl');
+      process.env.OMEGA_LOCAL_JOB_LEDGER_KEY = 'job-ledger-encryption-secret';
+      process.env.OMEGA_PERSISTENCE = 'off';
+      jest.resetModules();
+      const isolated = requireFromModule('../index') as ApiApp;
+      const server = createServer(isolated.app);
+      await new Promise<void>((resolve, reject) => {
+        server.once('error', reject);
+        server.listen(0, '127.0.0.1', () => resolve());
+      });
+      const address = server.address();
+      if (!address || typeof address === 'string') throw new Error('Test server did not start');
+      const baseUrl = `http://127.0.0.1:${address.port}`;
+
+      try {
+        type CoverageBody = {
+          data: {
+            checks?: {
+              persistence: {
+                coverage: {
+                  surfaces: Array<{ name: string; encryption: string; keySource: string }>;
+                };
+              };
+            };
+            runtime?: {
+              coverage: {
+                surfaces: Array<{ name: string; encryption: string; keySource: string }>;
+              };
+            };
+            jobs?: { encryption: string; durable: boolean; source: string };
+          };
+        };
+
+        const health = (await (await fetch(`${baseUrl}/health`)).json()) as CoverageBody;
+        const healthSurface = health.data.checks?.persistence.coverage.surfaces.find(
+          (surface) => surface.name === 'local-job-ledger'
+        );
+        expect(healthSurface).toMatchObject({ encryption: 'aes-256-gcm', keySource: 'current' });
+
+        const observability = (await (
+          await fetch(`${baseUrl}/observability`)
+        ).json()) as CoverageBody;
+        const observabilitySurface = observability.data.runtime?.coverage.surfaces.find(
+          (surface) => surface.name === 'local-job-ledger'
+        );
+        expect(observabilitySurface).toMatchObject({
+          encryption: 'aes-256-gcm',
+          keySource: 'current',
+        });
+        // The coverage surface is not just guessing from config: it must
+        // agree with the ledger's own reported status.
+        expect(observability.data.jobs).toMatchObject({
+          encryption: 'aes-256-gcm',
+          durable: true,
+          source: 'file',
+        });
+      } finally {
+        await new Promise<void>((resolve, reject) =>
+          server.close((error) => (error ? reject(error) : resolve()))
+        );
+      }
+    } finally {
+      for (const key of Object.keys(process.env)) {
+        if (!(key in original)) delete process.env[key];
+      }
+      for (const [key, value] of Object.entries(original)) {
+        process.env[key] = value;
+      }
+      rmSync(directory, { recursive: true, force: true });
+      jest.resetModules();
     }
   });
 });
