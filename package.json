@@ -12,12 +12,6 @@
   },
   "type": "module",
   "packageManager": "pnpm@10.34.5",
-  "pnpm": {
-    "overrides": {
-      "typescript": "6.0.3"
-    },
-    "onlyBuiltDependencies": ["@parcel/watcher", "esbuild", "unrs-resolver"]
-  },
   "workspaces": [
     "apps/*",
     "packages/*"

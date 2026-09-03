@@ -104,3 +104,7 @@ The Observer and API now preserve optional `parentId` and a bounded `lineage` ar
 ## Strict operator identity source boundary
 
 When `OMEGA_ADMIN_REQUIRE_ALLOWLIST=on`, all three administrative mutations require `x-omega-operator-id`; a JSON body `operatorId` cannot substitute for the dedicated request identity field. Optional local-development mode retains the legacy body fallback for compatibility. The header is still a caller assertion checked against the configured allowlist, not authentication, identity proofing, or evidence of the human behind the request.
+
+## Crawler and vector admission boundary
+
+The versioned `admission.v1` contract is validation-only. It requires an HTTPS source URI whose hostname is explicitly allowlisted, a closed local capability set, bounded retention and access declarations, embedding metadata when `embed-local` is requested, and request/actor provenance. `network:false` and `shell:false` are mandatory and fail closed. The validator performs no fetch, subprocess, vector write, retention deletion, tenant authorization, or external service call. Passing the contract does not prove source trust, human identity, embedding correctness, vector isolation, durable execution, or production enforcement; see `docs/ADMISSION-CONTRACT.md` for the required future execution gates.
