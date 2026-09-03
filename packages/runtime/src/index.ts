@@ -517,5 +517,23 @@ export type {
   SignatureVerifyResult,
   RequestSignatureOptions,
 } from './request-signature';
+export {
+  parseVersion,
+  compareVersions,
+  isVersionSupported,
+  formatVersion,
+  VersionRegistry,
+  VersionNegotiator,
+  FeatureFlagManager,
+  VersionMigration,
+} from './api-versioning';
+export type {
+  VersionFormat,
+  VersionSource,
+  Version,
+  VersionMetadata,
+  VersionNegotiationOptions,
+  VersionFeature,
+} from './api-versioning';
 
 export default VerificationRuntime;
