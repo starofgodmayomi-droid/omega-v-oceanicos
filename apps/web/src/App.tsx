@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 // asks nobody, which is the distinction the panel exists to make visible.
 import { verifyAttestation as verifyEnvelopeLocally, type VerificationOutcome } from './verify';
 import { evidenceStepClassName, evidenceStepLabel } from './evidence-step';
+import { eventLogTone, recoveryTone, verificationTone } from './status-tone';
 import './App.css';
 
 type DissentingOpinion = {
@@ -1197,7 +1198,7 @@ export function App(): React.JSX.Element {
           </div>
           <div>
             <span>VERIFICATION</span>
-            <strong className="green">
+            <strong className={verificationTone(result?.verification.summary)}>
               {result ? (result.verification.summary.passed ? 'PASSED' : 'FAILED') : 'READY'}
             </strong>
           </div>
@@ -1330,17 +1331,14 @@ export function App(): React.JSX.Element {
                 : 'UNKNOWN'}
             </strong>
           </div>
-          {runtimeHealth?.checks.persistence?.reencryptionRecovery.status !== 'none' ? (
+          {runtimeHealth?.checks.persistence &&
+          runtimeHealth.checks.persistence.reencryptionRecovery.status !== 'none' ? (
             <div>
               <span>ROTATION RECOVERY</span>
               <strong
-                className={
-                  runtimeHealth?.checks.persistence?.reencryptionRecovery.status === 'blocked'
-                    ? 'red'
-                    : 'green'
-                }
+                className={recoveryTone(runtimeHealth.checks.persistence.reencryptionRecovery)}
               >
-                {runtimeHealth?.checks.persistence?.reencryptionRecovery.status.toUpperCase()}
+                {runtimeHealth.checks.persistence.reencryptionRecovery.status.toUpperCase()}
               </strong>
             </div>
           ) : null}
@@ -1350,11 +1348,7 @@ export function App(): React.JSX.Element {
           </div>
           <div>
             <span>EVENT LOG</span>
-            <strong
-              className={
-                runtimeHealth?.checks.persistence?.eventLogSource === 'partial' ? 'red' : 'green'
-              }
-            >
+            <strong className={eventLogTone(runtimeHealth?.checks.persistence)}>
               {runtimeHealth?.checks.persistence
                 ? `${runtimeHealth.checks.persistence.eventLogSource.toUpperCase()} / ${runtimeHealth.checks.persistence.skippedLogEntries} SKIPPED`
                 : 'UNKNOWN'}
