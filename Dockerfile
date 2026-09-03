@@ -1,11 +1,11 @@
 # Multi-stage build for Ω∞v Oceanicos API
 # Stage 1: Build
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
 # Install pnpm
-RUN npm install -g pnpm@8
+RUN npm install -g pnpm@10.34.5
 
 # Copy workspace files
 COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
@@ -21,12 +21,12 @@ RUN pnpm install --frozen-lockfile
 RUN pnpm build
 
 # Stage 2: Runtime
-FROM node:20-alpine AS runtime
+FROM node:22-alpine AS runtime
 
 WORKDIR /app
 
 # Install pnpm runtime
-RUN npm install -g pnpm@8
+RUN npm install -g pnpm@10.34.5
 
 # Copy workspace files
 COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
