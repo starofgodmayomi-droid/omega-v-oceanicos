@@ -626,5 +626,22 @@ export type {
   NotificationDelivery,
   NotificationAuditLog as NotificationAuditEntry,
 } from './notifications';
+export {
+  SessionManager,
+  ContextManager,
+  DeviceTracker,
+  LocationTracker,
+  SessionAuditor,
+  SessionHub,
+} from './sessions';
+export type {
+  SessionStatus,
+  ContextEventType,
+  SessionMetadata,
+  UserContext,
+  DeviceInfo,
+  LocationInfo,
+  SessionContextEvent,
+} from './sessions';
 
 export default VerificationRuntime;
