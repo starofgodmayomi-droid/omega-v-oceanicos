@@ -745,5 +745,22 @@ export type {
   IsolationPolicy,
   TenantAuditEvent,
 } from './multitenancy';
+export {
+  DataStore,
+  SnapshotManager,
+  RetentionManager,
+  DataAuditor,
+  DataHub,
+} from './data-management';
+export type {
+  DataType,
+  ChangeType,
+  RetentionPolicy,
+  DataRecord,
+  DataVersion,
+  DataSnapshot,
+  DataQuery,
+  RetentionConfig,
+} from './data-management';
 
 export default VerificationRuntime;
