@@ -6,11 +6,11 @@
 # the code passes its own tests, never that it runs. This produces the
 # artifact, and CI proves it starts, serves, and refuses to start unsafely.
 
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 
 ENV PNPM_HOME=/pnpm
 ENV PATH=$PNPM_HOME:$PATH
-RUN corepack enable && corepack prepare pnpm@8.8.0 --activate
+RUN corepack enable && corepack prepare pnpm@10.34.5 --activate
 
 WORKDIR /app
 
@@ -33,7 +33,7 @@ RUN pnpm --filter @omega-v/types build \
  && pnpm --filter @omega-v/api build \
  && pnpm --filter @omega-v/web build
 
-FROM node:20-alpine AS runtime
+FROM node:22-alpine AS runtime
 
 ENV NODE_ENV=production
 ENV API_PORT=3000

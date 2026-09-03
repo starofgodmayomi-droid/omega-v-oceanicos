@@ -22,7 +22,7 @@
   "author": "Ω∞v Community",
   "license": "Apache-2.0",
   "dependencies": {
-    "@omega-v/types": "*"
+    "@omega-v/types": "workspace:*"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
