@@ -23,7 +23,7 @@ export interface NotificationRecipient {
   address: string;
   verified?: boolean;
   preferences?: {
-    channels: NotificationChannel[];
+    channels?: NotificationChannel[];
     quiet_hours?: { start: string; end: string };
     unsubscribe_types?: string[];
   };
@@ -168,7 +168,7 @@ export class RecipientManager {
     if (!recipient) return undefined;
 
     recipient.preferences = {
-      ...recipient.preferences,
+      ...(recipient.preferences || {}),
       ...preferences,
     };
 
@@ -478,7 +478,7 @@ export class NotificationHub {
       }
 
       const availableChannels = channels.filter(
-        (c) => !recipient.preferences || recipient.preferences.channels.includes(c),
+        (c) => !recipient.preferences?.channels || recipient.preferences.channels.includes(c),
       );
 
       const results = await this.dispatcher.dispatchAll(availableChannels, recipient, content);
