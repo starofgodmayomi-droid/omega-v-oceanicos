@@ -2,6 +2,7 @@ import { Observer } from '@omega-v/observer';
 import { VerificationEngine } from '@omega-v/verification';
 import { AttestationService } from '@omega-v/attestation';
 import { EventLog } from '@omega-v/recorder';
+import PrometheusMetricsCollector from './prometheus-metrics';
 import {
   Observation,
   VerificationRule,
@@ -22,6 +23,7 @@ export class VerificationRuntime {
   private verificationEngine: VerificationEngine;
   private attestationService: AttestationService;
   private eventLog: EventLog;
+  private metricsCollector: PrometheusMetricsCollector;
 
   private executionStats = {
     totalExecutions: 0,
@@ -31,6 +33,9 @@ export class VerificationRuntime {
     successCount: 0,
     failureCount: 0,
     totalConfidence: 0,
+    totalVerificationTime: 0,
+    totalAttestationTime: 0,
+    totalLoopTime: 0,
   };
 
   /**
@@ -41,6 +46,7 @@ export class VerificationRuntime {
     this.verificationEngine = new VerificationEngine();
     this.attestationService = new AttestationService();
     this.eventLog = new EventLog();
+    this.metricsCollector = new PrometheusMetricsCollector();
   }
 
   /**
@@ -67,6 +73,8 @@ export class VerificationRuntime {
     verification: VerificationResult;
     attestation: Attestation;
   } {
+    const loopStartTime = Date.now();
+
     // Step 1: OBSERVE - Create normalized observation
     const observation = this.observer.observe({
       claim: input.claim,
@@ -78,11 +86,23 @@ export class VerificationRuntime {
       confidenceReason: input.confidenceReason,
     });
 
+    this.metricsCollector.incrementObservations();
+
     // Step 2: VERIFY - Apply verification rules
+    const verifyStartTime = Date.now();
     const verification = this.verificationEngine.verify(observation);
+    const verifyDuration = Date.now() - verifyStartTime;
+
+    this.metricsCollector.incrementVerifications(verification.summary.passed);
+    this.metricsCollector.recordVerificationDuration(verifyDuration);
 
     // Step 3: ATTEST - Create cryptographic proof
+    const attestStartTime = Date.now();
     const attestation = this.attestationService.attest(verification);
+    const attestDuration = Date.now() - attestStartTime;
+
+    this.metricsCollector.incrementAttestations(attestation.verified);
+    this.metricsCollector.recordAttestationDuration(attestDuration);
 
     // Step 4: RECORD - Store in immutable event log
     this.eventLog.recordObservation(observation);
@@ -95,12 +115,34 @@ export class VerificationRuntime {
     this.executionStats.verifications++;
     this.executionStats.attestations++;
     this.executionStats.totalConfidence += verification.summary.confidence;
+    this.executionStats.totalVerificationTime += verifyDuration;
+    this.executionStats.totalAttestationTime += attestDuration;
 
     if (verification.summary.passed) {
       this.executionStats.successCount++;
     } else {
       this.executionStats.failureCount++;
     }
+
+    const loopDuration = Date.now() - loopStartTime;
+    this.metricsCollector.recordLoopDuration(loopDuration);
+    this.executionStats.totalLoopTime += loopDuration;
+
+    // Update gauge metrics
+    const eventLogStats = this.eventLog.getStats();
+    this.metricsCollector.setEventLogSize(eventLogStats.totalEvents);
+
+    const successRate =
+      this.executionStats.totalExecutions > 0
+        ? this.executionStats.successCount / this.executionStats.totalExecutions
+        : 0;
+    this.metricsCollector.setSuccessRate(successRate);
+
+    const avgConfidence =
+      this.executionStats.totalExecutions > 0
+        ? this.executionStats.totalConfidence / this.executionStats.totalExecutions
+        : 0;
+    this.metricsCollector.setSystemConfidence(avgConfidence);
 
     return {
       observation,
@@ -173,15 +215,41 @@ export class VerificationRuntime {
         ? this.executionStats.successCount / this.executionStats.totalExecutions
         : 0;
 
+    const avgVerificationTime =
+      this.executionStats.verifications > 0
+        ? this.executionStats.totalVerificationTime / this.executionStats.verifications
+        : 0;
+
     return {
       totalObservations: stats.observations,
       totalVerifications: stats.verifications,
-      avgVerificationTime: 0, // Would be collected in production
+      avgVerificationTime,
       successRate,
       totalAttestations: stats.attestations,
       systemConfidence: avgConfidence,
       lastUpdated: new Date().toISOString(),
     };
+  }
+
+  /**
+   * Get Prometheus-formatted metrics
+   */
+  public getPrometheusMetrics(): string {
+    return this.metricsCollector.generatePrometheusMetrics();
+  }
+
+  /**
+   * Get metrics as JSON (with statistics)
+   */
+  public getMetricsJSON() {
+    return this.metricsCollector.generateMetricsJSON();
+  }
+
+  /**
+   * Get the metrics collector instance (for advanced usage)
+   */
+  public getMetricsCollector(): PrometheusMetricsCollector {
+    return this.metricsCollector;
   }
 
   /**

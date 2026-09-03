@@ -228,9 +228,27 @@ app.get('/integrity', (_req: Request, res: Response) => {
 });
 
 /**
- * GET /metrics - Get system metrics and statistics
+ * GET /metrics - Get system metrics (Prometheus format)
  */
 app.get('/metrics', (_req: Request, res: Response) => {
+  try {
+    const prometheusMetrics = runtime.getPrometheusMetrics();
+    res.set('Content-Type', 'text/plain; version=0.0.4; charset=utf-8');
+    res.send(prometheusMetrics);
+  } catch (error) {
+    const errorResponse: ErrorResponse = {
+      code: 'QUERY_FAILED',
+      message: error instanceof Error ? error.message : 'Metrics query failed',
+      timestamp: new Date().toISOString(),
+    };
+    res.status(400).json(errorResponse);
+  }
+});
+
+/**
+ * GET /metrics/json - Get system metrics as JSON
+ */
+app.get('/metrics/json', (_req: Request, res: Response) => {
   try {
     const metrics = runtime.getMetrics();
 
@@ -274,7 +292,8 @@ app.listen(port, () => {
   console.log(`  GET    /query/attestations     - Query attestations with pagination`);
   console.log(`  GET    /query/trace/:id        - Get complete trace for observation`);
   console.log(`  GET    /integrity              - Verify event log integrity`);
-  console.log(`  GET    /metrics                - Get system metrics`);
+  console.log(`  GET    /metrics                - Get system metrics (Prometheus format)`);
+  console.log(`  GET    /metrics/json           - Get system metrics (JSON format)`);
   console.log(`  GET    /health                 - Health check`);
 });
 
