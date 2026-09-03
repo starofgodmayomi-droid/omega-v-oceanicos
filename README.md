@@ -263,8 +263,8 @@ See [CHARTER.md](CHARTER.md#code-of-conduct) for full details.
 
 - Node.js 18+ (backend)
 - React (web dashboard)
-- Express or Fastify (API)
-- PostgreSQL (production) or SQLite (development)
+- Express (API)
+- Encrypted file snapshots for API state; no database
 
 ### DevOps
 
