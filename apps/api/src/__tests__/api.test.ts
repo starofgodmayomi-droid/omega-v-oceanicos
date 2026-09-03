@@ -1,5 +1,5 @@
 import { createServer, Server } from 'node:http';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import {
@@ -1393,6 +1393,101 @@ describe('persistence re-encryption boundary', () => {
         expect.objectContaining({ type: 'persistence.rotation.reencrypted' }),
       ])
     );
+  });
+});
+
+/**
+ * The reencrypt route gates on `persistenceOperatorAction`, computed from a
+ * snapshot source cached once at boot plus a freshly re-read event log. If
+ * the on-disk snapshot is corrupted *after* boot (while the cached source
+ * still says the store was cleanly restored) that gate still opens, but
+ * `reencryptPersistence` itself re-reads the snapshot from disk and throws
+ * on the now-corrupt content. That is the only way the route's catch block
+ * -- the 409 PERSISTENCE_REENCRYPTION_FAILED response -- can actually fire,
+ * and nothing elsewhere in the suite reaches it: `persistence.test.ts` only
+ * unit-tests `reencryptPersistence` directly, and the other API-level
+ * reencrypt tests only cover the success and not-ready (409
+ * PERSISTENCE_REENCRYPTION_NOT_READY) paths.
+ */
+describe('persistence re-encryption failure boundary', () => {
+  let server: Server;
+  let baseUrl: string;
+  let dir: string;
+  let storePath: string;
+
+  beforeAll(async () => {
+    dir = mkdtempSync(join(tmpdir(), 'omega-api-reencrypt-fail-'));
+    storePath = join(dir, 'runtime.json');
+    const logPath = join(dir, 'runtime.log.jsonl');
+    const snapshot = {
+      events: [],
+      runs: [],
+      actions: [],
+      learnings: [],
+      recompilations: [],
+    };
+    saveSnapshot(storePath, snapshot, true, 'previous-secret');
+    appendEvent(logPath, { id: 'evt-previous' }, true, 'previous-secret');
+    process.env.OMEGA_PERSISTENCE = 'on';
+    process.env.OMEGA_PERSISTENCE_KEY = 'current-secret';
+    process.env.OMEGA_PERSISTENCE_KEY_PREVIOUS = 'previous-secret';
+    process.env.OMEGA_RUNTIME_STORE_PATH = storePath;
+    process.env.OMEGA_EVENT_LOG_PATH = logPath;
+    process.env.OMEGA_ADMIN_OPERATOR_ALLOWLIST = 'rotation-operator';
+
+    jest.resetModules();
+    const isolated = require('../index') as { app: typeof app };
+    server = createServer(isolated.app);
+    await new Promise<void>((resolve) => server.listen(0, resolve));
+    const address = server.address();
+    if (!address || typeof address === 'string') throw new Error('Test server did not start');
+    baseUrl = `http://127.0.0.1:${address.port}`;
+
+    // Corrupt the snapshot on disk only *after* boot: the cached
+    // `persistenceSource` the reencrypt route's readiness gate consults
+    // still reflects the clean, previous-key-encrypted file read at import
+    // time, so the gate still opens -- but `reencryptPersistence`'s own
+    // fresh read of this same path will not parse.
+    writeFileSync(storePath, 'not valid persistence content{{{');
+  });
+
+  afterAll(async () => {
+    await new Promise<void>((resolve, reject) =>
+      server.close((error) => (error ? reject(error) : resolve()))
+    );
+    for (const name of [
+      'OMEGA_PERSISTENCE',
+      'OMEGA_PERSISTENCE_KEY',
+      'OMEGA_PERSISTENCE_KEY_PREVIOUS',
+      'OMEGA_RUNTIME_STORE_PATH',
+      'OMEGA_EVENT_LOG_PATH',
+      'OMEGA_ADMIN_OPERATOR_ALLOWLIST',
+    ]) {
+      delete process.env[name];
+    }
+    rmSync(dir, { recursive: true, force: true });
+    jest.resetModules();
+  });
+
+  it('reports 409 PERSISTENCE_REENCRYPTION_FAILED when the store cannot be read at re-encryption time', async () => {
+    const response = await fetch(`${baseUrl}/persistence/reencrypt`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-omega-operator-id': 'rotation-operator' },
+      body: JSON.stringify({
+        reason: 'Rotate persistence while the store is unexpectedly corrupt',
+        operatorId: 'rotation-operator',
+      }),
+    });
+    const body = (await response.json()) as { code: string; message: string };
+
+    expect(response.status).toBe(409);
+    expect(body.code).toBe('PERSISTENCE_REENCRYPTION_FAILED');
+    expect(body.message).toBe(
+      'Persistence re-encryption refused because local evidence was incomplete'
+    );
+    // The corrupt file must not have been silently rewritten as a side
+    // effect of the failed attempt.
+    expect(readFileSync(storePath, 'utf8')).toBe('not valid persistence content{{{');
   });
 });
 
