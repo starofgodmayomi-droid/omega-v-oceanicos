@@ -496,6 +496,12 @@ export type { HealthStatus, ComponentHealth, SystemHealth, HealthCheckFunction }
 export { Cache, QueryCache } from './cache';
 export type { CacheEntry, CacheStats, CacheConfig, QueryCacheConfig } from './cache';
 export {
+  DistributedCache,
+  DistributedCacheManager,
+  RedisClient,
+} from './distributed-cache';
+export type { RedisConfig, CacheEntry as DistributedCacheEntry, CacheStats as DistributedCacheStats } from './distributed-cache';
+export {
   SlidingWindowRateLimiter,
   TokenBucket,
   TieredRateLimiter,
