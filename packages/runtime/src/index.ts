@@ -643,5 +643,25 @@ export type {
   LocationInfo,
   SessionContextEvent,
 } from './sessions';
+export {
+  AnalyticsCollector,
+  MetricsAggregator,
+  TrendDetector,
+  InsightEngine,
+  ReportGenerator,
+  AnalyticsHub,
+} from './analytics';
+export type {
+  MetricType,
+  TrendDirection,
+  InsightType,
+  AggregationPeriod,
+  AnalyticsEvent,
+  Metric,
+  AggregatedMetric,
+  Trend,
+  Insight,
+  Report,
+} from './analytics';
 
 export default VerificationRuntime;
