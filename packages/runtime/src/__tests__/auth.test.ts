@@ -19,9 +19,7 @@ describe('Authentication & Authorization', () => {
     });
 
     it('should register user with custom roles', () => {
-      const user = authManager.registerUser('user-2', 'admin', 'admin@example.com', [
-        'admin',
-      ]);
+      const user = authManager.registerUser('user-2', 'admin', 'admin@example.com', ['admin']);
 
       expect(user.roles).toEqual(['admin']);
     });
@@ -319,10 +317,7 @@ describe('Authentication & Authorization', () => {
 
   describe('Token Payload Integrity', () => {
     it('should include all required fields in token payload', () => {
-      authManager.registerUser('user-1', 'john', 'john@example.com', [
-        'admin',
-        'operator',
-      ]);
+      authManager.registerUser('user-1', 'john', 'john@example.com', ['admin', 'operator']);
       const token = authManager.generateToken('user-1');
 
       const payload = authManager.verifyToken(token);

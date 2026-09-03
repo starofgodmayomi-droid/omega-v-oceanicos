@@ -36,7 +36,7 @@ export class EventBroadcaster {
   subscribe(
     id: string,
     callback: (event: VerificationEvent) => void,
-    filter?: (event: VerificationEvent) => boolean,
+    filter?: (event: VerificationEvent) => boolean
   ): () => void {
     const subscriber: Subscriber = { id, callback, filter };
     this.subscribers.set(id, subscriber);
@@ -60,7 +60,7 @@ export class EventBroadcaster {
 
     this.metrics.eventsPublished++;
 
-    this.subscribers.forEach(subscriber => {
+    this.subscribers.forEach((subscriber) => {
       if (!subscriber.filter || subscriber.filter(event)) {
         try {
           subscriber.callback(event);
@@ -76,7 +76,7 @@ export class EventBroadcaster {
   }
 
   getHistoryByType(type: VerificationEvent['type'], limit: number = 50): VerificationEvent[] {
-    return this.eventHistory.filter(e => e.type === type).slice(-limit);
+    return this.eventHistory.filter((e) => e.type === type).slice(-limit);
   }
 
   getMetrics() {
@@ -103,10 +103,7 @@ export interface WebSocketMessage {
 /**
  * Create WebSocket message
  */
-export function createMessage(
-  type: WebSocketMessage['type'],
-  payload?: any,
-): WebSocketMessage {
+export function createMessage(type: WebSocketMessage['type'], payload?: any): WebSocketMessage {
   return {
     type,
     payload,
@@ -117,15 +114,17 @@ export function createMessage(
 /**
  * Parse subscription filter from query string
  */
-export function parseFilter(filterStr?: string): ((event: VerificationEvent) => boolean) | undefined {
+export function parseFilter(
+  filterStr?: string
+): ((event: VerificationEvent) => boolean) | undefined {
   if (!filterStr) {
     return undefined;
   }
 
-  const filters = filterStr.split(',').map(f => f.trim());
+  const filters = filterStr.split(',').map((f) => f.trim());
 
   return (event: VerificationEvent) => {
-    return filters.some(filter => {
+    return filters.some((filter) => {
       if (filter.startsWith('type:')) {
         const type = filter.substring(5);
         return event.type === type;

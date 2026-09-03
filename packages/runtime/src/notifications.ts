@@ -76,7 +76,7 @@ export class NotificationTemplateManager {
     channel: NotificationChannel,
     body: string,
     subject?: string,
-    variables: string[] = [],
+    variables: string[] = []
   ): NotificationTemplate {
     const template: NotificationTemplate = {
       id,
@@ -98,7 +98,7 @@ export class NotificationTemplateManager {
 
   renderTemplate(
     templateId: string,
-    variables: Record<string, any>,
+    variables: Record<string, any>
   ): { subject?: string; body: string } {
     const template = this.templates.get(templateId);
     if (!template) {
@@ -157,12 +157,14 @@ export class RecipientManager {
 
   findByAddress(address: string): NotificationRecipient[] {
     const recipientIds = this.addressIndex.get(address) || new Set();
-    return Array.from(recipientIds).map((id) => this.recipients.get(id)!).filter(Boolean);
+    return Array.from(recipientIds)
+      .map((id) => this.recipients.get(id)!)
+      .filter(Boolean);
   }
 
   updatePreferences(
     recipientId: string,
-    preferences: Partial<NotificationRecipient['preferences']>,
+    preferences: Partial<NotificationRecipient['preferences']>
   ): NotificationRecipient | undefined {
     const recipient = this.recipients.get(recipientId);
     if (!recipient) return undefined;
@@ -321,11 +323,20 @@ export class NotificationQueue {
  * NotificationDispatcher: Send notifications to external services
  */
 export class NotificationDispatcher {
-  private handlers: Map<NotificationChannel, (recipient: NotificationRecipient, content: { subject?: string; body: string }) => Promise<boolean>> = new Map();
+  private handlers: Map<
+    NotificationChannel,
+    (
+      recipient: NotificationRecipient,
+      content: { subject?: string; body: string }
+    ) => Promise<boolean>
+  > = new Map();
 
   registerHandler(
     channel: NotificationChannel,
-    handler: (recipient: NotificationRecipient, content: { subject?: string; body: string }) => Promise<boolean>,
+    handler: (
+      recipient: NotificationRecipient,
+      content: { subject?: string; body: string }
+    ) => Promise<boolean>
   ): void {
     this.handlers.set(channel, handler);
   }
@@ -333,7 +344,7 @@ export class NotificationDispatcher {
   async dispatch(
     channel: NotificationChannel,
     recipient: NotificationRecipient,
-    content: { subject?: string; body: string },
+    content: { subject?: string; body: string }
   ): Promise<boolean> {
     const handler = this.handlers.get(channel);
     if (!handler) {
@@ -346,7 +357,7 @@ export class NotificationDispatcher {
   async dispatchAll(
     channels: NotificationChannel[],
     recipient: NotificationRecipient,
-    content: { subject?: string; body: string },
+    content: { subject?: string; body: string }
   ): Promise<Map<NotificationChannel, boolean>> {
     const results = new Map<NotificationChannel, boolean>();
 
@@ -377,7 +388,7 @@ export class NotificationAuditor {
     notificationId: string,
     action: NotificationAuditLog['action'],
     actor: string,
-    details?: Record<string, any>,
+    details?: Record<string, any>
   ): NotificationAuditLog {
     const log: NotificationAuditLog = {
       id: `audit_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -396,7 +407,10 @@ export class NotificationAuditor {
     return this.logs.filter((l) => l.notificationId === notificationId);
   }
 
-  getActionLogs(action: NotificationAuditLog['action'], limit: number = 100): NotificationAuditLog[] {
+  getActionLogs(
+    action: NotificationAuditLog['action'],
+    limit: number = 100
+  ): NotificationAuditLog[] {
     return this.logs.filter((l) => l.action === action).slice(-limit);
   }
 
@@ -453,7 +467,7 @@ export class NotificationHub {
     variables: Record<string, any>,
     channels: NotificationChannel[],
     priority: NotificationPriority = 'normal',
-    actor: string = 'system',
+    actor: string = 'system'
   ): Promise<NotificationPayload> {
     const notificationId = `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
@@ -468,7 +482,10 @@ export class NotificationHub {
     };
 
     this.queue.enqueue(payload);
-    this.auditor.logAction(notificationId, 'created', actor, { recipientCount: recipients.length, channels });
+    this.auditor.logAction(notificationId, 'created', actor, {
+      recipientCount: recipients.length,
+      channels,
+    });
 
     const content = this.templateManager.renderTemplate(templateId, variables);
 
@@ -478,7 +495,7 @@ export class NotificationHub {
       }
 
       const availableChannels = channels.filter(
-        (c) => !recipient.preferences?.channels || recipient.preferences.channels.includes(c),
+        (c) => !recipient.preferences?.channels || recipient.preferences.channels.includes(c)
       );
 
       const results = await this.dispatcher.dispatchAll(availableChannels, recipient, content);
@@ -513,7 +530,7 @@ export class NotificationHub {
     channels: NotificationChannel[],
     scheduledFor: number,
     priority: NotificationPriority = 'normal',
-    actor: string = 'system',
+    actor: string = 'system'
   ): Promise<NotificationPayload> {
     const notificationId = `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 

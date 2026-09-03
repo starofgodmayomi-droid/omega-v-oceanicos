@@ -69,14 +69,8 @@ export function rateLimitingMiddleware(options: RateLimitOptions = {}) {
     }
 
     res.setHeader('X-RateLimit-Limit', status.limit.toString());
-    res.setHeader(
-      'X-RateLimit-Remaining',
-      status.remaining.toString(),
-    );
-    res.setHeader(
-      'X-RateLimit-Reset',
-      new Date(status.resetAt).toISOString(),
-    );
+    res.setHeader('X-RateLimit-Remaining', status.remaining.toString());
+    res.setHeader('X-RateLimit-Reset', new Date(status.resetAt).toISOString());
 
     if (status.isLimited) {
       if (onLimitReached) {
@@ -129,7 +123,7 @@ export interface EndpointLimit {
 
 export function endpointRateLimitingMiddleware(
   endpoints: EndpointLimit[],
-  options: Omit<RateLimitOptions, 'maxRequests' | 'windowMs'> = {},
+  options: Omit<RateLimitOptions, 'maxRequests' | 'windowMs'> = {}
 ) {
   const limiters = new Map<EndpointLimit, SlidingWindowRateLimiter>();
 
@@ -140,7 +134,7 @@ export function endpointRateLimitingMiddleware(
         maxRequests: endpoint.maxRequests,
         windowMs: endpoint.windowMs,
         keyGenerator: options.keyGenerator,
-      }),
+      })
     );
   }
 
@@ -161,14 +155,8 @@ export function endpointRateLimitingMiddleware(
     const status = limiter.checkLimit(key);
 
     res.setHeader('X-RateLimit-Limit', status.limit.toString());
-    res.setHeader(
-      'X-RateLimit-Remaining',
-      status.remaining.toString(),
-    );
-    res.setHeader(
-      'X-RateLimit-Reset',
-      new Date(status.resetAt).toISOString(),
-    );
+    res.setHeader('X-RateLimit-Remaining', status.remaining.toString());
+    res.setHeader('X-RateLimit-Reset', new Date(status.resetAt).toISOString());
 
     if (status.isLimited) {
       return res.status(429).json({

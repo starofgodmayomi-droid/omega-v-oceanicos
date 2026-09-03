@@ -180,7 +180,7 @@ describe('Job Queue', () => {
           id: 'job:123',
           type: 'test',
           status: 'pending',
-        }),
+        })
       );
 
       const jobs = await queue.loadJobs();
@@ -252,11 +252,7 @@ describe('Job Queue', () => {
     });
 
     it('should enqueue batch of jobs', async () => {
-      const items = [
-        { id: 1 },
-        { id: 2 },
-        { id: 3 },
-      ];
+      const items = [{ id: 1 }, { id: 2 }, { id: 3 }];
       const jobIds = await processor.enqueueBatch('test', items);
 
       expect(jobIds.length).toBe(3);

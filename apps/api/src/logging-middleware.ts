@@ -1,10 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import {
-  RequestLogger,
-  AuditLogger,
-  Logger,
-  generateCorrelationId,
-} from '@omega-v/runtime';
+import { RequestLogger, AuditLogger, Logger, generateCorrelationId } from '@omega-v/runtime';
 
 export interface LoggingContext {
   correlationId: string;
@@ -37,11 +32,7 @@ export function getLoggingContext(): LoggingContext {
   return loggingContext;
 }
 
-export function requestLoggingMiddleware(
-  req: Request,
-  res: Response,
-  next: NextFunction,
-): void {
+export function requestLoggingMiddleware(req: Request, res: Response, next: NextFunction): void {
   const context = getLoggingContext();
   const startTime = Date.now();
 
@@ -76,11 +67,7 @@ export function requestLoggingMiddleware(
   next();
 }
 
-export function auditLoggingMiddleware(
-  req: Request,
-  res: Response,
-  next: NextFunction,
-): void {
+export function auditLoggingMiddleware(req: Request, res: Response, next: NextFunction): void {
   (req as any).locals = (req as any).locals || {};
   const context = getLoggingContext();
   (req as any).locals.auditLogger = context.auditLogger;
@@ -91,7 +78,7 @@ export function errorLoggingMiddleware(
   err: Error,
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ): void {
   const context = getLoggingContext();
   const correlationId = res.getHeader('x-correlation-id') as string;

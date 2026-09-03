@@ -11,6 +11,10 @@ const moduleNameMapper = {
   '@omega-v/attestation': '<rootDir>/packages/attestation/src/index.ts',
   '@omega-v/dissensus': '<rootDir>/packages/dissensus/src/index.ts',
   '@omega-v/lexicon': '<rootDir>/packages/lexicon/src/index.ts',
+  '@omega-v/recorder': '<rootDir>/packages/recorder/src/index.ts',
+  '@omega-v/persistence': '<rootDir>/packages/persistence/src/index.ts',
+  '@omega-v/runtime': '<rootDir>/packages/runtime/src/index.ts',
+  '@omega-v/coordination': '<rootDir>/packages/coordination/src/index.ts',
   '\\.css$': '<rootDir>/tests/style-stub.cjs',
 };
 

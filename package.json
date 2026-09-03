@@ -16,7 +16,11 @@
     "overrides": {
       "typescript": "6.0.3"
     },
-    "onlyBuiltDependencies": ["@parcel/watcher", "esbuild", "unrs-resolver"]
+    "onlyBuiltDependencies": [
+      "@parcel/watcher",
+      "esbuild",
+      "unrs-resolver"
+    ]
   },
   "workspaces": [
     "apps/*",

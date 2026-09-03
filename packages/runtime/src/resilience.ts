@@ -26,7 +26,7 @@ export enum CircuitState {
  */
 export async function retryWithBackoff<T>(
   fn: () => Promise<T>,
-  config: Partial<RetryConfig> = {},
+  config: Partial<RetryConfig> = {}
 ): Promise<T> {
   const finalConfig: RetryConfig = {
     maxAttempts: config.maxAttempts ?? 3,
@@ -45,7 +45,7 @@ export async function retryWithBackoff<T>(
       lastError = error as Error;
 
       if (attempt < finalConfig.maxAttempts) {
-        await new Promise(resolve => setTimeout(resolve, delayMs));
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
         delayMs = Math.min(delayMs * finalConfig.backoffMultiplier, finalConfig.maxDelayMs);
       }
     }
@@ -157,7 +157,7 @@ export class VerificationError extends Error {
     public code: string,
     public message: string,
     public statusCode: number = 400,
-    public context?: Record<string, unknown>,
+    public context?: Record<string, unknown>
   ) {
     super(message);
     this.name = 'VerificationError';
@@ -193,7 +193,7 @@ export class RateLimiter {
     const now = Date.now();
     const times = this.requests.get(key) || [];
 
-    const recentRequests = times.filter(time => now - time < this.windowMs);
+    const recentRequests = times.filter((time) => now - time < this.windowMs);
 
     if (recentRequests.length < this.maxRequests) {
       recentRequests.push(now);
@@ -207,7 +207,7 @@ export class RateLimiter {
   getStatus(key: string) {
     const now = Date.now();
     const times = this.requests.get(key) || [];
-    const recentRequests = times.filter(time => now - time < this.windowMs);
+    const recentRequests = times.filter((time) => now - time < this.windowMs);
 
     return {
       remaining: Math.max(0, this.maxRequests - recentRequests.length),
@@ -228,8 +228,10 @@ export class GracefulShutdown {
 
   async shutdown(timeoutMs: number = 30000): Promise<void> {
     await Promise.race([
-      Promise.all(this.handlers.map(h => h().catch(e => console.error('Shutdown error:', e)))),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('Shutdown timeout')), timeoutMs)),
+      Promise.all(this.handlers.map((h) => h().catch((e) => console.error('Shutdown error:', e)))),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Shutdown timeout')), timeoutMs)
+      ),
     ]);
   }
 }

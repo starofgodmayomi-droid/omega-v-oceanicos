@@ -72,33 +72,21 @@ export class VerificationRuntime {
    * Initialize health checks for all components
    */
   private initializeHealthChecks(): void {
-    this.healthChecker.registerCheck(
-      'observer',
-      HealthChecks.alive('observer'),
-    );
+    this.healthChecker.registerCheck('observer', HealthChecks.alive('observer'));
     this.healthChecker.registerCheck(
       'verification-engine',
-      HealthChecks.alive('verification-engine'),
+      HealthChecks.alive('verification-engine')
     );
     this.healthChecker.registerCheck(
       'attestation-service',
-      HealthChecks.alive('attestation-service'),
+      HealthChecks.alive('attestation-service')
     );
-    this.healthChecker.registerCheck(
-      'event-log',
-      HealthChecks.alive('event-log'),
-    );
-    this.healthChecker.registerCheck(
-      'metrics',
-      HealthChecks.alive('metrics'),
-    );
-    this.healthChecker.registerCheck(
-      'memory',
-      HealthChecks.memory('memory', { threshold: 0.9 }),
-    );
+    this.healthChecker.registerCheck('event-log', HealthChecks.alive('event-log'));
+    this.healthChecker.registerCheck('metrics', HealthChecks.alive('metrics'));
+    this.healthChecker.registerCheck('memory', HealthChecks.memory('memory', { threshold: 0.9 }));
     this.healthChecker.registerCheck(
       'execution-health',
-      HealthChecks.counter('execution-health', () => this.executionStats.totalExecutions),
+      HealthChecks.counter('execution-health', () => this.executionStats.totalExecutions)
     );
   }
 
@@ -481,38 +469,22 @@ export {
   parseTraceContext,
   formatTraceContext,
 } from './tracing';
-export {
-  GraphQLSchema,
-  createVerificationSchema,
-  getSchemaIntrospection,
-} from './graphql';
+export { GraphQLSchema, createVerificationSchema, getSchemaIntrospection } from './graphql';
 export { EventBroadcaster, createMessage, parseFilter, generateEventId } from './websocket';
 export type { VerificationEvent, Subscriber, WebSocketMessage } from './websocket';
-export {
-  HealthChecker,
-  HealthChecks,
-} from './health';
+export { HealthChecker, HealthChecks } from './health';
 export type { HealthStatus, ComponentHealth, SystemHealth, HealthCheckFunction } from './health';
 export { Cache, QueryCache } from './cache';
 export type { CacheEntry, CacheStats, CacheConfig, QueryCacheConfig } from './cache';
-export {
-  DistributedCache,
-  DistributedCacheManager,
-  RedisClient,
+export { DistributedCache, DistributedCacheManager, RedisClient } from './distributed-cache';
+export type {
+  RedisConfig,
+  CacheEntry as DistributedCacheEntry,
+  CacheStats as DistributedCacheStats,
 } from './distributed-cache';
-export type { RedisConfig, CacheEntry as DistributedCacheEntry, CacheStats as DistributedCacheStats } from './distributed-cache';
-export {
-  JobQueue,
-  DistributedJobQueue,
-  PriorityJobQueue,
-  BatchJobProcessor,
-} from './job-queue';
+export { JobQueue, DistributedJobQueue, PriorityJobQueue, BatchJobProcessor } from './job-queue';
 export type { Job, JobStatus, JobPriority, JobHandler, QueueStats, QueueConfig } from './job-queue';
-export {
-  SlidingWindowRateLimiter,
-  TokenBucket,
-  TieredRateLimiter,
-} from './rate-limiter';
+export { SlidingWindowRateLimiter, TokenBucket, TieredRateLimiter } from './rate-limiter';
 export type {
   RateLimitConfig,
   RateLimitStatus,
@@ -520,11 +492,7 @@ export type {
   TokenBucketConfig,
   TierConfig,
 } from './rate-limiter';
-export {
-  RequestSignature,
-  WebhookSignature,
-  OutboundRequestSigner,
-} from './request-signature';
+export { RequestSignature, WebhookSignature, OutboundRequestSigner } from './request-signature';
 export type {
   SignatureConfig,
   SignatureVerifyResult,
@@ -707,13 +675,7 @@ export type {
   WorkflowAuditLog,
   WorkflowDefinitionRegistry,
 } from './workflows';
-export {
-  IndexBuilder,
-  QueryParser,
-  SearchEngine,
-  SearchAuditor,
-  SearchHub,
-} from './search';
+export { IndexBuilder, QueryParser, SearchEngine, SearchAuditor, SearchHub } from './search';
 export type {
   IndexType,
   SearchOperator,
@@ -726,5 +688,41 @@ export type {
   SearchResults,
   SearchAuditLog,
 } from './search';
+export {
+  TenantManager,
+  ContextPropagator,
+  QuotaManager,
+  IsolationManager,
+  TenantAuditor,
+  TenantHub,
+} from './multitenancy';
+export type {
+  QuotaMetric,
+  IsolationLevel,
+  TenantStatus,
+  Tenant,
+  TenantContext,
+  QuotaLimit,
+  TenantQuotas,
+  IsolationPolicy,
+  TenantAuditEvent,
+} from './multitenancy';
+export {
+  DataStore,
+  SnapshotManager,
+  RetentionManager,
+  DataAuditor,
+  DataHub,
+} from './data-management';
+export type {
+  DataType,
+  ChangeType,
+  RetentionPolicy,
+  DataRecord,
+  DataVersion,
+  DataSnapshot,
+  DataQuery,
+  RetentionConfig,
+} from './data-management';
 
 export default VerificationRuntime;

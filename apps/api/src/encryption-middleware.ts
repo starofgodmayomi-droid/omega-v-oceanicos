@@ -104,7 +104,7 @@ export function decryptEndpoint(hub: EncryptionHub) {
           keyId,
           timestamp: Date.now(),
         },
-        actor,
+        actor
       );
 
       res.json({
@@ -141,7 +141,7 @@ export function generateSymmetricKeyEndpoint(hub: EncryptionHub) {
       const metadata = keyManager.generateSymmetricKey(
         keyId,
         (algorithm as EncryptionAlgorithm) || 'aes-256-gcm',
-        expiresIn,
+        expiresIn
       );
 
       const auditor = hub.getAuditor();
@@ -471,7 +471,7 @@ export function getAuditLogsEndpoint(hub: EncryptionHub) {
  */
 export function initializeEncryptionMiddleware(
   options: EncryptionMiddlewareOptions,
-  enableEndpoints?: boolean,
+  enableEndpoints?: boolean
 ) {
   const endpoints = [];
 

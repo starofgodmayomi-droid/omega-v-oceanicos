@@ -28,7 +28,7 @@ describe('Advanced Session Management & Context Tracking', () => {
         'token_hash_1',
         '192.168.1.1',
         'Mozilla/5.0',
-        3600000,
+        3600000
       );
 
       expect(session.id).toBeDefined();
@@ -38,7 +38,12 @@ describe('Advanced Session Management & Context Tracking', () => {
     });
 
     it('should retrieve active session', () => {
-      const created = sessionManager.createSession('user1', 'token_hash_1', '192.168.1.1', 'Mozilla/5.0');
+      const created = sessionManager.createSession(
+        'user1',
+        'token_hash_1',
+        '192.168.1.1',
+        'Mozilla/5.0'
+      );
       const retrieved = sessionManager.getSession(created.id);
 
       expect(retrieved?.id).toBe(created.id);
@@ -46,14 +51,25 @@ describe('Advanced Session Management & Context Tracking', () => {
     });
 
     it('should return undefined for expired session', () => {
-      const session = sessionManager.createSession('user1', 'token_hash_1', '192.168.1.1', 'Mozilla/5.0', -1000);
+      const session = sessionManager.createSession(
+        'user1',
+        'token_hash_1',
+        '192.168.1.1',
+        'Mozilla/5.0',
+        -1000
+      );
 
       const retrieved = sessionManager.getSession(session.id);
       expect(retrieved).toBeUndefined();
     });
 
     it('should get session by token hash', () => {
-      const session = sessionManager.createSession('user1', 'token_hash_1', '192.168.1.1', 'Mozilla/5.0');
+      const session = sessionManager.createSession(
+        'user1',
+        'token_hash_1',
+        '192.168.1.1',
+        'Mozilla/5.0'
+      );
       const retrieved = sessionManager.getSessionByToken('token_hash_1');
 
       expect(retrieved?.id).toBe(session.id);
@@ -70,7 +86,13 @@ describe('Advanced Session Management & Context Tracking', () => {
     });
 
     it('should refresh session', () => {
-      const created = sessionManager.createSession('user1', 'token_hash_1', '192.168.1.1', 'Mozilla/5.0', 3600000);
+      const created = sessionManager.createSession(
+        'user1',
+        'token_hash_1',
+        '192.168.1.1',
+        'Mozilla/5.0',
+        3600000
+      );
       const originalExpiry = created.expiresAt;
 
       const refreshed = sessionManager.refreshSession(created.id, 7200000);
@@ -79,7 +101,12 @@ describe('Advanced Session Management & Context Tracking', () => {
     });
 
     it('should invalidate session', () => {
-      const session = sessionManager.createSession('user1', 'token_hash_1', '192.168.1.1', 'Mozilla/5.0');
+      const session = sessionManager.createSession(
+        'user1',
+        'token_hash_1',
+        '192.168.1.1',
+        'Mozilla/5.0'
+      );
       const invalidated = sessionManager.invalidateSession(session.id);
 
       expect(invalidated).toBe(true);
@@ -87,8 +114,18 @@ describe('Advanced Session Management & Context Tracking', () => {
     });
 
     it('should invalidate all user sessions', () => {
-      const s1 = sessionManager.createSession('user1', 'token_hash_1', '192.168.1.1', 'Mozilla/5.0');
-      const s2 = sessionManager.createSession('user1', 'token_hash_2', '192.168.1.2', 'Mozilla/5.0');
+      const s1 = sessionManager.createSession(
+        'user1',
+        'token_hash_1',
+        '192.168.1.1',
+        'Mozilla/5.0'
+      );
+      const s2 = sessionManager.createSession(
+        'user1',
+        'token_hash_2',
+        '192.168.1.2',
+        'Mozilla/5.0'
+      );
 
       const count = sessionManager.invalidateUserSessions('user1');
 
@@ -107,7 +144,12 @@ describe('Advanced Session Management & Context Tracking', () => {
     });
 
     it('should set device info', () => {
-      const session = sessionManager.createSession('user1', 'token_hash_1', '192.168.1.1', 'Mozilla/5.0');
+      const session = sessionManager.createSession(
+        'user1',
+        'token_hash_1',
+        '192.168.1.1',
+        'Mozilla/5.0'
+      );
       const set = sessionManager.setDeviceInfo(session.id, 'device_123');
 
       expect(set).toBe(true);
@@ -115,7 +157,12 @@ describe('Advanced Session Management & Context Tracking', () => {
     });
 
     it('should set location', () => {
-      const session = sessionManager.createSession('user1', 'token_hash_1', '192.168.1.1', 'Mozilla/5.0');
+      const session = sessionManager.createSession(
+        'user1',
+        'token_hash_1',
+        '192.168.1.1',
+        'Mozilla/5.0'
+      );
       const set = sessionManager.setLocation(session.id, 40.7128, -74.006, 'US', 'New York');
 
       expect(set).toBe(true);
@@ -151,7 +198,7 @@ describe('Advanced Session Management & Context Tracking', () => {
         'session1',
         '192.168.1.1',
         'Mozilla/5.0',
-        'req_123',
+        'req_123'
       );
 
       expect(context.userId).toBe('user1');
@@ -165,7 +212,7 @@ describe('Advanced Session Management & Context Tracking', () => {
         'session1',
         '192.168.1.1',
         'Mozilla/5.0',
-        'req_123',
+        'req_123'
       );
 
       const retrieved = contextManager.getContext(established.correlationId);
@@ -179,7 +226,7 @@ describe('Advanced Session Management & Context Tracking', () => {
         'session1',
         '192.168.1.1',
         'Mozilla/5.0',
-        'req_123',
+        'req_123'
       );
 
       const retrieved = contextManager.getContextByRequest('req_123');
@@ -193,7 +240,7 @@ describe('Advanced Session Management & Context Tracking', () => {
         'session1',
         '192.168.1.1',
         'Mozilla/5.0',
-        'req_123',
+        'req_123'
       );
 
       const updated = contextManager.updateContext(established.correlationId, {
@@ -209,7 +256,7 @@ describe('Advanced Session Management & Context Tracking', () => {
         'session1',
         '192.168.1.1',
         'Mozilla/5.0',
-        'req_123',
+        'req_123'
       );
 
       const added = contextManager.addPermissions(context.correlationId, ['read', 'write']);
@@ -224,7 +271,7 @@ describe('Advanced Session Management & Context Tracking', () => {
         'session1',
         '192.168.1.1',
         'Mozilla/5.0',
-        'req_123',
+        'req_123'
       );
 
       const added = contextManager.addRoles(context.correlationId, ['admin', 'user']);
@@ -261,7 +308,7 @@ describe('Advanced Session Management & Context Tracking', () => {
         'iOS',
         '16.0',
         'Safari',
-        '16.0',
+        '16.0'
       );
 
       expect(device.deviceId).toBeDefined();
@@ -270,7 +317,14 @@ describe('Advanced Session Management & Context Tracking', () => {
     });
 
     it('should get device', () => {
-      const registered = deviceTracker.registerDevice('user1', 'desktop', 'macOS', '13.0', 'Chrome', '120.0');
+      const registered = deviceTracker.registerDevice(
+        'user1',
+        'desktop',
+        'macOS',
+        '13.0',
+        'Chrome',
+        '120.0'
+      );
       const retrieved = deviceTracker.getDevice(registered.deviceId);
 
       expect(retrieved?.userId).toBe('user1');
@@ -288,7 +342,14 @@ describe('Advanced Session Management & Context Tracking', () => {
     });
 
     it('should update last seen', () => {
-      const device = deviceTracker.registerDevice('user1', 'mobile', 'iOS', '16.0', 'Safari', '16.0');
+      const device = deviceTracker.registerDevice(
+        'user1',
+        'mobile',
+        'iOS',
+        '16.0',
+        'Safari',
+        '16.0'
+      );
       const originalLastSeen = device.lastSeenAt;
 
       setTimeout(() => {}, 1);
@@ -296,11 +357,20 @@ describe('Advanced Session Management & Context Tracking', () => {
       const updated = deviceTracker.updateLastSeen(device.deviceId);
 
       expect(updated).toBe(true);
-      expect(deviceTracker.getDevice(device.deviceId)?.lastSeenAt).toBeGreaterThanOrEqual(originalLastSeen);
+      expect(deviceTracker.getDevice(device.deviceId)?.lastSeenAt).toBeGreaterThanOrEqual(
+        originalLastSeen
+      );
     });
 
     it('should trust device', () => {
-      const device = deviceTracker.registerDevice('user1', 'mobile', 'iOS', '16.0', 'Safari', '16.0');
+      const device = deviceTracker.registerDevice(
+        'user1',
+        'mobile',
+        'iOS',
+        '16.0',
+        'Safari',
+        '16.0'
+      );
 
       const trusted = deviceTracker.trustDevice(device.deviceId);
 
@@ -309,7 +379,14 @@ describe('Advanced Session Management & Context Tracking', () => {
     });
 
     it('should remove device', () => {
-      const device = deviceTracker.registerDevice('user1', 'mobile', 'iOS', '16.0', 'Safari', '16.0');
+      const device = deviceTracker.registerDevice(
+        'user1',
+        'mobile',
+        'iOS',
+        '16.0',
+        'Safari',
+        '16.0'
+      );
 
       const removed = deviceTracker.removeDevice(device.deviceId);
 
@@ -339,7 +416,7 @@ describe('Advanced Session Management & Context Tracking', () => {
         'US',
         'New York',
         'NY',
-        'UTC-5',
+        'UTC-5'
       );
 
       expect(location.city).toBe('New York');
@@ -347,7 +424,17 @@ describe('Advanced Session Management & Context Tracking', () => {
     });
 
     it('should get last location', () => {
-      locationTracker.recordLocation('session1', 'user1', 40.7128, -74.006, 10, 'US', 'New York', 'NY', 'UTC-5');
+      locationTracker.recordLocation(
+        'session1',
+        'user1',
+        40.7128,
+        -74.006,
+        10,
+        'US',
+        'New York',
+        'NY',
+        'UTC-5'
+      );
 
       const last = locationTracker.getLastLocation('session1');
 
@@ -355,8 +442,28 @@ describe('Advanced Session Management & Context Tracking', () => {
     });
 
     it('should get session locations', () => {
-      locationTracker.recordLocation('session1', 'user1', 40.7128, -74.006, 10, 'US', 'New York', 'NY', 'UTC-5');
-      locationTracker.recordLocation('session1', 'user1', 34.0522, -118.2437, 10, 'US', 'Los Angeles', 'CA', 'UTC-8');
+      locationTracker.recordLocation(
+        'session1',
+        'user1',
+        40.7128,
+        -74.006,
+        10,
+        'US',
+        'New York',
+        'NY',
+        'UTC-5'
+      );
+      locationTracker.recordLocation(
+        'session1',
+        'user1',
+        34.0522,
+        -118.2437,
+        10,
+        'US',
+        'Los Angeles',
+        'CA',
+        'UTC-8'
+      );
 
       const locations = locationTracker.getSessionLocations('session1');
 
@@ -364,7 +471,17 @@ describe('Advanced Session Management & Context Tracking', () => {
     });
 
     it('should detect location anomalies', () => {
-      locationTracker.recordLocation('session1', 'user1', 40.7128, -74.006, 10, 'US', 'New York', 'NY', 'UTC-5');
+      locationTracker.recordLocation(
+        'session1',
+        'user1',
+        40.7128,
+        -74.006,
+        10,
+        'US',
+        'New York',
+        'NY',
+        'UTC-5'
+      );
 
       const isAnomaly = locationTracker.detectAnomalies('session1', 34.0522, -118.2437);
 
@@ -372,9 +489,19 @@ describe('Advanced Session Management & Context Tracking', () => {
     });
 
     it('should detect anomalies for instant travel', () => {
-      locationTracker.recordLocation('session1', 'user1', 40.7128, -74.006, 10, 'US', 'New York', 'NY', 'UTC-5');
+      locationTracker.recordLocation(
+        'session1',
+        'user1',
+        40.7128,
+        -74.006,
+        10,
+        'US',
+        'New York',
+        'NY',
+        'UTC-5'
+      );
 
-      const isAnomaly = locationTracker.detectAnomalies('session1', 40.7580, -73.9855);
+      const isAnomaly = locationTracker.detectAnomalies('session1', 40.758, -73.9855);
 
       expect(isAnomaly).toBe(true);
     });
@@ -389,7 +516,7 @@ describe('Advanced Session Management & Context Tracking', () => {
         'US',
         'New York',
         'NY',
-        'UTC-5',
+        'UTC-5'
       );
 
       location.timestamp = Date.now() - 3600000;
@@ -418,7 +545,7 @@ describe('Advanced Session Management & Context Tracking', () => {
         'session_created',
         '192.168.1.1',
         'device1',
-        { source: 'web' },
+        { source: 'web' }
       );
 
       expect(event.eventType).toBe('session_created');
@@ -508,7 +635,7 @@ describe('Advanced Session Management & Context Tracking', () => {
         'user1',
         'token_hash_1',
         '192.168.1.1',
-        'Mozilla/5.0',
+        'Mozilla/5.0'
       );
 
       expect(session.id).toBeDefined();
@@ -520,7 +647,7 @@ describe('Advanced Session Management & Context Tracking', () => {
         'user1',
         'token_hash_1',
         '192.168.1.1',
-        'Mozilla/5.0',
+        'Mozilla/5.0'
       );
 
       const device = hub.registerAndTrustDevice(
@@ -530,7 +657,7 @@ describe('Advanced Session Management & Context Tracking', () => {
         'iOS',
         '16.0',
         'Safari',
-        '16.0',
+        '16.0'
       );
 
       expect(hub.getDeviceTracker().isTrusted(device.deviceId)).toBe(true);
@@ -541,7 +668,7 @@ describe('Advanced Session Management & Context Tracking', () => {
         'user1',
         'token_hash_1',
         '192.168.1.1',
-        'Mozilla/5.0',
+        'Mozilla/5.0'
       );
 
       const location = hub.recordLocationWithAnomalyDetection(
@@ -553,7 +680,7 @@ describe('Advanced Session Management & Context Tracking', () => {
         'US',
         'New York',
         'NY',
-        'UTC-5',
+        'UTC-5'
       );
 
       expect(location.city).toBe('New York');
@@ -564,7 +691,7 @@ describe('Advanced Session Management & Context Tracking', () => {
         'user1',
         'token_hash_1',
         '192.168.1.1',
-        'Mozilla/5.0',
+        'Mozilla/5.0'
       );
 
       const device = hub.registerAndTrustDevice(
@@ -574,10 +701,20 @@ describe('Advanced Session Management & Context Tracking', () => {
         'iOS',
         '16.0',
         'Safari',
-        '16.0',
+        '16.0'
       );
 
-      hub.recordLocationWithAnomalyDetection(session.id, 'user1', 40.7128, -74.006, 10, 'US', 'New York', 'NY', 'UTC-5');
+      hub.recordLocationWithAnomalyDetection(
+        session.id,
+        'user1',
+        40.7128,
+        -74.006,
+        10,
+        'US',
+        'New York',
+        'NY',
+        'UTC-5'
+      );
 
       const status = hub.getSessionStatus(session.id);
 
@@ -592,11 +729,19 @@ describe('Advanced Session Management & Context Tracking', () => {
         'user1',
         'token_hash_1',
         '192.168.1.1',
-        'Mozilla/5.0',
+        'Mozilla/5.0'
       );
 
       hub.getContextManager().addPermissions(session.id, ['read', 'write']);
-      hub.registerAndTrustDevice('user1', session.id, 'desktop', 'macOS', '13.0', 'Chrome', '120.0');
+      hub.registerAndTrustDevice(
+        'user1',
+        session.id,
+        'desktop',
+        'macOS',
+        '13.0',
+        'Chrome',
+        '120.0'
+      );
 
       const userSessions = hub.getSessionManager().getUserSessions('user1');
 

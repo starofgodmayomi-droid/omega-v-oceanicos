@@ -4,7 +4,16 @@
  */
 
 export type PermissionAction = 'create' | 'read' | 'update' | 'delete' | 'execute' | 'admin';
-export type ResourceType = 'observation' | 'verification' | 'attestation' | 'event' | 'user' | 'session' | 'notification' | 'report' | 'configuration';
+export type ResourceType =
+  | 'observation'
+  | 'verification'
+  | 'attestation'
+  | 'event'
+  | 'user'
+  | 'session'
+  | 'notification'
+  | 'report'
+  | 'configuration';
 export type PolicyEffect = 'allow' | 'deny';
 export type RoleType = 'system' | 'custom';
 
@@ -254,7 +263,7 @@ export class ResourceManager {
     if (ownerResources) {
       this.ownerIndex.set(
         resource.owner,
-        ownerResources.filter((r) => r.id !== resourceId),
+        ownerResources.filter((r) => r.id !== resourceId)
       );
     }
 
@@ -262,7 +271,7 @@ export class ResourceManager {
     if (typeResources) {
       this.typeIndex.set(
         resource.type,
-        typeResources.filter((r) => r.id !== resourceId),
+        typeResources.filter((r) => r.id !== resourceId)
       );
     }
 
@@ -323,7 +332,7 @@ export class AttributeManager {
     const initialLength = userAttrs.length;
     this.attributes.set(
       userId,
-      userAttrs.filter((a) => a.key !== key),
+      userAttrs.filter((a) => a.key !== key)
     );
 
     return this.attributes.get(userId)!.length < initialLength;
@@ -395,13 +404,18 @@ export class PolicyEngine {
     const initialLength = policies.length;
     this.userPolicies.set(
       userId,
-      policies.filter((p) => p.id !== policyId),
+      policies.filter((p) => p.id !== policyId)
     );
 
     return this.userPolicies.get(userId)!.length < initialLength;
   }
 
-  evaluatePolicy(userId: string, action: PermissionAction, resource: ResourceType, context?: Record<string, any>): { allowed: boolean; matchedPolicies: string[] } {
+  evaluatePolicy(
+    userId: string,
+    action: PermissionAction,
+    resource: ResourceType,
+    context?: Record<string, any>
+  ): { allowed: boolean; matchedPolicies: string[] } {
     const userPolicies = this.userPolicies.get(userId) || [];
     const matchedPolicies: string[] = [];
     let finalDecision: 'allow' | 'deny' | null = null;
@@ -434,7 +448,10 @@ export class PolicyEngine {
     return { allowed: finalDecision === 'allow', matchedPolicies };
   }
 
-  private evaluateConditions(conditions: Record<string, any>, context: Record<string, any>): boolean {
+  private evaluateConditions(
+    conditions: Record<string, any>,
+    context: Record<string, any>
+  ): boolean {
     for (const [key, expected] of Object.entries(conditions)) {
       const contextValue = context[key];
 
@@ -472,7 +489,7 @@ export class AccessDecisionPoint {
     private roleManager: RoleManager,
     private resourceManager: ResourceManager,
     private attributeManager: AttributeManager,
-    private policyEngine: PolicyEngine,
+    private policyEngine: PolicyEngine
   ) {}
 
   decide(request: AccessRequest): AccessDecision {
@@ -489,7 +506,7 @@ export class AccessDecisionPoint {
       request.userId,
       request.action,
       request.resource,
-      request.context,
+      request.context
     );
 
     if (policyResult.allowed) {
@@ -511,11 +528,15 @@ export class AccessDecisionPoint {
           };
         } else {
           const attrs = this.attributeManager.getAttributes(request.userId);
-          const hasOrgPermission = attrs.some((a) => a.key === 'org' && a.value === this.getResourceOrg(resource));
+          const hasOrgPermission = attrs.some(
+            (a) => a.key === 'org' && a.value === this.getResourceOrg(resource)
+          );
 
           decision = {
             allowed: hasOrgPermission,
-            reason: hasOrgPermission ? 'Policy permission granted' : 'No permission for this resource',
+            reason: hasOrgPermission
+              ? 'Policy permission granted'
+              : 'No permission for this resource',
             matchedPolicies: policyResult.matchedPolicies,
             evaluationTime: Date.now(),
           };
@@ -600,7 +621,7 @@ export class AuthorizationHub {
       this.roleManager,
       this.resourceManager,
       this.attributeManager,
-      this.policyEngine,
+      this.policyEngine
     );
   }
 
@@ -628,7 +649,12 @@ export class AuthorizationHub {
     return this.accessDecisionPoint.decide(request);
   }
 
-  canAccess(userId: string, action: PermissionAction, resource: ResourceType, resourceId?: string): boolean {
+  canAccess(
+    userId: string,
+    action: PermissionAction,
+    resource: ResourceType,
+    resourceId?: string
+  ): boolean {
     const decision = this.authorize({
       userId,
       action,

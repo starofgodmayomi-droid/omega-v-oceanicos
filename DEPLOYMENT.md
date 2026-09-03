@@ -96,7 +96,7 @@ services:
     container_name: omega-v-api-prod
     restart: always
     ports:
-      - "3000:3000"
+      - '3000:3000'
     environment:
       - NODE_ENV=production
       - API_PORT=3000
@@ -105,7 +105,7 @@ services:
     volumes:
       - omega-v-data:/app/data
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/health"]
+      test: ['CMD', 'wget', '--quiet', '--tries=1', '--spider', 'http://localhost:3000/health']
       interval: 30s
       timeout: 10s
       retries: 5
@@ -116,7 +116,7 @@ services:
     image: prom/prometheus:latest
     restart: always
     ports:
-      - "9090:9090"
+      - '9090:9090'
     volumes:
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus-data:/prometheus
@@ -188,19 +188,19 @@ services:
   api-1:
     image: omega-v-oceanicos:latest
     ports:
-      - "3001:3000"
+      - '3001:3000'
     # ... other config
 
   api-2:
     image: omega-v-oceanicos:latest
     ports:
-      - "3002:3000"
+      - '3002:3000'
     # ... other config
 
   nginx:
     image: nginx:latest
     ports:
-      - "3000:80"
+      - '3000:80'
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:

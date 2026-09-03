@@ -180,7 +180,19 @@ export class IndexBuilder {
  * QueryParser: Parse and normalize search queries
  */
 export class QueryParser {
-  private stopwords = new Set(['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for']);
+  private stopwords = new Set([
+    'the',
+    'a',
+    'an',
+    'and',
+    'or',
+    'but',
+    'in',
+    'on',
+    'at',
+    'to',
+    'for',
+  ]);
 
   parse(queryText: string): ParsedQuery {
     const terms: string[] = [];
@@ -203,7 +215,11 @@ export class QueryParser {
         currentPhrase = '';
       } else if (inPhrase) {
         currentPhrase += ' ' + part;
-      } else if (part.toLowerCase() === 'and' || part.toLowerCase() === 'or' || part.toLowerCase() === 'not') {
+      } else if (
+        part.toLowerCase() === 'and' ||
+        part.toLowerCase() === 'or' ||
+        part.toLowerCase() === 'not'
+      ) {
         operators.push(part.toLowerCase() as SearchOperator);
       } else if (part.includes(':')) {
         const [key, value] = part.split(':');
@@ -217,7 +233,10 @@ export class QueryParser {
   }
 
   normalizeQuery(queryText: string): string {
-    return queryText.toLowerCase().replace(/[^\w\s":-]/g, '').trim();
+    return queryText
+      .toLowerCase()
+      .replace(/[^\w\s":-]/g, '')
+      .trim();
   }
 
   async clear(): Promise<void> {
@@ -231,7 +250,7 @@ export class QueryParser {
 export class SearchEngine {
   constructor(
     private indexBuilder: IndexBuilder,
-    private queryParser: QueryParser,
+    private queryParser: QueryParser
   ) {}
 
   search(indexName: string, query: SearchQuery): SearchResults {
@@ -357,7 +376,12 @@ export class SearchEngine {
 export class SearchAuditor {
   private logs: SearchAuditLog[] = [];
 
-  logSearch(query: string, resultCount: number, executionTime: number, userId?: string): SearchAuditLog {
+  logSearch(
+    query: string,
+    resultCount: number,
+    executionTime: number,
+    userId?: string
+  ): SearchAuditLog {
     const log: SearchAuditLog = {
       id: `search_audit_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       query,
@@ -386,8 +410,10 @@ export class SearchAuditor {
 
   getSearchStats(): Record<string, any> {
     const totalSearches = this.logs.length;
-    const avgExecutionTime = this.logs.reduce((sum, log) => sum + log.executionTime, 0) / totalSearches || 0;
-    const avgResults = this.logs.reduce((sum, log) => sum + log.resultCount, 0) / totalSearches || 0;
+    const avgExecutionTime =
+      this.logs.reduce((sum, log) => sum + log.executionTime, 0) / totalSearches || 0;
+    const avgResults =
+      this.logs.reduce((sum, log) => sum + log.resultCount, 0) / totalSearches || 0;
 
     return {
       totalSearches,

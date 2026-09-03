@@ -141,7 +141,7 @@ describe('Distributed Tracing', () => {
       span?.end();
       manager.endSpan(span!);
 
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
       const traces = exporter.getTraces();
       expect(traces.length).toBeGreaterThan(0);
@@ -160,7 +160,7 @@ describe('Distributed Tracing', () => {
       span?.end();
       manager.endSpan(span!);
 
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
       expect(exporter1.getTraces().length).toBeGreaterThan(0);
       expect(exporter2.getTraces().length).toBeGreaterThan(0);
@@ -337,7 +337,7 @@ describe('Distributed Tracing', () => {
       rootSpan?.end();
       manager.endSpan(rootSpan!);
 
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
       const traces = exporter.getTraces();
       expect(traces.length).toBeGreaterThanOrEqual(1);

@@ -72,13 +72,15 @@ export class Logger {
       level,
       message,
       metadata,
-      error: error ? {
-        message: error.message,
-        stack: error.stack,
-      } : undefined,
+      error: error
+        ? {
+            message: error.message,
+            stack: error.stack,
+          }
+        : undefined,
     };
 
-    this.handlers.forEach(handler => handler(entry));
+    this.handlers.forEach((handler) => handler(entry));
   }
 
   debug(message: string, metadata?: Record<string, any>): void {
@@ -133,7 +135,10 @@ export class Logger {
  * Contextual logger with automatic metadata injection
  */
 export class ContextualLogger {
-  constructor(private logger: Logger, private context: Record<string, any>) {}
+  constructor(
+    private logger: Logger,
+    private context: Record<string, any>
+  ) {}
 
   debug(message: string, metadata?: Record<string, any>): void {
     this.logger.debug(message, { ...this.context, ...metadata });
@@ -195,7 +200,7 @@ export class AuditLogger {
     observationId: string,
     actor: string,
     result: 'success' | 'failure',
-    details?: Record<string, any>,
+    details?: Record<string, any>
   ): void {
     this.audit({
       level: 'info',
@@ -217,7 +222,7 @@ export class AuditLogger {
     observationId: string,
     passed: boolean,
     actor: string,
-    details?: Record<string, any>,
+    details?: Record<string, any>
   ): void {
     this.audit({
       level: 'info',
@@ -239,7 +244,7 @@ export class AuditLogger {
     verificationId: string,
     verified: boolean,
     actor: string,
-    details?: Record<string, any>,
+    details?: Record<string, any>
   ): void {
     this.audit({
       level: 'info',
@@ -267,7 +272,7 @@ export class AuditLogger {
    * Get entries by type
    */
   getEntriesByType(type: AuditEntry['type'], limit?: number): AuditEntry[] {
-    const filtered = this.entries.filter(e => e.type === type);
+    const filtered = this.entries.filter((e) => e.type === type);
     if (limit) {
       return filtered.slice(-limit);
     }
@@ -309,7 +314,8 @@ export class RequestLogger {
       this.entries.shift();
     }
 
-    const logLevel = requestLog.statusCode >= 500 ? 'error' : requestLog.statusCode >= 400 ? 'warn' : 'info';
+    const logLevel =
+      requestLog.statusCode >= 500 ? 'error' : requestLog.statusCode >= 400 ? 'warn' : 'info';
     this.logger.log(logLevel, `${requestLog.method} ${requestLog.path} ${requestLog.statusCode}`, {
       method: requestLog.method,
       path: requestLog.path,
@@ -334,7 +340,7 @@ export class RequestLogger {
    * Get slow requests
    */
   getSlowRequests(thresholdMs: number = 1000, limit?: number): RequestLog[] {
-    const filtered = this.entries.filter(e => e.duration > thresholdMs);
+    const filtered = this.entries.filter((e) => e.duration > thresholdMs);
     if (limit) {
       return filtered.slice(-limit);
     }
@@ -345,7 +351,7 @@ export class RequestLogger {
    * Get failed requests
    */
   getFailedRequests(limit?: number): RequestLog[] {
-    const filtered = this.entries.filter(e => e.statusCode >= 400);
+    const filtered = this.entries.filter((e) => e.statusCode >= 400);
     if (limit) {
       return filtered.slice(-limit);
     }

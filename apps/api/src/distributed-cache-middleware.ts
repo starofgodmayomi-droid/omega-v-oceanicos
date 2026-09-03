@@ -78,12 +78,14 @@ export function responseCacheMiddleware(options: CacheMiddlewareOptions) {
           (req.method === 'GET' || req.method === 'HEAD')
         ) {
           res.setHeader('X-Cache', 'MISS');
-          cache.set(cacheKey, {
-            status: res.statusCode,
-            body,
-          }).catch(() => {
-            // Cache write failed, continue
-          });
+          cache
+            .set(cacheKey, {
+              status: res.statusCode,
+              body,
+            })
+            .catch(() => {
+              // Cache write failed, continue
+            });
         }
         return originalJson(body);
       };
@@ -96,12 +98,14 @@ export function responseCacheMiddleware(options: CacheMiddlewareOptions) {
           (req.method === 'GET' || req.method === 'HEAD')
         ) {
           res.setHeader('X-Cache', 'MISS');
-          cache.set(cacheKey, {
-            status: res.statusCode,
-            body,
-          }).catch(() => {
-            // Cache write failed, continue
-          });
+          cache
+            .set(cacheKey, {
+              status: res.statusCode,
+              body,
+            })
+            .catch(() => {
+              // Cache write failed, continue
+            });
         }
         return originalSend(body);
       };
@@ -117,9 +121,7 @@ export function responseCacheMiddleware(options: CacheMiddlewareOptions) {
 /**
  * Cache invalidation middleware
  */
-export function cacheInvalidationMiddleware(
-  cacheManager: DistributedCacheManager,
-) {
+export function cacheInvalidationMiddleware(cacheManager: DistributedCacheManager) {
   return async (req: Request, res: Response, next: NextFunction) => {
     // Invalidate caches on mutations
     if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method)) {
@@ -221,10 +223,8 @@ export function cacheStatsEndpoint(cacheManager: DistributedCacheManager) {
     }
 
     const totalRequests = summary.totalHits + summary.totalMisses;
-    summary.overallHitRate =
-      totalRequests > 0 ? summary.totalHits / totalRequests : 0;
-    summary.averageAccessTime =
-      accessTimesCount > 0 ? accessTimesSum / accessTimesCount : 0;
+    summary.overallHitRate = totalRequests > 0 ? summary.totalHits / totalRequests : 0;
+    summary.averageAccessTime = accessTimesCount > 0 ? accessTimesSum / accessTimesCount : 0;
 
     res.json({
       summary,
@@ -258,10 +258,12 @@ export function defaultKeyGenerator(req: Request): string {
  */
 export function initializeDistributedCaching(
   cacheManager: DistributedCacheManager,
-  redisClient?: RedisClient,
+  redisClient?: RedisClient
 ) {
   return [
-    redisClient ? redisConnectionMiddleware(redisClient) : ((_r: Request, _: Response, n: NextFunction) => n()),
+    redisClient
+      ? redisConnectionMiddleware(redisClient)
+      : (_r: Request, _: Response, n: NextFunction) => n(),
     responseCacheMiddleware({ cacheManager }),
     cacheInvalidationMiddleware(cacheManager),
     cacheStatsMiddleware(cacheManager),

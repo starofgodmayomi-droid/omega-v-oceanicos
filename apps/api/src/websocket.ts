@@ -17,7 +17,7 @@ export interface WebSocketClient {
  */
 export function initializeWebSocketServer(
   httpServer: HTTPServer,
-  broadcaster: EventBroadcaster,
+  broadcaster: EventBroadcaster
 ): WebSocketServer {
   const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
   const clients = new Map<string, WebSocketClient>();
@@ -52,8 +52,8 @@ export function initializeWebSocketServer(
             createMessage('error', {
               message: 'Failed to process message',
               error: error instanceof Error ? error.message : 'Unknown error',
-            }),
-          ),
+            })
+          )
         );
       }
     });
@@ -80,7 +80,7 @@ export function initializeWebSocketServer(
 function handleSubscription(
   client: WebSocketClient,
   message: any,
-  broadcaster: EventBroadcaster,
+  broadcaster: EventBroadcaster
 ): void {
   const filter = parseFilter(message.payload?.filter);
 
@@ -96,12 +96,12 @@ function handleSubscription(
               timestamp: event.timestamp,
               data: event.data,
               source: event.source,
-            }),
-          ),
+            })
+          )
         );
       }
     },
-    filter,
+    filter
   );
 
   client.subscriptionId = subscriptionId.toString();
@@ -111,11 +111,13 @@ function handleSubscription(
       createMessage('subscribe', {
         message: 'Subscribed successfully',
         filter: message.payload?.filter || 'all events',
-      }),
-    ),
+      })
+    )
   );
 
-  console.log(`[WebSocket] Client ${client.id} subscribed with filter: ${message.payload?.filter || 'none'}`);
+  console.log(
+    `[WebSocket] Client ${client.id} subscribed with filter: ${message.payload?.filter || 'none'}`
+  );
 }
 
 /**
@@ -127,8 +129,8 @@ function handleUnsubscription(client: WebSocketClient): void {
       JSON.stringify(
         createMessage('unsubscribe', {
           message: 'Unsubscribed successfully',
-        }),
-      ),
+        })
+      )
     );
     console.log(`[WebSocket] Client ${client.id} unsubscribed`);
   }
@@ -137,7 +139,11 @@ function handleUnsubscription(client: WebSocketClient): void {
 /**
  * Handle history request
  */
-function handleHistoryRequest(client: WebSocketClient, message: any, broadcaster: EventBroadcaster): void {
+function handleHistoryRequest(
+  client: WebSocketClient,
+  message: any,
+  broadcaster: EventBroadcaster
+): void {
   const limit = message.payload?.limit || 50;
   const type = message.payload?.type;
 
@@ -153,8 +159,8 @@ function handleHistoryRequest(client: WebSocketClient, message: any, broadcaster
       createMessage('history', {
         events: history,
         count: history.length,
-      }),
-    ),
+      })
+    )
   );
 }
 
@@ -168,7 +174,7 @@ function handleMetricsRequest(client: WebSocketClient, broadcaster: EventBroadca
     JSON.stringify(
       createMessage('metrics', {
         ...metrics,
-      }),
-    ),
+      })
+    )
   );
 }

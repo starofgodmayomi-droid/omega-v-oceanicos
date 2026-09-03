@@ -75,7 +75,9 @@ describe('VerificationRuntime Metrics Integration', () => {
       const metrics = runtime.getMetricsJSON();
 
       expect(metrics.counters.verifications_total).toBe(3);
-      expect(metrics.counters.verifications_passed_total + metrics.counters.verifications_failed_total).toBe(3);
+      expect(
+        metrics.counters.verifications_passed_total + metrics.counters.verifications_failed_total
+      ).toBe(3);
     });
 
     it('should measure timing for each component', () => {
@@ -326,7 +328,9 @@ describe('VerificationRuntime Metrics Integration', () => {
       const prometheus = runtime.getPrometheusMetrics();
 
       expect(prometheus).toContain(`omega_observations_total ${json.counters.observations_total}`);
-      expect(prometheus).toContain(`omega_verifications_total ${json.counters.verifications_total}`);
+      expect(prometheus).toContain(
+        `omega_verifications_total ${json.counters.verifications_total}`
+      );
       expect(prometheus).toContain(`omega_attestations_total ${json.counters.attestations_total}`);
     });
 

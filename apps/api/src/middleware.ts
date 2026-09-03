@@ -70,7 +70,7 @@ export function requestSizeLimits(maxJsonSize: string = '1mb') {
 export function createRateLimitMiddleware(
   maxRequests: number = 100,
   windowMs: number = 60000,
-  keyFn: (req: Request) => string = req => req.ip || 'unknown',
+  keyFn: (req: Request) => string = (req) => req.ip || 'unknown'
 ) {
   const limiter = new RateLimiter(maxRequests, windowMs);
 
@@ -104,10 +104,10 @@ export function requestLogging(req: Request, res: Response, next: NextFunction):
   const startTime = Date.now();
   const originalSend = res.send;
 
-  res.send = function(data: any) {
+  res.send = function (data: any) {
     const duration = Date.now() - startTime;
     console.log(
-      `[${new Date().toISOString()}] ${req.method} ${req.path} ${res.statusCode} ${duration}ms`,
+      `[${new Date().toISOString()}] ${req.method} ${req.path} ${res.statusCode} ${duration}ms`
     );
     return originalSend.call(this, data);
   };

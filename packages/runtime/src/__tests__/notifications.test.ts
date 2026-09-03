@@ -29,7 +29,7 @@ describe('Advanced Notification & Broadcasting System', () => {
         'email',
         'Welcome {{name}}!',
         'Welcome',
-        ['name'],
+        ['name']
       );
 
       expect(template.id).toBe('welcome');
@@ -45,7 +45,7 @@ describe('Advanced Notification & Broadcasting System', () => {
         'sms',
         'Your code: {{code}}',
         undefined,
-        ['code'],
+        ['code']
       );
 
       expect(template.channel).toBe('sms');
@@ -59,7 +59,7 @@ describe('Advanced Notification & Broadcasting System', () => {
         'email',
         'Hello {{firstName}} {{lastName}}',
         'Greetings {{firstName}}',
-        ['firstName', 'lastName'],
+        ['firstName', 'lastName']
       );
 
       const rendered = templateManager.renderTemplate('greeting', {
@@ -78,7 +78,7 @@ describe('Advanced Notification & Broadcasting System', () => {
         'email',
         '{{value}} and {{value}} again',
         '',
-        ['value'],
+        ['value']
       );
 
       const rendered = templateManager.renderTemplate('repeat', { value: 'test' });
@@ -215,7 +215,9 @@ describe('Advanced Notification & Broadcasting System', () => {
       const unsubscribed = recipientManager.unsubscribeFromType('user1', 'marketing');
 
       expect(unsubscribed).toBe(true);
-      expect(recipientManager.getRecipient('user1')?.preferences?.unsubscribe_types).toContain('marketing');
+      expect(recipientManager.getRecipient('user1')?.preferences?.unsubscribe_types).toContain(
+        'marketing'
+      );
     });
 
     it('should list recipients', () => {
@@ -584,7 +586,9 @@ describe('Advanced Notification & Broadcasting System', () => {
     });
 
     it('should send notification', async () => {
-      hub.getTemplateManager().registerTemplate('welcome', 'Welcome', 'email', 'Welcome {{name}}!', 'Welcome', ['name']);
+      hub
+        .getTemplateManager()
+        .registerTemplate('welcome', 'Welcome', 'email', 'Welcome {{name}}!', 'Welcome', ['name']);
 
       hub.getDispatcher().registerHandler('email', async () => true);
 
@@ -595,14 +599,23 @@ describe('Advanced Notification & Broadcasting System', () => {
         preferences: { channels: ['email'] },
       };
 
-      const payload = await hub.sendNotification('welcome', [recipient], { name: 'John' }, ['email'], 'normal', 'test');
+      const payload = await hub.sendNotification(
+        'welcome',
+        [recipient],
+        { name: 'John' },
+        ['email'],
+        'normal',
+        'test'
+      );
 
       expect(payload.id).toBeDefined();
       expect(payload.recipients.length).toBe(1);
     });
 
     it('should schedule notification', async () => {
-      hub.getTemplateManager().registerTemplate('scheduled', 'Scheduled', 'email', 'Message', '', []);
+      hub
+        .getTemplateManager()
+        .registerTemplate('scheduled', 'Scheduled', 'email', 'Message', '', []);
 
       const recipient: NotificationRecipient = {
         id: 'user1',
@@ -611,7 +624,15 @@ describe('Advanced Notification & Broadcasting System', () => {
       };
 
       const scheduledFor = Date.now() + 10000;
-      const payload = await hub.scheduleNotification('scheduled', [recipient], {}, ['email'], scheduledFor, 'normal', 'test');
+      const payload = await hub.scheduleNotification(
+        'scheduled',
+        [recipient],
+        {},
+        ['email'],
+        scheduledFor,
+        'normal',
+        'test'
+      );
 
       expect(payload.scheduledFor).toBe(scheduledFor);
     });
@@ -652,14 +673,23 @@ describe('Advanced Notification & Broadcasting System', () => {
         },
       };
 
-      const payload = await hub.sendNotification('promo', [recipient], {}, ['email'], 'normal', 'test');
+      const payload = await hub.sendNotification(
+        'promo',
+        [recipient],
+        {},
+        ['email'],
+        'normal',
+        'test'
+      );
 
       const deliveries = hub.getQueue().getDeliveries(payload.id);
       expect(deliveries.length).toBe(0);
     });
 
     it('should integrate all components', async () => {
-      hub.getTemplateManager().registerTemplate('alert', 'Alert', 'email', 'Alert: {{message}}', 'ALERT', ['message']);
+      hub
+        .getTemplateManager()
+        .registerTemplate('alert', 'Alert', 'email', 'Alert: {{message}}', 'ALERT', ['message']);
       hub.getDispatcher().registerHandler('email', async () => true);
 
       const recipient: NotificationRecipient = {
@@ -672,7 +702,14 @@ describe('Advanced Notification & Broadcasting System', () => {
 
       hub.getRecipientManager().registerRecipient(recipient);
 
-      const payload = await hub.sendNotification('alert', [recipient], { message: 'Critical issue' }, ['email'], 'critical', 'system');
+      const payload = await hub.sendNotification(
+        'alert',
+        [recipient],
+        { message: 'Critical issue' },
+        ['email'],
+        'critical',
+        'system'
+      );
 
       const status = hub.getNotificationStatus(payload.id);
 

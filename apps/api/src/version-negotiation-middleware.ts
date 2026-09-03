@@ -39,9 +39,7 @@ declare global {
 /**
  * Version negotiation middleware
  */
-export function versionNegotiationMiddleware(
-  options: VersionMiddlewareOptions,
-) {
+export function versionNegotiationMiddleware(options: VersionMiddlewareOptions) {
   const {
     registry,
     negotiationOptions,
@@ -88,10 +86,7 @@ export function versionNegotiationMiddleware(
 
       // Include breaking changes if present
       if (versionMetadata.breaking && versionMetadata.breaking.length > 0) {
-        res.setHeader(
-          'X-Breaking-Changes',
-          versionMetadata.breaking.join(', '),
-        );
+        res.setHeader('X-Breaking-Changes', versionMetadata.breaking.join(', '));
       }
     } else if (onUnsupportedVersion) {
       onUnsupportedVersion(req, res, result.version);
@@ -106,7 +101,7 @@ export function versionNegotiationMiddleware(
  */
 export function featureAvailabilityMiddleware(
   featureFlagManager: FeatureFlagManager,
-  requiredFeature: string,
+  requiredFeature: string
 ) {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.apiVersion) {
@@ -134,7 +129,7 @@ export function featureAvailabilityMiddleware(
  */
 export function versionMigrationMiddleware(
   versionMigration: VersionMigration,
-  targetVersion: string,
+  targetVersion: string
 ) {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.apiVersion || req.apiVersion === targetVersion) {
@@ -151,18 +146,13 @@ export function versionMigrationMiddleware(
     }
 
     try {
-      const migratedBody = versionMigration.migrate(
-        req.body,
-        req.apiVersion,
-        targetVersion,
-      );
+      const migratedBody = versionMigration.migrate(req.body, req.apiVersion, targetVersion);
       req.body = migratedBody;
       next();
     } catch (error) {
       res.status(400).json({
         error: 'Version migration failed',
-        message:
-          error instanceof Error ? error.message : 'Unknown migration error',
+        message: error instanceof Error ? error.message : 'Unknown migration error',
       });
     }
   };
@@ -183,10 +173,7 @@ export function minimumVersionMiddleware(minVersion: string, registry: VersionRe
     }
 
     const reqVersionObj = require('@omega-v/runtime').parseVersion(req.apiVersion);
-    const comparison = require('@omega-v/runtime').compareVersions(
-      reqVersionObj,
-      minVersionObj,
-    );
+    const comparison = require('@omega-v/runtime').compareVersions(reqVersionObj, minVersionObj);
 
     if (comparison < 0) {
       return res.status(400).json({
@@ -204,9 +191,7 @@ export function minimumVersionMiddleware(minVersion: string, registry: VersionRe
 /**
  * Middleware to check and warn about deprecated features
  */
-export function deprecatedFeatureWarningMiddleware(
-  featureFlagManager: FeatureFlagManager,
-) {
+export function deprecatedFeatureWarningMiddleware(featureFlagManager: FeatureFlagManager) {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.apiVersion) {
       return next();

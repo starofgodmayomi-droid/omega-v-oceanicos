@@ -45,7 +45,7 @@ describe('Resilience Utilities', () => {
           initialDelayMs: 10,
           maxDelayMs: 50,
           backoffMultiplier: 2,
-        }),
+        })
       ).rejects.toThrow('persistent failure');
 
       expect(fn).toHaveBeenCalledTimes(2);
@@ -153,7 +153,7 @@ describe('Resilience Utilities', () => {
 
       expect(breaker.getState()).toBe(CircuitState.OPEN);
 
-      await new Promise(resolve => setTimeout(resolve, 150));
+      await new Promise((resolve) => setTimeout(resolve, 150));
 
       const successFn = jest.fn().mockResolvedValue('success');
       await breaker.execute(successFn);
@@ -177,7 +177,7 @@ describe('Resilience Utilities', () => {
 
       expect(breaker.getState()).toBe(CircuitState.OPEN);
 
-      await new Promise(resolve => setTimeout(resolve, 150));
+      await new Promise((resolve) => setTimeout(resolve, 150));
 
       const successFn = jest.fn().mockResolvedValue('success');
       await breaker.execute(successFn);
@@ -353,9 +353,7 @@ describe('Resilience Utilities', () => {
 
     it('should respect shutdown timeout', async () => {
       const shutdown = new GracefulShutdown();
-      const handler = jest.fn(
-        () => new Promise(resolve => setTimeout(resolve, 10000)),
-      );
+      const handler = jest.fn(() => new Promise((resolve) => setTimeout(resolve, 10000)));
 
       shutdown.register(handler);
 

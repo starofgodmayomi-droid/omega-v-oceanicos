@@ -30,7 +30,7 @@ describe('Logging System', () => {
       logger.error('error message');
 
       expect(handlers).toHaveLength(3);
-      expect(handlers.map(h => h.level)).toEqual(['info', 'warn', 'error']);
+      expect(handlers.map((h) => h.level)).toEqual(['info', 'warn', 'error']);
     });
 
     it('should log debug when level is debug', () => {
@@ -243,7 +243,7 @@ describe('Logging System', () => {
 
       const observations = auditLogger.getEntriesByType('observation');
       expect(observations.length).toBeGreaterThanOrEqual(2);
-      observations.forEach(entry => {
+      observations.forEach((entry) => {
         expect(entry.type).toBe('observation');
       });
     });
@@ -387,7 +387,7 @@ describe('Logging System', () => {
 
       const slowRequests = requestLogger.getSlowRequests(1000);
       expect(slowRequests.length).toBeGreaterThan(0);
-      expect(slowRequests.some(r => r.path === '/slow')).toBe(true);
+      expect(slowRequests.some((r) => r.path === '/slow')).toBe(true);
     });
 
     it('should get failed requests', () => {
@@ -420,7 +420,7 @@ describe('Logging System', () => {
 
       const failedRequests = requestLogger.getFailedRequests();
       expect(failedRequests.length).toBeGreaterThanOrEqual(2);
-      expect(failedRequests.every(r => r.statusCode >= 400)).toBe(true);
+      expect(failedRequests.every((r) => r.statusCode >= 400)).toBe(true);
     });
 
     it('should clear request logs', () => {
@@ -552,7 +552,7 @@ describe('Logging System', () => {
       contextLogger.info('operation completed', { result: 'success' });
 
       expect(handlers).toHaveLength(3);
-      handlers.forEach(entry => {
+      handlers.forEach((entry) => {
         expect(entry.metadata.userId).toBe('user-123');
         expect(entry.metadata.requestId).toBe('req-456');
         expect(entry.metadata.traceId).toBe('trace-789');

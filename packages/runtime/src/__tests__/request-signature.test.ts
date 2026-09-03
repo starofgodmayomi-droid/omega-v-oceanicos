@@ -1,9 +1,5 @@
 import crypto from 'crypto';
-import {
-  RequestSignature,
-  WebhookSignature,
-  OutboundRequestSigner,
-} from '../request-signature';
+import { RequestSignature, WebhookSignature, OutboundRequestSigner } from '../request-signature';
 
 describe('Request Signature System', () => {
   describe('RequestSignature - HMAC Signing', () => {
@@ -48,13 +44,17 @@ describe('Request Signature System', () => {
         body,
       });
 
-      const verifyResult = signer.verifyRequest(secret, {
-        method: 'POST',
-        path: '/api/observations',
-        headers: { 'content-type': 'application/json' },
-        body,
-        timestamp: signResult.timestamp,
-      }, signResult.signatureHeader);
+      const verifyResult = signer.verifyRequest(
+        secret,
+        {
+          method: 'POST',
+          path: '/api/observations',
+          headers: { 'content-type': 'application/json' },
+          body,
+          timestamp: signResult.timestamp,
+        },
+        signResult.signatureHeader
+      );
 
       expect(verifyResult.valid).toBe(true);
     });
@@ -68,13 +68,17 @@ describe('Request Signature System', () => {
         body,
       });
 
-      const verifyResult = signer.verifyRequest(secret, {
-        method: 'POST',
-        path: '/api/observations',
-        headers: { 'content-type': 'application/json' },
-        body: '{"claim":"tampered"}',
-        timestamp: signResult.timestamp,
-      }, signResult.signatureHeader);
+      const verifyResult = signer.verifyRequest(
+        secret,
+        {
+          method: 'POST',
+          path: '/api/observations',
+          headers: { 'content-type': 'application/json' },
+          body: '{"claim":"tampered"}',
+          timestamp: signResult.timestamp,
+        },
+        signResult.signatureHeader
+      );
 
       expect(verifyResult.valid).toBe(false);
     });
@@ -88,13 +92,17 @@ describe('Request Signature System', () => {
         body,
       });
 
-      const verifyResult = signer.verifyRequest('wrong-secret', {
-        method: 'POST',
-        path: '/api/observations',
-        headers: { 'content-type': 'application/json' },
-        body,
-        timestamp: signResult.timestamp,
-      }, signResult.signatureHeader);
+      const verifyResult = signer.verifyRequest(
+        'wrong-secret',
+        {
+          method: 'POST',
+          path: '/api/observations',
+          headers: { 'content-type': 'application/json' },
+          body,
+          timestamp: signResult.timestamp,
+        },
+        signResult.signatureHeader
+      );
 
       expect(verifyResult.valid).toBe(false);
     });
@@ -108,13 +116,17 @@ describe('Request Signature System', () => {
         body,
       });
 
-      const verifyResult = signer.verifyRequest(secret, {
-        method: 'GET',
-        path: '/api/observations',
-        headers: { 'content-type': 'application/json' },
-        body,
-        timestamp: signResult.timestamp,
-      }, signResult.signatureHeader);
+      const verifyResult = signer.verifyRequest(
+        secret,
+        {
+          method: 'GET',
+          path: '/api/observations',
+          headers: { 'content-type': 'application/json' },
+          body,
+          timestamp: signResult.timestamp,
+        },
+        signResult.signatureHeader
+      );
 
       expect(verifyResult.valid).toBe(false);
     });
@@ -128,13 +140,17 @@ describe('Request Signature System', () => {
         body,
       });
 
-      const verifyResult = signer.verifyRequest(secret, {
-        method: 'POST',
-        path: '/api/attestations',
-        headers: { 'content-type': 'application/json' },
-        body,
-        timestamp: signResult.timestamp,
-      }, signResult.signatureHeader);
+      const verifyResult = signer.verifyRequest(
+        secret,
+        {
+          method: 'POST',
+          path: '/api/attestations',
+          headers: { 'content-type': 'application/json' },
+          body,
+          timestamp: signResult.timestamp,
+        },
+        signResult.signatureHeader
+      );
 
       expect(verifyResult.valid).toBe(false);
     });
@@ -150,13 +166,17 @@ describe('Request Signature System', () => {
         timestamp: oldTimestamp,
       });
 
-      const verifyResult = signer.verifyRequest(secret, {
-        method: 'POST',
-        path: '/api/observations',
-        headers: { 'content-type': 'application/json' },
-        body,
-        timestamp: oldTimestamp,
-      }, signResult.signatureHeader);
+      const verifyResult = signer.verifyRequest(
+        secret,
+        {
+          method: 'POST',
+          path: '/api/observations',
+          headers: { 'content-type': 'application/json' },
+          body,
+          timestamp: oldTimestamp,
+        },
+        signResult.signatureHeader
+      );
 
       expect(verifyResult.valid).toBe(false);
       expect(verifyResult.error).toContain('timestamp');
@@ -238,13 +258,17 @@ describe('Request Signature System', () => {
         timestamp,
       });
 
-      const verifyResult = signer.verifyRequest(secret, {
-        method: 'POST',
-        path: '/api/observations',
-        headers: { 'content-type': 'application/json' },
-        body,
-        timestamp,
-      }, signResult.signatureHeader);
+      const verifyResult = signer.verifyRequest(
+        secret,
+        {
+          method: 'POST',
+          path: '/api/observations',
+          headers: { 'content-type': 'application/json' },
+          body,
+          timestamp,
+        },
+        signResult.signatureHeader
+      );
 
       expect(verifyResult.signatureAge).toBeDefined();
       expect(verifyResult.signatureAge).toBeGreaterThan(0);
@@ -265,13 +289,17 @@ describe('Request Signature System', () => {
         timestamp: oldTimestamp,
       });
 
-      const verifyResult = customSigner.verifyRequest(secret, {
-        method: 'POST',
-        path: '/api/observations',
-        headers: { 'content-type': 'application/json' },
-        body: 'test',
-        timestamp: oldTimestamp,
-      }, signResult.signatureHeader);
+      const verifyResult = customSigner.verifyRequest(
+        secret,
+        {
+          method: 'POST',
+          path: '/api/observations',
+          headers: { 'content-type': 'application/json' },
+          body: 'test',
+          timestamp: oldTimestamp,
+        },
+        signResult.signatureHeader
+      );
 
       expect(verifyResult.valid).toBe(false);
     });
@@ -307,10 +335,7 @@ describe('Request Signature System', () => {
       const timestamp = Math.floor(Date.now() / 1000);
 
       const signedContent = `${timestamp}.${payload}`;
-      const hash = crypto
-        .createHmac('sha256', secret)
-        .update(signedContent)
-        .digest('hex');
+      const hash = crypto.createHmac('sha256', secret).update(signedContent).digest('hex');
       const signature = `t=${timestamp},v1=${hash}`;
 
       const valid = WebhookSignature.verifyStripe(payload, signature, secret);
@@ -325,10 +350,7 @@ describe('Request Signature System', () => {
       const timestamp = Math.floor(Date.now() / 1000);
 
       const signedContent = `${timestamp}.${payload}`;
-      const hash = crypto
-        .createHmac('sha256', secret)
-        .update(signedContent)
-        .digest('hex');
+      const hash = crypto.createHmac('sha256', secret).update(signedContent).digest('hex');
       const signature = `t=${timestamp},v1=${hash}`;
 
       const valid = WebhookSignature.verifyStripe(wrongPayload, signature, secret);
@@ -384,7 +406,7 @@ describe('Request Signature System', () => {
         'POST',
         '/api/verify',
         { 'content-type': 'application/json' },
-        '{"test":true}',
+        '{"test":true}'
       );
 
       expect(headers['X-API-Key']).toBe(apiKey);
@@ -402,7 +424,7 @@ describe('Request Signature System', () => {
         'POST',
         '/api/observations',
         { 'content-type': 'application/json' },
-        '{"claim":"test"}',
+        '{"claim":"test"}'
       );
 
       expect(request.method).toBe('POST');
@@ -421,15 +443,10 @@ describe('Request Signature System', () => {
     it('should preserve original headers', () => {
       const originalHeaders = {
         'content-type': 'application/json',
-        'authorization': 'Bearer token',
+        authorization: 'Bearer token',
       };
 
-      const headers = signer.signHeaders(
-        'POST',
-        '/api/test',
-        originalHeaders,
-        '{}',
-      );
+      const headers = signer.signHeaders('POST', '/api/test', originalHeaders, '{}');
 
       expect(headers['content-type']).toBe('application/json');
       expect(headers['authorization']).toBe('Bearer token');
@@ -471,16 +488,20 @@ describe('Request Signature System', () => {
         body: requestBody,
       });
 
-      const verifyResult = signer.verifyRequest(secret, {
-        method: 'POST',
-        path: '/api/complete-loop',
-        headers: {
-          'content-type': 'application/json',
-          'x-api-version': 'v1',
+      const verifyResult = signer.verifyRequest(
+        secret,
+        {
+          method: 'POST',
+          path: '/api/complete-loop',
+          headers: {
+            'content-type': 'application/json',
+            'x-api-version': 'v1',
+          },
+          body: requestBody,
+          timestamp: signResult.timestamp,
         },
-        body: requestBody,
-        timestamp: signResult.timestamp,
-      }, signResult.signatureHeader);
+        signResult.signatureHeader
+      );
 
       expect(verifyResult.valid).toBe(true);
     });
@@ -497,17 +518,21 @@ describe('Request Signature System', () => {
         'POST',
         '/api/notify',
         { 'content-type': 'application/json' },
-        payload,
+        payload
       );
 
       const timestamp = parseInt(outboundHeaders['X-Timestamp'], 10);
-      const verifyResult = inboundVerifier.verifyRequest(apiSecret, {
-        method: 'POST',
-        path: '/api/notify',
-        headers: { 'content-type': 'application/json' },
-        body: payload,
-        timestamp,
-      }, outboundHeaders['X-Signature']);
+      const verifyResult = inboundVerifier.verifyRequest(
+        apiSecret,
+        {
+          method: 'POST',
+          path: '/api/notify',
+          headers: { 'content-type': 'application/json' },
+          body: payload,
+          timestamp,
+        },
+        outboundHeaders['X-Signature']
+      );
 
       expect(verifyResult.valid).toBe(true);
     });
@@ -543,13 +568,17 @@ describe('Request Signature System', () => {
       });
 
       // Old signature should fail due to clock skew
-      const verifyResult = strictSigner.verifyRequest(secret, {
-        method: 'POST',
-        path: '/api/sensitive',
-        headers: {},
-        body: payload,
-        timestamp: oldTimestamp,
-      }, signResult.signatureHeader);
+      const verifyResult = strictSigner.verifyRequest(
+        secret,
+        {
+          method: 'POST',
+          path: '/api/sensitive',
+          headers: {},
+          body: payload,
+          timestamp: oldTimestamp,
+        },
+        signResult.signatureHeader
+      );
 
       expect(verifyResult.valid).toBe(false);
     });
@@ -585,13 +614,17 @@ describe('Request Signature System', () => {
       // Timing attack: different length signatures should take same time
       const invalidSig = 'a'.repeat(100);
 
-      const verify = signer.verifyRequest(secret, {
-        method: 'POST',
-        path: '/api/test',
-        headers: {},
-        body: 'payload',
-        timestamp: validSig.timestamp,
-      }, `hmac-sha256=${invalidSig},timestamp=${validSig.timestamp}`);
+      const verify = signer.verifyRequest(
+        secret,
+        {
+          method: 'POST',
+          path: '/api/test',
+          headers: {},
+          body: 'payload',
+          timestamp: validSig.timestamp,
+        },
+        `hmac-sha256=${invalidSig},timestamp=${validSig.timestamp}`
+      );
 
       expect(verify.valid).toBe(false);
     });
@@ -600,12 +633,16 @@ describe('Request Signature System', () => {
       const secret = 'secret';
       const signer = new RequestSignature();
 
-      const verifyResult = signer.verifyRequest(secret, {
-        method: 'GET',
-        path: '/api/test',
-        headers: {},
-        body: '',
-      }, 'invalid-header-format');
+      const verifyResult = signer.verifyRequest(
+        secret,
+        {
+          method: 'GET',
+          path: '/api/test',
+          headers: {},
+          body: '',
+        },
+        'invalid-header-format'
+      );
 
       expect(verifyResult.valid).toBe(false);
       expect(verifyResult.error).toBeDefined();
@@ -615,12 +652,16 @@ describe('Request Signature System', () => {
       const secret = 'secret';
       const signer = new RequestSignature();
 
-      const verifyResult = signer.verifyRequest(secret, {
-        method: 'GET',
-        path: '/api/test',
-        headers: {},
-        body: '',
-      }, 'hmac-sha256=signature123');
+      const verifyResult = signer.verifyRequest(
+        secret,
+        {
+          method: 'GET',
+          path: '/api/test',
+          headers: {},
+          body: '',
+        },
+        'hmac-sha256=signature123'
+      );
 
       expect(verifyResult.valid).toBe(false);
     });
@@ -638,13 +679,17 @@ describe('Request Signature System', () => {
         body: largePayload,
       });
 
-      const verifyResult = signer.verifyRequest(secret, {
-        method: 'POST',
-        path: '/api/large',
-        headers: {},
-        body: largePayload,
-        timestamp: signResult.timestamp,
-      }, signResult.signatureHeader);
+      const verifyResult = signer.verifyRequest(
+        secret,
+        {
+          method: 'POST',
+          path: '/api/large',
+          headers: {},
+          body: largePayload,
+          timestamp: signResult.timestamp,
+        },
+        signResult.signatureHeader
+      );
 
       expect(verifyResult.valid).toBe(true);
     });
@@ -662,13 +707,17 @@ describe('Request Signature System', () => {
         body: specialBody,
       });
 
-      const verifyResult = signer.verifyRequest(secret, {
-        method: 'POST',
-        path: '/api/special?param=value&other=123',
-        headers: {},
-        body: specialBody,
-        timestamp: signResult.timestamp,
-      }, signResult.signatureHeader);
+      const verifyResult = signer.verifyRequest(
+        secret,
+        {
+          method: 'POST',
+          path: '/api/special?param=value&other=123',
+          headers: {},
+          body: specialBody,
+          timestamp: signResult.timestamp,
+        },
+        signResult.signatureHeader
+      );
 
       expect(verifyResult.valid).toBe(true);
     });
@@ -686,13 +735,17 @@ describe('Request Signature System', () => {
         timestamp: futureTimestamp,
       });
 
-      const verifyResult = signer.verifyRequest(secret, {
-        method: 'GET',
-        path: '/api/test',
-        headers: {},
-        body: '',
-        timestamp: futureTimestamp,
-      }, signResult.signatureHeader);
+      const verifyResult = signer.verifyRequest(
+        secret,
+        {
+          method: 'GET',
+          path: '/api/test',
+          headers: {},
+          body: '',
+          timestamp: futureTimestamp,
+        },
+        signResult.signatureHeader
+      );
 
       expect(verifyResult.valid).toBe(false);
     });

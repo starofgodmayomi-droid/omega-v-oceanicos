@@ -108,10 +108,7 @@ export class EventStore {
   /**
    * Get all events for aggregate
    */
-  async getEvents(
-    aggregateId: AggregateId,
-    fromVersion: EventVersion = 0,
-  ): Promise<DomainEvent[]> {
+  async getEvents(aggregateId: AggregateId, fromVersion: EventVersion = 0): Promise<DomainEvent[]> {
     const events = this.events.get(aggregateId) || [];
     return events.filter((e) => e.version > fromVersion);
   }
@@ -121,7 +118,7 @@ export class EventStore {
    */
   async getEventStream(
     aggregateId: AggregateId,
-    fromVersion: EventVersion = 0,
+    fromVersion: EventVersion = 0
   ): Promise<DomainEvent[]> {
     return this.getEvents(aggregateId, fromVersion);
   }
@@ -133,7 +130,7 @@ export class EventStore {
     aggregateId: AggregateId,
     aggregateType: string,
     state: Record<string, any>,
-    version: EventVersion,
+    version: EventVersion
   ): Promise<void> {
     const snapshot: EventSnapshot = {
       aggregateId,
@@ -156,21 +153,14 @@ export class EventStore {
    * Query events by type
    */
   async queryByType(eventType: EventType, limit: number = 100): Promise<DomainEvent[]> {
-    return this.eventIndex
-      .filter((e) => e.type === eventType)
-      .slice(-limit);
+    return this.eventIndex.filter((e) => e.type === eventType).slice(-limit);
   }
 
   /**
    * Query events by aggregate type
    */
-  async queryByAggregateType(
-    aggregateType: string,
-    limit: number = 100,
-  ): Promise<DomainEvent[]> {
-    return this.eventIndex
-      .filter((e) => e.aggregateType === aggregateType)
-      .slice(-limit);
+  async queryByAggregateType(aggregateType: string, limit: number = 100): Promise<DomainEvent[]> {
+    return this.eventIndex.filter((e) => e.aggregateType === aggregateType).slice(-limit);
   }
 
   /**
@@ -183,10 +173,7 @@ export class EventStore {
   /**
    * Subscribe to events
    */
-  subscribe(
-    eventType: string | string[],
-    handler: (event: DomainEvent) => void,
-  ): () => void {
+  subscribe(eventType: string | string[], handler: (event: DomainEvent) => void): () => void {
     const types = Array.isArray(eventType) ? eventType : [eventType];
 
     for (const type of types) {
@@ -238,7 +225,7 @@ export class EventStore {
       snapshotCount: this.snapshots.size,
       subscriptionCount: Array.from(this.subscriptions.values()).reduce(
         (sum, handlers) => sum + handlers.size,
-        0,
+        0
       ),
     };
   }
@@ -298,7 +285,7 @@ export abstract class EventAggregate {
   protected recordEvent(
     type: EventType,
     data: Record<string, any>,
-    metadata?: DomainEvent['metadata'],
+    metadata?: DomainEvent['metadata']
   ): void {
     const event: DomainEvent = {
       id: `evt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -353,7 +340,7 @@ export class CommandBus {
   async execute(
     commandType: string,
     command: any,
-    aggregate: EventAggregate,
+    aggregate: EventAggregate
   ): Promise<DomainEvent[]> {
     const handler = this.handlers.get(commandType);
     if (!handler) {
@@ -378,7 +365,7 @@ export class EventProjection {
    */
   registerHandler(
     eventType: EventType,
-    handler: (event: DomainEvent, projection: Projection) => void,
+    handler: (event: DomainEvent, projection: Projection) => void
   ): void {
     this.eventHandlers.set(eventType, handler);
   }
@@ -583,7 +570,7 @@ export class EventReplayer {
    */
   async replayAggregate<T extends EventAggregate>(
     AggregateClass: new (id: AggregateId) => T,
-    aggregateId: AggregateId,
+    aggregateId: AggregateId
   ): Promise<T> {
     const aggregate = new AggregateClass(aggregateId);
     const events = await this.eventStore.getEvents(aggregateId);
@@ -595,7 +582,7 @@ export class EventReplayer {
    * Replay all events
    */
   async replayAll(
-    aggregateFactory: (aggregateId: AggregateId) => EventAggregate,
+    aggregateFactory: (aggregateId: AggregateId) => EventAggregate
   ): Promise<Map<AggregateId, EventAggregate>> {
     const aggregates = new Map<AggregateId, EventAggregate>();
     const events = await this.eventStore.getAllEvents();
@@ -618,7 +605,7 @@ export class EventReplayer {
   async replayUntil(
     aggregateId: AggregateId,
     timestamp: number,
-    aggregate: EventAggregate,
+    aggregate: EventAggregate
   ): Promise<void> {
     const events = await this.eventStore.getEvents(aggregateId);
     const filteredEvents = events.filter((e) => e.timestamp <= timestamp);

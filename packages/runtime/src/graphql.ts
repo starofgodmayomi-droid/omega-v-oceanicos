@@ -74,7 +74,9 @@ export class GraphQLSchema {
  * Parse simple GraphQL query string
  * Supports basic field selection: { field1 field2(arg: value) }
  */
-function parseQuery(query: string): { fields: Array<{ name: string; args: Record<string, any> }> } | null {
+function parseQuery(
+  query: string
+): { fields: Array<{ name: string; args: Record<string, any> }> } | null {
   const match = query.match(/{\s*(.+?)\s*}/);
 
   if (!match) {
@@ -134,7 +136,7 @@ function parseArgValue(value: string): unknown {
     const items = value
       .slice(1, -1)
       .split(',')
-      .map(item => parseArgValue(item.trim()));
+      .map((item) => parseArgValue(item.trim()));
     return items;
   }
 

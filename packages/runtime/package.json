@@ -13,7 +13,8 @@
     "@omega-v/observer": "workspace:*",
     "@omega-v/verification": "workspace:*",
     "@omega-v/attestation": "workspace:*",
-    "@omega-v/recorder": "workspace:*"
+    "@omega-v/recorder": "workspace:*",
+    "redis": "^4.7.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

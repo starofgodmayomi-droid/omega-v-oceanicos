@@ -171,9 +171,45 @@ describe('Advanced Analytics & Insights System', () => {
 
     it('should detect upward trend', () => {
       const metrics: AggregatedMetric[] = [
-        { name: 'requests', period: '1h', timestamp: Date.now(), count: 10, sum: 100, avg: 100, min: 100, max: 100, p50: 100, p95: 100, p99: 100 },
-        { name: 'requests', period: '1h', timestamp: Date.now(), count: 10, sum: 110, avg: 110, min: 110, max: 110, p50: 110, p95: 110, p99: 110 },
-        { name: 'requests', period: '1h', timestamp: Date.now(), count: 10, sum: 120, avg: 120, min: 120, max: 120, p50: 120, p95: 120, p99: 120 },
+        {
+          name: 'requests',
+          period: '1h',
+          timestamp: Date.now(),
+          count: 10,
+          sum: 100,
+          avg: 100,
+          min: 100,
+          max: 100,
+          p50: 100,
+          p95: 100,
+          p99: 100,
+        },
+        {
+          name: 'requests',
+          period: '1h',
+          timestamp: Date.now(),
+          count: 10,
+          sum: 110,
+          avg: 110,
+          min: 110,
+          max: 110,
+          p50: 110,
+          p95: 110,
+          p99: 110,
+        },
+        {
+          name: 'requests',
+          period: '1h',
+          timestamp: Date.now(),
+          count: 10,
+          sum: 120,
+          avg: 120,
+          min: 120,
+          max: 120,
+          p50: 120,
+          p95: 120,
+          p99: 120,
+        },
       ];
 
       const trend = detector.detectTrend(metrics, '1h');
@@ -184,9 +220,45 @@ describe('Advanced Analytics & Insights System', () => {
 
     it('should detect downward trend', () => {
       const metrics: AggregatedMetric[] = [
-        { name: 'errors', period: '1h', timestamp: Date.now(), count: 10, sum: 100, avg: 100, min: 100, max: 100, p50: 100, p95: 100, p99: 100 },
-        { name: 'errors', period: '1h', timestamp: Date.now(), count: 10, sum: 80, avg: 80, min: 80, max: 80, p50: 80, p95: 80, p99: 80 },
-        { name: 'errors', period: '1h', timestamp: Date.now(), count: 10, sum: 60, avg: 60, min: 60, max: 60, p50: 60, p95: 60, p99: 60 },
+        {
+          name: 'errors',
+          period: '1h',
+          timestamp: Date.now(),
+          count: 10,
+          sum: 100,
+          avg: 100,
+          min: 100,
+          max: 100,
+          p50: 100,
+          p95: 100,
+          p99: 100,
+        },
+        {
+          name: 'errors',
+          period: '1h',
+          timestamp: Date.now(),
+          count: 10,
+          sum: 80,
+          avg: 80,
+          min: 80,
+          max: 80,
+          p50: 80,
+          p95: 80,
+          p99: 80,
+        },
+        {
+          name: 'errors',
+          period: '1h',
+          timestamp: Date.now(),
+          count: 10,
+          sum: 60,
+          avg: 60,
+          min: 60,
+          max: 60,
+          p50: 60,
+          p95: 60,
+          p99: 60,
+        },
       ];
 
       const trend = detector.detectTrend(metrics, '1h');
@@ -197,9 +269,45 @@ describe('Advanced Analytics & Insights System', () => {
 
     it('should detect stable trend', () => {
       const metrics: AggregatedMetric[] = [
-        { name: 'stable', period: '1h', timestamp: Date.now(), count: 10, sum: 100, avg: 100, min: 100, max: 100, p50: 100, p95: 100, p99: 100 },
-        { name: 'stable', period: '1h', timestamp: Date.now(), count: 10, sum: 100, avg: 100, min: 100, max: 100, p50: 100, p95: 100, p99: 100 },
-        { name: 'stable', period: '1h', timestamp: Date.now(), count: 10, sum: 101, avg: 101, min: 101, max: 101, p50: 101, p95: 101, p99: 101 },
+        {
+          name: 'stable',
+          period: '1h',
+          timestamp: Date.now(),
+          count: 10,
+          sum: 100,
+          avg: 100,
+          min: 100,
+          max: 100,
+          p50: 100,
+          p95: 100,
+          p99: 100,
+        },
+        {
+          name: 'stable',
+          period: '1h',
+          timestamp: Date.now(),
+          count: 10,
+          sum: 100,
+          avg: 100,
+          min: 100,
+          max: 100,
+          p50: 100,
+          p95: 100,
+          p99: 100,
+        },
+        {
+          name: 'stable',
+          period: '1h',
+          timestamp: Date.now(),
+          count: 10,
+          sum: 101,
+          avg: 101,
+          min: 101,
+          max: 101,
+          p50: 101,
+          p95: 101,
+          p99: 101,
+        },
       ];
 
       const trend = detector.detectTrend(metrics, '1h');
@@ -209,9 +317,45 @@ describe('Advanced Analytics & Insights System', () => {
 
     it('should retrieve trends', () => {
       const metrics: AggregatedMetric[] = [
-        { name: 'cpu', period: '1h', timestamp: Date.now(), count: 10, sum: 100, avg: 100, min: 100, max: 100, p50: 100, p95: 100, p99: 100 },
-        { name: 'cpu', period: '1h', timestamp: Date.now(), count: 10, sum: 120, avg: 120, min: 120, max: 120, p50: 120, p95: 120, p99: 120 },
-        { name: 'cpu', period: '1h', timestamp: Date.now(), count: 10, sum: 140, avg: 140, min: 140, max: 140, p50: 140, p95: 140, p99: 140 },
+        {
+          name: 'cpu',
+          period: '1h',
+          timestamp: Date.now(),
+          count: 10,
+          sum: 100,
+          avg: 100,
+          min: 100,
+          max: 100,
+          p50: 100,
+          p95: 100,
+          p99: 100,
+        },
+        {
+          name: 'cpu',
+          period: '1h',
+          timestamp: Date.now(),
+          count: 10,
+          sum: 120,
+          avg: 120,
+          min: 120,
+          max: 120,
+          p50: 120,
+          p95: 120,
+          p99: 120,
+        },
+        {
+          name: 'cpu',
+          period: '1h',
+          timestamp: Date.now(),
+          count: 10,
+          sum: 140,
+          avg: 140,
+          min: 140,
+          max: 140,
+          p50: 140,
+          p95: 140,
+          p99: 140,
+        },
       ];
 
       detector.detectTrend(metrics, '1h');
@@ -308,7 +452,14 @@ describe('Advanced Analytics & Insights System', () => {
         },
       };
 
-      const report = generator.generateReport('Performance Report', Date.now() - 3600000, Date.now(), metrics, [], []);
+      const report = generator.generateReport(
+        'Performance Report',
+        Date.now() - 3600000,
+        Date.now(),
+        metrics,
+        [],
+        []
+      );
 
       expect(report.id).toBeDefined();
       expect(report.title).toBe('Performance Report');
@@ -321,7 +472,14 @@ describe('Advanced Analytics & Insights System', () => {
       const trends = [];
       const insights = [];
 
-      const report = generator.generateReport('Test Report', Date.now() - 3600000, Date.now(), metrics, trends, insights);
+      const report = generator.generateReport(
+        'Test Report',
+        Date.now() - 3600000,
+        Date.now(),
+        metrics,
+        trends,
+        insights
+      );
 
       expect(report.metrics).toEqual(metrics);
       expect(report.trends).toEqual(trends);
@@ -366,7 +524,12 @@ describe('Advanced Analytics & Insights System', () => {
     });
 
     it('should record and analyze', () => {
-      const event = hub.recordAndAnalyze('page_view', { metricName: 'page_load_time', metricValue: 150 }, 'user1', 'session1');
+      const event = hub.recordAndAnalyze(
+        'page_view',
+        { metricName: 'page_load_time', metricValue: 150 },
+        'user1',
+        'session1'
+      );
 
       expect(event.eventType).toBe('page_view');
       expect(event.userId).toBe('user1');
@@ -400,7 +563,9 @@ describe('Advanced Analytics & Insights System', () => {
     it('should generate full report', () => {
       hub.recordAndAnalyze('event1', { metricName: 'metric1', metricValue: 100 });
 
-      const report = hub.generateFullReport('Analytics Report', Date.now() - 3600000, Date.now(), ['metric1']);
+      const report = hub.generateFullReport('Analytics Report', Date.now() - 3600000, Date.now(), [
+        'metric1',
+      ]);
 
       expect(report.id).toBeDefined();
       expect(report.title).toBe('Analytics Report');
@@ -420,7 +585,9 @@ describe('Advanced Analytics & Insights System', () => {
         api_latency: hub.getCollector().getMetrics('api_latency'),
       });
 
-      const report = hub.generateFullReport('Full Analytics', Date.now() - 3600000, Date.now(), ['api_latency']);
+      const report = hub.generateFullReport('Full Analytics', Date.now() - 3600000, Date.now(), [
+        'api_latency',
+      ]);
 
       expect(aggregated).toBeDefined();
       expect(report.generatedAt).toBeDefined();

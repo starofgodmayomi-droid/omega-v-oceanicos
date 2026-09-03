@@ -52,7 +52,10 @@ export class SQLiteEventLog {
     return this.recordEvent('ATTESTATION', attestation);
   }
 
-  private recordEvent(type: 'OBSERVATION' | 'VERIFICATION' | 'ATTESTATION', data: any): EventLogEntry {
+  private recordEvent(
+    type: 'OBSERVATION' | 'VERIFICATION' | 'ATTESTATION',
+    data: any
+  ): EventLogEntry {
     const recordedAt = new Date().toISOString();
     const lastEvent = this.getLastEvent();
     const previousHash = lastEvent?.hash || '';
@@ -65,7 +68,14 @@ export class SQLiteEventLog {
       VALUES (?, ?, ?, ?, ?, ?)
     `);
 
-    stmt.run(type, JSON.stringify(eventData), hash, previousHash, recordedAt, new Date().toISOString());
+    stmt.run(
+      type,
+      JSON.stringify(eventData),
+      hash,
+      previousHash,
+      recordedAt,
+      new Date().toISOString()
+    );
 
     return {
       id: this.db.prepare('SELECT last_insert_rowid() as id').get() as any,
@@ -95,7 +105,11 @@ export class SQLiteEventLog {
     };
   }
 
-  queryByType(type: string, limit = 50, offset = 0): { events: EventLogEntry[]; totalCount: number; pagination: any } {
+  queryByType(
+    type: string,
+    limit = 50,
+    offset = 0
+  ): { events: EventLogEntry[]; totalCount: number; pagination: any } {
     const countStmt = this.db.prepare('SELECT COUNT(*) as count FROM events WHERE type = ?');
     const totalCount = (countStmt.get(type) as any).count;
 
@@ -104,7 +118,7 @@ export class SQLiteEventLog {
     `);
     const rows = stmt.all(type, limit, offset) as any[];
 
-    const events = rows.map(row => ({
+    const events = rows.map((row) => ({
       id: row.id,
       type: row.type,
       data: JSON.parse(row.data),
@@ -140,7 +154,11 @@ export class SQLiteEventLog {
     };
   }
 
-  getTraceForObservation(observationId: string): { observation: EventLogEntry | null; verifications: EventLogEntry[]; attestations: EventLogEntry[] } {
+  getTraceForObservation(observationId: string): {
+    observation: EventLogEntry | null;
+    verifications: EventLogEntry[];
+    attestations: EventLogEntry[];
+  } {
     const obsStmt = this.db.prepare(`
       SELECT * FROM events WHERE type = 'OBSERVATION' AND json_extract(data, '$.id') = ?
     `);
@@ -162,7 +180,7 @@ export class SQLiteEventLog {
     const verStmt = this.db.prepare(`
       SELECT * FROM events WHERE type = 'VERIFICATION' AND json_extract(data, '$.observationId') = ?
     `);
-    const verifications = (verStmt.all(observationId) as any[]).map(row => ({
+    const verifications = (verStmt.all(observationId) as any[]).map((row) => ({
       id: row.id,
       type: row.type,
       data: JSON.parse(row.data),
@@ -174,7 +192,7 @@ export class SQLiteEventLog {
     const attStmt = this.db.prepare(`
       SELECT * FROM events WHERE type = 'ATTESTATION' AND json_extract(data, '$.observationId') = ?
     `);
-    const attestations = (attStmt.all(observationId) as any[]).map(row => ({
+    const attestations = (attStmt.all(observationId) as any[]).map((row) => ({
       id: row.id,
       type: row.type,
       data: JSON.parse(row.data),
@@ -206,7 +224,7 @@ export class SQLiteEventLog {
     const stmt = this.db.prepare('SELECT * FROM events ORDER BY id');
     const rows = stmt.all() as any[];
 
-    return rows.map(row => ({
+    return rows.map((row) => ({
       id: row.id,
       type: row.type,
       data: JSON.parse(row.data),

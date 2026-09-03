@@ -345,7 +345,7 @@ export function eventStoreStatsEndpoint(eventStore: EventStore) {
  */
 export function initializeEventSourcingMiddleware(
   options: EventSourcingMiddlewareOptions,
-  enableEndpoints?: boolean,
+  enableEndpoints?: boolean
 ) {
   const endpoints = [];
 

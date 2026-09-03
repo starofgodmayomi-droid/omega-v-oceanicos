@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import type { JSX } from 'react';
 import './App.css';
 
 /**
@@ -268,7 +269,9 @@ export function App(): JSX.Element {
                   )}
                   <button
                     className="btn-trace"
-                    onClick={() => loadTrace((event.data as any).observationId || (event.data as any).id)}
+                    onClick={() =>
+                      loadTrace((event.data as any).observationId || (event.data as any).id)
+                    }
                   >
                     View Trace
                   </button>
