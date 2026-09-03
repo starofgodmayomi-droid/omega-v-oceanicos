@@ -6,6 +6,7 @@ import PrometheusMetricsCollector from './prometheus-metrics';
 import { TraceManager } from './tracing';
 import { EventBroadcaster } from './websocket';
 import { HealthChecker, HealthChecks } from './health';
+import { QueryCache } from './cache';
 import {
   Observation,
   VerificationRule,
@@ -30,6 +31,7 @@ export class VerificationRuntime {
   private traceManager: TraceManager;
   private eventBroadcaster: EventBroadcaster;
   private healthChecker: HealthChecker;
+  private queryCache: QueryCache;
 
   private executionStats = {
     totalExecutions: 0,
@@ -56,6 +58,12 @@ export class VerificationRuntime {
     this.traceManager = new TraceManager();
     this.eventBroadcaster = new EventBroadcaster();
     this.healthChecker = new HealthChecker();
+    this.queryCache = new QueryCache({
+      maxSize: 10000,
+      queryTTL: 300000,
+      traceTTL: 600000,
+      integrityTTL: 60000,
+    });
 
     this.initializeHealthChecks();
   }
@@ -211,6 +219,12 @@ export class VerificationRuntime {
     this.eventLog.recordVerification(verification);
     this.eventLog.recordAttestation(attestation);
 
+    // Invalidate relevant query caches
+    this.queryCache.invalidateObservations();
+    this.queryCache.invalidateVerifications();
+    this.queryCache.invalidateAttestations();
+    this.queryCache.invalidateIntegrity();
+
     // Update statistics
     this.executionStats.totalExecutions++;
     this.executionStats.observations++;
@@ -260,24 +274,51 @@ export class VerificationRuntime {
   }
 
   /**
-   * Query observations from event log
+   * Query observations from event log with caching
    */
   public queryObservations(options?: { limit?: number; offset?: number }): QueryResult {
-    return this.eventLog.queryByType('OBSERVATION', options);
+    const cacheKey = `obs-limit-${options?.limit || 50}-offset-${options?.offset || 0}`;
+    const cached = this.queryCache.getObservations(cacheKey);
+
+    if (cached) {
+      return cached;
+    }
+
+    const result = this.eventLog.queryByType('OBSERVATION', options);
+    this.queryCache.cacheObservations(cacheKey, result);
+    return result;
   }
 
   /**
-   * Query verification results from event log
+   * Query verification results from event log with caching
    */
   public queryVerifications(options?: { limit?: number; offset?: number }): QueryResult {
-    return this.eventLog.queryByType('VERIFICATION', options);
+    const cacheKey = `ver-limit-${options?.limit || 50}-offset-${options?.offset || 0}`;
+    const cached = this.queryCache.getVerifications(cacheKey);
+
+    if (cached) {
+      return cached;
+    }
+
+    const result = this.eventLog.queryByType('VERIFICATION', options);
+    this.queryCache.cacheVerifications(cacheKey, result);
+    return result;
   }
 
   /**
-   * Query attestations from event log
+   * Query attestations from event log with caching
    */
   public queryAttestations(options?: { limit?: number; offset?: number }): QueryResult {
-    return this.eventLog.queryByType('ATTESTATION', options);
+    const cacheKey = `att-limit-${options?.limit || 50}-offset-${options?.offset || 0}`;
+    const cached = this.queryCache.getAttestations(cacheKey);
+
+    if (cached) {
+      return cached;
+    }
+
+    const result = this.eventLog.queryByType('ATTESTATION', options);
+    this.queryCache.cacheAttestations(cacheKey, result);
+    return result;
   }
 
   /**
@@ -288,17 +329,35 @@ export class VerificationRuntime {
   }
 
   /**
-   * Get complete trace for an observation (observation → verifications → attestations)
+   * Get complete trace for an observation with caching
    */
   public getTrace(observationId: string) {
-    return this.eventLog.getTraceForObservation(observationId);
+    const cacheKey = `trace-${observationId}`;
+    const cached = this.queryCache.getTrace(cacheKey);
+
+    if (cached) {
+      return cached;
+    }
+
+    const trace = this.eventLog.getTraceForObservation(observationId);
+    this.queryCache.cacheTrace(cacheKey, trace);
+    return trace;
   }
 
   /**
-   * Verify the integrity of the event log
+   * Verify the integrity of the event log with caching
    */
   public verifyIntegrity() {
-    return this.eventLog.verifyIntegrity();
+    const cacheKey = 'integrity-check';
+    const cached = this.queryCache.getIntegrity(cacheKey);
+
+    if (cached) {
+      return cached;
+    }
+
+    const integrity = this.eventLog.verifyIntegrity();
+    this.queryCache.cacheIntegrity(cacheKey, integrity);
+    return integrity;
   }
 
   /**
@@ -382,6 +441,13 @@ export class VerificationRuntime {
   }
 
   /**
+   * Get the query cache instance (for performance optimization)
+   */
+  public getQueryCache(): QueryCache {
+    return this.queryCache;
+  }
+
+  /**
    * Run all health checks and get system status
    */
   public async checkHealth() {
@@ -427,5 +493,7 @@ export {
   HealthChecks,
 } from './health';
 export type { HealthStatus, ComponentHealth, SystemHealth, HealthCheckFunction } from './health';
+export { Cache, QueryCache } from './cache';
+export type { CacheEntry, CacheStats, CacheConfig, QueryCacheConfig } from './cache';
 
 export default VerificationRuntime;
