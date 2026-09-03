@@ -502,6 +502,13 @@ export {
 } from './distributed-cache';
 export type { RedisConfig, CacheEntry as DistributedCacheEntry, CacheStats as DistributedCacheStats } from './distributed-cache';
 export {
+  JobQueue,
+  DistributedJobQueue,
+  PriorityJobQueue,
+  BatchJobProcessor,
+} from './job-queue';
+export type { Job, JobStatus, JobPriority, JobHandler, QueueStats, QueueConfig } from './job-queue';
+export {
   SlidingWindowRateLimiter,
   TokenBucket,
   TieredRateLimiter,
