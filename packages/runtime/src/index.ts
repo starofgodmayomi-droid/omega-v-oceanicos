@@ -686,5 +686,26 @@ export type {
   AccessDecision,
   AccessAuditLog,
 } from './authorization';
+export {
+  StepExecutor,
+  TaskManager,
+  WorkflowEngine,
+  WorkflowAuditor,
+  WorkflowHub,
+} from './workflows';
+export type {
+  StepType,
+  StepStatus,
+  WorkflowStatus,
+  RetryPolicy,
+  WorkflowInput,
+  WorkflowContext,
+  StepDefinition,
+  WorkflowDefinition,
+  WorkflowExecution,
+  StepExecution,
+  WorkflowAuditLog,
+  WorkflowDefinitionRegistry,
+} from './workflows';
 
 export default VerificationRuntime;
