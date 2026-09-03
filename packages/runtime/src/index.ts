@@ -707,5 +707,24 @@ export type {
   WorkflowAuditLog,
   WorkflowDefinitionRegistry,
 } from './workflows';
+export {
+  IndexBuilder,
+  QueryParser,
+  SearchEngine,
+  SearchAuditor,
+  SearchHub,
+} from './search';
+export type {
+  IndexType,
+  SearchOperator,
+  SortOrder,
+  Document,
+  SearchIndex,
+  SearchQuery,
+  ParsedQuery,
+  SearchResult,
+  SearchResults,
+  SearchAuditLog,
+} from './search';
 
 export default VerificationRuntime;
