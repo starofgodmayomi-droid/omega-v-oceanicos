@@ -61,13 +61,15 @@ packages/
 └── runtime/            # + RUNTIME — bounded agent execution loop
 ```
 
-| Package                | Expansion                                      |
-| ---------------------- | ---------------------------------------------- |
-| `@omega-v/attestation` | `+ ATTEST` — signatures others can check       |
-| `@omega-v/dissensus`   | `+ DISSENT` — disagreement preserved           |
-| `@omega-v/lexicon`     | `+ LEGIBILITY` — verdicts in Naijá and English |
-| `@omega-v/sdk`         | `+ SDK` — typed access                         |
-| `@omega-v/cli`         | `+ CLI` — operator surface                     |
+| Package                 | Expansion                                       |
+| ----------------------- | ----------------------------------------------- |
+| `@omega-v/attestation`  | `+ ATTEST` — signatures others can check        |
+| `@omega-v/dissensus`    | `+ DISSENT` — disagreement preserved            |
+| `@omega-v/lexicon`      | `+ LEGIBILITY` — verdicts in Naijá and English  |
+| `@omega-v/sdk`          | `+ SDK` — typed access                          |
+| `@omega-v/cli`          | `+ CLI` — operator surface                      |
+| `@omega-v/coordination` | `+ COORDINATION` — bounded workers and builders |
+| `@omega-v/runtime`      | `+ RUNTIME` — bounded agent loop and memory     |
 
 Apps (`apps/api`, `apps/web`) are interface expansions (`+ API`, `+ Web`).
 

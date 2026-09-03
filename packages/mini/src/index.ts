@@ -115,6 +115,7 @@ export type {
   OperatingSystemSnapshot,
   OperatingSystemState,
   OperatingSystemTask,
+  OperatingSystemTaskKind,
 } from './os.js';
 
 export default MiniKernel;

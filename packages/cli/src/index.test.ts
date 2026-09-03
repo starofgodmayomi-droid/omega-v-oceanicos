@@ -47,6 +47,7 @@ describe('omega status CLI', () => {
 
     expect(exitCode).toBe(0);
     expect(output.join('')).toContain('OS            state=ready tasks=0 events=2');
+    expect(output.join('')).toContain('EVENT         type=boot sequence=2');
     expect(output.join('')).toContain('SCHEMA os.snapshot.v1');
     expect(output.join('')).toContain('LIMITS maxTasks=32 maxEvents=128');
     expect(output.join('')).toContain(

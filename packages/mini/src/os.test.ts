@@ -32,6 +32,58 @@ describe('OperatingSystemKernel', () => {
     expect(os.snapshot().tasks).toHaveLength(0);
   });
 
+  it('rejects invalid task boundaries at runtime', () => {
+    const os = new OperatingSystemKernel();
+    os.boot();
+
+    expect(() => os.admit('execute' as never, {}, 'operator')).toThrow(
+      'unsupported operating system task kind'
+    );
+    expect(os.snapshot().events.at(-1)).toMatchObject({
+      type: 'reject',
+      state: 'ready',
+      reason: 'unsupported operating system task kind: execute',
+    });
+    expect(() => os.admit('observe', {}, '   ')).toThrow('task requester must be');
+    expect(os.snapshot().events.at(-1)?.type).toBe('reject');
+    expect(() => os.admit('observe', {}, 'x'.repeat(129))).toThrow('task requester must be');
+    expect(() =>
+      os.admit(
+        'observe',
+        Object.fromEntries(Array.from({ length: 65 }, (_, index) => [`key-${index}`, index])),
+        'operator'
+      )
+    ).toThrow('task input must contain at most 64 keys');
+  });
+
+  it('deeply isolates task input snapshots', () => {
+    const os = new OperatingSystemKernel();
+    os.boot();
+    const input = { nested: { values: ['before'] } };
+    const task = os.admit('observe', input, 'operator');
+
+    input.nested.values[0] = 'after';
+    (task.input.nested as { values: string[] }).values[0] = 'returned-mutation';
+
+    expect(os.snapshot().tasks[0]?.input).toEqual({ nested: { values: ['before'] } });
+  });
+
+  it('rejects cyclic and overly deep task inputs', () => {
+    const os = new OperatingSystemKernel();
+    os.boot();
+    const cyclic: Record<string, unknown> = {};
+    cyclic.self = cyclic;
+    expect(() => os.admit('observe', cyclic, 'operator')).toThrow('must not be cyclic');
+
+    let deep: Record<string, unknown> = {};
+    const root = deep;
+    for (let index = 0; index < 9; index += 1) {
+      deep.next = {};
+      deep = deep.next as Record<string, unknown>;
+    }
+    expect(() => os.admit('observe', root, 'operator')).toThrow('exceeds depth 8');
+  });
+
   it('fails closed when the task bound is reached', () => {
     const os = new OperatingSystemKernel({ maxTasks: 1 });
     os.boot();
@@ -39,6 +91,12 @@ describe('OperatingSystemKernel', () => {
 
     expect(() => os.admit('report', {}, 'operator')).toThrow('task limit reached');
     expect(os.snapshot().state).toBe('degraded');
+    expect(
+      os
+        .snapshot()
+        .events.slice(-2)
+        .map((event) => event.type)
+    ).toEqual(['degrade', 'reject']);
   });
 
   it('retains only the configured finite event trace', () => {

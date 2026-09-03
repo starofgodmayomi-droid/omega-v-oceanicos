@@ -1,6 +1,70 @@
 # Ω∞v Oceanicos Working State
 
-**Updated:** 2026-08-31
+**Updated:** 2026-09-02
+
+## Web package-local DOM verification checkpoint — 2026-09-02
+
+The Web package now has an explicit Jest/jsdom configuration for the control-room dashboard tests. `pnpm --filter @omega-v/web test` runs the three DOM suites directly and passes 84 tests. The package-local project intentionally scopes itself to `src/__tests__/dom/**/*.test.tsx`; root-relative Web contract and specification tests remain owned by the monorepo root verification project. This makes the visual control-room surface independently reproducible without overstating package-local coverage.
+
+No runtime authority changed. Formatting, package-local DOM tests, and the broader root verification remain separate evidence layers; no push, PR publication, merge, or deployment has occurred.
+
+## Core package verification alignment checkpoint — 2026-09-02
+
+The remaining core packages now invoke the repository’s authoritative root Jest project from their package test scripts: attestation, dissensus, lexicon, observer, remember, and verification. This removes package-local ESM/parser drift while keeping each command scoped to its own test directory. The packages expose a reproducible worker boundary without claiming independent root-relative documentation coverage.
+
+Observed package evidence: attestation 30 tests, dissensus 11 tests, lexicon 23 tests, observer 20 tests, remember 24 tests, and verification 28 tests passed. Formatting, lint, type-check, and diff checks passed. No push, PR publication, merge, or deployment has occurred.
+
+## SDK/CLI package-local verification checkpoint — 2026-09-02
+
+The SDK and CLI packages now have explicit local Jest configurations matching the repository’s TypeScript/ESM resolution. `pnpm --filter @omega-v/sdk test` passes 39 tests. `pnpm --filter @omega-v/cli test` passes 131 package-scoped tests; its repository-root `cli-entrypoint.test.ts` is intentionally excluded from the package-local project because it resolves files relative to the monorepo root and remains covered by the root verification project. This scope is explicit rather than silently claiming package-local coverage of the root-dependent test.
+
+Formatting, lint, type-check, and SDK/CLI builds pass. The change remains local; no GitHub push, PR publication, merge, or deployment has occurred.
+
+## MINI package-local verification checkpoint — 2026-09-02
+
+The MINI package now has an explicit local Jest configuration matching the monorepo’s TypeScript/ESM mapping. `pnpm --filter @omega-v/mini test` runs both the OS kernel and MINI contract suites directly, passing 19 tests, instead of falling through to an unconfigured Babel parser. This improves reproducibility without changing runtime behavior or authority boundaries.
+
+The initial package-wide command exposed a real verification gap; after adding the configuration, the package-local gate passed. No push, PR publication, merge, or deployment has occurred.
+
+## CLI Builder kernel event-observability checkpoint — 2026-09-01
+
+The `omega os` command now renders the latest bounded event type, sequence number, and optional rejection reason in addition to state, task/event counts, schema, limits, and capabilities. This aligns the CLI with the read-only Web Builder kernel panel and preserves the human-gated control boundary.
+
+Local evidence includes 82 CLI tests passing, formatting, lint, type-check, and the CLI build passing. The change is local and uncommitted at this checkpoint; no GitHub push, PR publication, merge, or deployment has occurred.
+
+## Web Builder kernel event-observability checkpoint — 2026-09-01
+
+The read-only Web Builder kernel panel now displays the latest bounded OS event type and any recorded rejection reason alongside sequence, task/event counts, schema, finite limits, and capability boundaries. This makes rejected admissions legible at the operator surface without adding worker controls, mutation authority, shell access, credential handling, remote actions, or deployment behavior.
+
+Local evidence in `/tmp/omega-os-next-slice` includes 81 Web DOM/contract tests passing, formatting, lint, type-check, and the Web production build passing. The change remains uncommitted at this checkpoint; no push, PR publication, merge, or deployment has occurred.
+
+## Rejected-admission evidence checkpoint — 2026-09-01
+
+The bounded OS kernel now records failed task admissions as `reject` events with bounded reasons. Unsupported kinds, invalid requester identities, oversized inputs, cyclic or overly deep input graphs, and task-limit exhaustion remain visible in the read-only event trace without creating admitted work. The SDK event union now includes `reject`, keeping the typed consumer contract aligned with the kernel.
+
+Focused MINI/SDK verification passed 49 tests, affected package builds and type-check passed, and the kernel tests now cover inspectable rejection evidence. The change is local and does not authorize shell execution, credential handling, remote mutation, deployment, or autonomous action. No push, PR publication, merge, or deployment has occurred.
+
+## OS task-kind contract alignment checkpoint — 2026-09-01
+
+The typed SDK contract is now aligned with the MINI kernel’s authoritative `OperatingSystemTaskKind` union: `observe`, `verify`, `remember`, and `report`. The stale SDK-only `recompile` member was removed, and `@omega-v/mini` now exports `OperatingSystemTaskKind` for downstream type reuse. This is a compile-time contract correction; the public `/os` snapshot and runtime capabilities remain unchanged.
+
+Focused SDK/MINI tests passed with 49 tests, the prerequisite package builds and MINI/SDK builds passed, TypeScript no-emit checking passed, and `git diff --check` passed. The earlier full local gate remains recorded at 59 suites / 1,148 tests with 3 integration suites / 28 tests and the complete workspace build passing. No push, PR publication, merge, or deployment has occurred.
+
+## Bounded OS task-admission hardening checkpoint — 2026-09-01
+
+The local Universal Builder OS kernel now validates task admission at runtime, not only through TypeScript types. Unsupported task kinds, blank or overlong requester identities, and task inputs with more than 64 top-level keys fail closed before task creation. Admitted task inputs are deeply cloned and reject cyclic graphs, graphs deeper than 8 levels, or graphs larger than 256 object/array nodes, preventing mutable nested references from escaping into retained kernel state. The public OS snapshot contract remains unchanged, and no API, SDK, CLI, Web, shell, credential, remote-mutation, deployment, or authorization capability was added by this slice.
+
+In isolated worktree `/tmp/omega-os-next-slice` from `origin/main` `a43a7a7`, the focused kernel suite passed with 8 tests and the repository fast verification gate passed with 56 suites and 1,118 tests. Formatting, lint, type-check, the MINI build, coordination/runtime builds, and `git diff --check` passed. The initial MINI-only build exposed the expected prerequisite-package ordering issue in the isolated worktree; rebuilding `types`, `observer`, `verification`, and `remember` first resolved it, after which the declared fast gate completed successfully. This checkpoint is local evidence only.
+
+The earlier admission-boundary implementation is committed locally at `5197bd2`; the deep input-isolation extension is currently an uncommitted local delta. No push, PR publication, merge, or deployment has occurred. Remote mutation remains human-gated; rollback is removal of the isolated worktree or reset of the unpublished commits.
+
+A subsequent full local verification on the same clean implementation passed 59 test suites and 1,146 tests, 3 integration suites and 28 integration tests, coverage collection, the complete workspace build including API and Web production builds, and `git diff --check`. This is stronger local evidence for the two-commit unpublished branch, not hosted-CI, deployment, distributed-consistency, or external-execution evidence.
+
+## Bounded coordination/runtime package inventory checkpoint — 2026-09-01
+
+From merged `origin/main` at `a43a7a7`, the package expansion inventory was reconciled with the already-merged `@omega-v/coordination` and `@omega-v/runtime` packages. `packages/README.md` now documents both earned expansions alongside the existing package tree: coordination provides bounded workers/builders, while runtime provides a bounded agent loop and memory fabric. This is documentation alignment only; it does not grant shell, credential, remote-mutation, deployment, or autonomous authorization capabilities.
+
+Local evidence in isolated worktree `/tmp/omega-os-next-slice` includes 150 focused tests passing across docs, brand, coordination, and runtime contracts; Prettier check passed; ESLint passed with zero warnings; TypeScript no-emit checking passed; both coordination and runtime package builds passed; and `git diff --check` passed. Dependencies were installed from the existing frozen lockfile. The working tree contains uncommitted documentation deltas in `packages/README.md`, `docs/WORKING_STATE.md`, and `docs/OS_KERNEL.md`; no commit, push, PR publication, merge, or deployment has occurred for this checkpoint. Remote mutation remains human-gated and rollback is removal of the isolated worktree delta.
 
 ## Current local Universal Builder OS continuation — 2026-08-31
 

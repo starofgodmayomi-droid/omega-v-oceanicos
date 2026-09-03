@@ -1,14 +1,15 @@
 export type OperatingSystemState =
   'offline' | 'booting' | 'ready' | 'degraded' | 'stopping' | 'stopped';
+export type OperatingSystemTaskKind = 'observe' | 'verify' | 'remember' | 'report';
 export type OperatingSystemTask = {
   id: string;
-  kind: 'observe' | 'verify' | 'remember' | 'report' | 'recompile';
+  kind: OperatingSystemTaskKind;
   input: Record<string, unknown>;
   requestedBy: string;
 };
 export type OperatingSystemEvent = {
   sequence: number;
-  type: 'boot' | 'admit' | 'complete' | 'degrade' | 'stop';
+  type: 'boot' | 'admit' | 'complete' | 'degrade' | 'reject' | 'stop';
   state: OperatingSystemState;
   taskId?: string;
   reason?: string;

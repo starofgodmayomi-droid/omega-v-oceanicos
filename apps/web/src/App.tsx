@@ -1086,7 +1086,11 @@ export function App(): React.JSX.Element {
               {osSnapshot?.events.length ? (
                 <small>
                   last sequence={osSnapshot.events[osSnapshot.events.length - 1]?.sequence ?? 0} ·
+                  event={osSnapshot.events[osSnapshot.events.length - 1]?.type ?? 'UNKNOWN'} ·
                   deterministic local trace
+                  {osSnapshot.events[osSnapshot.events.length - 1]?.reason
+                    ? ` · reason=${osSnapshot.events[osSnapshot.events.length - 1]?.reason}`
+                    : ''}
                 </small>
               ) : (
                 <small>No bounded kernel events are available.</small>

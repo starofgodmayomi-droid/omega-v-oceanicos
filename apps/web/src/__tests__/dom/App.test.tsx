@@ -65,7 +65,9 @@ describe('dashboard', () => {
     expect(screen.getByText('tasks=0 · events=2')).toBeInTheDocument();
     expect(screen.getByText(/schema=os\.snapshot\.v1/)).toBeInTheDocument();
     expect(screen.getByText(/limits=tasks≤32 · events≤128/)).toBeInTheDocument();
-    expect(screen.getByText(/last sequence=2 · deterministic local trace/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/last sequence=2 · event=boot · deterministic local trace/)
+    ).toBeInTheDocument();
     expect(
       screen.getByText(
         /shell=DISABLED · remote=DISABLED · credentials=DISABLED · human gate=REQUIRED/

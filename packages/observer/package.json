@@ -8,7 +8,7 @@
   "scripts": {
     "build": "tsc",
     "watch": "tsc --watch",
-    "test": "jest",
+    "test": "cd ../.. && jest --runInBand packages/observer/src/__tests__",
     "test:watch": "jest --watch",
     "clean": "node ../../scripts/rimraf.cjs dist \"*.tsbuildinfo\""
   },
