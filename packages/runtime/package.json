@@ -1,22 +1,21 @@
 {
   "name": "@omega-v/runtime",
   "version": "0.1.0",
-  "description": "Unified runtime orchestrator for Ω∞v Oceanicos verification loop",
+  "description": "Bounded low-overhead agent loops and memory fabric for Ω∞v Oceanicos",
+  "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "test": "jest"
+    "test": "cd ../.. && jest --runInBand packages/runtime/src/index.test.ts",
+    "clean": "node ../../scripts/rimraf.cjs dist \"*.tsbuildinfo\""
   },
-  "dependencies": {
-    "@omega-v/types": "workspace:*",
-    "@omega-v/observer": "workspace:*",
-    "@omega-v/verification": "workspace:*",
-    "@omega-v/attestation": "workspace:*",
-    "@omega-v/recorder": "workspace:*"
-  },
-  "devDependencies": {
-    "@types/node": "^20.0.0",
-    "typescript": "^5.0.0"
-  }
+  "keywords": [
+    "runtime",
+    "agent-loop",
+    "memory",
+    "low-overhead"
+  ],
+  "author": "Ω∞v Community",
+  "license": "Apache-2.0"
 }
