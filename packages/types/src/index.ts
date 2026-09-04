@@ -303,6 +303,45 @@ export interface MiniCycleResult {
 }
 
 /**
+ * The evidence supplied for one bounded Observe → Verify → Remember cycle.
+ *
+ * This deliberately describes only data the MINI components can consume. It
+ * is not an attestation, provider declaration, deployment record, or claim
+ * about truth outside the cycle's recorded evidence.
+ */
+export interface TotalityMetadata {
+  claim: string;
+  category?: string;
+  source: Observation['source'];
+  observedBy: string;
+  metadata: Record<string, unknown>;
+  confidence: number;
+  confidenceReason: string;
+  parentId?: string;
+  lineage?: string[];
+}
+
+/**
+ * Evidence produced by one bounded totality cycle.
+ *
+ * `completion` exists only when configured rules have passed and produced
+ * evaluated evidence. Its absence is intentional: remembering an unverified
+ * observation records the failure, but does not turn it into a completion or
+ * an authorization decision.
+ */
+export interface TotalityManifest {
+  observation: Observation;
+  verification: VerificationResult;
+  memory: MemoryRecord;
+  entries: EventLogEntry[];
+  completion?: {
+    observationId: string;
+    verificationId: string;
+    memoryId: string;
+  };
+}
+
+/**
  * A query result from the event store
  * Allows temporal and categorical searches through the verification history
  */
