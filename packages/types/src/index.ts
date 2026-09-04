@@ -501,6 +501,12 @@ export interface LocalJobLedgerStatus {
   recentWindow: number;
 }
 
+/** Optional bounded filters accepted by the local-job listing endpoint. */
+export interface LocalJobsQuery {
+  limit?: number;
+  state?: LocalJobState;
+}
+
 export type LocalJobCreateInput = {
   kind: 'synthetic-observe';
   idempotencyKey: string;
@@ -512,6 +518,31 @@ export type LocalJobMutationResult = {
   job: LocalJob;
   event: LocalJobEvent;
 };
+
+/**
+ * Public, bounded response returned when a caller reads the local job ledger.
+ *
+ * This is intentionally a contract rather than an assertion of distributed
+ * queue durability. Consumers can describe the observed local boundary
+ * without recreating the job and security provenance shapes themselves.
+ */
+export interface LocalJobsResponse {
+  data: {
+    jobs: LocalJob[];
+    status: LocalJobLedgerStatus;
+  };
+  timestamp: string;
+}
+
+/** Public, bounded response for one local job and its recorded events. */
+export interface LocalJobResponse {
+  data: {
+    job: LocalJob;
+    events: LocalJobEvent[];
+    status: LocalJobLedgerStatus;
+  };
+  timestamp: string;
+}
 
 export type SceneState =
   | 'darkness'
@@ -570,6 +601,9 @@ export interface SceneSimulation {
   };
   createdAt: string;
 }
+
+/** Canonical response envelope for a bounded scene simulation. */
+export type SceneSimulationResponse = SuccessResponse<SceneSimulation>;
 
 /**
  * Bounded runtime coordination evidence. These declarations describe the

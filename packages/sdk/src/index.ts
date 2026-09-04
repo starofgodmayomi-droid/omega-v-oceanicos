@@ -1,3 +1,26 @@
+import type {
+  LocalJobResponse,
+  LocalJobsQuery,
+  LocalJobsResponse,
+  SceneSimulationInput,
+  SceneSimulationResponse,
+} from '@omega-v/types';
+
+export type {
+  LocalJob,
+  LocalJobEvent,
+  LocalJobEventType,
+  LocalJobLedgerStatus,
+  LocalJobProvenance,
+  LocalJobResponse,
+  LocalJobsQuery,
+  LocalJobsResponse,
+  LocalJobState,
+  SceneSimulation,
+  SceneSimulationInput,
+  SceneSimulationResponse,
+} from '@omega-v/types';
+
 export type OperatingSystemState =
   'offline' | 'booting' | 'ready' | 'degraded' | 'stopping' | 'stopped';
 export type OperatingSystemTaskKind = 'observe' | 'verify' | 'remember' | 'report';
@@ -293,44 +316,6 @@ export type AuditQuery = {
 
 export type AuditEvent = RuntimeEvent;
 
-export type SceneSimulation = {
-  id: string;
-  seed: string;
-  equation: string;
-  states: string[];
-  terminalState: string;
-  trace: Array<{
-    sequence: number;
-    state: string;
-    status: 'observed' | 'verified';
-    evidence: string;
-  }>;
-  branches: Array<{
-    id: string;
-    index: number;
-    perspective: string;
-    states: string[];
-    terminalState: string;
-    trace: Array<{
-      sequence: number;
-      state: string;
-      status: 'observed' | 'verified';
-      evidence: string;
-    }>;
-    divergenceEvidence: string;
-  }>;
-  branchCount: number;
-  continuation: 'bounded-sample-of-infinite-potential';
-  provenance: {
-    source: 'local-simulation';
-    ruleVersion: 'scene-equation.v2';
-    deterministic: true;
-    verified: false;
-    note: string;
-  };
-  createdAt: string;
-};
-
 export type AuditEventsResponse = {
   data: AuditEvent[];
   meta: {
@@ -351,58 +336,6 @@ export type AuditEventsResponse = {
   timestamp: string;
 };
 
-export type LocalJobState = 'queued' | 'running' | 'succeeded' | 'failed' | 'unknown';
-export type LocalJobEventType = 'created' | 'started' | 'completed' | 'failed' | 'unknown';
-export type LocalJobProvenance = {
-  source: 'local' | 'api' | 'unknown';
-  actor: string | null;
-  requestId: string | null;
-  correlationId: string | null;
-  observedAt: string;
-  schemaVersion: '1';
-};
-export type LocalJob = {
-  id: string;
-  kind: 'synthetic-observe';
-  state: LocalJobState;
-  idempotencyKey: string;
-  payloadDigest: string;
-  sourceUri: string;
-  actor: string;
-  workerId: string | null;
-  attempt: number;
-  createdAt: string;
-  updatedAt: string;
-  finishedAt: string | null;
-  resultSummary: string | null;
-  errorClass: string | null;
-  provenance: LocalJobProvenance;
-};
-export type LocalJobEvent = {
-  id: string;
-  jobId: string;
-  type: LocalJobEventType;
-  sequence: number;
-  at: string;
-  provenance: LocalJobProvenance;
-  details: { state: LocalJobState; message: string };
-};
-export type LocalJobLedgerStatus = {
-  enabled: boolean;
-  durable: boolean;
-  source: 'memory' | 'file';
-  encryption: 'disabled' | 'aes-256-gcm';
-  counts: Record<LocalJobState, number>;
-  recentWindow: number;
-};
-export type LocalJobsResponse = {
-  data: { jobs: LocalJob[]; status: LocalJobLedgerStatus };
-  timestamp: string;
-};
-export type LocalJobResponse = {
-  data: { job: LocalJob; events: LocalJobEvent[]; status: LocalJobLedgerStatus };
-  timestamp: string;
-};
 export type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
 
 /**
@@ -474,14 +407,8 @@ export class OmegaClient {
     return this.get<Health>('/health');
   }
 
-  async simulateScene(
-    input: { seed?: string; steps?: number; branches?: number } = {}
-  ): Promise<{ data: SceneSimulation; timestamp: string }> {
-    return this.post<{ data: SceneSimulation; timestamp: string }>(
-      '/scene/simulate',
-      input,
-      this.readToken
-    );
+  async simulateScene(input: SceneSimulationInput = {}): Promise<SceneSimulationResponse> {
+    return this.post<SceneSimulationResponse>('/scene/simulate', input, this.readToken);
   }
 
   async getOperatingSystem(): Promise<{ data: OperatingSystemSnapshot; timestamp: string }> {
@@ -544,7 +471,7 @@ export class OmegaClient {
     return this.get<{ data: AttestationPolicy; timestamp: string }>('/attest/policy');
   }
 
-  async getJobs(query: { limit?: number; state?: LocalJobState } = {}): Promise<LocalJobsResponse> {
+  async getJobs(query: LocalJobsQuery = {}): Promise<LocalJobsResponse> {
     const params = new URLSearchParams();
     if (query.limit !== undefined) params.set('limit', String(query.limit));
     if (query.state !== undefined) params.set('state', query.state);
