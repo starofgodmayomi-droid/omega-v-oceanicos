@@ -1,0 +1,73 @@
+version: '3.9'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: omega-v-oceanicos-api
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - API_PORT=3000
+      - PERSISTENCE_ENABLED=true
+      - DB_PATH=/app/data/events.db
+    volumes:
+      - ./data:/app/data
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    networks:
+      - omega-network
+    restart: unless-stopped
+    labels:
+      - "com.omega-v.service=api"
+      - "com.omega-v.version=0.1.0"
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: omega-v-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    networks:
+      - omega-network
+    restart: unless-stopped
+    labels:
+      - "com.omega-v.service=monitoring"
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: omega-v-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus
+    networks:
+      - omega-network
+    restart: unless-stopped
+    labels:
+      - "com.omega-v.service=monitoring"
+
+volumes:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  omega-network:
+    driver: bridge
