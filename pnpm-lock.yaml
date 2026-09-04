@@ -264,7 +264,11 @@ importers:
 
   packages/runtime: {}
 
-  packages/sdk: {}
+  packages/sdk:
+    dependencies:
+      '@omega-v/types':
+        specifier: workspace:*
+        version: link:../types
 
   packages/types:
     devDependencies:

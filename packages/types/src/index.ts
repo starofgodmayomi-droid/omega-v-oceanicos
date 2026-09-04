@@ -513,6 +513,31 @@ export type LocalJobMutationResult = {
   event: LocalJobEvent;
 };
 
+/**
+ * Public, bounded response returned when a caller reads the local job ledger.
+ *
+ * This is intentionally a contract rather than an assertion of distributed
+ * queue durability. Consumers can describe the observed local boundary
+ * without recreating the job and security provenance shapes themselves.
+ */
+export interface LocalJobsResponse {
+  data: {
+    jobs: LocalJob[];
+    status: LocalJobLedgerStatus;
+  };
+  timestamp: string;
+}
+
+/** Public, bounded response for one local job and its recorded events. */
+export interface LocalJobResponse {
+  data: {
+    job: LocalJob;
+    events: LocalJobEvent[];
+    status: LocalJobLedgerStatus;
+  };
+  timestamp: string;
+}
+
 export type SceneState =
   | 'darkness'
   | 'possibility'
