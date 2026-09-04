@@ -501,6 +501,12 @@ export interface LocalJobLedgerStatus {
   recentWindow: number;
 }
 
+/** Optional bounded filters accepted by the local-job listing endpoint. */
+export interface LocalJobsQuery {
+  limit?: number;
+  state?: LocalJobState;
+}
+
 export type LocalJobCreateInput = {
   kind: 'synthetic-observe';
   idempotencyKey: string;
@@ -595,6 +601,9 @@ export interface SceneSimulation {
   };
   createdAt: string;
 }
+
+/** Canonical response envelope for a bounded scene simulation. */
+export type SceneSimulationResponse = SuccessResponse<SceneSimulation>;
 
 /**
  * Bounded runtime coordination evidence. These declarations describe the

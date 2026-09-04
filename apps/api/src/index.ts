@@ -17,7 +17,10 @@ import {
   ErrorResponse,
   LocalJobCreateInput,
   LocalJobEvent,
+  LocalJobResponse,
   LocalJobState,
+  LocalJobsResponse,
+  SceneSimulationResponse,
   SuccessResponse,
   VerificationRule,
 } from '@omega-v/types';
@@ -811,7 +814,7 @@ app.get('/jobs', (req: Request, res: Response) => {
     res.json({
       data: { jobs, status: localJobLedger.status() },
       timestamp: new Date().toISOString(),
-    });
+    } satisfies LocalJobsResponse);
   } catch (error) {
     jobError(error, res);
   }
@@ -834,7 +837,7 @@ app.get('/jobs/:jobId', (req: Request, res: Response) => {
       status: localJobLedger.status(),
     },
     timestamp: new Date().toISOString(),
-  });
+  } satisfies LocalJobResponse);
 });
 app.post('/jobs/:jobId/claim', (req: Request, res: Response) => {
   if (!jobLedgerAccess(req, res)) return;
@@ -902,7 +905,7 @@ app.post('/scene/simulate', (req: Request, res: Response) => {
     res.json({
       data: simulation,
       timestamp: new Date().toISOString(),
-    });
+    } satisfies SceneSimulationResponse);
   } catch (error) {
     res.status(400).json({
       code: 'SCENE_INVALID',

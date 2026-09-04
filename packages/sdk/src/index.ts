@@ -1,8 +1,9 @@
 import type {
   LocalJobResponse,
+  LocalJobsQuery,
   LocalJobsResponse,
-  LocalJobState,
-  SceneSimulation,
+  SceneSimulationInput,
+  SceneSimulationResponse,
 } from '@omega-v/types';
 
 export type {
@@ -12,9 +13,12 @@ export type {
   LocalJobLedgerStatus,
   LocalJobProvenance,
   LocalJobResponse,
+  LocalJobsQuery,
   LocalJobsResponse,
   LocalJobState,
   SceneSimulation,
+  SceneSimulationInput,
+  SceneSimulationResponse,
 } from '@omega-v/types';
 
 export type OperatingSystemState =
@@ -403,14 +407,8 @@ export class OmegaClient {
     return this.get<Health>('/health');
   }
 
-  async simulateScene(
-    input: { seed?: string; steps?: number; branches?: number } = {}
-  ): Promise<{ data: SceneSimulation; timestamp: string }> {
-    return this.post<{ data: SceneSimulation; timestamp: string }>(
-      '/scene/simulate',
-      input,
-      this.readToken
-    );
+  async simulateScene(input: SceneSimulationInput = {}): Promise<SceneSimulationResponse> {
+    return this.post<SceneSimulationResponse>('/scene/simulate', input, this.readToken);
   }
 
   async getOperatingSystem(): Promise<{ data: OperatingSystemSnapshot; timestamp: string }> {
@@ -473,7 +471,7 @@ export class OmegaClient {
     return this.get<{ data: AttestationPolicy; timestamp: string }>('/attest/policy');
   }
 
-  async getJobs(query: { limit?: number; state?: LocalJobState } = {}): Promise<LocalJobsResponse> {
+  async getJobs(query: LocalJobsQuery = {}): Promise<LocalJobsResponse> {
     const params = new URLSearchParams();
     if (query.limit !== undefined) params.set('limit', String(query.limit));
     if (query.state !== undefined) params.set('state', query.state);
