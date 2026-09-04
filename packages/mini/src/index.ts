@@ -117,5 +117,8 @@ export type {
   OperatingSystemTask,
   OperatingSystemTaskKind,
 } from './os.js';
+export { OmegaTotalAdapter } from './omega-total.js';
+export type { OmegaTotalAdapterOptions } from './omega-total.js';
+export type { TotalityManifest, TotalityMetadata } from '@omega-v/types';
 
 export default MiniKernel;
