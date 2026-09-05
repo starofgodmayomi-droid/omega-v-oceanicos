@@ -47,6 +47,16 @@ describe('@omega-v/benchmark — VerificationBenchmarkEngine', () => {
       expect(result.iterations).toBe(30);
       expect(result.throughputOpsSec).toBeGreaterThan(0);
     });
+
+    it('should benchmark grand continuum full-stack flow with quantiles', async () => {
+      const result = await engine.benchmarkGrandFlow(client, 5);
+
+      expect(result.testName).toBe('Grand Continuum Full-Stack E2E');
+      expect(result.iterations).toBe(5);
+      expect(result.totalDurationMs).toBeGreaterThan(0);
+      expect(result.throughputOpsSec).toBeGreaterThan(0);
+      expect(result.latency.p50Ms).toBeGreaterThanOrEqual(0);
+    });
   });
 
   describe('Benchmark Suite Orchestration', () => {

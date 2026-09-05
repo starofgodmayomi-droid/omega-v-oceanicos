@@ -75,6 +75,47 @@ export class VerificationBenchmarkEngine {
   }
 
   /**
+   * Benchmark Grand Continuum Full-Stack Execution Flow
+   */
+  public async benchmarkGrandFlow(
+    client: OceanicosClient,
+    iterations: number = 20
+  ): Promise<BenchmarkResult> {
+    const latencies: number[] = [];
+    const startMemory = process.memoryUsage().heapUsed;
+    const startTime = performance.now();
+
+    for (let i = 0; i < iterations; i++) {
+      const iterStart = performance.now();
+      await client.runGrandFlow({
+        intentClaim: `Grand Continuum Benchmark #${i}`,
+        actorDid: 'did:omega:agent:bench-runner',
+        ruleDefinition: 'responseTime < 100 && statusCode == 200',
+        metadata: { responseTime: 20, statusCode: 200 },
+        swapAmount: 100,
+      });
+      latencies.push(performance.now() - iterStart);
+    }
+
+    const totalDurationMs = performance.now() - startTime;
+    const endMemory = process.memoryUsage().heapUsed;
+    const memoryUsageMb = Number(((endMemory - startMemory) / (1024 * 1024)).toFixed(2));
+
+    const result: BenchmarkResult = {
+      testName: 'Grand Continuum Full-Stack E2E',
+      iterations,
+      totalDurationMs: Number(totalDurationMs.toFixed(2)),
+      throughputOpsSec: Number(((iterations / totalDurationMs) * 1000).toFixed(2)),
+      latency: this.calculateQuantiles(latencies),
+      memoryUsageMb: Math.max(0, memoryUsageMb),
+      timestamp: new Date().toISOString(),
+    };
+
+    this.latestResults.set('grand-flow', result);
+    return result;
+  }
+
+  /**
    * Benchmark rule evaluation engine throughput
    */
   public benchmarkRuleEvaluation(
