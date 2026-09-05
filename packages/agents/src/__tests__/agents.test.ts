@@ -1,4 +1,4 @@
-import { FormlessSwarm, ObserverAgent, VerifierAgent, SecurityAgent } from '../index';
+import { FormlessSwarm, ObserverAgent, VerifierAgent, SecurityAgent, GrandContinuumAgent } from '../index';
 import { OceanicosClient } from '@omega-v/sdk';
 
 describe('Formless Swarm & Agents', () => {
@@ -34,6 +34,18 @@ describe('Formless Swarm & Agents', () => {
     expect(result.verified).toBe(true);
   });
 
+  it('GrandContinuumAgent should orchestrate full grand flow cycle', async () => {
+    const agent = new GrandContinuumAgent(sdk);
+    const result = await agent.executeTask({
+      claim: 'Apex Continuum Convergence',
+      actorDid: 'did:omega:agent:grand-apex',
+    });
+    expect(result.agentRole).toBe('GrandContinuum');
+    expect(result.verified).toBe(true);
+    expect(result.action).toBe('GRAND_CONTINUUM_CYCLE');
+    expect(result.evidence.success).toBe(true);
+  });
+
   it('FormlessSwarm should execute full multi-agent cycle', async () => {
     const swarm = new FormlessSwarm(sdk);
     const cycleRes = await swarm.executeSwarmCycle({
@@ -49,3 +61,4 @@ describe('Formless Swarm & Agents', () => {
     expect(cycleRes.fullLoopResult.attestation.verified).toBe(true);
   });
 });
+

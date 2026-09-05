@@ -105,6 +105,22 @@ export class OceanicosCLI {
         };
       }
 
+      case 'hyper-flow': {
+        const claim = args[1] || 'CLI Hyper Continuum 22-Stage Execution Flow';
+        const result = await this.client.runHyperFlow({
+          intentClaim: claim,
+          actorDid: 'did:omega:agent:cli-hyper-operator',
+          ruleDefinition: 'responseTime < 100 && statusCode == 200',
+          metadata: { responseTime: 20, statusCode: 200 },
+          swapAmount: 150,
+        });
+        return {
+          success: result.success,
+          message: `[Ω∞v CLI] Hyper Continuum Flow: ${result.success ? 'PASSED' : 'FAILED'} (Stages: ${result.stageCount}, State: ${result.kernelStage.stateId}, Mood: ${result.moodStage.state})`,
+          output: result,
+        };
+      }
+
       case 'metrics': {
         const metrics = this.client.getMetrics();
         return {
@@ -653,6 +669,7 @@ Commands:
   omega-v loop [claim]              Execute complete verification loop
   omega-v ecosystem [claim]         Execute unified 8-stage canonical ecosystem OS flow
   omega-v grand-flow [claim]        Execute full grand continuum flow (lowest to max form)
+  omega-v hyper-flow [claim]        Execute 22-stage hyper-continuum max flow end-to-end
   omega-v swarm [claim]             Execute multi-agent Formless Swarm cycle
   omega-v edge [claim]              Capture & flush Merkle edge observation batch
   omega-v analytics                 Compute rule efficacy & pattern analytics

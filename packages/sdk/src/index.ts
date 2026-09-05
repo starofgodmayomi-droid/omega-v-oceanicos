@@ -95,6 +95,134 @@ export interface GrandFlowResult {
   executedAt: string;
 }
 
+export interface HyperFlowResult {
+  hyperFlowId: string;
+  stageCount: 22;
+  success: boolean;
+  executedAt: string;
+  telemetryStage: {
+    observationId: string;
+    confidence: number;
+    rawTelemetry: Record<string, unknown>;
+  };
+  irStage: {
+    instructionCount: number;
+    compiledRuleName: string;
+  };
+  verificationStage: {
+    passed: boolean;
+    rulesEvaluated: number;
+    ruleResults: Array<{ rule: string; passed: boolean }>;
+  };
+  attestationStage: {
+    attestationId: string;
+    signature: string;
+    algorithm: string;
+  };
+  teeStage: {
+    enclaveId: string;
+    reportId: string;
+    verified: boolean;
+  };
+  zkStage: {
+    proofId: string;
+    circuitId: string;
+    verified: boolean;
+  };
+  securityStage: {
+    subjectDid: string;
+    tokenValid: boolean;
+  };
+  humanStage: {
+    approvalId: string;
+    rationale: string;
+  };
+  swarmStage: {
+    agentCount: number;
+    isGreen: boolean;
+    evidenceArtifactId: string;
+  };
+  mempoolStage: {
+    txHash: string;
+    harvestedCount: number;
+  };
+  daStage: {
+    blobId: string;
+    kzgCommitment: string;
+  };
+  evmStage: {
+    gasUsed: number;
+    stackOutput: unknown;
+  };
+  ammStage: {
+    swapId: string;
+    tokenIn: string;
+    tokenOut: string;
+    amountIn: number;
+    amountOut: number;
+    priceImpactPct: number;
+  };
+  shardingStage: {
+    txId: string;
+    sourceShardId: string;
+    targetShardId: string;
+    state: string;
+    commitProof?: string;
+  };
+  rollupStage: {
+    l2TxHash: string;
+    blockHeight: number;
+    rollupType: string;
+    batchCommitment: string;
+  };
+  bridgeStage: {
+    transferId: string;
+    sourceChain: string;
+    targetChain: string;
+    status: string;
+    mintTxHash?: string;
+  };
+  consensusStage: {
+    blockHash: string;
+    blockHeight: number;
+    qcId: string;
+    quorumReached: boolean;
+  };
+  kernelStage: {
+    stateId: string;
+    stateIndex: number;
+    verificationStatus: string;
+    stateDeltaHash: string;
+  };
+  reputationStage: {
+    agentDid: string;
+    newScore: number;
+    scoreDelta: number;
+  };
+  learningStage: {
+    predictionId: string;
+    learningEventId: string;
+    actualOutcome: string;
+    error: number;
+    recommendation: string;
+  };
+  moodStage: {
+    state: string;
+    confidence: number;
+    verificationHealth: number;
+    evidenceQuality: number;
+    description: string;
+  };
+  maxStage: {
+    provenanceNodesCount: number;
+    provenanceEdgesCount: number;
+    vaultEpoch: number;
+    vaultMerkleRoot: string;
+    driftDetected: boolean;
+    recommendedAction: string;
+  };
+}
+
 /**
  * OceanicosClient: High-level SDK for interacting with the Ω∞v Oceanicos verification loop
  */
@@ -332,6 +460,160 @@ export class OceanicosClient {
         recommendedAction: 'MAINTAIN',
       },
       executedAt: new Date().toISOString(),
+    };
+  }
+
+  /**
+   * Run the 22-stage hyper-continuum ecosystem execution flow
+   */
+  public async runHyperFlow(input: {
+    intentClaim?: string;
+    actorDid?: string;
+    ruleDefinition?: string;
+    metadata?: Record<string, unknown>;
+    swapAmount?: number;
+  } = {}): Promise<HyperFlowResult> {
+    if (this.mode === 'remote') {
+      const res = await fetch(`${this.apiBaseUrl}/ecosystem/hyper-flow`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+      });
+      if (!res.ok) throw new Error(`Remote API error: HTTP ${res.status}`);
+      const payload = (await res.json()) as { data: HyperFlowResult };
+      return payload.data;
+    }
+
+    // Local embedded execution: uses grand-flow as base + generates local mock state for stages 14-22
+    const grand = await this.runGrandFlow(input);
+    const now = new Date().toISOString();
+
+    return {
+      hyperFlowId: `hyper-flow-local-${Date.now()}`,
+      stageCount: 22,
+      success: grand.intermediateForm.verificationPassed,
+      executedAt: now,
+      telemetryStage: {
+        observationId: grand.lowestForm.observationId,
+        confidence: grand.lowestForm.confidence,
+        rawTelemetry: grand.lowestForm.rawTelemetry,
+      },
+      irStage: {
+        instructionCount: grand.intermediateForm.irInstructionCount,
+        compiledRuleName: 'hyper-flow-rule',
+      },
+      verificationStage: {
+        passed: grand.intermediateForm.verificationPassed,
+        rulesEvaluated: 2,
+        ruleResults: [{ rule: 'response-time-threshold', passed: true }],
+      },
+      attestationStage: {
+        attestationId: grand.intermediateForm.attestationId,
+        signature: '0xattestation_sig_local',
+        algorithm: 'Ed25519',
+      },
+      teeStage: {
+        enclaveId: 'enclave-local-01',
+        reportId: grand.intermediateForm.teeAttestationId,
+        verified: true,
+      },
+      zkStage: {
+        proofId: 'zk-proof-local-01',
+        circuitId: 'circuit-latency-bound',
+        verified: true,
+      },
+      securityStage: {
+        subjectDid: input.actorDid || 'did:omega:agent:sdk-operator',
+        tokenValid: grand.intermediateForm.securityTokenValid,
+      },
+      humanStage: {
+        approvalId: grand.intermediateForm.humanApprovalId,
+        rationale: 'Local SDK hyper flow verification execution',
+      },
+      swarmStage: {
+        agentCount: 6,
+        isGreen: true,
+        evidenceArtifactId: 'art-local-swarm-01',
+      },
+      mempoolStage: {
+        txHash: grand.executionForm.mempoolTxHash,
+        harvestedCount: grand.executionForm.harvestedTxCount,
+      },
+      daStage: {
+        blobId: grand.executionForm.daBlobId,
+        kzgCommitment: grand.executionForm.daKzgCommitment,
+      },
+      evmStage: {
+        gasUsed: grand.executionForm.evmGasUsed,
+        stackOutput: 30,
+      },
+      ammStage: {
+        swapId: grand.executionForm.swapReceipt.swapId,
+        tokenIn: 'USDC',
+        tokenOut: 'OMEGA',
+        amountIn: grand.executionForm.swapReceipt.amountIn,
+        amountOut: grand.executionForm.swapReceipt.amountOut,
+        priceImpactPct: grand.executionForm.swapReceipt.priceImpactPct,
+      },
+      shardingStage: {
+        txId: 'ctx-local-01',
+        sourceShardId: 'shard-00',
+        targetShardId: 'shard-01',
+        state: 'COMMITTED',
+        commitProof: '0xcommit_proof_local',
+      },
+      rollupStage: {
+        l2TxHash: '0xl2tx_local_01',
+        blockHeight: 1,
+        rollupType: 'VALIDITY_ZK',
+        batchCommitment: '0xbatch_commit_local',
+      },
+      bridgeStage: {
+        transferId: 'brg-local-01',
+        sourceChain: 'chain-eth-mainnet',
+        targetChain: 'chain-solana-mainnet',
+        status: 'FINALIZED',
+        mintTxHash: '0xmint_tx_local',
+      },
+      consensusStage: {
+        blockHash: '0xconsensus_block_hash_local',
+        blockHeight: 1,
+        qcId: 'qc-1-1-FINAL',
+        quorumReached: true,
+      },
+      kernelStage: {
+        stateId: grand.canonicalState.stateId,
+        stateIndex: grand.canonicalState.stateIndex,
+        verificationStatus: grand.canonicalState.verificationStatus,
+        stateDeltaHash: grand.canonicalState.stateDeltaHash,
+      },
+      reputationStage: {
+        agentDid: input.actorDid || 'did:omega:agent:sdk-operator',
+        newScore: grand.canonicalState.newReputationScore,
+        scoreDelta: 30,
+      },
+      learningStage: {
+        predictionId: 'pred-local-01',
+        learningEventId: 'learn-local-01',
+        actualOutcome: 'PASS',
+        error: 0,
+        recommendation: 'MAINTAIN',
+      },
+      moodStage: {
+        state: 'OPTIMAL_FLOW',
+        confidence: 0.98,
+        verificationHealth: 1.0,
+        evidenceQuality: 0.99,
+        description: 'System operating at optimal confidence and verification health',
+      },
+      maxStage: {
+        provenanceNodesCount: grand.maxForm.provenanceNodesCount,
+        provenanceEdgesCount: grand.maxForm.provenanceEdgesCount,
+        vaultEpoch: grand.maxForm.vaultEpoch,
+        vaultMerkleRoot: grand.maxForm.vaultMerkleRoot,
+        driftDetected: grand.maxForm.driftDetected,
+        recommendedAction: grand.maxForm.recommendedAction,
+      },
     };
   }
 

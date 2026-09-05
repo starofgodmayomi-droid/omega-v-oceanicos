@@ -2102,6 +2102,8 @@ export function App(): JSX.Element {
   const [ecosystemResult, setEcosystemResult] = useState<any | null>(null);
   const [grandLoading, setGrandLoading] = useState(false);
   const [grandResult, setGrandResult] = useState<any | null>(null);
+  const [hyperLoading, setHyperLoading] = useState(false);
+  const [hyperResult, setHyperResult] = useState<any | null>(null);
 
   const runEcosystemFlow = async () => {
     setEcosystemLoading(true);
@@ -2152,6 +2154,32 @@ export function App(): JSX.Element {
       setError(err instanceof Error ? err.message : 'Failed to execute Grand Flow');
     } finally {
       setGrandLoading(false);
+    }
+  };
+
+  const runHyperFlow = async () => {
+    setHyperLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`${API_BASE}/ecosystem/hyper-flow`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          intentClaim: claim || 'Hyper continuum 22-stage state transition from lowest telemetry to max recompilation',
+          actorDid: 'did:omega:agent:hyper-operator',
+          ruleDefinition: 'responseTime < 100 && statusCode == 200',
+          metadata: { responseTime: Math.round(15 + Math.random() * 20), statusCode: 200 },
+          swapAmount: 150,
+        }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      setHyperResult(data.data);
+      await fetchState();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to execute Hyper Flow');
+    } finally {
+      setHyperLoading(false);
     }
   };
 
@@ -2249,6 +2277,16 @@ export function App(): JSX.Element {
             >
               {grandLoading ? '🌌 Executing Grand Continuum…' : '🌌 Grand Continuum Flow (Lowest → Max)'}
             </button>
+
+            <button
+              id="run-hyper-flow-btn"
+              className={`btn-run${hyperLoading ? ' running' : ''}`}
+              style={{ background: 'linear-gradient(135deg, #e53e3e, #805ad5, #319795)' }}
+              onClick={runHyperFlow}
+              disabled={loading || swarmLoading || ecosystemLoading || grandLoading || hyperLoading || !apiOnline || !claim.trim()}
+            >
+              {hyperLoading ? '⚡ Executing 22-Stage Hyper Flow…' : '🚀 Hyper Continuum Flow (22-Stage MAX)'}
+            </button>
           </div>
 
           {grandResult && (
@@ -2271,6 +2309,31 @@ export function App(): JSX.Element {
               <div>Swap Out: {grandResult.executionForm?.swapReceipt?.amountOut?.toFixed(2)} OMEGA · Rep: {grandResult.canonicalState?.newReputationScore}</div>
               <div style={{ color: 'var(--text-muted)', fontSize: '0.65rem', marginTop: 3 }}>
                 Vault Epoch {grandResult.maxForm?.vaultEpoch} · Nodes: {grandResult.maxForm?.provenanceNodesCount} · Edges: {grandResult.maxForm?.provenanceEdgesCount} · Drift: {grandResult.maxForm?.driftDetected ? 'DETECTED' : 'CLEAN'}
+              </div>
+            </div>
+          )}
+
+          {hyperResult && (
+            <div
+              style={{
+                fontSize: '0.72rem',
+                color: 'var(--text-primary)',
+                padding: '12px 14px',
+                background: 'rgba(128,90,213,0.12)',
+                border: '1px solid rgba(128,90,213,0.35)',
+                borderRadius: 8,
+                marginTop: 6,
+                fontFamily: 'JetBrains Mono, monospace',
+              }}
+            >
+              <div style={{ fontWeight: 700, color: '#b794f4', marginBottom: 4 }}>
+                ⚡ Hyper Flow (22 Stages): {hyperResult.kernelStage?.stateId}
+              </div>
+              <div>ZK Proof: {hyperResult.zkStage?.proofId?.slice(0, 16)}… · BFT QC: {hyperResult.consensusStage?.qcId}</div>
+              <div>Bridge: {hyperResult.bridgeStage?.transferId?.slice(0, 14)}… ({hyperResult.bridgeStage?.status}) · Rollup: Block #{hyperResult.rollupStage?.blockHeight}</div>
+              <div>Sharding: {hyperResult.shardingStage?.txId?.slice(0, 14)}… ({hyperResult.shardingStage?.state}) · Mood: <span style={{ color: '#68d391', fontWeight: 600 }}>{hyperResult.moodStage?.state}</span></div>
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.65rem', marginTop: 3 }}>
+                Vault Epoch {hyperResult.maxStage?.vaultEpoch} · Swarm Green: {hyperResult.swarmStage?.isGreen ? 'YES' : 'NO'} · Learning: {hyperResult.learningStage?.recommendation}
               </div>
             </div>
           )}

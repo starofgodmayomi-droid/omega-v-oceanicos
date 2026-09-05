@@ -8,6 +8,7 @@ import { RuleCompiler } from '@omega-v/compiler';
 import { OceanicosClient } from '@omega-v/sdk';
 import { FormlessSwarm } from '@omega-v/agents';
 import { MoodEvaluator } from '@omega-v/mood';
+import { LearningEngine } from '@omega-v/learning';
 import { FrictionTracker } from '@omega-v/friction';
 import { ProvenanceGraph } from '@omega-v/graph';
 import { SecurityEngine } from '@omega-v/security';
@@ -138,6 +139,8 @@ const reputationEngine = new OceanicosReputationEngine();
 const humanEngine = new HumanEngine();
 const humanAuditLog: ReturnType<typeof humanEngine.recordInput>[] = [];
 const ruleCompiler = new RuleCompiler();
+const moodEvaluator = new MoodEvaluator();
+const learningEngine = new LearningEngine();
 
 // Register default rules
 verificationEngine.registerRule({
@@ -688,6 +691,424 @@ app.post('/ecosystem/grand-flow', (req: Request, res: Response) => {
     res.status(400).json({
       code: 'GRAND_FLOW_FAILED',
       message: error instanceof Error ? error.message : 'Grand continuum flow failed',
+      timestamp: new Date().toISOString(),
+    } as ErrorResponse);
+  }
+});
+
+/**
+ * POST /ecosystem/hyper-flow — 22-Stage Full Ecosystem Hyper-Continuum Flow
+ * Reality-First, Evidence-First, Non-Destructive Execution from Lowest Telemetry to Max Recompilation
+ */
+app.post('/ecosystem/hyper-flow', async (req: Request, res: Response) => {
+  try {
+    const {
+      intentClaim = 'Autonomous verified hyper-continuum ecosystem state transition',
+      actorDid = 'did:omega:agent:hyper-operator',
+      ruleDefinition = 'responseTime < 100 && statusCode == 200',
+      metadata = { statusCode: 200, responseTime: 22, memoryPressurePct: 40 },
+      swapAmount = 150,
+    } = req.body;
+
+    // [1] Raw Telemetry & Epistemic Observation
+    const observation = observer.observe({
+      claim: intentClaim,
+      category: 'hyper-continuum-flow',
+      source: { system: 'api-hyper-flow-daemon', version: '2.0.0', environment: 'production' },
+      observedBy: actorDid,
+      metadata,
+      confidence: 0.99,
+      confidenceReason: 'Hyper-flow comprehensive multi-telemetry synthesis',
+    });
+    store.recordObservation(observation);
+
+    // [2] Deterministic IR Compilation
+    const compiledIR = ruleCompiler.compile(ruleDefinition, 'hyper-rule-compiled');
+
+    // [3] Formal Verification Execution
+    const verification = verificationEngine.verify(observation);
+    store.recordVerification(verification);
+
+    // [4] Cryptographic Ed25519 Attestation
+    const attestation = attestationService.attest(verification);
+    store.recordAttestation(attestation);
+
+    // [5] Confidential TEE Enclave Provisioning & Attestation
+    const existingEnclaves = enclaveEngine.getEnclaves();
+    const teeEnclave =
+      existingEnclaves.length > 0
+        ? existingEnclaves[0]
+        : enclaveEngine.provisionEnclave({
+            type: 'INTEL_SGX',
+            name: 'HyperContinuumEnclave',
+            codePayload: 'hyper-continuum-runtime-v2',
+            authorSignerKey: 'omega-root-signer-2026',
+          });
+    const teeAttestation = enclaveEngine.generateRemoteAttestation(teeEnclave.enclaveId, attestation.signature);
+    const teeVerification = enclaveEngine.verifyRemoteAttestation(teeAttestation);
+
+    // [6] Zero-Knowledge Range Proof Generation & Verification
+    const zkProof = zkEngine.generateRangeProof('circuit-latency-bound', Number(metadata.responseTime || 22));
+    const zkVerified = zkEngine.verifyProof(zkProof);
+
+    // [7] Security Engine Access Token & Guard Check
+    const securityToken = securityEngine.issueToken({
+      id: actorDid,
+      name: 'HyperOperator',
+      type: 'AGENT',
+      permissions: ['CAN_OBSERVE', 'CAN_VERIFY', 'CAN_ACT'],
+      issuedAt: new Date().toISOString(),
+    });
+    const tokenValid = securityEngine.verifyToken(securityToken);
+
+    // [8] Human Accountability Gate & Non-Destructive Approval
+    const humanRecord = humanEngine.recordInput(
+      'APPROVAL',
+      actorDid,
+      'Verified non-destructive hyper-continuum 22-stage execution',
+      metadata,
+      observation.id
+    );
+    humanAuditLog.push(humanRecord);
+
+    // [9] Formless Swarm Multi-Role Agent Consensus
+    const swarmClient = new OceanicosClient({ mode: 'local' });
+    const swarm = new FormlessSwarm(swarmClient);
+    const swarmResult = await swarm.executeSwarmCycle({
+      claim: `Hyper-Flow Swarm Verification: ${intentClaim}`,
+      ruleName: 'hyper-swarm-rule',
+      ruleDefinition: 'responseTime < 100',
+      metadata,
+    });
+
+    // [10] Mempool Submission & MEV-Resistant Sequencing
+    const mempoolTx = mempoolEngine.submitTransaction({
+      senderDid: actorDid,
+      nonce: 1,
+      payload: { attestationId: attestation.id, action: 'HYPER_FLOW_EXECUTE' },
+      gasPriceGwei: 40,
+      gasLimit: 80000,
+    });
+    const harvestReceipt = mempoolEngine.popBatch({ maxGas: 600000 });
+
+    // [11] Data Availability (DA) Blob Submission & KZG Polynomial Commitment
+    const daBlob = daEngine.submitBlob({
+      namespace: 'hyper-continuum',
+      submitterDid: actorDid,
+      rawData: JSON.stringify({ mempoolTx, attestationId: attestation.id }),
+    });
+
+    // [12] OVM Stack VM Bytecode Execution
+    const evmResult = evmEngine.execute({
+      callerDid: actorDid,
+      code: ['PUSH 15', 'PUSH 35', 'ADD', 'RETURN'],
+      gasLimit: 120000,
+    });
+
+    // [13] AMM Liquidity Pool Constant-Product Swap
+    const existingPools = ammEngine.getPools();
+    const pool =
+      existingPools.length > 0
+        ? existingPools[0]
+        : ammEngine.createPool({
+            tokenA: 'USDC',
+            tokenB: 'OMEGA',
+            initialA: 100000,
+            initialB: 50000,
+            creatorDid: 'did:omega:system:liquidity-root',
+          });
+    const swapReceipt = ammEngine.swap({
+      poolId: pool.poolId,
+      traderDid: actorDid,
+      tokenIn: 'USDC',
+      amountIn: swapAmount,
+      minAmountOut: 1,
+    });
+
+    // [14] Adaptive Dynamic Sharding 2PC State Transition
+    const crossShardTx = shardingEngine.prepareCrossShardTx({
+      key: `state-${actorDid}`,
+      sourceShardId: 'shard-00',
+      targetShardId: 'shard-01',
+      sourceValue: { status: 'LOCKED', timestamp: new Date().toISOString() },
+      targetValue: { balance: swapReceipt.amountOut, updatedBy: actorDid },
+    });
+    const committedCrossShard = shardingEngine.commitCrossShardTx(crossShardTx.txId);
+
+    // [15] L2 Validity Rollup Transaction & Batch Block Production
+    const l2Tx = rollupEngine.submitL2Transaction({
+      from: '0xAlice',
+      to: '0xBob',
+      value: 25,
+      calldata: '0xhyper_call',
+    });
+    const rollupBlock = rollupEngine.produceBlock({
+      proposerDid: actorDid,
+      rollupType: 'VALIDITY_ZK',
+    });
+
+    // [16] Heterogeneous Cross-Chain Bridge Initiation, Relay & Finalization
+    const bridgeTransfer = bridgeEngine.initiateTransfer({
+      sourceChain: 'chain-eth-mainnet',
+      targetChain: 'chain-solana-mainnet',
+      senderDid: actorDid,
+      recipientAddress: '0xHyperRecipientBridge',
+      assetSymbol: 'OMEGA',
+      amount: swapReceipt.amountOut,
+      lockTxHash: '0xlock_proof_hash_hyper',
+    });
+    bridgeEngine.relayTransfer({
+      transferId: bridgeTransfer.transferId,
+      relayerDid: 'did:omega:relayer:eth-primary',
+      merkleProof: '0xmerkle_proof_hyper_verified',
+    });
+    const finalizedBridge = bridgeEngine.finalizeTransfer(bridgeTransfer.transferId);
+
+    // [17] BFT Consensus Propose, Vote & Quorum Certificate (QC)
+    const consensusBlock = consensusEngine.proposeBlock({
+      proposerDid: 'did:omega:validator:genesis-alpha',
+      transactions: [{ type: 'HYPER_FLOW', claim: intentClaim, actorDid }],
+      stateRoot: rollupBlock.postStateRoot,
+      attestationProofs: [attestation.signature],
+    });
+    consensusEngine.castVote({
+      validatorDid: 'did:omega:validator:genesis-alpha',
+      blockHash: consensusBlock.blockHash,
+      blockHeight: consensusBlock.height,
+    });
+    const consensusVote2 = consensusEngine.castVote({
+      validatorDid: 'did:omega:validator:genesis-beta',
+      blockHash: consensusBlock.blockHash,
+      blockHeight: consensusBlock.height,
+    });
+
+    // [18] Canonical Kernel Sovereign State Machine Transition (S_n → S_{n+1})
+    const kernelState = kernelEngine.transition({
+      intent: {
+        claim: intentClaim,
+        actors: [actorDid],
+        inputs: metadata,
+        expectedOutputs: {
+          verified: verification.summary.passed,
+          swapOut: swapReceipt.amountOut,
+          bridgeFinalized: true,
+        },
+        constraints: ['ZERO_KNOWLEDGE_COMPLIANT', 'TEE_ATTESTED', 'HUMAN_GATED', 'BFT_FINALIZED'],
+        permissions: ['CAN_OBSERVE', 'CAN_VERIFY', 'CAN_ACT'],
+        dependencies: [],
+        maxRiskScore: 0.05,
+        economicTarget: { targetValue: swapReceipt.amountOut, resourceBudget: 2000 },
+      },
+      observation: {
+        source: 'hyper-flow-daemon',
+        observedAt: observation.timestamp,
+        rawTelemetry: metadata,
+        epistemicType: 'FACT',
+        confidence: observation.confidence,
+      },
+      evidenceItems: [
+        {
+          claim: intentClaim,
+          source: 'verification-engine',
+          observationId: observation.id,
+          commandOrTest: 'verificationEngine.verify && zkEngine.verifyProof',
+          status: verification.summary.passed ? 'PASSED' : 'FAILED',
+          confidence: 0.99,
+        },
+      ],
+      actionPlan: {
+        targetService: 'hyper-continuum-canonical-ledger',
+        payload: {
+          attestationSignature: attestation.signature,
+          teeReport: teeAttestation.reportId,
+          zkProofId: zkProof.proofId,
+          rollupBlockHash: rollupBlock.batchCommitment,
+          consensusBlockHash: consensusBlock.blockHash,
+        },
+        isDestructive: false,
+        isFinancial: true,
+        gasLimit: 250000,
+        reversibility: 'REVERSIBLE',
+      },
+      autoAuthorizeIfNonDestructive: true,
+    });
+
+    // [19] Reputation Feedback Engine & Operator Staking Evolution
+    let agentRep = reputationEngine.getAgent(actorDid);
+    if (!agentRep) {
+      agentRep = reputationEngine.registerAgent({
+        agentDid: actorDid,
+        moniker: 'HyperContinuumOperator',
+        initialScore: 550,
+      });
+    }
+    const repReceipt = reputationEngine.submitFeedback({
+      fromDid: 'did:omega:kernel:hyper-continuum',
+      targetDid: actorDid,
+      scoreDelta: verification.summary.passed ? 40 : -50,
+      reason: '22-Stage Hyper-continuum end-to-end execution verified',
+    });
+
+    // [20] Self-Correction & Learning Engine Prediction / Reality Evaluation
+    const prediction = learningEngine.makePrediction('PASS', 0.95, 'response-time-threshold');
+    const learningEvent = learningEngine.evaluatePrediction(prediction.id, verification);
+
+    // [21] System Mood & Telemetry Evaluation
+    const mood = moodEvaluator.evaluate(
+      store.getMetrics(),
+      store.verifyChainIntegrity().valid,
+      0
+    );
+
+    // [22] Max Form: Provenance DAG Ingestion, Vault Epoch Checkpoint & Drift Analysis
+    const provenanceGraph = new ProvenanceGraph();
+    provenanceGraph.ingestEvents(store.getEntries());
+    const vaultCheckpoint = stateVault.createCheckpoint(
+      'Hyper Continuum State Checkpoint',
+      store.getEntries(),
+      verificationEngine.getRules()
+    );
+    const driftAnalysis = evolutionEngine.analyzeDrift('hyper-continuum-rule', [
+      { passed: verification.summary.passed },
+    ]);
+    const graphStats = provenanceGraph.getStats();
+
+    const hyperResult = {
+      hyperFlowId: `hyper-flow-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`,
+      stageCount: 22 as const,
+      success: verification.summary.passed && consensusVote2.quorumReached && zkVerified,
+      executedAt: new Date().toISOString(),
+      telemetryStage: {
+        observationId: observation.id,
+        confidence: observation.confidence,
+        rawTelemetry: metadata,
+      },
+      irStage: {
+        instructionCount: compiledIR.instructions.length,
+        compiledRuleName: compiledIR.name,
+      },
+      verificationStage: {
+        passed: verification.summary.passed,
+        rulesEvaluated: verification.summary.rulesApplied,
+        ruleResults: verification.rules.map((r) => ({ rule: r.name, passed: r.passed })),
+      },
+      attestationStage: {
+        attestationId: attestation.id,
+        signature: attestation.signature,
+        algorithm: 'Ed25519',
+      },
+      teeStage: {
+        enclaveId: teeEnclave.enclaveId,
+        reportId: teeAttestation.reportId,
+        verified: teeVerification.valid,
+      },
+      zkStage: {
+        proofId: zkProof.proofId,
+        circuitId: zkProof.circuitId,
+        verified: zkVerified,
+      },
+      securityStage: {
+        subjectDid: actorDid,
+        tokenValid,
+      },
+      humanStage: {
+        approvalId: humanRecord.id,
+        rationale: humanRecord.rationale,
+      },
+      swarmStage: {
+        agentCount: swarmResult.agentResults.length,
+        isGreen: swarmResult.isGreen,
+        evidenceArtifactId: swarmResult.evidenceArtifactId,
+      },
+      mempoolStage: {
+        txHash: mempoolTx.txHash,
+        harvestedCount: harvestReceipt.includedTxCount,
+      },
+      daStage: {
+        blobId: daBlob.blobId,
+        kzgCommitment: daBlob.kzgCommitment,
+      },
+      evmStage: {
+        gasUsed: evmResult.gasUsed,
+        stackOutput: evmResult.stackResult[evmResult.stackResult.length - 1] || '0',
+      },
+      ammStage: {
+        swapId: swapReceipt.swapId,
+        tokenIn: swapReceipt.tokenIn,
+        tokenOut: swapReceipt.tokenOut,
+        amountIn: swapReceipt.amountIn,
+        amountOut: swapReceipt.amountOut,
+        priceImpactPct: swapReceipt.priceImpactPct,
+      },
+      shardingStage: {
+        txId: committedCrossShard.txId,
+        sourceShardId: committedCrossShard.sourceShardId,
+        targetShardId: committedCrossShard.targetShardId,
+        state: committedCrossShard.state,
+        commitProof: committedCrossShard.commitProof,
+      },
+      rollupStage: {
+        l2TxHash: l2Tx.txHash,
+        blockHeight: rollupBlock.blockHeight,
+        rollupType: rollupBlock.rollupType,
+        batchCommitment: rollupBlock.batchCommitment,
+      },
+      bridgeStage: {
+        transferId: finalizedBridge.transferId,
+        sourceChain: finalizedBridge.sourceChain,
+        targetChain: finalizedBridge.targetChain,
+        status: finalizedBridge.status,
+        mintTxHash: finalizedBridge.mintTxHash,
+      },
+      consensusStage: {
+        blockHash: consensusBlock.blockHash,
+        blockHeight: consensusBlock.height,
+        qcId: consensusVote2.qc.qcId,
+        quorumReached: consensusVote2.quorumReached,
+      },
+      kernelStage: {
+        stateId: kernelState.stateId,
+        stateIndex: kernelState.stateIndex,
+        verificationStatus: kernelState.verificationStatus,
+        stateDeltaHash: kernelState.stateDeltaHash,
+      },
+      reputationStage: {
+        agentDid: actorDid,
+        newScore: repReceipt.newScore,
+        scoreDelta: repReceipt.scoreDelta,
+      },
+      learningStage: {
+        predictionId: prediction.id,
+        learningEventId: learningEvent.id,
+        actualOutcome: learningEvent.actualOutcome,
+        error: learningEvent.error,
+        recommendation: learningEvent.insight.recommendation,
+      },
+      moodStage: {
+        state: mood.state,
+        confidence: mood.confidence,
+        verificationHealth: mood.verificationHealth,
+        evidenceQuality: mood.evidenceQuality,
+        description: mood.description,
+      },
+      maxStage: {
+        provenanceNodesCount: graphStats.nodeCount,
+        provenanceEdgesCount: graphStats.edgeCount,
+        vaultEpoch: vaultCheckpoint.epoch,
+        vaultMerkleRoot: vaultCheckpoint.merkleRoot,
+        driftDetected: driftAnalysis.driftDetected,
+        recommendedAction: driftAnalysis.recommendedAction,
+      },
+    };
+
+    res.status(201).json({
+      data: hyperResult,
+      timestamp: new Date().toISOString(),
+    } satisfies SuccessResponse<typeof hyperResult>);
+  } catch (error) {
+    res.status(400).json({
+      code: 'HYPER_FLOW_FAILED',
+      message: error instanceof Error ? error.message : 'Hyper continuum flow failed',
       timestamp: new Date().toISOString(),
     } as ErrorResponse);
   }

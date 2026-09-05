@@ -8,7 +8,7 @@ import { GreenEngine } from '@omega-v/green';
 import { HumanEngine } from '@omega-v/human';
 
 export type AgentRole =
-  'Observer' | 'Verifier' | 'Builder' | 'Security' | 'Governance' | 'Learning' | 'Human';
+  'Observer' | 'Verifier' | 'Builder' | 'Security' | 'Governance' | 'Learning' | 'Human' | 'GrandContinuum';
 
 export interface AgentActionResult {
   agentRole: AgentRole;
@@ -202,6 +202,48 @@ export class HumanAgent extends FormlessAgent {
         rationale: humanInput.rationale,
       },
       verified: true,
+    };
+  }
+}
+
+export class GrandContinuumAgent extends FormlessAgent {
+  constructor(sdk: OceanicosClient) {
+    super('GrandContinuum', sdk);
+  }
+
+  public async executeTask(input: Record<string, unknown> = {}): Promise<AgentActionResult> {
+    const claim = (input.claim as string) || 'Grand Continuum Full-Stack Convergence';
+    const actorDid = (input.actorDid as string) || 'did:omega:agent:grand-continuum';
+    const ruleDefinition = (input.ruleDefinition as string) || 'responseTime < 100 && statusCode == 200';
+    const metadata = (input.metadata as Record<string, unknown>) || { responseTime: 25, statusCode: 200 };
+    const swapAmount = (input.swapAmount as number) || 100;
+
+    const grandResult = await this.sdk.runGrandFlow({
+      intentClaim: claim,
+      actorDid,
+      ruleDefinition,
+      metadata,
+      swapAmount,
+    });
+
+    const isVerified = grandResult.intermediateForm.verificationPassed;
+
+    return {
+      agentRole: this.role,
+      timestamp: new Date().toISOString(),
+      action: 'GRAND_CONTINUUM_CYCLE',
+      evidence: {
+        success: isVerified,
+        continuumFlowId: grandResult.continuumFlowId,
+        stateId: grandResult.canonicalState.stateId,
+        stateIndex: grandResult.canonicalState.stateIndex,
+        verificationStatus: grandResult.canonicalState.verificationStatus,
+        daBlobId: grandResult.executionForm.daBlobId,
+        evmGasUsed: grandResult.executionForm.evmGasUsed,
+        swapOutputAmount: grandResult.executionForm.swapReceipt.amountOut,
+        vaultEpoch: grandResult.maxForm.vaultEpoch,
+      },
+      verified: isVerified,
     };
   }
 }

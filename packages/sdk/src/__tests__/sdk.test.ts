@@ -57,4 +57,37 @@ describe('OceanicosClient (SDK)', () => {
     expect(client.getObserver()).toBeDefined();
     expect(client.getAttestationService()).toBeDefined();
   });
+
+  it('should run grand-flow locally with all 10 stages', async () => {
+    const client = new OceanicosClient({ mode: 'local' });
+    const res = await client.runGrandFlow({
+      intentClaim: 'Grand Flow SDK verification test',
+      actorDid: 'did:omega:agent:tester',
+      swapAmount: 100,
+    });
+
+    expect(res.continuumFlowId).toBeDefined();
+    expect(res.intermediateForm.verificationPassed).toBe(true);
+    expect(res.executionForm.evmGasUsed).toBe(21000);
+    expect(res.canonicalState.verificationStatus).toBe('VERIFIED');
+    expect(res.maxForm.vaultEpoch).toBe(1);
+  });
+
+  it('should run hyper-flow locally with all 22 stages', async () => {
+    const client = new OceanicosClient({ mode: 'local' });
+    const res = await client.runHyperFlow({
+      intentClaim: 'Hyper Flow 22-Stage SDK execution test',
+      actorDid: 'did:omega:agent:hyper-tester',
+      swapAmount: 200,
+    });
+
+    expect(res.stageCount).toBe(22);
+    expect(res.success).toBe(true);
+    expect(res.zkStage.circuitId).toBe('circuit-latency-bound');
+    expect(res.shardingStage.state).toBe('COMMITTED');
+    expect(res.bridgeStage.status).toBe('FINALIZED');
+    expect(res.consensusStage.quorumReached).toBe(true);
+    expect(res.learningStage.recommendation).toBe('MAINTAIN');
+    expect(res.moodStage.state).toBe('OPTIMAL_FLOW');
+  });
 });

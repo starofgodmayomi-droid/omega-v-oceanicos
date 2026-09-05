@@ -85,5 +85,22 @@ describe('OceanicosCLI', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expect((res.output as any).kernelState).toHaveProperty('verificationStatus', 'VERIFIED');
   });
+
+  it('should execute grand-flow command with 10-stage flow', async () => {
+    const res = await cli.run(['grand-flow', 'CLI grand continuum transition']);
+    expect(res.success).toBe(true);
+    expect(res.message).toContain('Grand Continuum Flow: PASSED');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((res.output as any).canonicalState).toHaveProperty('verificationStatus', 'VERIFIED');
+  });
+
+  it('should execute hyper-flow command with 22-stage flow', async () => {
+    const res = await cli.run(['hyper-flow', 'CLI hyper continuum transition']);
+    expect(res.success).toBe(true);
+    expect(res.message).toContain('Hyper Continuum Flow: PASSED');
+    expect(res.message).toContain('Stages: 22');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((res.output as any).stageCount).toBe(22);
+  });
 });
 
