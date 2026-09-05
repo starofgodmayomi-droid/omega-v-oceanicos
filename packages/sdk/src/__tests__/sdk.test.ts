@@ -90,4 +90,37 @@ describe('OceanicosClient (SDK)', () => {
     expect(res.learningStage.recommendation).toBe('MAINTAIN');
     expect(res.moodStage.state).toBe('OPTIMAL_FLOW');
   });
+
+  it('should run foundational mini cycle through SDK', () => {
+    const client = new OceanicosClient();
+    const result = client.runMiniCycle({
+      claim: 'Mini cycle verification test',
+      category: 'health-check',
+      metadata: { responseTime: 40, statusCode: 200 },
+    });
+
+    expect(result.observation).toBeDefined();
+    expect(result.verification).toBeDefined();
+    expect(result.memory).toBeDefined();
+    expect(result.passed).toBe(true);
+    expect(client.getMiniKernel()).toBeDefined();
+    expect(client.getRemember()).toBeDefined();
+    expect(client.getRemember().verifyIntegrity()).toBe(true);
+  });
+
+  it('should lock totality into now through SDK', () => {
+    const client = new OceanicosClient();
+    const manifest = client.lockTotality({
+      claim: 'Totality test via SDK',
+      category: 'health-check',
+      metadata: { responseTime: 25, statusCode: 200 },
+    });
+
+    expect(manifest.stateRoot).toBe('Ø');
+    expect(manifest.stewardshipAxiom).toBe('TOOLS_FOR_EVOLUTION_NOT_WAR');
+    expect(manifest.cycleResult.passed).toBe(true);
+    expect(manifest.memoryIntegrityValid).toBe(true);
+    expect(client.getOmegaTotalCompressor()).toBeDefined();
+    expect(client.getOSKernel()).toBeDefined();
+  });
 });

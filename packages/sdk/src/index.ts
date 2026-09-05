@@ -2,6 +2,8 @@ import { Observer } from '@omega-v/observer';
 import { VerificationEngine } from '@omega-v/verification';
 import { AttestationService } from '@omega-v/attestation';
 import { ProvenanceStore } from '@omega-v/store';
+import { Remember } from '@omega-v/remember';
+import { MiniKernel, OperatingSystemKernel, OmegaTotalCompressor } from '@omega-v/mini';
 import {
   Observation,
   VerificationResult,
@@ -10,6 +12,8 @@ import {
   SystemMetrics,
   VerificationRule,
   QueryResult,
+  MiniCycleResult,
+  OmegaTotalManifest,
 } from '@omega-v/types';
 
 export interface OceanicosClientOptions {
@@ -231,6 +235,10 @@ export class OceanicosClient {
   private verificationEngine: VerificationEngine;
   private attestationService: AttestationService;
   private store: ProvenanceStore;
+  private remember: Remember;
+  private miniKernel: MiniKernel;
+  private osKernel: OperatingSystemKernel;
+  private totalCompressor: OmegaTotalCompressor;
   private mode: 'local' | 'remote';
   private apiBaseUrl: string;
 
@@ -242,6 +250,14 @@ export class OceanicosClient {
     this.verificationEngine = new VerificationEngine();
     this.attestationService = new AttestationService(options.signingKey);
     this.store = new ProvenanceStore();
+    this.remember = new Remember();
+    this.miniKernel = new MiniKernel({
+      observer: this.observer,
+      verificationEngine: this.verificationEngine,
+      memory: this.remember,
+    });
+    this.osKernel = new OperatingSystemKernel(this.miniKernel);
+    this.totalCompressor = new OmegaTotalCompressor(this.miniKernel);
 
     // Register default rules for local mode
     this.verificationEngine.registerRule({
@@ -698,6 +714,64 @@ export class OceanicosClient {
   }
 
   /**
+   * Run foundational MINI cycle: Observe → Verify → Remember
+   */
+  public runMiniCycle(input: {
+    claim: string;
+    category?: string;
+    source?: { system: string; version: string; environment: string };
+    observedBy?: string;
+    metadata?: Record<string, unknown>;
+    confidence?: number;
+    confidenceReason?: string;
+  }): MiniCycleResult {
+    return this.miniKernel.cycle(input);
+  }
+
+  /**
+   * Lock totality into now via OmegaTotalCompressor
+   */
+  public lockTotality(input: {
+    claim: string;
+    category?: string;
+    source?: { system: string; version: string; environment: string };
+    observedBy?: string;
+    metadata?: Record<string, unknown>;
+    confidence?: number;
+    confidenceReason?: string;
+  }): OmegaTotalManifest {
+    return this.totalCompressor.lockTotalityIntoNow(input);
+  }
+
+  /**
+   * Access underlying MiniKernel
+   */
+  public getMiniKernel(): MiniKernel {
+    return this.miniKernel;
+  }
+
+  /**
+   * Access underlying OperatingSystemKernel
+   */
+  public getOSKernel(): OperatingSystemKernel {
+    return this.osKernel;
+  }
+
+  /**
+   * Access underlying OmegaTotalCompressor
+   */
+  public getOmegaTotalCompressor(): OmegaTotalCompressor {
+    return this.totalCompressor;
+  }
+
+  /**
+   * Access underlying Remember instance
+   */
+  public getRemember(): Remember {
+    return this.remember;
+  }
+
+  /**
    * Access underlying Observer
    */
   public getObserver(): Observer {
@@ -716,5 +790,8 @@ export { Observer } from '@omega-v/observer';
 export { VerificationEngine } from '@omega-v/verification';
 export { AttestationService } from '@omega-v/attestation';
 export { ProvenanceStore } from '@omega-v/store';
+export { Remember } from '@omega-v/remember';
+export { MiniKernel, OperatingSystemKernel, OmegaTotalCompressor } from '@omega-v/mini';
 
 export default OceanicosClient;
+

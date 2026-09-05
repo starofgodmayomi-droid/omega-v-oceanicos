@@ -10,6 +10,8 @@ export default {
     '@omega-v/verification': '<rootDir>/packages/verification/src/index.ts',
     '@omega-v/attestation': '<rootDir>/packages/attestation/src/index.ts',
     '@omega-v/store': '<rootDir>/packages/store/src/index.ts',
+    '@omega-v/remember': '<rootDir>/packages/remember/src/index.ts',
+    '@omega-v/mini': '<rootDir>/packages/mini/src/index.ts',
     '@omega-v/ir': '<rootDir>/packages/ir/src/index.ts',
     '@omega-v/compiler': '<rootDir>/packages/compiler/src/index.ts',
     '@omega-v/sdk': '<rootDir>/packages/sdk/src/index.ts',

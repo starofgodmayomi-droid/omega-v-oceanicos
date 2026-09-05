@@ -195,10 +195,10 @@ export interface EventLogEntry {
   id: number;
 
   /** Type of event */
-  type: 'OBSERVATION' | 'VERIFICATION' | 'ATTESTATION';
+  type: 'OBSERVATION' | 'VERIFICATION' | 'ATTESTATION' | 'MEMORY';
 
   /** The actual data */
-  data: Observation | VerificationResult | Attestation;
+  data: Observation | VerificationResult | Attestation | MemoryRecord;
 
   /** When was this recorded? */
   recordedAt: string;
@@ -208,6 +208,81 @@ export interface EventLogEntry {
 
   /** Hash of the previous entry (creating a chain) */
   previousHash: string;
+}
+
+/**
+ * A memory record produced by the Remember layer
+ * Links an observation to its verification and stores the summary
+ */
+export interface MemoryRecord {
+  /** Unique memory identifier */
+  id: string;
+
+  /** Which observation does this memory reference? */
+  observationId: string;
+
+  /** Which verification does this memory reference? */
+  verificationId: string;
+
+  /** Was the observation verified? */
+  verified: boolean;
+
+  /** Confidence in the memory (0-1) */
+  confidence: number;
+
+  /** Human-readable summary of what was remembered */
+  summary: string;
+
+  /** When was this remembered? */
+  rememberedAt: string;
+}
+
+/**
+ * MiniCycleResult: Output of a single MINI kernel cycle
+ * Observe → Verify → Remember
+ */
+export interface MiniCycleResult {
+  /** The observation that was made */
+  observation: Observation;
+
+  /** The verification result */
+  verification: VerificationResult;
+
+  /** The memory record created */
+  memory: MemoryRecord;
+
+  /** Did the full cycle pass? */
+  passed: boolean;
+
+  /** Cycle confidence */
+  confidence: number;
+
+  /** Timestamp of cycle completion */
+  completedAt: string;
+}
+
+/**
+ * OmegaTotalManifest: Output of OmegaTotal compression
+ * Proves that a MINI cycle achieved verified totality
+ */
+export interface OmegaTotalManifest {
+  /** State root (always 'Ø' — the empty axiom) */
+  stateRoot: 'Ø';
+
+  /** The stewardship axiom */
+  stewardshipAxiom: 'TOOLS_FOR_EVOLUTION_NOT_WAR';
+
+  /** The MINI cycle that was compressed */
+  cycleResult: MiniCycleResult;
+
+  /** Memory integrity at time of compression */
+  memoryIntegrityValid: boolean;
+
+  /** Total entries in memory at time of compression */
+  memorySize: number;
+
+  /** When was totality locked? */
+  lockedAt: string;
 }
 
 /**
@@ -435,6 +510,7 @@ export interface ProvenanceGraphNode {
     | 'OBSERVATION'
     | 'VERIFICATION'
     | 'ATTESTATION'
+    | 'MEMORY'
     | 'ACTION'
     | 'OUTCOME'
     | 'LEARNING'

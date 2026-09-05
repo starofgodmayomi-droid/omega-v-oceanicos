@@ -52,6 +52,41 @@ export class OceanicosCLI {
         };
       }
 
+      case 'mini': {
+        const claim = args[1] || 'Default MINI cycle claim';
+        const result = this.client.runMiniCycle({
+          claim,
+          category: 'health-check',
+          metadata: { responseTime: 25, statusCode: 200 },
+        });
+        return {
+          success: result.passed,
+          message: `[Ω∞v CLI] MINI Cycle: ${result.passed ? 'PASSED' : 'FAILED'} (Memory ID: ${result.memory.id})`,
+          output: result,
+        };
+      }
+
+      case 'total': {
+        const claim = args[1] || 'Default Omega Total claim';
+        try {
+          const manifest = this.client.lockTotality({
+            claim,
+            category: 'health-check',
+            metadata: { responseTime: 25, statusCode: 200 },
+          });
+          return {
+            success: true,
+            message: `[Ω∞v CLI] Omega Total Manifest Locked (Root: ${manifest.stateRoot}, Axiom: ${manifest.stewardshipAxiom})`,
+            output: manifest,
+          };
+        } catch (err: any) {
+          return {
+            success: false,
+            message: `[Ω∞v CLI] Omega Total Failed: ${err.message}`,
+          };
+        }
+      }
+
       case 'swarm': {
         const claim = args[1] || 'CLI Swarm verification cycle';
         const swarm = new FormlessSwarm(this.client);
@@ -691,6 +726,8 @@ Commands:
   omega-v oracle [feeds|aggregate]  Compute multi-source external state consensus receipts
   omega-v vault [checkpoints|create] Manage cryptographic state checkpoints & disaster recovery
   omega-v dispute [list|raise]      Verifiable decentralized dispute resolution & jury arbitration
+  omega-v mini [claim]              Execute foundational MINI cycle (Observe → Verify → Remember)
+  omega-v total [claim]             Lock totality into now via OmegaTotalCompressor (State Root: Ø)
   omega-v metrics                   Show system health and metrics
   omega-v log                       Display event provenance log
   omega-v integrity                 Verify event hash chain integrity

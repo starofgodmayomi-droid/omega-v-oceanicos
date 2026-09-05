@@ -48,7 +48,9 @@ export class ProvenanceGraph {
           ? (dataAny.claim?.statement ?? 'Observation')
           : e.type === 'VERIFICATION'
             ? `Verified (${dataAny.summary?.passed ? 'PASSED' : 'FAILED'})`
-            : `Signed Attestation (${dataAny.signature?.slice(0, 10)}…)`;
+            : e.type === 'MEMORY'
+              ? `Remembered (${dataAny.verified ? 'VERIFIED' : 'UNVERIFIED'})`
+              : `Signed Attestation (${dataAny.signature?.slice(0, 10)}…)`;
 
       this.addNode({
         id: nodeId,

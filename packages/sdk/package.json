@@ -28,7 +28,9 @@
     "@omega-v/auth": "*",
     "@omega-v/replay": "*",
     "@omega-v/vaas": "*",
-    "@omega-v/federation": "*"
+    "@omega-v/federation": "*",
+    "@omega-v/remember": "*",
+    "@omega-v/mini": "*"
   },
   "devDependencies": {
     "@types/jest": "^29.5.0",

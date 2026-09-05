@@ -102,5 +102,24 @@ describe('OceanicosCLI', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expect((res.output as any).stageCount).toBe(22);
   });
+
+  it('should execute mini command with foundational Observe-Verify-Remember cycle', async () => {
+    const res = await cli.run(['mini', 'CLI foundational cycle']);
+    expect(res.success).toBe(true);
+    expect(res.message).toContain('MINI Cycle: PASSED');
+    expect(res.output).toHaveProperty('memory');
+    expect(res.output).toHaveProperty('verification');
+    expect(res.output).toHaveProperty('observation');
+  });
+
+  it('should execute total command and lock totality manifest into now', async () => {
+    const res = await cli.run(['total', 'CLI totality lock']);
+    expect(res.success).toBe(true);
+    expect(res.message).toContain('Omega Total Manifest Locked');
+    expect(res.message).toContain('Root: Ø');
+    expect(res.message).toContain('TOOLS_FOR_EVOLUTION_NOT_WAR');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((res.output as any).stateRoot).toBe('Ø');
+  });
 });
 
