@@ -356,6 +356,15 @@ type PersistenceReencryptResult = {
   eventId: string;
 };
 
+type SubsystemInfo = {
+  id: string;
+  name: string;
+  category: string;
+  package: string;
+  status: string;
+  description: string;
+};
+
 // Parameterised paths used via template literals. Listed here as string
 // literals so the contract-test regex can discover them.
 const parameterizedRoutes = [
@@ -496,6 +505,8 @@ export function App(): React.JSX.Element {
   const [persistenceReencryptFeedback, setPersistenceReencryptFeedback] = useState<string | null>(
     null
   );
+  const [subsystems, setSubsystems] = useState<SubsystemInfo[]>([]);
+  const [subsystemFilter, setSubsystemFilter] = useState<string>('all');
   const claimInputRef = useRef<HTMLTextAreaElement>(null);
   const commandFirstRef = useRef<HTMLButtonElement>(null);
   const commandTriggerRef = useRef<HTMLButtonElement>(null);
@@ -630,13 +641,19 @@ export function App(): React.JSX.Element {
           setRules(rulesData.data.rules);
         }
       }
-      const [actionsResponse, recompilationsResponse, memoryResponse, observabilityResponse] =
-        await Promise.all([
-          fetch('/api/actions').catch(() => null),
-          fetch('/api/recompilations').catch(() => null),
-          fetch('/api/memory').catch(() => null),
-          fetch('/api/observability').catch(() => null),
-        ]);
+      const [
+        actionsResponse,
+        recompilationsResponse,
+        memoryResponse,
+        observabilityResponse,
+        subsystemsResponse,
+      ] = await Promise.all([
+        fetch('/api/actions').catch(() => null),
+        fetch('/api/recompilations').catch(() => null),
+        fetch('/api/memory').catch(() => null),
+        fetch('/api/observability').catch(() => null),
+        fetch('/api/subsystems').catch(() => null),
+      ]);
       if (actionsResponse?.ok) {
         const actData = (await actionsResponse.json()) as { data?: RuntimeActionItem[] };
         if (Array.isArray(actData.data)) setActions(actData.data);
@@ -654,6 +671,14 @@ export function App(): React.JSX.Element {
       if (observabilityResponse?.ok) {
         const obsData = (await observabilityResponse.json()) as { data?: ObservabilitySnapshot };
         if (obsData.data) setObservability(obsData.data);
+      }
+      if (subsystemsResponse?.ok) {
+        const subsData = (await subsystemsResponse.json()) as {
+          data?: { subsystems?: SubsystemInfo[] };
+        };
+        if (Array.isArray(subsData.data?.subsystems)) {
+          setSubsystems(subsData.data.subsystems);
+        }
       }
       const [eventsDirectResponse] = await Promise.all([
         fetch('/api/events').catch(() => null),
@@ -2879,6 +2904,54 @@ export function App(): React.JSX.Element {
                 )}
               </div>
             </div>
+          </div>
+        </section>
+
+        <section className="subsystems-panel" aria-labelledby="subsystems-title">
+          <div className="panel-head">
+            <h2 id="subsystems-title">SUBSYSTEM INTELLIGENCE MATRIX</h2>
+            <span className="panel-badge">{subsystems.length} SUBSYSTEMS</span>
+          </div>
+          <p className="subsystems-description">
+            Live operational status across core computational, consensus, storage, verification, and
+            orchestration layers of Ω∞v Oceanicos.
+          </p>
+          <div
+            className="subsystems-filter-bar"
+            role="toolbar"
+            aria-label="Subsystem Category Filter"
+          >
+            {['all', 'core', 'runtime', 'consensus', 'verification', 'governance', 'storage'].map(
+              (cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  className={`subsystem-filter-button${subsystemFilter === cat ? ' active' : ''}`}
+                  onClick={() => setSubsystemFilter(cat)}
+                >
+                  {cat.toUpperCase()}
+                </button>
+              )
+            )}
+          </div>
+          <div className="subsystems-grid">
+            {subsystems
+              .filter((sub) => subsystemFilter === 'all' || sub.category === subsystemFilter)
+              .map((sub) => (
+                <article key={sub.id} className="subsystem-card">
+                  <header className="subsystem-card-header">
+                    <strong>{sub.name}</strong>
+                    <span className={`subsystem-status-pill status-${sub.status.toLowerCase()}`}>
+                      {sub.status.toUpperCase()}
+                    </span>
+                  </header>
+                  <div className="subsystem-meta">
+                    <span className="subsystem-category">[{sub.category}]</span>
+                    <span className="subsystem-package">{sub.package}</span>
+                  </div>
+                  <p className="subsystem-desc">{sub.description}</p>
+                </article>
+              ))}
           </div>
         </section>
       </main>

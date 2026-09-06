@@ -1991,3 +1991,115 @@ body {
   cursor: not-allowed;
 }
 
+.subsystems-panel {
+  margin-top: 1.5rem;
+  background: var(--omega-abyss-raised);
+  border: 1px solid var(--omega-abyss-edge);
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.subsystems-description {
+  color: var(--omega-foam-muted);
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.subsystems-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.subsystem-filter-button {
+  background: var(--omega-abyss);
+  border: 1px solid var(--omega-abyss-edge);
+  color: var(--omega-foam-muted);
+  font-family: 'DM Mono', monospace;
+  font-size: 0.7rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.subsystem-filter-button:hover,
+.subsystem-filter-button.active {
+  color: var(--omega-current);
+  border-color: var(--omega-current);
+  background: var(--omega-abyss-raised);
+}
+
+.subsystems-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.subsystem-card {
+  background: var(--omega-abyss);
+  border: 1px solid var(--omega-abyss-edge);
+  border-radius: 6px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  transition: border-color 0.15s ease;
+}
+
+.subsystem-card:hover {
+  border-color: var(--omega-current);
+}
+
+.subsystem-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.subsystem-card-header strong {
+  font-size: 0.9rem;
+  color: var(--omega-foam);
+}
+
+.subsystem-status-pill {
+  font-size: 0.65rem;
+  font-family: 'DM Mono', monospace;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: var(--omega-abyss-raised);
+  color: var(--omega-foam-muted);
+  border: 1px solid var(--omega-abyss-edge);
+}
+
+.subsystem-status-pill.status-active,
+.subsystem-status-pill.status-booted {
+  color: var(--omega-verified);
+  border-color: var(--omega-verified);
+}
+
+.subsystem-meta {
+  display: flex;
+  gap: 0.75rem;
+  font-size: 0.7rem;
+  font-family: 'DM Mono', monospace;
+}
+
+.subsystem-category {
+  color: var(--omega-current);
+}
+
+.subsystem-package {
+  color: var(--omega-foam-muted);
+}
+
+.subsystem-desc {
+  font-size: 0.8rem;
+  color: var(--omega-foam-muted);
+  line-height: 1.4;
+  margin: 0;
+}
+
+

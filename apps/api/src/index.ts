@@ -2504,6 +2504,171 @@ app.get('/rules', (req: Request, res: Response) => {
   res.json(response);
 });
 
+app.get('/subsystems', (_req: Request, res: Response) => {
+  const subsystems = [
+    {
+      id: 'mini',
+      name: 'MINI Kernel',
+      category: 'core',
+      package: '@omega-v/mini',
+      status: 'active',
+      description: 'Observe → Verify → Remember authoritative execution loop',
+    },
+    {
+      id: 'os',
+      name: 'Universal Builder OS',
+      category: 'core',
+      package: '@omega-v/mini',
+      status: 'booted',
+      description: 'Finite lifecycle & bounded task admission kernel',
+    },
+    {
+      id: 'swarm',
+      name: 'Formless Swarm',
+      category: 'agents',
+      package: '@omega-v/agents',
+      status: 'active',
+      description: 'Multi-agent emergent intelligence and collective verification',
+    },
+    {
+      id: 'analytics',
+      name: 'Verification Analytics',
+      category: 'telemetry',
+      package: '@omega-v/analytics',
+      status: 'active',
+      description: 'Rule efficacy, pass rates, and anomaly detection',
+    },
+    {
+      id: 'slo',
+      name: 'Telemetry & SLOs',
+      category: 'telemetry',
+      package: '@omega-v/telemetry',
+      status: 'active',
+      description: 'Target error budget and service level objective tracking',
+    },
+    {
+      id: 'vaas',
+      name: 'VaaS Gateway',
+      category: 'infrastructure',
+      package: '@omega-v/vaas',
+      status: 'active',
+      description: 'Multi-tenant verification-as-a-service access gate',
+    },
+    {
+      id: 'replay',
+      name: 'Deterministic Replay',
+      category: 'verification',
+      package: '@omega-v/replay',
+      status: 'active',
+      description: 'State replay & regression detection against baseline',
+    },
+    {
+      id: 'contract',
+      name: 'Formal Contracts',
+      category: 'policy',
+      package: '@omega-v/contract',
+      status: 'active',
+      description: 'Invariant assertion and health SLA contracts',
+    },
+    {
+      id: 'auth',
+      name: 'Decentralized Auth',
+      category: 'security',
+      package: '@omega-v/auth',
+      status: 'active',
+      description: 'DID identities and scoped cryptographic capabilities',
+    },
+    {
+      id: 'federation',
+      name: 'Federation Mesh',
+      category: 'network',
+      package: '@omega-v/federation',
+      status: 'active',
+      description: 'Cross-cluster Merkle proof federation',
+    },
+    {
+      id: 'benchmark',
+      name: 'Benchmark Engine',
+      category: 'performance',
+      package: '@omega-v/benchmark',
+      status: 'active',
+      description: 'Throughput & latency profiling across verification loop',
+    },
+    {
+      id: 'notary',
+      name: 'Merkle Notary',
+      category: 'cryptography',
+      package: '@omega-v/notary',
+      status: 'active',
+      description: 'Merkle attestation notarization and tree roots',
+    },
+    {
+      id: 'sandbox',
+      name: 'Rule Sandbox',
+      category: 'execution',
+      package: '@omega-v/sandbox',
+      status: 'active',
+      description: 'Resource-bounded execution sandbox for rules',
+    },
+    {
+      id: 'policy',
+      name: 'Policy Compliance',
+      category: 'policy',
+      package: '@omega-v/policy',
+      status: 'active',
+      description: 'Enterprise production SLA and compliance evaluation',
+    },
+    {
+      id: 'zk',
+      name: 'Zero-Knowledge Proofs',
+      category: 'cryptography',
+      package: '@omega-v/zk',
+      status: 'active',
+      description: 'Succinct range & membership zero-knowledge proofs',
+    },
+    {
+      id: 'gateway',
+      name: 'Access Gateway',
+      category: 'network',
+      package: '@omega-v/gateway',
+      status: 'active',
+      description: 'Tiered rate limiting and client quotas',
+    },
+    {
+      id: 'oracle',
+      name: 'Decentralized Oracle',
+      category: 'consensus',
+      package: '@omega-v/oracle',
+      status: 'active',
+      description: 'Multi-provider consensus aggregation',
+    },
+    {
+      id: 'vault',
+      name: 'State Vault',
+      category: 'storage',
+      package: '@omega-v/vault',
+      status: 'active',
+      description: 'Cryptographic epoch state baseline checkpoints',
+    },
+    {
+      id: 'dispute',
+      name: 'Dispute Resolution',
+      category: 'governance',
+      package: '@omega-v/dispute',
+      status: 'active',
+      description: 'Staked challenge and decentralized arbitration',
+    },
+  ];
+
+  res.json({
+    data: {
+      count: subsystems.length,
+      subsystems,
+    },
+    timestamp: new Date().toISOString(),
+  });
+});
+
 /**
  * Static web client, when a build is present.
  *

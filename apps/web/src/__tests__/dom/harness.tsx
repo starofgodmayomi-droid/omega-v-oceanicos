@@ -339,6 +339,23 @@ export function installFetch(overrides: RouteOverrides = {}): jest.Mock {
     '/api/recompilations': () => json({ data: [] }),
     '/api/memory': () => json({ data: [], meta: { size: 0, appendOnly: true, durable: true } }),
     '/api/memory/integrity': () => json({ data: { intact: true, entries: 0 } }),
+    '/api/subsystems': () =>
+      json({
+        data: {
+          count: 19,
+          subsystems: [
+            {
+              id: 'mini',
+              name: 'MINI Kernel',
+              category: 'core',
+              package: '@omega-v/mini',
+              status: 'active',
+              description: 'Observe → Verify → Remember authoritative execution loop',
+            },
+          ],
+        },
+        timestamp: '2026-08-16T00:00:00.000Z',
+      }),
     '/api/observability': () =>
       json({
         data: {
