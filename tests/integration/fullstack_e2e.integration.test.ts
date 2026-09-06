@@ -55,6 +55,9 @@ import { HumanEngine } from '@omega-v/human';
 import { GreenEngine } from '@omega-v/green';
 import { LearningEngine } from '@omega-v/learning';
 import { EvolutionEngine } from '@omega-v/evolution';
+import { ProvenanceGraph } from '@omega-v/graph';
+import { FrictionTracker } from '@omega-v/friction';
+import { MoodEvaluator } from '@omega-v/mood';
 import app from '../../apps/api/src/index';
 
 describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => {
@@ -2873,11 +2876,12 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       });
       expect(cycle.passed).toBe(true);
       expect(cycle.entries).toBeDefined();
-      expect(cycle.entries.length).toBe(3);
-      expect(cycle.entries[0].type).toBe('OBSERVATION');
-      expect(cycle.entries[1].type).toBe('VERIFICATION');
-      expect(cycle.entries[2].type).toBe('MEMORY');
-      expect(cycle.entries[2].previousHash).toBe(cycle.entries[1].hash);
+      const cycleEntries = cycle.entries!;
+      expect(cycleEntries.length).toBe(3);
+      expect(cycleEntries[0].type).toBe('OBSERVATION');
+      expect(cycleEntries[1].type).toBe('VERIFICATION');
+      expect(cycleEntries[2].type).toBe('MEMORY');
+      expect(cycleEntries[2].previousHash).toBe(cycleEntries[1].hash);
 
       // 6. Verify OS snapshot reflects updated counters and memory integrity
       const postCycleSnapshot = os.snapshot();
@@ -2958,6 +2962,239 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
           metadata: { responseTime: 45, statusCode: 503 },
         })
       ).toThrow(/verification did not pass/);
+    });
+  });
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Section 53 — Provenance Knowledge Graph & Causal Lineage Traversal
+  // ──────────────────────────────────────────────────────────────────────────
+  describe('Section 53 — Provenance Knowledge Graph & Causal Lineage Traversal', () => {
+    it('should ingest provenance events, construct graph, and support bidirectional BFS traversal', () => {
+      const store = new ProvenanceStore();
+      const observer = new Observer();
+      const engine = new VerificationEngine();
+      const attestation = new AttestationService('e2e-section-53-signing-secret');
+      const graph = new ProvenanceGraph();
+
+      // 1. Run a complete verification loop to produce provenance events
+      const claim = observer.observe({
+        claim: 'Graph lineage test claim',
+        category: 'e2e-graph',
+        source: { system: 'e2e-graph-section-53', version: '1.0.0', environment: 'test' },
+        observedBy: 'section-53-test',
+        metadata: {},
+        confidence: 0.91,
+        confidenceReason: 'E2E graph lineage test',
+      });
+      store.recordObservation(claim);
+
+      const verification = engine.verify(claim);
+      store.recordVerification(verification);
+
+      const signed = attestation.attest(verification);
+      store.recordAttestation(signed);
+
+      // 2. Ingest provenance events into graph
+      const events = store.getEntries();
+      expect(events.length).toBeGreaterThanOrEqual(3);
+      graph.ingestEvents(events);
+
+      // 3. Validate graph structure
+      const stats = graph.getStats();
+      expect(stats.nodeCount).toBe(events.length);
+      expect(stats.edgeCount).toBe(events.length - 1); // chain edges
+      expect(stats.types['OBSERVATION']).toBe(1);
+      expect(stats.types['VERIFICATION']).toBe(1);
+      expect(stats.types['ATTESTATION']).toBe(1);
+
+      // 4. Forward traversal: CAUSE → EFFECT
+      const rootNodeId = `event-${events[0].id}`;
+      const forward = graph.traverseForward(rootNodeId);
+      expect(forward.direction).toBe('FORWARD');
+      expect(forward.rootId).toBe(rootNodeId);
+      expect(forward.nodes.length).toBe(events.length); // should reach all nodes
+      expect(forward.edges.length).toBe(events.length - 1);
+      expect(forward.depth).toBeGreaterThanOrEqual(1);
+
+      // 5. Backward traversal: EFFECT → CAUSE
+      const leafNodeId = `event-${events[events.length - 1].id}`;
+      const backward = graph.traverseBackward(leafNodeId);
+      expect(backward.direction).toBe('BACKWARD');
+      expect(backward.rootId).toBe(leafNodeId);
+      expect(backward.nodes.length).toBe(events.length); // should trace back to root
+      expect(backward.edges.length).toBe(events.length - 1);
+
+      // 6. Verify edge relations match expected provenance types
+      const edgeRelations = forward.edges.map((e) => e.relation);
+      expect(edgeRelations).toContain('VERIFIED_BY');
+      expect(edgeRelations).toContain('ATTESTED_BY');
+    });
+  });
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Section 54 — Friction-to-Evidence Pipeline & Dissent Tracking
+  // ──────────────────────────────────────────────────────────────────────────
+  describe('Section 54 — Friction-to-Evidence Pipeline & Dissent Tracking', () => {
+    it('should record friction events, diagnose, resolve, transition to learning, and track dissent', () => {
+      const tracker = new FrictionTracker();
+
+      // 1. Record friction events across multiple categories
+      const errorFriction = tracker.record({
+        category: 'ERROR',
+        source: 'e2e-friction-test',
+        description: 'Verification engine threw unexpected exception',
+        evidence: ['stack-trace-001', 'log-entry-042'],
+        severity: 'critical',
+        correlationId: 'corr-001',
+      });
+      expect(errorFriction.status).toBe('OPEN');
+      expect(errorFriction.category).toBe('ERROR');
+      expect(errorFriction.severity).toBe('critical');
+      expect(errorFriction.evidence).toHaveLength(2);
+
+      const latencyFriction = tracker.record({
+        category: 'LATENCY',
+        source: 'e2e-latency-test',
+        description: 'Verification cycle exceeded 5s SLO threshold',
+        severity: 'warning',
+      });
+      expect(latencyFriction.status).toBe('OPEN');
+
+      // 2. Diagnose the error friction
+      const diagnosed = tracker.diagnose(
+        errorFriction.id,
+        'Root cause: null pointer in rule evaluator'
+      );
+      expect(diagnosed).not.toBeNull();
+      expect(diagnosed!.status).toBe('DIAGNOSED');
+      expect(diagnosed!.diagnosis).toBe('Root cause: null pointer in rule evaluator');
+
+      // 3. Resolve the error friction
+      const resolved = tracker.resolve(
+        errorFriction.id,
+        'Added null guard in rule evaluation path'
+      );
+      expect(resolved).not.toBeNull();
+      expect(resolved!.status).toBe('RESOLVED');
+      expect(resolved!.resolution).toBe('Added null guard in rule evaluation path');
+
+      // 4. Transition to LEARNING
+      const learned = tracker.learn(errorFriction.id);
+      expect(learned).not.toBeNull();
+      expect(learned!.status).toBe('LEARNING');
+
+      // 5. Cannot learn from unresolved friction
+      const cannotLearn = tracker.learn(latencyFriction.id);
+      expect(cannotLearn).toBeNull();
+
+      // 6. Query by status and category
+      const openEvents = tracker.getFriction({ status: 'OPEN' });
+      expect(openEvents).toHaveLength(1);
+      expect(openEvents[0].id).toBe(latencyFriction.id);
+
+      const learningEvents = tracker.getFriction({ status: 'LEARNING' });
+      expect(learningEvents).toHaveLength(1);
+
+      // 7. Record dissent — DISSENT = PRESERVE
+      const dissent = tracker.recordDissent('claim-123', [
+        { source: 'model-a', position: 'PASS', confidence: 0.92, evidence: ['All checks passed'] },
+        {
+          source: 'model-b',
+          position: 'FAIL',
+          confidence: 0.87,
+          evidence: ['Anomaly detected in metric'],
+        },
+      ]);
+      expect(dissent.status).toBe('OPEN');
+      expect(dissent.interpretations).toHaveLength(2);
+      expect(dissent.claimId).toBe('claim-123');
+
+      // 8. Resolve dissent
+      const resolvedDissent = tracker.resolveDissent(dissent.id);
+      expect(resolvedDissent).not.toBeNull();
+      expect(resolvedDissent!.status).toBe('RESOLVED');
+
+      // 9. Verify metrics reflect full lifecycle
+      const metrics = tracker.getMetrics();
+      expect(metrics.totalFriction).toBe(2);
+      expect(metrics.open).toBe(1); // latency still open
+      expect(metrics.learning).toBe(1); // error transitioned to learning
+      expect(metrics.totalDissent).toBe(1);
+      expect(metrics.openDissent).toBe(0); // dissent was resolved
+    });
+  });
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Section 55 — System Mood Evaluation from Telemetry
+  // ──────────────────────────────────────────────────────────────────────────
+  describe('Section 55 — System Mood Evaluation from Telemetry', () => {
+    it('should evaluate system mood states across health, friction, dissent, and low-confidence scenarios', () => {
+      const evaluator = new MoodEvaluator();
+
+      // 1. OPTIMAL_FLOW — high confidence, valid integrity, no dissent, verificationHealth < 0.95
+      const optimal = evaluator.evaluate(
+        { totalVerifications: 100, successRate: 0.92, averageLatencyMs: 45, systemConfidence: 0.9 },
+        true,
+        0
+      );
+      expect(optimal.state).toBe('OPTIMAL_FLOW');
+      expect(optimal.confidence).toBeGreaterThanOrEqual(0.9);
+      expect(optimal.verificationHealth).toBeGreaterThanOrEqual(0.9);
+      expect(optimal.errorRate).toBeLessThan(0.1);
+      expect(optimal.dissentCount).toBe(0);
+      expect(optimal.evaluatedAt).toBeTruthy();
+
+      // 2. HIGH_INTEGRITY — perfect success rate with high confidence
+      const highIntegrity = evaluator.evaluate(
+        { totalVerifications: 500, successRate: 1.0, averageLatencyMs: 30, systemConfidence: 0.99 },
+        true,
+        0
+      );
+      expect(highIntegrity.state).toBe('HIGH_INTEGRITY');
+      expect(highIntegrity.verificationHealth).toBe(1.0);
+      expect(highIntegrity.errorRate).toBe(0);
+
+      // 3. FRICTION_DETECTED — integrity failure
+      const frictionFromIntegrity = evaluator.evaluate(
+        { totalVerifications: 50, successRate: 0.9, averageLatencyMs: 200, systemConfidence: 0.85 },
+        false, // integrity invalid
+        0
+      );
+      expect(frictionFromIntegrity.state).toBe('FRICTION_DETECTED');
+      expect(frictionFromIntegrity.verificationHealth).toBe(0.0); // forced to 0 when integrity invalid
+
+      // 4. FRICTION_DETECTED — high error rate
+      const frictionFromErrors = evaluator.evaluate(
+        { totalVerifications: 100, successRate: 0.6, averageLatencyMs: 500, systemConfidence: 0.9 },
+        true,
+        0
+      );
+      expect(frictionFromErrors.state).toBe('FRICTION_DETECTED');
+      expect(frictionFromErrors.errorRate).toBeGreaterThan(0.3);
+
+      // 5. RECOMPILING — active dissent count > 2
+      const recompiling = evaluator.evaluate(
+        {
+          totalVerifications: 200,
+          successRate: 0.95,
+          averageLatencyMs: 80,
+          systemConfidence: 0.92,
+        },
+        true,
+        5 // high dissent
+      );
+      expect(recompiling.state).toBe('RECOMPILING');
+      expect(recompiling.dissentCount).toBe(5);
+
+      // 6. EVIDENCE_SEARCH — low confidence
+      const evidenceSearch = evaluator.evaluate(
+        { totalVerifications: 30, successRate: 0.9, averageLatencyMs: 120, systemConfidence: 0.7 },
+        true,
+        0
+      );
+      expect(evidenceSearch.state).toBe('EVIDENCE_SEARCH');
+      expect(evidenceSearch.confidence).toBeLessThan(0.8);
+      expect(evidenceSearch.uncertainty).toBeGreaterThan(0.2);
     });
   });
 });

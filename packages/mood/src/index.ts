@@ -5,7 +5,7 @@ export class MoodEvaluator {
    * Evaluate the current system mood from measurable telemetry (Pillar 19)
    */
   public evaluate(
-    metrics: SystemMetrics,
+    metrics: Partial<SystemMetrics> & { averageLatencyMs?: number },
     integrityValid: boolean,
     dissentCount: number = 0
   ): SystemMood {
