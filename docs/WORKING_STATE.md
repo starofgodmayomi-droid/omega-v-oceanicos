@@ -2,6 +2,19 @@
 
 **Updated:** 2026-09-06
 
+## Full-stack client-server contract closure & zero-gap synchronization checkpoint — 2026-09-06
+
+The entire Ω∞v Oceanicos full-stack ecosystem has reached **zero unused client-server contract gap** on `main` at `1512e73`, unifying all remaining API endpoints into the active Web operator dashboard with complete contract verification.
+
+Key architectural milestones achieved and verified:
+1. **Zero Unused Endpoints Contract Closure**: The Web dashboard now connects 100% of exposed REST API routes, including dynamic job inspection and lifecycle mutations (`/jobs/:jobId`, `/jobs/:jobId/claim`, `/jobs/:jobId/complete`, `/jobs/:jobId/fail`) and operator persistence controls (`/persistence/acknowledge`, `/persistence/reencrypt`), verified by `contract.test.ts` with `expect(unused).toEqual([])`.
+2. **Job Lifecycle & Mutation Controls**: Operators can inspect job state, attempts, worker assignments, timestamps, and error classifications, review attached job events, and trigger bounded job mutations (`claim`, `complete`, `fail`) directly from the UI.
+3. **Persistence Operator Review & Re-encryption**: Operators can record review acknowledgement for degraded storage states and trigger audited re-encryption of legacy/previous-key records with live feedback and state synchronization.
+4. **Universal Builder OS Kernel & MINI Unification**: Authoritative lifecycle (`offline` → `booting` → `ready` → `degraded` → `stopping` → `stopped`), cycle admission and task admission with deep input validation (`MAX_TASK_INPUT_KEYS = 64`, `MAX_TASK_INPUT_DEPTH = 8`, `MAX_TASK_INPUT_NODES = 256`, acyclicity enforcement), and monotonic audit event logging.
+5. **Multi-Model Dissent Preservation**: Evaluated rules in `VerificationEngine` preserve explicit dissent (`DISSENT = PRESERVE`) when model interpretations disagree, recording stance (`PASS` vs `FAIL`) and failure evidence rather than manufacturing artificial consensus.
+6. **Cryptographic Hash Chain Lineage**: `Remember.rememberWithEntries()` captures unbroken sequential SHA-256 links (`#1 OBSERVATION` → `#2 VERIFICATION` → `#3 MEMORY`), embedded directly in `MiniCycleResult.entries` and `/complete-loop`.
+7. **Monorepo-Wide Verification**: 121/121 test suites passing (1,877 passed tests, 0 failures, 1 skipped), clean TypeScript compilation (`tsc --noEmit`), zero ESLint errors, and 100% brand token compliance (`tokens.css`).
+
 ## Full-stack convergence, multi-model dissent preservation & evidence dossier export checkpoint — 2026-09-06
 
 The entire Ω∞v Oceanicos full-stack ecosystem has completed full convergence on `main` at `26080dc`, resolving and subsuming `origin/main` (`9814a54`) into an unbroken lineage.
