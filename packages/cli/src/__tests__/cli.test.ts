@@ -67,7 +67,7 @@ describe('OceanicosCLI', () => {
     const res = await cli.run(['trace', 'cli-test-span']);
     expect(res.success).toBe(true);
     expect(res.message).toContain('Trace Context Generated');
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     expect((res.output as any).traceparent).toMatch(/^00-[a-f0-9]{32}-[a-f0-9]{16}-01$/);
   });
 
@@ -82,7 +82,7 @@ describe('OceanicosCLI', () => {
     const res = await cli.run(['ecosystem', 'CLI full-stack state transition']);
     expect(res.success).toBe(true);
     expect(res.message).toContain('Unified Ecosystem Flow: PASSED');
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     expect((res.output as any).kernelState).toHaveProperty('verificationStatus', 'VERIFIED');
   });
 
@@ -90,7 +90,7 @@ describe('OceanicosCLI', () => {
     const res = await cli.run(['grand-flow', 'CLI grand continuum transition']);
     expect(res.success).toBe(true);
     expect(res.message).toContain('Grand Continuum Flow: PASSED');
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     expect((res.output as any).canonicalState).toHaveProperty('verificationStatus', 'VERIFIED');
   });
 
@@ -99,7 +99,7 @@ describe('OceanicosCLI', () => {
     expect(res.success).toBe(true);
     expect(res.message).toContain('Hyper Continuum Flow: PASSED');
     expect(res.message).toContain('Stages: 22');
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     expect((res.output as any).stageCount).toBe(22);
   });
 
@@ -118,8 +118,7 @@ describe('OceanicosCLI', () => {
     expect(res.message).toContain('Omega Total Manifest Locked');
     expect(res.message).toContain('Root: Ø');
     expect(res.message).toContain('TOOLS_FOR_EVOLUTION_NOT_WAR');
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     expect((res.output as any).stateRoot).toBe('Ø');
   });
 });
-

@@ -1,4 +1,10 @@
-import { FormlessSwarm, ObserverAgent, VerifierAgent, SecurityAgent, GrandContinuumAgent } from '../index';
+import {
+  FormlessSwarm,
+  ObserverAgent,
+  VerifierAgent,
+  SecurityAgent,
+  GrandContinuumAgent,
+} from '../index';
 import { OceanicosClient } from '@omega-v/sdk';
 
 describe('Formless Swarm & Agents', () => {
@@ -61,4 +67,3 @@ describe('Formless Swarm & Agents', () => {
     expect(cycleRes.fullLoopResult.attestation.verified).toBe(true);
   });
 });
-

@@ -375,7 +375,7 @@ const parameterizedRoutes = [
   '/api/persistence/acknowledge',
   '/api/persistence/reencrypt',
 ] as const;
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+
 void parameterizedRoutes;
 
 const stages = ['observe', 'evidence', 'verify', 'attest', 'act', 'learn', 'recompile'];

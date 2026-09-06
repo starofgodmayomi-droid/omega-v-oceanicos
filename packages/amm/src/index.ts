@@ -156,7 +156,9 @@ export class OceanicosAMMEngine {
     const mintedShares = Math.min(sharesA, sharesB);
 
     if (opts.minShares && mintedShares < opts.minShares) {
-      throw new Error(`Slippage error: minted shares ${mintedShares} < minShares ${opts.minShares}`);
+      throw new Error(
+        `Slippage error: minted shares ${mintedShares} < minShares ${opts.minShares}`
+      );
     }
 
     pool.reserveA += opts.amountA;
@@ -209,8 +211,10 @@ export class OceanicosAMMEngine {
     const amountA = shareFraction * pool.reserveA;
     const amountB = shareFraction * pool.reserveB;
 
-    if (opts.minA && amountA < opts.minA) throw new Error(`Slippage: amountA ${amountA} < minA ${opts.minA}`);
-    if (opts.minB && amountB < opts.minB) throw new Error(`Slippage: amountB ${amountB} < minB ${opts.minB}`);
+    if (opts.minA && amountA < opts.minA)
+      throw new Error(`Slippage: amountA ${amountA} < minA ${opts.minA}`);
+    if (opts.minB && amountB < opts.minB)
+      throw new Error(`Slippage: amountB ${amountB} < minB ${opts.minB}`);
 
     pool.reserveA -= amountA;
     pool.reserveB -= amountB;
@@ -240,14 +244,19 @@ export class OceanicosAMMEngine {
 
   /* ── 4. Swap Execution ── */
 
-  getAmountOut(poolId: string, tokenIn: string, amountIn: number): { amountOut: number; priceImpactPct: number; feePaid: number } {
+  getAmountOut(
+    poolId: string,
+    tokenIn: string,
+    amountIn: number
+  ): { amountOut: number; priceImpactPct: number; feePaid: number } {
     const pool = this.pools.get(poolId);
     if (!pool) throw new Error(`Pool ${poolId} not found`);
     if (amountIn <= 0) throw new Error('amountIn must be > 0');
 
     const isTokenA = tokenIn.toUpperCase() === pool.tokenA;
     const isTokenB = tokenIn.toUpperCase() === pool.tokenB;
-    if (!isTokenA && !isTokenB) throw new Error(`Token ${tokenIn} does not belong to pool ${poolId}`);
+    if (!isTokenA && !isTokenB)
+      throw new Error(`Token ${tokenIn} does not belong to pool ${poolId}`);
 
     const reserveIn = isTokenA ? pool.reserveA : pool.reserveB;
     const reserveOut = isTokenA ? pool.reserveB : pool.reserveA;
@@ -277,10 +286,16 @@ export class OceanicosAMMEngine {
     const isTokenA = opts.tokenIn.toUpperCase() === pool.tokenA;
     const tokenOut = isTokenA ? pool.tokenB : pool.tokenA;
 
-    const { amountOut, priceImpactPct, feePaid } = this.getAmountOut(opts.poolId, opts.tokenIn, opts.amountIn);
+    const { amountOut, priceImpactPct, feePaid } = this.getAmountOut(
+      opts.poolId,
+      opts.tokenIn,
+      opts.amountIn
+    );
 
     if (opts.minAmountOut && amountOut < opts.minAmountOut) {
-      throw new Error(`Slippage exceeded: output ${amountOut.toFixed(4)} < minAmountOut ${opts.minAmountOut}`);
+      throw new Error(
+        `Slippage exceeded: output ${amountOut.toFixed(4)} < minAmountOut ${opts.minAmountOut}`
+      );
     }
 
     const kBefore = pool.kInvariant;

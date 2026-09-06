@@ -7,6 +7,7 @@
 The full-stack E2E integration test suite (`tests/integration/fullstack_e2e.integration.test.ts`) has completed the end-to-end integration and verification of Sections 56 through 59, bringing the E2E suite to 66 passing integration scenarios (100%) and 1,895 passed tests across all 121 suites monorepo-wide.
 
 Key architectural milestones achieved and verified:
+
 1. **Universal Lexicon Bilingual Verdict Legibility (Section 56)**:
    - Integrated `@omega-v/lexicon` validating first-class English (`en`) and Nigerian Pidgin / Naijá (`pcm`, ISO 639-3) verdict legibility per the project charter.
    - Verified polarity preservation across all states (`affirming`, `negating`, `pending`, `unresolved`), ensuring translations cannot soften negative verdicts.
@@ -32,6 +33,7 @@ Key architectural milestones achieved and verified:
 The Ω∞v Oceanicos comprehensive full-stack E2E integration test suite (`tests/integration/fullstack_e2e.integration.test.ts`) has completed end-to-end integration and verification of Sections 53, 54, and 55, bringing the test suite to 62 passing integration scenarios (100%) and 1,891 passed tests across all 121 suites monorepo-wide.
 
 Key architectural milestones achieved and verified:
+
 1. **Provenance Knowledge Graph & Causal Lineage Traversal (Section 53)**:
    - Verified end-to-end provenance graph construction (`@omega-v/graph`) from `ProvenanceStore` event log entries (`Observation`, `VerificationResult`, `Attestation`).
    - Validated bidirectional BFS graph traversal: forward causality (`CAUSE → EFFECT`, verified relations `VERIFIED_BY`, `ATTESTED_BY`) and backward lineage (`EFFECT → CAUSE`).
@@ -52,6 +54,7 @@ Key architectural milestones achieved and verified:
 The Subsystems Intelligence Matrix (`GET /subsystems`) in `apps/api/src/index.ts` has been fully populated across all 66 packages of the Ω∞v Oceanicos ecosystem, establishing complete architectural inventory across all 6 canonical categories.
 
 Key architectural milestones achieved and verified:
+
 1. **Holistic 66-Module Ecosystem Inventory**:
    - **Core (8)**: `mini`, `os`, `observer`, `lexicon`, `edge`, `compiler`, `ir`, `kernel`.
    - **Runtime (15)**: `swarm`, `coordination`, `runtime`, `vaas`, `gateway`, `learning`, `evm`, `orchestrator`, `worker`, `scheduler`, `intent`, `pipeline`, `enclave`, `mood`, `webhook`.
@@ -75,6 +78,7 @@ Key architectural milestones achieved and verified:
 The Ω∞v Oceanicos full-stack architecture has completed the end-to-end integration of Section 46 (`@omega-v/green`) and Section 47 (`@omega-v/learning` + `@omega-v/evolution`) in the comprehensive full-stack E2E integration test suite, and expanded the canonical Subsystems Matrix in `apps/api` to 30 active modules.
 
 Key architectural milestones achieved and verified:
+
 1. **Grounded Invariant Verification & True GREEN State Evaluation (Section 46)**:
    - Added Section 46 to `tests/integration/fullstack_e2e.integration.test.ts` utilizing `GreenEngine` (`@omega-v/green`).
    - Validated five-fold invariant truth gate: requires all checks passed, existing evidence artifact, unbroken lineage to initial observation, valid cryptographic attestation, and absence of hidden critical failures in evidence path.
@@ -104,6 +108,7 @@ Key architectural milestones achieved and verified:
 The Subsystems Intelligence Matrix and Command Line Interface (`@omega-v/cli`) have completed comprehensive canonical alignment and ESM runtime isolation on `main` at `406d0ea` and `a6d84b6`.
 
 Key architectural milestones achieved and verified:
+
 1. **ESM Module Resolution & Runtime Isolation (`@omega-v/cli`)**:
    - Resolved Node.js ESM runtime module resolution by converting static imports of continuum engines in `OceanicosCLI` (`@omega-v/agents`, `@omega-v/edge`, `@omega-v/analytics`, `@omega-v/scheduler`, `@omega-v/telemetry`, `@omega-v/vaas`, `@omega-v/replay`, `@omega-v/contract`, `@omega-v/auth`, `@omega-v/federation`, `@omega-v/benchmark`, `@omega-v/notary`, `@omega-v/sandbox`, `@omega-v/policy`, `@omega-v/zk`, `@omega-v/gateway`, `@omega-v/webhook`, `@omega-v/oracle`, `@omega-v/vault`, `@omega-v/dispute`) to dynamic runtime loading.
    - Fixed `packages/cli/dist/cli.js` and `packages/cli/dist/index.js` startup so CLI commands (`omega health`, `omega subsystems`, `omega status`, `omega verify`, `omega os`, etc.) execute cleanly under Node without evaluating or failing on unbuilt continuum packages.
@@ -126,6 +131,7 @@ Key architectural milestones achieved and verified:
 The Subsystem Intelligence Matrix has been extended across `@omega-v/sdk` and `@omega-v/cli` on `main` at `ae75377`, completing end-to-end parity across REST API, Web dashboard, SDK client, and CLI tooling.
 
 Key architectural milestones achieved and verified:
+
 1. **SDK Client (`@omega-v/sdk`)**:
    - Added `SubsystemInfo` and `SubsystemsResponse` types.
    - Implemented `OmegaClient.getSubsystems(query?: { category?: string })`, supporting category filtering (`?category=...`).
@@ -153,6 +159,7 @@ Key architectural milestones achieved and verified:
 The Ω∞v Oceanicos architecture has integrated an operational **Subsystem Intelligence Matrix** across the REST API, client-server contract, and Web operator dashboard on `main` at `73dbad3` and `e734e7b`.
 
 Key architectural milestones achieved and verified:
+
 1. **Subsystems Inventory API (`GET /subsystems`)**:
    - Exposes an inventory of 19 foundational and expanded subsystems across 6 operational categories (`core`, `runtime`, `consensus`, `verification`, `governance`, `storage`).
    - Reports `id`, `name`, `category`, `package`, `status`, and `description` for each subsystem.
@@ -175,6 +182,7 @@ Key architectural milestones achieved and verified:
 The hosted verification workflow `.github/workflows/verification-ci.yml` has been updated and verified on `main` at `20f6aa7`, equipping CI with explicit `OMEGA_SIGNING_KEY` credentials and validating all 18 automated CLI verification commands.
 
 Key architectural milestones achieved and verified:
+
 1. **CI Pipeline Environment Configuration**: Added `env: OMEGA_SIGNING_KEY: ci-verification-signing-key` to `.github/workflows/verification-ci.yml`, preventing `MissingSigningKeyError` in non-interactive CI execution.
 2. **Automated CLI Command Suite Local Validation**: All 18 CLI verification commands across the monorepo executed locally with zero errors:
    - `swarm`: Formless Swarm cycle passed across 6 agents.
@@ -202,6 +210,7 @@ Key architectural milestones achieved and verified:
 The entire Ω∞v Oceanicos monorepo has completed **full production build compilation**, strict Node.js ESM module resolution, and live API smoke verification on `main` at `0aa18a0`.
 
 Key architectural milestones achieved and verified:
+
 1. **ESM Module Resolution & Package Compilation**: Added explicit `.js` import specifiers across `@omega-v/remember` (`./store.js`) and `@omega-v/mini` (`./os.js`, `./omegaTotal.js`), and linked all workspace package declarations in `apps/api/tsconfig.json` and package tsconfigs (`packages/mini`, `packages/remember`), enabling error-free compilation to `dist/`.
 2. **Production Bundle Builds**:
    - `apps/web`: Vite 4.5.14 production bundle built in 963ms (`dist/index.html`, `dist/assets/index-*.css`, `dist/assets/index-*.js`).
@@ -219,6 +228,7 @@ Key architectural milestones achieved and verified:
 The entire Ω∞v Oceanicos full-stack ecosystem has reached **zero unused client-server contract gap** on `main` at `1512e73`, unifying all remaining API endpoints into the active Web operator dashboard with complete contract verification.
 
 Key architectural milestones achieved and verified:
+
 1. **Zero Unused Endpoints Contract Closure**: The Web dashboard now connects 100% of exposed REST API routes, including dynamic job inspection and lifecycle mutations (`/jobs/:jobId`, `/jobs/:jobId/claim`, `/jobs/:jobId/complete`, `/jobs/:jobId/fail`) and operator persistence controls (`/persistence/acknowledge`, `/persistence/reencrypt`), verified by `contract.test.ts` with `expect(unused).toEqual([])`.
 2. **Job Lifecycle & Mutation Controls**: Operators can inspect job state, attempts, worker assignments, timestamps, and error classifications, review attached job events, and trigger bounded job mutations (`claim`, `complete`, `fail`) directly from the UI.
 3. **Persistence Operator Review & Re-encryption**: Operators can record review acknowledgement for degraded storage states and trigger audited re-encryption of legacy/previous-key records with live feedback and state synchronization.
@@ -232,6 +242,7 @@ Key architectural milestones achieved and verified:
 The entire Ω∞v Oceanicos full-stack ecosystem has completed full convergence on `main` at `26080dc`, resolving and subsuming `origin/main` (`9814a54`) into an unbroken lineage.
 
 Key architectural milestones achieved and verified:
+
 1. **Universal Builder OS Kernel & MINI Unification**: Authoritative lifecycle (`offline` → `booting` → `ready` → `degraded` → `stopping` → `stopped`), cycle admission and task admission with deep input validation (`MAX_TASK_INPUT_KEYS = 64`, `MAX_TASK_INPUT_DEPTH = 8`, `MAX_TASK_INPUT_NODES = 256`, acyclicity enforcement), and monotonic audit event logging.
 2. **Multi-Model Dissent Preservation**: Evaluated rules in `VerificationEngine` preserve explicit dissent (`DISSENT = PRESERVE`) when model interpretations disagree, recording stance (`PASS` vs `FAIL`) and failure evidence rather than manufacturing artificial consensus.
 3. **Cryptographic Hash Chain Lineage**: `Remember.rememberWithEntries()` captures unbroken sequential SHA-256 links (`#1 OBSERVATION` → `#2 VERIFICATION` → `#3 MEMORY`), embedded directly in `MiniCycleResult.entries` and `/complete-loop`.

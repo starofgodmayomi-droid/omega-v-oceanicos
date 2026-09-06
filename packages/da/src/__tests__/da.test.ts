@@ -80,7 +80,11 @@ describe('OceanicosDAEngine — Data Availability Sampling & Erasure Coding', ()
 
   describe('5. DA Layer Statistics', () => {
     it('should aggregate data availability metrics', () => {
-      engine.submitBlob({ namespace: 'ns-stats', submitterDid: 'did:omega:x', rawData: 'Hello DA Layer' });
+      engine.submitBlob({
+        namespace: 'ns-stats',
+        submitterDid: 'did:omega:x',
+        rawData: 'Hello DA Layer',
+      });
       const stats = engine.getStats();
 
       expect(stats.totalBlobs).toBe(1);

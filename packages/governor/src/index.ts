@@ -10,13 +10,7 @@ import { createHmac, randomUUID } from 'crypto';
 /* ─── Types ─────────────────────────────────────────────────────── */
 
 export type ProposalStatus =
-  | 'PENDING'
-  | 'ACTIVE'
-  | 'DEFEATED'
-  | 'SUCCEEDED'
-  | 'QUEUED'
-  | 'EXECUTED'
-  | 'CANCELLED';
+  'PENDING' | 'ACTIVE' | 'DEFEATED' | 'SUCCEEDED' | 'QUEUED' | 'EXECUTED' | 'CANCELLED';
 
 export type VoteChoice = 'FOR' | 'AGAINST' | 'ABSTAIN';
 
@@ -218,12 +212,16 @@ export class OceanicosGovernorEngine {
     const totalVotes = proposal.forVotes + proposal.againstVotes + proposal.abstainVotes;
     if (totalVotes < proposal.quorumPower) {
       proposal.status = 'DEFEATED';
-      throw new Error(`Proposal ${proposalId} failed quorum: ${totalVotes}/${proposal.quorumPower} power`);
+      throw new Error(
+        `Proposal ${proposalId} failed quorum: ${totalVotes}/${proposal.quorumPower} power`
+      );
     }
 
     if (proposal.forVotes <= proposal.againstVotes) {
       proposal.status = 'DEFEATED';
-      throw new Error(`Proposal ${proposalId} defeated: FOR (${proposal.forVotes}) <= AGAINST (${proposal.againstVotes})`);
+      throw new Error(
+        `Proposal ${proposalId} defeated: FOR (${proposal.forVotes}) <= AGAINST (${proposal.againstVotes})`
+      );
     }
 
     const now = new Date();
@@ -241,12 +239,16 @@ export class OceanicosGovernorEngine {
       throw new Error(`Proposal ${proposalId} not found`);
     }
     if (proposal.status !== 'QUEUED') {
-      throw new Error(`Proposal ${proposalId} must be QUEUED to execute (current status: ${proposal.status})`);
+      throw new Error(
+        `Proposal ${proposalId} must be QUEUED to execute (current status: ${proposal.status})`
+      );
     }
 
     const now = new Date();
     if (proposal.etaExecutionTime && new Date(proposal.etaExecutionTime) > now) {
-      throw new Error(`Proposal ${proposalId} is still timelocked until ${proposal.etaExecutionTime}`);
+      throw new Error(
+        `Proposal ${proposalId} is still timelocked until ${proposal.etaExecutionTime}`
+      );
     }
 
     const executedAt = now.toISOString();

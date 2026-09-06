@@ -136,10 +136,7 @@ export class OceanicosRelayEngine {
       `PACKET:${packetId}:${channelKey}:${nextNonce}:${opts.senderDid}:${opts.recipientDid}:${JSON.stringify(opts.payload)}:${now}`
     );
 
-    const proofWitness = hmac(
-      this.secret,
-      `WITNESS:${packetHash}:${opts.senderDid}:${now}`
-    );
+    const proofWitness = hmac(this.secret, `WITNESS:${packetHash}:${opts.senderDid}:${now}`);
 
     const packet: RelayPacket = {
       packetId,
@@ -192,7 +189,9 @@ export class OceanicosRelayEngine {
       throw new Error(`Packet ${packetId} not found`);
     }
     if (packet.status !== 'RELAYED') {
-      throw new Error(`Packet ${packetId} must be in RELAYED status to acknowledge (current: ${packet.status})`);
+      throw new Error(
+        `Packet ${packetId} must be in RELAYED status to acknowledge (current: ${packet.status})`
+      );
     }
     if (!targetReceiptHash.startsWith('0x')) {
       throw new Error('targetReceiptHash must be a valid 0x-prefixed hexadecimal hash');
@@ -256,7 +255,8 @@ export class OceanicosRelayEngine {
       dispatchedCount: list.filter((p) => p.status === 'DISPATCHED').length,
       relayedCount: list.filter((p) => p.status === 'RELAYED').length,
       acknowledgedCount: list.filter((p) => p.status === 'ACKNOWLEDGED').length,
-      activeRelayers: Array.from(this.relayers.values()).filter((r) => r.status === 'ACTIVE').length,
+      activeRelayers: Array.from(this.relayers.values()).filter((r) => r.status === 'ACTIVE')
+        .length,
       totalChannels: this.channelNonces.size,
     };
   }

@@ -51,9 +51,7 @@ describe('OceanicosOrchestratorEngine — Multi-Agent Swarm Orchestrator', () =>
     it('should record execution attestations and update batch completion', () => {
       const batch = engine.dispatchParallelBatch({
         batchName: 'Telemetry Sync',
-        tasks: [
-          { name: 'Collect Metrics', assignedAgentDid: 'did:omega:worker:metrics' },
-        ],
+        tasks: [{ name: 'Collect Metrics', assignedAgentDid: 'did:omega:worker:metrics' }],
       });
 
       const task = engine.getTasks(batch.batchId)[0];

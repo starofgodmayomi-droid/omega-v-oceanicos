@@ -125,7 +125,12 @@ export class OceanicosVirtualMachine {
       throw new Error('Contract code cannot be empty');
     }
 
-    const address = '0x' + hmac(this.secret, `DEPLOY:${opts.deployerDid}:${opts.name}:${opts.code.join(',')}:${Date.now()}`).slice(2, 42);
+    const address =
+      '0x' +
+      hmac(
+        this.secret,
+        `DEPLOY:${opts.deployerDid}:${opts.name}:${opts.code.join(',')}:${Date.now()}`
+      ).slice(2, 42);
     const codeHash = hmac(this.secret, opts.code.join(';'));
     const storage = { ...(opts.initialStorage ?? {}) };
     const storageRoot = computeStorageRoot(this.secret, storage);

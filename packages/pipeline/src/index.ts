@@ -4,20 +4,9 @@ import { OceanicosWorkerPool, BuildCapability, BuildAttestation } from '@omega-v
 // ─── Types ──────────────────────────────────────────────────────────────────
 
 export type PipelineStatus =
-  | 'PENDING'
-  | 'RUNNING'
-  | 'PAUSED'
-  | 'SUCCESS'
-  | 'FAILED'
-  | 'ROLLED_BACK';
+  'PENDING' | 'RUNNING' | 'PAUSED' | 'SUCCESS' | 'FAILED' | 'ROLLED_BACK';
 
-export type StageStatus =
-  | 'PENDING'
-  | 'RUNNING'
-  | 'SUCCESS'
-  | 'FAILED'
-  | 'SKIPPED'
-  | 'GATE_BLOCKED';
+export type StageStatus = 'PENDING' | 'RUNNING' | 'SUCCESS' | 'FAILED' | 'SKIPPED' | 'GATE_BLOCKED';
 
 export type GatePolicy = 'AUTO_PASS' | 'REQUIRE_ATTESTATION' | 'REQUIRE_HUMAN' | 'THRESHOLD';
 
@@ -207,7 +196,11 @@ export class OceanicosPipelineEngine {
         );
 
         if (!capable) {
-          spec.workerPool.failJob(job.jobId, workers[0]?.workerId || 'worker-fallback', 'No capable worker available');
+          spec.workerPool.failJob(
+            job.jobId,
+            workers[0]?.workerId || 'worker-fallback',
+            'No capable worker available'
+          );
           continue;
         }
 
@@ -221,23 +214,15 @@ export class OceanicosPipelineEngine {
           builtAt: new Date().toISOString(),
         };
 
-        const { attestation } = spec.workerPool.completeJob(
-          job.jobId,
-          capable.workerId,
-          output,
-          [
-            {
-              name: `${stage.name.toLowerCase().replace(/\s+/g, '-')}-output.json`,
-              path: `dist/pipeline/${runId}/${stageId}/output.json`,
-              contentHash: crypto
-                .createHash('sha256')
-                .update(JSON.stringify(output))
-                .digest('hex'),
-              sizeBytes: JSON.stringify(output).length,
-              mimeType: 'application/json',
-            },
-          ]
-        );
+        const { attestation } = spec.workerPool.completeJob(job.jobId, capable.workerId, output, [
+          {
+            name: `${stage.name.toLowerCase().replace(/\s+/g, '-')}-output.json`,
+            path: `dist/pipeline/${runId}/${stageId}/output.json`,
+            contentHash: crypto.createHash('sha256').update(JSON.stringify(output)).digest('hex'),
+            sizeBytes: JSON.stringify(output).length,
+            mimeType: 'application/json',
+          },
+        ]);
 
         stage.attestations.push(attestation);
         totalAttestations++;
@@ -288,7 +273,8 @@ export class OceanicosPipelineEngine {
       run,
       stagesExecuted: stages.filter((s) => s.status !== 'PENDING').length,
       stagesPassed: stages.filter((s) => s.status === 'SUCCESS').length,
-      stagesFailed: stages.filter((s) => s.status === 'FAILED' || s.status === 'GATE_BLOCKED').length,
+      stagesFailed: stages.filter((s) => s.status === 'FAILED' || s.status === 'GATE_BLOCKED')
+        .length,
       totalAttestations,
       rollbackTriggered,
       pipelineSignature: run.pipelineSignature,
@@ -343,8 +329,7 @@ export class OceanicosPipelineEngine {
       successfulRuns: successful.length,
       failedRuns: failed.length,
       rolledBackRuns: rolledBack.length,
-      avgDurationMs:
-        runs.length > 0 ? Math.round(totalDurationMs / runs.length) : 0,
+      avgDurationMs: runs.length > 0 ? Math.round(totalDurationMs / runs.length) : 0,
       totalStagesExecuted,
       totalAttestations,
     };

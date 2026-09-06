@@ -8,7 +8,7 @@ export interface EnclaveInstance {
   type: EnclaveType;
   name: string;
   mrEnclave: string; // SHA-256 code/memory measurement
-  mrSigner: string;  // SHA-256 author/publisher measurement
+  mrSigner: string; // SHA-256 author/publisher measurement
   pcrValues: {
     pcr0: string; // Boot measurement
     pcr1: string; // Host configuration
@@ -41,8 +41,8 @@ export interface SealedState {
   enclaveId: string;
   mrEnclaveConstraint: string;
   ciphertext: string; // Base64 AES-256-GCM
-  iv: string;         // Hex
-  authTag: string;    // Hex
+  iv: string; // Hex
+  authTag: string; // Hex
   sealedAt: string;
 }
 
@@ -72,7 +72,10 @@ export class OceanicosEnclaveEngine {
 
   constructor(hardwareRootKey = 'omega-v-root-hardware-key') {
     this.hardwareRootKey = hardwareRootKey;
-    this.masterSealingKey = crypto.createHash('sha256').update(hardwareRootKey + ':sealing').digest();
+    this.masterSealingKey = crypto
+      .createHash('sha256')
+      .update(hardwareRootKey + ':sealing')
+      .digest();
     this.seedCanonicalEnclaves();
   }
 
@@ -101,11 +104,13 @@ export class OceanicosEnclaveEngine {
     codePayload: string;
     authorSignerKey: string;
   }): EnclaveInstance {
-    const enclaveId = spec.enclaveId || `enclave-${spec.type.toLowerCase()}-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
-    
+    const enclaveId =
+      spec.enclaveId ||
+      `enclave-${spec.type.toLowerCase()}-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+
     // MRENCLAVE: cryptographic measurement of the loaded code payload
     const mrEnclave = crypto.createHash('sha256').update(spec.codePayload).digest('hex');
-    
+
     // MRSIGNER: cryptographic measurement of the author key
     const mrSigner = crypto.createHash('sha256').update(spec.authorSignerKey).digest('hex');
 
@@ -237,7 +242,9 @@ export class OceanicosEnclaveEngine {
     if (!enclave) throw new Error(`Enclave '${enclaveId}' not found`);
 
     if (enclave.mrEnclave !== sealed.mrEnclaveConstraint) {
-      throw new Error(`Unsealing rejected: MRENCLAVE mismatch (expected ${sealed.mrEnclaveConstraint}, got ${enclave.mrEnclave})`);
+      throw new Error(
+        `Unsealing rejected: MRENCLAVE mismatch (expected ${sealed.mrEnclaveConstraint}, got ${enclave.mrEnclave})`
+      );
     }
 
     const derivedKey = crypto
@@ -245,7 +252,11 @@ export class OceanicosEnclaveEngine {
       .update(enclave.mrEnclave)
       .digest();
 
-    const decipher = crypto.createDecipheriv('aes-256-gcm', derivedKey, Buffer.from(sealed.iv, 'hex'));
+    const decipher = crypto.createDecipheriv(
+      'aes-256-gcm',
+      derivedKey,
+      Buffer.from(sealed.iv, 'hex')
+    );
     decipher.setAuthTag(Buffer.from(sealed.authTag, 'hex'));
     let decrypted = decipher.update(sealed.ciphertext, 'base64', 'utf8');
     decrypted += decipher.final('utf8');

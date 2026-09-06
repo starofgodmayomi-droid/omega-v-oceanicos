@@ -155,13 +155,19 @@ export class OceanicosShardingEngine {
     if (!srcShard || !tgtShard) throw new Error('Invalid source or target shard ID');
 
     // Create 2PC prepare proofs
-    const srcProof = '0x' + crypto.createHmac('sha256', this.signingKey)
-      .update(`PREPARE:${txId}:${spec.sourceShardId}:${JSON.stringify(spec.sourceValue)}`)
-      .digest('hex');
+    const srcProof =
+      '0x' +
+      crypto
+        .createHmac('sha256', this.signingKey)
+        .update(`PREPARE:${txId}:${spec.sourceShardId}:${JSON.stringify(spec.sourceValue)}`)
+        .digest('hex');
 
-    const tgtProof = '0x' + crypto.createHmac('sha256', this.signingKey)
-      .update(`PREPARE:${txId}:${spec.targetShardId}:${JSON.stringify(spec.targetValue)}`)
-      .digest('hex');
+    const tgtProof =
+      '0x' +
+      crypto
+        .createHmac('sha256', this.signingKey)
+        .update(`PREPARE:${txId}:${spec.targetShardId}:${JSON.stringify(spec.targetValue)}`)
+        .digest('hex');
 
     const tx: CrossShardTransaction = {
       txId,
@@ -202,9 +208,12 @@ export class OceanicosShardingEngine {
       tgtShard.merkleRoot = this.calculateShardMerkleRoot(tx.targetShardId);
     }
 
-    const commitProof = '0x' + crypto.createHmac('sha256', this.signingKey)
-      .update(`COMMIT:${txId}:${tx.sourceShardId}:${tx.targetShardId}:${tx.timestamp}`)
-      .digest('hex');
+    const commitProof =
+      '0x' +
+      crypto
+        .createHmac('sha256', this.signingKey)
+        .update(`COMMIT:${txId}:${tx.sourceShardId}:${tx.targetShardId}:${tx.timestamp}`)
+        .digest('hex');
 
     tx.state = 'COMMITTED';
     tx.commitProof = commitProof;

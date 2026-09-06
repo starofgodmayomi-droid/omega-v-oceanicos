@@ -160,7 +160,7 @@ export class EdgeObserver {
     if (syncHandler) {
       try {
         syncSuccess = await syncHandler(batch);
-      } catch (err) {
+      } catch {
         syncSuccess = false;
       }
     }

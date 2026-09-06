@@ -8,7 +8,14 @@ import { GreenEngine } from '@omega-v/green';
 import { HumanEngine } from '@omega-v/human';
 
 export type AgentRole =
-  'Observer' | 'Verifier' | 'Builder' | 'Security' | 'Governance' | 'Learning' | 'Human' | 'GrandContinuum';
+  | 'Observer'
+  | 'Verifier'
+  | 'Builder'
+  | 'Security'
+  | 'Governance'
+  | 'Learning'
+  | 'Human'
+  | 'GrandContinuum';
 
 export interface AgentActionResult {
   agentRole: AgentRole;
@@ -214,8 +221,12 @@ export class GrandContinuumAgent extends FormlessAgent {
   public async executeTask(input: Record<string, unknown> = {}): Promise<AgentActionResult> {
     const claim = (input.claim as string) || 'Grand Continuum Full-Stack Convergence';
     const actorDid = (input.actorDid as string) || 'did:omega:agent:grand-continuum';
-    const ruleDefinition = (input.ruleDefinition as string) || 'responseTime < 100 && statusCode == 200';
-    const metadata = (input.metadata as Record<string, unknown>) || { responseTime: 25, statusCode: 200 };
+    const ruleDefinition =
+      (input.ruleDefinition as string) || 'responseTime < 100 && statusCode == 200';
+    const metadata = (input.metadata as Record<string, unknown>) || {
+      responseTime: 25,
+      statusCode: 200,
+    };
     const swapAmount = (input.swapAmount as number) || 100;
 
     const grandResult = await this.sdk.runGrandFlow({

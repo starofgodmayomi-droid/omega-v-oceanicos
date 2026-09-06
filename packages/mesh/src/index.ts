@@ -1,7 +1,14 @@
 import crypto from 'crypto';
 
 export type PeerStatus = 'CONNECTED' | 'DISCONNECTED' | 'SUSPECT' | 'BANNED';
-export type GossipMessageType = 'BLOCK_ANNOUNCE' | 'TX_PROPAGATE' | 'ATTESTATION_SHARE' | 'PEER_DISCOVERY' | 'HEARTBEAT' | 'SYNC_REQUEST' | 'SYNC_RESPONSE';
+export type GossipMessageType =
+  | 'BLOCK_ANNOUNCE'
+  | 'TX_PROPAGATE'
+  | 'ATTESTATION_SHARE'
+  | 'PEER_DISCOVERY'
+  | 'HEARTBEAT'
+  | 'SYNC_REQUEST'
+  | 'SYNC_RESPONSE';
 
 export interface MeshPeer {
   peerId: string;
@@ -72,9 +79,21 @@ export class OceanicosMeshEngine {
   private seedNetwork(): void {
     const regions = ['us-east-1', 'eu-west-1', 'ap-southeast-1'];
     const seedPeers = [
-      { did: 'did:omega:peer:alpha-seed', endpoint: 'wss://alpha.mesh.omega-v.io:9944', region: regions[0] },
-      { did: 'did:omega:peer:beta-seed', endpoint: 'wss://beta.mesh.omega-v.io:9944', region: regions[1] },
-      { did: 'did:omega:peer:gamma-seed', endpoint: 'wss://gamma.mesh.omega-v.io:9944', region: regions[2] },
+      {
+        did: 'did:omega:peer:alpha-seed',
+        endpoint: 'wss://alpha.mesh.omega-v.io:9944',
+        region: regions[0],
+      },
+      {
+        did: 'did:omega:peer:beta-seed',
+        endpoint: 'wss://beta.mesh.omega-v.io:9944',
+        region: regions[1],
+      },
+      {
+        did: 'did:omega:peer:gamma-seed',
+        endpoint: 'wss://gamma.mesh.omega-v.io:9944',
+        region: regions[2],
+      },
     ];
 
     for (const seed of seedPeers) {
@@ -136,7 +155,8 @@ export class OceanicosMeshEngine {
 
     // Sign message
     const sigPayload = `${messageId}:${spec.senderDid}:${spec.type}:${JSON.stringify(spec.payload)}:${timestamp}`;
-    const signature = '0x' + crypto.createHmac('sha256', this.signingKey).update(sigPayload).digest('hex');
+    const signature =
+      '0x' + crypto.createHmac('sha256', this.signingKey).update(sigPayload).digest('hex');
 
     // Simulate epidemic broadcast
     const connectedPeers = Array.from(this.peers.values()).filter(
@@ -201,12 +221,17 @@ export class OceanicosMeshEngine {
     if (!message) throw new Error(`Message '${messageId}' not found`);
 
     const sigPayload = `${message.messageId}:${message.senderDid}:${message.type}:${JSON.stringify(message.payload)}:${message.timestamp}`;
-    const expected = '0x' + crypto.createHmac('sha256', this.signingKey).update(sigPayload).digest('hex');
+    const expected =
+      '0x' + crypto.createHmac('sha256', this.signingKey).update(sigPayload).digest('hex');
 
     return { valid: message.signature === expected, messageId };
   }
 
-  public requestSync(spec: { peerDid: string; merkleRoot: string; blocksRequested: number }): MeshSyncState {
+  public requestSync(spec: {
+    peerDid: string;
+    merkleRoot: string;
+    blocksRequested: number;
+  }): MeshSyncState {
     const peer = this.peers.get(spec.peerDid);
     if (!peer || peer.status !== 'CONNECTED') {
       throw new Error(`Peer '${spec.peerDid}' is not connected for sync`);
@@ -243,9 +268,10 @@ export class OceanicosMeshEngine {
   public getStats(): MeshStats {
     const peers = Array.from(this.peers.values());
     const connected = peers.filter((p) => p.status === 'CONNECTED');
-    const avgLatency = connected.length > 0
-      ? connected.reduce((sum, p) => sum + p.latencyMs, 0) / connected.length
-      : 0;
+    const avgLatency =
+      connected.length > 0
+        ? connected.reduce((sum, p) => sum + p.latencyMs, 0) / connected.length
+        : 0;
 
     return {
       totalPeers: peers.length,

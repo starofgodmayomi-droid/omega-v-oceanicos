@@ -33,7 +33,9 @@ describe('@omega-v/governor — On-Chain Timelocked Decentralized Governance Eng
       proposerDid: 'did:omega:agent:dao-proposer',
       title: 'Adjust Staking Slashing Rate',
       description: 'Reduce downtime slashing penalty',
-      actions: [{ targetService: 'staking', actionType: 'SET_PENALTY', parameters: { rate: 0.01 } }],
+      actions: [
+        { targetService: 'staking', actionType: 'SET_PENALTY', parameters: { rate: 0.01 } },
+      ],
     });
 
     const vote1 = governor.castVote({
@@ -73,7 +75,9 @@ describe('@omega-v/governor — On-Chain Timelocked Decentralized Governance Eng
       proposerDid: 'did:omega:agent:dao-proposer',
       title: 'Authorize Treasury Grant',
       description: 'Deploy 50,000 OMEGA for developer grants',
-      actions: [{ targetService: 'treasury', actionType: 'DISBURSE', parameters: { amount: 50000 } }],
+      actions: [
+        { targetService: 'treasury', actionType: 'DISBURSE', parameters: { amount: 50000 } },
+      ],
       quorumPower: 40,
     });
 
@@ -130,8 +134,18 @@ describe('@omega-v/governor — On-Chain Timelocked Decentralized Governance Eng
       description: 'Test stats',
       actions: [{ targetService: 'test', actionType: 'TEST', parameters: {} }],
     });
-    governor.castVote({ proposalId: p.proposalId, voterDid: 'did:omega:v1', choice: 'FOR', votingPower: 25 });
-    governor.castVote({ proposalId: p.proposalId, voterDid: 'did:omega:v2', choice: 'FOR', votingPower: 30 });
+    governor.castVote({
+      proposalId: p.proposalId,
+      voterDid: 'did:omega:v1',
+      choice: 'FOR',
+      votingPower: 25,
+    });
+    governor.castVote({
+      proposalId: p.proposalId,
+      voterDid: 'did:omega:v2',
+      choice: 'FOR',
+      votingPower: 30,
+    });
 
     const stats = governor.getStats();
     expect(stats.totalProposals).toBe(1);

@@ -165,7 +165,9 @@ export class OceanicosKernel {
     intent: Omit<OceanicIntentSpec, 'intentId'>;
     observation: Omit<StateObservation, 'observationId'>;
     evidenceItems: Array<Omit<MachineEvidence, 'evidenceId' | 'proofWitness' | 'timestamp'>>;
-    dissentItems?: Array<Omit<PreservedDissent, 'dissentId' | 'dissentEvidenceProof' | 'timestamp'>>;
+    dissentItems?: Array<
+      Omit<PreservedDissent, 'dissentId' | 'dissentEvidenceProof' | 'timestamp'>
+    >;
     actionPlan: Omit<ActionExecutionPlan, 'actionId' | 'status'>;
     autoAuthorizeIfNonDestructive?: boolean;
   }): CanonicalStateNode {
@@ -200,7 +202,10 @@ export class OceanicosKernel {
     // 4. Preserve Multi-Model Dissent without Averaging
     const dissent: PreservedDissent[] = (opts.dissentItems ?? []).map((d, idx) => {
       const dissentId = `dissent-${idx}-${randomUUID().slice(0, 6)}`;
-      const dissentEvidenceProof = hmac(this.secret, `DISSENT:${dissentId}:${d.agentOrModelDid}:${d.dissentingHypothesis}`);
+      const dissentEvidenceProof = hmac(
+        this.secret,
+        `DISSENT:${dissentId}:${d.agentOrModelDid}:${d.dissentingHypothesis}`
+      );
       return {
         ...d,
         dissentId,
@@ -219,11 +224,17 @@ export class OceanicosKernel {
         : 'REJECTED';
 
     // 6. Human-in-the-Loop Authorization Gate
-    const isSensitive = opts.actionPlan.isDestructive || opts.actionPlan.isFinancial || opts.actionPlan.reversibility === 'IRREVERSIBLE';
+    const isSensitive =
+      opts.actionPlan.isDestructive ||
+      opts.actionPlan.isFinancial ||
+      opts.actionPlan.reversibility === 'IRREVERSIBLE';
     const humanGate: HumanAuthorizationGate = {
       requiresHumanApproval: isSensitive,
       isAuthorized: !isSensitive && !!opts.autoAuthorizeIfNonDestructive,
-      authorizedByDid: !isSensitive && opts.autoAuthorizeIfNonDestructive ? 'did:omega:system:auto-pass' : undefined,
+      authorizedByDid:
+        !isSensitive && opts.autoAuthorizeIfNonDestructive
+          ? 'did:omega:system:auto-pass'
+          : undefined,
       authorizedAt: !isSensitive && opts.autoAuthorizeIfNonDestructive ? now : undefined,
     };
 
@@ -358,7 +369,10 @@ export class OceanicosKernel {
     let current = this.states.find((s) => s.stateId === stateId);
     while (current) {
       lineage.unshift(current);
-      if (current.parentStateHash === '0x0000000000000000000000000000000000000000000000000000000000000000') {
+      if (
+        current.parentStateHash ===
+        '0x0000000000000000000000000000000000000000000000000000000000000000'
+      ) {
         break;
       }
       current = this.states.find((s) => s.stateDeltaHash === current?.parentStateHash);
@@ -369,13 +383,17 @@ export class OceanicosKernel {
   /* ── 5. Stats ── */
 
   getStats(): KernelStats {
-    const verified = this.states.filter((s) => s.verificationStatus === 'VERIFIED' || s.verificationStatus === 'DISSENT_CONTAINED').length;
+    const verified = this.states.filter(
+      (s) => s.verificationStatus === 'VERIFIED' || s.verificationStatus === 'DISSENT_CONTAINED'
+    ).length;
     const humanGated = this.states.filter((s) => s.authorization.requiresHumanApproval).length;
     const totalDissent = this.states.reduce((acc, s) => acc + s.dissent.length, 0);
     const consequences = this.states.filter((s) => s.consequence !== undefined);
-    const avgEff = consequences.length > 0
-      ? consequences.reduce((acc, s) => acc + (s.consequence?.efficiencyRatio || 0), 0) / consequences.length
-      : 0;
+    const avgEff =
+      consequences.length > 0
+        ? consequences.reduce((acc, s) => acc + (s.consequence?.efficiencyRatio || 0), 0) /
+          consequences.length
+        : 0;
 
     return {
       totalTransitions: this.states.length,

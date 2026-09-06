@@ -168,17 +168,18 @@ export class OceanicosThresholdAttestorEngine {
     return { ...session };
   }
 
-  submitShare(opts: {
-    sessionId: string;
-    nodeDid: string;
-    shareSignature: string;
-  }): { session: AttestationSession; qc?: QuorumCertificate } {
+  submitShare(opts: { sessionId: string; nodeDid: string; shareSignature: string }): {
+    session: AttestationSession;
+    qc?: QuorumCertificate;
+  } {
     const session = this.sessions.get(opts.sessionId);
     if (!session) {
       throw new Error(`Attestation session ${opts.sessionId} not found`);
     }
     if (session.status !== 'COLLECTING') {
-      throw new Error(`Session ${opts.sessionId} is no longer accepting shares (status: ${session.status})`);
+      throw new Error(
+        `Session ${opts.sessionId} is no longer accepting shares (status: ${session.status})`
+      );
     }
 
     const attestor = this.attestors.get(opts.nodeDid);
@@ -187,7 +188,9 @@ export class OceanicosThresholdAttestorEngine {
     }
 
     if (session.shares.has(opts.nodeDid)) {
-      throw new Error(`Attestor ${opts.nodeDid} has already submitted a share for session ${opts.sessionId}`);
+      throw new Error(
+        `Attestor ${opts.nodeDid} has already submitted a share for session ${opts.sessionId}`
+      );
     }
 
     const now = new Date().toISOString();
@@ -279,8 +282,12 @@ export class OceanicosThresholdAttestorEngine {
     const attestors = Array.from(this.attestors.values());
     const totalWeight = attestors.reduce((sum, a) => sum + a.weight, 0);
     const activeAttestors = attestors.filter((a) => a.status === 'ACTIVE').length;
-    const completedQCs = Array.from(this.sessions.values()).filter((s) => s.status === 'ATTESTED').length;
-    const activeSessions = Array.from(this.sessions.values()).filter((s) => s.status === 'COLLECTING').length;
+    const completedQCs = Array.from(this.sessions.values()).filter(
+      (s) => s.status === 'ATTESTED'
+    ).length;
+    const activeSessions = Array.from(this.sessions.values()).filter(
+      (s) => s.status === 'COLLECTING'
+    ).length;
 
     return {
       totalAttestors: attestors.length,

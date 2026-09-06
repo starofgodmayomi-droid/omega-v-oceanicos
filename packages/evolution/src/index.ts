@@ -60,7 +60,7 @@ export class EvolutionEngine {
     let ir;
     try {
       ir = this.compiler.compile(existingRule.name, candidateDSL, existingRule.version);
-    } catch (e) {
+    } catch {
       throw new Error(`Invalid candidate DSL syntax: ${candidateDSL}`);
     }
     if (!ir || ir.instructions.length === 0) {

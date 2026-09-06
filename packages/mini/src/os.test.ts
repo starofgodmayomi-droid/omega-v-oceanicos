@@ -142,17 +142,23 @@ describe('OperatingSystemKernel', () => {
     expect(os.snapshot().events.at(-1)?.type).toBe('reject');
 
     // Rejects oversized claim (> 1024 chars)
-    expect(() => os.admit({ claim: 'a'.repeat(1025) })).toThrow('cycle claim must be a non-empty string');
+    expect(() => os.admit({ claim: 'a'.repeat(1025) })).toThrow(
+      'cycle claim must be a non-empty string'
+    );
     expect(os.snapshot().events.at(-1)?.type).toBe('reject');
 
     // Rejects oversized observedBy (> 128 chars)
-    expect(() => os.admit({ claim: 'valid', observedBy: 'x'.repeat(129) })).toThrow('cycle observedBy must be at most');
+    expect(() => os.admit({ claim: 'valid', observedBy: 'x'.repeat(129) })).toThrow(
+      'cycle observedBy must be at most'
+    );
     expect(os.snapshot().events.at(-1)?.type).toBe('reject');
 
     // Rejects cyclic metadata
     const cyclicMeta: Record<string, unknown> = {};
     cyclicMeta.loop = cyclicMeta;
-    expect(() => os.admit({ claim: 'valid', metadata: cyclicMeta })).toThrow('cycle metadata invalid: operating system task input must not be cyclic');
+    expect(() => os.admit({ claim: 'valid', metadata: cyclicMeta })).toThrow(
+      'cycle metadata invalid: operating system task input must not be cyclic'
+    );
     expect(os.snapshot().events.at(-1)?.type).toBe('reject');
 
     // Records admit and complete events for valid cycle

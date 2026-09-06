@@ -88,10 +88,14 @@ describe('OceanicosEnclaveEngine — Hardware TEE Confidential Computing & Remot
 
   describe('4. Confidential Code Execution & Stats', () => {
     it('should execute operation inside confidential enclave memory and issue signed report', () => {
-      const result = engine.executeConfidentialCode('enclave-sgx-primary-01', 'VERIFY_ZERO_KNOWLEDGE_PROOF', {
-        witness: '0.98',
-        curve: 'bn254',
-      });
+      const result = engine.executeConfidentialCode(
+        'enclave-sgx-primary-01',
+        'VERIFY_ZERO_KNOWLEDGE_PROOF',
+        {
+          witness: '0.98',
+          curve: 'bn254',
+        }
+      );
 
       expect(result.executionId).toMatch(/^exec-/);
       expect(result.verified).toBe(true);

@@ -48,8 +48,8 @@ describe('@omega-v/dht — Distributed Hash Table Engine', () => {
   });
 
   it('should replicate records across closest nodes', () => {
-    const n1 = engine.registerNode({ did: 'did:omega:dht:n1', address: '10.0.0.1:9000' });
-    const n2 = engine.registerNode({ did: 'did:omega:dht:n2', address: '10.0.0.2:9000' });
+    engine.registerNode({ did: 'did:omega:dht:n1', address: '10.0.0.1:9000' });
+    engine.registerNode({ did: 'did:omega:dht:n2', address: '10.0.0.2:9000' });
     engine.registerNode({ did: 'did:omega:dht:n3', address: '10.0.0.3:9000' });
 
     engine.putRecord({
@@ -69,8 +69,18 @@ describe('@omega-v/dht — Distributed Hash Table Engine', () => {
     engine.registerNode({ did: 'did:omega:dht:n1', address: '10.0.0.1:9000' });
     engine.registerNode({ did: 'did:omega:dht:n2', address: '10.0.0.2:9000' });
 
-    engine.putRecord({ key: 'k1', value: 'v1', publisherDid: 'did:omega:test', replicationFactor: 2 });
-    engine.putRecord({ key: 'k2', value: 'v2', publisherDid: 'did:omega:test', replicationFactor: 1 });
+    engine.putRecord({
+      key: 'k1',
+      value: 'v1',
+      publisherDid: 'did:omega:test',
+      replicationFactor: 2,
+    });
+    engine.putRecord({
+      key: 'k2',
+      value: 'v2',
+      publisherDid: 'did:omega:test',
+      replicationFactor: 1,
+    });
 
     engine.lookup('k1');
     engine.lookup('k2');

@@ -68,7 +68,11 @@ describe('OceanicosRegistryEngine — Decentralized Verifiable Package & Artifac
 
       // Tampered download fails
       const tamperedContent = Buffer.from('TAMPERED_PAYLOAD_ATTACK');
-      const tamperedResult = registry.verifyPackageIntegrity('@omega-v/test-pkg', '0.1.0', tamperedContent);
+      const tamperedResult = registry.verifyPackageIntegrity(
+        '@omega-v/test-pkg',
+        '0.1.0',
+        tamperedContent
+      );
       expect(tamperedResult.valid).toBe(false);
       expect(tamperedResult.matchesExpected).toBe(false);
     });
@@ -76,7 +80,11 @@ describe('OceanicosRegistryEngine — Decentralized Verifiable Package & Artifac
 
   describe('4. Package Deprecation & Vulnerability Advisories', () => {
     it('should deprecate vulnerable package versions with audit reason', () => {
-      const release = registry.deprecatePackage('@omega-v/core-kernel', '6.0.0', 'Legacy VM instructions replaced by v6.1');
+      const release = registry.deprecatePackage(
+        '@omega-v/core-kernel',
+        '6.0.0',
+        'Legacy VM instructions replaced by v6.1'
+      );
       expect(release.deprecated).toBe(true);
       expect(release.deprecationReason).toContain('Legacy VM');
     });
@@ -87,7 +95,8 @@ describe('OceanicosRegistryEngine — Decentralized Verifiable Package & Artifac
         affectedVersions: ['<1.2.0'],
         severity: 'HIGH',
         title: 'Stack Overflow in Recursive IR Evaluation',
-        description: 'Deeply nested IR expressions could exceed call stack limits without gas exhaustion',
+        description:
+          'Deeply nested IR expressions could exceed call stack limits without gas exhaustion',
         reportedBy: 'did:omega:auditor:sentinel-01',
         patchedIn: '1.2.0',
       });

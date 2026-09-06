@@ -1,4 +1,10 @@
-import { Observation, VerificationResult, VerificationRule, EvidenceStep, DissentRecord } from '@omega-v/types';
+import {
+  Observation,
+  VerificationResult,
+  VerificationRule,
+  EvidenceStep,
+  DissentRecord,
+} from '@omega-v/types';
 
 /**
  * Confidence in a verification, derived from the rules that actually ran.
@@ -208,9 +214,7 @@ export class VerificationEngine {
         interpretations: ruleResults.map((r) => ({
           position: r.passed ? 'PASS' : 'FAIL',
           source: r.name,
-          evidence: evidencePath
-            .filter((e) => e.rule === r.name)
-            .map((e) => e.reasoning),
+          evidence: evidencePath.filter((e) => e.rule === r.name).map((e) => e.reasoning),
           confidence: r.confidence,
         })),
         status: 'OPEN',

@@ -30,7 +30,7 @@ export interface DataBlob {
 export interface ErasureChunk {
   chunkIndex: number;
   blobId: string;
-  data: string;        // hex-encoded chunk data
+  data: string; // hex-encoded chunk data
   isParity: boolean;
   merkleProof: string;
 }
@@ -78,11 +78,7 @@ export class OceanicosDAEngine {
   /**
    * Submit a data blob for erasure encoding and commitment.
    */
-  public submitBlob(spec: {
-    namespace: string;
-    submitterDid: string;
-    rawData: string;
-  }): DataBlob {
+  public submitBlob(spec: { namespace: string; submitterDid: string; rawData: string }): DataBlob {
     const rawBytes = Buffer.from(spec.rawData, 'utf-8');
     const sizeBytes = rawBytes.length;
 
@@ -98,16 +94,20 @@ export class OceanicosDAEngine {
     // Generate parity chunks (Reed-Solomon 2x extension simulation)
     const parityChunks: string[] = [];
     for (let i = 0; i < chunkCount; i++) {
-      const parity = crypto.createHash('sha256')
+      const parity = crypto
+        .createHash('sha256')
         .update(`PARITY:${i}:${dataChunks[i]}:${this.signingKey}`)
         .digest('hex');
       parityChunks.push(parity);
     }
 
-    const blobId = 'blob-' + crypto.createHash('sha256')
-      .update(`${spec.namespace}:${spec.submitterDid}:${Date.now()}:${sizeBytes}`)
-      .digest('hex')
-      .slice(0, 24);
+    const blobId =
+      'blob-' +
+      crypto
+        .createHash('sha256')
+        .update(`${spec.namespace}:${spec.submitterDid}:${Date.now()}:${sizeBytes}`)
+        .digest('hex')
+        .slice(0, 24);
 
     const rawDataHash = '0x' + crypto.createHash('sha256').update(rawBytes).digest('hex');
 
@@ -118,9 +118,12 @@ export class OceanicosDAEngine {
     const allChunks: ErasureChunk[] = [];
     const allChunkData = [...dataChunks, ...parityChunks];
     for (let idx = 0; idx < allChunkData.length; idx++) {
-      const merkleProof = '0x' + crypto.createHash('sha256')
-        .update(`MERKLE:${blobId}:${idx}:${allChunkData[idx]}`)
-        .digest('hex');
+      const merkleProof =
+        '0x' +
+        crypto
+          .createHash('sha256')
+          .update(`MERKLE:${blobId}:${idx}:${allChunkData[idx]}`)
+          .digest('hex');
 
       allChunks.push({
         chunkIndex: idx,
@@ -158,13 +161,16 @@ export class OceanicosDAEngine {
     const degree = dataChunks.length;
     const concatenated = dataChunks.join('|');
 
-    const commitment = '0x' + crypto.createHash('sha256')
-      .update(`KZG_COMMITMENT:${blobId}:${concatenated}`)
-      .digest('hex');
+    const commitment =
+      '0x' +
+      crypto.createHash('sha256').update(`KZG_COMMITMENT:${blobId}:${concatenated}`).digest('hex');
 
-    const proof = '0x' + crypto.createHmac('sha256', this.signingKey)
-      .update(`KZG_PROOF:${blobId}:${commitment}:${degree}`)
-      .digest('hex');
+    const proof =
+      '0x' +
+      crypto
+        .createHmac('sha256', this.signingKey)
+        .update(`KZG_PROOF:${blobId}:${commitment}:${degree}`)
+        .digest('hex');
 
     return {
       blobId,
@@ -182,9 +188,12 @@ export class OceanicosDAEngine {
     const commitment = this.commitments.get(blobId);
     if (!commitment) return false;
 
-    const expectedProof = '0x' + crypto.createHmac('sha256', this.signingKey)
-      .update(`KZG_PROOF:${blobId}:${commitment.commitment}:${commitment.degree}`)
-      .digest('hex');
+    const expectedProof =
+      '0x' +
+      crypto
+        .createHmac('sha256', this.signingKey)
+        .update(`KZG_PROOF:${blobId}:${commitment.commitment}:${commitment.degree}`)
+        .digest('hex');
 
     return commitment.proof === expectedProof;
   }
@@ -277,11 +286,14 @@ export class OceanicosDAEngine {
     const totalBytes = allBlobs.reduce((sum, b) => sum + b.sizeBytes, 0);
 
     const successfulSamples = this.samples.filter((s) => s.allAvailable);
-    const avgConfidence = successfulSamples.length > 0
-      ? Math.round(
-          (successfulSamples.reduce((sum, s) => sum + s.confidence, 0) / successfulSamples.length) * 100
-        ) / 100
-      : 0;
+    const avgConfidence =
+      successfulSamples.length > 0
+        ? Math.round(
+            (successfulSamples.reduce((sum, s) => sum + s.confidence, 0) /
+              successfulSamples.length) *
+              100
+          ) / 100
+        : 0;
 
     return {
       totalBlobs: allBlobs.length,
