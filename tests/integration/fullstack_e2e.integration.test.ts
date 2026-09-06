@@ -52,6 +52,9 @@ import { OceanicosVirtualMachine } from '@omega-v/evm';
 import { OceanicosAMMEngine } from '@omega-v/amm';
 import { OceanicosReputationEngine } from '@omega-v/reputation';
 import { HumanEngine } from '@omega-v/human';
+import { GreenEngine } from '@omega-v/green';
+import { LearningEngine } from '@omega-v/learning';
+import { EvolutionEngine } from '@omega-v/evolution';
 import app from '../../apps/api/src/index';
 
 describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => {
@@ -2352,6 +2355,168 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       // Verify feedbacks and slashes lists
       expect(rep.getFeedbacks().length).toBe(1);
       expect(rep.getSlashes().length).toBe(0);
+    });
+  });
+
+  // ─── Section 46: Grounded Invariant Verification & True GREEN State Evaluation ─
+  describe('Section 46 — Grounded Invariant Verification & True GREEN State Evaluation', () => {
+    it('evaluates true GREEN state only when checks pass, evidence exists, lineage is unbroken, and valid attestation is present', () => {
+      const green = new GreenEngine();
+
+      const validVerification: any = {
+        id: 'ver-green-001',
+        observationId: 'obs-green-001',
+        summary: { passed: true, totalRules: 2, rulesPassed: 2, rulesFailed: 0 },
+        evidencePath: [
+          {
+            ruleId: 'rule-1',
+            passed: true,
+            severity: 'info',
+            details: 'Telemetry latency acceptable',
+          },
+          {
+            ruleId: 'rule-2',
+            passed: true,
+            severity: 'warn',
+            details: 'Memory usage within threshold',
+          },
+        ],
+        createdAt: new Date().toISOString(),
+      };
+
+      const unbrokenLineage: any[] = [
+        {
+          id: 'evt-1',
+          type: 'OBSERVATION',
+          timestamp: new Date().toISOString(),
+          data: { id: 'obs-green-001', claim: 'System latency nominal' },
+        },
+      ];
+
+      const validAttestation: any = {
+        id: 'att-green-001',
+        verificationId: 'ver-green-001',
+        verified: true,
+        signature: '0xmockgreensignature123',
+        createdAt: new Date().toISOString(),
+      };
+
+      // 1. All conditions met => True GREEN
+      const evaluation = green.evaluateGreen(
+        validVerification,
+        true, // evidenceArtifactExists
+        unbrokenLineage,
+        validAttestation
+      );
+
+      expect(evaluation.isGreen).toBe(true);
+      expect(evaluation.allChecksPassed).toBe(true);
+      expect(evaluation.evidenceExists).toBe(true);
+      expect(evaluation.lineageExists).toBe(true);
+      expect(evaluation.attestationExists).toBe(true);
+      expect(evaluation.noCriticalFailures).toBe(true);
+      expect(evaluation.reason).toContain('All requirements met');
+
+      // 2. Fails closed if hidden critical failure exists in evidence path
+      const verificationWithCritical: any = {
+        ...validVerification,
+        evidencePath: [
+          ...validVerification.evidencePath,
+          {
+            ruleId: 'rule-crit',
+            passed: false,
+            severity: 'critical',
+            details: 'Kernel memory leak',
+          },
+        ],
+      };
+      const critEval = green.evaluateGreen(
+        verificationWithCritical,
+        true,
+        unbrokenLineage,
+        validAttestation
+      );
+      expect(critEval.isGreen).toBe(false);
+      expect(critEval.noCriticalFailures).toBe(false);
+      expect(critEval.reason).toContain('Hidden critical failure');
+
+      // 3. Fails closed if lineage is broken
+      const brokenLineageEval = green.evaluateGreen(
+        validVerification,
+        true,
+        [], // empty lineage
+        validAttestation
+      );
+      expect(brokenLineageEval.isGreen).toBe(false);
+      expect(brokenLineageEval.lineageExists).toBe(false);
+      expect(brokenLineageEval.reason).toContain('Unbroken lineage');
+    });
+  });
+
+  // ─── Section 47: Predictive Learning & Evolutionary Drift Recompilation ───────
+  describe('Section 47 — Predictive Learning & Evolutionary Drift Recompilation', () => {
+    it('generates hypothesis predictions, evaluates reality outcomes, and drives evolutionary rule recompilation', () => {
+      const learner = new LearningEngine();
+      const evolution = new EvolutionEngine();
+
+      // 1. Generate prediction for rule execution
+      const prediction = learner.makePrediction('PASS', 0.95, 'response-time-threshold');
+      expect(prediction.id).toMatch(/^pred-/);
+      expect(prediction.confidence).toBe(0.95);
+      expect(prediction.basedOnRule).toBe('response-time-threshold');
+
+      // 2. Reality validation: matching outcome yields 0 error
+      const passingResult: any = {
+        id: 'ver-pass-001',
+        summary: { passed: true },
+        createdAt: new Date().toISOString(),
+      };
+      const passEvent = learner.evaluatePrediction(prediction.id, passingResult);
+      expect(passEvent.error).toBe(0);
+      expect(passEvent.insight.recommendation).toBe('MAINTAIN');
+
+      // 3. Reality validation: mismatch yields error proportional to confidence
+      const predFail = learner.makePrediction('PASS', 0.9, 'response-time-threshold');
+      const failingResult: any = {
+        id: 'ver-fail-001',
+        summary: { passed: false },
+        createdAt: new Date().toISOString(),
+      };
+      const failEvent = learner.evaluatePrediction(predFail.id, failingResult);
+      expect(failEvent.error).toBe(0.9);
+      expect(failEvent.insight.recommendation).toBe('IMMEDIATE_REVISION_REQUIRED');
+
+      // 4. Evolutionary drift analysis triggers recompilation recommendation
+      const history = [
+        { passed: true },
+        { passed: false },
+        { passed: false },
+        { passed: false }, // 75% failure rate
+      ];
+      const drift = evolution.analyzeDrift('response-time-threshold', history);
+      expect(drift.driftDetected).toBe(true);
+      expect(drift.recommendedAction).toBe('RECOMPILE_DSL');
+
+      // 5. Propose candidate rule recompilation with DSL syntax validation
+      const existingRule: any = {
+        name: 'response-time-threshold',
+        version: '1.0.0',
+        definition: 'responseTime < 50',
+      };
+      const proposal = evolution.proposeRecompilation(
+        existingRule,
+        'responseTime < 150',
+        'Adaptive relaxation under peak network load'
+      );
+      expect(proposal.id).toMatch(/^evo-/);
+      expect(proposal.status).toBe('PROPOSED');
+      expect(proposal.candidateDefinition).toBe('responseTime < 150');
+
+      // 6. Promote verified proposal
+      const promoted = evolution.promote(proposal.id);
+      expect(promoted).toBeDefined();
+      expect(promoted!.status).toBe('PROMOTED');
+      expect(evolution.getProposals().length).toBe(1);
     });
   });
 

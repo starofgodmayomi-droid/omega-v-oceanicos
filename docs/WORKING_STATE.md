@@ -2,6 +2,29 @@
 
 **Updated:** 2026-09-06
 
+## Green Invariant, Predictive Learning & Evolutionary Drift E2E Integration Checkpoint — 2026-09-06
+
+The Ω∞v Oceanicos full-stack architecture has completed the end-to-end integration of Section 46 (`@omega-v/green`) and Section 47 (`@omega-v/learning` + `@omega-v/evolution`) in the comprehensive full-stack E2E integration test suite, and expanded the canonical Subsystems Matrix in `apps/api` to 30 active modules.
+
+Key architectural milestones achieved and verified:
+1. **Grounded Invariant Verification & True GREEN State Evaluation (Section 46)**:
+   - Added Section 46 to `tests/integration/fullstack_e2e.integration.test.ts` utilizing `GreenEngine` (`@omega-v/green`).
+   - Validated five-fold invariant truth gate: requires all checks passed, existing evidence artifact, unbroken lineage to initial observation, valid cryptographic attestation, and absence of hidden critical failures in evidence path.
+   - Fails closed if hidden critical failures exist or if lineage continuity is severed.
+2. **Predictive Learning & Evolutionary Drift Recompilation (Section 47)**:
+   - Added Section 47 to `tests/integration/fullstack_e2e.integration.test.ts` integrating `LearningEngine` (`@omega-v/learning`) and `EvolutionEngine` (`@omega-v/evolution`).
+   - Validates empirical prediction generation, reality outcome comparison with confidence-weighted error calculation, evolutionary drift detection over execution history, candidate rule recompilation with syntax validation, and promotion.
+3. **Subsystem Matrix Expansion to 30 Modules (`apps/api`)**:
+   - Expanded `/subsystems` endpoint in `apps/api/src/index.ts` with `green` (category `verification`), `learning` (category `runtime`), and `evolution` (category `governance`).
+   - Maintained strict alignment with the 6 canonical categories (`core`, `runtime`, `consensus`, `verification`, `governance`, `storage`).
+4. **Monorepo-Wide Verification**:
+   - 121/121 test suites passing (1,888 passed tests, 0 failures, 1 skipped).
+   - Zero TypeScript compilation errors (`tsc --noEmit`).
+   - Zero ESLint / Prettier errors across all modified files (`--max-warnings 0`).
+   - Zero-gap client-server contract synchronization (`expect(unused).toEqual([])`).
+   - 100% brand token compliance (`brand.test.ts`).
+   - Clean production Vite bundle for `apps/web` (786ms) and passing live API smoke contract (`smoke-api.cjs`: `health: "ready"`, `deterministic: true`, `terminalState: "return"`).
+
 ## Canonical Subsystems Alignment & CLI ESM Module Isolation Checkpoint — 2026-09-06
 
 The Subsystems Intelligence Matrix and Command Line Interface (`@omega-v/cli`) have completed comprehensive canonical alignment and ESM runtime isolation on `main` at `406d0ea` and `a6d84b6`.
