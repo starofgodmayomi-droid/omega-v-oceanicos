@@ -2,6 +2,23 @@
 
 **Updated:** 2026-09-06
 
+## Production build compilation, ESM module resolution & API smoke verification checkpoint — 2026-09-06
+
+The entire Ω∞v Oceanicos monorepo has completed **full production build compilation**, strict Node.js ESM module resolution, and live API smoke verification on `main` at `0aa18a0`.
+
+Key architectural milestones achieved and verified:
+1. **ESM Module Resolution & Package Compilation**: Added explicit `.js` import specifiers across `@omega-v/remember` (`./store.js`) and `@omega-v/mini` (`./os.js`, `./omegaTotal.js`), and linked all workspace package declarations in `apps/api/tsconfig.json` and package tsconfigs (`packages/mini`, `packages/remember`), enabling error-free compilation to `dist/`.
+2. **Production Bundle Builds**:
+   - `apps/web`: Vite 4.5.14 production bundle built in 963ms (`dist/index.html`, `dist/assets/index-*.css`, `dist/assets/index-*.js`).
+   - `apps/api`: Compiled clean with `tsc -p apps/api/tsconfig.json` into `dist/server.js`.
+   - Core packages (`types`, `observer`, `verification`, `remember`, `mini`, `attestation`, `dissensus`, `lexicon`, `coordination`, `runtime`) compiled into clean, typed declarations and ESM distributions.
+3. **Live API Smoke Verification**: Verified via `node scripts/smoke-api.cjs`:
+   - `health: "ready"`
+   - `deterministic: true`
+   - `terminalState: "return"`
+   - `verified: false`
+4. **Monorepo-Wide Test Verification**: 121/121 test suites passing (1,877 passed tests, 0 failures, 1 skipped), zero ESLint errors, zero TypeScript errors (`tsc --noEmit`), and 0 unused client-server contract endpoints.
+
 ## Full-stack client-server contract closure & zero-gap synchronization checkpoint — 2026-09-06
 
 The entire Ω∞v Oceanicos full-stack ecosystem has reached **zero unused client-server contract gap** on `main` at `1512e73`, unifying all remaining API endpoints into the active Web operator dashboard with complete contract verification.
