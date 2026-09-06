@@ -156,6 +156,8 @@ export class OperatingSystemKernel {
     source?: { system: string; version: string; environment: string };
     observedBy?: string;
     metadata?: Record<string, unknown>;
+    confidence?: number;
+    confidenceReason?: string;
   }): MiniCycleResult;
   public admit(
     kindOrCycleInput: OperatingSystemTaskKind | { claim: string; [k: string]: unknown },
@@ -298,6 +300,8 @@ export class OperatingSystemKernel {
     source?: { system: string; version: string; environment: string };
     observedBy?: string;
     metadata?: Record<string, unknown>;
+    confidence?: number;
+    confidenceReason?: string;
   }): MiniCycleResult;
   public complete(
     taskIdOrInput: string | { claim: string; [k: string]: unknown }

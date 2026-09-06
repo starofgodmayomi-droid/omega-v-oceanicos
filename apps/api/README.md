@@ -567,6 +567,23 @@ Set `OMEGA_MEMORY_PATH` to choose where the chain is written. It defaults
 to `/tmp/omega-v-oceanicos/memory.jsonl`. Under `NODE_ENV=test` the chain
 is in-process only.
 
+### Universal Builder OS & Foundational MINI Endpoints
+
+```
+GET  /os
+POST /os/admit
+POST /mini/cycle
+POST /mini/total
+GET  /mini/integrity
+```
+
+The API exposes the foundational MINI loop and finite Universal Builder OS control plane directly:
+- `GET /os` returns the deterministic `OperatingSystemSnapshot` including state, active tasks, event trace, and limits.
+- `POST /os/admit` admits a typed bounded task (`kind`, `input`, `requestedBy`) or a cycle payload (`cycle`).
+- `POST /mini/cycle` executes one atomic Observe → Verify → Remember cycle through `MiniKernel`.
+- `POST /mini/total` enforces the non-negotiable totality gate (`passed === true`, `rulesApplied >= 1`, and `verifyMemoryIntegrity() === true`) through `OmegaTotalCompressor`, returning an `OmegaTotalManifest`.
+- `GET /mini/integrity` re-evaluates the cryptographic SHA-256 hash chain of the kernel memory and reports whether it is intact.
+
 ### Provenance Log
 
 ```

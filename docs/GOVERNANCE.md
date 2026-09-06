@@ -44,6 +44,9 @@ port, regardless of how the three variables are configured:
 - `POST /recompile`
 - `POST /complete-loop`
 - `POST /dissensus`
+- `POST /os/admit`
+- `POST /mini/cycle`
+- `POST /mini/total`
 
 A caller who can reach the service can write into the append-only chain,
 authorize actions, and record learnings. `POST /attest/verify` is read-shaped

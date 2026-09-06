@@ -147,7 +147,7 @@ describe('API runtime contracts', () => {
       };
     };
     expect(body.data.snapshotVersion).toBe('os.snapshot.v1');
-    expect(body.data.state).toBe('ready');
+    expect(body.data.state).toBe('BOOTED');
     expect(body.data.tasks).toEqual([]);
     expect(body.data.limits).toEqual({ maxTasks: 32, maxEvents: 128 });
     expect(body.data.events).toEqual([

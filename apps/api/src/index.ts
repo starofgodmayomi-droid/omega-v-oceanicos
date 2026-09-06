@@ -8,7 +8,7 @@ import VerificationEngine from '@omega-v/verification';
 import AttestationService from '@omega-v/attestation';
 import Remember, { FileMemoryStore } from '@omega-v/remember';
 import * as DissensusModule from '@omega-v/dissensus';
-import { OperatingSystemKernel } from '@omega-v/mini';
+import { OperatingSystemKernel, MiniKernel, OmegaTotalCompressor } from '@omega-v/mini';
 import type { Dissensus, DissensusPolicy, Opinion } from '@omega-v/dissensus';
 
 const { policyFromEnvironment, reconcile } = DissensusModule;
@@ -229,8 +229,6 @@ app.use((req: Request, res: Response, next) => {
 // Initialize services. HMAC remains the default; Ed25519 is opt-in and must
 // receive explicit private-key material so the API never silently changes its
 // signing contract or signs with a public key.
-const operatingSystem = new OperatingSystemKernel();
-operatingSystem.boot();
 const observer = new Observer();
 const verificationEngine = new VerificationEngine();
 const configuredAttestationAlgorithm = process.env.OMEGA_ATTESTATION_ALGORITHM;
@@ -298,6 +296,18 @@ const kernelMemoryStore = persistenceEnabled
   ? new FileMemoryStore(memoryPath, memoryEncryptionKey)
   : undefined;
 const kernelMemory = new Remember(kernelMemoryStore);
+
+/**
+ * Foundational MINI Kernel & Totality composition wired into the ecosystem control plane.
+ */
+const miniKernel = new MiniKernel({
+  observer,
+  verificationEngine,
+  memory: kernelMemory,
+});
+const omegaTotal = new OmegaTotalCompressor(miniKernel);
+const operatingSystem = new OperatingSystemKernel(miniKernel);
+operatingSystem.boot();
 
 /**
  * Recorded reconciliations, newest first.
@@ -1243,6 +1253,81 @@ app.get('/health', (_req: Request, res: Response) => {
 app.get('/os', (_req: Request, res: Response) => {
   res.json({
     data: operatingSystem.snapshot(),
+    timestamp: new Date().toISOString(),
+  });
+});
+
+app.post('/os/admit', (req: Request, res: Response) => {
+  try {
+    const { kind, input, requestedBy, cycle } = req.body ?? {};
+    if (cycle && typeof cycle === 'object') {
+      const result = operatingSystem.admit(cycle);
+      res.json({ data: result, timestamp: new Date().toISOString() });
+      return;
+    }
+    if (kind && input && requestedBy) {
+      const task = operatingSystem.admit(kind, input, requestedBy);
+      res.json({ data: task, timestamp: new Date().toISOString() });
+      return;
+    }
+    res.status(400).json({ error: 'invalid admit request: provide task (kind, input, requestedBy) or cycle' });
+  } catch (err: unknown) {
+    res.status(400).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
+app.post('/mini/cycle', (req: Request, res: Response) => {
+  try {
+    const { claim, category, source, observedBy, metadata, confidence, confidenceReason } = req.body ?? {};
+    if (typeof claim !== 'string' || claim.trim().length === 0) {
+      res.status(400).json({ error: 'claim must be a non-empty string' });
+      return;
+    }
+    const result = operatingSystem.admit({
+      claim,
+      category,
+      source,
+      observedBy,
+      metadata,
+      confidence,
+      confidenceReason,
+    });
+    res.json({ data: result, timestamp: new Date().toISOString() });
+  } catch (err: unknown) {
+    res.status(400).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
+app.post('/mini/total', (req: Request, res: Response) => {
+  try {
+    const { claim, category, source, observedBy, metadata, confidence, confidenceReason } = req.body ?? {};
+    if (typeof claim !== 'string' || claim.trim().length === 0) {
+      res.status(400).json({ error: 'claim must be a non-empty string' });
+      return;
+    }
+    const manifest = omegaTotal.lockTotalityIntoNow({
+      claim,
+      category,
+      source,
+      observedBy,
+      metadata,
+      confidence,
+      confidenceReason,
+    });
+    res.json({ data: manifest, timestamp: new Date().toISOString() });
+  } catch (err: unknown) {
+    res.status(400).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
+app.get('/mini/integrity', (_req: Request, res: Response) => {
+  const intact = kernelMemory.verifyIntegrity();
+  res.json({
+    data: {
+      intact,
+      size: kernelMemory.size(),
+      verifiedAt: new Date().toISOString(),
+    },
     timestamp: new Date().toISOString(),
   });
 });
@@ -2457,6 +2542,10 @@ const startServer = () =>
         '  POST   /attest           - Attest a verification',
         '  POST   /complete-loop    - Execute full loop in one request',
         '  GET    /os               - Bounded operating-system snapshot',
+        '  POST   /os/admit         - Admit bounded operating-system task or cycle',
+        '  POST   /mini/cycle       - Execute foundational MINI cycle',
+        '  POST   /mini/total       - Lock totality into now',
+        '  GET    /mini/integrity   - Verify MINI memory hash chain integrity',
         '  GET    /state            - Runtime state',
         '  GET    /events           - Recent lifecycle events',
         '  GET    /events/stream    - Live lifecycle events',
