@@ -23,9 +23,16 @@ describe('web/API contract', () => {
   // literals carry a prefix the server never sees.
   const clientPaths = Array.from(
     new Set(
-      Array.from(client.matchAll(/['"`](\/api\/[a-z0-9/-]+)(?:\?[^'"`]+)?['"`]/g)).map((m) => m[1])
+      Array.from(client.matchAll(/['\"`](\/api\/[a-z0-9/-]+)(?:\?[^'\"`]+)?['\"`]/g)).map(
+        (m) => m[1]
+      )
     )
   ).sort();
+
+  /** Convert a server route like `/jobs/:jobId/claim` to a regex that
+   *  matches client equivalents like `/jobs/id/claim`. */
+  const routeToPattern = (route: string): RegExp =>
+    new RegExp('^' + route.replace(/:[a-zA-Z]+/g, '[a-z0-9-]+') + '$');
 
   it('finds paths on both sides', () => {
     expect(clientPaths.length).toBeGreaterThan(5);
@@ -33,7 +40,13 @@ describe('web/API contract', () => {
   });
 
   it.each(clientPaths)('the API serves %s', (clientPath) => {
-    expect(serverRoutes).toContain(clientPath.replace(/^\/api/, ''));
+    const stripped = clientPath.replace(/^\/api/, '');
+    // Exact match (static routes).
+    if (serverRoutes.has(stripped)) return;
+    // Parameterised match: the client uses a segment like `id` where the
+    // server defines `:jobId`.
+    const matched = Array.from(serverRoutes).some((route) => routeToPattern(route).test(stripped));
+    expect(matched).toBe(true);
   });
 
   it('rewrites the /api prefix the client depends on, in dev and in production', () => {
@@ -48,21 +61,21 @@ describe('web/API contract', () => {
   });
 
   it('records which endpoints the client does not yet use', () => {
-    const used = new Set(clientPaths.map((path) => path.replace(/^\/api/, '')));
+    const strippedClientPaths = clientPaths.map((path) => path.replace(/^\/api/, ''));
     const unused = Array.from(serverRoutes)
-      .filter((route) => !used.has(route))
+      .filter((route) => {
+        // Exact match.
+        if (strippedClientPaths.includes(route)) return false;
+        // Parameterised match: check if any client path matches this
+        // server route when parameters are wildcarded.
+        const pattern = routeToPattern(route);
+        return !strippedClientPaths.some((cp) => pattern.test(cp));
+      })
       .sort();
 
     // Not a failure: the client is behind the API, deliberately. This
     // pins the gap so it is visible and shrinks on purpose rather than
     // drifting further without anyone noticing.
-    expect(unused).toEqual([
-      '/jobs/:jobId',
-      '/jobs/:jobId/claim',
-      '/jobs/:jobId/complete',
-      '/jobs/:jobId/fail',
-      '/persistence/acknowledge',
-      '/persistence/reencrypt',
-    ]);
+    expect(unused).toEqual([]);
   });
 });

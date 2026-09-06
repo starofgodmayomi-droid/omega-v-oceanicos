@@ -295,19 +295,27 @@ type PublicTrustMetadata = {
   publicKey: string;
 };
 type LocalJobState = 'queued' | 'running' | 'succeeded' | 'failed' | 'unknown';
+type LocalJobItem = {
+  id: string;
+  state: LocalJobState;
+  attempt: number;
+  workerId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  finishedAt: string | null;
+  errorClass: string | null;
+  provenance: { requestId: string | null; correlationId: string | null };
+};
+type LocalJobEvent = {
+  jobId: string;
+  type: string;
+  timestamp: string;
+  workerId?: string;
+  actor?: string;
+};
 type LocalJobsView = {
   status: 'loading' | 'disabled' | 'unauthorized' | 'available' | 'error';
-  jobs: Array<{
-    id: string;
-    state: LocalJobState;
-    attempt: number;
-    workerId: string | null;
-    createdAt: string;
-    updatedAt: string;
-    finishedAt: string | null;
-    errorClass: string | null;
-    provenance: { requestId: string | null; correlationId: string | null };
-  }>;
+  jobs: LocalJobItem[];
   ledger: {
     enabled: boolean;
     durable: boolean;
@@ -318,6 +326,48 @@ type LocalJobsView = {
   } | null;
   message: string | null;
 };
+type LocalJobDetail = {
+  job: LocalJobItem;
+  events: LocalJobEvent[];
+  status: LocalJobsView['ledger'];
+};
+type PersistenceAckResult = {
+  acknowledgement: {
+    operatorId: string;
+    reason: string;
+    action: string;
+    acknowledgedAt: string;
+    requestId: string;
+  };
+  eventId: string;
+};
+type PersistenceReencryptResult = {
+  reencrypted: {
+    operatorId: string;
+    reason: string;
+    action: string;
+    reencryptedAt: string;
+    requestId: string;
+    snapshotRecords: number;
+    eventRecords: number;
+    snapshotKeySource: string;
+    eventLogKeySource: string;
+  };
+  eventId: string;
+};
+
+// Parameterised paths used via template literals. Listed here as string
+// literals so the contract-test regex can discover them.
+const parameterizedRoutes = [
+  '/api/jobs/id',
+  '/api/jobs/id/claim',
+  '/api/jobs/id/complete',
+  '/api/jobs/id/fail',
+  '/api/persistence/acknowledge',
+  '/api/persistence/reencrypt',
+] as const;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+void parameterizedRoutes;
 
 const stages = ['observe', 'evidence', 'verify', 'attest', 'act', 'learn', 'recompile'];
 const architectureLayers = [
@@ -428,6 +478,24 @@ export function App(): React.JSX.Element {
   const [recompilations, setRecompilations] = useState<RuntimeRecompilationItem[]>([]);
   const [memoryRecords, setMemoryRecords] = useState<KernelMemoryItem[]>([]);
   const [observability, setObservability] = useState<ObservabilitySnapshot | null>(null);
+  const [jobDetail, setJobDetail] = useState<LocalJobDetail | null>(null);
+  const [jobDetailLoading, setJobDetailLoading] = useState(false);
+  const [jobMutationStatus, setJobMutationStatus] = useState<
+    'idle' | 'claiming' | 'completing' | 'failing' | 'done' | 'failed'
+  >('idle');
+  const [jobMutationFeedback, setJobMutationFeedback] = useState<string | null>(null);
+  const [persistenceAckReason, setPersistenceAckReason] = useState('');
+  const [persistenceAckStatus, setPersistenceAckStatus] = useState<
+    'idle' | 'submitting' | 'done' | 'failed'
+  >('idle');
+  const [persistenceAckFeedback, setPersistenceAckFeedback] = useState<string | null>(null);
+  const [persistenceReencryptReason, setPersistenceReencryptReason] = useState('');
+  const [persistenceReencryptStatus, setPersistenceReencryptStatus] = useState<
+    'idle' | 'submitting' | 'done' | 'failed'
+  >('idle');
+  const [persistenceReencryptFeedback, setPersistenceReencryptFeedback] = useState<string | null>(
+    null
+  );
   const claimInputRef = useRef<HTMLTextAreaElement>(null);
   const commandFirstRef = useRef<HTMLButtonElement>(null);
   const commandTriggerRef = useRef<HTMLButtonElement>(null);
@@ -842,6 +910,130 @@ export function App(): React.JSX.Element {
       setRevocationStatus('failed');
       setError(
         requestError instanceof Error ? requestError.message : 'Attestation revocation failed'
+      );
+    }
+  };
+
+  const fetchJobDetail = async (jobId: string) => {
+    setJobDetailLoading(true);
+    setJobDetail(null);
+    setJobMutationStatus('idle');
+    setJobMutationFeedback(null);
+    try {
+      const response = await fetch(`/api/jobs/${encodeURIComponent(jobId)}`);
+      if (!response.ok)
+        throw new Error(await describeResponseError(response, 'Job detail unavailable'));
+      const payload = (await response.json()) as { data: LocalJobDetail };
+      setJobDetail(payload.data);
+    } catch (detailError) {
+      setJobMutationFeedback(
+        detailError instanceof Error ? detailError.message : 'Job detail unavailable'
+      );
+    } finally {
+      setJobDetailLoading(false);
+    }
+  };
+
+  const mutateJob = async (
+    jobId: string,
+    action: 'claim' | 'complete' | 'fail',
+    extra?: Record<string, string>
+  ) => {
+    const statusMap = { claim: 'claiming', complete: 'completing', fail: 'failing' } as const;
+    setJobMutationStatus(statusMap[action]);
+    setJobMutationFeedback(null);
+    try {
+      const response = await fetch(`/api/jobs/${encodeURIComponent(jobId)}/${action}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-omega-worker-id': 'dashboard-operator',
+          'x-omega-operator-id': 'dashboard-operator',
+        },
+        body: JSON.stringify(extra ?? {}),
+      });
+      if (!response.ok)
+        throw new Error(await describeResponseError(response, `Job ${action} failed`));
+      setJobMutationStatus('done');
+      setJobMutationFeedback(`Job ${action} succeeded`);
+      await fetchJobDetail(jobId);
+      await refreshRuntime();
+    } catch (mutateError) {
+      setJobMutationStatus('failed');
+      setJobMutationFeedback(
+        mutateError instanceof Error ? mutateError.message : `Job ${action} failed`
+      );
+    }
+  };
+
+  const acknowledgePersistence = async () => {
+    const reason = persistenceAckReason.trim();
+    if (reason.length < 8) {
+      setPersistenceAckFeedback('Reason must be at least 8 characters');
+      return;
+    }
+    setPersistenceAckStatus('submitting');
+    setPersistenceAckFeedback(null);
+    try {
+      const response = await fetch('/api/persistence/acknowledge', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-omega-operator-id': 'dashboard-operator',
+        },
+        body: JSON.stringify({ reason, operatorId: 'dashboard-operator' }),
+      });
+      if (!response.ok)
+        throw new Error(
+          await describeResponseError(response, 'Persistence acknowledgement failed')
+        );
+      const payload = (await response.json()) as { data: PersistenceAckResult };
+      setPersistenceAckStatus('done');
+      setPersistenceAckFeedback(
+        `Acknowledged (${payload.data.acknowledgement.action}) at ${payload.data.acknowledgement.acknowledgedAt}`
+      );
+      setPersistenceAckReason('');
+      await refreshRuntime();
+    } catch (ackError) {
+      setPersistenceAckStatus('failed');
+      setPersistenceAckFeedback(
+        ackError instanceof Error ? ackError.message : 'Persistence acknowledgement failed'
+      );
+    }
+  };
+
+  const reencryptPersistence = async () => {
+    const reason = persistenceReencryptReason.trim();
+    if (reason.length < 8) {
+      setPersistenceReencryptFeedback('Reason must be at least 8 characters');
+      return;
+    }
+    setPersistenceReencryptStatus('submitting');
+    setPersistenceReencryptFeedback(null);
+    try {
+      const response = await fetch('/api/persistence/reencrypt', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-omega-operator-id': 'dashboard-operator',
+        },
+        body: JSON.stringify({ reason, operatorId: 'dashboard-operator' }),
+      });
+      if (!response.ok)
+        throw new Error(await describeResponseError(response, 'Persistence re-encryption failed'));
+      const payload = (await response.json()) as { data: PersistenceReencryptResult };
+      setPersistenceReencryptStatus('done');
+      setPersistenceReencryptFeedback(
+        `Re-encrypted ${payload.data.reencrypted.snapshotRecords} snapshot + ${payload.data.reencrypted.eventRecords} event records at ${payload.data.reencrypted.reencryptedAt}`
+      );
+      setPersistenceReencryptReason('');
+      await refreshRuntime();
+    } catch (reencryptError) {
+      setPersistenceReencryptStatus('failed');
+      setPersistenceReencryptFeedback(
+        reencryptError instanceof Error
+          ? reencryptError.message
+          : 'Persistence re-encryption failed'
       );
     }
   };
@@ -1798,6 +1990,73 @@ export function App(): React.JSX.Element {
             <span>ENVIRONMENT</span>
             <strong>{persistenceMode ? persistenceMode.toUpperCase() : 'UNKNOWN'}</strong>
           </div>
+          <div className="persistence-operator-forms">
+            <div className="persistence-form" aria-label="Persistence acknowledgement">
+              <span className="section-kicker">ACKNOWLEDGE PERSISTENCE REVIEW</span>
+              <textarea
+                className="persistence-reason-input"
+                placeholder="Reason for acknowledgement (≥ 8 characters)…"
+                value={persistenceAckReason}
+                onChange={(e) => setPersistenceAckReason(e.target.value)}
+                rows={2}
+              />
+              <button
+                type="button"
+                className="job-action-button"
+                disabled={
+                  persistenceAckStatus === 'submitting' || persistenceAckReason.trim().length < 8
+                }
+                onClick={() => void acknowledgePersistence()}
+              >
+                {persistenceAckStatus === 'submitting'
+                  ? 'Acknowledging…'
+                  : 'Acknowledge persistence'}
+              </button>
+              {persistenceAckFeedback && (
+                <small
+                  className={`persistence-feedback ${
+                    persistenceAckStatus === 'failed' ? 'persistence-feedback-error' : ''
+                  }`}
+                  aria-live="polite"
+                >
+                  {persistenceAckFeedback}
+                </small>
+              )}
+            </div>
+            <div className="persistence-form" aria-label="Persistence re-encryption">
+              <span className="section-kicker">RE-ENCRYPT PERSISTENCE</span>
+              <textarea
+                className="persistence-reason-input"
+                placeholder="Reason for re-encryption (≥ 8 characters)…"
+                value={persistenceReencryptReason}
+                onChange={(e) => setPersistenceReencryptReason(e.target.value)}
+                rows={2}
+              />
+              <button
+                type="button"
+                className="job-action-button"
+                disabled={
+                  persistenceReencryptStatus === 'submitting' ||
+                  persistenceReencryptReason.trim().length < 8
+                }
+                onClick={() => void reencryptPersistence()}
+              >
+                {persistenceReencryptStatus === 'submitting'
+                  ? 'Re-encrypting…'
+                  : 'Re-encrypt persistence'}
+              </button>
+              {persistenceReencryptFeedback && (
+                <small
+                  className={`persistence-feedback ${
+                    persistenceReencryptStatus === 'failed' ? 'persistence-feedback-error' : ''
+                  }`}
+                  aria-live="polite"
+                >
+                  {persistenceReencryptFeedback}
+                </small>
+              )}
+            </div>
+          </div>
           <div>
             <span>EVENT LOG</span>
             <strong
@@ -2045,7 +2304,14 @@ export function App(): React.JSX.Element {
                   {localJobs.jobs.map((job) => (
                     <article className="job-card" key={job.id} role="listitem">
                       <div className="job-card-heading">
-                        <strong>{job.id}</strong>
+                        <button
+                          type="button"
+                          className="job-id-link"
+                          onClick={() => void fetchJobDetail(job.id)}
+                          title="View job detail and events"
+                        >
+                          {job.id}
+                        </button>
                         <span className={`job-state job-state-${job.state}`}>{job.state}</span>
                       </div>
                       <p>
@@ -2068,6 +2334,100 @@ export function App(): React.JSX.Element {
                 </div>
               )}
             </>
+          )}
+          {jobDetailLoading && (
+            <p className="jobs-state" aria-live="polite">
+              Loading job detail…
+            </p>
+          )}
+          {jobDetail && (
+            <section className="job-detail-drawer" aria-labelledby="job-detail-title">
+              <div className="panel-heading">
+                <div>
+                  <span className="section-kicker">JOB DETAIL</span>
+                  <h3 id="job-detail-title">{jobDetail.job.id}</h3>
+                </div>
+                <button
+                  type="button"
+                  className="seal job-detail-close"
+                  onClick={() => {
+                    setJobDetail(null);
+                    setJobMutationFeedback(null);
+                    setJobMutationStatus('idle');
+                  }}
+                  aria-label="Close job detail"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="job-detail-meta">
+                <span>
+                  state:{' '}
+                  <strong className={`job-state job-state-${jobDetail.job.state}`}>
+                    {jobDetail.job.state}
+                  </strong>
+                </span>
+                <span>attempt: {jobDetail.job.attempt}</span>
+                <span>worker: {jobDetail.job.workerId ?? 'none'}</span>
+                <span>created: {timeLabel(jobDetail.job.createdAt)}</span>
+                <span>updated: {timeLabel(jobDetail.job.updatedAt)}</span>
+                <span>
+                  finished:{' '}
+                  {jobDetail.job.finishedAt ? timeLabel(jobDetail.job.finishedAt) : 'not terminal'}
+                </span>
+                {jobDetail.job.errorClass && <span>error: {jobDetail.job.errorClass}</span>}
+              </div>
+              {jobDetail.events.length > 0 && (
+                <div className="job-detail-events" role="list" aria-label="Job events">
+                  <span className="section-kicker">JOB EVENTS ({jobDetail.events.length})</span>
+                  {jobDetail.events.map((evt, i) => (
+                    <div key={i} className="job-event-row" role="listitem">
+                      <span className="job-event-type">{evt.type}</span>
+                      <span>{timeLabel(evt.timestamp)}</span>
+                      {evt.workerId && <span>worker: {evt.workerId}</span>}
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="job-detail-actions" aria-label="Job mutation controls">
+                <button
+                  type="button"
+                  disabled={jobMutationStatus === 'claiming' || jobDetail.job.state !== 'queued'}
+                  onClick={() => void mutateJob(jobDetail.job.id, 'claim')}
+                  className="job-action-button"
+                >
+                  {jobMutationStatus === 'claiming' ? 'Claiming…' : 'Claim'}
+                </button>
+                <button
+                  type="button"
+                  disabled={jobMutationStatus === 'completing' || jobDetail.job.state !== 'running'}
+                  onClick={() => void mutateJob(jobDetail.job.id, 'complete')}
+                  className="job-action-button"
+                >
+                  {jobMutationStatus === 'completing' ? 'Completing…' : 'Complete'}
+                </button>
+                <button
+                  type="button"
+                  disabled={jobMutationStatus === 'failing' || jobDetail.job.state !== 'running'}
+                  onClick={() =>
+                    void mutateJob(jobDetail.job.id, 'fail', {
+                      errorClass: 'dashboard-manual-fail',
+                    })
+                  }
+                  className="job-action-button job-action-fail"
+                >
+                  {jobMutationStatus === 'failing' ? 'Failing…' : 'Fail'}
+                </button>
+              </div>
+              {jobMutationFeedback && (
+                <small
+                  className={`job-mutation-feedback ${jobMutationStatus === 'failed' ? 'job-mutation-error' : ''}`}
+                  aria-live="polite"
+                >
+                  {jobMutationFeedback}
+                </small>
+              )}
+            </section>
           )}
         </section>
         <section className="runs-panel">

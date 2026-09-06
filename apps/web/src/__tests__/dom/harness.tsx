@@ -392,6 +392,10 @@ export function installFetch(overrides: RouteOverrides = {}): jest.Mock {
         },
         { status: 201 }
       ),
+    '/api/persistence/acknowledge': () =>
+      json({ data: { acknowledged: true, count: 1 } }, { status: 200 }),
+    '/api/persistence/reencrypt': () =>
+      json({ data: { reencrypted: true, recordsProcessed: 1 } }, { status: 200 }),
   };
 
   const routes = { ...defaults, ...overrides };
@@ -399,10 +403,36 @@ export function installFetch(overrides: RouteOverrides = {}): jest.Mock {
   const mock = jest.fn(async (input: RequestInfo | URL) => {
     const url = typeof input === 'string' ? input : input.toString();
     const handler = routes[url];
-    if (!handler) {
-      throw new Error(`Unmocked fetch: ${url}`);
+    if (handler) {
+      return handler();
     }
-    return handler();
+    if (url.startsWith('/api/jobs/')) {
+      if (url.endsWith('/claim')) {
+        return json({ data: { id: 'job-1', state: 'running' } }, { status: 200 });
+      }
+      if (url.endsWith('/complete')) {
+        return json({ data: { id: 'job-1', state: 'completed' } }, { status: 200 });
+      }
+      if (url.endsWith('/fail')) {
+        return json({ data: { id: 'job-1', state: 'failed' } }, { status: 200 });
+      }
+      return json(
+        {
+          data: {
+            job: {
+              id: 'job-1',
+              state: 'queued',
+              attempt: 1,
+              createdAt: '2026-08-16T00:00:00.000Z',
+              updatedAt: '2026-08-16T00:00:00.000Z',
+            },
+            events: [],
+          },
+        },
+        { status: 200 }
+      );
+    }
+    throw new Error(`Unmocked fetch: ${url}`);
   });
 
   (globalThis as unknown as { fetch: unknown }).fetch = mock;
