@@ -1,6 +1,18 @@
 # Ω∞v Oceanicos Working State
 
-**Updated:** 2026-09-03
+**Updated:** 2026-09-06
+
+## Full-stack convergence, multi-model dissent preservation & evidence dossier export checkpoint — 2026-09-06
+
+The entire Ω∞v Oceanicos full-stack ecosystem has completed full convergence on `main` at `943b1b6`.
+
+Key architectural milestones achieved and verified:
+1. **Universal Builder OS Kernel & MINI Unification**: Authoritative lifecycle (`offline` → `booting` → `ready` → `degraded` → `stopping` → `stopped`), cycle admission and task admission with deep input validation (`MAX_TASK_INPUT_KEYS = 64`, `MAX_TASK_INPUT_DEPTH = 8`, `MAX_TASK_INPUT_NODES = 256`, acyclicity enforcement), and monotonic audit event logging.
+2. **Multi-Model Dissent Preservation**: Evaluated rules in `VerificationEngine` preserve explicit dissent (`DISSENT = PRESERVE`) when model interpretations disagree, recording stance (`PASS` vs `FAIL`) and failure evidence rather than manufacturing artificial consensus.
+3. **Cryptographic Hash Chain Lineage**: `Remember.rememberWithEntries()` captures unbroken sequential SHA-256 links (`#1 OBSERVATION` → `#2 VERIFICATION` → `#3 MEMORY`), embedded directly in `MiniCycleResult.entries` and `/complete-loop`.
+4. **REST API Control Plane**: Exposed `/os/admit`, `/mini/cycle`, `/mini/total`, and `/mini/integrity` routes with governance bounds documented in `docs/GOVERNANCE.md`.
+5. **Web Dashboard Evidence Panel**: Live rendering of Multi-Model Dissent Banners, sequential Cryptographic Hash Chain Inspector, interactive MINI and Totality controls, and downloadable Evidence Dossier (`/api/evidence/export`) styled with 100% CSS brand token compliance (`tokens.css`).
+6. **Monorepo-Wide Verification**: 121/121 test suites passing (1,859 passed tests, 0 failures), clean TypeScript compilation (`tsc --noEmit`), zero ESLint errors, and full contract alignment.
 
 ## Hosted package-worker verification checkpoint — 2026-09-03
 
