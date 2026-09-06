@@ -2,6 +2,28 @@
 
 **Updated:** 2026-09-06
 
+## Full-stack subsystem intelligence matrix integration checkpoint — 2026-09-06
+
+The Ω∞v Oceanicos architecture has integrated an operational **Subsystem Intelligence Matrix** across the REST API, client-server contract, and Web operator dashboard on `main` at `73dbad3` and `e734e7b`.
+
+Key architectural milestones achieved and verified:
+1. **Subsystems Inventory API (`GET /subsystems`)**:
+   - Exposes an inventory of 19 foundational and expanded subsystems across 6 operational categories (`core`, `runtime`, `consensus`, `verification`, `governance`, `storage`).
+   - Reports `id`, `name`, `category`, `package`, `status`, and `description` for each subsystem.
+   - Documented in `apps/api/README.md` and verified against the startup banner in `apps/api/src/index.ts` via `apps/api/src/__tests__/documentation.test.ts` (93 passed).
+2. **Interactive Web Dashboard Matrix**:
+   - Integrated `<section className="subsystems-panel">` in `apps/web/src/App.tsx` displaying live subsystem statuses with category filter controls (`ALL`, `CORE`, `RUNTIME`, `CONSENSUS`, `VERIFICATION`, `GOVERNANCE`, `STORAGE`).
+   - Strictly styled in `apps/web/src/App.css` using canonical `--omega-*` CSS custom properties, maintaining 100% brand token compliance in `brand.test.ts` (16 passed).
+   - Mocked in `apps/web/src/__tests__/dom/harness.tsx` for automated testing.
+3. **Zero-Gap Client-Server Contract Synchronization**:
+   - `contract.test.ts` verifies zero unused client-server routes (`expect(unused).toEqual([])`), maintaining complete contract synchrony.
+4. **Monorepo-Wide Verification**:
+   - 121/121 test suites passing (1,880 passed tests, 0 failures, 1 skipped).
+   - Zero TypeScript errors (`tsc --noEmit`).
+   - Clean ESLint check across all modified files.
+   - Clean Vite web production bundle (908ms) and API production build (`dist/server.js`).
+   - Passing portable API smoke contract (`smoke-api.cjs`: `health: "ready"`, `deterministic: true`, `terminalState: "return"`).
+
 ## Hosted CI pipeline signing configuration & automated CLI verification checkpoint — 2026-09-06
 
 The hosted verification workflow `.github/workflows/verification-ci.yml` has been updated and verified on `main` at `20f6aa7`, equipping CI with explicit `OMEGA_SIGNING_KEY` credentials and validating all 18 automated CLI verification commands.
