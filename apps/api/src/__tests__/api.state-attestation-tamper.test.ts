@@ -27,6 +27,7 @@ describe('GET /state attestation validity on a tampered latest run', () => {
   let dir: string;
   let storePath: string;
   let logPath: string;
+  let memoryPath: string;
 
   const boot = async (): Promise<{ server: Server; baseUrl: string }> => {
     jest.resetModules();
@@ -50,10 +51,12 @@ describe('GET /state attestation validity on a tampered latest run', () => {
     dir = mkdtempSync(join(tmpdir(), 'omega-api-attestation-tamper-'));
     storePath = join(dir, 'runtime.json');
     logPath = join(dir, 'runtime.log.jsonl');
+    memoryPath = join(dir, 'memory.jsonl');
     process.env.NODE_ENV = 'test';
     process.env.OMEGA_PERSISTENCE = 'on';
     process.env.OMEGA_RUNTIME_STORE_PATH = storePath;
     process.env.OMEGA_EVENT_LOG_PATH = logPath;
+    process.env.OMEGA_MEMORY_PATH = memoryPath;
     delete process.env.OMEGA_ATTESTATION_ALGORITHM;
     delete process.env.OMEGA_ATTESTATION_KEY_VERSION;
 
@@ -102,6 +105,7 @@ describe('GET /state attestation validity on a tampered latest run', () => {
     delete process.env.OMEGA_PERSISTENCE;
     delete process.env.OMEGA_RUNTIME_STORE_PATH;
     delete process.env.OMEGA_EVENT_LOG_PATH;
+    delete process.env.OMEGA_MEMORY_PATH;
     rmSync(dir, { recursive: true, force: true });
     jest.resetModules();
   });

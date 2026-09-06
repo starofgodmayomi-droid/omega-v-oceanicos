@@ -2,6 +2,8 @@ import { Observer } from '@omega-v/observer';
 import { VerificationEngine } from '@omega-v/verification';
 import { AttestationService } from '@omega-v/attestation';
 import { ProvenanceStore } from '@omega-v/store';
+import { Remember } from '@omega-v/remember';
+import { MiniKernel, OperatingSystemKernel, OmegaTotalCompressor } from '@omega-v/mini';
 import { RuleCompiler } from '@omega-v/compiler';
 import { OceanicumVM } from '@omega-v/ir';
 import { OceanicosClient } from '@omega-v/sdk';
@@ -2560,5 +2562,150 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       expect(hyperResult.maxStage.vaultEpoch).toBeGreaterThanOrEqual(1);
     });
   });
+
+  // ─── Section 52: Universal Builder OS, Foundational MINI Loop & Totality Compression ───
+  describe('Section 52 — Universal Builder OS, Foundational MINI Loop & Totality Compression', () => {
+    it('executes full convergence from Builder OS control plane through MINI cycle to Totality Lock', async () => {
+      // 1. Initialize Observer, VerificationEngine with custom rules, and Remember
+      const observer = new Observer();
+      const verifier = new VerificationEngine();
+      verifier.registerRule({
+        name: 'response-time-threshold',
+        version: '1.0.0',
+        appliesTo: ['convergence-e2e'],
+        definition: 'responseTime < 100',
+        description: 'E2E latency threshold check',
+        createdAt: new Date().toISOString(),
+        active: true,
+      });
+      verifier.registerRule({
+        name: 'status-code-check',
+        version: '1.0.0',
+        appliesTo: ['convergence-e2e'],
+        definition: 'statusCode == 200',
+        description: 'E2E status code check',
+        createdAt: new Date().toISOString(),
+        active: true,
+      });
+      const memory = new Remember();
+
+      // 2. Instantiate MiniKernel & OperatingSystemKernel
+      const mini = new MiniKernel({
+        observer,
+        verificationEngine: verifier,
+        memory,
+      });
+      const os = new OperatingSystemKernel(mini);
+
+      // 3. Boot OS & Verify Booted State
+      const bootSnapshot = os.boot();
+      expect(bootSnapshot.state).toBe('BOOTED');
+      expect(bootSnapshot.snapshotVersion).toBe('os.snapshot.v1');
+      expect(bootSnapshot.capabilities.humanAuthorizationRequired).toBe(true);
+      expect(bootSnapshot.limits.maxTasks).toBe(32);
+
+      // 4. Admit and complete task
+      const task = os.admit('observe', { target: 'fullstack-e2e-node' }, 'did:omega:operator:e2e');
+      expect(task.id).toMatch(/^task-/);
+      expect(task.kind).toBe('observe');
+      os.complete(task.id);
+
+      // 5. Admit and evaluate cycle with full trace verification
+      const cycle = os.admit({
+        claim: 'Full-stack converged ecosystem operational integrity nominal',
+        category: 'convergence-e2e',
+        source: { system: 'e2e-runner', version: '2.0.0', environment: 'production' },
+        observedBy: 'did:omega:agent:convergence-tester',
+        metadata: { responseTime: 24, statusCode: 200 },
+        confidence: 0.98,
+        confidenceReason: 'Verified live telemetry pair',
+      });
+      expect(cycle.passed).toBe(true);
+      expect(cycle.entries).toBeDefined();
+      expect(cycle.entries.length).toBe(3);
+      expect(cycle.entries[0].type).toBe('OBSERVATION');
+      expect(cycle.entries[1].type).toBe('VERIFICATION');
+      expect(cycle.entries[2].type).toBe('MEMORY');
+      expect(cycle.entries[2].previousHash).toBe(cycle.entries[1].hash);
+
+      // 6. Verify OS snapshot reflects updated counters and memory integrity
+      const postCycleSnapshot = os.snapshot();
+      expect(postCycleSnapshot.totalCycles).toBe(1);
+      expect(postCycleSnapshot.passedCycles).toBe(1);
+      expect(postCycleSnapshot.failedCycles).toBe(0);
+      expect(postCycleSnapshot.memoryIntegrity).toBe(true);
+      expect(postCycleSnapshot.memorySize).toBe(3);
+
+      // 7. Lock Totality into Now
+      const compressor = new OmegaTotalCompressor(mini);
+      const totalityManifest = compressor.lockTotalityIntoNow({
+        claim: 'Universal verification invariant holds without exception',
+        category: 'convergence-e2e',
+        metadata: { responseTime: 18, statusCode: 200 },
+      });
+      expect(totalityManifest.stateRoot).toBe('Ø');
+      expect(totalityManifest.stewardshipAxiom).toBe('TOOLS_FOR_EVOLUTION_NOT_WAR');
+      expect(totalityManifest.memoryIntegrityValid).toBe(true);
+      expect(totalityManifest.cycleResult.passed).toBe(true);
+
+      // 8. Verify unbroken hash chain after multiple cycles
+      expect(memory.verifyIntegrity()).toBe(true);
+      expect(memory.size()).toBe(6); // 3 from first cycle + 3 from totality cycle
+    });
+
+    it('preserves multi-model dissent when rules disagree and halts totality compression', () => {
+      const verifier = new VerificationEngine();
+      verifier.registerRule({
+        name: 'response-time-threshold',
+        version: '1.0.0',
+        appliesTo: ['dissent-e2e'],
+        definition: 'responseTime < 100',
+        description: 'Latency check',
+        createdAt: new Date().toISOString(),
+        active: true,
+      });
+      verifier.registerRule({
+        name: 'status-code-check',
+        version: '1.0.0',
+        appliesTo: ['dissent-e2e'],
+        definition: 'statusCode == 200',
+        description: 'Status check',
+        createdAt: new Date().toISOString(),
+        active: true,
+      });
+      const mini = new MiniKernel({ verificationEngine: verifier });
+
+      // Split observation: latency passes (45 < 100), status fails (503 != 200)
+      const cycle = mini.cycle({
+        claim: 'Degraded gateway response',
+        category: 'dissent-e2e',
+        metadata: { responseTime: 45, statusCode: 503 },
+      });
+
+      expect(cycle.passed).toBe(false);
+      expect(cycle.verification.summary.rulesPassed).toBe(1);
+      expect(cycle.verification.summary.rulesFailed).toBe(1);
+      expect(cycle.verification.dissent).toBeDefined();
+      expect(cycle.verification.dissent!.status).toBe('OPEN');
+      expect(cycle.verification.dissent!.interpretations).toHaveLength(2);
+      expect(
+        cycle.verification.dissent!.interpretations.find((i) => i.source === 'response-time-threshold')?.position
+      ).toBe('PASS');
+      expect(
+        cycle.verification.dissent!.interpretations.find((i) => i.source === 'status-code-check')?.position
+      ).toBe('FAIL');
+
+      // Totality compressor MUST fail closed on dissent / failed verification
+      const compressor = new OmegaTotalCompressor(mini);
+      expect(() =>
+        compressor.lockTotalityIntoNow({
+          claim: 'Attempted totality under dissent',
+          category: 'dissent-e2e',
+          metadata: { responseTime: 45, statusCode: 503 },
+        })
+      ).toThrow(/verification did not pass/);
+    });
+  });
 });
+
 
