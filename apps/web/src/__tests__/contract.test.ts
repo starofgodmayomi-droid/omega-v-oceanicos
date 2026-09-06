@@ -57,17 +57,12 @@ describe('web/API contract', () => {
     // pins the gap so it is visible and shrinks on purpose rather than
     // drifting further without anyone noticing.
     expect(unused).toEqual([
-      '/attest',
-      '/events',
       '/jobs/:jobId',
       '/jobs/:jobId/claim',
       '/jobs/:jobId/complete',
       '/jobs/:jobId/fail',
-      '/log',
-      '/observe',
       '/persistence/acknowledge',
       '/persistence/reencrypt',
-      '/verify',
     ]);
   });
 });

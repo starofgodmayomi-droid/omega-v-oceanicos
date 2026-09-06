@@ -587,6 +587,16 @@ export function App(): React.JSX.Element {
         const obsData = (await observabilityResponse.json()) as { data?: ObservabilitySnapshot };
         if (obsData.data) setObservability(obsData.data);
       }
+      const [eventsDirectResponse] = await Promise.all([
+        fetch('/api/events').catch(() => null),
+        fetch('/api/log').catch(() => null),
+      ]);
+      if (eventsDirectResponse?.ok && eventData.data.length === 0) {
+        const directEvents = (await eventsDirectResponse.json()) as { data?: RuntimeEvent[] };
+        if (Array.isArray(directEvents.data) && directEvents.data.length > 0) {
+          setEvents(directEvents.data);
+        }
+      }
       const readyServices = state.data.services.filter(
         (service) => service.status === 'ready'
       ).length;
@@ -719,6 +729,65 @@ export function App(): React.JSX.Element {
       await refreshRuntime();
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : 'The loop failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const executeStepByStep = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const obsRes = await fetch('/api/observe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          claim,
+          category: 'health-check',
+          source: { system: 'current-console', version: '0.1.0', environment: 'local' },
+          observedBy: 'operator',
+          metadata: { responseTime: Number(responseTime), statusCode: Number(statusCode) },
+          confidence: 0.95,
+          confidenceReason: 'Step-by-step observation',
+        }),
+      });
+      if (!obsRes.ok)
+        throw new Error(await describeResponseError(obsRes, 'Observation step failed'));
+      const obsData = (await obsRes.json()) as { data: LoopResult['observation'] };
+
+      const verRes = await fetch('/api/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ observation: obsData.data }),
+      });
+      if (!verRes.ok)
+        throw new Error(await describeResponseError(verRes, 'Verification step failed'));
+      const verData = (await verRes.json()) as { data: LoopResult['verification'] };
+
+      const attRes = await fetch('/api/attest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ verificationResult: verData.data }),
+      });
+      if (!attRes.ok)
+        throw new Error(await describeResponseError(attRes, 'Attestation step failed'));
+      const attData = (await attRes.json()) as { data: LoopResult['attestation'] };
+
+      setResult({
+        observation: obsData.data,
+        verification: verData.data,
+        attestation: attData.data,
+        memory: {
+          id: `mem-step-${Date.now()}`,
+          observationId: obsData.data.id,
+          verificationId: verData.data.id,
+        },
+      });
+      await refreshRuntime();
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error ? requestError.message : 'Step-by-step verification failed'
+      );
     } finally {
       setLoading(false);
     }
@@ -1547,13 +1616,24 @@ export function App(): React.JSX.Element {
             </div>
             <div className="input-meta">
               <span>health-check / local</span>
-              <button
-                className="run-button"
-                onClick={executeLoop}
-                disabled={loading || !claim.trim()}
-              >
-                {loading ? 'Running current...' : 'Run verification'} <span>↗</span>
-              </button>
+              <div className="button-group">
+                <button
+                  type="button"
+                  className="run-button"
+                  onClick={executeLoop}
+                  disabled={loading || !claim.trim()}
+                >
+                  {loading ? 'Running current...' : 'Run verification'} <span>↗</span>
+                </button>
+                <button
+                  type="button"
+                  className="step-button"
+                  onClick={() => void executeStepByStep()}
+                  disabled={loading || !claim.trim()}
+                >
+                  {loading ? 'Stepping...' : 'Step-by-step'}
+                </button>
+              </div>
             </div>
             <div className="truth-note">
               <span>⊙</span> Checks use the values you submit. Failures remain visible as evidence.

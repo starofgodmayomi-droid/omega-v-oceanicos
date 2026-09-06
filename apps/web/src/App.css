@@ -1807,3 +1807,25 @@ body {
   font-family: 'DM Mono', monospace;
 }
 
+.step-button {
+  background: var(--omega-abyss-raised);
+  border: 1px solid var(--omega-abyss-edge);
+  color: var(--omega-cyan);
+  font-family: 'DM Mono', monospace;
+  font-size: 0.75rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.step-button:hover:not(:disabled) {
+  border-color: var(--omega-cyan);
+  background: var(--omega-abyss);
+}
+
+.step-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
