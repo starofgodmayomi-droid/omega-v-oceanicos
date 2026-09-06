@@ -82,6 +82,22 @@ describe('Remember', () => {
     expect(mem.summary).toContain('unverified');
   });
 
+  test('rememberWithEntries returns memory and 3 chained log entries', () => {
+    const obs = makeObservation('obs-3', 'Sky is blue');
+    const ver = makeVerification('ver-3', 'obs-3', true);
+
+    const { memory: mem, entries } = memory.rememberWithEntries(obs, ver);
+
+    expect(mem.observationId).toBe('obs-3');
+    expect(entries).toHaveLength(3);
+    expect(entries[0].type).toBe('OBSERVATION');
+    expect(entries[1].type).toBe('VERIFICATION');
+    expect(entries[2].type).toBe('MEMORY');
+    expect(entries[1].previousHash).toBe(entries[0].hash);
+    expect(entries[2].previousHash).toBe(entries[1].hash);
+    expect(memory.verifyIntegrity()).toBe(true);
+  });
+
   test('recall returns entry by sequential id', () => {
     const obs = makeObservation('obs-1', 'test');
     memory.append({ type: 'OBSERVATION', data: obs });

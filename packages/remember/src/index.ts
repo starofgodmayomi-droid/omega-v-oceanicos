@@ -76,6 +76,17 @@ export class Remember {
    * Form a MemoryRecord from an observation + verification and store it.
    */
   public remember(observation: Observation, verification: VerificationResult): MemoryRecord {
+    return this.rememberWithEntries(observation, verification).memory;
+  }
+
+  /**
+   * Form a MemoryRecord and append all entries to the log, returning both the memory
+   * and the exact EventLogEntry sequence appended to the chain.
+   */
+  public rememberWithEntries(
+    observation: Observation,
+    verification: VerificationResult
+  ): { memory: MemoryRecord; entries: EventLogEntry[] } {
     const memory: MemoryRecord = {
       id: this.generateMemoryId(),
       observationId: observation.id,
@@ -88,11 +99,14 @@ export class Remember {
       rememberedAt: new Date().toISOString(),
     };
 
-    this.append({ type: 'OBSERVATION', data: observation });
-    this.append({ type: 'VERIFICATION', data: verification });
-    this.append({ type: 'MEMORY', data: memory });
+    const entry1 = this.append({ type: 'OBSERVATION', data: observation });
+    const entry2 = this.append({ type: 'VERIFICATION', data: verification });
+    const entry3 = this.append({ type: 'MEMORY', data: memory });
 
-    return memory;
+    return {
+      memory,
+      entries: [entry1, entry2, entry3],
+    };
   }
 
   /**

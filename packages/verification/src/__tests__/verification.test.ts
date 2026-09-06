@@ -406,3 +406,42 @@ describe('VerificationEngine — confidence is derived, not claimed', () => {
     expect(result.summary.confidence).toBe(0);
   });
 });
+
+describe('VerificationEngine — dissent preservation', () => {
+  it('does not create dissent when all rules pass', () => {
+    const engine = new VerificationEngine();
+    engine.registerRule(rule()); // status-code-check
+    engine.registerRule(rule({ name: 'response-time-threshold' }));
+
+    const result = engine.verify(observation({ statusCode: 200, responseTime: 50 }));
+
+    expect(result.summary.passed).toBe(true);
+    expect(result.summary.rulesPassed).toBe(2);
+    expect(result.summary.rulesFailed).toBe(0);
+    expect(result.dissent).toBeUndefined();
+  });
+
+  it('records explicit open dissent when rules split', () => {
+    const engine = new VerificationEngine();
+    engine.registerRule(rule()); // status-code-check: 200 -> pass
+    engine.registerRule(rule({ name: 'response-time-threshold' })); // 150ms -> fail
+
+    const result = engine.verify(observation({ statusCode: 200, responseTime: 150 }));
+
+    expect(result.summary.passed).toBe(false);
+    expect(result.summary.rulesPassed).toBe(1);
+    expect(result.summary.rulesFailed).toBe(1);
+    expect(result.dissent).toBeDefined();
+    expect(result.dissent!.status).toBe('OPEN');
+    expect(result.dissent!.interpretations).toHaveLength(2);
+
+    const passInterpretation = result.dissent!.interpretations.find((i) => i.position === 'PASS');
+    const failInterpretation = result.dissent!.interpretations.find((i) => i.position === 'FAIL');
+
+    expect(passInterpretation).toBeDefined();
+    expect(passInterpretation!.source).toBe('status-code-check');
+    expect(failInterpretation).toBeDefined();
+    expect(failInterpretation!.source).toBe('response-time-threshold');
+  });
+});
+

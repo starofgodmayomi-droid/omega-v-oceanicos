@@ -1,4 +1,4 @@
-import { Observation, VerificationResult, VerificationRule, EvidenceStep } from '@omega-v/types';
+import { Observation, VerificationResult, VerificationRule, EvidenceStep, DissentRecord } from '@omega-v/types';
 
 /**
  * Confidence in a verification, derived from the rules that actually ran.
@@ -195,6 +195,29 @@ export class VerificationEngine {
       stepNumber += result.evidencePath.length;
     }
 
+    // Dissent preservation: If evaluated rules split (some passed, some failed),
+    // record explicit dissent without manufacturing artificial consensus.
+    const rulesPassedCount = ruleResults.filter((r) => r.passed).length;
+    const rulesFailedCount = ruleResults.filter((r) => !r.passed).length;
+    let dissent: DissentRecord | undefined;
+
+    if (rulesPassedCount > 0 && rulesFailedCount > 0) {
+      dissent = {
+        id: `dissent-${this.generateVerificationId()}`,
+        claimId: observation.id,
+        interpretations: ruleResults.map((r) => ({
+          position: r.passed ? 'PASS' : 'FAIL',
+          source: r.name,
+          evidence: evidencePath
+            .filter((e) => e.rule === r.name)
+            .map((e) => e.reasoning),
+          confidence: r.confidence,
+        })),
+        status: 'OPEN',
+        recordedAt: new Date().toISOString(),
+      };
+    }
+
     // Create verification result
     const verificationResult: VerificationResult = {
       id: this.generateVerificationId(),
@@ -205,13 +228,14 @@ export class VerificationEngine {
         confidence: deriveConfidence(ruleResults),
         claimedConfidence: observation.confidence,
         rulesApplied: rules.length,
-        rulesPassed: ruleResults.filter((r) => r.passed).length,
-        rulesFailed: ruleResults.filter((r) => !r.passed).length,
+        rulesPassed: rulesPassedCount,
+        rulesFailed: rulesFailedCount,
       },
       rules: ruleResults,
       evidencePath,
       ruleVersions,
       status: 'completed',
+      dissent,
     };
 
     // Cache result

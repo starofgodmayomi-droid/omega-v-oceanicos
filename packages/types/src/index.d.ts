@@ -105,6 +105,8 @@ export interface VerificationResult {
   ruleVersions: Record<string, string>;
   /** Status of this verification */
   status: 'pending' | 'completed' | 'failed';
+  /** Preserved dissent record if rules or verifiers disagree */
+  dissent?: DissentRecord;
 }
 /**
  * An attestation is a cryptographically signed verification result

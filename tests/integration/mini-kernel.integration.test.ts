@@ -84,6 +84,30 @@ describe('Ω∞v Oceanicos Integration — Foundational MINI Kernel & Totality',
       expect(kernel.verifyMemoryIntegrity()).toBe(true);
       expect(kernel.getMemorySize()).toBe(3);
     });
+
+    it('preserves dissent and cryptographically links entries in MiniCycleResult', () => {
+      const kernel = new MiniKernel({ rules: [healthRule, statusRule] });
+
+      const cycle = kernel.cycle({
+        claim: 'Mixed service telemetry',
+        category: 'mini-integration',
+        metadata: { responseTime: 30, statusCode: 500 }, // health passes (30 < 100), status fails (500 != 200)
+      });
+
+      expect(cycle.passed).toBe(false);
+      expect(cycle.verification.summary.rulesPassed).toBe(1);
+      expect(cycle.verification.summary.rulesFailed).toBe(1);
+      expect(cycle.verification.dissent).toBeDefined();
+      expect(cycle.verification.dissent!.status).toBe('OPEN');
+      expect(cycle.verification.dissent!.interpretations).toHaveLength(2);
+
+      // Verify entries in result
+      expect(cycle.entries).toBeDefined();
+      expect(cycle.entries).toHaveLength(3);
+      expect(cycle.entries![1].previousHash).toBe(cycle.entries![0].hash);
+      expect(cycle.entries![2].previousHash).toBe(cycle.entries![1].hash);
+      expect(kernel.verifyMemoryIntegrity()).toBe(true);
+    });
   });
 
   describe('OperatingSystemKernel Control Plane', () => {

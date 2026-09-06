@@ -181,6 +181,9 @@ export interface VerificationResult {
 
   /** Status of this verification */
   status: 'pending' | 'completed' | 'failed';
+
+  /** Preserved dissent record if rules or verifiers disagree */
+  dissent?: DissentRecord;
 }
 
 /**

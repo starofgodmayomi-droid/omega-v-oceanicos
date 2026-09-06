@@ -68,12 +68,13 @@ export class MiniKernel {
     const verification = this.verify(observation);
 
     // Step 3: Remember
-    const memory = this.memory.remember(observation, verification);
+    const { memory, entries } = this.memory.rememberWithEntries(observation, verification);
 
     return {
       observation,
       verification,
       memory,
+      entries,
       passed: verification.summary.passed,
       confidence: verification.summary.confidence,
       completedAt: new Date().toISOString(),

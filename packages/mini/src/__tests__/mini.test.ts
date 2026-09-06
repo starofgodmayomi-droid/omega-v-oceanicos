@@ -28,6 +28,10 @@ describe('MiniKernel', () => {
     expect(result.observation.claim.statement).toBe('System health is nominal');
     expect(result.verification).toBeDefined();
     expect(result.memory).toBeDefined();
+    expect(result.entries).toBeDefined();
+    expect(result.entries).toHaveLength(3);
+    expect(result.entries![1].previousHash).toBe(result.entries![0].hash);
+    expect(result.entries![2].previousHash).toBe(result.entries![1].hash);
     expect(result.passed).toBe(true);
     expect(result.confidence).toBeDefined();
     expect(result.completedAt).toBeDefined();
