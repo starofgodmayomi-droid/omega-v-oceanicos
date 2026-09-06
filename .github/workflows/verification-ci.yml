@@ -35,7 +35,7 @@ jobs:
       - name: 2. ESLint Code Quality Gate
         run: npx eslint . --ext .ts,.tsx,.js,.jsx --max-warnings 10
 
-      - name: 3. Full-Stack Jest Test Suite (121 Suites / 1895+ Specs)
+      - name: 3. Full-Stack Jest Test Suite (121 Suites / 1898+ Specs)
         run: npx jest --no-cache --verbose --coverage
 
       - name: 4. Ω∞v CLI Swarm Verification

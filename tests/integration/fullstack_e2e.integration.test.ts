@@ -62,6 +62,10 @@ import { say as sayLexicon, sayAll as sayAllLexicon, isReviewed, isLocale } from
 import { reconcile as reconcileDissensus, STRICT_POLICY } from '@omega-v/dissensus';
 import { ParallelExecutor } from '@omega-v/coordination';
 import { EvidenceEngine } from '@omega-v/evidence';
+import { AgentLoop, MemoryFabric } from '@omega-v/runtime';
+import { SecurityEngine } from '@omega-v/security';
+import { GovernanceEngine } from '@omega-v/governance';
+import type { SecurityPermission, GovernanceAction, IdentitySubject } from '@omega-v/types';
 import app from '../../apps/api/src/index';
 
 describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => {
@@ -3474,6 +3478,258 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       );
       const isTamperedValid = evidence.verifyIntegrity(artifact, tamperedEvents);
       expect(isTamperedValid).toBe(false);
+    });
+  });
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Section 60 — Bounded Agent Loop & Hot-Path Memory Fabric Runtime E2E
+  // ──────────────────────────────────────────────────────────────────────────
+  describe('Section 60 — Bounded Agent Loop & Hot-Path Memory Fabric Runtime E2E', () => {
+    it('should execute sequential bounded modules, isolate runtime errors, and manage hot-path memory fabric with FIFO eviction', async () => {
+      // 1. Initialize sequential AgentLoop with bounded modules
+      const loop = new AgentLoop([
+        {
+          id: 'telemetry-ingest',
+          execute: (ctx) => {
+            return {
+              parsed: ctx.input.toUpperCase(),
+              bytesReceived: ctx.input.length,
+            };
+          },
+        },
+        {
+          id: 'invariant-check',
+          execute: (ctx) => {
+            const ingest = ctx.values['telemetry-ingest'] as {
+              parsed: string;
+              bytesReceived: number;
+            };
+            return {
+              invariantMet: ingest.bytesReceived > 0,
+              token: `INV-${ingest.parsed.slice(0, 8)}`,
+            };
+          },
+        },
+        {
+          id: 'decision-synthesis',
+          execute: (ctx) => {
+            const check = ctx.values['invariant-check'] as { invariantMet: boolean; token: string };
+            return {
+              admit: check.invariantMet,
+              correlationToken: check.token,
+            };
+          },
+        },
+      ]);
+
+      // Execute nominal loop run
+      const result = await loop.run('system-telemetry-payload-healthy', 'run-e2e-runtime-001');
+
+      expect(result.runId).toBe('run-e2e-runtime-001');
+      expect(result.state).toBe('succeeded');
+      expect(result.trace).toHaveLength(6); // 3 started + 3 succeeded
+      expect(result.context.values['decision-synthesis']).toEqual({
+        admit: true,
+        correlationToken: 'INV-SYSTEM-T',
+      });
+      expect(result.limitations).toContain('local process only');
+      expect(result.limitations).toContain('sequential module contract');
+
+      // 2. Error containment: module failure terminates loop gracefully with failure trace
+      const failingLoop = new AgentLoop([
+        {
+          id: 'step-pass',
+          execute: () => 'ok',
+        },
+        {
+          id: 'step-fail',
+          execute: () => {
+            throw new Error('Kernel sandbox execution constraint violated');
+          },
+        },
+        {
+          id: 'step-unreachable',
+          execute: () => 'unreachable',
+        },
+      ]);
+
+      const failResult = await failingLoop.run('faulty-input-payload', 'run-e2e-fail-002');
+      expect(failResult.state).toBe('failed');
+      expect(failResult.trace.some((t) => t.state === 'failed' && t.moduleId === 'step-fail')).toBe(
+        true
+      );
+      expect(failResult.context.values['step-unreachable']).toBeUndefined();
+
+      // 3. Hot-Path Memory Fabric: append, recall, and FIFO capacity eviction
+      const fabric = new MemoryFabric<string>(3);
+      fabric.remember({ id: 'rec-01', runId: 'run-alpha', kind: 'checkpoint', value: 'state-01' });
+      fabric.remember({ id: 'rec-02', runId: 'run-alpha', kind: 'checkpoint', value: 'state-02' });
+      fabric.remember({ id: 'rec-03', runId: 'run-beta', kind: 'checkpoint', value: 'state-03' });
+
+      expect(fabric.size()).toBe(3);
+      expect(fabric.recall('run-alpha')).toHaveLength(2);
+      expect(fabric.recall('run-beta')).toHaveLength(1);
+
+      // FIFO eviction when maxEntries (3) is exceeded
+      fabric.remember({ id: 'rec-04', runId: 'run-gamma', kind: 'checkpoint', value: 'state-04' });
+      expect(fabric.size()).toBe(3);
+      // rec-01 must have been evicted, leaving only 1 record for run-alpha
+      expect(fabric.recall('run-alpha')).toHaveLength(1);
+      expect(fabric.recall('run-alpha')[0].id).toBe('rec-02');
+      expect(fabric.recall('run-gamma')).toHaveLength(1);
+
+      // Clear fabric
+      fabric.clear();
+      expect(fabric.size()).toBe(0);
+    });
+  });
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Section 61 — Zero-Trust Capability Tokens & Least Privilege Security Engine E2E
+  // ──────────────────────────────────────────────────────────────────────────
+  describe('Section 61 — Zero-Trust Capability Tokens & Least Privilege Security Engine E2E', () => {
+    it('should issue signed capability tokens, enforce least privilege authorization, detect tampering, and sanitize inputs', () => {
+      const security = new SecurityEngine('e2e-security-test-key-2026');
+
+      const subject: IdentitySubject = {
+        id: 'did:omega:agent:auditor-01',
+        type: 'AGENT',
+        name: 'Continuous-Auditor',
+        permissions: ['CAN_OBSERVE', 'CAN_VERIFY', 'CAN_AUDIT'],
+        issuedAt: new Date().toISOString(),
+      };
+
+      // 1. Issue signed cryptographic capability token
+      const token = security.issueToken(subject, 3600);
+      expect(token.subjectId).toBe(subject.id);
+      expect(token.permissions).toEqual(['CAN_AUDIT', 'CAN_OBSERVE', 'CAN_VERIFY']); // sorted
+      expect(token.signature).toHaveLength(64);
+      expect(security.verifyToken(token)).toBe(true);
+
+      // 2. Authorize allowed permission with valid token
+      const authAllowed = security.authorize(subject, 'CAN_VERIFY', token);
+      expect(authAllowed.allowed).toBe(true);
+      expect(authAllowed.reason).toBe('Permission granted');
+
+      // 3. Deny unauthorized permission (Least Privilege principle)
+      const authDenied = security.authorize(subject, 'CAN_RECOMPILE' as SecurityPermission, token);
+      expect(authDenied.allowed).toBe(false);
+      expect(authDenied.reason).toContain('Missing required permission');
+
+      // 4. Fail closed on tampered token signature
+      const tamperedToken = { ...token, signature: '0'.repeat(64) };
+      const authTampered = security.authorize(subject, 'CAN_VERIFY', tamperedToken);
+      expect(authTampered.allowed).toBe(false);
+      expect(authTampered.reason).toContain('invalid or expired');
+
+      // 5. Fail closed on token subject mismatch
+      const mismatchedSubject: IdentitySubject = {
+        ...subject,
+        id: 'did:omega:agent:imposter-99',
+      };
+      const authMismatch = security.authorize(mismatchedSubject, 'CAN_VERIFY', token);
+      expect(authMismatch.allowed).toBe(false);
+      expect(authMismatch.reason).toContain('Token subject mismatch');
+
+      // 6. Sanitize malicious inputs against script and command injection
+      const rawInput = '<script>alert("xss")</script>valid-param-claim; rm -rf /; echo $SECRET';
+      const sanitized = security.sanitizeInput(rawInput);
+      expect(sanitized).not.toContain('<script>');
+      expect(sanitized).not.toContain(';</script>');
+      expect(sanitized).not.toContain(';');
+      expect(sanitized).not.toContain('$');
+      expect(sanitized).toContain('valid-param-claim');
+
+      // 7. Inspect immutable audit trail
+      const auditTrail = security.getAuditTrail();
+      expect(auditTrail.length).toBeGreaterThanOrEqual(4);
+      expect(auditTrail.some((a) => a.allowed === true)).toBe(true);
+      expect(auditTrail.some((a) => a.allowed === false)).toBe(true);
+    });
+  });
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Section 62 — Autonomous Governance Constraints, Fail-Closed Risk Gates & Human Approval E2E
+  // ──────────────────────────────────────────────────────────────────────────
+  describe('Section 62 — Autonomous Governance Constraints, Fail-Closed Risk Gates & Human Approval E2E', () => {
+    it('should evaluate action requests against active governance constraints, fail closed on confidence/risk limits, and enforce human approval', () => {
+      const governance = new GovernanceEngine();
+
+      // 1. Register governance rules across action types
+      governance.registerRule({
+        id: 'rule-agent-autonomy',
+        action: 'AGENT_AUTONOMY',
+        active: true,
+        minimumConfidenceThreshold: 0.85,
+        maximumRiskThreshold: 0.3,
+        requiresHumanApproval: false,
+      });
+
+      governance.registerRule({
+        id: 'rule-model-deployment',
+        action: 'MODEL_DEPLOYMENT',
+        active: true,
+        minimumConfidenceThreshold: 0.95,
+        maximumRiskThreshold: 0.1,
+        requiresHumanApproval: true,
+      });
+
+      // 2. Action permitted within confidence and risk constraints
+      const decision1 = governance.requestAction('AGENT_AUTONOMY', 'did:omega:agent:worker-01', {
+        confidence: 0.92,
+        risk: 0.15,
+      });
+      expect(decision1.allowed).toBe(true);
+      expect(decision1.requiresHumanApproval).toBe(false);
+      expect(decision1.reason).toContain('permitted by governance rules');
+
+      // 3. Fails closed when confidence is below required threshold
+      const decisionLowConf = governance.requestAction(
+        'AGENT_AUTONOMY',
+        'did:omega:agent:worker-01',
+        {
+          confidence: 0.75,
+          risk: 0.15,
+        }
+      );
+      expect(decisionLowConf.allowed).toBe(false);
+      expect(decisionLowConf.reason).toContain(
+        'Confidence (0.75) is below the required threshold (0.85)'
+      );
+
+      // 4. Fails closed when risk exceeds maximum threshold
+      const decisionHighRisk = governance.requestAction(
+        'AGENT_AUTONOMY',
+        'did:omega:agent:worker-01',
+        {
+          confidence: 0.95,
+          risk: 0.45,
+        }
+      );
+      expect(decisionHighRisk.allowed).toBe(false);
+      expect(decisionHighRisk.reason).toContain('Risk (0.45) exceeds the maximum threshold (0.3)');
+
+      // 5. Gated by mandatory human approval requirement
+      const decisionHumanGated = governance.requestAction(
+        'MODEL_DEPLOYMENT',
+        'did:omega:agent:lead-orchestrator',
+        {
+          confidence: 0.98,
+          risk: 0.05,
+        }
+      );
+      expect(decisionHumanGated.allowed).toBe(false);
+      expect(decisionHumanGated.requiresHumanApproval).toBe(true);
+      expect(decisionHumanGated.reason).toContain('requires human approval');
+
+      // 6. Fail closed: Unregistered actions are strictly denied
+      const decisionUnknown = governance.requestAction(
+        'EMERGENCY_ACTION' as GovernanceAction,
+        'did:omega:agent:unknown',
+        {}
+      );
+      expect(decisionUnknown.allowed).toBe(false);
+      expect(decisionUnknown.reason).toContain('No active governance rules permit this action');
     });
   });
 });
