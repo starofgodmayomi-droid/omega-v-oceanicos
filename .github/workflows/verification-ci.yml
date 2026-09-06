@@ -13,6 +13,8 @@ jobs:
   verify:
     name: Continuous Verification & Provenance Attestation
     runs-on: ubuntu-latest
+    env:
+      OMEGA_SIGNING_KEY: ci-verification-signing-key
 
     steps:
       - name: Checkout Repository
@@ -33,7 +35,7 @@ jobs:
       - name: 2. ESLint Code Quality Gate
         run: npx eslint . --ext .ts,.tsx,.js,.jsx --max-warnings 10
 
-      - name: 3. Full-Stack Jest Test Suite (41 Suites / 250+ Specs)
+      - name: 3. Full-Stack Jest Test Suite (121 Suites / 1870+ Specs)
         run: npx jest --no-cache --verbose --coverage
 
       - name: 4. Ω∞v CLI Swarm Verification
