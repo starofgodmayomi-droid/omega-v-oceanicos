@@ -58,6 +58,10 @@ import { EvolutionEngine } from '@omega-v/evolution';
 import { ProvenanceGraph } from '@omega-v/graph';
 import { FrictionTracker } from '@omega-v/friction';
 import { MoodEvaluator } from '@omega-v/mood';
+import { say as sayLexicon, sayAll as sayAllLexicon, isReviewed, isLocale } from '@omega-v/lexicon';
+import { reconcile as reconcileDissensus, STRICT_POLICY } from '@omega-v/dissensus';
+import { ParallelExecutor } from '@omega-v/coordination';
+import { EvidenceEngine } from '@omega-v/evidence';
 import app from '../../apps/api/src/index';
 
 describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => {
@@ -3195,6 +3199,281 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       expect(evidenceSearch.state).toBe('EVIDENCE_SEARCH');
       expect(evidenceSearch.confidence).toBeLessThan(0.8);
       expect(evidenceSearch.uncertainty).toBeGreaterThan(0.2);
+    });
+  });
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Section 56 — Universal Lexicon Bilingual Verdict Legibility E2E
+  // ──────────────────────────────────────────────────────────────────────────
+  describe('Section 56 — Universal Lexicon Bilingual Verdict Legibility E2E', () => {
+    it('should render legally binding verdict states in English and Naijá with preserved polarity', () => {
+      // 1. Verify English and Naijá rendering for core states
+      const verifiedEn = sayLexicon('VERIFIED', 'en');
+      const verifiedPcm = sayLexicon('VERIFIED', 'pcm');
+      expect(verifiedEn.label).toBe('Verified');
+      expect(verifiedEn.polarity).toBe('affirming');
+      expect(verifiedPcm.label).toBe('E don pass check');
+      expect(verifiedPcm.polarity).toBe('affirming');
+
+      const attestedPcm = sayLexicon('ATTESTED', 'pcm');
+      expect(attestedPcm.label).toBe('Dem don sign am');
+      expect(attestedPcm.polarity).toBe('affirming');
+
+      const failedPcm = sayLexicon('FAILED', 'pcm');
+      expect(failedPcm.label).toBe('E no pass');
+      expect(failedPcm.polarity).toBe('negating');
+
+      // 2. Dissenting verdict in Naijá ("Dem no gree")
+      const dissentingPcm = sayLexicon('DISSENTING', 'pcm');
+      expect(dissentingPcm.label).toBe('Dem no gree');
+      expect(dissentingPcm.polarity).toBe('unresolved');
+
+      // 3. Polarity consistency across all supported states
+      const allObserved = sayAllLexicon('OBSERVED');
+      expect(allObserved.en.polarity).toBe(allObserved.pcm.polarity);
+      expect(allObserved.en.polarity).toBe('pending');
+
+      const allFailed = sayAllLexicon('FAILED');
+      expect(allFailed.en.polarity).toBe(allFailed.pcm.polarity);
+      expect(allFailed.en.polarity).toBe('negating');
+
+      // 4. Fallback behavior: unknown locale gracefully falls back to default English
+      const fallback = sayLexicon('VERIFIED', 'unknown-locale-xyz');
+      expect(fallback.label).toBe('Verified');
+
+      // 5. Locale validation
+      expect(isLocale('en')).toBe(true);
+      expect(isLocale('pcm')).toBe(true);
+      expect(isLocale('fr')).toBe(false);
+      expect(isReviewed('en')).toBe(true);
+    });
+  });
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Section 57 — Multi-Model Dissensus Reconciliation Protocol E2E
+  // ──────────────────────────────────────────────────────────────────────────
+  describe('Section 57 — Multi-Model Dissensus Reconciliation Protocol E2E', () => {
+    it('should reconcile multi-verifier opinions without averaging confidence or suppressing dissent', () => {
+      // 1. Unanimous consensus
+      const unanimousOpinions = [
+        {
+          verifierId: 'v-alpha',
+          verifierVersion: '1.0.0',
+          passed: true,
+          confidence: 0.95,
+          reason: 'Checks passed',
+        },
+        {
+          verifierId: 'v-beta',
+          verifierVersion: '1.0.0',
+          passed: true,
+          confidence: 0.88,
+          reason: 'SLO met',
+        },
+      ];
+      const agreed = reconcileDissensus(unanimousOpinions, STRICT_POLICY);
+      expect(agreed.verdict).toBe('AGREED');
+      expect(agreed.agreed).toBe(true);
+      expect(agreed.confidence).toBe(0.88); // Lowest confidence wins, never averaged
+      expect(agreed.routing).toBe('AUTO');
+      expect(agreed.dissenting).toHaveLength(0);
+
+      // 2. Multi-model disagreement: 2 PASS, 1 FAIL
+      // Deliberately does NOT take majority vote (2-1 is a disagreement, not a decision)
+      const splitOpinions = [
+        {
+          verifierId: 'v-1',
+          verifierVersion: '1.0.0',
+          passed: true,
+          confidence: 0.92,
+          reason: 'Passed rule 1',
+        },
+        {
+          verifierId: 'v-2',
+          verifierVersion: '1.0.0',
+          passed: true,
+          confidence: 0.9,
+          reason: 'Passed rule 2',
+        },
+        {
+          verifierId: 'v-3',
+          verifierVersion: '1.0.0',
+          passed: false,
+          confidence: 0.85,
+          reason: 'Failed anomaly rule',
+        },
+      ];
+      const split = reconcileDissensus(splitOpinions, STRICT_POLICY);
+      expect(split.verdict).toBe('SPLIT');
+      expect(split.agreed).toBeNull();
+      expect(split.routing).toBe('HUMAN'); // humanOnSplit: true
+      expect(split.dissenting).toHaveLength(1);
+      expect(split.dissenting[0].verifierId).toBe('v-3');
+
+      // 3. Below minimum confidence threshold routes to HUMAN
+      const lowConfidenceOpinions = [
+        {
+          verifierId: 'v-low-1',
+          verifierVersion: '1.0.0',
+          passed: true,
+          confidence: 0.65,
+          reason: 'Marginal pass',
+        },
+        {
+          verifierId: 'v-low-2',
+          verifierVersion: '1.0.0',
+          passed: true,
+          confidence: 0.8,
+          reason: 'Nominal pass',
+        },
+      ];
+      const lowConfResult = reconcileDissensus(lowConfidenceOpinions, STRICT_POLICY);
+      expect(lowConfResult.verdict).toBe('AGREED');
+      expect(lowConfResult.confidence).toBe(0.65);
+      expect(lowConfResult.routing).toBe('HUMAN'); // minimumConfidence: 0.70 threshold not met
+
+      // 4. Duplicate verifier ID rejected to prevent manufactured consensus
+      const duplicateOpinions = [
+        {
+          verifierId: 'v-dup',
+          verifierVersion: '1.0.0',
+          passed: true,
+          confidence: 0.9,
+          reason: 'First run',
+        },
+        {
+          verifierId: 'v-dup',
+          verifierVersion: '1.0.0',
+          passed: true,
+          confidence: 0.9,
+          reason: 'Second run',
+        },
+      ];
+      const dupResult = reconcileDissensus(duplicateOpinions, STRICT_POLICY);
+      expect(dupResult.verdict).toBe('UNKNOWN');
+      expect(dupResult.routing).toBe('HUMAN');
+      expect(dupResult.reason).toContain('the same verifier answered more than once');
+    });
+  });
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Section 58 — Parallel Multi-Role Swarm Task Coordination E2E
+  // ──────────────────────────────────────────────────────────────────────────
+  describe('Section 58 — Parallel Multi-Role Swarm Task Coordination E2E', () => {
+    it('should coordinate parallel worker and builder tasks with bounded concurrency and inspectable lifecycle trace', async () => {
+      const executor = new ParallelExecutor({
+        maxConcurrency: 2,
+        maxTasks: 8,
+        runId: 'e2e-coord-run-001',
+      });
+
+      const tasks = [
+        {
+          id: 'task-build-compiler',
+          role: 'builder' as const,
+          title: 'Compile-DSL-Rules',
+          run: async () => 'artifact-bytecode-compiled',
+        },
+        {
+          id: 'task-work-verify-shard-1',
+          role: 'worker' as const,
+          title: 'Verify-Shard-1-Telemetry',
+          run: async () => 'proof-shard-1-verified',
+        },
+        {
+          id: 'task-work-verify-shard-2',
+          role: 'worker' as const,
+          title: 'Verify-Shard-2-Telemetry',
+          run: async () => 'proof-shard-2-verified',
+        },
+        {
+          id: 'task-build-settle-pack',
+          role: 'builder' as const,
+          title: 'Assemble-Attestation-Pack',
+          run: async () => 'pack-attestation-assembled',
+        },
+      ];
+
+      const summary = await executor.execute(tasks);
+
+      expect(summary.runId).toBe('e2e-coord-run-001');
+      expect(summary.state).toBe('succeeded');
+      expect(summary.maxConcurrency).toBe(2);
+      expect(summary.started).toBe(4);
+      expect(summary.succeeded).toBe(4);
+      expect(summary.failed).toBe(0);
+      expect(summary.blocked).toBe(0);
+
+      // Verify task results
+      expect(summary.results['task-build-compiler']).toBe('artifact-bytecode-compiled');
+      expect(summary.results['task-work-verify-shard-1']).toBe('proof-shard-1-verified');
+      expect(summary.results['task-work-verify-shard-2']).toBe('proof-shard-2-verified');
+      expect(summary.results['task-build-settle-pack']).toBe('pack-attestation-assembled');
+
+      // Verify event log trace
+      expect(summary.events.length).toBe(8); // 4 running + 4 succeeded events
+      expect(summary.events[0].sequence).toBe(1);
+      expect(summary.events.every((e) => e.workerSlot !== null && e.workerSlot < 2)).toBe(true);
+    });
+  });
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Section 59 — Cryptographic Evidence Artifact Engine E2E
+  // ──────────────────────────────────────────────────────────────────────────
+  describe('Section 59 — Cryptographic Evidence Artifact Engine E2E', () => {
+    it('should generate Section XXIV machine-readable evidence artifacts and verify lineage integrity', () => {
+      const obs = new Observer();
+      const verifier = new VerificationEngine();
+      const store = new ProvenanceStore();
+      const evidence = new EvidenceEngine();
+
+      // 1. Produce provenance events
+      const claim = obs.observe({
+        claim: 'Cryptographic evidence invariant verification',
+        category: 'health-check',
+        source: { system: 'e2e-evidence-test', version: '1.0.0', environment: 'production' },
+        observedBy: 'did:omega:agent:evidence-auditor',
+        metadata: { responseTime: 32, statusCode: 200 },
+        confidence: 0.98,
+        confidenceReason: 'Telemetry feed',
+      });
+      store.recordObservation(claim);
+
+      const verification = verifier.verify(claim);
+      store.recordVerification(verification);
+
+      const events = store.getEntries();
+      expect(events.length).toBe(2);
+
+      // 2. Generate evidence artifact
+      const artifact = evidence.generateArtifact(verification, events, 'production', {
+        node: '24.14.0',
+        engine: '1.0.0',
+      });
+
+      expect(artifact.id).toMatch(/^evd-/);
+      expect(artifact.verificationId).toBe(verification.id);
+      expect(artifact.environment).toBe('production');
+      expect(artifact.toolVersions['node']).toBe('24.14.0');
+      expect(artifact.lineageHash).toMatch(/^[a-f0-9]{64}$/);
+      expect((artifact.payload.verificationSummary as { passed: boolean }).passed).toBe(true);
+      expect(artifact.createdAt).toBeTruthy();
+
+      // 3. Verify integrity against authentic lineage events
+      const isAuthentic = evidence.verifyIntegrity(artifact, events);
+      expect(isAuthentic).toBe(true);
+
+      // 4. Retrieve artifact from store
+      const retrieved = evidence.getArtifact(artifact.id);
+      expect(retrieved).toBeDefined();
+      expect(retrieved?.id).toBe(artifact.id);
+
+      // 5. Tampering check: altered lineage event invalidates artifact integrity (fails closed)
+      const tamperedEvents = events.map((e, idx) =>
+        idx === 0 ? { ...e, hash: '0x' + 'f'.repeat(64) } : e
+      );
+      const isTamperedValid = evidence.verifyIntegrity(artifact, tamperedEvents);
+      expect(isTamperedValid).toBe(false);
     });
   });
 });

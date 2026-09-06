@@ -12,6 +12,8 @@ const moduleNameMapper = {
   '@omega-v/mini': '<rootDir>/packages/mini/src/index.ts',
   '@omega-v/dissensus': '<rootDir>/packages/dissensus/src/index.ts',
   '@omega-v/lexicon': '<rootDir>/packages/lexicon/src/index.ts',
+  '@omega-v/coordination': '<rootDir>/packages/coordination/src/index.ts',
+  '@omega-v/runtime': '<rootDir>/packages/runtime/src/index.ts',
   '@omega-v/ir': '<rootDir>/packages/ir/src/index.ts',
   '@omega-v/compiler': '<rootDir>/packages/compiler/src/index.ts',
   '@omega-v/sdk': '<rootDir>/packages/sdk/src/index.ts',
