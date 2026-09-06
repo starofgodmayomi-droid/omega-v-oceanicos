@@ -221,6 +221,25 @@ type RevocationsResponse = {
   timestamp: string;
 };
 
+type SubsystemItem = {
+  id: string;
+  name: string;
+  category: string;
+  package: string;
+  status: string;
+  description: string;
+};
+
+type SubsystemsResponse = {
+  data: {
+    count: number;
+    total?: number;
+    category?: string | null;
+    subsystems: SubsystemItem[];
+  };
+  timestamp: string;
+};
+
 type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
 
 function usage(): string {
@@ -234,6 +253,7 @@ function usage(): string {
     'omega jobs [--url URL] [--limit N] [--token TOKEN] [--job-token TOKEN]',
     'omega export [--url URL] [--token TOKEN]',
     'omega rules [--category CATEGORY] [--url URL] [--token TOKEN]',
+    'omega subsystems [--category CATEGORY] [--json] [--url URL] [--token TOKEN]',
     'omega revocations [--url URL] [--token TOKEN]',
     'omega revoke ATTESTATION_ID --reason REASON [--operator-id ID] [--url URL] [--token TOKEN] [--admin-token TOKEN]',
     'omega acknowledge-persistence --reason REASON --operator-id ID [--url URL] [--admin-token TOKEN]',
@@ -653,6 +673,45 @@ async function rules(argv: string[], fetchImpl: FetchLike): Promise<number> {
   }
 }
 
+async function subsystems(argv: string[], fetchImpl: FetchLike): Promise<number> {
+  const categoryArg = option(argv, '--category');
+  const params = categoryArg ? `?category=${encodeURIComponent(categoryArg)}` : '';
+  const endpoint = `${baseUrl(argv).replace(/\/$/, '')}/subsystems${params}`;
+  try {
+    const response = await fetchImpl(endpoint, requestInit(argv));
+    const body = (await response.json()) as
+      SubsystemsResponse | { error?: string; message?: string };
+    if (!response.ok || !('data' in body) || !Array.isArray(body.data?.subsystems)) {
+      process.stderr.write(
+        `Subsystems unavailable (${response.status}): ${'message' in body ? (body.message ?? 'unknown error') : 'unknown error'}\n`
+      );
+      return 1;
+    }
+    if (argv.includes('--json')) {
+      process.stdout.write(`${JSON.stringify(body)}\n`);
+      return 0;
+    }
+    const totalCount = body.data.total ?? body.data.count;
+    const catLabel = body.data.category ?? 'all';
+    process.stdout.write(
+      [
+        `SUBSYSTEMS    ${body.data.subsystems.length}/${totalCount} category=${catLabel}`,
+        ...body.data.subsystems.map(
+          (sub) =>
+            `[${sub.category.padEnd(12)}] ${sub.id.padEnd(12)} (${sub.package}) - ${sub.status.toUpperCase()}: ${sub.description}`
+        ),
+        `OBSERVED      ${body.timestamp}`,
+      ].join('\n') + '\n'
+    );
+    return 0;
+  } catch (error) {
+    process.stderr.write(
+      `Subsystems unavailable: ${error instanceof Error ? error.message : String(error)}\n`
+    );
+    return 1;
+  }
+}
+
 async function revocations(argv: string[], fetchImpl: FetchLike): Promise<number> {
   const endpoint = `${baseUrl(argv).replace(/\/$/, '')}/attest/revocations`;
   try {
@@ -950,6 +1009,7 @@ export async function run(
   if (command === 'jobs') return jobs(argv, fetchImpl);
   if (command === 'export') return evidenceExport(argv, fetchImpl);
   if (command === 'rules') return rules(argv, fetchImpl);
+  if (command === 'subsystems') return subsystems(argv, fetchImpl);
   if (command === 'revocations') return revocations(argv, fetchImpl);
   if (command === 'verify') return verifyAttestation(argv, fetchImpl);
   if (command === 'policy') return policy(argv, fetchImpl);
@@ -963,4 +1023,3 @@ export async function run(
 }
 
 export { OceanicosCLI, type CLIResult } from './oceanicos-cli.js';
-

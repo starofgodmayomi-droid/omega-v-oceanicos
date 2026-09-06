@@ -147,6 +147,18 @@ An unreachable or malformed response exits non-zero rather than printing an empt
 
 This reports what the engine declares about itself. It is not a claim that any rule is correct, that its logic matches its description, or that a passing verification is a sound decision.
 
+## Subsystems intelligence matrix
+
+Inspect operational status across core and expanded subsystems of Ω∞v Oceanicos:
+
+```bash
+node packages/cli/dist/index.js subsystems --url http://localhost:3000
+node packages/cli/dist/index.js subsystems --category core --url http://localhost:3000
+node packages/cli/dist/index.js subsystems --json --url http://localhost:3000
+```
+
+`omega subsystems` calls `GET /subsystems`, optionally filtering by category (`core`, `runtime`, `consensus`, `verification`, `governance`, `storage`). It reports the subsystem identifier, package, status, and concise architectural description, or outputs raw JSON with `--json`. An unavailable API returns a non-zero exit code.
+
 ## Local job evidence
 
 Read the bounded local worker ledger without starting or mutating work:

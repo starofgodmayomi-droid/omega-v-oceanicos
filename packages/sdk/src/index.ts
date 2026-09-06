@@ -282,6 +282,25 @@ export type EvidenceExport = {
   runs: RuntimeRun[];
 };
 
+export type SubsystemInfo = {
+  id: string;
+  name: string;
+  category: string;
+  package: string;
+  status: string;
+  description: string;
+};
+
+export type SubsystemsResponse = {
+  data: {
+    count: number;
+    total: number;
+    category: string | null;
+    subsystems: SubsystemInfo[];
+  };
+  timestamp: string;
+};
+
 export type AuditQuery = {
   type?: string;
   stage?: string;
@@ -513,6 +532,13 @@ export class OmegaClient {
     if (query.category !== undefined) params.set('category', query.category);
     const suffix = params.toString() ? `?${params.toString()}` : '';
     return this.get<RulesResponse>(`/rules${suffix}`);
+  }
+
+  async getSubsystems(query: { category?: string } = {}): Promise<SubsystemsResponse> {
+    const params = new URLSearchParams();
+    if (query.category !== undefined) params.set('category', query.category);
+    const suffix = params.toString() ? `?${params.toString()}` : '';
+    return this.get<SubsystemsResponse>(`/subsystems${suffix}`);
   }
 
   async getRuns(): Promise<{ data: RuntimeRun[] }> {

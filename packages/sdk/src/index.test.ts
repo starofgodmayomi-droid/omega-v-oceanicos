@@ -68,6 +68,79 @@ describe('OmegaClient', () => {
     expect(response.data.registered).toBe(2);
   });
 
+  it('reads subsystem intelligence matrix catalog', async () => {
+    const client = new OmegaClient('http://api.test/', async (url) => {
+      expect(url).toBe('http://api.test/subsystems');
+      return new Response(
+        JSON.stringify({
+          data: {
+            count: 2,
+            total: 19,
+            category: null,
+            subsystems: [
+              {
+                id: 'mini',
+                name: 'MINI Kernel',
+                category: 'core',
+                package: '@omega-v/mini',
+                status: 'active',
+                description: 'Observe → Verify → Remember authoritative execution loop',
+              },
+              {
+                id: 'os',
+                name: 'Universal Builder OS',
+                category: 'core',
+                package: '@omega-v/mini',
+                status: 'booted',
+                description: 'Finite lifecycle & bounded task admission kernel',
+              },
+            ],
+          },
+          timestamp: '2026-08-16T00:00:00.000Z',
+        })
+      );
+    });
+
+    const response = await client.getSubsystems();
+
+    expect(response.data.count).toBe(2);
+    expect(response.data.total).toBe(19);
+    expect(response.data.subsystems[0].id).toBe('mini');
+    expect(response.data.subsystems[1].status).toBe('booted');
+  });
+
+  it('passes category filter to getSubsystems query parameter', async () => {
+    const client = new OmegaClient('http://api.test/', async (url) => {
+      expect(url).toBe('http://api.test/subsystems?category=consensus');
+      return new Response(
+        JSON.stringify({
+          data: {
+            count: 1,
+            total: 19,
+            category: 'consensus',
+            subsystems: [
+              {
+                id: 'consensus',
+                name: 'Byzantine Consensus',
+                category: 'consensus',
+                package: '@omega-v/consensus',
+                status: 'active',
+                description: 'Multi-party state machine replication and quorums',
+              },
+            ],
+          },
+          timestamp: '2026-08-16T00:00:00.000Z',
+        })
+      );
+    });
+
+    const response = await client.getSubsystems({ category: 'consensus' });
+
+    expect(response.data.count).toBe(1);
+    expect(response.data.category).toBe('consensus');
+    expect(response.data.subsystems[0].id).toBe('consensus');
+  });
+
   it('reads typed health and readiness evidence', async () => {
     const client = new OmegaClient('http://api.test/', async (url, init) => {
       expect(url).toBe('http://api.test/health');

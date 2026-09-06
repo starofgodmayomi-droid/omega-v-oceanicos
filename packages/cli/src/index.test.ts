@@ -1964,3 +1964,127 @@ describe('omega jobs CLI', () => {
     }
   });
 });
+
+describe('omega subsystems CLI', () => {
+  const originalWrite = process.stdout.write;
+  const originalError = process.stderr.write;
+
+  afterEach(() => {
+    process.stdout.write = originalWrite;
+    process.stderr.write = originalError;
+  });
+
+  const capture = () => {
+    const output: string[] = [];
+    const errors: string[] = [];
+    process.stdout.write = ((chunk: string | Uint8Array) => {
+      output.push(String(chunk));
+      return true;
+    }) as typeof process.stdout.write;
+    process.stderr.write = ((chunk: string | Uint8Array) => {
+      errors.push(String(chunk));
+      return true;
+    }) as typeof process.stderr.write;
+    return {
+      output,
+      errors,
+      restore: () => {
+        process.stdout.write = originalWrite;
+        process.stderr.write = originalError;
+      },
+    };
+  };
+
+  const sampleSubsystems = {
+    data: {
+      count: 2,
+      total: 19,
+      category: null,
+      subsystems: [
+        {
+          id: 'mini',
+          name: 'MINI Kernel',
+          category: 'core',
+          package: '@omega-v/mini',
+          status: 'active',
+          description: 'Observe → Verify → Remember authoritative execution loop',
+        },
+        {
+          id: 'os',
+          name: 'Universal Builder OS',
+          category: 'core',
+          package: '@omega-v/mini',
+          status: 'booted',
+          description: 'Finite lifecycle & bounded task admission kernel',
+        },
+      ],
+    },
+    timestamp: '2026-08-20T00:00:00.000Z',
+  };
+
+  it('prints formatted subsystems catalog', async () => {
+    const io = capture();
+    try {
+      const exitCode = await run(['subsystems', '--url', 'http://api.test'], async (url) => {
+        expect(url).toBe('http://api.test/subsystems');
+        return new Response(JSON.stringify(sampleSubsystems));
+      });
+      expect(exitCode).toBe(0);
+      expect(io.output.join('')).toContain('SUBSYSTEMS    2/19 category=all');
+      expect(io.output.join('')).toContain('[core        ] mini         (@omega-v/mini) - ACTIVE:');
+    } finally {
+      io.restore();
+    }
+  });
+
+  it('passes category query parameter and prints filtered results', async () => {
+    const io = capture();
+    try {
+      const exitCode = await run(
+        ['subsystems', '--category', 'core', '--url', 'http://api.test'],
+        async (url) => {
+          expect(url).toBe('http://api.test/subsystems?category=core');
+          return new Response(
+            JSON.stringify({
+              ...sampleSubsystems,
+              data: { ...sampleSubsystems.data, category: 'core' },
+            })
+          );
+        }
+      );
+      expect(exitCode).toBe(0);
+      expect(io.output.join('')).toContain('SUBSYSTEMS    2/19 category=core');
+    } finally {
+      io.restore();
+    }
+  });
+
+  it('outputs raw JSON when --json flag is passed', async () => {
+    const io = capture();
+    try {
+      const exitCode = await run(
+        ['subsystems', '--json', '--url', 'http://api.test'],
+        async () => new Response(JSON.stringify(sampleSubsystems))
+      );
+      expect(exitCode).toBe(0);
+      expect(JSON.parse(io.output.join(''))).toEqual(sampleSubsystems);
+    } finally {
+      io.restore();
+    }
+  });
+
+  it('reports errors when API fails', async () => {
+    const io = capture();
+    try {
+      const exitCode = await run(
+        ['subsystems', '--url', 'http://api.test'],
+        async () =>
+          new Response(JSON.stringify({ message: 'Internal Server Error' }), { status: 500 })
+      );
+      expect(exitCode).toBe(1);
+      expect(io.errors.join('')).toContain('Subsystems unavailable (500): Internal Server Error');
+    } finally {
+      io.restore();
+    }
+  });
+});

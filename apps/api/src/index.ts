@@ -2504,7 +2504,7 @@ app.get('/rules', (req: Request, res: Response) => {
   res.json(response);
 });
 
-app.get('/subsystems', (_req: Request, res: Response) => {
+app.get('/subsystems', (req: Request, res: Response) => {
   const subsystems = [
     {
       id: 'mini',
@@ -2660,10 +2660,18 @@ app.get('/subsystems', (_req: Request, res: Response) => {
     },
   ];
 
+  const categoryParam =
+    typeof req.query.category === 'string' ? req.query.category.toLowerCase().trim() : undefined;
+  const filtered = categoryParam
+    ? subsystems.filter((sub) => sub.category.toLowerCase() === categoryParam)
+    : subsystems;
+
   res.json({
     data: {
-      count: subsystems.length,
-      subsystems,
+      count: filtered.length,
+      total: subsystems.length,
+      category: categoryParam ?? null,
+      subsystems: filtered,
     },
     timestamp: new Date().toISOString(),
   });
