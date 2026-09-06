@@ -736,3 +736,22 @@ export class OmegaClient {
     return body as T;
   }
 }
+
+export {
+  OceanicosClient,
+  type OceanicosClientOptions,
+  type FullLoopResult,
+  type EcosystemFlowResult,
+  type GrandFlowResult,
+  type HyperFlowResult,
+  Observer,
+  VerificationEngine,
+  AttestationService,
+  ProvenanceStore,
+  Remember,
+  MiniKernel,
+  OperatingSystemKernel,
+  OmegaTotalCompressor,
+} from './oceanicos.js';
+
+export default OmegaClient;

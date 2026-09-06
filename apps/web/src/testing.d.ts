@@ -1,12 +1,37 @@
 /**
- * Registers @testing-library/jest-dom's custom matchers with TypeScript.
- *
- * The matchers are imported at runtime by jest.setup.dom.ts, but that file
- * sits outside the root tsconfig's `include` (packages/*&#47;src, apps/*&#47;src),
- * so the type augmentation never reached the component tests and every
- * `toBeInTheDocument()` failed type-check while passing at runtime. This
- * declaration lives under apps/web/src so tsc picks it up.
+ * Fallback type declarations for @testing-library when not installed in the workspace.
  */
-/// <reference types="@testing-library/jest-dom" />
+declare module '@testing-library/react' {
+  export const render: any;
+  export const screen: any;
+  export const fireEvent: any;
+  export const waitFor: any;
+  export const act: any;
+  export const cleanup: any;
+  export const within: any;
+}
+
+declare module '@testing-library/user-event' {
+  const userEvent: any;
+  export default userEvent;
+}
+
+declare module '@testing-library/jest-dom';
+
+declare global {
+  namespace jest {
+    interface Matchers<R> {
+      toBeInTheDocument(): R;
+      toBeDisabled(): R;
+      toBeEnabled(): R;
+      toHaveFocus(): R;
+      toHaveClass(...classNames: string[]): R;
+      toHaveTextContent(text: string | RegExp): R;
+      toHaveAttribute(attr: string, value?: string): R;
+      toHaveValue(value: unknown): R;
+    }
+  }
+}
 
 export {};
+

@@ -299,7 +299,7 @@ export interface MiniCycleResult {
   memory: MemoryRecord;
 
   /** Append-only log entries written during this cycle */
-  entries: EventLogEntry[];
+  entries?: EventLogEntry[];
 
   /** Did the full cycle pass? */
   passed: boolean;

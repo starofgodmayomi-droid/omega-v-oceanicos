@@ -10,7 +10,7 @@
     "watch": "tsc --watch",
     "test": "jest",
     "test:watch": "jest --watch",
-    "clean": "rm -rf dist *.tsbuildinfo"
+    "clean": "node ../../scripts/rimraf.cjs dist \"*.tsbuildinfo\""
   },
   "keywords": [
     "memory",

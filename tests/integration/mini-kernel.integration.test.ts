@@ -161,7 +161,7 @@ describe('Ω∞v Oceanicos Integration — Foundational MINI Kernel & Totality',
     it('executes MINI cycle and Totality Lock through OceanicosClient', () => {
       const client = new OceanicosClient();
       client.registerRule({
-        name: 'sdk-mini-rule',
+        name: 'response-time-threshold',
         version: '1.0.0',
         appliesTo: ['e2e-check'],
         definition: 'responseTime < 50',

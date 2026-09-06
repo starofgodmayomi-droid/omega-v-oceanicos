@@ -1,22 +1,52 @@
-import { MiniKernel } from './index';
+import { MiniKernel } from './index.js';
 import { MiniCycleResult } from '@omega-v/types';
 
-/**
- * OperatingSystemKernel: bounded deterministic finite control-plane.
- *
- * Lifecycle: boot() → admit() → complete() → stop()
- *
- * This is the thin OS layer that manages the lifecycle of MINI cycles.
- * It enforces:
- *   - Sequential admission (no concurrent cycles)
- *   - Boot/stop lifecycle boundaries
- *   - State snapshotting
- */
+/** Finite lifecycle for the repository's computer-like control plane. */
+export type OperatingSystemState =
+  | 'offline'
+  | 'booting'
+  | 'ready'
+  | 'degraded'
+  | 'stopping'
+  | 'stopped';
 
 export type OSKernelState = 'COLD' | 'BOOTED' | 'PROCESSING' | 'STOPPED';
 
+/** A bounded task admitted to the OS kernel. Arbitrary shell execution is intentionally excluded. */
+export type OperatingSystemTaskKind = 'observe' | 'verify' | 'remember' | 'report';
+
+export type OperatingSystemTask = {
+  id: string;
+  kind: OperatingSystemTaskKind;
+  input: Record<string, unknown>;
+  requestedBy: string;
+};
+
+export type OperatingSystemEvent = {
+  sequence: number;
+  type: 'boot' | 'admit' | 'complete' | 'degrade' | 'reject' | 'stop';
+  state: OperatingSystemState;
+  taskId?: string;
+  reason?: string;
+};
+
+export type OperatingSystemOptions = {
+  /** Maximum number of tasks that may be retained in one bounded runtime. */
+  maxTasks?: number;
+  /** Maximum number of events retained in the deterministic runtime trace. */
+  maxEvents?: number;
+  /** Optional underlying MiniKernel for cycle admission. */
+  kernel?: MiniKernel;
+};
+
+export type OperatingSystemCapabilities = {
+  shellExecution: false;
+  remoteMutation: false;
+  credentialHandling: false;
+  humanAuthorizationRequired: true;
+};
+
 export interface OSKernelSnapshot {
-  state: OSKernelState;
   totalCycles: number;
   passedCycles: number;
   failedCycles: number;
@@ -25,112 +55,284 @@ export interface OSKernelSnapshot {
   snapshotAt: string;
 }
 
+export type OperatingSystemSnapshot = {
+  snapshotVersion: 'os.snapshot.v1';
+  state: OperatingSystemState;
+  tasks: OperatingSystemTask[];
+  events: OperatingSystemEvent[];
+  limits: {
+    maxTasks: number;
+    maxEvents: number;
+  };
+  capabilities: OperatingSystemCapabilities;
+} & OSKernelSnapshot;
+
+const DEFAULT_MAX_TASKS = 32;
+const DEFAULT_MAX_EVENTS = 128;
+const MAX_TASK_INPUT_KEYS = 64;
+const MAX_TASK_INPUT_NODES = 256;
+const MAX_TASK_INPUT_DEPTH = 8;
+const MAX_REQUESTER_LENGTH = 128;
+const OPERATING_SYSTEM_TASK_KINDS: readonly OperatingSystemTaskKind[] = [
+  'observe',
+  'verify',
+  'remember',
+  'report',
+];
+const OPERATING_SYSTEM_CAPABILITIES: OperatingSystemCapabilities = {
+  shellExecution: false,
+  remoteMutation: false,
+  credentialHandling: false,
+  humanAuthorizationRequired: true,
+};
+
+/**
+ * A finite, deterministic control-plane kernel.
+ *
+ * This is an OS-like coordination boundary, not a general-purpose shell and
+ * not an autonomous agent runtime. It admits only typed, bounded task kinds;
+ * callers provide the execution logic at a higher layer.
+ */
 export class OperatingSystemKernel {
-  private state: OSKernelState = 'COLD';
+  private readonly maxTasks: number;
+  private readonly maxEvents: number;
+  private readonly miniKernel?: MiniKernel;
+  private state: OperatingSystemState = 'offline';
+  private tasks: OperatingSystemTask[] = [];
+  private events: OperatingSystemEvent[] = [];
+  private nextTaskSequence = 1;
+  private nextEventSequence = 1;
+
   private totalCycles = 0;
   private passedCycles = 0;
   private failedCycles = 0;
 
-  constructor(private readonly kernel: MiniKernel) {}
-
-  /**
-   * Boot the kernel. Transitions COLD → BOOTED.
-   * Fails if already booted or stopped.
-   */
-  public boot(): void {
-    if (this.state !== 'COLD') {
-      throw new Error(`Cannot boot: kernel is in state '${this.state}' (expected 'COLD')`);
+  public constructor(optionsOrKernel: OperatingSystemOptions | MiniKernel = {}) {
+    if (optionsOrKernel && 'cycle' in optionsOrKernel && typeof (optionsOrKernel as MiniKernel).cycle === 'function') {
+      this.miniKernel = optionsOrKernel as MiniKernel;
+      this.maxTasks = DEFAULT_MAX_TASKS;
+      this.maxEvents = DEFAULT_MAX_EVENTS;
+    } else {
+      const opts = optionsOrKernel as OperatingSystemOptions;
+      this.maxTasks = opts.maxTasks ?? DEFAULT_MAX_TASKS;
+      this.maxEvents = opts.maxEvents ?? DEFAULT_MAX_EVENTS;
+      this.miniKernel = opts.kernel;
+      if (!Number.isInteger(this.maxTasks) || this.maxTasks < 1) {
+        throw new Error('maxTasks must be a positive integer');
+      }
+      if (!Number.isInteger(this.maxEvents) || this.maxEvents < 1) {
+        throw new Error('maxEvents must be a positive integer');
+      }
     }
-    this.state = 'BOOTED';
   }
 
-  /**
-   * Admit a claim for processing. Transitions BOOTED → PROCESSING → BOOTED.
-   * Fails if not booted.
-   */
-  public admit(input: {
+  public getState(): OSKernelState {
+    if (this.state === 'offline') return 'COLD';
+    if (this.state === 'ready' || this.state === 'booting') return 'BOOTED';
+    if (this.state === 'stopping' || this.state === 'stopped') return 'STOPPED';
+    return 'PROCESSING';
+  }
+
+  public boot(): OperatingSystemSnapshot {
+    if (this.state !== 'offline' && this.state !== 'stopped') {
+      return this.snapshot();
+    }
+    this.state = 'booting';
+    this.record({ type: 'boot', state: 'booting' });
+    this.state = 'ready';
+    this.record({ type: 'boot', state: 'ready' });
+    return this.snapshot();
+  }
+
+  public admit(
+    kind: OperatingSystemTaskKind,
+    input: Record<string, unknown>,
+    requestedBy: string
+  ): OperatingSystemTask;
+  public admit(cycleInput: {
     claim: string;
     category?: string;
     source?: { system: string; version: string; environment: string };
     observedBy?: string;
     metadata?: Record<string, unknown>;
-    confidence?: number;
-    confidenceReason?: string;
-  }): MiniCycleResult {
-    if (this.state !== 'BOOTED') {
-      throw new Error(`Cannot admit: kernel is in state '${this.state}' (expected 'BOOTED')`);
-    }
-
-    this.state = 'PROCESSING';
-
-    try {
-      const result = this.kernel.cycle(input);
-      this.totalCycles++;
-
-      if (result.passed) {
-        this.passedCycles++;
-      } else {
-        this.failedCycles++;
+  }): MiniCycleResult;
+  public admit(
+    kindOrCycleInput: OperatingSystemTaskKind | { claim: string; [k: string]: unknown },
+    input?: Record<string, unknown>,
+    requestedBy?: string
+  ): OperatingSystemTask | MiniCycleResult {
+    if (typeof kindOrCycleInput === 'object' && kindOrCycleInput !== null) {
+      if (this.state !== 'ready') {
+        throw new Error(`Cannot admit: kernel is in state '${this.getState()}' (expected 'BOOTED')`);
       }
-
-      return result;
-    } finally {
-      this.state = 'BOOTED';
+      if (!this.miniKernel) {
+        throw new Error('MiniKernel not configured for OperatingSystemKernel');
+      }
+      try {
+        const result = this.miniKernel.cycle(kindOrCycleInput);
+        this.totalCycles++;
+        if (result.passed) {
+          this.passedCycles++;
+        } else {
+          this.failedCycles++;
+        }
+        return result;
+      } catch (err) {
+        this.totalCycles++;
+        this.failedCycles++;
+        throw err;
+      }
     }
+
+    const kind = kindOrCycleInput as OperatingSystemTaskKind;
+    if (this.state !== 'ready') {
+      const reason = `cannot admit task while operating system is ${this.state}`;
+      this.record({ type: 'reject', state: this.state, reason });
+      throw new Error(reason);
+    }
+    if (!OPERATING_SYSTEM_TASK_KINDS.includes(kind)) {
+      const reason = `unsupported operating system task kind: ${String(kind)}`;
+      this.record({ type: 'reject', state: this.state, reason });
+      throw new Error(reason);
+    }
+    if (!isBoundedTaskInput(input!)) {
+      const reason = `operating system task input must contain at most ${MAX_TASK_INPUT_KEYS} keys`;
+      this.record({ type: 'reject', state: this.state, reason });
+      throw new Error(reason);
+    }
+    if (
+      typeof requestedBy !== 'string' ||
+      requestedBy.trim().length === 0 ||
+      requestedBy.length > MAX_REQUESTER_LENGTH
+    ) {
+      const reason = `operating system task requester must be 1-${MAX_REQUESTER_LENGTH} characters`;
+      this.record({ type: 'reject', state: this.state, reason });
+      throw new Error(reason);
+    }
+    if (this.tasks.length >= this.maxTasks) {
+      this.state = 'degraded';
+      this.record({ type: 'degrade', state: 'degraded', reason: 'task limit reached' });
+      const reason = 'operating system task limit reached';
+      this.record({ type: 'reject', state: this.state, reason });
+      throw new Error(reason);
+    }
+    const task: OperatingSystemTask = {
+      id: `task-${this.nextTaskSequence++}`,
+      kind,
+      input: cloneTaskInput(input!),
+      requestedBy,
+    };
+    this.tasks.push(task);
+    this.record({ type: 'admit', state: this.state, taskId: task.id });
+    return { ...task, input: cloneTaskInput(task.input) };
   }
 
-  /**
-   * Complete and acknowledge a cycle. Alias for admit() — semantically
-   * signals that the caller considers the cycle finished.
-   */
-  public complete(input: {
+  public complete(taskId: string): OperatingSystemSnapshot;
+  public complete(cycleInput: {
     claim: string;
     category?: string;
+    source?: { system: string; version: string; environment: string };
+    observedBy?: string;
     metadata?: Record<string, unknown>;
-    confidence?: number;
-  }): MiniCycleResult {
-    return this.admit(input);
-  }
-
-  /**
-   * Stop the kernel. Transitions BOOTED → STOPPED.
-   * After stopping, no more cycles can be admitted.
-   */
-  public stop(): void {
-    if (this.state !== 'BOOTED') {
-      throw new Error(`Cannot stop: kernel is in state '${this.state}' (expected 'BOOTED')`);
+  }): MiniCycleResult;
+  public complete(
+    taskIdOrInput: string | { claim: string; [k: string]: unknown }
+  ): OperatingSystemSnapshot | MiniCycleResult {
+    if (typeof taskIdOrInput === 'string') {
+      const index = this.tasks.findIndex((task) => task.id === taskIdOrInput);
+      if (index < 0) {
+        throw new Error(`unknown operating system task: ${taskIdOrInput}`);
+      }
+      this.tasks.splice(index, 1);
+      if (this.state === 'degraded') {
+        this.state = 'ready';
+      }
+      this.record({ type: 'complete', state: this.state, taskId: taskIdOrInput });
+      return this.snapshot();
     }
-    this.state = 'STOPPED';
+    return this.admit(taskIdOrInput);
   }
 
-  /**
-   * Produce a snapshot of the kernel's state.
-   */
-  public snapshot(): OSKernelSnapshot {
+  public stop(): OperatingSystemSnapshot {
+    if (this.state === 'stopped' || this.state === 'offline') {
+      this.state = 'stopped';
+      return this.snapshot();
+    }
+    this.state = 'stopping';
+    this.record({ type: 'stop', state: 'stopping' });
+    this.tasks = [];
+    this.state = 'stopped';
+    this.record({ type: 'stop', state: 'stopped' });
+    return this.snapshot();
+  }
+
+  public getKernel(): MiniKernel | undefined {
+    return this.miniKernel;
+  }
+
+  public snapshot(): OperatingSystemSnapshot {
+    const effectiveState = this.miniKernel
+      ? (this.state === 'ready' ? 'BOOTED' : this.state === 'offline' ? 'COLD' : this.state === 'stopped' ? 'STOPPED' : this.state)
+      : this.state;
     return {
-      state: this.state,
+      snapshotVersion: 'os.snapshot.v1',
+      state: effectiveState as OperatingSystemState,
+      tasks: this.tasks.map((task) => ({ ...task, input: cloneTaskInput(task.input) })),
+      events: this.events.map((event) => ({ ...event })),
+      limits: { maxTasks: this.maxTasks, maxEvents: this.maxEvents },
+      capabilities: { ...OPERATING_SYSTEM_CAPABILITIES },
       totalCycles: this.totalCycles,
       passedCycles: this.passedCycles,
       failedCycles: this.failedCycles,
-      memorySize: this.kernel.getMemorySize(),
-      memoryIntegrity: this.kernel.verifyMemoryIntegrity(),
+      memorySize: this.miniKernel ? this.miniKernel.getMemorySize() : 0,
+      memoryIntegrity: this.miniKernel ? this.miniKernel.verifyMemoryIntegrity() : true,
       snapshotAt: new Date().toISOString(),
     };
   }
 
-  /**
-   * Get the current state.
-   */
-  public getState(): OSKernelState {
-    return this.state;
+  private record(event: Omit<OperatingSystemEvent, 'sequence'>): void {
+    this.events.push({ sequence: this.nextEventSequence++, ...event });
+    if (this.events.length > this.maxEvents) {
+      this.events.splice(0, this.events.length - this.maxEvents);
+    }
   }
+}
 
-  /**
-   * Access the underlying MiniKernel.
-   */
-  public getKernel(): MiniKernel {
-    return this.kernel;
-  }
+function isBoundedTaskInput(input: Record<string, unknown>): boolean {
+  return (
+    typeof input === 'object' &&
+    input !== null &&
+    !Array.isArray(input) &&
+    Object.keys(input).length <= MAX_TASK_INPUT_KEYS
+  );
+}
+
+function cloneTaskInput(input: Record<string, unknown>): Record<string, unknown> {
+  const seen = new WeakSet<object>();
+  let nodes = 0;
+
+  const clone = (value: unknown, depth: number): unknown => {
+    if (value === null || typeof value !== 'object') return value;
+    if (depth > MAX_TASK_INPUT_DEPTH) {
+      throw new Error(`operating system task input exceeds depth ${MAX_TASK_INPUT_DEPTH}`);
+    }
+    if (seen.has(value)) throw new Error('operating system task input must not be cyclic');
+    seen.add(value);
+    nodes += 1;
+    if (nodes > MAX_TASK_INPUT_NODES) {
+      throw new Error(`operating system task input exceeds ${MAX_TASK_INPUT_NODES} nodes`);
+    }
+
+    if (Array.isArray(value)) return value.map((item) => clone(item, depth + 1));
+
+    const result: Record<string, unknown> = {};
+    for (const [key, nested] of Object.entries(value)) {
+      result[key] = clone(nested, depth + 1);
+    }
+    return result;
+  };
+
+  return clone(input, 0) as Record<string, unknown>;
 }
 
 export default OperatingSystemKernel;

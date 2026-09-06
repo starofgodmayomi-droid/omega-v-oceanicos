@@ -28,7 +28,7 @@ const metricsRow = (): HTMLElement => document.querySelector('.metrics-row') as 
 const valuesFor = (label: string): string[] =>
   within(metricsRow())
     .getAllByText(label)
-    .map((span) => span.nextElementSibling?.textContent?.trim() ?? '');
+    .map((span: any) => span.nextElementSibling?.textContent?.trim() ?? '');
 
 const renderApp = async (): Promise<void> => {
   await act(async () => {
@@ -296,7 +296,7 @@ describe('runtime health / persistence evidence panel', () => {
     // EVENT LOG row carries no className at all.
     const [topEventLogValue, bottomEventLogValue] = within(metricsRow())
       .getAllByText('EVENT LOG')
-      .map((span) => span.nextElementSibling as HTMLElement);
+      .map((span: any) => span.nextElementSibling as HTMLElement);
     expect(topEventLogValue.textContent).toBe('PARTIAL / 0');
     expect(bottomEventLogValue.textContent).toBe('PARTIAL / 0 SKIPPED');
     expect(bottomEventLogValue.className).toBe('red');

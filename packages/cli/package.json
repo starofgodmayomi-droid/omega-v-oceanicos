@@ -5,13 +5,13 @@
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "omega-v": "dist/bin.js"
+    "omega-v": "dist/cli.js"
   },
   "scripts": {
     "build": "tsc",
     "watch": "tsc --watch",
     "test": "jest",
-    "clean": "rm -rf dist *.tsbuildinfo"
+    "clean": "node ../../scripts/rimraf.cjs dist \"*.tsbuildinfo\""
   },
   "keywords": [
     "cli",

@@ -2416,8 +2416,10 @@ app.get('/rules', (req: Request, res: Response) => {
  * bundle is optional: if it has not been built, the API behaves exactly as
  * before and this is a no-op.
  */
-const webDistPath = process.env.OMEGA_WEB_DIST || join(process.cwd(), 'apps/web/dist');
-const webBuildPresent = existsSync(join(webDistPath, 'index.html'));
+const webDistPath =
+  process.env.OMEGA_WEB_DIST ||
+  (process.env.NODE_ENV === 'test' ? '' : join(process.cwd(), 'apps/web/dist'));
+const webBuildPresent = Boolean(webDistPath) && existsSync(join(webDistPath, 'index.html'));
 
 if (webBuildPresent) {
   app.use(express.static(webDistPath));

@@ -951,3 +951,6 @@ export async function run(
   process.stderr.write(`Unknown command: ${command}\n\n${usage()}\n`);
   return 2;
 }
+
+export { OceanicosCLI, type CLIResult } from './oceanicos-cli.js';
+

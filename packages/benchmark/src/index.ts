@@ -170,7 +170,7 @@ export class VerificationBenchmarkEngine {
       observationId: 'obs-bench-01',
       rules: [],
       ruleVersions: {},
-      summary: { passed: true, confidence: 0.95, rulesApplied: 2, rulesPassed: 2, rulesFailed: 0 },
+      summary: { passed: true, confidence: 0.95, claimedConfidence: 0.95, rulesApplied: 2, rulesPassed: 2, rulesFailed: 0 },
       evidencePath: [],
       timestamp: new Date().toISOString(),
       status: 'completed',
