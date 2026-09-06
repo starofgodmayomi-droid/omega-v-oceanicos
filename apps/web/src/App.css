@@ -709,6 +709,21 @@ select:focus-visible {
   color: #567f76;
   float: right;
 }
+.panel-foot-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+  flex-wrap: wrap;
+}
+.export-evidence-button {
+  font-size: 0.7rem;
+  padding: 4px 8px;
+}
+.export-feedback {
+  color: var(--omega-current);
+  font-size: 0.7rem;
+}
 @media (max-width: 900px) {
   .sidebar {
     width: 185px;

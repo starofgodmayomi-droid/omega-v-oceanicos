@@ -353,6 +353,8 @@ export function App(): React.JSX.Element {
   const [osSnapshot, setOsSnapshot] = useState<OperatingSystemSnapshot | null>(null);
   const [miniRunning, setMiniRunning] = useState(false);
   const [miniFeedback, setMiniFeedback] = useState<string | null>(null);
+  const [exportingEvidence, setExportingEvidence] = useState(false);
+  const [exportFeedback, setExportFeedback] = useState<string | null>(null);
   const claimInputRef = useRef<HTMLTextAreaElement>(null);
   const commandFirstRef = useRef<HTMLButtonElement>(null);
   const commandTriggerRef = useRef<HTMLButtonElement>(null);
@@ -912,6 +914,32 @@ export function App(): React.JSX.Element {
       setMiniFeedback(
         `Integrity check failed: ${err instanceof Error ? err.message : String(err)}`
       );
+    }
+  };
+
+  const exportEvidence = async () => {
+    setExportingEvidence(true);
+    setExportFeedback(null);
+    try {
+      const response = await fetch('/api/evidence/export');
+      if (!response.ok) {
+        throw new Error(await describeResponseError(response, 'Evidence export failed'));
+      }
+      const data = (await response.json()) as unknown;
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `omega-evidence-dossier-${Date.now()}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      setExportFeedback('Dossier exported');
+    } catch (err: unknown) {
+      setExportFeedback(err instanceof Error ? err.message : 'Export failed');
+    } finally {
+      setExportingEvidence(false);
     }
   };
 
@@ -2163,7 +2191,24 @@ export function App(): React.JSX.Element {
               </div>
             )}
             <div className="panel-foot">
-              ATTEST ≠ ASSERT <span>Evidence before trust</span>
+              <div className="panel-foot-axiom">
+                ATTEST ≠ ASSERT <span>Evidence before trust</span>
+              </div>
+              <div className="panel-foot-actions">
+                <button
+                  type="button"
+                  className="refresh-button export-evidence-button"
+                  onClick={() => void exportEvidence()}
+                  disabled={exportingEvidence}
+                >
+                  {exportingEvidence ? 'EXPORTING...' : 'EXPORT EVIDENCE DOSSIER'}
+                </button>
+                {exportFeedback && (
+                  <small className="export-feedback" aria-live="polite">
+                    {exportFeedback}
+                  </small>
+                )}
+              </div>
             </div>
           </div>
         </section>
