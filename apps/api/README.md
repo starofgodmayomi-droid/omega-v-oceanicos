@@ -891,3 +891,8 @@ The smoke runner uses a local test signing key and `OMEGA_PERSISTENCE=off`. It m
 ### Coordination evidence boundary
 
 `OMEGA_PERSISTENCE_COORDINATION_MODE` declares `local-single-process`, `operator-coordinated`, or `external-coordinator`; reference-bearing modes also require `OMEGA_PERSISTENCE_COORDINATION_REFERENCE`. Invalid or reference-less declarations degrade readiness. Health, state, observability, SDK, CLI, and dashboard surfaces report the same declaration with `verified: false`. These fields do not prove distributed consistency, leader election, replica agreement, global ordering, external coordinator control, or deployment availability.
+
+## Subsystems intelligence matrix
+
+`GET /subsystems` returns an operational inventory of the 19 core and expanded subsystems of Ω∞v Oceanicos across computational, consensus, storage, verification, governance, and orchestration layers. Each entry reports `id`, `name`, `category`, `package`, `status`, and `description`.
+

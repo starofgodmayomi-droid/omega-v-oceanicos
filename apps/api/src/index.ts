@@ -2755,6 +2755,7 @@ const startServer = () =>
         '  POST   /jobs/:jobId/complete - Complete a local job (opt-in)',
         '  POST   /jobs/:jobId/fail - Fail a local job (opt-in)',
         '  POST   /scene/simulate   - Run bounded Ω∞v multiverse perspective simulation',
+        '  GET    /subsystems       - List subsystem intelligence matrix',
         '',
       ].join('\n')
     );
