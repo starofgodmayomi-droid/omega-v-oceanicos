@@ -213,6 +213,7 @@ describe('Ω∞v Oceanicos Integration — Foundational MINI Kernel & Totality',
       expect(totalManifest.stateRoot).toBe('Ø');
       expect(totalManifest.stewardshipAxiom).toBe('TOOLS_FOR_EVOLUTION_NOT_WAR');
       expect(totalManifest.memoryIntegrityValid).toBe(true);
+      expect(client.getProvenanceStore()).toBeDefined();
     });
 
     it('executes omega-v mini and omega-v total via CLI', async () => {
@@ -226,6 +227,18 @@ describe('Ω∞v Oceanicos Integration — Foundational MINI Kernel & Totality',
       expect(totalCli.success).toBe(true);
       expect(totalCli.message).toContain('Omega Total Manifest Locked');
       expect(totalCli.message).toContain('Root: Ø');
+
+      const greenCli = await cli.run(['green', 'Integration CLI green test']);
+      expect(greenCli.success).toBe(true);
+      expect(greenCli.message).toContain('Green Invariant Evaluation');
+
+      const learnCli = await cli.run(['learn', 'predict', 'response-time-threshold']);
+      expect(learnCli.success).toBe(true);
+      expect(learnCli.message).toContain('Predictive Learning Cycle');
+
+      const evoCli = await cli.run(['evolution', 'drift', 'response-time-threshold']);
+      expect(evoCli.success).toBe(true);
+      expect(evoCli.message).toContain('Rule Drift Analysis');
     });
   });
 

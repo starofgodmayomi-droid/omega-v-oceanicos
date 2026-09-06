@@ -53,6 +53,7 @@ describe('OceanicosClient (SDK)', () => {
     expect(exported.events.length).toBe(3);
 
     expect(client.getStore()).toBeDefined();
+    expect(client.getProvenanceStore()).toBeDefined();
     expect(client.getVerificationEngine()).toBeDefined();
     expect(client.getObserver()).toBeDefined();
     expect(client.getAttestationService()).toBeDefined();

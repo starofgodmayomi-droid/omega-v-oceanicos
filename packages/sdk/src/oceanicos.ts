@@ -343,14 +343,16 @@ export class OceanicosClient {
   /**
    * Run the unified 8-stage canonical ecosystem OS execution flow
    */
-  public async runEcosystemFlow(input: {
-    intentClaim?: string;
-    actorDid?: string;
-    ruleDefinition?: string;
-    category?: string;
-    metadata?: Record<string, unknown>;
-    confidence?: number;
-  } = {}): Promise<EcosystemFlowResult> {
+  public async runEcosystemFlow(
+    input: {
+      intentClaim?: string;
+      actorDid?: string;
+      ruleDefinition?: string;
+      category?: string;
+      metadata?: Record<string, unknown>;
+      confidence?: number;
+    } = {}
+  ): Promise<EcosystemFlowResult> {
     if (this.mode === 'remote') {
       const res = await fetch(`${this.apiBaseUrl}/ecosystem/flow`, {
         method: 'POST',
@@ -383,8 +385,15 @@ export class OceanicosClient {
     return {
       flowId: `flow-local-${Date.now()}`,
       compiledIR: { name: 'local-intent-rule', instructionCount: 4 },
-      observation: { id: observation.id, status: observation.status, confidence: observation.confidence },
-      verification: { passed: verification.summary.passed, rulesEvaluated: verification.summary.rulesApplied },
+      observation: {
+        id: observation.id,
+        status: observation.status,
+        confidence: observation.confidence,
+      },
+      verification: {
+        passed: verification.summary.passed,
+        rulesEvaluated: verification.summary.rulesApplied,
+      },
       attestation: { id: attestation.id, signature: attestation.signature },
       kernelState: {
         stateId: `state-local-1`,
@@ -405,13 +414,15 @@ export class OceanicosClient {
   /**
    * Run the grand continuum full-stack execution flow (lowest to max form)
    */
-  public async runGrandFlow(input: {
-    intentClaim?: string;
-    actorDid?: string;
-    ruleDefinition?: string;
-    metadata?: Record<string, unknown>;
-    swapAmount?: number;
-  } = {}): Promise<GrandFlowResult> {
+  public async runGrandFlow(
+    input: {
+      intentClaim?: string;
+      actorDid?: string;
+      ruleDefinition?: string;
+      metadata?: Record<string, unknown>;
+      swapAmount?: number;
+    } = {}
+  ): Promise<GrandFlowResult> {
     if (this.mode === 'remote') {
       const res = await fetch(`${this.apiBaseUrl}/ecosystem/grand-flow`, {
         method: 'POST',
@@ -482,13 +493,15 @@ export class OceanicosClient {
   /**
    * Run the 22-stage hyper-continuum ecosystem execution flow
    */
-  public async runHyperFlow(input: {
-    intentClaim?: string;
-    actorDid?: string;
-    ruleDefinition?: string;
-    metadata?: Record<string, unknown>;
-    swapAmount?: number;
-  } = {}): Promise<HyperFlowResult> {
+  public async runHyperFlow(
+    input: {
+      intentClaim?: string;
+      actorDid?: string;
+      ruleDefinition?: string;
+      metadata?: Record<string, unknown>;
+      swapAmount?: number;
+    } = {}
+  ): Promise<HyperFlowResult> {
     if (this.mode === 'remote') {
       const res = await fetch(`${this.apiBaseUrl}/ecosystem/hyper-flow`, {
         method: 'POST',
@@ -707,6 +720,13 @@ export class OceanicosClient {
   }
 
   /**
+   * Access underlying ProvenanceStore (canonical alias)
+   */
+  public getProvenanceStore(): ProvenanceStore {
+    return this.store;
+  }
+
+  /**
    * Access underlying VerificationEngine
    */
   public getVerificationEngine(): VerificationEngine {
@@ -794,4 +814,3 @@ export { Remember } from '@omega-v/remember';
 export { MiniKernel, OperatingSystemKernel, OmegaTotalCompressor } from '@omega-v/mini';
 
 export default OceanicosClient;
-

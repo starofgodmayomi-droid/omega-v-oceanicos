@@ -20,7 +20,10 @@ Key architectural milestones achieved and verified:
 4. **CLI Command Suite Parity (`@omega-v/cli`)**:
    - Extended `OceanicosCLI` in `packages/cli/src/oceanicos-cli.ts` with `omega-v green`, `omega-v learn`, and `omega-v evolution` commands.
    - Verified live execution in Section 4 of `tests/integration/fullstack_e2e.integration.test.ts`.
-5. **Monorepo-Wide Verification**:
+5. **SDK Provenance Accessor & Cross-Surface Integration (`@omega-v/sdk`)**:
+   - Added canonical `getProvenanceStore()` accessor to `OceanicosClient`.
+   - Expanded `tests/integration/mini-kernel.integration.test.ts` validating CLI command suite execution (`green`, `learn`, `evolution`) and SDK provenance store access.
+6. **Monorepo-Wide Verification**:
    - 121/121 test suites passing (1,888 passed tests, 0 failures, 1 skipped).
    - Zero TypeScript compilation errors (`tsc --noEmit`).
    - Zero ESLint / Prettier errors across all modified files (`--max-warnings 0`).
