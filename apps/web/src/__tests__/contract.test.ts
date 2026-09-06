@@ -57,7 +57,6 @@ describe('web/API contract', () => {
     // pins the gap so it is visible and shrinks on purpose rather than
     // drifting further without anyone noticing.
     expect(unused).toEqual([
-      '/actions',
       '/attest',
       '/events',
       '/jobs/:jobId',
@@ -65,13 +64,9 @@ describe('web/API contract', () => {
       '/jobs/:jobId/complete',
       '/jobs/:jobId/fail',
       '/log',
-      '/memory',
-      '/memory/integrity',
-      '/observability',
       '/observe',
       '/persistence/acknowledge',
       '/persistence/reencrypt',
-      '/recompilations',
       '/verify',
     ]);
   });

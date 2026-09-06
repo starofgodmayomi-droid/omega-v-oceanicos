@@ -85,6 +85,63 @@ type VerificationRuleItem = {
   executable: boolean;
 };
 
+type RuntimeActionItem = {
+  id: string;
+  action: string;
+  attestationId: string;
+  status: 'authorized' | 'authorized-with-dissent';
+  dissensusId: string | null;
+  dissent?: {
+    verdict: string;
+    routing: string;
+    dissenting: Array<{ observer: string; claim: string; confidence: number; verdict: string }>;
+  } | null;
+  requiresHumanReview: boolean;
+  timestamp: string;
+};
+
+type RuntimeRecompilationItem = {
+  id: string;
+  learningId: string;
+  version: string;
+  status: 'proposed';
+  rationale: string;
+  timestamp: string;
+};
+
+type KernelMemoryItem = {
+  id: string;
+  previousHash: string;
+  hash: string;
+  timestamp: string;
+  cycleId?: string;
+};
+
+type ObservabilitySnapshot = {
+  runtime?: {
+    mode?: string;
+    persistence?: string;
+    persistenceEncryption?: string;
+    memoryEncryption?: string;
+    lastActivity?: string | null;
+  };
+  jobs?: {
+    enabled?: boolean;
+  };
+  provenance?: {
+    recentEvents?: number;
+    durableEvents?: number;
+    skippedLogEntries?: number;
+    completedRuns?: number;
+    lastRequestId?: string | null;
+    lastCorrelationId?: string | null;
+  };
+  memory?: {
+    entries?: number;
+    intact?: boolean;
+  };
+};
+
 type RuntimeEvent = {
   id: string;
   type: string;
@@ -367,6 +424,10 @@ export function App(): React.JSX.Element {
   const [exportingEvidence, setExportingEvidence] = useState(false);
   const [exportFeedback, setExportFeedback] = useState<string | null>(null);
   const [rules, setRules] = useState<VerificationRuleItem[]>([]);
+  const [actions, setActions] = useState<RuntimeActionItem[]>([]);
+  const [recompilations, setRecompilations] = useState<RuntimeRecompilationItem[]>([]);
+  const [memoryRecords, setMemoryRecords] = useState<KernelMemoryItem[]>([]);
+  const [observability, setObservability] = useState<ObservabilitySnapshot | null>(null);
   const claimInputRef = useRef<HTMLTextAreaElement>(null);
   const commandFirstRef = useRef<HTMLButtonElement>(null);
   const commandTriggerRef = useRef<HTMLButtonElement>(null);
@@ -500,6 +561,31 @@ export function App(): React.JSX.Element {
         if (Array.isArray(rulesData.data?.rules)) {
           setRules(rulesData.data.rules);
         }
+      }
+      const [actionsResponse, recompilationsResponse, memoryResponse, observabilityResponse] =
+        await Promise.all([
+          fetch('/api/actions').catch(() => null),
+          fetch('/api/recompilations').catch(() => null),
+          fetch('/api/memory').catch(() => null),
+          fetch('/api/observability').catch(() => null),
+        ]);
+      if (actionsResponse?.ok) {
+        const actData = (await actionsResponse.json()) as { data?: RuntimeActionItem[] };
+        if (Array.isArray(actData.data)) setActions(actData.data);
+      }
+      if (recompilationsResponse?.ok) {
+        const recData = (await recompilationsResponse.json()) as {
+          data?: RuntimeRecompilationItem[];
+        };
+        if (Array.isArray(recData.data)) setRecompilations(recData.data);
+      }
+      if (memoryResponse?.ok) {
+        const memData = (await memoryResponse.json()) as { data?: KernelMemoryItem[] };
+        if (Array.isArray(memData.data)) setMemoryRecords(memData.data);
+      }
+      if (observabilityResponse?.ok) {
+        const obsData = (await observabilityResponse.json()) as { data?: ObservabilitySnapshot };
+        if (obsData.data) setObservability(obsData.data);
       }
       const readyServices = state.data.services.filter(
         (service) => service.status === 'ready'
@@ -918,7 +1004,10 @@ export function App(): React.JSX.Element {
 
   const checkMiniIntegrity = async () => {
     try {
-      const response = await fetch('/api/mini/integrity');
+      const [response] = await Promise.all([
+        fetch('/api/mini/integrity'),
+        fetch('/api/memory/integrity').catch(() => null),
+      ]);
       const body = (await response.json()) as {
         data?: { intact: boolean; size: number };
         error?: string;
@@ -2126,6 +2215,29 @@ export function App(): React.JSX.Element {
                         </div>
                       </div>
                     )}
+                    {memoryRecords.length > 0 && (
+                      <div className="kernel-memory-summary">
+                        <span className="kernel-memory-title">
+                          DURABLE KERNEL MEMORY ({memoryRecords.length})
+                        </span>
+                        <div className="kernel-memory-tags">
+                          {memoryRecords.slice(0, 5).map((rec, idx) => (
+                            <span
+                              key={rec.id || idx}
+                              className="kernel-memory-badge"
+                              title={rec.hash}
+                            >
+                              #{rec.id || idx + 1}{' '}
+                              {rec.hash
+                                ? rec.hash.length > 12
+                                  ? `${rec.hash.slice(0, 12)}…`
+                                  : rec.hash
+                                : 'n/a'}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="chain-item">
@@ -2261,6 +2373,38 @@ export function App(): React.JSX.Element {
                         )}
                       </div>
                     )}
+                    {actions.length > 0 && (
+                      <div className="recent-actions-summary">
+                        <span className="recent-actions-title">
+                          RECORDED ACTIONS ({actions.length})
+                        </span>
+                        <div className="recent-actions-tags">
+                          {actions.slice(0, 5).map((act) => (
+                            <span
+                              key={act.id}
+                              className="action-badge"
+                              title={`attestation: ${act.attestationId}`}
+                            >
+                              #{act.id} · {act.action} · {act.status}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {recompilations.length > 0 && (
+                      <div className="recent-recompilations-summary">
+                        <span className="recent-recompilations-title">
+                          PROPOSED RECOMPILATIONS ({recompilations.length})
+                        </span>
+                        <div className="recent-recompilations-tags">
+                          {recompilations.slice(0, 5).map((rec) => (
+                            <span key={rec.id} className="recompile-badge" title={rec.rationale}>
+                              #{rec.id} · v{rec.version} · {rec.status}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -2272,6 +2416,12 @@ export function App(): React.JSX.Element {
             <div className="panel-foot">
               <div className="panel-foot-axiom">
                 ATTEST ≠ ASSERT <span>Evidence before trust</span>
+                {observability?.provenance?.durableEvents !== undefined && (
+                  <span className="observability-durable">
+                    {' '}
+                    · durable events: {observability.provenance.durableEvents}
+                  </span>
+                )}
               </div>
               <div className="panel-foot-actions">
                 <button

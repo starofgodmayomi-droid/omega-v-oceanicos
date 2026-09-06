@@ -335,6 +335,21 @@ export function installFetch(overrides: RouteOverrides = {}): jest.Mock {
         meta: { bounded: true },
         timestamp: '2026-08-16T00:00:00.000Z',
       }),
+    '/api/actions': () => json({ data: [] }),
+    '/api/recompilations': () => json({ data: [] }),
+    '/api/memory': () => json({ data: [], meta: { size: 0, appendOnly: true, durable: true } }),
+    '/api/memory/integrity': () => json({ data: { intact: true, entries: 0 } }),
+    '/api/observability': () =>
+      json({
+        data: {
+          runtime: { mode: 'observing', persistence: 'memory' },
+          jobs: { enabled: false },
+          provenance: { recentEvents: 0, durableEvents: 0, completedRuns: 0 },
+          trust: {},
+          memory: { entries: 0, intact: true },
+        },
+        timestamp: '2026-08-16T00:00:00.000Z',
+      }),
   };
 
   const routes = { ...defaults, ...overrides };
