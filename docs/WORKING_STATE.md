@@ -2,6 +2,28 @@
 
 **Updated:** 2026-09-06
 
+## Canonical Subsystems Alignment & CLI ESM Module Isolation Checkpoint — 2026-09-06
+
+The Subsystems Intelligence Matrix and Command Line Interface (`@omega-v/cli`) have completed comprehensive canonical alignment and ESM runtime isolation on `main` at `406d0ea` and `a6d84b6`.
+
+Key architectural milestones achieved and verified:
+1. **ESM Module Resolution & Runtime Isolation (`@omega-v/cli`)**:
+   - Resolved Node.js ESM runtime module resolution by converting static imports of continuum engines in `OceanicosCLI` (`@omega-v/agents`, `@omega-v/edge`, `@omega-v/analytics`, `@omega-v/scheduler`, `@omega-v/telemetry`, `@omega-v/vaas`, `@omega-v/replay`, `@omega-v/contract`, `@omega-v/auth`, `@omega-v/federation`, `@omega-v/benchmark`, `@omega-v/notary`, `@omega-v/sandbox`, `@omega-v/policy`, `@omega-v/zk`, `@omega-v/gateway`, `@omega-v/webhook`, `@omega-v/oracle`, `@omega-v/vault`, `@omega-v/dispute`) to dynamic runtime loading.
+   - Fixed `packages/cli/dist/cli.js` and `packages/cli/dist/index.js` startup so CLI commands (`omega health`, `omega subsystems`, `omega status`, `omega verify`, `omega os`, etc.) execute cleanly under Node without evaluating or failing on unbuilt continuum packages.
+   - Configured `packages/cli/tsconfig.json` with explicit `paths` pointing to built `dist` declaration files, eliminating cross-package source resolution leakage.
+   - Zero ESLint warnings across CLI codebase (`--max-warnings 0`).
+2. **Subsystems Canonical Alignment & Full Inventory (`apps/api`)**:
+   - Expanded `/subsystems` inventory to 27 modules covering core, runtime, consensus, verification, governance, and storage.
+   - Fully aligned every subsystem with the 6 canonical categories (`core`, `runtime`, `consensus`, `verification`, `governance`, `storage`), guaranteeing that every category filter in the Web dashboard, SDK client, and CLI returns active, relevant subsystems.
+   - Added core expansion subsystems: `observer` (@omega-v/observer), `lexicon` (@omega-v/lexicon), `coordination` (@omega-v/coordination), `runtime` (@omega-v/runtime), `verification` (@omega-v/verification), `attestation` (@omega-v/attestation), `dissensus` (@omega-v/dissensus), `remember` (@omega-v/remember).
+3. **Monorepo-Wide Verification**:
+   - 121/121 test suites passing (1,886 passed tests, 0 failures, 1 skipped).
+   - Zero TypeScript compilation errors (`tsc --noEmit`).
+   - Zero ESLint errors or warnings across all modified files.
+   - Zero-gap client-server contract synchronization (`expect(unused).toEqual([])`).
+   - Clean production Vite bundle for `apps/web` (816ms) and compiled server for `apps/api`.
+   - Passing live API smoke contract (`smoke-api.cjs`: `health: "ready"`, `deterministic: true`, `terminalState: "return"`).
+
 ## Full-stack Subsystems Matrix SDK & CLI synchronization checkpoint — 2026-09-06
 
 The Subsystem Intelligence Matrix has been extended across `@omega-v/sdk` and `@omega-v/cli` on `main` at `ae75377`, completing end-to-end parity across REST API, Web dashboard, SDK client, and CLI tooling.
