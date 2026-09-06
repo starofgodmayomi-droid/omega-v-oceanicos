@@ -1,24 +1,7 @@
 import { OceanicosClient } from '@omega-v/sdk';
-import { FormlessSwarm } from '@omega-v/agents';
-import { EdgeObserver } from '@omega-v/edge';
-import { VerificationAnalyticsEngine } from '@omega-v/analytics';
-import { VerificationScheduler } from '@omega-v/scheduler';
-import { TelemetryTracer, VerificationSLOEngine } from '@omega-v/telemetry';
-import { VaaSGate } from '@omega-v/vaas';
-import { VerificationReplayEngine } from '@omega-v/replay';
-import { FormalContractEngine } from '@omega-v/contract';
-import { OceanicosAuthEngine } from '@omega-v/auth';
-import { FederationMeshEngine } from '@omega-v/federation';
-import { VerificationBenchmarkEngine } from '@omega-v/benchmark';
-import { OceanicosNotaryEngine } from '@omega-v/notary';
-import { OceanicosSandboxEngine } from '@omega-v/sandbox';
-import { OceanicosPolicyEngine } from '@omega-v/policy';
-import { OceanicosZKEngine } from '@omega-v/zk';
-import { OceanicosGatewayEngine } from '@omega-v/gateway';
-import { OceanicosWebhookEngine } from '@omega-v/webhook';
-import { OceanicosOracleEngine } from '@omega-v/oracle';
-import { OceanicosStateVault } from '@omega-v/vault';
-import { OceanicosDisputeEngine } from '@omega-v/dispute';
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const loadModule = async (name: string): Promise<any> => import(name as any);
 
 export interface CLIResult {
   success: boolean;
@@ -79,16 +62,18 @@ export class OceanicosCLI {
             message: `[Ω∞v CLI] Omega Total Manifest Locked (Root: ${manifest.stateRoot}, Axiom: ${manifest.stewardshipAxiom})`,
             output: manifest,
           };
-        } catch (err: any) {
+        } catch (err: unknown) {
+          const message = err instanceof Error ? err.message : String(err);
           return {
             success: false,
-            message: `[Ω∞v CLI] Omega Total Failed: ${err.message}`,
+            message: `[Ω∞v CLI] Omega Total Failed: ${message}`,
           };
         }
       }
 
       case 'swarm': {
         const claim = args[1] || 'CLI Swarm verification cycle';
+        const { FormlessSwarm } = await loadModule('@omega-v/agents');
         const swarm = new FormlessSwarm(this.client);
         const result = await swarm.executeSwarmCycle({
           claim,
@@ -185,6 +170,7 @@ export class OceanicosCLI {
 
       case 'edge': {
         const claim = args[1] || 'CLI Edge Observation';
+        const { EdgeObserver } = await loadModule('@omega-v/edge');
         const edge = new EdgeObserver({ nodeId: 'cli-edge-node-1' });
         edge.capture(claim, 'cli-edge');
         const syncResult = await edge.flush();
@@ -201,6 +187,7 @@ export class OceanicosCLI {
 
       case 'analytics': {
         const entries = this.client.getLogEntries();
+        const { VerificationAnalyticsEngine } = await loadModule('@omega-v/analytics');
         const analytics = new VerificationAnalyticsEngine();
         const summary = analytics.analyzeLogs(entries);
         return {
@@ -215,6 +202,7 @@ export class OceanicosCLI {
         const intervalMs = args[2] ? Number(args[2]) : 10000;
         const claim = args[3] || 'Ω∞v CLI scheduled loop';
 
+        const { VerificationScheduler } = await loadModule('@omega-v/scheduler');
         const sched = new VerificationScheduler(this.client, { intervalMs, claim, maxRuns: 1 });
 
         if (subCmd === 'run') {
@@ -240,6 +228,7 @@ export class OceanicosCLI {
       case 'slo': {
         const targetRate = args[1] ? Number(args[1]) : 0.99;
         const metrics = this.client.getMetrics();
+        const { VerificationSLOEngine } = await loadModule('@omega-v/telemetry');
         const sloEngine = new VerificationSLOEngine();
         const evaluation = sloEngine.evaluateSLO(metrics, targetRate);
         return {
@@ -250,6 +239,7 @@ export class OceanicosCLI {
       }
 
       case 'trace': {
+        const { TelemetryTracer } = await loadModule('@omega-v/telemetry');
         const tracer = new TelemetryTracer();
         const span = tracer.startSpan('cli-trace-span', undefined, {
           command: args[1] || 'default',
@@ -267,6 +257,7 @@ export class OceanicosCLI {
 
       case 'vaas': {
         const subCmd = args[1] || 'register';
+        const { VaaSGate } = await loadModule('@omega-v/vaas');
         const vaasGate = new VaaSGate();
 
         if (subCmd === 'register') {
@@ -288,6 +279,7 @@ export class OceanicosCLI {
       }
 
       case 'replay': {
+        const { VerificationReplayEngine } = await loadModule('@omega-v/replay');
         const replayEngine = new VerificationReplayEngine();
         const claim = args[1] || 'CLI Replay verification snapshot';
         const label = args[2] || undefined;
@@ -321,6 +313,7 @@ export class OceanicosCLI {
       }
 
       case 'contract': {
+        const { FormalContractEngine } = await loadModule('@omega-v/contract');
         const engine = new FormalContractEngine();
         const subCommand = args[1] || 'list';
 
@@ -340,7 +333,16 @@ export class OceanicosCLI {
         return {
           success: true,
           message: `[Ω∞v CLI] Formal Contracts Registered: ${contracts.length}`,
-          output: contracts.map((c) => ({
+          output: (
+            contracts as Array<{
+              id: string;
+              name: string;
+              version: string;
+              category: string;
+              fields: Record<string, unknown>;
+              invariants: unknown[];
+            }>
+          ).map((c) => ({
             id: c.id,
             name: c.name,
             version: c.version,
@@ -352,11 +354,12 @@ export class OceanicosCLI {
       }
 
       case 'auth': {
+        const { OceanicosAuthEngine } = await loadModule('@omega-v/auth');
         const auth = new OceanicosAuthEngine();
         const subCommand = args[1] || 'list';
 
         if (subCommand === 'create') {
-          const type = (args[2] as any) || 'AGENT';
+          const type = (args[2] as 'AGENT' | 'NODE' | 'USER') || 'AGENT';
           const identity = auth.createIdentity(type, ['observe:write', 'verify:execute']);
           const token = auth.issueToken(identity.did, identity.secret);
 
@@ -377,7 +380,15 @@ export class OceanicosCLI {
         return {
           success: true,
           message: `[Ω∞v CLI] Registered DIDs: ${identities.length}`,
-          output: identities.map((i) => ({
+          output: (
+            identities as Array<{
+              did: string;
+              type: string;
+              capabilities: string[];
+              epoch: number;
+              revoked: boolean;
+            }>
+          ).map((i) => ({
             did: i.did,
             type: i.type,
             capabilities: i.capabilities,
@@ -388,7 +399,8 @@ export class OceanicosCLI {
       }
 
       case 'federation': {
-        const mesh = new FederationMeshEngine();
+        const { FederationMeshEngine } = await loadModule('@omega-v/federation');
+        const mesh = new FederationMeshEngine('cluster-cli-local');
         const subCommand = args[1] || 'peers';
 
         if (subCommand === 'export') {
@@ -417,6 +429,7 @@ export class OceanicosCLI {
       }
 
       case 'benchmark': {
+        const { VerificationBenchmarkEngine } = await loadModule('@omega-v/benchmark');
         const benchmark = new VerificationBenchmarkEngine();
         const iterations = parseInt(args[1] || '20', 10);
         const results = await benchmark.runSuite(this.client, iterations);
@@ -430,6 +443,7 @@ export class OceanicosCLI {
       }
 
       case 'notary': {
+        const { OceanicosNotaryEngine } = await loadModule('@omega-v/notary');
         const notary = new OceanicosNotaryEngine();
         const subCommand = args[1] || 'summary';
 
@@ -454,6 +468,7 @@ export class OceanicosCLI {
       }
 
       case 'sandbox': {
+        const { OceanicosSandboxEngine } = await loadModule('@omega-v/sandbox');
         const sandbox = new OceanicosSandboxEngine();
         const code = args.slice(1).join(' ') || 'responseTime < 100 && statusCode === 200';
         const context = { responseTime: 45, statusCode: 200 };
@@ -469,6 +484,7 @@ export class OceanicosCLI {
       }
 
       case 'policy': {
+        const { OceanicosPolicyEngine } = await loadModule('@omega-v/policy');
         const policyEngine = new OceanicosPolicyEngine();
         const subCommand = args[1] || 'list';
 
@@ -499,6 +515,7 @@ export class OceanicosCLI {
       }
 
       case 'zk': {
+        const { OceanicosZKEngine } = await loadModule('@omega-v/zk');
         const zkEngine = new OceanicosZKEngine();
         const subCommand = args[1] || 'circuits';
 
@@ -526,6 +543,7 @@ export class OceanicosCLI {
       }
 
       case 'gateway': {
+        const { OceanicosGatewayEngine } = await loadModule('@omega-v/gateway');
         const gateway = new OceanicosGatewayEngine();
         const subCommand = args[1] || 'stats';
 
@@ -550,6 +568,7 @@ export class OceanicosCLI {
       }
 
       case 'webhook': {
+        const { OceanicosWebhookEngine } = await loadModule('@omega-v/webhook');
         const webhook = new OceanicosWebhookEngine();
         const subCommand = args[1] || 'list';
 
@@ -569,7 +588,8 @@ export class OceanicosCLI {
         }
 
         if (subCommand === 'trigger') {
-          const eventType = (args[2] as any) || 'ATTESTATION_CREATED';
+          const eventType =
+            (args[2] as 'ATTESTATION_CREATED' | 'ATTESTATION_REVOKED') || 'ATTESTATION_CREATED';
           const attempts = await webhook.dispatchEvent(eventType, {
             source: 'CLI Trigger',
             timestamp: new Date().toISOString(),
@@ -591,6 +611,7 @@ export class OceanicosCLI {
       }
 
       case 'oracle': {
+        const { OceanicosOracleEngine } = await loadModule('@omega-v/oracle');
         const oracle = new OceanicosOracleEngine();
         const subCommand = args[1] || 'feeds';
 
@@ -632,6 +653,7 @@ export class OceanicosCLI {
       }
 
       case 'vault': {
+        const { OceanicosStateVault } = await loadModule('@omega-v/vault');
         const vault = new OceanicosStateVault();
         const subCommand = args[1] || 'checkpoints';
 
@@ -666,6 +688,7 @@ export class OceanicosCLI {
       }
 
       case 'dispute': {
+        const { OceanicosDisputeEngine } = await loadModule('@omega-v/dispute');
         const dispute = new OceanicosDisputeEngine();
         const subCommand = args[1] || 'list';
 
