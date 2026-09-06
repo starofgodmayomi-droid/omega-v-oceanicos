@@ -1,3 +1,4 @@
+import { createServer, Server } from 'node:http';
 import { Observer } from '@omega-v/observer';
 import { VerificationEngine } from '@omega-v/verification';
 import { Remember } from '@omega-v/remember';
@@ -225,6 +226,119 @@ describe('Ω∞v Oceanicos Integration — Foundational MINI Kernel & Totality',
       expect(totalCli.success).toBe(true);
       expect(totalCli.message).toContain('Omega Total Manifest Locked');
       expect(totalCli.message).toContain('Root: Ø');
+    });
+  });
+
+  describe('REST API Server MINI & Totality Endpoints', () => {
+    let server: Server;
+    let baseUrl: string;
+
+    beforeAll(async () => {
+      process.env.OMEGA_SIGNING_KEY = 'mini-api-integration-key';
+      jest.resetModules();
+      const module = await import('../../apps/api/src/index');
+      const app = module.default as { (...args: unknown[]): unknown };
+
+      server = createServer(app as never);
+      await new Promise<void>((resolve) => server.listen(0, resolve));
+      const address = server.address();
+      if (!address || typeof address === 'string') throw new Error('Test server did not start');
+      baseUrl = `http://127.0.0.1:${address.port}`;
+    });
+
+    afterAll(async () => {
+      await new Promise<void>((resolve, reject) =>
+        server.close((error) => (error ? reject(error) : resolve()))
+      );
+      delete process.env.OMEGA_SIGNING_KEY;
+    });
+
+    it('POST /mini/cycle executes cycle and returns data with verification and memory', async () => {
+      const res = await fetch(`${baseUrl}/mini/cycle`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          claim: 'API mini cycle check',
+          category: 'health-check',
+          metadata: { statusCode: 200, responseTime: 25 },
+        }),
+      });
+
+      expect(res.status).toBe(200);
+      const json = (await res.json()) as {
+        data: { passed: boolean; memory: { id: string } };
+      };
+      expect(json.data.passed).toBe(true);
+      expect(json.data.memory.id).toBeDefined();
+    });
+
+    it('POST /mini/cycle rejects invalid input with 400', async () => {
+      const res = await fetch(`${baseUrl}/mini/cycle`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ claim: '' }),
+      });
+
+      expect(res.status).toBe(400);
+    });
+
+    it('POST /mini/total locks totality into now', async () => {
+      const res = await fetch(`${baseUrl}/mini/total`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          claim: 'API totality lock check',
+          category: 'health-check',
+          metadata: { statusCode: 200, responseTime: 10 },
+        }),
+      });
+
+      expect(res.status).toBe(200);
+      const json = (await res.json()) as {
+        data: { stateRoot: string; stewardshipAxiom: string };
+      };
+      expect(json.data.stateRoot).toBe('Ø');
+      expect(json.data.stewardshipAxiom).toBe('TOOLS_FOR_EVOLUTION_NOT_WAR');
+    });
+
+    it('GET /mini/integrity verifies memory integrity', async () => {
+      const res = await fetch(`${baseUrl}/mini/integrity`);
+      expect(res.status).toBe(200);
+      const json = (await res.json()) as { data: { intact: boolean; size: number } };
+      expect(json.data.intact).toBe(true);
+      expect(json.data.size).toBeGreaterThan(0);
+    });
+
+    it('POST /os/admit admits task and cycle into OperatingSystemKernel', async () => {
+      // Admit task
+      const taskRes = await fetch(`${baseUrl}/os/admit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          kind: 'observe',
+          input: { key: 'val' },
+          requestedBy: 'operator-1',
+        }),
+      });
+      expect(taskRes.status).toBe(200);
+      const taskJson = (await taskRes.json()) as { data: { id: string; kind: string } };
+      expect(taskJson.data.kind).toBe('observe');
+
+      // Admit cycle
+      const cycleRes = await fetch(`${baseUrl}/os/admit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cycle: {
+            claim: 'Admitted cycle claim',
+            category: 'health-check',
+            metadata: { statusCode: 200, responseTime: 30 },
+          },
+        }),
+      });
+      expect(cycleRes.status).toBe(200);
+      const cycleJson = (await cycleRes.json()) as { data: { passed: boolean } };
+      expect(cycleJson.data.passed).toBe(true);
     });
   });
 });
