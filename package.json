@@ -12,19 +12,13 @@
   },
   "type": "module",
   "packageManager": "pnpm@10.34.5",
-  "pnpm": {
-    "overrides": {
-      "typescript": "6.0.3"
-    },
-    "onlyBuiltDependencies": ["@parcel/watcher", "esbuild", "unrs-resolver"]
-  },
   "workspaces": [
     "apps/*",
     "packages/*"
   ],
   "scripts": {
     "dev": "pnpm --parallel --filter @omega-v/api --filter @omega-v/web dev",
-    "build": "pnpm --filter @omega-v/types build && pnpm --filter @omega-v/observer build && pnpm --filter @omega-v/verification build && pnpm --filter @omega-v/remember build && pnpm --filter @omega-v/mini build && pnpm --filter @omega-v/attestation build && pnpm --filter @omega-v/dissensus build && pnpm --filter @omega-v/lexicon build && pnpm --filter @omega-v/coordination build && pnpm --filter @omega-v/runtime build && pnpm --filter @omega-v/api build && pnpm --filter @omega-v/web build && pnpm --filter @omega-v/cli build && pnpm --filter @omega-v/sdk build",
+    "build": "pnpm --filter @omega-v/types build && pnpm --filter @omega-v/observer build && pnpm --filter @omega-v/verification build && pnpm --filter @omega-v/remember build && pnpm --filter @omega-v/mini build && pnpm --filter @omega-v/attestation build && pnpm --filter @omega-v/dissensus build && pnpm --filter @omega-v/lexicon build && pnpm --filter @omega-v/coordination build && pnpm --filter @omega-v/runtime build && pnpm --filter @omega-v/api build && pnpm --filter @omega-v/web build && pnpm --filter @omega-v/store build && pnpm --filter @omega-v/sdk build && pnpm --filter @omega-v/cli build",
     "smoke:api": "pnpm build && node scripts/smoke-api.cjs",
     "clean": "node scripts/clean.cjs",
     "test": "jest --runInBand",
@@ -45,9 +39,11 @@
     "docs:test": "echo 'Documentation test (coming soon)'",
     "docs:watch": "echo 'Documentation watch (coming soon)'",
     "precommit": "pnpm lint && pnpm type-check",
-    "prepare": "node scripts/prepare.cjs"
+    "prepare": "node scripts/prepare.cjs",
+    "engine:run": "tsx index.ts"
   },
   "devDependencies": {
+    "@jest/globals": "30.5.1",
     "@testing-library/jest-dom": "7.0.1",
     "@testing-library/react": "16.3.3",
     "@testing-library/user-event": "14.6.6",
@@ -63,7 +59,7 @@
     "prettier": "^3.0.0",
     "ts-jest": "^29.1.0",
     "ts-node": "^10.9.0",
-    "tsx": "^3.12.7",
+    "tsx": "^4.23.12",
     "typescript": "^6.0.0"
   },
   "engines": {
