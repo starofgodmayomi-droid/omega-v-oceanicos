@@ -73,6 +73,7 @@ const MAX_TASK_INPUT_KEYS = 64;
 const MAX_TASK_INPUT_NODES = 256;
 const MAX_TASK_INPUT_DEPTH = 8;
 const MAX_REQUESTER_LENGTH = 128;
+const MAX_CLAIM_LENGTH = 1024;
 const OPERATING_SYSTEM_TASK_KINDS: readonly OperatingSystemTaskKind[] = [
   'observe',
   'verify',
@@ -163,23 +164,86 @@ export class OperatingSystemKernel {
   ): OperatingSystemTask | MiniCycleResult {
     if (typeof kindOrCycleInput === 'object' && kindOrCycleInput !== null) {
       if (this.state !== 'ready') {
+        const reason = `cannot admit cycle while operating system is ${this.state} (expected 'BOOTED')`;
+        this.record({ type: 'reject', state: this.state, reason });
         throw new Error(`Cannot admit: kernel is in state '${this.getState()}' (expected 'BOOTED')`);
       }
       if (!this.miniKernel) {
-        throw new Error('MiniKernel not configured for OperatingSystemKernel');
+        const reason = 'MiniKernel not configured for OperatingSystemKernel';
+        this.record({ type: 'reject', state: this.state, reason });
+        throw new Error(reason);
       }
+
+      const cycleInput = kindOrCycleInput as {
+        claim: string;
+        category?: string;
+        source?: { system: string; version: string; environment: string };
+        observedBy?: string;
+        metadata?: Record<string, unknown>;
+        [k: string]: unknown;
+      };
+
+      if (
+        typeof cycleInput.claim !== 'string' ||
+        cycleInput.claim.trim().length === 0 ||
+        cycleInput.claim.length > MAX_CLAIM_LENGTH
+      ) {
+        const reason = `operating system cycle claim must be a non-empty string with at most ${MAX_CLAIM_LENGTH} characters`;
+        this.record({ type: 'reject', state: this.state, reason });
+        throw new Error(reason);
+      }
+
+      if (
+        cycleInput.observedBy !== undefined &&
+        (typeof cycleInput.observedBy !== 'string' || cycleInput.observedBy.length > MAX_REQUESTER_LENGTH)
+      ) {
+        const reason = `operating system cycle observedBy must be at most ${MAX_REQUESTER_LENGTH} characters`;
+        this.record({ type: 'reject', state: this.state, reason });
+        throw new Error(reason);
+      }
+
+      let sanitizedMetadata: Record<string, unknown> | undefined = undefined;
+      if (cycleInput.metadata !== undefined) {
+        if (!isBoundedTaskInput(cycleInput.metadata)) {
+          const reason = `operating system cycle metadata must contain at most ${MAX_TASK_INPUT_KEYS} keys`;
+          this.record({ type: 'reject', state: this.state, reason });
+          throw new Error(reason);
+        }
+        try {
+          sanitizedMetadata = cloneTaskInput(cycleInput.metadata);
+        } catch (err: unknown) {
+          const message = err instanceof Error ? err.message : String(err);
+          const reason = `operating system cycle metadata invalid: ${message}`;
+          this.record({ type: 'reject', state: this.state, reason });
+          throw new Error(reason);
+        }
+      }
+
+      const cycleAdmissionId = `cycle-${this.nextTaskSequence++}`;
+      this.record({ type: 'admit', state: this.state, taskId: cycleAdmissionId });
+
       try {
-        const result = this.miniKernel.cycle(kindOrCycleInput);
+        const result = this.miniKernel.cycle({
+          ...cycleInput,
+          metadata: sanitizedMetadata ?? cycleInput.metadata,
+        });
         this.totalCycles++;
         if (result.passed) {
           this.passedCycles++;
         } else {
           this.failedCycles++;
         }
+        this.record({ type: 'complete', state: this.state, taskId: cycleAdmissionId });
         return result;
       } catch (err) {
         this.totalCycles++;
         this.failedCycles++;
+        this.record({
+          type: 'reject',
+          state: this.state,
+          taskId: cycleAdmissionId,
+          reason: err instanceof Error ? err.message : String(err),
+        });
         throw err;
       }
     }
