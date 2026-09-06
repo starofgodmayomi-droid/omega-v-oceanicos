@@ -363,6 +363,11 @@ async function operatingSystem(argv: string[], fetchImpl: FetchLike): Promise<nu
         credentialHandling?: boolean;
         humanAuthorizationRequired?: boolean;
       };
+      totalCycles?: number;
+      passedCycles?: number;
+      failedCycles?: number;
+      memorySize?: number;
+      memoryIntegrity?: boolean;
     };
     message?: string;
   };
@@ -373,8 +378,13 @@ async function operatingSystem(argv: string[], fetchImpl: FetchLike): Promise<nu
     return 1;
   }
   const lastEvent = body.data.events?.at(-1);
+  const cyclesLine =
+    body.data.totalCycles !== undefined
+      ? `CYCLES        total=${body.data.totalCycles} passed=${body.data.passedCycles ?? 0} failed=${body.data.failedCycles ?? 0} memory=${body.data.memorySize ?? 0} integrity=${body.data.memoryIntegrity ? 'INTACT' : 'DEGRADED'}\n`
+      : '';
   process.stdout.write(
     `OS            state=${body.data.state ?? 'unknown'} tasks=${body.data.tasks?.length ?? 0} events=${body.data.events?.length ?? 0}\n` +
+      cyclesLine +
       `EVENT         type=${lastEvent?.type ?? 'UNKNOWN'} sequence=${lastEvent?.sequence ?? 'UNKNOWN'}${lastEvent?.reason ? ` reason=${lastEvent.reason}` : ''}\n` +
       `SCHEMA ${body.data.snapshotVersion ?? 'UNKNOWN'}\n` +
       `LIMITS maxTasks=${body.data.limits?.maxTasks ?? 'UNKNOWN'} maxEvents=${body.data.limits?.maxEvents ?? 'UNKNOWN'}\n` +

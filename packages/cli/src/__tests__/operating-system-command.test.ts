@@ -148,4 +148,39 @@ describe('omega os CLI', () => {
     expect(err.join('')).toBe('');
     expect(out.join('')).toBe('');
   });
+
+  it('renders CYCLES line when totalCycles and verification/memory metrics are present', async () => {
+    const exitCode = await run(
+      ['os'],
+      async () =>
+        new Response(
+          JSON.stringify({
+            data: {
+              state: 'BOOTED',
+              tasks: [],
+              events: [{ sequence: 1, type: 'boot', state: 'ready' }],
+              snapshotVersion: 'os.snapshot.v1',
+              limits: { maxTasks: 32, maxEvents: 128 },
+              capabilities: {
+                shellExecution: false,
+                remoteMutation: false,
+                credentialHandling: false,
+                humanAuthorizationRequired: true,
+              },
+              totalCycles: 5,
+              passedCycles: 4,
+              failedCycles: 1,
+              memorySize: 12,
+              memoryIntegrity: true,
+            },
+          })
+        )
+    );
+
+    expect(exitCode).toBe(0);
+    const text = out.join('');
+    expect(text).toContain('OS            state=BOOTED tasks=0 events=1');
+    expect(text).toContain('CYCLES        total=5 passed=4 failed=1 memory=12 integrity=INTACT');
+    expect(text).toContain('EVENT         type=boot sequence=1');
+  });
 });

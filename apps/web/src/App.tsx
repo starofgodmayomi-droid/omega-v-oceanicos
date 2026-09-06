@@ -27,7 +27,16 @@ type RuntimeDissensus = {
 
 type OperatingSystemSnapshot = {
   snapshotVersion: 'os.snapshot.v1';
-  state: 'offline' | 'booting' | 'ready' | 'degraded' | 'stopping' | 'stopped';
+  state:
+    | 'offline'
+    | 'booting'
+    | 'ready'
+    | 'degraded'
+    | 'stopping'
+    | 'stopped'
+    | 'BOOTED'
+    | 'COLD'
+    | 'STOPPED';
   tasks: Array<{ id: string; kind: string; requestedBy: string }>;
   events: Array<{
     sequence: number;
@@ -43,6 +52,12 @@ type OperatingSystemSnapshot = {
     credentialHandling: false;
     humanAuthorizationRequired: true;
   };
+  totalCycles?: number;
+  passedCycles?: number;
+  failedCycles?: number;
+  memorySize?: number;
+  memoryIntegrity?: boolean;
+  snapshotAt?: string;
 };
 
 type SceneSimulation = {
@@ -313,6 +328,8 @@ export function App(): React.JSX.Element {
   const [sceneSimulation, setSceneSimulation] = useState<SceneSimulation | null>(null);
   const [sceneLoading, setSceneLoading] = useState(false);
   const [osSnapshot, setOsSnapshot] = useState<OperatingSystemSnapshot | null>(null);
+  const [miniRunning, setMiniRunning] = useState(false);
+  const [miniFeedback, setMiniFeedback] = useState<string | null>(null);
   const claimInputRef = useRef<HTMLTextAreaElement>(null);
   const commandFirstRef = useRef<HTMLButtonElement>(null);
   const commandTriggerRef = useRef<HTMLButtonElement>(null);
@@ -767,6 +784,90 @@ export function App(): React.JSX.Element {
     }
   };
 
+  const runMiniCycle = async () => {
+    setMiniRunning(true);
+    setMiniFeedback(null);
+    try {
+      const response = await fetch('/api/mini/cycle', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          claim: 'Builder OS runtime health and integrity verified',
+          category: 'health-check',
+          metadata: { statusCode: 200, responseTime: 20 },
+        }),
+      });
+      const body = (await response.json()) as {
+        data?: { passed: boolean; memory?: { id: string } };
+        error?: string;
+      };
+      if (!response.ok || !body.data) {
+        setMiniFeedback(`Cycle rejected: ${body.error ?? 'unknown error'}`);
+      } else {
+        setMiniFeedback(
+          `Cycle completed: ${body.data.passed ? 'PASSED' : 'FAILED'} (Memory: ${body.data.memory?.id ?? 'none'})`
+        );
+        void refreshRuntime();
+      }
+    } catch (err: unknown) {
+      setMiniFeedback(`Cycle failed: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setMiniRunning(false);
+    }
+  };
+
+  const lockTotality = async () => {
+    setMiniRunning(true);
+    setMiniFeedback(null);
+    try {
+      const response = await fetch('/api/mini/total', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          claim: 'Totality locked into present moment',
+          category: 'health-check',
+          metadata: { statusCode: 200, responseTime: 15 },
+        }),
+      });
+      const body = (await response.json()) as {
+        data?: { stateRoot: string; stewardshipAxiom: string };
+        error?: string;
+      };
+      if (!response.ok || !body.data) {
+        setMiniFeedback(`Totality gate failed: ${body.error ?? 'unknown error'}`);
+      } else {
+        setMiniFeedback(
+          `Totality locked: Root=${body.data.stateRoot} · Axiom=${body.data.stewardshipAxiom}`
+        );
+        void refreshRuntime();
+      }
+    } catch (err: unknown) {
+      setMiniFeedback(`Totality failed: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setMiniRunning(false);
+    }
+  };
+
+  const checkMiniIntegrity = async () => {
+    try {
+      const response = await fetch('/api/mini/integrity');
+      const body = (await response.json()) as {
+        data?: { intact: boolean; size: number };
+        error?: string;
+      };
+      if (response.ok && body.data) {
+        setMiniFeedback(
+          `Memory Integrity: ${body.data.intact ? 'INTACT' : 'BROKEN'} (${body.data.size} entries)`
+        );
+        void refreshRuntime();
+      } else {
+        setMiniFeedback(`Integrity check failed: ${body.error ?? 'unknown error'}`);
+      }
+    } catch (err: unknown) {
+      setMiniFeedback(`Integrity check failed: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  };
+
   return (
     <div className="os-shell">
       <aside className="sidebar">
@@ -1103,6 +1204,44 @@ export function App(): React.JSX.Element {
               <small className="capability-line">
                 shell=DISABLED · remote=DISABLED · credentials=DISABLED · human gate=REQUIRED
               </small>
+              {osSnapshot?.totalCycles !== undefined ? (
+                <small className="capability-line">
+                  cycles={osSnapshot.totalCycles} (passed={osSnapshot.passedCycles ?? 0} · failed=
+                  {osSnapshot.failedCycles ?? 0}) · memory={osSnapshot.memorySize ?? 0} · integrity=
+                  {osSnapshot.memoryIntegrity ? 'INTACT' : 'DEGRADED'}
+                </small>
+              ) : null}
+              <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  className="refresh-button"
+                  onClick={() => void runMiniCycle()}
+                  disabled={miniRunning}
+                >
+                  {miniRunning ? 'RUNNING…' : 'RUN MINI CYCLE'}
+                </button>
+                <button
+                  type="button"
+                  className="refresh-button"
+                  onClick={() => void lockTotality()}
+                  disabled={miniRunning}
+                >
+                  LOCK TOTALITY
+                </button>
+                <button
+                  type="button"
+                  className="refresh-button"
+                  onClick={() => void checkMiniIntegrity()}
+                  disabled={miniRunning}
+                >
+                  CHECK INTEGRITY
+                </button>
+              </div>
+              {miniFeedback ? (
+                <p className="intent-feedback" aria-live="polite" style={{ marginTop: '0.5rem' }}>
+                  {miniFeedback}
+                </p>
+              ) : null}
             </div>
           </section>
           <section className="intent-panel" aria-labelledby="scene-simulation-title">
