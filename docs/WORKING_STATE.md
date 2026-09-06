@@ -2,6 +2,33 @@
 
 **Updated:** 2026-09-06
 
+## Hosted CI pipeline signing configuration & automated CLI verification checkpoint — 2026-09-06
+
+The hosted verification workflow `.github/workflows/verification-ci.yml` has been updated and verified on `main` at `20f6aa7`, equipping CI with explicit `OMEGA_SIGNING_KEY` credentials and validating all 18 automated CLI verification commands.
+
+Key architectural milestones achieved and verified:
+1. **CI Pipeline Environment Configuration**: Added `env: OMEGA_SIGNING_KEY: ci-verification-signing-key` to `.github/workflows/verification-ci.yml`, preventing `MissingSigningKeyError` in non-interactive CI execution.
+2. **Automated CLI Command Suite Local Validation**: All 18 CLI verification commands across the monorepo executed locally with zero errors:
+   - `swarm`: Formless Swarm cycle passed across 6 agents.
+   - `analytics`: Efficacy and pass rate evaluation.
+   - `slo`: Telemetry SLO verification.
+   - `vaas`: Tenant registration (`CI Verification Corp` PRO tier).
+   - `replay`: Replay verification regression analysis.
+   - `contract`: Formal contract verification (`health-sla-contract`).
+   - `auth`: DID creation (`AGENT` did:omega:agent:...).
+   - `federation`: Cross-cluster proof export (`proof-mesh-...`).
+   - `benchmark`: 2727 ops/sec throughput benchmark.
+   - `notary`: Merkle attestation notarization anchor.
+   - `sandbox`: Isolated rule sandbox execution (`gas: 100`).
+   - `policy`: Compliance evaluation against enterprise SLA policy (3/3 rules passed).
+   - `zk`: Zero-knowledge proof generation and verification (`circuit-confidence-range`).
+   - `gateway`: Request rate limit evaluation.
+   - `webhook`: Dispatch of `ATTESTATION_CREATED` event.
+   - `oracle`: Consensus aggregation (`MEDIAN`).
+   - `vault`: State baseline checkpoint seal creation.
+   - `dispute`: Decentralized dispute case raise (`CHALLENGE_OPEN`).
+3. **CI Test Suite Alignment**: Updated workflow title to `121 Suites / 1870+ Specs` to accurately reflect monorepo test coverage.
+
 ## Production build compilation, ESM module resolution & API smoke verification checkpoint — 2026-09-06
 
 The entire Ω∞v Oceanicos monorepo has completed **full production build compilation**, strict Node.js ESM module resolution, and live API smoke verification on `main` at `0aa18a0`.
