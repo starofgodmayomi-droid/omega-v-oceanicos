@@ -1128,13 +1128,21 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       expect(release.publisherSignature).toMatch(/^0x/);
 
       // 3. Zero-trust download verification
-      const verifyValid = registry.verifyPackageIntegrity('@omega-v/e2e-security-module', '1.0.0', rawTarball);
+      const verifyValid = registry.verifyPackageIntegrity(
+        '@omega-v/e2e-security-module',
+        '1.0.0',
+        rawTarball
+      );
       expect(verifyValid.valid).toBe(true);
       expect(verifyValid.matchesExpected).toBe(true);
       expect(verifyValid.signatureValid).toBe(true);
 
       // Tampered download fails
-      const verifyTampered = registry.verifyPackageIntegrity('@omega-v/e2e-security-module', '1.0.0', Buffer.from('TAMPERED_PAYLOAD'));
+      const verifyTampered = registry.verifyPackageIntegrity(
+        '@omega-v/e2e-security-module',
+        '1.0.0',
+        Buffer.from('TAMPERED_PAYLOAD')
+      );
       expect(verifyTampered.valid).toBe(false);
       expect(verifyTampered.matchesExpected).toBe(false);
 
@@ -1152,7 +1160,11 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       expect(advisory.signature).toMatch(/^0x/);
 
       // 5. Deprecate affected release
-      const deprecated = registry.deprecatePackage('@omega-v/e2e-security-module', '1.0.0', 'Superseded by 1.0.1 due to advisory');
+      const deprecated = registry.deprecatePackage(
+        '@omega-v/e2e-security-module',
+        '1.0.0',
+        'Superseded by 1.0.1 due to advisory'
+      );
       expect(deprecated.deprecated).toBe(true);
       expect(deprecated.deprecationReason).toContain('Superseded');
 
@@ -1199,10 +1211,14 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       expect(JSON.parse(unsealed)).toEqual(sensitiveSecret);
 
       // 4. Confidential execution inside isolated enclave
-      const execResult = enclaveEngine.executeConfidentialCode('enclave-sgx-primary-01', 'VERIFY_EVIDENCE_ISOLATED', {
-        evidenceId: 'ev-001',
-        strict: true,
-      });
+      const execResult = enclaveEngine.executeConfidentialCode(
+        'enclave-sgx-primary-01',
+        'VERIFY_EVIDENCE_ISOLATED',
+        {
+          evidenceId: 'ev-001',
+          strict: true,
+        }
+      );
 
       expect(execResult.verified).toBe(true);
       expect(execResult.executionId).toMatch(/^exec-/);
@@ -1227,7 +1243,9 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       // 2. Propose block at height 1
       const candidateBlock = consensusEngine.proposeBlock({
         proposerDid: 'did:omega:validator:genesis-alpha',
-        transactions: [{ txId: 'tx-201', operation: 'REGISTER_VALID_IDENTITY', subject: 'did:omega:agent:01' }],
+        transactions: [
+          { txId: 'tx-201', operation: 'REGISTER_VALID_IDENTITY', subject: 'did:omega:agent:01' },
+        ],
         stateRoot: '0x1234567890abcdef1234567890abcdef',
         attestationProofs: ['proof-genesis-v6-01'],
       });
@@ -1268,7 +1286,9 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       expect(slash.recordId).toMatch(/^slash-/);
       expect(slash.slashedStake).toBe(200000);
 
-      const gamma = consensusEngine.getValidators().find((v) => v.did === 'did:omega:validator:genesis-gamma')!;
+      const gamma = consensusEngine
+        .getValidators()
+        .find((v) => v.did === 'did:omega:validator:genesis-gamma')!;
       expect(gamma.status).toBe('SLASHED');
       expect(gamma.stake).toBe(0);
 
@@ -1456,6 +1476,8 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
 
       expect(tx1.txHash).toMatch(/^0x/);
       expect(tx1.status).toBe('PENDING');
+      expect(tx2.txHash).toMatch(/^0x/);
+      expect(tx2.status).toBe('PENDING');
       expect(sequencerEngine.getMempool().length).toBe(2);
 
       // 2. Seal batch with VDF
@@ -1487,7 +1509,8 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       const blob = daEngine.submitBlob({
         namespace: 'rollup:settlement:alpha',
         submitterDid: 'did:omega:sequencer:primary',
-        rawData: 'State diff root proof with 1024 transactions rollup payload verified against base chain',
+        rawData:
+          'State diff root proof with 1024 transactions rollup payload verified against base chain',
       });
 
       expect(blob.blobId).toMatch(/^blob-/);
@@ -1706,7 +1729,7 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
         validatorDid: 'did:omega:val:rogue',
         moniker: 'Rogue Node',
         selfStake: 500,
-        commissionRate: 0.10,
+        commissionRate: 0.1,
       });
 
       expect(v1.totalStake).toBe(500);
@@ -1730,7 +1753,7 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       });
 
       expect(slash.slashedAmount).toBe(100); // 20% of 500
-      expect(slash.slashFraction).toBe(0.20);
+      expect(slash.slashFraction).toBe(0.2);
       const rogue = staking.getValidators().find((v) => v.validatorDid === 'did:omega:val:rogue')!;
       expect(rogue.status).toBe('JAILED');
 
@@ -1912,9 +1935,24 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       const attestor = new OceanicosThresholdAttestorEngine('e2e-attestor-secret', 0.67);
 
       // 1. Register 3 attestor nodes (total weight = 30; 67% threshold => 21 required)
-      attestor.registerAttestor({ nodeDid: 'did:omega:attestor:01', moniker: 'QC Sentinel 1', publicKey: '0x01', weight: 10 });
-      attestor.registerAttestor({ nodeDid: 'did:omega:attestor:02', moniker: 'QC Sentinel 2', publicKey: '0x02', weight: 10 });
-      attestor.registerAttestor({ nodeDid: 'did:omega:attestor:03', moniker: 'QC Sentinel 3', publicKey: '0x03', weight: 10 });
+      attestor.registerAttestor({
+        nodeDid: 'did:omega:attestor:01',
+        moniker: 'QC Sentinel 1',
+        publicKey: '0x01',
+        weight: 10,
+      });
+      attestor.registerAttestor({
+        nodeDid: 'did:omega:attestor:02',
+        moniker: 'QC Sentinel 2',
+        publicKey: '0x02',
+        weight: 10,
+      });
+      attestor.registerAttestor({
+        nodeDid: 'did:omega:attestor:03',
+        moniker: 'QC Sentinel 3',
+        publicKey: '0x03',
+        weight: 10,
+      });
 
       expect(attestor.getAttestors()).toHaveLength(3);
 
@@ -1975,7 +2013,11 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
         title: 'Adjust Protocol Gas Limits',
         description: 'Increase block gas target to 30M for scalability',
         actions: [
-          { targetService: 'mempool', actionType: 'UPDATE_LIMIT', parameters: { gasTarget: 30000000 } },
+          {
+            targetService: 'mempool',
+            actionType: 'UPDATE_LIMIT',
+            parameters: { gasTarget: 30000000 },
+          },
         ],
         quorumPower: 40,
       });
@@ -2053,7 +2095,10 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       expect(relayed.relayedBy).toBe('did:omega:relayer:hermes');
 
       // 4. Acknowledge Delivery & Issue Receipt
-      const receipt = relay.acknowledgeDelivery(packet.packetId, '0xdestination_execution_receipt_hash_001');
+      const receipt = relay.acknowledgeDelivery(
+        packet.packetId,
+        '0xdestination_execution_receipt_hash_001'
+      );
       expect(receipt.receiptId).toMatch(/^rcpt-/);
       expect(receipt.ackProof).toMatch(/^0x/);
       expect(receipt.targetReceiptHash).toBe('0xdestination_execution_receipt_hash_001');
@@ -2184,7 +2229,11 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       // 1. Register agents
       // score=500 → ESTABLISHED (boundary: ≥500 = ESTABLISHED, ≥300 = PROBATIONARY)
       const alice = rep.registerAgent({ agentDid: 'did:omega:alice', moniker: 'Alice' });
-      const bob = rep.registerAgent({ agentDid: 'did:omega:bob', moniker: 'Bob', initialScore: 800 });
+      const bob = rep.registerAgent({
+        agentDid: 'did:omega:bob',
+        moniker: 'Bob',
+        initialScore: 800,
+      });
       expect(alice.reputationScore).toBe(500);
       expect(alice.trustTier).toBe('ESTABLISHED');
       expect(bob.reputationScore).toBe(800);
@@ -2229,33 +2278,54 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       expect(stats.totalAgents).toBe(2);
       expect(stats.totalFeedbacks).toBe(1);
       expect(stats.totalSlashes).toBe(1);
-      expect(stats.authorityAgents + stats.establishedAgents + stats.probationaryAgents + stats.untrustedAgents).toBe(2);
+      expect(
+        stats.authorityAgents +
+          stats.establishedAgents +
+          stats.probationaryAgents +
+          stats.untrustedAgents
+      ).toBe(2);
     });
 
     it('rejects self-feedback and invalid scoreDelta', () => {
       const rep = new OceanicosReputationEngine();
       rep.registerAgent({ agentDid: 'did:omega:carol', moniker: 'Carol' });
-      expect(() => rep.submitFeedback({
-        fromDid: 'did:omega:carol',
-        targetDid: 'did:omega:carol',
-        scoreDelta: 10,
-        reason: 'Self-attestation attempt',
-      })).toThrow('self-feedback');
-      expect(() => rep.submitFeedback({
-        fromDid: 'did:omega:unknown',
-        targetDid: 'did:omega:carol',
-        scoreDelta: 200,
-        reason: 'Excessive delta',
-      })).toThrow('scoreDelta');
+      expect(() =>
+        rep.submitFeedback({
+          fromDid: 'did:omega:carol',
+          targetDid: 'did:omega:carol',
+          scoreDelta: 10,
+          reason: 'Self-attestation attempt',
+        })
+      ).toThrow('self-feedback');
+      expect(() =>
+        rep.submitFeedback({
+          fromDid: 'did:omega:unknown',
+          targetDid: 'did:omega:carol',
+          scoreDelta: 200,
+          reason: 'Excessive delta',
+        })
+      ).toThrow('scoreDelta');
     });
 
     it('verifies reputation engine full lifecycle: weighted feedback, tier transitions, and decay convergence', () => {
       const rep = new OceanicosReputationEngine('lifecycle-secret');
 
       // Register 3 agents at different tiers
-      const a1 = rep.registerAgent({ agentDid: 'did:omega:node-alpha', moniker: 'NodeAlpha', initialScore: 200 });
-      const a2 = rep.registerAgent({ agentDid: 'did:omega:node-beta', moniker: 'NodeBeta', initialScore: 500 });
-      const a3 = rep.registerAgent({ agentDid: 'did:omega:node-gamma', moniker: 'NodeGamma', initialScore: 900 });
+      const a1 = rep.registerAgent({
+        agentDid: 'did:omega:node-alpha',
+        moniker: 'NodeAlpha',
+        initialScore: 200,
+      });
+      const a2 = rep.registerAgent({
+        agentDid: 'did:omega:node-beta',
+        moniker: 'NodeBeta',
+        initialScore: 500,
+      });
+      const a3 = rep.registerAgent({
+        agentDid: 'did:omega:node-gamma',
+        moniker: 'NodeGamma',
+        initialScore: 900,
+      });
 
       expect(a1.trustTier).toBe('UNTRUSTED');
       expect(a2.trustTier).toBe('ESTABLISHED');
@@ -2338,7 +2408,11 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
 
     it('enforces attribution: every human action has humanId and rationale', () => {
       const human = new HumanEngine();
-      const fb = human.recordInput('FEEDBACK', 'did:human:reviewer-05', 'Verification results look correct');
+      const fb = human.recordInput(
+        'FEEDBACK',
+        'did:human:reviewer-05',
+        'Verification results look correct'
+      );
       expect(fb.humanId).toBe('did:human:reviewer-05');
       expect(fb.rationale).toBeTruthy();
       expect(fb.id).toMatch(/^hum-/);
@@ -2689,10 +2763,13 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       expect(cycle.verification.dissent!.status).toBe('OPEN');
       expect(cycle.verification.dissent!.interpretations).toHaveLength(2);
       expect(
-        cycle.verification.dissent!.interpretations.find((i) => i.source === 'response-time-threshold')?.position
+        cycle.verification.dissent!.interpretations.find(
+          (i) => i.source === 'response-time-threshold'
+        )?.position
       ).toBe('PASS');
       expect(
-        cycle.verification.dissent!.interpretations.find((i) => i.source === 'status-code-check')?.position
+        cycle.verification.dissent!.interpretations.find((i) => i.source === 'status-code-check')
+          ?.position
       ).toBe('FAIL');
 
       // Totality compressor MUST fail closed on dissent / failed verification
@@ -2707,5 +2784,3 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
     });
   });
 });
-
-

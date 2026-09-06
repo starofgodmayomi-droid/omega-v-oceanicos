@@ -110,6 +110,7 @@ export default [
       // is evaluated relative to environment setup. That is deliberate, and
       // the previous config permitted it under the rule's old name.
       '@typescript-eslint/no-require-imports': 'off',
+      '@typescript-eslint/no-var-requires': 'off',
     },
   },
 

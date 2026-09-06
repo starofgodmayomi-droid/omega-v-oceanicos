@@ -864,7 +864,9 @@ export function App(): React.JSX.Element {
         setMiniFeedback(`Integrity check failed: ${body.error ?? 'unknown error'}`);
       }
     } catch (err: unknown) {
-      setMiniFeedback(`Integrity check failed: ${err instanceof Error ? err.message : String(err)}`);
+      setMiniFeedback(
+        `Integrity check failed: ${err instanceof Error ? err.message : String(err)}`
+      );
     }
   };
 
@@ -1211,7 +1213,9 @@ export function App(): React.JSX.Element {
                   {osSnapshot.memoryIntegrity ? 'INTACT' : 'DEGRADED'}
                 </small>
               ) : null}
-              <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <div
+                style={{ marginTop: '0.75rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}
+              >
                 <button
                   type="button"
                   className="refresh-button"
