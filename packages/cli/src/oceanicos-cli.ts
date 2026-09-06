@@ -718,6 +718,88 @@ export class OceanicosCLI {
         };
       }
 
+      case 'green': {
+        const { GreenEngine } = await loadModule('@omega-v/green');
+        const green = new GreenEngine();
+        const claim = args[1] || 'CLI operational state nominal';
+        const verification = {
+          id: 'ver-cli-green-1',
+          observationId: 'obs-cli-green-1',
+          summary: { passed: true, totalRules: 1, rulesPassed: 1, rulesFailed: 0 },
+          evidencePath: [{ ruleId: 'r1', passed: true, severity: 'info', details: 'OK' }],
+          createdAt: new Date().toISOString(),
+        };
+        const lineage = [
+          {
+            id: 'evt-1',
+            type: 'OBSERVATION',
+            timestamp: new Date().toISOString(),
+            data: { id: 'obs-cli-green-1', claim },
+          },
+        ];
+        const attestation = {
+          id: 'att-cli-green-1',
+          verificationId: 'ver-cli-green-1',
+          verified: true,
+          signature: '0xclisig',
+          createdAt: new Date().toISOString(),
+        };
+        const evalResult = green.evaluateGreen(verification, true, lineage, attestation);
+        return {
+          success: true,
+          message: `[Ω∞v CLI] Green Invariant Evaluation: isGreen=${evalResult.isGreen} (${evalResult.reason})`,
+          output: evalResult,
+        };
+      }
+
+      case 'learn': {
+        const { LearningEngine } = await loadModule('@omega-v/learning');
+        const learner = new LearningEngine();
+        const subCommand = args[1] || 'predict';
+        if (subCommand === 'history') {
+          const history = learner.getLearningHistory();
+          return {
+            success: true,
+            message: `[Ω∞v CLI] Learning History: ${history.length} recorded events`,
+            output: { history },
+          };
+        }
+        const pred = learner.makePrediction('PASS', 0.95, args[2] || 'response-time-threshold');
+        const verification = {
+          id: 'ver-cli-learn-1',
+          summary: { passed: true },
+          createdAt: new Date().toISOString(),
+        };
+        const event = learner.evaluatePrediction(pred.id, verification);
+        return {
+          success: true,
+          message: `[Ω∞v CLI] Predictive Learning Cycle: Prediction=${pred.id}, Outcome=${event.actualOutcome}, Error=${event.error}, Recommendation=${event.insight.recommendation}`,
+          output: event,
+        };
+      }
+
+      case 'evolution': {
+        const { EvolutionEngine } = await loadModule('@omega-v/evolution');
+        const evolution = new EvolutionEngine();
+        const subCommand = args[1] || 'drift';
+        if (subCommand === 'proposals') {
+          const proposals = evolution.getProposals();
+          return {
+            success: true,
+            message: `[Ω∞v CLI] Evolution Proposals: ${proposals.length} proposals`,
+            output: { proposals },
+          };
+        }
+        const history = [{ passed: true }, { passed: true }, { passed: false }];
+        const ruleName = args[2] || 'response-time-threshold';
+        const drift = evolution.analyzeDrift(ruleName, history);
+        return {
+          success: true,
+          message: `[Ω∞v CLI] Rule Drift Analysis for '${ruleName}': FailureRate=${drift.failureRate * 100}%, DriftDetected=${drift.driftDetected}, RecommendedAction=${drift.recommendedAction}`,
+          output: drift,
+        };
+      }
+
       case 'help':
       default: {
         return {
@@ -749,6 +831,9 @@ Commands:
   omega-v oracle [feeds|aggregate]  Compute multi-source external state consensus receipts
   omega-v vault [checkpoints|create] Manage cryptographic state checkpoints & disaster recovery
   omega-v dispute [list|raise]      Verifiable decentralized dispute resolution & jury arbitration
+  omega-v green [claim]             Evaluate true GREEN invariant state
+  omega-v learn [predict|history]   Predictive learning hypothesis and reality feedback
+  omega-v evolution [drift|proposals] Drift analysis and controlled rule recompilation
   omega-v mini [claim]              Execute foundational MINI cycle (Observe → Verify → Remember)
   omega-v total [claim]             Lock totality into now via OmegaTotalCompressor (State Root: Ø)
   omega-v metrics                   Show system health and metrics

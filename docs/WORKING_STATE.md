@@ -17,7 +17,10 @@ Key architectural milestones achieved and verified:
 3. **Subsystem Matrix Expansion to 30 Modules (`apps/api`)**:
    - Expanded `/subsystems` endpoint in `apps/api/src/index.ts` with `green` (category `verification`), `learning` (category `runtime`), and `evolution` (category `governance`).
    - Maintained strict alignment with the 6 canonical categories (`core`, `runtime`, `consensus`, `verification`, `governance`, `storage`).
-4. **Monorepo-Wide Verification**:
+4. **CLI Command Suite Parity (`@omega-v/cli`)**:
+   - Extended `OceanicosCLI` in `packages/cli/src/oceanicos-cli.ts` with `omega-v green`, `omega-v learn`, and `omega-v evolution` commands.
+   - Verified live execution in Section 4 of `tests/integration/fullstack_e2e.integration.test.ts`.
+5. **Monorepo-Wide Verification**:
    - 121/121 test suites passing (1,888 passed tests, 0 failures, 1 skipped).
    - Zero TypeScript compilation errors (`tsc --noEmit`).
    - Zero ESLint / Prettier errors across all modified files (`--max-warnings 0`).

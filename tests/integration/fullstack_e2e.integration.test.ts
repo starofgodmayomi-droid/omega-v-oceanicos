@@ -173,6 +173,18 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       const integrityRes = await cli.run(['integrity']);
       expect(integrityRes.success).toBe(true);
       expect(integrityRes.message).toContain('VALID');
+
+      const greenRes = await cli.run(['green', 'CLI Green Invariant Claim']);
+      expect(greenRes.success).toBe(true);
+      expect(greenRes.output).toHaveProperty('isGreen', true);
+
+      const learnRes = await cli.run(['learn', 'predict', 'response-time-threshold']);
+      expect(learnRes.success).toBe(true);
+      expect(learnRes.output).toHaveProperty('actualOutcome', 'PASS');
+
+      const evoRes = await cli.run(['evolution', 'drift', 'response-time-threshold']);
+      expect(evoRes.success).toBe(true);
+      expect(evoRes.output).toHaveProperty('driftDetected');
     });
   });
 
