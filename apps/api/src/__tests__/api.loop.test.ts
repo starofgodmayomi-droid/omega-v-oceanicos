@@ -13,7 +13,12 @@ type Attestation = {
   keyVersion: string;
   ruleVersions: Record<string, string>;
 };
-type Memory = { id: string; observationId: string; verificationId: string };
+type Memory = {
+  id: string;
+  observationId: string;
+  verificationId: string;
+  entries?: Array<{ id: number; type: string; hash: string; previousHash: string }>;
+};
 type AuditEvent = {
   type?: string;
   details?: {
@@ -328,6 +333,12 @@ describe('API loop: act, learn, recompile', () => {
     expect(loop.data.memory.id).toBeDefined();
     expect(loop.data.memory.observationId).toBe(loop.data.observation.id);
     expect(loop.data.memory.verificationId).toBeDefined();
+    expect(loop.data.memory.entries).toBeDefined();
+    expect(loop.data.memory.entries).toHaveLength(3);
+    expect(loop.data.memory.entries![0].type).toBe('OBSERVATION');
+    expect(loop.data.memory.entries![1].type).toBe('VERIFICATION');
+    expect(loop.data.memory.entries![2].type).toBe('MEMORY');
+    expect(loop.data.memory.entries![2].previousHash).toBe(loop.data.memory.entries![1].hash);
   });
 
   it('refuses to sign an attestation over evidence it never checked', async () => {

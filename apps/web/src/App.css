@@ -1547,3 +1547,171 @@ body {
     line-height: 1.4;
   }
 }
+
+/* Dissent Banner & Interpretations in Evidence Chain */
+.dissent-banner {
+  margin-top: 0.85rem;
+  padding: 0.85rem 1rem;
+  border-left: 3px solid var(--omega-dissent);
+  background: rgba(237, 153, 134, 0.08);
+  border-radius: 2px;
+}
+
+.dissent-banner-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.dissent-tag {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--omega-dissent);
+}
+
+.dissent-status {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  background: rgba(237, 153, 134, 0.2);
+  color: var(--omega-dissent);
+  border-radius: 2px;
+}
+
+.dissent-note {
+  margin: 0.4rem 0 0.75rem;
+  font-size: 0.78rem;
+  opacity: 0.85;
+  line-height: 1.4;
+  color: var(--omega-foam);
+}
+
+.dissent-interpretations {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.dissent-interp-card {
+  padding: 0.55rem 0.75rem;
+  border-radius: 2px;
+  background: rgba(13, 17, 23, 0.85);
+  border: 1px solid rgba(240, 246, 252, 0.1);
+}
+
+.dissent-interp-card.interp-pass {
+  border-left: 2px solid var(--omega-verified);
+}
+
+.dissent-interp-card.interp-fail {
+  border-left: 2px solid var(--omega-dissent);
+}
+
+.dissent-interp-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dissent-source {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--omega-foam);
+}
+
+.dissent-badge {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 2px;
+}
+
+.badge-pass {
+  color: var(--omega-verified);
+  background: rgba(105, 231, 185, 0.15);
+}
+
+.badge-fail {
+  color: var(--omega-dissent);
+  background: rgba(237, 153, 134, 0.15);
+}
+
+.dissent-evidence-list {
+  margin: 0.35rem 0 0;
+  padding-left: 1.2rem;
+  font-size: 0.72rem;
+  opacity: 0.75;
+  color: var(--omega-foam-muted);
+}
+
+/* Hash Chain Inspector */
+.hash-chain-inspector {
+  margin-top: 0.75rem;
+  padding: 0.7rem 0.85rem;
+  background: rgba(4, 20, 32, 0.9);
+  border: 1px solid rgba(140, 232, 200, 0.15);
+  border-radius: 2px;
+}
+
+.hash-chain-title {
+  display: block;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--omega-current);
+  margin-bottom: 0.5rem;
+}
+
+.hash-chain-nodes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.hash-chain-node {
+  padding: 0.4rem 0.6rem;
+  background: rgba(13, 27, 42, 0.7);
+  border-left: 2px solid var(--omega-current);
+  border-radius: 2px;
+  font-family: 'DM Mono', monospace;
+}
+
+.hash-node-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.72rem;
+  margin-bottom: 0.25rem;
+}
+
+.hash-node-type {
+  color: var(--omega-current-bright);
+  font-weight: 600;
+}
+
+.hash-node-time {
+  color: var(--omega-foam-muted);
+  font-size: 0.68rem;
+}
+
+.hash-node-hashes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  font-size: 0.68rem;
+}
+
+.hash-label {
+  color: var(--omega-foam-muted);
+  margin-right: 0.35rem;
+}
+
+.hash-value {
+  color: var(--omega-foam);
+  font-family: 'DM Mono', monospace;
+}

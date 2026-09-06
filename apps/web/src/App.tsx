@@ -96,8 +96,31 @@ type LoopResult = {
       reasoning: string;
       evaluated?: boolean;
     }>;
+    dissent?: {
+      id: string;
+      claimId: string;
+      status: 'OPEN' | 'RESOLVED' | 'ACCEPTED';
+      recordedAt: string;
+      interpretations: Array<{
+        position: string;
+        source: string;
+        evidence: string[];
+        confidence: number;
+      }>;
+    };
   };
-  memory: { id: string; observationId: string; verificationId: string };
+  memory: {
+    id: string;
+    observationId: string;
+    verificationId: string;
+    entries?: Array<{
+      id: number;
+      type: string;
+      previousHash: string;
+      hash: string;
+      recordedAt: string;
+    }>;
+  };
   attestation: {
     id: string;
     verified: boolean;
@@ -798,12 +821,34 @@ export function App(): React.JSX.Element {
         }),
       });
       const body = (await response.json()) as {
-        data?: { passed: boolean; memory?: { id: string } };
+        data?: {
+          passed: boolean;
+          observation?: LoopResult['observation'];
+          verification?: LoopResult['verification'];
+          memory?: LoopResult['memory'];
+          entries?: NonNullable<LoopResult['memory']['entries']>;
+        };
         error?: string;
       };
       if (!response.ok || !body.data) {
         setMiniFeedback(`Cycle rejected: ${body.error ?? 'unknown error'}`);
       } else {
+        if (body.data.observation && body.data.verification && body.data.memory) {
+          setResult({
+            observation: body.data.observation,
+            verification: body.data.verification,
+            memory: {
+              ...body.data.memory,
+              entries: body.data.entries,
+            },
+            attestation: {
+              id: `mini-attest-${Date.now()}`,
+              verified: body.data.passed,
+              signature: '0x_mini_kernel_attestation_embedded',
+              attestedAt: new Date().toISOString(),
+            },
+          });
+        }
         setMiniFeedback(
           `Cycle completed: ${body.data.passed ? 'PASSED' : 'FAILED'} (Memory: ${body.data.memory?.id ?? 'none'})`
         );
@@ -1877,6 +1922,56 @@ export function App(): React.JSX.Element {
                         {evidenceStepLabel(step)} / {step.reasoning}
                       </p>
                     ))}
+                    {result.verification.dissent && (
+                      <div
+                        className="dissent-banner"
+                        role="region"
+                        aria-label="Multi-Model Dissent"
+                      >
+                        <div className="dissent-banner-header">
+                          <span className="dissent-tag">DISSENT PRESERVED</span>
+                          <span className="dissent-status">
+                            {result.verification.dissent.status}
+                          </span>
+                        </div>
+                        <p className="dissent-note">
+                          Axiom: Do not manufacture consensus. Disagreements are retained in
+                          cryptographic lineage.
+                        </p>
+                        <div className="dissent-interpretations">
+                          {result.verification.dissent.interpretations.map((interp) => (
+                            <div
+                              key={interp.source}
+                              className={`dissent-interp-card ${
+                                interp.position.toLowerCase() === 'pass'
+                                  ? 'interp-pass'
+                                  : 'interp-fail'
+                              }`}
+                            >
+                              <div className="dissent-interp-header">
+                                <span className="dissent-source">{interp.source}</span>
+                                <span
+                                  className={`dissent-badge ${
+                                    interp.position.toLowerCase() === 'pass'
+                                      ? 'badge-pass'
+                                      : 'badge-fail'
+                                  }`}
+                                >
+                                  {interp.position}
+                                </span>
+                              </div>
+                              {interp.evidence.length > 0 && (
+                                <ul className="dissent-evidence-list">
+                                  {interp.evidence.map((ev, idx) => (
+                                    <li key={idx}>{ev}</li>
+                                  ))}
+                                </ul>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="chain-item">
@@ -1885,6 +1980,45 @@ export function App(): React.JSX.Element {
                     <span>MEMORY / KERNEL RECORD</span>
                     <code>{result.memory.id}</code>
                     <small className="memory-note">Recorded in append-only hash chain</small>
+                    {result.memory.entries && result.memory.entries.length > 0 && (
+                      <div className="hash-chain-inspector">
+                        <span className="hash-chain-title">
+                          HASH CHAIN ENTRIES ({result.memory.entries.length})
+                        </span>
+                        <div className="hash-chain-nodes">
+                          {result.memory.entries.map((entry) => (
+                            <div key={entry.id} className="hash-chain-node">
+                              <div className="hash-node-header">
+                                <span className="hash-node-type">
+                                  #{entry.id} {entry.type}
+                                </span>
+                                <span className="hash-node-time">
+                                  {entry.recordedAt.slice(11, 19)}
+                                </span>
+                              </div>
+                              <div className="hash-node-hashes">
+                                <div>
+                                  <span className="hash-label">prev:</span>
+                                  <code className="hash-value">
+                                    {entry.previousHash.length > 16
+                                      ? `${entry.previousHash.slice(0, 16)}...`
+                                      : entry.previousHash}
+                                  </code>
+                                </div>
+                                <div>
+                                  <span className="hash-label">hash:</span>
+                                  <code className="hash-value">
+                                    {entry.hash.length > 16
+                                      ? `${entry.hash.slice(0, 16)}...`
+                                      : entry.hash}
+                                  </code>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="chain-item">

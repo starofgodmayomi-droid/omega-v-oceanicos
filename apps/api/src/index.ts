@@ -1270,7 +1270,9 @@ app.post('/os/admit', (req: Request, res: Response) => {
       res.json({ data: task, timestamp: new Date().toISOString() });
       return;
     }
-    res.status(400).json({ error: 'invalid admit request: provide task (kind, input, requestedBy) or cycle' });
+    res
+      .status(400)
+      .json({ error: 'invalid admit request: provide task (kind, input, requestedBy) or cycle' });
   } catch (err: unknown) {
     res.status(400).json({ error: err instanceof Error ? err.message : String(err) });
   }
@@ -1278,7 +1280,8 @@ app.post('/os/admit', (req: Request, res: Response) => {
 
 app.post('/mini/cycle', (req: Request, res: Response) => {
   try {
-    const { claim, category, source, observedBy, metadata, confidence, confidenceReason } = req.body ?? {};
+    const { claim, category, source, observedBy, metadata, confidence, confidenceReason } =
+      req.body ?? {};
     if (typeof claim !== 'string' || claim.trim().length === 0) {
       res.status(400).json({ error: 'claim must be a non-empty string' });
       return;
@@ -1300,7 +1303,8 @@ app.post('/mini/cycle', (req: Request, res: Response) => {
 
 app.post('/mini/total', (req: Request, res: Response) => {
   try {
-    const { claim, category, source, observedBy, metadata, confidence, confidenceReason } = req.body ?? {};
+    const { claim, category, source, observedBy, metadata, confidence, confidenceReason } =
+      req.body ?? {};
     if (typeof claim !== 'string' || claim.trim().length === 0) {
       res.status(400).json({ error: 'claim must be a non-empty string' });
       return;
@@ -2284,7 +2288,10 @@ app.post('/complete-loop', (req: Request, res: Response) => {
       correlationId,
       requestId,
     });
-    const remembered = kernelMemory.remember(observation, verificationResult);
+    const { memory: remembered, entries: rememberedEntries } = kernelMemory.rememberWithEntries(
+      observation,
+      verificationResult
+    );
 
     persistRuntime();
     recordEvent({
@@ -2322,13 +2329,16 @@ app.post('/complete-loop', (req: Request, res: Response) => {
     const response: SuccessResponse<{
       observation: typeof observation;
       verification: typeof verificationResult;
-      memory: typeof remembered;
+      memory: typeof remembered & { entries: typeof rememberedEntries };
       attestation: typeof attestation;
     }> = {
       data: {
         observation,
         verification: verificationResult,
-        memory: remembered,
+        memory: {
+          ...remembered,
+          entries: rememberedEntries,
+        },
         attestation,
       },
       timestamp: new Date().toISOString(),
