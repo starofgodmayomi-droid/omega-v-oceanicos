@@ -2,6 +2,33 @@
 
 **Updated:** 2026-09-06
 
+## Full-stack Subsystems Matrix SDK & CLI synchronization checkpoint — 2026-09-06
+
+The Subsystem Intelligence Matrix has been extended across `@omega-v/sdk` and `@omega-v/cli` on `main` at `ae75377`, completing end-to-end parity across REST API, Web dashboard, SDK client, and CLI tooling.
+
+Key architectural milestones achieved and verified:
+1. **SDK Client (`@omega-v/sdk`)**:
+   - Added `SubsystemInfo` and `SubsystemsResponse` types.
+   - Implemented `OmegaClient.getSubsystems(query?: { category?: string })`, supporting category filtering (`?category=...`).
+   - Covered with unit tests in `packages/sdk/src/index.test.ts` (48/48 tests passed).
+   - Clean compilation to `dist/` with resolved `paths` in `packages/sdk/tsconfig.json`.
+2. **Command Line Interface (`@omega-v/cli`)**:
+   - Implemented `omega subsystems [--category CATEGORY] [--json] [--url URL] [--token TOKEN]` command.
+   - Formatted human-readable output reporting category, package, status, and description, with support for raw JSON output.
+   - Added `subsystems` to CLI `usage()` and `run()` router.
+   - Documented in `packages/cli/README.md`.
+   - Covered with automated tests in `packages/cli/src/index.test.ts` (163/163 tests passed).
+3. **REST API Category Query Filtering (`apps/api`)**:
+   - Enhanced `GET /subsystems` handler in `apps/api/src/index.ts` to accept `?category=...` query parameter and return `{ count, total, category, subsystems }`.
+   - Maintained full backward compatibility with client and web contracts.
+4. **Monorepo-Wide Verification**:
+   - 121/121 test suites passing (1,886 passed tests, 0 failures, 1 skipped).
+   - Zero TypeScript compilation errors (`tsc --noEmit`).
+   - Zero ESLint / Prettier errors across all modified files.
+   - Zero-gap client-server contract synchronization (`expect(unused).toEqual([])`).
+   - 100% brand token compliance (`brand.test.ts`).
+   - Live API smoke contract verified (`smoke-api.cjs`: `health: "ready"`, `deterministic: true`, `terminalState: "return"`).
+
 ## Full-stack subsystem intelligence matrix integration checkpoint — 2026-09-06
 
 The Ω∞v Oceanicos architecture has integrated an operational **Subsystem Intelligence Matrix** across the REST API, client-server contract, and Web operator dashboard on `main` at `73dbad3` and `e734e7b`.
