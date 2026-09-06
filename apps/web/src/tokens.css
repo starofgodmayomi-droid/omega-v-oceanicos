@@ -1,0 +1,32 @@
+/*
+ * Ω∞v brand tokens.
+ *
+ * App.css carries 109 distinct colours across 146 uses and no variables —
+ * the same abyssal green retyped at slightly different values. These are the
+ * canonical set, documented in docs/BRAND.md and asserted by a test.
+ *
+ * Deliberately additive: existing rules are not rewritten here. Replacing
+ * 146 literals in one change would be a large untested diff across a file
+ * another session is actively editing. New work should use these; the
+ * literals are debt, and naming them is the first step to paying it.
+ */
+:root {
+  /* Abyss — background, deepest to shallowest */
+  --omega-abyss: #071312;
+  --omega-abyss-raised: #0b1d1a;
+  --omega-abyss-edge: #1b3b35;
+
+  /* Current — the living signal */
+  --omega-current: #8ce8c8;
+  --omega-current-bright: #69e7b9;
+  --omega-current-dim: #609187;
+
+  /* Surface text */
+  --omega-foam: #ebfaf4;
+  --omega-foam-muted: #c8e9df;
+
+  /* Verdicts. Never decorative: these three carry meaning. */
+  --omega-verified: #69e7b9;
+  --omega-dissent: #ed9986;
+  --omega-unknown: #547b74;
+}

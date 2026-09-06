@@ -1,741 +1,953 @@
-import { OceanicosClient } from '@omega-v/sdk';
-import { FormlessSwarm } from '@omega-v/agents';
-import { EdgeObserver } from '@omega-v/edge';
-import { VerificationAnalyticsEngine } from '@omega-v/analytics';
-import { VerificationScheduler } from '@omega-v/scheduler';
-import { TelemetryTracer, VerificationSLOEngine } from '@omega-v/telemetry';
-import { VaaSGate } from '@omega-v/vaas';
-import { VerificationReplayEngine } from '@omega-v/replay';
-import { FormalContractEngine } from '@omega-v/contract';
-import { OceanicosAuthEngine } from '@omega-v/auth';
-import { FederationMeshEngine } from '@omega-v/federation';
-import { VerificationBenchmarkEngine } from '@omega-v/benchmark';
-import { OceanicosNotaryEngine } from '@omega-v/notary';
-import { OceanicosSandboxEngine } from '@omega-v/sandbox';
-import { OceanicosPolicyEngine } from '@omega-v/policy';
-import { OceanicosZKEngine } from '@omega-v/zk';
-import { OceanicosGatewayEngine } from '@omega-v/gateway';
-import { OceanicosWebhookEngine } from '@omega-v/webhook';
-import { OceanicosOracleEngine } from '@omega-v/oracle';
-import { OceanicosStateVault } from '@omega-v/vault';
-import { OceanicosDisputeEngine } from '@omega-v/dispute';
+#!/usr/bin/env node
 
-export interface CLIResult {
-  success: boolean;
-  message: string;
-  output?: unknown;
+type PersistenceAcknowledgement = {
+  operatorId: string;
+  reason: string;
+  action:
+    'review-partial-recovery' | 'review-key-rotation' | 'review-partial-recovery-and-key-rotation';
+  acknowledgedAt: string;
+  requestId: string;
+};
+type ReencryptionRecovery = {
+  status: 'none' | 'recovered' | 'blocked';
+  reason: string | null;
+};
+type PersistenceReencryption = {
+  operatorId: string;
+  reason: string;
+  action: 'review-key-rotation';
+  reencryptedAt: string;
+  requestId: string;
+  snapshotRecords: number;
+  eventRecords: number;
+  snapshotKeySource: string;
+  eventLogKeySource: string;
+};
+
+type HealthResponse = {
+  data: {
+    status: 'ok';
+    readiness: 'ready' | 'degraded';
+    checks: {
+      observer: 'ready';
+      verifier: 'ready';
+      attester: 'ready';
+      memory: { status: 'ready' | 'degraded'; integrity: boolean; encryption: string };
+      persistence: {
+        mode: 'file' | 'memory';
+        encryption: string;
+        eventLogSource: 'disabled' | 'missing' | 'restored' | 'partial';
+        eventLogReason: string | null;
+        eventLogKeySource: 'none' | 'current' | 'previous' | 'mixed';
+        currentKeyFingerprint: string | null;
+        previousKeyFingerprint: string | null;
+        rotationPending: boolean;
+        operatorAction:
+          | 'none'
+          | 'review-partial-recovery'
+          | 'review-key-rotation'
+          | 'review-partial-recovery-and-key-rotation';
+        acknowledgement: PersistenceAcknowledgement | null;
+        reencryptionRecovery: ReencryptionRecovery;
+        recoveryPolicy: { mode: string; reference: string | null; reason: string | null };
+        deletionPolicy: { mode: string; reason: string | null; verified: false };
+        custodyPolicy: {
+          mode: string;
+          reference: string | null;
+          reason: string | null;
+          verified: false;
+        };
+        coordinationPolicy: {
+          mode: string;
+          reference: string | null;
+          reason: string | null;
+          evidence: 'runtime-observed';
+          scope: 'single-process';
+          limitations: string[];
+          verified: false;
+        };
+        coverage: {
+          complete: false;
+          surfaces: Array<{
+            name: string;
+            encryption: string;
+            keySource: string;
+            evidence: string;
+          }>;
+          unverifiedSurfaces: string[];
+          unverifiedReasons: string[];
+        };
+        skippedLogEntries: number;
+      };
+    };
+    policy: {
+      attestationAlgorithm: string;
+      attestationTtlMs: number | null;
+      authMode: 'local' | 'required';
+      readAuthConfigured: boolean;
+      adminAuthConfigured: boolean;
+      adminOperatorAllowlistRequired: boolean;
+      revocationEnabled: boolean;
+    };
+  };
+  timestamp: string;
+};
+
+type StateResponse = {
+  data: {
+    readiness: 'ready' | 'degraded';
+    trustBasis: { serviceReadiness: 0 | 1 };
+  };
+  timestamp: string;
+};
+
+type ObservabilityResponse = {
+  data: {
+    runtime: {
+      mode: string;
+      persistence: string;
+      services: string[];
+      lastActivity: string | null;
+      eventLogSource: 'disabled' | 'missing' | 'restored' | 'partial';
+      skippedLogEntries: number;
+      eventLogReason: string | null;
+      eventLogEncryptionKeySource: 'none' | 'current' | 'previous' | 'mixed';
+      persistenceCurrentKeyFingerprint: string | null;
+      persistencePreviousKeyFingerprint: string | null;
+      persistenceRotationPending: boolean;
+      operatorAction:
+        | 'none'
+        | 'review-partial-recovery'
+        | 'review-key-rotation'
+        | 'review-partial-recovery-and-key-rotation';
+      reencryptionRecovery: ReencryptionRecovery;
+    };
+    provenance: {
+      recentEvents: number;
+      durableEvents: number;
+      skippedLogEntries: number;
+      completedRuns: number;
+      lastRequestId: string | null;
+      lastCorrelationId: string | null;
+    };
+    trust: {
+      verificationCoverage: number | null;
+      attestationValidity: boolean | null;
+    };
+    memory: {
+      entries: number;
+      intact: boolean;
+      appendOnly: boolean;
+    };
+  };
+  timestamp: string;
+};
+
+type EventsResponse = {
+  data: Array<Record<string, unknown>>;
+  meta?: { window?: number; note?: string };
+  timestamp: string;
+};
+
+type AuditResponse = {
+  data: Array<Record<string, unknown>>;
+  meta: {
+    bounded: true;
+    limit: number;
+    total: number;
+    source: string;
+    skipped: number;
+    keySource: string;
+    filters: Record<string, string | null>;
+  };
+  timestamp: string;
+};
+
+type ExportResponse = {
+  data: {
+    observability: ObservabilityResponse['data'];
+    events: Array<Record<string, unknown>>;
+    runs: RunsResponse['data'];
+  };
+  meta: { bounded: boolean; eventWindow: number; runWindow: number };
+  timestamp: string;
+};
+
+type RunsResponse = {
+  data: Array<{
+    observation: { id: string; claim?: { statement?: string } };
+    verification: { id: string; summary: { passed: boolean; confidence?: number } };
+    attestation: { id: string; verified: boolean; attestedAt?: string; revoked?: boolean };
+  }>;
+  timestamp: string;
+};
+
+type LocalJobState = 'queued' | 'running' | 'succeeded' | 'failed' | 'unknown';
+type LocalJobsResponse = {
+  data: {
+    jobs: Array<{
+      id: string;
+      state: LocalJobState;
+      attempt: number;
+      workerId: string | null;
+      createdAt: string;
+      updatedAt: string;
+      finishedAt: string | null;
+      errorClass: string | null;
+    }>;
+    status: {
+      enabled: boolean;
+      durable: boolean;
+      source: 'memory' | 'file';
+      encryption: 'disabled' | 'aes-256-gcm';
+      counts: Record<LocalJobState, number>;
+      recentWindow: number;
+    };
+  };
+  timestamp: string;
+};
+type Revocation = {
+  id: string;
+  attestationId: string;
+  reason: string;
+  revokedBy: string;
+  revokedAt: string;
+};
+
+type RevocationIntegrity = 'disabled' | 'legacy' | 'intact' | 'mismatch';
+type RevocationsResponse = {
+  data: Revocation[];
+  meta?: { integrity: RevocationIntegrity; digest: string };
+  timestamp: string;
+};
+
+type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
+
+function usage(): string {
+  return [
+    'omega health [--url URL]',
+    'omega status [--url URL] [--token TOKEN]',
+    'omega os [--url URL] [--token TOKEN]',
+    'omega events [--url URL] [--limit N] [--token TOKEN]',
+    'omega audit [--type TYPE] [--stage STAGE] [--status STATUS] [--from ISO] [--to ISO] [--limit N] [--url URL] [--token TOKEN]',
+    'omega runs [--url URL] [--limit N] [--token TOKEN]',
+    'omega jobs [--url URL] [--limit N] [--token TOKEN] [--job-token TOKEN]',
+    'omega export [--url URL] [--token TOKEN]',
+    'omega rules [--category CATEGORY] [--url URL] [--token TOKEN]',
+    'omega revocations [--url URL] [--token TOKEN]',
+    'omega revoke ATTESTATION_ID --reason REASON [--operator-id ID] [--url URL] [--token TOKEN] [--admin-token TOKEN]',
+    'omega acknowledge-persistence --reason REASON --operator-id ID [--url URL] [--admin-token TOKEN]',
+    'omega reencrypt-persistence --reason REASON --operator-id ID [--url URL] [--admin-token TOKEN]',
+    'omega verify --attestation-json JSON [--url URL] [--token TOKEN]',
+    'omega policy [--url URL] [--token TOKEN]',
+    'omega scene [--seed SEED] [--steps N] [--branches N] [--url URL] [--token TOKEN]',
+    '',
+    'Read live runtime and evidence from the Omega V API.',
+    '',
+    'Environment:',
+    '  OMEGA_API_URL  Base API URL (default: http://localhost:3000)',
+  ].join('\n');
 }
 
-export class OceanicosCLI {
-  private client: OceanicosClient;
-
-  constructor(client?: OceanicosClient) {
-    this.client = client || new OceanicosClient();
-  }
-
-  public async run(args: string[]): Promise<CLIResult> {
-    const command = args[0] || 'help';
-
-    switch (command) {
-      case 'loop': {
-        const claim = args[1] || 'Default CLI verification claim';
-        const result = await this.client.runLoop({ claim });
-        return {
-          success: result.verification.summary.passed,
-          message: `[Ω∞v CLI] Full Loop Complete: ${result.verification.summary.passed ? 'PASSED' : 'FAILED'}`,
-          output: {
-            observationId: result.observation.id,
-            verified: result.verification.summary.passed,
-            attestationId: result.attestation.id,
-            signature: result.attestation.signature,
-          },
-        };
-      }
-
-      case 'mini': {
-        const claim = args[1] || 'Default MINI cycle claim';
-        const result = this.client.runMiniCycle({
-          claim,
-          category: 'health-check',
-          metadata: { responseTime: 25, statusCode: 200 },
-        });
-        return {
-          success: result.passed,
-          message: `[Ω∞v CLI] MINI Cycle: ${result.passed ? 'PASSED' : 'FAILED'} (Memory ID: ${result.memory.id})`,
-          output: result,
-        };
-      }
-
-      case 'total': {
-        const claim = args[1] || 'Default Omega Total claim';
-        try {
-          const manifest = this.client.lockTotality({
-            claim,
-            category: 'health-check',
-            metadata: { responseTime: 25, statusCode: 200 },
-          });
-          return {
-            success: true,
-            message: `[Ω∞v CLI] Omega Total Manifest Locked (Root: ${manifest.stateRoot}, Axiom: ${manifest.stewardshipAxiom})`,
-            output: manifest,
-          };
-        } catch (err: any) {
-          return {
-            success: false,
-            message: `[Ω∞v CLI] Omega Total Failed: ${err.message}`,
-          };
-        }
-      }
-
-      case 'swarm': {
-        const claim = args[1] || 'CLI Swarm verification cycle';
-        const swarm = new FormlessSwarm(this.client);
-        const result = await swarm.executeSwarmCycle({
-          claim,
-          ruleName: 'cli-swarm-rule',
-          ruleDefinition: 'responseTime < 100',
-          metadata: { responseTime: 35 },
-        });
-        return {
-          success: result.success,
-          message: `[Ω∞v CLI] Formless Swarm Cycle: ${result.success ? 'PASSED' : 'FAILED'} (${result.agentResults.length} Agents executed)`,
-          output: {
-            success: result.success,
-            agentsCount: result.agentResults.length,
-            attestationId: result.fullLoopResult.attestation.id,
-            signature: result.fullLoopResult.attestation.signature,
-          },
-        };
-      }
-
-      case 'ecosystem': {
-        const claim = args[1] || 'CLI Unified Ecosystem OS Flow';
-        const result = await this.client.runEcosystemFlow({
-          intentClaim: claim,
-          actorDid: 'did:omega:agent:cli-operator',
-          ruleDefinition: 'responseTime < 100',
-          metadata: { responseTime: 25, statusCode: 200 },
-          confidence: 0.98,
-        });
-        return {
-          success: result.verification.passed,
-          message: `[Ω∞v CLI] Unified Ecosystem Flow: ${result.verification.passed ? 'PASSED' : 'FAILED'} (State: ${result.kernelState.stateId}, Status: ${result.kernelState.verificationStatus})`,
-          output: result,
-        };
-      }
-
-      case 'grand-flow': {
-        const claim = args[1] || 'CLI Grand Continuum Full-Stack Execution Flow';
-        const result = await this.client.runGrandFlow({
-          intentClaim: claim,
-          actorDid: 'did:omega:agent:cli-universal-operator',
-          ruleDefinition: 'responseTime < 100 && statusCode == 200',
-          metadata: { responseTime: 20, statusCode: 200 },
-          swapAmount: 100,
-        });
-        return {
-          success: result.intermediateForm.verificationPassed,
-          message: `[Ω∞v CLI] Grand Continuum Flow: ${result.intermediateForm.verificationPassed ? 'PASSED' : 'FAILED'} (State: ${result.canonicalState.stateId}, Vault Epoch: ${result.maxForm.vaultEpoch})`,
-          output: result,
-        };
-      }
-
-      case 'hyper-flow': {
-        const claim = args[1] || 'CLI Hyper Continuum 22-Stage Execution Flow';
-        const result = await this.client.runHyperFlow({
-          intentClaim: claim,
-          actorDid: 'did:omega:agent:cli-hyper-operator',
-          ruleDefinition: 'responseTime < 100 && statusCode == 200',
-          metadata: { responseTime: 20, statusCode: 200 },
-          swapAmount: 150,
-        });
-        return {
-          success: result.success,
-          message: `[Ω∞v CLI] Hyper Continuum Flow: ${result.success ? 'PASSED' : 'FAILED'} (Stages: ${result.stageCount}, State: ${result.kernelStage.stateId}, Mood: ${result.moodStage.state})`,
-          output: result,
-        };
-      }
-
-      case 'metrics': {
-        const metrics = this.client.getMetrics();
-        return {
-          success: true,
-          message: '[Ω∞v CLI] System Metrics',
-          output: metrics,
-        };
-      }
-
-      case 'log': {
-        const entries = this.client.getLogEntries();
-        return {
-          success: true,
-          message: `[Ω∞v CLI] Provenance Log (${entries.length} entries)`,
-          output: entries,
-        };
-      }
-
-      case 'integrity': {
-        const integrity = this.client.verifyIntegrity();
-        return {
-          success: integrity.valid,
-          message: `[Ω∞v CLI] Chain Integrity: ${integrity.valid ? 'VALID' : 'BROKEN'}`,
-          output: integrity,
-        };
-      }
-
-      case 'edge': {
-        const claim = args[1] || 'CLI Edge Observation';
-        const edge = new EdgeObserver({ nodeId: 'cli-edge-node-1' });
-        edge.capture(claim, 'cli-edge');
-        const syncResult = await edge.flush();
-        return {
-          success: syncResult.success,
-          message: `[Ω∞v CLI] Edge Observation Batch Synced: ${syncResult.batchId}`,
-          output: {
-            batchId: syncResult.batchId,
-            merkleRoot: syncResult.merkleRoot,
-            syncedCount: syncResult.syncedCount,
-          },
-        };
-      }
-
-      case 'analytics': {
-        const entries = this.client.getLogEntries();
-        const analytics = new VerificationAnalyticsEngine();
-        const summary = analytics.analyzeLogs(entries);
-        return {
-          success: true,
-          message: `[Ω∞v CLI] Verification Analytics & Efficacy (Pass Rate: ${(summary.overallPassRate * 100).toFixed(0)}%)`,
-          output: summary,
-        };
-      }
-
-      case 'scheduler': {
-        const subCmd = args[1] || 'status';
-        const intervalMs = args[2] ? Number(args[2]) : 10000;
-        const claim = args[3] || 'Ω∞v CLI scheduled loop';
-
-        const sched = new VerificationScheduler(this.client, { intervalMs, claim, maxRuns: 1 });
-
-        if (subCmd === 'run') {
-          sched.start();
-          // Wait for one run to complete
-          await new Promise<void>((resolve) => setTimeout(resolve, intervalMs + 500));
-          sched.stop();
-          const state = sched.getState();
-          return {
-            success: state.totalRuns > 0,
-            message: `[Ω∞v CLI] Scheduler: ${state.totalRuns} runs | ${state.passedRuns} passed | ${state.failedRuns} failed`,
-            output: state,
-          };
-        }
-
-        return {
-          success: true,
-          message: '[Ω∞v CLI] Scheduler available. Use: omega-v scheduler run [intervalMs] [claim]',
-          output: { status: 'IDLE', usage: 'omega-v scheduler run [intervalMs] [claim]' },
-        };
-      }
-
-      case 'slo': {
-        const targetRate = args[1] ? Number(args[1]) : 0.99;
-        const metrics = this.client.getMetrics();
-        const sloEngine = new VerificationSLOEngine();
-        const evaluation = sloEngine.evaluateSLO(metrics, targetRate);
-        return {
-          success: evaluation.isHealthy,
-          message: `[Ω∞v CLI] Verification SLO: ${evaluation.isHealthy ? 'HEALTHY' : 'DEGRADED'} (Pass Rate: ${(evaluation.actualPassRate * 100).toFixed(1)}% / Target: ${(targetRate * 100).toFixed(1)}%)`,
-          output: evaluation,
-        };
-      }
-
-      case 'trace': {
-        const tracer = new TelemetryTracer();
-        const span = tracer.startSpan('cli-trace-span', undefined, {
-          command: args[1] || 'default',
-        });
-        tracer.addEvent(span, 'cli_invocation');
-        tracer.endSpan(span, 'OK');
-        const traceContext = { traceId: span.traceId, spanId: span.spanId, traceFlags: 1 };
-        const traceparent = tracer.injectTraceparent(traceContext);
-        return {
-          success: true,
-          message: `[Ω∞v CLI] Trace Context Generated: ${traceparent}`,
-          output: { span, traceparent },
-        };
-      }
-
-      case 'vaas': {
-        const subCmd = args[1] || 'register';
-        const vaasGate = new VaaSGate();
-
-        if (subCmd === 'register') {
-          const tenantName = args[2] || 'Default Organization';
-          const tier = (args[3] as 'FREE' | 'PRO' | 'ENTERPRISE') || 'PRO';
-          const creds = vaasGate.registerTenant(tenantName, tier);
-          return {
-            success: true,
-            message: `[Ω∞v CLI] VaaS Tenant Registered: ${creds.tenant.name} (${creds.tenant.id})`,
-            output: creds,
-          };
-        }
-
-        return {
-          success: true,
-          message: '[Ω∞v CLI] VaaS Gateway: Use omega-v vaas register [name] [tier]',
-          output: { usage: 'omega-v vaas register [name] [tier]' },
-        };
-      }
-
-      case 'replay': {
-        const replayEngine = new VerificationReplayEngine();
-        const claim = args[1] || 'CLI Replay verification snapshot';
-        const label = args[2] || undefined;
-
-        // Phase 1: Capture a baseline snapshot
-        const baselineResult = await this.client.runLoop({
-          claim,
-          category: 'replay-cli',
-          observedBy: 'cli-replay',
-          sourceSystem: 'omega-v-cli',
-        });
-        const baseline = replayEngine.capture(claim, baselineResult, label || 'Baseline', ['cli']);
-
-        // Phase 2: Replay the snapshot
-        const replayResult = await replayEngine.replay(baseline.id, this.client);
-
-        return {
-          success: !replayResult.diff.regressionDetected,
-          message:
-            `[Ω∞v CLI] Replay ${replayResult.diff.regressionDetected ? 'REGRESSION DETECTED' : 'OK — no regression'}. ` +
-            `Changes: ${replayResult.diff.changes.length}, Duration: ${replayResult.durationMs}ms`,
-          output: {
-            baselineId: baseline.id,
-            replayedId: replayResult.replayed.id,
-            identical: replayResult.diff.identical,
-            regressionDetected: replayResult.diff.regressionDetected,
-            changes: replayResult.diff.changes.length,
-            durationMs: replayResult.durationMs,
-          },
-        };
-      }
-
-      case 'contract': {
-        const engine = new FormalContractEngine();
-        const subCommand = args[1] || 'list';
-
-        if (subCommand === 'verify') {
-          const contractIdOrName = args[2] || 'health-sla-contract';
-          const sampleData = { responseTime: 45, statusCode: 200 };
-          const result = engine.verify(sampleData, contractIdOrName);
-
-          return {
-            success: result.valid,
-            message: `[Ω∞v CLI] Contract '${result.contractName}' Verification: ${result.valid ? 'VALID (PASSED)' : 'VIOLATED (FAILED)'}`,
-            output: result,
-          };
-        }
-
-        const contracts = engine.getContracts();
-        return {
-          success: true,
-          message: `[Ω∞v CLI] Formal Contracts Registered: ${contracts.length}`,
-          output: contracts.map((c) => ({
-            id: c.id,
-            name: c.name,
-            version: c.version,
-            category: c.category,
-            fields: Object.keys(c.fields).length,
-            invariants: c.invariants.length,
-          })),
-        };
-      }
-
-      case 'auth': {
-        const auth = new OceanicosAuthEngine();
-        const subCommand = args[1] || 'list';
-
-        if (subCommand === 'create') {
-          const type = (args[2] as any) || 'AGENT';
-          const identity = auth.createIdentity(type, ['observe:write', 'verify:execute']);
-          const token = auth.issueToken(identity.did, identity.secret);
-
-          return {
-            success: true,
-            message: `[Ω∞v CLI] DID Created: ${identity.did} (Type: ${identity.document.type})`,
-            output: {
-              did: identity.did,
-              secret: identity.secret,
-              publicKey: identity.document.publicKey,
-              capabilities: identity.document.capabilities,
-              token,
-            },
-          };
-        }
-
-        const identities = auth.listIdentities();
-        return {
-          success: true,
-          message: `[Ω∞v CLI] Registered DIDs: ${identities.length}`,
-          output: identities.map((i) => ({
-            did: i.did,
-            type: i.type,
-            capabilities: i.capabilities,
-            epoch: i.epoch,
-            revoked: i.revoked,
-          })),
-        };
-      }
-
-      case 'federation': {
-        const mesh = new FederationMeshEngine();
-        const subCommand = args[1] || 'peers';
-
-        if (subCommand === 'export') {
-          const claim = args[2] || 'CLI Federated Mesh Claim';
-          const loopResult = await this.client.runLoop({ claim });
-          const proof = mesh.exportProof(claim, loopResult);
-
-          return {
-            success: true,
-            message: `[Ω∞v CLI] Cross-Cluster Proof Exported: ${proof.proofId} (Origin: ${proof.originCluster})`,
-            output: proof,
-          };
-        }
-
-        const peers = mesh.getPeers();
-        const summary = mesh.getMeshSummary();
-
-        return {
-          success: true,
-          message: `[Ω∞v CLI] Federated Mesh Peers: ${peers.length} active (Avg Trust: ${summary.avgTrustScore})`,
-          output: {
-            summary,
-            peers,
-          },
-        };
-      }
-
-      case 'benchmark': {
-        const benchmark = new VerificationBenchmarkEngine();
-        const iterations = parseInt(args[1] || '20', 10);
-        const results = await benchmark.runSuite(this.client, iterations);
-        const loopBench = results.loop;
-
-        return {
-          success: true,
-          message: `[Ω∞v CLI] Benchmark Complete: ${loopBench.throughputOpsSec} ops/sec (P50: ${loopBench.latency.p50Ms}ms, P99: ${loopBench.latency.p99Ms}ms, Iterations: ${loopBench.iterations})`,
-          output: results,
-        };
-      }
-
-      case 'notary': {
-        const notary = new OceanicosNotaryEngine();
-        const subCommand = args[1] || 'summary';
-
-        if (subCommand === 'anchor') {
-          const claim = args[2] || 'CLI Notarization Claim';
-          const loopResult = await this.client.runLoop({ claim });
-          const seal = notary.anchorAttestation(loopResult.attestation);
-
-          return {
-            success: true,
-            message: `[Ω∞v CLI] Notarization Seal Created: ${seal.sealId} (Merkle Root: ${seal.merkleRoot.slice(0, 16)}…)`,
-            output: seal,
-          };
-        }
-
-        const summary = notary.getSummary();
-        return {
-          success: true,
-          message: `[Ω∞v CLI] Notary Merkle Tree: ${summary.treeSize} leaves (Root: ${summary.merkleRoot.slice(0, 16)}…, Seals: ${summary.totalSeals})`,
-          output: summary,
-        };
-      }
-
-      case 'sandbox': {
-        const sandbox = new OceanicosSandboxEngine();
-        const code = args.slice(1).join(' ') || 'responseTime < 100 && statusCode === 200';
-        const context = { responseTime: 45, statusCode: 200 };
-        const result = sandbox.executeExpression(code, context);
-
-        return {
-          success: result.success,
-          message: result.success
-            ? `[Ω∞v CLI] Sandbox Execution Succeeded: Result = ${JSON.stringify(result.result)} (${result.executionTimeMs}ms, Gas: ${result.gasConsumed})`
-            : `[Ω∞v CLI] Sandbox Violation / Error: ${result.error} (Type: ${result.violation})`,
-          output: result,
-        };
-      }
-
-      case 'policy': {
-        const policyEngine = new OceanicosPolicyEngine();
-        const subCommand = args[1] || 'list';
-
-        if (subCommand === 'evaluate') {
-          const policyId = args[2] || 'enterprise-sla-policy';
-          const context = {
-            confidence: 0.95,
-            metadata: { responseTime: 35, region: 'us-east-1' },
-            source: { environment: 'production' },
-          };
-          const receipt = policyEngine.evaluate(policyId, context);
-
-          return {
-            success: receipt.compliant,
-            message: receipt.compliant
-              ? `[Ω∞v CLI] Policy Compliance PASSED: ${receipt.policyName} (${receipt.passedRules}/${receipt.ruleResults.length} rules passed, Receipt: ${receipt.receiptId})`
-              : `[Ω∞v CLI] Policy Compliance FAILED: ${receipt.policyName} (${receipt.failedRules} rules failed)`,
-            output: receipt,
-          };
-        }
-
-        const policies = policyEngine.getPolicies();
-        return {
-          success: true,
-          message: `[Ω∞v CLI] Registered Declarative Policies: ${policies.length} bundles loaded`,
-          output: policies,
-        };
-      }
-
-      case 'zk': {
-        const zkEngine = new OceanicosZKEngine();
-        const subCommand = args[1] || 'circuits';
-
-        if (subCommand === 'prove') {
-          const circuitId = args[2] || 'circuit-confidence-range';
-          const witness = args[3] !== undefined ? Number(args[3]) : 0.96;
-          const proof = zkEngine.generateRangeProof(circuitId, witness);
-          const verification = zkEngine.verifyProof(proof);
-
-          return {
-            success: verification.valid,
-            message: verification.valid
-              ? `[Ω∞v CLI] Zero-Knowledge Proof Generated & Verified (${proof.circuitId}, Commitment: ${proof.commitment.slice(0, 16)}…, Token: ${proof.proofToken.slice(0, 20)}…)`
-              : `[Ω∞v CLI] ZK Proof Verification Failed: ${verification.reason}`,
-            output: { proof, verification },
-          };
-        }
-
-        const circuits = zkEngine.getCircuits();
-        return {
-          success: true,
-          message: `[Ω∞v CLI] Registered Zero-Knowledge Circuits: ${circuits.length} circuits active`,
-          output: circuits,
-        };
-      }
-
-      case 'gateway': {
-        const gateway = new OceanicosGatewayEngine();
-        const subCommand = args[1] || 'stats';
-
-        if (subCommand === 'request') {
-          const clientId = args[2] || 'cli-client';
-          const decision = gateway.processRequest(clientId);
-          return {
-            success: decision.allowed,
-            message: decision.allowed
-              ? `[Ω∞v CLI] Gateway Request ALLOWED for client '${clientId}' (${decision.remainingRequests} remaining)`
-              : `[Ω∞v CLI] Gateway Request BLOCKED: ${decision.reason}`,
-            output: decision,
-          };
-        }
-
-        const stats = gateway.getStats();
-        return {
-          success: true,
-          message: `[Ω∞v CLI] Gateway Status: ${stats.totalRequests} requests, ${stats.allowedRequests} allowed, ${stats.blockedRequests} blocked, ${stats.anomaliesDetected} anomalies`,
-          output: stats,
-        };
-      }
-
-      case 'webhook': {
-        const webhook = new OceanicosWebhookEngine();
-        const subCommand = args[1] || 'list';
-
-        if (subCommand === 'register') {
-          const name = args[2] || 'Custom CLI Webhook';
-          const url = args[3] || 'https://example.com/webhook';
-          const sub = webhook.registerSubscription({
-            name,
-            url,
-            events: ['ALL'],
-          });
-          return {
-            success: true,
-            message: `[Ω∞v CLI] Registered Webhook '${sub.name}' (${sub.id} -> ${sub.url})`,
-            output: sub,
-          };
-        }
-
-        if (subCommand === 'trigger') {
-          const eventType = (args[2] as any) || 'ATTESTATION_CREATED';
-          const attempts = await webhook.dispatchEvent(eventType, {
-            source: 'CLI Trigger',
-            timestamp: new Date().toISOString(),
-          });
-          return {
-            success: true,
-            message: `[Ω∞v CLI] Dispatched '${eventType}' to ${attempts.length} active webhooks`,
-            output: attempts,
-          };
-        }
-
-        const subs = webhook.getSubscriptions();
-        const stats = webhook.getStats();
-        return {
-          success: true,
-          message: `[Ω∞v CLI] Active Webhook Subscriptions: ${subs.length} subs, ${stats.totalDispatches} dispatches (${stats.successRate}% success rate)`,
-          output: { subscriptions: subs, stats },
-        };
-      }
-
-      case 'oracle': {
-        const oracle = new OceanicosOracleEngine();
-        const subCommand = args[1] || 'feeds';
-
-        if (subCommand === 'aggregate') {
-          const feedId = args[2] || 'feed-eth-usd';
-          const val1 = Number(args[3] || 3200);
-          const val2 = Number(args[4] || 3220);
-          const reports = [
-            {
-              providerId: 'prov-node-alpha',
-              feedId,
-              value: val1,
-              timestamp: new Date().toISOString(),
-              signature: 'sig_a',
-            },
-            {
-              providerId: 'prov-node-beta',
-              feedId,
-              value: val2,
-              timestamp: new Date().toISOString(),
-              signature: 'sig_b',
-            },
-          ];
-          const receipt = oracle.aggregateReports(feedId, reports);
-          return {
-            success: true,
-            message: `[Ω∞v CLI] Oracle Consensus Computed: ${feedId} = ${receipt.aggregatedValue} (${receipt.strategyUsed}, ${receipt.participants} providers)`,
-            output: receipt,
-          };
-        }
-
-        const feeds = oracle.getFeeds();
-        const stats = oracle.getStats();
-        return {
-          success: true,
-          message: `[Ω∞v CLI] Active Oracle Feeds: ${feeds.length} feeds, ${stats.totalProviders} providers, ${stats.totalConsensusReceipts} receipts`,
-          output: { feeds, stats },
-        };
-      }
-
-      case 'vault': {
-        const vault = new OceanicosStateVault();
-        const subCommand = args[1] || 'checkpoints';
-
-        if (subCommand === 'create') {
-          const label = args.slice(2).join(' ') || 'Manual CLI Checkpoint';
-          const sampleRules = [
-            {
-              name: 'response-time-threshold',
-              version: '1.0.5',
-              appliesTo: ['health-check'],
-              definition: 'responseTime < 100',
-              description: 'Verify response time is below 100ms',
-              createdAt: new Date().toISOString(),
-              active: true,
-            },
-          ];
-          const checkpoint = vault.createCheckpoint(label, [], sampleRules);
-          return {
-            success: true,
-            message: `[Ω∞v CLI] Sealed State Checkpoint Created: ${checkpoint.checkpointId} (Epoch ${checkpoint.epoch}, Root: ${checkpoint.merkleRoot.slice(0, 16)}…, Size: ${checkpoint.payloadSize}B)`,
-            output: checkpoint,
-          };
-        }
-
-        const checkpoints = vault.getCheckpoints();
-        const stats = vault.getStats();
-        return {
-          success: true,
-          message: `[Ω∞v CLI] State Vault: ${checkpoints.length} checkpoints, Latest Epoch: ${stats.latestEpoch}, Total Size: ${stats.totalVaultBytes}B`,
-          output: { checkpoints, stats },
-        };
-      }
-
-      case 'dispute': {
-        const dispute = new OceanicosDisputeEngine();
-        const subCommand = args[1] || 'list';
-
-        if (subCommand === 'raise') {
-          const targetEventHash = args[2] || '0xdefault_event_hash_123';
-          const reason = args.slice(3).join(' ') || 'Disputed attestation confidence bounds';
-          const newCase = dispute.raiseDispute({
-            targetEventHash,
-            claimantDid: 'did:omega:agent:node-primary',
-            challengerDid: 'did:omega:challenger:cli-operator',
-            stakeAmount: 500,
-            reason,
-          });
-          return {
-            success: true,
-            message: `[Ω∞v CLI] Dispute Case Raised: ${newCase.caseId} (Staked: ${newCase.stakeAmount}, Status: ${newCase.status})`,
-            output: newCase,
-          };
-        }
-
-        const cases = dispute.getCases();
-        const stats = dispute.getStats();
-        return {
-          success: true,
-          message: `[Ω∞v CLI] Dispute Registry: ${cases.length} cases (${stats.activeChallenges} active challenges, ${stats.totalStaked} tokens staked)`,
-          output: { cases, stats },
-        };
-      }
-
-      case 'help':
-      default: {
-        return {
-          success: true,
-          message: `Ω∞v Oceanicos CLI v0.1.0
-Commands:
-  omega-v loop [claim]              Execute complete verification loop
-  omega-v ecosystem [claim]         Execute unified 8-stage canonical ecosystem OS flow
-  omega-v grand-flow [claim]        Execute full grand continuum flow (lowest to max form)
-  omega-v hyper-flow [claim]        Execute 22-stage hyper-continuum max flow end-to-end
-  omega-v swarm [claim]             Execute multi-agent Formless Swarm cycle
-  omega-v edge [claim]              Capture & flush Merkle edge observation batch
-  omega-v analytics                 Compute rule efficacy & pattern analytics
-  omega-v scheduler run [ms] [claim] Run one autonomous scheduled loop
-  omega-v slo [targetRate]          Evaluate Service Level Objective & error budget
-  omega-v trace [name]              Generate W3C distributed trace context
-  omega-v vaas register [name] [tier] Register multi-tenant VaaS organization
-  omega-v replay [claim] [label]    Capture & replay verification snapshot with diff
-  omega-v contract [list|verify]    List formal contracts or verify sample payload
-  omega-v auth [list|create]        List DIDs or create decentralized identity
-  omega-v federation [peers|export] List mesh peers or export cross-cluster proof
-  omega-v benchmark [iterations]    Run verification performance & latency quantile profiling
-  omega-v notary [summary|anchor]   Notarize attestation into Merkle transparency log
-  omega-v sandbox [expression]      Execute rule expression in isolated deterministic sandbox
-  omega-v policy [list|evaluate]    List declarative policy documents or evaluate context
-  omega-v zk [circuits|prove]       Generate and verify zero-knowledge succinct privacy proofs
-  omega-v gateway [stats|request]   Inspect API gateway rate limits & anomaly alerts
-  omega-v webhook [list|register|trigger] Manage real-time verification event webhooks
-  omega-v oracle [feeds|aggregate]  Compute multi-source external state consensus receipts
-  omega-v vault [checkpoints|create] Manage cryptographic state checkpoints & disaster recovery
-  omega-v dispute [list|raise]      Verifiable decentralized dispute resolution & jury arbitration
-  omega-v mini [claim]              Execute foundational MINI cycle (Observe → Verify → Remember)
-  omega-v total [claim]             Lock totality into now via OmegaTotalCompressor (State Root: Ø)
-  omega-v metrics                   Show system health and metrics
-  omega-v log                       Display event provenance log
-  omega-v integrity                 Verify event hash chain integrity
-  omega-v help                      Show this help menu`,
-        };
-      }
+function baseUrl(argv: string[]): string {
+  // option() treats a flag with no value as absent, which is what
+  // adminToken already does. Reading argv directly meant a trailing --url
+  // selected the flag branch, found undefined, and fell through to
+  // localhost — silently ignoring a configured OMEGA_API_URL.
+  return option(argv, '--url') || process.env.OMEGA_API_URL || 'http://localhost:3000';
+}
+
+function readToken(argv: string[]): string | undefined {
+  // Same shape as baseUrl: a trailing --token must not discard a
+  // configured OMEGA_READ_TOKEN and silently send an unauthenticated
+  // request.
+  return option(argv, '--token') || process.env.OMEGA_READ_TOKEN || undefined;
+}
+
+function requestInit(argv: string[]): RequestInit | undefined {
+  const token = readToken(argv);
+  return token ? { headers: { Authorization: `Bearer ${token}` } } : undefined;
+}
+
+function localJobToken(argv: string[]): string | undefined {
+  return option(argv, '--job-token') || process.env.OMEGA_LOCAL_JOB_LEDGER_TOKEN || undefined;
+}
+
+function jobRequestInit(argv: string[]): RequestInit | undefined {
+  const token = localJobToken(argv);
+  const init = requestInit(argv);
+  if (!token) return init;
+  const headers = new Headers(init?.headers);
+  headers.set('x-omega-local-job-token', token);
+  return { ...init, headers };
+}
+
+function adminToken(argv: string[]): string | undefined {
+  return option(argv, '--admin-token') || process.env.OMEGA_ADMIN_TOKEN || undefined;
+}
+
+function percent(value: number | null): string {
+  return value === null ? 'UNKNOWN' : `${(value * 100).toFixed(0)}%`;
+}
+
+function option(argv: string[], name: string): string | null {
+  const index = argv.indexOf(name);
+  return index >= 0 && argv[index + 1] ? argv[index + 1] : null;
+}
+
+function limit(argv: string[]): number | null {
+  const index = argv.indexOf('--limit');
+  if (index < 0) return null;
+  const value = Number(argv[index + 1]);
+  return Number.isInteger(value) && value > 0 ? value : null;
+}
+
+async function health(argv: string[], fetchImpl: FetchLike): Promise<number> {
+  const endpoint = `${baseUrl(argv).replace(/\/$/, '')}/health`;
+  try {
+    const response = await fetchImpl(endpoint);
+    const body = (await response.json()) as HealthResponse | { message?: string };
+    if (!response.ok || !('data' in body)) {
+      const message = 'message' in body ? body.message : undefined;
+      process.stderr.write(
+        `Health unavailable (${response.status}): ${message ?? 'unknown error'}\n`
+      );
+      return 1;
     }
+
+    const { checks, policy } = body.data;
+    process.stdout.write(
+      [
+        `HEALTH        ${body.data.status} / ${body.data.readiness}`,
+        `CHECKS        observer=${checks.observer} verifier=${checks.verifier} attester=${checks.attester}`,
+        `MEMORY        ${checks.memory.status} integrity=${checks.memory.integrity} encryption=${checks.memory.encryption}`,
+        `PERSISTENCE   ${checks.persistence.mode} encryption=${checks.persistence.encryption} log=${checks.persistence.eventLogSource} skipped=${checks.persistence.skippedLogEntries} key=${checks.persistence.eventLogKeySource} rotation=${checks.persistence.rotationPending}`,
+        `KEY ID        current=${checks.persistence.currentKeyFingerprint ?? 'none'} previous=${checks.persistence.previousKeyFingerprint ?? 'none'} custody=unverified-local`,
+        `LOG REASON    ${checks.persistence.eventLogReason ?? 'none'}`,
+        `ACTION       ${checks.persistence.operatorAction ?? 'unknown'}`,
+        `ROTATION     recovery=${checks.persistence.reencryptionRecovery?.status ?? 'unknown'} reason=${checks.persistence.reencryptionRecovery?.reason ?? 'none'}`,
+        `RECOVERY     policy=${checks.persistence.recoveryPolicy?.mode ?? 'unknown'} reference=${checks.persistence.recoveryPolicy?.reference ?? 'none'} reason=${checks.persistence.recoveryPolicy?.reason ?? 'none'}`,
+        `DELETION     policy=${checks.persistence.deletionPolicy?.mode ?? 'unknown'} verified=${checks.persistence.deletionPolicy?.verified ?? 'unknown'} reason=${checks.persistence.deletionPolicy?.reason ?? 'none'}`,
+        `CUSTODY      policy=${checks.persistence.custodyPolicy?.mode ?? 'unknown'} reference=${checks.persistence.custodyPolicy?.reference ?? 'none'} verified=${checks.persistence.custodyPolicy?.verified ?? 'unknown'} reason=${checks.persistence.custodyPolicy?.reason ?? 'none'}`,
+        `COORDINATION  policy=${checks.persistence.coordinationPolicy?.mode ?? 'unknown'} scope=${checks.persistence.coordinationPolicy?.scope ?? 'unknown'} evidence=${checks.persistence.coordinationPolicy?.evidence ?? 'unknown'} verified=${checks.persistence.coordinationPolicy?.verified ?? 'unknown'} reason=${checks.persistence.coordinationPolicy?.reason ?? 'none'}`,
+        `COORDINATION-LIMITS ${checks.persistence.coordinationPolicy?.limitations?.join(' | ') ?? 'unknown'}`,
+        `COVERAGE     ${checks.persistence.coverage?.surfaces?.map((surface) => `${surface.name}=${surface.encryption}/${surface.keySource}`).join(', ') ?? 'unknown'}`,
+        `UNVERIFIED   ${checks.persistence.coverage?.unverifiedSurfaces?.join(', ') ?? 'unknown'} complete=${checks.persistence.coverage?.complete ?? 'unknown'}`,
+        `WHY          ${checks.persistence.coverage?.unverifiedReasons?.join(' | ') ?? 'unknown'}`,
+        `POLICY        algorithm=${policy.attestationAlgorithm} authMode=${policy.authMode ?? 'unknown'} ttl=${policy.attestationTtlMs ?? 'off'} adminAllowlistRequired=${policy.adminOperatorAllowlistRequired ?? 'unknown'} revocation=${policy.revocationEnabled}`,
+        `OBSERVED      ${body.timestamp}`,
+      ].join('\n') + '\n'
+    );
+    return body.data.readiness === 'ready' && checks.memory.integrity ? 0 : 1;
+  } catch (error) {
+    process.stderr.write(
+      `Health unavailable: ${error instanceof Error ? error.message : String(error)}\n`
+    );
+    return 1;
   }
 }
 
-export default OceanicosCLI;
+async function operatingSystem(argv: string[], fetchImpl: FetchLike): Promise<number> {
+  const endpoint = `${baseUrl(argv).replace(/\/$/, '')}/os`;
+  const response = await fetchImpl(endpoint, requestInit(argv));
+  const body = (await response.json()) as {
+    data?: {
+      state?: string;
+      tasks?: unknown[];
+      events?: Array<{ sequence: number; type: string; state: string; reason?: string }>;
+      snapshotVersion?: string;
+      limits?: { maxTasks?: number; maxEvents?: number };
+      capabilities?: {
+        shellExecution?: boolean;
+        remoteMutation?: boolean;
+        credentialHandling?: boolean;
+        humanAuthorizationRequired?: boolean;
+      };
+    };
+    message?: string;
+  };
+  if (!response.ok || !body.data) {
+    process.stderr.write(
+      `OS snapshot unavailable (${response.status}): ${body.message ?? 'unknown error'}\n`
+    );
+    return 1;
+  }
+  const lastEvent = body.data.events?.at(-1);
+  process.stdout.write(
+    `OS            state=${body.data.state ?? 'unknown'} tasks=${body.data.tasks?.length ?? 0} events=${body.data.events?.length ?? 0}\n` +
+      `EVENT         type=${lastEvent?.type ?? 'UNKNOWN'} sequence=${lastEvent?.sequence ?? 'UNKNOWN'}${lastEvent?.reason ? ` reason=${lastEvent.reason}` : ''}\n` +
+      `SCHEMA ${body.data.snapshotVersion ?? 'UNKNOWN'}\n` +
+      `LIMITS maxTasks=${body.data.limits?.maxTasks ?? 'UNKNOWN'} maxEvents=${body.data.limits?.maxEvents ?? 'UNKNOWN'}\n` +
+      `CAPABILITIES shell=${body.data.capabilities?.shellExecution === false ? 'DISABLED' : 'UNKNOWN'} remote=${body.data.capabilities?.remoteMutation === false ? 'DISABLED' : 'UNKNOWN'} credentials=${body.data.capabilities?.credentialHandling === false ? 'DISABLED' : 'UNKNOWN'} human_gate=${body.data.capabilities?.humanAuthorizationRequired === true ? 'REQUIRED' : 'UNKNOWN'}\n`
+  );
+  return 0;
+}
+
+async function status(argv: string[], fetchImpl: FetchLike): Promise<number> {
+  const endpoint = `${baseUrl(argv).replace(/\/$/, '')}/observability`;
+  try {
+    const [response, stateResponse] = await Promise.all([
+      fetchImpl(endpoint, requestInit(argv)),
+      fetchImpl(`${baseUrl(argv).replace(/\/$/, '')}/state`, requestInit(argv)),
+    ]);
+    const body = (await response.json()) as ObservabilityResponse | { error?: string };
+    const stateBody = (await stateResponse.json()) as StateResponse | { error?: string };
+    if (!response.ok || !stateResponse.ok || !('data' in body)) {
+      process.stderr.write(`Observability unavailable (${response.status})\n`);
+      return 1;
+    }
+
+    const stateData = 'data' in stateBody ? stateBody.data : undefined;
+    const stateReadiness = stateData?.readiness ?? 'unknown';
+    const stateServiceReadiness = stateData?.trustBasis?.serviceReadiness ?? 'unknown';
+    const { runtime, provenance, trust, memory } = body.data;
+    process.stdout.write(
+      [
+        `STATE         ${stateReadiness} service=${stateServiceReadiness}`,
+        `RUNTIME       ${runtime.mode} / ${runtime.persistence}`,
+        `SERVICES      ${runtime.services.join(', ')}`,
+        `TRUST         verification=${percent(trust.verificationCoverage)} attestation=${
+          trust.attestationValidity === null
+            ? 'UNKNOWN'
+            : trust.attestationValidity
+              ? 'VALID'
+              : 'INVALID'
+        }`,
+        `MEMORY        entries=${memory.entries} intact=${memory.intact} appendOnly=${memory.appendOnly}`,
+        `EVENT LOG     ${runtime.eventLogSource ?? 'unknown'} skipped=${runtime.skippedLogEntries ?? 'unknown'} key=${runtime.eventLogEncryptionKeySource ?? 'unknown'} rotation=${runtime.persistenceRotationPending ?? 'unknown'}`,
+        `KEY ID        current=${runtime.persistenceCurrentKeyFingerprint ?? 'none'} previous=${runtime.persistencePreviousKeyFingerprint ?? 'none'} custody=unverified-local`,
+        `LOG REASON    ${runtime.eventLogReason ?? 'none'}`,
+        `ACTION       ${runtime.operatorAction ?? 'unknown'}`,
+        `ROTATION     recovery=${runtime.reencryptionRecovery?.status ?? 'unknown'} reason=${runtime.reencryptionRecovery?.reason ?? 'none'}`,
+        `PROVENANCE    recent=${provenance.recentEvents} durable=${provenance.durableEvents} runs=${provenance.completedRuns}`,
+        `LINEAGE       request=${provenance.lastRequestId || 'none'} correlation=${provenance.lastCorrelationId || 'none'}`,
+        `OBSERVED      ${body.timestamp}`,
+      ].join('\n') + '\n'
+    );
+    return stateReadiness !== 'ready' ||
+      trust.attestationValidity === false ||
+      !memory.intact ||
+      !memory.appendOnly
+      ? 1
+      : 0;
+  } catch (error) {
+    process.stderr.write(
+      `Observability unavailable: ${error instanceof Error ? error.message : String(error)}\n`
+    );
+    return 1;
+  }
+}
+
+async function runs(argv: string[], fetchImpl: FetchLike): Promise<number> {
+  const endpoint = `${baseUrl(argv).replace(/\/$/, '')}/runs`;
+  try {
+    const response = await fetchImpl(endpoint, requestInit(argv));
+    const body = (await response.json()) as RunsResponse | { error?: string };
+    if (!response.ok || !('data' in body) || !Array.isArray(body.data)) {
+      process.stderr.write(`Runs unavailable (${response.status})\n`);
+      return 1;
+    }
+
+    const requestedLimit = limit(argv);
+    const entries = requestedLimit === null ? body.data : body.data.slice(0, requestedLimit);
+    process.stdout.write(`RUNS          ${entries.length}/${body.data.length}\n`);
+    for (const entry of entries) {
+      process.stdout.write(
+        `${entry.observation.id} verification=${entry.verification.summary.passed ? 'PASSED' : 'FAILED'} attestation=${entry.attestation.verified ? 'VALID' : 'INVALID'}\n`
+      );
+    }
+    return 0;
+  } catch (error) {
+    process.stderr.write(
+      `Runs unavailable: ${error instanceof Error ? error.message : String(error)}\n`
+    );
+    return 1;
+  }
+}
+
+async function jobs(argv: string[], fetchImpl: FetchLike): Promise<number> {
+  const endpoint = `${baseUrl(argv).replace(/\/$/, '')}/jobs`;
+  const limitIndex = argv.indexOf('--limit');
+  const requestedLimit = limitIndex < 0 ? 20 : Number(argv[limitIndex + 1]);
+  if (!Number.isInteger(requestedLimit) || requestedLimit < 1 || requestedLimit > 40) {
+    process.stderr.write('Jobs --limit must be an integer between 1 and 40\n');
+    return 2;
+  }
+  try {
+    const response = await fetchImpl(`${endpoint}?limit=${requestedLimit}`, jobRequestInit(argv));
+    const body = (await response.json()) as LocalJobsResponse | { code?: string; message?: string };
+    if (!response.ok || !('data' in body) || !Array.isArray(body.data.jobs)) {
+      const code = 'code' in body ? body.code : undefined;
+      const message = 'message' in body ? body.message : undefined;
+      process.stderr.write(
+        `Jobs unavailable (${response.status})${code ? ` ${code}` : ''}: ${message ?? 'unknown error'}\n`
+      );
+      return 1;
+    }
+    if (body.data.status.durable !== false || body.data.status.source !== 'memory') {
+      process.stderr.write('Jobs response contradicted the local non-durable contract\n');
+      return 1;
+    }
+    const jobsToShow = body.data.jobs.slice(0, requestedLimit);
+    const { status } = body.data;
+    process.stdout.write(
+      `JOBS          ${jobsToShow.length}/${body.data.jobs.length} source=${status.source} storage=${status.source} durable=${status.durable} encryption=${status.encryption} enabled=${status.enabled}\n`
+    );
+    process.stdout.write(
+      `COUNTS        queued=${status.counts.queued} running=${status.counts.running} succeeded=${status.counts.succeeded} failed=${status.counts.failed} unknown=${status.counts.unknown} window=${status.recentWindow}\n`
+    );
+    for (const job of jobsToShow) {
+      process.stdout.write(
+        `${job.id} state=${job.state} attempt=${job.attempt} worker=${job.workerId ?? 'none'} created=${job.createdAt} updated=${job.updatedAt} finished=${job.finishedAt ?? 'none'} error=${job.errorClass ?? 'none'}\n`
+      );
+    }
+    return 0;
+  } catch (error) {
+    process.stderr.write(
+      `Jobs unavailable: ${error instanceof Error ? error.message : String(error)}\n`
+    );
+    return 1;
+  }
+}
+
+async function policy(argv: string[], fetchImpl: FetchLike): Promise<number> {
+  const endpoint = `${baseUrl(argv).replace(/\/$/, '')}/attest/policy`;
+  try {
+    const response = await fetchImpl(endpoint, requestInit(argv));
+    const body = (await response.json()) as { data?: Record<string, unknown>; message?: string };
+    if (!response.ok || !body.data) {
+      process.stderr.write(
+        `Policy unavailable (${response.status}): ${body.message ?? 'unknown error'}\n`
+      );
+      return 1;
+    }
+    process.stdout.write(`${JSON.stringify(body.data)}\n`);
+    return 0;
+  } catch (error) {
+    process.stderr.write(
+      `Policy unavailable: ${error instanceof Error ? error.message : String(error)}\n`
+    );
+    return 1;
+  }
+}
+async function verifyAttestation(argv: string[], fetchImpl: FetchLike): Promise<number> {
+  const rawAttestation = option(argv, '--attestation-json');
+  if (!rawAttestation) {
+    process.stderr.write('Usage: omega verify --attestation-json JSON [options]\n');
+    return 2;
+  }
+  let attestation: unknown;
+  try {
+    attestation = JSON.parse(rawAttestation);
+  } catch {
+    process.stderr.write('Invalid JSON supplied to --attestation-json\n');
+    return 2;
+  }
+  const endpoint = `${baseUrl(argv).replace(/\/$/, '')}/attest/verify`;
+  try {
+    const response = await fetchImpl(endpoint, {
+      ...(requestInit(argv) ?? {}),
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        ...((requestInit(argv)?.headers as Record<string, string> | undefined) ?? {}),
+      },
+      body: JSON.stringify({ attestation }),
+    });
+    const body = (await response.json()) as {
+      data?: {
+        valid: boolean;
+        revoked: boolean;
+        expired: boolean;
+        revocationIntegrity: RevocationIntegrity;
+      };
+      message?: string;
+    };
+    if (!response.ok || !body.data) {
+      process.stderr.write(
+        `Verification failed (${response.status}): ${body.message ?? 'unknown error'}\n`
+      );
+      return 1;
+    }
+    process.stdout.write(
+      `VERIFICATION valid=${body.data.valid} revoked=${body.data.revoked} expired=${body.data.expired} registry=${body.data.revocationIntegrity}\n`
+    );
+    return body.data.valid && body.data.revocationIntegrity !== 'mismatch' ? 0 : 1;
+  } catch (error) {
+    process.stderr.write(
+      `Verification failed: ${error instanceof Error ? error.message : String(error)}\n`
+    );
+    return 1;
+  }
+}
+type RulesResponse = {
+  data: {
+    count: number;
+    registered: number;
+    executable: number;
+    category: string | null;
+    rules: Array<{ name: string; version: string; active: boolean; executable: boolean }>;
+  };
+};
+
+/**
+ * Print the rule set, marking which rules the engine can actually run.
+ *
+ * A rule the engine holds but cannot execute fails verification rather than
+ * passing quietly. That is the right direction and it is also the reason
+ * this command exists: without it the only way to discover a rule the
+ * engine will not evaluate is to submit an observation and read the
+ * failure. The API has published `executable` since the rule list was
+ * added; nothing on this side asked for it.
+ *
+ * REGISTERED counts every rule the engine holds. MATCHED is how many this
+ * response returned, which differs when --category filters them.
+ */
+async function rules(argv: string[], fetchImpl: FetchLike): Promise<number> {
+  const category = option(argv, '--category');
+  const params = category ? `?category=${encodeURIComponent(category)}` : '';
+  const endpoint = `${baseUrl(argv).replace(/\/$/, '')}/rules${params}`;
+  try {
+    const response = await fetchImpl(endpoint, requestInit(argv));
+    const body = (await response.json()) as RulesResponse | { error?: string };
+    if (!response.ok || !('data' in body) || !Array.isArray(body.data.rules)) {
+      process.stderr.write(`Rules unavailable (${response.status})\n`);
+      return 1;
+    }
+    const { count, registered, executable, rules: entries } = body.data;
+    process.stdout.write(
+      `RULES         matched=${count} registered=${registered} executable=${executable} category=${
+        body.data.category ?? 'all'
+      }\n`
+    );
+    for (const rule of entries) {
+      // Spelled out rather than shown as a tick: "executable=false" is the
+      // fact an operator needs to act on, and a symbol invites skimming.
+      process.stdout.write(
+        `${rule.name} v${rule.version} active=${rule.active} executable=${rule.executable}\n`
+      );
+    }
+    // Said once, plainly, when it applies. A rule that cannot run is not a
+    // rule that passes.
+    if (executable < count) {
+      process.stdout.write(
+        `NOTE          ${count - executable} of ${count} matched rules cannot be evaluated by this engine and will fail verification\n`
+      );
+    }
+    return 0;
+  } catch (error) {
+    process.stderr.write(
+      `Rules unavailable: ${error instanceof Error ? error.message : String(error)}\n`
+    );
+    return 1;
+  }
+}
+
+async function revocations(argv: string[], fetchImpl: FetchLike): Promise<number> {
+  const endpoint = `${baseUrl(argv).replace(/\/$/, '')}/attest/revocations`;
+  try {
+    const response = await fetchImpl(endpoint, requestInit(argv));
+    const body = (await response.json()) as RevocationsResponse | { error?: string };
+    if (!response.ok || !('data' in body) || !Array.isArray(body.data)) {
+      process.stderr.write(`Revocations unavailable (${response.status})\n`);
+      return 1;
+    }
+    process.stdout.write(
+      `REVOCATIONS   ${body.data.length} integrity=${body.meta?.integrity ?? 'unknown'}\n`
+    );
+    for (const entry of body.data) {
+      process.stdout.write(
+        `${entry.attestationId} revokedBy=${entry.revokedBy} reason=${entry.reason} at=${entry.revokedAt}\n`
+      );
+    }
+    return 0;
+  } catch (error) {
+    process.stderr.write(
+      `Revocations unavailable: ${error instanceof Error ? error.message : String(error)}\n`
+    );
+    return 1;
+  }
+}
+
+async function acknowledgePersistence(argv: string[], fetchImpl: FetchLike): Promise<number> {
+  const reason = option(argv, '--reason');
+  const operatorId = option(argv, '--operator-id');
+  if (!reason || !operatorId) {
+    process.stderr.write(
+      'Usage: omega acknowledge-persistence --reason REASON --operator-id ID [options]\n'
+    );
+    return 2;
+  }
+  const response = await fetchImpl(`${baseUrl(argv).replace(/\/$/, '')}/persistence/acknowledge`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      ...(adminToken(argv) ? { Authorization: `Bearer ${adminToken(argv)}` } : {}),
+      'x-omega-operator-id': operatorId,
+    },
+    body: JSON.stringify({ reason, operatorId }),
+  });
+  const body = (await response.json()) as {
+    data?: { acknowledgement: PersistenceAcknowledgement; eventId: string };
+    code?: string;
+    message?: string;
+  };
+  if (!response.ok || !body.data) {
+    process.stderr.write(
+      `${body.code ?? 'PERSISTENCE_ACKNOWLEDGEMENT_FAILED'}: ${body.message ?? 'request failed'}\n`
+    );
+    return 1;
+  }
+  process.stdout.write(
+    `ACKNOWLEDGED action=${body.data.acknowledgement.action} operator=${body.data.acknowledgement.operatorId} event=${body.data.eventId}\n`
+  );
+  return 0;
+}
+
+async function reencryptPersistence(argv: string[], fetchImpl: FetchLike): Promise<number> {
+  const reason = option(argv, '--reason');
+  const operatorId = option(argv, '--operator-id');
+  if (!reason || !operatorId) {
+    process.stderr.write(
+      'Usage: omega reencrypt-persistence --reason REASON --operator-id ID [options]\n'
+    );
+    return 2;
+  }
+  try {
+    const response = await fetchImpl(`${baseUrl(argv).replace(/\/$/, '')}/persistence/reencrypt`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        ...(adminToken(argv) ? { Authorization: `Bearer ${adminToken(argv)}` } : {}),
+        'x-omega-operator-id': operatorId,
+      },
+      body: JSON.stringify({ reason, operatorId }),
+    });
+    const body = (await response.json()) as {
+      data?: { reencrypted: PersistenceReencryption; eventId: string };
+      code?: string;
+      message?: string;
+    };
+    if (!response.ok || !body.data) {
+      process.stderr.write(
+        `${body.code ?? 'PERSISTENCE_REENCRYPTION_FAILED'}: ${body.message ?? 'request failed'}\n`
+      );
+      return 1;
+    }
+    const result = body.data.reencrypted;
+    process.stdout.write(
+      `REENCRYPTED snapshot=${result.snapshotRecords} events=${result.eventRecords} operator=${result.operatorId} event=${body.data.eventId}\n`
+    );
+    return 0;
+  } catch (error) {
+    process.stderr.write(
+      `Persistence re-encryption failed: ${error instanceof Error ? error.message : String(error)}\n`
+    );
+    return 1;
+  }
+}
+async function revoke(argv: string[], fetchImpl: FetchLike): Promise<number> {
+  const attestationId = argv[1];
+  const reason = option(argv, '--reason');
+  if (!attestationId || !reason) {
+    process.stderr.write('Usage: omega revoke ATTESTATION_ID --reason REASON [options]\n');
+    return 2;
+  }
+  const endpoint = `${baseUrl(argv).replace(/\/$/, '')}/attest/revoke`;
+  try {
+    const response = await fetchImpl(endpoint, {
+      ...(requestInit(argv) ?? {}),
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        ...(adminToken(argv) ? { Authorization: `Bearer ${adminToken(argv)}` } : {}),
+        ...(option(argv, '--operator-id')
+          ? { 'x-omega-operator-id': option(argv, '--operator-id') as string }
+          : {}),
+      },
+      body: JSON.stringify({
+        attestationId,
+        reason,
+        revokedBy: option(argv, '--operator-id') || 'omega-cli',
+      }),
+    });
+    const body = (await response.json()) as { data?: Revocation; message?: string };
+    if (!response.ok || !body.data) {
+      process.stderr.write(
+        `Revocation failed (${response.status}): ${body.message ?? 'unknown error'}\n`
+      );
+      return 1;
+    }
+    process.stdout.write(
+      `REVOKED       ${body.data.attestationId} by=${body.data.revokedBy} reason=${body.data.reason}\n`
+    );
+    return 0;
+  } catch (error) {
+    process.stderr.write(
+      `Revocation failed: ${error instanceof Error ? error.message : String(error)}\n`
+    );
+    return 1;
+  }
+}
+
+async function evidenceExport(argv: string[], fetchImpl: FetchLike): Promise<number> {
+  const endpoint = `${baseUrl(argv).replace(/\/$/, '')}/evidence/export`;
+  try {
+    const response = await fetchImpl(endpoint, requestInit(argv));
+    const body = (await response.json()) as ExportResponse | { error?: string };
+    if (!response.ok || !('data' in body) || !('meta' in body)) {
+      process.stderr.write(`Evidence export unavailable (${response.status})\n`);
+      return 1;
+    }
+    process.stdout.write(`${JSON.stringify(body)}\n`);
+    return body.data.observability.memory.intact && body.data.observability.memory.appendOnly
+      ? 0
+      : 1;
+  } catch (error) {
+    process.stderr.write(
+      `Evidence export unavailable: ${error instanceof Error ? error.message : String(error)}\n`
+    );
+    return 1;
+  }
+}
+
+async function audit(argv: string[], fetchImpl: FetchLike): Promise<number> {
+  const params = new URLSearchParams();
+  for (const name of ['--type', '--stage', '--status', '--from', '--to', '--limit']) {
+    const value = option(argv, name);
+    if (value !== null) params.set(name.slice(2), value);
+  }
+  const suffix = params.toString() ? `?${params.toString()}` : '';
+  const endpoint = `${baseUrl(argv).replace(/\/$/, '')}/audit/events${suffix}`;
+  try {
+    const response = await fetchImpl(endpoint, requestInit(argv));
+    const body = (await response.json()) as AuditResponse | { error?: string; message?: string };
+    if (!response.ok || !('data' in body) || !('meta' in body)) {
+      process.stderr.write(
+        `Audit unavailable (${response.status}): ${'message' in body ? (body.message ?? 'unknown error') : 'unknown error'}\n`
+      );
+      return 1;
+    }
+    process.stdout.write(
+      [
+        `AUDIT         ${body.data.length}/${body.meta.total} source=${body.meta.source} key=${body.meta.keySource}`,
+        `FILTERS       ${JSON.stringify(body.meta.filters)}`,
+        ...body.data.map((entry) => JSON.stringify(entry)),
+        `OBSERVED      ${body.timestamp}`,
+      ].join('\n') + '\n'
+    );
+    return 0;
+  } catch (error) {
+    process.stderr.write(
+      `Audit unavailable: ${error instanceof Error ? error.message : String(error)}\n`
+    );
+    return 1;
+  }
+}
+
+async function scene(argv: string[], fetchImpl: FetchLike): Promise<number> {
+  const seed = option(argv, '--seed');
+  const steps = option(argv, '--steps');
+  const branches = option(argv, '--branches');
+  const endpoint = `${baseUrl(argv).replace(/\/$/, '')}/scene/simulate`;
+  try {
+    const response = await fetchImpl(endpoint, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', ...(requestInit(argv)?.headers ?? {}) },
+      body: JSON.stringify({
+        ...(seed ? { seed } : {}),
+        ...(steps ? { steps: Number(steps) } : {}),
+        ...(branches ? { branches: Number(branches) } : {}),
+      }),
+    });
+    const body = (await response.json()) as {
+      data?: {
+        equation: string;
+        states: string[];
+        terminalState: string;
+        branches: Array<{ perspective: string; terminalState: string }>;
+        branchCount: number;
+        continuation: string;
+        provenance: { ruleVersion: string; verified: boolean; deterministic: boolean };
+      };
+      message?: string;
+    };
+    if (!response.ok || !body.data) {
+      process.stderr.write(
+        `Scene unavailable (${response.status}): ${body.message ?? 'unknown error'}\\n`
+      );
+      return 1;
+    }
+    process.stdout.write(
+      [
+        `SCENE         ${body.data.terminalState} states=${body.data.states.length} branches=${body.data.branchCount}`,
+        `EQUATION      ${body.data.equation}`,
+        `TRACE         ${body.data.states.join(' → ')}`,
+        `PERSPECTIVES  ${body.data.branches.map((branch) => `${branch.perspective}=${branch.terminalState}`).join(', ')}`,
+        `CONTINUATION  ${body.data.continuation}`,
+        `PROVENANCE    rule=${body.data.provenance.ruleVersion} deterministic=${body.data.provenance.deterministic} verified=${body.data.provenance.verified}`,
+      ].join('\\n') + '\\n'
+    );
+    return 0;
+  } catch (error) {
+    process.stderr.write(
+      `Scene unavailable: ${error instanceof Error ? error.message : String(error)}\\n`
+    );
+    return 1;
+  }
+}
+
+async function events(argv: string[], fetchImpl: FetchLike): Promise<number> {
+  const endpoint = `${baseUrl(argv).replace(/\/$/, '')}/events`;
+  try {
+    const response = await fetchImpl(endpoint, requestInit(argv));
+    const body = (await response.json()) as EventsResponse | { error?: string };
+    if (!response.ok || !('data' in body) || !Array.isArray(body.data)) {
+      process.stderr.write(`Events unavailable (${response.status})\n`);
+      return 1;
+    }
+
+    const requestedLimit = limit(argv);
+    const entries = requestedLimit === null ? body.data : body.data.slice(0, requestedLimit);
+    process.stdout.write(`EVENTS        ${entries.length}/${body.data.length}\n`);
+    for (const entry of entries) {
+      process.stdout.write(`${JSON.stringify(entry)}\n`);
+    }
+    return 0;
+  } catch (error) {
+    process.stderr.write(
+      `Events unavailable: ${error instanceof Error ? error.message : String(error)}\n`
+    );
+    return 1;
+  }
+}
+
+export async function run(
+  argv: string[],
+  fetchImpl: FetchLike = globalThis.fetch
+): Promise<number> {
+  const command = argv[0] || 'status';
+  if (command === '--help' || command === '-h' || command === 'help') {
+    process.stdout.write(`${usage()}\n`);
+    return 0;
+  }
+  if (command === 'health') return health(argv, fetchImpl);
+  if (command === 'status') return status(argv, fetchImpl);
+  if (command === 'os') return operatingSystem(argv, fetchImpl);
+  if (command === 'events') return events(argv, fetchImpl);
+  if (command === 'audit') return audit(argv, fetchImpl);
+  if (command === 'runs') return runs(argv, fetchImpl);
+  if (command === 'jobs') return jobs(argv, fetchImpl);
+  if (command === 'export') return evidenceExport(argv, fetchImpl);
+  if (command === 'rules') return rules(argv, fetchImpl);
+  if (command === 'revocations') return revocations(argv, fetchImpl);
+  if (command === 'verify') return verifyAttestation(argv, fetchImpl);
+  if (command === 'policy') return policy(argv, fetchImpl);
+  if (command === 'scene') return scene(argv, fetchImpl);
+  if (command === 'revoke') return revoke(argv, fetchImpl);
+  if (command === 'acknowledge-persistence') return acknowledgePersistence(argv, fetchImpl);
+  if (command === 'reencrypt-persistence') return reencryptPersistence(argv, fetchImpl);
+
+  process.stderr.write(`Unknown command: ${command}\n\n${usage()}\n`);
+  return 2;
+}

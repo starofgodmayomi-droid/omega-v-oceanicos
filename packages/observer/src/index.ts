@@ -36,6 +36,8 @@ export class Observer {
     metadata: Record<string, unknown>;
     confidence: number;
     confidenceReason: string;
+    parentId?: string;
+    lineage?: string[];
   }): Observation {
     // Validate input
     this.validateObservation(input);
@@ -63,6 +65,8 @@ export class Observer {
       metadata: input.metadata,
       confidence: Math.max(0, Math.min(1, input.confidence)), // Clamp 0-1
       confidenceReason: input.confidenceReason,
+      ...(input.parentId ? { parentId: input.parentId } : {}),
+      ...(input.lineage ? { lineage: [...input.lineage] } : {}),
       status: 'normalized',
     };
 
@@ -92,6 +96,8 @@ export class Observer {
     metadata: Record<string, unknown>;
     confidence: number;
     confidenceReason: string;
+    parentId?: string;
+    lineage?: string[];
   }): void {
     const errors: string[] = [];
 
@@ -109,6 +115,20 @@ export class Observer {
 
     if (!input.confidenceReason) {
       errors.push('confidenceReason is required');
+    }
+    if (
+      input.parentId !== undefined &&
+      (typeof input.parentId !== 'string' || !input.parentId.trim())
+    ) {
+      errors.push('parentId must be a non-empty string when provided');
+    }
+    if (
+      input.lineage !== undefined &&
+      (!Array.isArray(input.lineage) ||
+        input.lineage.length > 32 ||
+        input.lineage.some((id) => typeof id !== 'string' || !id.trim()))
+    ) {
+      errors.push('lineage must contain at most 32 non-empty string identifiers');
     }
 
     if (errors.length > 0) {
@@ -163,6 +183,7 @@ export class Observer {
       metadata: { deduplicated: true, originalId },
       confidence: 1.0,
       confidenceReason: 'Exact duplicate of recent observation',
+      lineage: [originalId],
       status: 'normalized',
     };
   }

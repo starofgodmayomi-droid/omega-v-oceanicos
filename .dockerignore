@@ -1,0 +1,15 @@
+node_modules
+**/node_modules
+**/dist
+**/coverage
+**/*.tsbuildinfo
+.git
+.github
+.husky
+docs
+infra
+tests
+**/__tests__
+*.md
+!package.json
+.eslintcache

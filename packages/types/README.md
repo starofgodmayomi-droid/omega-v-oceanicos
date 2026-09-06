@@ -2,13 +2,19 @@
 
 Shared type definitions for Ω∞v Oceanicos.
 
-This package defines the core data structures that flow through the verification loop:
+This package defines the core data structures for the MINI kernel and earned expansions:
 
-- **Observation** — A claim with metadata about what was observed
-- **VerificationRule** — A rule for testing observations
-- **VerificationResult** — The result of applying rules with evidence paths
-- **Attestation** — A cryptographically signed verification result
-- **EventLogEntry** — An immutable record in the event log
+```text
+💧 Ω∞v MINI ::= 👁 Observation → ✓ VerificationResult → 🧠 MemoryRecord
+```
+
+- **Observation** — A claim with metadata about what was observed (MINI)
+- **VerificationRule** — A rule for testing observations (MINI)
+- **VerificationResult** — The result of applying rules with evidence paths (MINI)
+- **MemoryRecord** — Durable link of observation ↔ verification (MINI)
+- **MiniCycleResult** — One full Observe → Verify → Remember cycle (MINI)
+- **EventLogEntry** — An immutable record in the append-only log (MINI + expansions)
+- **Attestation** — A cryptographically signed verification result (`+ ATTEST`)
 
 ## Installation
 
@@ -41,9 +47,9 @@ Observation (claim + metadata)
   ↓
 VerificationResult (rules applied, evidence generated)
   ↓
-Attestation (cryptographically signed result)
+MemoryRecord + EventLogEntry (MINI remember)
   ↓
-EventLogEntry (recorded in immutable log)
+Attestation (earned + ATTEST expansion)
 ```
 
 ## Key Types
@@ -86,7 +92,7 @@ A cryptographically signed verification result, proving it happened at a specifi
 
 ## API Reference
 
-See [../TYPES.md](../TYPES.md) for complete API documentation.
+See [../TYPES.md](../README.md) for complete API documentation.
 
 ---
 

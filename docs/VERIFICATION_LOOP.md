@@ -6,13 +6,22 @@ This document describes the heart of Ω∞v Oceanicos: the complete verification
 
 ## Overview
 
-The verification loop is a seven-step process that transforms observations into trustworthy, verifiable facts:
+### MINI foundation (always)
+
+```text
+💧 Ω∞v MINI ::= 👁 Observe → ✓ Verify → 🧠 Remember
+```
+
+This is the smallest useful kernel. See [MINI.md](./MINI.md).
+
+### Expanded loop (earned layers wrap MINI)
 
 ```
-Observe → Verify → Attest → Record → Display → Learn → Return
+Observe → Verify → Remember → Attest → Display → Learn → Return
 ```
 
-Every operation in Ω∞v follows this loop. Understanding it is crucial to understanding the entire system.
+Attest/Display/Learn are expansions. They must not redefine or replace MINI.
+Understanding both layers is crucial: start from MINI, then earn the rest.
 
 ---
 
@@ -280,11 +289,44 @@ const failureResult = {
 
 ---
 
-## Step 3: Attest
+## Step 3: Remember (MINI)
+
+### Purpose
+
+Persist the observation and verification as durable memory without assuming a database or ecosystem.
+
+### Process
+
+```typescript
+import { Remember } from '@omega-v/remember';
+
+const memory = new Remember();
+const record = memory.remember(observation, verification);
+// append-only: OBSERVATION → VERIFICATION → MEMORY
+memory.verifyIntegrity();
+```
+
+### Output
+
+**MemoryRecord** linked to observation + verification ids, plus hash-chained log entries.
+
+### Kernel composition
+
+```typescript
+import { MiniKernel } from '@omega-v/mini';
+const result = new MiniKernel({ rules }).cycle(input);
+// result.observation / result.verification / result.memory
+```
+
+---
+
+## Step 4: Attest (`+ ATTEST` expansion)
 
 ### Purpose
 
 Cryptographically sign the verification result, creating an unforgeable proof.
+
+This step is an **earned expansion**. MINI is complete without it.
 
 ### Input
 
@@ -312,8 +354,10 @@ const payloadToSign = {
 #### 3.2 Compute Signature
 
 ```typescript
-// Using the signing key (private key held securely)
-const signature = cryptography.sign(JSON.stringify(payloadToSign), signingKey);
+// Ed25519 over the UTF-8 bytes of the eight signed fields. The verifier
+// takes its algorithm from its own configuration, never from the
+// attestation being verified.
+const signature = sign(null, Buffer.from(JSON.stringify(payloadToSign)), privateKey);
 
 // signature = "0x1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a"
 ```
@@ -322,30 +366,23 @@ const signature = cryptography.sign(JSON.stringify(payloadToSign), signingKey);
 
 ```typescript
 const attestation = {
-  // The signed content
+  // The eight signed fields, in the order the signature covers them.
+  // See docs/spec/ATTESTATION-ENVELOPE.md — key order is part of the format.
   verificationId: 'ver-2026-08-07-5678',
   observationId: 'obs-2026-08-07-1234',
   verified: true,
   confidence: 0.95,
-
-  // The signature
-  signature: '0x1a2b3c4d5e6f...',
-
-  // Signature metadata
-  signingKey: 'key-2026-08-production-v2',
-  keyVersion: '2',
-  signingAlgorithm: 'ECDSA-SHA256',
-
-  // Temporal data
-  attestedAt: '2026-08-07T10:30:02Z',
-  attestedBy: 'attestation-service-1',
-  attestedByKeyVersion: '2',
-
-  // For auditability
   ruleVersions: verification.ruleVersions,
+  attestedAt: '2026-08-07T10:30:02Z',
+  attestedBy: 'attestation-service',
+  keyVersion: '1',
 
-  // For verification
-  verifyingPublicKey: publicKey,
+  // Not signed. Do not rest a trust decision on these.
+  id: 'att-2026-08-07-9012',
+  signature: '0x1a2b3c4d5e6f...',
+  signingKey: 'sha256:9f2c1a7b4e6d0835', // a fingerprint, never the key
+  signingAlgorithm: 'Ed25519', // or 'HMAC-SHA256'
+  status: 'signed',
 };
 ```
 
@@ -378,10 +415,10 @@ console.log(isValid); // true
   verificationId: "ver-2026-08-07-5678",
   observationId: "obs-2026-08-07-1234",
   signature: "0x1a2b3c4d5e6f...",
-  signingKey: "key-2026-08-production-v2",
-  keyVersion: "2",
+  signingKey: "sha256:9f2c1a7b4e6d0835",
+  keyVersion: "1",
   attestedAt: "2026-08-07T10:30:02Z",
-  attestedBy: "attestation-service-1",
+  attestedBy: "attestation-service",
   verified: true,
   confidence: 0.95,
   status: "signed"
@@ -390,11 +427,11 @@ console.log(isValid); // true
 
 ---
 
-## Step 4: Record
+## Step 5: Record (durable expansion of Remember)
 
 ### Purpose
 
-Store the complete chain of observation, verification, and attestation in an immutable log.
+When multi-process reality demands it, store the complete chain of observation, verification, memory, and attestation beyond in-process Remember.
 
 ### Input
 
@@ -483,7 +520,7 @@ Queryable by:
 
 ---
 
-## Step 5: Display
+## Step 6: Display
 
 ### Purpose
 
@@ -569,7 +606,7 @@ If verification fails:
 
 ---
 
-## Step 6: Learn
+## Step 7: Learn
 
 ### Purpose
 
@@ -640,7 +677,7 @@ const report = learningEngine.generateReport({
 
 ---
 
-## Step 7: Return
+## Step 8: Return
 
 ### Purpose
 
@@ -789,7 +826,7 @@ Overall: PASS (confidence 0.95)
 ```
 Sign the verification result
 signature: 0x1a2b3c...
-signingKey: key-2026-08-production-v2
+signingKey: sha256:9f2c1a7b4e6d0835 (fingerprint, not the key)
 timestamp: 10:30:02
 ```
 
@@ -867,5 +904,5 @@ System has proven stable
 
 ---
 
-**Last Updated**: 2026-08-07  
-**Status**: The heart of Ω∞v Oceanicos
+**Last Updated**: 2026-08-14  
+**Status**: MINI is the heart; expanded steps are earned wrappers

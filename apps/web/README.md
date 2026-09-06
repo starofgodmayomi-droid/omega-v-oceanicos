@@ -22,6 +22,18 @@ npm run dev
 
 Execute the complete Observe → Verify → Attest cycle from the browser.
 
+### Runtime Inspection
+
+- Read current API state and service health
+- Follow lifecycle events over server-sent events
+- Inspect event IDs, correlation IDs, and payloads
+- Recover the latest completed evidence chain after refresh
+- Verify attestation signatures from the Evidence Center
+- Follow the [independent browser-verifier walkthrough](../../docs/BROWSER-VERIFIER.md) with a real temporary Ed25519 key pair
+- Authorize a local action only from a verified attestation
+- Record explicit success, failure, or uncertainty feedback against that action
+- Propose a versioned recompile from recorded learning without claiming automatic code changes
+
 ### Interactive Input
 
 - Submit custom claims
@@ -30,32 +42,42 @@ Execute the complete Observe → Verify → Attest cycle from the browser.
 
 ### Verification Visualization
 
-View each step of the verification loop:
+View each step of the MINI kernel and its earned expansions:
 
-1. **Observation** — The claim captured with metadata
+**MINI Kernel (Observe → Verify → Remember):**
+
+1. **Observation** — The claim captured with metadata (Step 1)
    - Unique ID
    - Claim statement
    - Confidence level
    - Source system
 
-2. **Verification** — Rules applied and evidence generated
+2. **Verification / Evidence** — Rules applied and evidence generated (Step 2)
    - Pass/fail status
    - Rules applied and results
    - Evidence path showing step-by-step reasoning
    - Confidence score
 
-3. **Attestation** — Cryptographic signature proving verification
+3. **Memory / Kernel Record** — Stored in append-only hash chain (Step 3)
+   - Memory ID
+   - Link to observation and verification
+   - Immutable record of the complete cycle
+
+**Earned Expansions:**
+
+4. **Attestation** — Cryptographic signature proving verification (+ ATTEST)
    - Attestation ID
    - Verification status
    - Signed timestamp
-   - Signature preview
+   - Signature verification button
 
-### Clean UI
+### Current Console
 
-- Gradient background with Ω∞v branding
-- Step-by-step visualization
-- Color-coded results (blue for observation, green for verification, yellow for attestation)
-- Responsive design for desktop and mobile
+- Ω∞v current visualization with progressive stages
+- Runtime-aware navigation and explicit unavailable boundaries
+- Command palette with `⌘ K` / `Ctrl + K`
+- Operator-controlled response-time and status-code evidence
+- Responsive desktop and mobile layouts
 
 ## Usage
 
@@ -78,8 +100,19 @@ View each step of the verification loop:
 
 The dashboard communicates with the API server:
 
-```typescript
-POST / api / complete - loop;
+```text
+POST /api/complete-loop
+GET /api/state
+GET /api/events
+GET /api/events/stream
+GET /api/runs
+POST /api/attest/verify
+POST /api/act
+GET /api/actions
+POST /api/learn
+GET /api/learning
+POST /api/recompile
+GET /api/recompilations
 ```
 
 **Request:**
@@ -162,9 +195,46 @@ Key colors:
 ## Testing
 
 ```bash
-npm run test
-npm run test:watch
+npm run test                      # whole repo
+npx jest --selectProjects dom     # this dashboard only
 ```
+
+Jest runs two projects. `node` covers the server and packages; `dom` runs
+these component tests under jsdom. They are separate because the repository
+is two runtimes, and running the server suites under jsdom would both slow
+them and hide Node-specific behaviour.
+
+`src/__tests__/contract.test.ts` runs under `node` and is not a component
+test — it reads `App.tsx` as text and checks that the paths the client names
+are paths the server registers. `src/__tests__/dom/App.test.tsx` renders the
+component and asserts what a user sees.
+
+### What the component tests defend
+
+The dashboard is the only surface where a human reads a verification verdict,
+so the assertions concentrate there:
+
+- all three MINI steps plus the attestation render after a run
+- **failing evidence stays visible** — the UI promises "Failures remain
+  visible as evidence", and a dashboard that dropped the failing step would
+  still look correct
+- a failed verification is never displayed as passed
+- an invalid signature reports `INVALID`, never `VALID`
+- API errors surface their `requestId`, so a failure is traceable
+- an unreachable runtime says so rather than rendering empty state as healthy
+- the submitted payload carries the operator's values, not a hardcoded fixture
+
+### Known limitations
+
+- jsdom provides no `fetch` or `Response`. The harness supplies a double
+  implementing only `ok`, `status`, `json()`, and `headers.get()` — the
+  surface `App.tsx` actually consumes. If the component starts reading
+  `text()` or streaming a body, these tests will throw rather than silently
+  pass on a shape a browser would not produce.
+- React still reports "update not wrapped in act" for state changes made by
+  handlers that user-event dispatches as real DOM events. The suite is green
+  and the assertions are correct; the warnings are a true signal that those
+  updates are not batched, so they are left visible rather than filtered.
 
 ## Performance
 

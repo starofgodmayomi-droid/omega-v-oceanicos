@@ -1,147 +1,1069 @@
-import * as crypto from 'crypto';
+import { randomUUID, timingSafeEqual } from 'node:crypto';
+import { createHash } from 'node:crypto';
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import express, { Express, Request, Response } from 'express';
-import { Observer } from '@omega-v/observer';
-import { VerificationEngine } from '@omega-v/verification';
-import { AttestationService } from '@omega-v/attestation';
-import { ProvenanceStore } from '@omega-v/store';
-import { RuleCompiler } from '@omega-v/compiler';
-import { OceanicosClient } from '@omega-v/sdk';
-import { FormlessSwarm } from '@omega-v/agents';
-import { MoodEvaluator } from '@omega-v/mood';
-import { LearningEngine } from '@omega-v/learning';
-import { FrictionTracker } from '@omega-v/friction';
-import { ProvenanceGraph } from '@omega-v/graph';
-import { SecurityEngine } from '@omega-v/security';
-import { EvolutionEngine } from '@omega-v/evolution';
-import { VerificationAnalyticsEngine } from '@omega-v/analytics';
-import { VerificationScheduler } from '@omega-v/scheduler';
-import { TelemetryTracer, VerificationSLOEngine } from '@omega-v/telemetry';
-import { VaaSGate } from '@omega-v/vaas';
-import { VerificationReplayEngine } from '@omega-v/replay';
-import { FormalContractEngine } from '@omega-v/contract';
-import { OceanicosAuthEngine } from '@omega-v/auth';
-import { FederationMeshEngine } from '@omega-v/federation';
-import { VerificationBenchmarkEngine } from '@omega-v/benchmark';
-import { OceanicosNotaryEngine } from '@omega-v/notary';
-import { OceanicosSandboxEngine } from '@omega-v/sandbox';
-import { OceanicosPolicyEngine } from '@omega-v/policy';
-import { OceanicosZKEngine } from '@omega-v/zk';
-import { OceanicosGatewayEngine } from '@omega-v/gateway';
-import { OceanicosWebhookEngine } from '@omega-v/webhook';
-import { OceanicosOracleEngine } from '@omega-v/oracle';
-import { OceanicosStateVault } from '@omega-v/vault';
-import { OceanicosDisputeEngine } from '@omega-v/dispute';
-import { OceanicosWorkerPool } from '@omega-v/worker';
-import { OceanicosPipelineEngine } from '@omega-v/pipeline';
-import { OceanicosRegistryEngine } from '@omega-v/registry';
-import { OceanicosEnclaveEngine } from '@omega-v/enclave';
-import { OceanicosConsensusEngine } from '@omega-v/consensus';
-import { OceanicosMeshEngine } from '@omega-v/mesh';
-import { OceanicosShardingEngine } from '@omega-v/sharding';
-import { OceanicosBridgeEngine } from '@omega-v/bridge';
-import { OceanicosSequencerEngine } from '@omega-v/sequencer';
-import { OceanicosDAEngine } from '@omega-v/da';
-import { OceanicosRollupEngine } from '@omega-v/rollup';
-import { OceanicosIntentEngine } from '@omega-v/intent';
-import { OceanicosOrchestratorEngine } from '@omega-v/orchestrator';
-import { OceanicosDHTEngine } from '@omega-v/dht';
-import { OceanicosStakingEngine } from '@omega-v/staking';
-import { OceanicosKernel } from '@omega-v/kernel';
-import { OceanicosMempoolEngine } from '@omega-v/mempool';
-import { OceanicosThresholdAttestorEngine } from '@omega-v/attestor';
-import { OceanicosGovernorEngine } from '@omega-v/governor';
-import { OceanicosRelayEngine } from '@omega-v/relay';
-import { OceanicosVirtualMachine } from '@omega-v/evm';
-import { OceanicosAMMEngine } from '@omega-v/amm';
-import { OceanicosReputationEngine } from '@omega-v/reputation';
-import { HumanEngine } from '@omega-v/human';
+import Observer from '@omega-v/observer';
+import VerificationEngine from '@omega-v/verification';
+import AttestationService from '@omega-v/attestation';
+import Remember, { FileMemoryStore } from '@omega-v/remember';
+import * as DissensusModule from '@omega-v/dissensus';
+import { OperatingSystemKernel } from '@omega-v/mini';
+import type { Dissensus, DissensusPolicy, Opinion } from '@omega-v/dissensus';
+
+const { policyFromEnvironment, reconcile } = DissensusModule;
 import {
-  SuccessResponse,
+  Attestation,
   ErrorResponse,
+  LocalJobCreateInput,
+  LocalJobEvent,
+  LocalJobState,
+  SuccessResponse,
   VerificationRule,
-  SystemMetrics,
-  EventLogEntry,
-  QueryResult,
-  SystemMood,
-  FrictionCategory,
-  IdentitySubject,
 } from '@omega-v/types';
+import { LocalJobError, LocalJobLedger, LOCAL_JOB_WINDOW } from './jobs.js';
+import { simulateScene } from './scene.js';
+import {
+  appendEvent,
+  ENCRYPTION_ALGORITHM,
+  encryptionEnabled,
+  loadSnapshot,
+  readEventLog,
+  eventLogReady,
+  saveSnapshot,
+  persistenceReady,
+  persistenceRotationPending,
+  persistenceOperatorAction,
+  reencryptPersistence,
+  reencryptionJournalPath,
+  reconcileReencryptionJournal,
+  persistenceKeyFingerprint,
+  parsePersistenceRecoveryPolicy,
+  parsePersistenceDeletionPolicy,
+  parsePersistenceCustodyPolicy,
+  parsePersistenceCoordinationPolicy,
+  persistenceCoverage,
+} from './persistence.js';
 
 /**
  * Ω∞v Oceanicos API Server
  * Exposes the verification loop via REST endpoints
  */
+export const constantTimeTokenMatch = (supplied: string, expected: string): boolean => {
+  const suppliedBytes = Buffer.from(supplied);
+  const expectedBytes = Buffer.from(expected);
+  return (
+    suppliedBytes.length === expectedBytes.length && timingSafeEqual(suppliedBytes, expectedBytes)
+  );
+};
+
+const bearerToken = (authorization: string): string =>
+  authorization.startsWith('Bearer ') ? authorization.slice('Bearer '.length) : '';
+
+export const AUTH_MODE_ENV = 'OMEGA_AUTH_MODE';
+export type ApiAuthMode = 'local' | 'required';
+
+/**
+ * Authentication mode for the API boundary.
+ *
+ * `local` preserves the historical development behavior and existing opt-in
+ * token gates. `required` is the deployment profile: it is fail-closed at
+ * startup unless both read and admin bearer tokens are configured, then it
+ * authenticates every non-health request.
+ */
+export const parseAuthMode = (value?: string): ApiAuthMode => {
+  const normalized = value?.trim() || 'local';
+  if (normalized !== 'local' && normalized !== 'required') {
+    throw new Error(
+      `${AUTH_MODE_ENV} must be "local" or "required", received ${JSON.stringify(value)}`
+    );
+  }
+  return normalized;
+};
+
+const authMode = parseAuthMode(process.env[AUTH_MODE_ENV]);
+
+export const missingRequiredAuthTokens = (
+  mode: ApiAuthMode,
+  readToken?: string,
+  adminToken?: string
+): string[] =>
+  mode === 'required'
+    ? [
+        !readToken?.trim() ? 'OMEGA_READ_TOKEN' : null,
+        !adminToken?.trim() ? 'OMEGA_ADMIN_TOKEN' : null,
+      ].filter((name): name is string => name !== null)
+    : [];
+
+export const invalidRequiredAuthTokenConfiguration = (
+  mode: ApiAuthMode,
+  readToken?: string,
+  adminToken?: string
+): string | null => {
+  const normalizedReadToken = readToken?.trim();
+  const normalizedAdminToken = adminToken?.trim();
+  if (
+    mode === 'required' &&
+    normalizedReadToken &&
+    normalizedAdminToken &&
+    normalizedReadToken === normalizedAdminToken
+  ) {
+    return 'OMEGA_READ_TOKEN and OMEGA_ADMIN_TOKEN must be distinct';
+  }
+  return null;
+};
+
+const missingAuthTokens = missingRequiredAuthTokens(
+  authMode,
+  process.env.OMEGA_READ_TOKEN,
+  process.env.OMEGA_ADMIN_TOKEN
+);
+if (missingAuthTokens.length > 0) {
+  throw new Error(
+    `${AUTH_MODE_ENV}=required needs configured bearer tokens: ${missingAuthTokens.join(', ')}`
+  );
+}
+
+const invalidAuthTokenConfiguration = invalidRequiredAuthTokenConfiguration(
+  authMode,
+  process.env.OMEGA_READ_TOKEN,
+  process.env.OMEGA_ADMIN_TOKEN
+);
+if (invalidAuthTokenConfiguration) {
+  throw new Error(`${AUTH_MODE_ENV}=required ${invalidAuthTokenConfiguration}`);
+}
+
 const app: Express = express();
 const port = process.env.API_PORT || 3000;
 
-// Middleware
-app.use(express.json());
-app.use((_req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+/**
+ * The web client addresses the API under /api. In development that prefix
+ * is stripped by the Vite dev server's rewrite rule, which does not exist
+ * in a production build: the built bundle called /api/* and nothing served
+ * it. Stripping the prefix here means one origin serves both, and the
+ * client works identically built or not.
+ */
+app.use((req: Request, _res: Response, next) => {
+  if (req.url === '/api' || req.url.startsWith('/api/')) {
+    req.url = req.url.slice(4) || '/';
+  }
   next();
 });
 
-// Initialize services
+// Middleware
+app.use(express.json());
+app.use((req: Request, res: Response, next) => {
+  const suppliedRequestId = req.header('x-request-id')?.trim();
+  const requestId =
+    suppliedRequestId && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(suppliedRequestId)
+      ? suppliedRequestId
+      : `req-${randomUUID()}`;
+  res.setHeader('x-content-type-options', 'nosniff');
+  res.setHeader('x-frame-options', 'DENY');
+  res.setHeader('referrer-policy', 'no-referrer');
+  res.locals.requestId = requestId;
+  res.setHeader('x-request-id', requestId);
+  const configuredReadToken = process.env.OMEGA_READ_TOKEN?.trim();
+  const configuredAdminToken = process.env[ADMIN_TOKEN_ENV]?.trim();
+  const readTokenForComparison = configuredReadToken ?? '';
+  const adminTokenForComparison = configuredAdminToken ?? '';
+  const isHealthRequest = req.method === 'GET' && req.path === '/health';
+  const isReadOnlyRequest =
+    (req.method === 'GET' && !isHealthRequest) ||
+    (authMode === 'required' && req.method === 'POST' && req.path === '/attest/verify');
+  const isRevocationRequest = req.method === 'POST' && req.path === '/attest/revoke';
+  const isPersistenceAcknowledgementRequest =
+    req.method === 'POST' && req.path === '/persistence/acknowledge';
+  const isPersistenceReencryptionRequest =
+    req.method === 'POST' && req.path === '/persistence/reencrypt';
+  const isRequiredAdminRequest = authMode === 'required' && !isHealthRequest && !isReadOnlyRequest;
+  const requiresReadAuth =
+    isReadOnlyRequest && (authMode === 'required' || Boolean(configuredReadToken));
+  const requiresAdminAuth =
+    isRequiredAdminRequest ||
+    (Boolean(configuredAdminToken) &&
+      (isRevocationRequest ||
+        isPersistenceAcknowledgementRequest ||
+        isPersistenceReencryptionRequest));
+  if (requiresReadAuth) {
+    const authorization = req.header('authorization') || '';
+    if (!constantTimeTokenMatch(bearerToken(authorization), readTokenForComparison)) {
+      res.status(401).json({
+        code: 'READ_ACCESS_REQUIRED',
+        message: 'A valid bearer token is required for read-only evidence access',
+        requestId,
+      });
+      return;
+    }
+  }
+  if (requiresAdminAuth) {
+    const authorization = req.header('authorization') || '';
+    if (!constantTimeTokenMatch(bearerToken(authorization), adminTokenForComparison)) {
+      res.status(401).json({
+        code: 'ADMIN_ACCESS_REQUIRED',
+        message: isPersistenceReencryptionRequest
+          ? 'A valid admin bearer token is required to re-encrypt persistence'
+          : isPersistenceAcknowledgementRequest
+            ? 'A valid admin bearer token is required to acknowledge persistence review'
+            : isRevocationRequest
+              ? 'A valid admin bearer token is required to revoke attestations'
+              : 'A valid admin bearer token is required for API mutations',
+        requestId,
+      });
+      return;
+    }
+  }
+  const sendJson = res.json.bind(res);
+  res.json = ((body: unknown) => {
+    if (body && typeof body === 'object' && 'code' in body) {
+      return sendJson({
+        ...body,
+        requestId: (body as { requestId?: string }).requestId ?? requestId,
+      });
+    }
+    return sendJson(body);
+  }) as Response['json'];
+  next();
+});
+
+// Initialize services. HMAC remains the default; Ed25519 is opt-in and must
+// receive explicit private-key material so the API never silently changes its
+// signing contract or signs with a public key.
+const operatingSystem = new OperatingSystemKernel();
+operatingSystem.boot();
 const observer = new Observer();
 const verificationEngine = new VerificationEngine();
-const attestationService = new AttestationService();
-const store = new ProvenanceStore();
-const frictionTracker = new FrictionTracker();
-const securityEngine = new SecurityEngine();
-const evolutionEngine = new EvolutionEngine();
-const scheduler = new VerificationScheduler(undefined, {
-  intervalMs: 30000,
-  claim: 'Ω∞v autonomous scheduled verification loop',
-  maxRuns: 0,
-});
-const tracer = new TelemetryTracer();
-const sloEngine = new VerificationSLOEngine();
-const vaasGate = new VaaSGate();
-const replayEngine = new VerificationReplayEngine();
-const contractEngine = new FormalContractEngine();
-const authEngine = new OceanicosAuthEngine();
-const federationEngine = new FederationMeshEngine();
-const benchmarkEngine = new VerificationBenchmarkEngine();
-const notaryEngine = new OceanicosNotaryEngine();
-const sandboxEngine = new OceanicosSandboxEngine();
-const policyEngine = new OceanicosPolicyEngine();
-const zkEngine = new OceanicosZKEngine();
-const gatewayEngine = new OceanicosGatewayEngine();
-const webhookEngine = new OceanicosWebhookEngine();
-const oracleEngine = new OceanicosOracleEngine();
-const stateVault = new OceanicosStateVault();
-const disputeEngine = new OceanicosDisputeEngine();
-const workerPool = new OceanicosWorkerPool();
-const pipelineEngine = new OceanicosPipelineEngine();
-const registryEngine = new OceanicosRegistryEngine();
-const enclaveEngine = new OceanicosEnclaveEngine();
-const consensusEngine = new OceanicosConsensusEngine();
-const meshEngine = new OceanicosMeshEngine();
-const shardingEngine = new OceanicosShardingEngine();
-const bridgeEngine = new OceanicosBridgeEngine();
-const sequencerEngine = new OceanicosSequencerEngine();
-const daEngine = new OceanicosDAEngine();
-const rollupEngine = new OceanicosRollupEngine();
-const intentEngine = new OceanicosIntentEngine();
-const orchestratorEngine = new OceanicosOrchestratorEngine();
-const dhtEngine = new OceanicosDHTEngine();
-const stakingEngine = new OceanicosStakingEngine();
-const kernelEngine = new OceanicosKernel();
-const mempoolEngine = new OceanicosMempoolEngine();
-const attestorEngine = new OceanicosThresholdAttestorEngine();
-const governorEngine = new OceanicosGovernorEngine();
-const relayEngine = new OceanicosRelayEngine();
-const evmEngine = new OceanicosVirtualMachine();
-const ammEngine = new OceanicosAMMEngine();
-const reputationEngine = new OceanicosReputationEngine();
-const humanEngine = new HumanEngine();
-const humanAuditLog: ReturnType<typeof humanEngine.recordInput>[] = [];
-const ruleCompiler = new RuleCompiler();
-const moodEvaluator = new MoodEvaluator();
-const learningEngine = new LearningEngine();
+const configuredAttestationAlgorithm = process.env.OMEGA_ATTESTATION_ALGORITHM;
+const attestationService =
+  configuredAttestationAlgorithm === 'Ed25519'
+    ? new AttestationService({
+        algorithm: 'Ed25519',
+        signingKey: process.env.OMEGA_ED25519_PRIVATE_KEY || process.env.OMEGA_ED25519_KEY,
+        publicKey: process.env.OMEGA_ED25519_PUBLIC_KEY,
+        keyVersion: process.env.OMEGA_ATTESTATION_KEY_VERSION || '1',
+      })
+    : new AttestationService();
 
+/**
+ * The MINI kernel's memory, wired into the API.
+ *
+ * packages/remember was fully verified and imported by nothing: the
+ * kernel was an island beside the API's own runtime arrays. This makes
+ * the API a consumer of it, so completed loops enter a hash-chained,
+ * append-only record whose integrity can be checked rather than assumed.
+ */
+const memoryPath = process.env.OMEGA_MEMORY_PATH || '/tmp/omega-v-oceanicos/memory.jsonl';
+
+/**
+ * Durability is decided by one flag, not two.
+ *
+ * The runtime store already honoured OMEGA_PERSISTENCE; this checked
+ * NODE_ENV directly, so the kernel's chain was the one piece of state that
+ * could not be switched on the documented way. Anything that cannot be
+ * turned on cannot be verified in the state it ships in.
+ */
+const persistenceEnabled = process.env.OMEGA_PERSISTENCE
+  ? process.env.OMEGA_PERSISTENCE === 'on'
+  : process.env.NODE_ENV !== 'test';
+const persistenceEncryptionKey = process.env.OMEGA_PERSISTENCE_KEY;
+const previousPersistenceEncryptionKey = process.env.OMEGA_PERSISTENCE_KEY_PREVIOUS;
+const persistenceEncryptionEnabled =
+  persistenceEnabled && encryptionEnabled(persistenceEncryptionKey);
+const previousPersistenceEncryptionConfigured = Boolean(previousPersistenceEncryptionKey?.trim());
+const persistenceCurrentKeyFingerprint = persistenceKeyFingerprint(persistenceEncryptionKey);
+const persistencePreviousKeyFingerprint = persistenceKeyFingerprint(
+  previousPersistenceEncryptionKey
+);
+const persistenceRecoveryPolicy = parsePersistenceRecoveryPolicy(
+  process.env.OMEGA_PERSISTENCE_RECOVERY_MODE,
+  process.env.OMEGA_PERSISTENCE_RECOVERY_REFERENCE
+);
+const persistenceDeletionPolicy = parsePersistenceDeletionPolicy(
+  process.env.OMEGA_PERSISTENCE_DELETION_MODE
+);
+const persistenceCustodyPolicy = parsePersistenceCustodyPolicy(
+  process.env.OMEGA_PERSISTENCE_CUSTODY_MODE,
+  process.env.OMEGA_PERSISTENCE_CUSTODY_REFERENCE
+);
+const persistenceCoordinationPolicy = parsePersistenceCoordinationPolicy(
+  process.env.OMEGA_PERSISTENCE_COORDINATION_MODE,
+  process.env.OMEGA_PERSISTENCE_COORDINATION_REFERENCE
+);
+const deletionPolicyReady = persistenceDeletionPolicy.mode !== 'invalid';
+const custodyPolicyReady = persistenceCustodyPolicy.mode !== 'invalid';
+const coordinationPolicyReady = persistenceCoordinationPolicy.mode !== 'invalid';
+const memoryEncryptionKey = process.env.OMEGA_MEMORY_KEY;
+const memoryEncryptionEnabled = persistenceEnabled && Boolean(memoryEncryptionKey?.trim());
+const kernelMemoryStore = persistenceEnabled
+  ? new FileMemoryStore(memoryPath, memoryEncryptionKey)
+  : undefined;
+const kernelMemory = new Remember(kernelMemoryStore);
+
+/**
+ * Recorded reconciliations, newest first.
+ *
+ * A split is kept rather than resolved. Actions taken while verifiers
+ * disagreed carry the disagreement, so the record answers "was this
+ * contested at the time" rather than only "was it authorized".
+ */
+const runtimeDissensus: Array<Dissensus & { id: string; timestamp: string }> = [];
+
+/**
+ * Resolved once at startup so a malformed value fails loudly here rather
+ * than silently changing how disagreements route, request by request.
+ */
+const dissensusPolicy: DissensusPolicy = policyFromEnvironment(process.env);
+const memoryEncryptionKeySource = kernelMemoryStore?.encryptionKeySource() ?? 'none';
+
+type SigningAuditDetails = {
+  attestationId: string;
+  verificationId: string;
+  algorithm: string;
+  keyVersion: string;
+  keyFingerprint: string;
+  verified: boolean;
+  confidence: number;
+  ruleVersions: Record<string, string>;
+};
+
+type RuntimeEvent = {
+  id: string;
+  type: string;
+  stage: string;
+  message: string;
+  status: 'active' | 'passed' | 'failed';
+  timestamp: string;
+  correlationId?: string;
+  requestId?: string;
+  details?: Record<string, unknown>;
+};
+
+export type AuditQuery = {
+  type?: string;
+  stage?: string;
+  status?: RuntimeEvent['status'];
+  from?: string;
+  to?: string;
+  limit?: number;
+};
+
+const AUDIT_DEFAULT_LIMIT = 100;
+const AUDIT_MAX_LIMIT = 500;
+
+const queryValue = (value: unknown): string | undefined =>
+  typeof value === 'string' ? value : undefined;
+
+export const parseAuditQuery = (
+  query: Record<string, unknown>
+): { query: AuditQuery } | { error: string } => {
+  const type = queryValue(query.type);
+  const stage = queryValue(query.stage);
+  const status = queryValue(query.status);
+  const from = queryValue(query.from);
+  const to = queryValue(query.to);
+  const rawLimit = queryValue(query.limit);
+
+  if (status !== undefined && !['active', 'passed', 'failed'].includes(status)) {
+    return { error: 'status must be active, passed, or failed' };
+  }
+  if (from !== undefined && Number.isNaN(Date.parse(from))) {
+    return { error: 'from must be an ISO-8601 timestamp' };
+  }
+  if (to !== undefined && Number.isNaN(Date.parse(to))) {
+    return { error: 'to must be an ISO-8601 timestamp' };
+  }
+  if (from !== undefined && to !== undefined && Date.parse(from) > Date.parse(to)) {
+    return { error: 'from must not be later than to' };
+  }
+
+  const limit = rawLimit === undefined ? AUDIT_DEFAULT_LIMIT : Number(rawLimit);
+  if (!Number.isInteger(limit) || limit < 1 || limit > AUDIT_MAX_LIMIT) {
+    return { error: `limit must be an integer between 1 and ${AUDIT_MAX_LIMIT}` };
+  }
+
+  return {
+    query: {
+      type,
+      stage,
+      status: status as RuntimeEvent['status'] | undefined,
+      from,
+      to,
+      limit,
+    },
+  };
+};
+
+type CompletedRun = {
+  correlationId: string;
+  requestId: string;
+  observation: ReturnType<Observer['observe']>;
+  verification: ReturnType<VerificationEngine['verify']>;
+  attestation: ReturnType<AttestationService['attest']>;
+};
+type RuntimeAction = {
+  id: string;
+  action: string;
+  attestationId: string;
+  // An action taken while verifiers disagreed is a distinct state, not a
+  // footnote on an ordinary authorization. The type says so, because the
+  // record has to survive the question "was this contested at the time".
+  status: 'authorized' | 'authorized-with-dissent';
+  dissensusId: string | null;
+  dissent: {
+    verdict: Dissensus['verdict'];
+    routing: Dissensus['routing'];
+    dissenting: Opinion[];
+  } | null;
+  requiresHumanReview: boolean;
+  timestamp: string;
+};
+type RuntimeLearning = {
+  id: string;
+  actionId: string;
+  outcome: 'success' | 'failure' | 'uncertain';
+  note: string;
+  timestamp: string;
+};
+type RuntimeRecompilation = {
+  id: string;
+  learningId: string;
+  version: string;
+  status: 'proposed';
+  rationale: string;
+  timestamp: string;
+};
+type RuntimeRevocation = {
+  id: string;
+  attestationId: string;
+  reason: string;
+  revokedBy: string;
+  revokedAt: string;
+};
+type RevocationIntegrityStatus = 'disabled' | 'legacy' | 'intact' | 'mismatch';
+
+export const revocationRegistryDigest = (revocations: RuntimeRevocation[]): string =>
+  `sha256:${createHash('sha256').update(JSON.stringify(revocations), 'utf8').digest('hex')}`;
+
+export const revocationRegistryRevision = (revocations: RuntimeRevocation[]): number =>
+  revocations.length;
+
+export const revocationRegistryStatus = (
+  persistenceEnabled: boolean,
+  persistedDigest: string | undefined,
+  currentDigest: string
+): RevocationIntegrityStatus =>
+  !persistenceEnabled
+    ? 'disabled'
+    : persistedDigest === undefined
+      ? 'legacy'
+      : persistedDigest === currentDigest
+        ? 'intact'
+        : 'mismatch';
+
+type RuntimeSnapshot = {
+  events: RuntimeEvent[];
+  runs: CompletedRun[];
+  actions: RuntimeAction[];
+  learnings: RuntimeLearning[];
+  recompilations: RuntimeRecompilation[];
+  revocations?: RuntimeRevocation[];
+  revocationIntegrity?: string;
+};
+
+export const ADMIN_TOKEN_ENV = 'OMEGA_ADMIN_TOKEN';
+export const OPERATOR_ALLOWLIST_ENV = 'OMEGA_ADMIN_OPERATOR_ALLOWLIST';
+
+const configuredOperatorAllowlist = (): string[] =>
+  (process.env[OPERATOR_ALLOWLIST_ENV] || '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+export const operatorAllowlistConfigured = (): boolean => configuredOperatorAllowlist().length > 0;
+export const adminOperatorAllowlistRequired = (): boolean =>
+  process.env.OMEGA_ADMIN_REQUIRE_ALLOWLIST?.trim() === 'on';
+export const operatorIdentityAllowed = (
+  operatorId: string | undefined,
+  allowlist: string[],
+  requireAllowlist = false
+): boolean =>
+  !(requireAllowlist && allowlist.length === 0) &&
+  (allowlist.length === 0 || (operatorId !== undefined && allowlist.includes(operatorId)));
+
+const operatorAllowed = (operatorId: string | undefined): boolean => {
+  const allowlist = configuredOperatorAllowlist();
+  return operatorIdentityAllowed(operatorId, allowlist, adminOperatorAllowlistRequired());
+};
+
+/**
+ * In strict admin mode, a body field cannot stand in for request identity.
+ * The dedicated header is still only an asserted identity; authentication and
+ * identity proofing remain outside this local boundary.
+ */
+const requestOperatorId = (
+  req: Request,
+  bodyOperatorId: string | undefined
+): string | undefined => {
+  const headerOperatorId = req.header('x-omega-operator-id');
+  if (adminOperatorAllowlistRequired() && !headerOperatorId) return undefined;
+  return headerOperatorId || bodyOperatorId;
+};
+
+const runtimeStorePath =
+  process.env.OMEGA_RUNTIME_STORE_PATH || '/tmp/omega-v-oceanicos/runtime.json';
+
+/**
+ * Durable append-only event log. The runtime arrays below are a bounded
+ * recent window; this file is the history invariant 4 promises.
+ */
+const eventLogPath =
+  process.env.OMEGA_EVENT_LOG_PATH || `${runtimeStorePath.replace(/\.json$/, '')}.log.jsonl`;
+const reencryptionRecovery = reconcileReencryptionJournal(
+  reencryptionJournalPath(runtimeStorePath)
+);
+
+const {
+  snapshot,
+  source: persistenceSource,
+  reason: persistenceReason,
+  keySource: persistenceEncryptionKeySource,
+} = loadSnapshot<RuntimeSnapshot>(
+  runtimeStorePath,
+  persistenceEnabled,
+  persistenceEncryptionKey,
+  previousPersistenceEncryptionKey
+);
+const localJobLedger = new LocalJobLedger({
+  enabled: process.env.OMEGA_LOCAL_JOB_LEDGER === 'on',
+  storagePath: process.env.OMEGA_LOCAL_JOB_LEDGER_PATH,
+  encryptionKey: process.env.OMEGA_LOCAL_JOB_LEDGER_KEY,
+});
+const localJobLedgerStatus = localJobLedger.status();
+const localPersistenceCoverage = persistenceCoverage({
+  enabled: persistenceEnabled,
+  snapshotEncrypted: persistenceEncryptionEnabled,
+  snapshotKeySource: persistenceEncryptionKeySource,
+  eventLogEncrypted: persistenceEncryptionEnabled,
+  eventLogKeySource: 'none',
+  memoryEncrypted: memoryEncryptionEnabled,
+  memoryKeySource: memoryEncryptionKeySource,
+  jobLedgerEncrypted: localJobLedgerStatus.encryption === 'aes-256-gcm',
+  jobLedgerKeySource: localJobLedgerStatus.encryption === 'aes-256-gcm' ? 'current' : 'none',
+});
+const runtimeEvents = snapshot.events;
+const eventStreams = new Set<Response>();
+const completedRuns = snapshot.runs;
+const runtimeActions = snapshot.actions;
+const runtimeLearnings = snapshot.learnings;
+const runtimeRecompilations = snapshot.recompilations;
+const runtimeRevocations = snapshot.revocations ?? [];
+type PersistenceAcknowledgement = {
+  operatorId: string;
+  reason: string;
+  action: string;
+  acknowledgedAt: string;
+  requestId: string;
+};
+type PersistenceReencryption = {
+  operatorId: string;
+  reason: string;
+  action: 'review-key-rotation';
+  reencryptedAt: string;
+  requestId: string;
+  snapshotRecords: number;
+  eventRecords: number;
+  snapshotKeySource: string;
+  eventLogKeySource: string;
+};
+const persistedAcknowledgementEvent = [...runtimeEvents].find(
+  (event) => event.type === 'persistence.recovery.acknowledged' && event.details
+);
+const persistedAcknowledgementDetails = persistedAcknowledgementEvent?.details;
+let persistenceAcknowledgement: PersistenceAcknowledgement | null =
+  persistedAcknowledgementDetails &&
+  typeof persistedAcknowledgementDetails.operatorId === 'string' &&
+  typeof persistedAcknowledgementDetails.reason === 'string' &&
+  typeof persistedAcknowledgementDetails.action === 'string' &&
+  typeof persistedAcknowledgementDetails.acknowledgedAt === 'string' &&
+  typeof persistedAcknowledgementDetails.requestId === 'string'
+    ? {
+        operatorId: persistedAcknowledgementDetails.operatorId,
+        reason: persistedAcknowledgementDetails.reason,
+        action: persistedAcknowledgementDetails.action,
+        acknowledgedAt: persistedAcknowledgementDetails.acknowledgedAt,
+        requestId: persistedAcknowledgementDetails.requestId,
+      }
+    : null;
+const persistedReencryptionEvent = [...runtimeEvents].find(
+  (event) => event.type === 'persistence.rotation.reencrypted' && event.details
+);
+const persistedReencryptionDetails = persistedReencryptionEvent?.details;
+let persistenceReencryption: PersistenceReencryption | null =
+  persistedReencryptionDetails &&
+  typeof persistedReencryptionDetails.operatorId === 'string' &&
+  typeof persistedReencryptionDetails.reason === 'string' &&
+  persistedReencryptionDetails.action === 'review-key-rotation' &&
+  typeof persistedReencryptionDetails.reencryptedAt === 'string' &&
+  typeof persistedReencryptionDetails.requestId === 'string' &&
+  typeof persistedReencryptionDetails.snapshotRecords === 'number' &&
+  typeof persistedReencryptionDetails.eventRecords === 'number' &&
+  typeof persistedReencryptionDetails.snapshotKeySource === 'string' &&
+  typeof persistedReencryptionDetails.eventLogKeySource === 'string'
+    ? (persistedReencryptionDetails as PersistenceReencryption)
+    : null;
+const persistenceIsReady =
+  persistenceReady(persistenceEnabled, persistenceSource) &&
+  reencryptionRecovery.status !== 'blocked' &&
+  persistenceRecoveryPolicy.mode !== 'invalid';
+const persistedRevocationDigest = snapshot.revocationIntegrity;
+const currentRevocationDigest = revocationRegistryDigest(runtimeRevocations);
+const currentRevocationRevision = revocationRegistryRevision(runtimeRevocations);
+const revocationIntegrityStatus = revocationRegistryStatus(
+  persistenceEnabled,
+  persistedRevocationDigest,
+  currentRevocationDigest
+);
+const configuredAttestationTtlMs = (): number | null => {
+  const raw = process.env.OMEGA_ATTESTATION_TTL_MS?.trim();
+  if (!raw) return null;
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+};
+
+export const isAttestationExpired = (
+  attestation: Attestation,
+  now = Date.now(),
+  ttlMs = configuredAttestationTtlMs()
+): boolean => {
+  if (ttlMs === null) return false;
+  const attestedAt = Date.parse(attestation.attestedAt);
+  return !Number.isFinite(attestedAt) || now - attestedAt >= ttlMs;
+};
+
+const isRevoked = (attestationId: string): boolean =>
+  runtimeRevocations.some((revocation) => revocation.attestationId === attestationId);
+
+const persistRuntime = (): void => {
+  saveSnapshot(
+    runtimeStorePath,
+    {
+      events: runtimeEvents,
+      runs: completedRuns,
+      actions: runtimeActions,
+      learnings: runtimeLearnings,
+      recompilations: runtimeRecompilations,
+      revocations: runtimeRevocations,
+      revocationIntegrity: revocationRegistryDigest(runtimeRevocations),
+    } as RuntimeSnapshot,
+    persistenceEnabled,
+    persistenceEncryptionKey
+  );
+};
+
+/** How many recent events the in-memory runtime keeps. Not a history limit. */
+const RECENT_EVENT_WINDOW = 40;
+
+const recordEvent = (event: Omit<RuntimeEvent, 'id' | 'timestamp'>): RuntimeEvent => {
+  const recorded: RuntimeEvent = {
+    ...event,
+    id: `evt-${Date.now()}-${runtimeEvents.length + 1}`,
+    timestamp: new Date().toISOString(),
+  };
+  // Durable history first: the log is append-only and never truncated.
+  appendEvent(eventLogPath, recorded, persistenceEnabled, persistenceEncryptionKey);
+
+  // The in-memory array is a bounded recent window, not the log itself.
+  runtimeEvents.unshift(recorded);
+  runtimeEvents.splice(RECENT_EVENT_WINDOW);
+  persistRuntime();
+  for (const stream of eventStreams) {
+    stream.write(`data: ${JSON.stringify(recorded)}\n\n`);
+  }
+  return recorded;
+};
+
+const loopbackAddress = (address: string | undefined): boolean => {
+  if (!address) return false;
+  const normalized = address.replace(/^::ffff:/, '');
+  return normalized === '127.0.0.1' || normalized === '::1';
+};
+const jobLedgerAccess = (req: Request, res: Response): boolean => {
+  if (!localJobLedger.isEnabled()) {
+    res.status(404).json({
+      code: 'LOCAL_JOB_DISABLED',
+      message: 'The local job ledger is disabled',
+      timestamp: new Date().toISOString(),
+    } satisfies ErrorResponse);
+    return false;
+  }
+  if (!loopbackAddress(req.socket.remoteAddress)) {
+    res.status(403).json({
+      code: 'LOCAL_JOB_LOOPBACK_ONLY',
+      message: 'The local job ledger accepts loopback requests only',
+      timestamp: new Date().toISOString(),
+    } satisfies ErrorResponse);
+    return false;
+  }
+  const configuredToken = process.env.OMEGA_LOCAL_JOB_LEDGER_TOKEN?.trim();
+  const suppliedLocalToken =
+    req.header('x-omega-local-job-token')?.trim() ||
+    (authMode === 'local' ? bearerToken(req.header('authorization') || '') : '');
+  if (!configuredToken || !constantTimeTokenMatch(suppliedLocalToken, configuredToken)) {
+    res.status(401).json({
+      code: 'LOCAL_JOB_ACCESS_REQUIRED',
+      message:
+        authMode === 'required'
+          ? 'A local job ledger token is required in x-omega-local-job-token'
+          : 'A local job ledger bearer token is required',
+      timestamp: new Date().toISOString(),
+    } satisfies ErrorResponse);
+    return false;
+  }
+  return true;
+};
+const jobProvenance = (req: Request, res: Response, actor: string | null) => ({
+  source: 'api' as const,
+  actor,
+  requestId: (res.locals.requestId as string | undefined) ?? null,
+  correlationId: req.header('x-correlation-id')?.trim() || null,
+  observedAt: new Date().toISOString(),
+  schemaVersion: '1' as const,
+});
+const recordJobEvent = (event: LocalJobEvent): RuntimeEvent =>
+  recordEvent({
+    type: `job.${event.type}`,
+    stage: 'job',
+    message: event.details.message,
+    status: event.type === 'failed' ? 'failed' : 'passed',
+    correlationId: event.provenance.correlationId ?? undefined,
+    requestId: event.provenance.requestId ?? undefined,
+    details: {
+      jobId: event.jobId,
+      eventId: event.id,
+      sequence: event.sequence,
+      state: event.details.state,
+      durable: localJobLedger.status().durable,
+      source: localJobLedger.status().source,
+      encryption: localJobLedger.status().encryption,
+    },
+  });
+const jobErrorStatus = (code: LocalJobError['code']): number =>
+  code === 'JOB_NOT_FOUND'
+    ? 404
+    : code === 'JOB_DUPLICATE'
+      ? 409
+      : code === 'JOB_IDEMPOTENCY_CONFLICT'
+        ? 409
+        : 400;
+const jobPathValue = (value: string | string[] | undefined): string =>
+  typeof value === 'string' ? value : '';
+const jobError = (error: unknown, res: Response): void => {
+  if (error instanceof LocalJobError) {
+    res.status(jobErrorStatus(error.code)).json({
+      code: error.code,
+      message: error.message,
+      timestamp: new Date().toISOString(),
+    } satisfies ErrorResponse);
+    return;
+  }
+  res.status(400).json({
+    code: 'JOB_INVALID',
+    message: 'The local job request could not be processed',
+    timestamp: new Date().toISOString(),
+  } satisfies ErrorResponse);
+};
+app.post('/jobs', (req: Request, res: Response) => {
+  if (!jobLedgerAccess(req, res)) return;
+  const actor = req.header('x-omega-operator-id')?.trim() || null;
+  const input = {
+    kind: req.body?.kind,
+    idempotencyKey: req.body?.idempotencyKey,
+    sourceUri: req.body?.sourceUri,
+    actor: actor ?? '',
+  } as LocalJobCreateInput;
+  try {
+    const result = localJobLedger.create(input, jobProvenance(req, res, actor));
+    const event = recordJobEvent(result.event);
+    res.status(201).json({
+      data: { job: result.job, event: result.event, runtimeEventId: event.id },
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    if (error instanceof LocalJobError && error.code === 'JOB_DUPLICATE') {
+      res.status(409).json({
+        code: error.code,
+        message: 'The idempotency key already identifies an existing local job',
+        jobId: error.message,
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+    jobError(error, res);
+  }
+});
+app.get('/jobs', (req: Request, res: Response) => {
+  if (!jobLedgerAccess(req, res)) return;
+  try {
+    const rawLimit = req.query.limit;
+    const limit = rawLimit === undefined ? LOCAL_JOB_WINDOW : Number(rawLimit);
+    const state = typeof req.query.state === 'string' ? req.query.state : undefined;
+    const jobs = localJobLedger.list(limit, state as LocalJobState | undefined);
+    res.json({
+      data: { jobs, status: localJobLedger.status() },
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    jobError(error, res);
+  }
+});
+app.get('/jobs/:jobId', (req: Request, res: Response) => {
+  if (!jobLedgerAccess(req, res)) return;
+  const job = localJobLedger.get(jobPathValue(req.params.jobId));
+  if (!job) {
+    res.status(404).json({
+      code: 'JOB_NOT_FOUND',
+      message: 'Job not found',
+      timestamp: new Date().toISOString(),
+    } satisfies ErrorResponse);
+    return;
+  }
+  res.json({
+    data: {
+      job,
+      events: localJobLedger.recentEvents().filter((event) => event.jobId === job.id),
+      status: localJobLedger.status(),
+    },
+    timestamp: new Date().toISOString(),
+  });
+});
+app.post('/jobs/:jobId/claim', (req: Request, res: Response) => {
+  if (!jobLedgerAccess(req, res)) return;
+  const workerId = req.header('x-omega-worker-id')?.trim() || '';
+  try {
+    const result = localJobLedger.claim(
+      jobPathValue(req.params.jobId),
+      workerId,
+      jobProvenance(req, res, workerId)
+    );
+    const event = recordJobEvent(result.event);
+    res.json({
+      data: { job: result.job, event: result.event, runtimeEventId: event.id },
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    jobError(error, res);
+  }
+});
+app.post('/jobs/:jobId/complete', (req: Request, res: Response) => {
+  if (!jobLedgerAccess(req, res)) return;
+  const workerId = req.header('x-omega-worker-id')?.trim() || '';
+  try {
+    const result = localJobLedger.complete(
+      jobPathValue(req.params.jobId),
+      workerId,
+      req.body?.resultSummary,
+      jobProvenance(req, res, workerId)
+    );
+    const event = recordJobEvent(result.event);
+    res.json({
+      data: { job: result.job, event: result.event, runtimeEventId: event.id },
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    jobError(error, res);
+  }
+});
+app.post('/jobs/:jobId/fail', (req: Request, res: Response) => {
+  if (!jobLedgerAccess(req, res)) return;
+  const workerId = req.header('x-omega-worker-id')?.trim() || '';
+  try {
+    const result = localJobLedger.fail(
+      jobPathValue(req.params.jobId),
+      workerId,
+      req.body?.errorClass,
+      jobProvenance(req, res, workerId)
+    );
+    const event = recordJobEvent(result.event);
+    res.json({
+      data: { job: result.job, event: result.event, runtimeEventId: event.id },
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    jobError(error, res);
+  }
+});
+
+app.post('/scene/simulate', (req: Request, res: Response) => {
+  try {
+    const seed = typeof req.body?.seed === 'string' ? req.body.seed : undefined;
+    const steps = req.body?.steps === undefined ? undefined : Number(req.body.steps);
+    const branches = req.body?.branches === undefined ? undefined : Number(req.body.branches);
+    const simulation = simulateScene({ seed, steps, branches });
+    res.json({
+      data: simulation,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    res.status(400).json({
+      code: 'SCENE_INVALID',
+      message: error instanceof Error ? error.message : 'The scene simulation request is invalid',
+      timestamp: new Date().toISOString(),
+    } satisfies ErrorResponse);
+  }
+});
+
+app.post('/persistence/acknowledge', (req: Request, res: Response) => {
+  const { reason, operatorId: operatorIdFromBody } = req.body as {
+    reason?: string;
+    operatorId?: string;
+  };
+  const operatorId = requestOperatorId(req, operatorIdFromBody);
+  if (!operatorAllowed(operatorId)) {
+    res.status(403).json({
+      code: 'ADMIN_OPERATOR_NOT_ALLOWED',
+      message: 'The operator identity is not allowed to acknowledge persistence review',
+      timestamp: new Date().toISOString(),
+    } satisfies ErrorResponse);
+    return;
+  }
+  const normalizedReason = typeof reason === 'string' ? reason.trim() : '';
+  if (normalizedReason.length < 8 || normalizedReason.length > 1000) {
+    res.status(400).json({
+      code: 'INVALID_ACKNOWLEDGEMENT_REASON',
+      message: 'A persistence acknowledgement reason between 8 and 1000 characters is required',
+      timestamp: new Date().toISOString(),
+    } satisfies ErrorResponse);
+    return;
+  }
+  const durableLog = readEventLog<RuntimeEvent>(
+    eventLogPath,
+    persistenceEnabled,
+    persistenceEncryptionKey,
+    previousPersistenceEncryptionKey
+  );
+  const rotationPending = persistenceRotationPending(
+    previousPersistenceEncryptionConfigured,
+    persistenceEncryptionKeySource,
+    durableLog.keySource
+  );
+  const action = persistenceOperatorAction(persistenceSource, durableLog.source, rotationPending);
+  if (action === 'none') {
+    res.status(409).json({
+      code: 'PERSISTENCE_ACK_NOT_REQUIRED',
+      message: 'No persistence review action is currently pending',
+      timestamp: new Date().toISOString(),
+    } satisfies ErrorResponse);
+    return;
+  }
+  const requestId = res.locals.requestId as string;
+  const acknowledgement: PersistenceAcknowledgement = {
+    operatorId: operatorId as string,
+    reason: normalizedReason,
+    action,
+    acknowledgedAt: new Date().toISOString(),
+    requestId,
+  };
+  persistenceAcknowledgement = acknowledgement;
+  const event = recordEvent({
+    type: 'persistence.recovery.acknowledged',
+    stage: 'persistence',
+    status: 'active',
+    message: 'Operator acknowledged the persistence review boundary',
+    requestId,
+    details: acknowledgement,
+  });
+  res.status(201).json({
+    data: { acknowledgement, eventId: event.id },
+    timestamp: new Date().toISOString(),
+  });
+});
+app.post('/persistence/reencrypt', (req: Request, res: Response) => {
+  const { reason, operatorId: operatorIdFromBody } = req.body as {
+    reason?: string;
+    operatorId?: string;
+  };
+  const operatorId = requestOperatorId(req, operatorIdFromBody);
+  if (!operatorAllowed(operatorId)) {
+    res.status(403).json({
+      code: 'ADMIN_OPERATOR_NOT_ALLOWED',
+      message: 'The operator identity is not allowed to re-encrypt persistence',
+      timestamp: new Date().toISOString(),
+    } satisfies ErrorResponse);
+    return;
+  }
+  const normalizedReason = typeof reason === 'string' ? reason.trim() : '';
+  if (normalizedReason.length < 8 || normalizedReason.length > 1000) {
+    res.status(400).json({
+      code: 'INVALID_REENCRYPTION_REASON',
+      message: 'A persistence re-encryption reason between 8 and 1000 characters is required',
+      timestamp: new Date().toISOString(),
+    } satisfies ErrorResponse);
+    return;
+  }
+  const durableLog = readEventLog<RuntimeEvent>(
+    eventLogPath,
+    persistenceEnabled,
+    persistenceEncryptionKey,
+    previousPersistenceEncryptionKey
+  );
+  const rotationPending = persistenceRotationPending(
+    previousPersistenceEncryptionConfigured,
+    persistenceEncryptionKeySource,
+    durableLog.keySource
+  );
+  const action = persistenceOperatorAction(persistenceSource, durableLog.source, rotationPending);
+  if (action !== 'review-key-rotation') {
+    res.status(409).json({
+      code: 'PERSISTENCE_REENCRYPTION_NOT_READY',
+      message: 'Re-encryption requires complete persistence with a pending key rotation',
+      action,
+      timestamp: new Date().toISOString(),
+    } satisfies ErrorResponse & { action: string });
+    return;
+  }
+  let result;
+  try {
+    result = reencryptPersistence(
+      runtimeStorePath,
+      eventLogPath,
+      persistenceEnabled,
+      persistenceEncryptionKey,
+      previousPersistenceEncryptionKey
+    );
+  } catch {
+    res.status(409).json({
+      code: 'PERSISTENCE_REENCRYPTION_FAILED',
+      message: 'Persistence re-encryption refused because local evidence was incomplete',
+      timestamp: new Date().toISOString(),
+    } satisfies ErrorResponse);
+    return;
+  }
+  const reencryptedAt = new Date().toISOString();
+  const requestId = res.locals.requestId as string;
+  persistenceReencryption = {
+    operatorId: operatorId as string,
+    reason: normalizedReason,
+    action: 'review-key-rotation',
+    reencryptedAt,
+    requestId,
+    snapshotRecords: result.snapshotRecords,
+    eventRecords: result.eventRecords,
+    snapshotKeySource: result.snapshotKeySource,
+    eventLogKeySource: result.eventLogKeySource,
+  };
+  const event = recordEvent({
+    type: 'persistence.rotation.reencrypted',
+    stage: 'persistence',
+    status: 'passed',
+    message: 'Operator re-encrypted local persistence with the current key',
+    requestId,
+    details: persistenceReencryption,
+  });
+  res.status(201).json({
+    data: { reencrypted: persistenceReencryption, eventId: event.id },
+    timestamp: new Date().toISOString(),
+  });
+});
 // Register default rules
 verificationEngine.registerRule({
   name: 'response-time-threshold',
@@ -164,23 +1086,523 @@ verificationEngine.registerRule({
 });
 
 /**
- * GET /health
+ * Health check endpoint. This remains unauthenticated and exposes only
+ * non-secret liveness/readiness evidence for probes and operators.
  */
 app.get('/health', (_req: Request, res: Response) => {
-  const response: SuccessResponse<{ status: string; uptime: number; logSize: number }> = {
-    data: { status: 'ok', uptime: process.uptime(), logSize: store.size() },
+  const memoryIntact = kernelMemory.verifyIntegrity();
+  const durableLog = readEventLog<RuntimeEvent>(
+    eventLogPath,
+    persistenceEnabled,
+    persistenceEncryptionKey,
+    previousPersistenceEncryptionKey
+  );
+  const durableLogIsReady = eventLogReady(persistenceEnabled, durableLog.source);
+  const rotationPending = persistenceRotationPending(
+    previousPersistenceEncryptionConfigured,
+    persistenceEncryptionKeySource,
+    durableLog.keySource
+  );
+  const operatorAction = persistenceOperatorAction(
+    persistenceSource,
+    durableLog.source,
+    rotationPending
+  );
+  const response: SuccessResponse<{
+    status: 'ok';
+    readiness: 'ready' | 'degraded';
+    checks: {
+      observer: 'ready';
+      verifier: 'ready';
+      attester: 'ready';
+      memory: { status: 'ready' | 'degraded'; integrity: boolean; encryption: string };
+      persistence: {
+        mode: 'file' | 'memory';
+        encryption: string;
+        keySource: string;
+        currentKeyFingerprint: string | null;
+        previousKeyFingerprint: string | null;
+        previousKeyConfigured: boolean;
+        eventLogSource: string;
+        eventLogReason: string | null;
+        eventLogKeySource: string;
+        rotationPending: boolean;
+        operatorAction: string;
+        acknowledgement: PersistenceAcknowledgement | null;
+        reencrypt: PersistenceReencryption | null;
+        reencryptionRecovery: { status: 'none' | 'recovered' | 'blocked'; reason: string | null };
+        recoveryPolicy: { mode: string; reference: string | null; reason: string | null };
+        deletionPolicy: { mode: string; reason: string | null; verified: false };
+        custodyPolicy: {
+          mode: string;
+          reference: string | null;
+          reason: string | null;
+          verified: false;
+        };
+        coordinationPolicy: {
+          mode: string;
+          reference: string | null;
+          reason: string | null;
+          evidence: 'runtime-observed';
+          scope: 'single-process';
+          limitations: string[];
+          verified: false;
+        };
+        coverage: {
+          complete: false;
+          surfaces: Array<{
+            name: string;
+            encryption: string;
+            keySource: string;
+            evidence: string;
+          }>;
+          unverifiedSurfaces: string[];
+          unverifiedReasons: string[];
+        };
+        skippedLogEntries: number;
+      };
+    };
+    policy: {
+      attestationAlgorithm: string;
+      attestationTtlMs: number | null;
+      authMode: ApiAuthMode;
+      readAuthConfigured: boolean;
+      adminAuthConfigured: boolean;
+      adminOperatorAllowlistRequired: boolean;
+      revocationEnabled: true;
+    };
+  }> = {
+    data: {
+      status: 'ok',
+      readiness:
+        memoryIntact &&
+        persistenceIsReady &&
+        durableLogIsReady &&
+        deletionPolicyReady &&
+        custodyPolicyReady &&
+        coordinationPolicyReady
+          ? 'ready'
+          : 'degraded',
+      checks: {
+        observer: 'ready',
+        verifier: 'ready',
+        attester: 'ready',
+        memory: {
+          status: memoryIntact && persistenceIsReady ? 'ready' : 'degraded',
+          integrity: memoryIntact,
+          encryption: memoryEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
+        },
+        persistence: {
+          mode: persistenceEnabled ? 'file' : 'memory',
+          encryption: persistenceEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
+          keySource: persistenceEncryptionKeySource,
+          currentKeyFingerprint: persistenceCurrentKeyFingerprint,
+          previousKeyFingerprint: persistencePreviousKeyFingerprint,
+          previousKeyConfigured: previousPersistenceEncryptionConfigured,
+          eventLogSource: durableLog.source,
+          eventLogReason: durableLog.reason ?? null,
+          eventLogKeySource: durableLog.keySource,
+          rotationPending,
+          operatorAction,
+          acknowledgement: persistenceAcknowledgement,
+          reencrypt: persistenceReencryption,
+          reencryptionRecovery: {
+            status: reencryptionRecovery.status,
+            reason: reencryptionRecovery.reason ?? null,
+          },
+          recoveryPolicy: persistenceRecoveryPolicy,
+          deletionPolicy: persistenceDeletionPolicy,
+          custodyPolicy: persistenceCustodyPolicy,
+          coordinationPolicy: persistenceCoordinationPolicy,
+          coverage: {
+            ...localPersistenceCoverage,
+            surfaces: localPersistenceCoverage.surfaces.map((surface) =>
+              surface.name === 'event-log'
+                ? { ...surface, keySource: durableLog.keySource }
+                : surface
+            ),
+          },
+          skippedLogEntries: durableLog.skipped,
+        },
+      },
+      policy: {
+        attestationAlgorithm: attestationService.getKeyInfo().algorithm,
+        attestationTtlMs: configuredAttestationTtlMs(),
+        authMode,
+        readAuthConfigured: Boolean(process.env.OMEGA_READ_TOKEN?.trim()),
+        adminAuthConfigured: Boolean(process.env[ADMIN_TOKEN_ENV]?.trim()),
+        adminOperatorAllowlistRequired: adminOperatorAllowlistRequired(),
+        revocationEnabled: true,
+      },
+    },
     timestamp: new Date().toISOString(),
   };
-  res.json(response);
+  res.status(memoryIntact && persistenceIsReady && durableLogIsReady ? 200 : 503).json(response);
+});
+
+app.get('/os', (_req: Request, res: Response) => {
+  res.json({
+    data: operatingSystem.snapshot(),
+    timestamp: new Date().toISOString(),
+  });
+});
+app.get('/state', (_req: Request, res: Response) => {
+  const latest = runtimeEvents[0];
+  const memoryIntact = kernelMemory.verifyIntegrity();
+  const durableLog = readEventLog<RuntimeEvent>(
+    eventLogPath,
+    persistenceEnabled,
+    persistenceEncryptionKey,
+    previousPersistenceEncryptionKey
+  );
+  const durableLogIsReady = eventLogReady(persistenceEnabled, durableLog.source);
+  const rotationPending = persistenceRotationPending(
+    previousPersistenceEncryptionConfigured,
+    persistenceEncryptionKeySource,
+    durableLog.keySource
+  );
+  const operatorAction = persistenceOperatorAction(
+    persistenceSource,
+    durableLog.source,
+    rotationPending
+  );
+  const latestRun = completedRuns[0];
+  const recentFailures = runtimeEvents.filter((event) => event.status === 'failed').length;
+  const verificationCoverage = latestRun ? (latestRun.verification.summary.passed ? 1 : 0) : null;
+  const attestationValidity = latestRun
+    ? attestationService.verify(latestRun.attestation)
+      ? 1
+      : 0
+    : null;
+  res.json({
+    data: {
+      status: 'active',
+      readiness:
+        memoryIntact &&
+        persistenceIsReady &&
+        durableLogIsReady &&
+        deletionPolicyReady &&
+        custodyPolicyReady &&
+        coordinationPolicyReady
+          ? 'ready'
+          : 'degraded',
+      persistence: persistenceEnabled ? 'file' : 'memory',
+      persistenceEncryption: persistenceEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
+      persistenceEncryptionKeySource,
+      persistenceCurrentKeyFingerprint,
+      persistencePreviousKeyFingerprint,
+      persistencePreviousKeyConfigured: previousPersistenceEncryptionConfigured,
+      memoryEncryption: memoryEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
+      attestationTtlMs: configuredAttestationTtlMs(),
+      authMode,
+      persistenceSource,
+      persistenceReason: persistenceReason ?? reencryptionRecovery.reason ?? null,
+      reencryptionRecovery,
+      recoveryPolicy: persistenceRecoveryPolicy,
+      deletionPolicy: persistenceDeletionPolicy,
+      custodyPolicy: persistenceCustodyPolicy,
+      coordinationPolicy: persistenceCoordinationPolicy,
+      coverage: {
+        ...localPersistenceCoverage,
+        surfaces: localPersistenceCoverage.surfaces.map((surface) =>
+          surface.name === 'event-log' ? { ...surface, keySource: durableLog.keySource } : surface
+        ),
+      },
+      mode: latest?.stage || 'observing',
+      trust: latest ? (latest.status === 'failed' ? 0 : 1) : null,
+      trustBasis: {
+        evidenceQuality: latestRun ? latestRun.verification.summary.confidence : null,
+        verificationCoverage,
+        attestationValidity,
+        serviceReadiness: memoryIntact && persistenceIsReady && durableLogIsReady ? 1 : 0,
+        recentFailures,
+      },
+      events: runtimeEvents.length,
+      durableEvents: durableLog.entries.length,
+      skippedLogEntries: durableLog.skipped,
+      eventLogSource: durableLog.source,
+      eventLogReason: durableLog.reason ?? null,
+      eventLogKeySource: durableLog.keySource,
+      persistenceRotationPending: rotationPending,
+      operatorAction,
+      persistenceAcknowledgement,
+      persistenceReencryption,
+      lastActivity: latest?.timestamp || null,
+      services: [
+        { name: 'observer', status: 'ready' },
+        { name: 'verifier', status: 'ready' },
+        { name: 'attester', status: 'ready' },
+      ],
+    },
+    timestamp: new Date().toISOString(),
+  });
 });
 
 /**
- * POST /observe — Step 1
+ * GET /observability - Read-only operational evidence for runtime inspection.
+ * This composes existing state sources and exposes no signing material.
+ */
+app.get('/observability', (_req: Request, res: Response) => {
+  const latestRun = completedRuns[0];
+  const latestEvent = runtimeEvents[0];
+  const durableLog = readEventLog<RuntimeEvent>(
+    eventLogPath,
+    persistenceEnabled,
+    persistenceEncryptionKey,
+    previousPersistenceEncryptionKey
+  );
+  const attestationValidity = latestRun ? attestationService.verify(latestRun.attestation) : null;
+  const rotationPending = persistenceRotationPending(
+    previousPersistenceEncryptionConfigured,
+    persistenceEncryptionKeySource,
+    durableLog.keySource
+  );
+  const operatorAction = persistenceOperatorAction(
+    persistenceSource,
+    durableLog.source,
+    rotationPending
+  );
+
+  res.json({
+    data: {
+      runtime: {
+        mode: latestEvent?.stage || 'observing',
+        persistence: persistenceEnabled ? 'file' : 'memory',
+        persistenceEncryption: persistenceEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
+        persistenceEncryptionKeySource,
+        persistencePreviousKeyConfigured: previousPersistenceEncryptionConfigured,
+        eventLogEncryptionKeySource: durableLog.keySource,
+        eventLogSource: durableLog.source,
+        skippedLogEntries: durableLog.skipped,
+        eventLogReason: durableLog.reason ?? null,
+        persistenceRotationPending: rotationPending,
+        operatorAction,
+        persistenceAcknowledgement,
+        persistenceReencryption,
+        reencryptionRecovery,
+        recoveryPolicy: persistenceRecoveryPolicy,
+        deletionPolicy: persistenceDeletionPolicy,
+        coverage: {
+          ...localPersistenceCoverage,
+          surfaces: localPersistenceCoverage.surfaces.map((surface) =>
+            surface.name === 'event-log' ? { ...surface, keySource: durableLog.keySource } : surface
+          ),
+        },
+        memoryEncryption: memoryEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
+        memoryEncryptionKeySource,
+        attestationTtlMs: configuredAttestationTtlMs(),
+        services: ['observer', 'verifier', 'attester'],
+        lastActivity: latestEvent?.timestamp || null,
+      },
+      jobs: localJobLedger.status(),
+      provenance: {
+        recentEvents: runtimeEvents.length,
+        durableEvents: durableLog.entries.length,
+        skippedLogEntries: durableLog.skipped,
+        completedRuns: completedRuns.length,
+        lastRequestId: latestEvent?.requestId || null,
+        lastCorrelationId: latestEvent?.correlationId || null,
+      },
+      trust: {
+        verificationCoverage: latestRun ? (latestRun.verification.summary.passed ? 1 : 0) : null,
+        attestationValidity,
+      },
+      memory: {
+        entries: kernelMemory.size(),
+        intact: kernelMemory.verifyIntegrity(),
+        appendOnly: true,
+        encryption: memoryEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
+        encryptionKeySource: memoryEncryptionKeySource,
+      },
+    },
+    timestamp: new Date().toISOString(),
+  });
+});
+
+app.get('/evidence/export', (_req: Request, res: Response) => {
+  const durableLog = readEventLog<RuntimeEvent>(
+    eventLogPath,
+    persistenceEnabled,
+    persistenceEncryptionKey,
+    previousPersistenceEncryptionKey
+  );
+  const latestRun = completedRuns[0];
+  const latestEvent = runtimeEvents[0];
+  const attestationValidity = latestRun ? attestationService.verify(latestRun.attestation) : null;
+
+  res.json({
+    data: {
+      observability: {
+        runtime: {
+          mode: latestEvent?.stage || 'observing',
+          persistence: persistenceEnabled ? 'file' : 'memory',
+          persistenceEncryptionKeySource,
+          persistencePreviousKeyConfigured: previousPersistenceEncryptionConfigured,
+          services: ['observer', 'verifier', 'attester'],
+          lastActivity: latestEvent?.timestamp || null,
+        },
+        provenance: {
+          recentEvents: runtimeEvents.length,
+          durableEvents: durableLog.entries.length,
+          skippedLogEntries: durableLog.skipped,
+          completedRuns: completedRuns.length,
+          lastRequestId: latestEvent?.requestId || null,
+          lastCorrelationId: latestEvent?.correlationId || null,
+        },
+        trust: {
+          verificationCoverage: latestRun ? (latestRun.verification.summary.passed ? 1 : 0) : null,
+          attestationValidity,
+        },
+        memory: {
+          entries: kernelMemory.size(),
+          intact: kernelMemory.verifyIntegrity(),
+          appendOnly: true,
+        },
+      },
+      events: runtimeEvents.slice(0, RECENT_EVENT_WINDOW),
+      runs: completedRuns.slice(0, 10),
+    },
+    meta: { bounded: true, eventWindow: RECENT_EVENT_WINDOW, runWindow: 10 },
+    timestamp: new Date().toISOString(),
+  });
+});
+
+app.get('/events', (_req: Request, res: Response) => {
+  res.json({
+    data: runtimeEvents,
+    meta: { window: RECENT_EVENT_WINDOW, note: 'recent window; see /log for full history' },
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/**
+ * GET /audit/events - Bounded temporal queries over the append-only event log.
+ * The result is local evidence and is deliberately bounded; it is not a
+ * distributed audit index or a completeness proof for unpersisted history.
+ */
+app.get('/audit/events', (req: Request, res: Response) => {
+  const parsed = parseAuditQuery(req.query as Record<string, unknown>);
+  if ('error' in parsed) {
+    res.status(400).json({
+      code: 'INVALID_AUDIT_QUERY',
+      message: parsed.error,
+      timestamp: new Date().toISOString(),
+    } satisfies ErrorResponse);
+    return;
+  }
+
+  const durableLog = readEventLog<RuntimeEvent>(
+    eventLogPath,
+    persistenceEnabled,
+    persistenceEncryptionKey,
+    previousPersistenceEncryptionKey
+  );
+  const sourceEvents = persistenceEnabled ? durableLog.entries : runtimeEvents;
+  const { type, stage, status, from, to, limit } = parsed.query;
+  const fromMs = from === undefined ? undefined : Date.parse(from);
+  const toMs = to === undefined ? undefined : Date.parse(to);
+  const matching = sourceEvents.filter((event) => {
+    const timestamp = Date.parse(event.timestamp);
+    return (
+      (type === undefined || event.type === type) &&
+      (stage === undefined || event.stage === stage) &&
+      (status === undefined || event.status === status) &&
+      (fromMs === undefined || timestamp >= fromMs) &&
+      (toMs === undefined || timestamp <= toMs)
+    );
+  });
+
+  res.json({
+    data: matching.slice(0, limit),
+    meta: {
+      bounded: true,
+      limit,
+      total: matching.length,
+      source: persistenceEnabled ? durableLog.source : 'memory',
+      skipped: persistenceEnabled ? durableLog.skipped : 0,
+      keySource: persistenceEnabled ? durableLog.keySource : 'none',
+      filters: {
+        type: type ?? null,
+        stage: stage ?? null,
+        status: status ?? null,
+        from: from ?? null,
+        to: to ?? null,
+      },
+    },
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/**
+ * GET /log - The append-only event history
+ */
+app.get('/log', (_req: Request, res: Response) => {
+  const log = readEventLog<RuntimeEvent>(
+    eventLogPath,
+    persistenceEnabled,
+    persistenceEncryptionKey,
+    previousPersistenceEncryptionKey
+  );
+  res.json({
+    data: log.entries,
+    meta: {
+      source: log.source,
+      skipped: log.skipped,
+      reason: log.reason ?? null,
+      keySource: log.keySource,
+      appendOnly: true,
+    },
+    timestamp: new Date().toISOString(),
+  });
+});
+
+app.get('/events/stream', (req: Request, res: Response) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+  eventStreams.add(res);
+  res.write(`event: ready\ndata: ${JSON.stringify({ connectedAt: new Date().toISOString() })}\n\n`);
+
+  req.on('close', () => {
+    eventStreams.delete(res);
+  });
+});
+
+app.get('/runs', (_req: Request, res: Response) => {
+  res.json({ data: completedRuns, timestamp: new Date().toISOString() });
+});
+
+app.get('/actions', (_req: Request, res: Response) => {
+  res.json({ data: runtimeActions, timestamp: new Date().toISOString() });
+});
+
+app.get('/learning', (_req: Request, res: Response) => {
+  res.json({ data: runtimeLearnings, timestamp: new Date().toISOString() });
+});
+
+app.get('/recompilations', (_req: Request, res: Response) => {
+  res.json({ data: runtimeRecompilations, timestamp: new Date().toISOString() });
+});
+
+/**
+ * POST /observe - Submit an observation
+ * Step 1 of the verification loop
  */
 app.post('/observe', (req: Request, res: Response) => {
   try {
-    const { claim, category, source, observedBy, metadata, confidence, confidenceReason } =
-      req.body;
+    const {
+      claim,
+      category,
+      source,
+      observedBy,
+      metadata,
+      confidence,
+      confidenceReason,
+      parentId,
+      lineage,
+    } = req.body;
+
     const observation = observer.observe({
       claim,
       category,
@@ -189,90 +1611,537 @@ app.post('/observe', (req: Request, res: Response) => {
       metadata,
       confidence,
       confidenceReason,
+      parentId,
+      lineage,
     });
-    store.recordObservation(observation);
-    res
-      .status(201)
-      .json({ data: observation, timestamp: new Date().toISOString() } as SuccessResponse<
-        typeof observation
-      >);
-  } catch (error) {
-    res.status(400).json({
-      code: 'OBSERVATION_FAILED',
-      message: error instanceof Error ? error.message : 'Failed',
+
+    const response: SuccessResponse<typeof observation> = {
+      data: observation,
       timestamp: new Date().toISOString(),
-    } as ErrorResponse);
+    };
+
+    res.status(201).json(response);
+  } catch (error) {
+    const errorResponse: ErrorResponse = {
+      code: 'OBSERVATION_FAILED',
+      message: error instanceof Error ? error.message : 'Failed to create observation',
+      timestamp: new Date().toISOString(),
+    };
+    res.status(400).json(errorResponse);
   }
 });
 
 /**
- * POST /verify — Step 2
+ * POST /verify - Verify an observation
+ * Step 2 of the verification loop
  */
 app.post('/verify', (req: Request, res: Response) => {
   try {
     const { observation } = req.body;
+
     if (!observation) {
-      res.status(400).json({
+      const errorResponse: ErrorResponse = {
         code: 'MISSING_OBSERVATION',
         message: 'Observation is required',
         timestamp: new Date().toISOString(),
-      } as ErrorResponse);
+      };
+      res.status(400).json(errorResponse);
       return;
     }
+
     const verificationResult = verificationEngine.verify(observation);
-    store.recordVerification(verificationResult);
-    res
-      .status(201)
-      .json({ data: verificationResult, timestamp: new Date().toISOString() } as SuccessResponse<
-        typeof verificationResult
-      >);
+
+    const response: SuccessResponse<typeof verificationResult> = {
+      data: verificationResult,
+      timestamp: new Date().toISOString(),
+    };
+
+    res.status(201).json(response);
   } catch (error) {
-    res.status(400).json({
+    const errorResponse: ErrorResponse = {
       code: 'VERIFICATION_FAILED',
       message: error instanceof Error ? error.message : 'Verification failed',
       timestamp: new Date().toISOString(),
-    } as ErrorResponse);
+    };
+    res.status(400).json(errorResponse);
   }
 });
 
 /**
- * POST /attest — Step 3
+ * POST /attest - Attest a verification result
+ * Step 3 of the verification loop
  */
 app.post('/attest', (req: Request, res: Response) => {
   try {
     const { verificationResult } = req.body;
+
     if (!verificationResult) {
-      res.status(400).json({
+      const errorResponse: ErrorResponse = {
         code: 'MISSING_VERIFICATION',
         message: 'Verification result is required',
         timestamp: new Date().toISOString(),
-      } as ErrorResponse);
+      };
+      res.status(400).json(errorResponse);
       return;
     }
+
     const attestation = attestationService.attest(verificationResult);
-    store.recordAttestation(attestation);
-    res
-      .status(201)
-      .json({ data: attestation, timestamp: new Date().toISOString() } as SuccessResponse<
-        typeof attestation
-      >);
+
+    const response: SuccessResponse<typeof attestation> = {
+      data: attestation,
+      timestamp: new Date().toISOString(),
+    };
+
+    res.status(201).json(response);
   } catch (error) {
-    res.status(400).json({
+    const errorResponse: ErrorResponse = {
       code: 'ATTESTATION_FAILED',
       message: error instanceof Error ? error.message : 'Attestation failed',
       timestamp: new Date().toISOString(),
-    } as ErrorResponse);
+    };
+    res.status(400).json(errorResponse);
+  }
+});
+
+app.post('/attest/verify', (req: Request, res: Response) => {
+  try {
+    const { attestation } = req.body;
+    if (!attestation) {
+      res.status(400).json({
+        code: 'MISSING_ATTESTATION',
+        message: 'Attestation is required',
+        timestamp: new Date().toISOString(),
+      } satisfies ErrorResponse);
+      return;
+    }
+
+    const revoked = isRevoked(attestation.id);
+    const expired = isAttestationExpired(attestation);
+    res.json({
+      data: {
+        valid:
+          attestationService.verify(attestation) &&
+          !revoked &&
+          !expired &&
+          revocationIntegrityStatus !== 'mismatch',
+        revoked,
+        expired,
+        revocationIntegrity: revocationIntegrityStatus,
+        revocationRevision: currentRevocationRevision,
+      },
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    res.status(400).json({
+      code: 'ATTESTATION_VERIFICATION_FAILED',
+      message: error instanceof Error ? error.message : 'Attestation verification failed',
+      timestamp: new Date().toISOString(),
+    } satisfies ErrorResponse);
+  }
+});
+
+/** Public, non-secret attestation verification metadata. */
+app.post('/attest/revoke', (req: Request, res: Response) => {
+  const {
+    attestationId,
+    reason,
+    revokedBy = 'operator',
+    operatorId: operatorIdFromBody,
+  } = req.body as {
+    attestationId?: string;
+    reason?: string;
+    revokedBy?: string;
+    operatorId?: string;
+  };
+  const operatorId = requestOperatorId(req, operatorIdFromBody);
+  if (!operatorAllowed(operatorId)) {
+    res.status(403).json({
+      code: 'ADMIN_OPERATOR_NOT_ALLOWED',
+      message: 'The operator identity is not allowed to revoke attestations',
+      timestamp: new Date().toISOString(),
+    } satisfies ErrorResponse);
+    return;
+  }
+  if (revocationIntegrityStatus === 'mismatch') {
+    res.status(503).json({
+      code: 'REVOCATION_REGISTRY_INTEGRITY',
+      message: 'Revocation registry integrity evidence does not match persisted records',
+      timestamp: new Date().toISOString(),
+    } satisfies ErrorResponse);
+    return;
+  }
+  if (!attestationId || !reason) {
+    res.status(400).json({
+      code: 'MISSING_REVOCATION_DETAILS',
+      message: 'attestationId and reason are required to revoke an attestation',
+      timestamp: new Date().toISOString(),
+    } satisfies ErrorResponse);
+    return;
+  }
+  if (!completedRuns.some((run) => run.attestation.id === attestationId)) {
+    res.status(404).json({
+      code: 'ATTESTATION_NOT_RECORDED',
+      message: 'Cannot revoke an attestation with no recorded runtime lineage',
+      timestamp: new Date().toISOString(),
+    } satisfies ErrorResponse);
+    return;
+  }
+  if (isRevoked(attestationId)) {
+    res.status(409).json({
+      code: 'ATTESTATION_ALREADY_REVOKED',
+      message: 'The attestation has already been revoked',
+      timestamp: new Date().toISOString(),
+    } satisfies ErrorResponse);
+    return;
+  }
+
+  const revocation: RuntimeRevocation = {
+    id: `rev-${new Date().toISOString().replace(/[-:.TZ]/g, '')}`,
+    attestationId,
+    reason,
+    revokedBy: operatorId || revokedBy,
+    revokedAt: new Date().toISOString(),
+  };
+  runtimeRevocations.unshift(revocation);
+  persistRuntime();
+  recordEvent({
+    type: 'attestation.revoked',
+    stage: 'attest',
+    message: 'Attestation revoked',
+    status: 'failed',
+    details: revocation,
+  });
+  res.status(201).json({
+    data: revocation,
+    meta: {
+      revision: revocationRegistryRevision(runtimeRevocations),
+      integrity: revocationIntegrityStatus,
+    },
+    timestamp: new Date().toISOString(),
+  });
+});
+
+app.get('/attest/revocations', (_req: Request, res: Response) => {
+  res.json({
+    data: runtimeRevocations,
+    meta: {
+      integrity: revocationIntegrityStatus,
+      digest: currentRevocationDigest,
+      revision: currentRevocationRevision,
+    },
+    timestamp: new Date().toISOString(),
+  });
+});
+
+app.get('/attest/policy', (_req: Request, res: Response) => {
+  res.json({
+    data: {
+      attestationAlgorithm: attestationService.getKeyInfo().algorithm,
+      attestationTtlMs: configuredAttestationTtlMs(),
+      authMode,
+      readAuthConfigured: Boolean(process.env.OMEGA_READ_TOKEN?.trim()),
+      adminAuthConfigured: Boolean(process.env[ADMIN_TOKEN_ENV]?.trim()),
+      revocationEnabled: true,
+      revocationIntegrity: revocationIntegrityStatus,
+      revocationRevision: currentRevocationRevision,
+      adminOperatorAllowlistConfigured: operatorAllowlistConfigured(),
+      adminOperatorAllowlistRequired: adminOperatorAllowlistRequired(),
+      persistenceEncryption: persistenceEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
+      persistenceEncryptionKeySource,
+      persistenceCurrentKeyFingerprint,
+      persistencePreviousKeyFingerprint,
+      persistencePreviousKeyConfigured: previousPersistenceEncryptionConfigured,
+      memoryEncryption: memoryEncryptionEnabled ? ENCRYPTION_ALGORITHM : 'disabled',
+    },
+    timestamp: new Date().toISOString(),
+  });
+});
+
+app.get('/attest/public-key', (_req: Request, res: Response) => {
+  const info = attestationService.getKeyInfo();
+  if (info.algorithm !== 'Ed25519' || !info.publicKey) {
+    res.status(503).json({
+      code: 'ED25519_TRUST_UNAVAILABLE',
+      message:
+        'Ed25519 public-key discovery is unavailable while the configured algorithm is not Ed25519',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+  res.json({
+    data: {
+      algorithm: info.algorithm,
+      keyId: info.fingerprint,
+      fingerprint: info.fingerprint,
+      keyVersion: info.version,
+      publicKey: info.publicKey,
+    },
+    timestamp: new Date().toISOString(),
+  });
+});
+
+app.post('/act', (req: Request, res: Response) => {
+  try {
+    const {
+      attestation,
+      action = 'record-verified-result',
+      dissensusId,
+    } = req.body as {
+      attestation?: Attestation;
+      action?: string;
+      dissensusId?: string;
+    };
+    if (!attestation) {
+      res.status(400).json({
+        code: 'MISSING_ATTESTATION',
+        message: 'Attestation is required to authorize an action',
+        timestamp: new Date().toISOString(),
+      } satisfies ErrorResponse);
+      return;
+    }
+    if (revocationIntegrityStatus === 'mismatch') {
+      res.status(503).json({
+        code: 'REVOCATION_REGISTRY_INTEGRITY',
+        message: 'Action denied because revocation registry integrity evidence is mismatched',
+        timestamp: new Date().toISOString(),
+      } satisfies ErrorResponse);
+      return;
+    }
+    if (!attestationService.verify(attestation)) {
+      res.status(403).json({
+        code: 'INVALID_ATTESTATION',
+        message: 'Action denied because the attestation signature is invalid',
+        timestamp: new Date().toISOString(),
+      } satisfies ErrorResponse);
+      return;
+    }
+    if (!completedRuns.some((run) => run.attestation.id === attestation.id)) {
+      res.status(404).json({
+        code: 'ATTESTATION_NOT_RECORDED',
+        message: 'Action denied because the attestation has no recorded runtime lineage',
+        timestamp: new Date().toISOString(),
+      } satisfies ErrorResponse);
+      return;
+    }
+    if (isRevoked(attestation.id)) {
+      res.status(409).json({
+        code: 'REVOKED_ATTESTATION',
+        message: 'Action denied because the attestation has been revoked',
+        timestamp: new Date().toISOString(),
+      } satisfies ErrorResponse);
+      return;
+    }
+    if (isAttestationExpired(attestation)) {
+      res.status(409).json({
+        code: 'EXPIRED_ATTESTATION',
+        message: 'Action denied because the attestation has expired',
+        timestamp: new Date().toISOString(),
+      } satisfies ErrorResponse);
+      return;
+    }
+    if (!attestation.verified) {
+      res.status(409).json({
+        code: 'UNVERIFIED_ATTESTATION',
+        message: 'Action denied because verification did not pass',
+        timestamp: new Date().toISOString(),
+      } satisfies ErrorResponse);
+      return;
+    }
+
+    // A recorded disagreement does not block the action. It travels with
+    // it. Blocking would force resolution before evidence exists, which is
+    // the one thing the dissent model refuses to do; erasing it would let
+    // the record claim the action was uncontested. Neither is acceptable,
+    // so the action proceeds and carries the objection permanently.
+    const contested = dissensusId
+      ? runtimeDissensus.find((entry) => entry.id === dissensusId)
+      : undefined;
+
+    if (dissensusId && !contested) {
+      res.status(404).json({
+        code: 'DISSENSUS_NOT_RECORDED',
+        message: 'Action denied because the referenced reconciliation has no recorded lineage',
+        timestamp: new Date().toISOString(),
+      } satisfies ErrorResponse);
+      return;
+    }
+
+    const disputed = contested !== undefined && contested.verdict !== 'AGREED';
+
+    const recordedAction = {
+      id: `act-${new Date().toISOString().replace(/[-:.TZ]/g, '')}`,
+      action,
+      attestationId: attestation.id,
+      status: (disputed ? 'authorized-with-dissent' : 'authorized') as
+        'authorized' | 'authorized-with-dissent',
+      dissensusId: contested?.id ?? null,
+      dissent: contested
+        ? {
+            verdict: contested.verdict,
+            routing: contested.routing,
+            dissenting: contested.dissenting,
+          }
+        : null,
+      // Routing is advice to operators, not a gate. It is recorded so the
+      // question "did anyone review this" has an answer later.
+      requiresHumanReview: contested?.routing === 'HUMAN',
+      timestamp: new Date().toISOString(),
+    };
+    runtimeActions.unshift(recordedAction);
+    runtimeActions.splice(20);
+    persistRuntime();
+    recordEvent({
+      type: 'action.authorized',
+      stage: 'act',
+      message: disputed
+        ? `Action authorized over recorded dissent: ${action}`
+        : `Action authorized: ${action}`,
+      status: disputed ? 'active' : 'passed',
+      details: {
+        actionId: recordedAction.id,
+        attestationId: attestation.id,
+        dissensusId: recordedAction.dissensusId,
+        requiresHumanReview: recordedAction.requiresHumanReview,
+      },
+      requestId: res.locals.requestId,
+    });
+    res.status(201).json({ data: recordedAction, timestamp: new Date().toISOString() });
+  } catch (error) {
+    res.status(400).json({
+      code: 'ACTION_FAILED',
+      message: error instanceof Error ? error.message : 'Action authorization failed',
+      timestamp: new Date().toISOString(),
+    } satisfies ErrorResponse);
+  }
+});
+
+app.post('/learn', (req: Request, res: Response) => {
+  try {
+    const {
+      actionId,
+      outcome,
+      note = '',
+    } = req.body as {
+      actionId?: string;
+      outcome?: 'success' | 'failure' | 'uncertain';
+      note?: string;
+    };
+    if (!actionId || !outcome || !['success', 'failure', 'uncertain'].includes(outcome)) {
+      res.status(400).json({
+        code: 'INVALID_LEARNING',
+        message: 'actionId and a success, failure, or uncertain outcome are required',
+        timestamp: new Date().toISOString(),
+      } satisfies ErrorResponse);
+      return;
+    }
+    if (!runtimeActions.some((action) => action.id === actionId)) {
+      res.status(404).json({
+        code: 'ACTION_NOT_FOUND',
+        message: 'Learning must reference an authorized action',
+        timestamp: new Date().toISOString(),
+      } satisfies ErrorResponse);
+      return;
+    }
+
+    const learning = {
+      id: `learn-${new Date().toISOString().replace(/[-:.TZ]/g, '')}`,
+      actionId,
+      outcome,
+      note,
+      timestamp: new Date().toISOString(),
+    };
+    runtimeLearnings.unshift(learning);
+    runtimeLearnings.splice(20);
+    persistRuntime();
+    recordEvent({
+      type: 'learning.recorded',
+      stage: 'learn',
+      message: `Learning recorded: ${outcome}`,
+      status: outcome === 'failure' ? 'failed' : 'passed',
+      details: { learningId: learning.id, actionId },
+      requestId: res.locals.requestId,
+    });
+    res.status(201).json({ data: learning, timestamp: new Date().toISOString() });
+  } catch (error) {
+    res.status(400).json({
+      code: 'LEARNING_FAILED',
+      message: error instanceof Error ? error.message : 'Learning recording failed',
+      timestamp: new Date().toISOString(),
+    } satisfies ErrorResponse);
+  }
+});
+
+app.post('/recompile', (req: Request, res: Response) => {
+  try {
+    const { learningId } = req.body as { learningId?: string };
+    const learning = runtimeLearnings.find((record) => record.id === learningId);
+    if (!learning) {
+      res.status(404).json({
+        code: 'LEARNING_NOT_FOUND',
+        message: 'Recompile proposals must reference a recorded learning',
+        timestamp: new Date().toISOString(),
+      } satisfies ErrorResponse);
+      return;
+    }
+
+    const proposal = {
+      id: `recompile-${new Date().toISOString().replace(/[-:.TZ]/g, '')}`,
+      learningId: learning.id,
+      version: `proposal-${runtimeRecompilations.length + 1}`,
+      status: 'proposed' as const,
+      rationale: `Review ${learning.outcome} feedback from action ${learning.actionId}`,
+      timestamp: new Date().toISOString(),
+    };
+    runtimeRecompilations.unshift(proposal);
+    runtimeRecompilations.splice(20);
+    persistRuntime();
+    recordEvent({
+      type: 'recompile.proposed',
+      stage: 'recompile',
+      message: `Recompile proposal created: ${proposal.version}`,
+      status: 'active',
+      details: { proposalId: proposal.id, learningId: learning.id },
+      requestId: res.locals.requestId,
+    });
+    res.status(201).json({ data: proposal, timestamp: new Date().toISOString() });
+  } catch (error) {
+    res.status(400).json({
+      code: 'RECOMPILE_FAILED',
+      message: error instanceof Error ? error.message : 'Recompile proposal failed',
+      timestamp: new Date().toISOString(),
+    } satisfies ErrorResponse);
   }
 });
 
 /**
- * POST /complete-loop — Observe → Verify → Attest → Record in one request
+ * POST /complete-loop - Execute the complete verification loop
+ * Observe → Verify → Attest in one request
  */
 app.post('/complete-loop', (req: Request, res: Response) => {
+  const correlationId = `loop-${Date.now()}`;
+  const requestId = res.locals.requestId as string;
   try {
-    const { claim, category, source, observedBy, metadata, confidence, confidenceReason } =
-      req.body;
+    const {
+      claim,
+      category,
+      source,
+      observedBy,
+      metadata,
+      confidence,
+      confidenceReason,
+      parentId,
+      lineage,
+    } = req.body;
 
+    // Step 1: Observe
+    recordEvent({
+      type: 'observation.received',
+      stage: 'observe',
+      message: 'Observation received from the workspace',
+      status: 'active',
+      correlationId,
+      requestId,
+    });
     const observation = observer.observe({
       claim,
       category,
@@ -281,5701 +2150,292 @@ app.post('/complete-loop', (req: Request, res: Response) => {
       metadata,
       confidence,
       confidenceReason,
+      parentId,
+      lineage,
     });
-    store.recordObservation(observation);
-
+    // Step 2: Verify
+    recordEvent({
+      type: 'verification.started',
+      stage: 'verify',
+      message: 'Evidence checks started',
+      status: 'active',
+      correlationId,
+      requestId,
+      details: { claim },
+    });
     const verificationResult = verificationEngine.verify(observation);
-    store.recordVerification(verificationResult);
 
+    recordEvent({
+      type: verificationResult.summary.passed ? 'verification.passed' : 'verification.failed',
+      stage: 'verify',
+      message: verificationResult.summary.passed
+        ? 'All applicable rules passed'
+        : 'Verification found a failed rule',
+      status: verificationResult.summary.passed ? 'passed' : 'failed',
+      correlationId,
+      requestId,
+      details: { rulesApplied: verificationResult.summary.rulesApplied },
+    });
+
+    // Step 3: Attest
     const attestation = attestationService.attest(verificationResult);
-    store.recordAttestation(attestation);
-
-    const loopResult = {
+    completedRuns.unshift({
+      correlationId,
+      requestId,
       observation,
       verification: verificationResult,
       attestation,
-      logSize: store.size(),
-    };
-    res.status(201).json({
-      data: loopResult,
+    });
+    completedRuns.splice(20);
+
+    // Step 4: Remember (MINI kernel's hash chain)
+    // Unlike completedRuns, which is a bounded window, this is append-only
+    // and integrity-checkable. Remember completes the MINI cycle: Observe → Verify → Remember
+    recordEvent({
+      type: 'memory.entering',
+      stage: 'remember',
+      message: 'Storing in MINI kernel memory (append-only hash chain)',
+      status: 'active',
+      correlationId,
+      requestId,
+    });
+    const remembered = kernelMemory.remember(observation, verificationResult);
+
+    persistRuntime();
+    recordEvent({
+      type: 'memory.recorded',
+      stage: 'remember',
+      message: 'Verification result stored in MINI kernel',
+      status: 'passed',
+      correlationId,
+      requestId,
+      details: { memoryId: remembered.id },
+    });
+    recordEvent({
+      type: 'attestation.created',
+      stage: 'attest',
+      message: 'Verification result signed and recorded',
+      status: attestation.verified ? 'passed' : 'failed',
+      correlationId,
+      requestId,
+      details: {
+        attestationId: attestation.id,
+        memoryId: remembered.id,
+        signing: {
+          attestationId: attestation.id,
+          verificationId: attestation.verificationId,
+          algorithm: attestation.signingAlgorithm || 'HMAC-SHA256',
+          keyVersion: attestation.keyVersion,
+          keyFingerprint: attestation.signingKey,
+          verified: attestation.verified,
+          confidence: attestation.confidence,
+          ruleVersions: attestation.ruleVersions,
+        } satisfies SigningAuditDetails,
+      },
+    });
+
+    const response: SuccessResponse<{
+      observation: typeof observation;
+      verification: typeof verificationResult;
+      memory: typeof remembered;
+      attestation: typeof attestation;
+    }> = {
+      data: {
+        observation,
+        verification: verificationResult,
+        memory: remembered,
+        attestation,
+      },
       timestamp: new Date().toISOString(),
-    } satisfies SuccessResponse<typeof loopResult>);
+    };
+
+    res.status(201).json(response);
   } catch (error) {
-    res.status(400).json({
+    const errorResponse: ErrorResponse = {
       code: 'LOOP_FAILED',
       message: error instanceof Error ? error.message : 'Verification loop failed',
       timestamp: new Date().toISOString(),
-    } as ErrorResponse);
-  }
-});
-
-/**
- * POST /ecosystem/flow — Unified 8-Stage Canonical Ecosystem OS Execution Flow
- *
- * INTENT → COMPILE → OBSERVE → VERIFY → ATTEST → KERNEL_STATE → REPUTATION → PROVENANCE
- */
-app.post('/ecosystem/flow', (req: Request, res: Response) => {
-  try {
-    const {
-      intentClaim = 'Autonomous verified state transition across ecosystem OS',
-      actorDid = 'did:omega:agent:lead-orchestrator',
-      ruleDefinition = 'responseTime < 100',
-      category = 'ecosystem-flow',
-      metadata = { responseTime: 28, statusCode: 200 },
-      confidence = 0.98,
-    } = req.body;
-
-    // 1. Compile DSL Rule into Oceanicum IR Program
-    const compiledIR = ruleCompiler.compile('ecosystem-intent-rule', ruleDefinition);
-
-    // 2. Deterministic Observation
-    const observation = observer.observe({
-      claim: intentClaim,
-      category,
-      source: { system: 'ecosystem-flow-engine', version: '0.1.0', environment: 'production' },
-      observedBy: actorDid,
-      metadata,
-      confidence,
-      confidenceReason: 'Autonomous multi-stage ecosystem verification pipeline',
-    });
-    store.recordObservation(observation);
-
-    // 3. Formal Invariant Verification
-    const verification = verificationEngine.verify(observation);
-    store.recordVerification(verification);
-
-    // 4. Cryptographic HMAC/ECDSA Attestation
-    const attestation = attestationService.attest(verification);
-    store.recordAttestation(attestation);
-
-    // 5. Canonical Kernel State Transition (S_n -> S_{n+1})
-    const kernelState = kernelEngine.transition({
-      intent: {
-        claim: intentClaim,
-        actors: [actorDid],
-        inputs: metadata,
-        expectedOutputs: { verified: verification.summary.passed },
-        constraints: ['LATENCY_BOUND', 'CONFIDENCE_THRESHOLD'],
-        permissions: ['CAN_OBSERVE', 'CAN_VERIFY', 'CAN_ACT'],
-        dependencies: [],
-        maxRiskScore: 0.1,
-        economicTarget: { targetValue: 100, resourceBudget: 500 },
-      },
-      observation: {
-        source: 'ecosystem-flow-engine',
-        observedAt: observation.timestamp,
-        rawTelemetry: metadata,
-        epistemicType: 'FACT',
-        confidence,
-      },
-      evidenceItems: [
-        {
-          claim: intentClaim,
-          source: 'verification-engine',
-          observationId: observation.id,
-          commandOrTest: 'ruleCompiler.compile && verificationEngine.verify',
-          status: verification.summary.passed ? 'PASSED' : 'FAILED',
-          confidence,
-        },
-      ],
-      actionPlan: {
-        targetService: 'canonical-kernel-ledger',
-        payload: { attestationSignature: attestation.signature, metadata },
-        isDestructive: false,
-        isFinancial: false,
-        gasLimit: 100000,
-        reversibility: 'REVERSIBLE',
-      },
-      autoAuthorizeIfNonDestructive: true,
-    });
-
-    // 6. Reputation & Feedback Update (weighted by outcome)
-    let agentRep = reputationEngine.getAgent(actorDid);
-    if (!agentRep) {
-      agentRep = reputationEngine.registerAgent({
-        agentDid: actorDid,
-        moniker: actorDid.split(':').pop() || 'Agent',
-        initialScore: 500,
-      });
-    }
-    const feedbackReceipt = reputationEngine.submitFeedback({
-      fromDid: 'did:omega:kernel:canonical-state',
-      targetDid: actorDid,
-      scoreDelta: verification.summary.passed ? 20 : -30,
-      reason: `Ecosystem execution result: ${verification.summary.passed ? 'PASSED' : 'FAILED'}`,
-    });
-
-    // 7. Assemble Unified Result Package
-    const flowResult = {
-      flowId: `flow-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      compiledIR: {
-        name: compiledIR.name,
-        instructionCount: compiledIR.instructions.length,
-      },
-      observation: {
-        id: observation.id,
-        status: observation.status,
-        confidence: observation.confidence,
-      },
-      verification: {
-        passed: verification.summary.passed,
-        rulesEvaluated: verification.summary.rulesApplied,
-      },
-      attestation: {
-        id: attestation.id,
-        signature: attestation.signature,
-      },
-      kernelState: {
-        stateId: kernelState.stateId,
-        stateIndex: kernelState.stateIndex,
-        verificationStatus: kernelState.verificationStatus,
-        stateDeltaHash: kernelState.stateDeltaHash,
-      },
-      reputation: {
-        agentDid: actorDid,
-        newScore: feedbackReceipt.newScore,
-        scoreDelta: feedbackReceipt.scoreDelta,
-      },
-      provenanceLogSize: store.size(),
-      executedAt: new Date().toISOString(),
     };
-
-    res.status(201).json({
-      data: flowResult,
-      timestamp: new Date().toISOString(),
-    } satisfies SuccessResponse<typeof flowResult>);
-  } catch (error) {
-    res.status(400).json({
-      code: 'ECOSYSTEM_FLOW_FAILED',
-      message: error instanceof Error ? error.message : 'Ecosystem flow failed',
-      timestamp: new Date().toISOString(),
-    } as ErrorResponse);
+    res.status(400).json(errorResponse);
   }
 });
 
 /**
- * POST /ecosystem/grand-flow — Full-Stack Grand Continuum Flow (Lowest to Max Form)
- *
- * Connects the entire stack end-to-end:
- *   [1] Lowest Form: Raw Telemetry & Signal Capture
- *   [2] Intent & IR Bytecode Compilation
- *   [3] Formal Invariant & ZK Proof Verification
- *   [4] TEE Enclave & Quorum Multi-Signature Attestation
- *   [5] Security Capability & Attributable Human Authorization
- *   [6] Mempool MEV Bundling, VDF Sequencing & DA Erasure Coding
- *   [7] OVM Stack VM Execution & AMM Liquidity Swap
- *   [8] Canonical Kernel State Machine Transition (S_n → S_{n+1})
- *   [9] PoS Staking, Reputation Ledger & Provenance DAG Ingestion
- *   [10] Max Form: Online Learning, Drift Analysis & Rule Recompilation
+ * GET /memory - The kernel's hash-chained memory
  */
-app.post('/ecosystem/grand-flow', (req: Request, res: Response) => {
-  try {
-    const {
-      intentClaim = 'Grand continuum full-stack state transition from lowest telemetry to max recompilation',
-      actorDid = 'did:omega:agent:universal-operator',
-      ruleDefinition = 'responseTime < 100 && statusCode == 200',
-      metadata = { responseTime: 22, statusCode: 200, cpuUsage: 0.15 },
-      swapAmount = 50,
-    } = req.body;
-
-    // [1] Lowest Form: Signal Normalization & Telemetry Trace
-    const span = tracer.startSpan('grand-continuum-span');
-    const observation = observer.observe({
-      claim: intentClaim,
-      category: 'grand-ecosystem-continuum',
-      source: { system: 'grand-flow-engine', version: '0.1.0', environment: 'production' },
-      observedBy: actorDid,
-      metadata,
-      confidence: 0.99,
-      confidenceReason: 'Multi-tiered full-stack verification telemetry',
-    });
-    store.recordObservation(observation);
-    tracer.endSpan(span);
-
-    // [2] Intent & IR Bytecode Compilation
-    const compiledIR = ruleCompiler.compile('grand-continuum-rule', ruleDefinition);
-
-    // [3] Formal Invariant Verification
-    const verification = verificationEngine.verify(observation);
-    store.recordVerification(verification);
-
-    // [4] Cryptographic Attestation & TEE Remote Attestation
-    const attestation = attestationService.attest(verification);
-    store.recordAttestation(attestation);
-
-    const existingEnclaves = enclaveEngine.getEnclaves();
-    const enclave =
-      existingEnclaves.length > 0
-        ? existingEnclaves[0]
-        : enclaveEngine.provisionEnclave({
-            type: 'INTEL_SGX',
-            name: 'GrandContinuumEnclave',
-            codePayload: 'grand-continuum-runtime-v1',
-            authorSignerKey: 'omega-root-signer-2026',
-          });
-    const teeAttestation = enclaveEngine.generateRemoteAttestation(enclave.enclaveId, attestation.signature);
-
-    // [5] Security Capability & Attributable Human Gate
-    const securityToken = securityEngine.issueToken({
-      id: actorDid,
-      name: 'UniversalOperator',
-      type: 'AGENT',
-      permissions: ['CAN_OBSERVE', 'CAN_VERIFY', 'CAN_ACT'],
-      issuedAt: new Date().toISOString(),
-    });
-    const humanRecord = humanEngine.recordInput('APPROVAL', actorDid, 'Verified non-destructive grand continuum state transition', metadata, observation.id);
-    humanAuditLog.push(humanRecord);
-
-    // [6] Mempool Submission & MEV-Resistant Sequencing
-    const mempoolTx = mempoolEngine.submitTransaction({
-      senderDid: actorDid,
-      nonce: 1,
-      payload: { attestationId: attestation.id, action: 'GRAND_FLOW_EXECUTE' },
-      gasPriceGwei: 35,
-      gasLimit: 60000,
-    });
-    const harvestReceipt = mempoolEngine.popBatch({ maxGas: 500000 });
-    const daBlob = daEngine.submitBlob({
-      namespace: 'grand-continuum',
-      submitterDid: actorDid,
-      rawData: JSON.stringify(mempoolTx),
-    });
-
-    // [7] OVM Stack VM Execution & AMM Liquidity Swap
-    const evmResult = evmEngine.execute({
-      callerDid: actorDid,
-      code: ['PUSH 10', 'PUSH 20', 'ADD', 'RETURN'],
-      gasLimit: 100000,
-    });
-
-    const existingPools = ammEngine.getPools();
-    const pool =
-      existingPools.length > 0
-        ? existingPools[0]
-        : ammEngine.createPool({
-            tokenA: 'USDC',
-            tokenB: 'OMEGA',
-            initialA: 100000,
-            initialB: 50000,
-            creatorDid: 'did:omega:system:liquidity-root',
-          });
-    const swapReceipt = ammEngine.swap({
-      poolId: pool.poolId,
-      traderDid: actorDid,
-      tokenIn: 'USDC',
-      amountIn: swapAmount,
-      minAmountOut: 1,
-    });
-
-    // [8] Canonical Kernel State Machine Transition (S_n → S_{n+1})
-    const kernelState = kernelEngine.transition({
-      intent: {
-        claim: intentClaim,
-        actors: [actorDid],
-        inputs: metadata,
-        expectedOutputs: { verified: verification.summary.passed, swapOut: swapReceipt.amountOut },
-        constraints: ['ZERO_KNOWLEDGE_COMPLIANT', 'TEE_ATTESTED', 'HUMAN_GATED'],
-        permissions: ['CAN_OBSERVE', 'CAN_VERIFY', 'CAN_ACT'],
-        dependencies: [],
-        maxRiskScore: 0.05,
-        economicTarget: { targetValue: swapReceipt.amountOut, resourceBudget: 1000 },
-      },
-      observation: {
-        source: 'grand-flow-engine',
-        observedAt: observation.timestamp,
-        rawTelemetry: metadata,
-        epistemicType: 'FACT',
-        confidence: observation.confidence,
-      },
-      evidenceItems: [
-        {
-          claim: intentClaim,
-          source: 'verification-engine',
-          observationId: observation.id,
-          commandOrTest: 'verificationEngine.verify && evmEngine.execute',
-          status: verification.summary.passed ? 'PASSED' : 'FAILED',
-          confidence: 0.99,
-        },
-      ],
-      actionPlan: {
-        targetService: 'canonical-kernel-ledger',
-        payload: {
-          attestationSignature: attestation.signature,
-          teeReport: teeAttestation.reportId,
-          swapId: swapReceipt.swapId,
-        },
-        isDestructive: false,
-        isFinancial: true,
-        gasLimit: 200000,
-        reversibility: 'REVERSIBLE',
-      },
-      autoAuthorizeIfNonDestructive: true,
-    });
-
-    // [9] Reputation Feedback & Staking Epoch Rewards
-    let agentRep = reputationEngine.getAgent(actorDid);
-    if (!agentRep) {
-      agentRep = reputationEngine.registerAgent({ agentDid: actorDid, moniker: 'UniversalOperator', initialScore: 500 });
-    }
-    const repReceipt = reputationEngine.submitFeedback({
-      fromDid: 'did:omega:kernel:canonical-state',
-      targetDid: actorDid,
-      scoreDelta: verification.summary.passed ? 30 : -40,
-      reason: 'Grand continuum end-to-end execution verified',
-    });
-
-    // [10] Max Form: Provenance DAG Ingestion, State Checkpoint & Drift Analysis
-    const provenanceGraph = new ProvenanceGraph();
-    provenanceGraph.ingestEvents(store.getEntries());
-    const vaultCheckpoint = stateVault.createCheckpoint(
-      'Grand Continuum State Checkpoint',
-      store.getEntries(),
-      verificationEngine.getRules()
-    );
-    const driftAnalysis = evolutionEngine.analyzeDrift('grand-continuum-rule', [{ passed: verification.summary.passed }]);
-
-    const graphStats = provenanceGraph.getStats();
-
-    const grandResult = {
-      continuumFlowId: `grand-flow-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`,
-      lowestForm: {
-        observationId: observation.id,
-        confidence: observation.confidence,
-        rawTelemetry: metadata,
-      },
-      intermediateForm: {
-        irInstructionCount: compiledIR.instructions.length,
-        verificationPassed: verification.summary.passed,
-        attestationId: attestation.id,
-        teeAttestationId: teeAttestation.reportId,
-        securityTokenValid: securityEngine.verifyToken(securityToken),
-        humanApprovalId: humanRecord.id,
-      },
-      executionForm: {
-        mempoolTxHash: mempoolTx.txHash,
-        harvestedTxCount: harvestReceipt.includedTxCount,
-        daBlobId: daBlob.blobId,
-        daKzgCommitment: daBlob.kzgCommitment,
-        evmGasUsed: evmResult.gasUsed,
-        swapReceipt: {
-          swapId: swapReceipt.swapId,
-          amountIn: swapReceipt.amountIn,
-          amountOut: swapReceipt.amountOut,
-          feePaid: swapReceipt.feePaid,
-          priceImpactPct: swapReceipt.priceImpactPct,
-        },
-      },
-      canonicalState: {
-        stateId: kernelState.stateId,
-        stateIndex: kernelState.stateIndex,
-        verificationStatus: kernelState.verificationStatus,
-        stateDeltaHash: kernelState.stateDeltaHash,
-        newReputationScore: repReceipt.newScore,
-      },
-      maxForm: {
-        provenanceNodesCount: graphStats.nodeCount,
-        provenanceEdgesCount: graphStats.edgeCount,
-        vaultEpoch: vaultCheckpoint.epoch,
-        vaultMerkleRoot: vaultCheckpoint.merkleRoot,
-        driftDetected: driftAnalysis.driftDetected,
-        recommendedAction: driftAnalysis.recommendedAction,
-      },
-      executedAt: new Date().toISOString(),
-    };
-
-    res.status(201).json({
-      data: grandResult,
-      timestamp: new Date().toISOString(),
-    } satisfies SuccessResponse<typeof grandResult>);
-  } catch (error) {
-    res.status(400).json({
-      code: 'GRAND_FLOW_FAILED',
-      message: error instanceof Error ? error.message : 'Grand continuum flow failed',
-      timestamp: new Date().toISOString(),
-    } as ErrorResponse);
-  }
+app.get('/memory', (_req: Request, res: Response) => {
+  res.json({
+    data: kernelMemory.all(),
+    meta: {
+      size: kernelMemory.size(),
+      appendOnly: true,
+      durable: persistenceEnabled,
+    },
+    timestamp: new Date().toISOString(),
+  });
 });
 
 /**
- * POST /ecosystem/hyper-flow — 22-Stage Full Ecosystem Hyper-Continuum Flow
- * Reality-First, Evidence-First, Non-Destructive Execution from Lowest Telemetry to Max Recompilation
+ * GET /memory/integrity - Recompute the chain and report whether it holds
  */
-app.post('/ecosystem/hyper-flow', async (req: Request, res: Response) => {
-  try {
-    const {
-      intentClaim = 'Autonomous verified hyper-continuum ecosystem state transition',
-      actorDid = 'did:omega:agent:hyper-operator',
-      ruleDefinition = 'responseTime < 100 && statusCode == 200',
-      metadata = { statusCode: 200, responseTime: 22, memoryPressurePct: 40 },
-      swapAmount = 150,
-    } = req.body;
-
-    // [1] Raw Telemetry & Epistemic Observation
-    const observation = observer.observe({
-      claim: intentClaim,
-      category: 'hyper-continuum-flow',
-      source: { system: 'api-hyper-flow-daemon', version: '2.0.0', environment: 'production' },
-      observedBy: actorDid,
-      metadata,
-      confidence: 0.99,
-      confidenceReason: 'Hyper-flow comprehensive multi-telemetry synthesis',
-    });
-    store.recordObservation(observation);
-
-    // [2] Deterministic IR Compilation
-    const compiledIR = ruleCompiler.compile(ruleDefinition, 'hyper-rule-compiled');
-
-    // [3] Formal Verification Execution
-    const verification = verificationEngine.verify(observation);
-    store.recordVerification(verification);
-
-    // [4] Cryptographic Ed25519 Attestation
-    const attestation = attestationService.attest(verification);
-    store.recordAttestation(attestation);
-
-    // [5] Confidential TEE Enclave Provisioning & Attestation
-    const existingEnclaves = enclaveEngine.getEnclaves();
-    const teeEnclave =
-      existingEnclaves.length > 0
-        ? existingEnclaves[0]
-        : enclaveEngine.provisionEnclave({
-            type: 'INTEL_SGX',
-            name: 'HyperContinuumEnclave',
-            codePayload: 'hyper-continuum-runtime-v2',
-            authorSignerKey: 'omega-root-signer-2026',
-          });
-    const teeAttestation = enclaveEngine.generateRemoteAttestation(teeEnclave.enclaveId, attestation.signature);
-    const teeVerification = enclaveEngine.verifyRemoteAttestation(teeAttestation);
-
-    // [6] Zero-Knowledge Range Proof Generation & Verification
-    const zkProof = zkEngine.generateRangeProof('circuit-latency-bound', Number(metadata.responseTime || 22));
-    const zkVerified = zkEngine.verifyProof(zkProof);
-
-    // [7] Security Engine Access Token & Guard Check
-    const securityToken = securityEngine.issueToken({
-      id: actorDid,
-      name: 'HyperOperator',
-      type: 'AGENT',
-      permissions: ['CAN_OBSERVE', 'CAN_VERIFY', 'CAN_ACT'],
-      issuedAt: new Date().toISOString(),
-    });
-    const tokenValid = securityEngine.verifyToken(securityToken);
-
-    // [8] Human Accountability Gate & Non-Destructive Approval
-    const humanRecord = humanEngine.recordInput(
-      'APPROVAL',
-      actorDid,
-      'Verified non-destructive hyper-continuum 22-stage execution',
-      metadata,
-      observation.id
-    );
-    humanAuditLog.push(humanRecord);
-
-    // [9] Formless Swarm Multi-Role Agent Consensus
-    const swarmClient = new OceanicosClient({ mode: 'local' });
-    const swarm = new FormlessSwarm(swarmClient);
-    const swarmResult = await swarm.executeSwarmCycle({
-      claim: `Hyper-Flow Swarm Verification: ${intentClaim}`,
-      ruleName: 'hyper-swarm-rule',
-      ruleDefinition: 'responseTime < 100',
-      metadata,
-    });
-
-    // [10] Mempool Submission & MEV-Resistant Sequencing
-    const mempoolTx = mempoolEngine.submitTransaction({
-      senderDid: actorDid,
-      nonce: 1,
-      payload: { attestationId: attestation.id, action: 'HYPER_FLOW_EXECUTE' },
-      gasPriceGwei: 40,
-      gasLimit: 80000,
-    });
-    const harvestReceipt = mempoolEngine.popBatch({ maxGas: 600000 });
-
-    // [11] Data Availability (DA) Blob Submission & KZG Polynomial Commitment
-    const daBlob = daEngine.submitBlob({
-      namespace: 'hyper-continuum',
-      submitterDid: actorDid,
-      rawData: JSON.stringify({ mempoolTx, attestationId: attestation.id }),
-    });
-
-    // [12] OVM Stack VM Bytecode Execution
-    const evmResult = evmEngine.execute({
-      callerDid: actorDid,
-      code: ['PUSH 15', 'PUSH 35', 'ADD', 'RETURN'],
-      gasLimit: 120000,
-    });
-
-    // [13] AMM Liquidity Pool Constant-Product Swap
-    const existingPools = ammEngine.getPools();
-    const pool =
-      existingPools.length > 0
-        ? existingPools[0]
-        : ammEngine.createPool({
-            tokenA: 'USDC',
-            tokenB: 'OMEGA',
-            initialA: 100000,
-            initialB: 50000,
-            creatorDid: 'did:omega:system:liquidity-root',
-          });
-    const swapReceipt = ammEngine.swap({
-      poolId: pool.poolId,
-      traderDid: actorDid,
-      tokenIn: 'USDC',
-      amountIn: swapAmount,
-      minAmountOut: 1,
-    });
-
-    // [14] Adaptive Dynamic Sharding 2PC State Transition
-    const crossShardTx = shardingEngine.prepareCrossShardTx({
-      key: `state-${actorDid}`,
-      sourceShardId: 'shard-00',
-      targetShardId: 'shard-01',
-      sourceValue: { status: 'LOCKED', timestamp: new Date().toISOString() },
-      targetValue: { balance: swapReceipt.amountOut, updatedBy: actorDid },
-    });
-    const committedCrossShard = shardingEngine.commitCrossShardTx(crossShardTx.txId);
-
-    // [15] L2 Validity Rollup Transaction & Batch Block Production
-    const l2Tx = rollupEngine.submitL2Transaction({
-      from: '0xAlice',
-      to: '0xBob',
-      value: 25,
-      calldata: '0xhyper_call',
-    });
-    const rollupBlock = rollupEngine.produceBlock({
-      proposerDid: actorDid,
-      rollupType: 'VALIDITY_ZK',
-    });
-
-    // [16] Heterogeneous Cross-Chain Bridge Initiation, Relay & Finalization
-    const bridgeTransfer = bridgeEngine.initiateTransfer({
-      sourceChain: 'chain-eth-mainnet',
-      targetChain: 'chain-solana-mainnet',
-      senderDid: actorDid,
-      recipientAddress: '0xHyperRecipientBridge',
-      assetSymbol: 'OMEGA',
-      amount: swapReceipt.amountOut,
-      lockTxHash: '0xlock_proof_hash_hyper',
-    });
-    bridgeEngine.relayTransfer({
-      transferId: bridgeTransfer.transferId,
-      relayerDid: 'did:omega:relayer:eth-primary',
-      merkleProof: '0xmerkle_proof_hyper_verified',
-    });
-    const finalizedBridge = bridgeEngine.finalizeTransfer(bridgeTransfer.transferId);
-
-    // [17] BFT Consensus Propose, Vote & Quorum Certificate (QC)
-    const consensusBlock = consensusEngine.proposeBlock({
-      proposerDid: 'did:omega:validator:genesis-alpha',
-      transactions: [{ type: 'HYPER_FLOW', claim: intentClaim, actorDid }],
-      stateRoot: rollupBlock.postStateRoot,
-      attestationProofs: [attestation.signature],
-    });
-    consensusEngine.castVote({
-      validatorDid: 'did:omega:validator:genesis-alpha',
-      blockHash: consensusBlock.blockHash,
-      blockHeight: consensusBlock.height,
-    });
-    const consensusVote2 = consensusEngine.castVote({
-      validatorDid: 'did:omega:validator:genesis-beta',
-      blockHash: consensusBlock.blockHash,
-      blockHeight: consensusBlock.height,
-    });
-
-    // [18] Canonical Kernel Sovereign State Machine Transition (S_n → S_{n+1})
-    const kernelState = kernelEngine.transition({
-      intent: {
-        claim: intentClaim,
-        actors: [actorDid],
-        inputs: metadata,
-        expectedOutputs: {
-          verified: verification.summary.passed,
-          swapOut: swapReceipt.amountOut,
-          bridgeFinalized: true,
-        },
-        constraints: ['ZERO_KNOWLEDGE_COMPLIANT', 'TEE_ATTESTED', 'HUMAN_GATED', 'BFT_FINALIZED'],
-        permissions: ['CAN_OBSERVE', 'CAN_VERIFY', 'CAN_ACT'],
-        dependencies: [],
-        maxRiskScore: 0.05,
-        economicTarget: { targetValue: swapReceipt.amountOut, resourceBudget: 2000 },
-      },
-      observation: {
-        source: 'hyper-flow-daemon',
-        observedAt: observation.timestamp,
-        rawTelemetry: metadata,
-        epistemicType: 'FACT',
-        confidence: observation.confidence,
-      },
-      evidenceItems: [
-        {
-          claim: intentClaim,
-          source: 'verification-engine',
-          observationId: observation.id,
-          commandOrTest: 'verificationEngine.verify && zkEngine.verifyProof',
-          status: verification.summary.passed ? 'PASSED' : 'FAILED',
-          confidence: 0.99,
-        },
-      ],
-      actionPlan: {
-        targetService: 'hyper-continuum-canonical-ledger',
-        payload: {
-          attestationSignature: attestation.signature,
-          teeReport: teeAttestation.reportId,
-          zkProofId: zkProof.proofId,
-          rollupBlockHash: rollupBlock.batchCommitment,
-          consensusBlockHash: consensusBlock.blockHash,
-        },
-        isDestructive: false,
-        isFinancial: true,
-        gasLimit: 250000,
-        reversibility: 'REVERSIBLE',
-      },
-      autoAuthorizeIfNonDestructive: true,
-    });
-
-    // [19] Reputation Feedback Engine & Operator Staking Evolution
-    let agentRep = reputationEngine.getAgent(actorDid);
-    if (!agentRep) {
-      agentRep = reputationEngine.registerAgent({
-        agentDid: actorDid,
-        moniker: 'HyperContinuumOperator',
-        initialScore: 550,
-      });
-    }
-    const repReceipt = reputationEngine.submitFeedback({
-      fromDid: 'did:omega:kernel:hyper-continuum',
-      targetDid: actorDid,
-      scoreDelta: verification.summary.passed ? 40 : -50,
-      reason: '22-Stage Hyper-continuum end-to-end execution verified',
-    });
-
-    // [20] Self-Correction & Learning Engine Prediction / Reality Evaluation
-    const prediction = learningEngine.makePrediction('PASS', 0.95, 'response-time-threshold');
-    const learningEvent = learningEngine.evaluatePrediction(prediction.id, verification);
-
-    // [21] System Mood & Telemetry Evaluation
-    const mood = moodEvaluator.evaluate(
-      store.getMetrics(),
-      store.verifyChainIntegrity().valid,
-      0
-    );
-
-    // [22] Max Form: Provenance DAG Ingestion, Vault Epoch Checkpoint & Drift Analysis
-    const provenanceGraph = new ProvenanceGraph();
-    provenanceGraph.ingestEvents(store.getEntries());
-    const vaultCheckpoint = stateVault.createCheckpoint(
-      'Hyper Continuum State Checkpoint',
-      store.getEntries(),
-      verificationEngine.getRules()
-    );
-    const driftAnalysis = evolutionEngine.analyzeDrift('hyper-continuum-rule', [
-      { passed: verification.summary.passed },
-    ]);
-    const graphStats = provenanceGraph.getStats();
-
-    const hyperResult = {
-      hyperFlowId: `hyper-flow-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`,
-      stageCount: 22 as const,
-      success: verification.summary.passed && consensusVote2.quorumReached && zkVerified,
-      executedAt: new Date().toISOString(),
-      telemetryStage: {
-        observationId: observation.id,
-        confidence: observation.confidence,
-        rawTelemetry: metadata,
-      },
-      irStage: {
-        instructionCount: compiledIR.instructions.length,
-        compiledRuleName: compiledIR.name,
-      },
-      verificationStage: {
-        passed: verification.summary.passed,
-        rulesEvaluated: verification.summary.rulesApplied,
-        ruleResults: verification.rules.map((r) => ({ rule: r.name, passed: r.passed })),
-      },
-      attestationStage: {
-        attestationId: attestation.id,
-        signature: attestation.signature,
-        algorithm: 'Ed25519',
-      },
-      teeStage: {
-        enclaveId: teeEnclave.enclaveId,
-        reportId: teeAttestation.reportId,
-        verified: teeVerification.valid,
-      },
-      zkStage: {
-        proofId: zkProof.proofId,
-        circuitId: zkProof.circuitId,
-        verified: zkVerified,
-      },
-      securityStage: {
-        subjectDid: actorDid,
-        tokenValid,
-      },
-      humanStage: {
-        approvalId: humanRecord.id,
-        rationale: humanRecord.rationale,
-      },
-      swarmStage: {
-        agentCount: swarmResult.agentResults.length,
-        isGreen: swarmResult.isGreen,
-        evidenceArtifactId: swarmResult.evidenceArtifactId,
-      },
-      mempoolStage: {
-        txHash: mempoolTx.txHash,
-        harvestedCount: harvestReceipt.includedTxCount,
-      },
-      daStage: {
-        blobId: daBlob.blobId,
-        kzgCommitment: daBlob.kzgCommitment,
-      },
-      evmStage: {
-        gasUsed: evmResult.gasUsed,
-        stackOutput: evmResult.stackResult[evmResult.stackResult.length - 1] || '0',
-      },
-      ammStage: {
-        swapId: swapReceipt.swapId,
-        tokenIn: swapReceipt.tokenIn,
-        tokenOut: swapReceipt.tokenOut,
-        amountIn: swapReceipt.amountIn,
-        amountOut: swapReceipt.amountOut,
-        priceImpactPct: swapReceipt.priceImpactPct,
-      },
-      shardingStage: {
-        txId: committedCrossShard.txId,
-        sourceShardId: committedCrossShard.sourceShardId,
-        targetShardId: committedCrossShard.targetShardId,
-        state: committedCrossShard.state,
-        commitProof: committedCrossShard.commitProof,
-      },
-      rollupStage: {
-        l2TxHash: l2Tx.txHash,
-        blockHeight: rollupBlock.blockHeight,
-        rollupType: rollupBlock.rollupType,
-        batchCommitment: rollupBlock.batchCommitment,
-      },
-      bridgeStage: {
-        transferId: finalizedBridge.transferId,
-        sourceChain: finalizedBridge.sourceChain,
-        targetChain: finalizedBridge.targetChain,
-        status: finalizedBridge.status,
-        mintTxHash: finalizedBridge.mintTxHash,
-      },
-      consensusStage: {
-        blockHash: consensusBlock.blockHash,
-        blockHeight: consensusBlock.height,
-        qcId: consensusVote2.qc.qcId,
-        quorumReached: consensusVote2.quorumReached,
-      },
-      kernelStage: {
-        stateId: kernelState.stateId,
-        stateIndex: kernelState.stateIndex,
-        verificationStatus: kernelState.verificationStatus,
-        stateDeltaHash: kernelState.stateDeltaHash,
-      },
-      reputationStage: {
-        agentDid: actorDid,
-        newScore: repReceipt.newScore,
-        scoreDelta: repReceipt.scoreDelta,
-      },
-      learningStage: {
-        predictionId: prediction.id,
-        learningEventId: learningEvent.id,
-        actualOutcome: learningEvent.actualOutcome,
-        error: learningEvent.error,
-        recommendation: learningEvent.insight.recommendation,
-      },
-      moodStage: {
-        state: mood.state,
-        confidence: mood.confidence,
-        verificationHealth: mood.verificationHealth,
-        evidenceQuality: mood.evidenceQuality,
-        description: mood.description,
-      },
-      maxStage: {
-        provenanceNodesCount: graphStats.nodeCount,
-        provenanceEdgesCount: graphStats.edgeCount,
-        vaultEpoch: vaultCheckpoint.epoch,
-        vaultMerkleRoot: vaultCheckpoint.merkleRoot,
-        driftDetected: driftAnalysis.driftDetected,
-        recommendedAction: driftAnalysis.recommendedAction,
-      },
-    };
-
-    res.status(201).json({
-      data: hyperResult,
-      timestamp: new Date().toISOString(),
-    } satisfies SuccessResponse<typeof hyperResult>);
-  } catch (error) {
-    res.status(400).json({
-      code: 'HYPER_FLOW_FAILED',
-      message: error instanceof Error ? error.message : 'Hyper continuum flow failed',
-      timestamp: new Date().toISOString(),
-    } as ErrorResponse);
-  }
+app.get('/memory/integrity', (_req: Request, res: Response) => {
+  const intact = kernelMemory.verifyIntegrity();
+  res.status(intact ? 200 : 409).json({
+    data: { intact, entries: kernelMemory.size() },
+    timestamp: new Date().toISOString(),
+  });
 });
 
 /**
- * POST /swarm — Execute multi-agent Formless Swarm cycle
+ * POST /dissensus - Reconcile several verifiers without resolving them
  */
-app.post('/swarm', async (req: Request, res: Response) => {
+app.post('/dissensus', (req: Request, res: Response) => {
   try {
-    const { claim, ruleName, ruleDefinition, metadata } = req.body;
-    const client = new OceanicosClient({ mode: 'local' });
-    const swarm = new FormlessSwarm(client);
+    const { opinions } = req.body as { opinions?: Opinion[] };
 
-    const swarmResult = await swarm.executeSwarmCycle({
-      claim: claim || 'Multi-agent REST verification',
-      ruleName: ruleName || 'api-swarm-rule',
-      ruleDefinition: ruleDefinition || 'responseTime < 100',
-      metadata: metadata || { responseTime: 25 },
-    });
-
-    res.status(201).json({
-      data: swarmResult,
-      timestamp: new Date().toISOString(),
-    } satisfies SuccessResponse<typeof swarmResult>);
-  } catch (error) {
-    res.status(400).json({
-      code: 'SWARM_FAILED',
-      message: error instanceof Error ? error.message : 'Swarm execution failed',
-      timestamp: new Date().toISOString(),
-    } as ErrorResponse);
-  }
-});
-
-/**
- * GET /rules — List registered verification rules
- */
-app.get('/rules', (_req: Request, res: Response) => {
-  const applicableRules = verificationEngine.getApplicableRules({
-    id: '',
-    claim: { statement: '', category: 'health-check' },
-    source: { system: '', version: '', environment: '' },
-    timestamp: '',
-    observedBy: '',
-    metadata: {},
-    confidence: 0,
-    confidenceReason: '',
-    status: 'normalized',
-  });
-
-  const response: SuccessResponse<{ count: number; rules: VerificationRule[] }> = {
-    data: { count: applicableRules.length, rules: applicableRules },
-    timestamp: new Date().toISOString(),
-  };
-  res.json(response);
-});
-
-/**
- * GET /log — Provenance event log (append-only, hash-chained)
- */
-app.get('/log', (req: Request, res: Response) => {
-  const type = req.query['type'] as 'OBSERVATION' | 'VERIFICATION' | 'ATTESTATION' | undefined;
-  const limit = req.query['limit'] ? parseInt(req.query['limit'] as string, 10) : 50;
-  const offset = req.query['offset'] ? parseInt(req.query['offset'] as string, 10) : 0;
-  const since = req.query['since'] as string | undefined;
-
-  const result: QueryResult = store.query({ type, limit, offset, since });
-  const integrity = store.verifyChainIntegrity();
-
-  const response: SuccessResponse<QueryResult & { integrity: typeof integrity }> = {
-    data: { ...result, integrity },
-    timestamp: new Date().toISOString(),
-  };
-  res.json(response);
-});
-
-/**
- * GET /metrics — System metrics and learning insights
- */
-app.get('/metrics', (_req: Request, res: Response) => {
-  const metrics: SystemMetrics = store.getMetrics();
-  const integrity = store.verifyChainIntegrity();
-  const latest: EventLogEntry | undefined = store.getLatest();
-
-  const response: SuccessResponse<{
-    metrics: SystemMetrics;
-    integrity: typeof integrity;
-    latest: EventLogEntry | null;
-  }> = {
-    data: { metrics, integrity, latest: latest ?? null },
-    timestamp: new Date().toISOString(),
-  };
-  res.json(response);
-});
-
-/**
- * Pillar 16 Endpoints: /observations, /verifications, /attestations, /lineage, /agents
- */
-
-/** GET /observations */
-app.get('/observations', (_req: Request, res: Response) => {
-  const result = store.query({ type: 'OBSERVATION', limit: 100 });
-  res.json({ data: result, timestamp: new Date().toISOString() } satisfies SuccessResponse<
-    typeof result
-  >);
-});
-
-/** GET /verifications */
-app.get('/verifications', (_req: Request, res: Response) => {
-  const result = store.query({ type: 'VERIFICATION', limit: 100 });
-  res.json({ data: result, timestamp: new Date().toISOString() } satisfies SuccessResponse<
-    typeof result
-  >);
-});
-
-/** GET /attestations */
-app.get('/attestations', (_req: Request, res: Response) => {
-  const result = store.query({ type: 'ATTESTATION', limit: 100 });
-  res.json({ data: result, timestamp: new Date().toISOString() } satisfies SuccessResponse<
-    typeof result
-  >);
-});
-
-/** GET /lineage */
-app.get('/lineage', (_req: Request, res: Response) => {
-  const allEntries = store.query({ limit: 1000 }).events;
-  const integrity = store.verifyChainIntegrity();
-  const lineage = {
-    genesisHash: ProvenanceStore.GENESIS_HASH,
-    totalNodes: allEntries.length,
-    integrity,
-    chainHead: store.getLatest()?.hash ?? ProvenanceStore.GENESIS_HASH,
-  };
-  res.json({ data: lineage, timestamp: new Date().toISOString() } satisfies SuccessResponse<
-    typeof lineage
-  >);
-});
-
-/** GET /agents */
-app.get('/agents', (_req: Request, res: Response) => {
-  const agents = [
-    { role: 'Observer', capability: 'CAPTURE_SIGNAL', permissions: ['CAN_OBSERVE'] },
-    { role: 'Verifier', capability: 'VERIFY_RULE', permissions: ['CAN_REASON', 'CAN_PROPOSE'] },
-    { role: 'Security', capability: 'SECURITY_AUDIT', permissions: ['CAN_OBSERVE', 'CAN_REASON'] },
-    { role: 'Governance', capability: 'GOVERNANCE_CHECK', permissions: ['CAN_PROPOSE', 'CAN_ACT'] },
-    {
-      role: 'Learning',
-      capability: 'EXTRACT_INSIGHTS',
-      permissions: ['CAN_OBSERVE', 'CAN_REASON', 'CAN_ATTEST'],
-    },
-  ];
-  res.json({ data: agents, timestamp: new Date().toISOString() } satisfies SuccessResponse<
-    typeof agents
-  >);
-});
-
-/** GET /mood — System Mood Evaluator (Pillar 19) */
-app.get('/mood', (_req: Request, res: Response) => {
-  const metrics = store.getMetrics();
-  const integrity = store.verifyChainIntegrity();
-  const moodEvaluator = new MoodEvaluator();
-  const dissentMetrics = frictionTracker.getMetrics();
-  const mood: SystemMood = moodEvaluator.evaluate(
-    metrics,
-    integrity.valid,
-    dissentMetrics.openDissent
-  );
-  res.json({ data: mood, timestamp: new Date().toISOString() } satisfies SuccessResponse<
-    typeof mood
-  >);
-});
-
-/** GET /friction — Query friction events and summary metrics (Pillar 20) */
-app.get('/friction', (_req: Request, res: Response) => {
-  const events = frictionTracker.getFriction();
-  const metrics = frictionTracker.getMetrics();
-  res.json({
-    data: { events, metrics },
-    timestamp: new Date().toISOString(),
-  } satisfies SuccessResponse<{ events: typeof events; metrics: typeof metrics }>);
-});
-
-/** POST /friction — Record a new system friction event (Pillar 20) */
-app.post('/friction', (req: Request, res: Response) => {
-  const { category, source, description, evidence, severity } = req.body;
-  if (!category || !source || !description) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'Missing category, source, or description',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-  const event = frictionTracker.record({
-    category: category as FrictionCategory,
-    source,
-    description,
-    evidence,
-    severity,
-  });
-  res
-    .status(201)
-    .json({ data: event, timestamp: new Date().toISOString() } satisfies SuccessResponse<
-      typeof event
-    >);
-});
-
-/** GET /dissent — Query active dissent records (Pillar 21) */
-app.get('/dissent', (_req: Request, res: Response) => {
-  const records = frictionTracker.getDissent();
-  const metrics = frictionTracker.getMetrics();
-  res.json({
-    data: { records, openDissent: metrics.openDissent },
-    timestamp: new Date().toISOString(),
-  } satisfies SuccessResponse<{ records: typeof records; openDissent: number }>);
-});
-
-/** POST /dissent — Record explicit disagreement / competing interpretations (Pillar 21) */
-app.post('/dissent', (req: Request, res: Response) => {
-  const { claimId, interpretations } = req.body;
-  if (!claimId || !Array.isArray(interpretations) || interpretations.length < 2) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'Dissent requires claimId and at least 2 interpretations',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-  const dissent = frictionTracker.recordDissent(claimId, interpretations);
-  res
-    .status(201)
-    .json({ data: dissent, timestamp: new Date().toISOString() } satisfies SuccessResponse<
-      typeof dissent
-    >);
-});
-
-/** GET /graph — Provenance Knowledge Graph & Lineage DAG (Section XIV) */
-app.get('/graph', (_req: Request, res: Response) => {
-  const events = store.query({ limit: 1000 }).events;
-  const graph = new ProvenanceGraph();
-  graph.ingestEvents(events);
-  const stats = graph.getStats();
-  const traversal = events.length > 0 ? graph.traverseForward(`event-${events[0].id}`) : null;
-  res.json({
-    data: { stats, traversal },
-    timestamp: new Date().toISOString(),
-  } satisfies SuccessResponse<{ stats: typeof stats; traversal: typeof traversal }>);
-});
-
-/** POST /security/token — Issue HMAC-signed capability token for an identity (Section XVIII) */
-app.post('/security/token', (req: Request, res: Response) => {
-  const subject = req.body as IdentitySubject;
-  if (!subject.id || !subject.permissions || !Array.isArray(subject.permissions)) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'Subject id and permissions array required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-  const token = securityEngine.issueToken(subject);
-  res
-    .status(201)
-    .json({ data: token, timestamp: new Date().toISOString() } satisfies SuccessResponse<
-      typeof token
-    >);
-});
-
-/** GET /security/audit — Query identity authorization audit log (Section XIX) */
-app.get('/security/audit', (_req: Request, res: Response) => {
-  const auditTrail = securityEngine.getAuditTrail();
-  res.json({ data: auditTrail, timestamp: new Date().toISOString() } satisfies SuccessResponse<
-    typeof auditTrail
-  >);
-});
-
-/** GET /evolution/proposals — Query active rule recompilation proposals (Section XXVII) */
-app.get('/evolution/proposals', (_req: Request, res: Response) => {
-  const proposals = evolutionEngine.getProposals();
-  res.json({ data: proposals, timestamp: new Date().toISOString() } satisfies SuccessResponse<
-    typeof proposals
-  >);
-});
-
-/** POST /evolution/recompile — Propose controlled rule recompilation driven by drift (Section XXVII) */
-app.post('/evolution/recompile', (req: Request, res: Response) => {
-  const { ruleName, candidateDSL, rationale } = req.body;
-  if (!ruleName || !candidateDSL || !rationale) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'ruleName, candidateDSL, and rationale required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-  const rules = verificationEngine.getRules();
-  const targetRule = rules.find((r) => r.name === ruleName);
-  if (!targetRule) {
-    res.status(404).json({
-      code: 'NOT_FOUND',
-      message: `Rule '${ruleName}' not found`,
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-  try {
-    const proposal = evolutionEngine.proposeRecompilation(targetRule, candidateDSL, rationale);
-    res
-      .status(201)
-      .json({ data: proposal, timestamp: new Date().toISOString() } satisfies SuccessResponse<
-        typeof proposal
-      >);
-  } catch (err: any) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: err.message || 'Invalid DSL syntax',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** GET /governance — Query active governance rules and autonomy state (Section XXIX) */
-app.get('/governance', (_req: Request, res: Response) => {
-  const rules = [
-    {
-      id: 'gov-rule-default',
-      action: 'AGENT_AUTONOMY',
-      requiresHumanApproval: false,
-      minimumConfidenceThreshold: 0.5,
-      maximumRiskThreshold: 0.5,
-      active: true,
-    },
-    {
-      id: 'gov-rule-deploy',
-      action: 'MODEL_DEPLOYMENT',
-      requiresHumanApproval: true,
-      minimumConfidenceThreshold: 0.9,
-      maximumRiskThreshold: 0.1,
-      active: true,
-    },
-  ];
-  res.json({ data: { rules, failClosed: true }, timestamp: new Date().toISOString() });
-});
-
-/** GET /learning — Query learning insights and prediction history (Section XXVI) */
-app.get('/learning', (_req: Request, res: Response) => {
-  const insights = [
-    {
-      description: 'Observation-to-verification latency within normal bounds',
-      confidence: 0.98,
-      learnedAt: new Date().toISOString(),
-    },
-  ];
-  res.json({ data: { insights, historyCount: store.size() }, timestamp: new Date().toISOString() });
-});
-
-/** GET /evidence — Query evidence artifacts (Section XXIV) */
-app.get('/evidence', (_req: Request, res: Response) => {
-  const entries = store.query({ type: 'VERIFICATION', limit: 10 }).events;
-  const artifacts = entries.map((e) => ({
-    id: `evd-${e.id}`,
-    verificationId: e.data.id,
-    environment: 'production',
-    lineageHash: e.hash,
-    createdAt: e.recordedAt,
-  }));
-  res.json({ data: artifacts, timestamp: new Date().toISOString() });
-});
-
-/** GET /green — Evaluate system-wide GREEN status (Section XXV) */
-app.get('/green', (_req: Request, res: Response) => {
-  const integrity = store.verifyChainIntegrity();
-  const metrics = store.getMetrics();
-  const isGreen = integrity.valid && metrics.successRate >= 0.8 && store.size() > 0;
-  res.json({
-    data: {
-      isGreen,
-      allChecksPassed: metrics.successRate >= 0.8,
-      evidenceExists: store.size() > 0,
-      lineageExists: integrity.valid,
-      attestationExists: store.query({ type: 'ATTESTATION' }).totalCount > 0,
-      noCriticalFailures: integrity.valid,
-      reason: isGreen
-        ? 'All constitutional requirements met.'
-        : 'System requirements incomplete or unverified.',
-      evaluatedAt: new Date().toISOString(),
-    },
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /human — Record human participation, values, feedback, or approvals (Section XXVIII) */
-app.post('/human', (req: Request, res: Response) => {
-  const { type, humanId, rationale, payload, contextId } = req.body;
-  if (!type || !humanId || !rationale) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'type, humanId, and rationale required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-  const input = {
-    id: `hum-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    type,
-    humanId,
-    contextId,
-    payload: payload || {},
-    rationale,
-    recordedAt: new Date().toISOString(),
-  };
-  res.status(201).json({ data: input, timestamp: new Date().toISOString() });
-});
-
-/** POST /edge/batch — Sync edge observation batch with Merkle verification (Section XII) */
-app.post('/edge/batch', (req: Request, res: Response) => {
-  const { batchId, nodeId, merkleRoot, observations } = req.body;
-  if (!batchId || !nodeId || !merkleRoot || !Array.isArray(observations)) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'batchId, nodeId, merkleRoot, and observations array required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  const recordedObservations = [];
-  for (const obs of observations) {
-    store.recordObservation(obs);
-    recordedObservations.push(obs.id);
-  }
-
-  res.status(201).json({
-    data: {
-      batchId,
-      nodeId,
-      merkleRoot,
-      receivedCount: observations.length,
-      recordedCount: recordedObservations.length,
-      status: 'ingested',
-      syncedAt: new Date().toISOString(),
-    },
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** GET /analytics — Rule efficacy analytics and pattern extraction (Section XXVI) */
-app.get('/analytics', (_req: Request, res: Response) => {
-  const events = store.query({ limit: 1000 }).events;
-  const rules = verificationEngine.getRules();
-  const analyticsEngine = new VerificationAnalyticsEngine();
-  const summary = analyticsEngine.analyzeLogs(events);
-  const proposals = analyticsEngine.generateAdaptationProposals(summary, rules);
-
-  res.json({
-    data: { summary, proposals },
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** GET /scheduler — Return current autonomous scheduler state (Section XXVII) */
-app.get('/scheduler', (_req: Request, res: Response) => {
-  res.json({
-    data: scheduler.getState(),
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /scheduler/start — Start the autonomous verification scheduler */
-app.post('/scheduler/start', (req: Request, res: Response) => {
-  const { intervalMs, claim } = req.body || {};
-  if (intervalMs || claim) {
-    scheduler.reconfigure({
-      ...(intervalMs ? { intervalMs: Number(intervalMs) } : {}),
-      ...(claim ? { claim: String(claim) } : {}),
-    });
-  }
-  scheduler.start();
-  res.json({
-    data: scheduler.getState(),
-    message: 'Scheduler started',
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /scheduler/pause — Pause the autonomous scheduler */
-app.post('/scheduler/pause', (_req: Request, res: Response) => {
-  scheduler.pause();
-  res.json({
-    data: scheduler.getState(),
-    message: 'Scheduler paused',
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /scheduler/resume — Resume the paused scheduler */
-app.post('/scheduler/resume', (_req: Request, res: Response) => {
-  scheduler.resume();
-  res.json({
-    data: scheduler.getState(),
-    message: 'Scheduler resumed',
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /scheduler/stop — Stop the autonomous scheduler */
-app.post('/scheduler/stop', (_req: Request, res: Response) => {
-  scheduler.stop();
-  res.json({
-    data: scheduler.getState(),
-    message: 'Scheduler stopped',
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** GET /telemetry/slo — Service Level Objective and Error Budget Evaluation (Section XXVIII) */
-app.get('/telemetry/slo', (_req: Request, res: Response) => {
-  const metrics = store.getMetrics();
-  const evaluation = sloEngine.evaluateSLO(metrics);
-  res.json({
-    data: evaluation,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** GET /telemetry/spans — Distributed Provenance Spans and Trace Activity */
-app.get('/telemetry/spans', (_req: Request, res: Response) => {
-  res.json({
-    data: { spans: tracer.getSpans() },
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** GET /vaas/tenants — List all registered multi-tenant organizations (Section XXIX) */
-app.get('/vaas/tenants', (_req: Request, res: Response) => {
-  res.json({
-    data: { tenants: vaasGate.getTenants() },
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /vaas/tenants — Register a new multi-tenant organization in VaaS (Section XXIX) */
-app.post('/vaas/tenants', (req: Request, res: Response) => {
-  const { name, tier, quotaPerMinute } = req.body || {};
-  if (!name) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'Tenant name is required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  const credentials = vaasGate.registerTenant(name, tier, quotaPerMinute);
-  res.status(201).json({
-    data: credentials,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /vaas/verify — Execute tenant-isolated verification with rate limiting */
-app.post('/vaas/verify', async (req: Request, res: Response) => {
-  const apiKey = (req.headers['x-vaas-api-key'] as string) || req.body?.apiKey;
-  const { claim, metadata } = req.body || {};
-
-  if (!apiKey || !claim) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'apiKey and claim are required for VaaS verification',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const client = new OceanicosClient();
-    const result = await vaasGate.executeVerification(apiKey, client, claim, metadata);
-    res.json({
-      data: result,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'VaaS Verification Error';
-    const statusCode = message.includes('Quota Exceeded') ? 429 : 401;
-    res.status(statusCode).json({
-      code: statusCode === 429 ? 'RATE_LIMIT_EXCEEDED' : 'UNAUTHORIZED',
-      message,
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** GET /replay — List all replay snapshots and summary (Section XXX) */
-app.get('/replay', (_req: Request, res: Response) => {
-  res.json({
-    data: {
-      snapshots: replayEngine.getSnapshots(),
-      summary: replayEngine.getSummary(),
-    },
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /replay/capture — Capture a new replay snapshot from a fresh verification run */
-app.post('/replay/capture', async (req: Request, res: Response) => {
-  const { claim, label, tags, metadata } = req.body || {};
-  if (!claim) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'claim is required for replay capture',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const client = new OceanicosClient();
-    const result = await client.runLoop({
-      claim,
-      category: 'replay-capture',
-      observedBy: 'replay-api',
-      sourceSystem: 'omega-v-api',
-      metadata: metadata || {},
-    });
-    const snapshot = replayEngine.capture(claim, result, label, tags || [], metadata || {});
-    res.status(201).json({
-      data: snapshot,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(500).json({
-      code: 'REPLAY_CAPTURE_FAILED',
-      message: err instanceof Error ? err.message : 'Replay capture failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** POST /replay/:id/replay — Replay a captured snapshot and return diff */
-app.post('/replay/:id/replay', async (req: Request, res: Response) => {
-  try {
-    const client = new OceanicosClient();
-    const result = await replayEngine.replay(req.params.id, client);
-    res.json({
-      data: result,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Replay failed';
-    const statusCode = message.includes('not found') ? 404 : 500;
-    res.status(statusCode).json({
-      code: statusCode === 404 ? 'SNAPSHOT_NOT_FOUND' : 'REPLAY_FAILED',
-      message,
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** GET /replay/:idA/diff/:idB — Compute a diff between two snapshots */
-app.get('/replay/:idA/diff/:idB', (req: Request, res: Response) => {
-  try {
-    const diff = replayEngine.diff(req.params.idA, req.params.idB);
-    res.json({
-      data: diff,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(404).json({
-      code: 'DIFF_FAILED',
-      message: err instanceof Error ? err.message : 'Diff computation failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** GET /contracts — List all registered formal contracts (Section XXXI) */
-app.get('/contracts', (_req: Request, res: Response) => {
-  res.json({
-    data: { contracts: contractEngine.getContracts() },
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /contracts — Register a new formal contract (Section XXXI) */
-app.post('/contracts', (req: Request, res: Response) => {
-  const { name, version, category, description, fields, invariants } = req.body || {};
-  if (!name || !fields) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'name and fields are required for contract registration',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  const contract = contractEngine.registerContract({
-    name,
-    version: version || '1.0.0',
-    category: category || 'general',
-    description: description || '',
-    fields,
-    invariants: invariants || [],
-    active: true,
-  });
-
-  res.status(201).json({
-    data: contract,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /contracts/verify — Verify payload data against a contract schema and invariants */
-app.post('/contracts/verify', (req: Request, res: Response) => {
-  const { data, contractIdOrName, context } = req.body || {};
-  if (!data || !contractIdOrName) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'data and contractIdOrName are required for contract verification',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const result = contractEngine.verify(data, contractIdOrName, context);
-    res.json({
-      data: result,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(404).json({
-      code: 'CONTRACT_NOT_FOUND',
-      message: err instanceof Error ? err.message : 'Contract verification failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** GET /auth/identities — List all registered DID documents (Section XXXII) */
-app.get('/auth/identities', (_req: Request, res: Response) => {
-  res.json({
-    data: { identities: authEngine.listIdentities() },
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /auth/identities — Register a new Decentralized Identity (DID) (Section XXXII) */
-app.post('/auth/identities', (req: Request, res: Response) => {
-  const { type, capabilities, secret, did } = req.body || {};
-  if (!type) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'type is required for DID identity creation',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  const created = authEngine.createIdentity(type, capabilities, secret, did);
-  res.status(201).json({
-    data: created,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /auth/token — Issue a cryptographic bearer token for a DID */
-app.post('/auth/token', (req: Request, res: Response) => {
-  const { did, secret, expiresInMs } = req.body || {};
-  if (!did || !secret) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'did and secret are required for token issuance',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const token = authEngine.issueToken(did, secret, expiresInMs);
-    res.json({
-      data: { token, did },
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(401).json({
-      code: 'AUTH_FAILED',
-      message: err instanceof Error ? err.message : 'Token issuance failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** POST /auth/verify — Verify bearer token and check capabilities */
-app.post('/auth/verify', (req: Request, res: Response) => {
-  const { token, requiredCapability } = req.body || {};
-  if (!token) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'token is required for verification',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  const result = authEngine.verifyToken(token, requiredCapability);
-  res.status(result.valid ? 200 : 403).json({
-    data: result,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** GET /federation/peers — List all registered mesh peers and summary (Section XXXIII) */
-app.get('/federation/peers', (_req: Request, res: Response) => {
-  res.json({
-    data: {
-      peers: federationEngine.getPeers(),
-      summary: federationEngine.getMeshSummary(),
-    },
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /federation/peers — Register a remote cluster peer in the verification mesh */
-app.post('/federation/peers', (req: Request, res: Response) => {
-  const { clusterName, endpoint, publicKey, trustScore } = req.body || {};
-  if (!clusterName || !endpoint || !publicKey) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'clusterName, endpoint, and publicKey are required for peer registration',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  const peer = federationEngine.registerPeer({
-    clusterName,
-    endpoint,
-    publicKey,
-    trustScore,
-  });
-
-  res.status(201).json({
-    data: peer,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /federation/proofs/export — Export a cross-cluster verification proof */
-app.post('/federation/proofs/export', async (req: Request, res: Response) => {
-  const { claim, targetCluster } = req.body || {};
-  if (!claim) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'claim is required for cross-cluster proof export',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const client = new OceanicosClient();
-    const result = await client.runLoop({
-      claim,
-      category: 'mesh-federation',
-      observedBy: 'api-federation',
-      sourceSystem: 'omega-v-api',
-    });
-
-    const proof = federationEngine.exportProof(claim, result, targetCluster);
-    res.status(201).json({
-      data: proof,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(500).json({
-      code: 'PROOF_EXPORT_FAILED',
-      message: err instanceof Error ? err.message : 'Failed to export proof',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** POST /federation/proofs/verify — Verify an incoming remote proof */
-app.post('/federation/proofs/verify', (req: Request, res: Response) => {
-  const { proof } = req.body || {};
-  if (!proof) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'proof object is required for verification',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  const verification = federationEngine.verifyRemoteProof(proof);
-  res.json({
-    data: verification,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** GET /benchmark — Return latest benchmark results (Section XXXIV) */
-app.get('/benchmark', (_req: Request, res: Response) => {
-  res.json({
-    data: { results: benchmarkEngine.getLatestResults() },
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /benchmark/run — Run performance and latency profiling suite */
-app.post('/benchmark/run', async (req: Request, res: Response) => {
-  const { iterations } = req.body || {};
-  try {
-    const client = new OceanicosClient();
-    const results = await benchmarkEngine.runSuite(client, iterations || 20);
-    res.json({
-      data: results,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(500).json({
-      code: 'BENCHMARK_FAILED',
-      message: err instanceof Error ? err.message : 'Benchmark execution failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** GET /notary/summary — Merkle tree transparency root and seal statistics (Section XXXV) */
-app.get('/notary/summary', (_req: Request, res: Response) => {
-  res.json({
-    data: notaryEngine.getSummary(),
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** GET /notary/seals — List all notarization seals */
-app.get('/notary/seals', (_req: Request, res: Response) => {
-  res.json({
-    data: { seals: notaryEngine.getAllSeals() },
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /notary/anchor — Anchor a verification claim into the Merkle tree */
-app.post('/notary/anchor', async (req: Request, res: Response) => {
-  const { claim } = req.body || {};
-  if (!claim) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'claim is required for notarization',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const client = new OceanicosClient();
-    const result = await client.runLoop({
-      claim,
-      category: 'notarization',
-      observedBy: 'notary-api',
-      sourceSystem: 'omega-v-notary',
-    });
-
-    const seal = notaryEngine.anchorAttestation(result.attestation);
-    res.status(201).json({
-      data: seal,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(500).json({
-      code: 'NOTARIZATION_FAILED',
-      message: err instanceof Error ? err.message : 'Notarization failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** POST /notary/proof — Generate Merkle inclusion proof */
-app.post('/notary/proof', (req: Request, res: Response) => {
-  const { leafIndex } = req.body || {};
-  if (typeof leafIndex !== 'number') {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'leafIndex (number) is required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const proof = notaryEngine.generateInclusionProof(leafIndex);
-    res.json({
-      data: proof,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'INVALID_INDEX',
-      message: err instanceof Error ? err.message : 'Failed to generate proof',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** POST /notary/verify-proof — Verify Merkle inclusion proof */
-app.post('/notary/verify-proof', (req: Request, res: Response) => {
-  const { proof } = req.body || {};
-  if (!proof) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'proof object is required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  const valid = notaryEngine.verifyInclusionProof(proof);
-  res.json({
-    data: { valid, verifiedAt: new Date().toISOString() },
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** GET /sandbox/stats — Return sandbox execution telemetry and blocked violations (Section XXXVI) */
-app.get('/sandbox/stats', (_req: Request, res: Response) => {
-  res.json({
-    data: sandboxEngine.getStats(),
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /sandbox/execute — Execute expression in safe deterministic sandbox */
-app.post('/sandbox/execute', (req: Request, res: Response) => {
-  const { code, context, options } = req.body || {};
-  if (!code) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'code expression is required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  const result = sandboxEngine.executeExpression(code, context || {}, options || {});
-  res.json({
-    data: result,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** GET /policies — List all registered declarative policy documents (Section XXXVII) */
-app.get('/policies', (_req: Request, res: Response) => {
-  res.json({
-    data: { policies: policyEngine.getPolicies() },
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /policies — Register a new policy document */
-app.post('/policies', (req: Request, res: Response) => {
-  const { id, name, domain, version, rules, active } = req.body || {};
-  if (!id || !name || !rules || !Array.isArray(rules)) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'id, name, and rules (array) are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  const doc = policyEngine.registerPolicy({
-    id,
-    name,
-    domain: domain || 'general',
-    version: version || '1.0.0',
-    rules,
-    active: active ?? true,
-  });
-
-  res.status(201).json({
-    data: doc,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /policies/evaluate — Evaluate context against a policy and return compliance receipt */
-app.post('/policies/evaluate', (req: Request, res: Response) => {
-  const { policyId, context } = req.body || {};
-  if (!policyId || !context) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'policyId and context object are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const receipt = policyEngine.evaluate(policyId, context);
-    res.json({
-      data: receipt,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'EVALUATION_FAILED',
-      message: err instanceof Error ? err.message : 'Policy evaluation failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** GET /zk/circuits — List all registered zero-knowledge circuits (Section XXXVIII) */
-app.get('/zk/circuits', (_req: Request, res: Response) => {
-  res.json({
-    data: { circuits: zkEngine.getCircuits() },
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /zk/prove — Generate a zero-knowledge range/membership proof */
-app.post('/zk/prove', (req: Request, res: Response) => {
-  const { circuitId, witness, salt } = req.body || {};
-  if (!circuitId || witness === undefined) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'circuitId and witness are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const circuit = zkEngine.getCircuit(circuitId);
-    if (!circuit) {
-      res.status(404).json({
-        code: 'NOT_FOUND',
-        message: `Circuit '${circuitId}' not found`,
-        timestamp: new Date().toISOString(),
-      });
-      return;
-    }
-
-    let proof;
-    if (circuit.type === 'RANGE') {
-      proof = zkEngine.generateRangeProof(circuitId, Number(witness), salt);
-    } else if (circuit.type === 'MEMBERSHIP') {
-      proof = zkEngine.generateMembershipProof(circuitId, String(witness), salt);
-    } else {
+    if (!Array.isArray(opinions)) {
       res.status(400).json({
-        code: 'UNSUPPORTED_CIRCUIT',
-        message: `Unsupported circuit type: ${circuit.type}`,
+        code: 'MISSING_OPINIONS',
+        message: 'An array of verifier opinions is required',
         timestamp: new Date().toISOString(),
-      });
+      } satisfies ErrorResponse);
       return;
     }
 
-    res.json({
-      data: proof,
+    const reconciled = reconcile(opinions, dissensusPolicy);
+    const recorded = {
+      ...reconciled,
+      id: `dis-${new Date().toISOString().replace(/[-:.TZ]/g, '')}`,
       timestamp: new Date().toISOString(),
+    };
+
+    runtimeDissensus.unshift(recorded);
+    runtimeDissensus.splice(RECENT_EVENT_WINDOW);
+    persistRuntime();
+
+    recordEvent({
+      type: 'dissensus.reconciled',
+      stage: 'verify',
+      message: `${reconciled.verdict}: ${reconciled.reason}`,
+      // A split is not a failure of the system; it is the system working.
+      status: reconciled.verdict === 'AGREED' ? 'passed' : 'active',
+      details: {
+        dissensusId: recorded.id,
+        verdict: reconciled.verdict,
+        routing: reconciled.routing,
+        dissenting: reconciled.dissenting.map((entry) => entry.verifierId),
+      },
+      requestId: res.locals.requestId,
     });
-  } catch (err: unknown) {
+
+    res.status(201).json({ data: recorded, timestamp: new Date().toISOString() });
+  } catch (error) {
     res.status(400).json({
-      code: 'PROVING_FAILED',
-      message: err instanceof Error ? err.message : 'Zero-knowledge proving failed',
+      code: 'DISSENSUS_FAILED',
+      message: error instanceof Error ? error.message : 'Reconciliation failed',
       timestamp: new Date().toISOString(),
-    });
+    } satisfies ErrorResponse);
   }
 });
 
-/** POST /zk/verify — Cryptographically verify a zero-knowledge proof */
-app.post('/zk/verify', (req: Request, res: Response) => {
-  const { proof } = req.body || {};
-  if (!proof) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'proof object is required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  const result = zkEngine.verifyProof(proof);
+/**
+ * GET /dissensus - Recorded reconciliations, disagreements included
+ */
+app.get('/dissensus', (_req: Request, res: Response) => {
   res.json({
-    data: result,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** GET /gateway/stats — Return API gateway traffic, rate limits and anomaly stats (Section XXXIX) */
-app.get('/gateway/stats', (_req: Request, res: Response) => {
-  res.json({
-    data: gatewayEngine.getStats(),
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** GET /gateway/clients — List registered gateway client rate limit states */
-app.get('/gateway/clients', (_req: Request, res: Response) => {
-  res.json({
-    data: { clients: gatewayEngine.getAllClients(), tierConfigs: gatewayEngine.getTierConfigs() },
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /gateway/request — Process request through rate limiter and anomaly guard */
-app.post('/gateway/request', (req: Request, res: Response) => {
-  const { clientId } = req.body || {};
-  if (!clientId) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'clientId is required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  const decision = gatewayEngine.processRequest(clientId);
-  res.status(decision.allowed ? 200 : 429).json({
-    data: decision,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** GET /gateway/anomalies — Get list of detected anomaly alerts */
-app.get('/gateway/anomalies', (_req: Request, res: Response) => {
-  res.json({
-    data: { anomalies: gatewayEngine.getAnomalies() },
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** GET /webhooks — List all webhook subscriptions & delivery stats (Section XL) */
-app.get('/webhooks', (_req: Request, res: Response) => {
-  res.json({
-    data: {
-      subscriptions: webhookEngine.getSubscriptions(),
-      stats: webhookEngine.getStats(),
+    data: runtimeDissensus,
+    meta: {
+      window: RECENT_EVENT_WINDOW,
+      unresolved: runtimeDissensus.filter((entry) => entry.verdict !== 'AGREED').length,
+      // Reported so a reader can tell whether the routing threshold was
+      // measured or merely chosen. It has never been measured.
+      policy: dissensusPolicy,
     },
     timestamp: new Date().toISOString(),
   });
 });
 
-/** POST /webhooks — Register a new webhook subscription */
-app.post('/webhooks', (req: Request, res: Response) => {
-  const { name, url, events, secret, maxRetries } = req.body || {};
-  if (!name || !url || !events || !Array.isArray(events)) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'name, url, and events array are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
+/**
+ * GET /rules - List registered verification rules
+ *
+ * Without a category, returns every registered rule. With ?category=x,
+ * returns the rules that would apply to an observation in that category.
+ */
+app.get('/rules', (req: Request, res: Response) => {
+  const category = typeof req.query.category === 'string' ? req.query.category : null;
 
-  const sub = webhookEngine.registerSubscription({
-    name,
-    url,
-    events,
-    secret,
-    maxRetries,
-  });
+  const rules = category
+    ? verificationEngine.getApplicableRules({
+        claim: { statement: '', category },
+        source: { system: '', version: '', environment: '' },
+        timestamp: '',
+        observedBy: '',
+        metadata: {},
+        confidence: 0,
+        confidenceReason: '',
+        status: 'normalized',
+        id: '',
+      })
+    : verificationEngine.getRules();
 
-  res.json({
-    data: sub,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /webhooks/dispatch — Trigger a verification event to active webhook subscribers */
-app.post('/webhooks/dispatch', async (req: Request, res: Response) => {
-  const { event, data } = req.body || {};
-  if (!event || !data) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'event and data payload are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const attempts = await webhookEngine.dispatchEvent(event, data);
-    res.json({
-      data: { attempts, count: attempts.length },
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(500).json({
-      code: 'DISPATCH_ERROR',
-      message: err instanceof Error ? err.message : 'Dispatch failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** GET /webhooks/deliveries — Get historical delivery attempts */
-app.get('/webhooks/deliveries', (_req: Request, res: Response) => {
-  res.json({
-    data: { deliveries: webhookEngine.getDeliveryHistory() },
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** GET /oracle/feeds — List oracle feeds, providers and engine stats (Section XLI) */
-app.get('/oracle/feeds', (_req: Request, res: Response) => {
-  res.json({
+  /**
+   * `executable` distinguishes a rule the engine will actually evaluate from
+   * one it merely holds. A rule's `definition` string is a declaration, not
+   * something this engine interprets, so publishing the rule list without
+   * that flag implies every definition runs. Rules that are not executable
+   * fail verification rather than passing quietly, and a caller is better
+   * off learning that here than from a failed verdict.
+   */
+  const response: SuccessResponse<{
+    count: number;
+    registered: number;
+    executable: number;
+    category: string | null;
+    rules: Array<VerificationRule & { executable: boolean }>;
+  }> = {
     data: {
-      feeds: oracleEngine.getFeeds(),
-      providers: oracleEngine.getProviders(),
-      stats: oracleEngine.getStats(),
+      count: rules.length,
+      registered: verificationEngine.getRuleCount(),
+      executable: rules.filter((rule) => verificationEngine.canExecute(rule.name)).length,
+      category,
+      rules: rules.map((rule) => ({
+        ...rule,
+        executable: verificationEngine.canExecute(rule.name),
+      })),
     },
     timestamp: new Date().toISOString(),
-  });
-});
+  };
 
-/** POST /oracle/aggregate — Compute and cryptographically attest multi-source oracle consensus */
-app.post('/oracle/aggregate', (req: Request, res: Response) => {
-  const { feedId, reports } = req.body || {};
-  if (!feedId || !reports || !Array.isArray(reports)) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'feedId and reports array are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const receipt = oracleEngine.aggregateReports(feedId, reports);
-    res.json({
-      data: receipt,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'AGGREGATION_FAILED',
-      message: err instanceof Error ? err.message : 'Oracle aggregation failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** GET /oracle/receipts — List recent signed oracle consensus receipts */
-app.get('/oracle/receipts', (_req: Request, res: Response) => {
-  res.json({
-    data: { receipts: oracleEngine.getReceipts() },
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** GET /vault/checkpoints — List all sealed state checkpoints & vault statistics (Section XLII) */
-app.get('/vault/checkpoints', (_req: Request, res: Response) => {
-  res.json({
-    data: {
-      checkpoints: stateVault.getCheckpoints(),
-      stats: stateVault.getStats(),
-    },
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /vault/checkpoint — Create a new sealed state checkpoint */
-app.post('/vault/checkpoint', (req: Request, res: Response) => {
-  const { label } = req.body || {};
-  const events = store.getEntries();
-  const rules = verificationEngine.getRules();
-
-  const checkpoint = stateVault.createCheckpoint(
-    label || `State Checkpoint ${new Date().toISOString()}`,
-    events,
-    rules
-  );
-
-  res.json({
-    data: checkpoint,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /vault/restore — Verify and restore system state from a vault checkpoint */
-app.post('/vault/restore', (req: Request, res: Response) => {
-  const { checkpointId } = req.body || {};
-  if (!checkpointId) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'checkpointId is required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  const result = stateVault.restoreCheckpoint(checkpointId);
-  res.status(result.restored ? 200 : 400).json({
-    data: result,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** GET /disputes — List all dispute cases & arbitration statistics (Section XLIII) */
-app.get('/disputes', (_req: Request, res: Response) => {
-  res.json({
-    data: {
-      cases: disputeEngine.getCases(),
-      stats: disputeEngine.getStats(),
-    },
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /disputes — Raise a new dispute challenge */
-app.post('/disputes', (req: Request, res: Response) => {
-  const { targetEventHash, claimantDid, challengerDid, stakeAmount, reason } = req.body || {};
-  if (!targetEventHash || !claimantDid || !challengerDid || stakeAmount === undefined || !reason) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'targetEventHash, claimantDid, challengerDid, stakeAmount, and reason are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  const disputeCase = disputeEngine.raiseDispute({
-    targetEventHash,
-    claimantDid,
-    challengerDid,
-    stakeAmount: Number(stakeAmount),
-    reason,
-  });
-
-  res.json({
-    data: disputeCase,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /disputes/vote — Cast a juror vote on an open dispute case */
-app.post('/disputes/vote', (req: Request, res: Response) => {
-  const { caseId, jurorDid, choice, weight, rationale, signature } = req.body || {};
-  if (!caseId || !jurorDid || !choice || weight === undefined) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'caseId, jurorDid, choice, and weight are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const updated = disputeEngine.castVote(caseId, {
-      jurorDid,
-      choice,
-      weight: Number(weight),
-      rationale: rationale || 'Jury deliberation vote',
-      signature: signature || `0x${crypto.randomBytes(32).toString('hex')}`,
-    });
-
-    res.json({
-      data: updated,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'VOTE_FAILED',
-      message: err instanceof Error ? err.message : 'Vote failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
+  res.json(response);
 });
 
 /**
- * Section 25 Endpoints: Verifiable Worker Pool & Autonomous Builder Engine
- * /workers, /workers/register, /workers/heartbeat, /workers/jobs, /workers/jobs/submit,
- * /workers/jobs/lease, /workers/jobs/complete, /workers/jobs/fail, /workers/attestations,
- * /workers/verify-reproducibility, /workers/stats
+ * Static web client, when a build is present.
+ *
+ * apps/web was not in the image at all and had no production origin. The
+ * bundle is optional: if it has not been built, the API behaves exactly as
+ * before and this is a no-op.
  */
-
-/** GET /workers — List registered builder & worker nodes */
-app.get('/workers', (_req: Request, res: Response) => {
-  const workers = workerPool.getWorkers();
-  res.json({
-    data: workers,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /workers/register — Register or update a worker node */
-app.post('/workers/register', (req: Request, res: Response) => {
-  const { workerId, name, capabilities, maxConcurrency, cpuCores, memoryMb } = req.body;
-  if (!workerId || !name || !Array.isArray(capabilities)) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'workerId, name, and capabilities array are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  const worker = workerPool.registerWorker({
-    workerId,
-    name,
-    capabilities,
-    maxConcurrency,
-    cpuCores,
-    memoryMb,
-  });
-
-  res.status(201).json({
-    data: worker,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /workers/heartbeat — Submit worker heartbeat */
-app.post('/workers/heartbeat', (req: Request, res: Response) => {
-  const { workerId } = req.body;
-  if (!workerId) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'workerId is required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  const success = workerPool.heartbeat(workerId);
-  if (!success) {
-    res.status(404).json({
-      code: 'NOT_FOUND',
-      message: `Worker '${workerId}' not found`,
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  res.json({
-    data: { workerId, status: 'HEARTBEAT_ACCEPTED' },
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** GET /workers/jobs — Query all builder jobs */
-app.get('/workers/jobs', (_req: Request, res: Response) => {
-  const jobs = workerPool.getJobs();
-  res.json({
-    data: jobs,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /workers/jobs/submit — Enqueue a new verifiable build task */
-app.post('/workers/jobs/submit', (req: Request, res: Response) => {
-  const { name, requiredCapability, payload, priority, maxRetries } = req.body;
-  if (!name || !requiredCapability || !payload) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'name, requiredCapability, and payload are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  const job = workerPool.submitJob({
-    name,
-    requiredCapability,
-    payload,
-    priority: priority ? Number(priority) : undefined,
-    maxRetries: maxRetries ? Number(maxRetries) : undefined,
-  });
-
-  res.status(201).json({
-    data: job,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /workers/jobs/lease — Worker leases available capability-matched job */
-app.post('/workers/jobs/lease', (req: Request, res: Response) => {
-  const { workerId, leaseDurationMs } = req.body;
-  if (!workerId) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'workerId is required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  const job = workerPool.leaseJob(workerId, leaseDurationMs ? Number(leaseDurationMs) : undefined);
-  res.json({
-    data: job,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /workers/jobs/complete — Complete build job and generate SLSA-L3 Attestation */
-app.post('/workers/jobs/complete', (req: Request, res: Response) => {
-  const { jobId, workerId, output, artifacts } = req.body;
-  if (!jobId || !workerId || !output) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'jobId, workerId, and output are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const result = workerPool.completeJob(jobId, workerId, output, artifacts || []);
-    res.json({
-      data: result,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'COMPLETE_FAILED',
-      message: err instanceof Error ? err.message : 'Failed to complete job',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** POST /workers/jobs/fail — Report worker job failure with retry backoff */
-app.post('/workers/jobs/fail', (req: Request, res: Response) => {
-  const { jobId, workerId, error } = req.body;
-  if (!jobId || !workerId || !error) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'jobId, workerId, and error are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const job = workerPool.failJob(jobId, workerId, error);
-    res.json({
-      data: job,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'FAIL_JOB_FAILED',
-      message: err instanceof Error ? err.message : 'Failed to report job failure',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** GET /workers/attestations — List all cryptographic build attestations */
-app.get('/workers/attestations', (_req: Request, res: Response) => {
-  const attestations = workerPool.getAttestations();
-  res.json({
-    data: attestations,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /workers/verify-reproducibility — Cross-verify multiple builder attestations */
-app.post('/workers/verify-reproducibility', (req: Request, res: Response) => {
-  const { attestations } = req.body;
-  if (!Array.isArray(attestations) || attestations.length === 0) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'attestations array is required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  const result = workerPool.verifyBuildReproducibility(attestations);
-  res.json({
-    data: result,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** GET /workers/stats — Builder engine & worker pool statistics */
-app.get('/workers/stats', (_req: Request, res: Response) => {
-  const stats = workerPool.getStats();
-  res.json({
-    data: stats,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/**
- * Section 26 Endpoints: Automated CI/CD Pipeline Orchestration Engine
- * /pipelines, /pipelines/:runId, /pipelines/execute, /pipelines/verify, /pipelines/stats
- */
-
-/** GET /pipelines — List all pipeline runs */
-app.get('/pipelines', (_req: Request, res: Response) => {
-  const runs = pipelineEngine.getRuns();
-  res.json({
-    data: runs,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** GET /pipelines/:runId — Get specific pipeline run */
-app.get('/pipelines/:runId', (req: Request, res: Response) => {
-  const run = pipelineEngine.getRun(req.params.runId);
-  if (!run) {
-    res.status(404).json({
-      code: 'NOT_FOUND',
-      message: `Pipeline run '${req.params.runId}' not found`,
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-  res.json({
-    data: run,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /pipelines/execute — Trigger and execute multi-stage verifiable pipeline */
-app.post('/pipelines/execute', async (req: Request, res: Response) => {
-  const { name, version, triggeredBy, stages } = req.body;
-  if (!name || !Array.isArray(stages) || stages.length === 0) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'name and non-empty stages array are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const result = await pipelineEngine.executePipeline({
-      name,
-      version,
-      triggeredBy,
-      stages,
-      workerPool,
-    });
-
-    res.status(201).json({
-      data: result,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'PIPELINE_EXECUTION_FAILED',
-      message: err instanceof Error ? err.message : 'Pipeline execution failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** POST /pipelines/verify — Verify cryptographic signature of completed pipeline run */
-app.post('/pipelines/verify', (req: Request, res: Response) => {
-  const { run } = req.body;
-  if (!run || !run.pipelineSignature) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'Pipeline run with pipelineSignature is required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  const valid = pipelineEngine.verifyRunSignature(run);
-  res.json({
-    data: { valid, runId: run.runId },
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** GET /pipelines/stats — Aggregate pipeline orchestration metrics */
-app.get('/pipelines/stats', (_req: Request, res: Response) => {
-  const stats = pipelineEngine.getStats();
-  res.json({
-    data: stats,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/**
- * Section 27 Endpoints: Decentralized Verifiable Package & Artifact Registry Engine
- * /registry/packages, /registry/packages/:name, /registry/packages/:name/:version,
- * /registry/publish, /registry/verify, /registry/deprecate, /registry/advisories, /registry/stats
- */
-
-/** GET /registry/packages — List all published packages */
-app.get('/registry/packages', (_req: Request, res: Response) => {
-  const packages = registryEngine.getAllPackages();
-  res.json({
-    data: packages,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** GET /registry/packages/:name — Get package metadata */
-app.get('/registry/packages/:name', (req: Request, res: Response) => {
-  const pkg = registryEngine.getPackage(req.params.name);
-  if (!pkg) {
-    res.status(404).json({
-      code: 'NOT_FOUND',
-      message: `Package '${req.params.name}' not found`,
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-  res.json({
-    data: pkg,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** GET /registry/packages/:name/:version — Get specific package release */
-app.get('/registry/packages/:name/:version', (req: Request, res: Response) => {
-  const release = registryEngine.getPackageVersion(req.params.name, req.params.version);
-  if (!release) {
-    res.status(404).json({
-      code: 'NOT_FOUND',
-      message: `Release '${req.params.name}@${req.params.version}' not found`,
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-  res.json({
-    data: release,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /registry/publish — Publish new package version */
-app.post('/registry/publish', (req: Request, res: Response) => {
-  const { name, version, publisherDid, description, tarballContent, dependencies, slsaAttestationId } = req.body;
-  if (!name || !version || !publisherDid || !description || !tarballContent) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'name, version, publisherDid, description, and tarballContent are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  const release = registryEngine.publishPackage({
-    name,
-    version,
-    publisherDid,
-    description,
-    tarballContent,
-    dependencies,
-    slsaAttestationId,
-  });
-
-  res.status(201).json({
-    data: release,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /registry/verify — Verify package integrity and publisher signature */
-app.post('/registry/verify', (req: Request, res: Response) => {
-  const { name, version, tarballContent } = req.body;
-  if (!name || !version || !tarballContent) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'name, version, and tarballContent are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  const result = registryEngine.verifyPackageIntegrity(name, version, tarballContent);
-  res.json({
-    data: result,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /registry/deprecate — Deprecate package version */
-app.post('/registry/deprecate', (req: Request, res: Response) => {
-  const { name, version, reason } = req.body;
-  if (!name || !version || !reason) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'name, version, and reason are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const release = registryEngine.deprecatePackage(name, version, reason);
-    res.json({
-      data: release,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'DEPRECATE_FAILED',
-      message: err instanceof Error ? err.message : 'Deprecation failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** GET /registry/advisories — List security advisories */
-app.get('/registry/advisories', (req: Request, res: Response) => {
-  const packageName = typeof req.query.package === 'string' ? req.query.package : undefined;
-  const advisories = registryEngine.getAdvisories(packageName);
-  res.json({
-    data: advisories,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /registry/advisories — Publish security advisory */
-app.post('/registry/advisories', (req: Request, res: Response) => {
-  const { packageName, affectedVersions, severity, title, description, reportedBy, patchedIn } = req.body;
-  if (!packageName || !Array.isArray(affectedVersions) || !severity || !title || !description || !reportedBy) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'packageName, affectedVersions array, severity, title, description, and reportedBy are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  const advisory = registryEngine.publishAdvisory({
-    packageName,
-    affectedVersions,
-    severity,
-    title,
-    description,
-    reportedBy,
-    patchedIn,
-  });
-
-  res.status(201).json({
-    data: advisory,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** GET /registry/stats — Registry statistics */
-app.get('/registry/stats', (_req: Request, res: Response) => {
-  const stats = registryEngine.getStats();
-  res.json({
-    data: stats,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/**
- * Section 28 Endpoints: Hardware TEE Confidential Computing & Remote Attestation
- * /enclave/instances, /enclave/provision, /enclave/attest, /enclave/verify,
- * /enclave/seal, /enclave/unseal, /enclave/execute, /enclave/stats
- */
-
-/** GET /enclave/instances — List provisioned hardware enclaves */
-app.get('/enclave/instances', (_req: Request, res: Response) => {
-  const enclaves = enclaveEngine.getEnclaves();
-  res.json({
-    data: enclaves,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /enclave/provision — Provision new TEE enclave */
-app.post('/enclave/provision', (req: Request, res: Response) => {
-  const { enclaveId, type, name, codePayload, authorSignerKey } = req.body;
-  if (!type || !name || !codePayload || !authorSignerKey) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'type, name, codePayload, and authorSignerKey are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  const enclave = enclaveEngine.provisionEnclave({
-    enclaveId,
-    type,
-    name,
-    codePayload,
-    authorSignerKey,
-  });
-
-  res.status(201).json({
-    data: enclave,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /enclave/attest — Generate remote attestation report */
-app.post('/enclave/attest', (req: Request, res: Response) => {
-  const { enclaveId, userData, hardwareNonce } = req.body;
-  if (!enclaveId || !userData) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'enclaveId and userData are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const report = enclaveEngine.generateRemoteAttestation(enclaveId, userData, hardwareNonce);
-    res.json({
-      data: report,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'ATTESTATION_FAILED',
-      message: err instanceof Error ? err.message : 'Attestation generation failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** POST /enclave/verify — Verify remote attestation report */
-app.post('/enclave/verify', (req: Request, res: Response) => {
-  const { report } = req.body;
-  if (!report || !report.hardwareSignature) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'report with hardwareSignature is required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  const result = enclaveEngine.verifyRemoteAttestation(report);
-  res.json({
-    data: result,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /enclave/seal — Seal state bound to MRENCLAVE */
-app.post('/enclave/seal', (req: Request, res: Response) => {
-  const { enclaveId, plaintext } = req.body;
-  if (!enclaveId || !plaintext) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'enclaveId and plaintext are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const sealed = enclaveEngine.sealData(enclaveId, plaintext);
-    res.json({
-      data: sealed,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'SEAL_FAILED',
-      message: err instanceof Error ? err.message : 'Data sealing failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** POST /enclave/unseal — Unseal state inside enclave */
-app.post('/enclave/unseal', (req: Request, res: Response) => {
-  const { enclaveId, sealed } = req.body;
-  if (!enclaveId || !sealed || !sealed.ciphertext) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'enclaveId and sealed state object are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const decrypted = enclaveEngine.unsealData(enclaveId, sealed);
-    res.json({
-      data: { plaintext: decrypted },
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'UNSEAL_FAILED',
-      message: err instanceof Error ? err.message : 'Unsealing failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** POST /enclave/execute — Execute confidential code in enclave memory */
-app.post('/enclave/execute', (req: Request, res: Response) => {
-  const { enclaveId, operationName, inputs } = req.body;
-  if (!enclaveId || !operationName) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'enclaveId and operationName are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const result = enclaveEngine.executeConfidentialCode(enclaveId, operationName, inputs || {});
-    res.json({
-      data: result,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'EXECUTION_FAILED',
-      message: err instanceof Error ? err.message : 'Confidential execution failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** GET /enclave/stats — Enclave engine statistics */
-app.get('/enclave/stats', (_req: Request, res: Response) => {
-  const stats = enclaveEngine.getStats();
-  res.json({
-    data: stats,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/**
- * Section 29 Endpoints: Byzantine Fault Tolerant (BFT) State Machine Consensus
- * /consensus/chain, /consensus/validators, /consensus/validators/register,
- * /consensus/propose, /consensus/vote, /consensus/finalize, /consensus/slash, /consensus/stats
- */
-
-/** GET /consensus/chain — List all finalized blocks */
-app.get('/consensus/chain', (_req: Request, res: Response) => {
-  const chain = consensusEngine.getChain();
-  res.json({
-    data: chain,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** GET /consensus/validators — List active validators and stakes */
-app.get('/consensus/validators', (_req: Request, res: Response) => {
-  const validators = consensusEngine.getValidators();
-  res.json({
-    data: validators,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /consensus/validators/register — Register new validator */
-app.post('/consensus/validators/register', (req: Request, res: Response) => {
-  const { did, stake } = req.body;
-  if (!did || typeof stake !== 'number' || stake <= 0) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'did and positive numerical stake are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  const validator = consensusEngine.registerValidator({ did, stake });
-  res.status(201).json({
-    data: validator,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /consensus/propose — Propose candidate block */
-app.post('/consensus/propose', (req: Request, res: Response) => {
-  const { proposerDid, transactions, stateRoot, attestationProofs } = req.body;
-  if (!proposerDid || !Array.isArray(transactions) || !stateRoot) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'proposerDid, transactions array, and stateRoot are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const block = consensusEngine.proposeBlock({
-      proposerDid,
-      transactions,
-      stateRoot,
-      attestationProofs,
-    });
-    res.status(201).json({
-      data: block,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'PROPOSE_FAILED',
-      message: err instanceof Error ? err.message : 'Block proposal failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** POST /consensus/vote — Cast vote for Quorum Certificate */
-app.post('/consensus/vote', (req: Request, res: Response) => {
-  const { validatorDid, blockHash, blockHeight, viewNumber, voteType } = req.body;
-  if (!validatorDid || !blockHash || typeof blockHeight !== 'number') {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'validatorDid, blockHash, and blockHeight are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const result = consensusEngine.castVote({
-      validatorDid,
-      blockHash,
-      blockHeight,
-      viewNumber,
-      voteType,
-    });
-    res.json({
-      data: result,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'VOTE_FAILED',
-      message: err instanceof Error ? err.message : 'Voting failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** POST /consensus/finalize — Finalize block with Quorum Certificate */
-app.post('/consensus/finalize', (req: Request, res: Response) => {
-  const { block, qc } = req.body;
-  if (!block || !qc) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'block and qc are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const finalized = consensusEngine.finalizeBlock(block, qc);
-    res.json({
-      data: finalized,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'FINALIZE_FAILED',
-      message: err instanceof Error ? err.message : 'Block finalization failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** POST /consensus/slash — Slash Byzantine validator for equivocation */
-app.post('/consensus/slash', (req: Request, res: Response) => {
-  const { validatorDid, blockHeight, blockHashA, blockHashB } = req.body;
-  if (!validatorDid || typeof blockHeight !== 'number' || !blockHashA || !blockHashB) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'validatorDid, blockHeight, blockHashA, and blockHashB are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const record = consensusEngine.detectEquivocation({
-      validatorDid,
-      blockHeight,
-      blockHashA,
-      blockHashB,
-    });
-    res.json({
-      data: record,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'SLASH_FAILED',
-      message: err instanceof Error ? err.message : 'Slashing failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** GET /consensus/stats — Consensus metrics */
-app.get('/consensus/stats', (_req: Request, res: Response) => {
-  const stats = consensusEngine.getStats();
-  res.json({
-    data: stats,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/**
- * Section 30 Endpoints: Peer-to-Peer Gossip Protocol & Verifiable Message Propagation
- * /mesh/peers, /mesh/peers/add, /mesh/peers/ban, /mesh/gossip, /mesh/gossip/verify, /mesh/sync, /mesh/stats
- */
-
-/** GET /mesh/peers — List connected p2p mesh peers */
-app.get('/mesh/peers', (_req: Request, res: Response) => {
-  const peers = meshEngine.getPeers();
-  res.json({
-    data: peers,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /mesh/peers/add — Add new mesh peer node */
-app.post('/mesh/peers/add', (req: Request, res: Response) => {
-  const { did, endpoint, region } = req.body;
-  if (!did || !endpoint) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'did and endpoint are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  const peer = meshEngine.addPeer({ did, endpoint, region });
-  res.status(201).json({
-    data: peer,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /mesh/peers/ban — Ban rogue mesh peer */
-app.post('/mesh/peers/ban', (req: Request, res: Response) => {
-  const { did, reason } = req.body;
-  if (!did) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'did is required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const peer = meshEngine.banPeer(did, reason || 'Byzantine misbehavior');
-    res.json({
-      data: peer,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(404).json({
-      code: 'PEER_NOT_FOUND',
-      message: err instanceof Error ? err.message : 'Peer not found',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** POST /mesh/gossip — Broadcast gossip message across network */
-app.post('/mesh/gossip', (req: Request, res: Response) => {
-  const { senderDid, type, payload, ttl } = req.body;
-  if (!senderDid || !type || !payload) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'senderDid, type, and payload are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const receipt = meshEngine.gossip({ senderDid, type, payload, ttl });
-    res.status(201).json({
-      data: receipt,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'GOSSIP_FAILED',
-      message: err instanceof Error ? err.message : 'Gossip failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** POST /mesh/gossip/verify — Cryptographically verify signed gossip message */
-app.post('/mesh/gossip/verify', (req: Request, res: Response) => {
-  const { messageId } = req.body;
-  if (!messageId) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'messageId is required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const verification = meshEngine.verifyGossipSignature(messageId);
-    res.json({
-      data: verification,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(404).json({
-      code: 'MESSAGE_NOT_FOUND',
-      message: err instanceof Error ? err.message : 'Message not found',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** POST /mesh/sync — Trigger Merkle block sync with peer */
-app.post('/mesh/sync', (req: Request, res: Response) => {
-  const { peerDid, merkleRoot, blocksRequested } = req.body;
-  if (!peerDid || !merkleRoot || typeof blocksRequested !== 'number') {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'peerDid, merkleRoot, and numerical blocksRequested are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const syncState = meshEngine.requestSync({ peerDid, merkleRoot, blocksRequested });
-    res.json({
-      data: syncState,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'SYNC_FAILED',
-      message: err instanceof Error ? err.message : 'Sync request failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** GET /mesh/stats — Mesh network statistics */
-app.get('/mesh/stats', (_req: Request, res: Response) => {
-  const stats = meshEngine.getStats();
-  res.json({
-    data: stats,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/**
- * Section 31 Endpoints: Adaptive State Sharding & Cross-Shard 2PC
- * /sharding/shards, /sharding/state/put, /sharding/state/get,
- * /sharding/cross-shard/prepare, /sharding/cross-shard/commit, /sharding/rebalance/split, /sharding/stats
- */
-
-/** GET /sharding/shards — List all active and splitting shard partitions */
-app.get('/sharding/shards', (_req: Request, res: Response) => {
-  const shards = shardingEngine.getShards();
-  res.json({
-    data: shards,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /sharding/state/put — Put state in appropriate shard partition */
-app.post('/sharding/state/put', (req: Request, res: Response) => {
-  const { key, value } = req.body;
-  if (!key || value === undefined) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'key and value are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const result = shardingEngine.putState(key, value);
-    res.status(201).json({
-      data: result,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'PUT_STATE_FAILED',
-      message: err instanceof Error ? err.message : 'Put state failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** GET /sharding/state/get — Query state across shards by key */
-app.get('/sharding/state/get', (req: Request, res: Response) => {
-  const key = req.query.key as string;
-  if (!key) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'query parameter key is required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  const result = shardingEngine.getState(key);
-  if (!result) {
-    res.status(404).json({
-      code: 'STATE_NOT_FOUND',
-      message: `Key '${key}' not found in any shard`,
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  res.json({
-    data: result,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /sharding/cross-shard/prepare — Phase 1 of 2PC cross-shard transaction */
-app.post('/sharding/cross-shard/prepare', (req: Request, res: Response) => {
-  const { key, sourceShardId, targetShardId, sourceValue, targetValue } = req.body;
-  if (!key || !sourceShardId || !targetShardId) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'key, sourceShardId, and targetShardId are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const tx = shardingEngine.prepareCrossShardTx({
-      key,
-      sourceShardId,
-      targetShardId,
-      sourceValue,
-      targetValue,
-    });
-    res.status(201).json({
-      data: tx,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'PREPARE_FAILED',
-      message: err instanceof Error ? err.message : 'Prepare cross-shard tx failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** POST /sharding/cross-shard/commit — Phase 2 of 2PC cross-shard transaction */
-app.post('/sharding/cross-shard/commit', (req: Request, res: Response) => {
-  const { txId } = req.body;
-  if (!txId) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'txId is required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const tx = shardingEngine.commitCrossShardTx(txId);
-    res.json({
-      data: tx,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'COMMIT_FAILED',
-      message: err instanceof Error ? err.message : 'Commit cross-shard tx failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** POST /sharding/rebalance/split — Split shard partition */
-app.post('/sharding/rebalance/split', (req: Request, res: Response) => {
-  const { shardId } = req.body;
-  if (!shardId) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'shardId is required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const event = shardingEngine.splitShard(shardId);
-    res.json({
-      data: event,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'SPLIT_FAILED',
-      message: err instanceof Error ? err.message : 'Shard split failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** GET /sharding/stats — Sharding engine statistics */
-app.get('/sharding/stats', (_req: Request, res: Response) => {
-  const stats = shardingEngine.getStats();
-  res.json({
-    data: stats,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/**
- * Section 32 Endpoints: Cross-Chain Bridge & Light Client Relays
- * /bridge/chains, /bridge/headers/submit, /bridge/transfers/initiate,
- * /bridge/transfers/relay, /bridge/transfers/finalize, /bridge/transfers, /bridge/stats
- */
-
-/** GET /bridge/chains — List connected chain light clients */
-app.get('/bridge/chains', (_req: Request, res: Response) => {
-  const chains = bridgeEngine.getChains();
-  res.json({
-    data: chains,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /bridge/headers/submit — Submit verified foreign block header */
-app.post('/bridge/headers/submit', (req: Request, res: Response) => {
-  const { chainId, height, blockHash, previousBlockHash, stateRoot, signatures } = req.body;
-  if (!chainId || typeof height !== 'number' || !blockHash || !stateRoot) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'chainId, height, blockHash, and stateRoot are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const result = bridgeEngine.submitHeader({
-      chainId,
-      height,
-      blockHash,
-      previousBlockHash: previousBlockHash || '0x0',
-      stateRoot,
-      signatures: signatures || [],
-    });
-    res.status(201).json({
-      data: result,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'SUBMIT_HEADER_FAILED',
-      message: err instanceof Error ? err.message : 'Header submission failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** POST /bridge/transfers/initiate — Lock and initiate cross-chain bridge transfer */
-app.post('/bridge/transfers/initiate', (req: Request, res: Response) => {
-  const { sourceChain, targetChain, senderDid, recipientAddress, assetSymbol, amount, lockTxHash } = req.body;
-  if (!sourceChain || !targetChain || !senderDid || !recipientAddress || typeof amount !== 'number') {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'sourceChain, targetChain, senderDid, recipientAddress, and numerical amount are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const transfer = bridgeEngine.initiateTransfer({
-      sourceChain,
-      targetChain,
-      senderDid,
-      recipientAddress,
-      assetSymbol: assetSymbol || 'USDC',
-      amount,
-      lockTxHash: lockTxHash || `0xlock_${Date.now()}`,
-    });
-    res.status(201).json({
-      data: transfer,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'INITIATE_FAILED',
-      message: err instanceof Error ? err.message : 'Initiate transfer failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** POST /bridge/transfers/relay — Submit relayer Merkle proof */
-app.post('/bridge/transfers/relay', (req: Request, res: Response) => {
-  const { transferId, relayerDid, merkleProof } = req.body;
-  if (!transferId || !relayerDid || !merkleProof) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'transferId, relayerDid, and merkleProof are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const transfer = bridgeEngine.relayTransfer({
-      transferId,
-      relayerDid,
-      merkleProof,
-    });
-    res.json({
-      data: transfer,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'RELAY_FAILED',
-      message: err instanceof Error ? err.message : 'Relay transfer failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** POST /bridge/transfers/finalize — Finalize mint/release on destination */
-app.post('/bridge/transfers/finalize', (req: Request, res: Response) => {
-  const { transferId } = req.body;
-  if (!transferId) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'transferId is required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const transfer = bridgeEngine.finalizeTransfer(transferId);
-    res.json({
-      data: transfer,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'FINALIZE_FAILED',
-      message: err instanceof Error ? err.message : 'Finalize transfer failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** GET /bridge/transfers — List recent bridge transfers */
-app.get('/bridge/transfers', (_req: Request, res: Response) => {
-  const transfers = bridgeEngine.getTransfers();
-  res.json({
-    data: transfers,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** GET /bridge/stats — Bridge statistics */
-app.get('/bridge/stats', (_req: Request, res: Response) => {
-  const stats = bridgeEngine.getStats();
-  res.json({
-    data: stats,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/**
- * Section 33 Endpoints: MEV-Resistant Sequencer & VDF Fair Batching
- * /sequencer/mempool, /sequencer/mempool/submit, /sequencer/batch/seal, /sequencer/batches, /sequencer/stats
- */
-
-/** GET /sequencer/mempool — List all encrypted mempool transactions */
-app.get('/sequencer/mempool', (_req: Request, res: Response) => {
-  const mempool = sequencerEngine.getMempool();
-  res.json({
-    data: mempool,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /sequencer/mempool/submit — Submit encrypted transaction for fair ordering */
-app.post('/sequencer/mempool/submit', (req: Request, res: Response) => {
-  const { senderDid, encryptedPayload, ephemeralPublicKey, gasLimit } = req.body;
-  if (!senderDid || !encryptedPayload) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'senderDid and encryptedPayload are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  const tx = sequencerEngine.submitEncryptedTx({
-    senderDid,
-    encryptedPayload,
-    ephemeralPublicKey,
-    gasLimit,
-  });
-
-  res.status(201).json({
-    data: tx,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /sequencer/batch/seal — Seal pending mempool into VDF-attested batch */
-app.post('/sequencer/batch/seal', (req: Request, res: Response) => {
-  const maxTxs = typeof req.body.maxTxs === 'number' ? req.body.maxTxs : 50;
-
-  try {
-    const batch = sequencerEngine.sealBatch(maxTxs);
-    res.status(201).json({
-      data: batch,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'SEAL_BATCH_FAILED',
-      message: err instanceof Error ? err.message : 'Batch seal failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** GET /sequencer/batches — List all sealed sequencer batches */
-app.get('/sequencer/batches', (_req: Request, res: Response) => {
-  const batches = sequencerEngine.getBatches();
-  res.json({
-    data: batches,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** GET /sequencer/stats — Sequencer engine metrics */
-app.get('/sequencer/stats', (_req: Request, res: Response) => {
-  const stats = sequencerEngine.getStats();
-  res.json({
-    data: stats,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/**
- * Section 34 Endpoints: Data Availability Sampling & Erasure Coding
- * /da/blobs, /da/blobs/submit, /da/blobs/sample, /da/blobs/verify-kzg, /da/stats
- */
-
-/** GET /da/blobs — List all data blobs */
-app.get('/da/blobs', (req: Request, res: Response) => {
-  const namespace = typeof req.query.namespace === 'string' ? req.query.namespace : undefined;
-  const blobs = daEngine.getBlobs(namespace);
-  res.json({
-    data: blobs,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /da/blobs/submit — Submit data blob for erasure encoding and KZG commitment */
-app.post('/da/blobs/submit', (req: Request, res: Response) => {
-  const { namespace, submitterDid, rawData } = req.body;
-  if (!namespace || !submitterDid || !rawData) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'namespace, submitterDid, and rawData are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  const blob = daEngine.submitBlob({
-    namespace,
-    submitterDid,
-    rawData,
-  });
-
-  res.status(201).json({
-    data: blob,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /da/blobs/sample — Perform random Data Availability Sampling */
-app.post('/da/blobs/sample', (req: Request, res: Response) => {
-  const { blobId, sampleCount } = req.body;
-  if (!blobId) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'blobId is required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  const sample = daEngine.sampleBlob(blobId, typeof sampleCount === 'number' ? sampleCount : 4);
-  res.json({
-    data: sample,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /da/blobs/verify-kzg — Verify KZG commitment proof */
-app.post('/da/blobs/verify-kzg', (req: Request, res: Response) => {
-  const { blobId } = req.body;
-  if (!blobId) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'blobId is required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  const valid = daEngine.verifyCommitment(blobId);
-  res.json({
-    data: { blobId, valid },
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** GET /da/stats — Data availability layer statistics */
-app.get('/da/stats', (_req: Request, res: Response) => {
-  const stats = daEngine.getStats();
-  res.json({
-    data: stats,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/**
- * Section 35 Endpoints: Layer-2 Rollup Execution Engine & State Transitions
- * /rollup/accounts, /rollup/tx/submit, /rollup/blocks/produce, /rollup/blocks/commit-l1, /rollup/blocks/finalize, /rollup/blocks/challenge, /rollup/blocks, /rollup/stats
- */
-
-/** GET /rollup/accounts — List all L2 accounts */
-app.get('/rollup/accounts', (_req: Request, res: Response) => {
-  const accounts = rollupEngine.getAccounts();
-  res.json({
-    data: accounts,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /rollup/tx/submit — Submit L2 transaction */
-app.post('/rollup/tx/submit', (req: Request, res: Response) => {
-  const { from, to, value, calldata, signature } = req.body;
-  if (!from || !to || typeof value !== 'number') {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'from, to, and numerical value are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const tx = rollupEngine.submitL2Transaction({ from, to, value, calldata, signature });
-    res.status(201).json({
-      data: tx,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'L2_TX_FAILED',
-      message: err instanceof Error ? err.message : 'L2 tx failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** POST /rollup/blocks/produce — Produce L2 block from pending transactions */
-app.post('/rollup/blocks/produce', (req: Request, res: Response) => {
-  const { proposerDid, rollupType, maxTxs } = req.body;
-  if (!proposerDid) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'proposerDid is required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  const block = rollupEngine.produceBlock({
-    proposerDid,
-    rollupType: rollupType === 'VALIDITY_ZK' ? 'VALIDITY_ZK' : 'OPTIMISTIC',
-    maxTxs: typeof maxTxs === 'number' ? maxTxs : 20,
-  });
-
-  res.status(201).json({
-    data: block,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /rollup/blocks/commit-l1 — Commit proposed block to L1 */
-app.post('/rollup/blocks/commit-l1', (req: Request, res: Response) => {
-  const { blockHeight, l1TxHash } = req.body;
-  if (typeof blockHeight !== 'number') {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'blockHeight is required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const block = rollupEngine.commitToL1(blockHeight, l1TxHash);
-    res.json({
-      data: block,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'COMMIT_L1_FAILED',
-      message: err instanceof Error ? err.message : 'Commit to L1 failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** POST /rollup/blocks/finalize — Finalize L2 block */
-app.post('/rollup/blocks/finalize', (req: Request, res: Response) => {
-  const { blockHeight } = req.body;
-  if (typeof blockHeight !== 'number') {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'blockHeight is required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const block = rollupEngine.finalizeBlock(blockHeight);
-    res.json({
-      data: block,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'FINALIZE_BLOCK_FAILED',
-      message: err instanceof Error ? err.message : 'Finalize block failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** POST /rollup/blocks/challenge — Challenge disputed block state root */
-app.post('/rollup/blocks/challenge', (req: Request, res: Response) => {
-  const { blockHeight, challengerDid, disputedPostStateRoot } = req.body;
-  if (typeof blockHeight !== 'number' || !challengerDid || !disputedPostStateRoot) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'blockHeight, challengerDid, and disputedPostStateRoot are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const challenge = rollupEngine.challengeBlock({
-      blockHeight,
-      challengerDid,
-      disputedPostStateRoot,
-    });
-    res.status(201).json({
-      data: challenge,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'CHALLENGE_FAILED',
-      message: err instanceof Error ? err.message : 'Challenge failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** GET /rollup/blocks — List all L2 rollup blocks */
-app.get('/rollup/blocks', (_req: Request, res: Response) => {
-  const blocks = rollupEngine.getBlocks();
-  res.json({
-    data: blocks,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** GET /rollup/stats — Rollup execution engine metrics */
-app.get('/rollup/stats', (_req: Request, res: Response) => {
-  const stats = rollupEngine.getStats();
-  res.json({
-    data: stats,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/**
- * Section 36 Endpoints: Verifiable AI Agent Intent Solver & Composable Settlement
- * /intent/intents, /intent/intents/submit, /intent/bids/submit, /intent/intents/settle, /intent/bids, /intent/stats
- */
-
-/** GET /intent/intents — List all intents */
-app.get('/intent/intents', (_req: Request, res: Response) => {
-  const intents = intentEngine.getIntents();
-  res.json({
-    data: intents,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /intent/intents/submit — Submit user intent */
-app.post('/intent/intents/submit', (req: Request, res: Response) => {
-  const { userDid, intentDescription, sourceAsset, targetAsset, minTargetAmount, maxBudget, deadlineMs } = req.body;
-  if (!userDid || !intentDescription || !sourceAsset || !targetAsset || typeof minTargetAmount !== 'number' || typeof maxBudget !== 'number') {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'userDid, intentDescription, sourceAsset, targetAsset, minTargetAmount, and maxBudget are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  const intent = intentEngine.submitIntent({
-    userDid,
-    intentDescription,
-    sourceAsset,
-    targetAsset,
-    minTargetAmount,
-    maxBudget,
-    deadlineMs,
-  });
-
-  res.status(201).json({
-    data: intent,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /intent/bids/submit — Submit solver bid for intent */
-app.post('/intent/bids/submit', (req: Request, res: Response) => {
-  const { intentId, solverDid, proposedRoute, guaranteedOutput, estimatedFee } = req.body;
-  if (!intentId || !solverDid || !Array.isArray(proposedRoute) || typeof guaranteedOutput !== 'number' || typeof estimatedFee !== 'number') {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'intentId, solverDid, proposedRoute array, guaranteedOutput, and estimatedFee are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const bid = intentEngine.submitSolverBid({
-      intentId,
-      solverDid,
-      proposedRoute,
-      guaranteedOutput,
-      estimatedFee,
-    });
-    res.status(201).json({
-      data: bid,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'SUBMIT_BID_FAILED',
-      message: err instanceof Error ? err.message : 'Bid submission failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** POST /intent/intents/settle — Settle intent with winning solver */
-app.post('/intent/intents/settle', (req: Request, res: Response) => {
-  const { intentId } = req.body;
-  if (!intentId) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'intentId is required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const receipt = intentEngine.settleIntent(intentId);
-    res.json({
-      data: receipt,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'SETTLE_INTENT_FAILED',
-      message: err instanceof Error ? err.message : 'Settlement failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** GET /intent/bids — List all solver bids */
-app.get('/intent/bids', (req: Request, res: Response) => {
-  const intentId = typeof req.query.intentId === 'string' ? req.query.intentId : undefined;
-  const bids = intentEngine.getBids(intentId);
-  res.json({
-    data: bids,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** GET /intent/stats — Intent engine telemetry metrics */
-app.get('/intent/stats', (_req: Request, res: Response) => {
-  const stats = intentEngine.getStats();
-  res.json({
-    data: stats,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/**
- * Section 37 Endpoints: Decentralized Multi-Agent Swarm Orchestrator & Parallel Worker Dispatcher
- * /orchestrator/tasks, /orchestrator/tasks/dispatch, /orchestrator/batches/dispatch, /orchestrator/tasks/attest, /orchestrator/batches, /orchestrator/stats
- */
-
-/** GET /orchestrator/tasks — List all orchestrated tasks */
-app.get('/orchestrator/tasks', (req: Request, res: Response) => {
-  const batchId = typeof req.query.batchId === 'string' ? req.query.batchId : undefined;
-  const tasks = orchestratorEngine.getTasks(batchId);
-  res.json({
-    data: tasks,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /orchestrator/tasks/dispatch — Dispatch single orchestrated task */
-app.post('/orchestrator/tasks/dispatch', (req: Request, res: Response) => {
-  const { name, assignedAgentDid, payload, executionMode, dependencies } = req.body;
-  if (!name || !assignedAgentDid) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'name and assignedAgentDid are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  const task = orchestratorEngine.dispatchTask({
-    name,
-    assignedAgentDid,
-    payload,
-    executionMode,
-    dependencies,
-  });
-
-  res.status(201).json({
-    data: task,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /orchestrator/batches/dispatch — Dispatch parallel multi-task worker batch */
-app.post('/orchestrator/batches/dispatch', (req: Request, res: Response) => {
-  const { batchName, tasks } = req.body;
-  if (!batchName || !Array.isArray(tasks) || tasks.length === 0) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'batchName and non-empty tasks array are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  const batch = orchestratorEngine.dispatchParallelBatch({ batchName, tasks });
-  res.status(201).json({
-    data: batch,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /orchestrator/tasks/attest — Submit worker task attestation */
-app.post('/orchestrator/tasks/attest', (req: Request, res: Response) => {
-  const { taskId, agentDid, resultWitness, durationMs, hasConflict } = req.body;
-  if (!taskId || !agentDid || !resultWitness) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'taskId, agentDid, and resultWitness are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const task = orchestratorEngine.submitTaskAttestation({
-      taskId,
-      agentDid,
-      resultWitness,
-      durationMs,
-      hasConflict,
-    });
-    res.json({
-      data: task,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'TASK_ATTESTATION_FAILED',
-      message: err instanceof Error ? err.message : 'Attestation failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** GET /orchestrator/batches — List all parallel batch receipts */
-app.get('/orchestrator/batches', (_req: Request, res: Response) => {
-  const batches = orchestratorEngine.getBatches();
-  res.json({
-    data: batches,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** GET /orchestrator/stats — Orchestrator telemetry metrics */
-app.get('/orchestrator/stats', (_req: Request, res: Response) => {
-  const stats = orchestratorEngine.getStats();
-  res.json({
-    data: stats,
-    timestamp: new Date().toISOString(),
-  });
-});
-/**
- * Section 38 Endpoints: Distributed Hash Table (DHT) — Kademlia Overlay Network
- * /dht/nodes, /dht/nodes/register, /dht/records, /dht/records/put, /dht/lookup, /dht/stats
- */
-
-/** GET /dht/nodes — List all DHT overlay nodes */
-app.get('/dht/nodes', (_req: Request, res: Response) => {
-  const nodes = dhtEngine.getNodes();
-  res.json({
-    data: nodes,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /dht/nodes/register — Register new Kademlia node */
-app.post('/dht/nodes/register', (req: Request, res: Response) => {
-  const { did, address } = req.body;
-  if (!did || !address) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'did and address are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-  const node = dhtEngine.registerNode({ did, address });
-  res.status(201).json({
-    data: node,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** GET /dht/records — List all DHT records */
-app.get('/dht/records', (_req: Request, res: Response) => {
-  const records = dhtEngine.getRecords();
-  res.json({
-    data: records,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /dht/records/put — Store a key-value record in the DHT */
-app.post('/dht/records/put', (req: Request, res: Response) => {
-  const { key, value, publisherDid, ttlMs, replicationFactor } = req.body;
-  if (!key || !value || !publisherDid) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'key, value, and publisherDid are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-  const record = dhtEngine.putRecord({ key, value, publisherDid, ttlMs, replicationFactor });
-  res.status(201).json({
-    data: record,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** GET /dht/lookup — Perform Kademlia lookup by key */
-app.get('/dht/lookup', (req: Request, res: Response) => {
-  const key = typeof req.query.key === 'string' ? req.query.key : '';
-  if (!key) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'key query parameter is required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-  const result = dhtEngine.lookup(key);
-  res.json({
-    data: result,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** GET /dht/stats — DHT telemetry metrics */
-app.get('/dht/stats', (_req: Request, res: Response) => {
-  const stats = dhtEngine.getStats();
-  res.json({
-    data: stats,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/**
- * Section 39 Endpoints: Proof-of-Stake Delegation, Validator Staking & Slashing Engine
- * /staking/validators, /staking/validators/register, /staking/delegations, /staking/delegate, /staking/slash, /staking/epoch/advance, /staking/epochs, /staking/stats
- */
-
-/** GET /staking/validators — List all staking validators */
-app.get('/staking/validators', (_req: Request, res: Response) => {
-  const validators = stakingEngine.getValidators();
-  res.json({
-    data: validators,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /staking/validators/register — Register new PoS validator */
-app.post('/staking/validators/register', (req: Request, res: Response) => {
-  const { validatorDid, moniker, selfStake, commissionRate } = req.body;
-  if (!validatorDid || !moniker || typeof selfStake !== 'number') {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'validatorDid, moniker, and selfStake (number) are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const val = stakingEngine.registerValidator({ validatorDid, moniker, selfStake, commissionRate });
-    res.status(201).json({
-      data: val,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'VALIDATOR_REGISTRATION_FAILED',
-      message: err instanceof Error ? err.message : 'Registration failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** GET /staking/delegations — List delegations */
-app.get('/staking/delegations', (req: Request, res: Response) => {
-  const delegatorDid = typeof req.query.delegatorDid === 'string' ? req.query.delegatorDid : undefined;
-  const delegations = stakingEngine.getDelegations(delegatorDid);
-  res.json({
-    data: delegations,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /staking/delegate — Delegate stake to a validator */
-app.post('/staking/delegate', (req: Request, res: Response) => {
-  const { delegatorDid, validatorDid, amount } = req.body;
-  if (!delegatorDid || !validatorDid || typeof amount !== 'number') {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'delegatorDid, validatorDid, and amount (number) are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const delegation = stakingEngine.delegate({ delegatorDid, validatorDid, amount });
-    res.status(201).json({
-      data: delegation,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'DELEGATION_FAILED',
-      message: err instanceof Error ? err.message : 'Delegation failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** POST /staking/slash — Slash a misbehaving validator */
-app.post('/staking/slash', (req: Request, res: Response) => {
-  const { validatorDid, reason, evidenceProof } = req.body;
-  if (!validatorDid || !reason || !evidenceProof) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'validatorDid, reason, and evidenceProof are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const record = stakingEngine.slashValidator({ validatorDid, reason, evidenceProof });
-    res.json({
-      data: record,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'SLASH_FAILED',
-      message: err instanceof Error ? err.message : 'Slash execution failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** POST /staking/epoch/advance — Roll epoch and distribute staking rewards */
-app.post('/staking/epoch/advance', (req: Request, res: Response) => {
-  const mintRewards = typeof req.body.mintRewards === 'number' ? req.body.mintRewards : 1000;
-  const receipt = stakingEngine.advanceEpoch(mintRewards);
-  res.json({
-    data: receipt,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** GET /staking/epochs — List epoch distribution receipts */
-app.get('/staking/epochs', (_req: Request, res: Response) => {
-  const receipts = stakingEngine.getEpochReceipts();
-  res.json({
-    data: receipts,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** GET /staking/stats — Staking telemetry metrics */
-app.get('/staking/stats', (_req: Request, res: Response) => {
-  const stats = stakingEngine.getStats();
-  res.json({
-    data: stats,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/**
- * Section 40 Endpoints: Oceanic Finite State Machine Kernel — Canonical Verification Loop
- * /kernel/transition, /kernel/authorize, /kernel/consequence, /kernel/states, /kernel/states/:stateId/lineage, /kernel/stats
- */
-
-/** POST /kernel/transition — Execute canonical state transition Sn */
-app.post('/kernel/transition', (req: Request, res: Response) => {
-  const { intent, observation, evidenceItems, dissentItems, actionPlan, autoAuthorizeIfNonDestructive } = req.body;
-  if (!intent || !observation || !Array.isArray(evidenceItems) || !actionPlan) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'intent, observation, evidenceItems (array), and actionPlan are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const state = kernelEngine.transition({
-      intent,
-      observation,
-      evidenceItems,
-      dissentItems,
-      actionPlan,
-      autoAuthorizeIfNonDestructive,
-    });
-    res.status(201).json({
-      data: state,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'STATE_TRANSITION_FAILED',
-      message: err instanceof Error ? err.message : 'Transition failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** POST /kernel/authorize — Human DID authorization for gated actions */
-app.post('/kernel/authorize', (req: Request, res: Response) => {
-  const { stateId, authorizerDid, authorizationSignature } = req.body;
-  if (!stateId || !authorizerDid || !authorizationSignature) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'stateId, authorizerDid, and authorizationSignature are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const state = kernelEngine.authorizeAction({ stateId, authorizerDid, authorizationSignature });
-    res.json({
-      data: state,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'AUTHORIZATION_FAILED',
-      message: err instanceof Error ? err.message : 'Authorization failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** POST /kernel/consequence — Record measured consequence and trigger adaptive learning */
-app.post('/kernel/consequence', (req: Request, res: Response) => {
-  const { stateId, observedStatus, realizedEffects, sideEffects, executionDurationMs, verifiedValueGenerated, resourceCost } = req.body;
-  if (!stateId || !observedStatus || typeof executionDurationMs !== 'number' || typeof verifiedValueGenerated !== 'number') {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'stateId, observedStatus, executionDurationMs, and verifiedValueGenerated are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const state = kernelEngine.applyConsequence({
-      stateId,
-      observedStatus,
-      realizedEffects: realizedEffects ?? {},
-      sideEffects,
-      executionDurationMs,
-      verifiedValueGenerated,
-      resourceCost,
-    });
-    res.json({
-      data: state,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'CONSEQUENCE_APPLICATION_FAILED',
-      message: err instanceof Error ? err.message : 'Consequence recording failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** GET /kernel/states — List all canonical state nodes */
-app.get('/kernel/states', (_req: Request, res: Response) => {
-  const states = kernelEngine.getStates();
-  res.json({
-    data: states,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** GET /kernel/states/:stateId/lineage — Get verifiable parent-to-child lineage */
-app.get('/kernel/states/:stateId/lineage', (req: Request, res: Response) => {
-  const lineage = kernelEngine.getStateLineage(req.params.stateId);
-  res.json({
-    data: lineage,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** GET /kernel/stats — Kernel telemetry & root state hash */
-app.get('/kernel/stats', (_req: Request, res: Response) => {
-  const stats = kernelEngine.getStats();
-  res.json({
-    data: stats,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/**
- * Section 41 Endpoints: High-Throughput Transaction Mempool & MEV Bundle Engine
- * /mempool/transactions, /mempool/submit, /mempool/bundles/submit, /mempool/bundles, /mempool/harvest, /mempool/stats
- */
-
-/** GET /mempool/transactions — List transactions in mempool */
-app.get('/mempool/transactions', (req: Request, res: Response) => {
-  const senderDid = typeof req.query.senderDid === 'string' ? req.query.senderDid : undefined;
-  const status = typeof req.query.status === 'string' ? (req.query.status as any) : undefined;
-  const txs = mempoolEngine.getTransactions({ senderDid, status });
-  res.json({
-    data: txs,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /mempool/submit — Submit transaction to mempool with RBF */
-app.post('/mempool/submit', (req: Request, res: Response) => {
-  const { senderDid, nonce, gasPriceGwei, gasLimit, payload } = req.body;
-  if (!senderDid || typeof nonce !== 'number' || typeof gasPriceGwei !== 'number' || typeof gasLimit !== 'number') {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'senderDid, nonce (number), gasPriceGwei (number), and gasLimit (number) are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const tx = mempoolEngine.submitTransaction({
-      senderDid,
-      nonce,
-      gasPriceGwei,
-      gasLimit,
-      payload: payload ?? {},
-    });
-    res.status(201).json({
-      data: tx,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'MEMPOOL_SUBMISSION_FAILED',
-      message: err instanceof Error ? err.message : 'Submission failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** POST /mempool/bundles/submit — Submit MEV protection bundle */
-app.post('/mempool/bundles/submit', (req: Request, res: Response) => {
-  const { searcherDid, txHashes, bidTipGwei, targetBlockEpoch } = req.body;
-  if (!searcherDid || !Array.isArray(txHashes) || typeof bidTipGwei !== 'number' || typeof targetBlockEpoch !== 'number') {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'searcherDid, txHashes (array), bidTipGwei (number), and targetBlockEpoch (number) are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const bundle = mempoolEngine.submitBundle({
-      searcherDid,
-      txHashes,
-      bidTipGwei,
-      targetBlockEpoch,
-    });
-    res.status(201).json({
-      data: bundle,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'BUNDLE_SUBMISSION_FAILED',
-      message: err instanceof Error ? err.message : 'Bundle submission failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** GET /mempool/bundles — List all MEV bundles */
-app.get('/mempool/bundles', (_req: Request, res: Response) => {
-  const bundles = mempoolEngine.getBundles();
-  res.json({
-    data: bundles,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /mempool/harvest — Harvest block proposal batch */
-app.post('/mempool/harvest', (req: Request, res: Response) => {
-  const maxGas = typeof req.body.maxGas === 'number' ? req.body.maxGas : undefined;
-  const maxCount = typeof req.body.maxCount === 'number' ? req.body.maxCount : undefined;
-  const receipt = mempoolEngine.popBatch({ maxGas, maxCount });
-  res.json({
-    data: receipt,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** GET /mempool/stats — Mempool telemetry & Merkle root */
-app.get('/mempool/stats', (_req: Request, res: Response) => {
-  const stats = mempoolEngine.getStats();
-  res.json({
-    data: stats,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/**
- * Section 42 Endpoints: Decentralized Threshold Multi-Signature Attestation Network
- * /attestor/nodes, /attestor/nodes/register, /attestor/sessions/create, /attestor/sessions/share, /attestor/sessions, /attestor/qcs, /attestor/qcs/verify, /attestor/stats
- */
-
-/** GET /attestor/nodes — List attestor nodes */
-app.get('/attestor/nodes', (_req: Request, res: Response) => {
-  const nodes = attestorEngine.getAttestors();
-  res.json({
-    data: nodes,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /attestor/nodes/register — Register attestor node */
-app.post('/attestor/nodes/register', (req: Request, res: Response) => {
-  const { nodeDid, moniker, publicKey, weight } = req.body;
-  if (!nodeDid || !moniker || !publicKey) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'nodeDid, moniker, and publicKey are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const node = attestorEngine.registerAttestor({ nodeDid, moniker, publicKey, weight });
-    res.status(201).json({
-      data: node,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'ATTESTOR_REGISTRATION_FAILED',
-      message: err instanceof Error ? err.message : 'Registration failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** POST /attestor/sessions/create — Create new threshold attestation session */
-app.post('/attestor/sessions/create', (req: Request, res: Response) => {
-  const { subjectHash, domain, payload, ttlMs } = req.body;
-  if (!subjectHash || !domain) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'subjectHash and domain are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const session = attestorEngine.createSession({ subjectHash, domain, payload, ttlMs });
-    res.status(201).json({
-      data: session,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'SESSION_CREATION_FAILED',
-      message: err instanceof Error ? err.message : 'Session creation failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** POST /attestor/sessions/share — Submit signature share */
-app.post('/attestor/sessions/share', (req: Request, res: Response) => {
-  const { sessionId, nodeDid, shareSignature } = req.body;
-  if (!sessionId || !nodeDid || !shareSignature) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'sessionId, nodeDid, and shareSignature are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const result = attestorEngine.submitShare({ sessionId, nodeDid, shareSignature });
-    res.json({
-      data: result,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'SHARE_SUBMISSION_FAILED',
-      message: err instanceof Error ? err.message : 'Share submission failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** GET /attestor/sessions — List all attestation sessions */
-app.get('/attestor/sessions', (_req: Request, res: Response) => {
-  const sessions = attestorEngine.getSessions();
-  res.json({
-    data: sessions,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** GET /attestor/qcs — List all Quorum Certificates */
-app.get('/attestor/qcs', (_req: Request, res: Response) => {
-  const qcs = attestorEngine.getQCs();
-  res.json({
-    data: qcs,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /attestor/qcs/verify — Verify Quorum Certificate */
-app.post('/attestor/qcs/verify', (req: Request, res: Response) => {
-  const { qc } = req.body;
-  if (!qc) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'qc object is required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-  const valid = attestorEngine.verifyQC(qc);
-  res.json({
-    data: { valid },
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** GET /attestor/stats — Threshold attestor telemetry */
-app.get('/attestor/stats', (_req: Request, res: Response) => {
-  const stats = attestorEngine.getStats();
-  res.json({
-    data: stats,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/**
- * Section 43 Endpoints: On-Chain Timelocked Decentralized Autonomous Governance
- * /governor/proposals, /governor/proposals/:proposalId, /governor/proposals/vote, /governor/proposals/queue, /governor/proposals/execute, /governor/proposals/cancel, /governor/stats
- */
-
-/** GET /governor/proposals — List governance proposals */
-app.get('/governor/proposals', (req: Request, res: Response) => {
-  const status = typeof req.query.status === 'string' ? (req.query.status as any) : undefined;
-  const proposals = governorEngine.getProposals(status);
-  res.json({
-    data: proposals,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** GET /governor/proposals/:proposalId — Get single proposal */
-app.get('/governor/proposals/:proposalId', (req: Request, res: Response) => {
-  const proposal = governorEngine.getProposal(req.params.proposalId);
-  if (!proposal) {
-    res.status(404).json({
-      code: 'PROPOSAL_NOT_FOUND',
-      message: `Proposal ${req.params.proposalId} not found`,
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-  res.json({
-    data: proposal,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /governor/proposals — Create governance proposal */
-app.post('/governor/proposals', (req: Request, res: Response) => {
-  const { proposerDid, title, description, actions, votingPeriodMs, timelockDelayMs, quorumPower } = req.body;
-  if (!proposerDid || !title || !description || !Array.isArray(actions)) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'proposerDid, title, description, and actions (array) are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const proposal = governorEngine.propose({
-      proposerDid,
-      title,
-      description,
-      actions,
-      votingPeriodMs,
-      timelockDelayMs,
-      quorumPower,
-    });
-    res.status(201).json({
-      data: proposal,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'PROPOSAL_CREATION_FAILED',
-      message: err instanceof Error ? err.message : 'Proposal creation failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** POST /governor/proposals/vote — Cast vote on proposal */
-app.post('/governor/proposals/vote', (req: Request, res: Response) => {
-  const { proposalId, voterDid, choice, votingPower, reason } = req.body;
-  if (!proposalId || !voterDid || !choice || typeof votingPower !== 'number') {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'proposalId, voterDid, choice (FOR|AGAINST|ABSTAIN), and votingPower (number) are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const vote = governorEngine.castVote({
-      proposalId,
-      voterDid,
-      choice,
-      votingPower,
-      reason,
-    });
-    res.json({
-      data: vote,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'VOTE_FAILED',
-      message: err instanceof Error ? err.message : 'Vote failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** POST /governor/proposals/queue — Queue proposal in timelock */
-app.post('/governor/proposals/queue', (req: Request, res: Response) => {
-  const { proposalId } = req.body;
-  if (!proposalId) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'proposalId is required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const proposal = governorEngine.queueProposal(proposalId);
-    res.json({
-      data: proposal,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'QUEUE_FAILED',
-      message: err instanceof Error ? err.message : 'Queue failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** POST /governor/proposals/execute — Execute queued proposal */
-app.post('/governor/proposals/execute', (req: Request, res: Response) => {
-  const { proposalId, executorDid } = req.body;
-  if (!proposalId || !executorDid) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'proposalId and executorDid are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const receipt = governorEngine.executeProposal(proposalId, executorDid);
-    res.json({
-      data: receipt,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'EXECUTION_FAILED',
-      message: err instanceof Error ? err.message : 'Execution failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** POST /governor/proposals/cancel — Cancel proposal */
-app.post('/governor/proposals/cancel', (req: Request, res: Response) => {
-  const { proposalId, callerDid } = req.body;
-  if (!proposalId || !callerDid) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'proposalId and callerDid are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const proposal = governorEngine.cancelProposal(proposalId, callerDid);
-    res.json({
-      data: proposal,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'CANCEL_FAILED',
-      message: err instanceof Error ? err.message : 'Cancel failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** GET /governor/stats — Governance telemetry */
-app.get('/governor/stats', (_req: Request, res: Response) => {
-  const stats = governorEngine.getStats();
-  res.json({
-    data: stats,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/**
- * Section 44 Endpoints: Decentralized Cross-Shard & Cross-Rollup Message Relaying
- * /relay/packets, /relay/dispatch, /relay/relay, /relay/acknowledge, /relay/receipts, /relay/relayers, /relay/relayers/register, /relay/stats
- */
-
-/** GET /relay/packets — List cross-domain packets */
-app.get('/relay/packets', (req: Request, res: Response) => {
-  const status = typeof req.query.status === 'string' ? (req.query.status as any) : undefined;
-  const packets = relayEngine.getPackets(status);
-  res.json({
-    data: packets,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /relay/dispatch — Dispatch packet from source domain */
-app.post('/relay/dispatch', (req: Request, res: Response) => {
-  const { sourceDomain, targetDomain, senderDid, recipientDid, payload } = req.body;
-  if (!sourceDomain || !targetDomain || !senderDid || !recipientDid) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'sourceDomain, targetDomain, senderDid, and recipientDid are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const packet = relayEngine.dispatchPacket({
-      sourceDomain,
-      targetDomain,
-      senderDid,
-      recipientDid,
-      payload: payload ?? {},
-    });
-    res.status(201).json({
-      data: packet,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'DISPATCH_FAILED',
-      message: err instanceof Error ? err.message : 'Dispatch failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** POST /relay/relay — Relay packet to destination */
-app.post('/relay/relay', (req: Request, res: Response) => {
-  const { packetId, relayerDid } = req.body;
-  if (!packetId || !relayerDid) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'packetId and relayerDid are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const packet = relayEngine.relayPacket(packetId, relayerDid);
-    res.json({
-      data: packet,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'RELAY_FAILED',
-      message: err instanceof Error ? err.message : 'Relay failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** POST /relay/acknowledge — Acknowledge delivery with receipt hash */
-app.post('/relay/acknowledge', (req: Request, res: Response) => {
-  const { packetId, targetReceiptHash } = req.body;
-  if (!packetId || !targetReceiptHash) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'packetId and targetReceiptHash are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const receipt = relayEngine.acknowledgeDelivery(packetId, targetReceiptHash);
-    res.json({
-      data: receipt,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'ACKNOWLEDGE_FAILED',
-      message: err instanceof Error ? err.message : 'Acknowledgment failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** GET /relay/receipts — List all delivery receipts */
-app.get('/relay/receipts', (_req: Request, res: Response) => {
-  const receipts = relayEngine.getReceipts();
-  res.json({
-    data: receipts,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** GET /relay/relayers — List relayer nodes */
-app.get('/relay/relayers', (_req: Request, res: Response) => {
-  const relayers = relayEngine.getRelayers();
-  res.json({
-    data: relayers,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /relay/relayers/register — Register relayer node */
-app.post('/relay/relayers/register', (req: Request, res: Response) => {
-  const { relayerDid, moniker, stakeAmount } = req.body;
-  if (!relayerDid || !moniker) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'relayerDid and moniker are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const relayer = relayEngine.registerRelayer({ relayerDid, moniker, stakeAmount });
-    res.status(201).json({
-      data: relayer,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'RELAYER_REGISTRATION_FAILED',
-      message: err instanceof Error ? err.message : 'Registration failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** GET /relay/stats — Relay telemetry */
-app.get('/relay/stats', (_req: Request, res: Response) => {
-  const stats = relayEngine.getStats();
-  res.json({
-    data: stats,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/**
- * Section 45 Endpoints: Oceanic Verifiable Virtual Machine (OVM)
- * /evm/execute, /evm/contracts/deploy, /evm/contracts, /evm/contracts/:address, /evm/contracts/call, /evm/history, /evm/stats
- */
-
-/** POST /evm/execute — Execute bytecode instructions */
-app.post('/evm/execute', (req: Request, res: Response) => {
-  const { callerDid, code, gasLimit, initialStorage } = req.body;
-  if (!callerDid || !Array.isArray(code)) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'callerDid and code (array) are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const trace = evmEngine.execute({
-      callerDid,
-      code,
-      gasLimit,
-      initialStorage,
-    });
-    res.json({
-      data: trace,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'VM_EXECUTION_FAILED',
-      message: err instanceof Error ? err.message : 'Execution failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** POST /evm/contracts/deploy — Deploy smart contract */
-app.post('/evm/contracts/deploy', (req: Request, res: Response) => {
-  const { deployerDid, name, code, initialStorage } = req.body;
-  if (!deployerDid || !name || !Array.isArray(code)) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'deployerDid, name, and code (array) are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const contract = evmEngine.deployContract({
-      deployerDid,
-      name,
-      code,
-      initialStorage,
-    });
-    res.status(201).json({
-      data: contract,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'CONTRACT_DEPLOYMENT_FAILED',
-      message: err instanceof Error ? err.message : 'Deployment failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** GET /evm/contracts — List deployed contracts */
-app.get('/evm/contracts', (_req: Request, res: Response) => {
-  const contracts = evmEngine.getContracts();
-  res.json({
-    data: contracts,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** GET /evm/contracts/:address — Get deployed contract */
-app.get('/evm/contracts/:address', (req: Request, res: Response) => {
-  const contract = evmEngine.getContract(req.params.address);
-  if (!contract) {
-    res.status(404).json({
-      code: 'CONTRACT_NOT_FOUND',
-      message: `Contract ${req.params.address} not found`,
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-  res.json({
-    data: contract,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /evm/contracts/call — Call deployed smart contract */
-app.post('/evm/contracts/call', (req: Request, res: Response) => {
-  const { callerDid, contractAddress, gasLimit } = req.body;
-  if (!callerDid || !contractAddress) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'callerDid and contractAddress are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const trace = evmEngine.callContract({ callerDid, contractAddress, gasLimit });
-    res.json({
-      data: trace,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'CONTRACT_CALL_FAILED',
-      message: err instanceof Error ? err.message : 'Contract call failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** GET /evm/history — List execution history */
-app.get('/evm/history', (_req: Request, res: Response) => {
-  const history = evmEngine.getExecutionHistory();
-  res.json({
-    data: history,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** GET /evm/stats — OVM telemetry & state trie root */
-app.get('/evm/stats', (_req: Request, res: Response) => {
-  const stats = evmEngine.getStats();
-  res.json({
-    data: stats,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/**
- * Section 46 Endpoints: Verifiable Automated Market Maker (AMM)
- * /amm/pools, /amm/pools/:poolId, /amm/pools/create, /amm/liquidity/add, /amm/liquidity/remove, /amm/quote, /amm/swap, /amm/swaps, /amm/stats
- */
-
-/** GET /amm/pools — List all liquidity pools */
-app.get('/amm/pools', (_req: Request, res: Response) => {
-  const pools = ammEngine.getPools();
-  res.json({
-    data: pools.map((p) => ({
-      poolId: p.poolId,
-      tokenA: p.tokenA,
-      tokenB: p.tokenB,
-      reserveA: p.reserveA,
-      reserveB: p.reserveB,
-      totalLpShares: p.totalLpShares,
-      feeBps: p.feeBps,
-      kInvariant: p.kInvariant,
-      createdAt: p.createdAt,
-    })),
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** GET /amm/pools/:poolId — Get pool details */
-app.get('/amm/pools/:poolId', (req: Request, res: Response) => {
-  const pool = ammEngine.getPool(req.params.poolId);
-  if (!pool) {
-    res.status(404).json({
-      code: 'POOL_NOT_FOUND',
-      message: `Pool ${req.params.poolId} not found`,
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-  res.json({
-    data: {
-      poolId: pool.poolId,
-      tokenA: pool.tokenA,
-      tokenB: pool.tokenB,
-      reserveA: pool.reserveA,
-      reserveB: pool.reserveB,
-      totalLpShares: pool.totalLpShares,
-      feeBps: pool.feeBps,
-      kInvariant: pool.kInvariant,
-      createdAt: pool.createdAt,
-    },
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /amm/pools/create — Create liquidity pool */
-app.post('/amm/pools/create', (req: Request, res: Response) => {
-  const { tokenA, tokenB, initialA, initialB, creatorDid, feeBps } = req.body;
-  if (!tokenA || !tokenB || !initialA || !initialB || !creatorDid) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'tokenA, tokenB, initialA, initialB, and creatorDid are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const pool = ammEngine.createPool({
-      tokenA,
-      tokenB,
-      initialA: Number(initialA),
-      initialB: Number(initialB),
-      creatorDid,
-      feeBps: feeBps ? Number(feeBps) : undefined,
-    });
-    res.status(201).json({
-      data: pool,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'CREATE_POOL_FAILED',
-      message: err instanceof Error ? err.message : 'Create pool failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** POST /amm/liquidity/add — Add liquidity */
-app.post('/amm/liquidity/add', (req: Request, res: Response) => {
-  const { poolId, amountA, amountB, providerDid, minShares } = req.body;
-  if (!poolId || !amountA || !amountB || !providerDid) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'poolId, amountA, amountB, and providerDid are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const receipt = ammEngine.addLiquidity({
-      poolId,
-      amountA: Number(amountA),
-      amountB: Number(amountB),
-      providerDid,
-      minShares: minShares ? Number(minShares) : undefined,
-    });
-    res.json({
-      data: receipt,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'ADD_LIQUIDITY_FAILED',
-      message: err instanceof Error ? err.message : 'Add liquidity failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** POST /amm/liquidity/remove — Remove liquidity */
-app.post('/amm/liquidity/remove', (req: Request, res: Response) => {
-  const { poolId, sharesToBurn, providerDid, minA, minB } = req.body;
-  if (!poolId || !sharesToBurn || !providerDid) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'poolId, sharesToBurn, and providerDid are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const receipt = ammEngine.removeLiquidity({
-      poolId,
-      sharesToBurn: Number(sharesToBurn),
-      providerDid,
-      minA: minA ? Number(minA) : undefined,
-      minB: minB ? Number(minB) : undefined,
-    });
-    res.json({
-      data: receipt,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'REMOVE_LIQUIDITY_FAILED',
-      message: err instanceof Error ? err.message : 'Remove liquidity failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** GET /amm/quote — Get swap quote preview */
-app.get('/amm/quote', (req: Request, res: Response) => {
-  const { poolId, tokenIn, amountIn } = req.query;
-  if (!poolId || !tokenIn || !amountIn) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'poolId, tokenIn, and amountIn query params are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const quote = ammEngine.getAmountOut(String(poolId), String(tokenIn), Number(amountIn));
-    res.json({
-      data: quote,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'QUOTE_FAILED',
-      message: err instanceof Error ? err.message : 'Quote failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** POST /amm/swap — Execute constant product swap */
-app.post('/amm/swap', (req: Request, res: Response) => {
-  const { poolId, tokenIn, amountIn, traderDid, minAmountOut } = req.body;
-  if (!poolId || !tokenIn || !amountIn || !traderDid) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'poolId, tokenIn, amountIn, and traderDid are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const swap = ammEngine.swap({
-      poolId,
-      tokenIn,
-      amountIn: Number(amountIn),
-      traderDid,
-      minAmountOut: minAmountOut ? Number(minAmountOut) : undefined,
-    });
-    res.json({
-      data: swap,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'SWAP_FAILED',
-      message: err instanceof Error ? err.message : 'Swap failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** GET /amm/swaps — List executed swaps */
-app.get('/amm/swaps', (_req: Request, res: Response) => {
-  const swaps = ammEngine.getSwaps();
-  res.json({
-    data: swaps,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** GET /amm/stats — AMM telemetry */
-app.get('/amm/stats', (_req: Request, res: Response) => {
-  const stats = ammEngine.getStats();
-  res.json({
-    data: stats,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/**
- * Section 47 Endpoints: Verifiable Agent Reputation & Trust Scoring
- * /reputation/agents, /reputation/agents/:agentDid, /reputation/agents/register, /reputation/feedback, /reputation/feedbacks, /reputation/slash, /reputation/slashes, /reputation/decay, /reputation/stats
- */
-
-/** GET /reputation/agents — List registered agents */
-app.get('/reputation/agents', (_req: Request, res: Response) => {
-  const agents = reputationEngine.getAgents();
-  res.json({
-    data: agents,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** GET /reputation/agents/:agentDid — Get agent reputation */
-app.get('/reputation/agents/:agentDid', (req: Request, res: Response) => {
-  const agent = reputationEngine.getAgent(req.params.agentDid);
-  if (!agent) {
-    res.status(404).json({
-      code: 'AGENT_NOT_FOUND',
-      message: `Agent ${req.params.agentDid} not found`,
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-  res.json({
-    data: agent,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /reputation/agents/register — Register agent profile */
-app.post('/reputation/agents/register', (req: Request, res: Response) => {
-  const { agentDid, moniker, initialScore } = req.body;
-  if (!agentDid || !moniker) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'agentDid and moniker are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const agent = reputationEngine.registerAgent({
-      agentDid,
-      moniker,
-      initialScore: initialScore ? Number(initialScore) : undefined,
-    });
-    res.status(201).json({
-      data: agent,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'REGISTRATION_FAILED',
-      message: err instanceof Error ? err.message : 'Registration failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** POST /reputation/feedback — Submit feedback attestation */
-app.post('/reputation/feedback', (req: Request, res: Response) => {
-  const { fromDid, targetDid, scoreDelta, reason, contextHash } = req.body;
-  if (!fromDid || !targetDid || scoreDelta === undefined || !reason) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'fromDid, targetDid, scoreDelta, and reason are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const receipt = reputationEngine.submitFeedback({
-      fromDid,
-      targetDid,
-      scoreDelta: Number(scoreDelta),
-      reason,
-      contextHash,
-    });
-    res.json({
-      data: receipt,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'FEEDBACK_FAILED',
-      message: err instanceof Error ? err.message : 'Feedback failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** GET /reputation/feedbacks — List feedback receipts */
-app.get('/reputation/feedbacks', (_req: Request, res: Response) => {
-  const feedbacks = reputationEngine.getFeedbacks();
-  res.json({
-    data: feedbacks,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /reputation/slash — Slash agent reputation */
-app.post('/reputation/slash', (req: Request, res: Response) => {
-  const { targetDid, slashPenalty, reason, evidenceHash } = req.body;
-  if (!targetDid || !slashPenalty || !reason || !evidenceHash) {
-    res.status(400).json({
-      code: 'BAD_REQUEST',
-      message: 'targetDid, slashPenalty, reason, and evidenceHash are required',
-      timestamp: new Date().toISOString(),
-    });
-    return;
-  }
-
-  try {
-    const slash = reputationEngine.slashAgent({
-      targetDid,
-      slashPenalty: Number(slashPenalty),
-      reason,
-      evidenceHash,
-    });
-    res.json({
-      data: slash,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    res.status(400).json({
-      code: 'SLASH_FAILED',
-      message: err instanceof Error ? err.message : 'Slash failed',
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/** GET /reputation/slashes — List slashing receipts */
-app.get('/reputation/slashes', (_req: Request, res: Response) => {
-  const slashes = reputationEngine.getSlashes();
-  res.json({
-    data: slashes,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** POST /reputation/decay — Trigger decay cycle */
-app.post('/reputation/decay', (req: Request, res: Response) => {
-  const { decayFactor } = req.body;
-  reputationEngine.decayScores(decayFactor ? Number(decayFactor) : undefined);
-  res.json({
-    data: { status: 'DECAYED' },
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/** GET /reputation/stats — Reputation telemetry */
-app.get('/reputation/stats', (_req: Request, res: Response) => {
-  const stats = reputationEngine.getStats();
-  res.json({
-    data: stats,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/**
- * Section 48 — Human Authorization Gate
- * Records attributable human participation events in the verification loop.
- */
-
-/** POST /human/authorize — Record a human approval decision (APPROVAL type) */
-app.post('/human/authorize', (req: Request, res: Response) => {
-  const { humanId, rationale, payload, contextId } = req.body;
-  if (!humanId || !rationale) {
-    return res.status(400).json({ code: 'MISSING_FIELDS', message: 'humanId and rationale required', timestamp: new Date().toISOString() });
-  }
-  const input = humanEngine.recordInput('APPROVAL', humanId, rationale, payload ?? {}, contextId);
-  humanAuditLog.push(input);
-  return res.status(201).json({ data: { ...input, type: 'AUTHORIZE' }, timestamp: new Date().toISOString() });
-});
-
-/** POST /human/override — Record a human action override (ACTION type) */
-app.post('/human/override', (req: Request, res: Response) => {
-  const { humanId, rationale, payload, contextId } = req.body;
-  if (!humanId || !rationale) {
-    return res.status(400).json({ code: 'MISSING_FIELDS', message: 'humanId and rationale required', timestamp: new Date().toISOString() });
-  }
-  const input = humanEngine.recordInput('ACTION', humanId, rationale, payload ?? {}, contextId);
-  humanAuditLog.push(input);
-  return res.status(201).json({ data: { ...input, type: 'OVERRIDE' }, timestamp: new Date().toISOString() });
-});
-
-/** POST /human/reject — Record a human dissent/rejection (DISSENT type) */
-app.post('/human/reject', (req: Request, res: Response) => {
-  const { humanId, rationale, payload, contextId } = req.body;
-  if (!humanId || !rationale) {
-    return res.status(400).json({ code: 'MISSING_FIELDS', message: 'humanId and rationale required', timestamp: new Date().toISOString() });
-  }
-  const input = humanEngine.recordInput('DISSENT', humanId, rationale, payload ?? {}, contextId);
-  humanAuditLog.push(input);
-  return res.status(201).json({ data: { ...input, type: 'REJECT' }, timestamp: new Date().toISOString() });
-});
-
-/** GET /human/inputs — List all recorded human inputs */
-app.get('/human/inputs', (_req: Request, res: Response) => {
-  res.json({
-    data: humanAuditLog,
-    timestamp: new Date().toISOString(),
-  });
-});
+const webDistPath = process.env.OMEGA_WEB_DIST || join(process.cwd(), 'apps/web/dist');
+const webBuildPresent = existsSync(join(webDistPath, 'index.html'));
+
+if (webBuildPresent) {
+  app.use(express.static(webDistPath));
+}
 
 /**
  * 404 Handler
+ *
+ * A single-page client owns its own routes, so an unmatched GET that is not
+ * an API call falls back to index.html. Anything else is a genuine 404 and
+ * still says so in the structured error shape.
  */
-app.use((_req: Request, res: Response) => {
+app.use((req: Request, res: Response) => {
+  if (webBuildPresent && req.method === 'GET' && !req.accepts('json')) {
+    res.sendFile(join(webDistPath, 'index.html'));
+    return;
+  }
+
   const errorResponse: ErrorResponse = {
     code: 'NOT_FOUND',
     message: 'Endpoint not found',
@@ -5984,18 +2444,59 @@ app.use((_req: Request, res: Response) => {
   res.status(404).json(errorResponse);
 });
 
-/**
- * Start the server (guarded for tests)
- */
-if (process.env.NODE_ENV !== 'test') {
+const startServer = () =>
   app.listen(port, () => {
-    /* eslint-disable no-console */
-    console.log(`[Ω∞v API] Verification loop server running on http://localhost:${port}`);
-    console.log(
-      `Endpoints: POST /observe /verify /attest /complete-loop | GET /rules /log /metrics /health`
+    process.stdout.write(
+      [
+        `[Ω∞v API] Verification loop server running on http://localhost:${port}`,
+        'Available endpoints:',
+        '  POST   /observe          - Create an observation',
+        '  POST   /verify           - Verify an observation',
+        '  POST   /attest           - Attest a verification',
+        '  POST   /complete-loop    - Execute full loop in one request',
+        '  GET    /os               - Bounded operating-system snapshot',
+        '  GET    /state            - Runtime state',
+        '  GET    /events           - Recent lifecycle events',
+        '  GET    /events/stream    - Live lifecycle events',
+        '  GET    /log              - Append-only event history',
+        '  GET    /memory           - Kernel hash-chained memory',
+        '  GET    /memory/integrity - Verify the memory chain',
+        '  GET    /runs             - Completed runs',
+        '  POST   /act              - Authorize an action',
+        '  POST   /learn            - Record learning',
+        '  POST   /recompile        - Propose a recompile',
+        '  POST   /dissensus        - Reconcile plural verifier opinions',
+        '  GET    /dissensus        - Recorded reconciliations',
+        '  GET    /rules            - List verification rules',
+        '  GET    /health           - Health check',
+        '  GET    /observability    - Runtime, trust and provenance summary',
+        '  GET    /actions          - Authorized actions',
+        '  GET    /learning         - Recorded learnings',
+        '  GET    /recompilations   - Proposed recompiles',
+        '  GET    /audit/events     - Queryable audit trail',
+        '  GET    /evidence/export  - Bounded evidence bundle',
+        '  POST   /attest/verify    - Verify an attestation signature',
+        '  GET    /attest/policy    - Non-secret attestation policy',
+        '  GET    /attest/public-key - Public verification key',
+        '  GET    /attest/revocations - Revoked attestations',
+        '  POST   /attest/revoke    - Revoke an attestation',
+        '  POST   /persistence/acknowledge - Record persistence review',
+        '  POST   /persistence/reencrypt - Re-encrypt local persistence',
+        '  POST   /jobs             - Submit a local synthetic job (opt-in)',
+        '  GET    /jobs             - List bounded local jobs (opt-in)',
+        '  GET    /jobs/:jobId      - Read a local job and its events (opt-in)',
+        '  POST   /jobs/:jobId/claim - Claim a local job (opt-in)',
+        '  POST   /jobs/:jobId/complete - Complete a local job (opt-in)',
+        '  POST   /jobs/:jobId/fail - Fail a local job (opt-in)',
+        '  POST   /scene/simulate   - Run bounded Ω∞v multiverse perspective simulation',
+        '',
+      ].join('\n')
     );
-    /* eslint-enable no-console */
   });
+
+if (process.env.NODE_ENV !== 'test') {
+  startServer();
 }
 
+export { app, startServer, attestationService };
 export default app;

@@ -50,7 +50,7 @@ pnpm install
 The full verification suite checks that everything is working:
 
 ```bash
-npm run verify
+pnpm verify
 ```
 
 This runs:
@@ -67,7 +67,7 @@ If all checks pass, your environment is ready!
 Once the monorepo structure is built, run:
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
 This starts:
@@ -114,63 +114,63 @@ omega-v-oceanicos/
 
 ```bash
 # Start all servers in watch mode
-npm run dev
+pnpm dev
 
 # Watch for changes (without running servers)
-npm run watch
+pnpm --parallel --filter @omega-v/api --filter @omega-v/web dev
 
 # Build all packages
-npm run build
+pnpm build
 
 # Clean build artifacts
-npm run clean
+pnpm clean
 ```
 
 ### Testing & Verification
 
 ```bash
 # Run all verification (lint, type, test, build)
-npm run verify
+pnpm verify
 
 # Run just the verification suite
-npm run verify:fast         # Skip slow tasks
-npm run verify:full         # Include integration tests
+pnpm verify:fast         # Skip slow tasks
+pnpm verify:full         # Include integration tests
 
 # Run tests in watch mode
-npm run test:watch
+pnpm test:watch
 
 # Generate coverage report
-npm run test:coverage
+pnpm test:coverage
 ```
 
 ### Code Quality
 
 ```bash
 # Lint all code
-npm run lint
+pnpm lint
 
 # Fix linting issues automatically
-npm run lint:fix
+pnpm lint:fix
 
 # Type-check without building
-npm run type-check
+pnpm type-check
 
 # Format code
-npm run format:check
-npm run format:fix
+pnpm format:check
+pnpm format:fix
 ```
 
 ### Documentation
 
 ```bash
 # Build documentation site
-npm run docs:build
+pnpm docs:build
 
 # Test documentation examples
-npm run docs:test
+pnpm docs:test
 
 # Watch documentation for changes
-npm run docs:watch
+pnpm docs:watch
 ```
 
 ---
@@ -183,13 +183,13 @@ Each workspace (app or package) also has its own scripts. See the `scripts` sect
 
 ```bash
 # Run a script in a specific workspace
-npm run --workspace=packages/verification test
+pnpm --filter @omega-v/verification test
 
 # Shorter syntax with pnpm
 pnpm -F @omega-v/verification test
 
 # Run the same script in all workspaces
-npm run test --workspaces
+pnpm -r test
 ```
 
 ---

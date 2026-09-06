@@ -69,6 +69,7 @@ Converts raw observations into a standardized format:
 - Adds unique ID
 - Adds timestamp
 - Clamps confidence to 0-1
+- Preserves optional parent and bounded lineage identifiers
 - Marks as 'normalized' status
 
 ## API
@@ -102,6 +103,8 @@ Observe a claim and normalize it for verification.
   metadata: Record<string, unknown>;
   confidence: number;        // 0-1
   confidenceReason: string;
+  parentId?: string;          // immediate predecessor observation
+  lineage?: string[];         // at most 32 predecessor identifiers
 }
 ```
 
@@ -121,6 +124,8 @@ Get information about the deduplication cache.
 ```
 
 ## Error Handling
+
+When supplied, `parentId` must be a non-empty string and `lineage` must contain no more than 32 non-empty string identifiers. These fields preserve local provenance only; they do not prove causality, distributed ordering, or external execution.
 
 Invalid observations throw an error:
 

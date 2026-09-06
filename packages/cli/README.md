@@ -1,0 +1,167 @@
+# Ω∞v CLI
+
+The CLI reads the real API observability and runtime evidence contracts and exposes one explicit operator mutation for attestation revocation. When the API has `OMEGA_READ_TOKEN` configured, pass `--token TOKEN` or set `OMEGA_READ_TOKEN` so the CLI sends `Authorization: Bearer TOKEN`; this token is not a substitute for stronger administrative policy.
+
+## Usage
+
+Build the workspace, then run:
+
+```bash
+pnpm --filter @omega-v/cli build
+OMEGA_API_URL=http://localhost:3000 node packages/cli/dist/index.js health
+OMEGA_API_URL=http://localhost:3000 node packages/cli/dist/index.js status
+OMEGA_API_URL=http://localhost:3000 node packages/cli/dist/index.js rules
+```
+
+The `health` command reads unauthenticated `GET /health`, prints liveness, readiness, memory-integrity, persistence-codec, and non-secret policy evidence, and exits `0` only when readiness is `ready` and memory integrity is true. A degraded response—including an enabled corrupt runtime snapshot—HTTP failure, or network failure returns a non-zero status; an enabled missing store remains a valid cold start when the API reports it as ready. It does not turn a probe response into a cryptographic or deployment claim.
+
+The status command also accepts `--url`:
+
+```bash
+node packages/cli/dist/index.js status --url http://localhost:3000
+```
+
+It reads `GET /observability` and `GET /state`, then prints runtime, explicit state readiness, durable-log source/skipped/reason/key-source provenance, persistence rotation-pending evidence, operator-action routing, trust, memory, provenance, lineage, and observation timestamp fields returned by the API. It renders missing recovery fields as `unknown`, does not treat `persistenceRotationPending` or `operatorAction` as proof that automated re-encryption, acknowledgement, repair, or authorization occurred. `acknowledge-persistence` is an admin-authenticated, allowlist-aware mutation that records human review evidence; it does not claim recovery, and fails closed rather than inventing readiness. The process exits with status `1` when the API is unavailable, explicit state readiness is not `ready`, memory integrity is false, append-only status is false, or attestation validity is explicitly false.
+
+## Persistence acknowledgement
+
+Use `omega acknowledge-persistence --reason REASON --operator-id ID --admin-token TOKEN` to record human review of a currently pending local persistence action. The API requires the admin bearer token, applies the configured operator allowlist, validates the reason length, appends an active evidence event, and leaves readiness unchanged.
+
+## Persistence re-encryption
+
+Use `omega reencrypt-persistence --reason REASON --operator-id ID --admin-token TOKEN` to rewrite complete local snapshot and event-log ciphertext from `OMEGA_PERSISTENCE_KEY_PREVIOUS` to `OMEGA_PERSISTENCE_KEY`.
+
+```bash
+node packages/cli/dist/index.js reencrypt-persistence \
+  --reason "Rotate complete local persistence to the current key" \
+  --operator-id rotation-operator \
+  --admin-token "$OMEGA_ADMIN_TOKEN" \
+  --url http://localhost:3000
+```
+
+The command is admin-authenticated and respects `OMEGA_ADMIN_OPERATOR_ALLOWLIST`. The API validates all local evidence before rewriting; corrupt or partial persistence returns a non-zero result and is not silently treated as complete. Success prints snapshot/event record counts and the audit event ID. `health` and `status` also print `ROTATION recovery=none|recovered|blocked`; a blocked journal is a non-ready local startup condition, while `recovered` records that a complete staged transaction was reconciled. This is local ciphertext rotation evidence only. `health` and `status` print `KEY ID current=... previous=... custody=unverified-local`; those short fingerprints identify configured local secrets for equality checks but do not prove distributed recovery, HSM/KMS custody, secure deletion, or deployment authorization. The API may also report `RECOVERY policy=unavailable|operator-provided|external-reference|invalid`; a reference is a bounded label only, and `invalid` makes readiness fail closed. The CLI does not verify an operator, custodian, recovery material, or external system. `health` also prints `COVERAGE` for runtime-snapshot, event-log, and kernel-memory observations and `UNVERIFIED` for databases, object storage, backups, and external services; `complete=false` is intentional. `health` and `status` also print `DELETION policy=unavailable|unlink-only|overwrite-unlink|invalid verified=false`; invalid policy degrades readiness, and no mode proves secure erasure or removes evidence from backups, replicas, or external systems. They also print `CUSTODY policy=unverified-local|operator-managed|hsm-kms|external-reference|invalid reference=... verified=false`; invalid or reference-less modes degrade readiness, and no output proves HSM/KMS custody, operator identity, external recovery material, or deployment authorization.
+
+## Event evidence
+
+Read recent runtime events directly from the API:
+
+```bash
+node packages/cli/dist/index.js events --url http://localhost:3000
+node packages/cli/dist/index.js events --url http://localhost:3000 --limit 10
+```
+
+This command reads `GET /events`, preserves the returned event objects, and optionally limits how many recent entries are printed. It does not mutate runtime state or invent event fields.
+
+## Bounded audit evidence
+
+Query the local event log with explicit temporal and lifecycle filters:
+
+```bash
+node packages/cli/dist/index.js audit --url http://localhost:3000 \
+  --type attestation.created \
+  --status passed \
+  --from 2026-08-16T00:00:00.000Z \
+  --to 2026-08-16T23:59:59.999Z \
+  --limit 40
+```
+
+`omega audit` calls `GET /audit/events` and supports `--type`, `--stage`,
+`--status`, `--from`, `--to`, and `--limit` (1–500; default 100). It prints the
+API’s bounded result count and local `source`/`keySource` provenance. The command
+is read-only and does not treat a bounded local result as a distributed audit
+index or a completeness proof for unpersisted history.
+
+## Run evidence
+
+Read recent completed runs and their verification/attestation status:
+
+```bash
+node packages/cli/dist/index.js runs --url http://localhost:3000
+node packages/cli/dist/index.js runs --url http://localhost:3000 --limit 10
+```
+
+This command reads `GET /runs` and reports only the returned observation ID, verification status, and attestation status.
+
+Export a bounded evidence package directly from the API:
+
+```bash
+node packages/cli/dist/index.js export --url http://localhost:3000 --token "$OMEGA_READ_TOKEN"
+```
+
+This reads `GET /evidence/export`, prints the returned JSON without synthesizing fields, and exits non-zero when the returned memory integrity is invalid.
+
+## Attestation revocation
+
+Read the current non-secret attestation and persistence policy:
+
+```bash
+node packages/cli/dist/index.js policy \
+  --url http://localhost:3000 \
+  --token "$OMEGA_READ_TOKEN"
+```
+
+The command prints the API policy JSON without returning token or key values. It includes non-secret persistence key-source fields and whether a previous persistence key is configured. These fields report local fallback provenance only; the command does not claim HSM/KMS custody, secure deletion, automated re-encryption, recovery, or distributed policy coordination.
+
+Verify an attestation using the API’s cryptographic and policy boundary:
+
+```bash
+node packages/cli/dist/index.js verify \
+  --attestation-json "$ATTESTATION_JSON" \
+  --url http://localhost:3000 \
+  --token "$OMEGA_READ_TOKEN"
+```
+
+The command prints `valid`, `revoked`, `expired`, and local `registry` integrity status without recomputing signatures locally. It exits `0` only when the API reports `valid=true` and the registry is not `mismatch`; invalid, revoked, expired, or mismatched evidence returns a non-zero status.
+
+List recorded revocations without mutating state. The output includes the API’s `disabled`, `legacy`, `intact`, or `mismatch` registry-integrity status plus the local registry `revision`; `mismatch` or a revision difference is evidence about local persisted-record freshness, not a distributed-consistency result.
+
+```bash
+node packages/cli/dist/index.js revocations --url http://localhost:3000
+```
+
+Revoke a recorded attestation only when an authorized operator has supplied a reason. When `OMEGA_ADMIN_OPERATOR_ALLOWLIST` is configured, pass `--operator-id ID`; an unlisted identity returns a non-zero failure and the CLI does not claim authorization.
+
+```bash
+node packages/cli/dist/index.js revoke attestation-id \
+  --reason "Operator review found stale evidence" \
+  --operator-id dashboard-operator \
+  --url http://localhost:3000 \
+  --token "$OMEGA_READ_TOKEN"
+```
+
+The command calls `POST /attest/revoke`, sends `revokedBy=omega-cli`, and uses `--admin-token TOKEN` or `OMEGA_ADMIN_TOKEN` for the distinct administrative bearer credential. `--token` remains the read-only credential and is not reused for this mutation. The command prints the recorded revocation and returns a non-zero status for API failure. The API remains the authority for lineage, duplicate protection, persistence, and action denial; the CLI does not claim that a revocation is a cryptographic alteration of the original attestation.
+
+Mobile capabilities remain future slices. The typed SDK is available separately as `@omega-v/sdk`, and accepts `{ readToken }` as its third constructor argument when the API read boundary is enabled.
+
+## Rule capability
+
+`omega rules [--category CATEGORY]` calls `GET /rules` and prints each rule with `active` and, more importantly, `executable`.
+
+The two are different claims. `active` says the engine holds the rule and will apply it. `executable` says the engine can actually evaluate it — a rule's `definition` is a declaration this engine does not interpret, so a rule list without that flag reads as though every entry runs.
+
+A rule that is not executable fails verification rather than passing quietly, which is the correct direction: an unevaluated rule must never be reported as a rule that passed. The consequence is that without this command the only way to discover a misconfigured rule is to submit an observation and read the failure. `omega rules` moves that discovery earlier.
+
+Output reports `matched` (rules in this response), `registered` (every rule the engine holds), and `executable`. Those differ under `--category`, which is deliberate: "no rules matched this category" and "no rules at all" are different facts and an operator acts differently on each. When any matched rule cannot be evaluated, the command says so explicitly rather than leaving the reader to compare two numbers.
+
+An unreachable or malformed response exits non-zero rather than printing an empty list, because an empty rule set and an unavailable API must not look the same.
+
+This reports what the engine declares about itself. It is not a claim that any rule is correct, that its logic matches its description, or that a passing verification is a sound decision.
+
+## Local job evidence
+
+Read the bounded local worker ledger without starting or mutating work:
+
+```bash
+node packages/cli/dist/index.js jobs \
+  --url http://localhost:3000 \
+  --token "$OMEGA_READ_TOKEN" \
+  --limit 20
+```
+
+`omega jobs` calls only `GET /jobs`. It prints safe identifiers, lifecycle state, attempts, worker labels, timestamps, bounded counts, `source=memory`, and `durable=false`. The command rejects invalid limits outside 1–40, never sends worker headers or a request body, and returns a non-zero result for disabled, unauthorized, malformed, or contradictory evidence. A successful local job state is not a claim of durable execution, queue delivery, restart recovery, external crawling, or vector indexing.
+
+## Scene equation simulation
+
+`omega scene [--seed SEED] [--steps N] [--branches N]` calls `POST /scene/simulate` and renders the bounded Ω∞v scene trace, terminal state, finite point-of-view branches, continuation marker, rule version, deterministic flag, and `verified=false` boundary. Branches are bounded to a finite sample of infinite potential, not an assertion that infinite worlds were observed. This is symbolic local-simulation evidence only; it is not proof of cosmology, consciousness, sentience, or execution in an external world.
+
+The health output also prints `COORDINATION policy=local-single-process|operator-coordinated|external-coordinator|invalid reference=... verified=false`. This is a bounded declaration of the configured coordination boundary; it does not prove distributed consistency, leader election, replica agreement, external coordinator control, or deployment availability.

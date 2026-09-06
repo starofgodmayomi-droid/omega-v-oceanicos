@@ -135,7 +135,7 @@ Thank you for joining this verification-first community. This document explains 
 6. **Run the full verification suite**
 
    ```bash
-   npm run verify
+   pnpm verify
    # This runs: lint, type-check, test, build
    ```
 
@@ -168,17 +168,17 @@ Your code should:
 
 ```bash
 # Check code style
-npm run lint
+pnpm lint
 
 # Fix style issues automatically
-npm run lint:fix
+pnpm lint:fix
 
 # Type-check TypeScript
-npm run type-check
+pnpm type-check
 
 # Full format check
-npm run format:check
-npm run format:fix
+pnpm format:check
+pnpm format:fix
 ```
 
 ### Testing Requirements
@@ -191,8 +191,8 @@ npm run format:fix
 Minimum standard: **80% code coverage** for new code.
 
 ```bash
-npm run test
-npm run test:coverage
+pnpm test
+pnpm test:coverage
 ```
 
 ---

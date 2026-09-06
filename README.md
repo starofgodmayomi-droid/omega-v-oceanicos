@@ -1,126 +1,330 @@
-# Ω∞v Oceanicos
+<p align="center">
+  <img src="apps/web/public/omega-mark.svg" alt="Ω∞v" width="88" height="88" />
+</p>
+
+<h1 align="center">Ω∞v Oceanicos</h1>
+
+<p align="center"><strong>One root. One current. Infinite forms.</strong></p>
+
+<p align="center">
+  <a href="docs/spec/ATTESTATION-ENVELOPE.md">Attestation envelope</a> ·
+  <a href="docs/BRAND.md">Brand</a> ·
+  <a href="SECURITY.md">Security</a> ·
+  <a href="apps/api/README.md">API</a> ·
+  <a href="docs/decisions/0001-single-origin-deployment.md">Decisions</a>
+</p>
+
+[![Verification Pipeline](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/actions/workflows/verify.yml/badge.svg)](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/actions/workflows/verify.yml)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
 > **Attest, don't assert. Evidence before trust. Verification before evolution.**
-> Full Stack Repository: [`https://github.com/starofgodmayomi-droid/omega-v-oceanicos`](https://github.com/starofgodmayomi-droid/omega-v-oceanicos)
 
-An enterprise-grade, verification-first full-stack ecosystem for observing, verifying, attesting, and continuously evolving trustworthy intelligence systems.
+A verification-first full-stack ecosystem for observing, verifying, attesting, and continuously evolving trustworthy intelligence systems.
 
----
+## Quick Links
 
-## 🌊 The Invariant Axiom
-
-$$\Omega\infty v ::= \text{REALITY} \rightleftarrows \text{OBSERVE} \rightleftarrows \text{EVIDENCE} \rightleftarrows \text{VERIFY} \rightleftarrows \text{REMEMBER} \rightleftarrows \text{REASON} \rightleftarrows \text{INTEND} \rightleftarrows \text{BUILD} \rightleftarrows \text{TEST} \rightleftarrows \text{ATTEST} \rightleftarrows \text{ACT} \rightleftarrows \text{CONSEQUENCE} \rightleftarrows \text{LEARN} \rightleftarrows \text{AUDIT} \rightleftarrows \text{RECOMPILE} \circlearrowleft\infty$$
-
----
-
-## 🏛️ 61-Pillar Full-Stack Architecture Matrix
-
-The repository contains 61 modular, type-safe, independently tested pillars forming the complete bridge between intention and verified consequence.
-
-| Pillar | Package | Core Functionality | Test Suite |
-| :---: | :--- | :--- | :---: |
-| **I** | [`@omega-v/verification`](packages/verification) | Formal Rule Engine, Invariant Verification, Evidence Paths | 6/6 passing |
-| **II** | [`@omega-v/attestation`](packages/attestation) | Cryptographic HMAC-SHA256 / ECDSA Signatures & Lineage Proofs | 6/6 passing |
-| **III** | [`@omega-v/store`](packages/store) | Append-Only Cryptographic Provenance Ledger & Audit Logs | 6/6 passing |
-| **IV** | [`@omega-v/observer`](packages/observer) | Deterministic State Observer, Signal Normalization & Event Bus | 6/6 passing |
-| **V** | [`@omega-v/evidence`](packages/evidence) | Merkle Tree Audit Trails, Inclusion Proofs & State Commitments | 6/6 passing |
-| **VI** | [`@omega-v/telemetry`](packages/telemetry) | Multi-Dimensional Prometheus Metrics, Latency & Error Profiling | 6/6 passing |
-| **VII** | [`@omega-v/mood`](packages/mood) | System Mood Evaluator, Collective Sentiment & Stress Modeling | 6/6 passing |
-| **VIII** | [`@omega-v/friction`](packages/friction) | Kinetic Friction Tracker, Dissent Recorder & Contradiction Detection | 6/6 passing |
-| **IX** | [`@omega-v/green`](packages/green) | Proof-of-Green Carbon Accounting, Energy Tracking & Verified Offsets | 6/6 passing |
-| **X** | [`@omega-v/governance`](packages/governance) | Quadratic Voting Engine, Proposal Lifecycle & Sybil Resistance | 6/6 passing |
-| **XI** | [`@omega-v/learning`](packages/learning) | Heuristic Rule Synthesis, Online Hyperparameter Optimizer | 6/6 passing |
-| **XII** | [`@omega-v/analytics`](packages/analytics) | Statistical Efficacy Analysis, Anomaly Detection & Auto-Proposals | 6/6 passing |
-| **XIII** | [`@omega-v/scheduler`](packages/scheduler) | Topological Task Graph DAG Scheduler, Priority Queues & Cron | 6/6 passing |
-| **XIV** | [`@omega-v/vaas`](packages/vaas) | Multi-Tenant Verification-as-a-Service, Quota Enforcement & SLAs | 6/6 passing |
-| **XV** | [`@omega-v/federation`](packages/federation) | Peer Node Federation, Cross-Node Verification Handshakes | 6/6 passing |
-| **XVI** | [`@omega-v/replay`](packages/replay) | Deterministic Time-Travel Event Replay & State Delta Regression | 6/6 passing |
-| **XVII** | [`@omega-v/contract`](packages/contract) | Smart Contract Verification, Deterministic Gas Metering & VM | 6/6 passing |
-| **XVIII** | [`@omega-v/auth`](packages/auth) | Decentralized Identity (DID), Ed25519 Role-Based Access Control | 6/6 passing |
-| **XIX** | [`@omega-v/benchmark`](packages/benchmark) | High-Throughput Verification Microbenchmarking & Stress Harness | 6/6 passing |
-| **XX** | [`@omega-v/notary`](packages/notary) | Multi-Party Notarization Quorum, Timestamp Anchoring Seals | 6/6 passing |
-| **XXI** | [`@omega-v/sandbox`](packages/sandbox) | Isolated VM Code Execution, Memory Bounds & Resource Sandboxing | 6/6 passing |
-| **XXII** | [`@omega-v/policy`](packages/policy) | Declarative RBAC Policy Engine, Dynamic AST Rule Evaluation | 6/6 passing |
-| **XXIII** | [`@omega-v/zk`](packages/zk) | Zero-Knowledge Groth16 Snark Circuit Prover & Verifier | 6/6 passing |
-| **XXIV** | [`@omega-v/gateway`](packages/gateway) | Rate-Limiting Edge API Gateway, Geo-Partitioning & Anomalies | 6/6 passing |
-| **XXV** | [`@omega-v/worker`](packages/worker) | Multi-Parallel Autonomous Worker Pool & Cryptographic Attestations | 6/6 passing |
-| **XXVI** | [`@omega-v/pipeline`](packages/pipeline) | Verified CI/CD Pipeline Orchestrator, Stage DAGs & Auto-Rollback | 6/6 passing |
-| **XXVII** | [`@omega-v/registry`](packages/registry) | Verifiable Package & Artifact Registry, Merkle Manifests & CVEs | 6/6 passing |
-| **XXVIII** | [`@omega-v/enclave`](packages/enclave) | Hardware TEE (SGX/SEV/Nitro) Confidential Remote Attestations | 6/6 passing |
-| **XXIX** | [`@omega-v/consensus`](packages/consensus) | Byzantine Fault Tolerant (BFT) State Machine Replication | 6/6 passing |
-| **XXX** | [`@omega-v/mesh`](packages/mesh) | Peer-to-Peer Epidemic Gossip Protocol & Merkle Sync | 6/6 passing |
-| **XXXI** | [`@omega-v/sharding`](packages/sharding) | Adaptive State Sharding (1024 Slots) & Cross-Shard 2PC Transactions | 6/6 passing |
-| **XXXII** | [`@omega-v/bridge`](packages/bridge) | Foreign Light Clients (ETH/SOL/ATOM) & Relayer Proof Verification | 6/6 passing |
-| **XXXIII** | [`@omega-v/sequencer`](packages/sequencer) | MEV-Resistant Fair Ordering & Verifiable Delay Functions (VDF) | 4/4 passing |
-| **XXXIV** | [`@omega-v/da`](packages/da) | Data Availability Sampling (DAS) & Reed-Solomon KZG Proofs | 5/5 passing |
-| **XXXV** | [`@omega-v/rollup`](packages/rollup) | Layer-2 Optimistic & ZK-Validity Execution Engine & State Machine | 6/6 passing |
-| **XXXVI** | [`@omega-v/intent`](packages/intent) | Verifiable AI Agent Intent Solver & Composable Settlement Engine | 5/5 passing |
-| **XXXVII** | [`@omega-v/orchestrator`](packages/orchestrator) | Multi-Agent Swarm Orchestrator, Parallel Worker Dispatcher & Speculative Concurrency | 5/5 passing |
-| **XXXVIII** | [`@omega-v/dht`](packages/dht) | Distributed Hash Table (DHT), Kademlia Overlay Network & Verifiable Lookups | 5/5 passing |
-| **XXXIX** | [`@omega-v/staking`](packages/staking) | Proof-of-Stake Delegation, Validator Staking, Slashing & Verifiable Epoch Rewards | 5/5 passing |
-| **XL** | [`@omega-v/kernel`](packages/kernel) | Oceanic Finite State Machine Kernel, Canonical Verification Loop & Dissent Preservation | 5/5 passing |
-| **XLI** | [`@omega-v/mempool`](packages/mempool) | High-Throughput Transaction Mempool, RBF Gas Bumping, MEV Bundles & Priority Harvesting | 5/5 passing |
-| **XLII** | [`@omega-v/attestor`](packages/attestor) | Decentralized Threshold Multi-Signature Attestation Network & Quorum Certificates (QC) | 5/5 passing |
-| **XLIII** | [`@omega-v/governor`](packages/governor) | On-Chain Timelocked Decentralized Governance, Proposal Lifecycle & Execution Proofs | 5/5 passing |
-| **XLIV** | [`@omega-v/relay`](packages/relay) | Decentralized Cross-Shard & Cross-Rollup Message Relaying & Merkle Delivery Receipts | 5/5 passing |
-| **XLV** | [`@omega-v/evm`](packages/evm) | Oceanic Verifiable Virtual Machine (OVM), Stack Execution & State Trie Commitments | 6/6 passing |
-| **XLVI** | [`@omega-v/amm`](packages/amm) | Verifiable Automated Market Maker (AMM), Constant Product Invariant & Swap Proofs | 5/5 passing |
-| **XLVII** | [`@omega-v/reputation`](packages/reputation) | Verifiable Agent Reputation & Trust Scoring, Sybil-Resistant Feedback Attestations, Decay Dynamics & Slashing Lineage | 5/5 passing |
-| **XLVIII** | [`@omega-v/human`](packages/human) | Attributable Human Authorization Gate, Value Judgment & Operator Override Lineage | 4/4 passing |
-| **XLIX** | [`@omega-v/oracle`](packages/oracle) | Multi-Source Consensus Oracle, Variance Thresholding & Price Feeds | 7/7 passing |
-| **L** | [`@omega-v/webhook`](packages/webhook) | Real-Time Verification Webhook Engine, HMAC-SHA256 Delivery & Retries | 9/9 passing |
-| **LI** | [`@omega-v/vault`](packages/vault) | Cryptographic State Vault, Checkpoint Roots & Disaster Recovery | 5/5 passing |
-| **LII** | [`@omega-v/dispute`](packages/dispute) | Decentralized Dispute Arbitration, Counter-Evidence Dossiers & Jury Voting | 6/6 passing |
-| **LIII** | [`@omega-v/graph`](packages/graph) | Provenance Knowledge Graph & Bidirectional Causal Lineage Traversal | 3/3 passing |
-| **LIV** | [`@omega-v/security`](packages/security) | Capability Tokens, Role-Based Access Control & Security Audits | 7/7 passing |
-| **LV** | [`@omega-v/evolution`](packages/evolution) | Controlled Rule Recompilation & Drift Detection Engine | 5/5 passing |
-| **LVI** | [`@omega-v/compiler`](packages/compiler) | Ω∞v DSL Rule Compiler, Syntax AST & Bytecode Generation | 8/8 passing |
-| **LVII** | [`@omega-v/ir`](packages/ir) | Oceanicum Intermediate Representation (IR) Stack Execution Machine | 4/4 passing |
-| **LVIII** | [`@omega-v/agents`](packages/agents) | Formless Swarm Multi-Intelligence Consensus & Swarm Reasoning | 4/4 passing |
-| **LIX** | [`@omega-v/edge`](packages/edge) | Decentralized Edge Observation Nodes & Micro-Telemetry Streaming | 5/5 passing |
-| **LX** | [`@omega-v/cli`](packages/cli) | Oceanic Verification Command-Line Interface (CLI) | 10/10 passing |
-| **LXI** | [`@omega-v/sdk`](packages/sdk) | Full-Stack Oceanicos Client SDK & Verification Session Harness | 3/3 passing |
+- 📋 **[Manifest](MANIFEST.md)** — Project mission, principles, and architecture
+- 📜 **[Charter](CHARTER.md)** — Living agnostic principles and decision-making
+- 🤝 **[Contributing](CONTRIBUTING.md)** — How to contribute verification-first
+- 📖 **[Documentation](docs/)** — Architecture, guides, and references
+- ⚙️ **[Development Setup](docs/DEVELOPMENT.md)** — Get the project running locally
 
 ---
 
-## 🚀 Applications
+## What Is Ω∞v?
 
-* **`apps/api`**: Express TypeScript REST backend exposing complete verification endpoints for all 61 pillars (`http://localhost:3000`).
-* **`apps/web`**: React / Vite / TypeScript comprehensive control console featuring 61 live operational sections with real-time polling (`http://localhost:5173`).
+Ω∞v Oceanicos is a system for building trustworthy software through continuous verification and evidence-based evolution.
 
----
+### Growth law
 
-## 🧪 Verification & Test Health
-
-```bash
-# Verify entire monorepo TypeScript compilation
-npx tsc --noEmit
-
-# Run all 64 Jest test suites across all 61 pillars
-npx jest --no-coverage
+```text
+0 → MINI → + → + → FULL STACK → ECOSYSTEM → REALITY ↺ ∞
 ```
 
-* **Test Suites**: `64 passed, 64 total` (**100% Pass Rate**)
-* **Test Specs**: `418 passed, 418 total` (**100% Pass Rate**)
-* **TypeScript Errors**: `0 errors`
+Architecture does **not** begin as the giant ecosystem. It begins at **ZERO**, becomes **MINI**, and expands only when reality verifies the next step.
+
+### The MINI Kernel
+
+```text
+💧 Ω∞v MINI ::= 👁 Observe → ✓ Verify → 🧠 Remember
+```
+
+Every MINI cycle:
+
+1. **Observed** with metadata (who, when, what, confidence)
+2. **Verified** against rules with evidence paths
+3. **Remembered** in append-only, hash-chained memory
+
+### Expanded loop (earned layers)
+
+```
+Observe → Verify → Remember → Attest → Display → Learn → Return
+```
+
+Attestation, APIs, UI, and infra are **earned expansions** — not prerequisites. See [docs/MINI.md](docs/MINI.md).
+
+### Why It Matters
+
+Most systems assert correctness. We verify it.
+
+- **Without verification**: "The system is healthy" (hope-based)
+- **With verification**: "The system returned 200ms responses for 1000 consecutive requests; verified by rules v1.2.0; signed at 2026-08-07T10:30:02Z" (evidence-based)
 
 ---
 
-## 🛠️ Quick Start
+## Key Principles
 
-```bash
-# 1. Install dependencies
-npm install
+### 1. Verification Before Everything
 
-# 2. Run API server
-npm run api:dev
+No claim without evidence. No evolution without verification.
 
-# 3. Run Web Dashboard
-npm run web:dev
+### 2. Continuous Observation
+
+Systems are never final. Observation is ongoing.
+
+### 3. Evidence-Based Trust
+
+Trust emerges from verifiable provenance, not authority.
+
+### 4. Graceful Pluralism
+
+One system, many interpreters. Consensus and dissent both matter.
+
+### 5. Recursive Completeness
+
+Every component contains the whole verification loop.
+
+---
+
+## Project Structure
+
+```
+omega-v-oceanicos/
+├── packages/          # MINI kernel + expansions
+│   ├── types/         # Shared contracts
+│   ├── observer/      # 👁 Observe
+│   ├── verification/  # ✓ Verify
+│   ├── remember/      # 🧠 Remember
+│   ├── mini/          # 💧 Compose MINI cycle
+│   └── attestation/   # + ATTEST (earned expansion)
+│
+├── apps/              # Earned interface expansions
+│   ├── api/           # + API
+│   └── web/           # + Web
+│
+├── docs/              # Including MINI.md growth model
+├── infra/             # Later + infrastructure
+├── tests/             # Integration tests
+│
+├── MANIFEST.md        # Project constitution
+├── CHARTER.md         # Living principles
+└── CONTRIBUTING.md    # Contribution guide
 ```
 
 ---
 
-## 📜 License
+## Getting Started
 
-Apache-2.0 © 2026 Ω∞v Community
+### 1. Read the Foundation
+
+Start with these to understand the project:
+
+- [MANIFEST.md](MANIFEST.md) — 5 min read on the vision
+- [CHARTER.md](CHARTER.md) — 10 min read on our principles
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — 15 min read on system design
+
+### 2. Set Up Development
+
+```bash
+# Clone
+git clone https://github.com/starofgodmayomi-droid/omega-v-oceanicos.git
+cd omega-v-oceanicos
+
+# Install
+pnpm install
+
+# Verify everything works
+pnpm verify
+```
+
+See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for detailed setup.
+
+### 3. Pick a Contribution
+
+Look for issues labeled:
+
+- `good first issue` — Start here
+- `help wanted` — Areas needing contributions
+- `question` — Discussion and feedback
+
+### 4. Read the Contribution Guide
+
+[CONTRIBUTING.md](CONTRIBUTING.md) explains:
+
+- How to propose changes
+- How to verify your work
+- How to submit PRs
+- Our review process
+
+---
+
+## Common Commands
+
+### Development
+
+```bash
+# Start all services
+pnpm dev
+
+# Run in watch mode
+pnpm --parallel --filter @omega-v/api --filter @omega-v/web dev
+
+# Build everything
+pnpm build
+```
+
+### Verification
+
+```bash
+# Full verification (lint, test, build)
+pnpm verify
+
+# Quick verification (lint, test only)
+pnpm verify:fast
+
+# Comprehensive (full + coverage + integration)
+pnpm verify:full
+```
+
+### Code Quality
+
+```bash
+pnpm lint              # Check code style
+pnpm lint:fix          # Fix style issues
+pnpm type-check        # Check TypeScript
+pnpm test:coverage     # Generate coverage report
+```
+
+See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md#common-commands) for more.
+
+---
+
+## Current Phase
+
+**Phase 2: MINI kernel** (Establish Observe → Verify → Remember)
+
+- ✅ Zero acknowledged; constitution documents
+- ✅ `@omega-v/observer` · `@omega-v/verification` · `@omega-v/remember` · `@omega-v/mini`
+- ⏳ MINI as default path across apps and docs
+- ⏳ Earned expansions: attestation, API, web (present, not kernel)
+
+**Next**: Prove MINI under use, then earn `+ Attest` against remembered results.
+
+See [docs/MINI.md](docs/MINI.md) and [docs/ROADMAP.md](docs/ROADMAP.md).
+
+---
+
+## How Decisions Are Made
+
+This project follows **evidence-based decision-making**:
+
+1. Proposals include evidence
+2. All relevant evidence is presented
+3. Consensus is sought; dissent is documented
+4. When consensus cannot be reached, both paths are recorded
+5. Verification determines which interpretation was correct
+
+See [CHARTER.md](CHARTER.md#how-we-make-decisions) for details.
+
+---
+
+## Code of Conduct
+
+This community treats all contributors as co-observers seeking truth together:
+
+- ✓ Disagree strongly on evidence
+- ✓ Demand rigor and verification
+- ✓ Help others learn and improve
+- ✗ Dismiss ideas without evidence
+- ✗ Attack the person, not the problem
+
+See [CHARTER.md](CHARTER.md#code-of-conduct) for full details.
+
+---
+
+## Technology Stack
+
+### Languages
+
+- TypeScript (core, SDKs, tests)
+- Potentially: Python, Go, Rust (SDKs)
+
+### Runtime & Frameworks
+
+- Node.js 18+ (backend)
+- React (web dashboard)
+- Express or Fastify (API)
+- PostgreSQL (production) or SQLite (development)
+
+### DevOps
+
+- Docker (containerization)
+- GitHub Actions (CI/CD)
+- Kubernetes (orchestration, optional)
+
+### Testing & Quality
+
+- Jest (unit & integration tests)
+- ESLint + Prettier (code quality)
+- TypeScript (type safety)
+
+---
+
+## Contributing
+
+We welcome contributions in all areas:
+
+- **Code**: Implement features from the roadmap
+- **Documentation**: Improve guides and examples
+- **Discussion**: Share ideas and feedback
+- **Verification**: Test and report issues
+- **Community**: Help other contributors
+
+**Start here**: [CONTRIBUTING.md](CONTRIBUTING.md)
+
+---
+
+## Community
+
+- **Issues & Discussions**: [GitHub](https://github.com/starofgodmayomi-droid/omega-v-oceanicos)
+- **Code of Conduct**: [CHARTER.md](CHARTER.md)
+- **Roadmap**: [MANIFEST.md](MANIFEST.md#verification-roadmap)
+
+---
+
+## License
+
+Ω∞v Oceanicos is open-source under the [Apache License 2.0](LICENSE).
+
+---
+
+## About the Name
+
+**Ω∞v** represents:
+
+- **Ω** (Omega) — The end and the infinite return
+- **∞** (Infinity) — Continuous becoming and evolution
+- **v** (Lowercase) — Humility and pluralism (no authority imposing meaning)
+
+**Oceanicos** represents:
+
+- The vast, interconnected system of observations and verifications
+- Currents of formless intelligence flowing through evidence
+- The observer within the ocean, recognizing their reflection
+
+> Every end is a new beginning. Every becoming is a returning. Every step contains all steps.
+
+---
+
+**Status**: MINI kernel establishing — expand only with evidence  
+**Last Updated**: 2026-08-14

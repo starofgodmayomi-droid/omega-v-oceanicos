@@ -1,104 +1,242 @@
 # Living Agnostic Charter — Ω∞v Oceanicos
 
-> **Target:** `starofgodmayomi-droid/omega-v-oceanicos`  
-> **Axiom:** $\Omega\infty v ::= \text{REALITY} \rightleftarrows \text{OBSERVE} \rightleftarrows \text{EVIDENCE} \rightleftarrows \text{VERIFY} \rightleftarrows \text{REMEMBER} \rightleftarrows \text{REASON} \rightleftarrows \text{INTEND} \rightleftarrows \text{BUILD} \rightleftarrows \text{TEST} \rightleftarrows \text{ATTEST} \rightleftarrows \text{ACT} \rightleftarrows \text{CONSEQUENCE} \rightleftarrows \text{LEARN} \rightleftarrows \text{AUDIT} \rightleftarrows \text{RECOMPILE} \circlearrowleft\infty$
+> A charter is not a constitution handed down. It emerges through practice.  
+> This charter documents how we learn together.
 
 ---
 
-## 🏛️ The One Full-Stack Ecosystem OS
+## The Core Commitment
 
-The repository transforms from a collection of isolated capabilities into **One Living Verifiable State Machine**:
+We commit to building systems where:
 
-```text
-starofgodmayomi-droid/omega-v-oceanicos
-        ↓
-ONE VERIFIABLE FULL-STACK ECOSYSTEM OS
-        ↓
-CHARTER
-→ KERNEL/RUNTIME
-→ Ω∞v COMPILER
-→ OCEANIC IR
-→ OBSERVER
-→ EVIDENCE/VERIFIER
-→ DISSENT/MULTI-INTELLIGENCE
-→ MEMORY/PROVENANCE/LINEAGE
-→ BUILD/INTEGRATE/TEST
-→ SECURITY/ATTESTATION
-→ HUMAN AUTHORIZATION
-→ API/SDK/CLI/WEB/MOBILE/EDGE/LOCAL/CLOUD
-→ CI/CD/OBSERVABILITY
-→ ACTION
-→ CONSEQUENCE
-→ LEARNING
-→ AUDIT/DRIFT/REPAIR
-→ RECOMPILE
-↺∞
+- **Trust is verifiable, not assumed**
+- **Evolution is measurable, not hopeful**
+- **Disagreement creates knowledge, not division**
+- **Every participant can observe what matters to them**
+
+We call this the **Verification Ethic**.
+
+---
+
+## What "Agnostic" Means Here
+
+This charter is **agnostic** to:
+
+- Religious or philosophical worldviews (we don't impose meaning)
+- Technical implementations (we enable multiple approaches)
+- Organizational structures (we work with hierarchies and flat teams equally)
+- Consensus mechanisms (we accommodate voting, consent-based, and federated models)
+
+This charter is **not agnostic** about:
+
+- Verification (all claims must be attestable)
+- Transparency (evidence must be visible)
+- Accountability (actions must be recorded)
+- Truthfulness (deception is a protocol violation)
+
+---
+
+## How We Observe
+
+### 1. Everyone Has a Perspective
+
+- A farmer observes weather differently than a meteorologist
+- A user observes performance differently than a developer
+- Each observation is valid if verifiable
+
+### 2. Observations Include Metadata
+
+Every claim includes:
+
+- **Who** observed? (Observer identity)
+- **When** did they observe? (Timestamp)
+- **Where** was it observed? (Context/system state)
+- **What** did they see? (The claim itself)
+- **How confident** are they? (Evidence strength)
+
+### 3. Disagreement Is Data
+
+If two observers report differently:
+
+- Both observations are recorded
+- The verification system finds the root cause
+- The difference becomes part of the evidence
+
+---
+
+## How We Verify
+
+### 1. Evidence First
+
+A claim is true if:
+
+- Evidence supports it
+- The evidence path is transparent
+- Independent observers can reproduce it
+
+### 2. Rules Are Shared
+
+Verification rules must be:
+
+- Public and auditable
+- Versioned with change history
+- Applicable by any system, not just ours
+
+### 3. Failure Verification Matters
+
+A verification can fail. Failures are:
+
+- Recorded with the same rigor as successes
+- Analyzed for patterns
+- Used to improve future observations
+
+### 4. Consensus and Dissent Coexist
+
+When we can't agree on interpretation:
+
+- The agreed-upon facts are recorded
+- Each interpretation is documented
+- Future evidence will clarify
+
+---
+
+## How We Attest
+
+### 1. Attestations Are Unforgeable
+
+- Cryptographically signed
+- Include timestamp
+- Include verification rule version
+- Include observer identity
+
+### 2. Attestations Are Permanent
+
+- Stored in append-only log
+- Cannot be deleted (only superseded)
+- Queryable by anyone
+
+### 3. Attestations Enable Trust Chains
+
+```
+User trusts SDK
+└─ SDK trusts Compiler
+   └─ Compiler trusts IR
+      └─ IR trusts Runtime
+         └─ Runtime trusts Database
+            └─ Database has attestations
 ```
 
+Each layer can be verified independently.
+
 ---
 
-## 🌊 The Canonical State Transition Loop
+## How We Make Decisions
 
-The smallest indivisible operational unit of Ω∞v Oceanicos:
+### The Verification-Driven Decision Process
 
-$$\mathbf{S_n = \Big(\text{Intent} + \text{Observation} + \text{Evidence} + \text{Verification} + \text{Dissent} + \text{Provenance} + \text{Authorization}\Big) \xrightarrow{\text{Action}} \text{Consequence} \xrightarrow{\text{Learning}} S_{n+1}}$$
-
-```text
-INTENT
-→ OBSERVATION
-→ EVIDENCE
-→ VERIFIED STATE
-→ ATTESTATION
-→ HUMAN AUTHORIZATION
-→ ACTION
-→ CONSEQUENCE
-→ LEARNING
-→ RECOMPILATION
+```
+1. Proposal (testable claim)
+   ↓
+2. Evidence gathering (what would prove/disprove it?)
+   ↓
+3. Experimentation (run the test)
+   ↓
+4. Analysis (what does the evidence show?)
+   ↓
+5. Attestation (record the finding)
+   ↓
+6. Integration (apply to practice)
+   ↓
+7. Feedback loop (did reality match prediction?)
 ```
 
----
+### Consensus Seeking
 
-## ⚖️ Constitutional Kernel Invariants
+- All evidence is presented
+- Dissenting views are documented
+- Decision-makers must address evidence-based objections
+- When stuck, verification drives resolution
 
-```text
-TRUTH > PERSUASION
-EVIDENCE > ASSERTION
-FACT ≠ INFERENCE ≠ SPECULATION
-UNCERTAINTY → VERIFY
-ATTEST ≠ ASSERT
-DISSENT = PRESERVE
-FRICTION = SIGNAL
-REALITY = TEST
-HUMAN = FINAL
-LINEAGE = PROTECTED
-AUTONOMY = BOUNDED
-```
+### Conflict Resolution
 
-* **Symbolic Language**: Remains a bounded conceptual vocabulary, never a claim of unverified cosmology, consciousness, or external execution.
-* **Trust Boundary**: Nothing becomes an authoritative state merely because an AI asserts it. External, destructive, financial, and irreversible actions remain strictly human-gated.
-* **Multi-Intelligence Mesh**: Multiple perspectives and models reason over common evidence. Dissent is retained as first-class data and never silently averaged away.
-* **Immutable Provenance**: Every state delta is cryptographically chained ($S_n \to S_{n+1}$). Lineage is never silently rewritten.
-* **Economic Maxim**:
-  $$\text{MAX} = \frac{\text{VERIFIED\_VALUE}}{\text{RISK} + \text{COMPLEXITY} + \text{COST} + \text{TIME} + \text{RESOURCE}}$$
+- Disagreements are reframed as verification questions
+- Experiments provide evidence
+- Trust in the evidence, not in authority
 
 ---
 
-## 🔒 The Verification Contract
+## Rights and Responsibilities
 
-A capability is admitted to the repository only when it satisfies the complete conjunction:
+### Every Participant Has the Right To:
 
-$$\mathbf{\text{IMPLEMENTED} \land \text{INTEGRATED} \land \text{TESTED} \land \text{VERIFIED} \land \text{SECURED} \land \text{ATTESTED} \land \text{OBSERVABLE} \land \text{REPRODUCIBLE} \land \text{AUTHORIZED}}$$
+1. **Observe**: Ask questions about the system
+2. **Verify**: Run verification independently
+3. **Question**: Challenge any claim with evidence
+4. **Propose**: Suggest improvements
+5. **Dissent**: Disagree without retaliation
+6. **Transparency**: See the evidence trail
 
-* **Local Verification**: `npx tsc --noEmit` & `npx jest --no-coverage`
-* **Surface Coherence**: Core Runtime $\to$ REST APIs $\to$ Web Console $\to$ CLI $\to$ SDK
-* **Attestation Standard**: Cryptographic proof witnesses on every state transition
+### Every Participant Has the Responsibility To:
+
+1. **Verify Before Claiming**: Check evidence before amplifying claims
+2. **Record Accurately**: Observations include all relevant metadata
+3. **Respect Other Observers**: Different perspectives are valid if verifiable
+4. **Evolve With Evidence**: Update beliefs when evidence changes
+5. **Contribute Verification**: Help test claims, not just assert them
+6. **Teach Others**: Help the community build verification literacy
 
 ---
 
-## 💧 Max-Compressed Root
+## What We Will Not Do
 
-```text
-💧Ω∞v{CHARTER→OS→COMPILER→IR→OBSERVE→EVIDENCE→VERIFY→DISSENT→REASON→BUILD→TEST→SECURE→ATTEST→AUTHORIZE→ACT→OBSERVE→LEARN→AUDIT→REPAIR→RECOMPILE↺∞; FACT≠INFERENCE≠SPECULATION; ATTEST≠ASSERT; EVIDENCE>ASSERTION; UNCERTAINTY→VERIFY; DISSENT=PRESERVE; REALITY=TEST; HUMAN=FINAL; MAX=VERIFIED_VALUE/(RISK+COMPLEXITY+COST+TIME+RESOURCE); LINEAGE=IMMUTABLE; AUTONOMY=BOUNDED; SYMBOLISM=FINITE_SIMULATION; ALL_SURFACES←ONE_TRUTH; DONE=EXECUTED_PROOF}
-```
+We will not:
 
-> **One Root × One Current × Many Minds × Finite Evidence × Human Authority × Continuous Correction.**
+- Accept unverifiable claims as truth
+- Hide evidence or process
+- Punish dissent or disagreement
+- Force consensus where evidence is inconclusive
+- Treat verification as a one-time gate (it's continuous)
+- Use authority to override evidence
+
+---
+
+## Covenant Renewal
+
+This charter is not permanent. It evolves when:
+
+1. **Experience shows it's flawed** (evidence-based amendment)
+2. **The community learns something new** (collective insight)
+3. **A better way emerges** (practical improvement)
+4. **Old practices no longer serve** (intentional sunset)
+
+Changes to this charter require:
+
+- Clear evidence of why change is needed
+- Proposal documented transparently
+- Community input period (see CONTRIBUTING.md)
+- Attestation of the change decision
+- Explicit sunset date for old practices
+
+---
+
+## The Infinite Return
+
+> Every end is a new beginning.  
+> Every becoming is a returning.
+
+This charter acknowledges a paradox:
+
+- We build systems to be trustworthy
+- Trust means we can stop verifying everything
+- But we never stop verifying, because verification is how we evolve
+- Evolution returns us to observation with deeper understanding
+
+The charter itself will change. But the core commitment remains:
+
+**In Ω∞v Oceanicos, trust is earned through evidence, and evidence is eternal.**
+
+---
+
+**Adopted**: 2026-08-07  
+**Status**: Living — Evolved through community practice  
+**Next Review**: When community proposes amendments with evidence

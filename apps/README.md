@@ -7,11 +7,11 @@ User-facing applications and services for the Ω∞v Oceanicos verification ecos
 Applications expose the core verification loop to end users through different interfaces:
 
 ```
-Web Dashboard    REST API    CLI (future)    Mobile (future)
-      ↓           ↓             ↓                ↓
-   React UI   Express.js   Command-line    iOS/Android
-      └─────────────┬──────────────┐──────────────┘
-                    ↓
+Web Dashboard    REST API      CLI           SDK        Mobile (future)
+      ↓             ↓            ↓             ↓              ↓
+   React UI    Express.js    omega(1)    TypeScript     iOS/Android
+      └─────────────┴──────┬──────┴──────────────┘
+                           ↓
         Shared Verification Loop
         (Observer → Verify → Attest)
 ```
@@ -41,12 +41,14 @@ Express REST server exposing the verification loop via HTTP.
 
 **Endpoints:**
 
-- `GET /health` — API status check
-- `POST /observe` — Capture a claim
-- `POST /verify` — Verify an observation
-- `POST /attest` — Sign a verification result
-- `POST /complete-loop` — Full cycle in one request
-- `GET /rules` — List registered rules
+The full list, with request and response shapes, lives in
+[api/README.md](api/README.md). It is not repeated here on purpose: a second
+copy drifts from the first, and this one already had — it listed 17 endpoints
+while the server registered 29.
+
+A test asserts that `api/README.md` documents every route the API actually
+registers, so there is exactly one description of the surface and it cannot
+fall behind the code.
 
 **Quick Start:**
 
@@ -59,6 +61,10 @@ npm run test      # Run tests
 **Configuration:**
 
 - `API_PORT` — Server port (default: 3000)
+- `OMEGA_RUNTIME_STORE_PATH` — Local runtime snapshot path (default: `/tmp/omega-v-oceanicos/runtime.json`)
+- `OMEGA_SIGNING_KEY` — Required. The service refuses to start without it.
+- Further variables are documented in [api/README.md](api/README.md) rather
+  than duplicated here.
 
 **See also:** [api/README.md](api/README.md)
 
@@ -97,14 +103,14 @@ npm run test      # Run tests
 
 ```bash
 # Install dependencies for all apps and packages
-npm install
+pnpm install
 
 # Start all apps in parallel (hot reload enabled)
-npm run dev
+pnpm dev
 
 # In separate terminals or after Ctrl+C:
-npm run build    # Build all apps
-npm run test     # Test all apps
+pnpm build       # Build all apps
+pnpm test        # Test all apps
 ```
 
 ### Option 2: Start Individual App
@@ -112,13 +118,11 @@ npm run test     # Test all apps
 ```bash
 # API only
 cd apps/api
-npm install
-npm run dev       # Runs on http://localhost:3000
+pnpm --filter @omega-v/api dev       # Runs on http://localhost:3000
 
 # Web only (requires API running)
 cd apps/web
-npm install
-npm run dev       # Runs on http://localhost:3001
+pnpm --filter @omega-v/web dev       # Runs on http://localhost:3001
 ```
 
 ## Architecture
@@ -156,20 +160,20 @@ Display on Dashboard
 ### Run Tests for All Apps
 
 ```bash
-npm test
+pnpm test
 ```
 
 ### Run Tests for One App
 
 ```bash
-npm test -- apps/api/
-npm test -- apps/web/
+pnpm exec jest apps/api/
+pnpm exec jest apps/web/
 ```
 
 ### Watch Mode
 
 ```bash
-npm run test:watch
+pnpm test:watch
 ```
 
 ## Building
@@ -177,7 +181,7 @@ npm run test:watch
 ### Build All Apps
 
 ```bash
-npm run build
+pnpm build
 ```
 
 Produces:
@@ -188,8 +192,8 @@ Produces:
 ### Build One App
 
 ```bash
-npm run -w @omega-v/api build
-npm run -w @omega-v/web build
+pnpm --filter @omega-v/api build
+pnpm --filter @omega-v/web build
 ```
 
 ## Development
@@ -372,5 +376,5 @@ Runs on `http://localhost:3001`
 
 ---
 
-See [../../CONTRIBUTING.md](../../CONTRIBUTING.md) for contribution guidelines.
+See [../../CONTRIBUTING.md](../CONTRIBUTING.md) for contribution guidelines.
 ```

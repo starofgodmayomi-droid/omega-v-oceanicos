@@ -1,0 +1,15 @@
+# Build output and dependencies
+dist/
+node_modules/
+coverage/
+
+# Lockfiles are generated; reformatting them creates spurious diffs and
+# defeats `pnpm install --frozen-lockfile`.
+pnpm-lock.yaml
+
+# Skills are supplied artifacts, preserved exactly as received.
+#
+# Reformatting one would change a file this repository did not author and
+# break the hash recorded alongside it, which is the only thing that lets
+# an installed skill be checked against its source. Lineage over tidiness.
+.claude/skills/
