@@ -69,11 +69,9 @@ describe('web/API contract', () => {
       '/memory/integrity',
       '/observability',
       '/observe',
-      '/os/admit',
       '/persistence/acknowledge',
       '/persistence/reencrypt',
       '/recompilations',
-      '/rules',
       '/verify',
     ]);
   });

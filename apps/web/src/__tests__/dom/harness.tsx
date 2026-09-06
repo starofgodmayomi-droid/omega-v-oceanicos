@@ -280,6 +280,61 @@ export function installFetch(overrides: RouteOverrides = {}): jest.Mock {
     '/api/learning': () => json({ data: [{ id: 'lrn-1' }] }),
     '/api/learn': () => json({ data: { id: 'lrn-1' } }, { status: 201 }),
     '/api/recompile': () => json({ data: { id: 'rec-1', status: 'proposed' } }, { status: 201 }),
+    '/api/rules': () =>
+      json({
+        data: {
+          count: 2,
+          registered: 2,
+          executable: 2,
+          category: null,
+          rules: [
+            {
+              name: 'response-time-threshold',
+              version: '1.0.5',
+              appliesTo: ['health-check'],
+              definition: 'responseTime < 100',
+              description: 'Verify response time is below 100ms',
+              createdAt: '2026-08-16T00:00:00.000Z',
+              active: true,
+              executable: true,
+            },
+            {
+              name: 'status-code-check',
+              version: '1.2.0',
+              appliesTo: ['health-check'],
+              definition: 'statusCode == 200',
+              description: 'Verify HTTP status code is 200 OK',
+              createdAt: '2026-08-16T00:00:00.000Z',
+              active: true,
+              executable: true,
+            },
+          ],
+        },
+        timestamp: '2026-08-16T00:00:00.000Z',
+      }),
+    '/api/os/admit': () =>
+      json(
+        {
+          data: {
+            id: 'task-1',
+            kind: 'observe',
+            input: { claim: 'test' },
+            requestedBy: 'operator-web',
+            state: 'queued',
+          },
+        },
+        { status: 201 }
+      ),
+    '/api/evidence/export': () =>
+      json({
+        data: {
+          observability: {},
+          events: [],
+          runs: [],
+        },
+        meta: { bounded: true },
+        timestamp: '2026-08-16T00:00:00.000Z',
+      }),
   };
 
   const routes = { ...defaults, ...overrides };

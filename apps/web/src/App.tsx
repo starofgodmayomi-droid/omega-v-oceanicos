@@ -74,6 +74,17 @@ type SceneSimulation = {
   provenance: { ruleVersion: string; deterministic: boolean; verified: boolean; note: string };
 };
 
+type VerificationRuleItem = {
+  name: string;
+  version: string;
+  appliesTo: string[];
+  definition: string;
+  description?: string;
+  createdAt: string;
+  active: boolean;
+  executable: boolean;
+};
+
 type RuntimeEvent = {
   id: string;
   type: string;
@@ -355,6 +366,7 @@ export function App(): React.JSX.Element {
   const [miniFeedback, setMiniFeedback] = useState<string | null>(null);
   const [exportingEvidence, setExportingEvidence] = useState(false);
   const [exportFeedback, setExportFeedback] = useState<string | null>(null);
+  const [rules, setRules] = useState<VerificationRuleItem[]>([]);
   const claimInputRef = useRef<HTMLTextAreaElement>(null);
   const commandFirstRef = useRef<HTMLButtonElement>(null);
   const commandTriggerRef = useRef<HTMLButtonElement>(null);
@@ -479,6 +491,15 @@ export function App(): React.JSX.Element {
       } else {
         setPublicTrust(null);
         setPublicTrustStatus('unavailable');
+      }
+      const rulesResponse = await fetch('/api/rules').catch(() => null);
+      if (rulesResponse?.ok) {
+        const rulesData = (await rulesResponse.json()) as {
+          data?: { rules?: VerificationRuleItem[] };
+        };
+        if (Array.isArray(rulesData.data?.rules)) {
+          setRules(rulesData.data.rules);
+        }
       }
       const readyServices = state.data.services.filter(
         (service) => service.status === 'ready'
@@ -943,6 +964,42 @@ export function App(): React.JSX.Element {
     }
   };
 
+  const admitOsTask = async () => {
+    setMiniRunning(true);
+    setMiniFeedback(null);
+    try {
+      const response = await fetch('/api/os/admit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          kind: 'observe',
+          input: { claim: claim.trim() || 'Operator admitted observation' },
+          requestedBy: 'operator-web',
+        }),
+      });
+      const body = (await response.json()) as {
+        data?: { id: string; kind: string; requestedBy: string; state?: string };
+        error?: string;
+      };
+      if (response.ok && body.data) {
+        setMiniFeedback(
+          `Task admitted: #${body.data.id} (${body.data.kind}) by ${body.data.requestedBy}`
+        );
+        const osRes = await fetch('/api/os').catch(() => null);
+        if (osRes?.ok) {
+          const osData = (await osRes.json()) as { data: OperatingSystemSnapshot };
+          setOsSnapshot(osData.data);
+        }
+      } else {
+        setMiniFeedback(`Admission failed: ${body.error ?? 'unknown error'}`);
+      }
+    } catch (err: unknown) {
+      setMiniFeedback(`Admission failed: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setMiniRunning(false);
+    }
+  };
+
   return (
     <div className="os-shell">
       <aside className="sidebar">
@@ -1312,6 +1369,14 @@ export function App(): React.JSX.Element {
                   disabled={miniRunning}
                 >
                   CHECK INTEGRITY
+                </button>
+                <button
+                  type="button"
+                  className="refresh-button"
+                  onClick={() => void admitOsTask()}
+                  disabled={miniRunning}
+                >
+                  ADMIT TASK
                 </button>
               </div>
               {miniFeedback ? (
@@ -1950,6 +2015,20 @@ export function App(): React.JSX.Element {
                         {evidenceStepLabel(step)} / {step.reasoning}
                       </p>
                     ))}
+                    {rules.length > 0 && (
+                      <div className="registered-rules-summary">
+                        <span className="registered-rules-title">
+                          REGISTERED RULES ({rules.length})
+                        </span>
+                        <div className="registered-rules-tags">
+                          {rules.map((r) => (
+                            <span key={r.name} className="rule-badge" title={r.definition}>
+                              {r.name} v{r.version} {r.executable ? '✓' : '✗'}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                     {result.verification.dissent && (
                       <div
                         className="dissent-banner"

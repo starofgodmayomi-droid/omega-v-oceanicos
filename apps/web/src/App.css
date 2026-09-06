@@ -1730,3 +1730,38 @@ body {
   color: var(--omega-foam);
   font-family: 'DM Mono', monospace;
 }
+
+.registered-rules-summary {
+  margin-top: 0.5rem;
+  padding: 0.45rem 0.65rem;
+  background: var(--omega-abyss-raised);
+  border: 1px solid var(--omega-abyss-edge);
+  border-radius: 4px;
+}
+
+.registered-rules-title {
+  display: block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--omega-current-dim);
+  margin-bottom: 0.35rem;
+  font-family: 'DM Mono', monospace;
+}
+
+.registered-rules-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.rule-badge {
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  background: var(--omega-abyss);
+  border: 1px solid var(--omega-abyss-edge);
+  border-radius: 3px;
+  color: var(--omega-foam-muted);
+  font-family: 'DM Mono', monospace;
+}
+
