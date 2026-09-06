@@ -24,12 +24,14 @@ export class MiniKernel {
   private readonly verificationEngine: VerificationEngine;
   private readonly memory: Remember;
 
-  constructor(options: {
-    observer?: Observer;
-    verificationEngine?: VerificationEngine;
-    memory?: Remember;
-    rules?: VerificationRule[];
-  } = {}) {
+  constructor(
+    options: {
+      observer?: Observer;
+      verificationEngine?: VerificationEngine;
+      memory?: Remember;
+      rules?: VerificationRule[];
+    } = {}
+  ) {
     this.observer = options.observer ?? new Observer();
     this.verificationEngine = options.verificationEngine ?? new VerificationEngine();
     this.memory = options.memory ?? new Remember();
@@ -162,7 +164,7 @@ export class MiniKernel {
   }
 }
 
-export { OperatingSystemKernel } from './os';
-export { OmegaTotalCompressor } from './omegaTotal';
+export { OperatingSystemKernel } from './os.js';
+export { OmegaTotalCompressor } from './omegaTotal.js';
 
 export default MiniKernel;

@@ -2,7 +2,10 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "rootDir": "src",
-    "outDir": "dist"
+    "outDir": "dist",
+    "paths": {
+      "@omega-v/types": ["../types/dist/index.d.ts"]
+    }
   },
   "include": ["src"]
 }

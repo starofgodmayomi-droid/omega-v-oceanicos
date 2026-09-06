@@ -1,4 +1,4 @@
-import { MiniKernel } from './index';
+import { MiniKernel } from './index.js';
 import { OmegaTotalManifest } from '@omega-v/types';
 
 /**
@@ -45,8 +45,8 @@ export class OmegaTotalCompressor {
     if (!cycleResult.passed) {
       throw new Error(
         `OmegaTotal: verification did not pass. ` +
-        `Passed: ${cycleResult.verification.summary.rulesPassed}/${cycleResult.verification.summary.rulesApplied}. ` +
-        `Totality cannot be achieved without verification.`
+          `Passed: ${cycleResult.verification.summary.rulesPassed}/${cycleResult.verification.summary.rulesApplied}. ` +
+          `Totality cannot be achieved without verification.`
       );
     }
 
@@ -54,7 +54,7 @@ export class OmegaTotalCompressor {
     if (cycleResult.verification.summary.rulesApplied < 1) {
       throw new Error(
         `OmegaTotal: no rules were applied during verification. ` +
-        `Totality requires at least one executable rule.`
+          `Totality requires at least one executable rule.`
       );
     }
 
@@ -63,7 +63,7 @@ export class OmegaTotalCompressor {
     if (!memoryIntegrity) {
       throw new Error(
         `OmegaTotal: memory integrity check failed. ` +
-        `The hash chain is broken. Totality cannot be achieved with corrupted memory.`
+          `The hash chain is broken. Totality cannot be achieved with corrupted memory.`
       );
     }
 

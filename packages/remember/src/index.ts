@@ -1,5 +1,5 @@
 import { createHash } from 'crypto';
-import { MemoryStore, FileMemoryStore, StoreSource, EncryptionKeySource } from './store';
+import { MemoryStore, FileMemoryStore, StoreSource, EncryptionKeySource } from './store.js';
 import {
   Attestation,
   EventLogEntry,
