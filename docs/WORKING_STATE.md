@@ -2,6 +2,29 @@
 
 **Updated:** 2026-09-06
 
+## Real-Time SSE Telemetry Stream & Asymmetric Cryptographic Guard — 2026-09-06
+
+The Ω∞v Oceanicos full-stack monorepo has completed the real-time telemetry streaming and sovereign asymmetric cryptographic guard upgrades:
+
+1. **Real-Time SSE Block Telemetry Streaming (`apps/api`)**:
+   - Implemented `GET /v1/stream` (`text/event-stream`) in Fastify with automatic connection management.
+   - Streams the active tip immediately upon connection and broadcasts newly minted consensus blocks in real-time to all connected web dashboards whenever `/v1/cycle` is called.
+
+2. **Ed25519 Asymmetric Cryptographic Guard (`@oceanicos/verification` & `apps/api`)**:
+   - Implemented `packages/verification/src/asymmetric.ts` (`AsymmetricValidationGuard`) for Ed25519 keypair generation, payload signing, and verification.
+   - Secured `/v1/cycle` to verify `x-omega-signature` and `x-omega-public-key` against `EXECUTE_OMNI_CYCLE`, failing closed (`401 INVALID_ASYMMETRIC_SIGNATURE`) on tampered or invalid signatures.
+   - Exposed `/v1/auth/keypair`, `/v1/block/sign`, and `/v1/block/verify-signature`.
+
+3. **Interactive Sovereign Matrix Console (`apps/web`)**:
+   - Upgraded `apps/web/src/App.tsx` with auto-reconnecting SSE stream listener (`STREAM: LIVE`).
+   - Built-in one-click Ed25519 keypair generator and "Asymmetrically Seal State Commits" toggle.
+   - Visual telemetry matrix cards for Silicon Yield (`94%`), Grid Load (`1250 MW`), Accelerators (`989k`), and rolling immutable block chain feed.
+
+4. **Monorepo Build & Verification Status**:
+   - `pnpm run verify`: `Ω ➔ [👁 94% | ✓ PASS | 🧠 #4102] ── LIVE ── 0 ERRORS ── $`
+   - `pnpm run typecheck`: 0 TypeScript errors across all 7 workspace packages.
+   - `pnpm run build`: 100% clean production build of packages, API, and web bundles.
+
 ## Max Compress Architectural Upgrade & Deep Pluralism Verification Stack — 2026-09-06
 
 The Ω∞v Oceanicos codebase has undergone a zero-entropy "Max Compress" architectural consolidation and "Deep-Tier Cryptographic Architecture" omnipresent expansion, successfully merged into `main`:
