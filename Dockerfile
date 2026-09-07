@@ -1,14 +1,8 @@
-FROM node:20-alpine AS base
-RUN npm i -g pnpm@8
+FROM node:20-alpine
+RUN apk add --no-cache python3 make g++ git && npm install -g pnpm
 WORKDIR /app
-
-FROM base AS builder
-COPY pnpm-workspace.yaml package.json ./
-COPY shared/ ./shared/
+COPY package.json pnpm-workspace.yaml ./
 COPY packages/ ./packages/
 COPY apps/ ./apps/
-RUN pnpm install && pnpm --recursive run build
-
-FROM base AS runner
-COPY --from=builder /app /app
-EXPOSE 4102 3000
+RUN pnpm install && pnpm run build
+EXPOSE 5000 3000

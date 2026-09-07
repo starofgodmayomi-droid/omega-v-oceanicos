@@ -1,9 +1,14 @@
 version: '3.8'
 services:
-  omega-v-cluster:
+  api:
     build: .
     ports:
-      - "4102:4102"
+      - "5000:5000"
+    command: pnpm run start:api
+  web:
+    build: .
+    ports:
       - "3000:3000"
-    command: sh -c "pnpm --filter api run start & pnpm --filter web run start"
-    restart: always
+    command: pnpm run start:web
+    depends_on:
+      - api

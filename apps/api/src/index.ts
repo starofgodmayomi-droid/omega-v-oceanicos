@@ -1,34 +1,32 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import { RememberEngine } from '@oceanicos/remember';
-import { MiniKernelCoordinator } from '@oceanicos/mini';
+import { MiniKernel } from '@oceanicos/mini';
 
-const server = Fastify({ logger: true });
-const remember = new RememberEngine('oceanicos.db');
-const coordinator = new MiniKernelCoordinator(remember);
+const fastify = Fastify({ logger: true });
+const ledgerMemory = new RememberEngine('./oceanicos.db');
+const kernel = new MiniKernel(ledgerMemory);
 
-server.register(cors, { origin: '*' });
+fastify.register(cors, { origin: '*' });
 
-server.post('/v1/cycle', async (_request, reply) => {
-  try {
-    const block = coordinator.executeCycle();
-    return { status: 'SYNCHRONIZED', block };
-  } catch (error: any) {
-    return reply.status(500).send({ status: 'PANIC', message: error.message });
-  }
+fastify.post('/v1/cycle', async () => {
+  const block = kernel.runCycle();
+  return { success: true, status: 'SYNCHRONIZED', block };
 });
 
-server.get('/v1/block/tip', async (_request, _reply) => {
-  return { status: 'ONLINE', tip: remember.getTip() };
+fastify.get('/v1/block/tip', async () => {
+  const tip = ledgerMemory.getTip();
+  return { success: true, status: 'ONLINE', tip };
 });
 
 const start = async () => {
   try {
-    await server.listen({ port: 4102, host: '0.0.0.0' });
-    console.log('Fastify server gateway listening on http://0.0.0.0:4102');
+    await fastify.listen({ port: 5000, host: '0.0.0.0' });
+    console.log('Fastify API listening on http://0.0.0.0:5000');
   } catch (err) {
-    server.log.error(err);
+    fastify.log.error(err);
     process.exit(1);
   }
 };
+
 start();

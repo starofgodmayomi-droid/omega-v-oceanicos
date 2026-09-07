@@ -2,36 +2,21 @@ import React, { useState, useEffect } from 'react';
 
 export default function App() {
   const [tip, setTip] = useState<any>(null);
-  const [blocks, setBlocks] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
   const fetchTip = async () => {
     try {
-      const res = await fetch('http://localhost:4102/v1/block/tip');
-      const data = await res.json();
-      if (data.tip) {
-        setTip(data.tip);
-        setBlocks((prev) => {
-          if (prev.find((b) => b.hash === data.tip.hash)) return prev;
-          return [data.tip, ...prev].slice(0, 5);
-        });
-      }
-    } catch (e) {
-      console.error('Ecosystem synchronization delay.');
-    }
+      const r = await fetch('http://localhost:5000/v1/block/tip');
+      const d = await r.json();
+      if (d.tip) setTip(d.tip);
+    } catch (e) {}
   };
 
-  const triggerCycle = async () => {
+  const cycle = async () => {
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:4102/v1/cycle', { method: 'POST' });
-      const data = await res.json();
-      if (data.block) {
-        setTip(data.block);
-        setBlocks((prev) => [data.block, ...prev].slice(0, 5));
-      }
-    } catch (e) {
-      alert('Kernel Panic.');
+      await fetch('http://localhost:5000/v1/cycle', { method: 'POST' });
+      await fetchTip();
     } finally {
       setLoading(false);
     }
@@ -39,80 +24,62 @@ export default function App() {
 
   useEffect(() => {
     fetchTip();
-    const interval = setInterval(fetchTip, 3000);
-    return () => clearInterval(interval);
   }, []);
 
   return (
     <div
       style={{
-        background: '#050505',
-        color: '#00FF66',
+        background: '#000',
+        color: '#00ff66',
         fontFamily: 'monospace',
         minHeight: '100vh',
-        padding: '30px',
+        padding: '24px',
       }}
     >
-      <header>
-        <h1 style={{ margin: 0 }}>Ω∞v OCEANICOS // FULL-STACK VERIFIER COMPLETE</h1>
-        <p style={{ opacity: 0.8 }}>Status: {tip ? 'SYNCHRONIZED' : 'INITIALIZING...'}</p>
-        <button
-          onClick={triggerCycle}
-          disabled={loading}
+      <h2>Ω∞v Oceanicos Matrix Dashboard</h2>
+
+      <button
+        onClick={cycle}
+        disabled={loading}
+        style={{
+          background: '#00ff66',
+          color: '#000',
+          border: 'none',
+          padding: '10px 20px',
+          cursor: 'pointer',
+          fontWeight: 'bold',
+        }}
+      >
+        {loading ? 'MINING BLOCK...' : 'EXECUTE OMNI-CYCLE'}
+      </button>
+
+      {tip ? (
+        <pre
           style={{
-            background: '#00FF66',
-            color: '#050505',
-            border: 'none',
-            padding: '10px 20px',
-            fontFamily: 'monospace',
-            fontWeight: 'bold',
-            cursor: 'pointer',
+            border: '1px dashed #00ff66',
+            padding: '16px',
+            marginTop: '20px',
+            background: '#050505',
+            whiteSpace: 'pre-wrap',
           }}
         >
-          {loading ? 'MINING BLOCK...' : 'TRIGGER CYCLE (MINE BLOCK)'}
-        </button>
-      </header>
-
-      <main style={{ marginTop: '20px' }}>
-        <h2>LATEST TIP:</h2>
-        {tip ? (
-          <pre
-            style={{
-              background: '#111',
-              padding: '15px',
-              border: '1px solid #00FF66',
-              overflowX: 'auto',
-            }}
-          >
-            {JSON.stringify(tip, null, 2)}
-          </pre>
-        ) : (
-          <p>No block mined yet.</p>
-        )}
-
-        <h2>RECENT MINI BLOCKS:</h2>
-        <div>
-          {blocks.map((b) => (
-            <div
-              key={b.hash}
-              style={{
-                background: '#0d0d0d',
-                padding: '10px',
-                marginBottom: '10px',
-                borderLeft: '4px solid #00FF66',
-              }}
-            >
-              <div>
-                <strong>Index:</strong> #{b.index} | <strong>Hash:</strong> {b.hash} (Nonce:{' '}
-                {b.nonce})
-              </div>
-              <div>
-                <strong>Evidence:</strong> {b.evidence?.status} via {b.evidence?.lawRoute}
-              </div>
-            </div>
-          ))}
-        </div>
-      </main>
+          {'Ω ➔ [👁 ' +
+            Math.round(tip.observation.siliconYield * 100) +
+            '% | ✓ ' +
+            tip.evidence.status +
+            ' | 🧠 #' +
+            tip.index +
+            '] ── LIVE ── $ █\n\n' +
+            'Block Hash: ' +
+            tip.hash +
+            '\nPrevious: ' +
+            tip.previousHash +
+            '\nNonce: ' +
+            tip.nonce}
+        </pre>
+      ) : (
+        <p style={{ marginTop: '20px' }}>No verified blocks on ledger.</p>
+      )}
     </div>
   );
 }
