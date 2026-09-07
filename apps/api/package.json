@@ -12,6 +12,7 @@
     "@fastify/cors": "^9.0.1",
     "@oceanicos/types": "workspace:*",
     "@oceanicos/remember": "workspace:*",
+    "@oceanicos/verification": "workspace:*",
     "@oceanicos/mini": "workspace:*"
   }
 }

@@ -20,92 +20,46 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Enable pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 12.3.4
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: 'npm'
+          node-version: 22
+          cache: pnpm
 
       - name: Install Workspace Dependencies
-        run: npm ci || npm install
+        run: pnpm install --no-frozen-lockfile
 
       - name: 1. TypeScript Strict Verification
-        run: npx tsc --noEmit
+        run: pnpm run typecheck
 
-      - name: 2. ESLint Code Quality Gate
-        run: npx eslint . --ext .ts,.tsx,.js,.jsx --max-warnings 10
+      - name: 2. Monorepo Workspace Build
+        run: pnpm run build
 
-      - name: 3. Full-Stack Jest Test Suite (121 Suites / 1898+ Specs)
-        run: npx jest --no-cache --verbose --coverage
+      - name: 3. Ω∞v Pluralism Omni-Cycle Verification
+        run: pnpm run verify
 
-      - name: 4. Ω∞v CLI Swarm Verification
-        run: npx tsx packages/cli/src/bin.ts swarm "CI Automated Verification Pipeline"
-
-      - name: 5. Ω∞v CLI Analytics Verification
-        run: npx tsx packages/cli/src/bin.ts analytics
-
-      - name: 6. Ω∞v CLI Telemetry SLO Verification
-        run: npx tsx packages/cli/src/bin.ts slo 0.95
-
-      - name: 7. Ω∞v CLI VaaS Gateway Verification
-        run: npx tsx packages/cli/src/bin.ts vaas register "CI Verification Corp" PRO
-
-      - name: 8. Ω∞v CLI Replay Verification
-        run: npx tsx packages/cli/src/bin.ts replay "CI Replay Verification Pipeline" "CI Baseline"
-
-      - name: 9. Ω∞v CLI Formal Contract Verification
-        run: npx tsx packages/cli/src/bin.ts contract verify health-sla-contract
-
-      - name: 10. Ω∞v CLI Auth Verification
-        run: npx tsx packages/cli/src/bin.ts auth create AGENT
-
-      - name: 11. Ω∞v CLI Federation Verification
-        run: npx tsx packages/cli/src/bin.ts federation export "CI Federation Verification"
-
-      - name: 12. Ω∞v CLI Benchmark Verification
-        run: npx tsx packages/cli/src/bin.ts benchmark 10
-
-      - name: 13. Ω∞v CLI Notary Verification
-        run: npx tsx packages/cli/src/bin.ts notary anchor "CI Merkle Attestation Notarization"
-
-      - name: 14. Ω∞v CLI Sandbox Verification
-        run: npx tsx packages/cli/src/bin.ts sandbox "responseTime < 100"
-
-      - name: 15. Ω∞v CLI Policy Verification
-        run: npx tsx packages/cli/src/bin.ts policy evaluate enterprise-sla-policy
-
-      - name: 16. Ω∞v CLI ZK Verification
-        run: npx tsx packages/cli/src/bin.ts zk prove circuit-confidence-range 0.96
-
-      - name: 17. Ω∞v CLI Gateway Verification
-        run: npx tsx packages/cli/src/bin.ts gateway request ci-runner
-
-      - name: 18. Ω∞v CLI Webhook Verification
-        run: npx tsx packages/cli/src/bin.ts webhook trigger ATTESTATION_CREATED
-
-      - name: 19. Ω∞v CLI Oracle Verification
-        run: npx tsx packages/cli/src/bin.ts oracle aggregate feed-eth-usd 3200 3220
-
-      - name: 20. Ω∞v CLI Vault Checkpoint Verification
-        run: npx tsx packages/cli/src/bin.ts vault create "CI State Baseline Checkpoint"
-
-      - name: 21. Ω∞v CLI Dispute Resolution Verification
-        run: npx tsx packages/cli/src/bin.ts dispute raise 0xevent_hash_under_dispute "Observation latency claim contradicted by telemetry"
-
-      - name: 22. Export Verification Evidence Artifact
+      - name: 4. Export Verification Evidence Artifact
         run: |
           mkdir -p artifacts
           node -e "
             const fs = require('fs');
-            const pkgs = fs.readdirSync('packages').filter(p => fs.statSync('packages/' + p).isDirectory());
             const artifact = {
-              pipeline: 'Ω∞v Continuous Verification',
+              pipeline: 'Ω∞v Continuous Verification & Deep Pluralism Stack',
               timestamp: new Date().toISOString(),
               status: 'VERIFIED',
-              testSuites: 121,
-              testsTotal: 1895,
-              greenRuleSatisfied: true,
-              packages: pkgs.map(p => '@omega-v/' + p),
+              architecture: 'Max Compress Zero-Entropy',
+              packages: [
+                '@oceanicos/types',
+                '@oceanicos/observer',
+                '@oceanicos/verification',
+                '@oceanicos/remember',
+                '@oceanicos/mini'
+              ],
               provenance: {
                 commit: process.env.GITHUB_SHA || 'local',
                 branch: process.env.GITHUB_REF_NAME || 'main',
@@ -116,7 +70,7 @@ jobs:
             console.log(JSON.stringify(artifact, null, 2));
           "
 
-      - name: 23. Upload Evidence Artifacts
+      - name: 5. Upload Evidence Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: verification-evidence

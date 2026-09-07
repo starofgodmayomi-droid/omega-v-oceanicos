@@ -3,6 +3,11 @@ const moduleNameMapper = {
   // carry a .js extension for Node to resolve them at runtime. Strip it
   // here so ts-jest still resolves the .ts source.
   '^(\\.{1,2}/.*)\\.js$': '$1',
+  '@oceanicos/types': '<rootDir>/packages/types/src/index.ts',
+  '@oceanicos/observer': '<rootDir>/packages/observer/src/index.ts',
+  '@oceanicos/verification': '<rootDir>/packages/verification/src/index.ts',
+  '@oceanicos/remember': '<rootDir>/packages/remember/src/index.ts',
+  '@oceanicos/mini': '<rootDir>/packages/mini/src/index.ts',
   '@omega-v/types': '<rootDir>/packages/types/src/index.ts',
   '@omega-v/observer': '<rootDir>/packages/observer/src/index.ts',
   '@omega-v/verification': '<rootDir>/packages/verification/src/index.ts',
