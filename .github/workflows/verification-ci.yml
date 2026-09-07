@@ -43,7 +43,10 @@ jobs:
       - name: 3. Ω∞v Pluralism Omni-Cycle Verification
         run: pnpm run verify
 
-      - name: 4. Export Verification Evidence Artifact
+      - name: 4. Full-Stack E2E Integration Suite
+        run: pnpm run test:e2e
+
+      - name: 5. Export Verification Evidence Artifact
         run: |
           mkdir -p artifacts
           node -e "
@@ -70,7 +73,7 @@ jobs:
             console.log(JSON.stringify(artifact, null, 2));
           "
 
-      - name: 5. Upload Evidence Artifacts
+      - name: 6. Upload Evidence Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: verification-evidence
