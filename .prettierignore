@@ -13,3 +13,10 @@ pnpm-lock.yaml
 # break the hash recorded alongside it, which is the only thing that lets
 # an installed skill be checked against its source. Lineage over tidiness.
 .claude/skills/
+
+# The published copy under skills/ is the same kind of artifact and needs
+# the same protection. It was outside this list until now: prettier happened
+# to agree with the file as supplied, so nothing failed, but a future skill
+# it disagreed with would have been rewritten by CI — silently changing an
+# artifact the repository did not author.
+skills/
