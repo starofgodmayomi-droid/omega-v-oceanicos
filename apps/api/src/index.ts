@@ -8,6 +8,9 @@ const fastify = Fastify({ logger: true });
 const ledgerMemory = new RememberEngine('./oceanicos.db');
 const kernel = new MiniKernel(ledgerMemory);
 
+// Active SSE client subscriptions for real-time block streaming
+const streamClients = new Set<(block: any) => void>();
+
 fastify.register(cors, { origin: '*' });
 
 fastify.post('/v1/cycle', async (request, reply) => {
@@ -22,12 +25,47 @@ fastify.post('/v1/cycle', async (request, reply) => {
   }
 
   const block = kernel.runCycle();
+
+  // Broadcast newly minted block to all connected stream clients
+  for (const send of streamClients) {
+    try {
+      send(block);
+    } catch {
+      streamClients.delete(send);
+    }
+  }
+
   return { success: true, status: 'SYNCHRONIZED', block };
 });
 
 fastify.get('/v1/block/tip', async () => {
   const tip = ledgerMemory.getTip();
   return { success: true, status: 'ONLINE', tip };
+});
+
+// Real-time Event Stream (SSE) for Block Telemetry
+fastify.get('/v1/stream', (request, reply) => {
+  reply.raw.setHeader('Content-Type', 'text/event-stream');
+  reply.raw.setHeader('Cache-Control', 'no-cache');
+  reply.raw.setHeader('Connection', 'keep-alive');
+  reply.raw.setHeader('Access-Control-Allow-Origin', '*');
+  reply.raw.flushHeaders();
+
+  // Send current tip immediately upon connection
+  const tip = ledgerMemory.getTip();
+  if (tip) {
+    reply.raw.write(`data: ${JSON.stringify({ event: 'TIP', block: tip })}\n\n`);
+  }
+
+  const listener = (newBlock: any) => {
+    reply.raw.write(`data: ${JSON.stringify({ event: 'BLOCK_MINTED', block: newBlock })}\n\n`);
+  };
+
+  streamClients.add(listener);
+
+  request.raw.on('close', () => {
+    streamClients.delete(listener);
+  });
 });
 
 // Asymmetric Cryptographic Guard Endpoints
