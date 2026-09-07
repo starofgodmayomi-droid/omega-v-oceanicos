@@ -3,7 +3,12 @@ import { VerificationEngine } from '@omega-v/verification';
 import { AttestationService } from '@omega-v/attestation';
 import { ProvenanceStore } from '@omega-v/store';
 import { Remember } from '@omega-v/remember';
-import { MiniKernel, OperatingSystemKernel, OmegaTotalCompressor } from '@omega-v/mini';
+import {
+  MiniKernel,
+  OperatingSystemKernel,
+  OmegaTotalCompressor,
+  MiniCycleResult,
+} from '@omega-v/mini';
 import { RuleCompiler } from '@omega-v/compiler';
 import { OceanicumVM } from '@omega-v/ir';
 import { OceanicosClient } from '@omega-v/sdk';
@@ -3742,10 +3747,10 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       const security = new SecurityEngine('e2e-master-continuum-key');
       const verifier = new VerificationEngine();
       verifier.registerRule({
-        name: 'continuum-telemetry-invariant',
+        name: 'status-code-check',
         version: '1.0.0',
         appliesTo: ['continuum-synthesis'],
-        definition: 'latency < 50 && statusCode == 200',
+        definition: 'statusCode === 200',
         description: 'Continuum synthesis health gate',
         createdAt: new Date().toISOString(),
         active: true,

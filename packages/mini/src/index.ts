@@ -166,5 +166,6 @@ export class MiniKernel {
 
 export { OperatingSystemKernel } from './os.js';
 export { OmegaTotalCompressor } from './omegaTotal.js';
+export type { MiniCycleResult } from '@omega-v/types';
 
 export default MiniKernel;
