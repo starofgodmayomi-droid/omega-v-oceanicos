@@ -211,3 +211,156 @@ describe('documents describe the cryptography that exists', () => {
     }
   );
 });
+
+/**
+ * Every command a document tells you to run must name a script that exists.
+ *
+ * docs/DEVELOPMENT.md had a "Database Setup" section instructing the reader
+ * to start Postgres in Docker, then run `npm run db:migrate` and
+ * `npm run db:seed`, and stated that "SQLite is the default for development.
+ * No additional setup needed!". There is no database. There is no SQLite,
+ * no driver, no migration, no seed, and neither script exists. The same
+ * document told the reader to `cp .env.example .env.local` from a file that
+ * is not in the repository, and listed DATABASE_URL, API_LOG_LEVEL, WEB_PORT
+ * and WEB_API_URL as configuration, of which the code reads exactly none.
+ *
+ * A newcomer following that guide provisions a database, runs two commands
+ * that do not exist, and concludes the repository is broken. That is worse
+ * than an undocumented step: an absent instruction costs a question, but a
+ * false one costs an afternoon and some trust.
+ *
+ * This checks the mechanical half of that failure — a named script either
+ * exists or it does not. It cannot check that prose is true, so it does not
+ * pretend to: the SQLite sentence above would have passed this test. What it
+ * guarantees is that the commands are runnable, which is the part a reader
+ * acts on first.
+ */
+describe('documented commands name scripts that exist', () => {
+  const root = process.cwd();
+
+  const markdown = (from: string): string[] =>
+    readdirSync(from).flatMap((entry) => {
+      if (['node_modules', '.git', 'dist', 'coverage'].includes(entry)) return [];
+      const full = join(from, entry);
+      if (statSync(full).isDirectory()) return markdown(full);
+      return entry.endsWith('.md') ? [full] : [];
+    });
+
+  const scriptsIn = (manifest: string): string[] =>
+    Object.keys(JSON.parse(readFileSync(manifest, 'utf8')).scripts ?? {});
+
+  const workspaceManifests = ['apps', 'packages'].flatMap((dir) =>
+    readdirSync(join(root, dir))
+      .map((entry) => join(root, dir, entry, 'package.json'))
+      .filter((manifest) => existsSync(manifest))
+  );
+
+  const known = new Set([
+    ...scriptsIn(join(root, 'package.json')),
+    ...workspaceManifests.flatMap(scriptsIn),
+  ]);
+
+  // Subcommands of the package manager itself. `pnpm install` is not a
+  // missing script, and neither is `npm audit`.
+  const BUILTIN = new Set([
+    'install',
+    'i',
+    'add',
+    'remove',
+    'update',
+    'ci',
+    'exec',
+    'dlx',
+    'why',
+    'audit',
+    'fund',
+    'init',
+    'link',
+    'list',
+    'ls',
+    'outdated',
+    'pack',
+    'prune',
+    'publish',
+    'rebuild',
+    'store',
+    'config',
+    'version',
+    'view',
+    'create',
+    'run',
+  ]);
+
+  // Flags that consume the next token, so `--filter @omega-v/web dev`
+  // resolves to `dev` rather than to the package name.
+  const TAKES_VALUE = new Set(['--filter', '-F', '--workspace', '-w', '--dir', '-C']);
+
+  /** The script a shell line invokes, or null if it invokes none. */
+  const invokedScript = (line: string): string | null => {
+    const tokens = line.trim().split(/\s+/);
+    // Leading environment assignments: `API_PORT=3001 pnpm dev`.
+    while (tokens.length && /^[A-Za-z_][A-Za-z0-9_]*=/.test(tokens[0])) tokens.shift();
+    if (!['pnpm', 'npm'].includes(tokens[0])) return null;
+
+    let index = 1;
+    while (index < tokens.length && tokens[index].startsWith('-')) {
+      index += TAKES_VALUE.has(tokens[index]) ? 2 : 1;
+    }
+    if (tokens[index] === 'run') index += 1;
+
+    const name = tokens[index];
+    if (!name || name.startsWith('-') || BUILTIN.has(name)) return null;
+    // A placeholder such as <package-name> is a template, not a claim.
+    if (!/^[a-z][a-z0-9:_-]*$/.test(name)) return null;
+    return name;
+  };
+
+  /**
+   * Commands inside fenced blocks. Prose like "npm ERR!" is not a command.
+   *
+   * Fence state is tracked line by line rather than paired with a regex. A
+   * regex over the whole document mispairs: a closing ``` also matches an
+   * opening fence, so from the first block onward the "contents" are the
+   * gaps between blocks. That version of this test passed against the very
+   * file that provoked it, which is the only kind of test worth deleting.
+   */
+  const commandsIn = (text: string): string[] => {
+    const invoked: string[] = [];
+    let insideFence = false;
+
+    for (const line of text.split('\n')) {
+      if (line.startsWith('```')) {
+        insideFence = !insideFence;
+        continue;
+      }
+      if (!insideFence) continue;
+
+      const name = invokedScript(line);
+      if (name !== null) invoked.push(name);
+    }
+
+    return invoked;
+  };
+
+  const documents = markdown(root).map((file) => [relative(root, file), file] as const);
+
+  it('finds the scripts it checks against', () => {
+    expect(known.size).toBeGreaterThan(20);
+    expect(known.has('verify')).toBe(true);
+  });
+
+  it('finds commands to check', () => {
+    // Guards against a parser that silently matches nothing and passes.
+    const total = documents.reduce(
+      (count, [, file]) => count + commandsIn(readFileSync(file, 'utf8')).length,
+      0
+    );
+    expect(total).toBeGreaterThan(30);
+  });
+
+  it.each(documents)('%s runs no script that does not exist', (_label, file) => {
+    const invoked = commandsIn(readFileSync(file, 'utf8'));
+
+    expect(invoked.filter((name) => !known.has(name))).toEqual([]);
+  });
+});
