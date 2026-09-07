@@ -46,7 +46,14 @@ jobs:
       - name: 4. Full-Stack E2E Integration Suite
         run: pnpm run test:e2e
 
-      - name: 5. Export Verification Evidence Artifact
+      - name: 5. CLI Terminal Binary Smoke Test
+        run: |
+          node bin/oceanicos.mjs status
+          node bin/oceanicos.mjs cycle --json
+          node bin/oceanicos.mjs mesh
+          node bin/oceanicos.mjs keys
+
+      - name: 6. Export Verification Evidence Artifact
         run: |
           mkdir -p artifacts
           node -e "
@@ -73,7 +80,7 @@ jobs:
             console.log(JSON.stringify(artifact, null, 2));
           "
 
-      - name: 6. Upload Evidence Artifacts
+      - name: 7. Upload Evidence Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: verification-evidence

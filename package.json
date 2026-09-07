@@ -12,7 +12,13 @@
     "cli": "node bin/oceanicos.mjs",
     "oceanicos": "node bin/oceanicos.mjs",
     "start:api": "pnpm --filter api run start",
-    "start:web": "pnpm --filter web run start"
+    "start:web": "pnpm --filter web run start",
+    "dev": "node bin/dev-server.mjs",
+    "dev:api": "pnpm --filter api run dev",
+    "dev:web": "pnpm --filter web run dev",
+    "docker:up": "docker compose up --build -d",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f"
   },
   "bin": {
     "oceanicos": "./bin/oceanicos.mjs"

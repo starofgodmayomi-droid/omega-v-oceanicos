@@ -1,8 +1,48 @@
 # Ω∞v Oceanicos Working State
 
-**Updated:** 2026-09-06
+**Updated:** 2026-09-07
 
-## Dedicated Max Compress E2E Integration Suite & CI Attestation — 2026-09-06
+## Unified CLI Terminal Binary, Telemetry Timeline & Container Stack — 2026-09-07
+
+The Ω∞v Oceanicos repository has been upgraded with a unified CLI terminal binary, real-time web dashboard telemetry charts, production-ready Docker multi-stage builds, and concurrent dev orchestration:
+
+1. **Unified CLI Terminal Binary (`bin/oceanicos.mjs`)**:
+   - 6 commands: `status`, `cycle`, `mesh`, `keys`, `stream`, `help`.
+   - `oceanicos status`: Reports silicon yield, grid load, accelerator count, genesis anchor, and live API tip.
+   - `oceanicos cycle [--json]`: Executes a full PoW consensus cycle with optional raw JSON output.
+   - `oceanicos mesh`: Simulates decentralized 4-region sovereign mesh convergence with ANSI-styled node audit.
+   - `oceanicos keys`: Generates Ed25519 asymmetric keypair (public + private PEM).
+   - `oceanicos stream`: Real-time SSE block stream listener with terminal ANSI coloring.
+   - Registered in `package.json` as `bin.oceanicos` with npm-linkable entry and `pnpm run cli` / `pnpm run oceanicos` shortcuts.
+   - Windows launcher: `oceanicos.cmd`.
+
+2. **Real-Time Telemetry Pulse & Yield Timeline (`apps/web/src/App.tsx`)**:
+   - Inline SVG timeline chart rendering silicon yield % (solid green line with gradient fill) and grid load MW (dashed cyan line) over recent block epochs.
+   - Dynamic `viewBox="0 0 600 85"` with reference gridlines, point markers, and area fill gradients.
+   - Auto-populates from the rolling block history buffer with chronological reverse-ordering.
+
+3. **Production Docker Multi-Stage Build (`Dockerfile` + `docker-compose.yml`)**:
+   - Stage 1 (`builder`): Layer-cached pnpm dependency install via manifest-only COPY, followed by full source build.
+   - Stage 2 (`api`): Minimal production API runtime with Node.js and compiled packages only.
+   - Stage 3 (`web`): Static file server (`serve`) hosting the Vite production bundle.
+   - `docker-compose.yml`: Multi-target builds, API healthcheck (`wget --spider /v1/block/tip`), named persistent volume (`oceanicos-data`), `restart: unless-stopped`, `depends_on: condition: service_healthy`.
+
+4. **Concurrent Dev Server Orchestrator (`bin/dev-server.mjs`)**:
+   - `pnpm run dev` spawns Fastify API (port 5000) and Vite Web (port 3000) simultaneously.
+   - ANSI-labeled `[API]` / `[WEB]` output streams with colored prefixes.
+   - Graceful Ctrl+C shutdown handler.
+
+5. **E2E Test Suite Expansion (16 tests, all passing)**:
+   - Test 14: CLI `status` output verification.
+   - Test 15: CLI `cycle --json` PoW block minting verification with JSON parse.
+   - Test 16: CLI `mesh` sovereign convergence verification.
+
+6. **Build & Verification**:
+   - `pnpm run build`: 0 errors, all 7 workspace packages.
+   - `pnpm run typecheck`: 0 TypeScript errors.
+   - `pnpm run test:e2e`: 16/16 passing in ~980ms.
+   - Git commit `ec0013f` pushed to `origin/main`.
+
 
 The Ω∞v Oceanicos repository has completed the end-to-end integration test suite and CI verification for the compressed architecture:
 
