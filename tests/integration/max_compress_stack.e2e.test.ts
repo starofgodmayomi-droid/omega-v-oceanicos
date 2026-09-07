@@ -250,4 +250,47 @@ describe('Ω∞v Oceanicos Max Compress Full-Stack E2E Suite', () => {
     const nodesData = JSON.parse(nodesRes.body);
     assert.strictEqual(nodesData.nodes.length, 4);
   });
+
+  it('14. Unified CLI "status" executes cleanly and reports ledger & telemetry state', async () => {
+    const { execFileSync } = await import('node:child_process');
+    const path = await import('node:path');
+    const cliPath = path.resolve(process.cwd(), 'bin/oceanicos.mjs');
+
+    const stdout = execFileSync(process.execPath, [cliPath, 'status'], { encoding: 'utf-8' });
+    assert.ok(stdout.includes('OCEANICOS DEEP-TIER CRYPTOGRAPHIC CLI'));
+    assert.ok(stdout.includes('Silicon Yield'));
+    assert.ok(stdout.includes('Grid Load'));
+    assert.ok(stdout.includes('Chain Genesis Block'));
+  });
+
+  it('15. Unified CLI "cycle --json" mints cryptographic block with satisfied PoW', async () => {
+    const { execFileSync } = await import('node:child_process');
+    const path = await import('node:path');
+    const cliPath = path.resolve(process.cwd(), 'bin/oceanicos.mjs');
+
+    const stdout = execFileSync(process.execPath, [cliPath, 'cycle', '--json'], { encoding: 'utf-8' });
+    // Parse the JSON block output from CLI
+    const jsonMatch = stdout.match(/\{[\s\S]*\}/);
+    assert.ok(jsonMatch, 'Must output valid JSON block');
+    const block = JSON.parse(jsonMatch[0]);
+    assert.ok(block.index >= 4102);
+    assert.ok(block.hash.startsWith('00'));
+    assert.ok(block.nonce >= 0);
+    assert.strictEqual(block.payload.receipt.status, 'PASS');
+  });
+
+  it('16. Unified CLI "mesh" performs sovereign multi-region consensus convergence', async () => {
+    const { execFileSync } = await import('node:child_process');
+    const path = await import('node:path');
+    const cliPath = path.resolve(process.cwd(), 'bin/oceanicos.mjs');
+
+    const stdout = execFileSync(process.execPath, [cliPath, 'mesh'], { encoding: 'utf-8' });
+    assert.ok(stdout.includes('PLANETARY SOVEREIGN MESH CONVERGENCE'));
+    assert.ok(stdout.includes('Quorum Reached'));
+    assert.ok(stdout.includes('TRUE'));
+    assert.ok(stdout.includes('node-us-virginia'));
+    assert.ok(stdout.includes('node-eu-frankfurt'));
+    assert.ok(stdout.includes('node-cn-shanghai'));
+    assert.ok(stdout.includes('node-me-dubai'));
+  });
 });

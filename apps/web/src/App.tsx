@@ -671,6 +671,105 @@ export default function App() {
         </div>
       </div>
 
+      {/* Real-time Telemetry Pulse & Yield Timeline */}
+      {history.length > 0 && (
+        <div
+          style={{
+            background: '#040d16',
+            border: '1px solid #00ff6633',
+            borderRadius: '6px',
+            padding: '16px',
+            marginTop: '20px',
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+            <span style={{ fontSize: '12px', color: '#6ee7b7', fontWeight: 'bold' }}>
+              📈 PLANETARY TELEMETRY PULSE & YIELD TIMELINE ({history.length} EPOCHS)
+            </span>
+            <div style={{ display: 'flex', gap: '14px', fontSize: '11px' }}>
+              <span style={{ color: '#00ff66' }}>● Silicon Yield %</span>
+              <span style={{ color: '#38bdf8' }}>● Grid Load (MW)</span>
+            </div>
+          </div>
+
+          <div style={{ position: 'relative', width: '100%', height: '85px' }}>
+            <svg
+              viewBox="0 0 600 85"
+              preserveAspectRatio="none"
+              style={{ width: '100%', height: '100%', overflow: 'visible' }}
+            >
+              <defs>
+                <linearGradient id="yieldGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#00ff66" stopOpacity="0.35" />
+                  <stop offset="100%" stopColor="#00ff66" stopOpacity="0.0" />
+                </linearGradient>
+              </defs>
+
+              {/* Background Reference Lines */}
+              <line x1="0" y1="15" x2="600" y2="15" stroke="#1e293b" strokeDasharray="3 3" />
+              <line x1="0" y1="45" x2="600" y2="45" stroke="#1e293b" strokeDasharray="3 3" />
+              <line x1="0" y1="75" x2="600" y2="75" stroke="#1e293b" strokeDasharray="3 3" />
+
+              {(() => {
+                const chronBlocks = [...history].reverse();
+                if (chronBlocks.length === 1) {
+                  const b = chronBlocks[0];
+                  const yYield = 75 - ((b.observation?.siliconYield || 0.9) - 0.8) * 300;
+                  return (
+                    <circle cx="300" cy={Math.max(15, Math.min(75, yYield))} r="4" fill="#00ff66" />
+                  );
+                }
+
+                const step = 600 / (chronBlocks.length - 1);
+                const yieldPoints = chronBlocks.map((b, i) => {
+                  const x = i * step;
+                  const ratio = Math.max(0, Math.min(1, ((b.observation?.siliconYield || 0.9) - 0.8) / 0.2));
+                  const y = 75 - ratio * 60;
+                  return { x, y };
+                });
+
+                const gridPoints = chronBlocks.map((b, i) => {
+                  const x = i * step;
+                  const ratio = Math.max(0, Math.min(1, ((b.observation?.gridLoadMegawatts || 1000) - 500) / 1500));
+                  const y = 75 - ratio * 55;
+                  return { x, y };
+                });
+
+                const yieldPath = yieldPoints.reduce(
+                  (acc, p, i) => `${acc} ${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`,
+                  ''
+                );
+                const yieldArea = `${yieldPath} L 600 80 L 0 80 Z`;
+
+                const gridPath = gridPoints.reduce(
+                  (acc, p, i) => `${acc} ${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`,
+                  ''
+                );
+
+                return (
+                  <g>
+                    <path d={yieldArea} fill="url(#yieldGrad)" />
+                    <path d={gridPath} fill="none" stroke="#38bdf8" strokeWidth="1.5" strokeDasharray="4 2" />
+                    <path d={yieldPath} fill="none" stroke="#00ff66" strokeWidth="2" />
+                    {yieldPoints.map((p, i) => (
+                      <circle
+                        key={i}
+                        cx={p.x}
+                        cy={p.y}
+                        r="3"
+                        fill="#00ff66"
+                        stroke="#040d16"
+                        strokeWidth="1.5"
+                      />
+                    ))}
+                  </g>
+                );
+              })()}
+            </svg>
+          </div>
+        </div>
+      )}
+
       {/* Live Rolling Block History Feed */}
       <div style={{ marginTop: '24px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>

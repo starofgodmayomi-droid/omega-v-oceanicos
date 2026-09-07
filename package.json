@@ -9,8 +9,13 @@
     "verify": "node -e \"const { executeOceanicosMaxExpansion } = require('./packages/mini/dist/index.js'); executeOceanicosMaxExpansion();\"",
     "test": "node --test tests/integration/max_compress_stack.e2e.test.ts",
     "test:e2e": "node --test tests/integration/max_compress_stack.e2e.test.ts",
+    "cli": "node bin/oceanicos.mjs",
+    "oceanicos": "node bin/oceanicos.mjs",
     "start:api": "pnpm --filter api run start",
     "start:web": "pnpm --filter web run start"
+  },
+  "bin": {
+    "oceanicos": "./bin/oceanicos.mjs"
   },
   "engines": {
     "node": ">=20.0.0",
