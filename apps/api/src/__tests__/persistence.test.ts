@@ -42,6 +42,38 @@ describe('runtime persistence', () => {
     expect(persistenceReady(true, 'corrupt')).toBe(false);
   });
 
+  it('answers for every declared snapshot source, not just the one it rejects', () => {
+    // The predicate was `!enabled || source !== 'corrupt'`. Every current
+    // member gets the same answer from the exhaustive form, which is the
+    // point: this pins that the rewrite changed nothing today.
+    expect(persistenceReady(true, 'disabled')).toBe(true);
+    expect(persistenceReady(true, 'missing')).toBe(true);
+    expect(persistenceReady(true, 'restored')).toBe(true);
+    expect(persistenceReady(true, 'corrupt')).toBe(false);
+    expect(persistenceReady(false, 'corrupt')).toBe(true);
+  });
+
+  it('answers for every declared event log source', () => {
+    expect(eventLogReady(true, 'disabled')).toBe(true);
+    expect(eventLogReady(true, 'missing')).toBe(true);
+    expect(eventLogReady(true, 'restored')).toBe(true);
+    expect(eventLogReady(true, 'partial')).toBe(false);
+    expect(eventLogReady(false, 'partial')).toBe(true);
+  });
+
+  it('refuses readiness for a source the type system did not vouch for', () => {
+    // A value that reached here past the compiler — from JSON, a cast, or a
+    // future member someone forced through. The negative test these replaced
+    // would have called it ready, because it was not the one rejected name.
+    //
+    // The compile-time half of this is the `never` assignment in the default
+    // branch: adding a member to either union fails type-check until someone
+    // says whether it counts as ready. That cannot be asserted from a test,
+    // so it is stated here and demonstrated in the pull request.
+    expect(persistenceReady(true, 'truncated' as never)).toBe(false);
+    expect(eventLogReady(true, 'truncated' as never)).toBe(false);
+  });
+
   it('exposes only a deterministic non-secret key fingerprint', () => {
     const fingerprint = persistenceKeyFingerprint('current-secret');
     expect(fingerprint).toHaveLength(16);
