@@ -1,25 +1,25 @@
 export interface IObservation {
-  uuid: string;
-  timestamp: string;
-  siliconYield: number;
-  gridLoadMegawatts: number;
-  acceleratorInventory: number;
+  readonly uuid: string;
+  readonly timestamp: string;
+  readonly siliconYield: number;
+  readonly gridLoadMegawatts: number;
+  readonly acceleratorInventory: number;
 }
 
 export interface IEvidence {
-  status: 'PASS' | 'FAIL' | 'DIVERGENT';
-  lawRoute: string;
-  timestamp: string;
-  observationUuid: string;
-  signatureProof: string;
+  readonly status: 'PASS' | 'FAIL' | 'DIVERGENT';
+  readonly lawRoute: string;
+  readonly timestamp: string;
+  readonly observationUuid: string;
+  readonly signatureProof: string;
 }
 
 export interface IMiniBlock {
-  index: number;
-  timestamp: string;
-  observation: IObservation;
-  evidence: IEvidence;
-  previousHash: string;
-  hash: string;
-  nonce: number;
+  readonly index: number;
+  readonly timestamp: string;
+  readonly observation: IObservation;
+  readonly evidence: IEvidence;
+  readonly previousHash: string;
+  readonly hash: string;
+  readonly nonce: number;
 }

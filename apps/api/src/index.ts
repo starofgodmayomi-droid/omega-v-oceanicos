@@ -35,6 +35,12 @@ export function createApp(dbPath: string = './oceanicos.db', logger: boolean = t
 
   fastify.register(cors, { origin: '*' });
 
+  fastify.get('/health', async () => ({
+    status: 'ok',
+    service: 'omega-v-oceanicos-api',
+    ledger: ledgerMemory.getTip() ? 'ready' : 'empty',
+  }));
+
   // 1. Manual or Asymmetrically Signed Omni-Cycle Execution
   fastify.post('/v1/cycle', async (request, reply) => {
     const signature = request.headers['x-omega-signature'] as string | undefined;

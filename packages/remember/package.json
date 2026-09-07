@@ -9,7 +9,8 @@
   },
   "dependencies": {
     "@oceanicos/types": "workspace:*",
-    "@oceanicos/verification": "workspace:*"
+    "@oceanicos/verification": "workspace:*",
+    "better-sqlite3": "^11.10.0"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.9"
