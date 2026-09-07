@@ -8,7 +8,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@oceanicos/types": "workspace:*"
+    "@oceanicos/types": "workspace:*",
+    "@oceanicos/verification": "workspace:*"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.9"

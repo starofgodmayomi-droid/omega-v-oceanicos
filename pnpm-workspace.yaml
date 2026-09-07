@@ -6,3 +6,6 @@ packages:
   - 'packages/mini'
   - 'apps/api'
   - 'apps/web'
+
+allowBuilds:
+  esbuild: true

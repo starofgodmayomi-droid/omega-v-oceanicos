@@ -19,3 +19,5 @@ export class VerificationEngine {
     };
   }
 }
+
+export * from './frontier.js';

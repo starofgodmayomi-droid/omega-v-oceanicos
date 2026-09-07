@@ -1,6 +1,8 @@
 import crypto from 'crypto';
 import { IObservation } from '@oceanicos/types';
 
+export type GlobalComputeTelemetry = IObservation;
+
 export class ObserverEngine {
   public static generateTelemetry(): IObservation {
     return {
@@ -12,3 +14,5 @@ export class ObserverEngine {
     };
   }
 }
+
+export const observePlanetaryBase = ObserverEngine.generateTelemetry;
