@@ -2,7 +2,8 @@ import crypto from 'crypto';
 
 export type WorkerStatus = 'IDLE' | 'BUSY' | 'DRAINING' | 'OFFLINE';
 export type JobStatus = 'QUEUED' | 'LEASED' | 'RUNNING' | 'COMPLETED' | 'FAILED' | 'RETRYING';
-export type BuildCapability = 'COMPILE' | 'VERIFY' | 'ATTEST' | 'BENCHMARK' | 'CONTAINER_BUILD' | 'ZKP_GEN' | 'REPLAY';
+export type BuildCapability =
+  'COMPILE' | 'VERIFY' | 'ATTEST' | 'BENCHMARK' | 'CONTAINER_BUILD' | 'ZKP_GEN' | 'REPLAY';
 
 export interface WorkerNode {
   workerId: string;
@@ -92,7 +93,15 @@ export class OceanicosWorkerPool {
     this.registerWorker({
       workerId: 'worker-node-primary-01',
       name: 'Primary Pipeline Worker (High-Compute)',
-      capabilities: ['COMPILE', 'VERIFY', 'ATTEST', 'BENCHMARK', 'CONTAINER_BUILD', 'ZKP_GEN', 'REPLAY'],
+      capabilities: [
+        'COMPILE',
+        'VERIFY',
+        'ATTEST',
+        'BENCHMARK',
+        'CONTAINER_BUILD',
+        'ZKP_GEN',
+        'REPLAY',
+      ],
       maxConcurrency: 4,
       cpuCores: 16,
       memoryMb: 32768,
@@ -196,10 +205,16 @@ export class OceanicosWorkerPool {
       .filter(
         (j) =>
           (j.status === 'QUEUED' ||
-            (j.status === 'LEASED' && j.leaseExpiresAt && new Date(j.leaseExpiresAt) < new Date())) &&
+            (j.status === 'LEASED' &&
+              j.leaseExpiresAt &&
+              new Date(j.leaseExpiresAt) < new Date())) &&
           worker.capabilities.includes(j.requiredCapability)
       )
-      .sort((a, b) => a.priority - b.priority || new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+      .sort(
+        (a, b) =>
+          a.priority - b.priority ||
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      );
 
     if (eligibleJobs.length === 0) {
       return null;
@@ -271,7 +286,9 @@ export class OceanicosWorkerPool {
       worker.resourceMetrics.jobsCompleted++;
       const currentAvg = worker.resourceMetrics.avgExecutionTimeMs;
       const count = worker.resourceMetrics.jobsCompleted;
-      worker.resourceMetrics.avgExecutionTimeMs = Math.round((currentAvg * (count - 1) + executionTimeMs) / count);
+      worker.resourceMetrics.avgExecutionTimeMs = Math.round(
+        (currentAvg * (count - 1) + executionTimeMs) / count
+      );
     }
 
     return { job, attestation };
@@ -303,10 +320,20 @@ export class OceanicosWorkerPool {
     return job;
   }
 
-  public computeArtifactsMerkleRoot(artifacts: BuildArtifact[], output: Record<string, unknown>): string {
+  public computeArtifactsMerkleRoot(
+    artifacts: BuildArtifact[],
+    output: Record<string, unknown>
+  ): string {
     const leaves = [
       crypto.createHash('sha256').update(JSON.stringify(output)).digest('hex'),
-      ...artifacts.map((a) => a.contentHash || crypto.createHash('sha256').update(a.name + a.path).digest('hex')),
+      ...artifacts.map(
+        (a) =>
+          a.contentHash ||
+          crypto
+            .createHash('sha256')
+            .update(a.name + a.path)
+            .digest('hex')
+      ),
     ];
 
     let currentLevel = leaves;
@@ -327,13 +354,16 @@ export class OceanicosWorkerPool {
 
   public verifyAttestation(attestation: BuildAttestation): boolean {
     const sigPayload = `${attestation.attestationId}:${attestation.jobId}:${attestation.workerId}:${attestation.inputFingerprint}:${attestation.outputMerkleRoot}:${attestation.executionTimeMs}`;
-    const expectedSig = '0x' + crypto.createHmac('sha256', this.signingKey).update(sigPayload).digest('hex');
+    const expectedSig =
+      '0x' + crypto.createHmac('sha256', this.signingKey).update(sigPayload).digest('hex');
     return attestation.builderSignature === expectedSig;
   }
 
-  public verifyBuildReproducibility(
-    attestations: BuildAttestation[]
-  ): { reproducible: boolean; matchingRoot: string; discrepancyCount: number } {
+  public verifyBuildReproducibility(attestations: BuildAttestation[]): {
+    reproducible: boolean;
+    matchingRoot: string;
+    discrepancyCount: number;
+  } {
     if (attestations.length < 2) {
       return {
         reproducible: true,

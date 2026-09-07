@@ -197,13 +197,17 @@ export class OceanicosStakingEngine {
     let jailEpochs = 3;
 
     if (opts.reason === 'DOUBLE_SIGN' || opts.reason === 'MALICIOUS_ATTESTATION') {
-      slashFraction = 0.20; // 20% for severe safety violations
+      slashFraction = 0.2; // 20% for severe safety violations
       jailEpochs = 10;
     }
 
     const slashedAmount = Math.round(validator.totalStake * slashFraction * 100) / 100;
     validator.totalStake = Math.max(0, validator.totalStake - slashedAmount);
-    validator.selfStake = Math.max(0, validator.selfStake - (slashedAmount * (validator.selfStake / (validator.totalStake + slashedAmount || 1))));
+    validator.selfStake = Math.max(
+      0,
+      validator.selfStake -
+        slashedAmount * (validator.selfStake / (validator.totalStake + slashedAmount || 1))
+    );
     validator.delegatedStake = Math.max(0, validator.totalStake - validator.selfStake);
     validator.status = 'JAILED';
     validator.slashCount += 1;

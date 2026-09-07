@@ -68,7 +68,7 @@ describe('@omega-v/staking — Proof-of-Stake Delegation & Slashing Engine', () 
     });
 
     expect(slash.slashId).toMatch(/^slash-/);
-    expect(slash.slashFraction).toBe(0.20);
+    expect(slash.slashFraction).toBe(0.2);
     expect(slash.slashedAmount).toBe(200);
 
     const val = engine.getValidators()[0];

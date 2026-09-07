@@ -22,9 +22,24 @@ describe('@omega-v/attestor — Decentralized Threshold Attestation Network Engi
   });
 
   it('should create attestation session with calculated quorum threshold weight', () => {
-    engine.registerAttestor({ nodeDid: 'did:omega:attestor:01', moniker: 'N1', publicKey: '0x01', weight: 10 });
-    engine.registerAttestor({ nodeDid: 'did:omega:attestor:02', moniker: 'N2', publicKey: '0x02', weight: 10 });
-    engine.registerAttestor({ nodeDid: 'did:omega:attestor:03', moniker: 'N3', publicKey: '0x03', weight: 10 });
+    engine.registerAttestor({
+      nodeDid: 'did:omega:attestor:01',
+      moniker: 'N1',
+      publicKey: '0x01',
+      weight: 10,
+    });
+    engine.registerAttestor({
+      nodeDid: 'did:omega:attestor:02',
+      moniker: 'N2',
+      publicKey: '0x02',
+      weight: 10,
+    });
+    engine.registerAttestor({
+      nodeDid: 'did:omega:attestor:03',
+      moniker: 'N3',
+      publicKey: '0x03',
+      weight: 10,
+    });
 
     // Total weight = 30; 67% threshold => 21 required weight
     const session = engine.createSession({
@@ -39,9 +54,24 @@ describe('@omega-v/attestor — Decentralized Threshold Attestation Network Engi
   });
 
   it('should collect signature shares and automatically generate Quorum Certificate (QC) upon reaching threshold', () => {
-    engine.registerAttestor({ nodeDid: 'did:omega:attestor:01', moniker: 'N1', publicKey: '0x01', weight: 10 });
-    engine.registerAttestor({ nodeDid: 'did:omega:attestor:02', moniker: 'N2', publicKey: '0x02', weight: 10 });
-    engine.registerAttestor({ nodeDid: 'did:omega:attestor:03', moniker: 'N3', publicKey: '0x03', weight: 10 });
+    engine.registerAttestor({
+      nodeDid: 'did:omega:attestor:01',
+      moniker: 'N1',
+      publicKey: '0x01',
+      weight: 10,
+    });
+    engine.registerAttestor({
+      nodeDid: 'did:omega:attestor:02',
+      moniker: 'N2',
+      publicKey: '0x02',
+      weight: 10,
+    });
+    engine.registerAttestor({
+      nodeDid: 'did:omega:attestor:03',
+      moniker: 'N3',
+      publicKey: '0x03',
+      weight: 10,
+    });
 
     const session = engine.createSession({
       subjectHash: '0xabc123_block_header',
@@ -82,8 +112,18 @@ describe('@omega-v/attestor — Decentralized Threshold Attestation Network Engi
   });
 
   it('should reject duplicate shares from the same attestor', () => {
-    engine.registerAttestor({ nodeDid: 'did:omega:attestor:01', moniker: 'N1', publicKey: '0x01', weight: 10 });
-    engine.registerAttestor({ nodeDid: 'did:omega:attestor:02', moniker: 'N2', publicKey: '0x02', weight: 20 });
+    engine.registerAttestor({
+      nodeDid: 'did:omega:attestor:01',
+      moniker: 'N1',
+      publicKey: '0x01',
+      weight: 10,
+    });
+    engine.registerAttestor({
+      nodeDid: 'did:omega:attestor:02',
+      moniker: 'N2',
+      publicKey: '0x02',
+      weight: 20,
+    });
     const session = engine.createSession({
       subjectHash: '0x1234',
       domain: 'TEST',
@@ -105,12 +145,30 @@ describe('@omega-v/attestor — Decentralized Threshold Attestation Network Engi
   });
 
   it('should produce accurate telemetry stats', () => {
-    engine.registerAttestor({ nodeDid: 'did:omega:attestor:01', moniker: 'N1', publicKey: '0x01', weight: 15 });
-    engine.registerAttestor({ nodeDid: 'did:omega:attestor:02', moniker: 'N2', publicKey: '0x02', weight: 15 });
+    engine.registerAttestor({
+      nodeDid: 'did:omega:attestor:01',
+      moniker: 'N1',
+      publicKey: '0x01',
+      weight: 15,
+    });
+    engine.registerAttestor({
+      nodeDid: 'did:omega:attestor:02',
+      moniker: 'N2',
+      publicKey: '0x02',
+      weight: 15,
+    });
 
     const s = engine.createSession({ subjectHash: '0xstate', domain: 'CONSENSUS' });
-    engine.submitShare({ sessionId: s.sessionId, nodeDid: 'did:omega:attestor:01', shareSignature: '0xs1' });
-    engine.submitShare({ sessionId: s.sessionId, nodeDid: 'did:omega:attestor:02', shareSignature: '0xs2' });
+    engine.submitShare({
+      sessionId: s.sessionId,
+      nodeDid: 'did:omega:attestor:01',
+      shareSignature: '0xs1',
+    });
+    engine.submitShare({
+      sessionId: s.sessionId,
+      nodeDid: 'did:omega:attestor:02',
+      shareSignature: '0xs2',
+    });
 
     const stats = engine.getStats();
     expect(stats.totalAttestors).toBe(2);

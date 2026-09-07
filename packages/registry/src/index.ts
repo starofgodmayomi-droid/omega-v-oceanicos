@@ -104,7 +104,10 @@ export class OceanicosRegistryEngine {
       crypto.createHash('sha256').update(spec.name).digest('hex'),
       crypto.createHash('sha256').update(spec.version).digest('hex'),
       tarballHash,
-      crypto.createHash('sha256').update(JSON.stringify(spec.dependencies || {})).digest('hex'),
+      crypto
+        .createHash('sha256')
+        .update(JSON.stringify(spec.dependencies || {}))
+        .digest('hex'),
     ];
 
     const manifestMerkleRoot = this.computeMerkleRoot(manifestLeaves);
@@ -208,11 +211,7 @@ export class OceanicosRegistryEngine {
     };
   }
 
-  public deprecatePackage(
-    name: string,
-    version: string,
-    reason: string
-  ): PackageRelease {
+  public deprecatePackage(name: string, version: string, reason: string): PackageRelease {
     const release = this.getPackageVersion(name, version);
     if (!release) throw new Error(`Package '${name}@${version}' not found`);
 

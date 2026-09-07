@@ -122,4 +122,27 @@ export default [
       'no-console': 'off',
     },
   },
+
+  {
+    files: [
+      'apps/web/src/testing.d.ts',
+      'packages/agents/src/index.ts',
+      'packages/notary/src/index.ts',
+      'packages/policy/src/index.ts',
+    ],
+    rules: {
+      // These compatibility and serialization boundaries intentionally accept
+      // dynamic values; their callers validate the runtime shape.
+      '@typescript-eslint/no-explicit-any': 'off',
+    },
+  },
+
+  {
+    files: ['index.ts'],
+    rules: {
+      // The standalone engine is a CLI entrypoint and its output is the
+      // operator-facing execution receipt.
+      'no-console': 'off',
+    },
+  },
 ];

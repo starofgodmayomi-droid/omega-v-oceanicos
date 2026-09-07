@@ -109,13 +109,19 @@ export class OceanicosOrchestratorEngine {
       createdTasks.push(task);
     }
 
-    const stateDeltaHash = '0x' + crypto.createHash('sha256')
-      .update(`${batchId}:${createdTasks.map((t) => t.taskId).join(',')}`)
-      .digest('hex');
+    const stateDeltaHash =
+      '0x' +
+      crypto
+        .createHash('sha256')
+        .update(`${batchId}:${createdTasks.map((t) => t.taskId).join(',')}`)
+        .digest('hex');
 
-    const batchAttestation = '0x' + crypto.createHmac('sha256', this.signingKey)
-      .update(`BATCH_DISPATCH:${batchId}:${stateDeltaHash}`)
-      .digest('hex');
+    const batchAttestation =
+      '0x' +
+      crypto
+        .createHmac('sha256', this.signingKey)
+        .update(`BATCH_DISPATCH:${batchId}:${stateDeltaHash}`)
+        .digest('hex');
 
     const receipt: ParallelBatchReceipt = {
       batchId,

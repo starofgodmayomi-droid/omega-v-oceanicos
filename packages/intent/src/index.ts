@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 
-export type IntentStatus = 'SUBMITTED' | 'AUCTION_OPEN' | 'SOLVED' | 'VERIFIED' | 'SETTLED' | 'EXPIRED';
+export type IntentStatus =
+  'SUBMITTED' | 'AUCTION_OPEN' | 'SOLVED' | 'VERIFIED' | 'SETTLED' | 'EXPIRED';
 
 export interface UserIntent {
   intentId: string;
@@ -70,10 +71,13 @@ export class OceanicosIntentEngine {
     deadlineMs?: number;
   }): UserIntent {
     const deadline = Date.now() + (spec.deadlineMs || 300000); // 5 mins default
-    const intentId = 'intent-' + crypto.createHash('sha256')
-      .update(`${spec.userDid}:${spec.intentDescription}:${spec.minTargetAmount}:${Date.now()}`)
-      .digest('hex')
-      .slice(0, 20);
+    const intentId =
+      'intent-' +
+      crypto
+        .createHash('sha256')
+        .update(`${spec.userDid}:${spec.intentDescription}:${spec.minTargetAmount}:${Date.now()}`)
+        .digest('hex')
+        .slice(0, 20);
 
     const intent: UserIntent = {
       intentId,
@@ -107,12 +111,15 @@ export class OceanicosIntentEngine {
     }
 
     if (spec.guaranteedOutput < intent.minTargetAmount) {
-      throw new Error(`Bid guaranteedOutput (${spec.guaranteedOutput}) does not satisfy minimum required (${intent.minTargetAmount})`);
+      throw new Error(
+        `Bid guaranteedOutput (${spec.guaranteedOutput}) does not satisfy minimum required (${intent.minTargetAmount})`
+      );
     }
 
     const bidId = 'bid-' + crypto.randomBytes(8).toString('hex');
     const witnessPayload = `${spec.intentId}:${spec.solverDid}:${spec.guaranteedOutput}:${spec.estimatedFee}:${spec.proposedRoute.join('->')}`;
-    const solutionWitnessProof = '0x' + crypto.createHmac('sha256', this.signingKey).update(witnessPayload).digest('hex');
+    const solutionWitnessProof =
+      '0x' + crypto.createHmac('sha256', this.signingKey).update(witnessPayload).digest('hex');
 
     const bid: SolverBid = {
       bidId,
@@ -166,13 +173,21 @@ export class OceanicosIntentEngine {
     if (!winningBid) throw new Error(`Winning bid ${intent.selectedBidId} not found`);
 
     const settlementId = 'stl-' + crypto.randomBytes(8).toString('hex');
-    const settlementHash = '0x' + crypto.createHash('sha256')
-      .update(`${settlementId}:${intentId}:${winningBid.solverDid}:${winningBid.guaranteedOutput}:${Date.now()}`)
-      .digest('hex');
+    const settlementHash =
+      '0x' +
+      crypto
+        .createHash('sha256')
+        .update(
+          `${settlementId}:${intentId}:${winningBid.solverDid}:${winningBid.guaranteedOutput}:${Date.now()}`
+        )
+        .digest('hex');
 
-    const attestationSignature = '0x' + crypto.createHmac('sha256', this.signingKey)
-      .update(`SETTLED:${settlementId}:${settlementHash}`)
-      .digest('hex');
+    const attestationSignature =
+      '0x' +
+      crypto
+        .createHmac('sha256', this.signingKey)
+        .update(`SETTLED:${settlementId}:${settlementHash}`)
+        .digest('hex');
 
     const receipt: IntentSettlementReceipt = {
       settlementId,
@@ -210,7 +225,10 @@ export class OceanicosIntentEngine {
     const allIntents = Array.from(this.intents.values());
     const settled = allIntents.filter((i) => i.status === 'SETTLED').length;
     const allBids = this.getBids();
-    const volume = Array.from(this.settlements.values()).reduce((sum, s) => sum + s.finalOutputAmount, 0);
+    const volume = Array.from(this.settlements.values()).reduce(
+      (sum, s) => sum + s.finalOutputAmount,
+      0
+    );
 
     return {
       totalIntents: allIntents.length,

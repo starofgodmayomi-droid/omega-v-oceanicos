@@ -106,7 +106,9 @@ describe('OceanicosConsensusEngine — BFT State Machine Replication & Quorum Ce
       expect(slashRecord.slashedStake).toBe(200000);
       expect(slashRecord.evidenceHash).toHaveLength(64);
 
-      const gamma = engine.getValidators().find((v) => v.did === 'did:omega:validator:genesis-gamma')!;
+      const gamma = engine
+        .getValidators()
+        .find((v) => v.did === 'did:omega:validator:genesis-gamma')!;
       expect(gamma.status).toBe('SLASHED');
       expect(gamma.stake).toBe(0);
       expect(gamma.slashedAmount).toBe(200000);

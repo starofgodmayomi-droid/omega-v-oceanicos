@@ -3,12 +3,7 @@ import { MiniCycleResult } from '@omega-v/types';
 
 /** Finite lifecycle for the repository's computer-like control plane. */
 export type OperatingSystemState =
-  | 'offline'
-  | 'booting'
-  | 'ready'
-  | 'degraded'
-  | 'stopping'
-  | 'stopped';
+  'offline' | 'booting' | 'ready' | 'degraded' | 'stopping' | 'stopped';
 
 export type OSKernelState = 'COLD' | 'BOOTED' | 'PROCESSING' | 'STOPPED';
 
@@ -109,7 +104,11 @@ export class OperatingSystemKernel {
   private failedCycles = 0;
 
   public constructor(optionsOrKernel: OperatingSystemOptions | MiniKernel = {}) {
-    if (optionsOrKernel && 'cycle' in optionsOrKernel && typeof (optionsOrKernel as MiniKernel).cycle === 'function') {
+    if (
+      optionsOrKernel &&
+      'cycle' in optionsOrKernel &&
+      typeof (optionsOrKernel as MiniKernel).cycle === 'function'
+    ) {
       this.miniKernel = optionsOrKernel as MiniKernel;
       this.maxTasks = DEFAULT_MAX_TASKS;
       this.maxEvents = DEFAULT_MAX_EVENTS;
@@ -168,7 +167,9 @@ export class OperatingSystemKernel {
       if (this.state !== 'ready') {
         const reason = `cannot admit cycle while operating system is ${this.state} (expected 'BOOTED')`;
         this.record({ type: 'reject', state: this.state, reason });
-        throw new Error(`Cannot admit: kernel is in state '${this.getState()}' (expected 'BOOTED')`);
+        throw new Error(
+          `Cannot admit: kernel is in state '${this.getState()}' (expected 'BOOTED')`
+        );
       }
       if (!this.miniKernel) {
         const reason = 'MiniKernel not configured for OperatingSystemKernel';
@@ -197,7 +198,8 @@ export class OperatingSystemKernel {
 
       if (
         cycleInput.observedBy !== undefined &&
-        (typeof cycleInput.observedBy !== 'string' || cycleInput.observedBy.length > MAX_REQUESTER_LENGTH)
+        (typeof cycleInput.observedBy !== 'string' ||
+          cycleInput.observedBy.length > MAX_REQUESTER_LENGTH)
       ) {
         const reason = `operating system cycle observedBy must be at most ${MAX_REQUESTER_LENGTH} characters`;
         this.record({ type: 'reject', state: this.state, reason });
@@ -340,7 +342,13 @@ export class OperatingSystemKernel {
 
   public snapshot(): OperatingSystemSnapshot {
     const effectiveState = this.miniKernel
-      ? (this.state === 'ready' ? 'BOOTED' : this.state === 'offline' ? 'COLD' : this.state === 'stopped' ? 'STOPPED' : this.state)
+      ? this.state === 'ready'
+        ? 'BOOTED'
+        : this.state === 'offline'
+          ? 'COLD'
+          : this.state === 'stopped'
+            ? 'STOPPED'
+            : this.state
       : this.state;
     return {
       snapshotVersion: 'os.snapshot.v1',

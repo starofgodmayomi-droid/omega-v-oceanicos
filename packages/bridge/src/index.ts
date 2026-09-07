@@ -67,7 +67,8 @@ export class OceanicosBridgeEngine {
       chainId: 'chain-eth-mainnet',
       network: 'ETHEREUM',
       initialHeight: 19850000,
-      initialStateRoot: '0x' + crypto.createHash('sha256').update('ETH_STATE_ROOT_GENESIS').digest('hex'),
+      initialStateRoot:
+        '0x' + crypto.createHash('sha256').update('ETH_STATE_ROOT_GENESIS').digest('hex'),
       finalityThresholdBlocks: 64,
       activeRelayers: ['did:omega:relayer:eth-primary', 'did:omega:relayer:omega-bridge-bot'],
     });
@@ -76,7 +77,8 @@ export class OceanicosBridgeEngine {
       chainId: 'chain-solana-mainnet',
       network: 'SOLANA',
       initialHeight: 258000000,
-      initialStateRoot: '0x' + crypto.createHash('sha256').update('SOL_STATE_ROOT_GENESIS').digest('hex'),
+      initialStateRoot:
+        '0x' + crypto.createHash('sha256').update('SOL_STATE_ROOT_GENESIS').digest('hex'),
       finalityThresholdBlocks: 32,
       activeRelayers: ['did:omega:relayer:sol-primary'],
     });
@@ -85,7 +87,8 @@ export class OceanicosBridgeEngine {
       chainId: 'chain-cosmos-hub',
       network: 'COSMOS',
       initialHeight: 21000000,
-      initialStateRoot: '0x' + crypto.createHash('sha256').update('COSMOS_STATE_ROOT_GENESIS').digest('hex'),
+      initialStateRoot:
+        '0x' + crypto.createHash('sha256').update('COSMOS_STATE_ROOT_GENESIS').digest('hex'),
       finalityThresholdBlocks: 1,
       activeRelayers: ['did:omega:relayer:cosmos-ibc'],
     });
@@ -196,13 +199,20 @@ export class OceanicosBridgeEngine {
 
     const client = this.lightClients.get(transfer.sourceChain)!;
     if (!client.activeRelayers.includes(spec.relayerDid)) {
-      throw new Error(`Relayer '${spec.relayerDid}' is not authorized for chain '${transfer.sourceChain}'`);
+      throw new Error(
+        `Relayer '${spec.relayerDid}' is not authorized for chain '${transfer.sourceChain}'`
+      );
     }
 
     // Cryptographically verify Merkle proof signature
-    const verifiedProof = '0x' + crypto.createHmac('sha256', this.signingKey)
-      .update(`${spec.transferId}:${spec.relayerDid}:${spec.merkleProof}:${client.latestStateRoot}`)
-      .digest('hex');
+    const verifiedProof =
+      '0x' +
+      crypto
+        .createHmac('sha256', this.signingKey)
+        .update(
+          `${spec.transferId}:${spec.relayerDid}:${spec.merkleProof}:${client.latestStateRoot}`
+        )
+        .digest('hex');
 
     transfer.status = 'RELAYED';
     transfer.relayerDid = spec.relayerDid;
@@ -219,9 +229,14 @@ export class OceanicosBridgeEngine {
       throw new Error(`Transfer '${transferId}' must be RELAYED before finalization`);
     }
 
-    const mintTxHash = '0x' + crypto.createHash('sha256')
-      .update(`MINT:${transferId}:${transfer.targetChain}:${transfer.recipientAddress}:${transfer.amount}:${Date.now()}`)
-      .digest('hex');
+    const mintTxHash =
+      '0x' +
+      crypto
+        .createHash('sha256')
+        .update(
+          `MINT:${transferId}:${transfer.targetChain}:${transfer.recipientAddress}:${transfer.amount}:${Date.now()}`
+        )
+        .digest('hex');
 
     transfer.status = 'FINALIZED';
     transfer.mintTxHash = mintTxHash;

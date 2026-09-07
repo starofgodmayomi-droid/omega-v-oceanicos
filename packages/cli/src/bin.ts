@@ -14,7 +14,6 @@ cli
     process.exit(res.success ? 0 : 1);
   })
   .catch((err: Error) => {
-    /* eslint-disable no-console */
     console.error('[Ω∞v CLI Error]', err.message);
     process.exit(1);
   });

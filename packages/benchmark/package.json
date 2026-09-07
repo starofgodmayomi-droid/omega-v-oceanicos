@@ -22,11 +22,11 @@
   "author": "Ω∞v Community",
   "license": "Apache-2.0",
   "dependencies": {
-    "@omega-v/types": "*",
-    "@omega-v/sdk": "*",
-    "@omega-v/verification": "*",
-    "@omega-v/attestation": "*",
-    "@omega-v/store": "*"
+    "@omega-v/types": "workspace:*",
+    "@omega-v/sdk": "workspace:*",
+    "@omega-v/verification": "workspace:*",
+    "@omega-v/attestation": "workspace:*",
+    "@omega-v/store": "workspace:*"
   },
   "devDependencies": {
     "@types/jest": "^29.5.0",

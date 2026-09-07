@@ -63,9 +63,12 @@ export class OceanicosSequencerEngine {
     const ephemeralKey = spec.ephemeralPublicKey || '0x' + crypto.randomBytes(32).toString('hex');
     const gasLimit = spec.gasLimit || 100000;
 
-    const txHash = '0x' + crypto.createHash('sha256')
-      .update(`${spec.senderDid}:${spec.encryptedPayload}:${ephemeralKey}:${receivedTimestamp}`)
-      .digest('hex');
+    const txHash =
+      '0x' +
+      crypto
+        .createHash('sha256')
+        .update(`${spec.senderDid}:${spec.encryptedPayload}:${ephemeralKey}:${receivedTimestamp}`)
+        .digest('hex');
 
     const tx: EncryptedMempoolTx = {
       txHash,
@@ -88,9 +91,12 @@ export class OceanicosSequencerEngine {
       current = crypto.createHash('sha256').update(current).digest('hex');
     }
 
-    const proof = '0x' + crypto.createHmac('sha256', this.signingKey)
-      .update(`VDF_PROOF:${challenge}:${iterations}:${current}`)
-      .digest('hex');
+    const proof =
+      '0x' +
+      crypto
+        .createHmac('sha256', this.signingKey)
+        .update(`VDF_PROOF:${challenge}:${iterations}:${current}`)
+        .digest('hex');
 
     return {
       challenge,
@@ -102,9 +108,12 @@ export class OceanicosSequencerEngine {
   }
 
   public verifyVDF(vdf: VDFProof): boolean {
-    const expectedProof = '0x' + crypto.createHmac('sha256', this.signingKey)
-      .update(`VDF_PROOF:${vdf.challenge}:${vdf.iterations}:${vdf.output.replace(/^0x/, '')}`)
-      .digest('hex');
+    const expectedProof =
+      '0x' +
+      crypto
+        .createHmac('sha256', this.signingKey)
+        .update(`VDF_PROOF:${vdf.challenge}:${vdf.iterations}:${vdf.output.replace(/^0x/, '')}`)
+        .digest('hex');
 
     return vdf.proof === expectedProof;
   }
@@ -127,20 +136,25 @@ export class OceanicosSequencerEngine {
     }
 
     // Compute Transactions Root
-    const txRoot = '0x' + crypto.createHash('sha256')
-      .update(orderedHashes.join('|') || 'EMPTY_BATCH')
-      .digest('hex');
+    const txRoot =
+      '0x' +
+      crypto
+        .createHash('sha256')
+        .update(orderedHashes.join('|') || 'EMPTY_BATCH')
+        .digest('hex');
 
     // Compute State Delta Root
-    const stateDeltaRoot = '0x' + crypto.createHash('sha256')
-      .update(`${batchNumber}:${txRoot}:${vdfProof.output}`)
-      .digest('hex');
+    const stateDeltaRoot =
+      '0x' +
+      crypto
+        .createHash('sha256')
+        .update(`${batchNumber}:${txRoot}:${vdfProof.output}`)
+        .digest('hex');
 
     const timestamp = new Date().toISOString();
     const sigPayload = `${batchNumber}:${orderedHashes.length}:${txRoot}:${stateDeltaRoot}:${vdfProof.output}:${timestamp}`;
-    const sequencerSignature = '0x' + crypto.createHmac('sha256', this.signingKey)
-      .update(sigPayload)
-      .digest('hex');
+    const sequencerSignature =
+      '0x' + crypto.createHmac('sha256', this.signingKey).update(sigPayload).digest('hex');
 
     const receipt: SequencerBatchReceipt = {
       batchNumber,
@@ -157,15 +171,17 @@ export class OceanicosSequencerEngine {
     return receipt;
   }
 
-  public verifyBatchReceipt(receipt: SequencerBatchReceipt): { valid: boolean; batchNumber: number } {
+  public verifyBatchReceipt(receipt: SequencerBatchReceipt): {
+    valid: boolean;
+    batchNumber: number;
+  } {
     if (!this.verifyVDF(receipt.vdfProof)) {
       return { valid: false, batchNumber: receipt.batchNumber };
     }
 
     const sigPayload = `${receipt.batchNumber}:${receipt.txCount}:${receipt.transactionsRoot}:${receipt.stateDeltaRoot}:${receipt.vdfProof.output}:${receipt.timestamp}`;
-    const expectedSig = '0x' + crypto.createHmac('sha256', this.signingKey)
-      .update(sigPayload)
-      .digest('hex');
+    const expectedSig =
+      '0x' + crypto.createHmac('sha256', this.signingKey).update(sigPayload).digest('hex');
 
     return {
       valid: receipt.sequencerSignature === expectedSig,

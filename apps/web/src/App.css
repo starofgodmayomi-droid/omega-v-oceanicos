@@ -1416,7 +1416,9 @@ select:focus-visible {
   cursor: pointer;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  transition: background 0.18s, border-color 0.18s;
+  transition:
+    background 0.18s,
+    border-color 0.18s;
 }
 
 .job-action-button:hover:not(:disabled) {
@@ -2101,5 +2103,3 @@ body {
   line-height: 1.4;
   margin: 0;
 }
-
-

@@ -1,3 +1,5 @@
+import { jest } from '@jest/globals';
+
 /**
  * A fetch double shaped like the real API.
  *

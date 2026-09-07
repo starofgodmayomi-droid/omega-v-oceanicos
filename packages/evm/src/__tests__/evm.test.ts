@@ -10,14 +10,7 @@ describe('@omega-v/evm — Oceanic Verifiable Virtual Machine Engine', () => {
   it('should execute basic stack arithmetic with gas metering', () => {
     const trace = vm.execute({
       callerDid: 'did:omega:agent:coder',
-      code: [
-        'PUSH 10',
-        'PUSH 25',
-        'ADD',
-        'PUSH 5',
-        'MUL',
-        'RETURN',
-      ],
+      code: ['PUSH 10', 'PUSH 25', 'ADD', 'PUSH 5', 'MUL', 'RETURN'],
       gasLimit: 10000,
     });
 
@@ -97,13 +90,7 @@ describe('@omega-v/evm — Oceanic Verifiable Virtual Machine Engine', () => {
   it('should handle REVERT opcode and halt with failure state', () => {
     const trace = vm.execute({
       callerDid: 'did:omega:agent:reverting-caller',
-      code: [
-        'PUSH 10',
-        'PUSH 20',
-        'LT',
-        'PUSH ERROR_INVALID_CONDITION',
-        'REVERT',
-      ],
+      code: ['PUSH 10', 'PUSH 20', 'LT', 'PUSH ERROR_INVALID_CONDITION', 'REVERT'],
     });
 
     expect(trace.success).toBe(false);
@@ -113,12 +100,7 @@ describe('@omega-v/evm — Oceanic Verifiable Virtual Machine Engine', () => {
   it('should emit event logs during execution', () => {
     const trace = vm.execute({
       callerDid: 'did:omega:agent:logger',
-      code: [
-        'PUSH TransferEvent',
-        'PUSH from_alice_to_bob_100',
-        'LOG',
-        'STOP',
-      ],
+      code: ['PUSH TransferEvent', 'PUSH from_alice_to_bob_100', 'LOG', 'STOP'],
     });
 
     expect(trace.success).toBe(true);

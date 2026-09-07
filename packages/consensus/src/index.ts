@@ -92,9 +92,14 @@ export class OceanicosConsensusEngine {
     const txRoot = crypto.createHash('sha256').update('GENESIS_TRANSACTIONS').digest('hex');
     const timestamp = new Date().toISOString();
 
-    const blockHash = '0x' + crypto.createHash('sha256')
-      .update(`0:${genesisHash}:${stateRoot}:${txRoot}:did:omega:validator:genesis-alpha:${timestamp}`)
-      .digest('hex');
+    const blockHash =
+      '0x' +
+      crypto
+        .createHash('sha256')
+        .update(
+          `0:${genesisHash}:${stateRoot}:${txRoot}:did:omega:validator:genesis-alpha:${timestamp}`
+        )
+        .digest('hex');
 
     const genesisBlock: ConsensusBlock = {
       height: 0,
@@ -140,12 +145,20 @@ export class OceanicosConsensusEngine {
     const previousBlock = this.chain[this.chain.length - 1];
     const height = previousBlock.height + 1;
     const previousBlockHash = previousBlock.blockHash;
-    const txRoot = crypto.createHash('sha256').update(JSON.stringify(spec.transactions)).digest('hex');
+    const txRoot = crypto
+      .createHash('sha256')
+      .update(JSON.stringify(spec.transactions))
+      .digest('hex');
     const timestamp = new Date().toISOString();
 
-    const blockHash = '0x' + crypto.createHash('sha256')
-      .update(`${height}:${previousBlockHash}:${spec.stateRoot}:${txRoot}:${spec.proposerDid}:${timestamp}`)
-      .digest('hex');
+    const blockHash =
+      '0x' +
+      crypto
+        .createHash('sha256')
+        .update(
+          `${height}:${previousBlockHash}:${spec.stateRoot}:${txRoot}:${spec.proposerDid}:${timestamp}`
+        )
+        .digest('hex');
 
     const block: ConsensusBlock = {
       height,
@@ -197,7 +210,8 @@ export class OceanicosConsensusEngine {
 
     // Sign vote
     const votePayload = `${spec.blockHeight}:${spec.blockHash}:${view}:${type}:${spec.validatorDid}`;
-    const sig = '0x' + crypto.createHmac('sha256', this.signingKey).update(votePayload).digest('hex');
+    const sig =
+      '0x' + crypto.createHmac('sha256', this.signingKey).update(votePayload).digest('hex');
 
     if (!qc.signatures[spec.validatorDid]) {
       qc.signatures[spec.validatorDid] = sig;
@@ -216,7 +230,9 @@ export class OceanicosConsensusEngine {
 
   public finalizeBlock(block: ConsensusBlock, qc: QuorumCertificate): ConsensusBlock {
     if (!qc.quorumReached) {
-      throw new Error(`Cannot finalize block: Quorum Certificate has not achieved 2/3+1 supermajority`);
+      throw new Error(
+        `Cannot finalize block: Quorum Certificate has not achieved 2/3+1 supermajority`
+      );
     }
     if (qc.blockHash !== block.blockHash) {
       throw new Error(`QC blockHash mismatch (QC: ${qc.blockHash}, Block: ${block.blockHash})`);
@@ -246,7 +262,8 @@ export class OceanicosConsensusEngine {
     validator.slashedAmount += slashAmount;
     validator.status = 'SLASHED';
 
-    const evidenceHash = crypto.createHash('sha256')
+    const evidenceHash = crypto
+      .createHash('sha256')
       .update(`${spec.validatorDid}:${spec.blockHeight}:${spec.blockHashA}:${spec.blockHashB}`)
       .digest('hex');
 

@@ -22,16 +22,16 @@
   "author": "Ω∞v Community",
   "license": "Apache-2.0",
   "dependencies": {
-    "@omega-v/types": "*",
-    "@omega-v/sdk": "*",
-    "@omega-v/agents": "*",
-    "@omega-v/edge": "*",
-    "@omega-v/analytics": "*",
-    "@omega-v/scheduler": "*",
-    "@omega-v/telemetry": "*",
-    "@omega-v/vaas": "*",
-    "@omega-v/remember": "*",
-    "@omega-v/mini": "*"
+    "@omega-v/types": "workspace:*",
+    "@omega-v/sdk": "workspace:*",
+    "@omega-v/agents": "workspace:*",
+    "@omega-v/edge": "workspace:*",
+    "@omega-v/analytics": "workspace:*",
+    "@omega-v/scheduler": "workspace:*",
+    "@omega-v/telemetry": "workspace:*",
+    "@omega-v/vaas": "workspace:*",
+    "@omega-v/remember": "workspace:*",
+    "@omega-v/mini": "workspace:*"
   },
   "devDependencies": {
     "@types/jest": "^29.5.0",

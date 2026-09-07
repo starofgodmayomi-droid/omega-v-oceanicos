@@ -10,7 +10,7 @@
     "test": "jest"
   },
   "dependencies": {
-    "@omega-v/types": "*"
+    "@omega-v/types": "workspace:*"
   },
   "devDependencies": {
     "@types/jest": "^29.5.0",

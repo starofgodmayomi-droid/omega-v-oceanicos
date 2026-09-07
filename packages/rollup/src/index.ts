@@ -1,7 +1,8 @@
 import crypto from 'crypto';
 
 export type RollupType = 'OPTIMISTIC' | 'VALIDITY_ZK';
-export type RollupBlockStatus = 'PROPOSED' | 'COMMITTED_L1' | 'CHALLENGED' | 'FINALIZED' | 'REVERTED';
+export type RollupBlockStatus =
+  'PROPOSED' | 'COMMITTED_L1' | 'CHALLENGED' | 'FINALIZED' | 'REVERTED';
 
 export interface L2Account {
   address: string;
@@ -68,10 +69,16 @@ export class OceanicosRollupEngine {
 
   constructor(signingKey = 'omega-v-rollup-key') {
     this.signingKey = signingKey;
-    this.currentStateRoot = '0x' + crypto.createHash('sha256').update('GENESIS_L2_STATE').digest('hex');
+    this.currentStateRoot =
+      '0x' + crypto.createHash('sha256').update('GENESIS_L2_STATE').digest('hex');
 
     // Seed default L2 accounts
-    this.accounts.set('0xAlice', { address: '0xAlice', nonce: 0, balance: 100000, storageRoot: '0x0' });
+    this.accounts.set('0xAlice', {
+      address: '0xAlice',
+      nonce: 0,
+      balance: 100000,
+      storageRoot: '0x0',
+    });
     this.accounts.set('0xBob', { address: '0xBob', nonce: 0, balance: 50000, storageRoot: '0x0' });
   }
 
@@ -93,16 +100,27 @@ export class OceanicosRollupEngine {
   }): L2Transaction {
     const sender = this.getAccount(spec.from);
     if (sender.balance < spec.value) {
-      throw new Error(`Insufficient L2 balance for ${spec.from}: has ${sender.balance}, needs ${spec.value}`);
+      throw new Error(
+        `Insufficient L2 balance for ${spec.from}: has ${sender.balance}, needs ${spec.value}`
+      );
     }
 
     const nonce = sender.nonce;
     const calldata = spec.calldata || '0x';
-    const sig = spec.signature || '0x' + crypto.createHmac('sha256', this.signingKey).update(`${spec.from}:${spec.to}:${spec.value}:${nonce}`).digest('hex');
+    const sig =
+      spec.signature ||
+      '0x' +
+        crypto
+          .createHmac('sha256', this.signingKey)
+          .update(`${spec.from}:${spec.to}:${spec.value}:${nonce}`)
+          .digest('hex');
 
-    const txHash = '0x' + crypto.createHash('sha256')
-      .update(`${spec.from}:${spec.to}:${spec.value}:${nonce}:${calldata}:${Date.now()}`)
-      .digest('hex');
+    const txHash =
+      '0x' +
+      crypto
+        .createHash('sha256')
+        .update(`${spec.from}:${spec.to}:${spec.value}:${nonce}:${calldata}:${Date.now()}`)
+        .digest('hex');
 
     const tx: L2Transaction = {
       txHash,
@@ -152,20 +170,27 @@ export class OceanicosRollupEngine {
       .sort()
       .join('|');
 
-    const postStateRoot = '0x' + crypto.createHash('sha256')
-      .update(`${preStateRoot}:${stateRepresentation}:${blockHeight}`)
-      .digest('hex');
+    const postStateRoot =
+      '0x' +
+      crypto
+        .createHash('sha256')
+        .update(`${preStateRoot}:${stateRepresentation}:${blockHeight}`)
+        .digest('hex');
 
     this.currentStateRoot = postStateRoot;
 
     // Batch commitment
-    const batchCommitment = '0x' + crypto.createHash('sha256')
-      .update(`${blockHeight}:${executedTxHashes.join(',')}:${preStateRoot}:${postStateRoot}`)
-      .digest('hex');
+    const batchCommitment =
+      '0x' +
+      crypto
+        .createHash('sha256')
+        .update(`${blockHeight}:${executedTxHashes.join(',')}:${preStateRoot}:${postStateRoot}`)
+        .digest('hex');
 
-    const challengeWindowEndsAt = rollupType === 'OPTIMISTIC'
-      ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
-      : undefined;
+    const challengeWindowEndsAt =
+      rollupType === 'OPTIMISTIC'
+        ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+        : undefined;
 
     const block: RollupBlock = {
       blockHeight,
@@ -247,7 +272,8 @@ export class OceanicosRollupEngine {
       activeAccounts: this.accounts.size,
       totalL2ValueLocked: totalValue,
       openChallenges: openChal,
-      latestPreStateRoot: this.blocks[this.blocks.length - 1]?.preStateRoot || this.currentStateRoot,
+      latestPreStateRoot:
+        this.blocks[this.blocks.length - 1]?.preStateRoot || this.currentStateRoot,
       latestPostStateRoot: this.currentStateRoot,
     };
   }

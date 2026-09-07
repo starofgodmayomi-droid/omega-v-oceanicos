@@ -96,26 +96,39 @@ export class OceanicosMempoolEngine {
 
     const currentConfirmedNonce = this.accountNonces.get(opts.senderDid) ?? 0;
     if (opts.nonce < currentConfirmedNonce) {
-      throw new Error(`Nonce ${opts.nonce} is already consumed for sender ${opts.senderDid} (current: ${currentConfirmedNonce})`);
+      throw new Error(
+        `Nonce ${opts.nonce} is already consumed for sender ${opts.senderDid} (current: ${currentConfirmedNonce})`
+      );
     }
 
     // Check for Replace-By-Fee (RBF)
     const existingSameNonce = Array.from(this.pendingTxs.values()).find(
-      (tx) => tx.senderDid === opts.senderDid && tx.nonce === opts.nonce && (tx.status === 'PENDING' || tx.status === 'QUEUED')
+      (tx) =>
+        tx.senderDid === opts.senderDid &&
+        tx.nonce === opts.nonce &&
+        (tx.status === 'PENDING' || tx.status === 'QUEUED')
     );
 
     if (existingSameNonce) {
-      if (opts.gasPriceGwei < existingSameNonce.gasPriceGwei * 1.10) {
-        throw new Error(`Replacement transaction must have at least 10% higher gas price than existing ${existingSameNonce.gasPriceGwei} Gwei`);
+      if (opts.gasPriceGwei < existingSameNonce.gasPriceGwei * 1.1) {
+        throw new Error(
+          `Replacement transaction must have at least 10% higher gas price than existing ${existingSameNonce.gasPriceGwei} Gwei`
+        );
       }
       existingSameNonce.status = 'REPLACED';
       this.replacedCount++;
     }
 
-    const txHash = hmac(this.secret, `TX:${opts.senderDid}:${opts.nonce}:${opts.gasPriceGwei}:${Date.now()}:${randomUUID()}`);
+    const txHash = hmac(
+      this.secret,
+      `TX:${opts.senderDid}:${opts.nonce}:${opts.gasPriceGwei}:${Date.now()}:${randomUUID()}`
+    );
     const status: MempoolTxStatus = opts.nonce === currentConfirmedNonce ? 'PENDING' : 'QUEUED';
     const receivedAt = new Date().toISOString();
-    const admissionProof = hmac(this.secret, `ADMIT:${txHash}:${opts.senderDid}:${opts.nonce}:${status}:${receivedAt}`);
+    const admissionProof = hmac(
+      this.secret,
+      `ADMIT:${txHash}:${opts.senderDid}:${opts.nonce}:${status}:${receivedAt}`
+    );
 
     const tx: MempoolTransaction = {
       txHash,
@@ -264,7 +277,8 @@ export class OceanicosMempoolEngine {
     if (pending.length > 0) {
       const sortedGas = [...pending].map((tx) => tx.gasPriceGwei).sort((a, b) => a - b);
       const mid = Math.floor(sortedGas.length / 2);
-      medianGas = sortedGas.length % 2 !== 0 ? sortedGas[mid] : (sortedGas[mid - 1] + sortedGas[mid]) / 2;
+      medianGas =
+        sortedGas.length % 2 !== 0 ? sortedGas[mid] : (sortedGas[mid - 1] + sortedGas[mid]) / 2;
     }
 
     return {

@@ -578,6 +578,7 @@ GET  /mini/integrity
 ```
 
 The API exposes the foundational MINI loop and finite Universal Builder OS control plane directly:
+
 - `GET /os` returns the deterministic `OperatingSystemSnapshot` including state, active tasks, event trace, and limits.
 - `POST /os/admit` admits a typed bounded task (`kind`, `input`, `requestedBy`) or a cycle payload (`cycle`).
 - `POST /mini/cycle` executes one atomic Observe → Verify → Remember cycle through `MiniKernel`.
@@ -895,4 +896,3 @@ The smoke runner uses a local test signing key and `OMEGA_PERSISTENCE=off`. It m
 ## Subsystems intelligence matrix
 
 `GET /subsystems` returns an operational inventory of the 19 core and expanded subsystems of Ω∞v Oceanicos across computational, consensus, storage, verification, governance, and orchestration layers. Each entry reports `id`, `name`, `category`, `package`, `status`, and `description`.
-

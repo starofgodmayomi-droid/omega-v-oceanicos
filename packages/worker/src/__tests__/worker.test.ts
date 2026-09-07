@@ -104,7 +104,10 @@ describe('OceanicosWorkerPool (Verifiable Worker & Builder Execution Engine)', (
       expect(pool.verifyAttestation(attestation)).toBe(true);
 
       // Tampered attestation fails
-      const tampered = { ...attestation, outputMerkleRoot: '0000000000000000000000000000000000000000000000000000000000000000' };
+      const tampered = {
+        ...attestation,
+        outputMerkleRoot: '0000000000000000000000000000000000000000000000000000000000000000',
+      };
       expect(pool.verifyAttestation(tampered)).toBe(false);
     });
   });
@@ -120,13 +123,25 @@ describe('OceanicosWorkerPool (Verifiable Worker & Builder Execution Engine)', (
       const jobA = pool.submitJob(jobSpec);
       pool.leaseJob('worker-node-primary-01');
       const resA = pool.completeJob(jobA.jobId, 'worker-node-primary-01', { binarySha: 'xyz' }, [
-        { name: 'kernel.bin', path: 'dist/kernel.bin', contentHash: 'hash-kernel-exact-match', sizeBytes: 2048, mimeType: 'application/octet-stream' },
+        {
+          name: 'kernel.bin',
+          path: 'dist/kernel.bin',
+          contentHash: 'hash-kernel-exact-match',
+          sizeBytes: 2048,
+          mimeType: 'application/octet-stream',
+        },
       ]);
 
       const jobB = pool.submitJob(jobSpec);
       pool.leaseJob('worker-node-edge-02');
       const resB = pool.completeJob(jobB.jobId, 'worker-node-edge-02', { binarySha: 'xyz' }, [
-        { name: 'kernel.bin', path: 'dist/kernel.bin', contentHash: 'hash-kernel-exact-match', sizeBytes: 2048, mimeType: 'application/octet-stream' },
+        {
+          name: 'kernel.bin',
+          path: 'dist/kernel.bin',
+          contentHash: 'hash-kernel-exact-match',
+          sizeBytes: 2048,
+          mimeType: 'application/octet-stream',
+        },
       ]);
 
       const reproCheck = pool.verifyBuildReproducibility([resA.attestation, resB.attestation]);

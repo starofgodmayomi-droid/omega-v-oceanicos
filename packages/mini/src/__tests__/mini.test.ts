@@ -113,7 +113,11 @@ describe('MiniKernel', () => {
 
   test('constructs with default instances when no options provided', () => {
     const defaultKernel = new MiniKernel();
-    const obs = defaultKernel.observe({ claim: 'default test', confidence: 0.5, confidenceReason: 'test' });
+    const obs = defaultKernel.observe({
+      claim: 'default test',
+      confidence: 0.5,
+      confidenceReason: 'test',
+    });
     expect(obs.id).toBeDefined();
   });
 });

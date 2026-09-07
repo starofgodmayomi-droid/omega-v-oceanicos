@@ -75,11 +75,7 @@ sys.stdout.write(module.signed_bytes(payload).hex())
 
   // Windows runners ship python.exe rather than python3; both are tried
   // before anything is concluded from an absence.
-  const candidates = [
-    'python3',
-    'python',
-    'C:\\Users\\pc\\Python312\\python.exe',
-  ];
+  const candidates = ['python3', 'python', 'C:\\Users\\pc\\Python312\\python.exe'];
   const interpreter = candidates.find((candidate) => {
     try {
       return spawnSync(candidate, ['--version']).status === 0;

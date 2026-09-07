@@ -22,8 +22,8 @@
   "author": "Ω∞v Community",
   "license": "Apache-2.0",
   "dependencies": {
-    "@omega-v/types": "*",
-    "@omega-v/observer": "*"
+    "@omega-v/types": "workspace:*",
+    "@omega-v/observer": "workspace:*"
   },
   "devDependencies": {
     "@types/jest": "^29.5.0",
