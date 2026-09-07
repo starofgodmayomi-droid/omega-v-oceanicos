@@ -23,6 +23,9 @@ importers:
       '@oceanicos/mini':
         specifier: workspace:*
         version: link:../../packages/mini
+      '@oceanicos/observer':
+        specifier: workspace:*
+        version: link:../../packages/observer
       '@oceanicos/remember':
         specifier: workspace:*
         version: link:../../packages/remember

@@ -10,5 +10,5 @@
     "esModuleInterop": true,
     "skipLibCheck": true
   },
-  "include": ["src/index.ts", "src/frontier.ts", "src/asymmetric.ts"]
+  "include": ["src/index.ts", "src/frontier.ts", "src/asymmetric.ts", "src/regional-mesh.ts"]
 }

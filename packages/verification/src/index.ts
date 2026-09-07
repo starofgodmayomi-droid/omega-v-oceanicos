@@ -22,3 +22,4 @@ export class VerificationEngine {
 
 export * from './frontier.js';
 export * from './asymmetric.js';
+export * from './regional-mesh.js';

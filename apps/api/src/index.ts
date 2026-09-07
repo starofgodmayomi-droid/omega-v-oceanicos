@@ -2,7 +2,8 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import { RememberEngine } from '@oceanicos/remember';
 import { MiniKernel } from '@oceanicos/mini';
-import { AsymmetricValidationGuard } from '@oceanicos/verification';
+import { AsymmetricValidationGuard, MultiRegionMeshConvergence } from '@oceanicos/verification';
+import { ObserverEngine } from '@oceanicos/observer';
 
 const fastify = Fastify({ logger: true });
 const ledgerMemory = new RememberEngine('./oceanicos.db');
@@ -11,8 +12,29 @@ const kernel = new MiniKernel(ledgerMemory);
 // Active SSE client subscriptions for real-time block streaming
 const streamClients = new Set<(block: any) => void>();
 
+// Helper to broadcast minted blocks
+function broadcastMintedBlock(block: any) {
+  for (const send of streamClients) {
+    try {
+      send(block);
+    } catch {
+      streamClients.delete(send);
+    }
+  }
+}
+
+// Background Continuous Autonomous Miner
+let minerInterval: NodeJS.Timeout | null = null;
+const minerStats = {
+  active: false,
+  intervalMs: 5000,
+  totalMined: 0,
+  lastBlockTime: '',
+};
+
 fastify.register(cors, { origin: '*' });
 
+// 1. Manual or Asymmetrically Signed Omni-Cycle Execution
 fastify.post('/v1/cycle', async (request, reply) => {
   const signature = request.headers['x-omega-signature'] as string | undefined;
   const publicKey = request.headers['x-omega-public-key'] as string | undefined;
@@ -25,25 +47,20 @@ fastify.post('/v1/cycle', async (request, reply) => {
   }
 
   const block = kernel.runCycle();
-
-  // Broadcast newly minted block to all connected stream clients
-  for (const send of streamClients) {
-    try {
-      send(block);
-    } catch {
-      streamClients.delete(send);
-    }
-  }
+  minerStats.totalMined++;
+  minerStats.lastBlockTime = block.timestamp;
+  broadcastMintedBlock(block);
 
   return { success: true, status: 'SYNCHRONIZED', block };
 });
 
+// 2. Ledger Tip Retrieval
 fastify.get('/v1/block/tip', async () => {
   const tip = ledgerMemory.getTip();
   return { success: true, status: 'ONLINE', tip };
 });
 
-// Real-time Event Stream (SSE) for Block Telemetry
+// 3. Real-time Event Stream (SSE) for Block Telemetry
 fastify.get('/v1/stream', (request, reply) => {
   reply.raw.setHeader('Content-Type', 'text/event-stream');
   reply.raw.setHeader('Cache-Control', 'no-cache');
@@ -68,7 +85,57 @@ fastify.get('/v1/stream', (request, reply) => {
   });
 });
 
-// Asymmetric Cryptographic Guard Endpoints
+// 4. Automated Autonomous Background Miner Endpoints
+fastify.post('/v1/miner/start', async (request: any) => {
+  const { intervalMs } = request.body || {};
+  const interval = typeof intervalMs === 'number' && intervalMs >= 1000 ? intervalMs : 5000;
+
+  if (minerInterval) {
+    clearInterval(minerInterval);
+  }
+
+  minerStats.active = true;
+  minerStats.intervalMs = interval;
+
+  minerInterval = setInterval(() => {
+    try {
+      const block = kernel.runCycle();
+      minerStats.totalMined++;
+      minerStats.lastBlockTime = block.timestamp;
+      broadcastMintedBlock(block);
+    } catch (err) {
+      fastify.log.error('Miner cycle error: ' + err);
+    }
+  }, interval);
+
+  return { success: true, miner: minerStats };
+});
+
+fastify.post('/v1/miner/stop', async () => {
+  if (minerInterval) {
+    clearInterval(minerInterval);
+    minerInterval = null;
+  }
+  minerStats.active = false;
+  return { success: true, miner: minerStats };
+});
+
+fastify.get('/v1/miner/status', async () => {
+  return { success: true, miner: minerStats };
+});
+
+// 5. Multi-Region Mesh Sovereign Convergence Endpoints
+fastify.get('/v1/mesh/nodes', async () => {
+  return { success: true, nodes: MultiRegionMeshConvergence.getNodes() };
+});
+
+fastify.get('/v1/mesh/simulate', async () => {
+  const telemetry = ObserverEngine.generateTelemetry();
+  const convergence = MultiRegionMeshConvergence.simulateConvergence(telemetry);
+  return { success: true, telemetry, convergence };
+});
+
+// 6. Asymmetric Cryptographic Guard Endpoints
 fastify.post('/v1/auth/keypair', async () => {
   const keypair = AsymmetricValidationGuard.generateKeyPair();
   return { success: true, ...keypair };
