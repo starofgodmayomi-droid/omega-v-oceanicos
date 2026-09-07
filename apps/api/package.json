@@ -1,41 +1,17 @@
 {
-  "name": "@omega-v/api",
-  "version": "0.1.0",
-  "description": "REST API backend for Ω∞v Oceanicos",
-  "main": "dist/server.js",
-  "type": "module",
+  "name": "api",
+  "version": "1.0.0",
+  "main": "dist/index.js",
   "scripts": {
-    "dev": "tsx watch src/server.ts",
     "build": "tsc",
-    "start": "node dist/server.js",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "clean": "node ../../scripts/rimraf.cjs dist \"*.tsbuildinfo\""
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts"
   },
-  "keywords": [
-    "api",
-    "rest",
-    "oceanicos"
-  ],
-  "author": "Ω∞v Community",
-  "license": "Apache-2.0",
   "dependencies": {
-    "@omega-v/types": "workspace:*",
-    "@omega-v/observer": "workspace:*",
-    "@omega-v/verification": "workspace:*",
-    "@omega-v/attestation": "workspace:*",
-    "@omega-v/dissensus": "workspace:*",
-    "@omega-v/remember": "workspace:*",
-    "@omega-v/mini": "workspace:*",
-    "express": "^5.2.1"
-  },
-  "devDependencies": {
-    "@types/express": "^5.0.6",
-    "@types/jest": "^30.0.0",
-    "@types/node": "^20.0.0",
-    "jest": "^30.4.2",
-    "ts-jest": "^29.1.0",
-    "tsx": "^4.23.12",
-    "typescript": "^5.0.0"
+    "fastify": "^4.26.1",
+    "@fastify/cors": "^9.0.1",
+    "@oceanicos/types": "workspace:*",
+    "@oceanicos/remember": "workspace:*",
+    "@oceanicos/mini": "workspace:*"
   }
 }

@@ -1,38 +1,16 @@
 {
-  "name": "@omega-v/mini",
-  "version": "0.1.0",
-  "description": "MINI Kernel — the foundational composition layer for Ω∞v Oceanicos (Observe → Verify → Remember)",
-  "type": "module",
+  "name": "@oceanicos/mini",
+  "version": "1.0.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "watch": "tsc --watch",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "clean": "node ../../scripts/rimraf.cjs dist \"*.tsbuildinfo\""
+    "typecheck": "tsc --noEmit"
   },
-  "keywords": [
-    "mini",
-    "kernel",
-    "observe",
-    "verify",
-    "remember",
-    "oceanicos",
-    "omega-total"
-  ],
-  "author": "Ω∞v Community",
-  "license": "Apache-2.0",
   "dependencies": {
-    "@omega-v/types": "*",
-    "@omega-v/observer": "*",
-    "@omega-v/verification": "*",
-    "@omega-v/remember": "*"
-  },
-  "devDependencies": {
-    "@types/jest": "^29.5.0",
-    "jest": "^29.5.0",
-    "ts-jest": "^29.1.0",
-    "typescript": "^5.0.0"
+    "@oceanicos/types": "workspace:*",
+    "@oceanicos/observer": "workspace:*",
+    "@oceanicos/verification": "workspace:*",
+    "@oceanicos/remember": "workspace:*"
   }
 }

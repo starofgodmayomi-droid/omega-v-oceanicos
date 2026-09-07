@@ -1,29 +1,9 @@
 version: '3.8'
-
 services:
-  api:
-    build:
-      context: .
-      target: api
+  omega-v-cluster:
+    build: .
     ports:
-      - '3000:3000'
-    environment:
-      - NODE_ENV=production
-      - PORT=3000
-    healthcheck:
-      test: ['CMD', 'wget', '-qO-', 'http://localhost:3000/api/health']
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    restart: unless-stopped
-
-  web:
-    build:
-      context: .
-      target: web
-    ports:
-      - '80:80'
-    depends_on:
-      api:
-        condition: service_healthy
-    restart: unless-stopped
+      - "4102:4102"
+      - "3000:3000"
+    command: sh -c "pnpm --filter api run start & pnpm --filter web run start"
+    restart: always
