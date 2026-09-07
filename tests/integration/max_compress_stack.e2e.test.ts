@@ -1,4 +1,4 @@
-import { describe, it } from 'node:test';
+import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert';
 import { ObserverEngine } from '../../packages/observer/dist/index.js';
 import {
@@ -8,8 +8,22 @@ import {
 } from '../../packages/verification/dist/index.js';
 import { PluralisticHashChain, RememberEngine } from '../../packages/remember/dist/index.js';
 import { MiniKernel, executeOceanicosMaxExpansion } from '../../packages/mini/dist/index.js';
+import { createApp } from '../../apps/api/dist/index.js';
 
 describe('Ω∞v Oceanicos Max Compress Full-Stack E2E Suite', () => {
+  let apiApp: any;
+
+  before(async () => {
+    apiApp = createApp(':memory:', false);
+    await apiApp.ready();
+  });
+
+  after(async () => {
+    if (apiApp) {
+      await apiApp.close();
+    }
+  });
+
   it('1. Telemetry Generation Engine produces valid planetary telemetry', () => {
     const telemetry = ObserverEngine.generateTelemetry();
     assert.ok(telemetry.uuid, 'Telemetry must contain a unique UUID');
@@ -141,5 +155,99 @@ describe('Ω∞v Oceanicos Max Compress Full-Stack E2E Suite', () => {
     assert.doesNotThrow(() => {
       executeOceanicosMaxExpansion();
     });
+  });
+
+  it('9. Fastify API GET /v1/block/tip returns initial online tip status', async () => {
+    const res = await apiApp.inject({
+      method: 'GET',
+      url: '/v1/block/tip',
+    });
+    assert.strictEqual(res.statusCode, 200);
+    const body = JSON.parse(res.body);
+    assert.strictEqual(body.success, true);
+    assert.strictEqual(body.status, 'ONLINE');
+  });
+
+  it('10. Fastify API POST /v1/cycle executes and returns newly mined block', async () => {
+    const res = await apiApp.inject({
+      method: 'POST',
+      url: '/v1/cycle',
+    });
+    assert.strictEqual(res.statusCode, 200);
+    const body = JSON.parse(res.body);
+    assert.strictEqual(body.success, true);
+    assert.strictEqual(body.status, 'SYNCHRONIZED');
+    assert.ok(body.block);
+    assert.ok(body.block.hash.startsWith('00'));
+  });
+
+  it('11. Fastify API enforces Asymmetric Signature Guard on /v1/cycle', async () => {
+    const keypair = AsymmetricValidationGuard.generateKeyPair();
+
+    // 11a. Fails with tampered signature
+    const badRes = await apiApp.inject({
+      method: 'POST',
+      url: '/v1/cycle',
+      headers: {
+        'x-omega-signature': 'deadbeef00112233',
+        'x-omega-public-key': keypair.publicKey,
+      },
+    });
+    assert.strictEqual(badRes.statusCode, 401);
+    const badBody = JSON.parse(badRes.body);
+    assert.strictEqual(badBody.error, 'INVALID_ASYMMETRIC_SIGNATURE');
+
+    // 11b. Succeeds with authentic signature
+    const validSig = AsymmetricValidationGuard.sign('EXECUTE_OMNI_CYCLE', keypair.privateKey);
+    const goodRes = await apiApp.inject({
+      method: 'POST',
+      url: '/v1/cycle',
+      headers: {
+        'x-omega-signature': validSig,
+        'x-omega-public-key': keypair.publicKey,
+      },
+    });
+    assert.strictEqual(goodRes.statusCode, 200);
+    const goodBody = JSON.parse(goodRes.body);
+    assert.strictEqual(goodBody.success, true);
+  });
+
+  it('12. Fastify API Autonomous Background Miner endpoints operate correctly', async () => {
+    // Check initial status
+    const statusRes = await apiApp.inject({ method: 'GET', url: '/v1/miner/status' });
+    assert.strictEqual(statusRes.statusCode, 200);
+    const initialStatus = JSON.parse(statusRes.body);
+    assert.strictEqual(initialStatus.miner.active, false);
+
+    // Start miner
+    const startRes = await apiApp.inject({
+      method: 'POST',
+      url: '/v1/miner/start',
+      payload: { intervalMs: 2000 },
+    });
+    assert.strictEqual(startRes.statusCode, 200);
+    const started = JSON.parse(startRes.body);
+    assert.strictEqual(started.miner.active, true);
+    assert.strictEqual(started.miner.intervalMs, 2000);
+
+    // Stop miner
+    const stopRes = await apiApp.inject({ method: 'POST', url: '/v1/miner/stop' });
+    assert.strictEqual(stopRes.statusCode, 200);
+    const stopped = JSON.parse(stopRes.body);
+    assert.strictEqual(stopped.miner.active, false);
+  });
+
+  it('13. Fastify API Multi-Region Mesh simulation returns converged receipt', async () => {
+    const meshRes = await apiApp.inject({ method: 'GET', url: '/v1/mesh/simulate' });
+    assert.strictEqual(meshRes.statusCode, 200);
+    const data = JSON.parse(meshRes.body);
+    assert.strictEqual(data.success, true);
+    assert.ok(data.convergence.quorumReached);
+    assert.strictEqual(data.convergence.participatingNodes, 4);
+
+    const nodesRes = await apiApp.inject({ method: 'GET', url: '/v1/mesh/nodes' });
+    assert.strictEqual(nodesRes.statusCode, 200);
+    const nodesData = JSON.parse(nodesRes.body);
+    assert.strictEqual(nodesData.nodes.length, 4);
   });
 });
