@@ -222,6 +222,8 @@ switch (command) {
     await handleStream();
     break;
   case 'help':
+  case '--help':
+  case '-h':
     handleHelp();
     break;
   default:

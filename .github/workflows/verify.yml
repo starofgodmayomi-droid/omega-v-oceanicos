@@ -155,7 +155,7 @@ jobs:
         run: pnpm test
 
       - name: Build packages
-        run: pnpm build
+        run: pnpm --recursive run build
 
   docker:
     name: Package and smoke test
