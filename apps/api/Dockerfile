@@ -23,15 +23,13 @@ COPY apps/web ./apps/web
 RUN pnpm install --frozen-lockfile
 
 # One origin serves both: the API and the static client it talks to.
-RUN pnpm --filter @omega-v/types build \
- && pnpm --filter @omega-v/observer build \
- && pnpm --filter @omega-v/verification build \
- && pnpm --filter @omega-v/attestation build \
- && pnpm --filter @omega-v/dissensus build \
- && pnpm --filter @omega-v/remember build \
- && pnpm --filter @omega-v/mini build \
- && pnpm --filter @omega-v/api build \
- && pnpm --filter @omega-v/web build
+RUN pnpm --filter @oceanicos/types build \
+ && pnpm --filter @oceanicos/observer build \
+ && pnpm --filter @oceanicos/verification build \
+ && pnpm --filter @oceanicos/remember build \
+ && pnpm --filter @oceanicos/mini build \
+ && pnpm --filter api build \
+ && pnpm --filter web build
 
 FROM node:22-alpine AS runtime
 
