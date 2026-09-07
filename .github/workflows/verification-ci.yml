@@ -81,7 +81,7 @@ jobs:
           "
 
       - name: 7. Upload Evidence Artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: verification-evidence
           path: artifacts/
