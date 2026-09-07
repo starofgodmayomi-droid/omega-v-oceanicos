@@ -99,16 +99,14 @@ jobs:
       # The published bin is the file users actually execute, and nothing
       # imports it, so a broken entrypoint would ship silently. This runs
       # the built artifact rather than the source.
-      - name: Run the built CLI entrypoint
+      - name: Run the canonical CLI entrypoint
         run: |
-          node packages/cli/dist/cli.js --help > /tmp/cli-help.txt
-          # The help text lists commands; it does not contain the word
-          # "usage". Assert what it actually prints.
-          grep -q 'omega health' /tmp/cli-help.txt
-          grep -q 'OMEGA_API_URL' /tmp/cli-help.txt
+          node bin/oceanicos.mjs --help > /tmp/cli-help.txt
+          grep -q 'OCEANICOS DEEP-TIER CRYPTOGRAPHIC CLI' /tmp/cli-help.txt
+          grep -q 'status' /tmp/cli-help.txt
 
           set +e
-          node packages/cli/dist/cli.js definitely-not-a-command > /dev/null 2>&1
+          node bin/oceanicos.mjs definitely-not-a-command > /dev/null 2>&1
           status=$?
           set -e
           if [ "$status" -ne 2 ]; then
@@ -148,7 +146,10 @@ jobs:
         run: pnpm format:check
 
       - name: Run type checking
-        run: pnpm type-check
+        run: pnpm --recursive run build
+
+      - name: Run workspace type checking
+        run: pnpm --recursive run typecheck
 
       - name: Run tests
         run: pnpm test

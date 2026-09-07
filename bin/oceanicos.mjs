@@ -222,7 +222,10 @@ switch (command) {
     await handleStream();
     break;
   case 'help':
+    handleHelp();
+    break;
   default:
     handleHelp();
+    process.exitCode = 2;
     break;
 }
