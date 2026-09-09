@@ -401,11 +401,11 @@ export class PriorityJobQueue extends JobQueue {
  */
 export class BatchJobProcessor {
   private queue: JobQueue;
-  private batchSize: number;
+  private _batchSize: number;
 
   constructor(queue: JobQueue, batchSize: number = 100) {
     this.queue = queue;
-    this.batchSize = batchSize;
+    this._batchSize = batchSize;
   }
 
   /**

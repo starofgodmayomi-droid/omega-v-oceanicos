@@ -23,11 +23,6 @@ export interface RateLimiterStats {
   rejectionRate: number;
 }
 
-interface RequestRecord {
-  timestamp: number;
-  count: number;
-}
-
 interface KeyStatus {
   requests: number;
   firstRequestAt: number;

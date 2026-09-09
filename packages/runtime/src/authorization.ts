@@ -438,7 +438,7 @@ export class PolicyEngine {
             return { allowed: false, matchedPolicies };
           }
 
-          if (finalDecision !== 'deny') {
+          if (finalDecision === null) {
             finalDecision = 'allow';
           }
         }
@@ -486,7 +486,7 @@ export class AccessDecisionPoint {
   private decisionCache: Map<string, AccessDecision> = new Map();
 
   constructor(
-    private roleManager: RoleManager,
+    private _roleManager: RoleManager,
     private resourceManager: ResourceManager,
     private attributeManager: AttributeManager,
     private policyEngine: PolicyEngine
@@ -499,7 +499,7 @@ export class AccessDecisionPoint {
       return cached;
     }
 
-    const startTime = Date.now();
+    const _startTime = Date.now();
     let decision: AccessDecision;
 
     const policyResult = this.policyEngine.evaluatePolicy(

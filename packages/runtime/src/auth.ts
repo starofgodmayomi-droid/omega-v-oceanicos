@@ -50,12 +50,12 @@ export class AuthManager {
   private apiKeys: Map<string, APIKey> = new Map();
   private jwtSecret: string;
   private tokenExpiresIn: number;
-  private refreshTokenExpiresIn: number;
+  private _refreshTokenExpiresIn: number;
 
   constructor(config: AuthConfig = {}) {
     this.jwtSecret = config.jwtSecret || this.generateSecret();
     this.tokenExpiresIn = config.tokenExpiresIn || DEFAULT_TOKEN_EXPIRY;
-    this.refreshTokenExpiresIn = config.refreshTokenExpiresIn || DEFAULT_REFRESH_EXPIRY;
+    this._refreshTokenExpiresIn = config.refreshTokenExpiresIn || DEFAULT_REFRESH_EXPIRY;
   }
 
   /**

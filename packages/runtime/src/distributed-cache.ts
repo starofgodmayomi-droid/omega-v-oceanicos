@@ -478,7 +478,7 @@ export class RedisClient {
   /**
    * Private: Handle error
    */
-  private handleError(error: Error): void {
+  private handleError(_error: Error): void {
     if (!this.connected) {
       this.attemptReconnect();
     }

@@ -253,21 +253,21 @@ export class AlertManager {
   /**
    * Send email notification
    */
-  private async sendEmail(config: Record<string, any>, alert: Alert): Promise<void> {
+  private async sendEmail(_config: Record<string, any>, _alert: Alert): Promise<void> {
     // Email sending would be implemented here
   }
 
   /**
    * Send Slack notification
    */
-  private async sendSlack(config: Record<string, any>, alert: Alert): Promise<void> {
+  private async sendSlack(_config: Record<string, any>, _alert: Alert): Promise<void> {
     // Slack integration would be implemented here
   }
 
   /**
    * Send PagerDuty notification
    */
-  private async sendPagerDuty(config: Record<string, any>, alert: Alert): Promise<void> {
+  private async sendPagerDuty(_config: Record<string, any>, _alert: Alert): Promise<void> {
     // PagerDuty integration would be implemented here
   }
 

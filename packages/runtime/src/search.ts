@@ -311,7 +311,6 @@ export class SearchEngine {
     }
 
     for (const phrase of parsed.phrases) {
-      const phraseTokens = phrase.split(/\s+/);
       for (const [docId, doc] of index.documents) {
         if (doc.content.toLowerCase().includes(phrase)) {
           matchingDocIds.add(docId);
