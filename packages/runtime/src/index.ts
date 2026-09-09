@@ -788,5 +788,33 @@ export type {
   ValidationResult,
   MigrationConfig,
 } from './migration';
+export {
+  RequestValidator,
+  RateLimiter,
+  ResponseCache,
+  CircuitBreaker,
+  GatewayMetrics,
+  AuthenticationManager,
+  APIGateway,
+} from './api-gateway';
+export type {
+  HttpMethod,
+  ProtocolType,
+  RateLimitStrategy,
+  AuthType,
+  CacheStrategy,
+  CircuitBreakerState,
+  RequestContext,
+  ResponseContext,
+  EndpointRoute,
+  RateLimitConfig,
+  AuthConfig,
+  ValidationSchema,
+  ValidationProperty,
+  CacheConfig,
+  CircuitBreakerConfig,
+  GatewayConfig,
+  Middleware,
+} from './api-gateway';
 
 export default VerificationRuntime;
