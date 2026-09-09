@@ -689,6 +689,29 @@ export type {
   SearchAuditLog,
 } from './search';
 export {
+  QueryAnalyzer,
+  QueryPlanner,
+  IndexAdvisor,
+  QueryCache,
+  QueryOptimizer,
+} from './query-optimizer';
+export type {
+  QueryOperator,
+  JoinType,
+  AggregationType,
+  QueryPredicate,
+  JoinClause,
+  AggregationClause,
+  QueryDefinition,
+  IndexStrategy,
+  ExecutionPlan,
+  PlanStep,
+  QueryStatistics,
+  IndexStatistics,
+  CacheEntry,
+  QueryOptimizerConfig,
+} from './query-optimizer';
+export {
   TenantManager,
   ContextPropagator,
   QuotaManager,
