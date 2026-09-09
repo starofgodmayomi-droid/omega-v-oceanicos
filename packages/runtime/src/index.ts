@@ -770,5 +770,23 @@ export type {
 } from './data-management';
 export { PersistenceAdapter } from './data-persistence';
 export type { PersistenceConfig, TransactionOptions } from './data-persistence';
+export {
+  SchemaRegistry,
+  MigrationExecutor,
+  BackupManager,
+  MigrationValidator,
+  MigrationHub,
+} from './migration';
+export type {
+  SchemaVersion,
+  TableSchema,
+  Migration,
+  MigrationRecord,
+  DataBackup,
+  BackupMetadata,
+  ValidationError,
+  ValidationResult,
+  MigrationConfig,
+} from './migration';
 
 export default VerificationRuntime;
