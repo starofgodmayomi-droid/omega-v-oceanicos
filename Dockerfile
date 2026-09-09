@@ -2,10 +2,11 @@
 # Stage 1: Build
 FROM node:22-alpine AS builder
 
-WORKDIR /app
+ENV PNPM_HOME=/pnpm
+ENV PATH=$PNPM_HOME:$PATH
+RUN corepack enable && corepack prepare pnpm@10.34.5 --activate
 
-# Install pnpm
-RUN npm install -g pnpm@10.34.5
+WORKDIR /app
 
 # Copy workspace files
 COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
@@ -23,10 +24,11 @@ RUN pnpm build
 # Stage 2: Runtime
 FROM node:22-alpine AS runtime
 
-WORKDIR /app
+ENV PNPM_HOME=/pnpm
+ENV PATH=$PNPM_HOME:$PATH
+RUN corepack enable && corepack prepare pnpm@10.34.5 --activate
 
-# Install pnpm runtime
-RUN npm install -g pnpm@10.34.5
+WORKDIR /app
 
 # Copy workspace files
 COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
