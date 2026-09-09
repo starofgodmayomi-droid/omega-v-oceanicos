@@ -712,6 +712,27 @@ export type {
   QueryOptimizerConfig,
 } from './query-optimizer';
 export {
+  VectorClockManager,
+  ChangeLogManager,
+  ReplicationManager,
+  SyncCoordinator,
+  ReplicationHub,
+} from './replication';
+export type {
+  ReplicationStrategy,
+  SyncProtocol,
+  ConflictResolution,
+  NodeRole,
+  NodeStatus,
+  ReplicationNode,
+  ChangeLog,
+  VectorClock,
+  ReplicatedData,
+  SyncCheckpoint,
+  ConflictEvent,
+  ReplicationConfig,
+} from './replication';
+export {
   TenantManager,
   ContextPropagator,
   QuotaManager,
