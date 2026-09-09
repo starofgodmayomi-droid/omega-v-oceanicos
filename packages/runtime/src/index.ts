@@ -724,5 +724,7 @@ export type {
   DataQuery,
   RetentionConfig,
 } from './data-management';
+export { PersistenceAdapter } from './data-persistence';
+export type { PersistenceConfig, TransactionOptions } from './data-persistence';
 
 export default VerificationRuntime;
