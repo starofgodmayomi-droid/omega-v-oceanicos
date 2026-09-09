@@ -816,5 +816,22 @@ export type {
   GatewayConfig,
   Middleware,
 } from './api-gateway';
+export {
+  ServiceRegistry,
+  HealthChecker,
+  LoadBalancer,
+  ServiceDiscovery,
+} from './load-balancer';
+export type {
+  LoadBalancingStrategy,
+  ServiceStatus,
+  HealthCheckType,
+  ServiceInstance,
+  ServiceRegistration,
+  HealthCheckConfig,
+  LoadBalancingConfig,
+  ServiceEndpoint,
+  HealthCheckResult,
+} from './load-balancer';
 
 export default VerificationRuntime;
