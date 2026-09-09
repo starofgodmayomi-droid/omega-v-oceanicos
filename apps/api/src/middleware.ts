@@ -106,8 +106,9 @@ export function requestLogging(req: Request, res: Response, next: NextFunction):
 
   res.send = function (data: any) {
     const duration = Date.now() - startTime;
+    const safePath = (req.path || '').replace(/[\n\r]/g, ' ');
     console.log(
-      `[${new Date().toISOString()}] ${req.method} ${req.path} ${res.statusCode} ${duration}ms`
+      `[${new Date().toISOString()}] ${req.method} ${safePath} ${res.statusCode} ${duration}ms`
     );
     return originalSend.call(this, data);
   };

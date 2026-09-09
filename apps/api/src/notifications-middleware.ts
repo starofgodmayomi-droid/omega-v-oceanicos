@@ -556,7 +556,7 @@ export function initializeNotificationMiddleware(
       if (
         req.method === 'GET' &&
         req.path.match(/^\/api\/notifications\/[^\/]+$/) &&
-        !req.path.includes('/verify')
+        !req.path.match(/\/verify$/)
       ) {
         const notificationId = req.path.split('/')[3];
         req.params.notificationId = notificationId;
