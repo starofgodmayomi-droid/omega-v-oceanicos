@@ -51,7 +51,8 @@ describe('@omega-v/auth — OceanicosAuthEngine', () => {
     });
 
     it('should grant access to admin:all for any required capability', () => {
-      const token = auth.issueToken('did:omega:system:root', 'omega-root-system-secret');
+      const { did, secret } = auth.createIdentity('SYSTEM', ['admin:all']);
+      const token = auth.issueToken(did, secret);
       const verification = auth.verifyToken(token, 'governance:vote');
       expect(verification.valid).toBe(true);
     });
@@ -69,7 +70,8 @@ describe('@omega-v/auth — OceanicosAuthEngine', () => {
       const { did } = auth.createIdentity('SERVICE', ['observe:write']);
       expect(() => auth.issueToken(did, 'wrong-secret')).toThrow('Authentication Failed');
 
-      const token = auth.issueToken('did:omega:system:root', 'omega-root-system-secret');
+      const { did, secret } = auth.createIdentity('SYSTEM', ['admin:all']);
+      const token = auth.issueToken(did, secret);
       const tampered = `${token.slice(0, -5)}abcde`;
       const verification = auth.verifyToken(tampered);
       expect(verification.valid).toBe(false);

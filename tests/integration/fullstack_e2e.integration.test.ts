@@ -479,7 +479,7 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
 
   describe('13. Decentralized Identity (DID) & Capability Auth E2E', () => {
     it('should create DIDs, issue cryptographic tokens, enforce capabilities, and test key rotation', () => {
-      const auth = new OceanicosAuthEngine();
+      const auth = new OceanicosAuthEngine('fullstack-auth-master-secret-2026-09-12');
 
       // Verify system bootstrap
       expect(auth.getIdentity('did:omega:system:root')?.type).toBe('SYSTEM');

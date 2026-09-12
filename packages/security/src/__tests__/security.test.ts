@@ -55,8 +55,9 @@ describe('SecurityEngine (Sections XVIII & XIX)', () => {
     });
 
     it('should log all authorization decisions to audit trail', () => {
-      engine.authorize(subject, 'CAN_OBSERVE');
-      engine.authorize(subject, 'CAN_ACT');
+      const token = engine.issueToken(subject);
+      engine.authorize(subject, 'CAN_OBSERVE', token);
+      engine.authorize(subject, 'CAN_ACT', token);
 
       const trail = engine.getAuditTrail();
       expect(trail).toHaveLength(2);

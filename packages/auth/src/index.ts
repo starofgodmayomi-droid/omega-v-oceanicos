@@ -45,7 +45,11 @@ export class OceanicosAuthEngine {
   private masterSecret: string;
 
   constructor(masterSecret?: string) {
-    this.masterSecret = masterSecret || 'omega-v-master-cryptographic-salt';
+    const configuredSecret = masterSecret ?? process.env.OMEGA_AUTH_MASTER_SECRET;
+    if (!configuredSecret || configuredSecret.length < 32) {
+      throw new Error('OMEGA_AUTH_MASTER_SECRET must be configured with at least 32 characters');
+    }
+    this.masterSecret = configuredSecret;
     this.bootstrapSystemIdentities();
   }
 
@@ -54,21 +58,21 @@ export class OceanicosAuthEngine {
     this.createIdentity(
       'SYSTEM',
       ['admin:all'],
-      'omega-root-system-secret',
+      crypto.randomBytes(32).toString('hex'),
       'did:omega:system:root'
     );
     // Bootstrap verifier identity
     this.createIdentity(
       'VERIFIER',
       ['verify:execute', 'attest:sign'],
-      'omega-verifier-secret',
+      crypto.randomBytes(32).toString('hex'),
       'did:omega:verifier:core'
     );
     // Bootstrap agent swarm identity
     this.createIdentity(
       'AGENT',
       ['observe:write', 'verify:execute'],
-      'omega-agent-swarm-secret',
+      crypto.randomBytes(32).toString('hex'),
       'did:omega:agent:swarm'
     );
   }

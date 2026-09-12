@@ -93,7 +93,7 @@ export class OceanicosWebhookEngine {
       name: 'CI/CD Pipeline Verification Webhook',
       url: 'https://ci.oceanicos.internal/webhooks/verify',
       events: ['ATTESTATION_CREATED', 'VERIFICATION_FAILED'],
-      secret: 'whsec_ci_pipeline_secret_v1',
+      secret: crypto.randomBytes(32).toString('hex'),
       active: true,
       maxRetries: 3,
       createdAt: new Date().toISOString(),
@@ -104,7 +104,7 @@ export class OceanicosWebhookEngine {
       name: 'Security & Compliance Guard Webhook',
       url: 'https://security.oceanicos.internal/alerts/policy',
       events: ['POLICY_VIOLATED', 'ANOMALY_TRIGGERED', 'DISSENT_DETECTED'],
-      secret: 'whsec_sec_guard_secret_v1',
+      secret: crypto.randomBytes(32).toString('hex'),
       active: true,
       maxRetries: 5,
       createdAt: new Date().toISOString(),
@@ -156,8 +156,17 @@ export class OceanicosWebhookEngine {
 
   /** Verify incoming webhook signature */
   public verifySignature(payload: WebhookPayload, signature: string, secret: string): boolean {
-    const expected = this.signPayload(payload, secret);
-    return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
+    try {
+      if (typeof signature !== 'string' || !signature.startsWith('sha256=')) return false;
+      const expected = this.signPayload(payload, secret);
+      const actual = Buffer.from(signature, 'utf8');
+      const expectedBytes = Buffer.from(expected, 'utf8');
+      return (
+        actual.length === expectedBytes.length && crypto.timingSafeEqual(actual, expectedBytes)
+      );
+    } catch {
+      return false;
+    }
   }
 
   /** Dispatch an event to all matching active subscriptions */
