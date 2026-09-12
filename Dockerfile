@@ -25,6 +25,9 @@ COPY apps/ apps/
 COPY tsconfig.json ./
 COPY bin/ bin/
 
+ARG VITE_API_URL=http://localhost:5000
+ENV VITE_API_URL=$VITE_API_URL
+
 RUN pnpm run build
 
 # ── Stage 2: Production API Runtime ──────────────────────────────────────────

@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 
+const API_BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+
 interface KeyPair {
   publicKey: string;
   privateKey: string;
@@ -59,7 +61,7 @@ export default function App() {
   // Poll miner status initially
   const fetchMinerStatus = async () => {
     try {
-      const res = await fetch('http://localhost:5000/v1/miner/status');
+      const res = await fetch(`${API_BASE_URL}/v1/miner/status`);
       const data = await res.json();
       if (data.success && data.miner) {
         setMinerActive(data.miner.active);
@@ -78,7 +80,7 @@ export default function App() {
 
     let es: EventSource | null = null;
     try {
-      es = new EventSource('http://localhost:5000/v1/stream');
+      es = new EventSource(`${API_BASE_URL}/v1/stream`);
       eventSourceRef.current = es;
 
       es.onopen = () => {
@@ -118,7 +120,7 @@ export default function App() {
 
   const fetchTipFallback = async () => {
     try {
-      const r = await fetch('http://localhost:5000/v1/block/tip');
+      const r = await fetch(`${API_BASE_URL}/v1/block/tip`);
       const d = await r.json();
       if (d.tip) {
         setTip(d.tip);
@@ -130,7 +132,7 @@ export default function App() {
   // 1. Generate Native Ed25519 Server Keypair
   const generateServerKeys = async () => {
     try {
-      const res = await fetch('http://localhost:5000/v1/auth/keypair', { method: 'POST' });
+      const res = await fetch(`${API_BASE_URL}/v1/auth/keypair`, { method: 'POST' });
       const data = await res.json();
       if (data.success) {
         setKeyPair({
@@ -182,11 +184,11 @@ export default function App() {
   const toggleMiner = async () => {
     try {
       if (minerActive) {
-        const res = await fetch('http://localhost:5000/v1/miner/stop', { method: 'POST' });
+          const res = await fetch(`${API_BASE_URL}/v1/miner/stop`, { method: 'POST' });
         const data = await res.json();
         if (data.success) setMinerActive(false);
       } else {
-        const res = await fetch('http://localhost:5000/v1/miner/start', {
+        const res = await fetch(`${API_BASE_URL}/v1/miner/start`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ intervalMs: minerInterval }),
@@ -204,7 +206,7 @@ export default function App() {
     setMeshLoading(true);
     setLastError(null);
     try {
-      const res = await fetch('http://localhost:5000/v1/mesh/simulate');
+      const res = await fetch(`${API_BASE_URL}/v1/mesh/simulate`);
       const data = await res.json();
       if (data.success && data.convergence) {
         setMeshSimulation(data.convergence);
@@ -219,7 +221,7 @@ export default function App() {
   // 4b. Fetch Singularity Mood Status
   const fetchMood = async () => {
     try {
-      const res = await fetch('http://localhost:5000/v1/mood');
+      const res = await fetch(`${API_BASE_URL}/v1/mood`);
       const data = await res.json();
       setMoodData(data);
     } catch (err: any) {
@@ -232,7 +234,7 @@ export default function App() {
     setAttestLoading(true);
     setLastError(null);
     try {
-      const res = await fetch('http://localhost:5000/v1/attest', { method: 'POST' });
+      const res = await fetch(`${API_BASE_URL}/v1/attest`, { method: 'POST' });
       const data = await res.json();
       if (data.success && data.attestation) {
         setAttestationData(data.attestation);
@@ -253,7 +255,7 @@ export default function App() {
 
       if (signRequests && keyPair) {
         if (keyPair.type === 'ED25519_SERVER') {
-          const signRes = await fetch('http://localhost:5000/v1/block/sign', {
+          const signRes = await fetch(`${API_BASE_URL}/v1/block/sign`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ data: 'EXECUTE_OMNI_CYCLE', privateKey: keyPair.privateKey }),
@@ -266,7 +268,7 @@ export default function App() {
         }
       }
 
-      const res = await fetch('http://localhost:5000/v1/cycle', {
+      const res = await fetch(`${API_BASE_URL}/v1/cycle`, {
         method: 'POST',
         headers,
         body: JSON.stringify({}),

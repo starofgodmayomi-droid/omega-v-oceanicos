@@ -35,7 +35,7 @@ RUN pnpm --filter @oceanicos/types build \
 FROM node:22-alpine AS runtime
 
 ENV NODE_ENV=production
-ENV API_PORT=3000
+ENV API_PORT=5000
 # Exposed images require caller authentication by default. Local source runs can
 # explicitly choose OMEGA_AUTH_MODE=local when they are not network-exposed.
 ENV OMEGA_AUTH_MODE=required
@@ -53,7 +53,7 @@ RUN addgroup -S omega && adduser -S omega -G omega \
 
 USER omega
 
-EXPOSE 3000
+EXPOSE 5000
 
 # Container orchestration may use this local probe, while readiness remains
 # governed by the API's explicit /health response and its non-secret evidence.
