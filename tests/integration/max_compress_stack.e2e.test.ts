@@ -15,7 +15,10 @@ describe('Ω∞v Oceanicos Max Compress Full-Stack E2E Suite', () => {
   let apiApp: any;
 
   before(async () => {
-    apiApp = createApp(':memory:', false, { allowUnsignedCycle: true });
+    apiApp = createApp(':memory:', false, {
+      allowUnsignedCycle: true,
+      attestationSigningKey: 'integration-attestation-key-2026-strong',
+    });
     await apiApp.ready();
   });
 
@@ -365,6 +368,20 @@ describe('Ω∞v Oceanicos Max Compress Full-Stack E2E Suite', () => {
   });
 
   it('19. Fastify API POST /v1/attest produces valid cryptographic attestation receipt', async () => {
+    const missingKeyApp = createApp(':memory:', false);
+    await missingKeyApp.ready();
+    const missingKey = await missingKeyApp.inject({ method: 'POST', url: '/v1/attest' });
+    assert.strictEqual(missingKey.statusCode, 503);
+    assert.strictEqual(JSON.parse(missingKey.body).error, 'ATTESTATION_SIGNING_KEY_REQUIRED');
+    await missingKeyApp.close();
+
+    const weakKeyApp = createApp(':memory:', false, { attestationSigningKey: 'too-short' });
+    await weakKeyApp.ready();
+    const weakKey = await weakKeyApp.inject({ method: 'POST', url: '/v1/attest' });
+    assert.strictEqual(weakKey.statusCode, 503);
+    assert.strictEqual(JSON.parse(weakKey.body).error, 'ATTESTATION_SIGNING_KEY_TOO_WEAK');
+    await weakKeyApp.close();
+
     const res = await apiApp.inject({ method: 'POST', url: '/v1/attest' });
     assert.strictEqual(res.statusCode, 200);
     const data = JSON.parse(res.body);

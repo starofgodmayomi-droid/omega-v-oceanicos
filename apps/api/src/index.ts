@@ -7,8 +7,10 @@ import { ObserverEngine } from '@oceanicos/observer';
 import { AttestationService } from '@oceanicos/attestation';
 
 const MAX_STREAM_CLIENTS = 256;
+const MIN_ATTESTATION_KEY_LENGTH = 32;
 export type CreateAppOptions = {
   allowUnsignedCycle?: boolean;
+  attestationSigningKey?: string;
 };
 
 export function createApp(
@@ -22,6 +24,7 @@ export function createApp(
   const allowUnsignedCycle =
     options.allowUnsignedCycle ??
     (process.env.NODE_ENV !== 'production' && process.env.OMEGA_ALLOW_UNSIGNED_CYCLE === 'true');
+  const attestationSigningKey = options.attestationSigningKey ?? process.env.OMEGA_SIGNING_KEY;
 
   // Active SSE client subscriptions for real-time block streaming
   const streamClients = new Set<(block: any) => boolean>();
@@ -70,8 +73,23 @@ export function createApp(
 
   // Cryptographic Attestation Generation
   fastify.post('/v1/attest', async (request, reply) => {
-    const key = process.env.OMEGA_SIGNING_KEY || 'omega-v-default-attestation-secret-key-2026';
-    const service = new AttestationService({ signingKey: key, algorithm: 'HMAC-SHA256' });
+    if (!attestationSigningKey) {
+      return reply.status(503).send({
+        success: false,
+        error: 'ATTESTATION_SIGNING_KEY_REQUIRED',
+      });
+    }
+    if (attestationSigningKey.length < MIN_ATTESTATION_KEY_LENGTH) {
+      return reply.status(503).send({
+        success: false,
+        error: 'ATTESTATION_SIGNING_KEY_TOO_WEAK',
+        minimumLength: MIN_ATTESTATION_KEY_LENGTH,
+      });
+    }
+    const service = new AttestationService({
+      signingKey: attestationSigningKey,
+      algorithm: 'HMAC-SHA256',
+    });
     const telemetry = ObserverEngine.generateTelemetry();
     const tip = ledgerMemory.getTip();
 

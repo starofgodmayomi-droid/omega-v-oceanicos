@@ -624,6 +624,10 @@ with `400 INCOMPLETE_ASYMMETRIC_SIGNATURE`; unsigned requests are rejected with
 unsigned cycles with `OMEGA_ALLOW_UNSIGNED_CYCLE=true`; this flag must not be
 enabled in production.
 
+The legacy attestation route `POST /v1/attest` requires `OMEGA_SIGNING_KEY` (or an
+explicit application option) and rejects keys shorter than 32 characters with
+`503 ATTESTATION_SIGNING_KEY_TOO_WEAK`. There is no built-in fallback secret.
+
 ### Public Attestation Key
 
 ```
