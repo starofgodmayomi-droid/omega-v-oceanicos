@@ -281,6 +281,18 @@ export class OceanicosGatewayEngine {
       return { valid: false, reason: 'Request timestamp is too far in the future' };
     }
 
+    if (!this.clientStates.has(signed.clientId)) {
+      this.anomalies.push({
+        alertId: `alert-${crypto.randomBytes(4).toString('hex')}`,
+        clientId: signed.clientId,
+        type: 'UNKNOWN_CLIENT',
+        severity: 'MEDIUM',
+        description: `Unknown client '${signed.clientId}' presented a signed request. Registration is required.`,
+        detectedAt: new Date().toISOString(),
+      });
+      return { valid: false, reason: 'Unknown client — explicit registration required' };
+    }
+
     // Replay attack detection via nonce
     if (this.usedNonces.has(signed.nonce)) {
       this.anomalies.push({

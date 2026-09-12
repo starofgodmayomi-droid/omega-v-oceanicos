@@ -6,4 +6,7 @@ export default defineConfig({
   server: {
     port: 3000,
   },
+  preview: {
+    allowedHosts: ['3000-iscjvtugzf1ft862z9fi7-08dbc251.us4.manus.computer'],
+  },
 });
