@@ -350,7 +350,34 @@ describe('Ω∞v Oceanicos Max Compress Full-Stack E2E Suite', () => {
     assert.ok(data.attestation.signature.startsWith('0x'));
   });
 
-  it('20. Unified CLI "mood" and "attest" execute cleanly and attest to Singularity state', async () => {
+  it('20. SSE stream delivers the current tip and subsequent minted blocks', async () => {
+    await apiApp.listen({ host: '127.0.0.1', port: 0 });
+    const address = apiApp.server.address();
+    assert.ok(address && typeof address === 'object');
+    const baseUrl = `http://127.0.0.1:${address.port}`;
+    const response = await fetch(`${baseUrl}/v1/stream`);
+    assert.strictEqual(response.status, 200);
+    assert.ok(response.headers.get('content-type')?.includes('text/event-stream'));
+    assert.ok(response.body);
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    const initial = await reader.read();
+    assert.match(decoder.decode(initial.value), /event":"TIP"/);
+
+    const cycle = await fetch(`${baseUrl}/v1/cycle`, { method: 'POST', body: '{}' });
+    assert.strictEqual(cycle.status, 200);
+    const next = await Promise.race([
+      reader.read(),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Timed out waiting for SSE block frame')), 1000)
+      ),
+    ]);
+    assert.match(decoder.decode(next.value), /event":"BLOCK_MINTED"/);
+    await reader.cancel();
+    await apiApp.close();
+  });
+
+  it('21. Unified CLI "mood" and "attest" execute cleanly and attest to Singularity state', async () => {
     const { execFileSync } = await import('node:child_process');
     const path = await import('node:path');
     const cliPath = path.resolve(process.cwd(), 'bin/oceanicos.mjs');
