@@ -1,6 +1,13 @@
 version: '3.8'
 
+# Ω∞v Oceanicos Singularity Orchestration Matrix
+# Architecture: Core Engine (API + Web) + Local Inference (Ollama) + Vector Memory (Qdrant)
+# Hardware States:
+#   MINI_OMAGE  : Strict hardware limits to secure the base architecture memory envelope
+#   MAX_RUN_MOOD: Uncapped unified memory processing for multi-layered high-throughput flows
+
 services:
+  # ── 1. API: Core Engine, Cryptographic Ledger & Telemetry Matrix ───────────────
   api:
     build:
       context: .
@@ -9,25 +16,75 @@ services:
       - "5000:5000"
     environment:
       - NODE_ENV=production
+      - PORT=5000
+      - OLLAMA_HOST=http://ollama:11434
+      - QDRANT_URL=http://qdrant:6333
+      - OMEGA_MODE=${OMEGA_MODE:-MAX_FLUID}
+      - PIDGIN_ENGINE=${PIDGIN_ENGINE:-ON}
     volumes:
       - oceanicos-data:/app/data
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:5000/v1/block/tip"]
-      interval: 30s
+      interval: 15s
       timeout: 5s
       retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '${CPU_LIMIT:-2.0}'
+          memory: '${MEM_LIMIT:-2G}'
 
+  # ── 2. Web: UI Module & Real-Time Telemetry Dashboard ──────────────────────────
   web:
     build:
       context: .
       target: web
     ports:
       - "3000:3000"
+    environment:
+      - VITE_API_URL=http://localhost:5000
     depends_on:
       api:
         condition: service_healthy
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: '512M'
+
+  # ── 3. Qdrant: Dense Vector Memory Engine ──────────────────────────────────────
+  qdrant:
+    image: qdrant/qdrant:v1.11.0
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant-data:/qdrant/storage
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:6333/readyz"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  # ── 4. Ollama: Local Model Inference Engine (Phi-3-mini / Llama 3 8B) ──────────
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-models:/root/.ollama
+    restart: unless-stopped
+    environment:
+      - OLLAMA_KEEP_ALIVE=24h
+    deploy:
+      resources:
+        limits:
+          memory: '${OLLAMA_MEM_LIMIT:-8G}'
 
 volumes:
   oceanicos-data:
+  qdrant-data:
+  ollama-models:

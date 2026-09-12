@@ -14,6 +14,7 @@
     "@oceanicos/observer": "workspace:*",
     "@oceanicos/remember": "workspace:*",
     "@oceanicos/verification": "workspace:*",
-    "@oceanicos/mini": "workspace:*"
+    "@oceanicos/mini": "workspace:*",
+    "@oceanicos/attestation": "workspace:*"
   }
 }

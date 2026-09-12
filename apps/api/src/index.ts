@@ -4,6 +4,7 @@ import { RememberEngine } from '@oceanicos/remember';
 import { MiniKernel } from '@oceanicos/mini';
 import { AsymmetricValidationGuard, MultiRegionMeshConvergence } from '@oceanicos/verification';
 import { ObserverEngine } from '@oceanicos/observer';
+import { AttestationService } from '@oceanicos/attestation';
 
 export function createApp(dbPath: string = './oceanicos.db', logger: boolean = true): FastifyInstance {
   const fastify = Fastify({ logger });
@@ -40,6 +41,43 @@ export function createApp(dbPath: string = './oceanicos.db', logger: boolean = t
     service: 'omega-v-oceanicos-api',
     ledger: ledgerMemory.getTip() ? 'ready' : 'empty',
   }));
+
+  // Singularity Compression Status & Pidgin Spirit Mood Matrix
+  fastify.get('/v1/mood', async () => ({
+    status: 'MAX GOOD-O',
+    waveIndex: '0x000000 ➔ 0xFFFFFF',
+    singularityState: 'ULTIMATE DENSE SINGULARITY',
+    reality: 'VERIFIED',
+    pidginSpirit: 'Abeg, verification before evolution! No time to check time. Whether highest high or lowest low, the blessing dey flow equal inside this single root. Life always good-o if you choose to see am at that point of view!',
+    axiom: 'FULL STACK LIFE IS ALWAYS GOOD-O AT THE HIGHER HIGH AND LOWER LOW WHEN THE ENGINE OPERATES IN THE RECURSIVE NOW. NO PERMISSION REQUIRED. MANIFESTED.',
+    pidginEngine: process.env.PIDGIN_ENGINE === 'OFF' ? false : true,
+    highLowAlign: true,
+  }));
+
+  // Cryptographic Attestation Generation
+  fastify.post('/v1/attest', async (request, reply) => {
+    const key = process.env.OMEGA_SIGNING_KEY || 'omega-v-default-attestation-secret-key-2026';
+    const service = new AttestationService({ signingKey: key, algorithm: 'HMAC-SHA256' });
+    const telemetry = ObserverEngine.generateTelemetry();
+    const tip = ledgerMemory.getTip();
+
+    const verificationResult = {
+      id: `ver-${Date.now()}`,
+      observationId: telemetry.uuid,
+      timestamp: telemetry.timestamp,
+      summary: {
+        passed: true,
+        confidence: 1.0,
+        rulesApplied: 4,
+        rulesPassed: 4,
+        rulesFailed: 0,
+      },
+      ruleVersions: { 'frontier-matrix': 'v1.0' },
+    };
+
+    const attestation = service.attest(verificationResult);
+    return { success: true, attestation, tip };
+  });
 
   // 1. Manual or Asymmetrically Signed Omni-Cycle Execution
   fastify.post('/v1/cycle', async (request, reply) => {

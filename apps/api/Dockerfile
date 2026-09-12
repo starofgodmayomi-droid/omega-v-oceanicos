@@ -28,6 +28,7 @@ RUN pnpm --filter @oceanicos/types build \
  && pnpm --filter @oceanicos/verification build \
  && pnpm --filter @oceanicos/remember build \
  && pnpm --filter @oceanicos/mini build \
+ && pnpm --filter @oceanicos/attestation build \
  && pnpm --filter api build \
  && pnpm --filter web build
 

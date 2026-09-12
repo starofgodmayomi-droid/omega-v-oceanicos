@@ -4,9 +4,9 @@ packages:
   - 'packages/verification'
   - 'packages/remember'
   - 'packages/mini'
+  - 'packages/attestation'
   - 'apps/api'
   - 'apps/web'
 
 allowBuilds:
-  better-sqlite3: true
   esbuild: true

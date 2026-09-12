@@ -8,6 +8,7 @@ import {
 } from '../../packages/verification/dist/index.js';
 import { PluralisticHashChain, RememberEngine } from '../../packages/remember/dist/index.js';
 import { MiniKernel, executeOceanicosMaxExpansion } from '../../packages/mini/dist/index.js';
+import { AttestationService } from '../../packages/attestation/dist/index.js';
 import { createApp } from '../../apps/api/dist/index.js';
 
 describe('Ω∞v Oceanicos Max Compress Full-Stack E2E Suite', () => {
@@ -292,5 +293,80 @@ describe('Ω∞v Oceanicos Max Compress Full-Stack E2E Suite', () => {
     assert.ok(stdout.includes('node-eu-frankfurt'));
     assert.ok(stdout.includes('node-cn-shanghai'));
     assert.ok(stdout.includes('node-me-dubai'));
+  });
+
+  it('17. Cryptographic AttestationService generates and verifies unforgeable HMAC & Ed25519 signatures', async () => {
+    // 17a. HMAC-SHA256
+    const secretKey = 'test-secret-key-for-attestation-2026';
+    const hmacService = new AttestationService({ signingKey: secretKey, algorithm: 'HMAC-SHA256' });
+    const mockVerif = {
+      id: 'ver-test-1',
+      observationId: 'obs-test-1',
+      timestamp: new Date().toISOString(),
+      summary: { passed: true, confidence: 1.0, rulesApplied: 4, rulesPassed: 4, rulesFailed: 0 },
+      ruleVersions: { 'frontier-matrix': 'v1.0' },
+    };
+    const att = hmacService.attest(mockVerif);
+    assert.ok(att.id.startsWith('att-'));
+    assert.strictEqual(att.verified, true);
+    assert.strictEqual(att.signingAlgorithm, 'HMAC-SHA256');
+    assert.ok(att.signature.startsWith('0x'));
+    assert.strictEqual(hmacService.verify(att), true);
+
+    // Tampered attestation fails verification
+    const tampered = { ...att, verified: false };
+    assert.strictEqual(hmacService.verify(tampered), false);
+
+    // 17b. Ed25519 Asymmetric
+    const edKeypair = AsymmetricValidationGuard.generateKeyPair();
+    const edService = new AttestationService({
+      signingKey: edKeypair.privateKey,
+      publicKey: edKeypair.publicKey,
+      algorithm: 'Ed25519',
+    });
+    const edAtt = edService.attest(mockVerif);
+    assert.strictEqual(edAtt.signingAlgorithm, 'Ed25519');
+    assert.strictEqual(edService.verify(edAtt), true);
+  });
+
+  it('18. Fastify API GET /v1/mood returns Singularity Compression status and Pidgin Spirit Axiom', async () => {
+    const res = await apiApp.inject({ method: 'GET', url: '/v1/mood' });
+    assert.strictEqual(res.statusCode, 200);
+    const data = JSON.parse(res.body);
+    assert.strictEqual(data.status, 'MAX GOOD-O');
+    assert.strictEqual(data.singularityState, 'ULTIMATE DENSE SINGULARITY');
+    assert.strictEqual(data.reality, 'VERIFIED');
+    assert.ok(data.pidginSpirit.includes('Abeg, verification before evolution'));
+    assert.ok(data.axiom.includes('FULL STACK LIFE IS ALWAYS GOOD-O'));
+  });
+
+  it('19. Fastify API POST /v1/attest produces valid cryptographic attestation receipt', async () => {
+    const res = await apiApp.inject({ method: 'POST', url: '/v1/attest' });
+    assert.strictEqual(res.statusCode, 200);
+    const data = JSON.parse(res.body);
+    assert.strictEqual(data.success, true);
+    assert.ok(data.attestation.id.startsWith('att-'));
+    assert.strictEqual(data.attestation.verified, true);
+    assert.ok(data.attestation.signature.startsWith('0x'));
+  });
+
+  it('20. Unified CLI "mood" and "attest" execute cleanly and attest to Singularity state', async () => {
+    const { execFileSync } = await import('node:child_process');
+    const path = await import('node:path');
+    const cliPath = path.resolve(process.cwd(), 'bin/oceanicos.mjs');
+
+    // Test CLI mood
+    const moodStdout = execFileSync(process.execPath, [cliPath, 'mood'], { encoding: 'utf-8' });
+    assert.ok(moodStdout.includes('MAXIMUM COMPRESSION MATRIX & MOOD'));
+    assert.ok(moodStdout.includes('MAX GOOD-O'));
+    assert.ok(moodStdout.includes('PIDGIN SPIRIT OVERRIDE'));
+    assert.ok(moodStdout.includes('TERMINAL AXIOM'));
+
+    // Test CLI attest
+    const attestStdout = execFileSync(process.execPath, [cliPath, 'attest'], { encoding: 'utf-8' });
+    assert.ok(attestStdout.includes('CRYPTOGRAPHIC ATTESTATION SERVICE'));
+    assert.ok(attestStdout.includes('Cryptographic Attestation Generated'));
+    assert.ok(attestStdout.includes('HMAC-SHA256'));
+    assert.ok(attestStdout.includes('YES'));
   });
 });

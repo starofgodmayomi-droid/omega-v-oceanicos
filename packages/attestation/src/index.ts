@@ -6,7 +6,7 @@ import {
   sign,
   verify,
 } from 'node:crypto';
-import { Attestation, VerificationResult } from '@omega-v/types';
+import { Attestation, VerificationResult } from '@oceanicos/types';
 
 /** Environment variable read when no signing key is passed explicitly. */
 export const SIGNING_KEY_ENV = 'OMEGA_SIGNING_KEY';

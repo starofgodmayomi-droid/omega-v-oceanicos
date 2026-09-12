@@ -12,6 +12,7 @@ COPY packages/observer/package.json      packages/observer/package.json
 COPY packages/verification/package.json  packages/verification/package.json
 COPY packages/remember/package.json      packages/remember/package.json
 COPY packages/mini/package.json          packages/mini/package.json
+COPY packages/attestation/package.json   packages/attestation/package.json
 COPY apps/api/package.json               apps/api/package.json
 COPY apps/web/package.json               apps/web/package.json
 

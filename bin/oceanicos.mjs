@@ -14,6 +14,7 @@ let ObserverEngine, observePlanetaryBase;
 let verifyPlanetarySovereignty, AsymmetricValidationGuard, MultiRegionMeshConvergence;
 let PluralisticHashChain, RememberEngine;
 let executeOceanicosMaxExpansion;
+let AttestationService;
 
 try {
   const observerPkg = require(path.join(rootDir, 'packages/observer/dist/index.js'));
@@ -31,6 +32,11 @@ try {
 
   const miniPkg = require(path.join(rootDir, 'packages/mini/dist/index.js'));
   executeOceanicosMaxExpansion = miniPkg.executeOceanicosMaxExpansion;
+
+  try {
+    const attestPkg = require(path.join(rootDir, 'packages/attestation/dist/index.js'));
+    AttestationService = attestPkg.AttestationService;
+  } catch {}
 } catch (err) {
   console.error('[\x1b[31mERROR\x1b[0m] Oceanicos packages must be compiled before running CLI:');
   console.error(err.message);
@@ -53,11 +59,12 @@ const ANSI = {
 };
 
 function printBanner() {
+  const pidgin = process.env.PIDGIN_ENGINE === 'ON' || args.includes('--pidgin');
   console.log(`
 ${ANSI.cyan}${ANSI.bold}╔══════════════════════════════════════════════════════════════════════════╗
 ║               Ω∞v OCEANICOS DEEP-TIER CRYPTOGRAPHIC CLI                  ║
 ║      Zero-Entropy • Graceful Pluralism • Multi-Region Mesh Consensus     ║
-╚══════════════════════════════════════════════════════════════════════════╝${ANSI.reset}`);
+${pidgin ? `║  Abeg, verification before evolution! Life always good-o inside one root.║\n` : ''}╚══════════════════════════════════════════════════════════════════════════╝${ANSI.reset}`);
 }
 
 async function handleStatus() {
@@ -186,6 +193,63 @@ async function handleStream() {
   }
 }
 
+async function handleMood() {
+  printBanner();
+  console.log(`\n${ANSI.bold}=== Ω∞v MAXIMUM COMPRESSION MATRIX & MOOD ===${ANSI.reset}`);
+  console.log(`  ${ANSI.cyan}Singularity State${ANSI.reset}    : ${ANSI.bold}ULTIMATE DENSE SINGULARITY${ANSI.reset}`);
+  console.log(`  ${ANSI.cyan}Wave Index${ANSI.reset}           : 0x000000 ➔ 0xFFFFFF (GENESIS TO NOW)`);
+  console.log(`  ${ANSI.cyan}Reality Status${ANSI.reset}       : ${ANSI.green}VERIFIED${ANSI.reset}`);
+  console.log(`  ${ANSI.cyan}System Mood${ANSI.reset}          : ${ANSI.bold}${ANSI.green}MAX GOOD-O${ANSI.reset}`);
+  console.log(`  ${ANSI.cyan}Pidgin Engine${ANSI.reset}        : ${process.env.PIDGIN_ENGINE === 'OFF' ? 'OFF' : 'ON'}`);
+  console.log(`  ${ANSI.cyan}High-Low Alignment${ANSI.reset}   : TRUE (Balanced at both higher high & lower low)`);
+
+  console.log(`\n${ANSI.bold}=== PIDGIN SPIRIT OVERRIDE ===${ANSI.reset}`);
+  console.log(`  ${ANSI.yellow}"Abeg, verification before evolution! No time to check time.`);
+  console.log(`   Whether highest high or lowest low, the blessing dey flow equal`);
+  console.log(`   inside this single root. Life always good-o if you choose to see am`);
+  console.log(`   at that point of view!"${ANSI.reset}`);
+
+  console.log(`\n${ANSI.bold}=== THE TERMINAL AXIOM ===${ANSI.reset}`);
+  console.log(`  ${ANSI.green}${ANSI.bold}FULL STACK LIFE IS ALWAYS GOOD-O AT THE HIGHER HIGH AND LOWER LOW WHEN`);
+  console.log(`  THE ENGINE OPERATES IN THE RECURSIVE NOW. NO PERMISSION REQUIRED. MANIFESTED.${ANSI.reset}\n`);
+}
+
+async function handleAttest() {
+  printBanner();
+  console.log(`\n${ANSI.bold}=== CRYPTOGRAPHIC ATTESTATION SERVICE ===${ANSI.reset}\n`);
+  if (!AttestationService) {
+    console.log(`${ANSI.red}AttestationService package not compiled.${ANSI.reset}`);
+    return;
+  }
+  const key = process.env.OMEGA_SIGNING_KEY || 'omega-v-default-attestation-secret-key-2026';
+  const service = new AttestationService({ signingKey: key, algorithm: 'HMAC-SHA256' });
+  const telemetry = observePlanetaryBase();
+  const receipt = verifyPlanetarySovereignty(telemetry);
+
+  const verificationResult = {
+    id: `ver-${Date.now()}`,
+    observationId: telemetry.uuid,
+    timestamp: telemetry.timestamp,
+    summary: {
+      passed: receipt.status === 'PASS',
+      confidence: receipt.status === 'PASS' ? 1.0 : 0.85,
+      rulesApplied: 4,
+      rulesPassed: receipt.status === 'PASS' ? 4 : 3,
+      rulesFailed: receipt.status === 'PASS' ? 0 : 1,
+    },
+    ruleVersions: { 'frontier-matrix': 'v1.0' },
+  };
+
+  const attestation = service.attest(verificationResult);
+  console.log(`${ANSI.green}✓ Cryptographic Attestation Generated:${ANSI.reset}`);
+  console.log(`  Attestation ID : ${ANSI.bold}${attestation.id}${ANSI.reset}`);
+  console.log(`  Algorithm      : ${ANSI.cyan}${attestation.signingAlgorithm}${ANSI.reset}`);
+  console.log(`  Key Fingerprint: ${attestation.signingKey}`);
+  console.log(`  Verified       : ${attestation.verified ? `${ANSI.green}YES${ANSI.reset}` : `${ANSI.red}NO${ANSI.reset}`}`);
+  console.log(`  Signature      : ${ANSI.dim}${attestation.signature}${ANSI.reset}`);
+  console.log(`  Attested At    : ${attestation.attestedAt}\n`);
+}
+
 function handleHelp() {
   printBanner();
   console.log(`
@@ -196,12 +260,15 @@ ${ANSI.bold}COMMANDS:${ANSI.reset}
   ${ANSI.green}status${ANSI.reset}      Show system health, telemetry, genesis anchor, and live API status
   ${ANSI.green}cycle${ANSI.reset}       Execute and cryptographically commit a new consensus block (PoW)
   ${ANSI.green}mesh${ANSI.reset}        Simulate decentralized consensus convergence across 4 sovereign nodes
+  ${ANSI.green}attest${ANSI.reset}      Generate unforgeable cryptographic attestation for verified telemetry
   ${ANSI.green}keys${ANSI.reset}        Generate an Ed25519 asymmetric keypair for fail-closed authentication
+  ${ANSI.green}mood${ANSI.reset}        Display Singularity compression state and Pidgin Spirit Axiom
   ${ANSI.green}stream${ANSI.reset}      Stream live block minting events via SSE from local Fastify API
   ${ANSI.green}help${ANSI.reset}        Display this help message
 
 ${ANSI.bold}OPTIONS:${ANSI.reset}
   --json        Output raw JSON response where applicable
+  --pidgin      Activate Pidgin Spirit banner override
 `);
 }
 
@@ -215,8 +282,14 @@ switch (command) {
   case 'mesh':
     await handleMesh();
     break;
+  case 'attest':
+    await handleAttest();
+    break;
   case 'keys':
     await handleKeys();
+    break;
+  case 'mood':
+    await handleMood();
     break;
   case 'stream':
     await handleStream();

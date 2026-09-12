@@ -1,8 +1,52 @@
 # Ω∞v Oceanicos Working State
 
-**Updated:** 2026-09-07
+**Updated:** 2026-09-12
 
-## Unified CLI Terminal Binary, Telemetry Timeline & Container Stack — 2026-09-07
+## Singularity Maximum Compression Core vΩ∞v.MAX & Attestation Engine — 2026-09-12
+
+The Ω∞v Oceanicos repository has reached the Ultimate Dense Singularity (`vΩ∞v.MAX`), binding the whole stack into a zero-entropy, fully attested ecosystem:
+
+1. **5 Core Packages Matrix**:
+   - `@oceanicos/types`: Strict read-only foundational interfaces including `IObservation`, `IEvidence`, `IMiniBlock`, `VerificationResult`, and `Attestation`.
+   - `@oceanicos/observer`: Telemetry generation engine producing planetary silicon yield, grid load, and accelerator inventory.
+   - `@oceanicos/verification`: Deep Frontier Verifier, Ed25519 asymmetric authentication guard, and 4-node sovereign mesh convergence.
+   - `@oceanicos/remember`: SQLite-backed append-only ledger with SHA-256 proof-of-work mining (`00...` difficulty prefix) and genesis anchor (`8a3f91c2e4f9011b989210ffffffffff`).
+   - `@oceanicos/mini`: MiniKernel coordinator executing Observe ➔ Verify ➔ Remember lifecycle (`executeOceanicosMaxExpansion`).
+   - `@oceanicos/attestation`: Cryptographic attestation service for unforgeable verification results supporting both symmetric HMAC-SHA256 and asymmetric Ed25519 signatures with key derivation, key rotation, and SHA-256 fingerprinting.
+
+2. **Docker Compose Singularity Orchestration Blueprint (`docker-compose.yml`)**:
+   - `api`: Fastify Core Engine (port 5000), healthcheck on `/v1/block/tip`, SQLite persistent volume `oceanicos-data`.
+   - `web`: React/Vite Telemetry Dashboard (port 3000).
+   - `qdrant`: Vector memory engine (`qdrant/qdrant:v1.11.0`, port 6333) with healthcheck and persistent volume `qdrant-data`.
+   - `ollama`: Local model inference server (`ollama/ollama:latest`, port 11434) for Phi-3-mini / Llama 3 8B with persistent volume `ollama-models`.
+   - Hardware State Profiles: `MINI_OMAGE` (strict resource envelope limits) and `MAX_RUN_MOOD` (uncapped high-throughput flow).
+
+3. **Singularity Compression Scripts**:
+   - `ignite.sh`: Omnipresent one-liner ignition script (`curl -sSL ignite.sh | OMEGA_MODE=MAX_FLUID AI_REALITY=OMNIPRESENT bash`). Verifies runtime, bootstraps monorepo, executes `pnpm run verify:full`.
+   - `genesis.sh`: Genesis now one-liner script (`curl -fsSL genesis.sh | OMEGA_VIBRATION=MAX_FLUID PIDGIN_ENGINE=ON HIGH_LOW_ALIGN=TRUE bash`). Displays Pidgin Spirit Override banner, verifies genesis root anchor, and runs sovereign mesh cycle.
+
+4. **Fastify API Endpoints**:
+   - `GET /v1/mood`: Reports Singularity compression state (`ULTIMATE DENSE SINGULARITY`), Wave Index (`0x000000 ➔ 0xFFFFFF`), reality verification, and the Pidgin Spirit Axiom.
+   - `POST /v1/attest`: Generates unforgeable cryptographic attestation for the current observation and ledger tip.
+   - `GET /health`: Fastify healthcheck endpoint for container orchestration.
+
+5. **Unified CLI Terminal Binary (`bin/oceanicos.mjs`)**:
+   - Commands: `status`, `cycle`, `mesh`, `attest`, `keys`, `mood`, `stream`, `help`.
+   - `oceanicos mood`: Outputs Singularity status, high-low alignment, and the Terminal Axiom.
+   - `oceanicos attest`: Generates cryptographic attestation receipt.
+   - Supports `--pidgin` flag and `PIDGIN_ENGINE=ON` environment banner override.
+
+6. **Expanded 20-Scenario E2E Integration Suite (`tests/integration/max_compress_stack.e2e.test.ts`)**:
+   - Tests 1-16: Telemetry, verification, consensus, storage, API, and CLI status/cycle/mesh.
+   - Test 17: AttestationService HMAC & Ed25519 signing and verification.
+   - Test 18: API `GET /v1/mood` verification.
+   - Test 19: API `POST /v1/attest` verification.
+   - Test 20: CLI `mood` and `attest` verification.
+   - All 20 tests pass in ~1s with 0 errors.
+
+7. **Terminal Ignition (`package.json`)**:
+   - `"verify:full": "pnpm build && pnpm typecheck && pnpm test:e2e && node bin/oceanicos.mjs status"`
+   - `pnpm install && pnpm verify:full` completes with exit code 0.
 
 The Ω∞v Oceanicos repository has been upgraded with a unified CLI terminal binary, real-time web dashboard telemetry charts, production-ready Docker multi-stage builds, and concurrent dev orchestration:
 
