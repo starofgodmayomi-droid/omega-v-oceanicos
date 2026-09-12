@@ -6,19 +6,23 @@ import { AsymmetricValidationGuard, MultiRegionMeshConvergence } from '@oceanico
 import { ObserverEngine } from '@oceanicos/observer';
 import { AttestationService } from '@oceanicos/attestation';
 
+const MAX_STREAM_CLIENTS = 256;
+
 export function createApp(dbPath: string = './oceanicos.db', logger: boolean = true): FastifyInstance {
   const fastify = Fastify({ logger });
   const ledgerMemory = new RememberEngine(dbPath);
   const kernel = new MiniKernel(ledgerMemory);
 
   // Active SSE client subscriptions for real-time block streaming
-  const streamClients = new Set<(block: any) => void>();
+  const streamClients = new Set<(block: any) => boolean>();
 
   // Helper to broadcast minted blocks
   function broadcastMintedBlock(block: any) {
     for (const send of streamClients) {
       try {
-        send(block);
+        if (!send(block)) {
+          streamClients.delete(send);
+        }
       } catch {
         streamClients.delete(send);
       }
@@ -107,27 +111,55 @@ export function createApp(dbPath: string = './oceanicos.db', logger: boolean = t
 
   // 3. Real-time Event Stream (SSE) for Block Telemetry
   fastify.get('/v1/stream', (request, reply) => {
+    if (streamClients.size >= MAX_STREAM_CLIENTS) {
+      return reply.status(503).send({
+        success: false,
+        error: 'STREAM_CAPACITY_REACHED',
+        limit: MAX_STREAM_CLIENTS,
+      });
+    }
+
     reply.raw.setHeader('Content-Type', 'text/event-stream');
     reply.raw.setHeader('Cache-Control', 'no-cache');
     reply.raw.setHeader('Connection', 'keep-alive');
     reply.raw.setHeader('Access-Control-Allow-Origin', '*');
     reply.raw.flushHeaders();
 
-    // Send current tip immediately upon connection
+    let listener: (block: any) => boolean;
+    const close = () => {
+      streamClients.delete(listener);
+    };
+
+    // A slow or disconnected client must not retain an unbounded response buffer.
+    listener = (newBlock: any): boolean => {
+      if (reply.raw.destroyed || reply.raw.writableEnded) {
+        close();
+        return false;
+      }
+      const writable = reply.raw.write(
+        `data: ${JSON.stringify({ event: 'BLOCK_MINTED', block: newBlock })}\n\n`
+      );
+      if (!writable) {
+        close();
+        reply.raw.end();
+      }
+      return writable;
+    };
+
+    // Send current tip immediately upon connection.
     const tip = ledgerMemory.getTip();
     if (tip) {
-      reply.raw.write(`data: ${JSON.stringify({ event: 'TIP', block: tip })}\n\n`);
+      const writable = reply.raw.write(`data: ${JSON.stringify({ event: 'TIP', block: tip })}\n\n`);
+      if (!writable) {
+        return reply.raw.end();
+      }
     }
-
-    const listener = (newBlock: any) => {
-      reply.raw.write(`data: ${JSON.stringify({ event: 'BLOCK_MINTED', block: newBlock })}\n\n`);
-    };
 
     streamClients.add(listener);
 
-    request.raw.on('close', () => {
-      streamClients.delete(listener);
-    });
+    request.raw.once('close', close);
+    request.raw.once('aborted', close);
+    reply.raw.once('error', close);
   });
 
   // 4. Automated Autonomous Background Miner Endpoints
