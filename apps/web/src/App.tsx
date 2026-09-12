@@ -2,6 +2,25 @@ import React, { useState, useEffect, useRef } from 'react';
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
 
+function apiUrl(path: string): string {
+  return `${API_BASE_URL}${path}`;
+}
+
+async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(apiUrl(path), init);
+  const text = await response.text();
+  let payload: any = null;
+  try {
+    payload = text ? JSON.parse(text) : null;
+  } catch {
+    throw new Error(`API returned invalid JSON (${response.status})`);
+  }
+  if (!response.ok) {
+    throw new Error(payload?.error || payload?.message || `API request failed (${response.status})`);
+  }
+  return payload as T;
+}
+
 interface KeyPair {
   publicKey: string;
   privateKey: string;
@@ -38,6 +57,7 @@ export default function App() {
   const [keyPair, setKeyPair] = useState<KeyPair | null>(null);
   const [signRequests, setSignRequests] = useState(false);
   const [lastError, setLastError] = useState<string | null>(null);
+  const [reconnectAttempt, setReconnectAttempt] = useState(0);
 
   // Background Autonomous Miner state
   const [minerActive, setMinerActive] = useState(false);
@@ -61,8 +81,7 @@ export default function App() {
   // Poll miner status initially
   const fetchMinerStatus = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/v1/miner/status`);
-      const data = await res.json();
+      const data = await apiRequest<any>('/v1/miner/status');
       if (data.success && data.miner) {
         setMinerActive(data.miner.active);
         setMinerInterval(data.miner.intervalMs);
@@ -71,7 +90,9 @@ export default function App() {
           lastBlockTime: data.miner.lastBlockTime,
         });
       }
-    } catch {}
+    } catch (err: any) {
+      setLastError(`Miner status unavailable: ${err.message}`);
+    }
   };
 
   // Connect to the real-time event stream
@@ -79,61 +100,85 @@ export default function App() {
     fetchMinerStatus();
 
     let es: EventSource | null = null;
-    try {
-      es = new EventSource(`${API_BASE_URL}/v1/stream`);
-      eventSourceRef.current = es;
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+    let disposed = false;
+    let attempt = 0;
 
-      es.onopen = () => {
-        setStreamConnected(true);
-        setLastError(null);
-      };
+    const connect = () => {
+      if (disposed) return;
+      es?.close();
+      try {
+        es = new EventSource(apiUrl('/v1/stream'));
+        eventSourceRef.current = es;
 
-      es.onmessage = (event) => {
-        try {
-          const payload = JSON.parse(event.data);
-          if (payload.block) {
-            setTip(payload.block);
-            setHistory((prev) => {
-              const exists = prev.some((b) => b.hash === payload.block.hash);
-              if (exists) return prev;
-              return [payload.block, ...prev.slice(0, 14)];
-            });
-            setMinerStats((prev) => ({
-              totalMined: prev.totalMined + 1,
-              lastBlockTime: payload.block.timestamp,
-            }));
+        es.onopen = () => {
+          attempt = 0;
+          setReconnectAttempt(0);
+          setStreamConnected(true);
+          setLastError(null);
+        };
+
+        es.onmessage = (event) => {
+          try {
+            const payload = JSON.parse(event.data);
+            if (payload.block) {
+              setTip(payload.block);
+              setHistory((prev) => {
+                const exists = prev.some((b) => b.hash === payload.block.hash);
+                if (exists) return prev;
+                return [payload.block, ...prev.slice(0, 14)];
+              });
+              setMinerStats((prev) => ({
+                totalMined: prev.totalMined + 1,
+                lastBlockTime: payload.block.timestamp,
+              }));
+            }
+          } catch {
+            setLastError('Received an invalid event from the API stream');
           }
-        } catch {}
-      };
+        };
 
-      es.onerror = () => {
+        es.onerror = () => {
+          es?.close();
+          setStreamConnected(false);
+          attempt += 1;
+          setReconnectAttempt(attempt);
+          setLastError(`API stream disconnected; retrying (attempt ${attempt})`);
+          void fetchTipFallback();
+          const delay = Math.min(30_000, 1_000 * 2 ** Math.min(attempt - 1, 4));
+          reconnectTimer = setTimeout(connect, delay);
+        };
+      } catch (err: any) {
         setStreamConnected(false);
-      };
-    } catch {
-      setStreamConnected(false);
-    }
+        setLastError(`API stream unavailable: ${err.message}`);
+      }
+    };
+
+    connect();
 
     return () => {
-      if (es) es.close();
+      disposed = true;
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      es?.close();
     };
   }, []);
 
   const fetchTipFallback = async () => {
     try {
-      const r = await fetch(`${API_BASE_URL}/v1/block/tip`);
-      const d = await r.json();
+      const d = await apiRequest<any>('/v1/block/tip');
       if (d.tip) {
         setTip(d.tip);
         setHistory((prev) => (prev.length === 0 ? [d.tip] : prev));
       }
-    } catch {}
+    } catch (err: any) {
+      setLastError(`Tip sync unavailable: ${err.message}`);
+    }
   };
 
   // 1. Generate Native Ed25519 Server Keypair
   const generateServerKeys = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/v1/auth/keypair`, { method: 'POST' });
-      const data = await res.json();
+      const data = await apiRequest<any>('/v1/auth/keypair', { method: 'POST' });
       if (data.success) {
         setKeyPair({
           publicKey: data.publicKey,
@@ -184,16 +229,14 @@ export default function App() {
   const toggleMiner = async () => {
     try {
       if (minerActive) {
-          const res = await fetch(`${API_BASE_URL}/v1/miner/stop`, { method: 'POST' });
-        const data = await res.json();
+          const data = await apiRequest<any>('/v1/miner/stop', { method: 'POST' });
         if (data.success) setMinerActive(false);
       } else {
-        const res = await fetch(`${API_BASE_URL}/v1/miner/start`, {
+        const data = await apiRequest<any>('/v1/miner/start', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ intervalMs: minerInterval }),
         });
-        const data = await res.json();
         if (data.success) setMinerActive(true);
       }
     } catch (err: any) {
@@ -206,8 +249,7 @@ export default function App() {
     setMeshLoading(true);
     setLastError(null);
     try {
-      const res = await fetch(`${API_BASE_URL}/v1/mesh/simulate`);
-      const data = await res.json();
+      const data = await apiRequest<any>('/v1/mesh/simulate');
       if (data.success && data.convergence) {
         setMeshSimulation(data.convergence);
       }
@@ -221,8 +263,7 @@ export default function App() {
   // 4b. Fetch Singularity Mood Status
   const fetchMood = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/v1/mood`);
-      const data = await res.json();
+      const data = await apiRequest<any>('/v1/mood');
       setMoodData(data);
     } catch (err: any) {
       setLastError('Mood fetch error: ' + err.message);
@@ -234,8 +275,7 @@ export default function App() {
     setAttestLoading(true);
     setLastError(null);
     try {
-      const res = await fetch(`${API_BASE_URL}/v1/attest`, { method: 'POST' });
-      const data = await res.json();
+      const data = await apiRequest<any>('/v1/attest', { method: 'POST' });
       if (data.success && data.attestation) {
         setAttestationData(data.attestation);
       }
@@ -255,12 +295,11 @@ export default function App() {
 
       if (signRequests && keyPair) {
         if (keyPair.type === 'ED25519_SERVER') {
-          const signRes = await fetch(`${API_BASE_URL}/v1/block/sign`, {
+          const signData = await apiRequest<any>('/v1/block/sign', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ data: 'EXECUTE_OMNI_CYCLE', privateKey: keyPair.privateKey }),
           });
-          const signData = await signRes.json();
           if (signData.signature) {
             headers['x-omega-signature'] = signData.signature;
             headers['x-omega-public-key'] = keyPair.publicKey;
@@ -268,14 +307,13 @@ export default function App() {
         }
       }
 
-      const res = await fetch(`${API_BASE_URL}/v1/cycle`, {
+      const data = await apiRequest<any>('/v1/cycle', {
         method: 'POST',
         headers,
         body: JSON.stringify({}),
       });
 
-      const data = await res.json();
-      if (!res.ok || !data.success) {
+      if (!data.success) {
         setLastError(data.error || 'Cycle execution rejected');
       } else if (data.block) {
         setTip(data.block);
@@ -348,7 +386,11 @@ export default function App() {
                 boxShadow: streamConnected ? '0 0 8px #00ff66' : 'none',
               }}
             />
-            {streamConnected ? 'SSE STREAM: LIVE' : 'SSE STREAM: OFFLINE'}
+            {streamConnected
+              ? 'SSE STREAM: LIVE'
+              : reconnectAttempt > 0
+                ? `SSE RETRYING: ${reconnectAttempt}`
+                : 'SSE STREAM: OFFLINE'}
           </span>
         </div>
       </div>
