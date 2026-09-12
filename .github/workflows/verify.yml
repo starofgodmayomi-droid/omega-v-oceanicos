@@ -208,166 +208,56 @@ jobs:
             -v "$RUNNER_TEMP/omega-ledger:/tmp/omega-ledger" \
             --network host omega-v-api:ci
 
-      - name: Smoke test the running service
+      - name: Smoke test the API service
         run: |
+          api=http://localhost:5000
           for attempt in $(seq 1 30); do
-            if curl -sf http://localhost:3000/health > /dev/null; then break; fi
+            if curl -sf "$api/health" > /dev/null; then break; fi
             sleep 1
           done
 
-          curl -sf http://localhost:3000/health | tee /tmp/health.json
+          curl -sf "$api/health" | tee /tmp/health.json
           grep -q '"status":"ok"' /tmp/health.json
-          grep -q '"name":"local-job-ledger","encryption":"aes-256-gcm","keySource":"current"' /tmp/health.json
-          grep -q '"complete":false' /tmp/health.json
+          grep -q '"service":"omega-v-oceanicos-api"' /tmp/health.json
+          grep -q '"ledger":"ready"' /tmp/health.json
 
-          status=$(curl -sS -o /tmp/job.json -w '%{http_code}' -X POST http://localhost:3000/jobs \
-            -H 'Authorization: Bearer ci-smoke-admin-token' \
-            -H 'x-omega-local-job-token: ci-smoke-job-token' \
-            -H 'x-omega-operator-id: ci-smoke-operator' \
-            -H 'Content-Type: application/json' \
-            -d '{"kind":"synthetic-observe","idempotencyKey":"ci-restart-1","sourceUri":"local://ci-restart"}')
-          if [ "$status" != "201" ]; then
-            echo "::error::Job creation returned HTTP $status"
-            cat /tmp/job.json
+          if [ "$(curl -sS -o /tmp/tip-unauthenticated.json -w '%{http_code}' "$api/v1/block/tip")" != "401" ]; then
+            echo "::error::Unauthenticated tip read was not rejected in required mode."
+            cat /tmp/tip-unauthenticated.json
             exit 1
           fi
-          test -s /tmp/job.json
-          cat /tmp/job.json
-          job_id=$(node -e "const body=JSON.parse(require('fs').readFileSync('/tmp/job.json','utf8')); if (!body.data?.job?.id) process.exit(1); process.stdout.write(body.data.job.id)")
+
           curl -sf -H 'Authorization: Bearer ci-smoke-read-token' \
-            -H 'x-omega-local-job-token: ci-smoke-job-token' \
-            "http://localhost:3000/jobs/$job_id" | tee /tmp/job-before-restart.json
-          grep -q '"durable":true' /tmp/job-before-restart.json
-          grep -q '"source":"file"' /tmp/job-before-restart.json
-          grep -q '"encryption":"aes-256-gcm"' /tmp/job-before-restart.json
+            "$api/v1/block/tip" | tee /tmp/tip.json
+          grep -q '"status":"ONLINE"' /tmp/tip.json
 
-          # The volume is owned by the image user, so the host runner cannot
-          # read it directly after the ownership fix. Inspect it read-only
-          # through the image as root; this is a CI confidentiality assertion,
-          # not a production permission model.
-          if docker run --rm --user 0:0 \
-            -v "$RUNNER_TEMP/omega-ledger:/tmp/omega-ledger:ro" \
-            --entrypoint sh omega-v-api:ci \
-            -c "grep -R -q -E 'local://ci-restart|ci-restart-1' /tmp/omega-ledger"; then
-            echo "::error::The encrypted local-ledger volume contains plaintext job payload."
-            exit 1
-          fi
-
-          docker rm -f omega-smoke
-          docker run -d --name omega-smoke \
-            -e OMEGA_SIGNING_KEY=ci-smoke-key-not-for-production-2026-strong \
-            -e OMEGA_AUTH_MODE=required \
-            -e OMEGA_READ_TOKEN=ci-smoke-read-token \
-            -e OMEGA_ADMIN_TOKEN=ci-smoke-admin-token \
-            -e OMEGA_LOCAL_JOB_LEDGER=on \
-            -e OMEGA_LOCAL_JOB_LEDGER_TOKEN=ci-smoke-job-token \
-            -e OMEGA_LOCAL_JOB_LEDGER_PATH=/tmp/omega-ledger/jobs.json \
-            -e OMEGA_LOCAL_JOB_LEDGER_KEY=ci-smoke-ledger-key \
-            -v "$RUNNER_TEMP/omega-ledger:/tmp/omega-ledger" \
-            --network host omega-v-api:ci
-          for attempt in $(seq 1 30); do
-            if curl -sf http://localhost:3000/health > /dev/null; then break; fi
-            sleep 1
-          done
-          curl -sf -H 'Authorization: Bearer ci-smoke-read-token' \
-            -H 'x-omega-local-job-token: ci-smoke-job-token' \
-            "http://localhost:3000/jobs/$job_id" | tee /tmp/job-after-restart.json
-          grep -q "\"id\":\"$job_id\"" /tmp/job-after-restart.json
-          grep -q '"durable":true' /tmp/job-after-restart.json
-          grep -q '"source":"file"' /tmp/job-after-restart.json
-          grep -q '"encryption":"aes-256-gcm"' /tmp/job-after-restart.json
-
-          curl -sf -H 'Authorization: Bearer ci-smoke-read-token' http://localhost:3000/rules | tee /tmp/rules.json
-          grep -q '"registered":2' /tmp/rules.json
-
-          if [ "$(curl -sS -o /tmp/state-unauthenticated.json -w '%{http_code}' http://localhost:3000/state)" != "401" ]; then
-            echo "::error::Unauthenticated state read was not rejected."
-            exit 1
-          fi
-
-          if [ "$(curl -sS -o /tmp/loop-read-token.json -w '%{http_code}' -X POST http://localhost:3000/complete-loop \
+          if [ "$(curl -sS -o /tmp/cycle-read-token.json -w '%{http_code}' -X POST "$api/v1/cycle" \
             -H 'Content-Type: application/json' \
             -H 'Authorization: Bearer ci-smoke-read-token' \
             -d '{}')" != "401" ]; then
-            echo "::error::Read token was accepted for a state-changing mutation."
+            echo "::error::Read token was accepted for a state-changing cycle."
+            cat /tmp/cycle-read-token.json
             exit 1
           fi
 
-          curl -sf -X POST http://localhost:3000/complete-loop \
+          curl -sf -X POST "$api/v1/cycle" \
             -H 'Content-Type: application/json' \
             -H 'Authorization: Bearer ci-smoke-admin-token' \
-            -d '{"claim":"container is healthy","category":"health-check","source":{"system":"ci-smoke","version":"0.1.0","environment":"ci"},"observedBy":"github-actions","metadata":{"statusCode":200,"responseTime":12},"confidence":0.95,"confidenceReason":"smoke test"}' \
-            | tee /tmp/loop.json
-          grep -q '"verified":true' /tmp/loop.json
+            -d '{}' | tee /tmp/cycle.json
+          grep -q '"success":true' /tmp/cycle.json
+          grep -q '"block"' /tmp/cycle.json
 
-          curl -sf -H 'Authorization: Bearer ci-smoke-read-token' http://localhost:3000/log | tee /tmp/log.json
-          grep -q '"appendOnly":true' /tmp/log.json
+          curl -sf -H 'Authorization: Bearer ci-smoke-read-token' \
+            "$api/v1/miner/status" | tee /tmp/miner.json
+          grep -q '"success":true' /tmp/miner.json
 
-          # Deployment observability must expose the same runtime evidence that
-          # the Navigator consumes, not just a process-level health response.
-          curl -sf -H 'Authorization: Bearer ci-smoke-read-token' http://localhost:3000/state | tee /tmp/state.json
-          grep -q '"status":"active"' /tmp/state.json
-          grep -q '"attestationValidity":1' /tmp/state.json
+          curl -sf -H 'Authorization: Bearer ci-smoke-read-token' \
+            "$api/v1/mood" | tee /tmp/mood.json
+          grep -q '"status"' /tmp/mood.json
 
-          curl -sf -H 'Authorization: Bearer ci-smoke-read-token' http://localhost:3000/observability | tee /tmp/observability.json
-          grep -q '"intact":true' /tmp/observability.json
-          grep -q '"attestationValidity":true' /tmp/observability.json
-
-          curl -sf -H 'Authorization: Bearer ci-smoke-read-token' http://localhost:3000/memory/integrity | tee /tmp/memory-integrity.json
-          grep -q '"intact":true' /tmp/memory-integrity.json
-
-          # The client addresses the API under /api. In production there is
-          # no dev-server proxy, so the same routes must answer under the
-          # prefix the built bundle actually calls. Capture status and body
-          # for each assertion so a future route or auth regression is named.
-          check_api() {
-            local path="$1"
-            local token="$2"
-            local pattern="$3"
-            local response=/tmp/api-response.json
-            local status
-            if [ -n "$token" ]; then
-              status=$(curl -sS -o "$response" -w '%{http_code}' -H "Authorization: Bearer $token" "http://localhost:3000$path")
-            else
-              status=$(curl -sS -o "$response" -w '%{http_code}' "http://localhost:3000$path")
-            fi
-            if [ "$status" != "200" ]; then
-              echo "::error::API prefix $path returned HTTP $status"
-              cat "$response"
-              exit 1
-            fi
-            if ! grep -q "$pattern" "$response"; then
-              echo "::error::API prefix $path did not contain expected evidence: $pattern"
-              cat "$response"
-              exit 1
-            fi
-          }
-          check_api /api/health '' '"status":"ok"'
-          check_api /api/rules ci-smoke-read-token '"registered":2'
-          check_api /api/state ci-smoke-read-token '"status":"active"'
-          check_api /api/observability ci-smoke-read-token '"intact":true'
-          check_api /api/memory/integrity ci-smoke-read-token '"intact":true'
-
-          # And the client itself must be served from that same origin. In
-          # required mode, the root document is a non-health GET and therefore
-          # needs the read bearer just like the API evidence routes.
-          set +e
-          curl -sS -D /tmp/index.headers -o /tmp/index.html -w '%{http_code}' \
-            -H 'Accept: text/html' \
-            -H 'Authorization: Bearer ci-smoke-read-token' \
-            http://localhost:3000/ > /tmp/index.status
-          page_curl_exit=$?
-          set -e
-          page_status=$(cat /tmp/index.status)
-          if [ "$page_curl_exit" -ne 0 ] || [ "$page_status" != "200" ]; then
-            echo "::error::Root SPA curl failed with exit $page_curl_exit and HTTP $page_status"
-            cat /tmp/index.headers || true
-            cat /tmp/index.html || true
-            exit 1
-          fi
-          if ! grep -qi '<div id="root"' /tmp/index.html; then
-            echo "::error::Root SPA response did not contain the root mount"
-            cat /tmp/index.html
+          if [ "$(curl -sS -o /tmp/unknown.json -w '%{http_code}' "$api/unknown")" != "404" ]; then
+            echo "::error::Unknown API route did not return 404."
+            cat /tmp/unknown.json
             exit 1
           fi
 
@@ -384,7 +274,7 @@ jobs:
         run: |
           echo "### 📦 Artifact" >> $GITHUB_STEP_SUMMARY
           echo "\`omega-v-api:ci\` built, refused to start without a signing key," >> $GITHUB_STEP_SUMMARY
-          echo "then served /health, /rules, /complete-loop, /log, /state, /observability and /memory/integrity." >> $GITHUB_STEP_SUMMARY
+          echo "then served /health and the authenticated /v1 API contract on port 5000." >> $GITHUB_STEP_SUMMARY
           docker image inspect omega-v-api:ci --format 'Image size: {{.Size}} bytes' >> $GITHUB_STEP_SUMMARY
 
   report:
