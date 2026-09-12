@@ -140,10 +140,21 @@ export class OceanicosGatewayEngine {
         clientId,
         type: 'UNKNOWN_CLIENT',
         severity: 'MEDIUM',
-        description: `Unknown client '${clientId}' attempted access. Auto-registering as FREE tier.`,
+        description: `Unknown client '${clientId}' attempted access. Request denied until registered.`,
         detectedAt: timestamp,
       });
-      this.registerClient(clientId, 'FREE');
+      this.blockedRequests++;
+      const decision: GatewayDecision = {
+        allowed: false,
+        clientId,
+        tier: 'FREE',
+        remainingRequests: 0,
+        retryAfterMs: null,
+        reason: 'Unknown client — explicit registration required',
+        timestamp,
+      };
+      this.decisions.push(decision);
+      return decision;
     }
 
     const state = this.clientStates.get(clientId)!;

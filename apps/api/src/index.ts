@@ -13,6 +13,26 @@ export type CreateAppOptions = {
   attestationSigningKey?: string;
 };
 
+type AuthMode = 'local' | 'required';
+
+function parseAuthMode(value: string | undefined): AuthMode {
+  if (!value || value === 'local') return 'local';
+  if (value === 'required') return 'required';
+  throw new Error(`OMEGA_AUTH_MODE must be either 'local' or 'required', received '${value}'`);
+}
+
+function configuredBearerTokens(mode: AuthMode): { readToken: string; adminToken: string } {
+  const readToken = process.env.OMEGA_READ_TOKEN?.trim() ?? '';
+  const adminToken = process.env.OMEGA_ADMIN_TOKEN?.trim() ?? '';
+  if (mode === 'required' && (!readToken || !adminToken)) {
+    throw new Error('OMEGA_AUTH_MODE=required needs configured bearer tokens');
+  }
+  if (mode === 'required' && readToken === adminToken) {
+    throw new Error('OMEGA_AUTH_MODE=required OMEGA_READ_TOKEN and OMEGA_ADMIN_TOKEN must be distinct');
+  }
+  return { readToken, adminToken };
+}
+
 export function createApp(
   dbPath: string = './oceanicos.db',
   logger: boolean = true,
@@ -25,6 +45,8 @@ export function createApp(
     options.allowUnsignedCycle ??
     (process.env.NODE_ENV !== 'production' && process.env.OMEGA_ALLOW_UNSIGNED_CYCLE === 'true');
   const attestationSigningKey = options.attestationSigningKey ?? process.env.OMEGA_SIGNING_KEY;
+  const authMode = parseAuthMode(process.env.OMEGA_AUTH_MODE);
+  const { readToken, adminToken } = configuredBearerTokens(authMode);
 
   // Active SSE client subscriptions for real-time block streaming
   const streamClients = new Set<(block: any) => boolean>();
@@ -52,6 +74,23 @@ export function createApp(
   };
 
   fastify.register(cors, { origin: '*' });
+
+  fastify.addHook('onRequest', async (request, reply) => {
+    if (authMode === 'local' || request.url.split('?')[0] === '/health') return;
+
+    const authorization = request.headers.authorization;
+    const presentedToken = authorization?.startsWith('Bearer ')
+      ? authorization.slice('Bearer '.length).trim()
+      : '';
+    const readRoute = request.method === 'GET';
+    const requiredToken = readRoute ? readToken : adminToken;
+    if (presentedToken !== requiredToken) {
+      return reply.status(401).send({
+        success: false,
+        error: readRoute ? 'READ_ACCESS_REQUIRED' : 'ADMIN_ACCESS_REQUIRED',
+      });
+    }
+  });
 
   fastify.get('/health', async () => ({
     status: 'ok',

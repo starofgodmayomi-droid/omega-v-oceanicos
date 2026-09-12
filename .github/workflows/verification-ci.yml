@@ -14,7 +14,7 @@ jobs:
     name: Continuous Verification & Provenance Attestation
     runs-on: ubuntu-latest
     env:
-      OMEGA_SIGNING_KEY: ci-verification-signing-key
+      OMEGA_SIGNING_KEY: ci-verification-signing-key-2026-strong
 
     steps:
       - name: Checkout Repository

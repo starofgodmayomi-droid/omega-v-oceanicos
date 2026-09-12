@@ -197,7 +197,7 @@ jobs:
       - name: Start the container
         run: |
           docker run -d --name omega-smoke \
-            -e OMEGA_SIGNING_KEY=ci-smoke-key-not-for-production \
+            -e OMEGA_SIGNING_KEY=ci-smoke-key-not-for-production-2026-strong \
             -e OMEGA_AUTH_MODE=required \
             -e OMEGA_READ_TOKEN=ci-smoke-read-token \
             -e OMEGA_ADMIN_TOKEN=ci-smoke-admin-token \
@@ -255,7 +255,7 @@ jobs:
 
           docker rm -f omega-smoke
           docker run -d --name omega-smoke \
-            -e OMEGA_SIGNING_KEY=ci-smoke-key-not-for-production \
+            -e OMEGA_SIGNING_KEY=ci-smoke-key-not-for-production-2026-strong \
             -e OMEGA_AUTH_MODE=required \
             -e OMEGA_READ_TOKEN=ci-smoke-read-token \
             -e OMEGA_ADMIN_TOKEN=ci-smoke-admin-token \
