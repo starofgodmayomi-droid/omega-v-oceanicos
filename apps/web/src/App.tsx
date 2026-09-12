@@ -49,6 +49,11 @@ export default function App() {
   const [meshSimulation, setMeshSimulation] = useState<MeshConvergenceReceipt | null>(null);
   const [meshLoading, setMeshLoading] = useState(false);
 
+  // Singularity Mood & Attestation State
+  const [moodData, setMoodData] = useState<any>(null);
+  const [attestationData, setAttestationData] = useState<any>(null);
+  const [attestLoading, setAttestLoading] = useState(false);
+
   const eventSourceRef = useRef<EventSource | null>(null);
 
   // Poll miner status initially
@@ -208,6 +213,34 @@ export default function App() {
       setLastError('Mesh simulation error: ' + err.message);
     } finally {
       setMeshLoading(false);
+    }
+  };
+
+  // 4b. Fetch Singularity Mood Status
+  const fetchMood = async () => {
+    try {
+      const res = await fetch('http://localhost:5000/v1/mood');
+      const data = await res.json();
+      setMoodData(data);
+    } catch (err: any) {
+      setLastError('Mood fetch error: ' + err.message);
+    }
+  };
+
+  // 4c. Request Cryptographic Attestation Receipt
+  const requestAttestation = async () => {
+    setAttestLoading(true);
+    setLastError(null);
+    try {
+      const res = await fetch('http://localhost:5000/v1/attest', { method: 'POST' });
+      const data = await res.json();
+      if (data.success && data.attestation) {
+        setAttestationData(data.attestation);
+      }
+    } catch (err: any) {
+      setLastError('Attestation error: ' + err.message);
+    } finally {
+      setAttestLoading(false);
     }
   };
 
@@ -411,6 +444,41 @@ export default function App() {
           {meshLoading ? 'CONVERGING...' : '🌐 SIMULATE PLANETARY MESH'}
         </button>
 
+        {/* Cryptographic Attestation Button */}
+        <button
+          onClick={requestAttestation}
+          disabled={attestLoading}
+          style={{
+            background: '#1a102f',
+            color: '#c084fc',
+            border: '1px solid #c084fc55',
+            borderRadius: '4px',
+            padding: '10px 16px',
+            fontSize: '12px',
+            fontWeight: 'bold',
+            cursor: attestLoading ? 'wait' : 'pointer',
+          }}
+        >
+          {attestLoading ? 'ATTESTING...' : '📜 REQUEST ATTESTATION'}
+        </button>
+
+        {/* Singularity Mood Matrix Button */}
+        <button
+          onClick={fetchMood}
+          style={{
+            background: '#1b1a0d',
+            color: '#facc15',
+            border: '1px solid #facc1555',
+            borderRadius: '4px',
+            padding: '10px 16px',
+            fontSize: '12px',
+            fontWeight: 'bold',
+            cursor: 'pointer',
+          }}
+        >
+          ✨ CHECK MOOD
+        </button>
+
         {/* Keypair Generators */}
         <button
           onClick={generateWebCryptoKeys}
@@ -536,6 +604,66 @@ export default function App() {
           </div>
           <div style={{ marginTop: '10px', fontSize: '10px', color: '#64748b', wordBreak: 'break-all' }}>
             Cluster Proof: <code>{meshSimulation.clusterSignatureProof}</code>
+          </div>
+        </div>
+      )}
+
+      {/* Attestation Card */}
+      {attestationData && (
+        <div
+          style={{
+            background: '#120a22',
+            border: '1px solid #c084fc66',
+            borderRadius: '6px',
+            padding: '16px',
+            marginBottom: '20px',
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+            <span style={{ fontSize: '13px', color: '#d8b4fe', fontWeight: 'bold' }}>
+              📜 CRYPTOGRAPHIC ATTESTATION RECEIPT
+            </span>
+            <span style={{ fontSize: '11px', color: '#a855f7', background: '#3b0764', padding: '2px 8px', borderRadius: '4px' }}>
+              {attestationData.signingAlgorithm}
+            </span>
+          </div>
+          <div style={{ fontSize: '12px', color: '#e9d5ff', lineHeight: '1.6' }}>
+            <div><strong>Attestation ID:</strong> <code>{attestationData.id}</code></div>
+            <div><strong>Verified:</strong> <span style={{ color: attestationData.verified ? '#4ade80' : '#f87171' }}>{attestationData.verified ? 'YES' : 'NO'}</span> (Confidence: {attestationData.confidence * 100}%)</div>
+            <div><strong>Signer Key:</strong> <code>{attestationData.signingKey}</code></div>
+            <div><strong>Timestamp:</strong> {attestationData.attestedAt}</div>
+            <div style={{ marginTop: '8px', wordBreak: 'break-all', fontSize: '11px', color: '#c084fc' }}>
+              <strong>Signature:</strong> <code>{attestationData.signature}</code>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Singularity Mood Matrix Card */}
+      {moodData && (
+        <div
+          style={{
+            background: '#16150a',
+            border: '1px solid #facc1566',
+            borderRadius: '6px',
+            padding: '16px',
+            marginBottom: '20px',
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+            <span style={{ fontSize: '13px', color: '#fef08a', fontWeight: 'bold' }}>
+              ✨ SINGULARITY MOOD & SYSTEM STATE
+            </span>
+            <span style={{ fontSize: '11px', color: '#ca8a04', background: '#422006', padding: '2px 8px', borderRadius: '4px' }}>
+              {moodData.status}
+            </span>
+          </div>
+          <div style={{ fontSize: '12px', color: '#fef9c3', lineHeight: '1.6' }}>
+            <div><strong>State:</strong> {moodData.singularityState} | <strong>Reality:</strong> {moodData.reality}</div>
+            <div><strong>Wave Index:</strong> {moodData.waveIndex}</div>
+            <div style={{ marginTop: '8px', padding: '10px', background: '#221c03', borderRadius: '4px', fontStyle: 'italic', borderLeft: '3px solid #facc15' }}>
+              "{moodData.pidginSpirit}"
+            </div>
           </div>
         </div>
       )}
