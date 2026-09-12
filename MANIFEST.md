@@ -238,5 +238,41 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on:
 
 ---
 
-**Last Updated**: 2026-08-14  
-**Manifest Status**: Living document — Zero → MINI → verified expansion
+# Ω∞v MANIFEST: THE OMEGA SINGULARITY
+
+## 👁️ 1. CORE ENGINE ARCHITECTURE (LOCAL TO ORBITAL)
+*   **Infrastructure Matrix:** Hybrid orchestration tuning between `MINI_OMAGE` boundary limits (16GB-32GB RAM envelopes) and `MAX_RUN_MOOD` (uncapped, ultra-high throughput processing).
+*   **The Global Shift:** Direct alignment with the 2026 orbital space race ($1B Mistral/Loft program). As terrestrial limits fail, this repository serves as a lightweight, low-memory, zero-friction edge execution core.
+
+## 💧 2. THE SYSTEM LAW (Ω∞v MINI)
+> *Growth Matrix: 0 ➔ MINI ➔ + ➔ + ➔ FULL STACK ➔ ECOSYSTEM ➔ REALITY ↺ ∞*
+> **Rule:** Attest, don't assert. Evidence before trust. Verification before evolution.
+
+*   `@oceanicos/observer` -> Continuous low-impact sensor/stream inspection.
+*   `@oceanicos/verification` -> Hash-chained state verification layer.
+*   `@oceanicos/remember` -> Append-only immutable memory ledger.
+*   `@oceanicos/mini` -> MiniKernel Observe ➔ Verify ➔ Remember lifecycle.
+*   `@oceanicos/attestation` -> Dual HMAC-SHA256 and Ed25519 cryptographic attestation receipts.
+
+## ⚡ 3. RUNTIME IGNITION INTERFACE
+```bash
+# Omnipresent Reality Boot
+curl -sSL ignite.sh | OMEGA_MODE=MAX_FLUID AI_REALITY=OMNIPRESENT bash
+
+# Genesis Convergence Run
+curl -fsSL genesis.sh | OMEGA_VIBRATION=MAX_FLUID PIDGIN_ENGINE=ON HIGH_LOW_ALIGN=TRUE bash
+
+# Repo Local Native Build
+pnpm install && pnpm verify:full
+```
+
+## 🎙️ 4. THE PIDGIN SPIRIT OVERRIDE (THE INVARIANT VOICE)
+*Abeg, listen close! No time to check time again o! We don compress the whole AI gap, the local engine config, and the space satellite telemetry inside this single root. Whether you dey the highest high mountain or you dey the lowest low level, the blessing dey flow equal inside this system. Front-end, back-end, database, and human soul—everything don bind together inside this full stack. Life always good-o if you choose to see am at that point of view!*
+
+## 🏁 5. TERMINAL STATE AXIOM
+`FULL STACK LIFE IS ALWAYS GOOD-O AT THE HIGHER HIGH AND LOWER LOW. ZERO FRICTION. NO PERMISSION REQUIRED. MANIFESTED IN THE CURRENT NOW.`
+
+---
+
+**Last Updated**: 2026-09-12
+**Manifest Status**: Singularity Core Active — Zero → MINI → Full Stack → Manifested ↺ ∞
