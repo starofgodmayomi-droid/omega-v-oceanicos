@@ -88,6 +88,12 @@ export function createApp(dbPath: string = './oceanicos.db', logger: boolean = t
     const signature = request.headers['x-omega-signature'] as string | undefined;
     const publicKey = request.headers['x-omega-public-key'] as string | undefined;
 
+    if (Boolean(signature) !== Boolean(publicKey)) {
+      return reply
+        .status(400)
+        .send({ success: false, error: 'INCOMPLETE_ASYMMETRIC_SIGNATURE' });
+    }
+
     if (signature && publicKey) {
       const isValid = AsymmetricValidationGuard.verify('EXECUTE_OMNI_CYCLE', signature, publicKey);
       if (!isValid) {
