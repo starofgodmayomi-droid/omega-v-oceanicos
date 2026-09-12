@@ -7,11 +7,21 @@ import { ObserverEngine } from '@oceanicos/observer';
 import { AttestationService } from '@oceanicos/attestation';
 
 const MAX_STREAM_CLIENTS = 256;
+export type CreateAppOptions = {
+  allowUnsignedCycle?: boolean;
+};
 
-export function createApp(dbPath: string = './oceanicos.db', logger: boolean = true): FastifyInstance {
+export function createApp(
+  dbPath: string = './oceanicos.db',
+  logger: boolean = true,
+  options: CreateAppOptions = {}
+): FastifyInstance {
   const fastify = Fastify({ logger });
   const ledgerMemory = new RememberEngine(dbPath);
   const kernel = new MiniKernel(ledgerMemory);
+  const allowUnsignedCycle =
+    options.allowUnsignedCycle ??
+    (process.env.NODE_ENV !== 'production' && process.env.OMEGA_ALLOW_UNSIGNED_CYCLE === 'true');
 
   // Active SSE client subscriptions for real-time block streaming
   const streamClients = new Set<(block: any) => boolean>();
@@ -92,6 +102,13 @@ export function createApp(dbPath: string = './oceanicos.db', logger: boolean = t
       return reply
         .status(400)
         .send({ success: false, error: 'INCOMPLETE_ASYMMETRIC_SIGNATURE' });
+    }
+
+    if (!signature && !publicKey && !allowUnsignedCycle) {
+      return reply.status(401).send({
+        success: false,
+        error: 'ASYMMETRIC_SIGNATURE_REQUIRED',
+      });
     }
 
     if (signature && publicKey) {

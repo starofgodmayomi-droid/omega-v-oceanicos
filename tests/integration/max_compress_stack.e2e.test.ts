@@ -15,7 +15,7 @@ describe('Ω∞v Oceanicos Max Compress Full-Stack E2E Suite', () => {
   let apiApp: any;
 
   before(async () => {
-    apiApp = createApp(':memory:', false);
+    apiApp = createApp(':memory:', false, { allowUnsignedCycle: true });
     await apiApp.ready();
   });
 
@@ -184,6 +184,13 @@ describe('Ω∞v Oceanicos Max Compress Full-Stack E2E Suite', () => {
 
   it('11. Fastify API enforces Asymmetric Signature Guard on /v1/cycle', async () => {
     const keypair = AsymmetricValidationGuard.generateKeyPair();
+
+    const strictApp = createApp(':memory:', false, { allowUnsignedCycle: false });
+    await strictApp.ready();
+    const unsigned = await strictApp.inject({ method: 'POST', url: '/v1/cycle' });
+    assert.strictEqual(unsigned.statusCode, 401);
+    assert.strictEqual(JSON.parse(unsigned.body).error, 'ASYMMETRIC_SIGNATURE_REQUIRED');
+    await strictApp.close();
 
     // Partial credentials must fail closed rather than silently downgrade to an unsigned cycle.
     const signatureOnly = await apiApp.inject({

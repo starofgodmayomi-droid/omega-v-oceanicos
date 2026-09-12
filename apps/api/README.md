@@ -617,6 +617,13 @@ GET /events/stream
 
 Opens a server-sent event stream. Each complete loop emits observation, verification, and attestation lifecycle events with a correlation ID.
 
+The legacy block route `POST /v1/cycle` requires a complete asymmetric signature
+and public-key pair in production. Requests with only one credential are rejected
+with `400 INCOMPLETE_ASYMMETRIC_SIGNATURE`; unsigned requests are rejected with
+`401 ASYMMETRIC_SIGNATURE_REQUIRED`. Local development may explicitly opt in to
+unsigned cycles with `OMEGA_ALLOW_UNSIGNED_CYCLE=true`; this flag must not be
+enabled in production.
+
 ### Public Attestation Key
 
 ```
