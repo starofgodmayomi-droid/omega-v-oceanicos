@@ -14,6 +14,7 @@
     "mood": "node bin/oceanicos.mjs mood",
     "test": "node --experimental-strip-types --test tests/integration/max_compress_stack.e2e.test.ts",
     "test:e2e": "node --experimental-strip-types --test tests/integration/max_compress_stack.e2e.test.ts",
+    "verify:full": "pnpm build && pnpm typecheck && pnpm test",
     "test:packages": "pnpm test",
     "test:coverage": "pnpm test",
     "cli": "node bin/oceanicos.mjs",

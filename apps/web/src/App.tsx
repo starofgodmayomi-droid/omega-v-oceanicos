@@ -236,6 +236,7 @@ export default function App() {
       const res = await fetch('http://localhost:5000/v1/cycle', {
         method: 'POST',
         headers,
+        body: JSON.stringify({}),
       });
 
       const data = await res.json();
