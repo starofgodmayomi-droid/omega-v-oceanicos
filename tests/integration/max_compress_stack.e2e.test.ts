@@ -368,7 +368,7 @@ describe('Ω∞v Oceanicos Max Compress Full-Stack E2E Suite', () => {
   });
 
   it('19. Fastify API POST /v1/attest produces valid cryptographic attestation receipt', async () => {
-    const missingKeyApp = createApp(':memory:', false);
+    const missingKeyApp = createApp(':memory:', false, { attestationSigningKey: '' });
     await missingKeyApp.ready();
     const missingKey = await missingKeyApp.inject({ method: 'POST', url: '/v1/attest' });
     assert.strictEqual(missingKey.statusCode, 503);
