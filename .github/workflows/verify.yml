@@ -292,10 +292,22 @@ jobs:
           echo "then served /health and the authenticated /v1 API contract on port 5000." >> $GITHUB_STEP_SUMMARY
           docker image inspect omega-v-api:ci --format 'Image size: {{.Size}} bytes' >> $GITHUB_STEP_SUMMARY
 
+  compose:
+    name: Compose configuration
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Validate Compose interpolation and service graph
+        env:
+          OMEGA_SIGNING_KEY: ci-compose-signing-key-not-for-production-2026-strong
+          OMEGA_READ_TOKEN: ci-compose-read-token
+          OMEGA_ADMIN_TOKEN: ci-compose-admin-token
+        run: docker compose config --quiet
+
   report:
     name: Report pipeline result
     runs-on: ubuntu-latest
-    needs: [verify, windows, docker]
+    needs: [verify, windows, docker, compose]
     # always(), so a failed pipeline is reported rather than passed over in
     # silence. A comment that only ever appears on success is not a report.
     if: always() && github.event_name == 'pull_request'
@@ -323,7 +335,8 @@ jobs:
             const verify = '${{ needs.verify.result }}';
             const windows = '${{ needs.windows.result }}';
             const docker = '${{ needs.docker.result }}';
-            const ok = verify === 'success' && windows === 'success' && docker === 'success';
+            const compose = '${{ needs.compose.result }}';
+            const ok = verify === 'success' && windows === 'success' && docker === 'success' && compose === 'success';
             const mark = (r) => (r === 'success' ? '✓' : r === 'skipped' ? '–' : '✗');
 
             const body = [
@@ -334,6 +347,7 @@ jobs:
               `- ${mark(verify)} verify (format, lint, type-check, test, coverage, build) — ${verify}`,
               `- ${mark(windows)} Windows compatibility (format, type-check, test, build) — ${windows}`,
               `- ${mark(docker)} package and smoke test — ${docker}`,
+              `- ${mark(compose)} Compose configuration — ${compose}`,
               '',
               ok
                 ? 'Every job this comment names completed successfully.'
@@ -350,7 +364,7 @@ jobs:
   publish:
     name: Publish attested artifact
     runs-on: ubuntu-latest
-    needs: [verify, windows, docker]
+    needs: [verify, windows, docker, compose]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     permissions:
