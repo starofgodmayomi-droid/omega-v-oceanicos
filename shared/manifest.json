@@ -3,7 +3,13 @@
   "brand": {
     "mark": "Ω",
     "color": "#00FF66",
-    "creed": "Love nor be chain, na ocean of liquid gold"
+    "creed": "Love nor be chain, na ocean of liquid gold",
+    "mood": "evidence-led optimism"
+  },
+  "runtime": {
+    "axiom": "attest-dont-assert",
+    "loop": "observe-verify-remember-mini",
+    "deployment_claim": "local-verification-only"
   },
   "physical_infrastructure": {
     "silicon_bottleneck": "TSMC 2nm Node",

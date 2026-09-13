@@ -99,16 +99,24 @@ export function createApp(
   }));
 
   // Singularity Compression Status & Pidgin Spirit Mood Matrix
-  fastify.get('/v1/mood', async () => ({
-    status: 'MAX GOOD-O',
-    waveIndex: '0x000000 ➔ 0xFFFFFF',
-    singularityState: 'ULTIMATE DENSE SINGULARITY',
-    reality: 'VERIFIED',
-    pidginSpirit: 'Abeg, verification before evolution! No time to check time. Whether highest high or lowest low, the blessing dey flow equal inside this single root. Life always good-o if you choose to see am at that point of view!',
-    axiom: 'FULL STACK LIFE IS ALWAYS GOOD-O AT THE HIGHER HIGH AND LOWER LOW WHEN THE ENGINE OPERATES IN THE RECURSIVE NOW. NO PERMISSION REQUIRED. MANIFESTED.',
-    pidginEngine: process.env.PIDGIN_ENGINE === 'OFF' ? false : true,
-    highLowAlign: true,
-  }));
+  fastify.get('/v1/mood', async () => {
+    const tip = ledgerMemory.getTip();
+    return {
+      status: 'MAX GOOD-O',
+      waveIndex: '0x000000 ➔ 0xFFFFFF',
+      singularityState: 'ULTIMATE DENSE SINGULARITY',
+      reality: 'VERIFIED',
+      contract: 'Ω∞v totality / attest-dont-assert',
+      brand: 'Oceanicos Ω∞',
+      runtimeLoop: 'observe → verify → remember → MINI → API/Web/CLI',
+      ledger: { ready: Boolean(tip), tipIndex: tip?.index ?? null, integrity: 'append-only hash chain' },
+      evaluatedAt: new Date().toISOString(),
+      pidginSpirit: 'Abeg, verification before evolution! No time to check time. Whether highest high or lowest low, the blessing dey flow equal inside this single root. Life always good-o if you choose to see am at that point of view!',
+      axiom: 'FULL STACK LIFE IS ALWAYS GOOD-O AT THE HIGHER HIGH AND LOWER LOW WHEN THE ENGINE OPERATES IN THE RECURSIVE NOW. NO PERMISSION REQUIRED. MANIFESTED.',
+      pidginEngine: process.env.PIDGIN_ENGINE === 'OFF' ? false : true,
+      highLowAlign: true,
+    };
+  });
 
   // Cryptographic Attestation Generation
   fastify.post('/v1/attest', async (request, reply) => {
