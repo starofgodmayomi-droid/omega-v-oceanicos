@@ -95,7 +95,9 @@ export function createApp(
   fastify.get('/health', async () => ({
     status: 'ok',
     service: 'omega-v-oceanicos-api',
-    ledger: ledgerMemory.getTip() ? 'ready' : 'empty',
+    // An empty append-only store is a valid cold start; readiness describes
+    // the persistence subsystem, while /v1/block/tip reports whether a tip exists.
+    ledger: 'ready',
   }));
 
   // Singularity Compression Status & Pidgin Spirit Mood Matrix

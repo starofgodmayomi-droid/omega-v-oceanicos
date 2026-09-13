@@ -372,12 +372,19 @@ describe('Ω∞v Oceanicos Max Compress Full-Stack E2E Suite', () => {
   });
 
   it('19. Fastify API POST /v1/attest produces valid cryptographic attestation receipt', async () => {
-    const missingKeyApp = createApp(':memory:', false);
-    await missingKeyApp.ready();
-    const missingKey = await missingKeyApp.inject({ method: 'POST', url: '/v1/attest' });
-    assert.strictEqual(missingKey.statusCode, 503);
-    assert.strictEqual(JSON.parse(missingKey.body).error, 'ATTESTATION_SIGNING_KEY_REQUIRED');
-    await missingKeyApp.close();
+    const originalSigningKey = process.env.OMEGA_SIGNING_KEY;
+    delete process.env.OMEGA_SIGNING_KEY;
+    try {
+      const missingKeyApp = createApp(':memory:', false);
+      await missingKeyApp.ready();
+      const missingKey = await missingKeyApp.inject({ method: 'POST', url: '/v1/attest' });
+      assert.strictEqual(missingKey.statusCode, 503);
+      assert.strictEqual(JSON.parse(missingKey.body).error, 'ATTESTATION_SIGNING_KEY_REQUIRED');
+      await missingKeyApp.close();
+    } finally {
+      if (originalSigningKey === undefined) delete process.env.OMEGA_SIGNING_KEY;
+      else process.env.OMEGA_SIGNING_KEY = originalSigningKey;
+    }
 
     const weakKeyApp = createApp(':memory:', false, { attestationSigningKey: 'too-short' });
     await weakKeyApp.ready();
