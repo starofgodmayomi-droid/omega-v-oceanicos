@@ -1,7 +1,7 @@
 {
   "name": "@oceanicos/attestation",
   "version": "1.0.0",
-  "description": "Cryptographic attestation service for Ω∞v Oceanicos",
+  "description": "Cryptographic attestation service for \u03a9\u221ev Oceanicos",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
@@ -12,7 +12,7 @@
     "@oceanicos/types": "workspace:*"
   },
   "devDependencies": {
-    "@types/node": "^20.0.0",
-    "typescript": "^5.3.3"
+    "@types/node": "^22.0.0",
+    "typescript": "^7.0.2"
   }
 }
