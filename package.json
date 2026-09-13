@@ -16,6 +16,7 @@
     "test:e2e": "node --experimental-strip-types --test tests/integration/max_compress_stack.e2e.test.ts",
     "totality": "bash scripts/oceanicos-totality.sh",
     "verify:full": "pnpm run totality",
+    "smoke:api": "pnpm build && node scripts/smoke-api.cjs",
     "test:packages": "pnpm test",
     "test:coverage": "pnpm test",
     "cli": "node bin/oceanicos.mjs",
