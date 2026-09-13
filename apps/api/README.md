@@ -622,7 +622,9 @@ and public-key pair in production. Requests with only one credential are rejecte
 with `400 INCOMPLETE_ASYMMETRIC_SIGNATURE`; unsigned requests are rejected with
 `401 ASYMMETRIC_SIGNATURE_REQUIRED`. Local development may explicitly opt in to
 unsigned cycles with `OMEGA_ALLOW_UNSIGNED_CYCLE=true`; this flag must not be
-enabled in production.
+enabled in production. For HTTP clients that cannot transmit PEM newlines in a
+header, send the public key as `base64:<base64-encoded-UTF8-PEM>` in
+`x-omega-public-key`; the legacy PEM form remains supported.
 
 The legacy attestation route `POST /v1/attest` requires `OMEGA_SIGNING_KEY` (or an
 explicit application option) and rejects keys shorter than 32 characters with

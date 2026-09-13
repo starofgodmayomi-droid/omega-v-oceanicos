@@ -7,6 +7,8 @@ export default defineConfig({
     port: 3000,
   },
   preview: {
-    allowedHosts: ['3000-iscjvtugzf1ft862z9fi7-08dbc251.us4.manus.computer'],
+    allowedHosts: process.env.VITE_ALLOWED_HOST
+      ? [process.env.VITE_ALLOWED_HOST]
+      : ['3000-iscjvtugzf1ft862z9fi7-08dbc251.us4.manus.computer'],
   },
 });
