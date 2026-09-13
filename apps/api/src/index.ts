@@ -44,7 +44,8 @@ export function createApp(
   const allowUnsignedCycle =
     options.allowUnsignedCycle ??
     (process.env.NODE_ENV !== 'production' && process.env.OMEGA_ALLOW_UNSIGNED_CYCLE === 'true');
-  const attestationSigningKey = options.attestationSigningKey ?? process.env.OMEGA_SIGNING_KEY;
+  const attestationSigningKey =
+    options.attestationSigningKey !== undefined ? options.attestationSigningKey : process.env.OMEGA_SIGNING_KEY;
   const authMode = parseAuthMode(process.env.OMEGA_AUTH_MODE);
   const { readToken, adminToken } = configuredBearerTokens(authMode);
 
