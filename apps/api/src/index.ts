@@ -45,8 +45,20 @@ export function createApp(
     options.allowUnsignedCycle ??
     (process.env.NODE_ENV !== 'production' && process.env.OMEGA_ALLOW_UNSIGNED_CYCLE === 'true');
   const attestationSigningKey = options.attestationSigningKey ?? process.env.OMEGA_SIGNING_KEY;
-  const authMode = parseAuthMode(process.env.OMEGA_AUTH_MODE);
+  const authMode = parseAuthMode(
+    process.env.OMEGA_AUTH_MODE ?? (process.env.NODE_ENV === 'production' ? 'required' : 'local')
+  );
   const { readToken, adminToken } = configuredBearerTokens(authMode);
+  const requireReadAccess = async (request: any, reply: any) => {
+    if (authMode === 'local') return;
+    const authorization = request.headers.authorization;
+    const presentedToken = authorization?.startsWith('Bearer ')
+      ? authorization.slice('Bearer '.length).trim()
+      : '';
+    if (presentedToken !== readToken) {
+      return reply.status(401).send({ success: false, error: 'READ_ACCESS_REQUIRED' });
+    }
+  };
 
   // Active SSE client subscriptions for real-time block streaming
   const streamClients = new Set<(block: any) => boolean>();
@@ -194,7 +206,7 @@ export function createApp(
   });
 
   // 2. Ledger Tip Retrieval
-  fastify.get('/v1/block/tip', async () => {
+  fastify.get('/v1/block/tip', { preHandler: requireReadAccess }, async () => {
     const tip = ledgerMemory.getTip();
     return { success: true, status: 'ONLINE', tip };
   });
