@@ -33,15 +33,6 @@ function configuredBearerTokens(mode: AuthMode): { readToken: string; adminToken
   return { readToken, adminToken };
 }
 
-function decodePublicKeyHeader(value: string): string {
-  if (!value.startsWith('base64:')) return value;
-  try {
-    return Buffer.from(value.slice('base64:'.length), 'base64').toString('utf8');
-  } catch {
-    return value;
-  }
-}
-
 export function createApp(
   dbPath: string = './oceanicos.db',
   logger: boolean = true,
@@ -184,8 +175,7 @@ export function createApp(
   // 1. Manual or Asymmetrically Signed Omni-Cycle Execution
   fastify.post('/v1/cycle', async (request, reply) => {
     const signature = request.headers['x-omega-signature'] as string | undefined;
-    const rawPublicKey = request.headers['x-omega-public-key'] as string | undefined;
-    const publicKey = rawPublicKey ? decodePublicKeyHeader(rawPublicKey) : undefined;
+    const publicKey = request.headers['x-omega-public-key'] as string | undefined;
 
     if (Boolean(signature) !== Boolean(publicKey)) {
       return reply
