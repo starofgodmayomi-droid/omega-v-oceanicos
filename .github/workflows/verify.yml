@@ -199,6 +199,7 @@ jobs:
           docker run -d --name omega-smoke \
             -e OMEGA_SIGNING_KEY=ci-smoke-key-not-for-production-2026-strong \
             -e OMEGA_AUTH_MODE=required \
+            -e OMEGA_ALLOW_UNSIGNED_CYCLE=true \
             -e OMEGA_READ_TOKEN=ci-smoke-read-token \
             -e OMEGA_ADMIN_TOKEN=ci-smoke-admin-token \
             -e OMEGA_LOCAL_JOB_LEDGER=on \
@@ -255,7 +256,8 @@ jobs:
             "$api/v1/mood" | tee /tmp/mood.json
           grep -q '"status"' /tmp/mood.json
 
-          if [ "$(curl -sS -o /tmp/unknown.json -w '%{http_code}' "$api/unknown")" != "404" ]; then
+          if [ "$(curl -sS -o /tmp/unknown.json -w '%{http_code}' \
+            -H 'Authorization: Bearer ci-smoke-read-token' "$api/unknown")" != "404" ]; then
             echo "::error::Unknown API route did not return 404."
             cat /tmp/unknown.json
             exit 1

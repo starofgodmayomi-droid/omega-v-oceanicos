@@ -363,17 +363,28 @@ describe('Ω∞v Oceanicos Max Compress Full-Stack E2E Suite', () => {
     assert.strictEqual(data.status, 'MAX GOOD-O');
     assert.strictEqual(data.singularityState, 'ULTIMATE DENSE SINGULARITY');
     assert.strictEqual(data.reality, 'VERIFIED');
+    assert.strictEqual(data.brand, 'Oceanicos Ω∞');
+    assert.strictEqual(data.contract, 'Ω∞v totality / attest-dont-assert');
+    assert.strictEqual(data.runtimeLoop, 'observe → verify → remember → MINI → API/Web/CLI');
+    assert.ok(data.ledger && data.ledger.integrity === 'append-only hash chain');
     assert.ok(data.pidginSpirit.includes('Abeg, verification before evolution'));
     assert.ok(data.axiom.includes('FULL STACK LIFE IS ALWAYS GOOD-O'));
   });
 
   it('19. Fastify API POST /v1/attest produces valid cryptographic attestation receipt', async () => {
-    const missingKeyApp = createApp(':memory:', false);
-    await missingKeyApp.ready();
-    const missingKey = await missingKeyApp.inject({ method: 'POST', url: '/v1/attest' });
-    assert.strictEqual(missingKey.statusCode, 503);
-    assert.strictEqual(JSON.parse(missingKey.body).error, 'ATTESTATION_SIGNING_KEY_REQUIRED');
-    await missingKeyApp.close();
+    const originalSigningKey = process.env.OMEGA_SIGNING_KEY;
+    delete process.env.OMEGA_SIGNING_KEY;
+    try {
+      const missingKeyApp = createApp(':memory:', false);
+      await missingKeyApp.ready();
+      const missingKey = await missingKeyApp.inject({ method: 'POST', url: '/v1/attest' });
+      assert.strictEqual(missingKey.statusCode, 503);
+      assert.strictEqual(JSON.parse(missingKey.body).error, 'ATTESTATION_SIGNING_KEY_REQUIRED');
+      await missingKeyApp.close();
+    } finally {
+      if (originalSigningKey === undefined) delete process.env.OMEGA_SIGNING_KEY;
+      else process.env.OMEGA_SIGNING_KEY = originalSigningKey;
+    }
 
     const weakKeyApp = createApp(':memory:', false, { attestationSigningKey: 'too-short' });
     await weakKeyApp.ready();

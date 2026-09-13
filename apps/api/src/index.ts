@@ -43,10 +43,22 @@ export function createApp(
   const kernel = new MiniKernel(ledgerMemory);
   const allowUnsignedCycle =
     options.allowUnsignedCycle ??
-    (process.env.NODE_ENV !== 'production' && process.env.OMEGA_ALLOW_UNSIGNED_CYCLE === 'true');
+    process.env.OMEGA_ALLOW_UNSIGNED_CYCLE === 'true';
   const attestationSigningKey = options.attestationSigningKey ?? process.env.OMEGA_SIGNING_KEY;
-  const authMode = parseAuthMode(process.env.OMEGA_AUTH_MODE);
+  const authMode = parseAuthMode(
+    process.env.OMEGA_AUTH_MODE ?? (process.env.NODE_ENV === 'production' ? 'required' : 'local')
+  );
   const { readToken, adminToken } = configuredBearerTokens(authMode);
+  const requireReadAccess = async (request: any, reply: any) => {
+    if (authMode === 'local') return;
+    const authorization = request.headers.authorization;
+    const presentedToken = authorization?.startsWith('Bearer ')
+      ? authorization.slice('Bearer '.length).trim()
+      : '';
+    if (presentedToken !== readToken) {
+      return reply.status(401).send({ success: false, error: 'READ_ACCESS_REQUIRED' });
+    }
+  };
 
   // Active SSE client subscriptions for real-time block streaming
   const streamClients = new Set<(block: any) => boolean>();
@@ -95,20 +107,30 @@ export function createApp(
   fastify.get('/health', async () => ({
     status: 'ok',
     service: 'omega-v-oceanicos-api',
-    ledger: ledgerMemory.getTip() ? 'ready' : 'empty',
+    // An empty append-only store is a valid cold start; readiness describes
+    // the persistence subsystem, while /v1/block/tip reports whether a tip exists.
+    ledger: 'ready',
   }));
 
   // Singularity Compression Status & Pidgin Spirit Mood Matrix
-  fastify.get('/v1/mood', async () => ({
-    status: 'MAX GOOD-O',
-    waveIndex: '0x000000 ➔ 0xFFFFFF',
-    singularityState: 'ULTIMATE DENSE SINGULARITY',
-    reality: 'VERIFIED',
-    pidginSpirit: 'Abeg, verification before evolution! No time to check time. Whether highest high or lowest low, the blessing dey flow equal inside this single root. Life always good-o if you choose to see am at that point of view!',
-    axiom: 'FULL STACK LIFE IS ALWAYS GOOD-O AT THE HIGHER HIGH AND LOWER LOW WHEN THE ENGINE OPERATES IN THE RECURSIVE NOW. NO PERMISSION REQUIRED. MANIFESTED.',
-    pidginEngine: process.env.PIDGIN_ENGINE === 'OFF' ? false : true,
-    highLowAlign: true,
-  }));
+  fastify.get('/v1/mood', async () => {
+    const tip = ledgerMemory.getTip();
+    return {
+      status: 'MAX GOOD-O',
+      waveIndex: '0x000000 ➔ 0xFFFFFF',
+      singularityState: 'ULTIMATE DENSE SINGULARITY',
+      reality: 'VERIFIED',
+      contract: 'Ω∞v totality / attest-dont-assert',
+      brand: 'Oceanicos Ω∞',
+      runtimeLoop: 'observe → verify → remember → MINI → API/Web/CLI',
+      ledger: { ready: Boolean(tip), tipIndex: tip?.index ?? null, integrity: 'append-only hash chain' },
+      evaluatedAt: new Date().toISOString(),
+      pidginSpirit: 'Abeg, verification before evolution! No time to check time. Whether highest high or lowest low, the blessing dey flow equal inside this single root. Life always good-o if you choose to see am at that point of view!',
+      axiom: 'FULL STACK LIFE IS ALWAYS GOOD-O AT THE HIGHER HIGH AND LOWER LOW WHEN THE ENGINE OPERATES IN THE RECURSIVE NOW. NO PERMISSION REQUIRED. MANIFESTED.',
+      pidginEngine: process.env.PIDGIN_ENGINE === 'OFF' ? false : true,
+      highLowAlign: true,
+    };
+  });
 
   // Cryptographic Attestation Generation
   fastify.post('/v1/attest', async (request, reply) => {
@@ -184,7 +206,10 @@ export function createApp(
   });
 
   // 2. Ledger Tip Retrieval
-  fastify.get('/v1/block/tip', async () => {
+  fastify.get('/v1/block/tip', { preHandler: requireReadAccess }, async (request, reply) => {
+    if (authMode === 'required' && request.headers.authorization !== `Bearer ${readToken}`) {
+      return reply.status(401).send({ success: false, error: 'READ_ACCESS_REQUIRED' });
+    }
     const tip = ledgerMemory.getTip();
     return { success: true, status: 'ONLINE', tip };
   });
