@@ -896,7 +896,7 @@ This endpoint is a local symbolic simulation only. It does not prove physical co
 
 ### Portable API smoke contract
 
-After building the workspace, run `pnpm smoke:api` from the repository root. The portable Node runner starts `apps/api/dist/server.js` from the API package directory, where workspace package resolution is reproducible, checks `/health` for `readiness: "ready"`, and exercises `POST /scene/simulate` through its terminal `return` state. It asserts `deterministic: true` and `verified: false`. This is a local compiled-runtime smoke check; it does not prove deployment health, distributed coordination, external custody, or production availability.
+After building the workspace, run `pnpm smoke:api` from the repository root. The portable Node runner starts `apps/api/dist/index.js` from the API package directory, where workspace package resolution is reproducible, checks `/health`, reads `/v1/block/tip` and `/v1/mood`, and verifies that `/v1/stream` emits `TIP` and `BLOCK_MINTED` telemetry frames. This is a local compiled-runtime smoke check; it does not prove deployment health, distributed coordination, external custody, or production availability.
 
 The smoke runner uses a local test signing key and `OMEGA_PERSISTENCE=off`. It must never be interpreted as evidence that production secrets, persistence, backups, replicas, or external services are configured.
 
