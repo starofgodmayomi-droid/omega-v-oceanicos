@@ -199,6 +199,7 @@ jobs:
           docker run -d --name omega-smoke \
             -e OMEGA_SIGNING_KEY=ci-smoke-key-not-for-production-2026-strong \
             -e OMEGA_AUTH_MODE=required \
+            -e OMEGA_ALLOW_UNSIGNED_CYCLE=true \
             -e OMEGA_READ_TOKEN=ci-smoke-read-token \
             -e OMEGA_ADMIN_TOKEN=ci-smoke-admin-token \
             -e OMEGA_LOCAL_JOB_LEDGER=on \

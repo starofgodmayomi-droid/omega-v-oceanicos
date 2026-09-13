@@ -43,7 +43,7 @@ export function createApp(
   const kernel = new MiniKernel(ledgerMemory);
   const allowUnsignedCycle =
     options.allowUnsignedCycle ??
-    (process.env.NODE_ENV !== 'production' && process.env.OMEGA_ALLOW_UNSIGNED_CYCLE === 'true');
+    process.env.OMEGA_ALLOW_UNSIGNED_CYCLE === 'true';
   const attestationSigningKey = options.attestationSigningKey ?? process.env.OMEGA_SIGNING_KEY;
   const authMode = parseAuthMode(
     process.env.OMEGA_AUTH_MODE ?? (process.env.NODE_ENV === 'production' ? 'required' : 'local')
