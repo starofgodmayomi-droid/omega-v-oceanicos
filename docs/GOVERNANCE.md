@@ -90,7 +90,7 @@ one that runs.
 
 ## Portable runtime smoke evidence
 
-The root `pnpm smoke:api` command is a local reproducibility control. It builds the workspace, starts the compiled API from the `apps/api` package directory, checks health readiness, and exercises the bounded scene route. Its result is evidence that this local compiled package graph served the tested contract under a local signing key with persistence disabled. It is not deployment authorization, distributed readiness, production availability, external custody, backup or replica evidence, or proof that a remote environment runs the same state.
+The root `pnpm smoke:api` command is a local reproducibility control. It builds the workspace, starts the compiled API from the `apps/api` package directory, checks `/health`, reads the ledger tip and mood routes, and verifies that `/v1/stream` emits `TIP` and `BLOCK_MINTED` frames. Its result is evidence that this local compiled package graph served the tested contract under a local signing key with persistence disabled. It is not deployment authorization, distributed readiness, production availability, external custody, backup or replica evidence, or proof that a remote environment runs the same state.
 
 ## Coordination declaration boundary
 
