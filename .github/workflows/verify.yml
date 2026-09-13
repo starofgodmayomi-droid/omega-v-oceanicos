@@ -248,6 +248,19 @@ jobs:
           grep -q '"success":true' /tmp/cycle.json
           grep -q '"block"' /tmp/cycle.json
 
+          timeout 8s curl -sN \
+            -H 'Authorization: Bearer ci-smoke-read-token' \
+            "$api/v1/stream" > /tmp/stream.ndjson &
+          stream_pid=$!
+          sleep 1
+          curl -sf -X POST "$api/v1/cycle" \
+            -H 'Content-Type: application/json' \
+            -H 'Authorization: Bearer ci-smoke-admin-token' \
+            -d '{}' > /tmp/stream-cycle.json
+          wait "$stream_pid" || true
+          grep -q '"event":"TIP"' /tmp/stream.ndjson
+          grep -q '"event":"BLOCK_MINTED"' /tmp/stream.ndjson
+
           curl -sf -H 'Authorization: Bearer ci-smoke-read-token' \
             "$api/v1/miner/status" | tee /tmp/miner.json
           grep -q '"success":true' /tmp/miner.json

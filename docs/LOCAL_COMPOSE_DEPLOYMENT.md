@@ -26,9 +26,10 @@ curl -fsS -H "Authorization: Bearer $OMEGA_READ_TOKEN" http://localhost:5000/v1/
 curl -fsS http://localhost:3000
 ```
 
-For a complete API contract, run the repository gate separately:
+For a compiled API contract, including health, ledger, mood, and SSE `TIP`/`BLOCK_MINTED` delivery, run:
 
 ```bash
+pnpm run smoke:api
 pnpm run totality
 ```
 
