@@ -238,6 +238,18 @@ describe('Ω∞v Oceanicos Max Compress Full-Stack E2E Suite', () => {
     assert.strictEqual(goodRes.statusCode, 200);
     const goodBody = JSON.parse(goodRes.body);
     assert.strictEqual(goodBody.success, true);
+
+    // 11c. HTTP-safe base64 public-key transport succeeds without PEM newlines.
+    const encodedKeyRes = await apiApp.inject({
+      method: 'POST',
+      url: '/v1/cycle',
+      headers: {
+        'x-omega-signature': validSig,
+        'x-omega-public-key': `base64:${Buffer.from(keypair.publicKey, 'utf8').toString('base64')}`,
+      },
+    });
+    assert.strictEqual(encodedKeyRes.statusCode, 200);
+    assert.strictEqual(JSON.parse(encodedKeyRes.body).success, true);
   });
 
   it('12. Fastify API Autonomous Background Miner endpoints operate correctly', async () => {
