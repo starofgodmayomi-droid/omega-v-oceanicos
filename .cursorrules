@@ -1,0 +1,67 @@
+# Ω∞v Oceanicos Engineering Contract
+
+## Operating model
+
+Use the repository as the source of truth. Follow this loop:
+
+> Observe → gather evidence → verify → remember → reason → define intent → build → test → attest → act.
+
+Treat manifesto language such as “singularity,” “living runtime,” and “infinite recompilation” as product metaphors, not operational proof. Never claim a change is verified without executable evidence.
+
+## Current architecture
+
+- Monorepo managed by pnpm workspaces.
+- Fastify API in `apps/api`.
+- Vite web client in `apps/web`.
+- Shared domain packages under `packages/`.
+- Runtime flow: observe → verify → remember → MINI → API/Web/CLI.
+- Append-only ledger and fail-closed authentication are security boundaries.
+- `/v1/stream` is the existing SSE block-telemetry endpoint; do not create a duplicate stream route.
+
+## Required workflow
+
+1. Inspect branch, working tree, relevant files, tests, CI, and deployment configuration before editing.
+2. Prefer the smallest complete slice. Preserve existing interfaces and compatibility unless a breaking change is explicitly requested.
+3. Keep authentication, authorization, attestation, signature validation, and ledger integrity fail-closed.
+4. Never print, commit, or expose secrets, signing keys, tokens, private keys, or credentials.
+5. Add or update tests for both success and failure paths when behavior changes.
+6. Update documentation when an interface, command, security rule, or operational contract changes.
+7. Use focused commits with descriptive messages. Do not rewrite history or force-push.
+
+## Verification commands
+
+Run the narrowest relevant checks first, then the full applicable suite:
+
+```bash
+pnpm format:check
+pnpm lint
+pnpm type-check
+pnpm test
+pnpm build
+pnpm run totality
+```
+
+For API or container changes, also run the relevant integration tests and Docker smoke checks. Distinguish local proof from GitHub Actions proof; do not claim deployment unless a target was actually deployed and observed.
+
+## API and security rules
+
+- Preserve `/health` as an unauthenticated liveness/readiness probe.
+- Protected API reads require the configured read bearer token in required mode.
+- State-changing API calls require the admin bearer token and any additional signature policy required by the route.
+- Explicit CI-only overrides must be scoped to disposable test environments and must not become production defaults.
+- Keep unknown-route behavior and authentication behavior intentional and covered by smoke tests.
+
+## Git delivery
+
+Protect `main`. Work on a feature branch, run local verification, commit, push, open a pull request, wait for required checks, and merge only when authorized and all required branch-protection checks are green. After merge, verify local `main` matches `origin/main` and the working tree is clean.
+
+## Change reporting
+
+Every implementation report should state:
+
+- what changed and why;
+- files and interfaces affected;
+- exact commands and results;
+- security and compatibility impact;
+- skipped or unavailable gates;
+- commit, pull-request, and deployment identifiers when applicable.
