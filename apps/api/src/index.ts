@@ -206,7 +206,10 @@ export function createApp(
   });
 
   // 2. Ledger Tip Retrieval
-  fastify.get('/v1/block/tip', { preHandler: requireReadAccess }, async () => {
+  fastify.get('/v1/block/tip', { preHandler: requireReadAccess }, async (request, reply) => {
+    if (authMode === 'required' && request.headers.authorization !== `Bearer ${readToken}`) {
+      return reply.status(401).send({ success: false, error: 'READ_ACCESS_REQUIRED' });
+    }
     const tip = ledgerMemory.getTip();
     return { success: true, status: 'ONLINE', tip };
   });
