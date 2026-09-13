@@ -255,7 +255,8 @@ jobs:
             "$api/v1/mood" | tee /tmp/mood.json
           grep -q '"status"' /tmp/mood.json
 
-          if [ "$(curl -sS -o /tmp/unknown.json -w '%{http_code}' "$api/unknown")" != "404" ]; then
+          if [ "$(curl -sS -o /tmp/unknown.json -w '%{http_code}' \
+            -H 'Authorization: Bearer ci-smoke-read-token' "$api/unknown")" != "404" ]; then
             echo "::error::Unknown API route did not return 404."
             cat /tmp/unknown.json
             exit 1
