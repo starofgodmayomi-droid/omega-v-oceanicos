@@ -1,19 +1,12 @@
 {
-  "name": "web",
+  "name": "@oceanicos/web",
   "version": "1.0.0",
+  "private": true,
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
-    "start": "vite preview --port 3000 --host"
-  },
-  "dependencies": {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "start": "mkdir -p dist && cp index.html dist/index.html && vite preview --port 3000 --host 0.0.0.0",
+    "build": "tsc --noEmit"
   },
   "devDependencies": {
-    "vite": "^5.1.4",
-    "@vitejs/plugin-react": "^4.2.1",
-    "@types/react": "^18.2.56",
-    "@types/react-dom": "^18.2.19"
+    "vite": "^5.1.4"
   }
 }

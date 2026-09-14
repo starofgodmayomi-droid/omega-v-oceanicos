@@ -1,0 +1,43 @@
+name: Ω∞v Oceanicos Max Totality Verification
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify:
+    name: Zero-Entropy Verification Loop
+    runs-on: ubuntu-latest
+    env:
+      NODE_ENV: test
+      OMEGA_SIGNING_KEY: ci-test-secret-key-at-least-16-chars-2026
+      OMEGA_MODE: MAX_FLUID
+      PIDGIN_ENGINE: ON
+
+    steps:
+      - name: Checkout Source Tree
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Runtime (v20)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install pnpm Package Manager
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8
+
+      - name: Install Workspace Dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Compile All Modules & Typecheck (0 Errors)
+        run: pnpm build
+
+      - name: Execute End-to-End Test Suite
+        run: pnpm test:e2e
+
+      - name: Execute Native Genesis Verification Switch
+        run: node bin/oceanicos.mjs status

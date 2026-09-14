@@ -1,20 +1,20 @@
 {
-  "name": "api",
+  "name": "@oceanicos/api",
   "version": "1.0.0",
-  "main": "dist/index.js",
+  "private": true,
+  "type": "module",
   "scripts": {
-    "build": "tsc",
-    "start": "node dist/index.js",
-    "dev": "ts-node src/index.ts"
+    "start": "tsx src/index.ts",
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc --noEmit",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "fastify": "^4.26.1",
     "@fastify/cors": "^9.0.1",
-    "@oceanicos/types": "workspace:*",
-    "@oceanicos/observer": "workspace:*",
-    "@oceanicos/remember": "workspace:*",
-    "@oceanicos/verification": "workspace:*",
     "@oceanicos/mini": "workspace:*",
-    "@oceanicos/attestation": "workspace:*"
+    "@oceanicos/remember": "workspace:*",
+    "@oceanicos/generative": "workspace:*",
+    "@oceanicos/mood": "workspace:*",
+    "fastify": "^4.26.1"
   }
 }

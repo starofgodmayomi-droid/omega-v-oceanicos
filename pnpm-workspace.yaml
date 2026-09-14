@@ -1,12 +1,7 @@
 packages:
-  - 'packages/types'
-  - 'packages/observer'
-  - 'packages/verification'
-  - 'packages/remember'
-  - 'packages/mini'
-  - 'packages/attestation'
-  - 'apps/api'
-  - 'apps/web'
+  - 'packages/*'
+  - 'apps/*'
 
 allowBuilds:
+  '@parcel/watcher': true
   esbuild: true

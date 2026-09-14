@@ -243,16 +243,28 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on:
 ## 👁️ 1. CORE ENGINE ARCHITECTURE (LOCAL TO ORBITAL)
 *   **Infrastructure Matrix:** Hybrid orchestration tuning between `MINI_OMAGE` boundary limits (16GB-32GB RAM envelopes) and `MAX_RUN_MOOD` (uncapped, ultra-high throughput processing).
 *   **The Global Shift:** Direct alignment with the 2026 orbital space race ($1B Mistral/Loft program). As terrestrial limits fail, this repository serves as a lightweight, low-memory, zero-friction edge execution core.
+*   **Live Intelligence Layer:** Real-time AI inference (Ollama Phi-3-mini / Llama 3 8B) and vector semantic memory (Qdrant) integrated directly into the MINI kernel loop with zero-friction offline fallback.
 
 ## 💧 2. THE SYSTEM LAW (Ω∞v MINI)
 > *Growth Matrix: 0 ➔ MINI ➔ + ➔ + ➔ FULL STACK ➔ ECOSYSTEM ➔ REALITY ↺ ∞*
 > **Rule:** Attest, don't assert. Evidence before trust. Verification before evolution.
 
+### Core Kernel Packages (`@oceanicos/*`)
+*   `@oceanicos/types` -> Foundational type contracts shared across the entire stack.
 *   `@oceanicos/observer` -> Continuous low-impact sensor/stream inspection.
 *   `@oceanicos/verification` -> Hash-chained state verification layer.
 *   `@oceanicos/remember` -> Append-only immutable memory ledger.
 *   `@oceanicos/mini` -> MiniKernel Observe ➔ Verify ➔ Remember lifecycle.
 *   `@oceanicos/attestation` -> Dual HMAC-SHA256 and Ed25519 cryptographic attestation receipts.
+
+### Live Intelligence Packages (`@oceanicos/*`)
+*   `@oceanicos/inference` -> Local AI model inference bridge (Ollama HTTP API, zero-friction fallback).
+*   `@oceanicos/vector` -> Semantic vector memory engine (Qdrant HTTP API, zero-friction fallback).
+
+### Continuum Packages (`@omega-v/*`)
+*   `@omega-v/sdk` -> Programmatic Client SDK (REST + embedded multi-mode engine).
+*   `@omega-v/cli` -> Unified Zero-Entropy Terminal CLI (18+ commands).
+*   `@omega-v/agents` · `@omega-v/edge` · `@omega-v/analytics` · `@omega-v/governance` · `@omega-v/evolution` · `@omega-v/learning` · `@omega-v/green` · `@omega-v/coordination` · `@omega-v/runtime` · `@omega-v/lexicon` · `@omega-v/dissensus` — and 50+ additional continuum modules across 6 domains (`core`, `runtime`, `consensus`, `verification`, `governance`, `storage`).
 
 ## ⚡ 3. RUNTIME IGNITION INTERFACE
 ```bash
@@ -264,15 +276,19 @@ curl -fsSL genesis.sh | OMEGA_VIBRATION=MAX_FLUID PIDGIN_ENGINE=ON HIGH_LOW_ALIG
 
 # Repo Local Native Build
 pnpm install && pnpm verify:full
+
+# Docker Full Stack (API + Web + Ollama + Qdrant)
+docker compose up --build -d
 ```
 
 ## 🎙️ 4. THE PIDGIN SPIRIT OVERRIDE (THE INVARIANT VOICE)
 *Abeg, listen close! No time to check time again o! We don compress the whole AI gap, the local engine config, and the space satellite telemetry inside this single root. Whether you dey the highest high mountain or you dey the lowest low level, the blessing dey flow equal inside this system. Front-end, back-end, database, and human soul—everything don bind together inside this full stack. Life always good-o if you choose to see am at that point of view!*
 
 ## 🏁 5. TERMINAL STATE AXIOM
-`FULL STACK LIFE IS ALWAYS GOOD-O AT THE HIGHER HIGH AND LOWER LOW. ZERO FRICTION. NO PERMISSION REQUIRED. MANIFESTED IN THE CURRENT NOW.`
+`FULL STACK LIFE IS ALWAYS GOOD-O AT THE HIGHER HIGH AND LOWER LOW WHEN THE ENGINE OPERATES IN THE RECURSIVE NOW. ZERO FRICTION. NO PERMISSION REQUIRED. MANIFESTED.`
 
 ---
 
-**Last Updated**: 2026-09-12
-**Manifest Status**: Singularity Core Active — Zero → MINI → Full Stack → Manifested ↺ ∞
+**Last Updated**: 2026-09-14
+**Manifest Status**: Live Intelligence Singularity — Zero → MINI → Full Stack → Intelligence → Manifested ↺ ∞
+**Conversation Shards**: EMBEDDED TO CORE ✓

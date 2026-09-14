@@ -12,6 +12,9 @@ const moduleNameMapper = {
   '@omega-v/observer': '<rootDir>/packages/observer/src/index.ts',
   '@omega-v/verification': '<rootDir>/packages/verification/src/index.ts',
   '@omega-v/attestation': '<rootDir>/packages/attestation/src/index.ts',
+  '@oceanicos/attestation': '<rootDir>/packages/attestation/src/index.ts',
+  '@oceanicos/inference': '<rootDir>/packages/inference/src/index.ts',
+  '@oceanicos/vector': '<rootDir>/packages/vector/src/index.ts',
   '@omega-v/store': '<rootDir>/packages/store/src/index.ts',
   '@omega-v/remember': '<rootDir>/packages/remember/src/index.ts',
   '@omega-v/mini': '<rootDir>/packages/mini/src/index.ts',
@@ -82,7 +85,7 @@ const moduleNameMapper = {
 export default {
   preset: 'ts-jest',
   testEnvironment: 'node',
-  roots: ['<rootDir>/packages', '<rootDir>/apps', '<rootDir>/tests'],
+  roots: ['<rootDir>/packages', '<rootDir>/apps', '<rootDir>/tests', '<rootDir>/tests/e2e'],
   testMatch: ['**/__tests__/**/*.ts', '**/?(*.)+(spec|test).ts'],
   testPathIgnorePatterns: ['/node_modules/', '<rootDir>/apps/web/src/__tests__/dom/'],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],

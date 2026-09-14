@@ -1,29 +1,22 @@
 #!/bin/sh
-# Ω∞v Oceanicos Pre-commit Hook
-# Verify code quality before allowing commits
+# Ω∞v Oceanicos Zero-Entropy Pre-commit Hook
+# Invariant: Attest, don't assert. Evidence before trust.
 
-echo "🔍 Pre-commit verification..."
+echo "🌊 [Ω∞v] Pre-commit verification loop starting..."
 
-# Run linting
-echo "  → Checking code style..."
-npm run lint || {
-  echo "❌ Linting failed. Run 'npm run lint:fix' to auto-fix."
+# 1. Typecheck all workspace modules
+echo "  → [1/2] Type checking workspace (pnpm typecheck)..."
+pnpm typecheck || {
+  echo "❌ Type checking failed. Fix TypeScript compilation errors before committing."
   exit 1
 }
 
-# Run type checking
-echo "  → Type checking..."
-npm run type-check || {
-  echo "❌ Type checking failed."
+# 2. Run Fail-Closed Attestation Test Suite
+echo "  → [2/2] Running e2e cryptographic attestation tests (pnpm test:e2e)..."
+pnpm test:e2e || {
+  echo "❌ Attestation e2e tests failed."
   exit 1
 }
 
-# Run tests
-echo "  → Running tests..."
-npm run test:fast || {
-  echo "❌ Tests failed."
-  exit 1
-}
-
-echo "✅ Pre-commit checks passed"
+echo "✅ [Ω∞v] All verification gates passed with zero entropy. Proceeding with commit."
 exit 0

@@ -1,27 +1,68 @@
+export interface IPCState {
+  cpu: number;
+  ram: number;
+  io: string;
+  ts: string;
+}
+
+export interface INewsArticle {
+  source: string;
+  headline: string;
+  timestamp: string;
+  impactMetric: number;
+}
+
+export interface IHiggsfieldJob {
+  jobId: string;
+  modelType: string;
+  status: 'pending' | 'completed' | 'failed';
+  resultUrl?: string;
+}
+
 export interface IObservation {
-  readonly uuid: string;
-  readonly timestamp: string;
-  readonly siliconYield: number;
-  readonly gridLoadMegawatts: number;
-  readonly acceleratorInventory: number;
+  uuid: string;
+  timestamp: string;
+  siliconYield: number;
+  gridLoadMegawatts: number;
+  acceleratorInventory: number;
+  hardwareState: IPCState;
+  globalNewsFeed: INewsArticle[];
+  higgsfieldTelemetry?: IHiggsfieldJob;
+  androidAutomationState?: {
+    deviceSerial: string;
+    currentApp: string;
+    screenshotHash: string;
+  };
 }
 
 export interface IEvidence {
-  readonly status: 'PASS' | 'FAIL' | 'DIVERGENT';
-  readonly lawRoute: string;
-  readonly timestamp: string;
-  readonly observationUuid: string;
-  readonly signatureProof: string;
+  status: 'PASS' | 'FAIL' | 'DIVERGENT';
+  lawRoute: string;
+  timestamp: string;
+  observationUuid: string;
+  signatureProof: string;
+  mcpDiagnostics: {
+    logcatAnomalyCount: number;
+    stepDurationMs: number;
+    profileExecuted: 'flash' | 'pro';
+  };
 }
 
 export interface IMiniBlock {
-  readonly index: number;
-  readonly timestamp: string;
-  readonly observation: IObservation;
-  readonly evidence: IEvidence;
-  readonly previousHash: string;
-  readonly hash: string;
-  readonly nonce: number;
+  index: number;
+  timestamp: string;
+  observation: IObservation;
+  evidence: IEvidence;
+  previousHash: string;
+  hash: string;
+  nonce: number;
+}
+
+export interface ILiquidState {
+  velocity: number;
+  clarityVector: number;
+  resonanceHz: number;
+  blockAnchor: string;
 }
 
 export interface VerificationResultSummary {
@@ -57,3 +98,4 @@ export interface Attestation {
   verifyingPublicKey?: string;
   status: 'signed' | 'revoked' | 'expired';
 }
+

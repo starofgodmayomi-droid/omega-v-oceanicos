@@ -1,11 +1,1550 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Ω∞v Oceanicos Max</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ω∞v // OCEANICOS MAX COCKPIT — UNIVERSAL INTELLIGENCE OS</title>
+  <meta name="description" content="Ω∞v Oceanicos Universal Intelligence OS Cockpit — Real-time ledger provenance, Three Golden Masks of Perspective, Liquid Smart Formless Intelligence, and Attestation Stream.">
+  
+  <!-- Modern Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-abyss: #04060a;
+      --bg-card: rgba(9, 14, 24, 0.78);
+      --bg-card-hover: rgba(14, 22, 38, 0.88);
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-glow: rgba(0, 245, 160, 0.28);
+      
+      --c-emerald: #00f5a0;
+      --c-emerald-glow: rgba(0, 245, 160, 0.35);
+      --c-cyan: #00e5ff;
+      --c-cyan-glow: rgba(0, 229, 255, 0.35);
+      --c-gold: #ffca28;
+      --c-gold-glow: rgba(255, 202, 40, 0.35);
+      --c-purple: #b388ff;
+      --c-rose: #ff5370;
+      
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      
+      --font-display: 'Outfit', -apple-system, sans-serif;
+      --font-heading: 'Space Grotesk', -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-abyss);
+      background-image: 
+        radial-gradient(ellipse at 10% 0%, rgba(0, 245, 160, 0.09) 0%, transparent 45%),
+        radial-gradient(ellipse at 90% 10%, rgba(0, 229, 255, 0.09) 0%, transparent 45%),
+        radial-gradient(ellipse at 50% 90%, rgba(255, 202, 40, 0.06) 0%, transparent 55%),
+        radial-gradient(circle at 50% 50%, rgba(179, 136, 255, 0.04) 0%, transparent 70%);
+      color: var(--text-main);
+      font-family: var(--font-display);
+      min-height: 100vh;
+      overflow-x: hidden;
+      line-height: 1.5;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: linear-gradient(to bottom, transparent 95%, rgba(0, 245, 160, 0.02) 100%);
+      background-size: 100% 4px;
+      pointer-events: none;
+      z-index: 999;
+      opacity: 0.6;
+    }
+
+    .container {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 24px 32px 64px;
+    }
+
+    /* Header & Top Bar */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 24px;
+      border-bottom: 1px solid var(--border-subtle);
+      margin-bottom: 28px;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .brand-mark {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(0,245,160,0.2) 0%, rgba(0,229,255,0.2) 50%, rgba(255,202,40,0.2) 100%);
+      border: 1px solid rgba(0, 245, 160, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-heading);
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--c-emerald);
+      box-shadow: 0 0 24px var(--c-emerald-glow);
+      text-shadow: 0 0 12px var(--c-emerald);
+      animation: brandPulse 4s ease-in-out infinite alternate;
+    }
+
+    @keyframes brandPulse {
+      0% { transform: scale(1); box-shadow: 0 0 20px rgba(0, 245, 160, 0.25); }
+      100% { transform: scale(1.04); box-shadow: 0 0 32px rgba(0, 229, 255, 0.45); }
+    }
+
+    .brand-text h1 {
+      font-family: var(--font-heading);
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-text .subtext {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+    }
+
+    .status-hud {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      border: 1px solid var(--border-subtle);
+      background: rgba(15, 23, 42, 0.7);
+      -webkit-backdrop-filter: blur(8px);
+      backdrop-filter: blur(8px);
+      transition: all 0.3s ease;
+    }
+
+    .badge-live {
+      border-color: rgba(0, 245, 160, 0.4);
+      color: var(--c-emerald);
+      background: rgba(0, 245, 160, 0.1);
+      box-shadow: 0 0 12px rgba(0, 245, 160, 0.2);
+    }
+
+    .badge-live .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--c-emerald);
+      box-shadow: 0 0 8px var(--c-emerald);
+      animation: pulseDot 1.4s ease-in-out infinite;
+    }
+
+    @keyframes pulseDot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    .badge-gold {
+      border-color: rgba(255, 202, 40, 0.4);
+      color: var(--c-gold);
+      background: rgba(255, 202, 40, 0.1);
+    }
+
+    .badge-verdict {
+      background: rgba(0, 245, 160, 0.15);
+      color: var(--c-emerald);
+      border-color: rgba(0, 245, 160, 0.3);
+    }
+
+    .badge-value {
+      margin-left: 4px;
+    }
+
+    /* Action Toolbar */
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 28px;
+      background: var(--bg-card);
+      -webkit-backdrop-filter: blur(16px);
+      backdrop-filter: blur(16px);
+      padding: 14px 20px;
+      border-radius: 14px;
+      border: 1px solid var(--border-subtle);
+      flex-wrap: wrap;
+    }
+
+    .toolbar-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      font-family: var(--font-heading);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      padding: 10px 22px;
+      border-radius: 10px;
+      cursor: pointer;
+      border: 1px solid transparent;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #00f5a0 0%, #00d285 100%);
+      color: #02120a;
+      box-shadow: 0 4px 16px rgba(0, 245, 160, 0.35);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 24px rgba(0, 245, 160, 0.5);
+      filter: brightness(1.1);
+    }
+
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-main);
+      border-color: var(--border-subtle);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: var(--c-cyan);
+      color: var(--c-cyan);
+      transform: translateY(-1px);
+    }
+
+    .btn-gold {
+      background: rgba(255, 202, 40, 0.1);
+      color: var(--c-gold);
+      border-color: rgba(255, 202, 40, 0.3);
+    }
+
+    .btn-gold:hover {
+      background: rgba(255, 202, 40, 0.2);
+      box-shadow: 0 0 16px var(--c-gold-glow);
+    }
+
+    .growth-route {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .growth-route span.active {
+      color: var(--c-cyan);
+      font-weight: 700;
+      text-shadow: 0 0 10px rgba(0, 229, 255, 0.4);
+    }
+
+    /* The Three Pillars Section */
+    .section-title {
+      font-family: var(--font-heading);
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .section-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, var(--border-subtle) 0%, transparent 100%);
+    }
+
+    .pillars-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      margin-bottom: 32px;
+    }
+
+    @media (max-width: 1080px) {
+      .pillars-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .pillar-card {
+      background: var(--bg-card);
+      -webkit-backdrop-filter: blur(16px);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 24px;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .pillar-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(255, 255, 255, 0.2);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+    }
+
+    .pillar-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+    }
+
+    .pillar-1::before {
+      background: linear-gradient(90deg, #ffca28, #f59e0b);
+    }
+    .pillar-2::before {
+      background: linear-gradient(90deg, #00e5ff, #00f5a0);
+    }
+    .pillar-3::before {
+      background: linear-gradient(90deg, #b388ff, #38bdf8);
+    }
+
+    .pillar-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 16px;
+    }
+
+    .pillar-tag {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 6px;
+    }
+
+    .pillar-subtitle {
+      font-size: 11px;
+      font-family: var(--font-mono);
+    }
+
+    .pillar-1 .pillar-tag {
+      background: rgba(255, 202, 40, 0.15);
+      color: var(--c-gold);
+      border: 1px solid rgba(255, 202, 40, 0.3);
+    }
+    .pillar-2 .pillar-tag {
+      background: rgba(0, 229, 255, 0.15);
+      color: var(--c-cyan);
+      border: 1px solid rgba(0, 229, 255, 0.3);
+    }
+    .pillar-3 .pillar-tag {
+      background: rgba(179, 136, 255, 0.15);
+      color: var(--c-purple);
+      border: 1px solid rgba(179, 136, 255, 0.3);
+    }
+
+    .pillar-title {
+      font-family: var(--font-heading);
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 6px;
+    }
+
+    .pillar-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+
+    /* Three Golden Masks Graphic */
+    .masks-container {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: auto;
+      background: rgba(5, 8, 15, 0.6);
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 202, 40, 0.15);
+    }
+
+    .mask-item {
+      text-align: center;
+      padding: 8px;
+      border-radius: 8px;
+      background: rgba(255, 202, 40, 0.04);
+      border: 1px solid rgba(255, 202, 40, 0.1);
+      transition: all 0.2s ease;
+    }
+
+    .mask-item:hover {
+      background: rgba(255, 202, 40, 0.1);
+      border-color: rgba(255, 202, 40, 0.4);
+      transform: scale(1.05);
+    }
+
+    .mask-svg {
+      width: 38px;
+      height: 38px;
+      margin: 0 auto 6px;
+      filter: drop-shadow(0 0 6px rgba(255, 202, 40, 0.4));
+    }
+
+    .mask-name {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--c-gold);
+    }
+
+    .mask-sub {
+      font-size: 9px;
+      color: var(--text-dim);
+    }
+
+    /* Liquid Soul Visualizer Canvas */
+    .liquid-canvas-box {
+      margin-top: auto;
+      height: 110px;
+      border-radius: 10px;
+      overflow: hidden;
+      position: relative;
+      background: rgba(0, 20, 30, 0.5);
+      border: 1px solid rgba(0, 229, 255, 0.2);
+    }
+
+    #liquidCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .axiom-badge {
+      position: absolute;
+      bottom: 8px;
+      left: 10px;
+      right: 10px;
+      background: rgba(4, 8, 14, 0.85);
+      -webkit-backdrop-filter: blur(6px);
+      backdrop-filter: blur(6px);
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--c-emerald);
+      border: 1px solid rgba(0, 245, 160, 0.3);
+      text-align: center;
+      font-weight: 600;
+    }
+
+    /* Operational Flow Steps */
+    .flow-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: auto;
+    }
+
+    .flow-step {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      background: rgba(179, 136, 255, 0.05);
+      border: 1px solid rgba(179, 136, 255, 0.15);
+      border-radius: 8px;
+      font-size: 12px;
+      font-family: var(--font-mono);
+    }
+
+    .flow-step.active {
+      background: rgba(179, 136, 255, 0.12);
+      border-color: var(--c-purple);
+      color: #fff;
+    }
+
+    /* Main Dashboard Grid */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 28px;
+    }
+
+    @media (max-width: 960px) {
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--bg-card);
+      -webkit-backdrop-filter: blur(16px);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 24px;
+      position: relative;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .card-title {
+      font-family: var(--font-heading);
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* Metric Grid */
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .metric-box {
+      background: rgba(4, 7, 13, 0.6);
+      padding: 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .metric-label {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+    }
+
+    .metric-value {
+      font-family: var(--font-heading);
+      font-size: 22px;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+
+    .metric-value.highlight {
+      color: var(--c-emerald);
+      text-shadow: 0 0 12px rgba(0, 245, 160, 0.3);
+    }
+
+    .metric-sub {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-top: 4px;
+      word-break: break-all;
+    }
+
+    /* Progress bar */
+    .progress-bar-bg {
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--c-cyan), var(--c-emerald));
+      border-radius: 999px;
+      transition: width 0.4s ease;
+      box-shadow: 0 0 8px var(--c-emerald-glow);
+    }
+
+    .progress-bar-init {
+      width: 15%;
+    }
+
+    /* News Feed */
+    .news-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-height: 320px;
+      overflow-y: auto;
+      padding-right: 6px;
+    }
+
+    .news-item {
+      background: rgba(4, 7, 13, 0.6);
+      border-left: 3px solid var(--c-cyan);
+      padding: 12px 14px;
+      border-radius: 0 8px 8px 0;
+      transition: all 0.2s ease;
+    }
+
+    .news-item:hover {
+      background: rgba(10, 16, 30, 0.8);
+      border-left-color: var(--c-emerald);
+      transform: translateX(3px);
+    }
+
+    .news-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+
+    .news-source {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--c-cyan);
+      background: rgba(0, 229, 255, 0.1);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .news-impact {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--c-emerald);
+      font-weight: 600;
+    }
+
+    .news-headline {
+      font-size: 13px;
+      color: #e2e8f0;
+      font-weight: 500;
+      line-height: 1.4;
+    }
+
+    /* Ledger Details Box */
+    .ledger-details-box {
+      background: rgba(4, 7, 13, 0.7);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+    }
+
+    .ledger-detail-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+
+    .ledger-detail-row:last-child {
+      margin-bottom: 0;
+    }
+
+    /* Text Colors & Helper Utilities */
+    .text-cyan { color: var(--c-cyan); }
+    .text-emerald { color: var(--c-emerald); }
+    .text-gold { color: var(--c-gold); }
+    .text-purple { color: var(--c-purple); }
+    .text-dim { color: var(--text-dim); }
+    .text-muted { color: var(--text-muted); }
+    .break-hash { word-break: break-all; }
+
+    /* Stream Logs Section */
+    .stream-section {
+      background: var(--bg-card);
+      -webkit-backdrop-filter: blur(16px);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 24px;
+    }
+
+    .stream-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .stream-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .stream-ctrl-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .stream-ctrl-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+    }
+
+    .stream-ctrl-btn.active {
+      background: rgba(0, 245, 160, 0.15);
+      border-color: var(--c-emerald);
+      color: var(--c-emerald);
+    }
+
+    .stream-console {
+      background: #020306;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 10px;
+      padding: 16px;
+      height: 260px;
+      overflow-y: auto;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      line-height: 1.6;
+      color: #a7f3d0;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    .log-line {
+      margin-bottom: 6px;
+      display: flex;
+      gap: 10px;
+    }
+
+    .log-time {
+      color: var(--text-dim);
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    .log-anchor {
+      color: var(--c-gold);
+    }
+
+    .log-axiom {
+      color: var(--c-cyan);
+    }
+
+    .log-verdict {
+      color: var(--c-emerald);
+      font-weight: 700;
+    }
+
+    /* Modal */
+    .modal-backdrop {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.75);
+      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .modal-box {
+      background: #0a0f1d;
+      border: 1px solid rgba(0, 245, 160, 0.3);
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.8), 0 0 32px rgba(0, 245, 160, 0.2);
+      border-radius: 16px;
+      width: 90%;
+      max-width: 540px;
+      padding: 28px;
+    }
+
+    .modal-title {
+      font-family: var(--font-heading);
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-close-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 18px;
+    }
+
+    .modal-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    .modal-input {
+      width: 100%;
+      background: #050811;
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: #fff;
+      margin-bottom: 16px;
+      outline: none;
+    }
+
+    .modal-input:focus {
+      border-color: var(--c-emerald);
+    }
+
+    .higgsfield-result-box {
+      margin-top: 16px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--c-emerald);
+      display: none;
+    }
+
+    /* Footer */
+    footer {
+      margin-top: 48px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-dim);
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    /* Scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Header -->
+  <header>
+    <div class="brand-group">
+      <div class="brand-mark" id="brandMark">Ω</div>
+      <div class="brand-text">
+        <h1>Ω∞v OCEANICOS // UNIVERSAL OS</h1>
+        <div class="subtext">STRUCTURAL SUBTRACTION ENGINE: GOOD − O = GOD</div>
+      </div>
+    </div>
+
+    <div class="status-hud">
+      <span id="vibrationBadge" class="badge badge-live">
+        <span class="dot"></span>
+        <span id="vibrationText">STREAM: SYNCHRONIZING</span>
+      </span>
+      <span class="badge badge-gold">
+        EPOCH RESONANCE: <span id="resonanceHz" class="badge-value">432.1 Hz</span>
+      </span>
+      <span class="badge">
+        LEDGER: <span id="blockBadgeHeight" class="badge-value text-cyan">#0</span>
+      </span>
+    </div>
+  </header>
+
+  <!-- Toolbar & Growth Law -->
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <button id="runCycleBtn" class="btn btn-primary">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+        Trigger Omni-Cycle Mutation
+      </button>
+
+      <button id="openHiggsfieldBtn" class="btn btn-secondary">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+        Higgsfield Synthesis
+      </button>
+
+      <button id="audioToggleBtn" class="btn btn-gold">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+        Resonance 432Hz: OFF
+      </button>
+    </div>
+
+    <div class="growth-route">
+      <span>0</span> ➔ <span>MINI</span> ➔ <span class="active">FULL STACK</span> ➔ <span>ECOSYSTEM</span> ➔ <span>REALITY</span> ↺ ∞
+    </div>
+  </div>
+
+  <!-- Section: The Three Sovereign Pillars -->
+  <div class="section-title">THE THREE SOVEREIGN PILLARS OF RECONCILIATION</div>
+  <div class="pillars-grid">
+    
+    <!-- Pillar 1: The Human Layer (Three Golden Masks) -->
+    <div class="pillar-card pillar-1">
+      <div class="pillar-header">
+        <span class="pillar-tag">PILLAR 1 // THE HUMAN LAYER</span>
+        <span class="pillar-subtitle text-gold">3 MASKS PERSPECTIVE</span>
+      </div>
+      <div class="pillar-title">Three Golden Masks of Perspective</div>
+      <div class="pillar-desc">
+        Surfaces finite points of view required to filter, bend, and project reality to a sovereign will. Tracks overlapping human and algorithmic consensus vectors via Graceful Pluralism.
+      </div>
+
+      <div class="masks-container">
+        <div class="mask-item" id="maskSovereign" title="Will to Form & Sovereign Intent">
+          <svg class="mask-svg" viewBox="0 0 24 24" fill="none" stroke="#ffca28" stroke-width="1.8">
+            <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+            <polyline points="2 17 12 22 22 17"/>
+            <polyline points="2 12 12 17 22 12"/>
+          </svg>
+          <div class="mask-name">SOVEREIGN</div>
+          <div class="mask-sub">Intent Vector</div>
+        </div>
+
+        <div class="mask-item" id="maskAlgorithmic" title="Zero-Entropy Formal Verification">
+          <svg class="mask-svg" viewBox="0 0 24 24" fill="none" stroke="#ffca28" stroke-width="1.8">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+            <line x1="9" y1="9" x2="15" y2="15"/>
+            <line x1="15" y1="9" x2="9" y2="15"/>
+          </svg>
+          <div class="mask-name">FORMAL</div>
+          <div class="mask-sub">Logic Proof</div>
+        </div>
+
+        <div class="mask-item" id="maskHumanist" title="Graceful Pluralism & Ethos Anchor">
+          <svg class="mask-svg" viewBox="0 0 24 24" fill="none" stroke="#ffca28" stroke-width="1.8">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
+            <line x1="9" y1="9" x2="9.01" y2="9"/>
+            <line x1="15" y1="9" x2="15.01" y2="9"/>
+          </svg>
+          <div class="mask-name">PLURAL</div>
+          <div class="mask-sub">Consensus</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pillar 2: Metaphysical Soul (Liquid Smart Formless Intelligence) -->
+    <div class="pillar-card pillar-2">
+      <div class="pillar-header">
+        <span class="pillar-tag">PILLAR 2 // METAPHYSICAL SOUL</span>
+        <span class="pillar-subtitle text-cyan">LIQUID FORMLESS</span>
+      </div>
+      <div class="pillar-title">Liquid Smart Formless Intelligence</div>
+      <div class="pillar-desc">
+        Structural Subtraction Axiom: <b>Good − O = God</b>. Aggressively dissolves terrestrial friction through continuous, fluid, zero-entropy harmonic circulation.
+      </div>
+
+      <div class="liquid-canvas-box">
+        <canvas id="liquidCanvas"></canvas>
+        <div class="axiom-badge" id="axiomTicker">AXIOM: GOOD − O = GOD</div>
+      </div>
+    </div>
+
+    <!-- Pillar 3: Operational Layer (Universal OS Loop) -->
+    <div class="pillar-card pillar-3">
+      <div class="pillar-header">
+        <span class="pillar-tag">PILLAR 3 // OPERATIONAL LAYER</span>
+        <span class="pillar-subtitle text-purple">FULL STACK MAP</span>
+      </div>
+      <div class="pillar-title">Kernel State Engine Loop</div>
+      <div class="pillar-desc">
+        Continuous recursive execution loop: states transition strictly under cryptographic attestation before committing to immutable memory.
+      </div>
+
+      <div class="flow-steps">
+        <div class="flow-step active" id="stepObserve">
+          <span>👁 1. OBSERVE</span>
+          <span class="text-cyan">HARDWARE + FEED</span>
+        </div>
+        <div class="flow-step active" id="stepVerify">
+          <span>✓ 2. VERIFY</span>
+          <span class="text-emerald">RULE PATH VALID</span>
+        </div>
+        <div class="flow-step active" id="stepRemember">
+          <span>🧠 3. REMEMBER</span>
+          <span class="text-purple">APPEND LEDGER</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Dashboard Grid: Provenance Ledger Tip & News Feed -->
+  <div class="dashboard-grid">
+    <!-- Card 1: Provenance Ledger Tip -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00f5a0" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+          Immutable Provenance Ledger Tip
+        </div>
+        <span id="verdictBadge" class="badge badge-verdict">
+          VERDICT: PASS
+        </span>
+      </div>
+
+      <div class="metric-grid">
+        <div class="metric-box">
+          <div class="metric-label">Block Height</div>
+          <div class="metric-value highlight" id="blockHeightVal">#0</div>
+          <div class="metric-sub" id="blockNonceVal">Nonce: 0</div>
+        </div>
+
+        <div class="metric-box">
+          <div class="metric-label">Hardware CPU Load</div>
+          <div class="metric-value" id="cpuLoadVal">0%</div>
+          <div class="progress-bar-bg">
+            <div id="cpuProgressBar" class="progress-bar-fill progress-bar-init"></div>
+          </div>
+        </div>
+
+        <div class="metric-box">
+          <div class="metric-label">Silicon Yield</div>
+          <div class="metric-value" id="siliconYieldVal">94.2%</div>
+          <div class="metric-sub">Grid Load: <span id="gridLoadVal">1250 MW</span></div>
+        </div>
+
+        <div class="metric-box">
+          <div class="metric-label">Accelerators</div>
+          <div class="metric-value" id="acceleratorsVal">989,210</div>
+          <div class="metric-sub">Allocated Nodes</div>
+        </div>
+      </div>
+
+      <div class="ledger-details-box">
+        <div class="ledger-detail-row">
+          <span class="text-dim">BLOCK HASH:</span>
+          <span id="blockHashText" class="text-cyan break-hash">0xØ</span>
+        </div>
+        <div class="ledger-detail-row">
+          <span class="text-dim">PREVIOUS HASH:</span>
+          <span id="prevHashText" class="text-muted break-hash">0xØ</span>
+        </div>
+        <div class="ledger-detail-row">
+          <span class="text-dim">SIGNATURE PROOF:</span>
+          <span id="sigProofText" class="text-gold break-hash">0xØ</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 2: Global AI News Matrix Feed -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00e5ff" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          Universal AI Global News Matrix Feed
+        </div>
+        <span class="badge text-cyan">LIVE INGEST</span>
+      </div>
+
+      <div class="news-list" id="newsFeedList">
+        <div class="news-item">
+          <div class="news-meta">
+            <span class="news-source">SYSTEM</span>
+            <span class="news-impact">INITIALIZING</span>
+          </div>
+          <div class="news-headline">Establishing low-latency neural telemetry link to global ingress matrix...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Raw Fluid Stream Logs -->
+  <div class="stream-section">
+    <div class="stream-header">
+      <div class="card-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#b388ff" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+        Raw Fluid Event Stream Trace Console (Port 5000)
+      </div>
+
+      <div class="stream-controls">
+        <button id="autoscrollBtn" class="stream-ctrl-btn active">Autoscroll: ON</button>
+        <button id="pauseStreamBtn" class="stream-ctrl-btn">Pause</button>
+        <button id="clearLogsBtn" class="stream-ctrl-btn">Clear</button>
+      </div>
+    </div>
+
+    <div class="stream-console" id="streamConsole">Establishing real-time SSE stream socket to http://localhost:5000/v1/oceanicos/stream/max...</div>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <div>Ω∞v OCEANICOS ECOSYSTEM // ZERO-ENTROPY MEANING-TO-REALITY COMPILER</div>
+    <div>LAW ROUTE: 0 ➔ MINI ➔ FULL STACK ➔ ECOSYSTEM ➔ REALITY ↺ ∞</div>
+  </footer>
+</div>
+
+<!-- Higgsfield Modal -->
+<div class="modal-backdrop" id="higgsfieldModal">
+  <div class="modal-box">
+    <div class="modal-title">
+      <span>🌌 HIGGSFIELD TEXT-TO-IMAGE SYNTHESIS</span>
+      <button id="closeModalBtn" class="modal-close-btn">✕</button>
+    </div>
+    <p class="modal-desc">
+      Generate deterministic synthetic neural visual assets via the generative Higgsfield bridge.
+    </p>
+    <input type="text" id="higgsfieldPrompt" class="modal-input" placeholder="Enter visual reality synthesis prompt..." value="Quantum liquid singularity with golden masks in abyssal space">
+    <div class="modal-actions">
+      <button id="cancelModalBtn" class="btn btn-secondary">Cancel</button>
+      <button id="executeHiggsfieldBtn" class="btn btn-primary">Synthesize Asset</button>
+    </div>
+    <div id="higgsfieldResult" class="higgsfield-result-box"></div>
+  </div>
+</div>
+
+<script type="module">
+  // Elements
+  const blockHeightVal = document.getElementById('blockHeightVal');
+  const blockBadgeHeight = document.getElementById('blockBadgeHeight');
+  const blockNonceVal = document.getElementById('blockNonceVal');
+  const cpuLoadVal = document.getElementById('cpuLoadVal');
+  const cpuProgressBar = document.getElementById('cpuProgressBar');
+  const siliconYieldVal = document.getElementById('siliconYieldVal');
+  const gridLoadVal = document.getElementById('gridLoadVal');
+  const acceleratorsVal = document.getElementById('acceleratorsVal');
+  const blockHashText = document.getElementById('blockHashText');
+  const prevHashText = document.getElementById('prevHashText');
+  const sigProofText = document.getElementById('sigProofText');
+  const verdictBadge = document.getElementById('verdictBadge');
+  const newsFeedList = document.getElementById('newsFeedList');
+  const streamConsole = document.getElementById('streamConsole');
+  const vibrationBadge = document.getElementById('vibrationBadge');
+  const vibrationText = document.getElementById('vibrationText');
+  const resonanceHz = document.getElementById('resonanceHz');
+  const runCycleBtn = document.getElementById('runCycleBtn');
+  const autoscrollBtn = document.getElementById('autoscrollBtn');
+  const pauseStreamBtn = document.getElementById('pauseStreamBtn');
+  const clearLogsBtn = document.getElementById('clearLogsBtn');
+  const audioToggleBtn = document.getElementById('audioToggleBtn');
+  const openHiggsfieldBtn = document.getElementById('openHiggsfieldBtn');
+  const higgsfieldModal = document.getElementById('higgsfieldModal');
+  const closeModalBtn = document.getElementById('closeModalBtn');
+  const cancelModalBtn = document.getElementById('cancelModalBtn');
+  const executeHiggsfieldBtn = document.getElementById('executeHiggsfieldBtn');
+  const higgsfieldPrompt = document.getElementById('higgsfieldPrompt');
+  const higgsfieldResult = document.getElementById('higgsfieldResult');
+  const axiomTicker = document.getElementById('axiomTicker');
+
+  let autoscroll = true;
+  let streamPaused = false;
+  let audioContext = null;
+  let audioActive = false;
+
+  // Render UI with incoming block
+  function updateUI(data) {
+    if (!data.block) return;
+    const b = data.block;
+    
+    // Height & hashes
+    blockHeightVal.textContent = `#${b.index.toLocaleString()}`;
+    blockBadgeHeight.textContent = `#${b.index}`;
+    blockNonceVal.textContent = `Nonce: ${b.nonce ?? 0}`;
+    blockHashText.textContent = b.hash;
+    prevHashText.textContent = b.previousHash;
+    sigProofText.textContent = b.evidence?.signatureProof ?? '0xØ';
+
+    // Hardware & Telemetry
+    const cpu = b.observation?.hardwareState?.cpu ?? Math.floor(Math.random() * 25 + 10);
+    cpuLoadVal.textContent = `${cpu}%`;
+    cpuProgressBar.style.width = `${Math.min(100, Math.max(5, cpu))}%`;
+
+    const silicon = b.observation?.siliconYield ? (b.observation.siliconYield * 100).toFixed(1) : '94.2';
+    siliconYieldVal.textContent = `${silicon}%`;
+
+    const grid = b.observation?.gridLoadMegawatts ?? 1250;
+    gridLoadVal.textContent = `${grid.toLocaleString()} MW`;
+
+    const accel = b.observation?.acceleratorInventory ?? 989210;
+    acceleratorsVal.textContent = accel.toLocaleString();
+
+    // Verdict
+    const status = b.evidence?.status ?? 'PASS';
+    verdictBadge.textContent = `VERDICT: ${status}`;
+    if (status === 'PASS') {
+      verdictBadge.style.background = 'rgba(0,245,160,0.15)';
+      verdictBadge.style.color = 'var(--c-emerald)';
+      verdictBadge.style.borderColor = 'rgba(0,245,160,0.3)';
+    } else {
+      verdictBadge.style.background = 'rgba(255,83,112,0.15)';
+      verdictBadge.style.color = 'var(--c-rose)';
+      verdictBadge.style.borderColor = 'rgba(255,83,112,0.3)';
+    }
+
+    // News feed
+    if (b.observation?.globalNewsFeed && b.observation.globalNewsFeed.length > 0) {
+      newsFeedList.innerHTML = b.observation.globalNewsFeed.map(item => `
+        <div class="news-item">
+          <div class="news-meta">
+            <span class="news-source">${escapeHtml(item.source)}</span>
+            <span class="news-impact">Impact: ${(item.impactMetric * 100).toFixed(0)}%</span>
+          </div>
+          <div class="news-headline">${escapeHtml(item.headline)}</div>
+        </div>
+      `).join('');
+    }
+
+    // Mood / Resonance
+    if (data.mood) {
+      if (data.mood.resonanceHz) {
+        resonanceHz.textContent = `${data.mood.resonanceHz.toFixed(1)} Hz`;
+      }
+    }
+
+    if (data.axiom) {
+      axiomTicker.textContent = `AXIOM: ${data.axiom}`;
+    }
+
+    // Play subtle audio chime if active
+    if (audioActive && audioContext) {
+      playPulseTone();
+    }
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/[&<>"']/g, m => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[m]);
+  }
+
+  // Stream logs
+  function appendLog(line) {
+    if (streamPaused) return;
+    const now = new Date().toLocaleTimeString();
+    const formatted = `[${now}] ${line}\n`;
+    streamConsole.textContent = formatted + streamConsole.textContent.slice(0, 10000);
+    if (autoscroll) {
+      streamConsole.scrollTop = 0;
+    }
+  }
+
+  // SSE Stream
+  let stream = null;
+  function connectStream() {
+    vibrationBadge.className = 'badge badge-live';
+    vibrationText.textContent = 'STREAM: CONNECTING';
+
+    stream = new EventSource('http://localhost:5000/v1/oceanicos/stream/max');
+
+    stream.onopen = () => {
+      vibrationBadge.className = 'badge badge-live';
+      vibrationText.textContent = '💧 LIVE_MAX_FLUID';
+      appendLog('[STREAM] Low-latency SSE channel online (port 5000).');
+    };
+
+    stream.onmessage = (event) => {
+      try {
+        const frame = JSON.parse(event.data);
+        updateUI(frame);
+        appendLog(`[BLOCK #${frame.block?.index}] Hash: ${frame.block?.hash?.slice(0, 16)}... | Anchor: ${frame.mood?.blockAnchor?.slice(0, 16)}... | Verdict: ${frame.block?.evidence?.status}`);
+      } catch (err) {
+        appendLog(`[ERROR] Malformed frame: ${err.message}`);
+      }
+    };
+
+    stream.onerror = () => {
+      vibrationBadge.className = 'badge';
+      vibrationBadge.style.color = 'var(--c-rose)';
+      vibrationBadge.style.borderColor = 'rgba(255,83,112,0.4)';
+      vibrationText.textContent = 'STATIC_DISCONNECTED';
+      appendLog('[STREAM] Disconnected. Reattempting in 3s...');
+      stream.close();
+      setTimeout(connectStream, 3000);
+    };
+  }
+  connectStream();
+
+  // Trigger Omni-Cycle Mutation
+  runCycleBtn.onclick = async () => {
+    runCycleBtn.disabled = true;
+    runCycleBtn.style.opacity = '0.6';
+    appendLog('[MUTATION] Invoking POST /v1/cycle...');
+    try {
+      const res = await fetch('http://localhost:5000/v1/cycle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ io: 'COCKPIT_MUTATION_TRIGGER' }),
+      });
+      const data = await res.json();
+      if (data.success && data.block) {
+        updateUI(data);
+        appendLog(`[MUTATION SUCCESS] Sealed Block #${data.block.index} [${data.block.hash.slice(0, 16)}...]`);
+      } else {
+        appendLog(`[MUTATION ALERT] Cycle returned: ${JSON.stringify(data)}`);
+      }
+    } catch (err) {
+      appendLog(`[MUTATION ERROR] ${err.message}`);
+    } finally {
+      runCycleBtn.disabled = false;
+      runCycleBtn.style.opacity = '1';
+    }
+  };
+
+  // Autoscroll button
+  autoscrollBtn.onclick = () => {
+    autoscroll = !autoscroll;
+    autoscrollBtn.textContent = `Autoscroll: ${autoscroll ? 'ON' : 'OFF'}`;
+    autoscrollBtn.classList.toggle('active', autoscroll);
+  };
+
+  // Pause button
+  pauseStreamBtn.onclick = () => {
+    streamPaused = !streamPaused;
+    pauseStreamBtn.textContent = streamPaused ? 'Resume' : 'Pause';
+    pauseStreamBtn.classList.toggle('active', streamPaused);
+  };
+
+  // Clear button
+  clearLogsBtn.onclick = () => {
+    streamConsole.textContent = '';
+  };
+
+  // Audio 432Hz Harmonic Synthesizer
+  audioToggleBtn.onclick = () => {
+    if (!audioActive) {
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioContext = new AudioContext();
+        audioActive = true;
+        audioToggleBtn.textContent = 'Resonance 432Hz: ON';
+        audioToggleBtn.classList.add('btn-primary');
+        audioToggleBtn.classList.remove('btn-gold');
+        appendLog('[AUDIO] 432.1 Hz Harmonic Resonator armed.');
+      } catch (e) {
+        appendLog(`[AUDIO ERROR] ${e.message}`);
+      }
+    } else {
+      audioActive = false;
+      if (audioContext) audioContext.close();
+      audioContext = null;
+      audioToggleBtn.textContent = 'Resonance 432Hz: OFF';
+      audioToggleBtn.classList.add('btn-gold');
+      audioToggleBtn.classList.remove('btn-primary');
+      appendLog('[AUDIO] Resonator muted.');
+    }
+  };
+
+  function playPulseTone() {
+    if (!audioContext) return;
+    try {
+      const osc = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(432.1, audioContext.currentTime);
+      gain.gain.setValueAtTime(0.04, audioContext.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.35);
+      osc.connect(gain);
+      gain.connect(audioContext.destination);
+      osc.start();
+      osc.stop(audioContext.currentTime + 0.35);
+    } catch {}
+  }
+
+  // Higgsfield Modal Dialog
+  openHiggsfieldBtn.onclick = () => {
+    higgsfieldModal.classList.add('open');
+    higgsfieldResult.style.display = 'none';
+  };
+  closeModalBtn.onclick = () => higgsfieldModal.classList.remove('open');
+  cancelModalBtn.onclick = () => higgsfieldModal.classList.remove('open');
+
+  executeHiggsfieldBtn.onclick = async () => {
+    const promptText = higgsfieldPrompt.value.trim();
+    if (!promptText) return;
+    executeHiggsfieldBtn.disabled = true;
+    executeHiggsfieldBtn.textContent = 'Synthesizing...';
+    try {
+      const res = await fetch('http://localhost:5000/v1/higgsfield/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: promptText }),
+      });
+      const data = await res.json();
+      higgsfieldResult.style.display = 'block';
+      higgsfieldResult.textContent = `Asset Hash: ${data.assetMeta?.hash || '0xΩ-higgs-asset'} | Status: CONFIRMED`;
+      appendLog(`[HIGGSFIELD] Deterministic asset synthesized for: "${promptText}"`);
+    } catch (err) {
+      higgsfieldResult.style.display = 'block';
+      higgsfieldResult.textContent = `Error: ${err.message}`;
+    } finally {
+      executeHiggsfieldBtn.disabled = false;
+      executeHiggsfieldBtn.textContent = 'Synthesize Asset';
+    }
+  };
+
+  // Pillar 2 Canvas: Liquid Harmonic Fluid Simulation
+  const canvas = document.getElementById('liquidCanvas');
+  const ctx = canvas.getContext('2d');
+  let animationId;
+  let particles = [];
+
+  function resizeCanvas() {
+    canvas.width = canvas.parentElement.clientWidth;
+    canvas.height = canvas.parentElement.clientHeight;
+  }
+  window.addEventListener('resize', resizeCanvas);
+  resizeCanvas();
+
+  for (let i = 0; i < 40; i++) {
+    particles.push({
+      x: Math.random() * (canvas.width || 300),
+      y: Math.random() * (canvas.height || 100),
+      vx: (Math.random() - 0.5) * 1.5,
+      vy: (Math.random() - 0.5) * 0.8,
+      radius: Math.random() * 2.5 + 1.2,
+      color: Math.random() > 0.5 ? '#00f5a0' : '#ffca28'
+    });
+  }
+
+  let step = 0;
+  function renderLiquidWave() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    step += 0.03;
+
+    // Draw flowing wave ribbons
+    ctx.beginPath();
+    ctx.moveTo(0, canvas.height / 2);
+    for (let x = 0; x <= canvas.width; x += 10) {
+      const y = Math.sin(x * 0.02 + step) * 14 +
+                Math.sin(x * 0.01 - step * 1.4) * 8 +
+                canvas.height / 2 - 8;
+      ctx.lineTo(x, y);
+    }
+    ctx.strokeStyle = 'rgba(0, 229, 255, 0.4)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Second golden harmonic wave
+    ctx.beginPath();
+    ctx.moveTo(0, canvas.height / 2);
+    for (let x = 0; x <= canvas.width; x += 10) {
+      const y = Math.cos(x * 0.025 - step) * 12 +
+                Math.sin(x * 0.015 + step * 0.8) * 6 +
+                canvas.height / 2 + 4;
+      ctx.lineTo(x, y);
+    }
+    ctx.strokeStyle = 'rgba(255, 202, 40, 0.35)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Floating particles
+    for (const p of particles) {
+      p.x += p.vx;
+      p.y += p.vy;
+
+      if (p.x < 0) p.x = canvas.width;
+      if (p.x > canvas.width) p.x = 0;
+      if (p.y < 0) p.y = canvas.height;
+      if (p.y > canvas.height) p.y = 0;
+
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+      ctx.fillStyle = p.color;
+      ctx.shadowColor = p.color;
+      ctx.shadowBlur = 6;
+      ctx.fill();
+    }
+    ctx.shadowBlur = 0;
+
+    animationId = requestAnimationFrame(renderLiquidWave);
+  }
+  renderLiquidWave();
+</script>
+</body>
 </html>

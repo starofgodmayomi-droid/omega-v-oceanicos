@@ -9,6 +9,8 @@ import {
 import { PluralisticHashChain, RememberEngine } from '../../packages/remember/dist/index.js';
 import { MiniKernel, executeOceanicosMaxExpansion } from '../../packages/mini/dist/index.js';
 import { AttestationService } from '../../packages/attestation/dist/index.js';
+import { InferenceClient } from '../../packages/inference/dist/index.js';
+import { VectorMemory } from '../../packages/vector/dist/index.js';
 import { createApp } from '../../apps/api/dist/index.js';
 
 describe('Ω∞v Oceanicos Max Compress Full-Stack E2E Suite', () => {
@@ -368,5 +370,100 @@ describe('Ω∞v Oceanicos Max Compress Full-Stack E2E Suite', () => {
     assert.ok(attestStdout.includes('Cryptographic Attestation Generated'));
     assert.ok(attestStdout.includes('HMAC-SHA256'));
     assert.ok(attestStdout.includes('YES'));
+  });
+
+  it('21. @oceanicos/inference — InferenceClient returns deterministic stub when Ollama is offline', async () => {
+    const client = new InferenceClient({
+      host: 'http://127.0.0.1:19999',
+      model: 'phi3:mini',
+      fallbackToStub: true,
+      timeoutMs: 500,
+    });
+
+    const available = await client.isAvailable();
+    assert.strictEqual(available, false);
+
+    const observation = ObserverEngine.generateTelemetry();
+    const result = await client.analyzeObservation(observation);
+    assert.ok(result);
+    assert.strictEqual(result.source, 'STUB');
+    assert.strictEqual(result.observationId, observation.uuid);
+    assert.strictEqual(result.model, 'phi3:mini');
+    assert.ok(result.confidence > 0 && result.confidence <= 1);
+    assert.ok(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'].includes(result.riskLevel));
+    assert.ok(result.recommendations.length > 0);
+    assert.ok(result.proof.startsWith('0xΩ'));
+  });
+
+  it('22. @oceanicos/vector — VectorMemory returns empty results when Qdrant is offline', async () => {
+    const vectorMem = new VectorMemory({
+      url: 'http://127.0.0.1:19998',
+      fallbackToEmpty: true,
+      timeoutMs: 500,
+    });
+
+    const available = await vectorMem.isAvailable();
+    assert.strictEqual(available, false);
+
+    const status = await vectorMem.getStatus();
+    assert.strictEqual(status.available, false);
+    assert.strictEqual(status.vectorCount, 0);
+
+    const dummyEmbedding = VectorMemory.generateSimpleEmbedding('test-block-query');
+    assert.strictEqual(dummyEmbedding.length, 384);
+    const recallResults = await vectorMem.recall(dummyEmbedding, 5);
+    assert.deepStrictEqual(recallResults, []);
+  });
+
+  it('23. Fastify API GET /v1/inference/status and POST /v1/inference/analyze return valid responses', async () => {
+    // 23a. Inference status
+    const statusRes = await apiApp.inject({ method: 'GET', url: '/v1/inference/status' });
+    assert.strictEqual(statusRes.statusCode, 200);
+    const statusData = JSON.parse(statusRes.body);
+    assert.strictEqual(statusData.success, true);
+    assert.ok(statusData.inference);
+    assert.strictEqual(typeof statusData.inference.available, 'boolean');
+
+    // 23b. Direct telemetry analysis
+    const analyzeRes = await apiApp.inject({
+      method: 'POST',
+      url: '/v1/inference/analyze',
+      payload: {},
+    });
+    assert.strictEqual(analyzeRes.statusCode, 200);
+    const analyzeData = JSON.parse(analyzeRes.body);
+    assert.strictEqual(analyzeData.success, true);
+    assert.ok(analyzeData.result);
+    assert.ok(analyzeData.result.proof.startsWith('0xΩ'));
+  });
+
+  it('24. Fastify API GET /v1/memory/status and GET /v1/memory/search return status and search results', async () => {
+    // 24a. Memory status
+    const statusRes = await apiApp.inject({ method: 'GET', url: '/v1/memory/status' });
+    assert.strictEqual(statusRes.statusCode, 200);
+    const statusData = JSON.parse(statusRes.body);
+    assert.strictEqual(statusData.success, true);
+    assert.ok(statusData.memory);
+    assert.strictEqual(typeof statusData.memory.available, 'boolean');
+
+    // 24b. Vector search
+    const searchRes = await apiApp.inject({ method: 'GET', url: '/v1/memory/search?q=silicon-yield' });
+    assert.strictEqual(searchRes.statusCode, 200);
+    const searchData = JSON.parse(searchRes.body);
+    assert.strictEqual(searchData.success, true);
+    assert.strictEqual(searchData.query, 'silicon-yield');
+    assert.ok(Array.isArray(searchData.results));
+  });
+
+  it('25. Fastify API POST /v1/cycle enriches block with aiInsight in stub mode', async () => {
+    const cycleRes = await apiApp.inject({ method: 'POST', url: '/v1/cycle' });
+    assert.strictEqual(cycleRes.statusCode, 200);
+    const data = JSON.parse(cycleRes.body);
+    assert.strictEqual(data.success, true);
+    assert.ok(data.block);
+    assert.ok(data.aiInsight);
+    assert.strictEqual(data.aiInsight.source, 'STUB');
+    assert.strictEqual(data.aiInsight.observationId, data.block.observation.uuid);
+    assert.ok(data.aiInsight.proof.startsWith('0xΩ'));
   });
 });

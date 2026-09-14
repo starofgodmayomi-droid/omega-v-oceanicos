@@ -54,6 +54,17 @@ export default function App() {
   const [attestationData, setAttestationData] = useState<any>(null);
   const [attestLoading, setAttestLoading] = useState(false);
 
+  // Live Intelligence State (Ollama + Qdrant)
+  const [inferenceStatus, setInferenceStatus] = useState<any>(null);
+  const [memoryStatus, setMemoryStatus] = useState<any>(null);
+  const [aiInsight, setAiInsight] = useState<any>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [vectorQuery, setVectorQuery] = useState('');
+  const [vectorResults, setVectorResults] = useState<any[]>([]);
+  const [vectorLoading, setVectorLoading] = useState(false);
+  const [showIntelligence, setShowIntelligence] = useState(true);
+  const [showVectorMemory, setShowVectorMemory] = useState(false);
+
   const eventSourceRef = useRef<EventSource | null>(null);
 
   // Poll miner status initially
@@ -72,9 +83,68 @@ export default function App() {
     } catch {}
   };
 
+  const fetchInferenceStatus = async () => {
+    try {
+      const res = await fetch('http://localhost:5000/v1/inference/status');
+      const data = await res.json();
+      if (data.success) setInferenceStatus(data.inference);
+    } catch {}
+  };
+
+  const fetchMemoryStatus = async () => {
+    try {
+      const res = await fetch('http://localhost:5000/v1/memory/status');
+      const data = await res.json();
+      if (data.success) setMemoryStatus(data.memory);
+    } catch {}
+  };
+
+  const runInferenceAnalysis = async () => {
+    setAiLoading(true);
+    setLastError(null);
+    try {
+      const res = await fetch('http://localhost:5000/v1/inference/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ observation: tip?.observation }),
+      });
+      const data = await res.json();
+      if (data.success && data.result) {
+        setAiInsight(data.result);
+        setShowIntelligence(true);
+      }
+    } catch (err: any) {
+      setLastError('Inference analysis error: ' + err.message);
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const searchVectorMemory = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!vectorQuery.trim()) return;
+    setVectorLoading(true);
+    setLastError(null);
+    try {
+      const res = await fetch(`http://localhost:5000/v1/memory/search?q=${encodeURIComponent(vectorQuery)}`);
+      const data = await res.json();
+      if (data.success) {
+        setVectorResults(data.results || []);
+        setShowVectorMemory(true);
+      }
+    } catch (err: any) {
+      setLastError('Vector search error: ' + err.message);
+    } finally {
+      setVectorLoading(false);
+    }
+  };
+
   // Connect to the real-time event stream
   useEffect(() => {
     fetchMinerStatus();
+    fetchInferenceStatus();
+    fetchMemoryStatus();
+    fetchTipFallback();
 
     let es: EventSource | null = null;
     try {
@@ -91,6 +161,9 @@ export default function App() {
           const payload = JSON.parse(event.data);
           if (payload.block) {
             setTip(payload.block);
+            if (payload.aiInsight) {
+              setAiInsight(payload.aiInsight);
+            }
             setHistory((prev) => {
               const exists = prev.some((b) => b.hash === payload.block.hash);
               if (exists) return prev;
@@ -277,6 +350,9 @@ export default function App() {
         setLastError(data.error || 'Cycle execution rejected');
       } else if (data.block) {
         setTip(data.block);
+        if (data.aiInsight) {
+          setAiInsight(data.aiInsight);
+        }
       }
     } catch (err: any) {
       setLastError(err.message);
@@ -322,13 +398,14 @@ export default function App() {
             Deep Pluralism Cryptographic Engine & Autonomous Sovereign Mesh Gateway
           </p>
         </div>
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+          {/* 1. SSE Stream Status */}
           <span
             style={{
               display: 'inline-flex',
               alignItems: 'center',
               gap: '6px',
-              padding: '4px 10px',
+              padding: '4px 8px',
               borderRadius: '4px',
               fontSize: '11px',
               fontWeight: 'bold',
@@ -339,14 +416,70 @@ export default function App() {
           >
             <span
               style={{
-                width: '8px',
-                height: '8px',
+                width: '7px',
+                height: '7px',
                 borderRadius: '50%',
                 background: streamConnected ? '#00ff66' : '#ff3344',
                 boxShadow: streamConnected ? '0 0 8px #00ff66' : 'none',
               }}
             />
-            {streamConnected ? 'SSE STREAM: LIVE' : 'SSE STREAM: OFFLINE'}
+            {streamConnected ? 'SSE: LIVE' : 'SSE: OFFLINE'}
+          </span>
+
+          {/* 2. Ollama Inference Status */}
+          <span
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '4px 8px',
+              borderRadius: '4px',
+              fontSize: '11px',
+              fontWeight: 'bold',
+              background: inferenceStatus?.available ? '#38bdf818' : '#f59e0b15',
+              color: inferenceStatus?.available ? '#38bdf8' : '#fbbf24',
+              border: `1px solid ${inferenceStatus?.available ? '#38bdf855' : '#f59e0b44'}`,
+            }}
+            title={inferenceStatus ? `Host: ${inferenceStatus.host}` : 'Ollama Local LLM Engine'}
+          >
+            <span
+              style={{
+                width: '7px',
+                height: '7px',
+                borderRadius: '50%',
+                background: inferenceStatus?.available ? '#38bdf8' : '#fbbf24',
+                boxShadow: inferenceStatus?.available ? '0 0 8px #38bdf8' : 'none',
+              }}
+            />
+            {inferenceStatus?.available ? 'OLLAMA: LIVE' : 'OLLAMA: STUB (OFFLINE)'}
+          </span>
+
+          {/* 3. Qdrant Vector DB Status */}
+          <span
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '4px 8px',
+              borderRadius: '4px',
+              fontSize: '11px',
+              fontWeight: 'bold',
+              background: memoryStatus?.available ? '#a855f718' : '#64748b15',
+              color: memoryStatus?.available ? '#c084fc' : '#94a3b8',
+              border: `1px solid ${memoryStatus?.available ? '#a855f755' : '#64748b44'}`,
+            }}
+            title={memoryStatus ? `URL: ${memoryStatus.url}` : 'Qdrant Vector Engine'}
+          >
+            <span
+              style={{
+                width: '7px',
+                height: '7px',
+                borderRadius: '50%',
+                background: memoryStatus?.available ? '#c084fc' : '#64748b',
+                boxShadow: memoryStatus?.available ? '0 0 8px #c084fc' : 'none',
+              }}
+            />
+            {memoryStatus?.available ? `QDRANT: ${memoryStatus.vectorCount} VECTORS` : 'QDRANT: OFFLINE'}
           </span>
         </div>
       </div>
@@ -477,6 +610,40 @@ export default function App() {
           }}
         >
           ✨ CHECK MOOD
+        </button>
+
+        {/* Live Intelligence Buttons */}
+        <button
+          onClick={runInferenceAnalysis}
+          disabled={aiLoading}
+          style={{
+            background: '#0a1d2e',
+            color: '#38bdf8',
+            border: '1px solid #38bdf855',
+            borderRadius: '4px',
+            padding: '10px 16px',
+            fontSize: '12px',
+            fontWeight: 'bold',
+            cursor: aiLoading ? 'wait' : 'pointer',
+          }}
+        >
+          {aiLoading ? 'ANALYZING...' : '🤖 AI INFERENCE'}
+        </button>
+
+        <button
+          onClick={() => setShowVectorMemory((prev) => !prev)}
+          style={{
+            background: showVectorMemory ? '#3b0764' : '#140c24',
+            color: '#c084fc',
+            border: '1px solid #c084fc55',
+            borderRadius: '4px',
+            padding: '10px 16px',
+            fontSize: '12px',
+            fontWeight: 'bold',
+            cursor: 'pointer',
+          }}
+        >
+          🧠 VECTOR RECALL {vectorResults.length > 0 ? `(${vectorResults.length})` : ''}
         </button>
 
         {/* Keypair Generators */}
@@ -665,6 +832,205 @@ export default function App() {
               "{moodData.pidginSpirit}"
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Inference Intelligence Card */}
+      {aiInsight && showIntelligence && (
+        <div
+          style={{
+            background: '#071626',
+            border: '1px solid #38bdf866',
+            borderRadius: '6px',
+            padding: '16px',
+            marginBottom: '20px',
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '13px', color: '#38bdf8', fontWeight: 'bold' }}>
+                🤖 AI INFERENCE INTELLIGENCE
+              </span>
+              <span
+                style={{
+                  fontSize: '10px',
+                  padding: '2px 6px',
+                  borderRadius: '3px',
+                  background: aiInsight.source === 'OLLAMA' ? '#05966922' : '#f59e0b22',
+                  color: aiInsight.source === 'OLLAMA' ? '#34d399' : '#fbbf24',
+                  border: `1px solid ${aiInsight.source === 'OLLAMA' ? '#059669' : '#f59e0b'}`,
+                }}
+              >
+                {aiInsight.source} ({aiInsight.model})
+              </span>
+            </div>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <span
+                style={{
+                  fontSize: '11px',
+                  padding: '2px 8px',
+                  borderRadius: '3px',
+                  fontWeight: 'bold',
+                  background:
+                    aiInsight.riskLevel === 'LOW'
+                      ? '#00ff6622'
+                      : aiInsight.riskLevel === 'MEDIUM'
+                      ? '#facc1522'
+                      : '#f8717122',
+                  color:
+                    aiInsight.riskLevel === 'LOW'
+                      ? '#00ff66'
+                      : aiInsight.riskLevel === 'MEDIUM'
+                      ? '#facc15'
+                      : '#f87171',
+                  border: `1px solid ${
+                    aiInsight.riskLevel === 'LOW'
+                      ? '#00ff66'
+                      : aiInsight.riskLevel === 'MEDIUM'
+                      ? '#facc15'
+                      : '#f87171'
+                  }`,
+                }}
+              >
+                RISK: {aiInsight.riskLevel}
+              </span>
+              <span style={{ fontSize: '11px', color: '#94a3b8' }}>
+                Conf: {Math.round(aiInsight.confidence * 100)}%
+              </span>
+              <button
+                onClick={() => setShowIntelligence(false)}
+                style={{ background: 'transparent', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '12px' }}
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+
+          <div style={{ fontSize: '12px', color: '#bae6fd', lineHeight: '1.6' }}>
+            <div style={{ marginBottom: '8px', padding: '10px', background: '#040d17', borderRadius: '4px', borderLeft: '3px solid #38bdf8' }}>
+              {aiInsight.assessment}
+            </div>
+
+            {aiInsight.recommendations && aiInsight.recommendations.length > 0 && (
+              <div style={{ marginTop: '10px' }}>
+                <strong style={{ color: '#7dd3fc', fontSize: '11px' }}>ACTIONABLE AI RECOMMENDATIONS:</strong>
+                <ul style={{ margin: '6px 0 0', paddingLeft: '20px', color: '#e0f2fe' }}>
+                  {aiInsight.recommendations.map((rec: string, idx: number) => (
+                    <li key={idx} style={{ marginBottom: '4px' }}>{rec}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            <div style={{ marginTop: '10px', fontSize: '10px', color: '#64748b', wordBreak: 'break-all' }}>
+              Cryptographic Proof: <code>{aiInsight.proof}</code> (Latency: {aiInsight.latencyMs}ms)
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Vector Memory Recall Card */}
+      {showVectorMemory && (
+        <div
+          style={{
+            background: '#0e0b1f',
+            border: '1px solid #c084fc66',
+            borderRadius: '6px',
+            padding: '16px',
+            marginBottom: '20px',
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '13px', color: '#d8b4fe', fontWeight: 'bold' }}>
+                🧠 QDRANT SEMANTIC VECTOR MEMORY RECALL
+              </span>
+              <span
+                style={{
+                  fontSize: '10px',
+                  padding: '2px 6px',
+                  borderRadius: '3px',
+                  background: memoryStatus?.available ? '#05966922' : '#64748b22',
+                  color: memoryStatus?.available ? '#34d399' : '#94a3b8',
+                  border: `1px solid ${memoryStatus?.available ? '#059669' : '#64748b'}`,
+                }}
+              >
+                {memoryStatus?.available ? `ONLINE (${memoryStatus.vectorCount} embeddings)` : 'FALLBACK (OFFLINE)'}
+              </span>
+            </div>
+            <button
+              onClick={() => setShowVectorMemory(false)}
+              style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '14px' }}
+            >
+              ✕
+            </button>
+          </div>
+
+          {/* Search Input */}
+          <form onSubmit={searchVectorMemory} style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+            <input
+              type="text"
+              placeholder="Search past blocks (e.g. silicon yield, grid load, consensus)..."
+              value={vectorQuery}
+              onChange={(e) => setVectorQuery(e.target.value)}
+              style={{
+                flex: 1,
+                background: '#04030a',
+                border: '1px solid #c084fc44',
+                borderRadius: '4px',
+                padding: '8px 12px',
+                color: '#e9d5ff',
+                fontSize: '12px',
+                outline: 'none',
+              }}
+            />
+            <button
+              type="submit"
+              disabled={vectorLoading}
+              style={{
+                background: '#7c3aed',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '4px',
+                padding: '8px 16px',
+                fontSize: '12px',
+                fontWeight: 'bold',
+                cursor: vectorLoading ? 'wait' : 'pointer',
+              }}
+            >
+              {vectorLoading ? 'SEARCHING...' : 'RECALL'}
+            </button>
+          </form>
+
+          {/* Results list */}
+          {vectorResults.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {vectorResults.map((res: any, idx: number) => (
+                <div
+                  key={idx}
+                  style={{
+                    background: '#06040d',
+                    border: '1px solid #c084fc33',
+                    padding: '10px',
+                    borderRadius: '4px',
+                    fontSize: '11px',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                    <span style={{ color: '#d8b4fe', fontWeight: 'bold' }}>Block #{res.metadata?.index || idx + 1}</span>
+                    <span style={{ color: '#34d399' }}>Similarity: {Math.round((res.score || 0) * 100)}%</span>
+                  </div>
+                  <div style={{ color: '#94a3b8', wordBreak: 'break-all' }}>Hash: <code>{res.blockHash}</code></div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            vectorQuery && !vectorLoading && (
+              <div style={{ color: '#94a3b8', fontSize: '11px', fontStyle: 'italic', padding: '8px 0' }}>
+                No semantic matches found for "{vectorQuery}". Try broader search terms.
+              </div>
+            )
+          )}
         </div>
       )}
 

@@ -1,52 +1,36 @@
-import { observePlanetaryBase, ObserverEngine } from '@oceanicos/observer';
-import { verifyPlanetarySovereignty, VerificationEngine } from '@oceanicos/verification';
-import { PluralisticHashChain, RememberEngine, CryptographicBlock } from '@oceanicos/remember';
+import crypto from 'node:crypto';
+import { ObserverEngine } from '@oceanicos/observer';
+import { VerificationEngine } from '@oceanicos/verification';
+import { RememberEngine } from '@oceanicos/remember';
 import { IMiniBlock } from '@oceanicos/types';
 
 export class MiniKernel {
-  protected remember: RememberEngine;
-  constructor(rememberEngine: RememberEngine) {
-    this.remember = rememberEngine;
+  constructor(private readonly ledger: RememberEngine) {}
+
+  public runCycle(io = 'EXEC'): IMiniBlock {
+    const observation = ObserverEngine.generateTelemetry(io);
+    const evidence = VerificationEngine.evaluate(observation);
+    const previousHash = this.ledger.getTip()?.hash ?? '8a3f91c2e4f9011b989210ffffffffff';
+    let nonce = 0,
+      hash = '';
+    while (true) {
+      hash = crypto
+        .createHash('sha256')
+        .update(`0xΩ-${this.ledger.height}-${previousHash}-${evidence.signatureProof}-${nonce}`)
+        .digest('hex');
+      if (hash.startsWith('00')) break;
+      nonce++;
+    }
+    const block: IMiniBlock = {
+      index: this.ledger.height,
+      timestamp: new Date().toISOString(),
+      observation,
+      evidence,
+      previousHash,
+      hash,
+      nonce,
+    };
+    this.ledger.append(block);
+    return block;
   }
-  public runCycle(): IMiniBlock {
-    const telemetry = ObserverEngine.generateTelemetry();
-    const evidence = VerificationEngine.evaluate(telemetry);
-    return this.remember.append(telemetry, evidence);
-  }
-  public executeCycle(): IMiniBlock {
-    return this.runCycle();
-  }
-}
-
-export const MiniKernelCoordinator = MiniKernel;
-export type MiniKernelCoordinator = MiniKernel;
-
-export function executeOceanicosMaxExpansion(): CryptographicBlock {
-  const kernelChain = new PluralisticHashChain();
-
-  // 1. Observe material conditions
-  const telemetry = observePlanetaryBase();
-
-  // 2. Process regional compliance checks
-  const verificationReceipt = verifyPlanetarySovereignty(telemetry);
-
-  // 3. Cryptographically commit block state
-  const securelyMintedBlock = kernelChain.commitState(verificationReceipt);
-
-  // Pure UI Telemetry Output Extraction
-  console.log(
-    `\nΩ ➔ [👁 ${Math.round(telemetry.siliconYield * 100)}% | ✓ ${verificationReceipt.status} | 🧠 #${securelyMintedBlock.index}] ── LIVE ── 0 ERRORS ── $`
-  );
-  console.log(`   [BLOCK HASH]      : ${securelyMintedBlock.hash}`);
-  console.log(`   [PREVIOUS HASH]   : ${securelyMintedBlock.previousHash}`);
-  console.log(`   [STATE ROOT]      : ${securelyMintedBlock.payload.stateRootHash}`);
-  console.log(
-    `   [PLURALISM LOGS]  : Regional tracking matrix verified cleanly via ${securelyMintedBlock.nonce} consensus operations.\n`
-  );
-
-  return securelyMintedBlock;
-}
-
-if (typeof require !== 'undefined' && require.main === module) {
-  executeOceanicosMaxExpansion();
 }

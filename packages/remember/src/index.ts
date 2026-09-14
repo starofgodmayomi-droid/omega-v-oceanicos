@@ -1,82 +1,37 @@
-import crypto from 'crypto';
-import { IMiniBlock, IObservation, IEvidence } from '@oceanicos/types';
-
-interface ISqliteDatabase {
-  exec(sql: string): void;
-  prepare(sql: string): {
-    get(...params: any[]): any;
-    run(...params: any[]): any;
-  };
-}
+import fs from 'node:fs';
+import path from 'node:path';
+import { IMiniBlock } from '@oceanicos/types';
 
 export class RememberEngine {
-  private db: ISqliteDatabase;
-  private readonly rootHash = '8a3f91c2e4f9011b989210ffffffffff';
+  private file: string;
+  private blocks: IMiniBlock[] = [];
 
-  constructor(dbPath: string = ':memory:') {
-    try {
-      const BetterSqlite = require('better-sqlite3');
-      this.db = new BetterSqlite(dbPath);
-    } catch {
-      const { DatabaseSync } = require('node:sqlite');
-      this.db = new DatabaseSync(dbPath);
+  constructor(file = './data/oceanicos.jsonl') {
+    this.file = file;
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    if (fs.existsSync(file)) {
+      this.blocks = fs
+        .readFileSync(file, 'utf8')
+        .split('\n')
+        .filter(Boolean)
+        .map((line) => JSON.parse(line));
     }
-    this.initSchema();
-  }
-
-  private initSchema() {
-    this.db.exec(
-      `CREATE TABLE IF NOT EXISTS ledger (id_index INTEGER PRIMARY KEY, timestamp TEXT NOT NULL, observation_json TEXT NOT NULL, evidence_json TEXT NOT NULL, previous_hash TEXT NOT NULL, hash TEXT NOT NULL, nonce INTEGER NOT NULL);`
-    );
   }
 
   public getTip(): IMiniBlock | null {
-    const row: any = this.db.prepare('SELECT * FROM ledger ORDER BY id_index DESC LIMIT 1').get();
-    if (!row) return null;
-    return {
-      index: row.id_index,
-      timestamp: row.timestamp,
-      observation: JSON.parse(row.observation_json),
-      evidence: JSON.parse(row.evidence_json),
-      previousHash: row.previous_hash,
-      hash: row.hash,
-      nonce: row.nonce,
-    };
+    return this.blocks.at(-1) ?? null;
   }
 
-  public append(observation: IObservation, evidence: IEvidence): IMiniBlock {
-    const tip = this.getTip();
-    const nextIndex = tip ? tip.index + 1 : 4101;
-    const previousHash = tip ? tip.hash : this.rootHash;
-    const timestamp = new Date().toISOString();
-    let nonce = 0,
-      blockHash = '';
-    const obsStr = JSON.stringify(observation);
-    const evStr = JSON.stringify(evidence);
-    while (true) {
-      blockHash = crypto
-        .createHash('sha256')
-        .update(`${nextIndex}-${timestamp}-${obsStr}-${evStr}-${previousHash}-${nonce}`)
-        .digest('hex');
-      if (blockHash.substring(0, 2) === '00') break;
-      nonce++;
-    }
-    this.db
-      .prepare(
-        `INSERT INTO ledger (id_index, timestamp, observation_json, evidence_json, previous_hash, hash, nonce) VALUES (?, ?, ?, ?, ?, ?, ?)`
-      )
-      .run(nextIndex, timestamp, obsStr, evStr, previousHash, blockHash, nonce);
-    return {
-      index: nextIndex,
-      timestamp,
-      observation,
-      evidence,
-      previousHash,
-      hash: blockHash,
-      nonce,
-    };
+  public getHistory(): IMiniBlock[] {
+    return this.blocks;
+  }
+
+  public get height(): number {
+    return this.blocks.length;
+  }
+
+  public append(block: IMiniBlock): void {
+    this.blocks.push(block);
+    fs.appendFileSync(this.file, `${JSON.stringify(block)}\n`);
   }
 }
-
-export * from './ledger.js';
-

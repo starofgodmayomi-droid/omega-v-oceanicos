@@ -1,0 +1,42 @@
+module.exports = {
+  preset: 'ts-jest',
+  testEnvironment: 'node',
+  testMatch: ['<rootDir>/tests/**/*.test.ts'],
+  testPathIgnorePatterns: ['/node_modules/', '/legacy/'],
+  moduleNameMapper: {
+    '^(\\.{1,2}/.*)\\.js$': '$1',
+    '^@oceanicos/types$': '<rootDir>/packages/types/src/index.ts',
+    '^@oceanicos/observer$': '<rootDir>/packages/observer/src/index.ts',
+    '^@oceanicos/verification$': '<rootDir>/packages/verification/src/index.ts',
+    '^@oceanicos/remember$': '<rootDir>/packages/remember/src/index.ts',
+    '^@oceanicos/mini$': '<rootDir>/packages/mini/src/index.ts',
+    '^@oceanicos/generative$': '<rootDir>/packages/generative/src/index.ts',
+    '^@oceanicos/mood$': '<rootDir>/packages/mood/src/index.ts',
+    '^@oceanicos/attestation$': '<rootDir>/packages/attestation/src/index.ts',
+    '^@oceanicos/inference$': '<rootDir>/packages/inference/src/index.ts',
+    '^@oceanicos/vector$': '<rootDir>/packages/vector/src/index.ts',
+    '^@omega-v/types$': '<rootDir>/packages/types/src/index.ts',
+    '^@omega-v/observer$': '<rootDir>/packages/observer/src/index.ts',
+    '^@omega-v/verification$': '<rootDir>/packages/verification/src/index.ts',
+    '^@omega-v/attestation$': '<rootDir>/packages/attestation/src/index.ts',
+    '^@omega-v/remember$': '<rootDir>/packages/remember/src/index.ts',
+    '^@omega-v/mini$': '<rootDir>/packages/mini/src/index.ts',
+  },
+  transform: {
+    '^.+\\.tsx?$': [
+      'ts-jest',
+      {
+        useESM: true,
+        tsconfig: {
+          target: 'ES2022',
+          module: 'NodeNext',
+          moduleResolution: 'NodeNext',
+          esModuleInterop: true,
+          skipLibCheck: true,
+          isolatedModules: true,
+        },
+      },
+    ],
+  },
+  extensionsToTreatAsEsm: ['.ts'],
+};

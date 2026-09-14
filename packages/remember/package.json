@@ -1,17 +1,18 @@
 {
   "name": "@oceanicos/remember",
   "version": "1.0.0",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc --noEmit",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@oceanicos/types": "workspace:*",
-    "@oceanicos/verification": "workspace:*"
-  },
-  "devDependencies": {
-    "@types/better-sqlite3": "^7.6.9"
+    "@oceanicos/types": "workspace:*"
   }
 }
