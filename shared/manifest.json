@@ -1,5 +1,56 @@
 {
   "ecosystem": "Ω∞v Oceanicos Max",
+  "identity": {
+    "name": "Qov",
+    "description": "A living intelligence ecosystem that continuously observes, verifies, attests, and evolves reality without losing provenance.",
+    "grounding": "Qov is a product and architecture identity, not a claim of omniscience, consciousness, or literal universal reach.",
+    "current_slice": "observe → verify → remember → attest → evolve",
+    "authority": "human-gated",
+    "bounds": {
+      "execution": "finite and replayable",
+      "external_writes": "disabled by default",
+      "provenance": "preserved from observation through attestation",
+      "uncertainty": "visible and never silently upgraded to truth"
+    }
+  },
+  "crosswalk": [
+    {
+      "concept": "observe",
+      "repository_surface": "@oceanicos/observer",
+      "proof": "packages/observer/src/__tests__",
+      "status": "implemented"
+    },
+    {
+      "concept": "verify",
+      "repository_surface": "@oceanicos/verification",
+      "proof": "packages/verification/src/__tests__",
+      "status": "implemented"
+    },
+    {
+      "concept": "remember",
+      "repository_surface": "@oceanicos/remember",
+      "proof": "packages/remember/src/__tests__",
+      "status": "implemented"
+    },
+    {
+      "concept": "attest",
+      "repository_surface": "@oceanicos/attestation",
+      "proof": "packages/attestation/src/__tests__",
+      "status": "implemented"
+    },
+    {
+      "concept": "evolve",
+      "repository_surface": "docs/VERIFICATION_LOOP.md and apps/api",
+      "proof": "tests/integration and apps/api/src/__tests__",
+      "status": "bounded-proposal"
+    },
+    {
+      "concept": "qov-boundary",
+      "repository_surface": "@oceanicos/qov",
+      "proof": "packages/qov/src/__tests__",
+      "status": "implemented"
+    }
+  ],
   "brand": {
     "mark": "Ω",
     "color": "#00FF66",

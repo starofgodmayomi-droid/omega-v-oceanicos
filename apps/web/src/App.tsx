@@ -49,6 +49,16 @@ interface MeshConvergenceReceipt {
   timestamp: string;
 }
 
+interface QovEvolutionProposal {
+  id: string;
+  observationId: string;
+  verificationId: string;
+  memoryId: string;
+  proposedChange: string;
+  status: 'proposed' | 'approved';
+  expiresAt: string;
+}
+
 export default function App() {
   const [tip, setTip] = useState<any>(null);
   const [history, setHistory] = useState<any[]>([]);
@@ -75,6 +85,8 @@ export default function App() {
   const [moodData, setMoodData] = useState<any>(null);
   const [attestationData, setAttestationData] = useState<any>(null);
   const [attestLoading, setAttestLoading] = useState(false);
+  const [qovProposal, setQovProposal] = useState<QovEvolutionProposal | null>(null);
+  const [qovApprovalOpen, setQovApprovalOpen] = useState(false);
 
   const eventSourceRef = useRef<EventSource | null>(null);
 
@@ -332,6 +344,29 @@ export default function App() {
     return '#ff3344';
   };
 
+  const createQovProposal = () => {
+    if (!tip) {
+      setLastError('Run one verified cycle before proposing an evolution.');
+      return;
+    }
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+    setQovProposal({
+      id: `qov-evolution-${tip.observation.uuid}-${tip.index}`,
+      observationId: tip.observation.uuid,
+      verificationId: tip.evidence.signatureProof,
+      memoryId: tip.hash,
+      proposedChange: 'Review the latest verified cycle and prepare one bounded local improvement.',
+      status: 'proposed',
+      expiresAt,
+    });
+    setQovApprovalOpen(true);
+  };
+
+  const approveQovProposal = () => {
+    setQovProposal((current) => (current ? { ...current, status: 'approved' } : current));
+    setQovApprovalOpen(false);
+  };
+
   return (
     <div
       style={{
@@ -504,6 +539,23 @@ export default function App() {
           }}
         >
           {attestLoading ? 'ATTESTING...' : '📜 REQUEST ATTESTATION'}
+        </button>
+
+        {/* Qov evolution proposal: review only, no execution */}
+        <button
+          onClick={createQovProposal}
+          style={{
+            background: '#10241f',
+            color: '#5eead4',
+            border: '1px solid #5eead455',
+            borderRadius: '4px',
+            padding: '10px 16px',
+            fontSize: '12px',
+            fontWeight: 'bold',
+            cursor: 'pointer',
+          }}
+        >
+          {qovProposal?.status === 'approved' ? '✓ QOV SCOPE APPROVED' : '◎ REVIEW QOV EVOLUTION'}
         </button>
 
         {/* Singularity Mood Matrix Button */}
@@ -679,6 +731,31 @@ export default function App() {
             <div style={{ marginTop: '8px', wordBreak: 'break-all', fontSize: '11px', color: '#c084fc' }}>
               <strong>Signature:</strong> <code>{attestationData.signature}</code>
             </div>
+          </div>
+        </div>
+      )}
+
+      {qovProposal && (
+        <div
+          style={{
+            background: qovProposal.status === 'approved' ? '#08251d' : '#0b1d21',
+            border: `1px solid ${qovProposal.status === 'approved' ? '#34d39988' : '#5eead488'}`,
+            borderRadius: '6px',
+            padding: '16px',
+            marginBottom: '20px',
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+            <span style={{ fontSize: '13px', color: '#99f6e4', fontWeight: 'bold' }}>◎ QOV EVOLUTION PROPOSAL</span>
+            <span style={{ fontSize: '11px', color: qovProposal.status === 'approved' ? '#34d399' : '#fbbf24', fontWeight: 'bold' }}>
+              {qovProposal.status === 'approved' ? 'APPROVED SCOPE / NOT EXECUTED' : 'AWAITING HUMAN REVIEW'}
+            </span>
+          </div>
+          <div style={{ fontSize: '12px', color: '#ccfbf1', lineHeight: '1.6' }}>
+            <div><strong>Proposal:</strong> {qovProposal.proposedChange}</div>
+            <div><strong>Provenance:</strong> observation <code>{qovProposal.observationId}</code> → verification <code>{qovProposal.verificationId}</code> → memory <code>{qovProposal.memoryId.substring(0, 18)}...</code></div>
+            <div><strong>External side effects:</strong> disabled</div>
+            <div><strong>Expires:</strong> {new Date(qovProposal.expiresAt).toLocaleTimeString()}</div>
           </div>
         </div>
       )}
@@ -990,6 +1067,41 @@ export default function App() {
           ))}
         </div>
       </div>
+
+      {qovApprovalOpen && qovProposal && (
+        <div
+          role="presentation"
+          onMouseDown={(event) => { if (event.target === event.currentTarget) setQovApprovalOpen(false); }}
+          style={{ position: 'fixed', inset: 0, zIndex: 20, display: 'grid', placeItems: 'center', padding: '20px', background: 'rgba(0, 4, 7, .82)', backdropFilter: 'blur(8px)' }}
+        >
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="qov-approval-title"
+            style={{ width: 'min(560px, 100%)', background: '#0b171b', border: '1px solid #5eead488', borderRadius: '8px', padding: '22px', boxShadow: '0 24px 90px #000' }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px', alignItems: 'flex-start' }}>
+              <div>
+                <div style={{ color: '#5eead4', fontSize: '11px', fontWeight: 'bold', letterSpacing: '.08em' }}>HUMAN APPROVAL REQUIRED</div>
+                <h2 id="qov-approval-title" style={{ color: '#ecfeff', margin: '8px 0', fontSize: '22px' }}>Approve this Qov evolution proposal?</h2>
+              </div>
+              <button aria-label="Close Qov approval dialog" onClick={() => setQovApprovalOpen(false)} style={{ background: 'transparent', border: '1px solid #5eead455', color: '#99f6e4', borderRadius: '4px', padding: '5px 9px', cursor: 'pointer' }}>×</button>
+            </div>
+            <p style={{ color: '#99aeb2', fontSize: '12px', lineHeight: '1.55' }}>Approval authorizes only the bounded proposal below. It does not execute code, call a connector, publish, deploy, message, spend, or change remote state.</p>
+            <div style={{ border: '1px solid #224148', borderRadius: '5px', background: '#061013', overflow: 'hidden', fontSize: '11px' }}>
+              <div style={{ padding: '11px', borderBottom: '1px solid #1a3035' }}><span style={{ color: '#6f8b90' }}>PURPOSE</span><div style={{ color: '#d7fffb', marginTop: '4px' }}>{qovProposal.proposedChange}</div></div>
+              <div style={{ padding: '11px', borderBottom: '1px solid #1a3035' }}><span style={{ color: '#6f8b90' }}>PROVENANCE</span><div style={{ color: '#d7fffb', marginTop: '4px' }}>{qovProposal.observationId} → {qovProposal.verificationId} → {qovProposal.memoryId}</div></div>
+              <div style={{ padding: '11px', borderBottom: '1px solid #1a3035' }}><span style={{ color: '#6f8b90' }}>ROLLBACK</span><div style={{ color: '#d7fffb', marginTop: '4px' }}>Close or revoke this local approval; discard the proposal without executing it.</div></div>
+              <div style={{ padding: '11px' }}><span style={{ color: '#6f8b90' }}>EXPIRY</span><div style={{ color: '#fbbf24', marginTop: '4px' }}>{new Date(qovProposal.expiresAt).toLocaleString()}</div></div>
+            </div>
+            <div style={{ marginTop: '13px', padding: '10px', color: '#fbbf24', border: '1px solid #7c5b1c', borderRadius: '4px', fontSize: '11px' }}>⚠ This is a local approval record only. External writes remain disabled.</div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '9px', marginTop: '20px' }}>
+              <button onClick={() => setQovApprovalOpen(false)} style={{ background: 'transparent', color: '#b6c8cb', border: '1px solid #496168', borderRadius: '4px', padding: '10px 15px', cursor: 'pointer' }}>Cancel</button>
+              <button onClick={approveQovProposal} style={{ background: '#99f6e4', color: '#041012', border: '0', borderRadius: '4px', padding: '10px 15px', fontWeight: 'bold', cursor: 'pointer' }}>Approve bounded scope</button>
+            </div>
+          </section>
+        </div>
+      )}
     </div>
   );
 }

@@ -12,7 +12,7 @@
     "verify": "node -e \"const { executeOceanicosMaxExpansion } = require('./packages/mini/dist/index.js'); executeOceanicosMaxExpansion();\"",
     "predev": "pnpm build",
     "mood": "node bin/oceanicos.mjs mood",
-    "test": "node --experimental-strip-types --test tests/integration/max_compress_stack.e2e.test.ts",
+    "test": "pnpm build && node --experimental-strip-types --test tests/integration/max_compress_stack.e2e.test.ts",
     "test:e2e": "node --experimental-strip-types --test tests/integration/max_compress_stack.e2e.test.ts",
     "totality": "bash scripts/oceanicos-totality.sh",
     "verify:full": "pnpm run totality",

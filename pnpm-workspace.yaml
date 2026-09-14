@@ -5,6 +5,7 @@ packages:
   - 'packages/remember'
   - 'packages/mini'
   - 'packages/attestation'
+  - 'packages/qov'
   - 'packages/gateway'
   - 'apps/api'
   - 'apps/web'

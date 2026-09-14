@@ -1,0 +1,18 @@
+{
+  "name": "@oceanicos/qov",
+  "version": "0.1.0",
+  "description": "Qov provenance and human-gated evolution boundary for OceanicOS",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test --experimental-strip-types src/__tests__/qov.test.ts"
+  },
+  "keywords": ["qov", "provenance", "oceanicos", "attestation", "human-gated"],
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@oceanicos/types": "workspace:*"
+  }
+}
