@@ -75,6 +75,14 @@ export function createApp(
     }
   });
 
+  // Support /api/ prefix transparently in dev proxy and production
+  fastify.addHook('onRequest', async (request) => {
+    const req = request.raw;
+    if (req.url && req.url.startsWith('/api/')) {
+      req.url = req.url.slice(4);
+    }
+  });
+
   fastify.register(cors, { origin: '*' });
 
   fastify.get('/health', async () => ({

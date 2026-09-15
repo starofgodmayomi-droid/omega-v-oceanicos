@@ -6,7 +6,7 @@
  * the rest of App.tsx already uses.
  */
 
-const API_BASE = 'http://localhost:5000';
+export const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || '/api';
 
 // ── Response shapes (mirror packages/types, kept local to avoid
 //    build-time coupling between the web bundle and Node packages) ──
