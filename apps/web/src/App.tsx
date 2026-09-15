@@ -1,4 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
+import {
+  runCognitiveLoop,
+  runCompleteLoop,
+  fetchRules,
+  fetchMemory,
+  fetchIntegrity,
+  type MiniCycleResponse,
+  type CompleteLoopResponse,
+  type RulesResponse,
+  type MemoryResponse,
+  type IntegrityResponse,
+} from './cognitive-api';
 
 interface KeyPair {
   publicKey: string;
@@ -64,6 +76,17 @@ export default function App() {
   const [vectorLoading, setVectorLoading] = useState(false);
   const [showIntelligence, setShowIntelligence] = useState(true);
   const [showVectorMemory, setShowVectorMemory] = useState(false);
+
+  // Cognitive Verification Loop state
+  const [claimInput, setClaimInput] = useState('');
+  const [cognitiveResult, setCognitiveResult] = useState<CompleteLoopResponse | MiniCycleResponse | null>(null);
+  const [cognitiveLoading, setCognitiveLoading] = useState(false);
+  const [showCognitive, setShowCognitive] = useState(true);
+  const [rulesData, setRulesData] = useState<RulesResponse | null>(null);
+  const [showRules, setShowRules] = useState(false);
+  const [memoryData, setMemoryData] = useState<MemoryResponse | null>(null);
+  const [integrityData, setIntegrityData] = useState<IntegrityResponse | null>(null);
+  const [showMemory, setShowMemory] = useState(false);
 
   const eventSourceRef = useRef<EventSource | null>(null);
 
@@ -136,6 +159,52 @@ export default function App() {
       setLastError('Vector search error: ' + err.message);
     } finally {
       setVectorLoading(false);
+    }
+  };
+
+  // ── Cognitive Verification Loop handlers ──
+
+  const executeCognitiveLoop = async (withAttestation = false) => {
+    if (!claimInput.trim()) return;
+    setCognitiveLoading(true);
+    setLastError(null);
+    try {
+      const result = withAttestation
+        ? await runCompleteLoop(claimInput)
+        : await runCognitiveLoop(claimInput);
+      if (result.success) {
+        setCognitiveResult(result);
+        setShowCognitive(true);
+      } else {
+        setLastError(result.error || 'Cognitive cycle failed');
+      }
+    } catch (err: any) {
+      setLastError('Cognitive loop error: ' + err.message);
+    } finally {
+      setCognitiveLoading(false);
+    }
+  };
+
+  const loadRules = async () => {
+    try {
+      const data = await fetchRules();
+      if (data.success) {
+        setRulesData(data);
+        setShowRules(true);
+      }
+    } catch (err: any) {
+      setLastError('Rules fetch error: ' + err.message);
+    }
+  };
+
+  const loadMemoryAndIntegrity = async () => {
+    try {
+      const [mem, integrity] = await Promise.all([fetchMemory(), fetchIntegrity()]);
+      if (mem.success) setMemoryData(mem);
+      if (integrity.success) setIntegrityData(integrity);
+      setShowMemory(true);
+    } catch (err: any) {
+      setLastError('Memory/integrity fetch error: ' + err.message);
     }
   };
 
@@ -698,6 +767,94 @@ export default function App() {
             Asymmetric Seal Active
           </label>
         )}
+
+        {/* Cognitive Verification Loop Controls */}
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', width: '100%', marginTop: '8px', paddingTop: '10px', borderTop: '1px solid #00ff6622' }}>
+          <input
+            type="text"
+            placeholder="Enter claim to verify (e.g. silicon yield above 90%)..."
+            value={claimInput}
+            onChange={(e) => setClaimInput(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && executeCognitiveLoop(false)}
+            style={{
+              flex: 1,
+              background: '#040d14',
+              border: '1px solid #06b6d444',
+              borderRadius: '4px',
+              padding: '8px 12px',
+              color: '#a5f3fc',
+              fontSize: '12px',
+              fontFamily: 'inherit',
+              outline: 'none',
+            }}
+          />
+          <button
+            onClick={() => executeCognitiveLoop(false)}
+            disabled={cognitiveLoading || !claimInput.trim()}
+            style={{
+              background: cognitiveLoading ? '#155e75' : '#0891b2',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '4px',
+              padding: '8px 14px',
+              fontSize: '11px',
+              fontWeight: 'bold',
+              cursor: cognitiveLoading ? 'wait' : 'pointer',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {cognitiveLoading ? 'CYCLING...' : '🧬 COGNITIVE CYCLE'}
+          </button>
+          <button
+            onClick={() => executeCognitiveLoop(true)}
+            disabled={cognitiveLoading || !claimInput.trim()}
+            style={{
+              background: '#1e1b4b',
+              color: '#a78bfa',
+              border: '1px solid #a78bfa55',
+              borderRadius: '4px',
+              padding: '8px 14px',
+              fontSize: '11px',
+              fontWeight: 'bold',
+              cursor: cognitiveLoading ? 'wait' : 'pointer',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            🔏 ATTESTED LOOP
+          </button>
+          <button
+            onClick={loadRules}
+            style={{
+              background: '#0c1a2a',
+              color: '#67e8f9',
+              border: '1px solid #67e8f955',
+              borderRadius: '4px',
+              padding: '8px 14px',
+              fontSize: '11px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            📋 RULES
+          </button>
+          <button
+            onClick={loadMemoryAndIntegrity}
+            style={{
+              background: '#0a1a12',
+              color: '#86efac',
+              border: '1px solid #86efac44',
+              borderRadius: '4px',
+              padding: '8px 14px',
+              fontSize: '11px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            💾 MEMORY
+          </button>
+        </div>
       </div>
 
       {/* Error Alert */}
@@ -714,6 +871,246 @@ export default function App() {
           }}
         >
           ⚠️ {lastError}
+        </div>
+      )}
+
+      {/* ════════ COGNITIVE VERIFICATION PANEL ════════ */}
+      {cognitiveResult && showCognitive && (
+        <div
+          style={{
+            background: '#051520',
+            border: '1px solid #0891b266',
+            borderRadius: '6px',
+            padding: '16px',
+            marginBottom: '20px',
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '13px', color: '#22d3ee', fontWeight: 'bold' }}>
+                🧬 COGNITIVE VERIFICATION RESULT
+              </span>
+              <span
+                style={{
+                  padding: '2px 8px',
+                  borderRadius: '3px',
+                  fontSize: '11px',
+                  fontWeight: 'bold',
+                  background: cognitiveResult.passed ? '#00ff6622' : '#ff334422',
+                  color: cognitiveResult.passed ? '#00ff66' : '#ff3344',
+                  border: `1px solid ${cognitiveResult.passed ? '#00ff66' : '#ff3344'}`,
+                }}
+              >
+                {cognitiveResult.passed ? 'VERIFIED ✓' : 'FAILED ✗'}
+              </span>
+              <span style={{ fontSize: '11px', color: '#94a3b8' }}>
+                Confidence: {Math.round(cognitiveResult.confidence * 100)}%
+              </span>
+            </div>
+            <button
+              onClick={() => setShowCognitive(false)}
+              style={{ background: 'transparent', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '12px' }}
+            >
+              ✕
+            </button>
+          </div>
+
+          {/* Observation */}
+          <div style={{ marginBottom: '12px' }}>
+            <div style={{ fontSize: '11px', color: '#67e8f9', fontWeight: 'bold', marginBottom: '6px' }}>OBSERVATION</div>
+            <div style={{ background: '#030d14', border: '1px solid #0891b233', borderRadius: '4px', padding: '10px', fontSize: '11px', lineHeight: '1.6' }}>
+              <div><span style={{ color: '#94a3b8' }}>Claim:</span> <span style={{ color: '#e0f2fe' }}>{cognitiveResult.observation.claim.statement}</span></div>
+              <div><span style={{ color: '#94a3b8' }}>Category:</span> <span style={{ color: '#67e8f9' }}>{cognitiveResult.observation.claim.category}</span></div>
+              <div><span style={{ color: '#94a3b8' }}>ID:</span> <code style={{ color: '#64748b', fontSize: '10px' }}>{cognitiveResult.observation.id}</code></div>
+              <div><span style={{ color: '#94a3b8' }}>Status:</span> <span style={{ color: cognitiveResult.observation.status === 'normalized' ? '#34d399' : '#fbbf24' }}>{cognitiveResult.observation.status}</span></div>
+            </div>
+          </div>
+
+          {/* Verification */}
+          <div style={{ marginBottom: '12px' }}>
+            <div style={{ fontSize: '11px', color: '#67e8f9', fontWeight: 'bold', marginBottom: '6px' }}>VERIFICATION</div>
+            <div style={{ background: '#030d14', border: '1px solid #0891b233', borderRadius: '4px', padding: '10px', fontSize: '11px' }}>
+              <div style={{ display: 'flex', gap: '16px', marginBottom: '8px', flexWrap: 'wrap' }}>
+                <div><span style={{ color: '#94a3b8' }}>Rules Applied:</span> <span style={{ color: '#e0f2fe' }}>{cognitiveResult.verification.summary.rulesApplied ?? 0}</span></div>
+                <div><span style={{ color: '#94a3b8' }}>Passed:</span> <span style={{ color: '#00ff66' }}>{cognitiveResult.verification.summary.rulesPassed ?? 0}</span></div>
+                <div><span style={{ color: '#94a3b8' }}>Failed:</span> <span style={{ color: '#ff3344' }}>{cognitiveResult.verification.summary.rulesFailed ?? 0}</span></div>
+                <div><span style={{ color: '#94a3b8' }}>Confidence:</span> <span style={{ color: '#22d3ee' }}>{Math.round(cognitiveResult.verification.summary.confidence * 100)}%</span></div>
+              </div>
+              {/* Rule-level results */}
+              {cognitiveResult.verification.rules && cognitiveResult.verification.rules.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '6px' }}>
+                  {cognitiveResult.verification.rules.map((rule, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '4px 8px',
+                        background: '#020a10',
+                        borderLeft: `3px solid ${rule.passed ? '#00ff66' : '#ff3344'}`,
+                        borderRadius: '2px',
+                        fontSize: '10px',
+                      }}
+                    >
+                      <span style={{ color: '#cbd5e1' }}>{rule.name}</span>
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        {rule.reason && <span style={{ color: '#64748b', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{rule.reason}</span>}
+                        <span style={{ color: rule.passed ? '#00ff66' : '#ff3344', fontWeight: 'bold' }}>{rule.passed ? 'PASS' : 'FAIL'}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Memory Record */}
+          <div style={{ marginBottom: '12px' }}>
+            <div style={{ fontSize: '11px', color: '#67e8f9', fontWeight: 'bold', marginBottom: '6px' }}>MEMORY RECORD</div>
+            <div style={{ background: '#030d14', border: '1px solid #0891b233', borderRadius: '4px', padding: '10px', fontSize: '11px', lineHeight: '1.6' }}>
+              <div><span style={{ color: '#94a3b8' }}>Memory ID:</span> <code style={{ color: '#64748b', fontSize: '10px' }}>{cognitiveResult.memory.id}</code></div>
+              <div><span style={{ color: '#94a3b8' }}>Verified:</span> <span style={{ color: cognitiveResult.memory.verified ? '#00ff66' : '#ff3344' }}>{cognitiveResult.memory.verified ? 'YES' : 'NO'}</span></div>
+              {cognitiveResult.memory.hash && (
+                <div style={{ wordBreak: 'break-all' }}><span style={{ color: '#94a3b8' }}>Hash:</span> <code style={{ color: '#475569', fontSize: '10px' }}>{cognitiveResult.memory.hash}</code></div>
+              )}
+            </div>
+          </div>
+
+          {/* Attestation (only for complete-loop) */}
+          {'attestation' in cognitiveResult && cognitiveResult.attestation && (
+            <div>
+              <div style={{ fontSize: '11px', color: '#c084fc', fontWeight: 'bold', marginBottom: '6px' }}>ATTESTATION</div>
+              <div style={{ background: '#0e0820', border: '1px solid #c084fc33', borderRadius: '4px', padding: '10px', fontSize: '11px', lineHeight: '1.6' }}>
+                <div><span style={{ color: '#94a3b8' }}>Algorithm:</span> <span style={{ color: '#d8b4fe' }}>{(cognitiveResult as CompleteLoopResponse).attestation.signingAlgorithm}</span></div>
+                <div><span style={{ color: '#94a3b8' }}>Status:</span> <span style={{ color: '#a78bfa' }}>{(cognitiveResult as CompleteLoopResponse).attestation.status}</span></div>
+                <div style={{ wordBreak: 'break-all', marginTop: '4px' }}>
+                  <span style={{ color: '#94a3b8' }}>Signature:</span> <code style={{ color: '#7c3aed', fontSize: '10px' }}>{(cognitiveResult as CompleteLoopResponse).attestation.signature}</code>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div style={{ marginTop: '10px', fontSize: '10px', color: '#475569' }}>
+            Completed: {cognitiveResult.completedAt}
+          </div>
+        </div>
+      )}
+
+      {/* ════════ RULES PANEL ════════ */}
+      {rulesData && showRules && (
+        <div
+          style={{
+            background: '#051822',
+            border: '1px solid #67e8f944',
+            borderRadius: '6px',
+            padding: '16px',
+            marginBottom: '20px',
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '13px', color: '#67e8f9', fontWeight: 'bold' }}>📋 VERIFICATION RULES ENGINE</span>
+              <span style={{ fontSize: '10px', color: '#94a3b8', background: '#0c1a2a', padding: '2px 6px', borderRadius: '3px' }}>{rulesData.count} rules</span>
+            </div>
+            <button onClick={() => setShowRules(false)} style={{ background: 'transparent', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '12px' }}>✕</button>
+          </div>
+          {rulesData.rules.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              {rulesData.rules.map((rule, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    background: '#030d14',
+                    border: `1px solid ${rule.active ? '#22d3ee33' : '#64748b33'}`,
+                    borderRadius: '4px',
+                    padding: '10px',
+                    fontSize: '11px',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                    <strong style={{ color: '#e0f2fe' }}>{rule.name}</strong>
+                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                      <span style={{ color: '#67e8f9', fontSize: '10px' }}>v{rule.version}</span>
+                      <span style={{ color: rule.active ? '#00ff66' : '#64748b', fontSize: '10px', fontWeight: 'bold' }}>{rule.active ? 'ACTIVE' : 'INACTIVE'}</span>
+                    </div>
+                  </div>
+                  <div style={{ color: '#94a3b8', fontSize: '10px', marginBottom: '2px' }}>{rule.description}</div>
+                  <div style={{ color: '#475569', fontSize: '10px' }}>Applies to: {rule.appliesTo.join(', ') || 'all'}</div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ color: '#64748b', fontSize: '11px', fontStyle: 'italic' }}>No rules registered. The verification engine will apply default confidence derivation.</div>
+          )}
+        </div>
+      )}
+
+      {/* ════════ MEMORY & INTEGRITY PANEL ════════ */}
+      {showMemory && (
+        <div
+          style={{
+            background: '#051210',
+            border: '1px solid #86efac44',
+            borderRadius: '6px',
+            padding: '16px',
+            marginBottom: '20px',
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '13px', color: '#86efac', fontWeight: 'bold' }}>💾 COGNITIVE MEMORY & INTEGRITY</span>
+              {integrityData && (
+                <span
+                  style={{
+                    padding: '2px 8px',
+                    borderRadius: '3px',
+                    fontSize: '10px',
+                    fontWeight: 'bold',
+                    background: integrityData.valid ? '#00ff6622' : '#ff334422',
+                    color: integrityData.valid ? '#00ff66' : '#ff3344',
+                    border: `1px solid ${integrityData.valid ? '#00ff66' : '#ff3344'}`,
+                  }}
+                >
+                  INTEGRITY: {integrityData.valid ? 'VALID ✓' : 'BROKEN ✗'}
+                </span>
+              )}
+              {memoryData && (
+                <span style={{ fontSize: '10px', color: '#94a3b8' }}>{memoryData.size} entries</span>
+              )}
+            </div>
+            <button onClick={() => setShowMemory(false)} style={{ background: 'transparent', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '12px' }}>✕</button>
+          </div>
+          {memoryData && memoryData.entries.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '200px', overflowY: 'auto' }}>
+              {memoryData.entries.slice(-20).reverse().map((entry, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    background: '#020a08',
+                    borderLeft: `3px solid ${entry.verified ? '#00ff66' : '#ff3344'}`,
+                    padding: '6px 10px',
+                    borderRadius: '2px',
+                    fontSize: '10px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
+                >
+                  <div>
+                    <code style={{ color: '#64748b' }}>{entry.id.substring(0, 12)}...</code>
+                    <span style={{ color: '#94a3b8', marginLeft: '8px' }}>{entry.summary || 'memory record'}</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <span style={{ color: entry.verified ? '#00ff66' : '#ff3344', fontWeight: 'bold' }}>{entry.verified ? '✓' : '✗'}</span>
+                    <span style={{ color: '#67e8f9' }}>{Math.round(entry.confidence * 100)}%</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ color: '#64748b', fontSize: '11px', fontStyle: 'italic' }}>No cognitive memory entries yet. Execute a cognitive cycle to populate.</div>
+          )}
         </div>
       )}
 
