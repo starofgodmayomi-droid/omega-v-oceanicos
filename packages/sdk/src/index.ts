@@ -1,3 +1,5 @@
+import { validateSceneInput, type SceneInput } from '@omega-v/types';
+
 export type OperatingSystemState =
   'offline' | 'booting' | 'ready' | 'degraded' | 'stopping' | 'stopped';
 export type OperatingSystemTaskKind = 'observe' | 'verify' | 'remember' | 'report';
@@ -321,6 +323,9 @@ export type SceneSimulation = {
   trace: Array<{
     sequence: number;
     state: string;
+    from: string | null;
+    to: string;
+    transition: 'origin' | 'advance';
     status: 'observed' | 'verified';
     evidence: string;
   }>;
@@ -493,12 +498,28 @@ export class OmegaClient {
     return this.get<Health>('/health');
   }
 
+  async getKernelCapabilities(): Promise<{
+    success: true;
+    capability: {
+      contract: 'oceanicos-kernel.v1';
+      execution: 'local-simulation-only';
+      deterministicEvidence: boolean;
+      humanAuthorizationRequired: boolean;
+      capabilities: Record<string, boolean>;
+      limitations: readonly string[];
+    };
+    evaluatedAt: string;
+  }> {
+    return this.get('/v1/kernel/capabilities');
+  }
+
   async simulateScene(
-    input: { seed?: string; steps?: number; branches?: number } = {}
+    input: SceneInput = {}
   ): Promise<{ data: SceneSimulation; timestamp: string }> {
+    const validatedInput = validateSceneInput(input);
     return this.post<{ data: SceneSimulation; timestamp: string }>(
       '/scene/simulate',
-      input,
+      validatedInput,
       this.readToken
     );
   }

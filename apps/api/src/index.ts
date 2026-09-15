@@ -5,6 +5,7 @@ import { MiniKernel } from '@oceanicos/mini';
 import { AsymmetricValidationGuard, MultiRegionMeshConvergence } from '@oceanicos/verification';
 import { ObserverEngine } from '@oceanicos/observer';
 import { AttestationService } from '@oceanicos/attestation';
+import { OceanicosKernel } from '@omega-v/kernel';
 
 const MAX_STREAM_CLIENTS = 256;
 const MIN_ATTESTATION_KEY_LENGTH = 32;
@@ -41,6 +42,7 @@ export function createApp(
   const fastify = Fastify({ logger });
   const ledgerMemory = new RememberEngine(dbPath);
   const kernel = new MiniKernel(ledgerMemory);
+  const platformKernel = new OceanicosKernel();
   const allowUnsignedCycle =
     options.allowUnsignedCycle ??
     process.env.OMEGA_ALLOW_UNSIGNED_CYCLE === 'true';
@@ -110,6 +112,12 @@ export function createApp(
     // An empty append-only store is a valid cold start; readiness describes
     // the persistence subsystem, while /v1/block/tip reports whether a tip exists.
     ledger: 'ready',
+  }));
+
+  fastify.get('/v1/kernel/capabilities', async () => ({
+    success: true,
+    capability: platformKernel.getCapabilitySnapshot(),
+    evaluatedAt: new Date().toISOString(),
   }));
 
   // Singularity Compression Status & Pidgin Spirit Mood Matrix

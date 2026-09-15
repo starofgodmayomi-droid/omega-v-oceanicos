@@ -41,6 +41,9 @@ importers:
       '@oceanicos/verification':
         specifier: workspace:*
         version: link:../../packages/verification
+      '@omega-v/kernel':
+        specifier: workspace:*
+        version: link:../../packages/kernel
       fastify:
         specifier: ^5.12.4
         version: 5.12.4
@@ -98,6 +101,8 @@ importers:
       typescript:
         specifier: ^5.0.0
         version: 5.9.3
+
+  packages/kernel: {}
 
   packages/mini:
     dependencies:

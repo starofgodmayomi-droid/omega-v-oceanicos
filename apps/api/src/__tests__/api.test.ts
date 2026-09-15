@@ -30,6 +30,35 @@ type LoopPayload = {
 };
 
 describe('API runtime contracts', () => {
+  it('exposes the bounded omega kernel capability contract as read-only evidence', async () => {
+    const server = createServer(app as any);
+    await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', () => resolve()));
+    const address = server.address();
+    if (!address || typeof address === 'string') throw new Error('API server did not start');
+    try {
+      const response = await fetch(`http://127.0.0.1:${address.port}/v1/kernel/capabilities`);
+      const body = (await response.json()) as {
+        success: boolean;
+        capability: {
+          contract: string;
+          execution: string;
+          capabilities: { remoteMutation: boolean; arbitraryShellExecution: boolean };
+        };
+      };
+      expect(response.status).toBe(200);
+      expect(body).toMatchObject({
+        success: true,
+        capability: {
+          contract: 'oceanicos-kernel.v1',
+          execution: 'local-simulation-only',
+          capabilities: { remoteMutation: false, arbitraryShellExecution: false },
+        },
+      });
+    } finally {
+      await new Promise<void>((resolve) => server.close(() => resolve()));
+    }
+  });
+
   it('supports optional allowlists while failing closed when allowlists are required', () => {
     expect(operatorIdentityAllowed(undefined, [])).toBe(true);
     expect(operatorIdentityAllowed('operator-a', [], true)).toBe(false);

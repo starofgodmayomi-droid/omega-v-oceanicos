@@ -141,6 +141,28 @@ export interface KernelStats {
   currentRootStateHash: string;
 }
 
+export interface KernelCapabilitySnapshot {
+  contract: 'oceanicos-kernel.v1';
+  execution: 'local-simulation-only';
+  deterministicEvidence: boolean;
+  humanAuthorizationRequired: boolean;
+  capabilities: {
+    observe: true;
+    verify: true;
+    remember: true;
+    attest: true;
+    reason: true;
+    intend: true;
+    build: true;
+    test: true;
+    remoteMutation: false;
+    credentialHandling: false;
+    arbitraryShellExecution: false;
+    externalDeployment: false;
+  };
+  limitations: readonly string[];
+}
+
 /* ─── Helper Functions ───────────────────────────────────────────── */
 
 function hmac(key: string, data: string): string {
@@ -157,6 +179,36 @@ export class OceanicosKernel {
 
   constructor(secret = 'oceanicos-canonical-kernel-secret') {
     this.secret = secret;
+  }
+
+  /** Return the finite, non-authoritative capability boundary of this kernel. */
+  getCapabilitySnapshot(): KernelCapabilitySnapshot {
+    return {
+      contract: 'oceanicos-kernel.v1',
+      execution: 'local-simulation-only',
+      deterministicEvidence: true,
+      humanAuthorizationRequired: true,
+      capabilities: {
+        observe: true,
+        verify: true,
+        remember: true,
+        attest: true,
+        reason: true,
+        intend: true,
+        build: true,
+        test: true,
+        remoteMutation: false,
+        credentialHandling: false,
+        arbitraryShellExecution: false,
+        externalDeployment: false,
+      },
+      limitations: [
+        'local process only',
+        'cryptographic proofs attest simulated state, not physical reality',
+        'human authorization remains required for sensitive actions',
+        'distributed consistency and external execution are unverified',
+      ],
+    };
   }
 
   /* ── 1. Compile & Dispatch Canonical State Transition ── */

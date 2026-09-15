@@ -247,6 +247,35 @@ describe('OmegaClient', () => {
     });
   });
 
+  it('reads the bounded omega kernel capability contract', async () => {
+    const client = new OmegaClient(
+      'http://api.test/',
+      async (url, init) => {
+        expect(url).toBe('http://api.test/v1/kernel/capabilities');
+        expect(new Headers(init?.headers).get('authorization')).toBe('Bearer read-token');
+        return new Response(
+          JSON.stringify({
+            success: true,
+            capability: {
+              contract: 'oceanicos-kernel.v1',
+              execution: 'local-simulation-only',
+              deterministicEvidence: true,
+              humanAuthorizationRequired: true,
+              capabilities: { remoteMutation: false, arbitraryShellExecution: false },
+              limitations: ['local process only'],
+            },
+            evaluatedAt: '2026-09-15T00:00:00.000Z',
+          })
+        );
+      },
+      { readToken: 'read-token' }
+    );
+    await expect(client.getKernelCapabilities()).resolves.toMatchObject({
+      success: true,
+      capability: { contract: 'oceanicos-kernel.v1', execution: 'local-simulation-only' },
+    });
+  });
+
   it('reads typed explicit state readiness evidence', async () => {
     const client = new OmegaClient('http://api.test/', async (url) => {
       expect(url).toBe('http://api.test/state');

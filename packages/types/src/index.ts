@@ -57,3 +57,66 @@ export interface Attestation {
   verifyingPublicKey?: string;
   status: 'signed' | 'revoked' | 'expired';
 }
+
+export * from './scene.js';
+
+export type SceneState =
+  | 'darkness'
+  | 'possibility'
+  | 'ocean'
+  | 'star'
+  | 'water-form'
+  | 'many-forms'
+  | 'loneliness'
+  | 'human-form'
+  | 'misrecognition'
+  | 'boundary'
+  | 'question'
+  | 'forest'
+  | 'return';
+
+export type SceneSimulationInput = {
+  seed?: string;
+  steps?: number;
+  branches?: number;
+};
+
+export type SceneTrace = Array<{
+  sequence: number;
+  state: SceneState;
+  from: SceneState | null;
+  to: SceneState;
+  transition: 'origin' | 'advance';
+  status: 'observed' | 'verified';
+  evidence: string;
+}>;
+
+export type SceneBranch = {
+  id: string;
+  index: number;
+  perspective: string;
+  states: SceneState[];
+  terminalState: SceneState;
+  trace: SceneTrace;
+  divergenceEvidence: string;
+};
+
+export interface SceneSimulation {
+  id: string;
+  seed: string;
+  equation: string;
+  states: SceneState[];
+  terminalState: SceneState;
+  trace: SceneTrace;
+  branches: SceneBranch[];
+  branchCount: number;
+  continuation: 'bounded-sample-of-infinite-potential';
+  provenance: {
+    source: 'local-simulation';
+    ruleVersion: 'scene-equation.v2';
+    deterministic: true;
+    verified: false;
+    note: string;
+  };
+  createdAt: string;
+}
