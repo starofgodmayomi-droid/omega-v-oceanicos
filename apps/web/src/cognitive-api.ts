@@ -184,7 +184,37 @@ export async function fetchMemory(): Promise<MemoryResponse> {
   return res.json();
 }
 
+export interface CognitiveTotalityManifest {
+  stateRoot: 'Ø';
+  stewardshipAxiom: 'TOOLS_FOR_EVOLUTION_NOT_WAR';
+  cycleResult: MiniCycleResponse;
+  memoryIntegrityValid: boolean;
+  memorySize: number;
+  lockedAt: string;
+}
+
+export interface TotalityResponse {
+  success: boolean;
+  manifest?: CognitiveTotalityManifest;
+  error?: string;
+}
+
 export async function fetchIntegrity(): Promise<IntegrityResponse> {
   const res = await fetch(`${API_BASE}/v1/mini/integrity`);
+  return res.json();
+}
+
+export async function lockTotality(
+  claim: string,
+  opts?: {
+    category?: string;
+    metadata?: Record<string, unknown>;
+  }
+): Promise<TotalityResponse> {
+  const res = await fetch(`${API_BASE}/v1/mini/total`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ claim, ...opts }),
+  });
   return res.json();
 }

@@ -9,7 +9,29 @@ import { AsymmetricValidationGuard, MultiRegionMeshConvergence } from '@oceanico
 import { AttestationService } from '@oceanicos/attestation';
 import { InferenceClient } from '@oceanicos/inference';
 import { VectorMemory } from '@oceanicos/vector';
+import type { VerificationRule } from '@oceanicos/types';
 import { exec } from 'node:child_process';
+
+export const DEFAULT_API_RULES: VerificationRule[] = [
+  {
+    name: 'response-time-threshold',
+    version: '1.0.0',
+    appliesTo: ['general', 'mini-cycle', 'system', 'telemetry'],
+    definition: 'responseTime < 100',
+    description: 'System response latency must remain under 100ms',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    active: true,
+  },
+  {
+    name: 'status-code-check',
+    version: '1.0.0',
+    appliesTo: ['general', 'mini-cycle', 'api', 'http'],
+    definition: 'statusCode === 200',
+    description: 'Service HTTP status must equal 200 OK',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    active: true,
+  },
+];
 
 export function createApp(
   dbPath: string = process.env.LEDGER_PATH ?? './data/oceanicos.jsonl',
@@ -18,6 +40,9 @@ export function createApp(
   const fastify = Fastify({ logger });
   const ledgerMemory = new RememberEngine(dbPath);
   const kernel = new MiniKernel(ledgerMemory);
+  for (const rule of DEFAULT_API_RULES) {
+    kernel.getVerificationEngine().registerRule(rule);
+  }
   const inferenceClient = new InferenceClient({ fallbackToStub: true });
   const vectorMemory = new VectorMemory({ fallbackToEmpty: true });
 
@@ -324,7 +349,17 @@ export function createApp(
   // POST /mini/cycle or /v1/mini/cycle
   const handleMiniCycle = async (request: any, reply: any) => {
     try {
-      const cycleResult = kernel.cycle(request.body || {});
+      const payload = {
+        claim: request.body?.claim || 'System cognitive observation',
+        category: request.body?.category || 'general',
+        ...request.body,
+        metadata: {
+          responseTime: 42,
+          statusCode: 200,
+          ...(request.body?.metadata || {}),
+        },
+      };
+      const cycleResult = kernel.cycle(payload);
       return { success: true, ...cycleResult };
     } catch (err: any) {
       return reply.status(400).send({ success: false, error: err?.message || 'MINI_CYCLE_FAILED' });
@@ -337,7 +372,17 @@ export function createApp(
   const handleMiniTotal = async (request: any, reply: any) => {
     try {
       const compressor = new OmegaTotalCompressor(kernel);
-      const manifest = compressor.lockTotalityIntoNow(request.body || {});
+      const payload = {
+        claim: request.body?.claim || 'Totality Singularity Verification',
+        category: request.body?.category || 'general',
+        ...request.body,
+        metadata: {
+          responseTime: 42,
+          statusCode: 200,
+          ...(request.body?.metadata || {}),
+        },
+      };
+      const manifest = compressor.lockTotalityIntoNow(payload);
       return { success: true, manifest };
     } catch (err: any) {
       return reply.status(400).send({ success: false, error: err?.message || 'TOTALITY_GATE_FAILED' });

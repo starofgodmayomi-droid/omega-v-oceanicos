@@ -5,11 +5,13 @@ import {
   fetchRules,
   fetchMemory,
   fetchIntegrity,
+  lockTotality,
   type MiniCycleResponse,
   type CompleteLoopResponse,
   type RulesResponse,
   type MemoryResponse,
   type IntegrityResponse,
+  type CognitiveTotalityManifest,
 } from './cognitive-api';
 
 interface KeyPair {
@@ -87,6 +89,9 @@ export default function App() {
   const [memoryData, setMemoryData] = useState<MemoryResponse | null>(null);
   const [integrityData, setIntegrityData] = useState<IntegrityResponse | null>(null);
   const [showMemory, setShowMemory] = useState(false);
+  const [totalityManifest, setTotalityManifest] = useState<CognitiveTotalityManifest | null>(null);
+  const [totalityLoading, setTotalityLoading] = useState(false);
+  const [showTotality, setShowTotality] = useState(false);
 
   const eventSourceRef = useRef<EventSource | null>(null);
 
@@ -205,6 +210,25 @@ export default function App() {
       setShowMemory(true);
     } catch (err: any) {
       setLastError('Memory/integrity fetch error: ' + err.message);
+    }
+  };
+
+  const executeTotalityGate = async () => {
+    if (!claimInput.trim()) return;
+    setTotalityLoading(true);
+    setLastError(null);
+    try {
+      const res = await lockTotality(claimInput);
+      if (res.success && res.manifest) {
+        setTotalityManifest(res.manifest);
+        setShowTotality(true);
+      } else {
+        setLastError(res.error || 'Totality gate failed');
+      }
+    } catch (err: any) {
+      setLastError('Totality gate error: ' + err.message);
+    } finally {
+      setTotalityLoading(false);
     }
   };
 
@@ -854,6 +878,23 @@ export default function App() {
           >
             💾 MEMORY
           </button>
+          <button
+            onClick={executeTotalityGate}
+            disabled={totalityLoading || !claimInput.trim()}
+            style={{
+              background: '#3b0764',
+              color: '#e9d5ff',
+              border: '1px solid #c084fc55',
+              borderRadius: '4px',
+              padding: '8px 14px',
+              fontSize: '11px',
+              fontWeight: 'bold',
+              cursor: totalityLoading ? 'wait' : 'pointer',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {totalityLoading ? 'LOCKING...' : '🌀 TOTALITY GATE'}
+          </button>
         </div>
       </div>
 
@@ -1110,6 +1151,90 @@ export default function App() {
             </div>
           ) : (
             <div style={{ color: '#64748b', fontSize: '11px', fontStyle: 'italic' }}>No cognitive memory entries yet. Execute a cognitive cycle to populate.</div>
+          )}
+        </div>
+      )}
+
+      {/* ════════ TOTALITY MANIFEST PANEL ════════ */}
+      {totalityManifest && showTotality && (
+        <div
+          style={{
+            background: '#0d0718',
+            border: '1px solid #c084fc66',
+            borderRadius: '6px',
+            padding: '16px',
+            marginBottom: '20px',
+            boxShadow: '0 0 20px #c084fc15',
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '13px', color: '#c084fc', fontWeight: 'bold' }}>
+                🌀 OMEGA TOTALITY MANIFEST — SINGULARITY LOCK
+              </span>
+              <span
+                style={{
+                  padding: '2px 8px',
+                  borderRadius: '3px',
+                  fontSize: '10px',
+                  fontWeight: 'bold',
+                  background: '#3b0764',
+                  color: '#e9d5ff',
+                  border: '1px solid #c084fc',
+                }}
+              >
+                STATE ROOT: {totalityManifest.stateRoot}
+              </span>
+              <span
+                style={{
+                  padding: '2px 8px',
+                  borderRadius: '3px',
+                  fontSize: '10px',
+                  fontWeight: 'bold',
+                  background: totalityManifest.memoryIntegrityValid ? '#052e16' : '#450a0a',
+                  color: totalityManifest.memoryIntegrityValid ? '#4ade80' : '#f87171',
+                  border: `1px solid ${totalityManifest.memoryIntegrityValid ? '#22c55e' : '#ef4444'}`,
+                }}
+              >
+                INTEGRITY: {totalityManifest.memoryIntegrityValid ? 'UNBROKEN ✓' : 'FAILED ✗'}
+              </span>
+            </div>
+            <button onClick={() => setShowTotality(false)} style={{ background: 'transparent', border: 'none', color: '#a855f7', cursor: 'pointer', fontSize: '12px' }}>✕</button>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '8px', marginBottom: '12px' }}>
+            <div style={{ background: '#190a2e', padding: '8px 12px', borderRadius: '4px', border: '1px solid #c084fc22' }}>
+              <div style={{ fontSize: '10px', color: '#a855f7' }}>STEWARDSHIP AXIOM</div>
+              <div style={{ fontSize: '12px', color: '#f3e8ff', fontWeight: 'bold', fontFamily: 'monospace' }}>
+                {totalityManifest.stewardshipAxiom}
+              </div>
+            </div>
+            <div style={{ background: '#190a2e', padding: '8px 12px', borderRadius: '4px', border: '1px solid #c084fc22' }}>
+              <div style={{ fontSize: '10px', color: '#a855f7' }}>MEMORY ATTESTED</div>
+              <div style={{ fontSize: '12px', color: '#4ade80', fontWeight: 'bold' }}>
+                {totalityManifest.memorySize} records locked
+              </div>
+            </div>
+            <div style={{ background: '#190a2e', padding: '8px 12px', borderRadius: '4px', border: '1px solid #c084fc22' }}>
+              <div style={{ fontSize: '10px', color: '#a855f7' }}>CYCLE RESULT</div>
+              <div style={{ fontSize: '12px', color: totalityManifest.cycleResult?.passed ? '#4ade80' : '#f87171', fontWeight: 'bold' }}>
+                {totalityManifest.cycleResult?.passed ? 'VERIFIED PASSED' : 'FAILED'} ({(totalityManifest.cycleResult?.confidence * 100).toFixed(0)}% confidence)
+              </div>
+            </div>
+            <div style={{ background: '#190a2e', padding: '8px 12px', borderRadius: '4px', border: '1px solid #c084fc22' }}>
+              <div style={{ fontSize: '10px', color: '#a855f7' }}>LOCKED AT</div>
+              <div style={{ fontSize: '11px', color: '#e9d5ff', fontFamily: 'monospace' }}>
+                {totalityManifest.lockedAt}
+              </div>
+            </div>
+          </div>
+
+          {totalityManifest.cycleResult?.observation && (
+            <div style={{ background: '#090312', padding: '10px 12px', borderRadius: '4px', border: '1px solid #a855f733', fontSize: '11px' }}>
+              <span style={{ color: '#c084fc', fontWeight: 'bold' }}>Singularity Observation: </span>
+              <span style={{ color: '#f3e8ff' }}>"{totalityManifest.cycleResult.observation.claim.statement}"</span>
+              <span style={{ color: '#94a3b8', marginLeft: '10px' }}>[ID: {totalityManifest.cycleResult.observation.id.slice(0, 16)}...]</span>
+            </div>
           )}
         </div>
       )}
