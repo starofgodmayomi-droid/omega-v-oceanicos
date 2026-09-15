@@ -10,7 +10,7 @@
     "audit": "node scripts/oceanicos-audit.mjs",
     "lint": "pnpm typecheck",
     "type-check": "pnpm typecheck",
-    "verify": "node -e \"const { executeOceanicosMaxExpansion } = require('./packages/mini/dist/index.js'); executeOceanicosMaxExpansion();\"",
+    "verify": "pnpm build && node -e \"const { executeOceanicosMaxExpansion } = require('./packages/mini/dist/index.js'); executeOceanicosMaxExpansion();\"",
     "predev": "pnpm build",
     "mood": "node bin/oceanicos.mjs mood",
     "test": "pnpm build && node --experimental-strip-types --test tests/integration/max_compress_stack.e2e.test.ts",
