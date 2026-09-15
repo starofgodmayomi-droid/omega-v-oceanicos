@@ -10,7 +10,7 @@
     "dev": "pnpm --filter @oceanicos/api dev",
     "verify:full": "pnpm build && pnpm test:e2e",
     "test:e2e": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.config.cjs tests/e2e --runInBand",
-    "cli": "tsx bin/oceanicos.ts"
+    "cli": "tsx bin/oceanicos.mjs"
   },
   "engines": {
     "node": ">=20.0.0",
