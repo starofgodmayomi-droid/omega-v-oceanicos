@@ -1,7 +1,7 @@
 import Fastify, { FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
 import { RememberEngine } from '@oceanicos/remember';
-import { MiniKernel } from '@oceanicos/mini';
+import { MiniKernel, OmegaTotalCompressor } from '@oceanicos/mini';
 import { HiggsfieldBridgeEngine } from '@oceanicos/generative';
 import { OceanicosWaterKernel } from '@oceanicos/mood';
 import { ObserverEngine } from '@oceanicos/observer';
@@ -291,8 +291,118 @@ export function createApp(
     return { success: true, valid };
   });
 
+  // ─── Cognitive Verification Loop Endpoints ─────────────────────────
+
+  // POST /observe or /v1/observe
+  const handleObserve = async (request: any, reply: any) => {
+    try {
+      const observation = kernel.observe(request.body || {});
+      return { success: true, observation };
+    } catch (err: any) {
+      return reply.status(400).send({ success: false, error: err?.message || 'OBSERVATION_FAILED' });
+    }
+  };
+  fastify.post('/observe', handleObserve);
+  fastify.post('/v1/observe', handleObserve);
+
+  // POST /verify or /v1/verify
+  const handleVerify = async (request: any, reply: any) => {
+    try {
+      const observation = request.body;
+      if (!observation || !observation.id) {
+        return reply.status(400).send({ success: false, error: 'OBSERVATION_REQUIRED' });
+      }
+      const verification = kernel.verify(observation);
+      return { success: true, verification };
+    } catch (err: any) {
+      return reply.status(400).send({ success: false, error: err?.message || 'VERIFICATION_FAILED' });
+    }
+  };
+  fastify.post('/verify', handleVerify);
+  fastify.post('/v1/verify', handleVerify);
+
+  // POST /mini/cycle or /v1/mini/cycle
+  const handleMiniCycle = async (request: any, reply: any) => {
+    try {
+      const cycleResult = kernel.cycle(request.body || {});
+      return { success: true, ...cycleResult };
+    } catch (err: any) {
+      return reply.status(400).send({ success: false, error: err?.message || 'MINI_CYCLE_FAILED' });
+    }
+  };
+  fastify.post('/mini/cycle', handleMiniCycle);
+  fastify.post('/v1/mini/cycle', handleMiniCycle);
+
+  // POST /mini/total or /v1/mini/total
+  const handleMiniTotal = async (request: any, reply: any) => {
+    try {
+      const compressor = new OmegaTotalCompressor(kernel);
+      const manifest = compressor.lockTotalityIntoNow(request.body || {});
+      return { success: true, manifest };
+    } catch (err: any) {
+      return reply.status(400).send({ success: false, error: err?.message || 'TOTALITY_GATE_FAILED' });
+    }
+  };
+  fastify.post('/mini/total', handleMiniTotal);
+  fastify.post('/v1/mini/total', handleMiniTotal);
+
+  // GET /mini/integrity or /v1/mini/integrity
+  const handleMiniIntegrity = async () => ({
+    success: true,
+    valid: kernel.verifyMemoryIntegrity(),
+    size: kernel.getMemorySize(),
+  });
+  fastify.get('/mini/integrity', handleMiniIntegrity);
+  fastify.get('/v1/mini/integrity', handleMiniIntegrity);
+
+  // GET /memory or /v1/memory/all
+  const handleMemory = async () => ({
+    success: true,
+    entries: kernel.getMemory().all(),
+    size: kernel.getMemorySize(),
+  });
+  fastify.get('/memory', handleMemory);
+  fastify.get('/v1/memory/all', handleMemory);
+
+  // GET /rules or /v1/rules
+  const handleRules = async () => ({
+    success: true,
+    count: kernel.getVerificationEngine().getRuleCount(),
+    rules: kernel.getVerificationEngine().getRules(),
+  });
+  fastify.get('/rules', handleRules);
+  fastify.get('/v1/rules', handleRules);
+
+  // POST /complete-loop or /v1/complete-loop
+  const handleCompleteLoop = async (request: any, reply: any) => {
+    try {
+      const cycleResult = kernel.cycle(request.body || {});
+      const key = process.env.OMEGA_SIGNING_KEY || 'omega-v-default-attestation-secret-key-2026';
+      const attestationService = new AttestationService({ signingKey: key, algorithm: 'HMAC-SHA256' });
+      const attestation = attestationService.attest(cycleResult.verification);
+
+      return {
+        success: true,
+        observation: cycleResult.observation,
+        verification: cycleResult.verification,
+        memory: cycleResult.memory,
+        entries: cycleResult.entries,
+        attestation,
+        passed: cycleResult.passed,
+        confidence: cycleResult.confidence,
+        completedAt: cycleResult.completedAt,
+      };
+    } catch (err: any) {
+      return reply.status(400).send({ success: false, error: err?.message || 'COMPLETE_LOOP_FAILED' });
+    }
+  };
+  fastify.post('/complete-loop', handleCompleteLoop);
+  fastify.post('/v1/complete-loop', handleCompleteLoop);
+
   return fastify;
 }
+
+export * from './auth-helpers.js';
 
 export const fastify = createApp(
   process.env.LEDGER_PATH ?? './data/oceanicos.jsonl',
