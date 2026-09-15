@@ -1,5 +1,5 @@
 import * as crypto from 'crypto';
-import { AdvancedVerificationReceipt } from '@oceanicos/verification';
+import { AdvancedVerificationReceipt } from '@oceanicos/types';
 
 export interface BlockPayload {
   receipt: AdvancedVerificationReceipt;

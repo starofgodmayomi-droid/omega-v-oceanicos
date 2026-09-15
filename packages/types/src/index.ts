@@ -68,6 +68,7 @@ export interface ILiquidState {
 export interface VerificationResultSummary {
   readonly passed: boolean;
   readonly confidence: number;
+  readonly claimedConfidence?: number;
   readonly rulesApplied?: number;
   readonly rulesPassed?: number;
   readonly rulesFailed?: number;
@@ -78,8 +79,17 @@ export interface VerificationResult {
   readonly observationId: string;
   readonly timestamp?: string;
   readonly summary: VerificationResultSummary;
+  readonly rules?: Array<{
+    name: string;
+    passed: boolean;
+    confidence?: number;
+    evidence?: unknown[];
+    reason?: string;
+  }>;
+  readonly evidencePath?: EvidenceStep[] | string;
   readonly ruleVersions?: Record<string, string>;
   readonly status?: 'pending' | 'completed' | 'failed';
+  readonly dissent?: DissentRecord;
 }
 
 export interface Attestation {
@@ -98,4 +108,165 @@ export interface Attestation {
   verifyingPublicKey?: string;
   status: 'signed' | 'revoked' | 'expired';
 }
+
+export type GlobalComputeTelemetry = IObservation;
+
+export interface Observation {
+  id: string;
+  claim: {
+    statement: string;
+    category: string;
+  };
+  source: {
+    system: string;
+    version: string;
+    environment: string;
+  };
+  timestamp: string;
+  observedBy: string;
+  metadata: Record<string, unknown>;
+  confidence: number;
+  confidenceReason: string;
+  parentId?: string;
+  lineage?: string[];
+  status: 'normalized' | 'verified' | 'failed';
+}
+
+export interface VerificationRule {
+  name: string;
+  version: string;
+  appliesTo: string[];
+  definition: string;
+  bytecode?: string;
+  description: string;
+  createdAt: string;
+  active: boolean;
+}
+
+export interface EvidenceStep {
+  step: number;
+  rule: string;
+  condition: string;
+  value: unknown;
+  expected?: unknown;
+  passed: boolean;
+  reasoning: string;
+  severity?: 'info' | 'warning' | 'critical';
+  evaluated?: boolean;
+}
+
+export interface MemoryRecord {
+  id: string;
+  observationId: string;
+  verificationId: string;
+  verified: boolean;
+  confidence: number;
+  hash?: string;
+  summary?: string;
+  recordedAt?: string;
+  rememberedAt?: string;
+}
+
+export interface EventLogEntry {
+  id: number;
+  type: 'OBSERVATION' | 'VERIFICATION' | 'ATTESTATION' | 'MEMORY';
+  data: IObservation | Observation | VerificationResult | Attestation | MemoryRecord;
+  recordedAt: string;
+  hash: string;
+  previousHash: string;
+}
+
+export interface MiniCycleResult {
+  observation: Observation;
+  verification: VerificationResult;
+  memory: MemoryRecord;
+  entries?: EventLogEntry[];
+  passed: boolean;
+  confidence: number;
+  completedAt: string;
+}
+
+export interface OmegaTotalManifest {
+  stateRoot: 'Ø';
+  stewardshipAxiom: 'TOOLS_FOR_EVOLUTION_NOT_WAR';
+  cycleResult: MiniCycleResult;
+  memoryIntegrityValid: boolean;
+  memorySize: number;
+  lockedAt: string;
+}
+
+export type MoodState =
+  | 'OPTIMAL_FLOW'
+  | 'HIGH_INTEGRITY'
+  | 'EVIDENCE_SEARCH'
+  | 'FRICTION_DETECTED'
+  | 'RECOMPILING';
+
+export interface SystemMood {
+  state: MoodState;
+  confidence: number;
+  uncertainty: number;
+  verificationHealth: number;
+  evidenceQuality: number;
+  errorRate: number;
+  dissentCount: number;
+  description: string;
+  evaluatedAt: string;
+}
+
+export type FrictionCategory =
+  | 'ERROR'
+  | 'LATENCY'
+  | 'CONTRADICTION'
+  | 'MISSING_EVIDENCE'
+  | 'PERMISSION_FAILURE'
+  | 'TEST_FAILURE'
+  | 'SECURITY_ISSUE'
+  | 'MODEL_DISAGREEMENT'
+  | 'HUMAN_DISAGREEMENT';
+
+export interface FrictionEvent {
+  id: string;
+  category: FrictionCategory;
+  source: string;
+  description: string;
+  evidence: string[];
+  severity: 'info' | 'warning' | 'critical';
+  status: 'OPEN' | 'DIAGNOSED' | 'RESOLVED' | 'LEARNING';
+  correlationId?: string;
+  diagnosis?: string;
+  resolution?: string;
+  recordedAt: string;
+}
+
+export interface DissentRecord {
+  id: string;
+  claimId: string;
+  interpretations: DissentInterpretation[];
+  status: 'OPEN' | 'RESOLVED' | 'ACCEPTED';
+  recordedAt: string;
+}
+
+export interface DissentInterpretation {
+  position: string;
+  source: string;
+  evidence: string[];
+  confidence: number;
+}
+
+export type GeopoliticalRegion = 'US' | 'CN' | 'EU' | 'ME';
+
+export interface RegionalAssertion {
+  region: GeopoliticalRegion;
+  complianceRule: string;
+  hasLocalClearance: boolean;
+}
+
+export interface AdvancedVerificationReceipt {
+  status: 'PASS' | 'FAIL' | 'DIVERGENT';
+  lawRoute: string;
+  assertions: RegionalAssertion[];
+  evidencePath: string;
+}
+
 

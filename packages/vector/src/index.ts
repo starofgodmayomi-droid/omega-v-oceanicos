@@ -10,7 +10,7 @@
  * Iron Law: Attest, don't assert. Evidence before trust.
  */
 
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 
 // ─── Types ───────────────────────────────────────────────────────────
 
@@ -73,14 +73,12 @@ export class VectorMemory {
       return this.cachedAvailability;
     }
 
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3000);
     try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 3000);
-
       const response = await fetch(`${this.config.url}/readyz`, {
         signal: controller.signal,
       });
-      clearTimeout(timeout);
 
       this.cachedAvailability = response.ok;
       this.lastHealthCheck = now;
@@ -89,6 +87,8 @@ export class VectorMemory {
       this.cachedAvailability = false;
       this.lastHealthCheck = now;
       return false;
+    } finally {
+      clearTimeout(timeout);
     }
   }
 
@@ -101,10 +101,10 @@ export class VectorMemory {
     const available = await this.isAvailable();
     if (!available) return false;
 
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), this.config.timeoutMs);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), this.config.timeoutMs);
 
+    try {
       // Check if collection exists
       const checkResponse = await fetch(
         `${this.config.url}/collections/${this.config.collectionName}`,
@@ -112,7 +112,6 @@ export class VectorMemory {
       );
 
       if (checkResponse.ok) {
-        clearTimeout(timeout);
         this.collectionInitialized = true;
         return true;
       }
@@ -132,12 +131,13 @@ export class VectorMemory {
           signal: controller.signal,
         }
       );
-      clearTimeout(timeout);
 
       this.collectionInitialized = createResponse.ok;
       return this.collectionInitialized;
     } catch {
       return false;
+    } finally {
+      clearTimeout(timeout);
     }
   }
 
@@ -159,10 +159,10 @@ export class VectorMemory {
       throw new Error(`Vector memory unavailable at ${this.config.url}`);
     }
 
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), this.config.timeoutMs);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), this.config.timeoutMs);
 
+    try {
       // Generate a deterministic point ID from the block hash
       const pointId = this.hashToPointId(blockHash);
 
@@ -187,12 +187,13 @@ export class VectorMemory {
           signal: controller.signal,
         }
       );
-      clearTimeout(timeout);
 
       return response.ok;
     } catch {
       if (this.config.fallbackToEmpty) return false;
       throw new Error('Failed to store vector in Qdrant');
+    } finally {
+      clearTimeout(timeout);
     }
   }
 
@@ -209,10 +210,10 @@ export class VectorMemory {
       throw new Error(`Vector memory unavailable at ${this.config.url}`);
     }
 
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), this.config.timeoutMs);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), this.config.timeoutMs);
 
+    try {
       const response = await fetch(
         `${this.config.url}/collections/${this.config.collectionName}/points/search`,
         {
@@ -226,7 +227,6 @@ export class VectorMemory {
           signal: controller.signal,
         }
       );
-      clearTimeout(timeout);
 
       if (!response.ok) {
         if (this.config.fallbackToEmpty) return [];
@@ -250,6 +250,8 @@ export class VectorMemory {
     } catch {
       if (this.config.fallbackToEmpty) return [];
       throw new Error('Vector recall failed');
+    } finally {
+      clearTimeout(timeout);
     }
   }
 
@@ -261,15 +263,13 @@ export class VectorMemory {
     let vectorCount = 0;
 
     if (available) {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 3000);
       try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 3000);
-
         const response = await fetch(
           `${this.config.url}/collections/${this.config.collectionName}`,
           { signal: controller.signal }
         );
-        clearTimeout(timeout);
 
         if (response.ok) {
           const data = (await response.json()) as {
@@ -279,6 +279,8 @@ export class VectorMemory {
         }
       } catch {
         // Swallow — we already have available=false path
+      } finally {
+        clearTimeout(timeout);
       }
     }
 

@@ -11,7 +11,7 @@
  */
 
 import crypto from 'crypto';
-import { IObservation, IEvidence } from '@oceanicos/types';
+import type { IObservation, IEvidence } from '@oceanicos/types';
 
 // ─── Types ───────────────────────────────────────────────────────────
 
@@ -79,14 +79,12 @@ export class InferenceClient {
       return this.cachedAvailability;
     }
 
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3000);
     try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 3000);
-
       const response = await fetch(`${this.config.host}/api/tags`, {
         signal: controller.signal,
       });
-      clearTimeout(timeout);
 
       this.cachedAvailability = response.ok;
       this.lastHealthCheck = now;
@@ -95,6 +93,8 @@ export class InferenceClient {
       this.cachedAvailability = false;
       this.lastHealthCheck = now;
       return false;
+    } finally {
+      clearTimeout(timeout);
     }
   }
 
@@ -106,14 +106,12 @@ export class InferenceClient {
     let loadedModels: string[] = [];
 
     if (available) {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 3000);
       try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 3000);
-
         const response = await fetch(`${this.config.host}/api/tags`, {
           signal: controller.signal,
         });
-        clearTimeout(timeout);
 
         if (response.ok) {
           const data = (await response.json()) as { models?: Array<{ name: string }> };
@@ -121,6 +119,8 @@ export class InferenceClient {
         }
       } catch {
         // Swallow — we already have available=false path
+      } finally {
+        clearTimeout(timeout);
       }
     }
 
@@ -154,10 +154,10 @@ export class InferenceClient {
     // Build the analysis prompt
     const prompt = this.buildAnalysisPrompt(observation);
 
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), this.config.timeoutMs);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), this.config.timeoutMs);
 
+    try {
       const response = await fetch(`${this.config.host}/api/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -173,7 +173,6 @@ export class InferenceClient {
         }),
         signal: controller.signal,
       });
-      clearTimeout(timeout);
 
       if (!response.ok) {
         if (this.config.fallbackToStub) {
@@ -212,6 +211,8 @@ export class InferenceClient {
         return this.generateStubResult(observation, Date.now() - startMs);
       }
       throw err;
+    } finally {
+      clearTimeout(timeout);
     }
   }
 

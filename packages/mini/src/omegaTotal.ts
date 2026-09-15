@@ -1,5 +1,5 @@
 import { MiniKernel } from './index.js';
-import { OmegaTotalManifest } from '@omega-v/types';
+import { OmegaTotalManifest } from '@oceanicos/types';
 
 /**
  * OmegaTotalCompressor: thin composition layer that enforces totality.
@@ -51,7 +51,7 @@ export class OmegaTotalCompressor {
     }
 
     // Gate 2: At least one rule must have been applied
-    if (cycleResult.verification.summary.rulesApplied < 1) {
+    if ((cycleResult.verification.summary.rulesApplied ?? 0) < 1) {
       throw new Error(
         `OmegaTotal: no rules were applied during verification. ` +
           `Totality requires at least one executable rule.`

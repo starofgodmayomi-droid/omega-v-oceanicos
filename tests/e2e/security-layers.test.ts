@@ -15,6 +15,7 @@
  * 7. Verifying that the stream engine broadcasts without data loss
  */
 
+import { describe, expect, it, test, beforeEach, beforeAll } from '@jest/globals';
 import crypto from 'crypto';
 import {
   AttestationService,
@@ -22,12 +23,19 @@ import {
   InvalidSigningKeyError,
   verifyEd25519,
 } from '@oceanicos/attestation';
-import { AsymmetricValidationGuard } from '@oceanicos/verification';
-import { VerificationEngine } from '@oceanicos/verification';
+import {
+  AsymmetricValidationGuard,
+  VerificationEngine,
+} from '@oceanicos/verification';
 import { ObserverEngine } from '@oceanicos/observer';
 import { RememberEngine } from '@oceanicos/remember';
-import { MiniKernel } from '@oceanicos/mini';
+import { MiniKernel, AutonomousPlannerAgent } from '@oceanicos/mini';
 import { VerificationResult, Attestation } from '@oceanicos/types';
+
+// Ensure signing key is present for verification engine throughout tests
+beforeAll(() => {
+  process.env.OMEGA_SIGNING_KEY = process.env.OMEGA_SIGNING_KEY || 'omega-v-test-secret-key-e2e-2026';
+});
 
 // ─── Test Helpers ────────────────────────────────────────────────────
 
@@ -63,6 +71,7 @@ describe('Ω∞v Security: HMAC-SHA256 Attestation', () => {
   let service: AttestationService;
 
   beforeEach(() => {
+    process.env.OMEGA_SIGNING_KEY = SIGNING_KEY;
     service = new AttestationService({ signingKey: SIGNING_KEY, algorithm: 'HMAC-SHA256' });
   });
 
@@ -340,6 +349,10 @@ describe('Ω∞v Security: AsymmetricValidationGuard', () => {
 // ─── 4. Verification Engine Evidence Proofs ──────────────────────────
 
 describe('Ω∞v Security: Verification Evidence Proofs', () => {
+  beforeEach(() => {
+    process.env.OMEGA_SIGNING_KEY = 'omega-v-test-secret-key-e2e-2026';
+  });
+
   test('evidence contains SHA256 proof of observation', () => {
     const telemetry = ObserverEngine.generateTelemetry();
     const evidence = VerificationEngine.evaluate(telemetry);
@@ -376,6 +389,7 @@ describe('Ω∞v Security: Ledger Hash Chain Integrity', () => {
   let kernel: MiniKernel;
 
   beforeEach(() => {
+    process.env.OMEGA_SIGNING_KEY = 'omega-v-test-secret-key-e2e-2026';
     ledger = new RememberEngine(':memory:');
     kernel = new MiniKernel(ledger);
   });
@@ -407,7 +421,6 @@ describe('Ω∞v Security: Ledger Hash Chain Integrity', () => {
 
   test('chain starts from root hash', () => {
     const firstBlock = kernel.runCycle();
-    // First block's previousHash should be the root hash
     expect(firstBlock.previousHash).toBeTruthy();
     expect(firstBlock.previousHash.length).toBeGreaterThan(0);
   });
@@ -416,20 +429,11 @@ describe('Ω∞v Security: Ledger Hash Chain Integrity', () => {
 // ─── 6. Autonomous Agent Security Boundaries ─────────────────────────
 
 describe('Ω∞v Security: Autonomous Agent Planner Boundaries', () => {
-  // Import agent dynamically since it may not be built yet
-  let AutonomousPlannerAgent: any;
-
-  beforeAll(async () => {
-    try {
-      const mod = await import('../../packages/mini/src/agent');
-      AutonomousPlannerAgent = mod.AutonomousPlannerAgent;
-    } catch {
-      // Skip if not available
-    }
+  beforeEach(() => {
+    process.env.OMEGA_SIGNING_KEY = 'omega-v-test-secret-key-e2e-2026';
   });
 
   const createAgent = () => {
-    if (!AutonomousPlannerAgent) return null;
     const ledger = new RememberEngine(':memory:');
     const kernel = new MiniKernel(ledger);
     return new AutonomousPlannerAgent(kernel);
@@ -437,8 +441,6 @@ describe('Ω∞v Security: Autonomous Agent Planner Boundaries', () => {
 
   test('full cycle produces chained proofs', () => {
     const agent = createAgent();
-    if (!agent) return; // Skip if module not available
-
     const goal = agent.runFullCycle('Security Test Full Cycle');
 
     expect(goal.status).toBe('completed');
@@ -450,8 +452,6 @@ describe('Ω∞v Security: Autonomous Agent Planner Boundaries', () => {
 
   test('every step has a proof', () => {
     const agent = createAgent();
-    if (!agent) return;
-
     const goal = agent.runFullCycle();
 
     for (const step of goal.steps) {
@@ -462,8 +462,6 @@ describe('Ω∞v Security: Autonomous Agent Planner Boundaries', () => {
 
   test('empty steps rejected', () => {
     const agent = createAgent();
-    if (!agent) return;
-
     expect(() => {
       agent.plan('Empty', []);
     }).toThrow('at least one step');
@@ -471,8 +469,6 @@ describe('Ω∞v Security: Autonomous Agent Planner Boundaries', () => {
 
   test('invalid step kind rejected', () => {
     const agent = createAgent();
-    if (!agent) return;
-
     expect(() => {
       agent.plan('Bad Kind', [{ kind: 'shell_exec' as any, description: 'hacked' }]);
     }).toThrow('Invalid step kind');
@@ -480,8 +476,6 @@ describe('Ω∞v Security: Autonomous Agent Planner Boundaries', () => {
 
   test('exceeding max steps rejected', () => {
     const agent = createAgent();
-    if (!agent) return;
-
     const tooMany = Array.from({ length: 100 }, (_, i) => ({
       kind: 'observe' as const,
       description: `step ${i}`,
@@ -494,8 +488,6 @@ describe('Ω∞v Security: Autonomous Agent Planner Boundaries', () => {
 
   test('goal can be aborted', () => {
     const agent = createAgent();
-    if (!agent) return;
-
     const goal = agent.plan('Abort Test', [
       { kind: 'observe', description: 'step 1' },
       { kind: 'verify', description: 'step 2' },
@@ -507,8 +499,6 @@ describe('Ω∞v Security: Autonomous Agent Planner Boundaries', () => {
 
   test('master proof is deterministic hash of proof chain', () => {
     const agent = createAgent();
-    if (!agent) return;
-
     const goal = agent.runFullCycle();
 
     // Manually verify the master proof computation

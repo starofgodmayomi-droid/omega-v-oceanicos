@@ -40,3 +40,10 @@ export class ObserverEngine {
     };
   }
 }
+
+export type GlobalComputeTelemetry = IObservation;
+export const observePlanetaryBase = ObserverEngine.generateTelemetry;
+
+export * from './observer.js';
+export { Observer as default } from './observer.js';
+

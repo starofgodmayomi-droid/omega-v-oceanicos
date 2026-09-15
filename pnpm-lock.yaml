@@ -35,18 +35,36 @@ importers:
       '@fastify/cors':
         specifier: ^9.0.1
         version: 9.0.1
+      '@oceanicos/attestation':
+        specifier: workspace:*
+        version: link:../../packages/attestation
       '@oceanicos/generative':
         specifier: workspace:*
         version: link:../../packages/generative
+      '@oceanicos/inference':
+        specifier: workspace:*
+        version: link:../../packages/inference
       '@oceanicos/mini':
         specifier: workspace:*
         version: link:../../packages/mini
       '@oceanicos/mood':
         specifier: workspace:*
         version: link:../../packages/mood
+      '@oceanicos/observer':
+        specifier: workspace:*
+        version: link:../../packages/observer
       '@oceanicos/remember':
         specifier: workspace:*
         version: link:../../packages/remember
+      '@oceanicos/types':
+        specifier: workspace:*
+        version: link:../../packages/types
+      '@oceanicos/vector':
+        specifier: workspace:*
+        version: link:../../packages/vector
+      '@oceanicos/verification':
+        specifier: workspace:*
+        version: link:../../packages/verification
       fastify:
         specifier: ^4.26.1
         version: 4.29.1

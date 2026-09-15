@@ -11,10 +11,16 @@
   },
   "dependencies": {
     "@fastify/cors": "^9.0.1",
-    "@oceanicos/mini": "workspace:*",
-    "@oceanicos/remember": "workspace:*",
+    "@oceanicos/attestation": "workspace:*",
     "@oceanicos/generative": "workspace:*",
+    "@oceanicos/inference": "workspace:*",
+    "@oceanicos/mini": "workspace:*",
     "@oceanicos/mood": "workspace:*",
+    "@oceanicos/observer": "workspace:*",
+    "@oceanicos/remember": "workspace:*",
+    "@oceanicos/types": "workspace:*",
+    "@oceanicos/vector": "workspace:*",
+    "@oceanicos/verification": "workspace:*",
     "fastify": "^4.26.1"
   }
 }

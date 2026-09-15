@@ -8,11 +8,16 @@
  * Zero-friction: identical behavior whether Ollama/Qdrant are running or not.
  */
 
-import { InferenceClient, InferenceResult, InferenceStatus } from '@oceanicos/inference';
-import { VectorMemory, SimilarBlock, VectorMemoryStatus } from '@oceanicos/vector';
+import { describe, expect, it, beforeAll, afterAll } from '@jest/globals';
+import { InferenceClient, type InferenceResult, type InferenceStatus } from '@oceanicos/inference';
+import { VectorMemory, type SimilarBlock, type VectorMemoryStatus } from '@oceanicos/vector';
 import { ObserverEngine } from '@oceanicos/observer';
-import { MiniKernel } from '@oceanicos/mini';
-import { RememberEngine } from '@oceanicos/remember';
+import { createApp } from '../../apps/api/src/index.js';
+
+// Ensure signing key is present for verification engine throughout tests
+beforeAll(() => {
+  process.env.OMEGA_SIGNING_KEY = process.env.OMEGA_SIGNING_KEY || 'omega-v-test-secret-key-e2e-2026';
+});
 
 // ─── T21: InferenceClient — Deterministic Stub When Ollama Is Offline ─────
 
@@ -147,7 +152,6 @@ describe('T23: Fastify API — GET /v1/inference/status', () => {
   let app: any;
 
   beforeAll(async () => {
-    const { createApp } = require('../../../apps/api/src/index');
     app = createApp(':memory:', false);
     await app.ready();
   });
@@ -179,7 +183,6 @@ describe('T24: Fastify API — GET /v1/memory/status', () => {
   let app: any;
 
   beforeAll(async () => {
-    const { createApp } = require('../../../apps/api/src/index');
     app = createApp(':memory:', false);
     await app.ready();
   });
@@ -211,7 +214,6 @@ describe('T25: Enriched MINI cycle includes aiInsight field', () => {
   let app: any;
 
   beforeAll(async () => {
-    const { createApp } = require('../../../apps/api/src/index');
     app = createApp(':memory:', false);
     await app.ready();
   });

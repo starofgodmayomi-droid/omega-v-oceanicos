@@ -1,4 +1,4 @@
-import { GlobalComputeTelemetry } from '@oceanicos/observer';
+import { GlobalComputeTelemetry } from '@oceanicos/types';
 
 export type GeopoliticalRegion = 'US' | 'CN' | 'EU' | 'ME';
 
