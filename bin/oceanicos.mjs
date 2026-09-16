@@ -21,26 +21,38 @@ let AttestationService;
 let pkgLoadError = null;
 
 try {
-  const observerPkg = require(path.join(rootDir, 'packages/observer/dist/index.js'));
+  let observerPkg, verifPkg, remPkg, miniPkg, attestPkg;
+  try {
+    // Prefer source packages under tsx runtime
+    observerPkg = await import('../packages/observer/src/index.ts');
+    verifPkg = await import('../packages/verification/src/index.ts');
+    remPkg = await import('../packages/remember/src/index.ts');
+    miniPkg = await import('../packages/mini/src/index.ts');
+    try {
+      attestPkg = await import('../packages/attestation/src/index.ts');
+    } catch {}
+  } catch {
+    // Fallback to dist directory if precompiled
+    observerPkg = await import('../packages/observer/dist/index.js');
+    verifPkg = await import('../packages/verification/dist/index.js');
+    remPkg = await import('../packages/remember/dist/index.js');
+    miniPkg = await import('../packages/mini/dist/index.js');
+    try {
+      attestPkg = await import('../packages/attestation/dist/index.js');
+    } catch {}
+  }
+
   ObserverEngine = observerPkg.ObserverEngine;
   observePlanetaryBase = observerPkg.observePlanetaryBase;
-
-  const verifPkg = require(path.join(rootDir, 'packages/verification/dist/index.js'));
   verifyPlanetarySovereignty = verifPkg.verifyPlanetarySovereignty;
   AsymmetricValidationGuard = verifPkg.AsymmetricValidationGuard;
   MultiRegionMeshConvergence = verifPkg.MultiRegionMeshConvergence;
-
-  const remPkg = require(path.join(rootDir, 'packages/remember/dist/index.js'));
   PluralisticHashChain = remPkg.PluralisticHashChain;
   RememberEngine = remPkg.RememberEngine;
-
-  const miniPkg = require(path.join(rootDir, 'packages/mini/dist/index.js'));
   executeOceanicosMaxExpansion = miniPkg.executeOceanicosMaxExpansion;
-
-  try {
-    const attestPkg = require(path.join(rootDir, 'packages/attestation/dist/index.js'));
+  if (attestPkg) {
     AttestationService = attestPkg.AttestationService;
-  } catch {}
+  }
 } catch (err) {
   pkgLoadError = err;
 }
