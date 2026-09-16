@@ -10,11 +10,14 @@ import {
   fetchOmegaCommands,
   fetchOmegaLearning,
   fetchOmegaNextSlice,
+  fetchOmegaEvents,
+  subscribeToOmegaEvents,
   type OmegaWorkerInfo,
   type OmegaCommandView,
   type OmegaCommandResultView,
   type OmegaLearningView,
   type OmegaNextSliceProposalView,
+  type OmegaLifecycleEventView,
 } from './omega-api';
 
 export const OmegaWorkspace: React.FC = () => {
@@ -35,11 +38,28 @@ export const OmegaWorkspace: React.FC = () => {
   >('git_working_tree');
   const [learningMetrics, setLearningMetrics] = useState<OmegaLearningView | null>(null);
   const [nextSliceProposal, setNextSliceProposal] = useState<OmegaNextSliceProposalView | null>(null);
+  const [events, setEvents] = useState<OmegaLifecycleEventView[]>([]);
 
   useEffect(() => {
     loadWorkers();
     loadRecentCommands();
+    loadEvents();
+    const unsubscribe = subscribeToOmegaEvents((newEvent) => {
+      setEvents((prev) => [newEvent, ...prev.filter((e) => e.eventId !== newEvent.eventId)].slice(0, 40));
+    });
+    return () => {
+      unsubscribe();
+    };
   }, []);
+
+  const loadEvents = async () => {
+    try {
+      const res = await fetchOmegaEvents(20);
+      if (res.success) setEvents(res.events);
+    } catch {
+      // API may be loading
+    }
+  };
 
   const loadWorkers = async () => {
     try {
@@ -627,6 +647,98 @@ export const OmegaWorkspace: React.FC = () => {
             </div>
           )}
         </div>
+      </div>
+
+      {/* 3. Live Lifecycle Event Ledger & Provenance Stream */}
+      <div style={{ marginTop: '24px', background: 'rgba(15, 23, 42, 0.85)', border: '1px solid rgba(56, 189, 248, 0.25)', borderRadius: '8px', padding: '18px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <h3 style={{ margin: 0, fontSize: '15px', color: '#7dd3fc' }}>
+              3. Live Lifecycle Event Ledger & Provenance Stream
+            </h3>
+            <span style={{ fontSize: '10px', background: 'rgba(16, 185, 129, 0.2)', color: '#34d399', border: '1px solid rgba(16, 185, 129, 0.4)', padding: '2px 6px', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
+              SSE ACTIVE
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={loadEvents}
+            style={{ fontSize: '11px', background: 'rgba(56, 189, 248, 0.15)', border: '1px solid rgba(56, 189, 248, 0.3)', color: '#7dd3fc', padding: '3px 8px', borderRadius: '4px', cursor: 'pointer' }}
+          >
+            Refresh ({events.length})
+          </button>
+        </div>
+
+        {events.length === 0 ? (
+          <div style={{ color: '#64748b', fontSize: '12px', textAlign: 'center', padding: '16px' }}>
+            No lifecycle events recorded yet. Propose or execute a command to observe live provenance events.
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '240px', overflowY: 'auto' }}>
+            {events.map((ev) => {
+              const badgeColor =
+                ev.eventType.includes('VERIFIED') ? '#10b981' :
+                ev.eventType.includes('EXECUTED') ? '#34d399' :
+                ev.eventType.includes('DENIED') ? '#ef4444' :
+                ev.eventType.includes('REVIEW') ? '#f59e0b' :
+                ev.eventType.includes('ADMITTED') ? '#0284c7' :
+                ev.eventType.includes('OBSERVED') ? '#8b5cf6' :
+                ev.eventType.includes('RECOMPILED') ? '#ec4899' : '#38bdf8';
+
+              return (
+                <div
+                  key={ev.eventId}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '8px 12px',
+                    background: '#040914',
+                    border: '1px solid rgba(30, 41, 59, 0.7)',
+                    borderRadius: '4px',
+                    fontSize: '11px',
+                    fontFamily: 'monospace',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: '0', flex: 1 }}>
+                    <span style={{ padding: '2px 6px', borderRadius: '3px', background: `${badgeColor}22`, color: badgeColor, border: `1px solid ${badgeColor}44`, fontWeight: 700, fontSize: '10px' }}>
+                      {ev.eventType}
+                    </span>
+                    {ev.commandId && (
+                      <span
+                        onClick={() => {
+                          const cmd = recentCommands.find((c) => c.commandId === ev.commandId);
+                          if (cmd) setActiveCommand(cmd);
+                        }}
+                        style={{ color: '#7dd3fc', cursor: 'pointer', textDecoration: 'underline' }}
+                        title="Click to view command"
+                      >
+                        {ev.commandId.slice(0, 16)}...
+                      </span>
+                    )}
+                    <span style={{ color: '#94a3b8' }}>
+                      by <span style={{ color: '#e2e8f0' }}>{ev.actor}</span>
+                    </span>
+                    {ev.payload && typeof ev.payload.reason === 'string' && (
+                      <span style={{ color: '#cbd5e1', maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        — {ev.payload.reason}
+                      </span>
+                    )}
+                    {ev.payload && typeof ev.payload.verdict === 'string' && (
+                      <span style={{ color: '#cbd5e1' }}>
+                        — verdict: <strong>{ev.payload.verdict}</strong>
+                      </span>
+                    )}
+                  </div>
+                  <span style={{ color: '#64748b', fontSize: '10px', marginLeft: '12px', flexShrink: 0 }}>
+                    {new Date(ev.timestamp).toLocaleTimeString()}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -350,4 +350,68 @@ describe('Ω‑ƆREADƆS OS v∞ — Command Lifecycle & Reality Verification Su
     expect(obsBody.observation.observedData.ready).toBe(true);
     expect(obsBody.observation.observedData.typesPackageExists).toBe(true);
   });
+
+  it('records provenance lifecycle events and exposes them via GET /v1/omega/events', async () => {
+    // 1. Propose command
+    const createRes = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/commands',
+      payload: {
+        prompt: 'Audit planetary ledger and verify cryptographic integrity',
+        requestedWorkers: ['worker-observer', 'worker-planner'],
+      },
+    });
+    const cmdId = JSON.parse(createRes.payload).command.commandId;
+
+    // 2. Admit
+    await app.inject({ method: 'POST', url: `/v1/omega/commands/${cmdId}/admit` });
+
+    // 3. Execute
+    await app.inject({ method: 'POST', url: `/v1/omega/commands/${cmdId}/execute` });
+
+    // 4. Observe
+    await app.inject({
+      method: 'POST',
+      url: `/v1/omega/commands/${cmdId}/observe`,
+      payload: { observerType: 'git_working_tree', target: 'git_working_tree' },
+    });
+
+    // 5. Verify Reality
+    await app.inject({ method: 'POST', url: `/v1/omega/commands/${cmdId}/verify-reality` });
+
+    // 6. Query all events
+    const allEventsRes = await app.inject({
+      method: 'GET',
+      url: '/v1/omega/events',
+    });
+    expect(allEventsRes.statusCode).toBe(200);
+    const allEventsBody = JSON.parse(allEventsRes.payload);
+    expect(allEventsBody.success).toBe(true);
+    expect(allEventsBody.events.length).toBeGreaterThanOrEqual(5);
+
+    // 7. Query filtered by commandId
+    const cmdEventsRes = await app.inject({
+      method: 'GET',
+      url: `/v1/omega/events?commandId=${cmdId}`,
+    });
+    expect(cmdEventsRes.statusCode).toBe(200);
+    const cmdEventsBody = JSON.parse(cmdEventsRes.payload);
+    expect(cmdEventsBody.success).toBe(true);
+    const types = cmdEventsBody.events.map((e: any) => e.eventType);
+    expect(types).toContain('COMMAND_PROPOSED');
+    expect(types).toContain('COMMAND_ADMITTED');
+    expect(types).toContain('COMMAND_EXECUTED');
+    expect(types).toContain('REALITY_OBSERVED');
+    expect(types).toContain('REALITY_VERIFIED');
+
+    // 8. Test SSE headers and initial event flush
+    const sseRes = await app.inject({
+      method: 'GET',
+      url: `/v1/omega/events?stream=true&commandId=${cmdId}&once=true`,
+    });
+    expect(sseRes.headers['content-type']).toBe('text/event-stream');
+    expect(sseRes.payload).toContain(': omega-event-stream-connected');
+    expect(sseRes.payload).toContain('COMMAND_PROPOSED');
+    expect(sseRes.payload).toContain('REALITY_VERIFIED');
+  });
 });

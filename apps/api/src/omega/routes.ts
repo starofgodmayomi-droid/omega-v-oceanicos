@@ -6,6 +6,7 @@ import type {
   OmegaCommandStatus,
   OmegaObservation,
   OmegaNextSliceProposal,
+  OmegaLifecycleEvent,
 } from '@oceanicos/types';
 import {
   synthesizeOmegaLearning,
@@ -49,6 +50,56 @@ export const omegaRoutes: FastifyPluginAsync<OmegaRouteOptions> = async (
     return {
       success: true,
       commands: store.listCommands(limit),
+    };
+  });
+
+  // GET /v1/omega/events (Audit Log & Real-Time Event Stream)
+  fastify.get('/v1/omega/events', async (request: any, reply) => {
+    const isStream = request.query?.stream === 'true' || request.headers.accept === 'text/event-stream';
+    const limit = Math.min(parseInt(request.query?.limit || '50', 10), 200);
+    const commandId = typeof request.query?.commandId === 'string' ? request.query.commandId : undefined;
+    const eventType = typeof request.query?.type === 'string' ? request.query.type : undefined;
+
+    if (isStream) {
+      reply.raw.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+        'Access-Control-Allow-Origin': '*',
+      });
+
+      reply.raw.write(': omega-event-stream-connected\n\n');
+
+      const recent = store.listEvents({ commandId, eventType, limit: 10 });
+      for (const ev of recent.reverse()) {
+        reply.raw.write(`data: ${JSON.stringify(ev)}\n\n`);
+      }
+
+      if (request.query?.once === 'true') {
+        reply.raw.end();
+        return;
+      }
+
+      const unsubscribe = store.onEvent((ev) => {
+        if (commandId && ev.commandId !== commandId) return;
+        if (eventType && ev.eventType !== eventType) return;
+        try {
+          reply.raw.write(`data: ${JSON.stringify(ev)}\n\n`);
+        } catch {
+          unsubscribe();
+        }
+      });
+
+      request.raw.on('close', () => {
+        unsubscribe();
+      });
+
+      return;
+    }
+
+    return {
+      success: true,
+      events: store.listEvents({ commandId, eventType, limit }),
     };
   });
 
@@ -102,6 +153,18 @@ export const omegaRoutes: FastifyPluginAsync<OmegaRouteOptions> = async (
       };
 
       store.saveCommand(command);
+      store.appendEvent({
+        eventType: 'COMMAND_PROPOSED',
+        commandId: command.commandId,
+        status: 'PROPOSED',
+        actor: command.requestedBy,
+        payload: {
+          prompt: command.prompt,
+          requestedWorkers: command.requestedWorkers,
+          redacted: command.redacted,
+          redactedFields: command.redactedFields,
+        },
+      });
 
       return reply.code(201).send({
         success: true,
@@ -160,6 +223,13 @@ export const omegaRoutes: FastifyPluginAsync<OmegaRouteOptions> = async (
     for (const kw of prohibitedKeywords) {
       if (lower.includes(kw)) {
         store.updateCommandStatus(command.commandId, 'DENIED', `Prohibited action detected: "${kw}"`);
+        store.appendEvent({
+          eventType: 'COMMAND_DENIED',
+          commandId: command.commandId,
+          status: 'DENIED',
+          actor: 'kernel:safety-gate',
+          payload: { reason: `Violates Safety Charter: Prohibited action "${kw}".` },
+        });
         return {
           success: true,
           verdict: 'DENY',
@@ -177,6 +247,13 @@ export const omegaRoutes: FastifyPluginAsync<OmegaRouteOptions> = async (
         'REVIEW',
         'Command requests mutating or consequential worker(s); requires attributable human review.'
       );
+      store.appendEvent({
+        eventType: 'COMMAND_REVIEW_REQUIRED',
+        commandId: command.commandId,
+        status: 'REVIEW',
+        actor: 'kernel:admission-gate',
+        payload: { reason: 'Command requests mutating or consequential worker(s); requires attributable human review.' },
+      });
       return {
         success: true,
         verdict: 'REVIEW',
@@ -187,6 +264,13 @@ export const omegaRoutes: FastifyPluginAsync<OmegaRouteOptions> = async (
 
     // Otherwise, admit as AUTHORIZED
     store.updateCommandStatus(command.commandId, 'AUTHORIZED', 'All declared policy checks passed.');
+    store.appendEvent({
+      eventType: 'COMMAND_ADMITTED',
+      commandId: command.commandId,
+      status: 'AUTHORIZED',
+      actor: 'kernel:admission-gate',
+      payload: { reason: 'Read-only or bounded operations verified against active policy set.' },
+    });
     return {
       success: true,
       verdict: 'ALLOW',
@@ -220,6 +304,13 @@ export const omegaRoutes: FastifyPluginAsync<OmegaRouteOptions> = async (
     };
 
     store.updateCommandStatus(command.commandId, 'AUTHORIZED', `Approved by ${approvedBy}`);
+    store.appendEvent({
+      eventType: 'COMMAND_APPROVED',
+      commandId: command.commandId,
+      status: 'AUTHORIZED',
+      actor: approvedBy,
+      payload: { rationale },
+    });
 
     return {
       success: true,
@@ -250,6 +341,16 @@ export const omegaRoutes: FastifyPluginAsync<OmegaRouteOptions> = async (
 
       store.updateCommandStatus(command.commandId, 'EXECUTED', 'Executed by authorized worker pipeline.');
       store.saveResult(result);
+      store.appendEvent({
+        eventType: 'COMMAND_EXECUTED',
+        commandId: command.commandId,
+        status: 'EXECUTED',
+        actor: request.body?.executorIdentity || 'omega:api-kernel',
+        payload: {
+          consequence: result.consequence,
+          attestationDigest: result.attestationDigest,
+        },
+      });
 
       return {
         success: true,
@@ -298,6 +399,17 @@ export const omegaRoutes: FastifyPluginAsync<OmegaRouteOptions> = async (
     }
     result.observation = observation;
     store.saveResult(result);
+    store.appendEvent({
+      eventType: 'REALITY_OBSERVED',
+      commandId: command.commandId,
+      status: command.status,
+      actor: observation.observerId,
+      payload: {
+        observerType: observation.observerType,
+        target: observation.target,
+        stateHash: observation.stateHash,
+      },
+    });
 
     return {
       success: true,
@@ -334,6 +446,18 @@ export const omegaRoutes: FastifyPluginAsync<OmegaRouteOptions> = async (
     store.updateCommandStatus(command.commandId, newStatus, `Reality verification verdict: ${verdict.verdict}`);
     result.status = newStatus;
     store.saveResult(result);
+    store.appendEvent({
+      eventType: 'REALITY_VERIFIED',
+      commandId: command.commandId,
+      status: newStatus,
+      actor: 'kernel:reality-engine',
+      payload: {
+        verdict: verdict.verdict,
+        discrepancies: verdict.discrepancies,
+        claimedStateHash: verdict.claimedStateHash,
+        observedStateHash: verdict.observedStateHash,
+      },
+    });
 
     return {
       success: true,
@@ -424,6 +548,18 @@ export const omegaRoutes: FastifyPluginAsync<OmegaRouteOptions> = async (
     }
 
     const compileInput = compileNextLoopIntent(proposal);
+    store.appendEvent({
+      eventType: 'LOOP_RECOMPILED',
+      commandId: proposal.sourceCommandId,
+      actor: 'kernel:loop-recompiler',
+      payload: {
+        proposalAction: proposal.actionType,
+        proposalTrigger: proposal.trigger,
+        proposedIntent: proposal.proposedIntent,
+        urgency: proposal.urgency,
+      },
+    });
+
     return {
       success: true,
       proposal,

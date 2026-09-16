@@ -283,6 +283,7 @@ ${ANSI.bold}OMEGA SUBSYSTEM COMMANDS:${ANSI.reset}
   node bin/oceanicos.mjs omega learn
   node bin/oceanicos.mjs omega next [command-id]
   node bin/oceanicos.mjs omega recompile
+  node bin/oceanicos.mjs omega events [--stream] [--command <id>]
 `);
 
     return;
@@ -384,6 +385,66 @@ ${ANSI.bold}OMEGA SUBSYSTEM COMMANDS:${ANSI.reset}
       });
       const data = await res.json();
       console.log(JSON.stringify(data, null, 2));
+    } else if (subCommand === 'events') {
+      const isStream = args.includes('--stream');
+      const cmdIndex = args.indexOf('--command');
+      const filterCmdId = cmdIndex !== -1 ? args[cmdIndex + 1] : targetId && !targetId.startsWith('--') ? targetId : undefined;
+
+      if (isStream) {
+        console.log(`${ANSI.cyan}Connecting to Ω Live Lifecycle Event Stream (SSE)...${ANSI.reset}`);
+        const streamUrl = filterCmdId
+          ? `${apiBase}/v1/omega/events?stream=true&commandId=${encodeURIComponent(filterCmdId)}`
+          : `${apiBase}/v1/omega/events?stream=true`;
+
+        const response = await fetch(streamUrl);
+        if (!response.ok) {
+          throw new Error(`Failed to connect: HTTP ${response.status}`);
+        }
+
+        console.log(`${ANSI.green}✓ Connected. Listening for real-time events (Ctrl+C to exit)...${ANSI.reset}\n`);
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n\n');
+          buffer = lines.pop() || '';
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const ev = JSON.parse(line.slice(6));
+                const badgeColor =
+                  ev.eventType.includes('VERIFIED') ? ANSI.green :
+                  ev.eventType.includes('EXECUTED') ? ANSI.green :
+                  ev.eventType.includes('DENIED') ? ANSI.red :
+                  ev.eventType.includes('REVIEW') ? ANSI.yellow :
+                  ev.eventType.includes('OBSERVED') ? ANSI.magenta : ANSI.cyan;
+
+                console.log(
+                  `[${badgeColor}${ev.eventType}${ANSI.reset}] ` +
+                  `${ANSI.bold}${ev.commandId || 'global'}${ANSI.reset} ` +
+                  `by ${ANSI.dim}${ev.actor}${ANSI.reset} ` +
+                  `@ ${ev.timestamp}`
+                );
+                if (ev.payload && Object.keys(ev.payload).length > 0) {
+                  console.log(`  ${ANSI.dim}Details: ${JSON.stringify(ev.payload)}${ANSI.reset}`);
+                }
+              } catch {}
+            }
+          }
+        }
+      } else {
+        const queryUrl = filterCmdId
+          ? `${apiBase}/v1/omega/events?commandId=${encodeURIComponent(filterCmdId)}`
+          : `${apiBase}/v1/omega/events`;
+        const res = await fetch(queryUrl);
+        const data = await res.json();
+        console.log(JSON.stringify(data, null, 2));
+      }
     } else {
       console.error(`${ANSI.red}Unknown omega subcommand: ${subCommand}${ANSI.reset}`);
       process.exitCode = 1;

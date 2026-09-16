@@ -148,14 +148,17 @@ class AIOSCompanion:
         reality_verdict = verify_res.get("verdict", "UNKNOWN") if verify_res else "UNKNOWN"
         print(f"[AI OS] Reality verification verdict: {reality_verdict}")
 
-        # Step 6: Query Adaptive Learning & Continuous Loop Recompiler (C8 & C9)
+        # Step 6: Query Adaptive Learning, Next Loop Recompiler & Lifecycle Event Stream (C8 & C9)
         learning_res = self._http_request("GET", "/v1/omega/learning")
         next_slice_res = self._http_request("GET", f"/v1/omega/commands/{cmd_id}/next-slice")
+        events_res = self._http_request("GET", f"/v1/omega/events?commandId={cmd_id}")
         proposal = next_slice_res.get("proposal", {}) if next_slice_res else {}
         learning = learning_res.get("learning", {}) if learning_res else {}
         reliability = learning.get("reliabilityScore", 1.0)
+        events_count = len(events_res.get("events", [])) if events_res else 0
 
         print(f"[AI OS] Adaptive Learning Score: {reliability:.4f} (Evaluated: {learning.get('totalEvaluated', 0)})")
+        print(f"[AI OS] Recorded Lifecycle Events in Provenance: {events_count}")
         if proposal:
             print(f"[AI OS] Next Loop Proposal: '{proposal.get('proposedIntent')}' [Action: {proposal.get('actionType')}, Urgency: {proposal.get('urgency')}]")
 
@@ -168,6 +171,7 @@ class AIOSCompanion:
             "realityVerdict": reality_verdict,
             "reliabilityScore": reliability,
             "nextSliceProposal": proposal,
+            "lifecycleEventsCount": events_count,
             "discrepancies": verify_res.get("result", {}).get("realityVerdict", {}).get("discrepancies", []) if verify_res else []
         }
 

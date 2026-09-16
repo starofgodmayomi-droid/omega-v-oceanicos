@@ -474,3 +474,26 @@ export interface OmegaNextSliceProposal {
   readonly urgency: 'routine' | 'elevated' | 'critical';
   readonly generatedAt: string;
 }
+
+export type OmegaEventType =
+  | 'COMMAND_PROPOSED'
+  | 'COMMAND_ADMITTED'
+  | 'COMMAND_REVIEW_REQUIRED'
+  | 'COMMAND_APPROVED'
+  | 'COMMAND_DENIED'
+  | 'COMMAND_EXECUTED'
+  | 'REALITY_OBSERVED'
+  | 'REALITY_VERIFIED'
+  | 'LEARNING_SYNTHESIZED'
+  | 'NEXT_SLICE_PROPOSED'
+  | 'LOOP_RECOMPILED';
+
+export interface OmegaLifecycleEvent {
+  readonly eventId: string;
+  readonly eventType: OmegaEventType;
+  readonly commandId?: string;
+  readonly status?: OmegaCommandStatus;
+  readonly actor: string;
+  readonly payload: Record<string, unknown>;
+  readonly timestamp: string;
+}

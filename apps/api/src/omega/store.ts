@@ -1,13 +1,19 @@
+import crypto from 'node:crypto';
+import { EventEmitter } from 'node:events';
 import type {
   OmegaCommand,
   OmegaCommandResult,
   OmegaCommandStatus,
+  OmegaLifecycleEvent,
+  OmegaEventType,
 } from '@oceanicos/types';
 
 export class OmegaCommandStore {
   private readonly commands = new Map<string, OmegaCommand>();
   private readonly results = new Map<string, OmegaCommandResult>();
   private readonly idempotencyMap = new Map<string, string>(); // idempotencyKey -> commandId
+  private readonly events: OmegaLifecycleEvent[] = [];
+  private readonly emitter = new EventEmitter();
 
   public saveCommand(command: OmegaCommand): void {
     this.commands.set(command.commandId, command);
@@ -78,6 +84,36 @@ export class OmegaCommandStore {
 
   public listResults(): OmegaCommandResult[] {
     return Array.from(this.results.values());
+  }
+
+  public appendEvent(event: Omit<OmegaLifecycleEvent, 'eventId' | 'timestamp'>): OmegaLifecycleEvent {
+    const fullEvent: OmegaLifecycleEvent = {
+      eventId: `evt_${crypto.randomUUID()}`,
+      timestamp: new Date().toISOString(),
+      ...event,
+    };
+    this.events.push(fullEvent);
+    this.emitter.emit('omega_event', fullEvent);
+    return fullEvent;
+  }
+
+  public listEvents(options?: { commandId?: string; eventType?: OmegaEventType; limit?: number }): OmegaLifecycleEvent[] {
+    let filtered = this.events;
+    if (options?.commandId) {
+      filtered = filtered.filter((e) => e.commandId === options.commandId);
+    }
+    if (options?.eventType) {
+      filtered = filtered.filter((e) => e.eventType === options.eventType);
+    }
+    const limit = options?.limit ?? 50;
+    return filtered.slice(-limit).reverse();
+  }
+
+  public onEvent(listener: (event: OmegaLifecycleEvent) => void): () => void {
+    this.emitter.on('omega_event', listener);
+    return () => {
+      this.emitter.off('omega_event', listener);
+    };
   }
 }
 

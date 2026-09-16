@@ -229,3 +229,52 @@ export async function fetchOmegaNextSlice(
   const res = await fetch(url);
   return res.json();
 }
+
+export interface OmegaLifecycleEventView {
+  eventId: string;
+  eventType: string;
+  commandId?: string;
+  status?: string;
+  actor: string;
+  payload: Record<string, unknown>;
+  timestamp: string;
+}
+
+export async function fetchOmegaEvents(
+  limit: number = 20,
+  commandId?: string
+): Promise<{ success: boolean; events: OmegaLifecycleEventView[] }> {
+  const url = commandId
+    ? `${API_BASE}/v1/omega/events?limit=${limit}&commandId=${encodeURIComponent(commandId)}`
+    : `${API_BASE}/v1/omega/events?limit=${limit}`;
+  const res = await fetch(url);
+  return res.json();
+}
+
+export function subscribeToOmegaEvents(
+  onEvent: (event: OmegaLifecycleEventView) => void,
+  commandId?: string
+): () => void {
+  if (typeof EventSource === 'undefined') {
+    return () => {};
+  }
+  const url = commandId
+    ? `${API_BASE}/v1/omega/events?stream=true&commandId=${encodeURIComponent(commandId)}`
+    : `${API_BASE}/v1/omega/events?stream=true`;
+  const eventSource = new EventSource(url);
+
+  eventSource.onmessage = (e) => {
+    try {
+      const data = JSON.parse(e.data);
+      if (data && data.eventId) {
+        onEvent(data);
+      }
+    } catch {
+      // ignore non-json lines
+    }
+  };
+
+  return () => {
+    eventSource.close();
+  };
+}
