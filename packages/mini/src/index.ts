@@ -21,6 +21,16 @@ export class MiniKernel {
 export const MiniKernelCoordinator = MiniKernel;
 export type MiniKernelCoordinator = MiniKernel;
 export { observeCandidateChange } from './change.js';
+export { resolveChangeAdmission } from './admission.js';
+export type { OmegaAdmissionEvidence } from './admission.js';
+export { executeAuthorizedTransition } from './transition.js';
+export type {
+  TransitionExecution,
+  TransitionExecutionStatus,
+  TransitionExecutorOptions,
+  TransitionHandler,
+  TransitionMemory,
+} from './transition.js';
 
 export function executeOceanicosMaxExpansion(): CryptographicBlock {
   const kernelChain = new PluralisticHashChain();
