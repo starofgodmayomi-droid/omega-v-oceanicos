@@ -8,6 +8,7 @@
     "build": "pnpm -r run build",
     "typecheck": "pnpm -r run typecheck",
     "dev": "pnpm --filter @oceanicos/api dev",
+    "dev:web": "pnpm --filter @oceanicos/web dev",
     "verify": "pnpm run typecheck && pnpm run build && pnpm run test:fast && pnpm run test:e2e",
     "verify:full": "pnpm build && pnpm test:e2e",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.config.cjs --runInBand",

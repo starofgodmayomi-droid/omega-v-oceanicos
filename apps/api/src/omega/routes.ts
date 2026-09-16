@@ -128,7 +128,8 @@ export const omegaRoutes: FastifyPluginAsync<OmegaRouteOptions> = async (
     }
 
     try {
-      const normalized = IntentNormalizer.normalize(body.prompt, body.context);
+      const inputContext = body.context || body.boundedContext;
+      const normalized = IntentNormalizer.normalize(body.prompt, inputContext);
       const requestedWorkers: string[] = Array.isArray(body.requestedWorkers) && body.requestedWorkers.length > 0
         ? body.requestedWorkers
         : ['worker-observer', 'worker-planner'];

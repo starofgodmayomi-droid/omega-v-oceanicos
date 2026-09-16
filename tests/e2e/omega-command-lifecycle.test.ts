@@ -631,4 +631,101 @@ describe('Ω‑ƆREADƆS OS v∞ — Command Lifecycle & Reality Verification Su
       expect(body.command.status).toBe('PROPOSED');
     });
   });
+
+  describe('Phase 13: Sandbox Allowlisted Execution Engine & Defense', () => {
+    it('rejects shell injection characters in target (fail-closed)', async () => {
+      const proposeRes = await app.inject({
+        method: 'POST',
+        url: '/v1/omega/commands',
+        payload: {
+          prompt: 'Execute injected target',
+          requestedWorkers: ['worker-tester'],
+          boundedContext: { target: 'test:fast; cat /etc/passwd' },
+        },
+      });
+      const cmd = JSON.parse(proposeRes.payload).command;
+      const cmdId = cmd.commandId;
+
+      await app.inject({ method: 'POST', url: `/v1/omega/commands/${cmdId}/admit` });
+      await app.inject({
+        method: 'POST',
+        url: `/v1/omega/commands/${cmdId}/approve`,
+        payload: { approvedBy: 'human:security-lead', rationale: 'Testing injection handling' },
+      });
+
+      const execRes = await app.inject({
+        method: 'POST',
+        url: `/v1/omega/commands/${cmdId}/execute`,
+      });
+
+      expect(execRes.statusCode).toBe(500);
+      const errBody = JSON.parse(execRes.payload);
+      expect(errBody.error).toContain('SECURITY_REJECTION_SHELL_INJECTION_DETECTED');
+    });
+
+    it('captures sandboxExecution telemetry in stateAfter and result', async () => {
+      const proposeRes = await app.inject({
+        method: 'POST',
+        url: '/v1/omega/commands',
+        payload: {
+          prompt: 'Execute allowlisted test:fast suite',
+          requestedWorkers: ['worker-tester'],
+          boundedContext: { target: 'test:fast' },
+        },
+      });
+      const cmd = JSON.parse(proposeRes.payload).command;
+      const cmdId = cmd.commandId;
+
+      await app.inject({ method: 'POST', url: `/v1/omega/commands/${cmdId}/admit` });
+      await app.inject({
+        method: 'POST',
+        url: `/v1/omega/commands/${cmdId}/approve`,
+        payload: { approvedBy: 'human:qa-lead', rationale: 'Authorized test:fast run' },
+      });
+
+      const execRes = await app.inject({
+        method: 'POST',
+        url: `/v1/omega/commands/${cmdId}/execute`,
+      });
+
+      expect(execRes.statusCode).toBe(200);
+      const execBody = JSON.parse(execRes.payload);
+      expect(execBody.result.status).toBe('EXECUTED');
+      expect(execBody.result.stateAfter.sandboxExecution).toBeDefined();
+      expect(execBody.result.stateAfter.sandboxExecution.target).toBe('test:fast');
+      expect(execBody.result.stateAfter.sandboxExecution.passed).toBe(true);
+    });
+
+    it('dryRun bypasses physical execution and marks dryRun: true', async () => {
+      const proposeRes = await app.inject({
+        method: 'POST',
+        url: '/v1/omega/commands',
+        payload: {
+          prompt: 'Execute dry run build',
+          requestedWorkers: ['worker-tester'],
+          boundedContext: { target: 'build' },
+          dryRun: true,
+        },
+      });
+      const cmd = JSON.parse(proposeRes.payload).command;
+      const cmdId = cmd.commandId;
+
+      await app.inject({ method: 'POST', url: `/v1/omega/commands/${cmdId}/admit` });
+      await app.inject({
+        method: 'POST',
+        url: `/v1/omega/commands/${cmdId}/approve`,
+        payload: { approvedBy: 'human:qa-lead', rationale: 'Authorized dry run' },
+      });
+
+      const execRes = await app.inject({
+        method: 'POST',
+        url: `/v1/omega/commands/${cmdId}/execute`,
+      });
+
+      expect(execRes.statusCode).toBe(200);
+      const execBody = JSON.parse(execRes.payload);
+      expect(execBody.result.outputSummary).toContain('[DRY_RUN]');
+      expect(execBody.result.stateAfter.sandboxExecution.dryRun).toBe(true);
+    });
+  });
 });
