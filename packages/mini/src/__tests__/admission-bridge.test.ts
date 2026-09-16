@@ -121,6 +121,26 @@ describe('Omega admission bridge', () => {
     expect(result.change.authorized).toBe(false);
   });
 
+  it('fails closed when the change policy is outside the IR policy references', () => {
+    const result = admitOmegaIR({
+      ...admittedInput,
+      change: { ...change, policy: 'policy.other.v1' },
+    });
+
+    expect(result.change.decision).toBe('DENY');
+    expect(result.change.authorized).toBe(false);
+  });
+
+  it('fails closed when change evidence is outside the IR evidence references', () => {
+    const result = admitOmegaIR({
+      ...admittedInput,
+      change: { ...change, evidence: ['unbound-evidence'] },
+    });
+
+    expect(result.change.decision).toBe('DENY');
+    expect(result.change.authorized).toBe(false);
+  });
+
   it('never upgrades REVIEW when authority or policy evidence is missing', () => {
     const result = admitOmegaIR({
       ...admittedInput,
