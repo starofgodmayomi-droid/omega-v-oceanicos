@@ -1,3 +1,6 @@
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { createApp } from '../../apps/api/src/index.js';
 
@@ -413,5 +416,87 @@ describe('Ω‑ƆREADƆS OS v∞ — Command Lifecycle & Reality Verification Su
     expect(sseRes.payload).toContain(': omega-event-stream-connected');
     expect(sseRes.payload).toContain('COMMAND_PROPOSED');
     expect(sseRes.payload).toContain('REALITY_VERIFIED');
+  });
+
+  it('durable persistence recovers commands, events, and attestation history across server restarts', async () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'omega-durability-'));
+    const ledgerFile = path.join(tempDir, 'test-omega-ledger.jsonl');
+
+    try {
+      // 1. Boot Server Instance A with file ledger
+      const app1 = createApp(':memory:', false, ledgerFile);
+      await app1.ready();
+
+      const createRes = await app1.inject({
+        method: 'POST',
+        url: '/v1/omega/commands',
+        payload: {
+          prompt: 'Durable recovery verification across reboot',
+          requestedWorkers: ['worker-observer', 'worker-planner'],
+        },
+      });
+      const cmdId = JSON.parse(createRes.payload).command.commandId;
+
+      await app1.inject({ method: 'POST', url: `/v1/omega/commands/${cmdId}/admit` });
+      await app1.inject({ method: 'POST', url: `/v1/omega/commands/${cmdId}/execute` });
+      await app1.inject({
+        method: 'POST',
+        url: `/v1/omega/commands/${cmdId}/observe`,
+        payload: {
+          observerType: 'state_snapshot',
+          target: 'read_only_intent_record',
+          observedData: { verified: true, state: 'DURABLE_INTACT' },
+        },
+      });
+      await app1.inject({ method: 'POST', url: `/v1/omega/commands/${cmdId}/verify-reality` });
+
+      // Simulate crash / restart: close app1
+      await app1.close();
+
+      // Verify file exists on disk and contains records
+      expect(fs.existsSync(ledgerFile)).toBe(true);
+      const fileContent = fs.readFileSync(ledgerFile, 'utf8');
+      expect(fileContent).toContain(cmdId);
+      expect(fileContent).toContain('COMMAND_PROPOSED');
+      expect(fileContent).toContain('REALITY_VERIFIED');
+
+      // 2. Boot Server Instance B with the same file ledger (cold restart recovery)
+      const app2 = createApp(':memory:', false, ledgerFile);
+      await app2.ready();
+
+      // Verify command state is completely recovered
+      const getRes = await app2.inject({
+        method: 'GET',
+        url: `/v1/omega/commands/${cmdId}`,
+      });
+      expect(getRes.statusCode).toBe(200);
+      const getBody = JSON.parse(getRes.payload);
+      expect(getBody.command.commandId).toBe(cmdId);
+      expect(getBody.command.status).toBe('VERIFIED');
+      expect(getBody.result.status).toBe('VERIFIED');
+
+      // Verify events are completely recovered
+      const eventsRes = await app2.inject({
+        method: 'GET',
+        url: `/v1/omega/events?commandId=${cmdId}`,
+      });
+      expect(eventsRes.statusCode).toBe(200);
+      const eventsBody = JSON.parse(eventsRes.payload);
+      expect(eventsBody.events.length).toBe(5);
+
+      // Verify learning metrics are computed from recovered state
+      const learningRes = await app2.inject({
+        method: 'GET',
+        url: '/v1/omega/learning',
+      });
+      expect(learningRes.statusCode).toBe(200);
+      const learningBody = JSON.parse(learningRes.payload);
+      expect(learningBody.learning.totalEvaluated).toBe(1);
+      expect(learningBody.learning.reliabilityScore).toBe(1);
+
+      await app2.close();
+    } finally {
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    }
   });
 });

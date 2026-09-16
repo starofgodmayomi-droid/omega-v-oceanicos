@@ -1,4 +1,6 @@
 import crypto from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
 import { EventEmitter } from 'node:events';
 import type {
   OmegaCommand,
@@ -8,18 +10,83 @@ import type {
   OmegaEventType,
 } from '@oceanicos/types';
 
+export interface OmegaLedgerRecord {
+  readonly type: 'COMMAND' | 'RESULT' | 'EVENT';
+  readonly payload: OmegaCommand | OmegaCommandResult | OmegaLifecycleEvent;
+  readonly timestamp: string;
+}
+
 export class OmegaCommandStore {
   private readonly commands = new Map<string, OmegaCommand>();
   private readonly results = new Map<string, OmegaCommandResult>();
   private readonly idempotencyMap = new Map<string, string>(); // idempotencyKey -> commandId
   private readonly events: OmegaLifecycleEvent[] = [];
   private readonly emitter = new EventEmitter();
+  public readonly ledgerPath?: string;
+
+  constructor(ledgerPath?: string) {
+    if (ledgerPath && ledgerPath !== ':memory:') {
+      this.ledgerPath = ledgerPath;
+      this.initializeLedger();
+    }
+  }
+
+  private initializeLedger(): void {
+    if (!this.ledgerPath) return;
+    try {
+      const dir = path.dirname(this.ledgerPath);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      if (fs.existsSync(this.ledgerPath)) {
+        const content = fs.readFileSync(this.ledgerPath, 'utf8');
+        const lines = content.split('\n').filter((l) => l.trim().length > 0);
+        for (const line of lines) {
+          try {
+            const record = JSON.parse(line) as OmegaLedgerRecord;
+            if (record.type === 'COMMAND') {
+              const cmd = record.payload as OmegaCommand;
+              this.commands.set(cmd.commandId, cmd);
+              if (cmd.idempotencyKey) {
+                this.idempotencyMap.set(cmd.idempotencyKey, cmd.commandId);
+              }
+            } else if (record.type === 'RESULT') {
+              const res = record.payload as OmegaCommandResult;
+              this.results.set(res.commandId, res);
+            } else if (record.type === 'EVENT') {
+              const ev = record.payload as OmegaLifecycleEvent;
+              this.events.push(ev);
+            }
+          } catch {
+            // Ignore corrupted or partial line
+          }
+        }
+      }
+    } catch (err) {
+      console.warn(`[OmegaCommandStore] Ledger recovery warning: ${(err as Error).message}`);
+    }
+  }
+
+  private appendToLedger(type: 'COMMAND' | 'RESULT' | 'EVENT', payload: unknown): void {
+    if (!this.ledgerPath) return;
+    try {
+      const record: OmegaLedgerRecord = {
+        type,
+        payload: payload as any,
+        timestamp: new Date().toISOString(),
+      };
+      fs.appendFileSync(this.ledgerPath, JSON.stringify(record) + '\n', 'utf8');
+    } catch (err) {
+      console.error(`[OmegaCommandStore] Failed to write to ledger: ${(err as Error).message}`);
+    }
+  }
 
   public saveCommand(command: OmegaCommand): void {
     this.commands.set(command.commandId, command);
     if (command.idempotencyKey) {
       this.idempotencyMap.set(command.idempotencyKey, command.commandId);
     }
+    this.appendToLedger('COMMAND', command);
   }
 
   public getCommand(commandId: string): OmegaCommand | undefined {
@@ -67,11 +134,13 @@ export class OmegaCommandStore {
       command.statusReason = reason;
     }
 
+    this.appendToLedger('COMMAND', command);
     return command;
   }
 
   public saveResult(result: OmegaCommandResult): void {
     this.results.set(result.commandId, result);
+    this.appendToLedger('RESULT', result);
   }
 
   public getResult(commandId: string): OmegaCommandResult | undefined {
@@ -94,6 +163,7 @@ export class OmegaCommandStore {
     };
     this.events.push(fullEvent);
     this.emitter.emit('omega_event', fullEvent);
+    this.appendToLedger('EVENT', fullEvent);
     return fullEvent;
   }
 
