@@ -15,6 +15,7 @@ module.exports = {
     '^@oceanicos/attestation$': '<rootDir>/packages/attestation/src/index.ts',
     '^@oceanicos/inference$': '<rootDir>/packages/inference/src/index.ts',
     '^@oceanicos/vector$': '<rootDir>/packages/vector/src/index.ts',
+    '^@oceanicos/pluralism$': '<rootDir>/packages/pluralism/src/index.ts',
     '^@omega-v/types$': '<rootDir>/packages/types/src/index.ts',
     '^@omega-v/observer$': '<rootDir>/packages/observer/src/index.ts',
     '^@omega-v/verification$': '<rootDir>/packages/verification/src/index.ts',

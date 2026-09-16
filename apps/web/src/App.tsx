@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { OmegaWorkspace } from './OmegaWorkspace';
 import {
   runCognitiveLoop,
   runCompleteLoop,
@@ -51,6 +52,7 @@ export default function App() {
   const [keyPair, setKeyPair] = useState<KeyPair | null>(null);
   const [signRequests, setSignRequests] = useState(false);
   const [lastError, setLastError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'matrix' | 'workspace'>('matrix');
 
   // Background Autonomous Miner state
   const [minerActive, setMinerActive] = useState(false);
@@ -578,8 +580,48 @@ export default function App() {
         </div>
       </div>
 
-      {/* Main Controls Ribbon */}
-      <div
+      {/* Primary Navigation Tabs */}
+      <div style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
+        <button
+          type="button"
+          onClick={() => setActiveTab('matrix')}
+          style={{
+            padding: '10px 18px',
+            borderRadius: '6px',
+            fontSize: '12px',
+            fontWeight: 'bold',
+            background: activeTab === 'matrix' ? 'rgba(0, 255, 102, 0.15)' : 'rgba(15, 23, 42, 0.6)',
+            color: activeTab === 'matrix' ? '#00ff66' : '#94a3b8',
+            border: activeTab === 'matrix' ? '1px solid #00ff66' : '1px solid rgba(148, 163, 184, 0.2)',
+            cursor: 'pointer',
+          }}
+        >
+          📊 OMNI MATRIX & HARDWARE TELEMETRY
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('workspace')}
+          style={{
+            padding: '10px 18px',
+            borderRadius: '6px',
+            fontSize: '12px',
+            fontWeight: 'bold',
+            background: activeTab === 'workspace' ? 'rgba(56, 189, 248, 0.2)' : 'rgba(15, 23, 42, 0.6)',
+            color: activeTab === 'workspace' ? '#38bdf8' : '#94a3b8',
+            border: activeTab === 'workspace' ? '1px solid #38bdf8' : '1px solid rgba(148, 163, 184, 0.2)',
+            cursor: 'pointer',
+          }}
+        >
+          ⚡ Ω‑ƆREADƆS COMMAND WORKSPACE
+        </button>
+      </div>
+
+      {activeTab === 'workspace' ? (
+        <OmegaWorkspace />
+      ) : (
+        <>
+          {/* Main Controls Ribbon */}
+          <div
         style={{
           display: 'flex',
           flexWrap: 'wrap',
@@ -1835,6 +1877,8 @@ export default function App() {
           ))}
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 }

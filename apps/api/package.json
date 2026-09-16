@@ -17,6 +17,7 @@
     "@oceanicos/mini": "workspace:*",
     "@oceanicos/mood": "workspace:*",
     "@oceanicos/observer": "workspace:*",
+    "@oceanicos/pluralism": "workspace:*",
     "@oceanicos/remember": "workspace:*",
     "@oceanicos/types": "workspace:*",
     "@oceanicos/vector": "workspace:*",

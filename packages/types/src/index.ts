@@ -19,6 +19,22 @@ export interface IHiggsfieldJob {
   resultUrl?: string;
 }
 
+export interface IRegionalFaceStream {
+  nodeId: string;
+  regionCode: string;
+  telemetryMetric: number;
+  storyPayload: string;
+  timestamp: string;
+}
+
+export interface IUnifiedConsensus {
+  consensusId: string;
+  activeFacesCount: number;
+  agreementRatio: number;
+  convergedHash: string;
+  verdict: 'PASS' | 'FAIL' | 'DIVERGENT';
+}
+
 export interface IObservation {
   uuid: string;
   timestamp: string;
@@ -33,6 +49,8 @@ export interface IObservation {
     currentApp: string;
     screenshotHash: string;
   };
+  decentralizedStreams?: IRegionalFaceStream[];
+  unifiedConsensus?: IUnifiedConsensus;
 }
 
 export interface IEvidence {
@@ -268,5 +286,131 @@ export interface AdvancedVerificationReceipt {
   assertions: RegionalAssertion[];
   evidencePath: string;
 }
+
+// ---------------------------------------------------------------------------
+// Ω‑ƆREADƆS OS v∞ — Unified Command & Reality-First Contracts
+// ---------------------------------------------------------------------------
+
+export type OmegaCommandStatus =
+  | 'PROPOSED'
+  | 'REVIEW'
+  | 'DENIED'
+  | 'AUTHORIZED'
+  | 'EXECUTED'
+  | 'ATTESTED'
+  | 'VERIFIED'
+  | 'DIVERGENT'
+  | 'UNKNOWN'
+  | 'FAILED';
+
+export type OmegaWorkerRole =
+  | 'observer'
+  | 'researcher'
+  | 'planner'
+  | 'tester'
+  | 'security-reviewer'
+  | 'governance-reviewer';
+
+export type OmegaWorkerClassification = 'read-only' | 'local-mutating' | 'externally-consequential';
+
+export interface OmegaWorkerDefinition {
+  id: string;
+  version: string;
+  role: OmegaWorkerRole;
+  classification: OmegaWorkerClassification;
+  description: string;
+  capabilities: string[];
+  requiresApproval: boolean;
+  timeoutMs: number;
+  maxOutputBytes: number;
+  maxRetries: number;
+}
+
+export interface OmegaCommandIR {
+  irVersion: '1.0';
+  intent: string;
+  requestedWorkers: string[];
+  evidenceRefs: string[];
+  policyRefs: string[];
+  workerPlan: Array<{
+    step: number;
+    workerId: string;
+    action: string;
+    readOnly: boolean;
+  }>;
+  transitionSpec: {
+    target: string;
+    action: string;
+    rollbackSupported: boolean;
+  };
+  observationSpec: {
+    observerType: 'git_working_tree' | 'build_test' | 'api_health' | 'state_snapshot';
+    target: string;
+  };
+}
+
+export interface OmegaCommandApproval {
+  approvedBy: string;
+  approvedAt: string;
+  rationale?: string;
+  authProof?: string;
+}
+
+export interface OmegaCommand {
+  commandId: string;
+  sessionId: string;
+  requestedBy: string;
+  timestamp: string;
+  prompt: string;
+  boundedContext: Record<string, unknown>;
+  requestedWorkers: string[];
+  irPlan: OmegaCommandIR;
+  idempotencyKey: string;
+  dryRun: boolean;
+  redacted: boolean;
+  redactedFields: string[];
+  status: OmegaCommandStatus;
+  statusReason?: string;
+  approval?: OmegaCommandApproval;
+}
+
+export interface OmegaObservation {
+  observerId: string;
+  observerType: 'git_working_tree' | 'build_test' | 'api_health' | 'state_snapshot';
+  target: string;
+  timestamp: string;
+  observedData: Record<string, unknown>;
+  stateHash: string;
+}
+
+export interface OmegaRealityVerdict {
+  verdict: 'VERIFIED' | 'DIVERGENT' | 'UNKNOWN' | 'NOT_EXECUTED';
+  claimedStateHash?: string;
+  observedStateHash?: string;
+  discrepancies: string[];
+  evaluatedAt: string;
+}
+
+export interface OmegaCommandResult {
+  commandId: string;
+  status: OmegaCommandStatus;
+  statusReason?: string;
+  stateBefore?: Record<string, unknown>;
+  stateAfter?: Record<string, unknown>;
+  consequence?: string;
+  outputSummary?: string;
+  attestationId?: string;
+  attestationDigest?: string;
+  provenance?: {
+    lineage: string[];
+    executedBy: string;
+    timestamp: string;
+  };
+  observation?: OmegaObservation;
+  realityVerdict?: OmegaRealityVerdict;
+  dissentNotes?: string[];
+  completedAt?: string;
+}
+
 
 

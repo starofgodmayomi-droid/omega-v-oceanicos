@@ -250,6 +250,115 @@ async function handleAttest() {
   console.log(`  Attested At    : ${attestation.attestedAt}\n`);
 }
 
+async function handleOmega() {
+  const subCommand = args[1] || 'help';
+  const targetId = args[2];
+  const apiBase = process.env.API_BASE_URL || 'http://localhost:5000';
+
+  if (subCommand === 'help' || !subCommand) {
+    printBanner();
+    console.log(`
+${ANSI.bold}OMEGA SUBSYSTEM COMMANDS:${ANSI.reset}
+  node bin/oceanicos.mjs omega workers
+  node bin/oceanicos.mjs omega propose "<prompt>"
+  node bin/oceanicos.mjs omega inspect <command-id>
+  node bin/oceanicos.mjs omega admit <command-id>
+  node bin/oceanicos.mjs omega approve <command-id>
+  node bin/oceanicos.mjs omega execute <command-id>
+  node bin/oceanicos.mjs omega observe <command-id>
+  node bin/oceanicos.mjs omega verify-reality <command-id>
+`);
+    return;
+  }
+
+  try {
+    if (subCommand === 'workers') {
+      const res = await fetch(`${apiBase}/v1/omega/workers`);
+      const data = await res.json();
+      console.log(JSON.stringify(data, null, 2));
+    } else if (subCommand === 'propose') {
+      const prompt = args.slice(2).join(' ');
+      if (!prompt) {
+        console.error(`${ANSI.red}Error: Prompt required. Usage: node bin/oceanicos.mjs omega propose "<prompt>"${ANSI.reset}`);
+        process.exitCode = 1;
+        return;
+      }
+      const res = await fetch(`${apiBase}/v1/omega/commands`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt }),
+      });
+      const data = await res.json();
+      console.log(JSON.stringify(data, null, 2));
+    } else if (subCommand === 'inspect') {
+      if (!targetId) {
+        console.error(`${ANSI.red}Error: Command ID required.${ANSI.reset}`);
+        process.exitCode = 1;
+        return;
+      }
+      const res = await fetch(`${apiBase}/v1/omega/commands/${targetId}`);
+      const data = await res.json();
+      console.log(JSON.stringify(data, null, 2));
+    } else if (subCommand === 'admit') {
+      if (!targetId) {
+        console.error(`${ANSI.red}Error: Command ID required.${ANSI.reset}`);
+        process.exitCode = 1;
+        return;
+      }
+      const res = await fetch(`${apiBase}/v1/omega/commands/${targetId}/admit`, { method: 'POST' });
+      const data = await res.json();
+      console.log(JSON.stringify(data, null, 2));
+    } else if (subCommand === 'approve') {
+      if (!targetId) {
+        console.error(`${ANSI.red}Error: Command ID required.${ANSI.reset}`);
+        process.exitCode = 1;
+        return;
+      }
+      const res = await fetch(`${apiBase}/v1/omega/commands/${targetId}/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ approvedBy: 'cli:human-operator' }),
+      });
+      const data = await res.json();
+      console.log(JSON.stringify(data, null, 2));
+    } else if (subCommand === 'execute') {
+      if (!targetId) {
+        console.error(`${ANSI.red}Error: Command ID required.${ANSI.reset}`);
+        process.exitCode = 1;
+        return;
+      }
+      const res = await fetch(`${apiBase}/v1/omega/commands/${targetId}/execute`, { method: 'POST' });
+      const data = await res.json();
+      console.log(JSON.stringify(data, null, 2));
+    } else if (subCommand === 'observe') {
+      if (!targetId) {
+        console.error(`${ANSI.red}Error: Command ID required.${ANSI.reset}`);
+        process.exitCode = 1;
+        return;
+      }
+      const res = await fetch(`${apiBase}/v1/omega/commands/${targetId}/observe`, { method: 'POST' });
+      const data = await res.json();
+      console.log(JSON.stringify(data, null, 2));
+    } else if (subCommand === 'verify-reality') {
+      if (!targetId) {
+        console.error(`${ANSI.red}Error: Command ID required.${ANSI.reset}`);
+        process.exitCode = 1;
+        return;
+      }
+      const res = await fetch(`${apiBase}/v1/omega/commands/${targetId}/verify-reality`, { method: 'POST' });
+      const data = await res.json();
+      console.log(JSON.stringify(data, null, 2));
+    } else {
+      console.error(`${ANSI.red}Unknown omega subcommand: ${subCommand}${ANSI.reset}`);
+      process.exitCode = 1;
+    }
+  } catch (err) {
+    console.error(`${ANSI.red}CLI Request Failed: ${err.message}${ANSI.reset}`);
+    console.error(`${ANSI.dim}[Note: Ensure Fastify API is running on ${apiBase}]${ANSI.reset}`);
+    process.exitCode = 1;
+  }
+}
+
 function handleHelp() {
   printBanner();
   console.log(`
@@ -264,6 +373,7 @@ ${ANSI.bold}COMMANDS:${ANSI.reset}
   ${ANSI.green}keys${ANSI.reset}        Generate an Ed25519 asymmetric keypair for fail-closed authentication
   ${ANSI.green}mood${ANSI.reset}        Display Singularity compression state and Pidgin Spirit Axiom
   ${ANSI.green}stream${ANSI.reset}      Stream live block minting events via SSE from local Fastify API
+  ${ANSI.green}omega${ANSI.reset}       Ω‑ƆREADƆS Command Lifecycle (propose, admit, execute, observe, verify)
   ${ANSI.green}help${ANSI.reset}        Display this help message
 
 ${ANSI.bold}OPTIONS:${ANSI.reset}
@@ -293,6 +403,9 @@ switch (command) {
     break;
   case 'stream':
     await handleStream();
+    break;
+  case 'omega':
+    await handleOmega();
     break;
   case 'help':
   case '--help':

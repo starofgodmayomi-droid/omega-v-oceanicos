@@ -9,8 +9,11 @@ import { AsymmetricValidationGuard, MultiRegionMeshConvergence } from '@oceanico
 import { AttestationService } from '@oceanicos/attestation';
 import { InferenceClient } from '@oceanicos/inference';
 import { VectorMemory } from '@oceanicos/vector';
-import type { VerificationRule } from '@oceanicos/types';
-import { exec } from 'node:child_process';
+import { PluralismConvergenceMatrix } from '@oceanicos/pluralism';
+import type { VerificationRule, IObservation } from '@oceanicos/types';
+import { omegaRoutes } from './omega/routes.js';
+import { execFile } from 'node:child_process';
+import crypto from 'node:crypto';
 
 export const DEFAULT_API_RULES: VerificationRule[] = [
   {
@@ -180,7 +183,8 @@ export function createApp(
           `data: ${JSON.stringify({
             block: currentBlock,
             mood: activeCurrent,
-            axiom: 'FULL STACK LIFE IS ALWAYS GOOD-O AT THE HIGHER HIGH AND THE LOWER LOW. ZERO COATING.',
+            axiom:
+              'THE GREATEST MOVIE OUR PRESENCE HAS EVER WITNESSED IS TO BE ALIVE, CASTING THE PLURALISTIC FULL STACK SINGLE FACE OF REALITY.',
           })}\n\n`
         );
       } catch {
@@ -220,10 +224,17 @@ export function createApp(
   });
 
   // Artemis agent action
-  fastify.post('/v1/artemis/action', async (request: any) => {
+  fastify.post('/v1/artemis/action', async (request: any, reply: any) => {
+    const command = typeof request.body?.command === 'string' ? request.body.command.trim() : '';
+    const profile = request.body?.profile === 'pro' ? 'pro' : 'flash';
+    if (!command) {
+      return reply.status(400).send({ success: false, error: 'COMMAND_REQUIRED' });
+    }
     return new Promise((resolve) => {
-      exec(
-        `uv run artemis run "${request.body.command}" --profile ${request.body.profile || 'flash'}`,
+      execFile(
+        'uv',
+        ['run', 'artemis', 'run', command, '--profile', profile],
+        { timeout: 30000 },
         (err, stdout, stderr) => {
           resolve({ success: !err, traceLog: stdout || stderr });
         }
@@ -451,6 +462,30 @@ export function createApp(
   };
   fastify.post('/complete-loop', handleCompleteLoop);
   fastify.post('/v1/complete-loop', handleCompleteLoop);
+
+
+  // POST /v1/pluralism/converge
+  fastify.post('/v1/pluralism/converge', async (request: any, reply: any) => {
+    const observation: IObservation = {
+      uuid: crypto.randomUUID(),
+      timestamp: new Date().toISOString(),
+      siliconYield: 0.942,
+      gridLoadMegawatts: 1250,
+      acceleratorInventory: 989210,
+      hardwareState: { cpu: 50, ram: 16384, io: 'CONVERGE', ts: new Date().toISOString() },
+      globalNewsFeed: [],
+      decentralizedStreams: request.body?.streams || [],
+    };
+    try {
+      const evidence = PluralismConvergenceMatrix.processConvergence(observation);
+      return { success: true, consensusMatrix: observation.unifiedConsensus, evidence };
+    } catch (error: any) {
+      return reply.code(503).send({ success: false, error: error.message });
+    }
+  });
+
+  // Register Ω‑ƆREADƆS OS v∞ Command Lifecycle Routes
+  fastify.register(omegaRoutes);
 
   return fastify;
 }

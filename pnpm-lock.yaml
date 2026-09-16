@@ -53,6 +53,9 @@ importers:
       '@oceanicos/observer':
         specifier: workspace:*
         version: link:../../packages/observer
+      '@oceanicos/pluralism':
+        specifier: workspace:*
+        version: link:../../packages/pluralism
       '@oceanicos/remember':
         specifier: workspace:*
         version: link:../../packages/remember
@@ -122,6 +125,12 @@ importers:
         version: link:../types
 
   packages/observer:
+    dependencies:
+      '@oceanicos/types':
+        specifier: workspace:*
+        version: link:../types
+
+  packages/pluralism:
     dependencies:
       '@oceanicos/types':
         specifier: workspace:*

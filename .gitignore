@@ -54,3 +54,4 @@ docker-compose.override.yml
 # Python bytecode, from running the reference verifier locally
 __pycache__/
 *.pyc
+ai_os_workspace/
