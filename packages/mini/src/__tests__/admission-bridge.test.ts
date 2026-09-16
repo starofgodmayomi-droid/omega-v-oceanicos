@@ -6,6 +6,7 @@ const worker: OmegaWorkerCapability = {
   id: 'tester',
   version: '1.0.0',
   role: 'tester',
+  capability: 'repository-test',
   mode: 'build-test',
   description: 'Bounded repository test worker.',
   inputSchema: 'omega.test.input.v1',
@@ -67,29 +68,30 @@ const change: OmegaChangeRecord = {
 };
 
 describe('Omega admission bridge', () => {
-  it('binds a matching IR and registry to the existing admission gate', () => {
-    const result = admitOmegaIR({
-      ir,
-      registry,
-      change,
-      authorityVerified: true,
-      policySatisfied: true,
-    });
+  const admittedInput = {
+    ir,
+    registry,
+    change,
+    authorityVerified: true,
+    policySatisfied: true,
+    approvalVerified: true,
+  };
+
+  it('binds a matching IR, capability, and registry to the existing admission gate', () => {
+    const result = admitOmegaIR(admittedInput);
 
     expect(result.registryMatched).toBe(true);
     expect(result.policyReferencesSatisfied).toBe(true);
     expect(result.evidenceRequirementsSatisfied).toBe(true);
+    expect(result.approvalRequirementSatisfied).toBe(true);
     expect(result.change.decision).toBe('ALLOW');
     expect(result.change.authorized).toBe(true);
   });
 
   it('fails closed for an undeclared worker', () => {
     const result = admitOmegaIR({
+      ...admittedInput,
       ir: { ...ir, workerPlan: [{ ...ir.workerPlan[0], workerId: 'missing' }] },
-      registry,
-      change,
-      authorityVerified: true,
-      policySatisfied: true,
     });
 
     expect(result.registryMatched).toBe(false);
@@ -97,13 +99,32 @@ describe('Omega admission bridge', () => {
     expect(result.change.authorized).toBe(false);
   });
 
+  it('fails closed for a worker capability mismatch', () => {
+    const result = admitOmegaIR({
+      ...admittedInput,
+      ir: { ...ir, workerPlan: [{ ...ir.workerPlan[0], capability: 'wrong-capability' }] },
+    });
+
+    expect(result.registryMatched).toBe(false);
+    expect(result.change.decision).toBe('DENY');
+    expect(result.change.authorized).toBe(false);
+  });
+
+  it('fails closed when required human approval evidence is absent', () => {
+    const result = admitOmegaIR({
+      ...admittedInput,
+      approvalVerified: false,
+    });
+
+    expect(result.approvalRequirementSatisfied).toBe(false);
+    expect(result.change.decision).toBe('DENY');
+    expect(result.change.authorized).toBe(false);
+  });
+
   it('never upgrades REVIEW when authority or policy evidence is missing', () => {
     const result = admitOmegaIR({
-      ir,
-      registry,
-      change,
+      ...admittedInput,
       authorityVerified: false,
-      policySatisfied: true,
     });
 
     expect(result.change.decision).toBe('DENY');
