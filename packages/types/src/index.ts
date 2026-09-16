@@ -240,6 +240,7 @@ export interface OmegaTotalManifest {
   memoryIntegrityValid: boolean;
   memorySize: number;
   lockedAt: string;
+  pluralisticRealityFace?: IPluralisticRealityFace;
 }
 
 export type MoodState =
@@ -546,5 +547,33 @@ export interface OmegaTransition {
   readonly epistemic: OmegaEpistemicPredicates;
   readonly dissentNotes?: readonly string[];
   readonly timestamp: string;
+}
+
+/**
+ * The 5 Epistemic Faces of the Pluralistic Reality Matrix
+ */
+export type EpistemicFaceId = 'FORMAL' | 'PLURAL' | 'SYSTEM' | 'REALITY' | 'LIQUID_SOUL';
+
+export interface IEpistemicFaceReport {
+  readonly faceId: EpistemicFaceId;
+  readonly name: string;
+  readonly dimension: string;
+  readonly score: number;
+  readonly verified: boolean;
+  readonly signatureProof: string;
+  readonly telemetry: Record<string, unknown>;
+  readonly dissensusNotes?: readonly string[];
+}
+
+export interface IPluralisticRealityFace {
+  readonly faceMatrixId: string;
+  readonly timestamp: string;
+  readonly lawRoute: string;
+  readonly overallHarmonicScore: number;
+  readonly frictionDissolutionQuotient: number;
+  readonly faces: readonly IEpistemicFaceReport[];
+  readonly consensusVerdict: 'PASS' | 'DIVERGENT' | 'PLURAL_PRESERVED';
+  readonly clusterAttestationDigest: string;
+  readonly axiomProof: string;
 }
 

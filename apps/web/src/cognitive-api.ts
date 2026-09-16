@@ -184,6 +184,29 @@ export async function fetchMemory(): Promise<MemoryResponse> {
   return res.json();
 }
 
+export interface EpistemicFaceReport {
+  faceId: 'FORMAL' | 'PLURAL' | 'SYSTEM' | 'REALITY' | 'LIQUID_SOUL';
+  name: string;
+  dimension: string;
+  score: number;
+  verified: boolean;
+  signatureProof: string;
+  telemetry: Record<string, unknown>;
+  dissensusNotes?: string[];
+}
+
+export interface PluralisticRealityFace {
+  faceMatrixId: string;
+  timestamp: string;
+  lawRoute: string;
+  overallHarmonicScore: number;
+  frictionDissolutionQuotient: number;
+  faces: EpistemicFaceReport[];
+  consensusVerdict: 'PASS' | 'DIVERGENT' | 'PLURAL_PRESERVED';
+  clusterAttestationDigest: string;
+  axiomProof: string;
+}
+
 export interface CognitiveTotalityManifest {
   stateRoot: 'Ø';
   stewardshipAxiom: 'TOOLS_FOR_EVOLUTION_NOT_WAR';
@@ -191,11 +214,18 @@ export interface CognitiveTotalityManifest {
   memoryIntegrityValid: boolean;
   memorySize: number;
   lockedAt: string;
+  pluralisticRealityFace?: PluralisticRealityFace;
 }
 
 export interface TotalityResponse {
   success: boolean;
   manifest?: CognitiveTotalityManifest;
+  error?: string;
+}
+
+export interface PluralisticFaceResponse {
+  success: boolean;
+  face?: PluralisticRealityFace;
   error?: string;
 }
 
@@ -216,5 +246,10 @@ export async function lockTotality(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ claim, ...opts }),
   });
+  return res.json();
+}
+
+export async function fetchPluralisticFace(): Promise<PluralisticFaceResponse> {
+  const res = await fetch(`${API_BASE}/v1/pluralism/face`);
   return res.json();
 }

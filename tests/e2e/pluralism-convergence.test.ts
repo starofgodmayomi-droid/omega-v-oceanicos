@@ -152,6 +152,35 @@ describe('Pluralism Convergence Matrix & Hardened Execution Test Suite', () => {
     expect(body.error).toBe('COMMAND_REQUIRED');
   });
 
+  it('GET /v1/pluralism/face evaluates the 5 Epistemic Faces over HTTP', async () => {
+    const res = await app.inject({
+      method: 'GET',
+      url: '/v1/pluralism/face',
+    });
+
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.payload);
+    expect(body.success).toBe(true);
+    expect(body.face.faces).toHaveLength(5);
+    expect(body.face.consensusVerdict).toBe('PASS');
+    expect(body.face.axiomProof).toBe('GOOD - O = GOD');
+  });
+
+  it('POST /v1/totality/lock locks totality into now with pluralistic reality face', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/v1/totality/lock',
+      payload: { claim: 'Verification matches ground truth under zero entropy.' },
+    });
+
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.payload);
+    expect(body.success).toBe(true);
+    expect(body.manifest.stateRoot).toBe('Ø');
+    expect(body.manifest.pluralisticRealityFace).toBeDefined();
+    expect(body.manifest.pluralisticRealityFace.faces).toHaveLength(5);
+  });
+
   it('HiggsfieldBridgeEngine fails safely without executing child process when prompt is blank', async () => {
     const job = await HiggsfieldBridgeEngine.executeTextToImage('   ');
     expect(job.status).toBe('failed');

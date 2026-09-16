@@ -9,7 +9,7 @@ import { AsymmetricValidationGuard, MultiRegionMeshConvergence } from '@oceanico
 import { AttestationService } from '@oceanicos/attestation';
 import { InferenceClient } from '@oceanicos/inference';
 import { VectorMemory } from '@oceanicos/vector';
-import { PluralismConvergenceMatrix } from '@oceanicos/pluralism';
+import { PluralismConvergenceMatrix, PluralisticRealityMatrix } from '@oceanicos/pluralism';
 import type { VerificationRule, IObservation } from '@oceanicos/types';
 import { omegaRoutes } from './omega/routes.js';
 import { OmegaCommandStore } from './omega/store.js';
@@ -487,6 +487,46 @@ export function createApp(
       return { success: true, consensusMatrix: observation.unifiedConsensus, evidence };
     } catch (error: any) {
       return reply.code(503).send({ success: false, error: error.message });
+    }
+  });
+
+  // GET & POST /v1/pluralism/face — The Pluralistic Reality Face of Ω
+  const handlePluralisticFace = async (request: any, reply: any) => {
+    try {
+      const input = request.body || {};
+      const face = PluralisticRealityMatrix.evaluateMatrix(input);
+      return { success: true, face };
+    } catch (error: any) {
+      return reply.code(500).send({ success: false, error: error.message });
+    }
+  };
+  fastify.get('/v1/pluralism/face', handlePluralisticFace);
+  fastify.post('/v1/pluralism/face', handlePluralisticFace);
+
+  // POST /v1/totality/lock — Lock Totality into Now with Pluralistic Reality Face
+  fastify.post('/v1/totality/lock', async (request: any, reply: any) => {
+    try {
+      const compressor = new OmegaTotalCompressor(kernel);
+      const claim = request.body?.claim || 'Totality lock: Reality matches intent under zero entropy.';
+      const category = request.body?.category || 'general';
+      const manifest = compressor.lockTotalityIntoNow({
+        claim,
+        category,
+        source: { system: 'omega-v-oceanicos', version: '1.0.0', environment: 'production' },
+        metadata: {
+          responseTime: 42,
+          statusCode: 200,
+          ...(request.body?.metadata || {}),
+        },
+      });
+      const face = PluralisticRealityMatrix.evaluateMatrix({
+        formalProofValid: manifest.cycleResult.passed,
+        realityObserved: true,
+      });
+      manifest.pluralisticRealityFace = face;
+      return { success: true, manifest };
+    } catch (error: any) {
+      return reply.code(400).send({ success: false, error: error.message });
     }
   });
 

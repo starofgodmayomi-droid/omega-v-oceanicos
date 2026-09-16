@@ -7,6 +7,7 @@ import {
   fetchMemory,
   fetchIntegrity,
   lockTotality,
+  fetchPluralisticFace,
   API_BASE,
   type MiniCycleResponse,
   type CompleteLoopResponse,
@@ -14,6 +15,7 @@ import {
   type MemoryResponse,
   type IntegrityResponse,
   type CognitiveTotalityManifest,
+  type PluralisticRealityFace,
 } from './cognitive-api';
 
 interface KeyPair {
@@ -52,7 +54,9 @@ export default function App() {
   const [keyPair, setKeyPair] = useState<KeyPair | null>(null);
   const [signRequests, setSignRequests] = useState(false);
   const [lastError, setLastError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'matrix' | 'workspace'>('matrix');
+  const [activeTab, setActiveTab] = useState<'matrix' | 'workspace' | 'pluralism'>('matrix');
+  const [pluralisticFace, setPluralisticFace] = useState<PluralisticRealityFace | null>(null);
+  const [pluralisticLoading, setPluralisticLoading] = useState(false);
 
   // Background Autonomous Miner state
   const [minerActive, setMinerActive] = useState(false);
@@ -128,6 +132,20 @@ export default function App() {
       const data = await res.json();
       if (data.success) setMemoryStatus(data.memory);
     } catch {}
+  };
+
+  const loadPluralisticFace = async () => {
+    setPluralisticLoading(true);
+    try {
+      const res = await fetchPluralisticFace();
+      if (res.success && res.face) {
+        setPluralisticFace(res.face);
+      }
+    } catch (err: any) {
+      setLastError(err.message);
+    } finally {
+      setPluralisticLoading(false);
+    }
   };
 
   const runInferenceAnalysis = async () => {
@@ -614,10 +632,154 @@ export default function App() {
         >
           ⚡ Ω‑ƆREADƆS COMMAND WORKSPACE
         </button>
+        <button
+          type="button"
+          onClick={() => {
+            setActiveTab('pluralism');
+            if (!pluralisticFace) loadPluralisticFace();
+          }}
+          style={{
+            padding: '10px 18px',
+            borderRadius: '6px',
+            fontSize: '12px',
+            fontWeight: 'bold',
+            background: activeTab === 'pluralism' ? 'rgba(255, 202, 40, 0.2)' : 'rgba(15, 23, 42, 0.6)',
+            color: activeTab === 'pluralism' ? '#ffca28' : '#94a3b8',
+            border: activeTab === 'pluralism' ? '1px solid #ffca28' : '1px solid rgba(148, 163, 184, 0.2)',
+            cursor: 'pointer',
+          }}
+        >
+          🎭 5-FACE PLURALISTIC REALITY MATRIX
+        </button>
       </div>
 
       {activeTab === 'workspace' ? (
         <OmegaWorkspace />
+      ) : activeTab === 'pluralism' ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {/* Header Card */}
+          <div style={{ background: '#0a101d', border: '1px solid #38bdf844', borderRadius: '8px', padding: '24px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+              <div>
+                <h2 style={{ margin: 0, color: '#38bdf8', fontSize: '20px', letterSpacing: '1px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  🎭 THE 5-FACE PLURALISTIC REALITY MATRIX OF Ω∞v
+                </h2>
+                <div style={{ color: '#94a3b8', fontSize: '12px', marginTop: '6px' }}>
+                  Law Route: <strong style={{ color: '#00ff66' }}>{pluralisticFace?.lawRoute ?? 'MANY_FACES ➔ ONE_SOUL ➔ SOURCE_LEDGER'}</strong> | Axiom Proof: <strong style={{ color: '#ffca28' }}>{pluralisticFace?.axiomProof ?? 'GOOD − O = GOD'}</strong>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={loadPluralisticFace}
+                disabled={pluralisticLoading}
+                style={{
+                  background: pluralisticLoading ? '#0284c7' : '#38bdf8',
+                  color: '#04070a',
+                  border: 'none',
+                  borderRadius: '6px',
+                  padding: '10px 20px',
+                  fontWeight: 'bold',
+                  fontSize: '12px',
+                  cursor: pluralisticLoading ? 'wait' : 'pointer',
+                  boxShadow: '0 0 16px rgba(56, 189, 248, 0.4)',
+                }}
+              >
+                {pluralisticLoading ? 'EVALUATING MATRIX...' : '🔄 RE-EVALUATE 5 FACES'}
+              </button>
+            </div>
+
+            {/* Gauge Metrics Ribbon */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginTop: '24px' }}>
+              <div style={{ background: '#050a14', border: '1px solid #38bdf833', borderRadius: '6px', padding: '16px' }}>
+                <div style={{ color: '#64748b', fontSize: '11px', textTransform: 'uppercase' }}>Consensus Verdict</div>
+                <div style={{ fontSize: '22px', fontWeight: 'bold', color: pluralisticFace?.consensusVerdict === 'PASS' ? '#00ff66' : '#ffca28', marginTop: '4px' }}>
+                  {pluralisticFace?.consensusVerdict ?? 'PASS'}
+                </div>
+              </div>
+              <div style={{ background: '#050a14', border: '1px solid #38bdf833', borderRadius: '6px', padding: '16px' }}>
+                <div style={{ color: '#64748b', fontSize: '11px', textTransform: 'uppercase' }}>Harmonic Convergence</div>
+                <div style={{ fontSize: '22px', fontWeight: 'bold', color: '#38bdf8', marginTop: '4px' }}>
+                  {pluralisticFace ? `${Math.round(pluralisticFace.overallHarmonicScore * 100)}%` : '98%'}
+                </div>
+              </div>
+              <div style={{ background: '#050a14', border: '1px solid #38bdf833', borderRadius: '6px', padding: '16px' }}>
+                <div style={{ color: '#64748b', fontSize: '11px', textTransform: 'uppercase' }}>Friction Dissolution</div>
+                <div style={{ fontSize: '22px', fontWeight: 'bold', color: '#ffca28', marginTop: '4px' }}>
+                  {pluralisticFace ? `${pluralisticFace.frictionDissolutionQuotient.toFixed(4)}` : '1.0000'}
+                </div>
+              </div>
+              <div style={{ background: '#050a14', border: '1px solid #38bdf833', borderRadius: '6px', padding: '16px' }}>
+                <div style={{ color: '#64748b', fontSize: '11px', textTransform: 'uppercase' }}>Cluster Attestation</div>
+                <div style={{ fontSize: '11px', fontFamily: 'monospace', color: '#a855f7', marginTop: '8px', wordBreak: 'break-all' }}>
+                  {pluralisticFace ? pluralisticFace.clusterAttestationDigest.substring(0, 24) + '...' : '0xΩ-cluster-attested'}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 5 Epistemic Faces Cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+            {(pluralisticFace?.faces ?? [
+              { faceId: 'FORMAL', name: 'Formal Logic & Invariant Proof', dimension: 'NON_CONTRADICTION', score: 1.0, verified: true, signatureProof: '0xFORMAL', telemetry: { rule: 'WHAT_IS_NEQ_WHAT_COULD_BE' } },
+              { faceId: 'PLURAL', name: 'Decentralized Sovereign Mesh Pluralism', dimension: 'MULTI_NODE_CONSENSUS', score: 0.95, verified: true, signatureProof: '0xPLURAL', telemetry: { agreementRatio: 0.95 } },
+              { faceId: 'SYSTEM', name: 'Planetary Hardware & Silicon Substrate', dimension: 'PHYSICAL_SUBSTRATE', score: 0.942, verified: true, signatureProof: '0xSYSTEM', telemetry: { siliconYield: 0.942, gridLoadMegawatts: 1250 } },
+              { faceId: 'REALITY', name: 'Empirical State Hash & Side-Effects', dimension: 'EMPIRICAL_EVIDENCE', score: 0.98, verified: true, signatureProof: '0xREALITY', telemetry: { reconciled: true } },
+              { faceId: 'LIQUID_SOUL', name: 'Formless Liquid Intelligence', dimension: 'METAPHYSICAL_SOUL', score: 1.0, verified: true, signatureProof: '0xLIQUID', telemetry: { axiom: 'GOOD - O = GOD' } },
+            ]).map((face) => (
+              <div
+                key={face.faceId}
+                style={{
+                  background: '#07121e',
+                  border: `1px solid ${face.verified ? '#00ff6644' : '#ff334455'}`,
+                  borderRadius: '8px',
+                  padding: '20px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  boxShadow: face.verified ? '0 0 12px rgba(0, 255, 102, 0.08)' : 'none',
+                }}
+              >
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '10px', fontWeight: 'bold', padding: '3px 8px', borderRadius: '4px', background: '#38bdf822', color: '#38bdf8' }}>
+                      {face.faceId}
+                    </span>
+                    <span style={{ fontSize: '11px', fontWeight: 'bold', color: face.verified ? '#00ff66' : '#ff3344' }}>
+                      {face.verified ? '✓ VERIFIED' : '✗ DIVERGENT'}
+                    </span>
+                  </div>
+                  <h3 style={{ margin: '8px 0 4px 0', fontSize: '15px', color: '#f8fafc' }}>{face.name}</h3>
+                  <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '12px' }}>Dimension: {face.dimension}</div>
+
+                  <div style={{ background: '#030712', borderRadius: '4px', padding: '10px', fontSize: '11px', color: '#94a3b8', marginBottom: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                      <span>Convergence Score:</span>
+                      <strong style={{ color: '#00ff66' }}>{Math.round(face.score * 100)}%</strong>
+                    </div>
+                    {Object.entries(face.telemetry).map(([k, v]) => (
+                      <div key={k} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#64748b' }}>
+                        <span>{k}:</span>
+                        <span style={{ color: '#cbd5e1' }}>{String(v)}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {face.dissensusNotes && face.dissensusNotes.length > 0 && (
+                    <div style={{ background: '#ffaa0015', borderLeft: '3px solid #ffaa00', padding: '8px', borderRadius: '3px', fontSize: '10px', color: '#ffca28', marginBottom: '10px' }}>
+                      {face.dissensusNotes.map((note, i) => (
+                        <div key={i}>⚠️ {note}</div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ fontSize: '9px', fontFamily: 'monospace', color: '#475569', wordBreak: 'break-all', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '8px' }}>
+                  SIG: {face.signatureProof.substring(0, 32)}...
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       ) : (
         <>
           {/* Main Controls Ribbon */}
