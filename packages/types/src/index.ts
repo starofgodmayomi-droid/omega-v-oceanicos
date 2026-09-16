@@ -497,3 +497,54 @@ export interface OmegaLifecycleEvent {
   readonly payload: Record<string, unknown>;
   readonly timestamp: string;
 }
+
+/**
+ * Epistemic truth predicates:
+ * Never collapse multi-dimensional epistemic reality into a single boolean "success".
+ */
+export interface OmegaEpistemicPredicates {
+  readonly observed: boolean;
+  readonly intended: boolean;
+  readonly authorized: boolean;
+  readonly executed: boolean;
+  readonly attested: boolean;
+  readonly verified: boolean;
+  readonly healthy: boolean;
+}
+
+/**
+ * Universal Transition Record (The Deepest Primitive):
+ * τ = (S, I, E, A, P, C) → (D, S', R)
+ * Unifies Intent, Evidence, Authority, Policy, Decision, Consequence,
+ * Attestation, Observation, Reality Verification, and Memory.
+ */
+export interface OmegaTransition {
+  readonly transitionId: string;
+  readonly commandId?: string;
+  readonly subject: string;
+  readonly intent: string;
+  readonly stateBefore: string | Record<string, unknown>;
+  readonly evidenceRefs: readonly string[];
+  readonly authority: string | null;
+  readonly policyRefs: readonly string[];
+  readonly decision: ChangeDecision;
+  readonly actor: string;
+  readonly worker?: string;
+  readonly action?: string;
+  readonly stateAfter?: string | Record<string, unknown>;
+  readonly consequence?: string;
+  readonly observation?: OmegaObservation;
+  readonly attestationId?: string;
+  readonly attestationDigest?: string;
+  readonly realityVerdict?: OmegaRealityVerdict;
+  readonly provenance: {
+    readonly source: string;
+    readonly observedAt: string;
+    readonly attributedTo: string | null;
+    readonly lineage: readonly string[];
+  };
+  readonly epistemic: OmegaEpistemicPredicates;
+  readonly dissentNotes?: readonly string[];
+  readonly timestamp: string;
+}
+
