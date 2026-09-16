@@ -220,7 +220,7 @@ jobs:
           curl -sf "$api/health" | tee /tmp/health.json
           grep -q '"status":"ok"' /tmp/health.json
           grep -q '"service":"omega-v-oceanicos-api"' /tmp/health.json
-          grep -q '"ledger":"ready"' /tmp/health.json
+          grep -q '"readiness":"ready"' /tmp/health.json
 
           if [ "$(curl -sS -o /tmp/tip-unauthenticated.json -w '%{http_code}' "$api/v1/block/tip")" != "401" ]; then
             echo "::error::Unauthenticated tip read was not rejected in required mode."
