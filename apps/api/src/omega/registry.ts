@@ -73,6 +73,18 @@ export const INITIAL_ENABLED_WORKERS: OmegaWorkerDefinition[] = [
     maxOutputBytes: 32768,
     maxRetries: 1,
   },
+  {
+    id: 'worker-github-inspector',
+    version: '1.0.0',
+    role: 'github-inspector',
+    classification: 'read-only',
+    description: 'Read-only GitHub repository inspector auditing pull requests, issues, commits, and CI status without granting universal mutation authority.',
+    capabilities: ['inspect-pr', 'inspect-issue', 'inspect-ci', 'read-lineage'],
+    requiresApproval: false,
+    timeoutMs: 15000,
+    maxOutputBytes: 65536,
+    maxRetries: 1,
+  },
 ];
 
 export class WorkerRegistry {

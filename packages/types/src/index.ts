@@ -309,7 +309,8 @@ export type OmegaWorkerRole =
   | 'planner'
   | 'tester'
   | 'security-reviewer'
-  | 'governance-reviewer';
+  | 'governance-reviewer'
+  | 'github-inspector';
 
 export type OmegaWorkerClassification = 'read-only' | 'local-mutating' | 'externally-consequential';
 

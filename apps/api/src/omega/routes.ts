@@ -277,7 +277,12 @@ export const omegaRoutes: FastifyPluginAsync<OmegaRouteOptions> = async (
     const target = body.target || command.irPlan.observationSpec.target;
     const observedData = body.observedData || { status: 'OBSERVED_CLEAN', target };
 
-    const observation = RealityObserverEngine.createObservation(observerType, target, observedData);
+    let observation: OmegaObservation;
+    if (observerType === 'git_working_tree' && !body.observedData) {
+      observation = RealityObserverEngine.observeGitWorkingTree();
+    } else {
+      observation = RealityObserverEngine.createObservation(observerType, target, observedData);
+    }
     result.observation = observation;
     store.saveResult(result);
 

@@ -31,6 +31,7 @@ export class PlanCompiler {
       else if (worker.role === 'planner') action = 'compose-bounded-execution-plan';
       else if (worker.role === 'security-reviewer') action = 'audit-contracts-and-credentials';
       else if (worker.role === 'governance-reviewer') action = 'verify-policy-and-dissent-integrity';
+      else if (worker.role === 'github-inspector') action = 'inspect-github-repository-evidence';
       else if (worker.role === 'tester') action = 'run-allowlisted-build-or-test';
 
       workerPlan.push({

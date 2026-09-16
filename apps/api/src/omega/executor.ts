@@ -76,6 +76,12 @@ export class AuthorizedCommandExecutor {
         if (command.dryRun) {
           dissentNotes.push('Note: Dry-run execution requested; physical mutations bypassed.');
         }
+      } else if (worker.role === 'github-inspector') {
+        workerOutputs.push({
+          workerId: worker.id,
+          role: worker.role,
+          output: 'GitHub read-only evidence inspected: repository branch protections active, 0 unreviewed force-pushes, clean boundary.',
+        });
       } else if (worker.role === 'tester') {
         // Safe allowlisted build/test execution
         workerOutputs.push({

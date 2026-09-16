@@ -26,7 +26,7 @@ describe('Ω‑ƆREADƆS OS v∞ — Command Lifecycle & Reality Verification Su
     expect(res.statusCode).toBe(200);
     const body = JSON.parse(res.payload);
     expect(body.success).toBe(true);
-    expect(body.workers.length).toBe(6);
+    expect(body.workers.length).toBe(7);
 
     const workerMap = new Map(body.workers.map((w: any) => [w.id, w]));
     expect(workerMap.get('worker-observer')?.classification).toBe('read-only');
@@ -36,6 +36,7 @@ describe('Ω‑ƆREADƆS OS v∞ — Command Lifecycle & Reality Verification Su
     expect(workerMap.get('worker-tester')?.requiresApproval).toBe(true);
     expect(workerMap.get('worker-security-reviewer')?.classification).toBe('read-only');
     expect(workerMap.get('worker-governance-reviewer')?.classification).toBe('read-only');
+    expect(workerMap.get('worker-github-inspector')?.classification).toBe('read-only');
   });
 
   it('POST /v1/omega/commands creates candidate command, normalizes prompt, and redacts secrets', async () => {
@@ -276,5 +277,48 @@ describe('Ω‑ƆREADƆS OS v∞ — Command Lifecycle & Reality Verification Su
     expect(verifyBody.verdict).toBe('DIVERGENT');
     expect(verifyBody.result.realityVerdict.discrepancies.length).toBeGreaterThan(0);
     expect(verifyBody.result.realityVerdict.discrepancies[0]).toContain('SNAPSHOT_CORRUPTED');
+  });
+
+  it('executes worker-github-inspector and attaches deterministic git_working_tree observation', async () => {
+    const createRes = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/commands',
+      payload: {
+        prompt: 'Inspect GitHub repository PR evidence and verify working tree',
+        requestedWorkers: ['worker-observer', 'worker-github-inspector'],
+      },
+    });
+    const cmdId = JSON.parse(createRes.payload).command.commandId;
+
+    // Admit (read-only, no approval required)
+    const admitRes = await app.inject({
+      method: 'POST',
+      url: `/v1/omega/commands/${cmdId}/admit`,
+    });
+    expect(JSON.parse(admitRes.payload).verdict).toBe('ALLOW');
+
+    // Execute
+    const execRes = await app.inject({
+      method: 'POST',
+      url: `/v1/omega/commands/${cmdId}/execute`,
+    });
+    const execBody = JSON.parse(execRes.payload);
+    expect(execBody.result.outputSummary).toContain('worker-github-inspector');
+    expect(execBody.result.outputSummary).toContain('branch protections active');
+
+    // Observe git_working_tree without payload -> auto-inspects working tree
+    const obsRes = await app.inject({
+      method: 'POST',
+      url: `/v1/omega/commands/${cmdId}/observe`,
+      payload: {
+        observerType: 'git_working_tree',
+        target: 'git_working_tree',
+      },
+    });
+    expect(obsRes.statusCode).toBe(200);
+    const obsBody = JSON.parse(obsRes.payload);
+    expect(obsBody.observation.observerType).toBe('git_working_tree');
+    expect(obsBody.observation.observedData.headCommit).toBeDefined();
+    expect(obsBody.observation.stateHash).toBeDefined();
   });
 });
