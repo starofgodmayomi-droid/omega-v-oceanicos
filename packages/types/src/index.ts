@@ -58,6 +58,46 @@ export interface Attestation {
   status: 'signed' | 'revoked' | 'expired';
 }
 
+/**
+ * Decision made about whether a candidate change is admissible.
+ *
+ * This is intentionally a data contract only. It does not grant authority,
+ * execute a transition, or claim that a resulting state exists.
+ */
+export type ChangeDecision = 'ALLOW' | 'DENY' | 'REVIEW';
+
+/**
+ * Minimal Ω∞v change/decision record binding existing observation,
+ * verification, authority, policy, transition, attestation, and provenance.
+ *
+ * The contract separates what was observed from what was authorized and what
+ * was subsequently proven. External changes may therefore be recorded with
+ * `authorized: false` without falsely attributing them to Ω∞v.
+ */
+export interface OmegaChangeRecord {
+  readonly id: string;
+  readonly subject: string;
+  readonly intent: string;
+  readonly stateBefore: string;
+  readonly evidence: readonly string[];
+  readonly authority: string | null;
+  readonly policy: string | null;
+  readonly context?: Record<string, unknown>;
+  readonly decision: ChangeDecision;
+  readonly authorized: boolean;
+  readonly transition?: string;
+  readonly stateAfter?: string;
+  readonly consequence?: string;
+  readonly attestationId?: string;
+  readonly provenance: {
+    readonly source: string;
+    readonly observedAt: string;
+    readonly attributedTo: string | null;
+    readonly lineage?: readonly string[];
+  };
+  readonly createdAt: string;
+}
+
 export * from './scene.js';
 
 export type SceneState =
