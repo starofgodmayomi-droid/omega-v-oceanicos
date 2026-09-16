@@ -13,6 +13,9 @@
     "verify": "pnpm build && node -e \"const { executeOceanicosMaxExpansion } = require('./packages/mini/dist/index.js'); executeOceanicosMaxExpansion();\"",
     "predev": "pnpm build",
     "mood": "node bin/oceanicos.mjs mood",
+    "worker": "node scripts/oceanicos-worker.mjs",
+    "worker:verify": "node scripts/oceanicos-worker.mjs --verify",
+    "worker:continuous": "node scripts/oceanicos-worker.mjs --verify --continuous",
     "test": "pnpm build && node --experimental-strip-types --test-concurrency=1 --test ./tests/integration/max_compress_stack.e2e.test.ts ./tests/integration/worker-lifecycle.integration.test.ts ./tests/integration/causal-memory.integration.test.ts ./tests/integration/api-pipeline-causal.integration.test.ts",
     "test:e2e": "pnpm build && node --experimental-strip-types --test-concurrency=1 --test ./tests/integration/max_compress_stack.e2e.test.ts ./tests/integration/worker-lifecycle.integration.test.ts ./tests/integration/causal-memory.integration.test.ts ./tests/integration/api-pipeline-causal.integration.test.ts",
     "test:worker": "node --experimental-strip-types --test ./tests/integration/worker-lifecycle.integration.test.ts",
@@ -36,11 +39,11 @@
     "oceanicos": "./bin/oceanicos.mjs"
   },
   "engines": {
-    "node": ">=20.0.0",
-    "pnpm": ">=8.0.0"
+    "node": ">=22.0.0",
+    "pnpm": ">=10.0.0"
   },
   "devDependencies": {
-    "@types/node": "^20.0.0",
+    "@types/node": "^22.0.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.3.3"
   }
