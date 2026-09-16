@@ -37,6 +37,8 @@ export type {
   RealityVerification,
   RealityVerificationStatus,
 } from './reality.js';
+export { validateOmegaIR } from './ir-validator.js';
+export type { OmegaIRValidation, OmegaIRValidationIssue } from './ir-validator.js';
 
 export function executeOceanicosMaxExpansion(): CryptographicBlock {
   const kernelChain = new PluralisticHashChain();
