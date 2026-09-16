@@ -26,6 +26,9 @@ export const OmegaWorkspace: React.FC = () => {
   const [activeCommand, setActiveCommand] = useState<OmegaCommandView | null>(null);
   const [activeResult, setActiveResult] = useState<OmegaCommandResultView | null>(null);
   const [recentCommands, setRecentCommands] = useState<OmegaCommandView[]>([]);
+  const [selectedObserverType, setSelectedObserverType] = useState<
+    'git_working_tree' | 'api_health' | 'build_test'
+  >('git_working_tree');
 
   useEffect(() => {
     loadWorkers();
@@ -143,12 +146,13 @@ export const OmegaWorkspace: React.FC = () => {
     setLoading(true);
     setErrorMessage(null);
     try {
-      // 1. Observe
-      const obsRes = await observeOmegaCommand(activeCommand.commandId, {
-        source: 'Oceanicos Web Dashboard Observer',
-        timestamp: new Date().toISOString(),
-        verifiedStatus: 'CLEAN',
-      });
+      // 1. Observe via selected deterministic engine
+      const obsRes = await observeOmegaCommand(
+        activeCommand.commandId,
+        undefined,
+        selectedObserverType,
+        selectedObserverType === 'api_health' ? 'http://127.0.0.1:5000/health' : selectedObserverType
+      );
       if (!obsRes.success) throw new Error(obsRes.error || 'Observation failed');
 
       // 2. Verify reality
@@ -446,15 +450,37 @@ export const OmegaWorkspace: React.FC = () => {
                   </button>
                 )}
 
-                {activeResult && activeResult.status === 'EXECUTED' && (
-                  <button
-                    type="button"
-                    onClick={handleObserveAndVerify}
-                    disabled={loading}
-                    style={{ flex: 1, padding: '8px', background: '#8b5cf6', border: 'none', borderRadius: '4px', color: '#fff', fontWeight: 'bold', cursor: 'pointer' }}
-                  >
-                    Observe Reality & Verify Discrepancies
-                  </button>
+                {activeResult && (activeResult.status === 'EXECUTED' || activeResult.status === 'ATTESTED' || activeResult.status === 'VERIFIED' || activeResult.status === 'DIVERGENT') && (
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', width: '100%' }}>
+                    <select
+                      value={selectedObserverType}
+                      onChange={(e) => setSelectedObserverType(e.target.value as any)}
+                      disabled={loading}
+                      style={{
+                        padding: '8px 10px',
+                        background: '#090e18',
+                        border: '1px solid rgba(139, 92, 246, 0.4)',
+                        borderRadius: '4px',
+                        color: '#c4b5fd',
+                        fontSize: '11px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <option value="git_working_tree">🌳 Git Working Tree (Status & HEAD)</option>
+                      <option value="api_health">🩺 API Health & Ledger State</option>
+                      <option value="build_test">📦 Monorepo Build Readiness</option>
+                    </select>
+
+                    <button
+                      type="button"
+                      onClick={handleObserveAndVerify}
+                      disabled={loading}
+                      style={{ flex: 1, padding: '8px', background: '#8b5cf6', border: 'none', borderRadius: '4px', color: '#fff', fontWeight: 'bold', cursor: 'pointer' }}
+                    >
+                      Probe Reality & Verify Discrepancies
+                    </button>
+                  </div>
                 )}
               </div>
 
@@ -476,6 +502,21 @@ export const OmegaWorkspace: React.FC = () => {
                     <pre style={{ margin: 0, padding: '8px', background: 'rgba(15, 23, 42, 0.8)', borderRadius: '4px', fontSize: '11px', color: '#93c5fd', whiteSpace: 'pre-wrap', maxHeight: '120px', overflowY: 'auto' }}>
                       {activeResult.outputSummary}
                     </pre>
+                  )}
+
+                  {/* Captured External Reality Observation */}
+                  {activeResult.observation && (
+                    <div style={{ padding: '10px', background: 'rgba(139, 92, 246, 0.12)', borderRadius: '4px', border: '1px solid rgba(139, 92, 246, 0.3)' }}>
+                      <div style={{ fontSize: '11px', fontWeight: 600, color: '#c4b5fd', marginBottom: '4px' }}>
+                        Captured Observation: {activeResult.observation.observerType} ({activeResult.observation.target})
+                      </div>
+                      <div style={{ fontSize: '10px', fontFamily: 'monospace', color: '#94a3b8' }}>
+                        Hash: {activeResult.observation.stateHash?.slice(0, 20)}... | Time: {new Date(activeResult.observation.timestamp).toLocaleTimeString()}
+                      </div>
+                      <pre style={{ margin: '6px 0 0 0', padding: '6px', background: 'rgba(5, 10, 20, 0.8)', borderRadius: '4px', fontSize: '10px', color: '#a5b4fc', maxHeight: '80px', overflowY: 'auto' }}>
+                        {JSON.stringify(activeResult.observation.observedData, null, 2)}
+                      </pre>
+                    </div>
                   )}
 
                   {/* Dissent Notes if present */}

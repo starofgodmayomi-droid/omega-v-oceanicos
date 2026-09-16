@@ -167,12 +167,14 @@ export async function executeOmegaCommand(
 
 export async function observeOmegaCommand(
   commandId: string,
-  observedData?: Record<string, unknown>
+  observedData?: Record<string, unknown>,
+  observerType?: string,
+  target?: string
 ): Promise<{ success: boolean; command: OmegaCommandView; observation: OmegaObservationView; error?: string }> {
   const res = await fetch(`${API_BASE}/v1/omega/commands/${commandId}/observe`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ observedData }),
+    body: JSON.stringify({ observedData, observerType, target }),
   });
   return res.json();
 }
