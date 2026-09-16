@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "start": "mkdir -p dist && cp index.html dist/index.html && vite preview --port 3000 --host 0.0.0.0",
+    "start": "vite preview --port 3000 --host",
     "build": "tsc --noEmit"
   },
   "devDependencies": {

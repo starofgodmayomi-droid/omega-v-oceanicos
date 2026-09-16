@@ -56,11 +56,9 @@ Welcome to the Ω∞v Oceanicos documentation. Start here to understand the proj
   API actually registers, so it cannot drift from the code.
 - **[Infrastructure](../infra/README.md)** — the image, its environment
   variables, and what does not exist yet.
-
-The first CLI slice exists as [`@omega-v/cli`](../packages/cli/README.md).
-It provides `omega status`, `omega events`, and `omega runs` as read-only clients
-for real runtime evidence contracts. The first typed SDK slice exists as
-[`@omega-v/sdk`](../packages/sdk/README.md). Mobile and broader integrations
+The CLI interface is provided by [`bin/oceanicos.mjs`](../bin/oceanicos.mjs) via `pnpm run cli`.
+It provides status, cycle, mesh, and cryptographic inspection commands.
+Workspace packages are documented in [Packages](../packages/README.md). Mobile and broader integrations
 remain on the [roadmap](./ROADMAP.md).
 
 ---

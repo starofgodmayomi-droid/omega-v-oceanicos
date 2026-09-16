@@ -207,4 +207,22 @@ export function executeOceanicosMaxExpansion(): CryptographicBlock {
 export { OperatingSystemKernel } from './os.js';
 export { OmegaTotalCompressor } from './omegaTotal.js';
 export * from './agent.js';
+
+// ─── C-series Ω Kernel modules ───────────────────────────────────────
+export { compileOmegaIntent } from './compiler.js';
+export type { OmegaCompileInput } from './compiler.js';
+export { validateOmegaIR } from './ir-validator.js';
+export type { OmegaIRValidation, OmegaIRValidationIssue } from './ir-validator.js';
+export { createOmegaWorkerRegistry, getOmegaWorker } from './worker-registry.js';
+export { resolveChangeAdmission } from './admission.js';
+export type { OmegaAdmissionEvidence } from './admission.js';
+export { admitOmegaIR } from './admission-bridge.js';
+export type { OmegaAdmissionBridgeInput, OmegaAdmissionBridgeResult } from './admission-bridge.js';
+export { executeAuthorizedTransition } from './transition.js';
+export type { TransitionExecution, TransitionExecutionStatus, TransitionHandler, TransitionMemory, TransitionExecutorOptions } from './transition.js';
+export { createRealityObservation, reconcileReality } from './reality.js';
+export type { RealityObservation, RealityReconciliation, RealityVerdict } from './reality.js';
+export { OmegaAttestationMemory } from './attestation-memory.js';
+export type { AttestationEntry, AttestationMemory } from './attestation-memory.js';
+
 export default MiniKernel;

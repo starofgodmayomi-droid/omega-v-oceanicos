@@ -9,11 +9,15 @@
     "typecheck": "pnpm -r run typecheck",
     "dev": "pnpm --filter @oceanicos/api dev",
     "verify:full": "pnpm build && pnpm test:e2e",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.config.cjs --runInBand",
+    "test:fast": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.config.cjs tests/unit --runInBand",
+    "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.config.cjs --coverage --runInBand",
+    "smoke:api": "pnpm build && node scripts/smoke-api.cjs",
     "test:e2e": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.config.cjs tests/e2e --runInBand",
     "cli": "tsx bin/oceanicos.mjs"
   },
   "engines": {
-    "node": ">=20.0.0",
+    "node": ">=22.0.0",
     "pnpm": ">=8.0.0"
   },
   "devDependencies": {

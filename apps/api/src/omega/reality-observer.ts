@@ -1,5 +1,7 @@
 import crypto from 'node:crypto';
 import { execFileSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
+import path from 'node:path';
 import type {
   OmegaCommandResult,
   OmegaObservation,
@@ -54,6 +56,78 @@ export class RealityObserverEngine {
       observerId: `obs_git_${crypto.randomUUID()}`,
       observerType: 'git_working_tree',
       target: 'git_working_tree',
+      timestamp,
+      observedData,
+      stateHash,
+    };
+  }
+
+  public static async observeApiHealth(targetUrl: string = 'http://127.0.0.1:5000/health'): Promise<OmegaObservation> {
+    const timestamp = new Date().toISOString();
+    const startTime = Date.now();
+    let observedData: Record<string, unknown>;
+    try {
+      const res = await fetch(targetUrl, { signal: AbortSignal.timeout(3000) });
+      const latencyMs = Date.now() - startTime;
+      const json = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+      observedData = {
+        statusCode: res.status,
+        statusText: res.statusText,
+        ok: res.ok,
+        latencyMs,
+        body: json,
+        isHealthy: res.ok && json.status === 'ok',
+      };
+    } catch (err: any) {
+      observedData = {
+        statusCode: 0,
+        ok: false,
+        isHealthy: false,
+        error: err.message,
+        failed: true,
+      };
+    }
+
+    const serialized = JSON.stringify({ observerType: 'api_health', target: targetUrl, observedData });
+    const stateHash = crypto.createHash('sha256').update(serialized).digest('hex');
+
+    return {
+      observerId: `obs_api_${crypto.randomUUID()}`,
+      observerType: 'api_health',
+      target: targetUrl,
+      timestamp,
+      observedData,
+      stateHash,
+    };
+  }
+
+  public static observeBuildArtifacts(workspaceRoot?: string): OmegaObservation {
+    const timestamp = new Date().toISOString();
+    const root = workspaceRoot || process.cwd();
+    let observedData: Record<string, unknown>;
+    try {
+      const typesPkg = existsSync(path.join(root, 'packages/types/package.json'));
+      const miniPkg = existsSync(path.join(root, 'packages/mini/package.json'));
+      const apiPkg = existsSync(path.join(root, 'apps/api/package.json'));
+      const webPkg = existsSync(path.join(root, 'apps/web/package.json'));
+      observedData = {
+        typesPackageExists: typesPkg,
+        miniPackageExists: miniPkg,
+        apiPackageExists: apiPkg,
+        webPackageExists: webPkg,
+        ready: typesPkg && miniPkg && apiPkg && webPkg,
+      };
+    } catch (err: any) {
+      observedData = { ready: false, error: err.message, failed: true };
+    }
+
+    const serialized = JSON.stringify({ observerType: 'build_test', target: 'build_artifacts', observedData });
+    const stateHash = crypto.createHash('sha256').update(serialized).digest('hex');
+
+    return {
+      observerId: `obs_bld_${crypto.randomUUID()}`,
+      observerType: 'build_test',
+      target: 'build_artifacts',
       timestamp,
       observedData,
       stateHash,

@@ -321,4 +321,33 @@ describe('Ω‑ƆREADƆS OS v∞ — Command Lifecycle & Reality Verification Su
     expect(obsBody.observation.observedData.headCommit).toBeDefined();
     expect(obsBody.observation.stateHash).toBeDefined();
   });
+
+  it('observes build_test artifacts readiness automatically', async () => {
+    const createRes = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/commands',
+      payload: {
+        prompt: 'Check monorepo workspace package build readiness',
+        requestedWorkers: ['worker-observer'],
+      },
+    });
+    const cmdId = JSON.parse(createRes.payload).command.commandId;
+
+    await app.inject({ method: 'POST', url: `/v1/omega/commands/${cmdId}/admit` });
+    await app.inject({ method: 'POST', url: `/v1/omega/commands/${cmdId}/execute` });
+
+    const obsRes = await app.inject({
+      method: 'POST',
+      url: `/v1/omega/commands/${cmdId}/observe`,
+      payload: {
+        observerType: 'build_test',
+        target: 'build_artifacts',
+      },
+    });
+    expect(obsRes.statusCode).toBe(200);
+    const obsBody = JSON.parse(obsRes.payload);
+    expect(obsBody.observation.observerType).toBe('build_test');
+    expect(obsBody.observation.observedData.ready).toBe(true);
+    expect(obsBody.observation.observedData.typesPackageExists).toBe(true);
+  });
 });

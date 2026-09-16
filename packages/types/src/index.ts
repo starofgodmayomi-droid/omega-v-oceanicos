@@ -1,3 +1,32 @@
+export * from './omega-ir.js';
+export * from './worker-registry.js';
+
+export type ChangeDecision = 'ALLOW' | 'DENY' | 'REVIEW';
+
+export interface OmegaChangeRecord {
+  readonly id: string;
+  readonly subject: string;
+  readonly intent: string;
+  readonly stateBefore: string;
+  readonly evidence: readonly string[];
+  readonly authority: string | null;
+  readonly policy: string | null;
+  readonly context?: Record<string, unknown>;
+  readonly decision: ChangeDecision;
+  readonly authorized: boolean;
+  readonly transition?: string;
+  readonly stateAfter?: string;
+  readonly consequence?: string;
+  readonly attestationId?: string;
+  readonly provenance: {
+    readonly source: string;
+    readonly observedAt: string;
+    readonly attributedTo: string | null;
+    readonly lineage?: readonly string[];
+  };
+  readonly createdAt?: string;
+}
+
 export interface IPCState {
   cpu: number;
   ram: number;

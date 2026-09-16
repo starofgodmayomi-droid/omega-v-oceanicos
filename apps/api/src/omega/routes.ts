@@ -280,6 +280,10 @@ export const omegaRoutes: FastifyPluginAsync<OmegaRouteOptions> = async (
     let observation: OmegaObservation;
     if (observerType === 'git_working_tree' && !body.observedData) {
       observation = RealityObserverEngine.observeGitWorkingTree();
+    } else if (observerType === 'api_health' && !body.observedData) {
+      observation = await RealityObserverEngine.observeApiHealth(target || 'http://127.0.0.1:5000/health');
+    } else if (observerType === 'build_test' && !body.observedData) {
+      observation = RealityObserverEngine.observeBuildArtifacts();
     } else {
       observation = RealityObserverEngine.createObservation(observerType, target, observedData);
     }
