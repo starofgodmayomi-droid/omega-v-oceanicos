@@ -18,16 +18,18 @@ let verifyPlanetarySovereignty, AsymmetricValidationGuard, MultiRegionMeshConver
 let PluralisticHashChain, RememberEngine;
 let executeOceanicosMaxExpansion;
 let AttestationService;
+let PluralisticRealityMatrix;
 let pkgLoadError = null;
 
 try {
-  let observerPkg, verifPkg, remPkg, miniPkg, attestPkg;
+  let observerPkg, verifPkg, remPkg, miniPkg, attestPkg, pluralPkg;
   try {
     // Prefer source packages under tsx runtime
     observerPkg = await import('../packages/observer/src/index.ts');
     verifPkg = await import('../packages/verification/src/index.ts');
     remPkg = await import('../packages/remember/src/index.ts');
     miniPkg = await import('../packages/mini/src/index.ts');
+    pluralPkg = await import('../packages/pluralism/src/index.ts');
     try {
       attestPkg = await import('../packages/attestation/src/index.ts');
     } catch {}
@@ -37,6 +39,7 @@ try {
     verifPkg = await import('../packages/verification/dist/index.js');
     remPkg = await import('../packages/remember/dist/index.js');
     miniPkg = await import('../packages/mini/dist/index.js');
+    pluralPkg = await import('../packages/pluralism/dist/index.js');
     try {
       attestPkg = await import('../packages/attestation/dist/index.js');
     } catch {}
@@ -52,6 +55,9 @@ try {
   executeOceanicosMaxExpansion = miniPkg.executeOceanicosMaxExpansion;
   if (attestPkg) {
     AttestationService = attestPkg.AttestationService;
+  }
+  if (pluralPkg) {
+    PluralisticRealityMatrix = pluralPkg.PluralisticRealityMatrix;
   }
 } catch (err) {
   pkgLoadError = err;
@@ -469,6 +475,69 @@ ${ANSI.bold}OMEGA SUBSYSTEM COMMANDS:${ANSI.reset}
   }
 }
 
+async function handleFace() {
+  ensurePackagesLoaded();
+  printBanner();
+  console.log(`\n${ANSI.bold}=== THE 5 EPISTEMIC FACES OF THE PLURALISTIC REALITY MATRIX ===${ANSI.reset}\n`);
+
+  let report = null;
+  const isJson = args.includes('--json');
+  const isOffline = args.includes('--offline');
+
+  if (!isOffline) {
+    try {
+      const res = await fetch('http://localhost:5000/v1/pluralism/face', { signal: AbortSignal.timeout(1000) });
+      if (res.ok) {
+        const body = await res.json();
+        if (body.face) {
+          report = body.face;
+        }
+      }
+    } catch {}
+  }
+
+  if (!report && PluralisticRealityMatrix) {
+    report = PluralisticRealityMatrix.evaluateMatrix();
+  }
+
+  if (!report) {
+    console.error(`${ANSI.red}Error: Unable to evaluate Pluralistic Reality Face (matrix package not available).${ANSI.reset}`);
+    process.exitCode = 1;
+    return;
+  }
+
+  if (isJson) {
+    console.log(JSON.stringify(report, null, 2));
+    return;
+  }
+
+  console.log(`  Matrix ID             : ${ANSI.cyan}${report.faceMatrixId}${ANSI.reset}`);
+  console.log(`  Law Route             : ${ANSI.dim}${report.lawRoute}${ANSI.reset}`);
+  console.log(`  Harmonic Score        : ${ANSI.bold}${ANSI.green}${(report.overallHarmonicScore * 100).toFixed(1)}%${ANSI.reset}`);
+  console.log(`  Friction Dissolution  : ${ANSI.bold}${report.frictionDissolutionQuotient === 1 ? ANSI.green : ANSI.yellow}${report.frictionDissolutionQuotient} (Good - O = God)${ANSI.reset}`);
+  console.log(`  Consensus Verdict     : ${report.consensusVerdict === 'PASS' ? `${ANSI.green}${ANSI.bold}PASS${ANSI.reset}` : `${ANSI.red}DIVERGENT${ANSI.reset}`}`);
+  console.log(`  Cluster Digest        : ${ANSI.dim}${report.clusterAttestationDigest}${ANSI.reset}`);
+  console.log(`  Timestamp             : ${report.timestamp}`);
+
+  console.log(`\n${ANSI.bold}--- THE 5 EPISTEMIC FACES ---${ANSI.reset}`);
+  for (const f of report.faces) {
+    const scoreColor = f.score >= 0.95 ? ANSI.green : f.score >= 0.8 ? ANSI.yellow : ANSI.red;
+    const vTag = f.verified ? `${ANSI.green}✓ VERIFIED${ANSI.reset}` : `${ANSI.red}✗ UNVERIFIED${ANSI.reset}`;
+    console.log(`\n  [${ANSI.cyan}${f.faceId.padEnd(11)}${ANSI.reset}] ${ANSI.bold}${f.name}${ANSI.reset}`);
+    console.log(`    Dimension : ${ANSI.magenta}${f.dimension}${ANSI.reset} | Score: ${scoreColor}${(f.score * 100).toFixed(1)}%${ANSI.reset} | Status: ${vTag}`);
+    console.log(`    Proof Sig : ${ANSI.dim}${f.signatureProof}${ANSI.reset}`);
+    if (f.telemetry) {
+      console.log(`    Telemetry : ${ANSI.dim}${JSON.stringify(f.telemetry)}${ANSI.reset}`);
+    }
+    if (f.dissensusNotes && f.dissensusNotes.length > 0) {
+      for (const d of f.dissensusNotes) {
+        console.log(`    ${ANSI.yellow}Dissent Note : ${d}${ANSI.reset}`);
+      }
+    }
+  }
+  console.log(`\n${ANSI.bold}Axiom Proof${ANSI.reset} : ${ANSI.green}${ANSI.bold}${report.axiomProof}${ANSI.reset}\n`);
+}
+
 function handleHelp() {
   printBanner();
   console.log(`
@@ -479,6 +548,7 @@ ${ANSI.bold}COMMANDS:${ANSI.reset}
   ${ANSI.green}status${ANSI.reset}      Show system health, telemetry, genesis anchor, and live API status
   ${ANSI.green}cycle${ANSI.reset}       Execute and cryptographically commit a new consensus block (PoW)
   ${ANSI.green}mesh${ANSI.reset}        Simulate decentralized consensus convergence across 4 sovereign nodes
+  ${ANSI.green}face${ANSI.reset}        Evaluate the 5 Epistemic Faces of the Pluralistic Reality Matrix
   ${ANSI.green}attest${ANSI.reset}      Generate unforgeable cryptographic attestation for verified telemetry
   ${ANSI.green}keys${ANSI.reset}        Generate an Ed25519 asymmetric keypair for fail-closed authentication
   ${ANSI.green}mood${ANSI.reset}        Display Singularity compression state and Pidgin Spirit Axiom
@@ -489,6 +559,7 @@ ${ANSI.bold}COMMANDS:${ANSI.reset}
 ${ANSI.bold}OPTIONS:${ANSI.reset}
   --json        Output raw JSON response where applicable
   --pidgin      Activate Pidgin Spirit banner override
+  --offline     Evaluate locally without querying live API daemon
 `);
 }
 
@@ -501,6 +572,10 @@ switch (command) {
     break;
   case 'mesh':
     await handleMesh();
+    break;
+  case 'face':
+  case 'pluralism':
+    await handleFace();
     break;
   case 'attest':
     await handleAttest();
