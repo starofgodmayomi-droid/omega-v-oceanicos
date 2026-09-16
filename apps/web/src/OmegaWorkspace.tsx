@@ -8,9 +8,13 @@ import {
   observeOmegaCommand,
   verifyRealityOmegaCommand,
   fetchOmegaCommands,
+  fetchOmegaLearning,
+  fetchOmegaNextSlice,
   type OmegaWorkerInfo,
   type OmegaCommandView,
   type OmegaCommandResultView,
+  type OmegaLearningView,
+  type OmegaNextSliceProposalView,
 } from './omega-api';
 
 export const OmegaWorkspace: React.FC = () => {
@@ -29,6 +33,8 @@ export const OmegaWorkspace: React.FC = () => {
   const [selectedObserverType, setSelectedObserverType] = useState<
     'git_working_tree' | 'api_health' | 'build_test'
   >('git_working_tree');
+  const [learningMetrics, setLearningMetrics] = useState<OmegaLearningView | null>(null);
+  const [nextSliceProposal, setNextSliceProposal] = useState<OmegaNextSliceProposalView | null>(null);
 
   useEffect(() => {
     loadWorkers();
@@ -161,6 +167,18 @@ export const OmegaWorkspace: React.FC = () => {
         setActiveCommand(verRes.command);
         setActiveResult(verRes.result);
         loadRecentCommands();
+
+        // Fetch learning metrics & next-slice proposal (C8 & C9)
+        try {
+          const [lRes, nsRes] = await Promise.all([
+            fetchOmegaLearning(),
+            fetchOmegaNextSlice(activeCommand.commandId),
+          ]);
+          if (lRes.success) setLearningMetrics(lRes.learning);
+          if (nsRes.success) setNextSliceProposal(nsRes.proposal);
+        } catch {
+          // Non-blocking: learning fetch is informational
+        }
       } else {
         setErrorMessage(verRes.error || 'Reality verification failed');
       }
@@ -542,6 +560,66 @@ export const OmegaWorkspace: React.FC = () => {
                           Discrepancies: {activeResult.realityVerdict.discrepancies.join('; ')}
                         </div>
                       )}
+                    </div>
+                  )}
+
+                  {/* C8 & C9: Adaptive Learning & Next Loop Proposal */}
+                  {learningMetrics && (
+                    <div style={{ padding: '12px', background: 'rgba(14, 116, 144, 0.12)', borderRadius: '6px', border: '1px solid rgba(14, 165, 233, 0.3)' }}>
+                      <div style={{ fontSize: '12px', fontWeight: 700, color: '#22d3ee', marginBottom: '8px' }}>
+                        Ω Adaptive Learning (C8)
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px', fontSize: '11px' }}>
+                        <div style={{ padding: '6px 8px', background: '#0a0f1a', borderRadius: '4px' }}>
+                          <div style={{ color: '#64748b' }}>Reliability</div>
+                          <div style={{ color: learningMetrics.reliabilityScore >= 0.8 ? '#34d399' : '#fbbf24', fontWeight: 700, fontSize: '16px' }}>
+                            {(learningMetrics.reliabilityScore * 100).toFixed(1)}%
+                          </div>
+                        </div>
+                        <div style={{ padding: '6px 8px', background: '#0a0f1a', borderRadius: '4px' }}>
+                          <div style={{ color: '#64748b' }}>Verified</div>
+                          <div style={{ color: '#34d399', fontWeight: 700, fontSize: '16px' }}>
+                            {learningMetrics.verifiedCount}/{learningMetrics.totalEvaluated}
+                          </div>
+                        </div>
+                        <div style={{ padding: '6px 8px', background: '#0a0f1a', borderRadius: '4px' }}>
+                          <div style={{ color: '#64748b' }}>Divergent</div>
+                          <div style={{ color: learningMetrics.divergentCount > 0 ? '#fbbf24' : '#94a3b8', fontWeight: 700, fontSize: '16px' }}>
+                            {learningMetrics.divergentCount}
+                          </div>
+                        </div>
+                      </div>
+                      {learningMetrics.recommendations.length > 0 && (
+                        <div style={{ marginTop: '8px', fontSize: '11px', color: '#a5f3fc' }}>
+                          {learningMetrics.recommendations.map((r, i) => (
+                            <div key={i} style={{ marginBottom: '2px' }}>💡 {r}</div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {nextSliceProposal && (
+                    <div style={{ padding: '12px', background: 'rgba(59, 130, 246, 0.1)', borderRadius: '6px', border: '1px solid rgba(59, 130, 246, 0.3)' }}>
+                      <div style={{ fontSize: '12px', fontWeight: 700, color: '#60a5fa', marginBottom: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span>Ω Next Slice Proposal (C9)</span>
+                        <span style={{
+                          fontSize: '10px', padding: '2px 6px', borderRadius: '3px', fontWeight: 'bold',
+                          background: nextSliceProposal.urgency === 'critical' ? '#991b1b' : nextSliceProposal.urgency === 'elevated' ? '#854d0e' : '#064e3b',
+                          color: '#f8fafc'
+                        }}>
+                          {nextSliceProposal.urgency.toUpperCase()}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#e2e8f0', marginBottom: '4px' }}>
+                        <strong>Action:</strong> {nextSliceProposal.actionType} via {nextSliceProposal.trigger}
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#93c5fd', marginBottom: '4px' }}>
+                        {nextSliceProposal.proposedIntent}
+                      </div>
+                      <div style={{ fontSize: '10px', color: '#64748b' }}>
+                        Workers: {nextSliceProposal.suggestedWorkers.join(', ')} | Observe: {nextSliceProposal.suggestedObservationTarget}
+                      </div>
                     </div>
                   )}
                 </div>

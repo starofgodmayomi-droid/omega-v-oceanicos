@@ -187,3 +187,45 @@ export async function verifyRealityOmegaCommand(
   });
   return res.json();
 }
+
+export interface OmegaLearningView {
+  totalEvaluated: number;
+  completedCount: number;
+  refusedCount: number;
+  verifiedCount: number;
+  divergentCount: number;
+  unknownCount: number;
+  reliabilityScore: number;
+  workerReliability: Record<string, number>;
+  recurrentDiscrepancies: Array<{ kind: string; count: number; samples: string[] }>;
+  recommendations: string[];
+  analyzedAt: string;
+}
+
+export interface OmegaNextSliceProposalView {
+  sourceCommandId?: string;
+  trigger: string;
+  actionType: string;
+  rationale: string;
+  proposedIntent: string;
+  suggestedWorkers: string[];
+  suggestedObservationType: string;
+  suggestedObservationTarget: string;
+  urgency: string;
+  generatedAt: string;
+}
+
+export async function fetchOmegaLearning(): Promise<{ success: boolean; learning: OmegaLearningView }> {
+  const res = await fetch(`${API_BASE}/v1/omega/learning`);
+  return res.json();
+}
+
+export async function fetchOmegaNextSlice(
+  commandId?: string
+): Promise<{ success: boolean; proposal: OmegaNextSliceProposalView; feedback: OmegaLearningView }> {
+  const url = commandId
+    ? `${API_BASE}/v1/omega/commands/${commandId}/next-slice`
+    : `${API_BASE}/v1/omega/next-slice`;
+  const res = await fetch(url);
+  return res.json();
+}

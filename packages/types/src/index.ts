@@ -442,5 +442,35 @@ export interface OmegaCommandResult {
   completedAt?: string;
 }
 
+export interface OmegaDiscrepancyGroup {
+  readonly kind: string;
+  readonly count: number;
+  readonly samples: readonly string[];
+}
 
+export interface OmegaLearningFeedback {
+  readonly totalEvaluated: number;
+  readonly completedCount: number;
+  readonly refusedCount: number;
+  readonly verifiedCount: number;
+  readonly divergentCount: number;
+  readonly unknownCount: number;
+  readonly reliabilityScore: number; // 0.0 to 1.0
+  readonly workerReliability: Record<string, number>;
+  readonly recurrentDiscrepancies: readonly OmegaDiscrepancyGroup[];
+  readonly recommendations: readonly string[];
+  readonly analyzedAt: string;
+}
 
+export interface OmegaNextSliceProposal {
+  readonly sourceCommandId?: string;
+  readonly trigger: 'REALITY_VERIFIED' | 'REALITY_DIVERGENT' | 'TRANSITION_REFUSED' | 'OPERATOR_INITIATIVE';
+  readonly actionType: 'ADVANCE' | 'REMEDIATE' | 'POLICY_ESCALATION' | 'HARDEN';
+  readonly rationale: string;
+  readonly proposedIntent: string;
+  readonly suggestedWorkers: readonly OmegaWorkerRole[];
+  readonly suggestedObservationType: 'git_working_tree' | 'build_test' | 'api_health' | 'state_snapshot';
+  readonly suggestedObservationTarget: string;
+  readonly urgency: 'routine' | 'elevated' | 'critical';
+  readonly generatedAt: string;
+}

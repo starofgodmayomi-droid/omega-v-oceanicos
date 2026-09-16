@@ -10,7 +10,11 @@ import {
   createRealityObservation,
   reconcileReality,
   OmegaAttestationMemory,
+  synthesizeOmegaLearning,
+  proposeNextOmegaSlice,
+  compileNextLoopIntent,
 } from '@oceanicos/mini';
+
 import type {
   OmegaChangeRecord,
   OmegaWorkerCapability,
@@ -454,5 +458,151 @@ describe('Full Ω Kernel Pipeline: Compile → Validate → Admit → Execute �
     const snapshot = memory.snapshot();
     expect(snapshot.height).toBe(1);
     expect(snapshot.integrityValid).toBe(true);
+  });
+});
+
+// ─── C8: Omega Learning Engine ──────────────────────────────────────
+
+describe('C8 — synthesizeOmegaLearning', () => {
+  it('handles empty attestation history with default baseline', () => {
+    const feedback = synthesizeOmegaLearning([]);
+    expect(feedback.totalEvaluated).toBe(0);
+    expect(feedback.reliabilityScore).toBe(1.0);
+    expect(feedback.recurrentDiscrepancies).toHaveLength(0);
+    expect(feedback.recommendations[0]).toContain('No historical attestations');
+  });
+
+  it('computes empirical reliability score and recurrent discrepancies', () => {
+    const memory = new OmegaAttestationMemory();
+    const change = makeChange({ decision: 'ALLOW', authorized: true });
+
+    // Entry 1: Executed and verified
+    const ex1 = executeAuthorizedTransition(change, () => ({ stateAfter: 'state1' }));
+    const obs1 = createRealityObservation('obs1', 'state1', 'state1');
+    const rec1 = reconcileReality(ex1.record, obs1);
+    memory.append(change, ex1, rec1);
+
+    // Entry 2: Executed but divergent
+    const ex2 = executeAuthorizedTransition(change, () => ({ stateAfter: 'state2' }));
+    const obs2 = createRealityObservation('obs1', 'state2-diff', 'state2-diff');
+    const rec2 = reconcileReality(ex2.record, obs2);
+    memory.append(change, ex2, rec2);
+
+    const feedback = synthesizeOmegaLearning(memory.snapshot().entries);
+    expect(feedback.totalEvaluated).toBe(2);
+    expect(feedback.completedCount).toBe(2);
+    expect(feedback.verifiedCount).toBe(1);
+    expect(feedback.divergentCount).toBe(1);
+    expect(feedback.reliabilityScore).toBeGreaterThan(0.5);
+    expect(feedback.reliabilityScore).toBeLessThan(1.0);
+    expect(feedback.recurrentDiscrepancies.length).toBeGreaterThan(0);
+    expect(feedback.recommendations.some((r) => r.includes('Reality divergence'))).toBe(true);
+  });
+});
+
+// ─── C9: Omega Loop Recompiler & Next Slice ─────────────────────────
+
+describe('C9 — proposeNextOmegaSlice & compileNextLoopIntent', () => {
+  it('proposes remediation slice on reality divergence', () => {
+    const feedback = synthesizeOmegaLearning([]);
+    const proposal = proposeNextOmegaSlice({
+      latestEntry: {
+        index: 0,
+        changeId: 'c1',
+        transitionStatus: 'completed',
+        attestationId: 'att-1',
+        realityVerdict: 'DIVERGENT',
+        claimedStateHash: 'hash-a',
+        observedStateHash: 'hash-b',
+        discrepancies: ['State hash mismatch: expected hash-a, observed hash-b'],
+        previousHash: '000',
+        hash: '111',
+        timestamp: new Date().toISOString(),
+      },
+      feedback,
+    });
+
+    expect(proposal.trigger).toBe('REALITY_DIVERGENT');
+    expect(proposal.actionType).toBe('REMEDIATE');
+    expect(proposal.urgency).toBe('elevated');
+    expect(proposal.proposedIntent).toContain('Remediate');
+  });
+
+  it('proposes policy escalation on refused transition', () => {
+    const feedback = synthesizeOmegaLearning([]);
+    const proposal = proposeNextOmegaSlice({
+      latestEntry: {
+        index: 0,
+        changeId: 'c2',
+        transitionStatus: 'refused',
+        attestationId: undefined,
+        realityVerdict: undefined,
+        claimedStateHash: '',
+        observedStateHash: '',
+        discrepancies: [],
+        previousHash: '000',
+        hash: '222',
+        timestamp: new Date().toISOString(),
+      },
+      feedback,
+    });
+
+    expect(proposal.trigger).toBe('TRANSITION_REFUSED');
+    expect(proposal.actionType).toBe('POLICY_ESCALATION');
+    expect(proposal.urgency).toBe('critical');
+    expect(proposal.suggestedWorkers).toContain('governance-reviewer');
+  });
+
+  it('proposes advancement slice on verified reality', () => {
+    const feedback = synthesizeOmegaLearning([]);
+    const proposal = proposeNextOmegaSlice({
+      latestEntry: {
+        index: 0,
+        changeId: 'c3',
+        transitionStatus: 'completed',
+        attestationId: 'att-3',
+        realityVerdict: 'VERIFIED',
+        claimedStateHash: 'hash-c',
+        observedStateHash: 'hash-c',
+        discrepancies: [],
+        previousHash: '000',
+        hash: '333',
+        timestamp: new Date().toISOString(),
+      },
+      feedback,
+    });
+
+    expect(proposal.trigger).toBe('REALITY_VERIFIED');
+    expect(proposal.actionType).toBe('ADVANCE');
+    expect(proposal.urgency).toBe('routine');
+    expect(proposal.proposedIntent).toContain('Advance next');
+  });
+
+  it('compiles next loop intent directly back into C1 compiler (Loop closure: C9 -> C1)', () => {
+    const feedback = synthesizeOmegaLearning([]);
+    const proposal = proposeNextOmegaSlice({
+      latestEntry: {
+        index: 0,
+        changeId: 'c4',
+        transitionStatus: 'completed',
+        attestationId: 'att-4',
+        realityVerdict: 'VERIFIED',
+        claimedStateHash: 'hash-d',
+        observedStateHash: 'hash-d',
+        discrepancies: [],
+        previousHash: '000',
+        hash: '444',
+        timestamp: new Date().toISOString(),
+      },
+      feedback,
+    });
+
+    const compileInput = compileNextLoopIntent(proposal);
+    const nextIR = compileOmegaIntent(compileInput);
+    const validation = validateOmegaIR(nextIR);
+
+    expect(validation.valid).toBe(true);
+    expect(nextIR.intent).toBe(proposal.proposedIntent);
+    expect(nextIR.observationSpec.targets).toContain(proposal.suggestedObservationTarget);
   });
 });

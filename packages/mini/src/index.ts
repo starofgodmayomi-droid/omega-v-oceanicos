@@ -224,5 +224,8 @@ export { createRealityObservation, reconcileReality } from './reality.js';
 export type { RealityObservation, RealityReconciliation, RealityVerdict } from './reality.js';
 export { OmegaAttestationMemory } from './attestation-memory.js';
 export type { AttestationEntry, AttestationMemory } from './attestation-memory.js';
+export { synthesizeOmegaLearning } from './learning.js';
+export { proposeNextOmegaSlice, compileNextLoopIntent } from './recompiler.js';
+export type { ProposeNextSliceInput } from './recompiler.js';
 
 export default MiniKernel;

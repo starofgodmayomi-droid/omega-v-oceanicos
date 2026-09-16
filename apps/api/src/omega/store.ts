@@ -75,4 +75,9 @@ export class OmegaCommandStore {
   public listCommands(limit: number = 50): OmegaCommand[] {
     return Array.from(this.commands.values()).slice(-limit).reverse();
   }
+
+  public listResults(): OmegaCommandResult[] {
+    return Array.from(this.results.values());
+  }
 }
+

@@ -9,12 +9,16 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '..');
 
+const args = process.argv.slice(2);
+const command = args[0] || 'help';
+
 // Dynamically import compiled workspace packages
 let ObserverEngine, observePlanetaryBase;
 let verifyPlanetarySovereignty, AsymmetricValidationGuard, MultiRegionMeshConvergence;
 let PluralisticHashChain, RememberEngine;
 let executeOceanicosMaxExpansion;
 let AttestationService;
+let pkgLoadError = null;
 
 try {
   const observerPkg = require(path.join(rootDir, 'packages/observer/dist/index.js'));
@@ -38,13 +42,17 @@ try {
     AttestationService = attestPkg.AttestationService;
   } catch {}
 } catch (err) {
-  console.error('[\x1b[31mERROR\x1b[0m] Oceanicos packages must be compiled before running CLI:');
-  console.error(err.message);
-  process.exit(1);
+  pkgLoadError = err;
 }
 
-const args = process.argv.slice(2);
-const command = args[0] || 'help';
+function ensurePackagesLoaded() {
+  if (pkgLoadError) {
+    console.error('[\x1b[31mERROR\x1b[0m] Oceanicos packages must be compiled before running this command:');
+    console.error(pkgLoadError.message);
+    process.exit(1);
+  }
+}
+
 
 const ANSI = {
   reset: '\x1b[0m',
@@ -68,6 +76,7 @@ ${pidgin ? `║  Abeg, verification before evolution! Life always good-o inside 
 }
 
 async function handleStatus() {
+  ensurePackagesLoaded();
   printBanner();
   console.log(`\n${ANSI.bold}=== SYSTEM HEALTH & TELEMETRY ===${ANSI.reset}`);
   const telemetry = observePlanetaryBase();
@@ -98,8 +107,10 @@ async function handleStatus() {
 }
 
 async function handleCycle() {
+  ensurePackagesLoaded();
   printBanner();
   console.log(`\n${ANSI.yellow}Executing Omnipresent Consensus Cycle...${ANSI.reset}\n`);
+
   const block = executeOceanicosMaxExpansion();
   if (args.includes('--json')) {
     console.log(JSON.stringify(block, null, 2));
@@ -215,8 +226,10 @@ async function handleMood() {
 }
 
 async function handleAttest() {
+  ensurePackagesLoaded();
   printBanner();
   console.log(`\n${ANSI.bold}=== CRYPTOGRAPHIC ATTESTATION SERVICE ===${ANSI.reset}\n`);
+
   if (!AttestationService) {
     console.log(`${ANSI.red}AttestationService package not compiled.${ANSI.reset}`);
     return;
@@ -267,7 +280,11 @@ ${ANSI.bold}OMEGA SUBSYSTEM COMMANDS:${ANSI.reset}
   node bin/oceanicos.mjs omega execute <command-id>
   node bin/oceanicos.mjs omega observe <command-id>
   node bin/oceanicos.mjs omega verify-reality <command-id>
+  node bin/oceanicos.mjs omega learn
+  node bin/oceanicos.mjs omega next [command-id]
+  node bin/oceanicos.mjs omega recompile
 `);
+
     return;
   }
 
@@ -348,10 +365,30 @@ ${ANSI.bold}OMEGA SUBSYSTEM COMMANDS:${ANSI.reset}
       const res = await fetch(`${apiBase}/v1/omega/commands/${targetId}/verify-reality`, { method: 'POST' });
       const data = await res.json();
       console.log(JSON.stringify(data, null, 2));
+    } else if (subCommand === 'learn') {
+      const res = await fetch(`${apiBase}/v1/omega/learning`);
+      const data = await res.json();
+      console.log(JSON.stringify(data, null, 2));
+    } else if (subCommand === 'next') {
+      const url = targetId
+        ? `${apiBase}/v1/omega/commands/${targetId}/next-slice`
+        : `${apiBase}/v1/omega/next-slice`;
+      const res = await fetch(url);
+      const data = await res.json();
+      console.log(JSON.stringify(data, null, 2));
+    } else if (subCommand === 'recompile') {
+      const res = await fetch(`${apiBase}/v1/omega/recompile`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      const data = await res.json();
+      console.log(JSON.stringify(data, null, 2));
     } else {
       console.error(`${ANSI.red}Unknown omega subcommand: ${subCommand}${ANSI.reset}`);
       process.exitCode = 1;
     }
+
   } catch (err) {
     console.error(`${ANSI.red}CLI Request Failed: ${err.message}${ANSI.reset}`);
     console.error(`${ANSI.dim}[Note: Ensure Fastify API is running on ${apiBase}]${ANSI.reset}`);

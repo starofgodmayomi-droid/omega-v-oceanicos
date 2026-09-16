@@ -148,26 +148,40 @@ class AIOSCompanion:
         reality_verdict = verify_res.get("verdict", "UNKNOWN") if verify_res else "UNKNOWN"
         print(f"[AI OS] Reality verification verdict: {reality_verdict}")
 
-        # Step 6: Persist in companion state memory
+        # Step 6: Query Adaptive Learning & Continuous Loop Recompiler (C8 & C9)
+        learning_res = self._http_request("GET", "/v1/omega/learning")
+        next_slice_res = self._http_request("GET", f"/v1/omega/commands/{cmd_id}/next-slice")
+        proposal = next_slice_res.get("proposal", {}) if next_slice_res else {}
+        learning = learning_res.get("learning", {}) if learning_res else {}
+        reliability = learning.get("reliabilityScore", 1.0)
+
+        print(f"[AI OS] Adaptive Learning Score: {reliability:.4f} (Evaluated: {learning.get('totalEvaluated', 0)})")
+        if proposal:
+            print(f"[AI OS] Next Loop Proposal: '{proposal.get('proposedIntent')}' [Action: {proposal.get('actionType')}, Urgency: {proposal.get('urgency')}]")
+
+        # Step 7: Persist in companion state memory
         final_result = {
             "status": "SUCCESS",
             "commandId": cmd_id,
             "goal": high_level_goal,
             "attestation": attestation,
             "realityVerdict": reality_verdict,
+            "reliabilityScore": reliability,
+            "nextSliceProposal": proposal,
             "discrepancies": verify_res.get("result", {}).get("realityVerdict", {}).get("discrepancies", []) if verify_res else []
         }
 
         self.log_state(
-            decision_summary=f"End-to-end Ω cycle completed for '{high_level_goal}'",
+            decision_summary=f"End-to-end Ω cycle completed for '{high_level_goal}' (Next: {proposal.get('actionType', 'ADVANCE')})",
             action="OMEGA_LIFECYCLE_COMPLETE",
             reason_code=f"VERDICT_{reality_verdict}",
-            evidence_refs=[f"CMD:{cmd_id}", f"ATTEST:{attestation[:16]}", f"REALITY:{reality_verdict}"],
+            evidence_refs=[f"CMD:{cmd_id}", f"ATTEST:{attestation[:16]}", f"REALITY:{reality_verdict}", f"SCORE:{reliability:.2f}"],
             result=final_result,
             confidence=1.0 if reality_verdict == "VERIFIED" else 0.8
         )
 
         return final_result
+
 
 if __name__ == "__main__":
     signing_key = os.getenv("OMEGA_SIGNING_KEY")
