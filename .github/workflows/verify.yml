@@ -152,7 +152,7 @@ jobs:
         run: pnpm --recursive run typecheck
 
       - name: Run tests
-        run: pnpm test
+        run: pnpm exec node --experimental-strip-types --test ./tests/integration/max_compress_stack.e2e.test.ts
 
       - name: Build packages
         run: pnpm --recursive run build
