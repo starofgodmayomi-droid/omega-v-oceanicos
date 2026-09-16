@@ -8,8 +8,8 @@ const root = process.cwd();
 const args = new Set(process.argv.slice(2));
 const continuous = args.has('--continuous');
 const verify = args.has('--verify');
-const maxCycles = Number(process.env.OMEGA_WORKER_CYCLES || 1);
-const intervalMs = Number(process.env.OMEGA_WORKER_INTERVAL_MS || 5000);
+const maxCycles = Math.max(1, Number(process.env.OMEGA_WORKER_CYCLES || 1));
+const intervalMs = Math.max(0, Number(process.env.OMEGA_WORKER_INTERVAL_MS || 5000));
 
 const commands = verify
   ? [
@@ -47,7 +47,7 @@ function run(label, command, commandArgs) {
 }
 
 function printMode() {
-  console.log(`\n💧 Ω∞v | OCEANICOS — BOUNDED FULL-STACK WORKER`);
+  console.log('\n💧 Ω∞v | OCEANICOS — BOUNDED FULL-STACK WORKER');
   console.log('MODE=FULL_STACK');
   console.log('MOOD=PROACTIVE');
   console.log(`MOTION=${continuous ? 'CONTINUOUS_BOUNDED' : 'FINITE'}`);
@@ -59,7 +59,7 @@ function printMode() {
   console.log(`VERIFY=${verify ? 'ON' : 'OFF'}`);
 }
 
-async function cycle(index) {
+async function executeCycle(index) {
   console.log(`\n=== WORKER CYCLE ${index} ===`);
   console.log('OBSERVE → MAP → BUILD/VERIFY → REPORT → STOP');
 
@@ -81,14 +81,14 @@ async function cycle(index) {
 
 printMode();
 
-let cycle = 0;
+let cycleIndex = 0;
 let success = true;
 
-while (cycle < maxCycles) {
-  cycle += 1;
-  success = await cycle(cycle);
+while (cycleIndex < maxCycles) {
+  cycleIndex += 1;
+  success = await executeCycle(cycleIndex);
 
-  if (!continuous || !success || cycle >= maxCycles) break;
+  if (!continuous || !success || cycleIndex >= maxCycles) break;
   await new Promise((resolve) => setTimeout(resolve, intervalMs));
 }
 
