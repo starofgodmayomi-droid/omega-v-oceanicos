@@ -37,6 +37,8 @@ export type {
   RealityVerification,
   RealityVerificationStatus,
 } from './reality.js';
+export { buildOmegaCommand, listOmegaWorkers } from './worker-registry.js';
+export type { OmegaWorkerDescriptor } from './worker-registry.js';
 
 export function executeOceanicosMaxExpansion(): CryptographicBlock {
   const kernelChain = new PluralisticHashChain();

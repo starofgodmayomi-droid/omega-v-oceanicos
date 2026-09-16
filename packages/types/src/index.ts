@@ -98,6 +98,8 @@ export interface OmegaChangeRecord {
   readonly createdAt: string;
 }
 
+export * from './omega-command.js';
+
 export * from './scene.js';
 
 export type SceneState =

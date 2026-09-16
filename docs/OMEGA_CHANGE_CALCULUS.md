@@ -365,3 +365,15 @@ OBSERVE
 ```
 
 **One calculus. One kernel. One OS. Infinite surfaces.**
+
+
+## Compression form
+
+The calculus can be compressed to:
+
+```text
+WORLD → DISTINGUISH → INTENT → EVIDENCE → ADMIT → BOUNDED CHANGE
+      → OBSERVE → PROVE → REMEMBER → RECOMPILE
+```
+
+This is an explanatory compression, not a permission to collapse categories. `ATTESTATION ≠ AUTHORIZATION`, `TEST PASS ≠ REALITY`, and `CAPABILITY ≠ AUTHORITY` remain enforceable boundaries.

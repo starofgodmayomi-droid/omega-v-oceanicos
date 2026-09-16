@@ -909,3 +909,20 @@ The smoke runner uses a local test signing key and `OMEGA_PERSISTENCE=off`. It m
 ## Subsystems intelligence matrix
 
 `GET /subsystems` returns an operational inventory of the 19 core and expanded subsystems of Ω∞v Oceanicos across computational, consensus, storage, verification, governance, and orchestration layers. Each entry reports `id`, `name`, `category`, `package`, `status`, and `description`.
+
+
+## Ω command lifecycle
+
+The API exposes a bounded full-stack command surface under `/v1/omega/`:
+
+- `POST /v1/omega/commands` creates a redacted proposal and declarative ΩIR.
+- `GET /v1/omega/commands/:id` inspects the lifecycle record.
+- `POST /v1/omega/commands/:id/admit` resolves explicit authority and policy evidence.
+- `POST /v1/omega/commands/:id/approve` records attributable human approval for review-gated work.
+- `POST /v1/omega/commands/:id/execute` invokes only the bounded authorized transition.
+- `POST /v1/omega/commands/:id/observe` records an independent observation.
+- `POST /v1/omega/commands/:id/verify-reality` returns the recorded reality classification.
+- `GET /v1/omega/workers` lists enabled workers and limitations.
+- `GET /v1/omega/events` returns redacted lifecycle events.
+
+The initial command store is bounded and single-process. It is not durable persistence, a scheduler, or proof of deployment health. `DENY` and `REVIEW` never execute, and execution is never presented as verified external reality.

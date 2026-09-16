@@ -98,6 +98,9 @@ export function App() {
   const [attestLoading, setAttestLoading] = useState(false);
   const [kernelCapabilities, setKernelCapabilities] = useState<KernelCapabilitySnapshot | null>(null);
   const [kernelCapabilitiesError, setKernelCapabilitiesError] = useState<string | null>(null);
+  const [omegaIntent, setOmegaIntent] = useState('Inspect the current Oceanicos verification state');
+  const [omegaCommand, setOmegaCommand] = useState<any>(null);
+  const [omegaLoading, setOmegaLoading] = useState(false);
 
   const eventSourceRef = useRef<EventSource | null>(null);
 
@@ -212,6 +215,80 @@ export function App() {
       }
     } catch (err: any) {
       setLastError(`Tip sync unavailable: ${err.message}`);
+    }
+  };
+
+  const proposeOmegaCommand = async () => {
+    setOmegaLoading(true);
+    setLastError(null);
+    try {
+      const data = await apiRequest<any>('/v1/omega/commands', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          intent: omegaIntent,
+          requestedBy: 'dashboard-user',
+          workers: ['planner', 'tester'],
+          idempotencyKey: `dashboard-${Date.now()}`,
+          context: { stateBefore: tip?.hash ?? 'unknown', observationKind: 'supplied-state' },
+        }),
+      });
+      setOmegaCommand(data);
+    } catch (err: any) {
+      setLastError(`Ω command proposal failed: ${err.message}`);
+    } finally {
+      setOmegaLoading(false);
+    }
+  };
+
+  const observeOmegaReality = async () => {
+    if (!omegaCommand?.command?.commandId) return;
+    setOmegaLoading(true);
+    try {
+      const data = await apiRequest<any>(`/v1/omega/commands/${omegaCommand.command.commandId}/observe`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ observedState: omegaCommand.command.change.stateAfter ?? tip?.hash ?? 'unknown' }),
+      });
+      setOmegaCommand(data);
+    } catch (err: any) {
+      setLastError(`Ω reality observation unavailable: ${err.message}`);
+    } finally {
+      setOmegaLoading(false);
+    }
+  };
+
+  const approveOmegaCommand = async () => {
+    if (!omegaCommand?.command?.commandId) return;
+    setOmegaLoading(true);
+    try {
+      const data = await apiRequest<any>(`/v1/omega/commands/${omegaCommand.command.commandId}/approve`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ operator: 'dashboard-operator' }),
+      });
+      setOmegaCommand(data);
+    } catch (err: any) {
+      setLastError(`Ω approval failed: ${err.message}`);
+    } finally {
+      setOmegaLoading(false);
+    }
+  };
+
+  const executeOmegaCommand = async () => {
+    if (!omegaCommand?.command?.commandId) return;
+    setOmegaLoading(true);
+    try {
+      const data = await apiRequest<any>(`/v1/omega/commands/${omegaCommand.command.commandId}/execute`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      setOmegaCommand(data);
+    } catch (err: any) {
+      setLastError(`Ω bounded execution failed: ${err.message}`);
+    } finally {
+      setOmegaLoading(false);
     }
   };
 
@@ -633,6 +710,72 @@ export function App() {
           ⚠️ {lastError}
         </div>
       )}
+
+      <section
+        aria-label="Omega command workspace"
+        style={{
+          background: '#07121b',
+          border: '1px solid #c084fc55',
+          borderRadius: '6px',
+          padding: '16px',
+          marginBottom: '20px',
+        }}
+      >
+        <div style={{ color: '#c084fc', fontSize: '13px', fontWeight: 'bold' }}>
+          Ω‑ƆREADƆS COMMAND WORKSPACE — HUMAN SOURCE OF INTENT
+        </div>
+        <div style={{ color: '#94a3b8', fontSize: '11px', marginTop: '5px' }}>
+          Proposals are evidence, not authority. Execution and reality verification remain separate.
+        </div>
+        <div style={{ display: 'flex', gap: '8px', marginTop: '12px', flexWrap: 'wrap' }}>
+          <input
+            aria-label="Ω command intent"
+            value={omegaIntent}
+            onChange={(event) => setOmegaIntent(event.target.value)}
+            maxLength={2000}
+            style={{ flex: '1 1 420px', minWidth: '240px', background: '#03080d', color: '#e2e8f0', border: '1px solid #c084fc55', borderRadius: '4px', padding: '10px', fontSize: '12px' }}
+          />
+          <button
+            onClick={proposeOmegaCommand}
+            disabled={omegaLoading || !omegaIntent.trim()}
+            style={{ background: '#2e1065', color: '#e9d5ff', border: '1px solid #c084fc88', borderRadius: '4px', padding: '10px 16px', fontWeight: 'bold', cursor: omegaLoading ? 'wait' : 'pointer' }}
+          >
+            {omegaLoading ? 'ROUTING…' : 'PROPOSE BOUNDED COMMAND'}
+          </button>
+        </div>
+        {omegaCommand?.command && (
+          <div style={{ marginTop: '14px', background: '#03080d', border: '1px solid #334155', borderRadius: '4px', padding: '12px', fontSize: '11px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+              <strong style={{ color: '#e9d5ff' }}>{omegaCommand.command.commandId}</strong>
+              <span style={{ color: omegaCommand.command.status === 'VERIFIED' ? '#00ff66' : '#facc15', fontWeight: 'bold' }}>
+                {omegaCommand.command.status}
+              </span>
+            </div>
+            <div style={{ color: '#94a3b8', marginTop: '8px' }}>Workers: {omegaCommand.command.workers.join(' · ')}</div>
+            <div style={{ color: '#94a3b8', marginTop: '5px' }}>Next: {omegaCommand.nextAction}</div>
+            {omegaCommand.reality && (
+              <div style={{ color: omegaCommand.reality.classification === 'VERIFIED' ? '#00ff66' : '#facc15', marginTop: '8px' }}>
+                Reality: {omegaCommand.reality.classification} · observed={omegaCommand.reality.observedState}
+              </div>
+            )}
+            {omegaCommand.command.status === 'REVIEW' && (
+              <button onClick={approveOmegaCommand} disabled={omegaLoading} style={{ marginTop: '10px', marginRight: '8px', background: '#713f12', color: '#fef3c7', border: '1px solid #facc1588', borderRadius: '4px', padding: '7px 12px', cursor: 'pointer' }}>
+                APPROVE AS DASHBOARD OPERATOR
+              </button>
+            )}
+            {omegaCommand.command.status === 'AUTHORIZED' && (
+              <button onClick={executeOmegaCommand} disabled={omegaLoading} style={{ marginTop: '10px', background: '#064e3b', color: '#a7f3d0', border: '1px solid #34d39988', borderRadius: '4px', padding: '7px 12px', cursor: 'pointer' }}>
+                EXECUTE BOUNDED LOCAL ACTION
+              </button>
+            )}
+            {omegaCommand.command.status === 'EXECUTED' && (
+              <button onClick={observeOmegaReality} disabled={omegaLoading} style={{ marginTop: '10px', background: '#064e3b', color: '#a7f3d0', border: '1px solid #34d39988', borderRadius: '4px', padding: '7px 12px', cursor: 'pointer' }}>
+                OBSERVE AND VERIFY REALITY
+              </button>
+            )}
+          </div>
+        )}
+      </section>
 
       <section
         aria-label="Omega kernel capability boundary"

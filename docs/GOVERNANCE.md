@@ -107,3 +107,10 @@ The Observer and API now preserve optional `parentId` and a bounded `lineage` ar
 ## Strict operator identity source boundary
 
 When `OMEGA_ADMIN_REQUIRE_ALLOWLIST=on`, all three administrative mutations require `x-omega-operator-id`; a JSON body `operatorId` cannot substitute for the dedicated request identity field. Optional local-development mode retains the legacy body fallback for compatibility. The header is still a caller assertion checked against the configured allowlist, not authentication, identity proofing, or evidence of the human behind the request.
+
+
+## Ω command lifecycle governance
+
+The `/v1/omega/commands` lifecycle records human intent, worker attribution, ΩIR, evidence, authority, policy, approval, execution, attestation, provenance, and reality observation as separate states. `DENY` and `REVIEW` never execute. Approval does not claim success; execution does not claim reality; observation does not become proof without defined evidence.
+
+The first worker registry enables only observer, researcher, planner, tester, security-reviewer, and governance-reviewer. Arbitrary shell, credentials, remote mutation, finance, broad publication, deployment, and hidden autonomous loops remain disabled. Dissent and conflicting evidence are retained rather than silently collapsed.

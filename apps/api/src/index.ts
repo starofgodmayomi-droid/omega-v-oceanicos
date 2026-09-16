@@ -6,6 +6,7 @@ import { AsymmetricValidationGuard, MultiRegionMeshConvergence } from '@oceanico
 import { ObserverEngine } from '@oceanicos/observer';
 import { AttestationService } from '@oceanicos/attestation';
 import { OceanicosKernel } from '@omega-v/kernel';
+import { OmegaCommandStore, registerOmegaRoutes } from './omega.js';
 
 const MAX_STREAM_CLIENTS = 256;
 const MIN_ATTESTATION_KEY_LENGTH = 32;
@@ -43,6 +44,7 @@ export function createApp(
   const ledgerMemory = new RememberEngine(dbPath);
   const kernel = new MiniKernel(ledgerMemory);
   const platformKernel = new OceanicosKernel();
+  const omegaCommands = new OmegaCommandStore();
   const allowUnsignedCycle =
     options.allowUnsignedCycle ??
     process.env.OMEGA_ALLOW_UNSIGNED_CYCLE === 'true';
@@ -88,6 +90,7 @@ export function createApp(
   };
 
   fastify.register(cors, { origin: '*' });
+  registerOmegaRoutes(fastify, omegaCommands);
 
   fastify.addHook('onRequest', async (request, reply) => {
     if (authMode === 'local' || request.url.split('?')[0] === '/health') return;
