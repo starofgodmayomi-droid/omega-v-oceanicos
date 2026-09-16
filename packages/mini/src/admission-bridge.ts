@@ -68,7 +68,11 @@ export function admitOmegaIR(input: OmegaAdmissionBridgeInput): OmegaAdmissionBr
   if (!policyReferencesSatisfied) {
     issues.push('IR policy references do not satisfy declared worker policy requirements');
   }
+  if (input.change.policy && !policyReferences.has(normalize(input.change.policy))) {
+    issues.push('Change policy reference is not declared by the IR');
+  }
 
+  const evidenceReferencesById = new Map(input.ir.evidenceRefs.map((evidence) => [evidence.id, evidence]));
   const evidenceReferences = new Set(input.ir.evidenceRefs.map((evidence) => evidence.kind));
   const registryEvidenceRequirements = new Set(
     input.ir.workerPlan.flatMap((plan) => workersById.get(normalize(plan.workerId))?.evidenceRequired ?? []),
@@ -76,6 +80,9 @@ export function admitOmegaIR(input: OmegaAdmissionBridgeInput): OmegaAdmissionBr
   const evidenceRequirementsSatisfied = [...registryEvidenceRequirements].every((evidence) => evidenceReferences.has(evidence));
   if (!evidenceRequirementsSatisfied) {
     issues.push('IR evidence references do not satisfy declared worker evidence requirements');
+  }
+  if (!input.change.evidence.every((evidenceId) => evidenceReferencesById.has(normalize(evidenceId)))) {
+    issues.push('Change evidence contains references not declared by the IR');
   }
 
   const approvalRequirementSatisfied = !approvalRequired || input.approvalVerified;
