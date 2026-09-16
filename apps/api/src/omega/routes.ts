@@ -21,10 +21,12 @@ import { PlanCompiler } from './plan-compiler.js';
 import { AuthorizedCommandExecutor } from './executor.js';
 import { RealityObserverEngine } from './reality-observer.js';
 import { OmegaCommandStore } from './store.js';
+import { createOmegaSecurityHook, type OmegaSecurityOptions } from './security.js';
 
 export interface OmegaRouteOptions {
   store?: OmegaCommandStore;
   registry?: WorkerRegistry;
+  security?: OmegaSecurityOptions;
 }
 
 export const omegaRoutes: FastifyPluginAsync<OmegaRouteOptions> = async (
@@ -35,6 +37,9 @@ export const omegaRoutes: FastifyPluginAsync<OmegaRouteOptions> = async (
   const registry = opts.registry || new WorkerRegistry();
   const compiler = new PlanCompiler(registry);
   const executor = new AuthorizedCommandExecutor(registry);
+
+  // Enforce fail-closed HMAC-SHA256 signature verification on mutating endpoints
+  fastify.addHook('preHandler', createOmegaSecurityHook(opts.security));
 
   // GET /v1/omega/workers
   fastify.get('/v1/omega/workers', async () => {

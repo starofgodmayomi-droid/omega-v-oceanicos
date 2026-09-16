@@ -1,10 +1,12 @@
 import os
 import sys
 import json
+import hmac
+import hashlib
 import urllib.request
 import urllib.error
 import asyncio
-from datetime import datetime
+from datetime import datetime, timezone
 
 # Ensure safe UTF-8 output on Windows consoles
 if hasattr(sys.stdout, 'reconfigure'):
@@ -54,8 +56,17 @@ class AIOSCompanion:
         data = None
         if method in ("POST", "PUT", "PATCH"):
             body_obj = payload if payload is not None else {}
-            data = json.dumps(body_obj).encode('utf-8')
+            serialized = json.dumps(body_obj, separators=(',', ':'))
+            data = serialized.encode('utf-8')
             headers["Content-Type"] = "application/json"
+
+            signing_key = os.getenv("OMEGA_SIGNING_KEY")
+            if signing_key:
+                timestamp = datetime.now(timezone.utc).isoformat()
+                canonical = f"{timestamp}:{method.upper()}:{path}:{serialized}"
+                sig = hmac.new(signing_key.encode('utf-8'), canonical.encode('utf-8'), hashlib.sha256).hexdigest()
+                headers["X-Omega-Signature"] = f"sha256={sig}"
+                headers["X-Omega-Timestamp"] = timestamp
 
         req = urllib.request.Request(url, data=data, headers=headers, method=method)
         try:

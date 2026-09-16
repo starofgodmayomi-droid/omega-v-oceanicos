@@ -3,6 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { createApp } from '../../apps/api/src/index.js';
+import { generateOmegaSignature } from '../../apps/api/src/omega/security.js';
 
 describe('Ω‑ƆREADƆS OS v∞ — Command Lifecycle & Reality Verification Suite', () => {
   let app: any;
@@ -498,5 +499,136 @@ describe('Ω‑ƆREADƆS OS v∞ — Command Lifecycle & Reality Verification Su
     } finally {
       fs.rmSync(tempDir, { recursive: true, force: true });
     }
+  });
+
+  describe('Phase 10: Fail-Closed HMAC Security Guard & Replay Defense (HTTP Middleware)', () => {
+    let secureApp: any;
+    const authKey = 'sec-key-omega-guard-failclosed-2026';
+
+    beforeAll(async () => {
+      // Initialize an app instance with strict signature enforcement enabled
+      secureApp = createApp(':memory:', false, undefined, {
+        signingKey: authKey,
+        enforceSignature: true,
+        maxClockSkewSeconds: 300,
+      });
+      await secureApp.ready();
+    });
+
+    afterAll(async () => {
+      if (secureApp) {
+        await secureApp.close();
+      }
+    });
+
+    it('allows read-only endpoints without signature header', async () => {
+      const res = await secureApp.inject({
+        method: 'GET',
+        url: '/v1/omega/workers',
+      });
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.payload);
+      expect(body.success).toBe(true);
+    });
+
+    it('rejects mutating endpoint (POST /v1/omega/commands) without X-Omega-Signature header (401)', async () => {
+      const res = await secureApp.inject({
+        method: 'POST',
+        url: '/v1/omega/commands',
+        payload: {
+          prompt: 'Unsigned attempt to propose command',
+          requestedWorkers: ['worker-observer'],
+        },
+      });
+
+      expect(res.statusCode).toBe(401);
+      const body = JSON.parse(res.payload);
+      expect(body.success).toBe(false);
+      expect(body.error).toContain('X-Omega-Signature header is required');
+    });
+
+    it('rejects mutating endpoint with missing X-Omega-Timestamp header (401)', async () => {
+      const payload = { prompt: 'Missing timestamp', requestedWorkers: ['worker-observer'] };
+      const res = await secureApp.inject({
+        method: 'POST',
+        url: '/v1/omega/commands',
+        headers: {
+          'x-omega-signature': 'sha256=abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890',
+        },
+        payload,
+      });
+
+      expect(res.statusCode).toBe(401);
+      const body = JSON.parse(res.payload);
+      expect(body.success).toBe(false);
+      expect(body.error).toContain('X-Omega-Timestamp header is required');
+    });
+
+    it('rejects mutating endpoint with expired timestamp exceeding clock skew (401)', async () => {
+      const expiredTs = new Date(Date.now() - 400 * 1000).toISOString(); // 400s ago (>300s limit)
+      const payload = { prompt: 'Replay attempt', requestedWorkers: ['worker-observer'] };
+      const sig = generateOmegaSignature(authKey, expiredTs, 'POST', '/v1/omega/commands', payload);
+
+      const res = await secureApp.inject({
+        method: 'POST',
+        url: '/v1/omega/commands',
+        headers: {
+          'x-omega-signature': sig,
+          'x-omega-timestamp': expiredTs,
+        },
+        payload,
+      });
+
+      expect(res.statusCode).toBe(401);
+      const body = JSON.parse(res.payload);
+      expect(body.success).toBe(false);
+      expect(body.error).toContain('CLOCK_SKEW_EXCEEDED');
+    });
+
+    it('rejects mutating endpoint with forged / tampered payload (401 fail-closed)', async () => {
+      const ts = new Date().toISOString();
+      const originalPayload = { prompt: 'Original clean prompt', requestedWorkers: ['worker-observer'] };
+      const tamperedPayload = { prompt: 'Tampered malicious prompt', requestedWorkers: ['worker-observer'] };
+      const sig = generateOmegaSignature(authKey, ts, 'POST', '/v1/omega/commands', originalPayload);
+
+      const res = await secureApp.inject({
+        method: 'POST',
+        url: '/v1/omega/commands',
+        headers: {
+          'x-omega-signature': sig,
+          'x-omega-timestamp': ts,
+        },
+        payload: tamperedPayload,
+      });
+
+      expect(res.statusCode).toBe(401);
+      const body = JSON.parse(res.payload);
+      expect(body.success).toBe(false);
+      expect(body.error).toContain('SIGNATURE_VERIFICATION_FAILED');
+    });
+
+    it('accepts mutating endpoint with valid HMAC-SHA256 signature and timestamp (201 Created)', async () => {
+      const ts = new Date().toISOString();
+      const payload = {
+        prompt: 'Cryptographically signed command execution test',
+        requestedWorkers: ['worker-observer'],
+      };
+      const sig = generateOmegaSignature(authKey, ts, 'POST', '/v1/omega/commands', payload);
+
+      const res = await secureApp.inject({
+        method: 'POST',
+        url: '/v1/omega/commands',
+        headers: {
+          'x-omega-signature': sig,
+          'x-omega-timestamp': ts,
+        },
+        payload,
+      });
+
+      expect(res.statusCode).toBe(201);
+      const body = JSON.parse(res.payload);
+      expect(body.success).toBe(true);
+      expect(body.command.status).toBe('PROPOSED');
+    });
   });
 });

@@ -31,6 +31,10 @@ import { ObserverEngine } from '@oceanicos/observer';
 import { RememberEngine } from '@oceanicos/remember';
 import { MiniKernel, AutonomousPlannerAgent } from '@oceanicos/mini';
 import { VerificationResult, Attestation } from '@oceanicos/types';
+import {
+  generateOmegaSignature,
+  verifyOmegaSignature,
+} from '../../apps/api/src/omega/security.js';
 
 // Ensure signing key is present for verification engine throughout tests
 beforeAll(() => {
@@ -560,5 +564,90 @@ describe('Ω∞v Security: Algorithm Confusion Defense', () => {
     const attestation = hmacService.attest(result);
 
     expect(attestation.signingAlgorithm).toBe('HMAC-SHA256');
+  });
+});
+
+// ─── 8. HMAC Request Security Guard & Replay Defense ──────────────────
+
+describe('Ω∞v Security: HMAC Signature Guard & Replay Defense', () => {
+  const testKey = 'omega-security-guard-key-2026-super-secret';
+
+  test('generates valid HMAC signature and passes constant-time verification', () => {
+    const timestamp = new Date().toISOString();
+    const body = { prompt: 'Verify fail-closed security boundary', workers: ['worker-observer'] };
+    const sig = generateOmegaSignature(testKey, timestamp, 'POST', '/v1/omega/commands', body);
+
+    const result = verifyOmegaSignature(testKey, timestamp, 'POST', '/v1/omega/commands', body, sig);
+    expect(result.valid).toBe(true);
+  });
+
+  test('tampered payload fails closed', () => {
+    const timestamp = new Date().toISOString();
+    const originalBody = { prompt: 'Safe prompt' };
+    const tamperedBody = { prompt: 'Safe prompt; rm -rf /' };
+    const sig = generateOmegaSignature(testKey, timestamp, 'POST', '/v1/omega/commands', originalBody);
+
+    const result = verifyOmegaSignature(testKey, timestamp, 'POST', '/v1/omega/commands', tamperedBody, sig);
+    expect(result.valid).toBe(false);
+    expect(result.reason).toBe('SIGNATURE_VERIFICATION_FAILED');
+  });
+
+  test('expired timestamp (replay attack) fails closed with clock-skew exceeded', () => {
+    const expiredTimestamp = new Date(Date.now() - 400 * 1000).toISOString(); // 400s ago
+    const body = { prompt: 'Replay attempt' };
+    const sig = generateOmegaSignature(testKey, expiredTimestamp, 'POST', '/v1/omega/commands', body);
+
+    const result = verifyOmegaSignature(testKey, expiredTimestamp, 'POST', '/v1/omega/commands', body, sig, 300);
+    expect(result.valid).toBe(false);
+    expect(result.reason).toContain('CLOCK_SKEW_EXCEEDED');
+  });
+
+  test('wrong key fails closed', () => {
+    const timestamp = new Date().toISOString();
+    const body = { prompt: 'Key mismatch test' };
+    const sig = generateOmegaSignature('different-key-entirely', timestamp, 'POST', '/v1/omega/commands', body);
+
+    const result = verifyOmegaSignature(testKey, timestamp, 'POST', '/v1/omega/commands', body, sig);
+    expect(result.valid).toBe(false);
+    expect(result.reason).toBe('SIGNATURE_VERIFICATION_FAILED');
+  });
+
+  test('malformed signature header fails closed', () => {
+    const timestamp = new Date().toISOString();
+    const body = { prompt: 'Malformed header' };
+
+    // Missing sha256= prefix
+    const res1 = verifyOmegaSignature(testKey, timestamp, 'POST', '/v1/omega/commands', body, '1234567890abcdef');
+    expect(res1.valid).toBe(false);
+    expect(res1.reason).toBe('MALFORMED_SIGNATURE_HEADER');
+
+    // Empty signature
+    const res2 = verifyOmegaSignature(testKey, timestamp, 'POST', '/v1/omega/commands', body, '');
+    expect(res2.valid).toBe(false);
+    expect(res2.reason).toBe('MALFORMED_SIGNATURE_HEADER');
+  });
+
+  test('invalid or non-parseable timestamp header fails closed', () => {
+    const body = { prompt: 'Bad timestamp' };
+    const sig = generateOmegaSignature(testKey, 'not-a-date', 'POST', '/v1/omega/commands', body);
+
+    const result = verifyOmegaSignature(testKey, 'not-a-date', 'POST', '/v1/omega/commands', body, sig);
+    expect(result.valid).toBe(false);
+    expect(result.reason).toBe('INVALID_TIMESTAMP_HEADER');
+  });
+
+  test('canonicalization handles undefined, null, string, and object bodies deterministically', () => {
+    const ts = new Date().toISOString();
+    const sigUndefined = generateOmegaSignature(testKey, ts, 'GET', '/v1/omega/workers', undefined);
+    const sigNull = generateOmegaSignature(testKey, ts, 'GET', '/v1/omega/workers', null);
+    const sigEmptyString = generateOmegaSignature(testKey, ts, 'GET', '/v1/omega/workers', '');
+
+    // Undefined, null, and empty string all normalize to empty body
+    expect(sigUndefined).toBe(sigNull);
+    expect(sigNull).toBe(sigEmptyString);
+
+    // Verifying against identical representation succeeds
+    const verifyRes = verifyOmegaSignature(testKey, ts, 'GET', '/v1/omega/workers', null, sigUndefined);
+    expect(verifyRes.valid).toBe(true);
   });
 });

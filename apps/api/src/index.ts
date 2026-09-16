@@ -13,6 +13,7 @@ import { PluralismConvergenceMatrix } from '@oceanicos/pluralism';
 import type { VerificationRule, IObservation } from '@oceanicos/types';
 import { omegaRoutes } from './omega/routes.js';
 import { OmegaCommandStore } from './omega/store.js';
+import type { OmegaSecurityOptions } from './omega/security.js';
 import { execFile } from 'node:child_process';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
@@ -42,7 +43,8 @@ export const DEFAULT_API_RULES: VerificationRule[] = [
 export function createApp(
   dbPath: string = process.env.LEDGER_PATH ?? './data/oceanicos.jsonl',
   logger: boolean = true,
-  omegaLedgerPath?: string
+  omegaLedgerPath?: string,
+  security?: OmegaSecurityOptions
 ): FastifyInstance {
   const fastify = Fastify({ logger });
   const ledgerMemory = new RememberEngine(dbPath);
@@ -495,7 +497,7 @@ export function createApp(
       ? ':memory:'
       : (process.env.OMEGA_LEDGER_PATH ?? './data/omega-ledger.jsonl'));
   const omegaStore = new OmegaCommandStore(resolvedOmegaLedgerPath);
-  fastify.register(omegaRoutes, { store: omegaStore });
+  fastify.register(omegaRoutes, { store: omegaStore, security });
 
   return fastify;
 }
