@@ -14,6 +14,8 @@ import type { VerificationRule, IObservation } from '@oceanicos/types';
 import { omegaRoutes } from './omega/routes.js';
 import { execFile } from 'node:child_process';
 import crypto from 'node:crypto';
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
 
 export const DEFAULT_API_RULES: VerificationRule[] = [
   {
@@ -499,6 +501,17 @@ export const fastify = createApp(
 export const app = fastify;
 export default fastify;
 
-if (import.meta.url === `file://${process.argv[1]}`) {
-  fastify.listen({ port: Number(process.env.PORT ?? 5000), host: '0.0.0.0' }).catch(() => process.exit(1));
+const isDirectRun = Boolean(
+  process.argv[1] &&
+  (path.resolve(process.argv[1]) === fileURLToPath(import.meta.url) ||
+   process.argv[1].endsWith('src/index.ts') ||
+   process.argv[1].endsWith('src\\index.ts'))
+);
+
+if (isDirectRun) {
+  const port = Number(process.env.PORT ?? 5000);
+  fastify.listen({ port, host: '0.0.0.0' }).catch((err) => {
+    console.error('Failed to start Fastify API:', err);
+    process.exit(1);
+  });
 }

@@ -50,14 +50,25 @@ class AIOSCompanion:
 
     def _http_request(self, method, path, payload=None, timeout=5):
         url = f"{self.api_url}{path}"
-        data = json.dumps(payload).encode('utf-8') if payload is not None else None
-        headers = {"Content-Type": "application/json"}
+        headers = {}
+        data = None
+        if method in ("POST", "PUT", "PATCH"):
+            body_obj = payload if payload is not None else {}
+            data = json.dumps(body_obj).encode('utf-8')
+            headers["Content-Type"] = "application/json"
+
         req = urllib.request.Request(url, data=data, headers=headers, method=method)
         try:
             with urllib.request.urlopen(req, timeout=timeout) as res:
                 body = res.read().decode('utf-8')
-                return json.loads(body)
-        except (urllib.error.URLError, TimeoutError, ConnectionRefusedError, OSError) as e:
+                return json.loads(body) if body else {}
+        except urllib.error.HTTPError as e:
+            try:
+                err_body = e.read().decode('utf-8')
+                return json.loads(err_body)
+            except Exception:
+                return {"error": f"HTTP_{e.code}", "message": str(e)}
+        except (urllib.error.URLError, TimeoutError, ConnectionRefusedError, OSError):
             return None
 
     def probe_health(self):
@@ -126,7 +137,11 @@ class AIOSCompanion:
         print(f"[AI OS] Executed. Attestation digest: {attestation[:20]}...")
 
         # Step 5: Capture Reality Observation & Verify
-        obs_payload = {"observerType": "git_working_tree", "target": "git_working_tree"}
+        obs_spec = create_res.get("command", {}).get("irPlan", {}).get("observationSpec", {})
+        obs_payload = {
+            "observerType": obs_spec.get("observerType", "git_working_tree"),
+            "target": obs_spec.get("target", "git_working_tree")
+        }
         self._http_request("POST", f"/v1/omega/commands/{cmd_id}/observe", obs_payload)
 
         verify_res = self._http_request("POST", f"/v1/omega/commands/{cmd_id}/verify-reality")
