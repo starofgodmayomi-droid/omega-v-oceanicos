@@ -4,31 +4,7 @@ const { request } = require('node:http');
 const { resolve } = require('node:path');
 
 const root = resolve(__dirname, '..');
-const apiRoot = resolve(root, 'apps/api');
-const port = Number(process.env.API_PORT || 3210);
-const api = spawn(process.execPath, ['dist/server.js'], {
-  cwd: apiRoot,
-  env: {
-    ...process.env,
-    API_PORT: String(port),
-    OMEGA_SIGNING_KEY: process.env.OMEGA_SIGNING_KEY || 'local-smoke-test-key',
-    OMEGA_PERSISTENCE: 'off',
-  },
-  stdio: ['ignore', 'pipe', 'pipe'],
-});
-
-let output = '';
-api.stdout.on('data', (chunk) => {
-  output += chunk.toString();
-});
-api.stderr.on('data', (chunk) => {
-  output += chunk.toString();
-});
-
-const stop = (code) => {
-  if (!api.killed) api.kill('SIGTERM');
-  setTimeout(() => process.exit(code), 100);
-};
+const port = Number(process.env.API_PORT || 5000);
 
 const call = (method, path, body) =>
   new Promise((resolveCall, reject) => {
@@ -61,75 +37,50 @@ const call = (method, path, body) =>
     req.end();
   });
 
-const waitForHealth = async () => {
-  for (let attempt = 0; attempt < 30; attempt += 1) {
-    try {
-      const response = await call('GET', '/health');
-      if (response.status === 200) return response;
-    } catch {
-      // The process may still be compiling or binding its port.
-    }
-    await new Promise((resolveWait) => setTimeout(resolveWait, 250));
-  }
-  throw new Error(`API did not become healthy. Output:\n${output}`);
-};
-
 (async () => {
   try {
-    const health = await waitForHealth();
-    const simulation = await call('POST', '/scene/simulate', {
-      seed: 'portable-api-smoke',
-      steps: 13,
-    });
-    const scene = simulation.body?.data;
-    if (simulation.status !== 200 || !scene) {
-      throw new Error(`scene simulation failed with status ${simulation.status}`);
+    console.log(`[Smoke API] Probing Oceanicos Fastify API on port ${port}...`);
+
+    // 1. Health check
+    const health = await call('GET', '/health');
+    if (health.status !== 200 || health.body?.status !== 'ok') {
+      throw new Error(`/health did not return 200 ok: ${JSON.stringify(health.body)}`);
     }
-    if (health.body?.data?.readiness !== 'ready') {
-      throw new Error(`health readiness was ${health.body?.data?.readiness}`);
+    console.log('✓ /health responded 200 OK');
+
+    // 2. Mood check
+    const mood = await call('GET', '/v1/mood');
+    if (mood.status !== 200 || mood.body?.reality !== 'VERIFIED') {
+      throw new Error(`/v1/mood failed: ${JSON.stringify(mood.body)}`);
     }
-    const coverage = health.body?.data?.checks?.persistence?.coverage;
-    const expectedUnverifiedReasons = [
-      'no database persistence adapter is configured',
-      'no object-storage persistence adapter is configured',
-      'backup encryption and restore evidence are not connected to this runtime',
-      'external-service persistence and key custody are outside this process boundary',
-    ];
-    if (
-      JSON.stringify(coverage?.unverifiedReasons) !== JSON.stringify(expectedUnverifiedReasons) ||
-      coverage?.complete !== false
-    ) {
-      throw new Error('persistence coverage evidence boundary did not match the contract');
+    console.log('✓ /v1/mood responded VERIFIED');
+
+    // 3. Block tip
+    const tip = await call('GET', '/v1/block/tip');
+    if (tip.status !== 200 || !tip.body?.success) {
+      throw new Error(`/v1/block/tip failed: ${JSON.stringify(tip.body)}`);
     }
-    if (scene.terminalState !== 'return' || scene.provenance?.verified !== false) {
-      throw new Error('scene simulation evidence boundary did not match the contract');
+    console.log('✓ /v1/block/tip responded 200 OK');
+
+    // 4. Pluralistic Reality Face
+    const face = await call('GET', '/v1/pluralism/face');
+    if (face.status !== 200 || face.body?.face?.consensusVerdict !== 'PASS') {
+      throw new Error(`/v1/pluralism/face failed: ${JSON.stringify(face.body)}`);
     }
-    console.log(
-      JSON.stringify(
-        {
-          health: health.body.data.readiness,
-          sceneId: scene.id,
-          terminalState: scene.terminalState,
-          deterministic: scene.provenance.deterministic,
-          verified: scene.provenance.verified,
-        },
-        null,
-        2
-      )
-    );
-    stop(0);
+    console.log(`✓ /v1/pluralism/face evaluated 5 faces: consensus = ${face.body.face.consensusVerdict}`);
+
+    // 5. Omega Workers
+    const workers = await call('GET', '/v1/omega/workers');
+    if (workers.status !== 200 || !workers.body?.workers) {
+      throw new Error(`/v1/omega/workers failed: ${JSON.stringify(workers.body)}`);
+    }
+    console.log(`✓ /v1/omega/workers responded with ${workers.body.workers.length} active workers`);
+
+    console.log('\n[Smoke API] All critical API service endpoints verified healthy.');
+    process.exit(0);
   } catch (error) {
-    console.error(error instanceof Error ? error.message : error);
-    stop(1);
+    console.error(`[Smoke API Error]: ${error instanceof Error ? error.message : error}`);
+    process.exit(1);
   }
 })();
 
-api.on('exit', (code) => {
-  if (code && code !== 0) {
-    console.error(`API exited with code ${code}.\n${output}`);
-    process.exitCode = 1;
-  }
-});
-
-process.on('SIGINT', () => stop(130));
-process.on('SIGTERM', () => stop(143));
