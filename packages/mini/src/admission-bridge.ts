@@ -9,6 +9,8 @@ export interface OmegaAdmissionBridgeInput extends OmegaAdmissionEvidence {
   readonly ir: OmegaIR;
   readonly registry: OmegaWorkerRegistry;
   readonly change: OmegaChangeRecord;
+  /** Explicitly verified human approval when any planned worker requires it. */
+  readonly approvalVerified: boolean;
 }
 
 export interface OmegaAdmissionBridgeResult {
@@ -16,6 +18,7 @@ export interface OmegaAdmissionBridgeResult {
   readonly registryMatched: boolean;
   readonly policyReferencesSatisfied: boolean;
   readonly evidenceRequirementsSatisfied: boolean;
+  readonly approvalRequirementSatisfied: boolean;
   readonly issues: readonly string[];
 }
 
@@ -29,6 +32,7 @@ const normalize = (value: string): string => value.trim();
 export function admitOmegaIR(input: OmegaAdmissionBridgeInput): OmegaAdmissionBridgeResult {
   const issues: string[] = [];
   const workersById = new Map(input.registry.workers.map((worker) => [worker.id, worker]));
+  let approvalRequired = false;
 
   for (const plan of input.ir.workerPlan) {
     const worker = workersById.get(normalize(plan.workerId));
@@ -36,6 +40,8 @@ export function admitOmegaIR(input: OmegaAdmissionBridgeInput): OmegaAdmissionBr
       issues.push(`Unknown worker: ${plan.workerId}`);
       continue;
     }
+
+    approvalRequired ||= worker.approvalRequired;
 
     if (worker.version !== normalize(plan.version)) {
       issues.push(`Worker version mismatch: ${plan.workerId}`);
@@ -45,6 +51,9 @@ export function admitOmegaIR(input: OmegaAdmissionBridgeInput): OmegaAdmissionBr
     }
     if (worker.id !== normalize(plan.workerId)) {
       issues.push(`Worker id mismatch: ${plan.workerId}`);
+    }
+    if (worker.capability !== normalize(plan.capability)) {
+      issues.push(`Worker capability mismatch: ${plan.workerId}`);
     }
     if (worker.approvalRequired !== plan.approvalRequired) {
       issues.push(`Worker approval requirement mismatch: ${plan.workerId}`);
@@ -69,6 +78,11 @@ export function admitOmegaIR(input: OmegaAdmissionBridgeInput): OmegaAdmissionBr
     issues.push('IR evidence references do not satisfy declared worker evidence requirements');
   }
 
+  const approvalRequirementSatisfied = !approvalRequired || input.approvalVerified;
+  if (!approvalRequirementSatisfied) {
+    issues.push('Required worker approval evidence is missing');
+  }
+
   const registryMatched = issues.length === 0;
   const admitted = registryMatched
     ? resolveChangeAdmission(input.change, input)
@@ -79,6 +93,7 @@ export function admitOmegaIR(input: OmegaAdmissionBridgeInput): OmegaAdmissionBr
     registryMatched,
     policyReferencesSatisfied,
     evidenceRequirementsSatisfied,
+    approvalRequirementSatisfied,
     issues,
   };
 }
