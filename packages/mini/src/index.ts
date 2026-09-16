@@ -41,6 +41,9 @@ export { compileOmegaIntent } from './compiler.js';
 export type { OmegaCompileInput } from './compiler.js';
 export { validateOmegaIR } from './ir-validator.js';
 export type { OmegaIRValidation, OmegaIRValidationIssue } from './ir-validator.js';
+export { createOmegaWorkerRegistry, getOmegaWorker } from './worker-registry.js';
+export { admitOmegaIR } from './admission-bridge.js';
+export type { OmegaAdmissionBridgeInput, OmegaAdmissionBridgeResult } from './admission-bridge.js';
 
 export function executeOceanicosMaxExpansion(): CryptographicBlock {
   const kernelChain = new PluralisticHashChain();
