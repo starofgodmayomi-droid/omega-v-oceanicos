@@ -7,6 +7,7 @@ import { ObserverEngine } from '@oceanicos/observer';
 import { AttestationService } from '@oceanicos/attestation';
 import { OceanicosKernel } from '@omega-v/kernel';
 import { OmegaCommandStore, registerOmegaRoutes } from './omega.js';
+import { dirname, join } from 'node:path';
 
 const MAX_STREAM_CLIENTS = 256;
 const MIN_ATTESTATION_KEY_LENGTH = 32;
@@ -44,7 +45,8 @@ export function createApp(
   const ledgerMemory = new RememberEngine(dbPath);
   const kernel = new MiniKernel(ledgerMemory);
   const platformKernel = new OceanicosKernel();
-  const omegaCommands = new OmegaCommandStore();
+  const omegaCommandPath = dbPath === ':memory:' ? ':memory:' : join(dirname(dbPath), 'omega-commands.db');
+  const omegaCommands = new OmegaCommandStore(omegaCommandPath);
   const allowUnsignedCycle =
     options.allowUnsignedCycle ??
     process.env.OMEGA_ALLOW_UNSIGNED_CYCLE === 'true';
@@ -355,7 +357,7 @@ export function createApp(
   return fastify;
 }
 
-export const app = createApp('./oceanicos.db', process.env.NODE_ENV !== 'test');
+export const app = createApp(process.env.OMEGA_DB_PATH ?? './oceanicos.db', process.env.NODE_ENV !== 'test');
 
 const start = async () => {
   try {

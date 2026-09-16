@@ -101,3 +101,8 @@ Implementation status must distinguish **implemented**, **verified**, **merged**
 - No financial, legal, employment, tax, account-security, public-publication, or production-deployment action without its relevant approval workflow.
 
 The compressed form is therefore the **explanatory layer**; the typed contracts, admission gate, attestations, provenance, observations, and tests are the **anti-collapse layer**.
+
+
+## Durable coordination upgrade
+
+The command/event layer now supports restart recovery through a configurable SQLite database path (`OMEGA_DB_PATH`). Independent API processes sharing that volume coordinate worker registration, heartbeats, and exclusive leases through transactional writes. This is a real multi-process, single-volume boundary; it is not yet cross-host consensus or a network database. A staging or production topology must therefore provide a shared filesystem with correct locking semantics or adopt a reviewed network database adapter before claiming distributed deployment.

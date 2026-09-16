@@ -926,3 +926,10 @@ The API exposes a bounded full-stack command surface under `/v1/omega/`:
 - `GET /v1/omega/events` returns redacted lifecycle events.
 
 The initial command store is bounded and single-process. It is not durable persistence, a scheduler, or proof of deployment health. `DENY` and `REVIEW` never execute, and execution is never presented as verified external reality.
+
+
+## Durable coordination and multi-process workers
+
+When `OMEGA_DB_PATH` points at a persistent SQLite file, command records and lifecycle events survive API restart. SQLite transactions make idempotent command writes and worker leases exclusive across independent API processes sharing the same filesystem volume. The worker coordination routes are `POST /v1/omega/workers/register`, `POST /v1/omega/workers/:workerId/heartbeat`, `POST /v1/omega/workers/:workerId/lease`, and `POST /v1/omega/workers/:workerId/lease/:leaseId/release`.
+
+This is durable single-volume coordination, not a distributed database or cross-host consensus system. Multi-host deployment requires a shared filesystem with SQLite locking semantics or a reviewed network database adapter. Worker leases are capabilities and scheduling evidence; they do not grant authority to execute commands, bypass Ω admission, or claim reality success.

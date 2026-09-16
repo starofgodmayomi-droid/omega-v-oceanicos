@@ -24,6 +24,7 @@ services:
       - OMEGA_READ_TOKEN=${OMEGA_READ_TOKEN:?OMEGA_READ_TOKEN is required}
       - OMEGA_ADMIN_TOKEN=${OMEGA_ADMIN_TOKEN:?OMEGA_ADMIN_TOKEN is required}
       - OMEGA_MODE=${OMEGA_MODE:-MAX_FLUID}
+      - OMEGA_DB_PATH=${OMEGA_DB_PATH:-/app/data/oceanicos.db}
       - PIDGIN_ENGINE=${PIDGIN_ENGINE:-ON}
     volumes:
       - oceanicos-data:/app/data

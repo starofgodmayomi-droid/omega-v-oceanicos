@@ -337,3 +337,8 @@ Local verification passed formatting, lint, type-check, focused API/persistence 
 The current full-stack lane applies the canonical invariant **Ω∞v ::= VERIFY(ΔREALITY)** without collapsing possible, known, permitted, attempted, executed, observed, and verified states. The implementation now contains the first bounded command vertical slice: versioned ΩIR, worker registry, fail-closed admission, attributable approval, bounded local execution, attestation/provenance, reality observation, API lifecycle routes, SDK methods, CLI commands, and dashboard proposal visibility.
 
 Remaining gates are evidence-based: durable persistence and event replay, required-auth integration for command mutations, expanded worker adapters only through declared capabilities, full CI, focused-PR merge, and post-merge verification. Code presence is not proof of merge, deployment, or real-world health.
+
+
+### Durable command coordination increment — 2026-09
+
+The Ω command store now persists commands and lifecycle events in a configurable SQLite database and recovers them after API restart. Independent API processes can register workers, heartbeat, and acquire exclusive transactional leases against the same volume. Live local-staging smoke verification passed for proposal, restart recovery, worker registration, lease exclusivity, release, and durable events. This earns multi-process single-volume coordination, not cross-host consensus, network-database durability, deployment, or production health.

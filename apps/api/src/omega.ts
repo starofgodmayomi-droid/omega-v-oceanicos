@@ -8,6 +8,7 @@ import {
 } from '@oceanicos/mini';
 import type { OmegaCommand, OmegaCommandResult, OmegaCommandStatus, OmegaWorkerId } from '@oceanicos/types';
 import { decisionToStatus, validateOmegaCommandInput } from '@oceanicos/types';
+import { OmegaDurableStore } from './omega-persistence.js';
 
 type StoredCommand = OmegaCommand & {
   readonly result?: OmegaCommandResult;
@@ -16,36 +17,44 @@ type StoredCommand = OmegaCommand & {
 const MAX_COMMANDS = 256;
 
 export class OmegaCommandStore {
-  private readonly commands = new Map<string, StoredCommand>();
-  private readonly events: Array<Record<string, unknown>> = [];
+  private readonly durable: OmegaDurableStore;
+
+  constructor(path = ':memory:') {
+    this.durable = new OmegaDurableStore(path);
+  }
 
   create(input: Parameters<typeof buildOmegaCommand>[0]): StoredCommand {
-    const existing = this.commands.get(`omega-${input.idempotencyKey}`);
+    const existing = this.durable.getCommand(`omega-${input.idempotencyKey}`) as StoredCommand | undefined;
     if (existing) return existing;
-    if (this.commands.size >= MAX_COMMANDS) throw new Error('OMEGA_COMMAND_CAPACITY_REACHED');
     const command = buildOmegaCommand(input);
     const stored = { ...command };
-    this.commands.set(command.commandId, stored);
+    if (this.durable.listEvents().length >= MAX_COMMANDS * 2) throw new Error('OMEGA_COMMAND_CAPACITY_REACHED');
+    this.durable.putCommand(stored);
     this.record('command.proposed', stored);
     return stored;
   }
 
-  get(id: string): StoredCommand | undefined { return this.commands.get(id); }
+  get(id: string): StoredCommand | undefined { return this.durable.getCommand(id) as StoredCommand | undefined; }
 
   update(command: StoredCommand, patch: Partial<StoredCommand>): StoredCommand {
     const next = { ...command, ...patch };
-    this.commands.set(next.commandId, next);
+    this.durable.putCommand(next);
     return next;
   }
 
   record(type: string, command: StoredCommand, extra: Record<string, unknown> = {}): void {
-    this.events.push({ type, commandId: command.commandId, status: command.status, at: new Date().toISOString(), ...extra });
-    if (this.events.length > 512) this.events.splice(0, this.events.length - 512);
+    this.durable.appendEvent({ type, commandId: command.commandId, status: command.status, at: new Date().toISOString(), ...extra });
   }
 
   listEvents(commandId?: string): readonly Record<string, unknown>[] {
-    return this.events.filter((event) => !commandId || event.commandId === commandId).map((event) => ({ ...event }));
+    return this.durable.listEvents(commandId);
   }
+
+  registerWorker(input: { workerId: string; capabilities: string[] }) { return this.durable.registerWorker(input); }
+  heartbeatWorker(workerId: string) { return this.durable.heartbeatWorker(workerId); }
+  listWorkers() { return this.durable.listWorkers(); }
+  acquireWorkerLease(workerId: string, commandId: string, capability: string, durationMs?: number) { return this.durable.acquireLease(workerId, commandId, capability, durationMs); }
+  releaseWorkerLease(leaseId: string, workerId: string) { return this.durable.releaseLease(leaseId, workerId); }
 }
 
 function bodyOf(request: any): Record<string, unknown> {
@@ -61,7 +70,38 @@ function statusForDecision(decision: 'ALLOW' | 'DENY' | 'REVIEW'): OmegaCommandS
 }
 
 export function registerOmegaRoutes(fastify: FastifyInstance, store: OmegaCommandStore): void {
-  fastify.get('/v1/omega/workers', async () => ({ success: true, workers: listOmegaWorkers(), limitations: ['registry is local and single-process', 'worker output is evidence, not authority'] }));
+  fastify.get('/v1/omega/workers', async () => ({ success: true, workers: listOmegaWorkers(), activeWorkers: store.listWorkers(), limitations: ['coordination is durable on the configured SQLite volume', 'worker output is evidence, not authority', 'cross-host coordination requires a shared filesystem or a future network database'] }));
+
+  fastify.post('/v1/omega/workers/register', async (request, reply) => {
+    const body = bodyOf(request);
+    if (typeof body.workerId !== 'string' || !Array.isArray(body.capabilities) || body.capabilities.length > 16 || body.capabilities.some((value) => typeof value !== 'string' || value.length > 96)) {
+      return reply.status(400).send({ success: false, error: 'INVALID_WORKER_REGISTRATION' });
+    }
+    return { success: true, worker: store.registerWorker({ workerId: body.workerId, capabilities: body.capabilities as string[] }), coordination: 'sqlite-wal' };
+  });
+
+  fastify.post('/v1/omega/workers/:workerId/heartbeat', async (request, reply) => {
+    const workerId = (request.params as { workerId?: string }).workerId ?? '';
+    const worker = store.heartbeatWorker(workerId);
+    if (!worker) return reply.status(404).send({ success: false, error: 'OMEGA_WORKER_NOT_FOUND' });
+    return { success: true, worker };
+  });
+
+  fastify.post('/v1/omega/workers/:workerId/lease', async (request, reply) => {
+    const workerId = (request.params as { workerId?: string }).workerId ?? '';
+    const body = bodyOf(request);
+    if (typeof body.commandId !== 'string' || typeof body.capability !== 'string') return reply.status(400).send({ success: false, error: 'LEASE_COMMAND_AND_CAPABILITY_REQUIRED' });
+    const lease = store.acquireWorkerLease(workerId, body.commandId, body.capability, typeof body.durationMs === 'number' ? Math.min(Math.max(body.durationMs, 1000), 300000) : undefined);
+    if (!lease) return reply.status(409).send({ success: false, error: 'OMEGA_WORKER_LEASE_UNAVAILABLE' });
+    return { success: true, lease, coordination: 'sqlite-transaction' };
+  });
+
+  fastify.post('/v1/omega/workers/:workerId/lease/:leaseId/release', async (request, reply) => {
+    const params = request.params as { workerId?: string; leaseId?: string };
+    const released = store.releaseWorkerLease(params.leaseId ?? '', params.workerId ?? '');
+    if (!released) return reply.status(409).send({ success: false, error: 'OMEGA_WORKER_LEASE_NOT_FOUND' });
+    return { success: true, released: true };
+  });
 
   fastify.post('/v1/omega/commands', async (request, reply) => {
     const body = bodyOf(request);
