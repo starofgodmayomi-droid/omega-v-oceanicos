@@ -37,6 +37,8 @@ export type {
   RealityVerification,
   RealityVerificationStatus,
 } from './reality.js';
+export { compileOmegaIntent } from './compiler.js';
+export type { OmegaCompileInput } from './compiler.js';
 
 export function executeOceanicosMaxExpansion(): CryptographicBlock {
   const kernelChain = new PluralisticHashChain();
