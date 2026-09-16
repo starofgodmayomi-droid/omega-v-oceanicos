@@ -38,6 +38,10 @@ The kernel now exposes `getCapabilitySnapshot()`, a machine-readable read-only b
 
 ## Ω∞ MAX OCEANICOS reconciliation
 
+## Product position
+
+Ω∞ MAX OCEANICOS is positioned as the **human-governed trust layer between intelligence and consequence**. Models remain intelligence engines, agents remain action engines, tools and APIs remain capability interfaces, memory provides continuity, observation interfaces with systems, provenance preserves lineage, verification provides a trust mechanism, attestation provides cryptographic evidence, pluralism preserves disagreement, and humans remain the final authority. Oceanicos composes these surfaces without claiming that consensus is objective truth, confidence is proof, simulation is external reality, or system agency should replace human agency.
+
 The latest project charter compresses the operating law to **one real problem → one finite change → one executed proof → one verified state**. This repository currently satisfies that law for the kernel capability contract, bounded scene validation, asymmetric attestation, API/SDK exposure, CLI reporting, and the Web capability panel.
 
 The next concrete Web work item is contract reconciliation: the production dashboard currently consumes `/v1/*` routes while the legacy DOM harness contains fixtures for an older `/api/*` dashboard. This mismatch is recorded as an integration gap, not silently relabeled as a passing Web test. The current production build and full-stack E2E remain the executed evidence for the Web capability slice.

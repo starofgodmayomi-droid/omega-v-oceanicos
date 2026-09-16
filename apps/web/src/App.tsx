@@ -70,7 +70,7 @@ interface KernelCapabilitySnapshot {
   limitations: string[];
 }
 
-export default function App() {
+export function App() {
   const [tip, setTip] = useState<any>(null);
   const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -1078,3 +1078,5 @@ export default function App() {
     </div>
   );
 }
+
+export default App;
