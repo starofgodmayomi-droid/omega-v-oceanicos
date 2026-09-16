@@ -20,6 +20,7 @@ export class MiniKernel {
 
 export const MiniKernelCoordinator = MiniKernel;
 export type MiniKernelCoordinator = MiniKernel;
+export { observeCandidateChange } from './change.js';
 
 export function executeOceanicosMaxExpansion(): CryptographicBlock {
   const kernelChain = new PluralisticHashChain();
