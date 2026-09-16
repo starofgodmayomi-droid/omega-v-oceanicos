@@ -49,6 +49,27 @@ interface MeshConvergenceReceipt {
   timestamp: string;
 }
 
+interface KernelCapabilitySnapshot {
+  contract: string;
+  execution: string;
+  humanAuthorizationRequired: boolean;
+  capabilities: {
+    observe: boolean;
+    verify: boolean;
+    remember: boolean;
+    attest: boolean;
+    reason: boolean;
+    intend: boolean;
+    build: boolean;
+    test: boolean;
+    remoteMutation: boolean;
+    credentialHandling: boolean;
+    arbitraryShellExecution: boolean;
+    externalDeployment: boolean;
+  };
+  limitations: string[];
+}
+
 export default function App() {
   const [tip, setTip] = useState<any>(null);
   const [history, setHistory] = useState<any[]>([]);
@@ -75,6 +96,8 @@ export default function App() {
   const [moodData, setMoodData] = useState<any>(null);
   const [attestationData, setAttestationData] = useState<any>(null);
   const [attestLoading, setAttestLoading] = useState(false);
+  const [kernelCapabilities, setKernelCapabilities] = useState<KernelCapabilitySnapshot | null>(null);
+  const [kernelCapabilitiesError, setKernelCapabilitiesError] = useState<string | null>(null);
 
   const eventSourceRef = useRef<EventSource | null>(null);
 
@@ -95,9 +118,26 @@ export default function App() {
     }
   };
 
+  const fetchKernelCapabilities = async () => {
+    try {
+      const data = await apiRequest<{ success: boolean; capability?: KernelCapabilitySnapshot }>(
+        '/v1/kernel/capabilities'
+      );
+      if (!data.success || !data.capability) throw new Error('invalid capability response');
+      setKernelCapabilities(data.capability);
+      setKernelCapabilitiesError(null);
+    } catch (err: any) {
+      setKernelCapabilities(null);
+      setKernelCapabilitiesError(
+        err instanceof Error ? err.message : 'capability snapshot unavailable'
+      );
+    }
+  };
+
   // Connect to the real-time event stream
   useEffect(() => {
     fetchMinerStatus();
+    fetchKernelCapabilities();
 
     let es: EventSource | null = null;
     let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
@@ -593,6 +633,51 @@ export default function App() {
           ⚠️ {lastError}
         </div>
       )}
+
+      <section
+        aria-label="Omega kernel capability boundary"
+        style={{
+          background: '#07121b',
+          border: '1px solid #00ff6633',
+          borderRadius: '6px',
+          padding: '16px',
+          marginBottom: '20px',
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+          <div>
+            <div style={{ color: '#00ff66', fontSize: '13px', fontWeight: 'bold' }}>
+              OMEGA KERNEL CAPABILITY BOUNDARY
+            </div>
+            <div style={{ color: '#94a3b8', fontSize: '11px', marginTop: '5px' }}>
+              Read-only control-plane evidence; no external execution authority.
+            </div>
+          </div>
+          <div style={{ color: '#6ee7b7', fontSize: '11px' }}>
+            {kernelCapabilities?.contract ?? 'CONTRACT UNKNOWN'}
+          </div>
+        </div>
+        {kernelCapabilitiesError ? (
+          <div style={{ color: '#fca5a5', fontSize: '11px', marginTop: '12px' }}>
+            Capability snapshot unavailable: {kernelCapabilitiesError}
+          </div>
+        ) : kernelCapabilities ? (
+          <>
+            <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginTop: '14px', fontSize: '11px' }}>
+              <span>EXECUTION: {kernelCapabilities.execution}</span>
+              <span>REMOTE: {kernelCapabilities.capabilities.remoteMutation ? 'ENABLED' : 'DISABLED'}</span>
+              <span>SHELL: {kernelCapabilities.capabilities.arbitraryShellExecution ? 'ENABLED' : 'DISABLED'}</span>
+              <span>CREDENTIALS: {kernelCapabilities.capabilities.credentialHandling ? 'ENABLED' : 'DISABLED'}</span>
+              <span>HUMAN GATE: {kernelCapabilities.humanAuthorizationRequired ? 'REQUIRED' : 'UNKNOWN'}</span>
+            </div>
+            <div style={{ color: '#94a3b8', fontSize: '10px', marginTop: '12px' }}>
+              LIMITATIONS: {kernelCapabilities.limitations.join(' · ')}
+            </div>
+          </>
+        ) : (
+          <div style={{ color: '#94a3b8', fontSize: '11px', marginTop: '12px' }}>Loading capability snapshot…</div>
+        )}
+      </section>
 
       {/* Multi-Region Sovereign Mesh Panel */}
       {meshSimulation && (
