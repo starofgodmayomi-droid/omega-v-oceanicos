@@ -31,6 +31,12 @@ export type {
   TransitionHandler,
   TransitionMemory,
 } from './transition.js';
+export { verifyExecutedReality } from './reality.js';
+export type {
+  RealityObserverOptions,
+  RealityVerification,
+  RealityVerificationStatus,
+} from './reality.js';
 
 export function executeOceanicosMaxExpansion(): CryptographicBlock {
   const kernelChain = new PluralisticHashChain();
