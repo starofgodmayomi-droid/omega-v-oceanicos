@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import path from 'node:path';
 import type { FastifyInstance, FastifyPluginAsync } from 'fastify';
 import type {
   OmegaCommand,
@@ -30,6 +31,7 @@ export interface OmegaRouteOptions {
   registry?: WorkerRegistry;
   security?: OmegaSecurityOptions;
   kernel?: OceanicosKernel;
+  kernelStatePath?: string;
 }
 
 export const omegaRoutes: FastifyPluginAsync<OmegaRouteOptions> = async (
@@ -38,8 +40,14 @@ export const omegaRoutes: FastifyPluginAsync<OmegaRouteOptions> = async (
 ) => {
   const store = opts.store || new OmegaCommandStore();
   const registry = opts.registry || new WorkerRegistry();
-  const kernel = opts.kernel || new OceanicosKernel();
+  const kernelStatePath = opts.kernelStatePath || path.resolve(process.cwd(), '.omega', 'kernel-state.json');
+  const kernel = opts.kernel || await OceanicosKernel.loadFromFile(kernelStatePath);
   const compiler = new PlanCompiler(registry);
+
+  /** Non-blocking auto-save after kernel mutations */
+  const persistKernel = () => {
+    kernel.saveToFile(kernelStatePath).catch(() => {});
+  };
   const executor = new AuthorizedCommandExecutor(registry);
 
   // Enforce fail-closed HMAC-SHA256 signature verification on mutating endpoints
@@ -430,6 +438,7 @@ export const omegaRoutes: FastifyPluginAsync<OmegaRouteOptions> = async (
           },
           autoAuthorizeIfNonDestructive: true,
         });
+        persistKernel();
       } catch {
         // Non-blocking fallback
       }
@@ -562,6 +571,7 @@ export const omegaRoutes: FastifyPluginAsync<OmegaRouteOptions> = async (
           executionDurationMs: 120,
           verifiedValueGenerated: verdict.verdict === 'VERIFIED' ? 100 : 0,
         });
+        persistKernel();
       }
     } catch {
       // Non-blocking fallback

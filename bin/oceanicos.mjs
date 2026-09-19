@@ -19,6 +19,7 @@ let PluralisticHashChain, RememberEngine;
 let executeOceanicosMaxExpansion;
 let AttestationService;
 let PluralisticRealityMatrix;
+let OceanicosKernel;
 let pkgLoadError = null;
 
 try {
@@ -59,6 +60,7 @@ try {
     PluralisticHashChain = remPkg.PluralisticHashChain;
     RememberEngine = remPkg.RememberEngine;
     executeOceanicosMaxExpansion = miniPkg.executeOceanicosMaxExpansion;
+    OceanicosKernel = miniPkg.OceanicosKernel;
     if (attestPkg) {
       AttestationService = attestPkg.AttestationService;
     }
@@ -509,6 +511,190 @@ ${ANSI.bold}OMEGA SUBSYSTEM COMMANDS:${ANSI.reset}
   }
 }
 
+async function handleKernel() {
+  ensurePackagesLoaded();
+  const subCommand = args[1] || 'help';
+  const isJson = args.includes('--json');
+  const apiBase = process.env.API_BASE_URL || 'http://localhost:5000';
+
+  if (subCommand === 'help' || subCommand === '--help') {
+    printBanner();
+    console.log(`
+${ANSI.bold}KERNEL SUBSYSTEM COMMANDS:${ANSI.reset}
+  node bin/oceanicos.mjs kernel status       Show kernel chain head, stats, and hash-chain summary
+  node bin/oceanicos.mjs kernel verify       Run full hash-chain integrity self-audit
+  node bin/oceanicos.mjs kernel states       List all canonical state nodes in the chain
+  node bin/oceanicos.mjs kernel help         Display this help message
+
+${ANSI.bold}OPTIONS:${ANSI.reset}
+  --json        Output raw JSON instead of formatted text
+  --online      Query live API kernel endpoints (default: local-first offline)
+`);
+    return;
+  }
+
+  if (subCommand === 'status') {
+    // Try API first if --online, otherwise instantiate locally
+    let stats = null;
+    let head = null;
+    let chainLength = 0;
+    const isOnline = args.includes('--online');
+
+    if (isOnline) {
+      try {
+        const res = await fetch(`${apiBase}/v1/omega/kernel/status`, { signal: AbortSignal.timeout(1500) });
+        if (res.ok) {
+          const data = await res.json();
+          stats = data.stats;
+          head = data.head;
+          chainLength = data.chainLength ?? stats?.totalTransitions ?? 0;
+        }
+      } catch {}
+    }
+
+    if (!stats) {
+      // Local-first: instantiate a fresh kernel to show structure
+      const kernel = new OceanicosKernel();
+      stats = kernel.getStats();
+      head = kernel.getHead();
+      chainLength = kernel.getChainLength();
+    }
+
+    if (isJson) {
+      console.log(JSON.stringify({ stats, head, chainLength }, null, 2));
+      return;
+    }
+
+    printBanner();
+    console.log(`\n${ANSI.bold}=== Ω CANONICAL KERNEL STATUS ===${ANSI.reset}`);
+    console.log(`  ${ANSI.cyan}Chain Length${ANSI.reset}          : ${ANSI.bold}${chainLength}${ANSI.reset} state nodes`);
+    console.log(`  ${ANSI.cyan}Total Transitions${ANSI.reset}    : ${stats.totalTransitions}`);
+    console.log(`  ${ANSI.cyan}Verified States${ANSI.reset}      : ${ANSI.green}${stats.verifiedStatesCount}${ANSI.reset}`);
+    console.log(`  ${ANSI.cyan}Dissent Records${ANSI.reset}      : ${stats.dissentRecordedCount > 0 ? ANSI.yellow : ANSI.dim}${stats.dissentRecordedCount}${ANSI.reset}`);
+    console.log(`  ${ANSI.cyan}Gated Actions${ANSI.reset}        : ${stats.gatedActionsCount}`);
+    console.log(`  ${ANSI.cyan}Root State Hash${ANSI.reset}      : ${ANSI.dim}${stats.currentRootStateHash}${ANSI.reset}`);
+
+    if (head) {
+      console.log(`\n${ANSI.bold}--- CHAIN HEAD ---${ANSI.reset}`);
+      console.log(`  ${ANSI.cyan}State ID${ANSI.reset}             : ${ANSI.bold}${head.stateId}${ANSI.reset}`);
+      console.log(`  ${ANSI.cyan}State Index${ANSI.reset}          : #${head.stateIndex}`);
+      console.log(`  ${ANSI.cyan}Verification${ANSI.reset}         : ${head.verificationStatus === 'VERIFIED' ? `${ANSI.green}✓ VERIFIED${ANSI.reset}` : head.verificationStatus === 'FALSIFIED' ? `${ANSI.red}✗ FALSIFIED${ANSI.reset}` : `${ANSI.yellow}⚠ UNCERTAIN${ANSI.reset}`}`);
+      console.log(`  ${ANSI.cyan}Authorized${ANSI.reset}           : ${head.authorization?.isAuthorized ? `${ANSI.green}YES${ANSI.reset}` : `${ANSI.red}NO${ANSI.reset}`}`);
+      console.log(`  ${ANSI.cyan}Action Status${ANSI.reset}        : ${head.action?.status}`);
+      console.log(`  ${ANSI.cyan}Settled${ANSI.reset}              : ${head.settledAt ? `${ANSI.green}${head.settledAt}${ANSI.reset}` : `${ANSI.dim}NOT SETTLED${ANSI.reset}`}`);
+      console.log(`  ${ANSI.cyan}Delta Hash${ANSI.reset}           : ${ANSI.dim}${head.stateDeltaHash}${ANSI.reset}`);
+      console.log(`  ${ANSI.cyan}Created At${ANSI.reset}           : ${head.createdAt}`);
+    } else {
+      console.log(`\n  ${ANSI.dim}[No state transitions recorded — kernel is at genesis]${ANSI.reset}`);
+    }
+    console.log('');
+    return;
+  }
+
+  if (subCommand === 'verify') {
+    let report = null;
+    const isOnline = args.includes('--online');
+
+    if (isOnline) {
+      try {
+        const res = await fetch(`${apiBase}/v1/omega/kernel/integrity`, { signal: AbortSignal.timeout(2000) });
+        if (res.ok) {
+          const data = await res.json();
+          report = data.integrity ?? data;
+        }
+      } catch {}
+    }
+
+    if (!report) {
+      const kernel = new OceanicosKernel();
+      report = kernel.verifyChainIntegrity();
+    }
+
+    if (isJson) {
+      console.log(JSON.stringify(report, null, 2));
+      return;
+    }
+
+    printBanner();
+    console.log(`\n${ANSI.bold}=== Ω HASH-CHAIN INTEGRITY AUDIT ===${ANSI.reset}`);
+    console.log(`  ${ANSI.cyan}Chain Length${ANSI.reset}          : ${ANSI.bold}${report.chainLength}${ANSI.reset} state nodes`);
+    console.log(`  ${ANSI.cyan}Checked At${ANSI.reset}           : ${report.checkedAt}`);
+    console.log(`  ${ANSI.cyan}Integrity Status${ANSI.reset}     : ${report.valid ? `${ANSI.green}${ANSI.bold}✓ VALID — Chain is intact${ANSI.reset}` : `${ANSI.red}${ANSI.bold}✗ BROKEN — Tampering detected${ANSI.reset}`}`);
+
+    if (report.firstBrokenLink) {
+      console.log(`\n${ANSI.red}${ANSI.bold}--- BROKEN LINK DETAIL ---${ANSI.reset}`);
+      console.log(`  ${ANSI.red}State ID${ANSI.reset}             : ${report.firstBrokenLink.stateId}`);
+      console.log(`  ${ANSI.red}State Index${ANSI.reset}          : #${report.firstBrokenLink.stateIndex}`);
+      console.log(`  ${ANSI.red}Expected Parent Hash${ANSI.reset} : ${report.firstBrokenLink.expectedParentHash}`);
+      console.log(`  ${ANSI.red}Actual Parent Hash${ANSI.reset}   : ${report.firstBrokenLink.actualParentHash}`);
+    }
+
+    if (report.attestationFailures && report.attestationFailures.length > 0) {
+      console.log(`\n${ANSI.yellow}${ANSI.bold}--- ATTESTATION FAILURES ---${ANSI.reset}`);
+      for (const stateId of report.attestationFailures) {
+        console.log(`  ${ANSI.yellow}✗ ${stateId}${ANSI.reset}`);
+      }
+    }
+
+    if (report.valid && report.chainLength === 0) {
+      console.log(`  ${ANSI.dim}[Empty chain — genesis state, no nodes to verify]${ANSI.reset}`);
+    }
+
+    console.log('');
+    process.exitCode = report.valid ? 0 : 1;
+    return;
+  }
+
+  if (subCommand === 'states') {
+    let states = [];
+    const isOnline = args.includes('--online');
+
+    if (isOnline) {
+      try {
+        const res = await fetch(`${apiBase}/v1/omega/kernel/states`, { signal: AbortSignal.timeout(2000) });
+        if (res.ok) {
+          const data = await res.json();
+          states = data.states ?? data;
+        }
+      } catch {}
+    }
+
+    if (states.length === 0 && !isOnline) {
+      const kernel = new OceanicosKernel();
+      states = kernel.getStates();
+    }
+
+    if (isJson) {
+      console.log(JSON.stringify(states, null, 2));
+      return;
+    }
+
+    printBanner();
+    console.log(`\n${ANSI.bold}=== Ω CANONICAL STATE CHAIN ===${ANSI.reset}`);
+
+    if (states.length === 0) {
+      console.log(`  ${ANSI.dim}[No state transitions recorded — kernel is at genesis]${ANSI.reset}\n`);
+      return;
+    }
+
+    for (const s of states) {
+      const vColor = s.verificationStatus === 'VERIFIED' ? ANSI.green : s.verificationStatus === 'FALSIFIED' ? ANSI.red : ANSI.yellow;
+      const vIcon = s.verificationStatus === 'VERIFIED' ? '✓' : s.verificationStatus === 'FALSIFIED' ? '✗' : '⚠';
+      const settledTag = s.settledAt ? `${ANSI.green}SETTLED${ANSI.reset}` : `${ANSI.dim}PENDING${ANSI.reset}`;
+      console.log(`  [${ANSI.cyan}#${s.stateIndex}${ANSI.reset}] ${ANSI.bold}${s.stateId}${ANSI.reset} ${vColor}${vIcon} ${s.verificationStatus}${ANSI.reset} | ${settledTag}`);
+      console.log(`       Intent  : ${s.intent?.claim || 'N/A'}`);
+      console.log(`       Action  : ${s.action?.status} (${s.action?.actionId ?? 'N/A'})`);
+      console.log(`       Hash    : ${ANSI.dim}${s.stateDeltaHash?.substring(0, 32)}...${ANSI.reset}`);
+    }
+    console.log('');
+    return;
+  }
+
+  console.error(`${ANSI.red}Unknown kernel subcommand: ${subCommand}${ANSI.reset}`);
+  console.error(`Run 'node bin/oceanicos.mjs kernel help' for usage.`);
+  process.exitCode = 1;
+}
+
 async function handleFace() {
   ensurePackagesLoaded();
   printBanner();
@@ -723,6 +909,7 @@ ${ANSI.bold}COMMANDS:${ANSI.reset}
   ${ANSI.green}keys${ANSI.reset}        Generate an Ed25519 asymmetric keypair for fail-closed authentication
   ${ANSI.green}mood${ANSI.reset}        Display Singularity compression state and Pidgin Spirit Axiom
   ${ANSI.green}stream${ANSI.reset}      Stream live block minting events via SSE from local Fastify API
+  ${ANSI.green}kernel${ANSI.reset}      Ω Canonical Kernel introspection (status, verify, states)
   ${ANSI.green}omega${ANSI.reset}       Ω‑ƆREADƆS Command Lifecycle (propose, admit, execute, observe, verify)
   ${ANSI.green}copilot${ANSI.reset}     Display Copilot Antigravity Continuum bounded propulsion state
   ${ANSI.green}help${ANSI.reset}        Display this help message
@@ -771,6 +958,9 @@ switch (command) {
     break;
   case 'omega':
     await handleOmega();
+    break;
+  case 'kernel':
+    await handleKernel();
     break;
   case 'help':
   case '--help':

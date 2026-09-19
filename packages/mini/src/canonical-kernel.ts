@@ -486,4 +486,77 @@ export class OceanicosKernel {
 
     return report;
   }
+
+  /* ── 8. State Persistence ── */
+
+  /**
+   * Serialize the kernel's full state chain into a JSON-safe snapshot.
+   * The snapshot captures every `CanonicalStateNode` and the current head hash,
+   * enabling lossless round-tripping via `deserialize()`.
+   */
+  serialize(): KernelSnapshot {
+    return {
+      version: 1,
+      secret: this.secret,
+      currentHeadHash: this.currentHeadHash,
+      states: this.states.map((s) => ({ ...s })),
+      serializedAt: new Date().toISOString(),
+    };
+  }
+
+  /**
+   * Restore a kernel from a previously serialized snapshot.
+   * Validates the snapshot version and reconstitutes the full internal state.
+   */
+  static deserialize(snapshot: KernelSnapshot): OceanicosKernel {
+    if (!snapshot || snapshot.version !== 1) {
+      throw new Error('INVALID_SNAPSHOT: Unsupported or missing snapshot version');
+    }
+    const kernel = new OceanicosKernel(snapshot.secret);
+    for (const state of snapshot.states) {
+      (kernel as any).states.push({ ...state });
+    }
+    (kernel as any).currentHeadHash = snapshot.currentHeadHash;
+    return kernel;
+  }
+
+  /**
+   * Persist the kernel state to a JSON file on disk.
+   * Creates parent directories if needed.
+   */
+  async saveToFile(filePath: string): Promise<void> {
+    const { writeFile, mkdir } = await import('node:fs/promises');
+    const { dirname } = await import('node:path');
+    await mkdir(dirname(filePath), { recursive: true });
+    const snapshot = this.serialize();
+    await writeFile(filePath, JSON.stringify(snapshot, null, 2), 'utf-8');
+  }
+
+  /**
+   * Load kernel state from a JSON file on disk.
+   * Returns a new kernel at genesis if the file does not exist.
+   */
+  static async loadFromFile(filePath: string, fallbackSecret?: string): Promise<OceanicosKernel> {
+    const { readFile } = await import('node:fs/promises');
+    try {
+      const raw = await readFile(filePath, 'utf-8');
+      const snapshot: KernelSnapshot = JSON.parse(raw);
+      return OceanicosKernel.deserialize(snapshot);
+    } catch {
+      return new OceanicosKernel(fallbackSecret);
+    }
+  }
 }
+
+/**
+ * Serializable snapshot of the kernel's complete state chain.
+ * Used for persistence across process restarts.
+ */
+export interface KernelSnapshot {
+  version: number;
+  secret: string;
+  currentHeadHash: string;
+  states: CanonicalStateNode[];
+  serializedAt: string;
+}
+
