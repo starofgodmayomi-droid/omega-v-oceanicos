@@ -10,7 +10,7 @@ Get Ω∞v Oceanicos running locally in 10 minutes.
 
 - **Git** 2.30+
 - **Node.js** 18.x or 20.x (LTS recommended)
-- **npm** 9+ or **pnpm** 8+
+- **pnpm** 8+ (the lockfile in this repository is pnpm's)
 
 ### Recommended
 
@@ -20,7 +20,6 @@ Get Ω∞v Oceanicos running locally in 10 minutes.
 ### Optional
 
 - **Make** (for running common commands)
-- **PostgreSQL** 14+ (for production testing)
 
 ---
 
@@ -36,14 +35,13 @@ cd omega-v-oceanicos
 ### 2. Install Dependencies
 
 ```bash
-npm install
-```
-
-Or with pnpm:
-
-```bash
 pnpm install
 ```
+
+`pnpm-lock.yaml` is the only lockfile in this repository, and CI installs with
+`pnpm install --frozen-lockfile`. `npm install` does resolve this workspace, but
+it resolves fresh instead of from a lockfile, so it can give you versions CI has
+never run. Use pnpm if you want to reproduce CI.
 
 ### 3. Run Verification
 
@@ -235,52 +233,36 @@ In VS Code, you can configure shortcuts for common tasks:
 Create a `.env.local` file in the root for local development:
 
 ```bash
-# API
+# The port the API listens on
 API_PORT=3000
-API_LOG_LEVEL=debug
-
-# Web
-WEB_PORT=3001
-WEB_API_URL=http://localhost:3000
-
-# Database (when available)
-DATABASE_URL=postgresql://localhost/omega_dev
 ```
+
+`API_PORT` is the only variable in this file that the code reads. Everything
+else the API accepts is an `OMEGA_*` variable covering auth, attestation,
+persistence and the local job ledger, and `apps/api/README.md` is the single
+place that documents them — this guide deliberately keeps no second copy.
 
 Never commit `.env.local` (it's in `.gitignore`).
 
-### `.env.example`
-
-Use `.env.example` as a template:
-
-```bash
-cp .env.example .env.local
-```
-
 ---
 
-## Database Setup
+## Persistence
 
-### PostgreSQL (when available)
+There is no database. The API holds state in memory, and when persistence is
+enabled it writes an encrypted snapshot to a file:
 
 ```bash
-# Start Postgres in Docker
-docker run --name omega-postgres \
-  -e POSTGRES_DB=omega_dev \
-  -e POSTGRES_PASSWORD=devpass \
-  -p 5432:5432 \
-  -d postgres:14
+# Off under NODE_ENV=test, on elsewhere; set it to override explicitly
+OMEGA_PERSISTENCE=on
 
-# Run migrations (when available)
-npm run db:migrate
-
-# Seed test data
-npm run db:seed
+# 32-byte hex secret for the AES-256-GCM snapshot and event log
+OMEGA_PERSISTENCE_KEY=$(openssl rand -hex 32)
 ```
 
-### SQLite (for quick testing)
-
-SQLite is the default for development. No additional setup needed!
+Nothing here needs Postgres, SQLite, migrations or seed data, and no
+`db:migrate` or `db:seed` script exists. `apps/api/README.md` documents the key
+handling, rotation and recovery declarations, and is explicit about what that
+evidence does not establish.
 
 ---
 
@@ -290,33 +272,33 @@ SQLite is the default for development. No additional setup needed!
 
 ```bash
 # Run all tests
-npm run test
+pnpm test
 
 # Run tests in a specific package
-npm run --workspace=packages/verification test
+pnpm --filter @omega-v/verification test
 
 # Run in watch mode
-npm run test:watch
+pnpm test:watch
 
 # Run a specific test file
-npm run test -- observer.test.ts
+pnpm test -- observer.test.ts
 ```
 
 ### Integration Tests
 
 ```bash
 # Run integration tests
-npm run test:integration
-
-# These test the full verification loop
-# They require the database and API to be available
+pnpm test:integration
 ```
+
+These exercise the full Observe → Verify → Remember loop in process. They write
+to a temporary directory and need no database and no running server.
 
 ### Coverage
 
 ```bash
 # Generate coverage report
-npm run test:coverage
+pnpm test:coverage
 
 # View HTML coverage report
 open coverage/index.html
@@ -364,19 +346,19 @@ log('Observation received:', observation);
 Enable logs:
 
 ```bash
-DEBUG=omega:* npm run dev
+DEBUG=omega:* pnpm dev
 ```
 
 ---
 
 ## Troubleshooting
 
-### "npm ERR! peer dep missing"
+### "peer dep missing"
 
 Install the missing peer dependency:
 
 ```bash
-npm install --save-dev <package-name>
+pnpm add -D <package-name>
 ```
 
 ### "TypeScript error after git pull"
@@ -384,29 +366,30 @@ npm install --save-dev <package-name>
 The dependencies might have changed:
 
 ```bash
-npm install
-npm run type-check
+pnpm install
+pnpm type-check
 ```
 
 ### Tests fail locally but pass in CI
 
 This usually means:
 
-1. **Missing dependencies**: Run `npm install` again
-2. **Stale build**: Run `npm run clean && npm run build`
-3. **Environment variables**: Check `.env.local` against `.env.example`
-4. **Node version**: Verify `node --version` matches CI environment
+1. **Missing dependencies**: Run `pnpm install --frozen-lockfile` again
+2. **Stale build**: Run `pnpm clean && pnpm build`
+3. **Node version**: Verify `node --version` satisfies the `engines` range in
+   `package.json`
 
 ### Port already in use
 
 Change the port:
 
 ```bash
-# For API
-API_PORT=3001 npm run dev
+# For the API, which reads API_PORT
+API_PORT=3001 pnpm dev
 
-# For Web
-WEB_PORT=3002 npm run dev
+# For the web dashboard, whose port is a Vite setting rather than an
+# environment variable
+pnpm --filter @omega-v/web dev -- --port 3002
 ```
 
 Or kill the existing process:
@@ -427,7 +410,7 @@ kill -9 <PID>
 2. **Pick a good first issue**: Look for `good first issue` labels
 3. **Create a feature branch**: `git checkout -b verify/your-feature`
 4. **Write code and tests**: Follow the verification-first approach
-5. **Run verification**: `npm run verify` before committing
+5. **Run verification**: `pnpm verify` before committing
 6. **Submit a PR**: Include evidence of your work
 
 ---
