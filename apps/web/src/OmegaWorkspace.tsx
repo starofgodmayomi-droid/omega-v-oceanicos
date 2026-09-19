@@ -15,6 +15,7 @@ import {
   fetchCopilotMode,
   fetchKernelStatus,
   fetchKernelIntegrity,
+  fetchKernelStates,
   type OmegaWorkerInfo,
   type OmegaCommandView,
   type OmegaCommandResultView,
@@ -24,6 +25,7 @@ import {
   type CopilotPropulsionView,
   type KernelStatusView,
   type KernelIntegrityReportView,
+  type CanonicalStateNodeView,
 } from './omega-api';
 
 export const OmegaWorkspace: React.FC = () => {
@@ -48,6 +50,7 @@ export const OmegaWorkspace: React.FC = () => {
   const [copilotState, setCopilotState] = useState<CopilotPropulsionView | null>(null);
   const [kernelStatus, setKernelStatus] = useState<KernelStatusView | null>(null);
   const [kernelIntegrity, setKernelIntegrity] = useState<KernelIntegrityReportView | null>(null);
+  const [latestSettledState, setLatestSettledState] = useState<CanonicalStateNodeView | null>(null);
   const [auditingChain, setAuditingChain] = useState<boolean>(false);
 
   useEffect(() => {
@@ -66,12 +69,17 @@ export const OmegaWorkspace: React.FC = () => {
 
   const loadKernelState = async () => {
     try {
-      const [statusRes, integrityRes] = await Promise.all([
+      const [statusRes, integrityRes, statesRes] = await Promise.all([
         fetchKernelStatus(),
         fetchKernelIntegrity(),
+        fetchKernelStates(),
       ]);
       if (statusRes.success) setKernelStatus(statusRes);
       if (integrityRes.success) setKernelIntegrity(integrityRes.report);
+      if (statesRes.success && statesRes.states.length > 0) {
+        const settled = [...statesRes.states].reverse().find((s) => s.consequence);
+        setLatestSettledState(settled || statesRes.states[statesRes.states.length - 1]);
+      }
     } catch {
       // Non-blocking
     }
@@ -238,6 +246,7 @@ export const OmegaWorkspace: React.FC = () => {
         setActiveCommand(verRes.command);
         setActiveResult(verRes.result);
         loadRecentCommands();
+        loadKernelState();
 
         // Fetch learning metrics & next-slice proposal (C8 & C9)
         try {
@@ -385,6 +394,39 @@ export const OmegaWorkspace: React.FC = () => {
                 </span>
               </div>
             </div>
+
+            {latestSettledState?.consequence && (
+              <div
+                style={{
+                  padding: '8px 10px',
+                  borderRadius: '6px',
+                  background: 'rgba(0, 0, 0, 0.3)',
+                  border: '1px solid rgba(255, 255, 255, 0.07)',
+                  fontSize: '11px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '4px',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ color: '#94a3b8' }}>Latest Settled Consequence:</span>
+                  <span
+                    style={{
+                      fontWeight: 700,
+                      color: latestSettledState.consequence.observedStatus === 'SUCCESS' ? '#34d399' : '#f87171',
+                    }}
+                  >
+                    {latestSettledState.consequence.observedStatus}
+                  </span>
+                </div>
+                {latestSettledState.learning && (
+                  <div style={{ fontSize: '10px', color: '#cbd5e1' }}>
+                    <span style={{ color: '#94a3b8' }}>Learning Loop: </span>
+                    <span>{latestSettledState.learning.proposedNextIntentPrompt}</span>
+                  </div>
+                )}
+              </div>
+            )}
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
               <span style={{ fontSize: '10px', color: '#64748b' }}>

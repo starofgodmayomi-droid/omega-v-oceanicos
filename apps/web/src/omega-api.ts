@@ -375,4 +375,44 @@ export async function fetchKernelIntegrity(): Promise<{ success: boolean; report
   return res.json();
 }
 
+export interface CanonicalStateNodeView {
+  stateId: string;
+  stateIndex: number;
+  parentStateHash: string;
+  stateDeltaHash: string;
+  attestationSignature: string;
+  createdAt: string;
+  verificationStatus: 'VERIFIED' | 'FALSIFIED' | 'UNCERTAIN';
+  action: {
+    actionId: string;
+    targetService: string;
+    payload: Record<string, unknown>;
+    status: string;
+  };
+  consequence?: {
+    consequenceId: string;
+    actionId: string;
+    observedStatus: 'SUCCESS' | 'FAILURE' | 'PARTIAL' | 'TIMEOUT';
+    realizedEffects: Record<string, unknown>;
+    executionDurationMs: number;
+    verifiedValueGenerated: number;
+    observedAt: string;
+  };
+  learning?: {
+    learningId: string;
+    successRateScore: number;
+    meanVerificationLatencyMs: number;
+    dissentResolutionRatio: number;
+    recompilationTriggered: boolean;
+    proposedNextIntentPrompt: string;
+  };
+  settledAt?: string;
+}
+
+export async function fetchKernelStates(): Promise<{ success: boolean; states: CanonicalStateNodeView[] }> {
+  const res = await fetch(`${API_BASE}/v1/omega/kernel/states`);
+  return res.json();
+}
+
+
 

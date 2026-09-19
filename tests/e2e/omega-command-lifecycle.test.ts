@@ -759,6 +759,51 @@ describe('Ω‑ƆREADƆS OS v∞ — Command Lifecycle & Reality Verification Su
       expect(body.report.attestationFailures).toEqual([]);
       expect(body.report.firstBrokenLink).toBeUndefined();
     });
+
+    it('GET /v1/omega/kernel/states lists canonical state nodes with consequence settling', async () => {
+      const proposeRes = await app.inject({
+        method: 'POST',
+        url: '/v1/omega/commands',
+        payload: {
+          prompt: 'Execute verified reality settling command',
+          requestedWorkers: ['worker-observer', 'worker-planner'],
+        },
+      });
+      const cmdId = JSON.parse(proposeRes.payload).command.commandId;
+
+      await app.inject({ method: 'POST', url: `/v1/omega/commands/${cmdId}/admit` });
+      await app.inject({
+        method: 'POST',
+        url: `/v1/omega/commands/${cmdId}/approve`,
+        payload: { approvedBy: 'human:kernel-steward' },
+      });
+      await app.inject({ method: 'POST', url: `/v1/omega/commands/${cmdId}/execute` });
+      await app.inject({ method: 'POST', url: `/v1/omega/commands/${cmdId}/observe` });
+
+      const verifyRes = await app.inject({
+        method: 'POST',
+        url: `/v1/omega/commands/${cmdId}/verify-reality`,
+      });
+      expect(verifyRes.statusCode).toBe(200);
+
+      const statesRes = await app.inject({
+        method: 'GET',
+        url: '/v1/omega/kernel/states',
+      });
+      expect(statesRes.statusCode).toBe(200);
+      const statesBody = JSON.parse(statesRes.payload);
+      expect(statesBody.success).toBe(true);
+      expect(Array.isArray(statesBody.states)).toBe(true);
+
+      const matchingState = statesBody.states.find(
+        (s: any) => s.action.payload?.commandId === cmdId
+      );
+      expect(matchingState).toBeDefined();
+      expect(matchingState.consequence).toBeDefined();
+      expect(matchingState.consequence.observedStatus).toBe('SUCCESS');
+      expect(matchingState.learning).toBeDefined();
+      expect(matchingState.learning.proposedNextIntentPrompt).toContain(matchingState.stateId);
+    });
   });
 });
 

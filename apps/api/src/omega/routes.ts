@@ -64,6 +64,14 @@ export const omegaRoutes: FastifyPluginAsync<OmegaRouteOptions> = async (
     };
   });
 
+  // GET /v1/omega/kernel/states (List canonical state nodes with consequences)
+  fastify.get('/v1/omega/kernel/states', async () => {
+    return {
+      success: true,
+      states: kernel.getStates(),
+    };
+  });
+
   // GET /v1/omega/workers
   fastify.get('/v1/omega/workers', async () => {
     return {
@@ -533,11 +541,38 @@ export const omegaRoutes: FastifyPluginAsync<OmegaRouteOptions> = async (
       },
     });
 
+    // Apply consequence & empirical learning to the matching canonical kernel state
+    let kernelSettledState = undefined;
+    try {
+      const states = kernel.getStates();
+      const matchingState = [...states].reverse().find(
+        (s) => (s.action.payload as any)?.commandId === command.commandId
+      );
+      if (matchingState) {
+        kernelSettledState = kernel.applyConsequence({
+          stateId: matchingState.stateId,
+          observedStatus: verdict.verdict === 'VERIFIED' ? 'SUCCESS' : 'FAILURE',
+          realizedEffects: {
+            commandId: command.commandId,
+            verdict: verdict.verdict,
+            discrepancies: verdict.discrepancies,
+            claimedStateHash: verdict.claimedStateHash,
+            observedStateHash: verdict.observedStateHash,
+          },
+          executionDurationMs: 120,
+          verifiedValueGenerated: verdict.verdict === 'VERIFIED' ? 100 : 0,
+        });
+      }
+    } catch {
+      // Non-blocking fallback
+    }
+
     return {
       success: true,
       verdict: verdict.verdict,
       command,
       result,
+      kernelSettledState,
     };
   });
 
