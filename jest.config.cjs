@@ -1,7 +1,10 @@
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
-  testMatch: ['<rootDir>/tests/**/*.test.ts'],
+  testMatch: [
+    '<rootDir>/tests/**/*.test.ts',
+    '<rootDir>/continuum/packages/kernel/src/__tests__/**/*.test.ts',
+  ],
   testPathIgnorePatterns: [
     '/node_modules/',
     '/legacy/',

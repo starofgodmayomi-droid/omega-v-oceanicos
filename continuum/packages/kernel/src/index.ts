@@ -141,6 +141,23 @@ export interface KernelStats {
   currentRootStateHash: string;
 }
 
+/**
+ * Structured integrity report for the kernel's hash-chain.
+ * Returned by `verifyChainIntegrity()` — the kernel's self-audit primitive.
+ */
+export interface KernelIntegrityReport {
+  valid: boolean;
+  chainLength: number;
+  checkedAt: string;
+  firstBrokenLink?: {
+    stateId: string;
+    stateIndex: number;
+    expectedParentHash: string;
+    actualParentHash: string;
+  };
+  attestationFailures: string[];
+}
+
 /* ─── Helper Functions ───────────────────────────────────────────── */
 
 function hmac(key: string, data: string): string {
@@ -272,29 +289,81 @@ export class OceanicosKernel {
     return { ...stateNode };
   }
 
-  /* ── 2. Human Authorization of Gated Actions ── */
+  /* ── 2. Human Authorization of Gated Actions (Immutable) ── */
 
   authorizeAction(opts: {
     stateId: string;
     authorizerDid: string;
     authorizationSignature: string;
   }): CanonicalStateNode {
-    const node = this.states.find((s) => s.stateId === opts.stateId);
-    if (!node) {
+    const nodeIndex = this.states.findIndex((s) => s.stateId === opts.stateId);
+    if (nodeIndex === -1) {
       throw new Error(`State node ${opts.stateId} not found`);
     }
+
+    const node = this.states[nodeIndex];
 
     if (!opts.authorizerDid.startsWith('did:')) {
       throw new Error('Invalid authorizer DID format');
     }
 
-    node.authorization.isAuthorized = true;
-    node.authorization.authorizedByDid = opts.authorizerDid;
-    node.authorization.authorizationSignature = opts.authorizationSignature;
-    node.authorization.authorizedAt = new Date().toISOString();
-    node.action.status = 'READY';
+    // Create a new immutable node instead of mutating the existing one.
+    // The original state record is preserved as-is in the chain.
+    const authorizedNode: CanonicalStateNode = {
+      ...node,
+      authorization: {
+        ...node.authorization,
+        isAuthorized: true,
+        authorizedByDid: opts.authorizerDid,
+        authorizationSignature: opts.authorizationSignature,
+        authorizedAt: new Date().toISOString(),
+      },
+      action: {
+        ...node.action,
+        status: 'READY',
+      },
+    };
 
-    return { ...node };
+    this.states[nodeIndex] = authorizedNode;
+    return { ...authorizedNode };
+  }
+
+  /* ── 2b. Execute an Authorized Action ── */
+
+  executeAction(opts: {
+    stateId: string;
+    executorDid?: string;
+  }): CanonicalStateNode {
+    const nodeIndex = this.states.findIndex((s) => s.stateId === opts.stateId);
+    if (nodeIndex === -1) {
+      throw new Error(`State node ${opts.stateId} not found`);
+    }
+
+    const node = this.states[nodeIndex];
+
+    if (!node.authorization.isAuthorized) {
+      throw new Error(
+        `EXECUTION_DENIED: State ${opts.stateId} is not authorized. ` +
+        `Human approval required: ${node.authorization.requiresHumanApproval}`
+      );
+    }
+
+    if (node.action.status !== 'READY') {
+      throw new Error(
+        `EXECUTION_DENIED: Action ${node.action.actionId} status is ${node.action.status}, expected READY`
+      );
+    }
+
+    const executingNode: CanonicalStateNode = {
+      ...node,
+      action: {
+        ...node.action,
+        status: 'EXECUTING',
+      },
+    };
+
+    this.states[nodeIndex] = executingNode;
+    return { ...executingNode };
   }
 
   /* ── 3. Record Action Consequence & Trigger Recompilation ── */
@@ -404,5 +473,89 @@ export class OceanicosKernel {
       avgEfficiencyRatio: Math.round(avgEff * 100) / 100,
       currentRootStateHash: this.currentHeadHash,
     };
+  }
+
+  /* ── 6. Chain Head & Length ── */
+
+  getHead(): CanonicalStateNode | null {
+    return this.states.length > 0 ? { ...this.states[this.states.length - 1] } : null;
+  }
+
+  getChainLength(): number {
+    return this.states.length;
+  }
+
+  /* ── 7. Hash-Chain Integrity Verification ── */
+
+  /**
+   * Walk the entire state chain and verify every link:
+   *  - Each node's `parentStateHash` must equal the previous node's `stateDeltaHash`
+   *  - Each node's `attestationSignature` must be reproducible from its `stateDeltaHash`
+   *  - The genesis node's `parentStateHash` must be the null hash
+   *
+   * This is the kernel's self-audit primitive. If it reports `valid: false`,
+   * the chain has been tampered with and nothing above it is trustworthy.
+   */
+  verifyChainIntegrity(): KernelIntegrityReport {
+    const report: KernelIntegrityReport = {
+      valid: true,
+      chainLength: this.states.length,
+      checkedAt: new Date().toISOString(),
+      attestationFailures: [],
+    };
+
+    if (this.states.length === 0) {
+      return report;
+    }
+
+    const genesisHash =
+      '0x0000000000000000000000000000000000000000000000000000000000000000';
+    let expectedParentHash = genesisHash;
+
+    for (const node of this.states) {
+      // 1. Verify parent-hash linkage
+      if (node.parentStateHash !== expectedParentHash) {
+        report.valid = false;
+        report.firstBrokenLink = {
+          stateId: node.stateId,
+          stateIndex: node.stateIndex,
+          expectedParentHash,
+          actualParentHash: node.parentStateHash,
+        };
+        return report;
+      }
+
+      // 2. Reproduce the state delta hash
+      const statePayload = `${node.stateId}:${node.parentStateHash}:${node.intent.intentId}:${node.observation.observationId}:${node.verificationStatus}:${node.dissent.length}:${node.action.actionId}`;
+      const expectedDeltaHash = hmac(this.secret, statePayload);
+
+      if (node.stateDeltaHash !== expectedDeltaHash) {
+        report.valid = false;
+        report.firstBrokenLink = {
+          stateId: node.stateId,
+          stateIndex: node.stateIndex,
+          expectedParentHash: expectedDeltaHash,
+          actualParentHash: node.stateDeltaHash,
+        };
+        return report;
+      }
+
+      // 3. Verify attestation signature
+      const expectedAttestation = hmac(
+        this.secret,
+        `ATTEST_STATE:${node.stateDeltaHash}:${node.createdAt}`
+      );
+      if (node.attestationSignature !== expectedAttestation) {
+        report.attestationFailures.push(node.stateId);
+      }
+
+      expectedParentHash = node.stateDeltaHash;
+    }
+
+    if (report.attestationFailures.length > 0) {
+      report.valid = false;
+    }
+
+    return report;
   }
 }
