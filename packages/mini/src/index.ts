@@ -227,5 +227,7 @@ export type { AttestationEntry, AttestationMemory } from './attestation-memory.j
 export { synthesizeOmegaLearning } from './learning.js';
 export { proposeNextOmegaSlice, compileNextLoopIntent } from './recompiler.js';
 export type { ProposeNextSliceInput } from './recompiler.js';
+export * from './canonical-kernel.js';
 
 export default MiniKernel;
+

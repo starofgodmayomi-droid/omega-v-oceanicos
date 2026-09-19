@@ -728,4 +728,37 @@ describe('Ω‑ƆREADƆS OS v∞ — Command Lifecycle & Reality Verification Su
       expect(execBody.result.stateAfter.sandboxExecution.dryRun).toBe(true);
     });
   });
+
+  describe('Kernel Hash-Chain Integrity & Attestation Endpoints', () => {
+    it('GET /v1/omega/kernel/status reports valid status and stats', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: '/v1/omega/kernel/status',
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.payload);
+      expect(body.success).toBe(true);
+      expect(typeof body.chainLength).toBe('number');
+      expect(body.stats).toBeDefined();
+      expect(typeof body.stats.totalTransitions).toBe('number');
+      expect(typeof body.stats.currentRootStateHash).toBe('string');
+    });
+
+    it('GET /v1/omega/kernel/integrity performs self-audit and verifies chain', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: '/v1/omega/kernel/integrity',
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.payload);
+      expect(body.success).toBe(true);
+      expect(body.report).toBeDefined();
+      expect(body.report.valid).toBe(true);
+      expect(body.report.attestationFailures).toEqual([]);
+      expect(body.report.firstBrokenLink).toBeUndefined();
+    });
+  });
 });
+

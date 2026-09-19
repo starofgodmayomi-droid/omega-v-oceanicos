@@ -13,6 +13,8 @@ import {
   proposeNextOmegaSlice,
   compileNextLoopIntent,
   type AttestationEntry,
+  OceanicosKernel,
+  type KernelIntegrityReport,
 } from '@oceanicos/mini';
 
 import { WorkerRegistry } from './registry.js';
@@ -27,6 +29,7 @@ export interface OmegaRouteOptions {
   store?: OmegaCommandStore;
   registry?: WorkerRegistry;
   security?: OmegaSecurityOptions;
+  kernel?: OceanicosKernel;
 }
 
 export const omegaRoutes: FastifyPluginAsync<OmegaRouteOptions> = async (
@@ -35,11 +38,31 @@ export const omegaRoutes: FastifyPluginAsync<OmegaRouteOptions> = async (
 ) => {
   const store = opts.store || new OmegaCommandStore();
   const registry = opts.registry || new WorkerRegistry();
+  const kernel = opts.kernel || new OceanicosKernel();
   const compiler = new PlanCompiler(registry);
   const executor = new AuthorizedCommandExecutor(registry);
 
   // Enforce fail-closed HMAC-SHA256 signature verification on mutating endpoints
   fastify.addHook('preHandler', createOmegaSecurityHook(opts.security));
+
+  // GET /v1/omega/kernel/status (Head Hash, Stats, Chain Length)
+  fastify.get('/v1/omega/kernel/status', async () => {
+    return {
+      success: true,
+      chainLength: kernel.getChainLength(),
+      head: kernel.getHead(),
+      stats: kernel.getStats(),
+    };
+  });
+
+  // GET /v1/omega/kernel/integrity (Audit Hash-Chain Links, State Hashes, Attestation Signatures)
+  fastify.get('/v1/omega/kernel/integrity', async () => {
+    const report: KernelIntegrityReport = kernel.verifyChainIntegrity();
+    return {
+      success: true,
+      report,
+    };
+  });
 
   // GET /v1/omega/workers
   fastify.get('/v1/omega/workers', async () => {
@@ -357,6 +380,51 @@ export const omegaRoutes: FastifyPluginAsync<OmegaRouteOptions> = async (
           attestationDigest: result.attestationDigest,
         },
       });
+
+      // Advance canonical kernel state
+      try {
+        kernel.transition({
+          intent: {
+            claim: command.prompt,
+            actors: [command.requestedBy],
+            inputs: command.boundedContext,
+            expectedOutputs: { consequence: result.consequence },
+            constraints: command.irPlan.policyRefs,
+            permissions: command.irPlan.requestedWorkers,
+            dependencies: command.irPlan.evidenceRefs,
+            maxRiskScore: 0.2,
+            economicTarget: { targetValue: 1, resourceBudget: 1 },
+          },
+          observation: {
+            source: 'omega:api-executor',
+            observedAt: new Date().toISOString(),
+            rawTelemetry: { commandId: command.commandId, status: result.status },
+            epistemicType: 'FACT',
+            confidence: 1.0,
+          },
+          evidenceItems: [
+            {
+              claim: `Command ${command.commandId} executed`,
+              source: result.provenance?.executedBy || 'omega:api-kernel',
+              observationId: `obs-${command.commandId}`,
+              commandOrTest: command.prompt,
+              status: 'PASSED',
+              confidence: 1.0,
+            },
+          ],
+          actionPlan: {
+            targetService: command.irPlan.transitionSpec.target,
+            payload: { commandId: command.commandId },
+            isDestructive: false,
+            isFinancial: false,
+            gasLimit: 1000,
+            reversibility: command.irPlan.transitionSpec.rollbackSupported ? 'REVERSIBLE' : 'IRREVERSIBLE',
+          },
+          autoAuthorizeIfNonDestructive: true,
+        });
+      } catch {
+        // Non-blocking fallback
+      }
 
       return {
         success: true,

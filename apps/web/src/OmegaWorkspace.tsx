@@ -13,6 +13,8 @@ import {
   fetchOmegaEvents,
   subscribeToOmegaEvents,
   fetchCopilotMode,
+  fetchKernelStatus,
+  fetchKernelIntegrity,
   type OmegaWorkerInfo,
   type OmegaCommandView,
   type OmegaCommandResultView,
@@ -20,6 +22,8 @@ import {
   type OmegaNextSliceProposalView,
   type OmegaLifecycleEventView,
   type CopilotPropulsionView,
+  type KernelStatusView,
+  type KernelIntegrityReportView,
 } from './omega-api';
 
 export const OmegaWorkspace: React.FC = () => {
@@ -42,12 +46,16 @@ export const OmegaWorkspace: React.FC = () => {
   const [nextSliceProposal, setNextSliceProposal] = useState<OmegaNextSliceProposalView | null>(null);
   const [events, setEvents] = useState<OmegaLifecycleEventView[]>([]);
   const [copilotState, setCopilotState] = useState<CopilotPropulsionView | null>(null);
+  const [kernelStatus, setKernelStatus] = useState<KernelStatusView | null>(null);
+  const [kernelIntegrity, setKernelIntegrity] = useState<KernelIntegrityReportView | null>(null);
+  const [auditingChain, setAuditingChain] = useState<boolean>(false);
 
   useEffect(() => {
     loadWorkers();
     loadRecentCommands();
     loadEvents();
     loadCopilotMode();
+    loadKernelState();
     const unsubscribe = subscribeToOmegaEvents((newEvent) => {
       setEvents((prev) => [newEvent, ...prev.filter((e) => e.eventId !== newEvent.eventId)].slice(0, 40));
     });
@@ -55,6 +63,35 @@ export const OmegaWorkspace: React.FC = () => {
       unsubscribe();
     };
   }, []);
+
+  const loadKernelState = async () => {
+    try {
+      const [statusRes, integrityRes] = await Promise.all([
+        fetchKernelStatus(),
+        fetchKernelIntegrity(),
+      ]);
+      if (statusRes.success) setKernelStatus(statusRes);
+      if (integrityRes.success) setKernelIntegrity(integrityRes.report);
+    } catch {
+      // Non-blocking
+    }
+  };
+
+  const handleAuditChain = async () => {
+    setAuditingChain(true);
+    try {
+      const res = await fetchKernelIntegrity();
+      if (res.success) {
+        setKernelIntegrity(res.report);
+        const statusRes = await fetchKernelStatus();
+        if (statusRes.success) setKernelStatus(statusRes);
+      }
+    } catch (err: any) {
+      setErrorMessage(`Chain audit failed: ${err.message}`);
+    } finally {
+      setAuditingChain(false);
+    }
+  };
 
   const loadCopilotMode = async () => {
     try {
@@ -170,6 +207,7 @@ export const OmegaWorkspace: React.FC = () => {
       if (res.success) {
         setActiveCommand(res.command);
         setActiveResult(res.result);
+        loadKernelState();
       } else {
         setErrorMessage(res.error || 'Execution refused or failed');
       }
@@ -292,6 +330,85 @@ export const OmegaWorkspace: React.FC = () => {
               <span style={{ color: '#fbbf24' }}>TRANSITIONS: {copilotState?.verifiedTransitions ?? 0}</span>
             </div>
           </div>
+
+          {/* Kernel Hash-Chain Integrity & Attestation Self-Audit Card */}
+          <div
+            style={{
+              background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(6, 78, 59, 0.25) 100%)',
+              border: '1px solid rgba(16, 185, 129, 0.35)',
+              borderRadius: '8px',
+              padding: '14px 16px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '13px', fontWeight: 700, color: '#6ee7b7', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span>🔒</span>
+                <span>Kernel Hash-Chain Integrity</span>
+              </span>
+              <span
+                style={{
+                  fontSize: '10px',
+                  fontWeight: 600,
+                  padding: '2px 8px',
+                  borderRadius: '12px',
+                  background: kernelIntegrity?.valid ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                  border: `1px solid ${kernelIntegrity?.valid ? '#10b981' : '#ef4444'}`,
+                  color: kernelIntegrity?.valid ? '#6ee7b7' : '#fca5a5',
+                }}
+              >
+                {kernelIntegrity?.valid ? '✓ CHAIN INTEGRITY PASS' : '⚠ CHAIN AUDIT REQUIRED'}
+              </span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '11px', color: '#cbd5e1' }}>
+              <div>
+                <span style={{ color: '#94a3b8' }}>Transitions: </span>
+                <span style={{ fontFamily: 'monospace', fontWeight: 700, color: '#38bdf8' }}>
+                  {kernelStatus?.chainLength ?? 0}
+                </span>
+              </div>
+              <div>
+                <span style={{ color: '#94a3b8' }}>Verified States: </span>
+                <span style={{ fontFamily: 'monospace', fontWeight: 700, color: '#34d399' }}>
+                  {kernelStatus?.stats.verifiedStatesCount ?? 0}
+                </span>
+              </div>
+              <div style={{ gridColumn: '1 / -1', wordBreak: 'break-all' }}>
+                <span style={{ color: '#94a3b8' }}>Root Hash: </span>
+                <span style={{ fontFamily: 'monospace', fontSize: '10px', color: '#cbd5e1' }}>
+                  {kernelStatus?.stats.currentRootStateHash
+                    ? `${kernelStatus.stats.currentRootStateHash.slice(0, 18)}...${kernelStatus.stats.currentRootStateHash.slice(-8)}`
+                    : '0x0000...0000'}
+                </span>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+              <span style={{ fontSize: '10px', color: '#64748b' }}>
+                {kernelIntegrity?.checkedAt ? `Audited: ${new Date(kernelIntegrity.checkedAt).toLocaleTimeString()}` : 'Not yet audited'}
+              </span>
+              <button
+                onClick={handleAuditChain}
+                disabled={auditingChain}
+                style={{
+                  padding: '4px 10px',
+                  borderRadius: '4px',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  cursor: auditingChain ? 'not-allowed' : 'pointer',
+                  background: 'rgba(16, 185, 129, 0.2)',
+                  border: '1px solid rgba(16, 185, 129, 0.5)',
+                  color: '#6ee7b7',
+                }}
+              >
+                {auditingChain ? 'Auditing Chain...' : 'Run Self-Audit'}
+              </button>
+            </div>
+          </div>
+
 
           <div style={{ background: 'rgba(15, 23, 42, 0.8)', border: '1px solid rgba(56, 189, 248, 0.2)', borderRadius: '8px', padding: '18px' }}>
             <h3 style={{ margin: '0 0 12px 0', fontSize: '16px', color: '#7dd3fc' }}>1. Human Intent Composer</h3>

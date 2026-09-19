@@ -331,3 +331,48 @@ export async function fetchCopilotMode(): Promise<{ success: boolean } & Copilot
   return res.json();
 }
 
+export interface KernelIntegrityReportView {
+  valid: boolean;
+  chainLength: number;
+  checkedAt: string;
+  firstBrokenLink?: {
+    stateId: string;
+    stateIndex: number;
+    expectedParentHash: string;
+    actualParentHash: string;
+  };
+  attestationFailures: string[];
+}
+
+export interface KernelStatusView {
+  success: boolean;
+  chainLength: number;
+  head: {
+    stateId: string;
+    stateIndex: number;
+    parentStateHash: string;
+    stateDeltaHash: string;
+    attestationSignature: string;
+    createdAt: string;
+    verificationStatus: string;
+  } | null;
+  stats: {
+    totalTransitions: number;
+    verifiedStatesCount: number;
+    dissentRecordedCount: number;
+    gatedActionsCount: number;
+    currentRootStateHash: string;
+  };
+}
+
+export async function fetchKernelStatus(): Promise<KernelStatusView> {
+  const res = await fetch(`${API_BASE}/v1/omega/kernel/status`);
+  return res.json();
+}
+
+export async function fetchKernelIntegrity(): Promise<{ success: boolean; report: KernelIntegrityReportView }> {
+  const res = await fetch(`${API_BASE}/v1/omega/kernel/integrity`);
+  return res.json();
+}
+
+
