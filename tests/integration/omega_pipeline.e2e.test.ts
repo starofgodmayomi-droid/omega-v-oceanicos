@@ -128,6 +128,26 @@ describe('Ω∞v unified change pipeline', () => {
     assert.equal(result.reality?.observedState, 'S2');
   });
 
+  it('preserves UNKNOWN when the reality observer is unavailable', () => {
+    const result = runOmegaChangePipeline({
+      compile: compileBase,
+      admission: { authorityVerified: true, policySatisfied: true },
+      authority: 'human:pipeline',
+      policy: 'policy:pipeline',
+      handler: () => ({ stateAfter: 'S1' }),
+      observeState: () => {
+        throw new Error('observer unavailable');
+      },
+      changeId: 'change-pipeline-unknown',
+    });
+    assert.equal(result.halted, false);
+    assert.equal(result.stage, 'OBSERVE');
+    assert.equal(result.reality?.status, 'UNKNOWN');
+    assert.equal(result.reality?.expectedState, 'S1');
+    assert.equal(result.reality?.observedState, undefined);
+    assert.equal(result.reality?.evidence, 'observation unavailable; reality could not be verified');
+  });
+
   it('fails closed when worker is missing and no handler is provided', () => {
     const result = runOmegaChangePipeline({
       compile: compileBase,
