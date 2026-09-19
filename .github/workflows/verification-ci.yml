@@ -5,6 +5,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -13,8 +14,6 @@ jobs:
   verify:
     name: Continuous Verification & Provenance Attestation
     runs-on: ubuntu-latest
-    env:
-      OMEGA_SIGNING_KEY: ci-verification-signing-key-2026-strong
 
     steps:
       - name: Checkout Repository
@@ -23,7 +22,7 @@ jobs:
       - name: Enable pnpm
         uses: pnpm/action-setup@v3
         with:
-          version: 12.3.4
+          version: 10
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -51,7 +50,7 @@ jobs:
           node bin/oceanicos.mjs status
           node bin/oceanicos.mjs cycle --json
           node bin/oceanicos.mjs mesh
-          node bin/oceanicos.mjs keys
+          node bin/oceanicos.mjs key
 
       - name: 6. Export Verification Evidence Artifact
         run: |
