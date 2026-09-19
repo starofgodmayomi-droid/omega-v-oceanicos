@@ -364,9 +364,35 @@ export type SnapshotSource = 'disabled' | 'missing' | 'corrupt' | 'restored';
  * Whether the runtime has a usable persisted snapshot for readiness purposes.
  * An enabled but missing store is a valid cold start; an enabled corrupt store
  * is not silently treated as ready because the loaded runtime is incomplete.
+ *
+ * Written as an exhaustive switch rather than `source !== 'corrupt'`. Both say
+ * the same thing today, and the difference is what happens tomorrow: a new
+ * member added to SnapshotSource falls into the favourable branch of a
+ * negative test, silently and with no type error, and this function decides
+ * whether the service reports itself ready. The `never` assignment turns that
+ * addition into a compile failure, so the next source has to state whether it
+ * counts as ready instead of inheriting an answer.
+ *
+ * The runtime default fails closed, for a value that reached here past the
+ * type system.
  */
-export const persistenceReady = (enabled: boolean, source: SnapshotSource): boolean =>
-  !enabled || source !== 'corrupt';
+export const persistenceReady = (enabled: boolean, source: SnapshotSource): boolean => {
+  if (!enabled) return true;
+
+  switch (source) {
+    case 'disabled':
+    case 'missing':
+    case 'restored':
+      return true;
+    case 'corrupt':
+      return false;
+    default: {
+      const unhandled: never = source;
+      void unhandled;
+      return false;
+    }
+  }
+};
 
 export type PersistenceOperatorAction =
   | 'none'
@@ -705,9 +731,28 @@ export type EventLogSource = 'disabled' | 'missing' | 'restored' | 'partial';
 /**
  * Partial durable-log recovery is usable for inspection but not ready for
  * production claims because one or more historical entries were skipped.
+ *
+ * Exhaustive for the same reason as persistenceReady above: a negative test
+ * hands any future member the favourable answer without asking, and this one
+ * gates the readiness the API publishes.
  */
-export const eventLogReady = (enabled: boolean, source: EventLogSource): boolean =>
-  !enabled || source !== 'partial';
+export const eventLogReady = (enabled: boolean, source: EventLogSource): boolean => {
+  if (!enabled) return true;
+
+  switch (source) {
+    case 'disabled':
+    case 'missing':
+    case 'restored':
+      return true;
+    case 'partial':
+      return false;
+    default: {
+      const unhandled: never = source;
+      void unhandled;
+      return false;
+    }
+  }
+};
 
 export interface EventLogRead<T> {
   entries: T[];
