@@ -33,6 +33,27 @@ describe('Ω∞v reality verification boundary', () => {
     assert.equal(memory.length, 1);
   });
 
+  it('preserves UNKNOWN when reality observation fails', () => {
+    const allowed = resolveChangeAdmission(record, { authorityVerified: true, policySatisfied: true });
+    const execution = executeAuthorizedTransition(allowed, () => ({ stateAfter: 'S1' }));
+    const memory: unknown[] = [];
+    const verification = verifyExecutedReality(
+      execution,
+      () => {
+        throw new Error('observer unavailable');
+      },
+      {
+        memory: { append: (entry) => memory.push(entry) },
+        now: () => '2026-01-01T00:03:00.000Z',
+      },
+    );
+    assert.equal(verification.status, 'UNKNOWN');
+    assert.equal(verification.expectedState, 'S1');
+    assert.equal(verification.observedState, undefined);
+    assert.equal(verification.evidence, 'observation unavailable; reality could not be verified');
+    assert.equal(memory.length, 1);
+  });
+
   it('records divergence when observed reality differs', () => {
     const allowed = resolveChangeAdmission(record, { authorityVerified: true, policySatisfied: true });
     const execution = executeAuthorizedTransition(allowed, () => ({ stateAfter: 'S1' }));
