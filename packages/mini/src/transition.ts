@@ -74,6 +74,11 @@ export function executeAuthorizedTransition(
   const result = handler({ stateBefore: record.stateBefore, context: record.context });
   if (!result.stateAfter.trim()) throw new Error('transition handler must return a non-empty stateAfter');
 
+  const priorLineage = record.provenance.lineage ?? [];
+  const priorRoot = createHash('sha256')
+    .update(JSON.stringify(priorLineage))
+    .digest('hex');
+  const executedAt = now();
   const attestationPayload = JSON.stringify({
     changeId: record.id,
     subject: record.subject,
@@ -81,7 +86,10 @@ export function executeAuthorizedTransition(
     stateBefore: record.stateBefore,
     stateAfter: result.stateAfter,
     consequence: result.consequence ?? null,
-    executedAt: now(),
+    authority: record.authority,
+    policy: record.policy,
+    priorLineageRoot: priorRoot,
+    executedAt,
   });
   const digest = createHash('sha256').update(attestationPayload).digest('hex');
   const attestationId = `attestation-${digest}`;
@@ -95,9 +103,9 @@ export function executeAuthorizedTransition(
       ...record.provenance,
       source: 'mini-authorized-transition',
       attributedTo: record.authority,
-      lineage: [...(record.provenance.lineage ?? []), attestationId],
+      lineage: [...priorLineage, `prior-root-${priorRoot}`, attestationId],
     },
-    createdAt: now(),
+    createdAt: executedAt,
   };
   memory?.append(executed);
   return { status: 'EXECUTED', record: executed, attestationId };
