@@ -50,7 +50,18 @@ export function verifyExecutedReality(
   const matches = observedState === record.stateAfter;
   const observedAt = now();
   const evidence = createHash('sha256')
-    .update(JSON.stringify({ changeId: record.id, expectedState: record.stateAfter, observedState, observedAt }))
+    .update(
+      JSON.stringify({
+        changeId: record.id,
+        attestationId: record.attestationId ?? null,
+        expectedState: record.stateAfter,
+        observedState,
+        observedAt,
+        priorLineageRoot: createHash('sha256')
+          .update(JSON.stringify(record.provenance.lineage ?? []))
+          .digest('hex'),
+      }),
+    )
     .digest('hex');
   const verifiedRecord: OmegaChangeRecord = {
     ...record,
