@@ -6,6 +6,7 @@ import type {
   OmegaWorkerRegistry,
 } from '@oceanicos/types';
 import { resolveChangeAdmission, type OmegaAdmissionEvidence } from './admission.js';
+import { admitOmegaIR } from './admission-bridge.js';
 import { compileOmegaIntent, type OmegaCompileInput } from './compiler.js';
 import { validateOmegaIR, type OmegaIRValidation } from './ir-validator.js';
 import {
@@ -61,6 +62,8 @@ export interface OmegaPipelineInput {
   readonly now?: () => string;
   /** Deterministic change id for tests; otherwise derived from IR + time. */
   readonly changeId?: string;
+  /** Explicit human approval evidence when a planned worker requires it. Never inferred true. */
+  readonly approvalVerified?: boolean;
 }
 
 export interface OmegaPipelineResult {
@@ -199,9 +202,27 @@ export function runOmegaChangePipeline(input: OmegaPipelineInput): OmegaPipeline
     createdAt: observedAt,
   };
 
-  // C4 — Admit
-  record = resolveChangeAdmission(record, input.admission);
-  lineage.push(`admit:${record.decision}`);
+  // C4 — Admit. When a worker plan and registry are both present, bind IR
+  // declarations to the registry before the authority/policy gate.
+  if (input.registry && ir.workerPlan.length > 0) {
+    const approvalRequired = ir.workerPlan.some((plan) => plan.approvalRequired);
+    const bridge = admitOmegaIR({
+      ir,
+      registry: input.registry,
+      change: record,
+      authorityVerified: input.admission.authorityVerified,
+      policySatisfied: input.admission.policySatisfied,
+      approvalVerified: input.approvalVerified ?? !approvalRequired,
+    });
+    record = bridge.change;
+    lineage.push(`admit:${record.decision}`);
+    if (bridge.issues.length > 0) {
+      lineage.push(`admit-bridge:${bridge.issues[0]}`);
+    }
+  } else {
+    record = resolveChangeAdmission(record, input.admission);
+    lineage.push(`admit:${record.decision}`);
+  }
   if (record.decision === 'DENY') {
     memory?.append(record);
     return {

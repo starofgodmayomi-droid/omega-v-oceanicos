@@ -139,4 +139,43 @@ describe('Ω∞v unified change pipeline', () => {
     assert.equal(result.haltReason, 'WORKER_NOT_FOUND');
     assert.equal(result.stage, 'EXECUTE');
   });
+
+  it('halts at ADMIT when declared worker is not in the supplied registry', () => {
+    const registry = createOmegaWorkerRegistry([
+      {
+        id: 'other-worker',
+        version: '1.0.0',
+        role: 'executor',
+        mode: 'local-mutating',
+        description: 'Unrelated bounded worker',
+        inputSchema: 'stateBefore:string',
+        outputSchema: 'stateAfter:string',
+        authorityRequired: true,
+        approvalRequired: false,
+        policyRefs: ['policy:pipeline'],
+        evidenceRequired: ['test-result'],
+        timeoutMs: 1000,
+        maxOutputBytes: 1024,
+        retries: 0,
+        dryRunSupported: true,
+        rollbackSupported: false,
+      },
+    ]);
+
+    const result = runOmegaChangePipeline({
+      compile: compileBase,
+      admission: { authorityVerified: true, policySatisfied: true },
+      authority: 'human:pipeline',
+      policy: 'policy:pipeline',
+      registry,
+      handler: () => ({ stateAfter: 'S1' }),
+    });
+
+    assert.equal(result.halted, true);
+    assert.equal(result.haltReason, 'DENIED');
+    assert.equal(result.stage, 'ADMIT');
+    assert.equal(result.record?.decision, 'DENY');
+    assert.equal(result.record?.authorized, false);
+    assert.ok(result.lineage.some((entry) => entry.includes('Unknown worker')));
+  });
 });
