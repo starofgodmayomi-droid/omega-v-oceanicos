@@ -12,12 +12,14 @@ import {
   fetchOmegaNextSlice,
   fetchOmegaEvents,
   subscribeToOmegaEvents,
+  fetchCopilotMode,
   type OmegaWorkerInfo,
   type OmegaCommandView,
   type OmegaCommandResultView,
   type OmegaLearningView,
   type OmegaNextSliceProposalView,
   type OmegaLifecycleEventView,
+  type CopilotPropulsionView,
 } from './omega-api';
 
 export const OmegaWorkspace: React.FC = () => {
@@ -39,11 +41,13 @@ export const OmegaWorkspace: React.FC = () => {
   const [learningMetrics, setLearningMetrics] = useState<OmegaLearningView | null>(null);
   const [nextSliceProposal, setNextSliceProposal] = useState<OmegaNextSliceProposalView | null>(null);
   const [events, setEvents] = useState<OmegaLifecycleEventView[]>([]);
+  const [copilotState, setCopilotState] = useState<CopilotPropulsionView | null>(null);
 
   useEffect(() => {
     loadWorkers();
     loadRecentCommands();
     loadEvents();
+    loadCopilotMode();
     const unsubscribe = subscribeToOmegaEvents((newEvent) => {
       setEvents((prev) => [newEvent, ...prev.filter((e) => e.eventId !== newEvent.eventId)].slice(0, 40));
     });
@@ -51,6 +55,15 @@ export const OmegaWorkspace: React.FC = () => {
       unsubscribe();
     };
   }, []);
+
+  const loadCopilotMode = async () => {
+    try {
+      const res = await fetchCopilotMode();
+      if (res.success) setCopilotState(res);
+    } catch {
+      // Non-blocking
+    }
+  };
 
   const loadEvents = async () => {
     try {
@@ -238,6 +251,48 @@ export const OmegaWorkspace: React.FC = () => {
       <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1.3fr', gap: '24px' }}>
         {/* Left Column: Prompt Composer & Workers */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {/* Copilot Antigravity Continuum Bounded Mode Card */}
+          <div
+            style={{
+              background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(30, 27, 75, 0.4) 100%)',
+              border: '1px solid rgba(139, 92, 246, 0.35)',
+              borderRadius: '8px',
+              padding: '14px 16px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '8px',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '13px', fontWeight: 700, color: '#c4b5fd', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span>💧</span>
+                <span>Copilot Antigravity Propulsion</span>
+              </span>
+              <span
+                style={{
+                  fontSize: '10px',
+                  fontWeight: 600,
+                  padding: '2px 8px',
+                  borderRadius: '12px',
+                  background: 'rgba(56, 189, 248, 0.15)',
+                  border: '1px solid #38bdf8',
+                  color: '#7dd3fc',
+                }}
+              >
+                PROPOSAL ONLY • ZERO AUTONOMOUS AUTHORITY
+              </span>
+            </div>
+            <div style={{ fontSize: '11px', color: '#cbd5e1', lineHeight: '1.4' }}>
+              <strong>Propulsion Role:</strong> Copilot reasons and proposes. <strong>Ω Kernel:</strong> Admits through policy and authority. <strong>Reality:</strong> Evaluates consequences.
+            </div>
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', fontSize: '10px', fontFamily: 'monospace' }}>
+              <span style={{ color: '#34d399' }}>COPILOT: ON</span>
+              <span style={{ color: '#38bdf8' }}>ANTIGRAVITY: ON</span>
+              <span style={{ color: '#a78bfa' }}>DISSENT: PRESERVE</span>
+              <span style={{ color: '#fbbf24' }}>TRANSITIONS: {copilotState?.verifiedTransitions ?? 0}</span>
+            </div>
+          </div>
+
           <div style={{ background: 'rgba(15, 23, 42, 0.8)', border: '1px solid rgba(56, 189, 248, 0.2)', borderRadius: '8px', padding: '18px' }}>
             <h3 style={{ margin: '0 0 12px 0', fontSize: '16px', color: '#7dd3fc' }}>1. Human Intent Composer</h3>
             <textarea
@@ -569,12 +624,46 @@ export const OmegaWorkspace: React.FC = () => {
                     </div>
                   )}
 
+                  {/* C5 Execution Receipt & State Diff Card */}
+                  {activeResult.receipt && (
+                    <div style={{ padding: '10px', background: 'rgba(16, 185, 129, 0.08)', borderRadius: '4px', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                        <div style={{ fontSize: '11px', fontWeight: 600, color: '#6ee7b7' }}>
+                          ⚡ C5 Execution Receipt ({activeResult.receipt.isolationMode})
+                        </div>
+                        <span style={{ fontSize: '10px', padding: '1px 5px', borderRadius: '3px', background: activeResult.receipt.status === 'SUCCESS' ? '#065f46' : '#991b1b', color: '#ecfdf5' }}>
+                          EXIT {activeResult.receipt.exitCode} ({activeResult.receipt.durationMs}ms)
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '10px', fontFamily: 'monospace', color: '#94a3b8' }}>
+                        ID: {activeResult.receipt.executionId.slice(0, 18)}... | Digest: {activeResult.receipt.executionAttestationDigest.slice(0, 16)}...
+                      </div>
+                      {activeResult.receipt.stateDiff && (
+                        <div style={{ marginTop: '6px', fontSize: '11px', color: '#a7f3d0' }}>
+                          <strong>Δ State Diff:</strong> {activeResult.receipt.stateDiff.summary}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {/* Reality Verdict */}
                   {activeResult.realityVerdict && (
                     <div style={{ marginTop: '6px', padding: '10px', background: activeResult.realityVerdict.verdict === 'VERIFIED' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)', borderRadius: '4px', border: activeResult.realityVerdict.verdict === 'VERIFIED' ? '1px solid #10b981' : '1px solid #f59e0b' }}>
-                      <div style={{ fontSize: '12px', fontWeight: 'bold', color: activeResult.realityVerdict.verdict === 'VERIFIED' ? '#34d399' : '#fbbf24' }}>
-                        Reality Verdict: {activeResult.realityVerdict.verdict}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ fontSize: '12px', fontWeight: 'bold', color: activeResult.realityVerdict.verdict === 'VERIFIED' ? '#34d399' : '#fbbf24' }}>
+                          Reality Verdict: {activeResult.realityVerdict.verdict}
+                        </div>
+                        {activeResult.realityVerdict.receiptVerified && (
+                          <span style={{ fontSize: '10px', color: '#6ee7b7', background: 'rgba(6, 95, 70, 0.5)', padding: '2px 6px', borderRadius: '3px' }}>
+                            ✓ Receipt Verified
+                          </span>
+                        )}
                       </div>
+                      {activeResult.realityVerdict.stateDiffSummary && (
+                        <div style={{ marginTop: '4px', fontSize: '11px', color: '#cbd5e1' }}>
+                          Observed Δ: {activeResult.realityVerdict.stateDiffSummary}
+                        </div>
+                      )}
                       {activeResult.realityVerdict.discrepancies.length > 0 && (
                         <div style={{ marginTop: '4px', fontSize: '11px', color: '#fca5a5' }}>
                           Discrepancies: {activeResult.realityVerdict.discrepancies.join('; ')}

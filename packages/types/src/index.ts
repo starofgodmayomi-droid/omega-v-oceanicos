@@ -1,5 +1,7 @@
 export * from './omega-ir.js';
 export * from './worker-registry.js';
+export * from './executor.js';
+import type { ExecutionReceipt } from './executor.js';
 
 export type ChangeDecision = 'ALLOW' | 'DENY' | 'REVIEW';
 
@@ -110,6 +112,33 @@ export interface ILiquidState {
   clarityVector: number;
   resonanceHz: number;
   blockAnchor: string;
+}
+
+export interface CopilotOperatingMode {
+  readonly copilot: boolean;
+  readonly antigravity: boolean;
+  readonly continuum: 'FINITE_VERIFIED_STEPS';
+  readonly fullStack: boolean;
+  readonly realityFirst: boolean;
+  readonly evidenceBound: boolean;
+  readonly humanRouting: boolean;
+  readonly pluralism: boolean;
+  readonly dissent: 'PRESERVE';
+  readonly noSpeculation: boolean;
+  readonly noFabricatedState: boolean;
+  readonly noStall: boolean;
+  readonly preserveLineage: boolean;
+}
+
+export interface CopilotPropulsionState {
+  readonly mode: CopilotOperatingMode;
+  readonly authority: 'EVIDENCE_BOUND_PROPOSAL_ONLY';
+  readonly liquidState: ILiquidState;
+  readonly pidginSpirit: string;
+  readonly axiom: string;
+  readonly verifiedTransitions: number;
+  readonly activeGoal: string;
+  readonly invariant: string;
 }
 
 export interface VerificationResultSummary {
@@ -420,6 +449,9 @@ export interface OmegaRealityVerdict {
   observedStateHash?: string;
   discrepancies: string[];
   evaluatedAt: string;
+  receiptVerified?: boolean;
+  stateDiffSummary?: string;
+  reconciliationDetails?: Record<string, unknown>;
 }
 
 export interface OmegaCommandResult {
@@ -441,6 +473,7 @@ export interface OmegaCommandResult {
   realityVerdict?: OmegaRealityVerdict;
   dissentNotes?: string[];
   completedAt?: string;
+  receipt?: ExecutionReceipt;
 }
 
 export interface OmegaDiscrepancyGroup {

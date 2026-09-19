@@ -16,6 +16,7 @@
     "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.config.cjs --coverage --runInBand",
     "smoke:api": "pnpm build && node scripts/smoke-api.cjs",
     "test:e2e": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.config.cjs tests/e2e --runInBand",
+    "test:stack": "tsx --test tests/integration/max_compress_stack.e2e.test.ts",
     "cli": "tsx bin/oceanicos.mjs"
   },
   "engines": {

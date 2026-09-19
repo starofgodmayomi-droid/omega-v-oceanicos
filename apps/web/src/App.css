@@ -1063,6 +1063,7 @@ select:focus-visible {
   place-items: start center;
   padding-top: 14vh;
   background: rgba(2, 10, 9, 0.72);
+  -webkit-backdrop-filter: blur(5px);
   backdrop-filter: blur(5px);
 }
 .command-palette {

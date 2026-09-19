@@ -1,11 +1,20 @@
 import crypto from 'node:crypto';
 import { execSync } from 'node:child_process';
-import type { OmegaCommand, OmegaCommandResult } from '@oceanicos/types';
+import type {
+  OmegaCommand,
+  OmegaCommandResult,
+  IOmegaExecutor,
+  ExecutionReceipt,
+  StateDiff,
+  StateDeltaEntry,
+  ExecutionIsolationMode,
+} from '@oceanicos/types';
 import { WorkerRegistry } from './registry.js';
 
 export interface ExecutionOptions {
   signingKey?: string;
   executorIdentity?: string;
+  isolationMode?: ExecutionIsolationMode;
 }
 
 export const ALLOWLISTED_SANDBOX_TARGETS: Record<string, { cmd: string; description: string }> = {
@@ -14,11 +23,57 @@ export const ALLOWLISTED_SANDBOX_TARGETS: Record<string, { cmd: string; descript
   'build': { cmd: 'run build', description: 'Monorepo workspace build' },
 };
 
-export class AuthorizedCommandExecutor {
+export class AuthorizedCommandExecutor implements IOmegaExecutor {
+  public readonly isolationMode: ExecutionIsolationMode = 'sandboxed';
   private readonly registry: WorkerRegistry;
 
   constructor(registry: WorkerRegistry) {
     this.registry = registry;
+  }
+
+  public calculateStateDiff(
+    before: Record<string, unknown>,
+    after: Record<string, unknown>
+  ): StateDiff {
+    const beforeStr = JSON.stringify(before, Object.keys(before).sort());
+    const afterStr = JSON.stringify(after, Object.keys(after).sort());
+    const stateBeforeHash = crypto.createHash('sha256').update(beforeStr).digest('hex');
+    const stateAfterHash = crypto.createHash('sha256').update(afterStr).digest('hex');
+
+    const mutations: StateDeltaEntry[] = [];
+    const allKeys = new Set([...Object.keys(before), ...Object.keys(after)]);
+
+    for (const key of allKeys) {
+      if (!(key in before)) {
+        mutations.push({
+          path: key,
+          nextValue: after[key],
+          mutationType: 'ADDED',
+        });
+      } else if (!(key in after)) {
+        mutations.push({
+          path: key,
+          previousValue: before[key],
+          mutationType: 'DELETED',
+        });
+      } else if (JSON.stringify(before[key]) !== JSON.stringify(after[key])) {
+        mutations.push({
+          path: key,
+          previousValue: before[key],
+          nextValue: after[key],
+          mutationType: 'MODIFIED',
+        });
+      }
+    }
+
+    const summary = `${mutations.length} delta(s) detected [${mutations.map((m) => `${m.mutationType}:${m.path}`).join(', ')}]`;
+
+    return {
+      stateBeforeHash,
+      stateAfterHash,
+      mutations,
+      summary,
+    };
   }
 
   public async execute(
@@ -183,10 +238,31 @@ export class AuthorizedCommandExecutor {
       sandboxExecution: sandboxDetails,
     };
 
+    const stateDiff = this.calculateStateDiff(stateBefore, stateAfter);
+
     const attestationDigest = crypto
       .createHmac('sha256', signingKey)
       .update(`${command.commandId}-EXECUTED-${timestamp}-${consequence}`)
       .digest('hex');
+
+    const receipt: ExecutionReceipt = {
+      executionId: `exec_${crypto.randomUUID()}`,
+      commandId: command.commandId,
+      idempotencyKey: command.idempotencyKey || command.commandId,
+      status: (sandboxDetails?.exitCode as number ?? 0) === 0 ? 'SUCCESS' : 'FAILURE',
+      isolationMode: this.isolationMode,
+      exitCode: (sandboxDetails?.exitCode as number) ?? 0,
+      durationMs: (sandboxDetails?.durationMs as number) ?? 0,
+      outputSummary,
+      stateDiff,
+      executedBy: executorIdentity,
+      executionAttestationDigest: attestationDigest,
+      timestamps: {
+        startedAt: timestamp,
+        completedAt: new Date().toISOString(),
+      },
+      dissentNotes: dissentNotes.length > 0 ? dissentNotes : undefined,
+    };
 
     const result: OmegaCommandResult = {
       commandId: command.commandId,
@@ -205,8 +281,20 @@ export class AuthorizedCommandExecutor {
       },
       dissentNotes: dissentNotes.length > 0 ? dissentNotes : undefined,
       completedAt: timestamp,
+      receipt,
     };
 
     return result;
+  }
+
+  public async executeWithReceipt(
+    command: OmegaCommand,
+    options: ExecutionOptions = {}
+  ): Promise<ExecutionReceipt> {
+    const result = await this.execute(command, options);
+    if (!result.receipt) {
+      throw new Error(`MISSING_EXECUTION_RECEIPT_${command.commandId}`);
+    }
+    return result.receipt;
   }
 }

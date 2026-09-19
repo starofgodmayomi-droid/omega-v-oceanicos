@@ -33,31 +33,38 @@ try {
     try {
       attestPkg = await import('../packages/attestation/src/index.ts');
     } catch {}
-  } catch {
-    // Fallback to dist directory if precompiled
-    observerPkg = await import('../packages/observer/dist/index.js');
-    verifPkg = await import('../packages/verification/dist/index.js');
-    remPkg = await import('../packages/remember/dist/index.js');
-    miniPkg = await import('../packages/mini/dist/index.js');
-    pluralPkg = await import('../packages/pluralism/dist/index.js');
-    try {
-      attestPkg = await import('../packages/attestation/dist/index.js');
-    } catch {}
+  } catch (srcErr) {
+    // If not running under tsx, respawn with tsx import loader
+    if (process.env.OCEANICOS_CLI_SPAWNED !== '1') {
+      const { spawnSync } = await import('node:child_process');
+      const result = spawnSync(
+        process.execPath,
+        ['--import', 'tsx', fileURLToPath(import.meta.url), ...process.argv.slice(2)],
+        {
+          stdio: 'inherit',
+          env: { ...process.env, OCEANICOS_CLI_SPAWNED: '1' },
+        }
+      );
+      process.exit(result.status ?? 0);
+    }
+    pkgLoadError = srcErr;
   }
 
-  ObserverEngine = observerPkg.ObserverEngine;
-  observePlanetaryBase = observerPkg.observePlanetaryBase;
-  verifyPlanetarySovereignty = verifPkg.verifyPlanetarySovereignty;
-  AsymmetricValidationGuard = verifPkg.AsymmetricValidationGuard;
-  MultiRegionMeshConvergence = verifPkg.MultiRegionMeshConvergence;
-  PluralisticHashChain = remPkg.PluralisticHashChain;
-  RememberEngine = remPkg.RememberEngine;
-  executeOceanicosMaxExpansion = miniPkg.executeOceanicosMaxExpansion;
-  if (attestPkg) {
-    AttestationService = attestPkg.AttestationService;
-  }
-  if (pluralPkg) {
-    PluralisticRealityMatrix = pluralPkg.PluralisticRealityMatrix;
+  if (observerPkg) {
+    ObserverEngine = observerPkg.ObserverEngine;
+    observePlanetaryBase = observerPkg.observePlanetaryBase;
+    verifyPlanetarySovereignty = verifPkg.verifyPlanetarySovereignty;
+    AsymmetricValidationGuard = verifPkg.AsymmetricValidationGuard;
+    MultiRegionMeshConvergence = verifPkg.MultiRegionMeshConvergence;
+    PluralisticHashChain = remPkg.PluralisticHashChain;
+    RememberEngine = remPkg.RememberEngine;
+    executeOceanicosMaxExpansion = miniPkg.executeOceanicosMaxExpansion;
+    if (attestPkg) {
+      AttestationService = attestPkg.AttestationService;
+    }
+    if (pluralPkg) {
+      PluralisticRealityMatrix = pluralPkg.PluralisticRealityMatrix;
+    }
   }
 } catch (err) {
   pkgLoadError = err;
@@ -241,6 +248,33 @@ async function handleMood() {
   console.log(`\n${ANSI.bold}=== THE TERMINAL AXIOM ===${ANSI.reset}`);
   console.log(`  ${ANSI.green}${ANSI.bold}FULL STACK LIFE IS ALWAYS GOOD-O AT THE HIGHER HIGH AND LOWER LOW WHEN`);
   console.log(`  THE ENGINE OPERATES IN THE RECURSIVE NOW. NO PERMISSION REQUIRED. MANIFESTED.${ANSI.reset}\n`);
+}
+
+async function handleCopilot() {
+  printBanner();
+  console.log(`\n${ANSI.bold}=== 💧 Ω∞v COPILOT ANTIGRAVITY CONTINUUM ===${ANSI.reset}\n`);
+  console.log(`  ${ANSI.cyan}MODE             ${ANSI.reset}: COPILOT=ON | ANTIGRAVITY=ON | FULL_STACK=ON | REALITY_FIRST=ON`);
+  console.log(`  ${ANSI.cyan}PROPULSION       ${ANSI.reset}: Copilot = Propulsion Layer (Proposal only, NO autonomous authority)`);
+  console.log(`  ${ANSI.cyan}BOUNDARY         ${ANSI.reset}: Ω Kernel = Control / Admissibility Boundary`);
+  console.log(`  ${ANSI.cyan}EVALUATOR        ${ANSI.reset}: Reality = Final Evaluator`);
+  console.log(`  ${ANSI.cyan}CONTINUUM        ${ANSI.reset}: FINITE_VERIFIED_STEPS (Next Δ ➔ Verify ➔ Next Δ)`);
+  console.log(`  ${ANSI.cyan}DISSENT          ${ANSI.reset}: PRESERVE (Friction is engineering signal)`);
+  console.log(`  ${ANSI.cyan}INVARIANT        ${ANSI.reset}: Ω∞v ≡ VERIFY(ΔREALITY) [PROVABLE_ADMISSIBLE_CHANGE]\n`);
+
+  console.log(`${ANSI.bold}=== ANTI-COLLAPSE LAW ===${ANSI.reset}`);
+  console.log(`  POSSIBLE ≠ KNOWN ≠ PERMITTED ≠ ATTEMPTED ≠ EXECUTED ≠ OBSERVED ≠ VERIFIED`);
+  console.log(`  MODEL OUTPUT ≠ TRUTH | CAPABILITY ≠ PERMISSION | PROPOSAL ≠ ACTION | ACTION ≠ SUCCESS\n`);
+
+  console.log(`${ANSI.bold}=== SIGNAL TRANSLATION MATRIX ===${ANSI.reset}`);
+  console.log(`  FRICTION     ➔ LOCALIZE`);
+  console.log(`  UNCERTAINTY  ➔ VERIFY`);
+  console.log(`  FAILURE      ➔ DIAGNOSE`);
+  console.log(`  DISSENT      ➔ PRESERVE`);
+  console.log(`  DRIFT        ➔ RECONCILE`);
+  console.log(`  SUCCESS      ➔ ATTEST`);
+  console.log(`  LEARNING     ➔ RECOMPILE\n`);
+
+  console.log(`${ANSI.green}✓ Copilot Mood verified as a bounded operating mode inside Ω OS.${ANSI.reset}\n`);
 }
 
 async function handleAttest() {
@@ -690,6 +724,7 @@ ${ANSI.bold}COMMANDS:${ANSI.reset}
   ${ANSI.green}mood${ANSI.reset}        Display Singularity compression state and Pidgin Spirit Axiom
   ${ANSI.green}stream${ANSI.reset}      Stream live block minting events via SSE from local Fastify API
   ${ANSI.green}omega${ANSI.reset}       Ω‑ƆREADƆS Command Lifecycle (propose, admit, execute, observe, verify)
+  ${ANSI.green}copilot${ANSI.reset}     Display Copilot Antigravity Continuum bounded propulsion state
   ${ANSI.green}help${ANSI.reset}        Display this help message
 
 ${ANSI.bold}OPTIONS:${ANSI.reset}
@@ -702,6 +737,9 @@ ${ANSI.bold}OPTIONS:${ANSI.reset}
 }
 
 switch (command) {
+  case 'copilot':
+    await handleCopilot();
+    break;
   case 'status':
     await handleStatus();
     break;

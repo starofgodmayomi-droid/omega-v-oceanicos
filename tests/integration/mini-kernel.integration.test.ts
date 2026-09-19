@@ -1,4 +1,5 @@
 import { createServer, Server } from 'node:http';
+import { jest } from '@jest/globals';
 import { Observer } from '@omega-v/observer';
 import { VerificationEngine } from '@omega-v/verification';
 import { Remember } from '@omega-v/remember';
@@ -8,6 +9,13 @@ import { OceanicosCLI } from '@omega-v/cli';
 import { VerificationRule } from '@omega-v/types';
 
 describe('Ω∞v Oceanicos Integration — Foundational MINI Kernel & Totality', () => {
+  beforeAll(() => {
+    process.env.OMEGA_SIGNING_KEY = 'mini-api-integration-key';
+  });
+
+  afterAll(() => {
+    delete process.env.OMEGA_SIGNING_KEY;
+  });
   const healthRule: VerificationRule = {
     name: 'response-time-threshold',
     version: '1.0.0',

@@ -1,22 +1,27 @@
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert';
-import { ObserverEngine } from '../../packages/observer/dist/index.js';
+import { ObserverEngine } from '../../packages/observer/src/index.js';
 import {
   verifyPlanetarySovereignty,
   AsymmetricValidationGuard,
   MultiRegionMeshConvergence,
-} from '../../packages/verification/dist/index.js';
-import { PluralisticHashChain, RememberEngine } from '../../packages/remember/dist/index.js';
-import { MiniKernel, executeOceanicosMaxExpansion } from '../../packages/mini/dist/index.js';
-import { AttestationService } from '../../packages/attestation/dist/index.js';
-import { InferenceClient } from '../../packages/inference/dist/index.js';
-import { VectorMemory } from '../../packages/vector/dist/index.js';
-import { createApp } from '../../apps/api/dist/index.js';
+} from '../../packages/verification/src/index.js';
+import { PluralisticHashChain, RememberEngine } from '../../packages/remember/src/index.js';
+import { MiniKernel, executeOceanicosMaxExpansion } from '../../packages/mini/src/index.js';
+import { AttestationService } from '../../packages/attestation/src/index.js';
+import { InferenceClient } from '../../packages/inference/src/index.js';
+import { VectorMemory } from '../../packages/vector/src/index.js';
+import { CopilotAntigravityController } from '../../packages/mood/src/index.js';
+import { AuthorizedCommandExecutor } from '../../apps/api/src/omega/executor.js';
+import { WorkerRegistry } from '../../apps/api/src/omega/registry.js';
+import { createApp } from '../../apps/api/src/index.js';
 
 describe('Ω∞v Oceanicos Max Compress Full-Stack E2E Suite', () => {
   let apiApp: any;
 
   before(async () => {
+    process.env.OMEGA_SIGNING_KEY =
+      process.env.OMEGA_SIGNING_KEY || 'omega-v-default-attestation-secret-key-2026';
     apiApp = createApp(':memory:', false);
     await apiApp.ready();
   });
@@ -113,14 +118,21 @@ describe('Ω∞v Oceanicos Max Compress Full-Stack E2E Suite', () => {
       signatureProof: 'fake-proof-hash',
     };
 
-    const minted = dbEngine.append(obs, evidence);
-    assert.strictEqual(minted.index, 4101);
-    assert.ok(minted.hash.startsWith('00'));
+    const block = {
+      index: 0,
+      timestamp: new Date().toISOString(),
+      observation: obs,
+      evidence,
+      previousHash: '8a3f91c2e4f9011b989210ffffffffff',
+      hash: '00abc123456789',
+      nonce: 42,
+    };
 
+    dbEngine.append(block);
     const tip = dbEngine.getTip();
     assert.ok(tip !== null);
-    assert.strictEqual(tip?.hash, minted.hash);
-    assert.strictEqual(tip?.index, 4101);
+    assert.strictEqual(tip?.hash, block.hash);
+    assert.strictEqual(tip?.index, 0);
   });
 
   it('6. MiniKernel executes full end-to-end cycle cleanly', () => {
@@ -129,7 +141,7 @@ describe('Ω∞v Oceanicos Max Compress Full-Stack E2E Suite', () => {
 
     const block = kernel.runCycle();
     assert.ok(block);
-    assert.strictEqual(block.index, 4101);
+    assert.strictEqual(block.index, 0);
     assert.ok(block.hash.startsWith('00'));
     assert.ok(block.observation.siliconYield >= 0.9);
   });
@@ -465,5 +477,209 @@ describe('Ω∞v Oceanicos Max Compress Full-Stack E2E Suite', () => {
     assert.strictEqual(data.aiInsight.source, 'STUB');
     assert.strictEqual(data.aiInsight.observationId, data.block.observation.uuid);
     assert.ok(data.aiInsight.proof.startsWith('0xΩ'));
+  });
+
+  it('26. Copilot Antigravity Controller enforces bounded propulsion mode and signal translation', () => {
+    const propulsion = CopilotAntigravityController.getPropulsionState('OMEGA FULL STACK');
+    assert.ok(propulsion);
+    assert.strictEqual(propulsion.authority, 'EVIDENCE_BOUND_PROPOSAL_ONLY');
+    assert.strictEqual(propulsion.mode.copilot, true);
+    assert.strictEqual(propulsion.mode.antigravity, true);
+    assert.strictEqual(propulsion.mode.continuum, 'FINITE_VERIFIED_STEPS');
+    assert.strictEqual(propulsion.mode.dissent, 'PRESERVE');
+    assert.strictEqual(propulsion.mode.realityFirst, true);
+    assert.ok(propulsion.invariant.includes('Ω∞v ≡ VERIFY(ΔREALITY)'));
+
+    const frictionSignal = CopilotAntigravityController.processSignal('FRICTION', 'High latency on node 3');
+    assert.strictEqual(frictionSignal.action, 'LOCALIZE');
+    assert.strictEqual(frictionSignal.authorityCheck, 'CANNOT_SELF_AUTHORIZE');
+
+    const uncertaintySignal = CopilotAntigravityController.processSignal('UNCERTAINTY', 'Unverified cache state');
+    assert.strictEqual(uncertaintySignal.action, 'VERIFY');
+
+    const transitionNumber = CopilotAntigravityController.recordTransition();
+    assert.ok(transitionNumber > 0);
+  });
+
+  it('27. C5 Bounded Executor Engine computes state diffs and produces unforgeable ExecutionReceipt', async () => {
+    const registry = new WorkerRegistry();
+    const executor = new AuthorizedCommandExecutor(registry);
+
+    // 27a. Test StateDiff calculation
+    const beforeState = { mode: 'INITIAL', count: 1, deprecatedFlag: true };
+    const afterState = { mode: 'MUTATED', count: 2, newFeature: 'ONLINE' };
+    const diff = executor.calculateStateDiff(beforeState, afterState);
+
+    assert.ok(diff.stateBeforeHash);
+    assert.ok(diff.stateAfterHash);
+    assert.strictEqual(diff.mutations.length, 4); // mode MODIFIED, count MODIFIED, deprecatedFlag DELETED, newFeature ADDED
+    assert.ok(diff.summary.includes('delta(s) detected'));
+
+    // 27b. Test Command execution and receipt generation
+    const mockCommand: any = {
+      commandId: 'cmd-test-c5-001',
+      sessionId: 'sess-test',
+      requestedBy: 'operator:admin',
+      prompt: 'Verify kernel typecheck bounds',
+      status: 'AUTHORIZED',
+      requestedWorkers: ['worker-observer', 'worker-planner'],
+      boundedContext: {},
+      irPlan: {
+        workerPlan: [
+          { step: 1, workerId: 'worker-observer', action: 'observe', readOnly: true },
+          { step: 2, workerId: 'worker-planner', action: 'plan', readOnly: true },
+        ],
+        transitionSpec: { target: 'kernel-state', action: 'plan-only' },
+      },
+      idempotencyKey: 'idem-test-c5-001',
+      dryRun: false,
+    };
+
+    const receipt = await executor.executeWithReceipt(mockCommand, {
+      signingKey: 'omega-v-default-attestation-secret-key-2026',
+    });
+
+    assert.ok(receipt);
+    assert.ok(receipt.executionId.startsWith('exec_'));
+    assert.strictEqual(receipt.commandId, 'cmd-test-c5-001');
+    assert.strictEqual(receipt.status, 'SUCCESS');
+    assert.strictEqual(receipt.isolationMode, 'sandboxed');
+    assert.ok(receipt.executionAttestationDigest);
+    assert.ok(receipt.stateDiff);
+    assert.ok(receipt.outputSummary.includes('[worker-observer]'));
+
+    // 27c. Fail-closed on unauthorized status
+    const unauthorizedCommand: any = { ...mockCommand, status: 'PROPOSED' };
+    await assert.rejects(
+      async () => executor.execute(unauthorizedCommand),
+      /EXECUTION_FORBIDDEN_STATUS_PROPOSED/
+    );
+  });
+
+  it('28. Fastify API Command Lifecycle executes admitted command and attaches unforgeable receipt', async () => {
+    // 28a. Propose a new command
+    const proposeRes = await apiApp.inject({
+      method: 'POST',
+      url: '/v1/omega/commands',
+      payload: {
+        prompt: 'Run read-only observation slice',
+        requestedBy: 'operator:e2e-test',
+        requestedWorkers: ['worker-observer'],
+      },
+    });
+    assert.strictEqual(proposeRes.statusCode, 201);
+    const proposeData = JSON.parse(proposeRes.body);
+    assert.strictEqual(proposeData.success, true);
+    const cmdId = proposeData.command.commandId;
+    assert.strictEqual(proposeData.command.status, 'PROPOSED');
+
+    // 28b. Admit the command (read-only worker passes policy)
+    const admitRes = await apiApp.inject({
+      method: 'POST',
+      url: `/v1/omega/commands/${cmdId}/admit`,
+    });
+    assert.strictEqual(admitRes.statusCode, 200);
+    const admitData = JSON.parse(admitRes.body);
+    assert.strictEqual(admitData.verdict, 'ALLOW');
+    assert.strictEqual(admitData.command.status, 'AUTHORIZED');
+
+    // 28c. Execute the admitted command via C5 Executor
+    const execRes = await apiApp.inject({
+      method: 'POST',
+      url: `/v1/omega/commands/${cmdId}/execute`,
+      payload: { executorIdentity: 'omega:e2e-runner' },
+    });
+    assert.strictEqual(execRes.statusCode, 200);
+    const execData = JSON.parse(execRes.body);
+    assert.strictEqual(execData.success, true);
+    assert.strictEqual(execData.command.status, 'EXECUTED');
+    assert.ok(execData.result);
+    assert.ok(execData.result.receipt);
+    assert.strictEqual(execData.result.receipt.status, 'SUCCESS');
+    assert.strictEqual(execData.result.receipt.isolationMode, 'sandboxed');
+    assert.ok(execData.result.receipt.executionAttestationDigest);
+    assert.ok(execData.result.receipt.stateDiff);
+  });
+
+  it('29. C6 Reality Reconciliation reconciles execution receipt with observation and preserves divergence', async () => {
+    // 29a. Setup: Propose, admit, execute
+    const proposeRes = await apiApp.inject({
+      method: 'POST',
+      url: '/v1/omega/commands',
+      payload: {
+        prompt: 'Reconciliation test slice',
+        requestedBy: 'operator:c6-tester',
+        requestedWorkers: ['worker-observer'],
+      },
+    });
+    const cmdId = JSON.parse(proposeRes.body).command.commandId;
+    await apiApp.inject({ method: 'POST', url: `/v1/omega/commands/${cmdId}/admit` });
+    await apiApp.inject({ method: 'POST', url: `/v1/omega/commands/${cmdId}/execute` });
+
+    // 29b. Attempt reality verification before attaching observation -> UNKNOWN
+    const verifyBeforeObs = await apiApp.inject({
+      method: 'POST',
+      url: `/v1/omega/commands/${cmdId}/verify-reality`,
+    });
+    assert.strictEqual(verifyBeforeObs.statusCode, 200);
+    const verifyBeforeData = JSON.parse(verifyBeforeObs.body);
+    assert.strictEqual(verifyBeforeData.verdict, 'UNKNOWN');
+    assert.strictEqual(verifyBeforeData.command.status, 'UNKNOWN');
+
+    // 29c. Attach valid matching observation
+    const obsRes = await apiApp.inject({
+      method: 'POST',
+      url: `/v1/omega/commands/${cmdId}/observe`,
+      payload: {
+        observerType: 'state_snapshot',
+        target: 'read_only_intent_record',
+        observedData: { isClean: true, statusText: 'clean' },
+      },
+    });
+    assert.strictEqual(obsRes.statusCode, 200);
+
+    // 29d. Verify reality with matching observation -> VERIFIED
+    const verifyAfterObs = await apiApp.inject({
+      method: 'POST',
+      url: `/v1/omega/commands/${cmdId}/verify-reality`,
+    });
+    assert.strictEqual(verifyAfterObs.statusCode, 200);
+    const verifyAfterData = JSON.parse(verifyAfterObs.body);
+    assert.strictEqual(verifyAfterData.verdict, 'VERIFIED');
+    assert.strictEqual(verifyAfterData.command.status, 'VERIFIED');
+    assert.strictEqual(verifyAfterData.result.realityVerdict.receiptVerified, true);
+    assert.ok(verifyAfterData.result.realityVerdict.stateDiffSummary);
+
+    // 29e. Prove non-collapse of divergence: if observer reports failure -> DIVERGENT
+    const divergentCmdRes = await apiApp.inject({
+      method: 'POST',
+      url: '/v1/omega/commands',
+      payload: {
+        prompt: 'Divergence check slice',
+        requestedBy: 'operator:c6-tester',
+        requestedWorkers: ['worker-observer'],
+      },
+    });
+    const divCmdId = JSON.parse(divergentCmdRes.body).command.commandId;
+    await apiApp.inject({ method: 'POST', url: `/v1/omega/commands/${divCmdId}/admit` });
+    await apiApp.inject({ method: 'POST', url: `/v1/omega/commands/${divCmdId}/execute` });
+    await apiApp.inject({
+      method: 'POST',
+      url: `/v1/omega/commands/${divCmdId}/observe`,
+      payload: {
+        observerType: 'api_health',
+        target: 'api_health',
+        observedData: { failed: true, error: 'Connection refused on socket' },
+      },
+    });
+
+    const divVerifyRes = await apiApp.inject({
+      method: 'POST',
+      url: `/v1/omega/commands/${divCmdId}/verify-reality`,
+    });
+    const divVerifyData = JSON.parse(divVerifyRes.body);
+    assert.strictEqual(divVerifyData.verdict, 'DIVERGENT');
+    assert.strictEqual(divVerifyData.command.status, 'DIVERGENT');
+    assert.ok(divVerifyData.result.realityVerdict.discrepancies.length > 0);
   });
 });

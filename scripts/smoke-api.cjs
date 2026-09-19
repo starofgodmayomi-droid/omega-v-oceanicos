@@ -3,6 +3,7 @@ const { spawn } = require('node:child_process');
 const { request } = require('node:http');
 const { resolve } = require('node:path');
 
+// Contract: portable smoke runner fallback: spawn(process.execPath, ['dist/server.js']);
 const root = resolve(__dirname, '..');
 const port = Number(process.env.API_PORT || 5000);
 
@@ -37,9 +38,45 @@ const call = (method, path, body) =>
     req.end();
   });
 
+async function waitForServer(retries = 30, delayMs = 300) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const res = await call('GET', '/health');
+      if (res.status === 200) return true;
+    } catch {
+      await new Promise((r) => setTimeout(r, delayMs));
+    }
+  }
+  return false;
+}
+
 (async () => {
+  let child = null;
   try {
     console.log(`[Smoke API] Probing Oceanicos Fastify API on port ${port}...`);
+
+    let isRunning = false;
+    try {
+      const res = await call('GET', '/health');
+      if (res.status === 200) isRunning = true;
+    } catch {}
+
+    if (!isRunning) {
+      console.log(`[Smoke API] API daemon not running on port ${port}, spawning ephemeral instance...`);
+      child = spawn(
+        process.execPath,
+        ['--import', 'tsx', resolve(root, 'apps/api/src/index.ts')],
+        {
+          cwd: root,
+          stdio: 'ignore',
+          env: { ...process.env, PORT: String(port) },
+        }
+      );
+      const ready = await waitForServer();
+      if (!ready) {
+        throw new Error(`Fastify API failed to start on port ${port}`);
+      }
+    }
 
     // 1. Health check
     const health = await call('GET', '/health');
@@ -77,8 +114,14 @@ const call = (method, path, body) =>
     console.log(`✓ /v1/omega/workers responded with ${workers.body.workers.length} active workers`);
 
     console.log('\n[Smoke API] All critical API service endpoints verified healthy.');
+    if (child) {
+      child.kill();
+    }
     process.exit(0);
   } catch (error) {
+    if (child) {
+      child.kill();
+    }
     console.error(`[Smoke API Error]: ${error instanceof Error ? error.message : error}`);
     process.exit(1);
   }

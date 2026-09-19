@@ -81,6 +81,8 @@ export interface OmegaRealityVerdictView {
   observedStateHash?: string;
   discrepancies: string[];
   evaluatedAt: string;
+  receiptVerified?: boolean;
+  stateDiffSummary?: string;
 }
 
 export interface OmegaCommandResultView {
@@ -102,6 +104,21 @@ export interface OmegaCommandResultView {
   realityVerdict?: OmegaRealityVerdictView;
   dissentNotes?: string[];
   completedAt?: string;
+  receipt?: {
+    executionId: string;
+    status: string;
+    isolationMode: string;
+    exitCode: number;
+    durationMs: number;
+    outputSummary: string;
+    stateDiff: {
+      stateBeforeHash: string;
+      stateAfterHash: string;
+      mutations: Array<{ path: string; mutationType: string; nextValue?: unknown }>;
+      summary: string;
+    };
+    executionAttestationDigest: string;
+  };
 }
 
 export async function fetchOmegaWorkers(): Promise<{ success: boolean; workers: OmegaWorkerInfo[] }> {
@@ -278,3 +295,39 @@ export function subscribeToOmegaEvents(
     eventSource.close();
   };
 }
+
+export interface CopilotPropulsionView {
+  mode: {
+    copilot: boolean;
+    antigravity: boolean;
+    continuum: string;
+    fullStack: boolean;
+    realityFirst: boolean;
+    evidenceBound: boolean;
+    humanRouting: boolean;
+    pluralism: boolean;
+    dissent: string;
+    noSpeculation: boolean;
+    noFabricatedState: boolean;
+    noStall: boolean;
+    preserveLineage: boolean;
+  };
+  authority: string;
+  liquidState: {
+    velocity: number;
+    clarityVector: number;
+    resonanceHz: number;
+    blockAnchor: string;
+  };
+  pidginSpirit: string;
+  axiom: string;
+  verifiedTransitions: number;
+  activeGoal: string;
+  invariant: string;
+}
+
+export async function fetchCopilotMode(): Promise<{ success: boolean } & CopilotPropulsionView> {
+  const res = await fetch(`${API_BASE}/v1/copilot/mode`);
+  return res.json();
+}
+

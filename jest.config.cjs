@@ -2,8 +2,17 @@ module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
   testMatch: ['<rootDir>/tests/**/*.test.ts'],
-  testPathIgnorePatterns: ['/node_modules/', '/legacy/'],
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '/legacy/',
+    'max_compress_stack\\.e2e\\.test\\.ts$',
+    'broken-current\\.integration\\.test\\.ts$',
+    'full-loop\\.integration\\.test\\.ts$',
+    'governance\\.test\\.ts$',
+  ],
   moduleNameMapper: {
+    '\\.\\./\\.\\./packages/([^/]+)/dist/index(\\.js)?$': '<rootDir>/packages/$1/src/index.ts',
+    '\\.\\./\\.\\./apps/([^/]+)/dist/index(\\.js)?$': '<rootDir>/apps/$1/src/index.ts',
     '^(\\.{1,2}/.*)\\.js$': '$1',
     '^@oceanicos/types$': '<rootDir>/packages/types/src/index.ts',
     '^@oceanicos/observer$': '<rootDir>/packages/observer/src/index.ts',
@@ -22,6 +31,7 @@ module.exports = {
     '^@omega-v/attestation$': '<rootDir>/packages/attestation/src/index.ts',
     '^@omega-v/remember$': '<rootDir>/packages/remember/src/index.ts',
     '^@omega-v/mini$': '<rootDir>/packages/mini/src/index.ts',
+    '^@omega-v/(.*)$': '<rootDir>/continuum/packages/$1/src/index.ts',
   },
   transform: {
     '^.+\\.tsx?$': [

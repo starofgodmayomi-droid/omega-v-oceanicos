@@ -140,10 +140,10 @@ export class RealityObserverEngine {
   ): OmegaRealityVerdict {
     const evaluatedAt = new Date().toISOString();
 
-    if (result.status !== 'EXECUTED' && result.status !== 'ATTESTED') {
+    if (result.status !== 'EXECUTED' && result.status !== 'ATTESTED' && result.status !== 'UNKNOWN') {
       return {
         verdict: 'NOT_EXECUTED',
-        discrepancies: [`Command is in status ${result.status}, not EXECUTED.`],
+        discrepancies: [`Command is in status ${result.status}, not EXECUTED or UNKNOWN.`],
         evaluatedAt,
       };
     }
@@ -162,6 +162,21 @@ export class RealityObserverEngine {
     const observedHash = observation.stateHash;
 
     const discrepancies: string[] = [];
+    let receiptVerified = false;
+    let stateDiffSummary: string | undefined = undefined;
+
+    // Cross-validate C5 ExecutionReceipt if present
+    if (result.receipt) {
+      stateDiffSummary = result.receipt.stateDiff?.summary;
+      if (result.receipt.status === 'FAILURE' || result.receipt.exitCode !== 0) {
+        discrepancies.push(`Executor recorded execution failure (exit code ${result.receipt.exitCode}).`);
+      }
+      if (result.attestationDigest && result.receipt.executionAttestationDigest !== result.attestationDigest) {
+        discrepancies.push('Attestation digest mismatch between execution receipt and command result.');
+      } else {
+        receiptVerified = true;
+      }
+    }
 
     // Check target match
     const claimedTarget = result.stateAfter?.transitionTarget;
@@ -186,6 +201,13 @@ export class RealityObserverEngine {
         observedStateHash: observedHash,
         discrepancies,
         evaluatedAt,
+        receiptVerified,
+        stateDiffSummary,
+        reconciliationDetails: {
+          claimedTarget,
+          observedTarget: observation.target,
+          discrepancyCount: discrepancies.length,
+        },
       };
     }
 
@@ -195,6 +217,13 @@ export class RealityObserverEngine {
       observedStateHash: observedHash,
       discrepancies: [],
       evaluatedAt,
+      receiptVerified,
+      stateDiffSummary,
+      reconciliationDetails: {
+        claimedTarget,
+        observedTarget: observation.target,
+        discrepancyCount: 0,
+      },
     };
   }
 }

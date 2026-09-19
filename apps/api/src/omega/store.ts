@@ -118,7 +118,7 @@ export class OmegaCommandStore {
       ATTESTED: ['VERIFIED', 'DIVERGENT', 'UNKNOWN', 'FAILED'],
       VERIFIED: [],
       DIVERGENT: [],
-      UNKNOWN: [],
+      UNKNOWN: ['VERIFIED', 'DIVERGENT', 'FAILED'],
       FAILED: [],
     };
 

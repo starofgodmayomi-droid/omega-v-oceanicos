@@ -1,9 +1,9 @@
 import Fastify, { FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
 import { RememberEngine } from '@oceanicos/remember';
-import { MiniKernel, OmegaTotalCompressor } from '@oceanicos/mini';
+import { MiniKernel, OmegaTotalCompressor, OperatingSystemKernel } from '@oceanicos/mini';
 import { HiggsfieldBridgeEngine } from '@oceanicos/generative';
-import { OceanicosWaterKernel } from '@oceanicos/mood';
+import { OceanicosWaterKernel, CopilotAntigravityController } from '@oceanicos/mood';
 import { ObserverEngine } from '@oceanicos/observer';
 import { AsymmetricValidationGuard, MultiRegionMeshConvergence } from '@oceanicos/verification';
 import { AttestationService } from '@oceanicos/attestation';
@@ -23,7 +23,7 @@ export const DEFAULT_API_RULES: VerificationRule[] = [
   {
     name: 'response-time-threshold',
     version: '1.0.0',
-    appliesTo: ['general', 'mini-cycle', 'system', 'telemetry'],
+    appliesTo: ['general', 'mini-cycle', 'system', 'telemetry', 'health-check'],
     definition: 'responseTime < 100',
     description: 'System response latency must remain under 100ms',
     createdAt: '2026-01-01T00:00:00.000Z',
@@ -32,7 +32,7 @@ export const DEFAULT_API_RULES: VerificationRule[] = [
   {
     name: 'status-code-check',
     version: '1.0.0',
-    appliesTo: ['general', 'mini-cycle', 'api', 'http'],
+    appliesTo: ['general', 'mini-cycle', 'api', 'http', 'health-check'],
     definition: 'statusCode === 200',
     description: 'Service HTTP status must equal 200 OK',
     createdAt: '2026-01-01T00:00:00.000Z',
@@ -52,6 +52,8 @@ export function createApp(
   for (const rule of DEFAULT_API_RULES) {
     kernel.getVerificationEngine().registerRule(rule);
   }
+  const osKernel = new OperatingSystemKernel(kernel);
+  osKernel.boot();
   const inferenceClient = new InferenceClient({ fallbackToStub: true });
   const vectorMemory = new VectorMemory({ fallbackToEmpty: true });
 
@@ -112,6 +114,13 @@ export function createApp(
     pidginEngine: process.env.PIDGIN_ENGINE === 'OFF' ? false : true,
     highLowAlign: true,
   }));
+
+  const handleCopilotMode = async () => ({
+    success: true,
+    ...CopilotAntigravityController.getPropulsionState(),
+  });
+  fastify.get('/v1/copilot/mode', handleCopilotMode);
+  fastify.get('/copilot/mode', handleCopilotMode);
 
   fastify.post('/v1/attest', async () => {
     const key = process.env.OMEGA_SIGNING_KEY || 'omega-v-default-attestation-secret-key-2026';
@@ -385,7 +394,7 @@ export function createApp(
         },
       };
       const cycleResult = kernel.cycle(payload);
-      return { success: true, ...cycleResult };
+      return { success: true, data: cycleResult, ...cycleResult };
     } catch (err: any) {
       return reply.status(400).send({ success: false, error: err?.message || 'MINI_CYCLE_FAILED' });
     }
@@ -408,7 +417,7 @@ export function createApp(
         },
       };
       const manifest = compressor.lockTotalityIntoNow(payload);
-      return { success: true, manifest };
+      return { success: true, data: manifest, manifest };
     } catch (err: any) {
       return reply.status(400).send({ success: false, error: err?.message || 'TOTALITY_GATE_FAILED' });
     }
@@ -417,13 +426,42 @@ export function createApp(
   fastify.post('/v1/mini/total', handleMiniTotal);
 
   // GET /mini/integrity or /v1/mini/integrity
-  const handleMiniIntegrity = async () => ({
-    success: true,
-    valid: kernel.verifyMemoryIntegrity(),
-    size: kernel.getMemorySize(),
-  });
+  const handleMiniIntegrity = async () => {
+    const intact = kernel.verifyMemoryIntegrity();
+    const size = kernel.getMemorySize();
+    return {
+      success: true,
+      valid: intact,
+      intact,
+      size,
+      data: { intact, size },
+    };
+  };
   fastify.get('/mini/integrity', handleMiniIntegrity);
   fastify.get('/v1/mini/integrity', handleMiniIntegrity);
+
+  // POST /os/admit or /v1/os/admit
+  const handleOsAdmit = async (request: any, reply: any) => {
+    try {
+      if (request.body?.cycle) {
+        const admittedCycle = osKernel.admit(request.body.cycle);
+        return { success: true, data: admittedCycle, ...admittedCycle };
+      }
+      if (request.body?.kind) {
+        const task = osKernel.admit(
+          request.body.kind,
+          request.body.input || {},
+          request.body.requestedBy || 'system'
+        );
+        return { success: true, data: task, ...task };
+      }
+      return reply.status(400).send({ success: false, error: 'INVALID_ADMISSION_PAYLOAD' });
+    } catch (err: any) {
+      return reply.status(400).send({ success: false, error: err?.message || 'ADMISSION_FAILED' });
+    }
+  };
+  fastify.post('/os/admit', handleOsAdmit);
+  fastify.post('/v1/os/admit', handleOsAdmit);
 
   // GET /memory or /v1/memory/all
   const handleMemory = async () => ({
@@ -539,7 +577,35 @@ export function createApp(
   const omegaStore = new OmegaCommandStore(resolvedOmegaLedgerPath);
   fastify.register(omegaRoutes, { store: omegaStore, security });
 
-  return fastify;
+  function toCallableApp(instance: FastifyInstance): FastifyInstance {
+    let isReady = false;
+    Promise.resolve(instance.ready()).then(() => { isReady = true; }).catch(() => {});
+    const callable = function (req: any, res: any) {
+      if (!isReady) {
+        Promise.resolve(instance.ready()).then(() => {
+          isReady = true;
+          instance.routing(req, res);
+        }).catch((err: unknown) => {
+          res.statusCode = 500;
+          const msg = err instanceof Error ? err.message : String(err ?? 'SERVER_ERROR');
+          res.end(JSON.stringify({ error: msg }));
+        });
+      } else {
+        instance.routing(req, res);
+      }
+    };
+    Object.assign(callable, instance);
+    for (const proto of [Object.getPrototypeOf(instance)]) {
+      for (const name of Object.getOwnPropertyNames(proto)) {
+        if (name !== 'constructor' && typeof (instance as any)[name] === 'function') {
+          (callable as any)[name] = (instance as any)[name].bind(instance);
+        }
+      }
+    }
+    return callable as unknown as FastifyInstance;
+  }
+
+  return toCallableApp(fastify);
 }
 
 export * from './auth-helpers.js';

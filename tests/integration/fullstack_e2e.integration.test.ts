@@ -78,6 +78,11 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
   let sdk: OceanicosClient;
   let cli: OceanicosCLI;
 
+  beforeAll(() => {
+    process.env.OMEGA_SIGNING_KEY =
+      process.env.OMEGA_SIGNING_KEY || 'omega-v-default-attestation-secret-key-2026';
+  });
+
   beforeEach(() => {
     store = new ProvenanceStore();
     sdk = new OceanicosClient({ mode: 'local' });
