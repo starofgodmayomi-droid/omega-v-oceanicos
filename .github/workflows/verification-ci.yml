@@ -50,7 +50,7 @@ jobs:
           node bin/oceanicos.mjs status
           node bin/oceanicos.mjs cycle --json
           node bin/oceanicos.mjs mesh
-          node bin/oceanicos.mjs key
+          node bin/oceanicos.mjs keys
 
       - name: 6. Export Verification Evidence Artifact
         run: |
