@@ -10,6 +10,7 @@ import { ObserverEngine } from '@oceanicos/observer';
 import { AttestationService } from '@oceanicos/attestation';
 import { OceanicosKernel } from '@omega-v/kernel';
 import { LocalJobError, LocalJobLedger, LOCAL_JOB_WINDOW } from './jobs.js';
+import { registerPipelineRoute } from './pipeline-route.js';
 import {
   ENCRYPTION_ALGORITHM,
   encryptionEnabled,
@@ -134,6 +135,8 @@ export function createApp(
       return jsonError(reply, 401, request.method === 'GET' ? 'READ_ACCESS_REQUIRED' : 'ADMIN_ACCESS_REQUIRED');
     }
   });
+
+  registerPipelineRoute(fastify, jsonError);
 
   fastify.get('/health', async (_request, reply) => {
     const memoryReady = true;

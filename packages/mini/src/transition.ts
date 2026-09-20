@@ -1,5 +1,7 @@
 import { createHash } from 'node:crypto';
 import type { OmegaChangeRecord } from '@oceanicos/types';
+import type { RealityAttestation } from './causal-memory.js';
+import type { RealityVerification } from './reality.js';
 
 export type TransitionExecutionStatus = 'EXECUTED' | 'REFUSED' | 'REVIEW_REQUIRED';
 
@@ -12,6 +14,8 @@ export interface TransitionExecution {
 
 export interface TransitionMemory {
   append(record: OmegaChangeRecord): void;
+  /** Optional C7→C8 append. Record-only memory remains supported. */
+  appendCausal?(record: OmegaChangeRecord, reality: RealityVerification, attestation: RealityAttestation): void;
 }
 
 export interface TransitionExecutorOptions {

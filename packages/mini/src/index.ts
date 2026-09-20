@@ -51,6 +51,8 @@ export type {
   PipelineStage,
   PipelineHaltReason,
 } from './pipeline.js';
+export { FileCausalMemory, createRealityAttestation, verifyRealityAttestation } from './causal-memory.js';
+export type { CausalMemory, CausalMemoryEntry, RealityAttestation } from './causal-memory.js';
 
 export function executeOceanicosMaxExpansion(): CryptographicBlock {
   const kernelChain = new PluralisticHashChain();

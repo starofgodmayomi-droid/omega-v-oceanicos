@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import type {
   OmegaChangeRecord,
   OmegaIR,
+  OmegaStatusVector,
   OmegaWorkerCapability,
   OmegaWorkerRegistry,
 } from '@oceanicos/types';
@@ -22,6 +23,7 @@ import {
   type RealityVerification,
 } from './reality.js';
 import { getOmegaWorker } from './worker-registry.js';
+import { createRealityAttestation, type RealityAttestation } from './causal-memory.js';
 
 export type PipelineStage =
   | 'COMPILE'
@@ -64,6 +66,10 @@ export interface OmegaPipelineInput {
   readonly changeId?: string;
   /** Explicit human approval evidence when a planned worker requires it. Never inferred true. */
   readonly approvalVerified?: boolean;
+  /** Explicit C7 signing key; absent means no reality attestation is created. */
+  readonly realityAttestationKey?: string;
+  readonly realityAttestationSignerId?: string;
+  readonly realityAttestationKeyVersion?: string;
 }
 
 export interface OmegaPipelineResult {
@@ -75,6 +81,8 @@ export interface OmegaPipelineResult {
   readonly record?: OmegaChangeRecord;
   readonly execution?: TransitionExecution;
   readonly reality?: RealityVerification;
+  readonly realityAttestation?: RealityAttestation;
+  readonly statusVector: OmegaStatusVector;
   readonly provenanceRoot: string;
   readonly lineage: readonly string[];
 }
@@ -83,6 +91,21 @@ const sha256 = (payload: string): string => createHash('sha256').update(payload)
 
 const buildProvenanceRoot = (parts: readonly string[]): string =>
   `prov-root-${sha256(JSON.stringify(parts))}`;
+
+const statusVector = (overrides: Partial<OmegaStatusVector> = {}): OmegaStatusVector => ({
+  declared: 'YES',
+  represented: 'UNKNOWN',
+  implemented: 'UNKNOWN',
+  tested: 'UNKNOWN',
+  admitted: 'UNKNOWN',
+  executed: 'UNKNOWN',
+  observed: 'UNKNOWN',
+  verified: 'UNKNOWN',
+  attested: 'UNKNOWN',
+  deployed: 'UNKNOWN',
+  healthy: 'UNKNOWN',
+  ...overrides,
+});
 
 /**
  * Resolve a bounded transition handler from the worker registry.
@@ -152,6 +175,9 @@ export function runOmegaChangePipeline(input: OmegaPipelineInput): OmegaPipeline
   const now = input.now ?? (() => new Date().toISOString());
   const lineage: string[] = [];
   const memory = input.memory;
+  const appendRecord = (record: OmegaChangeRecord): void => {
+    if (!memory?.appendCausal) memory?.append(record);
+  };
 
   // C0/C1 — Compile
   const ir = compileOmegaIntent(input.compile);
@@ -166,6 +192,7 @@ export function runOmegaChangePipeline(input: OmegaPipelineInput): OmegaPipeline
       haltReason: 'IR_INVALID',
       ir,
       validation,
+      statusVector: statusVector({ represented: 'YES', implemented: 'NO', tested: 'NO' }),
       provenanceRoot: buildProvenanceRoot(lineage),
       lineage,
     };
@@ -224,7 +251,7 @@ export function runOmegaChangePipeline(input: OmegaPipelineInput): OmegaPipeline
     lineage.push(`admit:${record.decision}`);
   }
   if (record.decision === 'DENY') {
-    memory?.append(record);
+    appendRecord(record);
     return {
       stage: 'ADMIT',
       halted: true,
@@ -232,12 +259,13 @@ export function runOmegaChangePipeline(input: OmegaPipelineInput): OmegaPipeline
       ir,
       validation,
       record,
+      statusVector: statusVector({ represented: 'YES', implemented: 'YES', tested: 'YES', admitted: 'NO' }),
       provenanceRoot: buildProvenanceRoot(lineage),
       lineage,
     };
   }
   if (record.decision !== 'ALLOW') {
-    memory?.append(record);
+    appendRecord(record);
     return {
       stage: 'ADMIT',
       halted: true,
@@ -245,6 +273,7 @@ export function runOmegaChangePipeline(input: OmegaPipelineInput): OmegaPipeline
       ir,
       validation,
       record,
+      statusVector: statusVector({ represented: 'YES', implemented: 'YES', tested: 'YES', admitted: 'UNKNOWN' }),
       provenanceRoot: buildProvenanceRoot(lineage),
       lineage,
     };
@@ -263,7 +292,7 @@ export function runOmegaChangePipeline(input: OmegaPipelineInput): OmegaPipeline
   );
 
   if (!resolved.handler) {
-    memory?.append(record);
+    appendRecord(record);
     return {
       stage: 'EXECUTE',
       halted: true,
@@ -271,6 +300,7 @@ export function runOmegaChangePipeline(input: OmegaPipelineInput): OmegaPipeline
       ir,
       validation,
       record,
+      statusVector: statusVector({ represented: 'YES', implemented: 'YES', tested: 'YES', admitted: 'YES', executed: 'NO' }),
       provenanceRoot: buildProvenanceRoot(lineage),
       lineage: [...lineage, `worker:${resolved.error ?? 'missing'}`],
     };
@@ -281,7 +311,7 @@ export function runOmegaChangePipeline(input: OmegaPipelineInput): OmegaPipeline
   }
 
   const execOptions: TransitionExecutorOptions = {
-    memory,
+    memory: memory?.appendCausal ? { append: () => undefined } : memory,
     now,
   };
   const execution = executeAuthorizedTransition(record, resolved.handler, execOptions);
@@ -299,6 +329,7 @@ export function runOmegaChangePipeline(input: OmegaPipelineInput): OmegaPipeline
       validation,
       record: execution.record,
       execution,
+      statusVector: statusVector({ represented: 'YES', implemented: 'YES', tested: 'YES', admitted: 'YES', executed: 'NO' }),
       provenanceRoot: buildProvenanceRoot(lineage),
       lineage,
     };
@@ -313,16 +344,35 @@ export function runOmegaChangePipeline(input: OmegaPipelineInput): OmegaPipeline
       validation,
       record: execution.record,
       execution,
+      statusVector: statusVector({ represented: 'YES', implemented: 'YES', tested: 'YES', admitted: 'YES', executed: 'YES' }),
       provenanceRoot: buildProvenanceRoot(lineage),
       lineage,
     };
   }
 
-  const realityOptions: RealityObserverOptions = { memory, now };
+  const realityMemory = memory?.appendCausal
+    ? { append: (_record: OmegaChangeRecord) => undefined }
+    : memory;
+  const realityOptions: RealityObserverOptions = { memory: realityMemory, now };
   const reality = verifyExecutedReality(execution, input.observeState, realityOptions);
   lineage.push(`reality:${reality.status}`);
   if (reality.evidence.startsWith('sha256:')) {
     lineage.push(reality.evidence);
+  }
+
+  let realityAttestation: RealityAttestation | undefined;
+  if (input.realityAttestationKey?.trim()) {
+    realityAttestation = createRealityAttestation(reality.record, reality, {
+      key: input.realityAttestationKey,
+      signerId: input.realityAttestationSignerId,
+      keyVersion: input.realityAttestationKeyVersion,
+      attestedAt: now(),
+    });
+    if (memory?.appendCausal) {
+      memory.appendCausal(reality.record, reality, realityAttestation);
+    }
+  } else if (memory?.appendCausal) {
+    throw new Error('durable causal memory requires a reality attestation key');
   }
 
   return {
@@ -333,6 +383,17 @@ export function runOmegaChangePipeline(input: OmegaPipelineInput): OmegaPipeline
     record: reality.record,
     execution,
     reality,
+    realityAttestation,
+    statusVector: statusVector({
+      represented: 'YES',
+      implemented: 'YES',
+      tested: 'YES',
+      admitted: 'YES',
+      executed: 'YES',
+      observed: 'YES',
+      verified: reality.status === 'VERIFIED' ? 'YES' : reality.status === 'DIVERGENT' ? 'NO' : 'UNKNOWN',
+      attested: execution.attestationId ? 'YES' : 'UNKNOWN',
+    }),
     provenanceRoot: buildProvenanceRoot(lineage),
     lineage,
   };
