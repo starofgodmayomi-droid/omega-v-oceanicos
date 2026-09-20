@@ -15,6 +15,19 @@ const compile = {
   observation: { observerId: 'api-test', targets: ['api:pipeline'], evidenceRequired: ['state'] },
 };
 
+async function removeTemporaryDirectory(directory: string): Promise<void> {
+  for (let attempt = 0; attempt < 50; attempt += 1) {
+    try {
+      rmSync(directory, { recursive: true, force: true, maxRetries: 2, retryDelay: 100 });
+      return;
+    } catch (error: any) {
+      if (error?.code !== 'EBUSY' && error?.code !== 'EPERM') throw error;
+      await new Promise((resolve) => setTimeout(resolve, 200));
+    }
+  }
+  rmSync(directory, { recursive: true, force: true });
+}
+
 describe('live API pipeline → durable causal memory', () => {
   it('registers POST /v1/pipeline and returns a replayable C7 record', async () => {
     const directory = mkdtempSync(join(tmpdir(), 'omega-api-causal-'));
@@ -62,7 +75,7 @@ describe('live API pipeline → durable causal memory', () => {
       else process.env.OMEGA_CAUSAL_MEMORY_PATH = previousPath;
       if (previousKey === undefined) delete process.env.OMEGA_REALITY_ATTESTATION_KEY;
       else process.env.OMEGA_REALITY_ATTESTATION_KEY = previousKey;
-      rmSync(directory, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+      await removeTemporaryDirectory(directory);
     }
   });
 });
