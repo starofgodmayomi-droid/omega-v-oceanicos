@@ -327,6 +327,34 @@ export class AttestationService {
     return createSignaturePayload(attestation);
   }
 
+  /** Sign a caller-owned canonical payload with this service's configured key. */
+  public signPayload(payload: Record<string, unknown>): string {
+    return this.generateSignature(payload, this.algorithm);
+  }
+
+  /** Verify a caller-owned canonical payload against this service's configured key. */
+  public verifyPayload(
+    payload: Record<string, unknown>,
+    signature: string,
+    keyVersion: string,
+    signingAlgorithm: string,
+  ): boolean {
+    if (keyVersion !== this.keyVersion || signingAlgorithm !== this.algorithm || !signature) return false;
+    if (this.algorithm === 'Ed25519') {
+      if (!this.publicKey) return false;
+      try {
+        const bytes = Buffer.from(signature.replace(/^0x/, ''), 'hex');
+        return verify(null, Buffer.from(JSON.stringify(payload)), this.publicKey, bytes);
+      } catch {
+        return false;
+      }
+    }
+    const expected = this.generateSignature(payload, this.algorithm);
+    const actualBytes = Buffer.from(signature.replace(/^0x/, ''), 'hex');
+    const expectedBytes = Buffer.from(expected.replace(/^0x/, ''), 'hex');
+    return actualBytes.length === expectedBytes.length && timingSafeEqual(actualBytes, expectedBytes);
+  }
+
   /**
    * Generate a unique attestation ID
    */
@@ -403,3 +431,5 @@ export class AttestationService {
 }
 
 export default AttestationService;
+
+export * from './reality.js';

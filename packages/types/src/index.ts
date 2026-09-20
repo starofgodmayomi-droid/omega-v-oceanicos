@@ -158,3 +158,5 @@ export interface SceneSimulation {
   };
   createdAt: string;
 }
+
+export * from './reality-attestation.js';
