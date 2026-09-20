@@ -3,7 +3,11 @@
  * Wired from apps/api/src/index.ts — fail-closed, evidence-bound.
  */
 import type { FastifyInstance } from 'fastify';
-import { runOmegaChangePipeline, createOmegaWorkerRegistry } from '@oceanicos/mini';
+import {
+  FileCausalMemory,
+  runOmegaChangePipeline,
+  createOmegaWorkerRegistry,
+} from '@oceanicos/mini';
 
 type JsonError = (
   reply: any,
@@ -49,6 +53,18 @@ export function registerPipelineRoute(
     }
 
     const memoryEntries: unknown[] = [];
+    const causalMemoryPath = process.env.OMEGA_CAUSAL_MEMORY_PATH?.trim();
+    const causalMemoryKey = process.env.OMEGA_REALITY_ATTESTATION_KEY?.trim();
+    if (causalMemoryPath && !causalMemoryKey) {
+      return jsonError(reply, 503, 'CAUSAL_MEMORY_KEY_REQUIRED');
+    }
+    const memory: any = causalMemoryPath && causalMemoryKey
+      ? new FileCausalMemory(causalMemoryPath, {
+          key: causalMemoryKey,
+          signerId: process.env.OMEGA_REALITY_ATTESTATION_SIGNER,
+          keyVersion: process.env.OMEGA_REALITY_ATTESTATION_KEY_VERSION,
+        })
+      : { append: (record: unknown) => memoryEntries.push(record) };
     try {
       const result = runOmegaChangePipeline({
         compile,
@@ -69,7 +85,10 @@ export function registerPipelineRoute(
               })
             : undefined,
         observeState: observedState ? () => observedState : undefined,
-        memory: { append: (record) => memoryEntries.push(record) },
+        memory,
+        realityAttestationKey: causalMemoryKey,
+        realityAttestationSignerId: process.env.OMEGA_REALITY_ATTESTATION_SIGNER,
+        realityAttestationKeyVersion: process.env.OMEGA_REALITY_ATTESTATION_KEY_VERSION,
       });
 
       return {
@@ -91,6 +110,9 @@ export function registerPipelineRoute(
           expectedState: result.reality?.expectedState ?? result.record?.stateAfter ?? requestedAfter ?? null,
           observedState: result.reality?.observedState ?? observedState ?? null,
           realityEvidence: result.reality?.evidence ?? null,
+          realityAttestation: result.realityAttestation ?? null,
+          durableMemory: Boolean(causalMemoryPath && causalMemoryKey),
+          memoryIntegrity: causalMemoryPath && causalMemoryKey ? memory.verifyIntegrity() : null,
           memoryAppended: memoryEntries.length,
         },
       };

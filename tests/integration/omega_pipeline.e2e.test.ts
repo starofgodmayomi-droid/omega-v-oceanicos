@@ -73,6 +73,19 @@ describe('Ω∞v unified change pipeline', () => {
     assert.equal(result.validation?.valid, true);
     assert.equal(result.execution?.status, 'EXECUTED');
     assert.equal(result.reality?.status, 'VERIFIED');
+    assert.deepEqual(result.statusVector, {
+      declared: 'YES',
+      represented: 'YES',
+      implemented: 'YES',
+      tested: 'YES',
+      admitted: 'YES',
+      executed: 'YES',
+      observed: 'YES',
+      verified: 'YES',
+      attested: 'YES',
+      deployed: 'UNKNOWN',
+      healthy: 'UNKNOWN',
+    });
     assert.equal(result.reality?.observedState, 'S1');
     assert.match(result.reality?.evidence ?? '', /^sha256:[a-f0-9]{64}$/);
     assert.match(result.provenanceRoot, /^prov-root-[a-f0-9]{64}$/);
@@ -109,6 +122,10 @@ describe('Ω∞v unified change pipeline', () => {
     assert.equal(result.haltReason, 'DENIED');
     assert.equal(result.stage, 'ADMIT');
     assert.equal(result.record?.decision, 'DENY');
+    assert.equal(result.statusVector.admitted, 'NO');
+    assert.equal(result.statusVector.executed, 'UNKNOWN');
+    assert.equal(result.statusVector.verified, 'UNKNOWN');
+    assert.equal(result.statusVector.deployed, 'UNKNOWN');
   });
 
   it('records DIVERGENT when observation disagrees with expected state', () => {
@@ -126,6 +143,11 @@ describe('Ω∞v unified change pipeline', () => {
     assert.equal(result.reality?.status, 'DIVERGENT');
     assert.equal(result.reality?.expectedState, 'S1');
     assert.equal(result.reality?.observedState, 'S2');
+    assert.equal(result.statusVector.executed, 'YES');
+    assert.equal(result.statusVector.observed, 'YES');
+    assert.equal(result.statusVector.verified, 'NO');
+    assert.equal(result.statusVector.attested, 'YES');
+    assert.equal(result.statusVector.deployed, 'UNKNOWN');
   });
 
   it('preserves UNKNOWN when the reality observer is unavailable', () => {
@@ -146,6 +168,9 @@ describe('Ω∞v unified change pipeline', () => {
     assert.equal(result.reality?.expectedState, 'S1');
     assert.equal(result.reality?.observedState, undefined);
     assert.equal(result.reality?.evidence, 'observation unavailable; reality could not be verified');
+    assert.equal(result.statusVector.observed, 'YES');
+    assert.equal(result.statusVector.verified, 'UNKNOWN');
+    assert.equal(result.statusVector.attested, 'YES');
   });
 
   it('fails closed when worker is missing and no handler is provided', () => {
@@ -158,6 +183,9 @@ describe('Ω∞v unified change pipeline', () => {
     assert.equal(result.halted, true);
     assert.equal(result.haltReason, 'WORKER_NOT_FOUND');
     assert.equal(result.stage, 'EXECUTE');
+    assert.equal(result.statusVector.admitted, 'YES');
+    assert.equal(result.statusVector.executed, 'NO');
+    assert.equal(result.statusVector.deployed, 'UNKNOWN');
   });
 
   it('halts at ADMIT when declared worker is not in the supplied registry', () => {
