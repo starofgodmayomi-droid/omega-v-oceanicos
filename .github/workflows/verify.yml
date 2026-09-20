@@ -151,7 +151,7 @@ jobs:
         run: pnpm --recursive run typecheck
 
       - name: Run tests
-        run: pnpm test:e2e
+        run: pnpm exec node --experimental-strip-types --test ./tests/integration/max_compress_stack.e2e.test.ts ./tests/integration/worker-lifecycle.integration.test.ts ./tests/integration/causal-memory.integration.test.ts ./tests/integration/api-pipeline-causal.integration.test.ts
 
       - name: Build packages
         run: pnpm --recursive run build
@@ -259,7 +259,7 @@ jobs:
           grep -q '"realityStatus":"VERIFIED"' /tmp/pipeline.json
           grep -q '"durableMemory":true' /tmp/pipeline.json
           grep -q '"memoryIntegrity":true' /tmp/pipeline.json
-          test -s "$RUNNER_TEMP/omega-ledger/causal.jsonl"
+          docker exec omega-smoke sh -c 'test -s /tmp/omega-ledger/causal.jsonl'
 
           timeout 8s curl -sN \
             -H 'Authorization: Bearer ci-smoke-read-token' \
