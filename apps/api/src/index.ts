@@ -98,6 +98,10 @@ export function createApp(
     encryptionKey: process.env.OMEGA_LOCAL_JOB_LEDGER_KEY,
   });
 
+  fastify.addHook('onClose', async () => {
+    ledgerMemory.close();
+  });
+
   const revocations = new Map<string, { id: string; attestationId: string; reason: string; revokedBy: string; revokedAt: string }>();
   const streamClients = new Set<(block: any) => boolean>();
   let minerInterval: NodeJS.Timeout | null = null;

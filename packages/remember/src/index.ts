@@ -3,6 +3,7 @@ import { IMiniBlock, IObservation, IEvidence } from '@oceanicos/types';
 
 interface ISqliteDatabase {
   exec(sql: string): void;
+  close?(): void;
   prepare(sql: string): {
     get(...params: any[]): any;
     run(...params: any[]): any;
@@ -76,7 +77,10 @@ export class RememberEngine {
       nonce,
     };
   }
+
+  public close(): void {
+    this.db.close?.();
+  }
 }
 
 export * from './ledger.js';
-
