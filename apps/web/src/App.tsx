@@ -70,6 +70,14 @@ interface KernelCapabilitySnapshot {
   limitations: string[];
 }
 
+interface CausalReplayEntry {
+  record: { id: string; stateAfter?: string; decision?: string };
+  reality: { status: string; expectedState?: string; observedState?: string; evidence: string };
+  attestation: { id: string; status: string; signerId: string; keyVersion: string; attestedAt: string };
+  sequence: number;
+  hash: string;
+}
+
 export function App() {
   const [tip, setTip] = useState<any>(null);
   const [history, setHistory] = useState<any[]>([]);
@@ -98,6 +106,10 @@ export function App() {
   const [attestLoading, setAttestLoading] = useState(false);
   const [kernelCapabilities, setKernelCapabilities] = useState<KernelCapabilitySnapshot | null>(null);
   const [kernelCapabilitiesError, setKernelCapabilitiesError] = useState<string | null>(null);
+  const [causalChangeId, setCausalChangeId] = useState('');
+  const [causalReplay, setCausalReplay] = useState<CausalReplayEntry | null>(null);
+  const [causalReplayLoading, setCausalReplayLoading] = useState(false);
+  const [causalReplayError, setCausalReplayError] = useState<string | null>(null);
 
   const eventSourceRef = useRef<EventSource | null>(null);
 
@@ -131,6 +143,29 @@ export function App() {
       setKernelCapabilitiesError(
         err instanceof Error ? err.message : 'capability snapshot unavailable'
       );
+    }
+  };
+
+  const fetchCausalReplay = async () => {
+    const changeId = causalChangeId.trim();
+    if (!changeId) {
+      setCausalReplayError('Enter a change ID before requesting replay evidence');
+      setCausalReplay(null);
+      return;
+    }
+    setCausalReplayLoading(true);
+    setCausalReplayError(null);
+    try {
+      const data = await apiRequest<{ success: boolean; memoryIntegrity: boolean; replay: CausalReplayEntry }>(
+        `/v1/pipeline/${encodeURIComponent(changeId)}`
+      );
+      if (!data.success || !data.memoryIntegrity || !data.replay) throw new Error('causal replay is not verified');
+      setCausalReplay(data.replay);
+    } catch (err: any) {
+      setCausalReplay(null);
+      setCausalReplayError(err instanceof Error ? err.message : 'causal replay unavailable');
+    } finally {
+      setCausalReplayLoading(false);
     }
   };
 
@@ -676,6 +711,68 @@ export function App() {
           </>
         ) : (
           <div style={{ color: '#94a3b8', fontSize: '11px', marginTop: '12px' }}>Loading capability snapshot…</div>
+        )}
+      </section>
+
+      <section
+        aria-label="Durable causal replay evidence"
+        style={{
+          background: '#07121b',
+          border: '1px solid #38bdf833',
+          borderRadius: '6px',
+          padding: '16px',
+          marginBottom: '20px',
+        }}
+      >
+        <div style={{ color: '#38bdf8', fontSize: '13px', fontWeight: 'bold' }}>
+          DURABLE CAUSAL REPLAY
+        </div>
+        <div style={{ color: '#94a3b8', fontSize: '11px', marginTop: '5px' }}>
+          Read-only C7→C8 evidence lookup; missing or degraded records remain non-verified.
+        </div>
+        <div style={{ display: 'flex', gap: '8px', marginTop: '12px', flexWrap: 'wrap' }}>
+          <input
+            aria-label="Causal change ID"
+            value={causalChangeId}
+            onChange={(event) => setCausalChangeId(event.target.value)}
+            placeholder="change ID"
+            style={{
+              flex: '1 1 240px',
+              minWidth: '180px',
+              background: '#040d14',
+              color: '#d1fae5',
+              border: '1px solid #38bdf855',
+              borderRadius: '4px',
+              padding: '9px 10px',
+              fontFamily: 'inherit',
+              fontSize: '12px',
+            }}
+          />
+          <button
+            onClick={fetchCausalReplay}
+            disabled={causalReplayLoading}
+            style={{
+              background: '#0a1d2e',
+              color: '#38bdf8',
+              border: '1px solid #38bdf855',
+              borderRadius: '4px',
+              padding: '9px 14px',
+              fontSize: '12px',
+              fontWeight: 'bold',
+              cursor: causalReplayLoading ? 'wait' : 'pointer',
+            }}
+          >
+            {causalReplayLoading ? 'REPLAYING…' : 'LOOK UP REPLAY'}
+          </button>
+        </div>
+        {causalReplayError && <div style={{ color: '#fca5a5', fontSize: '11px', marginTop: '10px' }}>{causalReplayError}</div>}
+        {causalReplay && (
+          <div style={{ marginTop: '12px', display: 'grid', gap: '6px', fontSize: '11px', color: '#a7f3d0' }}>
+            <div>STATUS: {causalReplay.attestation.status} · INTEGRITY: VERIFIED</div>
+            <div>CHANGE: {causalReplay.record.id} · SEQUENCE: {causalReplay.sequence}</div>
+            <div>ATTESTOR: {causalReplay.attestation.signerId} · KEY: {causalReplay.attestation.keyVersion}</div>
+            <div style={{ color: '#64748b', overflowWrap: 'anywhere' }}>HASH: {causalReplay.hash}</div>
+          </div>
         )}
       </section>
 

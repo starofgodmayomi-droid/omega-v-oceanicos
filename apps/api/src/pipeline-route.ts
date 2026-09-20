@@ -120,4 +120,31 @@ export function registerPipelineRoute(
       return jsonError(reply, 400, 'PIPELINE_REJECTED', { message: String(error?.message ?? error) });
     }
   });
+
+  fastify.get('/v1/pipeline/:changeId', async (request: any, reply) => {
+    const changeId = typeof request.params?.changeId === 'string' ? request.params.changeId.trim() : '';
+    if (!changeId || changeId.length > 256) return jsonError(reply, 400, 'INVALID_CHANGE_ID');
+
+    const causalMemoryPath = process.env.OMEGA_CAUSAL_MEMORY_PATH?.trim();
+    const causalMemoryKey = process.env.OMEGA_REALITY_ATTESTATION_KEY?.trim();
+    if (!causalMemoryPath || !causalMemoryKey) return jsonError(reply, 503, 'CAUSAL_MEMORY_UNAVAILABLE');
+
+    try {
+      const memory = new FileCausalMemory(causalMemoryPath, {
+        key: causalMemoryKey,
+        signerId: process.env.OMEGA_REALITY_ATTESTATION_SIGNER,
+        keyVersion: process.env.OMEGA_REALITY_ATTESTATION_KEY_VERSION,
+      });
+      if (!memory.verifyIntegrity()) return jsonError(reply, 503, 'CAUSAL_MEMORY_INTEGRITY_DEGRADED');
+      const entry = memory.replay(changeId);
+      if (!entry) return jsonError(reply, 404, 'CAUSAL_RECORD_NOT_FOUND');
+      return {
+        success: true,
+        memoryIntegrity: true,
+        replay: entry,
+      };
+    } catch (error: any) {
+      return jsonError(reply, 503, 'CAUSAL_MEMORY_UNAVAILABLE', { message: String(error?.message ?? error) });
+    }
+  });
 }
