@@ -62,7 +62,7 @@ describe('live API pipeline → durable causal memory', () => {
       else process.env.OMEGA_CAUSAL_MEMORY_PATH = previousPath;
       if (previousKey === undefined) delete process.env.OMEGA_REALITY_ATTESTATION_KEY;
       else process.env.OMEGA_REALITY_ATTESTATION_KEY = previousKey;
-      rmSync(directory, { recursive: true, force: true });
+      rmSync(directory, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
     }
   });
 });

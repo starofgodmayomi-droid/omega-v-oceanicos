@@ -151,7 +151,7 @@ jobs:
         run: pnpm --recursive run typecheck
 
       - name: Run tests
-        run: pnpm exec node --experimental-strip-types --test ./tests/integration/max_compress_stack.e2e.test.ts ./tests/integration/worker-lifecycle.integration.test.ts ./tests/integration/causal-memory.integration.test.ts ./tests/integration/api-pipeline-causal.integration.test.ts
+        run: pnpm exec node --experimental-strip-types --test-concurrency=1 --test ./tests/integration/max_compress_stack.e2e.test.ts ./tests/integration/worker-lifecycle.integration.test.ts ./tests/integration/causal-memory.integration.test.ts ./tests/integration/api-pipeline-causal.integration.test.ts
 
       - name: Build packages
         run: pnpm --recursive run build
