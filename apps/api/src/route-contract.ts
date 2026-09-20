@@ -14,6 +14,7 @@ export const API_ROUTE_INVENTORY = [
   'POST /v1/attest',
   'POST /v1/cycle',
   'POST /v1/pipeline',
+  'GET /v1/pipeline/:changeId',
   'GET /v1/block/tip',
   'GET /v1/stream',
   'POST /v1/miner/start',

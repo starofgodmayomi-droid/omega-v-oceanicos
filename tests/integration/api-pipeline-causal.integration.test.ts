@@ -67,6 +67,15 @@ describe('live API pipeline → durable causal memory', () => {
         const memory = new FileCausalMemory(memoryPath, { key: 'api-causal-test-key' });
         assert.equal(memory.verifyIntegrity(), true);
         assert.equal(memory.replay('api-causal-1')?.attestation.status, 'VERIFIED');
+
+        const replayResponse = await app.inject({ method: 'GET', url: '/v1/pipeline/api-causal-1' });
+        assert.equal(replayResponse.statusCode, 200);
+        assert.equal(replayResponse.json().memoryIntegrity, true);
+        assert.equal(replayResponse.json().replay.attestation.changeId, 'api-causal-1');
+
+        const missingResponse = await app.inject({ method: 'GET', url: '/v1/pipeline/missing-change' });
+        assert.equal(missingResponse.statusCode, 404);
+        assert.equal(missingResponse.json().error, 'CAUSAL_RECORD_NOT_FOUND');
       } finally {
         await app.close();
       }
