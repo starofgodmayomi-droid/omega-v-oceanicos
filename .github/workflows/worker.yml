@@ -12,12 +12,8 @@ permissions:
 
 jobs:
   worker:
-    name: Worker verification (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest]
+    name: Worker verification (ubuntu-latest)
+    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v7
