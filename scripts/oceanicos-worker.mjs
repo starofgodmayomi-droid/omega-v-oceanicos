@@ -19,8 +19,8 @@ function parseBoundedInteger(name, rawValue, defaultValue, minimum) {
 
 const maxCycles = parseBoundedInteger('OMEGA_WORKER_CYCLES', process.env.OMEGA_WORKER_CYCLES, 1, 1);
 const intervalMs = parseBoundedInteger('OMEGA_WORKER_INTERVAL_MS', process.env.OMEGA_WORKER_INTERVAL_MS, 5000, 0);
-const pnpmCommand = process.platform === 'win32' ? 'cmd.exe' : 'pnpm';
-const pnpmArgs = (script) => process.platform === 'win32' ? ['/d', '/c', `pnpm ${script}`] : [script];
+const pnpmCommand = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm';
+const pnpmArgs = (script) => [script];
 const commands = verify
   ? [
       ['build', pnpmCommand, pnpmArgs('build')],
@@ -39,7 +39,7 @@ function run(label, command, commandArgs) {
     const child = spawn(command, commandArgs, {
       cwd: root,
       stdio: 'inherit',
-      shell: false,
+      shell: process.platform === 'win32',
       windowsHide: true,
     });
 
