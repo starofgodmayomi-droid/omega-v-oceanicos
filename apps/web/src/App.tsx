@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { EcosystemPanel } from './EcosystemPanel';
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
 
@@ -821,6 +822,8 @@ export function App() {
           <div style={{ color: '#94a3b8', fontSize: '11px', marginTop: '12px' }}>Loading capability snapshot…</div>
         )}
       </section>
+
+      <EcosystemPanel />
 
       {/* Multi-Region Sovereign Mesh Panel */}
       {meshSimulation && (

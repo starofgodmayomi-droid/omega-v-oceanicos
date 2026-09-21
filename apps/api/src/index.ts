@@ -11,6 +11,7 @@ import { AttestationService } from '@oceanicos/attestation';
 import { OceanicosKernel } from '@omega-v/kernel';
 import { LocalJobError, LocalJobLedger, LOCAL_JOB_WINDOW } from './jobs.js';
 import { registerPipelineRoute } from './pipeline-route.js';
+import { registerEcosystemRoute } from './ecosystem-route.js';
 import { OmegaCommandStore, registerOmegaRoutes } from './omega.js';
 import {
   ENCRYPTION_ALGORITHM,
@@ -146,6 +147,7 @@ export function createApp(
   });
 
   registerPipelineRoute(fastify, jsonError);
+  registerEcosystemRoute(fastify, authMode, Boolean(attestationSigningKey));
 
   fastify.get('/health', async (_request, reply) => {
     const memoryReady = true;
