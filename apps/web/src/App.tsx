@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { EcosystemPanel } from './EcosystemPanel';
+import { RealityPanel } from './RealityPanel';
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
 
@@ -824,6 +825,7 @@ export function App() {
       </section>
 
       <EcosystemPanel />
+      <RealityPanel />
 
       {/* Multi-Region Sovereign Mesh Panel */}
       {meshSimulation && (
