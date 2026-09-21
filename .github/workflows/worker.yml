@@ -1,0 +1,60 @@
+name: Bounded Full-Stack Worker
+
+on:
+  push:
+    branches:
+      - upgrade/full-stack-evidence-bound-mood
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  worker:
+    name: Worker verification (ubuntu-latest)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Enable pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.34.5
+
+      - name: Use Node.js 22.x
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22.x
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run bounded worker inspection
+        run: pnpm worker
+        env:
+          OMEGA_WORKER_CYCLES: 1
+          OMEGA_WORKER_INTERVAL_MS: 0
+
+      - name: Run bounded worker verification
+        run: pnpm worker:verify
+        env:
+          OMEGA_WORKER_CYCLES: 1
+          OMEGA_WORKER_INTERVAL_MS: 0
+
+      - name: Record worker evidence
+        if: success()
+        shell: bash
+        run: |
+          {
+            echo "### 💧 Ω∞v bounded worker evidence"
+            echo ""
+            echo "- Runtime: Node 22.x"
+            echo "- Worker: inspect + verification"
+            echo "- Cycles: 1"
+            echo "- External action: OFF"
+            echo "- Git write: OFF"
+            echo "- Result: executable steps completed successfully"
+          } >> "$GITHUB_STEP_SUMMARY"
