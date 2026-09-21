@@ -19,12 +19,12 @@ function parseBoundedInteger(name, rawValue, defaultValue, minimum) {
 
 const maxCycles = parseBoundedInteger('OMEGA_WORKER_CYCLES', process.env.OMEGA_WORKER_CYCLES, 1, 1);
 const intervalMs = parseBoundedInteger('OMEGA_WORKER_INTERVAL_MS', process.env.OMEGA_WORKER_INTERVAL_MS, 5000, 0);
-
+const pnpmCommand = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm';
 const commands = verify
   ? [
-      ['build', 'pnpm', ['build']],
-      ['typecheck', 'pnpm', ['typecheck']],
-      ['test', 'pnpm', ['test:e2e']],
+      ['build', pnpmCommand, ['build']],
+      ['typecheck', pnpmCommand, ['typecheck']],
+      ['test', pnpmCommand, ['test:e2e']],
     ]
   : [['inspect', process.platform === 'win32' ? 'cmd.exe' : 'sh', process.platform === 'win32'
       ? ['/d', '/c', 'git status --short --branch']
