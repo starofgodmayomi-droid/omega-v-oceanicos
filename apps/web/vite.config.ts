@@ -5,6 +5,8 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 3000,
+    host: true,
+    allowedHosts: true,
   },
   preview: {
     allowedHosts: process.env.VITE_ALLOWED_HOST

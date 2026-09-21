@@ -1,0 +1,59 @@
+# Base44 dev environment for Ω∞v Oceanicos
+# Development-oriented: runs from bind-mounted source with live reload.
+services:
+  # One-shot: install deps + build the API's workspace dependency tree.
+  setup:
+    image: node:22
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: sh -c "corepack enable && corepack prepare pnpm@10 --activate && pnpm install --frozen-lockfile && pnpm --filter api... run build"
+    environment:
+      - CI=true
+
+  # API: Fastify server (CommonJS, ts-node live reload).
+  api:
+    image: node:22
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: sh -c "mkdir -p data && npx tsc --watch -p apps/api & node --watch apps/api/dist/index.js"
+    environment:
+      - NODE_ENV=development
+      - API_PORT=5000
+      - PORT=5000
+      - OMEGA_AUTH_MODE=local
+      - OMEGA_DB_PATH=/app/data/oceanicos.db
+      - OMEGA_ALLOW_UNSIGNED_CYCLE=true
+    env_file:
+      - ./.env.base44-defaults
+      - /run/base44/app.env
+    ports:
+      - "5000:5000"
+    depends_on:
+      setup:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:5000/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 25s
+
+  # Web: Vite + React dev server (live reload), public on port 3000.
+  web:
+    image: node:22
+    working_dir: /app/apps/web
+    volumes:
+      - .:/app
+    command: sh -c "mkdir -p ../data && npx vite --host 0.0.0.0 --port 3000"
+    environment:
+      - VITE_API_URL=https://5000-${BASE44_PUBLIC_HOST_SUFFIX}
+      - __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS
+    ports:
+      - "3000:3000"
+    depends_on:
+      setup:
+        condition: service_completed_successfully
+      api:
+        condition: service_healthy
