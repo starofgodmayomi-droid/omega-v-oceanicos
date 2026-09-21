@@ -1,6 +1,18 @@
 import { observeCandidateChange } from './change.js';
-import type { OmegaChangeRecord, OmegaCommand, OmegaCommandIR, OmegaWorkerId } from '@oceanicos/types';
-import { OMEGA_COMMAND_VERSION, OMEGA_IR_VERSION, validateOmegaCommandInput, workerRisk } from '@oceanicos/types';
+import type {
+  OmegaChangeRecord,
+  OmegaCommand,
+  OmegaCommandIR,
+  OmegaWorkerCapability,
+  OmegaWorkerId,
+  OmegaWorkerRegistry,
+} from '@oceanicos/types';
+import {
+  OMEGA_COMMAND_VERSION,
+  OMEGA_IR_VERSION,
+  validateOmegaCommandInput,
+  workerRisk,
+} from '@oceanicos/types';
 
 export type OmegaWorkerDescriptor = {
   readonly id: OmegaWorkerId;
@@ -39,12 +51,7 @@ export function buildOmegaCommand(input: {
   const now = input.now ?? (() => new Date().toISOString());
   const createdAt = now();
   const commandId = `omega-${input.idempotencyKey}`;
-  const change: OmegaChangeRecord = observeCandidateChange({
-    subject: commandId,
-    intent: input.intent,
-    stateBefore: input.context?.stateBefore ?? 'unknown',
-    context: input.context,
-  });
+  const change: OmegaChangeRecord = observeCandidateChange({ subject: commandId, intent: input.intent, stateBefore: input.context?.stateBefore ?? 'unknown', context: input.context });
   const ir: OmegaCommandIR = {
     version: OMEGA_IR_VERSION,
     intent: input.intent,
@@ -70,11 +77,31 @@ export function buildOmegaCommand(input: {
     dryRun: true,
     status: requiresReview ? 'REVIEW' : 'PROPOSED',
     dissent: [],
-    limitations: [
-      'AI and worker output is proposal evidence, not truth or authority',
-      'external reality requires an independent observer',
-      'arbitrary shell, credentials, remote mutation, and deployment are disabled',
-    ],
+    limitations: ['AI and worker output is proposal evidence, not truth or authority', 'external reality requires an independent observer', 'arbitrary shell, credentials, remote mutation, and deployment are disabled'],
     redacted: true,
   };
 }
+
+const validateWorker = (worker: OmegaWorkerCapability): void => {
+  if (!worker.id.trim()) throw new Error('Worker id is required');
+  if (!worker.version.trim()) throw new Error(`Worker ${worker.id} version is required`);
+  if (!worker.role.trim()) throw new Error(`Worker ${worker.id} role is required`);
+  if (!worker.description.trim()) throw new Error(`Worker ${worker.id} description is required`);
+  if (!worker.inputSchema.trim()) throw new Error(`Worker ${worker.id} inputSchema is required`);
+  if (!worker.outputSchema.trim()) throw new Error(`Worker ${worker.id} outputSchema is required`);
+  if (worker.timeoutMs <= 0) throw new Error(`Worker ${worker.id} timeoutMs must be positive`);
+  if (worker.maxOutputBytes <= 0) throw new Error(`Worker ${worker.id} maxOutputBytes must be positive`);
+  if (worker.retries < 0) throw new Error(`Worker ${worker.id} retries cannot be negative`);
+};
+
+export const createOmegaWorkerRegistry = (workers: readonly OmegaWorkerCapability[]): OmegaWorkerRegistry => {
+  const ids = new Set<string>();
+  for (const worker of workers) {
+    validateWorker(worker);
+    if (ids.has(worker.id)) throw new Error(`Duplicate worker id: ${worker.id}`);
+    ids.add(worker.id);
+  }
+  return { version: 'omega-workers.v1', workers: workers.map((worker) => ({ ...worker, policyRefs: [...worker.policyRefs], evidenceRequired: [...worker.evidenceRequired] })) };
+};
+
+export const getOmegaWorker = (registry: OmegaWorkerRegistry, workerId: string): OmegaWorkerCapability | undefined => registry.workers.find((worker) => worker.id === workerId);

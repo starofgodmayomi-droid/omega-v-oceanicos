@@ -69,10 +69,6 @@ export type ChangeDecision = 'ALLOW' | 'DENY' | 'REVIEW';
 /**
  * Minimal Ω∞v change/decision record binding existing observation,
  * verification, authority, policy, transition, attestation, and provenance.
- *
- * The contract separates what was observed from what was authorized and what
- * was subsequently proven. External changes may therefore be recorded with
- * `authorized: false` without falsely attributing them to Ω∞v.
  */
 export interface OmegaChangeRecord {
   readonly id: string;
@@ -98,8 +94,9 @@ export interface OmegaChangeRecord {
   readonly createdAt: string;
 }
 
+export * from './omega-ir.js';
+export * from './worker-registry.js';
 export * from './omega-command.js';
-
 export * from './scene.js';
 
 export type SceneState =

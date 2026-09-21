@@ -37,32 +37,24 @@ export type {
   RealityVerification,
   RealityVerificationStatus,
 } from './reality.js';
+export { compileOmegaIntent } from './compiler.js';
+export type { OmegaCompileInput } from './compiler.js';
+export { validateOmegaIR } from './ir-validator.js';
+export type { OmegaIRValidation, OmegaIRValidationIssue } from './ir-validator.js';
+export { createOmegaWorkerRegistry, getOmegaWorker } from './worker-registry.js';
 export { buildOmegaCommand, listOmegaWorkers } from './worker-registry.js';
 export type { OmegaWorkerDescriptor } from './worker-registry.js';
 
 export function executeOceanicosMaxExpansion(): CryptographicBlock {
   const kernelChain = new PluralisticHashChain();
-
-  // 1. Observe material conditions
   const telemetry = observePlanetaryBase();
-
-  // 2. Process regional compliance checks
   const verificationReceipt = verifyPlanetarySovereignty(telemetry);
-
-  // 3. Cryptographically commit block state
   const securelyMintedBlock = kernelChain.commitState(verificationReceipt);
-
-  // Pure UI Telemetry Output Extraction
-  console.log(
-    `\nΩ ➔ [👁 ${Math.round(telemetry.siliconYield * 100)}% | ✓ ${verificationReceipt.status} | 🧠 #${securelyMintedBlock.index}] ── LIVE ── 0 ERRORS ── $`
-  );
+  console.log(`\nΩ ➔ [👁 ${Math.round(telemetry.siliconYield * 100)}% | ✓ ${verificationReceipt.status} | 🧠 #${securelyMintedBlock.index}] ── LIVE ── 0 ERRORS ── $`);
   console.log(`   [BLOCK HASH]      : ${securelyMintedBlock.hash}`);
   console.log(`   [PREVIOUS HASH]   : ${securelyMintedBlock.previousHash}`);
   console.log(`   [STATE ROOT]      : ${securelyMintedBlock.payload.stateRootHash}`);
-  console.log(
-    `   [PLURALISM LOGS]  : Regional tracking matrix verified cleanly via ${securelyMintedBlock.nonce} consensus operations.\n`
-  );
-
+  console.log(`   [PLURALISM LOGS]  : Regional tracking matrix verified cleanly via ${securelyMintedBlock.nonce} consensus operations.\n`);
   return securelyMintedBlock;
 }
 

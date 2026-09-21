@@ -24,7 +24,7 @@ export type OmegaWorkerId =
   | 'security-reviewer'
   | 'governance-reviewer';
 
-export type OmegaTransitionSpec = {
+export type OmegaCommandTransitionSpec = {
   readonly kind: 'observation' | 'test' | 'report';
   readonly target: string;
   readonly arguments: Record<string, string>;
@@ -36,7 +36,7 @@ export type OmegaCommandIR = {
   readonly evidenceRefs: readonly string[];
   readonly policyRefs: readonly string[];
   readonly workerPlan: readonly OmegaWorkerId[];
-  readonly transition: OmegaTransitionSpec;
+  readonly transition: OmegaCommandTransitionSpec;
   readonly observation: { readonly kind: 'supplied-state' | 'execution-result' | 'api-health' };
 };
 
