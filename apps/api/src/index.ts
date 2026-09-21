@@ -103,6 +103,7 @@ export function createApp(
 
   fastify.addHook('onClose', async () => {
     ledgerMemory.close();
+    omegaCommands.close();
   });
 
   const revocations = new Map<string, { id: string; attestationId: string; reason: string; revokedBy: string; revokedAt: string }>();

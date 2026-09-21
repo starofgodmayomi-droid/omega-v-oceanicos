@@ -8,6 +8,8 @@
 
 This change deploys the upgraded `omega-reality-first` Manus skill into the repository under `skills/omega-reality-first/`. It also records a bounded verification of the repository-side canonical Notion → ΩIR bridge.
 
+It also closes the SQLite-backed Ω command store during API shutdown. This is a minimal lifecycle correction for the Windows integration runner, which otherwise retained a file handle during temporary-directory cleanup.
+
 ## Canonical bridge
 
 ```text
@@ -42,6 +44,7 @@ NOTION INTENT
 - `quick_validate.py /home/ubuntu/omega-v-oceanicos/skills/omega-reality-first` → **passed**.
 - `pnpm build` → **passed** across the workspace.
 - `pnpm test` → **31 passed, 0 failed** across the supported integration suites.
+- The previously failing Windows-sensitive API pipeline test → **passed locally** after explicit Ω command-store shutdown.
 - `node scripts/verify-canonical-bridge.mjs` → ΩIR `omega-ir.v1` compiled and admitted with `ALLOW` / `authorized: true`.
 
 ## Verification boundary

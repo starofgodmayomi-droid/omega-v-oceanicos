@@ -20,6 +20,7 @@ export type WorkerLease = {
 type SqliteDb = {
   exec(sql: string): void;
   prepare(sql: string): { get(...params: unknown[]): any; all(...params: unknown[]): any[]; run(...params: unknown[]): any };
+  close?: () => void;
 };
 
 function openDatabase(path: string): SqliteDb {
@@ -69,6 +70,10 @@ export class OmegaDurableStore {
         expires_at TEXT NOT NULL
       );
     `);
+  }
+
+  close(): void {
+    this.db.close?.();
   }
 
   getCommand(commandId: string): any | undefined {
