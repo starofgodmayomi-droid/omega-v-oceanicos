@@ -106,3 +106,8 @@ The compressed form is therefore the **explanatory layer**; the typed contracts,
 ## Durable coordination upgrade
 
 The command/event layer now supports restart recovery through a configurable SQLite database path (`OMEGA_DB_PATH`). Independent API processes sharing that volume coordinate worker registration, heartbeats, and exclusive leases through transactional writes. This is a real multi-process, single-volume boundary; it is not yet cross-host consensus or a network database. A staging or production topology must therefore provide a shared filesystem with correct locking semantics or adopt a reviewed network database adapter before claiming distributed deployment.
+
+
+## Observable coordination surface
+
+The dashboard consumes `GET /v1/omega/workers`, `GET /v1/omega/leases`, and redacted `GET /v1/omega/events` on a bounded three-second refresh interval. These views expose observed worker presence, lease state, and lifecycle evidence only. They do not authorize execution, prove external reality, or establish cross-host consensus. An unavailable endpoint is rendered as `UNKNOWN`, not as an empty or healthy state.

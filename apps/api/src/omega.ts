@@ -57,6 +57,7 @@ export class OmegaCommandStore {
   registerWorker(input: { workerId: string; capabilities: string[] }) { return this.durable.registerWorker(input); }
   heartbeatWorker(workerId: string) { return this.durable.heartbeatWorker(workerId); }
   listWorkers() { return this.durable.listWorkers(); }
+  listLeases() { return this.durable.listLeases(); }
   acquireWorkerLease(workerId: string, commandId: string, capability: string, durationMs?: number) { return this.durable.acquireLease(workerId, commandId, capability, durationMs); }
   releaseWorkerLease(leaseId: string, workerId: string) { return this.durable.releaseLease(leaseId, workerId); }
 }
@@ -75,6 +76,7 @@ function statusForDecision(decision: 'ALLOW' | 'DENY' | 'REVIEW'): OmegaCommandS
 
 export function registerOmegaRoutes(fastify: FastifyInstance, store: OmegaCommandStore): void {
   fastify.get('/v1/omega/workers', async () => ({ success: true, workers: listOmegaWorkers(), activeWorkers: store.listWorkers(), limitations: ['coordination is durable on the configured SQLite volume', 'worker output is evidence, not authority', 'cross-host coordination requires a shared filesystem or a future network database'] }));
+  fastify.get('/v1/omega/leases', async () => ({ success: true, leases: store.listLeases(), redacted: true }));
 
   fastify.post('/v1/omega/workers/register', async (request, reply) => {
     const body = bodyOf(request);
