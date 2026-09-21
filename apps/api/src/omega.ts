@@ -23,6 +23,10 @@ export class OmegaCommandStore {
     this.durable = new OmegaDurableStore(path);
   }
 
+  close(): void {
+    this.durable.close();
+  }
+
   create(input: Parameters<typeof buildOmegaCommand>[0]): StoredCommand {
     const existing = this.durable.getCommand(`omega-${input.idempotencyKey}`) as StoredCommand | undefined;
     if (existing) return existing;
