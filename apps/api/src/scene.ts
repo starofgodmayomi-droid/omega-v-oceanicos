@@ -5,6 +5,7 @@ import type {
   SceneSimulationInput,
   SceneState,
   SceneTrace,
+  validateSceneInput,
 } from '@omega-v/types';
 
 const SCENE_STATES: readonly SceneState[] = [
@@ -68,6 +69,9 @@ const traceFor = (seed: string, branchIndex: number, states: SceneState[]): Scen
   states.map((state, sequence) => ({
     sequence,
     state,
+    from: sequence === 0 ? null : states[sequence - 1],
+    to: state,
+    transition: sequence === 0 ? ('origin' as const) : ('advance' as const),
     status: sequence === 0 ? ('observed' as const) : ('verified' as const),
     evidence: `scene:${state}:${digest(`${seed}:branch:${branchIndex}:${sequence}:${state}`)}`,
   }));
@@ -88,9 +92,10 @@ const branchFor = (seed: string, branchIndex: number, steps: number): SceneBranc
 export const sceneStates = (): readonly SceneState[] => SCENE_STATES;
 
 export const simulateScene = (input: SceneSimulationInput = {}): SceneSimulation => {
-  const seed = boundedSeed(input.seed);
-  const steps = boundedSteps(input.steps);
-  const branchCount = boundedBranches(input.branches);
+  const validated = validateSceneInput(input);
+  const seed = boundedSeed(validated.seed);
+  const steps = boundedSteps(validated.steps);
+  const branchCount = boundedBranches(validated.branches);
   const branches = Array.from({ length: branchCount }, (_, branchIndex) =>
     branchFor(seed, branchIndex, steps)
   );

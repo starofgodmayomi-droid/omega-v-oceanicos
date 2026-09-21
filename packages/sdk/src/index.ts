@@ -1,3 +1,5 @@
+import { validateSceneInput, type SceneInput } from '@omega-v/types';
+
 export type OperatingSystemState =
   'offline' | 'booting' | 'ready' | 'degraded' | 'stopping' | 'stopped';
 export type OperatingSystemTaskKind = 'observe' | 'verify' | 'remember' | 'report';
@@ -321,6 +323,9 @@ export type SceneSimulation = {
   trace: Array<{
     sequence: number;
     state: string;
+    from: string | null;
+    to: string;
+    transition: 'origin' | 'advance';
     status: 'observed' | 'verified';
     evidence: string;
   }>;
@@ -470,6 +475,9 @@ export class OmegaApiError extends Error {
   }
 }
 
+export type OmegaCommandWorker = 'observer' | 'researcher' | 'planner' | 'tester' | 'security-reviewer' | 'governance-reviewer';
+export type OmegaCommandResponse = { success: boolean; command: Record<string, unknown>; status: string; nextAction: string; [key: string]: unknown };
+
 export class OmegaClient {
   private readonly baseUrl: string;
   private readonly fetchImpl: FetchLike;
@@ -493,12 +501,28 @@ export class OmegaClient {
     return this.get<Health>('/health');
   }
 
+  async getKernelCapabilities(): Promise<{
+    success: true;
+    capability: {
+      contract: 'oceanicos-kernel.v1';
+      execution: 'local-simulation-only';
+      deterministicEvidence: boolean;
+      humanAuthorizationRequired: boolean;
+      capabilities: Record<string, boolean>;
+      limitations: readonly string[];
+    };
+    evaluatedAt: string;
+  }> {
+    return this.get('/v1/kernel/capabilities');
+  }
+
   async simulateScene(
-    input: { seed?: string; steps?: number; branches?: number } = {}
+    input: SceneInput = {}
   ): Promise<{ data: SceneSimulation; timestamp: string }> {
+    const validatedInput = validateSceneInput(input);
     return this.post<{ data: SceneSimulation; timestamp: string }>(
       '/scene/simulate',
-      input,
+      validatedInput,
       this.readToken
     );
   }
@@ -682,6 +706,42 @@ export class OmegaClient {
       meta: { bounded: boolean; eventWindow: number; runWindow: number };
       timestamp: string;
     }>('/evidence/export');
+  }
+
+  async listOmegaWorkers(): Promise<Record<string, unknown>> {
+    return this.get<Record<string, unknown>>('/v1/omega/workers');
+  }
+
+  async proposeCommand(input: { intent: string; requestedBy: string; workers: OmegaCommandWorker[]; idempotencyKey: string; context?: Record<string, string> }): Promise<OmegaCommandResponse> {
+    return this.post<OmegaCommandResponse>('/v1/omega/commands', input, this.adminToken);
+  }
+
+  async inspectCommand(commandId: string): Promise<OmegaCommandResponse> {
+    return this.get<OmegaCommandResponse>(`/v1/omega/commands/${encodeURIComponent(commandId)}`);
+  }
+
+  async admitCommand(commandId: string, input: { authority: string; policy: string; authorityVerified?: boolean; policySatisfied?: boolean }): Promise<OmegaCommandResponse> {
+    return this.post<OmegaCommandResponse>(`/v1/omega/commands/${encodeURIComponent(commandId)}/admit`, input, this.adminToken);
+  }
+
+  async approveCommand(commandId: string, operator = 'sdk-operator'): Promise<OmegaCommandResponse> {
+    return this.post<OmegaCommandResponse>(`/v1/omega/commands/${encodeURIComponent(commandId)}/approve`, { operator }, this.adminToken);
+  }
+
+  async executeCommand(commandId: string): Promise<OmegaCommandResponse> {
+    return this.post<OmegaCommandResponse>(`/v1/omega/commands/${encodeURIComponent(commandId)}/execute`, {}, this.adminToken);
+  }
+
+  async observeCommand(commandId: string, observedState: string): Promise<OmegaCommandResponse> {
+    return this.post<OmegaCommandResponse>(`/v1/omega/commands/${encodeURIComponent(commandId)}/observe`, { observedState }, this.adminToken);
+  }
+
+  async verifyReality(commandId: string): Promise<OmegaCommandResponse> {
+    return this.post<OmegaCommandResponse>(`/v1/omega/commands/${encodeURIComponent(commandId)}/verify-reality`, {}, this.adminToken);
+  }
+
+  async getOmegaEvents(commandId?: string): Promise<Record<string, unknown>> {
+    return this.get<Record<string, unknown>>(`/v1/omega/events${commandId ? `?commandId=${encodeURIComponent(commandId)}` : ''}`);
   }
 
   private async post<T>(

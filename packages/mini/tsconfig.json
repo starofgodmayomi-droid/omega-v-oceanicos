@@ -10,5 +10,15 @@
     "esModuleInterop": true,
     "skipLibCheck": true
   },
-  "include": ["src/index.ts"]
+  "include": [
+    "src/index.ts",
+    "src/admission.ts",
+    "src/transition.ts",
+    "src/reality.ts",
+    "src/worker-registry.ts",
+    "src/change.ts",
+    "src/compiler.ts",
+    "src/ir-validator.ts",
+    "src/pipeline.ts"
+  ]
 }

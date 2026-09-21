@@ -379,3 +379,10 @@ Expansion layers publish their own SLOs when earned.
 
 **Last Updated**: 2026-08-14  
 **Status**: Living — kernel-first; expands with evidence
+
+
+## Ω OS compression and command boundary
+
+The full-stack command surface is governed by **Ω∞v ::= VERIFY(ΔREALITY)**. Every consequential request is represented as non-executable ΩIR, validated against the worker registry, admitted as `ALLOW`, `DENY`, or `REVIEW`, executed only through an authorized bounded transition, and independently observed as `VERIFIED`, `DIVERGENT`, or `UNKNOWN`. The dashboard is the source of human intent; it is not the source of truth. See [OMEGA_OS_COMPRESSION.md](./OMEGA_OS_COMPRESSION.md).
+
+The anti-collapse rule is explicit: possible is not known, known is not permitted, permitted is not executed, executed is not observed, and observed is not verified. AI output, GitHub evidence, attestations, and test passes remain attributable evidence rather than authority or proof of external reality.

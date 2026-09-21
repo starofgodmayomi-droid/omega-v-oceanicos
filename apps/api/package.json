@@ -8,13 +8,14 @@
     "dev": "ts-node src/index.ts"
   },
   "dependencies": {
-    "fastify": "^4.26.1",
-    "@fastify/cors": "^9.0.1",
-    "@oceanicos/types": "workspace:*",
+    "@fastify/cors": "^10.1.0",
+    "@oceanicos/attestation": "workspace:*",
+    "@oceanicos/mini": "workspace:*",
     "@oceanicos/observer": "workspace:*",
     "@oceanicos/remember": "workspace:*",
+    "@oceanicos/types": "workspace:*",
     "@oceanicos/verification": "workspace:*",
-    "@oceanicos/mini": "workspace:*",
-    "@oceanicos/attestation": "workspace:*"
+    "@omega-v/kernel": "workspace:*",
+    "fastify": "^5.12.4"
   }
 }

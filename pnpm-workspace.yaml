@@ -6,6 +6,7 @@ packages:
   - 'packages/mini'
   - 'packages/attestation'
   - 'packages/gateway'
+  - 'packages/kernel'
   - 'apps/api'
   - 'apps/web'
 
