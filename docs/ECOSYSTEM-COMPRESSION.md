@@ -88,6 +88,51 @@ The smallest complete follow-up is a **design-only adapter contract**: define on
 
 No API integration, deployment, credential exchange, Lovable mutation, or publication to a broad audience is included in this record. Those actions require their own bounded authority, expected state, rollback, and runtime evidence.
 
+## Canonical Ω∞v flow mapped to evidence
+
+The supplied architecture diagram is adopted here as the **canonical conceptual flow**. The labels below distinguish observed implementation from design intent and unknown deployment reality.
+
+```text
+💧 Ω∞v VERIFICATION-FIRST ECOSYSTEM OS
+  → REALITY
+  → OBSERVE / SENSE
+  → EVIDENCE / DATA
+  → VERIFY / DISSENT / CVI
+  → HUMAN JUDGMENT + AI MODELS / AGENTS
+  → KNOWLEDGE / MEMORY / PROVENANCE
+  → REASON / PLAN
+  → BUILD: CODE + DATA + MEDIA
+  → SDK / CLI / IDE / API
+  → CLOUD / EDGE / LOCAL / DEVICE
+  → Docker / CI/CD / GitHub
+  → TEST / VERIFY / ATTEST
+  → AUTHORIZE / DEPLOY
+  → PEOPLE / COMMUNITY / MARKETS
+  → SECURITY / PRIVACY / GOVERNANCE
+  → STEWARDSHIP
+  → LEARN / AUDIT
+  → EVOLVE
+  ↺ REALITY
+```
+
+| Canonical layer | Current omega evidence | Status |
+|---|---|---|
+| Reality, observe, evidence, verify | MINI kernel, observer, verification engine, integration tests, smoke output | `SUPPORTED`; local/runtime scope only |
+| Human + AI judgment | Human-routed contracts, bounded worker, policy and authority documentation | `SUPPORTED` as governance boundary; no autonomous authority claimed |
+| Knowledge, memory, provenance | Remember package, causal-memory surfaces, attestation and lineage documentation | `SUPPORTED`; memory is not proof by itself |
+| Reason, plan, build | ΩIR/admission/worker surfaces, TypeScript packages, API, web, CLI | `SUPPORTED` for implemented slices; not every conceptual layer is complete |
+| Code, data, media | Code and local state are observed; no unified media pipeline was observed | `SUPPORTED` for code/local data; `UNKNOWN` for media system |
+| SDK, CLI, IDE, API | SDK, CLI, API, and web are observed; IDE integration is not | `SUPPORTED` for observed surfaces; `UNKNOWN` for IDE |
+| Cloud, edge, local, device | Local execution and GitHub CI are observed; deployment/device runtime is not | `SUPPORTED` locally/CI; `UNKNOWN` for cloud, edge, and device |
+| Docker, CI/CD, GitHub | Docker files, GitHub workflows, PR checks, and protected mainline evidence | `SUPPORTED` for source/CI; deployment remains unclaimed |
+| Test, verify, attest | Required CI checks, attestation package, worker verification, and 31 local worker tests | `VERIFIED` for executed checks; not universal correctness |
+| Authorize, deploy | Authority and admission are modeled; no deployment target was exercised | `SUPPORTED` for contract design; `NOT_EXECUTED` for deployment |
+| People, community, markets | Charter and human-routing principles are documented | `SUPPORTED` as governance intent; market/community outcomes are `UNKNOWN` |
+| Security, privacy, governance | Security workflow, fail-closed boundaries, policy docs, and repository permissions | `SUPPORTED`; comprehensive privacy/security reality is not proven |
+| Stewardship, learn, audit, evolve | Working-state records, audit scripts, drift language, and bounded next-transition discipline | `SUPPORTED` as process; continuous production evolution is `UNKNOWN` |
+
+This mapping keeps the diagram maximally expressive without allowing presentation to overstate implementation. In particular, the return arrow to Reality means **iterated finite observation and reconciliation**, not infinite autonomy. “∞” is notation for bounded next transitions, not unlimited authority, execution, budget, or capability.
+
 ## Reconciliation record
 
 | Claim | Source | Observation | Status |
