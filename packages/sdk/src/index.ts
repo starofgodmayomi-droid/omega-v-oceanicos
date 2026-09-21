@@ -475,6 +475,9 @@ export class OmegaApiError extends Error {
   }
 }
 
+export type OmegaCommandWorker = 'observer' | 'researcher' | 'planner' | 'tester' | 'security-reviewer' | 'governance-reviewer';
+export type OmegaCommandResponse = { success: boolean; command: Record<string, unknown>; status: string; nextAction: string; [key: string]: unknown };
+
 export class OmegaClient {
   private readonly baseUrl: string;
   private readonly fetchImpl: FetchLike;
@@ -703,6 +706,42 @@ export class OmegaClient {
       meta: { bounded: boolean; eventWindow: number; runWindow: number };
       timestamp: string;
     }>('/evidence/export');
+  }
+
+  async listOmegaWorkers(): Promise<Record<string, unknown>> {
+    return this.get<Record<string, unknown>>('/v1/omega/workers');
+  }
+
+  async proposeCommand(input: { intent: string; requestedBy: string; workers: OmegaCommandWorker[]; idempotencyKey: string; context?: Record<string, string> }): Promise<OmegaCommandResponse> {
+    return this.post<OmegaCommandResponse>('/v1/omega/commands', input, this.adminToken);
+  }
+
+  async inspectCommand(commandId: string): Promise<OmegaCommandResponse> {
+    return this.get<OmegaCommandResponse>(`/v1/omega/commands/${encodeURIComponent(commandId)}`);
+  }
+
+  async admitCommand(commandId: string, input: { authority: string; policy: string; authorityVerified?: boolean; policySatisfied?: boolean }): Promise<OmegaCommandResponse> {
+    return this.post<OmegaCommandResponse>(`/v1/omega/commands/${encodeURIComponent(commandId)}/admit`, input, this.adminToken);
+  }
+
+  async approveCommand(commandId: string, operator = 'sdk-operator'): Promise<OmegaCommandResponse> {
+    return this.post<OmegaCommandResponse>(`/v1/omega/commands/${encodeURIComponent(commandId)}/approve`, { operator }, this.adminToken);
+  }
+
+  async executeCommand(commandId: string): Promise<OmegaCommandResponse> {
+    return this.post<OmegaCommandResponse>(`/v1/omega/commands/${encodeURIComponent(commandId)}/execute`, {}, this.adminToken);
+  }
+
+  async observeCommand(commandId: string, observedState: string): Promise<OmegaCommandResponse> {
+    return this.post<OmegaCommandResponse>(`/v1/omega/commands/${encodeURIComponent(commandId)}/observe`, { observedState }, this.adminToken);
+  }
+
+  async verifyReality(commandId: string): Promise<OmegaCommandResponse> {
+    return this.post<OmegaCommandResponse>(`/v1/omega/commands/${encodeURIComponent(commandId)}/verify-reality`, {}, this.adminToken);
+  }
+
+  async getOmegaEvents(commandId?: string): Promise<Record<string, unknown>> {
+    return this.get<Record<string, unknown>>(`/v1/omega/events${commandId ? `?commandId=${encodeURIComponent(commandId)}` : ''}`);
   }
 
   private async post<T>(

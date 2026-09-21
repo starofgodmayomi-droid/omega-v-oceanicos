@@ -11,6 +11,7 @@ import { AttestationService } from '@oceanicos/attestation';
 import { OceanicosKernel } from '@omega-v/kernel';
 import { LocalJobError, LocalJobLedger, LOCAL_JOB_WINDOW } from './jobs.js';
 import { registerPipelineRoute } from './pipeline-route.js';
+import { OmegaCommandStore, registerOmegaRoutes } from './omega.js';
 import {
   ENCRYPTION_ALGORITHM,
   encryptionEnabled,
@@ -97,6 +98,8 @@ export function createApp(
     storagePath: process.env.OMEGA_LOCAL_JOB_LEDGER_PATH,
     encryptionKey: process.env.OMEGA_LOCAL_JOB_LEDGER_KEY,
   });
+  const omegaCommandPath = dbPath === ':memory:' ? ':memory:' : join(resolve(dbPath, '..'), 'omega-commands.db');
+  const omegaCommands = new OmegaCommandStore(omegaCommandPath);
 
   fastify.addHook('onClose', async () => {
     ledgerMemory.close();
@@ -132,6 +135,7 @@ export function createApp(
   };
 
   fastify.register(cors, { origin: '*' });
+  registerOmegaRoutes(fastify, omegaCommands);
   fastify.addHook('onRequest', async (request, reply) => {
     if (authMode === 'local' || request.url.split('?')[0] === '/health') return;
     const required = request.method === 'GET' ? readToken : adminToken;
@@ -331,7 +335,7 @@ export function createApp(
   return fastify;
 }
 
-export const app = createApp('./oceanicos.db', process.env.NODE_ENV !== 'test');
+export const app = createApp(process.env.OMEGA_DB_PATH ?? './oceanicos.db', process.env.NODE_ENV !== 'test');
 
 const start = async () => {
   try {
