@@ -156,3 +156,8 @@ DEPLOYED != HEALTHY
 
 The API is an evidence boundary, not a claim that every downstream system is
 controlled by this process.
+
+
+## Ω operations observability
+
+The read-only operations surface includes `GET /v1/omega/workers`, `GET /v1/omega/leases`, and redacted `GET /v1/omega/events`. The web dashboard refreshes these endpoints every three seconds and labels unavailable evidence as `UNKNOWN`. Worker and lease records are coordination evidence only; they do not authorize commands, bypass admission, or verify external reality.

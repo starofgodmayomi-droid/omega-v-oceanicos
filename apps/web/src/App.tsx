@@ -101,8 +101,37 @@ export function App() {
   const [omegaIntent, setOmegaIntent] = useState('Inspect the current Oceanicos verification state');
   const [omegaCommand, setOmegaCommand] = useState<any>(null);
   const [omegaLoading, setOmegaLoading] = useState(false);
+  const [omegaWorkers, setOmegaWorkers] = useState<any[]>([]);
+  const [omegaLeases, setOmegaLeases] = useState<any[]>([]);
+  const [omegaEvents, setOmegaEvents] = useState<any[]>([]);
+  const [omegaObservabilityError, setOmegaObservabilityError] = useState<string | null>(null);
+  const [omegaObservedAt, setOmegaObservedAt] = useState<string | null>(null);
 
   const eventSourceRef = useRef<EventSource | null>(null);
+
+  useEffect(() => {
+    let disposed = false;
+    const refreshOmegaObservability = async () => {
+      try {
+        const [workers, leases, events] = await Promise.all([
+          apiRequest<any>('/v1/omega/workers'),
+          apiRequest<any>('/v1/omega/leases'),
+          apiRequest<any>('/v1/omega/events'),
+        ]);
+        if (disposed) return;
+        setOmegaWorkers(Array.isArray(workers.activeWorkers) ? workers.activeWorkers : []);
+        setOmegaLeases(Array.isArray(leases.leases) ? leases.leases : []);
+        setOmegaEvents(Array.isArray(events.events) ? events.events.slice(-30).reverse() : []);
+        setOmegaObservedAt(new Date().toISOString());
+        setOmegaObservabilityError(null);
+      } catch (err: any) {
+        if (!disposed) setOmegaObservabilityError(err instanceof Error ? err.message : 'Ω observability unavailable');
+      }
+    };
+    void refreshOmegaObservability();
+    const timer = window.setInterval(() => { void refreshOmegaObservability(); }, 3000);
+    return () => { disposed = true; window.clearInterval(timer); };
+  }, []);
 
   // Poll miner status initially
   const fetchMinerStatus = async () => {
@@ -710,6 +739,47 @@ export function App() {
           ⚠️ {lastError}
         </div>
       )}
+
+      <section
+        aria-label="Omega operations observability"
+        style={{ background: '#07121b', border: '1px solid #38bdf855', borderRadius: '6px', padding: '16px', marginBottom: '20px' }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+          <div>
+            <div style={{ color: '#7dd3fc', fontSize: '13px', fontWeight: 'bold' }}>Ω OPERATIONS — OBSERVED COORDINATION</div>
+            <div style={{ color: '#94a3b8', fontSize: '11px', marginTop: '5px' }}>Read-only dashboard evidence. Worker presence and leases do not grant execution authority.</div>
+          </div>
+          <div style={{ color: omegaObservabilityError ? '#fca5a5' : '#67e8f9', fontSize: '10px' }}>
+            {omegaObservabilityError ? `UNKNOWN: ${omegaObservabilityError}` : `POLLING · ${omegaObservedAt ? new Date(omegaObservedAt).toLocaleTimeString() : 'connecting'}`}
+          </div>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', marginTop: '14px' }}>
+          <div style={{ background: '#03080d', border: '1px solid #334155', borderRadius: '4px', padding: '10px' }}>
+            <div style={{ color: '#bae6fd', fontWeight: 'bold', fontSize: '11px' }}>ACTIVE WORKERS ({omegaWorkers.length})</div>
+            {omegaWorkers.length === 0 ? <div style={{ color: '#64748b', fontSize: '11px', marginTop: '8px' }}>No registered workers observed.</div> : omegaWorkers.map((worker) => (
+              <div key={worker.workerId} style={{ borderTop: '1px solid #1e293b', marginTop: '8px', paddingTop: '8px', fontSize: '10px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}><strong>{worker.workerId}</strong><span style={{ color: worker.status === 'BUSY' ? '#facc15' : worker.status === 'OFFLINE' ? '#f87171' : '#86efac' }}>{worker.status}</span></div>
+                <div style={{ color: '#94a3b8', marginTop: '4px' }}>leases={worker.leaseCount} · heartbeat={worker.lastHeartbeatAt}</div>
+                <div style={{ color: '#64748b', marginTop: '3px' }}>{worker.capabilities.join(' · ')}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ background: '#03080d', border: '1px solid #334155', borderRadius: '4px', padding: '10px' }}>
+            <div style={{ color: '#bae6fd', fontWeight: 'bold', fontSize: '11px' }}>ACTIVE LEASES ({omegaLeases.length})</div>
+            {omegaLeases.length === 0 ? <div style={{ color: '#64748b', fontSize: '11px', marginTop: '8px' }}>No active leases observed.</div> : omegaLeases.map((lease) => (
+              <div key={lease.leaseId} style={{ borderTop: '1px solid #1e293b', marginTop: '8px', paddingTop: '8px', fontSize: '10px' }}>
+                <strong>{lease.leaseId}</strong><div style={{ color: '#94a3b8', marginTop: '4px' }}>{lease.workerId} → {lease.commandId}</div><div style={{ color: '#64748b', marginTop: '3px' }}>{lease.capability} · expires {lease.expiresAt}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ background: '#03080d', border: '1px solid #334155', borderRadius: '4px', padding: '10px', minWidth: 0 }}>
+            <div style={{ color: '#bae6fd', fontWeight: 'bold', fontSize: '11px' }}>Ω EVENT STREAM ({omegaEvents.length})</div>
+            {omegaEvents.length === 0 ? <div style={{ color: '#64748b', fontSize: '11px', marginTop: '8px' }}>No redacted Ω events observed.</div> : omegaEvents.map((event, index) => (
+              <div key={`${event.at ?? 'event'}-${index}`} style={{ borderTop: '1px solid #1e293b', marginTop: '8px', paddingTop: '8px', fontSize: '10px' }}><span style={{ color: '#c4b5fd' }}>{String(event.type ?? 'omega.event')}</span><div style={{ color: '#94a3b8', marginTop: '3px' }}>{event.commandId ?? 'system'} · {event.status ?? 'OBSERVED'}</div><div style={{ color: '#64748b', marginTop: '3px' }}>{event.at ?? 'time unknown'}</div></div>
+            ))}
+          </div>
+        </div>
+      </section>
 
       <section
         aria-label="Omega command workspace"
