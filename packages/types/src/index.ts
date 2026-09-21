@@ -67,6 +67,31 @@ export interface Attestation {
 export type ChangeDecision = 'ALLOW' | 'DENY' | 'REVIEW';
 
 /**
+ * Independent lifecycle evidence state. `UNKNOWN` is intentional: absence of
+ * an observation must never be upgraded to a positive claim.
+ */
+export type OmegaLifecycleStatus = 'YES' | 'NO' | 'UNKNOWN';
+
+/**
+ * Status vector for a consequential change. These fields are deliberately
+ * separate so local implementation or execution cannot imply deployment or
+ * health.
+ */
+export interface OmegaStatusVector {
+  readonly declared: OmegaLifecycleStatus;
+  readonly represented: OmegaLifecycleStatus;
+  readonly implemented: OmegaLifecycleStatus;
+  readonly tested: OmegaLifecycleStatus;
+  readonly admitted: OmegaLifecycleStatus;
+  readonly executed: OmegaLifecycleStatus;
+  readonly observed: OmegaLifecycleStatus;
+  readonly verified: OmegaLifecycleStatus;
+  readonly attested: OmegaLifecycleStatus;
+  readonly deployed: OmegaLifecycleStatus;
+  readonly healthy: OmegaLifecycleStatus;
+}
+
+/**
  * Minimal Ω∞v change/decision record binding existing observation,
  * verification, authority, policy, transition, attestation, and provenance.
  */

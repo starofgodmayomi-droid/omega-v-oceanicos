@@ -78,11 +78,10 @@ jobs:
       - name: Run tests
         run: pnpm test
 
-      # The root test suite proves repository coverage, while this command
-      # proves every package/application entrypoint remains independently
-      # runnable from its own declared worker boundary.
-      - name: Run package-worker verification
-        run: pnpm test:packages
+      # This is a source-level worker proof, not a claim that every historical
+      # package is an active workspace product.
+      - name: Run worker lifecycle verification
+        run: pnpm test:worker
 
       - name: Generate coverage report
         run: pnpm test:coverage
@@ -152,7 +151,7 @@ jobs:
         run: pnpm --recursive run typecheck
 
       - name: Run tests
-        run: pnpm exec node --experimental-strip-types --test ./tests/integration/max_compress_stack.e2e.test.ts
+        run: pnpm exec node --experimental-strip-types --test-concurrency=1 --test ./tests/integration/max_compress_stack.e2e.test.ts ./tests/integration/worker-lifecycle.integration.test.ts ./tests/integration/causal-memory.integration.test.ts ./tests/integration/api-pipeline-causal.integration.test.ts
 
       - name: Build packages
         run: pnpm --recursive run build
@@ -206,6 +205,10 @@ jobs:
             -e OMEGA_LOCAL_JOB_LEDGER_TOKEN=ci-smoke-job-token \
             -e OMEGA_LOCAL_JOB_LEDGER_PATH=/tmp/omega-ledger/jobs.json \
             -e OMEGA_LOCAL_JOB_LEDGER_KEY=ci-smoke-ledger-key \
+            -e OMEGA_CAUSAL_MEMORY_PATH=/tmp/omega-ledger/causal.jsonl \
+            -e OMEGA_REALITY_ATTESTATION_KEY=ci-smoke-causal-key \
+            -e OMEGA_REALITY_ATTESTATION_SIGNER=ci-smoke-attestor \
+            -e OMEGA_REALITY_ATTESTATION_KEY_VERSION=ci-v1 \
             -v "$RUNNER_TEMP/omega-ledger:/tmp/omega-ledger" \
             --network host omega-v-api:ci
 
@@ -247,6 +250,16 @@ jobs:
             -d '{}' | tee /tmp/cycle.json
           grep -q '"success":true' /tmp/cycle.json
           grep -q '"block"' /tmp/cycle.json
+
+          curl -sf -X POST "$api/v1/pipeline" \
+            -H 'Content-Type: application/json' \
+            -H 'Authorization: Bearer ci-smoke-admin-token' \
+            -d '{"compile":{"intent":"CI causal pipeline","subject":"docker-smoke","stateBefore":"S0","evidenceRefs":[{"id":"ci-ev","kind":"test-result","source":"docker-smoke","digest":"sha256:ci"}],"policyRefs":[{"id":"policy:ci","version":"1","requirement":"explicit authority"}],"workerPlan":[],"transition":{"requestedStateAfter":"S1","consequence":"bounded smoke transition","dryRun":false},"observation":{"observerId":"ci-smoke","targets":["docker-smoke"],"evidenceRequired":["state"]}},"admission":{"authorityVerified":true,"policySatisfied":true},"authority":"ci:docker-smoke","policy":"policy:ci","handlerStateAfter":"S1","observedState":"S1","changeId":"ci-docker-causal-1"}' | tee /tmp/pipeline.json
+          grep -q '"success":true' /tmp/pipeline.json
+          grep -q '"realityStatus":"VERIFIED"' /tmp/pipeline.json
+          grep -q '"durableMemory":true' /tmp/pipeline.json
+          grep -q '"memoryIntegrity":true' /tmp/pipeline.json
+          docker exec omega-smoke sh -c 'test -s /tmp/omega-ledger/causal.jsonl'
 
           timeout 8s curl -sN \
             -H 'Authorization: Bearer ci-smoke-read-token' \

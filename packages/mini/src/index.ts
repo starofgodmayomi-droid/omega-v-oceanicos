@@ -44,6 +44,17 @@ export type { OmegaIRValidation, OmegaIRValidationIssue } from './ir-validator.j
 export { createOmegaWorkerRegistry, getOmegaWorker } from './worker-registry.js';
 export { buildOmegaCommand, listOmegaWorkers } from './worker-registry.js';
 export type { OmegaWorkerDescriptor } from './worker-registry.js';
+export { admitOmegaIR } from './admission-bridge.js';
+export type { OmegaAdmissionBridgeInput, OmegaAdmissionBridgeResult } from './admission-bridge.js';
+export { runOmegaChangePipeline, resolveBoundedWorkerHandler } from './pipeline.js';
+export type {
+  OmegaPipelineInput,
+  OmegaPipelineResult,
+  PipelineStage,
+  PipelineHaltReason,
+} from './pipeline.js';
+export { FileCausalMemory, createRealityAttestation, verifyRealityAttestation } from './causal-memory.js';
+export type { CausalMemory, CausalMemoryEntry, RealityAttestation } from './causal-memory.js';
 
 export function executeOceanicosMaxExpansion(): CryptographicBlock {
   const kernelChain = new PluralisticHashChain();

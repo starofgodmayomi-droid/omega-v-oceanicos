@@ -10,6 +10,7 @@ import { ObserverEngine } from '@oceanicos/observer';
 import { AttestationService } from '@oceanicos/attestation';
 import { OceanicosKernel } from '@omega-v/kernel';
 import { LocalJobError, LocalJobLedger, LOCAL_JOB_WINDOW } from './jobs.js';
+import { registerPipelineRoute } from './pipeline-route.js';
 import { OmegaCommandStore, registerOmegaRoutes } from './omega.js';
 import {
   ENCRYPTION_ALGORITHM,
@@ -100,6 +101,10 @@ export function createApp(
   const omegaCommandPath = dbPath === ':memory:' ? ':memory:' : join(resolve(dbPath, '..'), 'omega-commands.db');
   const omegaCommands = new OmegaCommandStore(omegaCommandPath);
 
+  fastify.addHook('onClose', async () => {
+    ledgerMemory.close();
+  });
+
   const revocations = new Map<string, { id: string; attestationId: string; reason: string; revokedBy: string; revokedAt: string }>();
   const streamClients = new Set<(block: any) => boolean>();
   let minerInterval: NodeJS.Timeout | null = null;
@@ -138,6 +143,8 @@ export function createApp(
       return jsonError(reply, 401, request.method === 'GET' ? 'READ_ACCESS_REQUIRED' : 'ADMIN_ACCESS_REQUIRED');
     }
   });
+
+  registerPipelineRoute(fastify, jsonError);
 
   fastify.get('/health', async (_request, reply) => {
     const memoryReady = true;

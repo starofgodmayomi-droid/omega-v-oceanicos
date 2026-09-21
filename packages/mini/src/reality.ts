@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import type { OmegaChangeRecord } from '@oceanicos/types';
 import type { TransitionExecution, TransitionMemory } from './transition.js';
 
-export type RealityVerificationStatus = 'VERIFIED' | 'DIVERGENT' | 'NOT_EXECUTED';
+export type RealityVerificationStatus = 'VERIFIED' | 'DIVERGENT' | 'UNKNOWN' | 'NOT_EXECUTED';
 
 export interface RealityVerification {
   readonly status: RealityVerificationStatus;
@@ -46,11 +46,45 @@ export function verifyExecutedReality(
     };
   }
 
-  const observedState = observeState();
+  let observedState: string;
+  try {
+    observedState = observeState();
+  } catch {
+    const observedAt = now();
+    const recordWithUnknownReality: OmegaChangeRecord = {
+      ...record,
+      consequence: `${record.consequence ?? 'transition executed'}; reality unknown: observation failed`,
+      provenance: {
+        ...record.provenance,
+        source: 'mini-reality-observation',
+        lineage: [...(record.provenance.lineage ?? []), `${record.id}:reality-unknown`],
+      },
+      createdAt: observedAt,
+    };
+    options.memory?.append(recordWithUnknownReality);
+    return {
+      status: 'UNKNOWN',
+      expectedState: record.stateAfter,
+      evidence: 'observation unavailable; reality could not be verified',
+      record: recordWithUnknownReality,
+    };
+  }
+
   const matches = observedState === record.stateAfter;
   const observedAt = now();
   const evidence = createHash('sha256')
-    .update(JSON.stringify({ changeId: record.id, expectedState: record.stateAfter, observedState, observedAt }))
+    .update(
+      JSON.stringify({
+        changeId: record.id,
+        attestationId: record.attestationId ?? null,
+        expectedState: record.stateAfter,
+        observedState,
+        observedAt,
+        priorLineageRoot: createHash('sha256')
+          .update(JSON.stringify(record.provenance.lineage ?? []))
+          .digest('hex'),
+      }),
+    )
     .digest('hex');
   const verifiedRecord: OmegaChangeRecord = {
     ...record,
