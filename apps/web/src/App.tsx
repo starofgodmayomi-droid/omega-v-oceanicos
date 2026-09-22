@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Oceanicos } from './Oceanicos';
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
 
@@ -70,7 +71,7 @@ interface KernelCapabilitySnapshot {
   limitations: string[];
 }
 
-export function App() {
+export function ConsoleDashboard({ onBack }: { onBack: () => void }) {
   const [tip, setTip] = useState<any>(null);
   const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -458,8 +459,29 @@ export function App() {
         minHeight: '100vh',
         padding: '24px',
         boxSizing: 'border-box',
+        position: 'relative',
       }}
     >
+      <button
+        onClick={onBack}
+        style={{
+          position: 'fixed',
+          bottom: '20px',
+          right: '20px',
+          padding: '8',
+          border: '1px solid #1b3b35',
+          borderRadius: '6px',
+          background: 'rgba(5, 15, 14, 0.85)',
+          color: '#609187',
+          fontFamily: 'DM Mono, monospace',
+          fontSize: '10px',
+          letterSpacing: '0.08em',
+          cursor: 'pointer',
+          zIndex: 100,
+        }}
+      >
+        💧 OCEANICOS
+      </button>
       {/* Header */}
       <div
         style={{
@@ -1220,6 +1242,12 @@ export function App() {
       </div>
     </div>
   );
+}
+
+export function App() {
+  const [view, setView] = useState<'oceanicos' | 'console'>('oceanicos');
+  if (view === 'oceanicos') return <Oceanicos onConsole={() => setView('console')} />;
+  return <ConsoleDashboard onBack={() => setView('oceanicos')} />;
 }
 
 export default App;

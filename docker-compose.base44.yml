@@ -34,6 +34,7 @@ services:
       - OMEGA_AUTH_MODE=local
       - API_PORT=5000
       - OMEGA_DB_PATH=/app/data/oceanicos.db
+      - OMEGA_ALLOW_UNSIGNED_CYCLE=true
     ports:
       - "5000:5000"
     restart: unless-stopped
