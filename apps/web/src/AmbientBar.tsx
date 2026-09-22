@@ -19,6 +19,8 @@ interface AmbientBarProps {
   realityStatus: string | null;
   epochsRemembered: number;
   miningActive: boolean;
+  moodLevel: number;
+  moodState: string;
 }
 
 interface Indicator {
@@ -30,6 +32,11 @@ interface Indicator {
 
 export function AmbientBar(props: AmbientBarProps) {
   const indicators: Indicator[] = [
+    {
+      label: 'Mood',
+      value: `🔥 AUTO · ${props.moodState}`,
+      color: props.moodLevel > 0 ? theme.accentWarm : theme.unknown,
+    },
     {
       label: 'Connection',
       value: props.connected

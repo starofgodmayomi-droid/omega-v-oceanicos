@@ -15,6 +15,8 @@ import { registerPipelineRoute } from './pipeline-route.js';
 import { registerEcosystemRoute } from './ecosystem-route.js';
 import { registerRealityRoute } from './reality-route.js';
 import { OmegaCommandStore, registerOmegaRoutes } from './omega.js';
+import { MoodAutopilotEngine, MoodEvaluator } from '@omega-v/mood';
+import { registerMoodRoutes } from './mood-route.js';
 import {
   ENCRYPTION_ALGORITHM,
   encryptionEnabled,
@@ -76,6 +78,8 @@ export function createApp(
   const ledgerMemory = new RememberEngine(dbPath);
   const kernel = new MiniKernel(ledgerMemory);
   const platformKernel = new OceanicosKernel();
+  const moodEngine = new MoodAutopilotEngine();
+  const moodEvaluator = new MoodEvaluator();
   const allowUnsignedCycle = options.allowUnsignedCycle ?? process.env.OMEGA_ALLOW_UNSIGNED_CYCLE === 'true';
   const attestationSigningKey = options.attestationSigningKey ?? process.env.OMEGA_SIGNING_KEY;
   const authMode = parseAuthMode(process.env.OMEGA_AUTH_MODE ?? (process.env.NODE_ENV === 'production' ? 'required' : 'local'));
@@ -152,6 +156,12 @@ export function createApp(
   registerPipelineRoute(fastify, jsonError);
   registerEcosystemRoute(fastify, authMode, Boolean(attestationSigningKey));
   registerRealityRoute(fastify, authMode, Boolean(attestationSigningKey), Boolean(ledgerMemory.getTip()));
+  registerMoodRoutes(fastify, {
+    engine: moodEngine,
+    evaluator: moodEvaluator,
+    getLedgerState: () => ({ ready: Boolean(ledgerMemory.getTip()), totalMined: minerStats.totalMined, tip: ledgerMemory.getTip() }),
+    jsonError,
+  });
 
   fastify.get('/health', async (_request, reply) => {
     const memoryReady = true;
@@ -207,7 +217,7 @@ export function createApp(
   });
 
   fastify.get('/v1/kernel/capabilities', async () => ({ success: true, capability: platformKernel.getCapabilitySnapshot(), evaluatedAt: new Date().toISOString() }));
-  fastify.get('/v1/mood', async () => ({ success: true, status: 'MAX GOOD-O', contract: 'Ω∞v totality / attest-dont-assert', brand: 'Oceanicos Ω∞', ledger: { ready: Boolean(ledgerMemory.getTip()) }, evaluatedAt: new Date().toISOString() }));
+  // GET /v1/mood is registered by registerMoodRoutes (governed autopilot snapshot).
 
   fastify.post('/v1/attest', async (_request, reply) => {
     if (!attestationSigningKey) return jsonError(reply, 503, 'ATTESTATION_SIGNING_KEY_REQUIRED');

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { theme, statusColor, humanStatus, KeyPair, MeshConvergenceReceipt } from './oceanicosTheme';
 
 /*
@@ -24,6 +25,7 @@ interface SystemControlsPanelProps {
   onRequestAttestation: () => void;
   moodData: any;
   onFetchMood: () => void;
+  onSubmitMoodSignal: (signal: string) => Promise<any>;
   keyPair: KeyPair | null;
   onGenerateWebCrypto: () => void;
   onGenerateServerKeys: () => void;
@@ -212,30 +214,144 @@ export function SystemControlsPanel(props: SystemControlsPanelProps) {
         </div>
       )}
 
-      {/* Mood */}
+      {/* Mood — governed autopilot (MOOD → EXPERIENCE, Ω∞v → REALITY, AUTHORITY → ACTION) */}
       {props.moodData && (
-        <div style={cardStyle}>
-          <div style={{ ...cardTitleStyle, color: theme.accentWarm }}>
-            Mood · {props.moodData.singularityState}
-          </div>
-          <div style={{ fontSize: '12px', color: theme.textMuted, marginBottom: '8px' }}>
-            Reality: {props.moodData.reality} · Wave {props.moodData.waveIndex}
-          </div>
-          <div
+        <MoodCard moodData={props.moodData} onSubmit={props.onSubmitMoodSignal} />
+      )}
+    </div>
+  );
+}
+
+/* ── Mood — governed autopilot card (section 15) ── */
+
+function MoodCard({ moodData, onSubmit }: { moodData: any; onSubmit: (signal: string) => Promise<any> }) {
+  const [signalText, setSignalText] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const ap = moodData.autopilot;
+  const memoryEntries = ap?.memory?.entries ?? [];
+  const latestSignal = memoryEntries[memoryEntries.length - 1];
+
+  const handleSubmit = async () => {
+    if (!signalText.trim() || submitting) return;
+    setSubmitting(true);
+    try {
+      await onSubmit(signalText);
+      setSignalText('');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const lawBadges = [
+    { label: 'MOOD ≠ AUTHORITY', ok: ap?.coreLaw?.moodNotAuthority },
+    { label: 'MOOD ≠ TRUTH', ok: ap?.coreLaw?.moodNotTruth },
+    { label: 'INFERENCE ≠ FACT', ok: ap?.coreLaw?.inferenceNotFact },
+  ];
+
+  return (
+    <div style={cardStyle}>
+      <div style={{ ...cardTitleStyle, color: theme.accentWarm }}>
+        🔥 Mood · AUTO L{ap?.level ?? 0} · {ap?.levelLabel ?? 'PASSIVE'} · {ap?.state ?? 'UNKNOWN'}
+      </div>
+      <div style={{ fontSize: '12px', color: theme.textMuted, marginBottom: '10px' }}>
+        {moodData.reality} · Wave {moodData.waveIndex} · Memory {ap?.memory?.count ?? 0}
+        {ap?.multiAgent?.dissent ? ' · Dissent preserved' : ''}
+      </div>
+
+      {/* Core law — mood never becomes authority */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '12px' }}>
+        {lawBadges.map((badge) => (
+          <span
+            key={badge.label}
             style={{
-              padding: '10px 14px',
-              background: theme.surfaceDeep,
-              borderRadius: theme.radiusSmall,
-              fontStyle: 'italic',
-              borderLeft: `3px solid ${theme.accentWarm}`,
-              fontSize: '12px',
-              color: theme.text,
+              fontSize: '9px',
+              fontWeight: 700,
+              letterSpacing: '0.04em',
+              padding: '3px 7px',
+              borderRadius: '4px',
+              background: badge.ok ? `${theme.verified}14` : `${theme.divergent}14`,
+              color: badge.ok ? theme.verified : theme.divergent,
+              border: `1px solid ${badge.ok ? theme.verified : theme.divergent}33`,
             }}
           >
-            "{props.moodData.pidginSpirit}"
+            {badge.label}
+          </span>
+        ))}
+      </div>
+
+      {/* Latest observed signal + bounded proposal */}
+      {latestSignal && (
+        <div
+          style={{
+            padding: '10px 12px',
+            background: theme.surfaceDeep,
+            borderRadius: theme.radiusSmall,
+            borderLeft: `3px solid ${theme.accentWarm}`,
+            fontSize: '11px',
+            color: theme.text,
+            marginBottom: '10px',
+            lineHeight: 1.6,
+          }}
+        >
+          <div style={{ color: theme.textDim, fontSize: '10px', marginBottom: '4px' }}>
+            Signal · {latestSignal.status} · {latestSignal.source}
           </div>
+          <div style={{ marginBottom: '6px' }}>"{latestSignal.signal}"</div>
+          <div style={{ color: theme.textMuted, fontSize: '10px' }}>
+            Adaptation: <span style={{ color: theme.accentWarm }}>{ap.proposal.adaptation.replace(/_/g, ' ')}</span>
+            {' · '}Authority: <span style={{ color: theme.verified }}>unchanged</span>
+          </div>
+          {latestSignal.userCorrection && (
+            <div style={{ color: theme.divergent, fontSize: '10px', marginTop: '4px' }}>
+              Corrected: {latestSignal.userCorrection}
+            </div>
+          )}
         </div>
       )}
+
+      {/* ƆREADE / language-spirit */}
+      <div
+        style={{
+          padding: '10px 14px',
+          background: theme.surfaceDeep,
+          borderRadius: theme.radiusSmall,
+          fontStyle: 'italic',
+          borderLeft: `3px solid ${theme.accentDim}`,
+          fontSize: '12px',
+          color: theme.textMuted,
+          marginBottom: '12px',
+        }}
+      >
+        "{moodData.pidginSpirit}"
+      </div>
+
+      {/* Observe a USER_STATED mood signal (bounded: experience only) */}
+      <div style={{ display: 'flex', gap: '8px' }}>
+        <input
+          value={signalText}
+          onChange={(e) => setSignalText(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit(); }}
+          placeholder="Tell the system how to respond (e.g. keep it short)…"
+          style={{
+            flex: 1,
+            padding: '9px 12px',
+            background: theme.surfaceDeep,
+            border: `1px solid ${theme.borderBright}`,
+            borderRadius: theme.radiusSmall,
+            color: theme.text,
+            fontFamily: theme.fontSans,
+            fontSize: '12px',
+            outline: 'none',
+          }}
+        />
+        <button
+          onClick={handleSubmit}
+          disabled={submitting || !signalText.trim()}
+          style={btnStyle(theme.accentWarm, submitting || !signalText.trim(), theme.surfaceDeep)}
+        >
+          {submitting ? 'Observing…' : 'Observe'}
+        </button>
+      </div>
     </div>
   );
 }

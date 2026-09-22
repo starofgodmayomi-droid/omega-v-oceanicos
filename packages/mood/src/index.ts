@@ -37,6 +37,20 @@ export type {
   MoodSignalStatus,
 } from './autopilot';
 
+export {
+  MoodAutopilotEngine,
+  MOOD_AUTOPILOT_LEVEL_LABELS,
+  MOOD_CORE_LAW,
+} from './engine';
+export type {
+  MoodStateLabel,
+  MoodMemoryEntry,
+  MoodMultiAgentSummary,
+  MoodAutopilotSnapshot,
+  ObserveOptions,
+  SafetyGateOptions,
+} from './engine';
+
 export class MoodEvaluator {
   /**
    * Evaluate the current system mood from measurable telemetry (Pillar 19)

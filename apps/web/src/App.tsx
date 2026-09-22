@@ -131,6 +131,22 @@ export function App() {
     }
   };
 
+  const submitMoodSignal = async (signal: string) => {
+    const trimmed = signal.trim();
+    if (!trimmed) return;
+    try {
+      const data = await apiRequest<any>('/v1/mood/signal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ signal: trimmed, status: 'USER_STATED', source: 'conversation' }),
+      });
+      setMoodData(await apiRequest<any>('/v1/mood'));
+      return data;
+    } catch {
+      /* ambient */
+    }
+  };
+
   useEffect(() => {
     fetchMinerStatus();
     fetchKernelCapabilities();
@@ -448,6 +464,8 @@ export function App() {
         realityStatus={tip?.evidence?.status ?? null}
         epochsRemembered={history.length}
         miningActive={minerActive}
+        moodLevel={moodData?.autopilot?.level ?? 0}
+        moodState={moodData?.autopilot?.state ?? 'UNKNOWN'}
       />
 
       {/* Error toast */}
@@ -687,6 +705,7 @@ export function App() {
             onRequestAttestation={requestAttestation}
             moodData={moodData}
             onFetchMood={fetchMood}
+            onSubmitMoodSignal={submitMoodSignal}
             keyPair={keyPair}
             onGenerateWebCrypto={generateWebCryptoKeys}
             onGenerateServerKeys={generateServerKeys}

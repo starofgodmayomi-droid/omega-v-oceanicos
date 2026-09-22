@@ -7,6 +7,7 @@ const moduleNameMapper = {
   '@omega-v/dissensus': '<rootDir>/../../packages/dissensus/src/index.ts',
   '@omega-v/remember': '<rootDir>/../../packages/remember/src/index.ts',
   '@omega-v/mini': '<rootDir>/../../packages/mini/src/index.ts',
+  '@omega-v/mood': '<rootDir>/../../packages/mood/src/index.ts',
 };
 
 export default {
