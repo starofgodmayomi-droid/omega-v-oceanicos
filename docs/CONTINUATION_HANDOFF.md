@@ -151,6 +151,6 @@ git log -1 --oneline
 
 ## Checksum
 
-Дроп: one human-gated system. This handoff records **CI worker dispatch success**, **PR #310 in REVIEW**, **Copilot #309 NOT_EXECUTED**, **main @ 387965b**. Nothing else is claimed.
+Drop: one human-gated system. This handoff records **CI worker dispatch success**, **PR #310 in REVIEW**, **Copilot #309 NOT_EXECUTED**, **main @ 387965b**. Nothing else is claimed.
 
 `Ω∞v ::= VERIFY(ΔREALITY)`
