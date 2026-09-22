@@ -1,5 +1,6 @@
 import Fastify, { FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
+import rateLimit from '@fastify/rate-limit';
 import { randomUUID } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
@@ -11,6 +12,8 @@ import { AttestationService } from '@oceanicos/attestation';
 import { OceanicosKernel } from '@omega-v/kernel';
 import { LocalJobError, LocalJobLedger, LOCAL_JOB_WINDOW } from './jobs.js';
 import { registerPipelineRoute } from './pipeline-route.js';
+import { registerEcosystemRoute } from './ecosystem-route.js';
+import { registerRealityRoute } from './reality-route.js';
 import { OmegaCommandStore, registerOmegaRoutes } from './omega.js';
 import {
   ENCRYPTION_ALGORITHM,
@@ -136,6 +139,7 @@ export function createApp(
   };
 
   fastify.register(cors, { origin: '*' });
+  fastify.register(rateLimit, { global: false });
   registerOmegaRoutes(fastify, omegaCommands);
   fastify.addHook('onRequest', async (request, reply) => {
     if (authMode === 'local' || request.url.split('?')[0] === '/health') return;
@@ -146,6 +150,8 @@ export function createApp(
   });
 
   registerPipelineRoute(fastify, jsonError);
+  registerEcosystemRoute(fastify, authMode, Boolean(attestationSigningKey));
+  registerRealityRoute(fastify, authMode, Boolean(attestationSigningKey), Boolean(ledgerMemory.getTip()));
 
   fastify.get('/health', async (_request, reply) => {
     const memoryReady = true;

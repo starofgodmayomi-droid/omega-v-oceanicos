@@ -99,6 +99,10 @@ export class OmegaDurableStore {
     );
   }
 
+  listCommands(): readonly any[] {
+    return this.db.prepare('SELECT command_json FROM omega_commands ORDER BY updated_at DESC').all().map((row) => JSON.parse(row.command_json));
+  }
+
   listEvents(commandId?: string): readonly Record<string, unknown>[] {
     const rows = commandId
       ? this.db.prepare('SELECT event_json FROM omega_events WHERE command_id = ? ORDER BY sequence ASC').all(commandId)

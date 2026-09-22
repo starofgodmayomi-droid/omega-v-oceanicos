@@ -30,3 +30,36 @@
   --omega-dissent: #ed9986;
   --omega-unknown: #547b74;
 }
+
+/* ── Frontier surface animations ── */
+
+@keyframes omega-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(0.82);
+  }
+}
+
+@keyframes omega-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.omega-pulse {
+  animation: omega-pulse 2s ease-in-out infinite;
+}
+
+.omega-fade-in {
+  animation: omega-fade-in 0.4s ease-out;
+}

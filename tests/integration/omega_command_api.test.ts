@@ -56,4 +56,13 @@ describe('Ω∞v command API vertical slice', () => {
     assert.equal(duplicate.statusCode, 201);
     assert.equal(duplicate.json().command.commandId, 'omega-api-slice-1');
   });
+
+  it('rate-limits repeated command-store reads', async () => {
+    let response;
+    for (let attempt = 0; attempt < 61; attempt += 1) {
+      response = await app.inject({ method: 'GET', url: '/v1/omega/commands' });
+    }
+    assert.equal(response?.statusCode, 429);
+    assert.equal(response?.headers['retry-after'], '60');
+  });
 });
