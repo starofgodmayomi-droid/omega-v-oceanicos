@@ -22,7 +22,7 @@
   "author": "Ω∞v Community",
   "license": "Apache-2.0",
   "dependencies": {
-    "@omega-v/types": "workspace:*",
+    "@oceanicos/types": "workspace:*",
     "@omega-v/sdk": "workspace:*",
     "@omega-v/agents": "workspace:*",
     "@omega-v/edge": "workspace:*",
@@ -30,8 +30,8 @@
     "@omega-v/scheduler": "workspace:*",
     "@omega-v/telemetry": "workspace:*",
     "@omega-v/vaas": "workspace:*",
-    "@omega-v/remember": "workspace:*",
-    "@omega-v/mini": "workspace:*"
+    "@oceanicos/remember": "workspace:*",
+    "@oceanicos/mini": "workspace:*"
   },
   "devDependencies": {
     "@types/jest": "^29.5.0",

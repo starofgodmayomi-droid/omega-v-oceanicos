@@ -5,7 +5,7 @@ import {
   Attestation,
   QueryResult,
   SystemMetrics,
-} from '@omega-v/types';
+} from '@oceanicos/types';
 
 /**
  * ProvenanceStore: Append-only event log with hash-chained integrity

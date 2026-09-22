@@ -1,5 +1,5 @@
 import { ProvenanceStore } from '../index';
-import { Observation, VerificationResult, Attestation } from '@omega-v/types';
+import { Observation, VerificationResult, Attestation } from '@oceanicos/types';
 
 const makeObs = (id: string): Observation => ({
   id,

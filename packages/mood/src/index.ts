@@ -1,4 +1,4 @@
-import { SystemMetrics, SystemMood, MoodState } from '@omega-v/types';
+import { SystemMetrics, SystemMood, MoodState } from '@oceanicos/types';
 
 export class MoodEvaluator {
   /**

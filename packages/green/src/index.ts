@@ -1,4 +1,4 @@
-import { GreenEvaluation, VerificationResult, EventLogEntry, Attestation } from '@omega-v/types';
+import { GreenEvaluation, VerificationResult, EventLogEntry, Attestation } from '@oceanicos/types';
 
 /**
  * Green Engine: Implements Section XXV (GREEN Rule)
@@ -48,7 +48,7 @@ export class GreenEngine {
 
     // 5. NO_HIDDEN_CRITICAL_FAILURE
     // Scan evidence path for critical failures even if overall result passed
-    const noCriticalFailures = !verification.evidencePath.some(
+    const noCriticalFailures = !(verification.evidencePath ?? []).some(
       (e) => e.severity === 'critical' && !e.passed
     );
     if (

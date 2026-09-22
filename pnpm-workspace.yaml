@@ -1,12 +1,5 @@
 packages:
-  - 'packages/types'
-  - 'packages/observer'
-  - 'packages/verification'
-  - 'packages/remember'
-  - 'packages/mini'
-  - 'packages/attestation'
-  - 'packages/gateway'
-  - 'packages/kernel'
+  - 'packages/*'
   - 'apps/api'
   - 'apps/web'
 

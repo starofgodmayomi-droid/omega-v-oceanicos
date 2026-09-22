@@ -4,8 +4,9 @@
     "rootDir": "src",
     "outDir": "dist",
     "paths": {
-      "@omega-v/types": ["../types/dist/index.d.ts"]
+      "@oceanicos/types": ["../types/dist/index.d.ts"]
     }
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": ["src/**/__tests__/**", "src/**/*.test.ts"]
 }

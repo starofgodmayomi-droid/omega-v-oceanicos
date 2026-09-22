@@ -32,7 +32,7 @@ describe('OceanicosRegistryEngine — Decentralized Verifiable Package & Artifac
         publisherDid: 'did:omega:developer:alice',
         description: 'Neural weight matrix verification adapter',
         tarballContent: Buffer.from('MODEL_ADAPTER_WEIGHT_V1'),
-        dependencies: { '@omega-v/types': '^0.1.0' },
+        dependencies: { '@oceanicos/types': '^0.1.0' },
         slsaAttestationId: 'att-slsa-neural-001',
       });
 

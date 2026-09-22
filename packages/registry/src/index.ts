@@ -68,7 +68,7 @@ export class OceanicosRegistryEngine {
       publisherDid: 'did:omega:core:genesis-builder',
       description: 'The definitive Ω∞v Oceanicos deterministic verification & execution kernel',
       tarballContent: Buffer.from('Ω∞v::CORE_KERNEL_BYTECODE_V6'),
-      dependencies: { '@omega-v/types': '^0.1.0' },
+      dependencies: { '@oceanicos/types': '^0.1.0' },
       slsaAttestationId: 'att-build-genesis-001',
     });
 
@@ -78,7 +78,7 @@ export class OceanicosRegistryEngine {
       publisherDid: 'did:omega:core:genesis-builder',
       description: 'Isolated bytecode virtual machine and sandboxed evaluator',
       tarballContent: Buffer.from('Ω∞v::VM_RUNTIME_BYTECODE_V1.2'),
-      dependencies: { '@omega-v/types': '^0.1.0' },
+      dependencies: { '@oceanicos/types': '^0.1.0' },
       slsaAttestationId: 'att-build-genesis-002',
     });
   }

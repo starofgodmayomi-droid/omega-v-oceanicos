@@ -1,5 +1,5 @@
 import { ProvenanceGraph } from '../index';
-import { EventLogEntry } from '@omega-v/types';
+import { EventLogEntry } from '@oceanicos/types';
 
 describe('ProvenanceGraph (Section XIV Knowledge Graph)', () => {
   let graph: ProvenanceGraph;

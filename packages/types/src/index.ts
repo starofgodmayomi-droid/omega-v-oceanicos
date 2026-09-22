@@ -27,6 +27,7 @@ export interface IMiniBlock {
 export interface VerificationResultSummary {
   readonly passed: boolean;
   readonly confidence: number;
+  readonly claimedConfidence?: number;
   readonly rulesApplied?: number;
   readonly rulesPassed?: number;
   readonly rulesFailed?: number;
@@ -37,8 +38,11 @@ export interface VerificationResult {
   readonly observationId: string;
   readonly timestamp?: string;
   readonly summary: VerificationResultSummary;
+  readonly rules?: Array<{ name: string; passed: boolean; confidence: number; details?: string }>;
+  readonly evidencePath?: import('./extended.js').EvidenceStep[];
   readonly ruleVersions?: Record<string, string>;
   readonly status?: 'pending' | 'completed' | 'failed';
+  readonly dissent?: import('./extended.js').DissentRecord;
 }
 
 export interface Attestation {
@@ -123,6 +127,7 @@ export * from './omega-ir.js';
 export * from './worker-registry.js';
 export * from './omega-command.js';
 export * from './scene.js';
+export * from './extended.js';
 
 export type SceneState =
   | 'darkness'
