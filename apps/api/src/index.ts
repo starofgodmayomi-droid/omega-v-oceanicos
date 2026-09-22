@@ -15,6 +15,7 @@ import { registerPipelineRoute } from './pipeline-route.js';
 import { registerEcosystemRoute } from './ecosystem-route.js';
 import { registerRealityRoute } from './reality-route.js';
 import { OmegaCommandStore, registerOmegaRoutes } from './omega.js';
+import { OmegaJobStore, registerOmegaJobRoutes } from './omega-jobs.js';
 import {
   ENCRYPTION_ALGORITHM,
   encryptionEnabled,
@@ -103,10 +104,12 @@ export function createApp(
   });
   const omegaCommandPath = dbPath === ':memory:' ? ':memory:' : join(resolve(dbPath, '..'), 'omega-commands.db');
   const omegaCommands = new OmegaCommandStore(omegaCommandPath);
+  const omegaJobs = new OmegaJobStore(omegaCommandPath, omegaCommands);
 
   fastify.addHook('onClose', async () => {
     ledgerMemory.close();
     omegaCommands.close();
+    omegaJobs.close();
   });
 
   const revocations = new Map<string, { id: string; attestationId: string; reason: string; revokedBy: string; revokedAt: string }>();
@@ -141,6 +144,7 @@ export function createApp(
   fastify.register(cors, { origin: '*' });
   fastify.register(rateLimit, { global: false });
   registerOmegaRoutes(fastify, omegaCommands);
+  registerOmegaJobRoutes(fastify, omegaJobs);
   fastify.addHook('onRequest', async (request, reply) => {
     if (authMode === 'local' || request.url.split('?')[0] === '/health') return;
     const required = request.method === 'GET' ? readToken : adminToken;
