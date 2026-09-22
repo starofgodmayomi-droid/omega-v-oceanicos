@@ -83,6 +83,9 @@ jobs:
       - name: Run worker lifecycle verification
         run: pnpm test:worker
 
+      - name: Run governed mood contract tests
+        run: pnpm test:mood
+
       - name: Generate coverage report
         run: pnpm test:coverage
 
