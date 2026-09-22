@@ -44,7 +44,7 @@ Run the worker's verification cycle:
 pnpm worker:verify
 ```
 
-Run bounded continuous verification. The cycle count can be controlled with `OMEGA_WORKER_CYCLES` and the interval with `OMEGA_WORKER_INTERVAL_MS`:
+Run bounded continuous verification. The cycle count can be controlled with `OMEGA_WORKER_CYCLES` (1–32) and the interval with `OMEGA_WORKER_INTERVAL_MS` (0–3,600,000 milliseconds; at most one hour):
 
 ```bash
 pnpm worker:continuous
