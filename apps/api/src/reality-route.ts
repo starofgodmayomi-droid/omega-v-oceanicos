@@ -53,7 +53,6 @@ export interface RealityStatus {
 
 export function registerRealityRoute(
   fastify: FastifyInstance,
-  authMode: string,
 ): void {
   fastify.get('/v1/reality/status', async () => {
     const now = new Date().toISOString();
