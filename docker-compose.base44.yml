@@ -1,0 +1,78 @@
+# Base44 development compose — runs the app FROM CLONED SOURCE with live reload.
+# API (Fastify, port 5000) + Web (Vite, port 3000). Workspace packages are built
+# once by the `setup` service, then the API and web dev servers run against the
+# bind-mounted source so edits are reflected without image rebuilds.
+
+services:
+  # ── One-shot: install deps + build all workspace packages ────────────────────
+  setup:
+    image: node:22
+    working_dir: /app
+    volumes:
+      - .:/app
+      - base44-node-modules:/app/node_modules
+    command: >
+      sh -c "npm install -g pnpm@10 nodemon
+      && pnpm install --frozen-lockfile
+      && pnpm --recursive run build"
+    restart: "no"
+
+  # ── API: Fastify core engine (built dist, nodemon watch on src) ──────────────
+  api:
+    image: node:22
+    working_dir: /app
+    volumes:
+      - .:/app
+      - base44-node-modules:/app/node_modules
+      - oceanicos-data:/app/data
+    depends_on:
+      setup:
+        condition: service_completed_successfully
+    env_file:
+      - ./.env.base44-defaults
+      - /run/base44/app.env
+    environment:
+      - API_PORT=5000
+    command: >
+      sh -c "npm install -g pnpm@10 nodemon
+      && nodemon --watch apps/api/src --ext ts --exec 'pnpm --filter api run build && node apps/api/dist/index.js'"
+    ports:
+      - "5000:5000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:5000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+
+  # ── Web: Vite + React dev server (live reload) on port 3000 ──────────────────
+  web:
+    image: node:22
+    working_dir: /app
+    volumes:
+      - .:/app
+      - base44-node-modules:/app/node_modules
+    depends_on:
+      setup:
+        condition: service_completed_successfully
+      api:
+        condition: service_healthy
+    env_file:
+      - ./.env.base44-defaults
+      - /run/base44/app.env
+    environment:
+      # Public URL of the API as seen from the browser (separate origin).
+      - VITE_API_URL=https://5000-${BASE44_PUBLIC_HOST_SUFFIX}
+      # Vite >= 6.1 appends this to allowedHosts so the preview origin is accepted.
+      - __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS
+    command: >
+      sh -c "npm install -g pnpm@10
+      && cd apps/web && pnpm exec vite --host 0.0.0.0 --port 3000"
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
+volumes:
+  base44-node-modules:
+  oceanicos-data:
