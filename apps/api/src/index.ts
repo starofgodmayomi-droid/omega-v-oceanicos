@@ -1,5 +1,6 @@
 import Fastify, { FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
+import rateLimit from '@fastify/rate-limit';
 import { randomUUID } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
@@ -138,6 +139,7 @@ export function createApp(
   };
 
   fastify.register(cors, { origin: '*' });
+  fastify.register(rateLimit, { global: false });
   registerOmegaRoutes(fastify, omegaCommands);
   fastify.addHook('onRequest', async (request, reply) => {
     if (authMode === 'local' || request.url.split('?')[0] === '/health') return;
