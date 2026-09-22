@@ -54,6 +54,10 @@ export class OmegaCommandStore {
     return this.durable.listEvents(commandId);
   }
 
+  listCommands(): readonly StoredCommand[] {
+    return this.durable.listCommands() as StoredCommand[];
+  }
+
   registerWorker(input: { workerId: string; capabilities: string[] }) { return this.durable.registerWorker(input); }
   heartbeatWorker(workerId: string) { return this.durable.heartbeatWorker(workerId); }
   listWorkers() { return this.durable.listWorkers(); }
@@ -122,6 +126,54 @@ export function registerOmegaRoutes(fastify: FastifyInstance, store: OmegaComman
     } catch (error) {
       return reply.status(400).send({ success: false, error: error instanceof Error ? error.message : 'INVALID_OMEGA_COMMAND' });
     }
+  });
+
+  fastify.get('/v1/omega/commands', async () => {
+    const commands = store.listCommands();
+    return {
+      success: true,
+      count: commands.length,
+      commands: commands.map((c) => ({
+        commandId: c.commandId,
+        intent: c.intent,
+        requestedBy: c.requestedBy,
+        status: c.status,
+        createdAt: c.createdAt,
+        workers: c.workers,
+        decision: c.change?.decision ?? null,
+        authority: c.change?.authority ?? null,
+        policy: c.change?.policy ?? null,
+        execution: c.result?.execution ?? null,
+        reality: c.result?.reality ?? null,
+      })),
+      redacted: true,
+    };
+  });
+
+  fastify.get('/v1/omega/commands/:id/provenance', async (request, reply) => {
+    const id = (request.params as { id?: string }).id ?? '';
+    const command = store.get(id);
+    if (!command) return reply.status(404).send({ success: false, error: 'OMEGA_COMMAND_NOT_FOUND' });
+    const events = store.listEvents(id);
+    return {
+      success: true,
+      provenance: {
+        commandId: command.commandId,
+        intent: command.intent,
+        requestedBy: command.requestedBy,
+        createdAt: command.createdAt,
+        context: command.context,
+        workers: command.workers,
+        status: command.status,
+        ir: command.ir,
+        change: command.change,
+        execution: command.result?.execution ?? null,
+        reality: command.result?.reality ?? null,
+        events,
+        lineage: events.map((e: any) => ({ type: e.type, at: e.at, status: e.status })),
+        redacted: true,
+      },
+    };
   });
 
   fastify.get('/v1/omega/commands/:id', async (request, reply) => {
