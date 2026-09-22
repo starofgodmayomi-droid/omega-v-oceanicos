@@ -3,6 +3,7 @@ name: Bounded Full-Stack Worker
 on:
   push:
     branches:
+      - main
       - upgrade/full-stack-evidence-bound-mood
   pull_request:
   workflow_dispatch:
@@ -57,4 +58,5 @@ jobs:
             echo "- External action: OFF"
             echo "- Git write: OFF"
             echo "- Result: executable steps completed successfully"
+            echo "- Non-claim: this is CI evidence, not runtime health or deployment proof"
           } >> "$GITHUB_STEP_SUMMARY"
