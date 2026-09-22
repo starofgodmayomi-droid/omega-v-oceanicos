@@ -5,6 +5,15 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 3000,
+    host: '0.0.0.0',
+    allowedHosts: true,
+    proxy: {
+      '/health': 'http://api:5000',
+      '/v1': 'http://api:5000',
+      '/jobs': 'http://api:5000',
+      '/attest': 'http://api:5000',
+      '/persistence': 'http://api:5000',
+    },
   },
   preview: {
     allowedHosts: process.env.VITE_ALLOWED_HOST

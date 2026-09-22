@@ -1,0 +1,13 @@
+{
+  "previewPort": 3000,
+  "healthPath": "/",
+  "startCommand": "docker compose -f docker-compose.base44.yml up -d",
+  "secrets": [
+    {
+      "name": "OMEGA_SIGNING_KEY",
+      "description": "HMAC-SHA256 signing key for attestation service (at least 32 characters). Generated for development; replace with a real random key for production.",
+      "requiredAtBoot": false,
+      "generatedForDevelopment": true
+    }
+  ]
+}

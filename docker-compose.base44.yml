@@ -1,0 +1,62 @@
+# Base44 dev environment for Ω∞v Oceanicos
+# Runs the monorepo from bind-mounted source with live-reload dev servers.
+services:
+  # ── Setup: install deps and build workspace packages (one-shot) ──────────────
+  setup:
+    image: node:22-alpine
+    working_dir: /app
+    volumes:
+      - ./:/app
+      - pnpm-store:/root/.local/share/pnpm
+      - node-modules:/app/node_modules
+    command: sh -c "corepack enable && corepack prepare pnpm@10.34.5 --activate && pnpm install --frozen-lockfile && pnpm build"
+    environment:
+      - NODE_ENV=development
+
+  # ── API: Fastify server with ts-node + node --watch ──────────────────────────
+  api:
+    image: node:22-alpine
+    working_dir: /app
+    volumes:
+      - ./:/app
+      - pnpm-store:/root/.local/share/pnpm
+      - node-modules:/app/node_modules
+      - api-data:/app/data
+    depends_on:
+      setup:
+        condition: service_completed_successfully
+    command: sh -c "corepack enable && corepack prepare pnpm@10.34.5 --activate && pnpm --filter api exec tsc --watch & node --watch apps/api/dist/index.js"
+    env_file:
+      - ./.env.base44-defaults
+      - /run/base44/app.env
+    environment:
+      - NODE_ENV=development
+      - OMEGA_AUTH_MODE=local
+      - API_PORT=5000
+      - OMEGA_DB_PATH=/app/data/oceanicos.db
+    ports:
+      - "5000:5000"
+    restart: unless-stopped
+
+  # ── Web: Vite dev server with API proxy ──────────────────────────────────────
+  web:
+    image: node:22-alpine
+    working_dir: /app
+    volumes:
+      - ./:/app
+      - pnpm-store:/root/.local/share/pnpm
+      - node-modules:/app/node_modules
+    depends_on:
+      setup:
+        condition: service_completed_successfully
+    command: sh -c "corepack enable && corepack prepare pnpm@10.34.5 --activate && pnpm --filter web exec vite --host 0.0.0.0 --port 3000"
+    environment:
+      - __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS=${BASE44_PUBLIC_HOST_SUFFIX}
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
+volumes:
+  pnpm-store:
+  node-modules:
+  api-data:
