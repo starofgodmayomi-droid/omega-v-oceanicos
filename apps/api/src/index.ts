@@ -139,8 +139,10 @@ export function createApp(
   };
 
   fastify.register(cors, { origin: '*' });
-  fastify.register(rateLimit, { global: false });
-  registerOmegaRoutes(fastify, omegaCommands);
+  fastify.register(async (scope) => {
+    await scope.register(rateLimit, { global: false });
+    registerOmegaRoutes(scope, omegaCommands);
+  });
   fastify.addHook('onRequest', async (request, reply) => {
     if (authMode === 'local' || request.url.split('?')[0] === '/health') return;
     const required = request.method === 'GET' ? readToken : adminToken;
