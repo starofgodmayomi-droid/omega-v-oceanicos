@@ -6,6 +6,7 @@ import { AmbientBar } from './AmbientBar';
 import { IntentFlow } from './IntentFlow';
 import { DeepSection } from './DeepSection';
 import { SystemControlsPanel } from './SystemControlsPanel';
+import { MultiJobPanel } from './MultiJobPanel';
 import { ObservationStreamPanel } from './ObservationStreamPanel';
 import {
   theme,
@@ -624,6 +625,8 @@ export function App() {
           simulationMode={simulationMode}
           humanGateRequired={humanGateRequired}
         />
+
+        <MultiJobPanel />
       </main>
 
       {/* Deep sections */}

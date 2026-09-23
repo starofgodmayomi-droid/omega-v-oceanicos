@@ -8,6 +8,14 @@ export type DurableWorker = {
   leaseCount: number;
 };
 
+export type OmegaJobStoredEvent = {
+  sequence: number;
+  jobId: string;
+  type: string;
+  eventJson: string;
+  createdAt: string;
+};
+
 export type WorkerLease = {
   leaseId: string;
   workerId: string;
@@ -61,6 +69,19 @@ export class OmegaDurableStore {
         last_heartbeat_at TEXT NOT NULL,
         lease_count INTEGER NOT NULL DEFAULT 0
       );
+      CREATE TABLE IF NOT EXISTS omega_jobs (
+        job_id TEXT PRIMARY KEY,
+        status TEXT NOT NULL,
+        job_json TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS omega_job_events (
+        sequence INTEGER PRIMARY KEY AUTOINCREMENT,
+        job_id TEXT NOT NULL,
+        event_type TEXT NOT NULL,
+        event_json TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
       CREATE TABLE IF NOT EXISTS omega_leases (
         lease_id TEXT PRIMARY KEY,
         worker_id TEXT NOT NULL,
@@ -108,6 +129,34 @@ export class OmegaDurableStore {
       ? this.db.prepare('SELECT event_json FROM omega_events WHERE command_id = ? ORDER BY sequence ASC').all(commandId)
       : this.db.prepare('SELECT event_json FROM omega_events ORDER BY sequence ASC').all();
     return rows.map((row) => JSON.parse(row.event_json));
+  }
+
+  getJob(jobId: string): any | undefined {
+    const row = this.db.prepare('SELECT job_json FROM omega_jobs WHERE job_id = ?').get(jobId);
+    return row ? JSON.parse(row.job_json) : undefined;
+  }
+
+  putJob(job: any): void {
+    const now = new Date().toISOString();
+    this.db.prepare(`
+      INSERT INTO omega_jobs(job_id, status, job_json, updated_at)
+      VALUES (?, ?, ?, ?)
+      ON CONFLICT(job_id) DO UPDATE SET status=excluded.status, job_json=excluded.job_json, updated_at=excluded.updated_at
+    `).run(job.jobId, job.status, JSON.stringify(job), now);
+  }
+
+  appendJobEvent(event: { jobId: string; type: string; status: string; at: string; detail: string }): void {
+    this.db.prepare(
+      'INSERT INTO omega_job_events(job_id, event_type, event_json, created_at) VALUES (?, ?, ?, ?)'
+    ).run(event.jobId, event.type, JSON.stringify(event), event.at);
+  }
+
+  listJobs(): readonly any[] {
+    return this.db.prepare('SELECT job_json FROM omega_jobs ORDER BY updated_at DESC').all().map((row) => JSON.parse(row.job_json));
+  }
+
+  listJobEvents(jobId: string): readonly Record<string, unknown>[] {
+    return this.db.prepare('SELECT event_json FROM omega_job_events WHERE job_id = ? ORDER BY sequence ASC').all(jobId).map((row) => JSON.parse(row.event_json));
   }
 
   registerWorker(input: { workerId: string; capabilities: string[] }): DurableWorker {
