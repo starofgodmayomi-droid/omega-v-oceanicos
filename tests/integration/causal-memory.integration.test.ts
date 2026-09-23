@@ -52,6 +52,9 @@ describe('C7 reality attestation → C8 causal memory', () => {
     assert.deepEqual(replayed?.record, result.record);
     assert.equal(reloaded.verifyIntegrity(), true);
     assert.equal(verifyRealityAttestation(replayed!.attestation, 'wrong-key'), false);
+    assert.equal(verifyRealityAttestation({ ...replayed!.attestation, signature: undefined } as any, 'c8-test-signing-key'), false);
+    assert.equal(verifyRealityAttestation({ ...replayed!.attestation, provenanceLineage: null } as any, 'c8-test-signing-key'), false);
+    assert.equal(verifyRealityAttestation(replayed!.attestation, null as any), false);
   });
 
   it('preserves DIVERGENT and UNKNOWN without upgrading either to VERIFIED', () => {
