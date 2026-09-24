@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
 const specification = readFileSync(new URL('../../docs/spec/OCEANICOS-OPERATIONAL-PROTOCOL.md', import.meta.url), 'utf8');
+const conflictResolution = readFileSync(new URL('../../docs/spec/OCEANICOS-CONFLICT-RESOLUTION.md', import.meta.url), 'utf8');
 
 const requiredSections = [
   '## 3. The Drop contract',
@@ -36,4 +37,21 @@ test('Operational Protocol Specification keeps capability separate from authorit
   assert.match(specification, /capability.*authority|authority.*capability/i);
   assert.match(specification, /does not claim omniscience|does not grant software agency/i);
   assert.match(specification, /evidence.*does not prove|what its evidence does not prove/i);
+});
+
+test('Conflict Resolution module preserves fail-closed states and recovery boundaries', () => {
+  for (const state of ['`REVIEW`', '`DIVERGENT`', '`UNKNOWN`', '`NOT_EXECUTED`', '`RESOLVED`', '`SUPERSEDED`']) {
+    assert.ok(conflictResolution.includes(state), `missing conflict state: ${state}`);
+  }
+  for (const marker of [
+    '## 3. Conflict record',
+    '## 4. Failure classification',
+    '## 5. Resolution procedure',
+    '## 6. Retry and rollback',
+    '## 7. Dissent and multi-observer review',
+    '## 8. API and event mapping',
+    '## 10. Conformance checklist',
+    'OMEGA_COMMAND_NOT_FOUND',
+    'coordination.evidence-recorded',
+  ]) assert.ok(conflictResolution.includes(marker), `missing conflict-resolution marker: ${marker}`);
 });
