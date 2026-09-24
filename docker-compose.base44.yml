@@ -1,0 +1,68 @@
+# Base44 dev-mode compose for Ω∞v Oceanicos
+# Runs the API and web from bind-mounted source with live-reload dev servers.
+services:
+  # ── One-shot: install deps + build workspace packages ────────────────────────
+  setup:
+    image: node:22-slim
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: >-
+      sh -c "npm install -g pnpm@10 &&
+      pnpm install --frozen-lockfile &&
+      pnpm --filter @oceanicos/types build &&
+      pnpm --filter @omega-v/kernel build &&
+      pnpm --filter @oceanicos/observer build &&
+      pnpm --filter @oceanicos/verification build &&
+      pnpm --filter @oceanicos/remember build &&
+      pnpm --filter @oceanicos/mini build &&
+      pnpm --filter @oceanicos/attestation build &&
+      pnpm --filter api build"
+
+  # ── API: Fastify dev server (ts-node) ────────────────────────────────────────
+  api:
+    image: node:22-slim
+    working_dir: /app
+    volumes:
+      - .:/app
+    env_file:
+      - ./.env.base44-defaults
+      - /run/base44/app.env
+    environment:
+      - NODE_ENV=development
+      - API_PORT=5000
+      - OMEGA_AUTH_MODE=local
+      - TS_NODE_PREFER_TS_EXTS=true
+    depends_on:
+      setup:
+        condition: service_completed_successfully
+    command: sh -c "npm install -g pnpm@10 && cd apps/api && (npx tsc --watch --preserveWatchOutput &) && sleep 3 && node --watch dist/index.js"
+    ports:
+      - "8000:5000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:5000/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+
+  # ── Web: Vite dev server with HMR ────────────────────────────────────────────
+  web:
+    image: node:22-slim
+    working_dir: /app
+    volumes:
+      - .:/app
+    env_file:
+      - ./.env.base44-defaults
+      - /run/base44/app.env
+    environment:
+      - VITE_API_URL=https://8000-${BASE44_PUBLIC_HOST_SUFFIX}
+      - __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS
+    depends_on:
+      setup:
+        condition: service_completed_successfully
+      api:
+        condition: service_healthy
+    command: sh -c "npm install -g pnpm@10 && cd apps/web && npx vite --host 0.0.0.0 --port 3000"
+    ports:
+      - "3000:3000"

@@ -201,7 +201,7 @@ export function createApp(
         readAuthConfigured: Boolean(readToken),
         adminAuthConfigured: Boolean(adminToken),
         revocationEnabled: true,
-        persistenceEncryption: persistenceEncryptionKey ? ENCRYPTION_ALGORITHM : 'disabled',
+        persistenceEncryption: encryptionEnabled(persistenceKey) ? ENCRYPTION_ALGORITHM : 'disabled',
       },
       timestamp: new Date().toISOString(),
     };
