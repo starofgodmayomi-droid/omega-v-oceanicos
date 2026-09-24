@@ -85,6 +85,19 @@ describe('Ω durable multi-process coordination', () => {
     assert.equal(response.json().error, 'coordination probe commandId is invalid');
   });
 
+  it('rejects unknown evidence commands without creating probe events', async () => {
+    const before = (await first.inject({ method: 'GET', url: '/v1/omega/events?commandId=unknown-evidence-command' })).json().events;
+    const response = await first.inject({
+      method: 'POST',
+      url: '/v1/omega/coordination/evidence',
+      payload: { commandId: 'unknown-evidence-command' },
+    });
+    const after = (await first.inject({ method: 'GET', url: '/v1/omega/events?commandId=unknown-evidence-command' })).json().events;
+    assert.equal(response.statusCode, 404);
+    assert.equal(response.json().error, 'OMEGA_COMMAND_NOT_FOUND');
+    assert.deepEqual(after, before);
+  });
+
   it('emits bounded multi-process evidence and replays the lease lifecycle after restart', async () => {
     const probeDirectory = mkdtempSync(join(tmpdir(), 'omega-probe-'));
     const probePath = join(probeDirectory, 'ledger.db');

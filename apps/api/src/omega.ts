@@ -27,6 +27,7 @@ const coordinationLimitations = [
   'does not prove distributed consensus, leader election, or replica agreement',
   'does not prove global ordering, deployment health, or external coordinator control',
 ] as const;
+const coordinationCommandIdPattern = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,95}$/;
 
 async function runDurableCoordinationEvidenceProbe(input: {
   commandId: string;
@@ -34,7 +35,7 @@ async function runDurableCoordinationEvidenceProbe(input: {
   second: CoordinationProbeClient;
   restart: () => Promise<CoordinationProbeClient>;
 }) {
-  if (!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,95}$/.test(input.commandId)) throw new Error('coordination probe commandId is invalid');
+  if (!coordinationCommandIdPattern.test(input.commandId)) throw new Error('coordination probe commandId is invalid');
   const workers = ['probe-worker-a', 'probe-worker-b'] as const;
   await input.first.registerWorker(workers[0], ['PROBE']);
   await input.second.registerWorker(workers[1], ['PROBE']);
@@ -359,9 +360,11 @@ export function registerOmegaRoutes(fastify: FastifyInstance, store: OmegaComman
     config: { rateLimit: { max: 10, timeWindow: '1 minute' } },
   }, async (request, reply) => {
     if (!store.durableEvidenceAvailable) return reply.status(503).send({ success: false, error: 'COORDINATION_EVIDENCE_REQUIRES_DURABLE_STORE' });
-    if (coordinationProbeInFlight) return reply.status(409).send({ success: false, error: 'COORDINATION_EVIDENCE_IN_FLIGHT' });
     const body = bodyOf(request);
     if (typeof body.commandId !== 'string') return reply.status(400).send({ success: false, error: 'COORDINATION_COMMAND_ID_REQUIRED' });
+    if (!coordinationCommandIdPattern.test(body.commandId)) return reply.status(409).send({ success: false, error: 'coordination probe commandId is invalid' });
+    if (!store.get(body.commandId)) return reply.status(404).send({ success: false, error: 'OMEGA_COMMAND_NOT_FOUND' });
+    if (coordinationProbeInFlight) return reply.status(409).send({ success: false, error: 'COORDINATION_EVIDENCE_IN_FLIGHT' });
     coordinationProbeInFlight = true;
     try {
       const evidence = await runDurableCoordinationEvidenceProbe({
