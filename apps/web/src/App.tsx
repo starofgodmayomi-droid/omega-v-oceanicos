@@ -7,6 +7,7 @@ import { IntentFlow } from './IntentFlow';
 import { SystemControlsPanel } from './SystemControlsPanel';
 import { ObservationStreamPanel } from './ObservationStreamPanel';
 import { LifecycleFlow, deriveStageStates, type LifecycleStage } from './LifecycleFlow';
+import { MarketCommandCenter } from './MarketCommandCenter';
 import {
   theme,
   statusColor,
@@ -747,6 +748,7 @@ export function App() {
           openStageId={openStageId}
           onStageToggle={(id) => setOpenStageId(id || null)}
         />
+        <MarketCommandCenter />
       </div>
     </div>
   );

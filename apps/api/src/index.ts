@@ -15,6 +15,7 @@ import { registerPipelineRoute } from './pipeline-route.js';
 import { registerEcosystemRoute } from './ecosystem-route.js';
 import { registerRealityRoute } from './reality-route.js';
 import { OmegaCommandStore, registerOmegaRoutes } from './omega.js';
+import { registerMarketIntelligenceRoute } from './market-intelligence-route.js';
 import {
   ENCRYPTION_ALGORITHM,
   encryptionEnabled,
@@ -154,6 +155,7 @@ export function createApp(
   registerPipelineRoute(fastify, jsonError);
   registerEcosystemRoute(fastify, authMode, Boolean(attestationSigningKey));
   registerRealityRoute(fastify, authMode, Boolean(attestationSigningKey), Boolean(ledgerMemory.getTip()));
+  registerMarketIntelligenceRoute(fastify);
 
   fastify.get('/health', async (_request, reply) => {
     const memoryReady = true;
