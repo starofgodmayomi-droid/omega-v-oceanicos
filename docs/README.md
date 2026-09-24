@@ -104,6 +104,7 @@ remain on the [roadmap](./ROADMAP.md).
 ### System Design
 
 - **[Ocean Point of View](./architecture/OCEAN-POINT-OF-VIEW.md)** — the planetary-ocean metaphor and its evidence-bound transition invariant
+- **[OCEANICOS Constitution](./architecture/OCEANICOS-CONSTITUTION.md)** — the one-current, many-bounded-forms map with current implementation evidence
 - **[Observer](../packages/observer/README.md)** — capturing normalized
   observations
 - **[Memory](../packages/remember/README.md)** — the append-only
