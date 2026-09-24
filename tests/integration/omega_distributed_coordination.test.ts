@@ -37,6 +37,28 @@ describe('Ω durable multi-process coordination', () => {
     assert.equal(released.statusCode, 200);
   });
 
+  it('exposes bounded coordination evidence through the durable API contract', async () => {
+    const created = await first.inject({
+      method: 'POST',
+      url: '/v1/omega/commands',
+      payload: { intent: 'public coordination evidence', requestedBy: 'api-test', workers: ['observer'], idempotencyKey: 'public-evidence-1' },
+    });
+    assert.equal(created.statusCode, 201);
+    const commandId = created.json().command.commandId;
+    const response = await first.inject({ method: 'POST', url: '/v1/omega/coordination/evidence', payload: { commandId } });
+    assert.equal(response.statusCode, 200);
+    const evidence = response.json().evidence;
+    assert.equal(evidence.kind, 'coordination-evidence');
+    assert.equal(evidence.evidence, 'runtime-observed');
+    assert.equal(evidence.scope, 'multi-process-single-volume');
+    assert.equal(evidence.verified, true);
+    assert.equal(evidence.commandId, commandId);
+    assert.equal(evidence.rejectedWorkers.length, 1);
+    assert.ok(evidence.eventTypes.includes('worker.lease-acquired'));
+    assert.ok(evidence.eventTypes.includes('worker.lease-rejected'));
+    assert.ok(evidence.eventTypes.includes('worker.lease-released'));
+  });
+
   it('emits bounded multi-process evidence and replays the lease lifecycle after restart', async () => {
     const probeDirectory = mkdtempSync(join(tmpdir(), 'omega-probe-'));
     const probePath = join(probeDirectory, 'ledger.db');

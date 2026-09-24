@@ -14,14 +14,73 @@ type StoredCommand = OmegaCommand & {
   readonly result?: OmegaCommandResult;
 };
 
+type CoordinationProbeClient = {
+  registerWorker(workerId: string, capabilities: string[]): Promise<void>;
+  acquireLease(workerId: string, commandId: string): Promise<{ leaseId?: string }>;
+  releaseLease(workerId: string, leaseId: string): Promise<boolean>;
+  replayEvents(commandId: string): Promise<readonly { type?: unknown }[]>;
+  close?: () => void;
+};
+
+const coordinationLimitations = [
+  'does not prove cross-host durability',
+  'does not prove distributed consensus, leader election, or replica agreement',
+  'does not prove global ordering, deployment health, or external coordinator control',
+] as const;
+
+async function runDurableCoordinationEvidenceProbe(input: {
+  commandId: string;
+  first: CoordinationProbeClient;
+  second: CoordinationProbeClient;
+  restart: () => Promise<CoordinationProbeClient>;
+}) {
+  if (!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,95}$/.test(input.commandId)) throw new Error('coordination probe commandId is invalid');
+  const workers = ['probe-worker-a', 'probe-worker-b'] as const;
+  await input.first.registerWorker(workers[0], ['PROBE']);
+  await input.second.registerWorker(workers[1], ['PROBE']);
+  const attempts = await Promise.all(workers.map((workerId, index) => (index === 0 ? input.first : input.second).acquireLease(workerId, input.commandId)));
+  const hasLease = (attempt: { leaseId?: string }): boolean => typeof attempt.leaseId === 'string' && attempt.leaseId.length > 0;
+  const winners = attempts.filter(hasLease);
+  if (winners.length !== 1) throw new Error('coordination probe did not observe exactly one lease winner');
+  const winnerIndex = attempts.findIndex(hasLease);
+  const winner = workers[winnerIndex];
+  const released = await (winnerIndex === 0 ? input.first : input.second).releaseLease(winner, winners[0].leaseId!);
+  if (!released) throw new Error('coordination probe could not release the winning lease');
+  const restarted = await input.restart();
+  let events: readonly { type?: unknown }[];
+  try {
+    events = await restarted.replayEvents(input.commandId);
+  } finally {
+    restarted.close?.();
+  }
+  const eventTypes = events.map((event) => event.type).filter((type): type is string => typeof type === 'string');
+  const required = ['command.proposed', 'worker.lease-acquired', 'worker.lease-rejected', 'worker.lease-released'];
+  if (!required.every((type) => eventTypes.includes(type))) throw new Error('coordination probe replay is missing required lifecycle events');
+  return {
+    kind: 'coordination-evidence' as const,
+    evidence: 'runtime-observed' as const,
+    scope: 'multi-process-single-volume' as const,
+    verified: true as const,
+    commandId: input.commandId,
+    leaseWinner: winner,
+    rejectedWorkers: workers.filter((workerId) => workerId !== winner),
+    eventTypes,
+    limitations: [...coordinationLimitations],
+  };
+}
+
 const MAX_COMMANDS = 256;
 
 export class OmegaCommandStore {
   private readonly durable: OmegaDurableStore;
+  readonly path: string;
 
   constructor(path = ':memory:') {
+    this.path = path;
     this.durable = new OmegaDurableStore(path);
   }
+
+  get durableEvidenceAvailable(): boolean { return this.path !== ':memory:'; }
 
   close(): void {
     this.durable.close();
@@ -100,6 +159,23 @@ function statusForDecision(decision: 'ALLOW' | 'DENY' | 'REVIEW'): OmegaCommandS
 }
 
 export function registerOmegaRoutes(fastify: FastifyInstance, store: OmegaCommandStore): void {
+  let coordinationProbeInFlight = false;
+
+  const coordinationClient = (clientStore: OmegaCommandStore): CoordinationProbeClient => ({
+    registerWorker: async (workerId, capabilities) => { clientStore.registerWorker({ workerId, capabilities }); },
+    acquireLease: async (workerId, commandId) => {
+      const lease = clientStore.acquireWorkerLease(workerId, commandId, 'PROBE', 5000);
+      return lease ? { leaseId: lease.leaseId } : {};
+    },
+    releaseLease: async (workerId, leaseId) => clientStore.releaseWorkerLease(leaseId, workerId),
+    replayEvents: async (commandId) => clientStore.listEvents(commandId),
+  });
+
+  const restartCoordinationClient = async (): Promise<CoordinationProbeClient> => {
+    const restarted = new OmegaCommandStore(store.path);
+    return { ...coordinationClient(restarted), close: () => restarted.close() };
+  };
+
   fastify.get('/v1/omega/workers', async () => ({ success: true, workers: listOmegaWorkers(), activeWorkers: store.listWorkers(), limitations: ['coordination is durable on the configured SQLite volume', 'worker output is evidence, not authority', 'cross-host coordination requires a shared filesystem or a future network database'] }));
 
   fastify.post('/v1/omega/workers/register', async (request, reply) => {
@@ -277,5 +353,28 @@ export function registerOmegaRoutes(fastify: FastifyInstance, store: OmegaComman
   }, async (request) => {
     const commandId = (request.query as { commandId?: string }).commandId;
     return { success: true, events: store.listEvents(commandId), redacted: true };
+  });
+
+  fastify.post('/v1/omega/coordination/evidence', {
+    config: { rateLimit: { max: 10, timeWindow: '1 minute' } },
+  }, async (request, reply) => {
+    if (!store.durableEvidenceAvailable) return reply.status(503).send({ success: false, error: 'COORDINATION_EVIDENCE_REQUIRES_DURABLE_STORE' });
+    if (coordinationProbeInFlight) return reply.status(409).send({ success: false, error: 'COORDINATION_EVIDENCE_IN_FLIGHT' });
+    const body = bodyOf(request);
+    if (typeof body.commandId !== 'string') return reply.status(400).send({ success: false, error: 'COORDINATION_COMMAND_ID_REQUIRED' });
+    coordinationProbeInFlight = true;
+    try {
+      const evidence = await runDurableCoordinationEvidenceProbe({
+        commandId: body.commandId,
+        first: coordinationClient(store),
+        second: coordinationClient(store),
+        restart: restartCoordinationClient,
+      });
+      return { success: true, evidence, redacted: true };
+    } catch (error) {
+      return reply.status(409).send({ success: false, error: error instanceof Error ? error.message : 'COORDINATION_EVIDENCE_FAILED' });
+    } finally {
+      coordinationProbeInFlight = false;
+    }
   });
 }
