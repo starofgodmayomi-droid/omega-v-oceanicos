@@ -139,7 +139,7 @@ The current repository provides concrete boundaries for this module:
 | Reality observation required | `OMEGA_REALITY_OBSERVATION_REQUIRED` |
 | Divergent or unknown reality | `DIVERGENT` and `UNKNOWN` command statuses |
 | Lease contention evidence | `worker.lease-acquired` and `worker.lease-rejected` |
-| Evidence provenance | `coordination.evidence-recorded` |
+| Evidence provenance | `coordination.evidence-recorded` and `coordination.evidence-failed` |
 | Replayable event trail | `GET /v1/omega/events` |
 
 The route and event names are implementation evidence, not a promise that every future adapter has identical transport semantics. Any adapter must preserve the same state distinctions.

@@ -53,5 +53,6 @@ test('Conflict Resolution module preserves fail-closed states and recovery bound
     '## 10. Conformance checklist',
     'OMEGA_COMMAND_NOT_FOUND',
     'coordination.evidence-recorded',
+    'coordination.evidence-failed',
   ]) assert.ok(conflictResolution.includes(marker), `missing conflict-resolution marker: ${marker}`);
 });

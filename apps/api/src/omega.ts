@@ -366,6 +366,7 @@ export function registerOmegaRoutes(fastify: FastifyInstance, store: OmegaComman
     if (!store.get(body.commandId)) return reply.status(404).send({ success: false, error: 'OMEGA_COMMAND_NOT_FOUND' });
     if (coordinationProbeInFlight) return reply.status(409).send({ success: false, error: 'COORDINATION_EVIDENCE_IN_FLIGHT' });
     coordinationProbeInFlight = true;
+    const command = store.get(body.commandId)!;
     try {
       const evidence = await runDurableCoordinationEvidenceProbe({
         commandId: body.commandId,
@@ -373,7 +374,6 @@ export function registerOmegaRoutes(fastify: FastifyInstance, store: OmegaComman
         second: coordinationClient(store),
         restart: restartCoordinationClient,
       });
-      const command = store.get(body.commandId)!;
       store.record('coordination.evidence-recorded', command, {
         evidence: evidence.evidence,
         scope: evidence.scope,
@@ -385,7 +385,9 @@ export function registerOmegaRoutes(fastify: FastifyInstance, store: OmegaComman
       });
       return { success: true, evidence, redacted: true };
     } catch (error) {
-      return reply.status(409).send({ success: false, error: error instanceof Error ? error.message : 'COORDINATION_EVIDENCE_FAILED' });
+      const message = error instanceof Error ? error.message : 'COORDINATION_EVIDENCE_FAILED';
+      store.record('coordination.evidence-failed', command, { error: message });
+      return reply.status(409).send({ success: false, error: message });
     } finally {
       coordinationProbeInFlight = false;
     }
