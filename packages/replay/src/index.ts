@@ -54,6 +54,16 @@ export interface ReplayChange {
   severity: 'INFO' | 'WARNING' | 'REGRESSION';
 }
 
+const deepFreeze = <T>(value: T): T => {
+  if (value && typeof value === 'object' && !Object.isFrozen(value)) {
+    Object.freeze(value);
+    for (const child of Object.values(value as Record<string, unknown>)) {
+      deepFreeze(child);
+    }
+  }
+  return value;
+};
+
 /**
  * Result of replaying a snapshot (re-executing the same claim)
  */
@@ -90,18 +100,19 @@ export class VerificationReplayEngine {
     metadata: Record<string, unknown> = {}
   ): ReplaySnapshot {
     const id = `replay-${crypto.randomBytes(8).toString('hex')}`;
-    const fingerprint = this.computeFingerprint(result);
+    const capturedResult = deepFreeze(structuredClone(result));
+    const fingerprint = this.computeFingerprint(capturedResult);
 
     const snapshot: ReplaySnapshot = {
       id,
       label: label || `Snapshot ${this.snapshots.size + 1}`,
       claim,
-      result,
+      result: capturedResult,
       fingerprint,
       capturedAt: new Date().toISOString(),
-      tags,
+      tags: deepFreeze([...tags]),
       status: 'CAPTURED',
-      metadata,
+      metadata: deepFreeze(structuredClone(metadata)),
     };
 
     this.snapshots.set(id, snapshot);

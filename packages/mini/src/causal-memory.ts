@@ -89,11 +89,33 @@ export function createRealityAttestation(
 }
 
 export function verifyRealityAttestation(attestation: RealityAttestation, key: string): boolean {
-  if (!key.trim() || !attestation.id || !attestation.changeId || attestation.signingAlgorithm !== 'HMAC-SHA256') return false;
-  const { signature, ...unsigned } = attestation;
-  const expected = Buffer.from(`0x${createHmac('sha256', key).update(canonicalAttestation(unsigned)).digest('hex')}`, 'utf8');
-  const actual = Buffer.from(signature, 'utf8');
-  return actual.length === expected.length && timingSafeEqual(actual, expected);
+  try {
+    if (
+      typeof key !== 'string' ||
+      !key.trim() ||
+      !attestation ||
+      typeof attestation.id !== 'string' ||
+      !attestation.id ||
+      typeof attestation.changeId !== 'string' ||
+      !attestation.changeId ||
+      !['VERIFIED', 'DIVERGENT', 'UNKNOWN', 'NOT_EXECUTED'].includes(attestation.status) ||
+      typeof attestation.evidence !== 'string' ||
+      typeof attestation.observedAt !== 'string' ||
+      typeof attestation.attestedAt !== 'string' ||
+      typeof attestation.signerId !== 'string' ||
+      typeof attestation.keyVersion !== 'string' ||
+      attestation.signingAlgorithm !== 'HMAC-SHA256' ||
+      typeof attestation.signature !== 'string' ||
+      !Array.isArray(attestation.provenanceLineage) ||
+      attestation.provenanceLineage.some((item) => typeof item !== 'string')
+    ) return false;
+    const { signature, ...unsigned } = attestation;
+    const expected = Buffer.from(`0x${createHmac('sha256', key).update(canonicalAttestation(unsigned)).digest('hex')}`, 'utf8');
+    const actual = Buffer.from(signature, 'utf8');
+    return actual.length === expected.length && timingSafeEqual(actual, expected);
+  } catch {
+    return false;
+  }
 }
 
 const hashEntry = (entry: Omit<CausalMemoryEntry, 'hash'>): string =>

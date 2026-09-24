@@ -37,7 +37,7 @@ export type {
   RealityVerification,
   RealityVerificationStatus,
 } from './reality.js';
-export { compileOmegaIntent } from './compiler.js';
+export { advanceOmegaSourceState, compileOmegaIntent, normalizeOmegaSource } from './compiler.js';
 export type { OmegaCompileInput } from './compiler.js';
 export { validateOmegaIR } from './ir-validator.js';
 export type { OmegaIRValidation, OmegaIRValidationIssue } from './ir-validator.js';

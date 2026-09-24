@@ -1,5 +1,6 @@
 import Fastify, { FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
+import rateLimit from '@fastify/rate-limit';
 import { randomUUID } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
@@ -138,7 +139,10 @@ export function createApp(
   };
 
   fastify.register(cors, { origin: '*' });
-  registerOmegaRoutes(fastify, omegaCommands);
+  fastify.register(async (scope) => {
+    await scope.register(rateLimit, { global: false });
+    registerOmegaRoutes(scope, omegaCommands);
+  });
   fastify.addHook('onRequest', async (request, reply) => {
     if (authMode === 'local' || request.url.split('?')[0] === '/health') return;
     const required = request.method === 'GET' ? readToken : adminToken;
@@ -197,7 +201,7 @@ export function createApp(
         readAuthConfigured: Boolean(readToken),
         adminAuthConfigured: Boolean(adminToken),
         revocationEnabled: true,
-        persistenceEncryption: persistenceEncryptionKey ? ENCRYPTION_ALGORITHM : 'disabled',
+        persistenceEncryption: encryptionEnabled(persistenceKey) ? ENCRYPTION_ALGORITHM : 'disabled',
       },
       timestamp: new Date().toISOString(),
     };

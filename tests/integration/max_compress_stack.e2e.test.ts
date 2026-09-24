@@ -6,7 +6,7 @@ import {
   AsymmetricValidationGuard,
   MultiRegionMeshConvergence,
 } from '../../packages/verification/dist/index.js';
-import { PluralisticHashChain, RememberEngine } from '../../packages/remember/dist/index.js';
+import { MAX_PROOF_OF_WORK_ATTEMPTS, PluralisticHashChain, RememberEngine } from '../../packages/remember/dist/index.js';
 import { MiniKernel, executeOceanicosMaxExpansion } from '../../packages/mini/dist/index.js';
 import { AttestationService } from '../../packages/attestation/dist/index.js';
 import { createApp } from '../../apps/api/dist/index.js';
@@ -121,6 +121,30 @@ describe('Ω∞v Oceanicos Max Compress Full-Stack E2E Suite', () => {
     assert.ok(tip !== null);
     assert.strictEqual(tip?.hash, minted.hash);
     assert.strictEqual(tip?.index, 4101);
+  });
+
+  it('5a. Remember proof-of-work is finite and cancellable', () => {
+    assert.strictEqual(MAX_PROOF_OF_WORK_ATTEMPTS, 1_000_000);
+    const receipt = verifyPlanetarySovereignty({
+      siliconYield: 0.94,
+      gridLoadMegawatts: 1200,
+      acceleratorInventory: 600000,
+    });
+    const chainController = new AbortController();
+    chainController.abort();
+    assert.throws(
+      () => new PluralisticHashChain().commitState(receipt, { signal: chainController.signal }),
+      /proof-of-work aborted/,
+    );
+
+    const engineController = new AbortController();
+    engineController.abort();
+    const engine = new RememberEngine(':memory:');
+    assert.throws(
+      () => engine.append(ObserverEngine.generateTelemetry(), { status: 'PASS' } as any, { signal: engineController.signal }),
+      /proof-of-work aborted/,
+    );
+    engine.close();
   });
 
   it('6. MiniKernel executes full end-to-end cycle cleanly', () => {

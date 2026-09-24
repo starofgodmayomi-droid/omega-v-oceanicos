@@ -15,6 +15,8 @@ export interface CryptographicBlock {
   nonce: number;
 }
 
+export const MAX_PROOF_OF_WORK_ATTEMPTS = 1_000_000;
+
 export class PluralisticHashChain {
   private ledger: CryptographicBlock[] = [];
   private readonly defaultGenesisHash = '8a3f91c2e4f9011b989210ffffffffff';
@@ -49,7 +51,7 @@ export class PluralisticHashChain {
     });
   }
 
-  public commitState(receipt: AdvancedVerificationReceipt): CryptographicBlock {
+  public commitState(receipt: AdvancedVerificationReceipt, options: { signal?: AbortSignal } = {}): CryptographicBlock {
     const lastBlock = this.ledger[this.ledger.length - 1];
     const currentIndex = lastBlock.index + 1;
     const currentTimestamp = new Date().toISOString();
@@ -62,13 +64,19 @@ export class PluralisticHashChain {
     let nonce = 0;
     let blockHash = '';
 
-    while (true) {
+    for (; nonce < MAX_PROOF_OF_WORK_ATTEMPTS; nonce++) {
+      if (options.signal?.aborted) {
+        throw new Error('proof-of-work aborted before completion');
+      }
       blockHash = this.calculateBlockHash(currentIndex, currentTimestamp, payload, lastBlock.hash, nonce);
       // Ensure valid memory lock footprint signature format matching terminal
       if (blockHash.substring(0, 2) === '00') {
         break;
       }
-      nonce++;
+    }
+
+    if (!blockHash.startsWith('00')) {
+      throw new Error(`proof-of-work did not complete within ${MAX_PROOF_OF_WORK_ATTEMPTS} attempts`);
     }
 
     const mintedBlock: CryptographicBlock = {

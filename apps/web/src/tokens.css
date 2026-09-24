@@ -63,3 +63,62 @@
 .omega-fade-in {
   animation: omega-fade-in 0.4s ease-out;
 }
+
+/* ── Mirror-water lifecycle flow ── */
+
+@keyframes omega-flow-down {
+  0% { background-position: 0 -20px; }
+  100% { background-position: 0 0; }
+}
+
+@keyframes omega-ripple {
+  0% { transform: scale(1); opacity: 0.5; }
+  100% { transform: scale(2.8); opacity: 0; }
+}
+
+@keyframes omega-drift {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+.omega-flow-line {
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    var(--omega-current-dim) 30%,
+    var(--omega-current-bright) 50%,
+    var(--omega-current-dim) 70%,
+    transparent 100%
+  );
+  background-size: 100% 20px;
+  animation: omega-flow-down 1.2s linear infinite;
+}
+
+.omega-flow-line-dormant {
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(84, 123, 116, 0.15) 50%,
+    transparent 100%
+  );
+  background-size: 100% 20px;
+  animation: omega-flow-down 3s linear infinite;
+}
+
+.omega-ripple::before,
+.omega-ripple::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1px solid currentColor;
+  animation: omega-ripple 2s ease-out infinite;
+}
+
+.omega-ripple::after {
+  animation-delay: 1s;
+}
+
+.omega-drift {
+  animation: omega-drift 4s ease-in-out infinite;
+}

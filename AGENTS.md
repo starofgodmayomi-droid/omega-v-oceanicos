@@ -15,6 +15,7 @@ docker compose -f docker-compose.base44.yml up -d
 - `web`: `npx vite --host 0.0.0.0` from `apps/web`. Vite HMR for frontend edits.
 
 ## Key config
+- **Node 22 required** — the `@omega-v/kernel` package is ESM (`"type": "module"`) and the API (CommonJS) uses `require()` of it, which only works in Node 22+.
 - **Auth**: `OMEGA_AUTH_MODE=local` (no bearer tokens needed for dev). Set to `required` + provide `OMEGA_READ_TOKEN`/`OMEGA_ADMIN_TOKEN` for auth-protected deployments.
 - **Signing key**: `OMEGA_SIGNING_KEY` is a dev placeholder in `.env.base44-defaults` (listed first in `env_file`). Only needed for `/v1/attest`; the API boots without it (attester = degraded). Replace via dashboard secret for real attestations.
 - **Secret precedence**: `.env.base44-defaults` (placeholders) → `/run/base44/app.env` (dashboard, always wins).
@@ -25,6 +26,14 @@ docker compose -f docker-compose.base44.yml up -d
 - The API uses `.js` extension imports (`import { X } from './jobs.js'`) — an ESM-style pattern compiled to CommonJS. ts-node cannot resolve these from source, so the API runs from `dist` (built by tsc) rather than via ts-node.
 - `apps/api/src/runtime-globals.d.ts` declares a global `persistenceEncryptionKey` var; only `tsc` picks it up, not ts-node's type-checker.
 - `apps/api/tsconfig.json` `include` lists only `src/index.ts` + the `.d.ts`, but tsc follows imports so all src files compile.
+- **Workspace packages must be built** before the API can start — their `main` points to `dist/index.js`. The setup service builds them in dependency order.
+- **SSE limitation**: the `/v1/stream` EventSource endpoint won't connect through the preview proxy (long-lived connections are unsupported). This shows as "Reconnecting…" in the UI but doesn't affect REST endpoints.
+
+## Fixed bug
+`apps/api/src/index.ts` line 204: `persistenceEncryptionKey` was undefined → changed to `encryptionEnabled(persistenceKey)` to match the pattern used at lines 163/165.
+
+## No external credentials needed
+All secrets (signing key, tokens) are local dev values in `.env.base44-defaults`. No external service credentials are required for the app to run.
 
 ## Verify
 - API health: `curl http://localhost:5000/health` → `{"status":"ok",...}`

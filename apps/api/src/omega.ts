@@ -128,7 +128,9 @@ export function registerOmegaRoutes(fastify: FastifyInstance, store: OmegaComman
     }
   });
 
-  fastify.get('/v1/omega/commands', async () => {
+  fastify.get('/v1/omega/commands', {
+    config: { rateLimit: { max: 60, timeWindow: '1 minute' } },
+  }, async () => {
     const commands = store.listCommands();
     return {
       success: true,
@@ -150,7 +152,9 @@ export function registerOmegaRoutes(fastify: FastifyInstance, store: OmegaComman
     };
   });
 
-  fastify.get('/v1/omega/commands/:id/provenance', async (request, reply) => {
+  fastify.get('/v1/omega/commands/:id/provenance', {
+    config: { rateLimit: { max: 60, timeWindow: '1 minute' } },
+  }, async (request, reply) => {
     const id = (request.params as { id?: string }).id ?? '';
     const command = store.get(id);
     if (!command) return reply.status(404).send({ success: false, error: 'OMEGA_COMMAND_NOT_FOUND' });
@@ -176,7 +180,9 @@ export function registerOmegaRoutes(fastify: FastifyInstance, store: OmegaComman
     };
   });
 
-  fastify.get('/v1/omega/commands/:id', async (request, reply) => {
+  fastify.get('/v1/omega/commands/:id', {
+    config: { rateLimit: { max: 60, timeWindow: '1 minute' } },
+  }, async (request, reply) => {
     const id = (request.params as { id?: string }).id ?? '';
     const command = store.get(id);
     if (!command) return reply.status(404).send({ success: false, error: 'OMEGA_COMMAND_NOT_FOUND' });
@@ -244,7 +250,9 @@ export function registerOmegaRoutes(fastify: FastifyInstance, store: OmegaComman
     return { success: true, ...commandResult(command, command.result.nextAction) };
   });
 
-  fastify.get('/v1/omega/events', async (request) => {
+  fastify.get('/v1/omega/events', {
+    config: { rateLimit: { max: 60, timeWindow: '1 minute' } },
+  }, async (request) => {
     const commandId = (request.query as { commandId?: string }).commandId;
     return { success: true, events: store.listEvents(commandId), redacted: true };
   });

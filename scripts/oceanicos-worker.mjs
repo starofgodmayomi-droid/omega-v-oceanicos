@@ -8,17 +8,19 @@ const root = process.cwd();
 const args = new Set(process.argv.slice(2));
 const continuous = args.has('--continuous');
 const verify = args.has('--verify');
+const MAX_CYCLES = 32;
+const MAX_INTERVAL_MS = 60 * 60 * 1000;
 
-function parseBoundedInteger(name, rawValue, defaultValue, minimum) {
+function parseBoundedInteger(name, rawValue, defaultValue, minimum, maximum) {
   const value = rawValue === undefined ? defaultValue : Number(rawValue);
-  if (!Number.isInteger(value) || value < minimum) {
-    throw new Error(`[Ω∞ WORKER] ${name} must be an integer >= ${minimum}; received ${rawValue ?? 'undefined'}.`);
+  if (!Number.isInteger(value) || value < minimum || value > maximum) {
+    throw new Error(`[Ω∞ WORKER] ${name} must be an integer between ${minimum} and ${maximum}; received ${rawValue ?? 'undefined'}.`);
   }
   return value;
 }
 
-const maxCycles = parseBoundedInteger('OMEGA_WORKER_CYCLES', process.env.OMEGA_WORKER_CYCLES, 1, 1);
-const intervalMs = parseBoundedInteger('OMEGA_WORKER_INTERVAL_MS', process.env.OMEGA_WORKER_INTERVAL_MS, 5000, 0);
+const maxCycles = parseBoundedInteger('OMEGA_WORKER_CYCLES', process.env.OMEGA_WORKER_CYCLES, 1, 1, MAX_CYCLES);
+const intervalMs = parseBoundedInteger('OMEGA_WORKER_INTERVAL_MS', process.env.OMEGA_WORKER_INTERVAL_MS, 5000, 0, MAX_INTERVAL_MS);
 const pnpmCommand = process.platform === 'win32'
   ? path.join(process.env.PNPM_HOME || '', 'pnpm.cmd')
   : 'pnpm';

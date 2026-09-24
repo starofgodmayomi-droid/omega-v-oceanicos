@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import { IMiniBlock, IObservation, IEvidence } from '@oceanicos/types';
+import { MAX_PROOF_OF_WORK_ATTEMPTS } from './ledger.js';
 
 interface ISqliteDatabase {
   exec(sql: string): void;
@@ -45,7 +46,7 @@ export class RememberEngine {
     };
   }
 
-  public append(observation: IObservation, evidence: IEvidence): IMiniBlock {
+  public append(observation: IObservation, evidence: IEvidence, options: { signal?: AbortSignal } = {}): IMiniBlock {
     const tip = this.getTip();
     const nextIndex = tip ? tip.index + 1 : 4101;
     const previousHash = tip ? tip.hash : this.rootHash;
@@ -54,13 +55,19 @@ export class RememberEngine {
       blockHash = '';
     const obsStr = JSON.stringify(observation);
     const evStr = JSON.stringify(evidence);
-    while (true) {
+    for (; nonce < MAX_PROOF_OF_WORK_ATTEMPTS; nonce++) {
+      if (options.signal?.aborted) {
+        throw new Error('proof-of-work aborted before completion');
+      }
       blockHash = crypto
         .createHash('sha256')
         .update(`${nextIndex}-${timestamp}-${obsStr}-${evStr}-${previousHash}-${nonce}`)
         .digest('hex');
       if (blockHash.substring(0, 2) === '00') break;
-      nonce++;
+    }
+
+    if (!blockHash.startsWith('00')) {
+      throw new Error(`proof-of-work did not complete within ${MAX_PROOF_OF_WORK_ATTEMPTS} attempts`);
     }
     this.db
       .prepare(
