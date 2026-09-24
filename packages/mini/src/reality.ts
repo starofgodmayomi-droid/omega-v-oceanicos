@@ -70,6 +70,27 @@ export function verifyExecutedReality(
     };
   }
 
+  if (typeof observedState !== 'string' || observedState.trim().length === 0) {
+    const observedAt = now();
+    const recordWithUnknownReality: OmegaChangeRecord = {
+      ...record,
+      consequence: `${record.consequence ?? 'transition executed'}; reality unknown: observer returned an invalid state`,
+      provenance: {
+        ...record.provenance,
+        source: 'mini-reality-observation',
+        lineage: [...(record.provenance.lineage ?? []), `${record.id}:reality-unknown-invalid-observation`],
+      },
+      createdAt: observedAt,
+    };
+    options.memory?.append(recordWithUnknownReality);
+    return {
+      status: 'UNKNOWN',
+      expectedState: record.stateAfter,
+      evidence: 'observer returned an empty or non-string state; reality could not be verified',
+      record: recordWithUnknownReality,
+    };
+  }
+
   const matches = observedState === record.stateAfter;
   const observedAt = now();
   const evidence = createHash('sha256')
