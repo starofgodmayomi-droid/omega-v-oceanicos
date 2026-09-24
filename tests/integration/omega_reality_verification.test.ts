@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { executeAuthorizedTransition, resolveChangeAdmission, verifyExecutedReality } from '../../packages/mini/dist/index.js';
+import { advanceOmegaSourceState, executeAuthorizedTransition, normalizeOmegaSource, resolveChangeAdmission, verifyExecutedReality } from '../../packages/mini/dist/index.js';
 
 const record = {
   id: 'change-reality',
@@ -61,5 +61,38 @@ describe('Ω∞v reality verification boundary', () => {
     assert.equal(verification.status, 'DIVERGENT');
     assert.equal(verification.expectedState, 'S1');
     assert.equal(verification.observedState, 'S2');
+  });
+
+  it('preserves retrieved source state without promoting it to trust or verification', () => {
+    const source = normalizeOmegaSource({
+      id: 'source-1',
+      kind: 'api',
+      locator: 'https://example.test/data',
+      state: 'RETRIEVED',
+      provenance: 'integration-test',
+    });
+    assert.equal(source.state, 'RETRIEVED');
+    assert.equal(source.authority, undefined);
+    assert.equal(source.evidenceRef, undefined);
+  });
+
+  it('fails closed when source state claims exceed supplied authority or evidence', () => {
+    assert.throws(
+      () => normalizeOmegaSource({ id: 'source-2', kind: 'api', locator: 'example', state: 'AUTHORIZED', provenance: 'test' }),
+      /authorized source requires explicit source authority/,
+    );
+    assert.throws(
+      () => normalizeOmegaSource({ id: 'source-3', kind: 'api', locator: 'example', state: 'VERIFIED', provenance: 'test' }),
+      /verified source requires an evidence reference/,
+    );
+  });
+
+  it('allows source states to advance but rejects epistemic regression', () => {
+    assert.equal(advanceOmegaSourceState('RETRIEVED', 'TRUSTED'), 'TRUSTED');
+    assert.equal(advanceOmegaSourceState('OBSERVED', 'VERIFIED'), 'VERIFIED');
+    assert.throws(
+      () => advanceOmegaSourceState('VERIFIED', 'RETRIEVED'),
+      /source state cannot regress from VERIFIED to RETRIEVED/,
+    );
   });
 });

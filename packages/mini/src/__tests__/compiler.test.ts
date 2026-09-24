@@ -58,4 +58,24 @@ describe('Ω deterministic compiler', () => {
     expect(JSON.stringify(ir)).not.toContain('function');
     expect(JSON.stringify(ir)).not.toContain('shell');
   });
+
+  it('preserves source epistemic state without treating retrieval as verification', () => {
+    const ir = compileOmegaIntent({
+      ...input,
+      sourceRefs: [{ id: 'source-1', kind: 'api', locator: 'https://example.test/data', state: 'RETRIEVED', provenance: 'user-supplied-url' }],
+    });
+    expect(ir.sourceRefs?.[0]).toMatchObject({ state: 'RETRIEVED', provenance: 'user-supplied-url' });
+    expect(ir.sourceRefs?.[0]).not.toHaveProperty('authority');
+  });
+
+  it('requires explicit authority and evidence for stronger source states', () => {
+    expect(() => compileOmegaIntent({
+      ...input,
+      sourceRefs: [{ id: 'source-1', kind: 'api', locator: 'example', state: 'AUTHORIZED', provenance: 'request' }],
+    })).toThrow('authorized source requires explicit source authority');
+    expect(() => compileOmegaIntent({
+      ...input,
+      sourceRefs: [{ id: 'source-1', kind: 'api', locator: 'example', state: 'VERIFIED', provenance: 'test' }],
+    })).toThrow('verified source requires an evidence reference');
+  });
 });

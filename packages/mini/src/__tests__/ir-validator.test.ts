@@ -33,4 +33,17 @@ describe('Ω IR validator', () => {
       { path: 'workerPlan[0].mode', message: 'unsupported worker mode' },
     ]);
   });
+
+  it('rejects source claims that skip required authority or evidence boundaries', () => {
+    const invalid = {
+      ...validIR,
+      sourceRefs: [
+        { id: 'source-1', kind: 'api', locator: 'example', state: 'AUTHORIZED', provenance: 'request' },
+        { id: 'source-2', kind: 'api', locator: 'example', state: 'VERIFIED', provenance: 'request' },
+      ],
+    } as OmegaIR;
+    const result = validateOmegaIR(invalid);
+    expect(result.valid).toBe(false);
+    expect(result.issues.map((issue) => issue.path)).toEqual(['sourceRefs[0].authority', 'sourceRefs[1].evidenceRef']);
+  });
 });
