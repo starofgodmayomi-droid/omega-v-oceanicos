@@ -1,132 +1,151 @@
-# Omega V Continuation Handoff
+# Ω∞v Continuation Handoff
 
 ## Purpose
 
-This document compresses the verified repository state and operating context for the next build or upgrade slice. It is a repository handoff, not an instruction to apply speculative rewrites from pasted prompts or attachments.
+This document is a current, evidence-bound continuation record for the next finite repository transition. It preserves intent, authority, scope, current state, contracts, evidence, uncertainty, blockers, rollback, and the next safe change. It is not proof of deployment, production health, distributed consistency, or universal ecosystem completion.
 
-## Canonical Repository
+## Repository anchor
 
-| Field | Verified value |
-| --- | --- |
+| Field | Current observed value |
+|---|---|
 | Repository | `starofgodmayomi-droid/omega-v-oceanicos` |
-| Local clone | `/home/ubuntu/github-check/omega-v-oceanicos` |
+| Remote | `https://github.com/starofgodmayomi-droid/omega-v-oceanicos.git` |
+| Local clone | `/home/ubuntu/omega-v-oceanicos` |
 | Branch | `main` |
-| Local and remote commit | `70b0759` |
-| Commit subject | `merge: integrate current origin/main while preserving Qov documentation` |
-| Remote | `origin/main` |
-| Working tree | One intentional uncommitted modification to `scripts/oceanicos-totality.sh` |
-| Active services | None after verification cleanup |
+| HEAD | `fc3f8b665020fb56b8ed2ee2bd5242c20147ac7b` |
+| Commit subject | `docs: compress ecosystem toward omega core` |
+| Upstream relation | `main...origin/main` |
+| Current local state | One tracked documentation edit plus the untracked compressed continuity artifact |
+| Active services | None claimed after bounded validation |
+| Deployment | Not executed |
 
-The merge commit preserves the earlier Qov documentation commit `ee77132` as an ancestor. The current branch is synchronized with `origin/main`.
+The current commit is a shallow local checkout of `origin/main`. Reinspect Git state before any future mutation, commit, push, merge, or release operation.
 
-## Operating Invariant
+## Human intent and authority
 
-> **Observe → Distinguish → Evidence → Verify → Intent → Compile → Validate → Authority/Policy → Admit → Bounded Execution → Observe → Reconcile → Attest → Provenance → Remember → Replay → Next verified change.**
+The user’s stated mission is to continue the Ω∞v AI/OS/full-stack ecosystem toward reality while preserving the creative universe/ocean vision, human agency, verification, provenance, and bounded evolution. The creative cosmology is retained as poetic, philosophical, spiritual, or narrative intent; it is not empirical proof of universal intelligence or authorization for autonomous action.
 
-The repository must not claim more reality than executable evidence supports. GitHub state, source code, test results, signatures, attestations, deployment state, and runtime health remain distinct claims.
+The current authority permits bounded local inspection, documentation reconciliation, local validation, and explicitly scoped reversible engineering. It does not implicitly authorize deployment, merge, push, access/security changes, destructive deletion, external connector activation, persistent daemons, surveillance, or unrestricted autonomous execution.
 
-The following distinctions are mandatory:
-
-```text
-POSSIBLE ≠ KNOWN ≠ REPRESENTABLE ≠ PERMITTED ≠ ATTEMPTED
-≠ EXECUTED ≠ OBSERVED ≠ VERIFIED ≠ ATTESTED ≠ DEPLOYED ≠ HEALTHY
-```
-
-AI output is a proposal. Human authority remains necessary for consequential external actions. Unknown, divergent, denied, review, and not-executed states must remain explicit.
-
-## Current Architecture
-
-The canonical local loop is:
+## Operating invariant
 
 ```text
-Observe → Verify → Remember → MINI → API/Web/CLI
+OBSERVE → DISTINGUISH → EVIDENCE → VERIFY → INTENT
+→ POLICY/AUTHORITY → ADMIT → BOUNDED EXECUTE
+→ OBSERVE → RECONCILE → ATTEST → PROVENANCE
+→ REMEMBER/REPLAY → NEXT FINITE Δ
 ```
 
-The repository currently includes the observer, verification, remember, MINI, attestation, gateway, kernel, API, web, CLI, worker, pipeline, causal-memory, admission, transition, and bounded runtime surfaces. The expanded Omega OS layers are additive and must not weaken the established fail-closed boundaries.
+```text
+POSSIBLE ≠ KNOWN ≠ REPRESENTABLE ≠ PERMITTED ≠ PROPOSED
+≠ ATTEMPTED ≠ EXECUTED ≠ OBSERVED ≠ VERIFIED
+≠ ATTESTED ≠ DEPLOYED ≠ HEALTHY
+```
 
-## Verified Gates
+## Current architecture and contracts
 
-The current merged tree has passed the following commands:
+The repository contains the observer, verification, remember, MINI, attestation, gateway, kernel, API, web, CLI, worker, pipeline, causal-memory, admission, transition, replay, and bounded runtime surfaces. The applicable compression path is:
+
+```text
+ΩIR → VALIDATOR → REGISTRY → ADMISSION → EXECUTOR
+→ OBSERVER → ATTESTATION/PROVENANCE → PERSISTENCE/REPLAY
+→ API/SDK/CLI → DASHBOARD → TEST/CI → RUNTIME OBSERVATION
+```
+
+A named layer is not treated as complete merely because documentation names it. Each included layer requires interface-specific evidence.
+
+## Validation evidence
+
+The following commands executed locally on the current checkout:
 
 ```bash
-pnpm build
-pnpm typecheck
-pnpm test
-pnpm audit
-node scripts/smoke-api.cjs
+pnpm install --frozen-lockfile
 pnpm verify:full
+pnpm verify
+OMEGA_WORKER_CYCLES=1 OMEGA_WORKER_INTERVAL_MS=0 pnpm worker:verify
+node --experimental-strip-types /tmp/omega-worker-concurrency-check.mjs
+git diff --check
 ```
 
-The latest full verification produced:
+Observed evidence:
 
-| Gate | Result |
-| --- | --- |
-| Workspace build | Passed across 10 of 11 workspace projects |
-| Strict typecheck | Passed |
-| Integration and E2E tests | 31 passed, 0 failed |
-| Security audit | No known vulnerabilities found |
-| API smoke | Health `ok`, ledger `ONLINE`, mood `MAX GOOD-O` |
-| SSE smoke | `TIP` and `BLOCK_MINTED` observed |
-| Diff hygiene | `git diff --check` passed |
-| Totality | `TOTALITY STATUS: VERIFIED` |
-| Web runtime | HTTP 200 at `http://[::1]:3000/` during the latest orchestrator run |
-| API runtime | Readiness response observed at `http://127.0.0.1:5000/health` |
+- locked install and lockfile policy checks passed;
+- applicable workspace build passed;
+- strict type checking passed;
+- integration/E2E validation passed: **31 tests, 0 failures**;
+- full-stack E2E suite passed: **21 scenarios**;
+- worker lifecycle suite passed: **5 scenarios**;
+- worker cycle 1 reported `VERIFIED`;
+- one bounded eight-slot worker probe leased and completed 8/8 jobs;
+- peak active jobs observed: 8;
+- failed, queued, and running jobs after completion: 0;
+- all 8 attestations verified;
+- reproducibility: true, discrepancy count 0;
+- totality previously reported `VERIFIED`;
+- local API/SSE smoke evidence was observed in the prior full verification run.
 
-The orchestrator was stopped intentionally after the web and API probes. A background process exit code 130 in that context means manual `Ctrl-C` cleanup, not a startup failure.
+Warnings about Node type stripping, SQLite, and module type were non-failing warnings. They remain engineering hygiene items, not verification failures.
 
-## Current Local Modification
+## Status ledger
 
-`scripts/oceanicos-totality.sh` contains the intentional preflight enhancement. Before the full-stack gates it prints:
+| Claim | Status | Boundary |
+|---|---|---|
+| Repository identity and current HEAD | `VERIFIED` | Current Git and remote inspection |
+| Local core verification | `VERIFIED` | Executed build/type/test/verification commands |
+| Bounded worker cycle | `VERIFIED` | One finite cycle with external action and Git write disabled |
+| Eight-slot worker capacity accounting | `VERIFIED` | In-process worker-pool probe |
+| Attestation validity and reproducibility | `VERIFIED` | Eight completed identical-output attestations |
+| Offline-local equivalent path | `VERIFIED` | Local commands ran without requiring external services |
+| Formal `offline` CLI subcommand | `NOT_EXECUTED` / not implemented | Repository CLI does not currently expose it |
+| Production/distributed scalability | `UNKNOWN` | No production or distributed target was tested |
+| Deployment/runtime health | `UNKNOWN` | No deployment target was selected or probed |
+| Universal ecosystem completion | `UNVERIFIED` | Broad surfaces exist; no universal completion proof |
+| Historical FSPCI daemon/control claims | `REJECTED` as authority | Untrusted historical context, not executable capability |
 
-- branch and working-tree status;
-- exact current commit;
-- configured origin URL; and
-- repository mood from `pnpm mood`.
+## Open divergence and local changes
 
-It then runs frozen install, build, typecheck, expanded tests, and compiled API smoke. This modification is uncommitted and must be preserved unless a later change explicitly replaces it with an equivalent or stronger contract.
+The previous version of this handoff was stale. This revision corrects its old commit, path, dirty-state, and validation claims.
 
-## Runtime and Security Boundaries
+Current local changes are intentionally uncommitted:
 
-The local API accurately reports bounded limitations. Attester availability may be degraded when no signing key is configured. Persistence encryption is disabled unless explicitly configured. Local file persistence and single-process coordination do not prove distributed consistency, replica agreement, backups, external custody, deployment availability, or production health.
+```text
+M  docs/CONTINUATION_HANDOFF.md
+?? docs/CONVERSATION_MAX_COMPRESSED.md
+```
 
-Do not apply credentials, tokens, pasted shell scripts, external API integrations, deployment commands, or broad workspace rewrites merely because they appear in an attachment. Inspect first, classify the claim, and execute only a bounded command that is authorized and supported by the repository.
+The compressed conversation artifact is a continuity aid, not proof by itself. No source-code or runtime behavior change is included in this documentation transition.
 
-Do not force-push. Do not reset or discard uncommitted work. Do not claim deployment from local build evidence. Do not claim runtime truth from documentation or GitHub history.
+## Safety and rollback
 
-## Next Finite Slice
-
-The next safe engineering slice is a focused provenance or replay improvement that is additive, testable, and bounded. Candidate work should be selected in this order:
-
-1. Inspect the current API, MINI, memory, attestation, and replay contracts.
-2. Identify one missing invariant with a concrete failing or absent test.
-3. Add the smallest implementation and focused test.
-4. Run the affected package checks first.
-5. Run `pnpm verify:full` and independent API/web probes.
-6. Record the exact result, limitations, and rollback path.
-7. Commit and push only when explicitly authorized.
-
-No new package, external connector, autonomous worker, deployment target, or persistence backend should be introduced unless the existing contract and evidence show that it is the smallest necessary change.
-
-## Continuation Command Set
-
-From the repository root:
+This transition is documentation-only and reversible. Rollback is:
 
 ```bash
-cd /home/ubuntu/github-check/omega-v-oceanicos
-
-git status --short --branch
-git log -1 --oneline --decorate
-pnpm verify:full
-pnpm dev
-curl --noproxy '*' -I http://[::1]:3000/
-curl -fsS http://127.0.0.1:5000/health
+git restore -- docs/CONTINUATION_HANDOFF.md
 ```
 
-Use the orchestrator cleanup path after runtime probes. Report web and API independently.
+Do not discard `docs/CONVERSATION_MAX_COMPRESSED.md` without confirming whether it is still needed as the continuity record. Do not commit or push either file unless that collaboration action is explicitly selected.
 
-## References
+## Next finite transition
 
-[1]: https://github.com/starofgodmayomi-droid/omega-v-oceanicos "Canonical Omega V Oceanicos repository"
-[2]: https://github.com/starofgodmayomi-droid/omega-v-oceanicos/blob/main/docs/OMEGA_TOTALITY_CONTRACT.md "Omega V Totality Contract"
-[3]: https://github.com/starofgodmayomi-droid/omega-v-oceanicos/blob/main/docs/GOVERNANCE.md "Omega V Governance Contract"
-[4]: https://github.com/starofgodmayomi-droid/omega-v-oceanicos/blob/main/docs/QOV_ARCHITECTURE.md "Qov Architecture Brief"
+The next smallest complete engineering slice is one additive provenance/replay invariant:
+
+1. Inspect the current API, MINI, causal-memory, attestation, and replay contracts.
+2. Identify one missing invariant with a concrete absent or failing test.
+3. Define expected state, expected consequence, authority, policy, stop condition, and rollback.
+4. Implement only the smallest scoped change on a dedicated branch if a branch is requested.
+5. Run the focused tests, then `pnpm verify:full` and relevant local smoke probes.
+6. Reconcile expected versus observed state and preserve any divergence.
+7. Commit/push/open a PR only when explicitly requested.
+
+**Next transition gate:** a specific provenance/replay invariant and acceptance test must be named before code mutation.
+
+## Compact handoff
+
+```text
+Intent: continue Ω∞v toward reality with bounded AI/OS/full-stack evolution.
+Authority: local reversible documentation and validation only at this stage.
+Current: main @ fc3f8b6; local tests 31/31 pass; worker cycle verified; 8-slot probe verified.
+Changes: this handoff updated; compressed conversation artifact remains untracked.
+Unknowns: production runtime, distributed scalability, deployment health, universal completion.
+Next Δ: choose one additive provenance/replay invariant with explicit acceptance evidence.
+```

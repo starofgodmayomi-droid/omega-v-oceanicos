@@ -30,6 +30,29 @@ describe('@omega-v/replay — VerificationReplayEngine', () => {
       expect(snapshot.result.verification.summary.passed).toBe(true);
     });
 
+    it('keeps captured payloads stable when source inputs mutate after capture', async () => {
+      const result = await sdk.runLoop({
+        claim: 'Immutable capture test',
+        category: 'replay-test',
+        observedBy: 'test-harness',
+        sourceSystem: 'jest',
+      });
+      const tags = ['original'];
+      const metadata = { source: 'test', nested: { preserved: true } };
+      const snapshot = engine.capture('Immutable capture test', result, 'Stable', tags, metadata);
+      const fingerprint = snapshot.fingerprint;
+
+      result.observation.confidence = 0;
+      tags.push('mutated');
+      metadata.source = 'mutated';
+      metadata.nested.preserved = false;
+
+      expect(snapshot.fingerprint).toBe(fingerprint);
+      expect(snapshot.result.observation.confidence).not.toBe(0);
+      expect(snapshot.tags).toEqual(['original']);
+      expect(snapshot.metadata).toEqual({ source: 'test', nested: { preserved: true } });
+    });
+
     it('should auto-label snapshots when no label is provided', async () => {
       const result = await sdk.runLoop({
         claim: 'Auto-label test',
