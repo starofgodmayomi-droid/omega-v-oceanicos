@@ -30,6 +30,10 @@ export interface WorkerNode {
   workerId: string;
   name: string;
   capabilities: BuildCapability[];
+  authoritySubject: string;
+  policyId: string;
+  expiresAt: string;
+  scope: string[];
   maxConcurrency: number;
   activeJobs: number;
   status: WorkerStatus;
@@ -61,7 +65,9 @@ export interface BuildAttestation {
   outputMerkleRoot: string;
   artifacts: BuildArtifact[];
   executionTimeMs: number;
-  slsaLevel: 'SLSA_BUILD_L1' | 'SLSA_BUILD_L2' | 'SLSA_BUILD_L3';
+  slsaLevel: 'LOCAL_HMAC_OBSERVED' | 'SLSA_BUILD_L1' | 'SLSA_BUILD_L2' | 'SLSA_BUILD_L3';
+  realityStatus: 'OBSERVED';
+  runtimeClaim: 'NOT_CLAIMED';
   builderSignature: string;
   timestamp: string;
 }
@@ -105,8 +111,14 @@ export class OceanicosWorkerPool {
   private attestations: Map<string, BuildAttestation> = new Map();
   private signingKey: string;
 
-  constructor(signingKey = 'omega-v-builder-secret-key') {
-    this.signingKey = signingKey;
+  constructor(signingKey: string) {
+    if (typeof signingKey !== 'string' || signingKey.trim().length === 0) {
+      throw new Error('signingKey must be a non-empty string');
+    }
+    if (signingKey.trim() === 'omega-v-builder-secret-key') {
+      throw new Error('default signing secret is forbidden; provide an explicit signingKey');
+    }
+    this.signingKey = signingKey.trim();
     this.seedCanonicalWorkers();
   }
 
@@ -123,6 +135,10 @@ export class OceanicosWorkerPool {
         'ZKP_GEN',
         'REPLAY',
       ],
+      authoritySubject: 'did:omega:test:seed-primary',
+      policyId: 'omega.worker.v1.seed',
+      expiresAt: '2099-01-01T00:00:00.000Z',
+      scope: ['local-simulate'],
       maxConcurrency: 4,
       cpuCores: 16,
       memoryMb: 32768,
@@ -132,6 +148,10 @@ export class OceanicosWorkerPool {
       workerId: 'worker-node-edge-02',
       name: 'Edge Lightweight Builder',
       capabilities: ['COMPILE', 'VERIFY', 'ATTEST'],
+      authoritySubject: 'did:omega:test:seed-edge',
+      policyId: 'omega.worker.v1.seed',
+      expiresAt: '2099-01-01T00:00:00.000Z',
+      scope: ['local-simulate'],
       maxConcurrency: 2,
       cpuCores: 4,
       memoryMb: 8192,
@@ -142,6 +162,10 @@ export class OceanicosWorkerPool {
     workerId: string;
     name: string;
     capabilities: BuildCapability[];
+    authoritySubject?: string;
+    policyId?: string;
+    expiresAt?: string;
+    scope?: string[];
     maxConcurrency?: number;
     cpuCores?: number;
     memoryMb?: number;
@@ -161,10 +185,22 @@ export class OceanicosWorkerPool {
     const cpuCores = config.cpuCores === undefined ? 4 : requireIntegerRange(config.cpuCores, 'cpuCores', 1, MAX_CPU_CORES);
     const memoryMb = config.memoryMb === undefined ? 8192 : requireIntegerRange(config.memoryMb, 'memoryMb', 128, MAX_MEMORY_MB);
     const existing = this.workers.get(workerId);
+    const authoritySubject = config.authoritySubject === undefined ? '' : requireText(config.authoritySubject, 'authoritySubject');
+    const policyId = config.policyId === undefined ? '' : requireText(config.policyId, 'policyId');
+    const expiresAt = config.expiresAt === undefined ? '1970-01-01T00:00:00.000Z' : requireText(config.expiresAt, 'expiresAt');
+    if (Number.isNaN(Date.parse(expiresAt))) {
+      throw new Error('expiresAt must be a valid ISO-8601 timestamp');
+    }
+    const scope = Array.isArray(config.scope) ? config.scope.map((item) => requireText(item, 'scope item')) : [];
+
     const worker: WorkerNode = {
       workerId,
       name,
       capabilities,
+      authoritySubject,
+      policyId,
+      expiresAt,
+      scope,
       maxConcurrency,
       activeJobs: existing ? existing.activeJobs : 0,
       status: 'IDLE',
@@ -238,6 +274,12 @@ export class OceanicosWorkerPool {
     if (!worker || worker.status === 'OFFLINE' || worker.status === 'DRAINING') {
       return null;
     }
+    if (!worker.authoritySubject || !worker.policyId) {
+      return null;
+    }
+    if (Date.parse(worker.expiresAt) <= Date.now()) {
+      return null;
+    }
 
     if (worker.activeJobs >= worker.maxConcurrency) {
       return null;
@@ -298,7 +340,7 @@ export class OceanicosWorkerPool {
     // Compute Merkle root of generated artifacts
     const outputMerkleRoot = this.computeArtifactsMerkleRoot(artifacts, output);
 
-    // Create signed SLSA Provenance Attestation
+    // Local HMAC observation receipt. This is not an SLSA level and not runtime health.
     const attestationId = `att-build-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
     const sigPayload = `${attestationId}:${jobId}:${workerId}:${job.inputFingerprint}:${outputMerkleRoot}:${executionTimeMs}`;
     const builderSignature =
@@ -312,7 +354,9 @@ export class OceanicosWorkerPool {
       outputMerkleRoot,
       artifacts,
       executionTimeMs,
-      slsaLevel: 'SLSA_BUILD_L3',
+      slsaLevel: 'LOCAL_HMAC_OBSERVED',
+      realityStatus: 'OBSERVED',
+      runtimeClaim: 'NOT_CLAIMED',
       builderSignature,
       timestamp: completedAt,
     };
