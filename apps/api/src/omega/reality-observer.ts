@@ -7,6 +7,7 @@ import type {
   OmegaObservation,
   OmegaRealityVerdict,
 } from '@oceanicos/types';
+import { parsePersistenceCoordinationPolicy } from '../persistence.js';
 
 export class RealityObserverEngine {
   public static createObservation(
@@ -128,6 +129,40 @@ export class RealityObserverEngine {
       observerId: `obs_bld_${crypto.randomUUID()}`,
       observerType: 'build_test',
       target: 'build_artifacts',
+      timestamp,
+      observedData,
+      stateHash,
+    };
+  }
+
+  public static observeCoordinationEvidence(
+    customMode?: string,
+    customReference?: string,
+    target: string = 'coordination_boundary'
+  ): OmegaObservation {
+    const timestamp = new Date().toISOString();
+    const mode = customMode || process.env.OMEGA_PERSISTENCE_COORDINATION_MODE || 'local-single-process';
+    const reference = customReference || process.env.OMEGA_PERSISTENCE_COORDINATION_REF || null;
+    const policy = parsePersistenceCoordinationPolicy(mode, reference ?? undefined);
+
+    const observedData = {
+      mode: policy.mode,
+      reference: policy.reference,
+      reason: policy.reason,
+      evidence: policy.evidence,
+      scope: policy.scope,
+      limitations: policy.limitations,
+      verified: policy.verified,
+      isConfigured: policy.mode !== 'invalid',
+    };
+
+    const serialized = JSON.stringify({ observerType: 'coordination_probe', target, observedData });
+    const stateHash = crypto.createHash('sha256').update(serialized).digest('hex');
+
+    return {
+      observerId: `obs_coord_${crypto.randomUUID()}`,
+      observerType: 'coordination_probe',
+      target,
       timestamp,
       observedData,
       stateHash,

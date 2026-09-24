@@ -42,7 +42,7 @@ export const OmegaWorkspace: React.FC = () => {
   const [activeResult, setActiveResult] = useState<OmegaCommandResultView | null>(null);
   const [recentCommands, setRecentCommands] = useState<OmegaCommandView[]>([]);
   const [selectedObserverType, setSelectedObserverType] = useState<
-    'git_working_tree' | 'api_health' | 'build_test'
+    'git_working_tree' | 'api_health' | 'build_test' | 'coordination_probe'
   >('git_working_tree');
   const [learningMetrics, setLearningMetrics] = useState<OmegaLearningView | null>(null);
   const [nextSliceProposal, setNextSliceProposal] = useState<OmegaNextSliceProposalView | null>(null);
@@ -236,7 +236,11 @@ export const OmegaWorkspace: React.FC = () => {
         activeCommand.commandId,
         undefined,
         selectedObserverType,
-        selectedObserverType === 'api_health' ? 'http://127.0.0.1:5000/health' : selectedObserverType
+        selectedObserverType === 'api_health'
+          ? 'http://127.0.0.1:5000/health'
+          : selectedObserverType === 'coordination_probe'
+          ? 'coordination_boundary'
+          : selectedObserverType
       );
       if (!obsRes.success) throw new Error(obsRes.error || 'Observation failed');
 
@@ -722,6 +726,7 @@ export const OmegaWorkspace: React.FC = () => {
                       <option value="git_working_tree">🌳 Git Working Tree (Status & HEAD)</option>
                       <option value="api_health">🩺 API Health & Ledger State</option>
                       <option value="build_test">📦 Monorepo Build Readiness</option>
+                      <option value="coordination_probe">🤝 Coordination Evidence (Runtime Boundary)</option>
                     </select>
 
                     <button

@@ -35,6 +35,7 @@ import {
   generateOmegaSignature,
   verifyOmegaSignature,
 } from '../../apps/api/src/omega/security.js';
+import { evaluateAuthorization } from '@oceanicos/authorization';
 
 // Ensure signing key is present for verification engine throughout tests
 beforeAll(() => {
@@ -651,3 +652,96 @@ describe('Ω∞v Security: HMAC Signature Guard & Replay Defense', () => {
     expect(verifyRes.valid).toBe(true);
   });
 });
+
+describe('Layer 8: Fail-Closed Consequential Authorization (§6, §8, §9)', () => {
+  it('requires human review when action is destructive', () => {
+    const decision = evaluateAuthorization({
+      subject: 'workspace:clean',
+      intent: 'Delete generated artifacts',
+      isDestructive: true,
+      isFinancial: false,
+      isIrreversible: false,
+      hasDissentRecords: false,
+      requestedBy: 'agent:planner',
+      evidence: ['ev-1'],
+      timestamp: new Date().toISOString(),
+    });
+    expect(decision.decision).toBe('REVIEW');
+    expect(decision.requiresHumanApproval).toBe(true);
+    expect(decision.authorizedBy).toBeNull();
+    expect(decision.rationale).toContain('destructive=true');
+  });
+
+  it('requires human review when action is financial', () => {
+    const decision = evaluateAuthorization({
+      subject: 'treasury:transfer',
+      intent: 'Allocate compute credits',
+      isDestructive: false,
+      isFinancial: true,
+      isIrreversible: false,
+      hasDissentRecords: false,
+      requestedBy: 'agent:treasury',
+      evidence: ['ev-2'],
+      timestamp: new Date().toISOString(),
+    });
+    expect(decision.decision).toBe('REVIEW');
+    expect(decision.requiresHumanApproval).toBe(true);
+    expect(decision.authorizedBy).toBeNull();
+    expect(decision.rationale).toContain('financial=true');
+  });
+
+  it('requires human review when action is irreversible', () => {
+    const decision = evaluateAuthorization({
+      subject: 'ledger:prune',
+      intent: 'Prune historical branches',
+      isDestructive: false,
+      isFinancial: false,
+      isIrreversible: true,
+      hasDissentRecords: false,
+      requestedBy: 'agent:compactor',
+      evidence: ['ev-3'],
+      timestamp: new Date().toISOString(),
+    });
+    expect(decision.decision).toBe('REVIEW');
+    expect(decision.requiresHumanApproval).toBe(true);
+    expect(decision.authorizedBy).toBeNull();
+    expect(decision.rationale).toContain('irreversible=true');
+  });
+
+  it('requires human review when dissent records exist', () => {
+    const decision = evaluateAuthorization({
+      subject: 'consensus:fork',
+      intent: 'Adopt contentious branch',
+      isDestructive: false,
+      isFinancial: false,
+      isIrreversible: false,
+      hasDissentRecords: true,
+      requestedBy: 'agent:miner',
+      evidence: ['ev-4'],
+      timestamp: new Date().toISOString(),
+    });
+    expect(decision.decision).toBe('REVIEW');
+    expect(decision.requiresHumanApproval).toBe(true);
+    expect(decision.authorizedBy).toBeNull();
+    expect(decision.rationale).toContain('dissent=true');
+  });
+
+  it('ALLOWs non-consequential, reversible actions within bounds without dissent', () => {
+    const decision = evaluateAuthorization({
+      subject: 'health:ping',
+      intent: 'Check worker responsiveness',
+      isDestructive: false,
+      isFinancial: false,
+      isIrreversible: false,
+      hasDissentRecords: false,
+      requestedBy: 'agent:observer',
+      evidence: ['ev-5'],
+      timestamp: new Date().toISOString(),
+    });
+    expect(decision.decision).toBe('ALLOW');
+    expect(decision.requiresHumanApproval).toBe(false);
+    expect(decision.authorizedBy).toBe('system:auto');
+    expect(decision.authorizedAt).toBeTruthy();
+  });
+});
+

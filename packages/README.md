@@ -53,6 +53,7 @@ These packages expand MINI across attestation, consensus, cognition, and vector 
 ```
 packages/
 ├── attestation/        # + ATTEST — cryptographic signing
+├── authorization/      # + AUTHORIZATION — fail-closed change authority
 ├── generative/         # + GENERATIVE — media bridge
 ├── inference/          # + INFERENCE — live model client
 ├── mood/               # + MOOD — state resonance
@@ -60,14 +61,15 @@ packages/
 └── vector/             # + VECTOR — semantic recall
 ```
 
-| Package                 | Expansion / Subsystem                           |
-| ----------------------- | ----------------------------------------------- |
-| `@omega-v/attestation`  | `+ ATTEST` — signatures others can check        |
-| `@omega-v/generative`   | `+ GENERATIVE` — deterministic generative media |
-| `@omega-v/inference`    | `+ INFERENCE` — local LLM intelligence client   |
-| `@omega-v/mood`         | `+ MOOD` — liquid state resonance               |
-| `@omega-v/pluralism`    | `+ PLURALISM` — multi-perspective consensus     |
-| `@omega-v/vector`       | `+ VECTOR` — dense semantic vector memory       |
+| Package                    | Expansion / Subsystem                                    |
+| -------------------------- | -------------------------------------------------------- |
+| `@omega-v/attestation`     | `+ ATTEST` — signatures others can check                 |
+| `@omega-v/authorization`   | `+ AUTHORIZATION` — fail-closed change authority (§6,§8) |
+| `@omega-v/generative`      | `+ GENERATIVE` — deterministic generative media          |
+| `@omega-v/inference`       | `+ INFERENCE` — local LLM intelligence client            |
+| `@omega-v/mood`            | `+ MOOD` — liquid state resonance                        |
+| `@omega-v/pluralism`       | `+ PLURALISM` — multi-perspective consensus              |
+| `@omega-v/vector`          | `+ VECTOR` — dense semantic vector memory                |
 
 Apps (`apps/api`, `apps/web`) are interface expansions (`+ API`, `+ Web`).
 

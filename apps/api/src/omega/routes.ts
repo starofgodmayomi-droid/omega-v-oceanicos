@@ -25,6 +25,7 @@ import { AuthorizedCommandExecutor } from './executor.js';
 import { RealityObserverEngine } from './reality-observer.js';
 import { OmegaCommandStore } from './store.js';
 import { createOmegaSecurityHook, type OmegaSecurityOptions } from './security.js';
+import { evaluateAuthorization } from '@oceanicos/authorization';
 
 export interface OmegaRouteOptions {
   store?: OmegaCommandStore;
@@ -284,26 +285,62 @@ export const omegaRoutes: FastifyPluginAsync<OmegaRouteOptions> = async (
       }
     }
 
-    // Check if requested workers require human approval
+    // Evaluate canonical authorization per Constitution §6, §8, §9
     const workerCheck = registry.validateRequestedWorkers(command.requestedWorkers);
-    if (workerCheck.requiresApproval) {
-      store.updateCommandStatus(
-        command.commandId,
-        'REVIEW',
-        'Command requests mutating or consequential worker(s); requires attributable human review.'
-      );
+    const isDestructive =
+      /delete|destroy|drop|purge|remove/i.test(command.irPlan.transitionSpec.action) ||
+      workerCheck.requiresApproval;
+    const isFinancial =
+      lower.includes('transfer_funds') ||
+      lower.includes('buy_crypto');
+    const isIrreversible = !command.irPlan.transitionSpec.rollbackSupported;
+    const hasDissentRecords = (command.irPlan.evidenceRefs || []).some(ref =>
+      ref.toLowerCase().includes('dissent') || ref.toLowerCase().includes('dispute')
+    );
+
+    const authDecision = evaluateAuthorization({
+      subject: command.commandId,
+      intent: command.prompt,
+      isDestructive,
+      isFinancial,
+      isIrreversible,
+      hasDissentRecords,
+      requestedBy: command.requestedBy,
+      evidence: command.irPlan.evidenceRefs,
+      timestamp: new Date().toISOString(),
+    });
+
+    if (authDecision.decision === 'DENY') {
+      store.updateCommandStatus(command.commandId, 'DENIED', authDecision.rationale);
+      store.appendEvent({
+        eventType: 'COMMAND_DENIED',
+        commandId: command.commandId,
+        status: 'DENIED',
+        actor: 'kernel:safety-gate',
+        payload: { reason: authDecision.rationale },
+      });
+      return {
+        success: true,
+        verdict: 'DENY',
+        command,
+        reason: authDecision.rationale,
+      };
+    }
+
+    if (authDecision.decision === 'REVIEW') {
+      store.updateCommandStatus(command.commandId, 'REVIEW', authDecision.rationale);
       store.appendEvent({
         eventType: 'COMMAND_REVIEW_REQUIRED',
         commandId: command.commandId,
         status: 'REVIEW',
         actor: 'kernel:admission-gate',
-        payload: { reason: 'Command requests mutating or consequential worker(s); requires attributable human review.' },
+        payload: { reason: authDecision.rationale },
       });
       return {
         success: true,
         verdict: 'REVIEW',
         command,
-        reason: 'Requires human approval before executing local mutation.',
+        reason: authDecision.rationale,
       };
     }
 
@@ -485,6 +522,12 @@ export const omegaRoutes: FastifyPluginAsync<OmegaRouteOptions> = async (
       observation = await RealityObserverEngine.observeApiHealth(target || 'http://127.0.0.1:5000/health');
     } else if (observerType === 'build_test' && !body.observedData) {
       observation = RealityObserverEngine.observeBuildArtifacts();
+    } else if (observerType === 'coordination_probe' && !body.observedData) {
+      observation = RealityObserverEngine.observeCoordinationEvidence(
+        body.coordinationMode,
+        body.coordinationReference,
+        target || 'coordination_boundary'
+      );
     } else {
       observation = RealityObserverEngine.createObservation(observerType, target, observedData);
     }

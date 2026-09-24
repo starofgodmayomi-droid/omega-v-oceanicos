@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oceanicos.org/contracts/schemas/transition.schema.json",
+  "title": "OmegaTransition",
+  "description": "Universal Transition Record: τ = (S, I, E, A, P, C) → (D, S', R)",
+  "type": "object",
+  "required": [
+    "transitionId",
+    "subject",
+    "intent",
+    "stateBefore",
+    "evidenceRefs",
+    "authority",
+    "policyRefs",
+    "decision",
+    "actor",
+    "provenance",
+    "epistemic",
+    "timestamp"
+  ],
+  "properties": {
+    "transitionId": { "type": "string" },
+    "commandId": { "type": "string" },
+    "subject": { "type": "string" },
+    "intent": { "type": "string" },
+    "stateBefore": { "type": ["string", "object"] },
+    "evidenceRefs": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "authority": { "type": ["string", "null"] },
+    "policyRefs": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "decision": {
+      "type": "string",
+      "enum": ["ALLOW", "DENY", "REVIEW"]
+    },
+    "actor": { "type": "string" },
+    "worker": { "type": "string" },
+    "action": { "type": "string" },
+    "stateAfter": { "type": ["string", "object"] },
+    "consequence": { "type": "string" },
+    "observation": { "type": "object" },
+    "attestationId": { "type": "string" },
+    "attestationDigest": { "type": "string" },
+    "realityVerdict": {
+      "type": "object",
+      "properties": {
+        "verdict": {
+          "type": "string",
+          "enum": ["VERIFIED", "DIVERGENT", "UNKNOWN", "NOT_EXECUTED"]
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "required": ["source", "observedAt", "attributedTo", "lineage"],
+      "properties": {
+        "source": { "type": "string" },
+        "observedAt": { "type": "string" },
+        "attributedTo": { "type": ["string", "null"] },
+        "lineage": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "epistemic": {
+      "type": "object",
+      "required": ["observed", "intended", "authorized", "executed", "attested", "verified", "healthy"],
+      "properties": {
+        "observed": { "type": "boolean" },
+        "intended": { "type": "boolean" },
+        "authorized": { "type": "boolean" },
+        "executed": { "type": "boolean" },
+        "attested": { "type": "boolean" },
+        "verified": { "type": "boolean" },
+        "healthy": { "type": "boolean" }
+      }
+    },
+    "dissentNotes": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "timestamp": { "type": "string" }
+  }
+}

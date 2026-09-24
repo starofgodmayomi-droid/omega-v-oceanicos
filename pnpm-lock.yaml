@@ -38,6 +38,9 @@ importers:
       '@oceanicos/attestation':
         specifier: workspace:*
         version: link:../../packages/attestation
+      '@oceanicos/authorization':
+        specifier: workspace:*
+        version: link:../../packages/authorization
       '@oceanicos/generative':
         specifier: workspace:*
         version: link:../../packages/generative
@@ -106,6 +109,12 @@ importers:
       typescript:
         specifier: ^5.3.3
         version: 5.9.3
+
+  packages/authorization:
+    dependencies:
+      '@oceanicos/types':
+        specifier: workspace:*
+        version: link:../types
 
   packages/generative:
     dependencies:

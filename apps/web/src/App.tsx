@@ -54,7 +54,19 @@ export default function App() {
   const [keyPair, setKeyPair] = useState<KeyPair | null>(null);
   const [signRequests, setSignRequests] = useState(false);
   const [lastError, setLastError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'matrix' | 'workspace' | 'pluralism'>('matrix');
+  const [activeTab, setActiveTab] = useState<'matrix' | 'workspace' | 'pluralism' | 'interactive'>('matrix');
+
+  // ── Interactive Voice/Command/Mood State ──
+  const [voiceListening, setVoiceListening] = useState(false);
+  const [voiceTranscript, setVoiceTranscript] = useState('');
+  const [voiceSupported, setVoiceSupported] = useState(true);
+  const [commandInput, setCommandInput] = useState('');
+  const [commandHistory, setCommandHistory] = useState<Array<{ input: string; output: string; timestamp: string; status: 'success' | 'error' | 'pending' }>>([]);
+  const [commandLoading, setCommandLoading] = useState(false);
+  const [liveMood, setLiveMood] = useState<any>(null);
+  const [moodPulse, setMoodPulse] = useState(0);
+  const [moodPolling, setMoodPolling] = useState(false);
+  const voiceRecognitionRef = useRef<any>(null);
   const [pluralisticFace, setPluralisticFace] = useState<PluralisticRealityFace | null>(null);
   const [pluralisticLoading, setPluralisticLoading] = useState(false);
 
@@ -482,6 +494,560 @@ export default function App() {
     return '#ff3344';
   };
 
+  // ── Voice Recognition Setup ──
+  const startVoiceInput = () => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setVoiceSupported(false);
+      setLastError('Voice input not supported in this browser. Use Chrome or Edge.');
+      return;
+    }
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+    recognition.onresult = (event: any) => {
+      let finalTranscript = '';
+      let interimTranscript = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalTranscript += transcript;
+        } else {
+          interimTranscript += transcript;
+        }
+      }
+      if (finalTranscript) {
+        setVoiceTranscript(prev => (prev + ' ' + finalTranscript).trim());
+      }
+      if (interimTranscript) {
+        // Show interim in a way that doesn't commit
+        setVoiceTranscript(prev => {
+          const base = prev.replace(/ \[.*\]$/, '');
+          return base + ' [' + interimTranscript + ']';
+        });
+      }
+    };
+    recognition.onerror = (event: any) => {
+      if (event.error !== 'no-speech') {
+        setLastError(`Voice error: ${event.error}`);
+      }
+      setVoiceListening(false);
+    };
+    recognition.onend = () => {
+      setVoiceListening(false);
+    };
+    voiceRecognitionRef.current = recognition;
+    recognition.start();
+    setVoiceListening(true);
+    setVoiceTranscript('');
+  };
+
+  const stopVoiceInput = () => {
+    if (voiceRecognitionRef.current) {
+      voiceRecognitionRef.current.stop();
+      voiceRecognitionRef.current = null;
+    }
+    setVoiceListening(false);
+    // Clean up interim markers
+    setVoiceTranscript(prev => prev.replace(/ \[.*\]$/, ''));
+  };
+
+  const sendVoiceAsCommand = () => {
+    const cleanTranscript = voiceTranscript.replace(/ \[.*\]$/, '').trim();
+    if (cleanTranscript) {
+      setCommandInput(cleanTranscript);
+      setVoiceTranscript('');
+    }
+  };
+
+  // ── Command Execution ──
+  const executeInteractiveCommand = async (input?: string) => {
+    const cmd = (input || commandInput).trim();
+    if (!cmd) return;
+    setCommandLoading(true);
+    const entry = { input: cmd, output: '', timestamp: new Date().toISOString(), status: 'pending' as const };
+    setCommandHistory(prev => [entry, ...prev].slice(0, 50));
+    setCommandInput('');
+    try {
+      // Route through the Omega propose flow
+      const res = await fetch(`${API_BASE}/v1/omega/propose`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: cmd,
+          requestedBy: 'human:voice-operator@oceanicos.org',
+          requestedWorkers: ['worker-observer', 'worker-planner'],
+          boundedContext: { source: 'interactive-voice-command' },
+        }),
+      });
+      const data = await res.json();
+      setCommandHistory(prev => {
+        const updated = [...prev];
+        const idx = updated.findIndex(e => e.timestamp === entry.timestamp && e.input === cmd);
+        if (idx >= 0) {
+          updated[idx] = {
+            ...updated[idx],
+            output: data.success
+              ? `✓ Command proposed → ${data.command?.commandId?.slice(0, 16)}... | Status: ${data.command?.status}`
+              : `✗ ${data.error || 'Proposal rejected'}`,
+            status: data.success ? 'success' : 'error',
+          };
+        }
+        return updated;
+      });
+    } catch (err: any) {
+      setCommandHistory(prev => {
+        const updated = [...prev];
+        const idx = updated.findIndex(e => e.timestamp === entry.timestamp && e.input === cmd);
+        if (idx >= 0) {
+          updated[idx] = { ...updated[idx], output: `✗ ${err.message}`, status: 'error' };
+        }
+        return updated;
+      });
+    } finally {
+      setCommandLoading(false);
+    }
+  };
+
+  // ── Live Mood Fetch ──
+  const fetchMoodLive = async () => {
+    try {
+      const [moodRes, kernelRes] = await Promise.all([
+        fetch(`${API_BASE}/v1/mood`).then(r => r.json()),
+        fetch(`${API_BASE}/v1/omega/kernel/status`).then(r => r.json()).catch(() => null),
+      ]);
+      setLiveMood({ ...moodRes, kernel: kernelRes });
+      setMoodPulse(prev => prev + 1);
+    } catch (err: any) {
+      setLastError('Mood fetch: ' + err.message);
+    }
+  };
+
+  // ── Interactive Panel Component ──
+  const InteractivePanel = () => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      {/* CSS Animation Keyframes */}
+      <style>{`
+        @keyframes glow-pink { from { box-shadow: 0 0 8px rgba(244, 114, 182, 0.3); } to { box-shadow: 0 0 20px rgba(244, 114, 182, 0.6); } }
+        @keyframes pulse-ring { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(1.8); opacity: 0; } }
+        @keyframes wave-flow { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        @keyframes float-up { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(-30px); opacity: 0; } }
+        @keyframes breathe { 0%,100% { transform: scale(1); } 50% { transform: scale(1.03); } }
+      `}</style>
+
+      {/* ═══ VOICE INPUT SECTION ═══ */}
+      <div
+        style={{
+          background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(88, 28, 135, 0.2) 100%)',
+          border: `2px solid ${voiceListening ? '#f472b6' : 'rgba(244, 114, 182, 0.3)'}`,
+          borderRadius: '12px',
+          padding: '24px',
+          animation: voiceListening ? 'breathe 2s ease-in-out infinite' : 'none',
+          transition: 'border-color 0.3s ease',
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <h3 style={{ margin: 0, fontSize: '18px', color: '#f472b6', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span>🎤</span>
+            <span>Voice Command Interface</span>
+            {voiceListening && (
+              <span style={{
+                display: 'inline-block',
+                width: '10px',
+                height: '10px',
+                borderRadius: '50%',
+                background: '#ef4444',
+                boxShadow: '0 0 12px #ef4444',
+                animation: 'pulse-ring 1.5s ease-out infinite',
+              }} />
+            )}
+          </h3>
+          <span style={{
+            fontSize: '10px',
+            padding: '3px 10px',
+            borderRadius: '12px',
+            background: voiceSupported ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+            color: voiceSupported ? '#6ee7b7' : '#fca5a5',
+            border: `1px solid ${voiceSupported ? '#10b981' : '#ef4444'}`,
+          }}>
+            {voiceSupported ? 'WEB SPEECH API READY' : 'NOT SUPPORTED'}
+          </span>
+        </div>
+
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '16px' }}>
+          <button
+            type="button"
+            onClick={voiceListening ? stopVoiceInput : startVoiceInput}
+            disabled={!voiceSupported}
+            style={{
+              width: '64px',
+              height: '64px',
+              borderRadius: '50%',
+              border: 'none',
+              background: voiceListening
+                ? 'radial-gradient(circle, #ef4444 0%, #991b1b 100%)'
+                : 'radial-gradient(circle, #f472b6 0%, #9d174d 100%)',
+              color: '#fff',
+              fontSize: '24px',
+              cursor: voiceSupported ? 'pointer' : 'not-allowed',
+              boxShadow: voiceListening ? '0 0 30px rgba(239, 68, 68, 0.5)' : '0 0 16px rgba(244, 114, 182, 0.3)',
+              transition: 'all 0.3s ease',
+              position: 'relative',
+            }}
+          >
+            {voiceListening ? '⏹' : '🎙️'}
+          </button>
+
+          <div style={{ flex: 1 }}>
+            <div style={{
+              background: '#030712',
+              border: `1px solid ${voiceListening ? '#f472b6' : 'rgba(148, 163, 184, 0.2)'}`,
+              borderRadius: '8px',
+              padding: '14px',
+              minHeight: '60px',
+              fontSize: '14px',
+              color: voiceTranscript ? '#f8fafc' : '#64748b',
+              fontFamily: 'monospace',
+              transition: 'border-color 0.3s ease',
+            }}>
+              {voiceTranscript || (voiceListening ? 'Listening... speak your command' : 'Press the microphone to start voice input')}
+            </div>
+          </div>
+        </div>
+
+        {voiceTranscript && (
+          <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+            <button
+              type="button"
+              onClick={() => setVoiceTranscript('')}
+              style={{
+                padding: '8px 16px',
+                borderRadius: '6px',
+                background: 'rgba(239, 68, 68, 0.15)',
+                border: '1px solid #ef4444',
+                color: '#fca5a5',
+                fontSize: '12px',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              ✗ Clear
+            </button>
+            <button
+              type="button"
+              onClick={sendVoiceAsCommand}
+              style={{
+                padding: '8px 16px',
+                borderRadius: '6px',
+                background: 'rgba(16, 185, 129, 0.2)',
+                border: '1px solid #10b981',
+                color: '#6ee7b7',
+                fontSize: '12px',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              → Send to Command
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const clean = voiceTranscript.replace(/ \[.*\]$/, '').trim();
+                if (clean) executeInteractiveCommand(clean);
+                setVoiceTranscript('');
+              }}
+              style={{
+                padding: '8px 20px',
+                borderRadius: '6px',
+                background: 'linear-gradient(135deg, #10b981 0%, #0284c7 100%)',
+                border: 'none',
+                color: '#fff',
+                fontSize: '12px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                boxShadow: '0 0 12px rgba(16, 185, 129, 0.3)',
+              }}
+            >
+              ⚡ Execute Directly
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* ═══ COMMAND INPUT SECTION ═══ */}
+      <div
+        style={{
+          background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(6, 78, 59, 0.15) 100%)',
+          border: '1px solid rgba(16, 185, 129, 0.3)',
+          borderRadius: '12px',
+          padding: '24px',
+        }}
+      >
+        <h3 style={{ margin: '0 0 16px 0', fontSize: '18px', color: '#34d399', display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <span>⚡</span>
+          <span>Ω Command Terminal</span>
+          <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 400 }}>Route: PROPOSE → ADMIT → AUTHORIZE → EXECUTE</span>
+        </h3>
+
+        <form
+          onSubmit={(e) => { e.preventDefault(); executeInteractiveCommand(); }}
+          style={{ display: 'flex', gap: '10px', marginBottom: '16px' }}
+        >
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            flex: 1,
+            background: '#030712',
+            border: '1px solid rgba(16, 185, 129, 0.3)',
+            borderRadius: '8px',
+            padding: '0 12px',
+          }}>
+            <span style={{ color: '#10b981', fontFamily: 'monospace', fontSize: '14px', marginRight: '8px' }}>Ω❯</span>
+            <input
+              type="text"
+              value={commandInput}
+              onChange={(e) => setCommandInput(e.target.value)}
+              placeholder="Enter bounded command (e.g., 'Inspect architecture contracts')..."
+              style={{
+                flex: 1,
+                background: 'transparent',
+                border: 'none',
+                outline: 'none',
+                color: '#f8fafc',
+                fontSize: '14px',
+                fontFamily: 'monospace',
+                padding: '14px 0',
+              }}
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={commandLoading || !commandInput.trim()}
+            style={{
+              padding: '14px 24px',
+              borderRadius: '8px',
+              background: commandLoading ? '#064e3b' : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+              border: 'none',
+              color: '#fff',
+              fontWeight: 'bold',
+              fontSize: '13px',
+              cursor: commandLoading ? 'wait' : 'pointer',
+              boxShadow: '0 0 12px rgba(16, 185, 129, 0.3)',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            {commandLoading ? '◌ Proposing...' : '→ PROPOSE'}
+          </button>
+        </form>
+
+        {/* Command History */}
+        <div style={{
+          maxHeight: '300px',
+          overflowY: 'auto',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '6px',
+        }}>
+          {commandHistory.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '30px', color: '#64748b', fontSize: '12px' }}>
+              No commands yet. Type a command or use voice input above.
+            </div>
+          ) : (
+            commandHistory.map((entry, i) => (
+              <div
+                key={`${entry.timestamp}-${i}`}
+                style={{
+                  background: '#030712',
+                  borderRadius: '6px',
+                  border: `1px solid ${
+                    entry.status === 'success' ? 'rgba(16, 185, 129, 0.25)'
+                    : entry.status === 'error' ? 'rgba(239, 68, 68, 0.25)'
+                    : 'rgba(251, 191, 36, 0.25)'
+                  }`,
+                  padding: '10px 14px',
+                  fontSize: '12px',
+                  fontFamily: 'monospace',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                  <span style={{ color: '#10b981' }}>Ω❯ <span style={{ color: '#e2e8f0' }}>{entry.input}</span></span>
+                  <span style={{ color: '#64748b', fontSize: '10px' }}>{new Date(entry.timestamp).toLocaleTimeString()}</span>
+                </div>
+                {entry.output && (
+                  <div style={{
+                    color: entry.status === 'success' ? '#6ee7b7' : entry.status === 'error' ? '#fca5a5' : '#fbbf24',
+                    fontSize: '11px',
+                    paddingLeft: '20px',
+                  }}>
+                    {entry.output}
+                  </div>
+                )}
+                {entry.status === 'pending' && (
+                  <div style={{ color: '#fbbf24', fontSize: '11px', paddingLeft: '20px' }}>◌ Processing...</div>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* ═══ FULL-STACK INTERACTIVE MOOD ═══ */}
+      <div
+        style={{
+          background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(120, 53, 15, 0.15) 50%, rgba(88, 28, 135, 0.1) 100%)',
+          border: '1px solid rgba(250, 204, 21, 0.3)',
+          borderRadius: '12px',
+          padding: '24px',
+          animation: 'breathe 4s ease-in-out infinite',
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <h3 style={{ margin: 0, fontSize: '18px', color: '#facc15', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span>✨</span>
+            <span>Full-Stack Singularity Mood</span>
+            <span style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+              fontSize: '10px',
+              padding: '2px 8px',
+              borderRadius: '10px',
+              background: 'rgba(16, 185, 129, 0.15)',
+              color: '#34d399',
+              border: '1px solid rgba(16, 185, 129, 0.3)',
+            }}>
+              <span style={{
+                width: '6px',
+                height: '6px',
+                borderRadius: '50%',
+                background: '#10b981',
+                boxShadow: '0 0 6px #10b981',
+              }} />
+              PULSE #{moodPulse}
+            </span>
+          </h3>
+          <button
+            type="button"
+            onClick={fetchMoodLive}
+            style={{
+              padding: '8px 16px',
+              borderRadius: '6px',
+              background: 'rgba(250, 204, 21, 0.15)',
+              border: '1px solid #facc15',
+              color: '#fef08a',
+              fontSize: '12px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            🔄 REFRESH MOOD
+          </button>
+        </div>
+
+        {/* Mood Waveform Visualization */}
+        <div style={{
+          height: '80px',
+          borderRadius: '8px',
+          marginBottom: '20px',
+          background: 'linear-gradient(270deg, #f472b6, #facc15, #34d399, #38bdf8, #a855f7, #f472b6)',
+          backgroundSize: '600% 100%',
+          animation: 'wave-flow 8s ease-in-out infinite',
+          opacity: 0.3,
+          position: 'relative',
+          overflow: 'hidden',
+        }}>
+          <div style={{
+            position: 'absolute',
+            inset: '2px',
+            borderRadius: '6px',
+            background: '#04070a',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '20px',
+            fontWeight: 'bold',
+            letterSpacing: '4px',
+            color: '#facc15',
+            textShadow: '0 0 20px rgba(250, 204, 21, 0.5)',
+          }}>
+            {liveMood?.status || 'AWAITING SINGULARITY...'}
+          </div>
+        </div>
+
+        {/* Mood Detail Grid */}
+        {liveMood && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px' }}>
+            <div style={{ background: '#030712', borderRadius: '8px', padding: '16px', border: '1px solid rgba(250, 204, 21, 0.15)' }}>
+              <div style={{ color: '#94a3b8', fontSize: '10px', textTransform: 'uppercase', marginBottom: '6px' }}>Singularity State</div>
+              <div style={{ color: '#facc15', fontSize: '16px', fontWeight: 'bold' }}>{liveMood.singularityState || 'ACTIVE'}</div>
+              <div style={{ color: '#64748b', fontSize: '10px', marginTop: '4px', fontFamily: 'monospace' }}>
+                Wave: {liveMood.waveIndex || '0x000 → 0xFFF'}
+              </div>
+            </div>
+            <div style={{ background: '#030712', borderRadius: '8px', padding: '16px', border: '1px solid rgba(16, 185, 129, 0.15)' }}>
+              <div style={{ color: '#94a3b8', fontSize: '10px', textTransform: 'uppercase', marginBottom: '6px' }}>Reality Status</div>
+              <div style={{ color: '#34d399', fontSize: '16px', fontWeight: 'bold' }}>{liveMood.reality || 'VERIFIED'}</div>
+              <div style={{ color: '#64748b', fontSize: '10px', marginTop: '4px' }}>
+                High-Low Align: {liveMood.highLowAlign ? '✓ TRUE' : '✗ FALSE'}
+              </div>
+            </div>
+            <div style={{ background: '#030712', borderRadius: '8px', padding: '16px', border: '1px solid rgba(168, 85, 247, 0.15)' }}>
+              <div style={{ color: '#94a3b8', fontSize: '10px', textTransform: 'uppercase', marginBottom: '6px' }}>Pidgin Engine</div>
+              <div style={{ color: '#c084fc', fontSize: '16px', fontWeight: 'bold' }}>{liveMood.pidginEngine ? 'ACTIVE' : 'OFF'}</div>
+              <div style={{ color: '#64748b', fontSize: '10px', marginTop: '4px' }}>
+                Spirit Mode: RECURSIVE NOW
+              </div>
+            </div>
+            {liveMood.kernel && (
+              <div style={{ background: '#030712', borderRadius: '8px', padding: '16px', border: '1px solid rgba(56, 189, 248, 0.15)' }}>
+                <div style={{ color: '#94a3b8', fontSize: '10px', textTransform: 'uppercase', marginBottom: '6px' }}>Kernel Chain</div>
+                <div style={{ color: '#38bdf8', fontSize: '16px', fontWeight: 'bold' }}>{liveMood.kernel.chainLength || 0} transitions</div>
+                <div style={{ color: '#64748b', fontSize: '10px', marginTop: '4px', fontFamily: 'monospace' }}>
+                  Verified: {liveMood.kernel.stats?.verifiedStatesCount ?? 0}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Axiom & Pidgin Spirit */}
+        {liveMood?.pidginSpirit && (
+          <div style={{
+            marginTop: '16px',
+            padding: '16px',
+            background: 'rgba(250, 204, 21, 0.05)',
+            borderLeft: '3px solid #facc15',
+            borderRadius: '0 8px 8px 0',
+            fontSize: '13px',
+            color: '#fef3c7',
+            fontStyle: 'italic',
+            lineHeight: 1.6,
+          }}>
+            💧 {liveMood.pidginSpirit}
+          </div>
+        )}
+
+        {liveMood?.axiom && (
+          <div style={{
+            marginTop: '12px',
+            padding: '12px 16px',
+            background: 'rgba(168, 85, 247, 0.08)',
+            borderRadius: '8px',
+            fontSize: '11px',
+            fontFamily: 'monospace',
+            color: '#c4b5fd',
+            textAlign: 'center',
+            letterSpacing: '0.5px',
+          }}>
+            AXIOM: {liveMood.axiom}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
   return (
     <div
       style={{
@@ -651,10 +1217,35 @@ export default function App() {
         >
           🎭 5-FACE PLURALISTIC REALITY MATRIX
         </button>
+        <button
+          type="button"
+          onClick={() => {
+            setActiveTab('interactive');
+            // Start mood polling when entering interactive tab
+            if (!liveMood) {
+              fetchMoodLive();
+            }
+          }}
+          style={{
+            padding: '10px 18px',
+            borderRadius: '6px',
+            fontSize: '12px',
+            fontWeight: 'bold',
+            background: activeTab === 'interactive' ? 'rgba(236, 72, 153, 0.2)' : 'rgba(15, 23, 42, 0.6)',
+            color: activeTab === 'interactive' ? '#f472b6' : '#94a3b8',
+            border: activeTab === 'interactive' ? '1px solid #f472b6' : '1px solid rgba(148, 163, 184, 0.2)',
+            cursor: 'pointer',
+            animation: activeTab === 'interactive' ? 'glow-pink 2s ease-in-out infinite alternate' : 'none',
+          }}
+        >
+          🎤 VOICE • COMMAND • MOOD INTERACTIVE
+        </button>
       </div>
 
       {activeTab === 'workspace' ? (
         <OmegaWorkspace />
+      ) : activeTab === 'interactive' ? (
+        <InteractivePanel />
       ) : activeTab === 'pluralism' ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {/* Header Card */}

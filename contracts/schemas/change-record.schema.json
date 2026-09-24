@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oceanicos.org/contracts/schemas/change-record.schema.json",
+  "title": "OmegaChangeRecord",
+  "description": "Immutable Canonical Change Record specification per Constitution §6.",
+  "type": "object",
+  "required": [
+    "id",
+    "subject",
+    "intent",
+    "stateBefore",
+    "evidence",
+    "authority",
+    "policy",
+    "decision",
+    "authorized",
+    "provenance"
+  ],
+  "properties": {
+    "id": { "type": "string" },
+    "subject": { "type": "string" },
+    "intent": { "type": "string" },
+    "stateBefore": { "type": "string" },
+    "evidence": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "authority": { "type": ["string", "null"] },
+    "policy": { "type": ["string", "null"] },
+    "context": { "type": "object" },
+    "decision": {
+      "type": "string",
+      "enum": ["ALLOW", "DENY", "REVIEW"]
+    },
+    "authorized": { "type": "boolean" },
+    "transition": { "type": "string" },
+    "stateAfter": { "type": "string" },
+    "consequence": { "type": "string" },
+    "attestationId": { "type": "string" },
+    "provenance": {
+      "type": "object",
+      "required": ["source", "observedAt", "attributedTo"],
+      "properties": {
+        "source": { "type": "string" },
+        "observedAt": { "type": "string" },
+        "attributedTo": { "type": ["string", "null"] },
+        "lineage": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "createdAt": { "type": "string" }
+  }
+}

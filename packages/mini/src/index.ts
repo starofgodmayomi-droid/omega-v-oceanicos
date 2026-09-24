@@ -227,6 +227,13 @@ export type { AttestationEntry, AttestationMemory } from './attestation-memory.j
 export { synthesizeOmegaLearning } from './learning.js';
 export { proposeNextOmegaSlice, compileNextLoopIntent } from './recompiler.js';
 export type { ProposeNextSliceInput } from './recompiler.js';
+export {
+  OmegaReconciliationBoundary,
+  type ReconciliationBoundaryInput,
+  type ReconciliationAttestation,
+  type ReconciledBoundaryResult,
+  type ReplayVerificationOutcome,
+} from './reconciliation-boundary.js';
 export * from './canonical-kernel.js';
 
 export default MiniKernel;

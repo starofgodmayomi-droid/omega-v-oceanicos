@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oceanicos.org/contracts/events/lifecycle-events.schema.json",
+  "title": "OmegaLifecycleEvent",
+  "description": "Omega OS Event Stream and Provenance Ledger Event Specification.",
+  "type": "object",
+  "required": ["eventId", "eventType", "actor", "payload", "timestamp"],
+  "properties": {
+    "eventId": { "type": "string" },
+    "eventType": {
+      "type": "string",
+      "enum": [
+        "COMMAND_PROPOSED",
+        "COMMAND_ADMITTED",
+        "COMMAND_REVIEW_REQUIRED",
+        "COMMAND_APPROVED",
+        "COMMAND_DENIED",
+        "COMMAND_EXECUTED",
+        "REALITY_OBSERVED",
+        "REALITY_VERIFIED",
+        "LEARNING_SYNTHESIZED",
+        "NEXT_SLICE_PROPOSED",
+        "LOOP_RECOMPILED"
+      ]
+    },
+    "commandId": { "type": "string" },
+    "status": { "type": "string" },
+    "actor": { "type": "string" },
+    "payload": { "type": "object" },
+    "timestamp": { "type": "string" }
+  }
+}

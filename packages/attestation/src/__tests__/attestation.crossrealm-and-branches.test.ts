@@ -32,25 +32,29 @@
  * it shares this file's realm — exactly the failure shape a non-sandboxed
  * Node process produces.
  */
-jest.mock('node:crypto', () => {
-  const actual = jest.requireActual('node:crypto');
-  return {
-    ...actual,
-    createPrivateKey: jest.fn(actual.createPrivateKey),
-  };
-});
+import { jest, describe, it, expect, afterEach } from '@jest/globals';
 
-import { createPrivateKey, generateKeyPairSync } from 'node:crypto';
-import { AttestationService, InvalidSigningKeyError, MissingSigningKeyError } from '../index';
+const actualCrypto = await import('node:crypto');
+const mockCreatePrivateKey = jest.fn(actualCrypto.createPrivateKey);
 
-const actualCrypto = jest.requireActual('node:crypto') as typeof import('node:crypto');
+await jest.unstable_mockModule('node:crypto', () => ({
+  ...actualCrypto,
+  createPrivateKey: mockCreatePrivateKey,
+  default: {
+    ...actualCrypto.default,
+    createPrivateKey: mockCreatePrivateKey,
+  },
+}));
+
+const { generateKeyPairSync } = await import('node:crypto');
+const { AttestationService, InvalidSigningKeyError, MissingSigningKeyError } = await import('../index.js');
 
 describe('AttestationService — remaining constructor branches', () => {
   const originalHmac = process.env.OMEGA_SIGNING_KEY;
   const originalEd25519 = process.env.OMEGA_ED25519_KEY;
 
   afterEach(() => {
-    (createPrivateKey as jest.Mock).mockImplementation(actualCrypto.createPrivateKey);
+    mockCreatePrivateKey.mockImplementation(actualCrypto.createPrivateKey);
     if (originalHmac === undefined) {
       delete process.env.OMEGA_SIGNING_KEY;
     } else {
@@ -98,7 +102,7 @@ describe('AttestationService — remaining constructor branches', () => {
   });
 
   it('surfaces the real parse-failure message when createPrivateKey throws a same-realm Error', () => {
-    (createPrivateKey as jest.Mock).mockImplementation(() => {
+    mockCreatePrivateKey.mockImplementation(() => {
       throw new Error('mocked parse failure: unsupported key format');
     });
 

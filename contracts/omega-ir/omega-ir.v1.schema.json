@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oceanicos.org/contracts/omega-ir/omega-ir.v1.schema.json",
+  "title": "OmegaIR",
+  "description": "Versioned, declarative Ω∞v intermediate representation (omega-ir.v1). Intentionally non-executable.",
+  "type": "object",
+  "required": [
+    "version",
+    "intent",
+    "evidenceRefs",
+    "policyRefs",
+    "workerPlan",
+    "transitionSpec",
+    "observationSpec"
+  ],
+  "properties": {
+    "version": {
+      "type": "string",
+      "const": "omega-ir.v1"
+    },
+    "intent": {
+      "type": "string",
+      "minLength": 1
+    },
+    "evidenceRefs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "kind", "source"],
+        "properties": {
+          "id": { "type": "string" },
+          "kind": { "type": "string" },
+          "source": { "type": "string" },
+          "digest": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "policyRefs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "version", "requirement"],
+        "properties": {
+          "id": { "type": "string" },
+          "version": { "type": "string" },
+          "requirement": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "workerPlan": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["workerId", "version", "capability", "mode", "approvalRequired"],
+        "properties": {
+          "workerId": { "type": "string" },
+          "version": { "type": "string" },
+          "capability": { "type": "string" },
+          "mode": {
+            "type": "string",
+            "enum": ["read-only", "build-test", "local-mutating", "external-consequence"]
+          },
+          "approvalRequired": { "type": "boolean" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "transitionSpec": {
+      "type": "object",
+      "required": ["subject", "intent", "stateBefore", "dryRun"],
+      "properties": {
+        "subject": { "type": "string" },
+        "intent": { "type": "string" },
+        "stateBefore": { "type": "string" },
+        "requestedStateAfter": { "type": "string" },
+        "consequence": { "type": "string" },
+        "dryRun": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "observationSpec": {
+      "type": "object",
+      "required": ["observerId", "targets", "evidenceRequired"],
+      "properties": {
+        "observerId": { "type": "string" },
+        "targets": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "evidenceRequired": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

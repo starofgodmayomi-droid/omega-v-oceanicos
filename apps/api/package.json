@@ -12,6 +12,7 @@
   "dependencies": {
     "@fastify/cors": "^9.0.1",
     "@oceanicos/attestation": "workspace:*",
+    "@oceanicos/authorization": "workspace:*",
     "@oceanicos/generative": "workspace:*",
     "@oceanicos/inference": "workspace:*",
     "@oceanicos/mini": "workspace:*",

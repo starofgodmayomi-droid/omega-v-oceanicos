@@ -804,6 +804,48 @@ describe('Ω‑ƆREADƆS OS v∞ — Command Lifecycle & Reality Verification Su
       expect(matchingState.learning).toBeDefined();
       expect(matchingState.learning.proposedNextIntentPrompt).toContain(matchingState.stateId);
     });
+
+    it('attaches coordination_probe observation via POST /v1/omega/commands/:id/observe', async () => {
+      const createRes = await app.inject({
+        method: 'POST',
+        url: '/v1/omega/commands',
+        payload: {
+          prompt: 'Inspect runtime coordination policy boundary',
+          requestedWorkers: ['worker-observer'],
+        },
+      });
+      const cmdId = JSON.parse(createRes.payload).command.commandId;
+
+      await app.inject({
+        method: 'POST',
+        url: `/v1/omega/commands/${cmdId}/admit`,
+      });
+      await app.inject({
+        method: 'POST',
+        url: `/v1/omega/commands/${cmdId}/execute`,
+      });
+
+      const observeRes = await app.inject({
+        method: 'POST',
+        url: `/v1/omega/commands/${cmdId}/observe`,
+        payload: {
+          observerType: 'coordination_probe',
+          target: 'coordination_boundary',
+          coordinationMode: 'operator-coordinated',
+          coordinationReference: 'operator-ref-99',
+        },
+      });
+
+      expect(observeRes.statusCode).toBe(200);
+      const obsBody = JSON.parse(observeRes.payload);
+      expect(obsBody.success).toBe(true);
+      expect(obsBody.observation.observerType).toBe('coordination_probe');
+      expect(obsBody.observation.target).toBe('coordination_boundary');
+      expect(obsBody.observation.observedData.mode).toBe('operator-coordinated');
+      expect(obsBody.observation.observedData.reference).toBe('operator-ref-99');
+      expect(obsBody.observation.observedData.verified).toBe(false);
+      expect(obsBody.observation.stateHash).toBeDefined();
+    });
   });
 });
 
