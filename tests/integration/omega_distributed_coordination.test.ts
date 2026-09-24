@@ -59,6 +59,32 @@ describe('Ω durable multi-process coordination', () => {
     assert.ok(evidence.eventTypes.includes('worker.lease-released'));
   });
 
+  it('refuses coordination evidence on an ephemeral store', async () => {
+    const ephemeral = createApp(':memory:', false);
+    await ephemeral.ready();
+    try {
+      const response = await ephemeral.inject({
+        method: 'POST',
+        url: '/v1/omega/coordination/evidence',
+        payload: { commandId: 'ephemeral-command' },
+      });
+      assert.equal(response.statusCode, 503);
+      assert.equal(response.json().error, 'COORDINATION_EVIDENCE_REQUIRES_DURABLE_STORE');
+    } finally {
+      await ephemeral.close();
+    }
+  });
+
+  it('rejects malformed evidence command IDs before probing workers', async () => {
+    const response = await first.inject({
+      method: 'POST',
+      url: '/v1/omega/coordination/evidence',
+      payload: { commandId: ' invalid-command' },
+    });
+    assert.equal(response.statusCode, 409);
+    assert.equal(response.json().error, 'coordination probe commandId is invalid');
+  });
+
   it('emits bounded multi-process evidence and replays the lease lifecycle after restart', async () => {
     const probeDirectory = mkdtempSync(join(tmpdir(), 'omega-probe-'));
     const probePath = join(probeDirectory, 'ledger.db');
