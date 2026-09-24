@@ -78,6 +78,7 @@ remain on the [roadmap](./ROADMAP.md).
 
 ### Specifications
 
+- **[Operational Protocol Specification](./spec/OCEANICOS-OPERATIONAL-PROTOCOL.md)** — how a bounded Drop moves from intent through authority, execution, observation, reconciliation, and provenance
 - **[Attestation Envelope v1](./spec/ATTESTATION-ENVELOPE.md)** — the signed
   payload, its exact byte serialisation, and how to verify one **without
   running any code from this project**. Ships a reference verifier in Python
