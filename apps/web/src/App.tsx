@@ -4,9 +4,9 @@ import { RealityPanel } from './RealityPanel';
 import { TransitionProvenancePanel } from './TransitionProvenancePanel';
 import { AmbientBar } from './AmbientBar';
 import { IntentFlow } from './IntentFlow';
-import { DeepSection } from './DeepSection';
 import { SystemControlsPanel } from './SystemControlsPanel';
 import { ObservationStreamPanel } from './ObservationStreamPanel';
+import { LifecycleFlow, deriveStageStates, type LifecycleStage } from './LifecycleFlow';
 import {
   theme,
   statusColor,
@@ -73,22 +73,9 @@ export function App() {
   const [omegaCommand, setOmegaCommand] = useState<any>(null);
   const [omegaLoading, setOmegaLoading] = useState(false);
 
-  const [openSections, setOpenSections] = useState<Set<string>>(new Set());
+  const [openStageId, setOpenStageId] = useState<string | null>(null);
 
   const eventSourceRef = useRef<EventSource | null>(null);
-
-  const toggleSection = (id: string) => {
-    setOpenSections((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
-  const openSection = (id: string) => {
-    setOpenSections((prev) => new Set(prev).add(id));
-  };
 
   const fetchMinerStatus = async () => {
     try {
@@ -428,6 +415,126 @@ export function App() {
   const simulationMode = kernelCapabilities?.execution === 'SIMULATION';
   const humanGateRequired = kernelCapabilities?.humanAuthorizationRequired ?? true;
 
+  const stageStates = deriveStageStates(omegaCommand);
+
+  const lifecycleStages: LifecycleStage[] = [
+    {
+      id: 'intent',
+      icon: '✦',
+      label: 'Intent',
+      subtitle: omegaCommand?.command?.intent || 'What shall we make real?',
+      state: stageStates.intent,
+    },
+    {
+      id: 'evidence',
+      icon: '👁',
+      label: 'Evidence',
+      subtitle: "What the system knows and doesn't know",
+      state: stageStates.evidence,
+      detail: <RealityPanel />,
+    },
+    {
+      id: 'authority',
+      icon: '🔐',
+      label: 'Authority',
+      subtitle: humanGateRequired ? 'Human approval required' : 'Autonomous',
+      state: stageStates.authority,
+    },
+    {
+      id: 'admit',
+      icon: '◇',
+      label: 'Admission',
+      subtitle: omegaCommand?.command?.change?.decision
+        ? `Decision: ${omegaCommand.command.change.decision}`
+        : 'Awaiting admission',
+      state: stageStates.admit,
+    },
+    {
+      id: 'execute',
+      icon: '⚙',
+      label: 'Execute',
+      subtitle: simulationMode ? 'Bounded simulation' : 'Bounded action',
+      state: stageStates.execute,
+    },
+    {
+      id: 'observe',
+      icon: '📡',
+      label: 'Observe',
+      subtitle: 'What actually happened',
+      state: stageStates.observe,
+      detail: (
+        <ObservationStreamPanel
+          tip={tip}
+          history={history}
+          minerActive={minerActive}
+          minerStats={minerStats}
+        />
+      ),
+    },
+    {
+      id: 'verify',
+      icon: '✓',
+      label: 'Verify',
+      subtitle: omegaCommand?.reality?.classification
+        ? humanStatus(omegaCommand.reality.classification)
+        : 'Does reality match the proposition?',
+      state: stageStates.verify,
+    },
+    {
+      id: 'remember',
+      icon: '🧠',
+      label: 'Remember',
+      subtitle: 'Lineage and memory',
+      state: stageStates.remember,
+      detail: <TransitionProvenancePanel />,
+    },
+    {
+      id: 'next',
+      icon: '↺',
+      label: 'Next Δ',
+      subtitle: 'The next finite transition',
+      state: stageStates.next,
+    },
+    {
+      id: 'ecosystem',
+      icon: '🌊',
+      label: 'Ecosystem',
+      subtitle: 'Capability layers and evidence',
+      state: 'available' as const,
+      detail: <EcosystemPanel />,
+    },
+    {
+      id: 'system',
+      icon: '⚙',
+      label: 'System',
+      subtitle: 'Mining, mesh, attestation, identity',
+      state: 'available' as const,
+      detail: (
+        <SystemControlsPanel
+          onCycle={cycle}
+          cycleLoading={loading}
+          minerActive={minerActive}
+          minerInterval={minerInterval}
+          onToggleMiner={toggleMiner}
+          onSetMinerInterval={setMinerInterval}
+          meshSimulation={meshSimulation}
+          meshLoading={meshLoading}
+          onRunMesh={runMeshSimulation}
+          attestationData={attestationData}
+          attestLoading={attestLoading}
+          onRequestAttestation={requestAttestation}
+          moodData={moodData}
+          onFetchMood={fetchMood}
+          keyPair={keyPair}
+          onGenerateWebCrypto={generateWebCryptoKeys}
+          onGenerateServerKeys={generateServerKeys}
+          signRequests={signRequests}
+          onSetSignRequests={setSignRequests}
+        />
+      ),
+    },
+  ];
+
   return (
     <div
       style={{
@@ -618,97 +725,28 @@ export function App() {
           onApprove={approveOmegaCommand}
           onExecute={executeOmegaCommand}
           onObserve={observeOmegaReality}
-          onViewEvidence={() => openSection('reality')}
-          onViewTimeline={() => openSection('provenance')}
+          onViewEvidence={() => setOpenStageId('evidence')}
+          onViewTimeline={() => setOpenStageId('remember')}
           onDismiss={dismissCommand}
           simulationMode={simulationMode}
           humanGateRequired={humanGateRequired}
         />
       </main>
 
-      {/* Deep sections */}
+      {/* Mirror-water lifecycle flow */}
       <div
         style={{
-          maxWidth: '960px',
+          maxWidth: '720px',
           width: '100%',
           margin: '0 auto',
-          padding: '0 24px 60px',
+          padding: '8px 24px 60px',
         }}
       >
-        <DeepSection
-          id="reality"
-          title="Reality Verification"
-          subtitle="What the system knows and doesn't know"
-          isOpen={openSections.has('reality')}
-          onToggle={toggleSection}
-        >
-          <RealityPanel />
-        </DeepSection>
-
-        <DeepSection
-          id="ecosystem"
-          title="Ecosystem Status"
-          subtitle="Capability layers and evidence"
-          isOpen={openSections.has('ecosystem')}
-          onToggle={toggleSection}
-        >
-          <EcosystemPanel />
-        </DeepSection>
-
-        <DeepSection
-          id="provenance"
-          title="Transition Provenance"
-          subtitle="τ-record lineage and event trail"
-          isOpen={openSections.has('provenance')}
-          onToggle={toggleSection}
-        >
-          <TransitionProvenancePanel />
-        </DeepSection>
-
-        <DeepSection
-          id="system"
-          title="System Controls"
-          subtitle="Mining, mesh, attestation, identity"
-          isOpen={openSections.has('system')}
-          onToggle={toggleSection}
-        >
-          <SystemControlsPanel
-            onCycle={cycle}
-            cycleLoading={loading}
-            minerActive={minerActive}
-            minerInterval={minerInterval}
-            onToggleMiner={toggleMiner}
-            onSetMinerInterval={setMinerInterval}
-            meshSimulation={meshSimulation}
-            meshLoading={meshLoading}
-            onRunMesh={runMeshSimulation}
-            attestationData={attestationData}
-            attestLoading={attestLoading}
-            onRequestAttestation={requestAttestation}
-            moodData={moodData}
-            onFetchMood={fetchMood}
-            keyPair={keyPair}
-            onGenerateWebCrypto={generateWebCryptoKeys}
-            onGenerateServerKeys={generateServerKeys}
-            signRequests={signRequests}
-            onSetSignRequests={setSignRequests}
-          />
-        </DeepSection>
-
-        <DeepSection
-          id="stream"
-          title="Observation Stream"
-          subtitle="Live telemetry and block history"
-          isOpen={openSections.has('stream')}
-          onToggle={toggleSection}
-        >
-          <ObservationStreamPanel
-            tip={tip}
-            history={history}
-            minerActive={minerActive}
-            minerStats={minerStats}
-          />
-        </DeepSection>
+        <LifecycleFlow
+          stages={lifecycleStages}
+          openStageId={openStageId}
+          onStageToggle={(id) => setOpenStageId(id || null)}
+        />
       </div>
     </div>
   );
