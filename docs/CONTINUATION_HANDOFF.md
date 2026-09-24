@@ -1,132 +1,156 @@
 # Omega V Continuation Handoff
 
-## Purpose
+**Recorded:** 2026-09-22T20:40Z WAT  
+**Status of this file:** `DOCUMENTED` (intent + observed GitHub lineage). Not runtime proof.
 
-This document compresses the verified repository state and operating context for the next build or upgrade slice. It is a repository handoff, not an instruction to apply speculative rewrites from pasted prompts or attachments.
+Invariant: `Ω∞v ::= VERIFY(ΔREALITY)`
 
-## Canonical Repository
+This handoff is for the next bounded builder. It must not be treated as totality, deployment, or runtime health.
 
-| Field | Verified value |
-| --- | --- |
-| Repository | `starofgodmayomi-droid/omega-v-oceanicos` |
-| Local clone | `/home/ubuntu/github-check/omega-v-oceanicos` |
-| Branch | `main` |
-| Local and remote commit | `70b0759` |
-| Commit subject | `merge: integrate current origin/main while preserving Qov documentation` |
-| Remote | `origin/main` |
-| Working tree | One intentional uncommitted modification to `scripts/oceanicos-totality.sh` |
-| Active services | None after verification cleanup |
+---
 
-The merge commit preserves the earlier Qov documentation commit `ee77132` as an ancestor. The current branch is synchronized with `origin/main`.
+## Canonical repository (OBSERVED)
 
-## Operating Invariant
+| Field | Value | Status |
+| --- | --- | --- |
+| Repository | [`starofgodmayomi-droid/omega-v-oceanicos`](https://github.com/starofgodmayomi-droid/omega-v-oceanicos) | OBSERVED |
+| Account | `starofgodmayomi-droid` (admin on this repo) | OBSERVED |
+| Companion | `oceanicos-navigator` (private, last push 2026-08-15) | OBSERVED |
+| Default branch | `main` | OBSERVED |
+| Tip of `main` | `387965b832c5921d7e5780ccb554a3039742b9ed` | OBSERVED |
+| Tip subject | `feat: activate governed autopilot mood contract` (squash of PR #307) | OBSERVED |
+| Prior merge | `73b7fdde` — unify verified frontier surface | OBSERVED |
 
-> **Observe → Distinguish → Evidence → Verify → Intent → Compile → Validate → Authority/Policy → Admit → Bounded Execution → Observe → Reconcile → Attest → Provenance → Remember → Replay → Next verified change.**
+Older handoff values (`70b0759`, local path `/home/ubuntu/github-check/...`, uncommitted totality.sh) are **historical**. They were **not re-observed** in this session. Do not treat them as current.
 
-The repository must not claim more reality than executable evidence supports. GitHub state, source code, test results, signatures, attestations, deployment state, and runtime health remain distinct claims.
+---
 
-The following distinctions are mandatory:
+## Operating constitution (USER_STATED / DOCUMENTED)
 
-```text
-POSSIBLE ≠ KNOWN ≠ REPRESENTABLE ≠ PERMITTED ≠ ATTEMPTED
-≠ EXECUTED ≠ OBSERVED ≠ VERIFIED ≠ ATTESTED ≠ DEPLOYED ≠ HEALTHY
-```
-
-AI output is a proposal. Human authority remains necessary for consequential external actions. Unknown, divergent, denied, review, and not-executed states must remain explicit.
-
-## Current Architecture
-
-The canonical local loop is:
+Human-gated, reality-first, verification-bound AI/OS. One root, many forms.
 
 ```text
-Observe → Verify → Remember → MINI → API/Web/CLI
+INTENT → EVIDENCE → ΩIR → AUTHORITY → POLICY → ADMISSION
+→ BOUNDED ACTION → OBSERVE → RECONCILE
+→ VERIFIED | DIVERGENT | UNKNOWN | NOT_EXECUTED
+→ ATTEST → PROVENANCE → MEMORY → NEXT FINITE Δ ↺∞
 ```
 
-The repository currently includes the observer, verification, remember, MINI, attestation, gateway, kernel, API, web, CLI, worker, pipeline, causal-memory, admission, transition, and bounded runtime surfaces. The expanded Omega OS layers are additive and must not weaken the established fail-closed boundaries.
+Non-collapse (mandatory):
 
-## Verified Gates
-
-The current merged tree has passed the following commands:
-
-```bash
-pnpm build
-pnpm typecheck
-pnpm test
-pnpm audit
-node scripts/smoke-api.cjs
-pnpm verify:full
+```text
+POSSIBLE ≠ KNOWN ≠ PERMITTED ≠ EXECUTED ≠ OBSERVED
+≠ VERIFIED ≠ ATTESTED ≠ DEPLOYED ≠ HEALTHY
+CI PASS ≠ RUNTIME HEALTH
+SIMULATION ≠ REALITY
+MEMORY ≠ PROOF
+MOOD ≠ TRUTH ≠ CONSENT ≠ AUTHORITY
+CAPABILITY ≠ AUTHORITY
+CONSENSUS ≠ AUTHORITY
 ```
 
-The latest full verification produced:
+Mood is a bounded experience subsystem. Mood may adapt tone/pacing and preserve uncertainty. Mood may not manufacture consent, override policy, or self-authorize.
 
-| Gate | Result |
+Workers are bounded capability. Default = fail closed.
+
+---
+
+## What this session observed and changed
+
+### 1. Bounded CI worker — EXECUTED (CI only)
+
+`workflow_dispatch` of `.github/workflows/worker.yml` on `main` @ `387965b`:
+
+| Field | Value |
 | --- | --- |
-| Workspace build | Passed across 10 of 11 workspace projects |
-| Strict typecheck | Passed |
-| Integration and E2E tests | 31 passed, 0 failed |
-| Security audit | No known vulnerabilities found |
-| API smoke | Health `ok`, ledger `ONLINE`, mood `MAX GOOD-O` |
-| SSE smoke | `TIP` and `BLOCK_MINTED` observed |
-| Diff hygiene | `git diff --check` passed |
-| Totality | `TOTALITY STATUS: VERIFIED` |
-| Web runtime | HTTP 200 at `http://[::1]:3000/` during the latest orchestrator run |
-| API runtime | Readiness response observed at `http://127.0.0.1:5000/health` |
+| Run | [35775047763](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/actions/runs/35775047763) |
+| Event | `workflow_dispatch` |
+| Status | `completed` |
+| Conclusion | `success` |
+| Script | `pnpm worker` then `pnpm worker:verify` (1 cycle, `EXTERNAL_ACTION=OFF`, `GIT_WRITE=OFF`) |
 
-The orchestrator was stopped intentionally after the web and API probes. A background process exit code 130 in that context means manual `Ctrl-C` cleanup, not a startup failure.
+**Claim allowed:** hosted CI inspect + verify steps completed successfully on that SHA.  
+**Claim forbidden:** runtime health, production deploy, `@omega-v/worker` pool authority, SLSA L3.
 
-## Current Local Modification
+### 2. Persist worker on `main` pushes — PROPOSED / REVIEW
 
-`scripts/oceanicos-totality.sh` contains the intentional preflight enhancement. Before the full-stack gates it prints:
+[PR #310](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/pull/310) `activate/bounded-worker-on-main` @ `8d7d5fa`
 
-- branch and working-tree status;
-- exact current commit;
-- configured origin URL; and
-- repository mood from `pnpm mood`.
+- Diff: `.github/workflows/worker.yml` also triggers on `push` to `main`.
+- Mergeable state when recorded: **blocked** (required checks / review).
+- Checks then in flight included verify 22.x, Windows compatibility, Worker verification. Several others had already concluded `success` (CodeQL, compose, coverage, 24.x, provenance attestation).
+- **Not merged.** Human ALLOW still required.
 
-It then runs frozen install, build, typecheck, expanded tests, and compiled API smoke. This modification is uncommitted and must be preserved unless a later change explicitly replaces it with an equivalent or stronger contract.
+### 3. Copilot worker constitution rewrite — NOT_EXECUTED
 
-## Runtime and Security Boundaries
+[PR #309](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/pull/309) closed. Copilot monthly AI credits exhausted. No implementation landed. Capability ≠ authority.
 
-The local API accurately reports bounded limitations. Attester availability may be degraded when no signing key is configured. Persistence encryption is disabled unless explicitly configured. Local file persistence and single-process coordination do not prove distributed consistency, replica agreement, backups, external custody, deployment availability, or production health.
+### 4. `@omega-v/worker` package — OBSERVED, constitution gap remains
 
-Do not apply credentials, tokens, pasted shell scripts, external API integrations, deployment commands, or broad workspace rewrites merely because they appear in an attachment. Inspect first, classify the claim, and execute only a bounded command that is authorized and supported by the repository.
+`packages/worker/src/index.ts`:
 
-Do not force-push. Do not reset or discard uncommitted work. Do not claim deployment from local build evidence. Do not claim runtime truth from documentation or GitHub history.
+- In-process pool; auto-seeds two workers with broad capabilities.
+- Default HMAC key `'omega-v-builder-secret-key'`.
+- Labels attestations `SLSA_BUILD_L3` without SLSA evidence.
+- Distinct from the CI worker script `scripts/oceanicos-worker.mjs`.
 
-## Next Finite Slice
+This package is **SIMULATED** worker semantics, not authorized execution substrate.
 
-The next safe engineering slice is a focused provenance or replay improvement that is additive, testable, and bounded. Candidate work should be selected in this order:
+### 5. Other open GitHub work (not executed this session)
 
-1. Inspect the current API, MINI, memory, attestation, and replay contracts.
-2. Identify one missing invariant with a concrete failing or absent test.
-3. Add the smallest implementation and focused test.
-4. Run the affected package checks first.
-5. Run `pnpm verify:full` and independent API/web probes.
-6. Record the exact result, limitations, and rollback path.
-7. Commit and push only when explicitly authorized.
+| Item | State |
+| --- | --- |
+| [#308](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/pull/308) multi-job orchestration | open; base SHA older than current `main` (`73b7fdde`) |
+| [#306](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/pull/306) reality status evidence-bound | open |
+| [#305](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/pull/305) base44/setup | open |
+| [#295](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/issues/295) C7 reality attestation → durable provenance | open issue |
 
-No new package, external connector, autonomous worker, deployment target, or persistence backend should be introduced unless the existing contract and evidence show that it is the smallest necessary change.
+---
 
-## Continuation Command Set
+## Decision log (this Δ)
 
-From the repository root:
+| Intent | Decision | Authority |
+| --- | --- | --- |
+| Dispatch existing bounded CI worker on `main` | ALLOW → EXECUTED | Human request “activate workers” + repo admin GitHub token |
+| Wire worker.yml to `main` pushes | REVIEW (PR #310) | Not merged |
+| Copilot fail-closed worker rewrite | ATTEMPTED → NOT_EXECUTED | Credits exhausted |
+| Merge #310 | REVIEW | Human gate |
+| Rewrite `@omega-v/worker` constitution | NOT_EXECUTED | No authorization beyond proposal |
+
+---
+
+## Known unknowns
+
+- Hosted production / deployed runtime: **UNKNOWN** (not probed this session).
+- Local `pnpm verify:full` on this builder host: **NOT_EXECUTED** (no clone totality run here).
+- Whether PR #310 required checks all conclude success: **UNKNOWN** at handoff time (some still in progress).
+- Navigator private repo current behavior: **UNKNOWN** (idle since 2026-08-15).
+- GitHub notifications: **UNKNOWN** (connector 403).
+
+---
+
+## Next finite slice (ordered)
+
+1. Human **ALLOW or DENY** merge of [#310](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/pull/310) after required checks finish. Do not self-merge.
+2. If ALLOW, re-observe worker.yml on the resulting `main` SHA (push trigger, not only dispatch).
+3. Smallest remaining code Δ: fail-closed `@omega-v/worker` — no default secret, no SLSA L3 claim, DENY without explicit authority/expiration; tests for unauthorized lease. Do not invent a new package.
+4. Rebase or close [#308](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/pull/308) against current `main` before treating it as executable.
+5. Do not spawn Copilot until credits exist. Do not treat agent count as authority.
+
+Continuation commands (on a real clone, not this chat sandbox):
 
 ```bash
-cd /home/ubuntu/github-check/omega-v-oceanicos
-
-git status --short --branch
-git log -1 --oneline --decorate
-pnpm verify:full
-pnpm dev
-curl --noproxy '*' -I http://[::1]:3000/
-curl -fsS http://127.0.0.1:5000/health
+git fetch origin
+git checkout main
+git log -1 --oneline
+# inspect PR 310 checks before any merge
+# pnpm worker && pnpm worker:verify   # CI-equivalent, git-write off
 ```
 
-Use the orchestrator cleanup path after runtime probes. Report web and API independently.
+---
 
-## References
+## Checksum
 
-[1]: https://github.com/starofgodmayomi-droid/omega-v-oceanicos "Canonical Omega V Oceanicos repository"
-[2]: https://github.com/starofgodmayomi-droid/omega-v-oceanicos/blob/main/docs/OMEGA_TOTALITY_CONTRACT.md "Omega V Totality Contract"
-[3]: https://github.com/starofgodmayomi-droid/omega-v-oceanicos/blob/main/docs/GOVERNANCE.md "Omega V Governance Contract"
-[4]: https://github.com/starofgodmayomi-droid/omega-v-oceanicos/blob/main/docs/QOV_ARCHITECTURE.md "Qov Architecture Brief"
+Drop: one human-gated system. This handoff records **CI worker dispatch success**, **PR #310 in REVIEW**, **Copilot #309 NOT_EXECUTED**, **main @ 387965b**. Nothing else is claimed.
+
+`Ω∞v ::= VERIFY(ΔREALITY)`
