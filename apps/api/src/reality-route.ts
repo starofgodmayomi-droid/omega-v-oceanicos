@@ -53,9 +53,6 @@ export interface RealityStatus {
 
 export function registerRealityRoute(
   fastify: FastifyInstance,
-  authMode: string,
-  attesterReady: boolean,
-  ledgerHasTip: boolean,
 ): void {
   fastify.get('/v1/reality/status', async () => {
     const now = new Date().toISOString();
@@ -84,10 +81,10 @@ export function registerRealityRoute(
       },
       {
         field: 'tested',
-        value: 'YES',
-        evidence: 'integration and E2E test suite exists in repository',
-        provenance: 'tests/integration/*.test.ts, pnpm test',
-        scope: 'local-contract',
+        value: 'UNKNOWN',
+        evidence: 'test definitions exist, but this runtime endpoint does not receive current test execution evidence',
+        provenance: 'tests/integration/*.test.ts; current test result not observed here',
+        scope: 'unobserved-ci',
       },
       {
         field: 'admitted',
@@ -112,24 +109,16 @@ export function registerRealityRoute(
       },
       {
         field: 'verified',
-        value: ledgerHasTip ? 'YES' : 'UNKNOWN',
-        evidence: ledgerHasTip
-          ? 'ledger tip exists with hash-chained evidence'
-          : 'no ledger tip — reality reconciliation not yet performed',
-        provenance: ledgerHasTip
-          ? '@oceanicos/remember SQLite ledger, SHA-256 hash chain'
-          : 'no memory evidence observed',
-        scope: 'local-runtime',
+        value: 'UNKNOWN',
+        evidence: 'memory or attestation records do not by themselves establish reality verification; current reconciliation evidence is not supplied to this read-only status route',
+        provenance: 'reconciliation evidence required; memory ≠ proof',
+        scope: 'unreconciled-runtime',
       },
       {
         field: 'attested',
-        value: attesterReady ? 'SUPPORTED' === 'SUPPORTED' ? 'YES' : 'UNKNOWN' : 'UNKNOWN',
-        evidence: attesterReady
-          ? 'attestation service ready with configured signing key'
-          : 'attester degraded — signing key not configured',
-        provenance: attesterReady
-          ? '@oceanicos/attestation HMAC-SHA256'
-          : 'OMEGA_SIGNING_KEY not set',
+        value: 'UNKNOWN',
+        evidence: 'signing capability may be configured, but this route has no current attestation receipt proving that a state was attested',
+        provenance: 'attestation receipt required; signature capability ≠ attestation evidence',
         scope: 'local-runtime',
       },
       {

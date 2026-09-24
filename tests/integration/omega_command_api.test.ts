@@ -131,4 +131,18 @@ describe('Ω∞v command API vertical slice', () => {
     assert.equal(response?.statusCode, 429);
     assert.equal(response?.headers['retry-after'], '60');
   });
+
+  it('keeps reality status evidence-bound', async () => {
+    const response = await app.inject({ method: 'GET', url: '/v1/reality/status' });
+    assert.equal(response.statusCode, 200);
+    const vector = response.json().statusVector as Array<{ field: string; value: string; evidence: string }>;
+    const tested = vector.find((field) => field.field === 'tested');
+    const verified = vector.find((field) => field.field === 'verified');
+    const attested = vector.find((field) => field.field === 'attested');
+    assert.equal(tested?.value, 'UNKNOWN');
+    assert.equal(verified?.value, 'UNKNOWN');
+    assert.equal(attested?.value, 'UNKNOWN');
+    assert.match(verified?.evidence ?? '', /reality verification|reconciliation/i);
+    assert.match(attested?.evidence ?? '', /attestation receipt|signature capability/i);
+  });
 });
