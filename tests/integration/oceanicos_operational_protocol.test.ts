@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 
 const specification = readFileSync(new URL('../../docs/spec/OCEANICOS-OPERATIONAL-PROTOCOL.md', import.meta.url), 'utf8');
 const conflictResolution = readFileSync(new URL('../../docs/spec/OCEANICOS-CONFLICT-RESOLUTION.md', import.meta.url), 'utf8');
+const commitmentOfFlow = readFileSync(new URL('../../docs/spec/OCEANICOS-COMMITMENT-OF-FLOW.md', import.meta.url), 'utf8');
 
 const requiredSections = [
   '## 3. The Drop contract',
@@ -55,4 +56,21 @@ test('Conflict Resolution module preserves fail-closed states and recovery bound
     'coordination.evidence-recorded',
     'coordination.evidence-failed',
   ]) assert.ok(conflictResolution.includes(marker), `missing conflict-resolution marker: ${marker}`);
+});
+
+test('Commitment of Flow preserves consent, dissent, and non-authority boundaries', () => {
+  for (const marker of [
+    '## 2. Shared commitments',
+    '## 3. Participant rights',
+    '## 4. Participant responsibilities',
+    '## 5. Consent and authorization',
+    '## 6. Evidence and privacy',
+    '## 7. Conflict and withdrawal',
+    '## 9. Operational mapping',
+    '## 11. Conformance checklist',
+    'capability does not grant me authority',
+    'not a legal contract',
+    'OMEGA_COMMAND_NOT_FOUND',
+    'coordination.evidence-failed',
+  ]) assert.ok(commitmentOfFlow.includes(marker), `missing Commitment of Flow marker: ${marker}`);
 });
