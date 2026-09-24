@@ -61,8 +61,30 @@ export class OmegaCommandStore {
   registerWorker(input: { workerId: string; capabilities: string[] }) { return this.durable.registerWorker(input); }
   heartbeatWorker(workerId: string) { return this.durable.heartbeatWorker(workerId); }
   listWorkers() { return this.durable.listWorkers(); }
-  acquireWorkerLease(workerId: string, commandId: string, capability: string, durationMs?: number) { return this.durable.acquireLease(workerId, commandId, capability, durationMs); }
-  releaseWorkerLease(leaseId: string, workerId: string) { return this.durable.releaseLease(leaseId, workerId); }
+  acquireWorkerLease(workerId: string, commandId: string, capability: string, durationMs?: number) {
+    const lease = this.durable.acquireLease(workerId, commandId, capability, durationMs);
+    this.durable.appendEvent({
+      type: lease ? 'worker.lease-acquired' : 'worker.lease-rejected',
+      commandId,
+      workerId,
+      capability,
+      leaseId: lease?.leaseId ?? null,
+      at: new Date().toISOString(),
+    });
+    return lease;
+  }
+  releaseWorkerLease(leaseId: string, workerId: string) {
+    const released = this.durable.releaseLease(leaseId, workerId);
+    const leaseEvents = this.durable.listEvents().filter((event) => event.type === 'worker.lease-acquired' && event.leaseId === leaseId);
+    this.durable.appendEvent({
+      type: released ? 'worker.lease-released' : 'worker.lease-release-rejected',
+      commandId: leaseEvents.at(-1)?.commandId ?? null,
+      workerId,
+      leaseId,
+      at: new Date().toISOString(),
+    });
+    return released;
+  }
 }
 
 function bodyOf(request: any): Record<string, unknown> {

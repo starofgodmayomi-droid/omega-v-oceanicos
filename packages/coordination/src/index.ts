@@ -182,3 +182,79 @@ export const demoExecution = async (): Promise<ExecutionSummary> =>
     { id: 'verify-1', role: 'worker', title: 'Verify fixture one', run: async () => 'verified-1' },
     { id: 'build-1', role: 'builder', title: 'Build evidence bundle', run: async () => 'bundle-1' },
   ]);
+
+export type CoordinationProbeClient = {
+  registerWorker(workerId: string, capabilities: string[]): Promise<void>;
+  acquireLease(workerId: string, commandId: string): Promise<{ leaseId?: string }>;
+  releaseLease(workerId: string, leaseId: string): Promise<boolean>;
+  replayEvents(commandId: string): Promise<readonly { type?: unknown; at?: unknown }[]>;
+};
+
+export type CoordinationEvidence = {
+  kind: 'coordination-evidence';
+  evidence: 'runtime-observed';
+  scope: 'multi-process-single-volume';
+  verified: boolean;
+  commandId: string;
+  leaseWinner: string | null;
+  rejectedWorkers: string[];
+  eventTypes: string[];
+  limitations: string[];
+};
+
+const coordinationLimitations = [
+  'does not prove cross-host durability',
+  'does not prove distributed consensus, leader election, or replica agreement',
+  'does not prove global ordering, deployment health, or external coordinator control',
+] as const;
+
+/**
+ * Proves only the bounded evidence available from two independent clients
+ * sharing one durable volume. The adapter owns process construction and
+ * restart; this function never upgrades local evidence into consensus.
+ */
+export async function runCoordinationEvidenceProbe(input: {
+  commandId: string;
+  first: CoordinationProbeClient;
+  second: CoordinationProbeClient;
+  restart: () => Promise<CoordinationProbeClient>;
+}): Promise<CoordinationEvidence> {
+  if (!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,95}$/.test(input.commandId)) {
+    throw new Error('coordination probe commandId is invalid');
+  }
+  const workers = ['probe-worker-a', 'probe-worker-b'] as const;
+  await input.first.registerWorker(workers[0], ['PROBE']);
+  await input.second.registerWorker(workers[1], ['PROBE']);
+  const attempts = await Promise.all(
+    workers.map((workerId, index) =>
+      (index === 0 ? input.first : input.second).acquireLease(workerId, input.commandId),
+    ),
+  );
+  const winners = attempts.filter((attempt) => typeof attempt.leaseId === 'string');
+  if (winners.length !== 1) throw new Error('coordination probe did not observe exactly one lease winner');
+  const winnerIndex = attempts.findIndex((attempt) => typeof attempt.leaseId === 'string');
+  const winner = workers[winnerIndex];
+  const rejectedWorkers = workers.filter((workerId) => workerId !== winner);
+  const winnerLease = winners[0].leaseId!;
+  const released = await (winnerIndex === 0 ? input.first : input.second).releaseLease(winner, winnerLease);
+  if (!released) throw new Error('coordination probe could not release the winning lease');
+
+  const afterRestart = await input.restart();
+  const events = await afterRestart.replayEvents(input.commandId);
+  const eventTypes = events.map((event) => event.type).filter((type): type is string => typeof type === 'string');
+  const required = ['command.proposed', 'worker.lease-acquired', 'worker.lease-rejected', 'worker.lease-released'];
+  if (!required.every((type) => eventTypes.includes(type))) {
+    throw new Error('coordination probe replay is missing required lifecycle events');
+  }
+  return {
+    kind: 'coordination-evidence',
+    evidence: 'runtime-observed',
+    scope: 'multi-process-single-volume',
+    verified: true,
+    commandId: input.commandId,
+    leaseWinner: winner,
+    rejectedWorkers,
+    eventTypes,
+    limitations: [...coordinationLimitations],
+  };
+}
