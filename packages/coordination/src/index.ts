@@ -230,9 +230,11 @@ export async function runCoordinationEvidenceProbe(input: {
       (index === 0 ? input.first : input.second).acquireLease(workerId, input.commandId),
     ),
   );
-  const winners = attempts.filter((attempt) => typeof attempt.leaseId === 'string');
+  const hasLease = (attempt: { leaseId?: string }): boolean =>
+    typeof attempt.leaseId === 'string' && attempt.leaseId.length > 0;
+  const winners = attempts.filter(hasLease);
   if (winners.length !== 1) throw new Error('coordination probe did not observe exactly one lease winner');
-  const winnerIndex = attempts.findIndex((attempt) => typeof attempt.leaseId === 'string');
+  const winnerIndex = attempts.findIndex(hasLease);
   const winner = workers[winnerIndex];
   const rejectedWorkers = workers.filter((workerId) => workerId !== winner);
   const winnerLease = winners[0].leaseId!;

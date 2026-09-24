@@ -101,4 +101,39 @@ describe('Ω durable multi-process coordination', () => {
       rmSync(probeDirectory, { recursive: true, force: true });
     }
   });
+
+  it('fails closed when a client returns an empty lease identifier', async () => {
+    const calls: string[] = [];
+    const client = {
+      registerWorker: async (workerId: string) => { calls.push(`register:${workerId}`); },
+      acquireLease: async (workerId: string) => { calls.push(`acquire:${workerId}`); return { leaseId: '' }; },
+      releaseLease: async () => true,
+      replayEvents: async () => [],
+    };
+    await assert.rejects(
+      runCoordinationEvidenceProbe({ commandId: 'empty-lease', first: client, second: client, restart: async () => client }),
+      /exactly one lease winner/,
+    );
+    assert.deepEqual(calls, [
+      'register:probe-worker-a',
+      'register:probe-worker-b',
+      'acquire:probe-worker-a',
+      'acquire:probe-worker-b',
+    ]);
+  });
+
+  it('rejects an invalid command before registering probe workers', async () => {
+    const calls: string[] = [];
+    const client = {
+      registerWorker: async () => { calls.push('register'); },
+      acquireLease: async () => ({ leaseId: 'lease-1' }),
+      releaseLease: async () => true,
+      replayEvents: async () => [],
+    };
+    await assert.rejects(
+      runCoordinationEvidenceProbe({ commandId: ' bad-command', first: client, second: client, restart: async () => client }),
+      /commandId is invalid/,
+    );
+    assert.deepEqual(calls, []);
+  });
 });
