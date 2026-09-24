@@ -57,6 +57,13 @@ describe('Ω durable multi-process coordination', () => {
     assert.ok(evidence.eventTypes.includes('worker.lease-acquired'));
     assert.ok(evidence.eventTypes.includes('worker.lease-rejected'));
     assert.ok(evidence.eventTypes.includes('worker.lease-released'));
+    const recorded = (await first.inject({ method: 'GET', url: `/v1/omega/events?commandId=${commandId}` })).json().events.at(-1);
+    assert.equal(recorded.type, 'coordination.evidence-recorded');
+    assert.equal(recorded.evidence, 'runtime-observed');
+    assert.equal(recorded.scope, 'multi-process-single-volume');
+    assert.equal(recorded.verified, true);
+    assert.deepEqual(recorded.leaseWinner, evidence.leaseWinner);
+    assert.deepEqual(recorded.rejectedWorkers, evidence.rejectedWorkers);
   });
 
   it('refuses coordination evidence on an ephemeral store', async () => {

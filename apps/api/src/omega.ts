@@ -373,6 +373,16 @@ export function registerOmegaRoutes(fastify: FastifyInstance, store: OmegaComman
         second: coordinationClient(store),
         restart: restartCoordinationClient,
       });
+      const command = store.get(body.commandId)!;
+      store.record('coordination.evidence-recorded', command, {
+        evidence: evidence.evidence,
+        scope: evidence.scope,
+        verified: evidence.verified,
+        leaseWinner: evidence.leaseWinner,
+        rejectedWorkers: evidence.rejectedWorkers,
+        eventTypes: evidence.eventTypes,
+        limitations: evidence.limitations,
+      });
       return { success: true, evidence, redacted: true };
     } catch (error) {
       return reply.status(409).send({ success: false, error: error instanceof Error ? error.message : 'COORDINATION_EVIDENCE_FAILED' });
