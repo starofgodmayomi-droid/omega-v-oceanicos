@@ -31,11 +31,11 @@ export function DivergenceAlertsPanel() {
   const fetchCommands = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/v1/omega/commands`);
+      const response = await fetch(`${API_BASE_URL}/v1/omega/divergences?limit=50`);
       const text = await response.text();
       const data = text ? JSON.parse(text) : null;
       if (!response.ok) throw new Error(data?.error || `Alert check failed (${response.status})`);
-      setCommands(Array.isArray(data?.commands) ? data.commands : []);
+      setCommands(Array.isArray(data?.alerts) ? data.alerts : []);
       setLastChecked(new Date().toISOString());
       setError(null);
     } catch (err) {

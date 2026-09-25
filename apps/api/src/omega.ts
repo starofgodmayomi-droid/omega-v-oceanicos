@@ -328,6 +328,29 @@ export function registerOmegaRoutes(fastify: FastifyInstance, store: OmegaComman
     };
   });
 
+  fastify.get('/v1/omega/divergences', {
+    config: { rateLimit: { max: 60, timeWindow: '1 minute' } },
+  }, async (request, reply) => {
+    const query = (request.query ?? {}) as { limit?: string; since?: string };
+    const limit = Math.min(Math.max(Number.parseInt(query.limit ?? '20', 10) || 20, 1), 50);
+    const since = query.since ? new Date(query.since) : null;
+    if (since && Number.isNaN(since.getTime())) return reply.status(400).send({ success: false, error: 'DIVERGENCE_SINCE_INVALID' });
+    const alerts = store.listCommands()
+      .filter((command) => command.status === 'DIVERGENT' || command.result?.reality?.classification === 'DIVERGENT')
+      .filter((command) => !since || new Date(command.createdAt).getTime() >= since.getTime())
+      .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
+      .slice(0, limit)
+      .map((command) => ({
+        commandId: command.commandId,
+        intent: command.intent,
+        requestedBy: command.requestedBy,
+        status: command.status,
+        createdAt: command.createdAt,
+        reality: command.result?.reality ?? null,
+      }));
+    return { success: true, count: alerts.length, alerts, redacted: true, nextAction: 'review the divergent evidence and preserve the conflict; no retry or authorization was performed' };
+  });
+
   fastify.get('/v1/omega/commands/:id/provenance', {
     config: { rateLimit: { max: 60, timeWindow: '1 minute' } },
   }, async (request, reply) => {

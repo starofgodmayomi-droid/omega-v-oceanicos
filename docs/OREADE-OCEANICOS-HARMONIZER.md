@@ -65,6 +65,8 @@ After authorization, the Mood Codex dashboard offers separate, user-triggered `E
 
 The dashboard now performs an informational divergence check every 15 seconds against the redacted command ledger. It surfaces commands whose status or reality classification is `DIVERGENT`, shows the observed state and evidence, and permits only local “acknowledged viewed” state. Acknowledgement does not alter the ledger, resolve the divergence, authorize a command, or trigger a retry.
 
+The dashboard consumes `GET /v1/omega/divergences?limit=50`, a bounded redacted feed that filters server-side for divergent outcomes and supports an optional `since` timestamp. The feed returns evidence for review, not an instruction to retry or a permission to authorize.
+
 `.github/workflows/deploy.yml` is the deployment workflow configuration. It runs locked installation, formatting, workspace build, integration verification, and web build before staging a versioned full-stack release bundle as a GitHub Actions artifact. It deliberately records `VERIFIED / STAGED_ONLY`: a hosting provider, runtime secrets, and final publish action must be supplied explicitly rather than inferred by automation.
 
 ## Reference alignment
