@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
 
@@ -70,6 +70,8 @@ export function TransitionProvenancePanel() {
       setLoading(false);
     }
   }, []);
+
+  useEffect(() => { fetchCommands(); }, [fetchCommands]);
 
   const fetchProvenance = useCallback(async (commandId: string) => {
     setLoading(true);

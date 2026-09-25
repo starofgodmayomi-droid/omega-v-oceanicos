@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
 
@@ -71,6 +71,8 @@ export function EcosystemPanel() {
       setLoading(false);
     }
   }, []);
+
+  useEffect(() => { fetchStatus(); }, [fetchStatus]);
 
   return (
     <section
