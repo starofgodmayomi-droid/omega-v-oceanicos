@@ -1,5 +1,5 @@
 import { FileMemoryStore } from '../store';
-import { EventLogEntry } from '@omega-v/types';
+import { EventLogEntry } from '@oceanicos/types';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';

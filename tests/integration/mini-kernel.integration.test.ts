@@ -1,11 +1,11 @@
 import { createServer, Server } from 'node:http';
-import { Observer } from '@omega-v/observer';
-import { VerificationEngine } from '@omega-v/verification';
-import { Remember } from '@omega-v/remember';
-import { MiniKernel, OperatingSystemKernel, OmegaTotalCompressor } from '@omega-v/mini';
+import { Observer } from '@oceanicos/observer';
+import { VerificationEngine } from '@oceanicos/verification';
+import { Remember } from '@oceanicos/remember';
+import { MiniKernel, OperatingSystemKernel, OmegaTotalCompressor } from '@oceanicos/mini';
 import { OceanicosClient } from '@omega-v/sdk';
 import { OceanicosCLI } from '@omega-v/cli';
-import { VerificationRule } from '@omega-v/types';
+import { VerificationRule } from '@oceanicos/types';
 
 describe('Ω∞v Oceanicos Integration — Foundational MINI Kernel & Totality', () => {
   const healthRule: VerificationRule = {
@@ -249,7 +249,7 @@ describe('Ω∞v Oceanicos Integration — Foundational MINI Kernel & Totality',
     beforeAll(async () => {
       process.env.OMEGA_SIGNING_KEY = 'mini-api-integration-key';
       jest.resetModules();
-      const module = await import('../../apps/api/src/index');
+      const module = await import('../../apps/api/dist/index');
       const app = module.default as { (...args: unknown[]): unknown };
 
       server = createServer(app as never);

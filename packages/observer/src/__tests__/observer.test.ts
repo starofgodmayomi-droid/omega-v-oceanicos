@@ -1,4 +1,4 @@
-import { Observer } from '@omega-v/observer';
+import { Observer } from '@oceanicos/observer';
 
 describe('Observer', () => {
   let observer: Observer;

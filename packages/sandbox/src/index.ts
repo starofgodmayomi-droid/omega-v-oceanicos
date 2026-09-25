@@ -1,4 +1,4 @@
-import { VerificationRule, Observation } from '@omega-v/types';
+import { VerificationRule, Observation } from '@oceanicos/types';
 
 export type SandboxViolationType =
   | 'TIMEOUT'

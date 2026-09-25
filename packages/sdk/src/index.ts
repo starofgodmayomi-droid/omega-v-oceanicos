@@ -1,4 +1,4 @@
-import { validateSceneInput, type SceneInput } from '@omega-v/types';
+import { validateSceneInput, type SceneInput } from '@oceanicos/types';
 
 export type OperatingSystemState =
   'offline' | 'booting' | 'ready' | 'degraded' | 'stopping' | 'stopped';

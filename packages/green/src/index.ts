@@ -1,4 +1,4 @@
-import { GreenEvaluation, VerificationResult, EventLogEntry, Attestation } from '@omega-v/types';
+import { GreenEvaluation, VerificationResult, EventLogEntry, Attestation } from '@oceanicos/types';
 
 /**
  * Green Engine: Implements Section XXV (GREEN Rule)

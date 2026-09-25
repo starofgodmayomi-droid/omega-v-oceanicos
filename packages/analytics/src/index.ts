@@ -1,4 +1,4 @@
-import { EventLogEntry, VerificationRule } from '@omega-v/types';
+import { EventLogEntry, VerificationRule } from '@oceanicos/types';
 
 export interface RuleEfficacy {
   ruleName: string;

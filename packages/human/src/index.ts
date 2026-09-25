@@ -1,4 +1,4 @@
-import { HumanInput, HumanActionType } from '@omega-v/types';
+import { HumanInput, HumanActionType } from '@oceanicos/types';
 
 /**
  * Human Intelligence Engine: Implements Section XXVIII

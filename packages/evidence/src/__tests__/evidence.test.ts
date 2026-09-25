@@ -1,5 +1,5 @@
 import { EvidenceEngine } from '../index';
-import { VerificationResult, EventLogEntry } from '@omega-v/types';
+import { VerificationResult, EventLogEntry } from '@oceanicos/types';
 
 describe('EvidenceEngine (Section XXIV Evidence Artifacts)', () => {
   let engine: EvidenceEngine;

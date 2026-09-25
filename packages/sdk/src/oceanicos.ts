@@ -1,9 +1,9 @@
-import { Observer } from '@omega-v/observer';
-import { VerificationEngine } from '@omega-v/verification';
-import { AttestationService } from '@omega-v/attestation';
+import { Observer } from '@oceanicos/observer';
+import { VerificationEngine } from '@oceanicos/verification';
+import { AttestationService } from '@oceanicos/attestation';
 import { ProvenanceStore } from '@omega-v/store';
-import { Remember } from '@omega-v/remember';
-import { MiniKernel, OperatingSystemKernel, OmegaTotalCompressor } from '@omega-v/mini';
+import { Remember } from '@oceanicos/remember';
+import { MiniKernel, OperatingSystemKernel, OmegaTotalCompressor } from '@oceanicos/mini';
 import {
   Observation,
   VerificationResult,
@@ -14,7 +14,7 @@ import {
   QueryResult,
   MiniCycleResult,
   OmegaTotalManifest,
-} from '@omega-v/types';
+} from '@oceanicos/types';
 
 export interface OceanicosClientOptions {
   /** Mode of operation: 'local' (embedded engine) or 'remote' (REST API) */
@@ -806,11 +806,11 @@ export class OceanicosClient {
   }
 }
 
-export { Observer } from '@omega-v/observer';
-export { VerificationEngine } from '@omega-v/verification';
-export { AttestationService } from '@omega-v/attestation';
+export { Observer } from '@oceanicos/observer';
+export { VerificationEngine } from '@oceanicos/verification';
+export { AttestationService } from '@oceanicos/attestation';
 export { ProvenanceStore } from '@omega-v/store';
-export { Remember } from '@omega-v/remember';
-export { MiniKernel, OperatingSystemKernel, OmegaTotalCompressor } from '@omega-v/mini';
+export { Remember } from '@oceanicos/remember';
+export { MiniKernel, OperatingSystemKernel, OmegaTotalCompressor } from '@oceanicos/mini';
 
 export default OceanicosClient;

@@ -1,5 +1,5 @@
 import { LearningEngine } from '../index';
-import { VerificationResult } from '@omega-v/types';
+import { VerificationResult } from '@oceanicos/types';
 
 describe('LearningEngine (Section XXVI Learning)', () => {
   let engine: LearningEngine;

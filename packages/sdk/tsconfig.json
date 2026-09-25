@@ -7,13 +7,13 @@
     "declarationMap": true,
     "sourceMap": true,
     "paths": {
-      "@omega-v/types": ["../types/dist/index.d.ts"],
-      "@omega-v/observer": ["../observer/dist/index.d.ts"],
-      "@omega-v/verification": ["../verification/dist/index.d.ts"],
-      "@omega-v/attestation": ["../attestation/dist/index.d.ts"],
+      "@oceanicos/types": ["../types/dist/index.d.ts"],
+      "@oceanicos/observer": ["../observer/dist/index.d.ts"],
+      "@oceanicos/verification": ["../verification/dist/index.d.ts"],
+      "@oceanicos/attestation": ["../attestation/dist/index.d.ts"],
       "@omega-v/store": ["../store/dist/index.d.ts"],
-      "@omega-v/remember": ["../remember/dist/index.d.ts"],
-      "@omega-v/mini": ["../mini/dist/index.d.ts"]
+      "@oceanicos/remember": ["../remember/dist/index.d.ts"],
+      "@oceanicos/mini": ["../mini/dist/index.d.ts"]
     }
   },
   "include": ["src/**/*.ts"]

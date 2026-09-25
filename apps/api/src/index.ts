@@ -138,9 +138,9 @@ export function createApp(
     if (bearer(request.headers.authorization) !== configured) return jsonError(reply, 401, 'JOB_ACCESS_REQUIRED');
   };
 
-  fastify.register(cors, { origin: '*' });
+  fastify.register(cors as any, { origin: '*' });
   fastify.register(async (scope) => {
-    await scope.register(rateLimit, { global: false });
+    await scope.register(rateLimit as any, { global: false });
     registerOmegaRoutes(scope, omegaCommands);
   });
   fastify.addHook('onRequest', async (request, reply) => {
