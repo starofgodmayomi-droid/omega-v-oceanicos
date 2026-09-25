@@ -43,6 +43,20 @@ for (const directory of packageDirectories) {
   }
 }
 
+const workspaceFile = await readFile(join(root, 'pnpm-workspace.yaml'), 'utf8');
+const workspacePatterns = [...workspaceFile.matchAll(/^\s*-\s*['"]([^'"]+)['"]\s*$/gm)].map(
+  (match) => match[1],
+);
+const workspacePackageDirectories = packageDirectories.filter((directory) =>
+  workspacePatterns.some((pattern) => {
+    if (pattern === 'packages/*') return true;
+    return pattern === `packages/${directory}`;
+  }),
+);
+const excludedPackageDirectories = packageDirectories.filter(
+  (directory) => !workspacePackageDirectories.includes(directory),
+);
+
 const rootManifest = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'));
 for (const script of ['build', 'test', 'typecheck', 'verify:full', 'smoke:api']) {
   if (!rootManifest.scripts?.[script]) failures.push(`missing root script: ${script}`);
@@ -53,6 +67,12 @@ const result = {
   packageCount: packageDirectories.length,
   uniquePackageNames: packageNames.size,
   requiredFiles: requiredFiles.length,
+  workspace: {
+    patterns: workspacePatterns,
+    packageCount: workspacePackageDirectories.length,
+    excludedPackageCount: excludedPackageDirectories.length,
+    excludedPackages: excludedPackageDirectories,
+  },
   failures,
 };
 

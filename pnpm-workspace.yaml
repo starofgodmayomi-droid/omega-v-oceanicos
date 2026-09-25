@@ -10,6 +10,8 @@ packages:
   - 'packages/coordination'
   - 'packages/oreade'
   - 'packages/mood'
+  - 'packages/auth'
+  - 'packages/webhook'
   - 'apps/api'
   - 'apps/web'
 
