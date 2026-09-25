@@ -77,6 +77,21 @@ test('mood Codex proposal enters the ledger as PROPOSED and never executes', asy
     assert.deepEqual(body.command.workers, ['planner']);
     assert.equal(body.executed, false);
     assert.match(body.nextAction, /review and explicitly admit/);
+
+    const admitted = await app.inject({
+      method: 'POST',
+      url: `/v1/omega/commands/${body.command.commandId}/admit`,
+      payload: {
+        authority: 'human:dashboard-operator',
+        policy: 'mood-codex-boundary.v1',
+        authorityVerified: true,
+        policySatisfied: true,
+      },
+    });
+    assert.equal(admitted.statusCode, 200);
+    assert.equal(admitted.json().command.status, 'AUTHORIZED');
+    assert.equal(admitted.json().command.result, undefined);
+    assert.match(admitted.json().nextAction, /execute the authorized bounded action/);
   } finally {
     await app.close();
     rmSync(dir, { recursive: true, force: true });
