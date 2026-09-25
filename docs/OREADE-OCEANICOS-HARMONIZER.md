@@ -51,6 +51,8 @@ When extending Oceanicos with ƆREADE-inspired interfaces or language:
 
 The API exposes `POST /v1/omega/oreade/drop` as a read-only translation boundary. It returns a bounded Drop proposal and a next-action message. It does not create an Omega command, grant authority, acquire a worker lease, execute a side effect, or claim verified reality. `POST /v1/omega/oreade/proposal` is the next handoff: it persists a planner-only `PROPOSED` command with `dryRun: true`, still requiring a separate review/admission step. Neither route claims verified reality. Both inherit the API’s existing authentication policy for POST requests.
 
+The web dashboard exposes the same boundary through the **ƆREADE Console**. `TRANSLATE DROP` stays read-only; `CREATE PROPOSED COMMAND` persists only the planner proposal and displays its state and next action. The interface does not offer an execute button for this handoff, so the UI cannot imply that symbolic translation completed a real-world action.
+
 ## Reference alignment
 
 This guidance is subordinate to the repository’s [Living Agnostic Charter](../CHARTER.md) and [Operational Protocol Specification](spec/OCEANICOS-OPERATIONAL-PROTOCOL.md). The companion skill is installed at `/home/ubuntu/skills/oread-pidgin-harmonizer/SKILL.md` for agent-level use.

@@ -8,6 +8,7 @@ import { SystemControlsPanel } from './SystemControlsPanel';
 import { SystemHealthPanel } from './SystemHealthPanel';
 import { DependencyMapPanel } from './DependencyMapPanel';
 import { ObservationStreamPanel } from './ObservationStreamPanel';
+import { OreadConsole } from './OreadConsole';
 import { LifecycleFlow, deriveStageStates, type LifecycleStage } from './LifecycleFlow';
 import {
   theme,
@@ -760,6 +761,8 @@ export function App() {
         </div>
 
         {/* Intent flow card */}
+        <OreadConsole />
+
         <IntentFlow
           command={omegaCommand}
           loading={omegaLoading}
