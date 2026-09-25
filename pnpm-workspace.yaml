@@ -9,6 +9,9 @@ packages:
   - 'packages/kernel'
   - 'packages/coordination'
   - 'packages/mood'
+  - 'packages/reconciliation'
+  - 'packages/provenance'
+  - 'packages/authorization'
   - 'apps/api'
   - 'apps/web'
 

@@ -2,8 +2,8 @@
   <title>Ω∞v — one root, one current, infinite forms</title>
   <defs>
     <linearGradient id="current" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#8ce8c8" />
-      <stop offset="1" stop-color="#1b3b35" />
+      <stop offset="0" stop-color="#2A857D" />
+      <stop offset="1" stop-color="#1A544F" />
     </linearGradient>
   </defs>
 
@@ -13,22 +13,12 @@
     fill="url(#current)"
   />
 
-  <!-- The current: a single unbroken line, because the loop never terminates. -->
+  <!-- The current: a single unbroken loop, because the loop never terminates. -->
   <path
-    d="M38 84 c9 -14 18 -14 26 0 c8 14 17 14 26 0"
+    d="M38 82 c9 -14 18 -14 26 0 c8 14 17 14 26 0"
     fill="none"
     stroke="#071312"
-    stroke-width="6"
+    stroke-width="4"
     stroke-linecap="round"
-  />
-
-  <!-- The verification mark, carried inside the drop rather than beside it. -->
-  <path
-    d="M50 60 l10 11 l19 -23"
-    fill="none"
-    stroke="#071312"
-    stroke-width="7"
-    stroke-linecap="round"
-    stroke-linejoin="round"
   />
 </svg>

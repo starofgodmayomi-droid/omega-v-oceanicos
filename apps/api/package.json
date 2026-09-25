@@ -17,6 +17,9 @@
     "@oceanicos/types": "workspace:*",
     "@oceanicos/verification": "workspace:*",
     "@omega-v/kernel": "workspace:*",
+    "@omega-v/reconciliation": "workspace:*",
+    "@omega-v/provenance": "workspace:*",
+    "@omega-v/authorization": "workspace:*",
     "fastify": "^5.12.4"
   }
 }

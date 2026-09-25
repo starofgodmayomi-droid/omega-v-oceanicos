@@ -1,0 +1,17 @@
+{
+  "name": "@omega-v/authorization",
+  "version": "1.0.0",
+  "description": "Ω∞v Authorization Engine — fail-closed authority/permission model feeding the C4 admission gate",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "node --experimental-strip-types --test __tests__/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "clean": "node ../../scripts/rimraf.cjs dist \"*.tsbuildinfo\""
+  },
+  "dependencies": {
+    "@oceanicos/types": "workspace:*"
+  }
+}

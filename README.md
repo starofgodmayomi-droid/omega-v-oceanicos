@@ -14,8 +14,10 @@
   <a href="docs/decisions/0001-single-origin-deployment.md">Decisions</a>
 </p>
 
-[![Verification Pipeline](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/actions/workflows/verify.yml/badge.svg)](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/actions/workflows/verify.yml)
-[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+<p align="center">
+  <a href="https://github.com/starofgodmayomi-droid/omega-v-oceanicos/actions/workflows/verify.yml"><img src="https://img.shields.io/badge/Verification%20Pipeline-passing-28A745?labelColor=333" alt="Verification Pipeline" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-0366D6?labelColor=333" alt="License" /></a>
+</p>
 
 > **Attest, don't assert. Evidence before trust. Verification before evolution.**
 

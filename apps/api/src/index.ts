@@ -15,6 +15,7 @@ import { registerPipelineRoute } from './pipeline-route.js';
 import { registerEcosystemRoute } from './ecosystem-route.js';
 import { registerRealityRoute } from './reality-route.js';
 import { registerDependencyRoute } from './dependency-route.js';
+import { registerGovernanceRoutes } from './governance-route.js';
 import { OmegaCommandStore, registerOmegaRoutes } from './omega.js';
 import {
   ENCRYPTION_ALGORITHM,
@@ -156,6 +157,7 @@ export function createApp(
   registerEcosystemRoute(fastify, authMode, Boolean(attestationSigningKey));
   registerRealityRoute(fastify, authMode, Boolean(attestationSigningKey), Boolean(ledgerMemory.getTip()));
   registerDependencyRoute(fastify);
+  registerGovernanceRoutes(fastify, jsonError);
 
   fastify.get('/health', async (_request, reply) => {
     const memoryReady = true;
@@ -337,7 +339,7 @@ export function createApp(
   fastify.get('/', async (_request, reply) => { if (sendStatic('index.html', reply)) return; return jsonError(reply, 404, 'STATIC_CLIENT_UNAVAILABLE'); });
   fastify.get('/assets/*', async (request: any, reply) => { const asset = String(request.params['*'] ?? ''); if (sendStatic(join('assets', asset), reply)) return; return jsonError(reply, 404, 'STATIC_ASSET_NOT_FOUND'); });
   fastify.setNotFoundHandler(async (request, reply) => {
-    if (webDist && request.method === 'GET' && !request.url.startsWith('/v1/') && !request.url.startsWith('/jobs') && !request.url.startsWith('/persistence') && !request.url.startsWith('/attest')) {
+    if (webDist && request.method === 'GET' && !request.url.startsWith('/v1/') && !request.url.startsWith('/jobs') && !request.url.startsWith('/persistence') && !request.url.startsWith('/attest') && !request.url.startsWith('/v1/reconciliation') && !request.url.startsWith('/v1/provenance') && !request.url.startsWith('/v1/authorization')) {
       if (sendStatic('index.html', reply)) return;
     }
     return jsonError(reply, 404, 'NOT_FOUND');

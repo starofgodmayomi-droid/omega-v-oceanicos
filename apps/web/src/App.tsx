@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import omegaMark from '/omega-mark.svg';
 import { EcosystemPanel } from './EcosystemPanel';
 import { RealityPanel } from './RealityPanel';
 import { TransitionProvenancePanel } from './TransitionProvenancePanel';
@@ -644,15 +645,35 @@ export function App() {
         {/* Logo */}
         <div
           style={{
-            fontSize: '13px',
-            fontWeight: 800,
-            letterSpacing: '0.2em',
-            color: theme.accent,
-            textAlign: 'center',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '10px',
             marginBottom: '8px',
           }}
         >
-          💧 OCEANICOS
+          <img src={omegaMark} alt="Ω∞v" width="56" height="56" />
+          <div
+            style={{
+              fontSize: '13px',
+              fontWeight: 800,
+              letterSpacing: '0.2em',
+              color: theme.accent,
+              textAlign: 'center',
+            }}
+          >
+            Ω∞v OCEANICOS
+          </div>
+          <div
+            style={{
+              fontSize: '13px',
+              fontWeight: 400,
+              color: theme.textMuted,
+              textAlign: 'center',
+            }}
+          >
+            One root. One current. Infinite forms.
+          </div>
         </div>
 
         {/* Prompt */}
