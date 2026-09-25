@@ -55,6 +55,8 @@ The web dashboard exposes the same boundary through the **ƆREADE Console**. `TR
 
 The full-stack sequence now makes the distinction visible as **one evidence-bound reality, many distinguishable forms**: `DROP → DISTINGUISH → VALIDATE → AUTHORIZE → ADMIT → BOUND → EXECUTE → OBSERVE → RECONCILE → ATTEST → REMEMBER → NEXT DROP`. The console’s admission action supplies attributable authority and policy evidence, moving only `PROPOSED`/`REVIEW` to `AUTHORIZED`; it never executes the command. Unity preserves relationship, difference preserves information, and evidence preserves reality.
 
+The **Mood Codex autopilot** is intentionally narrower than an autonomous coding agent. It reads explicit mood context, produces a finite five-step Codex plan, routes uncertainty to `REVIEW`, denies obviously unsafe intents, and always returns `NOT_EXECUTED` with authority `UNCHANGED`. “Autopilot” means automatic planning and presentation only; repository mutation, deployment, and consequential execution remain separate Oceanicos actions requiring their own evidence and authority.
+
 ## Reference alignment
 
 This guidance is subordinate to the repository’s [Living Agnostic Charter](../CHARTER.md) and [Operational Protocol Specification](spec/OCEANICOS-OPERATIONAL-PROTOCOL.md). The companion skill is installed at `/home/ubuntu/skills/oread-pidgin-harmonizer/SKILL.md` for agent-level use.

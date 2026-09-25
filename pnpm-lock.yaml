@@ -47,6 +47,9 @@ importers:
       '@omega-v/kernel':
         specifier: workspace:*
         version: link:../../packages/kernel
+      '@omega-v/mood':
+        specifier: workspace:*
+        version: link:../../packages/mood
       '@omega-v/oreade':
         specifier: workspace:*
         version: link:../../packages/oreade

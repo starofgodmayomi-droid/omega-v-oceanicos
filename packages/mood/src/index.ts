@@ -27,6 +27,7 @@ export {
   createMoodContext,
   normalizeMoodSignal,
   proposeMoodAdaptation,
+  proposeMoodCodex,
 } from './autopilot';
 export type {
   MoodAdaptationProposal,
@@ -35,6 +36,9 @@ export type {
   MoodContext,
   MoodSignal,
   MoodSignalStatus,
+  MoodCodexDecision,
+  MoodCodexStep,
+  MoodCodexProposal,
 } from './autopilot';
 
 export class MoodEvaluator {

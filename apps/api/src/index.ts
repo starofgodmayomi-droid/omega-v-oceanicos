@@ -10,6 +10,7 @@ import { AsymmetricValidationGuard, MultiRegionMeshConvergence } from '@oceanico
 import { ObserverEngine } from '@oceanicos/observer';
 import { AttestationService } from '@oceanicos/attestation';
 import { OceanicosKernel } from '@omega-v/kernel';
+import { createMoodContext, proposeMoodCodex } from '@omega-v/mood';
 import { LocalJobError, LocalJobLedger, LOCAL_JOB_WINDOW } from './jobs.js';
 import { registerPipelineRoute } from './pipeline-route.js';
 import { registerEcosystemRoute } from './ecosystem-route.js';
@@ -212,6 +213,28 @@ export function createApp(
 
   fastify.get('/v1/kernel/capabilities', async () => ({ success: true, capability: platformKernel.getCapabilitySnapshot(), evaluatedAt: new Date().toISOString() }));
   fastify.get('/v1/mood', async () => ({ success: true, status: 'MAX GOOD-O', contract: 'Ω∞v totality / attest-dont-assert', brand: 'Oceanicos Ω∞', ledger: { ready: Boolean(ledgerMemory.getTip()) }, evaluatedAt: new Date().toISOString() }));
+
+  fastify.post('/v1/mood/codex', async (request, reply) => {
+    const body = request.body && typeof request.body === 'object' && !Array.isArray(request.body) ? request.body as Record<string, unknown> : {};
+    if (typeof body.intent !== 'string' || body.intent.trim().length === 0 || body.intent.length > 2000) {
+      return jsonError(reply, 400, 'MOOD_CODEX_INTENT_REQUIRED');
+    }
+    const signals = Array.isArray(body.signals) ? body.signals : [];
+    if (signals.length > 16 || signals.some((signal) => !signal || typeof signal !== 'object' || Array.isArray(signal))) {
+      return jsonError(reply, 400, 'MOOD_CODEX_SIGNALS_UNBOUNDED');
+    }
+    const context = createMoodContext({
+      context: typeof body.context === 'string' ? body.context : undefined,
+      intent: body.intent,
+      language: typeof body.language === 'string' ? body.language : 'en-NG-pidgin',
+      relationship: typeof body.relationship === 'string' ? body.relationship : 'dashboard-user',
+      provenance: typeof body.provenance === 'string' ? body.provenance : 'dashboard-codex-request',
+      signals: signals as any,
+      status: typeof body.status === 'string' ? body.status as any : undefined,
+      uncertainty: typeof body.uncertainty === 'number' ? body.uncertainty : undefined,
+    });
+    return reply.status(201).send({ success: true, codex: proposeMoodCodex(context), context, nextAction: 'review the finite Codex steps; no repository mutation or execution occurred' });
+  });
 
   fastify.post('/v1/attest', async (_request, reply) => {
     if (!attestationSigningKey) return jsonError(reply, 503, 'ATTESTATION_SIGNING_KEY_REQUIRED');
