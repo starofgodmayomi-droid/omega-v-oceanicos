@@ -6,6 +6,7 @@ import { AmbientBar } from './AmbientBar';
 import { IntentFlow } from './IntentFlow';
 import { SystemControlsPanel } from './SystemControlsPanel';
 import { SystemHealthPanel } from './SystemHealthPanel';
+import { DependencyMapPanel } from './DependencyMapPanel';
 import { ObservationStreamPanel } from './ObservationStreamPanel';
 import { LifecycleFlow, deriveStageStates, type LifecycleStage } from './LifecycleFlow';
 import {
@@ -531,6 +532,14 @@ export function App() {
       subtitle: 'Capability layers and evidence',
       state: 'available' as const,
       detail: <EcosystemPanel />,
+    },
+    {
+      id: 'dependencies',
+      icon: '🗺',
+      label: 'Dependencies',
+      subtitle: 'Package graph · earned vs not-yet-earned',
+      state: 'available' as const,
+      detail: <DependencyMapPanel />,
     },
     {
       id: 'system',

@@ -14,6 +14,7 @@ import { LocalJobError, LocalJobLedger, LOCAL_JOB_WINDOW } from './jobs.js';
 import { registerPipelineRoute } from './pipeline-route.js';
 import { registerEcosystemRoute } from './ecosystem-route.js';
 import { registerRealityRoute } from './reality-route.js';
+import { registerDependencyRoute } from './dependency-route.js';
 import { OmegaCommandStore, registerOmegaRoutes } from './omega.js';
 import {
   ENCRYPTION_ALGORITHM,
@@ -154,6 +155,7 @@ export function createApp(
   registerPipelineRoute(fastify, jsonError);
   registerEcosystemRoute(fastify, authMode, Boolean(attestationSigningKey));
   registerRealityRoute(fastify, authMode, Boolean(attestationSigningKey), Boolean(ledgerMemory.getTip()));
+  registerDependencyRoute(fastify);
 
   fastify.get('/health', async (_request, reply) => {
     const memoryReady = true;
