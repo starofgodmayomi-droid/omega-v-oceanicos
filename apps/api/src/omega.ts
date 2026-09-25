@@ -209,6 +209,53 @@ export function registerOmegaRoutes(fastify: FastifyInstance, store: OmegaComman
     }
   });
 
+  fastify.post('/v1/omega/oreade/proposal', {
+    config: { rateLimit: { max: 20, timeWindow: '1 minute' } },
+  }, async (request, reply) => {
+    const body = bodyOf(request);
+    try {
+      if (typeof body.symbolicIntent !== 'string' || typeof body.requestedBy !== 'string' || !Array.isArray(body.targetScope) || typeof body.idempotencyKey !== 'string' || typeof body.stopCondition !== 'string' || typeof body.expectedObservation !== 'string') {
+        return reply.status(400).send({ success: false, error: 'INVALID_OREADE_PROPOSAL' });
+      }
+      const drop = buildSymbolicDrop({
+        symbolicIntent: body.symbolicIntent,
+        requestedBy: body.requestedBy,
+        targetScope: body.targetScope as string[],
+        idempotencyKey: body.idempotencyKey,
+        stopCondition: body.stopCondition,
+        expectedObservation: body.expectedObservation,
+        mode: body.mode === 'WORLDVIEW' ? 'WORLDVIEW' : 'BUILD',
+        context: body.context && typeof body.context === 'object' && !Array.isArray(body.context) ? body.context as Record<string, string> : undefined,
+      });
+      const command = store.create({
+        intent: drop.intent,
+        requestedBy: drop.requestedBy,
+        workers: ['planner'],
+        idempotencyKey: drop.idempotencyKey,
+        context: {
+          ...drop.context,
+          symbolicDropId: drop.dropId,
+          symbolicMode: drop.mode,
+          stopCondition: drop.stopCondition,
+          expectedObservation: drop.expectedObservation,
+          targetScope: drop.targetScope.join('|'),
+        },
+      });
+      if (command.status !== 'PROPOSED') {
+        return reply.status(409).send({ success: false, error: 'OREADE_PROPOSAL_NOT_PROPOSED', status: command.status });
+      }
+      return reply.status(201).send({
+        success: true,
+        drop,
+        command,
+        nextAction: 'review and explicitly admit the bounded proposal; no authorization or execution occurred',
+        executed: false,
+      });
+    } catch (error) {
+      return reply.status(400).send({ success: false, error: error instanceof Error ? error.message : 'INVALID_OREADE_PROPOSAL' });
+    }
+  });
+
   fastify.post('/v1/omega/workers/register', async (request, reply) => {
     const body = bodyOf(request);
     if (typeof body.workerId !== 'string' || !Array.isArray(body.capabilities) || body.capabilities.length > 16 || body.capabilities.some((value) => typeof value !== 'string' || value.length > 96)) {

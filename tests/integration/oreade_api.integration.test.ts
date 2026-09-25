@@ -64,3 +64,41 @@ test('API rejects an unbounded ƆREADE target scope', async () => {
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('API persists a planner-only proposal without authorizing or executing it', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'omega-oreade-proposal-'));
+  const app = createApp(join(dir, 'test.db'), false, { allowUnsignedCycle: true });
+  await app.ready();
+
+  try {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/oreade/proposal',
+      payload: {
+        symbolicIntent: 'prepare a bounded community reflection plan',
+        requestedBy: 'operator:test',
+        targetScope: ['oracle:reflection'],
+        idempotencyKey: 'proposal-integration-001',
+        stopCondition: 'stop after one proposal is stored',
+        expectedObservation: 'one PROPOSED command is persisted',
+      },
+    });
+    const body = response.json();
+
+    assert.equal(response.statusCode, 201);
+    assert.equal(body.success, true);
+    assert.equal(body.command.status, 'PROPOSED');
+    assert.deepEqual(body.command.workers, ['planner']);
+    assert.equal(body.command.dryRun, true);
+    assert.equal(body.command.change.authority, null);
+    assert.equal(body.executed, false);
+    assert.match(body.nextAction, /review and explicitly admit/);
+
+    const detail = await app.inject({ method: 'GET', url: `/v1/omega/commands/${body.command.commandId}` });
+    assert.equal(detail.statusCode, 200);
+    assert.equal(detail.json().command.status, 'PROPOSED');
+  } finally {
+    await app.close();
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
