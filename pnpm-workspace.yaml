@@ -8,6 +8,7 @@ packages:
   - 'packages/gateway'
   - 'packages/kernel'
   - 'packages/coordination'
+  - 'packages/oreade'
   - 'packages/mood'
   - 'apps/api'
   - 'apps/web'

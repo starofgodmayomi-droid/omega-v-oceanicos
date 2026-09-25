@@ -152,6 +152,12 @@ importers:
         specifier: workspace:*
         version: link:../types
 
+  packages/oreade:
+    devDependencies:
+      typescript:
+        specifier: ^5.0.0
+        version: 5.9.3
+
   packages/remember:
     dependencies:
       '@oceanicos/types':

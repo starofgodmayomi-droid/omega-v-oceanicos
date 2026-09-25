@@ -1,0 +1,20 @@
+{
+  "name": "@omega-v/oreade",
+  "version": "0.1.0",
+  "description": "Bounded ƆREADE symbolic translation for Ω∞v Oceanicos Drops",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "test": "pnpm build && node --test dist/__tests__/oreade.test.js",
+    "clean": "node ../../scripts/rimraf.cjs dist \"*.tsbuildinfo\""
+  },
+  "keywords": ["oreade", "symbolic", "drop", "evidence", "oceanicos"],
+  "author": "Ω∞v Community",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
