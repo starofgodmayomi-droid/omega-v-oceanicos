@@ -47,6 +47,9 @@ importers:
       '@omega-v/kernel':
         specifier: workspace:*
         version: link:../../packages/kernel
+      '@omega-v/oreade':
+        specifier: workspace:*
+        version: link:../../packages/oreade
       fastify:
         specifier: ^5.12.4
         version: 5.12.4

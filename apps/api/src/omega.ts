@@ -8,6 +8,7 @@ import {
 } from '@oceanicos/mini';
 import type { OmegaCommand, OmegaCommandResult, OmegaCommandStatus, OmegaWorkerId } from '@oceanicos/types';
 import { decisionToStatus, validateOmegaCommandInput } from '@oceanicos/types';
+import { buildSymbolicDrop } from '@omega-v/oreade';
 import { OmegaDurableStore } from './omega-persistence.js';
 
 type StoredCommand = OmegaCommand & {
@@ -178,6 +179,35 @@ export function registerOmegaRoutes(fastify: FastifyInstance, store: OmegaComman
   };
 
   fastify.get('/v1/omega/workers', async () => ({ success: true, workers: listOmegaWorkers(), activeWorkers: store.listWorkers(), limitations: ['coordination is durable on the configured SQLite volume', 'worker output is evidence, not authority', 'cross-host coordination requires a shared filesystem or a future network database'] }));
+
+  fastify.post('/v1/omega/oreade/drop', {
+    config: { rateLimit: { max: 30, timeWindow: '1 minute' } },
+  }, async (request, reply) => {
+    const body = bodyOf(request);
+    try {
+      if (typeof body.symbolicIntent !== 'string' || typeof body.requestedBy !== 'string' || !Array.isArray(body.targetScope) || typeof body.idempotencyKey !== 'string' || typeof body.stopCondition !== 'string' || typeof body.expectedObservation !== 'string') {
+        return reply.status(400).send({ success: false, error: 'INVALID_OREADE_DROP' });
+      }
+      const drop = buildSymbolicDrop({
+        symbolicIntent: body.symbolicIntent,
+        requestedBy: body.requestedBy,
+        targetScope: body.targetScope as string[],
+        idempotencyKey: body.idempotencyKey,
+        stopCondition: body.stopCondition,
+        expectedObservation: body.expectedObservation,
+        mode: body.mode === 'WORLDVIEW' ? 'WORLDVIEW' : 'BUILD',
+        context: body.context && typeof body.context === 'object' && !Array.isArray(body.context) ? body.context as Record<string, string> : undefined,
+      });
+      return reply.status(201).send({
+        success: true,
+        drop,
+        nextAction: 'supply attributable authority and policy to the Oceanicos runtime; translation did not authorize or execute this Drop',
+        readOnly: true,
+      });
+    } catch (error) {
+      return reply.status(400).send({ success: false, error: error instanceof Error ? error.message : 'INVALID_OREADE_DROP' });
+    }
+  });
 
   fastify.post('/v1/omega/workers/register', async (request, reply) => {
     const body = bodyOf(request);

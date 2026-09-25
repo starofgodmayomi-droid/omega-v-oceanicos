@@ -49,6 +49,8 @@ When extending Oceanicos with ƆREADE-inspired interfaces or language:
 5. Add tests for authorization, malformed input, unknown resources, persistence failure, observation divergence, and retry linkage.
 6. Update evidence and specifications whenever a protocol boundary changes.
 
+The API exposes `POST /v1/omega/oreade/drop` as a read-only translation boundary. It returns a bounded Drop proposal and a next-action message. It does not create an Omega command, grant authority, acquire a worker lease, execute a side effect, or claim verified reality. The route inherits the API’s existing authentication policy for POST requests.
+
 ## Reference alignment
 
 This guidance is subordinate to the repository’s [Living Agnostic Charter](../CHARTER.md) and [Operational Protocol Specification](spec/OCEANICOS-OPERATIONAL-PROTOCOL.md). The companion skill is installed at `/home/ubuntu/skills/oread-pidgin-harmonizer/SKILL.md` for agent-level use.

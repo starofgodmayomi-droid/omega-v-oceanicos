@@ -16,6 +16,7 @@
     "@oceanicos/remember": "workspace:*",
     "@oceanicos/types": "workspace:*",
     "@oceanicos/verification": "workspace:*",
+    "@omega-v/oreade": "workspace:*",
     "@omega-v/kernel": "workspace:*",
     "fastify": "^5.12.4"
   }
