@@ -5,6 +5,8 @@ import { TransitionProvenancePanel } from './TransitionProvenancePanel';
 import { AmbientBar } from './AmbientBar';
 import { IntentFlow } from './IntentFlow';
 import { SystemControlsPanel } from './SystemControlsPanel';
+import { SystemHealthPanel } from './SystemHealthPanel';
+import { DependencyMapPanel } from './DependencyMapPanel';
 import { ObservationStreamPanel } from './ObservationStreamPanel';
 import { LifecycleFlow, deriveStageStates, type LifecycleStage } from './LifecycleFlow';
 import {
@@ -184,6 +186,34 @@ export function App() {
       es?.close();
     };
   }, []);
+
+  // REST polling fallback — when SSE is unavailable (proxy limitation),
+  // poll the tip endpoint so the UI stays live without EventSource.
+  useEffect(() => {
+    if (streamConnected) return;
+    let active = true;
+    const poll = async () => {
+      if (!active) return;
+      try {
+        const d = await apiRequest<any>('/v1/block/tip');
+        if (d.tip && active) {
+          setTip(d.tip);
+          setHistory((prev) => {
+            const exists = prev.some((b) => b.hash === d.tip.hash);
+            return exists ? prev : [d.tip, ...prev.slice(0, 14)];
+          });
+        }
+      } catch {
+        /* ambient */
+      }
+    };
+    poll();
+    const interval = setInterval(poll, 5000);
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, [streamConnected]);
 
   const fetchTipFallback = async () => {
     try {
@@ -504,13 +534,23 @@ export function App() {
       detail: <EcosystemPanel />,
     },
     {
+      id: 'dependencies',
+      icon: '🗺',
+      label: 'Dependencies',
+      subtitle: 'Package graph · earned vs not-yet-earned',
+      state: 'available' as const,
+      detail: <DependencyMapPanel />,
+    },
+    {
       id: 'system',
       icon: '⚙',
       label: 'System',
       subtitle: 'Mining, mesh, attestation, identity',
       state: 'available' as const,
       detail: (
-        <SystemControlsPanel
+        <>
+          <SystemHealthPanel />
+          <SystemControlsPanel
           onCycle={cycle}
           cycleLoading={loading}
           minerActive={minerActive}
@@ -531,6 +571,7 @@ export function App() {
           signRequests={signRequests}
           onSetSignRequests={setSignRequests}
         />
+        </>
       ),
     },
   ];
