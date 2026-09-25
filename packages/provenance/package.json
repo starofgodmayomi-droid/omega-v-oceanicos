@@ -1,0 +1,17 @@
+{
+  "name": "@omega-v/provenance",
+  "version": "1.0.0",
+  "description": "Ω∞v Provenance Chain Engine (C7) — append-only hash-chained lineage tracking",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "node --experimental-strip-types --test __tests__/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "clean": "node ../../scripts/rimraf.cjs dist \"*.tsbuildinfo\""
+  },
+  "dependencies": {
+    "@oceanicos/types": "workspace:*"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "name": "@omega-v/reconciliation",
+  "version": "1.0.0",
+  "description": "Ω∞v Reconciliation Engine (C6) — expected ↔ actual comparison with evidence-bound verdicts",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "node --experimental-strip-types --test __tests__/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "clean": "node ../../scripts/rimraf.cjs dist \"*.tsbuildinfo\""
+  },
+  "dependencies": {
+    "@oceanicos/types": "workspace:*"
+  }
+}

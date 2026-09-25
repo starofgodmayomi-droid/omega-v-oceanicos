@@ -29,6 +29,13 @@ docker compose -f docker-compose.base44.yml up -d
 - **Workspace packages must be built** before the API can start — their `main` points to `dist/index.js`. The setup service builds them in dependency order.
 - **SSE limitation**: the `/v1/stream` EventSource endpoint won't connect through the preview proxy (long-lived connections are unsupported). This shows as "Reconnecting…" in the UI but doesn't affect REST endpoints.
 
+## New roadmap packages (C6/C7/Authorization)
+- **`@omega-v/reconciliation`** (C6): expected↔actual comparison → VERIFIED/DIVERGENT/UNKNOWN/NOT_EXECUTED with SHA-256 evidence. API: `POST /v1/reconciliation/reconcile`, `POST /v1/reconciliation/batch`.
+- **`@omega-v/provenance`** (C7): append-only hash-chained lineage ledger with `verifyIntegrity()`. API: `POST /v1/provenance/append`, `GET /v1/provenance/verify`, `GET /v1/provenance/lineage/:changeId`, `GET /v1/provenance/tip`.
+- **`@omega-v/authorization`**: fail-closed authority/permission engine producing `authorityVerified`+`policySatisfied` for the C4 admission gate. No self-authorization, grants expire/revocable/scoped. API: `POST /v1/authorization/grant`, `POST /v1/authorization/evaluate`, `POST /v1/authorization/revoke`, `GET /v1/authorization/grants`.
+- All three are ESM (`"type": "module"`, `module: NodeNext` in tsconfig) and built via `pnpm --filter @omega-v/reconciliation... run build`.
+- Route contract in `apps/api/src/route-contract.ts` and `apps/api/src/governance-route.ts`.
+
 ## Fixed bug
 `apps/api/src/index.ts` line 204: `persistenceEncryptionKey` was undefined → changed to `encryptionEnabled(persistenceKey)` to match the pattern used at lines 163/165.
 
