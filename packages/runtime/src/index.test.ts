@@ -47,3 +47,58 @@ describe('MemoryFabric', () => {
     expect(memory.recall('r1').map((record) => record.id)).toEqual(['m2']);
   });
 });
+
+describe('BoundedRuntimeManager', () => {
+  it('shuts down registered resources once and never calls process.exit', async () => {
+    const events: string[] = [];
+    const runtime = new BoundedRuntimeManager({
+      resources: [
+        { id: 'ledger', close: () => { events.push('ledger-close'); } },
+        { id: 'commands', close: async () => { events.push('commands-close'); } },
+      ],
+      onStopAcceptingWork: () => { events.push('stop-accepting'); },
+      haltPulse: () => { events.push('halt-pulse'); },
+    });
+    const first = await runtime.requestShutdown('manual');
+    const second = await runtime.requestShutdown('manual');
+    expect(first).toEqual(second);
+    expect(events).toEqual(['stop-accepting', 'halt-pulse', 'ledger-close', 'commands-close']);
+    expect(runtime.getState()).toBe('stopped');
+  });
+
+  it('preserves fatal shutdown as a non-success receipt', async () => {
+    const runtime = new BoundedRuntimeManager();
+    const receipt = await runtime.requestShutdown('fatal');
+    expect(receipt.exitCode).toBe(1);
+    expect(receipt.reason).toBe('fatal');
+  });
+
+  it('enforces an active-cycle quota without terminating the process', async () => {
+    const runtime = new BoundedRuntimeManager({
+      maxActiveCycles: 2,
+      getActiveCycles: () => 3,
+    });
+    await runtime.enforceQuotas();
+    expect(runtime.getState()).toBe('stopped');
+  });
+
+  it('installs and removes signal handlers idempotently', () => {
+    const listeners = new Map<string, Set<(...args: any[]) => void>>();
+    const fakeProcess = {
+      on(event: string, listener: (...args: any[]) => void) {
+        const set = listeners.get(event) ?? new Set();
+        set.add(listener);
+        listeners.set(event, set);
+      },
+      off(event: string, listener: (...args: any[]) => void) {
+        listeners.get(event)?.delete(listener);
+      },
+    };
+    const runtime = new BoundedRuntimeManager();
+    runtime.installProcessHandlers(fakeProcess);
+    runtime.installProcessHandlers(fakeProcess);
+    expect([...listeners.values()].reduce((sum, set) => sum + set.size, 0)).toBe(4);
+    runtime.uninstallProcessHandlers(fakeProcess);
+    expect([...listeners.values()].reduce((sum, set) => sum + set.size, 0)).toBe(0);
+  });
+});

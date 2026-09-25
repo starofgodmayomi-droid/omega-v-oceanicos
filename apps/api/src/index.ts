@@ -9,6 +9,7 @@ import { MiniKernel } from '@oceanicos/mini';
 import { AsymmetricValidationGuard, MultiRegionMeshConvergence } from '@oceanicos/verification';
 import { ObserverEngine } from '@oceanicos/observer';
 import { AttestationService } from '@oceanicos/attestation';
+import { BoundedRuntimeManager } from '@omega-v/runtime';
 import { OceanicosKernel } from '@omega-v/kernel';
 import { LocalJobError, LocalJobLedger, LOCAL_JOB_WINDOW } from './jobs.js';
 import { registerPipelineRoute } from './pipeline-route.js';
@@ -104,9 +105,26 @@ export function createApp(
   const omegaCommandPath = dbPath === ':memory:' ? ':memory:' : join(resolve(dbPath, '..'), 'omega-commands.db');
   const omegaCommands = new OmegaCommandStore(omegaCommandPath);
 
+  const runtime = new BoundedRuntimeManager({
+    resources: [
+      { id: 'remember-ledger', close: () => ledgerMemory.close() },
+      { id: 'omega-command-store', close: () => omegaCommands.close() },
+    ],
+    onStopAcceptingWork: () => {
+      if (minerInterval) {
+        clearInterval(minerInterval);
+        minerInterval = null;
+        minerStats.active = false;
+      }
+      streamClients.clear();
+    },
+  });
+
   fastify.addHook('onClose', async () => {
-    ledgerMemory.close();
-    omegaCommands.close();
+    const receipt = await runtime.requestShutdown('fastify-close');
+    if (receipt.errors.length > 0) {
+      throw new Error('runtime shutdown failed: ' + receipt.errors.join('; '));
+    }
   });
 
   const revocations = new Map<string, { id: string; attestationId: string; reason: string; revokedBy: string; revokedAt: string }>();
