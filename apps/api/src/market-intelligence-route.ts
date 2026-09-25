@@ -10,6 +10,8 @@ type MarketAsset = {
   source: 'finnhub' | 'coingecko' | 'fallback';
 };
 
+type WatchItem = { symbol: string; thresholdPercent: number; createdAt: string };
+
 const fallbackAssets: MarketAsset[] = [
   { symbol: 'SPX', name: 'S&P 500', price: 5864.67, change: 32.14, changePercent: 0.55, kind: 'equity', source: 'fallback' },
   { symbol: 'NDX', name: 'Nasdaq 100', price: 20528.18, change: 118.42, changePercent: 0.58, kind: 'equity', source: 'fallback' },
@@ -41,26 +43,72 @@ async function fetchCrypto(id: string, symbol: string, name: string): Promise<Ma
   return { symbol, name, price, change: price * changePercent / 100, changePercent, kind: 'crypto', source: 'coingecko' };
 }
 
+async function getSnapshot(): Promise<{ assets: MarketAsset[]; live: boolean; providerCount: number; signal: string; observedAt: string }> {
+  const finnhubKey = process.env.FINNHUB_API_KEY?.trim();
+  const equityDefinitions = [['NVDA', 'NVIDIA'], ['TSLA', 'Tesla'], ['AAPL', 'Apple'], ['MSFT', 'Microsoft']] as const;
+  const results = await Promise.allSettled([
+    ...(finnhubKey ? equityDefinitions.map(([symbol, name]) => fetchFinnhub(symbol, name, finnhubKey)) : []),
+    fetchCrypto('bitcoin', 'BTC', 'Bitcoin'),
+    fetchCrypto('ethereum', 'ETH', 'Ethereum'),
+  ]);
+  const assets = results.filter((result): result is PromiseFulfilledResult<MarketAsset> => result.status === 'fulfilled').map(result => result.value);
+  const live = assets.length >= 2;
+  const normalized = live ? assets : fallbackAssets;
+  const strongest = [...normalized].sort((a, b) => b.changePercent - a.changePercent)[0];
+  return {
+    assets: normalized,
+    live,
+    providerCount: new Set(normalized.map(asset => asset.source)).size,
+    signal: strongest ? `${strongest.symbol} leads relative momentum at ${strongest.changePercent >= 0 ? '+' : ''}${strongest.changePercent.toFixed(2)}%` : 'No dominant signal',
+    observedAt: new Date().toISOString(),
+  };
+}
+
 export function registerMarketIntelligenceRoute(fastify: FastifyInstance): void {
+  const watchlist = new Map<string, WatchItem>([
+    ['NVDA', { symbol: 'NVDA', thresholdPercent: 2, createdAt: new Date().toISOString() }],
+    ['BTC', { symbol: 'BTC', thresholdPercent: 3, createdAt: new Date().toISOString() }],
+  ]);
+
   fastify.get('/v1/market/snapshot', async () => {
-    const finnhubKey = process.env.FINNHUB_API_KEY?.trim();
-    const equityDefinitions = [['NVDA', 'NVIDIA'], ['TSLA', 'Tesla'], ['AAPL', 'Apple'], ['MSFT', 'Microsoft']] as const;
-    const results = await Promise.allSettled([
-      ...(finnhubKey ? equityDefinitions.map(([symbol, name]) => fetchFinnhub(symbol, name, finnhubKey)) : []),
-      fetchCrypto('bitcoin', 'BTC', 'Bitcoin'),
-      fetchCrypto('ethereum', 'ETH', 'Ethereum'),
-    ]);
-    const assets = results.filter((result): result is PromiseFulfilledResult<MarketAsset> => result.status === 'fulfilled').map(result => result.value);
-    const live = assets.length >= 2;
-    const normalized = live ? assets : fallbackAssets;
-    const strongest = [...normalized].sort((a, b) => b.changePercent - a.changePercent)[0];
+    const snapshot = await getSnapshot();
     return {
       success: true,
       observation: 'market_snapshot',
-      evidence: { providerCount: new Set(normalized.map(asset => asset.source)).size, live, assetCount: normalized.length },
-      assets: normalized,
-      signal: strongest ? `${strongest.symbol} leads relative momentum at ${strongest.changePercent >= 0 ? '+' : ''}${strongest.changePercent.toFixed(2)}%` : 'No dominant signal',
-      observedAt: new Date().toISOString(),
+      evidence: { providerCount: snapshot.providerCount, live: snapshot.live, assetCount: snapshot.assets.length },
+      assets: snapshot.assets,
+      signal: snapshot.signal,
+      observedAt: snapshot.observedAt,
     };
+  });
+
+  fastify.get('/v1/market/watchlist', async () => ({ success: true, items: [...watchlist.values()] }));
+
+  fastify.post('/v1/market/watchlist', async (request: any, reply) => {
+    const symbol = String(request.body?.symbol ?? '').trim().toUpperCase();
+    const thresholdPercent = Number(request.body?.thresholdPercent ?? 2);
+    if (!/^[A-Z0-9.\-]{1,12}$/.test(symbol) || !Number.isFinite(thresholdPercent) || thresholdPercent <= 0 || thresholdPercent > 100) {
+      return reply.status(400).send({ success: false, error: 'INVALID_WATCH_ITEM', message: 'symbol and thresholdPercent are required' });
+    }
+    const item = { symbol, thresholdPercent: Number(thresholdPercent.toFixed(2)), createdAt: new Date().toISOString() };
+    watchlist.set(symbol, item);
+    return reply.status(201).send({ success: true, item });
+  });
+
+  fastify.delete('/v1/market/watchlist/:symbol', async (request: any, reply) => {
+    const symbol = String(request.params.symbol ?? '').trim().toUpperCase();
+    if (!watchlist.delete(symbol)) return reply.status(404).send({ success: false, error: 'WATCH_ITEM_NOT_FOUND' });
+    return { success: true, removed: symbol };
+  });
+
+  fastify.get('/v1/market/alerts', async () => {
+    const snapshot = await getSnapshot();
+    const bySymbol = new Map(snapshot.assets.map(asset => [asset.symbol, asset]));
+    const alerts = [...watchlist.values()].flatMap(item => {
+      const asset = bySymbol.get(item.symbol);
+      if (!asset || Math.abs(asset.changePercent) < item.thresholdPercent) return [];
+      return [{ symbol: item.symbol, severity: Math.abs(asset.changePercent) >= item.thresholdPercent * 2 ? 'critical' : 'watch', thresholdPercent: item.thresholdPercent, changePercent: asset.changePercent, price: asset.price, source: asset.source }];
+    });
+    return { success: true, alerts, observedAt: snapshot.observedAt, evidence: { live: snapshot.live, providerCount: snapshot.providerCount } };
   });
 }

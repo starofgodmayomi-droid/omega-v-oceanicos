@@ -15,6 +15,8 @@ The Omega web surface now includes a verification-aware market intelligence pane
 
 The route keeps provider credentials server-side. Configure `FINNHUB_API_KEY` for equities. CoinGecko is used for crypto and gracefully degrades to a deterministic fallback snapshot when providers fail or return insufficient data.
 
+The operator watchlist is managed through `GET /v1/market/watchlist`, `POST /v1/market/watchlist`, and `DELETE /v1/market/watchlist/:symbol`. A watch item contains a symbol and an absolute percentage threshold. `GET /v1/market/alerts` evaluates those thresholds against the latest observation and returns `watch` or `critical` crossings. The current store is process-local and is intentionally scoped to the single running operator surface; durable per-user storage should be added alongside authentication before multi-tenant deployment.
+
 ## Verification boundary
 
 Market data is treated as an observation, not an assertion. The API includes evidence metadata so the UI can distinguish a live verified feed from a fallback observation. This preserves the Oceanicos invariant: evidence before trust.
