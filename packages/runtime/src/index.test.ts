@@ -1,4 +1,4 @@
-import { AgentLoop, MemoryFabric } from './index';
+import { AgentLoop, BoundedRuntimeManager, MemoryFabric } from './index';
 
 describe('AgentLoop', () => {
   it('runs modular stages and records low-overhead trace evidence', async () => {
@@ -53,11 +53,25 @@ describe('BoundedRuntimeManager', () => {
     const events: string[] = [];
     const runtime = new BoundedRuntimeManager({
       resources: [
-        { id: 'ledger', close: () => { events.push('ledger-close'); } },
-        { id: 'commands', close: async () => { events.push('commands-close'); } },
+        {
+          id: 'ledger',
+          close: () => {
+            events.push('ledger-close');
+          },
+        },
+        {
+          id: 'commands',
+          close: async () => {
+            events.push('commands-close');
+          },
+        },
       ],
-      onStopAcceptingWork: () => { events.push('stop-accepting'); },
-      haltPulse: () => { events.push('halt-pulse'); },
+      onStopAcceptingWork: () => {
+        events.push('stop-accepting');
+      },
+      haltPulse: () => {
+        events.push('halt-pulse');
+      },
     });
     const first = await runtime.requestShutdown('manual');
     const second = await runtime.requestShutdown('manual');
