@@ -63,6 +63,22 @@ test('rejects missing bounded fields before a Drop exists', () => {
   );
 });
 
+test('rejects unbounded identifiers, scope, and context before translation', () => {
+  const base = {
+    symbolicIntent: 'offer guidance',
+    requestedBy: 'operator:demo',
+    targetScope: ['guidance'],
+    idempotencyKey: 'bounded-001',
+    stopCondition: 'stop after one answer',
+    expectedObservation: 'one answer is returned',
+  };
+
+  assert.throws(() => buildSymbolicDrop({ ...base, requestedBy: 'not safe!' }), /requestedBy/);
+  assert.throws(() => buildSymbolicDrop({ ...base, targetScope: Array.from({ length: 17 }, (_, index) => `target:${index}`) }), /no more than 16/);
+  assert.throws(() => buildSymbolicDrop({ ...base, context: { 'bad key!': 'value' } }), /context keys/);
+  assert.throws(() => buildSymbolicDrop({ ...base, context: { note: 'x'.repeat(513) } }), /context.note/);
+});
+
 test('renders a warm boundary without claiming completion', () => {
   const drop = buildSymbolicDrop({
     symbolicIntent: 'offer guidance',
