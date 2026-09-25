@@ -1,5 +1,5 @@
 import { TelemetryTracer, VerificationSLOEngine } from '../index';
-import { SystemMetrics } from '@omega-v/types';
+import { SystemMetrics } from '@oceanicos/types';
 
 describe('@omega-v/telemetry', () => {
   describe('TelemetryTracer', () => {

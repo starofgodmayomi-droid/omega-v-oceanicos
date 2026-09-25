@@ -1,5 +1,5 @@
 import { createServer, Server } from 'node:http';
-import app from '../../apps/api/src/index';
+import app from '../../apps/api/dist/index';
 
 type Body<T> = { data: T; meta?: Record<string, unknown> };
 

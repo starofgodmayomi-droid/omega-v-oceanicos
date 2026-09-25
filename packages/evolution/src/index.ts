@@ -1,5 +1,5 @@
 import { RuleCompiler } from '@omega-v/compiler';
-import { DriftAnalysis, EvolutionProposal, VerificationRule } from '@omega-v/types';
+import { DriftAnalysis, EvolutionProposal, VerificationRule } from '@oceanicos/types';
 
 /**
  * EvolutionEngine: Controlled Rule Recompilation & Drift Detection Engine (Section XXVII)

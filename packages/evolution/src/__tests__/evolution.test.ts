@@ -1,5 +1,5 @@
 import { EvolutionEngine } from '../index';
-import { VerificationRule } from '@omega-v/types';
+import { VerificationRule } from '@oceanicos/types';
 
 describe('EvolutionEngine (Section XXVII Controlled Recompilation)', () => {
   let engine: EvolutionEngine;

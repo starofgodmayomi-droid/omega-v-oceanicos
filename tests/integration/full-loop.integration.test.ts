@@ -2,10 +2,10 @@ import { createServer, Server } from 'node:http';
 import { mkdtempSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { Remember, FileMemoryStore } from '@omega-v/remember';
-import { AttestationService } from '@omega-v/attestation';
-import { Observer } from '@omega-v/observer';
-import { VerificationEngine } from '@omega-v/verification';
+import { Remember, FileMemoryStore } from '@oceanicos/remember';
+import { AttestationService } from '@oceanicos/attestation';
+import { Observer } from '@oceanicos/observer';
+import { VerificationEngine } from '@oceanicos/verification';
 
 /**
  * Cross-package integration.
@@ -54,7 +54,7 @@ describe('full loop, written by the API and read back by the packages', () => {
     process.env.OMEGA_RUNTIME_STORE_PATH = join(directory, 'runtime.json');
 
     jest.resetModules();
-    const module = await import('../../apps/api/src/index');
+    const module = await import('../../apps/api/dist/index');
     app = module.default as typeof app;
 
     server = createServer(app as never);

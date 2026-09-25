@@ -1,5 +1,5 @@
 import { OceanicosSandboxEngine } from '../index';
-import { Observation, VerificationRule } from '@omega-v/types';
+import { Observation, VerificationRule } from '@oceanicos/types';
 
 describe('@omega-v/sandbox — OceanicosSandboxEngine', () => {
   let sandbox: OceanicosSandboxEngine;

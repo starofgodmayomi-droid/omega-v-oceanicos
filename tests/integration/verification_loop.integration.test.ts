@@ -1,6 +1,6 @@
-import { Observer } from '@omega-v/observer';
-import { VerificationEngine } from '@omega-v/verification';
-import { AttestationService } from '@omega-v/attestation';
+import { Observer } from '@oceanicos/observer';
+import { VerificationEngine } from '@oceanicos/verification';
+import { AttestationService } from '@oceanicos/attestation';
 
 describe('Ω∞v Oceanicos Integration — Verification Loop', () => {
   let observer: Observer;

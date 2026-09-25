@@ -12,7 +12,7 @@ import {
 /**
  * This module implements docs/spec/ATTESTATION-ENVELOPE.md independently of
  * the signer. The signatures here are produced by node:crypto directly,
- * not by @omega-v/attestation, so a passing test means the specification is
+ * not by @oceanicos/attestation, so a passing test means the specification is
  * implementable from the document rather than from shared code.
  */
 const subtle = webcrypto.subtle as unknown as SubtleCrypto;

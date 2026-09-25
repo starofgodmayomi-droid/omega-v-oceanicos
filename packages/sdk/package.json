@@ -19,18 +19,18 @@
   "author": "Ω∞v Community",
   "license": "Apache-2.0",
   "dependencies": {
-    "@omega-v/types": "workspace:*",
-    "@omega-v/observer": "workspace:*",
-    "@omega-v/verification": "workspace:*",
-    "@omega-v/attestation": "workspace:*",
+    "@oceanicos/types": "workspace:*",
+    "@oceanicos/observer": "workspace:*",
+    "@oceanicos/verification": "workspace:*",
+    "@oceanicos/attestation": "workspace:*",
     "@omega-v/store": "workspace:*",
     "@omega-v/contract": "workspace:*",
     "@omega-v/auth": "workspace:*",
     "@omega-v/replay": "workspace:*",
     "@omega-v/vaas": "workspace:*",
     "@omega-v/federation": "workspace:*",
-    "@omega-v/remember": "workspace:*",
-    "@omega-v/mini": "workspace:*"
+    "@oceanicos/remember": "workspace:*",
+    "@oceanicos/mini": "workspace:*"
   },
   "devDependencies": {
     "@types/jest": "^29.5.0",

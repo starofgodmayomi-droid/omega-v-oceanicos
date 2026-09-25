@@ -1,5 +1,5 @@
 import { GreenEngine } from '../index';
-import { VerificationResult, EventLogEntry, Attestation } from '@omega-v/types';
+import { VerificationResult, EventLogEntry, Attestation } from '@oceanicos/types';
 
 describe('GreenEngine (Section XXV GREEN Rule)', () => {
   let engine: GreenEngine;

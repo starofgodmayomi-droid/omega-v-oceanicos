@@ -2005,7 +2005,7 @@ describe('omega subsystems CLI', () => {
           id: 'mini',
           name: 'MINI Kernel',
           category: 'core',
-          package: '@omega-v/mini',
+          package: '@oceanicos/mini',
           status: 'active',
           description: 'Observe → Verify → Remember authoritative execution loop',
         },
@@ -2013,7 +2013,7 @@ describe('omega subsystems CLI', () => {
           id: 'os',
           name: 'Universal Builder OS',
           category: 'core',
-          package: '@omega-v/mini',
+          package: '@oceanicos/mini',
           status: 'booted',
           description: 'Finite lifecycle & bounded task admission kernel',
         },
@@ -2031,7 +2031,7 @@ describe('omega subsystems CLI', () => {
       });
       expect(exitCode).toBe(0);
       expect(io.output.join('')).toContain('SUBSYSTEMS    2/19 category=all');
-      expect(io.output.join('')).toContain('[core        ] mini         (@omega-v/mini) - ACTIVE:');
+      expect(io.output.join('')).toContain('[core        ] mini         (@oceanicos/mini) - ACTIVE:');
     } finally {
       io.restore();
     }

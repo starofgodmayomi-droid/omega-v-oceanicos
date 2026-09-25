@@ -1,14 +1,14 @@
-import { Observer } from '@omega-v/observer';
-import { VerificationEngine } from '@omega-v/verification';
-import { AttestationService } from '@omega-v/attestation';
+import { Observer } from '@oceanicos/observer';
+import { VerificationEngine } from '@oceanicos/verification';
+import { AttestationService } from '@oceanicos/attestation';
 import { ProvenanceStore } from '@omega-v/store';
-import { Remember } from '@omega-v/remember';
+import { Remember } from '@oceanicos/remember';
 import {
   MiniKernel,
   OperatingSystemKernel,
   OmegaTotalCompressor,
   MiniCycleResult,
-} from '@omega-v/mini';
+} from '@oceanicos/mini';
 import { RuleCompiler } from '@omega-v/compiler';
 import { OceanicumVM } from '@omega-v/ir';
 import { OceanicosClient } from '@omega-v/sdk';
@@ -70,8 +70,8 @@ import { EvidenceEngine } from '@omega-v/evidence';
 import { AgentLoop, MemoryFabric } from '@omega-v/runtime';
 import { SecurityEngine } from '@omega-v/security';
 import { GovernanceEngine } from '@omega-v/governance';
-import type { SecurityPermission, GovernanceAction, IdentitySubject } from '@omega-v/types';
-import app from '../../apps/api/src/index';
+import type { SecurityPermission, GovernanceAction, IdentitySubject } from '@oceanicos/types';
+import app from '../../apps/api/dist/index';
 
 describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => {
   let store: ProvenanceStore;
@@ -1148,7 +1148,7 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
         publisherDid: 'did:omega:publisher:release-bot',
         description: 'E2E verified security adapter',
         tarballContent: rawTarball,
-        dependencies: { '@omega-v/types': '^0.1.0' },
+        dependencies: { '@oceanicos/types': '^0.1.0' },
         slsaAttestationId: 'att-slsa-e2e-001',
       });
 

@@ -350,7 +350,7 @@ export function installFetch(overrides: RouteOverrides = {}): jest.Mock {
               id: 'mini',
               name: 'MINI Kernel',
               category: 'core',
-              package: '@omega-v/mini',
+              package: '@oceanicos/mini',
               status: 'active',
               description: 'Observe → Verify → Remember authoritative execution loop',
             },

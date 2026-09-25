@@ -21,7 +21,7 @@
   "author": "Ω∞v Community",
   "license": "Apache-2.0",
   "dependencies": {
-    "@omega-v/types": "workspace:*",
+    "@oceanicos/types": "workspace:*",
     "@omega-v/ir": "workspace:*"
   },
   "devDependencies": {
