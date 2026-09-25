@@ -25,6 +25,7 @@ A verification-first full-stack ecosystem for observing, verifying, attesting, a
 
 - 📋 **[Manifest](MANIFEST.md)** — Project mission, principles, and architecture
 - 📜 **[Charter](CHARTER.md)** — Living agnostic principles and decision-making
+- 🌊 **[Finite operational charter](docs/OMEGA_INFINITY_CHARTER.md)** — Drop → Current → Ocean → Evaporation protocol
 - 🤝 **[Contributing](CONTRIBUTING.md)** — How to contribute verification-first
 - 📖 **[Documentation](docs/)** — Architecture, guides, and references
 - ⚙️ **[Development Setup](docs/DEVELOPMENT.md)** — Get the project running locally
