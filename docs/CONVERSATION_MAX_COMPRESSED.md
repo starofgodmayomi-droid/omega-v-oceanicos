@@ -89,6 +89,7 @@ NOT_EXECUTED = execution did not occur
 - `packages/types/src/index.ts` — exports the new contract.
 - `packages/mini/src/__tests__/change-calculus.test.ts` — acceptance tests for admission, status classification, promotion prevention, and malformed input.
 - `docs/OMEGA_INFINITY_CHARTER.md` — documents the finite operational charter and root contract.
+- `docs/10D_FULL_STACK_AI_BRIDGE.md` — maps the referenced 10D web-app concept into an evidence-gated, read-only next adapter slice.
 - `README.md` — links the finite operational charter.
 - This file — current compressed handoff.
 
