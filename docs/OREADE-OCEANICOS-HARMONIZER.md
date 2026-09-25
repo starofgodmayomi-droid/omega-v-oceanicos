@@ -61,6 +61,8 @@ When a grounded Codex plan is handed to `/v1/mood/codex/proposal`, the API may p
 
 The dashboard’s `ADMIT CODEX PROPOSAL` action reuses the Oceanicos admission contract with attributable human authority and a named policy. It may move the command to `AUTHORIZED`, but it cannot execute it. This keeps mood adaptation, Codex planning, admission, execution, and verified reality as distinct states.
 
+After authorization, the Mood Codex dashboard offers separate, user-triggered `EXECUTE BOUNDED ACTION` and `RECORD OBSERVATION` controls. Execution produces a local bounded result; observation compares the supplied state against that result and preserves `VERIFIED`, `DIVERGENT`, or `UNKNOWN`. No observation is accepted before execution, and no verification is inferred from mood or intent alone.
+
 ## Reference alignment
 
 This guidance is subordinate to the repository’s [Living Agnostic Charter](../CHARTER.md) and [Operational Protocol Specification](spec/OCEANICOS-OPERATIONAL-PROTOCOL.md). The companion skill is installed at `/home/ubuntu/skills/oread-pidgin-harmonizer/SKILL.md` for agent-level use.

@@ -92,6 +92,20 @@ test('mood Codex proposal enters the ledger as PROPOSED and never executes', asy
     assert.equal(admitted.json().command.status, 'AUTHORIZED');
     assert.equal(admitted.json().command.result, undefined);
     assert.match(admitted.json().nextAction, /execute the authorized bounded action/);
+
+    const executed = await app.inject({ method: 'POST', url: `/v1/omega/commands/${body.command.commandId}/execute`, payload: {} });
+    assert.equal(executed.statusCode, 200);
+    assert.equal(executed.json().command.status, 'EXECUTED');
+    assert.equal(executed.json().command.result.reality, undefined);
+
+    const observed = await app.inject({
+      method: 'POST',
+      url: `/v1/omega/commands/${body.command.commandId}/observe`,
+      payload: { observedState: 'bounded-local-action-complete' },
+    });
+    assert.equal(observed.statusCode, 200);
+    assert.equal(observed.json().command.status, 'VERIFIED');
+    assert.equal(observed.json().command.result.reality.classification, 'VERIFIED');
   } finally {
     await app.close();
     rmSync(dir, { recursive: true, force: true });
