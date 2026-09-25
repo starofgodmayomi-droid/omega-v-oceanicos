@@ -236,6 +236,46 @@ export function createApp(
     return reply.status(201).send({ success: true, codex: proposeMoodCodex(context), context, nextAction: 'review the finite Codex steps; no repository mutation or execution occurred' });
   });
 
+  fastify.post('/v1/mood/codex/proposal', async (request, reply) => {
+    const body = request.body && typeof request.body === 'object' && !Array.isArray(request.body) ? request.body as Record<string, unknown> : {};
+    if (typeof body.intent !== 'string' || body.intent.trim().length === 0 || body.intent.length > 2000 || typeof body.requestedBy !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,95}$/.test(body.requestedBy)) {
+      return jsonError(reply, 400, 'MOOD_CODEX_PROPOSAL_INPUT_INVALID');
+    }
+    const signals = Array.isArray(body.signals) ? body.signals : [];
+    if (signals.length > 16 || signals.some((signal) => !signal || typeof signal !== 'object' || Array.isArray(signal))) {
+      return jsonError(reply, 400, 'MOOD_CODEX_SIGNALS_UNBOUNDED');
+    }
+    const context = createMoodContext({
+      context: typeof body.context === 'string' ? body.context : undefined,
+      intent: body.intent,
+      language: typeof body.language === 'string' ? body.language : 'en-NG-pidgin',
+      relationship: typeof body.relationship === 'string' ? body.relationship : 'dashboard-user',
+      provenance: typeof body.provenance === 'string' ? body.provenance : 'dashboard-codex-proposal',
+      signals: signals as any,
+      status: typeof body.status === 'string' ? body.status as any : undefined,
+      uncertainty: typeof body.uncertainty === 'number' ? body.uncertainty : undefined,
+    });
+    const codex = proposeMoodCodex(context);
+    if (codex.decision !== 'PROPOSE') {
+      return reply.status(codex.decision === 'DENY' ? 403 : 409).send({ success: false, codex, context, error: codex.decision === 'DENY' ? 'MOOD_CODEX_PROPOSAL_DENIED' : 'MOOD_CODEX_REQUIRES_REVIEW', nextAction: 'review the Codex context before creating a ledger proposal' });
+    }
+    const command = omegaCommands.create({
+      intent: codex.intent,
+      requestedBy: body.requestedBy,
+      workers: ['planner'],
+      idempotencyKey: codex.codexId,
+      context: {
+        moodCodexId: codex.codexId,
+        moodStatus: codex.moodStatus,
+        moodUncertainty: String(codex.uncertainty),
+        moodLanguage: context.language,
+        codexSteps: codex.steps.map((step) => `${step.order}:${step.action}`).join('|'),
+        executionBoundary: codex.execution,
+      },
+    });
+    return reply.status(201).send({ success: true, codex, context, command, executed: false, nextAction: 'review and explicitly admit the planner-only Mood Codex proposal; no execution occurred' });
+  });
+
   fastify.post('/v1/attest', async (_request, reply) => {
     if (!attestationSigningKey) return jsonError(reply, 503, 'ATTESTATION_SIGNING_KEY_REQUIRED');
     if (attestationSigningKey.length < MIN_ATTESTATION_KEY_LENGTH) return jsonError(reply, 503, 'ATTESTATION_SIGNING_KEY_TOO_WEAK', { minimumLength: MIN_ATTESTATION_KEY_LENGTH });
