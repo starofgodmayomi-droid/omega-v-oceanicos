@@ -35,14 +35,14 @@ export function AmbientBar(props: AmbientBarProps) {
       value: props.connected
         ? 'Connected'
         : props.reconnectAttempt > 0
-          ? 'Reconnecting…'
-          : 'Offline',
+          ? 'REST mode'
+          : 'Connecting…',
       color: props.connected
         ? theme.verified
         : props.reconnectAttempt > 0
-          ? theme.warning
-          : theme.divergent,
-      pulse: !props.connected,
+          ? theme.accentDim
+          : theme.warning,
+      pulse: !props.connected && props.reconnectAttempt === 0,
     },
     {
       label: 'Mode',
