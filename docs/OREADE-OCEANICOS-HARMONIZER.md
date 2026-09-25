@@ -63,6 +63,10 @@ The dashboard’s `ADMIT CODEX PROPOSAL` action reuses the Oceanicos admission c
 
 After authorization, the Mood Codex dashboard offers separate, user-triggered `EXECUTE BOUNDED ACTION` and `RECORD OBSERVATION` controls. Execution produces a local bounded result; observation compares the supplied state against that result and preserves `VERIFIED`, `DIVERGENT`, or `UNKNOWN`. No observation is accepted before execution, and no verification is inferred from mood or intent alone.
 
+The dashboard now performs an informational divergence check every 15 seconds against the redacted command ledger. It surfaces commands whose status or reality classification is `DIVERGENT`, shows the observed state and evidence, and permits only local “acknowledged viewed” state. Acknowledgement does not alter the ledger, resolve the divergence, authorize a command, or trigger a retry.
+
+`.github/workflows/deploy.yml` is the deployment workflow configuration. It runs locked installation, formatting, workspace build, integration verification, and web build before staging a versioned full-stack release bundle as a GitHub Actions artifact. It deliberately records `VERIFIED / STAGED_ONLY`: a hosting provider, runtime secrets, and final publish action must be supplied explicitly rather than inferred by automation.
+
 ## Reference alignment
 
 This guidance is subordinate to the repository’s [Living Agnostic Charter](../CHARTER.md) and [Operational Protocol Specification](spec/OCEANICOS-OPERATIONAL-PROTOCOL.md). The companion skill is installed at `/home/ubuntu/skills/oread-pidgin-harmonizer/SKILL.md` for agent-level use.

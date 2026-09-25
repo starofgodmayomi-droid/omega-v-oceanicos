@@ -10,6 +10,7 @@ import { DependencyMapPanel } from './DependencyMapPanel';
 import { ObservationStreamPanel } from './ObservationStreamPanel';
 import { OreadConsole } from './OreadConsole';
 import { MoodCodexPanel } from './MoodCodexPanel';
+import { DivergenceAlertsPanel } from './DivergenceAlertsPanel';
 import { LifecycleFlow, deriveStageStates, type LifecycleStage } from './LifecycleFlow';
 import {
   theme,
@@ -764,6 +765,7 @@ export function App() {
         {/* Intent flow card */}
         <OreadConsole />
         <MoodCodexPanel />
+        <DivergenceAlertsPanel />
 
         <IntentFlow
           command={omegaCommand}

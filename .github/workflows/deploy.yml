@@ -1,0 +1,102 @@
+name: Ω∞v Full-Stack Deployment
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Release environment label'
+        required: true
+        default: staging
+        type: choice
+        options: [staging, production]
+      publish:
+        description: 'Stage a deployment artifact after all verification gates pass'
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: oceanicos-deployment-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: 22.x
+  PNPM_VERSION: 10.34.5
+
+jobs:
+  verify-and-stage:
+    name: Verify and stage full-stack release
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment || 'staging' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Enable pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Format gate
+        run: pnpm format:check
+
+      - name: Build workspace
+        run: pnpm build
+
+      - name: Run integration verification
+        run: pnpm test:e2e
+
+      - name: Build web release
+        run: pnpm --filter web build
+
+      - name: Assemble release manifest
+        run: |
+          mkdir -p release/api release/web release/docs
+          cp -R apps/api/dist release/api/dist
+          cp -R apps/api/package.json release/api/package.json
+          cp -R apps/web/dist release/web/dist
+          cp apps/web/package.json release/web/package.json
+          cp package.json pnpm-lock.yaml release/
+          cp docs/OREADE-OCEANICOS-HARMONIZER.md release/docs/
+          node -e "const fs=require('fs'); const m={commit:process.env.GITHUB_SHA,ref:process.env.GITHUB_REF_NAME,environment:process.env.RELEASE_ENV||'staging',builtAt:new Date().toISOString(),status:'VERIFIED',deployment:'STAGED_ONLY',limitations:['provider-specific publish step is intentionally not inferred','runtime secrets and hosting target must be supplied by the operator','divergence alerts are informational and do not auto-authorize or execute']}; fs.writeFileSync('release/release-manifest.json',JSON.stringify(m,null,2));"
+        env:
+          RELEASE_ENV: ${{ github.event.inputs.environment || 'staging' }}
+
+      - name: Package release bundle
+        run: tar -czf oceanicos-${GITHUB_SHA}.tar.gz -C release .
+
+      - name: Upload deployment bundle
+        if: ${{ github.event_name == 'push' || github.event.inputs.publish == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: oceanicos-release-${{ github.sha }}
+          path: oceanicos-${{ github.sha }}.tar.gz
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Write deployment summary
+        run: |
+          {
+            echo '## Ω∞v deployment bundle staged'
+            echo "- Commit: \\`${GITHUB_SHA}\\`"
+            echo "- Environment: \\`${{ github.event.inputs.environment || 'staging' }}\\`"
+            echo '- Status: `VERIFIED / STAGED_ONLY`'
+            echo '- Divergence alerts: informational only; no automatic authorization or execution'
+            echo '- Final provider publish remains an explicit operator-controlled step'
+          } >> "$GITHUB_STEP_SUMMARY"
