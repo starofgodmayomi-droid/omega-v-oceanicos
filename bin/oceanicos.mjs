@@ -80,6 +80,7 @@ function ensurePackagesLoaded() {
   }
 }
 
+const apiBase = (process.env.OMEGA_API_URL || 'http://127.0.0.1:5000').replace(/\/$/, '');
 
 const ANSI = {
   reset: '\x1b[0m',
@@ -92,6 +93,42 @@ const ANSI = {
   blue: '\x1b[34m',
   red: '\x1b[31m',
 };
+
+async function omegaRequest(pathname, method = 'GET', body) {
+  const response = await fetch(`${apiBase}${pathname}`, {
+    method,
+    headers: body ? { 'content-type': 'application/json' } : undefined,
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const payload = await response.json();
+  if (!response.ok) throw new Error(payload.error || `Ω API request failed (${response.status})`);
+  return payload;
+}
+
+async function handleOmega(argsAfterCommand) {
+  const subcommand = argsAfterCommand[0] || 'help';
+  if (subcommand === 'workers') return console.log(JSON.stringify(await omegaRequest('/v1/omega/workers'), null, 2));
+  if (subcommand === 'events') return console.log(JSON.stringify(await omegaRequest(`/v1/omega/events${argsAfterCommand[1] ? `?commandId=${encodeURIComponent(argsAfterCommand[1])}` : ''}`), null, 2));
+  if (subcommand === 'propose') {
+    const intent = argsAfterCommand.slice(1).join(' ').trim();
+    if (!intent) throw new Error('omega propose requires a bounded intent');
+    return console.log(JSON.stringify(await omegaRequest('/v1/omega/commands', 'POST', {
+      intent,
+      requestedBy: process.env.OMEGA_REQUESTED_BY || 'cli-user',
+      workers: ['observer', 'planner'],
+      idempotencyKey: `cli-${Date.now()}`,
+    }), null, 2));
+  }
+  const id = argsAfterCommand[1];
+  if (!id) throw new Error(`omega ${subcommand} requires a command id`);
+  if (subcommand === 'inspect') return console.log(JSON.stringify(await omegaRequest(`/v1/omega/commands/${encodeURIComponent(id)}`), null, 2));
+  if (subcommand === 'admit') return console.log(JSON.stringify(await omegaRequest(`/v1/omega/commands/${encodeURIComponent(id)}/admit`, 'POST', { authority: process.env.OMEGA_AUTHORITY || 'human:cli-user', policy: 'policy:cli', authorityVerified: true, policySatisfied: true }), null, 2));
+  if (subcommand === 'approve') return console.log(JSON.stringify(await omegaRequest(`/v1/omega/commands/${encodeURIComponent(id)}/approve`, 'POST', { operator: process.env.OMEGA_REQUESTED_BY || 'cli-user' }), null, 2));
+  if (subcommand === 'execute') return console.log(JSON.stringify(await omegaRequest(`/v1/omega/commands/${encodeURIComponent(id)}/execute`, 'POST', {}), null, 2));
+  if (subcommand === 'observe') return console.log(JSON.stringify(await omegaRequest(`/v1/omega/commands/${encodeURIComponent(id)}/observe`, 'POST', { observedState: argsAfterCommand.slice(2).join(' ') || 'bounded-local-action-complete' }), null, 2));
+  if (subcommand === 'verify-reality') return console.log(JSON.stringify(await omegaRequest(`/v1/omega/commands/${encodeURIComponent(id)}/verify-reality`, 'POST', {}), null, 2));
+  throw new Error('unknown omega command; use workers, propose, inspect, admit, approve, execute, observe, verify-reality, or events');
+}
 
 function printBanner() {
   const pidgin = process.env.PIDGIN_ENGINE === 'ON' || args.includes('--pidgin');
@@ -910,7 +947,7 @@ ${ANSI.bold}COMMANDS:${ANSI.reset}
   ${ANSI.green}mood${ANSI.reset}        Display Singularity compression state and Pidgin Spirit Axiom
   ${ANSI.green}stream${ANSI.reset}      Stream live block minting events via SSE from local Fastify API
   ${ANSI.green}kernel${ANSI.reset}      Ω Canonical Kernel introspection (status, verify, states)
-  ${ANSI.green}omega${ANSI.reset}       Ω‑ƆREADƆS Command Lifecycle (propose, admit, execute, observe, verify)
+  ${ANSI.green}omega${ANSI.reset}       Propose, inspect, admit, execute, and verify bounded Ω commands
   ${ANSI.green}copilot${ANSI.reset}     Display Copilot Antigravity Continuum bounded propulsion state
   ${ANSI.green}help${ANSI.reset}        Display this help message
 

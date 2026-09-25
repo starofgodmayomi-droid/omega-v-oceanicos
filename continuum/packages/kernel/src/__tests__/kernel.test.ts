@@ -7,6 +7,37 @@ describe('@omega-v/kernel — Oceanic Finite State Machine Kernel', () => {
     kernel = new OceanicosKernel('test-canonical-kernel-secret');
   });
 
+  it('publishes a bounded capability snapshot without implying external execution', () => {
+    const snapshot = kernel.getCapabilitySnapshot();
+
+    expect(snapshot).toMatchObject({
+      contract: 'oceanicos-kernel.v1',
+      execution: 'local-simulation-only',
+      deterministicEvidence: true,
+      humanAuthorizationRequired: true,
+      capabilities: {
+        observe: true,
+        verify: true,
+        remember: true,
+        attest: true,
+        reason: true,
+        intend: true,
+        build: true,
+        test: true,
+        remoteMutation: false,
+        credentialHandling: false,
+        arbitraryShellExecution: false,
+        externalDeployment: false,
+      },
+    });
+    expect(snapshot.limitations).toEqual(
+      expect.arrayContaining([
+        'local process only',
+        'distributed consistency and external execution are unverified',
+      ])
+    );
+  });
+
   it('should compile canonical state transition Sn from intent, observation, and machine evidence', () => {
     const state = kernel.transition({
       intent: {

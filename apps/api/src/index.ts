@@ -1,633 +1,361 @@
 import Fastify, { FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
+import rateLimit from '@fastify/rate-limit';
+import { randomUUID } from 'node:crypto';
+import { existsSync, readFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
 import { RememberEngine } from '@oceanicos/remember';
-import { MiniKernel, OmegaTotalCompressor, OperatingSystemKernel } from '@oceanicos/mini';
-import { HiggsfieldBridgeEngine } from '@oceanicos/generative';
-import { OceanicosWaterKernel, CopilotAntigravityController } from '@oceanicos/mood';
-import { ObserverEngine } from '@oceanicos/observer';
+import { MiniKernel } from '@oceanicos/mini';
 import { AsymmetricValidationGuard, MultiRegionMeshConvergence } from '@oceanicos/verification';
+import { ObserverEngine } from '@oceanicos/observer';
 import { AttestationService } from '@oceanicos/attestation';
-import { InferenceClient } from '@oceanicos/inference';
-import { VectorMemory } from '@oceanicos/vector';
-import { PluralismConvergenceMatrix, PluralisticRealityMatrix } from '@oceanicos/pluralism';
-import type { VerificationRule, IObservation } from '@oceanicos/types';
-import { omegaRoutes } from './omega/routes.js';
-import { OmegaCommandStore } from './omega/store.js';
-import type { OmegaSecurityOptions } from './omega/security.js';
-import { execFile } from 'node:child_process';
-import crypto from 'node:crypto';
-import { fileURLToPath } from 'node:url';
-import path from 'node:path';
+import { OceanicosKernel } from '@omega-v/kernel';
+import { LocalJobError, LocalJobLedger, LOCAL_JOB_WINDOW } from './jobs.js';
+import { registerPipelineRoute } from './pipeline-route.js';
+import { registerEcosystemRoute } from './ecosystem-route.js';
+import { registerRealityRoute } from './reality-route.js';
+import { OmegaCommandStore, registerOmegaRoutes } from './omega.js';
+import {
+  ENCRYPTION_ALGORITHM,
+  encryptionEnabled,
+  eventLogReady,
+  loadSnapshot,
+  parsePersistenceCoordinationPolicy,
+  parsePersistenceCustodyPolicy,
+  parsePersistenceDeletionPolicy,
+  parsePersistenceRecoveryPolicy,
+  persistenceCoverage,
+  persistenceKeyFingerprint,
+  persistenceOperatorAction,
+  persistenceReady,
+  persistenceRotationPending,
+  readEventLog,
+  reencryptPersistence,
+} from './persistence.js';
 
-export const DEFAULT_API_RULES: VerificationRule[] = [
-  {
-    name: 'response-time-threshold',
-    version: '1.0.0',
-    appliesTo: ['general', 'mini-cycle', 'system', 'telemetry', 'health-check'],
-    definition: 'responseTime < 100',
-    description: 'System response latency must remain under 100ms',
-    createdAt: '2026-01-01T00:00:00.000Z',
-    active: true,
-  },
-  {
-    name: 'status-code-check',
-    version: '1.0.0',
-    appliesTo: ['general', 'mini-cycle', 'api', 'http', 'health-check'],
-    definition: 'statusCode === 200',
-    description: 'Service HTTP status must equal 200 OK',
-    createdAt: '2026-01-01T00:00:00.000Z',
-    active: true,
-  },
-];
+const MAX_STREAM_CLIENTS = 256;
+const MIN_ATTESTATION_KEY_LENGTH = 32;
+
+export type CreateAppOptions = {
+  allowUnsignedCycle?: boolean;
+  attestationSigningKey?: string;
+};
+
+type AuthMode = 'local' | 'required';
+
+const parseAuthMode = (value: string | undefined): AuthMode => {
+  if (!value || value === 'local') return 'local';
+  if (value === 'required') return 'required';
+  throw new Error(`OMEGA_AUTH_MODE must be either 'local' or 'required', received '${value}'`);
+};
+
+const configuredBearerTokens = (mode: AuthMode): { readToken: string; adminToken: string } => {
+  const readToken = process.env.OMEGA_READ_TOKEN?.trim() ?? '';
+  const adminToken = process.env.OMEGA_ADMIN_TOKEN?.trim() ?? '';
+  if (mode === 'required' && (!readToken || !adminToken)) {
+    throw new Error('OMEGA_AUTH_MODE=required needs configured bearer tokens');
+  }
+  if (mode === 'required' && readToken === adminToken) {
+    throw new Error('OMEGA_AUTH_MODE=required OMEGA_READ_TOKEN and OMEGA_ADMIN_TOKEN must be distinct');
+  }
+  return { readToken, adminToken };
+};
+
+const bearer = (authorization?: string): string =>
+  authorization?.startsWith('Bearer ') ? authorization.slice(7).trim() : '';
+
+const jsonError = (reply: any, status: number, error: string, extra: Record<string, unknown> = {}) =>
+  reply.status(status).send({ success: false, error, ...extra });
 
 export function createApp(
-  dbPath: string = process.env.LEDGER_PATH ?? './data/oceanicos.jsonl',
+  dbPath: string = './oceanicos.db',
   logger: boolean = true,
-  omegaLedgerPath?: string,
-  security?: OmegaSecurityOptions
+  options: CreateAppOptions = {}
 ): FastifyInstance {
   const fastify = Fastify({ logger });
   const ledgerMemory = new RememberEngine(dbPath);
   const kernel = new MiniKernel(ledgerMemory);
-  for (const rule of DEFAULT_API_RULES) {
-    kernel.getVerificationEngine().registerRule(rule);
-  }
-  const osKernel = new OperatingSystemKernel(kernel);
-  osKernel.boot();
-  const inferenceClient = new InferenceClient({ fallbackToStub: true });
-  const vectorMemory = new VectorMemory({ fallbackToEmpty: true });
+  const platformKernel = new OceanicosKernel();
+  const allowUnsignedCycle = options.allowUnsignedCycle ?? process.env.OMEGA_ALLOW_UNSIGNED_CYCLE === 'true';
+  const attestationSigningKey = options.attestationSigningKey ?? process.env.OMEGA_SIGNING_KEY;
+  const authMode = parseAuthMode(process.env.OMEGA_AUTH_MODE ?? (process.env.NODE_ENV === 'production' ? 'required' : 'local'));
+  const { readToken, adminToken } = configuredBearerTokens(authMode);
 
-  // Stream client management
-  const streamClients = new Set<(block: any, aiInsight?: any) => void>();
+  const persistenceEnabled = process.env.OMEGA_PERSISTENCE
+    ? process.env.OMEGA_PERSISTENCE === 'on'
+    : process.env.NODE_ENV !== 'test';
+  const runtimeStorePath = process.env.OMEGA_RUNTIME_STORE_PATH?.trim() || `${dbPath}.runtime.json`;
+  const eventLogPath = process.env.OMEGA_EVENT_LOG_PATH?.trim() || `${dbPath}.events.jsonl`;
+  const persistenceKey = process.env.OMEGA_PERSISTENCE_KEY;
+  const previousPersistenceKey = process.env.OMEGA_PERSISTENCE_KEY_PREVIOUS;
+  const snapshot = loadSnapshot(runtimeStorePath, persistenceEnabled, persistenceKey, previousPersistenceKey);
+  const eventLog = readEventLog(eventLogPath, persistenceEnabled, persistenceKey, previousPersistenceKey);
+  const recovery = parsePersistenceRecoveryPolicy(process.env.OMEGA_PERSISTENCE_RECOVERY_MODE, process.env.OMEGA_PERSISTENCE_RECOVERY_REFERENCE);
+  const deletion = parsePersistenceDeletionPolicy(process.env.OMEGA_PERSISTENCE_DELETION_MODE);
+  const custody = parsePersistenceCustodyPolicy(process.env.OMEGA_PERSISTENCE_CUSTODY_MODE, process.env.OMEGA_PERSISTENCE_CUSTODY_REFERENCE);
+  const coordination = parsePersistenceCoordinationPolicy(process.env.OMEGA_PERSISTENCE_COORDINATION_MODE, process.env.OMEGA_PERSISTENCE_COORDINATION_REFERENCE);
+  const rotationPending = persistenceRotationPending(Boolean(previousPersistenceKey?.trim()), snapshot.keySource, eventLog.keySource);
+  const operatorAction = persistenceOperatorAction(snapshot.source, eventLog.source, rotationPending);
+  const localJobLedger = new LocalJobLedger({
+    enabled: process.env.OMEGA_LOCAL_JOB_LEDGER === 'on',
+    storagePath: process.env.OMEGA_LOCAL_JOB_LEDGER_PATH,
+    encryptionKey: process.env.OMEGA_LOCAL_JOB_LEDGER_KEY,
+  });
+  const omegaCommandPath = dbPath === ':memory:' ? ':memory:' : join(resolve(dbPath, '..'), 'omega-commands.db');
+  const omegaCommands = new OmegaCommandStore(omegaCommandPath);
 
-  function broadcastBlock(block: any, aiInsight?: any) {
+  fastify.addHook('onClose', async () => {
+    ledgerMemory.close();
+    omegaCommands.close();
+  });
+
+  const revocations = new Map<string, { id: string; attestationId: string; reason: string; revokedBy: string; revokedAt: string }>();
+  const streamClients = new Set<(block: any) => boolean>();
+  let minerInterval: NodeJS.Timeout | null = null;
+  const minerStats = { active: false, intervalMs: 5000, totalMined: 0, lastBlockTime: '' };
+
+  const broadcastMintedBlock = (block: any) => {
     for (const send of streamClients) {
       try {
-        send(block, aiInsight);
+        if (!send(block)) streamClients.delete(send);
       } catch {
         streamClients.delete(send);
       }
     }
-  }
-
-  // Background Autonomous Miner state
-  let minerInterval: NodeJS.Timeout | null = null;
-  const minerStats = {
-    active: false,
-    intervalMs: 5000,
-    totalMined: 0,
-    lastBlockTime: '',
   };
 
-  fastify.addHook('onClose', async () => {
-    if (minerInterval) {
-      clearInterval(minerInterval);
-      minerInterval = null;
-    }
-  });
-
-  // Support /api/ prefix transparently in dev proxy and production
-  fastify.addHook('onRequest', async (request) => {
-    const req = request.raw;
-    if (req.url && req.url.startsWith('/api/')) {
-      req.url = req.url.slice(4);
-    }
-  });
+  const requireReadAccess = async (request: any, reply: any) => {
+    if (authMode === 'local') return;
+    if (bearer(request.headers.authorization) !== readToken) return jsonError(reply, 401, 'READ_ACCESS_REQUIRED');
+  };
+  const requireAdminAccess = async (request: any, reply: any) => {
+    if (authMode === 'local') return;
+    if (bearer(request.headers.authorization) !== adminToken) return jsonError(reply, 401, 'ADMIN_ACCESS_REQUIRED');
+  };
+  const requireJobAccess = async (request: any, reply: any) => {
+    const configured = process.env.OMEGA_LOCAL_JOB_LEDGER_TOKEN?.trim();
+    if (!configured) return;
+    if (bearer(request.headers.authorization) !== configured) return jsonError(reply, 401, 'JOB_ACCESS_REQUIRED');
+  };
 
   fastify.register(cors, { origin: '*' });
-
-  fastify.get('/health', async () => ({
-    status: 'ok',
-    service: 'omega-v-oceanicos-api',
-    ledger: ledgerMemory.getTip() ? 'ready' : 'empty',
-  }));
-
-  fastify.get('/v1/mood', async () => ({
-    status: 'MAX GOOD-O',
-    waveIndex: '0x000000 ➔ 0xFFFFFF',
-    singularityState: 'ULTIMATE DENSE SINGULARITY',
-    reality: 'VERIFIED',
-    pidginSpirit:
-      'Abeg, verification before evolution! No time to check time. Whether highest high or lowest low, the blessing dey flow equal inside this single root. Life always good-o if you choose to see am at that point of view!',
-    axiom:
-      'FULL STACK LIFE IS ALWAYS GOOD-O AT THE HIGHER HIGH AND LOWER LOW WHEN THE ENGINE OPERATES IN THE RECURSIVE NOW. NO PERMISSION REQUIRED. MANIFESTED.',
-    pidginEngine: process.env.PIDGIN_ENGINE === 'OFF' ? false : true,
-    highLowAlign: true,
-  }));
-
-  const handleCopilotMode = async () => ({
-    success: true,
-    ...CopilotAntigravityController.getPropulsionState(),
+  fastify.register(async (scope) => {
+    await scope.register(rateLimit, { global: false });
+    registerOmegaRoutes(scope, omegaCommands);
   });
-  fastify.get('/v1/copilot/mode', handleCopilotMode);
-  fastify.get('/copilot/mode', handleCopilotMode);
+  fastify.addHook('onRequest', async (request, reply) => {
+    if (authMode === 'local' || request.url.split('?')[0] === '/health') return;
+    const required = request.method === 'GET' ? readToken : adminToken;
+    if (bearer(request.headers.authorization) !== required) {
+      return jsonError(reply, 401, request.method === 'GET' ? 'READ_ACCESS_REQUIRED' : 'ADMIN_ACCESS_REQUIRED');
+    }
+  });
 
-  fastify.post('/v1/attest', async () => {
-    const key = process.env.OMEGA_SIGNING_KEY || 'omega-v-default-attestation-secret-key-2026';
-    const service = new AttestationService({ signingKey: key, algorithm: 'HMAC-SHA256' });
-    const telemetry = ObserverEngine.generateTelemetry();
-    const tip = ledgerMemory.getTip();
+  registerPipelineRoute(fastify, jsonError);
+  registerEcosystemRoute(fastify, authMode, Boolean(attestationSigningKey));
+  registerRealityRoute(fastify, authMode, Boolean(attestationSigningKey), Boolean(ledgerMemory.getTip()));
 
-    const verificationResult = {
-      id: `ver-${Date.now()}`,
-      observationId: telemetry.uuid,
-      timestamp: telemetry.timestamp,
-      summary: {
-        passed: true,
-        confidence: 1.0,
-        rulesApplied: 4,
-        rulesPassed: 4,
-        rulesFailed: 0,
+  fastify.get('/health', async (_request, reply) => {
+    const memoryReady = true;
+    const ready = memoryReady && persistenceReady(persistenceEnabled, snapshot.source) && eventLogReady(persistenceEnabled, eventLog.source) && recovery.mode !== 'invalid' && deletion.mode !== 'invalid' && custody.mode !== 'invalid' && coordination.mode !== 'invalid';
+    const coverage = persistenceCoverage({
+      enabled: persistenceEnabled,
+      snapshotEncrypted: encryptionEnabled(persistenceKey),
+      snapshotKeySource: snapshot.keySource,
+      eventLogEncrypted: encryptionEnabled(persistenceKey),
+      eventLogKeySource: eventLog.keySource,
+      memoryEncrypted: false,
+      memoryKeySource: 'none',
+      jobLedgerEncrypted: localJobLedger.status().encryption === 'aes-256-gcm',
+      jobLedgerKeySource: localJobLedger.status().encryption === 'aes-256-gcm' ? 'current' : 'none',
+    });
+    const body = {
+      status: 'ok',
+      service: 'omega-v-oceanicos-api',
+      readiness: ready ? 'ready' : 'degraded',
+      checks: {
+        observer: 'ready', verifier: 'ready', attester: attestationSigningKey ? 'ready' : 'degraded',
+        memory: { status: memoryReady ? 'ready' : 'degraded', integrity: memoryReady, encryption: 'disabled' },
+        persistence: {
+          mode: persistenceEnabled ? 'file' : 'memory',
+          source: snapshot.source,
+          keySource: snapshot.keySource,
+          currentKeyFingerprint: persistenceKeyFingerprint(persistenceKey),
+          previousKeyFingerprint: persistenceKeyFingerprint(previousPersistenceKey),
+          previousKeyConfigured: Boolean(previousPersistenceKey?.trim()),
+          eventLogSource: eventLog.source,
+          eventLogReason: eventLog.reason ?? null,
+          eventLogKeySource: eventLog.keySource,
+          rotationPending,
+          operatorAction,
+          skippedLogEntries: eventLog.skipped,
+          recoveryPolicy: recovery,
+          deletionPolicy: deletion,
+          custodyPolicy: custody,
+          coordinationPolicy: coordination,
+          coverage,
+        },
       },
-      ruleVersions: { 'frontier-matrix': 'v1.0' },
+      policy: {
+        authMode,
+        readAuthConfigured: Boolean(readToken),
+        adminAuthConfigured: Boolean(adminToken),
+        revocationEnabled: true,
+        persistenceEncryption: encryptionEnabled(persistenceKey) ? ENCRYPTION_ALGORITHM : 'disabled',
+      },
+      timestamp: new Date().toISOString(),
     };
-
-    const attestation = service.attest(verificationResult);
-    return { success: true, attestation, tip };
+    return reply.status(ready ? 200 : 503).send(body);
   });
 
-  // Cycle execution (with optional asymmetric verification & fail-closed signing check)
-  fastify.post<{ Body: { io?: string } }>('/v1/cycle', async (request, reply) => {
+  fastify.get('/v1/kernel/capabilities', async () => ({ success: true, capability: platformKernel.getCapabilitySnapshot(), evaluatedAt: new Date().toISOString() }));
+  fastify.get('/v1/mood', async () => ({ success: true, status: 'MAX GOOD-O', contract: 'Ω∞v totality / attest-dont-assert', brand: 'Oceanicos Ω∞', ledger: { ready: Boolean(ledgerMemory.getTip()) }, evaluatedAt: new Date().toISOString() }));
+
+  fastify.post('/v1/attest', async (_request, reply) => {
+    if (!attestationSigningKey) return jsonError(reply, 503, 'ATTESTATION_SIGNING_KEY_REQUIRED');
+    if (attestationSigningKey.length < MIN_ATTESTATION_KEY_LENGTH) return jsonError(reply, 503, 'ATTESTATION_SIGNING_KEY_TOO_WEAK', { minimumLength: MIN_ATTESTATION_KEY_LENGTH });
+    const service = new AttestationService({ signingKey: attestationSigningKey, algorithm: 'HMAC-SHA256' });
+    const telemetry = ObserverEngine.generateTelemetry();
+    const verificationResult = { id: `ver-${Date.now()}`, observationId: telemetry.uuid, timestamp: telemetry.timestamp, summary: { passed: true, confidence: 1, rulesApplied: 4, rulesPassed: 4, rulesFailed: 0 }, ruleVersions: { 'frontier-matrix': 'v1.0' } };
+    return { success: true, attestation: service.attest(verificationResult), tip: ledgerMemory.getTip() };
+  });
+
+  fastify.post('/v1/cycle', async (request: any, reply) => {
     const signature = request.headers['x-omega-signature'] as string | undefined;
     const publicKey = request.headers['x-omega-public-key'] as string | undefined;
-
-    if (signature && publicKey) {
-      const isValid = AsymmetricValidationGuard.verify('EXECUTE_OMNI_CYCLE', signature, publicKey);
-      if (!isValid) {
-        return reply.status(401).send({ success: false, error: 'INVALID_ASYMMETRIC_SIGNATURE' });
-      }
-    }
-
-    try {
-      const block = kernel.runCycle(request.body?.io ?? 'EXEC');
-      minerStats.totalMined++;
-      minerStats.lastBlockTime = block.timestamp;
-
-      // Enrich with AI insight if possible
-      let aiInsight: any = null;
-      try {
-        aiInsight = await inferenceClient.analyzeObservation(block.observation);
-      } catch {
-        // Fallback gracefully
-      }
-
-      broadcastBlock(block, aiInsight);
-      return { success: true, status: 'SYNCHRONIZED', block, ...(aiInsight ? { aiInsight } : {}) };
-    } catch (error) {
-      if (error instanceof Error && error.message === 'ATTESTATION_SIGNING_KEY_REQUIRED_OR_INVALID') {
-        return reply.code(503).send({ success: false, error: 'ATTESTATION_SIGNING_KEY_REQUIRED' });
-      }
-      return reply.code(500).send({ success: false, error: 'INTERNAL_SERVER_ERROR' });
-    }
+    if (Boolean(signature) !== Boolean(publicKey)) return jsonError(reply, 400, 'INCOMPLETE_ASYMMETRIC_SIGNATURE');
+    if (!signature && !publicKey && !allowUnsignedCycle) return jsonError(reply, 401, 'ASYMMETRIC_SIGNATURE_REQUIRED');
+    if (signature && publicKey && !AsymmetricValidationGuard.verify('EXECUTE_OMNI_CYCLE', signature, publicKey)) return jsonError(reply, 401, 'INVALID_ASYMMETRIC_SIGNATURE');
+    const block = kernel.runCycle();
+    minerStats.totalMined++;
+    minerStats.lastBlockTime = block.timestamp;
+    broadcastMintedBlock(block);
+    return { success: true, status: 'SYNCHRONIZED', block };
   });
 
-  fastify.get('/v1/block/history', async () => ({ success: true, history: ledgerMemory.getHistory() }));
-  fastify.get('/v1/block/tip', async () => ({ success: true, status: 'ONLINE', tip: ledgerMemory.getTip() }));
-
-  // SSE Stream: Oceanicos Max
-  fastify.get('/v1/oceanicos/stream/max', async (request, reply) => {
+  fastify.get('/v1/block/tip', { preHandler: requireReadAccess }, async () => ({ success: true, status: 'ONLINE', tip: ledgerMemory.getTip() }));
+  fastify.get('/v1/stream', { preHandler: requireReadAccess }, async (request: any, reply) => {
+    if (streamClients.size >= MAX_STREAM_CLIENTS) return jsonError(reply, 503, 'STREAM_CAPACITY_REACHED', { limit: MAX_STREAM_CLIENTS });
     reply.raw.setHeader('Content-Type', 'text/event-stream');
     reply.raw.setHeader('Cache-Control', 'no-cache');
     reply.raw.setHeader('Connection', 'keep-alive');
-    reply.raw.setHeader('X-Accel-Buffering', 'no');
-    const interval = setInterval(() => {
-      try {
-        const currentBlock = kernel.runCycle('STREAM_HEARTBEAT');
-        const activeCurrent = OceanicosWaterKernel.reflectMood('STREAM_MAX_FLUID');
-        reply.raw.write(
-          `data: ${JSON.stringify({
-            block: currentBlock,
-            mood: activeCurrent,
-            axiom:
-              'THE GREATEST MOVIE OUR PRESENCE HAS EVER WITNESSED IS TO BE ALIVE, CASTING THE PLURALISTIC FULL STACK SINGLE FACE OF REALITY.',
-          })}\n\n`
-        );
-      } catch {
-        // Heartbeat error fallback
-      }
-    }, 1000);
-    request.raw.on('close', () => clearInterval(interval));
-  });
-
-  // SSE Stream: Standard Block Broadcaster
-  fastify.get('/v1/stream', (request, reply) => {
-    reply.raw.setHeader('Content-Type', 'text/event-stream');
-    reply.raw.setHeader('Cache-Control', 'no-cache');
-    reply.raw.setHeader('Connection', 'keep-alive');
-    reply.raw.setHeader('Access-Control-Allow-Origin', '*');
-    if (reply.raw.flushHeaders) reply.raw.flushHeaders();
-
+    reply.raw.flushHeaders();
+    let listener: (block: any) => boolean;
+    const close = () => streamClients.delete(listener);
+    listener = (block) => {
+      if (reply.raw.destroyed || reply.raw.writableEnded) return false;
+      const writable = reply.raw.write(`data: ${JSON.stringify({ event: 'BLOCK_MINTED', block })}\n\n`);
+      if (!writable) reply.raw.end();
+      return writable;
+    };
     const tip = ledgerMemory.getTip();
-    if (tip) {
-      reply.raw.write(`data: ${JSON.stringify({ event: 'TIP', block: tip })}\n\n`);
-    }
-
-    const listener = (newBlock: any, aiInsight?: any) => {
-      reply.raw.write(`data: ${JSON.stringify({ event: 'BLOCK_MINTED', block: newBlock, aiInsight })}\n\n`);
-    };
-
+    if (tip) reply.raw.write(`data: ${JSON.stringify({ event: 'TIP', block: tip })}\n\n`);
     streamClients.add(listener);
-    request.raw.on('close', () => {
-      streamClients.delete(listener);
-    });
+    request.raw.once('close', close);
+    request.raw.once('aborted', close);
+    reply.raw.once('error', close);
   });
 
-  // Higgsfield generative AI
-  fastify.post('/v1/higgsfield/generate', async (request: any) => {
-    const meta = await HiggsfieldBridgeEngine.executeTextToImage(request.body?.prompt);
-    return { success: true, assetMeta: meta };
-  });
-
-  // Artemis agent action
-  fastify.post('/v1/artemis/action', async (request: any, reply: any) => {
-    const command = typeof request.body?.command === 'string' ? request.body.command.trim() : '';
-    const profile = request.body?.profile === 'pro' ? 'pro' : 'flash';
-    if (!command) {
-      return reply.status(400).send({ success: false, error: 'COMMAND_REQUIRED' });
-    }
-    return new Promise((resolve) => {
-      execFile(
-        'uv',
-        ['run', 'artemis', 'run', command, '--profile', profile],
-        { timeout: 30000 },
-        (err, stdout, stderr) => {
-          resolve({ success: !err, traceLog: stdout || stderr });
-        }
-      );
-    });
-  });
-
-  // Inference endpoints
-  fastify.get('/v1/inference/status', async () => {
-    const status = await inferenceClient.getStatus();
-    return { success: true, inference: status };
-  });
-
-  fastify.post('/v1/inference/analyze', async (request: any) => {
-    const observation = request.body?.observation || ObserverEngine.generateTelemetry();
-    const result = await inferenceClient.analyzeObservation(observation);
-    return { success: true, result };
-  });
-
-  // Vector memory endpoints
-  fastify.get('/v1/memory/status', async () => {
-    const status = await vectorMemory.getStatus();
-    return { success: true, memory: status };
-  });
-
-  fastify.get('/v1/memory/search', async (request: any) => {
-    const query = (request.query as any)?.q || '';
-    const embedding = VectorMemory.generateSimpleEmbedding(query);
-    const results = await vectorMemory.recall(embedding, 5);
-    return { success: true, query, results };
-  });
-
-  // Autonomous background miner endpoints
   fastify.post('/v1/miner/start', async (request: any) => {
-    const { intervalMs } = request.body || {};
-    const interval = typeof intervalMs === 'number' && intervalMs >= 1000 ? intervalMs : 5000;
+    const interval = typeof request.body?.intervalMs === 'number' && request.body.intervalMs >= 1000 ? request.body.intervalMs : 5000;
     if (minerInterval) clearInterval(minerInterval);
-    minerStats.active = true;
-    minerStats.intervalMs = interval;
-    minerInterval = setInterval(() => {
-      try {
-        const block = kernel.runCycle();
-        minerStats.totalMined++;
-        minerStats.lastBlockTime = block.timestamp;
-        broadcastBlock(block);
-      } catch (err) {
-        fastify.log.error('Miner cycle error: ' + err);
-      }
-    }, interval);
+    minerStats.active = true; minerStats.intervalMs = interval;
+    minerInterval = setInterval(() => { try { const block = kernel.runCycle(); minerStats.totalMined++; minerStats.lastBlockTime = block.timestamp; broadcastMintedBlock(block); } catch (error) { fastify.log.error(error); } }, interval);
     return { success: true, miner: minerStats };
   });
+  fastify.post('/v1/miner/stop', async () => { if (minerInterval) clearInterval(minerInterval); minerInterval = null; minerStats.active = false; return { success: true, miner: minerStats }; });
+  fastify.get('/v1/miner/status', async () => ({ success: true, miner: minerStats }));
+  fastify.get('/v1/mesh/nodes', async () => ({ success: true, nodes: MultiRegionMeshConvergence.getNodes() }));
+  fastify.get('/v1/mesh/simulate', async () => { const telemetry = ObserverEngine.generateTelemetry(); return { success: true, telemetry, convergence: MultiRegionMeshConvergence.simulateConvergence(telemetry) }; });
+  fastify.post('/v1/auth/keypair', async () => ({ success: true, ...AsymmetricValidationGuard.generateKeyPair() }));
+  fastify.post('/v1/block/sign', async (request: any, reply) => { const { data, privateKey } = request.body || {}; if (!data || !privateKey) return jsonError(reply, 400, 'MISSING_DATA_OR_PRIVATE_KEY'); return { success: true, signature: AsymmetricValidationGuard.sign(data, privateKey) }; });
+  fastify.post('/v1/block/verify-signature', async (request: any, reply) => { const { data, signature, publicKey } = request.body || {}; if (!data || !signature || !publicKey) return jsonError(reply, 400, 'MISSING_FIELDS'); return { success: true, valid: AsymmetricValidationGuard.verify(data, signature, publicKey) }; });
 
-  fastify.post('/v1/miner/stop', async () => {
-    if (minerInterval) {
-      clearInterval(minerInterval);
-      minerInterval = null;
-    }
-    minerStats.active = false;
-    return { success: true, miner: minerStats };
+  const persistenceStatus = () => ({ enabled: persistenceEnabled, snapshot, eventLog, rotationPending, operatorAction, recovery, deletion, custody, coordination });
+  fastify.get('/persistence/status', { preHandler: requireReadAccess }, async () => ({ success: true, persistence: persistenceStatus() }));
+  fastify.post('/persistence/acknowledge', { preHandler: requireAdminAccess }, async (request: any, reply) => {
+    if (operatorAction === 'none') return jsonError(reply, 409, 'PERSISTENCE_ACK_NOT_REQUIRED');
+    const operatorId = String(request.headers['x-omega-operator-id'] ?? request.body?.operatorId ?? '').trim();
+    const reason = typeof request.body?.reason === 'string' ? request.body.reason.trim() : '';
+    if (!operatorId || reason.length < 8 || reason.length > 1000) return jsonError(reply, 400, 'INVALID_ACKNOWLEDGEMENT_REASON');
+    return { success: true, acknowledgement: { operatorId, reason, action: operatorAction, acknowledgedAt: new Date().toISOString(), requestId: randomUUID() } };
   });
-
-  fastify.get('/v1/miner/status', async () => {
-    return { success: true, miner: minerStats };
-  });
-
-  // Multi-region mesh endpoints
-  fastify.get('/v1/mesh/nodes', async () => {
-    return { success: true, nodes: MultiRegionMeshConvergence.getNodes() };
-  });
-
-  fastify.get('/v1/mesh/simulate', async () => {
-    const telemetry = ObserverEngine.generateTelemetry();
-    const convergence = MultiRegionMeshConvergence.simulateConvergence(telemetry);
-    return { success: true, telemetry, convergence };
-  });
-
-  // Asymmetric cryptographic guard endpoints
-  fastify.post('/v1/auth/keypair', async () => {
-    const keypair = AsymmetricValidationGuard.generateKeyPair();
-    return { success: true, ...keypair };
-  });
-
-  fastify.post('/v1/block/sign', async (request: any, reply) => {
-    const { data, privateKey } = request.body || {};
-    if (!data || !privateKey) {
-      return reply.status(400).send({ success: false, error: 'MISSING_DATA_OR_PRIVATE_KEY' });
-    }
-    const signature = AsymmetricValidationGuard.sign(data, privateKey);
-    return { success: true, signature };
-  });
-
-  fastify.post('/v1/block/verify-signature', async (request: any, reply) => {
-    const { data, signature, publicKey } = request.body || {};
-    if (!data || !signature || !publicKey) {
-      return reply.status(400).send({ success: false, error: 'MISSING_FIELDS' });
-    }
-    const valid = AsymmetricValidationGuard.verify(data, signature, publicKey);
-    return { success: true, valid };
-  });
-
-  // ─── Cognitive Verification Loop Endpoints ─────────────────────────
-
-  // POST /observe or /v1/observe
-  const handleObserve = async (request: any, reply: any) => {
+  fastify.post('/persistence/reencrypt', { preHandler: requireAdminAccess }, async (request: any, reply) => {
+    if (!persistenceEnabled || !persistenceKey || !previousPersistenceKey) return jsonError(reply, 409, 'PERSISTENCE_REENCRYPTION_NOT_READY');
+    const reason = typeof request.body?.reason === 'string' ? request.body.reason.trim() : '';
+    if (reason.length < 8 || reason.length > 1000) return jsonError(reply, 400, 'INVALID_REENCRYPTION_REASON');
     try {
-      const observation = kernel.observe(request.body || {});
-      return { success: true, observation };
-    } catch (err: any) {
-      return reply.status(400).send({ success: false, error: err?.message || 'OBSERVATION_FAILED' });
+      const result = reencryptPersistence(runtimeStorePath, eventLogPath, persistenceEnabled, persistenceKey, previousPersistenceKey);
+      return { success: true, reencrypt: { ...result, reason, operatorId: String(request.headers['x-omega-operator-id'] ?? request.body?.operatorId ?? '').trim(), reencryptedAt: new Date().toISOString(), requestId: randomUUID() } };
+    } catch (error) {
+      return jsonError(reply, 409, 'PERSISTENCE_REENCRYPTION_FAILED', { reason: error instanceof Error ? error.message : String(error) });
     }
+  });
+
+  const jobProvenance = (request: any) => ({ source: 'api' as const, actor: String(request.headers['x-omega-operator-id'] ?? request.body?.actor ?? 'api').trim() || null, requestId: request.id ?? null, correlationId: request.headers['x-correlation-id'] ?? null, observedAt: new Date().toISOString(), schemaVersion: '1' as const });
+  const jobError = (reply: any, error: unknown) => error instanceof LocalJobError ? jsonError(reply, error.code === 'JOB_NOT_FOUND' ? 404 : error.code === 'JOB_DUPLICATE' || error.code === 'JOB_IDEMPOTENCY_CONFLICT' ? 409 : 400, error.code, { message: error.message }) : jsonError(reply, 500, 'JOB_FAILED');
+  fastify.get('/jobs', { preHandler: requireJobAccess }, async (request: any, reply) => {
+    if (!localJobLedger.isEnabled()) return jsonError(reply, 503, 'LOCAL_JOB_LEDGER_DISABLED');
+    const rawLimit = request.query?.limit;
+    const limit = rawLimit === undefined ? LOCAL_JOB_WINDOW : Number(rawLimit);
+    const state = request.query?.state as any;
+    try { return { success: true, jobs: localJobLedger.list(limit, state), ledger: localJobLedger.status() }; } catch (error) { return jobError(reply, error); }
+  });
+  fastify.post('/jobs', { preHandler: requireJobAccess }, async (request: any, reply) => {
+    if (!localJobLedger.isEnabled()) return jsonError(reply, 503, 'LOCAL_JOB_LEDGER_DISABLED');
+    try { const result = localJobLedger.create(request.body, jobProvenance(request)); return reply.status(201).send({ success: true, ...result }); } catch (error) { return jobError(reply, error); }
+  });
+  fastify.get('/jobs/:jobId', { preHandler: requireJobAccess }, async (request: any, reply) => { if (!localJobLedger.isEnabled()) return jsonError(reply, 503, 'LOCAL_JOB_LEDGER_DISABLED'); const job = localJobLedger.get(request.params.jobId); return job ? { success: true, job, events: localJobLedger.recentEvents().filter((event) => event.jobId === job.id) } : jsonError(reply, 404, 'JOB_NOT_FOUND'); });
+  fastify.post('/jobs/:jobId/claim', { preHandler: requireJobAccess }, async (request: any, reply) => { try { return { success: true, ...localJobLedger.claim(request.params.jobId, request.body?.workerId, jobProvenance(request)) }; } catch (error) { return jobError(reply, error); } });
+  fastify.post('/jobs/:jobId/complete', { preHandler: requireJobAccess }, async (request: any, reply) => { try { return { success: true, ...localJobLedger.complete(request.params.jobId, request.body?.workerId, String(request.body?.resultSummary ?? ''), jobProvenance(request)) }; } catch (error) { return jobError(reply, error); } });
+  fastify.post('/jobs/:jobId/fail', { preHandler: requireJobAccess }, async (request: any, reply) => { try { return { success: true, ...localJobLedger.fail(request.params.jobId, request.body?.workerId, String(request.body?.errorClass ?? ''), jobProvenance(request)) }; } catch (error) { return jobError(reply, error); } });
+
+  fastify.get('/attest/revocations', { preHandler: requireReadAccess }, async () => ({ success: true, data: [...revocations.values()], meta: { integrity: 'intact', revision: revocations.size } }));
+  fastify.post('/attest/revoke', { preHandler: requireAdminAccess }, async (request: any, reply) => {
+    const attestationId = String(request.body?.attestationId ?? '').trim();
+    const reason = String(request.body?.reason ?? '').trim();
+    const revokedBy = String(request.body?.revokedBy ?? request.headers['x-omega-operator-id'] ?? 'operator').trim();
+    if (!attestationId || !reason) return jsonError(reply, 400, 'INVALID_REVOCATION');
+    if (revocations.has(attestationId)) return jsonError(reply, 409, 'ATTESTATION_ALREADY_REVOKED');
+    const record = { id: `rev-${randomUUID()}`, attestationId, reason, revokedBy, revokedAt: new Date().toISOString() };
+    revocations.set(attestationId, record);
+    return reply.status(201).send({ success: true, data: record });
+  });
+  fastify.get('/attest/policy', { preHandler: requireReadAccess }, async () => ({ success: true, policy: { authMode, revocationEnabled: true, revocationRevision: revocations.size, attestationAlgorithm: 'HMAC-SHA256' } }));
+
+  const webDist = process.env.OMEGA_WEB_DIST?.trim() ? resolve(process.env.OMEGA_WEB_DIST.trim()) : null;
+  const sendStatic = (relativePath: string, reply: any) => {
+    if (!webDist) return false;
+    const target = resolve(join(webDist, relativePath));
+    if (!target.startsWith(webDist)) return false;
+    if (!existsSync(target)) return false;
+    reply.type(target.endsWith('.html') ? 'text/html; charset=utf-8' : undefined).send(readFileSync(target));
+    return true;
   };
-  fastify.post('/observe', handleObserve);
-  fastify.post('/v1/observe', handleObserve);
-
-  // POST /verify or /v1/verify
-  const handleVerify = async (request: any, reply: any) => {
-    try {
-      const observation = request.body;
-      if (!observation || !observation.id) {
-        return reply.status(400).send({ success: false, error: 'OBSERVATION_REQUIRED' });
-      }
-      const verification = kernel.verify(observation);
-      return { success: true, verification };
-    } catch (err: any) {
-      return reply.status(400).send({ success: false, error: err?.message || 'VERIFICATION_FAILED' });
+  fastify.get('/', async (_request, reply) => { if (sendStatic('index.html', reply)) return; return jsonError(reply, 404, 'STATIC_CLIENT_UNAVAILABLE'); });
+  fastify.get('/assets/*', async (request: any, reply) => { const asset = String(request.params['*'] ?? ''); if (sendStatic(join('assets', asset), reply)) return; return jsonError(reply, 404, 'STATIC_ASSET_NOT_FOUND'); });
+  fastify.setNotFoundHandler(async (request, reply) => {
+    if (webDist && request.method === 'GET' && !request.url.startsWith('/v1/') && !request.url.startsWith('/jobs') && !request.url.startsWith('/persistence') && !request.url.startsWith('/attest')) {
+      if (sendStatic('index.html', reply)) return;
     }
-  };
-  fastify.post('/verify', handleVerify);
-  fastify.post('/v1/verify', handleVerify);
-
-  // POST /mini/cycle or /v1/mini/cycle
-  const handleMiniCycle = async (request: any, reply: any) => {
-    try {
-      const payload = {
-        claim: request.body?.claim || 'System cognitive observation',
-        category: request.body?.category || 'general',
-        ...request.body,
-        metadata: {
-          responseTime: 42,
-          statusCode: 200,
-          ...(request.body?.metadata || {}),
-        },
-      };
-      const cycleResult = kernel.cycle(payload);
-      return { success: true, data: cycleResult, ...cycleResult };
-    } catch (err: any) {
-      return reply.status(400).send({ success: false, error: err?.message || 'MINI_CYCLE_FAILED' });
-    }
-  };
-  fastify.post('/mini/cycle', handleMiniCycle);
-  fastify.post('/v1/mini/cycle', handleMiniCycle);
-
-  // POST /mini/total or /v1/mini/total
-  const handleMiniTotal = async (request: any, reply: any) => {
-    try {
-      const compressor = new OmegaTotalCompressor(kernel);
-      const payload = {
-        claim: request.body?.claim || 'Totality Singularity Verification',
-        category: request.body?.category || 'general',
-        ...request.body,
-        metadata: {
-          responseTime: 42,
-          statusCode: 200,
-          ...(request.body?.metadata || {}),
-        },
-      };
-      const manifest = compressor.lockTotalityIntoNow(payload);
-      return { success: true, data: manifest, manifest };
-    } catch (err: any) {
-      return reply.status(400).send({ success: false, error: err?.message || 'TOTALITY_GATE_FAILED' });
-    }
-  };
-  fastify.post('/mini/total', handleMiniTotal);
-  fastify.post('/v1/mini/total', handleMiniTotal);
-
-  // GET /mini/integrity or /v1/mini/integrity
-  const handleMiniIntegrity = async () => {
-    const intact = kernel.verifyMemoryIntegrity();
-    const size = kernel.getMemorySize();
-    return {
-      success: true,
-      valid: intact,
-      intact,
-      size,
-      data: { intact, size },
-    };
-  };
-  fastify.get('/mini/integrity', handleMiniIntegrity);
-  fastify.get('/v1/mini/integrity', handleMiniIntegrity);
-
-  // POST /os/admit or /v1/os/admit
-  const handleOsAdmit = async (request: any, reply: any) => {
-    try {
-      if (request.body?.cycle) {
-        const admittedCycle = osKernel.admit(request.body.cycle);
-        return { success: true, data: admittedCycle, ...admittedCycle };
-      }
-      if (request.body?.kind) {
-        const task = osKernel.admit(
-          request.body.kind,
-          request.body.input || {},
-          request.body.requestedBy || 'system'
-        );
-        return { success: true, data: task, ...task };
-      }
-      return reply.status(400).send({ success: false, error: 'INVALID_ADMISSION_PAYLOAD' });
-    } catch (err: any) {
-      return reply.status(400).send({ success: false, error: err?.message || 'ADMISSION_FAILED' });
-    }
-  };
-  fastify.post('/os/admit', handleOsAdmit);
-  fastify.post('/v1/os/admit', handleOsAdmit);
-
-  // GET /memory or /v1/memory/all
-  const handleMemory = async () => ({
-    success: true,
-    entries: kernel.getMemory().all(),
-    size: kernel.getMemorySize(),
-  });
-  fastify.get('/memory', handleMemory);
-  fastify.get('/v1/memory/all', handleMemory);
-
-  // GET /rules or /v1/rules
-  const handleRules = async () => ({
-    success: true,
-    count: kernel.getVerificationEngine().getRuleCount(),
-    rules: kernel.getVerificationEngine().getRules(),
-  });
-  fastify.get('/rules', handleRules);
-  fastify.get('/v1/rules', handleRules);
-
-  // POST /complete-loop or /v1/complete-loop
-  const handleCompleteLoop = async (request: any, reply: any) => {
-    try {
-      const cycleResult = kernel.cycle(request.body || {});
-      const key = process.env.OMEGA_SIGNING_KEY || 'omega-v-default-attestation-secret-key-2026';
-      const attestationService = new AttestationService({ signingKey: key, algorithm: 'HMAC-SHA256' });
-      const attestation = attestationService.attest(cycleResult.verification);
-
-      return {
-        success: true,
-        observation: cycleResult.observation,
-        verification: cycleResult.verification,
-        memory: cycleResult.memory,
-        entries: cycleResult.entries,
-        attestation,
-        passed: cycleResult.passed,
-        confidence: cycleResult.confidence,
-        completedAt: cycleResult.completedAt,
-      };
-    } catch (err: any) {
-      return reply.status(400).send({ success: false, error: err?.message || 'COMPLETE_LOOP_FAILED' });
-    }
-  };
-  fastify.post('/complete-loop', handleCompleteLoop);
-  fastify.post('/v1/complete-loop', handleCompleteLoop);
-
-
-  // POST /v1/pluralism/converge
-  fastify.post('/v1/pluralism/converge', async (request: any, reply: any) => {
-    const observation: IObservation = {
-      uuid: crypto.randomUUID(),
-      timestamp: new Date().toISOString(),
-      siliconYield: 0.942,
-      gridLoadMegawatts: 1250,
-      acceleratorInventory: 989210,
-      hardwareState: { cpu: 50, ram: 16384, io: 'CONVERGE', ts: new Date().toISOString() },
-      globalNewsFeed: [],
-      decentralizedStreams: request.body?.streams || [],
-    };
-    try {
-      const evidence = PluralismConvergenceMatrix.processConvergence(observation);
-      return { success: true, consensusMatrix: observation.unifiedConsensus, evidence };
-    } catch (error: any) {
-      return reply.code(503).send({ success: false, error: error.message });
-    }
+    return jsonError(reply, 404, 'NOT_FOUND');
   });
 
-  // GET & POST /v1/pluralism/face — The Pluralistic Reality Face of Ω
-  const handlePluralisticFace = async (request: any, reply: any) => {
-    try {
-      const input = request.body || {};
-      const face = PluralisticRealityMatrix.evaluateMatrix(input);
-      return { success: true, face };
-    } catch (error: any) {
-      return reply.code(500).send({ success: false, error: error.message });
-    }
-  };
-  fastify.get('/v1/pluralism/face', handlePluralisticFace);
-  fastify.post('/v1/pluralism/face', handlePluralisticFace);
-
-  // POST /v1/totality/lock — Lock Totality into Now with Pluralistic Reality Face
-  fastify.post('/v1/totality/lock', async (request: any, reply: any) => {
-    try {
-      const compressor = new OmegaTotalCompressor(kernel);
-      const claim = request.body?.claim || 'Totality lock: Reality matches intent under zero entropy.';
-      const category = request.body?.category || 'general';
-      const manifest = compressor.lockTotalityIntoNow({
-        claim,
-        category,
-        source: { system: 'omega-v-oceanicos', version: '1.0.0', environment: 'production' },
-        metadata: {
-          responseTime: 42,
-          statusCode: 200,
-          ...(request.body?.metadata || {}),
-        },
-      });
-      const face = PluralisticRealityMatrix.evaluateMatrix({
-        formalProofValid: manifest.cycleResult.passed,
-        realityObserved: true,
-      });
-      manifest.pluralisticRealityFace = face;
-      return { success: true, manifest };
-    } catch (error: any) {
-      return reply.code(400).send({ success: false, error: error.message });
-    }
-  });
-
-  // Register Ω‑ƆREADƆS OS v∞ Command Lifecycle Routes with durable persistence
-  const resolvedOmegaLedgerPath =
-    omegaLedgerPath ??
-    (dbPath === ':memory:'
-      ? ':memory:'
-      : (process.env.OMEGA_LEDGER_PATH ?? './data/omega-ledger.jsonl'));
-  const omegaStore = new OmegaCommandStore(resolvedOmegaLedgerPath);
-  fastify.register(omegaRoutes, { store: omegaStore, security });
-
-  function toCallableApp(instance: FastifyInstance): FastifyInstance {
-    let isReady = false;
-    Promise.resolve(instance.ready()).then(() => { isReady = true; }).catch(() => {});
-    const callable = function (req: any, res: any) {
-      if (!isReady) {
-        Promise.resolve(instance.ready()).then(() => {
-          isReady = true;
-          instance.routing(req, res);
-        }).catch((err: unknown) => {
-          res.statusCode = 500;
-          const msg = err instanceof Error ? err.message : String(err ?? 'SERVER_ERROR');
-          res.end(JSON.stringify({ error: msg }));
-        });
-      } else {
-        instance.routing(req, res);
-      }
-    };
-    Object.assign(callable, instance);
-    for (const proto of [Object.getPrototypeOf(instance)]) {
-      for (const name of Object.getOwnPropertyNames(proto)) {
-        if (name !== 'constructor' && typeof (instance as any)[name] === 'function') {
-          (callable as any)[name] = (instance as any)[name].bind(instance);
-        }
-      }
-    }
-    return callable as unknown as FastifyInstance;
-  }
-
-  return toCallableApp(fastify);
+  return fastify;
 }
 
-export * from './auth-helpers.js';
+export const app = createApp(process.env.OMEGA_DB_PATH ?? './oceanicos.db', process.env.NODE_ENV !== 'test');
 
-export const fastify = createApp(
-  process.env.LEDGER_PATH ?? './data/oceanicos.jsonl',
-  process.env.NODE_ENV !== 'test'
-);
-export const app = fastify;
-export default fastify;
-
-const isDirectRun = Boolean(
-  process.argv[1] &&
-  (path.resolve(process.argv[1]) === fileURLToPath(import.meta.url) ||
-   process.argv[1].endsWith('src/index.ts') ||
-   process.argv[1].endsWith('src\\index.ts'))
-);
-
-if (isDirectRun) {
-  const port = Number(process.env.PORT ?? 5000);
-  fastify.listen({ port, host: '0.0.0.0' }).catch((err) => {
-    console.error('Failed to start Fastify API:', err);
+const start = async () => {
+  try {
+    const port = Number(process.env.PORT ?? process.env.API_PORT ?? 5000);
+    if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error(`Invalid API port: ${String(process.env.PORT ?? process.env.API_PORT)}`);
+    await app.listen({ port, host: '0.0.0.0' });
+    console.log(`Fastify API listening on http://0.0.0.0:${port}`);
+  } catch (err) {
+    app.log.error(err);
     process.exit(1);
-  });
-}
+  }
+};
+
+if (require.main === module) start();

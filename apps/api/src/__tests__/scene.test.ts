@@ -9,6 +9,16 @@ describe('Ω∞v scene equation simulation', () => {
     expect(first.terminalState).toBe('return');
     expect(first.trace).toHaveLength(13);
     expect(first.trace[0]).toMatchObject({ state: 'darkness', status: 'observed' });
+    expect(first.trace[0]).toMatchObject({
+      from: null,
+      to: 'darkness',
+      transition: 'origin',
+    });
+    expect(first.trace[1]).toMatchObject({
+      from: 'darkness',
+      to: 'possibility',
+      transition: 'advance',
+    });
     expect(first.trace.at(-1)).toMatchObject({ state: 'return', status: 'verified' });
     expect(first.trace.map((entry) => entry.evidence)).toEqual(
       second.trace.map((entry) => entry.evidence)

@@ -25,6 +25,18 @@ export function validateOmegaIR(ir: OmegaIR): OmegaIRValidation {
     if (ref.digest !== undefined && !nonEmpty(ref.digest)) issues.push({ path: `evidenceRefs[${index}].digest`, message: 'digest must be non-empty when supplied' });
   });
 
+  ir.sourceRefs?.forEach((ref, index) => {
+    if (!nonEmpty(ref.id)) issues.push({ path: `sourceRefs[${index}].id`, message: 'id must be non-empty' });
+    if (!nonEmpty(ref.kind)) issues.push({ path: `sourceRefs[${index}].kind`, message: 'kind must be non-empty' });
+    if (!nonEmpty(ref.locator)) issues.push({ path: `sourceRefs[${index}].locator`, message: 'locator must be non-empty' });
+    if (!['DISCOVERED', 'RETRIEVED', 'TRUSTED', 'AUTHORIZED', 'EXECUTED', 'OBSERVED', 'VERIFIED'].includes(ref.state)) {
+      issues.push({ path: `sourceRefs[${index}].state`, message: 'unsupported source state' });
+    }
+    if (!nonEmpty(ref.provenance)) issues.push({ path: `sourceRefs[${index}].provenance`, message: 'provenance must be non-empty' });
+    if (ref.state === 'AUTHORIZED' && !nonEmpty(ref.authority)) issues.push({ path: `sourceRefs[${index}].authority`, message: 'authorized source requires authority' });
+    if (ref.state === 'VERIFIED' && !nonEmpty(ref.evidenceRef)) issues.push({ path: `sourceRefs[${index}].evidenceRef`, message: 'verified source requires evidenceRef' });
+  });
+
   ir.policyRefs.forEach((ref, index) => {
     if (!nonEmpty(ref.id)) issues.push({ path: `policyRefs[${index}].id`, message: 'id must be non-empty' });
     if (!nonEmpty(ref.version)) issues.push({ path: `policyRefs[${index}].version`, message: 'version must be non-empty' });

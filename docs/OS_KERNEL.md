@@ -63,3 +63,8 @@ The slice was implemented in isolated worktree `/tmp/omega-os-kernel-slice` from
 ## Lineage and rollback
 
 The web-panel continuation is locally verified in `/tmp/omega-os-kernel-slice` and is not yet published. The earlier OS/API/SDK/CLI commits are present on PR #219, but the current session’s GitHub connector is disabled, so remote status cannot be refreshed here. This work remains not a claim about `main`, a merged pull request, a deployment, or production behavior. Rollback is deleting the isolated worktree changes or resetting the unpublished local commit. Push, pull-request publication, merge, and deployment require explicit human authorization.
+
+
+## Ω command layer
+
+Above the finite control-plane kernel, the Ω command layer provides a versioned declarative IR and bounded worker registry. It does not execute arbitrary generated code. The API, SDK, CLI, and Web surfaces all call the same lifecycle: proposal → validation → admission → bounded transition → attestation/provenance → observation → reality classification. This layer preserves `UNKNOWN`, `REVIEW`, `DENY`, and `DIVERGENT` as valid outcomes.

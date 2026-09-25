@@ -24,6 +24,8 @@ console.log(result.state, result.events, result.limitations);
 
 A second useful pattern is a mixed run where a builder fails without erasing successful worker output. The summary reports `state: 'failed'`, retains successful results, and records the failure event for diagnosis.
 
+The package also exports `runCoordinationEvidenceProbe()`. With two independent clients and a restart callback, it verifies one exclusive lease winner, one rejected contender, and replay of the proposed/acquired/rejected/released lifecycle from a shared durable volume. Its result is explicitly `evidence: 'runtime-observed'`, `scope: 'multi-process-single-volume'`, and `verified: true`; it does not claim cross-host durability, distributed consensus, replica agreement, global ordering, deployment health, or external coordinator control.
+
 ## Safety boundary
 
 This is a **local, bounded scheduler**. It does not provide a distributed queue, durable execution, leader election, retries, external callbacks, secret handling, deployment authorization, or proof of work outside the current process. Human authorization remains outside the executor.

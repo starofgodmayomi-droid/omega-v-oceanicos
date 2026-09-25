@@ -278,6 +278,11 @@ describe('local job ledger HTTP contract', () => {
         data: {
           states: string[];
           terminalState: string;
+          trace: Array<{
+            from: string | null;
+            to: string;
+            transition: 'origin' | 'advance';
+          }>;
           branches: Array<{ perspective: string; states: string[] }>;
           branchCount: number;
           continuation: string;
@@ -286,6 +291,10 @@ describe('local job ledger HTTP contract', () => {
       };
       expect(body.data.states).toEqual(['darkness', 'possibility', 'ocean', 'star']);
       expect(body.data.terminalState).toBe('star');
+      expect(body.data.trace.slice(0, 2)).toEqual([
+        { from: null, to: 'darkness', transition: 'origin' },
+        { from: 'darkness', to: 'possibility', transition: 'advance' },
+      ]);
       expect(body.data.branchCount).toBe(3);
       expect(body.data.continuation).toBe('bounded-sample-of-infinite-potential');
       expect(body.data.branches).toHaveLength(3);

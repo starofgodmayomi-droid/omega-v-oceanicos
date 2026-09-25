@@ -19,6 +19,43 @@
  *   → BOUNDED ACTION → OBSERVE → RECONCILE → REMEMBER → NEXT Δ
  */
 
+export type MoodState = 'OPTIMAL_FLOW' | 'FRICTION_DETECTED' | 'RECOMPILING' | 'EVIDENCE_SEARCH' | 'HIGH_INTEGRITY';
+
+export interface SystemMetrics {
+  totalObservations?: number;
+  totalVerifications?: number;
+  avgVerificationTime?: number;
+  successRate?: number;
+  totalAttestations?: number;
+  systemConfidence?: number;
+  lastUpdated?: string;
+  averageLatencyMs?: number;
+}
+
+export interface SystemMood {
+  state: MoodState;
+  confidence: number;
+  uncertainty: number;
+  verificationHealth: number;
+  evidenceQuality: number;
+  errorRate: number;
+  dissentCount: number;
+  description: string;
+  evaluatedAt: string;
+}
+
+export {
+  createMoodContext,
+  normalizeMoodSignal,
+  proposeMoodAdaptation,
+} from './autopilot.js';
+export type {
+  MoodAdaptationProposal,
+  MoodAutopilotLevel,
+  MoodAuthorityDecision,
+  MoodContext,
+} from './autopilot.js';
+
 import crypto from 'node:crypto';
 import type {
   ILiquidState,

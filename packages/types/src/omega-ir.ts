@@ -14,6 +14,31 @@ export interface OmegaEvidenceRef {
   readonly digest?: string;
 }
 
+/**
+ * Monotonic epistemic states for an external source. These are not claims
+ * that the source is universally true; they describe only the local system's
+ * bounded relationship with that source.
+ */
+export type OmegaSourceState =
+  | 'DISCOVERED'
+  | 'RETRIEVED'
+  | 'TRUSTED'
+  | 'AUTHORIZED'
+  | 'EXECUTED'
+  | 'OBSERVED'
+  | 'VERIFIED';
+
+export interface OmegaSourceRef {
+  readonly id: string;
+  readonly kind: string;
+  readonly locator: string;
+  readonly state: OmegaSourceState;
+  readonly provenance: string;
+  readonly digest?: string;
+  readonly authority?: string;
+  readonly evidenceRef?: string;
+}
+
 export interface OmegaPolicyRef {
   readonly id: string;
   readonly version: string;
@@ -51,6 +76,7 @@ export interface OmegaIR {
   readonly version: OmegaIRVersion;
   readonly intent: string;
   readonly evidenceRefs: readonly OmegaEvidenceRef[];
+  readonly sourceRefs?: readonly OmegaSourceRef[];
   readonly policyRefs: readonly OmegaPolicyRef[];
   readonly workerPlan: readonly OmegaWorkerPlan[];
   readonly transitionSpec: OmegaTransitionSpec;

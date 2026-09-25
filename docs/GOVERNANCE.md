@@ -90,7 +90,7 @@ one that runs.
 
 ## Portable runtime smoke evidence
 
-The root `pnpm smoke:api` command is a local reproducibility control. It builds the workspace, starts the compiled API from the `apps/api` package directory, checks health readiness, and exercises the bounded scene route. Its result is evidence that this local compiled package graph served the tested contract under a local signing key with persistence disabled. It is not deployment authorization, distributed readiness, production availability, external custody, backup or replica evidence, or proof that a remote environment runs the same state.
+The root `pnpm smoke:api` command is a local reproducibility control. It builds the workspace, starts the compiled API from the `apps/api` package directory, checks `/health`, reads the ledger tip and mood routes, and verifies that `/v1/stream` emits `TIP` and `BLOCK_MINTED` frames. Its result is evidence that this local compiled package graph served the tested contract under a local signing key with persistence disabled. It is not deployment authorization, distributed readiness, production availability, external custody, backup or replica evidence, or proof that a remote environment runs the same state.
 
 ## Coordination declaration boundary
 
@@ -107,3 +107,10 @@ The Observer and API now preserve optional `parentId` and a bounded `lineage` ar
 ## Strict operator identity source boundary
 
 When `OMEGA_ADMIN_REQUIRE_ALLOWLIST=on`, all three administrative mutations require `x-omega-operator-id`; a JSON body `operatorId` cannot substitute for the dedicated request identity field. Optional local-development mode retains the legacy body fallback for compatibility. The header is still a caller assertion checked against the configured allowlist, not authentication, identity proofing, or evidence of the human behind the request.
+
+
+## Ω command lifecycle governance
+
+The `/v1/omega/commands` lifecycle records human intent, worker attribution, ΩIR, evidence, authority, policy, approval, execution, attestation, provenance, and reality observation as separate states. `DENY` and `REVIEW` never execute. Approval does not claim success; execution does not claim reality; observation does not become proof without defined evidence.
+
+The first worker registry enables only observer, researcher, planner, tester, security-reviewer, and governance-reviewer. Arbitrary shell, credentials, remote mutation, finance, broad publication, deployment, and hidden autonomous loops remain disabled. Dissent and conflicting evidence are retained rather than silently collapsed.

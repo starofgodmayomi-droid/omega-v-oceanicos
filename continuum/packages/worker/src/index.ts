@@ -5,6 +5,27 @@ export type JobStatus = 'QUEUED' | 'LEASED' | 'RUNNING' | 'COMPLETED' | 'FAILED'
 export type BuildCapability =
   'COMPILE' | 'VERIFY' | 'ATTEST' | 'BENCHMARK' | 'CONTAINER_BUILD' | 'ZKP_GEN' | 'REPLAY';
 
+const MAX_IDENTIFIER_LENGTH = 128;
+const MAX_WORKER_CONCURRENCY = 64;
+const MAX_CPU_CORES = 1024;
+const MAX_MEMORY_MB = 1_048_576;
+const MAX_RETRIES = 10;
+const MAX_LEASE_DURATION_MS = 86_400_000;
+
+const requireText = (value: unknown, field: string): string => {
+  if (typeof value !== 'string' || value.trim().length === 0 || value.length > MAX_IDENTIFIER_LENGTH) {
+    throw new Error(`${field} must be a non-empty string of at most ${MAX_IDENTIFIER_LENGTH} characters`);
+  }
+  return value.trim();
+};
+
+const requireIntegerRange = (value: unknown, field: string, minimum: number, maximum: number): number => {
+  if (typeof value !== 'number' || !Number.isInteger(value) || value < minimum || value > maximum) {
+    throw new Error(`${field} must be an integer between ${minimum} and ${maximum}`);
+  }
+  return value;
+};
+
 export interface WorkerNode {
   workerId: string;
   name: string;
@@ -125,12 +146,26 @@ export class OceanicosWorkerPool {
     cpuCores?: number;
     memoryMb?: number;
   }): WorkerNode {
-    const existing = this.workers.get(config.workerId);
+    const workerId = requireText(config.workerId, 'workerId');
+    const name = requireText(config.name, 'worker name');
+    if (!Array.isArray(config.capabilities) || config.capabilities.length === 0) {
+      throw new Error('worker capabilities must contain at least one capability');
+    }
+    const capabilities = [...new Set(config.capabilities)];
+    if (capabilities.some((capability) => !['COMPILE', 'VERIFY', 'ATTEST', 'BENCHMARK', 'CONTAINER_BUILD', 'ZKP_GEN', 'REPLAY'].includes(capability))) {
+      throw new Error('worker capabilities contain an unsupported capability');
+    }
+    const maxConcurrency = config.maxConcurrency === undefined
+      ? 2
+      : requireIntegerRange(config.maxConcurrency, 'maxConcurrency', 1, MAX_WORKER_CONCURRENCY);
+    const cpuCores = config.cpuCores === undefined ? 4 : requireIntegerRange(config.cpuCores, 'cpuCores', 1, MAX_CPU_CORES);
+    const memoryMb = config.memoryMb === undefined ? 8192 : requireIntegerRange(config.memoryMb, 'memoryMb', 128, MAX_MEMORY_MB);
+    const existing = this.workers.get(workerId);
     const worker: WorkerNode = {
-      workerId: config.workerId,
-      name: config.name,
-      capabilities: config.capabilities,
-      maxConcurrency: config.maxConcurrency || 2,
+      workerId,
+      name,
+      capabilities,
+      maxConcurrency,
       activeJobs: existing ? existing.activeJobs : 0,
       status: 'IDLE',
       registeredAt: existing ? existing.registeredAt : new Date().toISOString(),
@@ -138,8 +173,8 @@ export class OceanicosWorkerPool {
       resourceMetrics: existing
         ? existing.resourceMetrics
         : {
-            cpuCores: config.cpuCores || 4,
-            memoryMb: config.memoryMb || 8192,
+            cpuCores,
+            memoryMb,
             avgExecutionTimeMs: 0,
             jobsCompleted: 0,
             jobsFailed: 0,
@@ -167,22 +202,28 @@ export class OceanicosWorkerPool {
     priority?: number;
     maxRetries?: number;
   }): BuildJob {
+    const name = requireText(spec.name, 'job name');
+    if (!spec.payload || typeof spec.payload !== 'object' || Array.isArray(spec.payload)) {
+      throw new Error('job payload must be a record');
+    }
+    const priority = spec.priority === undefined ? 5 : requireIntegerRange(spec.priority, 'priority', 1, 10);
+    const maxRetries = spec.maxRetries === undefined ? 3 : requireIntegerRange(spec.maxRetries, 'maxRetries', 0, MAX_RETRIES);
     const jobId = `job-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
     const inputFingerprint = crypto
       .createHash('sha256')
-      .update(JSON.stringify(spec.payload) + spec.name)
+      .update(JSON.stringify(spec.payload) + name)
       .digest('hex');
 
     const job: BuildJob = {
       jobId,
-      name: spec.name,
+      name,
       requiredCapability: spec.requiredCapability,
       payload: spec.payload,
       inputFingerprint,
       status: 'QUEUED',
-      priority: spec.priority || 5,
+      priority,
       retries: 0,
-      maxRetries: spec.maxRetries || 3,
+      maxRetries,
       createdAt: new Date().toISOString(),
     };
 
@@ -191,6 +232,8 @@ export class OceanicosWorkerPool {
   }
 
   public leaseJob(workerId: string, leaseDurationMs = 30000): BuildJob | null {
+    requireText(workerId, 'workerId');
+    requireIntegerRange(leaseDurationMs, 'leaseDurationMs', 1, MAX_LEASE_DURATION_MS);
     const worker = this.workers.get(workerId);
     if (!worker || worker.status === 'OFFLINE' || worker.status === 'DRAINING') {
       return null;
@@ -205,6 +248,7 @@ export class OceanicosWorkerPool {
       .filter(
         (j) =>
           (j.status === 'QUEUED' ||
+            j.status === 'RETRYING' ||
             (j.status === 'LEASED' &&
               j.leaseExpiresAt &&
               new Date(j.leaseExpiresAt) < new Date())) &&
@@ -221,6 +265,9 @@ export class OceanicosWorkerPool {
     }
 
     const job = eligibleJobs[0];
+    if (job.status === 'LEASED' && job.assignedWorkerId && job.assignedWorkerId !== workerId) {
+      this.releaseWorkerSlot(job.assignedWorkerId);
+    }
     job.status = 'LEASED';
     job.assignedWorkerId = workerId;
     job.startedAt = new Date().toISOString();
@@ -241,9 +288,7 @@ export class OceanicosWorkerPool {
   ): { job: BuildJob; attestation: BuildAttestation } {
     const job = this.jobs.get(jobId);
     if (!job) throw new Error(`Job '${jobId}' not found`);
-    if (job.assignedWorkerId !== workerId) {
-      throw new Error(`Worker '${workerId}' is not assigned to job '${jobId}'`);
-    }
+    this.requireActiveAssignment(job, workerId);
 
     const worker = this.workers.get(workerId);
     const completedAt = new Date().toISOString();
@@ -277,6 +322,8 @@ export class OceanicosWorkerPool {
     job.output = output;
     job.artifacts = artifacts;
     job.attestation = attestation;
+    job.assignedWorkerId = undefined;
+    job.leaseExpiresAt = undefined;
 
     this.attestations.set(attestationId, attestation);
 
@@ -298,7 +345,7 @@ export class OceanicosWorkerPool {
     const job = this.jobs.get(jobId);
     if (!job) throw new Error(`Job '${jobId}' not found`);
 
-    const worker = this.workers.get(workerId);
+    this.requireActiveAssignment(job, workerId);
     job.retries++;
     job.error = error;
 
@@ -309,15 +356,34 @@ export class OceanicosWorkerPool {
     } else {
       job.status = 'FAILED';
       job.completedAt = new Date().toISOString();
+      job.assignedWorkerId = undefined;
+      job.leaseExpiresAt = undefined;
     }
 
-    if (worker) {
-      worker.activeJobs = Math.max(0, worker.activeJobs - 1);
-      worker.status = worker.activeJobs > 0 ? 'BUSY' : 'IDLE';
-      worker.resourceMetrics.jobsFailed++;
-    }
+    const worker = this.releaseWorkerSlot(workerId);
+    if (worker) worker.resourceMetrics.jobsFailed++;
 
     return job;
+  }
+
+  private requireActiveAssignment(job: BuildJob, workerId: string): void {
+    if (job.status !== 'LEASED' && job.status !== 'RUNNING') {
+      throw new Error(`Job '${job.jobId}' is not active`);
+    }
+    if (job.assignedWorkerId !== workerId) {
+      throw new Error(`Worker '${workerId}' is not assigned to job '${job.jobId}'`);
+    }
+    if (job.leaseExpiresAt && new Date(job.leaseExpiresAt).getTime() <= Date.now()) {
+      throw new Error(`Job '${job.jobId}' lease has expired`);
+    }
+  }
+
+  private releaseWorkerSlot(workerId: string): WorkerNode | undefined {
+    const worker = this.workers.get(workerId);
+    if (!worker) return undefined;
+    worker.activeJobs = Math.max(0, worker.activeJobs - 1);
+    worker.status = worker.activeJobs > 0 ? 'BUSY' : 'IDLE';
+    return worker;
   }
 
   public computeArtifactsMerkleRoot(
@@ -353,10 +419,25 @@ export class OceanicosWorkerPool {
   }
 
   public verifyAttestation(attestation: BuildAttestation): boolean {
+    const job = this.jobs.get(attestation.jobId);
+    if (
+      !job ||
+      job.status !== 'COMPLETED' ||
+      job.attestation?.attestationId !== attestation.attestationId ||
+      !this.attestations.has(attestation.attestationId) ||
+      job.inputFingerprint !== attestation.inputFingerprint ||
+      !job.output ||
+      !job.artifacts ||
+      this.computeArtifactsMerkleRoot(job.artifacts, job.output) !== attestation.outputMerkleRoot
+    ) {
+      return false;
+    }
     const sigPayload = `${attestation.attestationId}:${attestation.jobId}:${attestation.workerId}:${attestation.inputFingerprint}:${attestation.outputMerkleRoot}:${attestation.executionTimeMs}`;
     const expectedSig =
       '0x' + crypto.createHmac('sha256', this.signingKey).update(sigPayload).digest('hex');
-    return attestation.builderSignature === expectedSig;
+    const actual = Buffer.from(attestation.builderSignature, 'utf8');
+    const expected = Buffer.from(expectedSig, 'utf8');
+    return actual.length === expected.length && crypto.timingSafeEqual(actual, expected);
   }
 
   public verifyBuildReproducibility(attestations: BuildAttestation[]): {
@@ -420,7 +501,17 @@ export class OceanicosWorkerPool {
       completedJobs: completed.length,
       failedJobs: failed.length,
       avgDurationMs: completed.length > 0 ? Math.round(totalDuration / completed.length) : 0,
-      reproducibilityRate: completed.length > 0 ? 1.0 : 1.0,
+      reproducibilityRate:
+        completed.length < 2
+          ? 1.0
+          : (() => {
+              const roots = completed
+                .map((job) => job.attestation?.outputMerkleRoot)
+                .filter((root): root is string => Boolean(root));
+              return roots.length === completed.length && roots.every((root) => root === roots[0])
+                ? 1.0
+                : 0.0;
+            })(),
     };
   }
 }

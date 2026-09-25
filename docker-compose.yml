@@ -8,15 +8,22 @@ services:
     ports:
       - "5000:5000"
     environment:
-      NODE_ENV: production
-      PORT: 5000
-      HOST: 0.0.0.0
-      OMEGA_SIGNING_KEY: ${OMEGA_SIGNING_KEY:-ci-test-secret-key-at-least-16-chars-2026}
-      OMEGA_LEDGER_PATH: /app/data/oceanicos.jsonl
+      - NODE_ENV=production
+      - PORT=5000
+      - API_PORT=5000
+      - HOST=0.0.0.0
+      - OMEGA_SIGNING_KEY=${OMEGA_SIGNING_KEY:-ci-test-secret-key-at-least-32-chars-2026}
+      - OMEGA_AUTH_MODE=${OMEGA_AUTH_MODE:-local}
+      - OMEGA_READ_TOKEN=${OMEGA_READ_TOKEN:-read-token-placeholder}
+      - OMEGA_ADMIN_TOKEN=${OMEGA_ADMIN_TOKEN:-admin-token-placeholder}
+      - OMEGA_MODE=${OMEGA_MODE:-MAX_FLUID}
+      - OMEGA_LEDGER_PATH=/app/data/oceanicos.jsonl
+      - OMEGA_DB_PATH=/app/data/oceanicos.db
+      - PIDGIN_ENGINE=${PIDGIN_ENGINE:-ON}
     volumes:
       - ledger-storage:/app/data
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://localhost:5000/v1/omega/workers').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      test: ["CMD", "node", "-e", "fetch('http://localhost:5000/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -26,6 +33,8 @@ services:
     build:
       context: .
       target: web
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:5000}
     ports:
       - "3000:3000"
     environment:

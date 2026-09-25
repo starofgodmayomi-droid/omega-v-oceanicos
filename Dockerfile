@@ -2,7 +2,7 @@
 # Multi-stage production container for Ω∞v Oceanicos Zero-Entropy OS
 
 FROM node:22-bookworm-slim AS base
-RUN corepack enable && corepack prepare pnpm@9.15.4 --activate
+RUN corepack enable && corepack prepare pnpm@10.5.2 --activate
 WORKDIR /app
 
 # Stage 1: Build all packages and web assets
@@ -16,7 +16,8 @@ FROM base AS api
 ENV NODE_ENV=production \
     PORT=5000 \
     HOST=0.0.0.0 \
-    OMEGA_LEDGER_PATH=/app/data/oceanicos.jsonl
+    OMEGA_LEDGER_PATH=/app/data/oceanicos.jsonl \
+    OMEGA_DB_PATH=/app/data/oceanicos.db
 COPY --from=builder /app /app
 RUN mkdir -p /app/data
 EXPOSE 5000

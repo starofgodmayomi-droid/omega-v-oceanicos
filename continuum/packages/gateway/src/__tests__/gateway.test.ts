@@ -4,7 +4,7 @@ describe('@omega-v/gateway — OceanicosGatewayEngine', () => {
   let gateway: OceanicosGatewayEngine;
 
   beforeEach(() => {
-    gateway = new OceanicosGatewayEngine('test-gateway-key');
+    gateway = new OceanicosGatewayEngine('test-gateway-signing-key-2026-strong');
   });
 
   describe('Client Registration & Tier Management', () => {
@@ -53,10 +53,11 @@ describe('@omega-v/gateway — OceanicosGatewayEngine', () => {
       expect(blocked.reason).toContain('Rate limit exceeded');
     });
 
-    it('should auto-register unknown clients as FREE', () => {
+    it('should deny unknown clients until explicitly registered', () => {
       const decision = gateway.processRequest('unknown-client');
-      expect(decision.allowed).toBe(true);
+      expect(decision.allowed).toBe(false);
       expect(decision.tier).toBe('FREE');
+      expect(decision.reason).toContain('explicit registration required');
       // Should have generated an anomaly
       const anomalies = gateway.getAnomalies();
       expect(anomalies.some((a) => a.type === 'UNKNOWN_CLIENT')).toBe(true);
@@ -65,6 +66,7 @@ describe('@omega-v/gateway — OceanicosGatewayEngine', () => {
 
   describe('Request Signing & Verification', () => {
     it('should sign and verify requests', () => {
+      gateway.registerClient('client-1');
       const signed = gateway.signRequest('client-1', 'hello');
       expect(signed.signature).toBeDefined();
       expect(signed.nonce).toHaveLength(16);
@@ -75,6 +77,7 @@ describe('@omega-v/gateway — OceanicosGatewayEngine', () => {
     });
 
     it('should detect replay attacks via nonce reuse', () => {
+      gateway.registerClient('client-1');
       const signed = gateway.signRequest('client-1', 'data');
       // First verification succeeds
       expect(gateway.verifySignedRequest(signed).valid).toBe(true);
@@ -85,6 +88,7 @@ describe('@omega-v/gateway — OceanicosGatewayEngine', () => {
     });
 
     it('should detect signature tampering', () => {
+      gateway.registerClient('client-1');
       const signed = gateway.signRequest('client-1', 'data');
       // Tamper with signature
       const tampered = { ...signed, signature: 'tampered-signature' };
@@ -94,6 +98,7 @@ describe('@omega-v/gateway — OceanicosGatewayEngine', () => {
     });
 
     it('should reject expired timestamps', () => {
+      gateway.registerClient('client-1');
       const signed = gateway.signRequest('client-1');
       // Set timestamp to 10 minutes ago
       const expired = {
@@ -103,6 +108,14 @@ describe('@omega-v/gateway — OceanicosGatewayEngine', () => {
       const result = gateway.verifySignedRequest(expired);
       expect(result.valid).toBe(false);
       expect(result.reason).toContain('too old');
+    });
+
+    it('should reject a valid signature from an unregistered client', () => {
+      const signed = gateway.signRequest('unregistered-client', 'data');
+      const result = gateway.verifySignedRequest(signed);
+      expect(result.valid).toBe(false);
+      expect(result.reason).toContain('explicit registration required');
+      expect(gateway.getAnomalies().some((a) => a.type === 'UNKNOWN_CLIENT')).toBe(true);
     });
   });
 
@@ -129,6 +142,7 @@ describe('@omega-v/gateway — OceanicosGatewayEngine', () => {
     });
 
     it('should detect signature mismatch anomalies', () => {
+      gateway.registerClient('client-1');
       const signed = gateway.signRequest('client-1');
       gateway.verifySignedRequest({ ...signed, signature: 'bad' });
       const anomalies = gateway.getAnomalies();

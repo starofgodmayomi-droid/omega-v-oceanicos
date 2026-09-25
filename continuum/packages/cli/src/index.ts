@@ -247,6 +247,7 @@ function usage(): string {
     'omega health [--url URL]',
     'omega status [--url URL] [--token TOKEN]',
     'omega os [--url URL] [--token TOKEN]',
+    'omega kernel-capabilities [--url URL] [--token TOKEN]',
     'omega events [--url URL] [--limit N] [--token TOKEN]',
     'omega audit [--type TYPE] [--stage STAGE] [--status STATUS] [--from ISO] [--to ISO] [--limit N] [--url URL] [--token TOKEN]',
     'omega runs [--url URL] [--limit N] [--token TOKEN]',
@@ -411,6 +412,49 @@ async function operatingSystem(argv: string[], fetchImpl: FetchLike): Promise<nu
       `CAPABILITIES shell=${body.data.capabilities?.shellExecution === false ? 'DISABLED' : 'UNKNOWN'} remote=${body.data.capabilities?.remoteMutation === false ? 'DISABLED' : 'UNKNOWN'} credentials=${body.data.capabilities?.credentialHandling === false ? 'DISABLED' : 'UNKNOWN'} human_gate=${body.data.capabilities?.humanAuthorizationRequired === true ? 'REQUIRED' : 'UNKNOWN'}\n`
   );
   return 0;
+}
+
+async function kernelCapabilities(argv: string[], fetchImpl: FetchLike): Promise<number> {
+  const endpoint = `${baseUrl(argv).replace(/\/$/, '')}/v1/kernel/capabilities`;
+  try {
+    const response = await fetchImpl(endpoint, requestInit(argv));
+    const body = (await response.json()) as {
+      success?: boolean;
+      capability?: {
+        contract?: string;
+        execution?: string;
+        humanAuthorizationRequired?: boolean;
+        capabilities?: {
+          remoteMutation?: boolean;
+          arbitraryShellExecution?: boolean;
+          credentialHandling?: boolean;
+        };
+      };
+      message?: string;
+    };
+    if (!response.ok || !body.success || !body.capability) {
+      process.stderr.write(
+        `Kernel capabilities unavailable (${response.status}): ${body.message ?? 'unknown error'}\n`
+      );
+      return 1;
+    }
+    const capability = body.capability;
+    const flags = capability.capabilities ?? {};
+    process.stdout.write(
+      `CONTRACT   ${capability.contract ?? 'UNKNOWN'}\n` +
+        `EXECUTION  ${capability.execution ?? 'UNKNOWN'}\n` +
+        `REMOTE     ${flags.remoteMutation === false ? 'DISABLED' : 'UNKNOWN'}\n` +
+        `SHELL      ${flags.arbitraryShellExecution === false ? 'DISABLED' : 'UNKNOWN'}\n` +
+        `CREDENTIALS ${flags.credentialHandling === false ? 'DISABLED' : 'UNKNOWN'}\n` +
+        `HUMAN_GATE ${capability.humanAuthorizationRequired === true ? 'REQUIRED' : 'UNKNOWN'}\n`
+    );
+    return 0;
+  } catch (error) {
+    process.stderr.write(
+      `Kernel capabilities unavailable: ${error instanceof Error ? error.message : String(error)}\n`
+    );
+    return 1;
+  }
 }
 
 async function status(argv: string[], fetchImpl: FetchLike): Promise<number> {
@@ -1003,6 +1047,7 @@ export async function run(
   if (command === 'health') return health(argv, fetchImpl);
   if (command === 'status') return status(argv, fetchImpl);
   if (command === 'os') return operatingSystem(argv, fetchImpl);
+  if (command === 'kernel-capabilities') return kernelCapabilities(argv, fetchImpl);
   if (command === 'events') return events(argv, fetchImpl);
   if (command === 'audit') return audit(argv, fetchImpl);
   if (command === 'runs') return runs(argv, fetchImpl);

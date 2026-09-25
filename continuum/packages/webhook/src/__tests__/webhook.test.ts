@@ -73,6 +73,17 @@ describe('@omega-v/webhook — OceanicosWebhookEngine', () => {
       const tampered = { ...payload, data: { claim: 'tampered' } };
       expect(webhookEngine.verifySignature(tampered, sig, secret)).toBe(false);
     });
+
+    it('should reject malformed signatures without throwing', () => {
+      const payload: WebhookPayload = {
+        eventId: 'evt-malformed',
+        event: 'ATTESTATION_CREATED',
+        timestamp: '2026-08-23T00:00:00.000Z',
+        data: { claim: 'malformed' },
+      };
+      expect(() => webhookEngine.verifySignature(payload, 'sha256=short', 'secret')).not.toThrow();
+      expect(webhookEngine.verifySignature(payload, 'sha256=short', 'secret')).toBe(false);
+    });
   });
 
   describe('Event Dispatching & Delivery Retries', () => {

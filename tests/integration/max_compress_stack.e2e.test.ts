@@ -6,7 +6,7 @@ import {
   AsymmetricValidationGuard,
   MultiRegionMeshConvergence,
 } from '../../packages/verification/src/index.js';
-import { PluralisticHashChain, RememberEngine } from '../../packages/remember/src/index.js';
+import { MAX_PROOF_OF_WORK_ATTEMPTS, PluralisticHashChain, RememberEngine } from '../../packages/remember/src/index.js';
 import { MiniKernel, executeOceanicosMaxExpansion } from '../../packages/mini/src/index.js';
 import { AttestationService } from '../../packages/attestation/src/index.js';
 import { InferenceClient } from '../../packages/inference/src/index.js';
@@ -22,7 +22,10 @@ describe('Ω∞v Oceanicos Max Compress Full-Stack E2E Suite', () => {
   before(async () => {
     process.env.OMEGA_SIGNING_KEY =
       process.env.OMEGA_SIGNING_KEY || 'omega-v-default-attestation-secret-key-2026';
-    apiApp = createApp(':memory:', false);
+    apiApp = createApp(':memory:', false, {
+      allowUnsignedCycle: true,
+      attestationSigningKey: 'integration-attestation-key-2026-strong',
+    });
     await apiApp.ready();
   });
 
@@ -54,9 +57,8 @@ describe('Ω∞v Oceanicos Max Compress Full-Stack E2E Suite', () => {
     assert.strictEqual(receipt.assertions.length, 3, 'Must evaluate US, CN, and EU');
     assert.ok(receipt.evidencePath.startsWith('crypto-attestation://'), 'Evidence path must be URI scheme');
 
-    // Test DIVERGENT state condition (silicon yield failing CN independence)
     const divergentTelemetry = {
-      siliconYield: 0.85, // Below 0.92 CN threshold
+      siliconYield: 0.85,
       gridLoadMegawatts: 1250,
       acceleratorInventory: 989210,
     };
@@ -135,6 +137,30 @@ describe('Ω∞v Oceanicos Max Compress Full-Stack E2E Suite', () => {
     assert.strictEqual(tip?.index, 0);
   });
 
+  it('5a. Remember proof-of-work is finite and cancellable', () => {
+    assert.strictEqual(MAX_PROOF_OF_WORK_ATTEMPTS, 1_000_000);
+    const receipt = verifyPlanetarySovereignty({
+      siliconYield: 0.94,
+      gridLoadMegawatts: 1200,
+      acceleratorInventory: 600000,
+    });
+    const chainController = new AbortController();
+    chainController.abort();
+    assert.throws(
+      () => new PluralisticHashChain().commitState(receipt, { signal: chainController.signal }),
+      /proof-of-work aborted/,
+    );
+
+    const engineController = new AbortController();
+    engineController.abort();
+    const engine = new RememberEngine(':memory:');
+    assert.throws(
+      () => engine.append(ObserverEngine.generateTelemetry(), { status: 'PASS' } as any, { signal: engineController.signal }),
+      /proof-of-work aborted/,
+    );
+    engine.close();
+  });
+
   it('6. MiniKernel executes full end-to-end cycle cleanly', () => {
     const db = new RememberEngine(':memory:');
     const kernel = new MiniKernel(db);
@@ -173,10 +199,7 @@ describe('Ω∞v Oceanicos Max Compress Full-Stack E2E Suite', () => {
   });
 
   it('9. Fastify API GET /v1/block/tip returns initial online tip status', async () => {
-    const res = await apiApp.inject({
-      method: 'GET',
-      url: '/v1/block/tip',
-    });
+    const res = await apiApp.inject({ method: 'GET', url: '/v1/block/tip' });
     assert.strictEqual(res.statusCode, 200);
     const body = JSON.parse(res.body);
     assert.strictEqual(body.success, true);
@@ -184,10 +207,7 @@ describe('Ω∞v Oceanicos Max Compress Full-Stack E2E Suite', () => {
   });
 
   it('10. Fastify API POST /v1/cycle executes and returns newly mined block', async () => {
-    const res = await apiApp.inject({
-      method: 'POST',
-      url: '/v1/cycle',
-    });
+    const res = await apiApp.inject({ method: 'POST', url: '/v1/cycle' });
     assert.strictEqual(res.statusCode, 200);
     const body = JSON.parse(res.body);
     assert.strictEqual(body.success, true);
@@ -198,54 +218,62 @@ describe('Ω∞v Oceanicos Max Compress Full-Stack E2E Suite', () => {
 
   it('11. Fastify API enforces Asymmetric Signature Guard on /v1/cycle', async () => {
     const keypair = AsymmetricValidationGuard.generateKeyPair();
+    const strictApp = createApp(':memory:', false, { allowUnsignedCycle: false });
+    await strictApp.ready();
+    const unsigned = await strictApp.inject({ method: 'POST', url: '/v1/cycle' });
+    assert.strictEqual(unsigned.statusCode, 401);
+    assert.strictEqual(JSON.parse(unsigned.body).error, 'ASYMMETRIC_SIGNATURE_REQUIRED');
+    await strictApp.close();
 
-    // 11a. Fails with tampered signature
+    const signatureOnly = await apiApp.inject({ method: 'POST', url: '/v1/cycle', headers: { 'x-omega-signature': 'deadbeef00112233' } });
+    assert.strictEqual(signatureOnly.statusCode, 400);
+    assert.strictEqual(JSON.parse(signatureOnly.body).error, 'INCOMPLETE_ASYMMETRIC_SIGNATURE');
+
+    const publicKeyOnly = await apiApp.inject({ method: 'POST', url: '/v1/cycle', headers: { 'x-omega-public-key': keypair.publicKey } });
+    assert.strictEqual(publicKeyOnly.statusCode, 400);
+    assert.strictEqual(JSON.parse(publicKeyOnly.body).error, 'INCOMPLETE_ASYMMETRIC_SIGNATURE');
+
     const badRes = await apiApp.inject({
       method: 'POST',
       url: '/v1/cycle',
-      headers: {
-        'x-omega-signature': 'deadbeef00112233',
-        'x-omega-public-key': keypair.publicKey,
-      },
+      headers: { 'x-omega-signature': 'deadbeef00112233', 'x-omega-public-key': keypair.publicKey },
     });
     assert.strictEqual(badRes.statusCode, 401);
-    const badBody = JSON.parse(badRes.body);
-    assert.strictEqual(badBody.error, 'INVALID_ASYMMETRIC_SIGNATURE');
+    assert.strictEqual(JSON.parse(badRes.body).error, 'INVALID_ASYMMETRIC_SIGNATURE');
 
-    // 11b. Succeeds with authentic signature
     const validSig = AsymmetricValidationGuard.sign('EXECUTE_OMNI_CYCLE', keypair.privateKey);
     const goodRes = await apiApp.inject({
       method: 'POST',
       url: '/v1/cycle',
-      headers: {
-        'x-omega-signature': validSig,
-        'x-omega-public-key': keypair.publicKey,
-      },
+      headers: { 'x-omega-signature': validSig, 'x-omega-public-key': keypair.publicKey },
     });
     assert.strictEqual(goodRes.statusCode, 200);
-    const goodBody = JSON.parse(goodRes.body);
-    assert.strictEqual(goodBody.success, true);
+    assert.strictEqual(JSON.parse(goodRes.body).success, true);
+
+    const encodedKeyRes = await apiApp.inject({
+      method: 'POST',
+      url: '/v1/cycle',
+      headers: {
+        'x-omega-signature': validSig,
+        'x-omega-public-key': `base64:${Buffer.from(keypair.publicKey, 'utf8').toString('base64')}`,
+      },
+    });
+    assert.strictEqual(encodedKeyRes.statusCode, 200);
+    assert.strictEqual(JSON.parse(encodedKeyRes.body).success, true);
   });
 
   it('12. Fastify API Autonomous Background Miner endpoints operate correctly', async () => {
-    // Check initial status
     const statusRes = await apiApp.inject({ method: 'GET', url: '/v1/miner/status' });
     assert.strictEqual(statusRes.statusCode, 200);
     const initialStatus = JSON.parse(statusRes.body);
     assert.strictEqual(initialStatus.miner.active, false);
 
-    // Start miner
-    const startRes = await apiApp.inject({
-      method: 'POST',
-      url: '/v1/miner/start',
-      payload: { intervalMs: 2000 },
-    });
+    const startRes = await apiApp.inject({ method: 'POST', url: '/v1/miner/start', payload: { intervalMs: 2000 } });
     assert.strictEqual(startRes.statusCode, 200);
     const started = JSON.parse(startRes.body);
     assert.strictEqual(started.miner.active, true);
     assert.strictEqual(started.miner.intervalMs, 2000);
 
-    // Stop miner
     const stopRes = await apiApp.inject({ method: 'POST', url: '/v1/miner/stop' });
     assert.strictEqual(stopRes.statusCode, 200);
     const stopped = JSON.parse(stopRes.body);
@@ -270,7 +298,6 @@ describe('Ω∞v Oceanicos Max Compress Full-Stack E2E Suite', () => {
     const { execFileSync } = await import('node:child_process');
     const path = await import('node:path');
     const cliPath = path.resolve(process.cwd(), 'bin/oceanicos.mjs');
-
     const stdout = execFileSync(process.execPath, [cliPath, 'status'], { encoding: 'utf-8' });
     assert.ok(stdout.includes('OCEANICOS DEEP-TIER CRYPTOGRAPHIC CLI'));
     assert.ok(stdout.includes('Silicon Yield'));
@@ -282,9 +309,7 @@ describe('Ω∞v Oceanicos Max Compress Full-Stack E2E Suite', () => {
     const { execFileSync } = await import('node:child_process');
     const path = await import('node:path');
     const cliPath = path.resolve(process.cwd(), 'bin/oceanicos.mjs');
-
     const stdout = execFileSync(process.execPath, [cliPath, 'cycle', '--json'], { encoding: 'utf-8' });
-    // Parse the JSON block output from CLI
     const jsonMatch = stdout.match(/\{[\s\S]*\}/);
     assert.ok(jsonMatch, 'Must output valid JSON block');
     const block = JSON.parse(jsonMatch[0]);
@@ -298,7 +323,6 @@ describe('Ω∞v Oceanicos Max Compress Full-Stack E2E Suite', () => {
     const { execFileSync } = await import('node:child_process');
     const path = await import('node:path');
     const cliPath = path.resolve(process.cwd(), 'bin/oceanicos.mjs');
-
     const stdout = execFileSync(process.execPath, [cliPath, 'mesh'], { encoding: 'utf-8' });
     assert.ok(stdout.includes('PLANETARY SOVEREIGN MESH CONVERGENCE'));
     assert.ok(stdout.includes('Quorum Reached'));
@@ -310,7 +334,6 @@ describe('Ω∞v Oceanicos Max Compress Full-Stack E2E Suite', () => {
   });
 
   it('17. Cryptographic AttestationService generates and verifies unforgeable HMAC & Ed25519 signatures', async () => {
-    // 17a. HMAC-SHA256
     const secretKey = 'test-secret-key-for-attestation-2026';
     const hmacService = new AttestationService({ signingKey: secretKey, algorithm: 'HMAC-SHA256' });
     const mockVerif = {
@@ -327,11 +350,9 @@ describe('Ω∞v Oceanicos Max Compress Full-Stack E2E Suite', () => {
     assert.ok(att.signature.startsWith('0x'));
     assert.strictEqual(hmacService.verify(att), true);
 
-    // Tampered attestation fails verification
     const tampered = { ...att, verified: false };
     assert.strictEqual(hmacService.verify(tampered), false);
 
-    // 17b. Ed25519 Asymmetric
     const edKeypair = AsymmetricValidationGuard.generateKeyPair();
     const edService = new AttestationService({
       signingKey: edKeypair.privateKey,
@@ -343,18 +364,40 @@ describe('Ω∞v Oceanicos Max Compress Full-Stack E2E Suite', () => {
     assert.strictEqual(edService.verify(edAtt), true);
   });
 
-  it('18. Fastify API GET /v1/mood returns Singularity Compression status and Pidgin Spirit Axiom', async () => {
+  it('18. Fastify API GET /v1/mood exposes the current bounded mood contract', async () => {
     const res = await apiApp.inject({ method: 'GET', url: '/v1/mood' });
     assert.strictEqual(res.statusCode, 200);
     const data = JSON.parse(res.body);
+    assert.strictEqual(data.success, true);
     assert.strictEqual(data.status, 'MAX GOOD-O');
-    assert.strictEqual(data.singularityState, 'ULTIMATE DENSE SINGULARITY');
-    assert.strictEqual(data.reality, 'VERIFIED');
-    assert.ok(data.pidginSpirit.includes('Abeg, verification before evolution'));
-    assert.ok(data.axiom.includes('FULL STACK LIFE IS ALWAYS GOOD-O'));
+    assert.strictEqual(data.brand, 'Oceanicos Ω∞');
+    assert.strictEqual(data.contract, 'Ω∞v totality / attest-dont-assert');
+    assert.ok(data.ledger && typeof data.ledger.ready === 'boolean');
+    assert.ok(typeof data.evaluatedAt === 'string');
   });
 
   it('19. Fastify API POST /v1/attest produces valid cryptographic attestation receipt', async () => {
+    const originalSigningKey = process.env.OMEGA_SIGNING_KEY;
+    delete process.env.OMEGA_SIGNING_KEY;
+    try {
+      const missingKeyApp = createApp(':memory:', false);
+      await missingKeyApp.ready();
+      const missingKey = await missingKeyApp.inject({ method: 'POST', url: '/v1/attest' });
+      assert.strictEqual(missingKey.statusCode, 503);
+      assert.strictEqual(JSON.parse(missingKey.body).error, 'ATTESTATION_SIGNING_KEY_REQUIRED');
+      await missingKeyApp.close();
+    } finally {
+      if (originalSigningKey === undefined) delete process.env.OMEGA_SIGNING_KEY;
+      else process.env.OMEGA_SIGNING_KEY = originalSigningKey;
+    }
+
+    const weakKeyApp = createApp(':memory:', false, { attestationSigningKey: 'too-short' });
+    await weakKeyApp.ready();
+    const weakKey = await weakKeyApp.inject({ method: 'POST', url: '/v1/attest' });
+    assert.strictEqual(weakKey.statusCode, 503);
+    assert.strictEqual(JSON.parse(weakKey.body).error, 'ATTESTATION_SIGNING_KEY_TOO_WEAK');
+    await weakKeyApp.close();
+
     const res = await apiApp.inject({ method: 'POST', url: '/v1/attest' });
     assert.strictEqual(res.statusCode, 200);
     const data = JSON.parse(res.body);
@@ -364,19 +407,44 @@ describe('Ω∞v Oceanicos Max Compress Full-Stack E2E Suite', () => {
     assert.ok(data.attestation.signature.startsWith('0x'));
   });
 
-  it('20. Unified CLI "mood" and "attest" execute cleanly and attest to Singularity state', async () => {
+  it('20. SSE stream delivers the current tip and subsequent minted blocks', async () => {
+    await apiApp.listen({ host: '127.0.0.1', port: 0 });
+    const address = apiApp.server.address();
+    assert.ok(address && typeof address === 'object');
+    const baseUrl = `http://127.0.0.1:${address.port}`;
+    const response = await fetch(`${baseUrl}/v1/stream`);
+    assert.strictEqual(response.status, 200);
+    assert.ok(response.headers.get('content-type')?.includes('text/event-stream'));
+    assert.ok(response.body);
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    const initial = await reader.read();
+    assert.match(decoder.decode(initial.value), /event\":\"TIP\"/);
+
+    const cycle = await fetch(`${baseUrl}/v1/cycle`, { method: 'POST', body: '{}' });
+    assert.strictEqual(cycle.status, 200);
+    const next = await Promise.race([
+      reader.read(),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Timed out waiting for SSE block frame')), 1000)
+      ),
+    ]);
+    assert.match(decoder.decode(next.value), /event\":\"BLOCK_MINTED\"/);
+    await reader.cancel();
+    await apiApp.close();
+  });
+
+  it('21. Unified CLI "mood" and "attest" execute cleanly and attest to Singularity state', async () => {
     const { execFileSync } = await import('node:child_process');
     const path = await import('node:path');
     const cliPath = path.resolve(process.cwd(), 'bin/oceanicos.mjs');
 
-    // Test CLI mood
     const moodStdout = execFileSync(process.execPath, [cliPath, 'mood'], { encoding: 'utf-8' });
     assert.ok(moodStdout.includes('MAXIMUM COMPRESSION MATRIX & MOOD'));
     assert.ok(moodStdout.includes('MAX GOOD-O'));
     assert.ok(moodStdout.includes('PIDGIN SPIRIT OVERRIDE'));
     assert.ok(moodStdout.includes('TERMINAL AXIOM'));
 
-    // Test CLI attest
     const attestStdout = execFileSync(process.execPath, [cliPath, 'attest'], { encoding: 'utf-8' });
     assert.ok(attestStdout.includes('CRYPTOGRAPHIC ATTESTATION SERVICE'));
     assert.ok(attestStdout.includes('Cryptographic Attestation Generated'));

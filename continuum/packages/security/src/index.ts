@@ -20,8 +20,12 @@ export class SecurityEngine {
   private secretKey: string;
   private auditLog: AuthorizationResult[] = [];
 
-  constructor(secretKey = 'omega-v-security-kernel-key') {
-    this.secretKey = secretKey;
+  constructor(secretKey?: string) {
+    const configuredSecret = secretKey ?? process.env.OMEGA_SECURITY_KEY;
+    if (!configuredSecret || configuredSecret.length < 32) {
+      throw new Error('OMEGA_SECURITY_KEY must be configured with at least 32 characters');
+    }
+    this.secretKey = configuredSecret;
   }
 
   /** Issue a cryptographic security token for a subject */
@@ -40,11 +44,14 @@ export class SecurityEngine {
 
   /** Verify token signature and expiration */
   public verifyToken(token: SecurityToken): boolean {
-    if (new Date(token.expiresAt).getTime() < Date.now()) return false;
+    const expiresAt = new Date(token.expiresAt).getTime();
+    if (!Number.isFinite(expiresAt) || expiresAt < Date.now()) return false;
 
     const payload = `${token.subjectId}:${token.permissions.sort().join(',')}:${token.expiresAt}`;
     const expectedSig = crypto.createHmac('sha256', this.secretKey).update(payload).digest('hex');
-    return token.signature === expectedSig;
+    const actual = Buffer.from(token.signature, 'hex');
+    const expected = Buffer.from(expectedSig, 'hex');
+    return actual.length === expected.length && crypto.timingSafeEqual(actual, expected);
   }
 
   /** Authorize a subject for a specific action permission */
@@ -55,21 +62,20 @@ export class SecurityEngine {
   ): AuthorizationResult {
     const timestamp = new Date().toISOString();
 
-    // 1. Verify token if supplied
-    if (token) {
-      if (!this.verifyToken(token)) {
+    // 1. Every protected authorization decision requires a valid token.
+    if (!token || !this.verifyToken(token)) {
         const res: AuthorizationResult = {
           allowed: false,
           subjectId: subject.id,
           requiredPermission,
-          reason: 'Security token is invalid or expired',
+          reason: 'Security token is required, invalid, or expired',
           timestamp,
         };
         this.auditLog.push(res);
-        return res;
-      }
+      return res;
+    }
 
-      if (token.subjectId !== subject.id) {
+    if (token.subjectId !== subject.id) {
         const res: AuthorizationResult = {
           allowed: false,
           subjectId: subject.id,
@@ -79,7 +85,6 @@ export class SecurityEngine {
         };
         this.auditLog.push(res);
         return res;
-      }
     }
 
     // 2. Check permission

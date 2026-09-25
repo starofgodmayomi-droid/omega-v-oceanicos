@@ -9,6 +9,16 @@ import type {
   DissentRecord,
 } from '@oceanicos/types';
 
+type AttestationProfile = 'flash' | 'pro';
+
+function canonicalAttestationPayload(
+  telemetryUuid: string,
+  status: IEvidence['status'],
+  profile: AttestationProfile
+): string {
+  return `${telemetryUuid}:${status}:${profile}`;
+}
+
 /**
  * Confidence in a verification, derived from the rules that actually ran.
  * The lowest rule confidence wins. A verification is only as strong as its
@@ -96,17 +106,34 @@ export class VerificationEngine {
 
   constructor(private readonly cacheTtl: number = 60000) {}
 
-  public static evaluate(telemetry: IObservation): IEvidence {
+  public static evaluate(telemetry: IObservation, privateKeyPem?: string): IEvidence {
     const scale = telemetry.acceleratorInventory > 500000;
     const independence = telemetry.siliconYield >= 0.92;
     const status: IEvidence['status'] = scale && independence ? 'PASS' : 'DIVERGENT';
-    const signingKey = process.env.OMEGA_SIGNING_KEY;
-    if (!signingKey || signingKey.length < 16) {
+    const profile: AttestationProfile = telemetry.androidAutomationState ? 'flash' : 'pro';
+    const signingKey = privateKeyPem ?? process.env.OMEGA_PRIVATE_KEY ?? process.env.OMEGA_SIGNING_KEY;
+
+    let signatureProof = '';
+    if (signingKey && signingKey.includes('-----BEGIN')) {
+      try {
+        signatureProof = crypto
+          .sign(
+            null,
+            Buffer.from(canonicalAttestationPayload(telemetry.uuid, status, profile)),
+            crypto.createPrivateKey({ key: signingKey, format: 'pem' })
+          )
+          .toString('hex');
+      } catch {
+        const rawPayload = `${telemetry.uuid}-${status}-${telemetry.timestamp}-${profile}`;
+        signatureProof = crypto.createHmac('sha256', signingKey).update(rawPayload).digest('hex');
+      }
+    } else if (signingKey && signingKey.length >= 16) {
+      const rawPayload = `${telemetry.uuid}-${status}-${telemetry.timestamp}-${profile}`;
+      signatureProof = crypto.createHmac('sha256', signingKey).update(rawPayload).digest('hex');
+    } else {
       throw new Error('ATTESTATION_SIGNING_KEY_REQUIRED_OR_INVALID');
     }
-    const runsOnFlash = telemetry.androidAutomationState ? 'flash' : 'pro';
-    const rawPayload = `${telemetry.uuid}-${status}-${telemetry.timestamp}-${runsOnFlash}`;
-    const signatureProof = crypto.createHmac('sha256', signingKey).update(rawPayload).digest('hex');
+
     return {
       status,
       lawRoute: '0 ➔ MINI ➔ FULL_STACK ➔ ECOSYSTEM ➔ REALITY',
@@ -115,10 +142,30 @@ export class VerificationEngine {
       signatureProof,
       mcpDiagnostics: {
         logcatAnomalyCount: 0,
-        stepDurationMs: runsOnFlash === 'flash' ? 3000 : 25000,
-        profileExecuted: runsOnFlash,
+        stepDurationMs: profile === 'flash' ? 3000 : 25000,
+        profileExecuted: profile,
       },
     };
+  }
+
+  /** Verify a proof without access to the private signing key. */
+  public static verifyAttestation(
+    telemetryUuid: string,
+    status: IEvidence['status'],
+    profile: AttestationProfile,
+    signatureHex: string,
+    publicKeyPem: string
+  ): boolean {
+    try {
+      return crypto.verify(
+        null,
+        Buffer.from(canonicalAttestationPayload(telemetryUuid, status, profile)),
+        crypto.createPublicKey({ key: publicKeyPem, format: 'pem' }),
+        Buffer.from(signatureHex, 'hex')
+      );
+    } catch {
+      return false;
+    }
   }
 
   public registerRule(rule: VerificationRule): void {

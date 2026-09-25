@@ -196,6 +196,44 @@ export class MiniKernel {
   }
 }
 
+export const MiniKernelCoordinator = MiniKernel;
+export type MiniKernelCoordinator = MiniKernel;
+export { observeCandidateChange } from './change.js';
+export { resolveChangeAdmission } from './admission.js';
+export type { OmegaAdmissionEvidence } from './admission.js';
+export { executeAuthorizedTransition } from './transition.js';
+export type {
+  TransitionExecution,
+  TransitionExecutionStatus,
+  TransitionExecutorOptions,
+  TransitionHandler,
+  TransitionMemory,
+} from './transition.js';
+export { verifyExecutedReality } from './reality.js';
+export type {
+  RealityObserverOptions,
+  RealityVerification,
+  RealityVerificationStatus,
+} from './reality.js';
+export { advanceOmegaSourceState, compileOmegaIntent, normalizeOmegaSource } from './compiler.js';
+export type { OmegaCompileInput } from './compiler.js';
+export { validateOmegaIR } from './ir-validator.js';
+export type { OmegaIRValidation, OmegaIRValidationIssue } from './ir-validator.js';
+export { createOmegaWorkerRegistry, getOmegaWorker } from './worker-registry.js';
+export { buildOmegaCommand, listOmegaWorkers } from './worker-registry.js';
+export type { OmegaWorkerDescriptor } from './worker-registry.js';
+export { admitOmegaIR } from './admission-bridge.js';
+export type { OmegaAdmissionBridgeInput, OmegaAdmissionBridgeResult } from './admission-bridge.js';
+export { runOmegaChangePipeline, resolveBoundedWorkerHandler } from './pipeline.js';
+export type {
+  OmegaPipelineInput,
+  OmegaPipelineResult,
+  PipelineStage,
+  PipelineHaltReason,
+} from './pipeline.js';
+export { FileCausalMemory, createRealityAttestation, verifyRealityAttestation } from './causal-memory.js';
+export type { CausalMemory, CausalMemoryEntry, RealityAttestation } from './causal-memory.js';
+
 export function executeOceanicosMaxExpansion(): CryptographicBlock {
   const kernelChain = new PluralisticHashChain();
   const telemetry = observePlanetaryBase();
@@ -209,17 +247,6 @@ export { OmegaTotalCompressor } from './omegaTotal.js';
 export * from './agent.js';
 
 // ─── C-series Ω Kernel modules ───────────────────────────────────────
-export { compileOmegaIntent } from './compiler.js';
-export type { OmegaCompileInput } from './compiler.js';
-export { validateOmegaIR } from './ir-validator.js';
-export type { OmegaIRValidation, OmegaIRValidationIssue } from './ir-validator.js';
-export { createOmegaWorkerRegistry, getOmegaWorker } from './worker-registry.js';
-export { resolveChangeAdmission } from './admission.js';
-export type { OmegaAdmissionEvidence } from './admission.js';
-export { admitOmegaIR } from './admission-bridge.js';
-export type { OmegaAdmissionBridgeInput, OmegaAdmissionBridgeResult } from './admission-bridge.js';
-export { executeAuthorizedTransition } from './transition.js';
-export type { TransitionExecution, TransitionExecutionStatus, TransitionHandler, TransitionMemory, TransitionExecutorOptions } from './transition.js';
 export { createRealityObservation, reconcileReality } from './reality.js';
 export type { RealityObservation, RealityReconciliation, RealityVerdict } from './reality.js';
 export { OmegaAttestationMemory } from './attestation-memory.js';
@@ -237,4 +264,3 @@ export {
 export * from './canonical-kernel.js';
 
 export default MiniKernel;
-

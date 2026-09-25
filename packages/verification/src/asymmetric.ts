@@ -36,7 +36,10 @@ export class AsymmetricValidationGuard {
     try {
       const serialized = typeof data === 'string' ? data : JSON.stringify(data);
       const signature = Buffer.from(signatureHex, 'hex');
-      return crypto.verify(null, Buffer.from(serialized), publicKeyPem, signature);
+      const normalizedPublicKey = publicKeyPem.startsWith('base64:')
+        ? Buffer.from(publicKeyPem.slice('base64:'.length), 'base64').toString('utf8')
+        : publicKeyPem;
+      return crypto.verify(null, Buffer.from(serialized), normalizedPublicKey, signature);
     } catch {
       return false;
     }

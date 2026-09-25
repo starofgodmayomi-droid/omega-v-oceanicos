@@ -99,7 +99,11 @@ export class OceanicosGatewayEngine {
   private blockedRequests = 0;
 
   constructor(secretKey?: string) {
-    this.secretKey = secretKey || 'Ω∞v-GATEWAY-SIGNING-KEY-v1';
+    const configuredSecret = secretKey ?? process.env.OMEGA_GATEWAY_SIGNING_KEY;
+    if (!configuredSecret || configuredSecret.length < 32) {
+      throw new Error('OMEGA_GATEWAY_SIGNING_KEY must be configured with at least 32 characters');
+    }
+    this.secretKey = configuredSecret;
     // Bootstrap default tier configs
     for (const [tier, config] of Object.entries(DEFAULT_TIER_CONFIGS)) {
       this.tierConfigs.set(tier as RateLimitTier, config);
@@ -136,10 +140,21 @@ export class OceanicosGatewayEngine {
         clientId,
         type: 'UNKNOWN_CLIENT',
         severity: 'MEDIUM',
-        description: `Unknown client '${clientId}' attempted access. Auto-registering as FREE tier.`,
+        description: `Unknown client '${clientId}' attempted access. Request denied until registered.`,
         detectedAt: timestamp,
       });
-      this.registerClient(clientId, 'FREE');
+      this.blockedRequests++;
+      const decision: GatewayDecision = {
+        allowed: false,
+        clientId,
+        tier: 'FREE',
+        remainingRequests: 0,
+        retryAfterMs: null,
+        reason: 'Unknown client — explicit registration required',
+        timestamp,
+      };
+      this.decisions.push(decision);
+      return decision;
     }
 
     const state = this.clientStates.get(clientId)!;
@@ -255,9 +270,27 @@ export class OceanicosGatewayEngine {
     const now = Date.now();
     const requestTime = new Date(signed.timestamp).getTime();
 
-    // Reject requests older than 5 minutes
+    if (!Number.isFinite(requestTime)) {
+      return { valid: false, reason: 'Invalid request timestamp' };
+    }
+    // Reject requests older than 5 minutes or too far in the future.
     if (now - requestTime > 5 * 60 * 1000) {
       return { valid: false, reason: 'Request timestamp too old (>5m)' };
+    }
+    if (requestTime - now > 30 * 1000) {
+      return { valid: false, reason: 'Request timestamp is too far in the future' };
+    }
+
+    if (!this.clientStates.has(signed.clientId)) {
+      this.anomalies.push({
+        alertId: `alert-${crypto.randomBytes(4).toString('hex')}`,
+        clientId: signed.clientId,
+        type: 'UNKNOWN_CLIENT',
+        severity: 'MEDIUM',
+        description: `Unknown client '${signed.clientId}' presented a signed request. Registration is required.`,
+        detectedAt: new Date().toISOString(),
+      });
+      return { valid: false, reason: 'Unknown client — explicit registration required' };
     }
 
     // Replay attack detection via nonce
@@ -277,7 +310,9 @@ export class OceanicosGatewayEngine {
     const data = `${signed.clientId}:${signed.timestamp}:${signed.nonce}:${signed.payload || ''}`;
     const expectedSig = crypto.createHmac('sha256', this.secretKey).update(data).digest('hex');
 
-    if (signed.signature !== expectedSig) {
+    const actual = Buffer.from(signed.signature, 'hex');
+    const expected = Buffer.from(expectedSig, 'hex');
+    if (actual.length !== expected.length || !crypto.timingSafeEqual(actual, expected)) {
       this.anomalies.push({
         alertId: `alert-${crypto.randomBytes(4).toString('hex')}`,
         clientId: signed.clientId,

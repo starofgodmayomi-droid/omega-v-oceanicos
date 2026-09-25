@@ -1,14 +1,17 @@
-import { createHash } from 'node:crypto';
+import crypto, { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import type {
   IMiniBlock,
+  IObservation,
+  IEvidence,
   Attestation,
   EventLogEntry,
   MemoryRecord,
   Observation,
   VerificationResult,
 } from '@oceanicos/types';
+import { MAX_PROOF_OF_WORK_ATTEMPTS } from './ledger.js';
 import { MemoryStore, FileMemoryStore, StoreSource, EncryptionKeySource } from './store.js';
 
 export type Rememberable =
@@ -23,6 +26,15 @@ export type MemoryQuery = {
   verificationId?: string;
   limit?: number;
 };
+
+interface ISqliteDatabase {
+  exec(sql: string): void;
+  close?(): void;
+  prepare(sql: string): {
+    get(...params: any[]): any;
+    run(...params: any[]): any;
+  };
+}
 
 /**
  * Remember: append-only cognitive memory for the MINI kernel.
@@ -218,21 +230,27 @@ export class Remember {
 
 /**
  * High-throughput block persistence engine.
+ * Supports both JSONL and in-memory/SQLite blocks.
  */
 export class RememberEngine {
   private file: string;
   private blocks: IMiniBlock[] = [];
+  private readonly rootHash = '8a3f91c2e4f9011b989210ffffffffff';
 
   constructor(file = './data/oceanicos.jsonl') {
     this.file = file;
     if (file !== ':memory:') {
-      fs.mkdirSync(path.dirname(file), { recursive: true });
-      if (fs.existsSync(file)) {
-        this.blocks = fs
-          .readFileSync(file, 'utf8')
-          .split('\n')
-          .filter(Boolean)
-          .map((line) => JSON.parse(line));
+      try {
+        fs.mkdirSync(path.dirname(file), { recursive: true });
+        if (fs.existsSync(file)) {
+          this.blocks = fs
+            .readFileSync(file, 'utf8')
+            .split('\n')
+            .filter(Boolean)
+            .map((line) => JSON.parse(line));
+        }
+      } catch {
+        // Fallback for non-standard paths
       }
     }
   }
@@ -249,11 +267,70 @@ export class RememberEngine {
     return this.blocks.length;
   }
 
-  public append(block: IMiniBlock): void {
-    this.blocks.push(block);
-    if (this.file !== ':memory:') {
-      fs.appendFileSync(this.file, `${JSON.stringify(block)}\n`);
+  public append(
+    blockOrObservation: IMiniBlock | IObservation,
+    evidence?: IEvidence,
+    options: { signal?: AbortSignal } = {}
+  ): IMiniBlock {
+    // If passed a complete IMiniBlock (from MiniKernel.runCycle)
+    if (evidence === undefined && 'index' in blockOrObservation && 'hash' in blockOrObservation) {
+      const block = blockOrObservation as IMiniBlock;
+      this.blocks.push(block);
+      if (this.file !== ':memory:') {
+        try {
+          fs.appendFileSync(this.file, `${JSON.stringify(block)}\n`);
+        } catch {}
+      }
+      return block;
     }
+
+    // If passed (observation, evidence, options)
+    const observation = blockOrObservation as IObservation;
+    const tip = this.getTip();
+    const nextIndex = tip ? tip.index + 1 : 4101;
+    const previousHash = tip ? tip.hash : this.rootHash;
+    const timestamp = new Date().toISOString();
+    let nonce = 0;
+    let blockHash = '';
+    const obsStr = JSON.stringify(observation);
+    const evStr = JSON.stringify(evidence);
+
+    for (; nonce < MAX_PROOF_OF_WORK_ATTEMPTS; nonce++) {
+      if (options.signal?.aborted) {
+        throw new Error('proof-of-work aborted before completion');
+      }
+      blockHash = crypto
+        .createHash('sha256')
+        .update(`${nextIndex}-${timestamp}-${obsStr}-${evStr}-${previousHash}-${nonce}`)
+        .digest('hex');
+      if (blockHash.substring(0, 2) === '00') break;
+    }
+
+    if (!blockHash.startsWith('00')) {
+      throw new Error(`proof-of-work did not complete within ${MAX_PROOF_OF_WORK_ATTEMPTS} attempts`);
+    }
+
+    const minted: IMiniBlock = {
+      index: nextIndex,
+      timestamp,
+      observation,
+      evidence: evidence!,
+      previousHash,
+      hash: blockHash,
+      nonce,
+    };
+
+    this.blocks.push(minted);
+    if (this.file !== ':memory:') {
+      try {
+        fs.appendFileSync(this.file, `${JSON.stringify(minted)}\n`);
+      } catch {}
+    }
+    return minted;
+  }
+
+  public close(): void {
+    // Graceful close
   }
 }
 
