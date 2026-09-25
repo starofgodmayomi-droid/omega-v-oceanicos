@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify';
+import { MarketWatchlistStore } from './market-watchlist-store.js';
 
 type MarketAsset = {
   symbol: string;
@@ -9,8 +10,6 @@ type MarketAsset = {
   kind: 'equity' | 'crypto';
   source: 'finnhub' | 'coingecko' | 'fallback';
 };
-
-type WatchItem = { symbol: string; thresholdPercent: number; createdAt: string };
 
 const fallbackAssets: MarketAsset[] = [
   { symbol: 'SPX', name: 'S&P 500', price: 5864.67, change: 32.14, changePercent: 0.55, kind: 'equity', source: 'fallback' },
@@ -64,51 +63,42 @@ async function getSnapshot(): Promise<{ assets: MarketAsset[]; live: boolean; pr
   };
 }
 
-export function registerMarketIntelligenceRoute(fastify: FastifyInstance): void {
-  const watchlist = new Map<string, WatchItem>([
-    ['NVDA', { symbol: 'NVDA', thresholdPercent: 2, createdAt: new Date().toISOString() }],
-    ['BTC', { symbol: 'BTC', thresholdPercent: 3, createdAt: new Date().toISOString() }],
-  ]);
+export function registerMarketIntelligenceRoute(fastify: FastifyInstance, dbPath = ':memory:'): void {
+  const store = new MarketWatchlistStore(dbPath);
+  fastify.addHook('onClose', async () => store.close());
 
   fastify.get('/v1/market/snapshot', async () => {
     const snapshot = await getSnapshot();
-    return {
-      success: true,
-      observation: 'market_snapshot',
-      evidence: { providerCount: snapshot.providerCount, live: snapshot.live, assetCount: snapshot.assets.length },
-      assets: snapshot.assets,
-      signal: snapshot.signal,
-      observedAt: snapshot.observedAt,
-    };
+    return { success: true, observation: 'market_snapshot', evidence: { providerCount: snapshot.providerCount, live: snapshot.live, assetCount: snapshot.assets.length }, assets: snapshot.assets, signal: snapshot.signal, observedAt: snapshot.observedAt };
   });
 
-  fastify.get('/v1/market/watchlist', async () => ({ success: true, items: [...watchlist.values()] }));
+  fastify.get('/v1/market/watchlist', async () => ({ success: true, items: store.list() }));
 
   fastify.post('/v1/market/watchlist', async (request: any, reply) => {
     const symbol = String(request.body?.symbol ?? '').trim().toUpperCase();
     const thresholdPercent = Number(request.body?.thresholdPercent ?? 2);
-    if (!/^[A-Z0-9.\-]{1,12}$/.test(symbol) || !Number.isFinite(thresholdPercent) || thresholdPercent <= 0 || thresholdPercent > 100) {
-      return reply.status(400).send({ success: false, error: 'INVALID_WATCH_ITEM', message: 'symbol and thresholdPercent are required' });
-    }
-    const item = { symbol, thresholdPercent: Number(thresholdPercent.toFixed(2)), createdAt: new Date().toISOString() };
-    watchlist.set(symbol, item);
+    if (!/^[A-Z0-9.\-]{1,12}$/.test(symbol) || !Number.isFinite(thresholdPercent) || thresholdPercent <= 0 || thresholdPercent > 100) return reply.status(400).send({ success: false, error: 'INVALID_WATCH_ITEM', message: 'symbol and thresholdPercent are required' });
+    const item = store.upsert(symbol, Number(thresholdPercent.toFixed(2)));
     return reply.status(201).send({ success: true, item });
   });
 
   fastify.delete('/v1/market/watchlist/:symbol', async (request: any, reply) => {
     const symbol = String(request.params.symbol ?? '').trim().toUpperCase();
-    if (!watchlist.delete(symbol)) return reply.status(404).send({ success: false, error: 'WATCH_ITEM_NOT_FOUND' });
+    if (!store.remove(symbol)) return reply.status(404).send({ success: false, error: 'WATCH_ITEM_NOT_FOUND' });
     return { success: true, removed: symbol };
   });
 
   fastify.get('/v1/market/alerts', async () => {
     const snapshot = await getSnapshot();
     const bySymbol = new Map(snapshot.assets.map(asset => [asset.symbol, asset]));
-    const alerts = [...watchlist.values()].flatMap(item => {
+    const alerts = store.list().flatMap(item => {
       const asset = bySymbol.get(item.symbol);
       if (!asset || Math.abs(asset.changePercent) < item.thresholdPercent) return [];
-      return [{ symbol: item.symbol, severity: Math.abs(asset.changePercent) >= item.thresholdPercent * 2 ? 'critical' : 'watch', thresholdPercent: item.thresholdPercent, changePercent: asset.changePercent, price: asset.price, source: asset.source }];
+      const severity = Math.abs(asset.changePercent) >= item.thresholdPercent * 2 ? 'critical' : 'watch';
+      return [store.recordAlert({ ...item, severity, changePercent: asset.changePercent, price: asset.price, source: asset.source, observedAt: snapshot.observedAt })];
     });
     return { success: true, alerts, observedAt: snapshot.observedAt, evidence: { live: snapshot.live, providerCount: snapshot.providerCount } };
   });
+
+  fastify.get('/v1/market/alerts/history', async (request: any) => ({ success: true, events: store.history(Number(request.query?.limit ?? 50)) }));
 }

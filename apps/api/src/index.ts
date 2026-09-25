@@ -155,7 +155,7 @@ export function createApp(
   registerPipelineRoute(fastify, jsonError);
   registerEcosystemRoute(fastify, authMode, Boolean(attestationSigningKey));
   registerRealityRoute(fastify, authMode, Boolean(attestationSigningKey), Boolean(ledgerMemory.getTip()));
-  registerMarketIntelligenceRoute(fastify);
+  registerMarketIntelligenceRoute(fastify, dbPath);
 
   fastify.get('/health', async (_request, reply) => {
     const memoryReady = true;
