@@ -53,6 +53,8 @@ The API exposes `POST /v1/omega/oreade/drop` as a read-only translation boundary
 
 The web dashboard exposes the same boundary through the **ƆREADE Console**. `TRANSLATE DROP` stays read-only; `CREATE PROPOSED COMMAND` persists only the planner proposal and displays its state and next action. The interface does not offer an execute button for this handoff, so the UI cannot imply that symbolic translation completed a real-world action.
 
+The full-stack sequence now makes the distinction visible as **one evidence-bound reality, many distinguishable forms**: `DROP → DISTINGUISH → VALIDATE → AUTHORIZE → ADMIT → BOUND → EXECUTE → OBSERVE → RECONCILE → ATTEST → REMEMBER → NEXT DROP`. The console’s admission action supplies attributable authority and policy evidence, moving only `PROPOSED`/`REVIEW` to `AUTHORIZED`; it never executes the command. Unity preserves relationship, difference preserves information, and evidence preserves reality.
+
 ## Reference alignment
 
 This guidance is subordinate to the repository’s [Living Agnostic Charter](../CHARTER.md) and [Operational Protocol Specification](spec/OCEANICOS-OPERATIONAL-PROTOCOL.md). The companion skill is installed at `/home/ubuntu/skills/oread-pidgin-harmonizer/SKILL.md` for agent-level use.

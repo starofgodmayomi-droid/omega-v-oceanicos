@@ -50,7 +50,7 @@ export function OreadConsole() {
   const [expectedObservation, setExpectedObservation] = useState('one response labeled symbolic is returned');
   const [result, setResult] = useState<DropResult | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState<'drop' | 'proposal' | null>(null);
+  const [loading, setLoading] = useState<'drop' | 'proposal' | 'admit' | null>(null);
 
   const payload = () => ({
     symbolicIntent: intent,
@@ -80,6 +80,33 @@ export function OreadConsole() {
       setResult(await requestDrop('/v1/omega/oreade/proposal', payload()));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Proposal handoff failed');
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  const admit = async () => {
+    const commandId = result?.command?.commandId;
+    if (!commandId) return;
+    setLoading('admit');
+    setError(null);
+    try {
+      const response = await fetch(`${API_BASE_URL}/v1/omega/commands/${commandId}/admit`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          authority: 'human:dashboard-operator',
+          policy: 'oreade-symbolic-boundary.v1',
+          authorityVerified: true,
+          policySatisfied: true,
+        }),
+      });
+      const text = await response.text();
+      const data = text ? JSON.parse(text) : null;
+      if (!response.ok) throw new Error(data?.error || `Admission failed (${response.status})`);
+      setResult((previous) => previous ? { ...previous, command: data.command, nextAction: data.nextAction, executed: false } : previous);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Proposal admission failed');
     } finally {
       setLoading(null);
     }
@@ -123,6 +150,9 @@ export function OreadConsole() {
       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '13px' }}>
         <button onClick={translate} disabled={!intent.trim() || loading !== null} style={{ border: '1px solid #67d9b4', background: '#123a31', color: '#b8f5de', padding: '8px 12px', borderRadius: '4px', fontSize: '11px', fontWeight: 700 }}>{loading === 'drop' ? 'TRANSLATING…' : 'TRANSLATE DROP'}</button>
         <button onClick={propose} disabled={!intent.trim() || loading !== null} style={{ border: '1px solid #8ce8c8', background: '#8ce8c8', color: '#071312', padding: '8px 12px', borderRadius: '4px', fontSize: '11px', fontWeight: 700 }}>{loading === 'proposal' ? 'PERSISTING…' : 'CREATE PROPOSED COMMAND'}</button>
+        {result?.command && (result.command.status === 'PROPOSED' || result.command.status === 'REVIEW') && (
+          <button onClick={admit} disabled={loading !== null} style={{ border: '1px solid #f0c674', background: '#3a2f16', color: '#ffe2a1', padding: '8px 12px', borderRadius: '4px', fontSize: '11px', fontWeight: 700 }}>{loading === 'admit' ? 'CHECKING POLICY…' : 'ADMIT BOUNDED PROPOSAL'}</button>
+        )}
       </div>
 
       {error && <div role="alert" style={{ color: '#ffaaa0', fontSize: '11px', marginTop: '12px' }}>⚠ {error}</div>}

@@ -94,9 +94,24 @@ test('API persists a planner-only proposal without authorizing or executing it',
     assert.equal(body.executed, false);
     assert.match(body.nextAction, /review and explicitly admit/);
 
+    const admitted = await app.inject({
+      method: 'POST',
+      url: `/v1/omega/commands/${body.command.commandId}/admit`,
+      payload: {
+        authority: 'human:dashboard-operator',
+        policy: 'oreade-symbolic-boundary.v1',
+        authorityVerified: true,
+        policySatisfied: true,
+      },
+    });
+    assert.equal(admitted.statusCode, 200);
+    assert.equal(admitted.json().command.status, 'AUTHORIZED');
+    assert.equal(admitted.json().command.result, undefined);
+    assert.match(admitted.json().nextAction, /execute the authorized bounded action/);
+
     const detail = await app.inject({ method: 'GET', url: `/v1/omega/commands/${body.command.commandId}` });
     assert.equal(detail.statusCode, 200);
-    assert.equal(detail.json().command.status, 'PROPOSED');
+    assert.equal(detail.json().command.status, 'AUTHORIZED');
   } finally {
     await app.close();
     rmSync(dir, { recursive: true, force: true });
