@@ -1,3 +1,171 @@
+
+export type RuntimeShutdownReason =
+  | 'signal'
+  | 'quota'
+  | 'fatal'
+  | 'manual'
+  | 'fastify-close';
+
+export type RuntimeState = 'running' | 'shutting-down' | 'stopped';
+
+export type RuntimeResource = {
+  id: string;
+  close: () => void | Promise<void>;
+};
+
+export type RuntimeQuotas = {
+  maxMemoryBytes?: number;
+  maxActiveCycles?: number;
+  pollIntervalMs?: number;
+};
+
+export type RuntimeShutdownReceipt = {
+  reason: RuntimeShutdownReason;
+  state: RuntimeState;
+  startedAt: string;
+  completedAt: string;
+  exitCode: 0 | 1;
+  errors: string[];
+};
+
+export type BoundedRuntimeOptions = RuntimeQuotas & {
+  resources?: RuntimeResource[];
+  getActiveCycles?: () => number;
+  onStopAcceptingWork?: () => void | Promise<void>;
+  haltPulse?: () => void | Promise<void>;
+  now?: () => Date;
+};
+
+type ProcessLike = {
+  on: (event: string, listener: (...args: any[]) => void) => void;
+  off?: (event: string, listener: (...args: any[]) => void) => void;
+};
+
+const RESOURCE_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,95}$/;
+
+export class BoundedRuntimeManager {
+  private state: RuntimeState = 'running';
+  private monitor: NodeJS.Timeout | null = null;
+  private shutdownPromise: Promise<RuntimeShutdownReceipt> | null = null;
+  private readonly resources: RuntimeResource[];
+  private readonly quotas: Required<Pick<RuntimeQuotas, 'pollIntervalMs'>> & RuntimeQuotas;
+  private readonly getActiveCycles: () => number;
+  private readonly onStopAcceptingWork?: () => void | Promise<void>;
+  private readonly haltPulse?: () => void | Promise<void>;
+  private readonly now: () => Date;
+  private processHandlers: Array<{ event: string; listener: (...args: any[]) => void }> = [];
+
+  constructor(options: BoundedRuntimeOptions = {}) {
+    const pollIntervalMs = options.pollIntervalMs ?? 500;
+    if (!Number.isInteger(pollIntervalMs) || pollIntervalMs < 50 || pollIntervalMs > 60_000)
+      throw new Error('pollIntervalMs must be between 50 and 60000');
+    if (options.maxMemoryBytes !== undefined && (!Number.isSafeInteger(options.maxMemoryBytes) || options.maxMemoryBytes < 1))
+      throw new Error('maxMemoryBytes must be a positive safe integer');
+    if (options.maxActiveCycles !== undefined && (!Number.isSafeInteger(options.maxActiveCycles) || options.maxActiveCycles < 0))
+      throw new Error('maxActiveCycles must be a non-negative safe integer');
+    this.quotas = { pollIntervalMs, maxMemoryBytes: options.maxMemoryBytes, maxActiveCycles: options.maxActiveCycles };
+    this.resources = [...(options.resources ?? [])];
+    for (const resource of this.resources) {
+      if (!RESOURCE_ID.test(resource.id) || typeof resource.close !== 'function')
+        throw new Error('runtime resources require bounded unique identifiers and close handlers');
+    }
+    if (new Set(this.resources.map((resource) => resource.id)).size !== this.resources.length)
+      throw new Error('runtime resource ids must be unique');
+    this.getActiveCycles = options.getActiveCycles ?? (() => 0);
+    this.onStopAcceptingWork = options.onStopAcceptingWork;
+    this.haltPulse = options.haltPulse;
+    this.now = options.now ?? (() => new Date());
+  }
+
+  getState(): RuntimeState {
+    return this.state;
+  }
+
+  getQuotas(): RuntimeQuotas {
+    return { ...this.quotas };
+  }
+
+  startMonitoring(): void {
+    if (this.state !== 'running' || this.monitor) return;
+    this.monitor = setInterval(() => {
+      void this.enforceQuotas();
+    }, this.quotas.pollIntervalMs);
+  }
+
+  stopMonitoring(): void {
+    if (!this.monitor) return;
+    clearInterval(this.monitor);
+    this.monitor = null;
+  }
+
+  async enforceQuotas(): Promise<void> {
+    if (this.state !== 'running') return;
+    const memory = process.memoryUsage().heapUsed;
+    const activeCycles = this.getActiveCycles();
+    if (this.quotas.maxMemoryBytes !== undefined && memory > this.quotas.maxMemoryBytes)
+      await this.requestShutdown('quota', 1);
+    else if (this.quotas.maxActiveCycles !== undefined && activeCycles > this.quotas.maxActiveCycles)
+      await this.requestShutdown('quota', 1);
+  }
+
+  installProcessHandlers(processLike: ProcessLike = process): void {
+    if (this.processHandlers.length > 0) return;
+    const signal = () => { void this.requestShutdown('signal', 0); };
+    const fatal = () => { void this.requestShutdown('fatal', 1); };
+    const handlers = [
+      { event: 'SIGTERM', listener: signal },
+      { event: 'SIGINT', listener: signal },
+      { event: 'uncaughtException', listener: fatal },
+      { event: 'unhandledRejection', listener: fatal },
+    ];
+    for (const handler of handlers) processLike.on(handler.event, handler.listener);
+    this.processHandlers = handlers;
+  }
+
+  uninstallProcessHandlers(processLike: ProcessLike = process): void {
+    for (const handler of this.processHandlers) processLike.off?.(handler.event, handler.listener);
+    this.processHandlers = [];
+  }
+
+  async requestShutdown(reason: RuntimeShutdownReason, exitCode: 0 | 1 = reason === 'fatal' || reason === 'quota' ? 1 : 0): Promise<RuntimeShutdownReceipt> {
+    if (this.shutdownPromise) return this.shutdownPromise;
+    this.state = 'shutting-down';
+    this.stopMonitoring();
+    const startedAt = this.now().toISOString();
+    this.shutdownPromise = (async () => {
+      const errors: string[] = [];
+      const attempt = async (label: string, operation: (() => void | Promise<void>) | undefined) => {
+        if (!operation) return;
+        try { await operation(); } catch (error) {
+          errors.push(label + ': ' + (error instanceof Error ? error.message : 'shutdown operation failed'));
+        }
+      };
+      await attempt('stop-accepting-work', this.onStopAcceptingWork);
+      await attempt('halt-pulse', this.haltPulse);
+      for (const resource of this.resources) await attempt(resource.id, resource.close);
+      this.state = 'stopped';
+      return {
+        reason,
+        state: this.state,
+        startedAt,
+        completedAt: this.now().toISOString(),
+        exitCode: errors.length > 0 ? 1 : exitCode,
+        errors,
+      };
+    })();
+    return this.shutdownPromise;
+  }
+
+  static limitations(): string[] {
+    return [
+      'quota enforcement observes V8 heapUsed, not total process memory',
+      'active cycle counts are supplied by the caller and are not inferred',
+      'shutdown drains only registered resources; external systems require explicit adapters',
+      'process termination is intentionally outside this manager',
+    ];
+  }
+}
+
 export type AgentContext = {
   runId: string;
   input: string;

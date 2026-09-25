@@ -1,7 +1,7 @@
 {
   "name": "@omega-v/runtime",
   "version": "0.1.0",
-  "description": "Bounded low-overhead agent loops and memory fabric for Ω∞v Oceanicos",
+  "description": "Bounded runtime lifecycle coordinator and memory fabric for Ω∞v Oceanicos",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -14,6 +14,7 @@
     "runtime",
     "agent-loop",
     "memory",
+    "lifecycle",
     "low-overhead"
   ],
   "author": "Ω∞v Community",

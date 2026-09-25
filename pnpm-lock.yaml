@@ -47,6 +47,9 @@ importers:
       '@omega-v/kernel':
         specifier: workspace:*
         version: link:../../packages/kernel
+      '@omega-v/runtime':
+        specifier: workspace:*
+        version: link:../../packages/runtime
       fastify:
         specifier: ^5.12.4
         version: 5.12.4
@@ -115,6 +118,8 @@ importers:
         version: 5.9.3
 
   packages/kernel: {}
+
+  packages/runtime: {}
 
   packages/mini:
     dependencies:
