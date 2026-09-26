@@ -16,7 +16,7 @@ import { registerPipelineRoute } from './pipeline-route.js';
 import { registerEcosystemRoute } from './ecosystem-route.js';
 import { registerRealityRoute } from './reality-route.js';
 import { registerDependencyRoute } from './dependency-route.js';
-import { OmegaCommandStore, registerOmegaRoutes } from './omega.js';
+import { OmegaCommandStore, OmegaIdempotencyConflictError, registerOmegaRoutes } from './omega.js';
 import {
   ENCRYPTION_ALGORITHM,
   encryptionEnabled,
@@ -259,21 +259,42 @@ export function createApp(
     if (codex.decision !== 'PROPOSE') {
       return reply.status(codex.decision === 'DENY' ? 403 : 409).send({ success: false, codex, context, error: codex.decision === 'DENY' ? 'MOOD_CODEX_PROPOSAL_DENIED' : 'MOOD_CODEX_REQUIRES_REVIEW', nextAction: 'review the Codex context before creating a ledger proposal' });
     }
-    const command = omegaCommands.create({
-      intent: codex.intent,
-      requestedBy: body.requestedBy,
-      workers: ['planner'],
-      idempotencyKey: codex.codexId,
-      context: {
-        moodCodexId: codex.codexId,
-        moodStatus: codex.moodStatus,
-        moodUncertainty: String(codex.uncertainty),
-        moodLanguage: context.language,
-        codexSteps: codex.steps.map((step) => `${step.order}:${step.action}`).join('|'),
-        executionBoundary: codex.execution,
-      },
+    let creation: ReturnType<OmegaCommandStore['create']>;
+    try {
+      creation = omegaCommands.create({
+        intent: codex.intent,
+        requestedBy: body.requestedBy,
+        workers: ['planner'],
+        idempotencyKey: codex.codexId,
+        context: {
+          moodCodexId: codex.codexId,
+          moodStatus: codex.moodStatus,
+          moodUncertainty: String(codex.uncertainty),
+          moodLanguage: context.language,
+          codexSteps: codex.steps.map((step) => `${step.order}:${step.action}`).join('|'),
+          executionBoundary: codex.execution,
+        },
+      });
+    } catch (error) {
+      if (error instanceof OmegaIdempotencyConflictError) {
+        return reply.status(409).send({ success: false, error: 'OMEGA_IDEMPOTENCY_CONFLICT' });
+      }
+      throw error;
+    }
+    const { command } = creation;
+    const nextAction = command.status === 'PROPOSED' || command.status === 'REVIEW'
+      ? 'review and explicitly admit the planner-only Mood Codex proposal; no execution occurred'
+      : command.status === 'AUTHORIZED'
+        ? 'the stored command is authorized; execution remains a separate bounded transition'
+        : 'review the stored command state and evidence; this replay made no state change';
+    return reply.status(creation.created ? 201 : 200).send({
+      success: true,
+      codex,
+      context,
+      command,
+      executed: Boolean(command.result?.execution),
+      nextAction,
     });
-    return reply.status(201).send({ success: true, codex, context, command, executed: false, nextAction: 'review and explicitly admit the planner-only Mood Codex proposal; no execution occurred' });
   });
 
   fastify.post('/v1/attest', async (_request, reply) => {

@@ -81,6 +81,22 @@ export class OmegaDurableStore {
     return row ? JSON.parse(row.command_json) : undefined;
   }
 
+  getCommandByIdempotencyKey(idempotencyKey: string): any | undefined {
+    const row = this.db.prepare('SELECT command_json FROM omega_commands WHERE idempotency_key = ?').get(idempotencyKey);
+    return row ? JSON.parse(row.command_json) : undefined;
+  }
+
+  insertCommandIfAbsent(command: any): { inserted: boolean; command: any } {
+    const result = this.db.prepare(`
+      INSERT INTO omega_commands(command_id, idempotency_key, status, command_json, updated_at)
+      VALUES (?, ?, ?, ?, ?)
+      ON CONFLICT DO NOTHING
+    `).run(command.commandId, command.idempotencyKey, command.status, JSON.stringify(command), new Date().toISOString());
+    const existing = this.getCommandByIdempotencyKey(command.idempotencyKey);
+    if (!existing) throw new Error('OMEGA_COMMAND_IDENTITY_CONFLICT');
+    return { inserted: Number(result.changes) > 0, command: existing };
+  }
+
   putCommand(command: any): void {
     const now = new Date().toISOString();
     this.db.prepare(`

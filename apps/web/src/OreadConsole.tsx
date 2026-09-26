@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import { initialOreadSubmissionIdentity, prepareOreadSubmission } from './oreade-submission';
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
 
@@ -52,14 +53,19 @@ export function OreadConsole() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<'drop' | 'proposal' | 'admit' | null>(null);
 
-  const payload = () => ({
-    symbolicIntent: intent,
-    requestedBy,
-    targetScope: scope.split(',').map((item) => item.trim()).filter(Boolean),
-    idempotencyKey: `oreade-${Date.now()}`,
-    stopCondition,
-    expectedObservation,
-  });
+  const submissionIdentity = useRef(initialOreadSubmissionIdentity());
+  const payload = () => {
+    const request = {
+      symbolicIntent: intent,
+      requestedBy,
+      targetScope: scope.split(',').map((item) => item.trim()).filter(Boolean),
+      stopCondition,
+      expectedObservation,
+    };
+    const prepared = prepareOreadSubmission(request, submissionIdentity.current);
+    submissionIdentity.current = prepared.identity;
+    return prepared.payload;
+  };
 
   const translate = async () => {
     setLoading('drop');

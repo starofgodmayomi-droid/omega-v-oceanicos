@@ -112,8 +112,157 @@ test('API persists a planner-only proposal without authorizing or executing it',
     const detail = await app.inject({ method: 'GET', url: `/v1/omega/commands/${body.command.commandId}` });
     assert.equal(detail.statusCode, 200);
     assert.equal(detail.json().command.status, 'AUTHORIZED');
+
+    const replay = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/oreade/proposal',
+      payload: {
+        symbolicIntent: 'prepare a bounded community reflection plan',
+        requestedBy: 'operator:test',
+        targetScope: ['oracle:reflection'],
+        idempotencyKey: 'proposal-integration-001',
+        stopCondition: 'stop after one proposal is stored',
+        expectedObservation: 'one PROPOSED command is persisted',
+      },
+    });
+    assert.equal(replay.statusCode, 200);
+    assert.equal(replay.json().command.commandId, body.command.commandId);
+    assert.equal(replay.json().command.status, 'AUTHORIZED');
+    assert.equal(replay.json().drop.dropId, body.drop.dropId);
+    assert.equal(replay.json().drop.createdAt, body.drop.createdAt);
   } finally {
     await app.close();
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('API rejects reuse of a proposal idempotency key for a different request without changing the original', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'omega-oreade-idempotency-conflict-'));
+  const app = createApp(join(dir, 'test.db'), false, { allowUnsignedCycle: true });
+  await app.ready();
+
+  try {
+    const original = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/oreade/proposal',
+      payload: {
+        symbolicIntent: 'prepare the first bounded community reflection plan',
+        requestedBy: 'operator:test',
+        targetScope: ['oracle:reflection'],
+        idempotencyKey: 'proposal-conflict-integration-001',
+        stopCondition: 'stop after one proposal is stored',
+        expectedObservation: 'one PROPOSED command is persisted',
+      },
+    });
+    const originalBody = original.json();
+    assert.equal(original.statusCode, 201);
+
+    const conflict = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/oreade/proposal',
+      payload: {
+        symbolicIntent: 'prepare a different bounded reflection plan',
+        requestedBy: 'operator:test',
+        targetScope: ['oracle:reflection'],
+        idempotencyKey: 'proposal-conflict-integration-001',
+        stopCondition: 'stop after one proposal is stored',
+        expectedObservation: 'one PROPOSED command is persisted',
+      },
+    });
+    assert.equal(conflict.statusCode, 409);
+    assert.equal(conflict.json().error, 'OMEGA_IDEMPOTENCY_CONFLICT');
+
+    const detail = await app.inject({ method: 'GET', url: `/v1/omega/commands/${originalBody.command.commandId}` });
+    assert.equal(detail.statusCode, 200);
+    assert.equal(detail.json().command.intent, 'prepare the first bounded community reflection plan');
+    assert.equal(detail.json().command.status, 'PROPOSED');
+  } finally {
+    await app.close();
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('generic command API rejects conflicting idempotency-key reuse', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'omega-command-idempotency-conflict-'));
+  const app = createApp(join(dir, 'test.db'), false, { allowUnsignedCycle: true });
+  await app.ready();
+
+  try {
+    const original = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/commands',
+      payload: {
+        intent: 'inspect the bounded runtime',
+        requestedBy: 'operator:test',
+        workers: ['planner'],
+        idempotencyKey: 'generic-conflict-integration-001',
+        context: { target: 'runtime' },
+      },
+    });
+    assert.equal(original.statusCode, 201);
+
+    const originalBody = original.json();
+    const replay = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/commands',
+      payload: {
+        intent: 'inspect the bounded runtime',
+        requestedBy: 'operator:test',
+        workers: ['planner'],
+        idempotencyKey: 'generic-conflict-integration-001',
+        context: { target: 'runtime' },
+      },
+    });
+    assert.equal(replay.statusCode, 200);
+    assert.equal(replay.json().command.commandId, originalBody.command.commandId);
+
+    const conflict = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/commands',
+      payload: {
+        intent: 'inspect a different bounded runtime',
+        requestedBy: 'operator:test',
+        workers: ['planner'],
+        idempotencyKey: 'generic-conflict-integration-001',
+        context: { target: 'runtime' },
+      },
+    });
+    assert.equal(conflict.statusCode, 409);
+    assert.equal(conflict.json().error, 'OMEGA_IDEMPOTENCY_CONFLICT');
+  } finally {
+    await app.close();
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('separate API instances converge on one durable OREAD command for an idempotency key', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'omega-oreade-idempotency-multi-instance-'));
+  const dbPath = join(dir, 'test.db');
+  const firstApp = createApp(dbPath, false, { allowUnsignedCycle: true });
+  const secondApp = createApp(dbPath, false, { allowUnsignedCycle: true });
+  await Promise.all([firstApp.ready(), secondApp.ready()]);
+
+  try {
+    const payload = {
+      symbolicIntent: 'prepare one bounded multi-instance reflection',
+      requestedBy: 'operator:test',
+      targetScope: ['oracle:reflection'],
+      idempotencyKey: 'proposal-multi-instance-integration-001',
+      stopCondition: 'stop after one proposal is stored',
+      expectedObservation: 'one durable PROPOSED command is returned',
+    };
+    const [first, second] = await Promise.all([
+      firstApp.inject({ method: 'POST', url: '/v1/omega/oreade/proposal', payload }),
+      secondApp.inject({ method: 'POST', url: '/v1/omega/oreade/proposal', payload }),
+    ]);
+    assert.deepEqual([first.statusCode, second.statusCode].sort((left, right) => left - right), [200, 201]);
+    assert.equal(first.json().command.commandId, second.json().command.commandId);
+
+    const detail = await firstApp.inject({ method: 'GET', url: `/v1/omega/commands/${first.json().command.commandId}/provenance` });
+    assert.equal(detail.statusCode, 200);
+    assert.equal(detail.json().provenance.events.filter((event: { type: string }) => event.type === 'command.proposed').length, 1);
+  } finally {
+    await Promise.all([firstApp.close(), secondApp.close()]);
     rmSync(dir, { recursive: true, force: true });
   }
 });

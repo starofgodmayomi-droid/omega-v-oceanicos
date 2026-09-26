@@ -73,6 +73,26 @@ async function runDurableCoordinationEvidenceProbe(input: {
 
 const MAX_COMMANDS = 256;
 
+export class OmegaIdempotencyConflictError extends Error {
+  constructor() {
+    super('OMEGA_IDEMPOTENCY_CONFLICT');
+    this.name = 'OmegaIdempotencyConflictError';
+  }
+}
+
+function canonicalContext(context: Record<string, string>): string {
+  return JSON.stringify(Object.entries(context).sort(([left], [right]) => left < right ? -1 : left > right ? 1 : 0));
+}
+
+function sameCommandRequest(existing: StoredCommand, candidate: OmegaCommand): boolean {
+  return existing.intent === candidate.intent
+    && existing.requestedBy === candidate.requestedBy
+    && existing.sessionId === candidate.sessionId
+    && existing.workers.length === candidate.workers.length
+    && existing.workers.every((worker, index) => worker === candidate.workers[index])
+    && canonicalContext(existing.context) === canonicalContext(candidate.context);
+}
+
 export class OmegaCommandStore {
   private readonly durable: OmegaDurableStore;
   readonly path: string;
@@ -88,15 +108,19 @@ export class OmegaCommandStore {
     this.durable.close();
   }
 
-  create(input: Parameters<typeof buildOmegaCommand>[0]): StoredCommand {
-    const existing = this.durable.getCommand(`omega-${input.idempotencyKey}`) as StoredCommand | undefined;
-    if (existing) return existing;
+  create(input: Parameters<typeof buildOmegaCommand>[0]): { command: StoredCommand; created: boolean } {
     const command = buildOmegaCommand(input);
+    const existing = this.durable.getCommandByIdempotencyKey(input.idempotencyKey) as StoredCommand | undefined;
+    if (existing) {
+      if (!sameCommandRequest(existing, command)) throw new OmegaIdempotencyConflictError();
+      return { command: existing, created: false };
+    }
     const stored = { ...command };
     if (this.durable.listEvents().length >= MAX_COMMANDS * 2) throw new Error('OMEGA_COMMAND_CAPACITY_REACHED');
-    this.durable.putCommand(stored);
-    this.record('command.proposed', stored);
-    return stored;
+    const result = this.durable.insertCommandIfAbsent(stored) as { inserted: boolean; command: StoredCommand };
+    if (!sameCommandRequest(result.command, command)) throw new OmegaIdempotencyConflictError();
+    if (result.inserted) this.record('command.proposed', result.command);
+    return { command: result.command, created: result.inserted };
   }
 
   get(id: string): StoredCommand | undefined { return this.durable.getCommand(id) as StoredCommand | undefined; }
@@ -227,7 +251,7 @@ export function registerOmegaRoutes(fastify: FastifyInstance, store: OmegaComman
         mode: body.mode === 'WORLDVIEW' ? 'WORLDVIEW' : 'BUILD',
         context: body.context && typeof body.context === 'object' && !Array.isArray(body.context) ? body.context as Record<string, string> : undefined,
       });
-      const command = store.create({
+      const creation = store.create({
         intent: drop.intent,
         requestedBy: drop.requestedBy,
         workers: ['planner'],
@@ -238,20 +262,38 @@ export function registerOmegaRoutes(fastify: FastifyInstance, store: OmegaComman
           symbolicMode: drop.mode,
           stopCondition: drop.stopCondition,
           expectedObservation: drop.expectedObservation,
-          targetScope: drop.targetScope.join('|'),
+          targetScope: JSON.stringify(drop.targetScope),
         },
       });
-      if (command.status !== 'PROPOSED') {
-        return reply.status(409).send({ success: false, error: 'OREADE_PROPOSAL_NOT_PROPOSED', status: command.status });
-      }
-      return reply.status(201).send({
+      const { command } = creation;
+      const persistedDrop = { ...drop, createdAt: command.createdAt };
+      const nextAction = command.status === 'PROPOSED' || command.status === 'REVIEW'
+        ? 'review and explicitly admit the bounded proposal; no authorization or execution occurred'
+        : command.status === 'AUTHORIZED'
+          ? 'the stored command is authorized; execution remains a separate bounded transition'
+          : command.status === 'EXECUTED' || command.status === 'ATTESTED'
+            ? 'observe and reconcile the stored execution result; replay did not execute again'
+            : command.status === 'VERIFIED'
+              ? 'review the stored verification evidence and select the next finite Drop'
+              : command.status === 'DIVERGENT'
+                ? 'preserve the divergence and review both expected and observed evidence'
+                : command.status === 'DENIED'
+                  ? 'review the denial evidence; no execution is permitted'
+                  : command.status === 'FAILED'
+                    ? 'preserve the failed attempt evidence and review before proposing a new bounded transition'
+                    : command.status === 'UNKNOWN'
+                      ? 'preserve UNKNOWN and gather bounded evidence before making another claim'
+                      : 'review the stored command state and evidence; replay made no state change';
+      return reply.status(creation.created ? 201 : 200).send({
         success: true,
-        drop,
-        command,
-        nextAction: 'review and explicitly admit the bounded proposal; no authorization or execution occurred',
-        executed: false,
+        drop: persistedDrop,
+        ...commandResult(command, nextAction),
+        executed: Boolean(command.result?.execution),
       });
     } catch (error) {
+      if (error instanceof OmegaIdempotencyConflictError) {
+        return reply.status(409).send({ success: false, error: 'OMEGA_IDEMPOTENCY_CONFLICT' });
+      }
       return reply.status(400).send({ success: false, error: error instanceof Error ? error.message : 'INVALID_OREADE_PROPOSAL' });
     }
   });
@@ -291,15 +333,18 @@ export function registerOmegaRoutes(fastify: FastifyInstance, store: OmegaComman
     const body = bodyOf(request);
     try {
       validateOmegaCommandInput({ intent: body.intent, requestedBy: body.requestedBy, workers: body.workers, idempotencyKey: body.idempotencyKey, context: body.context });
-      const command = store.create({
+      const creation = store.create({
         intent: body.intent as string,
         requestedBy: body.requestedBy as string,
         workers: body.workers as OmegaWorkerId[],
         idempotencyKey: body.idempotencyKey as string,
         context: (body.context as Record<string, string> | undefined),
       });
-      return reply.status(201).send({ success: true, ...commandResult(command, 'admit the command with explicit authority and policy evidence') });
+      return reply.status(creation.created ? 201 : 200).send({ success: true, ...commandResult(creation.command, 'admit the command with explicit authority and policy evidence') });
     } catch (error) {
+      if (error instanceof OmegaIdempotencyConflictError) {
+        return reply.status(409).send({ success: false, error: 'OMEGA_IDEMPOTENCY_CONFLICT' });
+      }
       return reply.status(400).send({ success: false, error: error instanceof Error ? error.message : 'INVALID_OMEGA_COMMAND' });
     }
   });
