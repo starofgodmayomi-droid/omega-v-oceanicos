@@ -76,6 +76,28 @@ test('worker lifecycle remains fail-closed and capacity accounting is bounded', 
     assert.equal(pool.getStats().reproducibilityRate, 0);
   });
 
+  await t.test('refuses default secret and denies unauthorized or expired leases', () => {
+    assert.throws(() => new OceanicosWorkerPool('omega-v-builder-secret-key'), /default signing secret is forbidden/);
+    const pool = new OceanicosWorkerPool('worker-test-key');
+    pool.registerWorker({
+      workerId: 'worker-no-auth',
+      name: 'no-auth',
+      capabilities: ['COMPILE'],
+    });
+    pool.submitJob({ name: 'no-auth-job', requiredCapability: 'COMPILE', payload: { x: 1 } });
+    assert.equal(pool.leaseJob('worker-no-auth'), null);
+    pool.registerWorker({
+      workerId: 'worker-expired-auth',
+      name: 'expired',
+      capabilities: ['COMPILE'],
+      authoritySubject: 'did:omega:test:expired',
+      policyId: 'omega.worker.v1.seed',
+      expiresAt: '2000-01-01T00:00:00.000Z',
+    });
+    pool.submitJob({ name: 'expired-job', requiredCapability: 'COMPILE', payload: { x: 2 } });
+    assert.equal(pool.leaseJob('worker-expired-auth'), null);
+  });
+
   await t.test('rejects malformed scheduling inputs before they enter worker state', () => {
     const pool = new OceanicosWorkerPool('worker-test-key');
     assert.throws(

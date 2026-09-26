@@ -997,7 +997,7 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
     });
   });
 
-  describe('25. Verifiable Worker Pool, Reproducible Builds & SLSA Attestations E2E', () => {
+  describe('25. Verifiable Worker Pool, Reproducible Builds & Local HMAC Observation E2E', () => {
     it('should register worker capabilities, lease build tasks, generate SLSA-L3 attestations, and verify multi-builder reproducibility', () => {
       const pool = new OceanicosWorkerPool('e2e-worker-pool-key');
 
@@ -1041,7 +1041,7 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       );
 
       expect(completedJob.status).toBe('COMPLETED');
-      expect(attestation.slsaLevel).toBe('SLSA_BUILD_L3');
+      expect(attestation.slsaLevel).toBe('LOCAL_HMAC_OBSERVED');
       expect(attestation.outputMerkleRoot).toHaveLength(64);
       expect(attestation.builderSignature).toMatch(/^0x/);
 

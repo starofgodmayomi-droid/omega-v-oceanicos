@@ -67,7 +67,7 @@ describe('OceanicosWorkerPool (Verifiable Worker & Builder Execution Engine)', (
     });
   });
 
-  describe('3. Execution Completion & SLSA-L3 Attestation', () => {
+  describe('3. Execution Completion & Local HMAC Observation', () => {
     it('should complete job and issue cryptographically signed SLSA build attestation', () => {
       const job = pool.submitJob({
         name: 'Build Container Image',
@@ -96,7 +96,9 @@ describe('OceanicosWorkerPool (Verifiable Worker & Builder Execution Engine)', (
       );
 
       expect(completedJob.status).toBe('COMPLETED');
-      expect(attestation.slsaLevel).toBe('SLSA_BUILD_L3');
+      expect(attestation.slsaLevel).toBe('LOCAL_HMAC_OBSERVED');
+      expect(attestation.realityStatus).toBe('OBSERVED');
+      expect(attestation.runtimeClaim).toBe('NOT_CLAIMED');
       expect(attestation.outputMerkleRoot).toHaveLength(64);
       expect(attestation.builderSignature).toMatch(/^0x/);
 
@@ -175,6 +177,36 @@ describe('OceanicosWorkerPool (Verifiable Worker & Builder Execution Engine)', (
       expect(stats.totalWorkers).toBeGreaterThanOrEqual(2);
       expect(stats.onlineWorkers).toBeGreaterThanOrEqual(2);
       expect(typeof stats.avgDurationMs).toBe('number');
+    });
+  });
+
+  describe('5. Fail-closed authority and secrets', () => {
+    it('refuses the default signing secret and empty keys', () => {
+      expect(() => new OceanicosWorkerPool('omega-v-builder-secret-key')).toThrow(/default signing secret is forbidden/);
+      expect(() => new OceanicosWorkerPool('')).toThrow(/signingKey must be a non-empty string/);
+    });
+
+    it('denies lease when worker lacks authority or is expired', () => {
+      const unauthorized = pool.registerWorker({
+        workerId: 'worker-unauthorized',
+        name: 'No Authority',
+        capabilities: ['COMPILE'],
+      });
+      expect(unauthorized.authoritySubject).toBe('');
+      pool.submitJob({ name: 'denied-unauth', requiredCapability: 'COMPILE', payload: { n: 1 } });
+      expect(pool.leaseJob('worker-unauthorized')).toBeNull();
+
+      pool.registerWorker({
+        workerId: 'worker-expired',
+        name: 'Expired',
+        capabilities: ['COMPILE'],
+        authoritySubject: 'did:omega:test:expired',
+        policyId: 'omega.worker.v1.seed',
+        expiresAt: '2000-01-01T00:00:00.000Z',
+        scope: ['local-simulate'],
+      });
+      pool.submitJob({ name: 'denied-expired', requiredCapability: 'COMPILE', payload: { n: 2 } });
+      expect(pool.leaseJob('worker-expired')).toBeNull();
     });
   });
 });

@@ -12,6 +12,8 @@ packages:
   - 'packages/mood'
   - 'packages/auth'
   - 'packages/webhook'
+  - 'packages/worker'
+  - 'packages/pipeline'
   - 'apps/api'
   - 'apps/web'
 
