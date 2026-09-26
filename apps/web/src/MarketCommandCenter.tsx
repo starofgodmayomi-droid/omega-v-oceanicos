@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { theme } from './oceanicosTheme';
+import { apiRequest } from './apiClient';
 
 type Asset = { symbol: string; name: string; price: number; changePercent: number; kind: string; source: string };
 type Snapshot = { success: boolean; evidence: { live: boolean; assetCount: number; providerCount: number }; assets: Asset[]; signal: string; observedAt: string };
@@ -21,14 +22,14 @@ export function MarketCommandCenter() {
   const load = async () => {
     setLoading(true);
     try {
-      const [snapshotResponse, watchlistResponse, alertsResponse] = await Promise.all([
-        fetch('/v1/market/snapshot'), fetch('/v1/market/watchlist'), fetch('/v1/market/alerts'),
+      const [nextSnapshot, watchlistResponse, alertsResponse] = await Promise.all([
+        apiRequest<Snapshot>('/v1/market/snapshot'),
+        apiRequest<{ items?: WatchItem[] }>('/v1/market/watchlist'),
+        apiRequest<{ alerts?: Alert[] }>('/v1/market/alerts'),
       ]);
-      if (!snapshotResponse.ok) throw new Error(`market snapshot unavailable (${snapshotResponse.status})`);
-      const nextSnapshot = await snapshotResponse.json() as Snapshot;
       setSnapshot(nextSnapshot);
-      if (watchlistResponse.ok) setWatchlist((await watchlistResponse.json()).items ?? []);
-      if (alertsResponse.ok) setAlerts((await alertsResponse.json()).alerts ?? []);
+      setWatchlist(watchlistResponse.items ?? []);
+      setAlerts(alertsResponse.alerts ?? []);
       setError(null);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'market observation unavailable');
@@ -39,11 +40,22 @@ export function MarketCommandCenter() {
   const radar = useMemo(() => [...snapshot.assets].sort((a, b) => b.changePercent - a.changePercent).slice(0, 3), [snapshot.assets]);
   const addWatch = async () => {
     if (!symbol.trim()) return;
-    const response = await fetch('/v1/market/watchlist', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ symbol, thresholdPercent: Number(threshold) }) });
-    if (!response.ok) { setError('Could not add watch item'); return; }
-    setSymbol(''); await load();
+    try {
+      await apiRequest('/v1/market/watchlist', { method: 'POST', body: JSON.stringify({ symbol, thresholdPercent: Number(threshold) }) });
+      setSymbol('');
+      await load();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Could not add watch item');
+    }
   };
-  const removeWatch = async (item: WatchItem) => { await fetch(`/v1/market/watchlist/${encodeURIComponent(item.symbol)}`, { method: 'DELETE' }); await load(); };
+  const removeWatch = async (item: WatchItem) => {
+    try {
+      await apiRequest(`/v1/market/watchlist/${encodeURIComponent(item.symbol)}`, { method: 'DELETE' });
+      await load();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : `Could not remove ${item.symbol}`);
+    }
+  };
 
   return <section style={{ marginTop: '28px', padding: '20px', borderRadius: theme.radius, border: `1px solid ${theme.borderBright}`, background: theme.surfaceDeep, fontFamily: theme.fontSans }}>
     <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'flex-start', flexWrap: 'wrap' }}>

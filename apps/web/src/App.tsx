@@ -8,6 +8,7 @@ import { SystemControlsPanel } from './SystemControlsPanel';
 import { ObservationStreamPanel } from './ObservationStreamPanel';
 import { LifecycleFlow, deriveStageStates, type LifecycleStage } from './LifecycleFlow';
 import { MarketCommandCenter } from './MarketCommandCenter';
+import { apiRequest, apiUrl } from './apiClient';
 import {
   theme,
   statusColor,
@@ -16,27 +17,6 @@ import {
   MeshConvergenceReceipt,
   KernelCapabilitySnapshot,
 } from './oceanicosTheme';
-
-const API_BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
-
-function apiUrl(path: string): string {
-  return `${API_BASE_URL}${path}`;
-}
-
-async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(apiUrl(path), init);
-  const text = await response.text();
-  let payload: any = null;
-  try {
-    payload = text ? JSON.parse(text) : null;
-  } catch {
-    throw new Error(`API returned invalid JSON (${response.status})`);
-  }
-  if (!response.ok) {
-    throw new Error(payload?.error || payload?.message || `API request failed (${response.status})`);
-  }
-  return payload as T;
-}
 
 const MODE_BUTTONS = [
   { icon: '✦', label: 'Create', template: 'Create a new ' },

@@ -36,3 +36,5 @@ Run the API locally and inspect the route:
 OMEGA_AUTH_MODE=local pnpm --filter api dev
 curl http://127.0.0.1:5000/v1/market/snapshot
 ```
+
+The web client routes through `VITE_API_URL` so the dashboard can run in a separate web container from the API. Optional `VITE_API_READ_TOKEN` and `VITE_API_ADMIN_TOKEN` values add bearer credentials for browser requests; do not embed an admin token in a publicly distributed web bundle. In required-auth deployments, prefer a trusted same-origin gateway or server-side session exchange for mutations rather than shipping privileged credentials to the browser.
