@@ -23,7 +23,10 @@ export const SNAPSHOT_KEYS = ['events', 'runs', 'actions', 'learnings', 'recompi
 
 export type SnapshotKey = (typeof SNAPSHOT_KEYS)[number];
 
-export type AnySnapshot = Record<SnapshotKey, unknown[]>;
+export type AnySnapshot = Record<SnapshotKey, unknown[]> & {
+  /** Added after the original snapshot schema; absent means no revocations. */
+  revocations?: unknown[];
+};
 
 const ENCRYPTED_PREFIX = 'omega-v1';
 const AES_KEY_BYTES = 32;

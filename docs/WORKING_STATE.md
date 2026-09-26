@@ -948,3 +948,7 @@ Two hosted confirmations followed, on branches that carry none of this change ex
 Neither diff touches `apps/web`. Both had been red across days for a failure that was never theirs, and both went green on the same two-file port.
 
 The #204 failure is worth keeping for a second reason: it failed on **Windows while both Linux legs passed**. The older records repeatedly attribute Windows DOM failures to WebCrypto or to hosted contention. They are the same deadlock, and the platform difference is timing, not cryptography — the deadlock bites only when the state update lands inside the `findBy*` scope rather than during the interaction that opened it, which is a matter of microseconds.
+
+## Durable revocation consistency checkpoint — 2026-09-25
+
+The next bounded slice closes the observed in-memory-only revocation gap: accepted attestation revocations are restored from the configured runtime snapshot, persisted atomically, and recorded in the append-only event log. A compiled-runtime regression proves restart recovery, independent API-instance visibility on the shared local volume, and duplicate rejection. This earns local single-volume evidence only; distributed ordering, cross-host agreement, external persistence, replicas/backups, and deployment health remain unverified.

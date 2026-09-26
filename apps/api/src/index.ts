@@ -19,6 +19,7 @@ import { registerDependencyRoute } from './dependency-route.js';
 import { OmegaCommandStore, registerOmegaRoutes } from './omega.js';
 import {
   ENCRYPTION_ALGORITHM,
+  appendEvent,
   encryptionEnabled,
   eventLogReady,
   loadSnapshot,
@@ -33,6 +34,7 @@ import {
   persistenceRotationPending,
   readEventLog,
   reencryptPersistence,
+  saveSnapshot,
 } from './persistence.js';
 
 const MAX_STREAM_CLIENTS = 256;
@@ -111,7 +113,23 @@ export function createApp(
     omegaCommands.close();
   });
 
-  const revocations = new Map<string, { id: string; attestationId: string; reason: string; revokedBy: string; revokedAt: string }>();
+  type RevocationRecord = { id: string; attestationId: string; reason: string; revokedBy: string; revokedAt: string };
+  const restoredRevocations = Array.isArray(snapshot.snapshot.revocations) ? snapshot.snapshot.revocations : [];
+  const revocations = new Map<string, RevocationRecord>();
+  for (const value of restoredRevocations) {
+    if (
+      value &&
+      typeof value === 'object' &&
+      typeof (value as RevocationRecord).id === 'string' &&
+      typeof (value as RevocationRecord).attestationId === 'string' &&
+      typeof (value as RevocationRecord).reason === 'string' &&
+      typeof (value as RevocationRecord).revokedBy === 'string' &&
+      typeof (value as RevocationRecord).revokedAt === 'string'
+    ) {
+      const record = value as RevocationRecord;
+      revocations.set(record.attestationId, record);
+    }
+  }
   const streamClients = new Set<(block: any) => boolean>();
   let minerInterval: NodeJS.Timeout | null = null;
   const minerStats = { active: false, intervalMs: 5000, totalMined: 0, lastBlockTime: '' };
@@ -382,8 +400,16 @@ export function createApp(
     const revokedBy = String(request.body?.revokedBy ?? request.headers['x-omega-operator-id'] ?? 'operator').trim();
     if (!attestationId || !reason) return jsonError(reply, 400, 'INVALID_REVOCATION');
     if (revocations.has(attestationId)) return jsonError(reply, 409, 'ATTESTATION_ALREADY_REVOKED');
-    const record = { id: `rev-${randomUUID()}`, attestationId, reason, revokedBy, revokedAt: new Date().toISOString() };
+    const record: RevocationRecord = { id: `rev-${randomUUID()}`, attestationId, reason, revokedBy, revokedAt: new Date().toISOString() };
     revocations.set(attestationId, record);
+    const persistedSnapshot = { ...snapshot.snapshot, revocations: [...revocations.values()] };
+    const snapshotWritten = saveSnapshot(runtimeStorePath, persistedSnapshot, persistenceEnabled, persistenceKey);
+    const eventWritten = appendEvent(eventLogPath, { type: 'attestation.revoked', ...record }, persistenceEnabled, persistenceKey);
+    if (persistenceEnabled && (!snapshotWritten || !eventWritten.appended)) {
+      revocations.delete(attestationId);
+      return jsonError(reply, 503, 'REVOCATION_PERSISTENCE_FAILED', { snapshotWritten, eventWritten: eventWritten.appended });
+    }
+    snapshot.snapshot = persistedSnapshot;
     return reply.status(201).send({ success: true, data: record });
   });
   fastify.get('/attest/policy', { preHandler: requireReadAccess }, async () => ({ success: true, policy: { authMode, revocationEnabled: true, revocationRevision: revocations.size, attestationAlgorithm: 'HMAC-SHA256' } }));
