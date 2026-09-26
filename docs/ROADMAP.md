@@ -342,3 +342,7 @@ Remaining gates are evidence-based: durable persistence and event replay, requir
 ### Durable command coordination increment — 2026-09
 
 The Ω command store now persists commands and lifecycle events in a configurable SQLite database and recovers them after API restart. Independent API processes can register workers, heartbeat, and acquire exclusive transactional leases against the same volume. Live local-staging smoke verification passed for proposal, restart recovery, worker registration, lease exclusivity, release, and durable events. This earns multi-process single-volume coordination, not cross-host consensus, network-database durability, deployment, or production health.
+
+## Durable revocation consistency — next finite slice — 2026-09-25
+
+Attestation revocations now persist in the runtime snapshot and emit append-only `attestation.revoked` evidence when persistence is enabled. A restart or independent API instance sharing the configured runtime snapshot restores the revocation set and continues to reject duplicate revocations. The focused compiled-runtime integration test covers acceptance, restart recovery, independent-instance visibility, and duplicate rejection. This is local single-volume evidence only; distributed revocation ordering, cross-host agreement, external storage, backup/replica consistency, and deployment health remain unverified.
