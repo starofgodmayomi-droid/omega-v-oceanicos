@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
-import { MarketWatchlistStore } from './market-watchlist-store.js';
+import { randomUUID } from 'node:crypto';
+import { MarketWatchlistStore, type AlertEvent } from './market-watchlist-store.js';
 
 type MarketAsset = {
   symbol: string;
@@ -67,6 +68,16 @@ export function registerMarketIntelligenceRoute(fastify: FastifyInstance, dbPath
   const store = new MarketWatchlistStore(dbPath);
   fastify.addHook('onClose', async () => store.close());
 
+  const evaluateAlerts = (snapshot: Awaited<ReturnType<typeof getSnapshot>>): Array<Omit<AlertEvent, 'id'>> => {
+    const bySymbol = new Map(snapshot.assets.map(asset => [asset.symbol, asset]));
+    return store.list().flatMap(item => {
+      const asset = bySymbol.get(item.symbol);
+      if (!asset || Math.abs(asset.changePercent) < item.thresholdPercent) return [];
+      const severity = Math.abs(asset.changePercent) >= item.thresholdPercent * 2 ? 'critical' : 'watch';
+      return [{ ...item, direction: asset.changePercent >= 0 ? 'up' as const : 'down' as const, severity, changePercent: asset.changePercent, price: asset.price, source: asset.source, observedAt: snapshot.observedAt }];
+    });
+  };
+
   fastify.get('/v1/market/snapshot', async () => {
     const snapshot = await getSnapshot();
     return { success: true, observation: 'market_snapshot', evidence: { providerCount: snapshot.providerCount, live: snapshot.live, assetCount: snapshot.assets.length }, assets: snapshot.assets, signal: snapshot.signal, observedAt: snapshot.observedAt };
@@ -90,14 +101,26 @@ export function registerMarketIntelligenceRoute(fastify: FastifyInstance, dbPath
 
   fastify.get('/v1/market/alerts', async () => {
     const snapshot = await getSnapshot();
-    const bySymbol = new Map(snapshot.assets.map(asset => [asset.symbol, asset]));
-    const alerts = store.list().flatMap(item => {
-      const asset = bySymbol.get(item.symbol);
-      if (!asset || Math.abs(asset.changePercent) < item.thresholdPercent) return [];
-      const severity = Math.abs(asset.changePercent) >= item.thresholdPercent * 2 ? 'critical' : 'watch';
-      return [store.recordAlert({ ...item, severity, changePercent: asset.changePercent, price: asset.price, source: asset.source, observedAt: snapshot.observedAt })];
-    });
+    const alerts = evaluateAlerts(snapshot);
     return { success: true, alerts, observedAt: snapshot.observedAt, evidence: { live: snapshot.live, providerCount: snapshot.providerCount } };
+  });
+
+  fastify.post('/v1/market/scan', async () => {
+    const snapshot = await getSnapshot();
+    const candidates = evaluateAlerts(snapshot);
+    const recorded = candidates.flatMap(candidate => {
+      const event = store.recordAlertIfEligible(candidate);
+      return event ? [event] : [];
+    });
+    return {
+      success: true,
+      scanId: `market-scan-${randomUUID()}`,
+      recordedAlerts: recorded,
+      activeAlerts: candidates,
+      suppressedCount: candidates.length - recorded.length,
+      observedAt: snapshot.observedAt,
+      evidence: { live: snapshot.live, providerCount: snapshot.providerCount, assetCount: snapshot.assets.length },
+    };
   });
 
   fastify.get('/v1/market/alerts/history', async (request: any) => ({ success: true, events: store.history(Number(request.query?.limit ?? 50)) }));

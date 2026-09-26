@@ -5,7 +5,7 @@ import { apiRequest } from './apiClient';
 type Asset = { symbol: string; name: string; price: number; changePercent: number; kind: string; source: string };
 type Snapshot = { success: boolean; evidence: { live: boolean; assetCount: number; providerCount: number }; assets: Asset[]; signal: string; observedAt: string };
 type WatchItem = { symbol: string; thresholdPercent: number; createdAt: string };
-type Alert = { symbol: string; severity: 'critical' | 'watch'; thresholdPercent: number; changePercent: number; price: number; source: string };
+type Alert = { symbol: string; direction?: 'up' | 'down'; severity: 'critical' | 'watch'; thresholdPercent: number; changePercent: number; price: number; source: string };
 
 const fallback: Snapshot = { success: true, evidence: { live: false, assetCount: 0, providerCount: 0 }, assets: [], signal: 'Awaiting market observation', observedAt: '' };
 const buttonStyle = { border: `1px solid ${theme.border}`, borderRadius: theme.radiusPill, background: 'transparent', color: theme.textMuted, padding: '7px 10px', cursor: 'pointer', fontFamily: theme.fontSans, fontSize: '11px' } as const;
@@ -17,6 +17,7 @@ export function MarketCommandCenter() {
   const [symbol, setSymbol] = useState('');
   const [threshold, setThreshold] = useState('2');
   const [loading, setLoading] = useState(true);
+  const [scanLoading, setScanLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const load = async () => {
@@ -56,11 +57,22 @@ export function MarketCommandCenter() {
       setError(cause instanceof Error ? cause.message : `Could not remove ${item.symbol}`);
     }
   };
+  const scanNow = async () => {
+    setScanLoading(true);
+    try {
+      await apiRequest('/v1/market/scan', { method: 'POST' });
+      await load();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Market scan unavailable');
+    } finally {
+      setScanLoading(false);
+    }
+  };
 
   return <section style={{ marginTop: '28px', padding: '20px', borderRadius: theme.radius, border: `1px solid ${theme.borderBright}`, background: theme.surfaceDeep, fontFamily: theme.fontSans }}>
     <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
       <div><div style={{ color: theme.accent, fontSize: '11px', fontWeight: 800, letterSpacing: '.18em' }}>◈ MARKET INTELLIGENCE</div><h2 style={{ color: theme.text, fontSize: '22px', margin: '8px 0 4px' }}>Observe the signal. Verify the source.</h2><div style={{ color: theme.textMuted, fontSize: '12px' }}>{snapshot.signal}</div></div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: snapshot.evidence.live ? theme.verified : theme.warning, fontSize: '11px', fontWeight: 700, letterSpacing: '.08em' }}><span style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'currentColor' }} /> {snapshot.evidence.live ? 'LIVE VERIFIED FEED' : 'FALLBACK OBSERVATION'}</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}><div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: snapshot.evidence.live ? theme.verified : theme.warning, fontSize: '11px', fontWeight: 700, letterSpacing: '.08em' }}><span style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'currentColor' }} /> {snapshot.evidence.live ? 'LIVE VERIFIED FEED' : 'FALLBACK OBSERVATION'}</div><button onClick={() => void scanNow()} disabled={scanLoading} style={{ ...buttonStyle, borderColor: theme.borderBright, color: theme.accent, opacity: scanLoading ? .65 : 1 }}>{scanLoading ? 'SCANNING…' : 'SCAN NOW'}</button></div>
     </div>
     {error && <div style={{ marginTop: '14px', color: theme.warning, fontSize: '12px' }}>Observation degraded: {error}</div>}
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '8px', marginTop: '18px' }}>{snapshot.assets.map(asset => <div key={asset.symbol} style={{ padding: '12px', borderRadius: theme.radiusSmall, border: `1px solid ${theme.border}`, background: theme.surface }}><div style={{ display: 'flex', justifyContent: 'space-between', color: theme.text, fontWeight: 700, fontSize: '13px' }}><span>{asset.symbol}</span><span style={{ color: asset.changePercent >= 0 ? theme.verified : theme.divergent }}>{asset.changePercent >= 0 ? '+' : ''}{asset.changePercent.toFixed(2)}%</span></div><div style={{ color: theme.textMuted, fontSize: '11px', marginTop: '6px' }}>{asset.name} · ${asset.price.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div></div>)}</div>

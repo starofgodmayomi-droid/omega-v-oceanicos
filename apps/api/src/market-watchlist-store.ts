@@ -1,5 +1,6 @@
 export type WatchItem = { symbol: string; thresholdPercent: number; createdAt: string };
-export type AlertEvent = WatchItem & { id: number; severity: 'watch' | 'critical'; changePercent: number; price: number; source: string; observedAt: string };
+export type AlertDirection = 'up' | 'down';
+export type AlertEvent = WatchItem & { id: number; direction: AlertDirection; severity: 'watch' | 'critical'; changePercent: number; price: number; source: string; observedAt: string };
 
 type SqliteDb = {
   exec(sql: string): void;
@@ -33,6 +34,7 @@ export class MarketWatchlistStore {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         symbol TEXT NOT NULL,
         threshold_percent REAL NOT NULL,
+        direction TEXT NOT NULL DEFAULT 'up',
         severity TEXT NOT NULL,
         change_percent REAL NOT NULL,
         price REAL NOT NULL,
@@ -40,6 +42,8 @@ export class MarketWatchlistStore {
         observed_at TEXT NOT NULL
       );
     `);
+    const columns = this.db.prepare('PRAGMA table_info(market_alert_events)').all() as Array<{ name: string }>;
+    if (!columns.some(column => column.name === 'direction')) this.db.exec("ALTER TABLE market_alert_events ADD COLUMN direction TEXT NOT NULL DEFAULT 'up'");
     const count = this.db.prepare('SELECT COUNT(*) AS count FROM market_watchlist').get();
     if (Number(count?.count ?? 0) === 0) {
       const now = new Date().toISOString();
@@ -57,10 +61,7 @@ export class MarketWatchlistStore {
 
   upsert(symbol: string, thresholdPercent: number): WatchItem {
     const createdAt = new Date().toISOString();
-    this.db.prepare(`
-      INSERT INTO market_watchlist(symbol, threshold_percent, created_at) VALUES (?, ?, ?)
-      ON CONFLICT(symbol) DO UPDATE SET threshold_percent=excluded.threshold_percent
-    `).run(symbol, thresholdPercent, createdAt);
+    this.db.prepare(`INSERT INTO market_watchlist(symbol, threshold_percent, created_at) VALUES (?, ?, ?) ON CONFLICT(symbol) DO UPDATE SET threshold_percent=excluded.threshold_percent`).run(symbol, thresholdPercent, createdAt);
     return this.db.prepare('SELECT symbol, threshold_percent AS thresholdPercent, created_at AS createdAt FROM market_watchlist WHERE symbol = ?').get(symbol) as WatchItem;
   }
 
@@ -68,13 +69,15 @@ export class MarketWatchlistStore {
     return Number(this.db.prepare('DELETE FROM market_watchlist WHERE symbol = ?').run(symbol)?.changes ?? 0) > 0;
   }
 
-  recordAlert(event: Omit<AlertEvent, 'id'>): AlertEvent {
-    const result = this.db.prepare(`INSERT INTO market_alert_events(symbol, threshold_percent, severity, change_percent, price, source, observed_at) VALUES (?, ?, ?, ?, ?, ?, ?)`).run(event.symbol, event.thresholdPercent, event.severity, event.changePercent, event.price, event.source, event.observedAt);
+  recordAlertIfEligible(event: Omit<AlertEvent, 'id'>, cooldownMs = 15 * 60 * 1000): AlertEvent | null {
+    const previous = this.db.prepare('SELECT id, observed_at AS observedAt FROM market_alert_events WHERE symbol = ? AND direction = ? AND severity = ? ORDER BY id DESC LIMIT 1').get(event.symbol, event.direction, event.severity);
+    if (previous?.observedAt && Date.now() - Date.parse(String(previous.observedAt)) < cooldownMs) return null;
+    const result = this.db.prepare(`INSERT INTO market_alert_events(symbol, threshold_percent, direction, severity, change_percent, price, source, observed_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`).run(event.symbol, event.thresholdPercent, event.direction, event.severity, event.changePercent, event.price, event.source, event.observedAt);
     return { ...event, id: Number(result?.lastInsertRowid ?? 0) };
   }
 
   history(limit = 50): AlertEvent[] {
     const bounded = Math.max(1, Math.min(200, Math.floor(limit)));
-    return this.db.prepare('SELECT id, symbol, threshold_percent AS thresholdPercent, severity, change_percent AS changePercent, price, source, observed_at AS observedAt FROM market_alert_events ORDER BY id DESC LIMIT ?').all(bounded) as AlertEvent[];
+    return this.db.prepare('SELECT id, symbol, threshold_percent AS thresholdPercent, direction, severity, change_percent AS changePercent, price, source, observed_at AS observedAt FROM market_alert_events ORDER BY id DESC LIMIT ?').all(bounded) as AlertEvent[];
   }
 }
