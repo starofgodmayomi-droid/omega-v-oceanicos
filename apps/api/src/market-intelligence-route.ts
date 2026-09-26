@@ -43,7 +43,7 @@ async function fetchCrypto(id: string, symbol: string, name: string): Promise<Ma
   return { symbol, name, price, change: price * changePercent / 100, changePercent, kind: 'crypto', source: 'coingecko' };
 }
 
-async function getSnapshot(): Promise<{ assets: MarketAsset[]; live: boolean; providerCount: number; signal: string; observedAt: string }> {
+async function getSnapshot(requireLive = false): Promise<{ assets: MarketAsset[]; live: boolean; providerCount: number; signal: string; observedAt: string }> {
   const finnhubKey = process.env.FINNHUB_API_KEY?.trim();
   const equityDefinitions = [['NVDA', 'NVIDIA'], ['TSLA', 'Tesla'], ['AAPL', 'Apple'], ['MSFT', 'Microsoft']] as const;
   const results = await Promise.allSettled([
@@ -53,6 +53,7 @@ async function getSnapshot(): Promise<{ assets: MarketAsset[]; live: boolean; pr
   ]);
   const assets = results.filter((result): result is PromiseFulfilledResult<MarketAsset> => result.status === 'fulfilled').map(result => result.value);
   const live = assets.length >= 2;
+  if (requireLive && !live) throw new Error('live_market_data_unavailable');
   const normalized = live ? assets : fallbackAssets;
   const strongest = [...normalized].sort((a, b) => b.changePercent - a.changePercent)[0];
   return {
@@ -105,27 +106,33 @@ export function registerMarketIntelligenceRoute(fastify: FastifyInstance, dbPath
     return { success: true, alerts, observedAt: snapshot.observedAt, evidence: { live: snapshot.live, providerCount: snapshot.providerCount } };
   });
 
-  fastify.post('/v1/market/scan', async () => {
+  fastify.post('/v1/market/scan', async (_request: unknown, reply: any) => {
     const startedAt = new Date().toISOString();
     const scanId = `market-scan-${randomUUID()}`;
-    const snapshot = await getSnapshot();
-    const candidates = evaluateAlerts(snapshot);
-    const recorded = candidates.flatMap(candidate => {
-      const event = store.recordAlertIfEligible(candidate);
-      return event ? [event] : [];
-    });
-    const completedAt = new Date().toISOString();
-    const scanRun = store.recordScanRun({ scanId, status: 'completed', startedAt, completedAt, live: snapshot.live, providerCount: snapshot.providerCount, assetCount: snapshot.assets.length, candidateCount: candidates.length, recordedCount: recorded.length, suppressedCount: candidates.length - recorded.length });
-    return {
-      success: true,
-      scanId,
-      scanRun,
-      recordedAlerts: recorded,
-      activeAlerts: candidates,
-      suppressedCount: candidates.length - recorded.length,
-      observedAt: snapshot.observedAt,
-      evidence: { live: snapshot.live, providerCount: snapshot.providerCount, assetCount: snapshot.assets.length },
-    };
+    try {
+      const snapshot = await getSnapshot(process.env.OMEGA_MARKET_SCAN_REQUIRE_LIVE === '1');
+      const candidates = evaluateAlerts(snapshot);
+      const recorded = candidates.flatMap(candidate => {
+        const event = store.recordAlertIfEligible(candidate);
+        return event ? [event] : [];
+      });
+      const completedAt = new Date().toISOString();
+      const scanRun = store.recordScanRun({ scanId, status: 'completed', startedAt, completedAt, live: snapshot.live, providerCount: snapshot.providerCount, assetCount: snapshot.assets.length, candidateCount: candidates.length, recordedCount: recorded.length, suppressedCount: candidates.length - recorded.length });
+      return {
+        success: true,
+        scanId,
+        scanRun,
+        recordedAlerts: recorded,
+        activeAlerts: candidates,
+        suppressedCount: candidates.length - recorded.length,
+        observedAt: snapshot.observedAt,
+        evidence: { live: snapshot.live, providerCount: snapshot.providerCount, assetCount: snapshot.assets.length },
+      };
+    } catch (cause) {
+      const message = cause instanceof Error ? cause.message : String(cause);
+      const failedRun = store.recordScanRun({ scanId, status: 'failed', startedAt, completedAt: new Date().toISOString(), live: false, providerCount: 0, assetCount: 0, candidateCount: 0, recordedCount: 0, suppressedCount: 0, error: message.slice(0, 240) });
+      return reply.status(503).send({ success: false, error: 'MARKET_SCAN_FAILED', message: 'Market scan could not be reconciled.', scanId, scanRun: failedRun });
+    }
   });
 
   fastify.get('/v1/market/alerts/history', async (request: any) => ({ success: true, events: store.history(Number(request.query?.limit ?? 50)) }));

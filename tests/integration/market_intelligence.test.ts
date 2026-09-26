@@ -56,6 +56,18 @@ describe('market intelligence evidence route', () => {
     assert.equal(history.json().events.length, firstHistory.json().events.length);
     const runs = await app.inject({ method: 'GET', url: '/v1/market/scans/history' });
     assert.equal(runs.json().runs.length, 2);
+    const originalRequireLive = process.env.OMEGA_MARKET_SCAN_REQUIRE_LIVE;
+    process.env.OMEGA_MARKET_SCAN_REQUIRE_LIVE = '1';
+    globalThis.fetch = (async () => { throw new Error('provider_unavailable'); }) as typeof fetch;
+    const failedScan = await app.inject({ method: 'POST', url: '/v1/market/scan' });
+    assert.equal(failedScan.statusCode, 503);
+    assert.equal(failedScan.json().error, 'MARKET_SCAN_FAILED');
+    assert.equal(failedScan.json().scanRun.status, 'failed');
+    const allRuns = await app.inject({ method: 'GET', url: '/v1/market/scans/history' });
+    assert.equal(allRuns.json().runs.length, 3);
+    if (originalRequireLive === undefined) delete process.env.OMEGA_MARKET_SCAN_REQUIRE_LIVE;
+    else process.env.OMEGA_MARKET_SCAN_REQUIRE_LIVE = originalRequireLive;
+    globalThis.fetch = originalFetch;
     const removeWatch = await app.inject({ method: 'DELETE', url: '/v1/market/watchlist/ETH' });
     assert.equal(removeWatch.statusCode, 200);
     await app.close();
@@ -64,7 +76,7 @@ describe('market intelligence evidence route', () => {
     assert.equal(persisted.json().items.some((item: { symbol: string }) => item.symbol === 'NVDA'), true);
     assert.equal(persisted.json().items.some((item: { symbol: string }) => item.symbol === 'ETH'), false);
     const persistedRuns = await restarted.inject({ method: 'GET', url: '/v1/market/scans/history' });
-    assert.equal(persistedRuns.json().runs.length, 2);
+    assert.equal(persistedRuns.json().runs.length, 3);
     await restarted.close();
     rmSync(directory, { recursive: true, force: true });
   });
