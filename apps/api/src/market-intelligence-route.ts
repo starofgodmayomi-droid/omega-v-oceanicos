@@ -106,15 +106,20 @@ export function registerMarketIntelligenceRoute(fastify: FastifyInstance, dbPath
   });
 
   fastify.post('/v1/market/scan', async () => {
+    const startedAt = new Date().toISOString();
+    const scanId = `market-scan-${randomUUID()}`;
     const snapshot = await getSnapshot();
     const candidates = evaluateAlerts(snapshot);
     const recorded = candidates.flatMap(candidate => {
       const event = store.recordAlertIfEligible(candidate);
       return event ? [event] : [];
     });
+    const completedAt = new Date().toISOString();
+    const scanRun = store.recordScanRun({ scanId, status: 'completed', startedAt, completedAt, live: snapshot.live, providerCount: snapshot.providerCount, assetCount: snapshot.assets.length, candidateCount: candidates.length, recordedCount: recorded.length, suppressedCount: candidates.length - recorded.length });
     return {
       success: true,
-      scanId: `market-scan-${randomUUID()}`,
+      scanId,
+      scanRun,
       recordedAlerts: recorded,
       activeAlerts: candidates,
       suppressedCount: candidates.length - recorded.length,
@@ -124,4 +129,5 @@ export function registerMarketIntelligenceRoute(fastify: FastifyInstance, dbPath
   });
 
   fastify.get('/v1/market/alerts/history', async (request: any) => ({ success: true, events: store.history(Number(request.query?.limit ?? 50)) }));
+  fastify.get('/v1/market/scans/history', async (request: any) => ({ success: true, runs: store.scanHistory(Number(request.query?.limit ?? 25)) }));
 }

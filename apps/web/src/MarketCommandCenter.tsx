@@ -6,6 +6,7 @@ type Asset = { symbol: string; name: string; price: number; changePercent: numbe
 type Snapshot = { success: boolean; evidence: { live: boolean; assetCount: number; providerCount: number }; assets: Asset[]; signal: string; observedAt: string };
 type WatchItem = { symbol: string; thresholdPercent: number; createdAt: string };
 type Alert = { symbol: string; direction?: 'up' | 'down'; severity: 'critical' | 'watch'; thresholdPercent: number; changePercent: number; price: number; source: string };
+type ScanRun = { scanId: string; status: string; completedAt: string; live: boolean; assetCount: number; candidateCount: number; recordedCount: number; suppressedCount: number };
 
 const fallback: Snapshot = { success: true, evidence: { live: false, assetCount: 0, providerCount: 0 }, assets: [], signal: 'Awaiting market observation', observedAt: '' };
 const buttonStyle = { border: `1px solid ${theme.border}`, borderRadius: theme.radiusPill, background: 'transparent', color: theme.textMuted, padding: '7px 10px', cursor: 'pointer', fontFamily: theme.fontSans, fontSize: '11px' } as const;
@@ -14,6 +15,7 @@ export function MarketCommandCenter() {
   const [snapshot, setSnapshot] = useState<Snapshot>(fallback);
   const [watchlist, setWatchlist] = useState<WatchItem[]>([]);
   const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [scanRuns, setScanRuns] = useState<ScanRun[]>([]);
   const [symbol, setSymbol] = useState('');
   const [threshold, setThreshold] = useState('2');
   const [loading, setLoading] = useState(true);
@@ -23,14 +25,16 @@ export function MarketCommandCenter() {
   const load = async () => {
     setLoading(true);
     try {
-      const [nextSnapshot, watchlistResponse, alertsResponse] = await Promise.all([
+      const [nextSnapshot, watchlistResponse, alertsResponse, scanRunsResponse] = await Promise.all([
         apiRequest<Snapshot>('/v1/market/snapshot'),
         apiRequest<{ items?: WatchItem[] }>('/v1/market/watchlist'),
         apiRequest<{ alerts?: Alert[] }>('/v1/market/alerts'),
+        apiRequest<{ runs?: ScanRun[] }>('/v1/market/scans/history'),
       ]);
       setSnapshot(nextSnapshot);
       setWatchlist(watchlistResponse.items ?? []);
       setAlerts(alertsResponse.alerts ?? []);
+      setScanRuns(scanRunsResponse.runs ?? []);
       setError(null);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'market observation unavailable');
@@ -79,6 +83,7 @@ export function MarketCommandCenter() {
     <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '16px' }}><span style={{ color: theme.textDim, fontSize: '11px', paddingTop: '8px' }}>RADAR</span>{radar.map(asset => <span key={asset.symbol} style={{ color: theme.accentWarm, fontSize: '11px', paddingTop: '8px' }}>{asset.symbol} {asset.changePercent >= 0 ? '+' : ''}{asset.changePercent.toFixed(2)}%</span>)}</div>
     <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: `1px solid ${theme.border}` }}><div style={{ color: theme.text, fontWeight: 700, fontSize: '13px' }}>Watchlist & thresholds</div><div style={{ display: 'flex', gap: '7px', flexWrap: 'wrap', marginTop: '10px' }}>{watchlist.map(item => <span key={item.symbol} style={{ display: 'inline-flex', gap: '7px', alignItems: 'center', border: `1px solid ${theme.border}`, borderRadius: theme.radiusPill, padding: '5px 8px', color: theme.textMuted, fontSize: '11px' }}>{item.symbol} ±{item.thresholdPercent}% <button aria-label={`Remove ${item.symbol}`} onClick={() => void removeWatch(item)} style={{ ...buttonStyle, border: 0, padding: 0, color: theme.divergent }}>×</button></span>)}</div><div style={{ display: 'flex', gap: '7px', flexWrap: 'wrap', marginTop: '10px' }}><input value={symbol} onChange={event => setSymbol(event.target.value.toUpperCase())} onKeyDown={event => { if (event.key === 'Enter') void addWatch(); }} placeholder="SYMBOL" maxLength={12} style={{ ...buttonStyle, width: '90px', color: theme.text }} /><input value={threshold} onChange={event => setThreshold(event.target.value)} inputMode="decimal" aria-label="Alert threshold percent" style={{ ...buttonStyle, width: '76px', color: theme.text }} /><button onClick={() => void addWatch()} style={{ ...buttonStyle, borderColor: theme.borderBright, color: theme.accent }}>+ Add watch</button></div></div>
     <div style={{ marginTop: '18px' }}><div style={{ display: 'flex', justifyContent: 'space-between', color: theme.text, fontWeight: 700, fontSize: '13px' }}><span>Alerts</span><span style={{ color: alerts.length ? theme.warning : theme.textDim, fontSize: '11px' }}>{alerts.length ? `${alerts.length} active` : 'No threshold crossings'}</span></div>{alerts.length > 0 && <div style={{ display: 'grid', gap: '6px', marginTop: '9px' }}>{alerts.map(alert => <div key={alert.symbol} style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', padding: '9px 10px', borderRadius: theme.radiusSmall, background: `${alert.severity === 'critical' ? theme.divergent : theme.warning}12`, color: alert.severity === 'critical' ? theme.divergent : theme.warning, fontSize: '11px' }}><span>{alert.symbol} crossed ±{alert.thresholdPercent}%</span><span>{alert.changePercent >= 0 ? '+' : ''}{alert.changePercent.toFixed(2)}% · {alert.severity.toUpperCase()}</span></div>)}</div>}</div>
+    <div style={{ marginTop: '18px', paddingTop: '14px', borderTop: `1px solid ${theme.border}` }}><div style={{ color: theme.text, fontWeight: 700, fontSize: '13px' }}>Recent scans</div>{scanRuns.length === 0 ? <div style={{ color: theme.textDim, fontSize: '11px', marginTop: '8px' }}>No scan runs recorded yet.</div> : <div style={{ display: 'grid', gap: '5px', marginTop: '8px' }}>{scanRuns.slice(0, 3).map(run => <div key={run.scanId} style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', color: theme.textMuted, fontSize: '11px' }}><span>{new Date(run.completedAt).toLocaleTimeString()} · {run.live ? 'LIVE' : 'FALLBACK'}</span><span>{run.recordedCount} recorded · {run.suppressedCount} suppressed</span></div>)}</div>}</div>
     {loading && <div style={{ color: theme.textDim, fontSize: '11px', marginTop: '14px' }}>Refreshing observation…</div>}
   </section>;
 }
