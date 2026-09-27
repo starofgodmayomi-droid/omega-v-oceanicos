@@ -271,4 +271,4 @@ export type {
   AdmittedWorkerBuilderActivationRequest,
   WorkerBuilderActivationRequest,
   WorkerBuilderActivationResult,
-} from './activation';
+} from './activation.js';
