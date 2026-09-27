@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { randomUUID } from 'node:crypto';
+import type { OmegaEvidenceEnvelope } from '@oceanicos/types';
 import { MarketWatchlistStore, type AlertEvent } from './market-watchlist-store.js';
 
 type MarketAsset = {
@@ -65,6 +66,23 @@ async function getSnapshot(requireLive = false): Promise<{ assets: MarketAsset[]
   };
 }
 
+function createEvidenceEnvelope(snapshot: Awaited<ReturnType<typeof getSnapshot>>, id: string, kind: string): OmegaEvidenceEnvelope {
+  return {
+    id,
+    kind,
+    subject: 'market-observation',
+    status: snapshot.live ? 'OBSERVED' : 'UNKNOWN',
+    source: snapshot.live ? 'finnhub+coingecko' : 'deterministic-fallback',
+    observedAt: snapshot.observedAt,
+    confidence: snapshot.live ? 'medium' : 'low',
+    verified: false,
+    provenance: { system: 'omega-v-oceanicos', component: 'market-intelligence', lineage: [id] },
+    limitations: snapshot.live
+      ? ['Provider observations are not independently verified market truth.', 'No investment conclusion is implied.']
+      : ['Live provider observation was unavailable.', 'Fallback values are deterministic fixtures, not current market data.', 'No investment conclusion is implied.'],
+  };
+}
+
 export function registerMarketIntelligenceRoute(fastify: FastifyInstance, dbPath = ':memory:'): void {
   const store = new MarketWatchlistStore(dbPath);
   fastify.addHook('onClose', async () => store.close());
@@ -81,7 +99,8 @@ export function registerMarketIntelligenceRoute(fastify: FastifyInstance, dbPath
 
   fastify.get('/v1/market/snapshot', async () => {
     const snapshot = await getSnapshot();
-    return { success: true, observation: 'market_snapshot', evidence: { providerCount: snapshot.providerCount, live: snapshot.live, assetCount: snapshot.assets.length }, assets: snapshot.assets, signal: snapshot.signal, observedAt: snapshot.observedAt };
+    const observationId = `market-observation-${randomUUID()}`;
+    return { success: true, observation: 'market_snapshot', evidence: { providerCount: snapshot.providerCount, live: snapshot.live, assetCount: snapshot.assets.length, envelope: createEvidenceEnvelope(snapshot, observationId, 'market.snapshot') }, assets: snapshot.assets, signal: snapshot.signal, observedAt: snapshot.observedAt };
   });
 
   fastify.get('/v1/market/watchlist', async () => ({ success: true, items: store.list() }));
@@ -118,6 +137,7 @@ export function registerMarketIntelligenceRoute(fastify: FastifyInstance, dbPath
       });
       const completedAt = new Date().toISOString();
       const scanRun = store.recordScanRun({ scanId, status: 'completed', startedAt, completedAt, live: snapshot.live, providerCount: snapshot.providerCount, assetCount: snapshot.assets.length, candidateCount: candidates.length, recordedCount: recorded.length, suppressedCount: candidates.length - recorded.length });
+      const envelope = createEvidenceEnvelope(snapshot, scanId, 'market.scan');
       return {
         success: true,
         scanId,
@@ -126,12 +146,13 @@ export function registerMarketIntelligenceRoute(fastify: FastifyInstance, dbPath
         activeAlerts: candidates,
         suppressedCount: candidates.length - recorded.length,
         observedAt: snapshot.observedAt,
-        evidence: { live: snapshot.live, providerCount: snapshot.providerCount, assetCount: snapshot.assets.length },
+        evidence: { live: snapshot.live, providerCount: snapshot.providerCount, assetCount: snapshot.assets.length, envelope },
       };
     } catch (cause) {
       const message = cause instanceof Error ? cause.message : String(cause);
       const failedRun = store.recordScanRun({ scanId, status: 'failed', startedAt, completedAt: new Date().toISOString(), live: false, providerCount: 0, assetCount: 0, candidateCount: 0, recordedCount: 0, suppressedCount: 0, error: message.slice(0, 240) });
-      return reply.status(503).send({ success: false, error: 'MARKET_SCAN_FAILED', message: 'Market scan could not be reconciled.', scanId, scanRun: failedRun });
+      const envelope: OmegaEvidenceEnvelope = { id: scanId, kind: 'market.scan', subject: 'market-observation', status: 'UNKNOWN', source: 'market-intelligence', observedAt: failedRun.completedAt, confidence: 'unknown', verified: false, provenance: { system: 'omega-v-oceanicos', component: 'market-intelligence', lineage: [scanId] }, limitations: ['The scan did not produce a reconciled observation.', message.slice(0, 240)] };
+      return reply.status(503).send({ success: false, error: 'MARKET_SCAN_FAILED', message: 'Market scan could not be reconciled.', scanId, scanRun: failedRun, evidence: { envelope } });
     }
   });
 

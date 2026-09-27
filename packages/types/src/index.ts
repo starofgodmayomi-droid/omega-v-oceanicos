@@ -14,6 +14,28 @@ export interface IEvidence {
   readonly signatureProof: string;
 }
 
+/**
+ * Cross-domain evidence envelope. Observation is not verification: every
+ * producer must state its source, limitations, and whether independent
+ * verification exists before another subsystem interprets the claim.
+ */
+export interface OmegaEvidenceEnvelope {
+  readonly id: string;
+  readonly kind: string;
+  readonly subject: string;
+  readonly status: 'OBSERVED' | 'UNKNOWN' | 'DIVERGENT';
+  readonly source: string;
+  readonly observedAt: string;
+  readonly confidence: 'high' | 'medium' | 'low' | 'unknown';
+  readonly verified: false;
+  readonly provenance: {
+    readonly system: 'omega-v-oceanicos';
+    readonly component: string;
+    readonly lineage: readonly string[];
+  };
+  readonly limitations: readonly string[];
+}
+
 export interface IMiniBlock {
   readonly index: number;
   readonly timestamp: string;

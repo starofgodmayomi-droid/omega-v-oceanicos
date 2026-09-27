@@ -13,13 +13,13 @@ The Omega web surface now includes a verification-aware market intelligence pane
 - `signal`: a deterministic relative-momentum summary
 - `observedAt`: UTC observation timestamp
 
-The route keeps provider credentials server-side. Configure `FINNHUB_API_KEY` for equities. CoinGecko is used for crypto and gracefully degrades to a deterministic fallback snapshot when providers fail or return insufficient data.
+The route keeps provider credentials server-side. Configure `FINNHUB_API_KEY` for equities. CoinGecko is used for crypto and gracefully degrades to a deterministic fallback snapshot when providers fail or return insufficient data. Snapshot and scan responses carry the shared `OmegaEvidenceEnvelope` from `@oceanicos/types`, with source, confidence, provenance, limitations, and an explicit `verified: false` boundary.
 
 The operator watchlist is managed through `GET /v1/market/watchlist`, `POST /v1/market/watchlist`, and `DELETE /v1/market/watchlist/:symbol`. A watch item contains a symbol and an absolute percentage threshold. `GET /v1/market/alerts` is a side-effect-free read of active crossings. `POST /v1/market/scan` performs an explicit observation and records eligible `watch` or `critical` crossings; repeated same-direction/severity events are suppressed for 15 minutes. Every scan run—including zero-alert runs—is stored in SQLite alongside watch items and alert events. `GET /v1/market/scans/history` replays run telemetry, while `GET /v1/market/alerts/history` replays recorded crossings. `POST /v1/market/alerts/:id/acknowledge` adds a durable acknowledgement timestamp without deleting or rewriting the original crossing evidence; the operation is idempotent. Set `OMEGA_MARKET_SCAN_REQUIRE_LIVE=1` for scheduled scans that must reject fallback-only observations; such failures return HTTP 503 with `MARKET_SCAN_FAILED` and a persisted `failed` run record. The current surface is intentionally scoped to the single running operator; per-user ownership should be added alongside authentication before multi-tenant deployment.
 
 ## Verification boundary
 
-Market data is treated as an observation, not an assertion. The API includes evidence metadata so the UI can distinguish a live verified feed from a fallback observation. This preserves the Oceanicos invariant: evidence before trust.
+Market data is treated as an observation, not an assertion. The API includes a cross-domain evidence envelope so the UI can distinguish observed, unknown, and unverified states while retaining provenance and limitations. This preserves the Oceanicos invariant: evidence before trust.
 
 ## Development
 

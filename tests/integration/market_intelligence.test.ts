@@ -29,6 +29,9 @@ describe('market intelligence evidence route', () => {
     assert.equal(body.assets.length, 6);
     assert.equal(body.evidence.live, true);
     assert.equal(body.evidence.providerCount, 2);
+    assert.equal(body.evidence.envelope.status, 'OBSERVED');
+    assert.equal(body.evidence.envelope.verified, false);
+    assert.equal(body.evidence.envelope.provenance.system, 'omega-v-oceanicos');
     assert.match(body.signal, /leads relative momentum/);
     const addWatch = await app.inject({ method: 'POST', url: '/v1/market/watchlist', payload: { symbol: 'ETH', thresholdPercent: 0.5 } });
     assert.equal(addWatch.statusCode, 201);
@@ -42,6 +45,8 @@ describe('market intelligence evidence route', () => {
     const scan = await app.inject({ method: 'POST', url: '/v1/market/scan' });
     assert.equal(scan.statusCode, 200);
     const firstScan = scan.json();
+    assert.equal(firstScan.evidence.envelope.kind, 'market.scan');
+    assert.equal(firstScan.evidence.envelope.verified, false);
     assert.equal(firstScan.recordedAlerts.some((alert: { symbol: string }) => alert.symbol === 'ETH'), true);
     const firstHistory = await app.inject({ method: 'GET', url: '/v1/market/alerts/history' });
     assert.equal(firstHistory.json().events.length, firstScan.recordedAlerts.length);
@@ -71,6 +76,7 @@ describe('market intelligence evidence route', () => {
     assert.equal(failedScan.statusCode, 503);
     assert.equal(failedScan.json().error, 'MARKET_SCAN_FAILED');
     assert.equal(failedScan.json().scanRun.status, 'failed');
+    assert.equal(failedScan.json().evidence.envelope.status, 'UNKNOWN');
     const allRuns = await app.inject({ method: 'GET', url: '/v1/market/scans/history' });
     assert.equal(allRuns.json().runs.length, 3);
     if (originalRequireLive === undefined) delete process.env.OMEGA_MARKET_SCAN_REQUIRE_LIVE;

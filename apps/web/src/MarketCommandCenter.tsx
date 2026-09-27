@@ -3,13 +3,14 @@ import { theme } from './oceanicosTheme';
 import { apiRequest } from './apiClient';
 
 type Asset = { symbol: string; name: string; price: number; changePercent: number; kind: string; source: string };
-type Snapshot = { success: boolean; evidence: { live: boolean; assetCount: number; providerCount: number }; assets: Asset[]; signal: string; observedAt: string };
+type EvidenceEnvelope = { status: 'OBSERVED' | 'UNKNOWN' | 'DIVERGENT'; source: string; confidence: string; verified: false; limitations: string[] };
+type Snapshot = { success: boolean; evidence: { live: boolean; assetCount: number; providerCount: number; envelope?: EvidenceEnvelope }; assets: Asset[]; signal: string; observedAt: string };
 type WatchItem = { symbol: string; thresholdPercent: number; createdAt: string };
 type Alert = { symbol: string; direction?: 'up' | 'down'; severity: 'critical' | 'watch'; thresholdPercent: number; changePercent: number; price: number; source: string };
 type AlertEvent = Alert & { id: number; observedAt: string; acknowledgedAt?: string | null };
 type ScanRun = { scanId: string; status: 'completed' | 'failed'; completedAt: string; live: boolean; assetCount: number; candidateCount: number; recordedCount: number; suppressedCount: number; error?: string };
 
-const fallback: Snapshot = { success: true, evidence: { live: false, assetCount: 0, providerCount: 0 }, assets: [], signal: 'Awaiting market observation', observedAt: '' };
+const fallback: Snapshot = { success: true, evidence: { live: false, assetCount: 0, providerCount: 0, envelope: { status: 'UNKNOWN', source: 'uninitialized', confidence: 'unknown', verified: false, limitations: ['No observation has been retrieved yet.'] } }, assets: [], signal: 'Awaiting market observation', observedAt: '' };
 const buttonStyle = { border: `1px solid ${theme.border}`, borderRadius: theme.radiusPill, background: 'transparent', color: theme.textMuted, padding: '7px 10px', cursor: 'pointer', fontFamily: theme.fontSans, fontSize: '11px' } as const;
 
 export function MarketCommandCenter() {
@@ -87,7 +88,7 @@ export function MarketCommandCenter() {
 
   return <section style={{ marginTop: '28px', padding: '20px', borderRadius: theme.radius, border: `1px solid ${theme.borderBright}`, background: theme.surfaceDeep, fontFamily: theme.fontSans }}>
     <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-      <div><div style={{ color: theme.accent, fontSize: '11px', fontWeight: 800, letterSpacing: '.18em' }}>◈ MARKET INTELLIGENCE</div><h2 style={{ color: theme.text, fontSize: '22px', margin: '8px 0 4px' }}>Observe the signal. Verify the source.</h2><div style={{ color: theme.textMuted, fontSize: '12px' }}>{snapshot.signal}</div></div>
+      <div><div style={{ color: theme.accent, fontSize: '11px', fontWeight: 800, letterSpacing: '.18em' }}>◈ MARKET INTELLIGENCE</div><h2 style={{ color: theme.text, fontSize: '22px', margin: '8px 0 4px' }}>Observe the signal. Verify the source.</h2><div style={{ color: theme.textMuted, fontSize: '12px' }}>{snapshot.signal}</div><div style={{ color: theme.textDim, fontSize: '10px', marginTop: '7px' }}>EVIDENCE · {snapshot.evidence.envelope?.status ?? 'UNKNOWN'} · {snapshot.evidence.envelope?.confidence ?? 'unknown'} confidence · {snapshot.evidence.envelope?.verified ? 'verified' : 'not independently verified'}</div></div>
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}><div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: snapshot.evidence.live ? theme.verified : theme.warning, fontSize: '11px', fontWeight: 700, letterSpacing: '.08em' }}><span style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'currentColor' }} /> {snapshot.evidence.live ? 'LIVE VERIFIED FEED' : 'FALLBACK OBSERVATION'}</div><button onClick={() => void scanNow()} disabled={scanLoading} style={{ ...buttonStyle, borderColor: theme.borderBright, color: theme.accent, opacity: scanLoading ? .65 : 1 }}>{scanLoading ? 'SCANNING…' : 'SCAN NOW'}</button></div>
     </div>
     {error && <div style={{ marginTop: '14px', color: theme.warning, fontSize: '12px' }}>Observation degraded: {error}</div>}
