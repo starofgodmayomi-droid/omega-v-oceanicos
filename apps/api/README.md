@@ -161,3 +161,8 @@ controlled by this process.
 ## Ω operations observability
 
 The read-only operations surface includes `GET /v1/omega/workers`, `GET /v1/omega/leases`, and redacted `GET /v1/omega/events`. The web dashboard refreshes these endpoints every three seconds and labels unavailable evidence as `UNKNOWN`. Worker and lease records are coordination evidence only; they do not authorize commands, bypass admission, or verify external reality.
+
+
+## Ω consensus evidence
+
+The API exposes a transport-neutral, in-memory consensus evidence slice under `/v1/omega/consensus/`. Proposals declare eligible nodes, a term, quorum, intent digest, and expiry. Nodes submit evidence-backed `AGREE`, `DISSENT`, or `ABSTAIN` votes. Results are `AGREED`, `NO_QUORUM`, `DIVERGENT`, or `UNKNOWN`. Agreement is policy-scoped evidence only; it is not truth, authorization, cross-host consensus, Byzantine tolerance, or permission to execute.

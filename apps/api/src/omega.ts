@@ -3,11 +3,12 @@ import {
   buildOmegaCommand,
   executeAuthorizedTransition,
   listOmegaWorkers,
+  OmegaConsensusSession,
   resolveChangeAdmission,
   verifyExecutedReality,
 } from '@oceanicos/mini';
-import type { OmegaCommand, OmegaCommandResult, OmegaCommandStatus, OmegaWorkerId } from '@oceanicos/types';
-import { decisionToStatus, validateOmegaCommandInput } from '@oceanicos/types';
+import type { OmegaCommand, OmegaCommandResult, OmegaCommandStatus, OmegaConsensusProposal, OmegaConsensusVote, OmegaWorkerId } from '@oceanicos/types';
+import { decisionToStatus, validateOmegaCommandInput, validateOmegaConsensusProposal, OMEGA_CONSENSUS_VERSION } from '@oceanicos/types';
 import { OmegaDurableStore } from './omega-persistence.js';
 
 type StoredCommand = OmegaCommand & {
@@ -18,6 +19,7 @@ const MAX_COMMANDS = 256;
 
 export class OmegaCommandStore {
   private readonly durable: OmegaDurableStore;
+  private readonly consensus = new Map<string, OmegaConsensusSession>();
 
   constructor(path = ':memory:') {
     this.durable = new OmegaDurableStore(path);
@@ -56,6 +58,14 @@ export class OmegaCommandStore {
   listLeases() { return this.durable.listLeases(); }
   acquireWorkerLease(workerId: string, commandId: string, capability: string, durationMs?: number) { return this.durable.acquireLease(workerId, commandId, capability, durationMs); }
   releaseWorkerLease(leaseId: string, workerId: string) { return this.durable.releaseLease(leaseId, workerId); }
+  createConsensus(proposal: OmegaConsensusProposal) {
+    validateOmegaConsensusProposal(proposal);
+    if (this.consensus.has(proposal.proposalId)) throw new Error('CONSENSUS_PROPOSAL_EXISTS');
+    const session = new OmegaConsensusSession(proposal);
+    this.consensus.set(proposal.proposalId, session);
+    return session.result();
+  }
+  getConsensus(proposalId: string) { return this.consensus.get(proposalId); }
 }
 
 function bodyOf(request: any): Record<string, unknown> {
@@ -71,6 +81,53 @@ function statusForDecision(decision: 'ALLOW' | 'DENY' | 'REVIEW'): OmegaCommandS
 }
 
 export function registerOmegaRoutes(fastify: FastifyInstance, store: OmegaCommandStore): void {
+  fastify.post('/v1/omega/consensus/proposals', async (request, reply) => {
+    const body = bodyOf(request);
+    try {
+      const proposal: OmegaConsensusProposal = {
+        version: OMEGA_CONSENSUS_VERSION,
+        proposalId: typeof body.proposalId === 'string' ? body.proposalId : `consensus-${Date.now()}`,
+        subject: typeof body.subject === 'string' ? body.subject : '',
+        intentDigest: typeof body.intentDigest === 'string' ? body.intentDigest : '',
+        term: typeof body.term === 'number' ? body.term : 0,
+        eligibleNodeIds: Array.isArray(body.eligibleNodeIds) ? body.eligibleNodeIds as string[] : [],
+        quorum: typeof body.quorum === 'number' ? body.quorum : 0,
+        expiresAt: typeof body.expiresAt === 'string' ? body.expiresAt : new Date(Date.now() + 30000).toISOString(),
+      };
+      return reply.status(201).send({ success: true, result: store.createConsensus(proposal), limitations: ['agreement evidence is not truth or authority', 'transport and cross-host durability are not implemented'] });
+    } catch (error) {
+      return reply.status(400).send({ success: false, error: error instanceof Error ? error.message : 'INVALID_CONSENSUS_PROPOSAL' });
+    }
+  });
+
+  fastify.post('/v1/omega/consensus/proposals/:id/votes', async (request, reply) => {
+    const id = (request.params as { id?: string }).id ?? '';
+    const session = store.getConsensus(id);
+    if (!session) return reply.status(404).send({ success: false, error: 'CONSENSUS_PROPOSAL_NOT_FOUND' });
+    const body = bodyOf(request);
+    try {
+      const vote: OmegaConsensusVote = {
+        proposalId: id,
+        nodeId: typeof body.nodeId === 'string' ? body.nodeId : '',
+        decision: body.decision as OmegaConsensusVote['decision'],
+        evidenceRefs: Array.isArray(body.evidenceRefs) ? body.evidenceRefs as string[] : [],
+        reason: typeof body.reason === 'string' ? body.reason : undefined,
+        votedAt: typeof body.votedAt === 'string' ? body.votedAt : new Date().toISOString(),
+      };
+      session.addVote(vote);
+      return { success: true, result: session.result(), limitations: ['a vote is evidence under the declared policy, not authorization'] };
+    } catch (error) {
+      return reply.status(409).send({ success: false, error: error instanceof Error ? error.message : 'INVALID_CONSENSUS_VOTE' });
+    }
+  });
+
+  fastify.get('/v1/omega/consensus/proposals/:id', async (request, reply) => {
+    const id = (request.params as { id?: string }).id ?? '';
+    const session = store.getConsensus(id);
+    if (!session) return reply.status(404).send({ success: false, error: 'CONSENSUS_PROPOSAL_NOT_FOUND' });
+    return { success: true, result: session.result() };
+  });
+
   fastify.get('/v1/omega/workers', async () => ({ success: true, workers: listOmegaWorkers(), activeWorkers: store.listWorkers(), limitations: ['coordination is durable on the configured SQLite volume', 'worker output is evidence, not authority', 'cross-host coordination requires a shared filesystem or a future network database'] }));
   fastify.get('/v1/omega/leases', async () => ({ success: true, leases: store.listLeases(), redacted: true }));
 
