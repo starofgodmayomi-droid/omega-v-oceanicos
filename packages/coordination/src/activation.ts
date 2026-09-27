@@ -22,6 +22,14 @@ export type ActivationAdmission = {
   approvalRequirementSatisfied: boolean;
 };
 
+export type OmegaAdmissionBridgeResultLike = {
+  change: { decision: 'ALLOW' | 'DENY' | 'REVIEW'; authorized: boolean };
+  registryMatched: boolean;
+  policyReferencesSatisfied: boolean;
+  evidenceRequirementsSatisfied: boolean;
+  approvalRequirementSatisfied: boolean;
+};
+
 export type AdmittedWorkerBuilderActivationRequest = WorkerBuilderActivationRequest & {
   admission: ActivationAdmission;
 };
@@ -100,6 +108,21 @@ export async function activateWorkersAndBuilders(
   };
 }
 
+
+/**
+ * Convert the existing ΩIR admission-bridge result into the activation gate.
+ * This is an adapter only: it neither re-evaluates nor grants admission.
+ */
+export const activationAdmissionFromOmegaBridge = (
+  result: OmegaAdmissionBridgeResultLike,
+): ActivationAdmission => ({
+  decision: result.change.decision,
+  authorized: result.change.authorized,
+  registryMatched: result.registryMatched,
+  policyReferencesSatisfied: result.policyReferencesSatisfied,
+  evidenceRequirementsSatisfied: result.evidenceRequirementsSatisfied,
+  approvalRequirementSatisfied: result.approvalRequirementSatisfied,
+});
 
 /**
  * Activation entry point for callers that already passed the Ω∞v admission gate.
