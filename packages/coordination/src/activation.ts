@@ -12,6 +12,15 @@ export type WorkerBuilderActivationRequest = {
   executor?: ParallelExecutorOptions;
 };
 
+export type ActivationAdmission = {
+  decision: 'ALLOW' | 'DENY' | 'REVIEW';
+  authorized: boolean;
+};
+
+export type AdmittedWorkerBuilderActivationRequest = WorkerBuilderActivationRequest & {
+  admission: ActivationAdmission;
+};
+
 export type WorkerBuilderActivationResult = {
   kind: 'worker-builder-activation';
   authorized: true;
@@ -23,6 +32,12 @@ export type WorkerBuilderActivationResult = {
 };
 
 const MAX_AUTH_TEXT = 128;
+
+const requireAdmission = (admission: ActivationAdmission): void => {
+  if (admission.decision !== 'ALLOW' || admission.authorized !== true) {
+    throw new Error('worker/builder activation requires an ALLOW admission with authorization');
+  }
+};
 
 const requireText = (value: unknown, field: string): string => {
   if (typeof value !== 'string' || value.trim().length === 0 || value.trim().length > MAX_AUTH_TEXT) {
@@ -71,4 +86,16 @@ export async function activateWorkersAndBuilders(
       'does not prove distributed coordination or deployment health',
     ],
   };
+}
+
+
+/**
+ * Activation entry point for callers that already passed the Ω∞v admission gate.
+ * The admission proof is consumed here; this function never creates or upgrades it.
+ */
+export async function activateAdmittedWorkersAndBuilders(
+  request: AdmittedWorkerBuilderActivationRequest,
+): Promise<WorkerBuilderActivationResult> {
+  requireAdmission(request.admission);
+  return activateWorkersAndBuilders(request);
 }
