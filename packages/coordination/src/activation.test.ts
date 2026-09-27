@@ -4,7 +4,7 @@ describe('activateWorkersAndBuilders', () => {
   it('requires explicit human approval', async () => {
     await expect(
       activateWorkersAndBuilders({
-        authorization: { approved: false as true, operatorId: 'human-1', reason: 'test' },
+        authorization: { approved: false, operatorId: 'human-1', reason: 'test' },
         tasks: [{ id: 'w1', role: 'worker', title: 'worker', run: async () => 'ok' }],
       }),
     ).rejects.toThrow('explicit human approval');

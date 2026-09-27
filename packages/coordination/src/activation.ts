@@ -1,7 +1,7 @@
 import { ExecutionTask, ExecutionSummary, ParallelExecutor, ParallelExecutorOptions } from './index';
 
 export type ActivationAuthorization = {
-  approved: true;
+  approved: boolean;
   operatorId: string;
   reason: string;
 };
