@@ -104,3 +104,25 @@ describe('admission evidence boundary', () => {
     ).rejects.toThrow('satisfied registry/policy/evidence/approval requirements');
   });
 });
+
+
+describe('activationAdmissionFromOmegaBridge', () => {
+  it('maps the existing admission-bridge result without widening authority', async () => {
+    const { activationAdmissionFromOmegaBridge, activateAdmittedWorkersAndBuilders } = await import('./index');
+    const admission = activationAdmissionFromOmegaBridge({
+      change: { decision: 'ALLOW', authorized: true },
+      registryMatched: true,
+      policyReferencesSatisfied: true,
+      evidenceRequirementsSatisfied: true,
+      approvalRequirementSatisfied: true,
+    });
+    const result = await activateAdmittedWorkersAndBuilders({
+      admission,
+      authorization: { approved: true, operatorId: 'human-1', reason: 'bridge-admitted bounded run' },
+      executor: { runId: 'bridge-adapter-test' },
+      tasks: [{ id: 'w1', role: 'worker', title: 'worker', run: async () => 'ok' }],
+    });
+    expect(admission.decision).toBe('ALLOW');
+    expect(result.execution.state).toBe('succeeded');
+  });
+});
