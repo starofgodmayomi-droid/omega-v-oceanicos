@@ -20,6 +20,7 @@ Welcome to the Ω∞v Oceanicos documentation. Start here to understand the proj
 - **[Roadmap](./ROADMAP.md)** — Earned expansion phases
 - **[Verification Loop](./VERIFICATION_LOOP.md)** — Full workflow including post-MINI steps
 - **[Value Navigator demo](./VALUE-NAVIGATOR-DEMO.md)** — Three worked examples for turning observed needs into bounded earning experiments
+- **[Upgrade compass](./UPGRADE-COMPASS.md)** — Max-compressed architecture, current reality, migration gates, and the next finite Δ
 
 ---
 
