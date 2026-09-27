@@ -61,21 +61,46 @@ describe('activateAdmittedWorkersAndBuilders', () => {
   it('requires an already-authorized admission decision', async () => {
     await expect(
       activateAdmittedWorkersAndBuilders({
-        admission: { decision: 'REVIEW', authorized: false },
+        admission: {
+          decision: 'REVIEW', authorized: false, registryMatched: false,
+          policyReferencesSatisfied: false, evidenceRequirementsSatisfied: false,
+          approvalRequirementSatisfied: false,
+        },
         authorization: { approved: true, operatorId: 'human-1', reason: 'review path' },
         tasks: [{ id: 'w1', role: 'worker', title: 'worker', run: async () => 'ok' }],
       }),
-    ).rejects.toThrow('ALLOW admission with authorization');
+    ).rejects.toThrow('ALLOW admission with authorization and satisfied registry/policy/evidence/approval requirements');
   });
 
   it('activates only after an ALLOW admission', async () => {
     const result = await activateAdmittedWorkersAndBuilders({
-      admission: { decision: 'ALLOW', authorized: true },
+      admission: {
+        decision: 'ALLOW', authorized: true, registryMatched: true,
+        policyReferencesSatisfied: true, evidenceRequirementsSatisfied: true,
+        approvalRequirementSatisfied: true,
+      },
       authorization: { approved: true, operatorId: 'human-1', reason: 'admitted bounded run' },
       executor: { runId: 'admitted-activation-test' },
       tasks: [{ id: 'w1', role: 'worker', title: 'worker', run: async () => 'ok' }],
     });
     expect(result.authorized).toBe(true);
     expect(result.execution.state).toBe('succeeded');
+  });
+});
+
+
+describe('admission evidence boundary', () => {
+  it('fails closed when registry evidence is missing', async () => {
+    await expect(
+      activateAdmittedWorkersAndBuilders({
+        admission: {
+          decision: 'ALLOW', authorized: true, registryMatched: false,
+          policyReferencesSatisfied: true, evidenceRequirementsSatisfied: true,
+          approvalRequirementSatisfied: true,
+        },
+        authorization: { approved: true, operatorId: 'human-1', reason: 'missing registry evidence' },
+        tasks: [{ id: 'w1', role: 'worker', title: 'worker', run: async () => 'ok' }],
+      }),
+    ).rejects.toThrow('satisfied registry/policy/evidence/approval requirements');
   });
 });
