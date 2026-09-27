@@ -1,130 +1,109 @@
-# Repository Inventory — EARNED COMPLEXITY Audit
+# Repository Inventory — workspace vs disk
 
-> Per the OCEANICOS spec §32: "DO NOT PRE-BUILD NODES THAT HAVE NOT EARNED THEMSELVES."
+> Per the OCEANICOS spec: **DO NOT PRE-BUILD NODES THAT HAVE NOT EARNED THEMSELVES.**
 >
-> This inventory classifies every package by its current evidence state.
+> This inventory classifies packages by **current executable evidence**.
+> It does **not** claim VERIFIED, DEPLOYED, or HEALTHY.
 
 ## Audit Date
-2026-09-25 — runtime-observed via `docker compose -f docker-compose.base44.yml`
+
+2026-09-27 — inspected GitHub tip `61b5fff23af5a8766065e08e3c79858c6ea16187`
+
+Evidence:
+
+- `pnpm-workspace.yaml` (authoritative workspace membership)
+- `apps/api/package.json` (declared API imports)
+- `apps/api/Dockerfile` (image build filters)
+- `packages/` directory listing
+
+Previous inventory dated 2026-09-25 classified `ir` as BUILT and `mood` as STUB.
+That snapshot is **DIVERGENT** from the current workspace. History is preserved;
+this document supersedes it for current reality.
+
+## Non-collapse
+
+```text
+PRESENT ON DISK
+  ≠  WORKSPACE-ACTIVE
+  ≠  IMPORTED BY apps/api
+  ≠  BUILT BY ROOT pnpm scripts
+  ≠  TESTED
+  ≠  VERIFIED
+  ≠  DEPLOYED
+```
 
 ## Classification
 
 | State | Meaning |
 |-------|---------|
-| **BUILT** | Has `dist/`, compiled, wired into the API or web app |
-| **SOURCE-ONLY** | Has `src/` but no `dist/`, not in the API build chain |
-| **STUB** | < 200 lines of source, minimal implementation |
+| **BUILT** | In `pnpm-workspace.yaml` **and** imported by `apps/api` |
+| **WORKSPACE** | In `pnpm-workspace.yaml`, **not** imported by `apps/api` |
+| **SOURCE-ONLY** | Directory exists under `packages/`, not in the workspace |
+| **STUB** | SOURCE-ONLY with a thin implementation |
 
-## BUILT — EARNED (8 packages)
+## BUILT — workspace + API import (9 packages)
 
-These packages are compiled, imported by the API, and exercised at runtime:
+| Package | Name | Role |
+|---------|------|------|
+| `types` | `@oceanicos/types` | Shared contracts |
+| `observer` | `@oceanicos/observer` | Observe |
+| `verification` | `@oceanicos/verification` | Verify |
+| `remember` | `@oceanicos/remember` | Remember |
+| `mini` | `@oceanicos/mini` | MINI kernel |
+| `attestation` | `@oceanicos/attestation` | Attest |
+| `kernel` | `@omega-v/kernel` | Finite-state kernel |
+| `oreade` | `@omega-v/oreade` | ƆREADE (layer, not authority) |
+| `mood` | `@omega-v/mood` | Mood context (planning only) |
 
-| Package | Name | Lines | Role |
-|---------|------|-------|------|
-| `kernel` | `@omega-v/kernel` | 822 | Constitutional state machine |
-| `ir` | `@omega-v/ir` | 395 | ΩIR spec + verification VM |
-| `verification` | `@oceanicos/verification` | 748 | Rule evaluation, asymmetric signing |
-| `observer` | `@oceanicos/observer` | 418 | Telemetry generation |
-| `remember` | `@oceanicos/remember` | 648 | SQLite append-only hash chain |
-| `mini` | `@oceanicos/mini` | 2677 | MINI kernel + admission + transition |
-| `attestation` | `@oceanicos/attestation` | 1085 | HMAC-SHA256 + Ed25519 signing |
-| `types` | `@oceanicos/types` | 1232 | Shared contracts & validators |
+Apps: `apps/api`, `apps/web` are also workspace members.
 
-## SOURCE-ONLY — NOT YET EARNED (62 packages)
+## WORKSPACE — active, not API-imported (4 packages)
 
-These packages have source code but are NOT built and NOT wired into the API.
-Per EARNED COMPLEXITY, they should not be promoted until a demonstrated need
-requires them and a contract justifies their activation.
+| Package | Name | Role |
+|---------|------|------|
+| `gateway` | `@omega-v/gateway` | Gateway |
+| `coordination` | `@omega-v/coordination` | Bounded workers/builders |
+| `auth` | `@omega-v/auth` | Auth |
+| `webhook` | `@omega-v/webhook` | Webhooks |
 
-### Spec-aligned (in desired eventual structure)
+These are **not** dormant. They are also **not** proven as live API capabilities.
 
-| Package | Name | Lines | Spec Role | Recommendation |
-|---------|------|-------|-----------|----------------|
-| `policy` | `@omega-v/policy` | 407 | POLICY = constraint | Build when admission needs policy enforcement |
-| `worker` | `@omega-v/worker` | 699 | WORKER = bounded capability | Build when bounded execution is needed |
-| `registry` | `@omega-v/registry` | 423 | Worker registry | Build alongside worker |
-| `compiler` | `@omega-v/compiler` | 204 | C1 deterministic compiler | Build when ΩIR→execution is needed |
-| `sdk` | `@omega-v/sdk` | 3015 | C9 SDK | Build when external integration is needed |
-| `cli` | `@omega-v/cli` | 5296 | C9 CLI | Build alongside SDK |
-| `evidence` | `@omega-v/evidence` | 146 | Evidence model | Build when evidence chain is formalized |
-| `intent` | `@omega-v/intent` | 378 | Intent model | Build when intent formalization is needed |
-| `contract` | `@omega-v/contract` | 576 | Contract model | Build when contracts are formalized |
-| `governance` | `@omega-v/governance` | 166 | Governance model | Build when governance is formalized |
-| `human` | `@omega-v/human` | 85 | Human authority | Build when authority is formalized |
-| `learning` | `@omega-v/learning` | 150 | Learning loop | Build when learning is earned |
-| `evolution` | `@omega-v/evolution` | 161 | Evolution | Build when evolution is earned |
-| `runtime` | `@omega-v/runtime` | 192 | Runtime model | Build when runtime is formalized |
-| `mood` | `@omega-v/mood` | 371 | MOOD = experience | Build when affective interface is earned |
-| `graph` | `@omega-v/graph` | 273 | Relationship graph | Build when knowledge graph is earned |
-| `store` | `@omega-v/store` | 344 | State store | Build when state store is needed |
-| `pipeline` | `@omega-v/pipeline` | 640 | Pipeline | Build when pipeline is formalized |
-| `security` | `@omega-v/security` | 196 | Security | Build when security is formalized |
-| `sandbox` | `@omega-v/sandbox` | 310 | Sandbox | Build when sandboxing is needed |
-| `scheduler` | `@omega-v/scheduler` | 306 | Scheduler | Build when scheduling is needed |
-| `telemetry` | `@omega-v/telemetry` | 266 | Telemetry | Build when telemetry is needed |
-| `webhook` | `@omega-v/webhook` | 428 | Webhook | Build when webhooks are needed |
-| `gateway` | `@omega-v/gateway` | 526 | Gateway | Build when gateway is needed |
-| `bridge` | `@omega-v/bridge` | 383 | Bridge | Build when bridging is needed |
-| `edge` | `@omega-v/edge` | 283 | Edge | Build when edge is needed |
-| `auth` | `@omega-v/auth` | 408 | Auth | Build when auth is formalized |
-| `analytics` | `@omega-v/analytics` | 261 | Analytics | Build when analytics is earned |
-| `benchmark` | `@omega-v/benchmark` | 373 | Benchmark | Build when benchmarking is needed |
-| `friction` | `@omega-v/friction` | 251 | Friction signal | Build when friction is formalized |
-| `green` | `@omega-v/green` | 207 | Green | Build when sustainability is earned |
-| `lexicon` | `@omega-v/lexicon` | 332 | Lexicon | Build when language model is earned |
-| `notary` | `@omega-v/notary` | 344 | Notary | Build when notarization is needed |
+## SOURCE-ONLY / STUB — on disk, off workspace
 
-### Distributed-systems (not in desired structure, speculative)
+Includes (non-exhaustive of every speculative package): `ir`, `policy`, `worker`, `registry`, `compiler`, `sdk`, `cli`, `evidence`, `intent`, `contract`, `pipeline`, and the distributed/speculative set (`agents`, `amm`, `consensus`, `zk`, …).
 
-| Package | Name | Lines | Recommendation |
-|---------|------|-------|----------------|
-| `agents` | `@omega-v/agents` | 466 | Archive — no earned need |
-| `amm` | `@omega-v/amm` | 489 | Archive — no earned need |
-| `attestor` | `@omega-v/attestor` | 482 | Archive — superseded by `@oceanicos/attestation` |
-| `consensus` | `@omega-v/consensus` | 459 | Archive — no earned need |
-| `coordination` | `@omega-v/coordination` | 335 | Archive — no earned need |
-| `da` | `@omega-v/da` | 407 | Archive — no earned need |
-| `dht` | `@omega-v/dht` | 310 | Archive — no earned need |
-| `dispute` | `@omega-v/dispute` | 425 | Archive — no earned need |
-| `dissensus` | `@omega-v/dissensus` | 621 | Archive — no earned need |
-| `enclave` | `@omega-v/enclave` | 439 | Archive — no earned need |
-| `evm` | `@omega-v/evm` | 535 | Archive — no earned need |
-| `federation` | `@omega-v/federation` | 334 | Archive — no earned need |
-| `governor` | `@omega-v/governor` | 481 | Archive — no earned need |
-| `mempool` | `@omega-v/mempool` | 447 | Archive — no earned need |
-| `mesh` | `@omega-v/mesh` | 373 | Archive — no earned need |
-| `oracle` | `@omega-v/oracle` | 461 | Archive — no earned need |
-| `orchestrator` | `@omega-v/orchestrator` | 304 | Archive — no earned need |
-| `relay` | `@omega-v/relay` | 372 | Archive — no earned need |
-| `replay` | `@omega-v/replay` | 535 | Archive — no earned need |
-| `reputation` | `@omega-v/reputation` | 368 | Archive — no earned need |
-| `rollup` | `@omega-v/rollup` | 386 | Archive — no earned need |
-| `sequencer` | `@omega-v/sequencer` | 297 | Archive — no earned need |
-| `sharding` | `@omega-v/sharding` | 421 | Archive — no earned need |
-| `staking` | `@omega-v/staking` | 430 | Archive — no earned need |
-| `vaas` | `@omega-v/vaas` | 251 | Archive — no earned need |
-| `vault` | `@omega-v/vault` | 342 | Archive — no earned need |
-| `zk` | `@omega-v/zk` | 351 | Archive — no earned need |
+`@omega-v/ir` is **not** workspace-active on this tip. Do not treat it as a runtime kernel.
 
-## Summary
+## Naming split (observed)
+
+- `@oceanicos/*` — types, observer, verification, remember, mini, attestation
+- `@omega-v/*` — kernel, oreade, mood, gateway, coordination, auth, webhook, and dormant packages
+
+Unresolved edge. Do not silently rename.
+
+## Summary (this tip)
 
 | Category | Count | Action |
 |----------|-------|--------|
-| BUILT (earned) | 8 | Keep — actively used |
-| SOURCE-ONLY (spec-aligned) | 32 | Build when earned — do NOT pre-build |
-| SOURCE-ONLY (speculative) | 27 | Archive — no demonstrated need |
+| Workspace members | 15 (13 packages + 2 apps) | Keep — currently active |
+| BUILT (API-imported) | 9 packages | Runtime path |
+| WORKSPACE only | 4 packages | Do not claim API capability |
+| On-disk, off-workspace | ~55 | Quarantine / promote only when earned |
 
-**Total: 70 packages → 8 earned, 62 not yet earned.**
+## Test-command note
 
-## Migration Path (per spec §15)
+Root `package.json` enumerates a **fixed list of integration files** (currently 12 paths in `test` / `test:e2e`). README language that says “20 tests passing” is **historical / unreconciled**. This session did not execute the suite; current runtime verification remains **UNKNOWN**.
 
-```
-INVENTORY (done)
-→ DEPENDENCY MAP (next)
+## Migration Path
+
+```text
+INVENTORY (this document, 2026-09-27)
+→ DEPENDENCY MAP (docs/DEPENDENCY_MAP.md)
 → CONTRACT MAP
 → MIGRATION
 → TEST
-→ EVIDENCE
+→ OBSERVE
+→ RECONCILE
 ```
 
-Do NOT merge blindly. Do NOT delete history. Classify, relate, and promote only when earned.
+Do NOT merge blindly. Do NOT delete history. Promote only when earned.

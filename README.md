@@ -27,6 +27,7 @@ A verification-first full-stack ecosystem for observing, verifying, attesting, a
 - 📜 **[Charter](CHARTER.md)** — Living agnostic principles and decision-making
 - 🤝 **[Contributing](CONTRIBUTING.md)** — How to contribute verification-first
 - 📖 **[Documentation](docs/)** — Architecture, guides, and references
+- 🗺️ **[Repository inventory](docs/REPO_INVENTORY.md)** — workspace vs disk (current evidence)
 - ⚙️ **[Development Setup](docs/DEVELOPMENT.md)** — Get the project running locally
 
 ---
@@ -100,31 +101,33 @@ Every component contains the whole verification loop.
 
 ```
 omega-v-oceanicos/
-├── packages/          # 5 Core Packages Matrix
-│   ├── types/         # @oceanicos/types (Shared contracts & IObservation / IEvidence / IMiniBlock / Attestation)
-│   ├── observer/      # @oceanicos/observer (👁 Observe: Planetary telemetry generation)
-│   ├── verification/  # @oceanicos/verification (✓ Verify: Frontier matrix, Ed25519 asymmetric guard, 4-node mesh)
-│   ├── remember/      # @oceanicos/remember (🧠 Remember: Hash-chained PoW ledger with node:sqlite fallback)
-│   ├── mini/          # @oceanicos/mini (💧 MiniKernel: Observe ➔ Verify ➔ Remember lifecycle coordinator)
-│   └── attestation/   # @oceanicos/attestation (📜 Attest: Dual HMAC-SHA256 & Ed25519 unforgeable receipts)
+├── packages/          # Many directories on disk; only some are workspace-active
+│   ├── types/         # @oceanicos/types
+│   ├── observer/      # @oceanicos/observer
+│   ├── verification/  # @oceanicos/verification
+│   ├── remember/      # @oceanicos/remember
+│   ├── mini/          # @oceanicos/mini
+│   └── attestation/   # @oceanicos/attestation
 │
 ├── apps/              # Interface Applications
-│   ├── api/           # Fastify Core Engine (port 5000: /v1/cycle, /v1/mood, /v1/attest, /v1/stream)
-│   └── web/           # React/Vite Telemetry Dashboard (port 3000: real-time SVG charts & attestation console)
+│   ├── api/           # Fastify Core Engine
+│   └── web/           # React/Vite Telemetry Dashboard
 │
 ├── bin/               # Unified Command Line Interface
-│   ├── oceanicos.mjs  # Zero-entropy terminal binary (status, cycle, mesh, attest, keys, mood, stream)
-│   └── dev-server.mjs # Concurrent orchestrator for API + Web dev environment
+│   ├── oceanicos.mjs  # Terminal binary
+│   └── dev-server.mjs # Concurrent orchestrator for API + Web
 │
-├── docker-compose.yml # Singularity multi-service blueprint (API, Web, Qdrant vector memory, Ollama models)
-├── ignite.sh          # One-liner ignition script
-├── genesis.sh         # One-liner genesis verification script
-├── tests/             # End-to-end integration test suite (20/20 scenarios passing)
+├── docker-compose.yml
+├── ignite.sh
+├── genesis.sh
+├── tests/             # Integration tests enumerated in package.json
 │
-├── MANIFEST.md        # Project constitution
-├── CHARTER.md         # Living principles
-└── CONTRIBUTING.md    # Contribution guide
+├── MANIFEST.md
+├── CHARTER.md
+└── CONTRIBUTING.md
 ```
+
+**Present on disk ≠ workspace-active.** See [docs/REPO_INVENTORY.md](docs/REPO_INVENTORY.md) and [pnpm-workspace.yaml](pnpm-workspace.yaml).
 
 ---
 
@@ -152,7 +155,7 @@ cd omega-v-oceanicos
 # Install dependencies
 pnpm install
 
-# Terminal Ignition: build, typecheck, run 20 E2E tests & verify CLI status
+# Local totality: install, build, typecheck, enumerated integration tests, API smoke
 pnpm verify:full
 ```
 
@@ -200,21 +203,26 @@ pnpm docker:up
 ### Verification & Quality
 
 ```bash
-pnpm verify:full       # Build + typecheck + 20 integration tests + CLI check
-pnpm test:e2e          # Run 20/20 sub-second E2E integration test suite
-pnpm typecheck         # Verify strict TypeScript type safety across all packages
+pnpm verify:full       # totality.sh: install, build, typecheck, test:e2e, smoke-api
+pnpm test:e2e          # enumerated integration files in package.json (not a "20/20" claim)
+pnpm typecheck         # Verify TypeScript across workspace members
 pnpm format:check      # Check Git whitespace and syntax integrity
 ```
 
 ---
 
-## Current Status: Singularity Maximum Compression Core (vΩ∞v.MAX)
+## Current Status
 
-- ✅ **5 Core Packages Integrated**: `@oceanicos/types`, `@oceanicos/observer`, `@oceanicos/verification`, `@oceanicos/remember`, `@oceanicos/mini`, `@oceanicos/attestation`.
-- ✅ **Graceful Pluralism & Sovereignty**: Regional compliance verifier with decentralized signed mesh consensus across 4 jurisdictions.
-- ✅ **Fail-Closed Security**: Ed25519 asymmetric cryptographic signatures guarding API cycle mutations.
-- ✅ **Telemetry Pulse & Attestation Web UI**: Real-time SVG silicon yield and grid load timeline charts, with interactive attestation receipts.
-- ✅ **Full Zero-Entropy Verification**: 20 automated integration tests passing in sub-second execution.
+Observed at tip `61b5fff` (2026-09-27). This is an inventory, not a health claim.
+
+- **Active workspace**: 13 packages + `apps/api` + `apps/web` (see `pnpm-workspace.yaml`)
+- **MINI spine**: `@oceanicos/types` → observer → verification → remember → mini
+- **API-imported expansions**: attestation, kernel, oreade, mood
+- **Workspace but not API-imported**: gateway, coordination, auth, webhook
+- **On-disk packages outside the workspace**: many; they are not verified capabilities
+- **Integration tests**: the root `test` script lists a fixed file set. A pass is only evidence of that command on that run. This README does **not** claim they are currently passing.
+
+See [docs/REPO_INVENTORY.md](docs/REPO_INVENTORY.md) and [docs/DEPENDENCY_MAP.md](docs/DEPENDENCY_MAP.md).
 
 ---
 
@@ -255,10 +263,10 @@ See [CHARTER.md](CHARTER.md#code-of-conduct) for full details.
 
 ### Runtime & Frameworks
 
-- Node.js 18+ (backend)
+- Node.js 22+ (backend; see `package.json` engines)
 - React (web dashboard)
-- Express or Fastify (API)
-- PostgreSQL (production) or SQLite (development)
+- Fastify (API)
+- SQLite (development memory)
 
 ### DevOps
 
@@ -268,7 +276,7 @@ See [CHARTER.md](CHARTER.md#code-of-conduct) for full details.
 
 ### Testing & Quality
 
-- Jest (unit & integration tests)
+- Node test runner + package-level Jest
 - ESLint + Prettier (code quality)
 - TypeScript (type safety)
 
@@ -321,4 +329,4 @@ We welcome contributions in all areas:
 ---
 
 **Status**: MINI kernel establishing — expand only with evidence  
-**Last Updated**: 2026-08-14
+**Last Updated**: 2026-09-27

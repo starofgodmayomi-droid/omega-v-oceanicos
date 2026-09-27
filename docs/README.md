@@ -17,6 +17,8 @@ Welcome to the Ω∞v Oceanicos documentation. Start here to understand the proj
 - **[Development Setup](./DEVELOPMENT.md)** — Get the project running locally
 - **[MINI Kernel](./MINI.md)** — Zero → MINI → verified expansion (canonical growth model)
 - **[Architecture](./ARCHITECTURE.md)** — High-level system design from MINI outward
+- **[Repository inventory](./REPO_INVENTORY.md)** — workspace vs disk (current evidence)
+- **[Dependency map](./DEPENDENCY_MAP.md)** — declared edges, not health claims
 - **[Roadmap](./ROADMAP.md)** — Earned expansion phases
 - **[Verification Loop](./VERIFICATION_LOOP.md)** — Full workflow including post-MINI steps
 
@@ -151,6 +153,7 @@ A: Provide evidence and propose alternatives. See [CHARTER.md](../CHARTER.md#how
 - **Current Phase**: MINI kernel (Observe → Verify → Remember)
 - **Next Phase**: Earned expansions (`+ Attest`, interfaces) after MINI is proven
 - **Stability**: Rapidly evolving — APIs may change
+- **Workspace vs disk**: [REPO_INVENTORY.md](./REPO_INVENTORY.md) — do not treat extra `packages/` directories as verified capabilities
 
 See [MINI.md](./MINI.md) and [ROADMAP.md](./ROADMAP.md).
 
@@ -165,4 +168,4 @@ See [MINI.md](./MINI.md) and [ROADMAP.md](./ROADMAP.md).
 ---
 
 **Documentation Status**: Living — Zero → MINI → verified expansion  
-**Last Updated**: 2026-08-16
+**Last Updated**: 2026-09-27
