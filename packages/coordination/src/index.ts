@@ -260,3 +260,10 @@ export async function runCoordinationEvidenceProbe(input: {
     limitations: [...coordinationLimitations],
   };
 }
+
+export { activateWorkersAndBuilders } from './activation';
+export type {
+  ActivationAuthorization,
+  WorkerBuilderActivationRequest,
+  WorkerBuilderActivationResult,
+} from './activation';
