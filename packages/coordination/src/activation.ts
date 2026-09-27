@@ -1,4 +1,4 @@
-import { ExecutionTask, ExecutionSummary, ParallelExecutor, ParallelExecutorOptions } from './index';
+import { ExecutionTask, ExecutionSummary, ParallelExecutor, ParallelExecutorOptions } from './index.js';
 
 export type ActivationAuthorization = {
   approved: boolean;
