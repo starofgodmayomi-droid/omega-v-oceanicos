@@ -38,6 +38,8 @@ Every Drop MUST be represented by a request with the following fields or equival
 
 A request that lacks a required field MUST be rejected before it enters worker state or external execution. A system MAY accept a request for further review when it is incomplete, but it MUST label the request as non-executable.
 
+When a request is retried with an existing `idempotencyKey`, the system MUST return the original proposal/result only when the normalized request is equivalent. Reusing the key for a materially different intent, requester, scope, worker plan, session, stop condition, expected observation, or context MUST return a conflict and MUST NOT overwrite or mutate the original record. The caller MUST use a new key for a materially changed request.
+
 ## 4. Lifecycle protocol
 
 The lifecycle is a sequence of finite state transitions. Each transition MUST leave evidence that is sufficient to explain what happened without relying on an unrecorded narrative.

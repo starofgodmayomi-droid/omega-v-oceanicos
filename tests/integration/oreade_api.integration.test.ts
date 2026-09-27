@@ -112,6 +112,39 @@ test('API persists a planner-only proposal without authorizing or executing it',
     const detail = await app.inject({ method: 'GET', url: `/v1/omega/commands/${body.command.commandId}` });
     assert.equal(detail.statusCode, 200);
     assert.equal(detail.json().command.status, 'AUTHORIZED');
+
+    const replay = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/oreade/proposal',
+      payload: {
+        symbolicIntent: 'prepare a bounded community reflection plan',
+        requestedBy: 'operator:test',
+        targetScope: ['oracle:reflection'],
+        idempotencyKey: 'proposal-integration-001',
+        stopCondition: 'stop after one proposal is stored',
+        expectedObservation: 'one PROPOSED command is persisted',
+      },
+    });
+    assert.equal(replay.statusCode, 200);
+    assert.equal(replay.json().command.commandId, body.command.commandId);
+    assert.equal(replay.json().command.status, 'AUTHORIZED');
+    assert.equal(replay.json().executed, false);
+    assert.match(replay.json().nextAction, /execution remains a separate bounded transition/);
+
+    const conflict = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/oreade/proposal',
+      payload: {
+        symbolicIntent: 'prepare a different bounded community reflection plan',
+        requestedBy: 'operator:test',
+        targetScope: ['oracle:reflection'],
+        idempotencyKey: 'proposal-integration-001',
+        stopCondition: 'stop after one proposal is stored',
+        expectedObservation: 'one PROPOSED command is persisted',
+      },
+    });
+    assert.equal(conflict.statusCode, 409);
+    assert.equal(conflict.json().error, 'OMEGA_IDEMPOTENCY_CONFLICT');
   } finally {
     await app.close();
     rmSync(dir, { recursive: true, force: true });
