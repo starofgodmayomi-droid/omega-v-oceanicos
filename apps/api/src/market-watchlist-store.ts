@@ -1,7 +1,10 @@
+import type { OmegaEvidenceEnvelope } from '@oceanicos/types';
+
 export type WatchItem = { symbol: string; thresholdPercent: number; createdAt: string };
 export type AlertDirection = 'up' | 'down';
 export type AlertEvent = WatchItem & { id: number; direction: AlertDirection; severity: 'watch' | 'critical'; changePercent: number; price: number; source: string; observedAt: string; acknowledgedAt?: string | null };
 export type ScanRun = { id: number; scanId: string; status: 'completed' | 'failed'; startedAt: string; completedAt: string; live: boolean; providerCount: number; assetCount: number; candidateCount: number; recordedCount: number; suppressedCount: number; error?: string };
+export type EvidenceRecord = OmegaEvidenceEnvelope & { recordId: number; linkedScanId?: string | null };
 
 type SqliteDb = {
   exec(sql: string): void;
@@ -56,6 +59,20 @@ export class MarketWatchlistStore {
         recorded_count INTEGER NOT NULL,
         suppressed_count INTEGER NOT NULL,
         error TEXT
+      );
+      CREATE TABLE IF NOT EXISTS market_evidence_events (
+        record_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        evidence_id TEXT NOT NULL UNIQUE,
+        kind TEXT NOT NULL,
+        subject TEXT NOT NULL,
+        status TEXT NOT NULL,
+        source TEXT NOT NULL,
+        observed_at TEXT NOT NULL,
+        confidence TEXT NOT NULL,
+        verified INTEGER NOT NULL,
+        provenance_json TEXT NOT NULL,
+        limitations_json TEXT NOT NULL,
+        linked_scan_id TEXT
       );
     `);
     const columns = this.db.prepare('PRAGMA table_info(market_alert_events)').all() as Array<{ name: string }>;
@@ -113,5 +130,15 @@ export class MarketWatchlistStore {
   scanHistory(limit = 25): ScanRun[] {
     const bounded = Math.max(1, Math.min(100, Math.floor(limit)));
     return this.db.prepare('SELECT id, scan_id AS scanId, status, started_at AS startedAt, completed_at AS completedAt, live = 1 AS live, provider_count AS providerCount, asset_count AS assetCount, candidate_count AS candidateCount, recorded_count AS recordedCount, suppressed_count AS suppressedCount, error FROM market_scan_runs ORDER BY id DESC LIMIT ?').all(bounded).map((row: any) => ({ ...row, live: Boolean(row.live) })) as ScanRun[];
+  }
+
+  recordEvidence(envelope: OmegaEvidenceEnvelope, linkedScanId: string | null = null): EvidenceRecord {
+    this.db.prepare(`INSERT INTO market_evidence_events(evidence_id, kind, subject, status, source, observed_at, confidence, verified, provenance_json, limitations_json, linked_scan_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(evidence_id) DO NOTHING`).run(envelope.id, envelope.kind, envelope.subject, envelope.status, envelope.source, envelope.observedAt, envelope.confidence, envelope.verified ? 1 : 0, JSON.stringify(envelope.provenance), JSON.stringify(envelope.limitations), linkedScanId);
+    return this.evidenceHistory(100).find(record => record.id === envelope.id) as EvidenceRecord;
+  }
+
+  evidenceHistory(limit = 25): EvidenceRecord[] {
+    const bounded = Math.max(1, Math.min(100, Math.floor(limit)));
+    return this.db.prepare('SELECT record_id AS recordId, evidence_id AS id, kind, subject, status, source, observed_at AS observedAt, confidence, verified, provenance_json AS provenanceJson, limitations_json AS limitationsJson, linked_scan_id AS linkedScanId FROM market_evidence_events ORDER BY record_id DESC LIMIT ?').all(bounded).map((row: any) => ({ ...row, verified: Boolean(row.verified), provenance: JSON.parse(row.provenanceJson), limitations: JSON.parse(row.limitationsJson), provenanceJson: undefined, limitationsJson: undefined })).map(({ provenanceJson: _p, limitationsJson: _l, ...record }: any) => record) as EvidenceRecord[];
   }
 }

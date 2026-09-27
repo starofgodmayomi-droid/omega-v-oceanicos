@@ -4,6 +4,7 @@ import { apiRequest } from './apiClient';
 
 type Asset = { symbol: string; name: string; price: number; changePercent: number; kind: string; source: string };
 type EvidenceEnvelope = { status: 'OBSERVED' | 'UNKNOWN' | 'DIVERGENT'; source: string; confidence: string; verified: false; limitations: string[] };
+type EvidenceRecord = EvidenceEnvelope & { id: string; kind: string; observedAt: string };
 type Snapshot = { success: boolean; evidence: { live: boolean; assetCount: number; providerCount: number; envelope?: EvidenceEnvelope }; assets: Asset[]; signal: string; observedAt: string };
 type WatchItem = { symbol: string; thresholdPercent: number; createdAt: string };
 type Alert = { symbol: string; direction?: 'up' | 'down'; severity: 'critical' | 'watch'; thresholdPercent: number; changePercent: number; price: number; source: string };
@@ -19,6 +20,7 @@ export function MarketCommandCenter() {
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [alertHistory, setAlertHistory] = useState<AlertEvent[]>([]);
   const [scanRuns, setScanRuns] = useState<ScanRun[]>([]);
+  const [evidenceRecords, setEvidenceRecords] = useState<EvidenceRecord[]>([]);
   const [symbol, setSymbol] = useState('');
   const [threshold, setThreshold] = useState('2');
   const [loading, setLoading] = useState(true);
@@ -28,18 +30,20 @@ export function MarketCommandCenter() {
   const load = async () => {
     setLoading(true);
     try {
-      const [nextSnapshot, watchlistResponse, alertsResponse, alertHistoryResponse, scanRunsResponse] = await Promise.all([
+      const [nextSnapshot, watchlistResponse, alertsResponse, alertHistoryResponse, scanRunsResponse, evidenceResponse] = await Promise.all([
         apiRequest<Snapshot>('/v1/market/snapshot'),
         apiRequest<{ items?: WatchItem[] }>('/v1/market/watchlist'),
         apiRequest<{ alerts?: Alert[] }>('/v1/market/alerts'),
         apiRequest<{ events?: AlertEvent[] }>('/v1/market/alerts/history?limit=8'),
         apiRequest<{ runs?: ScanRun[] }>('/v1/market/scans/history'),
+        apiRequest<{ records?: EvidenceRecord[] }>('/v1/market/evidence?limit=8'),
       ]);
       setSnapshot(nextSnapshot);
       setWatchlist(watchlistResponse.items ?? []);
       setAlerts(alertsResponse.alerts ?? []);
       setAlertHistory(alertHistoryResponse.events ?? []);
       setScanRuns(scanRunsResponse.runs ?? []);
+      setEvidenceRecords(evidenceResponse.records ?? []);
       setError(null);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'market observation unavailable');
@@ -97,6 +101,7 @@ export function MarketCommandCenter() {
     <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: `1px solid ${theme.border}` }}><div style={{ color: theme.text, fontWeight: 700, fontSize: '13px' }}>Watchlist & thresholds</div><div style={{ display: 'flex', gap: '7px', flexWrap: 'wrap', marginTop: '10px' }}>{watchlist.map(item => <span key={item.symbol} style={{ display: 'inline-flex', gap: '7px', alignItems: 'center', border: `1px solid ${theme.border}`, borderRadius: theme.radiusPill, padding: '5px 8px', color: theme.textMuted, fontSize: '11px' }}>{item.symbol} ±{item.thresholdPercent}% <button aria-label={`Remove ${item.symbol}`} onClick={() => void removeWatch(item)} style={{ ...buttonStyle, border: 0, padding: 0, color: theme.divergent }}>×</button></span>)}</div><div style={{ display: 'flex', gap: '7px', flexWrap: 'wrap', marginTop: '10px' }}><input value={symbol} onChange={event => setSymbol(event.target.value.toUpperCase())} onKeyDown={event => { if (event.key === 'Enter') void addWatch(); }} placeholder="SYMBOL" maxLength={12} style={{ ...buttonStyle, width: '90px', color: theme.text }} /><input value={threshold} onChange={event => setThreshold(event.target.value)} inputMode="decimal" aria-label="Alert threshold percent" style={{ ...buttonStyle, width: '76px', color: theme.text }} /><button onClick={() => void addWatch()} style={{ ...buttonStyle, borderColor: theme.borderBright, color: theme.accent }}>+ Add watch</button></div></div>
     <div style={{ marginTop: '18px' }}><div style={{ display: 'flex', justifyContent: 'space-between', color: theme.text, fontWeight: 700, fontSize: '13px' }}><span>Alerts</span><span style={{ color: alerts.length ? theme.warning : theme.textDim, fontSize: '11px' }}>{alerts.length ? `${alerts.length} active` : 'No threshold crossings'}</span></div>{alerts.length > 0 && <div style={{ display: 'grid', gap: '6px', marginTop: '9px' }}>{alerts.map(alert => <div key={alert.symbol} style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', padding: '9px 10px', borderRadius: theme.radiusSmall, background: `${alert.severity === 'critical' ? theme.divergent : theme.warning}12`, color: alert.severity === 'critical' ? theme.divergent : theme.warning, fontSize: '11px' }}><span>{alert.symbol} crossed ±{alert.thresholdPercent}%</span><span>{alert.changePercent >= 0 ? '+' : ''}{alert.changePercent.toFixed(2)}% · {alert.severity.toUpperCase()}</span></div>)}</div>}</div>
     <div style={{ marginTop: '18px', paddingTop: '14px', borderTop: `1px solid ${theme.border}` }}><div style={{ color: theme.text, fontWeight: 700, fontSize: '13px' }}>Alert ledger</div>{alertHistory.length === 0 ? <div style={{ color: theme.textDim, fontSize: '11px', marginTop: '8px' }}>No recorded crossings yet.</div> : <div style={{ display: 'grid', gap: '6px', marginTop: '8px' }}>{alertHistory.map(event => <div key={event.id} style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', alignItems: 'center', padding: '7px 9px', borderRadius: theme.radiusSmall, background: event.acknowledgedAt ? theme.surface : `${event.severity === 'critical' ? theme.divergent : theme.warning}12`, color: event.acknowledgedAt ? theme.textDim : event.severity === 'critical' ? theme.divergent : theme.warning, fontSize: '11px' }}><span>{event.symbol} {event.changePercent >= 0 ? '+' : ''}{event.changePercent.toFixed(2)}% · {event.acknowledgedAt ? 'ACKNOWLEDGED' : event.severity.toUpperCase()}</span>{event.acknowledgedAt ? <span>{new Date(event.acknowledgedAt).toLocaleTimeString()}</span> : <button onClick={() => void acknowledgeAlert(event)} style={{ ...buttonStyle, padding: '4px 7px', color: theme.accent }}>Acknowledge</button>}</div>)}</div>}</div>
+    <div style={{ marginTop: '18px', paddingTop: '14px', borderTop: `1px solid ${theme.border}` }}><div style={{ color: theme.text, fontWeight: 700, fontSize: '13px' }}>Evidence stream · {evidenceRecords.length} durable records</div>{evidenceRecords.length > 0 && <div style={{ color: theme.textDim, fontSize: '11px', marginTop: '7px' }}>Latest: {evidenceRecords[0].kind} · {evidenceRecords[0].status} · {evidenceRecords[0].verified ? 'verified' : 'unverified by design'}</div>}</div>
     <div style={{ marginTop: '18px', paddingTop: '14px', borderTop: `1px solid ${theme.border}` }}><div style={{ color: theme.text, fontWeight: 700, fontSize: '13px' }}>Recent scans</div>{scanRuns.length === 0 ? <div style={{ color: theme.textDim, fontSize: '11px', marginTop: '8px' }}>No scan runs recorded yet.</div> : <div style={{ display: 'grid', gap: '5px', marginTop: '8px' }}>{scanRuns.slice(0, 3).map(run => <div key={run.scanId} style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', color: run.status === 'failed' ? theme.divergent : theme.textMuted, fontSize: '11px' }}><span>{new Date(run.completedAt).toLocaleTimeString()} · {run.status === 'failed' ? 'FAILED' : run.live ? 'LIVE' : 'FALLBACK'}</span><span>{run.status === 'failed' ? (run.error ?? 'unreconciled') : `${run.recordedCount} recorded · ${run.suppressedCount} suppressed`}</span></div>)}</div>}</div>
     {loading && <div style={{ color: theme.textDim, fontSize: '11px', marginTop: '14px' }}>Refreshing observation…</div>}
   </section>;

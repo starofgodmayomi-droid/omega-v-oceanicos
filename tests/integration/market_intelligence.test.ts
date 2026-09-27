@@ -32,6 +32,9 @@ describe('market intelligence evidence route', () => {
     assert.equal(body.evidence.envelope.status, 'OBSERVED');
     assert.equal(body.evidence.envelope.verified, false);
     assert.equal(body.evidence.envelope.provenance.system, 'omega-v-oceanicos');
+    const initialEvidence = await app.inject({ method: 'GET', url: '/v1/market/evidence' });
+    assert.equal(initialEvidence.statusCode, 200);
+    assert.equal(initialEvidence.json().records.length, 1);
     assert.match(body.signal, /leads relative momentum/);
     const addWatch = await app.inject({ method: 'POST', url: '/v1/market/watchlist', payload: { symbol: 'ETH', thresholdPercent: 0.5 } });
     assert.equal(addWatch.statusCode, 201);
@@ -79,6 +82,9 @@ describe('market intelligence evidence route', () => {
     assert.equal(failedScan.json().evidence.envelope.status, 'UNKNOWN');
     const allRuns = await app.inject({ method: 'GET', url: '/v1/market/scans/history' });
     assert.equal(allRuns.json().runs.length, 3);
+    const evidence = await app.inject({ method: 'GET', url: '/v1/market/evidence' });
+    assert.equal(evidence.json().records.length, 4);
+    assert.equal(evidence.json().records.some((record: { kind: string; status: string }) => record.kind === 'market.scan' && record.status === 'UNKNOWN'), true);
     if (originalRequireLive === undefined) delete process.env.OMEGA_MARKET_SCAN_REQUIRE_LIVE;
     else process.env.OMEGA_MARKET_SCAN_REQUIRE_LIVE = originalRequireLive;
     globalThis.fetch = originalFetch;
@@ -93,6 +99,8 @@ describe('market intelligence evidence route', () => {
     assert.equal(persistedRuns.json().runs.length, 3);
     const persistedAlerts = await restarted.inject({ method: 'GET', url: '/v1/market/alerts/history' });
     assert.equal(typeof persistedAlerts.json().events.find((event: { id: number }) => event.id === alertId).acknowledgedAt, 'string');
+    const persistedEvidence = await restarted.inject({ method: 'GET', url: '/v1/market/evidence' });
+    assert.equal(persistedEvidence.json().records.length, 4);
     await restarted.close();
     rmSync(directory, { recursive: true, force: true });
   });
