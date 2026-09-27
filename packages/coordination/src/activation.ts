@@ -15,6 +15,11 @@ export type WorkerBuilderActivationRequest = {
 export type ActivationAdmission = {
   decision: 'ALLOW' | 'DENY' | 'REVIEW';
   authorized: boolean;
+  /** Evidence from the existing ΩIR → registry admission bridge. */
+  registryMatched: boolean;
+  policyReferencesSatisfied: boolean;
+  evidenceRequirementsSatisfied: boolean;
+  approvalRequirementSatisfied: boolean;
 };
 
 export type AdmittedWorkerBuilderActivationRequest = WorkerBuilderActivationRequest & {
@@ -34,8 +39,15 @@ export type WorkerBuilderActivationResult = {
 const MAX_AUTH_TEXT = 128;
 
 const requireAdmission = (admission: ActivationAdmission): void => {
-  if (admission.decision !== 'ALLOW' || admission.authorized !== true) {
-    throw new Error('worker/builder activation requires an ALLOW admission with authorization');
+  if (
+    admission.decision !== 'ALLOW' ||
+    admission.authorized !== true ||
+    admission.registryMatched !== true ||
+    admission.policyReferencesSatisfied !== true ||
+    admission.evidenceRequirementsSatisfied !== true ||
+    admission.approvalRequirementSatisfied !== true
+  ) {
+    throw new Error('worker/builder activation requires an ALLOW admission with authorization and satisfied registry/policy/evidence/approval requirements');
   }
 };
 
