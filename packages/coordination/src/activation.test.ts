@@ -1,4 +1,4 @@
-import { activateWorkersAndBuilders } from './activation';
+import { activateWorkersAndBuilders } from './index';
 
 describe('activateWorkersAndBuilders', () => {
   it('requires explicit human approval', async () => {
