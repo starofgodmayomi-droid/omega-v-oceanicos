@@ -34,6 +34,20 @@ export type AdmittedWorkerBuilderActivationRequest = WorkerBuilderActivationRequ
   admission: ActivationAdmission;
 };
 
+export type ActivationRealityStatus = 'UNKNOWN' | 'NOT_EXECUTED';
+
+export type WorkerBuilderActivationEvidence = {
+  readonly kind: 'worker-builder-activation-evidence';
+  readonly runId: string;
+  readonly executionState: ExecutionSummary['state'];
+  readonly executed: boolean;
+  readonly realityStatus: ActivationRealityStatus;
+  readonly eventCount: number;
+  readonly succeeded: number;
+  readonly failed: number;
+  readonly limitations: readonly string[];
+};
+
 export type WorkerBuilderActivationResult = {
   kind: 'worker-builder-activation';
   authorized: true;
@@ -45,6 +59,30 @@ export type WorkerBuilderActivationResult = {
 };
 
 const MAX_AUTH_TEXT = 128;
+/**
+ * Convert bounded executor output into an explicit evidence boundary.
+ * Successful local task execution is evidence of execution only; it is not
+ * evidence that the intended external reality was achieved.
+ */
+export const activationEvidenceFromExecution = (
+  execution: ExecutionSummary,
+): WorkerBuilderActivationEvidence => ({
+  kind: 'worker-builder-activation-evidence',
+  runId: execution.runId,
+  executionState: execution.state,
+  executed: execution.started > 0 && execution.succeeded + execution.failed === execution.started,
+  realityStatus: execution.started === 0 ? 'NOT_EXECUTED' : 'UNKNOWN',
+  eventCount: execution.events.length,
+  succeeded: execution.succeeded,
+  failed: execution.failed,
+  limitations: [
+    ...execution.limitations,
+    'local task completion does not prove external reality',
+    'external reality remains UNKNOWN until an independent observation is supplied',
+  ],
+});
+
+
 
 const requireAdmission = (admission: ActivationAdmission): void => {
   if (
