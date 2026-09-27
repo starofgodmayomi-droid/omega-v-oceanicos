@@ -2,7 +2,7 @@
 
 > INVENTORY → **DEPENDENCY MAP** → CONTRACT MAP → MIGRATION → TEST → EVIDENCE
 >
-> Observed at tip `61b5fff`. This map records **declared** edges, not verification of runtime health.
+> Observed at tip `35eab29` plus the fail-closed worker constitution slice. This map records **declared** edges, not verification of runtime health.
 
 ## Legend
 
@@ -36,6 +36,8 @@ WORKSPACE (not imported by apps/api):
     @omega-v/auth         -> @oceanicos/types
     @omega-v/webhook      -> @oceanicos/types
     @omega-v/coordination -> (no workspace deps declared)
+    @omega-v/worker       -> (no workspace deps declared)
+    @omega-v/pipeline     -> @omega-v/worker
 ```
 
 ## Corrections vs 2026-09-25 map
@@ -47,13 +49,14 @@ WORKSPACE (not imported by apps/api):
 | `@omega-v/oreade` omitted | **BUILT** — workspace + imported by `apps/api` |
 | `coordination` archive candidate | **WORKSPACE** — in `pnpm-workspace.yaml`, not API-imported |
 | `gateway` / `auth` / `webhook` SOURCE-ONLY | **WORKSPACE** |
+| `worker` / `pipeline` SOURCE-ONLY | **WORKSPACE** after fail-closed constitution slice — still not API-imported |
 
 ## Key observations
 
 1. **`types` is the MINI root.** The earned observe-verify-remember-mini chain is self-contained.
 2. **`ir` is not an active workspace package.** Do not treat Omega IR as compiled runtime on this tip.
 3. **Mood and OREADE are live API imports.** They remain **layers**, not authority.
-4. **Four workspace packages are not API-imported.** Workspace membership is not capability.
+4. **Workspace membership is not capability.** Worker and pipeline are now workspace members so leases and observation receipts can be built and tested. They are **not** API capabilities.
 5. **Dormant packages must not be promoted in bulk.**
 
 ## Promotion risk
@@ -67,12 +70,12 @@ Promoting a SOURCE-ONLY package requires:
 
 Lowest-risk (depend only on types, still off-workspace): evidence, intent, contract, governance, human, security, telemetry, bridge, analytics, green.
 
-Blocked by sdk: policy, worker, sandbox, scheduler, benchmark, notary.
+Worker is no longer blocked by sdk: unused `@omega-v/types` / `@omega-v/sdk` declarations were removed. Pipeline depends only on worker.
 
 ## Next step
 
-CONTRACT MAP for one candidate at a time. Recommended serial slices already in flight as PRs (not merged here):
+CONTRACT MAP for one candidate at a time. In-flight PRs (not merged here):
 
-1. Ignore `.pnpm-store` (#322)
-2. Oreade container / idempotent retries (#327, #329)
-3. Fail-closed worker constitution (#330)
+1. Ignore `.pnpm-store` (#322) — still open against an older base
+2. Oreade idempotent retries (#335) — current-main rebase of #329
+3. This worker constitution slice — rebase of #330 onto `35eab29`

@@ -7,7 +7,7 @@
 
 ## Audit Date
 
-2026-09-27 — inspected GitHub tip `61b5fff23af5a8766065e08e3c79858c6ea16187`
+2026-09-27 — inspected GitHub tip `35eab29f08c5476cf75dca1d2414b6f88607c45a` plus the fail-closed worker constitution slice in this change.
 
 Evidence:
 
@@ -15,10 +15,12 @@ Evidence:
 - `apps/api/package.json` (declared API imports)
 - `apps/api/Dockerfile` (image build filters)
 - `packages/` directory listing
+- `packages/worker/src/index.ts` (fail-closed lease + local HMAC receipts)
 
-Previous inventory dated 2026-09-25 classified `ir` as BUILT and `mood` as STUB.
-That snapshot is **DIVERGENT** from the current workspace. History is preserved;
-this document supersedes it for current reality.
+Previous inventory dated 2026-09-27 against `61b5fff` classified `worker` and `pipeline` as SOURCE-ONLY.
+That snapshot is **DIVERGENT** after this slice. History is preserved;
+this document supersedes it for current proposed workspace membership.
+This document does **not** claim the slice is merged until GitHub shows it on `main`.
 
 ## Non-collapse
 
@@ -57,7 +59,7 @@ PRESENT ON DISK
 
 Apps: `apps/api`, `apps/web` are also workspace members.
 
-## WORKSPACE — active, not API-imported (4 packages)
+## WORKSPACE — active, not API-imported (6 packages)
 
 | Package | Name | Role |
 |---------|------|------|
@@ -65,19 +67,22 @@ Apps: `apps/api`, `apps/web` are also workspace members.
 | `coordination` | `@omega-v/coordination` | Bounded workers/builders |
 | `auth` | `@omega-v/auth` | Auth |
 | `webhook` | `@omega-v/webhook` | Webhooks |
+| `worker` | `@omega-v/worker` | Fail-closed local worker pool |
+| `pipeline` | `@omega-v/pipeline` | Stage graph over the worker pool |
 
 These are **not** dormant. They are also **not** proven as live API capabilities.
+Worker receipts are local HMAC observations, not SLSA or runtime health.
 
 ## SOURCE-ONLY / STUB — on disk, off workspace
 
-Includes (non-exhaustive of every speculative package): `ir`, `policy`, `worker`, `registry`, `compiler`, `sdk`, `cli`, `evidence`, `intent`, `contract`, `pipeline`, and the distributed/speculative set (`agents`, `amm`, `consensus`, `zk`, …).
+Includes (non-exhaustive of every speculative package): `ir`, `policy`, `registry`, `compiler`, `sdk`, `cli`, `evidence`, `intent`, `contract`, and the distributed/speculative set (`agents`, `amm`, `consensus`, `zk`, …).
 
 `@omega-v/ir` is **not** workspace-active on this tip. Do not treat it as a runtime kernel.
 
 ## Naming split (observed)
 
 - `@oceanicos/*` — types, observer, verification, remember, mini, attestation
-- `@omega-v/*` — kernel, oreade, mood, gateway, coordination, auth, webhook, and dormant packages
+- `@omega-v/*` — kernel, oreade, mood, gateway, coordination, auth, webhook, worker, pipeline, and dormant packages
 
 Unresolved edge. Do not silently rename.
 
@@ -85,14 +90,14 @@ Unresolved edge. Do not silently rename.
 
 | Category | Count | Action |
 |----------|-------|--------|
-| Workspace members | 15 (13 packages + 2 apps) | Keep — currently active |
+| Workspace members | 17 (15 packages + 2 apps) | Keep — currently active |
 | BUILT (API-imported) | 9 packages | Runtime path |
-| WORKSPACE only | 4 packages | Do not claim API capability |
-| On-disk, off-workspace | ~55 | Quarantine / promote only when earned |
+| WORKSPACE only | 6 packages | Do not claim API capability |
+| On-disk, off-workspace | ~53 | Quarantine / promote only when earned |
 
 ## Test-command note
 
-Root `package.json` enumerates a **fixed list of integration files** (currently 12 paths in `test` / `test:e2e`). README language that says “20 tests passing” is **historical / unreconciled**. This session did not execute the suite; current runtime verification remains **UNKNOWN**.
+Root `package.json` enumerates a **fixed list of integration files**. The focused worker evidence command is `pnpm test:worker`. README language that says “20 tests passing” is **historical / unreconciled**. This slice ran the focused worker lifecycle tests locally; full `pnpm test` / image / deployment remain **UNKNOWN** until observed.
 
 ## Migration Path
 
