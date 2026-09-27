@@ -4,15 +4,18 @@ import { theme } from './oceanicosTheme';
 /*
  * DependencyMapPanel — visualizes the workspace package dependency graph.
  *
- * Shows which packages are earned (BUILT) vs not-yet-earned (SOURCE-ONLY / STUB),
- * the dependency edges between them, and promotion risk classification.
+ * Shows which packages are:
+ *   BUILT        = pnpm workspace + imported by apps/api
+ *   WORKSPACE    = pnpm workspace, not imported by apps/api
+ *   SOURCE-ONLY  = present on disk, not in pnpm-workspace.yaml
+ *   STUB         = present on disk, not workspace, thin implementation
  *
- * Migration path step 2: INVENTORY → DEPENDENCY MAP → CONTRACT MAP
+ * PRESENT ≠ WORKSPACE ≠ IMPORTED ≠ VERIFIED
  */
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
 
-type Classification = 'BUILT' | 'SOURCE-ONLY' | 'STUB';
+type Classification = 'BUILT' | 'WORKSPACE' | 'SOURCE-ONLY' | 'STUB';
 
 interface DependencyNode {
   name: string;
@@ -21,6 +24,8 @@ interface DependencyNode {
   specRole: string;
   dependsOn: string[];
   lines: number;
+  workspaceActive?: boolean;
+  apiImported?: boolean;
 }
 
 interface DependencyMapData {
@@ -35,6 +40,7 @@ interface DependencyMapData {
   nodes: DependencyNode[];
   summary: {
     built: number;
+    workspace?: number;
     sourceOnly: number;
     stub: number;
     total: number;
@@ -46,13 +52,15 @@ interface DependencyMapData {
 
 const CLASS_COLORS: Record<Classification, string> = {
   BUILT: theme.verified,
+  WORKSPACE: theme.accent,
   'SOURCE-ONLY': theme.warning,
   STUB: theme.unknown,
 };
 
 const CLASS_LABELS: Record<Classification, string> = {
-  BUILT: 'Earned',
-  'SOURCE-ONLY': 'Source-only',
+  BUILT: 'Imported',
+  WORKSPACE: 'Workspace',
+  'SOURCE-ONLY': 'On disk',
   STUB: 'Stub',
 };
 
@@ -90,14 +98,13 @@ export function DependencyMapPanel() {
 
   return (
     <div style={{ padding: '20px 22px', fontFamily: theme.fontSans }}>
-      {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
         <div>
           <div style={{ fontSize: '13px', fontWeight: 700, color: theme.accent }}>
-            🗺 Dependency Map
+            Dependency Map
           </div>
           <div style={{ fontSize: '11px', color: theme.textDim, marginTop: '3px' }}>
-            {data?.contract.migrationStep ?? 'Loading…'} · EARNED COMPLEXITY audit
+            {data?.contract.migrationStep ?? 'Loading…'} · PRESENT ≠ WORKSPACE ≠ IMPORTED
           </div>
         </div>
         <button
@@ -121,19 +128,18 @@ export function DependencyMapPanel() {
 
       {error && (
         <div style={{ color: theme.divergent, fontSize: '11px', marginBottom: '10px' }}>
-          ⚠ {error}
+          {error}
         </div>
       )}
 
       {data && (
         <>
-          {/* Summary stats */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '8px', marginBottom: '14px' }}>
             {([
-              { label: 'Built', count: data.summary.built, color: theme.verified },
-              { label: 'Source-only', count: data.summary.sourceOnly, color: theme.warning },
+              { label: 'Imported by API', count: data.summary.built, color: theme.verified },
+              { label: 'Workspace only', count: data.summary.workspace ?? 0, color: theme.accent },
+              { label: 'On disk', count: data.summary.sourceOnly, color: theme.warning },
               { label: 'Stub', count: data.summary.stub, color: theme.unknown },
-              { label: 'Archive candidates', count: data.summary.archiveCandidates, color: theme.divergent },
             ]).map((stat) => (
               <div
                 key={stat.label}
@@ -154,9 +160,8 @@ export function DependencyMapPanel() {
             ))}
           </div>
 
-          {/* Filter buttons */}
           <div style={{ display: 'flex', gap: '6px', marginBottom: '14px', flexWrap: 'wrap' }}>
-            {(['all', 'BUILT', 'SOURCE-ONLY', 'STUB'] as const).map((f) => (
+            {(['all', 'BUILT', 'WORKSPACE', 'SOURCE-ONLY', 'STUB'] as const).map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
@@ -177,7 +182,6 @@ export function DependencyMapPanel() {
             ))}
           </div>
 
-          {/* Promotion risk summary */}
           <div
             style={{
               padding: '12px 14px',
@@ -192,7 +196,7 @@ export function DependencyMapPanel() {
             </div>
             <div style={{ fontSize: '11px', color: theme.textDim, marginBottom: '6px' }}>
               <span style={{ color: theme.verified, fontWeight: 600 }}>Lowest-risk:</span>{' '}
-              {data.summary.lowestRiskPromotions.length} packages depend only on `types`
+              {data.summary.lowestRiskPromotions.length} packages depend only on types and are still off-workspace
             </div>
             <div style={{ fontSize: '11px', color: theme.textDim }}>
               <span style={{ color: theme.warning, fontWeight: 600 }}>Blocked by sdk:</span>{' '}
@@ -200,7 +204,6 @@ export function DependencyMapPanel() {
             </div>
           </div>
 
-          {/* Package list */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             {filteredNodes.map((node) => {
               const color = CLASS_COLORS[node.classification];
@@ -219,7 +222,6 @@ export function DependencyMapPanel() {
                     gap: '10px',
                   }}
                 >
-                  {/* Status dot */}
                   <div
                     style={{
                       width: '8px',
@@ -230,7 +232,6 @@ export function DependencyMapPanel() {
                       marginTop: '4px',
                     }}
                   />
-                  {/* Content */}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                       <span style={{ fontSize: '12px', fontWeight: 600, color: theme.text, fontFamily: theme.fontMono }}>
@@ -252,12 +253,12 @@ export function DependencyMapPanel() {
                       </span>
                       {isLowestRisk && (
                         <span style={{ fontSize: '9px', color: theme.verified, fontWeight: 600 }}>
-                          ↓ lowest-risk
+                          lowest-risk
                         </span>
                       )}
                       {isBlocked && (
                         <span style={{ fontSize: '9px', color: theme.warning, fontWeight: 600 }}>
-                          ⛔ blocked by sdk
+                          blocked by sdk
                         </span>
                       )}
                       <span style={{ fontSize: '10px', color: theme.textDim, marginLeft: 'auto' }}>
