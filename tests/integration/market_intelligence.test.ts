@@ -35,6 +35,11 @@ describe('market intelligence evidence route', () => {
     const initialEvidence = await app.inject({ method: 'GET', url: '/v1/market/evidence' });
     assert.equal(initialEvidence.statusCode, 200);
     assert.equal(initialEvidence.json().records.length, 1);
+    const evidenceId = String(initialEvidence.json().records[0].id);
+    const reconciliation = await app.inject({ method: 'POST', url: `/v1/market/evidence/${encodeURIComponent(evidenceId)}/reconcile` });
+    assert.equal(reconciliation.statusCode, 200);
+    assert.equal(reconciliation.json().record.status, 'UNKNOWN');
+    assert.equal(reconciliation.json().record.verified, false);
     assert.match(body.signal, /leads relative momentum/);
     const addWatch = await app.inject({ method: 'POST', url: '/v1/market/watchlist', payload: { symbol: 'ETH', thresholdPercent: 0.5 } });
     assert.equal(addWatch.statusCode, 201);
@@ -85,6 +90,8 @@ describe('market intelligence evidence route', () => {
     const evidence = await app.inject({ method: 'GET', url: '/v1/market/evidence' });
     assert.equal(evidence.json().records.length, 4);
     assert.equal(evidence.json().records.some((record: { kind: string; status: string }) => record.kind === 'market.scan' && record.status === 'UNKNOWN'), true);
+    const reconciliationHistory = await app.inject({ method: 'GET', url: '/v1/market/reconciliation' });
+    assert.equal(reconciliationHistory.json().records.length, 1);
     if (originalRequireLive === undefined) delete process.env.OMEGA_MARKET_SCAN_REQUIRE_LIVE;
     else process.env.OMEGA_MARKET_SCAN_REQUIRE_LIVE = originalRequireLive;
     globalThis.fetch = originalFetch;
@@ -101,6 +108,8 @@ describe('market intelligence evidence route', () => {
     assert.equal(typeof persistedAlerts.json().events.find((event: { id: number }) => event.id === alertId).acknowledgedAt, 'string');
     const persistedEvidence = await restarted.inject({ method: 'GET', url: '/v1/market/evidence' });
     assert.equal(persistedEvidence.json().records.length, 4);
+    const persistedReconciliation = await restarted.inject({ method: 'GET', url: '/v1/market/reconciliation' });
+    assert.equal(persistedReconciliation.json().records.length, 1);
     await restarted.close();
     rmSync(directory, { recursive: true, force: true });
   });

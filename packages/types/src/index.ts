@@ -36,6 +36,23 @@ export interface OmegaEvidenceEnvelope {
   readonly limitations: readonly string[];
 }
 
+export interface OmegaReconciliationRecord {
+  readonly id: string;
+  readonly evidenceId: string;
+  readonly status: 'VERIFIED' | 'DIVERGENT' | 'UNKNOWN' | 'NOT_EXECUTED';
+  readonly expected: string;
+  readonly actual: string;
+  readonly matched: false;
+  readonly verified: false;
+  readonly rationale: string;
+  readonly createdAt: string;
+  readonly provenance: {
+    readonly system: 'omega-v-oceanicos';
+    readonly component: string;
+    readonly lineage: readonly string[];
+  };
+}
+
 export interface IMiniBlock {
   readonly index: number;
   readonly timestamp: string;

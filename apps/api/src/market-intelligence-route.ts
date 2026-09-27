@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { randomUUID } from 'node:crypto';
-import type { OmegaEvidenceEnvelope } from '@oceanicos/types';
+import type { OmegaEvidenceEnvelope, OmegaReconciliationRecord } from '@oceanicos/types';
 import { MarketWatchlistStore, type AlertEvent } from './market-watchlist-store.js';
 
 type MarketAsset = {
@@ -170,4 +170,23 @@ export function registerMarketIntelligenceRoute(fastify: FastifyInstance, dbPath
   });
   fastify.get('/v1/market/scans/history', async (request: any) => ({ success: true, runs: store.scanHistory(Number(request.query?.limit ?? 25)) }));
   fastify.get('/v1/market/evidence', async (request: any) => ({ success: true, records: store.evidenceHistory(Number(request.query?.limit ?? 25)) }));
+  fastify.post('/v1/market/evidence/:id/reconcile', async (request: any, reply: any) => {
+    const evidenceId = String(request.params.id ?? '').trim();
+    const evidence = store.evidenceHistory(100).find(record => record.id === evidenceId);
+    if (!evidence) return reply.status(404).send({ success: false, error: 'EVIDENCE_NOT_FOUND' });
+    const record: OmegaReconciliationRecord = {
+      id: `reconciliation-${evidenceId}`,
+      evidenceId,
+      status: evidence.status === 'OBSERVED' ? 'UNKNOWN' : 'NOT_EXECUTED',
+      expected: 'Independent verification, authority, and expected-versus-actual evidence',
+      actual: `${evidence.status} observation from ${evidence.source}; no independent verification supplied`,
+      matched: false,
+      verified: false,
+      rationale: evidence.status === 'OBSERVED' ? 'Observation exists, but market truth and authority are not independently established.' : 'No admissible observation exists to reconcile into a verified state.',
+      createdAt: new Date().toISOString(),
+      provenance: { system: 'omega-v-oceanicos', component: 'market-reconciliation', lineage: [evidenceId] },
+    };
+    return { success: true, record: store.recordReconciliation(record) };
+  });
+  fastify.get('/v1/market/reconciliation', async (request: any) => ({ success: true, records: store.reconciliationHistory(Number(request.query?.limit ?? 25)) }));
 }

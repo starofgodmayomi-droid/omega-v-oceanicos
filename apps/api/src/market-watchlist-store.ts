@@ -1,10 +1,11 @@
-import type { OmegaEvidenceEnvelope } from '@oceanicos/types';
+import type { OmegaEvidenceEnvelope, OmegaReconciliationRecord } from '@oceanicos/types';
 
 export type WatchItem = { symbol: string; thresholdPercent: number; createdAt: string };
 export type AlertDirection = 'up' | 'down';
 export type AlertEvent = WatchItem & { id: number; direction: AlertDirection; severity: 'watch' | 'critical'; changePercent: number; price: number; source: string; observedAt: string; acknowledgedAt?: string | null };
 export type ScanRun = { id: number; scanId: string; status: 'completed' | 'failed'; startedAt: string; completedAt: string; live: boolean; providerCount: number; assetCount: number; candidateCount: number; recordedCount: number; suppressedCount: number; error?: string };
 export type EvidenceRecord = OmegaEvidenceEnvelope & { recordId: number; linkedScanId?: string | null };
+export type ReconciliationRecord = OmegaReconciliationRecord & { recordId: number };
 
 type SqliteDb = {
   exec(sql: string): void;
@@ -74,6 +75,19 @@ export class MarketWatchlistStore {
         limitations_json TEXT NOT NULL,
         linked_scan_id TEXT
       );
+      CREATE TABLE IF NOT EXISTS market_reconciliation_events (
+        record_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        reconciliation_id TEXT NOT NULL UNIQUE,
+        evidence_id TEXT NOT NULL,
+        status TEXT NOT NULL,
+        expected TEXT NOT NULL,
+        actual TEXT NOT NULL,
+        matched INTEGER NOT NULL,
+        verified INTEGER NOT NULL,
+        rationale TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        provenance_json TEXT NOT NULL
+      );
     `);
     const columns = this.db.prepare('PRAGMA table_info(market_alert_events)').all() as Array<{ name: string }>;
     if (!columns.some(column => column.name === 'direction')) this.db.exec("ALTER TABLE market_alert_events ADD COLUMN direction TEXT NOT NULL DEFAULT 'up'");
@@ -140,5 +154,15 @@ export class MarketWatchlistStore {
   evidenceHistory(limit = 25): EvidenceRecord[] {
     const bounded = Math.max(1, Math.min(100, Math.floor(limit)));
     return this.db.prepare('SELECT record_id AS recordId, evidence_id AS id, kind, subject, status, source, observed_at AS observedAt, confidence, verified, provenance_json AS provenanceJson, limitations_json AS limitationsJson, linked_scan_id AS linkedScanId FROM market_evidence_events ORDER BY record_id DESC LIMIT ?').all(bounded).map((row: any) => ({ ...row, verified: Boolean(row.verified), provenance: JSON.parse(row.provenanceJson), limitations: JSON.parse(row.limitationsJson), provenanceJson: undefined, limitationsJson: undefined })).map(({ provenanceJson: _p, limitationsJson: _l, ...record }: any) => record) as EvidenceRecord[];
+  }
+
+  recordReconciliation(record: OmegaReconciliationRecord): ReconciliationRecord {
+    this.db.prepare(`INSERT INTO market_reconciliation_events(reconciliation_id, evidence_id, status, expected, actual, matched, verified, rationale, created_at, provenance_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(reconciliation_id) DO NOTHING`).run(record.id, record.evidenceId, record.status, record.expected, record.actual, record.matched ? 1 : 0, record.verified ? 1 : 0, record.rationale, record.createdAt, JSON.stringify(record.provenance));
+    return this.reconciliationHistory(100).find(item => item.id === record.id) as ReconciliationRecord;
+  }
+
+  reconciliationHistory(limit = 25): ReconciliationRecord[] {
+    const bounded = Math.max(1, Math.min(100, Math.floor(limit)));
+    return this.db.prepare('SELECT record_id AS recordId, reconciliation_id AS id, evidence_id AS evidenceId, status, expected, actual, matched, verified, rationale, created_at AS createdAt, provenance_json AS provenanceJson FROM market_reconciliation_events ORDER BY record_id DESC LIMIT ?').all(bounded).map((row: any) => ({ ...row, matched: Boolean(row.matched), verified: Boolean(row.verified), provenance: JSON.parse(row.provenanceJson) })).map(({ provenanceJson: _p, ...record }: any) => record) as ReconciliationRecord[];
   }
 }
