@@ -19,6 +19,7 @@ Welcome to the Ω∞v Oceanicos documentation. Start here to understand the proj
 - **[Architecture](./ARCHITECTURE.md)** — High-level system design from MINI outward
 - **[Roadmap](./ROADMAP.md)** — Earned expansion phases
 - **[Verification Loop](./VERIFICATION_LOOP.md)** — Full workflow including post-MINI steps
+- **[Value Navigator demo](./VALUE-NAVIGATOR-DEMO.md)** — Three worked examples for turning observed needs into bounded earning experiments
 
 ---
 
