@@ -27,6 +27,8 @@ A verification-first full-stack ecosystem for observing, verifying, attesting, a
 - 📜 **[Charter](CHARTER.md)** — Living agnostic principles and decision-making
 - 🤝 **[Contributing](CONTRIBUTING.md)** — How to contribute verification-first
 - 📖 **[Documentation](docs/)** — Architecture, guides, and references
+- 🧭 **[Value Navigator demo](docs/VALUE-NAVIGATOR-DEMO.md)** — Evidence-backed earning experiments without overclaiming
+- 🧭 **[Upgrade compass](docs/UPGRADE-COMPASS.md)** — Compressed architecture and evidence-bounded upgrade path
 - ⚙️ **[Development Setup](docs/DEVELOPMENT.md)** — Get the project running locally
 
 ---
