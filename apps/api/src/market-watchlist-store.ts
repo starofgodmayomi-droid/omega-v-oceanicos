@@ -1,6 +1,6 @@
 export type WatchItem = { symbol: string; thresholdPercent: number; createdAt: string };
 export type AlertDirection = 'up' | 'down';
-export type AlertEvent = WatchItem & { id: number; direction: AlertDirection; severity: 'watch' | 'critical'; changePercent: number; price: number; source: string; observedAt: string };
+export type AlertEvent = WatchItem & { id: number; direction: AlertDirection; severity: 'watch' | 'critical'; changePercent: number; price: number; source: string; observedAt: string; acknowledgedAt?: string | null };
 export type ScanRun = { id: number; scanId: string; status: 'completed' | 'failed'; startedAt: string; completedAt: string; live: boolean; providerCount: number; assetCount: number; candidateCount: number; recordedCount: number; suppressedCount: number; error?: string };
 
 type SqliteDb = {
@@ -40,7 +40,8 @@ export class MarketWatchlistStore {
         change_percent REAL NOT NULL,
         price REAL NOT NULL,
         source TEXT NOT NULL,
-        observed_at TEXT NOT NULL
+        observed_at TEXT NOT NULL,
+        acknowledged_at TEXT
       );
       CREATE TABLE IF NOT EXISTS market_scan_runs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -59,6 +60,7 @@ export class MarketWatchlistStore {
     `);
     const columns = this.db.prepare('PRAGMA table_info(market_alert_events)').all() as Array<{ name: string }>;
     if (!columns.some(column => column.name === 'direction')) this.db.exec("ALTER TABLE market_alert_events ADD COLUMN direction TEXT NOT NULL DEFAULT 'up'");
+    if (!columns.some(column => column.name === 'acknowledged_at')) this.db.exec('ALTER TABLE market_alert_events ADD COLUMN acknowledged_at TEXT');
     const count = this.db.prepare('SELECT COUNT(*) AS count FROM market_watchlist').get();
     if (Number(count?.count ?? 0) === 0) {
       const now = new Date().toISOString();
@@ -93,7 +95,14 @@ export class MarketWatchlistStore {
 
   history(limit = 50): AlertEvent[] {
     const bounded = Math.max(1, Math.min(200, Math.floor(limit)));
-    return this.db.prepare('SELECT id, symbol, threshold_percent AS thresholdPercent, direction, severity, change_percent AS changePercent, price, source, observed_at AS observedAt FROM market_alert_events ORDER BY id DESC LIMIT ?').all(bounded) as AlertEvent[];
+    return this.db.prepare('SELECT id, symbol, threshold_percent AS thresholdPercent, direction, severity, change_percent AS changePercent, price, source, observed_at AS observedAt, acknowledged_at AS acknowledgedAt FROM market_alert_events ORDER BY id DESC LIMIT ?').all(bounded) as AlertEvent[];
+  }
+
+  acknowledgeAlert(id: number): AlertEvent | null {
+    const acknowledgedAt = new Date().toISOString();
+    const result = this.db.prepare('UPDATE market_alert_events SET acknowledged_at = ? WHERE id = ? AND acknowledged_at IS NULL').run(acknowledgedAt, id);
+    if (Number(result?.changes ?? 0) === 0) return this.db.prepare('SELECT id, symbol, threshold_percent AS thresholdPercent, direction, severity, change_percent AS changePercent, price, source, observed_at AS observedAt, acknowledged_at AS acknowledgedAt FROM market_alert_events WHERE id = ?').get(id) as AlertEvent | null;
+    return this.db.prepare('SELECT id, symbol, threshold_percent AS thresholdPercent, direction, severity, change_percent AS changePercent, price, source, observed_at AS observedAt, acknowledged_at AS acknowledgedAt FROM market_alert_events WHERE id = ?').get(id) as AlertEvent | null;
   }
 
   recordScanRun(run: Omit<ScanRun, 'id'>): ScanRun {

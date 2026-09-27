@@ -45,6 +45,13 @@ describe('market intelligence evidence route', () => {
     assert.equal(firstScan.recordedAlerts.some((alert: { symbol: string }) => alert.symbol === 'ETH'), true);
     const firstHistory = await app.inject({ method: 'GET', url: '/v1/market/alerts/history' });
     assert.equal(firstHistory.json().events.length, firstScan.recordedAlerts.length);
+    const alertId = Number(firstHistory.json().events[0].id);
+    const acknowledged = await app.inject({ method: 'POST', url: `/v1/market/alerts/${alertId}/acknowledge` });
+    assert.equal(acknowledged.statusCode, 200);
+    assert.equal(typeof acknowledged.json().event.acknowledgedAt, 'string');
+    const acknowledgedAgain = await app.inject({ method: 'POST', url: `/v1/market/alerts/${alertId}/acknowledge` });
+    assert.equal(acknowledgedAgain.statusCode, 200);
+    assert.equal(acknowledgedAgain.json().event.id, alertId);
     const firstRuns = await app.inject({ method: 'GET', url: '/v1/market/scans/history' });
     assert.equal(firstRuns.json().runs.length, 1);
     assert.equal(firstRuns.json().runs[0].recordedCount, firstScan.recordedAlerts.length);
@@ -54,6 +61,7 @@ describe('market intelligence evidence route', () => {
     const history = await app.inject({ method: 'GET', url: '/v1/market/alerts/history' });
     assert.equal(history.statusCode, 200);
     assert.equal(history.json().events.length, firstHistory.json().events.length);
+    assert.equal(typeof history.json().events.find((event: { id: number }) => event.id === alertId).acknowledgedAt, 'string');
     const runs = await app.inject({ method: 'GET', url: '/v1/market/scans/history' });
     assert.equal(runs.json().runs.length, 2);
     const originalRequireLive = process.env.OMEGA_MARKET_SCAN_REQUIRE_LIVE;
@@ -77,6 +85,8 @@ describe('market intelligence evidence route', () => {
     assert.equal(persisted.json().items.some((item: { symbol: string }) => item.symbol === 'ETH'), false);
     const persistedRuns = await restarted.inject({ method: 'GET', url: '/v1/market/scans/history' });
     assert.equal(persistedRuns.json().runs.length, 3);
+    const persistedAlerts = await restarted.inject({ method: 'GET', url: '/v1/market/alerts/history' });
+    assert.equal(typeof persistedAlerts.json().events.find((event: { id: number }) => event.id === alertId).acknowledgedAt, 'string');
     await restarted.close();
     rmSync(directory, { recursive: true, force: true });
   });

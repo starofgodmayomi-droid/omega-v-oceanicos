@@ -136,5 +136,12 @@ export function registerMarketIntelligenceRoute(fastify: FastifyInstance, dbPath
   });
 
   fastify.get('/v1/market/alerts/history', async (request: any) => ({ success: true, events: store.history(Number(request.query?.limit ?? 50)) }));
+  fastify.post('/v1/market/alerts/:id/acknowledge', async (request: any, reply: any) => {
+    const id = Number(request.params.id);
+    if (!Number.isInteger(id) || id <= 0) return reply.status(400).send({ success: false, error: 'INVALID_ALERT_ID' });
+    const event = store.acknowledgeAlert(id);
+    if (!event) return reply.status(404).send({ success: false, error: 'ALERT_NOT_FOUND' });
+    return { success: true, event };
+  });
   fastify.get('/v1/market/scans/history', async (request: any) => ({ success: true, runs: store.scanHistory(Number(request.query?.limit ?? 25)) }));
 }
