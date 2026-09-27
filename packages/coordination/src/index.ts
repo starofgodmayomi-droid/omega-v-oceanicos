@@ -261,9 +261,11 @@ export async function runCoordinationEvidenceProbe(input: {
   };
 }
 
-export { activateWorkersAndBuilders } from './activation';
+export { activateAdmittedWorkersAndBuilders, activateWorkersAndBuilders } from './activation';
 export type {
+  ActivationAdmission,
   ActivationAuthorization,
+  AdmittedWorkerBuilderActivationRequest,
   WorkerBuilderActivationRequest,
   WorkerBuilderActivationResult,
 } from './activation';
