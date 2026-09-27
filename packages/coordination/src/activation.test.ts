@@ -1,4 +1,4 @@
-import { activateWorkersAndBuilders } from './index';
+import { activateAdmittedWorkersAndBuilders, activateWorkersAndBuilders } from './index';
 
 describe('activateWorkersAndBuilders', () => {
   it('requires explicit human approval', async () => {
@@ -53,5 +53,29 @@ describe('activateWorkersAndBuilders', () => {
     expect(result.execution.events.find((event) => event.taskId === 'builder-fail')?.message).toBe(
       'builder failed',
     );
+  });
+});
+
+
+describe('activateAdmittedWorkersAndBuilders', () => {
+  it('requires an already-authorized admission decision', async () => {
+    await expect(
+      activateAdmittedWorkersAndBuilders({
+        admission: { decision: 'REVIEW', authorized: false },
+        authorization: { approved: true, operatorId: 'human-1', reason: 'review path' },
+        tasks: [{ id: 'w1', role: 'worker', title: 'worker', run: async () => 'ok' }],
+      }),
+    ).rejects.toThrow('ALLOW admission with authorization');
+  });
+
+  it('activates only after an ALLOW admission', async () => {
+    const result = await activateAdmittedWorkersAndBuilders({
+      admission: { decision: 'ALLOW', authorized: true },
+      authorization: { approved: true, operatorId: 'human-1', reason: 'admitted bounded run' },
+      executor: { runId: 'admitted-activation-test' },
+      tasks: [{ id: 'w1', role: 'worker', title: 'worker', run: async () => 'ok' }],
+    });
+    expect(result.authorized).toBe(true);
+    expect(result.execution.state).toBe('succeeded');
   });
 });
