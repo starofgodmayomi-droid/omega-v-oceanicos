@@ -102,6 +102,7 @@ export function createApp(
   const omegaCommands = new OmegaCommandStore(omegaCommandPath);
 
   fastify.addHook('onClose', async () => {
+    omegaCommands.close();
     ledgerMemory.close();
   });
 
