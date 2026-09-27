@@ -126,3 +126,35 @@ describe('activationAdmissionFromOmegaBridge', () => {
     expect(result.execution.state).toBe('succeeded');
   });
 });
+
+
+describe('activationEvidenceFromExecution', () => {
+  it('bridges local execution into UNKNOWN reality without upgrading proof', async () => {
+    const { activationEvidenceFromExecution } = await import('./index');
+    const result = await activateWorkersAndBuilders({
+      authorization: { approved: true, operatorId: 'human-1', reason: 'evidence boundary test' },
+      executor: { runId: 'evidence-boundary-test' },
+      tasks: [{ id: 'w1', role: 'worker', title: 'worker', run: async () => 'ok' }],
+    });
+    const evidence = activationEvidenceFromExecution(result.execution);
+    expect(evidence.executed).toBe(true);
+    expect(evidence.executionState).toBe('succeeded');
+    expect(evidence.realityStatus).toBe('UNKNOWN');
+    expect(evidence.eventCount).toBeGreaterThan(0);
+    expect(evidence.limitations).toContain('external reality remains UNKNOWN until an independent observation is supplied');
+  });
+
+  it('preserves failed execution evidence', async () => {
+    const { activationEvidenceFromExecution } = await import('./index');
+    const result = await activateWorkersAndBuilders({
+      authorization: { approved: true, operatorId: 'human-1', reason: 'failure evidence boundary test' },
+      executor: { runId: 'failure-evidence-boundary-test' },
+      tasks: [{ id: 'w1', role: 'worker', title: 'worker', run: async () => { throw new Error('failed'); } }],
+    });
+    const evidence = activationEvidenceFromExecution(result.execution);
+    expect(evidence.executionState).toBe('failed');
+    expect(evidence.executed).toBe(true);
+    expect(evidence.failed).toBe(1);
+    expect(evidence.realityStatus).toBe('UNKNOWN');
+  });
+});
