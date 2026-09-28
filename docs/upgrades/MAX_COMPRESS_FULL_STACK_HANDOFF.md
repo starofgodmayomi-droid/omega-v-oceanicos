@@ -107,3 +107,7 @@ The bounded GitHub transition has now occurred:
 GitHub Actions checks were observed in `IN_PROGRESS` or `QUEUED` state during reconciliation. Their final result is `UNKNOWN` until directly observed. A running check is not a passing check; a passing check is not a merge, deployment, production-health, or real-world-value observation.
 
 The next finite action is one bounded check-status observation and reconciliation. Stop after recording the final check conclusions; do not merge or deploy automatically.
+
+## Latest PR check observation
+
+At head `dd601ebd`, PR #346 remains open and non-draft. GitHub reported **6 successful checks, 3 pending checks, 0 failing checks, 0 cancelled checks, and 0 skipped checks**. The pending checks are Verification Pipeline variants. This state is `SUPPORTED` for the observed GitHub check snapshot, not a claim of merge, deployment, production health, or real-world value.
