@@ -6,15 +6,21 @@ Visualizes the verification loop in real-time with an interactive interface.
 
 ## Quick Start
 
+Run these commands from the repository root:
+
 ```bash
-# Install dependencies
-npm install
-
-# Start development server with hot reload
-npm run dev
-
-# Dashboard runs on http://localhost:3001
+pnpm install --frozen-lockfile
+pnpm dev
 ```
+
+The root development command builds the workspace, then starts the API at
+`http://localhost:5000` and the Vite dashboard at `http://localhost:3000`.
+Relative `/api/*` requests are proxied to the local API. Set
+`VITE_API_PROXY_TARGET` to override the proxy target; it defaults to
+`http://localhost:5000`.
+
+To run only the dashboard while the API is already running, use
+`pnpm --filter web dev` from the repository root.
 
 ## Features
 
@@ -83,7 +89,7 @@ View each step of the MINI kernel and its earned expansions:
 
 ### Basic Workflow
 
-1. Open http://localhost:3001
+1. Open http://localhost:3000
 2. Enter a claim (default: "Service X is healthy")
 3. Click "Run Verification"
 4. Watch the verification loop execute
@@ -98,42 +104,20 @@ View each step of the MINI kernel and its earned expansions:
 
 ## API Integration
 
-The dashboard communicates with the API server:
-
-```text
-POST /api/complete-loop
-GET /api/state
-GET /api/events
-GET /api/events/stream
-GET /api/runs
-POST /api/attest/verify
-POST /api/act
-GET /api/actions
-POST /api/learn
-GET /api/learning
-POST /api/recompile
-GET /api/recompilations
-```
-
-**Request:**
-
-```json
-{
-  "claim": "Service X is healthy",
-  "category": "health-check",
-  "source": { ... },
-  "observedBy": "user",
-  "metadata": { ... },
-  "confidence": 0.95,
-  "confidenceReason": "Manual verification from dashboard"
-}
-```
+The browser uses relative `/api/*` paths by default. In development, Vite
+forwards those requests to `VITE_API_PROXY_TARGET` and removes the `/api`
+prefix. For a separately hosted API, set `VITE_API_URL` to its origin; see the
+[API reference](../api/README.md) for current server routes and request
+contracts.
 
 ## Configuration
 
 ### Environment Variables
 
-- `VITE_API_URL` — API server URL (default: http://localhost:3000)
+- `VITE_API_URL` — optional API origin for a separately hosted API; unset by
+  default so browser-relative requests use the Vite proxy.
+- `VITE_API_PROXY_TARGET` — development proxy target (default:
+  `http://localhost:5000`).
 
 ### Proxy Setup
 
@@ -142,7 +126,7 @@ In `vite.config.ts`:
 ```typescript
 proxy: {
   '/api': {
-    target: 'http://localhost:3000',
+    target: process.env.VITE_API_PROXY_TARGET || 'http://localhost:5000',
     changeOrigin: true,
     rewrite: (path) => path.replace(/^\/api/, ''),
   },
@@ -158,7 +142,7 @@ src/
   ├── App.tsx           # Main React component
   ├── App.css           # Styling
   ├── main.tsx          # Entry point
-  └── __tests__/        # Tests (coming soon)
+  └── __tests__/        # Frontend contract and component test sources
 index.html             # HTML template
 vite.config.ts         # Vite configuration
 ```
@@ -166,11 +150,11 @@ vite.config.ts         # Vite configuration
 ### Building
 
 ```bash
-# Build for production
-npm run build
+# Build the web workspace package from the repository root
+pnpm --filter web build
 
-# Preview production build
-npm run preview
+# Preview the built bundle
+pnpm --filter web start
 ```
 
 The built files are in the `dist/` directory.
@@ -194,47 +178,16 @@ Key colors:
 
 ## Testing
 
+Run the repository checks from the root:
+
 ```bash
-npm run test                      # whole repo
-npx jest --selectProjects dom     # this dashboard only
+pnpm test        # enumerated repository integration suite
+pnpm verify:full # build, type-check, integration suite, and API smoke
 ```
 
-Jest runs two projects. `node` covers the server and packages; `dom` runs
-these component tests under jsdom. They are separate because the repository
-is two runtimes, and running the server suites under jsdom would both slow
-them and hide Node-specific behaviour.
-
-`src/__tests__/contract.test.ts` runs under `node` and is not a component
-test — it reads `App.tsx` as text and checks that the paths the client names
-are paths the server registers. `src/__tests__/dom/App.test.tsx` renders the
-component and asserts what a user sees.
-
-### What the component tests defend
-
-The dashboard is the only surface where a human reads a verification verdict,
-so the assertions concentrate there:
-
-- all three MINI steps plus the attestation render after a run
-- **failing evidence stays visible** — the UI promises "Failures remain
-  visible as evidence", and a dashboard that dropped the failing step would
-  still look correct
-- a failed verification is never displayed as passed
-- an invalid signature reports `INVALID`, never `VALID`
-- API errors surface their `requestId`, so a failure is traceable
-- an unreachable runtime says so rather than rendering empty state as healthy
-- the submitted payload carries the operator's values, not a hardcoded fixture
-
-### Known limitations
-
-- jsdom provides no `fetch` or `Response`. The harness supplies a double
-  implementing only `ok`, `status`, `json()`, and `headers.get()` — the
-  surface `App.tsx` actually consumes. If the component starts reading
-  `text()` or streaming a body, these tests will throw rather than silently
-  pass on a shape a browser would not produce.
-- React still reports "update not wrapped in act" for state changes made by
-  handlers that user-event dispatches as real DOM events. The suite is green
-  and the assertions are correct; the warnings are a true signal that those
-  updates are not batched, so they are left visible rather than filtered.
+The integration suite includes a regression test for the Vite `/api` proxy.
+These commands provide local verification evidence only; they do not establish
+deployment or production health.
 
 ## Performance
 
@@ -246,7 +199,7 @@ so the assertions concentrate there:
 ## Security
 
 - Input validation on form submission
-- CORS handled by proxy
+- The development proxy does not provide authentication or production CORS policy
 - No sensitive data stored locally
 - API calls use HTTPS in production
 
@@ -265,13 +218,13 @@ so the assertions concentrate there:
 
 **Solution:**
 
-1. Ensure API server is running on http://localhost:3000
+1. Ensure the API server is running on http://localhost:5000
 2. Check that proxy is configured in vite.config.ts
 3. Verify CORS headers from API
 
 ### Port Already in Use
 
-**Problem:** `EADDRINUSE: address already in use :::3001`
+**Problem:** `EADDRINUSE: address already in use :::3000`
 
 **Solution:**
 
@@ -290,13 +243,12 @@ server: {
 
 ```bash
 # Clear cache and rebuild
-npm run clean
-npm run dev
+pnpm --filter web build
+pnpm --filter web dev
 ```
 
 ---
 
-**Package Status:** Beta (v0.1.0)  
+**Package version:** 1.0.0
 **Part of:** Ω∞v Oceanicos verification system  
-**Next:** Dashboard persistence, historical queries, metrics  
-**Last Updated:** 2026-08-07
+**Last Updated:** 2026-09-28
