@@ -11,6 +11,7 @@ import { ObservationStreamPanel } from './ObservationStreamPanel';
 import { OreadConsole } from './OreadConsole';
 import { MoodCodexPanel } from './MoodCodexPanel';
 import { DivergenceAlertsPanel } from './DivergenceAlertsPanel';
+import { ValueNavigatorPanel } from './ValueNavigatorPanel';
 import { LifecycleFlow, deriveStageStates, type LifecycleStage } from './LifecycleFlow';
 import {
   theme,
@@ -766,6 +767,7 @@ export function App() {
         <OreadConsole />
         <MoodCodexPanel />
         <DivergenceAlertsPanel />
+        <ValueNavigatorPanel />
 
         <IntentFlow
           command={omegaCommand}

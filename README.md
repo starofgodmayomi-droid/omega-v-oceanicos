@@ -27,6 +27,7 @@ A verification-first full-stack ecosystem for observing, verifying, attesting, a
 - 📜 **[Charter](CHARTER.md)** — Living agnostic principles and decision-making
 - 🤝 **[Contributing](CONTRIBUTING.md)** — How to contribute verification-first
 - 📖 **[Documentation](docs/)** — Architecture, guides, and references
+- 🧭 **[Value Navigator contract](skills/oceanicos-value-navigator/SKILL.md)** — proposals, evidence, observation, and reconciliation
 - 🗺️ **[Repository inventory](docs/REPO_INVENTORY.md)** — workspace vs disk (current evidence)
 - ⚙️ **[Development Setup](docs/DEVELOPMENT.md)** — Get the project running locally
 
@@ -213,7 +214,7 @@ pnpm format:check      # Check Git whitespace and syntax integrity
 
 ## Current Status
 
-Observed at tip `61b5fff` (2026-09-27). This is an inventory, not a health claim.
+Observed at base tip `35eab29` (2026-09-28). This is an inventory, not a health claim.
 
 - **Active workspace**: 13 packages + `apps/api` + `apps/web` (see `pnpm-workspace.yaml`)
 - **MINI spine**: `@oceanicos/types` → observer → verification → remember → mini

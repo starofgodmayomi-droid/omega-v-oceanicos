@@ -56,6 +56,8 @@ Welcome to the Ω∞v Oceanicos documentation. Start here to understand the proj
 - **[REST API](../apps/api/README.md)** — every endpoint, with request and
   response shapes. A test asserts this document describes every route the
   API actually registers, so it cannot drift from the code.
+- **[Value Navigator](../skills/oceanicos-value-navigator/SKILL.md)** — bounded
+  proposal/observation flow, status boundaries, and the repository API contract.
 - **[Infrastructure](../infra/README.md)** — the image, its environment
   variables, and what does not exist yet.
 
