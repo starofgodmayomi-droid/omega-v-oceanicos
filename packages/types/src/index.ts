@@ -123,6 +123,7 @@ export * from './omega-ir.js';
 export * from './worker-registry.js';
 export * from './omega-command.js';
 export * from './scene.js';
+export * from './navigator-contract.js';
 
 export type SceneState =
   | 'darkness'

@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/starofgodmayomi-droid/omega-v-oceanicos/blob/main/docs/contracts/omega-navigator-evidence.v1.schema.json",
+  "title": "Omega Navigator Evidence Snapshot v1",
+  "description": "Read-only evidence for presentation surfaces. It does not grant authority or imply deployment or health.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract", "generatedAt", "source", "overallStatus", "evidence", "readOnly"],
+  "properties": {
+    "contract": { "const": "omega-navigator-evidence.v1" },
+    "generatedAt": { "type": "string", "format": "date-time" },
+    "source": { "$ref": "#/$defs/source" },
+    "overallStatus": { "$ref": "#/$defs/status" },
+    "readOnly": { "const": true },
+    "evidence": { "type": "array", "items": { "$ref": "#/$defs/evidence" } }
+  },
+  "$defs": {
+    "status": { "type": "string", "enum": ["VERIFIED", "SUPPORTED", "UNVERIFIED", "DIVERGENT", "UNKNOWN"] },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "commit", "branch", "observedAt", "locator"],
+      "properties": {
+        "repository": { "type": "string", "minLength": 1 },
+        "commit": { "type": "string", "minLength": 1 },
+        "branch": { "type": "string", "minLength": 1 },
+        "observedAt": { "type": "string", "format": "date-time" },
+        "locator": { "type": "string", "minLength": 1 }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "status", "claim", "observedAt", "source", "policyVersion", "limitations"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "status": { "$ref": "#/$defs/status" },
+        "claim": { "type": "string", "minLength": 1 },
+        "observedAt": { "type": "string", "format": "date-time" },
+        "source": { "$ref": "#/$defs/source" },
+        "policyVersion": { "type": "string", "minLength": 1 },
+        "attestationId": { "type": "string", "minLength": 1 },
+        "limitations": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+      }
+    }
+  }
+}
