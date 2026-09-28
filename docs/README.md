@@ -58,6 +58,16 @@ Welcome to the Ω∞v Oceanicos documentation. Start here to understand the proj
   API actually registers, so it cannot drift from the code.
 - **[Value Navigator](../skills/oceanicos-value-navigator/SKILL.md)** — bounded
   proposal/observation flow, status boundaries, and the repository API contract.
+- **[Voice Bridge](../skills/voice-bridge/SKILL.md)** — one human source across
+  system design, expression, truth-checking, and execution planning.
+- **[ƆREADE × Oceanicos Harmonizer](../skills/oread-pidgin-harmonizer/SKILL.md)**
+  — symbolic and Nigerian Pidgin meaning compiled into bounded, evidence-first
+  action.
+- **[OceanicOS Framework](../skills/oceanicos-framework/SKILL.md)** — OUPEMLI,
+  finite transition, provenance, and authority boundaries.
+- **[Full-stack reality access](./upgrades/FULL_STACK_REALITY_ACCESS_2026-09-28.md)**
+  — admissible connector surfaces, authentication, authorization, and
+  reconciliation boundaries.
 - **[Infrastructure](../infra/README.md)** — the image, its environment
   variables, and what does not exist yet.
 
