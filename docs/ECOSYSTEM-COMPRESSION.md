@@ -105,6 +105,12 @@ credential exchange, mutation endpoint, or deployment claim is included.
 The focused contract test proves acceptance of a provenance-bearing snapshot
 and rejection of mutable, missing-provenance, and over-claimed payloads.
 
+The first runtime adapter is `GET /v1/navigator/evidence`. It is read-only,
+inherits the API's existing read-access policy in required-auth mode, and
+returns `UNKNOWN` for deployment/health rather than inferring those states
+from local execution. Its API behavior is covered by the canonical Node
+integration suite.
+
 ## Canonical Ω∞v flow mapped to evidence
 
 The supplied architecture diagram is adopted here as the **canonical conceptual flow**. The labels below distinguish observed implementation from design intent and unknown deployment reality.

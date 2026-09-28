@@ -11,6 +11,7 @@ export const API_ROUTE_INVENTORY = [
   'GET /health',
   'GET /v1/kernel/capabilities',
   'GET /v1/mood',
+  'GET /v1/navigator/evidence',
   'POST /v1/attest',
   'POST /v1/cycle',
   'POST /v1/pipeline',
