@@ -27,7 +27,7 @@ A verification-first full-stack ecosystem for observing, verifying, attesting, a
 - 📜 **[Charter](CHARTER.md)** — Living agnostic principles and decision-making
 - 🤝 **[Contributing](CONTRIBUTING.md)** — How to contribute verification-first
 - 📖 **[Documentation](docs/)** — Architecture, guides, and references
-- 🧭 **[Value Navigator contract](skills/oceanicos-value-navigator/SKILL.md)** — proposals, evidence, observation, and reconciliation
+- 🧭 **[Value Navigator contract](skills/oceanicos-value-navigator/references/repository-contract.md)** — proposals, evidence, observation, and reconciliation
 - 🌉 **[Voice Bridge](skills/voice-bridge/SKILL.md)** — one human source across many expressive forms
 - Ɔ **[ƆREADE × Oceanicos Harmonizer](skills/oread-pidgin-harmonizer/SKILL.md)** — symbolic meaning translated into bounded action
 - 🧩 **[OceanicOS Framework](skills/oceanicos-framework/SKILL.md)** — finite transitions, evidence, and human authority
@@ -37,7 +37,145 @@ A verification-first full-stack ecosystem for observing, verifying, attesting, a
 
 ---
 
-## What Is Ω∞v?
+## Ω∞v — FUSION / DEEPEST COMPRESSION
+
+> This is the charter-level system model, not a claim that every named capability is
+> currently implemented. Check the [repository inventory](docs/REPO_INVENTORY.md)
+> and [roadmap](docs/ROADMAP.md) for current evidence and next earned transitions.
+
+```text
+OCEANICOS ≡ ONE ECOSYSTEM BODY
+
+Ω∞v := VERIFY(ΔREALITY)
+∞ := ITERATED FINITE VERIFIED Δ
+REALITY := FINAL AUTHORITY
+HUMAN := CONSEQUENTIAL INTENT/AUTHORITY
+
+ONE ROOT • ONE CURRENT • MANY FORMS
+
+                    ┌─ KNOWLEDGE
+                    ├─ AI / AGENTS
+                    ├─ CODE / REPOS
+                    ├─ APPS / APIS
+                    ├─ DATA / DATABASES
+                    ├─ CLOUD / INFRA
+                    ├─ WEB / SEARCH
+                    ├─ COMMUNICATION
+                    ├─ BUSINESS / VALUE
+                    ├─ CREATION / MEDIA
+                    ├─ MEMORY / CONTEXT
+                    ├─ ECHOFRAME
+                    ├─ ƆREADE
+                    ├─ MINI / WORKERS
+                    └─ REAL-WORLD SYSTEMS
+                           │
+                           ▼
+HUMAN INTENT
+→ ΩIR
+→ DISCOVER
+→ EVIDENCE
+→ AUTHORITY
+→ POLICY
+→ ADMISSION
+→ BOUND
+→ EXECUTE
+→ OBSERVE
+→ RECONCILE
+→ VERIFY
+→ ATTEST
+→ PROVENANCE
+→ MEMORY
+→ REPLAY
+→ LEARN
+→ RECOMPILE
+→ NEXT Δ
+→ ∞
+
+CHECK → MAP → CHANGE → TEST → OBSERVE → RECONCILE → VERIFY → NEXT
+
+NOTION = INTENT / CONTEXT
+GITHUB = BUILD / SOURCE / HISTORY
+CONNECTORS = ACCESS / CAPABILITY
+RUNTIME = EXECUTION / OBSERVATION
+RECONCILIATION = BRIDGE
+REALITY = COURT
+
+NO SYSTEM IS THE CENTER.
+NO AGENT IS THE AUTHORITY.
+NO CONNECTOR IMPLIES PERMISSION.
+NO PERMISSION IMPLIES AUTHORIZATION.
+NO EXECUTION IMPLIES SUCCESS.
+
+POSSIBLE ≠ KNOWN ≠ REPRESENTABLE ≠ PERMITTED ≠ PROPOSED
+≠ ATTEMPTED ≠ EXECUTED ≠ OBSERVED ≠ VERIFIED ≠ ATTESTED
+≠ DEPLOYED ≠ HEALTHY ≠ CORRECT
+
+MODEL ≠ REALITY
+SIMULATION ≠ REALITY
+CLAIM ≠ PROOF
+CAPABILITY ≠ AUTHORITY
+ATTESTATION ≠ AUTHORIZATION
+
+UNKNOWN → UNKNOWN
+DIVERGENT → DIVERGENT
+NOT_EXECUTED → NOT_EXECUTED
+DISSENT → PRESERVED
+PLURALISM → ON
+
+VALUE:
+KNOWLEDGE
+→ CAPABILITY
+→ CREATION
+→ ACTION
+→ EVIDENCE
+→ VERIFIED VALUE
+→ EARNED OUTCOME
+→ MEMORY
+→ REUSE
+→ COMPOUND
+→ GENERATIONAL CAPABILITY
+
+UNIVERSAL
+≠ CONTAIN ALL REALITY
+≡ CONNECT THE OBSERVABLE FRONTIER
+  THROUGH ADMISSIBLE FULL-STACK CAPABILITIES.
+
+FULL-STACK:
+KNOW • CREATE • BUILD • CONNECT • AUTHORIZE • EXECUTE
+• OBSERVE • VERIFY • REMEMBER • COMPOUND.
+
+OCEANICOS
+= ONE BODY
+= MANY ORGANS
+= MANY WORLDS
+= MANY FORMS
+= ONE VERIFICATION LAW.
+
+FINAL LOOP:
+
+INTENT
+→ VERIFIED REALITY
+→ MEMORY
+→ NEXT.
+
+FINAL QUESTION:
+
+WHAT SHALL WE MAKE REAL?
+```
+
+### Atomic form
+
+> **ONE BODY → MANY CAPABILITIES → BOUNDED ACTION → OBSERVED REALITY → VERIFIED MEMORY → NEXT.**
+
+### Absolute form
+
+> **Ω∞v / OCEANICOS = the full-stack ecosystem body through which human intent
+> can connect to admissible digital and real-world capabilities, act within
+> explicit authority, observe consequences, reconcile them against evidence,
+> preserve what is known and unknown, and continuously create the next verified
+> piece of reality.**
+
+### What Is Ω∞v?
 
 Ω∞v Oceanicos is a system for building trustworthy software through continuous verification and evidence-based evolution.
 
@@ -334,4 +472,4 @@ We welcome contributions in all areas:
 ---
 
 **Status**: MINI kernel establishing — expand only with evidence  
-**Last Updated**: 2026-09-27
+**Last Updated**: 2026-09-28
