@@ -46,6 +46,13 @@ export { buildOmegaCommand, listOmegaWorkers } from './worker-registry.js';
 export type { OmegaWorkerDescriptor } from './worker-registry.js';
 export { admitOmegaIR } from './admission-bridge.js';
 export type { OmegaAdmissionBridgeInput, OmegaAdmissionBridgeResult } from './admission-bridge.js';
+export { admitOmegaConnector } from './connector-admission.js';
+export type {
+  OmegaConnectorAdmissionDecision,
+  OmegaConnectorAdmissionInput,
+  OmegaConnectorAdmissionResult,
+  OmegaConnectorDeclaration,
+} from './connector-admission.js';
 export { runOmegaChangePipeline, resolveBoundedWorkerHandler } from './pipeline.js';
 export type {
   OmegaPipelineInput,
