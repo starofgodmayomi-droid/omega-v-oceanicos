@@ -77,4 +77,18 @@ describe('Ω connector admission boundary', () => {
     assert.equal(result.admitted, false);
     assert.ok(result.issues.length >= 6);
   });
+
+  it('rejects unbounded scope and inline secret-shaped auth references', () => {
+    const result = admitOmegaConnector({
+      connector: { ...connector, scope: ['*'], authRef: 'ghp_inline-secret-value' },
+      authorityVerified: true,
+      policySatisfied: true,
+      approvalVerified: true,
+    });
+
+    assert.equal(result.decision, 'REVIEW');
+    assert.equal(result.admitted, false);
+    assert.ok(result.issues.includes('connector scope must not use an unbounded wildcard'));
+    assert.ok(result.issues.includes('connector authRef must identify secret configuration without containing secret material'));
+  });
 });
