@@ -117,3 +117,7 @@ At head `dd601ebd`, PR #346 remains open and non-draft. GitHub reported **6 succ
 The attached full-stack brief has been translated into [`FULL_STACK_REALITY_ACCESS_2026-09-28.md`](FULL_STACK_REALITY_ACCESS_2026-09-28.md). It expands the capability taxonomy beyond Notion and GitHub while preserving a strict boundary: a connector catalog is not a connected-service inventory, and technical reachability is not human authorization.
 
 The bounded connector lifecycle is `DISCOVER → DECLARE → REVIEW → AUTHORIZE → ADMIT → BOUND → EXECUTE → OBSERVE → RECONCILE → REMEMBER → NEXT`. No connector was activated by this documentation change.
+
+## Discoverability integration
+
+The root and docs READMEs now link the four skill contracts and the full-stack reality-access handoff. This keeps the repository ecosystem navigable without implying that linked capabilities are connected, authorized, deployed, or healthy.

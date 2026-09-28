@@ -620,3 +620,9 @@ ONE BODY ↔ MANY SYSTEMS ↔ BOUNDED ACTION ↔ OBSERVED REALITY
 The implementation boundary is explicit: a broad connector taxonomy does not prove that connectors, accounts, permissions, deployments, or physical-world services exist or are active. Access is not ownership; access is not authority; capability is not permission; permission is not authorization; connection is not execution; execution is not observation; observation is not verification.
 
 The next finite connector transition is `DISCOVER → DECLARE → REVIEW → AUTHORIZE → ADMIT → BOUND → EXECUTE → OBSERVE → RECONCILE → REMEMBER → NEXT`. No external connector was activated and no credentials, payments, deployments, or real-world services were touched.
+
+## 31. Ecosystem discoverability integration — 2026-09-28
+
+The root README and documentation index now expose the Voice Bridge, ƆREADE × Oceanicos Harmonizer, OceanicOS Framework, Value Navigator, and full-stack reality-access handoff as discoverable repository entry points. This is a documentation-only integration; it adds no connector, authority, runtime, deployment, or external side effect.
+
+Commit `3a578ef8` is pushed on `upgrade/voice-bridge` and is included in PR #346.
