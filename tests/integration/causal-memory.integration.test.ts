@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
@@ -37,6 +37,34 @@ const input = (memory: FileCausalMemory, observedState: string | (() => string),
   });
 
 describe('C7 reality attestation → C8 causal memory', () => {
+  it('treats only a missing journal as a healthy empty start', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'omega-c8-read-error-'));
+    const missing = new FileCausalMemory(join(directory, 'missing.jsonl'), { key: 'c8-test-signing-key' });
+    assert.equal(missing.verifyIntegrity(), true);
+    assert.deepEqual(missing.all(), []);
+
+    const directoryPath = join(directory, 'journal-directory');
+    mkdirSync(directoryPath);
+    const unreadable = new FileCausalMemory(directoryPath, { key: 'c8-test-signing-key' });
+    assert.equal(unreadable.verifyIntegrity(), false);
+    assert.deepEqual(unreadable.all(), []);
+    assert.equal(unreadable.replay('c8-missing'), undefined);
+  });
+
+  it('degrades if a previously observed journal disappears during reload', () => {
+    const path = join(mkdtempSync(join(tmpdir(), 'omega-c8-disappeared-')), 'causal.jsonl');
+    const memory = new FileCausalMemory(path, { key: 'c8-test-signing-key' });
+    input(memory, 'S1', 'c8-disappearing-journal');
+    const reader = new FileCausalMemory(path, { key: 'c8-test-signing-key' });
+    assert.equal(reader.verifyIntegrity(), true);
+
+    unlinkSync(path);
+    assert.deepEqual(reader.reload(), []);
+    assert.equal(reader.verifyIntegrity(), false);
+    assert.deepEqual(reader.all(), []);
+    assert.equal(reader.replay('c8-disappearing-journal'), undefined);
+  });
+
   it('persists VERIFIED and replays the exact attestation/provenance record after reload', () => {
     const path = join(mkdtempSync(join(tmpdir(), 'omega-c8-')), 'causal.jsonl');
     const first = new FileCausalMemory(path, { key: 'c8-test-signing-key' });
@@ -91,5 +119,26 @@ describe('C7 reality attestation → C8 causal memory', () => {
     const tampered = new FileCausalMemory(path, { key: 'c8-test-signing-key' });
     assert.equal(tampered.verifyIntegrity(), false);
     assert.equal(tampered.replay('c8-tamper-source'), undefined);
+  });
+
+  it('does not expose a valid prefix after a later journal entry is corrupted', () => {
+    const path = join(mkdtempSync(join(tmpdir(), 'omega-c8-prefix-')), 'causal.jsonl');
+    const memory = new FileCausalMemory(path, { key: 'c8-test-signing-key' });
+    input(memory, 'S1', 'c8-prefix-valid');
+    input(memory, 'S1', 'c8-prefix-corrupted-suffix');
+
+    const reader = new FileCausalMemory(path, { key: 'c8-test-signing-key' });
+    assert.equal(reader.verifyIntegrity(), true);
+    const lines = readFileSync(path, 'utf8').trim().split('\n');
+    const corruptedSuffix = JSON.parse(lines[1] ?? 'null') as { record: { intent: string } };
+    assert.ok(corruptedSuffix);
+    corruptedSuffix.record.intent = 'modified without updating the entry hash';
+    lines[1] = JSON.stringify(corruptedSuffix);
+    writeFileSync(path, `${lines.join('\n')}\n`);
+
+    assert.deepEqual(reader.reload(), []);
+    assert.equal(reader.verifyIntegrity(), false);
+    assert.deepEqual(reader.all(), []);
+    assert.equal(reader.replay('c8-prefix-valid'), undefined);
   });
 });
