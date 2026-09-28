@@ -584,3 +584,18 @@ Updated status ledger:
 | Earned value or market outcome | `UNKNOWN` | No market experiment executed |
 
 The next finite transition is to observe the PR checks once, reconcile each conclusion, and stop. No merge, deployment, or further external mutation follows automatically from a green check.
+
+## 28. Deepest possible compression — 2026-09-28
+
+The user supplied a deeper Ω∞v compression for the Voice Bridge and ƆREADE work. It is preserved as design language and compiled into the canonical repository artifact `docs/upgrades/DEEPEST_POSSIBLE_COMPRESSION_2026-09-28.md`.
+
+The bounded interpretation is:
+
+```text
+ONE BODY → ONE CURRENT → INTENT → EVIDENCE → BOUNDED ACTION
+→ OBSERVATION → RECONCILIATION → VERIFICATION → MEMORY → NEXT → ∞
+```
+
+The artifact preserves the user's central law—`REALITY DECIDES`—while keeping reality distinct from models, plans, code, AI, memory, CI, tests, attestations, and simulations. It names Voice Bridge as a human-controlled expression map and ƆREADE as symbolic/cultural language with Nigerian Pidgin warmth; neither is treated as identity, supernatural authority, proof, consent, or permission.
+
+No runtime capability was added. The next finite repository action is to commit this documentation artifact and update PR #346; PR checks, merge, deployment, health, and earned value remain separate observations.
