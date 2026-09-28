@@ -426,3 +426,125 @@ Design context: living-soul specification preserved as architecture, not runtime
 Active: parallel build + mood job; result not yet observed.
 Next Δ: reconcile the active parallel result, then select one finite repair/verification target.
 ```
+
+
+## 26. Current Voice Bridge → GitHub ecosystem upgrade — 2026-09-28
+
+This section supersedes stale branch/HEAD statements above for the current work cycle while preserving the historical record.
+
+### Intent and scope
+
+```text
+WHOLE CONVERSATION → MAX FULL-STACK COMPRESSION → GITHUB ECOSYSTEM UPGRADE
+```
+
+The user requested a repository-centered upgrade of the human voice, ƆREADE/Pidgin harmonization, OceanicOS framework, and Value Navigator contracts toward the canonical repository `starofgodmayomi-droid/omega-v-oceanicos`.
+
+### Current observed state
+
+```text
+Repository:     starofgodmayomi-droid/omega-v-oceanicos
+Local clone:    /home/ubuntu/omega-v-oceanicos
+Branch:         upgrade/voice-bridge
+Base:           origin/main at inspection time
+External write: NOT EXECUTED
+Commit/push:    NOT EXECUTED
+Deployment:     NOT EXECUTED
+```
+
+The user-provided “Ω∞v — Deeper Max Compression” brief was received twice; both files were byte-for-byte identical. It is treated as supplied design intent and translated into bounded repository contracts, not as proof of universal capability, consciousness, supernatural authority, wealth, deployment, or completion.
+
+### Compressed invariant
+
+```text
+HUMAN INTENT → ΩIR / CONTRACT → EVIDENCE → VERIFY → AUTHORITY → POLICY
+→ ADMISSION → BOUNDED CAPABILITY → EXECUTE → OBSERVE → RECONCILE
+→ ATTEST → PROVENANCE → MEMORY → REPLAY → LEARN → RECOMPILE → NEXT
+```
+
+```text
+REALITY ≠ MODEL ≠ PLAN ≠ CLAIM ≠ CODE ≠ TEST ≠ CI
+≠ SIGNATURE ≠ ATTESTATION ≠ SIMULATION ≠ MEMORY
+
+CAPABILITY ≠ AUTHORITY
+PROPOSAL ≠ ACTION
+EXECUTION ≠ OBSERVATION
+OBSERVATION ≠ VERIFICATION
+VERIFICATION ≠ AUTHORIZATION
+```
+
+### Repository changes
+
+| Surface | Result | Status |
+|---|---|---|
+| `skills/voice-bridge/SKILL.md` | Added one-human-source/many-forms expression contract and status ladder | `APPLIED` |
+| `skills/oread-pidgin-harmonizer/SKILL.md` | Added symbolic-to-bounded translation contract with cultural and evidence boundaries | `APPLIED` |
+| `skills/oceanicos-framework/SKILL.md` | Added OUPEMLI, finite transition, evidence, and system-of-record contract | `APPLIED` |
+| `skills/oceanicos-value-navigator/SKILL.md` | Added reality-bound value loop, OUPEMLI-E, and authority/evidence record | `APPLIED` |
+| `scripts/validate-skill-contracts.mjs` | Added deterministic validation for the four skill manifests | `APPLIED` |
+| `package.json` | Added `pnpm validate:skills` | `APPLIED` |
+| `docs/upgrades/VOICE_BRIDGE_SKILLS_UPGRADE_2026-09-28.md` | Added scope, provenance, acceptance, and limitation record | `APPLIED` |
+
+No runtime API, persistence, worker, authorization, deployment, or external-system behavior was changed.
+
+### Executable evidence
+
+```text
+pnpm validate:skills  → validated 4 Oceanicos skill contracts
+pnpm format:check     → PASSED
+ git diff --check      → PASSED
+pnpm test             → 68 passed, 0 failed
+pnpm build            → PASSED
+```
+
+The full test suite covers the existing API, OREADE, Value Navigator, worker, verification, coordination, memory, web proxy, and publication-authorization boundaries. These results prove the tested local repository behavior only; they do not prove external deployment, production health, market demand, earned income, or universal ecosystem completion.
+
+### GitHub ecosystem mapping
+
+```text
+VOICE / HUMAN INTENT
+  → skill contracts and design language
+  → GitHub branch / reviewable diff
+  → repository validation and CI evidence
+  → protected mainline (future authorized transition)
+  → optional runtime deployment (separate authority)
+  → observation / reconciliation
+  → provenance / memory / next finite change
+```
+
+GitHub remains the implementation, history, CI, and provenance layer. Runtime remains the execution/observation layer. Reconciliation is the bridge. Reality remains the final court. The repository does not become the whole of reality by containing more concepts.
+
+### Status ledger
+
+| Claim | Status | Limitation |
+|---|---|---|
+| Four skill contracts exist in the current worktree | `VERIFIED` | File existence and content validated locally |
+| Skill contract validator passes | `VERIFIED` | Validates declared tokens/frontmatter only |
+| Existing repository tests pass | `VERIFIED` | 68 local tests; bounded to tested cases |
+| Upgrade is committed or pushed | `NOT_EXECUTED` | No commit or GitHub write performed |
+| Upgrade is merged into `main` | `NOT_EXECUTED` | No PR/merge performed |
+| GitHub ecosystem is deployed/healthy | `UNKNOWN` | No deployment or production observation made |
+| Value has been earned | `UNKNOWN` | No market or exchange experiment was executed |
+| Universal intelligence/autonomy exists | `UNVERIFIED` | Symbolic/design language only |
+
+### Rollback
+
+The current work is reversible through ordinary working-tree restore/removal before any commit:
+
+```bash
+git restore -- package.json skills/oceanicos-value-navigator/SKILL.md
+rm -rf skills/voice-bridge skills/oread-pidgin-harmonizer skills/oceanicos-framework
+rm -f scripts/validate-skill-contracts.mjs
+rm -f docs/upgrades/VOICE_BRIDGE_SKILLS_UPGRADE_2026-09-28.md
+```
+
+Do not execute rollback without confirming the intended scope; the existing historical sections of this file should be preserved.
+
+### Next finite transition
+
+Review the current diff and, if desired, create a normal GitHub pull request from `upgrade/voice-bridge` into `main`. That would be a reviewable repository action, not proof of merge, deployment, health, or real-world value.
+
+```text
+TARGET → EXPECTED BEHAVIOR → ACCEPTANCE TEST
+→ AUTHORITY → STOP CONDITION → ROLLBACK
+```

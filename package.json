@@ -8,6 +8,7 @@
     "typecheck": "pnpm --recursive run build && pnpm --recursive run typecheck",
     "format:check": "git diff --check",
     "audit": "node scripts/oceanicos-audit.mjs",
+    "validate:skills": "node scripts/validate-skill-contracts.mjs",
     "lint": "pnpm typecheck",
     "type-check": "pnpm typecheck",
     "verify": "pnpm build && node -e \"const { executeOceanicosMaxExpansion } = require('./packages/mini/dist/index.js'); executeOceanicosMaxExpansion();\"",
