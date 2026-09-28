@@ -548,3 +548,39 @@ Review the current diff and, if desired, create a normal GitHub pull request fro
 TARGET → EXPECTED BEHAVIOR → ACCEPTANCE TEST
 → AUTHORITY → STOP CONDITION → ROLLBACK
 ```
+
+## 27. GitHub publication reconciliation — 2026-09-28
+
+The previously proposed next transition was executed within the user's repository scope.
+
+```text
+Local commits:
+  3686493b docs: compress voice bridge into github ecosystem
+  18f91720 docs: add max compression handoff
+Remote branch:
+  origin/upgrade/voice-bridge
+Pull request:
+  #346 — https://github.com/starofgodmayomi-droid/omega-v-oceanicos/pull/346
+Base:
+  main
+Merge:
+  NOT EXECUTED
+Deployment:
+  NOT EXECUTED
+```
+
+Observed GitHub state: PR #346 is open, non-draft, and points at head `18f91720`. GitHub Actions checks were observed running or queued at the time of inspection, including CodeQL, Verification Pipeline, Windows compatibility, Compose configuration, and Ω∞v Verification CI. Their final conclusions are not yet observed and must not be inferred from local green tests or workflow start state.
+
+Updated status ledger:
+
+| Claim | Status | Evidence / limitation |
+|---|---|---|
+| Upgrade committed locally | `VERIFIED` | Commits `3686493b` and `18f91720` |
+| Upgrade pushed to GitHub | `VERIFIED` | `origin/upgrade/voice-bridge` resolves to `18f91720` |
+| Pull request opened | `VERIFIED` | PR #346, open and non-draft |
+| GitHub CI completed successfully | `UNKNOWN` | Checks were still running/queued at observation time |
+| Upgrade merged into `main` | `NOT_EXECUTED` | No merge performed |
+| Deployment and production health | `UNKNOWN` | No deployment target selected or probed |
+| Earned value or market outcome | `UNKNOWN` | No market experiment executed |
+
+The next finite transition is to observe the PR checks once, reconcile each conclusion, and stop. No merge, deployment, or further external mutation follows automatically from a green check.
