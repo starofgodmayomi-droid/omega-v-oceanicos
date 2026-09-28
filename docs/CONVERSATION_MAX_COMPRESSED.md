@@ -605,3 +605,18 @@ No runtime capability was added. The next finite repository action is to commit 
 A subsequent observation of PR #346 at head `dd601ebd` found **6 successful checks, 3 pending checks, 0 failing checks, 0 cancelled checks, and 0 skipped checks**. Successful checks include CodeQL, coverage, Ω∞v Verification CI, bounded full-stack worker verification, security analysis, and compose configuration. The remaining pending checks are Verification Pipeline variants, including Windows and verification jobs.
 
 Status remains `OPEN` and non-draft. This is evidence about the current GitHub check state only. It does not establish merge, deployment, production health, or earned value. The next transition remains one bounded status observation after the pending checks conclude; no merge or deployment follows automatically.
+
+## 30. Full-stack reality-access extraction — 2026-09-28
+
+The attached `pasted_content_3.txt` was extracted and translated into `docs/upgrades/FULL_STACK_REALITY_ACCESS_2026-09-28.md`.
+
+Its central claim is preserved as a capability-plane design:
+
+```text
+ONE BODY ↔ MANY SYSTEMS ↔ BOUNDED ACTION ↔ OBSERVED REALITY
+↔ VERIFIED MEMORY ↔ NEXT
+```
+
+The implementation boundary is explicit: a broad connector taxonomy does not prove that connectors, accounts, permissions, deployments, or physical-world services exist or are active. Access is not ownership; access is not authority; capability is not permission; permission is not authorization; connection is not execution; execution is not observation; observation is not verification.
+
+The next finite connector transition is `DISCOVER → DECLARE → REVIEW → AUTHORIZE → ADMIT → BOUND → EXECUTE → OBSERVE → RECONCILE → REMEMBER → NEXT`. No external connector was activated and no credentials, payments, deployments, or real-world services were touched.

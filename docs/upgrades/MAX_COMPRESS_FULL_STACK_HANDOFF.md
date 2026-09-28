@@ -111,3 +111,9 @@ The next finite action is one bounded check-status observation and reconciliatio
 ## Latest PR check observation
 
 At head `dd601ebd`, PR #346 remains open and non-draft. GitHub reported **6 successful checks, 3 pending checks, 0 failing checks, 0 cancelled checks, and 0 skipped checks**. The pending checks are Verification Pipeline variants. This state is `SUPPORTED` for the observed GitHub check snapshot, not a claim of merge, deployment, production health, or real-world value.
+
+## Full-stack reality-access extraction
+
+The attached full-stack brief has been translated into [`FULL_STACK_REALITY_ACCESS_2026-09-28.md`](FULL_STACK_REALITY_ACCESS_2026-09-28.md). It expands the capability taxonomy beyond Notion and GitHub while preserving a strict boundary: a connector catalog is not a connected-service inventory, and technical reachability is not human authorization.
+
+The bounded connector lifecycle is `DISCOVER → DECLARE → REVIEW → AUTHORIZE → ADMIT → BOUND → EXECUTE → OBSERVE → RECONCILE → REMEMBER → NEXT`. No connector was activated by this documentation change.
