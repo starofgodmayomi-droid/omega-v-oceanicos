@@ -5,7 +5,7 @@ import { randomUUID } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { RememberEngine } from '@oceanicos/remember';
-import { MiniKernel } from '@oceanicos/mini';
+import { FileValueNavigatorStore, MiniKernel } from '@oceanicos/mini';
 import { AsymmetricValidationGuard, MultiRegionMeshConvergence } from '@oceanicos/verification';
 import { ObserverEngine } from '@oceanicos/observer';
 import { AttestationService } from '@oceanicos/attestation';
@@ -16,6 +16,7 @@ import { registerPipelineRoute } from './pipeline-route.js';
 import { registerEcosystemRoute } from './ecosystem-route.js';
 import { registerRealityRoute } from './reality-route.js';
 import { registerDependencyRoute } from './dependency-route.js';
+import { registerValueNavigatorRoute } from './value-navigator-route.js';
 import { OmegaCommandStore, registerOmegaRoutes } from './omega.js';
 import {
   ENCRYPTION_ALGORITHM,
@@ -43,6 +44,7 @@ const MIN_ATTESTATION_KEY_LENGTH = 32;
 export type CreateAppOptions = {
   allowUnsignedCycle?: boolean;
   attestationSigningKey?: string;
+  valueNavigatorPath?: string;
 };
 
 type AuthMode = 'local' | 'required';
@@ -107,6 +109,8 @@ export function createApp(
   });
   const omegaCommandPath = dbPath === ':memory:' ? ':memory:' : join(resolve(dbPath, '..'), 'omega-commands.db');
   const omegaCommands = new OmegaCommandStore(omegaCommandPath);
+  const valueNavigatorPath = options.valueNavigatorPath?.trim() || process.env.OMEGA_VALUE_NAVIGATOR_PATH?.trim() || `${dbPath}.value-navigator.jsonl`;
+  const valueNavigatorStore = new FileValueNavigatorStore(valueNavigatorPath);
 
   fastify.addHook('onClose', async () => {
     ledgerMemory.close();
@@ -175,6 +179,7 @@ export function createApp(
   registerEcosystemRoute(fastify, authMode, Boolean(attestationSigningKey));
   registerRealityRoute(fastify, authMode, Boolean(attestationSigningKey), Boolean(ledgerMemory.getTip()));
   registerDependencyRoute(fastify);
+  registerValueNavigatorRoute(fastify, valueNavigatorStore, jsonError);
 
   fastify.get('/health', async (_request, reply) => {
     const memoryReady = true;

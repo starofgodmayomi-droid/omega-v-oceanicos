@@ -55,6 +55,21 @@ export type {
 } from './pipeline.js';
 export { FileCausalMemory, createRealityAttestation, verifyRealityAttestation } from './causal-memory.js';
 export type { CausalMemory, CausalMemoryEntry, RealityAttestation } from './causal-memory.js';
+export {
+  createValueNavigatorProposal,
+  observeValueNavigatorProposal,
+  FileValueNavigatorStore,
+} from './value-navigator.js';
+export type {
+  ValueNavigatorDraft,
+  ValueNavigatorEntry,
+  ValueNavigatorObservationInput,
+  ValueNavigatorPhase,
+  ValueNavigatorProposalInput,
+  ValueNavigatorStatus,
+  ValueNavigatorStore,
+  ValuePotentialHypothesis,
+} from './value-navigator.js';
 
 export function executeOceanicosMaxExpansion(): CryptographicBlock {
   const kernelChain = new PluralisticHashChain();

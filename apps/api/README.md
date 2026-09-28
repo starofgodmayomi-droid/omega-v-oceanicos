@@ -51,6 +51,17 @@ policy, coordination policy, event-log recovery, rotation state, and bounded
 coverage. A corrupt snapshot or partial event log degrades readiness rather
 than being silently treated as a clean store.
 
+The Value Navigator appends local `OmegaChangeRecord` proposals and observations
+to a separate hash-chained JSONL journal. Set `OMEGA_VALUE_NAVIGATOR_PATH` to
+choose its location; otherwise the path is `{dbPath}.value-navigator.jsonl`.
+The journal is tamper-evident for accidental edits/corruption, not a signature,
+backup, distributed store, or proof of truth. A damaged journal fails closed.
+New directories/files use restrictive local permissions where supported. The
+journal is bounded to 5,000 entries and 100 observations per proposal; do not
+put secrets or sensitive personal data in its caller-supplied evidence fields.
+The collection route returns at most the most recent 200 records; the
+per-proposal route returns that proposal's bounded complete history.
+
 Operator controls:
 
 ```text
@@ -121,7 +132,20 @@ GET  /v1/mesh/simulate
 POST /v1/auth/keypair
 POST /v1/block/sign
 POST /v1/block/verify-signature
+GET  /v1/value-navigator/proposals
+GET  /v1/value-navigator/proposals/:proposalId
+POST /v1/value-navigator/proposals
+POST /v1/value-navigator/proposals/:proposalId/observe
 ```
+
+Value Navigator proposals always remain `decision: REVIEW`,
+`authorized: false`, and `NOT_EXECUTED`. Observations are supplied by the
+caller; a `VERIFIED` result means only that the submitted source/evidence and
+normalized outcome match the stated hypothesis. It does not prove demand,
+execution, earnings, deployment, or external-world truth. The API performs no
+outbound observation, shell operation, outreach, spending, or proposal
+execution. Writes inherit the existing admin bearer boundary in required-auth
+mode. See [the repository contract](../../skills/oceanicos-value-navigator/references/repository-contract.md).
 
 ## Static client
 
