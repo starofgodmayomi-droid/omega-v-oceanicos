@@ -68,3 +68,14 @@ persists those records in a local append-only, hash-chained JSONL journal with
 bounded text/evidence and record counts. A match verifies only the stated
 hypothesis against the supplied observation; it does not prove demand, revenue,
 execution, external truth, deployment, or health.
+
+## Connector observation
+
+`admitOmegaConnector` remains a non-executing admission boundary.
+`executeAdmittedConnector` invokes an explicit handler only after admission
+succeeds. `observeAdmittedConnector` reconciles the declared expected
+observation against a supplied actual observation as `VERIFIED`, `DIVERGENT`,
+`UNKNOWN`, or `NOT_EXECUTED`. No handler is inferred. Unadmitted connectors
+cannot become `VERIFIED`. A match verifies only the admitted observation
+receipt; it does not prove deployment, revenue, secret custody, or an
+undeclared network call.

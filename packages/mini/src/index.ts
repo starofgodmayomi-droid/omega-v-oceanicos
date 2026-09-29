@@ -53,6 +53,15 @@ export type {
   OmegaConnectorAdmissionResult,
   OmegaConnectorDeclaration,
 } from './connector-admission.js';
+export { executeAdmittedConnector, observeAdmittedConnector } from './connector-observation.js';
+export type {
+  ConnectorExecutionObservation,
+  ConnectorHandler,
+  ConnectorObservationResult,
+  ConnectorRealityStatus,
+  ExecuteAdmittedConnectorInput,
+  ObserveAdmittedConnectorInput,
+} from './connector-observation.js';
 export { runOmegaChangePipeline, resolveBoundedWorkerHandler } from './pipeline.js';
 export type {
   OmegaPipelineInput,
