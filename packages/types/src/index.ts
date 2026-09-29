@@ -140,6 +140,45 @@ export interface OmegaChangeRecord {
   readonly createdAt: string;
 }
 
+/** Machine-readable reality state for declarative verification receipts. */
+export type RealityStatus = 'VERIFIED' | 'DIVERGENT' | 'UNKNOWN' | 'NOT_EXECUTED';
+
+export interface ObservationEnvelope<T = unknown> {
+  readonly id: string;
+  readonly timestamp: string;
+  readonly subject: string;
+  readonly payload: T;
+  readonly confidence: number;
+  readonly provenanceSignature: string;
+}
+
+export interface VerificationPredicate {
+  readonly ruleId: string;
+  readonly expression: string;
+  readonly evaluatedTrue: boolean;
+  readonly evidencePath: string;
+}
+
+export interface VerificationReceipt {
+  readonly observationId: string;
+  readonly verifiedAt: string;
+  readonly status: RealityStatus;
+  readonly passedPredicates: readonly VerificationPredicate[];
+  readonly failedPredicates: readonly VerificationPredicate[];
+  readonly digest: string;
+}
+
+export interface ChangeTransaction {
+  readonly stateBefore: Record<string, unknown>;
+  readonly intent: string;
+  readonly evidenceHash: string;
+  readonly authoritySignature: string;
+  readonly policyId: string;
+  readonly decision: ChangeDecision;
+  readonly stateAfter: Record<string, unknown>;
+  readonly attestationToken?: string;
+}
+
 export * from './omega-ir.js';
 export * from './change-calculus.js';
 export * from './worker-registry.js';

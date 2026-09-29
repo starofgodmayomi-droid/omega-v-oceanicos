@@ -10,6 +10,7 @@ interface ISqliteDatabase {
   close?(): void;
   prepare(sql: string): {
     get(...params: any[]): any;
+    all(...params: any[]): any[];
     run(...params: any[]): any;
     all?(...params: any[]): any[];
   };

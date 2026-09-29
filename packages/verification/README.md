@@ -23,6 +23,12 @@ implementation, and a rule whose input is absent from the observation. Both
 produce an evidence step naming what could not be checked, with
 `severity: 'critical'` and confidence `0`.
 
+The package also exports `DeclarativeVerificationEngine`, a bounded receipt
+engine for `ObservationEnvelope` values. Its baseline accelerator-inventory
+and silicon-yield predicates fail closed, preserve divergent/unknown states,
+and produce a SHA-256 receipt digest. It is additive to the existing rule
+registry and attestation APIs; it does not authorize or execute a transaction.
+
 This is deliberate and it is the point of the package. A verification verdict
 does not stay local: `summary.passed` becomes an attestation's `verified`
 field, that attestation is cryptographically signed, and a signed attestation

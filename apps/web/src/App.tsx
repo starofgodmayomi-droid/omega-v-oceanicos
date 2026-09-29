@@ -82,6 +82,7 @@ export function App() {
   const [meshLoading, setMeshLoading] = useState(false);
 
   const [moodData, setMoodData] = useState<any>(null);
+  const [ecosystemBody, setEcosystemBody] = useState<any>(null);
   const [attestationData, setAttestationData] = useState<any>(null);
   const [attestLoading, setAttestLoading] = useState(false);
   const [kernelCapabilities, setKernelCapabilities] = useState<KernelCapabilitySnapshot | null>(null);
@@ -137,11 +138,20 @@ export function App() {
       /* ambient */
     }
   };
+  const fetchEcosystemBody = async () => {
+    try {
+      const data = await apiRequest<any>('/v1/ecosystem/body');
+      if (data.success) setEcosystemBody(data);
+    } catch {
+      /* ambient — the API may be mounted separately from the web surface */
+    }
+  };
 
   useEffect(() => {
     fetchMinerStatus();
     fetchKernelCapabilities();
     fetchMood();
+    fetchEcosystemBody();
 
     let es: EventSource | null = null;
     let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
@@ -562,7 +572,27 @@ export function App() {
       label: 'Ecosystem',
       subtitle: 'Capability layers and evidence',
       state: 'available' as const,
-      detail: <EcosystemPanel />,
+      detail: (
+        <>
+          {ecosystemBody && (
+            <section className="ecosystem-body-strip" aria-label="Unified full-stack ecosystem body">
+              <div className="ecosystem-body-heading">
+                <span>Ω∞v FULL-STACK BODY · {ecosystemBody.bodyVersion}</span>
+                <strong>{ecosystemBody.status}</strong>
+              </div>
+              <div className="ecosystem-body-layers">
+                {Object.entries(ecosystemBody.layers ?? {}).map(([name, layer]: [string, any]) => (
+                  <span key={name} title={layer.contract ?? layer.status}>
+                    <b>{name}</b> {layer.status}
+                  </span>
+                ))}
+              </div>
+              <small>{ecosystemBody.expansion?.moduleInvariant} · read-only · bounded · append-only</small>
+            </section>
+          )}
+          <EcosystemPanel />
+        </>
+      ),
     },
     {
       id: 'dependencies',
