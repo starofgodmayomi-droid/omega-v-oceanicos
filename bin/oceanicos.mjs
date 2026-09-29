@@ -125,8 +125,10 @@ async function handleStatus() {
     if (res.ok) {
       const data = await res.json();
       console.log(`\n${ANSI.bold}=== LIVE API SERVICE ===${ANSI.reset}`);
-      console.log(`  ${ANSI.green}Service Status${ANSI.reset}        : ONLINE`);
+      const integrityValid = data.integrity?.valid !== false;
+      console.log(`  ${integrityValid ? ANSI.green : ANSI.red}Service Status${ANSI.reset}        : ${data.status ?? 'UNKNOWN'}`);
       console.log(`  ${ANSI.cyan}Ledger Tip${ANSI.reset}            : #${data.tip?.index ?? 'GENESIS'} [${data.tip?.hash ?? 'NONE'}]`);
+      console.log(`  ${integrityValid ? ANSI.green : ANSI.red}Ledger Integrity${ANSI.reset}      : ${data.integrity ? (data.integrity.valid ? `VALID height=${data.integrity.height}` : `DEGRADED ${data.integrity.reason ?? ''}`) : 'NOT_REPORTED'}`);
     }
   } catch {
     console.log(`\n${ANSI.dim}[Note: Local Fastify API on :5000 is not running or unreachable]${ANSI.reset}`);

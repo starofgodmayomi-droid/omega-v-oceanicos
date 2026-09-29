@@ -24,6 +24,27 @@ export interface IMiniBlock {
   readonly nonce: number;
 }
 
+/**
+ * Independent ledger-chain verification evidence.
+ * Observation of a tip (`getTip`) is not this result.
+ */
+export type LedgerIntegrityReason =
+  | 'HASH_MISMATCH'
+  | 'PREVIOUS_HASH_MISMATCH'
+  | 'POW_INVALID'
+  | 'INDEX_GAP'
+  | 'GENESIS_MISMATCH'
+  | 'PARSE_FAILURE';
+
+export interface LedgerIntegrity {
+  readonly valid: boolean;
+  readonly height: number;
+  readonly genesisHash: string | null;
+  readonly tipHash: string | null;
+  readonly brokenAt?: number;
+  readonly reason?: LedgerIntegrityReason;
+}
+
 export interface VerificationResultSummary {
   readonly passed: boolean;
   readonly confidence: number;

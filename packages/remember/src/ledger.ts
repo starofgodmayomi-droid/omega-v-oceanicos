@@ -53,6 +53,10 @@ export class PluralisticHashChain {
 
   public commitState(receipt: AdvancedVerificationReceipt, options: { signal?: AbortSignal } = {}): CryptographicBlock {
     const lastBlock = this.ledger[this.ledger.length - 1];
+    const chain = this.verifyChain();
+    if (!lastBlock || !chain.valid) {
+      throw new Error(`ledger integrity degraded: ${chain.reason ?? 'EMPTY'}`);
+    }
     const currentIndex = lastBlock.index + 1;
     const currentTimestamp = new Date().toISOString();
 
@@ -99,5 +103,92 @@ export class PluralisticHashChain {
 
   public getFullChain(): CryptographicBlock[] {
     return this.ledger;
+  }
+
+  /**
+   * Recompute every in-memory block hash. Genesis (index 4101) is not
+   * proof-of-work gated; subsequent blocks must keep the `00` prefix.
+   * Observation of `getFullChain()` is not this result.
+   */
+  public verifyChain(): {
+    valid: boolean;
+    height: number;
+    genesisHash: string | null;
+    tipHash: string | null;
+    brokenAt?: number;
+    reason?: 'HASH_MISMATCH' | 'PREVIOUS_HASH_MISMATCH' | 'POW_INVALID' | 'INDEX_GAP' | 'GENESIS_MISMATCH';
+  } {
+    if (this.ledger.length === 0) {
+      return { valid: true, height: 0, genesisHash: null, tipHash: null };
+    }
+
+    let previousHash = this.defaultGenesisHash;
+    let expectedIndex = 4101;
+    let genesisHash: string | null = null;
+
+    for (const block of this.ledger) {
+      if (block.index !== expectedIndex) {
+        return {
+          valid: false,
+          height: this.ledger.length,
+          genesisHash,
+          tipHash: null,
+          brokenAt: block.index,
+          reason: 'INDEX_GAP',
+        };
+      }
+      if (expectedIndex === 4101 && block.previousHash !== this.defaultGenesisHash) {
+        return {
+          valid: false,
+          height: this.ledger.length,
+          genesisHash,
+          tipHash: null,
+          brokenAt: block.index,
+          reason: 'GENESIS_MISMATCH',
+        };
+      }
+      if (block.previousHash !== previousHash) {
+        return {
+          valid: false,
+          height: this.ledger.length,
+          genesisHash,
+          tipHash: null,
+          brokenAt: block.index,
+          reason: 'PREVIOUS_HASH_MISMATCH',
+        };
+      }
+      const expectedHash = this.calculateBlockHash(
+        block.index,
+        block.timestamp,
+        block.payload,
+        block.previousHash,
+        block.nonce,
+      );
+      if (expectedHash !== block.hash) {
+        return {
+          valid: false,
+          height: this.ledger.length,
+          genesisHash,
+          tipHash: null,
+          brokenAt: block.index,
+          reason: 'HASH_MISMATCH',
+        };
+      }
+      if (expectedIndex !== 4101 && !block.hash.startsWith('00')) {
+        return {
+          valid: false,
+          height: this.ledger.length,
+          genesisHash,
+          tipHash: null,
+          brokenAt: block.index,
+          reason: 'POW_INVALID',
+        };
+      }
+      if (expectedIndex === 4101) genesisHash = block.hash;
+      previousHash = block.hash;
+      expectedIndex += 1;
+    }
+
+    return { valid: true, height: this.ledger.length, genesisHash, tipHash: previousHash };
   }
 }
