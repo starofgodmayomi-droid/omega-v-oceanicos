@@ -53,6 +53,18 @@ export type {
   OmegaConnectorAdmissionResult,
   OmegaConnectorDeclaration,
 } from './connector-admission.js';
+export { inspectGithubUpgrade } from './github-upgrade.js';
+export type {
+  GithubLayerVerdict,
+  GithubOpenPullRequest,
+  GithubRealitySnapshot,
+  GithubUpgradeDecision,
+  GithubUpgradeInspectionInput,
+  GithubUpgradeInspectionResult,
+  GithubUpgradeIntent,
+  GithubUpgradeLayer,
+  GithubUpgradeStatus,
+} from './github-upgrade.js';
 export { runOmegaChangePipeline, resolveBoundedWorkerHandler } from './pipeline.js';
 export type {
   OmegaPipelineInput,
@@ -83,7 +95,7 @@ export function executeOceanicosMaxExpansion(): CryptographicBlock {
   const telemetry = observePlanetaryBase();
   const verificationReceipt = verifyPlanetarySovereignty(telemetry);
   const securelyMintedBlock = kernelChain.commitState(verificationReceipt);
-  console.log(`\nΩ ➔ [👁 ${Math.round(telemetry.siliconYield * 100)}% | ✓ ${verificationReceipt.status} | 🧠 #${securelyMintedBlock.index}] ── LIVE ── 0 ERRORS ── $`);
+  console.log(`\nΩ ➝ [👁 ${Math.round(telemetry.siliconYield * 100)}% | ✓ ${verificationReceipt.status} | 🧠 #${securelyMintedBlock.index}] ── LIVE ── 0 ERRORS ── $`);
   console.log(`   [BLOCK HASH]      : ${securelyMintedBlock.hash}`);
   console.log(`   [PREVIOUS HASH]   : ${securelyMintedBlock.previousHash}`);
   console.log(`   [STATE ROOT]      : ${securelyMintedBlock.payload.stateRootHash}`);

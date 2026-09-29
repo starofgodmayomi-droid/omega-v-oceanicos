@@ -20,6 +20,10 @@
     "src/compiler.ts",
     "src/ir-validator.ts",
     "src/pipeline.ts",
-    "src/value-navigator.ts"
+    "src/value-navigator.ts",
+    "src/github-upgrade.ts",
+    "src/connector-admission.ts",
+    "src/admission-bridge.ts",
+    "src/causal-memory.ts"
   ]
 }
