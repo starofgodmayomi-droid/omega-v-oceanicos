@@ -17,6 +17,7 @@ import { registerEcosystemRoute } from './ecosystem-route.js';
 import { registerRealityRoute } from './reality-route.js';
 import { registerDependencyRoute } from './dependency-route.js';
 import { registerValueNavigatorRoute } from './value-navigator-route.js';
+import { registerConnectorObservationRoute } from './connector-observation-route.js';
 import { OmegaCommandStore, registerOmegaRoutes } from './omega.js';
 import {
   ENCRYPTION_ALGORITHM,
@@ -180,6 +181,7 @@ export function createApp(
   registerRealityRoute(fastify, authMode, Boolean(attestationSigningKey), Boolean(ledgerMemory.getTip()));
   registerDependencyRoute(fastify);
   registerValueNavigatorRoute(fastify, valueNavigatorStore, jsonError);
+  registerConnectorObservationRoute(fastify, jsonError);
 
   fastify.get('/health', async (_request, reply) => {
     const memoryReady = true;
