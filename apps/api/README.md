@@ -111,8 +111,13 @@ GET  /attest/policy
 ```
 
 Revocations are operator-mediated local control records separate from the
-cryptographic attestation. The current runtime keeps a bounded in-process
-registry; distributed revocation consistency is not claimed.
+cryptographic attestation. With file-backed persistence enabled, the API uses
+the shared SQLite command volume as an atomic revocation registry: independent
+API instances observe new records and reject duplicate writes. Responses label
+this evidence as `multi-process-single-volume` and `verified: true`. This does
+not claim cross-host ordering, replica agreement, external storage, backup
+consistency, or deployment health. Memory mode remains `single-process` and
+unverified.
 
 ## Core runtime routes
 

@@ -109,6 +109,7 @@ export function createApp(
   });
   const omegaCommandPath = dbPath === ':memory:' ? ':memory:' : join(resolve(dbPath, '..'), 'omega-commands.db');
   const omegaCommands = new OmegaCommandStore(omegaCommandPath);
+  const durableRevocationStore = persistenceEnabled && dbPath !== ':memory:' ? omegaCommands : null;
   const valueNavigatorPath = options.valueNavigatorPath?.trim() || process.env.OMEGA_VALUE_NAVIGATOR_PATH?.trim() || `${dbPath}.value-navigator.jsonl`;
   const valueNavigatorStore = new FileValueNavigatorStore(valueNavigatorPath);
 
@@ -133,6 +134,11 @@ export function createApp(
       const record = value as RevocationRecord;
       revocations.set(record.attestationId, record);
     }
+  }
+  if (durableRevocationStore) {
+    for (const record of revocations.values()) durableRevocationStore.recordRevocation(record);
+    revocations.clear();
+    for (const record of durableRevocationStore.listRevocations()) revocations.set(record.attestationId, record);
   }
   const streamClients = new Set<(block: any) => boolean>();
   let minerInterval: NodeJS.Timeout | null = null;
@@ -398,26 +404,51 @@ export function createApp(
   fastify.post('/jobs/:jobId/complete', { preHandler: requireJobAccess }, async (request: any, reply) => { try { return { success: true, ...localJobLedger.complete(request.params.jobId, request.body?.workerId, String(request.body?.resultSummary ?? ''), jobProvenance(request)) }; } catch (error) { return jobError(reply, error); } });
   fastify.post('/jobs/:jobId/fail', { preHandler: requireJobAccess }, async (request: any, reply) => { try { return { success: true, ...localJobLedger.fail(request.params.jobId, request.body?.workerId, String(request.body?.errorClass ?? ''), jobProvenance(request)) }; } catch (error) { return jobError(reply, error); } });
 
-  fastify.get('/attest/revocations', { preHandler: requireReadAccess }, async () => ({ success: true, data: [...revocations.values()], meta: { integrity: 'intact', revision: revocations.size } }));
+  const currentRevocations = (): readonly RevocationRecord[] => {
+    if (!durableRevocationStore) return [...revocations.values()];
+    revocations.clear();
+    for (const record of durableRevocationStore.listRevocations()) revocations.set(record.attestationId, record);
+    return [...revocations.values()];
+  };
+  fastify.get('/attest/revocations', { preHandler: requireReadAccess }, async () => {
+    const records = currentRevocations();
+    return {
+      success: true,
+      data: records,
+      meta: {
+        integrity: 'intact',
+        revision: records.length,
+        consistency: durableRevocationStore ? 'multi-process-single-volume' : 'single-process',
+        verified: Boolean(durableRevocationStore),
+      },
+    };
+  });
   fastify.post('/attest/revoke', { preHandler: requireAdminAccess }, async (request: any, reply) => {
     const attestationId = String(request.body?.attestationId ?? '').trim();
     const reason = String(request.body?.reason ?? '').trim();
     const revokedBy = String(request.body?.revokedBy ?? request.headers['x-omega-operator-id'] ?? 'operator').trim();
     if (!attestationId || !reason) return jsonError(reply, 400, 'INVALID_REVOCATION');
+    currentRevocations();
     if (revocations.has(attestationId)) return jsonError(reply, 409, 'ATTESTATION_ALREADY_REVOKED');
     const record: RevocationRecord = { id: `rev-${randomUUID()}`, attestationId, reason, revokedBy, revokedAt: new Date().toISOString() };
+    if (durableRevocationStore && !durableRevocationStore.recordRevocation(record)) {
+      currentRevocations();
+      return jsonError(reply, 409, 'ATTESTATION_ALREADY_REVOKED');
+    }
     revocations.set(attestationId, record);
     const persistedSnapshot = { ...snapshot.snapshot, revocations: [...revocations.values()] };
     const snapshotWritten = saveSnapshot(runtimeStorePath, persistedSnapshot, persistenceEnabled, persistenceKey);
     const eventWritten = appendEvent(eventLogPath, { type: 'attestation.revoked', ...record }, persistenceEnabled, persistenceKey);
     if (persistenceEnabled && (!snapshotWritten || !eventWritten.appended)) {
+      durableRevocationStore?.deleteRevocation(attestationId);
+      if (durableRevocationStore) currentRevocations();
       revocations.delete(attestationId);
       return jsonError(reply, 503, 'REVOCATION_PERSISTENCE_FAILED', { snapshotWritten, eventWritten: eventWritten.appended });
     }
     snapshot.snapshot = persistedSnapshot;
     return reply.status(201).send({ success: true, data: record });
   });
-  fastify.get('/attest/policy', { preHandler: requireReadAccess }, async () => ({ success: true, policy: { authMode, revocationEnabled: true, revocationRevision: revocations.size, attestationAlgorithm: 'HMAC-SHA256' } }));
+  fastify.get('/attest/policy', { preHandler: requireReadAccess }, async () => ({ success: true, policy: { authMode, revocationEnabled: true, revocationRevision: currentRevocations().length, revocationConsistency: durableRevocationStore ? 'multi-process-single-volume' : 'single-process', attestationAlgorithm: 'HMAC-SHA256' } }));
 
   const webDist = process.env.OMEGA_WEB_DIST?.trim() ? resolve(process.env.OMEGA_WEB_DIST.trim()) : null;
   const sendStatic = (relativePath: string, reply: any) => {
