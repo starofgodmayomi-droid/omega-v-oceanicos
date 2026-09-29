@@ -45,6 +45,11 @@ const nonEmpty = (value: string): boolean => value.trim().length > 0;
 
 const hasPositiveInteger = (value: number): boolean => Number.isInteger(value) && value > 0;
 
+const broadScope = (value: string): boolean => ['*', 'all', '/**'].includes(value.trim().toLowerCase());
+
+const looksLikeInlineSecret = (value: string): boolean =>
+  /^(sk-|ghp_|github_pat_|akia[0-9a-z]{16}|bearer\s)/i.test(value.trim());
+
 /**
  * Validate and admit a connector declaration without authenticating or executing it.
  *
@@ -64,6 +69,12 @@ export function admitOmegaConnector(
   if (!nonEmpty(connector.authRef)) issues.push('connector authRef must be a reference, not empty');
   if (connector.scope.length === 0 || connector.scope.some((entry) => !nonEmpty(entry))) {
     issues.push('connector scope must contain non-empty bounded entries');
+  }
+  if (connector.scope.some(broadScope)) {
+    issues.push('connector scope must not use an unbounded wildcard');
+  }
+  if (/\s/.test(connector.authRef.trim()) || looksLikeInlineSecret(connector.authRef)) {
+    issues.push('connector authRef must identify secret configuration without containing secret material');
   }
   if (!supportedModes.includes(connector.mode)) issues.push('connector mode is unsupported');
   if (connector.policyRefs.length === 0 || connector.policyRefs.some((entry) => !nonEmpty(entry))) {
