@@ -351,3 +351,8 @@ Attestation revocations now persist in the runtime snapshot and emit append-only
 ## Durable revocation consistency — bounded multi-process slice — 2026-09-28
 
 The attestation revocation registry now uses the shared SQLite command volume when file-backed persistence is enabled. Independent API instances observe live revocations and SQLite uniqueness makes duplicate writes fail closed with `ATTESTATION_ALREADY_REVOKED`. The API exposes `consistency: multi-process-single-volume` and `verified: true` for this runtime-observed boundary; memory mode remains `single-process`. The focused integration gate verifies live visibility and duplicate safety. Cross-host ordering, replica agreement, external storage, backup/restore consistency, key custody, and deployment health remain unverified.
+
+
+## One Body ecosystem contract — bounded full-stack slice — 2026-09-28
+
+The existing ecosystem adapter now returns one shared `oneBody` snapshot consumed by the API contract, typed SDK (`getOneBodyStatus()`), CLI (`omega one-body`), and web Ecosystem panel. The snapshot binds MINI, API/Web, attestation, worker, governance, and distribution layers to explicit evidence statuses, with `SUPPORTED` / `runtime-observed` / `local-runtime` as the aggregate boundary. It does not claim that deployment, community, economy, external services, or consequential authority are active. Focused integration coverage verifies the contract shape and its limitations.

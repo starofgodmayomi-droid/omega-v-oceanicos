@@ -22,6 +22,21 @@ export interface EcosystemLayer {
   provenance: string;
 }
 
+export interface OneBodyStatus {
+  name: 'Ω∞v Oceanicos';
+  invariant: 'VERIFY(ΔREALITY)';
+  stage: 'FULL STACK → ECOSYSTEM';
+  evidenceStatus: 'SUPPORTED';
+  evidence: 'runtime-observed';
+  scope: 'local-runtime';
+  organs: Array<{
+    name: string;
+    status: EvidenceStatus;
+    source: string;
+  }>;
+  limitations: string[];
+}
+
 export interface EcosystemStatus {
   success: true;
   contract: {
@@ -47,6 +62,7 @@ export interface EcosystemStatus {
     failClosed: boolean;
     status: EvidenceStatus;
   };
+  oneBody: OneBodyStatus;
 }
 
 export function registerEcosystemRoute(
@@ -169,6 +185,24 @@ export function registerEcosystemRoute(
           'IDENTITY + CAPABILITY + SCOPE + AUTHORITY + POLICY + EXPIRATION + RATE_LIMIT + RESOURCE_LIMIT + DATA_LIMIT + STOP_CONDITION + AUDIT + REVOCATION + RECOVERY',
         failClosed: true,
         status: 'SUPPORTED',
+      },
+      oneBody: {
+        name: 'Ω∞v Oceanicos',
+        invariant: 'VERIFY(ΔREALITY)',
+        stage: 'FULL STACK → ECOSYSTEM',
+        evidenceStatus: 'SUPPORTED',
+        evidence: 'runtime-observed',
+        scope: 'local-runtime',
+        organs: layers.map((layer) => ({
+          name: layer.layer,
+          status: layer.evidenceStatus,
+          source: layer.provenance,
+        })),
+        limitations: [
+          'does not prove deployment or external service availability',
+          'does not prove community, economy, or real-world outcomes',
+          'does not grant authority to execute consequential actions',
+        ],
       },
     };
 

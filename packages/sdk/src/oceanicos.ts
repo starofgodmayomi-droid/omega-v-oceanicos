@@ -52,6 +52,19 @@ export interface EcosystemFlowResult {
   executedAt: string;
 }
 
+export type EcosystemEvidenceStatus = 'VERIFIED' | 'SUPPORTED' | 'UNVERIFIED' | 'DIVERGENT' | 'UNKNOWN';
+
+export interface OneBodyStatus {
+  name: 'Ω∞v Oceanicos';
+  invariant: 'VERIFY(ΔREALITY)';
+  stage: 'FULL STACK → ECOSYSTEM';
+  evidenceStatus: 'SUPPORTED';
+  evidence: 'runtime-observed';
+  scope: 'local-runtime';
+  organs: Array<{ name: string; status: EcosystemEvidenceStatus; source: string }>;
+  limitations: string[];
+}
+
 export interface GrandFlowResult {
   continuumFlowId: string;
   lowestForm: {
@@ -338,6 +351,32 @@ export class OceanicosClient {
     this.store.recordAttestation(attestation);
 
     return { observation, verification, attestation };
+  }
+
+  /**
+   * Read the unified, evidence-bearing One Body ecosystem snapshot.
+   */
+  public async getOneBodyStatus(): Promise<OneBodyStatus> {
+    if (this.mode === 'local') {
+      return {
+        name: 'Ω∞v Oceanicos',
+        invariant: 'VERIFY(ΔREALITY)',
+        stage: 'FULL STACK → ECOSYSTEM',
+        evidenceStatus: 'SUPPORTED',
+        evidence: 'runtime-observed',
+        scope: 'local-runtime',
+        organs: [
+          { name: 'MINI kernel', status: 'SUPPORTED', source: '@omega-v/mini' },
+          { name: 'API & Web Interface', status: 'SUPPORTED', source: 'apps/api + apps/web' },
+          { name: 'Attestation', status: 'SUPPORTED', source: '@omega-v/attestation' },
+        ],
+        limitations: ['local embedded SDK state is not deployment evidence'],
+      };
+    }
+    const response = await fetch(`${this.apiBaseUrl}/v1/ecosystem/status`);
+    if (!response.ok) throw new Error(`Remote API error: HTTP ${response.status}`);
+    const payload = (await response.json()) as { oneBody: OneBodyStatus };
+    return payload.oneBody;
   }
 
   /**
