@@ -13,6 +13,7 @@ import { MoodCodexPanel } from './MoodCodexPanel';
 import { DivergenceAlertsPanel } from './DivergenceAlertsPanel';
 import { ValueNavigatorPanel } from './ValueNavigatorPanel';
 import { LifecycleFlow, deriveStageStates, type LifecycleStage } from './LifecycleFlow';
+import { GlobeViewport } from './GlobeViewport';
 import {
   theme,
   statusColor,
@@ -88,6 +89,7 @@ export function App() {
   const [omegaLoading, setOmegaLoading] = useState(false);
 
   const [openStageId, setOpenStageId] = useState<string | null>(null);
+  const [globeMax, setGlobeMax] = useState(false);
 
   const eventSourceRef = useRef<EventSource | null>(null);
 
@@ -603,9 +605,12 @@ export function App() {
         fontFamily: theme.fontSans,
         display: 'flex',
         flexDirection: 'column',
+        position: 'relative',
       }}
     >
+      <GlobeViewport active={globeMax} realityStatus={tip?.evidence?.status ?? null} />
       {/* Ambient status bar */}
+      <div style={{ position: 'relative', zIndex: 2 }}>
       <AmbientBar
         connected={streamConnected}
         reconnectAttempt={reconnectAttempt}
@@ -615,6 +620,7 @@ export function App() {
         epochsRemembered={history.length}
         miningActive={minerActive}
       />
+      </div>
 
       {/* Error toast */}
       {lastError && (
@@ -652,11 +658,13 @@ export function App() {
       {/* Main surface */}
       <main
         style={{
-          maxWidth: '720px',
+          maxWidth: globeMax ? '1100px' : '720px',
           width: '100%',
           margin: '0 auto',
           padding: '60px 24px 40px',
           flex: 1,
+          position: 'relative',
+          zIndex: 1,
         }}
       >
         {/* Logo */}
@@ -671,6 +679,26 @@ export function App() {
           }}
         >
           💧 OCEANICOS
+        </div>
+        <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+          <button
+            type="button"
+            aria-pressed={globeMax}
+            onClick={() => setGlobeMax((v) => !v)}
+            style={{
+              background: 'transparent',
+              border: `1px solid ${theme.borderBright}`,
+              color: theme.accent,
+              borderRadius: theme.radiusPill,
+              padding: '6px 14px',
+              fontSize: '11px',
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              cursor: 'pointer',
+            }}
+          >
+            {globeMax ? 'Exit globe view' : 'Globe view'}
+          </button>
         </div>
 
         {/* Prompt */}
