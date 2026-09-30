@@ -1,20 +1,20 @@
 import React from 'react';
-import { globeRealityKind, globeShellCaption } from './globe-shell';
+import { globeShellCaptionFromEvidence, type GlobeEvidence } from './globe-shell';
 
 type GlobeViewportProps = {
   active: boolean;
-  realityStatus: string | null;
+  evidence: GlobeEvidence;
 };
 
-export function GlobeViewport({ active, realityStatus }: GlobeViewportProps) {
+export function GlobeViewport({ active, evidence }: GlobeViewportProps) {
   if (!active) return null;
-  const kind = globeRealityKind(realityStatus);
 
   return (
     <div
       aria-hidden="true"
       data-testid="globe-viewport"
-      data-reality-kind={kind}
+      data-reality-kind={evidence.status}
+      data-evidence-source={evidence.source}
       style={{
         position: 'fixed',
         inset: 0,
@@ -54,7 +54,7 @@ export function GlobeViewport({ active, realityStatus }: GlobeViewportProps) {
           color: '#547b74',
         }}
       >
-        {globeShellCaption(realityStatus)}
+        {globeShellCaptionFromEvidence(evidence)}
       </p>
     </div>
   );

@@ -14,6 +14,7 @@ import { DivergenceAlertsPanel } from './DivergenceAlertsPanel';
 import { ValueNavigatorPanel } from './ValueNavigatorPanel';
 import { LifecycleFlow, deriveStageStates, type LifecycleStage } from './LifecycleFlow';
 import { GlobeViewport } from './GlobeViewport';
+import { bindGlobeEvidence } from './globe-shell';
 import {
   theme,
   statusColor,
@@ -90,6 +91,8 @@ export function App() {
 
   const [openStageId, setOpenStageId] = useState<string | null>(null);
   const [globeMax, setGlobeMax] = useState(false);
+  const [tipReachable, setTipReachable] = useState<boolean | null>(null);
+  const [tipRouteStatus, setTipRouteStatus] = useState<string | null>(null);
 
   const eventSourceRef = useRef<EventSource | null>(null);
 
@@ -209,6 +212,8 @@ export function App() {
       try {
         const d = await apiRequest<any>('/v1/block/tip');
         if (!active) return;
+        setTipReachable(true);
+        setTipRouteStatus(typeof d.status === 'string' ? d.status : null);
         if (d.integrity) setLedgerIntegrity(d.integrity);
         if (!streamConnected && d.tip) {
           setTip(d.tip);
@@ -218,7 +223,9 @@ export function App() {
           });
         }
       } catch {
-        /* ambient */
+        if (!active) return;
+        setTipReachable(false);
+        setTipRouteStatus(null);
       }
     };
     poll();
@@ -232,13 +239,16 @@ export function App() {
   const fetchTipFallback = async () => {
     try {
       const d = await apiRequest<any>('/v1/block/tip');
+      setTipReachable(true);
+      setTipRouteStatus(typeof d.status === 'string' ? d.status : null);
       if (d.integrity) setLedgerIntegrity(d.integrity);
       if (d.tip) {
         setTip(d.tip);
         setHistory((prev) => (prev.length === 0 ? [d.tip] : prev));
       }
     } catch {
-      /* ambient */
+      setTipReachable(false);
+      setTipRouteStatus(null);
     }
   };
 
@@ -608,7 +618,15 @@ export function App() {
         position: 'relative',
       }}
     >
-      <GlobeViewport active={globeMax} realityStatus={tip?.evidence?.status ?? null} />
+      <GlobeViewport
+        active={globeMax}
+        evidence={bindGlobeEvidence({
+          reachable: tipReachable,
+          tipRouteStatus,
+          tipEvidenceStatus: tip?.evidence?.status ?? null,
+          chainIntact: ledgerIntegrity ? ledgerIntegrity.valid : null,
+        })}
+      />
       {/* Ambient status bar */}
       <div style={{ position: 'relative', zIndex: 2 }}>
       <AmbientBar
