@@ -1,7 +1,7 @@
 {
   "name": "@omega-v/pipeline",
   "version": "0.1.0",
-  "description": "Automated Verified CI/CD Pipeline Orchestrator for Ω∞v Oceanicos — Stage graphs, dependency ordering, gate checks, worker dispatch, rollback, and build attestation chains",
+  "description": "Automated Verified CI/CD Pipeline Orchestrator for Ω∞v Oceanicos — Stage graphs, dependency ordering, gate checks, worker dispatch, rollback, and build observation receipts",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -24,7 +24,6 @@
   "author": "Ω∞v Community",
   "license": "Apache-2.0",
   "dependencies": {
-    "@omega-v/types": "workspace:*",
     "@omega-v/worker": "workspace:*"
   },
   "devDependencies": {

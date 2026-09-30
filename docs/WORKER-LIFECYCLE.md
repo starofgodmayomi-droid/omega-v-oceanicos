@@ -1,6 +1,8 @@
 # Worker lifecycle boundary
 
-The worker pool is a bounded execution contract, not an authorization or deployment claim. Worker identities, names, capabilities, concurrency, resource declarations, job names, priorities, retry budgets, and lease durations are validated before they enter scheduler state. A job can then be leased only to a capable, non-draining worker; completion and failure require the currently assigned worker and a live lease; retryable failures return to the lease queue; terminal jobs cannot be mutated again; terminal jobs no longer report stale worker ownership or lease expiry metadata; and attestation verification reconciles the stored completed job and recomputed output root before accepting a signature.
+The worker pool is a bounded execution contract, not an authorization or deployment claim. Worker identities, names, capabilities, concurrency, resource declarations, job names, priorities, retry budgets, and lease durations are validated before they enter scheduler state. A job can then be leased only to a capable, non-draining worker **with unexpired authority and policy**; completion and failure require the currently assigned worker and a live lease; retryable failures return to the lease queue; terminal jobs cannot be mutated again; terminal jobs no longer report stale worker ownership or lease expiry metadata; and attestation verification reconciles the stored completed job and recomputed output root before accepting a signature.
+
+A worker registered without `authoritySubject` and `policyId` is stored, but it cannot lease. Expired `expiresAt` cannot lease. Completing a job emits a local HMAC observation receipt (`LOCAL_HMAC_OBSERVED`, `runtimeClaim: NOT_CLAIMED`). That receipt is not an SLSA provenance level and is not a runtime-health claim. The constructor refuses the historical default signing secret.
 
 ## Proven invariants
 
