@@ -190,7 +190,13 @@ export function createApp(
   registerConnectorObservationRoute(fastify, jsonError);
 
   fastify.get('/health', async (_request, reply) => {
-    const memoryReady = true;
+    let ledgerIntegrity;
+    try {
+      ledgerIntegrity = ledgerMemory.verifyChain();
+    } catch {
+      ledgerIntegrity = { valid: false, height: 0, genesisHash: null, tipHash: null, reason: 'PARSE_FAILURE' };
+    }
+    const memoryReady = ledgerIntegrity.valid;
     const ready = memoryReady && persistenceReady(persistenceEnabled, snapshot.source) && eventLogReady(persistenceEnabled, eventLog.source) && recovery.mode !== 'invalid' && deletion.mode !== 'invalid' && custody.mode !== 'invalid' && coordination.mode !== 'invalid';
     const coverage = persistenceCoverage({
       enabled: persistenceEnabled,
@@ -209,7 +215,7 @@ export function createApp(
       readiness: ready ? 'ready' : 'degraded',
       checks: {
         observer: 'ready', verifier: 'ready', attester: attestationSigningKey ? 'ready' : 'degraded',
-        memory: { status: memoryReady ? 'ready' : 'degraded', integrity: memoryReady, encryption: 'disabled' },
+        memory: { status: memoryReady ? 'ready' : 'degraded', integrity: ledgerIntegrity.valid, height: ledgerIntegrity.height, reason: ledgerIntegrity.reason ?? null, encryption: 'disabled' },
         persistence: {
           mode: persistenceEnabled ? 'file' : 'memory',
           source: snapshot.source,
@@ -322,14 +328,24 @@ export function createApp(
     if (Boolean(signature) !== Boolean(publicKey)) return jsonError(reply, 400, 'INCOMPLETE_ASYMMETRIC_SIGNATURE');
     if (!signature && !publicKey && !allowUnsignedCycle) return jsonError(reply, 401, 'ASYMMETRIC_SIGNATURE_REQUIRED');
     if (signature && publicKey && !AsymmetricValidationGuard.verify('EXECUTE_OMNI_CYCLE', signature, publicKey)) return jsonError(reply, 401, 'INVALID_ASYMMETRIC_SIGNATURE');
+    const ledgerIntegrity = ledgerMemory.verifyChain();
+    if (!ledgerIntegrity.valid) return jsonError(reply, 409, 'LEDGER_INTEGRITY_DEGRADED', { integrity: ledgerIntegrity });
     const block = kernel.runCycle();
     minerStats.totalMined++;
     minerStats.lastBlockTime = block.timestamp;
     broadcastMintedBlock(block);
-    return { success: true, status: 'SYNCHRONIZED', block };
+    return { success: true, status: 'SYNCHRONIZED', block, integrity: ledgerMemory.verifyChain() };
   });
 
-  fastify.get('/v1/block/tip', { preHandler: requireReadAccess }, async () => ({ success: true, status: 'ONLINE', tip: ledgerMemory.getTip() }));
+  fastify.get('/v1/block/tip', { preHandler: requireReadAccess }, async () => {
+    const integrity = ledgerMemory.verifyChain();
+    return {
+      success: true,
+      status: integrity.valid ? 'ONLINE' : 'DEGRADED',
+      tip: ledgerMemory.getTip(),
+      integrity,
+    };
+  });
   fastify.get('/v1/stream', { preHandler: requireReadAccess }, async (request: any, reply) => {
     if (streamClients.size >= MAX_STREAM_CLIENTS) return jsonError(reply, 503, 'STREAM_CAPACITY_REACHED', { limit: MAX_STREAM_CLIENTS });
     reply.raw.setHeader('Content-Type', 'text/event-stream');

@@ -16,6 +16,10 @@ export class MiniKernel {
   public executeCycle(): IMiniBlock {
     return this.runCycle();
   }
+  /** Verification of the durable ledger, not observation of the last row. */
+  public verifyLedger() {
+    return this.remember.verifyChain();
+  }
 }
 
 export const MiniKernelCoordinator = MiniKernel;
