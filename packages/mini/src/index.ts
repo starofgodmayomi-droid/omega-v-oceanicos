@@ -57,7 +57,7 @@ export type {
   OmegaConnectorAdmissionResult,
   OmegaConnectorDeclaration,
 } from './connector-admission.js';
-export { executeAdmittedConnector, observeAdmittedConnector } from './connector-observation.js';
+export { executeAdmittedConnector, observeAdmittedConnector, ConnectorObservationMemory } from './connector-observation.js';
 export type {
   ConnectorExecutionObservation,
   ConnectorHandler,
@@ -66,6 +66,15 @@ export type {
   ExecuteAdmittedConnectorInput,
   ObserveAdmittedConnectorInput,
 } from './connector-observation.js';
+export {
+  GITHUB_PUBLIC_REPOSITORY_ADAPTER,
+  assertGithubPublicRepositoryConnector,
+  createGithubPublicRepositoryHandler,
+  githubPublicMetadataObservation,
+  observeGithubPublicRepository,
+  parseGithubRepoScope,
+} from './github-public-repository.js';
+export type { GithubPublicRepositoryAdapter, GithubRepoIdentity } from './github-public-repository.js';
 export { runOmegaChangePipeline, resolveBoundedWorkerHandler } from './pipeline.js';
 export type {
   OmegaPipelineInput,

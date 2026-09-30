@@ -19,6 +19,7 @@ export const API_ROUTE_INVENTORY = [
   'POST /v1/value-navigator/proposals',
   'POST /v1/value-navigator/proposals/:proposalId/observe',
   'POST /v1/omega/connectors/observe',
+  'GET /v1/omega/connectors/observations',
   'GET /v1/block/tip',
   'GET /v1/stream',
   'POST /v1/miner/start',

@@ -2,6 +2,9 @@ import type { FastifyInstance } from 'fastify';
 import {
   admitOmegaConnector,
   observeAdmittedConnector,
+  ConnectorObservationMemory,
+  GITHUB_PUBLIC_REPOSITORY_ADAPTER,
+  createGithubPublicRepositoryHandler,
   type OmegaConnectorDeclaration,
 } from '@oceanicos/mini';
 
@@ -63,10 +66,25 @@ function parseBooleanFlag(value: unknown): boolean {
   return value === true;
 }
 
+export interface ConnectorObservationRouteOptions {
+  readonly githubFetch?: typeof fetch;
+  readonly memory?: ConnectorObservationMemory;
+}
+
 export function registerConnectorObservationRoute(
   fastify: FastifyInstance,
   jsonError: JsonError,
+  options: ConnectorObservationRouteOptions = {},
 ): void {
+  const memory = options.memory ?? new ConnectorObservationMemory();
+
+  fastify.get('/v1/omega/connectors/observations', async () => ({
+    success: true,
+    observations: memory.list(),
+    limitation:
+      'in-process connector memory is not durable across process restart, deployment health, or revenue',
+  }));
+
   fastify.post('/v1/omega/connectors/observe', async (request, reply) => {
     const body = parseObject(request.body);
     if (!body) return jsonError(reply, 400, 'INVALID_CONNECTOR_OBSERVATION');
@@ -86,8 +104,18 @@ export function registerConnectorObservationRoute(
       });
     }
 
+    const liveAdapter = body.liveAdapter;
+    if (liveAdapter !== undefined && liveAdapter !== GITHUB_PUBLIC_REPOSITORY_ADAPTER) {
+      return jsonError(reply, 400, 'UNKNOWN_LIVE_ADAPTER', {
+        message: 'only github-public-repository is a declared live adapter',
+      });
+    }
+
     let execution;
     if (body.execution !== undefined) {
+      if (liveAdapter === GITHUB_PUBLIC_REPOSITORY_ADAPTER) {
+        return jsonError(reply, 400, 'LIVE_ADAPTER_EXCLUDES_SUPPLIED_EXECUTION');
+      }
       const executionBody = parseObject(body.execution);
       if (!executionBody) return jsonError(reply, 400, 'INVALID_CONNECTOR_EXECUTION');
       if (typeof executionBody.attempted !== 'boolean' || typeof executionBody.executed !== 'boolean') {
@@ -113,10 +141,24 @@ export function registerConnectorObservationRoute(
       policySatisfied: parseBooleanFlag(body.policySatisfied),
       approvalVerified: parseBooleanFlag(body.approvalVerified),
     });
-    const observation = observeAdmittedConnector({ connector, admission, execution });
+
+    if (liveAdapter === GITHUB_PUBLIC_REPOSITORY_ADAPTER && admission.admitted) {
+      try {
+        const handler = createGithubPublicRepositoryHandler(connector, options.githubFetch);
+        execution = await handler();
+      } catch (error) {
+        return jsonError(reply, 400, 'INVALID_LIVE_ADAPTER', {
+          message: String((error as Error)?.message ?? error),
+        });
+      }
+    }
+
+    const observation = memory.remember(observeAdmittedConnector({ connector, admission, execution }));
     return {
       success: true,
       ...observation,
+      remembered: true,
+      liveAdapter: liveAdapter === GITHUB_PUBLIC_REPOSITORY_ADAPTER ? GITHUB_PUBLIC_REPOSITORY_ADAPTER : null,
       limitation:
         'admitted-connector observation is not deployment health, revenue, secret material, or proof of an undeclared network call',
     };

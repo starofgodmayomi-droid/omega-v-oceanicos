@@ -79,6 +79,28 @@ Every connector transition must declare:
 
 Authentication proves an identity or credential exchange, not permission for every action. Authorization permits a bounded action, not proof that the action happened. Execution requires observation and reconciliation before a result may be verified.
 
+## First proven connector path (bounded)
+
+Proven in this repository, not a claim of universal connectivity:
+
+```text
+github.read-repository
+→ admitOmegaConnector (non-executing)
+→ POST /v1/omega/connectors/observe
+→ optional liveAdapter=github-public-repository (declared, read-only, one repo:owner/name)
+→ observeAdmittedConnector
+→ VERIFIED | DIVERGENT | UNKNOWN | NOT_EXECUTED
+→ GET /v1/omega/connectors/observations (in-process memory)
+```
+
+Limits that remain explicit:
+
+- live adapter is GitHub public repository metadata only
+- no secrets enter `authRef`
+- supplied `execution` is not a live network call
+- in-process memory is not durable, not deployment health, not revenue
+- Notion, Gmail, Slack, and other organs stay UNKNOWN until separately admitted and observed
+
 ## Organ metaphor, bounded implementation
 
 ```text
