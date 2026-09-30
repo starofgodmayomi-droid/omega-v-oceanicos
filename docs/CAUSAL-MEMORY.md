@@ -24,11 +24,10 @@ A configured path without a signing key returns `503 CAUSAL_MEMORY_KEY_REQUIRED`
 
 ## Invariants
 
-`FileCausalMemory` verifies every loaded line for sequence, previous hash, entry hash, attestation signature, and attestation/change identity. Any malformed, tampered, or unverifiable line degrades the store to `verifyIntegrity() === false`; replay returns no entry for an unverifiable record. `VERIFIED`, `DIVERGENT`, and `UNKNOWN` remain distinct. An observation failure is signed as `UNKNOWN`, never upgraded to `VERIFIED`.
+`FileCausalMemory` verifies every loaded line for sequence, previous hash, entry hash, attestation signature, and attestation/change identity. A missing journal (`ENOENT`) is a valid empty cold start only before that store instance has observed an existing journal; disappearance on a later reload, other file-read errors, and malformed, tampered, or unverifiable lines degrade the store to `verifyIntegrity() === false`. Degraded stores expose neither a valid prefix through `all()`/`reload()` nor an entry through `replay()`, and reject appends. When durable memory is configured, `POST /v1/pipeline` returns `503 CAUSAL_MEMORY_INTEGRITY_DEGRADED` before running the pipeline if the journal cannot be read and verified. `VERIFIED`, `DIVERGENT`, and `UNKNOWN` remain distinct. An observation failure is signed as `UNKNOWN`, never upgraded to `VERIFIED`.
 
 The store supports `reload()` and exact `replay(changeId)`. Replay is local reconstruction of the persisted record; it is not a claim that an external system is currently healthy or deployed.
 
 ## Evidence
 
-The executable proof is `tests/integration/causal-memory.integration.test.ts`. It covers verified persistence and reload, divergent and unknown preservation, signature tampering, hash-chain tampering, record-only/NOT_EXECUTED rejection, and authorization separation. The API route exposes the attestation and local memory-integrity result when durable mode is enabled.
-
+The executable proof is `tests/integration/causal-memory.integration.test.ts` and `tests/integration/api-pipeline-causal.integration.test.ts`. They cover verified persistence and reload, divergent and unknown preservation, signature/hash-chain tampering, unreadable-journal rejection before API pipeline execution, valid-prefix suppression on corruption, record-only/NOT_EXECUTED rejection, and authorization separation. The API route exposes the attestation and local memory-integrity result when durable mode is enabled.

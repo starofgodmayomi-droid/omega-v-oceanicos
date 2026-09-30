@@ -65,6 +65,9 @@ export function registerPipelineRoute(
           keyVersion: process.env.OMEGA_REALITY_ATTESTATION_KEY_VERSION,
         })
       : { append: (record: unknown) => memoryEntries.push(record) };
+    if (causalMemoryPath && causalMemoryKey && !memory.verifyIntegrity()) {
+      return jsonError(reply, 503, 'CAUSAL_MEMORY_INTEGRITY_DEGRADED');
+    }
     try {
       const result = runOmegaChangePipeline({
         compile,
