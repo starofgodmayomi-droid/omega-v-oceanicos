@@ -121,6 +121,22 @@ describe('C7 reality attestation → C8 causal memory', () => {
     assert.equal(tampered.replay('c8-tamper-source'), undefined);
   });
 
+  it('rejects a reality observation whose record differs from the persisted change', () => {
+    const primaryPath = join(mkdtempSync(join(tmpdir(), 'omega-c8-provenance-primary-')), 'causal.jsonl');
+    const secondaryPath = join(mkdtempSync(join(tmpdir(), 'omega-c8-provenance-secondary-')), 'causal.jsonl');
+    const primary = new FileCausalMemory(primaryPath, { key: 'c8-test-signing-key' });
+    const secondary = new FileCausalMemory(secondaryPath, { key: 'c8-test-signing-key' });
+    const first = input(primary, 'S1', 'c8-provenance-first');
+    const second = input(secondary, 'S1', 'c8-provenance-second');
+
+    assert.ok(first.reality && first.realityAttestation && second.record);
+    assert.throws(
+      () => primary.appendCausal(second.record!, first.reality!, first.realityAttestation!),
+      /mismatched reality attestation/,
+    );
+    assert.deepEqual(primary.all().map((entry) => entry.record.id), ['c8-provenance-first']);
+  });
+
   it('does not expose a valid prefix after a later journal entry is corrupted', () => {
     const path = join(mkdtempSync(join(tmpdir(), 'omega-c8-prefix-')), 'causal.jsonl');
     const memory = new FileCausalMemory(path, { key: 'c8-test-signing-key' });

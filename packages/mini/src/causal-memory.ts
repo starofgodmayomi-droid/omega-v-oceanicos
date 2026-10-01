@@ -142,7 +142,13 @@ export class FileCausalMemory implements CausalMemory {
   }
 
   public appendCausal(record: OmegaChangeRecord, reality: RealityVerification, attestation: RealityAttestation): void {
-    if (attestation.changeId !== record.id || attestation.status !== reality.status || !verifyRealityAttestation(attestation, this.signingKey)) {
+    if (
+      reality.record.id !== record.id ||
+      attestation.changeId !== record.id ||
+      attestation.changeId !== reality.record.id ||
+      attestation.status !== reality.status ||
+      !verifyRealityAttestation(attestation, this.signingKey)
+    ) {
       throw new Error('causal memory rejected an unverifiable or mismatched reality attestation');
     }
     this.appendRaw(record, reality, attestation);
