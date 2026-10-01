@@ -59,6 +59,8 @@ export type {
 } from './connector-admission.js';
 export { executeAdmittedConnector, observeAdmittedConnector } from './connector-observation.js';
 export { mirrorRepositoryState, unknownMirrorObservation } from './mirror-worker.js';
+export { reconcileRepositoryState } from './repo-verifier.js';
+export type { RepositoryReconciliation, RepositoryReconciliationStatus } from './repo-verifier.js';
 export type { MirrorObservation, MirrorRepositorySnapshot } from './mirror-worker.js';
 export type {
   ConnectorExecutionObservation,
