@@ -22,7 +22,10 @@ export type OmegaWorkerId =
   | 'planner'
   | 'tester'
   | 'security-reviewer'
-  | 'governance-reviewer';
+  | 'governance-reviewer'
+  | 'mirror'
+  | 'repo-builder'
+  | 'repo-verifier';
 
 export type OmegaCommandTransitionSpec = {
   readonly kind: 'observation' | 'test' | 'report';
@@ -82,7 +85,7 @@ export type OmegaCommandResult = {
 
 const MAX_INTENT = 2000;
 const MAX_CONTEXT_ENTRIES = 16;
-const MAX_WORKERS = 6;
+const MAX_WORKERS = 9;
 const ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,95}$/;
 const ALLOWED_WORKERS = new Set<OmegaWorkerId>([
   'observer', 'researcher', 'planner', 'tester', 'security-reviewer', 'governance-reviewer',
@@ -132,7 +135,7 @@ export function canTransitionOmegaStatus(from: OmegaCommandStatus, to: OmegaComm
 }
 
 export function workerRisk(worker: OmegaWorkerId): OmegaWorkerRisk {
-  return worker === 'tester' ? 'local-mutating' : 'read-only';
+  return worker === 'tester' || worker === 'repo-builder' ? 'local-mutating' : 'read-only';
 }
 
 export function decisionToStatus(decision: ChangeDecision): OmegaCommandStatus {
