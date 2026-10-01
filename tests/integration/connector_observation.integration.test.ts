@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
-import { admitOmegaConnector, executeAdmittedConnector } from '../../packages/mini/dist/index.js';
+import { admitOmegaConnector, executeAdmittedConnector, FileConnectorObservationStore } from '../../packages/mini/dist/index.js';
 
 const connector = {
   id: 'github.read-repository',
@@ -41,7 +41,7 @@ describe('Ω connector observation path', () => {
     assert.match(verified.evidence, /^sha256:[a-f0-9]{64}$/);
   });
 
-  it('refuses unverified client status claims and does not execute unadmitted connectors over HTTP', async () => {
+  it('refuses unverified client status claims and remembers observations on a local hash chain', async () => {
     const directory = mkdtempSync(join(tmpdir(), 'omega-connector-observation-'));
     const { createApp } = await import('../../apps/api/dist/index.js');
     const app = createApp(join(directory, 'ledger.db'), false, { allowUnsignedCycle: true });
@@ -90,6 +90,9 @@ describe('Ω connector observation path', () => {
       assert.equal(admittedOnly.json().admission.admitted, true);
       assert.equal(admittedOnly.json().status, 'NOT_EXECUTED');
       assert.equal(admittedOnly.json().executed, false);
+      assert.equal(admittedOnly.json().remembered, true);
+      assert.equal(admittedOnly.json().journal.sequence, 1);
+      assert.match(admittedOnly.json().journal.hash, /^[a-f0-9]{64}$/);
 
       const denied = await app.inject({
         method: 'POST',
@@ -110,6 +113,8 @@ describe('Ω connector observation path', () => {
       assert.equal(denied.json().status, 'NOT_EXECUTED');
       assert.equal(denied.json().executed, false);
       assert.equal(denied.json().actualObservation, undefined);
+      assert.equal(denied.json().remembered, true);
+      assert.equal(denied.json().journal.sequence, 2);
 
       const observed = await app.inject({
         method: 'POST',
@@ -133,6 +138,58 @@ describe('Ω connector observation path', () => {
       assert.equal(observed.json().observed, true);
       assert.match(observed.json().evidence, /^sha256:[a-f0-9]{64}$/);
       assert.equal(observed.json().limitation.includes('not deployment'), true);
+      assert.equal(observed.json().remembered, true);
+      assert.equal(observed.json().journal.sequence, 3);
+      assert.equal(observed.json().journal.previousHash, denied.json().journal.hash);
+
+      const memory = await app.inject({
+        method: 'GET',
+        url: '/v1/omega/connectors/observations',
+      });
+      assert.equal(memory.statusCode, 200);
+      assert.equal(memory.json().success, true);
+      assert.equal(memory.json().total, 3);
+      assert.equal(memory.json().integrity, 'verified-local-hash-chain');
+      assert.equal(memory.json().entries[0].observation.status, 'NOT_EXECUTED');
+      assert.equal(memory.json().entries[2].observation.status, 'VERIFIED');
+      assert.equal(memory.json().entries[2].hash, observed.json().journal.hash);
+      assert.equal(memory.json().limitation.includes('not live GitHub'), true);
+    } finally {
+      await app.close();
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
+  it('fails closed when the connector journal hash chain is tampered', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'omega-connector-journal-'));
+    const journalPath = join(directory, 'connectors.jsonl');
+    writeFileSync(journalPath, '{"kind":"OMEGA_CONNECTOR_OBSERVATION","hash":"deadbeef"}\n');
+    const store = new FileConnectorObservationStore(journalPath);
+    assert.equal(store.verifyIntegrity(), false);
+
+    const { createApp } = await import('../../apps/api/dist/index.js');
+    const app = createApp(join(directory, 'ledger.db'), false, {
+      allowUnsignedCycle: true,
+      connectorObservationPath: journalPath,
+    });
+    await app.ready();
+    try {
+      const listed = await app.inject({ method: 'GET', url: '/v1/omega/connectors/observations' });
+      assert.equal(listed.statusCode, 503);
+      assert.equal(listed.json().error, 'CONNECTOR_OBSERVATION_JOURNAL_INTEGRITY_DEGRADED');
+
+      const observe = await app.inject({
+        method: 'POST',
+        url: '/v1/omega/connectors/observe',
+        payload: {
+          connector,
+          authorityVerified: true,
+          policySatisfied: true,
+          approvalVerified: false,
+        },
+      });
+      assert.equal(observe.statusCode, 503);
+      assert.equal(observe.json().error, 'CONNECTOR_OBSERVATION_JOURNAL_INTEGRITY_DEGRADED');
     } finally {
       await app.close();
       rmSync(directory, { recursive: true, force: true });

@@ -132,9 +132,11 @@ DISCOVER → DECLARE → REVIEW → AUTHORIZE → ADMIT → BOUND
 `admitOmegaConnector` remains a non-executing admission boundary.
 `executeAdmittedConnector` / `observeAdmittedConnector` and
 `POST /v1/omega/connectors/observe` reconcile an explicit observation after
-admission. They do not open undeclared network connections, persist a
-connector journal, or prove live GitHub/Notion execution. Absent a handler or
-supplied execution, the result is `NOT_EXECUTED`.
+admission. Successful HTTP observations are remembered on a **local**
+hash-chained JSONL journal (`GET /v1/omega/connectors/observations`).
+That journal is provenance, not deployment health, not the MINI silicon-yield
+ledger, and not live GitHub/Notion execution. Absent a handler or supplied
+execution, the result is `NOT_EXECUTED` — and that denial is still remembered.
 
 ## Final axiom
 
