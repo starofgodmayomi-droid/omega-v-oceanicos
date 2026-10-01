@@ -1,0 +1,21 @@
+# Priority: Auth boundaries & Attestation hardening
+
+This issue tracks the high-priority work needed to verify authentication/authorization boundaries and harden attestation behavior across the repository.
+
+Linked audit: docs/AUDIT/inspect-2026-10-01.md
+
+Checklist
+
+- [ ] Verify OMEGA_AUTH_MODE behavior in runtime (local vs required) and ensure docs match behavior across README, apps/README.md, and docs/GOVERNANCE.md.
+- [ ] Prevent accidental default signing key usage; ensure environment and CI refuse to run without `OMEGA_SIGNING_KEY`.
+- [ ] Add runtime configuration `OMEGA_ATTESTATION_ALGORITHM` and document accepted values.
+- [ ] Add unit & contract tests: create + verify attestations for each supported algorithm.
+- [ ] Add CI smoke test to sign and verify an attestation using ephemeral keys (or CI-only keys stored in secrets); fail if verification does not succeed.
+- [ ] Reconcile docs that claim Ed25519-only with actual runtime behavior.
+- [ ] Run `pnpm verify:full` on this branch and collect logs; address any failures prioritized by security impact.
+- [ ] Produce an attestation hardening PR that: introduces config, tests, and migration notes in `docs/decisions/`.
+
+Owner: @starofgodmayomi-droid (maintainers)
+
+Labels: security, priority-1, attestation, infra
+

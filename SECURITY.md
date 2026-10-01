@@ -72,3 +72,80 @@ Stated so a reporter knows what has been tried rather than rediscovering it:
 - secret scanning and push protection are enabled on this repository
 - the container refuses to start without `OMEGA_SIGNING_KEY`, and CI fails the
   build if it starts anyway
+
+## Attestation: current runtime reality & recommended hardening
+
+Observed runtime
+
+- The API implements a `/v1/attest` endpoint that currently uses HMAC-SHA256
+  in the AttestationService invocation in `apps/api/src/index.ts` when the
+  endpoint runs a one-off signing operation.
+- The repository also contains Ed25519 key handling and reference verifier
+  implementations (spec examples, Python verifier, browser verifier). Ed25519
+  capability exists in the codebase, but not all attestation paths use it.
+
+Truthful summary
+
+- ED25519 CAPABILITY = PRESENT IN REPO
+- HMAC-SHA256 ATTESTATION = USED BY `/v1/attest` IN RUNTIME
+- "ALL ATTESTATION = ED25519" = NOT SUPPORTED BY CURRENT RUNTIME
+
+Security risk posture
+
+- Algorithm mismatch across code, docs, and higher-level claims can lead to
+  verifier confusion or unexpected acceptance paths. The repo's own security
+  policy lists algorithm confusion as in-scope.
+- A single default attestation algorithm should be chosen for runtime, or the
+  implementation should clearly document and gate multiple algorithms via
+  configuration and tests that demonstrate the verifier's behaviour.
+
+Recommended immediate hardening steps (short-term)
+
+1. Introduce a runtime configuration option to select the attestation algorithm
+   (example: `OMEGA_ATTESTATION_ALGORITHM=hmac-sha256|ed25519`) with a
+   conservative default matching the most-reviewed code path (currently
+   `hmac-sha256`). Document this variable in `apps/api/README.md` and
+   `docs/spec/ATTESTATION-ENVELOPE.md`.
+2. Ensure the verifier and signer are tested against each supported algorithm
+   in unit tests (both sign and verify) and add a contract test that fails if
+   an attestation created with the chosen algorithm does not verify with the
+   configured verifier.
+3. Update documentation and security policy statements to avoid asserting that
+   all attestations are Ed25519 unless runtime and CI demonstrate it.
+4. Plan a migration path to Ed25519 (recommended for asymmetric, non-repudiable
+   attestations) with a compatibility layer (HMAC acceptance only when an
+   explicit `OMEGA_ALLOW_HMAC=true` is set and documented). Treat HMAC as
+   legacy for high-assurance deployments.
+5. Add an integration smoke test in CI that creates an attestation using the
+   configured algorithm and verifies it with the repository verifier (this can
+   be toggled in CI to avoid exposing keys publicly).
+
+Recommended medium-term steps (next Δs)
+
+- Reconcile all top-level docs (README, MANIFEST, SECURITY, SPEC) to the
+  attestation configuration and make an explicit statement of the supported
+  runtime algorithms.
+- Run the proof suite on the branch and capture CI evidence (format, lint,
+  type-check, tests, build, docker smoke). Resolve failing tests in order of
+  security and auth boundaries.
+- Implement the runtime `OMEGA_ATTESTATION_ALGORITHM` config with tests and add
+  a migration proposal in `docs/decisions/` to record the chosen path.
+
+Minimal, non-destructive fixes applied in this branch
+
+- apps/README.md: clarified API port default (5000) and VITE_API_URL defaults.
+- docs/AUDIT/inspect-2026-10-01.md: added the inspection report describing
+  observed mismatches and next steps.
+- This SECURITY.md (updated) now includes the attestation reality and
+  recommended immediate hardening steps.
+
+Next suggested action
+
+- Create an issue tracking the attestation hardening and auth-boundary
+  verification (I will open one for the repo and link to the audit report).
+- Run CI on this branch (open a PR) and collect evidence. Fix any failures
+  observed in the pipeline starting with auth and attestation tests.
+
+
+Inspector: Ω∞v continuity agent
+Date: 2026-10-01T00:00:00Z
