@@ -89,6 +89,7 @@ const MAX_WORKERS = 9;
 const ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,95}$/;
 const ALLOWED_WORKERS = new Set<OmegaWorkerId>([
   'observer', 'researcher', 'planner', 'tester', 'security-reviewer', 'governance-reviewer',
+  'mirror', 'repo-builder', 'repo-verifier',
 ]);
 
 export function validateOmegaCommandInput(input: {
