@@ -78,6 +78,9 @@ jobs:
         env:
           RELEASE_ENV: ${{ github.event.inputs.environment || 'staging' }}
 
+      - name: Validate staged release bundle
+        run: node scripts/validate-release-bundle.mjs release "$GITHUB_SHA"
+
       - name: Package release bundle
         run: tar -czf oceanicos-${GITHUB_SHA}.tar.gz -C release .
 

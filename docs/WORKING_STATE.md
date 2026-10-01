@@ -13,6 +13,16 @@ status for the same change. This reduces duplicate green signals and runner cost
 manual historical evidence remains attributable and is not treated as a deployment
 or production-health claim.
 
+## Release-bundle provenance boundary — 2026-10-01
+
+The deployment staging workflow now runs `scripts/validate-release-bundle.mjs`
+before packaging. The validator requires the staged API and web build outputs,
+workspace lockfile, release documentation, an ISO build timestamp, commit
+identity matching `GITHUB_SHA`, and an explicit `VERIFIED` / `STAGED_ONLY` manifest
+with non-empty limitations. A deliberate `DEPLOYED` manifest mutation fails closed
+in the local negative test. This strengthens staging provenance only; it does not
+publish an image, select a hosting provider, prove runtime health, or deploy.
+
 ## Singularity Maximum Compression Core vΩ∞v.MAX & Attestation Engine — 2026-09-12
 
 The Ω∞v Oceanicos repository has reached the Ultimate Dense Singularity (`vΩ∞v.MAX`), binding the whole stack into a zero-entropy, fully attested ecosystem:
