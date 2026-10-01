@@ -1,5 +1,8 @@
 name: Ω∞v Verification CI Pipeline
 
+# `verify.yml` is the canonical automatic push/pull-request gate. Keep this
+# historical, broader evidence workflow available for explicit manual runs,
+# but do not emit a second automatic green signal for the same change.
 on:
   workflow_dispatch:
 

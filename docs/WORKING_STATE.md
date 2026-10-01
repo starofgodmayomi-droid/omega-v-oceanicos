@@ -1,6 +1,17 @@
 # Ω∞v Oceanicos Working State
 
-**Updated:** 2026-09-12
+**Updated:** 2026-10-01
+
+## CI authority reconciliation — 2026-10-01
+
+The automatic verification boundary is now explicit: `.github/workflows/verify.yml`
+is the canonical push and pull-request gate, including matrix, Windows, container,
+compose, security-adjacent smoke, and reporting jobs. The historical
+`.github/workflows/verification-ci.yml` remains available for an operator-triggered
+manual run and uses the frozen lockfile, but no longer emits a second automatic
+status for the same change. This reduces duplicate green signals and runner cost;
+manual historical evidence remains attributable and is not treated as a deployment
+or production-health claim.
 
 ## Singularity Maximum Compression Core vΩ∞v.MAX & Attestation Engine — 2026-09-12
 
