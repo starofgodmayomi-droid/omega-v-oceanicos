@@ -63,6 +63,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # Dependency security is part of the executable proof. Keep this after
+      # the frozen install so CI audits exactly the lockfile it will build.
+      - name: Audit dependencies
+        run: pnpm audit
+
       - name: Check formatting
         run: pnpm format:check
 
@@ -367,7 +372,7 @@ jobs:
                 ? '✅ Verification pipeline passed'
                 : '❌ Verification pipeline did not pass',
               '',
-              `- ${mark(verify)} verify (format, lint, type-check, test, coverage, build) — ${verify}`,
+              `- ${mark(verify)} verify (audit, format, lint, type-check, test, coverage, build) — ${verify}`,
               `- ${mark(windows)} Windows compatibility (format, type-check, test, build) — ${windows}`,
               `- ${mark(docker)} package and smoke test — ${docker}`,
               `- ${mark(compose)} Compose configuration — ${compose}`,
