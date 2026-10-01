@@ -23,6 +23,11 @@ with non-empty limitations. A deliberate `DEPLOYED` manifest mutation fails clos
 in the local negative test. This strengthens staging provenance only; it does not
 publish an image, select a hosting provider, prove runtime health, or deploy.
 
+The staging job also emits a SHA-256 sidecar beside the release archive and
+uploads both files together. The digest supports operator-side artifact equality
+checks; it is not a signature, custody proof, deployment receipt, or proof that
+the archive reached a runtime target.
+
 ## Singularity Maximum Compression Core vΩ∞v.MAX & Attestation Engine — 2026-09-12
 
 The Ω∞v Oceanicos repository has reached the Ultimate Dense Singularity (`vΩ∞v.MAX`), binding the whole stack into a zero-entropy, fully attested ecosystem:
