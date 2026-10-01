@@ -1,5 +1,33 @@
 import { RuleCompiler } from '@omega-v/compiler';
-import { DriftAnalysis, EvolutionProposal, VerificationRule } from '@omega-v/types';
+
+export interface VerificationRule {
+  name: string;
+  version: string;
+  appliesTo: string[];
+  definition: string;
+  description: string;
+  createdAt: string;
+  active: boolean;
+}
+
+export interface DriftAnalysis {
+  ruleName: string;
+  totalExecutions: number;
+  failureRate: number;
+  driftDetected: boolean;
+  recommendedAction: 'MAINTAIN' | 'ADJUST_THRESHOLD' | 'RECOMPILE_DSL';
+}
+
+export interface EvolutionProposal {
+  id: string;
+  targetRule: string;
+  previousDefinition: string;
+  candidateDefinition: string;
+  rationale: string;
+  simulatedSuccessRate: number;
+  status: 'PROPOSED' | 'PROMOTED';
+  proposedAt: string;
+}
 
 /**
  * EvolutionEngine: Controlled Rule Recompilation & Drift Detection Engine (Section XXVII)
