@@ -828,6 +828,8 @@ export {
   type OceanicosClientOptions,
   type FullLoopResult,
   type EcosystemFlowResult,
+  type OneBodyStatus,
+  type EcosystemEvidenceStatus,
   type GrandFlowResult,
   type HyperFlowResult,
   Observer,

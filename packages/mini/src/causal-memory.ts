@@ -127,6 +127,7 @@ export class FileCausalMemory implements CausalMemory {
   private readonly signerId: string;
   private readonly keyVersion: string;
   private integrity = true;
+  private hasObservedJournal = false;
 
   constructor(private readonly path: string, options: { key: string; signerId?: string; keyVersion?: string }) {
     if (!options.key.trim()) throw new Error('causal memory signing key is required');
@@ -141,16 +142,29 @@ export class FileCausalMemory implements CausalMemory {
   }
 
   public appendCausal(record: OmegaChangeRecord, reality: RealityVerification, attestation: RealityAttestation): void {
-    if (attestation.changeId !== record.id || attestation.status !== reality.status || !verifyRealityAttestation(attestation, this.signingKey)) {
+    if (
+      reality.record.id !== record.id ||
+      attestation.changeId !== record.id ||
+      attestation.changeId !== reality.record.id ||
+      attestation.status !== reality.status ||
+      !verifyRealityAttestation(attestation, this.signingKey)
+    ) {
       throw new Error('causal memory rejected an unverifiable or mismatched reality attestation');
+    }
+    if (this.entries.some((entry) => entry.record.id === record.id)) {
+      throw new Error(`causal memory rejected duplicate change identity: ${record.id}`);
     }
     this.appendRaw(record, reality, attestation);
   }
 
-  public all(): readonly CausalMemoryEntry[] { return [...this.entries]; }
-  public reload(): readonly CausalMemoryEntry[] { return this.load(); }
+  public all(): readonly CausalMemoryEntry[] { return this.integrity ? [...this.entries] : []; }
+  public reload(): readonly CausalMemoryEntry[] {
+    this.entries.splice(0, this.entries.length, ...this.load());
+    return this.all();
+  }
   public verifyIntegrity(): boolean { return this.integrity; }
   public replay(changeId: string): CausalMemoryEntry | undefined {
+    if (!this.integrity) return undefined;
     const entry = this.entries.find((candidate) => candidate.record.id === changeId);
     if (!entry || !verifyRealityAttestation(entry.attestation, this.signingKey)) return undefined;
     return entry;
@@ -168,7 +182,15 @@ export class FileCausalMemory implements CausalMemory {
 
   private load(): CausalMemoryEntry[] {
     let raw: string;
-    try { raw = readFileSync(this.path, 'utf8'); } catch { this.integrity = true; return []; }
+    try {
+      raw = readFileSync(this.path, 'utf8');
+      this.hasObservedJournal = true;
+    } catch (error) {
+      // A missing file is a valid empty cold start; every other I/O failure
+      // (or a previously observed file disappearing) means state is unknown.
+      this.integrity = (error as NodeJS.ErrnoException).code === 'ENOENT' && !this.hasObservedJournal;
+      return [];
+    }
     const loaded: CausalMemoryEntry[] = [];
     let previousHash = GENESIS;
     try {
@@ -176,7 +198,7 @@ export class FileCausalMemory implements CausalMemory {
         if (!line.trim()) continue;
         const parsed = JSON.parse(line) as CausalMemoryEntry;
         const { hash, ...unsigned } = parsed;
-        if (parsed.kind !== 'OMEGA_CAUSAL' || parsed.sequence !== loaded.length + 1 || parsed.previousHash !== previousHash || hashEntry(unsigned) !== hash || !verifyRealityAttestation(parsed.attestation, this.signingKey) || parsed.attestation.changeId !== parsed.record.id) throw new Error('causal memory integrity check failed');
+        if (parsed.kind !== 'OMEGA_CAUSAL' || parsed.sequence !== loaded.length + 1 || parsed.previousHash !== previousHash || loaded.some((entry) => entry.record.id === parsed.record.id) || hashEntry(unsigned) !== hash || !verifyRealityAttestation(parsed.attestation, this.signingKey) || parsed.attestation.changeId !== parsed.record.id) throw new Error('causal memory integrity check failed');
         loaded.push(parsed);
         previousHash = parsed.hash;
       }
@@ -184,7 +206,7 @@ export class FileCausalMemory implements CausalMemory {
       return loaded;
     } catch {
       this.integrity = false;
-      return loaded;
+      return [];
     }
   }
 }

@@ -47,6 +47,8 @@ class Remember {
 
 The cryptographic block engines use a finite proof-of-work envelope of `1,000,000` nonce attempts. `PluralisticHashChain.commitState()` and `RememberEngine.append()` accept an optional `{ signal }`; an aborted signal stops mining before the next attempt, and exhaustion fails closed instead of looping indefinitely.
 
+`RememberEngine.getTip()` is observation of the last stored row. It does not prove the chain. `verifyChain()` recomputes SHA-256 over every committed payload, checks previous-hash links, genesis anchoring, sequential indexes, and the `00` proof-of-work prefix. Empty ledgers are valid (nothing to forge). `getVerifiedTip()` and `append()` fail closed when `verifyChain().valid === false`. `GET /v1/block/tip` and `/health.checks.memory.integrity` expose that evidence; `POST /v1/cycle` returns `409 LEDGER_INTEGRITY_DEGRADED` instead of extending a broken chain. Observation of a tip, attestation of a cycle, and verification of the hash chain remain distinct.
+
 The package does not expose the secret or claim key custody. Operators remain responsible for secret provisioning, rotation, recovery, and protection of the memory path.
 
 ## Status

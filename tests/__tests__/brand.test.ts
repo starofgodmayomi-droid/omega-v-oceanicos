@@ -62,4 +62,11 @@ describe('brand system', () => {
       expect(html).toContain(tag);
     }
   });
+
+  it('keeps the public product lockup canonical', () => {
+    expect(html).toContain('<title>OCEANICOS — Reality, Verified</title>');
+    expect(html).toContain('name="description"');
+    expect(html).toContain('theme-color');
+    expect(html).not.toContain('Oceanicos Max');
+  });
 });

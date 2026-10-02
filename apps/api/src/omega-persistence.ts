@@ -17,6 +17,14 @@ export type WorkerLease = {
   expiresAt: string;
 };
 
+export type DurableRevocation = {
+  id: string;
+  attestationId: string;
+  reason: string;
+  revokedBy: string;
+  revokedAt: string;
+};
+
 type SqliteDb = {
   exec(sql: string): void;
   prepare(sql: string): { get(...params: unknown[]): any; all(...params: unknown[]): any[]; run(...params: unknown[]): any };
@@ -68,6 +76,13 @@ export class OmegaDurableStore {
         capability TEXT NOT NULL,
         leased_at TEXT NOT NULL,
         expires_at TEXT NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS omega_revocations (
+        id TEXT PRIMARY KEY,
+        attestation_id TEXT NOT NULL UNIQUE,
+        reason TEXT NOT NULL,
+        revoked_by TEXT NOT NULL,
+        revoked_at TEXT NOT NULL
       );
     `);
   }
@@ -124,6 +139,33 @@ export class OmegaDurableStore {
       ? this.db.prepare('SELECT event_json FROM omega_events WHERE command_id = ? ORDER BY sequence ASC').all(commandId)
       : this.db.prepare('SELECT event_json FROM omega_events ORDER BY sequence ASC').all();
     return rows.map((row) => JSON.parse(row.event_json));
+  }
+
+  listRevocations(): readonly DurableRevocation[] {
+    return this.db.prepare(
+      'SELECT id, attestation_id, reason, revoked_by, revoked_at FROM omega_revocations ORDER BY revoked_at ASC, id ASC'
+    ).all().map((row) => ({
+      id: row.id,
+      attestationId: row.attestation_id,
+      reason: row.reason,
+      revokedBy: row.revoked_by,
+      revokedAt: row.revoked_at,
+    }));
+  }
+
+  recordRevocation(record: DurableRevocation): boolean {
+    try {
+      this.db.prepare(
+        'INSERT INTO omega_revocations(id, attestation_id, reason, revoked_by, revoked_at) VALUES (?, ?, ?, ?, ?)'
+      ).run(record.id, record.attestationId, record.reason, record.revokedBy, record.revokedAt);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  deleteRevocation(attestationId: string): void {
+    this.db.prepare('DELETE FROM omega_revocations WHERE attestation_id = ?').run(attestationId);
   }
 
   registerWorker(input: { workerId: string; capabilities: string[] }): DurableWorker {

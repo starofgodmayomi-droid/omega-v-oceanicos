@@ -1,10 +1,9 @@
 name: Ω∞v Verification CI Pipeline
 
+# `verify.yml` is the canonical automatic push/pull-request gate. Keep this
+# historical, broader evidence workflow available for explicit manual runs,
+# but do not emit a second automatic green signal for the same change.
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -17,21 +16,29 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Enable pnpm
-        uses: pnpm/action-setup@v3
+        uses: pnpm/action-setup@v6
         with:
-          version: 10
+          version: 10.34.5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: pnpm
 
+      - name: 0. Validate CI contracts
+        run: pnpm run validate:ci
+
       - name: Install Workspace Dependencies
-        run: pnpm install --no-frozen-lockfile
+        # The committed pnpm lockfile is the dependency provenance boundary.
+        # A non-frozen install can silently verify a graph that was never reviewed.
+        run: pnpm install --frozen-lockfile
+
+      - name: Audit Workspace Dependencies
+        run: pnpm audit
 
       - name: 1. TypeScript Strict Verification
         run: pnpm run typecheck
@@ -80,7 +87,7 @@ jobs:
           "
 
       - name: 7. Upload Evidence Artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: verification-evidence
           path: artifacts/
