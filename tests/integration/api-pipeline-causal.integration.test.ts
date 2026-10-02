@@ -58,7 +58,7 @@ describe('live API pipeline → durable causal memory', () => {
         assert.equal(response.statusCode, 200);
         const body = response.json();
         assert.equal(body.success, true);
-        assert.equal(body.pipeline.stage, 'OBSERVE');
+        assert.equal(body.pipeline.stage, 'RECONCILE');
         assert.equal(body.pipeline.realityStatus, 'VERIFIED');
         assert.equal(body.pipeline.durableMemory, true);
         assert.equal(body.pipeline.memoryIntegrity, true);
