@@ -17,7 +17,6 @@ import { registerEcosystemRoute } from './ecosystem-route.js';
 import { registerNavigatorEvidenceRoute } from './navigator-route.js';
 import { registerRealityRoute } from './reality-route.js';
 import { registerDependencyRoute } from './dependency-route.js';
-import { OmegaCommandStore, OmegaIdempotencyConflictError, registerOmegaRoutes } from './omega.js';
 import { registerValueNavigatorRoute } from './value-navigator-route.js';
 import { registerConnectorObservationRoute } from './connector-observation-route.js';
 import { OmegaCommandStore, OmegaIdempotencyConflictError, registerOmegaRoutes } from './omega.js';
