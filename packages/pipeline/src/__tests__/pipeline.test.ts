@@ -82,7 +82,7 @@ describe('OceanicosPipelineEngine — Automated CI/CD Pipeline Orchestrator', ()
 
       const stage = result.run.stages[0];
       expect(stage.attestations.length).toBeGreaterThanOrEqual(1);
-      expect(stage.attestations[0].slsaLevel).toBe('SLSA_BUILD_L3');
+      expect(stage.attestations[0].slsaLevel).toBe('LOCAL_HMAC_OBSERVED');
       expect(stage.attestations[0].builderSignature).toMatch(/^0x/);
     });
   });

@@ -11,7 +11,10 @@ import { ObservationStreamPanel } from './ObservationStreamPanel';
 import { OreadConsole } from './OreadConsole';
 import { MoodCodexPanel } from './MoodCodexPanel';
 import { DivergenceAlertsPanel } from './DivergenceAlertsPanel';
+import { ValueNavigatorPanel } from './ValueNavigatorPanel';
 import { LifecycleFlow, deriveStageStates, type LifecycleStage } from './LifecycleFlow';
+import { GlobeViewport } from './GlobeViewport';
+import { bindGlobeEvidence } from './globe-shell';
 import {
   theme,
   statusColor,
@@ -51,6 +54,14 @@ const MODE_BUTTONS = [
 
 export function App() {
   const [tip, setTip] = useState<any>(null);
+  const [ledgerIntegrity, setLedgerIntegrity] = useState<{
+    valid: boolean;
+    height: number;
+    genesisHash: string | null;
+    tipHash: string | null;
+    brokenAt?: number;
+    reason?: string;
+  } | null>(null);
   const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [streamConnected, setStreamConnected] = useState(false);
@@ -79,6 +90,9 @@ export function App() {
   const [omegaLoading, setOmegaLoading] = useState(false);
 
   const [openStageId, setOpenStageId] = useState<string | null>(null);
+  const [globeMax, setGlobeMax] = useState(false);
+  const [tipReachable, setTipReachable] = useState<boolean | null>(null);
+  const [tipRouteStatus, setTipRouteStatus] = useState<string | null>(null);
 
   const eventSourceRef = useRef<EventSource | null>(null);
 
@@ -190,16 +204,18 @@ export function App() {
     };
   }, []);
 
-  // REST polling fallback — when SSE is unavailable (proxy limitation),
-  // poll the tip endpoint so the UI stays live without EventSource.
+  // REST polling — always refresh ledger integrity; use tip only when SSE is down.
   useEffect(() => {
-    if (streamConnected) return;
     let active = true;
     const poll = async () => {
       if (!active) return;
       try {
         const d = await apiRequest<any>('/v1/block/tip');
-        if (d.tip && active) {
+        if (!active) return;
+        setTipReachable(true);
+        setTipRouteStatus(typeof d.status === 'string' ? d.status : null);
+        if (d.integrity) setLedgerIntegrity(d.integrity);
+        if (!streamConnected && d.tip) {
           setTip(d.tip);
           setHistory((prev) => {
             const exists = prev.some((b) => b.hash === d.tip.hash);
@@ -207,7 +223,9 @@ export function App() {
           });
         }
       } catch {
-        /* ambient */
+        if (!active) return;
+        setTipReachable(false);
+        setTipRouteStatus(null);
       }
     };
     poll();
@@ -221,12 +239,16 @@ export function App() {
   const fetchTipFallback = async () => {
     try {
       const d = await apiRequest<any>('/v1/block/tip');
+      setTipReachable(true);
+      setTipRouteStatus(typeof d.status === 'string' ? d.status : null);
+      if (d.integrity) setLedgerIntegrity(d.integrity);
       if (d.tip) {
         setTip(d.tip);
         setHistory((prev) => (prev.length === 0 ? [d.tip] : prev));
       }
     } catch {
-      /* ambient */
+      setTipReachable(false);
+      setTipRouteStatus(null);
     }
   };
 
@@ -501,6 +523,7 @@ export function App() {
           history={history}
           minerActive={minerActive}
           minerStats={minerStats}
+          integrity={ledgerIntegrity}
         />
       ),
     },
@@ -517,7 +540,11 @@ export function App() {
       id: 'remember',
       icon: '🧠',
       label: 'Remember',
-      subtitle: 'Lineage and memory',
+      subtitle: ledgerIntegrity
+        ? ledgerIntegrity.valid
+          ? `integrity valid · height ${ledgerIntegrity.height}`
+          : `DEGRADED · ${ledgerIntegrity.reason ?? 'unverified'}`
+        : 'Lineage and memory',
       state: stageStates.remember,
       detail: <TransitionProvenancePanel />,
     },
@@ -588,9 +615,20 @@ export function App() {
         fontFamily: theme.fontSans,
         display: 'flex',
         flexDirection: 'column',
+        position: 'relative',
       }}
     >
+      <GlobeViewport
+        active={globeMax}
+        evidence={bindGlobeEvidence({
+          reachable: tipReachable,
+          tipRouteStatus,
+          tipEvidenceStatus: tip?.evidence?.status ?? null,
+          chainIntact: ledgerIntegrity ? ledgerIntegrity.valid : null,
+        })}
+      />
       {/* Ambient status bar */}
+      <div style={{ position: 'relative', zIndex: 2 }}>
       <AmbientBar
         connected={streamConnected}
         reconnectAttempt={reconnectAttempt}
@@ -600,6 +638,7 @@ export function App() {
         epochsRemembered={history.length}
         miningActive={minerActive}
       />
+      </div>
 
       {/* Error toast */}
       {lastError && (
@@ -637,11 +676,13 @@ export function App() {
       {/* Main surface */}
       <main
         style={{
-          maxWidth: '720px',
+          maxWidth: globeMax ? '1100px' : '720px',
           width: '100%',
           margin: '0 auto',
           padding: '60px 24px 40px',
           flex: 1,
+          position: 'relative',
+          zIndex: 1,
         }}
       >
         {/* Logo */}
@@ -656,6 +697,26 @@ export function App() {
           }}
         >
           💧 OCEANICOS
+        </div>
+        <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+          <button
+            type="button"
+            aria-pressed={globeMax}
+            onClick={() => setGlobeMax((v) => !v)}
+            style={{
+              background: 'transparent',
+              border: `1px solid ${theme.borderBright}`,
+              color: theme.accent,
+              borderRadius: theme.radiusPill,
+              padding: '6px 14px',
+              fontSize: '11px',
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              cursor: 'pointer',
+            }}
+          >
+            {globeMax ? 'Exit globe view' : 'Globe view'}
+          </button>
         </div>
 
         {/* Prompt */}
@@ -766,6 +827,7 @@ export function App() {
         <OreadConsole />
         <MoodCodexPanel />
         <DivergenceAlertsPanel />
+        <ValueNavigatorPanel />
 
         <IntentFlow
           command={omegaCommand}

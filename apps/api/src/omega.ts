@@ -10,6 +10,7 @@ import type { OmegaCommand, OmegaCommandResult, OmegaCommandStatus, OmegaWorkerI
 import { decisionToStatus, validateOmegaCommandInput } from '@oceanicos/types';
 import { buildSymbolicDrop } from '@omega-v/oreade';
 import { OmegaDurableStore } from './omega-persistence.js';
+import type { DurableRevocation } from './omega-persistence.js';
 
 type StoredCommand = OmegaCommand & {
   readonly result?: OmegaCommandResult;
@@ -113,6 +114,18 @@ export class OmegaCommandStore {
 
   listEvents(commandId?: string): readonly Record<string, unknown>[] {
     return this.durable.listEvents(commandId);
+  }
+
+  listRevocations(): readonly DurableRevocation[] {
+    return this.durable.listRevocations();
+  }
+
+  recordRevocation(record: DurableRevocation): boolean {
+    return this.durable.recordRevocation(record);
+  }
+
+  deleteRevocation(attestationId: string): void {
+    this.durable.deleteRevocation(attestationId);
   }
 
   listCommands(): readonly StoredCommand[] {

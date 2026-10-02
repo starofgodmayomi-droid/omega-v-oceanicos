@@ -5,7 +5,7 @@ import { randomUUID } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { RememberEngine } from '@oceanicos/remember';
-import { MiniKernel } from '@oceanicos/mini';
+import { FileConnectorObservationStore, FileValueNavigatorStore, MiniKernel } from '@oceanicos/mini';
 import { AsymmetricValidationGuard, MultiRegionMeshConvergence } from '@oceanicos/verification';
 import { ObserverEngine } from '@oceanicos/observer';
 import { AttestationService } from '@oceanicos/attestation';
@@ -17,6 +17,8 @@ import { registerEcosystemRoute } from './ecosystem-route.js';
 import { registerNavigatorEvidenceRoute } from './navigator-route.js';
 import { registerRealityRoute } from './reality-route.js';
 import { registerDependencyRoute } from './dependency-route.js';
+import { registerValueNavigatorRoute } from './value-navigator-route.js';
+import { registerConnectorObservationRoute } from './connector-observation-route.js';
 import { OmegaCommandStore, registerOmegaRoutes } from './omega.js';
 import {
   ENCRYPTION_ALGORITHM,
@@ -44,6 +46,8 @@ const MIN_ATTESTATION_KEY_LENGTH = 32;
 export type CreateAppOptions = {
   allowUnsignedCycle?: boolean;
   attestationSigningKey?: string;
+  valueNavigatorPath?: string;
+  connectorObservationPath?: string;
 };
 
 type AuthMode = 'local' | 'required';
@@ -108,6 +112,14 @@ export function createApp(
   });
   const omegaCommandPath = dbPath === ':memory:' ? ':memory:' : join(resolve(dbPath, '..'), 'omega-commands.db');
   const omegaCommands = new OmegaCommandStore(omegaCommandPath);
+  const durableRevocationStore = persistenceEnabled && dbPath !== ':memory:' ? omegaCommands : null;
+  const valueNavigatorPath = options.valueNavigatorPath?.trim() || process.env.OMEGA_VALUE_NAVIGATOR_PATH?.trim() || `${dbPath}.value-navigator.jsonl`;
+  const valueNavigatorStore = new FileValueNavigatorStore(valueNavigatorPath);
+  const connectorObservationPath =
+    options.connectorObservationPath?.trim()
+    || process.env.OMEGA_CONNECTOR_OBSERVATION_PATH?.trim()
+    || (dbPath === ':memory:' ? ':memory:' : `${dbPath}.connector-observations.jsonl`);
+  const connectorObservationStore = new FileConnectorObservationStore(connectorObservationPath);
 
   fastify.addHook('onClose', async () => {
     ledgerMemory.close();
@@ -130,6 +142,11 @@ export function createApp(
       const record = value as RevocationRecord;
       revocations.set(record.attestationId, record);
     }
+  }
+  if (durableRevocationStore) {
+    for (const record of revocations.values()) durableRevocationStore.recordRevocation(record);
+    revocations.clear();
+    for (const record of durableRevocationStore.listRevocations()) revocations.set(record.attestationId, record);
   }
   const streamClients = new Set<(block: any) => boolean>();
   let minerInterval: NodeJS.Timeout | null = null;
@@ -177,9 +194,17 @@ export function createApp(
   registerNavigatorEvidenceRoute(fastify);
   registerRealityRoute(fastify, authMode, Boolean(attestationSigningKey), Boolean(ledgerMemory.getTip()));
   registerDependencyRoute(fastify);
+  registerValueNavigatorRoute(fastify, valueNavigatorStore, jsonError);
+  registerConnectorObservationRoute(fastify, jsonError, connectorObservationStore);
 
   fastify.get('/health', async (_request, reply) => {
-    const memoryReady = true;
+    let ledgerIntegrity;
+    try {
+      ledgerIntegrity = ledgerMemory.verifyChain();
+    } catch {
+      ledgerIntegrity = { valid: false, height: 0, genesisHash: null, tipHash: null, reason: 'PARSE_FAILURE' };
+    }
+    const memoryReady = ledgerIntegrity.valid;
     const ready = memoryReady && persistenceReady(persistenceEnabled, snapshot.source) && eventLogReady(persistenceEnabled, eventLog.source) && recovery.mode !== 'invalid' && deletion.mode !== 'invalid' && custody.mode !== 'invalid' && coordination.mode !== 'invalid';
     const coverage = persistenceCoverage({
       enabled: persistenceEnabled,
@@ -198,7 +223,7 @@ export function createApp(
       readiness: ready ? 'ready' : 'degraded',
       checks: {
         observer: 'ready', verifier: 'ready', attester: attestationSigningKey ? 'ready' : 'degraded',
-        memory: { status: memoryReady ? 'ready' : 'degraded', integrity: memoryReady, encryption: 'disabled' },
+        memory: { status: memoryReady ? 'ready' : 'degraded', integrity: ledgerIntegrity.valid, height: ledgerIntegrity.height, reason: ledgerIntegrity.reason ?? null, encryption: 'disabled' },
         persistence: {
           mode: persistenceEnabled ? 'file' : 'memory',
           source: snapshot.source,
@@ -311,14 +336,24 @@ export function createApp(
     if (Boolean(signature) !== Boolean(publicKey)) return jsonError(reply, 400, 'INCOMPLETE_ASYMMETRIC_SIGNATURE');
     if (!signature && !publicKey && !allowUnsignedCycle) return jsonError(reply, 401, 'ASYMMETRIC_SIGNATURE_REQUIRED');
     if (signature && publicKey && !AsymmetricValidationGuard.verify('EXECUTE_OMNI_CYCLE', signature, publicKey)) return jsonError(reply, 401, 'INVALID_ASYMMETRIC_SIGNATURE');
+    const ledgerIntegrity = ledgerMemory.verifyChain();
+    if (!ledgerIntegrity.valid) return jsonError(reply, 409, 'LEDGER_INTEGRITY_DEGRADED', { integrity: ledgerIntegrity });
     const block = kernel.runCycle();
     minerStats.totalMined++;
     minerStats.lastBlockTime = block.timestamp;
     broadcastMintedBlock(block);
-    return { success: true, status: 'SYNCHRONIZED', block };
+    return { success: true, status: 'SYNCHRONIZED', block, integrity: ledgerMemory.verifyChain() };
   });
 
-  fastify.get('/v1/block/tip', { preHandler: requireReadAccess }, async () => ({ success: true, status: 'ONLINE', tip: ledgerMemory.getTip() }));
+  fastify.get('/v1/block/tip', { preHandler: requireReadAccess }, async () => {
+    const integrity = ledgerMemory.verifyChain();
+    return {
+      success: true,
+      status: integrity.valid ? 'ONLINE' : 'DEGRADED',
+      tip: ledgerMemory.getTip(),
+      integrity,
+    };
+  });
   fastify.get('/v1/stream', { preHandler: requireReadAccess }, async (request: any, reply) => {
     if (streamClients.size >= MAX_STREAM_CLIENTS) return jsonError(reply, 503, 'STREAM_CAPACITY_REACHED', { limit: MAX_STREAM_CLIENTS });
     reply.raw.setHeader('Content-Type', 'text/event-stream');
@@ -395,26 +430,51 @@ export function createApp(
   fastify.post('/jobs/:jobId/complete', { preHandler: requireJobAccess }, async (request: any, reply) => { try { return { success: true, ...localJobLedger.complete(request.params.jobId, request.body?.workerId, String(request.body?.resultSummary ?? ''), jobProvenance(request)) }; } catch (error) { return jobError(reply, error); } });
   fastify.post('/jobs/:jobId/fail', { preHandler: requireJobAccess }, async (request: any, reply) => { try { return { success: true, ...localJobLedger.fail(request.params.jobId, request.body?.workerId, String(request.body?.errorClass ?? ''), jobProvenance(request)) }; } catch (error) { return jobError(reply, error); } });
 
-  fastify.get('/attest/revocations', { preHandler: requireReadAccess }, async () => ({ success: true, data: [...revocations.values()], meta: { integrity: 'intact', revision: revocations.size } }));
+  const currentRevocations = (): readonly RevocationRecord[] => {
+    if (!durableRevocationStore) return [...revocations.values()];
+    revocations.clear();
+    for (const record of durableRevocationStore.listRevocations()) revocations.set(record.attestationId, record);
+    return [...revocations.values()];
+  };
+  fastify.get('/attest/revocations', { preHandler: requireReadAccess }, async () => {
+    const records = currentRevocations();
+    return {
+      success: true,
+      data: records,
+      meta: {
+        integrity: 'intact',
+        revision: records.length,
+        consistency: durableRevocationStore ? 'multi-process-single-volume' : 'single-process',
+        verified: Boolean(durableRevocationStore),
+      },
+    };
+  });
   fastify.post('/attest/revoke', { preHandler: requireAdminAccess }, async (request: any, reply) => {
     const attestationId = String(request.body?.attestationId ?? '').trim();
     const reason = String(request.body?.reason ?? '').trim();
     const revokedBy = String(request.body?.revokedBy ?? request.headers['x-omega-operator-id'] ?? 'operator').trim();
     if (!attestationId || !reason) return jsonError(reply, 400, 'INVALID_REVOCATION');
+    currentRevocations();
     if (revocations.has(attestationId)) return jsonError(reply, 409, 'ATTESTATION_ALREADY_REVOKED');
     const record: RevocationRecord = { id: `rev-${randomUUID()}`, attestationId, reason, revokedBy, revokedAt: new Date().toISOString() };
+    if (durableRevocationStore && !durableRevocationStore.recordRevocation(record)) {
+      currentRevocations();
+      return jsonError(reply, 409, 'ATTESTATION_ALREADY_REVOKED');
+    }
     revocations.set(attestationId, record);
     const persistedSnapshot = { ...snapshot.snapshot, revocations: [...revocations.values()] };
     const snapshotWritten = saveSnapshot(runtimeStorePath, persistedSnapshot, persistenceEnabled, persistenceKey);
     const eventWritten = appendEvent(eventLogPath, { type: 'attestation.revoked', ...record }, persistenceEnabled, persistenceKey);
     if (persistenceEnabled && (!snapshotWritten || !eventWritten.appended)) {
+      durableRevocationStore?.deleteRevocation(attestationId);
+      if (durableRevocationStore) currentRevocations();
       revocations.delete(attestationId);
       return jsonError(reply, 503, 'REVOCATION_PERSISTENCE_FAILED', { snapshotWritten, eventWritten: eventWritten.appended });
     }
     snapshot.snapshot = persistedSnapshot;
     return reply.status(201).send({ success: true, data: record });
   });
-  fastify.get('/attest/policy', { preHandler: requireReadAccess }, async () => ({ success: true, policy: { authMode, revocationEnabled: true, revocationRevision: revocations.size, attestationAlgorithm: 'HMAC-SHA256' } }));
+  fastify.get('/attest/policy', { preHandler: requireReadAccess }, async () => ({ success: true, policy: { authMode, revocationEnabled: true, revocationRevision: currentRevocations().length, revocationConsistency: durableRevocationStore ? 'multi-process-single-volume' : 'single-process', attestationAlgorithm: 'HMAC-SHA256' } }));
 
   const webDist = process.env.OMEGA_WEB_DIST?.trim() ? resolve(process.env.OMEGA_WEB_DIST.trim()) : null;
   const sendStatic = (relativePath: string, reply: any) => {

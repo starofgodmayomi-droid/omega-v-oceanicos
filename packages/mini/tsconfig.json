@@ -19,6 +19,10 @@
     "src/change.ts",
     "src/compiler.ts",
     "src/ir-validator.ts",
-    "src/pipeline.ts"
+    "src/pipeline.ts",
+    "src/value-navigator.ts",
+    "src/connector-admission.ts",
+    "src/connector-observation.ts",
+    "src/connector-observation-journal.ts"
   ]
 }

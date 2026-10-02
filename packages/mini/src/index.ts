@@ -16,6 +16,10 @@ export class MiniKernel {
   public executeCycle(): IMiniBlock {
     return this.runCycle();
   }
+  /** Verification of the durable ledger, not observation of the last row. */
+  public verifyLedger() {
+    return this.remember.verifyChain();
+  }
 }
 
 export const MiniKernelCoordinator = MiniKernel;
@@ -46,6 +50,31 @@ export { buildOmegaCommand, listOmegaWorkers } from './worker-registry.js';
 export type { OmegaWorkerDescriptor } from './worker-registry.js';
 export { admitOmegaIR } from './admission-bridge.js';
 export type { OmegaAdmissionBridgeInput, OmegaAdmissionBridgeResult } from './admission-bridge.js';
+export { admitOmegaConnector } from './connector-admission.js';
+export type {
+  OmegaConnectorAdmissionDecision,
+  OmegaConnectorAdmissionInput,
+  OmegaConnectorAdmissionResult,
+  OmegaConnectorDeclaration,
+} from './connector-admission.js';
+export { executeAdmittedConnector, observeAdmittedConnector } from './connector-observation.js';
+export { mirrorRepositoryState, unknownMirrorObservation } from './mirror-worker.js';
+export { reconcileRepositoryState } from './repo-verifier.js';
+export type { RepositoryReconciliation, RepositoryReconciliationStatus } from './repo-verifier.js';
+export type { MirrorObservation, MirrorRepositorySnapshot } from './mirror-worker.js';
+export type {
+  ConnectorExecutionObservation,
+  ConnectorHandler,
+  ConnectorObservationResult,
+  ConnectorRealityStatus,
+  ExecuteAdmittedConnectorInput,
+  ObserveAdmittedConnectorInput,
+} from './connector-observation.js';
+export { FileConnectorObservationStore } from './connector-observation-journal.js';
+export type {
+  ConnectorObservationJournalEntry,
+  ConnectorObservationStore,
+} from './connector-observation-journal.js';
 export { runOmegaChangePipeline, resolveBoundedWorkerHandler } from './pipeline.js';
 export type {
   OmegaPipelineInput,
@@ -55,6 +84,21 @@ export type {
 } from './pipeline.js';
 export { FileCausalMemory, createRealityAttestation, verifyRealityAttestation } from './causal-memory.js';
 export type { CausalMemory, CausalMemoryEntry, RealityAttestation } from './causal-memory.js';
+export {
+  createValueNavigatorProposal,
+  observeValueNavigatorProposal,
+  FileValueNavigatorStore,
+} from './value-navigator.js';
+export type {
+  ValueNavigatorDraft,
+  ValueNavigatorEntry,
+  ValueNavigatorObservationInput,
+  ValueNavigatorPhase,
+  ValueNavigatorProposalInput,
+  ValueNavigatorStatus,
+  ValueNavigatorStore,
+  ValuePotentialHypothesis,
+} from './value-navigator.js';
 
 export function executeOceanicosMaxExpansion(): CryptographicBlock {
   const kernelChain = new PluralisticHashChain();

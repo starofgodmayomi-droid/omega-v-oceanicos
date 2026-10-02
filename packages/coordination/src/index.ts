@@ -260,3 +260,15 @@ export async function runCoordinationEvidenceProbe(input: {
     limitations: [...coordinationLimitations],
   };
 }
+
+export { activateAdmittedWorkersAndBuilders, activateWorkersAndBuilders, activationAdmissionFromOmegaBridge, activationEvidenceFromExecution } from './activation.js';
+export type {
+  ActivationAdmission,
+  ActivationRealityStatus,
+  WorkerBuilderActivationEvidence,
+  OmegaAdmissionBridgeResultLike,
+  ActivationAuthorization,
+  AdmittedWorkerBuilderActivationRequest,
+  WorkerBuilderActivationRequest,
+  WorkerBuilderActivationResult,
+} from './activation.js';

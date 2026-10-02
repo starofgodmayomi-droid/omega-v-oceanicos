@@ -32,6 +32,9 @@ const WORKERS: readonly OmegaWorkerDescriptor[] = [
   { id: 'tester', version: '1.0.0', role: 'run an allowlisted repository test or build', risk: 'local-mutating', humanApprovalRequired: true, enabled: true, capabilities: ['test:allowlisted'], limitations: ['no arbitrary shell or network mutation'] },
   { id: 'security-reviewer', version: '1.0.0', role: 'review proposed commands and diffs', risk: 'read-only', humanApprovalRequired: false, enabled: true, capabilities: ['review:security'], limitations: ['review is not authorization'] },
   { id: 'governance-reviewer', version: '1.0.0', role: 'preserve dissent and policy concerns', risk: 'read-only', humanApprovalRequired: false, enabled: true, capabilities: ['review:governance'], limitations: ['cannot approve its own proposal'] },
+  { id: 'mirror', version: '1.0.0', role: 'reflect current repository state into bounded evidence', risk: 'read-only', humanApprovalRequired: false, enabled: true, capabilities: ['observe:repository-state', 'reflect:change-surface'], limitations: ['does not mutate the repository or claim external runtime truth'] },
+  { id: 'repo-builder', version: '1.0.0', role: 'prepare an allowlisted repository change for human-authorized execution', risk: 'local-mutating', humanApprovalRequired: true, enabled: true, capabilities: ['build:allowlisted-repository-change'], limitations: ['no arbitrary shell, credentials, deployment, or self-authorization'] },
+  { id: 'repo-verifier', version: '1.0.0', role: 'verify repository evidence and reconcile proposed versus observed state', risk: 'read-only', humanApprovalRequired: false, enabled: true, capabilities: ['verify:repository-state', 'reconcile:change'], limitations: ['verification does not grant authorization or merge authority'] },
 ];
 
 export function listOmegaWorkers(): readonly OmegaWorkerDescriptor[] {
