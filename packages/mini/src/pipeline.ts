@@ -31,6 +31,7 @@ export type PipelineStage =
   | 'ADMIT'
   | 'EXECUTE'
   | 'OBSERVE'
+  | 'RECONCILE'
   | 'HALTED';
 
 export type PipelineHaltReason =
@@ -192,7 +193,7 @@ export function runOmegaChangePipeline(input: OmegaPipelineInput): OmegaPipeline
       haltReason: 'IR_INVALID',
       ir,
       validation,
-      statusVector: statusVector({ represented: 'YES', implemented: 'NO', tested: 'NO' }),
+      statusVector: statusVector({ represented: 'YES', implemented: 'NO' }),
       provenanceRoot: buildProvenanceRoot(lineage),
       lineage,
     };
@@ -259,7 +260,7 @@ export function runOmegaChangePipeline(input: OmegaPipelineInput): OmegaPipeline
       ir,
       validation,
       record,
-      statusVector: statusVector({ represented: 'YES', implemented: 'YES', tested: 'YES', admitted: 'NO' }),
+      statusVector: statusVector({ represented: 'YES', implemented: 'YES', admitted: 'NO' }),
       provenanceRoot: buildProvenanceRoot(lineage),
       lineage,
     };
@@ -273,7 +274,7 @@ export function runOmegaChangePipeline(input: OmegaPipelineInput): OmegaPipeline
       ir,
       validation,
       record,
-      statusVector: statusVector({ represented: 'YES', implemented: 'YES', tested: 'YES', admitted: 'UNKNOWN' }),
+      statusVector: statusVector({ represented: 'YES', implemented: 'YES', admitted: 'UNKNOWN' }),
       provenanceRoot: buildProvenanceRoot(lineage),
       lineage,
     };
@@ -300,7 +301,7 @@ export function runOmegaChangePipeline(input: OmegaPipelineInput): OmegaPipeline
       ir,
       validation,
       record,
-      statusVector: statusVector({ represented: 'YES', implemented: 'YES', tested: 'YES', admitted: 'YES', executed: 'NO' }),
+      statusVector: statusVector({ represented: 'YES', implemented: 'YES', admitted: 'YES', executed: 'NO' }),
       provenanceRoot: buildProvenanceRoot(lineage),
       lineage: [...lineage, `worker:${resolved.error ?? 'missing'}`],
     };
@@ -344,7 +345,7 @@ export function runOmegaChangePipeline(input: OmegaPipelineInput): OmegaPipeline
       validation,
       record: execution.record,
       execution,
-      statusVector: statusVector({ represented: 'YES', implemented: 'YES', tested: 'YES', admitted: 'YES', executed: 'YES' }),
+      statusVector: statusVector({ represented: 'YES', implemented: 'YES', admitted: 'YES', executed: 'YES' }),
       provenanceRoot: buildProvenanceRoot(lineage),
       lineage,
     };
@@ -376,7 +377,7 @@ export function runOmegaChangePipeline(input: OmegaPipelineInput): OmegaPipeline
   }
 
   return {
-    stage: 'OBSERVE',
+    stage: 'RECONCILE',
     halted: false,
     ir,
     validation,
