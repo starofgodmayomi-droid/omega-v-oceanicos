@@ -17,21 +17,26 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Enable pnpm
-        uses: pnpm/action-setup@v3
+        uses: pnpm/action-setup@v6
         with:
-          version: 10
+          version: 10.34.5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: pnpm
 
+      - name: 0. Validate CI contracts
+        run: pnpm run validate:ci
+
       - name: Install Workspace Dependencies
-        run: pnpm install --no-frozen-lockfile
+        # The committed pnpm-lock.yaml is the dependency contract. A mutable
+        # install can silently test a graph different from the one reviewed.
+        run: pnpm install --frozen-lockfile
 
       - name: 1. TypeScript Strict Verification
         run: pnpm run typecheck

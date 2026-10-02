@@ -8,6 +8,7 @@
     "typecheck": "pnpm --recursive run build && pnpm --recursive run typecheck",
     "format:check": "git diff --check",
     "audit": "node scripts/oceanicos-audit.mjs",
+    "validate:ci": "node scripts/validate-ci-contract.mjs",
     "validate:skills": "node scripts/validate-skill-contracts.mjs",
     "lint": "pnpm typecheck",
     "type-check": "pnpm typecheck",
