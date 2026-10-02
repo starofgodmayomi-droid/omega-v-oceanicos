@@ -38,6 +38,9 @@ jobs:
         # install can silently test a graph different from the one reviewed.
         run: pnpm install --frozen-lockfile
 
+      - name: Audit Workspace Dependencies
+        run: pnpm audit
+
       - name: 1. TypeScript Strict Verification
         run: pnpm run typecheck
 
