@@ -118,9 +118,12 @@ describe('Ω∞v command API vertical slice', () => {
   it('rejects unknown workers and duplicate mutations are idempotent', async () => {
     const invalid = await app.inject({ method: 'POST', url: '/v1/omega/commands', payload: { intent: 'bad worker', requestedBy: 'dashboard-user', workers: ['arbitrary-shell'], idempotencyKey: 'api-slice-invalid' } });
     assert.equal(invalid.statusCode, 400);
-    const duplicate = await app.inject({ method: 'POST', url: '/v1/omega/commands', payload: { intent: 'run the bounded test plan', requestedBy: 'dashboard-user', workers: ['planner', 'tester'], idempotencyKey: 'api-slice-1' } });
-    assert.equal(duplicate.statusCode, 201);
+    const duplicate = await app.inject({ method: 'POST', url: '/v1/omega/commands', payload: { intent: 'run the bounded test plan', requestedBy: 'dashboard-user', workers: ['planner', 'tester'], idempotencyKey: 'api-slice-1', context: { stateBefore: 'S0' } } });
+    assert.equal(duplicate.statusCode, 200);
     assert.equal(duplicate.json().command.commandId, 'omega-api-slice-1');
+    const conflict = await app.inject({ method: 'POST', url: '/v1/omega/commands', payload: { intent: 'a different bounded test plan', requestedBy: 'dashboard-user', workers: ['planner', 'tester'], idempotencyKey: 'api-slice-1' } });
+    assert.equal(conflict.statusCode, 409);
+    assert.equal(conflict.json().error, 'OMEGA_IDEMPOTENCY_CONFLICT');
   });
 
   it('rate-limits repeated command-store reads', async () => {
