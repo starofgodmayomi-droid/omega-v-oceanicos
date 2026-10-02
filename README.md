@@ -26,6 +26,7 @@ A verification-first full-stack ecosystem for observing, verifying, attesting, a
 - 📋 **[Manifest](MANIFEST.md)** — Project mission, principles, and architecture
 - 💧 **[Mirror-Water Universal Body](docs/MIRROR-WATER-UNIVERSAL-BODY.md)** — one body, one current, bounded transitions, and evidence-bound truth
 - 📜 **[Charter](CHARTER.md)** — Living agnostic principles and decision-making
+- 🌊 **[Finite operational charter](docs/OMEGA_INFINITY_CHARTER.md)** — Drop → Current → Ocean → Evaporation protocol
 - 🤝 **[Contributing](CONTRIBUTING.md)** — How to contribute verification-first
 - 📖 **[Documentation](docs/)** — Architecture, guides, and references
 - 🧭 **[Value Navigator contract](skills/oceanicos-value-navigator/references/repository-contract.md)** — proposals, evidence, observation, and reconciliation
