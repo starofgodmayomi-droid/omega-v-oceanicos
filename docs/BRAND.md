@@ -1,16 +1,20 @@
-# 💧 Ω∞ OCEANICOS — Brand System
+# 💧 OCEANICOS — Brand System
 
 **REALITY, VERIFIED.**
 
 > **One root. One current. Infinite forms.**
 
-This document is the canonical brand language for Ω∞ OCEANICOS across the repository, product, website, API, CLI, community, and future hardware.
+This document is the canonical brand language for OCEANICOS across the
+repository, product, website, API, CLI, community, and future surfaces.
+
+**Naming lock:** use `OCEANICOS` for the platform and `Ω∞v` for the engine.
+Do not use the obsolete `Ω∞v Oceanicos Max` suffix in public product copy.
 
 ## 1. Brand core
 
 | Layer | Canonical definition |
 | --- | --- |
-| **Name** | **Ω∞ OCEANICOS** |
+| **Name** | **OCEANICOS** |
 | **Category** | **Verified Intelligence Infrastructure** |
 | **Position** | **The trust + orchestration fabric between intelligence and consequence** |
 | **Promise** | **Turn intelligence into verified, authorized, auditable human value.** |

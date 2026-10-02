@@ -81,15 +81,22 @@ jobs:
         env:
           RELEASE_ENV: ${{ github.event.inputs.environment || 'staging' }}
 
+      - name: Validate staged release bundle
+        run: node scripts/validate-release-bundle.mjs release "$GITHUB_SHA"
+
       - name: Package release bundle
-        run: tar -czf oceanicos-${GITHUB_SHA}.tar.gz -C release .
+        run: |
+          tar -czf oceanicos-${GITHUB_SHA}.tar.gz -C release .
+          sha256sum oceanicos-${GITHUB_SHA}.tar.gz | tee oceanicos-${GITHUB_SHA}.tar.gz.sha256
 
       - name: Upload deployment bundle
         if: ${{ github.event_name == 'push' || github.event.inputs.publish == 'true' }}
         uses: actions/upload-artifact@v7
         with:
           name: oceanicos-release-${{ github.sha }}
-          path: oceanicos-${{ github.sha }}.tar.gz
+          path: |
+            oceanicos-${{ github.sha }}.tar.gz
+            oceanicos-${{ github.sha }}.tar.gz.sha256
           if-no-files-found: error
           retention-days: 14
 
@@ -103,3 +110,4 @@ jobs:
             echo '- Divergence alerts: informational only; no automatic authorization or execution'
             echo '- Final provider publish remains an explicit operator-controlled step'
           } >> "$GITHUB_STEP_SUMMARY"
+          echo '- SHA-256 sidecar: uploaded beside the staged bundle for operator verification' >> "$GITHUB_STEP_SUMMARY"

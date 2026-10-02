@@ -1,6 +1,8 @@
-# @omega-v/web
+# OCEANICOS Web Dashboard
 
-Web dashboard for Ω∞v Oceanicos.
+The OCEANICOS web dashboard is the visual surface for the Ω∞v verification loop:
+**Observe → Verify → Remember**, with earned layers for attestation, display,
+learning, and return.
 
 Visualizes the verification loop in real-time with an interactive interface.
 
@@ -24,9 +26,11 @@ To run only the dashboard while the API is already running, use
 
 ## Features
 
-### Real-Time Verification
+### Evidence-first verification
 
-Execute the complete Observe → Verify → Attest cycle from the browser.
+Run the bounded Observe → Verify → Attest flow from the browser. The dashboard
+renders evidence and state; it does not turn a model response into proof or
+authorize consequential action by itself.
 
 ### Runtime Inspection
 
@@ -159,22 +163,24 @@ pnpm --filter web start
 
 The built files are in the `dist/` directory.
 
-## Styling
+## Brand and styling
 
-The dashboard uses pure CSS with:
+The dashboard uses the canonical OCEANICOS visual language:
 
-- Gradient background (purple to indigo)
+- Ocean Black surfaces and raised panels
+- Current Green / seafoam signal states
 - Card-based layout
 - Hover effects and transitions
 - Mobile-responsive design
 
-Key colors:
+The source of truth is `src/tokens.css` and `docs/BRAND.md`. Use semantic
+tokens instead of introducing ad-hoc color literals:
 
-- Primary: `#667eea` (indigo)
-- Secondary: `#764ba2` (purple)
-- Success: `#16a34a` (green)
-- Info: `#0284c7` (blue)
-- Warning: `#d97706` (amber)
+- `--omega-abyss` — page background
+- `--omega-abyss-raised` — panels
+- `--omega-current` — primary signal
+- `--omega-foam` — primary text
+- `--omega-verified`, `--omega-dissent`, `--omega-unknown` — semantic verdicts
 
 ## Testing
 

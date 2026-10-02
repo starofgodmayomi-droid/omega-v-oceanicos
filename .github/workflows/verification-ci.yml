@@ -1,10 +1,9 @@
 name: Ω∞v Verification CI Pipeline
 
+# `verify.yml` is the canonical automatic push/pull-request gate. Keep this
+# historical, broader evidence workflow available for explicit manual runs,
+# but do not emit a second automatic green signal for the same change.
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -34,8 +33,8 @@ jobs:
         run: pnpm run validate:ci
 
       - name: Install Workspace Dependencies
-        # The committed pnpm-lock.yaml is the dependency contract. A mutable
-        # install can silently test a graph different from the one reviewed.
+        # The committed pnpm lockfile is the dependency provenance boundary.
+        # A non-frozen install can silently verify a graph that was never reviewed.
         run: pnpm install --frozen-lockfile
 
       - name: Audit Workspace Dependencies
