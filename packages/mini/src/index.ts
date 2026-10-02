@@ -66,6 +66,11 @@ export type {
   ExecuteAdmittedConnectorInput,
   ObserveAdmittedConnectorInput,
 } from './connector-observation.js';
+export { FileConnectorObservationStore } from './connector-observation-journal.js';
+export type {
+  ConnectorObservationJournalEntry,
+  ConnectorObservationStore,
+} from './connector-observation-journal.js';
 export { runOmegaChangePipeline, resolveBoundedWorkerHandler } from './pipeline.js';
 export type {
   OmegaPipelineInput,

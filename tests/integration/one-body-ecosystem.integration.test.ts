@@ -16,7 +16,8 @@ test('One Body ecosystem status binds full-stack organs to bounded evidence', as
     assert.equal(body.oneBody.evidence, 'runtime-observed');
     assert.ok(body.oneBody.organs.some((organ: { name: string }) => organ.name === 'Reality Observation'));
     assert.ok(body.oneBody.organs.some((organ: { name: string }) => organ.name === 'API & Web Interface'));
-    assert.ok(body.oneBody.limitations.length >= 3);
+    assert.ok(body.oneBody.organs.some((organ: { name: string }) => organ.name === 'External Connectors'));
+    assert.ok(body.oneBody.limitations.some((item: string) => item.includes('not live GitHub')));
   } finally {
     await app.close();
   }

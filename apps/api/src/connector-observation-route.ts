@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import {
   admitOmegaConnector,
   observeAdmittedConnector,
+  type ConnectorObservationStore,
   type OmegaConnectorDeclaration,
 } from '@oceanicos/mini';
 
@@ -10,6 +11,7 @@ type JsonError = (reply: any, status: number, error: string, extra?: Record<stri
 const connectorModes = new Set(['read-only', 'build-test', 'local-mutating', 'external-consequence']);
 const forbiddenClaimFields = new Set(['status', 'realityStatus', 'admitted', 'authorized', 'decision']);
 const forbiddenHandlerFields = new Set(['handler', 'execute', 'transport', 'fetch']);
+const MAX_LIST_ENTRIES = 200;
 
 function parseObject(body: unknown): Record<string, unknown> | null {
   return body && typeof body === 'object' && !Array.isArray(body) ? body as Record<string, unknown> : null;
@@ -63,11 +65,40 @@ function parseBooleanFlag(value: unknown): boolean {
   return value === true;
 }
 
+function storeFailure(reply: any, jsonError: JsonError, error: unknown): unknown {
+  const message = String((error as Error)?.message ?? error);
+  if (/integrity|capacity exhausted/i.test(message)) {
+    return jsonError(reply, 503, 'CONNECTOR_OBSERVATION_JOURNAL_UNAVAILABLE');
+  }
+  throw error;
+}
+
 export function registerConnectorObservationRoute(
   fastify: FastifyInstance,
   jsonError: JsonError,
+  store: ConnectorObservationStore,
 ): void {
+  fastify.get('/v1/omega/connectors/observations', async (_request, reply) => {
+    if (!store.verifyIntegrity()) {
+      return jsonError(reply, 503, 'CONNECTOR_OBSERVATION_JOURNAL_INTEGRITY_DEGRADED');
+    }
+    const allEntries = store.all();
+    const entries = allEntries.slice(-MAX_LIST_ENTRIES);
+    return {
+      success: true,
+      entries,
+      total: allEntries.length,
+      truncated: allEntries.length > entries.length,
+      integrity: 'verified-local-hash-chain',
+      limitation:
+        'local connector journal is not deployment health, not live GitHub execution, not revenue, and not durable across a destroyed volume',
+    };
+  });
+
   fastify.post('/v1/omega/connectors/observe', async (request, reply) => {
+    if (!store.verifyIntegrity()) {
+      return jsonError(reply, 503, 'CONNECTOR_OBSERVATION_JOURNAL_INTEGRITY_DEGRADED');
+    }
     const body = parseObject(request.body);
     if (!body) return jsonError(reply, 400, 'INVALID_CONNECTOR_OBSERVATION');
     if (Object.keys(body).some((field) => forbiddenClaimFields.has(field))) {
@@ -114,9 +145,23 @@ export function registerConnectorObservationRoute(
       approvalVerified: parseBooleanFlag(body.approvalVerified),
     });
     const observation = observeAdmittedConnector({ connector, admission, execution });
+
+    let journal;
+    try {
+      journal = store.append(connector.id, connector.system, observation);
+    } catch (error) {
+      return storeFailure(reply, jsonError, error);
+    }
+
     return {
       success: true,
       ...observation,
+      remembered: true,
+      journal: {
+        sequence: journal.sequence,
+        hash: journal.hash,
+        previousHash: journal.previousHash,
+      },
       limitation:
         'admitted-connector observation is not deployment health, revenue, secret material, or proof of an undeclared network call',
     };

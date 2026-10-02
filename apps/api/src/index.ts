@@ -5,7 +5,7 @@ import { randomUUID } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { RememberEngine } from '@oceanicos/remember';
-import { FileValueNavigatorStore, MiniKernel } from '@oceanicos/mini';
+import { FileConnectorObservationStore, FileValueNavigatorStore, MiniKernel } from '@oceanicos/mini';
 import { AsymmetricValidationGuard, MultiRegionMeshConvergence } from '@oceanicos/verification';
 import { ObserverEngine } from '@oceanicos/observer';
 import { AttestationService } from '@oceanicos/attestation';
@@ -46,6 +46,7 @@ export type CreateAppOptions = {
   allowUnsignedCycle?: boolean;
   attestationSigningKey?: string;
   valueNavigatorPath?: string;
+  connectorObservationPath?: string;
 };
 
 type AuthMode = 'local' | 'required';
@@ -113,6 +114,11 @@ export function createApp(
   const durableRevocationStore = persistenceEnabled && dbPath !== ':memory:' ? omegaCommands : null;
   const valueNavigatorPath = options.valueNavigatorPath?.trim() || process.env.OMEGA_VALUE_NAVIGATOR_PATH?.trim() || `${dbPath}.value-navigator.jsonl`;
   const valueNavigatorStore = new FileValueNavigatorStore(valueNavigatorPath);
+  const connectorObservationPath =
+    options.connectorObservationPath?.trim()
+    || process.env.OMEGA_CONNECTOR_OBSERVATION_PATH?.trim()
+    || (dbPath === ':memory:' ? ':memory:' : `${dbPath}.connector-observations.jsonl`);
+  const connectorObservationStore = new FileConnectorObservationStore(connectorObservationPath);
 
   fastify.addHook('onClose', async () => {
     ledgerMemory.close();
@@ -187,7 +193,7 @@ export function createApp(
   registerRealityRoute(fastify, authMode, Boolean(attestationSigningKey), Boolean(ledgerMemory.getTip()));
   registerDependencyRoute(fastify);
   registerValueNavigatorRoute(fastify, valueNavigatorStore, jsonError);
-  registerConnectorObservationRoute(fastify, jsonError);
+  registerConnectorObservationRoute(fastify, jsonError, connectorObservationStore);
 
   fastify.get('/health', async (_request, reply) => {
     let ledgerIntegrity;

@@ -140,6 +140,15 @@ export function registerEcosystemRoute(
         provenance: 'CHARTER.md, MANIFEST.md, @omega-v/kernel',
       },
       {
+        layer: 'External Connectors',
+        capabilities: ['admit', 'observe', 'remember'],
+        evidenceStatus: 'SUPPORTED',
+        source: 'admitOmegaConnector, POST /v1/omega/connectors/observe, local hash-chained journal',
+        scope: 'local-runtime',
+        policy: 'admission is not execution; live GitHub/Notion remain UNKNOWN until separately observed',
+        provenance: '@oceanicos/mini connector observation journal',
+      },
+      {
         layer: 'Distribution & Deployment',
         capabilities: ['deploy', 'edge', 'cloud', 'vaas'],
         evidenceStatus: 'UNKNOWN',
@@ -202,6 +211,7 @@ export function registerEcosystemRoute(
           'does not prove deployment or external service availability',
           'does not prove community, economy, or real-world outcomes',
           'does not grant authority to execute consequential actions',
+          'connector journal is local provenance, not live GitHub or Notion connectivity',
         ],
       },
     };
