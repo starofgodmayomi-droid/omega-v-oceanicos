@@ -88,6 +88,29 @@ The smallest complete follow-up is a **design-only adapter contract**: define on
 
 No API integration, deployment, credential exchange, Lovable mutation, or publication to a broad audience is included in this record. Those actions require their own bounded authority, expected state, rollback, and runtime evidence.
 
+## Versioned read-only bridge contract
+
+The first implementation slice of the next transition is now present in
+`docs/contracts/omega-navigator-evidence.v1.schema.json` and
+`packages/types/src/navigator-contract.ts`. It defines a read-only snapshot
+with repository/commit/branch provenance, observation timestamps, policy
+version, evidence IDs, limitations, and an explicit `readOnly: true` marker.
+
+The parser rejects malformed snapshots and refuses unsupported status claims;
+in particular, presentation data cannot invent `HEALTHY`, `DEPLOYED`, or any
+other status outside the contract's bounded vocabulary. Jade contains a
+type-only mirror at `src/lib/omega/navigator-contract.ts`. No network binding,
+credential exchange, mutation endpoint, or deployment claim is included.
+
+The focused contract test proves acceptance of a provenance-bearing snapshot
+and rejection of mutable, missing-provenance, and over-claimed payloads.
+
+The first runtime adapter is `GET /v1/navigator/evidence`. It is read-only,
+inherits the API's existing read-access policy in required-auth mode, and
+returns `UNKNOWN` for deployment/health rather than inferring those states
+from local execution. Its API behavior is covered by the canonical Node
+integration suite.
+
 ## Canonical Ω∞v flow mapped to evidence
 
 The supplied architecture diagram is adopted here as the **canonical conceptual flow**. The labels below distinguish observed implementation from design intent and unknown deployment reality.
