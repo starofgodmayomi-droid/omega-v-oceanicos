@@ -46,6 +46,7 @@ export type CreateAppOptions = {
   allowUnsignedCycle?: boolean;
   attestationSigningKey?: string;
   valueNavigatorPath?: string;
+  githubFetch?: typeof fetch;
 };
 
 type AuthMode = 'local' | 'required';
@@ -187,7 +188,7 @@ export function createApp(
   registerRealityRoute(fastify, authMode, Boolean(attestationSigningKey), Boolean(ledgerMemory.getTip()));
   registerDependencyRoute(fastify);
   registerValueNavigatorRoute(fastify, valueNavigatorStore, jsonError);
-  registerConnectorObservationRoute(fastify, jsonError);
+  registerConnectorObservationRoute(fastify, jsonError, { githubFetch: options.githubFetch });
 
   fastify.get('/health', async (_request, reply) => {
     let ledgerIntegrity;
