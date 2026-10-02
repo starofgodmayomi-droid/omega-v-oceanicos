@@ -1,7 +1,9 @@
 # Dependencies
 node_modules/
+.pnpm-store/
 package-lock.json
 yarn.lock
+.pnpm-store/
 
 # Build outputs
 dist/

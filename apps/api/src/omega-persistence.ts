@@ -17,6 +17,14 @@ export type WorkerLease = {
   expiresAt: string;
 };
 
+export type DurableRevocation = {
+  id: string;
+  attestationId: string;
+  reason: string;
+  revokedBy: string;
+  revokedAt: string;
+};
+
 type SqliteDb = {
   exec(sql: string): void;
   prepare(sql: string): { get(...params: unknown[]): any; all(...params: unknown[]): any[]; run(...params: unknown[]): any };
@@ -69,6 +77,13 @@ export class OmegaDurableStore {
         leased_at TEXT NOT NULL,
         expires_at TEXT NOT NULL
       );
+      CREATE TABLE IF NOT EXISTS omega_revocations (
+        id TEXT PRIMARY KEY,
+        attestation_id TEXT NOT NULL UNIQUE,
+        reason TEXT NOT NULL,
+        revoked_by TEXT NOT NULL,
+        revoked_at TEXT NOT NULL
+      );
     `);
   }
 
@@ -79,6 +94,22 @@ export class OmegaDurableStore {
   getCommand(commandId: string): any | undefined {
     const row = this.db.prepare('SELECT command_json FROM omega_commands WHERE command_id = ?').get(commandId);
     return row ? JSON.parse(row.command_json) : undefined;
+  }
+
+  getCommandByIdempotencyKey(idempotencyKey: string): any | undefined {
+    const row = this.db.prepare('SELECT command_json FROM omega_commands WHERE idempotency_key = ?').get(idempotencyKey);
+    return row ? JSON.parse(row.command_json) : undefined;
+  }
+
+  insertCommandIfAbsent(command: any): { inserted: boolean; command: any } {
+    const result = this.db.prepare(`
+      INSERT INTO omega_commands(command_id, idempotency_key, status, command_json, updated_at)
+      VALUES (?, ?, ?, ?, ?)
+      ON CONFLICT DO NOTHING
+    `).run(command.commandId, command.idempotencyKey, command.status, JSON.stringify(command), new Date().toISOString());
+    const existing = this.getCommandByIdempotencyKey(command.idempotencyKey);
+    if (!existing) throw new Error('OMEGA_COMMAND_IDENTITY_CONFLICT');
+    return { inserted: Number(result.changes) > 0, command: existing };
   }
 
   putCommand(command: any): void {
@@ -108,6 +139,33 @@ export class OmegaDurableStore {
       ? this.db.prepare('SELECT event_json FROM omega_events WHERE command_id = ? ORDER BY sequence ASC').all(commandId)
       : this.db.prepare('SELECT event_json FROM omega_events ORDER BY sequence ASC').all();
     return rows.map((row) => JSON.parse(row.event_json));
+  }
+
+  listRevocations(): readonly DurableRevocation[] {
+    return this.db.prepare(
+      'SELECT id, attestation_id, reason, revoked_by, revoked_at FROM omega_revocations ORDER BY revoked_at ASC, id ASC'
+    ).all().map((row) => ({
+      id: row.id,
+      attestationId: row.attestation_id,
+      reason: row.reason,
+      revokedBy: row.revoked_by,
+      revokedAt: row.revoked_at,
+    }));
+  }
+
+  recordRevocation(record: DurableRevocation): boolean {
+    try {
+      this.db.prepare(
+        'INSERT INTO omega_revocations(id, attestation_id, reason, revoked_by, revoked_at) VALUES (?, ?, ?, ?, ?)'
+      ).run(record.id, record.attestationId, record.reason, record.revokedBy, record.revokedAt);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  deleteRevocation(attestationId: string): void {
+    this.db.prepare('DELETE FROM omega_revocations WHERE attestation_id = ?').run(attestationId);
   }
 
   registerWorker(input: { workerId: string; capabilities: string[] }): DurableWorker {

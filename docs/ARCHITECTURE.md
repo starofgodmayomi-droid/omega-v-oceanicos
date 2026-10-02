@@ -370,6 +370,7 @@ Expansion layers publish their own SLOs when earned.
 ## References
 
 - [MINI.md](./MINI.md) — Zero → MINI → expansion
+- [MIRROR-WATER-UNIVERSAL-BODY.md](./MIRROR-WATER-UNIVERSAL-BODY.md) — one-body architecture, finite security, and evidence-bound truth
 - [MANIFEST.md](../MANIFEST.md) — System principles and invariants
 - [CHARTER.md](../CHARTER.md) — How we make architectural decisions
 - [VERIFICATION_LOOP.md](./VERIFICATION_LOOP.md) — Detailed workflow including post-MINI steps

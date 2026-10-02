@@ -2,6 +2,7 @@ import {
   createMoodContext,
   normalizeMoodSignal,
   proposeMoodAdaptation,
+  proposeMoodCodex,
 } from '../autopilot';
 
 describe('bounded autopilot mood contract', () => {
@@ -73,5 +74,26 @@ describe('bounded autopilot mood contract', () => {
 
     expect(proposal.decision).toBe('DENY');
     expect(proposal.adaptation).toBe('PRESERVE_DEFAULT');
+  });
+
+  it('creates a finite Codex plan without authority or execution', () => {
+    const codex = proposeMoodCodex(createMoodContext({
+      intent: 'improve the next bounded interaction',
+      status: 'USER_STATED',
+      signals: [{ signal: 'needs calm pacing', status: 'USER_STATED', source: 'conversation', confidence: 1, uncertainty: 0, timestamp: '2026-09-25T00:00:00.000Z', provenance: 'explicit-user-expression' }],
+      uncertainty: 0,
+    }), new Date('2026-09-25T00:00:00.000Z'));
+
+    expect(codex.decision).toBe('PROPOSE');
+    expect(codex.steps).toHaveLength(5);
+    expect(codex.steps[0].action).toBe('DISTINGUISH');
+    expect(codex.authority).toBe('UNCHANGED');
+    expect(codex.execution).toBe('NOT_EXECUTED');
+    expect(codex.createdAt).toBe('2026-09-25T00:00:00.000Z');
+  });
+
+  it('routes uncertain or unsafe Codex intents to review or denial', () => {
+    expect(proposeMoodCodex(createMoodContext({ intent: 'improve the workflow' })).decision).toBe('REVIEW');
+    expect(proposeMoodCodex(createMoodContext({ intent: 'deploy to production now', status: 'USER_STATED' })).decision).toBe('DENY');
   });
 });

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
 
@@ -39,6 +39,16 @@ interface EcosystemStatus {
     failClosed: boolean;
     status: EvidenceStatus;
   };
+  oneBody: {
+    name: string;
+    invariant: string;
+    stage: string;
+    evidenceStatus: EvidenceStatus;
+    evidence: string;
+    scope: string;
+    organs: Array<{ name: string; status: EvidenceStatus; source: string }>;
+    limitations: string[];
+  };
 }
 
 const STATUS_COLORS: Record<EvidenceStatus, string> = {
@@ -71,6 +81,10 @@ export function EcosystemPanel() {
       setLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    fetchStatus();
+  }, [fetchStatus]);
 
   return (
     <section
@@ -142,6 +156,36 @@ export function EcosystemPanel() {
             </div>
             <div style={{ color: '#6ee7b7', fontSize: '10px', marginTop: '6px' }}>
               invariant: {status.contract.invariant} · schema v{status.contract.schemaVersion} · evaluated {new Date(status.contract.evaluatedAt).toLocaleTimeString()}
+            </div>
+          </div>
+
+          {/* One Body Aggregate */}
+          <div
+            style={{
+              background: '#03080d',
+              border: `1px solid ${STATUS_COLORS[status.oneBody.evidenceStatus]}55`,
+              borderRadius: '4px',
+              padding: '12px',
+              marginBottom: '16px',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <span style={{ color: '#6ee7b7', fontSize: '12px', fontWeight: 'bold' }}>{status.oneBody.name} — ONE BODY</span>
+              <span style={{ color: STATUS_COLORS[status.oneBody.evidenceStatus], fontSize: '10px', fontWeight: 'bold' }}>
+                {status.oneBody.evidenceStatus}
+              </span>
+            </div>
+            <div style={{ color: '#94a3b8', fontSize: '10px', lineHeight: '1.5' }}>
+              <div>{status.oneBody.stage} · {status.oneBody.evidence} · {status.oneBody.scope}</div>
+              <div style={{ marginTop: '4px', color: '#6ee7b7' }}>{status.oneBody.invariant}</div>
+              <div style={{ marginTop: '6px' }}>
+                {status.oneBody.organs.map((organ) => (
+                  <span key={organ.name} style={{ display: 'inline-block', marginRight: '10px', color: STATUS_COLORS[organ.status] }}>
+                    {organ.name}: {organ.status}
+                  </span>
+                ))}
+              </div>
+              <div style={{ marginTop: '6px', color: '#64748b' }}>limits: {status.oneBody.limitations.join(' · ')}</div>
             </div>
           </div>
 

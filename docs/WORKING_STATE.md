@@ -1,6 +1,44 @@
 # Ω∞v Oceanicos Working State
 
-**Updated:** 2026-09-12
+**Updated:** 2026-10-01
+
+## CI authority reconciliation — 2026-10-01
+
+The automatic verification boundary is now explicit: `.github/workflows/verify.yml`
+is the canonical push and pull-request gate, including matrix, Windows, container,
+compose, security-adjacent smoke, and reporting jobs. The historical
+`.github/workflows/verification-ci.yml` remains available for an operator-triggered
+manual run and uses the frozen lockfile, but no longer emits a second automatic
+status for the same change. This reduces duplicate green signals and runner cost;
+manual historical evidence remains attributable and is not treated as a deployment
+or production-health claim.
+
+## Release-bundle provenance boundary — 2026-10-01
+
+The deployment staging workflow now runs `scripts/validate-release-bundle.mjs`
+before packaging. The validator requires the staged API and web build outputs,
+workspace lockfile, release documentation, an ISO build timestamp, commit
+identity matching `GITHUB_SHA`, and an explicit `VERIFIED` / `STAGED_ONLY` manifest
+with non-empty limitations. A deliberate `DEPLOYED` manifest mutation fails closed
+in the local negative test. This strengthens staging provenance only; it does not
+publish an image, select a hosting provider, prove runtime health, or deploy.
+
+The staging job also emits a SHA-256 sidecar beside the release archive and
+uploads both files together. The digest supports operator-side artifact equality
+checks; it is not a signature, custody proof, deployment receipt, or proof that
+the archive reached a runtime target.
+
+## Cross-surface brand reconciliation — 2026-10-02
+
+The public identity is now aligned around `OCEANICOS` as the platform and `Ω∞v`
+as the verification engine, with the lockup `REALITY, VERIFIED.` and the creed
+`One root. One current. Infinite forms.` README, manifest, brand guide, web
+document shell, favicon/mark links, and web package guide now use the same
+language. The web shell exposes description, theme, Open Graph, and Twitter
+metadata; old `Oceanicos Max` and unsafe remote-pipe onboarding examples were
+removed from public entry points. This is brand/documentation consistency
+evidence, not a claim that every named ecosystem capability is implemented or
+deployed.
 
 ## Singularity Maximum Compression Core vΩ∞v.MAX & Attestation Engine — 2026-09-12
 
@@ -948,3 +986,7 @@ Two hosted confirmations followed, on branches that carry none of this change ex
 Neither diff touches `apps/web`. Both had been red across days for a failure that was never theirs, and both went green on the same two-file port.
 
 The #204 failure is worth keeping for a second reason: it failed on **Windows while both Linux legs passed**. The older records repeatedly attribute Windows DOM failures to WebCrypto or to hosted contention. They are the same deadlock, and the platform difference is timing, not cryptography — the deadlock bites only when the state update lands inside the `findBy*` scope rather than during the interaction that opened it, which is a matter of microseconds.
+
+## Durable revocation consistency checkpoint — 2026-09-25
+
+The next bounded slice closes the observed in-memory-only revocation gap: accepted attestation revocations are restored from the configured runtime snapshot, persisted atomically, and recorded in the append-only event log. A compiled-runtime regression proves restart recovery, independent API-instance visibility on the shared local volume, and duplicate rejection. This earns local single-volume evidence only; distributed ordering, cross-host agreement, external persistence, replicas/backups, and deployment health remain unverified.

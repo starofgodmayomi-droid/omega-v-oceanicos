@@ -30,6 +30,8 @@ RUN pnpm --filter @oceanicos/types build \
  && pnpm --filter @oceanicos/remember build \
  && pnpm --filter @oceanicos/mini build \
  && pnpm --filter @oceanicos/attestation build \
+ && pnpm --filter @omega-v/oreade build \
+ && pnpm --filter @omega-v/mood build \
  && pnpm --filter api build \
  && pnpm --filter web build
 

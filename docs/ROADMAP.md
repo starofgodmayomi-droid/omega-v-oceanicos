@@ -342,3 +342,17 @@ Remaining gates are evidence-based: durable persistence and event replay, requir
 ### Durable command coordination increment — 2026-09
 
 The Ω command store now persists commands and lifecycle events in a configurable SQLite database and recovers them after API restart. Independent API processes can register workers, heartbeat, and acquire exclusive transactional leases against the same volume. Live local-staging smoke verification passed for proposal, restart recovery, worker registration, lease exclusivity, release, and durable events. This earns multi-process single-volume coordination, not cross-host consensus, network-database durability, deployment, or production health.
+
+## Durable revocation consistency — next finite slice — 2026-09-25
+
+Attestation revocations now persist in the runtime snapshot and emit append-only `attestation.revoked` evidence when persistence is enabled. A restart or independent API instance sharing the configured runtime snapshot restores the revocation set and continues to reject duplicate revocations. The focused compiled-runtime integration test covers acceptance, restart recovery, independent-instance visibility, and duplicate rejection. This is local single-volume evidence only; distributed revocation ordering, cross-host agreement, external storage, backup/replica consistency, and deployment health remain unverified.
+
+
+## Durable revocation consistency — bounded multi-process slice — 2026-09-28
+
+The attestation revocation registry now uses the shared SQLite command volume when file-backed persistence is enabled. Independent API instances observe live revocations and SQLite uniqueness makes duplicate writes fail closed with `ATTESTATION_ALREADY_REVOKED`. The API exposes `consistency: multi-process-single-volume` and `verified: true` for this runtime-observed boundary; memory mode remains `single-process`. The focused integration gate verifies live visibility and duplicate safety. Cross-host ordering, replica agreement, external storage, backup/restore consistency, key custody, and deployment health remain unverified.
+
+
+## One Body ecosystem contract — bounded full-stack slice — 2026-09-28
+
+The existing ecosystem adapter now returns one shared `oneBody` snapshot consumed by the API contract, typed SDK (`getOneBodyStatus()`), CLI (`omega one-body`), and web Ecosystem panel. The snapshot binds MINI, API/Web, attestation, worker, governance, and distribution layers to explicit evidence statuses, with `SUPPORTED` / `runtime-observed` / `local-runtime` as the aggregate boundary. It does not claim that deployment, community, economy, external services, or consequential authority are active. Focused integration coverage verifies the contract shape and its limitations.

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
@@ -67,6 +67,46 @@ describe('live API pipeline → durable causal memory', () => {
         const memory = new FileCausalMemory(memoryPath, { key: 'api-causal-test-key' });
         assert.equal(memory.verifyIntegrity(), true);
         assert.equal(memory.replay('api-causal-1')?.attestation.status, 'VERIFIED');
+      } finally {
+        await app.close();
+      }
+    } finally {
+      if (previousPath === undefined) delete process.env.OMEGA_CAUSAL_MEMORY_PATH;
+      else process.env.OMEGA_CAUSAL_MEMORY_PATH = previousPath;
+      if (previousKey === undefined) delete process.env.OMEGA_REALITY_ATTESTATION_KEY;
+      else process.env.OMEGA_REALITY_ATTESTATION_KEY = previousKey;
+      await removeTemporaryDirectory(directory);
+    }
+  });
+
+  it('rejects the pipeline before execution when configured causal memory is unreadable', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'omega-api-causal-unreadable-'));
+    const memoryPath = join(directory, 'causal-directory');
+    mkdirSync(memoryPath);
+    const previousPath = process.env.OMEGA_CAUSAL_MEMORY_PATH;
+    const previousKey = process.env.OMEGA_REALITY_ATTESTATION_KEY;
+    process.env.OMEGA_CAUSAL_MEMORY_PATH = memoryPath;
+    process.env.OMEGA_REALITY_ATTESTATION_KEY = 'api-causal-test-key';
+    try {
+      const { createApp } = await import('../../apps/api/dist/index.js');
+      const app = createApp(join(directory, 'ledger.db'), false, { allowUnsignedCycle: true });
+      await app.ready();
+      try {
+        const response = await app.inject({
+          method: 'POST',
+          url: '/v1/pipeline',
+          payload: {
+            compile,
+            admission: { authorityVerified: true, policySatisfied: true },
+            authority: 'human:api-test',
+            policy: 'policy:api',
+            handlerStateAfter: 'S1',
+            observedState: 'S1',
+            changeId: 'api-causal-unreadable',
+          },
+        });
+        assert.equal(response.statusCode, 503);
+        assert.equal(response.json().error, 'CAUSAL_MEMORY_INTEGRITY_DEGRADED');
       } finally {
         await app.close();
       }

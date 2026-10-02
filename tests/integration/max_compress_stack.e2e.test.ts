@@ -116,6 +116,10 @@ describe('Ω∞v Oceanicos Max Compress Full-Stack E2E Suite', () => {
     const minted = dbEngine.append(obs, evidence);
     assert.strictEqual(minted.index, 4101);
     assert.ok(minted.hash.startsWith('00'));
+    assert.strictEqual(dbEngine.verifyIntegrity(), true);
+    assert.strictEqual(dbEngine.verifyChain().valid, true);
+    assert.strictEqual(dbEngine.verifyChain().height, 1);
+    assert.strictEqual(dbEngine.getVerifiedTip()?.hash, minted.hash);
 
     const tip = dbEngine.getTip();
     assert.ok(tip !== null);
@@ -190,6 +194,9 @@ describe('Ω∞v Oceanicos Max Compress Full-Stack E2E Suite', () => {
     const body = JSON.parse(res.body);
     assert.strictEqual(body.success, true);
     assert.strictEqual(body.status, 'ONLINE');
+    assert.strictEqual(body.integrity.valid, true);
+    assert.strictEqual(body.integrity.height, 0);
+    assert.strictEqual(body.tip, null);
   });
 
   it('10. Fastify API POST /v1/cycle executes and returns newly mined block', async () => {

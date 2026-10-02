@@ -14,6 +14,14 @@ interface ObservationStreamPanelProps {
   history: any[];
   minerActive: boolean;
   minerStats: { totalMined: number; lastBlockTime: string };
+  integrity?: {
+    valid: boolean;
+    height: number;
+    genesisHash: string | null;
+    tipHash: string | null;
+    brokenAt?: number;
+    reason?: string;
+  } | null;
 }
 
 export function ObservationStreamPanel({
@@ -21,6 +29,7 @@ export function ObservationStreamPanel({
   history,
   minerActive,
   minerStats,
+  integrity,
 }: ObservationStreamPanelProps) {
   return (
     <div
@@ -57,12 +66,26 @@ export function ObservationStreamPanel({
                 borderRadius: theme.radiusPill,
                 fontSize: '11px',
                 fontWeight: 700,
-                color: statusColor(tip.evidence.status),
-                background: `${statusColor(tip.evidence.status)}15`,
-                border: `1px solid ${statusColor(tip.evidence.status)}44`,
+                color: integrity
+                  ? integrity.valid
+                    ? theme.verified
+                    : theme.warning
+                  : statusColor(tip.evidence.status),
+                background: integrity
+                  ? `${integrity.valid ? theme.verified : theme.warning}15`
+                  : `${statusColor(tip.evidence.status)}15`,
+                border: `1px solid ${
+                  integrity
+                    ? `${integrity.valid ? theme.verified : theme.warning}44`
+                    : `${statusColor(tip.evidence.status)}44`
+                }`,
               }}
             >
-              {humanStatus(tip.evidence.status)}
+              {integrity
+                ? integrity.valid
+                  ? `INTEGRITY VALID · h${integrity.height}`
+                  : `DEGRADED · ${integrity.reason ?? 'unverified'}`
+                : humanStatus(tip.evidence.status)}
             </span>
           </div>
           <div style={{ fontSize: '11px', color: theme.textDim, fontFamily: theme.fontMono, marginBottom: '12px' }}>
@@ -76,7 +99,11 @@ export function ObservationStreamPanel({
         </div>
       ) : (
         <div style={{ color: theme.textDim, fontSize: '12px', marginBottom: '16px' }}>
-          Awaiting initial observation…
+          {integrity
+            ? integrity.valid
+              ? `Awaiting initial observation · ledger integrity valid (height ${integrity.height})`
+              : `Ledger integrity DEGRADED · ${integrity.reason ?? 'unverified'}`
+            : 'Awaiting initial observation…'}
         </div>
       )}
 

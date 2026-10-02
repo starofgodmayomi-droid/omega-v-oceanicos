@@ -8,34 +8,118 @@ import {
 } from '@oceanicos/mini';
 import type { OmegaCommand, OmegaCommandResult, OmegaCommandStatus, OmegaWorkerId } from '@oceanicos/types';
 import { decisionToStatus, validateOmegaCommandInput } from '@oceanicos/types';
+import { buildSymbolicDrop } from '@omega-v/oreade';
 import { OmegaDurableStore } from './omega-persistence.js';
-
 type StoredCommand = OmegaCommand & {
   readonly result?: OmegaCommandResult;
 };
 
+type CoordinationProbeClient = {
+  registerWorker(workerId: string, capabilities: string[]): Promise<void>;
+  acquireLease(workerId: string, commandId: string): Promise<{ leaseId?: string }>;
+  releaseLease(workerId: string, leaseId: string): Promise<boolean>;
+  replayEvents(commandId: string): Promise<readonly { type?: unknown }[]>;
+  close?: () => void;
+};
+
+const coordinationLimitations = [
+  'does not prove cross-host durability',
+  'does not prove distributed consensus, leader election, or replica agreement',
+  'does not prove global ordering, deployment health, or external coordinator control',
+] as const;
+const coordinationCommandIdPattern = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,95}$/;
+
+async function runDurableCoordinationEvidenceProbe(input: {
+  commandId: string;
+  first: CoordinationProbeClient;
+  second: CoordinationProbeClient;
+  restart: () => Promise<CoordinationProbeClient>;
+}) {
+  if (!coordinationCommandIdPattern.test(input.commandId)) throw new Error('coordination probe commandId is invalid');
+  const workers = ['probe-worker-a', 'probe-worker-b'] as const;
+  await input.first.registerWorker(workers[0], ['PROBE']);
+  await input.second.registerWorker(workers[1], ['PROBE']);
+  const attempts = await Promise.all(workers.map((workerId, index) => (index === 0 ? input.first : input.second).acquireLease(workerId, input.commandId)));
+  const hasLease = (attempt: { leaseId?: string }): boolean => typeof attempt.leaseId === 'string' && attempt.leaseId.length > 0;
+  const winners = attempts.filter(hasLease);
+  if (winners.length !== 1) throw new Error('coordination probe did not observe exactly one lease winner');
+  const winnerIndex = attempts.findIndex(hasLease);
+  const winner = workers[winnerIndex];
+  const released = await (winnerIndex === 0 ? input.first : input.second).releaseLease(winner, winners[0].leaseId!);
+  if (!released) throw new Error('coordination probe could not release the winning lease');
+  const restarted = await input.restart();
+  let events: readonly { type?: unknown }[];
+  try {
+    events = await restarted.replayEvents(input.commandId);
+  } finally {
+    restarted.close?.();
+  }
+  const eventTypes = events.map((event) => event.type).filter((type): type is string => typeof type === 'string');
+  const required = ['command.proposed', 'worker.lease-acquired', 'worker.lease-rejected', 'worker.lease-released'];
+  if (!required.every((type) => eventTypes.includes(type))) throw new Error('coordination probe replay is missing required lifecycle events');
+  return {
+    kind: 'coordination-evidence' as const,
+    evidence: 'runtime-observed' as const,
+    scope: 'multi-process-single-volume' as const,
+    verified: true as const,
+    commandId: input.commandId,
+    leaseWinner: winner,
+    rejectedWorkers: workers.filter((workerId) => workerId !== winner),
+    eventTypes,
+    limitations: [...coordinationLimitations],
+  };
+}
+
 const MAX_COMMANDS = 256;
+
+export class OmegaIdempotencyConflictError extends Error {
+  constructor() {
+    super('OMEGA_IDEMPOTENCY_CONFLICT');
+    this.name = 'OmegaIdempotencyConflictError';
+  }
+}
+
+function canonicalContext(context: Record<string, string>): string {
+  return JSON.stringify(Object.entries(context).sort(([left], [right]) => left < right ? -1 : left > right ? 1 : 0));
+}
+
+function sameCommandRequest(existing: StoredCommand, candidate: OmegaCommand): boolean {
+  return existing.intent === candidate.intent
+    && existing.requestedBy === candidate.requestedBy
+    && existing.sessionId === candidate.sessionId
+    && existing.workers.length === candidate.workers.length
+    && existing.workers.every((worker, index) => worker === candidate.workers[index])
+    && canonicalContext(existing.context) === canonicalContext(candidate.context);
+}
 
 export class OmegaCommandStore {
   private readonly durable: OmegaDurableStore;
+  readonly path: string;
 
   constructor(path = ':memory:') {
+    this.path = path;
     this.durable = new OmegaDurableStore(path);
   }
+
+  get durableEvidenceAvailable(): boolean { return this.path !== ':memory:'; }
 
   close(): void {
     this.durable.close();
   }
 
-  create(input: Parameters<typeof buildOmegaCommand>[0]): StoredCommand {
-    const existing = this.durable.getCommand(`omega-${input.idempotencyKey}`) as StoredCommand | undefined;
-    if (existing) return existing;
+  create(input: Parameters<typeof buildOmegaCommand>[0]): { command: StoredCommand; created: boolean } {
     const command = buildOmegaCommand(input);
+    const existing = this.durable.getCommandByIdempotencyKey(input.idempotencyKey) as StoredCommand | undefined;
+    if (existing) {
+      if (!sameCommandRequest(existing, command)) throw new OmegaIdempotencyConflictError();
+      return { command: existing, created: false };
+    }
     const stored = { ...command };
     if (this.durable.listEvents().length >= MAX_COMMANDS * 2) throw new Error('OMEGA_COMMAND_CAPACITY_REACHED');
-    this.durable.putCommand(stored);
-    this.record('command.proposed', stored);
-    return stored;
+    const result = this.durable.insertCommandIfAbsent(stored) as { inserted: boolean; command: StoredCommand };
+    if (!sameCommandRequest(result.command, command)) throw new OmegaIdempotencyConflictError();
+    if (result.inserted) this.record('command.proposed', result.command);
+    return { command: result.command, created: result.inserted };
   }
 
   get(id: string): StoredCommand | undefined { return this.durable.getCommand(id) as StoredCommand | undefined; }
@@ -53,6 +137,15 @@ export class OmegaCommandStore {
   listEvents(commandId?: string): readonly Record<string, unknown>[] {
     return this.durable.listEvents(commandId);
   }
+  listRevocations(): readonly import('./omega-persistence.js').DurableRevocation[] {
+    return this.durable.listRevocations();
+  }
+  recordRevocation(record: import('./omega-persistence.js').DurableRevocation): boolean {
+    return this.durable.recordRevocation(record);
+  }
+  deleteRevocation(attestationId: string): void {
+    this.durable.deleteRevocation(attestationId);
+  }
 
   listCommands(): readonly StoredCommand[] {
     return this.durable.listCommands() as StoredCommand[];
@@ -61,8 +154,30 @@ export class OmegaCommandStore {
   registerWorker(input: { workerId: string; capabilities: string[] }) { return this.durable.registerWorker(input); }
   heartbeatWorker(workerId: string) { return this.durable.heartbeatWorker(workerId); }
   listWorkers() { return this.durable.listWorkers(); }
-  acquireWorkerLease(workerId: string, commandId: string, capability: string, durationMs?: number) { return this.durable.acquireLease(workerId, commandId, capability, durationMs); }
-  releaseWorkerLease(leaseId: string, workerId: string) { return this.durable.releaseLease(leaseId, workerId); }
+  acquireWorkerLease(workerId: string, commandId: string, capability: string, durationMs?: number) {
+    const lease = this.durable.acquireLease(workerId, commandId, capability, durationMs);
+    this.durable.appendEvent({
+      type: lease ? 'worker.lease-acquired' : 'worker.lease-rejected',
+      commandId,
+      workerId,
+      capability,
+      leaseId: lease?.leaseId ?? null,
+      at: new Date().toISOString(),
+    });
+    return lease;
+  }
+  releaseWorkerLease(leaseId: string, workerId: string) {
+    const released = this.durable.releaseLease(leaseId, workerId);
+    const leaseEvents = this.durable.listEvents().filter((event) => event.type === 'worker.lease-acquired' && event.leaseId === leaseId);
+    this.durable.appendEvent({
+      type: released ? 'worker.lease-released' : 'worker.lease-release-rejected',
+      commandId: leaseEvents.at(-1)?.commandId ?? null,
+      workerId,
+      leaseId,
+      at: new Date().toISOString(),
+    });
+    return released;
+  }
 }
 
 function bodyOf(request: any): Record<string, unknown> {
@@ -78,7 +193,118 @@ function statusForDecision(decision: 'ALLOW' | 'DENY' | 'REVIEW'): OmegaCommandS
 }
 
 export function registerOmegaRoutes(fastify: FastifyInstance, store: OmegaCommandStore): void {
+  let coordinationProbeInFlight = false;
+
+  const coordinationClient = (clientStore: OmegaCommandStore): CoordinationProbeClient => ({
+    registerWorker: async (workerId, capabilities) => { clientStore.registerWorker({ workerId, capabilities }); },
+    acquireLease: async (workerId, commandId) => {
+      const lease = clientStore.acquireWorkerLease(workerId, commandId, 'PROBE', 5000);
+      return lease ? { leaseId: lease.leaseId } : {};
+    },
+    releaseLease: async (workerId, leaseId) => clientStore.releaseWorkerLease(leaseId, workerId),
+    replayEvents: async (commandId) => clientStore.listEvents(commandId),
+  });
+
+  const restartCoordinationClient = async (): Promise<CoordinationProbeClient> => {
+    const restarted = new OmegaCommandStore(store.path);
+    return { ...coordinationClient(restarted), close: () => restarted.close() };
+  };
+
   fastify.get('/v1/omega/workers', async () => ({ success: true, workers: listOmegaWorkers(), activeWorkers: store.listWorkers(), limitations: ['coordination is durable on the configured SQLite volume', 'worker output is evidence, not authority', 'cross-host coordination requires a shared filesystem or a future network database'] }));
+
+  fastify.post('/v1/omega/oreade/drop', {
+    config: { rateLimit: { max: 30, timeWindow: '1 minute' } },
+  }, async (request, reply) => {
+    const body = bodyOf(request);
+    try {
+      if (typeof body.symbolicIntent !== 'string' || typeof body.requestedBy !== 'string' || !Array.isArray(body.targetScope) || typeof body.idempotencyKey !== 'string' || typeof body.stopCondition !== 'string' || typeof body.expectedObservation !== 'string') {
+        return reply.status(400).send({ success: false, error: 'INVALID_OREADE_DROP' });
+      }
+      const drop = buildSymbolicDrop({
+        symbolicIntent: body.symbolicIntent,
+        requestedBy: body.requestedBy,
+        targetScope: body.targetScope as string[],
+        idempotencyKey: body.idempotencyKey,
+        stopCondition: body.stopCondition,
+        expectedObservation: body.expectedObservation,
+        mode: body.mode === 'WORLDVIEW' ? 'WORLDVIEW' : 'BUILD',
+        context: body.context && typeof body.context === 'object' && !Array.isArray(body.context) ? body.context as Record<string, string> : undefined,
+      });
+      return reply.status(201).send({
+        success: true,
+        drop,
+        nextAction: 'supply attributable authority and policy to the Oceanicos runtime; translation did not authorize or execute this Drop',
+        readOnly: true,
+      });
+    } catch (error) {
+      return reply.status(400).send({ success: false, error: error instanceof Error ? error.message : 'INVALID_OREADE_DROP' });
+    }
+  });
+
+  fastify.post('/v1/omega/oreade/proposal', {
+    config: { rateLimit: { max: 20, timeWindow: '1 minute' } },
+  }, async (request, reply) => {
+    const body = bodyOf(request);
+    try {
+      if (typeof body.symbolicIntent !== 'string' || typeof body.requestedBy !== 'string' || !Array.isArray(body.targetScope) || typeof body.idempotencyKey !== 'string' || typeof body.stopCondition !== 'string' || typeof body.expectedObservation !== 'string') {
+        return reply.status(400).send({ success: false, error: 'INVALID_OREADE_PROPOSAL' });
+      }
+      const drop = buildSymbolicDrop({
+        symbolicIntent: body.symbolicIntent,
+        requestedBy: body.requestedBy,
+        targetScope: body.targetScope as string[],
+        idempotencyKey: body.idempotencyKey,
+        stopCondition: body.stopCondition,
+        expectedObservation: body.expectedObservation,
+        mode: body.mode === 'WORLDVIEW' ? 'WORLDVIEW' : 'BUILD',
+        context: body.context && typeof body.context === 'object' && !Array.isArray(body.context) ? body.context as Record<string, string> : undefined,
+      });
+      const creation = store.create({
+        intent: drop.intent,
+        requestedBy: drop.requestedBy,
+        workers: ['planner'],
+        idempotencyKey: drop.idempotencyKey,
+        context: {
+          ...drop.context,
+          symbolicDropId: drop.dropId,
+          symbolicMode: drop.mode,
+          stopCondition: drop.stopCondition,
+          expectedObservation: drop.expectedObservation,
+          targetScope: JSON.stringify(drop.targetScope),
+        },
+      });
+      const { command } = creation;
+      const persistedDrop = { ...drop, createdAt: command.createdAt };
+      const nextAction = command.status === 'PROPOSED' || command.status === 'REVIEW'
+        ? 'review and explicitly admit the bounded proposal; no authorization or execution occurred'
+        : command.status === 'AUTHORIZED'
+          ? 'the stored command is authorized; execution remains a separate bounded transition'
+          : command.status === 'EXECUTED' || command.status === 'ATTESTED'
+            ? 'observe and reconcile the stored execution result; replay did not execute again'
+            : command.status === 'VERIFIED'
+              ? 'review the stored verification evidence and select the next finite Drop'
+              : command.status === 'DIVERGENT'
+                ? 'preserve the divergence and review both expected and observed evidence'
+                : command.status === 'DENIED'
+                  ? 'review the denial evidence; no execution is permitted'
+                  : command.status === 'FAILED'
+                    ? 'preserve the failed attempt evidence and review before proposing a new bounded transition'
+                    : command.status === 'UNKNOWN'
+                      ? 'preserve UNKNOWN and gather bounded evidence before making another claim'
+                      : 'review the stored command state and evidence; replay made no state change';
+      return reply.status(creation.created ? 201 : 200).send({
+        success: true,
+        drop: persistedDrop,
+        ...commandResult(command, nextAction),
+        executed: Boolean(command.result?.execution),
+      });
+    } catch (error) {
+      if (error instanceof OmegaIdempotencyConflictError) {
+        return reply.status(409).send({ success: false, error: 'OMEGA_IDEMPOTENCY_CONFLICT' });
+      }
+      return reply.status(400).send({ success: false, error: error instanceof Error ? error.message : 'INVALID_OREADE_PROPOSAL' });
+    }
+  });
 
   fastify.post('/v1/omega/workers/register', async (request, reply) => {
     const body = bodyOf(request);
@@ -115,15 +341,18 @@ export function registerOmegaRoutes(fastify: FastifyInstance, store: OmegaComman
     const body = bodyOf(request);
     try {
       validateOmegaCommandInput({ intent: body.intent, requestedBy: body.requestedBy, workers: body.workers, idempotencyKey: body.idempotencyKey, context: body.context });
-      const command = store.create({
+      const creation = store.create({
         intent: body.intent as string,
         requestedBy: body.requestedBy as string,
         workers: body.workers as OmegaWorkerId[],
         idempotencyKey: body.idempotencyKey as string,
         context: (body.context as Record<string, string> | undefined),
       });
-      return reply.status(201).send({ success: true, ...commandResult(command, 'admit the command with explicit authority and policy evidence') });
+      return reply.status(creation.created ? 201 : 200).send({ success: true, ...commandResult(creation.command, 'admit the command with explicit authority and policy evidence') });
     } catch (error) {
+      if (error instanceof OmegaIdempotencyConflictError) {
+        return reply.status(409).send({ success: false, error: 'OMEGA_IDEMPOTENCY_CONFLICT' });
+      }
       return reply.status(400).send({ success: false, error: error instanceof Error ? error.message : 'INVALID_OMEGA_COMMAND' });
     }
   });
@@ -150,6 +379,29 @@ export function registerOmegaRoutes(fastify: FastifyInstance, store: OmegaComman
       })),
       redacted: true,
     };
+  });
+
+  fastify.get('/v1/omega/divergences', {
+    config: { rateLimit: { max: 60, timeWindow: '1 minute' } },
+  }, async (request, reply) => {
+    const query = (request.query ?? {}) as { limit?: string; since?: string };
+    const limit = Math.min(Math.max(Number.parseInt(query.limit ?? '20', 10) || 20, 1), 50);
+    const since = query.since ? new Date(query.since) : null;
+    if (since && Number.isNaN(since.getTime())) return reply.status(400).send({ success: false, error: 'DIVERGENCE_SINCE_INVALID' });
+    const alerts = store.listCommands()
+      .filter((command) => command.status === 'DIVERGENT' || command.result?.reality?.classification === 'DIVERGENT')
+      .filter((command) => !since || new Date(command.createdAt).getTime() >= since.getTime())
+      .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
+      .slice(0, limit)
+      .map((command) => ({
+        commandId: command.commandId,
+        intent: command.intent,
+        requestedBy: command.requestedBy,
+        status: command.status,
+        createdAt: command.createdAt,
+        reality: command.result?.reality ?? null,
+      }));
+    return { success: true, count: alerts.length, alerts, redacted: true, nextAction: 'review the divergent evidence and preserve the conflict; no retry or authorization was performed' };
   });
 
   fastify.get('/v1/omega/commands/:id/provenance', {
@@ -255,5 +507,42 @@ export function registerOmegaRoutes(fastify: FastifyInstance, store: OmegaComman
   }, async (request) => {
     const commandId = (request.query as { commandId?: string }).commandId;
     return { success: true, events: store.listEvents(commandId), redacted: true };
+  });
+
+  fastify.post('/v1/omega/coordination/evidence', {
+    config: { rateLimit: { max: 10, timeWindow: '1 minute' } },
+  }, async (request, reply) => {
+    if (!store.durableEvidenceAvailable) return reply.status(503).send({ success: false, error: 'COORDINATION_EVIDENCE_REQUIRES_DURABLE_STORE' });
+    const body = bodyOf(request);
+    if (typeof body.commandId !== 'string') return reply.status(400).send({ success: false, error: 'COORDINATION_COMMAND_ID_REQUIRED' });
+    if (!coordinationCommandIdPattern.test(body.commandId)) return reply.status(409).send({ success: false, error: 'coordination probe commandId is invalid' });
+    if (!store.get(body.commandId)) return reply.status(404).send({ success: false, error: 'OMEGA_COMMAND_NOT_FOUND' });
+    if (coordinationProbeInFlight) return reply.status(409).send({ success: false, error: 'COORDINATION_EVIDENCE_IN_FLIGHT' });
+    coordinationProbeInFlight = true;
+    const command = store.get(body.commandId)!;
+    try {
+      const evidence = await runDurableCoordinationEvidenceProbe({
+        commandId: body.commandId,
+        first: coordinationClient(store),
+        second: coordinationClient(store),
+        restart: restartCoordinationClient,
+      });
+      store.record('coordination.evidence-recorded', command, {
+        evidence: evidence.evidence,
+        scope: evidence.scope,
+        verified: evidence.verified,
+        leaseWinner: evidence.leaseWinner,
+        rejectedWorkers: evidence.rejectedWorkers,
+        eventTypes: evidence.eventTypes,
+        limitations: evidence.limitations,
+      });
+      return { success: true, evidence, redacted: true };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'COORDINATION_EVIDENCE_FAILED';
+      store.record('coordination.evidence-failed', command, { error: message });
+      return reply.status(409).send({ success: false, error: message });
+    } finally {
+      coordinationProbeInFlight = false;
+    }
   });
 }

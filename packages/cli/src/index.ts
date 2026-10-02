@@ -221,6 +221,19 @@ type RevocationsResponse = {
   timestamp: string;
 };
 
+type OneBodyResponse = {
+  oneBody: {
+    name: string;
+    invariant: string;
+    stage: string;
+    evidenceStatus: string;
+    evidence: string;
+    scope: string;
+    organs: Array<{ name: string; status: string; source: string }>;
+    limitations: string[];
+  };
+};
+
 type SubsystemItem = {
   id: string;
   name: string;
@@ -246,6 +259,7 @@ function usage(): string {
   return [
     'omega health [--url URL]',
     'omega status [--url URL] [--token TOKEN]',
+    'omega one-body [--url URL] [--token TOKEN]',
     'omega os [--url URL] [--token TOKEN]',
     'omega kernel-capabilities [--url URL] [--token TOKEN]',
     'omega events [--url URL] [--limit N] [--token TOKEN]',
@@ -364,6 +378,31 @@ async function health(argv: string[], fetchImpl: FetchLike): Promise<number> {
     process.stderr.write(
       `Health unavailable: ${error instanceof Error ? error.message : String(error)}\n`
     );
+    return 1;
+  }
+}
+
+async function oneBody(argv: string[], fetchImpl: FetchLike): Promise<number> {
+  const endpoint = `${baseUrl(argv).replace(/\/$/, '')}/v1/ecosystem/status`;
+  try {
+    const response = await fetchImpl(endpoint, requestInit(argv));
+    const body = (await response.json()) as OneBodyResponse | { error?: string };
+    if (!response.ok || !('oneBody' in body)) {
+      process.stderr.write(`One Body unavailable (${response.status}): ${'error' in body ? body.error ?? 'unknown error' : 'invalid response'}\n`);
+      return 1;
+    }
+    const snapshot = body.oneBody;
+    process.stdout.write([
+      `ONE BODY      ${snapshot.name}`,
+      `INVARIANT     ${snapshot.invariant}`,
+      `STAGE         ${snapshot.stage}`,
+      `EVIDENCE      ${snapshot.evidenceStatus} / ${snapshot.evidence} / ${snapshot.scope}`,
+      `ORGANS        ${snapshot.organs.map((organ) => `${organ.name}=${organ.status}`).join(', ')}`,
+      `LIMITS        ${snapshot.limitations.join(' | ')}`,
+    ].join('\n') + '\n');
+    return snapshot.evidenceStatus === 'SUPPORTED' ? 0 : 1;
+  } catch (error) {
+    process.stderr.write(`One Body unavailable: ${error instanceof Error ? error.message : String(error)}\n`);
     return 1;
   }
 }
@@ -1046,6 +1085,7 @@ export async function run(
   }
   if (command === 'health') return health(argv, fetchImpl);
   if (command === 'status') return status(argv, fetchImpl);
+  if (command === 'one-body') return oneBody(argv, fetchImpl);
   if (command === 'os') return operatingSystem(argv, fetchImpl);
   if (command === 'kernel-capabilities') return kernelCapabilities(argv, fetchImpl);
   if (command === 'events') return events(argv, fetchImpl);

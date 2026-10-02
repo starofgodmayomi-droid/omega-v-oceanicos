@@ -17,6 +17,8 @@ Welcome to the Ω∞v Oceanicos documentation. Start here to understand the proj
 - **[Development Setup](./DEVELOPMENT.md)** — Get the project running locally
 - **[MINI Kernel](./MINI.md)** — Zero → MINI → verified expansion (canonical growth model)
 - **[Architecture](./ARCHITECTURE.md)** — High-level system design from MINI outward
+- **[Repository inventory](./REPO_INVENTORY.md)** — workspace vs disk (current evidence)
+- **[Dependency map](./DEPENDENCY_MAP.md)** — declared edges, not health claims
 - **[Roadmap](./ROADMAP.md)** — Earned expansion phases
 - **[Verification Loop](./VERIFICATION_LOOP.md)** — Full workflow including post-MINI steps
 
@@ -54,6 +56,18 @@ Welcome to the Ω∞v Oceanicos documentation. Start here to understand the proj
 - **[REST API](../apps/api/README.md)** — every endpoint, with request and
   response shapes. A test asserts this document describes every route the
   API actually registers, so it cannot drift from the code.
+- **[Value Navigator](../skills/oceanicos-value-navigator/SKILL.md)** — bounded
+  proposal/observation flow, status boundaries, and the repository API contract.
+- **[Voice Bridge](../skills/voice-bridge/SKILL.md)** — one human source across
+  system design, expression, truth-checking, and execution planning.
+- **[ƆREADE × Oceanicos Harmonizer](../skills/oread-pidgin-harmonizer/SKILL.md)**
+  — symbolic and Nigerian Pidgin meaning compiled into bounded, evidence-first
+  action.
+- **[OceanicOS Framework](../skills/oceanicos-framework/SKILL.md)** — OUPEMLI,
+  finite transition, provenance, and authority boundaries.
+- **[Full-stack reality access](./upgrades/FULL_STACK_REALITY_ACCESS_2026-09-28.md)**
+  — admissible connector surfaces, authentication, authorization, and
+  reconciliation boundaries.
 - **[Infrastructure](../infra/README.md)** — the image, its environment
   variables, and what does not exist yet.
 
@@ -78,6 +92,9 @@ remain on the [roadmap](./ROADMAP.md).
 
 ### Specifications
 
+- **[Operational Protocol Specification](./spec/OCEANICOS-OPERATIONAL-PROTOCOL.md)** — how a bounded Drop moves from intent through authority, execution, observation, reconciliation, and provenance
+- **[Error Handling and Conflict Resolution](./spec/OCEANICOS-CONFLICT-RESOLUTION.md)** — how failures, dissent, uncertainty, retries, and rollback remain evidence-bound
+- **[Commitment of Flow](./spec/OCEANICOS-COMMITMENT-OF-FLOW.md)** — participant rights, responsibilities, consent boundaries, and non-authority commitments
 - **[Attestation Envelope v1](./spec/ATTESTATION-ENVELOPE.md)** — the signed
   payload, its exact byte serialisation, and how to verify one **without
   running any code from this project**. Ships a reference verifier in Python
@@ -148,6 +165,7 @@ A: Provide evidence and propose alternatives. See [CHARTER.md](../CHARTER.md#how
 - **Current Phase**: MINI kernel (Observe → Verify → Remember)
 - **Next Phase**: Earned expansions (`+ Attest`, interfaces) after MINI is proven
 - **Stability**: Rapidly evolving — APIs may change
+- **Workspace vs disk**: [REPO_INVENTORY.md](./REPO_INVENTORY.md) — do not treat extra `packages/` directories as verified capabilities
 
 See [MINI.md](./MINI.md) and [ROADMAP.md](./ROADMAP.md).
 
@@ -162,4 +180,4 @@ See [MINI.md](./MINI.md) and [ROADMAP.md](./ROADMAP.md).
 ---
 
 **Documentation Status**: Living — Zero → MINI → verified expansion  
-**Last Updated**: 2026-08-16
+**Last Updated**: 2026-09-27
