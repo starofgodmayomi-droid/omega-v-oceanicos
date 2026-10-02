@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { mkdirSync, mkdtempSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -135,6 +136,34 @@ describe('C7 reality attestation → C8 causal memory', () => {
       /mismatched reality attestation/,
     );
     assert.deepEqual(primary.all().map((entry) => entry.record.id), ['c8-provenance-first']);
+  });
+
+  it('rejects duplicate change identities so replay remains unambiguous', () => {
+    const path = join(mkdtempSync(join(tmpdir(), 'omega-c8-duplicate-')), 'causal.jsonl');
+    const memory = new FileCausalMemory(path, { key: 'c8-test-signing-key' });
+    const first = input(memory, 'S1', 'c8-duplicate');
+    assert.equal(first.reality?.status, 'VERIFIED');
+    assert.throws(() => input(memory, 'S1', 'c8-duplicate'), /duplicate change identity: c8-duplicate/);
+    assert.equal(memory.all().length, 1);
+    assert.equal(memory.replay('c8-duplicate')?.sequence, 1);
+    assert.equal(memory.verifyIntegrity(), true);
+  });
+
+  it('degrades when a journal contains duplicate change identities', () => {
+    const path = join(mkdtempSync(join(tmpdir(), 'omega-c8-duplicate-journal-')), 'causal.jsonl');
+    const memory = new FileCausalMemory(path, { key: 'c8-test-signing-key' });
+    input(memory, 'S1', 'c8-duplicate-journal');
+    const line = readFileSync(path, 'utf8').trim();
+    const duplicate = JSON.parse(line) as Record<string, unknown> & { hash: string };
+    duplicate.sequence = 2;
+    duplicate.previousHash = duplicate.hash;
+    const { hash: _hash, ...unsigned } = duplicate;
+    duplicate.hash = createHash('sha256').update(JSON.stringify(unsigned)).digest('hex');
+    writeFileSync(path, `${line}\n${JSON.stringify(duplicate)}\n`);
+    const reloaded = new FileCausalMemory(path, { key: 'c8-test-signing-key' });
+    assert.equal(reloaded.verifyIntegrity(), false);
+    assert.deepEqual(reloaded.all(), []);
+    assert.equal(reloaded.replay('c8-duplicate-journal'), undefined);
   });
 
   it('does not expose a valid prefix after a later journal entry is corrupted', () => {
