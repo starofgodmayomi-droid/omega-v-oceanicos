@@ -137,6 +137,15 @@ export class OmegaCommandStore {
   listEvents(commandId?: string): readonly Record<string, unknown>[] {
     return this.durable.listEvents(commandId);
   }
+  listRevocations(): readonly import('./omega-persistence.js').DurableRevocation[] {
+    return this.durable.listRevocations();
+  }
+  recordRevocation(record: import('./omega-persistence.js').DurableRevocation): boolean {
+    return this.durable.recordRevocation(record);
+  }
+  deleteRevocation(attestationId: string): void {
+    this.durable.deleteRevocation(attestationId);
+  }
 
   listCommands(): readonly StoredCommand[] {
     return this.durable.listCommands() as StoredCommand[];
