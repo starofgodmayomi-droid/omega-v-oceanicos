@@ -28,6 +28,18 @@ uploads both files together. The digest supports operator-side artifact equality
 checks; it is not a signature, custody proof, deployment receipt, or proof that
 the archive reached a runtime target.
 
+## Cross-surface brand reconciliation — 2026-10-02
+
+The public identity is now aligned around `OCEANICOS` as the platform and `Ω∞v`
+as the verification engine, with the lockup `REALITY, VERIFIED.` and the creed
+`One root. One current. Infinite forms.` README, manifest, brand guide, web
+document shell, favicon/mark links, and web package guide now use the same
+language. The web shell exposes description, theme, Open Graph, and Twitter
+metadata; old `Oceanicos Max` and unsafe remote-pipe onboarding examples were
+removed from public entry points. This is brand/documentation consistency
+evidence, not a claim that every named ecosystem capability is implemented or
+deployed.
+
 ## Singularity Maximum Compression Core vΩ∞v.MAX & Attestation Engine — 2026-09-12
 
 The Ω∞v Oceanicos repository has reached the Ultimate Dense Singularity (`vΩ∞v.MAX`), binding the whole stack into a zero-entropy, fully attested ecosystem:

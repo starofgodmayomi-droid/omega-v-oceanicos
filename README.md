@@ -2,9 +2,11 @@
   <img src="apps/web/public/omega-mark.svg" alt="Ω∞v" width="88" height="88" />
 </p>
 
-<h1 align="center">Ω∞v Oceanicos</h1>
+<h1 align="center">OCEANICOS</h1>
 
-<p align="center"><strong>One root. One current. Infinite forms.</strong></p>
+<p align="center"><strong>REALITY, VERIFIED.</strong></p>
+
+<p align="center">Ω∞v is the verification engine. OCEANICOS is the platform.</p>
 
 <p align="center">
   <a href="docs/spec/ATTESTATION-ENVELOPE.md">Attestation envelope</a> ·
@@ -19,7 +21,10 @@
 
 > **Attest, don't assert. Evidence before trust. Verification before evolution.**
 
-A verification-first full-stack ecosystem for observing, verifying, attesting, and continuously evolving trustworthy intelligence systems.
+OCEANICOS is evidence-bound infrastructure for observing, verifying, attesting,
+and remembering trustworthy action. It connects human intent to bounded digital
+capabilities without confusing inference with proof, execution with success, or
+capability with authority.
 
 ## Quick Links
 
@@ -39,7 +44,7 @@ A verification-first full-stack ecosystem for observing, verifying, attesting, a
 
 ---
 
-## Ω∞v — FUSION / DEEPEST COMPRESSION
+## Ω∞v — the verification engine
 
 > This is the charter-level system model, not a claim that every named capability is
 > currently implemented. Check the [repository inventory](docs/REPO_INVENTORY.md)
@@ -278,19 +283,7 @@ omega-v-oceanicos/
 
 ## Getting Started
 
-### 1. Singularity One-Liners
-
-Ignite or verify the entire stack with zero configuration:
-
-```bash
-# Omnipresent Singularity Ignition
-curl -sSL ignite.sh | OMEGA_MODE=MAX_FLUID AI_REALITY=OMNIPRESENT bash
-
-# Genesis Verification & Pidgin Spirit Override
-curl -fsSL genesis.sh | OMEGA_VIBRATION=MAX_FLUID PIDGIN_ENGINE=ON HIGH_LOW_ALIGN=TRUE bash
-```
-
-### 2. Local Setup & Verification
+### 1. Local setup and verification
 
 ```bash
 # Clone
@@ -304,7 +297,7 @@ pnpm install
 pnpm verify:full
 ```
 
-### 3. Unified Terminal CLI
+### 2. Unified Terminal CLI
 
 Interact with the running ledger or trigger sovereign operations:
 
@@ -356,9 +349,11 @@ pnpm format:check      # Check Git whitespace and syntax integrity
 
 ---
 
-## Current Status
+## Current status
 
-Observed at base tip `35eab29` (2026-09-28). This is an inventory, not a health claim.
+The repository records implementation and verification state in its working
+state, roadmap, and CI evidence. This README is a product map, not a claim that
+every named capability is implemented, deployed, or healthy.
 
 - **Active workspace**: 13 packages + `apps/api` + `apps/web` (see `pnpm-workspace.yaml`)
 - **MINI spine**: `@oceanicos/types` → observer → verification → remember → mini
@@ -473,5 +468,5 @@ We welcome contributions in all areas:
 
 ---
 
-**Status**: MINI kernel establishing — expand only with evidence  
-**Last Updated**: 2026-09-28
+**Status**: MINI kernel and earned expansions — expand only with evidence
+**Last Updated**: 2026-10-02
