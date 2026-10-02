@@ -30,6 +30,9 @@ jobs:
           node-version: 22
           cache: pnpm
 
+      - name: 0. Validate CI contracts
+        run: pnpm run validate:ci
+
       - name: Install Workspace Dependencies
         # The committed pnpm-lock.yaml is the dependency contract. A mutable
         # install can silently test a graph different from the one reviewed.
