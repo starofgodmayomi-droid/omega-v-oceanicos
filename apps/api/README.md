@@ -125,6 +125,7 @@ unverified.
 GET  /health
 GET  /v1/kernel/capabilities
 GET  /v1/mood
+GET  /v1/ecosystem/status
 POST /v1/attest
 POST /v1/cycle
 GET  /v1/block/tip
