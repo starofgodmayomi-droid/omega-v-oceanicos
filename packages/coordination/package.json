@@ -17,8 +17,8 @@
     "audit"
   ],
   "devDependencies": {
-    "@types/jest": "^29.5.0",
-    "jest": "^29.5.0"
+    "@types/jest": "^30.0.0",
+    "jest": "^30.5.2"
   },
   "author": "Ω∞v Community",
   "license": "Apache-2.0"
