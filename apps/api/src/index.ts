@@ -4,6 +4,7 @@ import rateLimit from '@fastify/rate-limit';
 import { randomUUID } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { RememberEngine } from '@oceanicos/remember';
 import { FileConnectorObservationStore, FileValueNavigatorStore, MiniKernel } from '@oceanicos/mini';
 import { AsymmetricValidationGuard, MultiRegionMeshConvergence } from '@oceanicos/verification';
@@ -532,4 +533,4 @@ const start = async () => {
   }
 };
 
-if (require.main === module) start();
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) start();

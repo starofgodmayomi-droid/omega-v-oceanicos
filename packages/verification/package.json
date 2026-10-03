@@ -10,5 +10,8 @@
   "dependencies": {
     "@oceanicos/types": "workspace:*",
     "@oceanicos/observer": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.3"
   }
 }
