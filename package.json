@@ -2,6 +2,7 @@
   "name": "omega-v-oceanicos",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "install:all": "pnpm install",
     "build": "pnpm --recursive run build",
@@ -12,7 +13,7 @@
     "validate:skills": "node scripts/validate-skill-contracts.mjs",
     "lint": "pnpm typecheck",
     "type-check": "pnpm typecheck",
-    "verify": "pnpm build && node -e \"const { executeOceanicosMaxExpansion } = require('./packages/mini/dist/index.js'); executeOceanicosMaxExpansion();\"",
+    "verify": "pnpm build && node --input-type=module -e \"const { executeOceanicosMaxExpansion } = await import('./packages/mini/dist/index.js'); executeOceanicosMaxExpansion();\"",
     "predev": "pnpm build",
     "mood": "node bin/oceanicos.mjs mood",
     "worker": "node scripts/oceanicos-worker.mjs",

@@ -21,7 +21,9 @@ packages:
   - 'apps/web'
 
 allowBuilds:
+  '@parcel/watcher': true
   esbuild: true
+  unrs-resolver: true
 overrides:
   brace-expansion@1.1.18: 1.1.21
   fast-uri@3.1.7: 3.1.8
