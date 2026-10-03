@@ -26,6 +26,18 @@ To run only the dashboard while the API is already running, use
 
 ## Features
 
+### Mobile field console
+
+The dashboard is mobile-first and installable as a standalone web app. The bottom
+navigation keeps **Current**, **Evidence**, and **System** reachable with one hand;
+the evidence chain remains visible as **Observe → Verify → Remember → Attest**.
+Runtime failures render as `UNKNOWN` or `DEGRADED` rather than being promoted to
+verified state. Intent proposals stay separate from human approval, execution, and
+observation.
+
+The mobile metadata lives in `public/manifest.webmanifest`, and the Webdev route
+declaration lives in `public/manus-routes.json`.
+
 ### Evidence-first verification
 
 Run the bounded Observe → Verify → Attest flow from the browser. The dashboard

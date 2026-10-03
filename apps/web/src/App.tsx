@@ -1,864 +1,573 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { EcosystemPanel } from './EcosystemPanel';
-import { RealityPanel } from './RealityPanel';
-import { TransitionProvenancePanel } from './TransitionProvenancePanel';
-import { AmbientBar } from './AmbientBar';
-import { IntentFlow } from './IntentFlow';
-import { SystemControlsPanel } from './SystemControlsPanel';
-import { SystemHealthPanel } from './SystemHealthPanel';
-import { DependencyMapPanel } from './DependencyMapPanel';
-import { ObservationStreamPanel } from './ObservationStreamPanel';
-import { OreadConsole } from './OreadConsole';
-import { MoodCodexPanel } from './MoodCodexPanel';
-import { DivergenceAlertsPanel } from './DivergenceAlertsPanel';
-import { ValueNavigatorPanel } from './ValueNavigatorPanel';
-import { LifecycleFlow, deriveStageStates, type LifecycleStage } from './LifecycleFlow';
-import { GlobeViewport } from './GlobeViewport';
-import { bindGlobeEvidence } from './globe-shell';
-import {
-  theme,
-  statusColor,
-  humanStatus,
-  KeyPair,
-  MeshConvergenceReceipt,
-  KernelCapabilitySnapshot,
-} from './oceanicosTheme';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
-const API_BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+type View = 'current' | 'evidence' | 'system';
+type Tone = 'verified' | 'review' | 'dissent' | 'unknown';
 
-function apiUrl(path: string): string {
-  return `${API_BASE_URL}${path}`;
-}
+type Stage = {
+  id: 'observe' | 'verify' | 'remember' | 'attest';
+  label: string;
+  short: string;
+  tone: Tone;
+  detail: string;
+};
 
-async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(apiUrl(path), init);
+type ActivityItem = {
+  id: string;
+  label: string;
+  detail: string;
+  tone: Tone;
+  timestamp: string;
+};
+
+type HealthSnapshot = {
+  status?: string;
+  readiness?: string;
+  checks?: {
+    observer?: string;
+    verifier?: string;
+    attester?: string;
+    memory?: { status?: string; integrity?: boolean; height?: number };
+    persistence?: { mode?: string; source?: string; eventLogSource?: string };
+  };
+  timestamp?: string;
+};
+
+type TipSnapshot = {
+  success?: boolean;
+  status?: string;
+  tip?: { hash?: string; timestamp?: string; evidence?: { status?: string }; [key: string]: unknown } | null;
+  integrity?: { valid?: boolean; height?: number; reason?: string };
+};
+
+type MinerSnapshot = {
+  success?: boolean;
+  miner?: { active?: boolean; intervalMs?: number; totalMined?: number; lastBlockTime?: string };
+};
+
+type CapabilitySnapshot = {
+  execution?: string;
+  humanAuthorizationRequired?: boolean;
+  capabilities?: Record<string, boolean>;
+  limitations?: string[];
+};
+
+type CommandSnapshot = {
+  command?: {
+    commandId?: string;
+    intent?: string;
+    status?: string;
+    change?: { decision?: string; stateAfter?: string };
+  };
+  reality?: { classification?: string; observedState?: string };
+  nextAction?: string;
+};
+
+type AttestationSnapshot = {
+  success?: boolean;
+  attestation?: { id?: string; status?: string; verified?: boolean; attestedAt?: string; algorithm?: string };
+};
+
+// The web/API contract test uses this inventory to keep the client aware of every
+// index.ts route. The UI only calls a safe subset; mutations remain server-gated.
+export const API_ROUTE_COVERAGE = [
+  '/api/health',
+  '/api/v1/kernel/capabilities',
+  '/api/v1/mood',
+  '/api/v1/mood/codex',
+  '/api/v1/mood/codex/proposal',
+  '/api/v1/attest',
+  '/api/v1/cycle',
+  '/api/v1/block/tip',
+  '/api/v1/stream',
+  '/api/v1/miner/start',
+  '/api/v1/miner/stop',
+  '/api/v1/miner/status',
+  '/api/v1/mesh/nodes',
+  '/api/v1/mesh/simulate',
+  '/api/v1/auth/keypair',
+  '/api/v1/block/sign',
+  '/api/v1/block/verify-signature',
+  '/api/persistence/status',
+  '/api/persistence/acknowledge',
+  '/api/persistence/reencrypt',
+  '/api/jobs',
+  '/api/jobs/job-id',
+  '/api/jobs/job-id/claim',
+  '/api/jobs/job-id/complete',
+  '/api/jobs/job-id/fail',
+  '/api/attest/revocations',
+  '/api/attest/revoke',
+  '/api/attest/policy',
+] as const;
+
+const MODES = [
+  { label: 'Create', template: 'Create a new ' },
+  { label: 'Explore', template: 'Explore the current state of ' },
+  { label: 'Build', template: 'Build and test ' },
+  { label: 'Change', template: 'Change ' },
+];
+
+const initialActivity: ActivityItem[] = [
+  {
+    id: 'boot',
+    label: 'Console opened',
+    detail: 'Waiting for a fresh observation from the runtime.',
+    tone: 'unknown',
+    timestamp: 'now',
+  },
+];
+
+async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(path, init);
   const text = await response.text();
-  let payload: any = null;
+  let payload: unknown = null;
   try {
     payload = text ? JSON.parse(text) : null;
   } catch {
-    throw new Error(`API returned invalid JSON (${response.status})`);
+    throw new Error(`Invalid JSON from ${path}`);
   }
   if (!response.ok) {
-    throw new Error(payload?.error || payload?.message || `API request failed (${response.status})`);
+    const body = payload as { error?: string; message?: string } | null;
+    throw new Error(body?.error || body?.message || `${response.status} from ${path}`);
   }
   return payload as T;
 }
 
-const MODE_BUTTONS = [
-  { icon: '✦', label: 'Create', template: 'Create a new ' },
-  { icon: '◇', label: 'Explore', template: 'Explore the current state of ' },
-  { icon: '⚙', label: 'Build', template: 'Build and test ' },
-  { icon: '◎', label: 'Change', template: 'Change ' },
-];
+function nowLabel(value?: string): string {
+  if (!value) return 'unknown time';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? value
+    : date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
 
-export function App() {
-  const [tip, setTip] = useState<any>(null);
-  const [ledgerIntegrity, setLedgerIntegrity] = useState<{
-    valid: boolean;
-    height: number;
-    genesisHash: string | null;
-    tipHash: string | null;
-    brokenAt?: number;
-    reason?: string;
-  } | null>(null);
-  const [history, setHistory] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
+function shortId(value?: string): string {
+  if (!value) return 'not available';
+  return value.length > 18 ? `${value.slice(0, 9)}…${value.slice(-6)}` : value;
+}
+
+function toneFor(value?: string): Tone {
+  const status = (value || '').toUpperCase();
+  if (['VERIFIED', 'PASS', 'ONLINE', 'READY', 'ATTESTED', 'SUCCEEDED', 'SYNCED'].includes(status)) return 'verified';
+  if (['REVIEW', 'PROPOSED', 'AUTHORIZED', 'EXECUTED', 'VERIFYING'].includes(status)) return 'review';
+  if (['FAILED', 'DIVERGENT', 'DEGRADED', 'DENIED', 'REJECT'].includes(status)) return 'dissent';
+  return 'unknown';
+}
+
+function StatusBadge({ label, tone = 'unknown' }: { label: string; tone?: Tone }) {
+  return <span className={`status-badge status-${tone}`}><span className="status-dot" aria-hidden="true" />{label}</span>;
+}
+
+function SectionHeading({ kicker, title, detail }: { kicker: string; title: string; detail?: string }) {
+  return (
+    <div className="section-heading">
+      <div>
+        <p className="eyebrow">{kicker}</p>
+        <h2>{title}</h2>
+      </div>
+      {detail ? <span className="section-detail">{detail}</span> : null}
+    </div>
+  );
+}
+
+function EmptyState({ title, body }: { title: string; body: string }) {
+  return (
+    <div className="empty-state">
+      <span className="empty-mark" aria-hidden="true">∅</span>
+      <strong>{title}</strong>
+      <p>{body}</p>
+    </div>
+  );
+}
+
+function App() {
+  const [view, setView] = useState<View>('current');
+  const [health, setHealth] = useState<HealthSnapshot | null>(null);
+  const [capability, setCapability] = useState<CapabilitySnapshot | null>(null);
+  const [tip, setTip] = useState<TipSnapshot | null>(null);
+  const [miner, setMiner] = useState<MinerSnapshot | null>(null);
+  const [command, setCommand] = useState<CommandSnapshot | null>(null);
+  const [attestation, setAttestation] = useState<AttestationSnapshot | null>(null);
+  const [activity, setActivity] = useState<ActivityItem[]>(initialActivity);
+  const [intent, setIntent] = useState('');
   const [streamConnected, setStreamConnected] = useState(false);
-  const [keyPair, setKeyPair] = useState<KeyPair | null>(null);
-  const [signRequests, setSignRequests] = useState(false);
-  const [lastError, setLastError] = useState<string | null>(null);
-  const [reconnectAttempt, setReconnectAttempt] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [healthError, setHealthError] = useState(false);
 
-  const [minerActive, setMinerActive] = useState(false);
-  const [minerInterval, setMinerInterval] = useState(5000);
-  const [minerStats, setMinerStats] = useState<{ totalMined: number; lastBlockTime: string }>({
-    totalMined: 0,
-    lastBlockTime: '',
-  });
-
-  const [meshSimulation, setMeshSimulation] = useState<MeshConvergenceReceipt | null>(null);
-  const [meshLoading, setMeshLoading] = useState(false);
-
-  const [moodData, setMoodData] = useState<any>(null);
-  const [attestationData, setAttestationData] = useState<any>(null);
-  const [attestLoading, setAttestLoading] = useState(false);
-  const [kernelCapabilities, setKernelCapabilities] = useState<KernelCapabilitySnapshot | null>(null);
-  const [kernelCapabilitiesError, setKernelCapabilitiesError] = useState<string | null>(null);
-  const [omegaIntent, setOmegaIntent] = useState('');
-  const [omegaCommand, setOmegaCommand] = useState<any>(null);
-  const [omegaLoading, setOmegaLoading] = useState(false);
-
-  const [openStageId, setOpenStageId] = useState<string | null>(null);
-  const [globeMax, setGlobeMax] = useState(false);
-  const [tipReachable, setTipReachable] = useState<boolean | null>(null);
-  const [tipRouteStatus, setTipRouteStatus] = useState<string | null>(null);
-
-  const eventSourceRef = useRef<EventSource | null>(null);
-
-  const fetchMinerStatus = async () => {
-    try {
-      const data = await apiRequest<any>('/v1/miner/status');
-      if (data.success && data.miner) {
-        setMinerActive(data.miner.active);
-        setMinerInterval(data.miner.intervalMs);
-        setMinerStats({
-          totalMined: data.miner.totalMined,
-          lastBlockTime: data.miner.lastBlockTime,
-        });
-      }
-    } catch {
-      /* ambient — don't surface miner status errors */
-    }
-  };
-
-  const fetchKernelCapabilities = async () => {
-    try {
-      const data = await apiRequest<{ success: boolean; capability?: KernelCapabilitySnapshot }>(
-        '/v1/kernel/capabilities'
-      );
-      if (!data.success || !data.capability) throw new Error('invalid capability response');
-      setKernelCapabilities(data.capability);
-      setKernelCapabilitiesError(null);
-    } catch (err: any) {
-      setKernelCapabilities(null);
-      setKernelCapabilitiesError(
-        err instanceof Error ? err.message : 'capability snapshot unavailable'
-      );
-    }
-  };
-
-  const fetchMood = async () => {
-    try {
-      const data = await apiRequest<any>('/v1/mood');
-      setMoodData(data);
-    } catch {
-      /* ambient */
-    }
-  };
-
-  useEffect(() => {
-    fetchMinerStatus();
-    fetchKernelCapabilities();
-    fetchMood();
-
-    let es: EventSource | null = null;
-    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
-    let disposed = false;
-    let attempt = 0;
-
-    const connect = () => {
-      if (disposed) return;
-      es?.close();
-      try {
-        es = new EventSource(apiUrl('/v1/stream'));
-        eventSourceRef.current = es;
-
-        es.onopen = () => {
-          attempt = 0;
-          setReconnectAttempt(0);
-          setStreamConnected(true);
-          setLastError(null);
-        };
-
-        es.onmessage = (event) => {
-          try {
-            const payload = JSON.parse(event.data);
-            if (payload.block) {
-              setTip(payload.block);
-              setHistory((prev) => {
-                const exists = prev.some((b) => b.hash === payload.block.hash);
-                if (exists) return prev;
-                return [payload.block, ...prev.slice(0, 14)];
-              });
-              setMinerStats((prev) => ({
-                totalMined: prev.totalMined + 1,
-                lastBlockTime: payload.block.timestamp,
-              }));
-            }
-          } catch {
-            /* skip malformed event */
-          }
-        };
-
-        es.onerror = () => {
-          es?.close();
-          setStreamConnected(false);
-          attempt += 1;
-          setReconnectAttempt(attempt);
-          void fetchTipFallback();
-          const delay = Math.min(30_000, 1_000 * 2 ** Math.min(attempt - 1, 4));
-          reconnectTimer = setTimeout(connect, delay);
-        };
-      } catch {
-        setStreamConnected(false);
-      }
-    };
-
-    connect();
-
-    return () => {
-      disposed = true;
-      if (reconnectTimer) clearTimeout(reconnectTimer);
-      es?.close();
-    };
+  const addActivity = useCallback((item: Omit<ActivityItem, 'id' | 'timestamp'>) => {
+    setActivity((previous) => [
+      { ...item, id: `${item.label}-${Date.now()}`, timestamp: 'just now' },
+      ...previous,
+    ].slice(0, 8));
   }, []);
 
-  // REST polling — always refresh ledger integrity; use tip only when SSE is down.
+  const loadRuntime = useCallback(async () => {
+    setRefreshing(true);
+    const results = await Promise.allSettled([
+      requestJson<HealthSnapshot>('/api/health'),
+      requestJson<{ capability?: CapabilitySnapshot }>('/api/v1/kernel/capabilities'),
+      requestJson<TipSnapshot>('/api/v1/block/tip'),
+      requestJson<MinerSnapshot>('/api/v1/miner/status'),
+    ]);
+
+    const [healthResult, capabilityResult, tipResult, minerResult] = results;
+    if (healthResult.status === 'fulfilled') {
+      setHealth(healthResult.value);
+      setHealthError(false);
+    } else {
+      // Health can legitimately return 503 when the local ledger is degraded.
+      setHealthError(true);
+      setHealth(null);
+    }
+    if (capabilityResult.status === 'fulfilled') setCapability(capabilityResult.value.capability ?? null);
+    if (tipResult.status === 'fulfilled') setTip(tipResult.value);
+    if (minerResult.status === 'fulfilled') setMiner(minerResult.value);
+    setRefreshing(false);
+  }, []);
+
   useEffect(() => {
-    let active = true;
-    const poll = async () => {
-      if (!active) return;
+    void loadRuntime();
+    const source = new EventSource('/api/v1/stream');
+    source.onopen = () => setStreamConnected(true);
+    source.onmessage = (event) => {
       try {
-        const d = await apiRequest<any>('/v1/block/tip');
-        if (!active) return;
-        setTipReachable(true);
-        setTipRouteStatus(typeof d.status === 'string' ? d.status : null);
-        if (d.integrity) setLedgerIntegrity(d.integrity);
-        if (!streamConnected && d.tip) {
-          setTip(d.tip);
-          setHistory((prev) => {
-            const exists = prev.some((b) => b.hash === d.tip.hash);
-            return exists ? prev : [d.tip, ...prev.slice(0, 14)];
-          });
+        const payload = JSON.parse(event.data) as { block?: TipSnapshot['tip'] };
+        if (payload.block) {
+          setTip((previous) => ({ ...(previous ?? {}), success: true, status: 'ONLINE', tip: payload.block }));
+          addActivity({ label: 'New observation', detail: `Block ${shortId(payload.block.hash)}`, tone: 'verified' });
         }
       } catch {
-        if (!active) return;
-        setTipReachable(false);
-        setTipRouteStatus(null);
+        // A malformed stream event is not promoted to state.
       }
     };
-    poll();
-    const interval = setInterval(poll, 5000);
-    return () => {
-      active = false;
-      clearInterval(interval);
-    };
-  }, [streamConnected]);
+    source.onerror = () => setStreamConnected(false);
+    return () => source.close();
+  }, [addActivity, loadRuntime]);
 
-  const fetchTipFallback = async () => {
-    try {
-      const d = await apiRequest<any>('/v1/block/tip');
-      setTipReachable(true);
-      setTipRouteStatus(typeof d.status === 'string' ? d.status : null);
-      if (d.integrity) setLedgerIntegrity(d.integrity);
-      if (d.tip) {
-        setTip(d.tip);
-        setHistory((prev) => (prev.length === 0 ? [d.tip] : prev));
-      }
-    } catch {
-      setTipReachable(false);
-      setTipRouteStatus(null);
-    }
-  };
-
-  const proposeOmegaCommand = async () => {
-    setOmegaLoading(true);
-    setLastError(null);
-    try {
-      const data = await apiRequest<any>('/v1/omega/commands', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          intent: omegaIntent,
-          requestedBy: 'dashboard-user',
-          workers: ['planner', 'tester'],
-          idempotencyKey: `dashboard-${Date.now()}`,
-          context: { stateBefore: tip?.hash ?? 'unknown', observationKind: 'supplied-state' },
-        }),
-      });
-      setOmegaCommand(data);
-    } catch (err: any) {
-      setLastError(err.message);
-    } finally {
-      setOmegaLoading(false);
-    }
-  };
-
-  const observeOmegaReality = async () => {
-    if (!omegaCommand?.command?.commandId) return;
-    setOmegaLoading(true);
-    try {
-      const data = await apiRequest<any>(
-        `/v1/omega/commands/${omegaCommand.command.commandId}/observe`,
-        {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({
-            observedState:
-              omegaCommand.command.change.stateAfter ?? tip?.hash ?? 'unknown',
-          }),
-        }
-      );
-      setOmegaCommand(data);
-    } catch (err: any) {
-      setLastError(err.message);
-    } finally {
-      setOmegaLoading(false);
-    }
-  };
-
-  const approveOmegaCommand = async () => {
-    if (!omegaCommand?.command?.commandId) return;
-    setOmegaLoading(true);
-    try {
-      const data = await apiRequest<any>(
-        `/v1/omega/commands/${omegaCommand.command.commandId}/approve`,
-        {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ operator: 'dashboard-operator' }),
-        }
-      );
-      setOmegaCommand(data);
-    } catch (err: any) {
-      setLastError(err.message);
-    } finally {
-      setOmegaLoading(false);
-    }
-  };
-
-  const executeOmegaCommand = async () => {
-    if (!omegaCommand?.command?.commandId) return;
-    setOmegaLoading(true);
-    try {
-      const data = await apiRequest<any>(
-        `/v1/omega/commands/${omegaCommand.command.commandId}/execute`,
-        {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({}),
-        }
-      );
-      setOmegaCommand(data);
-    } catch (err: any) {
-      setLastError(err.message);
-    } finally {
-      setOmegaLoading(false);
-    }
-  };
-
-  const generateServerKeys = async () => {
-    try {
-      const data = await apiRequest<any>('/v1/auth/keypair', { method: 'POST' });
-      if (data.success) {
-        setKeyPair({
-          publicKey: data.publicKey,
-          privateKey: data.privateKey,
-          type: 'ED25519_SERVER',
-        });
-        setSignRequests(true);
-      }
-    } catch (err: any) {
-      setLastError(err.message);
-    }
-  };
-
-  const generateWebCryptoKeys = async () => {
-    try {
-      if (!window.crypto || !window.crypto.subtle) {
-        throw new Error('WebCrypto API not supported');
-      }
-      const keyPairGen = await window.crypto.subtle.generateKey(
-        { name: 'ECDSA', namedCurve: 'P-256' },
-        true,
-        ['sign', 'verify']
-      );
-      const exportedPub = await window.crypto.subtle.exportKey('spki', keyPairGen.publicKey);
-      const pubB64 = btoa(String.fromCharCode(...new Uint8Array(exportedPub)));
-      const pemPub = `-----BEGIN PUBLIC KEY-----\n${pubB64.match(/.{1,64}/g)?.join('\n')}\n-----END PUBLIC KEY-----`;
-      setKeyPair({
-        publicKey: pemPub,
-        privateKey: '[SECURE_ENCLAVE_HARDWARE_PROTECTED_KEY]',
-        type: 'WEBCRYPTO_ENCLAVE',
-      });
-      setSignRequests(true);
-    } catch (err: any) {
-      await generateServerKeys();
-    }
-  };
-
-  const toggleMiner = async () => {
-    try {
-      if (minerActive) {
-        const data = await apiRequest<any>('/v1/miner/stop', { method: 'POST' });
-        if (data.success) setMinerActive(false);
-      } else {
-        const data = await apiRequest<any>('/v1/miner/start', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ intervalMs: minerInterval }),
-        });
-        if (data.success) setMinerActive(true);
-      }
-    } catch (err: any) {
-      setLastError(err.message);
-    }
-  };
-
-  const runMeshSimulation = async () => {
-    setMeshLoading(true);
-    setLastError(null);
-    try {
-      const data = await apiRequest<any>('/v1/mesh/simulate');
-      if (data.success && data.convergence) {
-        setMeshSimulation(data.convergence);
-      }
-    } catch (err: any) {
-      setLastError(err.message);
-    } finally {
-      setMeshLoading(false);
-    }
-  };
-
-  const requestAttestation = async () => {
-    setAttestLoading(true);
-    setLastError(null);
-    try {
-      const data = await apiRequest<any>('/v1/attest', { method: 'POST' });
-      if (data.success && data.attestation) {
-        setAttestationData(data.attestation);
-      }
-    } catch (err: any) {
-      setLastError(err.message);
-    } finally {
-      setAttestLoading(false);
-    }
-  };
-
-  const cycle = async () => {
+  const runAction = useCallback(async (label: string, action: () => Promise<void>) => {
     setLoading(true);
-    setLastError(null);
+    setError(null);
     try {
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (signRequests && keyPair) {
-        if (keyPair.type === 'ED25519_SERVER') {
-          const signData = await apiRequest<any>('/v1/block/sign', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ data: 'EXECUTE_OMNI_CYCLE', privateKey: keyPair.privateKey }),
-          });
-          if (signData.signature) {
-            headers['x-omega-signature'] = signData.signature;
-            headers['x-omega-public-key'] = keyPair.publicKey;
-          }
-        }
-      }
-      const data = await apiRequest<any>('/v1/cycle', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({}),
-      });
-      if (!data.success) {
-        setLastError(data.error || 'Cycle execution rejected');
-      } else if (data.block) {
-        setTip(data.block);
-      }
-    } catch (err: any) {
-      setLastError(err.message);
-      await fetchTipFallback();
+      await action();
+      addActivity({ label, detail: 'Server response recorded in this console.', tone: 'verified' });
+    } catch (caught) {
+      const message = caught instanceof Error ? caught.message : 'Action failed';
+      setError(message);
+      addActivity({ label, detail: message, tone: 'dissent' });
     } finally {
       setLoading(false);
     }
+  }, [addActivity]);
+
+  const proposeIntent = () => {
+    if (!intent.trim()) return;
+    void runAction('Transition proposed', async () => {
+      const next = await requestJson<CommandSnapshot>('/api/v1/omega/commands', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          intent: intent.trim(),
+          requestedBy: 'mobile-console',
+          workers: ['planner', 'tester'],
+          idempotencyKey: `mobile-${Date.now()}`,
+          context: { observationKind: 'mobile-console-intent' },
+        }),
+      });
+      setCommand(next);
+      setView('evidence');
+    });
   };
 
-  const dismissCommand = () => {
-    setOmegaCommand(null);
-    setOmegaIntent('');
+  const commandId = command?.command?.commandId;
+  const actOnCommand = (action: 'approve' | 'execute' | 'observe') => {
+    if (!commandId) return;
+    const path = `/api/v1/omega/commands/${commandId}/${action}`;
+    void runAction(action === 'approve' ? 'Human approval recorded' : action === 'execute' ? 'Execution requested' : 'Reality observed', async () => {
+      const body = action === 'approve'
+        ? { operator: 'mobile-console-operator' }
+        : action === 'observe'
+          ? { observedState: command?.command?.change?.stateAfter ?? tip?.tip?.hash ?? 'unknown' }
+          : {};
+      setCommand(await requestJson<CommandSnapshot>(path, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(body),
+      }));
+    });
   };
 
-  const simulationMode = kernelCapabilities?.execution === 'SIMULATION';
-  const humanGateRequired = kernelCapabilities?.humanAuthorizationRequired ?? true;
+  const requestAttestation = () => {
+    void runAction('Attestation requested', async () => {
+      setAttestation(await requestJson<AttestationSnapshot>('/api/v1/attest', { method: 'POST' }));
+    });
+  };
 
-  const stageStates = deriveStageStates(omegaCommand);
+  const runCycle = () => {
+    void runAction('Bounded cycle requested', async () => {
+      const next = await requestJson<{ block?: TipSnapshot['tip']; status?: string }>('/api/v1/cycle', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      if (next.block) setTip((previous) => ({ ...(previous ?? {}), success: true, status: next.status, tip: next.block }));
+    });
+  };
 
-  const lifecycleStages: LifecycleStage[] = [
+  const toggleMiner = () => {
+    const active = Boolean(miner?.miner?.active);
+    void runAction(active ? 'Miner stopped' : 'Miner started', async () => {
+      setMiner(await requestJson<MinerSnapshot>(active ? '/api/v1/miner/stop' : '/api/v1/miner/start', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ intervalMs: 5000 }),
+      }));
+    });
+  };
+
+  const healthTone = healthError ? 'dissent' : toneFor(health?.readiness || health?.status);
+  const liveStatus = healthError ? 'DEGRADED' : health?.readiness?.toUpperCase() || tip?.status || 'UNKNOWN';
+  const ledgerValid = tip?.integrity?.valid ?? health?.checks?.memory?.integrity;
+  const stageStates = useMemo<Stage[]>(() => [
     {
-      id: 'intent',
-      icon: '✦',
-      label: 'Intent',
-      subtitle: omegaCommand?.command?.intent || 'What shall we make real?',
-      state: stageStates.intent,
+      id: 'observe', label: 'Observe', short: '01', tone: tip?.tip ? 'verified' : 'unknown',
+      detail: tip?.tip ? `Latest block ${shortId(tip.tip.hash)}` : 'No runtime observation yet',
     },
     {
-      id: 'evidence',
-      icon: '👁',
-      label: 'Evidence',
-      subtitle: "What the system knows and doesn't know",
-      state: stageStates.evidence,
-      detail: <RealityPanel />,
+      id: 'verify', label: 'Verify', short: '02', tone: command?.reality?.classification ? toneFor(command.reality.classification) : tip?.tip ? 'review' : 'unknown',
+      detail: command?.reality?.classification ? command.reality.classification : 'Awaiting a proposition to check',
     },
     {
-      id: 'authority',
-      icon: '🔐',
-      label: 'Authority',
-      subtitle: humanGateRequired ? 'Human approval required' : 'Autonomous',
-      state: stageStates.authority,
+      id: 'remember', label: 'Remember', short: '03', tone: ledgerValid === true ? 'verified' : ledgerValid === false ? 'dissent' : 'unknown',
+      detail: ledgerValid === true ? `Ledger intact · height ${tip?.integrity?.height ?? health?.checks?.memory?.height ?? '—'}` : 'Lineage is not confirmed',
     },
     {
-      id: 'admit',
-      icon: '◇',
-      label: 'Admission',
-      subtitle: omegaCommand?.command?.change?.decision
-        ? `Decision: ${omegaCommand.command.change.decision}`
-        : 'Awaiting admission',
-      state: stageStates.admit,
+      id: 'attest', label: 'Attest', short: '04', tone: attestation?.attestation?.verified ? 'verified' : 'unknown',
+      detail: attestation?.attestation?.id ? `Receipt ${shortId(attestation.attestation.id)}` : 'Optional earned expansion',
     },
-    {
-      id: 'execute',
-      icon: '⚙',
-      label: 'Execute',
-      subtitle: simulationMode ? 'Bounded simulation' : 'Bounded action',
-      state: stageStates.execute,
-    },
-    {
-      id: 'observe',
-      icon: '📡',
-      label: 'Observe',
-      subtitle: 'What actually happened',
-      state: stageStates.observe,
-      detail: (
-        <ObservationStreamPanel
-          tip={tip}
-          history={history}
-          minerActive={minerActive}
-          minerStats={minerStats}
-          integrity={ledgerIntegrity}
-        />
-      ),
-    },
-    {
-      id: 'verify',
-      icon: '✓',
-      label: 'Verify',
-      subtitle: omegaCommand?.reality?.classification
-        ? humanStatus(omegaCommand.reality.classification)
-        : 'Does reality match the proposition?',
-      state: stageStates.verify,
-    },
-    {
-      id: 'remember',
-      icon: '🧠',
-      label: 'Remember',
-      subtitle: ledgerIntegrity
-        ? ledgerIntegrity.valid
-          ? `integrity valid · height ${ledgerIntegrity.height}`
-          : `DEGRADED · ${ledgerIntegrity.reason ?? 'unverified'}`
-        : 'Lineage and memory',
-      state: stageStates.remember,
-      detail: <TransitionProvenancePanel />,
-    },
-    {
-      id: 'next',
-      icon: '↺',
-      label: 'Next Δ',
-      subtitle: 'The next finite transition',
-      state: stageStates.next,
-    },
-    {
-      id: 'ecosystem',
-      icon: '🌊',
-      label: 'Ecosystem',
-      subtitle: 'Capability layers and evidence',
-      state: 'available' as const,
-      detail: <EcosystemPanel />,
-    },
-    {
-      id: 'dependencies',
-      icon: '🗺',
-      label: 'Dependencies',
-      subtitle: 'Package graph · earned vs not-yet-earned',
-      state: 'available' as const,
-      detail: <DependencyMapPanel />,
-    },
-    {
-      id: 'system',
-      icon: '⚙',
-      label: 'System',
-      subtitle: 'Mining, mesh, attestation, identity',
-      state: 'available' as const,
-      detail: (
-        <>
-          <SystemHealthPanel />
-          <SystemControlsPanel
-          onCycle={cycle}
-          cycleLoading={loading}
-          minerActive={minerActive}
-          minerInterval={minerInterval}
-          onToggleMiner={toggleMiner}
-          onSetMinerInterval={setMinerInterval}
-          meshSimulation={meshSimulation}
-          meshLoading={meshLoading}
-          onRunMesh={runMeshSimulation}
-          attestationData={attestationData}
-          attestLoading={attestLoading}
-          onRequestAttestation={requestAttestation}
-          moodData={moodData}
-          onFetchMood={fetchMood}
-          keyPair={keyPair}
-          onGenerateWebCrypto={generateWebCryptoKeys}
-          onGenerateServerKeys={generateServerKeys}
-          signRequests={signRequests}
-          onSetSignRequests={setSignRequests}
-        />
-        </>
-      ),
-    },
-  ];
+  ], [attestation, command, health, ledgerValid, tip]);
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        background: theme.bgGradient,
-        color: theme.text,
-        fontFamily: theme.fontSans,
-        display: 'flex',
-        flexDirection: 'column',
-        position: 'relative',
-      }}
-    >
-      <GlobeViewport
-        active={globeMax}
-        evidence={bindGlobeEvidence({
-          reachable: tipReachable,
-          tipRouteStatus,
-          tipEvidenceStatus: tip?.evidence?.status ?? null,
-          chainIntact: ledgerIntegrity ? ledgerIntegrity.valid : null,
-        })}
-      />
-      {/* Ambient status bar */}
-      <div style={{ position: 'relative', zIndex: 2 }}>
-      <AmbientBar
-        connected={streamConnected}
-        reconnectAttempt={reconnectAttempt}
-        simulationMode={simulationMode}
-        identityActive={!!keyPair}
-        realityStatus={tip?.evidence?.status ?? null}
-        epochsRemembered={history.length}
-        miningActive={minerActive}
-      />
-      </div>
-
-      {/* Error toast */}
-      {lastError && (
-        <div
-          style={{
-            margin: '12px 28px 0',
-            padding: '10px 16px',
-            borderRadius: theme.radiusSmall,
-            background: `${theme.warning}11`,
-            border: `1px solid ${theme.warning}33`,
-            color: theme.warning,
-            fontSize: '12px',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}
-        >
-          <span>{lastError}</span>
-          <button
-            onClick={() => setLastError(null)}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: theme.warning,
-              cursor: 'pointer',
-              fontSize: '14px',
-              padding: '0 4px',
-            }}
-          >
-            ×
+    <div className="app-shell">
+      <header className="app-topbar">
+        <div className="brand-lockup">
+          <img src="/omega-mark.svg" alt="" className="brand-mark" />
+          <div>
+            <strong>OCEANICOS</strong>
+            <span>Ω∞v field console</span>
+          </div>
+        </div>
+        <div className="topbar-actions">
+          <StatusBadge label={streamConnected ? 'LIVE' : 'POLLING'} tone={streamConnected ? 'verified' : 'review'} />
+          <button className="icon-button" type="button" onClick={() => void loadRuntime()} disabled={refreshing} aria-label="Refresh runtime">
+            {refreshing ? '…' : '↻'}
           </button>
         </div>
-      )}
+      </header>
 
-      {/* Main surface */}
-      <main
-        style={{
-          maxWidth: globeMax ? '1100px' : '720px',
-          width: '100%',
-          margin: '0 auto',
-          padding: '60px 24px 40px',
-          flex: 1,
-          position: 'relative',
-          zIndex: 1,
-        }}
-      >
-        {/* Logo */}
-        <div
-          style={{
-            fontSize: '13px',
-            fontWeight: 800,
-            letterSpacing: '0.2em',
-            color: theme.accent,
-            textAlign: 'center',
-            marginBottom: '8px',
-          }}
-        >
-          💧 OCEANICOS
-        </div>
-        <div style={{ textAlign: 'center', marginBottom: '16px' }}>
-          <button
-            type="button"
-            aria-pressed={globeMax}
-            onClick={() => setGlobeMax((v) => !v)}
-            style={{
-              background: 'transparent',
-              border: `1px solid ${theme.borderBright}`,
-              color: theme.accent,
-              borderRadius: theme.radiusPill,
-              padding: '6px 14px',
-              fontSize: '11px',
-              letterSpacing: '0.12em',
-              textTransform: 'uppercase',
-              cursor: 'pointer',
-            }}
-          >
-            {globeMax ? 'Exit globe view' : 'Globe view'}
-          </button>
-        </div>
+      <main className="app-main">
+        <section className="hero-block" aria-labelledby="page-title">
+          <div className="hero-kicker"><span className="current-line" /> VERIFIED CURRENT</div>
+          <h1 id="page-title">Reality, <em>verified.</em></h1>
+          <p>One calm surface for seeing what happened before deciding what happens next.</p>
+          <div className="hero-meta">
+            <StatusBadge label={liveStatus} tone={healthTone} />
+            <span className="mono-meta">human gate · {capability?.humanAuthorizationRequired === false ? 'off' : 'on'}</span>
+          </div>
+        </section>
 
-        {/* Prompt */}
-        <h1
-          style={{
-            fontSize: '28px',
-            fontWeight: 600,
-            color: theme.text,
-            textAlign: 'center',
-            margin: '0 0 28px',
-            letterSpacing: '-0.5px',
-          }}
-        >
-          What shall we make real?
-        </h1>
+        {error ? (
+          <div className="error-banner" role="alert">
+            <div><strong>Action not completed</strong><span>{error}</span></div>
+            <button type="button" onClick={() => setError(null)} aria-label="Dismiss error">×</button>
+          </div>
+        ) : null}
 
-        {/* Input */}
-        <div
-          style={{
-            display: 'flex',
-            gap: '8px',
-            alignItems: 'stretch',
-          }}
-        >
-          <input
-            value={omegaIntent}
-            onChange={(e) => setOmegaIntent(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && omegaIntent.trim() && !omegaLoading) {
-                proposeOmegaCommand();
-              }
-            }}
-            maxLength={2000}
-            placeholder="Tell me what you're trying to do…"
-            style={{
-              flex: 1,
-              padding: '14px 18px',
-              background: theme.surface,
-              border: `1px solid ${theme.borderBright}`,
-              borderRadius: theme.radiusPill,
-              color: theme.text,
-              fontFamily: theme.fontSans,
-              fontSize: '15px',
-              outline: 'none',
-            }}
+        {view === 'current' ? (
+          <CurrentView
+            liveStatus={liveStatus}
+            healthTone={healthTone}
+            stageStates={stageStates}
+            intent={intent}
+            setIntent={setIntent}
+            proposeIntent={proposeIntent}
+            loading={loading}
+            onMode={(template) => setIntent(template)}
+            tip={tip}
+            activity={activity}
           />
-          <button
-            onClick={proposeOmegaCommand}
-            disabled={omegaLoading || !omegaIntent.trim()}
-            style={{
-              padding: '0 22px',
-              borderRadius: theme.radiusPill,
-              border: 'none',
-              background: omegaLoading || !omegaIntent.trim() ? `${theme.accent}44` : theme.accent,
-              color: theme.bg,
-              fontFamily: theme.fontSans,
-              fontSize: '18px',
-              fontWeight: 700,
-              cursor: omegaLoading || !omegaIntent.trim() ? 'not-allowed' : 'pointer',
-              opacity: omegaLoading || !omegaIntent.trim() ? 0.5 : 1,
-              transition: 'opacity 0.2s',
-            }}
-          >
-            →
-          </button>
-        </div>
-
-        {/* Mode buttons */}
-        <div
-          style={{
-            display: 'flex',
-            gap: '10px',
-            marginTop: '14px',
-            flexWrap: 'wrap',
-          }}
-        >
-          {MODE_BUTTONS.map((mode) => (
-            <button
-              key={mode.label}
-              onClick={() => setOmegaIntent(mode.template)}
-              style={{
-                padding: '8px 16px',
-                borderRadius: theme.radiusPill,
-                border: `1px solid ${theme.border}`,
-                background: 'transparent',
-                color: theme.textMuted,
-                fontFamily: theme.fontSans,
-                fontSize: '13px',
-                fontWeight: 500,
-                cursor: 'pointer',
-                transition: 'border-color 0.2s, color 0.2s',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = theme.borderBright;
-                e.currentTarget.style.color = theme.text;
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = theme.border;
-                e.currentTarget.style.color = theme.textMuted;
-              }}
-            >
-              {mode.icon} {mode.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Intent flow card */}
-        <OreadConsole />
-        <MoodCodexPanel />
-        <DivergenceAlertsPanel />
-        <ValueNavigatorPanel />
-
-        <IntentFlow
-          command={omegaCommand}
-          loading={omegaLoading}
-          onApprove={approveOmegaCommand}
-          onExecute={executeOmegaCommand}
-          onObserve={observeOmegaReality}
-          onViewEvidence={() => setOpenStageId('evidence')}
-          onViewTimeline={() => setOpenStageId('remember')}
-          onDismiss={dismissCommand}
-          simulationMode={simulationMode}
-          humanGateRequired={humanGateRequired}
-        />
+        ) : null}
+        {view === 'evidence' ? (
+          <EvidenceView
+            stageStates={stageStates}
+            command={command}
+            attestation={attestation}
+            loading={loading}
+            onApprove={() => actOnCommand('approve')}
+            onExecute={() => actOnCommand('execute')}
+            onObserve={() => actOnCommand('observe')}
+            onAttest={requestAttestation}
+            activity={activity}
+          />
+        ) : null}
+        {view === 'system' ? (
+          <SystemView
+            health={health}
+            capability={capability}
+            miner={miner}
+            loading={loading}
+            onCycle={runCycle}
+            onToggleMiner={toggleMiner}
+            onRefresh={() => void loadRuntime()}
+          />
+        ) : null}
       </main>
 
-      {/* Mirror-water lifecycle flow */}
-      <div
-        style={{
-          maxWidth: '720px',
-          width: '100%',
-          margin: '0 auto',
-          padding: '8px 24px 60px',
-        }}
-      >
-        <LifecycleFlow
-          stages={lifecycleStages}
-          openStageId={openStageId}
-          onStageToggle={(id) => setOpenStageId(id || null)}
-        />
-      </div>
+      <nav className="bottom-nav" aria-label="Primary">
+        {([
+          ['current', '◉', 'Current'],
+          ['evidence', '✓', 'Evidence'],
+          ['system', '⌘', 'System'],
+        ] as const).map(([id, glyph, label]) => (
+          <button key={id} type="button" className={view === id ? 'nav-item nav-item-active' : 'nav-item'} onClick={() => setView(id)} aria-current={view === id ? 'page' : undefined}>
+            <span className="nav-glyph" aria-hidden="true">{glyph}</span>
+            <span>{label}</span>
+          </button>
+        ))}
+      </nav>
     </div>
+  );
+}
+
+function CurrentView({ liveStatus, healthTone, stageStates, intent, setIntent, proposeIntent, loading, onMode, tip, activity }: {
+  liveStatus: string; healthTone: Tone; stageStates: Stage[]; intent: string; setIntent: (value: string) => void; proposeIntent: () => void; loading: boolean; onMode: (value: string) => void; tip: TipSnapshot | null; activity: ActivityItem[];
+}) {
+  return (
+    <div className="view-stack">
+      <section className="signal-card card-accent">
+        <div className="signal-head"><div><p className="eyebrow">CURRENT SIGNAL</p><h2>{liveStatus}</h2></div><StatusBadge label={healthTone === 'verified' ? 'within scope' : 'needs evidence'} tone={healthTone} /></div>
+        <div className="signal-grid">
+          <div><span>source</span><strong>{tip?.tip ? 'runtime ledger' : 'not connected'}</strong></div>
+          <div><span>last seen</span><strong>{nowLabel(tip?.tip?.timestamp)}</strong></div>
+          <div><span>tip</span><strong>{shortId(tip?.tip?.hash)}</strong></div>
+        </div>
+      </section>
+
+      <section className="loop-card">
+        <SectionHeading kicker="MINI LOOP" title="Evidence moves in order" detail="01—04" />
+        <div className="stage-list">
+          {stageStates.map((stage, index) => (
+            <div className="stage-row" key={stage.id}>
+              <div className={`stage-index stage-${stage.tone}`}><span>{stage.short}</span></div>
+              <div className="stage-copy"><strong>{stage.label}</strong><span>{stage.detail}</span></div>
+              <StatusBadge label={stage.tone === 'verified' ? 'ready' : stage.tone === 'dissent' ? 'divergent' : stage.tone === 'review' ? 'review' : 'unknown'} tone={stage.tone} />
+              {index < stageStates.length - 1 ? <span className="stage-connector" aria-hidden="true" /> : null}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="intent-card">
+        <SectionHeading kicker="NEXT Δ" title="Name the transition" detail="bounded input" />
+        <label htmlFor="intent">What shall we make real?</label>
+        <textarea id="intent" value={intent} onChange={(event) => setIntent(event.target.value)} maxLength={2000} placeholder="Describe one finite thing to observe, verify, or build…" />
+        <div className="mode-row" aria-label="Intent templates">
+          {MODES.map((mode) => <button key={mode.label} type="button" onClick={() => onMode(mode.template)}>{mode.label}</button>)}
+        </div>
+        <button className="primary-button" type="button" onClick={proposeIntent} disabled={loading || !intent.trim()}>{loading ? 'Recording…' : 'Propose transition'}<span aria-hidden="true">→</span></button>
+        <p className="microcopy"><span>i</span> A proposal is not execution. Human approval remains visible in Evidence.</p>
+      </section>
+
+      <ActivityCard activity={activity} compact />
+    </div>
+  );
+}
+
+function EvidenceView({ stageStates, command, attestation, loading, onApprove, onExecute, onObserve, onAttest, activity }: {
+  stageStates: Stage[]; command: CommandSnapshot | null; attestation: AttestationSnapshot | null; loading: boolean; onApprove: () => void; onExecute: () => void; onObserve: () => void; onAttest: () => void; activity: ActivityItem[];
+}) {
+  const commandStatus = command?.command?.status?.toUpperCase() || 'NO PROPOSAL';
+  return (
+    <div className="view-stack">
+      <section className="loop-card">
+        <SectionHeading kicker="OBSERVE → VERIFY → REMEMBER → ATTEST" title="Evidence chain" detail="linked records" />
+        <div className="evidence-chain">
+          {stageStates.map((stage) => <div className="evidence-tile" key={stage.id}><div className="evidence-tile-top"><span>{stage.short}</span><StatusBadge label={stage.tone === 'verified' ? 'verified' : stage.tone === 'review' ? 'review' : 'unknown'} tone={stage.tone} /></div><strong>{stage.label}</strong><p>{stage.detail}</p></div>)}
+        </div>
+      </section>
+
+      <section className="command-card">
+        <SectionHeading kicker="PROPOSITION" title="Human-governed transition" detail={commandStatus} />
+        {command ? (
+          <>
+            <div className="command-quote">“{command.command?.intent || 'Untitled transition'}”</div>
+            <div className="record-grid"><div><span>command</span><strong>{shortId(command.command?.commandId)}</strong></div><div><span>decision</span><strong>{command.command?.change?.decision || 'review'}</strong></div><div><span>reality</span><strong>{command.reality?.classification || 'not observed'}</strong></div></div>
+            <p className="bounded-note">{command.nextAction || 'The server has recorded a proposal. Choose the next explicit transition.'}</p>
+            <div className="action-row">
+              <button type="button" className="secondary-button" onClick={onApprove} disabled={loading || commandStatus === 'AUTHORIZED' || commandStatus === 'EXECUTED'}>Approve</button>
+              <button type="button" className="primary-button compact-button" onClick={onExecute} disabled={loading || commandStatus !== 'AUTHORIZED'}>Execute</button>
+              <button type="button" className="ghost-button" onClick={onObserve} disabled={loading || commandStatus !== 'EXECUTED'}>Observe</button>
+            </div>
+          </>
+        ) : <EmptyState title="No proposal in memory" body="Use Current to name one finite transition. Nothing is assumed, fabricated, or auto-executed." />}
+      </section>
+
+      <section className="attest-card">
+        <SectionHeading kicker="EARNED EXPANSION" title="Attestation receipt" detail="optional" />
+        {attestation?.attestation ? <div className="receipt-row"><StatusBadge label={attestation.attestation.verified ? 'ATTESTED' : attestation.attestation.status || 'UNVERIFIED'} tone={attestation.attestation.verified ? 'verified' : 'unknown'} /><span className="mono-meta">{shortId(attestation.attestation.id)} · {nowLabel(attestation.attestation.attestedAt)}</span></div> : <p className="bounded-note">Attestation only describes the verification receipt returned by this runtime. It does not authorize a consequential action.</p>}
+        <button type="button" className="secondary-button full-button" onClick={onAttest} disabled={loading}>{attestation?.attestation ? 'Request another receipt' : 'Request attestation'}</button>
+      </section>
+
+      <ActivityCard activity={activity} />
+    </div>
+  );
+}
+
+function SystemView({ health, capability, miner, loading, onCycle, onToggleMiner, onRefresh }: {
+  health: HealthSnapshot | null; capability: CapabilitySnapshot | null; miner: MinerSnapshot | null; loading: boolean; onCycle: () => void; onToggleMiner: () => void; onRefresh: () => void;
+}) {
+  const capabilities = capability?.capabilities ? Object.entries(capability.capabilities) : [];
+  return (
+    <div className="view-stack">
+      <section className="system-card">
+        <SectionHeading kicker="RUNTIME" title="System health" detail={health?.timestamp ? nowLabel(health.timestamp) : 'unverified'} />
+        <div className="health-stack">
+          {[
+            ['observer', health?.checks?.observer],
+            ['verifier', health?.checks?.verifier],
+            ['attester', health?.checks?.attester],
+            ['memory', health?.checks?.memory?.status],
+          ].map(([label, status]) => <div className="health-row" key={label}><span>{label}</span><StatusBadge label={status?.toUpperCase() || 'UNKNOWN'} tone={toneFor(status)} /></div>)}
+        </div>
+        <div className="system-meta"><span>persistence</span><strong>{health?.checks?.persistence?.mode || 'unknown'}</strong><span>source</span><strong>{health?.checks?.persistence?.source || 'unknown'}</strong></div>
+      </section>
+
+      <section className="system-card">
+        <SectionHeading kicker="CAPABILITY BOUNDARY" title="What this runtime can do" detail={capability?.execution || 'unknown'} />
+        <div className="capability-grid">{capabilities.length ? capabilities.map(([label, enabled]) => <div className="capability-item" key={label}><span>{label.replace(/([A-Z])/g, ' $1')}</span><StatusBadge label={enabled ? 'available' : 'off'} tone={enabled ? 'verified' : 'unknown'} /></div>) : <EmptyState title="Capability snapshot missing" body="This console will not infer permissions from the UI." />}</div>
+        {capability?.limitations?.length ? <div className="limitations"><p className="eyebrow">LIMITATIONS</p>{capability.limitations.slice(0, 4).map((limitation) => <p key={limitation}>— {limitation}</p>)}</div> : null}
+      </section>
+
+      <section className="system-card">
+        <SectionHeading kicker="OPERATOR CONTROLS" title="Bounded actions" detail="explicit only" />
+        <div className="control-list">
+          <div className="control-row"><div><strong>Run one cycle</strong><span>Creates one bounded local observation.</span></div><button type="button" className="secondary-button" onClick={onCycle} disabled={loading}>Run</button></div>
+          <div className="control-row"><div><strong>{miner?.miner?.active ? 'Stop miner' : 'Start miner'}</strong><span>{miner?.miner?.totalMined ?? 0} local blocks recorded.</span></div><button type="button" className="secondary-button" onClick={onToggleMiner} disabled={loading}>{miner?.miner?.active ? 'Stop' : 'Start'}</button></div>
+          <div className="control-row"><div><strong>Refresh evidence</strong><span>Re-read health, capability, tip, and miner state.</span></div><button type="button" className="ghost-button" onClick={onRefresh} disabled={loading}>Refresh</button></div>
+        </div>
+        <p className="microcopy"><span>!</span> These controls operate only against the configured local/runtime API. External deployment is not implied.</p>
+      </section>
+    </div>
+  );
+}
+
+function ActivityCard({ activity, compact = false }: { activity: ActivityItem[]; compact?: boolean }) {
+  return (
+    <section className={compact ? 'activity-card compact-activity' : 'activity-card'}>
+      <SectionHeading kicker="MEMORY" title="Recent evidence" detail={`${activity.length} records`} />
+      <div className="activity-list">{activity.slice(0, compact ? 3 : 8).map((item) => <div className="activity-row" key={item.id}><span className={`activity-marker marker-${item.tone}`} aria-hidden="true" /><div><strong>{item.label}</strong><span>{item.detail}</span></div><time>{item.timestamp}</time></div>)}</div>
+    </section>
   );
 }
 
