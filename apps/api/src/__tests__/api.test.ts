@@ -55,6 +55,77 @@ describe('API runtime contracts', () => {
     expect(revocationRegistryStatus(true, digest, `${digest}-tampered`)).toBe('mismatch');
   });
 
+  it('detects a corrupted registry but not an edited one', () => {
+    // The digest is an unkeyed sha256 stored in the same file as the records
+    // it covers. That detects a partial write, a truncation, or bit rot.
+    //
+    // It does not detect an editor. Anyone who can rewrite the snapshot can
+    // drop a revocation and recompute the digest over what is left, and the
+    // result reports `intact` — indistinguishable from an honest registry.
+    // Only the AES-GCM envelope authenticates the file, and only when
+    // OMEGA_PERSISTENCE_KEY is configured.
+    const records = [
+      {
+        id: 'rev-1',
+        attestationId: 'att-1',
+        reason: 'compromised',
+        revokedBy: 'operator',
+        revokedAt: '2026-08-28T00:00:00.000Z',
+      },
+    ];
+
+    // Honest state.
+    expect(
+      revocationRegistryStatus(
+        true,
+        revocationRegistryDigest(records),
+        revocationRegistryDigest(records)
+      )
+    ).toBe('intact');
+
+    // Corruption: the stored digest no longer describes what loaded.
+    expect(
+      revocationRegistryStatus(
+        true,
+        revocationRegistryDigest(records),
+        revocationRegistryDigest([])
+      )
+    ).toBe('mismatch');
+
+    // An editor who removes the revocation and recomputes the digest is
+    // reported exactly as an honest empty registry is.
+    const edited = revocationRegistryDigest([]);
+    expect(revocationRegistryStatus(true, edited, edited)).toBe('intact');
+  });
+
+  it('treats a deleted digest as more benign than a corrupted one', () => {
+    // The asymmetry worth knowing about: `/act` and `/attest/verify` deny on
+    // `mismatch` only, so removing the digest field is more permissive than
+    // leaving it in place.
+    //
+    //   revocations dropped, digest kept    -> mismatch -> denied
+    //   revocations dropped, digest deleted -> legacy   -> allowed
+    //
+    // `legacy` exists so snapshots written before the digest remain
+    // readable, which is a real need. The consequence is that absence is
+    // accepted, and absence is what an editor produces most easily.
+    const records = [
+      {
+        id: 'rev-1',
+        attestationId: 'att-1',
+        reason: 'compromised',
+        revokedBy: 'operator',
+        revokedAt: '2026-08-28T00:00:00.000Z',
+      },
+    ];
+    const emptied = revocationRegistryDigest([]);
+
+    expect(revocationRegistryStatus(true, revocationRegistryDigest(records), emptied)).toBe(
+      'mismatch'
+    );
+    expect(revocationRegistryStatus(true, undefined, emptied)).toBe('legacy');
+  });
+
   it('parses bounded audit filters and rejects unsafe temporal ranges', () => {
     expect(parseAuditQuery({ type: 'attestation.created', status: 'passed', limit: '12' })).toEqual(
       {
