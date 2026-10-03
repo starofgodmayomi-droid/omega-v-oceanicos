@@ -9,5 +9,8 @@
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "test": "jest"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.3"
   }
 }

@@ -12,6 +12,7 @@
     "@oceanicos/verification": "workspace:*"
   },
   "devDependencies": {
-    "@types/better-sqlite3": "^9.6.0"
+    "@types/better-sqlite3": "^9.6.0",
+    "@types/node": "^26.6.3"
   }
 }

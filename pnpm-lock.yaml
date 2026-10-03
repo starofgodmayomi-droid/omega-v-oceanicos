@@ -207,7 +207,11 @@ importers:
         specifier: ^6.0.3
         version: 6.0.3
 
-  packages/kernel: {}
+  packages/kernel:
+    devDependencies:
+      '@types/node':
+        specifier: ^26.6.3
+        version: 26.6.3
 
   packages/mini:
     dependencies:
@@ -223,6 +227,10 @@ importers:
       '@oceanicos/verification':
         specifier: workspace:*
         version: link:../verification
+    devDependencies:
+      '@types/node':
+        specifier: ^26.6.3
+        version: 26.6.3
 
   packages/mood:
     devDependencies:
@@ -244,9 +252,16 @@ importers:
       '@oceanicos/types':
         specifier: workspace:*
         version: link:../types
+    devDependencies:
+      '@types/node':
+        specifier: ^26.6.3
+        version: 26.6.3
 
   packages/oreade:
     devDependencies:
+      '@types/node':
+        specifier: ^26.6.3
+        version: 26.6.3
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
@@ -282,6 +297,9 @@ importers:
       '@types/better-sqlite3':
         specifier: ^9.6.0
         version: 9.6.0
+      '@types/node':
+        specifier: ^26.6.3
+        version: 26.6.3
 
   packages/types: {}
 
@@ -293,6 +311,10 @@ importers:
       '@oceanicos/types':
         specifier: workspace:*
         version: link:../types
+    devDependencies:
+      '@types/node':
+        specifier: ^26.6.3
+        version: 26.6.3
 
   packages/webhook:
     dependencies:
