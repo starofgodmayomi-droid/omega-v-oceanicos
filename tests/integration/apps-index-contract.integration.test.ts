@@ -46,7 +46,7 @@ test('documented app URLs and API proxy match source configuration', () => {
 
 test('documented root setup commands exist and stale setup claims stay out', () => {
   assert.match(rootPackage.engines.node, />=22/);
-  assert.match(rootPackage.engines.pnpm, />=10/);
+  assert.equal(rootPackage.engines.pnpm, '10.34.5');
   for (const command of ['dev', 'build', 'test', 'verify:full']) {
     assert.ok(rootPackage.scripts[command], `root script ${command} must exist`);
   }

@@ -22,6 +22,17 @@ const expectedActions = new Map([
   ['pnpm/action-setup', 'v6'],
 ]);
 const failures = [];
+const packageJson = JSON.parse(readFileSync(join(process.cwd(), 'package.json'), 'utf8'));
+if (packageJson.packageManager !== 'pnpm@10.34.5') {
+  failures.push(
+    `package.json: packageManager must pin pnpm@10.34.5, found ${packageJson.packageManager ?? 'unset'}`,
+  );
+}
+if (packageJson.engines?.pnpm !== '10.34.5') {
+  failures.push(
+    `package.json: engines.pnpm must pin 10.34.5, found ${packageJson.engines?.pnpm ?? 'unset'}`,
+  );
+}
 
 for (const file of workflowFiles) {
   const source = readFileSync(join(workflowsDir, file), 'utf8');
