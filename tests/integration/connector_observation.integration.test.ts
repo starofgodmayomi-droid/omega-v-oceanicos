@@ -41,6 +41,48 @@ describe('Ω connector observation path', () => {
     assert.match(verified.evidence, /^sha256:[a-f0-9]{64}$/);
   });
 
+  it('enforces the declared timeout and exposes an UNKNOWN result', async () => {
+    const started = Date.now();
+    const timedOut = await executeAdmittedConnector({
+      connector: { ...connector, timeoutMs: 5 },
+      authorityVerified: true,
+      policySatisfied: true,
+      approvalVerified: false,
+      handler: async () => {
+        await new Promise((resolve) => setTimeout(resolve, 25));
+        return {
+          attempted: true,
+          executed: true,
+          actualObservation: connector.expectedObservation,
+        };
+      },
+    });
+
+    assert.equal(timedOut.status, 'UNKNOWN');
+    assert.equal(timedOut.executed, false);
+    assert.match(timedOut.issues.join(' '), /timed out after 5ms/);
+    assert.ok(Date.now() - started < 20);
+  });
+
+  it('retries only within the declared attempt bound', async () => {
+    let attempts = 0;
+    const retried = await executeAdmittedConnector({
+      connector: { ...connector, maxAttempts: 2 },
+      authorityVerified: true,
+      policySatisfied: true,
+      approvalVerified: false,
+      handler: () => {
+        attempts += 1;
+        return attempts === 1
+          ? { attempted: true, executed: false, error: 'transient failure' }
+          : { attempted: true, executed: true, actualObservation: connector.expectedObservation };
+      },
+    });
+
+    assert.equal(attempts, 2);
+    assert.equal(retried.status, 'VERIFIED');
+  });
+
   it('refuses unverified client status claims and remembers observations on a local hash chain', async () => {
     const directory = mkdtempSync(join(tmpdir(), 'omega-connector-observation-'));
     const { createApp } = await import('../../apps/api/dist/index.js');
