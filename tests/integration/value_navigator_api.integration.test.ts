@@ -169,4 +169,58 @@ describe('Value Navigator → durable OmegaChangeRecord', () => {
       await removeTemporaryDirectory(directory);
     }
   });
+
+  it('preserves historical declarations as NOT_EXECUTED until a sourced observation reconciles them', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'omega-historical-claim-'));
+    const dbPath = join(directory, 'ledger.db');
+    const journalPath = join(directory, 'value-navigator.jsonl');
+    const { createApp } = await import('../../apps/api/dist/index.js');
+    const app = createApp(dbPath, false, { allowUnsignedCycle: true, valueNavigatorPath: journalPath });
+    await app.ready();
+    try {
+      const invalid = await app.inject({
+        method: 'POST',
+        url: '/v1/value-navigator/proposals',
+        payload: { ...proposalPayload('invalid kind'), claimKind: 'DEPLOYED' },
+      });
+      assert.equal(invalid.statusCode, 400);
+      assert.equal(invalid.json().error, 'INVALID_VALUE_NAVIGATOR_CLAIM_KIND');
+
+      const created = await app.inject({
+        method: 'POST',
+        url: '/v1/value-navigator/proposals',
+        payload: {
+          claimKind: 'HISTORICAL_DECLARATION',
+          subject: 'Historical claim: full stack deployed',
+          intent: 'preserve the old declaration for reconciliation',
+          stateBefore: 'historical-source',
+          expectedOutcome: 'release bundle is staged only',
+          evidence: ['stated: historical workspace declaration'],
+        },
+      });
+      assert.equal(created.statusCode, 201);
+      const original = created.json().entry;
+      assert.equal(original.claimKind, 'HISTORICAL_DECLARATION');
+      assert.equal(original.reconciliationStatus, 'NOT_EXECUTED');
+      assert.equal(original.verificationScope, 'historical-declaration-reconciliation-only');
+      assert.equal(original.record.authorized, false);
+
+      const observed = await app.inject({
+        method: 'POST',
+        url: `/v1/value-navigator/proposals/${encodeURIComponent(original.proposalId)}/observe`,
+        payload: {
+          observedOutcome: 'release bundle is staged only',
+          source: 'post-merge GitHub workflow',
+          evidence: 'staged-only release manifest and successful bundle validation',
+        },
+      });
+      assert.equal(observed.statusCode, 201);
+      assert.equal(observed.json().entry.claimKind, 'HISTORICAL_DECLARATION');
+      assert.equal(observed.json().entry.reconciliationStatus, 'VERIFIED');
+      assert.equal(observed.json().entry.verificationScope, 'historical-declaration-reconciliation-only');
+    } finally {
+      await app.close();
+      await removeTemporaryDirectory(directory);
+    }
+  });
 });

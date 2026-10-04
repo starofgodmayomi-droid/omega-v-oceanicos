@@ -8,7 +8,7 @@ import {
 type JsonError = (reply: any, status: number, error: string, extra?: Record<string, unknown>) => unknown;
 
 const proposalFields = new Set([
-  'subject', 'intent', 'stateBefore', 'expectedOutcome', 'beneficiary', 'evidence',
+  'claimKind', 'subject', 'intent', 'stateBefore', 'expectedOutcome', 'beneficiary', 'evidence',
   'valuePotentialScore', 'valuePotentialBasis', 'attributedTo',
 ]);
 const observationFields = new Set(['observedOutcome', 'source', 'evidence', 'error']);
@@ -67,8 +67,11 @@ export function registerValueNavigatorRoute(
     if (hasUnsupportedFields(body, proposalFields)) {
       return jsonError(reply, 400, 'PROPOSAL_CANNOT_SET_DECISION_AUTHORITY_OR_STATUS');
     }
-    if (hasInvalidTypes(body, ['subject', 'intent', 'stateBefore', 'expectedOutcome', 'beneficiary', 'valuePotentialBasis', 'attributedTo'])) {
+    if (hasInvalidTypes(body, ['claimKind', 'subject', 'intent', 'stateBefore', 'expectedOutcome', 'beneficiary', 'valuePotentialBasis', 'attributedTo'])) {
       return jsonError(reply, 400, 'INVALID_VALUE_NAVIGATOR_PROPOSAL_FIELDS');
+    }
+    if (body.claimKind !== undefined && !['CURRENT_HYPOTHESIS', 'HISTORICAL_DECLARATION'].includes(body.claimKind as string)) {
+      return jsonError(reply, 400, 'INVALID_VALUE_NAVIGATOR_CLAIM_KIND');
     }
     if (body.evidence !== undefined && (!Array.isArray(body.evidence) || body.evidence.some((item) => typeof item !== 'string'))) {
       return jsonError(reply, 400, 'INVALID_VALUE_NAVIGATOR_EVIDENCE');
@@ -80,6 +83,7 @@ export function registerValueNavigatorRoute(
     let draft;
     try {
       draft = createValueNavigatorProposal({
+        claimKind: body.claimKind as 'CURRENT_HYPOTHESIS' | 'HISTORICAL_DECLARATION' | undefined,
         subject: body.subject as string,
         intent: body.intent as string,
         stateBefore: body.stateBefore as string,

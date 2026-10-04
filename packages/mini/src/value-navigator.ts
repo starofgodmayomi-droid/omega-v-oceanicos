@@ -5,6 +5,8 @@ import type { OmegaChangeRecord } from '@oceanicos/types';
 
 export type ValueNavigatorStatus = 'VERIFIED' | 'DIVERGENT' | 'UNKNOWN' | 'NOT_EXECUTED';
 export type ValueNavigatorPhase = 'PROPOSAL' | 'OBSERVATION';
+export type ValueNavigatorClaimKind = 'CURRENT_HYPOTHESIS' | 'HISTORICAL_DECLARATION';
+export type ValueNavigatorVerificationScope = 'hypothesis-reconciliation-only' | 'historical-declaration-reconciliation-only';
 
 export interface ValuePotentialHypothesis {
   readonly kind: 'hypothesis';
@@ -15,12 +17,13 @@ export interface ValuePotentialHypothesis {
 
 export interface ValueNavigatorEntry {
   readonly kind: 'OMEGA_VALUE_NAVIGATOR';
+  readonly claimKind: ValueNavigatorClaimKind;
   readonly proposalId: string;
   readonly phase: ValueNavigatorPhase;
   readonly record: OmegaChangeRecord;
   readonly expectedOutcome: string;
   readonly reconciliationStatus: ValueNavigatorStatus;
-  readonly verificationScope: 'hypothesis-reconciliation-only';
+  readonly verificationScope: ValueNavigatorVerificationScope;
   readonly evidenceStatus: 'STATED' | 'NOT_PROVIDED';
   readonly observation?: {
     readonly observedOutcome?: string;
@@ -72,6 +75,7 @@ function validateEvidence(value: unknown): string[] {
 }
 
 export interface ValueNavigatorProposalInput {
+  readonly claimKind?: ValueNavigatorClaimKind;
   readonly subject: string;
   readonly intent: string;
   readonly stateBefore: string;
@@ -88,6 +92,10 @@ export function createValueNavigatorProposal(
   input: ValueNavigatorProposalInput,
   now: () => string = () => new Date().toISOString(),
 ): ValueNavigatorDraft {
+  const claimKind = input.claimKind ?? 'CURRENT_HYPOTHESIS';
+  if (!['CURRENT_HYPOTHESIS', 'HISTORICAL_DECLARATION'].includes(claimKind)) {
+    throw new Error('claimKind must be CURRENT_HYPOTHESIS or HISTORICAL_DECLARATION');
+  }
   const subject = requiredText(input.subject, 'subject');
   const intent = requiredText(input.intent, 'intent');
   const stateBefore = requiredText(input.stateBefore, 'stateBefore');
@@ -119,8 +127,11 @@ export function createValueNavigatorProposal(
     stateBefore,
     evidence,
     authority: null,
-    policy: 'value-navigator-read-only-proposal',
+    policy: claimKind === 'HISTORICAL_DECLARATION'
+      ? 'historical-claim-read-only-proposal'
+      : 'value-navigator-read-only-proposal',
     context: {
+      claimKind,
       ...(beneficiary ? { beneficiary } : {}),
       expectedOutcome,
       ...(valuePotentialHypothesis ? { valuePotentialHypothesis } : {}),
@@ -138,12 +149,15 @@ export function createValueNavigatorProposal(
 
   return {
     kind: 'OMEGA_VALUE_NAVIGATOR',
+    claimKind,
     proposalId: id,
     phase: 'PROPOSAL',
     record,
     expectedOutcome,
     reconciliationStatus: 'NOT_EXECUTED',
-    verificationScope: 'hypothesis-reconciliation-only',
+    verificationScope: claimKind === 'HISTORICAL_DECLARATION'
+      ? 'historical-declaration-reconciliation-only'
+      : 'hypothesis-reconciliation-only',
     evidenceStatus: evidence.length ? 'STATED' : 'NOT_PROVIDED',
     ...(valuePotentialHypothesis ? { valuePotentialHypothesis } : {}),
   };
@@ -199,7 +213,7 @@ export function observeValueNavigatorProposal(
       expectedOutcome: proposal.expectedOutcome,
       ...(observedOutcome ? { observedOutcome } : {}),
       reconciliationStatus,
-      verificationScope: 'hypothesis-reconciliation-only',
+      verificationScope: proposal.verificationScope,
       ...(source ? { observationSource: source } : {}),
       ...(error ? { observationError: error } : {}),
     },
@@ -219,12 +233,13 @@ export function observeValueNavigatorProposal(
 
   return {
     kind: 'OMEGA_VALUE_NAVIGATOR',
+    claimKind: proposal.claimKind,
     proposalId: proposal.proposalId,
     phase: 'OBSERVATION',
     record,
     expectedOutcome: proposal.expectedOutcome,
     reconciliationStatus,
-    verificationScope: 'hypothesis-reconciliation-only',
+    verificationScope: proposal.verificationScope,
     evidenceStatus: evidence ? 'STATED' : 'NOT_PROVIDED',
     observation: {
       ...(observedOutcome ? { observedOutcome } : {}),
@@ -307,13 +322,15 @@ export class FileValueNavigatorStore implements ValueNavigatorStore {
           parsed.kind !== 'OMEGA_VALUE_NAVIGATOR' ||
           parsed.sequence !== loaded.length + 1 ||
           parsed.previousHash !== previousHash ||
+          (parsed.claimKind !== undefined && !['CURRENT_HYPOTHESIS', 'HISTORICAL_DECLARATION'].includes(parsed.claimKind)) ||
           typeof parsed.proposalId !== 'string' ||
           parsed.record?.authorized !== false ||
           parsed.record?.decision !== 'REVIEW' ||
           !['VERIFIED', 'DIVERGENT', 'UNKNOWN', 'NOT_EXECUTED'].includes(parsed.reconciliationStatus) ||
+          !['hypothesis-reconciliation-only', 'historical-declaration-reconciliation-only'].includes(parsed.verificationScope) ||
           hashEntry(unsigned) !== hash
         ) throw new Error('value navigator journal integrity check failed');
-        loaded.push(parsed);
+        loaded.push(parsed.claimKind ? parsed : { ...parsed, claimKind: 'CURRENT_HYPOTHESIS' });
         previousHash = parsed.hash;
       }
       this.integrity = true;
