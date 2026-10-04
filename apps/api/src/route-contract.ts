@@ -10,6 +10,7 @@ export type ApiRouteMethod = 'GET' | 'POST';
 export const API_ROUTE_INVENTORY = [
   'GET /health',
   'GET /v1/kernel/capabilities',
+  'GET /v1/ecosystem/body',
   'GET /v1/mood',
   'GET /v1/navigator/evidence',
   'POST /v1/attest',
@@ -29,6 +30,7 @@ export const API_ROUTE_INVENTORY = [
   'GET /v1/miner/status',
   'GET /v1/mesh/nodes',
   'GET /v1/mesh/simulate',
+  'GET /v1/mesh/validate',
   'POST /v1/auth/keypair',
   'POST /v1/block/sign',
   'POST /v1/block/verify-signature',

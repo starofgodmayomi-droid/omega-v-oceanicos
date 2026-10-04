@@ -7,7 +7,7 @@ import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { RememberEngine } from '@oceanicos/remember';
 import { FileConnectorObservationStore, FileValueNavigatorStore, MiniKernel } from '@oceanicos/mini';
-import { AsymmetricValidationGuard, MultiRegionMeshConvergence } from '@oceanicos/verification';
+import { AsymmetricValidationGuard, DeclarativeVerificationEngine, MultiRegionMeshConvergence } from '@oceanicos/verification';
 import { ObserverEngine } from '@oceanicos/observer';
 import { AttestationService } from '@oceanicos/attestation';
 import { OceanicosKernel } from '@omega-v/kernel';
@@ -21,6 +21,7 @@ import { registerDependencyRoute } from './dependency-route.js';
 import { registerValueNavigatorRoute } from './value-navigator-route.js';
 import { registerConnectorObservationRoute } from './connector-observation-route.js';
 import { OmegaCommandStore, OmegaIdempotencyConflictError, registerOmegaRoutes } from './omega.js';
+import { registerMeshValidationRoute } from './mesh-route.js';
 import {
   ENCRYPTION_ALGORITHM,
   appendEvent,
@@ -107,6 +108,7 @@ export function createApp(
   const ledgerMemory = new RememberEngine(dbPath);
   const kernel = new MiniKernel(ledgerMemory);
   const platformKernel = new OceanicosKernel();
+  const declarativeVerification = new DeclarativeVerificationEngine();
   const allowUnsignedCycle = options.allowUnsignedCycle ?? process.env.OMEGA_ALLOW_UNSIGNED_CYCLE === 'true';
   const attestationSigningKey = options.attestationSigningKey ?? process.env.OMEGA_SIGNING_KEY;
   const authMode = parseAuthMode(process.env.OMEGA_AUTH_MODE ?? (process.env.NODE_ENV === 'production' ? 'required' : 'local'));
@@ -219,6 +221,7 @@ export function createApp(
   registerDependencyRoute(fastify);
   registerValueNavigatorRoute(fastify, valueNavigatorStore, jsonError);
   registerConnectorObservationRoute(fastify, jsonError, connectorObservationStore, { githubFetch: options.githubFetch });
+  registerMeshValidationRoute(fastify, ledgerMemory, requireReadAccess, jsonError);
 
   fastify.get('/health', async (_request, reply) => {
     let ledgerIntegrity;
@@ -280,6 +283,44 @@ export function createApp(
   });
 
   fastify.get('/v1/kernel/capabilities', async () => ({ success: true, capability: platformKernel.getCapabilitySnapshot(), evaluatedAt: new Date().toISOString() }));
+  fastify.get('/v1/ecosystem/body', async () => {
+    const evaluatedAt = new Date().toISOString();
+    const telemetry = ObserverEngine.generateTelemetry();
+    const mesh = MultiRegionMeshConvergence.simulateConvergence(telemetry);
+    const receipt = await declarativeVerification.evaluateObservation({
+      id: telemetry.uuid,
+      timestamp: telemetry.timestamp,
+      subject: 'omega-v-oceanicos',
+      payload: telemetry,
+      confidence: 1,
+      provenanceSignature: 'local://observer-runtime',
+    });
+    const tip = ledgerMemory.getTip();
+    const ledgerIntact = ledgerMemory.verifyIntegrity();
+    const capability = platformKernel.getCapabilitySnapshot();
+    const bodyStatus = receipt.status === 'VERIFIED' && ledgerIntact && mesh.quorumReached ? 'VERIFIED' : receipt.status;
+    return {
+      success: true,
+      bodyVersion: 'omega.fullstack.body.v1',
+      status: bodyStatus,
+      evaluatedAt,
+      layers: {
+        sensory: { status: 'OBSERVED', telemetry },
+        verification: { status: receipt.status, receipt },
+        memory: { status: ledgerIntact ? 'INTEGRITY_VERIFIED' : 'DIVERGENT', tip: tip ? { index: tip.index, hash: tip.hash } : null },
+        mesh: { status: mesh.effectiveStatus, convergence: mesh },
+        kernel: { status: 'READY', capability },
+        governance: { status: capability.humanAuthorizationRequired ? 'HUMAN_GATE_REQUIRED' : 'BOUNDED', failClosed: true },
+        interface: { status: 'READY', contract: 'Navigator / Oceanic Mirror / living telemetry surface' },
+      },
+      expansion: {
+        appendOnly: true,
+        readOnly: true,
+        bounded: true,
+        moduleInvariant: 'observe → verify → remember → govern → present',
+      },
+    };
+  });
   fastify.get('/v1/mood', async () => ({ success: true, status: 'MAX GOOD-O', contract: 'Ω∞v totality / attest-dont-assert', brand: 'Oceanicos Ω∞', ledger: { ready: Boolean(ledgerMemory.getTip()) }, evaluatedAt: new Date().toISOString() }));
 
   fastify.post('/v1/mood/codex', async (request, reply) => {

@@ -51,6 +51,8 @@ The cryptographic block engines use a finite proof-of-work envelope of `1,000,00
 
 The package does not expose the secret or claim key custody. Operators remain responsible for secret provisioning, rotation, recovery, and protection of the memory path.
 
+`RememberEngine.verifyIntegrity()` recomputes every SQLite row and fails closed when the persisted chain has a missing or reordered index, broken predecessor link, invalid root anchor, altered payload, invalid SHA-256 digest, or a hash that no longer satisfies the `00` proof-of-work prefix.
+
 ## Status
 
 MINI kernel component. Attestation, APIs, and full-stack layers are earned expansions beyond this package.

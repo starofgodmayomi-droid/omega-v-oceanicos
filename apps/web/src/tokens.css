@@ -12,23 +12,120 @@
  */
 :root {
   /* Abyss — background, deepest to shallowest */
-  --omega-abyss: #071312;
-  --omega-abyss-raised: #0b1d1a;
-  --omega-abyss-edge: #1b3b35;
+  --omega-abyss: #020617;
+  --omega-abyss-raised: #0b1329;
+  --omega-abyss-edge: rgba(6, 182, 212, 0.2);
 
   /* Current — the living signal */
-  --omega-current: #8ce8c8;
-  --omega-current-bright: #69e7b9;
-  --omega-current-dim: #609187;
+  --omega-current: #22d3ee;
+  --omega-current-bright: #06b6d4;
+  --omega-current-dim: #0891b2;
 
   /* Surface text */
-  --omega-foam: #ebfaf4;
-  --omega-foam-muted: #c8e9df;
+  --omega-foam: #e2e8f0;
+  --omega-foam-muted: #94a3b8;
 
   /* Verdicts. Never decorative: these three carry meaning. */
-  --omega-verified: #69e7b9;
-  --omega-dissent: #ed9986;
-  --omega-unknown: #547b74;
+  --omega-verified: #06b6d4;
+  --omega-dissent: #ef4444;
+  --omega-unknown: #64748b;
+  --omega-violet: #7c3aed;
+  --omega-warning: #f59e0b;
+  --omega-glass: rgba(15, 23, 42, 0.65);
+  --omega-shadow: 0 18px 70px rgba(2, 6, 23, 0.46);
+  --font-mono: 'JetBrains Mono', 'DM Mono', 'Fira Code', ui-monospace, monospace;
+}
+
+html,
+body {
+  background: var(--omega-abyss);
+  color: var(--omega-foam);
+}
+
+body {
+  font-family: 'Manrope', system-ui, sans-serif;
+}
+
+.os-shell {
+  background:
+    radial-gradient(circle at 76% -8%, rgba(124, 58, 237, 0.26), transparent 28rem),
+    radial-gradient(circle at 32% 0%, rgba(6, 182, 212, 0.2), transparent 32rem),
+    linear-gradient(145deg, #020617 0%, #0b1329 58%, #020617 100%);
+}
+
+.sidebar,
+.current-panel,
+.intent-panel,
+.architecture-panel,
+.stream-panel,
+.evidence-panel {
+  background: var(--omega-glass);
+  border-color: var(--omega-abyss-edge);
+  box-shadow: var(--omega-shadow);
+  backdrop-filter: blur(14px);
+}
+
+.status-dot {
+  background: var(--omega-current);
+  box-shadow: 0 0 16px var(--omega-current);
+  animation: omega-fluid-pulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes omega-fluid-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.45; transform: scale(0.8); }
+}
+
+.ecosystem-body-strip {
+  margin-bottom: 18px;
+  padding: 14px 16px;
+  border: 1px solid rgba(6, 182, 212, 0.3);
+  border-left: 3px solid var(--omega-current);
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(30, 27, 75, 0.58));
+  box-shadow: var(--omega-shadow);
+  font-family: var(--font-mono);
+}
+
+.ecosystem-body-heading,
+.ecosystem-body-layers {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ecosystem-body-heading {
+  color: var(--omega-current);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+}
+
+.ecosystem-body-heading strong {
+  color: var(--omega-verified);
+}
+
+.ecosystem-body-layers {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  margin: 12px 0 8px;
+}
+
+.ecosystem-body-layers span {
+  padding: 5px 7px;
+  border: 1px solid rgba(124, 58, 237, 0.35);
+  color: var(--omega-foam-muted);
+  background: rgba(2, 6, 23, 0.48);
+  font-size: 10px;
+}
+
+.ecosystem-body-layers b {
+  color: var(--omega-foam);
+  margin-right: 4px;
+}
+
+.ecosystem-body-strip small {
+  color: var(--omega-unknown);
+  font-size: 9px;
 }
 
 /* ── Frontier surface animations ── */

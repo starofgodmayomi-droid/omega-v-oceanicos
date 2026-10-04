@@ -9,37 +9,37 @@
 
 export const theme = {
   // Ocean depths
-  bg: '#06141a',
+  bg: '#020617',
   bgGradient:
-    'radial-gradient(ellipse 80% 50% at 50% -10%, #0e2a36 0%, #06141a 60%)',
-  surface: '#0a1f28',
-  surfaceRaised: '#0e2837',
-  surfaceDeep: '#051016',
+    'radial-gradient(ellipse 90% 60% at 50% -15%, rgba(30, 64, 175, 0.34) 0%, rgba(49, 46, 129, 0.18) 38%, #020617 78%)',
+  surface: 'rgba(15, 23, 42, 0.76)',
+  surfaceRaised: '#0b1329',
+  surfaceDeep: '#020617',
 
   // Borders
-  border: 'rgba(105, 231, 185, 0.13)',
-  borderBright: 'rgba(105, 231, 185, 0.28)',
-  borderSubtle: 'rgba(27, 59, 53, 0.22)',
+  border: 'rgba(6, 182, 212, 0.16)',
+  borderBright: 'rgba(6, 182, 212, 0.36)',
+  borderSubtle: 'rgba(99, 102, 241, 0.2)',
 
   // Text
-  text: '#ebfaf4',
-  textMuted: '#8ba8a0',
-  textDim: '#547b74',
+  text: '#e2e8f0',
+  textMuted: '#94a3b8',
+  textDim: '#64748b',
 
   // Accents
-  accent: '#69e7b9',
-  accentDim: '#609187',
-  accentWarm: '#f0c674',
+  accent: '#06b6d4',
+  accentDim: '#0891b2',
+  accentWarm: '#f59e0b',
 
   // Status — meaning-carrying, never decorative
-  verified: '#69e7b9',
-  divergent: '#ed9986',
-  unknown: '#547b74',
-  warning: '#f0c674',
+  verified: '#06b6d4',
+  divergent: '#ef4444',
+  unknown: '#64748b',
+  warning: '#f59e0b',
 
   // Fonts
   fontSans: "'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-  fontMono: "'DM Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+  fontMono: "'JetBrains Mono', 'DM Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, monospace",
 
   // Radii
   radius: '16px',
