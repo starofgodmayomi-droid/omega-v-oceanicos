@@ -48,6 +48,7 @@ export type CreateAppOptions = {
   allowUnsignedCycle?: boolean;
   attestationSigningKey?: string;
   valueNavigatorPath?: string;
+  connectorObservationPath?: string;
   githubFetch?: typeof fetch;
   connectorObservationPath?: string;
 };
