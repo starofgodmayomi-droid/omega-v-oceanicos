@@ -230,3 +230,20 @@ export async function executeAdmittedConnector(
   }
   return lastObservation!;
 }
+
+/** Bounded in-process memory. Not durable across process restart. */
+export class ConnectorObservationMemory {
+  private readonly items: ConnectorObservationResult[] = [];
+
+  constructor(private readonly limit = 32) {}
+
+  remember(entry: ConnectorObservationResult): ConnectorObservationResult {
+    this.items.push(entry);
+    if (this.items.length > this.limit) this.items.shift();
+    return entry;
+  }
+
+  list(): readonly ConnectorObservationResult[] {
+    return this.items.slice();
+  }
+}
