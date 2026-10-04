@@ -7,6 +7,11 @@ describe('@omega-v/governor — On-Chain Timelocked Decentralized Governance Eng
     governor = new OceanicosGovernorEngine('test-governor-secret', 50, 0);
   });
 
+  it('rejects empty and legacy default secrets', () => {
+    expect(() => new OceanicosGovernorEngine('')).toThrow(/secret must be a non-empty string/);
+    expect(() => new OceanicosGovernorEngine('governor-omega-v-secret')).toThrow(/default Governor secret is forbidden/);
+  });
+
   it('should create a governance proposal with cryptographic proposalHash', () => {
     const p = governor.propose({
       proposerDid: 'did:omega:agent:dao-proposer',

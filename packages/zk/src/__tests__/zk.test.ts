@@ -7,6 +7,11 @@ describe('@omega-v/zk — OceanicosZKEngine', () => {
     zkEngine = new OceanicosZKEngine('test-zk-secret-key');
   });
 
+  it('rejects empty and legacy default secrets', () => {
+    expect(() => new OceanicosZKEngine('')).toThrow(/secretKey must be a non-empty string/);
+    expect(() => new OceanicosZKEngine('Ω∞v-ZK-PROVER-SECRET-KEY-v1')).toThrow(/default ZK secret is forbidden/);
+  });
+
   describe('Circuit Registry & Discovery', () => {
     it('should bootstrap canonical zk circuits', () => {
       const circuits = zkEngine.getCircuits();
