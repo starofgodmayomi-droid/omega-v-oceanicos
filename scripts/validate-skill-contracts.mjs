@@ -5,6 +5,8 @@ const root = process.cwd();
 const skills = [
   'voice-bridge',
   'oread-pidgin-harmonizer',
+  'kai-companion',
+  'omega-mirror-water-universal-body',
   'oceanicos-framework',
   'oceanicos-value-navigator',
 ];

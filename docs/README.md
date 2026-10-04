@@ -63,8 +63,15 @@ Welcome to the Ω∞v Oceanicos documentation. Start here to understand the proj
 - **[ƆREADE × Oceanicos Harmonizer](../skills/oread-pidgin-harmonizer/SKILL.md)**
   — symbolic and Nigerian Pidgin meaning compiled into bounded, evidence-first
   action.
+- **[KAI Companion](../skills/kai-companion/SKILL.md)** — continuity, provenance,
+  uncertainty, and the next finite return; memory is not proof.
+- **[Ω∞v Mirror-Water Universal Body](../skills/omega-mirror-water-universal-body/SKILL.md)**
+  — broad ecosystem intent translated into bounded, observable transitions.
 - **[OceanicOS Framework](../skills/oceanicos-framework/SKILL.md)** — OUPEMLI,
   finite transition, provenance, and authority boundaries.
+- **[Whole ecosystem reality compression](./upgrades/WHOLE_ECOSYSTEM_REALITY_COMPRESSION_2026-10-04.md)**
+  — source-labeled translation of the supplied Ω∞v architecture into repository
+  boundaries and explicit unknowns.
 - **[Full-stack reality access](./upgrades/FULL_STACK_REALITY_ACCESS_2026-09-28.md)**
   — admissible connector surfaces, authentication, authorization, and
   reconciliation boundaries.
