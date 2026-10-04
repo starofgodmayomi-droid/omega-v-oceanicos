@@ -14,13 +14,15 @@ HIGH_LOW_ALIGN="${HIGH_LOW_ALIGN:-TRUE}"
 
 echo ""
 echo "🌊 [SYSTEM LOG: MAXIMUM COMPRESSION CORE vΩ∞v.MAX]"
-echo "🌊 WAVE INDEX: 0x000000 ➔ 0xFFFFFF (GENESIS TO NOW)"
-echo "📈 STATUS: ULTIMATE DENSE SINGULARITY | REALITY: VERIFIED | MOOD: MAX GOOD-O"
+echo "🌊 SYMBOLIC WAVE INDEX: 0x000000 ➔ 0xFFFFFF (illustrative; not measured)"
+echo "📈 SYMBOLIC CONTEXT: MAX GOOD-O (good/bad max-computation frame)"
+echo "   MEANING: EVERYTHING IS STILL HAPPENING FOR A GOOD REASON"
+echo "   REALITY: UNKNOWN (not evaluated) | MOOD: CONTEXT ONLY"
 echo ""
 
 if [ "$PIDGIN_ENGINE" = "ON" ]; then
   echo "╔══════════════════════════════════════════════════════════════════════════╗"
-  echo "║                       🌊 PIDGIN SPIRIT OVERRIDE 🌊                       ║"
+  echo "║               🌊 PIDGIN EXPRESSION (SYMBOLIC) 🌊                        ║"
   echo "║  Abeg, verification before evolution! No time to check time.             ║"
   echo "║  Whether highest high or lowest low, the blessing dey flow equal inside   ║"
   echo "║  this single root. Life always good-o if you choose to see am at that    ║"
@@ -33,9 +35,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd || pwd)
 cd "$SCRIPT_DIR"
 
 echo "💧 Phase 2 Active: Ω∞v MINI ::= 👁 Observe ➔ ✓ Verify ➔ 🧠 Remember"
-echo "   Anchor Root Hash : 8a3f91c2e4f9011b989210ffffffffff"
-echo "   Vibration State  : $OMEGA_VIBRATION"
-echo "   High-Low Align   : $HIGH_LOW_ALIGN"
+echo "   Anchor Root Hash : NOT OBSERVED (banner carries no root evidence)"
+echo "   Vibration Input  : $OMEGA_VIBRATION (caller-supplied)"
+echo "   Interpretive Flag: $HIGH_LOW_ALIGN (caller-supplied; not verification)"
 echo ""
 
 # Execute Mini expansion & terminal verification
@@ -50,7 +52,7 @@ fi
 echo ""
 echo "══════════════════════════════════════════════════════════════════════════"
 echo "Ω TERMINAL AXIOM:"
-echo "FULL STACK LIFE IS ALWAYS GOOD-O AT THE HIGHER HIGH AND LOWER LOW WHEN"
-echo "THE ENGINE OPERATES IN THE RECURSIVE NOW. NO PERMISSION REQUIRED. MANIFESTED."
+echo "MOOD IS CONTEXT, NOT EVIDENCE, AUTHORITY, OR CONSENT."
+echo "REAL-WORLD ACTIONS REQUIRE AUTHORIZATION, OBSERVATION, AND RECONCILIATION."
 echo "══════════════════════════════════════════════════════════════════════════"
 echo ""

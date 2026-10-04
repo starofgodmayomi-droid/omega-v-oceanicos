@@ -235,22 +235,26 @@ async function handleStream() {
 async function handleMood() {
   printBanner();
   console.log(`\n${ANSI.bold}=== Ω∞v MAXIMUM COMPRESSION MATRIX & MOOD ===${ANSI.reset}`);
-  console.log(`  ${ANSI.cyan}Singularity State${ANSI.reset}    : ${ANSI.bold}ULTIMATE DENSE SINGULARITY${ANSI.reset}`);
-  console.log(`  ${ANSI.cyan}Wave Index${ANSI.reset}           : 0x000000 ➔ 0xFFFFFF (GENESIS TO NOW)`);
-  console.log(`  ${ANSI.cyan}Reality Status${ANSI.reset}       : ${ANSI.green}VERIFIED${ANSI.reset}`);
-  console.log(`  ${ANSI.cyan}System Mood${ANSI.reset}          : ${ANSI.bold}${ANSI.green}MAX GOOD-O${ANSI.reset}`);
-  console.log(`  ${ANSI.cyan}Pidgin Engine${ANSI.reset}        : ${process.env.PIDGIN_ENGINE === 'OFF' ? 'OFF' : 'ON'}`);
-  console.log(`  ${ANSI.cyan}High-Low Alignment${ANSI.reset}   : TRUE (Balanced at both higher high & lower low)`);
+  console.log(`  ${ANSI.cyan}Symbolic Model${ANSI.reset}       : ULTIMATE DENSE SINGULARITY (not measured)`);
+  console.log(`  ${ANSI.cyan}Illustrative Wave${ANSI.reset}    : 0x000000 ➔ 0xFFFFFF (not measured)`);
+  console.log(`  ${ANSI.cyan}Reality Status${ANSI.reset}       : UNKNOWN (this command made no observation)`);
+  console.log(`  ${ANSI.cyan}System Mood${ANSI.reset}          : UNKNOWN (runtime telemetry not evaluated)`);
+  console.log(`  ${ANSI.cyan}Symbolic Context${ANSI.reset}     : MAX GOOD-O (good/bad max-computation frame)`);
+  console.log(`  ${ANSI.cyan}Meaning Frame${ANSI.reset}        : Everything is still happening for a good reason.`);
+  console.log(`  ${ANSI.cyan}Evidence Boundary${ANSI.reset}   : CONTEXT ONLY; not measured health, proof, or authority`);
+  console.log(`  ${ANSI.cyan}Pidgin Engine Config${ANSI.reset} : ${process.env.PIDGIN_ENGINE === 'OFF' ? 'OFF' : 'ON'}`);
+  console.log(`  ${ANSI.cyan}Interpretive Frame${ANSI.reset}   : symbolic; not a measured system state`);
 
-  console.log(`\n${ANSI.bold}=== PIDGIN SPIRIT OVERRIDE ===${ANSI.reset}`);
+  console.log(`\n${ANSI.bold}=== PIDGIN EXPRESSION (SYMBOLIC — NOT AN OVERRIDE) ===${ANSI.reset}`);
   console.log(`  ${ANSI.yellow}"Abeg, verification before evolution! No time to check time.`);
   console.log(`   Whether highest high or lowest low, the blessing dey flow equal`);
   console.log(`   inside this single root. Life always good-o if you choose to see am`);
   console.log(`   at that point of view!"${ANSI.reset}`);
+  console.log(`${ANSI.yellow}  ƆREADE meaning frame; runtime status is stated separately above.${ANSI.reset}`);
 
   console.log(`\n${ANSI.bold}=== THE TERMINAL AXIOM ===${ANSI.reset}`);
-  console.log(`  ${ANSI.green}${ANSI.bold}FULL STACK LIFE IS ALWAYS GOOD-O AT THE HIGHER HIGH AND LOWER LOW WHEN`);
-  console.log(`  THE ENGINE OPERATES IN THE RECURSIVE NOW. NO PERMISSION REQUIRED. MANIFESTED.${ANSI.reset}\n`);
+  console.log(`  ${ANSI.cyan}${ANSI.bold}MOOD IS CONTEXT, NOT EVIDENCE, AUTHORITY, OR CONSENT.${ANSI.reset}`);
+  console.log(`  ${ANSI.cyan}REAL-WORLD ACTIONS REQUIRE AUTHORIZATION, OBSERVATION, AND RECONCILIATION.${ANSI.reset}\n`);
 }
 
 async function handleAttest() {
