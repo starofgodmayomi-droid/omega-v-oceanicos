@@ -7,6 +7,8 @@ const root = process.cwd();
 const read = (path: string): string => readFileSync(join(root, path), 'utf8');
 const workspaceYaml = read('pnpm-workspace.yaml');
 const inventory = read('docs/REPO_INVENTORY.md');
+const dependencyMap = read('docs/DEPENDENCY_MAP.md');
+const packageReadme = read('packages/README.md');
 const rootPackage = JSON.parse(read('package.json')) as {
   scripts: Record<string, string>;
 };
@@ -25,6 +27,7 @@ const packageRows = packagePaths.map((path) => {
   const manifest = JSON.parse(read(join(path, 'package.json'))) as { name: string };
   return { path: path.slice('packages/'.length), name: manifest.name };
 });
+const packagePathByName = new Map(packageRows.map((row) => [row.name, `packages/${row.path}`]));
 const apiWorkspaceNames = new Set(
   Object.entries({ ...apiPackage.dependencies, ...apiPackage.devDependencies })
     .filter(([, version]) => version.startsWith('workspace:'))
@@ -88,6 +91,58 @@ test('source-only examples do not misclassify current workspace packages', () =>
       `workspace package ${row.path} must not appear in source-only examples`
     );
   }
+});
+
+test('packages README registry matches current workspace package manifests', () => {
+  const heading = '## Workspace package registry';
+  const start = packageReadme.indexOf(heading);
+  assert.notEqual(start, -1, 'packages README registry section must exist');
+  const end = packageReadme.indexOf('\n## ', start + heading.length);
+  const registry = packageReadme.slice(start, end === -1 ? undefined : end);
+  const registryRows = tableRows(registry).map((row) => {
+    const [path, name] = row.split('\t');
+    return `${path.slice('packages/'.length)}\t${name}`;
+  });
+  assert.deepEqual(registryRows, packageRowsAsStrings(packageRows));
+});
+
+test('dependency map graph matches current workspace manifests', () => {
+  const manifests = workspacePaths.map((path) => ({
+    path,
+    manifest: JSON.parse(read(join(path, 'package.json'))) as {
+      name: string;
+      dependencies?: Record<string, string>;
+      devDependencies?: Record<string, string>;
+      optionalDependencies?: Record<string, string>;
+    },
+  }));
+  const expectedRows = manifests
+    .map(({ path, manifest }) => {
+      const dependencies = Object.entries({
+        ...manifest.dependencies,
+        ...manifest.devDependencies,
+        ...manifest.optionalDependencies,
+      })
+        .filter(([, version]) => version.startsWith('workspace:'))
+        .map(([name]) => packagePathByName.get(name) ?? `UNMAPPED:${name}`)
+        .sort();
+      const dependencyCell = dependencies.length
+        ? dependencies.map((dependency) => `\`${dependency}\``).join(', ')
+        : '—';
+      return `${path}\t${manifest.name}\t${dependencyCell}`;
+    })
+    .sort();
+
+  const heading = '## Manifest-declared workspace graph';
+  const start = dependencyMap.indexOf(heading);
+  assert.notEqual(start, -1, 'dependency map graph section must exist');
+  const end = dependencyMap.indexOf('\n## ', start + heading.length);
+  const graph = dependencyMap.slice(start, end === -1 ? undefined : end);
+  const actualRows = Array.from(
+    graph.matchAll(/^\|\s*`([^`]+)`\s*\|\s*`([^`]+)`\s*\|\s*(.*?)\s*\|$/gm),
+    (match) => `${match[1]}\t${match[2]}\t${match[3]}`
+  ).sort();
+  assert.deepEqual(actualRows, expectedRows);
 });
 
 test('inventory contract is part of both explicit root test suites', () => {

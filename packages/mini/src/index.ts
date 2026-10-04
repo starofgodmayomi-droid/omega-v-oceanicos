@@ -100,6 +100,20 @@ export type {
   ValuePotentialHypothesis,
 } from './value-navigator.js';
 
+export {
+  MAX_TOTAL_COMPRESSION_LEASE_MS,
+  TOTAL_COMPRESSION_PACKAGE_IDS,
+  validateTotalCompressionRequest,
+} from './total-compress.js';
+export type {
+  TotalCompressionIssueCode,
+  TotalCompressionPackage,
+  TotalCompressionRequest,
+  TotalCompressionScope,
+  TotalCompressionValidationIssue,
+  TotalCompressionValidationResult,
+} from './total-compress.js';
+
 export function executeOceanicosMaxExpansion(): CryptographicBlock {
   const kernelChain = new PluralisticHashChain();
   const telemetry = observePlanetaryBase();
