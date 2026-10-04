@@ -6,7 +6,7 @@
  * Ω∞v ::= REALITY ⇄ OBSERVE ⇄ EVIDENCE ⇄ VERIFY ⇄ REMEMBER ⇄ REASON ⇄ INTEND ⇄ BUILD ⇄ TEST ⇄ ATTEST ⇄ ACT ⇄ CONSEQUENCE ⇄ LEARN ⇄ AUDIT ⇄ RECOMPILE ↺∞
  */
 
-import { createHmac, randomUUID } from 'crypto';
+import { createHmac, randomBytes, randomUUID } from 'crypto';
 
 /* ─── Types ─────────────────────────────────────────────────────── */
 
@@ -75,8 +75,13 @@ export class OceanicosDHTEngine {
   private lookups: DHTLookupResult[] = [];
   private expiredCount = 0;
 
-  constructor(secret = 'dht-kademlia-omega-v-secret') {
-    this.secret = secret;
+  constructor(secret = randomBytes(32).toString('hex')) {
+    const normalizedSecret = secret.trim();
+    if (!normalizedSecret) throw new Error('secret must be a non-empty string');
+    if (normalizedSecret === 'dht-kademlia-omega-v-secret') {
+      throw new Error('default DHT secret is forbidden; provide an explicit secret');
+    }
+    this.secret = normalizedSecret;
   }
 
   /* ── Node Management ── */

@@ -7,6 +7,11 @@ describe('@omega-v/evm — Oceanic Verifiable Virtual Machine Engine', () => {
     vm = new OceanicosVirtualMachine('test-evm-secret');
   });
 
+  it('rejects empty and legacy default secrets', () => {
+    expect(() => new OceanicosVirtualMachine('')).toThrow(/secret must be a non-empty string/);
+    expect(() => new OceanicosVirtualMachine('ovm-omega-v-secret')).toThrow(/default EVM secret is forbidden/);
+  });
+
   it('should execute basic stack arithmetic with gas metering', () => {
     const trace = vm.execute({
       callerDid: 'did:omega:agent:coder',
