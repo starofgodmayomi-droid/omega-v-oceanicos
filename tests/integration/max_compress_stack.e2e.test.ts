@@ -1,5 +1,6 @@
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert';
+import { readFileSync } from 'node:fs';
 import { ObserverEngine } from '../../packages/observer/dist/index.js';
 import {
   verifyPlanetarySovereignty,
@@ -427,7 +428,7 @@ describe('Ω∞v Oceanicos Max Compress Full-Stack E2E Suite', () => {
     await apiApp.close();
   });
 
-  it('21. Unified CLI "mood" and "attest" execute cleanly and attest to Singularity state', async () => {
+  it('21. CLI mood labels symbolic context without claiming verification or bypassing authority', async () => {
     const { execFileSync } = await import('node:child_process');
     const path = await import('node:path');
     const cliPath = path.resolve(process.cwd(), 'bin/oceanicos.mjs');
@@ -435,8 +436,24 @@ describe('Ω∞v Oceanicos Max Compress Full-Stack E2E Suite', () => {
     const moodStdout = execFileSync(process.execPath, [cliPath, 'mood'], { encoding: 'utf-8' });
     assert.ok(moodStdout.includes('MAXIMUM COMPRESSION MATRIX & MOOD'));
     assert.ok(moodStdout.includes('MAX GOOD-O'));
-    assert.ok(moodStdout.includes('PIDGIN SPIRIT OVERRIDE'));
+    assert.ok(moodStdout.includes('Reality Status'));
+    assert.ok(moodStdout.includes('UNKNOWN (this command made no observation)'));
+    assert.ok(moodStdout.includes('UNKNOWN (runtime telemetry not evaluated)'));
+    assert.ok(moodStdout.includes('good/bad max-computation frame'));
+    assert.ok(moodStdout.includes('Everything is still happening for a good reason.'));
+    assert.ok(moodStdout.includes('CONTEXT ONLY'));
+    assert.ok(moodStdout.includes('PIDGIN EXPRESSION (SYMBOLIC'));
+    assert.ok(moodStdout.includes('ƆREADE meaning frame'));
+    assert.ok(moodStdout.includes('REAL-WORLD ACTIONS REQUIRE AUTHORIZATION'));
+    assert.doesNotMatch(moodStdout, /Reality Status\s*:\s*VERIFIED|NO PERMISSION REQUIRED|MANIFESTED/);
     assert.ok(moodStdout.includes('TERMINAL AXIOM'));
+
+    const genesis = readFileSync(path.resolve(process.cwd(), 'genesis.sh'), 'utf-8');
+    assert.match(genesis, /REALITY: UNKNOWN \(not evaluated\)/);
+    assert.match(genesis, /MEANING: EVERYTHING IS STILL HAPPENING FOR A GOOD REASON/);
+    assert.match(genesis, /Anchor Root Hash : NOT OBSERVED/);
+    assert.match(genesis, /MOOD IS CONTEXT, NOT EVIDENCE, AUTHORITY, OR CONSENT/);
+    assert.doesNotMatch(genesis, /REALITY:\s*VERIFIED|NO PERMISSION REQUIRED|MANIFESTED/);
 
     const attestStdout = execFileSync(process.execPath, [cliPath, 'attest'], { encoding: 'utf-8' });
     assert.ok(attestStdout.includes('CRYPTOGRAPHIC ATTESTATION SERVICE'));
