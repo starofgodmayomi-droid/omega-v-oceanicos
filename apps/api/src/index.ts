@@ -71,6 +71,26 @@ const configuredBearerTokens = (mode: AuthMode): { readToken: string; adminToken
   return { readToken, adminToken };
 };
 
+export const parseCorsOrigins = (value: string | undefined, mode: AuthMode): string | string[] | false => {
+  const origins = [...new Set((value ?? '').split(',').map((origin) => origin.trim()).filter(Boolean))];
+  if (origins.length === 0) return mode === 'local' ? '*' : false;
+  if (mode === 'required' && origins.includes('*')) {
+    throw new Error('OMEGA_CORS_ORIGINS must use explicit origins when OMEGA_AUTH_MODE=required');
+  }
+  for (const origin of origins) {
+    let parsed: URL;
+    try {
+      parsed = new URL(origin);
+    } catch {
+      throw new Error(`OMEGA_CORS_ORIGINS contains an invalid origin: '${origin}'`);
+    }
+    if (!['http:', 'https:'].includes(parsed.protocol) || parsed.origin !== origin) {
+      throw new Error(`OMEGA_CORS_ORIGINS contains an invalid origin: '${origin}'`);
+    }
+  }
+  return origins.length === 1 ? origins[0] : origins;
+};
+
 const bearer = (authorization?: string): string =>
   authorization?.startsWith('Bearer ') ? authorization.slice(7).trim() : '';
 
@@ -90,6 +110,7 @@ export function createApp(
   const attestationSigningKey = options.attestationSigningKey ?? process.env.OMEGA_SIGNING_KEY;
   const authMode = parseAuthMode(process.env.OMEGA_AUTH_MODE ?? (process.env.NODE_ENV === 'production' ? 'required' : 'local'));
   const { readToken, adminToken } = configuredBearerTokens(authMode);
+  const corsOrigin = parseCorsOrigins(process.env.OMEGA_CORS_ORIGINS, authMode);
 
   const persistenceEnabled = process.env.OMEGA_PERSISTENCE
     ? process.env.OMEGA_PERSISTENCE === 'on'
@@ -177,13 +198,13 @@ export function createApp(
     if (bearer(request.headers.authorization) !== configured) return jsonError(reply, 401, 'JOB_ACCESS_REQUIRED');
   };
 
-  fastify.register(cors, { origin: '*' });
+  fastify.register(cors, { origin: corsOrigin });
   fastify.register(async (scope) => {
     await scope.register(rateLimit, { global: false });
     registerOmegaRoutes(scope, omegaCommands);
   });
   fastify.addHook('onRequest', async (request, reply) => {
-    if (authMode === 'local' || request.url.split('?')[0] === '/health') return;
+    if (authMode === 'local' || request.method === 'OPTIONS' || request.url.split('?')[0] === '/health') return;
     const required = request.method === 'GET' ? readToken : adminToken;
     if (bearer(request.headers.authorization) !== required) {
       return jsonError(reply, 401, request.method === 'GET' ? 'READ_ACCESS_REQUIRED' : 'ADMIN_ACCESS_REQUIRED');
