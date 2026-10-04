@@ -205,7 +205,6 @@ export function createApp(
   fastify.register(async (scope) => {
     await scope.register(rateLimit, { global: false });
     registerOmegaRoutes(scope, omegaCommands);
-    registerPipelineRoute(scope, jsonError);
   });
   fastify.addHook('onRequest', async (request, reply) => {
     if (authMode === 'local' || request.method === 'OPTIONS' || request.url.split('?')[0] === '/health') return;
@@ -213,6 +212,11 @@ export function createApp(
     if (bearer(request.headers.authorization) !== required) {
       return jsonError(reply, 401, request.method === 'GET' ? 'READ_ACCESS_REQUIRED' : 'ADMIN_ACCESS_REQUIRED');
     }
+  });
+
+  fastify.register(async (scope) => {
+    await scope.register(rateLimit, { global: false });
+    registerPipelineRoute(scope, jsonError);
   });
 
   registerEcosystemRoute(fastify, authMode, Boolean(attestationSigningKey));
