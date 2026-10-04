@@ -10,6 +10,11 @@ describe('OceanicosPipelineEngine — Automated CI/CD Pipeline Orchestrator', ()
     engine = new OceanicosPipelineEngine('test-pipeline-key');
   });
 
+  it('rejects empty and legacy default signing keys', () => {
+    expect(() => new OceanicosPipelineEngine('')).toThrow(/signingKey must be a non-empty string/);
+    expect(() => new OceanicosPipelineEngine('omega-v-pipeline-secret-key')).toThrow(/default pipeline signing key is forbidden/);
+  });
+
   describe('1. Topological Stage Ordering & Dependency Resolution', () => {
     it('should execute a 3-stage linear pipeline in dependency order', async () => {
       const result = await engine.executePipeline({

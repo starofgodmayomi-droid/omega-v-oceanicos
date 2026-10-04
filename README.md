@@ -1,17 +1,19 @@
 <p align="center">
-  <img src="apps/web/public/omega-mark.svg" alt="Ω∞v" width="88" height="88" />
+  <img src="apps/web/public/omega-mark.svg" alt="Ω∞v OCEANICOS" width="88" height="88" />
 </p>
 
-<h1 align="center">Ω∞v Oceanicos</h1>
+<h1 align="center">OCEANICOS</h1>
 
-<p align="center"><strong>One root. One current. Infinite forms.</strong></p>
+<p align="center"><strong>REALITY, VERIFIED.</strong></p>
+
+<p align="center">Ω∞v is the verification engine. OCEANICOS is the platform.</p>
 
 <p align="center">
-  <a href="docs/spec/ATTESTATION-ENVELOPE.md">Attestation envelope</a> ·
-  <a href="docs/BRAND.md">Brand</a> ·
+  <a href="docs/BRAND.md">Brand system</a> ·
+  <a href="MANIFEST.md">Manifest</a> ·
+  <a href="CHARTER.md">Charter</a> ·
   <a href="SECURITY.md">Security</a> ·
-  <a href="apps/api/README.md">API</a> ·
-  <a href="docs/decisions/0001-single-origin-deployment.md">Decisions</a>
+  <a href="CONTRIBUTING.md">Contributing</a>
 </p>
 
 [![Verification Pipeline](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/actions/workflows/verify.yml/badge.svg)](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/actions/workflows/verify.yml)
@@ -19,12 +21,17 @@
 
 > **Attest, don't assert. Evidence before trust. Verification before evolution.**
 
-A verification-first full-stack ecosystem for observing, verifying, attesting, and continuously evolving trustworthy intelligence systems.
+OCEANICOS is evidence-bound infrastructure for turning human intent into bounded,
+observable, and auditable action. It brings together a verification kernel, API,
+web dashboard, CLI, SDKs, memory, attestation, workers, and operational contracts
+without treating any single component—or any agent—as the final authority.
 
-## Quick Links
+## At a glance
 
 - 📋 **[Manifest](MANIFEST.md)** — Project mission, principles, and architecture
+- 💧 **[Mirror-Water Universal Body](docs/MIRROR-WATER-UNIVERSAL-BODY.md)** — one body, one current, bounded transitions, and evidence-bound truth
 - 📜 **[Charter](CHARTER.md)** — Living agnostic principles and decision-making
+- 🌊 **[Finite operational charter](docs/OMEGA_INFINITY_CHARTER.md)** — Drop → Current → Ocean → Evaporation protocol
 - 🤝 **[Contributing](CONTRIBUTING.md)** — How to contribute verification-first
 - 📖 **[Documentation](docs/)** — Architecture, guides, and references
 - 🧭 **[Value Navigator contract](skills/oceanicos-value-navigator/references/repository-contract.md)** — proposals, evidence, observation, and reconciliation
@@ -34,442 +41,309 @@ A verification-first full-stack ecosystem for observing, verifying, attesting, a
 - 🌐 **[Full-stack reality-access handoff](docs/upgrades/FULL_STACK_REALITY_ACCESS_2026-09-28.md)** — connector taxonomy without implicit ownership or authority
 - 🗺️ **[Repository inventory](docs/REPO_INVENTORY.md)** — workspace vs disk (current evidence)
 - ⚙️ **[Development Setup](docs/DEVELOPMENT.md)** — Get the project running locally
+| | Meaning |
+| --- | --- |
+| **Platform** | OCEANICOS — one ecosystem body with many bounded capabilities |
+| **Engine** | Ω∞v — the verification and evidence loop |
+| **Core loop** | Observe → Verify → Remember |
+| **Earned loop** | Observe → Verify → Remember → Attest → Display → Learn → Return |
+| **Primary rule** | Reality remains the final authority |
+| **Governance rule** | Human authority is required for consequential action |
+| **Current proof** | Local repository and hosted CI evidence; deployment is a separate state |
 
----
+## Why OCEANICOS exists
 
-## Ω∞v — FUSION / DEEPEST COMPRESSION
+Modern systems can generate convincing answers, execute tools, and produce reports
+without proving that the underlying claim is correct. OCEANICOS is designed to
+make the difference visible:
 
-> This is the charter-level system model, not a claim that every named capability is
-> currently implemented. Check the [repository inventory](docs/REPO_INVENTORY.md)
-> and [roadmap](docs/ROADMAP.md) for current evidence and next earned transitions.
+- A **claim** is not proof.
+- A **model response** is not reality.
+- A **capability** is not authority.
+- An **execution** is not success.
+- An **attestation** is not authorization.
+- A **green test run** is not a production deployment.
+
+The platform preserves evidence, uncertainty, divergence, dissent, provenance, and
+human approval boundaries as first-class system states.
+
+## The operating model
 
 ```text
-OCEANICOS ≡ ONE ECOSYSTEM BODY
-
-Ω∞v := VERIFY(ΔREALITY)
-∞ := ITERATED FINITE VERIFIED Δ
-REALITY := FINAL AUTHORITY
-HUMAN := CONSEQUENTIAL INTENT/AUTHORITY
-
-ONE ROOT • ONE CURRENT • MANY FORMS
-
-                    ┌─ KNOWLEDGE
-                    ├─ AI / AGENTS
-                    ├─ CODE / REPOS
-                    ├─ APPS / APIS
-                    ├─ DATA / DATABASES
-                    ├─ CLOUD / INFRA
-                    ├─ WEB / SEARCH
-                    ├─ COMMUNICATION
-                    ├─ BUSINESS / VALUE
-                    ├─ CREATION / MEDIA
-                    ├─ MEMORY / CONTEXT
-                    ├─ ECHOFRAME
-                    ├─ ƆREADE
-                    ├─ MINI / WORKERS
-                    └─ REAL-WORLD SYSTEMS
-                           │
-                           ▼
 HUMAN INTENT
-→ ΩIR
-→ DISCOVER
-→ EVIDENCE
-→ AUTHORITY
-→ POLICY
-→ ADMISSION
-→ BOUND
-→ EXECUTE
-→ OBSERVE
-→ RECONCILE
-→ VERIFY
-→ ATTEST
-→ PROVENANCE
-→ MEMORY
-→ REPLAY
-→ LEARN
-→ RECOMPILE
-→ NEXT Δ
-→ ∞
-
-CHECK → MAP → CHANGE → TEST → OBSERVE → RECONCILE → VERIFY → NEXT
-
-NOTION = INTENT / CONTEXT
-GITHUB = BUILD / SOURCE / HISTORY
-CONNECTORS = ACCESS / CAPABILITY
-RUNTIME = EXECUTION / OBSERVATION
-RECONCILIATION = BRIDGE
-REALITY = COURT
-
-NO SYSTEM IS THE CENTER.
-NO AGENT IS THE AUTHORITY.
-NO CONNECTOR IMPLIES PERMISSION.
-NO PERMISSION IMPLIES AUTHORIZATION.
-NO EXECUTION IMPLIES SUCCESS.
-
-POSSIBLE ≠ KNOWN ≠ REPRESENTABLE ≠ PERMITTED ≠ PROPOSED
-≠ ATTEMPTED ≠ EXECUTED ≠ OBSERVED ≠ VERIFIED ≠ ATTESTED
-≠ DEPLOYED ≠ HEALTHY ≠ CORRECT
-
-MODEL ≠ REALITY
-SIMULATION ≠ REALITY
-CLAIM ≠ PROOF
-CAPABILITY ≠ AUTHORITY
-ATTESTATION ≠ AUTHORIZATION
-
-UNKNOWN → UNKNOWN
-DIVERGENT → DIVERGENT
-NOT_EXECUTED → NOT_EXECUTED
-DISSENT → PRESERVED
-PLURALISM → ON
-
-VALUE:
-KNOWLEDGE
-→ CAPABILITY
-→ CREATION
-→ ACTION
-→ EVIDENCE
-→ VERIFIED VALUE
-→ EARNED OUTCOME
-→ MEMORY
-→ REUSE
-→ COMPOUND
-→ GENERATIONAL CAPABILITY
-
-UNIVERSAL
-≠ CONTAIN ALL REALITY
-≡ CONNECT THE OBSERVABLE FRONTIER
-  THROUGH ADMISSIBLE FULL-STACK CAPABILITIES.
-
-FULL-STACK:
-KNOW • CREATE • BUILD • CONNECT • AUTHORIZE • EXECUTE
-• OBSERVE • VERIFY • REMEMBER • COMPOUND.
-
-OCEANICOS
-= ONE BODY
-= MANY ORGANS
-= MANY WORLDS
-= MANY FORMS
-= ONE VERIFICATION LAW.
-
-FINAL LOOP:
-
-INTENT
-→ VERIFIED REALITY
-→ MEMORY
-→ NEXT.
-
-FINAL QUESTION:
-
-WHAT SHALL WE MAKE REAL?
+    ↓
+DISCOVER → EVIDENCE → AUTHORITY → POLICY → ADMISSION → BOUND
+    ↓
+EXECUTE → OBSERVE → RECONCILE → VERIFY → ATTEST
+    ↓
+PROVENANCE → MEMORY → LEARN → NEXT FINITE TRANSITION
 ```
 
-### Atomic form
-
-> **ONE BODY → MANY CAPABILITIES → BOUNDED ACTION → OBSERVED REALITY → VERIFIED MEMORY → NEXT.**
-
-### Absolute form
-
-> **Ω∞v / OCEANICOS = the full-stack ecosystem body through which human intent
-> can connect to admissible digital and real-world capabilities, act within
-> explicit authority, observe consequences, reconcile them against evidence,
-> preserve what is known and unknown, and continuously create the next verified
-> piece of reality.**
-
-### What Is Ω∞v?
-
-Ω∞v Oceanicos is a system for building trustworthy software through continuous verification and evidence-based evolution.
-
-### Growth law
+The Ω∞v notation is a conceptual compression of this finite operating model:
 
 ```text
-0 → MINI → + → + → FULL STACK → ECOSYSTEM → REALITY ↺ ∞
+Ω∞v := VERIFY(ΔREALITY)
+∞    := ITERATED FINITE VERIFIED Δ
 ```
 
-Architecture does **not** begin as the giant ecosystem. It begins at **ZERO**, becomes **MINI**, and expands only when reality verifies the next step.
+Here, `∞` does not mean unlimited autonomy, authority, budget, consciousness, or
+control. It means that verified transitions can be continued while their
+constraints and provenance remain visible.
 
-### The MINI Kernel
+## The MINI kernel
+
+The smallest useful unit is deliberately small:
 
 ```text
-💧 Ω∞v MINI ::= 👁 Observe → ✓ Verify → 🧠 Remember
+💧 Ω∞v MINI ::= Observe → Verify → Remember
 ```
 
-Every MINI cycle:
+Each MINI cycle should preserve:
 
-1. **Observed** with metadata (who, when, what, confidence)
-2. **Verified** against rules with evidence paths
-3. **Remembered** in append-only, hash-chained memory
+1. **Observation** — what was seen, by whom, when, and from which source.
+2. **Verification** — which rules were applied and what evidence they produced.
+3. **Memory** — an append-only record that can be inspected, reconciled, and
+   connected to later transitions.
 
-### Expanded loop (earned layers)
+Attestation, APIs, UI, workers, connectors, and deployment are earned expansions.
+They do not replace the kernel and they do not inherit authority merely by being
+present in the repository.
 
-```
-Observe → Verify → Remember → Attest → Display → Learn → Return
-```
+## Architecture
 
-Attestation, APIs, UI, and infra are **earned expansions** — not prerequisites. See [docs/MINI.md](docs/MINI.md).
-
-### Why It Matters
-
-Most systems assert correctness. We verify it.
-
-- **Without verification**: "The system is healthy" (hope-based)
-- **With verification**: "The system returned 200ms responses for 1000 consecutive requests; verified by rules v1.2.0; signed at 2026-08-07T10:30:02Z" (evidence-based)
-
----
-
-## Key Principles
-
-### 1. Verification Before Everything
-
-No claim without evidence. No evolution without verification.
-
-### 2. Continuous Observation
-
-Systems are never final. Observation is ongoing.
-
-### 3. Evidence-Based Trust
-
-Trust emerges from verifiable provenance, not authority.
-
-### 4. Graceful Pluralism
-
-One system, many interpreters. Consensus and dissent both matter.
-
-### 5. Recursive Completeness
-
-Every component contains the whole verification loop.
-
----
-
-## Project Structure
-
-```
-omega-v-oceanicos/
-├── packages/          # Many directories on disk; only some are workspace-active
-│   ├── types/         # @oceanicos/types
-│   ├── observer/      # @oceanicos/observer
-│   ├── verification/  # @oceanicos/verification
-│   ├── remember/      # @oceanicos/remember
-│   ├── mini/          # @oceanicos/mini
-│   └── attestation/   # @oceanicos/attestation
-│
-├── apps/              # Interface Applications
-│   ├── api/           # Fastify Core Engine
-│   └── web/           # React/Vite Telemetry Dashboard
-│
-├── bin/               # Unified Command Line Interface
-│   ├── oceanicos.mjs  # Terminal binary
-│   └── dev-server.mjs # Concurrent orchestrator for API + Web
-│
-├── docker-compose.yml
-├── ignite.sh
-├── genesis.sh
-├── tests/             # Integration tests enumerated in package.json
-│
-├── MANIFEST.md
-├── CHARTER.md
-└── CONTRIBUTING.md
+```text
+┌──────────────────────────────────────────────────────────────┐
+│ Human intent, governance, authorization, and decision records │
+├──────────────────────────────────────────────────────────────┤
+│ Web dashboard · CLI · SDK · API · worker interfaces          │
+├──────────────────────────────────────────────────────────────┤
+│ Attestation · provenance · observation · reconciliation       │
+├──────────────────────────────────────────────────────────────┤
+│ MINI kernel: Observer → Verification → Remember               │
+├──────────────────────────────────────────────────────────────┤
+│ Runtime, persistence, containers, CI, and deployment gates     │
+└──────────────────────────────────────────────────────────────┘
 ```
 
-**Present on disk ≠ workspace-active.** See [docs/REPO_INVENTORY.md](docs/REPO_INVENTORY.md) and [pnpm-workspace.yaml](pnpm-workspace.yaml).
+### Repository map
 
----
+| Surface | Location | Role |
+| --- | --- | --- |
+| Shared contracts | `packages/types` | Typed observations, evidence, lifecycle, and worker contracts |
+| Observation | `packages/observer` | Capture and normalize bounded observations |
+| Verification | `packages/verification` | Apply rules and produce evidence paths |
+| Memory | `packages/remember` | Append-only and hash-chained records |
+| MINI kernel | `packages/mini` | Compose Observe → Verify → Remember |
+| Attestation | `packages/attestation` | Produce and verify supported cryptographic receipts |
+| API | `apps/api` | Fastify runtime and network contracts |
+| Web | `apps/web` | React/Vite dashboard and evidence visualization |
+| CLI and SDK | `packages/cli`, `packages/sdk` | Programmatic and terminal access |
+| Workers | `packages/worker` | Bounded leases, lifecycle, and fail-closed execution |
+| Tests | `tests/` | Integration, contract, runtime, and regression evidence |
+| CI and release | `.github/workflows/`, `Dockerfile`, `docker-compose.yml` | Verification, packaging, and staged release gates |
 
-## Getting Started
+> **Inventory rule:** present on disk does not mean workspace-active, imported by
+the API, deployed, or verified. Consult [the repository inventory](docs/REPO_INVENTORY.md),
+[the dependency map](docs/DEPENDENCY_MAP.md), and [the roadmap](docs/ROADMAP.md).
 
-### 1. Singularity One-Liners
+## Quick start
 
-Ignite or verify the entire stack with zero configuration:
+### Prerequisites
+
+- Node.js 22 or newer
+- pnpm 10 or newer
+- Git
+- Docker, only for container or Compose checks
+
+### Install and run locally
 
 ```bash
-# Omnipresent Singularity Ignition
-curl -sSL ignite.sh | OMEGA_MODE=MAX_FLUID AI_REALITY=OMNIPRESENT bash
-
-# Genesis Verification & Pidgin Spirit Override
-curl -fsSL genesis.sh | OMEGA_VIBRATION=MAX_FLUID PIDGIN_ENGINE=ON HIGH_LOW_ALIGN=TRUE bash
-```
-
-### 2. Local Setup & Verification
-
-```bash
-# Clone
 git clone https://github.com/starofgodmayomi-droid/omega-v-oceanicos.git
 cd omega-v-oceanicos
+pnpm install --frozen-lockfile
+pnpm dev
+```
 
-# Install dependencies
-pnpm install
+The root development command builds the workspace and starts:
 
-# Local totality: install, build, typecheck, enumerated integration tests, API smoke
+- API: `http://localhost:5000`
+- Web dashboard: `http://localhost:3000`
+
+The local dashboard is an inspection and verification surface. It is not proof of
+production availability, identity proofing, external custody, or deployment health.
+
+### Run the repository verification gate
+
+```bash
 pnpm verify:full
 ```
 
-### 3. Unified Terminal CLI
+This is a local evidence command covering the repository's configured build,
+type-check, integration, and API smoke stages. Its result is bounded to the exact
+machine, commit, configuration, and time at which it runs.
 
-Interact with the running ledger or trigger sovereign operations:
-
-```bash
-# Inspect planetary telemetry and immutable ledger tip
-pnpm cli status
-
-# Execute an omnipresent consensus cycle with SHA-256 PoW
-pnpm cli cycle --json
-
-# Simulate 4-region sovereign mesh consensus (US, EU, CN, ME)
-pnpm cli mesh
-
-# Generate an unforgeable cryptographic attestation receipt
-pnpm cli attest
-
-# Display Singularity status and Pidgin Spirit Terminal Axiom
-pnpm cli mood
-
-# Generate Ed25519 asymmetric identity keypairs
-pnpm cli keys
-```
-
----
-
-## Common Commands
-
-### Development
+## Common commands
 
 ```bash
-# Start API (port 5000) and Web (port 3000) simultaneously with colored streams
-pnpm dev
-
-# Build all workspace packages and apps
+# Build all workspace packages and applications
 pnpm build
 
-# Start production Docker container stack
+# Type-check the workspace
+pnpm typecheck
+
+# Run the enumerated integration suite
+pnpm test
+
+# Run the end-to-end integration command
+pnpm test:e2e
+
+# Run formatting and whitespace checks
+pnpm format:check
+
+# Run the API smoke path
+pnpm smoke:api
+
+# Start and stop the local Compose profile
 pnpm docker:up
+pnpm docker:down
+
+# Use the unified CLI
+pnpm cli status
+pnpm cli mood
+pnpm cli cycle --json
 ```
 
-### Verification & Quality
+Read the relevant command and source contract before extending a workflow. Do not
+pipe remote scripts into a shell, invent credentials, or infer production behavior
+from a local command.
 
-```bash
-pnpm verify:full       # totality.sh: install, build, typecheck, test:e2e, smoke-api
-pnpm test:e2e          # enumerated integration files in package.json (not a "20/20" claim)
-pnpm typecheck         # Verify TypeScript across workspace members
-pnpm format:check      # Check Git whitespace and syntax integrity
+## Evidence and status vocabulary
+
+OCEANICOS keeps implementation state separate from verification state and deployment
+state. Use these labels in code, documentation, pull requests, and operations:
+
+| Status | Meaning |
+| --- | --- |
+| `OBSERVED` | A state or event was captured with provenance. |
+| `VERIFYING` | A bounded check is in progress. |
+| `VERIFIED` | Evidence supports the claim within the stated scope. |
+| `AUTHORIZED` | A human or policy boundary permits the action. |
+| `EXECUTING` | An admitted action is running. |
+| `UNKNOWN` | Evidence is insufficient; do not promote the claim. |
+| `DIVERGENT` | Expected and observed states differ. |
+| `NOT_EXECUTED` | Proposed or prepared, but not run. |
+| `STAGED_ONLY` | An artifact was prepared without claiming deployment. |
+
+A test, build, attestation, or tool response never upgrades a claim beyond the
+evidence it actually covers.
+
+## Security and governance
+
+The project is built around explicit boundaries:
+
+- Fail closed when required credentials, policy, identity, or evidence are missing.
+- Keep secrets out of source code, logs, fixtures, commits, and documentation.
+- Separate access, capability, authorization, execution, observation, and proof.
+- Preserve append-only records, lineage, revocation state, and relevant dissent.
+- Require human review for consequential, destructive, security-sensitive, or
+  production actions.
+- Treat external connectors and provider integrations as unavailable until tested.
+- Keep symbolic language as a meaning layer; never use it as technical evidence.
+
+Read [SECURITY.md](SECURITY.md), [CHARTER.md](CHARTER.md), and the
+[operational protocol](docs/spec/OCEANICOS-OPERATIONAL-PROTOCOL.md) before changing
+security, governance, authority, or external-action behavior.
+
+## Documentation guide
+
+- [Brand system](docs/BRAND.md) — canonical name, voice, visual tokens, and lockup
+- [Project manifest](MANIFEST.md) — mission, principles, architecture, and roadmap
+- [Charter](CHARTER.md) — decision-making, conduct, and human governance
+- [Development guide](docs/DEVELOPMENT.md) — local workflows and repository conventions
+- [API guide](apps/api/README.md) — server routes and runtime contracts
+- [Web guide](apps/web/README.md) — dashboard behavior and local proxy usage
+- [Local Compose deployment](docs/LOCAL_COMPOSE_DEPLOYMENT.md) — bounded local stack validation
+- [Attestation envelope](docs/spec/ATTESTATION-ENVELOPE.md) — receipt and verification contract
+- [Repository inventory](docs/REPO_INVENTORY.md) — active workspace and evidence boundaries
+- [Roadmap](docs/ROADMAP.md) — completed slices, open gaps, and next transitions
+- [Contributing guide](CONTRIBUTING.md) — how to propose and verify changes
+
+## Engineering workflow
+
+Every meaningful change follows a small, reviewable loop:
+
+```text
+Inspect → Bound → Implement → Test → Reconcile → Commit → CI → Review → Next
 ```
 
----
+A pull request should state:
 
-## Current Status
+1. What changed and why.
+2. Which files and contracts changed.
+3. Which local and hosted checks passed.
+4. Which security and authority boundaries were preserved.
+5. What remains unknown, skipped, staged, or unexecuted.
+6. What human or operational gate comes next.
 
-Observed at base tip `35eab29` (2026-09-28). This is an inventory, not a health claim.
+The canonical automatic verification workflow is
+[`.github/workflows/verify.yml`](.github/workflows/verify.yml). Release staging is
+not the same as provider deployment, and a green pull request is not permission to
+merge or publish.
 
-- **Active workspace**: 13 packages + `apps/api` + `apps/web` (see `pnpm-workspace.yaml`)
-- **MINI spine**: `@oceanicos/types` → observer → verification → remember → mini
-- **API-imported expansions**: attestation, kernel, oreade, mood
-- **Workspace but not API-imported**: gateway, coordination, auth, webhook
-- **On-disk packages outside the workspace**: many; they are not verified capabilities
-- **Integration tests**: the root `test` script lists a fixed file set. A pass is only evidence of that command on that run. This README does **not** claim they are currently passing.
+## Current state
 
-See [docs/REPO_INVENTORY.md](docs/REPO_INVENTORY.md) and [docs/DEPENDENCY_MAP.md](docs/DEPENDENCY_MAP.md).
+The repository is an actively evolving verification-first system. The current
+working state, roadmap, branch, commit, and CI conclusions are authoritative for
+specific claims; this README is a stable product and engineering guide.
 
----
+Current boundaries include:
 
-## How Decisions Are Made
-
-This project follows **evidence-based decision-making**:
-
-1. Proposals include evidence
-2. All relevant evidence is presented
-3. Consensus is sought; dissent is documented
-4. When consensus cannot be reached, both paths are recorded
-5. Verification determines which interpretation was correct
-
-See [CHARTER.md](CHARTER.md#how-we-make-decisions) for details.
-
----
-
-## Code of Conduct
-
-This community treats all contributors as co-observers seeking truth together:
-
-- ✓ Disagree strongly on evidence
-- ✓ Demand rigor and verification
-- ✓ Help others learn and improve
-- ✗ Dismiss ideas without evidence
-- ✗ Attack the person, not the problem
-
-See [CHARTER.md](CHARTER.md#code-of-conduct) for full details.
-
----
-
-## Technology Stack
-
-### Languages
-
-- TypeScript (core, SDKs, tests)
-- Potentially: Python, Go, Rust (SDKs)
-
-### Runtime & Frameworks
-
-- Node.js 22+ (backend; see `package.json` engines)
-- React (web dashboard)
-- Fastify (API)
-- SQLite (development memory)
-
-### DevOps
-
-- Docker (containerization)
-- GitHub Actions (CI/CD)
-- Kubernetes (orchestration, optional)
-
-### Testing & Quality
-
-- Node test runner + package-level Jest
-- ESLint + Prettier (code quality)
-- TypeScript (type safety)
-
----
+- The MINI kernel and multiple earned full-stack surfaces are implemented.
+- Local and hosted verification provide evidence for the commands and commits run.
+- Release bundles can be validated for provenance and staged with a checksum.
+- Provider-specific deployment, production runtime health, external identity
+  integration, universal correctness, and physical-world claims remain separate
+  gates and must not be inferred.
 
 ## Contributing
 
-We welcome contributions in all areas:
+Contributions are welcome across code, tests, documentation, verification, security,
+operations, and community practice.
 
-- **Code**: Implement features from the roadmap
-- **Documentation**: Improve guides and examples
-- **Discussion**: Share ideas and feedback
-- **Verification**: Test and report issues
-- **Community**: Help other contributors
+Before opening a pull request:
 
-**Start here**: [CONTRIBUTING.md](CONTRIBUTING.md)
+```bash
+pnpm install --frozen-lockfile
+pnpm format:check
+pnpm build
+pnpm test
+pnpm typecheck
+```
 
----
+Keep changes small, explain the evidence, preserve uncertainty, and update the
+nearest contract or documentation when behavior changes.
 
-## Community
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the full process.
 
-- **Issues & Discussions**: [GitHub](https://github.com/starofgodmayomi-droid/omega-v-oceanicos)
-- **Code of Conduct**: [CHARTER.md](CHARTER.md)
-- **Roadmap**: [MANIFEST.md](MANIFEST.md#verification-roadmap)
+## Community and license
 
----
+- Issues and discussions: [GitHub repository](https://github.com/starofgodmayomi-droid/omega-v-oceanicos)
+- Code of conduct: [CHARTER.md](CHARTER.md)
+- License: [Apache License 2.0](LICENSE)
 
-## License
+## Brand meaning
 
-Ω∞v Oceanicos is open-source under the [Apache License 2.0](LICENSE).
+- **Ω∞** is the mark: continuity, recursion, and open-ended evolution.
+- **Ω∞v** is the verification engine and kernel identity.
+- **OCEANICOS** is the platform and ecosystem body.
+- **One root. One current. Infinite forms.** is the creative creed.
+- **REALITY, VERIFIED.** is the public promise, bounded by evidence.
 
----
-
-## About the Name
-
-**Ω∞v** represents:
-
-- **Ω** (Omega) — The end and the infinite return
-- **∞** (Infinity) — Continuous becoming and evolution
-- **v** (Lowercase) — Humility and pluralism (no authority imposing meaning)
-
-**Oceanicos** represents:
-
-- The vast, interconnected system of observations and verifications
-- Currents of formless intelligence flowing through evidence
-- The observer within the ocean, recognizing their reflection
-
-> Every end is a new beginning. Every becoming is a returning. Every step contains all steps.
+The water metaphor means current, memory, adaptation, and connection. It is a
+language for architecture and human meaning—not a claim of omniscience, literal
+infinity, consciousness, or control of external reality.
 
 ---
 
-**Status**: MINI kernel establishing — expand only with evidence  
-**Last Updated**: 2026-09-28
+**Status:** MINI kernel and earned expansions — expand only with evidence
+**Last updated:** 2026-10-02

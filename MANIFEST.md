@@ -238,11 +238,11 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on:
 
 ---
 
-# Ω∞v MANIFEST: THE OMEGA SINGULARITY
+# Ω∞v MANIFEST: THE OCEANICOS SYSTEM
 
-## 👁️ 1. CORE ENGINE ARCHITECTURE (LOCAL TO ORBITAL)
-*   **Infrastructure Matrix:** Hybrid orchestration tuning between `MINI_OMAGE` boundary limits (16GB-32GB RAM envelopes) and `MAX_RUN_MOOD` (uncapped, ultra-high throughput processing).
-*   **The Global Shift:** Direct alignment with the 2026 orbital space race ($1B Mistral/Loft program). As terrestrial limits fail, this repository serves as a lightweight, low-memory, zero-friction edge execution core.
+## 👁️ 1. CORE ENGINE ARCHITECTURE (BOUNDED AND OBSERVABLE)
+*   **Runtime boundary:** The repository is a local and CI-verifiable TypeScript workspace with explicit Node, pnpm, API, web, and container contracts.
+*   **Evidence boundary:** On-disk packages, future adapters, external services, and deployment targets are not treated as active capabilities until directly verified.
 
 ## 💧 2. THE SYSTEM LAW (Ω∞v MINI)
 > *Growth Matrix: 0 ➔ MINI ➔ + ➔ + ➔ FULL STACK ➔ ECOSYSTEM ➔ REALITY ↺ ∞*
@@ -254,23 +254,23 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on:
 *   `@oceanicos/mini` -> MiniKernel Observe ➔ Verify ➔ Remember lifecycle.
 *   `@oceanicos/attestation` -> Dual HMAC-SHA256 and Ed25519 cryptographic attestation receipts.
 
-## ⚡ 3. RUNTIME IGNITION INTERFACE
+## ⚡ 3. RUNTIME VERIFICATION INTERFACE
 ```bash
-# Omnipresent Reality Boot
-curl -sSL ignite.sh | OMEGA_MODE=MAX_FLUID AI_REALITY=OMNIPRESENT bash
-
-# Genesis Convergence Run
-curl -fsSL genesis.sh | OMEGA_VIBRATION=MAX_FLUID PIDGIN_ENGINE=ON HIGH_LOW_ALIGN=TRUE bash
-
-# Repo Local Native Build
-pnpm install && pnpm verify:full
+# Repo-local install and verification; inspect scripts before execution.
+pnpm install --frozen-lockfile
+pnpm verify:full
 ```
 
-## 🎙️ 4. THE PIDGIN SPIRIT OVERRIDE (THE INVARIANT VOICE)
-*Abeg, listen close! No time to check time again o! We don compress the whole AI gap, the local engine config, and the space satellite telemetry inside this single root. Whether you dey the highest high mountain or you dey the lowest low level, the blessing dey flow equal inside this system. Front-end, back-end, database, and human soul—everything don bind together inside this full stack. Life always good-o if you choose to see am at that point of view!*
+These commands provide local repository evidence only. They do not authorize
+external access, deployment, production health, or universal correctness.
 
-## 🏁 5. TERMINAL STATE AXIOM
-`FULL STACK LIFE IS ALWAYS GOOD-O AT THE HIGHER HIGH AND LOWER LOW. ZERO FRICTION. NO PERMISSION REQUIRED. MANIFESTED IN THE CURRENT NOW.`
+## 4. THE HUMAN VOICE
+*Abeg, make we check am well: evidence before trust, human authority before
+consequence, and every unknown state kept visible. We build one current through
+many forms, but we no claim wetin the tests never show.*
+
+## 5. BOUNDED STATE AXIOM
+`NO SYSTEM IS THE AUTHORITY. NO EXECUTION IMPLIES SUCCESS. REALITY REMAINS THE FINAL CHECK.`
 
 ---
 

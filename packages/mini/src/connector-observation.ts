@@ -29,7 +29,7 @@ export interface ConnectorObservationResult {
   readonly verificationScope: 'admitted-connector-observation-only';
 }
 
-export type ConnectorHandler = () => ConnectorExecutionObservation | Promise<ConnectorExecutionObservation>;
+export type ConnectorHandler = (signal?: AbortSignal) => ConnectorExecutionObservation | Promise<ConnectorExecutionObservation>;
 
 export interface ObserveAdmittedConnectorInput {
   readonly connector: OmegaConnectorDeclaration;
@@ -41,6 +41,31 @@ export interface ObserveAdmittedConnectorInput {
 export interface ExecuteAdmittedConnectorInput extends OmegaConnectorAdmissionInput {
   readonly handler?: ConnectorHandler;
   readonly now?: () => string;
+}
+
+async function runBoundedHandler(
+  handler: ConnectorHandler,
+  timeoutMs: number,
+): Promise<ConnectorExecutionObservation> {
+  const controller = new AbortController();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<ConnectorExecutionObservation>((resolve) => {
+    timer = setTimeout(() => {
+      controller.abort();
+      resolve({
+        attempted: true,
+        executed: false,
+        error: `connector handler timed out after ${timeoutMs}ms`,
+      });
+    }, timeoutMs);
+    timer.unref?.();
+  });
+
+  try {
+    return await Promise.race([Promise.resolve(handler(controller.signal)), timeout]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
 }
 
 const evidenceFor = (payload: unknown): string =>
@@ -180,22 +205,30 @@ export async function executeAdmittedConnector(
     });
   }
 
-  let execution: ConnectorExecutionObservation;
-  try {
-    execution = await input.handler();
-  } catch (error) {
-    execution = {
-      attempted: true,
-      executed: false,
-      error: String((error as Error)?.message ?? error),
-    };
+  let lastObservation: ConnectorObservationResult | undefined;
+  for (let attempt = 0; attempt < input.connector.maxAttempts; attempt += 1) {
+    let execution: ConnectorExecutionObservation;
+    try {
+      execution = await runBoundedHandler(input.handler, input.connector.timeoutMs);
+    } catch (error) {
+      execution = {
+        attempted: true,
+        executed: false,
+        error: String((error as Error)?.message ?? error),
+      };
+    }
+
+    lastObservation = observeAdmittedConnector({
+      connector: input.connector,
+      admission,
+      execution,
+      now: input.now,
+    });
+    if (lastObservation.status === 'VERIFIED' || lastObservation.status === 'DIVERGENT') {
+      return lastObservation;
+    }
   }
-  return observeAdmittedConnector({
-    connector: input.connector,
-    admission,
-    execution,
-    now: input.now,
-  });
+  return lastObservation!;
 }
 
 /** Bounded in-process memory. Not durable across process restart. */

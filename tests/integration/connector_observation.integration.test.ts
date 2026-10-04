@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import {
   admitOmegaConnector,
   executeAdmittedConnector,
+  FileConnectorObservationStore,
   MAX_CONNECTOR_TIMEOUT_MS,
   observeGithubPublicRepository,
 } from '../../packages/mini/dist/index.js';
@@ -64,7 +65,49 @@ describe('Ω connector observation path', () => {
     assert.equal(fetchCalls, 0);
   });
 
-  it('refuses unverified client status claims and does not execute unadmitted connectors over HTTP', async () => {
+  it('enforces the declared timeout and exposes an UNKNOWN result', async () => {
+    const started = Date.now();
+    const timedOut = await executeAdmittedConnector({
+      connector: { ...connector, timeoutMs: 5 },
+      authorityVerified: true,
+      policySatisfied: true,
+      approvalVerified: false,
+      handler: async () => {
+        await new Promise((resolve) => setTimeout(resolve, 25));
+        return {
+          attempted: true,
+          executed: true,
+          actualObservation: connector.expectedObservation,
+        };
+      },
+    });
+
+    assert.equal(timedOut.status, 'UNKNOWN');
+    assert.equal(timedOut.executed, false);
+    assert.match(timedOut.issues.join(' '), /timed out after 5ms/);
+    assert.ok(Date.now() - started < 20);
+  });
+
+  it('retries only within the declared attempt bound', async () => {
+    let attempts = 0;
+    const retried = await executeAdmittedConnector({
+      connector: { ...connector, maxAttempts: 2 },
+      authorityVerified: true,
+      policySatisfied: true,
+      approvalVerified: false,
+      handler: () => {
+        attempts += 1;
+        return attempts === 1
+          ? { attempted: true, executed: false, error: 'transient failure' }
+          : { attempted: true, executed: true, actualObservation: connector.expectedObservation };
+      },
+    });
+
+    assert.equal(attempts, 2);
+    assert.equal(retried.status, 'VERIFIED');
+  });
+
+  it('refuses unverified client status claims and remembers observations on a local hash chain', async () => {
     const directory = mkdtempSync(join(tmpdir(), 'omega-connector-observation-'));
     const { createApp } = await import('../../apps/api/dist/index.js');
     const app = createApp(join(directory, 'ledger.db'), false, { allowUnsignedCycle: true });
@@ -113,6 +156,9 @@ describe('Ω connector observation path', () => {
       assert.equal(admittedOnly.json().admission.admitted, true);
       assert.equal(admittedOnly.json().status, 'NOT_EXECUTED');
       assert.equal(admittedOnly.json().executed, false);
+      assert.equal(admittedOnly.json().remembered, true);
+      assert.equal(admittedOnly.json().journal.sequence, 1);
+      assert.match(admittedOnly.json().journal.hash, /^[a-f0-9]{64}$/);
 
       const denied = await app.inject({
         method: 'POST',
@@ -133,6 +179,8 @@ describe('Ω connector observation path', () => {
       assert.equal(denied.json().status, 'NOT_EXECUTED');
       assert.equal(denied.json().executed, false);
       assert.equal(denied.json().actualObservation, undefined);
+      assert.equal(denied.json().remembered, true);
+      assert.equal(denied.json().journal.sequence, 2);
 
       const observed = await app.inject({
         method: 'POST',
@@ -156,6 +204,58 @@ describe('Ω connector observation path', () => {
       assert.equal(observed.json().observed, true);
       assert.match(observed.json().evidence, /^sha256:[a-f0-9]{64}$/);
       assert.equal(observed.json().limitation.includes('not deployment'), true);
+      assert.equal(observed.json().remembered, true);
+      assert.equal(observed.json().journal.sequence, 3);
+      assert.equal(observed.json().journal.previousHash, denied.json().journal.hash);
+
+      const memory = await app.inject({
+        method: 'GET',
+        url: '/v1/omega/connectors/observations',
+      });
+      assert.equal(memory.statusCode, 200);
+      assert.equal(memory.json().success, true);
+      assert.equal(memory.json().total, 3);
+      assert.equal(memory.json().integrity, 'verified-local-hash-chain');
+      assert.equal(memory.json().entries[0].observation.status, 'NOT_EXECUTED');
+      assert.equal(memory.json().entries[2].observation.status, 'VERIFIED');
+      assert.equal(memory.json().entries[2].hash, observed.json().journal.hash);
+      assert.equal(memory.json().limitation.includes('not live GitHub'), true);
+    } finally {
+      await app.close();
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
+  it('fails closed when the connector journal hash chain is tampered', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'omega-connector-journal-'));
+    const journalPath = join(directory, 'connectors.jsonl');
+    writeFileSync(journalPath, '{"kind":"OMEGA_CONNECTOR_OBSERVATION","hash":"deadbeef"}\n');
+    const store = new FileConnectorObservationStore(journalPath);
+    assert.equal(store.verifyIntegrity(), false);
+
+    const { createApp } = await import('../../apps/api/dist/index.js');
+    const app = createApp(join(directory, 'ledger.db'), false, {
+      allowUnsignedCycle: true,
+      connectorObservationPath: journalPath,
+    });
+    await app.ready();
+    try {
+      const listed = await app.inject({ method: 'GET', url: '/v1/omega/connectors/observations' });
+      assert.equal(listed.statusCode, 503);
+      assert.equal(listed.json().error, 'CONNECTOR_OBSERVATION_JOURNAL_INTEGRITY_DEGRADED');
+
+      const observe = await app.inject({
+        method: 'POST',
+        url: '/v1/omega/connectors/observe',
+        payload: {
+          connector,
+          authorityVerified: true,
+          policySatisfied: true,
+          approvalVerified: false,
+        },
+      });
+      assert.equal(observe.statusCode, 503);
+      assert.equal(observe.json().error, 'CONNECTOR_OBSERVATION_JOURNAL_INTEGRITY_DEGRADED');
     } finally {
       await app.close();
       rmSync(directory, { recursive: true, force: true });
@@ -235,6 +335,7 @@ describe('Ω connector observation path', () => {
       assert.equal(liveHttp.json().liveAdapter, 'github-public-repository');
       assert.equal(liveHttp.json().actualObservation, connector.expectedObservation);
       assert.equal(liveHttp.json().remembered, true);
+      assert.equal(liveHttp.json().journal.sequence, 1);
 
       let fetchCalls = 0;
       const deniedLive = await executeAdmittedConnector({
@@ -292,8 +393,9 @@ describe('Ω connector observation path', () => {
 
       const memory = await app.inject({ method: 'GET', url: '/v1/omega/connectors/observations' });
       assert.equal(memory.statusCode, 200);
-      assert.equal(memory.json().observations.length >= 1, true);
-      assert.equal(memory.json().observations.at(-1).status, 'VERIFIED');
+      assert.equal(memory.json().total, 2);
+      assert.equal(memory.json().integrity, 'verified-local-hash-chain');
+      assert.equal(memory.json().entries.at(-1).observation.status, 'VERIFIED');
     } finally {
       await app.close();
       rmSync(directory, { recursive: true, force: true });

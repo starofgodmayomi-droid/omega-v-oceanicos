@@ -12,5 +12,8 @@
     "@oceanicos/observer": "workspace:*",
     "@oceanicos/verification": "workspace:*",
     "@oceanicos/remember": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.3"
   }
 }

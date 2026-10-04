@@ -1,5 +1,4 @@
-import { EvolutionEngine } from '../index';
-import { VerificationRule } from '@omega-v/types';
+import { EvolutionEngine, VerificationRule } from '../index';
 
 describe('EvolutionEngine (Section XXVII Controlled Recompilation)', () => {
   let engine: EvolutionEngine;

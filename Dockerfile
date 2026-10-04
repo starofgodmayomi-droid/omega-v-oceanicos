@@ -1,7 +1,7 @@
 # ── Stage 1: Install & Build ──────────────────────────────────────────────────
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 
-RUN apk add --no-cache python3 make g++ git && npm install -g pnpm@8
+RUN apk add --no-cache python3 make g++ git && npm install -g pnpm@10.34.5
 
 WORKDIR /app
 
@@ -32,9 +32,9 @@ ENV VITE_API_URL=$VITE_API_URL
 RUN pnpm run build
 
 # ── Stage 2: Production API Runtime ──────────────────────────────────────────
-FROM node:20-alpine AS api
+FROM node:22-alpine AS api
 
-RUN npm install -g pnpm@8
+RUN npm install -g pnpm@10.34.5
 WORKDIR /app
 
 COPY --from=builder /app/package.json /app/pnpm-workspace.yaml /app/pnpm-lock.yaml ./
@@ -48,9 +48,9 @@ EXPOSE 5000
 CMD ["node", "apps/api/dist/index.js"]
 
 # ── Stage 3: Production Web Static Serve ─────────────────────────────────────
-FROM node:20-alpine AS web
+FROM node:22-alpine AS web
 
-RUN npm install -g pnpm@8 serve
+RUN npm install -g pnpm@10.34.5 serve
 WORKDIR /app
 
 COPY --from=builder /app/apps/web/dist ./dist

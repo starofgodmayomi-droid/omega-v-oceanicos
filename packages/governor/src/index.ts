@@ -5,7 +5,7 @@
  * Ω∞v ::= REALITY ⇄ OBSERVE ⇄ EVIDENCE ⇄ VERIFY ⇄ REMEMBER ⇄ REASON ⇄ INTEND ⇄ BUILD ⇄ TEST ⇄ ATTEST ⇄ ACT ⇄ CONSEQUENCE ⇄ LEARN ⇄ AUDIT ⇄ RECOMPILE ↺∞
  */
 
-import { createHmac, randomUUID } from 'crypto';
+import { createHmac, randomBytes, randomUUID } from 'crypto';
 
 /* ─── Types ─────────────────────────────────────────────────────── */
 
@@ -84,11 +84,16 @@ export class OceanicosGovernorEngine {
   private defaultTimelockDelayMs: number;
 
   constructor(
-    secret = 'governor-omega-v-secret',
+    secret = randomBytes(32).toString('hex'),
     defaultQuorumPower = 100,
     defaultTimelockDelayMs = 0
   ) {
-    this.secret = secret;
+    const normalizedSecret = secret.trim();
+    if (!normalizedSecret) throw new Error('secret must be a non-empty string');
+    if (normalizedSecret === 'governor-omega-v-secret') {
+      throw new Error('default Governor secret is forbidden; provide an explicit secret');
+    }
+    this.secret = normalizedSecret;
     this.defaultQuorumPower = defaultQuorumPower;
     this.defaultTimelockDelayMs = defaultTimelockDelayMs;
   }

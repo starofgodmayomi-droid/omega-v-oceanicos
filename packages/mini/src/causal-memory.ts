@@ -142,8 +142,17 @@ export class FileCausalMemory implements CausalMemory {
   }
 
   public appendCausal(record: OmegaChangeRecord, reality: RealityVerification, attestation: RealityAttestation): void {
-    if (attestation.changeId !== record.id || attestation.status !== reality.status || !verifyRealityAttestation(attestation, this.signingKey)) {
+    if (
+      reality.record.id !== record.id ||
+      attestation.changeId !== record.id ||
+      attestation.changeId !== reality.record.id ||
+      attestation.status !== reality.status ||
+      !verifyRealityAttestation(attestation, this.signingKey)
+    ) {
       throw new Error('causal memory rejected an unverifiable or mismatched reality attestation');
+    }
+    if (this.entries.some((entry) => entry.record.id === record.id)) {
+      throw new Error(`causal memory rejected duplicate change identity: ${record.id}`);
     }
     this.appendRaw(record, reality, attestation);
   }
@@ -189,7 +198,7 @@ export class FileCausalMemory implements CausalMemory {
         if (!line.trim()) continue;
         const parsed = JSON.parse(line) as CausalMemoryEntry;
         const { hash, ...unsigned } = parsed;
-        if (parsed.kind !== 'OMEGA_CAUSAL' || parsed.sequence !== loaded.length + 1 || parsed.previousHash !== previousHash || hashEntry(unsigned) !== hash || !verifyRealityAttestation(parsed.attestation, this.signingKey) || parsed.attestation.changeId !== parsed.record.id) throw new Error('causal memory integrity check failed');
+        if (parsed.kind !== 'OMEGA_CAUSAL' || parsed.sequence !== loaded.length + 1 || parsed.previousHash !== previousHash || loaded.some((entry) => entry.record.id === parsed.record.id) || hashEntry(unsigned) !== hash || !verifyRealityAttestation(parsed.attestation, this.signingKey) || parsed.attestation.changeId !== parsed.record.id) throw new Error('causal memory integrity check failed');
         loaded.push(parsed);
         previousHash = parsed.hash;
       }

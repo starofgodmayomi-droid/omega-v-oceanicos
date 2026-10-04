@@ -34,8 +34,45 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build workspace artifacts
-        run: pnpm build
+      - name: Audit dependencies
+        run: pnpm audit
 
-      - name: Run full test suite
-        run: pnpm test
+      - name: Run full test coverage
+        run: pnpm test:coverage
+
+      - name: Add LCOV coverage summary
+        if: always() && hashFiles('coverage/lcov.info') != ''
+        run: |
+          node --input-type=module <<'NODE' >> "$GITHUB_STEP_SUMMARY"
+          import { readFileSync } from 'node:fs';
+
+          const lcov = readFileSync('coverage/lcov.info', 'utf8');
+          const total = (prefix) => [...lcov.matchAll(new RegExp(`^${prefix}:(\\d+)$`, 'gm'))]
+            .reduce((sum, match) => sum + Number(match[1]), 0);
+          const covered = (prefix) => [...lcov.matchAll(new RegExp(`^${prefix}:(\\d+)$`, 'gm'))]
+            .reduce((sum, match) => sum + Number(match[1]), 0);
+          const percent = (hit, count) => count === 0 ? 'n/a' : `${((hit / count) * 100).toFixed(2)}%`;
+          const linesFound = total('LF');
+          const linesHit = covered('LH');
+          const functionsFound = total('FNF');
+          const functionsHit = covered('FNH');
+          const branchesFound = total('BRF');
+          const branchesHit = covered('BRH');
+
+          console.log('## Pull-request coverage summary');
+          console.log('');
+          console.log('| Metric | Coverage | Covered | Total |');
+          console.log('| --- | ---: | ---: | ---: |');
+          console.log(`| Lines | ${percent(linesHit, linesFound)} | ${linesHit} | ${linesFound} |`);
+          console.log(`| Functions | ${percent(functionsHit, functionsFound)} | ${functionsHit} | ${functionsFound} |`);
+          console.log(`| Branches | ${percent(branchesHit, branchesFound)} | ${branchesHit} | ${branchesFound} |`);
+          NODE
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-coverage-${{ github.event.pull_request.number || github.run_id }}
+          path: coverage/
+          if-no-files-found: error
+          retention-days: 14

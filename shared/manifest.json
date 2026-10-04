@@ -1,19 +1,22 @@
 {
-  "ecosystem": "Ω∞v Oceanicos Max",
+  "ecosystem": "Ω∞v Oceanicos",
   "brand": {
-    "mark": "Ω",
-    "color": "#00FF66",
-    "creed": "Love nor be chain, na ocean of liquid gold",
-    "mood": "evidence-led optimism"
+    "mark": "Ω∞",
+    "platform": "OCEANICOS",
+    "engine": "Ω∞v",
+    "tagline": "REALITY, VERIFIED.",
+    "creed": "One root. One current. Infinite forms.",
+    "mood": "evidence-led optimism",
+    "voice": "precise, calm, bold, poetic, technical, human-governed"
   },
   "runtime": {
     "axiom": "attest-dont-assert",
     "loop": "observe-verify-remember-mini",
     "deployment_claim": "local-verification-only"
   },
-  "physical_infrastructure": {
-    "silicon_bottleneck": "TSMC 2nm Node",
-    "compute_monopoly": "Nvidia Accelerator Pipeline (>80% share)",
-    "energy_grid": "Gigawatt nuclear/green pairing"
+  "boundaries": {
+    "deployment_claim": "local-verification-only",
+    "authority": "human-controlled",
+    "reality_status": "runtime and deployment claims require direct evidence"
   }
 }
