@@ -27,6 +27,20 @@ describe('MoodEvaluator (Pillar 19)', () => {
     expect(mood.verificationHealth).toBe(1.0);
   });
 
+  it('preserves explicit zero confidence and searches for more evidence', () => {
+    const mood = evaluator.evaluate({ successRate: 1.0, systemConfidence: 0 }, true);
+
+    expect(mood.state).toBe('EVIDENCE_SEARCH');
+    expect(mood.confidence).toBe(0);
+    expect(mood.uncertainty).toBe(1);
+  });
+
+  it('uses the legacy confidence fallback only when telemetry is missing', () => {
+    const mood = evaluator.evaluate({ successRate: 1.0 }, true);
+
+    expect(mood.confidence).toBe(0.87);
+  });
+
   it('should evaluate FRICTION_DETECTED state when hash chain integrity is broken', () => {
     const mood = evaluator.evaluate(
       {

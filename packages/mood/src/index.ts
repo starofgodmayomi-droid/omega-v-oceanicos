@@ -50,7 +50,8 @@ export class MoodEvaluator {
     integrityValid: boolean,
     dissentCount: number = 0
   ): SystemMood {
-    const confidence = metrics.systemConfidence || 0.87;
+    // Only missing telemetry receives the legacy default; zero is a valid measured confidence.
+    const confidence = metrics.systemConfidence ?? 0.87;
     const successRate = metrics.successRate ?? 1.0;
     const verificationHealth = integrityValid ? successRate : 0.0;
     const errorRate = 1.0 - successRate;
