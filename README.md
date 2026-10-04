@@ -146,6 +146,41 @@ present in the repository.
 the API, deployed, or verified. Consult [the repository inventory](docs/REPO_INVENTORY.md),
 [the dependency map](docs/DEPENDENCY_MAP.md), and [the roadmap](docs/ROADMAP.md).
 
+### Symbolic topology proposal
+
+The supplied “multi-universal reality OS” material is retained here as a **creative
+design language**, not as evidence that physical, spiritual, planetary, or financial
+systems exist or are controlled by this repository. Its categories can be translated
+into bounded software concerns as follows:
+
+| Symbolic category | Bounded Oceanicos interpretation | Evidence state |
+| --- | --- | --- |
+| Source / Potentiality | intent, proposal, and unexecuted possibility | `PROPOSED` |
+| Spatial geometry / Fluid dynamics | bounded spatial or telemetry input | `UNKNOWN` until an approved observer is connected |
+| Atmospheric conduction / Energetic catalyst | communication and transition metadata | `UNKNOWN` beyond local runtime evidence |
+| Biological vessels | human actors, affected parties, and consent boundaries | `HUMAN-GOVERNED` |
+| Mind and synthetic logic | bounded model or worker capability | `CAPABILITY`, not authority |
+| Soulbound matrix | identity, lineage, and provenance records | `UNKNOWN` as a metaphysical claim |
+| Mirror interface / Observer | dashboard presentation and independent observation | `SUPPORTED` only within tested surfaces |
+| Cryptographic value | accounting or payment integration proposal | `NOT IMPLEMENTED` |
+| Continuous becoming | finite repeatable transitions with stop conditions | `SUPPORTED` as a design principle |
+
+The attachment’s changing-clothes, mirror, water, pursuit, blessing, prayer, and
+cosmic imagery remain symbolic motifs. They are not claims of supernatural agency,
+physical liquid computation, consciousness, or guaranteed transformation. Likewise,
+Bitcoin, Lightning, wallet, treasury, fee, or payout language is intentionally not
+implemented from this proposal: no custody, payment authorization, external wallet,
+or financial outcome is inferred from a local simulation or green test run.
+
+The safe translation remains:
+
+```text
+DROP → DISTINGUISH → VALIDATE → AUTHORIZE → ADMIT → BOUND
+→ EXECUTE → OBSERVE → RECONCILE → ATTEST → REMEMBER → NEXT DROP
+```
+
+> **Pidgin fit carry the warmth; evidence go carry the claim.**
+
 ## Quick start
 
 ### Prerequisites
