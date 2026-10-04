@@ -3,7 +3,13 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
-import { admitOmegaConnector, executeAdmittedConnector, FileConnectorObservationStore } from '../../packages/mini/dist/index.js';
+import {
+  admitOmegaConnector,
+  executeAdmittedConnector,
+  FileConnectorObservationStore,
+  MAX_CONNECTOR_TIMEOUT_MS,
+  observeGithubPublicRepository,
+} from '../../packages/mini/dist/index.js';
 
 const connector = {
   id: 'github.read-repository',
@@ -39,6 +45,24 @@ describe('Ω connector observation path', () => {
     assert.equal(verified.status, 'VERIFIED');
     assert.equal(verified.verificationScope, 'admitted-connector-observation-only');
     assert.match(verified.evidence, /^sha256:[a-f0-9]{64}$/);
+  });
+
+  it('refuses an oversized GitHub timeout before invoking fetch', async () => {
+    let fetchCalls = 0;
+    const rejected = await observeGithubPublicRepository({
+      owner: 'starofgodmayomi-droid',
+      repo: 'omega-v-oceanicos',
+      timeoutMs: MAX_CONNECTOR_TIMEOUT_MS + 1,
+      fetchImpl: async () => {
+        fetchCalls += 1;
+        return new Response('{}', { status: 200 });
+      },
+    });
+
+    assert.equal(rejected.attempted, false);
+    assert.equal(rejected.executed, false);
+    assert.match(rejected.error ?? '', /timeoutMs must be an integer/);
+    assert.equal(fetchCalls, 0);
   });
 
   it('enforces the declared timeout and exposes an UNKNOWN result', async () => {
@@ -246,5 +270,135 @@ describe('Ω connector observation path', () => {
       approvalVerified: false,
     });
     assert.deepEqual(admission, { decision: 'ADMIT', admitted: true, issues: [] });
+  });
+
+  it('uses the declared github-public-repository adapter without treating fetch as a client handler', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'omega-connector-live-'));
+    const { createApp } = await import('../../apps/api/dist/index.js');
+    const fetchImpl: typeof fetch = async (input) => {
+      const url = String(input);
+      assert.match(url, /\/repos\/starofgodmayomi-droid\/omega-v-oceanicos$/);
+      return new Response(JSON.stringify({ full_name: 'starofgodmayomi-droid/omega-v-oceanicos' }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    };
+    const app = createApp(join(directory, 'ledger.db'), false, {
+      allowUnsignedCycle: true,
+      githubFetch: fetchImpl,
+    });
+    await app.ready();
+
+    try {
+      const mixed = await app.inject({
+        method: 'POST',
+        url: '/v1/omega/connectors/observe',
+        payload: {
+          connector,
+          authorityVerified: true,
+          policySatisfied: true,
+          approvalVerified: false,
+          liveAdapter: 'github-public-repository',
+          execution: { attempted: true, executed: true, actualObservation: connector.expectedObservation },
+        },
+      });
+      assert.equal(mixed.statusCode, 400);
+      assert.equal(mixed.json().error, 'LIVE_ADAPTER_EXCLUDES_SUPPLIED_EXECUTION');
+
+      const unknownAdapter = await app.inject({
+        method: 'POST',
+        url: '/v1/omega/connectors/observe',
+        payload: {
+          connector,
+          authorityVerified: true,
+          policySatisfied: true,
+          approvalVerified: false,
+          liveAdapter: 'gmail',
+        },
+      });
+      assert.equal(unknownAdapter.statusCode, 400);
+      assert.equal(unknownAdapter.json().error, 'UNKNOWN_LIVE_ADAPTER');
+
+      const liveHttp = await app.inject({
+        method: 'POST',
+        url: '/v1/omega/connectors/observe',
+        payload: {
+          connector,
+          authorityVerified: true,
+          policySatisfied: true,
+          approvalVerified: false,
+          liveAdapter: 'github-public-repository',
+        },
+      });
+      assert.equal(liveHttp.statusCode, 200);
+      assert.equal(liveHttp.json().status, 'VERIFIED');
+      assert.equal(liveHttp.json().liveAdapter, 'github-public-repository');
+      assert.equal(liveHttp.json().actualObservation, connector.expectedObservation);
+      assert.equal(liveHttp.json().remembered, true);
+      assert.equal(liveHttp.json().journal.sequence, 1);
+
+      let fetchCalls = 0;
+      const deniedLive = await executeAdmittedConnector({
+        connector,
+        authorityVerified: false,
+        policySatisfied: true,
+        approvalVerified: false,
+        handler: async () => {
+          fetchCalls += 1;
+          return observeGithubPublicRepository({
+            owner: 'starofgodmayomi-droid',
+            repo: 'omega-v-oceanicos',
+            timeoutMs: 5000,
+            fetchImpl,
+          });
+        },
+      });
+      assert.equal(deniedLive.status, 'NOT_EXECUTED');
+      assert.equal(fetchCalls, 0);
+
+      const live = await executeAdmittedConnector({
+        connector,
+        authorityVerified: true,
+        policySatisfied: true,
+        approvalVerified: false,
+        handler: () =>
+          observeGithubPublicRepository({
+            owner: 'starofgodmayomi-droid',
+            repo: 'omega-v-oceanicos',
+            timeoutMs: 5000,
+            fetchImpl,
+          }),
+      });
+      assert.equal(live.status, 'VERIFIED');
+      assert.equal(live.executed, true);
+      assert.equal(live.actualObservation, connector.expectedObservation);
+
+      const remembered = await app.inject({
+        method: 'POST',
+        url: '/v1/omega/connectors/observe',
+        payload: {
+          connector,
+          authorityVerified: true,
+          policySatisfied: true,
+          approvalVerified: false,
+          execution: {
+            attempted: true,
+            executed: true,
+            actualObservation: connector.expectedObservation,
+          },
+        },
+      });
+      assert.equal(remembered.statusCode, 200);
+      assert.equal(remembered.json().remembered, true);
+
+      const memory = await app.inject({ method: 'GET', url: '/v1/omega/connectors/observations' });
+      assert.equal(memory.statusCode, 200);
+      assert.equal(memory.json().total, 2);
+      assert.equal(memory.json().integrity, 'verified-local-hash-chain');
+      assert.equal(memory.json().entries.at(-1).observation.status, 'VERIFIED');
+    } finally {
+      await app.close();
+      rmSync(directory, { recursive: true, force: true });
+    }
   });
 });

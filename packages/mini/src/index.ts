@@ -50,7 +50,11 @@ export { buildOmegaCommand, listOmegaWorkers } from './worker-registry.js';
 export type { OmegaWorkerDescriptor } from './worker-registry.js';
 export { admitOmegaIR } from './admission-bridge.js';
 export type { OmegaAdmissionBridgeInput, OmegaAdmissionBridgeResult } from './admission-bridge.js';
-export { admitOmegaConnector } from './connector-admission.js';
+export {
+  admitOmegaConnector,
+  MAX_CONNECTOR_ATTEMPTS,
+  MAX_CONNECTOR_TIMEOUT_MS,
+} from './connector-admission.js';
 export type {
   OmegaConnectorAdmissionDecision,
   OmegaConnectorAdmissionInput,
@@ -70,6 +74,15 @@ export type {
   ExecuteAdmittedConnectorInput,
   ObserveAdmittedConnectorInput,
 } from './connector-observation.js';
+export {
+  GITHUB_PUBLIC_REPOSITORY_ADAPTER,
+  assertGithubPublicRepositoryConnector,
+  createGithubPublicRepositoryHandler,
+  githubPublicMetadataObservation,
+  observeGithubPublicRepository,
+  parseGithubRepoScope,
+} from './github-public-repository.js';
+export type { GithubPublicRepositoryAdapter, GithubRepoIdentity } from './github-public-repository.js';
 export { FileConnectorObservationStore } from './connector-observation-journal.js';
 export type {
   ConnectorObservationJournalEntry,

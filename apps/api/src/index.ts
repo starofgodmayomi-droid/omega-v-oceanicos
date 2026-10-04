@@ -49,6 +49,7 @@ export type CreateAppOptions = {
   attestationSigningKey?: string;
   valueNavigatorPath?: string;
   connectorObservationPath?: string;
+  githubFetch?: typeof fetch;
 };
 
 type AuthMode = 'local' | 'required';
@@ -217,7 +218,7 @@ export function createApp(
   registerRealityRoute(fastify, authMode, Boolean(attestationSigningKey), Boolean(ledgerMemory.getTip()));
   registerDependencyRoute(fastify);
   registerValueNavigatorRoute(fastify, valueNavigatorStore, jsonError);
-  registerConnectorObservationRoute(fastify, jsonError, connectorObservationStore);
+  registerConnectorObservationRoute(fastify, jsonError, connectorObservationStore, { githubFetch: options.githubFetch });
 
   fastify.get('/health', async (_request, reply) => {
     let ledgerIntegrity;

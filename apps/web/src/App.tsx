@@ -12,6 +12,7 @@ import { OreadConsole } from './OreadConsole';
 import { MoodCodexPanel } from './MoodCodexPanel';
 import { DivergenceAlertsPanel } from './DivergenceAlertsPanel';
 import { ValueNavigatorPanel } from './ValueNavigatorPanel';
+import { ConnectorPanel } from './ConnectorPanel';
 import { LifecycleFlow, deriveStageStates, type LifecycleStage } from './LifecycleFlow';
 import { GlobeViewport } from './GlobeViewport';
 import { bindGlobeEvidence } from './globe-shell';
@@ -828,6 +829,7 @@ export function App() {
         <MoodCodexPanel />
         <DivergenceAlertsPanel />
         <ValueNavigatorPanel />
+        <ConnectorPanel />
 
         <IntentFlow
           command={omegaCommand}
