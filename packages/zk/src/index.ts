@@ -43,7 +43,14 @@ export class OceanicosZKEngine {
   private secretKey: string;
 
   constructor(secretKey?: string) {
-    this.secretKey = secretKey || 'Ω∞v-ZK-PROVER-SECRET-KEY-v1';
+    const normalizedSecret = secretKey?.trim();
+    if (secretKey !== undefined && !normalizedSecret) {
+      throw new Error('secretKey must be a non-empty string');
+    }
+    if (normalizedSecret === 'Ω∞v-ZK-PROVER-SECRET-KEY-v1') {
+      throw new Error('default ZK secret is forbidden; provide an explicit secret');
+    }
+    this.secretKey = normalizedSecret || crypto.randomBytes(32).toString('hex');
     this.bootstrapCanonicalCircuits();
   }
 

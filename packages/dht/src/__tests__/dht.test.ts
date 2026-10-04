@@ -7,6 +7,11 @@ describe('@omega-v/dht — Distributed Hash Table Engine', () => {
     engine = new OceanicosDHTEngine('test-dht-secret');
   });
 
+  it('rejects empty and legacy default secrets', () => {
+    expect(() => new OceanicosDHTEngine('')).toThrow(/secret must be a non-empty string/);
+    expect(() => new OceanicosDHTEngine('dht-kademlia-omega-v-secret')).toThrow(/default DHT secret is forbidden/);
+  });
+
   it('should register DHT nodes with Kademlia bucket indices', () => {
     const node = engine.registerNode({ did: 'did:omega:dht:alpha', address: '10.0.0.1:9000' });
     expect(node.nodeId).toMatch(/^dht-/);

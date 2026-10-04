@@ -5,7 +5,7 @@
  * Ω∞v ::= REALITY ⇄ OBSERVE ⇄ EVIDENCE ⇄ VERIFY ⇄ REMEMBER ⇄ REASON ⇄ INTEND ⇄ BUILD ⇄ TEST ⇄ ATTEST ⇄ ACT ⇄ CONSEQUENCE ⇄ LEARN ⇄ AUDIT ⇄ RECOMPILE ↺∞
  */
 
-import { createHmac, randomUUID } from 'crypto';
+import { createHmac, randomBytes, randomUUID } from 'crypto';
 
 /* ─── Types ─────────────────────────────────────────────────────── */
 
@@ -106,8 +106,13 @@ export class OceanicosVirtualMachine {
   private executionHistory: ExecutionTraceReceipt[] = [];
   private totalGasConsumed = 0;
 
-  constructor(secret = 'ovm-omega-v-secret') {
-    this.secret = secret;
+  constructor(secret = randomBytes(32).toString('hex')) {
+    const normalizedSecret = secret.trim();
+    if (!normalizedSecret) throw new Error('secret must be a non-empty string');
+    if (normalizedSecret === 'ovm-omega-v-secret') {
+      throw new Error('default EVM secret is forbidden; provide an explicit secret');
+    }
+    this.secret = normalizedSecret;
   }
 
   /* ── 1. Contract Deployment ── */

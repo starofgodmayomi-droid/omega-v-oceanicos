@@ -7,6 +7,11 @@ describe('@omega-v/kernel — Oceanic Finite State Machine Kernel', () => {
     kernel = new OceanicosKernel('test-canonical-kernel-secret');
   });
 
+  it('rejects empty and legacy default secrets', () => {
+    expect(() => new OceanicosKernel('')).toThrow(/secret must be a non-empty string/);
+    expect(() => new OceanicosKernel('oceanicos-canonical-kernel-secret')).toThrow(/default kernel secret is forbidden/);
+  });
+
   it('publishes a bounded capability snapshot without implying external execution', () => {
     const snapshot = kernel.getCapabilitySnapshot();
 

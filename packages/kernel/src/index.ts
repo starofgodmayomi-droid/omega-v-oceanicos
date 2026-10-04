@@ -20,7 +20,7 @@
  * Ω∞v ::= REALITY ⇄ OBSERVE ⇄ EVIDENCE ⇄ VERIFY ⇄ REMEMBER ⇄ REASON ⇄ INTEND ⇄ BUILD ⇄ TEST ⇄ ATTEST ⇄ ACT ⇄ CONSEQUENCE ⇄ LEARN ⇄ AUDIT ⇄ RECOMPILE ↺∞
  */
 
-import { createHmac, randomUUID } from 'crypto';
+import { createHmac, randomBytes, randomUUID } from 'crypto';
 
 /* ─── Oceanic IR & Constitutional Types ──────────────────────────── */
 
@@ -177,8 +177,13 @@ export class OceanicosKernel {
   private currentHeadHash = '0x0000000000000000000000000000000000000000000000000000000000000000';
   private recompileCount = 0;
 
-  constructor(secret = 'oceanicos-canonical-kernel-secret') {
-    this.secret = secret;
+  constructor(secret = randomBytes(32).toString('hex')) {
+    const normalizedSecret = secret.trim();
+    if (!normalizedSecret) throw new Error('secret must be a non-empty string');
+    if (normalizedSecret === 'oceanicos-canonical-kernel-secret') {
+      throw new Error('default kernel secret is forbidden; provide an explicit secret');
+    }
+    this.secret = normalizedSecret;
   }
 
   /** Return the finite, non-authoritative capability boundary of this kernel. */

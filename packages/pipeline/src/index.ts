@@ -1,5 +1,6 @@
 import crypto from 'crypto';
-import { OceanicosWorkerPool, BuildCapability, BuildAttestation } from '@omega-v/worker';
+import { OceanicosWorkerPool } from '@omega-v/worker';
+import type { BuildCapability, BuildAttestation } from '@omega-v/worker';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -82,8 +83,13 @@ export class OceanicosPipelineEngine {
   private runs: Map<string, PipelineRun> = new Map();
   private signingKey: string;
 
-  constructor(signingKey = 'omega-v-pipeline-secret-key') {
-    this.signingKey = signingKey;
+  constructor(signingKey = crypto.randomBytes(32).toString('hex')) {
+    const normalizedSigningKey = signingKey.trim();
+    if (!normalizedSigningKey) throw new Error('signingKey must be a non-empty string');
+    if (normalizedSigningKey === 'omega-v-pipeline-secret-key') {
+      throw new Error('default pipeline signing key is forbidden; provide an explicit key');
+    }
+    this.signingKey = normalizedSigningKey;
   }
 
   /**

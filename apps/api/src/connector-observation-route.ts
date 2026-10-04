@@ -1,7 +1,10 @@
 import type { FastifyInstance } from 'fastify';
 import {
   admitOmegaConnector,
+  createGithubPublicRepositoryHandler,
+  GITHUB_PUBLIC_REPOSITORY_ADAPTER,
   observeAdmittedConnector,
+  type ConnectorExecutionObservation,
   type ConnectorObservationStore,
   type OmegaConnectorDeclaration,
 } from '@oceanicos/mini';
@@ -14,7 +17,7 @@ const forbiddenHandlerFields = new Set(['handler', 'execute', 'transport', 'fetc
 const MAX_LIST_ENTRIES = 200;
 
 function parseObject(body: unknown): Record<string, unknown> | null {
-  return body && typeof body === 'object' && !Array.isArray(body) ? body as Record<string, unknown> : null;
+  return body && typeof body === 'object' && !Array.isArray(body) ? (body as Record<string, unknown>) : null;
 }
 
 function requiredText(value: unknown, field: string): string {
@@ -73,10 +76,15 @@ function storeFailure(reply: any, jsonError: JsonError, error: unknown): unknown
   throw error;
 }
 
+export interface ConnectorObservationRouteOptions {
+  readonly githubFetch?: typeof fetch;
+}
+
 export function registerConnectorObservationRoute(
   fastify: FastifyInstance,
   jsonError: JsonError,
   store: ConnectorObservationStore,
+  options: ConnectorObservationRouteOptions = {},
 ): void {
   fastify.get('/v1/omega/connectors/observations', async (_request, reply) => {
     if (!store.verifyIntegrity()) {
@@ -117,8 +125,18 @@ export function registerConnectorObservationRoute(
       });
     }
 
-    let execution;
+    const liveAdapter = body.liveAdapter;
+    if (liveAdapter !== undefined && liveAdapter !== GITHUB_PUBLIC_REPOSITORY_ADAPTER) {
+      return jsonError(reply, 400, 'UNKNOWN_LIVE_ADAPTER', {
+        message: 'only github-public-repository is a declared live adapter',
+      });
+    }
+
+    let execution: ConnectorExecutionObservation | undefined;
     if (body.execution !== undefined) {
+      if (liveAdapter === GITHUB_PUBLIC_REPOSITORY_ADAPTER) {
+        return jsonError(reply, 400, 'LIVE_ADAPTER_EXCLUDES_SUPPLIED_EXECUTION');
+      }
       const executionBody = parseObject(body.execution);
       if (!executionBody) return jsonError(reply, 400, 'INVALID_CONNECTOR_EXECUTION');
       if (typeof executionBody.attempted !== 'boolean' || typeof executionBody.executed !== 'boolean') {
@@ -144,6 +162,17 @@ export function registerConnectorObservationRoute(
       policySatisfied: parseBooleanFlag(body.policySatisfied),
       approvalVerified: parseBooleanFlag(body.approvalVerified),
     });
+
+    if (liveAdapter === GITHUB_PUBLIC_REPOSITORY_ADAPTER && admission.admitted) {
+      try {
+        execution = await createGithubPublicRepositoryHandler(connector, options.githubFetch)();
+      } catch (error) {
+        return jsonError(reply, 400, 'INVALID_LIVE_ADAPTER', {
+          message: String((error as Error)?.message ?? error),
+        });
+      }
+    }
+
     const observation = observeAdmittedConnector({ connector, admission, execution });
 
     let journal;
@@ -157,6 +186,7 @@ export function registerConnectorObservationRoute(
       success: true,
       ...observation,
       remembered: true,
+      liveAdapter: liveAdapter === GITHUB_PUBLIC_REPOSITORY_ADAPTER ? GITHUB_PUBLIC_REPOSITORY_ADAPTER : null,
       journal: {
         sequence: journal.sequence,
         hash: journal.hash,
