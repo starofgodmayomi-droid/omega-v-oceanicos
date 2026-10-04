@@ -2,7 +2,6 @@ import crypto from 'node:crypto';
 import type { IMiniBlock } from '@oceanicos/types';
 
 export const KAI_VERSION = 'kai.continuity.v1' as const;
-
 export type KaiStatus = 'OBSERVED' | 'VERIFIED' | 'DIVERGENT' | 'UNKNOWN' | 'NOT_EXECUTED';
 
 export interface KaiDrop {
@@ -31,16 +30,12 @@ const dropId = (block: IMiniBlock, source: string): string =>
   `kai:${crypto.createHash('sha256').update(`${source}|${block.hash}`).digest('hex')}`;
 
 const statusFromBlock = (block: IMiniBlock): KaiStatus => {
-  const status = String((block.evidence as Record<string, unknown>)?.status ?? '').toUpperCase();
-  if (status === 'PASS' || status === 'VERIFIED') return 'VERIFIED';
+  const status = String(block.evidence.status).toUpperCase();
+  if (status === 'PASS') return 'VERIFIED';
   if (status === 'DIVERGENT' || status === 'FAIL') return 'DIVERGENT';
   return 'UNKNOWN';
 };
 
-/**
- * KAI is a continuity layer over verified memory. It does not create evidence,
- * authorize actions, or promote memory into reality.
- */
 export const kaiFromBlock = (block: IMiniBlock, source: KaiSource): KaiDrop => ({
   id: dropId(block, source.source),
   version: KAI_VERSION,
@@ -62,8 +57,8 @@ export const kaiUnknown = (reason: string, source: KaiSource): KaiDrop => ({
   version: KAI_VERSION,
   status: 'UNKNOWN',
   source: source.source,
-  observation: { reason },
-  evidence: { status: 'UNKNOWN', reason },
+  observation: {} as IMiniBlock['observation'],
+  evidence: { status: 'DIVERGENT', lawRoute: 'unknown', timestamp: source.observedAt ?? new Date().toISOString(), observationUuid: '', signatureProof: '' },
   provenance: [`source:${source.source}`],
   unknowns: [reason],
   inferences: [],
@@ -88,10 +83,6 @@ export class KaiContinuity {
     return drop;
   }
 
-  /**
-   * Corrections append a new Drop and preserve the previous lineage.
-   * Historical memory is never silently rewritten.
-   */
   public correct(previous: KaiDrop, correction: Omit<KaiDrop, 'id' | 'corrects'>): KaiDrop {
     const corrected: KaiDrop = {
       ...correction,
