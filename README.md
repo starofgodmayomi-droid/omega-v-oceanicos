@@ -30,6 +30,7 @@ without treating any single component—or any agent—as the final authority.
 
 - 📋 **[Manifest](MANIFEST.md)** — Project mission, principles, and architecture
 - 💧 **[Mirror-Water Universal Body](docs/MIRROR-WATER-UNIVERSAL-BODY.md)** — one body, one current, bounded transitions, and evidence-bound truth
+- 🌊 **[Ω∞v Maximum Full-Stack Space of Reality](docs/OMEGA-INFINITY-MAXIMUM-FULL-STACK-SPACE.md)** — canonical ecosystem vision: representation, authority, bounded execution, observation, reconciliation, and next finite Δ
 - 📜 **[Charter](CHARTER.md)** — Living agnostic principles and decision-making
 - 🌊 **[Finite operational charter](docs/OMEGA_INFINITY_CHARTER.md)** — Drop → Current → Ocean → Evaporation protocol
 - 🤝 **[Contributing](CONTRIBUTING.md)** — How to contribute verification-first
