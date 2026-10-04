@@ -205,6 +205,7 @@ export function createApp(
   fastify.register(async (scope) => {
     await scope.register(rateLimit, { global: false });
     registerOmegaRoutes(scope, omegaCommands);
+    registerPipelineRoute(scope, jsonError);
   });
   fastify.addHook('onRequest', async (request, reply) => {
     if (authMode === 'local' || request.method === 'OPTIONS' || request.url.split('?')[0] === '/health') return;
@@ -214,7 +215,6 @@ export function createApp(
     }
   });
 
-  registerPipelineRoute(fastify, jsonError);
   registerEcosystemRoute(fastify, authMode, Boolean(attestationSigningKey));
   registerNavigatorEvidenceRoute(fastify);
   registerRealityRoute(fastify, authMode, Boolean(attestationSigningKey), Boolean(ledgerMemory.getTip()));

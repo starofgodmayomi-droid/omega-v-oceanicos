@@ -118,4 +118,25 @@ describe('live API pipeline → durable causal memory', () => {
       await removeTemporaryDirectory(directory);
     }
   });
+
+  it('rate-limits pipeline requests within a bounded one-minute window', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'omega-api-pipeline-rate-limit-'));
+    try {
+      const { createApp } = await import('../../apps/api/dist/index.js');
+      const app = createApp(join(directory, 'ledger.db'), false, { allowUnsignedCycle: true });
+      await app.ready();
+      try {
+        const responses = [];
+        for (let i = 0; i < 11; i += 1) {
+          responses.push(await app.inject({ method: 'POST', url: '/v1/pipeline', payload: {} }));
+        }
+        assert.equal(responses.slice(0, 10).every((response) => response.statusCode === 400), true);
+        assert.equal(responses[10].statusCode, 429);
+      } finally {
+        await app.close();
+      }
+    } finally {
+      await removeTemporaryDirectory(directory);
+    }
+  });
 });

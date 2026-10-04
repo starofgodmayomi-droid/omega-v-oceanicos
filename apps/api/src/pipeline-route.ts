@@ -20,7 +20,9 @@ export function registerPipelineRoute(
   fastify: FastifyInstance,
   jsonError: JsonError,
 ): void {
-  fastify.post('/v1/pipeline', async (request: any, reply) => {
+  fastify.post('/v1/pipeline', {
+    config: { rateLimit: { max: 10, timeWindow: '1 minute' } },
+  }, async (request: any, reply) => {
     const body = request.body || {};
     const compile = body.compile;
     const admission = body.admission;
