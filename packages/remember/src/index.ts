@@ -12,7 +12,6 @@ interface ISqliteDatabase {
     get(...params: any[]): any;
     all(...params: any[]): any[];
     run(...params: any[]): any;
-    all?(...params: any[]): any[];
   };
 }
 
