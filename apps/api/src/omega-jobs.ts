@@ -246,9 +246,10 @@ export class OmegaJobStore {
         attestationId: command.change.attestationId,
       };
       const verification = verifyExecutedReality(execution, () => observedState);
-      const classification = verification.status === 'VERIFIED' ? 'VERIFIED' : verification.status === 'DIVERGENT' ? 'DIVERGENT' : 'UNKNOWN';
-      const status = classification === 'VERIFIED' ? 'VERIFIED' : classification === 'DIVERGENT' ? 'DIVERGENT' : 'UNKNOWN';
-      const reality = {
+      const classification: NonNullable<OmegaJobStep['reality']>['classification'] =
+        verification.status === 'VERIFIED' ? 'VERIFIED' : verification.status === 'DIVERGENT' ? 'DIVERGENT' : 'UNKNOWN';
+      const status: OmegaJobStep['status'] = classification;
+      const reality: NonNullable<OmegaJobStep['reality']> = {
         observedState,
         evidence: verification.evidence,
         classification,
