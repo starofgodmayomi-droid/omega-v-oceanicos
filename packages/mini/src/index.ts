@@ -112,6 +112,8 @@ export type {
   ValueNavigatorStore,
   ValuePotentialHypothesis,
 } from './value-navigator.js';
+export { KaiContinuity, kaiFromBlock, kaiUnknown, KAI_VERSION } from './kai.js';
+export type { KaiDrop, KaiSource, KaiStatus } from './kai.js';
 
 export function executeOceanicosMaxExpansion(): CryptographicBlock {
   const kernelChain = new PluralisticHashChain();
