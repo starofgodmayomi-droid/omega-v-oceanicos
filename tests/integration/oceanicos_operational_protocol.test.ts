@@ -24,6 +24,7 @@ test('Operational Protocol Specification preserves its required modules', () => 
 test('Operational Protocol Specification maps to executable evidence boundaries', () => {
   for (const contract of [
     'POST /v1/omega/commands/:id/observe',
+    'POST /v1/omega/commands/:id/reconciliation',
     'GET /v1/omega/events',
     'POST /v1/omega/coordination/evidence',
     'coordination.evidence-recorded',

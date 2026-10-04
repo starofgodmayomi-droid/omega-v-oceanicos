@@ -7,7 +7,7 @@ import {
   verifyExecutedReality,
 } from '@oceanicos/mini';
 import type { OmegaCommand, OmegaCommandResult, OmegaCommandStatus, OmegaWorkerId } from '@oceanicos/types';
-import { decisionToStatus, validateOmegaCommandInput } from '@oceanicos/types';
+import { decisionToStatus, validateOmegaCommandInput, validateOmegaReconciliationInput } from '@oceanicos/types';
 import { buildSymbolicDrop } from '@omega-v/oreade';
 import { OmegaDurableStore } from './omega-persistence.js';
 type StoredCommand = OmegaCommand & {
@@ -493,6 +493,35 @@ export function registerOmegaRoutes(fastify: FastifyInstance, store: OmegaComman
     const updated = store.update(command, { change: verification.record, status, result: { command, status, ...(command.result?.execution ? { execution: command.result.execution } : {}), reality, nextAction: status === 'VERIFIED' ? 'record what was learned and select the next bounded change' : 'review divergence before selecting the next change' } });
     store.record('command.reality-observed', updated, { classification: reality.classification });
     return { success: true, ...commandResult(updated, updated.result?.nextAction ?? 'review the observed result') };
+  });
+
+  fastify.post('/v1/omega/commands/:id/reconciliation', async (request, reply) => {
+    const command = store.get((request.params as { id?: string }).id ?? '');
+    if (!command) return reply.status(404).send({ success: false, error: 'OMEGA_COMMAND_NOT_FOUND' });
+    if (command.status !== 'DIVERGENT' && command.status !== 'UNKNOWN') {
+      return reply.status(409).send({ success: false, error: 'OMEGA_RECONCILIATION_REQUIRES_DIVERGENT_OR_UNKNOWN' });
+    }
+    const body = bodyOf(request);
+    try {
+      const input = { action: body.action, note: body.note, operator: body.operator };
+      validateOmegaReconciliationInput(input);
+      const reconciliation = {
+        action: input.action,
+        note: input.note.trim(),
+        operator: input.operator,
+        recordedAt: new Date().toISOString(),
+      };
+      store.record('command.reconciliation-noted', command, reconciliation);
+      return {
+        success: true,
+        commandId: command.commandId,
+        status: command.status,
+        reconciliation,
+        nextAction: 'the note is durable evidence; no retry, correction, authorization, or execution was performed',
+      };
+    } catch (error) {
+      return reply.status(400).send({ success: false, error: error instanceof Error ? error.message : 'INVALID_RECONCILIATION_NOTE' });
+    }
   });
 
   fastify.post('/v1/omega/commands/:id/verify-reality', async (request, reply) => {

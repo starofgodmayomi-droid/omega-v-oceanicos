@@ -94,6 +94,14 @@ Observation records the state that was actually inspected, including observer id
 
 A `DIVERGENT` or `UNKNOWN` result MUST NOT be silently converted into success by a later summary, memory record, or user interface.
 
+An operator MAY append a reconciliation note to a `DIVERGENT` or `UNKNOWN`
+command through `POST /v1/omega/commands/:id/reconciliation`. The note MUST
+identify a bounded action (`accepted`, `retried`, `corrected`, or `closed`),
+the operator, and the reason. This route records an append-only event; it MUST
+NOT rewrite the original observation, change the command status, retry the
+transition, or grant authorization. A note is durable decision evidence, not
+proof that the named action occurred.
+
 ### 4.7 Attest and remember
 
 Attestation binds a finding to its evidence, rule version, observer, and time. Memory preserves the result and its provenance for future proposals. Neither attestation nor memory creates authority that was absent from the original transition.
@@ -156,6 +164,7 @@ The current repository implements portions of this module as follows:
 | Review and authorization | `REVIEW → AUTHORIZED` command transitions |
 | Execution boundary | `AUTHORIZED → EXECUTED` command transition |
 | Reality reconciliation | `POST /v1/omega/commands/:id/observe` and `verify-reality` |
+| Operator reconciliation record | `POST /v1/omega/commands/:id/reconciliation` records a durable note without changing command state |
 | Durable events | `GET /v1/omega/events` backed by SQLite persistence |
 | Worker and lease bounds | Worker registration, exclusive leases, expiry, and release events |
 | Coordination evidence | `POST /v1/omega/coordination/evidence` |
