@@ -1,81 +1,64 @@
 # Dependency Map — Ω∞v Oceanicos
 
-> INVENTORY → **DEPENDENCY MAP** → CONTRACT MAP → MIGRATION → TEST → EVIDENCE
->
-> Observed at tip `35eab29` plus the fail-closed worker constitution slice. This map records **declared** edges, not verification of runtime health.
+This is a point-in-time map of **declared workspace membership and dependency edges**, not a claim about runtime use, successful builds, deployment, or health.
 
-## Legend
+## Snapshot and evidence
 
-| Classification | Meaning |
-|----------------|---------|
-| **BUILT** | `pnpm-workspace.yaml` + imported by `apps/api` |
-| **WORKSPACE** | `pnpm-workspace.yaml`, not imported by `apps/api` |
-| **SOURCE-ONLY** | On disk, not in the workspace |
-| **STUB** | SOURCE-ONLY, thin implementation |
+Inspected `main` at commit `c4d4c12ef865270e5b2081d3bd10288cf1b36c36`. The map below is derived from:
 
-## Core graph (BUILT)
+- `pnpm-workspace.yaml` for workspace paths;
+- each workspace's `package.json` for package names and `workspace:` dependency declarations;
+- `apps/api/package.json` for the API's direct workspace dependencies.
+
+The contract test `tests/integration/repo-inventory-contract.integration.test.ts` compares this graph with the current manifests. Re-run it after changing workspace declarations.
+
+## Non-collapse rule
 
 ```text
-@oceanicos/types
-    |
-    +-- @oceanicos/observer
-    |       |
-    |       +-- @oceanicos/verification
-    |               |
-    |               +-- @oceanicos/remember
-    |                       |
-    |                       +-- @oceanicos/mini --+
-    +-- @oceanicos/attestation -------------------+ 
-    +-- (standalone / no workspace deps)          |
-            @omega-v/kernel                       +-- apps/api
-            @omega-v/oreade                       |
-            @omega-v/mood ------------------------+ 
-
-WORKSPACE (not imported by apps/api):
-    @omega-v/gateway      -> @oceanicos/types
-    @omega-v/auth         -> @oceanicos/types
-    @omega-v/webhook      -> @oceanicos/types
-    @omega-v/coordination -> (no workspace deps declared)
-    @omega-v/worker       -> (no workspace deps declared)
-    @omega-v/pipeline     -> @omega-v/worker
+PRESENT ON DISK
+  ≠ WORKSPACE MEMBER
+  ≠ DECLARED DEPENDENCY
+  ≠ IMPORTED OR USED AT RUNTIME
+  ≠ BUILT BY A PARTICULAR COMMAND
+  ≠ TESTED
+  ≠ VERIFIED
+  ≠ DEPLOYED
+  ≠ HEALTHY
 ```
 
-## Corrections vs 2026-09-25 map
+A row below records only manifest declarations. “Workspace dependency” means a dependency whose version in the manifest starts with `workspace:`.
 
-| Prior claim | Current evidence |
-|-------------|------------------|
-| `@omega-v/ir` is BUILT | **SOURCE-ONLY** — not in `pnpm-workspace.yaml` |
-| `@omega-v/mood` is STUB | **BUILT** — workspace + imported by `apps/api` |
-| `@omega-v/oreade` omitted | **BUILT** — workspace + imported by `apps/api` |
-| `coordination` archive candidate | **WORKSPACE** — in `pnpm-workspace.yaml`, not API-imported |
-| `gateway` / `auth` / `webhook` SOURCE-ONLY | **WORKSPACE** |
-| `worker` / `pipeline` SOURCE-ONLY | **WORKSPACE** after fail-closed constitution slice — still not API-imported |
+## Manifest-declared workspace graph
 
-## Key observations
+| Workspace path | Manifest name | Declared workspace dependencies |
+| --- | --- | --- |
+| `packages/types` | `@oceanicos/types` | — |
+| `packages/observer` | `@oceanicos/observer` | `packages/types` |
+| `packages/verification` | `@oceanicos/verification` | `packages/observer`, `packages/types` |
+| `packages/remember` | `@oceanicos/remember` | `packages/types`, `packages/verification` |
+| `packages/mini` | `@oceanicos/mini` | `packages/observer`, `packages/remember`, `packages/types`, `packages/verification` |
+| `packages/attestation` | `@oceanicos/attestation` | `packages/types` |
+| `packages/gateway` | `@omega-v/gateway` | `packages/types` |
+| `packages/kernel` | `@omega-v/kernel` | — |
+| `packages/ir` | `@omega-v/ir` | `packages/types` |
+| `packages/compiler` | `@omega-v/compiler` | `packages/ir`, `packages/types` |
+| `packages/evolution` | `@omega-v/evolution` | `packages/compiler`, `packages/types` |
+| `packages/coordination` | `@omega-v/coordination` | — |
+| `packages/oreade` | `@omega-v/oreade` | — |
+| `packages/mood` | `@omega-v/mood` | — |
+| `packages/auth` | `@omega-v/auth` | `packages/types` |
+| `packages/webhook` | `@omega-v/webhook` | `packages/types` |
+| `packages/worker` | `@omega-v/worker` | — |
+| `packages/pipeline` | `@omega-v/pipeline` | `packages/worker` |
+| `apps/api` | `api` | `packages/attestation`, `packages/kernel`, `packages/mini`, `packages/mood`, `packages/observer`, `packages/oreade`, `packages/remember`, `packages/types`, `packages/verification` |
+| `apps/web` | `web` | — |
 
-1. **`types` is the MINI root.** The earned observe-verify-remember-mini chain is self-contained.
-2. **`ir` is not an active workspace package.** Do not treat Omega IR as compiled runtime on this tip.
-3. **Mood and OREADE are live API imports.** They remain **layers**, not authority.
-4. **Workspace membership is not capability.** Worker and pipeline are now workspace members so leases and observation receipts can be built and tested. They are **not** API capabilities.
-5. **Dormant packages must not be promoted in bulk.**
+## Interpreting the graph
 
-## Promotion risk
+- The workspace contains **18 package paths and 2 app paths**. `apps/api` and `apps/web` are applications, not packages under `packages/`.
+- The API directly declares nine workspace package dependencies: `@oceanicos/types`, `@oceanicos/observer`, `@oceanicos/verification`, `@oceanicos/remember`, `@oceanicos/mini`, `@oceanicos/attestation`, `@omega-v/kernel`, `@omega-v/oreade`, and `@omega-v/mood`.
+- `@omega-v/ir`, `@omega-v/compiler`, and `@omega-v/evolution` are workspace members. Their declared graph is shown above; membership does not establish API exposure.
+- The `@oceanicos/*` and `@omega-v/*` naming split is present in manifests. Do not silently rename packages.
+- On-disk directories omitted from `pnpm-workspace.yaml` are not workspace members. Do not promote them without an explicit, tested need.
 
-Promoting a SOURCE-ONLY package requires:
-
-1. Workspace membership is explicit
-2. Dependencies are already BUILT or promoted in the same authorized transition
-3. A demonstrated runtime need
-4. Tests + observation after the change
-
-Lowest-risk (depend only on types, still off-workspace): evidence, intent, contract, governance, human, security, telemetry, bridge, analytics, green.
-
-Worker is no longer blocked by sdk: unused `@omega-v/types` / `@omega-v/sdk` declarations were removed. Pipeline depends only on worker.
-
-## Next step
-
-CONTRACT MAP for one candidate at a time. In-flight PRs (not merged here):
-
-1. Ignore `.pnpm-store` (#322) — still open against an older base
-2. Oreade idempotent retries (#335) — current-main rebase of #329
-3. This worker constitution slice — rebase of #330 onto `35eab29`
+For workspace membership, API-declared versus workspace-only counts, and the source-only examples, see [`REPO_INVENTORY.md`](REPO_INVENTORY.md). Consult package source and tests before making behavioral claims. Validate each requested transition with focused checks, observe the result, and report exactly what the evidence covers.
