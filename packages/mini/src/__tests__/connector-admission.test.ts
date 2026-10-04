@@ -1,6 +1,10 @@
 import { describe, expect, it } from '@jest/globals';
 import type { OmegaConnectorDeclaration } from '../connector-admission';
-import { admitOmegaConnector } from '../connector-admission';
+import {
+  admitOmegaConnector,
+  MAX_CONNECTOR_ATTEMPTS,
+  MAX_CONNECTOR_TIMEOUT_MS,
+} from '../connector-admission';
 
 const connector: OmegaConnectorDeclaration = {
   id: 'github.read-repository',
@@ -28,6 +32,30 @@ describe('Ω connector admission boundary', () => {
     });
 
     expect(result).toEqual({ decision: 'ADMIT', admitted: true, issues: [] });
+  });
+
+  it('rejects timeout and attempt declarations above finite resource caps', () => {
+    const timeoutResult = admitOmegaConnector({
+      connector: { ...connector, timeoutMs: MAX_CONNECTOR_TIMEOUT_MS + 1 },
+      authorityVerified: true,
+      policySatisfied: true,
+      approvalVerified: false,
+    });
+    expect(timeoutResult.admitted).toBe(false);
+    expect(timeoutResult.issues).toContain(
+      `connector timeoutMs must be an integer from 1 to ${MAX_CONNECTOR_TIMEOUT_MS}`,
+    );
+
+    const attemptsResult = admitOmegaConnector({
+      connector: { ...connector, maxAttempts: MAX_CONNECTOR_ATTEMPTS + 1 },
+      authorityVerified: true,
+      policySatisfied: true,
+      approvalVerified: false,
+    });
+    expect(attemptsResult.admitted).toBe(false);
+    expect(attemptsResult.issues).toContain(
+      `connector maxAttempts must be an integer from 1 to ${MAX_CONNECTOR_ATTEMPTS}`,
+    );
   });
 
   it('denies when authority or policy evidence is absent', () => {

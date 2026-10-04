@@ -3,7 +3,12 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
-import { admitOmegaConnector, executeAdmittedConnector, observeGithubPublicRepository } from '../../packages/mini/dist/index.js';
+import {
+  admitOmegaConnector,
+  executeAdmittedConnector,
+  MAX_CONNECTOR_TIMEOUT_MS,
+  observeGithubPublicRepository,
+} from '../../packages/mini/dist/index.js';
 
 const connector = {
   id: 'github.read-repository',
@@ -39,6 +44,24 @@ describe('Ω connector observation path', () => {
     assert.equal(verified.status, 'VERIFIED');
     assert.equal(verified.verificationScope, 'admitted-connector-observation-only');
     assert.match(verified.evidence, /^sha256:[a-f0-9]{64}$/);
+  });
+
+  it('refuses an oversized GitHub timeout before invoking fetch', async () => {
+    let fetchCalls = 0;
+    const rejected = await observeGithubPublicRepository({
+      owner: 'starofgodmayomi-droid',
+      repo: 'omega-v-oceanicos',
+      timeoutMs: MAX_CONNECTOR_TIMEOUT_MS + 1,
+      fetchImpl: async () => {
+        fetchCalls += 1;
+        return new Response('{}', { status: 200 });
+      },
+    });
+
+    assert.equal(rejected.attempted, false);
+    assert.equal(rejected.executed, false);
+    assert.match(rejected.error ?? '', /timeoutMs must be an integer/);
+    assert.equal(fetchCalls, 0);
   });
 
   it('refuses unverified client status claims and does not execute unadmitted connectors over HTTP', async () => {

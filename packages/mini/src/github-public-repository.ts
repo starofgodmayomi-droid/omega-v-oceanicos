@@ -1,4 +1,7 @@
-import type { OmegaConnectorDeclaration } from './connector-admission.js';
+import {
+  MAX_CONNECTOR_TIMEOUT_MS,
+  type OmegaConnectorDeclaration,
+} from './connector-admission.js';
 import type { ConnectorExecutionObservation } from './connector-observation.js';
 
 export const GITHUB_PUBLIC_REPOSITORY_ADAPTER = 'github-public-repository' as const;
@@ -51,9 +54,23 @@ export async function observeGithubPublicRepository(options: {
   readonly timeoutMs: number;
   readonly fetchImpl?: typeof fetch;
 }): Promise<ConnectorExecutionObservation> {
+  const requestedTimeoutMs = options.timeoutMs;
+  if (
+    !Number.isSafeInteger(requestedTimeoutMs) ||
+    requestedTimeoutMs <= 0 ||
+    requestedTimeoutMs > MAX_CONNECTOR_TIMEOUT_MS
+  ) {
+    return {
+      attempted: false,
+      executed: false,
+      error: `connector timeoutMs must be an integer from 1 to ${MAX_CONNECTOR_TIMEOUT_MS}`,
+    };
+  }
+
+  const timeoutMs = Math.min(requestedTimeoutMs, MAX_CONNECTOR_TIMEOUT_MS);
   const fetchImpl = options.fetchImpl ?? fetch;
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), options.timeoutMs);
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const response = await fetchImpl(
       `https://api.github.com/repos/${encodeURIComponent(options.owner)}/${encodeURIComponent(options.repo)}`,

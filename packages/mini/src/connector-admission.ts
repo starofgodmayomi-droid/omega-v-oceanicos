@@ -34,6 +34,9 @@ export interface OmegaConnectorAdmissionResult {
   readonly issues: readonly string[];
 }
 
+export const MAX_CONNECTOR_TIMEOUT_MS = 10_000;
+export const MAX_CONNECTOR_ATTEMPTS = 3;
+
 const supportedModes: readonly OmegaWorkerMode[] = [
   'read-only',
   'build-test',
@@ -43,7 +46,8 @@ const supportedModes: readonly OmegaWorkerMode[] = [
 
 const nonEmpty = (value: string): boolean => value.trim().length > 0;
 
-const hasPositiveInteger = (value: number): boolean => Number.isInteger(value) && value > 0;
+const isBoundedPositiveInteger = (value: number, max: number): boolean =>
+  Number.isSafeInteger(value) && value > 0 && value <= max;
 
 const broadScope = (value: string): boolean => ['*', 'all', '/**'].includes(value.trim().toLowerCase());
 
@@ -82,8 +86,12 @@ export function admitOmegaConnector(
   }
   if (!nonEmpty(connector.stopCondition)) issues.push('connector stop condition must be declared');
   if (!nonEmpty(connector.expectedObservation)) issues.push('connector expected observation must be declared');
-  if (!hasPositiveInteger(connector.timeoutMs)) issues.push('connector timeoutMs must be a positive integer');
-  if (!hasPositiveInteger(connector.maxAttempts)) issues.push('connector maxAttempts must be a positive integer');
+  if (!isBoundedPositiveInteger(connector.timeoutMs, MAX_CONNECTOR_TIMEOUT_MS)) {
+    issues.push(`connector timeoutMs must be an integer from 1 to ${MAX_CONNECTOR_TIMEOUT_MS}`);
+  }
+  if (!isBoundedPositiveInteger(connector.maxAttempts, MAX_CONNECTOR_ATTEMPTS)) {
+    issues.push(`connector maxAttempts must be an integer from 1 to ${MAX_CONNECTOR_ATTEMPTS}`);
+  }
 
   if (!input.authorityVerified) issues.push('connector authority evidence is missing');
   if (!input.policySatisfied) issues.push('connector policy evidence is missing');
