@@ -95,12 +95,15 @@ export type {
   ValuePotentialHypothesis,
 } from './value-navigator.js';
 
+export { KaiContinuity, kaiFromBlock, kaiUnknown } from './kai.js';
+export type { KaiDrop, KaiStatus } from './kai.js';
+
 export function executeOceanicosMaxExpansion(): CryptographicBlock {
   const kernelChain = new PluralisticHashChain();
   const telemetry = observePlanetaryBase();
   const verificationReceipt = verifyPlanetarySovereignty(telemetry);
   const securelyMintedBlock = kernelChain.commitState(verificationReceipt);
-  console.log(`\nΩ ➔ [👁 ${Math.round(telemetry.siliconYield * 100)}% | ✓ ${verificationReceipt.status} | 🧠 #${securelyMintedBlock.index}] ── LIVE ── 0 ERRORS ── $`);
+  console.log(`\nÎ© â [ð ${Math.round(telemetry.siliconYield * 100)}% | â ${verificationReceipt.status} | ð§  #${securelyMintedBlock.index}] ââ LIVE ââ 0 ERRORS ââ $`);
   console.log(`   [BLOCK HASH]      : ${securelyMintedBlock.hash}`);
   console.log(`   [PREVIOUS HASH]   : ${securelyMintedBlock.previousHash}`);
   console.log(`   [STATE ROOT]      : ${securelyMintedBlock.payload.stateRootHash}`);
