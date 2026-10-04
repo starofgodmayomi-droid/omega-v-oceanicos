@@ -49,6 +49,15 @@ export type OmegaDissent = {
   readonly evidenceRefs: readonly string[];
 };
 
+export const OMEGA_RECONCILIATION_ACTIONS = ['accepted', 'retried', 'corrected', 'closed'] as const;
+export type OmegaReconciliationAction = (typeof OMEGA_RECONCILIATION_ACTIONS)[number];
+export type OmegaReconciliationNote = {
+  readonly action: OmegaReconciliationAction;
+  readonly note: string;
+  readonly operator: string;
+  readonly recordedAt: string;
+};
+
 export type OmegaCommand = {
   readonly version: typeof OMEGA_COMMAND_VERSION;
   readonly commandId: string;
@@ -112,6 +121,22 @@ export function validateOmegaCommandInput(input: {
       throw new Error('context must be a bounded string map');
     if (Object.values(input.context).some((value) => typeof value !== 'string' || value.length > 512))
       throw new Error('context values must be strings no longer than 512 characters');
+  }
+}
+
+export function validateOmegaReconciliationInput(input: {
+  action: unknown;
+  note: unknown;
+  operator: unknown;
+}): asserts input is { action: OmegaReconciliationAction; note: string; operator: string } {
+  if (typeof input.action !== 'string' || !(OMEGA_RECONCILIATION_ACTIONS as readonly string[]).includes(input.action)) {
+    throw new Error('action must be one of accepted, retried, corrected, or closed');
+  }
+  if (typeof input.note !== 'string' || input.note.trim().length < 1 || input.note.length > 2000) {
+    throw new Error('note must be a non-empty string no longer than 2000 characters');
+  }
+  if (typeof input.operator !== 'string' || !ID.test(input.operator)) {
+    throw new Error('operator must be a bounded identifier');
   }
 }
 
