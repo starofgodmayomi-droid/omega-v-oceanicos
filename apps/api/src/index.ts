@@ -50,7 +50,6 @@ export type CreateAppOptions = {
   valueNavigatorPath?: string;
   connectorObservationPath?: string;
   githubFetch?: typeof fetch;
-  connectorObservationPath?: string;
 };
 
 type AuthMode = 'local' | 'required';
