@@ -27,6 +27,8 @@ const STATUS_COLOR: Record<RealityStatus, string> = {
   NOT_EXECUTED: theme.warning,
 };
 
+const CORE_STEPS = ['ASK', 'THINK', 'DISTINGUISH', 'AUTHORIZE', 'BOUND', 'ACT', 'OBSERVE', 'VERIFY', 'RECONCILE', 'VALUE', 'REMEMBER', 'NEXT Δ'];
+
 function EcosystemMap() {
   return (
     <div className="whole-map-wrap">
@@ -91,6 +93,13 @@ function EcosystemMap() {
         </g>
       </svg>
       <p className="whole-map-caption">CONCEPT MAP · relationships shown, not live topology</p>
+      <div className="whole-provider-currents">
+        <span className="whole-ecosystem-label">INTERCHANGEABLE CURRENTS · EXAMPLES ONLY</span>
+        <div className="whole-provider-chips">
+          {['ChatGPT', 'Grok', 'Manus', 'Codex', 'Composio'].map((provider) => <span className="whole-provider-chip" key={provider}>{provider}</span>)}
+        </div>
+        <small>Connection and availability are not queried by this screen.</small>
+      </div>
     </div>
   );
 }
@@ -132,6 +141,13 @@ export function WholeEcosystemDashboard(props: Props) {
           <span className="whole-ecosystem-label">MIRROR-WATER · CURRENT STATE</span>
           <EcosystemMap />
           <p className="whole-question">WHAT MATTERS NOW?</p>
+          <div className="whole-core-heading">
+            <span className="whole-ecosystem-label">ONE GOVERNANCE SPINE</span>
+            <small>Operating design · not live stage status</small>
+          </div>
+          <ol className="whole-operating-loop" aria-label="Reality-bound operating cycle">
+            {CORE_STEPS.map((step, index) => <li key={step}><span>{String(index + 1).padStart(2, '0')}</span>{step}</li>)}
+          </ol>
           <div className="whole-transition">
             <span>ONE FINITE Δ</span>
             <strong>{currentTransition}</strong>
