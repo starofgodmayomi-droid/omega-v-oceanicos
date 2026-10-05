@@ -2154,3 +2154,110 @@ body {
 .whole-bottom-current button:hover { color: #67e8f9; }
 @media (max-width: 820px) { .whole-ecosystem-grid { grid-template-columns: 1fr 1.6fr; } .whole-reality-panel { grid-column: 1 / -1; } }
 @media (max-width: 560px) { .whole-ecosystem-grid { grid-template-columns: 1fr; } .whole-reality-panel { grid-column: auto; } .whole-ecosystem-header { align-items: flex-start; flex-direction: column; } .whole-value-current { align-items: flex-start; flex-direction: column; } .whole-value-unknown { text-align: left; } }
+
+
+/* Screenshot-guided center map: conceptual relationships only, never live telemetry. */
+.whole-map-wrap {
+  width: 100%;
+  margin: -2px 0 0;
+}
+.whole-map {
+  display: block;
+  width: min(100%, 520px);
+  height: auto;
+  margin: 0 auto;
+  overflow: visible;
+}
+.whole-map-halo {
+  fill: rgba(8, 47, 73, 0.17);
+  stroke: rgba(34, 211, 238, 0.12);
+  stroke-width: 1;
+}
+.whole-map-orbit {
+  fill: none;
+  stroke: rgba(56, 189, 248, 0.42);
+  stroke-width: 1;
+  stroke-dasharray: 2 5;
+}
+.whole-map-orbit-inner {
+  stroke: rgba(129, 140, 248, 0.38);
+  stroke-dasharray: 1 5;
+}
+.whole-map-links path {
+  fill: none;
+  stroke: rgba(103, 232, 249, 0.36);
+  stroke-width: 1;
+}
+.whole-map-core-aura {
+  fill: rgba(8, 47, 73, 0.5);
+  stroke: rgba(34, 211, 238, 0.55);
+  stroke-width: 1.5;
+}
+.whole-map-world {
+  stroke: rgba(165, 243, 252, 0.55);
+  stroke-width: 1;
+}
+.whole-map-land {
+  fill: #67e8a5;
+  opacity: 0.86;
+}
+.whole-map-mark {
+  fill: #e0f2fe;
+  font: 600 8px 'DM Mono', monospace;
+  letter-spacing: 0.04em;
+}
+.whole-map-node circle {
+  fill: #071827;
+  stroke: rgba(103, 232, 249, 0.86);
+  stroke-width: 1.4;
+}
+.whole-map-node > text:not(.whole-map-label) {
+  fill: #cffafe;
+  font: 12px sans-serif;
+}
+.whole-map-node .whole-map-label {
+  fill: #bae6fd;
+  font: 600 8px 'DM Mono', monospace;
+  letter-spacing: 0.08em;
+}
+.whole-map-caption {
+  margin: -2px 0 5px;
+  color: #64748b;
+  font: 8px 'DM Mono', monospace;
+  letter-spacing: 0.08em;
+  text-align: center;
+}
+.whole-metric-note {
+  display: block;
+  margin: -8px 7px 11px;
+  color: #64748b;
+  font-size: 9px;
+  line-height: 1.45;
+}
+.whole-current-actions button:focus-visible,
+.whole-value-current button:focus-visible,
+.whole-organ:focus-visible,
+.whole-bottom-current button:focus-visible {
+  outline: 2px solid #67e8f9;
+  outline-offset: 2px;
+}
+@media (max-width: 560px) {
+  .whole-map-wrap { margin-top: 1px; }
+  .whole-map-caption { font-size: 7px; }
+}
+
+
+/* Let the ecosystem overview occupy the broad control-center canvas in the reference. */
+.whole-ecosystem {
+  position: relative;
+  left: 50%;
+  width: min(calc(100vw - 32px), 1440px);
+  max-width: 1440px;
+  box-sizing: border-box;
+  transform: translateX(-50%);
+}
+@media (max-width: 560px) {
+  .whole-ecosystem {
+    width: min(calc(100vw - 20px), 1440px);
+  }
+}
