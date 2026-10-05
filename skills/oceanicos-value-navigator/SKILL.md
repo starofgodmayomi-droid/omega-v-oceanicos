@@ -23,6 +23,7 @@ This is not guaranteed money and does not grant autonomy or authority by scale. 
 The dashboard's Value Navigator and API share `OmegaChangeRecord` semantics through `@oceanicos/mini`.
 
 - `POST /v1/value-navigator/proposals` creates a durable `REVIEW`, `authorized:false`, `NOT_EXECUTED` record.
+- Proposals may declare `claimKind: CURRENT_HYPOTHESIS` (default) or `HISTORICAL_DECLARATION`; the latter preserves an old “built/live/deployed” statement for current reconciliation and does not upgrade it to truth.
 - `GET /v1/value-navigator/proposals` lists the append-only local journal.
 - `GET /v1/value-navigator/proposals/{proposalId}` returns proposal history.
 - `POST /v1/value-navigator/proposals/{proposalId}/observe` appends a superseding observation record; it never edits the proposal.
@@ -46,6 +47,8 @@ The API accepts only declared fields. Clients cannot set `decision`, `authorized
 - `DIVERGENT`: complete supplied observation differs from the expected outcome.
 - `UNKNOWN`: observation failed or is incomplete.
 - `NOT_EXECUTED`: no action has been performed by this feature.
+
+Historical declarations use `historical-declaration-reconciliation-only` scope. A matching supplied observation reconciles only the stated declaration and its evidence; it does not prove current production health, deployment, demand, or impact.
 
 Every observation appends a new `OmegaChangeRecord` with lineage to the proposal and previous record. The local JSONL journal uses a SHA-256 hash chain for integrity detection; a hash chain is not truth, authority, a digital signature, backup, or distributed durability.
 

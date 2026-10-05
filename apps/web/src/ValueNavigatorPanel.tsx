@@ -3,8 +3,10 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 const API_BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
 
 type Status = 'VERIFIED' | 'DIVERGENT' | 'UNKNOWN' | 'NOT_EXECUTED';
+type ClaimKind = 'CURRENT_HYPOTHESIS' | 'HISTORICAL_DECLARATION';
 interface Entry {
   kind: 'OMEGA_VALUE_NAVIGATOR';
+  claimKind: ClaimKind;
   proposalId: string;
   phase: 'PROPOSAL' | 'OBSERVATION';
   record: {
@@ -18,7 +20,7 @@ interface Entry {
   };
   expectedOutcome: string;
   reconciliationStatus: Status;
-  verificationScope: 'hypothesis-reconciliation-only';
+  verificationScope: 'hypothesis-reconciliation-only' | 'historical-declaration-reconciliation-only';
   evidenceStatus: 'STATED' | 'NOT_PROVIDED';
   observation?: { observedOutcome?: string; source?: string; evidence?: string; error?: string };
   valuePotentialHypothesis?: { kind: 'hypothesis'; score: number; basis: string; limitation: string };
@@ -55,6 +57,7 @@ export function ValueNavigatorPanel() {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [selectedProposalId, setSelectedProposalId] = useState('');
   const [subject, setSubject] = useState('');
+  const [claimKind, setClaimKind] = useState<ClaimKind>('CURRENT_HYPOTHESIS');
   const [intent, setIntent] = useState('');
   const [expectedOutcome, setExpectedOutcome] = useState('');
   const [beneficiary, setBeneficiary] = useState('');
@@ -91,7 +94,7 @@ export function ValueNavigatorPanel() {
     setBusy(true); setError(''); setNotice('');
     try {
       const payload: Record<string, unknown> = {
-        subject: subject.trim(), intent: intent.trim(), stateBefore: 'proposal', expectedOutcome: expectedOutcome.trim(),
+        claimKind, subject: subject.trim(), intent: intent.trim(), stateBefore: 'proposal', expectedOutcome: expectedOutcome.trim(),
       };
       if (beneficiary.trim()) payload.beneficiary = beneficiary.trim();
       const evidenceRefs = evidence.split('\n').map((line) => line.trim()).filter(Boolean);
@@ -102,7 +105,7 @@ export function ValueNavigatorPanel() {
         method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload),
       });
       setSelectedProposalId(data.entry.proposalId);
-      setSubject(''); setIntent(''); setExpectedOutcome(''); setBeneficiary(''); setEvidence(''); setScore('');
+      setSubject(''); setClaimKind('CURRENT_HYPOTHESIS'); setIntent(''); setExpectedOutcome(''); setBeneficiary(''); setEvidence(''); setScore('');
       await refresh();
       setNotice('Proposal appended as REVIEW / unauthorized. No external action was performed.');
     } catch (err) {
@@ -146,6 +149,7 @@ export function ValueNavigatorPanel() {
       {notice && <div role="status" style={{ color: '#6ee7b7', fontSize: 11, marginBottom: 8 }}>{notice}</div>}
 
       <form onSubmit={submitProposal} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 8, marginBottom: 16 }}>
+        <label style={{ color: '#cbd5e1', fontSize: 10 }}>Claim kind<select aria-label="Claim kind" value={claimKind} onChange={(e) => setClaimKind(e.target.value as ClaimKind)} style={{ ...inputStyle, display: 'block', marginTop: 4 }}><option value="CURRENT_HYPOTHESIS">Current hypothesis</option><option value="HISTORICAL_DECLARATION">Historical declaration</option></select></label>
         <label style={{ color: '#cbd5e1', fontSize: 10 }}>Need / subject<input required value={subject} onChange={(e) => setSubject(e.target.value)} maxLength={2000} style={{ ...inputStyle, display: 'block', marginTop: 4 }} /></label>
         <label style={{ color: '#cbd5e1', fontSize: 10 }}>Intent<input required value={intent} onChange={(e) => setIntent(e.target.value)} maxLength={2000} style={{ ...inputStyle, display: 'block', marginTop: 4 }} /></label>
         <label style={{ color: '#cbd5e1', fontSize: 10 }}>Expected outcome (hypothesis)<input required value={expectedOutcome} onChange={(e) => setExpectedOutcome(e.target.value)} maxLength={2000} style={{ ...inputStyle, display: 'block', marginTop: 4 }} /></label>
@@ -177,12 +181,12 @@ export function ValueNavigatorPanel() {
         {entries.slice().reverse().map((entry) => (
           <article key={`${entry.sequence}:${entry.record.id}`} style={{ background: '#03080d', border: '1px solid #334155', borderRadius: 4, padding: 10 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
-              <strong style={{ color: '#e2e8f0', fontSize: 11 }}>{entry.record.subject} · {entry.phase}</strong>
+              <strong style={{ color: '#e2e8f0', fontSize: 11 }}>{entry.record.subject} · {entry.claimKind === 'HISTORICAL_DECLARATION' ? 'HISTORICAL DECLARATION' : entry.phase}</strong>
               <span style={{ color: STATUS_COLOR[entry.reconciliationStatus], fontSize: 10, fontWeight: 700 }}>{entry.reconciliationStatus} · decision {entry.record.decision} · authorized {String(entry.record.authorized)}</span>
             </div>
             <div style={{ color: '#94a3b8', fontSize: 10, marginTop: 5 }}>Expected: {entry.expectedOutcome}{entry.observation?.observedOutcome ? ` · Observed: ${entry.observation.observedOutcome}` : ''}</div>
             {entry.valuePotentialHypothesis && <div style={{ color: '#facc15', fontSize: 10, marginTop: 4 }}>Value-potential hypothesis: {entry.valuePotentialHypothesis.score}/100 — {entry.valuePotentialHypothesis.limitation}</div>}
-            <div style={{ color: '#64748b', fontSize: 9, marginTop: 4 }}>scope: hypothesis reconciliation only · {entry.record.provenance.source} · append #{entry.sequence}{entry.supersedesId ? ` · supersedes ${entry.supersedesId}` : ''}</div>
+            <div style={{ color: '#64748b', fontSize: 9, marginTop: 4 }}>scope: {entry.verificationScope} · {entry.record.provenance.source} · append #{entry.sequence}{entry.supersedesId ? ` · supersedes ${entry.supersedesId}` : ''}</div>
           </article>
         ))}
       </div>
