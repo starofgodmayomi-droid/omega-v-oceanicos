@@ -13,6 +13,7 @@ import { MoodCodexPanel } from './MoodCodexPanel';
 import { DivergenceAlertsPanel } from './DivergenceAlertsPanel';
 import { ValueNavigatorPanel } from './ValueNavigatorPanel';
 import { ConnectorPanel } from './ConnectorPanel';
+import { WholeEcosystemDashboard } from './WholeEcosystemDashboard';
 import { LifecycleFlow, deriveStageStates, type LifecycleStage } from './LifecycleFlow';
 import { GlobeViewport } from './GlobeViewport';
 import { bindGlobeEvidence } from './globe-shell';
@@ -749,6 +750,18 @@ export function App() {
             {globeMax ? 'Exit globe view' : 'Globe view'}
           </button>
         </div>
+
+        <WholeEcosystemDashboard
+          streamConnected={streamConnected}
+          simulationMode={simulationMode}
+          humanGateRequired={humanGateRequired}
+          realityStatus={tip?.evidence?.status}
+          ledgerIntegrity={ledgerIntegrity}
+          history={history}
+          ecosystemBody={ecosystemBody}
+          omegaCommand={omegaCommand}
+          onFocusCommand={setOmegaIntent}
+        />
 
         {/* Prompt */}
         <h1
