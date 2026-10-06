@@ -25,6 +25,17 @@ export const HUMAN_PRINCIPLES = [
   'Steward for future generations',
 ] as const;
 
+export const HUMAN_ROOT_DISTINCTIONS = [
+  'RAW ≠ TRUE',
+  'THOUGHT ≠ FACT',
+  'DREAM ≠ PROPHECY',
+  'SYMBOL ≠ EVIDENCE',
+  'IDEA ≠ PLAN',
+  'PLAN ≠ ACTION',
+  'ACTION ≠ OUTCOME',
+  'CLAIM ≠ REALITY',
+] as const;
+
 export function runtimeModeLabel(simulationMode: boolean, streamConnected: boolean): string {
   if (simulationMode) return 'BOUNDED SIMULATION';
   if (streamConnected) return 'STREAM CONNECTED · REALITY UNVERIFIED';

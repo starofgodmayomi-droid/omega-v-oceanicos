@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import {
   boundedStatus,
   HUMAN_PRINCIPLES,
+  HUMAN_ROOT_DISTINCTIONS,
   NON_COLLAPSE_DISTINCTIONS,
   runtimeModeLabel,
   statusCounts,
@@ -53,4 +54,12 @@ test('dashboard does not present a mode as verified live reality', () => {
   assert.equal(runtimeModeLabel(true, false), 'BOUNDED SIMULATION');
   assert.equal(runtimeModeLabel(false, false), 'AWAITING OBSERVATION');
   assert.equal(runtimeModeLabel(false, true), 'STREAM CONNECTED · REALITY UNVERIFIED');
+});
+
+test('dashboard preserves raw human meaning without upgrading it into fact', () => {
+  assert.equal(HUMAN_ROOT_DISTINCTIONS.length, 8);
+  assert.ok(HUMAN_ROOT_DISTINCTIONS.includes('RAW ≠ TRUE'));
+  assert.ok(HUMAN_ROOT_DISTINCTIONS.includes('DREAM ≠ PROPHECY'));
+  assert.ok(HUMAN_ROOT_DISTINCTIONS.includes('SYMBOL ≠ EVIDENCE'));
+  assert.ok(HUMAN_ROOT_DISTINCTIONS.includes('CLAIM ≠ REALITY'));
 });

@@ -3,6 +3,7 @@ import { theme, humanStatus } from './oceanicosTheme';
 import {
   boundedStatus,
   HUMAN_PRINCIPLES,
+  HUMAN_ROOT_DISTINCTIONS,
   NON_COLLAPSE_DISTINCTIONS,
   runtimeModeLabel,
   statusCounts,
@@ -147,6 +148,13 @@ export function WholeEcosystemDashboard(props: Props) {
           <p>One prompt carries human context, values, and boundaries into one bounded body of work.</p>
         </div>
         <small>Intent is not identity proof, authority, or runtime evidence.</small>
+      </section>
+
+      <section className="whole-source-boundary" aria-labelledby="whole-source-boundary-title">
+        <span id="whole-source-boundary-title" className="whole-ecosystem-label">HUMAN ROOT · PRESERVE RAW LINEAGE</span>
+        <ul>
+          {HUMAN_ROOT_DISTINCTIONS.map((distinction) => <li key={distinction}>{distinction}</li>)}
+        </ul>
       </section>
 
       <div className="whole-ecosystem-grid">

@@ -2413,6 +2413,29 @@ body {
 }
 .whole-human-principles li { padding-left: 3px; }
 .whole-human-principles li::marker { color: #22d3ee; }
+.whole-source-boundary {
+  margin-top: 8px;
+  padding: 9px 10px;
+  border: 1px solid rgba(129, 140, 248, 0.18);
+  border-radius: 10px;
+  background: rgba(30, 27, 75, 0.14);
+}
+.whole-source-boundary > .whole-ecosystem-label { color: #c4b5fd; }
+.whole-source-boundary ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 7px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.whole-source-boundary li {
+  padding: 4px 7px;
+  border: 1px solid rgba(129, 140, 248, 0.2);
+  border-radius: 999px;
+  color: #ddd6fe;
+  font: 8px 'DM Mono', monospace;
+}
 @media (max-width: 560px) {
   .whole-human-root { align-items: flex-start; flex-direction: column; }
   .whole-human-root > small { max-width: none; text-align: left; }
