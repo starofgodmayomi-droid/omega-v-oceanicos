@@ -69,10 +69,21 @@ describe('Ω∞v unified change pipeline', () => {
     });
 
     assert.equal(result.halted, false);
-    assert.equal(result.stage, 'OBSERVE');
+    assert.equal(result.stage, 'RECONCILE');
     assert.equal(result.validation?.valid, true);
     assert.equal(result.execution?.status, 'EXECUTED');
     assert.equal(result.reality?.status, 'VERIFIED');
+    assert.deepEqual(result.waterFlow.map((frame) => frame.stage), [
+      'REALITY',
+      'ATTENTION',
+      'INTENTION',
+      'ACTION',
+      'CONSEQUENCE',
+      'OBSERVATION',
+      'LEARNING',
+      'RETURN',
+    ]);
+    assert.equal(result.waterFlow.at(-1)?.provenance.verified, false);
     assert.deepEqual(result.statusVector, {
       declared: 'YES',
       represented: 'YES',
@@ -139,7 +150,7 @@ describe('Ω∞v unified change pipeline', () => {
       changeId: 'change-pipeline-divergent',
     });
     assert.equal(result.halted, false);
-    assert.equal(result.stage, 'OBSERVE');
+    assert.equal(result.stage, 'RECONCILE');
     assert.equal(result.reality?.status, 'DIVERGENT');
     assert.equal(result.reality?.expectedState, 'S1');
     assert.equal(result.reality?.observedState, 'S2');
@@ -163,7 +174,7 @@ describe('Ω∞v unified change pipeline', () => {
       changeId: 'change-pipeline-unknown',
     });
     assert.equal(result.halted, false);
-    assert.equal(result.stage, 'OBSERVE');
+    assert.equal(result.stage, 'RECONCILE');
     assert.equal(result.reality?.status, 'UNKNOWN');
     assert.equal(result.reality?.expectedState, 'S1');
     assert.equal(result.reality?.observedState, undefined);
