@@ -13,6 +13,7 @@
   },
   "include": [
     "src/index.ts",
+    "src/kai.ts",
     "src/admission.ts",
     "src/transition.ts",
     "src/reality.ts",
