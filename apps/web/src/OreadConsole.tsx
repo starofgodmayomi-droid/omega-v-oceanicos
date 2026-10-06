@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { initialOreadSubmissionIdentity, prepareOreadSubmission } from './oreade-submission';
 
-const API_BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+const API_BASE_URL = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '');
 
 interface DropResult {
   drop: {

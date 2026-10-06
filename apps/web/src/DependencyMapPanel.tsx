@@ -13,7 +13,7 @@ import { theme } from './oceanicosTheme';
  * PRESENT ≠ WORKSPACE ≠ IMPORTED ≠ VERIFIED
  */
 
-const API_BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+const API_BASE_URL = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '');
 
 type Classification = 'BUILT' | 'WORKSPACE' | 'SOURCE-ONLY' | 'STUB';
 
