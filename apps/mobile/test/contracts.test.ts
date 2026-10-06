@@ -7,6 +7,12 @@ import {
   EMPTY_KAI_REFLECTION_DRAFT,
   KAI_REFLECTION_LIMITS,
 } from '../src/reflection.ts';
+import {
+  buildEchoVoiceNoteCard,
+  ECHO_SOURCE_KINDS,
+  EMPTY_ECHO_VOICE_NOTE_DRAFT,
+  ECHO_VOICE_NOTE_LIMITS,
+} from '../src/echo.ts';
 
 const request = {
   symbolicIntent: 'Inspect one bounded local state',
@@ -124,6 +130,45 @@ test('requires an expected observation and stop condition for a selected action'
   const card = buildKaiReflectionCard({ ...draft, expectedObservation: 'The task is completed.', stopCondition: 'Stop after this one task.' });
   assert.equal(card.status, 'UNKNOWN');
   assert.equal(card.nextAction, 'Complete one task.');
+});
+
+test('builds an ephemeral ECHOFRAME voice-note draft without upgrading its status', () => {
+  const source = {
+    ...EMPTY_ECHO_VOICE_NOTE_DRAFT,
+    title: '  A note to carry  ',
+    audience: '  A friend  ',
+    opening: '  One opening line.  ',
+    mainMessage: '  Meaning matters; proof still needs evidence.  ',
+    closing: '  Keep the next step small.  ',
+    sourceKind: 'SYMBOLIC_CREATION' as const,
+  };
+  const card = buildEchoVoiceNoteCard(source);
+  assert.equal(card.title, 'A note to carry');
+  assert.equal(card.audience, 'A friend');
+  assert.equal(card.mainMessage, 'Meaning matters; proof still needs evidence.');
+  assert.equal(card.format, 'VOICE_NOTE');
+  assert.equal(card.status, 'DRAFT');
+  assert.equal(card.origin, 'USER_ENTERED');
+  assert.equal(card.persisted, false);
+  assert.equal(card.published, false);
+  assert.equal(card.verified, false);
+  assert.equal(source.mainMessage, '  Meaning matters; proof still needs evidence.  ', "building a card must not mutate the user's draft");
+});
+
+test('requires a supplied source reference without treating it as checked evidence', () => {
+  const draft = { ...EMPTY_ECHO_VOICE_NOTE_DRAFT, mainMessage: 'A source-backed draft.', sourceKind: 'SOURCE_REFERENCED' as const };
+  assert.throws(() => buildEchoVoiceNoteCard(draft), /reference/);
+  const card = buildEchoVoiceNoteCard({ ...draft, sourceReference: 'https://example.test/source' });
+  assert.equal(card.sourceReference, 'https://example.test/source');
+  assert.equal(card.verified, false);
+  assert.equal(card.published, false);
+});
+
+test('rejects blank voice-note messages, invalid source labels, and oversized fields', () => {
+  assert.throws(() => buildEchoVoiceNoteCard(EMPTY_ECHO_VOICE_NOTE_DRAFT), /main message/);
+  assert.throws(() => buildEchoVoiceNoteCard({ ...EMPTY_ECHO_VOICE_NOTE_DRAFT, mainMessage: 'A note', title: 'x'.repeat(ECHO_VOICE_NOTE_LIMITS.title + 1) }), /title must be/);
+  assert.throws(() => buildEchoVoiceNoteCard({ ...EMPTY_ECHO_VOICE_NOTE_DRAFT, mainMessage: 'A note', sourceKind: 'UNKNOWN' as never }), /source labels/);
+  assert.equal(ECHO_SOURCE_KINDS.length, 4);
 });
 
 test('rejects a blank entry and oversized reflection fields', () => {

@@ -7,6 +7,7 @@ A local Expo / React Native companion surface for the Oceanicos API, built insid
 - **Current:** read API health and the redacted Omega command list; distinguish verified, divergent, unknown, not-executed, and other/open states.
 - **Drop:** submit a bounded ƆREADE proposal with requester, target scope, stop condition, expected observation, mode, and a stable in-session retry idempotency key.
 - **Mirror:** use a KAI-aligned prompt worksheet to separate a user-labelled experience, interpretation, stated knowledge, assumptions, and one optional next action. It does not call an AI model or create a persisted KAI Drop; its status remains `UNKNOWN`.
+- **Echo:** shape user-entered opening, message, and closing words into a session-only ECHOFRAME voice-note draft with an explicit source label. This first creation slice does not generate text or audio, save, send, publish, or verify sources.
 - **Evidence:** filter commands and inspect returned provenance events.
 - **Settings:** choose the API origin; only that origin is called. No API token or secret is collected or stored.
 
@@ -14,7 +15,9 @@ Creating a proposal only persists a `PROPOSED` command through `POST /v1/omega/o
 
 The Mirror screen keeps its draft only in the current app memory. It sends no reflection text to the API and provides no save/sync function; closing the app or clearing the visible draft discards the worksheet. This is a data-flow boundary, not a claim of encrypted storage or device-level privacy.
 
-This screen follows the repository's [KAI boundary](../../docs/KAI.md) and [whole-ecosystem constitution](../../docs/WHOLE-ECOSYSTEM-CONSTITUTION.md): continuity is not proof, reflection is not authorization, and one optional action requires an expected observation and stop condition.
+The ECHOFRAME voice-note draft follows the same session-only boundary. It formats only the words entered by the user; a source reference is displayed as user-supplied and not checked. The draft is never sent to the API and is not retained after the app closes. This is not a device-level privacy guarantee.
+
+These screens follow the repository's [KAI boundary](../../docs/KAI.md) and [whole-ecosystem constitution](../../docs/WHOLE-ECOSYSTEM-CONSTITUTION.md): continuity is not proof, reflection is not authorization, creation is not publication, and a source reference is not verification.
 
 ## Development
 

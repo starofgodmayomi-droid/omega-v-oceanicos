@@ -37,8 +37,16 @@ import {
   type KaiReflectionCard,
   type KaiReflectionDraft,
 } from './src/reflection';
+import {
+  buildEchoVoiceNoteCard,
+  ECHO_SOURCE_KINDS,
+  EMPTY_ECHO_VOICE_NOTE_DRAFT,
+  ECHO_VOICE_NOTE_LIMITS,
+  type EchoVoiceNoteCard,
+  type EchoVoiceNoteDraft,
+} from './src/echo';
 
-type Screen = 'current' | 'reflection' | 'drops' | 'evidence' | 'settings';
+type Screen = 'current' | 'reflection' | 'echo' | 'drops' | 'evidence' | 'settings';
 type Mode = 'BUILD' | 'WORLDVIEW';
 const API_URL_KEY = 'oceanicos.mobile.apiBaseUrl.v1';
 
@@ -197,6 +205,10 @@ export default function App() {
   const [reflectionCard, setReflectionCard] = useState<KaiReflectionCard | null>(null);
   const [reflectionError, setReflectionError] = useState<string | null>(null);
   const [reflectionNotice, setReflectionNotice] = useState<string | null>(null);
+  const [echoDraft, setEchoDraft] = useState<EchoVoiceNoteDraft>({ ...EMPTY_ECHO_VOICE_NOTE_DRAFT });
+  const [echoCard, setEchoCard] = useState<EchoVoiceNoteCard | null>(null);
+  const [echoError, setEchoError] = useState<string | null>(null);
+  const [echoNotice, setEchoNotice] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -291,6 +303,36 @@ export default function App() {
     setReflectionNotice('The visible draft was cleared; this feature does not save reflection text.');
   };
 
+  const updateEchoDraft = (field: keyof EchoVoiceNoteDraft, value: string) => {
+    setEchoDraft((previous) => ({
+      ...previous,
+      [field]: value,
+      ...(field === 'sourceKind' && value !== 'SOURCE_REFERENCED' ? { sourceReference: '' } : {}),
+    } as EchoVoiceNoteDraft));
+    setEchoCard(null);
+    setEchoError(null);
+    setEchoNotice(null);
+  };
+
+  const previewEchoDraft = () => {
+    setEchoError(null);
+    setEchoNotice(null);
+    try {
+      setEchoCard(buildEchoVoiceNoteCard(echoDraft));
+      setEchoNotice('Local voice-note draft preview only. Nothing was saved or sent.');
+    } catch (caught) {
+      setEchoCard(null);
+      setEchoError(caught instanceof Error ? caught.message : 'Could not build the voice-note draft.');
+    }
+  };
+
+  const clearEchoDraft = () => {
+    setEchoDraft({ ...EMPTY_ECHO_VOICE_NOTE_DRAFT });
+    setEchoCard(null);
+    setEchoError(null);
+    setEchoNotice('The visible voice-note draft was cleared; this feature does not save it.');
+  };
+
   const toggleProvenance = async (commandId: string) => {
     if (expandedCommand === commandId) { setExpandedCommand(null); return; }
     setExpandedCommand(commandId);
@@ -345,6 +387,10 @@ export default function App() {
             card={reflectionCard} draft={reflectionDraft} error={reflectionError} notice={reflectionNotice}
             onChange={updateReflection} onClear={clearReflection} onPreview={previewReflection}
           /> : null}
+          {screen === 'echo' ? <EchoVoiceNoteScreen
+            card={echoCard} draft={echoDraft} error={echoError} notice={echoNotice}
+            onChange={updateEchoDraft} onClear={clearEchoDraft} onPreview={previewEchoDraft}
+          /> : null}
           {screen === 'evidence' ? <EvidenceScreen
             commands={visibleCommands} error={error} notice={notice} expandedCommand={expandedCommand} filter={filter} loading={loading}
             onFilter={setFilter} onRefresh={() => { void refresh(); }} onToggle={toggleProvenance} provenance={provenance}
@@ -356,6 +402,7 @@ export default function App() {
         <View style={styles.bottomNav}>
           <NavItem active={screen === 'current'} glyph="◌" label="Current" onPress={() => setScreen('current')} />
           <NavItem active={screen === 'reflection'} glyph="◇" label="Mirror" onPress={() => { setReflectionError(null); setReflectionNotice(null); setScreen('reflection'); }} />
+          <NavItem active={screen === 'echo'} glyph="✦" label="Echo" onPress={() => { setEchoError(null); setEchoNotice(null); setScreen('echo'); }} />
           <NavItem active={screen === 'drops'} glyph="＋" label="Drop" onPress={() => { setError(null); setScreen('drops'); }} />
           <NavItem active={screen === 'evidence'} glyph="≋" label="Evidence" onPress={() => setScreen('evidence')} />
           <NavItem active={screen === 'settings'} glyph="⚙" label="Settings" onPress={() => setScreen('settings')} />
@@ -585,6 +632,82 @@ function ReflectionValue({ label, value }: { label: string; value: string }) {
       <Text style={styles.reflectionValueLabel}>{label}</Text>
       <Text style={styles.reflectionValueText}>{value}</Text>
     </View>
+  );
+}
+
+function EchoVoiceNoteScreen({ draft, card, error, notice, onChange, onClear, onPreview }: {
+  draft: EchoVoiceNoteDraft; card: EchoVoiceNoteCard | null; error: string | null; notice: string | null;
+  onChange: (field: keyof EchoVoiceNoteDraft, value: string) => void; onClear: () => void; onPreview: () => void;
+}) {
+  const selectedKind = ECHO_SOURCE_KINDS.find((kind) => kind.value === draft.sourceKind);
+  return (
+    <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+        <SectionTitle
+          eyebrow="ECHOFRAME · ƆREADE"
+          title="Give one thought a voice."
+          detail="This first creation path shapes your own words into a voice-note draft. It does not generate, save, send, or publish content."
+        />
+        <Text style={styles.bodyMuted}>Voice fit carry the meaning; label go show what kind of claim it is.</Text>
+        <View style={styles.authorityNotice}>
+          <Text style={styles.noticeTitle}>CURRENT-SESSION DRAFT · NOT SAVED OR SENT</Text>
+          <Text style={styles.bodyMuted}>The draft stays in this screen's app memory and is not sent to the API. Closing the app clears it. This is a data-flow boundary, not a device-privacy guarantee.</Text>
+        </View>
+        <View style={styles.fieldWrap}>
+          <Text style={styles.fieldLabel}>How should this source be labeled?</Text>
+          <View style={styles.reflectionKinds}>
+            {ECHO_SOURCE_KINDS.map((kind) => (
+              <Pressable
+                key={kind.value}
+                accessibilityRole="button"
+                accessibilityState={{ selected: draft.sourceKind === kind.value }}
+                onPress={() => onChange('sourceKind', kind.value)}
+                style={[styles.reflectionKind, draft.sourceKind === kind.value && styles.reflectionKindActive]}
+              >
+                <Text style={[styles.reflectionKindText, draft.sourceKind === kind.value && styles.reflectionKindTextActive]}>{kind.label}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+        <Field label="Title (optional)" value={draft.title} onChangeText={(value) => onChange('title', value)} placeholder="A short name for this voice note" maxLength={ECHO_VOICE_NOTE_LIMITS.title} />
+        <Field label="Intended listener (optional)" value={draft.audience} onChangeText={(value) => onChange('audience', value)} placeholder="Who might this be useful for?" maxLength={ECHO_VOICE_NOTE_LIMITS.audience} />
+        <Field label="Opening (optional)" value={draft.opening} onChangeText={(value) => onChange('opening', value)} placeholder="Your own first words" multiline maxLength={ECHO_VOICE_NOTE_LIMITS.opening} />
+        <Field
+          label="Main message" value={draft.mainMessage} onChangeText={(value) => onChange('mainMessage', value)}
+          placeholder="Write the message in your own words" multiline maxLength={ECHO_VOICE_NOTE_LIMITS.mainMessage}
+          helper="This screen preserves your wording; it does not add claims or generate an audio recording."
+        />
+        <Field label="Closing (optional)" value={draft.closing} onChangeText={(value) => onChange('closing', value)} placeholder="Your own closing words" multiline maxLength={ECHO_VOICE_NOTE_LIMITS.closing} />
+        {draft.sourceKind === 'SOURCE_REFERENCED' ? (
+          <Field
+            label="Source reference (not checked)" value={draft.sourceReference} onChangeText={(value) => onChange('sourceReference', value)}
+            placeholder="A citation or URL you supplied" maxLength={ECHO_VOICE_NOTE_LIMITS.sourceReference}
+            helper="The app does not open or verify this reference."
+          />
+        ) : null}
+        {error ? <InlineMessage text={error} tone="error" /> : null}
+        {notice ? <InlineMessage text={notice} tone="success" /> : null}
+        <ActionButton label="Build local voice-note draft" onPress={onPreview} disabled={!draft.mainMessage.trim()} />
+        <ActionButton label="Clear visible draft" onPress={onClear} quiet />
+        {card ? (
+          <View style={styles.reflectionPreview}>
+            <View style={styles.latestTop}>
+              <Text style={styles.eyebrow}>ECHOFRAME · VOICE NOTE · DRAFT</Text>
+              <StatusPill status={card.status} />
+            </View>
+            <Text style={styles.cardTitle}>{card.title || 'Untitled voice note'}</Text>
+            <ReflectionValue label="Source label · user-selected" value={selectedKind?.label ?? 'Not specified'} />
+            <ReflectionValue label="Intended listener" value={card.audience || 'Not specified'} />
+            <ReflectionValue label="Opening · user-entered" value={card.opening || 'Not supplied.'} />
+            <ReflectionValue label="Main message · user-entered" value={card.mainMessage} />
+            <ReflectionValue label="Closing · user-entered" value={card.closing || 'Not supplied.'} />
+            {card.sourceReference ? <ReflectionValue label="Reference · supplied, not checked" value={card.sourceReference} /> : null}
+            <Text style={styles.fieldHelper}>No AI generation, fact-checking, storage, API transmission, audio recording, or publication occurs in this flow. A reference is not verification.</Text>
+          </View>
+        ) : null}
+        <LimitNote />
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
