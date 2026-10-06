@@ -24,6 +24,7 @@ import {
 } from './reality.js';
 import { getOmegaWorker } from './worker-registry.js';
 import { createRealityAttestation, type RealityAttestation } from './causal-memory.js';
+import { buildOmegaWaterFlow } from './water-flow.js';
 
 export type PipelineStage =
   | 'COMPILE'
@@ -83,6 +84,8 @@ export interface OmegaPipelineResult {
   readonly execution?: TransitionExecution;
   readonly reality?: RealityVerification;
   readonly realityAttestation?: RealityAttestation;
+  /** Bounded symbolic flow trace; it never implies external execution. */
+  readonly waterFlow: ReturnType<typeof buildOmegaWaterFlow>;
   readonly statusVector: OmegaStatusVector;
   readonly provenanceRoot: string;
   readonly lineage: readonly string[];
@@ -182,6 +185,11 @@ export function runOmegaChangePipeline(input: OmegaPipelineInput): OmegaPipeline
 
   // C0/C1 — Compile
   const ir = compileOmegaIntent(input.compile);
+  const waterFlow = buildOmegaWaterFlow({
+    state: ir.transitionSpec.stateBefore,
+    intent: ir.intent,
+    traceId: input.changeId,
+  });
   lineage.push(`compile:${sha256(JSON.stringify(ir)).slice(0, 16)}`);
 
   // C2 — Validate
@@ -193,6 +201,7 @@ export function runOmegaChangePipeline(input: OmegaPipelineInput): OmegaPipeline
       haltReason: 'IR_INVALID',
       ir,
       validation,
+      waterFlow,
       statusVector: statusVector({ represented: 'YES', implemented: 'NO' }),
       provenanceRoot: buildProvenanceRoot(lineage),
       lineage,
@@ -260,6 +269,7 @@ export function runOmegaChangePipeline(input: OmegaPipelineInput): OmegaPipeline
       ir,
       validation,
       record,
+      waterFlow,
       statusVector: statusVector({ represented: 'YES', implemented: 'YES', admitted: 'NO' }),
       provenanceRoot: buildProvenanceRoot(lineage),
       lineage,
@@ -274,6 +284,7 @@ export function runOmegaChangePipeline(input: OmegaPipelineInput): OmegaPipeline
       ir,
       validation,
       record,
+      waterFlow,
       statusVector: statusVector({ represented: 'YES', implemented: 'YES', admitted: 'UNKNOWN' }),
       provenanceRoot: buildProvenanceRoot(lineage),
       lineage,
@@ -301,6 +312,7 @@ export function runOmegaChangePipeline(input: OmegaPipelineInput): OmegaPipeline
       ir,
       validation,
       record,
+      waterFlow,
       statusVector: statusVector({ represented: 'YES', implemented: 'YES', admitted: 'YES', executed: 'NO' }),
       provenanceRoot: buildProvenanceRoot(lineage),
       lineage: [...lineage, `worker:${resolved.error ?? 'missing'}`],
@@ -330,6 +342,7 @@ export function runOmegaChangePipeline(input: OmegaPipelineInput): OmegaPipeline
       validation,
       record: execution.record,
       execution,
+      waterFlow,
       statusVector: statusVector({ represented: 'YES', implemented: 'YES', tested: 'YES', admitted: 'YES', executed: 'NO' }),
       provenanceRoot: buildProvenanceRoot(lineage),
       lineage,
@@ -345,6 +358,7 @@ export function runOmegaChangePipeline(input: OmegaPipelineInput): OmegaPipeline
       validation,
       record: execution.record,
       execution,
+      waterFlow,
       statusVector: statusVector({ represented: 'YES', implemented: 'YES', admitted: 'YES', executed: 'YES' }),
       provenanceRoot: buildProvenanceRoot(lineage),
       lineage,
@@ -385,6 +399,7 @@ export function runOmegaChangePipeline(input: OmegaPipelineInput): OmegaPipeline
     execution,
     reality,
     realityAttestation,
+    waterFlow,
     statusVector: statusVector({
       represented: 'YES',
       implemented: 'YES',
