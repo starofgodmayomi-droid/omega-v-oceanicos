@@ -22,6 +22,7 @@ const proposalPayload = (subject: string) => ({
   intent: 'test one bounded value hypothesis',
   stateBefore: 'proposal',
   expectedOutcome: '3 users complete the test',
+  nextTransition: 'run one timeboxed interview round',
   evidence: ['stated: local discovery notes'],
   valuePotentialScore: 62,
   valuePotentialBasis: 'operator prioritization estimate',
@@ -65,6 +66,7 @@ describe('Value Navigator → durable OmegaChangeRecord', () => {
       assert.equal(original.record.decision, 'REVIEW');
       assert.equal(original.record.authorized, false);
       assert.equal(original.reconciliationStatus, 'NOT_EXECUTED');
+      assert.equal(original.nextTransition, 'run one timeboxed interview round');
       assert.equal(original.valuePotentialHypothesis.kind, 'hypothesis');
       assert.equal(original.valuePotentialHypothesis.score, 62);
       assert.match(original.valuePotentialHypothesis.limitation, /not evidence of demand, revenue, or earnings/);
@@ -87,6 +89,7 @@ describe('Value Navigator → durable OmegaChangeRecord', () => {
       assert.equal(observation.statusCode, 201);
       const observed = observation.json().entry;
       assert.equal(observed.reconciliationStatus, 'VERIFIED');
+      assert.equal(observed.nextTransition, 'run one timeboxed interview round');
       assert.equal(observed.verificationScope, 'hypothesis-reconciliation-only');
       assert.equal(observed.record.decision, 'REVIEW');
       assert.equal(observed.record.authorized, false);
