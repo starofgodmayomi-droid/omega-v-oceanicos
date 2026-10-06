@@ -13,7 +13,7 @@ const rootDir = path.resolve(__dirname, '..');
 let ObserverEngine, observePlanetaryBase;
 let verifyPlanetarySovereignty, AsymmetricValidationGuard, MultiRegionMeshConvergence;
 let PluralisticHashChain, RememberEngine;
-let executeOceanicosMaxExpansion;
+let executeOceanicosMaxExpansion, MiniKernel;
 let AttestationService;
 
 try {
@@ -32,6 +32,7 @@ try {
 
   const miniPkg = require(path.join(rootDir, 'packages/mini/dist/index.js'));
   executeOceanicosMaxExpansion = miniPkg.executeOceanicosMaxExpansion;
+  MiniKernel = miniPkg.MiniKernel;
 
   try {
     const attestPkg = require(path.join(rootDir, 'packages/attestation/dist/index.js'));
@@ -152,6 +153,23 @@ async function handleCycle() {
     console.log(`  Law Route    : ${block.payload.receipt?.lawRoute || 'N/A'}`);
     console.log(`  Timestamp    : ${block.timestamp}\n`);
   }
+}
+
+async function handleOffline() {
+  printBanner();
+  const remember = new RememberEngine();
+  const kernel = new MiniKernel(remember);
+  const block = kernel.runCycle();
+  const integrity = kernel.verifyLedger();
+  console.log(`\n${ANSI.bold}=== OFFLINE MINI CYCLE ===${ANSI.reset}`);
+  console.log(`  ${ANSI.cyan}Observe → Verify → Remember${ANSI.reset} : ${block.evidence.status}`);
+  console.log(`  ${ANSI.cyan}Observation${ANSI.reset}                 : ${block.observation.uuid}`);
+  console.log(`  ${ANSI.cyan}Memory${ANSI.reset}                      : ${block.index}`);
+  console.log(`  ${ANSI.cyan}Ledger Integrity${ANSI.reset}           : ${integrity.valid ? 'INTACT' : 'DEGRADED'}`);
+  console.log(`  ${ANSI.cyan}Network${ANSI.reset}                    : DISABLED`);
+  console.log(`  ${ANSI.cyan}Authority${ANSI.reset}                  : HUMAN-GATED; no remote mutation or deployment`);
+  console.log(`  ${ANSI.cyan}Boundary${ANSI.reset}                   : local in-process evidence; not production health or external reality\n`);
+  return integrity.valid && block.evidence.status === 'PASS' ? 0 : 1;
 }
 
 async function handleMesh() {
@@ -302,6 +320,7 @@ ${ANSI.bold}USAGE:${ANSI.reset}
 ${ANSI.bold}COMMANDS:${ANSI.reset}
   ${ANSI.green}status${ANSI.reset}      Show system health, telemetry, genesis anchor, and live API status
   ${ANSI.green}cycle${ANSI.reset}       Execute and cryptographically commit a new consensus block (PoW)
+  ${ANSI.green}offline${ANSI.reset}     Run a local MINI Observe → Verify → Remember cycle with network disabled
   ${ANSI.green}mesh${ANSI.reset}        Simulate decentralized consensus convergence across 4 sovereign nodes
   ${ANSI.green}attest${ANSI.reset}      Generate unforgeable cryptographic attestation for verified telemetry
   ${ANSI.green}keys${ANSI.reset}        Generate an Ed25519 asymmetric keypair for fail-closed authentication
@@ -322,6 +341,9 @@ switch (command) {
     break;
   case 'cycle':
     await handleCycle();
+    break;
+  case 'offline':
+    process.exitCode = await handleOffline();
     break;
   case 'mesh':
     await handleMesh();
