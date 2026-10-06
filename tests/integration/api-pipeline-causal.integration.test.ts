@@ -118,4 +118,64 @@ describe('live API pipeline → durable causal memory', () => {
       await removeTemporaryDirectory(directory);
     }
   });
+
+  it('rate-limits pipeline requests within a bounded one-minute window', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'omega-api-pipeline-rate-limit-'));
+    try {
+      const { createApp } = await import('../../apps/api/dist/index.js');
+      const app = createApp(join(directory, 'ledger.db'), false, { allowUnsignedCycle: true });
+      await app.ready();
+      try {
+        const responses: Array<{ statusCode: number }> = [];
+        for (let i = 0; i < 11; i += 1) {
+          responses.push(await app.inject({ method: 'POST', url: '/v1/pipeline', payload: {} }));
+        }
+        assert.equal(responses.slice(0, 10).every((response) => response.statusCode === 400), true);
+        assert.equal(responses[10].statusCode, 429);
+      } finally {
+        await app.close();
+      }
+    } finally {
+      await removeTemporaryDirectory(directory);
+    }
+  });
+
+  it('preserves the configured admin authorization boundary for the scoped pipeline route', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'omega-api-pipeline-auth-'));
+    const previousMode = process.env.OMEGA_AUTH_MODE;
+    const previousReadToken = process.env.OMEGA_READ_TOKEN;
+    const previousAdminToken = process.env.OMEGA_ADMIN_TOKEN;
+    let app: any;
+
+    try {
+      process.env.OMEGA_AUTH_MODE = 'required';
+      process.env.OMEGA_READ_TOKEN = 'pipeline-read-token';
+      process.env.OMEGA_ADMIN_TOKEN = 'pipeline-admin-token';
+      const { createApp } = await import('../../apps/api/dist/index.js');
+      app = createApp(join(directory, 'ledger.db'), false, { allowUnsignedCycle: true });
+      await app.ready();
+
+      const denied = await app.inject({ method: 'POST', url: '/v1/pipeline', payload: {} });
+      assert.equal(denied.statusCode, 401);
+      assert.equal(denied.json().error, 'ADMIN_ACCESS_REQUIRED');
+
+      const authorized = await app.inject({
+        method: 'POST',
+        url: '/v1/pipeline',
+        headers: { authorization: 'Bearer pipeline-admin-token' },
+        payload: {},
+      });
+      assert.equal(authorized.statusCode, 400);
+      assert.equal(authorized.json().error, 'MISSING_COMPILE');
+    } finally {
+      if (app) await app.close();
+      if (previousMode === undefined) delete process.env.OMEGA_AUTH_MODE;
+      else process.env.OMEGA_AUTH_MODE = previousMode;
+      if (previousReadToken === undefined) delete process.env.OMEGA_READ_TOKEN;
+      else process.env.OMEGA_READ_TOKEN = previousReadToken;
+      if (previousAdminToken === undefined) delete process.env.OMEGA_ADMIN_TOKEN;
+      else process.env.OMEGA_ADMIN_TOKEN = previousAdminToken;
+      await removeTemporaryDirectory(directory);
+    }
+  });
 });

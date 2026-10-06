@@ -214,7 +214,11 @@ export function createApp(
     }
   });
 
-  registerPipelineRoute(fastify, jsonError);
+  fastify.register(async (scope) => {
+    await scope.register(rateLimit, { global: false });
+    registerPipelineRoute(scope, jsonError);
+  });
+
   registerEcosystemRoute(fastify, authMode, Boolean(attestationSigningKey));
   registerNavigatorEvidenceRoute(fastify);
   registerRealityRoute(fastify, authMode, Boolean(attestationSigningKey), Boolean(ledgerMemory.getTip()));
