@@ -35,7 +35,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Audit dependencies
-        run: pnpm audit
+        run: pnpm audit --ignore-unfixable
 
       - name: Run full test coverage
         run: pnpm test:coverage

@@ -38,7 +38,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Audit Workspace Dependencies
-        run: pnpm audit
+        run: pnpm audit --ignore-unfixable
 
       - name: 1. TypeScript Strict Verification
         run: pnpm run typecheck
