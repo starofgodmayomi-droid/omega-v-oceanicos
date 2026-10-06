@@ -193,16 +193,15 @@ pnpm run dev   # expansion surfaces (API/Web), optional for MINI work
 Recorded here so it is visible rather than rediscovered. None of these is
 blocked on design; each is a decision or a scoped change.
 
-- **Two package managers, one lockfile.** `pnpm` is canonical: `pnpm-lock.yaml`
-  is the committed lockfile and CI installs with `pnpm install --frozen-lockfile`.
-  The READMEs mostly say `npm install`, which does work — verified on a clean
-  clone: 671 packages, then 263 tests, build and lint all green. But npm ignores
-  `pnpm-lock.yaml` and there is no `package-lock.json`, so an npm install
-  resolves fresh and can differ from what CI proved. Mixing them in one tree is
-  the actual hazard: running `npm install` over an existing pnpm `node_modules`
-  fails with a misleading `EUNSUPPORTEDPROTOCOL workspace:*` raised by pnpm's
-  own store layout, not by anything in this repository's manifests. No manifest
-  here uses the `workspace:` protocol.
+- ~~**Two package managers, one lockfile.**~~ **Closed (2026-10-06).** The root
+  manifest pins `pnpm@10.34.5`, `pnpm-lock.yaml` is the only repository lockfile,
+  and the canonical repository setup guides (`README.md`, `apps/README.md`,
+  `apps/web/README.md`, and `docs/DEVELOPMENT.md`) use pnpm and the frozen
+  lockfile. The remaining `npm install @omega-v/...` examples in package
+  READMEs describe installing published packages into consumer projects, not
+  installing this workspace. Keep repository setup and scripts on pnpm so the
+  dependencies verified by CI stay reproducible; no npm lockfile or npm-based
+  workspace installation is implied.
 - ~~**`format:check` was not run by CI and failed on 14 files.**~~ **Closed.**
   The formatting drift was corrected, `pnpm format:check` was added to the
   verify workflow after dependency installation, and the main-branch workflow
