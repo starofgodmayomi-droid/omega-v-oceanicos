@@ -24,6 +24,7 @@ The dashboard's Value Navigator and API share `OmegaChangeRecord` semantics thro
 
 - `POST /v1/value-navigator/proposals` creates a durable `REVIEW`, `authorized:false`, `NOT_EXECUTED` record.
 - Proposals may declare `claimKind: CURRENT_HYPOTHESIS` (default) or `HISTORICAL_DECLARATION`; the latter preserves an old “built/live/deployed” statement for current reconciliation and does not upgrade it to truth.
+- Proposals may include one `nextTransition` string to preserve the next finite Δ; it is a plan/provenance field, never an execution request or authorization.
 - `GET /v1/value-navigator/proposals` lists the append-only local journal.
 - `GET /v1/value-navigator/proposals/{proposalId}` returns proposal history.
 - `POST /v1/value-navigator/proposals/{proposalId}/observe` appends a superseding observation record; it never edits the proposal.
@@ -65,6 +66,8 @@ provenance / next_transition
 ```
 
 Proposal is not action. Capability is not authority. Verification is not authorization. Unknown is not false. Attestation is provenance, not impact proof. This skill itself grants no authority to publish, message, spend, access accounts, or change external systems.
+
+Keep the active loop small: **one active Δ → one bounded action → one observed outcome → one memory update → next Δ**. The stored next transition is not proof that the transition happened.
 
 ## Minimum truthful cycle
 

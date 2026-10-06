@@ -22,6 +22,7 @@ export interface ValueNavigatorEntry {
   readonly phase: ValueNavigatorPhase;
   readonly record: OmegaChangeRecord;
   readonly expectedOutcome: string;
+  readonly nextTransition?: string;
   readonly reconciliationStatus: ValueNavigatorStatus;
   readonly verificationScope: ValueNavigatorVerificationScope;
   readonly evidenceStatus: 'STATED' | 'NOT_PROVIDED';
@@ -80,6 +81,7 @@ export interface ValueNavigatorProposalInput {
   readonly intent: string;
   readonly stateBefore: string;
   readonly expectedOutcome: string;
+  readonly nextTransition?: string;
   readonly beneficiary?: string;
   readonly evidence?: readonly string[];
   readonly valuePotentialScore?: number;
@@ -100,6 +102,7 @@ export function createValueNavigatorProposal(
   const intent = requiredText(input.intent, 'intent');
   const stateBefore = requiredText(input.stateBefore, 'stateBefore');
   const expectedOutcome = requiredText(input.expectedOutcome, 'expectedOutcome');
+  const nextTransition = optionalText(input.nextTransition, 'nextTransition');
   const beneficiary = optionalText(input.beneficiary, 'beneficiary');
   const evidence = validateEvidence(input.evidence);
   const attributedTo = optionalText(input.attributedTo, 'attributedTo') ?? null;
@@ -134,6 +137,7 @@ export function createValueNavigatorProposal(
       claimKind,
       ...(beneficiary ? { beneficiary } : {}),
       expectedOutcome,
+      ...(nextTransition ? { nextTransition } : {}),
       ...(valuePotentialHypothesis ? { valuePotentialHypothesis } : {}),
     },
     decision: 'REVIEW',
@@ -154,6 +158,7 @@ export function createValueNavigatorProposal(
     phase: 'PROPOSAL',
     record,
     expectedOutcome,
+    ...(nextTransition ? { nextTransition } : {}),
     reconciliationStatus: 'NOT_EXECUTED',
     verificationScope: claimKind === 'HISTORICAL_DECLARATION'
       ? 'historical-declaration-reconciliation-only'
@@ -211,6 +216,7 @@ export function observeValueNavigatorProposal(
     policy: 'value-navigator-read-only-observation',
     context: {
       expectedOutcome: proposal.expectedOutcome,
+      ...(proposal.nextTransition ? { nextTransition: proposal.nextTransition } : {}),
       ...(observedOutcome ? { observedOutcome } : {}),
       reconciliationStatus,
       verificationScope: proposal.verificationScope,
@@ -238,6 +244,7 @@ export function observeValueNavigatorProposal(
     phase: 'OBSERVATION',
     record,
     expectedOutcome: proposal.expectedOutcome,
+    ...(proposal.nextTransition ? { nextTransition: proposal.nextTransition } : {}),
     reconciliationStatus,
     verificationScope: proposal.verificationScope,
     evidenceStatus: evidence ? 'STATED' : 'NOT_PROVIDED',

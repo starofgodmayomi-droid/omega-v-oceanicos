@@ -19,6 +19,7 @@ interface Entry {
     provenance: { source: string; observedAt: string; lineage?: string[] };
   };
   expectedOutcome: string;
+  nextTransition?: string;
   reconciliationStatus: Status;
   verificationScope: 'hypothesis-reconciliation-only' | 'historical-declaration-reconciliation-only';
   evidenceStatus: 'STATED' | 'NOT_PROVIDED';
@@ -60,6 +61,7 @@ export function ValueNavigatorPanel() {
   const [claimKind, setClaimKind] = useState<ClaimKind>('CURRENT_HYPOTHESIS');
   const [intent, setIntent] = useState('');
   const [expectedOutcome, setExpectedOutcome] = useState('');
+  const [nextTransition, setNextTransition] = useState('');
   const [beneficiary, setBeneficiary] = useState('');
   const [evidence, setEvidence] = useState('');
   const [score, setScore] = useState('');
@@ -94,7 +96,7 @@ export function ValueNavigatorPanel() {
     setBusy(true); setError(''); setNotice('');
     try {
       const payload: Record<string, unknown> = {
-        claimKind, subject: subject.trim(), intent: intent.trim(), stateBefore: 'proposal', expectedOutcome: expectedOutcome.trim(),
+        claimKind, subject: subject.trim(), intent: intent.trim(), stateBefore: 'proposal', expectedOutcome: expectedOutcome.trim(), nextTransition: nextTransition.trim(),
       };
       if (beneficiary.trim()) payload.beneficiary = beneficiary.trim();
       const evidenceRefs = evidence.split('\n').map((line) => line.trim()).filter(Boolean);
@@ -105,7 +107,7 @@ export function ValueNavigatorPanel() {
         method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload),
       });
       setSelectedProposalId(data.entry.proposalId);
-      setSubject(''); setClaimKind('CURRENT_HYPOTHESIS'); setIntent(''); setExpectedOutcome(''); setBeneficiary(''); setEvidence(''); setScore('');
+      setSubject(''); setClaimKind('CURRENT_HYPOTHESIS'); setIntent(''); setExpectedOutcome(''); setNextTransition(''); setBeneficiary(''); setEvidence(''); setScore('');
       await refresh();
       setNotice('Proposal appended as REVIEW / unauthorized. No external action was performed.');
     } catch (err) {
@@ -153,6 +155,7 @@ export function ValueNavigatorPanel() {
         <label style={{ color: '#cbd5e1', fontSize: 10 }}>Need / subject<input required value={subject} onChange={(e) => setSubject(e.target.value)} maxLength={2000} style={{ ...inputStyle, display: 'block', marginTop: 4 }} /></label>
         <label style={{ color: '#cbd5e1', fontSize: 10 }}>Intent<input required value={intent} onChange={(e) => setIntent(e.target.value)} maxLength={2000} style={{ ...inputStyle, display: 'block', marginTop: 4 }} /></label>
         <label style={{ color: '#cbd5e1', fontSize: 10 }}>Expected outcome (hypothesis)<input required value={expectedOutcome} onChange={(e) => setExpectedOutcome(e.target.value)} maxLength={2000} style={{ ...inputStyle, display: 'block', marginTop: 4 }} /></label>
+        <label style={{ color: '#cbd5e1', fontSize: 10 }}>One next bounded transition<input required value={nextTransition} onChange={(e) => setNextTransition(e.target.value)} maxLength={2000} style={{ ...inputStyle, display: 'block', marginTop: 4 }} /></label>
         <label style={{ color: '#cbd5e1', fontSize: 10 }}>Beneficiary (optional)<input value={beneficiary} onChange={(e) => setBeneficiary(e.target.value)} maxLength={2000} style={{ ...inputStyle, display: 'block', marginTop: 4 }} /></label>
         <label style={{ color: '#cbd5e1', fontSize: 10 }}>Stated evidence references (one per line)<textarea value={evidence} onChange={(e) => setEvidence(e.target.value)} rows={2} style={{ ...inputStyle, display: 'block', marginTop: 4 }} /></label>
         <label style={{ color: '#cbd5e1', fontSize: 10 }}>Value-potential prioritization hypothesis (0–100; not demand/revenue)<input type="number" min="0" max="100" step="any" value={score} onChange={(e) => setScore(e.target.value)} style={{ ...inputStyle, display: 'block', marginTop: 4 }} /></label>
@@ -185,6 +188,7 @@ export function ValueNavigatorPanel() {
               <span style={{ color: STATUS_COLOR[entry.reconciliationStatus], fontSize: 10, fontWeight: 700 }}>{entry.reconciliationStatus} · decision {entry.record.decision} · authorized {String(entry.record.authorized)}</span>
             </div>
             <div style={{ color: '#94a3b8', fontSize: 10, marginTop: 5 }}>Expected: {entry.expectedOutcome}{entry.observation?.observedOutcome ? ` · Observed: ${entry.observation.observedOutcome}` : ''}</div>
+            {entry.nextTransition && <div style={{ color: '#6ee7b7', fontSize: 10, marginTop: 4 }}>Next Δ: {entry.nextTransition}</div>}
             {entry.valuePotentialHypothesis && <div style={{ color: '#facc15', fontSize: 10, marginTop: 4 }}>Value-potential hypothesis: {entry.valuePotentialHypothesis.score}/100 — {entry.valuePotentialHypothesis.limitation}</div>}
             <div style={{ color: '#64748b', fontSize: 9, marginTop: 4 }}>scope: {entry.verificationScope} · {entry.record.provenance.source} · append #{entry.sequence}{entry.supersedesId ? ` · supersedes ${entry.supersedesId}` : ''}</div>
           </article>
