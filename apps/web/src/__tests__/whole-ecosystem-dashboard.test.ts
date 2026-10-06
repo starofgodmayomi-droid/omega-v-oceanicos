@@ -8,6 +8,14 @@ import {
   runtimeModeLabel,
   statusCounts,
 } from '../whole-ecosystem-dashboard-model.ts';
+import {
+  OBSERVED_VALUE_DEFAULT,
+  OBSERVED_VALUE_NOTE,
+  PROVIDER_CONNECTION_NOTE,
+  PROVIDER_EXAMPLES,
+  VALUE_DOMAINS,
+  VALUE_STAGES,
+} from '../oceanicos-workspace-model.ts';
 
 test('unknown values never become verified dashboard status', () => {
   assert.equal(boundedStatus('healthy'), 'UNKNOWN');
@@ -62,4 +70,22 @@ test('dashboard preserves raw human meaning without upgrading it into fact', () 
   assert.ok(HUMAN_ROOT_DISTINCTIONS.includes('DREAM ≠ PROPHECY'));
   assert.ok(HUMAN_ROOT_DISTINCTIONS.includes('SYMBOL ≠ EVIDENCE'));
   assert.ok(HUMAN_ROOT_DISTINCTIONS.includes('CLAIM ≠ REALITY'));
+});
+
+test('workspace presents model brands as examples, not claimed connections', () => {
+  assert.ok(PROVIDER_EXAMPLES.includes('ChatGPT'));
+  assert.ok(PROVIDER_EXAMPLES.includes('Manus'));
+  assert.ok(PROVIDER_EXAMPLES.includes('Grok'));
+  assert.ok(PROVIDER_EXAMPLES.includes('Groq'));
+  assert.match(PROVIDER_CONNECTION_NOTE, /no external model provider is connected/i);
+});
+
+test('whole-body value path preserves broad life domains and unknown earnings', () => {
+  assert.ok(VALUE_DOMAINS.includes('Life'));
+  assert.ok(VALUE_DOMAINS.includes('Nature'));
+  assert.ok(VALUE_DOMAINS.includes('Relationships'));
+  assert.ok(VALUE_DOMAINS.includes('Creativity'));
+  assert.deepEqual(VALUE_STAGES, ['Need', 'Create', 'Deliver', 'Observe', 'Reconcile', 'Earned value']);
+  assert.equal(OBSERVED_VALUE_DEFAULT, 'UNKNOWN');
+  assert.match(OBSERVED_VALUE_NOTE, /does not query/i);
 });

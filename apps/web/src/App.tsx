@@ -14,6 +14,7 @@ import { DivergenceAlertsPanel } from './DivergenceAlertsPanel';
 import { ValueNavigatorPanel } from './ValueNavigatorPanel';
 import { ConnectorPanel } from './ConnectorPanel';
 import { WholeEcosystemDashboard } from './WholeEcosystemDashboard';
+import { OceanicosWorkbench } from './OceanicosWorkbench';
 import { LifecycleFlow, deriveStageStates, type LifecycleStage } from './LifecycleFlow';
 import { GlobeViewport } from './GlobeViewport';
 import { bindGlobeEvidence } from './globe-shell';
@@ -49,13 +50,6 @@ async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
   }
   return payload as T;
 }
-
-const MODE_BUTTONS = [
-  { icon: '✦', label: 'Create', template: 'Create a new ' },
-  { icon: '◇', label: 'Explore', template: 'Explore the current state of ' },
-  { icon: '⚙', label: 'Build', template: 'Build and test ' },
-  { icon: '◎', label: 'Change', template: 'Change ' },
-];
 
 export function App() {
   const [tip, setTip] = useState<any>(null);
@@ -708,174 +702,35 @@ export function App() {
         </div>
       )}
 
-      {/* Main surface */}
+      {/* Main conversational workspace */}
       <main
         style={{
-          maxWidth: globeMax ? '1100px' : '720px',
+          maxWidth: globeMax ? '1760px' : '1520px',
           width: '100%',
           margin: '0 auto',
-          padding: '60px 24px 40px',
+          padding: '22px clamp(14px, 2vw, 30px) 50px',
           flex: 1,
           position: 'relative',
           zIndex: 1,
         }}
       >
-        {/* Logo */}
-        <div
-          style={{
-            fontSize: '13px',
-            fontWeight: 800,
-            letterSpacing: '0.2em',
-            color: theme.accent,
-            textAlign: 'center',
-            marginBottom: '8px',
-          }}
-        >
-          💧 OCEANICOS
-        </div>
-        <div style={{ textAlign: 'center', marginBottom: '16px' }}>
-          <button
-            type="button"
-            aria-pressed={globeMax}
-            onClick={() => setGlobeMax((v) => !v)}
-            style={{
-              background: 'transparent',
-              border: `1px solid ${theme.borderBright}`,
-              color: theme.accent,
-              borderRadius: theme.radiusPill,
-              padding: '6px 14px',
-              fontSize: '11px',
-              letterSpacing: '0.12em',
-              textTransform: 'uppercase',
-              cursor: 'pointer',
-            }}
-          >
-            {globeMax ? 'Exit globe view' : 'Globe view'}
+        <div className="ow-utility-row">
+          <span>ASK → DISTINGUISH → BOUND → BUILD → OBSERVE → VALUE</span>
+          <button type="button" aria-pressed={globeMax} onClick={() => setGlobeMax((value) => !value)}>
+            {globeMax ? 'Exit globe view' : 'Open globe view'}
           </button>
         </div>
 
-        <WholeEcosystemDashboard
-          streamConnected={streamConnected}
-          simulationMode={simulationMode}
-          humanGateRequired={humanGateRequired}
+        <OceanicosWorkbench
+          intent={omegaIntent}
+          onIntentChange={setOmegaIntent}
+          onSubmit={proposeOmegaCommand}
+          onQuickPrompt={setOmegaIntent}
+          onNewWork={dismissCommand}
+          loading={omegaLoading}
+          command={omegaCommand}
           realityStatus={tip?.evidence?.status}
-          ledgerIntegrity={ledgerIntegrity}
-          history={history}
-          ecosystemBody={ecosystemBody}
-          omegaCommand={omegaCommand}
-          onFocusCommand={setOmegaIntent}
         />
-
-        {/* Prompt */}
-        <h1
-          style={{
-            fontSize: '28px',
-            fontWeight: 600,
-            color: theme.text,
-            textAlign: 'center',
-            margin: '0 0 28px',
-            letterSpacing: '-0.5px',
-          }}
-        >
-          What shall we make real?
-        </h1>
-
-        {/* Input */}
-        <div
-          style={{
-            display: 'flex',
-            gap: '8px',
-            alignItems: 'stretch',
-          }}
-        >
-          <input
-            value={omegaIntent}
-            onChange={(e) => setOmegaIntent(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && omegaIntent.trim() && !omegaLoading) {
-                proposeOmegaCommand();
-              }
-            }}
-            maxLength={2000}
-            placeholder="Tell me what you're trying to do…"
-            style={{
-              flex: 1,
-              padding: '14px 18px',
-              background: theme.surface,
-              border: `1px solid ${theme.borderBright}`,
-              borderRadius: theme.radiusPill,
-              color: theme.text,
-              fontFamily: theme.fontSans,
-              fontSize: '15px',
-              outline: 'none',
-            }}
-          />
-          <button
-            onClick={proposeOmegaCommand}
-            disabled={omegaLoading || !omegaIntent.trim()}
-            style={{
-              padding: '0 22px',
-              borderRadius: theme.radiusPill,
-              border: 'none',
-              background: omegaLoading || !omegaIntent.trim() ? `${theme.accent}44` : theme.accent,
-              color: theme.bg,
-              fontFamily: theme.fontSans,
-              fontSize: '18px',
-              fontWeight: 700,
-              cursor: omegaLoading || !omegaIntent.trim() ? 'not-allowed' : 'pointer',
-              opacity: omegaLoading || !omegaIntent.trim() ? 0.5 : 1,
-              transition: 'opacity 0.2s',
-            }}
-          >
-            →
-          </button>
-        </div>
-
-        {/* Mode buttons */}
-        <div
-          style={{
-            display: 'flex',
-            gap: '10px',
-            marginTop: '14px',
-            flexWrap: 'wrap',
-          }}
-        >
-          {MODE_BUTTONS.map((mode) => (
-            <button
-              key={mode.label}
-              onClick={() => setOmegaIntent(mode.template)}
-              style={{
-                padding: '8px 16px',
-                borderRadius: theme.radiusPill,
-                border: `1px solid ${theme.border}`,
-                background: 'transparent',
-                color: theme.textMuted,
-                fontFamily: theme.fontSans,
-                fontSize: '13px',
-                fontWeight: 500,
-                cursor: 'pointer',
-                transition: 'border-color 0.2s, color 0.2s',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = theme.borderBright;
-                e.currentTarget.style.color = theme.text;
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = theme.border;
-                e.currentTarget.style.color = theme.textMuted;
-              }}
-            >
-              {mode.icon} {mode.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Intent flow card */}
-        <OreadConsole />
-        <MoodCodexPanel />
-        <DivergenceAlertsPanel />
-        <ValueNavigatorPanel />
-        <ConnectorPanel />
 
         <IntentFlow
           command={omegaCommand}
@@ -889,23 +744,34 @@ export function App() {
           simulationMode={simulationMode}
           humanGateRequired={humanGateRequired}
         />
-      </main>
 
-      {/* Mirror-water lifecycle flow */}
-      <div
-        style={{
-          maxWidth: '720px',
-          width: '100%',
-          margin: '0 auto',
-          padding: '8px 24px 60px',
-        }}
-      >
-        <LifecycleFlow
-          stages={lifecycleStages}
-          openStageId={openStageId}
-          onStageToggle={(id) => setOpenStageId(id || null)}
-        />
-      </div>
+        <details className="ow-deep-dive">
+          <summary>Explore the full ecosystem map, evidence, and operating tools</summary>
+          <WholeEcosystemDashboard
+            streamConnected={streamConnected}
+            simulationMode={simulationMode}
+            humanGateRequired={humanGateRequired}
+            realityStatus={tip?.evidence?.status}
+            ledgerIntegrity={ledgerIntegrity}
+            history={history}
+            ecosystemBody={ecosystemBody}
+            omegaCommand={omegaCommand}
+            onFocusCommand={setOmegaIntent}
+          />
+          <div className="ow-tools-stack">
+            <OreadConsole />
+            <MoodCodexPanel />
+            <DivergenceAlertsPanel />
+            <ValueNavigatorPanel />
+            <ConnectorPanel />
+            <LifecycleFlow
+              stages={lifecycleStages}
+              openStageId={openStageId}
+              onStageToggle={(id) => setOpenStageId(id || null)}
+            />
+          </div>
+        </details>
+      </main>
     </div>
   );
 }
