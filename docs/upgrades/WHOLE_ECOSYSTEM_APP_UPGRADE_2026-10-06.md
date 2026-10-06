@@ -69,6 +69,12 @@ Updated panels:
 - `TransitionProvenancePanel.tsx`
 - `DivergenceAlertsPanel.tsx`
 
+The main client now skips the long-lived `/v1/stream` connection when no direct
+`VITE_API_URL` is configured. In that configuration the sandbox/Vite proxy is
+REST-only, so the top-level connection state remains explicitly `REST mode`
+instead of retrying an unsupported SSE path. A direct API origin can opt into
+SSE by supplying `VITE_API_URL`.
+
 ### 3. Partial evidence remains readable
 
 `ConnectorPanel.tsx` now accepts the API's verified local journal envelope (`entries`) and safely falls back to an empty list when optional evidence is absent. A missing observation is no longer allowed to crash the whole app.

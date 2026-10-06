@@ -30,6 +30,7 @@ import {
 // /v1/* to Vite itself, which returns the app HTML instead of API JSON.
 // VITE_API_URL remains available for a separately hosted API origin.
 const API_BASE_URL = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '');
+const STREAM_ENABLED = Boolean(import.meta.env.VITE_API_URL);
 
 function apiUrl(path: string): string {
   return `${API_BASE_URL}${path}`;
@@ -156,6 +157,12 @@ export function App() {
     fetchKernelCapabilities();
     fetchMood();
     fetchEcosystemBody();
+
+    if (!STREAM_ENABLED) {
+      setStreamConnected(false);
+      setReconnectAttempt(0);
+      return;
+    }
 
     let es: EventSource | null = null;
     let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
