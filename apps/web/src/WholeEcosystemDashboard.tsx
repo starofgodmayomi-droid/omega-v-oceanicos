@@ -1,6 +1,14 @@
 import React, { useMemo } from 'react';
 import { theme, humanStatus } from './oceanicosTheme';
-import { boundedStatus, statusCounts, STATUS_ORDER, type RealityStatus } from './whole-ecosystem-dashboard-model';
+import {
+  boundedStatus,
+  HUMAN_PRINCIPLES,
+  NON_COLLAPSE_DISTINCTIONS,
+  runtimeModeLabel,
+  statusCounts,
+  STATUS_ORDER,
+  type RealityStatus,
+} from './whole-ecosystem-dashboard-model';
 
 type Props = {
   streamConnected: boolean;
@@ -119,16 +127,27 @@ export function WholeEcosystemDashboard(props: Props) {
   const commandStatus = props.omegaCommand?.reality?.classification
     ? boundedStatus(props.omegaCommand.reality.classification)
     : 'NOT_EXECUTED';
+  const runtimeLabel = runtimeModeLabel(props.simulationMode, props.streamConnected);
 
   return (
     <section className="whole-ecosystem" aria-label="Whole ecosystem command surface">
       <header className="whole-ecosystem-header">
         <div>
-          <span className="whole-ecosystem-kicker">💧 Ω∞v OCEANICOS · ONE BODY · ONE CURRENT</span>
-          <h2>Whole ecosystem command surface</h2>
+          <span className="whole-ecosystem-kicker">ONE PROMPT → ONE BODY · ONE CURRENT · MANY BOUNDED FORMS</span>
+          <h2>My Own From All</h2>
+          <p className="whole-ecosystem-subtitle">One ecosystem · one root · one current · many forms</p>
         </div>
-        <span className="whole-ecosystem-state"><i className="status-dot" /> {props.simulationMode ? 'BOUNDED SIMULATION' : 'LIVE STATE'}</span>
+        <span className="whole-ecosystem-state"><i className="status-dot" /> {runtimeLabel}</span>
       </header>
+
+      <section className="whole-human-root" aria-labelledby="whole-human-root-title">
+        <div>
+          <span className="whole-ecosystem-label">HUMAN ROOT · SOURCE</span>
+          <strong id="whole-human-root-title">Intent begins with the person</strong>
+          <p>One prompt carries human context, values, and boundaries into one bounded body of work.</p>
+        </div>
+        <small>Intent is not identity proof, authority, or runtime evidence.</small>
+      </section>
 
       <div className="whole-ecosystem-grid">
         <nav className="whole-ecosystem-organs" aria-label="Ecosystem organs">
@@ -178,6 +197,20 @@ export function WholeEcosystemDashboard(props: Props) {
           <div className="whole-trust-boundary">DOCUMENTED ≠ VERIFIED<br />CAPABILITY ≠ AUTHORITY<br />PLAN ≠ EXECUTION</div>
         </aside>
       </div>
+
+      <section className="whole-non-collapse" aria-labelledby="whole-non-collapse-title">
+        <span id="whole-non-collapse-title" className="whole-ecosystem-label">NON-COLLAPSE LAW · KEEP STATES DISTINCT</span>
+        <ul>
+          {NON_COLLAPSE_DISTINCTIONS.map((distinction) => <li key={distinction}>{distinction}</li>)}
+        </ul>
+      </section>
+
+      <details className="whole-human-principles">
+        <summary>Human principles · 10 charter commitments</summary>
+        <ol>
+          {HUMAN_PRINCIPLES.map((principle) => <li key={principle}>{principle}</li>)}
+        </ol>
+      </details>
 
       <div className="whole-value-current">
         <div><span className="whole-ecosystem-label">VALUE CURRENT</span><strong>Need → Problem → Solution → Delivery → Observed outcome → Earned value</strong></div>
