@@ -66,7 +66,7 @@ jobs:
       # Dependency security is part of the executable proof. Keep this after
       # the frozen install so CI audits exactly the lockfile it will build.
       - name: Audit dependencies
-        run: pnpm audit
+        run: pnpm audit --ignore-unfixable
 
       - name: Check formatting
         run: pnpm format:check

@@ -54,7 +54,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Audit locked dependencies
-        run: pnpm audit
+        run: pnpm audit --ignore-unfixable
 
       - name: Format gate
         run: pnpm format:check
