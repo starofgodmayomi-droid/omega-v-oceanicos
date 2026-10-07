@@ -1,9 +1,11 @@
 # Notion Command Center ↔ GitHub Reconciliation
 
-**Status:** observed reconciliation; no Notion edit, merge, rebase, push, or deployment executed  
+**Status:** historical pre-PR snapshot; superseded by the follow-up observation below
 **Date:** 2026-10-07  
 **Notion source:** [AI SOUL — MASTER COMMAND CENTER](https://app.notion.com/p/33949ca435a281a89c83ca074966bbfa?pvs=204)  
 **Repository:** `starofgodmayomi-droid/omega-v-oceanicos`
+
+> The observations through the original “Next finite transition” section describe the repository before the bounded GitHub bridge was executed. They remain preserved for lineage and are not current-state claims.
 
 ## Source classification
 
@@ -21,7 +23,7 @@ These principles align with the repository’s existing `docs/architecture/NOTIO
 
 The page also contains historical statements about deployment, connected tools, product status, revenue, prior commits, and previous PRs. Those statements are preserved as Notion source material but are **not promoted to current runtime or GitHub facts** without independent observation.
 
-## Current observations
+## Historical observations before PR #408
 
 | Surface | Observation | Status | Boundary |
 |---|---|---|---|
@@ -36,7 +38,7 @@ The page also contains historical statements about deployment, connected tools, 
 | Notion ↔ GitHub synchronization | No write or synchronization performed | `NOT_EXECUTED` | No content changed in Notion |
 | Production deployment or health | Not probed or authorized | `UNKNOWN` | Local/public sandbox runtime is not production evidence |
 
-## Reconciliation result
+## Historical reconciliation result
 
 The Notion command center and repository architecture agree at the **operating-contract level**:
 
@@ -57,7 +59,7 @@ They diverge at the **current-state level** because the Notion page contains his
 
 No claim is made that the local four commits should be merged on top of the current remote main. The correct next step requires choosing a reconciliation strategy and reviewing the 17 remote commits.
 
-## Authority boundary
+## Historical authority boundary
 
 Not executed:
 
@@ -70,7 +72,7 @@ Not executed:
 
 This stop is intentional. A merge/rebase/push would change external repository history or publish code and requires an explicit strategy after reviewing the divergent remote commits.
 
-## Next finite transition
+## Historical next finite transition
 
 Choose one of these reviewable paths:
 
@@ -79,3 +81,33 @@ Choose one of these reviewable paths:
 3. **Documentation-only sync:** update the Notion page with this reconciliation record after explicit user approval; do not alter GitHub history.
 
 Until one path is selected, the repository state remains `DIVERGENT`, not failed and not merged.
+
+## Follow-up observation: bounded GitHub bridge
+
+The previously selected reviewable path was executed after explicit user confirmation. A fresh branch was created from the current remote `main`, the verified local upgrades were carried forward, conflicts were reconciled in favor of the newer remote Lucid Field behavior plus the bounded safety panel, and the result was published for review.
+
+| Surface | Observation | Status | Boundary |
+|---|---|---|---|
+| Integration branch | `feat/notion-github-agent-safety-bridge` at `20c61560` | `OBSERVED` | Review branch; not merged |
+| GitHub PR | [#408](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/pull/408), open, non-draft, merge state `CLEAN` | `OBSERVED` | Review state is not merge or deployment |
+| Hosted checks | Reported checks completed successfully; publish-attested-artifact was skipped | `SUPPORTED` | GitHub check scope only |
+| Local full suite | `pnpm test`: 118 passed, 0 failed | `VERIFIED` for repository test scope | Does not prove production health |
+| Focused web audit | Web build plus dashboard/proxy tests: 6 passed, 0 failed | `VERIFIED` for focused test scope | Does not prove runtime or external health |
+| Notion bridge note | Factual comment added to the linked command center | `OBSERVED` | Comment records evidence; it does not authorize merge |
+| Merge | No merge action performed | `NOT_EXECUTED` | Human review remains required |
+| Deployment / production health | No deployment or production probe performed | `UNKNOWN` / `NOT_EXECUTED` | Outside this transition |
+
+### Current reconciliation
+
+The repository is no longer merely divergent at the local-history boundary: the verified integration work is now represented by an open, reviewable PR against current `main`. The PR is **not merged**, the application is **not claimed deployed**, and production health and earned value remain **UNKNOWN**.
+
+```text
+NOTION INTENT
+→ RECONCILED BRANCH
+→ LOCAL TEST EVIDENCE
+→ HOSTED CHECK OBSERVATION
+→ REVIEW-ONLY PR #408
+→ HUMAN REVIEW / MERGE DECISION
+```
+
+The next finite transition is human review of PR #408. No automatic merge or deployment is authorized by this record.
