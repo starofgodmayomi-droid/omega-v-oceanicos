@@ -1,5 +1,10 @@
 export type ApiRouteMethod = 'GET' | 'POST';
 
+export type ParsedApiRouteContract = {
+  method: ApiRouteMethod;
+  path: string;
+};
+
 /**
  * Public HTTP contract for the API runtime.
  *
@@ -38,7 +43,6 @@ export const API_ROUTE_INVENTORY = [
   'GET /v1/omega/commands',
   'GET /v1/omega/commands/:id',
   'GET /v1/omega/commands/:id/provenance',
-  'GET /v1/omega/commands/:id/safety-boundary',
   'POST /v1/omega/commands/:id/admit',
   'POST /v1/omega/commands/:id/approve',
   'POST /v1/omega/commands/:id/execute',
@@ -76,3 +80,28 @@ export const API_ROUTE_INVENTORY = [
 ] as const;
 
 export type ApiRouteContract = (typeof API_ROUTE_INVENTORY)[number];
+
+const API_ROUTE_CONTRACT_PATTERN = /^(GET|POST) (\/[^\s]*)$/;
+
+/**
+ * Parse one inventory entry into the exact method/path pair used by Fastify.
+ * Keeping this boundary strict prevents a malformed or duplicated string from
+ * weakening the compiled route parity check.
+ */
+export function parseApiRouteContract(contract: string): ParsedApiRouteContract {
+  const match = API_ROUTE_CONTRACT_PATTERN.exec(contract);
+  if (!match) throw new Error(`invalid API route contract: ${contract}`);
+  return { method: match[1] as ApiRouteMethod, path: match[2] };
+}
+
+export function validateApiRouteInventory(inventory: readonly string[] = API_ROUTE_INVENTORY): void {
+  const seen = new Set<string>();
+  for (const contract of inventory) {
+    const parsed = parseApiRouteContract(contract);
+    const key = `${parsed.method} ${parsed.path}`;
+    if (seen.has(key)) throw new Error(`duplicate API route contract: ${key}`);
+    seen.add(key);
+  }
+}
+
+validateApiRouteInventory();
