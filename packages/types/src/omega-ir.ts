@@ -81,6 +81,8 @@ export interface OmegaIR {
   readonly intent: string;
   readonly evidenceRefs: readonly OmegaEvidenceRef[];
   readonly sourceRefs?: readonly OmegaSourceRef[];
+  /** Optional bounded graph context. Presence does not imply truth or authority. */
+  readonly networkGraph?: import('./network-intelligence.js').NetworkGraph;
   readonly policyRefs: readonly OmegaPolicyRef[];
   readonly workerPlan: readonly OmegaWorkerPlan[];
   readonly transitionSpec: OmegaTransitionSpec;

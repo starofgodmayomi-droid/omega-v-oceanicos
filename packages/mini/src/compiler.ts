@@ -5,6 +5,7 @@ import type {
   OmegaSourceRef,
   OmegaSourceState,
   OmegaWorkerPlan,
+  NetworkGraph,
 } from '@oceanicos/types';
 
 export interface OmegaCompileInput {
@@ -13,6 +14,8 @@ export interface OmegaCompileInput {
   readonly stateBefore: string;
   readonly evidenceRefs: readonly OmegaEvidenceRef[];
   readonly sourceRefs?: readonly OmegaSourceRef[];
+  /** Optional bounded graph context; copied as data only. */
+  readonly networkGraph?: NetworkGraph;
   readonly policyRefs: readonly OmegaPolicyRef[];
   readonly workerPlan: readonly OmegaWorkerPlan[];
   readonly transition: {
@@ -145,6 +148,7 @@ export function compileOmegaIntent(input: OmegaCompileInput): OmegaIR {
     intent,
     evidenceRefs,
     ...(sourceRefs ? { sourceRefs } : {}),
+    ...(input.networkGraph ? { networkGraph: input.networkGraph } : {}),
     policyRefs,
     workerPlan,
     transitionSpec: {

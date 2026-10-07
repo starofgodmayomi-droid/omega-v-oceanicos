@@ -34,6 +34,47 @@ describe('Ω IR validator', () => {
     ]);
   });
 
+  it('rejects invalid network graph references at the Ω IR boundary', () => {
+    const invalid = {
+      ...validIR,
+      networkGraph: {
+        version: 'network-intelligence.v1',
+        nodes: [],
+        edges: [
+          { id: 'edge-1', from: 'missing-a', to: 'missing-b', kind: 'connects', bounded: true, authority: null, policy: null },
+        ],
+        signals: [],
+      },
+    } as OmegaIR;
+    const result = validateOmegaIR(invalid);
+    expect(result.valid).toBe(false);
+    expect(result.issues.map((issue) => issue.message)).toEqual([
+      'edge edge-1 references unknown source node missing-a',
+      'edge edge-1 references unknown target node missing-b',
+    ]);
+  });
+
+  it('accepts a valid network graph at the Ω IR boundary', () => {
+    const valid = {
+      ...validIR,
+      networkGraph: {
+        version: 'network-intelligence.v1',
+        nodes: [
+          {
+            id: 'human',
+            kind: 'human',
+            label: 'human root',
+            state: 'OBSERVED',
+            provenance: { source: 'test', observedAt: '2026-10-07T00:00:00.000Z', attributedTo: 'test', evidenceRefs: ['e1'] },
+          },
+        ],
+        edges: [],
+        signals: [],
+      },
+    } as OmegaIR;
+    expect(validateOmegaIR(valid)).toEqual({ valid: true, issues: [] });
+  });
+
   it('rejects source claims that skip required authority or evidence boundaries', () => {
     const invalid = {
       ...validIR,
