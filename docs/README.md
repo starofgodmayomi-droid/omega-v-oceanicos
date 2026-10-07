@@ -83,6 +83,9 @@ Welcome to the Ω∞v Oceanicos documentation. Start here to understand the proj
 - **[Full-stack reality access](./upgrades/FULL_STACK_REALITY_ACCESS_2026-09-28.md)**
   — admissible connector surfaces, authentication, authorization, and
   reconciliation boundaries.
+- **[AI-news agent safety upgrade](./upgrades/AI_NEWS_AGENT_SAFETY_UPGRADE_2026-10-07.md)**
+  — current primary-source evidence translated into runtime boundaries,
+  oversight, evaluation, revocation, and provenance requirements.
 - **[Infrastructure](../infra/README.md)** — the image, its environment
   variables, and what does not exist yet.
 
