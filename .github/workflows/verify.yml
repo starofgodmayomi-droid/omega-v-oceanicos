@@ -35,6 +35,7 @@ jobs:
       pull-requests: write
 
     strategy:
+      fail-fast: false
       matrix:
         # 22.x is what the published container runs. 24.x is the next LTS,
         # so a break arrives as a red pull request rather than as a
@@ -341,6 +342,7 @@ jobs:
     if: always() && github.event_name == 'pull_request'
 
     permissions:
+      actions: read
       pull-requests: write
 
     steps:
@@ -360,28 +362,28 @@ jobs:
         uses: actions/github-script@v9
         with:
           script: |
-            const verify = '${{ needs.verify.result }}';
-            const windows = '${{ needs.windows.result }}';
-            const docker = '${{ needs.docker.result }}';
-            const compose = '${{ needs.compose.result }}';
-            const ok = verify === 'success' && windows === 'success' && docker === 'success' && compose === 'success';
-            const mark = (r) => (r === 'success' ? '✓' : r === 'skipped' ? '–' : '✗');
+            const { data } = await github.rest.actions.listJobsForWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.runId,
+              per_page: 100,
+            });
+            const jobs = data.jobs.filter((job) => job.name !== 'Report pipeline result');
+            const stateOf = (job) => job.status === 'completed' ? (job.conclusion || 'no conclusion') : job.status;
+            const NOT_REQUIRED_ON_PULL_REQUESTS = new Set(['Publish attested artifact']);
+            const required = jobs.filter((job) => !NOT_REQUIRED_ON_PULL_REQUESTS.has(job.name));
+            const ok = required.length > 0 && required.every((job) => stateOf(job) === 'success');
+            const mark = (state) => state === 'success' ? '✓' : state === 'skipped' ? '–' : '✗';
 
             const body = [
-              ok
-                ? '✅ Verification pipeline passed'
-                : '❌ Verification pipeline did not pass',
+              ok ? '✅ Verification pipeline passed' : '❌ Verification pipeline did not pass',
               '',
-              `- ${mark(verify)} verify (audit, format, lint, type-check, test, coverage, build) — ${verify}`,
-              `- ${mark(windows)} Windows compatibility (format, type-check, test, build) — ${windows}`,
-              `- ${mark(docker)} package and smoke test — ${docker}`,
-              `- ${mark(compose)} Compose configuration — ${compose}`,
+              ...jobs.map((job) => '- ' + mark(stateOf(job)) + ' ' + job.name + ' — ' + stateOf(job)),
               '',
               ok
-                ? 'Every job this comment names completed successfully.'
-                : 'Details are in the checks tab. This comment reports what ran, not what was hoped for.',
+                ? 'Every required job in run ' + context.runId + ' completed successfully.'
+                : 'Read as: only success is a pass. Run ' + context.runId + '.',
             ].join('\n');
-
             await github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
