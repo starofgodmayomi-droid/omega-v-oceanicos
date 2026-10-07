@@ -470,7 +470,7 @@ export function registerOmegaRoutes(fastify: FastifyInstance, store: OmegaComman
   fastify.post('/v1/omega/commands/:id/approve', async (request, reply) => {
     const command = store.get((request.params as { id?: string }).id ?? '');
     if (!command) return reply.status(404).send({ success: false, error: 'OMEGA_COMMAND_NOT_FOUND' });
-    if (command.status !== 'REVIEW') return reply.status(409).send({ success: false, error: 'OMEGA_APPROVAL_REQUIRES_REVIEW' });
+    if (command.status !== 'PROPOSED' && command.status !== 'REVIEW') return reply.status(409).send({ success: false, error: 'OMEGA_APPROVAL_REQUIRES_REVIEW' });
     const body = bodyOf(request);
     const operator = typeof body.operator === 'string' && body.operator.trim() ? body.operator : 'dashboard-operator';
     const policy = typeof body.policy === 'string' && body.policy.trim() ? body.policy : 'human-review';
