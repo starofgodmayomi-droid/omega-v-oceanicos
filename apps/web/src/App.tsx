@@ -14,6 +14,8 @@ import { DivergenceAlertsPanel } from './DivergenceAlertsPanel';
 import { ValueNavigatorPanel } from './ValueNavigatorPanel';
 import { ConnectorPanel } from './ConnectorPanel';
 import { WholeEcosystemDashboard } from './WholeEcosystemDashboard';
+import { WholeEcosystemDepthPanels } from './WholeEcosystemDepthPanels';
+import { ExpandableCompressPanel } from './ExpandableCompressPanel';
 import { LifecycleFlow, deriveStageStates, type LifecycleStage } from './LifecycleFlow';
 import { GlobeViewport } from './GlobeViewport';
 import { bindGlobeEvidence } from './globe-shell';
@@ -762,6 +764,15 @@ export function App() {
           omegaCommand={omegaCommand}
           onFocusCommand={setOmegaIntent}
         />
+        <WholeEcosystemDepthPanels
+          streamConnected={streamConnected}
+          simulationMode={simulationMode}
+          humanGateRequired={humanGateRequired}
+          ledgerIntegrity={ledgerIntegrity}
+          omegaCommand={omegaCommand}
+          onFocusCommand={setOmegaIntent}
+        />
+        <ExpandableCompressPanel onFocusCommand={setOmegaIntent} />
 
         {/* Prompt */}
         <h1
