@@ -23,7 +23,7 @@ test('compiled API registers every inventoried method/path pair', async () => {
     });
 
     assert.deepEqual(missing, [], `missing compiled routes: ${missing.join(', ')}`);
-    assert.equal(API_ROUTE_INVENTORY.length, 65);
+    assert.equal(API_ROUTE_INVENTORY.length, 66);
   } finally {
     await app.close();
     rmSync(directory, { recursive: true, force: true });
