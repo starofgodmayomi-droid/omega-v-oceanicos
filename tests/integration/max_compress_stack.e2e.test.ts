@@ -261,6 +261,12 @@ describe('Ω∞v Oceanicos Max Compress Full-Stack E2E Suite', () => {
     assert.strictEqual(statusRes.statusCode, 200);
     const initialStatus = JSON.parse(statusRes.body);
     assert.strictEqual(initialStatus.miner.active, false);
+    assert.deepStrictEqual(initialStatus.bounds.intervalMs, { min: 1000, max: 60000 });
+    assert.strictEqual(initialStatus.bounds.proofOfWorkAttempts, MAX_PROOF_OF_WORK_ATTEMPTS);
+
+    const invalidStart = await apiApp.inject({ method: 'POST', url: '/v1/miner/start', payload: { intervalMs: 60001 } });
+    assert.strictEqual(invalidStart.statusCode, 400);
+    assert.strictEqual(JSON.parse(invalidStart.body).error, 'INVALID_MINER_INTERVAL');
 
     const startRes = await apiApp.inject({ method: 'POST', url: '/v1/miner/start', payload: { intervalMs: 2000 } });
     assert.strictEqual(startRes.statusCode, 200);
