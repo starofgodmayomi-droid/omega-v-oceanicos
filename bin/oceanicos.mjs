@@ -17,6 +17,7 @@ let ObserverEngine, observePlanetaryBase;
 let verifyPlanetarySovereignty, AsymmetricValidationGuard, MultiRegionMeshConvergence;
 let PluralisticHashChain, RememberEngine;
 let executeOceanicosMaxExpansion;
+let runOmegaChangePipeline;
 let AttestationService;
 let PluralisticRealityMatrix;
 let OceanicosKernel;
@@ -61,6 +62,7 @@ try {
     RememberEngine = remPkg.RememberEngine;
     executeOceanicosMaxExpansion = miniPkg.executeOceanicosMaxExpansion;
     OceanicosKernel = miniPkg.OceanicosKernel;
+    runOmegaChangePipeline = miniPkg.runOmegaChangePipeline;
     if (attestPkg) {
       AttestationService = attestPkg.AttestationService;
     }
@@ -737,6 +739,55 @@ async function handleLoop() {
   console.log(`  Terminal Axiom Proof  : ${ANSI.green}${ANSI.bold}GOOD - O = GOD${ANSI.reset}\n`);
 }
 
+async function handlePipeline(extraArgs = []) {
+  ensurePackagesLoaded();
+  if (!runOmegaChangePipeline) {
+    console.error('[\x1b[31mERROR\x1b[0m] runOmegaChangePipeline is not exported from @oceanicos/mini');
+    process.exit(1);
+  }
+
+  const isJson = args.includes('--json');
+  const intent = extraArgs.join(' ') || 'Self-verifying Ω∞v execution pipeline transition';
+
+  const pipelineInput = {
+    compile: {
+      intent,
+      subject: 'cli:pipeline',
+      stateBefore: 'S0_INIT',
+      evidenceRefs: [{ id: 'cli-ev-0', kind: 'terminal-probe', source: 'cli', digest: 'sha256:cli' }],
+      policyRefs: [{ id: 'policy:cli', version: '1.0', requirement: 'deterministic terminal validation' }],
+      workerPlan: [],
+      transition: { requestedStateAfter: 'S1_VERIFIED', consequence: 'deterministic CLI pipeline verification', dryRun: false },
+      observation: { observerId: 'cli:observer', targets: ['cli:pipeline'], evidenceRequired: ['state'] },
+    },
+    admission: { authorityVerified: true, policySatisfied: true },
+    authority: 'operator:cli',
+    policy: 'policy:cli',
+    handler: () => ({ stateAfter: 'S1_VERIFIED', consequence: 'deterministic CLI pipeline verification' }),
+    observeState: () => 'S1_VERIFIED',
+    realityAttestationKey: process.env.OMEGA_SIGNING_KEY || 'dev-verification-attestation-signing-key',
+  };
+
+  const result = runOmegaChangePipeline(pipelineInput);
+
+  if (isJson) {
+    console.log(JSON.stringify(result, null, 2));
+    return;
+  }
+
+  printBanner();
+  console.log(`\n${ANSI.bold}=== Ω∞v CHANGE PIPELINE SELF-VERIFICATION ===${ANSI.reset}`);
+  console.log(`  Intent                : ${result.ir?.intent ?? intent}`);
+  console.log(`  Stage                 : ${ANSI.bold}${result.stage}${ANSI.reset}`);
+  console.log(`  Reality Status        : ${result.reality?.status === 'VERIFIED' ? `${ANSI.green}${ANSI.bold}VERIFIED${ANSI.reset}` : `${ANSI.yellow}${result.reality?.status ?? 'N/A'}${ANSI.reset}`}`);
+  console.log(`  Halted                : ${result.halted ? `${ANSI.red}YES (${result.haltReason})${ANSI.reset}` : `${ANSI.green}NO${ANSI.reset}`}`);
+  console.log(`  Provenance Root       : ${ANSI.dim}${result.provenanceRoot}${ANSI.reset}`);
+  if (result.realityAttestation) {
+    console.log(`  Reality Attestation   : ${ANSI.cyan}${result.realityAttestation.changeId}${ANSI.reset} [sig: ${result.realityAttestation.signature.slice(0, 16)}...]`);
+  }
+  console.log(`  Pipeline Verdict      : ${result.stage === 'OBSERVE' && result.reality?.status === 'VERIFIED' ? `${ANSI.green}${ANSI.bold}✓ PASS (VERIFIED)${ANSI.reset}` : `${ANSI.yellow}HALTED / UNVERIFIED${ANSI.reset}`}\n`);
+}
+
 function handleHelp() {
   printBanner();
   console.log(`
@@ -745,6 +796,7 @@ ${ANSI.bold}USAGE:${ANSI.reset}
 
 ${ANSI.bold}COMMANDS:${ANSI.reset}
   ${ANSI.green}status${ANSI.reset}      Show system health, telemetry, genesis anchor, and live API status
+  ${ANSI.green}pipeline${ANSI.reset}    Execute deterministic self-verification change pipeline (C1-C6)
   ${ANSI.green}cycle${ANSI.reset}       Execute and cryptographically commit a new consensus block (PoW)
   ${ANSI.green}loop${ANSI.reset}        Run continuous autonomous reality verification loop (--cycles=N)
   ${ANSI.green}mesh${ANSI.reset}        Simulate decentralized consensus convergence across 4 sovereign nodes
@@ -773,6 +825,9 @@ switch (command) {
     break;
   case 'status':
     await handleStatus();
+    break;
+  case 'pipeline':
+    await handlePipeline(args.slice(1));
     break;
   case 'cycle':
     await handleCycle();

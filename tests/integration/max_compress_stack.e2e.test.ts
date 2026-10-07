@@ -333,6 +333,21 @@ describe('Ω∞v Oceanicos Max Compress Full-Stack E2E Suite', () => {
     assert.ok(stdout.includes('node-me-dubai'));
   });
 
+  it('16b. Unified CLI "pipeline --json" executes deterministic C1-C6 self-verification pipeline', async () => {
+    const { execFileSync } = await import('node:child_process');
+    const path = await import('node:path');
+    const cliPath = path.resolve(process.cwd(), 'bin/oceanicos.mjs');
+    const stdout = execFileSync(process.execPath, [cliPath, 'pipeline', '--json'], { encoding: 'utf-8' });
+    const jsonMatch = stdout.match(/\{[\s\S]*\}/);
+    assert.ok(jsonMatch, 'Must output valid JSON pipeline result');
+    const result = JSON.parse(jsonMatch[0]);
+    assert.strictEqual(result.stage, 'OBSERVE');
+    assert.strictEqual(result.halted, false);
+    assert.strictEqual(result.reality.status, 'VERIFIED');
+    assert.strictEqual(result.statusVector.verified, 'YES');
+    assert.ok(result.realityAttestation?.signature);
+  });
+
   it('17. Cryptographic AttestationService generates and verifies unforgeable HMAC & Ed25519 signatures', async () => {
     const secretKey = 'test-secret-key-for-attestation-2026';
     const hmacService = new AttestationService({ signingKey: secretKey, algorithm: 'HMAC-SHA256' });
