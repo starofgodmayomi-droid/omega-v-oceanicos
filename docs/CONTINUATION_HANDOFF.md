@@ -10,16 +10,16 @@ This document is a current, evidence-bound continuation record for the next fini
 |---|---|
 | Repository | `starofgodmayomi-droid/omega-v-oceanicos` |
 | Remote | `https://github.com/starofgodmayomi-droid/omega-v-oceanicos.git` |
-| Local clone | `/home/ubuntu/omega-v-oceanicos` |
-| Branch | `main` |
-| HEAD | `fc3f8b665020fb56b8ed2ee2bd5242c20147ac7b` |
-| Commit subject | `docs: compress ecosystem toward omega core` |
-| Upstream relation | `main...origin/main` |
-| Current local state | One tracked documentation edit plus the untracked compressed continuity artifact |
+| Local clone | `/home/ubuntu/github-work/omega-v-oceanicos` |
+| Branch | `feat/dashboard-water-flow` |
+| HEAD | `8955146f38635e374b6650fd713280c1e022e4b4` |
+| Commit subject | `feat(api): bound miner and proof of work` |
+| Upstream relation | `feat/dashboard-water-flow...origin/feat/dashboard-water-flow` |
+| Current local state | Clean feature branch; PR #399 open and mergeable into protected `main` |
 | Active services | None claimed after bounded validation |
 | Deployment | Not executed |
 
-The current commit is a shallow local checkout of `origin/main`. Reinspect Git state before any future mutation, commit, push, merge, or release operation.
+GitHub `main` remains protected at `fbad42b1e78c9fde6b824a81f7d8a2b9f3f04614`; the feature branch is reviewed through [PR #399](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/pull/399). Reinspect Git state before any future mutation, commit, push, merge, or release operation.
 
 ## Human intent and authority
 
@@ -104,48 +104,46 @@ Warnings about Node type stripping, SQLite, and module type were non-failing war
 
 ## Open divergence and local changes
 
-The previous version of this handoff was stale. This revision corrects its old commit, path, dirty-state, and validation claims.
+The previous version of this handoff was stale. This revision corrects its old commit, path, branch, dirty-state, and validation claims.
 
-Current local changes are intentionally uncommitted:
+The previously documented local-only changes are no longer the current state. The current branch is clean after the reviewed implementation commits:
 
 ```text
-M  docs/CONTINUATION_HANDOFF.md
-?? docs/CONVERSATION_MAX_COMPRESSED.md
+8955146f feat(api): bound miner and proof of work
+89bd1959 test(api): harden auth boundary coverage
+386051bc feat(web): surface bounded water flow
 ```
 
-The compressed conversation artifact is a continuity aid, not proof by itself. No source-code or runtime behavior change is included in this documentation transition.
+The current PR includes the bounded water-flow UI/API contract, explicit auth-boundary regression coverage, and finite Remember/PoW bounds. Local full build, focused proof suites, skill/CI validation, and hosted PR checks passed. These are repository and CI claims only; merge, deployment, runtime health, and real-world value remain distinct states.
 
 ## Safety and rollback
 
-This transition is documentation-only and reversible. Rollback is:
+This reconciliation is documentation-only and reversible. Rollback is:
 
 ```bash
-git restore -- docs/CONTINUATION_HANDOFF.md
+git restore -- docs/CONTINUATION_HANDOFF.md docs/REPO_INVENTORY.md README.md
 ```
 
-Do not discard `docs/CONVERSATION_MAX_COMPRESSED.md` without confirming whether it is still needed as the continuity record. Do not commit or push either file unless that collaboration action is explicitly selected.
+Do not infer merge or deployment from this record. Any future merge remains a separate authorized GitHub action.
 
 ## Next finite transition
 
-The next smallest complete engineering slice is one additive provenance/replay invariant:
+The current bounded slice is complete through review and CI; the next gate is human review and an explicit merge decision for PR #399:
 
-1. Inspect the current API, MINI, causal-memory, attestation, and replay contracts.
-2. Identify one missing invariant with a concrete absent or failing test.
-3. Define expected state, expected consequence, authority, policy, stop condition, and rollback.
-4. Implement only the smallest scoped change on a dedicated branch if a branch is requested.
-5. Run the focused tests, then `pnpm verify:full` and relevant local smoke probes.
-6. Reconcile expected versus observed state and preserve any divergence.
-7. Commit/push/open a PR only when explicitly requested.
+1. Review PR #399's diff and hosted check conclusions.
+2. Decide whether to merge the reviewed feature branch into protected `main`.
+3. If merged, observe the resulting `main` commit and post-merge workflows.
+4. Preserve deployment and runtime health as `UNKNOWN` until directly observed.
 
-**Next transition gate:** a specific provenance/replay invariant and acceptance test must be named before code mutation.
+**Next transition gate:** explicit human authorization to merge PR #399; no merge is implied by green checks.
 
 ## Compact handoff
 
 ```text
 Intent: continue Ω∞v toward reality with bounded AI/OS/full-stack evolution.
-Authority: local reversible documentation and validation only at this stage.
-Current: main @ fc3f8b6; local tests 31/31 pass; worker cycle verified; 8-slot probe verified.
-Changes: this handoff updated; compressed conversation artifact remains untracked.
+Authority: PR #399 is published and reviewable; merge remains a separate human decision.
+Current: feature @ 8955146f; main @ fbad42b1; local and hosted checks pass.
+Changes: water-flow UI/API, auth-boundary tests, Remember/PoW bounds, and reconciled records.
 Unknowns: production runtime, distributed scalability, deployment health, universal completion.
-Next Δ: choose one additive provenance/replay invariant with explicit acceptance evidence.
+Next Δ: review and, if explicitly authorized, merge PR #399; then observe post-merge main.
 ```

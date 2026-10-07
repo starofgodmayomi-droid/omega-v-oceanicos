@@ -6,7 +6,9 @@
 
 ## Audit date and evidence
 
-**2026-10-02** — inspected current `main` at `fd4417e73c4aa10cec678d1f09eb6f09a0cffec2`.
+**2026-10-06** — reconciled the repository manifests against local branch
+`feat/dashboard-water-flow` at `8955146f` and GitHub `main` at
+`fbad42b1e78c9fde6b824a81f7d8a2b9f3f04614`.
 
 Evidence sources:
 
@@ -14,7 +16,7 @@ Evidence sources:
 - Each workspace package's `package.json` — package directory and declared name.
 - `apps/api/package.json` — direct API workspace dependency declarations.
 - `docs/REPO_INVENTORY.md` contract test — compares this inventory with those manifests.
-- [Verification Pipeline run 37074868414](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/actions/runs/37074868414) — succeeded on `main` at the audited commit. This is CI evidence for that revision; it does not prove deployment or current production health.
+- [PR #399](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/pull/399) — open and mergeable at head `8955146f`; its hosted verification, security, coverage, worker, Windows, and package/smoke checks passed. This is PR evidence for that reviewed revision; it does not prove merge, deployment, or current production health.
 
 An earlier 2026-09-27 snapshot at `61b5fff` classified `worker` and `pipeline` as source-only. The current workspace configuration includes both. Historical classifications remain in Git history; the manifest is the source of truth for the inventory below.
 
@@ -100,12 +102,12 @@ Unresolved naming edge. Do not silently rename packages.
 
 The root `package.json` maintains explicit file lists for `pnpm test` and `pnpm test:e2e`; do not assume those commands discover arbitrary tests or accept path-filter semantics. `pnpm test:worker` is the focused worker lifecycle command.
 
-At audited main commit `fd4417e73c4aa10cec678d1f09eb6f09a0cffec2`, Verification Pipeline run [37074868414](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/actions/runs/37074868414) completed successfully. Its Node 22.x and 24.x verification jobs, Compose configuration, Windows compatibility, and package/smoke jobs succeeded; artifact publication was skipped. This records CI for that commit only, not deployment or runtime health.
+At the reconciled PR head `8955146f`, PR #399's Verification Pipeline and companion hosted checks completed successfully, including Node 22.x and 24.x verification, Compose configuration, Windows compatibility, package/smoke, security, coverage, and bounded-worker evidence. This records CI for that reviewed revision only, not merge, deployment, or runtime health. GitHub `main` remains protected at `fbad42b1` until review and merge.
 
 ## Migration path
 
 ```text
-INVENTORY (this document, 2026-10-02)
+INVENTORY (this document, 2026-10-06)
 → DEPENDENCY MAP (docs/DEPENDENCY_MAP.md)
 → CONTRACT MAP
 → MIGRATION

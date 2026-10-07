@@ -54,6 +54,18 @@ without treating any single component—or any agent—as the final authority.
 | **Governance rule** | Human authority is required for consequential action |
 | **Current proof** | Local repository and hosted CI evidence; deployment is a separate state |
 
+### Current bounded transition
+
+The open review [PR #399](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/pull/399)
+connects a bounded water-flow trace from the Omega command API to the dashboard,
+adds explicit required-mode authentication boundary coverage, and exposes finite
+Remember/PoW bounds (miner interval: 1–60 seconds; PoW ceiling: 1,000,000
+attempts). Its latest observed head is `8955146f`. Local validation and hosted
+Verification Pipeline, Security Analysis, coverage, worker, Windows, and package/
+smoke checks passed for the reviewed revisions. The PR remains open and mergeable;
+this is review and CI evidence, not evidence of merge, deployment, runtime health,
+or real-world value.
+
 ## Why OCEANICOS exists
 
 Modern systems can generate convincing answers, execute tools, and produce reports
