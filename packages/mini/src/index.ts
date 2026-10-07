@@ -116,6 +116,8 @@ export { KaiContinuity, kaiFromBlock, kaiUnknown, KAI_VERSION } from './kai.js';
 export type { KaiDrop, KaiSource, KaiStatus } from './kai.js';
 export { captureMiniKernelCycle } from './kai-cycle.js';
 export { buildOmegaWaterFlow } from './water-flow.js';
+export { MAX_TOTAL_COMPRESSION_LEASE_MS, TOTAL_COMPRESSION_PACKAGE_IDS, validateTotalCompressionRequest } from './total-compress.js';
+export type { TotalCompressionIssueCode, TotalCompressionPackage, TotalCompressionRequest, TotalCompressionScope, TotalCompressionValidationIssue, TotalCompressionValidationResult } from './total-compress.js';
 export { runBoundedParallel } from './parallel.js';
 export type {
   BoundedParallelAdmission,
