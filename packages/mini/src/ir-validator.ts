@@ -29,6 +29,21 @@ export function validateOmegaIR(ir: OmegaIR): OmegaIRValidation {
     if (!nonEmpty(ref.id)) issues.push({ path: `sourceRefs[${index}].id`, message: 'id must be non-empty' });
     if (!nonEmpty(ref.kind)) issues.push({ path: `sourceRefs[${index}].kind`, message: 'kind must be non-empty' });
     if (!nonEmpty(ref.locator)) issues.push({ path: `sourceRefs[${index}].locator`, message: 'locator must be non-empty' });
+    if (ref.lineRange !== undefined) {
+      const lineRange: unknown = ref.lineRange;
+      if (typeof lineRange !== 'object' || lineRange === null || Array.isArray(lineRange)) {
+        issues.push({ path: `sourceRefs[${index}].lineRange`, message: 'lineRange must be an object' });
+      } else {
+        const { startLine, endLine } = lineRange as { startLine?: unknown; endLine?: unknown };
+        const validStart = Number.isSafeInteger(startLine) && Number(startLine) >= 1;
+        const validEnd = Number.isSafeInteger(endLine) && Number(endLine) >= 1;
+        if (!validStart) issues.push({ path: `sourceRefs[${index}].lineRange.startLine`, message: 'startLine must be a positive safe integer' });
+        if (!validEnd) issues.push({ path: `sourceRefs[${index}].lineRange.endLine`, message: 'endLine must be a positive safe integer' });
+        else if (validStart && Number(endLine) < Number(startLine)) {
+          issues.push({ path: `sourceRefs[${index}].lineRange.endLine`, message: 'endLine must be greater than or equal to startLine' });
+        }
+      }
+    }
     if (!['DISCOVERED', 'RETRIEVED', 'TRUSTED', 'AUTHORIZED', 'EXECUTED', 'OBSERVED', 'VERIFIED'].includes(ref.state)) {
       issues.push({ path: `sourceRefs[${index}].state`, message: 'unsupported source state' });
     }

@@ -53,6 +53,17 @@ const normalizeSourceState = (state: OmegaSourceState): OmegaSourceState => {
   return state;
 };
 
+const normalizeSourceLineRange = (lineRange: OmegaSourceRef['lineRange']): OmegaSourceRef['lineRange'] => {
+  if (!lineRange || typeof lineRange !== 'object' || Array.isArray(lineRange)) {
+    throw new Error('source line range must be an object');
+  }
+  const { startLine, endLine } = lineRange;
+  if (!Number.isSafeInteger(startLine) || startLine < 1 || !Number.isSafeInteger(endLine) || endLine < startLine) {
+    throw new Error('source line range must use positive safe integers with endLine >= startLine');
+  }
+  return { startLine, endLine };
+};
+
 /**
  * Advance a source only forward through the epistemic lifecycle. A later
  * observation cannot erase a stronger prior state by silently regressing it.
@@ -75,6 +86,7 @@ export function normalizeOmegaSource(source: OmegaSourceRef): OmegaSourceRef {
     id: normalize(source.id, 'source id'),
     kind: normalize(source.kind, 'source kind'),
     locator: normalize(source.locator, 'source locator'),
+    ...(source.lineRange !== undefined ? { lineRange: normalizeSourceLineRange(source.lineRange) } : {}),
     state: normalizeSourceState(source.state),
     provenance: normalize(source.provenance, 'source provenance'),
     ...(source.digest ? { digest: normalize(source.digest, 'source digest') } : {}),
