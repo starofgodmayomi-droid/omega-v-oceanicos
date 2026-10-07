@@ -385,3 +385,7 @@ infinity, consciousness, or control of external reality.
 
 **Status:** MINI kernel and earned expansions — expand only with evidence
 **Last updated:** 2026-10-02
+
+## Whole-ecosystem root
+
+The canonical expandable continuity/root prompt is [docs/WHOLE-ECOSYSTEM-MASTER-PROMPT.md](docs/WHOLE-ECOSYSTEM-MASTER-PROMPT.md). It is a design/continuity contract, not runtime proof. Existing repository contracts, ΩIR types, admission gates, tests, and runtime observations remain the executable evidence boundary.
