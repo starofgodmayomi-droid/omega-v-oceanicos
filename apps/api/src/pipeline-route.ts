@@ -8,6 +8,7 @@ import {
   runOmegaChangePipeline,
   createOmegaWorkerRegistry,
 } from '@oceanicos/mini';
+import { OMEGA_WATER_FLOW_MAX_STEPS } from '@oceanicos/types';
 
 type JsonError = (
   reply: any,
@@ -34,6 +35,17 @@ export function registerPipelineRoute(
     if (!policy) return jsonError(reply, 400, 'MISSING_POLICY');
     if (typeof admission.authorityVerified !== 'boolean' || typeof admission.policySatisfied !== 'boolean') {
       return jsonError(reply, 400, 'INVALID_ADMISSION_GATES');
+    }
+    const waterFlowMaxSteps = body.waterFlowMaxSteps;
+    if (
+      waterFlowMaxSteps !== undefined &&
+      (!Number.isInteger(waterFlowMaxSteps) ||
+        waterFlowMaxSteps < 1 ||
+        waterFlowMaxSteps > OMEGA_WATER_FLOW_MAX_STEPS)
+    ) {
+      return jsonError(reply, 400, 'INVALID_WATER_FLOW_BOUNDS', {
+        message: `waterFlowMaxSteps must be an integer from 1 to ${OMEGA_WATER_FLOW_MAX_STEPS}`,
+      });
     }
 
     const observedState =
@@ -94,6 +106,7 @@ export function registerPipelineRoute(
         realityAttestationKey: causalMemoryKey,
         realityAttestationSignerId: process.env.OMEGA_REALITY_ATTESTATION_SIGNER,
         realityAttestationKeyVersion: process.env.OMEGA_REALITY_ATTESTATION_KEY_VERSION,
+        waterFlowMaxSteps,
       });
 
       return {

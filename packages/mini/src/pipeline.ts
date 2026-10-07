@@ -72,6 +72,8 @@ export interface OmegaPipelineInput {
   readonly realityAttestationKey?: string;
   readonly realityAttestationSignerId?: string;
   readonly realityAttestationKeyVersion?: string;
+  /** Optional finite prefix length for the symbolic KAI water-flow trace. */
+  readonly waterFlowMaxSteps?: number;
 }
 
 export interface OmegaPipelineResult {
@@ -189,6 +191,7 @@ export function runOmegaChangePipeline(input: OmegaPipelineInput): OmegaPipeline
     state: ir.transitionSpec.stateBefore,
     intent: ir.intent,
     traceId: input.changeId,
+    maxSteps: input.waterFlowMaxSteps,
   });
   lineage.push(`compile:${sha256(JSON.stringify(ir)).slice(0, 16)}`);
 

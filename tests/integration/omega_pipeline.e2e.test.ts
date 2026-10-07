@@ -105,6 +105,38 @@ describe('Ω∞v unified change pipeline', () => {
     assert.ok(memory.length >= 1);
   });
 
+  it('exposes a deterministic finite water-flow prefix without changing execution semantics', () => {
+    const result = runOmegaChangePipeline({
+      compile: compileBase,
+      admission: { authorityVerified: true, policySatisfied: true },
+      authority: 'human:pipeline',
+      policy: 'policy:pipeline',
+      handler: () => ({ stateAfter: 'S1' }),
+      waterFlowMaxSteps: 3,
+      changeId: 'change-pipeline-prefix',
+    });
+
+    assert.equal(result.halted, false);
+    assert.equal(result.stage, 'EXECUTE');
+    assert.deepEqual(result.waterFlow.map((frame) => frame.stage), ['REALITY', 'ATTENTION', 'INTENTION']);
+    assert.equal(result.waterFlow.every((frame) => frame.bounds.maxSteps === 3), true);
+    assert.equal(result.waterFlow.every((frame) => frame.provenance.verified === false), true);
+  });
+
+  it('rejects water-flow bounds outside the finite contract', () => {
+    assert.throws(
+      () =>
+        runOmegaChangePipeline({
+          compile: compileBase,
+          admission: { authorityVerified: true, policySatisfied: true },
+          authority: 'human:pipeline',
+          policy: 'policy:pipeline',
+          waterFlowMaxSteps: 9,
+        }),
+      /water-flow maxSteps must be an integer from 1 to 8/,
+    );
+  });
+
   it('fails closed at compile when intent is empty', () => {
     assert.throws(
       () =>
