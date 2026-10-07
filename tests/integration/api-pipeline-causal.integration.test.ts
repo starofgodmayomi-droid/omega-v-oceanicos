@@ -79,6 +79,53 @@ describe('live API pipeline → durable causal memory', () => {
     }
   });
 
+  it('accepts a finite water-flow prefix and rejects invalid bounds at the API boundary', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'omega-api-water-flow-'));
+    try {
+      const { createApp } = await import('../../apps/api/dist/index.js');
+      const app = createApp(join(directory, 'ledger.db'), false, { allowUnsignedCycle: true });
+      await app.ready();
+      try {
+        const valid = await app.inject({
+          method: 'POST',
+          url: '/v1/pipeline',
+          payload: {
+            compile,
+            admission: { authorityVerified: true, policySatisfied: true },
+            authority: 'human:api-test',
+            policy: 'policy:api',
+            handlerStateAfter: 'S1',
+            waterFlowMaxSteps: 2,
+            changeId: 'api-water-flow-prefix',
+          },
+        });
+        assert.equal(valid.statusCode, 200);
+        assert.deepEqual(
+          valid.json().pipeline.waterFlow.map((frame: { stage: string }) => frame.stage),
+          ['REALITY', 'ATTENTION'],
+        );
+
+        const invalid = await app.inject({
+          method: 'POST',
+          url: '/v1/pipeline',
+          payload: {
+            compile,
+            admission: { authorityVerified: true, policySatisfied: true },
+            authority: 'human:api-test',
+            policy: 'policy:api',
+            waterFlowMaxSteps: 9,
+          },
+        });
+        assert.equal(invalid.statusCode, 400);
+        assert.equal(invalid.json().error, 'INVALID_WATER_FLOW_BOUNDS');
+      } finally {
+        await app.close();
+      }
+    } finally {
+      await removeTemporaryDirectory(directory);
+    }
+  });
+
   it('rejects the pipeline before execution when configured causal memory is unreadable', async () => {
     const directory = mkdtempSync(join(tmpdir(), 'omega-api-causal-unreadable-'));
     const memoryPath = join(directory, 'causal-directory');

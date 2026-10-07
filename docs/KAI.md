@@ -41,6 +41,12 @@ Opportunity is not revenue; projection is not earned value.
 
 The kernel is `packages/mini/src/kai.ts` and is exported by `@oceanicos/mini`. It builds on the existing MINI Observe → Verify → Remember fabric rather than replacing it.
 
+The bounded water-flow companion is `buildOmegaWaterFlow` in `packages/mini/src/water-flow.ts`.
+It emits the finite `REALITY → ATTENTION → INTENTION → ACTION → CONSEQUENCE → OBSERVATION → LEARNING → RETURN`
+trace (`omega.water-flow.v1`) with deterministic provenance and `verified: false`. Pipeline callers may request
+an explicit prefix through `waterFlowMaxSteps`; the API accepts only integers from 1 through 8 and defaults to
+the full eight-stage trace. This is symbolic local-simulation evidence, not physical-world observation or external execution.
+
 > **KAI = THE CURRENT THAT REMEMBERS.**
 
 > **Ω∞v = VERIFY(ΔREALITY).**
