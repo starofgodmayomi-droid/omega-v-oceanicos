@@ -90,6 +90,10 @@ export class OmegaDurableStore {
         revoked_at TEXT NOT NULL
       );
     `);
+    const workerColumns = this.db.prepare('PRAGMA table_info(omega_workers)').all();
+    if (!workerColumns.some((column) => column.name === 'worker_role')) {
+      this.db.exec("ALTER TABLE omega_workers ADD COLUMN worker_role TEXT NOT NULL DEFAULT ''");
+    }
   }
 
   close(): void {
