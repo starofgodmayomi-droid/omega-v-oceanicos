@@ -1,57 +1,36 @@
 # Ω∞v / OCEANICOS Master-Prompt Reconciliation
 
-**Purpose:** Record how the attached MAX Full-Stack Master Prompt maps to the current repository without treating architectural direction as runtime fact.
+**Purpose:** Map the whole-ecosystem root prompt to the live repository without treating architectural direction as runtime fact.
 
-**Repository system of record:** `starofgodmayomi-droid/omega-v-oceanicos`
+**Repository system of record:** starofgodmayomi-droid/omega-v-oceanicos
 
-**Reconciled commit:** `34d7d450` (`feat: add bounded divergence alert feed`)
+**Canonical root:** docs/WHOLE-ECOSYSTEM-MASTER-PROMPT.md
 
-## Current reality
+## Current reconciliation
 
-| Prompt distinction | Repository evidence | State |
+| Root concern | Existing repository surface | Boundary |
 |---|---|---|
-| One Oceanicos repository | The selected GitHub repository contains API, web, packages, tests, docs, and workflows | **OBSERVED** |
-| Proposal is not action | Mood Codex proposal persists as `PROPOSED`/`dryRun: true`; admission is separate | **VERIFIED by integration tests** |
-| Authorization is not execution | Admission moves a command to `AUTHORIZED`; execution is a separate route and dashboard control | **VERIFIED by integration tests** |
-| Execution is not verified reality | Observation is required after execution; results classify as `VERIFIED`, `DIVERGENT`, or `UNKNOWN` | **VERIFIED by integration tests** |
-| Divergence is preserved | `GET /v1/omega/divergences` filters and returns redacted divergent evidence; dashboard polls it and only acknowledges locally | **VERIFIED by build and feed test** |
-| Deployment is distinct from staging | `.github/workflows/deploy.yml` verifies, builds, and uploads a `STAGED_ONLY` bundle | **VERIFIED as configuration; not deployed** |
-| Human accountability | Admission requires explicit authority and policy fields; UI does not auto-authorize or auto-execute | **VERIFIED by route contract** |
+| One body / many organs | API, web, shared types, MINI, attestation, workers, docs, tests | Cohesion is observed; not proof that every conceptual organ is implemented |
+| Reality final authority | Charter, manifest, status vectors, reconciliation docs | Documentation/tests are scoped evidence, not reality itself |
+| ΩIR change language | packages/types/src/omega-ir.ts and compiler/admission bridge | Declarative; does not itself grant authority |
+| Admission / authority | packages/mini/src/admission.ts and admission bridge | Explicit authority/policy evidence is required; admission is not execution |
+| Observe → Verify → Remember | observer, verification, remember, MINI packages | Core executable loop |
+| MIRRIO / reconciliation | divergence feeds and reconciliation surfaces | Expected/observed comparison; divergence remains visible |
+| KAI / continuity | packages/mini/src/kai.ts and docs/KAI.md | Memory is continuity, not proof |
+| Composio / external tools | connector admission and bounded-worker contracts | Capability is not authority |
+| GitHub / implementation | mainline code, CI, history, PR workflow | Commit/CI state does not imply deployment or production health |
+| Runtime / observation | API/runtime and smoke/integration suites | Evidence is scoped to the observed run |
+| Blessings / universal layer | symbolic design language | Meaning-making, not empirical or metaphysical proof |
+| Raw / canonical / provenance | ecosystem compression and source-register patterns | Preserve lineage; summaries do not replace raw source when exact preservation matters |
 
-## Verified validation evidence
+## Non-collapse law
 
-The latest bounded change was validated with:
+POSSIBLE ≠ KNOWN ≠ REPRESENTABLE ≠ PERMITTED ≠ PROPOSED ≠ ATTEMPTED ≠ EXECUTED ≠ OBSERVED ≠ VERIFIED ≠ ATTESTED ≠ DEPLOYED ≠ HEALTHY ≠ CORRECT
 
-- Deployment workflow YAML parsing.
-- API dependency-closure build.
-- Divergence-feed integration test.
-- ƆREADE API integration tests.
-- Mood Codex API integration tests.
-- Web TypeScript and Vite production build.
-- `git diff --check`.
+## Implementation consequence
 
-The GitHub remote was verified at commit `34d7d450` on `main`.
+The root prompt is intentionally not a runtime authority engine. It is the canonical continuity/design layer above the existing executable contracts. Runtime changes continue through ΩIR, authority/policy admission, bounded execution, observation, reconciliation, and evidence.
 
-## Unknown or not claimed
+## Next finite transition
 
-- No external hosting provider is configured in this repository.
-- No production deployment was observed.
-- No runtime secret, domain, container health, or public service health is claimed.
-- Dashboard polling is informational; it is not a notification delivery guarantee.
-- A divergence alert does not resolve, retry, authorize, or execute a command.
-- The attached architectural names and metaphors are design language, not evidence that every proposed package or layer exists.
-
-## Safe next drops
-
-1. **Notification boundary:** add an explicit, authenticated delivery adapter only after a target channel and consent policy are specified.
-2. **Deployment target:** configure one hosting provider and its environment/secrets through an explicit operator-controlled workflow; retain `STAGED_ONLY` until observed.
-3. **Reconciliation record:** add durable operator notes for why a divergent result was accepted, retried, corrected, or closed, without rewriting the original evidence.
-4. **Runtime observation:** measure the deployed service and record health separately from CI/build status.
-
-## Non-collapse rule
-
-```text
-POSSIBLE ≠ KNOWN ≠ PROPOSED ≠ AUTHORIZED ≠ EXECUTED ≠ OBSERVED ≠ VERIFIED ≠ DEPLOYED ≠ HEALTHY
-```
-
-> Pidgin fit carry the warmth; evidence go carry the claim. If evidence no reach, state go remain `UNKNOWN`. If reality disagree, state go remain `DIVERGENT`.
+Use this root as the shared handoff for future Notion → ΩIR → GitHub → runtime work. Select implementation work from observed repository/runtime gaps rather than from the presence of a name in the prompt.
