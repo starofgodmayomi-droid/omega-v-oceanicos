@@ -12,7 +12,7 @@ export type BoundedParallelLaneResult<T> = {
 
 export type BoundedParallelOptions = {
   /** Maximum number of lanes allowed to be active at once. */
-  readonly maxConcurrency?: number;
+  readonly maxConcurrency: number;
 };
 
 /**
@@ -25,13 +25,13 @@ export type BoundedParallelOptions = {
  */
 export async function runBoundedParallel<T>(
   lanes: readonly BoundedParallelLane<T>[],
-  options: BoundedParallelOptions = {},
+  options: BoundedParallelOptions,
 ): Promise<readonly BoundedParallelLaneResult<T>[]> {
-  if (!Number.isInteger(options.maxConcurrency) || (options.maxConcurrency ?? 0) < 1) {
+  if (!Number.isInteger(options.maxConcurrency) || options.maxConcurrency < 1) {
     throw new Error('maxConcurrency must be a positive integer');
   }
 
-  const maxConcurrency = Math.min(options.maxConcurrency!, Math.max(1, lanes.length));
+  const maxConcurrency = Math.min(options.maxConcurrency, Math.max(1, lanes.length));
   const results: BoundedParallelLaneResult<T>[] = new Array(lanes.length);
   let nextIndex = 0;
 
