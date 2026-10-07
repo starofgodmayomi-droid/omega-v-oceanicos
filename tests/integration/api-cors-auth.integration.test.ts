@@ -56,4 +56,38 @@ test('required authentication CORS boundary', async (t) => {
     success: false,
     error: 'READ_ACCESS_REQUIRED',
   });
+
+  const adminCannotRead = await app.inject({
+    method: 'GET',
+    url: '/v1/ecosystem/status',
+    headers: { authorization: 'Bearer admin-token' },
+  });
+  assert.equal(adminCannotRead.statusCode, 401);
+  assert.equal(adminCannotRead.json().error, 'READ_ACCESS_REQUIRED');
+
+  const readCannotWrite = await app.inject({
+    method: 'POST',
+    url: '/v1/pipeline',
+    headers: { authorization: 'Bearer read-token' },
+    payload: {},
+  });
+  assert.equal(readCannotWrite.statusCode, 401);
+  assert.equal(readCannotWrite.json().error, 'ADMIN_ACCESS_REQUIRED');
+
+  const adminReachesWriteBoundary = await app.inject({
+    method: 'POST',
+    url: '/v1/pipeline',
+    headers: { authorization: 'Bearer admin-token' },
+    payload: {},
+  });
+  assert.equal(adminReachesWriteBoundary.statusCode, 400);
+  assert.equal(adminReachesWriteBoundary.json().error, 'MISSING_COMPILE');
+
+  const malformedScheme = await app.inject({
+    method: 'GET',
+    url: '/v1/ecosystem/status',
+    headers: { authorization: 'Basic read-token' },
+  });
+  assert.equal(malformedScheme.statusCode, 401);
+  assert.equal(malformedScheme.json().error, 'READ_ACCESS_REQUIRED');
 });
