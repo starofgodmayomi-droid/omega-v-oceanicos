@@ -65,6 +65,65 @@ describe('Ω connector observation path', () => {
     assert.equal(fetchCalls, 0);
   });
 
+  it('pins GitHub metadata requests to the declared host and refuses redirects', async () => {
+    let requestUrl = '';
+    let redirectMode: RequestRedirect | undefined;
+    const result = await observeGithubPublicRepository({
+      owner: 'starofgodmayomi-droid',
+      repo: 'omega-v-oceanicos',
+      timeoutMs: 5000,
+      fetchImpl: async (input, init) => {
+        requestUrl = String(input);
+        redirectMode = init?.redirect;
+        return new Response('', {
+          status: 302,
+          headers: { Location: 'https://unexpected.example/collect' },
+        });
+      },
+    });
+
+    assert.equal(new URL(requestUrl).origin, 'https://api.github.com');
+    assert.equal(redirectMode, 'error');
+    assert.equal(result.attempted, true);
+    assert.equal(result.executed, false);
+  });
+
+  it('rejects GitHub response bodies above 64 KiB before JSON parsing', async () => {
+    const oversizedBody = JSON.stringify({ full_name: 'starofgodmayomi-droid/omega-v-oceanicos' })
+      + ' '.repeat(64 * 1024);
+    const result = await observeGithubPublicRepository({
+      owner: 'starofgodmayomi-droid',
+      repo: 'omega-v-oceanicos',
+      timeoutMs: 5000,
+      fetchImpl: async () => new Response(oversizedBody, {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    });
+
+    assert.equal(result.attempted, true);
+    assert.equal(result.executed, false);
+    assert.match(result.error ?? '', /exceeded 65536 byte limit/);
+  });
+
+  it('rejects an oversized declared GitHub response before consuming its body', async () => {
+    const response = new Response(JSON.stringify({ full_name: 'starofgodmayomi-droid/omega-v-oceanicos' }), {
+      status: 200,
+      headers: { 'Content-Length': String(64 * 1024 + 1) },
+    });
+    const result = await observeGithubPublicRepository({
+      owner: 'starofgodmayomi-droid',
+      repo: 'omega-v-oceanicos',
+      timeoutMs: 5000,
+      fetchImpl: async () => response,
+    });
+
+    assert.equal(result.attempted, true);
+    assert.equal(result.executed, false);
+    assert.equal(response.bodyUsed, true);
+    assert.match(result.error ?? '', /exceeded 65536 byte limit/);
+  });
+
   it('enforces the declared timeout and exposes an UNKNOWN result', async () => {
     const started = Date.now();
     const timedOut = await executeAdmittedConnector({

@@ -6,6 +6,7 @@ import type { ConnectorExecutionObservation } from './connector-observation.js';
 
 export const GITHUB_PUBLIC_REPOSITORY_ADAPTER = 'github-public-repository' as const;
 export type GithubPublicRepositoryAdapter = typeof GITHUB_PUBLIC_REPOSITORY_ADAPTER;
+const MAX_GITHUB_RESPONSE_BYTES = 64 * 1024;
 
 export interface GithubRepoIdentity {
   readonly owner: string;
@@ -48,6 +49,37 @@ export function assertGithubPublicRepositoryConnector(
   return identity;
 }
 
+async function readBoundedJson(response: Response): Promise<unknown> {
+  const contentLength = response.headers.get('content-length');
+  const declaredBytes = contentLength === null ? NaN : Number(contentLength);
+  if (Number.isFinite(declaredBytes) && declaredBytes > MAX_GITHUB_RESPONSE_BYTES) {
+    await response.body?.cancel();
+    throw new Error(`github response exceeded ${MAX_GITHUB_RESPONSE_BYTES} byte limit`);
+  }
+
+  if (!response.body) throw new Error('github response body is missing');
+  const reader = response.body.getReader();
+  const bytes = new Uint8Array(MAX_GITHUB_RESPONSE_BYTES);
+  let totalBytes = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (!value) continue;
+      if (totalBytes + value.byteLength > MAX_GITHUB_RESPONSE_BYTES) {
+        await reader.cancel();
+        throw new Error(`github response exceeded ${MAX_GITHUB_RESPONSE_BYTES} byte limit`);
+      }
+      bytes.set(value, totalBytes);
+      totalBytes += value.byteLength;
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  return JSON.parse(new TextDecoder().decode(bytes.subarray(0, totalBytes)));
+}
+
 export async function observeGithubPublicRepository(options: {
   readonly owner: string;
   readonly repo: string;
@@ -81,13 +113,14 @@ export async function observeGithubPublicRepository(options: {
           'User-Agent': 'omega-v-oceanicos-connector-observe',
           'X-GitHub-Api-Version': '2022-11-28',
         },
+        redirect: 'error',
         signal: controller.signal,
       },
     );
     if (!response.ok) {
       return { attempted: true, executed: false, error: `github http ${response.status}` };
     }
-    const payload = (await response.json()) as { full_name?: unknown };
+    const payload = (await readBoundedJson(response)) as { full_name?: unknown };
     if (typeof payload.full_name !== 'string' || !payload.full_name.trim()) {
       return { attempted: true, executed: true, error: 'github response missing full_name' };
     }
