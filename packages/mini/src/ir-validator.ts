@@ -1,4 +1,4 @@
-import type { OmegaIR } from '@oceanicos/types';
+import { validateNetworkGraph, type OmegaIR } from '@oceanicos/types';
 
 export type OmegaIRValidationIssue = {
   readonly path: string;
@@ -24,6 +24,13 @@ export function validateOmegaIR(ir: OmegaIR): OmegaIRValidation {
     if (!nonEmpty(ref.source)) issues.push({ path: `evidenceRefs[${index}].source`, message: 'source must be non-empty' });
     if (ref.digest !== undefined && !nonEmpty(ref.digest)) issues.push({ path: `evidenceRefs[${index}].digest`, message: 'digest must be non-empty when supplied' });
   });
+
+  if (ir.networkGraph) {
+    const graphValidation = validateNetworkGraph(ir.networkGraph);
+    graphValidation.errors.forEach((message, index) => {
+      issues.push({ path: `networkGraph[${index}]`, message });
+    });
+  }
 
   ir.sourceRefs?.forEach((ref, index) => {
     if (!nonEmpty(ref.id)) issues.push({ path: `sourceRefs[${index}].id`, message: 'id must be non-empty' });

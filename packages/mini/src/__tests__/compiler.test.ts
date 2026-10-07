@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import type { OmegaEvidenceRef, OmegaPolicyRef, OmegaWorkerPlan } from '@oceanicos/types';
+import type { NetworkGraph, OmegaEvidenceRef, OmegaPolicyRef, OmegaWorkerPlan } from '@oceanicos/types';
 import { compileOmegaIntent } from '../compiler';
 
 const evidenceRefs: readonly OmegaEvidenceRef[] = [
@@ -11,6 +11,21 @@ const policyRefs: readonly OmegaPolicyRef[] = [
 const workerPlan: readonly OmegaWorkerPlan[] = [
   { workerId: 'tester', version: '1', capability: 'build-test', mode: 'build-test', approvalRequired: true },
 ];
+
+const networkGraph: NetworkGraph = {
+  version: 'network-intelligence.v1',
+  nodes: [
+    {
+      id: 'human',
+      kind: 'human',
+      label: 'human root',
+      state: 'OBSERVED',
+      provenance: { source: 'test', observedAt: '2026-10-07T00:00:00.000Z', attributedTo: 'test', evidenceRefs: ['evidence-1'] },
+    },
+  ],
+  edges: [],
+  signals: [],
+};
 
 const input = {
   intent: '  run the bounded test suite  ',
@@ -66,6 +81,12 @@ describe('Ω deterministic compiler', () => {
     });
     expect(ir.sourceRefs?.[0]).toMatchObject({ state: 'RETRIEVED', provenance: 'user-supplied-url' });
     expect(ir.sourceRefs?.[0]).not.toHaveProperty('authority');
+  });
+
+  it('carries bounded network graph context without granting authority', () => {
+    const ir = compileOmegaIntent({ ...input, networkGraph });
+    expect(ir.networkGraph).toEqual(networkGraph);
+    expect(Object.keys(ir)).not.toContain('authority');
   });
 
   it('requires explicit authority and evidence for stronger source states', () => {
