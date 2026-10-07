@@ -32,6 +32,10 @@ export interface OmegaSourceRef {
   readonly id: string;
   readonly kind: string;
   readonly locator: string;
+  readonly lineRange?: {
+    readonly startLine: number;
+    readonly endLine: number;
+  };
   readonly state: OmegaSourceState;
   readonly provenance: string;
   readonly digest?: string;

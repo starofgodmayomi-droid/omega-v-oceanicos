@@ -118,6 +118,8 @@ Evidence MUST answer five questions:
 
 Evidence records SHOULD include a stable event type, a command or transition identifier, a timestamp, and a redacted payload appropriate to the audience. Sensitive credentials, secrets, and unnecessary personal data MUST NOT be copied into a public evidence record.
 
+For line-addressable text sources, an implementation MAY include a `lineRange` with one-based inclusive `startLine` and `endLine` values in its source reference. Both values MUST be positive safe integers, and `endLine` MUST be greater than or equal to `startLine`. A line range is a locator only: it MUST NOT promote the source's epistemic state, establish authority, or claim that the referenced text was independently verified. Implementations MUST preserve the source locator and provenance alongside the range.
+
 The coordination evidence endpoint demonstrates this boundary. It records a lease lifecycle, replays the same durable SQLite volume, reports the scope `multi-process-single-volume`, and states that the result does not prove cross-host durability, consensus, deployment health, or external coordinator control.
 
 ## 6. Authority, consent, and stop conditions
