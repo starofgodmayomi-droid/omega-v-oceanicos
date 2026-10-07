@@ -535,7 +535,7 @@ export function registerOmegaRoutes(fastify: FastifyInstance, store: OmegaComman
   fastify.get('/v1/omega/commands/:id/safety-boundary', async (request, reply) => {
     const command = store.get((request.params as { id?: string }).id ?? '');
     if (!command) return reply.status(404).send({ success: false, error: 'OMEGA_COMMAND_NOT_FOUND' });
-    const workers = store.listWorkers().filter((worker) => command.workers.includes(worker.workerId));
+    const workers = store.listWorkers().filter((worker) => command.workers.some((workerId) => workerId === worker.workerId));
     const lease = store.getLeaseForCommand(command.commandId);
     const activeLease = lease && new Date(lease.expiresAt).getTime() > Date.now() ? lease : null;
     const reality = command.result?.reality?.classification;
