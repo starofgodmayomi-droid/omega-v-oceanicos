@@ -492,6 +492,64 @@ export function registerOmegaRoutes(fastify: FastifyInstance, store: OmegaComman
     return { success: execution.status === 'EXECUTED', ...commandResult(updated, execution.status === 'EXECUTED' ? 'observe and verify the result' : 'inspect the execution failure') };
   });
 
+  fastify.post('/v1/omega/commands/:id/lease-execute', async (request, reply) => {
+    const command = store.get((request.params as { id?: string }).id ?? '');
+    if (!command) return reply.status(404).send({ success: false, error: 'OMEGA_COMMAND_NOT_FOUND' });
+    if (command.status !== 'AUTHORIZED') return reply.status(409).send({ success: false, error: 'OMEGA_EXECUTION_REQUIRES_AUTHORIZATION' });
+
+    const body = bodyOf(request);
+    const workerId = typeof body.workerId === 'string' ? body.workerId.trim() : '';
+    const capability = typeof body.capability === 'string' ? body.capability.trim() : '';
+    if (!workerId || !capability) {
+      return reply.status(400).send({ success: false, error: 'LEASE_EXECUTION_WORKER_AND_CAPABILITY_REQUIRED' });
+    }
+    if (!command.workers.includes(workerId as OmegaWorkerId)) {
+      return reply.status(403).send({ success: false, error: 'LEASE_EXECUTION_WORKER_NOT_IN_COMMAND' });
+    }
+
+    const lease = store.acquireWorkerLease(workerId, command.commandId, capability);
+    if (!lease) return reply.status(409).send({ success: false, error: 'OMEGA_WORKER_LEASE_UNAVAILABLE' });
+
+    store.record('command.lease-execution-started', command, {
+      workerId,
+      capability,
+      leaseId: lease.leaseId,
+      expiresAt: lease.expiresAt,
+    });
+
+    try {
+      const execution = executeAuthorizedTransition(command.change, () => ({
+        stateAfter: 'bounded-local-action-complete',
+        consequence: 'bounded local action recorded under an observed worker lease; no remote mutation performed',
+      }));
+      const status: OmegaCommandStatus = execution.status === 'EXECUTED' ? 'EXECUTED' : 'FAILED';
+      const result = execution.status === 'EXECUTED' && execution.attestationId
+        ? {
+            execution: {
+              stateAfter: execution.record.stateAfter ?? '',
+              consequence: execution.record.consequence ?? '',
+              attestationId: execution.attestationId,
+            },
+          }
+        : undefined;
+      const updated = store.update(command, {
+        change: execution.record,
+        status,
+        result: result ? { command, status, ...result, nextAction: 'observe and verify the result' } : undefined,
+      });
+      store.record('command.executed', updated, { workerId, leaseId: lease.leaseId });
+      const released = store.releaseWorkerLease(lease.leaseId, workerId);
+      return {
+        success: execution.status === 'EXECUTED',
+        lease: { leaseId: lease.leaseId, workerId, released },
+        ...commandResult(updated, execution.status === 'EXECUTED' ? 'observe and verify the result' : 'inspect the execution failure'),
+      };
+    } catch (error) {
+      store.releaseWorkerLease(lease.leaseId, workerId);
+      throw error;
+    }
+  });
+
   fastify.post('/v1/omega/commands/:id/observe', async (request, reply) => {
     const command = store.get((request.params as { id?: string }).id ?? '');
     if (!command) return reply.status(404).send({ success: false, error: 'OMEGA_COMMAND_NOT_FOUND' });
