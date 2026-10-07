@@ -891,6 +891,7 @@ export function App() {
           simulationMode={simulationMode}
           humanGateRequired={humanGateRequired}
         />
+        <WaterFlowPanel frames={omegaCommand?.waterFlow} />
       </main>
 
       {/* Mirror-water lifecycle flow */}
