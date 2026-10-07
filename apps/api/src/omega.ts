@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import {
   buildOmegaCommand,
+  buildOmegaWaterFlow,
   executeAuthorizedTransition,
   listOmegaWorkers,
   resolveChangeAdmission,
@@ -184,8 +185,18 @@ function bodyOf(request: any): Record<string, unknown> {
   return request.body && typeof request.body === 'object' && !Array.isArray(request.body) ? request.body : {};
 }
 
+function commandWaterFlow(command: StoredCommand): ReturnType<typeof buildOmegaWaterFlow> {
+  return buildOmegaWaterFlow({
+    state: typeof command.change?.stateBefore === 'string'
+      ? command.change.stateBefore
+      : String(command.context.stateBefore ?? 'unknown'),
+    intent: command.intent,
+    traceId: command.commandId,
+  });
+}
+
 function commandResult(command: StoredCommand, nextAction: string): OmegaCommandResult {
-  return { command, status: command.status, ...(command.result?.execution ? { execution: command.result.execution } : {}), ...(command.result?.reality ? { reality: command.result.reality } : {}), nextAction };
+  return { command, status: command.status, waterFlow: commandWaterFlow(command), ...(command.result?.execution ? { execution: command.result.execution } : {}), ...(command.result?.reality ? { reality: command.result.reality } : {}), nextAction };
 }
 
 function statusForDecision(decision: 'ALLOW' | 'DENY' | 'REVIEW'): OmegaCommandStatus {
@@ -475,7 +486,7 @@ export function registerOmegaRoutes(fastify: FastifyInstance, store: OmegaComman
     const execution = executeAuthorizedTransition(command.change, () => ({ stateAfter: 'bounded-local-action-complete', consequence: 'bounded local action recorded; no remote mutation performed' }));
     const status: OmegaCommandStatus = execution.status === 'EXECUTED' ? 'EXECUTED' : 'FAILED';
     const result = execution.status === 'EXECUTED' && execution.attestationId ? { execution: { stateAfter: execution.record.stateAfter ?? '', consequence: execution.record.consequence ?? '', attestationId: execution.attestationId } } : undefined;
-    const updated = store.update(command, { change: execution.record, status, result: result ? { command, status, ...result, nextAction: 'observe and verify the result' } : undefined });
+    const updated = store.update(command, { change: execution.record, status, result: result ? { command, status, waterFlow: commandWaterFlow(command), ...result, nextAction: 'observe and verify the result' } : undefined });
     store.record('command.executed', updated);
     return { success: execution.status === 'EXECUTED', ...commandResult(updated, execution.status === 'EXECUTED' ? 'observe and verify the result' : 'inspect the execution failure') };
   });
@@ -490,7 +501,7 @@ export function registerOmegaRoutes(fastify: FastifyInstance, store: OmegaComman
     const verification = verifyExecutedReality(execution, () => body.observedState as string);
     const status: OmegaCommandStatus = verification.status === 'VERIFIED' ? 'VERIFIED' : verification.status === 'DIVERGENT' ? 'DIVERGENT' : 'UNKNOWN';
     const reality = { kind: 'supplied-state' as const, observedState: verification.observedState ?? body.observedState as string, evidence: verification.evidence, observedAt: new Date().toISOString(), classification: verification.status === 'VERIFIED' ? 'VERIFIED' as const : verification.status === 'DIVERGENT' ? 'DIVERGENT' as const : 'UNKNOWN' as const };
-    const updated = store.update(command, { change: verification.record, status, result: { command, status, ...(command.result?.execution ? { execution: command.result.execution } : {}), reality, nextAction: status === 'VERIFIED' ? 'record what was learned and select the next bounded change' : 'review divergence before selecting the next change' } });
+    const updated = store.update(command, { change: verification.record, status, result: { command, status, waterFlow: commandWaterFlow(command), ...(command.result?.execution ? { execution: command.result.execution } : {}), reality, nextAction: status === 'VERIFIED' ? 'record what was learned and select the next bounded change' : 'review divergence before selecting the next change' } });
     store.record('command.reality-observed', updated, { classification: reality.classification });
     return { success: true, ...commandResult(updated, updated.result?.nextAction ?? 'review the observed result') };
   });
