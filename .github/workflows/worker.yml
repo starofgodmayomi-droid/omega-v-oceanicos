@@ -4,17 +4,35 @@ on:
   push:
     branches:
       - main
-      - upgrade/full-stack-evidence-bound-mood
   pull_request:
   workflow_dispatch:
+    inputs:
+      cycles:
+        description: 'Finite worker cycles (1-32)'
+        required: true
+        default: '1'
+        type: string
+      interval_ms:
+        description: 'Delay between cycles in milliseconds (0-3600000)'
+        required: true
+        default: '0'
+        type: string
 
 permissions:
   contents: read
+
+concurrency:
+  group: bounded-worker-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   worker:
     name: Worker verification (ubuntu-latest)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      OMEGA_WORKER_CYCLES: ${{ inputs.cycles || '1' }}
+      OMEGA_WORKER_INTERVAL_MS: ${{ inputs.interval_ms || '0' }}
 
     steps:
       - uses: actions/checkout@v7
@@ -36,30 +54,44 @@ jobs:
       - name: Audit dependencies
         run: pnpm audit --ignore-unfixable
 
+      - name: Prepare worker evidence directory
+        run: mkdir -p worker-evidence
+
       - name: Run bounded worker inspection
-        run: pnpm worker
-        env:
-          OMEGA_WORKER_CYCLES: 1
-          OMEGA_WORKER_INTERVAL_MS: 0
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm worker 2>&1 | tee worker-evidence/inspection.log
 
       - name: Run bounded worker verification
-        run: pnpm worker:verify
-        env:
-          OMEGA_WORKER_CYCLES: 1
-          OMEGA_WORKER_INTERVAL_MS: 0
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm worker:verify 2>&1 | tee worker-evidence/verification.log
+
+      - name: Upload bounded worker evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: bounded-worker-evidence-${{ github.sha }}
+          path: worker-evidence/
+          if-no-files-found: error
+          retention-days: 14
 
       - name: Record worker evidence
-        if: success()
+        if: always()
         shell: bash
         run: |
           {
-            echo "### 💧 Ω∞v bounded worker evidence"
-            echo ""
-            echo "- Runtime: Node 22.x"
-            echo "- Worker: inspect + verification"
-            echo "- Cycles: 1"
-            echo "- External action: OFF"
-            echo "- Git write: OFF"
-            echo "- Result: executable steps completed successfully"
-            echo "- Non-claim: this is CI evidence, not runtime health or deployment proof"
+            echo '### 💧 Ω∞v bounded worker evidence'
+            echo ''
+            echo "- Commit: \\`${GITHUB_SHA}\\`"
+            echo '- Runtime: Node 22.x on ubuntu-latest'
+            echo "- Cycles: \\`${OMEGA_WORKER_CYCLES}\\`"
+            echo "- Interval: \\`${OMEGA_WORKER_INTERVAL_MS}ms\\`"
+            echo '- External action: OFF'
+            echo '- Git write: OFF'
+            echo "- Job result: \\`${{ job.status }}\\`"
+            echo '- Artifact: bounded worker logs retained for 14 days'
+            echo '- Non-claim: this is GitHub Actions evidence, not runtime health, fleet health, or production deployment proof'
           } >> "$GITHUB_STEP_SUMMARY"
