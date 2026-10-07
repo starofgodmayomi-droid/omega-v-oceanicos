@@ -26,6 +26,39 @@ describe('Ω durable multi-process coordination', () => {
     assert.equal(events.json().events.length, 1);
   });
 
+  it('keeps worker instance identity distinct from its bounded role', async () => {
+    const registered = await first.inject({
+      method: 'POST',
+      url: '/v1/omega/workers/register',
+      payload: { workerId: 'observer-instance-a', role: 'observer', capabilities: ['PROBE'] },
+    });
+    assert.equal(registered.statusCode, 200);
+    assert.equal(registered.json().worker.workerId, 'observer-instance-a');
+    assert.equal(registered.json().worker.role, 'observer');
+
+    const mismatch = await second.inject({
+      method: 'POST',
+      url: '/v1/omega/workers/observer-instance-a/lease',
+      payload: { commandId: 'role-bound-mismatch', capability: 'PROBE', role: 'planner', durationMs: 5000 },
+    });
+    assert.equal(mismatch.statusCode, 409);
+    assert.equal(mismatch.json().error, 'OMEGA_WORKER_LEASE_UNAVAILABLE');
+
+    const lease = await second.inject({
+      method: 'POST',
+      url: '/v1/omega/workers/observer-instance-a/lease',
+      payload: { commandId: 'role-bound-match', capability: 'PROBE', role: 'observer', durationMs: 5000 },
+    });
+    assert.equal(lease.statusCode, 200);
+    assert.equal(lease.json().workerRole, 'observer');
+
+    const released = await first.inject({
+      method: 'POST',
+      url: '/v1/omega/workers/observer-instance-a/lease/' + lease.json().lease.leaseId + '/release',
+    });
+    assert.equal(released.statusCode, 200);
+  });
+
   it('coordinates worker registration and exclusive leases across processes', async () => {
     const registered = await first.inject({ method: 'POST', url: '/v1/omega/workers/register', payload: { workerId: 'worker-process-a', capabilities: ['TEST'] } });
     assert.equal(registered.statusCode, 200);
