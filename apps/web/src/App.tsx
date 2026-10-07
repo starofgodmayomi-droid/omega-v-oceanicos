@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { EcosystemPanel } from './EcosystemPanel';
 import { RealityPanel } from './RealityPanel';
 import { TransitionProvenancePanel } from './TransitionProvenancePanel';
+import { WaterFlowPanel } from './WaterFlowPanel';
 import { AmbientBar } from './AmbientBar';
 import { IntentFlow } from './IntentFlow';
 import { SystemControlsPanel } from './SystemControlsPanel';
@@ -889,6 +890,7 @@ export function App() {
           simulationMode={simulationMode}
           humanGateRequired={humanGateRequired}
         />
+        <WaterFlowPanel frames={omegaCommand?.waterFlow} />
       </main>
 
       {/* Mirror-water lifecycle flow */}

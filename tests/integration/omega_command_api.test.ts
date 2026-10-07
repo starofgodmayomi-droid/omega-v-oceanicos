@@ -44,6 +44,17 @@ describe('Ω∞v command API vertical slice', () => {
     assert.equal(body.command.redacted, true);
     assert.equal(body.command.dryRun, true);
     assert.equal(body.command.change.authorized, false);
+    assert.deepEqual(body.waterFlow.map((frame: { stage: string }) => frame.stage), [
+      'REALITY',
+      'ATTENTION',
+      'INTENTION',
+      'ACTION',
+      'CONSEQUENCE',
+      'OBSERVATION',
+      'LEARNING',
+      'RETURN',
+    ]);
+    assert.equal(body.waterFlow.at(-1).provenance.verified, false);
   });
 
   it('enforces read and admin bearer tokens at the Ω route boundary', async () => {

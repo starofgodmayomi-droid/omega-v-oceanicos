@@ -1,4 +1,5 @@
 import type { ChangeDecision, OmegaChangeRecord } from './index.js';
+import type { OmegaWaterFlowFrame } from './water-flow.js';
 
 export const OMEGA_COMMAND_VERSION = 'omega.command.v1' as const;
 export const OMEGA_IR_VERSION = 'omega.ir.v1' as const;
@@ -87,6 +88,7 @@ export type OmegaRealityObservation = {
 export type OmegaCommandResult = {
   readonly command: OmegaCommand;
   readonly status: OmegaCommandStatus;
+  readonly waterFlow: readonly OmegaWaterFlowFrame[];
   readonly execution?: { readonly stateAfter: string; readonly consequence: string; readonly attestationId: string };
   readonly reality?: OmegaRealityObservation & { readonly classification: 'VERIFIED' | 'DIVERGENT' | 'UNKNOWN' };
   readonly nextAction: string;
