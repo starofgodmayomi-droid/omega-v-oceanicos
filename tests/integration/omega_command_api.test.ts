@@ -139,6 +139,70 @@ describe('Ω∞v command API vertical slice', () => {
     assert.ok(events.json().events.some((event: { type: string }) => event.type === 'command.executed'));
   });
 
+  it('binds lease-bound execution to an admitted worker and releases the lease', async () => {
+    const created = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/commands',
+      payload: {
+        intent: 'lease-bound execution',
+        requestedBy: 'integration-user',
+        workers: ['planner'],
+        idempotencyKey: 'lease-execution-1',
+      },
+    });
+    assert.equal(created.statusCode, 201);
+
+    const approved = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/commands/omega-lease-execution-1/approve',
+      payload: { operator: 'integration-operator' },
+    });
+    assert.equal(approved.statusCode, 200);
+    assert.equal(approved.json().command.status, 'AUTHORIZED');
+
+    const missingCapability = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/commands/omega-lease-execution-1/lease-execute',
+      payload: { workerId: 'planner', capability: 'EXECUTE' },
+    });
+    assert.equal(missingCapability.statusCode, 409);
+    assert.equal(missingCapability.json().error, 'OMEGA_WORKER_LEASE_UNAVAILABLE');
+
+    const registered = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/workers/register',
+      payload: { workerId: 'planner', capabilities: ['EXECUTE'] },
+    });
+    assert.equal(registered.statusCode, 200);
+    assert.equal(registered.json().worker.status, 'IDLE');
+
+    const executed = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/commands/omega-lease-execution-1/lease-execute',
+      payload: { workerId: 'planner', capability: 'EXECUTE' },
+    });
+    assert.equal(executed.statusCode, 200);
+    assert.equal(executed.json().command.status, 'EXECUTED');
+    assert.equal(executed.json().lease.workerId, 'planner');
+    assert.equal(executed.json().lease.released, true);
+
+    const boundary = await app.inject({
+      method: 'GET',
+      url: '/v1/omega/commands/omega-lease-execution-1/safety-boundary',
+    });
+    assert.equal(boundary.statusCode, 200);
+    assert.equal(boundary.json().boundary.lease.status, 'NOT_EXECUTED');
+
+    const events = await app.inject({
+      method: 'GET',
+      url: '/v1/omega/events?commandId=omega-lease-execution-1',
+    });
+    assert.equal(events.statusCode, 200);
+    assert.ok(events.json().events.some((event: { type: string }) => event.type === 'worker.lease-acquired'));
+    assert.ok(events.json().events.some((event: { type: string }) => event.type === 'command.lease-execution-started'));
+    assert.ok(events.json().events.some((event: { type: string }) => event.type === 'worker.lease-released'));
+  });
+
   it('rejects unknown workers and duplicate mutations are idempotent', async () => {
     const invalid = await app.inject({ method: 'POST', url: '/v1/omega/commands', payload: { intent: 'bad worker', requestedBy: 'dashboard-user', workers: ['arbitrary-shell'], idempotencyKey: 'api-slice-invalid' } });
     assert.equal(invalid.statusCode, 400);
