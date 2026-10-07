@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -7,6 +8,7 @@ const skills = [
   'oread-pidgin-harmonizer',
   'kai-companion',
   'omega-mirror-water-universal-body',
+  'oceanicos-full-stack',
   'oceanicos-framework',
   'oceanicos-value-navigator',
 ];
@@ -43,4 +45,15 @@ const names = skills.map((skill) => {
   return source.match(/^name:\s*(.+)$/m)?.[1]?.trim();
 });
 if (new Set(names).size !== names.length) throw new Error('skill names must be unique');
+
+const masterPrompt = join(root, 'skills', 'oceanicos-full-stack', 'references', 'master-prompt.md');
+const sourceRegister = readFileSync(
+  join(root, 'skills', 'oceanicos-full-stack', 'references', 'SOURCE_REGISTER.md'),
+  'utf8',
+);
+const expectedHash = sourceRegister.match(/\| `sha256` \| `([0-9a-f]{64})` \|/)?.[1];
+const actualHash = createHash('sha256').update(readFileSync(masterPrompt)).digest('hex');
+if (!expectedHash || expectedHash !== actualHash) {
+  throw new Error('oceanicos-full-stack: master prompt hash does not match SOURCE_REGISTER.md');
+}
 console.log(`validated ${skills.length} Oceanicos skill contracts`);
