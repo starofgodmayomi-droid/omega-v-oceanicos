@@ -39,6 +39,7 @@ without treating any single component—or any agent—as the final authority.
 - 🌉 **[Voice Bridge](skills/voice-bridge/SKILL.md)** — one human source across many expressive forms
 - Ɔ **[ƆREADE × Oceanicos Harmonizer](skills/oread-pidgin-harmonizer/SKILL.md)** — symbolic meaning translated into bounded action
 - 🧩 **[OceanicOS Framework](skills/oceanicos-framework/SKILL.md)** — finite transitions, evidence, and human authority
+- 🌊 **[Oceanicos Full Stack](skills/oceanicos-full-stack/SKILL.md)** — the renamed Ω∞v verification spine, whole-ecosystem routing, and bounded FLOW
 - 🌐 **[Full-stack reality-access handoff](docs/upgrades/FULL_STACK_REALITY_ACCESS_2026-09-28.md)** — connector taxonomy without implicit ownership or authority
 - 🗺️ **[Repository inventory](docs/REPO_INVENTORY.md)** — workspace vs disk (current evidence)
 - ⚙️ **[Development Setup](docs/DEVELOPMENT.md)** — Get the project running locally
