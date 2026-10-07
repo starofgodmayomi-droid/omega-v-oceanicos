@@ -391,6 +391,70 @@ jobs:
               body,
             });
 
+  legacy-required-status-contexts:
+    name: Publish required status contexts
+    runs-on: ubuntu-latest
+    needs: [verify, windows, docker, compose]
+    # Protected main currently requires four legacy commit-status contexts.
+    # This job mirrors the actual workflow-job conclusions into those exact
+    # contexts. It can never invent success: missing/non-success jobs become
+    # failure, and the job itself does not grant authority or merge anything.
+    if: always() && github.event_name == 'pull_request'
+
+    permissions:
+      actions: read
+      statuses: write
+
+    steps:
+      - name: Mirror observed job conclusions
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const required = [
+              'verify (22.x)',
+              'verify (24.x)',
+              'Windows compatibility',
+              'Package and smoke test',
+            ];
+
+            const { data } = await github.rest.actions.listJobsForWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.runId,
+              per_page: 100,
+            });
+
+            const jobs = new Map(data.jobs.map((job) => [job.name, job]));
+            const targetUrl = context.serverUrl + '/' + context.repo.owner + '/' + context.repo.repo + '/actions/runs/' + context.runId;
+
+            for (const contextName of required) {
+              const job = jobs.get(contextName);
+              let state = 'failure';
+              let description = 'required workflow job was not observed';
+
+              if (job) {
+                if (job.status === 'completed' && job.conclusion === 'success') {
+                  state = 'success';
+                  description = 'observed required workflow job completed successfully';
+                } else if (job.status !== 'completed') {
+                  state = 'pending';
+                  description = 'required workflow job is not complete';
+                } else {
+                  description = 'observed required workflow job conclusion: ' + (job.conclusion || 'no conclusion');
+                }
+              }
+
+              await github.rest.repos.createCommitStatus({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                sha: context.payload.pull_request.head.sha,
+                state,
+                target_url: targetUrl,
+                description,
+                context: contextName,
+              });
+            }
+
   publish:
     name: Publish attested artifact
     runs-on: ubuntu-latest
