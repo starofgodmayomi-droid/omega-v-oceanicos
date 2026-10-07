@@ -9,9 +9,15 @@ Define how OCEANICOS represents the whole ecosystem as a typed, directed graph w
 
 ## One body
 
-`SOURCE → ROOT → OCEANICOS BODY → RELEVANT ORGANS / ROOMS / FORMS → BOUNDED CURRENT → OBSERVE → RECONCILE → ATTEST → MEMORY → NEXT Δ`
+`SOURCE → ROOT (SUCCESS as bounded outcome philosophy) → OCEANICOS BODY → RELEVANT ORGANS / ROOMS / FORMS → BOUNDED CURRENT → OBSERVE → RECONCILE → ATTEST → MEMORY → NEXT Δ`
 
 The listed organs are distinct roles, not a mandatory serial pipeline. Include only the forms needed for a given transition; preserve their boundaries and pass scoped evidence forward.
+
+## SUCCESS as an outcome philosophy
+
+SUCCESS means transforming thought, intention, and possibility into useful, bounded, observable outcomes that withstand reality testing. Treat it as an operating philosophy inside ROOT—not as a separate authority, a guarantee, or proof by assertion. Reality remains the final reference point, and consequential action still requires appropriate human authority and policy.
+
+A success claim must name the outcome and scope and be supported by evidence appropriate to that claim. Thought, intention, effort, a proposal, a test pass, or potential value alone does not establish broader real-world success. Distinguish implementation evidence from evidence of real-world outcomes.
 
 ## Graph invariants
 
