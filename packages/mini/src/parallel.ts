@@ -1,11 +1,28 @@
+export type BoundedParallelAdmission = {
+  /** Explicit upstream authority evidence; this runtime does not establish it. */
+  readonly authorityVerified: boolean;
+  /** Explicit upstream policy evidence; this runtime does not establish it. */
+  readonly policySatisfied: boolean;
+  /** Evidence references supporting the admission decision. */
+  readonly evidence: readonly string[];
+};
+
+export type BoundedParallelAdmissionDecision = 'ALLOW' | 'DENY' | 'REVIEW';
+
 export type BoundedParallelLane<T> = {
   readonly id: string;
+  /**
+   * Explicit per-lane admission boundary. It must return an already-observed
+   * decision; the parallel runtime never discovers or grants authority.
+   */
+  readonly admit: () => Promise<BoundedParallelAdmissionDecision> | BoundedParallelAdmissionDecision;
   readonly run: () => Promise<T> | T;
 };
 
 export type BoundedParallelLaneResult<T> = {
   readonly id: string;
-  readonly status: 'FULFILLED' | 'REJECTED';
+  readonly admission: BoundedParallelAdmissionDecision;
+  readonly status: 'FULFILLED' | 'REJECTED' | 'DENIED' | 'REVIEW_REQUIRED';
   readonly value?: T;
   readonly error?: unknown;
 };
@@ -16,12 +33,12 @@ export type BoundedParallelOptions = {
 };
 
 /**
- * Execute independently-authorized lanes with a finite concurrency bound.
+ * Execute independently-admitted lanes with a finite concurrency bound.
  *
- * This is an orchestration primitive, not an authority mechanism: every lane
- * owns its own admission/authorization boundary. Results preserve input order
- * so reconciliation remains deterministic even when completion order differs.
- * A rejected lane does not silently cancel or mark sibling lanes successful.
+ * Admission is evaluated per lane before execution. DENY and REVIEW never call
+ * the lane runner. Results preserve input order so reconciliation is
+ * deterministic even when completion order differs. A failed lane never
+ * silently changes sibling outcomes.
  */
 export async function runBoundedParallel<T>(
   lanes: readonly BoundedParallelLane<T>[],
@@ -40,10 +57,35 @@ export async function runBoundedParallel<T>(
       const index = nextIndex++;
       if (index >= lanes.length) return;
       const lane = lanes[index];
+
       try {
-        results[index] = { id: lane.id, status: 'FULFILLED', value: await lane.run() };
+        const admission = await lane.admit();
+        if (admission === 'DENY') {
+          results[index] = { id: lane.id, admission, status: 'DENIED' };
+          continue;
+        }
+        if (admission === 'REVIEW') {
+          results[index] = { id: lane.id, admission, status: 'REVIEW_REQUIRED' };
+          continue;
+        }
+
+        try {
+          results[index] = {
+            id: lane.id,
+            admission,
+            status: 'FULFILLED',
+            value: await lane.run(),
+          };
+        } catch (error) {
+          results[index] = { id: lane.id, admission, status: 'REJECTED', error };
+        }
       } catch (error) {
-        results[index] = { id: lane.id, status: 'REJECTED', error };
+        results[index] = {
+          id: lane.id,
+          admission: 'REVIEW',
+          status: 'REVIEW_REQUIRED',
+          error,
+        };
       }
     }
   };
