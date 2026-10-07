@@ -537,6 +537,7 @@ export function registerOmegaRoutes(fastify: FastifyInstance, store: OmegaComman
     if (!command) return reply.status(404).send({ success: false, error: 'OMEGA_COMMAND_NOT_FOUND' });
     const workers = store.listWorkers().filter((worker) => command.workers.includes(worker.workerId));
     const lease = store.getLeaseForCommand(command.commandId);
+    const activeLease = lease && new Date(lease.expiresAt).getTime() > Date.now() ? lease : null;
     const reality = command.result?.reality?.classification;
     const attestationId = command.result?.execution?.attestationId ?? command.change?.attestationId;
     const revoked = typeof attestationId === 'string'
@@ -554,7 +555,7 @@ export function registerOmegaRoutes(fastify: FastifyInstance, store: OmegaComman
         capability: { status: capabilityObserved ? 'VERIFIED' : 'UNKNOWN', evidence: capabilityObserved ? 'declared worker capabilities observed' : 'one or more requested worker capabilities were not observed', workers },
         policy: { status: policyObserved ? 'VERIFIED' : 'UNKNOWN', evidence: policyObserved ? 'admission policy evidence observed' : 'admission policy evidence unavailable', value: command.change?.policy ?? null },
         authority: { status: authorityObserved ? 'VERIFIED' : 'UNKNOWN', evidence: authorityObserved ? 'attributable authority evidence observed' : 'attributable authority evidence unavailable', value: command.change?.authority ?? null },
-        lease: { status: lease ? 'VERIFIED' : 'NOT_EXECUTED', evidence: lease ? 'active worker lease observed' : 'no active worker lease observed', value: lease ?? null },
+        lease: { status: activeLease ? 'VERIFIED' : 'NOT_EXECUTED', evidence: activeLease ? 'active worker lease observed' : 'no active worker lease observed', value: activeLease ?? null },
         execution: { status: command.result?.execution ? 'VERIFIED' : 'NOT_EXECUTED', evidence: command.result?.execution ? 'execution result observed' : 'no execution result recorded' },
         observation: { status: reality === 'VERIFIED' || reality === 'DIVERGENT' || reality === 'UNKNOWN' ? reality : 'UNKNOWN', evidence: reality ? 'reality classification observed' : 'no reality observation recorded' },
         revocation: { status: revoked ? 'VERIFIED' : 'NOT_EXECUTED', evidence: revoked ? 'matching attestation revocation observed' : 'no matching attestation revocation observed', value: revoked },
