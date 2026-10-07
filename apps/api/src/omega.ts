@@ -535,7 +535,7 @@ export function registerOmegaRoutes(fastify: FastifyInstance, store: OmegaComman
       const updated = store.update(command, {
         change: execution.record,
         status,
-        result: result ? { command, status, ...result, nextAction: 'observe and verify the result' } : undefined,
+        result: result ? { command, status, waterFlow: commandWaterFlow(command), ...result, nextAction: 'observe and verify the result' } : undefined,
       });
       store.record('command.executed', updated, { workerId, leaseId: lease.leaseId });
       const released = store.releaseWorkerLease(lease.leaseId, workerId);
