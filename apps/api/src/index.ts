@@ -5,7 +5,7 @@ import { randomUUID } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { RememberEngine } from '@oceanicos/remember';
+import { MAX_PROOF_OF_WORK_ATTEMPTS, RememberEngine } from '@oceanicos/remember';
 import { FileConnectorObservationStore, FileValueNavigatorStore, MiniKernel } from '@oceanicos/mini';
 import { AsymmetricValidationGuard, DeclarativeVerificationEngine, MultiRegionMeshConvergence } from '@oceanicos/verification';
 import { ObserverEngine } from '@oceanicos/observer';
@@ -44,6 +44,9 @@ import {
 
 const MAX_STREAM_CLIENTS = 256;
 const MIN_ATTESTATION_KEY_LENGTH = 32;
+const MIN_MINER_INTERVAL_MS = 1_000;
+const MAX_MINER_INTERVAL_MS = 60_000;
+const DEFAULT_MINER_INTERVAL_MS = 5_000;
 
 export type CreateAppOptions = {
   allowUnsignedCycle?: boolean;
@@ -465,15 +468,25 @@ export function createApp(
     reply.raw.once('error', close);
   });
 
-  fastify.post('/v1/miner/start', async (request: any) => {
-    const interval = typeof request.body?.intervalMs === 'number' && request.body.intervalMs >= 1000 ? request.body.intervalMs : 5000;
+  const minerBounds = {
+    intervalMs: { min: MIN_MINER_INTERVAL_MS, max: MAX_MINER_INTERVAL_MS },
+    proofOfWorkAttempts: MAX_PROOF_OF_WORK_ATTEMPTS,
+  } as const;
+  const minerResponse = () => ({ success: true, miner: minerStats, bounds: minerBounds });
+
+  fastify.post('/v1/miner/start', async (request: any, reply) => {
+    const rawInterval = request.body?.intervalMs;
+    const interval = rawInterval === undefined ? DEFAULT_MINER_INTERVAL_MS : rawInterval;
+    if (!Number.isInteger(interval) || interval < MIN_MINER_INTERVAL_MS || interval > MAX_MINER_INTERVAL_MS) {
+      return jsonError(reply, 400, 'INVALID_MINER_INTERVAL', minerBounds.intervalMs);
+    }
     if (minerInterval) clearInterval(minerInterval);
     minerStats.active = true; minerStats.intervalMs = interval;
     minerInterval = setInterval(() => { try { const block = kernel.runCycle(); minerStats.totalMined++; minerStats.lastBlockTime = block.timestamp; broadcastMintedBlock(block); } catch (error) { fastify.log.error(error); } }, interval);
-    return { success: true, miner: minerStats };
+    return minerResponse();
   });
-  fastify.post('/v1/miner/stop', async () => { if (minerInterval) clearInterval(minerInterval); minerInterval = null; minerStats.active = false; return { success: true, miner: minerStats }; });
-  fastify.get('/v1/miner/status', async () => ({ success: true, miner: minerStats }));
+  fastify.post('/v1/miner/stop', async () => { if (minerInterval) clearInterval(minerInterval); minerInterval = null; minerStats.active = false; return minerResponse(); });
+  fastify.get('/v1/miner/status', async () => minerResponse());
   fastify.get('/v1/mesh/nodes', async () => ({ success: true, nodes: MultiRegionMeshConvergence.getNodes() }));
   fastify.get('/v1/mesh/simulate', async () => { const telemetry = ObserverEngine.generateTelemetry(); return { success: true, telemetry, convergence: MultiRegionMeshConvergence.simulateConvergence(telemetry) }; });
   fastify.post('/v1/auth/keypair', async () => ({ success: true, ...AsymmetricValidationGuard.generateKeyPair() }));
