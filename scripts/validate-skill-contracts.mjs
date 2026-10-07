@@ -11,7 +11,6 @@ const skills = [
   'oceanicos-full-stack',
   'oceanicos-framework',
   'oceanicos-value-navigator',
-  'omega-v-full-stack',
 ];
 const required = [
   'POSSIBLE',
