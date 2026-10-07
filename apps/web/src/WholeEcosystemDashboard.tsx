@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { theme, humanStatus } from './oceanicosTheme';
 import { boundedStatus, statusCounts, STATUS_ORDER, summarizeLucidField, type RealityStatus } from './whole-ecosystem-dashboard-model';
 import { AgentSafetyBoundaryPanel } from './AgentSafetyBoundaryPanel';
+import { WorkerCoordinationPanel } from './WorkerCoordinationPanel';
 
 type Props = {
   streamConnected: boolean;
@@ -209,6 +210,8 @@ export function WholeEcosystemDashboard(props: Props) {
         revocationObserved={props.omegaCommand?.revocation?.observed === true}
         reconciliationStatus={props.omegaCommand?.reality?.classification}
       />
+
+      <WorkerCoordinationPanel />
 
       <div className="whole-value-current">
         <div><span className="whole-ecosystem-label">VALUE CURRENT</span><strong>Need → Problem → Solution → Delivery → Observed outcome → Earned value</strong></div>
