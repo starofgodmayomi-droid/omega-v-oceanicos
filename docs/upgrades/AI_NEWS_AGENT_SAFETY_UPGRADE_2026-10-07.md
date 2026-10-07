@@ -91,13 +91,25 @@ A safety claim is only as strong as its observed boundary. If the runtime, polic
 | External AI safety platform integration | `NOT_EXECUTED` | no OpenShell, Sentry, or external runtime was added |
 | Production agent safety | `UNKNOWN` | no production deployment or external runtime observation |
 
-## Next finite delta
+## Implemented next finite delta
 
-Add a **visible agent safety boundary panel** to the whole-ecosystem dashboard that reports only repository-observed controls:
+Added a **visible Agent Safety Boundary panel** to the whole-ecosystem dashboard. It reports only repository-observed controls:
 
 ```text
 CAPABILITY → POLICY → AUTHORITY → LEASE → EXECUTION
 → OBSERVATION → REVOCATION → RECONCILIATION
 ```
 
-The panel should show `VERIFIED`, `UNKNOWN`, or `NOT_EXECUTED` per control and should never imply that an external vendor platform or production deployment is connected.
+The panel shows `VERIFIED`, `UNKNOWN`, `DIVERGENT`, or `NOT_EXECUTED` per control and explicitly states that external safety platforms are not connected. Missing command evidence cannot become `VERIFIED` through UI defaults.
+
+Observed implementation evidence:
+
+- `apps/web/src/AgentSafetyBoundaryPanel.tsx` added;
+- `WholeEcosystemDashboard.tsx` renders the panel from existing runtime/command observations;
+- browser accessibility snapshot exposes `Agent safety boundary`;
+- browser console inspection reported zero errors;
+- full repository suite passed 113 tests with zero failures.
+
+## Next finite delta
+
+Expose richer worker lease, policy, and revocation evidence from the API so the panel can replace `UNKNOWN`/`NOT_EXECUTED` with stronger runtime observations without inferring them from client state.
