@@ -154,6 +154,7 @@ export class OmegaCommandStore {
   registerWorker(input: { workerId: string; capabilities: string[] }) { return this.durable.registerWorker(input); }
   heartbeatWorker(workerId: string) { return this.durable.heartbeatWorker(workerId); }
   listWorkers() { return this.durable.listWorkers(); }
+  getLeaseForCommand(commandId: string) { return this.durable.getLeaseForCommand(commandId); }
   acquireWorkerLease(workerId: string, commandId: string, capability: string, durationMs?: number) {
     const lease = this.durable.acquireLease(workerId, commandId, capability, durationMs);
     this.durable.appendEvent({
@@ -529,6 +530,93 @@ export function registerOmegaRoutes(fastify: FastifyInstance, store: OmegaComman
     if (!command) return reply.status(404).send({ success: false, error: 'OMEGA_COMMAND_NOT_FOUND' });
     if (!command.result?.reality) return reply.status(409).send({ success: false, error: 'OMEGA_REALITY_OBSERVATION_REQUIRED' });
     return { success: true, ...commandResult(command, command.result.nextAction) };
+  });
+
+  fastify.get('/v1/omega/commands/:id/safety-boundary', {
+    config: { rateLimit: { max: 60, timeWindow: '1 minute' } },
+  }, async (request, reply) => {
+    const command = store.get((request.params as { id?: string }).id ?? '');
+    if (!command) return reply.status(404).send({ success: false, error: 'OMEGA_COMMAND_NOT_FOUND' });
+
+    const workers = store
+      .listWorkers()
+      .filter((worker) => command.workers.some((workerId) => worker.workerId === workerId));
+    const lease = store.getLeaseForCommand(command.commandId);
+    const activeLease = lease && new Date(lease.expiresAt).getTime() > Date.now() ? lease : null;
+    const reality = command.result?.reality?.classification;
+    const attestationId = command.result?.execution?.attestationId ?? command.change?.attestationId;
+    const revoked = typeof attestationId === 'string'
+      ? store.listRevocations().find((record) => record.attestationId === attestationId) ?? null
+      : null;
+    const reconciliationEvents = store
+      .listEvents(command.commandId)
+      .filter((event) => event.type === 'command.reconciliation-noted');
+
+    const capabilityObserved =
+      workers.length === command.workers.length &&
+      workers.every((worker) => worker.capabilities.length > 0);
+    const policyObserved = typeof command.change?.policy === 'string' && command.change.policy.length > 0;
+    const authorityObserved = typeof command.change?.authority === 'string' && command.change.authority.length > 0;
+
+    return {
+      success: true,
+      commandId: command.commandId,
+      status: command.status,
+      boundary: {
+        capability: {
+          status: capabilityObserved ? 'VERIFIED' : 'UNKNOWN',
+          evidence: capabilityObserved
+            ? 'declared worker capabilities observed'
+            : 'one or more requested worker capabilities were not observed',
+          workers,
+        },
+        policy: {
+          status: policyObserved ? 'VERIFIED' : 'UNKNOWN',
+          evidence: policyObserved ? 'admission policy evidence observed' : 'admission policy evidence unavailable',
+          value: command.change?.policy ?? null,
+        },
+        authority: {
+          status: authorityObserved ? 'VERIFIED' : 'UNKNOWN',
+          evidence: authorityObserved
+            ? 'attributable authority evidence observed'
+            : 'attributable authority evidence unavailable',
+          value: command.change?.authority ?? null,
+        },
+        lease: {
+          status: activeLease ? 'VERIFIED' : 'NOT_EXECUTED',
+          evidence: activeLease ? 'active worker lease observed' : 'no active worker lease observed',
+          value: activeLease,
+        },
+        execution: {
+          status: command.result?.execution ? 'VERIFIED' : 'NOT_EXECUTED',
+          evidence: command.result?.execution ? 'execution result observed' : 'no execution result recorded',
+        },
+        observation: {
+          status:
+            reality === 'VERIFIED' || reality === 'DIVERGENT' || reality === 'UNKNOWN'
+              ? reality
+              : 'UNKNOWN',
+          evidence: reality ? 'reality classification observed' : 'no reality observation recorded',
+        },
+        revocation: {
+          status: revoked ? 'VERIFIED' : 'NOT_EXECUTED',
+          evidence: revoked ? 'matching attestation revocation observed' : 'no matching attestation revocation observed',
+          value: revoked,
+        },
+        reconciliation: {
+          status: reconciliationEvents.length > 0 ? 'VERIFIED' : 'NOT_EXECUTED',
+          evidence: reconciliationEvents.length > 0
+            ? 'durable reconciliation note observed'
+            : 'no reconciliation note observed',
+          count: reconciliationEvents.length,
+        },
+      },
+      limitations: [
+        'This endpoint reports repository-observed command evidence; it does not prove production deployment or external consequences.',
+        'Absence of a lease or revocation is not proof that no external system holds one.',
+        'Policy and authority evidence are records of the admitted command, not independent authorization proof.',
+      ],
+    };
   });
 
   fastify.get('/v1/omega/events', {

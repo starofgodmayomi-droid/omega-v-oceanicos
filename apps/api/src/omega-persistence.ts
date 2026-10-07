@@ -196,6 +196,22 @@ export class OmegaDurableStore {
     return this.db.prepare('SELECT * FROM omega_workers ORDER BY worker_id').all().map((row) => ({ workerId: row.worker_id, capabilities: JSON.parse(row.capabilities_json), status: row.status, lastHeartbeatAt: row.last_heartbeat_at, leaseCount: row.lease_count }));
   }
 
+  getLeaseForCommand(commandId: string): WorkerLease | undefined {
+    const row = this.db.prepare(
+      'SELECT lease_id, worker_id, command_id, capability, leased_at, expires_at FROM omega_leases WHERE command_id = ?'
+    ).get(commandId);
+    return row
+      ? {
+          leaseId: row.lease_id,
+          workerId: row.worker_id,
+          commandId: row.command_id,
+          capability: row.capability,
+          leasedAt: row.leased_at,
+          expiresAt: row.expires_at,
+        }
+      : undefined;
+  }
+
   acquireLease(workerId: string, commandId: string, capability: string, durationMs = 30_000): WorkerLease | undefined {
     const worker = this.getWorker(workerId);
     if (!worker || !worker.capabilities.includes(capability)) return undefined;
