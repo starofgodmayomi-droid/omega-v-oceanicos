@@ -14,10 +14,11 @@ import { DivergenceAlertsPanel } from './DivergenceAlertsPanel';
 import { ValueNavigatorPanel } from './ValueNavigatorPanel';
 import { ConnectorPanel } from './ConnectorPanel';
 import { WholeEcosystemDashboard } from './WholeEcosystemDashboard';
-import { OceanicosWorkbench } from './OceanicosWorkbench';
+import { OceanicosNavigator } from './OceanicosNavigator';
 import { LifecycleFlow, deriveStageStates, type LifecycleStage } from './LifecycleFlow';
 import { GlobeViewport } from './GlobeViewport';
 import { bindGlobeEvidence } from './globe-shell';
+import { isLocalSimulationOnly } from './whole-ecosystem-dashboard-model';
 import {
   theme,
   statusColor,
@@ -476,7 +477,7 @@ export function App() {
     setOmegaIntent('');
   };
 
-  const simulationMode = kernelCapabilities?.execution === 'SIMULATION';
+  const simulationMode = isLocalSimulationOnly(kernelCapabilities?.execution);
   const humanGateRequired = kernelCapabilities?.humanAuthorizationRequired ?? true;
 
   const stageStates = deriveStageStates(omegaCommand);
@@ -517,7 +518,7 @@ export function App() {
       id: 'execute',
       icon: '⚙',
       label: 'Execute',
-      subtitle: simulationMode ? 'Bounded simulation' : 'Bounded action',
+      subtitle: simulationMode ? 'Local simulation only' : 'Execution mode unknown',
       state: stageStates.execute,
     },
     {
@@ -702,7 +703,7 @@ export function App() {
         </div>
       )}
 
-      {/* Main conversational workspace */}
+      {/* Expandable Ω∞v Navigator: the body, transition, reality, and value layers */}
       <main
         style={{
           maxWidth: globeMax ? '1760px' : '1520px',
@@ -714,14 +715,14 @@ export function App() {
           zIndex: 1,
         }}
       >
-        <div className="ow-utility-row">
-          <span>ASK → DISTINGUISH → BOUND → BUILD → OBSERVE → VALUE</span>
+        <div className="navigator-utility-row">
+          <span>ONE ROOT → ONE CURRENT → MANY FORMS</span>
           <button type="button" aria-pressed={globeMax} onClick={() => setGlobeMax((value) => !value)}>
             {globeMax ? 'Exit globe view' : 'Open globe view'}
           </button>
         </div>
 
-        <OceanicosWorkbench
+        <OceanicosNavigator
           intent={omegaIntent}
           onIntentChange={setOmegaIntent}
           onSubmit={proposeOmegaCommand}
@@ -730,6 +731,7 @@ export function App() {
           loading={omegaLoading}
           command={omegaCommand}
           realityStatus={tip?.evidence?.status}
+          humanGateRequired={humanGateRequired}
         />
 
         <IntentFlow
@@ -745,7 +747,7 @@ export function App() {
           humanGateRequired={humanGateRequired}
         />
 
-        <details className="ow-deep-dive">
+        <details className="navigator-deep-dive">
           <summary>Explore the full ecosystem map, evidence, and operating tools</summary>
           <WholeEcosystemDashboard
             streamConnected={streamConnected}
@@ -758,7 +760,7 @@ export function App() {
             omegaCommand={omegaCommand}
             onFocusCommand={setOmegaIntent}
           />
-          <div className="ow-tools-stack">
+          <div className="navigator-tools-stack">
             <OreadConsole />
             <MoodCodexPanel />
             <DivergenceAlertsPanel />

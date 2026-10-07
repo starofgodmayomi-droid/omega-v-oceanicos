@@ -42,6 +42,11 @@ export function runtimeModeLabel(simulationMode: boolean, streamConnected: boole
   return 'AWAITING OBSERVATION';
 }
 
+export function isLocalSimulationOnly(value: unknown): boolean {
+  return typeof value === 'string'
+    && value.trim().toLowerCase().replace(/_/g, '-') === 'local-simulation-only';
+}
+
 export function boundedStatus(value: unknown): RealityStatus {
   const normalized = typeof value === 'string' ? value.trim().toUpperCase().replace(/\s+/g, '_') : '';
   return STATUS_ORDER.includes(normalized as RealityStatus) ? normalized as RealityStatus : 'UNKNOWN';

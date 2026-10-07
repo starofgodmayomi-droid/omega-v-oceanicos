@@ -158,12 +158,12 @@ export function IntentFlow({
           value={humanGateRequired ? 'Human approval required' : 'Autonomous'}
         />
         <UnderstandingItem
-          label="Risk"
-          value={simulationMode ? 'Low — simulation only' : 'Medium — live'}
+          label="Execution boundary"
+          value={simulationMode ? 'Local simulation only; external effects disabled' : 'Unknown — execution mode not verified'}
         />
         <UnderstandingItem
           label="Mode"
-          value={simulationMode ? 'Simulation' : 'Live'}
+          value={simulationMode ? 'Local simulation only' : 'Unknown'}
         />
       </div>
 
