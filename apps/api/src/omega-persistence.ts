@@ -5,6 +5,7 @@ const require = createRequire(import.meta.url);
 
 export type DurableWorker = {
   workerId: string;
+  role: string;
   capabilities: string[];
   status: 'IDLE' | 'BUSY' | 'OFFLINE';
   lastHeartbeatAt: string;
@@ -67,6 +68,7 @@ export class OmegaDurableStore {
       );
       CREATE TABLE IF NOT EXISTS omega_workers (
         worker_id TEXT PRIMARY KEY,
+        worker_role TEXT NOT NULL DEFAULT '',
         capabilities_json TEXT NOT NULL,
         status TEXT NOT NULL,
         last_heartbeat_at TEXT NOT NULL,
