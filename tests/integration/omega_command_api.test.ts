@@ -126,6 +126,36 @@ describe('Ω∞v command API vertical slice', () => {
     assert.equal(conflict.json().error, 'OMEGA_IDEMPOTENCY_CONFLICT');
   });
 
+  it('exposes only repository-observed safety boundary evidence', async () => {
+    const created = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/commands',
+      payload: {
+        intent: 'inspect safety boundary',
+        requestedBy: 'integration-user',
+        workers: ['planner'],
+        idempotencyKey: 'safety-boundary-1',
+      },
+    });
+    assert.equal(created.statusCode, 201);
+
+    const boundary = await app.inject({
+      method: 'GET',
+      url: '/v1/omega/commands/omega-safety-boundary-1/safety-boundary',
+    });
+    assert.equal(boundary.statusCode, 200);
+    const body = boundary.json();
+    assert.equal(body.success, true);
+    assert.equal(body.boundary.capability.status, 'UNKNOWN');
+    assert.equal(body.boundary.policy.status, 'UNKNOWN');
+    assert.equal(body.boundary.authority.status, 'UNKNOWN');
+    assert.equal(body.boundary.lease.status, 'NOT_EXECUTED');
+    assert.equal(body.boundary.execution.status, 'NOT_EXECUTED');
+    assert.equal(body.boundary.observation.status, 'UNKNOWN');
+    assert.equal(body.boundary.revocation.status, 'NOT_EXECUTED');
+    assert.equal(body.boundary.reconciliation.status, 'NOT_EXECUTED');
+  });
+
   it('rate-limits repeated command-store reads', async () => {
     let response;
     for (let attempt = 0; attempt < 61; attempt += 1) {
