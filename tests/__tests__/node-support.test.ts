@@ -32,6 +32,15 @@ describe('the supported Node version is one claim, not three', () => {
 
   const image = Number((dockerfile.match(/FROM node:(\d+)/) ?? [])[1]);
 
+  const workflowConfig = workflow
+    .split('\n')
+    .filter((line) => !/^\s*#/.test(line))
+    .join('\n');
+  const failFast = Array.from(workflowConfig.matchAll(/^\s*fail-fast:\s*(\S+)\s*$/gm)).map(
+    (match) => match[1]
+  );
+  const matrixBlocks = Array.from(workflowConfig.matchAll(/^\s*matrix:\s*$/gm));
+
   it('declares an engine range to check', () => {
     expect(declared).toBeGreaterThan(0);
     expect(matrix.length).toBeGreaterThan(0);
@@ -63,6 +72,10 @@ describe('the supported Node version is one claim, not three', () => {
     // Otherwise the next LTS becomes a surprise on the day it turns
     // default, rather than a red pull request beforehand.
     expect(Math.max(...matrix)).toBeGreaterThan(image);
+  });
+
+  it('keeps every matrix leg reporting when one leg fails', () => {
+    expect(failFast).toEqual(matrixBlocks.map(() => 'false'));
   });
 
   it('reads the matrix from the matrix, not from prose about it', () => {
