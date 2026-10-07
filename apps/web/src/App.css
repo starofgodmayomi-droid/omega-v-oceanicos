@@ -2346,3 +2346,80 @@ body {
 @media (max-width: 900px) {
   .whole-operating-loop { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
+
+
+/* Agent safety is a visible evidence boundary, not a decorative status card. */
+.agent-safety-panel {
+  position: relative;
+  z-index: 1;
+  margin: 2px 0 0;
+  padding: 15px 10px 13px;
+  border-top: 1px solid rgba(148, 163, 184, 0.14);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+  background: rgba(2, 6, 23, 0.22);
+}
+.agent-safety-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.agent-safety-heading strong {
+  display: block;
+  margin-top: 5px;
+  color: #94a3b8;
+  font-size: 10px;
+  font-weight: 500;
+}
+.agent-safety-ratio {
+  color: #67e8f9;
+  font: 10px var(--font-mono);
+  white-space: nowrap;
+}
+.agent-safety-subtitle {
+  margin: 9px 0 12px;
+  color: #64748b;
+  font: 9px/1.55 var(--font-mono);
+}
+.agent-safety-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+}
+.agent-safety-control {
+  min-width: 0;
+  padding: 9px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 7px;
+  background: rgba(2, 6, 23, 0.38);
+}
+.agent-safety-control-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 7px;
+  color: #cbd5e1;
+  font-size: 10px;
+}
+.agent-safety-control-top b {
+  font: 8px var(--font-mono);
+  letter-spacing: 0.04em;
+  text-align: right;
+}
+.agent-safety-control small {
+  display: block;
+  margin-top: 6px;
+  color: #64748b;
+  font: 8px/1.45 var(--font-mono);
+}
+.agent-safety-boundary-note {
+  margin-top: 11px;
+  color: #64748b;
+  font: 8px/1.5 var(--font-mono);
+  letter-spacing: 0.04em;
+}
+@media (max-width: 700px) {
+  .agent-safety-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
