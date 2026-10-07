@@ -152,17 +152,18 @@ export class OmegaCommandStore {
     return this.durable.listCommands() as StoredCommand[];
   }
 
-  registerWorker(input: { workerId: string; capabilities: string[] }) { return this.durable.registerWorker(input); }
+  registerWorker(input: { workerId: string; role?: string; capabilities: string[] }) { return this.durable.registerWorker(input); }
   heartbeatWorker(workerId: string) { return this.durable.heartbeatWorker(workerId); }
   listWorkers() { return this.durable.listWorkers(); }
   getLeaseForCommand(commandId: string) { return this.durable.getLeaseForCommand(commandId); }
-  acquireWorkerLease(workerId: string, commandId: string, capability: string, durationMs?: number) {
-    const lease = this.durable.acquireLease(workerId, commandId, capability, durationMs);
+  acquireWorkerLease(workerId: string, commandId: string, capability: string, durationMs?: number, requiredRole?: string) {
+    const lease = this.durable.acquireLease(workerId, commandId, capability, durationMs, requiredRole);
     this.durable.appendEvent({
       type: lease ? 'worker.lease-acquired' : 'worker.lease-rejected',
       commandId,
       workerId,
       capability,
+      workerRole: requiredRole ?? null,
       leaseId: lease?.leaseId ?? null,
       at: new Date().toISOString(),
     });
@@ -320,10 +321,18 @@ export function registerOmegaRoutes(fastify: FastifyInstance, store: OmegaComman
 
   fastify.post('/v1/omega/workers/register', async (request, reply) => {
     const body = bodyOf(request);
-    if (typeof body.workerId !== 'string' || !Array.isArray(body.capabilities) || body.capabilities.length > 16 || body.capabilities.some((value) => typeof value !== 'string' || value.length > 96)) {
+    const workerId = typeof body.workerId === 'string' ? body.workerId : '';
+    const role = body.role === undefined ? undefined : typeof body.role === 'string' ? body.role : '';
+    const validId = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,95}$/.test(workerId);
+    const validRole = role === undefined || /^[A-Za-z0-9][A-Za-z0-9._:-]{0,95}$/.test(role);
+    if (!validId || !validRole || !Array.isArray(body.capabilities) || body.capabilities.length > 16 || body.capabilities.some((value) => typeof value !== 'string' || value.length > 96)) {
       return reply.status(400).send({ success: false, error: 'INVALID_WORKER_REGISTRATION' });
     }
-    return { success: true, worker: store.registerWorker({ workerId: body.workerId, capabilities: body.capabilities as string[] }), coordination: 'sqlite-wal' };
+    return {
+      success: true,
+      worker: store.registerWorker({ workerId, role, capabilities: body.capabilities as string[] }),
+      coordination: 'sqlite-wal',
+    };
   });
 
   fastify.post('/v1/omega/workers/:workerId/heartbeat', async (request, reply) => {
@@ -337,9 +346,24 @@ export function registerOmegaRoutes(fastify: FastifyInstance, store: OmegaComman
     const workerId = (request.params as { workerId?: string }).workerId ?? '';
     const body = bodyOf(request);
     if (typeof body.commandId !== 'string' || typeof body.capability !== 'string') return reply.status(400).send({ success: false, error: 'LEASE_COMMAND_AND_CAPABILITY_REQUIRED' });
-    const lease = store.acquireWorkerLease(workerId, body.commandId, body.capability, typeof body.durationMs === 'number' ? Math.min(Math.max(body.durationMs, 1000), 300000) : undefined);
+    const requiredRole = body.role === undefined ? undefined : typeof body.role === 'string' ? body.role.trim() : '';
+    if (body.role !== undefined && (!requiredRole || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,95}$/.test(requiredRole))) {
+      return reply.status(400).send({ success: false, error: 'LEASE_ROLE_INVALID' });
+    }
+    const lease = store.acquireWorkerLease(
+      workerId,
+      body.commandId,
+      body.capability,
+      typeof body.durationMs === 'number' ? Math.min(Math.max(body.durationMs, 1000), 300000) : undefined,
+      requiredRole,
+    );
     if (!lease) return reply.status(409).send({ success: false, error: 'OMEGA_WORKER_LEASE_UNAVAILABLE' });
-    return { success: true, lease, coordination: 'sqlite-transaction' };
+    return {
+      success: true,
+      lease,
+      workerRole: requiredRole ?? store.listWorkers().find((worker) => worker.workerId === workerId)?.role ?? null,
+      coordination: 'sqlite-transaction',
+    };
   });
 
   fastify.post('/v1/omega/workers/:workerId/lease/:leaseId/release', async (request, reply) => {
