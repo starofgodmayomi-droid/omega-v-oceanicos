@@ -81,6 +81,10 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
   beforeAll(() => {
     process.env.OMEGA_SIGNING_KEY =
       process.env.OMEGA_SIGNING_KEY || 'omega-v-default-attestation-secret-key-2026';
+    process.env.OMEGA_GATEWAY_SIGNING_KEY =
+      process.env.OMEGA_GATEWAY_SIGNING_KEY || 'omega-v-default-gateway-signing-key-32chars';
+    process.env.OMEGA_SECURITY_KEY =
+      process.env.OMEGA_SECURITY_KEY || 'omega-v-default-security-signing-key-32chars';
   });
 
   beforeEach(() => {
@@ -3599,7 +3603,7 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
   // ──────────────────────────────────────────────────────────────────────────
   describe('Section 61 — Zero-Trust Capability Tokens & Least Privilege Security Engine E2E', () => {
     it('should issue signed capability tokens, enforce least privilege authorization, detect tampering, and sanitize inputs', () => {
-      const security = new SecurityEngine('e2e-security-test-key-2026');
+      const security = new SecurityEngine('e2e-security-test-key-2026-minimum-32-chars');
 
       const subject: IdentitySubject = {
         id: 'did:omega:agent:auditor-01',
@@ -3630,7 +3634,7 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
       const tamperedToken = { ...token, signature: '0'.repeat(64) };
       const authTampered = security.authorize(subject, 'CAN_VERIFY', tamperedToken);
       expect(authTampered.allowed).toBe(false);
-      expect(authTampered.reason).toContain('invalid or expired');
+      expect(authTampered.reason).toContain('invalid, or expired');
 
       // 5. Fail closed on token subject mismatch
       const mismatchedSubject: IdentitySubject = {
@@ -3749,7 +3753,7 @@ describe('Ω∞v Oceanicos — Full Stack End-to-End Verification Suite', () => 
   describe('Section 63 — Full-Stack Sovereign Totality Synthesis & Master Continuum Loop E2E', () => {
     it('should synthesize runtime loop, security tokens, MINI cycle, dissensus, universal lexicon, evidence artifact, governance, and totality compression', async () => {
       // 1. Setup Engines
-      const security = new SecurityEngine('e2e-master-continuum-key');
+      const security = new SecurityEngine('e2e-master-continuum-key-minimum-32-chars');
       const verifier = new VerificationEngine();
       verifier.registerRule({
         name: 'status-code-check',

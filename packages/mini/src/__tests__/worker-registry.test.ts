@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from '@jest/globals';
 import { createOmegaWorkerRegistry, getOmegaWorker } from '../worker-registry.js';
 import type { OmegaWorkerCapability } from '@oceanicos/types';
 

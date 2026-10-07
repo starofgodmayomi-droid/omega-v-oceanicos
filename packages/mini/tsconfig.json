@@ -1,8 +1,8 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "CommonJS",
-    "moduleResolution": "node",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "declaration": true,
     "outDir": "./dist",
     "rootDir": "./src",
@@ -12,14 +12,10 @@
     "skipLibCheck": true
   },
   "include": [
-    "src/index.ts",
-    "src/admission.ts",
-    "src/transition.ts",
-    "src/reality.ts",
-    "src/worker-registry.ts",
-    "src/change.ts",
-    "src/compiler.ts",
-    "src/ir-validator.ts",
-    "src/pipeline.ts"
+    "src/**/*"
+  ],
+  "exclude": [
+    "src/__tests__",
+    "**/*.test.ts"
   ]
 }

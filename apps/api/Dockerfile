@@ -30,8 +30,14 @@ RUN pnpm --filter @oceanicos/types build \
  && pnpm --filter @oceanicos/remember build \
  && pnpm --filter @oceanicos/mini build \
  && pnpm --filter @oceanicos/attestation build \
- && pnpm --filter api build \
- && pnpm --filter web build
+ && pnpm --filter @oceanicos/authorization build \
+ && pnpm --filter @oceanicos/generative build \
+ && pnpm --filter @oceanicos/inference build \
+ && pnpm --filter @oceanicos/mood build \
+ && pnpm --filter @oceanicos/pluralism build \
+ && pnpm --filter @oceanicos/vector build \
+ && pnpm --filter @oceanicos/api build \
+ && pnpm --filter @oceanicos/web build
 
 FROM node:22-alpine AS runtime
 

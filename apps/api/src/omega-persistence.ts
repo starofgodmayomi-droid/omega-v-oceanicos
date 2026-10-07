@@ -17,6 +17,10 @@ export type WorkerLease = {
   expiresAt: string;
 };
 
+import { createRequire } from 'node:module';
+
+const requireFn = typeof require !== 'undefined' ? require : createRequire(import.meta.url);
+
 type SqliteDb = {
   exec(sql: string): void;
   prepare(sql: string): { get(...params: unknown[]): any; all(...params: unknown[]): any[]; run(...params: unknown[]): any };
@@ -25,10 +29,10 @@ type SqliteDb = {
 
 function openDatabase(path: string): SqliteDb {
   try {
-    const BetterSqlite = require('better-sqlite3');
+    const BetterSqlite = requireFn('better-sqlite3');
     return new BetterSqlite(path) as SqliteDb;
   } catch {
-    const { DatabaseSync } = require('node:sqlite');
+    const { DatabaseSync } = requireFn('node:sqlite');
     return new DatabaseSync(path) as SqliteDb;
   }
 }

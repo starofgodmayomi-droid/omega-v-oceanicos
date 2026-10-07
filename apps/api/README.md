@@ -1,6 +1,6 @@
 # @omega-v/api
 
-Fastify HTTP runtime for Ω∞v | OCEANICOS.
+Fastify HTTP runtime for Ω∞v | OCEANICOS. Operates on the foundational MINI kernel: Observe → Verify → Remember.
 
 The executable contract is the current `createApp` surface. Persistence,
 local jobs, readiness, attestation revocations, and optional static-client

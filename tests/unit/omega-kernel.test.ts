@@ -50,7 +50,7 @@ function makeChange(overrides: Partial<OmegaChangeRecord> = {}): OmegaChangeReco
     subject: 'test-subject',
     intent: 'Run unit tests',
     stateBefore: 'clean',
-    evidence: ['git-status-clean'],
+    evidence: ['git-status'],
     authority: 'human:steward',
     policy: 'policy-safety-v1',
     decision: 'REVIEW',

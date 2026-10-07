@@ -7,6 +7,7 @@ import {
 import {
   Remember,
   RememberEngine,
+  KaiLedger,
   PluralisticHashChain,
   type CryptographicBlock,
 } from '@oceanicos/remember';
@@ -17,12 +18,16 @@ import type {
   VerificationRule,
   MemoryRecord,
   MiniCycleResult,
+  KaiMemoryDistinction,
+  KaiProvenanceRecord,
 } from '@oceanicos/types';
 
 export interface MiniKernelOptions {
   observer?: Observer;
   verificationEngine?: VerificationEngine;
   memory?: Remember;
+  ledger?: RememberEngine;
+  kaiLedger?: KaiLedger;
   rules?: VerificationRule[];
 }
 
@@ -38,6 +43,7 @@ export class MiniKernel {
   private readonly verificationEngine: VerificationEngine;
   private readonly memory: Remember;
   private readonly ledger: RememberEngine;
+  private readonly kaiLedger?: KaiLedger;
 
   constructor(
     optionsOrLedger?: MiniKernelOptions | RememberEngine
@@ -52,7 +58,8 @@ export class MiniKernel {
       this.observer = opts.observer ?? new Observer();
       this.verificationEngine = opts.verificationEngine ?? new VerificationEngine();
       this.memory = opts.memory ?? new Remember();
-      this.ledger = new RememberEngine(':memory:');
+      this.ledger = opts.ledger ?? new RememberEngine(':memory:');
+      this.kaiLedger = opts.kaiLedger;
 
       if (opts.rules) {
         for (const rule of opts.rules) {
@@ -84,11 +91,31 @@ export class MiniKernel {
     const verification = this.verify(observation);
     const { memory, entries } = this.memory.rememberWithEntries(observation, verification);
 
+    let kaiRecord: KaiProvenanceRecord | undefined;
+    if (this.kaiLedger) {
+      const distinction: KaiMemoryDistinction = verification.summary.passed ? 'VERIFIED' : 'DIVERGENT';
+      kaiRecord = this.kaiLedger.append({
+        distinction,
+        statement: `${observation.claim.statement} → ${verification.summary.passed ? 'verified' : 'unverified'} (confidence: ${verification.summary.confidence})`,
+        subject: `claim:${observation.claim.category}`,
+        source: observation.source.system || 'mini-kernel:cycle',
+        author: observation.observedBy || 'mini-kernel',
+        evidenceRef: verification.id,
+        policyOrAuthority: 'CONSTITUTION §13',
+        metadata: {
+          observationId: observation.id,
+          verificationId: verification.id,
+          passed: verification.summary.passed,
+        },
+      });
+    }
+
     return {
       observation,
       verification,
       memory,
       entries,
+      kaiRecord,
       passed: verification.summary.passed,
       confidence: verification.summary.confidence,
       completedAt: new Date().toISOString(),
@@ -193,6 +220,14 @@ export class MiniKernel {
 
   public getObserver(): Observer {
     return this.observer;
+  }
+
+  public getKaiLedger(): KaiLedger | undefined {
+    return this.kaiLedger;
+  }
+
+  public getLedger(): RememberEngine {
+    return this.ledger;
   }
 }
 

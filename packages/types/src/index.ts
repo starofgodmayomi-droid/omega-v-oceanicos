@@ -4,6 +4,7 @@ export * from './executor.js';
 export * from './omega-command.js';
 export * from './scene.js';
 import type { ExecutionReceipt } from './executor.js';
+import type { OmegaCommandStatus } from './omega-command.js';
 
 export type ChangeDecision = 'ALLOW' | 'DENY' | 'REVIEW';
 
@@ -287,6 +288,7 @@ export interface MiniCycleResult {
   verification: VerificationResult;
   memory: MemoryRecord;
   entries?: EventLogEntry[];
+  kaiRecord?: KaiProvenanceRecord;
   passed: boolean;
   confidence: number;
   completedAt: string;
@@ -487,18 +489,6 @@ export interface AdvancedVerificationReceipt {
 // Ω‑ƆREADƆS OS v∞ — Unified Command & Reality-First Contracts
 // ---------------------------------------------------------------------------
 
-export type OmegaCommandStatus =
-  | 'PROPOSED'
-  | 'REVIEW'
-  | 'DENIED'
-  | 'AUTHORIZED'
-  | 'EXECUTED'
-  | 'ATTESTED'
-  | 'VERIFIED'
-  | 'DIVERGENT'
-  | 'UNKNOWN'
-  | 'FAILED';
-
 export type OmegaWorkerRole =
   | 'observer'
   | 'researcher'
@@ -523,7 +513,7 @@ export interface OmegaWorkerDefinition {
   maxRetries: number;
 }
 
-export interface OmegaCommandIR {
+export interface OmegaCommandPlanIR {
   irVersion: '1.0';
   intent: string;
   requestedWorkers: string[];
@@ -553,7 +543,7 @@ export interface OmegaCommandApproval {
   authProof?: string;
 }
 
-export interface OmegaCommand {
+export interface OmegaCommandPlan {
   commandId: string;
   sessionId: string;
   requestedBy: string;
@@ -561,7 +551,7 @@ export interface OmegaCommand {
   prompt: string;
   boundedContext: Record<string, unknown>;
   requestedWorkers: string[];
-  irPlan: OmegaCommandIR;
+  irPlan: OmegaCommandPlanIR;
   idempotencyKey: string;
   dryRun: boolean;
   redacted: boolean;
@@ -607,27 +597,6 @@ export interface OmegaRealityVerdict {
   reconciliationDetails?: Record<string, unknown>;
 }
 
-export interface OmegaCommandResult {
-  commandId: string;
-  status: OmegaCommandStatus;
-  statusReason?: string;
-  stateBefore?: Record<string, unknown>;
-  stateAfter?: Record<string, unknown>;
-  consequence?: string;
-  outputSummary?: string;
-  attestationId?: string;
-  attestationDigest?: string;
-  provenance?: {
-    lineage: string[];
-    executedBy: string;
-    timestamp: string;
-  };
-  observation?: OmegaObservation;
-  realityVerdict?: OmegaRealityVerdict;
-  dissentNotes?: string[];
-  completedAt?: string;
-  receipt?: ExecutionReceipt;
-}
 
 export interface OmegaDiscrepancyGroup {
   readonly kind: string;
@@ -809,4 +778,47 @@ export interface SceneSimulation {
     note: string;
   };
   createdAt: string;
+}
+
+/**
+ * Constitution Section 13: MEMORY / KAI
+ * Hash-chain model: hashₙ = H(recordₙ + hashₙ₋₁)
+ * Never silently convert INFERRED → OBSERVED.
+ */
+export type KaiMemoryDistinction =
+  | 'OBSERVED'
+  | 'USER-STATED'
+  | 'DOCUMENTED'
+  | 'INFERRED'
+  | 'PROPOSED'
+  | 'VERIFIED'
+  | 'DIVERGENT'
+  | 'UNKNOWN'
+  | 'BLOCKED'
+  | 'NOT-AUTHORIZED'
+  | 'CORRECTED';
+
+export interface KaiProvenanceRecord {
+  id: string;
+  index: number;
+  timestamp: string;
+  distinction: KaiMemoryDistinction;
+  statement: string;
+  subject: string;
+  source: string;
+  author: string;
+  policyOrAuthority?: string;
+  evidenceRef?: string;
+  previousHash: string;
+  hash: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface KaiIntegrityReport {
+  valid: boolean;
+  count: number;
+  genesisHash: string;
+  tipHash: string;
+  distinctions: Record<KaiMemoryDistinction, number>;
+  evaluatedAt: string;
 }

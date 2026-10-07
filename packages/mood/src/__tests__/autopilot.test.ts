@@ -2,7 +2,7 @@ import {
   createMoodContext,
   normalizeMoodSignal,
   proposeMoodAdaptation,
-} from '../autopilot';
+} from '../autopilot.js';
 
 describe('bounded autopilot mood contract', () => {
   it('preserves an explicit user signal as USER_STATED with provenance', () => {

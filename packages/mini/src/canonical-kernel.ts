@@ -1,4 +1,5 @@
 import { createHmac, randomUUID } from 'crypto';
+import { readFile } from 'node:fs/promises';
 
 /* ─── Oceanic IR & Constitutional Types ──────────────────────────── */
 
@@ -537,7 +538,6 @@ export class OceanicosKernel {
    * Returns a new kernel at genesis if the file does not exist.
    */
   static async loadFromFile(filePath: string, fallbackSecret?: string): Promise<OceanicosKernel> {
-    const { readFile } = await import('node:fs/promises');
     try {
       const raw = await readFile(filePath, 'utf-8');
       const snapshot: KernelSnapshot = JSON.parse(raw);

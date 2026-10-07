@@ -4,7 +4,7 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createApp } from '../../apps/api/dist/index.js';
-import { runCoordinationEvidenceProbe } from '../../packages/coordination/dist/index.js';
+import { runCoordinationEvidenceProbe } from '../../continuum/packages/coordination/dist/index.js';
 
 describe('Ω durable multi-process coordination', () => {
   const directory = mkdtempSync(join(tmpdir(), 'omega-distributed-'));

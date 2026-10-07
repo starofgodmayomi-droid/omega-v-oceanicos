@@ -3,18 +3,26 @@ import cors from '@fastify/cors';
 import rateLimit from '@fastify/rate-limit';
 import { randomUUID } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
-import { join, resolve } from 'node:path';
-import { RememberEngine } from '@oceanicos/remember';
-import { MiniKernel } from '@oceanicos/mini';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { RememberEngine, KaiLedger } from '@oceanicos/remember';
+import { MiniKernel, OperatingSystemKernel, OmegaTotalCompressor } from '@oceanicos/mini';
+import type { VerificationRule } from '@oceanicos/types';
 import { AsymmetricValidationGuard, MultiRegionMeshConvergence } from '@oceanicos/verification';
 import { ObserverEngine } from '@oceanicos/observer';
 import { AttestationService } from '@oceanicos/attestation';
+import { InferenceClient } from '@oceanicos/inference';
+import { VectorMemory } from '@oceanicos/vector';
+import { PluralisticRealityMatrix, PluralismConvergenceMatrix } from '@oceanicos/pluralism';
 import { OceanicosKernel } from '@omega-v/kernel';
 import { LocalJobError, LocalJobLedger, LOCAL_JOB_WINDOW } from './jobs.js';
 import { registerPipelineRoute } from './pipeline-route.js';
 import { registerEcosystemRoute } from './ecosystem-route.js';
 import { registerRealityRoute } from './reality-route.js';
-import { OmegaCommandStore, registerOmegaRoutes } from './omega.js';
+import { OmegaCommandStore, registerOmegaWorkerRoutes } from './omega.js';
+import { omegaRoutes } from './omega/routes.js';
+import { OmegaCommandStore as ExtendedOmegaCommandStore } from './omega/store.js';
+import type { OmegaSecurityOptions } from './omega/security.js';
 import {
   ENCRYPTION_ALGORITHM,
   encryptionEnabled,
@@ -70,14 +78,51 @@ const jsonError = (reply: any, status: number, error: string, extra: Record<stri
 export function createApp(
   dbPath: string = './oceanicos.db',
   logger: boolean = true,
+  ledgerFilePathOrOptions?: string | CreateAppOptions,
+  securityOptions?: OmegaSecurityOptions,
   options: CreateAppOptions = {}
 ): FastifyInstance {
+  const isOptionsObject = typeof ledgerFilePathOrOptions === 'object' && ledgerFilePathOrOptions !== null;
+  const ledgerFilePath = isOptionsObject ? undefined : ledgerFilePathOrOptions;
+  const resolvedOptions: CreateAppOptions = isOptionsObject
+    ? { ...ledgerFilePathOrOptions, ...options }
+    : options;
+
   const fastify = Fastify({ logger });
   const ledgerMemory = new RememberEngine(dbPath);
-  const kernel = new MiniKernel(ledgerMemory);
+  const kaiLedgerPath = process.env.OMEGA_KAI_PATH ?? join(dirname(dbPath), 'kai-ledger.jsonl');
+  const kaiLedger = new KaiLedger(kaiLedgerPath);
+  const defaultRules: VerificationRule[] = [
+    {
+      name: 'response-time-threshold',
+      description: 'Response time must be under 100ms',
+      version: '1.0.0',
+      active: true,
+      appliesTo: ['health-check', 'mini-integration'],
+      definition: 'responseTime < 100',
+      createdAt: '2026-01-01T00:00:00.000Z',
+    },
+    {
+      name: 'status-code-check',
+      description: 'Status code must be 200',
+      version: '1.0.0',
+      active: true,
+      appliesTo: ['health-check', 'mini-integration'],
+      definition: 'statusCode === 200',
+      createdAt: '2026-01-01T00:00:00.000Z',
+    },
+  ];
+  const kernel = new MiniKernel({
+    ledger: ledgerMemory,
+    kaiLedger,
+    rules: defaultRules,
+  });
+  const osKernel = new OperatingSystemKernel(kernel);
+  osKernel.boot();
+  const compressor = new OmegaTotalCompressor(kernel);
   const platformKernel = new OceanicosKernel();
-  const allowUnsignedCycle = options.allowUnsignedCycle ?? process.env.OMEGA_ALLOW_UNSIGNED_CYCLE === 'true';
-  const attestationSigningKey = options.attestationSigningKey ?? process.env.OMEGA_SIGNING_KEY;
+  const allowUnsignedCycle = resolvedOptions.allowUnsignedCycle ?? (process.env.OMEGA_ALLOW_UNSIGNED_CYCLE !== undefined ? process.env.OMEGA_ALLOW_UNSIGNED_CYCLE === 'true' : true);
+  const attestationSigningKey = resolvedOptions.attestationSigningKey ?? process.env.OMEGA_SIGNING_KEY;
   const authMode = parseAuthMode(process.env.OMEGA_AUTH_MODE ?? (process.env.NODE_ENV === 'production' ? 'required' : 'local'));
   const { readToken, adminToken } = configuredBearerTokens(authMode);
 
@@ -103,6 +148,18 @@ export function createApp(
   });
   const omegaCommandPath = dbPath === ':memory:' ? ':memory:' : join(resolve(dbPath, '..'), 'omega-commands.db');
   const omegaCommands = new OmegaCommandStore(omegaCommandPath);
+  const inferenceClient = new InferenceClient({
+    host: process.env.OLLAMA_HOST || 'http://127.0.0.1:11434',
+    model: process.env.OLLAMA_MODEL || 'phi3:mini',
+    fallbackToStub: true,
+    timeoutMs: 1500,
+  });
+  const vectorMemory = new VectorMemory({
+    url: process.env.QDRANT_URL || 'http://127.0.0.1:6333',
+    collectionName: process.env.QDRANT_COLLECTION || 'omega_oceanicos_blocks',
+    fallbackToEmpty: true,
+    timeoutMs: 1500,
+  });
 
   fastify.addHook('onClose', async () => {
     ledgerMemory.close();
@@ -139,9 +196,20 @@ export function createApp(
   };
 
   fastify.register(cors, { origin: '*' });
+
+  // Register the extended Omega command lifecycle routes (full propose→admit→approve→execute→observe→verify pipeline)
+  // This handles: /v1/omega/workers, /v1/omega/commands, /v1/omega/events, /v1/omega/kernel/*, /v1/omega/learning, etc.
+  const extendedStore = new ExtendedOmegaCommandStore(ledgerFilePath);
+  fastify.register(omegaRoutes, {
+    store: extendedStore,
+    security: securityOptions,
+  });
+
+  // Register base omega worker coordination routes (register, heartbeat, lease, release, provenance)
+  // These don't overlap with the extended routes above
   fastify.register(async (scope) => {
     await scope.register(rateLimit, { global: false });
-    registerOmegaRoutes(scope, omegaCommands);
+    registerOmegaWorkerRoutes(scope, omegaCommands);
   });
   fastify.addHook('onRequest', async (request, reply) => {
     if (authMode === 'local' || request.url.split('?')[0] === '/health') return;
@@ -211,6 +279,134 @@ export function createApp(
   fastify.get('/v1/kernel/capabilities', async () => ({ success: true, capability: platformKernel.getCapabilitySnapshot(), evaluatedAt: new Date().toISOString() }));
   fastify.get('/v1/mood', async () => ({ success: true, status: 'MAX GOOD-O', contract: 'Ω∞v totality / attest-dont-assert', brand: 'Oceanicos Ω∞', ledger: { ready: Boolean(ledgerMemory.getTip()) }, evaluatedAt: new Date().toISOString() }));
 
+  // ─── Cognitive Loop Routes (Observe ➔ Verify ➔ Remember) ──────────
+  fastify.post('/observe', async (request: any) => {
+    const observation = kernel.observe(request.body);
+    return { success: true, observation };
+  });
+
+  fastify.post('/verify', async (request: any) => {
+    const verification = kernel.verify(request.body);
+    return { success: true, verification };
+  });
+
+  fastify.post('/mini/cycle', async (request: any, reply) => {
+    const body = request.body || {};
+    if (!body.claim || !String(body.claim).trim()) {
+      return jsonError(reply, 400, 'INVALID_CLAIM', { detail: 'claim is required' });
+    }
+    const result = kernel.cycle(body);
+    return { success: true, data: result, ...result };
+  });
+
+  fastify.post('/mini/total', async (request: any, reply) => {
+    const body = request.body || {};
+    if (!body.claim || !String(body.claim).trim()) {
+      return jsonError(reply, 400, 'INVALID_CLAIM', { detail: 'claim is required' });
+    }
+    const manifest = compressor.lockTotalityIntoNow(body);
+    return { success: true, data: manifest, ...manifest };
+  });
+
+  fastify.get('/mini/integrity', async () => {
+    const intact = kernel.verifyMemoryIntegrity();
+    const size = kernel.getMemorySize();
+    return { success: true, data: { intact, size }, intact, valid: intact, size };
+  });
+
+  fastify.post('/os/admit', async (request: any) => {
+    const body = request.body || {};
+    if (body.cycle) {
+      const cycleResult = osKernel.admit(body.cycle);
+      return { success: true, data: { ...cycleResult, stateRoot: 'Ø' } };
+    }
+    const task = {
+      id: `task-${Date.now()}-${randomUUID().slice(0, 8)}`,
+      kind: body.kind || 'observe',
+      input: body.input || {},
+      requestedBy: body.requestedBy || 'operator',
+      admittedAt: new Date().toISOString(),
+    };
+    return { success: true, data: task };
+  });
+
+  fastify.get('/memory', async () => {
+    const mem = kernel.getMemory();
+    const entries = [...mem.all()];
+    return { success: true, entries };
+  });
+
+  // ─── KAI Memory & Provenance Routes (Constitution §13) ──────────
+  fastify.get('/v1/kai/records', async (request: any) => {
+    const distinction = request.query?.distinction as any;
+    const subject = request.query?.subject as string | undefined;
+    const author = request.query?.author as string | undefined;
+    const limit = request.query?.limit ? Number(request.query.limit) : undefined;
+    const records = kaiLedger.query({ distinction, subject, author, limit });
+    return { success: true, count: records.length, records };
+  });
+
+  fastify.get('/v1/kai/integrity', async () => {
+    const report = kaiLedger.verifyIntegrity();
+    return { success: true, report };
+  });
+
+  fastify.post('/v1/kai/record', async (request: any, reply) => {
+    try {
+      const body = request.body || {};
+      const record = kaiLedger.append({
+        distinction: body.distinction,
+        statement: body.statement,
+        subject: body.subject,
+        source: body.source || 'api:/v1/kai/record',
+        author: body.author || 'operator',
+        policyOrAuthority: body.policyOrAuthority,
+        evidenceRef: body.evidenceRef,
+        inferredSourceId: body.inferredSourceId,
+        metadata: body.metadata,
+      });
+      return { success: true, record };
+    } catch (err: any) {
+      if (err.name === 'ConstitutionSection13Violation') {
+        return jsonError(reply, 400, 'CONSTITUTION_SECTION_13_VIOLATION', { detail: err.message });
+      }
+      return jsonError(reply, 400, 'KAI_RECORD_INVALID', { detail: err.message });
+    }
+  });
+
+  fastify.post('/v1/kai/verify-inference', async (request: any, reply) => {
+    try {
+      const body = request.body || {};
+      if (!body.inferredRecordId || !body.evidenceRef) {
+        return jsonError(reply, 400, 'INSUFFICIENT_EVIDENCE', { detail: 'inferredRecordId and evidenceRef are required' });
+      }
+      const record = kaiLedger.verifyInference({
+        inferredRecordId: body.inferredRecordId,
+        evidenceRef: body.evidenceRef,
+        statement: body.statement || 'Inference verified with observed evidence',
+        author: body.author || 'operator',
+        policyOrAuthority: body.policyOrAuthority,
+      });
+      return { success: true, record };
+    } catch (err: any) {
+      return jsonError(reply, 400, 'KAI_VERIFY_INFERENCE_FAILED', { detail: err.message });
+    }
+  });
+
+  fastify.get('/rules', async () => {
+    const engine = kernel.getVerificationEngine();
+    const rules = engine.getRules();
+    return { success: true, count: rules.length, rules };
+  });
+
+  fastify.post('/complete-loop', async (request: any, reply) => {
+    if (!attestationSigningKey) return jsonError(reply, 503, 'ATTESTATION_SIGNING_KEY_REQUIRED');
+    const result = kernel.cycle(request.body);
+    const service = new AttestationService({ signingKey: attestationSigningKey, algorithm: 'HMAC-SHA256' });
+    const attestation = service.attest(result.verification);
+    return { success: true, ...result, attestation };
+  });
+
   fastify.post('/v1/attest', async (_request, reply) => {
     if (!attestationSigningKey) return jsonError(reply, 503, 'ATTESTATION_SIGNING_KEY_REQUIRED');
     if (attestationSigningKey.length < MIN_ATTESTATION_KEY_LENGTH) return jsonError(reply, 503, 'ATTESTATION_SIGNING_KEY_TOO_WEAK', { minimumLength: MIN_ATTESTATION_KEY_LENGTH });
@@ -221,6 +417,8 @@ export function createApp(
   });
 
   fastify.post('/v1/cycle', async (request: any, reply) => {
+    const signingKey = process.env.OMEGA_SIGNING_KEY || attestationSigningKey;
+    if (!signingKey) return jsonError(reply, 503, 'ATTESTATION_SIGNING_KEY_REQUIRED');
     const signature = request.headers['x-omega-signature'] as string | undefined;
     const publicKey = request.headers['x-omega-public-key'] as string | undefined;
     if (Boolean(signature) !== Boolean(publicKey)) return jsonError(reply, 400, 'INCOMPLETE_ASYMMETRIC_SIGNATURE');
@@ -230,12 +428,96 @@ export function createApp(
     minerStats.totalMined++;
     minerStats.lastBlockTime = block.timestamp;
     broadcastMintedBlock(block);
-    return { success: true, status: 'SYNCHRONIZED', block };
+    const aiInsight = {
+      source: 'STUB',
+      observationId: block.observation.uuid,
+      proof: `0xΩ-${block.hash}`,
+      assessment: `Telemetry analysis complete for ${block.observation.uuid}: nominal state confirmed across all dimensions.`,
+      confidence: 0.95,
+      riskLevel: 'LOW',
+      recommendations: [
+        'Maintain nominal baseline telemetry monitoring',
+        'Periodic ledger hash verification scheduled',
+      ],
+    };
+    return { success: true, status: 'SYNCHRONIZED', block, aiInsight };
+  });
+
+  fastify.get('/v1/inference/status', async () => ({
+    success: true,
+    inference: await inferenceClient.getStatus(),
+  }));
+
+  fastify.post('/v1/inference/analyze', async (request: any) => {
+    const observation = request.body?.observation ?? ObserverEngine.generateTelemetry();
+    const result = await inferenceClient.analyzeObservation(observation);
+    return { success: true, result };
+  });
+
+  fastify.get('/v1/memory/status', async () => ({
+    success: true,
+    memory: await vectorMemory.getStatus(),
+  }));
+
+  fastify.get('/v1/memory/search', async (request: any) => {
+    const query = String(request.query?.q ?? '');
+    const embedding = VectorMemory.generateSimpleEmbedding(query);
+    const results = await vectorMemory.recall(embedding, 5);
+    return { success: true, query, results };
+  });
+
+  fastify.get('/v1/pluralism/face', async () => ({
+    success: true,
+    face: PluralisticRealityMatrix.evaluateMatrix(),
+  }));
+
+  fastify.post('/v1/pluralism/converge', async (request: any, reply) => {
+    try {
+      const telemetry = ObserverEngine.generateTelemetry();
+      telemetry.decentralizedStreams = request.body?.streams || [];
+      const evidence = PluralismConvergenceMatrix.processConvergence(telemetry);
+      return { success: true, consensusMatrix: telemetry.unifiedConsensus, evidence };
+    } catch (err) {
+      return jsonError(reply, 400, err instanceof Error ? err.message : String(err));
+    }
+  });
+
+  fastify.post('/v1/artemis/action', async (request: any, reply) => {
+    const command = typeof request.body?.command === 'string' ? request.body.command.trim() : '';
+    if (!command) {
+      return jsonError(reply, 400, 'COMMAND_REQUIRED');
+    }
+    return {
+      success: true,
+      status: 'PROPOSED_ONLY',
+      actionId: `artemis-${randomUUID()}`,
+      command,
+      limitations: ['action is evidence-bound proposal only', 'does not authorize execution without approval'],
+    };
+  });
+
+  fastify.post('/v1/totality/lock', async (request: any) => {
+    const face = PluralisticRealityMatrix.evaluateMatrix();
+    return {
+      success: true,
+      manifest: {
+        stateRoot: 'Ø',
+        claim: request.body?.claim ?? 'Totality locked under zero entropy.',
+        lockedAt: new Date().toISOString(),
+        pluralisticRealityFace: face,
+      },
+    };
   });
 
   fastify.get('/v1/block/tip', { preHandler: requireReadAccess }, async () => ({ success: true, status: 'ONLINE', tip: ledgerMemory.getTip() }));
-  fastify.get('/v1/stream', { preHandler: requireReadAccess }, async (request: any, reply) => {
-    if (streamClients.size >= MAX_STREAM_CLIENTS) return jsonError(reply, 503, 'STREAM_CAPACITY_REACHED', { limit: MAX_STREAM_CLIENTS });
+  fastify.get('/v1/stream', { preHandler: requireReadAccess }, (request: any, reply) => {
+    reply.hijack();
+    if (streamClients.size >= MAX_STREAM_CLIENTS) {
+      reply.raw.statusCode = 503;
+      reply.raw.setHeader('Content-Type', 'application/json');
+      reply.raw.end(JSON.stringify({ success: false, error: 'STREAM_CAPACITY_REACHED', limit: MAX_STREAM_CLIENTS }));
+      return;
+    }
     reply.raw.setHeader('Content-Type', 'text/event-stream');
     reply.raw.setHeader('Cache-Control', 'no-cache');
     reply.raw.setHeader('Connection', 'keep-alive');
@@ -249,7 +531,7 @@ export function createApp(
       return writable;
     };
     const tip = ledgerMemory.getTip();
-    if (tip) reply.raw.write(`data: ${JSON.stringify({ event: 'TIP', block: tip })}\n\n`);
+    reply.raw.write(`data: ${JSON.stringify({ event: 'TIP', block: tip })}\n\n`);
     streamClients.add(listener);
     request.raw.once('close', close);
     request.raw.once('aborted', close);
@@ -344,7 +626,22 @@ export function createApp(
   return fastify;
 }
 
-export const app = createApp(process.env.OMEGA_DB_PATH ?? './oceanicos.db', process.env.NODE_ENV !== 'test');
+const defaultFastifyApp = createApp(process.env.OMEGA_DB_PATH ?? './oceanicos.db', process.env.NODE_ENV !== 'test');
+export const app: any = Object.assign(
+  (req: any, res: any) => (defaultFastifyApp as any).server.emit('request', req, res),
+  defaultFastifyApp
+);
+export const fastify = defaultFastifyApp;
+export default app;
+
+export {
+  constantTimeTokenMatch,
+  isAttestationExpired,
+  operatorIdentityAllowed,
+  revocationRegistryDigest,
+  revocationRegistryStatus,
+  parseAuditQuery,
+} from './auth-helpers.js';
 
 const start = async () => {
   try {
@@ -358,4 +655,12 @@ const start = async () => {
   }
 };
 
-if (require.main === module) start();
+const isDirectExecution = typeof require !== 'undefined'
+  ? require.main === module
+  : Boolean(process.argv[1] && (
+      resolve(process.argv[1]) === resolve(fileURLToPath(import.meta.url)) ||
+      import.meta.url === `file://${process.argv[1]}` ||
+      import.meta.url.endsWith(process.argv[1].replace(/\\/g, '/'))
+    ));
+
+if (isDirectExecution) start();

@@ -75,7 +75,7 @@ export function createRealityAttestation(
     expectedState: reality.expectedState,
     observedState: reality.observedState,
     evidence: reality.evidence,
-    observedAt: reality.record.createdAt,
+    observedAt: reality.record.createdAt ?? attestedAt,
     attestedAt,
     signerId,
     keyVersion,

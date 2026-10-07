@@ -6,7 +6,7 @@ describe('the image builds the packages it names', () => {
   const dockerfile = readFileSync(join(root, 'apps/api/Dockerfile'), 'utf8');
 
   const declared = new Set<string>();
-  for (const dir of ['packages', 'apps']) {
+  for (const dir of ['packages', 'apps', 'continuum/packages']) {
     const base = join(root, dir);
     if (!existsSync(base)) continue;
     for (const entry of readdirSync(base)) {

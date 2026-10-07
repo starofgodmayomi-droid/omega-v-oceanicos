@@ -18,7 +18,7 @@ export class PlanCompiler {
       throw new Error(`UNKNOWN_WORKERS_REQUESTED: ${validCheck.missing.join(', ')}`);
     }
 
-    const workerPlan: OmegaCommandIR['workerPlan'] = [];
+    const workerPlan: any[] = [];
     let stepNumber = 1;
 
     for (const workerId of requestedWorkers) {

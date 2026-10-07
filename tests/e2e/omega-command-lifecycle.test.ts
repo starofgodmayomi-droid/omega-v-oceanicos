@@ -32,7 +32,7 @@ describe('Ω‑ƆREADƆS OS v∞ — Command Lifecycle & Reality Verification Su
     expect(body.success).toBe(true);
     expect(body.workers.length).toBe(7);
 
-    const workerMap = new Map(body.workers.map((w: any) => [w.id, w]));
+    const workerMap: Map<string, any> = new Map(body.workers.map((w: any) => [w.id, w]));
     expect(workerMap.get('worker-observer')?.classification).toBe('read-only');
     expect(workerMap.get('worker-researcher')?.classification).toBe('read-only');
     expect(workerMap.get('worker-planner')?.classification).toBe('read-only');

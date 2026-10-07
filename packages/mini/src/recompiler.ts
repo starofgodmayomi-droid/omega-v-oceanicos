@@ -34,7 +34,8 @@ export function proposeNextOmegaSlice(input: ProposeNextSliceInput): OmegaNextSl
 
   if (isDivergent) {
     const target =
-      latestCommand?.irPlan?.observationSpec?.target ??
+      (latestCommand as any)?.irPlan?.observationSpec?.target ??
+      (latestCommand as any)?.ir?.transition?.target ??
       latestResult?.observation?.target ??
       'system_state';
     const discSummary =
@@ -65,7 +66,7 @@ export function proposeNextOmegaSlice(input: ProposeNextSliceInput): OmegaNextSl
 
 
   if (isRefused) {
-    const intent = latestCommand?.prompt ?? 'transition';
+    const intent = (latestCommand as any)?.prompt ?? latestCommand?.intent ?? 'transition';
     return {
       sourceCommandId: latestCommand?.commandId ?? latestResult?.commandId ?? latestEntry?.changeId,
       trigger: 'TRANSITION_REFUSED',
@@ -86,7 +87,7 @@ export function proposeNextOmegaSlice(input: ProposeNextSliceInput): OmegaNextSl
     latestResult?.realityVerdict?.verdict === 'VERIFIED';
 
   if (isVerified) {
-    const prevGoal = latestCommand?.prompt ?? latestResult?.outputSummary ?? 'milestone';
+    const prevGoal = (latestCommand as any)?.prompt ?? latestCommand?.intent ?? latestResult?.outputSummary ?? 'milestone';
     return {
       sourceCommandId: latestCommand?.commandId ?? latestResult?.commandId ?? latestEntry?.changeId,
       trigger: 'REALITY_VERIFIED',

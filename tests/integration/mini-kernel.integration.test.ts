@@ -251,26 +251,24 @@ describe('Ω∞v Oceanicos Integration — Foundational MINI Kernel & Totality',
   });
 
   describe('REST API Server MINI & Totality Endpoints', () => {
-    let server: Server;
+    let fastifyApp: any;
     let baseUrl: string;
 
     beforeAll(async () => {
       process.env.OMEGA_SIGNING_KEY = 'mini-api-integration-key';
       jest.resetModules();
-      const module = await import('../../apps/api/src/index');
-      const app = module.default as { (...args: unknown[]): unknown };
-
-      server = createServer(app as never);
-      await new Promise<void>((resolve) => server.listen(0, resolve));
-      const address = server.address();
+      const { createApp } = await import('../../apps/api/src/index');
+      fastifyApp = createApp(':memory:', false);
+      await fastifyApp.listen({ port: 0, host: '127.0.0.1' });
+      const address = fastifyApp.server.address();
       if (!address || typeof address === 'string') throw new Error('Test server did not start');
       baseUrl = `http://127.0.0.1:${address.port}`;
-    });
+    }, 30000);
 
     afterAll(async () => {
-      await new Promise<void>((resolve, reject) =>
-        server.close((error) => (error ? reject(error) : resolve()))
-      );
+      if (fastifyApp) {
+        await fastifyApp.close();
+      }
       delete process.env.OMEGA_SIGNING_KEY;
     });
 

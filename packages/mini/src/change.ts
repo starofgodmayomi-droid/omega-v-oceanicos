@@ -14,9 +14,11 @@ export function observeCandidateChange(input: {
   intent: string;
   stateBefore: string;
   context?: Record<string, unknown>;
+  signingKey?: string;
 }): OmegaChangeRecord {
   const observation = ObserverEngine.generateTelemetry();
-  const evidence = VerificationEngine.evaluate(observation);
+  const signingKey = input.signingKey ?? process.env.OMEGA_SIGNING_KEY ?? 'dev-verification-attestation-signing-key';
+  const evidence = VerificationEngine.evaluate(observation, signingKey);
   const createdAt = new Date().toISOString();
 
   return {

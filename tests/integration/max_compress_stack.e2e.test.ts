@@ -408,8 +408,12 @@ describe('Ω∞v Oceanicos Max Compress Full-Stack E2E Suite', () => {
   });
 
   it('20. SSE stream delivers the current tip and subsequent minted blocks', async () => {
-    await apiApp.listen({ host: '127.0.0.1', port: 0 });
-    const address = apiApp.server.address();
+    const streamApp = createApp(':memory:', false, {
+      allowUnsignedCycle: true,
+      attestationSigningKey: 'integration-attestation-key-2026-strong',
+    });
+    await streamApp.listen({ host: '127.0.0.1', port: 0 });
+    const address = streamApp.server.address();
     assert.ok(address && typeof address === 'object');
     const baseUrl = `http://127.0.0.1:${address.port}`;
     const response = await fetch(`${baseUrl}/v1/stream`);
@@ -431,7 +435,7 @@ describe('Ω∞v Oceanicos Max Compress Full-Stack E2E Suite', () => {
     ]);
     assert.match(decoder.decode(next.value), /event\":\"BLOCK_MINTED\"/);
     await reader.cancel();
-    await apiApp.close();
+    await streamApp.close();
   });
 
   it('21. Unified CLI "mood" and "attest" execute cleanly and attest to Singularity state', async () => {

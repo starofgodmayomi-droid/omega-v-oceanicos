@@ -30,6 +30,7 @@ coverage/
 # Runtime
 *.log
 logs/
+*.jsonl
 
 # Temporary
 tmp/

@@ -11,6 +11,7 @@ import { decisionToStatus, validateOmegaCommandInput } from '@oceanicos/types';
 import { OmegaDurableStore } from './omega-persistence.js';
 
 type StoredCommand = OmegaCommand & {
+  readonly change: NonNullable<OmegaCommand['change']>;
   readonly result?: OmegaCommandResult;
 };
 
@@ -31,7 +32,7 @@ export class OmegaCommandStore {
     const existing = this.durable.getCommand(`omega-${input.idempotencyKey}`) as StoredCommand | undefined;
     if (existing) return existing;
     const command = buildOmegaCommand(input);
-    const stored = { ...command };
+    const stored: StoredCommand = { ...command, change: command.change! };
     if (this.durable.listEvents().length >= MAX_COMMANDS * 2) throw new Error('OMEGA_COMMAND_CAPACITY_REACHED');
     this.durable.putCommand(stored);
     this.record('command.proposed', stored);
@@ -97,6 +98,67 @@ function commandResult(command: StoredCommand, nextAction: string): OmegaCommand
 
 function statusForDecision(decision: 'ALLOW' | 'DENY' | 'REVIEW'): OmegaCommandStatus {
   return decisionToStatus(decision);
+}
+
+export function registerOmegaWorkerRoutes(fastify: FastifyInstance, store: OmegaCommandStore): void {
+  fastify.post('/v1/omega/workers/register', async (request, reply) => {
+    const body = bodyOf(request);
+    if (typeof body.workerId !== 'string' || !Array.isArray(body.capabilities) || body.capabilities.length > 16 || body.capabilities.some((value) => typeof value !== 'string' || value.length > 96)) {
+      return reply.status(400).send({ success: false, error: 'INVALID_WORKER_REGISTRATION' });
+    }
+    return { success: true, worker: store.registerWorker({ workerId: body.workerId, capabilities: body.capabilities as string[] }), coordination: 'sqlite-wal' };
+  });
+
+  fastify.post('/v1/omega/workers/:workerId/heartbeat', async (request, reply) => {
+    const workerId = (request.params as { workerId?: string }).workerId ?? '';
+    const worker = store.heartbeatWorker(workerId);
+    if (!worker) return reply.status(404).send({ success: false, error: 'OMEGA_WORKER_NOT_FOUND' });
+    return { success: true, worker };
+  });
+
+  fastify.post('/v1/omega/workers/:workerId/lease', async (request, reply) => {
+    const workerId = (request.params as { workerId?: string }).workerId ?? '';
+    const body = bodyOf(request);
+    if (typeof body.commandId !== 'string' || typeof body.capability !== 'string') return reply.status(400).send({ success: false, error: 'LEASE_COMMAND_AND_CAPABILITY_REQUIRED' });
+    const lease = store.acquireWorkerLease(workerId, body.commandId, body.capability, typeof body.durationMs === 'number' ? Math.min(Math.max(body.durationMs, 1000), 300000) : undefined);
+    if (!lease) return reply.status(409).send({ success: false, error: 'OMEGA_WORKER_LEASE_UNAVAILABLE' });
+    return { success: true, lease, coordination: 'sqlite-transaction' };
+  });
+
+  fastify.post('/v1/omega/workers/:workerId/lease/:leaseId/release', async (request, reply) => {
+    const params = request.params as { workerId?: string; leaseId?: string };
+    const released = store.releaseWorkerLease(params.leaseId ?? '', params.workerId ?? '');
+    if (!released) return reply.status(409).send({ success: false, error: 'OMEGA_WORKER_LEASE_NOT_FOUND' });
+    return { success: true, released: true };
+  });
+
+  fastify.get('/v1/omega/commands/:id/provenance', {
+    config: { rateLimit: { max: 60, timeWindow: '1 minute' } },
+  }, async (request, reply) => {
+    const id = (request.params as { id?: string }).id ?? '';
+    const command = store.get(id);
+    if (!command) return reply.status(404).send({ success: false, error: 'OMEGA_COMMAND_NOT_FOUND' });
+    const events = store.listEvents(id);
+    return {
+      success: true,
+      provenance: {
+        commandId: command.commandId,
+        intent: command.intent,
+        requestedBy: command.requestedBy,
+        createdAt: command.createdAt,
+        context: command.context,
+        workers: command.workers,
+        status: command.status,
+        ir: command.ir,
+        change: command.change,
+        execution: command.result?.execution ?? null,
+        reality: command.result?.reality ?? null,
+        events,
+        lineage: events.map((e: any) => ({ type: e.type, at: e.at, status: e.status })),
+        redacted: true,
+      },
+    };
+  });
 }
 
 export function registerOmegaRoutes(fastify: FastifyInstance, store: OmegaCommandStore): void {
@@ -269,7 +331,7 @@ export function registerOmegaRoutes(fastify: FastifyInstance, store: OmegaComman
     const command = store.get((request.params as { id?: string }).id ?? '');
     if (!command) return reply.status(404).send({ success: false, error: 'OMEGA_COMMAND_NOT_FOUND' });
     if (!command.result?.reality) return reply.status(409).send({ success: false, error: 'OMEGA_REALITY_OBSERVATION_REQUIRED' });
-    return { success: true, ...commandResult(command, command.result.nextAction) };
+    return { success: true, ...commandResult(command, command.result.nextAction ?? 'review the verified state') };
   });
 
   fastify.get('/v1/omega/events', {

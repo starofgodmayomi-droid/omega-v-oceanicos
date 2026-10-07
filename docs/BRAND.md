@@ -169,6 +169,12 @@ Defined in `apps/web/src/tokens.css`:
 
 **Semantic verdict colors are reserved.** They communicate system state, not decoration.
 
+### Honest state of the palette
+
+`App.css` currently contains **109 distinct colours across 146 uses and no variables** — the same abyssal green retyped at slightly different values. The tokens above are the canonical set, not a description of what is already there.
+
+New work should use the tokens. The literals are debt. This document names the debt rather than implying it does not exist, and the number above is checked by a test so it cannot quietly grow while the document claims otherwise.
+
 ## 11. Mark
 
 Canonical asset:

@@ -748,7 +748,7 @@ export function App() {
           onStageToggle={(id) => setOpenStageId(id || null)}
         />
       </div>
-    </div>
+                                                                                                                                                                                                                                                                                                                                                                                                                              </div>
   );
 }
 

@@ -1,7 +1,9 @@
 packages:
   - 'packages/*'
   - 'apps/*'
-  - 'continuum/packages/*'
+  - 'continuum/packages/kernel'
+  - 'continuum/packages/gateway'
+  - 'continuum/packages/coordination'
 
 allowBuilds:
   '@parcel/watcher': true

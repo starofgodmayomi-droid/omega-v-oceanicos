@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import OceanicosWorkerPool from '../../packages/worker/src/index.ts';
+import OceanicosWorkerPool from '../../continuum/packages/worker/src/index.ts';
 
 test('worker lifecycle remains fail-closed and capacity accounting is bounded', async (t) => {
   await t.test('does not allow completion after lease expiry and requeues the job', async () => {

@@ -31,13 +31,17 @@ export type OmegaCommandTransitionSpec = {
 };
 
 export type OmegaCommandIR = {
-  readonly version: typeof OMEGA_IR_VERSION;
+  readonly version?: typeof OMEGA_IR_VERSION;
+  readonly irVersion?: string;
   readonly intent: string;
   readonly evidenceRefs: readonly string[];
   readonly policyRefs: readonly string[];
-  readonly workerPlan: readonly OmegaWorkerId[];
-  readonly transition: OmegaCommandTransitionSpec;
-  readonly observation: { readonly kind: 'supplied-state' | 'execution-result' | 'api-health' };
+  readonly workerPlan: readonly any[];
+  readonly requestedWorkers?: readonly string[];
+  readonly transition?: OmegaCommandTransitionSpec;
+  readonly transitionSpec?: any;
+  readonly observation?: { readonly kind: 'supplied-state' | 'execution-result' | 'api-health' } | any;
+  readonly observationSpec?: any;
 };
 
 export type OmegaDissent = {
@@ -47,22 +51,32 @@ export type OmegaDissent = {
 };
 
 export type OmegaCommand = {
-  readonly version: typeof OMEGA_COMMAND_VERSION;
+  readonly version?: typeof OMEGA_COMMAND_VERSION;
   readonly commandId: string;
-  readonly sessionId: string;
+  readonly sessionId?: string;
   readonly requestedBy: string;
-  readonly createdAt: string;
-  readonly intent: string;
-  readonly context: Record<string, string>;
-  readonly workers: readonly OmegaWorkerId[];
-  readonly ir: OmegaCommandIR;
-  readonly change: OmegaChangeRecord;
-  readonly idempotencyKey: string;
-  readonly dryRun: boolean;
-  readonly status: OmegaCommandStatus;
-  readonly dissent: readonly OmegaDissent[];
-  readonly limitations: readonly string[];
-  readonly redacted: true;
+  readonly createdAt?: string;
+  readonly timestamp?: string;
+  readonly intent?: string;
+  readonly prompt?: string;
+  readonly context?: Record<string, string>;
+  readonly boundedContext?: Record<string, unknown>;
+  readonly workers?: readonly OmegaWorkerId[];
+  readonly requestedWorkers?: readonly string[];
+  readonly ir?: OmegaCommandIR;
+  readonly irPlan?: OmegaCommandIR | any;
+  readonly change?: OmegaChangeRecord;
+  readonly idempotencyKey?: string;
+  readonly dryRun?: boolean;
+  status: OmegaCommandStatus;
+  statusReason?: string;
+  readonly dissent?: readonly OmegaDissent[];
+  readonly limitations?: readonly string[];
+  readonly redacted?: boolean;
+  readonly redactedFields?: readonly string[];
+  approval?: any;
+  observation?: any;
+  realityVerdict?: any;
 };
 
 export type OmegaRealityObservation = {
@@ -73,11 +87,29 @@ export type OmegaRealityObservation = {
 };
 
 export type OmegaCommandResult = {
-  readonly command: OmegaCommand;
-  readonly status: OmegaCommandStatus;
+  readonly command?: OmegaCommand;
+  readonly commandId?: string;
+  status: OmegaCommandStatus;
+  readonly statusReason?: string;
+  readonly stateBefore?: Record<string, unknown>;
+  readonly stateAfter?: Record<string, unknown>;
+  readonly consequence?: string;
+  readonly outputSummary?: string;
+  readonly attestationId?: string;
+  readonly attestationDigest?: string;
+  readonly provenance?: {
+    readonly lineage: readonly string[];
+    readonly executedBy: string;
+    readonly timestamp: string;
+  };
+  observation?: any;
+  realityVerdict?: any;
+  readonly dissentNotes?: readonly string[];
+  readonly completedAt?: string;
+  readonly receipt?: any;
   readonly execution?: { readonly stateAfter: string; readonly consequence: string; readonly attestationId: string };
   readonly reality?: OmegaRealityObservation & { readonly classification: 'VERIFIED' | 'DIVERGENT' | 'UNKNOWN' };
-  readonly nextAction: string;
+  readonly nextAction?: string;
 };
 
 const MAX_INTENT = 2000;

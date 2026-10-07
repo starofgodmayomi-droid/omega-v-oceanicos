@@ -52,7 +52,9 @@ export class OmegaCommandStore {
               }
             } else if (record.type === 'RESULT') {
               const res = record.payload as OmegaCommandResult;
-              this.results.set(res.commandId, res);
+              if (res.commandId) {
+                this.results.set(res.commandId, res);
+              }
             } else if (record.type === 'EVENT') {
               const ev = record.payload as OmegaLifecycleEvent;
               this.events.push(ev);
@@ -139,7 +141,9 @@ export class OmegaCommandStore {
   }
 
   public saveResult(result: OmegaCommandResult): void {
-    this.results.set(result.commandId, result);
+    if (result.commandId) {
+      this.results.set(result.commandId, result);
+    }
     this.appendToLedger('RESULT', result);
   }
 

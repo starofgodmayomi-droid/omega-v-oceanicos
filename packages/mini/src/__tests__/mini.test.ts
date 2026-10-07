@@ -1,4 +1,5 @@
 import { MiniKernel } from '../index';
+import { KaiLedger } from '@oceanicos/remember';
 import { VerificationRule } from '@oceanicos/types';
 
 const DEFAULT_RULE: VerificationRule = {
@@ -119,5 +120,38 @@ describe('MiniKernel', () => {
       confidenceReason: 'test',
     });
     expect(obs.id).toBeDefined();
+  });
+
+  test('cycle automatically mints KAI provenance record when kaiLedger is configured', () => {
+    const kaiLedger = new KaiLedger(':memory:');
+    const kaiKernel = new MiniKernel({
+      rules: [DEFAULT_RULE],
+      kaiLedger,
+    });
+
+    const passedResult = kaiKernel.cycle({
+      claim: 'Latency within threshold',
+      category: 'telemetry',
+      metadata: { responseTime: 25 },
+    });
+
+    expect(passedResult.kaiRecord).toBeDefined();
+    expect(passedResult.kaiRecord?.distinction).toBe('VERIFIED');
+    expect(passedResult.kaiRecord?.evidenceRef).toBe(passedResult.verification.id);
+
+    const failedResult = kaiKernel.cycle({
+      claim: 'Latency exceeded threshold',
+      category: 'mini-cycle',
+      metadata: { responseTime: 250 },
+    });
+
+    expect(failedResult.kaiRecord).toBeDefined();
+    expect(failedResult.kaiRecord?.distinction).toBe('DIVERGENT');
+
+    const integrity = kaiLedger.verifyIntegrity();
+    expect(integrity.valid).toBe(true);
+    expect(integrity.count).toBe(3); // genesis + 1 VERIFIED + 1 DIVERGENT
+    expect(integrity.distinctions.VERIFIED).toBe(2);
+    expect(integrity.distinctions.DIVERGENT).toBe(1);
   });
 });

@@ -255,7 +255,8 @@ export const omegaRoutes: FastifyPluginAsync<OmegaRouteOptions> = async (
     }
 
     // Safety checks against prohibited operations
-    const lower = command.prompt.toLowerCase();
+    const promptText = command.prompt || command.intent || '';
+    const lower = promptText.toLowerCase();
     const prohibitedKeywords = [
       'rm -rf',
       'sudo',
@@ -286,7 +287,8 @@ export const omegaRoutes: FastifyPluginAsync<OmegaRouteOptions> = async (
     }
 
     // Evaluate canonical authorization per Constitution §6, §8, §9
-    const workerCheck = registry.validateRequestedWorkers(command.requestedWorkers);
+    const requestedWorkers = [...(command.requestedWorkers || command.workers || [])];
+    const workerCheck = registry.validateRequestedWorkers(requestedWorkers);
     const isDestructive =
       /delete|destroy|drop|purge|remove/i.test(command.irPlan.transitionSpec.action) ||
       workerCheck.requiresApproval;
@@ -294,13 +296,13 @@ export const omegaRoutes: FastifyPluginAsync<OmegaRouteOptions> = async (
       lower.includes('transfer_funds') ||
       lower.includes('buy_crypto');
     const isIrreversible = !command.irPlan.transitionSpec.rollbackSupported;
-    const hasDissentRecords = (command.irPlan.evidenceRefs || []).some(ref =>
+    const hasDissentRecords = (command.irPlan.evidenceRefs || []).some((ref: string) =>
       ref.toLowerCase().includes('dissent') || ref.toLowerCase().includes('dispute')
     );
 
     const authDecision = evaluateAuthorization({
       subject: command.commandId,
-      intent: command.prompt,
+      intent: promptText,
       isDestructive,
       isFinancial,
       isIrreversible,
@@ -438,9 +440,9 @@ export const omegaRoutes: FastifyPluginAsync<OmegaRouteOptions> = async (
       try {
         kernel.transition({
           intent: {
-            claim: command.prompt,
+            claim: command.prompt || command.intent || '',
             actors: [command.requestedBy],
-            inputs: command.boundedContext,
+            inputs: (command.boundedContext || command.context || {}) as Record<string, unknown>,
             expectedOutputs: { consequence: result.consequence },
             constraints: command.irPlan.policyRefs,
             permissions: command.irPlan.requestedWorkers,
@@ -460,7 +462,7 @@ export const omegaRoutes: FastifyPluginAsync<OmegaRouteOptions> = async (
               claim: `Command ${command.commandId} executed`,
               source: result.provenance?.executedBy || 'omega:api-kernel',
               observationId: `obs-${command.commandId}`,
-              commandOrTest: command.prompt,
+              commandOrTest: command.prompt || command.intent || '',
               status: 'PASSED',
               confidence: 1.0,
             },
@@ -641,7 +643,7 @@ export const omegaRoutes: FastifyPluginAsync<OmegaRouteOptions> = async (
 
       return {
         index,
-        changeId: res.commandId,
+        changeId: res.commandId ?? '',
         transitionStatus: isCompleted ? 'EXECUTED' : isRefused ? 'REFUSED' : res.status,
         attestationId: res.attestationId,
         realityVerdict: res.realityVerdict?.verdict,
@@ -649,7 +651,7 @@ export const omegaRoutes: FastifyPluginAsync<OmegaRouteOptions> = async (
         observedStateHash: res.realityVerdict?.observedStateHash ?? '',
         discrepancies,
         previousHash: '0000000000000000000000000000000000000000000000000000000000000000',
-        hash: res.attestationDigest ?? `attest_${res.commandId}`,
+        hash: res.attestationDigest ?? (res.commandId ? `attest_${res.commandId}` : `attest_${index}`),
         timestamp: res.completedAt ?? new Date().toISOString(),
       };
     });

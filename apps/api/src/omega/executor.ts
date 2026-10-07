@@ -104,10 +104,12 @@ export class AuthorizedCommandExecutor implements IOmegaExecutor {
       if (!worker) continue;
 
       if (worker.role === 'observer') {
+        const promptStr = command.prompt || command.intent || '';
+        const workersCount = (command.requestedWorkers || command.workers || []).length;
         workerOutputs.push({
           workerId: worker.id,
           role: worker.role,
-          output: `Observed intent "${command.prompt.slice(0, 80)}" with ${command.requestedWorkers.length} workers.`,
+          output: `Observed intent "${promptStr.slice(0, 80)}" with ${workersCount} workers.`,
         });
       } else if (worker.role === 'researcher') {
         workerOutputs.push({
@@ -127,7 +129,7 @@ export class AuthorizedCommandExecutor implements IOmegaExecutor {
           workerId: worker.id,
           role: worker.role,
           output: hasRedaction
-            ? `Security check: sensitive fields redacted (${command.redactedFields.join(', ')}). Bounded capabilities confirmed.`
+            ? `Security check: sensitive fields redacted (${(command.redactedFields || []).join(', ')}). Bounded capabilities confirmed.`
             : 'Security check: no credentials detected. Capability boundary clean.',
         });
       } else if (worker.role === 'governance-reviewer') {
@@ -153,11 +155,12 @@ export class AuthorizedCommandExecutor implements IOmegaExecutor {
         }
 
         let targetKey = 'test:fast';
+        const promptText = (command.prompt || command.intent || '').toLowerCase();
         if (rawTarget && ALLOWLISTED_SANDBOX_TARGETS[rawTarget]) {
           targetKey = rawTarget;
-        } else if (command.prompt.toLowerCase().includes('typecheck')) {
+        } else if (promptText.includes('typecheck')) {
           targetKey = 'typecheck';
-        } else if (command.prompt.toLowerCase().includes('build')) {
+        } else if (promptText.includes('build')) {
           targetKey = 'build';
         }
 
@@ -275,7 +278,7 @@ export class AuthorizedCommandExecutor implements IOmegaExecutor {
       attestationId: `att_${crypto.randomUUID()}`,
       attestationDigest,
       provenance: {
-        lineage: [command.commandId, command.sessionId],
+        lineage: [command.commandId, command.sessionId ?? 'session_default'],
         executedBy: executorIdentity,
         timestamp,
       },

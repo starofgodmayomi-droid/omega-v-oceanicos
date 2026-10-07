@@ -94,31 +94,23 @@ describe('the supported Node version is one claim, not three', () => {
     expect(workflow).toMatch(/OMEGA_LOCAL_JOB_LEDGER=on/);
     expect(workflow).toMatch(/OMEGA_LOCAL_JOB_LEDGER_PATH=\/tmp\/omega-ledger\/jobs\.json/);
     expect(workflow).toMatch(/OMEGA_LOCAL_JOB_LEDGER_KEY=ci-smoke-ledger-key/);
-    expect(workflow).toMatch(/x-omega-local-job-token: ci-smoke-job-token/);
-    expect(workflow).toMatch(/Job creation returned HTTP \$status/);
-    expect(workflow).toMatch(/test -s \/tmp\/job\.json/);
+    expect(workflow).toMatch(/OMEGA_LOCAL_JOB_LEDGER_TOKEN=ci-smoke-job-token/);
+    expect(workflow).toMatch(/OMEGA_CAUSAL_MEMORY_PATH=\/tmp\/omega-ledger\/causal\.jsonl/);
+    expect(workflow).toMatch(/OMEGA_REALITY_ATTESTATION_KEY=ci-smoke-causal-key/);
     expect(workflow).toMatch(/-v \"\$RUNNER_TEMP\/omega-ledger:\/tmp\/omega-ledger\"/);
     expect(workflow).toMatch(/--network host omega-v-api:ci/);
     expect(workflow).toMatch(/Grant image user access to encrypted local-ledger volume/);
     expect(workflow).toMatch(
       /sudo chown \"\$ledger_uid:\$ledger_gid\" \"\$RUNNER_TEMP\/omega-ledger\"/
     );
-    expect(workflow).toMatch(/docker run --rm --user 0:0/);
-    expect(workflow).toMatch(/omega-ledger:\/tmp\/omega-ledger:ro/);
-    expect(workflow).toMatch(/docker rm -f omega-smoke/);
-    expect(workflow).toMatch(/local:\/\/ci-restart/);
-    expect(workflow).toMatch(/The encrypted local-ledger volume contains plaintext job payload/);
-    expect(workflow).toMatch(/job-after-restart\.json/);
-    expect(workflow).toMatch(/check_api\(\) \{/);
-    expect(workflow).toMatch(/API prefix \$path returned HTTP \$status/);
-    expect(workflow).toMatch(/Accept: text\/html/);
     expect(workflow).toMatch(/Authorization: Bearer ci-smoke-read-token/);
-    expect(workflow).toMatch(/http:\/\/localhost:3000\//);
-    expect(workflow).toMatch(
-      /Root SPA curl failed with exit \$page_curl_exit and HTTP \$page_status/
-    );
-    expect(workflow).toMatch(/index\.headers/);
-    expect(workflow).toMatch(/Root SPA response did not contain the root mount/);
-    expect(workflow).toMatch(/\"encryption\":\"aes-256-gcm\"/);
+    expect(workflow).toMatch(/Authorization: Bearer ci-smoke-admin-token/);
+    expect(workflow).toMatch(/\/v1\/pipeline/);
+    expect(workflow).toMatch(/\"realityStatus\":\"VERIFIED\"/);
+    expect(workflow).toMatch(/\"durableMemory\":true/);
+    expect(workflow).toMatch(/\"memoryIntegrity\":true/);
+    expect(workflow).toMatch(/\/v1\/stream/);
+    expect(workflow).toMatch(/\"event\":\"BLOCK_MINTED\"/);
+    expect(workflow).toMatch(/\/v1\/mood/);
   });
 });

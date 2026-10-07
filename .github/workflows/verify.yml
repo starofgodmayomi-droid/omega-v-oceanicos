@@ -40,15 +40,15 @@ jobs:
         node-version: [22.x, 24.x]
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v4
 
       - name: Enable pnpm
-        uses: pnpm/action-setup@v6
+        uses: pnpm/action-setup@v4
         with:
           version: 10.34.5
 
       - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'pnpm'
@@ -90,7 +90,7 @@ jobs:
         run: pnpm test:coverage
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v7
+        uses: codecov/codecov-action@v5
         with:
           files: ./coverage/lcov.info
           fail_ci_if_error: false
@@ -128,15 +128,15 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v4
 
       - name: Enable pnpm
-        uses: pnpm/action-setup@v6
+        uses: pnpm/action-setup@v4
         with:
           version: 10.34.5
 
       - name: Use Node.js 22.x
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@v4
         with:
           node-version: 22.x
           cache: pnpm
@@ -168,7 +168,7 @@ jobs:
       contents: read
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v4
 
       - name: Build the API image
         run: docker build -f apps/api/Dockerfile -t omega-v-api:ci .
@@ -312,7 +312,7 @@ jobs:
     name: Compose configuration
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v4
       - name: Validate Compose interpolation and service graph
         env:
           OMEGA_SIGNING_KEY: ci-compose-signing-key-not-for-production-2026-strong
@@ -345,7 +345,7 @@ jobs:
       # Here the job depends on everything it speaks for, runs once, and
       # reports the results it was actually given.
       - name: Comment PR with the real result
-        uses: actions/github-script@v9
+        uses: actions/github-script@v7
         with:
           script: |
             const verify = '${{ needs.verify.result }}';
@@ -390,10 +390,10 @@ jobs:
       attestations: write
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v4
 
       - name: Log in to the container registry
-        uses: docker/login-action@v4
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -405,7 +405,7 @@ jobs:
 
       - name: Build and push
         id: push
-        uses: docker/build-push-action@v7
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: apps/api/Dockerfile
@@ -419,7 +419,7 @@ jobs:
       # signed, verifiable record of which commit and which workflow built
       # this exact digest.
       - name: Attest build provenance
-        uses: actions/attest-build-provenance@v4
+        uses: actions/attest-build-provenance@v2
         with:
           subject-name: ${{ steps.image.outputs.name }}
           subject-digest: ${{ steps.push.outputs.digest }}
@@ -439,7 +439,7 @@ jobs:
       # Signed, so the inventory is evidence rather than a file anyone
       # could have written afterwards.
       - name: Attest the SBOM
-        uses: actions/attest-sbom@v4
+        uses: actions/attest-sbom@v2
         with:
           subject-name: ${{ steps.image.outputs.name }}
           subject-digest: ${{ steps.push.outputs.digest }}
