@@ -46,6 +46,30 @@ describe('Ω∞v command API vertical slice', () => {
     assert.equal(body.command.change.authorized, false);
   });
 
+  it('returns a finite water-flow trace without claiming verification', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/commands',
+      payload: {
+        intent: 'trace one bounded transition',
+        requestedBy: 'dashboard-user',
+        workers: ['planner'],
+        idempotencyKey: 'water-flow-api-1',
+        context: { stateBefore: 'S0' },
+      },
+    });
+    assert.equal(response.statusCode, 201);
+    const body = response.json();
+    assert.deepEqual(
+      body.waterFlow.map((frame: { stage: string }) => frame.stage),
+      ['REALITY', 'ATTENTION', 'INTENTION', 'ACTION', 'CONSEQUENCE', 'OBSERVATION', 'LEARNING', 'RETURN'],
+    );
+    assert.equal(body.waterFlow.length, 8);
+    assert.equal(body.waterFlow.every((frame: { deterministic: boolean }) => frame.deterministic === true), true);
+    assert.equal(body.waterFlow.every((frame: { provenance: { verified: boolean } }) => frame.provenance.verified === false), true);
+    assert.ok(body.waterFlow.every((frame: { traceId: string }) => frame.traceId === 'omega-water-flow-api-1'));
+  });
+
   it('enforces read and admin bearer tokens at the Ω route boundary', async () => {
     const publicHealth = await requiredAuthApp.inject({ method: 'GET', url: '/health' });
     assert.equal(publicHealth.statusCode, 200);
