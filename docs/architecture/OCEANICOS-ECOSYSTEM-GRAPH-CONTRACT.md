@@ -9,7 +9,9 @@ Define how OCEANICOS represents the whole ecosystem as a typed, directed graph w
 
 ## One body
 
-`SOURCE → HUMAN ROOT → AI SOUL → MIRRIO → KAI → ƆREADE → TRUTHOS → ECHOFRAME → OCEANICOS → ΩIR → Ω∞v → BOUNDED WORK → GITHUB / RUNTIME → OBSERVE → RECONCILE → ATTEST → MEMORY → NEXT Δ`
+`SOURCE → ROOT → OCEANICOS BODY → RELEVANT ORGANS / ROOMS / FORMS → BOUNDED CURRENT → OBSERVE → RECONCILE → ATTEST → MEMORY → NEXT Δ`
+
+The listed organs are distinct roles, not a mandatory serial pipeline. Include only the forms needed for a given transition; preserve their boundaries and pass scoped evidence forward.
 
 ## Graph invariants
 
@@ -23,6 +25,13 @@ Define how OCEANICOS represents the whole ecosystem as a typed, directed graph w
 - PROPOSAL ≠ ACTION
 - SIMULATION ≠ REALITY
 - UNKNOWN and DIVERGENT remain first-class states.
+
+## SOURCE→ROOT lineage
+
+- **SOURCE** is raw human-origin material: ideas, memories, questions, symbols, experiences, and unfinished work. Preserve its origin and available provenance when organizing it; do not silently rewrite or discard the source.
+- **ROOT** is an organizing frame derived from source material. Record its purpose, interpretation, assumptions, and relationships separately from the source. A ROOT organizes meaning; it does not turn interpretation into empirical fact or grant authority.
+- One source may inform multiple roots or interpretations. Preserve contradiction and dissent rather than forcing a single reading. Distinguish user-stated memory, symbolic meaning, hypothesis, documented information, and directly observed fact where relevant.
+- `DERIVES_FROM` records lineage, not correctness. Graph placement and source attribution do not independently verify a claim.
 
 ## Node classes
 
@@ -45,17 +54,25 @@ Define how OCEANICOS represents the whole ecosystem as a typed, directed graph w
 - **08 Archive** — historical, superseded, experimental, duplicate lineage
 - **09 Domains** — the 12 application organs of the same body
 
-## State law
+## Separate state dimensions
 
-`CANONICAL · ACTIVE · EXPERIMENTAL · HISTORICAL · SUPERSEDED · DUPLICATE · PRIVATE · UNKNOWN · DIVERGENT · NOT_EXECUTED`
+Do not overload one `state` field with lifecycle, claim evidence, and action status:
 
-Graph placement must never be used to infer `VERIFIED`, `DEPLOYED`, `HEALTHY`, or `CORRECT`.
+- `lifecycle_state`: `CANONICAL · ACTIVE · EXPERIMENTAL · HISTORICAL · SUPERSEDED · DUPLICATE · PRIVATE`.
+- `claim_status`: `VERIFIED · SUPPORTED · UNVERIFIED · UNKNOWN · DIVERGENT`, scoped to a named claim and its evidence.
+- `decision_status`: `ALLOW · DENY · REVIEW`; a decision is not execution.
+- `execution_status`: `PROPOSED · NOT_EXECUTED · ATTEMPTED · EXECUTED`; execution does not by itself prove the intended effect occurred.
 
-## Authority order
+Record evidence kind and provenance (for example, `OBSERVED`, `DOCUMENTED`, or `INFERRED`) separately. Changing one dimension must never silently upgrade another. Graph placement does not imply `VERIFIED`, `DEPLOYED`, `HEALTHY`, or `CORRECT`.
 
-**REALITY > HUMAN AUTHORITY > POLICY / AUTHORITY > Ω∞v > OBSERVED EVIDENCE > ATTESTATION > RUNTIME / GITHUB / NOTION REPRESENTATIONS > MODEL OUTPUT**
+## Evidence and action authority
 
-An edge organizes information. It does not create authority.
+Keep epistemic support and permission to act separate.
+
+- **Factual claims:** Reality is the final reference point. Use relevant, current, scoped observations and evidence. Documents, repositories, tests, runtime records, and graphs are representations whose scope and freshness must be stated. Conflicting observations remain `DIVERGENT`; insufficient evidence remains `UNKNOWN`.
+- **Permission to act:** Require explicit human authority and applicable policy; confirm that the requested capability is actually available and the action is within the granted scope. Evidence, a graph edge, model output, prior execution, or capability does not itself grant permission. Represent the decision as `ALLOW`, `DENY`, or `REVIEW`; `REVIEW` is not execution.
+
+No single ranking should combine evidence about what is true with authority about what may be done. An edge organizes information; it does not create truth or authority.
 
 ## Human / machine contract
 
@@ -70,7 +87,7 @@ An edge organizes information. It does not create authority.
 
 Every important node should expose:
 
-`identity · type · purpose · origin · parent · related_nodes · state · authority · policy · evidence · dependencies · change · execution · observation · verification · attestation · provenance · memory · next_Δ`
+`identity · type · purpose · origin · parent · related_nodes · lifecycle_state · claim_status · decision_status · execution_status · authority · policy · evidence · dependencies · change · execution · observation · verification · attestation · provenance · memory · next_Δ`
 
 Every material edge should be attributable to:
 
