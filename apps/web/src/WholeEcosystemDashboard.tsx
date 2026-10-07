@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { theme, humanStatus } from './oceanicosTheme';
 import { boundedStatus, statusCounts, STATUS_ORDER, summarizeLucidField, type RealityStatus } from './whole-ecosystem-dashboard-model';
+import { AgentSafetyBoundaryPanel } from './AgentSafetyBoundaryPanel';
 
 type Props = {
   streamConnected: boolean;
@@ -197,6 +198,17 @@ export function WholeEcosystemDashboard(props: Props) {
           <div className="whole-trust-boundary">DOCUMENTED ≠ VERIFIED<br />CAPABILITY ≠ AUTHORITY<br />PLAN ≠ EXECUTION</div>
         </aside>
       </div>
+
+      <AgentSafetyBoundaryPanel
+        capabilityObserved={props.ecosystemBody?.status === 'VERIFIED'}
+        policySatisfied={props.omegaCommand?.command?.policy?.satisfied === true}
+        humanGateRequired={props.humanGateRequired}
+        leaseObserved={Boolean(props.omegaCommand?.execution?.leaseId)}
+        executed={props.omegaCommand?.execution?.executed === true}
+        observedStatus={props.omegaCommand?.reality?.classification ?? props.realityStatus}
+        revocationObserved={props.omegaCommand?.revocation?.observed === true}
+        reconciliationStatus={props.omegaCommand?.reality?.classification}
+      />
 
       <div className="whole-value-current">
         <div><span className="whole-ecosystem-label">VALUE CURRENT</span><strong>Need → Problem → Solution → Delivery → Observed outcome → Earned value</strong></div>
