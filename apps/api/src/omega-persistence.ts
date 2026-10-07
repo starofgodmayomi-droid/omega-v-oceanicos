@@ -177,12 +177,13 @@ export class OmegaDurableStore {
     this.db.prepare('DELETE FROM omega_revocations WHERE attestation_id = ?').run(attestationId);
   }
 
-  registerWorker(input: { workerId: string; capabilities: string[] }): DurableWorker {
+  registerWorker(input: { workerId: string; role?: string; capabilities: string[] }): DurableWorker {
     const now = new Date().toISOString();
+    const role = input.role?.trim() || input.workerId;
     this.db.prepare(`
-      INSERT INTO omega_workers(worker_id, capabilities_json, status, last_heartbeat_at, lease_count)
-      VALUES (?, ?, 'IDLE', ?, 0)
-      ON CONFLICT(worker_id) DO UPDATE SET capabilities_json=excluded.capabilities_json, status='IDLE', last_heartbeat_at=excluded.last_heartbeat_at
+      INSERT INTO omega_workers(worker_id, worker_role, capabilities_json, status, last_heartbeat_at, lease_count)
+      VALUES (?, ?, ?, 'IDLE', ?, 0)
+      ON CONFLICT(worker_id) DO UPDATE SET worker_role=excluded.worker_role, capabilities_json=excluded.capabilities_json, status='IDLE', last_heartbeat_at=excluded.last_heartbeat_at
     `).run(input.workerId, JSON.stringify(input.capabilities), now);
     return this.getWorker(input.workerId)!;
   }
@@ -195,11 +196,11 @@ export class OmegaDurableStore {
 
   getWorker(workerId: string): DurableWorker | undefined {
     const row = this.db.prepare('SELECT * FROM omega_workers WHERE worker_id = ?').get(workerId);
-    return row ? { workerId: row.worker_id, capabilities: JSON.parse(row.capabilities_json), status: row.status, lastHeartbeatAt: row.last_heartbeat_at, leaseCount: row.lease_count } : undefined;
+    return row ? { workerId: row.worker_id, role: row.worker_role || row.worker_id, capabilities: JSON.parse(row.capabilities_json), status: row.status, lastHeartbeatAt: row.last_heartbeat_at, leaseCount: row.lease_count } : undefined;
   }
 
   listWorkers(): readonly DurableWorker[] {
-    return this.db.prepare('SELECT * FROM omega_workers ORDER BY worker_id').all().map((row) => ({ workerId: row.worker_id, capabilities: JSON.parse(row.capabilities_json), status: row.status, lastHeartbeatAt: row.last_heartbeat_at, leaseCount: row.lease_count }));
+    return this.db.prepare('SELECT * FROM omega_workers ORDER BY worker_id').all().map((row) => ({ workerId: row.worker_id, role: row.worker_role || row.worker_id, capabilities: JSON.parse(row.capabilities_json), status: row.status, lastHeartbeatAt: row.last_heartbeat_at, leaseCount: row.lease_count }));
   }
 
   getLeaseForCommand(commandId: string): WorkerLease | undefined {
@@ -218,9 +219,10 @@ export class OmegaDurableStore {
       : undefined;
   }
 
-  acquireLease(workerId: string, commandId: string, capability: string, durationMs = 30_000): WorkerLease | undefined {
+  acquireLease(workerId: string, commandId: string, capability: string, durationMs = 30_000, requiredRole?: string): WorkerLease | undefined {
     const worker = this.getWorker(workerId);
     if (!worker || !worker.capabilities.includes(capability)) return undefined;
+    if (requiredRole?.trim() && worker.role !== requiredRole.trim()) return undefined;
     const now = new Date();
     const expires = new Date(now.getTime() + durationMs);
     const lease: WorkerLease = { leaseId: `lease-${randomUUID()}`, workerId, commandId, capability, leasedAt: now.toISOString(), expiresAt: expires.toISOString() };
