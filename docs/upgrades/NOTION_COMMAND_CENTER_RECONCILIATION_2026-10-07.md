@@ -88,9 +88,9 @@ The previously selected reviewable path was executed after explicit user confirm
 
 | Surface | Observation | Status | Boundary |
 |---|---|---|---|
-| Integration branch | `feat/notion-github-agent-safety-bridge` at `20c61560` | `OBSERVED` | Review branch; not merged |
-| GitHub PR | [#408](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/pull/408), open, non-draft, merge state `CLEAN` | `OBSERVED` | Review state is not merge or deployment |
-| Hosted checks | Reported checks completed successfully; publish-attested-artifact was skipped | `SUPPORTED` | GitHub check scope only |
+| Integration branch | `feat/notion-github-agent-safety-bridge` refreshed with current `origin/main`; local head is the new merge commit | `OBSERVED` | Review branch; not merged |
+| GitHub PR | [#408](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/pull/408), open and non-draft; branch refreshed after `main` advanced | `OBSERVED` | Hosted checks must rerun; review state is not merge or deployment |
+| Hosted checks | Prior head checks completed successfully; the latest-main refresh requires a new hosted-check run | `SUPPORTED` | GitHub check scope only; latest refresh was not yet observed on GitHub |
 | Local full suite | `pnpm test`: 118 passed, 0 failed | `VERIFIED` for repository test scope | Does not prove production health |
 | Focused web audit | Web build plus dashboard/proxy tests: 6 passed, 0 failed | `VERIFIED` for focused test scope | Does not prove runtime or external health |
 | Notion bridge note | Factual comment added to the linked command center | `OBSERVED` | Comment records evidence; it does not authorize merge |
@@ -110,4 +110,4 @@ NOTION INTENT
 → HUMAN REVIEW / MERGE DECISION
 ```
 
-The next finite transition is human review of PR #408. No automatic merge or deployment is authorized by this record.
+The next finite transition is observation of the refreshed PR checks, followed by human review of PR #408. No automatic merge or deployment is authorized by this record.
