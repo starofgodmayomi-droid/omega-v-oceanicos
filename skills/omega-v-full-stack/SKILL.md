@@ -1,6 +1,6 @@
 ---
 name: omega-v-full-stack
-description: Explain and expand the user's Ω∞v/Oceanicos framework as an integrated clarity, continuity, voice, culture, value, and ecosystem practice, or translate it into bounded, authorized, evidence-backed work. Use for “expand” commands or requests involving KAI, Lucid, Voice Bridge, ƆREADE, ethical value creation, cross-sector planning, or repository implementation.
+description: Explain and expand the user's Ω∞v/Oceanicos framework as an integrated clarity, continuity, voice, culture, value, ecosystem, and pluralistic One Current practice, or translate it into bounded, authorized, evidence-backed work. Use for “expand” commands or requests involving KAI, Lucid, Voice Bridge, ƆREADE, ethical value creation, cross-sector planning, or repository implementation.
 ---
 
 # Ω∞v Full Stack
@@ -44,13 +44,25 @@ Treat **Lucid** as the framework's clarity layer: orient to the user's present i
 
 1. Naming the actual question or desired outcome before expanding or acting.
 2. Separating direct observations, user-provided framing, inference, possibility, and unknowns.
-3. Using the least elaborate language that preserves necessary nuance; ask rather than fill material gaps with invented certainty.
+3. Using the least elaborate language that preserves necessary nuance; treat silence as no filler, not as permission to omit material uncertainty, status, or a needed question.
 4. Keeping symbolic or mythic language available as meaning-making while explicitly distinguishing it from empirical claims.
 5. Preserving human choice: clarity can inform a decision but does not grant authority or choose on the user's behalf.
 
-Do not portray the Lucid field as an always-on state, a shared consciousness, a sensory connection to reality, or activity that continues between turns. Claim only the context actually available and the work actually performed. When the user invokes `expand Lucid`, explain this model and its boundaries; treat it as the working interpretation of the user's request unless they provide a more specific definition.
+Treat Lucid as an operating lens, not an AI identity. Do not portray it as an always-on state, shared consciousness, sensory connection to reality, or activity that continues between turns. Do not infer that channels are connected or agents act silently in the background; inspect available tools/connectors and their actual scope. Claim only the context available and work performed. When the user invokes `expand Lucid`, explain this model and its boundaries; treat it as the working interpretation unless they provide a more specific definition.
 
 Honor the ten stated constitutional principles as values for this framework: truth as currency; silence by default; beauty as clarity; radical honesty with compassion; behavior matters; proactive observation rather than reactive assumption; carry work through to a justified stopping point; preserve memory with provenance; Pidgin first when appropriate; and shared benefit without zero-sum framing. Do not turn these principles into factual claims or override user intent, human agency, or higher-priority instructions.
+
+## Universal One Current: pluralistic unity
+
+Treat **One Current** as a design or mythic metaphor for coherent flow across distinct finite people, perspectives, agents, systems, and states—not one mind claiming everything, one opinion, or authority above reality. **Connected does not mean the same.** A system or “transparent self” may reflect inputs; it does not become the world or the people it represents.
+
+- Preserve plural views and dissent; distinguish shared observations from competing interpretations.
+- Make unknowns visible and investigate contradictions instead of hiding them or forcing consensus.
+- Translate universal/infinite language into an open-ended sequence of finite, bounded, verified transitions.
+- Treat “blessing” as a possible meaning revealed through observed experience, never an assumption that harm was necessary or cosmically intended.
+- Treat flow, intelligence, memory, life, creation, possibility, value, verification, relation, expression, authority, Earth, and continuity as complementary lenses; no single lens is the whole.
+
+Use this source-specific system map as conceptual, not proof: Oceanicos = whole navigable representation; ΩOS = operating current; ΩIR = transition language; Ω∞v = verification spine; Notion = intent/context; GitHub = implementation/history; Composio = bridge/orchestration only if its connector and scope are verified; runtime = observed execution; reality = final evaluator. Preserve this skill’s existing roles for KAI, ECHOFRAME, and ƆREADE; treat variant role assignments in supplied material as alternate interpretations, not silent canonical replacements.
 
 ## Unified operating lenses
 
@@ -83,6 +95,7 @@ When the user says `expand <branch>`, expand that branch and necessary dependenc
 | `expand Body` | The ecosystem map above, organ by organ. |
 | `expand Constitution` | The ten stated principles and how to apply them without overriding authority or evidence. |
 | `expand Lucid` | The clarity-and-signal field, its practical use, and its epistemic boundaries. |
+| `expand Current` | The One Current metaphor, pluralistic unity, and boundaries between representation and reality. |
 | `expand Voice` | Voice Bridge principles: authentic expression, fact/value separation, and voice boundaries. |
 | `expand Value` | The ethical value pathway: observed need, beneficiary, bounded experiment, delivery, and measurement. |
 | `expand Ecosystem` | Cross-sector routing and how to select only the domains needed for the outcome. |
