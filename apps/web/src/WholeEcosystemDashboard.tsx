@@ -1,11 +1,7 @@
 import React, { useMemo } from 'react';
 import { theme, humanStatus } from './oceanicosTheme';
-<<<<<<< HEAD
 import { boundedStatus, statusCounts, STATUS_ORDER, summarizeLucidField, type RealityStatus } from './whole-ecosystem-dashboard-model';
-=======
-import { boundedStatus, statusCounts, STATUS_ORDER, type RealityStatus } from './whole-ecosystem-dashboard-model';
 import { AgentSafetyBoundaryPanel } from './AgentSafetyBoundaryPanel';
->>>>>>> d2c4c5ec (feat(web): expose agent safety boundary)
 
 type Props = {
   streamConnected: boolean;
@@ -203,11 +199,6 @@ export function WholeEcosystemDashboard(props: Props) {
         </aside>
       </div>
 
-<<<<<<< HEAD
-      <div className="whole-value-current">
-        <div><span className="whole-ecosystem-label">VALUE CURRENT</span><strong>Need → Problem → Solution → Delivery → Observed outcome → Earned value</strong></div>
-        <div className="whole-value-unknown"><b>OBSERVED VALUE</b><span>UNKNOWN · no value observation supplied</span></div>
-=======
       <AgentSafetyBoundaryPanel
         capabilityObserved={props.ecosystemBody?.status === 'VERIFIED'}
         policySatisfied={props.omegaCommand?.command?.policy?.satisfied === true}
@@ -218,11 +209,9 @@ export function WholeEcosystemDashboard(props: Props) {
         revocationObserved={props.omegaCommand?.revocation?.observed === true}
         reconciliationStatus={props.omegaCommand?.reality?.classification}
       />
-
-      <section className="whole-value-current" aria-label="Value current">
-        <div><span className="whole-ecosystem-label">VALUE CURRENT</span><strong>CREATE → BUILD → DELIVER → OBSERVE → EARNED → REINVEST → NEXT</strong></div>
-        <div className="whole-value-stats"><span><b>12</b> opportunities</span><span><b>4</b> in progress</span><span><b>3</b> delivered</span><span><b>—</b> earned revenue</span></div>
->>>>>>> d2c4c5ec (feat(web): expose agent safety boundary)
+      <div className="whole-value-current">
+        <div><span className="whole-ecosystem-label">VALUE CURRENT</span><strong>Need → Problem → Solution → Delivery → Observed outcome → Earned value</strong></div>
+        <div className="whole-value-unknown"><b>OBSERVED VALUE</b><span>UNKNOWN · no value observation supplied</span></div>
         <button onClick={() => props.onFocusCommand('Show me what actually produced value.')}>SEE VALUE PATH</button>
       </div>
 
