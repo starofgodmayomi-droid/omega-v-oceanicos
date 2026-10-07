@@ -47,9 +47,9 @@ export function AmbientBar(props: AmbientBarProps) {
     {
       label: 'Mode',
       value: props.simulationMode
-        ? 'Simulation · Nothing can affect external systems'
-        : 'Live mode',
-      color: props.simulationMode ? theme.accent : theme.warning,
+        ? 'Local simulation only · external effects disabled'
+        : 'Unknown · execution mode not verified',
+      color: props.simulationMode ? theme.accent : theme.unknown,
     },
     {
       label: 'Identity',

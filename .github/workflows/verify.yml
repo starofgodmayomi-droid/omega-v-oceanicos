@@ -90,6 +90,9 @@ jobs:
       - name: Run tests
         run: pnpm test
 
+      - name: Run dashboard human-root and non-collapse contracts
+        run: pnpm test:dashboard
+
       # This is a source-level worker proof, not a claim that every historical
       # package is an active workspace product.
       - name: Run worker lifecycle verification

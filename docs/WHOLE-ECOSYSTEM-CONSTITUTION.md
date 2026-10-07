@@ -92,6 +92,19 @@ The whole system is best understood as **one living ecosystem**, not a collectio
 
 It contains the deepest raw material: your observations, dreams, worldview, philosophy, creative images, questions, ambitions, contradictions, hopes, economic ideas, and the **“Universe as Blessings in Disguise”** vision.
 
+### Raw human source: preserve, do not promote
+
+Keep source material and its epistemic status distinct. Storage, compression, interpretation, or personal meaning does not turn a thought into an observed fact:
+
+```text
+RAW ≠ TRUE          THOUGHT ≠ FACT
+DREAM ≠ PROPHECY    SYMBOL ≠ EVIDENCE
+IDEA ≠ PLAN         PLAN ≠ ACTION
+ACTION ≠ OUTCOME    CLAIM ≠ REALITY
+```
+
+Dreams and spiritual or symbolic experiences may be preserved as experience, interpretation, and meaning without being presented as verified external facts. Preserve the lineage; verify empirical claims separately.
+
 Its central image is:
 
 ```text
