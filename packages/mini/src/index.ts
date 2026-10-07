@@ -115,6 +115,8 @@ export type {
 export { KaiContinuity, kaiFromBlock, kaiUnknown, KAI_VERSION } from './kai.js';
 export type { KaiDrop, KaiSource, KaiStatus } from './kai.js';
 export { captureMiniKernelCycle } from './kai-cycle.js';
+export { buildOmegaWaterFlow } from './water-flow.js';
+export type { OmegaWaterFlowInput } from './water-flow.js';
 
 export function executeOceanicosMaxExpansion(): CryptographicBlock {
   const kernelChain = new PluralisticHashChain();

@@ -116,6 +116,7 @@ export function registerPipelineRoute(
           observedState: result.reality?.observedState ?? observedState ?? null,
           realityEvidence: result.reality?.evidence ?? null,
           realityAttestation: result.realityAttestation ?? null,
+          waterFlow: result.waterFlow,
           durableMemory: Boolean(causalMemoryPath && causalMemoryKey),
           memoryIntegrity: causalMemoryPath && causalMemoryKey ? memory.verifyIntegrity() : null,
           memoryAppended: memoryEntries.length,
