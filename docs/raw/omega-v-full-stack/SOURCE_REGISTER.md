@@ -1,39 +1,25 @@
 # Raw Source Register — omega-v-full-stack
 
-Source artifact: user-uploaded `omega-v-full-stack.zip`
-Archive contents: `SKILL.md`
-SHA-256: `529766f00a643e3362842a5daed80956878be2aead747bd67e7b07b3fd5bc68d`
+This register tracks user-provided source artifacts preserved in this directory. A digest identifies bytes; it does not authenticate authorship or establish that a claim is true.
 
-## Preservation rule
+## 1. `omega-v-full-stack.zip`
 
-The uploaded source is preserved as an attributed raw artifact in the conversation workspace. This register records its identity and digest so later ecosystem work can distinguish source material from derived architecture.
+- **Artifact:** user-uploaded `omega-v-full-stack.zip`
+- **Observed archive contents:** `SKILL.md`
+- **SHA-256:** `529766f00a643e3362842a5daed80956878be2aead747bd67e7b07b3fd5bc68d`
+- **Repository copy:** [`SKILL.md`](./SKILL.md)
+- **Role:** source context for the Ocean of Thought / Universal Current manifest
 
-## Important source principles
+## 2. `pasted_content_3.txt`
 
-- `Ω∞v ::= VERIFY(ΔREALITY)`
-- `∞ = iterated finite verified transitions`
-- preserve POSSIBLE / KNOWN / REPRESENTABLE / PERMITTED / PROPOSED / ATTEMPTED / EXECUTED / OBSERVED / VERIFIED / ATTESTED / DEPLOYED / HEALTHY / CORRECT as distinct states
-- model output is not a factual claim
-- capability is not authority
-- proposal is not action
-- test pass is not production reality
-- simulation is not physical reality
-- memory is not proof
-- preserve unknowns and divergence
-- prefer provenance and evidence over confidence
-- bounded action over unlimited action
-- human authority and real observation remain decisive
+- **Artifact:** user-uploaded text attachment, supplied 2026-10-07
+- **SHA-256:** `43fcbd6de335862673b6a92fef0155398a5ccec6610a03b1f5a87dd5d2b46f0a`
+- **Repository copy:** [`2026-10-07-TOTAL-MAXIMUM-COMPRESSED-MATRIX.txt`](./2026-10-07-TOTAL-MAXIMUM-COMPRESSED-MATRIX.txt)
+- **Role:** design language and source claims about the “Total Maximum Compressed Matrix”; not implementation, authority, or runtime proof
+- **Reconciliation:** [`Total Maximum Compressed Matrix — Source and Reality Reconciliation`](../../research/TOTAL-MAXIMUM-COMPRESSED-MATRIX-RECONCILIATION-2026-10-07.md)
 
-## Routing
+## Preservation and use
 
-This source supports the canonical Ocean of Thought / Universal Current manifest:
+Preserve exact source bytes when raw-source retention is requested. Keep derived summaries linked to their source and label interpretation separately from observed implementation. A matching digest establishes content integrity relative to the recorded bytes only; it does not prove source truth, runtime state, authorization, deployment, or real-world outcome.
 
-`docs/OCEAN_OF_THOUGHT.md`
-
-It should be treated as **source context**, not independent proof of repository state, system activation, deployment, or real-world outcomes.
-
-## Real-work contract
-
-Inspect actual repository state before claiming implementation. Bound scope, data, duration, side effects, cost, and reversibility. Execute only authorized work. Test proportionately. Observe and reconcile expected versus actual state. Attest only directly supported outcomes.
-
-Status of this register: VERIFIED — digest computed from the uploaded `SKILL.md`.
+The companion [`omega-ir.v1 viewport proposal`](./omega-ir-v1-viewport-proposal.json) is a derived declarative fixture, not a raw source file. Its source references remain `RETRIEVED`; its `dryRun` flag and empty worker plan do not authorize or execute a runtime action.
