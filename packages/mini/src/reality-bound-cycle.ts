@@ -55,7 +55,7 @@ const MOTION: readonly OmegaMotion[] = [0, 1];
 const SCALE: readonly OmegaScale[] = ['NEEDLE', 'PLANET'];
 
 export class OceanicosRealityMatrix {
-  private readonly ledger: LedgerEntry[] = [];
+  private readonly entries: LedgerEntry[] = [];
 
   public cycle(input: OmegaCycleInput): OmegaCycleResult {
     const eventId = 'event_' + randomUUID();
@@ -117,12 +117,12 @@ export class OceanicosRealityMatrix {
   }
 
   public ledger(): readonly LedgerEntry[] {
-    return this.ledger.map((entry) => ({ ...entry }));
+    return this.entries.map((entry) => ({ ...entry }));
   }
 
   public verifyLedger(): boolean {
     let previousHash = 'GENESIS';
-    for (const entry of this.ledger) {
+    for (const entry of this.entries) {
       const { hash, ...unsigned } = entry;
       if (entry.previousHash !== previousHash) return false;
       if (hash !== digest(unsigned)) return false;
@@ -147,17 +147,17 @@ export class OceanicosRealityMatrix {
   }
 
   private tipHash(): string {
-    return this.ledger.length ? this.ledger[this.ledger.length - 1].hash : 'GENESIS';
+    return this.entries.length ? this.entries[this.entries.length - 1].hash : 'GENESIS';
   }
 
   private append(entry: LedgerEntry): void {
-    this.ledger.push(entry);
+    this.entries.push(entry);
   }
 
   private sealLast(): void {
-    const last = this.ledger[this.ledger.length - 1];
+    const last = this.entries[this.entries.length - 1];
     const { hash, ...unsigned } = last;
-    this.ledger[this.ledger.length - 1] = { ...unsigned, hash: digest(unsigned) };
+    this.entries[this.entries.length - 1] = { ...unsigned, hash: digest(unsigned) };
   }
 }
 
