@@ -34,3 +34,5 @@ The SDK reads the real unauthenticated `/health` liveness/readiness contract plu
 ## Ω command lifecycle
 
 `OmegaClient` exposes `listOmegaWorkers()`, `proposeCommand()`, `inspectCommand()`, `admitCommand()`, `approveCommand()`, `executeCommand()`, `observeCommand()`, `verifyReality()`, and `getOmegaEvents()`. These methods call the same `/v1/omega/` API boundary and preserve the server’s lifecycle status; the SDK does not infer authorization, execution success, or external reality locally.
+
+`approveCommand(commandId, operator = 'sdk-operator')` sends the operator in both the request body and `x-omega-operator-id`. When the API allowlist is enabled, the accepted header is the approval actor; the label is still caller-supplied, not authenticated identity proof. Configure the allowlist to include the exact operator labels used by clients.
