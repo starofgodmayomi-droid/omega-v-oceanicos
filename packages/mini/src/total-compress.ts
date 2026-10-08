@@ -1,5 +1,6 @@
 /** Validation-only boundary for whole-conversation compression requests. */
 export const MAX_TOTAL_COMPRESSION_LEASE_MS = 300_000;
+export const MAX_TOTAL_COMPRESSION_CONTEXT_TOKENS = 10_000_000;
 export const TOTAL_COMPRESSION_PACKAGE_IDS = ['mini','worker','remember','api'] as const;
 export type TotalCompressionPackage = (typeof TOTAL_COMPRESSION_PACKAGE_IDS)[number];
 export type TotalCompressionScope = 'CONVERSATION_HISTORIC_COMPRESSION';
@@ -17,7 +18,7 @@ export type TotalCompressionIssueCode =
   | 'FINANCIAL_MUTATION_UNSUPPORTED' | 'SIGNATURE_VERIFICATION_UNSUPPORTED'
   | 'INVALID_ARCHIVE_ID' | 'UNSUPPORTED_SCOPE' | 'ACTUATION_SCOPE_UNSUPPORTED'
   | 'INVALID_PACKAGE_LIST' | 'UNSUPPORTED_PACKAGE' | 'DUPLICATE_PACKAGE'
-  | 'INVALID_TOKEN_COUNT' | 'INVALID_LEASE_BOUND';
+  | 'INVALID_TOKEN_COUNT' | 'TOKEN_COUNT_OUT_OF_BOUNDS' | 'INVALID_LEASE_BOUND';
 
 export interface TotalCompressionValidationIssue {
   readonly code: TotalCompressionIssueCode;
@@ -83,6 +84,8 @@ export function validateTotalCompressionRequest(input: unknown): TotalCompressio
     const tokenCount = input.totalContextTokensProcessed;
     if (typeof tokenCount !== 'number' || !Number.isSafeInteger(tokenCount) || tokenCount < 0) {
       issues.push({code:'INVALID_TOKEN_COUNT',field:'totalContextTokensProcessed',message:'token count must be a non-negative safe integer'});
+    } else if (tokenCount > MAX_TOTAL_COMPRESSION_CONTEXT_TOKENS) {
+      issues.push({code:'TOKEN_COUNT_OUT_OF_BOUNDS',field:'totalContextTokensProcessed',message:`token count must not exceed ${MAX_TOTAL_COMPRESSION_CONTEXT_TOKENS}`});
     }
 
     const leaseMs = input.rigidLeaseBoundMs;

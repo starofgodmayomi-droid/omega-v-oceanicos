@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { MAX_TOTAL_COMPRESSION_LEASE_MS, validateTotalCompressionRequest } from '../../packages/mini/dist/index.js';
+import { MAX_TOTAL_COMPRESSION_CONTEXT_TOKENS, MAX_TOTAL_COMPRESSION_LEASE_MS, validateTotalCompressionRequest } from '../../packages/mini/dist/index.js';
 
 const valid = () => ({
   archiveId:'archive-2026-10-07',
@@ -51,6 +51,16 @@ test('rejects invalid package scope, token count, lease bound, and archive id', 
   assert.ok(codes(result).includes('UNSUPPORTED_PACKAGE'));
   assert.ok(codes(result).includes('INVALID_TOKEN_COUNT'));
   assert.ok(codes(result).includes('INVALID_LEASE_BOUND'));
+});
+
+test('rejects a safe-integer token count that exceeds the finite resource bound', () => {
+  const result = validateTotalCompressionRequest({
+    ...valid(),
+    totalContextTokensProcessed:MAX_TOTAL_COMPRESSION_CONTEXT_TOKENS + 1,
+  });
+  assert.equal(result.validation,'INVALID');
+  assert.deepEqual(codes(result),['TOKEN_COUNT_OUT_OF_BOUNDS']);
+  assert.equal(result.execution,'NOT_STARTED');
 });
 
 test('rejects unexpected fields and null input fail closed', () => {
