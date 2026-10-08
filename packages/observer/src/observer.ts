@@ -9,10 +9,14 @@ export class Observer {
   private observationCounter: number = 0;
   private deduplicationCache: Map<string, { time: number; id: string }> = new Map();
 
+  private readonly deduplicationWindow: number;
+
   /**
    * Create a new observer instance
    */
-  constructor(private readonly deduplicationWindow: number = 60000) {}
+  constructor(deduplicationWindow: number = 60000) {
+    this.deduplicationWindow = deduplicationWindow;
+  }
 
   /**
    * Observe a claim and normalize it for verification

@@ -122,13 +122,15 @@ const hashEntry = (entry: Omit<CausalMemoryEntry, 'hash'>): string =>
   createHash('sha256').update(JSON.stringify(entry)).digest('hex');
 
 export class FileCausalMemory implements CausalMemory {
+  private readonly path: string;
   private readonly entries: CausalMemoryEntry[];
   private readonly signingKey: string;
   private readonly signerId: string;
   private readonly keyVersion: string;
   private integrity = true;
 
-  constructor(private readonly path: string, options: { key: string; signerId?: string; keyVersion?: string }) {
+  constructor(path: string, options: { key: string; signerId?: string; keyVersion?: string }) {
+    this.path = path;
     if (!options.key.trim()) throw new Error('causal memory signing key is required');
     this.signingKey = options.key;
     this.signerId = options.signerId?.trim() || 'mini-reality-attestor';

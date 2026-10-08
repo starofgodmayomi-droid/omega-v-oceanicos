@@ -17,7 +17,11 @@ import { OmegaTotalManifest } from '@oceanicos/types';
  * stewardshipAxiom: 'TOOLS_FOR_EVOLUTION_NOT_WAR'
  */
 export class OmegaTotalCompressor {
-  constructor(private readonly kernel: MiniKernel = new MiniKernel()) {}
+  private readonly kernel: MiniKernel;
+
+  constructor(kernel: MiniKernel = new MiniKernel()) {
+    this.kernel = kernel;
+  }
 
   /**
    * Lock totality into the present moment.

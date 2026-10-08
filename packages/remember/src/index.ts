@@ -43,8 +43,10 @@ interface ISqliteDatabase {
 export class Remember {
   private entries: EventLogEntry[] = [];
   private memoryCounter = 0;
+  private readonly store?: MemoryStore;
 
-  constructor(private readonly store?: MemoryStore) {
+  constructor(store?: MemoryStore) {
+    this.store = store;
     if (!store) return;
     this.entries = store.load();
     this.memoryCounter = this.entries.filter((entry) => entry.type === 'MEMORY').length;

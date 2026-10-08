@@ -7,6 +7,7 @@ import { IntentFlow } from './IntentFlow';
 import { SystemControlsPanel } from './SystemControlsPanel';
 import { ObservationStreamPanel } from './ObservationStreamPanel';
 import { LifecycleFlow, deriveStageStates, type LifecycleStage } from './LifecycleFlow';
+import { OmegaWorkspace } from './OmegaWorkspace';
 import {
   theme,
   statusColor,
@@ -74,6 +75,7 @@ export function App() {
   const [omegaLoading, setOmegaLoading] = useState(false);
 
   const [openStageId, setOpenStageId] = useState<string | null>(null);
+  const [viewportMode, setViewportMode] = useState<'stream' | 'cockpit'>('stream');
 
   const eventSourceRef = useRef<EventSource | null>(null);
 
@@ -590,16 +592,97 @@ export function App() {
         </div>
       )}
 
-      {/* Main surface */}
-      <main
+      {/* Viewport Mode Switcher */}
+      <div
         style={{
-          maxWidth: '720px',
-          width: '100%',
-          margin: '0 auto',
-          padding: '60px 24px 40px',
-          flex: 1,
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          gap: '8px',
+          padding: '16px 24px 0',
         }}
       >
+        <div
+          style={{
+            display: 'inline-flex',
+            padding: '4px',
+            background: theme.surface,
+            border: `1px solid ${theme.border}`,
+            borderRadius: theme.radiusPill,
+            gap: '4px',
+          }}
+        >
+          <button
+            onClick={() => setViewportMode('stream')}
+            style={{
+              padding: '6px 16px',
+              borderRadius: theme.radiusPill,
+              border: 'none',
+              background: viewportMode === 'stream' ? theme.surfaceRaised : 'transparent',
+              color: viewportMode === 'stream' ? theme.accent : theme.textMuted,
+              boxShadow: viewportMode === 'stream' ? `0 0 12px ${theme.accent}22` : 'none',
+              fontFamily: theme.fontSans,
+              fontSize: '12px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+            }}
+          >
+            <span>💧</span>
+            <span>Mirror-Water Stream</span>
+          </button>
+          <button
+            onClick={() => setViewportMode('cockpit')}
+            style={{
+              padding: '6px 16px',
+              borderRadius: theme.radiusPill,
+              border: 'none',
+              background: viewportMode === 'cockpit' ? theme.surfaceRaised : 'transparent',
+              color: viewportMode === 'cockpit' ? theme.accent : theme.textMuted,
+              boxShadow: viewportMode === 'cockpit' ? `0 0 12px ${theme.accent}22` : 'none',
+              fontFamily: theme.fontSans,
+              fontSize: '12px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+            }}
+          >
+            <span>🌌</span>
+            <span>Omega Workspace Cockpit</span>
+          </button>
+        </div>
+      </div>
+
+      {viewportMode === 'cockpit' ? (
+        <div
+          style={{
+            maxWidth: '1360px',
+            width: '100%',
+            margin: '0 auto',
+            padding: '24px 24px 60px',
+            flex: 1,
+          }}
+        >
+          <OmegaWorkspace />
+        </div>
+      ) : (
+        <>
+          {/* Main surface */}
+          <main
+            style={{
+              maxWidth: '720px',
+              width: '100%',
+              margin: '0 auto',
+              padding: '60px 24px 40px',
+              flex: 1,
+            }}
+          >
         {/* Logo */}
         <div
           style={{
@@ -748,8 +831,10 @@ export function App() {
           onStageToggle={(id) => setOpenStageId(id || null)}
         />
       </div>
-                                                                                                                                                                                                                                                                                                                                                                                                                              </div>
-  );
+    </>
+  )}
+</div>
+);
 }
 
 export default App;

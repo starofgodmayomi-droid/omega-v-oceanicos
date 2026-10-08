@@ -70,7 +70,12 @@ type StoredLedger = { version: 1; jobs: LocalJob[]; idempotency: Record<string, 
 type LedgerEnvelope = { version: 1; algorithm: 'aes-256-gcm'; iv: string; tag: string; ciphertext: string };
 
 export class LocalJobError extends Error {
-  constructor(public readonly code: 'JOB_INVALID' | 'JOB_DUPLICATE' | 'JOB_IDEMPOTENCY_CONFLICT' | 'JOB_NOT_FOUND' | 'JOB_NOT_CLAIMABLE' | 'JOB_CLAIM_REQUIRED' | 'JOB_TERMINAL', message: string) { super(message); this.name = 'LocalJobError'; }
+  public readonly code: 'JOB_INVALID' | 'JOB_DUPLICATE' | 'JOB_IDEMPOTENCY_CONFLICT' | 'JOB_NOT_FOUND' | 'JOB_NOT_CLAIMABLE' | 'JOB_CLAIM_REQUIRED' | 'JOB_TERMINAL';
+  constructor(code: 'JOB_INVALID' | 'JOB_DUPLICATE' | 'JOB_IDEMPOTENCY_CONFLICT' | 'JOB_NOT_FOUND' | 'JOB_NOT_CLAIMABLE' | 'JOB_CLAIM_REQUIRED' | 'JOB_TERMINAL', message: string) {
+    super(message);
+    this.name = 'LocalJobError';
+    this.code = code;
+  }
 }
 const digestInput = (input: LocalJobCreateInput): string => `sha256:${createHash('sha256').update(JSON.stringify(input), 'utf8').digest('hex')}`;
 const validIdentifier = (value: string, maximum: number): boolean => value.length > 0 && value.length <= maximum && /^[A-Za-z0-9][A-Za-z0-9._:-]*$/.test(value);

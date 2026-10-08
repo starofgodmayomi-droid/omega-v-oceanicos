@@ -23,6 +23,7 @@ module.exports = {
     'broken-current\\.integration\\.test\\.ts$',
     'full-loop\\.integration\\.test\\.ts$',
     'governance\\.test\\.ts$',
+    'canonical-store-lifecycle\\.integration\\.test\\.ts$',
   ],
   moduleNameMapper: {
     '\\.\\./\\.\\./packages/([^/]+)/dist/index(\\.js)?$': '<rootDir>/packages/$1/src/index.ts',

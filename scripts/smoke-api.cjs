@@ -105,7 +105,11 @@ const openStream = () => new Promise((resolveStream, rejectStream) => {
 
     if (!isRunning) {
       console.log(`[Smoke API] API daemon not running on port ${port}, spawning ephemeral instance...`);
-      child = spawn(process.execPath, ['dist/index.js'], {
+      const tsxCli = resolve(root, 'node_modules/tsx/dist/cli.mjs');
+      const spawnArgs = require('node:fs').existsSync(tsxCli)
+        ? [tsxCli, 'src/index.ts']
+        : ['dist/index.js'];
+      child = spawn(process.execPath, spawnArgs, {
         cwd: apiRoot,
         env: {
           ...process.env,

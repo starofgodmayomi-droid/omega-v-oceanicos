@@ -64,7 +64,11 @@ export class UltraLowLatencyStreamEngine {
   private readonly startedAt = Date.now();
   private heartbeatInterval: NodeJS.Timeout | null = null;
 
-  constructor(private readonly heartbeatMs: number = 15_000) {}
+  private readonly heartbeatMs: number;
+
+  constructor(heartbeatMs: number = 15_000) {
+    this.heartbeatMs = heartbeatMs;
+  }
 
   /** Start the heartbeat pulse to keep connections alive through proxies */
   public startHeartbeat(): void {

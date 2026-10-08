@@ -16,6 +16,10 @@ import {
   fetchKernelStatus,
   fetchKernelIntegrity,
   fetchKernelStates,
+  fetchOmegaProvenance,
+  compressOmegaContext,
+  leaseExecuteOmegaCommand,
+  recompileOmegaSlice,
   type OmegaWorkerInfo,
   type OmegaCommandView,
   type OmegaCommandResultView,
@@ -26,6 +30,8 @@ import {
   type KernelStatusView,
   type KernelIntegrityReportView,
   type CanonicalStateNodeView,
+  type OmegaProvenanceView,
+  type TotalCompressionResultView,
 } from './omega-api';
 
 export const OmegaWorkspace: React.FC = () => {
@@ -52,6 +58,12 @@ export const OmegaWorkspace: React.FC = () => {
   const [kernelIntegrity, setKernelIntegrity] = useState<KernelIntegrityReportView | null>(null);
   const [latestSettledState, setLatestSettledState] = useState<CanonicalStateNodeView | null>(null);
   const [auditingChain, setAuditingChain] = useState<boolean>(false);
+  const [provenance, setProvenance] = useState<OmegaProvenanceView | null>(null);
+  const [showProvenanceModal, setShowProvenanceModal] = useState<boolean>(false);
+  const [loadingProvenance, setLoadingProvenance] = useState<boolean>(false);
+  const [compressionResult, setCompressionResult] = useState<TotalCompressionResultView | null>(null);
+  const [validatingCompression, setValidatingCompression] = useState<boolean>(false);
+  const [selectedLeaseWorker, setSelectedLeaseWorker] = useState<string>('worker-planner');
 
   useEffect(() => {
     loadWorkers();
@@ -273,6 +285,81 @@ export const OmegaWorkspace: React.FC = () => {
     }
   };
 
+  const handleFetchProvenance = async (commandId: string) => {
+    setLoadingProvenance(true);
+    setErrorMessage(null);
+    try {
+      const res = await fetchOmegaProvenance(commandId);
+      if (res.success) {
+        setProvenance(res.provenance);
+        setShowProvenanceModal(true);
+      } else {
+        setErrorMessage(res.error || 'Failed to fetch cryptographic provenance');
+      }
+    } catch (err: any) {
+      setErrorMessage(err.message);
+    } finally {
+      setLoadingProvenance(false);
+    }
+  };
+
+  const handleLeaseExecute = async (workerId: string) => {
+    if (!activeCommand) return;
+    setLoading(true);
+    setErrorMessage(null);
+    try {
+      const res = await leaseExecuteOmegaCommand(activeCommand.commandId, workerId, 'EXECUTE');
+      if (res.success) {
+        setActiveCommand(res.command);
+        loadRecentCommands();
+        loadKernelState();
+      } else {
+        setErrorMessage(res.error || `Lease execution rejected for worker ${workerId}`);
+      }
+    } catch (err: any) {
+      setErrorMessage(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRecompileAndStage = async () => {
+    if (!nextSliceProposal) return;
+    setLoading(true);
+    try {
+      const res = await recompileOmegaSlice(nextSliceProposal);
+      if (res.success) {
+        setPrompt(nextSliceProposal.proposedIntent);
+        if (nextSliceProposal.suggestedWorkers.length > 0) {
+          setSelectedWorkers(nextSliceProposal.suggestedWorkers);
+        }
+      }
+    } catch (err: any) {
+      setErrorMessage(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleValidateCompression = async () => {
+    setValidatingCompression(true);
+    setErrorMessage(null);
+    try {
+      const res = await compressOmegaContext({
+        archiveId: `archive-omega-${Date.now()}`,
+        evolutionScope: 'CONVERSATION_HISTORIC_COMPRESSION',
+        activePackages: ['mini', 'remember', 'observer', 'verification'],
+        totalContextTokensProcessed: 14200,
+        rigidLeaseBoundMs: 30000,
+      });
+      setCompressionResult(res);
+    } catch (err: any) {
+      setErrorMessage(err.message);
+    } finally {
+      setValidatingCompression(false);
+    }
+  };
+
   return (
     <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto', color: '#e0f2fe' }}>
       {/* Header & Truth Weaver Radical Honesty Notice */}
@@ -453,6 +540,88 @@ export const OmegaWorkspace: React.FC = () => {
                 {auditingChain ? 'Auditing Chain...' : 'Run Self-Audit'}
               </button>
             </div>
+          </div>
+
+          {/* Total Context Compression Admission Boundary Card */}
+          <div
+            style={{
+              background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(30, 58, 138, 0.25) 100%)',
+              border: '1px solid rgba(56, 189, 248, 0.35)',
+              borderRadius: '8px',
+              padding: '14px 16px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '13px', fontWeight: 700, color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span>🗜</span>
+                <span>Total Context Compression Boundary</span>
+              </span>
+              <span
+                style={{
+                  fontSize: '10px',
+                  fontWeight: 600,
+                  padding: '2px 8px',
+                  borderRadius: '12px',
+                  background: compressionResult?.validation === 'VALID' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(56, 189, 248, 0.15)',
+                  border: `1px solid ${compressionResult?.validation === 'VALID' ? '#10b981' : '#38bdf8'}`,
+                  color: compressionResult?.validation === 'VALID' ? '#6ee7b7' : '#7dd3fc',
+                }}
+              >
+                {compressionResult ? `ADMISSION: ${compressionResult.validation}` : 'INPUT BOUNDARY ONLY'}
+              </span>
+            </div>
+
+            <div style={{ fontSize: '11px', color: '#cbd5e1', lineHeight: '1.4' }}>
+              Validates bounded compression archives against 5 strict invariants: 30s rigid lease ceiling, single target scope, non-empty packages.
+            </div>
+
+            {compressionResult && (
+              <div
+                style={{
+                  padding: '8px 10px',
+                  borderRadius: '6px',
+                  background: 'rgba(0, 0, 0, 0.3)',
+                  border: '1px solid rgba(255, 255, 255, 0.07)',
+                  fontSize: '10px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '4px',
+                  fontFamily: 'monospace',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#94a3b8' }}>Execution State:</span>
+                  <span style={{ color: '#fbbf24', fontWeight: 700 }}>{compressionResult.execution}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#94a3b8' }}>Evidence Mode:</span>
+                  <span style={{ color: '#38bdf8' }}>{compressionResult.evidence}</span>
+                </div>
+                {compressionResult.issues.length > 0 && (
+                  <div style={{ color: '#f87171' }}>Issues: {compressionResult.issues.map((i) => i.message).join(', ')}</div>
+                )}
+              </div>
+            )}
+
+            <button
+              onClick={handleValidateCompression}
+              disabled={validatingCompression}
+              style={{
+                padding: '6px 12px',
+                borderRadius: '4px',
+                fontSize: '11px',
+                fontWeight: 600,
+                cursor: validatingCompression ? 'not-allowed' : 'pointer',
+                background: 'rgba(56, 189, 248, 0.2)',
+                border: '1px solid rgba(56, 189, 248, 0.5)',
+                color: '#7dd3fc',
+              }}
+            >
+              {validatingCompression ? 'Validating Boundary...' : 'Probe Compression Admission (Dry-Run)'}
+            </button>
           </div>
 
 
@@ -696,15 +865,74 @@ export const OmegaWorkspace: React.FC = () => {
                 )}
 
                 {activeCommand.status === 'AUTHORIZED' && (
-                  <button
-                    type="button"
-                    onClick={handleExecute}
-                    disabled={loading}
-                    style={{ flex: 1, padding: '8px', background: '#10b981', border: 'none', borderRadius: '4px', color: '#000', fontWeight: 'bold', cursor: 'pointer' }}
-                  >
-                    Execute via Authorized Local Kernel
-                  </button>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', width: '100%' }}>
+                    <button
+                      type="button"
+                      onClick={handleExecute}
+                      disabled={loading}
+                      style={{ flex: 1, padding: '8px', background: '#10b981', border: 'none', borderRadius: '4px', color: '#000', fontWeight: 'bold', cursor: 'pointer' }}
+                    >
+                      Execute via Authorized Local Kernel
+                    </button>
+                    {workers.length > 0 && (
+                      <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                        <select
+                          value={selectedLeaseWorker}
+                          onChange={(e) => setSelectedLeaseWorker(e.target.value)}
+                          style={{
+                            padding: '6px 8px',
+                            background: '#090e18',
+                            border: '1px solid rgba(16, 185, 129, 0.4)',
+                            borderRadius: '4px',
+                            color: '#6ee7b7',
+                            fontSize: '11px',
+                          }}
+                        >
+                          {workers.map((w) => (
+                            <option key={w.id} value={w.id}>
+                              {w.id}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          onClick={() => handleLeaseExecute(selectedLeaseWorker)}
+                          disabled={loading}
+                          style={{
+                            padding: '8px 12px',
+                            background: '#059669',
+                            border: 'none',
+                            borderRadius: '4px',
+                            color: '#fff',
+                            fontWeight: 600,
+                            fontSize: '11px',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          Lease-Execute
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 )}
+
+                <button
+                  type="button"
+                  onClick={() => handleFetchProvenance(activeCommand.commandId)}
+                  disabled={loadingProvenance}
+                  style={{
+                    padding: '8px 12px',
+                    background: 'rgba(147, 51, 234, 0.2)',
+                    border: '1px solid rgba(147, 51, 234, 0.4)',
+                    borderRadius: '4px',
+                    color: '#c084fc',
+                    fontWeight: 600,
+                    fontSize: '11px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {loadingProvenance ? 'Loading...' : '📜 Cryptographic Lineage'}
+                </button>
 
                 {activeResult && (activeResult.status === 'EXECUTED' || activeResult.status === 'ATTESTED' || activeResult.status === 'VERIFIED' || activeResult.status === 'DIVERGENT') && (
                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center', width: '100%' }}>
@@ -890,9 +1118,30 @@ export const OmegaWorkspace: React.FC = () => {
                       <div style={{ fontSize: '11px', color: '#93c5fd', marginBottom: '4px' }}>
                         {nextSliceProposal.proposedIntent}
                       </div>
-                      <div style={{ fontSize: '10px', color: '#64748b' }}>
+                      <div style={{ fontSize: '10px', color: '#64748b', marginBottom: '8px' }}>
                         Workers: {nextSliceProposal.suggestedWorkers.join(', ')} | Observe: {nextSliceProposal.suggestedObservationTarget}
                       </div>
+                      <button
+                        type="button"
+                        onClick={handleRecompileAndStage}
+                        disabled={loading}
+                        style={{
+                          padding: '6px 12px',
+                          borderRadius: '4px',
+                          border: 'none',
+                          background: '#2563eb',
+                          color: '#fff',
+                          fontWeight: 600,
+                          fontSize: '11px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                        }}
+                      >
+                        <span>⚡</span>
+                        <span>Compile & Stage into Composer</span>
+                      </button>
                     </div>
                   )}
                 </div>
@@ -993,6 +1242,125 @@ export const OmegaWorkspace: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Cryptographic Provenance Modal */}
+      {showProvenanceModal && provenance && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.8)',
+            backdropFilter: 'blur(4px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '20px',
+          }}
+          onClick={() => setShowProvenanceModal(false)}
+        >
+          <div
+            style={{
+              background: '#090d16',
+              border: '1px solid rgba(147, 51, 234, 0.4)',
+              borderRadius: '12px',
+              padding: '24px',
+              maxWidth: '700px',
+              width: '100%',
+              maxHeight: '85vh',
+              overflowY: 'auto',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.8)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '12px' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '18px', color: '#c084fc', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span>📜</span>
+                  <span>Cryptographic Provenance Lineage</span>
+                </h3>
+                <span style={{ fontSize: '11px', fontFamily: 'monospace', color: '#94a3b8' }}>
+                  {provenance.commandId}
+                </span>
+              </div>
+              <button
+                onClick={() => setShowProvenanceModal(false)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#94a3b8',
+                  fontSize: '20px',
+                  cursor: 'pointer',
+                  padding: '4px 8px',
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '12px', marginBottom: '16px' }}>
+              <div>
+                <span style={{ color: '#64748b' }}>Requested By: </span>
+                <span style={{ color: '#38bdf8' }}>{provenance.requestedBy}</span>
+              </div>
+              <div>
+                <span style={{ color: '#64748b' }}>Current Status: </span>
+                <span style={{ color: '#34d399', fontWeight: 700 }}>{provenance.status}</span>
+              </div>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <span style={{ color: '#64748b' }}>Intent: </span>
+                <span style={{ color: '#e2e8f0' }}>{provenance.intent}</span>
+              </div>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <span style={{ color: '#64748b' }}>Workers: </span>
+                <span style={{ color: '#a78bfa' }}>{provenance.workers.join(', ') || 'none'}</span>
+              </div>
+            </div>
+
+            <h4 style={{ fontSize: '13px', color: '#a78bfa', margin: '16px 0 8px 0' }}>
+              Immutable Transition Lineage ({provenance.lineage.length} transitions)
+            </h4>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
+              {provenance.lineage.map((item, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '8px 12px',
+                    background: 'rgba(255, 255, 255, 0.03)',
+                    border: '1px solid rgba(255, 255, 255, 0.07)',
+                    borderRadius: '6px',
+                    fontSize: '11px',
+                  }}
+                >
+                  <span style={{ color: '#c084fc', fontWeight: 700, minWidth: '24px' }}>#{idx + 1}</span>
+                  <span style={{ color: '#38bdf8', fontFamily: 'monospace', minWidth: '160px' }}>{item.type}</span>
+                  <span style={{ color: '#34d399', fontWeight: 600 }}>{item.status}</span>
+                  <span style={{ color: '#64748b', fontSize: '10px', marginLeft: 'auto' }}>
+                    {new Date(item.at).toLocaleTimeString()}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <h4 style={{ fontSize: '13px', color: '#a78bfa', margin: '16px 0 8px 0' }}>
+              Cryptographic Event Log ({provenance.events.length} events)
+            </h4>
+            <div style={{ maxHeight: '180px', overflowY: 'auto', background: '#02040a', borderRadius: '6px', padding: '10px', fontSize: '11px', fontFamily: 'monospace' }}>
+              {provenance.events.map((ev, i) => (
+                <div key={i} style={{ marginBottom: '6px', color: '#cbd5e1', borderBottom: '1px solid rgba(255,255,255,0.04)', paddingBottom: '4px' }}>
+                  <span style={{ color: '#38bdf8' }}>{String(ev.type)}</span> | <span style={{ color: '#64748b' }}>{String(ev.eventId || ev.id || i)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

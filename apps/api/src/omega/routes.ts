@@ -8,6 +8,11 @@ import type {
   OmegaObservation,
   OmegaNextSliceProposal,
   OmegaLifecycleEvent,
+  OmegaWorkerId,
+} from '@oceanicos/types';
+import {
+  decisionToStatus,
+  validateOmegaCommandInput,
 } from '@oceanicos/types';
 import {
   synthesizeOmegaLearning,
@@ -16,6 +21,10 @@ import {
   type AttestationEntry,
   OceanicosKernel,
   type KernelIntegrityReport,
+  executeAuthorizedTransition,
+  resolveChangeAdmission,
+  verifyExecutedReality,
+  validateTotalCompressionRequest,
 } from '@oceanicos/mini';
 
 import { WorkerRegistry } from './registry.js';
@@ -26,9 +35,11 @@ import { RealityObserverEngine } from './reality-observer.js';
 import { OmegaCommandStore } from './store.js';
 import { createOmegaSecurityHook, type OmegaSecurityOptions } from './security.js';
 import { evaluateAuthorization } from '@oceanicos/authorization';
+import type { OmegaCommandStore as CanonicalOmegaCommandStore } from '../omega.js';
 
 export interface OmegaRouteOptions {
   store?: OmegaCommandStore;
+  canonicalStore?: CanonicalOmegaCommandStore;
   registry?: WorkerRegistry;
   security?: OmegaSecurityOptions;
   kernel?: OceanicosKernel;
@@ -90,7 +101,32 @@ export const omegaRoutes: FastifyPluginAsync<OmegaRouteOptions> = async (
   });
 
   // GET /v1/omega/commands
-  fastify.get('/v1/omega/commands', async (request: any) => {
+  fastify.get('/v1/omega/commands', {
+    config: { rateLimit: { max: 60, timeWindow: '1 minute' } },
+  }, async (request: any) => {
+    if (opts.canonicalStore) {
+      const canonicalCmds = opts.canonicalStore.listCommands();
+      if (canonicalCmds.length > 0) {
+        return {
+          success: true,
+          count: canonicalCmds.length,
+          commands: canonicalCmds.map((c) => ({
+            commandId: c.commandId,
+            intent: c.intent,
+            requestedBy: c.requestedBy,
+            status: c.status,
+            createdAt: c.createdAt,
+            workers: c.workers,
+            decision: c.change?.decision ?? null,
+            authority: c.change?.authority ?? null,
+            policy: c.change?.policy ?? null,
+            execution: c.result?.execution ?? null,
+            reality: c.result?.reality ?? null,
+          })),
+          redacted: true,
+        };
+      }
+    }
     const limit = Math.min(parseInt(request.query?.limit || '50', 10), 100);
     return {
       success: true,
@@ -98,12 +134,49 @@ export const omegaRoutes: FastifyPluginAsync<OmegaRouteOptions> = async (
     };
   });
 
+  // POST /v1/omega/compress (Total Context Compression Admission Boundary)
+  fastify.post('/v1/omega/compress', {
+    config: { rateLimit: { max: 60, timeWindow: '1 minute' } },
+  }, async (request: any, reply) => {
+    const result = validateTotalCompressionRequest(request.body);
+    if (result.validation === 'INVALID') {
+      return reply.status(400).send({
+        success: false,
+        validation: result.validation,
+        execution: result.execution,
+        evidence: result.evidence,
+        issues: result.issues,
+      });
+    }
+    return reply.status(200).send({
+      success: true,
+      validation: result.validation,
+      execution: result.execution,
+      evidence: result.evidence,
+      request: result.request,
+      issues: result.issues,
+    });
+  });
+
   // GET /v1/omega/events (Audit Log & Real-Time Event Stream)
-  fastify.get('/v1/omega/events', async (request: any, reply) => {
+  fastify.get('/v1/omega/events', {
+    config: { rateLimit: { max: 60, timeWindow: '1 minute' } },
+  }, async (request: any, reply) => {
     const isStream = request.query?.stream === 'true' || request.headers.accept === 'text/event-stream';
     const limit = Math.min(parseInt(request.query?.limit || '50', 10), 200);
     const commandId = typeof request.query?.commandId === 'string' ? request.query.commandId : undefined;
     const eventType = typeof request.query?.type === 'string' ? request.query.type : undefined;
+
+    if (opts.canonicalStore && !isStream) {
+      const canonicalEvents = opts.canonicalStore.listEvents(commandId);
+      if (canonicalEvents.length > 0 || (commandId && opts.canonicalStore.get(commandId))) {
+        return {
+          success: true,
+          events: canonicalEvents,
+          redacted: true,
+        };
+      }
+    }
 
     if (isStream) {
       reply.raw.writeHead(200, {
@@ -151,6 +224,37 @@ export const omegaRoutes: FastifyPluginAsync<OmegaRouteOptions> = async (
   // POST /v1/omega/commands (Propose)
   fastify.post('/v1/omega/commands', async (request: any, reply) => {
     const body = request.body || {};
+
+    if (opts.canonicalStore && typeof body.intent === 'string' && !body.prompt) {
+      try {
+        validateOmegaCommandInput({
+          intent: body.intent,
+          requestedBy: body.requestedBy,
+          workers: body.workers,
+          idempotencyKey: body.idempotencyKey,
+          context: body.context,
+        });
+        const command = opts.canonicalStore.create({
+          intent: body.intent as string,
+          requestedBy: body.requestedBy as string,
+          workers: body.workers as OmegaWorkerId[],
+          idempotencyKey: body.idempotencyKey as string,
+          context: body.context as Record<string, string> | undefined,
+        });
+        return reply.status(201).send({
+          success: true,
+          command,
+          status: command.status,
+          nextAction: 'admit the command with explicit authority and policy evidence',
+        });
+      } catch (error) {
+        return reply.status(400).send({
+          success: false,
+          error: error instanceof Error ? error.message : 'INVALID_OMEGA_COMMAND',
+        });
+      }
+    }
+
     const idempotencyKey = typeof body.idempotencyKey === 'string' && body.idempotencyKey.trim()
       ? body.idempotencyKey.trim()
       : `idem_${crypto.randomUUID()}`;
@@ -225,8 +329,26 @@ export const omegaRoutes: FastifyPluginAsync<OmegaRouteOptions> = async (
   });
 
   // GET /v1/omega/commands/:id (Inspect)
-  fastify.get('/v1/omega/commands/:id', async (request: any, reply) => {
+  fastify.get('/v1/omega/commands/:id', {
+    config: { rateLimit: { max: 60, timeWindow: '1 minute' } },
+  }, async (request: any, reply) => {
     const { id } = request.params;
+    if (opts.canonicalStore) {
+      const canonicalCmd = opts.canonicalStore.get(id);
+      if (canonicalCmd) {
+        return {
+          success: true,
+          command: canonicalCmd,
+          status: canonicalCmd.status,
+          ...(canonicalCmd.result?.execution ? { execution: canonicalCmd.result.execution } : {}),
+          ...(canonicalCmd.result?.reality ? { reality: canonicalCmd.result.reality } : {}),
+          nextAction:
+            canonicalCmd.status === 'PROPOSED' || canonicalCmd.status === 'REVIEW'
+              ? 'admit or approve the command'
+              : 'observe and verify the result',
+        };
+      }
+    }
     const command = store.getCommand(id);
     if (!command) {
       return reply.code(404).send({ success: false, error: 'COMMAND_NOT_FOUND' });
@@ -239,9 +361,87 @@ export const omegaRoutes: FastifyPluginAsync<OmegaRouteOptions> = async (
     };
   });
 
+  // GET /v1/omega/commands/:id/provenance
+  fastify.get('/v1/omega/commands/:id/provenance', {
+    config: { rateLimit: { max: 60, timeWindow: '1 minute' } },
+  }, async (request: any, reply) => {
+    const id = (request.params as { id?: string }).id ?? '';
+    if (opts.canonicalStore) {
+      const canonicalCmd = opts.canonicalStore.get(id);
+      if (canonicalCmd) {
+        const events = opts.canonicalStore.listEvents(id);
+        return {
+          success: true,
+          provenance: {
+            commandId: canonicalCmd.commandId,
+            intent: canonicalCmd.intent,
+            requestedBy: canonicalCmd.requestedBy,
+            createdAt: canonicalCmd.createdAt,
+            context: canonicalCmd.context,
+            workers: canonicalCmd.workers,
+            status: canonicalCmd.status,
+            ir: canonicalCmd.ir,
+            change: canonicalCmd.change,
+            execution: canonicalCmd.result?.execution ?? null,
+            reality: canonicalCmd.result?.reality ?? null,
+            events,
+            lineage: events.map((e: any) => ({ type: e.type, at: e.at, status: e.status })),
+            redacted: true,
+          },
+        };
+      }
+    }
+    const command = store.getCommand(id);
+    if (!command) return reply.status(404).send({ success: false, error: 'COMMAND_NOT_FOUND' });
+    const events = store.listEvents({ commandId: id });
+    const result = store.getResult(id);
+    return {
+      success: true,
+      provenance: {
+        commandId: command.commandId,
+        intent: command.prompt || command.intent,
+        requestedBy: command.requestedBy,
+        createdAt: command.createdAt,
+        context: command.boundedContext,
+        workers: command.requestedWorkers,
+        status: command.status,
+        ir: command.irPlan,
+        change: null,
+        execution: result?.attestationId ? { consequence: result.consequence, attestationId: result.attestationId } : null,
+        reality: result?.realityVerdict ? { verdict: result.realityVerdict.verdict, discrepancies: result.realityVerdict.discrepancies } : null,
+        events,
+        lineage: events.map((e: any) => ({ type: e.eventType, at: e.timestamp, status: e.status })),
+        redacted: true,
+      },
+    };
+  });
+
   // POST /v1/omega/commands/:id/admit (Policy & Authority Admission)
   fastify.post('/v1/omega/commands/:id/admit', async (request: any, reply) => {
     const { id } = request.params;
+    if (opts.canonicalStore) {
+      const canonicalCmd = opts.canonicalStore.get(id);
+      if (canonicalCmd) {
+        if (canonicalCmd.status !== 'PROPOSED' && canonicalCmd.status !== 'REVIEW') {
+          return reply.status(409).send({ success: false, error: 'OMEGA_COMMAND_STALE' });
+        }
+        const body = request.body && typeof request.body === 'object' && !Array.isArray(request.body) ? request.body : {};
+        const authority = typeof body.authority === 'string' ? body.authority : null;
+        const policy = typeof body.policy === 'string' ? body.policy : null;
+        const admitted = resolveChangeAdmission({ ...canonicalCmd.change, authority, policy }, { authorityVerified: body.authorityVerified === true, policySatisfied: body.policySatisfied === true });
+        const status = decisionToStatus(admitted.decision);
+        const updated = opts.canonicalStore.update(canonicalCmd, { change: admitted, status });
+        opts.canonicalStore.record('command.admitted', updated, { decision: admitted.decision });
+        return {
+          success: true,
+          command: updated,
+          status: updated.status,
+          ...(updated.result?.execution ? { execution: updated.result.execution } : {}),
+          ...(updated.result?.reality ? { reality: updated.result.reality } : {}),
+          nextAction: status === 'AUTHORIZED' ? 'execute the authorized bounded action' : status === 'DENIED' ? 'review the denial evidence; no execution is permitted' : 'obtain attributable human approval',
+        };
+      }
+    }
     const command = store.getCommand(id);
     if (!command) {
       return reply.code(404).send({ success: false, error: 'COMMAND_NOT_FOUND' });
@@ -366,6 +566,28 @@ export const omegaRoutes: FastifyPluginAsync<OmegaRouteOptions> = async (
   // POST /v1/omega/commands/:id/approve (Human Approval for REVIEW)
   fastify.post('/v1/omega/commands/:id/approve', async (request: any, reply) => {
     const { id } = request.params;
+    if (opts.canonicalStore) {
+      const canonicalCmd = opts.canonicalStore.get(id);
+      if (canonicalCmd) {
+        if (canonicalCmd.status !== 'REVIEW') {
+          return reply.status(409).send({ success: false, error: 'OMEGA_APPROVAL_REQUIRES_REVIEW' });
+        }
+        const body = request.body && typeof request.body === 'object' && !Array.isArray(request.body) ? request.body : {};
+        const operator = typeof body.operator === 'string' && body.operator.trim() ? body.operator : (body.approvedBy || 'dashboard-operator');
+        const policy = typeof body.policy === 'string' && body.policy.trim() ? body.policy : 'human-review';
+        const admitted = resolveChangeAdmission({ ...canonicalCmd.change, authority: `human:${operator}`, policy }, { authorityVerified: true, policySatisfied: true });
+        const updated = opts.canonicalStore.update(canonicalCmd, { change: admitted, status: 'AUTHORIZED' });
+        opts.canonicalStore.record('command.approved', updated, { operator });
+        return {
+          success: true,
+          command: updated,
+          status: updated.status,
+          ...(updated.result?.execution ? { execution: updated.result.execution } : {}),
+          ...(updated.result?.reality ? { reality: updated.result.reality } : {}),
+          nextAction: 'execute the authorized bounded action',
+        };
+      }
+    }
     const command = store.getCommand(id);
     if (!command) {
       return reply.code(404).send({ success: false, error: 'COMMAND_NOT_FOUND' });
@@ -405,6 +627,36 @@ export const omegaRoutes: FastifyPluginAsync<OmegaRouteOptions> = async (
   // POST /v1/omega/commands/:id/execute (Authorized Executor)
   fastify.post('/v1/omega/commands/:id/execute', async (request: any, reply) => {
     const { id } = request.params;
+    if (opts.canonicalStore) {
+      const canonicalCmd = opts.canonicalStore.get(id);
+      if (canonicalCmd) {
+        if (canonicalCmd.status !== 'AUTHORIZED') {
+          return reply.status(409).send({ success: false, error: 'OMEGA_EXECUTION_REQUIRES_AUTHORIZATION' });
+        }
+        const execution = executeAuthorizedTransition(canonicalCmd.change, () => ({
+          stateAfter: 'bounded-local-action-complete',
+          consequence: 'bounded local action recorded; no remote mutation performed',
+        }));
+        const status: OmegaCommandStatus = execution.status === 'EXECUTED' ? 'EXECUTED' : 'FAILED';
+        const result = execution.status === 'EXECUTED' && execution.attestationId
+          ? { execution: { stateAfter: execution.record.stateAfter ?? '', consequence: execution.record.consequence ?? '', attestationId: execution.attestationId } }
+          : undefined;
+        const updated = opts.canonicalStore.update(canonicalCmd, {
+          change: execution.record,
+          status,
+          result: result ? { command: canonicalCmd, status, ...result, nextAction: 'observe and verify the result' } : undefined,
+        });
+        opts.canonicalStore.record('command.executed', updated);
+        return {
+          success: execution.status === 'EXECUTED',
+          command: updated,
+          status: updated.status,
+          ...(updated.result?.execution ? { execution: updated.result.execution } : {}),
+          ...(updated.result?.reality ? { reality: updated.result.reality } : {}),
+          nextAction: execution.status === 'EXECUTED' ? 'observe and verify the result' : 'inspect the execution failure',
+        };
+      }
+    }
     const command = store.getCommand(id);
     if (!command) {
       return reply.code(404).send({ success: false, error: 'COMMAND_NOT_FOUND' });
@@ -496,9 +748,115 @@ export const omegaRoutes: FastifyPluginAsync<OmegaRouteOptions> = async (
     }
   });
 
+  // POST /v1/omega/commands/:id/lease-execute (Admitted Worker Lease Execution)
+  fastify.post('/v1/omega/commands/:id/lease-execute', async (request: any, reply) => {
+    const { id } = request.params;
+    if (opts.canonicalStore) {
+      const canonicalCmd = opts.canonicalStore.get(id);
+      if (canonicalCmd) {
+        if (canonicalCmd.status !== 'AUTHORIZED') {
+          return reply.status(409).send({ success: false, error: 'OMEGA_EXECUTION_REQUIRES_AUTHORIZATION' });
+        }
+        const body = request.body && typeof request.body === 'object' && !Array.isArray(request.body) ? request.body : {};
+        const workerId = typeof body.workerId === 'string' ? body.workerId.trim() : '';
+        const capability = typeof body.capability === 'string' ? body.capability.trim() : '';
+        if (!workerId || !capability) {
+          return reply.status(400).send({ success: false, error: 'LEASE_EXECUTION_WORKER_AND_CAPABILITY_REQUIRED' });
+        }
+        if (!canonicalCmd.workers || !canonicalCmd.workers.includes(workerId as any)) {
+          return reply.status(403).send({ success: false, error: 'LEASE_EXECUTION_WORKER_NOT_IN_COMMAND' });
+        }
+        const lease = opts.canonicalStore.acquireWorkerLease(workerId, canonicalCmd.commandId, capability);
+        if (!lease) {
+          return reply.status(409).send({ success: false, error: 'OMEGA_WORKER_LEASE_UNAVAILABLE' });
+        }
+        opts.canonicalStore.record('command.lease-execution-started', canonicalCmd, {
+          workerId,
+          capability,
+          leaseId: lease.leaseId,
+          expiresAt: lease.expiresAt,
+        });
+        try {
+          const execution = executeAuthorizedTransition(canonicalCmd.change, () => ({
+            stateAfter: 'bounded-local-action-complete',
+            consequence: 'bounded local action recorded under an observed worker lease; no remote mutation performed',
+          }));
+          const status: OmegaCommandStatus = execution.status === 'EXECUTED' ? 'EXECUTED' : 'FAILED';
+          const result = execution.status === 'EXECUTED' && execution.attestationId
+            ? { execution: { stateAfter: execution.record.stateAfter ?? '', consequence: execution.record.consequence ?? '', attestationId: execution.attestationId } }
+            : undefined;
+          const updated = opts.canonicalStore.update(canonicalCmd, {
+            change: execution.record,
+            status,
+            result: result
+              ? { command: canonicalCmd, status, ...result, nextAction: 'observe and verify the result' }
+              : undefined,
+          });
+          opts.canonicalStore.record('command.executed', updated, { workerId, leaseId: lease.leaseId });
+          const released = opts.canonicalStore.releaseWorkerLease(lease.leaseId, workerId);
+          return {
+            success: execution.status === 'EXECUTED',
+            lease: { leaseId: lease.leaseId, workerId, released },
+            command: updated,
+            status: updated.status,
+            ...(updated.result?.execution ? { execution: updated.result.execution } : {}),
+            ...(updated.result?.reality ? { reality: updated.result.reality } : {}),
+            nextAction: execution.status === 'EXECUTED' ? 'observe and verify the result' : 'inspect the execution failure',
+          };
+        } catch (error) {
+          opts.canonicalStore.releaseWorkerLease(lease.leaseId, workerId);
+          throw error;
+        }
+      }
+    }
+    return reply.status(404).send({ success: false, error: 'COMMAND_NOT_FOUND' });
+  });
+
   // POST /v1/omega/commands/:id/observe (Attach Observation)
   fastify.post('/v1/omega/commands/:id/observe', async (request: any, reply) => {
     const { id } = request.params;
+    if (opts.canonicalStore) {
+      const canonicalCmd = opts.canonicalStore.get(id);
+      if (canonicalCmd) {
+        if (canonicalCmd.status !== 'EXECUTED' && canonicalCmd.status !== 'ATTESTED') {
+          return reply.status(409).send({ success: false, error: 'OMEGA_OBSERVATION_REQUIRES_EXECUTION' });
+        }
+        const body = request.body && typeof request.body === 'object' && !Array.isArray(request.body) ? request.body : {};
+        if (typeof body.observedState !== 'string' || body.observedState.length > 512) {
+          return reply.status(400).send({ success: false, error: 'OBSERVED_STATE_REQUIRED' });
+        }
+        const execution = { status: 'EXECUTED' as const, record: canonicalCmd.change, attestationId: canonicalCmd.change.attestationId };
+        const verification = verifyExecutedReality(execution, () => body.observedState as string);
+        const status: OmegaCommandStatus = verification.status === 'VERIFIED' ? 'VERIFIED' : verification.status === 'DIVERGENT' ? 'DIVERGENT' : 'UNKNOWN';
+        const reality = {
+          kind: 'supplied-state' as const,
+          observedState: verification.observedState ?? (body.observedState as string),
+          evidence: verification.evidence,
+          observedAt: new Date().toISOString(),
+          classification: verification.status === 'VERIFIED' ? ('VERIFIED' as const) : verification.status === 'DIVERGENT' ? ('DIVERGENT' as const) : ('UNKNOWN' as const),
+        };
+        const updated = opts.canonicalStore.update(canonicalCmd, {
+          change: verification.record,
+          status,
+          result: {
+            command: canonicalCmd,
+            status,
+            ...(canonicalCmd.result?.execution ? { execution: canonicalCmd.result.execution } : {}),
+            reality,
+            nextAction: status === 'VERIFIED' ? 'record what was learned and select the next bounded change' : 'review divergence before selecting the next change',
+          },
+        });
+        opts.canonicalStore.record('command.reality-observed', updated, { classification: reality.classification });
+        return {
+          success: true,
+          command: updated,
+          status: updated.status,
+          ...(updated.result?.execution ? { execution: updated.result.execution } : {}),
+          reality,
+          nextAction: updated.result?.nextAction ?? 'review the observed result',
+        };
+      }
+    }
     const command = store.getCommand(id);
     if (!command) {
       return reply.code(404).send({ success: false, error: 'COMMAND_NOT_FOUND' });
@@ -557,6 +915,22 @@ export const omegaRoutes: FastifyPluginAsync<OmegaRouteOptions> = async (
   // POST /v1/omega/commands/:id/verify-reality (Verify Reality)
   fastify.post('/v1/omega/commands/:id/verify-reality', async (request: any, reply) => {
     const { id } = request.params;
+    if (opts.canonicalStore) {
+      const canonicalCmd = opts.canonicalStore.get(id);
+      if (canonicalCmd) {
+        if (!canonicalCmd.result?.reality) {
+          return reply.status(409).send({ success: false, error: 'OMEGA_REALITY_OBSERVATION_REQUIRED' });
+        }
+        return {
+          success: true,
+          command: canonicalCmd,
+          status: canonicalCmd.status,
+          ...(canonicalCmd.result?.execution ? { execution: canonicalCmd.result.execution } : {}),
+          ...(canonicalCmd.result?.reality ? { reality: canonicalCmd.result.reality } : {}),
+          nextAction: canonicalCmd.result.nextAction ?? 'review the verified state',
+        };
+      }
+    }
     const command = store.getCommand(id);
     if (!command) {
       return reply.code(404).send({ success: false, error: 'COMMAND_NOT_FOUND' });

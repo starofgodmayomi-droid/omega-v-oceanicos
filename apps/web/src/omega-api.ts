@@ -132,14 +132,37 @@ export async function fetchOmegaCommands(limit: number = 20): Promise<{ success:
 }
 
 export async function proposeOmegaCommand(
-  prompt: string,
-  requestedWorkers?: string[],
+  intentOrPrompt: string,
+  requestedWorkersOrOptions?: string[] | {
+    requestedBy?: string;
+    workers?: string[];
+    idempotencyKey?: string;
+    context?: Record<string, unknown>;
+  },
   context?: Record<string, unknown>
 ): Promise<{ success: boolean; command: OmegaCommandView; error?: string }> {
+  let body: Record<string, unknown>;
+  if (requestedWorkersOrOptions && !Array.isArray(requestedWorkersOrOptions)) {
+    // New canonical form: proposeOmegaCommand('intent', { requestedBy, workers, ... })
+    body = {
+      intent: intentOrPrompt,
+      requestedBy: requestedWorkersOrOptions.requestedBy ?? 'dashboard-user',
+      workers: requestedWorkersOrOptions.workers ?? [],
+      idempotencyKey: requestedWorkersOrOptions.idempotencyKey ?? `idem_${Date.now()}`,
+      context: requestedWorkersOrOptions.context,
+    };
+  } else {
+    // Legacy compat: proposeOmegaCommand('prompt', ['worker-a'], { ... })
+    body = {
+      prompt: intentOrPrompt,
+      requestedWorkers: requestedWorkersOrOptions,
+      context,
+    };
+  }
   const res = await fetch(`${API_BASE}/v1/omega/commands`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ prompt, requestedWorkers, context }),
+    body: JSON.stringify(body),
   });
   return res.json();
 }
@@ -152,10 +175,18 @@ export async function inspectOmegaCommand(
 }
 
 export async function admitOmegaCommand(
-  commandId: string
+  commandId: string,
+  evidence?: {
+    authority?: string;
+    policy?: string;
+    authorityVerified?: boolean;
+    policySatisfied?: boolean;
+  }
 ): Promise<{ success: boolean; verdict: 'ALLOW' | 'DENY' | 'REVIEW'; command: OmegaCommandView; reason?: string; error?: string }> {
   const res = await fetch(`${API_BASE}/v1/omega/commands/${commandId}/admit`, {
     method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(evidence ?? {}),
   });
   return res.json();
 }
@@ -414,5 +445,94 @@ export async function fetchKernelStates(): Promise<{ success: boolean; states: C
   return res.json();
 }
 
+// ─── Canonical Store Client Functions ─────────────────────────────────
 
+export interface OmegaProvenanceView {
+  commandId: string;
+  intent: string;
+  requestedBy: string;
+  createdAt: string;
+  context?: Record<string, string>;
+  workers: string[];
+  status: string;
+  ir?: unknown;
+  change?: unknown;
+  execution?: unknown;
+  reality?: unknown;
+  events: Array<Record<string, unknown>>;
+  lineage: Array<{ type: string; at: string; status: string }>;
+  redacted: boolean;
+}
+
+export async function fetchOmegaProvenance(
+  commandId: string
+): Promise<{ success: boolean; provenance: OmegaProvenanceView; error?: string }> {
+  const res = await fetch(`${API_BASE}/v1/omega/commands/${commandId}/provenance`);
+  return res.json();
+}
+
+export interface TotalCompressionRequestView {
+  archiveId: string;
+  evolutionScope: string;
+  activePackages: string[];
+  totalContextTokensProcessed: number;
+  rigidLeaseBoundMs: number;
+}
+
+export interface TotalCompressionResultView {
+  success: boolean;
+  validation: 'VALID' | 'INVALID';
+  execution: string;
+  evidence: string;
+  request?: TotalCompressionRequestView;
+  issues: Array<{ code: string; field: string; message: string }>;
+}
+
+export async function compressOmegaContext(
+  request: TotalCompressionRequestView
+): Promise<TotalCompressionResultView> {
+  const res = await fetch(`${API_BASE}/v1/omega/compress`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(request),
+  });
+  return res.json();
+}
+
+export async function leaseExecuteOmegaCommand(
+  commandId: string,
+  workerId: string,
+  capability: string
+): Promise<{
+  success: boolean;
+  lease: { leaseId: string; workerId: string; released: boolean };
+  command: OmegaCommandView;
+  status: string;
+  execution?: unknown;
+  reality?: unknown;
+  nextAction: string;
+  error?: string;
+}> {
+  const res = await fetch(`${API_BASE}/v1/omega/commands/${commandId}/lease-execute`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ workerId, capability }),
+  });
+  return res.json();
+}
+
+export async function recompileOmegaSlice(
+  proposal?: OmegaNextSliceProposalView
+): Promise<{
+  success: boolean;
+  proposal: OmegaNextSliceProposalView;
+  compileInput: unknown;
+}> {
+  const res = await fetch(`${API_BASE}/v1/omega/recompile`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(proposal ? { proposal } : {}),
+  });
+  return res.json();
+}
 

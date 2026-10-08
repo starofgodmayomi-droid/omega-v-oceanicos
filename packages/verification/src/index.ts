@@ -104,7 +104,11 @@ export class VerificationEngine {
   private ruleRegistry: Map<string, VerificationRule> = new Map();
   private resultCache: Map<string, { result: VerificationResult; time: number }> = new Map();
 
-  constructor(private readonly cacheTtl: number = 60000) {}
+  private readonly cacheTtl: number;
+
+  constructor(cacheTtl: number = 60000) {
+    this.cacheTtl = cacheTtl;
+  }
 
   public static evaluate(telemetry: IObservation, privateKeyPem?: string): IEvidence {
     const scale = telemetry.acceleratorInventory > 500000;

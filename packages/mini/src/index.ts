@@ -268,6 +268,19 @@ export type {
 } from './pipeline.js';
 export { FileCausalMemory, createRealityAttestation, verifyRealityAttestation } from './causal-memory.js';
 export type { CausalMemory, CausalMemoryEntry, RealityAttestation } from './causal-memory.js';
+export {
+  MAX_TOTAL_COMPRESSION_LEASE_MS,
+  TOTAL_COMPRESSION_PACKAGE_IDS,
+  validateTotalCompressionRequest,
+} from './total-compress.js';
+export type {
+  TotalCompressionIssueCode,
+  TotalCompressionPackage,
+  TotalCompressionRequest,
+  TotalCompressionScope,
+  TotalCompressionValidationIssue,
+  TotalCompressionValidationResult,
+} from './total-compress.js';
 
 export function executeOceanicosMaxExpansion(): CryptographicBlock {
   const kernelChain = new PluralisticHashChain();

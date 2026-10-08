@@ -196,19 +196,20 @@ export function createApp(
   };
 
   fastify.register(cors, { origin: '*' });
+  fastify.register(rateLimit, { global: false });
 
   // Register the extended Omega command lifecycle routes (full propose→admit→approve→execute→observe→verify pipeline)
   // This handles: /v1/omega/workers, /v1/omega/commands, /v1/omega/events, /v1/omega/kernel/*, /v1/omega/learning, etc.
   const extendedStore = new ExtendedOmegaCommandStore(ledgerFilePath);
   fastify.register(omegaRoutes, {
     store: extendedStore,
+    canonicalStore: omegaCommands,
     security: securityOptions,
   });
 
-  // Register base omega worker coordination routes (register, heartbeat, lease, release, provenance)
+  // Register base omega worker coordination routes (register, heartbeat, lease, release)
   // These don't overlap with the extended routes above
   fastify.register(async (scope) => {
-    await scope.register(rateLimit, { global: false });
     registerOmegaWorkerRoutes(scope, omegaCommands);
   });
   fastify.addHook('onRequest', async (request, reply) => {

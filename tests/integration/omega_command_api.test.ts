@@ -115,6 +115,47 @@ describe('Ω∞v command API vertical slice', () => {
     assert.ok(events.json().events.some((event: { type: string }) => event.type === 'command.executed'));
   });
 
+  it('binds execution to an admitted worker lease and releases the lease', async () => {
+    const created = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/commands',
+      payload: { intent: 'lease-bound execution', requestedBy: 'integration-user', workers: ['planner', 'tester'], idempotencyKey: 'lease-execution-current-1' },
+    });
+    assert.equal(created.statusCode, 201);
+    const approved = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/commands/omega-lease-execution-current-1/approve',
+      payload: { operator: 'integration-operator' },
+    });
+    assert.equal(approved.statusCode, 200);
+    assert.equal(approved.json().command.status, 'AUTHORIZED');
+
+    const unregistered = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/commands/omega-lease-execution-current-1/lease-execute',
+      payload: { workerId: 'planner', capability: 'EXECUTE' },
+    });
+    assert.equal(unregistered.statusCode, 409);
+    assert.equal(unregistered.json().error, 'OMEGA_WORKER_LEASE_UNAVAILABLE');
+
+    const registered = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/workers/register',
+      payload: { workerId: 'planner', capabilities: ['EXECUTE'] },
+    });
+    assert.equal(registered.statusCode, 200);
+
+    const executed = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/commands/omega-lease-execution-current-1/lease-execute',
+      payload: { workerId: 'planner', capability: 'EXECUTE' },
+    });
+    assert.equal(executed.statusCode, 200);
+    assert.equal(executed.json().command.status, 'EXECUTED');
+    assert.equal(executed.json().lease.workerId, 'planner');
+    assert.equal(executed.json().lease.released, true);
+  });
+
   it('rejects unknown workers and duplicate mutations are idempotent', async () => {
     const invalid = await app.inject({ method: 'POST', url: '/v1/omega/commands', payload: { intent: 'bad worker', requestedBy: 'dashboard-user', workers: ['arbitrary-shell'], idempotencyKey: 'api-slice-invalid' } });
     assert.equal(invalid.statusCode, 400);
