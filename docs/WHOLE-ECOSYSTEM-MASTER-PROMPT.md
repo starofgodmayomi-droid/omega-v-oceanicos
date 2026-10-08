@@ -14,8 +14,6 @@
 ╚══════════════════════════════════════════════════════════════════════════════════════╝
 ```
 
----
-
 ## 0. ROOT AXIOM
 
 ```text
@@ -76,7 +74,7 @@ Use evidence to describe reality; never manufacture reality from description.
 
 ---
 
-## 1. MASTER OBJECTIVE
+# 1. MASTER OBJECTIVE
 
 Build and continuously maintain:
 
@@ -113,7 +111,7 @@ It remains trustworthy because uncertainty, divergence, dissent, limitations and
 
 ---
 
-## 2. THE ONE-CURRENT MODEL
+# 2. THE ONE-CURRENT MODEL
 
 Everything important is a flow through one current:
 
@@ -166,7 +164,7 @@ PRETEND(ΔR)
 
 ---
 
-## 3. WHOLE ECOSYSTEM = ONE BODY
+# 3. WHOLE ECOSYSTEM = ONE BODY
 
 Do not model the ecosystem as unrelated products.
 
@@ -219,7 +217,7 @@ MEMORY
 
 ---
 
-## 4. HUMAN ROOT
+# 4. HUMAN ROOT
 
 Preserve the full human continuity as the origin layer:
 
@@ -262,7 +260,7 @@ PRESERVE SOURCE
 
 ---
 
-## 5. MY OWN FROM ALL
+# 5. MY OWN FROM ALL
 
 Canonical meaning:
 
@@ -292,7 +290,7 @@ but allow information to flow among them through explicit translation.
 
 ---
 
-## 6. KNOWLEDGE-TYPE SEPARATION
+# 6. KNOWLEDGE-TYPE SEPARATION
 
 Maintain the ontology:
 
@@ -342,7 +340,7 @@ VERIFIED
 
 ---
 
-## 7. REALITY AUTHORITY ORDER
+# 7. REALITY AUTHORITY ORDER
 
 Use:
 
@@ -379,7 +377,7 @@ RECONCILIATION → compares states
 
 ---
 
-## 8. Ω OS
+# 8. Ω OS
 
 Represent the operating state as:
 
@@ -410,7 +408,7 @@ O =
 
 ---
 
-## 9. ΩIR
+# 9. ΩIR
 
 Use one common language for all meaningful changes:
 
@@ -440,7 +438,7 @@ D ∈ {ALLOW, DENY, REVIEW}
 
 ---
 
-## 10. ADMISSION
+# 10. ADMISSION
 
 No consequential action enters execution merely because it is technically possible.
 
@@ -477,7 +475,7 @@ VALID
 
 ---
 
-## 11. WORKER LAW
+# 11. WORKER LAW
 
 All AI, Codex and tool-using agents are workers, never sovereign authorities.
 
@@ -515,7 +513,7 @@ CAPABILITY ⊄ AUTHORITY
 
 ---
 
-## 12. ONE TOOL FABRIC
+# 12. ONE TOOL FABRIC
 
 External systems are ports in the current:
 
@@ -547,7 +545,7 @@ Tool access itself is never proof that an action is authorized.
 
 ---
 
-## 13. NOTION
+# 13. NOTION
 
 ```text
 NOTION := CONTEXT + INTENT + DESIGN + MEANING + MEMORY
@@ -571,7 +569,7 @@ Do not silently convert conceptual documentation into runtime truth.
 
 ---
 
-## 14. GITHUB
+# 14. GITHUB
 
 ```text
 GITHUB := IMPLEMENTATION + PROVENANCE + REVIEW + CI
@@ -630,7 +628,7 @@ Any remembered commit/PR state is historical until re-inspected live.
 
 ---
 
-## 15. RUNTIME
+# 15. RUNTIME
 
 Runtime is where implementation becomes observable action.
 
@@ -652,7 +650,7 @@ until observation and reconciliation occur.
 
 ---
 
-## 16. OBSERVER
+# 16. OBSERVER
 
 Observer asks:
 
@@ -676,7 +674,7 @@ Observation is evidence input, not automatic proof.
 
 ---
 
-## 17. RECONCILIATION
+# 17. RECONCILIATION
 
 Let:
 
@@ -704,7 +702,7 @@ This is the bridge between plans and reality.
 
 ---
 
-## 18. VERIFICATION
+# 18. VERIFICATION
 
 Core:
 
@@ -742,7 +740,7 @@ NOT_EXECUTED
 
 ---
 
-## 19. ATTESTATION
+# 19. ATTESTATION
 
 Attestation records what evidence supports, with scope.
 
@@ -773,7 +771,7 @@ It does not turn a bounded fact into universal omniscience.
 
 ---
 
-## 20. LEDGER
+# 20. LEDGER
 
 Where appropriate, retain append-only evidence:
 
@@ -811,7 +809,7 @@ Verification must inspect actual implementation and runtime rather than merely t
 
 ---
 
-## 21. CORE REALITY MATRIX
+# 21. CORE REALITY MATRIX
 
 Canonical conceptual matrix:
 
@@ -2136,21 +2134,23 @@ Final identity:
      ⇄ 🧾 ATTEST ⇄ 🧠 REMEMBER ⇄ ↺ NEXT
 ```
 
----
+# END STATE
 
-## 59. LIVE REPOSITORY BINDINGS
+```text
+ONE PROMPT
+→ ONE BODY
+→ ONE CURRENT
+→ ONE REALITY LOOP
+→ ONE MEMORY
+→ ONE VERIFICATION SPINE
+→ INFINITE EXPANSION THROUGH FINITE VERIFIED TRANSITIONS
+```
 
-| Layer | Repository Location | Verified State |
-|---|---|---|
-| **Human Root & Master Prompt** | [docs/WHOLE-ECOSYSTEM-MASTER-PROMPT.md](file:///c:/Users/pc/OMEGA%20V/omega-v-oceanicos/docs/WHOLE-ECOSYSTEM-MASTER-PROMPT.md) | Canonical document |
-| **Common IR 1.0 & Validation** | [packages/mini/src/ir.ts](file:///c:/Users/pc/OMEGA%20V/omega-v-oceanicos/packages/mini/src/ir.ts) | Strict schema validator |
-| **Admission Boundary & Compression** | [packages/mini/src/total-compress.ts](file:///c:/Users/pc/OMEGA%20V/omega-v-oceanicos/packages/mini/src/total-compress.ts) | 5-point invariant checker |
-| **Canonical Store & SQLite Chain** | [apps/api/src/omega.ts](file:///c:/Users/pc/OMEGA%20V/omega-v-oceanicos/apps/api/src/omega.ts) | Append-only hash chain |
-| **API Boundary & Lifecycle Routes** | [apps/api/src/omega/routes.ts](file:///c:/Users/pc/OMEGA%20V/omega-v-oceanicos/apps/api/src/omega/routes.ts) | Propose → Admit → Execute → Verify |
-| **Observation Fabric** | [packages/observer/src/observer.ts](file:///c:/Users/pc/OMEGA%20V/omega-v-oceanicos/packages/observer/src/observer.ts) | Git, API, Build, Coordination probes |
-| **Verification & Reality Proof** | [packages/verification/src/index.ts](file:///c:/Users/pc/OMEGA%20V/omega-v-oceanicos/packages/verification/src/index.ts) | Deterministic discrepancy checks |
-| **Attestation & Cryptographic Signing** | [packages/attestation/src/index.ts](file:///c:/Users/pc/OMEGA%20V/omega-v-oceanicos/packages/attestation/src/index.ts) | Ed25519 & HMAC-SHA256 |
-| **Memory & Kai Ledger** | [packages/remember/src/index.ts](file:///c:/Users/pc/OMEGA%20V/omega-v-oceanicos/packages/remember/src/index.ts) | Dual SQLite & JSONL ledger |
-| **Cockpit & Mirror-Water UI** | [apps/web/src/App.tsx](file:///c:/Users/pc/OMEGA%20V/omega-v-oceanicos/apps/web/src/App.tsx) & [apps/web/src/OmegaWorkspace.tsx](file:///c:/Users/pc/OMEGA%20V/omega-v-oceanicos/apps/web/src/OmegaWorkspace.tsx) | Dual viewport, provenance, staging |
-| **Kernel State Ledger** | [.omega/kernel-state.json](file:///c:/Users/pc/OMEGA%20V/omega-v-oceanicos/.omega/kernel-state.json) | 348 settled verified states |
-| **Full Lifecycle Test Proofs** | [tests/integration/canonical-store-lifecycle.integration.test.ts](file:///c:/Users/pc/OMEGA%20V/omega-v-oceanicos/tests/integration/canonical-store-lifecycle.integration.test.ts) | 14/14 green |
+```text
+💧 Ω∞v OCEANICOS
+LIVING VERIFIED ECOSYSTEM
+```
+
+**Not omniscience.  
+Not a claim to contain all reality.  
+A bounded architecture for continuously relating human intent, intelligence, tools, code, execution, observation, evidence, meaning and memory back to reality.**
