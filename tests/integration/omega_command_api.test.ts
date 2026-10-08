@@ -198,7 +198,7 @@ describe('Ω∞v command API vertical slice', () => {
       payload: {
         intent: 'inspect safety boundary',
         requestedBy: 'integration-user',
-        workers: ['planner'],
+        workers: ['governance-reviewer'],
         idempotencyKey: 'safety-boundary-1',
       },
     });
