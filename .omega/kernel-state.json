@@ -1,7 +1,7 @@
 {
   "version": 1,
   "secret": "oceanicos-canonical-kernel-root-secret",
-  "currentHeadHash": "5459e85ba78880b8be4bc7ed9fef97cf610738b34d86003375e638fc976778e8",
+  "currentHeadHash": "55717d3211dde444960d7510581aac231f3b2e6214690b2e7e46e31dace9d436",
   "states": [
     {
       "stateId": "state-1-903d92e9",
@@ -32987,7 +32987,1900 @@
         "gasLimit": 1000,
         "reversibility": "REVERSIBLE"
       }
+    },
+    {
+      "stateId": "state-367-883a7d58",
+      "stateIndex": 367,
+      "parentStateHash": "5459e85ba78880b8be4bc7ed9fef97cf610738b34d86003375e638fc976778e8",
+      "stateDeltaHash": "bf0a39eb172e4a729438f923f005611baed4cf4afd30cab3e07a561dc5cf85a1",
+      "attestationSignature": "ce048f0d0a0c86d8627df6c7c37302f40c84269d0b12897fdde36b7435cb2be3",
+      "createdAt": "2026-10-08T14:23:14.247Z",
+      "intent": {
+        "intentId": "intent-827cecde",
+        "claim": "Execute allowlisted test suite",
+        "actors": [
+          "human:local-source"
+        ],
+        "inputs": {},
+        "expectedOutputs": {
+          "consequence": "Command cmd_e73a51d0-dd2f-4e6e-8575-b7b3ccc0bdd4 executed across 2 workers. Transition target: local_build_test."
+        },
+        "constraints": [
+          "CHARTER:TRUTH_WEAVER",
+          "ADMISSION:FAIL_CLOSED_AUTHORITY",
+          "EVIDENCE:RADICAL_HONESTY"
+        ],
+        "permissions": [
+          "worker-observer",
+          "worker-tester"
+        ],
+        "dependencies": [
+          "PRESENCE_INPUT",
+          "LOCAL_ENV_OBSERVER"
+        ],
+        "maxRiskScore": 0.2,
+        "economicTarget": {
+          "targetValue": 1,
+          "resourceBudget": 1
+        }
+      },
+      "observation": {
+        "observationId": "obs-0a0618fe",
+        "source": "omega:api-executor",
+        "observedAt": "2026-10-08T14:23:14.246Z",
+        "rawTelemetry": {
+          "commandId": "cmd_e73a51d0-dd2f-4e6e-8575-b7b3ccc0bdd4",
+          "status": "EXECUTED"
+        },
+        "epistemicType": "FACT",
+        "confidence": 1
+      },
+      "evidence": [
+        {
+          "evidenceId": "ev-f641a7e0",
+          "claim": "Command cmd_e73a51d0-dd2f-4e6e-8575-b7b3ccc0bdd4 executed",
+          "source": "omega:api-kernel",
+          "observationId": "obs-cmd_e73a51d0-dd2f-4e6e-8575-b7b3ccc0bdd4",
+          "commandOrTest": "Execute allowlisted test suite",
+          "status": "PASSED",
+          "confidence": 1
+        }
+      ],
+      "verificationStatus": "VERIFIED",
+      "dissent": [],
+      "authorization": {
+        "requiresHumanApproval": true,
+        "isAuthorized": false
+      },
+      "action": {
+        "actionId": "action-3ed31954",
+        "status": "EXECUTED",
+        "targetService": "local_build_test",
+        "payload": {
+          "commandId": "cmd_e73a51d0-dd2f-4e6e-8575-b7b3ccc0bdd4"
+        },
+        "isDestructive": false,
+        "isFinancial": false,
+        "gasLimit": 1000,
+        "reversibility": "IRREVERSIBLE"
+      },
+      "consequence": {
+        "consequenceId": "consequence-6cc89d3c",
+        "actionId": "action-3ed31954",
+        "observedStatus": "SUCCESS",
+        "realizedEffects": {
+          "commandId": "cmd_e73a51d0-dd2f-4e6e-8575-b7b3ccc0bdd4",
+          "verdict": "VERIFIED",
+          "discrepancies": [],
+          "claimedStateHash": "bc6dbe185fa4f1b5f1622df5a410959bd16e1c61663b28a723f9b4964dc5f794",
+          "observedStateHash": "413d8a13dcdcf9a0b1df385aab41191de40fb53572ce66100afc1b2b8f68b077"
+        },
+        "executionDurationMs": 120,
+        "verifiedValueGenerated": 100,
+        "observedAt": "2026-10-08T14:23:14.251Z"
+      },
+      "learning": {
+        "learningId": "learn-360209ee",
+        "successRateScore": 1,
+        "meanVerificationLatencyMs": 120,
+        "dissentResolutionRatio": 1,
+        "recompilationTriggered": false,
+        "proposedNextIntentPrompt": "Extend and optimize state state-367-883a7d58"
+      },
+      "settledAt": "2026-10-08T14:23:14.251Z"
+    },
+    {
+      "stateId": "state-368-aab46af3",
+      "stateIndex": 368,
+      "parentStateHash": "bf0a39eb172e4a729438f923f005611baed4cf4afd30cab3e07a561dc5cf85a1",
+      "stateDeltaHash": "326c3df184cf731c401fbabefd498f39280acc0b3e6f3ee12ab448eca5f572a7",
+      "attestationSignature": "ab60bc3857ff13000cfb717c1b59f551ebad140a04255d16aa9f804d4ab8c408",
+      "createdAt": "2026-10-08T14:23:14.269Z",
+      "intent": {
+        "intentId": "intent-31aaef81",
+        "claim": "Verify system mood and documentation baseline",
+        "actors": [
+          "human:local-source"
+        ],
+        "inputs": {},
+        "expectedOutputs": {
+          "consequence": "Command cmd_89ae7cf4-bd40-4061-8ff7-04360ea55ea5 executed across 1 workers. Transition target: read_only_intent_record."
+        },
+        "constraints": [
+          "CHARTER:TRUTH_WEAVER",
+          "ADMISSION:FAIL_CLOSED_AUTHORITY",
+          "EVIDENCE:RADICAL_HONESTY"
+        ],
+        "permissions": [
+          "worker-observer"
+        ],
+        "dependencies": [
+          "PRESENCE_INPUT",
+          "LOCAL_ENV_OBSERVER"
+        ],
+        "maxRiskScore": 0.2,
+        "economicTarget": {
+          "targetValue": 1,
+          "resourceBudget": 1
+        }
+      },
+      "observation": {
+        "observationId": "obs-412c6295",
+        "source": "omega:api-executor",
+        "observedAt": "2026-10-08T14:23:14.269Z",
+        "rawTelemetry": {
+          "commandId": "cmd_89ae7cf4-bd40-4061-8ff7-04360ea55ea5",
+          "status": "EXECUTED"
+        },
+        "epistemicType": "FACT",
+        "confidence": 1
+      },
+      "evidence": [
+        {
+          "evidenceId": "ev-53a05967",
+          "claim": "Command cmd_89ae7cf4-bd40-4061-8ff7-04360ea55ea5 executed",
+          "source": "omega:api-kernel",
+          "observationId": "obs-cmd_89ae7cf4-bd40-4061-8ff7-04360ea55ea5",
+          "commandOrTest": "Verify system mood and documentation baseline",
+          "status": "PASSED",
+          "confidence": 1
+        }
+      ],
+      "verificationStatus": "VERIFIED",
+      "dissent": [],
+      "authorization": {
+        "requiresHumanApproval": false,
+        "isAuthorized": true,
+        "authorizedByDid": "did:omega:kernel:auto",
+        "authorizedAt": "2026-10-08T14:23:14.269Z"
+      },
+      "action": {
+        "actionId": "action-2a43b607",
+        "status": "FAILED",
+        "targetService": "read_only_intent_record",
+        "payload": {
+          "commandId": "cmd_89ae7cf4-bd40-4061-8ff7-04360ea55ea5"
+        },
+        "isDestructive": false,
+        "isFinancial": false,
+        "gasLimit": 1000,
+        "reversibility": "REVERSIBLE"
+      },
+      "consequence": {
+        "consequenceId": "consequence-d787ae24",
+        "actionId": "action-2a43b607",
+        "observedStatus": "FAILURE",
+        "realizedEffects": {
+          "commandId": "cmd_89ae7cf4-bd40-4061-8ff7-04360ea55ea5",
+          "verdict": "DIVERGENT",
+          "discrepancies": [
+            "External observer reported failure: SNAPSHOT_CORRUPTED"
+          ],
+          "claimedStateHash": "6d67754bba1eab5956a72f7e2237c045a32eef485d976add33812a1aa02b5902",
+          "observedStateHash": "eaa6c0e067359cb9082ee887db1297fabcdfd85efa8497be9e45b0ecda566b1f"
+        },
+        "executionDurationMs": 120,
+        "verifiedValueGenerated": 0,
+        "observedAt": "2026-10-08T14:23:14.278Z"
+      },
+      "learning": {
+        "learningId": "learn-7310ec8e",
+        "successRateScore": 0,
+        "meanVerificationLatencyMs": 120,
+        "dissentResolutionRatio": 1,
+        "recompilationTriggered": true,
+        "proposedNextIntentPrompt": "Remediate failure in state state-368-aab46af3"
+      },
+      "settledAt": "2026-10-08T14:23:14.278Z"
+    },
+    {
+      "stateId": "state-369-62d5f235",
+      "stateIndex": 369,
+      "parentStateHash": "326c3df184cf731c401fbabefd498f39280acc0b3e6f3ee12ab448eca5f572a7",
+      "stateDeltaHash": "e0b06186bf9af151bae588cce14a992daeb8753fa57f3d8ec448ed50e60c5735",
+      "attestationSignature": "311d3a9b545d5cae78d47db8e57b5267a2962ec9ebcf58048fa62f66eff20701",
+      "createdAt": "2026-10-08T14:23:14.287Z",
+      "intent": {
+        "intentId": "intent-c6ec4d97",
+        "claim": "Inspect GitHub repository PR evidence and verify working tree",
+        "actors": [
+          "human:local-source"
+        ],
+        "inputs": {},
+        "expectedOutputs": {
+          "consequence": "Command cmd_7e3da9d8-216d-4505-bd87-0d740bb16480 executed across 2 workers. Transition target: read_only_intent_record."
+        },
+        "constraints": [
+          "CHARTER:TRUTH_WEAVER",
+          "ADMISSION:FAIL_CLOSED_AUTHORITY",
+          "EVIDENCE:RADICAL_HONESTY"
+        ],
+        "permissions": [
+          "worker-observer",
+          "worker-github-inspector"
+        ],
+        "dependencies": [
+          "PRESENCE_INPUT",
+          "LOCAL_ENV_OBSERVER"
+        ],
+        "maxRiskScore": 0.2,
+        "economicTarget": {
+          "targetValue": 1,
+          "resourceBudget": 1
+        }
+      },
+      "observation": {
+        "observationId": "obs-c44c524c",
+        "source": "omega:api-executor",
+        "observedAt": "2026-10-08T14:23:14.287Z",
+        "rawTelemetry": {
+          "commandId": "cmd_7e3da9d8-216d-4505-bd87-0d740bb16480",
+          "status": "EXECUTED"
+        },
+        "epistemicType": "FACT",
+        "confidence": 1
+      },
+      "evidence": [
+        {
+          "evidenceId": "ev-512764d1",
+          "claim": "Command cmd_7e3da9d8-216d-4505-bd87-0d740bb16480 executed",
+          "source": "omega:api-kernel",
+          "observationId": "obs-cmd_7e3da9d8-216d-4505-bd87-0d740bb16480",
+          "commandOrTest": "Inspect GitHub repository PR evidence and verify working tree",
+          "status": "PASSED",
+          "confidence": 1
+        }
+      ],
+      "verificationStatus": "VERIFIED",
+      "dissent": [],
+      "authorization": {
+        "requiresHumanApproval": false,
+        "isAuthorized": true,
+        "authorizedByDid": "did:omega:kernel:auto",
+        "authorizedAt": "2026-10-08T14:23:14.287Z"
+      },
+      "action": {
+        "actionId": "action-94f6f11f",
+        "status": "READY",
+        "targetService": "read_only_intent_record",
+        "payload": {
+          "commandId": "cmd_7e3da9d8-216d-4505-bd87-0d740bb16480"
+        },
+        "isDestructive": false,
+        "isFinancial": false,
+        "gasLimit": 1000,
+        "reversibility": "REVERSIBLE"
+      }
+    },
+    {
+      "stateId": "state-370-58f388d2",
+      "stateIndex": 370,
+      "parentStateHash": "e0b06186bf9af151bae588cce14a992daeb8753fa57f3d8ec448ed50e60c5735",
+      "stateDeltaHash": "f6efd6b12a41a5964b0dfb783b9a61fce7cadb3d20e1a9833f60e32962fe407f",
+      "attestationSignature": "0a3eddad373437ff85709c2928ddc7a929ea30161367a93059f6ac3518422f6c",
+      "createdAt": "2026-10-08T14:23:14.429Z",
+      "intent": {
+        "intentId": "intent-ce01d6cd",
+        "claim": "Check monorepo workspace package build readiness",
+        "actors": [
+          "human:local-source"
+        ],
+        "inputs": {},
+        "expectedOutputs": {
+          "consequence": "Command cmd_9036aece-5da6-4b6e-819b-5c31daa27608 executed across 1 workers. Transition target: read_only_intent_record."
+        },
+        "constraints": [
+          "CHARTER:TRUTH_WEAVER",
+          "ADMISSION:FAIL_CLOSED_AUTHORITY",
+          "EVIDENCE:RADICAL_HONESTY"
+        ],
+        "permissions": [
+          "worker-observer"
+        ],
+        "dependencies": [
+          "PRESENCE_INPUT",
+          "LOCAL_ENV_OBSERVER"
+        ],
+        "maxRiskScore": 0.2,
+        "economicTarget": {
+          "targetValue": 1,
+          "resourceBudget": 1
+        }
+      },
+      "observation": {
+        "observationId": "obs-67d77dac",
+        "source": "omega:api-executor",
+        "observedAt": "2026-10-08T14:23:14.429Z",
+        "rawTelemetry": {
+          "commandId": "cmd_9036aece-5da6-4b6e-819b-5c31daa27608",
+          "status": "EXECUTED"
+        },
+        "epistemicType": "FACT",
+        "confidence": 1
+      },
+      "evidence": [
+        {
+          "evidenceId": "ev-2928a536",
+          "claim": "Command cmd_9036aece-5da6-4b6e-819b-5c31daa27608 executed",
+          "source": "omega:api-kernel",
+          "observationId": "obs-cmd_9036aece-5da6-4b6e-819b-5c31daa27608",
+          "commandOrTest": "Check monorepo workspace package build readiness",
+          "status": "PASSED",
+          "confidence": 1
+        }
+      ],
+      "verificationStatus": "VERIFIED",
+      "dissent": [],
+      "authorization": {
+        "requiresHumanApproval": false,
+        "isAuthorized": true,
+        "authorizedByDid": "did:omega:kernel:auto",
+        "authorizedAt": "2026-10-08T14:23:14.429Z"
+      },
+      "action": {
+        "actionId": "action-609bf588",
+        "status": "READY",
+        "targetService": "read_only_intent_record",
+        "payload": {
+          "commandId": "cmd_9036aece-5da6-4b6e-819b-5c31daa27608"
+        },
+        "isDestructive": false,
+        "isFinancial": false,
+        "gasLimit": 1000,
+        "reversibility": "REVERSIBLE"
+      }
+    },
+    {
+      "stateId": "state-371-f9e5ccf1",
+      "stateIndex": 371,
+      "parentStateHash": "f6efd6b12a41a5964b0dfb783b9a61fce7cadb3d20e1a9833f60e32962fe407f",
+      "stateDeltaHash": "812ca9cc1fc2afb4836df6740a7231efc3643e079895ca09de50cb5a097bd1e3",
+      "attestationSignature": "d767c309c1a1b781cad74db80eda771d3a676043c878bd9f6fa5ef8598d64d77",
+      "createdAt": "2026-10-08T14:23:14.439Z",
+      "intent": {
+        "intentId": "intent-fd65093f",
+        "claim": "Audit planetary ledger and verify cryptographic integrity",
+        "actors": [
+          "human:local-source"
+        ],
+        "inputs": {},
+        "expectedOutputs": {
+          "consequence": "Command cmd_10f4a799-4925-4a2f-b2e0-b28720f6e12e executed across 2 workers. Transition target: read_only_intent_record."
+        },
+        "constraints": [
+          "CHARTER:TRUTH_WEAVER",
+          "ADMISSION:FAIL_CLOSED_AUTHORITY",
+          "EVIDENCE:RADICAL_HONESTY"
+        ],
+        "permissions": [
+          "worker-observer",
+          "worker-planner"
+        ],
+        "dependencies": [
+          "PRESENCE_INPUT",
+          "LOCAL_ENV_OBSERVER"
+        ],
+        "maxRiskScore": 0.2,
+        "economicTarget": {
+          "targetValue": 1,
+          "resourceBudget": 1
+        }
+      },
+      "observation": {
+        "observationId": "obs-ad92e817",
+        "source": "omega:api-executor",
+        "observedAt": "2026-10-08T14:23:14.439Z",
+        "rawTelemetry": {
+          "commandId": "cmd_10f4a799-4925-4a2f-b2e0-b28720f6e12e",
+          "status": "EXECUTED"
+        },
+        "epistemicType": "FACT",
+        "confidence": 1
+      },
+      "evidence": [
+        {
+          "evidenceId": "ev-94c6874f",
+          "claim": "Command cmd_10f4a799-4925-4a2f-b2e0-b28720f6e12e executed",
+          "source": "omega:api-kernel",
+          "observationId": "obs-cmd_10f4a799-4925-4a2f-b2e0-b28720f6e12e",
+          "commandOrTest": "Audit planetary ledger and verify cryptographic integrity",
+          "status": "PASSED",
+          "confidence": 1
+        }
+      ],
+      "verificationStatus": "VERIFIED",
+      "dissent": [],
+      "authorization": {
+        "requiresHumanApproval": false,
+        "isAuthorized": true,
+        "authorizedByDid": "did:omega:kernel:auto",
+        "authorizedAt": "2026-10-08T14:23:14.439Z"
+      },
+      "action": {
+        "actionId": "action-d7f73cc0",
+        "status": "FAILED",
+        "targetService": "read_only_intent_record",
+        "payload": {
+          "commandId": "cmd_10f4a799-4925-4a2f-b2e0-b28720f6e12e"
+        },
+        "isDestructive": false,
+        "isFinancial": false,
+        "gasLimit": 1000,
+        "reversibility": "REVERSIBLE"
+      },
+      "consequence": {
+        "consequenceId": "consequence-751a94e9",
+        "actionId": "action-d7f73cc0",
+        "observedStatus": "FAILURE",
+        "realizedEffects": {
+          "commandId": "cmd_10f4a799-4925-4a2f-b2e0-b28720f6e12e",
+          "verdict": "DIVERGENT",
+          "discrepancies": [
+            "Target mismatch: claimed \"read_only_intent_record\" but observed \"git_working_tree\"."
+          ],
+          "claimedStateHash": "05092d76288174d745d46a562078b4fe091a06636e6814dc0c1a30633355ef96",
+          "observedStateHash": "90b7c938d9eb2eee45464d445e78c3b5c16530183d778e8566a412e123994c10"
+        },
+        "executionDurationMs": 120,
+        "verifiedValueGenerated": 0,
+        "observedAt": "2026-10-08T14:23:14.537Z"
+      },
+      "learning": {
+        "learningId": "learn-e26eee53",
+        "successRateScore": 0,
+        "meanVerificationLatencyMs": 120,
+        "dissentResolutionRatio": 1,
+        "recompilationTriggered": true,
+        "proposedNextIntentPrompt": "Remediate failure in state state-371-f9e5ccf1"
+      },
+      "settledAt": "2026-10-08T14:23:14.537Z"
+    },
+    {
+      "stateId": "state-372-8d739684",
+      "stateIndex": 372,
+      "parentStateHash": "812ca9cc1fc2afb4836df6740a7231efc3643e079895ca09de50cb5a097bd1e3",
+      "stateDeltaHash": "ed89f58f7a276db4db8d1b3c9380c639c3e254b4e33a9cb75105dc7eaecdd694",
+      "attestationSignature": "49429cd7087cb180cb04f0d7b00e873f3b1d3dbce04aa693bd9852891d0fae22",
+      "createdAt": "2026-10-08T14:23:14.740Z",
+      "intent": {
+        "intentId": "intent-333042d4",
+        "claim": "Execute allowlisted test:fast suite",
+        "actors": [
+          "human:local-source"
+        ],
+        "inputs": {
+          "target": "test:fast"
+        },
+        "expectedOutputs": {
+          "consequence": "Command cmd_6241891a-6b9c-4b08-a2a9-3ac3f391ce18 executed across 1 workers. Transition target: local_build_test."
+        },
+        "constraints": [
+          "CHARTER:TRUTH_WEAVER",
+          "ADMISSION:FAIL_CLOSED_AUTHORITY",
+          "EVIDENCE:RADICAL_HONESTY"
+        ],
+        "permissions": [
+          "worker-tester"
+        ],
+        "dependencies": [
+          "PRESENCE_INPUT",
+          "LOCAL_ENV_OBSERVER"
+        ],
+        "maxRiskScore": 0.2,
+        "economicTarget": {
+          "targetValue": 1,
+          "resourceBudget": 1
+        }
+      },
+      "observation": {
+        "observationId": "obs-7c1b3f9c",
+        "source": "omega:api-executor",
+        "observedAt": "2026-10-08T14:23:14.740Z",
+        "rawTelemetry": {
+          "commandId": "cmd_6241891a-6b9c-4b08-a2a9-3ac3f391ce18",
+          "status": "EXECUTED"
+        },
+        "epistemicType": "FACT",
+        "confidence": 1
+      },
+      "evidence": [
+        {
+          "evidenceId": "ev-fd709b7c",
+          "claim": "Command cmd_6241891a-6b9c-4b08-a2a9-3ac3f391ce18 executed",
+          "source": "omega:api-kernel",
+          "observationId": "obs-cmd_6241891a-6b9c-4b08-a2a9-3ac3f391ce18",
+          "commandOrTest": "Execute allowlisted test:fast suite",
+          "status": "PASSED",
+          "confidence": 1
+        }
+      ],
+      "verificationStatus": "VERIFIED",
+      "dissent": [],
+      "authorization": {
+        "requiresHumanApproval": true,
+        "isAuthorized": false
+      },
+      "action": {
+        "actionId": "action-060b59cd",
+        "status": "PENDING",
+        "targetService": "local_build_test",
+        "payload": {
+          "commandId": "cmd_6241891a-6b9c-4b08-a2a9-3ac3f391ce18"
+        },
+        "isDestructive": false,
+        "isFinancial": false,
+        "gasLimit": 1000,
+        "reversibility": "IRREVERSIBLE"
+      }
+    },
+    {
+      "stateId": "state-373-c930b659",
+      "stateIndex": 373,
+      "parentStateHash": "ed89f58f7a276db4db8d1b3c9380c639c3e254b4e33a9cb75105dc7eaecdd694",
+      "stateDeltaHash": "1ea69d70faaa3dd1a99755a0219062e0f25e39b301bb6dbe1915c5e1a28bf5f2",
+      "attestationSignature": "cf775d2771e351d46812f7bcb1749d1d548d2b6caa90a53a5eb273ab14e40404",
+      "createdAt": "2026-10-08T14:23:14.754Z",
+      "intent": {
+        "intentId": "intent-f836e289",
+        "claim": "Execute dry run build",
+        "actors": [
+          "human:local-source"
+        ],
+        "inputs": {
+          "target": "build"
+        },
+        "expectedOutputs": {
+          "consequence": "Command cmd_159cbaed-9162-4ecc-8cf3-9563c680e447 executed across 1 workers. Transition target: local_build_test."
+        },
+        "constraints": [
+          "CHARTER:TRUTH_WEAVER",
+          "ADMISSION:FAIL_CLOSED_AUTHORITY",
+          "EVIDENCE:RADICAL_HONESTY"
+        ],
+        "permissions": [
+          "worker-tester"
+        ],
+        "dependencies": [
+          "PRESENCE_INPUT",
+          "LOCAL_ENV_OBSERVER"
+        ],
+        "maxRiskScore": 0.2,
+        "economicTarget": {
+          "targetValue": 1,
+          "resourceBudget": 1
+        }
+      },
+      "observation": {
+        "observationId": "obs-a2e2c77e",
+        "source": "omega:api-executor",
+        "observedAt": "2026-10-08T14:23:14.754Z",
+        "rawTelemetry": {
+          "commandId": "cmd_159cbaed-9162-4ecc-8cf3-9563c680e447",
+          "status": "EXECUTED"
+        },
+        "epistemicType": "FACT",
+        "confidence": 1
+      },
+      "evidence": [
+        {
+          "evidenceId": "ev-21d1ce8b",
+          "claim": "Command cmd_159cbaed-9162-4ecc-8cf3-9563c680e447 executed",
+          "source": "omega:api-kernel",
+          "observationId": "obs-cmd_159cbaed-9162-4ecc-8cf3-9563c680e447",
+          "commandOrTest": "Execute dry run build",
+          "status": "PASSED",
+          "confidence": 1
+        }
+      ],
+      "verificationStatus": "VERIFIED",
+      "dissent": [],
+      "authorization": {
+        "requiresHumanApproval": true,
+        "isAuthorized": false
+      },
+      "action": {
+        "actionId": "action-b3339f9d",
+        "status": "PENDING",
+        "targetService": "local_build_test",
+        "payload": {
+          "commandId": "cmd_159cbaed-9162-4ecc-8cf3-9563c680e447"
+        },
+        "isDestructive": false,
+        "isFinancial": false,
+        "gasLimit": 1000,
+        "reversibility": "IRREVERSIBLE"
+      }
+    },
+    {
+      "stateId": "state-374-400d3897",
+      "stateIndex": 374,
+      "parentStateHash": "1ea69d70faaa3dd1a99755a0219062e0f25e39b301bb6dbe1915c5e1a28bf5f2",
+      "stateDeltaHash": "17052d4d259a1d2f4eea8f502a53403304910330d7e6f9a4fad78fef5efdda20",
+      "attestationSignature": "074ace9d40d4e09af6c949ebf0615774e9d059d7923f0f44bf5a881a79ef1dfc",
+      "createdAt": "2026-10-08T14:23:14.774Z",
+      "intent": {
+        "intentId": "intent-9f7b589c",
+        "claim": "Execute verified reality settling command",
+        "actors": [
+          "human:local-source"
+        ],
+        "inputs": {},
+        "expectedOutputs": {
+          "consequence": "Command cmd_4cc219b4-664c-40fc-9b89-0662e43f06ec executed across 2 workers. Transition target: read_only_intent_record."
+        },
+        "constraints": [
+          "CHARTER:TRUTH_WEAVER",
+          "ADMISSION:FAIL_CLOSED_AUTHORITY",
+          "EVIDENCE:RADICAL_HONESTY"
+        ],
+        "permissions": [
+          "worker-observer",
+          "worker-planner"
+        ],
+        "dependencies": [
+          "PRESENCE_INPUT",
+          "LOCAL_ENV_OBSERVER"
+        ],
+        "maxRiskScore": 0.2,
+        "economicTarget": {
+          "targetValue": 1,
+          "resourceBudget": 1
+        }
+      },
+      "observation": {
+        "observationId": "obs-64c7c6b7",
+        "source": "omega:api-executor",
+        "observedAt": "2026-10-08T14:23:14.774Z",
+        "rawTelemetry": {
+          "commandId": "cmd_4cc219b4-664c-40fc-9b89-0662e43f06ec",
+          "status": "EXECUTED"
+        },
+        "epistemicType": "FACT",
+        "confidence": 1
+      },
+      "evidence": [
+        {
+          "evidenceId": "ev-a13e85a7",
+          "claim": "Command cmd_4cc219b4-664c-40fc-9b89-0662e43f06ec executed",
+          "source": "omega:api-kernel",
+          "observationId": "obs-cmd_4cc219b4-664c-40fc-9b89-0662e43f06ec",
+          "commandOrTest": "Execute verified reality settling command",
+          "status": "PASSED",
+          "confidence": 1
+        }
+      ],
+      "verificationStatus": "VERIFIED",
+      "dissent": [],
+      "authorization": {
+        "requiresHumanApproval": false,
+        "isAuthorized": true,
+        "authorizedByDid": "did:omega:kernel:auto",
+        "authorizedAt": "2026-10-08T14:23:14.774Z"
+      },
+      "action": {
+        "actionId": "action-4998892a",
+        "status": "EXECUTED",
+        "targetService": "read_only_intent_record",
+        "payload": {
+          "commandId": "cmd_4cc219b4-664c-40fc-9b89-0662e43f06ec"
+        },
+        "isDestructive": false,
+        "isFinancial": false,
+        "gasLimit": 1000,
+        "reversibility": "REVERSIBLE"
+      },
+      "consequence": {
+        "consequenceId": "consequence-ad948ea6",
+        "actionId": "action-4998892a",
+        "observedStatus": "SUCCESS",
+        "realizedEffects": {
+          "commandId": "cmd_4cc219b4-664c-40fc-9b89-0662e43f06ec",
+          "verdict": "VERIFIED",
+          "discrepancies": [],
+          "claimedStateHash": "6910dc513165c8a6c110a38683d270326ebefaae54bdd1c86a056ab59cbc27d9",
+          "observedStateHash": "04790c013e6ba069f00d1b39fd52a8e2df3e8342a21eaf72808966557073f3d2"
+        },
+        "executionDurationMs": 120,
+        "verifiedValueGenerated": 100,
+        "observedAt": "2026-10-08T14:23:14.776Z"
+      },
+      "learning": {
+        "learningId": "learn-9fad0ffe",
+        "successRateScore": 1,
+        "meanVerificationLatencyMs": 120,
+        "dissentResolutionRatio": 1,
+        "recompilationTriggered": false,
+        "proposedNextIntentPrompt": "Extend and optimize state state-374-400d3897"
+      },
+      "settledAt": "2026-10-08T14:23:14.776Z"
+    },
+    {
+      "stateId": "state-375-3272c918",
+      "stateIndex": 375,
+      "parentStateHash": "17052d4d259a1d2f4eea8f502a53403304910330d7e6f9a4fad78fef5efdda20",
+      "stateDeltaHash": "ba0beda986865fc6a16093c721c998ee35b2b8fd2e23d8a9909de15df85151cc",
+      "attestationSignature": "7fbedbcedf196628e5c518280821e2b23a91a0a96a8e43b7a6a5826390274ac8",
+      "createdAt": "2026-10-08T14:23:14.800Z",
+      "intent": {
+        "intentId": "intent-73b562ca",
+        "claim": "Inspect runtime coordination policy boundary",
+        "actors": [
+          "human:local-source"
+        ],
+        "inputs": {},
+        "expectedOutputs": {
+          "consequence": "Command cmd_6c2e4cf4-e291-42e3-955d-482e2d35014c executed across 1 workers. Transition target: read_only_intent_record."
+        },
+        "constraints": [
+          "CHARTER:TRUTH_WEAVER",
+          "ADMISSION:FAIL_CLOSED_AUTHORITY",
+          "EVIDENCE:RADICAL_HONESTY"
+        ],
+        "permissions": [
+          "worker-observer"
+        ],
+        "dependencies": [
+          "PRESENCE_INPUT",
+          "LOCAL_ENV_OBSERVER"
+        ],
+        "maxRiskScore": 0.2,
+        "economicTarget": {
+          "targetValue": 1,
+          "resourceBudget": 1
+        }
+      },
+      "observation": {
+        "observationId": "obs-a1d2bce5",
+        "source": "omega:api-executor",
+        "observedAt": "2026-10-08T14:23:14.800Z",
+        "rawTelemetry": {
+          "commandId": "cmd_6c2e4cf4-e291-42e3-955d-482e2d35014c",
+          "status": "EXECUTED"
+        },
+        "epistemicType": "FACT",
+        "confidence": 1
+      },
+      "evidence": [
+        {
+          "evidenceId": "ev-4b2440c6",
+          "claim": "Command cmd_6c2e4cf4-e291-42e3-955d-482e2d35014c executed",
+          "source": "omega:api-kernel",
+          "observationId": "obs-cmd_6c2e4cf4-e291-42e3-955d-482e2d35014c",
+          "commandOrTest": "Inspect runtime coordination policy boundary",
+          "status": "PASSED",
+          "confidence": 1
+        }
+      ],
+      "verificationStatus": "VERIFIED",
+      "dissent": [],
+      "authorization": {
+        "requiresHumanApproval": false,
+        "isAuthorized": true,
+        "authorizedByDid": "did:omega:kernel:auto",
+        "authorizedAt": "2026-10-08T14:23:14.800Z"
+      },
+      "action": {
+        "actionId": "action-79ef1c14",
+        "status": "READY",
+        "targetService": "read_only_intent_record",
+        "payload": {
+          "commandId": "cmd_6c2e4cf4-e291-42e3-955d-482e2d35014c"
+        },
+        "isDestructive": false,
+        "isFinancial": false,
+        "gasLimit": 1000,
+        "reversibility": "REVERSIBLE"
+      }
+    },
+    {
+      "stateId": "state-376-01959e08",
+      "stateIndex": 376,
+      "parentStateHash": "ba0beda986865fc6a16093c721c998ee35b2b8fd2e23d8a9909de15df85151cc",
+      "stateDeltaHash": "1fbc5d8b226742dc27bcb779b16d2abad1642547f8585b726668386a1ba9d565",
+      "attestationSignature": "7dc7ad61022b898de14a3d2d2a0a9fca4483cb3cdd71d73345a8298499b00843",
+      "createdAt": "2026-10-08T14:24:42.315Z",
+      "intent": {
+        "intentId": "intent-df6aee26",
+        "claim": "Run read-only observation slice",
+        "actors": [
+          "operator:e2e-test"
+        ],
+        "inputs": {},
+        "expectedOutputs": {
+          "consequence": "Command cmd_6afd002e-bc39-4aeb-bcc5-8d3ab13250ca executed across 1 workers. Transition target: read_only_intent_record."
+        },
+        "constraints": [
+          "CHARTER:TRUTH_WEAVER",
+          "ADMISSION:FAIL_CLOSED_AUTHORITY",
+          "EVIDENCE:RADICAL_HONESTY"
+        ],
+        "permissions": [
+          "worker-observer"
+        ],
+        "dependencies": [
+          "PRESENCE_INPUT",
+          "LOCAL_ENV_OBSERVER"
+        ],
+        "maxRiskScore": 0.2,
+        "economicTarget": {
+          "targetValue": 1,
+          "resourceBudget": 1
+        }
+      },
+      "observation": {
+        "observationId": "obs-469f1ee9",
+        "source": "omega:api-executor",
+        "observedAt": "2026-10-08T14:24:42.315Z",
+        "rawTelemetry": {
+          "commandId": "cmd_6afd002e-bc39-4aeb-bcc5-8d3ab13250ca",
+          "status": "EXECUTED"
+        },
+        "epistemicType": "FACT",
+        "confidence": 1
+      },
+      "evidence": [
+        {
+          "evidenceId": "ev-c213ca10",
+          "claim": "Command cmd_6afd002e-bc39-4aeb-bcc5-8d3ab13250ca executed",
+          "source": "omega:e2e-runner",
+          "observationId": "obs-cmd_6afd002e-bc39-4aeb-bcc5-8d3ab13250ca",
+          "commandOrTest": "Run read-only observation slice",
+          "status": "PASSED",
+          "confidence": 1
+        }
+      ],
+      "verificationStatus": "VERIFIED",
+      "dissent": [],
+      "authorization": {
+        "requiresHumanApproval": false,
+        "isAuthorized": true,
+        "authorizedByDid": "did:omega:kernel:auto",
+        "authorizedAt": "2026-10-08T14:24:42.315Z"
+      },
+      "action": {
+        "actionId": "action-f62568ef",
+        "status": "READY",
+        "targetService": "read_only_intent_record",
+        "payload": {
+          "commandId": "cmd_6afd002e-bc39-4aeb-bcc5-8d3ab13250ca"
+        },
+        "isDestructive": false,
+        "isFinancial": false,
+        "gasLimit": 1000,
+        "reversibility": "REVERSIBLE"
+      }
+    },
+    {
+      "stateId": "state-377-36538a6f",
+      "stateIndex": 377,
+      "parentStateHash": "1fbc5d8b226742dc27bcb779b16d2abad1642547f8585b726668386a1ba9d565",
+      "stateDeltaHash": "9148a50c434bc149da3ced0d45a320b2458ac4f4c037d6d010f8ddd5342c5d80",
+      "attestationSignature": "ddf24c43c95df94efc25ac6e8e59b1c73ce659bb5009c871542517a1afd66daa",
+      "createdAt": "2026-10-08T14:24:42.317Z",
+      "intent": {
+        "intentId": "intent-1a0c0b89",
+        "claim": "Reconciliation test slice",
+        "actors": [
+          "operator:c6-tester"
+        ],
+        "inputs": {},
+        "expectedOutputs": {
+          "consequence": "Command cmd_69da77d0-754b-4918-b5b0-b27136ca4f37 executed across 1 workers. Transition target: read_only_intent_record."
+        },
+        "constraints": [
+          "CHARTER:TRUTH_WEAVER",
+          "ADMISSION:FAIL_CLOSED_AUTHORITY",
+          "EVIDENCE:RADICAL_HONESTY"
+        ],
+        "permissions": [
+          "worker-observer"
+        ],
+        "dependencies": [
+          "PRESENCE_INPUT",
+          "LOCAL_ENV_OBSERVER"
+        ],
+        "maxRiskScore": 0.2,
+        "economicTarget": {
+          "targetValue": 1,
+          "resourceBudget": 1
+        }
+      },
+      "observation": {
+        "observationId": "obs-678539fc",
+        "source": "omega:api-executor",
+        "observedAt": "2026-10-08T14:24:42.317Z",
+        "rawTelemetry": {
+          "commandId": "cmd_69da77d0-754b-4918-b5b0-b27136ca4f37",
+          "status": "EXECUTED"
+        },
+        "epistemicType": "FACT",
+        "confidence": 1
+      },
+      "evidence": [
+        {
+          "evidenceId": "ev-8926932d",
+          "claim": "Command cmd_69da77d0-754b-4918-b5b0-b27136ca4f37 executed",
+          "source": "omega:api-kernel",
+          "observationId": "obs-cmd_69da77d0-754b-4918-b5b0-b27136ca4f37",
+          "commandOrTest": "Reconciliation test slice",
+          "status": "PASSED",
+          "confidence": 1
+        }
+      ],
+      "verificationStatus": "VERIFIED",
+      "dissent": [],
+      "authorization": {
+        "requiresHumanApproval": false,
+        "isAuthorized": true,
+        "authorizedByDid": "did:omega:kernel:auto",
+        "authorizedAt": "2026-10-08T14:24:42.317Z"
+      },
+      "action": {
+        "actionId": "action-bb41e3d6",
+        "status": "EXECUTED",
+        "targetService": "read_only_intent_record",
+        "payload": {
+          "commandId": "cmd_69da77d0-754b-4918-b5b0-b27136ca4f37"
+        },
+        "isDestructive": false,
+        "isFinancial": false,
+        "gasLimit": 1000,
+        "reversibility": "REVERSIBLE"
+      },
+      "consequence": {
+        "consequenceId": "consequence-ad73eecb",
+        "actionId": "action-bb41e3d6",
+        "observedStatus": "SUCCESS",
+        "realizedEffects": {
+          "commandId": "cmd_69da77d0-754b-4918-b5b0-b27136ca4f37",
+          "verdict": "VERIFIED",
+          "discrepancies": [],
+          "claimedStateHash": "b7469ef996c3bc6284d19dafde2344d302472941e64381c8c79d5052214cc0a1",
+          "observedStateHash": "604e1ce03ee2f493a457af1ef230eb69b639b3a877809183d21bfbb1f4dd327d"
+        },
+        "executionDurationMs": 120,
+        "verifiedValueGenerated": 100,
+        "observedAt": "2026-10-08T14:24:42.324Z"
+      },
+      "learning": {
+        "learningId": "learn-60ef432e",
+        "successRateScore": 1,
+        "meanVerificationLatencyMs": 120,
+        "dissentResolutionRatio": 1,
+        "recompilationTriggered": false,
+        "proposedNextIntentPrompt": "Extend and optimize state state-377-36538a6f"
+      },
+      "settledAt": "2026-10-08T14:24:42.324Z"
+    },
+    {
+      "stateId": "state-378-b9a81ac3",
+      "stateIndex": 378,
+      "parentStateHash": "9148a50c434bc149da3ced0d45a320b2458ac4f4c037d6d010f8ddd5342c5d80",
+      "stateDeltaHash": "7d2e60507f5ad0023a55a830713646f09d560f59d7002e29b597f8c0b782d0a7",
+      "attestationSignature": "b074a65378cb72a0b44b9565eafadd45cd0d936cbf543bfc1b86fa8375c385ba",
+      "createdAt": "2026-10-08T14:24:42.333Z",
+      "intent": {
+        "intentId": "intent-5977a500",
+        "claim": "Divergence check slice",
+        "actors": [
+          "operator:c6-tester"
+        ],
+        "inputs": {},
+        "expectedOutputs": {
+          "consequence": "Command cmd_7de22b12-580b-4b4e-be30-9feeb6a925af executed across 1 workers. Transition target: read_only_intent_record."
+        },
+        "constraints": [
+          "CHARTER:TRUTH_WEAVER",
+          "ADMISSION:FAIL_CLOSED_AUTHORITY",
+          "EVIDENCE:RADICAL_HONESTY"
+        ],
+        "permissions": [
+          "worker-observer"
+        ],
+        "dependencies": [
+          "PRESENCE_INPUT",
+          "LOCAL_ENV_OBSERVER"
+        ],
+        "maxRiskScore": 0.2,
+        "economicTarget": {
+          "targetValue": 1,
+          "resourceBudget": 1
+        }
+      },
+      "observation": {
+        "observationId": "obs-ce945802",
+        "source": "omega:api-executor",
+        "observedAt": "2026-10-08T14:24:42.333Z",
+        "rawTelemetry": {
+          "commandId": "cmd_7de22b12-580b-4b4e-be30-9feeb6a925af",
+          "status": "EXECUTED"
+        },
+        "epistemicType": "FACT",
+        "confidence": 1
+      },
+      "evidence": [
+        {
+          "evidenceId": "ev-a803c17c",
+          "claim": "Command cmd_7de22b12-580b-4b4e-be30-9feeb6a925af executed",
+          "source": "omega:api-kernel",
+          "observationId": "obs-cmd_7de22b12-580b-4b4e-be30-9feeb6a925af",
+          "commandOrTest": "Divergence check slice",
+          "status": "PASSED",
+          "confidence": 1
+        }
+      ],
+      "verificationStatus": "VERIFIED",
+      "dissent": [],
+      "authorization": {
+        "requiresHumanApproval": false,
+        "isAuthorized": true,
+        "authorizedByDid": "did:omega:kernel:auto",
+        "authorizedAt": "2026-10-08T14:24:42.333Z"
+      },
+      "action": {
+        "actionId": "action-d1dcffda",
+        "status": "FAILED",
+        "targetService": "read_only_intent_record",
+        "payload": {
+          "commandId": "cmd_7de22b12-580b-4b4e-be30-9feeb6a925af"
+        },
+        "isDestructive": false,
+        "isFinancial": false,
+        "gasLimit": 1000,
+        "reversibility": "REVERSIBLE"
+      },
+      "consequence": {
+        "consequenceId": "consequence-39161209",
+        "actionId": "action-d1dcffda",
+        "observedStatus": "FAILURE",
+        "realizedEffects": {
+          "commandId": "cmd_7de22b12-580b-4b4e-be30-9feeb6a925af",
+          "verdict": "DIVERGENT",
+          "discrepancies": [
+            "Target mismatch: claimed \"read_only_intent_record\" but observed \"api_health\".",
+            "External observer reported failure: Connection refused on socket"
+          ],
+          "claimedStateHash": "af45c27a6f5d9d386cce2bb04e699703dcd7cc19336b33ed3f929432e223af0a",
+          "observedStateHash": "249cae490b3da2539714e0983bda536de74ba0bb29ad09b4c46813436d58a0a4"
+        },
+        "executionDurationMs": 120,
+        "verifiedValueGenerated": 0,
+        "observedAt": "2026-10-08T14:24:42.338Z"
+      },
+      "learning": {
+        "learningId": "learn-b76b2a7c",
+        "successRateScore": 0,
+        "meanVerificationLatencyMs": 120,
+        "dissentResolutionRatio": 1,
+        "recompilationTriggered": true,
+        "proposedNextIntentPrompt": "Remediate failure in state state-378-b9a81ac3"
+      },
+      "settledAt": "2026-10-08T14:24:42.338Z"
+    },
+    {
+      "stateId": "state-379-2ce14fcd",
+      "stateIndex": 379,
+      "parentStateHash": "7d2e60507f5ad0023a55a830713646f09d560f59d7002e29b597f8c0b782d0a7",
+      "stateDeltaHash": "36b7f95d87505bf99cb7cfb67d38710b7953943b906d90ce918f348270217d0b",
+      "attestationSignature": "1c8f7f165ca296fc64c638e4e971fb926ce4c3b211a2504fe4ed26b5a9154801",
+      "createdAt": "2026-10-08T23:36:42.835Z",
+      "intent": {
+        "intentId": "intent-f3265e99",
+        "claim": "Execute allowlisted test suite",
+        "actors": [
+          "human:local-source"
+        ],
+        "inputs": {},
+        "expectedOutputs": {
+          "consequence": "Command cmd_70024d74-309e-46bc-8110-0b320c06e75c executed across 2 workers. Transition target: local_build_test."
+        },
+        "constraints": [
+          "CHARTER:TRUTH_WEAVER",
+          "ADMISSION:FAIL_CLOSED_AUTHORITY",
+          "EVIDENCE:RADICAL_HONESTY"
+        ],
+        "permissions": [
+          "worker-observer",
+          "worker-tester"
+        ],
+        "dependencies": [
+          "PRESENCE_INPUT",
+          "LOCAL_ENV_OBSERVER"
+        ],
+        "maxRiskScore": 0.2,
+        "economicTarget": {
+          "targetValue": 1,
+          "resourceBudget": 1
+        }
+      },
+      "observation": {
+        "observationId": "obs-5ba6e8b3",
+        "source": "omega:api-executor",
+        "observedAt": "2026-10-08T23:36:42.833Z",
+        "rawTelemetry": {
+          "commandId": "cmd_70024d74-309e-46bc-8110-0b320c06e75c",
+          "status": "EXECUTED"
+        },
+        "epistemicType": "FACT",
+        "confidence": 1
+      },
+      "evidence": [
+        {
+          "evidenceId": "ev-c952f7dd",
+          "claim": "Command cmd_70024d74-309e-46bc-8110-0b320c06e75c executed",
+          "source": "omega:api-kernel",
+          "observationId": "obs-cmd_70024d74-309e-46bc-8110-0b320c06e75c",
+          "commandOrTest": "Execute allowlisted test suite",
+          "status": "PASSED",
+          "confidence": 1
+        }
+      ],
+      "verificationStatus": "VERIFIED",
+      "dissent": [],
+      "authorization": {
+        "requiresHumanApproval": true,
+        "isAuthorized": false
+      },
+      "action": {
+        "actionId": "action-6c33a2a8",
+        "status": "EXECUTED",
+        "targetService": "local_build_test",
+        "payload": {
+          "commandId": "cmd_70024d74-309e-46bc-8110-0b320c06e75c"
+        },
+        "isDestructive": false,
+        "isFinancial": false,
+        "gasLimit": 1000,
+        "reversibility": "IRREVERSIBLE"
+      },
+      "consequence": {
+        "consequenceId": "consequence-8c8cc24c",
+        "actionId": "action-6c33a2a8",
+        "observedStatus": "SUCCESS",
+        "realizedEffects": {
+          "commandId": "cmd_70024d74-309e-46bc-8110-0b320c06e75c",
+          "verdict": "VERIFIED",
+          "discrepancies": [],
+          "claimedStateHash": "58227ea4617b3bb08bdafcb4f74880f5d42caaefbe6110a084cc5ef29feda365",
+          "observedStateHash": "413d8a13dcdcf9a0b1df385aab41191de40fb53572ce66100afc1b2b8f68b077"
+        },
+        "executionDurationMs": 120,
+        "verifiedValueGenerated": 100,
+        "observedAt": "2026-10-08T23:36:42.852Z"
+      },
+      "learning": {
+        "learningId": "learn-ee169b03",
+        "successRateScore": 1,
+        "meanVerificationLatencyMs": 120,
+        "dissentResolutionRatio": 1,
+        "recompilationTriggered": false,
+        "proposedNextIntentPrompt": "Extend and optimize state state-379-2ce14fcd"
+      },
+      "settledAt": "2026-10-08T23:36:42.852Z"
+    },
+    {
+      "stateId": "state-380-58e749ac",
+      "stateIndex": 380,
+      "parentStateHash": "36b7f95d87505bf99cb7cfb67d38710b7953943b906d90ce918f348270217d0b",
+      "stateDeltaHash": "8de6430df37b408172ca1e26ef81ca75d65e216bcf209e7c57333a04e50767b3",
+      "attestationSignature": "29d75e94ff61ceedad205d0f94df422a5aae84750b5072cb3c70ef0d8d5e3f73",
+      "createdAt": "2026-10-08T23:36:42.883Z",
+      "intent": {
+        "intentId": "intent-1c26e21d",
+        "claim": "Verify system mood and documentation baseline",
+        "actors": [
+          "human:local-source"
+        ],
+        "inputs": {},
+        "expectedOutputs": {
+          "consequence": "Command cmd_af4c7e60-454d-41c9-9bd1-7a4d63b12d18 executed across 1 workers. Transition target: read_only_intent_record."
+        },
+        "constraints": [
+          "CHARTER:TRUTH_WEAVER",
+          "ADMISSION:FAIL_CLOSED_AUTHORITY",
+          "EVIDENCE:RADICAL_HONESTY"
+        ],
+        "permissions": [
+          "worker-observer"
+        ],
+        "dependencies": [
+          "PRESENCE_INPUT",
+          "LOCAL_ENV_OBSERVER"
+        ],
+        "maxRiskScore": 0.2,
+        "economicTarget": {
+          "targetValue": 1,
+          "resourceBudget": 1
+        }
+      },
+      "observation": {
+        "observationId": "obs-415694c6",
+        "source": "omega:api-executor",
+        "observedAt": "2026-10-08T23:36:42.882Z",
+        "rawTelemetry": {
+          "commandId": "cmd_af4c7e60-454d-41c9-9bd1-7a4d63b12d18",
+          "status": "EXECUTED"
+        },
+        "epistemicType": "FACT",
+        "confidence": 1
+      },
+      "evidence": [
+        {
+          "evidenceId": "ev-4112b318",
+          "claim": "Command cmd_af4c7e60-454d-41c9-9bd1-7a4d63b12d18 executed",
+          "source": "omega:api-kernel",
+          "observationId": "obs-cmd_af4c7e60-454d-41c9-9bd1-7a4d63b12d18",
+          "commandOrTest": "Verify system mood and documentation baseline",
+          "status": "PASSED",
+          "confidence": 1
+        }
+      ],
+      "verificationStatus": "VERIFIED",
+      "dissent": [],
+      "authorization": {
+        "requiresHumanApproval": false,
+        "isAuthorized": true,
+        "authorizedByDid": "did:omega:kernel:auto",
+        "authorizedAt": "2026-10-08T23:36:42.882Z"
+      },
+      "action": {
+        "actionId": "action-fb6a20ef",
+        "status": "FAILED",
+        "targetService": "read_only_intent_record",
+        "payload": {
+          "commandId": "cmd_af4c7e60-454d-41c9-9bd1-7a4d63b12d18"
+        },
+        "isDestructive": false,
+        "isFinancial": false,
+        "gasLimit": 1000,
+        "reversibility": "REVERSIBLE"
+      },
+      "consequence": {
+        "consequenceId": "consequence-3c6ba8d5",
+        "actionId": "action-fb6a20ef",
+        "observedStatus": "FAILURE",
+        "realizedEffects": {
+          "commandId": "cmd_af4c7e60-454d-41c9-9bd1-7a4d63b12d18",
+          "verdict": "DIVERGENT",
+          "discrepancies": [
+            "External observer reported failure: SNAPSHOT_CORRUPTED"
+          ],
+          "claimedStateHash": "2421eca3df7628e60e9e3b297d1425b7b4a0eee9e4156efd63d0574399b4d898",
+          "observedStateHash": "eaa6c0e067359cb9082ee887db1297fabcdfd85efa8497be9e45b0ecda566b1f"
+        },
+        "executionDurationMs": 120,
+        "verifiedValueGenerated": 0,
+        "observedAt": "2026-10-08T23:36:42.906Z"
+      },
+      "learning": {
+        "learningId": "learn-d764f9fe",
+        "successRateScore": 0,
+        "meanVerificationLatencyMs": 120,
+        "dissentResolutionRatio": 1,
+        "recompilationTriggered": true,
+        "proposedNextIntentPrompt": "Remediate failure in state state-380-58e749ac"
+      },
+      "settledAt": "2026-10-08T23:36:42.906Z"
+    },
+    {
+      "stateId": "state-381-08f72533",
+      "stateIndex": 381,
+      "parentStateHash": "8de6430df37b408172ca1e26ef81ca75d65e216bcf209e7c57333a04e50767b3",
+      "stateDeltaHash": "c7bb7b0c963db0605341d9f9c723c25cebf8dc84743feb2f69f80be9f9c5cdbf",
+      "attestationSignature": "7ae4c8e13d7599e0b1cbfc44017b62b95eb484c6bca635e204693f6b7f712356",
+      "createdAt": "2026-10-08T23:36:42.936Z",
+      "intent": {
+        "intentId": "intent-35dc1338",
+        "claim": "Inspect GitHub repository PR evidence and verify working tree",
+        "actors": [
+          "human:local-source"
+        ],
+        "inputs": {},
+        "expectedOutputs": {
+          "consequence": "Command cmd_4acb308a-3895-492d-b073-5cfe44a4c046 executed across 2 workers. Transition target: read_only_intent_record."
+        },
+        "constraints": [
+          "CHARTER:TRUTH_WEAVER",
+          "ADMISSION:FAIL_CLOSED_AUTHORITY",
+          "EVIDENCE:RADICAL_HONESTY"
+        ],
+        "permissions": [
+          "worker-observer",
+          "worker-github-inspector"
+        ],
+        "dependencies": [
+          "PRESENCE_INPUT",
+          "LOCAL_ENV_OBSERVER"
+        ],
+        "maxRiskScore": 0.2,
+        "economicTarget": {
+          "targetValue": 1,
+          "resourceBudget": 1
+        }
+      },
+      "observation": {
+        "observationId": "obs-20ef0952",
+        "source": "omega:api-executor",
+        "observedAt": "2026-10-08T23:36:42.936Z",
+        "rawTelemetry": {
+          "commandId": "cmd_4acb308a-3895-492d-b073-5cfe44a4c046",
+          "status": "EXECUTED"
+        },
+        "epistemicType": "FACT",
+        "confidence": 1
+      },
+      "evidence": [
+        {
+          "evidenceId": "ev-3eafdd7b",
+          "claim": "Command cmd_4acb308a-3895-492d-b073-5cfe44a4c046 executed",
+          "source": "omega:api-kernel",
+          "observationId": "obs-cmd_4acb308a-3895-492d-b073-5cfe44a4c046",
+          "commandOrTest": "Inspect GitHub repository PR evidence and verify working tree",
+          "status": "PASSED",
+          "confidence": 1
+        }
+      ],
+      "verificationStatus": "VERIFIED",
+      "dissent": [],
+      "authorization": {
+        "requiresHumanApproval": false,
+        "isAuthorized": true,
+        "authorizedByDid": "did:omega:kernel:auto",
+        "authorizedAt": "2026-10-08T23:36:42.936Z"
+      },
+      "action": {
+        "actionId": "action-0d2139f1",
+        "status": "READY",
+        "targetService": "read_only_intent_record",
+        "payload": {
+          "commandId": "cmd_4acb308a-3895-492d-b073-5cfe44a4c046"
+        },
+        "isDestructive": false,
+        "isFinancial": false,
+        "gasLimit": 1000,
+        "reversibility": "REVERSIBLE"
+      }
+    },
+    {
+      "stateId": "state-382-b78ad2a1",
+      "stateIndex": 382,
+      "parentStateHash": "c7bb7b0c963db0605341d9f9c723c25cebf8dc84743feb2f69f80be9f9c5cdbf",
+      "stateDeltaHash": "2f6f0d47a16f850c05bb9785d05a50affb015b9d66339d84c3f7fa4195da459c",
+      "attestationSignature": "c902412d7165a3c78505ec86890cb3b625265b5cbaf7f25f995cc09be03aa84e",
+      "createdAt": "2026-10-08T23:36:43.282Z",
+      "intent": {
+        "intentId": "intent-337e08fd",
+        "claim": "Check monorepo workspace package build readiness",
+        "actors": [
+          "human:local-source"
+        ],
+        "inputs": {},
+        "expectedOutputs": {
+          "consequence": "Command cmd_130ef5de-209c-44c4-8a23-a823449b1d17 executed across 1 workers. Transition target: read_only_intent_record."
+        },
+        "constraints": [
+          "CHARTER:TRUTH_WEAVER",
+          "ADMISSION:FAIL_CLOSED_AUTHORITY",
+          "EVIDENCE:RADICAL_HONESTY"
+        ],
+        "permissions": [
+          "worker-observer"
+        ],
+        "dependencies": [
+          "PRESENCE_INPUT",
+          "LOCAL_ENV_OBSERVER"
+        ],
+        "maxRiskScore": 0.2,
+        "economicTarget": {
+          "targetValue": 1,
+          "resourceBudget": 1
+        }
+      },
+      "observation": {
+        "observationId": "obs-85dd3ff5",
+        "source": "omega:api-executor",
+        "observedAt": "2026-10-08T23:36:43.281Z",
+        "rawTelemetry": {
+          "commandId": "cmd_130ef5de-209c-44c4-8a23-a823449b1d17",
+          "status": "EXECUTED"
+        },
+        "epistemicType": "FACT",
+        "confidence": 1
+      },
+      "evidence": [
+        {
+          "evidenceId": "ev-4b0e7cd7",
+          "claim": "Command cmd_130ef5de-209c-44c4-8a23-a823449b1d17 executed",
+          "source": "omega:api-kernel",
+          "observationId": "obs-cmd_130ef5de-209c-44c4-8a23-a823449b1d17",
+          "commandOrTest": "Check monorepo workspace package build readiness",
+          "status": "PASSED",
+          "confidence": 1
+        }
+      ],
+      "verificationStatus": "VERIFIED",
+      "dissent": [],
+      "authorization": {
+        "requiresHumanApproval": false,
+        "isAuthorized": true,
+        "authorizedByDid": "did:omega:kernel:auto",
+        "authorizedAt": "2026-10-08T23:36:43.281Z"
+      },
+      "action": {
+        "actionId": "action-d2877eca",
+        "status": "READY",
+        "targetService": "read_only_intent_record",
+        "payload": {
+          "commandId": "cmd_130ef5de-209c-44c4-8a23-a823449b1d17"
+        },
+        "isDestructive": false,
+        "isFinancial": false,
+        "gasLimit": 1000,
+        "reversibility": "REVERSIBLE"
+      }
+    },
+    {
+      "stateId": "state-383-57e7eb93",
+      "stateIndex": 383,
+      "parentStateHash": "2f6f0d47a16f850c05bb9785d05a50affb015b9d66339d84c3f7fa4195da459c",
+      "stateDeltaHash": "43300489c9b85f0c3462c44b6ef10a43c2fd9320d63d1144229e509efb8bfa10",
+      "attestationSignature": "d9c69bcedf43cfc800e3ba3b33d49b6c27a5cebdff78757c195e41de005163cf",
+      "createdAt": "2026-10-08T23:36:43.348Z",
+      "intent": {
+        "intentId": "intent-1a62523d",
+        "claim": "Audit planetary ledger and verify cryptographic integrity",
+        "actors": [
+          "human:local-source"
+        ],
+        "inputs": {},
+        "expectedOutputs": {
+          "consequence": "Command cmd_1b2981ce-bb97-47f5-8084-653de4e68bf0 executed across 2 workers. Transition target: read_only_intent_record."
+        },
+        "constraints": [
+          "CHARTER:TRUTH_WEAVER",
+          "ADMISSION:FAIL_CLOSED_AUTHORITY",
+          "EVIDENCE:RADICAL_HONESTY"
+        ],
+        "permissions": [
+          "worker-observer",
+          "worker-planner"
+        ],
+        "dependencies": [
+          "PRESENCE_INPUT",
+          "LOCAL_ENV_OBSERVER"
+        ],
+        "maxRiskScore": 0.2,
+        "economicTarget": {
+          "targetValue": 1,
+          "resourceBudget": 1
+        }
+      },
+      "observation": {
+        "observationId": "obs-4ec80445",
+        "source": "omega:api-executor",
+        "observedAt": "2026-10-08T23:36:43.348Z",
+        "rawTelemetry": {
+          "commandId": "cmd_1b2981ce-bb97-47f5-8084-653de4e68bf0",
+          "status": "EXECUTED"
+        },
+        "epistemicType": "FACT",
+        "confidence": 1
+      },
+      "evidence": [
+        {
+          "evidenceId": "ev-c0ed9ec6",
+          "claim": "Command cmd_1b2981ce-bb97-47f5-8084-653de4e68bf0 executed",
+          "source": "omega:api-kernel",
+          "observationId": "obs-cmd_1b2981ce-bb97-47f5-8084-653de4e68bf0",
+          "commandOrTest": "Audit planetary ledger and verify cryptographic integrity",
+          "status": "PASSED",
+          "confidence": 1
+        }
+      ],
+      "verificationStatus": "VERIFIED",
+      "dissent": [],
+      "authorization": {
+        "requiresHumanApproval": false,
+        "isAuthorized": true,
+        "authorizedByDid": "did:omega:kernel:auto",
+        "authorizedAt": "2026-10-08T23:36:43.348Z"
+      },
+      "action": {
+        "actionId": "action-f885e2f4",
+        "status": "FAILED",
+        "targetService": "read_only_intent_record",
+        "payload": {
+          "commandId": "cmd_1b2981ce-bb97-47f5-8084-653de4e68bf0"
+        },
+        "isDestructive": false,
+        "isFinancial": false,
+        "gasLimit": 1000,
+        "reversibility": "REVERSIBLE"
+      },
+      "consequence": {
+        "consequenceId": "consequence-62aae747",
+        "actionId": "action-f885e2f4",
+        "observedStatus": "FAILURE",
+        "realizedEffects": {
+          "commandId": "cmd_1b2981ce-bb97-47f5-8084-653de4e68bf0",
+          "verdict": "DIVERGENT",
+          "discrepancies": [
+            "Target mismatch: claimed \"read_only_intent_record\" but observed \"git_working_tree\"."
+          ],
+          "claimedStateHash": "44dc99d22a19552d7c5bb3d867a61e5d05a3e6b7147963eb02396e82bc91036a",
+          "observedStateHash": "90b7c938d9eb2eee45464d445e78c3b5c16530183d778e8566a412e123994c10"
+        },
+        "executionDurationMs": 120,
+        "verifiedValueGenerated": 0,
+        "observedAt": "2026-10-08T23:36:43.720Z"
+      },
+      "learning": {
+        "learningId": "learn-f04c2bea",
+        "successRateScore": 0,
+        "meanVerificationLatencyMs": 120,
+        "dissentResolutionRatio": 1,
+        "recompilationTriggered": true,
+        "proposedNextIntentPrompt": "Remediate failure in state state-383-57e7eb93"
+      },
+      "settledAt": "2026-10-08T23:36:43.720Z"
+    },
+    {
+      "stateId": "state-384-c08935f4",
+      "stateIndex": 384,
+      "parentStateHash": "43300489c9b85f0c3462c44b6ef10a43c2fd9320d63d1144229e509efb8bfa10",
+      "stateDeltaHash": "1e39f82881bbfb89a5e211e6c36130cb52910fd085cb76f7a35e13151223b6b5",
+      "attestationSignature": "e31009b9a89c7cfb1383db63ea14d1e49a7158e7342bbd72f410ee8db2508a87",
+      "createdAt": "2026-10-08T23:36:46.563Z",
+      "intent": {
+        "intentId": "intent-cebd06dc",
+        "claim": "Execute allowlisted test:fast suite",
+        "actors": [
+          "human:local-source"
+        ],
+        "inputs": {
+          "target": "test:fast"
+        },
+        "expectedOutputs": {
+          "consequence": "Command cmd_37b26853-78b2-4778-b25b-5ddd4bbf98f9 executed across 1 workers. Transition target: local_build_test."
+        },
+        "constraints": [
+          "CHARTER:TRUTH_WEAVER",
+          "ADMISSION:FAIL_CLOSED_AUTHORITY",
+          "EVIDENCE:RADICAL_HONESTY"
+        ],
+        "permissions": [
+          "worker-tester"
+        ],
+        "dependencies": [
+          "PRESENCE_INPUT",
+          "LOCAL_ENV_OBSERVER"
+        ],
+        "maxRiskScore": 0.2,
+        "economicTarget": {
+          "targetValue": 1,
+          "resourceBudget": 1
+        }
+      },
+      "observation": {
+        "observationId": "obs-f3a07c38",
+        "source": "omega:api-executor",
+        "observedAt": "2026-10-08T23:36:46.563Z",
+        "rawTelemetry": {
+          "commandId": "cmd_37b26853-78b2-4778-b25b-5ddd4bbf98f9",
+          "status": "EXECUTED"
+        },
+        "epistemicType": "FACT",
+        "confidence": 1
+      },
+      "evidence": [
+        {
+          "evidenceId": "ev-f947ee58",
+          "claim": "Command cmd_37b26853-78b2-4778-b25b-5ddd4bbf98f9 executed",
+          "source": "omega:api-kernel",
+          "observationId": "obs-cmd_37b26853-78b2-4778-b25b-5ddd4bbf98f9",
+          "commandOrTest": "Execute allowlisted test:fast suite",
+          "status": "PASSED",
+          "confidence": 1
+        }
+      ],
+      "verificationStatus": "VERIFIED",
+      "dissent": [],
+      "authorization": {
+        "requiresHumanApproval": true,
+        "isAuthorized": false
+      },
+      "action": {
+        "actionId": "action-17c95682",
+        "status": "PENDING",
+        "targetService": "local_build_test",
+        "payload": {
+          "commandId": "cmd_37b26853-78b2-4778-b25b-5ddd4bbf98f9"
+        },
+        "isDestructive": false,
+        "isFinancial": false,
+        "gasLimit": 1000,
+        "reversibility": "IRREVERSIBLE"
+      }
+    },
+    {
+      "stateId": "state-385-af768080",
+      "stateIndex": 385,
+      "parentStateHash": "1e39f82881bbfb89a5e211e6c36130cb52910fd085cb76f7a35e13151223b6b5",
+      "stateDeltaHash": "eaf5233e31ff9d41be83cf185d843a61638b9a7ca3d1b8f091127ebf4b5185bb",
+      "attestationSignature": "f58e769afd693b3cd16165ed25f6888d5d31fc8daaa7e01062b8e6373bf15c0c",
+      "createdAt": "2026-10-08T23:36:46.758Z",
+      "intent": {
+        "intentId": "intent-25be82c5",
+        "claim": "Execute dry run build",
+        "actors": [
+          "human:local-source"
+        ],
+        "inputs": {
+          "target": "build"
+        },
+        "expectedOutputs": {
+          "consequence": "Command cmd_778d75df-a8c6-459c-8bf3-cf679bcb195c executed across 1 workers. Transition target: local_build_test."
+        },
+        "constraints": [
+          "CHARTER:TRUTH_WEAVER",
+          "ADMISSION:FAIL_CLOSED_AUTHORITY",
+          "EVIDENCE:RADICAL_HONESTY"
+        ],
+        "permissions": [
+          "worker-tester"
+        ],
+        "dependencies": [
+          "PRESENCE_INPUT",
+          "LOCAL_ENV_OBSERVER"
+        ],
+        "maxRiskScore": 0.2,
+        "economicTarget": {
+          "targetValue": 1,
+          "resourceBudget": 1
+        }
+      },
+      "observation": {
+        "observationId": "obs-8eafde17",
+        "source": "omega:api-executor",
+        "observedAt": "2026-10-08T23:36:46.752Z",
+        "rawTelemetry": {
+          "commandId": "cmd_778d75df-a8c6-459c-8bf3-cf679bcb195c",
+          "status": "EXECUTED"
+        },
+        "epistemicType": "FACT",
+        "confidence": 1
+      },
+      "evidence": [
+        {
+          "evidenceId": "ev-2a9517b2",
+          "claim": "Command cmd_778d75df-a8c6-459c-8bf3-cf679bcb195c executed",
+          "source": "omega:api-kernel",
+          "observationId": "obs-cmd_778d75df-a8c6-459c-8bf3-cf679bcb195c",
+          "commandOrTest": "Execute dry run build",
+          "status": "PASSED",
+          "confidence": 1
+        }
+      ],
+      "verificationStatus": "VERIFIED",
+      "dissent": [],
+      "authorization": {
+        "requiresHumanApproval": true,
+        "isAuthorized": false
+      },
+      "action": {
+        "actionId": "action-b9e25118",
+        "status": "PENDING",
+        "targetService": "local_build_test",
+        "payload": {
+          "commandId": "cmd_778d75df-a8c6-459c-8bf3-cf679bcb195c"
+        },
+        "isDestructive": false,
+        "isFinancial": false,
+        "gasLimit": 1000,
+        "reversibility": "IRREVERSIBLE"
+      }
+    },
+    {
+      "stateId": "state-386-ededdd28",
+      "stateIndex": 386,
+      "parentStateHash": "eaf5233e31ff9d41be83cf185d843a61638b9a7ca3d1b8f091127ebf4b5185bb",
+      "stateDeltaHash": "6e36b7cf53ad4219f5251fa4704b4069eccae559e1bb74b7058daf692bebe412",
+      "attestationSignature": "2fd334808917ccf8f5d2f9069fa2fc803064cae53dcb90c8b36fec2ffaf2f863",
+      "createdAt": "2026-10-08T23:36:47.042Z",
+      "intent": {
+        "intentId": "intent-a71715c3",
+        "claim": "Execute verified reality settling command",
+        "actors": [
+          "human:local-source"
+        ],
+        "inputs": {},
+        "expectedOutputs": {
+          "consequence": "Command cmd_82a680ea-591c-49a4-bd2f-064329f7288b executed across 2 workers. Transition target: read_only_intent_record."
+        },
+        "constraints": [
+          "CHARTER:TRUTH_WEAVER",
+          "ADMISSION:FAIL_CLOSED_AUTHORITY",
+          "EVIDENCE:RADICAL_HONESTY"
+        ],
+        "permissions": [
+          "worker-observer",
+          "worker-planner"
+        ],
+        "dependencies": [
+          "PRESENCE_INPUT",
+          "LOCAL_ENV_OBSERVER"
+        ],
+        "maxRiskScore": 0.2,
+        "economicTarget": {
+          "targetValue": 1,
+          "resourceBudget": 1
+        }
+      },
+      "observation": {
+        "observationId": "obs-6fa9f9f4",
+        "source": "omega:api-executor",
+        "observedAt": "2026-10-08T23:36:47.042Z",
+        "rawTelemetry": {
+          "commandId": "cmd_82a680ea-591c-49a4-bd2f-064329f7288b",
+          "status": "EXECUTED"
+        },
+        "epistemicType": "FACT",
+        "confidence": 1
+      },
+      "evidence": [
+        {
+          "evidenceId": "ev-7dd397c7",
+          "claim": "Command cmd_82a680ea-591c-49a4-bd2f-064329f7288b executed",
+          "source": "omega:api-kernel",
+          "observationId": "obs-cmd_82a680ea-591c-49a4-bd2f-064329f7288b",
+          "commandOrTest": "Execute verified reality settling command",
+          "status": "PASSED",
+          "confidence": 1
+        }
+      ],
+      "verificationStatus": "VERIFIED",
+      "dissent": [],
+      "authorization": {
+        "requiresHumanApproval": false,
+        "isAuthorized": true,
+        "authorizedByDid": "did:omega:kernel:auto",
+        "authorizedAt": "2026-10-08T23:36:47.042Z"
+      },
+      "action": {
+        "actionId": "action-4520389b",
+        "status": "EXECUTED",
+        "targetService": "read_only_intent_record",
+        "payload": {
+          "commandId": "cmd_82a680ea-591c-49a4-bd2f-064329f7288b"
+        },
+        "isDestructive": false,
+        "isFinancial": false,
+        "gasLimit": 1000,
+        "reversibility": "REVERSIBLE"
+      },
+      "consequence": {
+        "consequenceId": "consequence-a66818c0",
+        "actionId": "action-4520389b",
+        "observedStatus": "SUCCESS",
+        "realizedEffects": {
+          "commandId": "cmd_82a680ea-591c-49a4-bd2f-064329f7288b",
+          "verdict": "VERIFIED",
+          "discrepancies": [],
+          "claimedStateHash": "daedc3c204d4a82635989c82c63b07cb6831271dd1b8eb9c4007eb82f09106d9",
+          "observedStateHash": "04790c013e6ba069f00d1b39fd52a8e2df3e8342a21eaf72808966557073f3d2"
+        },
+        "executionDurationMs": 120,
+        "verifiedValueGenerated": 100,
+        "observedAt": "2026-10-08T23:36:47.083Z"
+      },
+      "learning": {
+        "learningId": "learn-d111b0b2",
+        "successRateScore": 1,
+        "meanVerificationLatencyMs": 120,
+        "dissentResolutionRatio": 1,
+        "recompilationTriggered": false,
+        "proposedNextIntentPrompt": "Extend and optimize state state-386-ededdd28"
+      },
+      "settledAt": "2026-10-08T23:36:47.083Z"
+    },
+    {
+      "stateId": "state-387-f6664cb6",
+      "stateIndex": 387,
+      "parentStateHash": "6e36b7cf53ad4219f5251fa4704b4069eccae559e1bb74b7058daf692bebe412",
+      "stateDeltaHash": "55717d3211dde444960d7510581aac231f3b2e6214690b2e7e46e31dace9d436",
+      "attestationSignature": "13bf904ee028ca2afd40097599d0d7fd39a462ac93f38c61e991758b6f6fa5c6",
+      "createdAt": "2026-10-08T23:36:47.373Z",
+      "intent": {
+        "intentId": "intent-7af45e0e",
+        "claim": "Inspect runtime coordination policy boundary",
+        "actors": [
+          "human:local-source"
+        ],
+        "inputs": {},
+        "expectedOutputs": {
+          "consequence": "Command cmd_946a2bf8-0689-4e2a-9b2e-f15db2554bd5 executed across 1 workers. Transition target: read_only_intent_record."
+        },
+        "constraints": [
+          "CHARTER:TRUTH_WEAVER",
+          "ADMISSION:FAIL_CLOSED_AUTHORITY",
+          "EVIDENCE:RADICAL_HONESTY"
+        ],
+        "permissions": [
+          "worker-observer"
+        ],
+        "dependencies": [
+          "PRESENCE_INPUT",
+          "LOCAL_ENV_OBSERVER"
+        ],
+        "maxRiskScore": 0.2,
+        "economicTarget": {
+          "targetValue": 1,
+          "resourceBudget": 1
+        }
+      },
+      "observation": {
+        "observationId": "obs-aa1f2162",
+        "source": "omega:api-executor",
+        "observedAt": "2026-10-08T23:36:47.372Z",
+        "rawTelemetry": {
+          "commandId": "cmd_946a2bf8-0689-4e2a-9b2e-f15db2554bd5",
+          "status": "EXECUTED"
+        },
+        "epistemicType": "FACT",
+        "confidence": 1
+      },
+      "evidence": [
+        {
+          "evidenceId": "ev-bbfde0fd",
+          "claim": "Command cmd_946a2bf8-0689-4e2a-9b2e-f15db2554bd5 executed",
+          "source": "omega:api-kernel",
+          "observationId": "obs-cmd_946a2bf8-0689-4e2a-9b2e-f15db2554bd5",
+          "commandOrTest": "Inspect runtime coordination policy boundary",
+          "status": "PASSED",
+          "confidence": 1
+        }
+      ],
+      "verificationStatus": "VERIFIED",
+      "dissent": [],
+      "authorization": {
+        "requiresHumanApproval": false,
+        "isAuthorized": true,
+        "authorizedByDid": "did:omega:kernel:auto",
+        "authorizedAt": "2026-10-08T23:36:47.372Z"
+      },
+      "action": {
+        "actionId": "action-58a69bf4",
+        "status": "READY",
+        "targetService": "read_only_intent_record",
+        "payload": {
+          "commandId": "cmd_946a2bf8-0689-4e2a-9b2e-f15db2554bd5"
+        },
+        "isDestructive": false,
+        "isFinancial": false,
+        "gasLimit": 1000,
+        "reversibility": "REVERSIBLE"
+      }
     }
   ],
-  "serializedAt": "2026-10-08T14:20:29.473Z"
+  "serializedAt": "2026-10-08T23:36:47.689Z"
 }
