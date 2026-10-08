@@ -42,6 +42,8 @@ Check each touched boundary independently. A neighboring component, documentatio
 
 Composio or any connector is unavailable until inspected and successfully probed. Capability does not imply authority.
 
+For the current attachment-to-checkout comparison, see [Whole Ecosystem Reality Compression](../../../docs/upgrades/WHOLE_ECOSYSTEM_REALITY_COMPRESSION_2026-10-04.md). It is a source-labeled reconciliation record, not a deployment or production attestation.
+
 ## Full-stack status rule
 
 A local build or green test supports only the tested local scope. It does not prove deployment, production health, gateway security, backups, restoration, external key custody, customer adoption, payment, or social impact.

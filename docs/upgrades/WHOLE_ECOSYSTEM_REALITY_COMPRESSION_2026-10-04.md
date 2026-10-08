@@ -46,6 +46,28 @@ NOTION INTENT / CONTEXT / MEMORY
 | GitHub implementation/provenance | current branch, source, tests, CI workflows | `OBSERVED` locally; hosted/runtime effects remain `UNKNOWN` |
 | Runtime reality | local tests and optional local smoke paths | `UNKNOWN` for production health unless separately observed |
 
+## Compressed matrix reconciliation
+
+The supplied matrix names a more specific implementation anatomy. The following
+claims are reconciled against the current checkout rather than accepted from the
+matrix by declaration:
+
+| Matrix claim | Current evidence | Status |
+|---|---|---|
+| `omega-ir.v1` change language | `packages/types/src/omega-ir.ts`, compiler, validator, and integration tests | `OBSERVED` |
+| `packages/mini` as bounded spine | admission, change, observation, execution, and max-compression tests | `SUPPORTED` |
+| `packages/observer`, `packages/verification`, `packages/remember` | workspace packages and integration imports | `OBSERVED` |
+| `packages/attestation` | workspace package and attestation tests/docs | `OBSERVED` |
+| `packages/executor` | no workspace package found under `packages/` | `DIVERGENT` |
+| `OmegaReceipt v1` exact named ledger contract | no exact named contract found in the inspected source/docs | `UNKNOWN` |
+| Composio or all external channels always connected | no current connector observation supplied | `UNKNOWN` |
+| `InnerHeaven` runtime surface | no matching repository/runtime surface found | `UNKNOWN` |
+| “system armed” / “continuity verified” | supplied declaration only | `NOT_EXECUTED` |
+
+The matrix's fail-closed and state-isolation principles align with the repository
+contracts. Alignment is design evidence, not proof that every named organ is
+implemented, connected, deployed, or healthy.
+
 ## Non-collapse laws
 
 ```text
