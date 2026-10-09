@@ -13,6 +13,7 @@ Welcome to the Ω∞v Oceanicos documentation. Start here to understand the proj
 - **[Contributing](../CONTRIBUTING.md)** — How to submit PRs and work within our verification-first culture
 - **[Master Ecosystem Prompt](./WHOLE-ECOSYSTEM-MASTER-PROMPT.md)** — Root verified reality continuum and one living body architecture
 - **[Human Root: Elion Varel / Prophet Seed](./HUMAN_ROOT_ELION_VAREL.md)** — First-class meaning-field, spiritual root, and living vision artifact
+- **[Living Ecosystem Prompt](./LIVING_ECOSYSTEM_PROMPT.md)** — Living system prompt, meaning-field, and five-fold daily rhythm
 
 ### Development
 

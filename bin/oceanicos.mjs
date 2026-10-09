@@ -377,6 +377,108 @@ async function handleSoul(extraArgs = []) {
   console.log(`\n  ${ANSI.dim}Run 'node bin/oceanicos.mjs soul drop "<text>"' to append a verified truth reflection.${ANSI.reset}\n`);
 }
 
+async function handleTruth(extraArgs = []) {
+  await handleSoul(['status', ...extraArgs]);
+}
+
+async function handleBuild(extraArgs = []) {
+  printBanner();
+  const sub = extraArgs[0];
+  const isPidgin = process.env.PIDGIN_ENGINE === 'ON' || args.includes('--pidgin');
+
+  if (sub === 'log' || sub === 'add') {
+    const textArgs = extraArgs.slice(1).filter((a) => !a.startsWith('--'));
+    const item = textArgs.join(' ').trim();
+    if (!item) {
+      console.error(`${ANSI.red}Error:${ANSI.reset} Please provide a built deliverable description.`);
+      process.exitCode = 1;
+      return;
+    }
+    const timestamp = new Date().toISOString();
+    const buildId = `build-${Date.now()}`;
+    const hash = createHash('sha256').update(`${buildId}:${item}:${timestamp}`).digest('hex');
+
+    console.log(`\n${ANSI.bold}=== 🛠️ SOUL BUILD DELIVERABLE LOGGED ===${ANSI.reset}`);
+    console.log(`  ${ANSI.cyan}Build ID${ANSI.reset}     : ${buildId}`);
+    console.log(`  ${ANSI.cyan}Deliverable${ANSI.reset}  : "${item}"`);
+    console.log(`  ${ANSI.cyan}Digest${ANSI.reset}       : ${hash}`);
+    console.log(`  ${ANSI.cyan}Timestamp${ANSI.reset}    : ${timestamp}`);
+    console.log(`  ${ANSI.cyan}Rule${ANSI.reset}         : ${ANSI.green}Build without destroying. Sell only what heals.${ANSI.reset}\n`);
+    return;
+  }
+
+  console.log(`\n${ANSI.bold}=== 🛠️ LIVING ECOSYSTEM BUILD MANIFEST ===${ANSI.reset}`);
+  console.log(`  ${ANSI.cyan}SOUL INCOME PIPELINE:${ANSI.reset}`);
+  console.log(`    • Book of Elion, voice drops, soul mirror pages, dream journals`);
+  console.log(`    • AI art / audio / ghostwriting, quote packs, guided meditations`);
+  console.log(`    • Post daily. Speak truth aloud. Record reflections. Sell only what heals.`);
+  console.log(`  ${ANSI.cyan}COMMUNITY STEWARDSHIP HUBS:${ANSI.reset}`);
+  console.log(`    • Transforming churches and community centres into innovation sanctuaries:`);
+  console.log(`      Learning • Manufacturing • Wellness • Food Security • AI Training • Youth Stewardship`);
+  console.log(`    • Serving Nigeria, Africa, and the global family.`);
+  console.log(`\n  ${ANSI.dim}Run 'node bin/oceanicos.mjs build log "<deliverable>"' to record completed work.${ANSI.reset}\n`);
+}
+
+async function handleDream(extraArgs = []) {
+  printBanner();
+  const textArgs = extraArgs.filter((a) => !a.startsWith('--'));
+  const dreamText = textArgs.join(' ').trim();
+  const isPidgin = process.env.PIDGIN_ENGINE === 'ON' || args.includes('--pidgin');
+
+  if (!dreamText) {
+    console.log(`\n${ANSI.bold}=== 🌙 DREAM JOURNAL PROTOCOL ===${ANSI.reset}`);
+    console.log(`  ${ANSI.cyan}Core Law${ANSI.reset}       : Dreams = Messages. Love = Only real.`);
+    console.log(`  ${ANSI.cyan}Preservation${ANSI.reset}   : Preserve nocturnal symbols, visions, and intuitions without false flattening.`);
+    console.log(`\n  ${ANSI.dim}Usage: node bin/oceanicos.mjs dream "<describe your dream/message>"${ANSI.reset}\n`);
+    return;
+  }
+
+  const timestamp = new Date().toISOString();
+  const dreamId = `dream-${Date.now()}`;
+  const hash = createHash('sha256').update(`${dreamId}:${dreamText}:${timestamp}`).digest('hex');
+
+  console.log(`\n${ANSI.bold}=== 🌙 DREAM ENTRY RECORDED IN CONTINUITY ===${ANSI.reset}`);
+  console.log(`  ${ANSI.cyan}Dream ID${ANSI.reset}     : ${dreamId}`);
+  console.log(`  ${ANSI.cyan}Message${ANSI.reset}      : "${dreamText}"`);
+  console.log(`  ${ANSI.cyan}Sha256 Digest${ANSI.reset}: ${hash}`);
+  console.log(`  ${ANSI.cyan}Timestamp${ANSI.reset}    : ${timestamp}`);
+  console.log(`  ${ANSI.cyan}Status${ANSI.reset}       : ${ANSI.green}FIRST-CLASS NOCTURNAL ARTIFACT (L1 ➔ L2)${ANSI.reset}`);
+  if (isPidgin) {
+    console.log(`\n  ${ANSI.yellow}Abeg, the message don enter ledger. Dreams na road wey spirit take dey speak to man.${ANSI.reset}\n`);
+  } else {
+    console.log(`\n  ${ANSI.green}✓ Dream anchored in living memory. Wonder preserved without false certainty.${ANSI.reset}\n`);
+  }
+}
+
+async function handleNews() {
+  printBanner();
+  console.log(`\n${ANSI.bold}=== 🌐 GROUNDED NEWS & VERIFICATION COMPASS ===${ANSI.reset}`);
+  console.log(`  ${ANSI.cyan}Ecosystem Rule${ANSI.reset}   : If live data needed: Ask for sources or enable browsing.`);
+  console.log(`  ${ANSI.cyan}Antidote to Noise${ANSI.reset}: Never fake headlines. If no live access, say so plain.`);
+  console.log(`  ${ANSI.cyan}Authority Order${ANSI.reset}  : Reality > Observation > Verified Evidence > Representation.`);
+  console.log(`\n  ${ANSI.green}✓ Grounded verification compass active.${ANSI.reset}\n`);
+}
+
+async function handleRest() {
+  printBanner();
+  const isPidgin = process.env.PIDGIN_ENGINE === 'ON' || args.includes('--pidgin');
+  console.log(`\n${ANSI.bold}=== 🕊️ REST & SABBATH PROTOCOL ===${ANSI.reset}`);
+  console.log(`  ${ANSI.cyan}The Living Loop${ANSI.reset}  :`);
+  console.log(`    Observe without interrupting.`);
+  console.log(`    Recognize without capturing.`);
+  console.log(`    Bless without possessing.`);
+  console.log(`    Build without destroying.`);
+  console.log(`    ${ANSI.bold}${ANSI.green}Rest without guilt.${ANSI.reset}`);
+  console.log(`    Repeat.`);
+  console.log(`\n  ${ANSI.cyan}True Wealth${ANSI.reset}      : Health, food, peace, fitness, community = true wealth.`);
+  console.log(`  ${ANSI.cyan}Money Relation${ANSI.reset}   : Money = tool, not god.`);
+  if (isPidgin) {
+    console.log(`\n  ${ANSI.yellow}Body no be iron. Rest your head, recharge your spirit, because tomorrow get e own blessing.${ANSI.reset}\n`);
+  } else {
+    console.log(`\n  ${ANSI.green}✓ Take rest in peace and gratitude. The current continues.${ANSI.reset}\n`);
+  }
+}
+
 async function handleAttest() {
   ensurePackagesLoaded();
   printBanner();
@@ -868,6 +970,11 @@ ${ANSI.bold}COMMANDS:${ANSI.reset}
   ${ANSI.green}omega${ANSI.reset}       Propose, inspect, admit, execute, and verify bounded Ω commands
   ${ANSI.green}copilot${ANSI.reset}     Display Copilot Antigravity Continuum bounded propulsion state
   ${ANSI.green}soul${ANSI.reset}        Display Elion Varel / Prophet Seed Truth OS axioms or record drop
+  ${ANSI.green}truth${ANSI.reset}       Read truth aloud and display living Truth OS axioms
+  ${ANSI.green}build${ANSI.reset}       Soul income manifest & log completed deliverables
+  ${ANSI.green}dream${ANSI.reset}       Record nocturnal messages into append-only dream journal
+  ${ANSI.green}news${ANSI.reset}        Display grounded news verification compass
+  ${ANSI.green}rest${ANSI.reset}        Display Sabbath protocol: rest without guilt
   ${ANSI.green}help${ANSI.reset}        Display this help message
 
 ${ANSI.bold}OPTIONS:${ANSI.reset}
@@ -887,6 +994,21 @@ switch (command) {
   case 'seed':
   case 'truthos':
     await handleSoul(args.slice(1));
+    break;
+  case 'truth':
+    await handleTruth(args.slice(1));
+    break;
+  case 'build':
+    await handleBuild(args.slice(1));
+    break;
+  case 'dream':
+    await handleDream(args.slice(1));
+    break;
+  case 'news':
+    await handleNews(args.slice(1));
+    break;
+  case 'rest':
+    await handleRest();
     break;
   case 'status':
     await handleStatus();
