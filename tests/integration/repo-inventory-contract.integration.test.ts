@@ -65,6 +65,25 @@ test('inventory API-declared and workspace-only tables match current manifests',
   );
 });
 
+test('README Markdown images have alt text and local targets resolve to files', () => {
+  const images = Array.from(
+    read('README.md').matchAll(/!\[([^\]]*)\]\(([^)\s]+)\)/g),
+    (match) => ({ alt: match[1].trim(), destination: match[2] })
+  );
+  const localImages = images.filter(
+    ({ destination }) => !/^(?:[a-z][a-z\d+.-]*:|\/\/)/i.test(destination)
+  );
+
+  assert.ok(localImages.length > 0, 'README should include at least one local Markdown image');
+  for (const { alt, destination } of images) {
+    assert.ok(alt.length > 0, `README image must have alt text: ${destination}`);
+  }
+  for (const { destination } of localImages) {
+    const target = destination.replace(/^<|>$/g, '').split(/[?#]/, 1)[0].replace(/^\/+/, '');
+    assert.doesNotThrow(() => read(target), `README image target must exist: ${destination}`);
+  }
+});
+
 test('inventory summary counts and app membership match workspace declarations', () => {
   const workspaceMemberCount = packagePaths.length + appPaths.length;
   assert.ok(
