@@ -134,19 +134,29 @@ export class OceanicosRealityMatrix {
     }
 
     const receiptWasProvided = input.executionReceipt !== undefined;
-    const receiptIsWellFormed = this.validExecutionReceipt(input.executionReceipt);
-    const receiptIsTrusted = receiptIsWellFormed && this.isTrustedExecutionReceipt(input.executionReceipt);
-    const executionReceipt = receiptIsTrusted ? input.executionReceipt : undefined;
+    const receiptCandidate = input.executionReceipt;
+    const receiptIsWellFormed = this.validExecutionReceipt(receiptCandidate);
+    const receiptIsTrusted =
+      receiptIsWellFormed &&
+      receiptCandidate !== undefined &&
+      this.isTrustedExecutionReceipt(receiptCandidate);
+    const executionReceipt = receiptIsTrusted ? receiptCandidate : undefined;
 
     const observationWasProvided = input.observation !== undefined;
-    const observationIsWellFormed = this.validObservation(input.observation);
+    const observationCandidate = input.observation;
+    const observationIsWellFormed = this.validObservation(observationCandidate);
     const observationBindsToReceipt = Boolean(
       executionReceipt &&
+      observationCandidate &&
       observationIsWellFormed &&
-      input.observation.executionReceiptId === executionReceipt.id
+      observationCandidate.executionReceiptId === executionReceipt.id
     );
-    const observationIsTrusted = observationBindsToReceipt && this.isTrustedObservation(input.observation);
-    const observation = observationIsTrusted ? input.observation : undefined;
+    const observationIsTrusted = Boolean(
+      observationBindsToReceipt &&
+      observationCandidate &&
+      this.isTrustedObservation(observationCandidate)
+    );
+    const observation = observationIsTrusted ? observationCandidate : undefined;
 
     // Admission is not execution. Only a receipt accepted by the trusted adapter can confirm execution.
     const execution: OmegaExecution = executionReceipt ? 'EXECUTED' : 'UNCONFIRMED';
