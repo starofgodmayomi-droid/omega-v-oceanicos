@@ -19,6 +19,8 @@
 [![Verification Pipeline](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/actions/workflows/verify.yml/badge.svg)](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/actions/workflows/verify.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
+![A luminous emerald current crossing a deep ocean toward the horizon](docs/assets/oceanicos-readme-hero.jpg)
+
 > **Attest, don't assert. Evidence before trust. Verification before evolution.**
 
 OCEANICOS is evidence-bound infrastructure for turning human intent into bounded,
