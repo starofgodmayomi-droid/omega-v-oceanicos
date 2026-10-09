@@ -67,7 +67,7 @@ jobs:
       # Dependency security is part of the executable proof. Keep this after
       # the frozen install so CI audits exactly the lockfile it will build.
       - name: Audit dependencies
-        run: pnpm audit --ignore-unfixable
+        run: pnpm run audit
 
       - name: Check formatting
         run: pnpm format:check
@@ -251,6 +251,14 @@ jobs:
             "$api/v1/block/tip" | tee /tmp/tip.json
           grep -q '"status":"ONLINE"' /tmp/tip.json
 
+          curl -sf -H 'Authorization: Bearer ci-smoke-read-token' \
+            "$api/v1/ecosystem/body" | tee /tmp/ecosystem-body.json
+          grep -q '"bodyVersion":"omega.fullstack.body.v1"' /tmp/ecosystem-body.json
+          grep -q '"status":"VERIFIED"' /tmp/ecosystem-body.json
+          grep -q '"appendOnly":true' /tmp/ecosystem-body.json
+          grep -q '"readOnly":true' /tmp/ecosystem-body.json
+          grep -q '"bounded":true' /tmp/ecosystem-body.json
+
           if [ "$(curl -sS -o /tmp/cycle-read-token.json -w '%{http_code}' -X POST "$api/v1/cycle" \
             -H 'Content-Type: application/json' \
             -H 'Authorization: Bearer ci-smoke-read-token' \
@@ -318,7 +326,7 @@ jobs:
         run: |
           echo "### 📦 Artifact" >> $GITHUB_STEP_SUMMARY
           echo "\`omega-v-api:ci\` built, refused to start without a signing key," >> $GITHUB_STEP_SUMMARY
-          echo "then served /health and the authenticated /v1 API contract on port 5000." >> $GITHUB_STEP_SUMMARY
+          echo "then served /health, the authenticated /v1 API contract, and the unified ecosystem body on port 5000." >> $GITHUB_STEP_SUMMARY
           docker image inspect omega-v-api:ci --format 'Image size: {{.Size}} bytes' >> $GITHUB_STEP_SUMMARY
 
   compose:

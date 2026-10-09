@@ -28,7 +28,7 @@ Only `GET /health` is intended to be unauthenticated for a load balancer probe. 
 ## Release sequence
 
 1. Run `pnpm format:check`.
-2. Run `pnpm audit`.
+2. Run `pnpm run audit`.
 3. Run `pnpm verify:full` with no development server occupying the smoke port.
 4. Build the image or services with the production API origin.
 5. Start with the secret-managed environment and durable volume.
