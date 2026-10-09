@@ -1,7 +1,8 @@
 # Base44 Dev Environment — Ω∞v Oceanicos
 
 ## Stack
-- **pnpm monorepo** (Node 22, pnpm 10). Workspace packages in `packages/*`, apps in `apps/api` and `apps/web`.
+- **pnpm monorepo** (Node 22, pnpm 10). Workspace packages in `packages/*`; the API and web apps are in `apps/api` and `apps/web`.
+- **Mobile** (`apps/mobile`): standalone Expo / React Native app with its own `package-lock.json`; it is intentionally outside the root pnpm workspace.
 - **API** (`apps/api`): Fastify, CommonJS, port 5000. Depends on built workspace packages (`@oceanicos/*`, `@omega-v/kernel`).
 - **Web** (`apps/web`): Vite 6 + React 18, port 3000. No workspace package dependencies; Vite transpiles TSX on the fly.
 - **No external DB required.** Persistence is file-based SQLite (`node:sqlite` fallback when `better-sqlite3` isn't installed for the api package). Qdrant/Ollama are referenced in the original `docker-compose.yml` but are NOT used by the API code.
@@ -13,6 +14,7 @@ docker compose -f docker-compose.base44.yml up -d
 - `setup` (one-shot): `pnpm install --frozen-lockfile` + `pnpm --filter api... run build` (builds the API and its workspace dependency tree; skips web).
 - `api`: runs `tsc --watch` (rebuilds `apps/api/dist` on source change) + `node --watch apps/api/dist/index.js` (restarts on dist change). Live reload for API source edits.
 - `web`: `npx vite --host 0.0.0.0` from `apps/web`. Vite HMR for frontend edits.
+- **Mobile:** from `apps/mobile`, run `npm ci` then `npm run start`. Root `pnpm dev` and the Base44 Compose stack do not start Expo.
 
 ## Key config
 - **Node 22 required** — the `@omega-v/kernel` package is ESM (`"type": "module"`) and the API (CommonJS) uses `require()` of it, which only works in Node 22+.

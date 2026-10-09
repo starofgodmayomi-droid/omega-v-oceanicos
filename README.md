@@ -25,8 +25,9 @@
 
 OCEANICOS is evidence-bound infrastructure for turning human intent into bounded,
 observable, and auditable action. It brings together a verification kernel, API,
-web dashboard, CLI, SDKs, memory, attestation, workers, and operational contracts
-without treating any single component—or any agent—as the final authority.
+web dashboard and Expo mobile companion, CLI, SDKs, memory, attestation, workers,
+and operational contracts without treating any single component—or any agent—as
+the final authority.
 
 ## At a glance
 
@@ -120,7 +121,7 @@ present in the repository.
 ┌──────────────────────────────────────────────────────────────┐
 │ Human intent, governance, authorization, and decision records │
 ├──────────────────────────────────────────────────────────────┤
-│ Web dashboard · CLI · SDK · API · worker interfaces          │
+│ Web dashboard · mobile companion · CLI · SDK · API · workers │
 ├──────────────────────────────────────────────────────────────┤
 │ Attestation · provenance · observation · reconciliation       │
 ├──────────────────────────────────────────────────────────────┤
@@ -142,6 +143,7 @@ present in the repository.
 | Attestation | `packages/attestation` | Produce and verify supported cryptographic receipts |
 | API | `apps/api` | Fastify runtime and network contracts |
 | Web | `apps/web` | React/Vite dashboard and evidence visualization |
+| Mobile | `apps/mobile` | Expo companion for proposals, evidence, and local KAI reflection |
 | CLI and SDK | `packages/cli`, `packages/sdk` | Programmatic and terminal access |
 | Workers | `packages/worker` | Bounded leases, lifecycle, and fail-closed execution |
 | Tests | `tests/` | Integration, contract, runtime, and regression evidence |
@@ -208,6 +210,9 @@ The root development command builds the workspace and starts:
 
 - API: `http://localhost:5000`
 - Web dashboard: `http://localhost:3000`
+
+The Expo mobile companion is started separately from `apps/mobile` with `npm install`
+and `npm run start`; it is not started by root `pnpm dev`.
 
 The local dashboard is an inspection and verification surface. It is not proof of
 production availability, identity proofing, external custody, or deployment health.
@@ -302,6 +307,10 @@ security, governance, authority, or external-action behavior.
 - [Development guide](docs/DEVELOPMENT.md) — local workflows and repository conventions
 - [API guide](apps/api/README.md) — server routes and runtime contracts
 - [Web guide](apps/web/README.md) — dashboard behavior and local proxy usage
+- [Mobile guide](apps/mobile/README.md) — Expo app setup and its local-only KAI
+  reflection boundary
+- [Application index](apps/README.md) — how API, web, and mobile app surfaces fit
+  together
 - [Local Compose deployment](docs/LOCAL_COMPOSE_DEPLOYMENT.md) — bounded local stack validation
 - [Attestation envelope](docs/spec/ATTESTATION-ENVELOPE.md) — receipt and verification contract
 - [Repository inventory](docs/REPO_INVENTORY.md) — active workspace and evidence boundaries
