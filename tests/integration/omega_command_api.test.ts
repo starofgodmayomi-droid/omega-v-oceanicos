@@ -109,6 +109,32 @@ describe('Ω∞v command API vertical slice', () => {
       payload: { intent: 'protected command', requestedBy: 'integration-user', workers: ['planner'], idempotencyKey: 'required-auth-3' },
     });
     assert.equal(allowedWrite.statusCode, 201);
+
+    const deniedApproval = await requiredAuthApp.inject({
+      method: 'POST',
+      url: '/v1/omega/commands/omega-required-auth-3/approve',
+      payload: { operator: 'integration-operator' },
+    });
+    assert.equal(deniedApproval.statusCode, 401);
+    assert.equal(deniedApproval.json().error, 'ADMIN_ACCESS_REQUIRED');
+
+    const readCannotApprove = await requiredAuthApp.inject({
+      method: 'POST',
+      url: '/v1/omega/commands/omega-required-auth-3/approve',
+      headers: { authorization: `Bearer ${requiredReadToken}` },
+      payload: { operator: 'integration-operator' },
+    });
+    assert.equal(readCannotApprove.statusCode, 401);
+    assert.equal(readCannotApprove.json().error, 'ADMIN_ACCESS_REQUIRED');
+
+    const allowedApproval = await requiredAuthApp.inject({
+      method: 'POST',
+      url: '/v1/omega/commands/omega-required-auth-3/approve',
+      headers: { authorization: `Bearer ${requiredAdminToken}` },
+      payload: { operator: 'integration-operator' },
+    });
+    assert.equal(allowedApproval.statusCode, 200);
+    assert.equal(allowedApproval.json().command.status, 'AUTHORIZED');
   });
 
   it('requires explicit approval before executing a review-gated command', async () => {
@@ -120,6 +146,59 @@ describe('Ω∞v command API vertical slice', () => {
     assert.equal(approved.statusCode, 200);
     assert.equal(approved.json().command.status, 'AUTHORIZED');
     assert.equal(approved.json().command.change.authority, 'human:integration-operator');
+  });
+
+  it('allows explicit human approval of a proposed read-only command once', async () => {
+    const created = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/commands',
+      payload: {
+        intent: 'review a bounded repository observation',
+        requestedBy: 'integration-user',
+        workers: ['planner'],
+        idempotencyKey: 'proposed-approval-1',
+      },
+    });
+    assert.equal(created.statusCode, 201);
+    assert.equal(created.json().command.status, 'PROPOSED');
+
+    const oversizedOperator = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/commands/omega-proposed-approval-1/approve',
+      payload: { operator: 'o'.repeat(97) },
+    });
+    assert.equal(oversizedOperator.statusCode, 400);
+    assert.equal(oversizedOperator.json().error, 'INVALID_OMEGA_APPROVAL_INPUT');
+
+    const oversizedPolicy = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/commands/omega-proposed-approval-1/approve',
+      payload: { operator: 'integration-operator', policy: 'p'.repeat(257) },
+    });
+    assert.equal(oversizedPolicy.statusCode, 400);
+    assert.equal(oversizedPolicy.json().error, 'INVALID_OMEGA_APPROVAL_INPUT');
+
+    const unchanged = await app.inject({ method: 'GET', url: '/v1/omega/commands/omega-proposed-approval-1' });
+    assert.equal(unchanged.statusCode, 200);
+    assert.equal(unchanged.json().command.status, 'PROPOSED');
+
+    const approved = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/commands/omega-proposed-approval-1/approve',
+      payload: { operator: 'integration-operator', policy: 'human-review' },
+    });
+    assert.equal(approved.statusCode, 200);
+    assert.equal(approved.json().command.status, 'AUTHORIZED');
+    assert.equal(approved.json().command.change.authority, 'human:integration-operator');
+    assert.equal(approved.json().command.change.policy, 'human-review');
+
+    const repeatedApproval = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/commands/omega-proposed-approval-1/approve',
+      payload: { operator: 'integration-operator' },
+    });
+    assert.equal(repeatedApproval.statusCode, 409);
+    assert.equal(repeatedApproval.json().error, 'OMEGA_APPROVAL_REQUIRES_REVIEW');
   });
 
   it('executes only after approval and distinguishes verified reality', async () => {

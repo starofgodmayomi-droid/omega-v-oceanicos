@@ -99,6 +99,16 @@ export const parseCorsOrigins = (value: string | undefined, mode: AuthMode): str
 const bearer = (authorization?: string): string =>
   authorization?.startsWith('Bearer ') ? authorization.slice(7).trim() : '';
 
+export function operatorIdentityAllowed(
+  operatorId: string | undefined,
+  allowedOperators: readonly string[],
+  requireAllowlist = false,
+): boolean {
+  const candidate = operatorId?.trim();
+  if (allowedOperators.length === 0) return !requireAllowlist;
+  return Boolean(candidate && allowedOperators.includes(candidate));
+}
+
 const jsonError = (reply: any, status: number, error: string, extra: Record<string, unknown> = {}) =>
   reply.status(status).send({ success: false, error, ...extra });
 
@@ -198,6 +208,21 @@ export function createApp(
     if (authMode === 'local') return;
     if (bearer(request.headers.authorization) !== adminToken) return jsonError(reply, 401, 'ADMIN_ACCESS_REQUIRED');
   };
+  const enforceAdminOperatorIdentity = (request: any, reply: any): boolean => {
+    const allowedOperators = (process.env.OMEGA_ADMIN_OPERATOR_ALLOWLIST ?? '')
+      .split(',')
+      .map((operatorId) => operatorId.trim())
+      .filter(Boolean);
+    const requireAllowlist = process.env.OMEGA_ADMIN_REQUIRE_ALLOWLIST === 'on';
+    const rawOperatorId = request.headers['x-omega-operator-id'];
+    const operatorId = typeof rawOperatorId === 'string' ? rawOperatorId.trim() : undefined;
+    if (operatorIdentityAllowed(operatorId || undefined, allowedOperators, requireAllowlist)) {
+      request.omegaOperatorId = operatorId || undefined;
+      return true;
+    }
+    jsonError(reply, 403, 'ADMIN_OPERATOR_NOT_ALLOWED');
+    return false;
+  };
   const requireJobAccess = async (request: any, reply: any) => {
     const configured = process.env.OMEGA_LOCAL_JOB_LEDGER_TOKEN?.trim();
     if (!configured) return;
@@ -207,7 +232,7 @@ export function createApp(
   fastify.register(cors, { origin: corsOrigin });
   fastify.register(async (scope) => {
     await scope.register(rateLimit, { global: false });
-    registerOmegaRoutes(scope, omegaCommands);
+    registerOmegaRoutes(scope, omegaCommands, enforceAdminOperatorIdentity);
   });
   fastify.addHook('onRequest', async (request, reply) => {
     if (authMode === 'local' || request.method === 'OPTIONS' || request.url.split('?')[0] === '/health') return;
@@ -496,6 +521,7 @@ export function createApp(
   const persistenceStatus = () => ({ enabled: persistenceEnabled, snapshot, eventLog, rotationPending, operatorAction, recovery, deletion, custody, coordination });
   fastify.get('/persistence/status', { preHandler: requireReadAccess }, async () => ({ success: true, persistence: persistenceStatus() }));
   fastify.post('/persistence/acknowledge', { preHandler: requireAdminAccess }, async (request: any, reply) => {
+    if (!enforceAdminOperatorIdentity(request, reply)) return;
     if (operatorAction === 'none') return jsonError(reply, 409, 'PERSISTENCE_ACK_NOT_REQUIRED');
     const operatorId = String(request.headers['x-omega-operator-id'] ?? request.body?.operatorId ?? '').trim();
     const reason = typeof request.body?.reason === 'string' ? request.body.reason.trim() : '';
@@ -503,6 +529,7 @@ export function createApp(
     return { success: true, acknowledgement: { operatorId, reason, action: operatorAction, acknowledgedAt: new Date().toISOString(), requestId: randomUUID() } };
   });
   fastify.post('/persistence/reencrypt', { preHandler: requireAdminAccess }, async (request: any, reply) => {
+    if (!enforceAdminOperatorIdentity(request, reply)) return;
     if (!persistenceEnabled || !persistenceKey || !previousPersistenceKey) return jsonError(reply, 409, 'PERSISTENCE_REENCRYPTION_NOT_READY');
     const reason = typeof request.body?.reason === 'string' ? request.body.reason.trim() : '';
     if (reason.length < 8 || reason.length > 1000) return jsonError(reply, 400, 'INVALID_REENCRYPTION_REASON');
@@ -552,9 +579,10 @@ export function createApp(
     };
   });
   fastify.post('/attest/revoke', { preHandler: requireAdminAccess }, async (request: any, reply) => {
+    if (!enforceAdminOperatorIdentity(request, reply)) return;
     const attestationId = String(request.body?.attestationId ?? '').trim();
     const reason = String(request.body?.reason ?? '').trim();
-    const revokedBy = String(request.body?.revokedBy ?? request.headers['x-omega-operator-id'] ?? 'operator').trim();
+    const revokedBy = String(request.omegaOperatorId ?? request.headers['x-omega-operator-id'] ?? request.body?.revokedBy ?? 'operator').trim();
     if (!attestationId || !reason) return jsonError(reply, 400, 'INVALID_REVOCATION');
     currentRevocations();
     if (revocations.has(attestationId)) return jsonError(reply, 409, 'ATTESTATION_ALREADY_REVOKED');

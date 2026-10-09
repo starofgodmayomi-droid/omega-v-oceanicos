@@ -142,6 +142,23 @@ export function validateOmegaReconciliationInput(input: {
   }
 }
 
+export function validateOmegaApprovalInput(input: {
+  operator: unknown;
+  policy: unknown;
+}): asserts input is { operator: string; policy: string } {
+  if (typeof input.operator !== 'string' || !ID.test(input.operator)) {
+    throw new Error('operator must be a bounded identifier');
+  }
+  if (
+    typeof input.policy !== 'string' ||
+    input.policy.trim().length < 1 ||
+    input.policy.length > 256 ||
+    /[\u0000-\u001f\u007f]/.test(input.policy)
+  ) {
+    throw new Error('policy must be a non-empty string no longer than 256 characters');
+  }
+}
+
 export function isOmegaStatus(value: unknown): value is OmegaCommandStatus {
   return typeof value === 'string' && (OMEGA_COMMAND_STATUSES as readonly string[]).includes(value);
 }

@@ -18,6 +18,7 @@ import { WaterFlowPanel } from './WaterFlowPanel';
 import { LifecycleFlow, deriveStageStates, type LifecycleStage } from './LifecycleFlow';
 import { GlobeViewport } from './GlobeViewport';
 import { bindGlobeEvidence } from './globe-shell';
+import { omegaApprovalRequest } from './omega-approval-request';
 import {
   theme,
   statusColor,
@@ -320,11 +321,7 @@ export function App() {
     try {
       const data = await apiRequest<any>(
         `/v1/omega/commands/${omegaCommand.command.commandId}/approve`,
-        {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ operator: 'dashboard-operator' }),
-        }
+        omegaApprovalRequest()
       );
       setOmegaCommand(data);
     } catch (err: any) {
