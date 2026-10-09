@@ -33,8 +33,19 @@ export interface OmegaObservation {
   readonly recordedAt: string;
   /** Evidence reference for the observed result. */
   readonly evidenceId: string;
+  /** Receipt ID this observation directly reconciles. */
+  readonly executionReceiptId: string;
   /** Undefined means that observation exists but no comparison has been established. */
   readonly expectedMatchesActual?: boolean;
+}
+
+/**
+ * Trusted adapters must validate provenance/authenticity, not just field shape.
+ * Missing, false, or throwing verifiers fail closed.
+ */
+export interface OmegaEvidenceTrust {
+  verifyExecutionReceipt(receipt: OmegaExecutionReceipt): boolean;
+  verifyObservation(observation: OmegaObservation): boolean;
 }
 
 export interface OmegaCycleInput extends OmegaCoreState {
@@ -87,6 +98,8 @@ const SCALE: readonly OmegaScale[] = ['NEEDLE', 'PLANET'];
 export class OceanicosRealityMatrix {
   private readonly entries: LedgerEntry[] = [];
 
+  public constructor(private readonly evidenceTrust?: OmegaEvidenceTrust) {}
+
   /**
    * Evaluates admission and reconciles caller-supplied execution/observation evidence.
    * It deliberately does not execute external actions or invent receipts.
@@ -121,14 +134,21 @@ export class OceanicosRealityMatrix {
     }
 
     const receiptWasProvided = input.executionReceipt !== undefined;
-    const executionReceipt = this.validExecutionReceipt(input.executionReceipt)
-      ? input.executionReceipt
-      : undefined;
-    const observation = executionReceipt && this.validObservation(input.observation)
-      ? input.observation
-      : undefined;
+    const receiptIsWellFormed = this.validExecutionReceipt(input.executionReceipt);
+    const receiptIsTrusted = receiptIsWellFormed && this.isTrustedExecutionReceipt(input.executionReceipt);
+    const executionReceipt = receiptIsTrusted ? input.executionReceipt : undefined;
 
-    // Admission is not execution. Without a valid external receipt, execution is UNCONFIRMED.
+    const observationWasProvided = input.observation !== undefined;
+    const observationIsWellFormed = this.validObservation(input.observation);
+    const observationBindsToReceipt = Boolean(
+      executionReceipt &&
+      observationIsWellFormed &&
+      input.observation.executionReceiptId === executionReceipt.id
+    );
+    const observationIsTrusted = observationBindsToReceipt && this.isTrustedObservation(input.observation);
+    const observation = observationIsTrusted ? input.observation : undefined;
+
+    // Admission is not execution. Only a receipt accepted by the trusted adapter can confirm execution.
     const execution: OmegaExecution = executionReceipt ? 'EXECUTED' : 'UNCONFIRMED';
     const verification: OmegaVerification = !executionReceipt
       ? 'UNKNOWN'
@@ -140,9 +160,19 @@ export class OceanicosRealityMatrix {
 
     let reason: string | undefined;
     if (!executionReceipt) {
-      reason = receiptWasProvided ? 'INVALID_EXECUTION_RECEIPT' : 'NO_EXECUTION_RECEIPT';
+      reason = !receiptWasProvided
+        ? 'NO_EXECUTION_RECEIPT'
+        : !receiptIsWellFormed
+          ? 'INVALID_EXECUTION_RECEIPT'
+          : 'UNTRUSTED_EXECUTION_RECEIPT';
     } else if (!observation) {
-      reason = input.observation ? 'INVALID_OBSERVATION' : 'NO_OBSERVATION';
+      reason = !observationWasProvided
+        ? 'NO_OBSERVATION'
+        : !observationIsWellFormed
+          ? 'INVALID_OBSERVATION'
+          : !observationBindsToReceipt
+            ? 'OBSERVATION_RECEIPT_MISMATCH'
+            : 'UNTRUSTED_OBSERVATION';
     } else if (observation.expectedMatchesActual === undefined) {
       reason = 'OBSERVATION_HAS_NO_COMPARISON';
     }
@@ -225,18 +255,33 @@ export class OceanicosRealityMatrix {
     );
   }
 
-  private validObservation(
-    observation: OmegaObservation | undefined,
-  ): observation is OmegaObservation {
+  private validObservation(observation: OmegaObservation | undefined): observation is OmegaObservation {
     return Boolean(
       observation &&
       isNonEmpty(observation.id) &&
       isNonEmpty(observation.source) &&
       isTimestamp(observation.recordedAt) &&
       isNonEmpty(observation.evidenceId) &&
+      isNonEmpty(observation.executionReceiptId) &&
       (observation.expectedMatchesActual === undefined ||
         typeof observation.expectedMatchesActual === 'boolean'),
     );
+  }
+
+  private isTrustedExecutionReceipt(receipt: OmegaExecutionReceipt): boolean {
+    try {
+      return this.evidenceTrust?.verifyExecutionReceipt(receipt) === true;
+    } catch {
+      return false;
+    }
+  }
+
+  private isTrustedObservation(observation: OmegaObservation): boolean {
+    try {
+      return this.evidenceTrust?.verifyObservation(observation) === true;
+    } catch {
+      return false;
+    }
   }
 
   private stateOf(input: OmegaCoreState): OmegaCoreState {
