@@ -1,4 +1,6 @@
-import { OceanicosAuthEngine } from '../index';
+import assert from 'node:assert/strict';
+import { beforeEach, describe, it } from 'node:test';
+import { OceanicosAuthEngine } from '../index.ts';
 
 describe('@omega-v/auth — OceanicosAuthEngine', () => {
   let auth: OceanicosAuthEngine;
@@ -10,30 +12,31 @@ describe('@omega-v/auth — OceanicosAuthEngine', () => {
   describe('Identity Creation & Retrieval', () => {
     it('should bootstrap system root identities', () => {
       const root = auth.getIdentity('did:omega:system:root');
-      expect(root).toBeDefined();
-      expect(root?.type).toBe('SYSTEM');
-      expect(root?.capabilities).toContain('admin:all');
+      assert.ok(root);
+      assert.equal(root.type, 'SYSTEM');
+      assert.ok(root.capabilities.includes('admin:all'));
 
       const verifier = auth.getIdentity('did:omega:verifier:core');
-      expect(verifier).toBeDefined();
-      expect(verifier?.capabilities).toContain('verify:execute');
+      assert.ok(verifier);
+      assert.equal(verifier.type, 'VERIFIER');
+      assert.ok(verifier.capabilities.includes('verify:execute'));
     });
 
     it('should create a new agent identity with capabilities and verifiable public key', () => {
       const created = auth.createIdentity('AGENT', ['observe:write', 'verify:execute']);
 
-      expect(created.did).toMatch(/^did:omega:agent:/);
-      expect(created.secret).toBeDefined();
-      expect(created.document.type).toBe('AGENT');
-      expect(created.document.capabilities).toContain('observe:write');
-      expect(created.document.epoch).toBe(1);
-      expect(created.document.revoked).toBe(false);
+      assert.match(created.did, /^did:omega:agent:/);
+      assert.ok(created.secret);
+      assert.equal(created.document.type, 'AGENT');
+      assert.ok(created.document.capabilities.includes('observe:write'));
+      assert.equal(created.document.epoch, 1);
+      assert.equal(created.document.revoked, false);
     });
 
     it('should list all identities', () => {
       auth.createIdentity('HUMAN', ['governance:vote']);
       const all = auth.listIdentities();
-      expect(all.length).toBeGreaterThanOrEqual(4);
+      assert.ok(all.length >= 4);
     });
   });
 
@@ -42,19 +45,19 @@ describe('@omega-v/auth — OceanicosAuthEngine', () => {
       const { did, secret } = auth.createIdentity('AGENT', ['observe:write', 'verify:execute']);
 
       const token = auth.issueToken(did, secret, 60000);
-      expect(token).toMatch(/^Ω∞v-TOKEN-v1\./);
+      assert.match(token, /^Ω∞v-TOKEN-v1\./);
 
       const verification = auth.verifyToken(token, 'observe:write');
-      expect(verification.valid).toBe(true);
-      expect(verification.subject?.did).toBe(did);
-      expect(verification.payload?.sub).toBe(did);
+      assert.equal(verification.valid, true);
+      assert.equal(verification.subject?.did, did);
+      assert.equal(verification.payload?.sub, did);
     });
 
     it('should grant access to admin:all for any required capability', () => {
       const { did, secret } = auth.createIdentity('SYSTEM', ['admin:all']);
       const token = auth.issueToken(did, secret);
       const verification = auth.verifyToken(token, 'governance:vote');
-      expect(verification.valid).toBe(true);
+      assert.equal(verification.valid, true);
     });
 
     it('should reject token with insufficient capability', () => {
@@ -62,29 +65,29 @@ describe('@omega-v/auth — OceanicosAuthEngine', () => {
       const token = auth.issueToken(did, secret);
 
       const verification = auth.verifyToken(token, 'attest:sign');
-      expect(verification.valid).toBe(false);
-      expect(verification.error).toContain('Insufficient capabilities');
+      assert.equal(verification.valid, false);
+      assert.match(verification.error ?? '', /Insufficient capabilities/);
     });
 
     it('should reject token with invalid secret or tampered signature', () => {
       const { did } = auth.createIdentity('SERVICE', ['observe:write']);
-      expect(() => auth.issueToken(did, 'wrong-secret')).toThrow('Authentication Failed');
+      assert.throws(() => auth.issueToken(did, 'wrong-secret'), /Authentication Failed/);
 
       const { did: systemDid, secret } = auth.createIdentity('SYSTEM', ['admin:all']);
       const token = auth.issueToken(systemDid, secret);
       const tampered = `${token.slice(0, -5)}abcde`;
       const verification = auth.verifyToken(tampered);
-      expect(verification.valid).toBe(false);
-      expect(verification.error).toBe('Invalid token signature');
+      assert.equal(verification.valid, false);
+      assert.equal(verification.error, 'Invalid token signature');
     });
 
     it('should reject expired tokens', () => {
       const { did, secret } = auth.createIdentity('AGENT', ['observe:write']);
-      const expiredToken = auth.issueToken(did, secret, -1000); // expired 1s ago
+      const expiredToken = auth.issueToken(did, secret, -1000);
 
       const verification = auth.verifyToken(expiredToken);
-      expect(verification.valid).toBe(false);
-      expect(verification.error).toBe('Token expired');
+      assert.equal(verification.valid, false);
+      assert.equal(verification.error, 'Token expired');
     });
   });
 
@@ -93,31 +96,29 @@ describe('@omega-v/auth — OceanicosAuthEngine', () => {
       const { did, secret } = auth.createIdentity('SERVICE', ['observe:write']);
       const token = auth.issueToken(did, secret);
 
-      expect(auth.verifyToken(token).valid).toBe(true);
+      assert.equal(auth.verifyToken(token).valid, true);
 
       const revoked = auth.revokeIdentity(did);
-      expect(revoked).toBe(true);
+      assert.equal(revoked, true);
 
       const postRevocation = auth.verifyToken(token);
-      expect(postRevocation.valid).toBe(false);
-      expect(postRevocation.error).toBe('DID is revoked');
+      assert.equal(postRevocation.valid, false);
+      assert.equal(postRevocation.error, 'DID is revoked');
     });
 
     it('should rotate secret, increment epoch, and invalidate old secret', () => {
       const { did, secret: oldSecret } = auth.createIdentity('AGENT', ['observe:write']);
 
       const newSecret = auth.rotateSecret(did, oldSecret);
-      expect(newSecret).not.toBe(oldSecret);
+      assert.notEqual(newSecret, oldSecret);
 
       const doc = auth.getIdentity(did);
-      expect(doc?.epoch).toBe(2);
+      assert.equal(doc?.epoch, 2);
 
-      // Old secret should fail
-      expect(() => auth.issueToken(did, oldSecret)).toThrow('Authentication Failed');
+      assert.throws(() => auth.issueToken(did, oldSecret), /Authentication Failed/);
 
-      // New secret should succeed
       const token = auth.issueToken(did, newSecret);
-      expect(auth.verifyToken(token).valid).toBe(true);
+      assert.equal(auth.verifyToken(token).valid, true);
     });
   });
 });
