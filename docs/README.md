@@ -11,6 +11,8 @@ Welcome to the Ω∞v Oceanicos documentation. Start here to understand the proj
 - **[Charter](../CHARTER.md)** — Our living agnostic principles and decision-making philosophy
 - **[Manifest](../MANIFEST.md)** — Project mission, architecture, and verification loop
 - **[Contributing](../CONTRIBUTING.md)** — How to submit PRs and work within our verification-first culture
+- **[Master Ecosystem Prompt](./WHOLE-ECOSYSTEM-MASTER-PROMPT.md)** — Root verified reality continuum and one living body architecture
+- **[Human Root: Elion Varel / Prophet Seed](./HUMAN_ROOT_ELION_VAREL.md)** — First-class meaning-field, spiritual root, and living vision artifact
 
 ### Development
 
