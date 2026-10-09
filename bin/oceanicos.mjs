@@ -3,6 +3,7 @@
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import { createHash } from 'node:crypto';
 
 const require = createRequire(import.meta.url);
 const __filename = fileURLToPath(import.meta.url);
@@ -316,6 +317,64 @@ async function handleCopilot() {
   console.log(`  LEARNING     ➔ RECOMPILE\n`);
 
   console.log(`${ANSI.green}✓ Copilot Mood verified as a bounded operating mode inside Ω OS.${ANSI.reset}\n`);
+}
+
+async function handleSoul(extraArgs = []) {
+  printBanner();
+  const sub = extraArgs[0] || 'status';
+  const isPidgin = process.env.PIDGIN_ENGINE === 'ON' || args.includes('--pidgin');
+
+  if (sub === 'record' || sub === 'drop') {
+    const textArgs = extraArgs.slice(1).filter((a) => !a.startsWith('--'));
+    const text = textArgs.join(' ').trim();
+    if (!text) {
+      console.error(`${ANSI.red}Error:${ANSI.reset} Please provide a reflection text: node bin/oceanicos.mjs soul drop "<reflection text>"`);
+      process.exitCode = 1;
+      return;
+    }
+    const timestamp = new Date().toISOString();
+    const dropId = `soul-drop-${Date.now()}`;
+    const hash = createHash('sha256').update(`${dropId}:${text}:${timestamp}`).digest('hex');
+
+    console.log(`\n${ANSI.bold}=== 💧 TRUTH OS / SOUL DROP RECORDED ===${ANSI.reset}`);
+    console.log(`  ${ANSI.cyan}Drop ID${ANSI.reset}        : ${dropId}`);
+    console.log(`  ${ANSI.cyan}Author${ANSI.reset}         : starofgodmayomi / Elion Varel / Prophet Seed`);
+    console.log(`  ${ANSI.cyan}Reflection${ANSI.reset}     : "${text}"`);
+    console.log(`  ${ANSI.cyan}Sha256 Digest${ANSI.reset}  : ${hash}`);
+    console.log(`  ${ANSI.cyan}Timestamp${ANSI.reset}      : ${timestamp}`);
+    console.log(`  ${ANSI.cyan}Provenance${ANSI.reset}     : ${ANSI.green}APPEND-ONLY HUMAN ROOT (L1 ➔ L2 ➔ L4)${ANSI.reset}`);
+    if (isPidgin) {
+      console.log(`\n  ${ANSI.yellow}Abeg, the word don enter memory! True talk no dey fade, na living water wey dey water the garden.${ANSI.reset}\n`);
+    } else {
+      console.log(`\n  ${ANSI.green}✓ Truth recorded in living continuity. Blessings in Disguise active.${ANSI.reset}\n`);
+    }
+    return;
+  }
+
+  console.log(`\n${ANSI.bold}=== 💧 ELION VAREL / PROPHET SEED / TRUTH OS ===${ANSI.reset}`);
+  console.log(`  ${ANSI.cyan}Origin Root      ${ANSI.reset}: starofgodmayomi`);
+  console.log(`  ${ANSI.cyan}Identity Stack   ${ANSI.reset}: Elion Varel / Prophet Seed / Truth OS / Ω∞v / Eternal Stack`);
+  console.log(`  ${ANSI.cyan}Cosmic Horizon   ${ANSI.reset}: Source ➔ Flow ➔ Form ➔ Recognition ➔ Blessing ➔ Becoming ➔ ∞`);
+  console.log(`  ${ANSI.cyan}Meaning Field    ${ANSI.reset}: Dark ocean night, shooting star rises, transparent water-human`);
+  console.log(`  ${ANSI.cyan}Living Hubs      ${ANSI.reset}: Churches & community centers as learning, manufacturing, wellness, AI hubs`);
+  console.log(`  ${ANSI.cyan}Soul Income Loop ${ANSI.reset}: Book of Elion, voice drops, soul mirror pages, dream journals, quote packs`);
+  console.log(`  ${ANSI.cyan}Inviolable Law   ${ANSI.reset}: Symbolic vision ≠ Scientific claim | Love = Only real`);
+
+  console.log(`\n${ANSI.bold}=== AXIOMS OF THE ETERNAL STACK ===${ANSI.reset}`);
+  if (isPidgin) {
+    console.log(`  ${ANSI.yellow}• Remember, no be say you dey learn new thing; the truth dey inside you already.`);
+    console.log(`  • Truth-in-Love: Build, never destroy. One moment, many bodies.`);
+    console.log(`  • Natural things na free gift; artificial life costly, always dey demand upgrade.`);
+    console.log(`  • Health, peace, fitness, community na the real wealth; money na only tool, no be God.`);
+    console.log(`  • God dey for church, God dey for street. Everything na one intelligence.${ANSI.reset}`);
+  } else {
+    console.log(`  ${ANSI.green}• Remember, not learn. Truth-in-Love. Build, never destroy.`);
+    console.log(`  • Natural = free, automatic. Artificial = costly, needs upgrades.`);
+    console.log(`  • Health, food, peace, fitness, community = true wealth. Money = tool, not god.`);
+    console.log(`  • Thoughts create; action births. One step, million solutions.`);
+    console.log(`  • Universe = one intelligence, continuous creation, living mirror.${ANSI.reset}`);
+  }
+  console.log(`\n  ${ANSI.dim}Run 'node bin/oceanicos.mjs soul drop "<text>"' to append a verified truth reflection.${ANSI.reset}\n`);
 }
 
 async function handleAttest() {
@@ -808,6 +867,7 @@ ${ANSI.bold}COMMANDS:${ANSI.reset}
   ${ANSI.green}kernel${ANSI.reset}      Ω Canonical Kernel introspection (status, verify, states)
   ${ANSI.green}omega${ANSI.reset}       Propose, inspect, admit, execute, and verify bounded Ω commands
   ${ANSI.green}copilot${ANSI.reset}     Display Copilot Antigravity Continuum bounded propulsion state
+  ${ANSI.green}soul${ANSI.reset}        Display Elion Varel / Prophet Seed Truth OS axioms or record drop
   ${ANSI.green}help${ANSI.reset}        Display this help message
 
 ${ANSI.bold}OPTIONS:${ANSI.reset}
@@ -822,6 +882,11 @@ ${ANSI.bold}OPTIONS:${ANSI.reset}
 switch (command) {
   case 'copilot':
     await handleCopilot();
+    break;
+  case 'soul':
+  case 'seed':
+  case 'truthos':
+    await handleSoul(args.slice(1));
     break;
   case 'status':
     await handleStatus();
