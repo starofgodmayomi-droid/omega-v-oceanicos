@@ -1,0 +1,353 @@
+/* Lucid Field × Water Current — an evidence-bound UI composition. */
+.lucid-water-shell {
+  margin: 18px 0;
+  overflow: hidden;
+  border: 1px solid var(--omega-abyss-edge);
+  border-radius: 14px;
+  background:
+    radial-gradient(ellipse at 4% 0%, rgba(34, 211, 238, 0.10), transparent 34rem),
+    radial-gradient(ellipse at 100% 100%, rgba(124, 58, 237, 0.10), transparent 30rem),
+    rgba(2, 6, 23, 0.78);
+  box-shadow: var(--omega-shadow);
+  color: var(--omega-foam);
+}
+.lucid-water-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 22px 24px 20px;
+  border-bottom: 1px solid var(--omega-abyss-edge);
+}
+.lucid-water-eyebrow,
+.lucid-water-section-heading h4,
+.lucid-water-count small,
+.lucid-water-index,
+.lucid-water-status,
+.lucid-water-flow-status small,
+.lucid-water-stage > span,
+.lucid-water-stage > small,
+.lucid-water-footer {
+  font-family: var(--font-mono);
+  letter-spacing: 0.09em;
+}
+.lucid-water-eyebrow {
+  color: var(--omega-current);
+  font-size: 10px;
+  font-weight: 700;
+}
+.lucid-water-header h3 {
+  margin: 8px 0 7px;
+  font-size: clamp(18px, 2vw, 25px);
+  font-weight: 600;
+  letter-spacing: -0.035em;
+}
+.lucid-water-header p,
+.lucid-water-section-heading p {
+  max-width: 720px;
+  margin: 0;
+  color: var(--omega-foam-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.lucid-water-count {
+  min-width: 104px;
+  padding: 10px 12px;
+  border: 1px solid var(--omega-abyss-edge);
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.68);
+  text-align: right;
+}
+.lucid-water-count strong {
+  display: block;
+  color: var(--omega-verified);
+  font-family: var(--font-mono);
+  font-size: 22px;
+  font-weight: 500;
+}
+.lucid-water-count strong span {
+  color: var(--omega-foam-muted);
+  font-size: 13px;
+}
+.lucid-water-count small {
+  display: block;
+  margin-top: 3px;
+  color: var(--omega-foam-muted);
+  font-size: 8px;
+}
+.lucid-water-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1.04fr) minmax(0, 0.96fr);
+}
+.lucid-water-field,
+.lucid-water-current {
+  min-width: 0;
+  padding: 20px 22px 22px;
+}
+.lucid-water-field {
+  border-right: 1px solid var(--omega-abyss-edge);
+}
+.lucid-water-section-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  margin-bottom: 17px;
+}
+.lucid-water-index {
+  display: grid;
+  width: 27px;
+  height: 27px;
+  flex: 0 0 27px;
+  place-items: center;
+  border: 1px solid rgba(34, 211, 238, 0.38);
+  border-radius: 8px;
+  color: var(--omega-current);
+  font-size: 10px;
+}
+.lucid-water-section-heading h4 {
+  margin: 2px 0 7px;
+  color: var(--omega-foam);
+  font-size: 10px;
+  font-weight: 700;
+}
+.lucid-water-signals {
+  display: grid;
+  gap: 8px;
+}
+.lucid-water-signal {
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 10px 11px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 9px;
+  background: rgba(15, 23, 42, 0.43);
+}
+.lucid-water-signal-point {
+  width: 7px;
+  height: 7px;
+  border: 1px solid var(--omega-current);
+  border-radius: 50%;
+  box-shadow: 0 0 12px rgba(34, 211, 238, 0.25);
+}
+.lucid-water-signal-copy {
+  min-width: 0;
+}
+.lucid-water-signal-copy strong,
+.lucid-water-signal-copy small {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.lucid-water-signal-copy strong {
+  color: var(--omega-foam);
+  font-size: 11px;
+  font-weight: 600;
+}
+.lucid-water-signal-copy small {
+  margin-top: 4px;
+  color: var(--omega-foam-muted);
+  font-size: 10px;
+  line-height: 1.45;
+}
+.lucid-water-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 82px;
+  padding: 4px 7px;
+  border: 1px solid currentColor;
+  border-radius: 5px;
+  font-size: 8px;
+  font-weight: 700;
+  text-align: center;
+  white-space: nowrap;
+}
+.lucid-water-status--VERIFIED {
+  color: var(--omega-verified);
+  background: rgba(6, 182, 212, 0.07);
+}
+.lucid-water-status--UNKNOWN {
+  color: var(--omega-unknown);
+  background: rgba(100, 116, 139, 0.08);
+}
+.lucid-water-status--DIVERGENT {
+  color: var(--omega-dissent);
+  background: rgba(239, 68, 68, 0.07);
+}
+.lucid-water-status--NOT_EXECUTED {
+  color: var(--omega-warning);
+  background: rgba(245, 158, 11, 0.07);
+}
+.lucid-water-footnote {
+  margin: 13px 0 0;
+  color: var(--omega-foam-muted);
+  font-size: 10px;
+  line-height: 1.55;
+}
+.lucid-water-review {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 15px;
+  padding: 8px 11px;
+  border: 1px solid rgba(34, 211, 238, 0.36);
+  border-radius: 7px;
+  background: rgba(8, 47, 73, 0.22);
+  color: var(--omega-current);
+  font: 700 9px var(--font-mono);
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+.lucid-water-review:hover {
+  background: rgba(8, 47, 73, 0.42);
+  border-color: var(--omega-current);
+}
+.lucid-water-review:focus-visible {
+  outline: 2px solid var(--omega-current);
+  outline-offset: 3px;
+}
+.lucid-water-flow-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 12px 38px;
+}
+.lucid-water-flow-status small {
+  color: var(--omega-foam-muted);
+  font-size: 8px;
+}
+.lucid-water-stages {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  margin: 0 0 0 38px;
+  padding: 0;
+  list-style: none;
+}
+.lucid-water-stage {
+  position: relative;
+  display: grid;
+  grid-template-columns: 23px minmax(0, 1fr);
+  align-items: center;
+  gap: 5px;
+  min-height: 43px;
+  padding: 7px 8px;
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.38);
+}
+.lucid-water-stage:not(:last-child)::after {
+  position: absolute;
+  z-index: 0;
+  right: -6px;
+  bottom: -5px;
+  width: 10px;
+  height: 1px;
+  background: var(--omega-current-dim);
+  content: '';
+  opacity: 0.65;
+}
+.lucid-water-stage > span {
+  color: var(--omega-current-dim);
+  font-size: 8px;
+}
+.lucid-water-stage > strong {
+  overflow-wrap: anywhere;
+  color: var(--omega-foam);
+  font-size: 9px;
+  font-weight: 600;
+}
+.lucid-water-stage > small {
+  grid-column: 2;
+  color: var(--omega-foam-muted);
+  font-size: 7px;
+}
+.lucid-water-stage.is-in-trace {
+  border-color: rgba(34, 211, 238, 0.38);
+  background: linear-gradient(110deg, rgba(6, 182, 212, 0.12), rgba(124, 58, 237, 0.07));
+}
+.lucid-water-stage.is-in-trace > small {
+  color: var(--omega-current);
+}
+.lucid-water-stage.is-unobserved {
+  opacity: 0.78;
+}
+.lucid-water-trace-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 9px 0 0 38px;
+  color: var(--omega-foam-muted);
+  font-size: 9px;
+}
+.lucid-water-trace-meta code {
+  overflow-wrap: anywhere;
+}
+.lucid-water-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 9px 18px;
+  padding: 12px 22px;
+  border-top: 1px solid var(--omega-abyss-edge);
+  background: rgba(2, 6, 23, 0.5);
+  color: var(--omega-foam-muted);
+  font-size: 8px;
+}
+.lucid-water-footer span:first-child {
+  color: var(--omega-current);
+}
+@media (max-width: 760px) {
+  .lucid-water-header {
+    padding: 18px 16px;
+  }
+  .lucid-water-count {
+    min-width: 84px;
+    padding: 8px;
+  }
+  .lucid-water-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .lucid-water-field {
+    border-right: 0;
+    border-bottom: 1px solid var(--omega-abyss-edge);
+  }
+  .lucid-water-field,
+  .lucid-water-current {
+    padding: 17px 15px;
+  }
+  .lucid-water-stages,
+  .lucid-water-flow-status,
+  .lucid-water-trace-meta {
+    margin-left: 0;
+  }
+}
+@media (max-width: 440px) {
+  .lucid-water-header {
+    flex-direction: column;
+  }
+  .lucid-water-count {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    width: 100%;
+    text-align: left;
+  }
+  .lucid-water-signal {
+    grid-template-columns: 8px minmax(0, 1fr);
+  }
+  .lucid-water-signal > .lucid-water-status {
+    grid-column: 2;
+    justify-self: start;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lucid-water-shell *,
+  .lucid-water-shell *::before,
+  .lucid-water-shell *::after {
+    animation-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
