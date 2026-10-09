@@ -1,20 +1,21 @@
 import React from 'react';
 import {
-  WATER_FLOW_STAGES,
   summarizeWaterFlow,
   type WaterFlowFrameView,
+  type LivingWaterStageStatus,
 } from './water-flow-panel-model';
 
 interface WaterFlowPanelProps {
   frames?: readonly WaterFlowFrameView[] | null;
 }
 
-const STATUS_COLOR = {
+const STATUS_COLOR: Record<LivingWaterStageStatus | 'VERIFIED', string> = {
   VERIFIED: '#6ee7b7',
+  MODEL_ONLY: '#7dd3fc',
   DIVERGENT: '#fca5a5',
   UNKNOWN: '#94a3b8',
   NOT_EXECUTED: '#facc15',
-} as const;
+};
 
 export function WaterFlowPanel({ frames = null }: WaterFlowPanelProps) {
   const summary = summarizeWaterFlow(frames);
@@ -22,7 +23,7 @@ export function WaterFlowPanel({ frames = null }: WaterFlowPanelProps) {
 
   return (
     <section
-      aria-label="KAI bounded water-flow trace"
+      aria-label="Living Water evidence trace"
       style={{
         marginTop: '18px',
         padding: '18px',
@@ -34,13 +35,16 @@ export function WaterFlowPanel({ frames = null }: WaterFlowPanelProps) {
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'flex-start' }}>
         <div>
           <div style={{ color: '#6ee7b7', fontSize: '13px', fontWeight: 'bold' }}>
-            💧 KAI WATER-FLOW · FINITE TRACE
+            💧 LIVING WATER · REALITY-BOUND TRACE
           </div>
           <div style={{ color: '#94a3b8', fontSize: '11px', lineHeight: 1.5, marginTop: '4px' }}>
-            A provenance-aware representation of a pipeline receipt. It does not execute a pipeline or verify external reality.
+            {summary.traceId
+              ? 'Showing the active command receipt. MODEL ONLY means a v1 symbolic frame exists; UNKNOWN means this flow has no distinct evidence for that step. Neither means verified reality.'
+              : 'Waiting for an active command receipt; no lifecycle step is claimed as executed.'}
           </div>
         </div>
         <span
+          aria-label={`Overall trace status: ${summary.status}`}
           style={{
             color,
             background: `${color}15`,
@@ -55,37 +59,42 @@ export function WaterFlowPanel({ frames = null }: WaterFlowPanelProps) {
           {summary.status}
         </span>
       </div>
-
       <div
         role="list"
-        aria-label="Canonical water-flow stages"
-        style={{ display: 'grid', gridTemplateColumns: 'repeat(8, minmax(0, 1fr))', gap: '4px', marginTop: '16px' }}
+        aria-label="Living Water lifecycle stages and evidence coverage; not a progress indicator"
+        style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(82px, 1fr))', gap: '6px', marginTop: '16px' }}
       >
-        {WATER_FLOW_STAGES.map((stage) => {
-          const observed = summary.stages.includes(stage);
+        {summary.livingWaterSteps.map((step) => {
+          const stepColor = STATUS_COLOR[step.status];
+          const evidenceLabel = step.status.replace(/_/g, ' ');
+          const mapped = step.machineStages.length > 0 ? `v1: ${step.machineStages.join(', ')}` : 'no distinct v1 stage';
           return (
             <div
-              key={stage}
+              key={step.stage}
               role="listitem"
+              aria-label={`${step.stage}: ${evidenceLabel}. ${mapped}. ${step.meaning}`}
+              title={step.meaning}
               style={{
-                minHeight: '48px',
+                minHeight: '60px',
                 padding: '7px 5px',
-                background: observed ? '#123d37' : '#03080d',
-                border: `1px solid ${observed ? '#6ee7b755' : '#1e293b'}`,
-                color: observed ? '#b4ffe4' : '#64748b',
+                background: step.status === 'MODEL_ONLY' ? '#0b2738' : '#03080d',
+                border: `1px solid ${step.status === 'MODEL_ONLY' ? '#38bdf855' : `${stepColor}55`}`,
+                color: stepColor,
                 fontSize: '9px',
                 lineHeight: 1.3,
                 textAlign: 'center',
                 display: 'grid',
-                placeItems: 'center',
+                alignContent: 'center',
+                gap: '3px',
               }}
             >
-              {stage}
+              <strong>{step.stage}</strong>
+              <span>{evidenceLabel}</span>
+              <span style={{ color: '#64748b', fontSize: '8px' }}>{mapped}</span>
             </div>
           );
         })}
       </div>
-
       <div style={{ color: '#64748b', fontSize: '10px', lineHeight: 1.5, marginTop: '12px' }}>
         {summary.note}
         {summary.traceId && <div style={{ marginTop: '3px', fontFamily: 'monospace' }}>trace: {summary.traceId} · max steps: {summary.maxSteps}</div>}
