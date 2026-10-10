@@ -9,6 +9,7 @@
  * architecture labels into verified status. Reality is final authority.
  */
 import type { FastifyInstance } from 'fastify';
+import { ECOSYSTEM_BODY_EVIDENCE_BOUNDARY } from './ecosystem-evidence-boundary.js';
 
 export type EvidenceStatus = 'VERIFIED' | 'SUPPORTED' | 'UNVERIFIED' | 'DIVERGENT' | 'UNKNOWN';
 
@@ -29,6 +30,7 @@ export interface OneBodyStatus {
   evidenceStatus: 'SUPPORTED';
   evidence: 'runtime-observed';
   scope: 'local-runtime';
+  evidenceBoundary: typeof ECOSYSTEM_BODY_EVIDENCE_BOUNDARY;
   organs: Array<{
     name: string;
     status: EvidenceStatus;
@@ -202,6 +204,7 @@ export function registerEcosystemRoute(
         evidenceStatus: 'SUPPORTED',
         evidence: 'runtime-observed',
         scope: 'local-runtime',
+        evidenceBoundary: ECOSYSTEM_BODY_EVIDENCE_BOUNDARY,
         organs: layers.map((layer) => ({
           name: layer.layer,
           status: layer.evidenceStatus,

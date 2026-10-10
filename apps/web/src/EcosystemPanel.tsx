@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 
-const API_BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+const API_BASE_URL = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '');
 
 type EvidenceStatus = 'VERIFIED' | 'SUPPORTED' | 'UNVERIFIED' | 'DIVERGENT' | 'UNKNOWN';
 
@@ -46,6 +46,13 @@ interface EcosystemStatus {
     evidenceStatus: EvidenceStatus;
     evidence: string;
     scope: string;
+    evidenceBoundary: {
+      evidenceMode: 'LOCAL_SYNTHETIC_SIMULATION';
+      scope: 'local-api-runtime';
+      statusSemantics: string;
+      externalRealityStatus: 'UNKNOWN';
+      limitations: string[];
+    };
     organs: Array<{ name: string; status: EvidenceStatus; source: string }>;
     limitations: string[];
   };
@@ -61,26 +68,93 @@ const STATUS_COLORS: Record<EvidenceStatus, string> = {
 
 const GROWTH_STAGES = ['0', 'MINI', '+', '+', 'FULL STACK', 'ECOSYSTEM', 'REALITY'];
 
+function statusErrorMessage(error: unknown): string {
+  const message = error instanceof Error ? error.message : 'ecosystem status unavailable';
+  if (message === 'READ_ACCESS_REQUIRED') {
+    return 'Read access required. Enter the read-only API token once to start a short-lived browser session; this page does not save the token.';
+  }
+  if (message === 'BROWSER_SESSION_ORIGIN_NOT_ALLOWED') return 'This web origin is not allowlisted for browser sessions. Configure OMEGA_CORS_ORIGINS with this exact HTTPS origin.';
+  if (message === 'BROWSER_SESSION_REQUIRED') return 'The browser session has expired or was ended. Start a new read-only session to continue.';
+  return message;
+}
+
 export function EcosystemPanel() {
   const [status, setStatus] = useState<EcosystemStatus | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [authRequired, setAuthRequired] = useState(false);
+  const [browserSessionActive, setBrowserSessionActive] = useState(false);
+  const [sessionSubmitting, setSessionSubmitting] = useState(false);
+  const tokenInput = useRef<HTMLInputElement>(null);
 
   const fetchStatus = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE_URL}/v1/ecosystem/status`);
+      const res = await fetch(`${API_BASE_URL}/v1/ecosystem/status`, { credentials: 'include' });
       const text = await res.text();
       const data = text ? JSON.parse(text) : null;
-      if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
+      if (!res.ok) {
+        if (data?.error === 'READ_ACCESS_REQUIRED') setAuthRequired(true);
+        throw new Error(data?.error || `HTTP ${res.status}`);
+      }
       setStatus(data);
+      setAuthRequired(false);
+      setBrowserSessionActive(data.governance.authMode === 'required');
     } catch (err: any) {
-      setError(err instanceof Error ? err.message : 'ecosystem status unavailable');
+      setError(statusErrorMessage(err));
     } finally {
       setLoading(false);
     }
   }, []);
+
+  const startBrowserSession = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const readToken = tokenInput.current?.value.trim() ?? '';
+    if (!readToken) {
+      setError('Enter the configured read-only API token.');
+      return;
+    }
+    setSessionSubmitting(true);
+    setError(null);
+    try {
+      const response = await fetch(`${API_BASE_URL}/v1/auth/browser-session`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { authorization: `Bearer ${readToken}` },
+      });
+      const text = await response.text();
+      const data = text ? JSON.parse(text) : null;
+      if (!response.ok) throw new Error(data?.error || `HTTP ${response.status}`);
+      await fetchStatus();
+    } catch (err) {
+      setError(statusErrorMessage(err));
+    } finally {
+      if (tokenInput.current) tokenInput.current.value = '';
+      setSessionSubmitting(false);
+    }
+  };
+
+  const endBrowserSession = async () => {
+    setSessionSubmitting(true);
+    setError(null);
+    try {
+      const response = await fetch(`${API_BASE_URL}/v1/auth/browser-session/logout`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      const text = await response.text();
+      const data = text ? JSON.parse(text) : null;
+      if (!response.ok) throw new Error(data?.error || `HTTP ${response.status}`);
+      setStatus(null);
+      setBrowserSessionActive(false);
+      setAuthRequired(true);
+    } catch (err) {
+      setError(statusErrorMessage(err));
+    } finally {
+      setSessionSubmitting(false);
+    }
+  };
 
   useEffect(() => {
     fetchStatus();
@@ -106,28 +180,60 @@ export function EcosystemPanel() {
             Read-only evidence-bearing contract · distinguishes VERIFIED from Unknown
           </div>
         </div>
-        <button
-          onClick={fetchStatus}
-          disabled={loading}
-          style={{
-            background: '#0a1d2e',
-            color: '#38bdf8',
-            border: '1px solid #38bdf855',
-            borderRadius: '4px',
-            padding: '8px 14px',
-            fontSize: '11px',
-            fontWeight: 'bold',
-            cursor: loading ? 'wait' : 'pointer',
-          }}
-        >
-          {loading ? 'EVALUATING...' : status ? '↻ REFRESH' : '📋 FETCH ECOSYSTEM STATUS'}
-        </button>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          {browserSessionActive && (
+            <button
+              onClick={endBrowserSession}
+              disabled={sessionSubmitting}
+              style={{ background: '#241313', color: '#fca5a5', border: '1px solid #fca5a555', borderRadius: '4px', padding: '8px 14px', fontSize: '11px', fontWeight: 'bold', cursor: sessionSubmitting ? 'wait' : 'pointer' }}
+            >
+              {sessionSubmitting ? 'ENDING...' : 'END SESSION'}
+            </button>
+          )}
+          <button
+            onClick={fetchStatus}
+            disabled={loading || sessionSubmitting}
+            style={{
+              background: '#0a1d2e',
+              color: '#38bdf8',
+              border: '1px solid #38bdf855',
+              borderRadius: '4px',
+              padding: '8px 14px',
+              fontSize: '11px',
+              fontWeight: 'bold',
+              cursor: loading ? 'wait' : 'pointer',
+            }}
+          >
+            {loading ? 'EVALUATING...' : status ? '↻ REFRESH' : '📋 FETCH ECOSYSTEM STATUS'}
+          </button>
+        </div>
       </div>
 
       {error && (
-        <div style={{ color: '#fca5a5', fontSize: '11px', marginBottom: '10px' }}>
+        <div role="alert" style={{ color: '#fca5a5', fontSize: '11px', marginBottom: '10px' }}>
           ⚠ {error}
         </div>
+      )}
+
+      {authRequired && (
+        <form onSubmit={startBrowserSession} aria-label="Start read-only browser session" style={{ display: 'grid', gap: '8px', maxWidth: '520px', marginBottom: '16px' }}>
+          <label htmlFor="ecosystem-read-token" style={{ color: '#cbd5e1', fontSize: '11px' }}>Read-only API token</label>
+          <input
+            ref={tokenInput}
+            id="ecosystem-read-token"
+            type="password"
+            autoComplete="off"
+            required
+            aria-describedby="ecosystem-session-help"
+            style={{ background: '#03080d', color: '#e2e8f0', border: '1px solid #475569', borderRadius: '4px', padding: '9px 10px', fontSize: '12px' }}
+          />
+          <div id="ecosystem-session-help" style={{ color: '#94a3b8', fontSize: '10px', lineHeight: '1.5' }}>
+            The token is sent once to the API and cleared from this form. The API sets a 15-minute HttpOnly, Secure, read-only session cookie; the token is never written to browser storage.
+          </div>
+          <button type="submit" disabled={sessionSubmitting} style={{ justifySelf: 'start', background: '#0a1d2e', color: '#38bdf8', border: '1px solid #38bdf855', borderRadius: '4px', padding: '8px 14px', fontSize: '11px', fontWeight: 'bold', cursor: sessionSubmitting ? 'wait' : 'pointer' }}>
+            {sessionSubmitting ? 'STARTING SESSION...' : 'START READ-ONLY SESSION'}
+          </button>
+        </form>
       )}
 
       {status && (
@@ -178,6 +284,10 @@ export function EcosystemPanel() {
             <div style={{ color: '#94a3b8', fontSize: '10px', lineHeight: '1.5' }}>
               <div>{status.oneBody.stage} · {status.oneBody.evidence} · {status.oneBody.scope}</div>
               <div style={{ marginTop: '4px', color: '#6ee7b7' }}>{status.oneBody.invariant}</div>
+              <div role="note" aria-label="Body evidence boundary" style={{ marginTop: '6px', color: STATUS_COLORS[status.oneBody.evidenceBoundary.externalRealityStatus] }}>
+                {status.oneBody.evidenceBoundary.evidenceMode} · {status.oneBody.evidenceBoundary.scope} · external reality: {status.oneBody.evidenceBoundary.externalRealityStatus}
+              </div>
+              <div style={{ marginTop: '3px' }}>{status.oneBody.evidenceBoundary.statusSemantics}</div>
               <div style={{ marginTop: '6px' }}>
                 {status.oneBody.organs.map((organ) => (
                   <span key={organ.name} style={{ display: 'inline-block', marginRight: '10px', color: STATUS_COLORS[organ.status] }}>
@@ -185,7 +295,7 @@ export function EcosystemPanel() {
                   </span>
                 ))}
               </div>
-              <div style={{ marginTop: '6px', color: '#64748b' }}>limits: {status.oneBody.limitations.join(' · ')}</div>
+              <div style={{ marginTop: '6px', color: '#64748b' }}>limits: {[...status.oneBody.limitations, ...status.oneBody.evidenceBoundary.limitations].join(' · ')}</div>
             </div>
           </div>
 

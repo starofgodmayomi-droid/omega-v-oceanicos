@@ -15,6 +15,13 @@ import { createMoodContext, proposeMoodCodex } from '@omega-v/mood';
 import { LocalJobError, LocalJobLedger, LOCAL_JOB_WINDOW } from './jobs.js';
 import { registerPipelineRoute } from './pipeline-route.js';
 import { registerEcosystemRoute } from './ecosystem-route.js';
+import { ECOSYSTEM_BODY_EVIDENCE_BOUNDARY } from './ecosystem-evidence-boundary.js';
+import {
+  BROWSER_SESSION_LOGOUT_PATH,
+  BROWSER_SESSION_PATH,
+  createBrowserReadSessionStore,
+  registerBrowserReadSessionRoutes,
+} from './browser-session.js';
 import { registerNavigatorEvidenceRoute } from './navigator-route.js';
 import { registerRealityRoute } from './reality-route.js';
 import { registerDependencyRoute } from './dependency-route.js';
@@ -127,6 +134,8 @@ export function createApp(
   const authMode = parseAuthMode(process.env.OMEGA_AUTH_MODE ?? (process.env.NODE_ENV === 'production' ? 'required' : 'local'));
   const { readToken, adminToken } = configuredBearerTokens(authMode);
   const corsOrigin = parseCorsOrigins(process.env.OMEGA_CORS_ORIGINS, authMode);
+  const browserSessionOrigins = typeof corsOrigin === 'string' ? [corsOrigin] : Array.isArray(corsOrigin) ? corsOrigin : [];
+  const browserReadSessions = createBrowserReadSessionStore(browserSessionOrigins);
 
   const persistenceEnabled = process.env.OMEGA_PERSISTENCE
     ? process.env.OMEGA_PERSISTENCE === 'on'
@@ -229,13 +238,32 @@ export function createApp(
     if (bearer(request.headers.authorization) !== configured) return jsonError(reply, 401, 'JOB_ACCESS_REQUIRED');
   };
 
-  fastify.register(cors, { origin: corsOrigin });
+  fastify.register(cors, { origin: corsOrigin, credentials: authMode === 'required' });
   fastify.register(async (scope) => {
     await scope.register(rateLimit, { global: false });
     registerOmegaRoutes(scope, omegaCommands, enforceAdminOperatorIdentity);
   });
+  fastify.register(async (scope) => {
+    await scope.register(rateLimit, { global: false });
+    registerBrowserReadSessionRoutes(scope, {
+      authMode,
+      readToken,
+      sessions: browserReadSessions,
+      jsonError,
+    });
+  });
   fastify.addHook('onRequest', async (request, reply) => {
-    if (authMode === 'local' || request.method === 'OPTIONS' || request.url.split('?')[0] === '/health') return;
+    const path = request.url.split('?')[0];
+    if (authMode === 'local' || request.method === 'OPTIONS' || path === '/health') return;
+    if (
+      (request.method === 'POST' && path === BROWSER_SESSION_PATH) ||
+      (request.method === 'POST' && path === BROWSER_SESSION_LOGOUT_PATH)
+    ) return;
+    if (
+      request.method === 'GET' &&
+      (path === '/v1/ecosystem/status' || path === '/v1/ecosystem/body') &&
+      browserReadSessions.requestHasSession(request)
+    ) return;
     const required = request.method === 'GET' ? readToken : adminToken;
     if (bearer(request.headers.authorization) !== required) {
       return jsonError(reply, 401, request.method === 'GET' ? 'READ_ACCESS_REQUIRED' : 'ADMIN_ACCESS_REQUIRED');
@@ -335,12 +363,13 @@ export function createApp(
       success: true,
       bodyVersion: 'omega.fullstack.body.v1',
       status: bodyStatus,
+      evidenceBoundary: ECOSYSTEM_BODY_EVIDENCE_BOUNDARY,
       evaluatedAt,
       layers: {
-        sensory: { status: 'OBSERVED', telemetry },
-        verification: { status: receipt.status, receipt },
+        sensory: { status: 'OBSERVED', evidenceMode: 'GENERATED', source: 'ObserverEngine.generateTelemetry', telemetry },
+        verification: { status: receipt.status, evidenceMode: 'LOCAL_RULE_EVALUATION', input: 'GENERATED_LOCAL_TELEMETRY', receipt },
         memory: { status: ledgerIntact ? 'INTEGRITY_VERIFIED' : 'DIVERGENT', tip: tip ? { index: tip.index, hash: tip.hash } : null },
-        mesh: { status: mesh.effectiveStatus, convergence: mesh },
+        mesh: { status: mesh.effectiveStatus, evidenceMode: 'SIMULATED', scope: 'in-process-model', convergence: mesh },
         kernel: { status: 'READY', capability },
         governance: { status: capability.humanAuthorizationRequired ? 'HUMAN_GATE_REQUIRED' : 'BOUNDED', failClosed: true },
         interface: { status: 'READY', contract: 'Navigator / Oceanic Mirror / living telemetry surface' },

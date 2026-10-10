@@ -3,7 +3,7 @@ import { createApp } from '../index';
 describe('GET /v1/ecosystem/body', () => {
   const requiredLayers = ['sensory', 'verification', 'memory', 'mesh', 'kernel', 'governance', 'interface'] as const;
 
-  it('composes every runtime layer into one verified, bounded body', async () => {
+  it('composes bounded local layers without claiming external reality verification', async () => {
     const app = createApp(':memory:', false);
     try {
       const response = await app.inject({ method: 'GET', url: '/v1/ecosystem/body' });
@@ -14,6 +14,11 @@ describe('GET /v1/ecosystem/body', () => {
         success: true,
         bodyVersion: 'omega.fullstack.body.v1',
         status: 'VERIFIED',
+        evidenceBoundary: {
+          evidenceMode: 'LOCAL_SYNTHETIC_SIMULATION',
+          scope: 'local-api-runtime',
+          externalRealityStatus: 'UNKNOWN',
+        },
         expansion: {
           appendOnly: true,
           readOnly: true,
@@ -21,11 +26,13 @@ describe('GET /v1/ecosystem/body', () => {
           moduleInvariant: 'observe → verify → remember → govern → present',
         },
       });
+      expect(body.evidenceBoundary.statusSemantics).toContain('generated telemetry');
+      expect(body.evidenceBoundary.limitations).toContain('regional mesh votes and quorum are simulated in process');
       expect(Object.keys(body.layers)).toEqual(requiredLayers);
-      expect(body.layers.sensory).toMatchObject({ status: 'OBSERVED' });
-      expect(body.layers.verification).toMatchObject({ status: 'VERIFIED' });
+      expect(body.layers.sensory).toMatchObject({ status: 'OBSERVED', evidenceMode: 'GENERATED' });
+      expect(body.layers.verification).toMatchObject({ status: 'VERIFIED', evidenceMode: 'LOCAL_RULE_EVALUATION', input: 'GENERATED_LOCAL_TELEMETRY' });
       expect(body.layers.memory).toMatchObject({ status: 'INTEGRITY_VERIFIED', tip: null });
-      expect(body.layers.mesh).toMatchObject({ status: 'CONVERGED_PLURAL', convergence: { quorumReached: true } });
+      expect(body.layers.mesh).toMatchObject({ status: 'CONVERGED_PLURAL', evidenceMode: 'SIMULATED', scope: 'in-process-model', convergence: { quorumReached: true } });
       expect(body.layers.kernel).toMatchObject({ status: 'READY', capability: { capabilities: { remoteMutation: false, arbitraryShellExecution: false } } });
       expect(body.layers.governance).toMatchObject({ status: 'HUMAN_GATE_REQUIRED', failClosed: true });
       expect(body.layers.interface).toMatchObject({ status: 'READY' });

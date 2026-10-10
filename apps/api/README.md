@@ -126,6 +126,9 @@ GET  /health
 GET  /v1/kernel/capabilities
 GET  /v1/mood
 GET  /v1/ecosystem/status
+GET  /v1/ecosystem/body
+POST /v1/auth/browser-session
+POST /v1/auth/browser-session/logout
 POST /v1/attest
 POST /v1/cycle
 GET  /v1/block/tip
@@ -143,6 +146,31 @@ GET  /v1/value-navigator/proposals/:proposalId
 POST /v1/value-navigator/proposals
 POST /v1/value-navigator/proposals/:proposalId/observe
 ```
+
+`GET /v1/ecosystem/body` returns a read-only `omega.fullstack.body.v1` snapshot.
+Its `status: VERIFIED` is scoped to generated local telemetry satisfying local
+verification rules, a passing integrity check for the configured local ledger,
+and quorum in an in-process mesh simulation. The response exposes this boundary
+and sets `externalRealityStatus: UNKNOWN`; it does not establish external
+sensing, remote service availability, deployment health, community or economic
+outcomes, or whole-ecosystem correctness.
+`GET /v1/ecosystem/status` exposes the same boundary at
+`oneBody.evidenceBoundary`; the existing web status panel renders that scope
+without making a second request. The two endpoints keep distinct payloads but
+share the same boundary definition.
+
+In `OMEGA_AUTH_MODE=required`, the ecosystem panel can exchange the read-only
+bearer through `POST /v1/auth/browser-session` for a 15-minute
+`HttpOnly; Secure; SameSite=None` cookie. The exchange and logout require an
+exact `Origin` in `OMEGA_CORS_ORIGINS`; credentialed CORS is enabled only for
+the configured origins, and the exchange is rate limited. The cookie is
+accepted only for the ecosystem status/body GET routes; other reads still
+require the read bearer, and writes still require the distinct admin bearer.
+The token is not returned or stored by the browser UI. The session identity is
+shared read-token possession, not individual-user identity. Sessions are held
+in process memory and expire on restart; multi-replica deployments need sticky
+routing or a shared session store before relying on this mechanism. Use HTTPS
+for required-mode browser sessions.
 
 Value Navigator proposals always remain `decision: REVIEW`,
 `authorized: false`, and `NOT_EXECUTED`. Observations are supplied by the
