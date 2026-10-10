@@ -126,6 +126,15 @@ The coordination evidence endpoint demonstrates this boundary. It records a leas
 
 A system MUST identify the authority required for a transition before execution. Human review is required when the consequence, irreversibility, or uncertainty exceeds the configured policy boundary. The protocol does not treat broad user intent as blanket authorization for unrelated operations.
 
+When an API adapter enables operator allowlisting for command admission, it
+MUST reject a missing or unlisted `x-omega-operator-id` before command state is
+mutated or an admission event is appended. A request-body `authority` MUST NOT
+substitute for the guarded operator identity. An accepted guarded identity MUST
+be bound to the admitted command authority and its event provenance. This
+header is a caller assertion checked against configuration, not authentication
+or proof of the human behind the request. Client-supplied policy or authority
+verification flags remain inputs, not independent evidence.
+
 Every executable transition MUST have a stop condition. Examples include lease expiry, capacity exhaustion, policy mismatch, missing evidence, conflicting observation, user revocation, or a bounded attempt count. When a stop condition is reached, the system MUST preserve the partial evidence and transition to a non-executing state.
 
 A rollback MUST be described as a separate transition with its own authority, scope, evidence, and observation. “Undo” is not evidence that the original transition had no consequence.

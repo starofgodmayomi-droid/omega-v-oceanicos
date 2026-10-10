@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { omegaOperatorHeaders } from './omega-approval-request';
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
 
@@ -47,7 +48,7 @@ export function MoodCodexPanel() {
     try {
       const response = await fetch(`${API_BASE_URL}/v1/omega/commands/${command.commandId}/admit`, {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        headers: omegaOperatorHeaders(),
         body: JSON.stringify({
           authority: 'human:dashboard-operator',
           policy: 'mood-codex-boundary.v1',
