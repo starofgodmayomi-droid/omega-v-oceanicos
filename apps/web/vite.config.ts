@@ -9,6 +9,14 @@ export default defineConfig({
     host: true,
     allowedHosts: true,
     proxy: {
+      '/v1': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+      },
+      '/health': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+      },
       '/api': {
         target: 'http://localhost:5000',
         changeOrigin: true,
