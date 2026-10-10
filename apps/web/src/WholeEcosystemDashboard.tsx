@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { theme, humanStatus } from './oceanicosTheme';
-import { boundedStatus, statusCounts, STATUS_ORDER, type RealityStatus } from './whole-ecosystem-dashboard-model';
+import { boundedStatus, dashboardConnectionLabel, statusCounts, STATUS_ORDER, type RealityStatus } from './whole-ecosystem-dashboard-model';
 import { AgentSafetyBoundaryPanel } from './AgentSafetyBoundaryPanel';
 import { WorkerCoordinationPanel } from './WorkerCoordinationPanel';
 import { LucidFieldWaterPanel } from './LucidFieldWaterPanel';
@@ -130,7 +130,7 @@ export function WholeEcosystemDashboard(props: Props) {
           <span className="whole-ecosystem-kicker">💧 Ω∞v OCEANICOS · ONE BODY · ONE CURRENT</span>
           <h2>Whole ecosystem command surface</h2>
         </div>
-        <span className="whole-ecosystem-state"><i className="status-dot" /> {props.simulationMode ? 'BOUNDED SIMULATION' : props.streamConnected ? 'STREAM CONNECTED' : 'CONNECTION UNKNOWN'}</span>
+        <span className="whole-ecosystem-state"><i className="status-dot" /> {dashboardConnectionLabel(props.simulationMode, props.streamConnected)}</span>
       </header>
 
       <div className="whole-ecosystem-grid">
