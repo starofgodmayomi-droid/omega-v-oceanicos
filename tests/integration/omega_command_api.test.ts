@@ -270,6 +270,57 @@ describe('Ω∞v command API vertical slice', () => {
     assert.equal(conflict.json().error, 'OMEGA_IDEMPOTENCY_CONFLICT');
   });
 
+  it('canonicalizes context key order and preserves the original proposal on a context conflict', async () => {
+    const originalContext = { stateBefore: 'S0', source: 'contract-test' };
+    const first = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/commands',
+      payload: {
+        intent: 'verify idempotent context handling',
+        requestedBy: 'dashboard-user',
+        workers: ['observer'],
+        idempotencyKey: 'context-replay-1',
+        context: originalContext,
+      },
+    });
+    assert.equal(first.statusCode, 201);
+
+    const replay = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/commands',
+      payload: {
+        intent: 'verify idempotent context handling',
+        requestedBy: 'dashboard-user',
+        workers: ['observer'],
+        idempotencyKey: 'context-replay-1',
+        context: { source: 'contract-test', stateBefore: 'S0' },
+      },
+    });
+    assert.equal(replay.statusCode, 200);
+    assert.equal(replay.json().command.commandId, first.json().command.commandId);
+
+    const conflict = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/commands',
+      payload: {
+        intent: 'verify idempotent context handling',
+        requestedBy: 'dashboard-user',
+        workers: ['observer'],
+        idempotencyKey: 'context-replay-1',
+        context: { source: 'contract-test', stateBefore: 'S1' },
+      },
+    });
+    assert.equal(conflict.statusCode, 409);
+    assert.equal(conflict.json().error, 'OMEGA_IDEMPOTENCY_CONFLICT');
+
+    const stored = await app.inject({
+      method: 'GET',
+      url: `/v1/omega/commands/${first.json().command.commandId}`,
+    });
+    assert.equal(stored.statusCode, 200);
+    assert.deepEqual(stored.json().command.context, originalContext);
+  });
+
   it('exposes only repository-observed safety boundary evidence', async () => {
     const created = await app.inject({
       method: 'POST',
