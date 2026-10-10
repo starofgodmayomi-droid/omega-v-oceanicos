@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { EcosystemPanel } from './EcosystemPanel';
 import { SoulPanel } from './SoulPanel';
+import { PluralismPanel } from './PluralismPanel';
 import { RealityPanel } from './RealityPanel';
 import { TransitionProvenancePanel } from './TransitionProvenancePanel';
 import { AmbientBar } from './AmbientBar';
@@ -513,6 +514,14 @@ export function App() {
       subtitle: 'Sovereign treasury & soul income',
       state: 'available' as const,
       detail: <SoulPanel />,
+    },
+    {
+      id: 'pluralism',
+      icon: '🏛️',
+      label: 'Pluralism',
+      subtitle: 'African pantheon duplex & convergence',
+      state: 'available' as const,
+      detail: <PluralismPanel />,
     },
     {
       id: 'system',
