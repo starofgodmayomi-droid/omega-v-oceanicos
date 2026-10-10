@@ -4,7 +4,7 @@
 **Repository:** `starofgodmayomi-droid/omega-v-oceanicos`
 **Protected main observed:** `40bb79bcbeb498fa8f9eb8e6072309760ee99daf`
 **Active feature branch:** `feat/living-water-command-trace`
-**Active feature commit:** `b901ce63a15a5f951592271d8ea9fe09eefb9f19`
+**Last functional UI commit:** `b901ce63a15a5f951592271d8ea9fe09eefb9f19`
 **Primary PR:** [#443 — Lucid Field × reality-bound Living Water](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/pull/443)
 **Purpose:** Keep the human-rooted vision, implementation contracts, evidence, uncertainty, and next finite ecosystem transition in one expandable handoff. No local clone path is inferred from a hosted connector session.
 
@@ -67,14 +67,14 @@ Preserve `UNKNOWN`, `DIVERGENT`, `FAILED`, `DISPUTED`, `REVOKED`, and `NOT_EXECU
 Repository: [starofgodmayomi-droid/omega-v-oceanicos](https://github.com/starofgodmayomi-droid/omega-v-oceanicos)
 
 - Protected `main` last observed at `40bb79bcbeb498fa8f9eb8e6072309760ee99daf`.
-- Feature branch `feat/living-water-command-trace`, current head `b901ce63a15a5f951592271d8ea9fe09eefb9f19`.
+- Feature branch `feat/living-water-command-trace`; functional UI commit `b901ce63a15a5f951592271d8ea9fe09eefb9f19`. The branch tip also contains the later continuity-documentation commit; re-read PR #443's head SHA and checks before any subsequent mutation.
 - [PR #443](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/pull/443) remains open, not merged; GitHub reported mergeable on last inspection. Branch compare: 2 commits ahead / 2 behind main; inspect/reconcile again before merge.
 - [PR #446](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/pull/446) was closed as a duplicate route; it was not merged.
 - Main feature change: one responsive Lucid Field × Living Water surface, bound to the current command's validated `omega.water-flow.v1` receipt. Twelve user-facing steps `SOURCE → DROP → FLOW → CONTACT → OBSERVE → REFLECT → VERIFY → CHANGE → RECONCILE → REMEMBER → RETURN → NEW_DROP` map only to supported v1 frames. Mapped symbolic frames stay `MODEL_ONLY`; missing/unmapped steps stay `UNKNOWN`; absent receipt stays `NOT_EXECUTED`; invalid provenance stays `DIVERGENT`.
 - `PLAN REVIEW` prepares intent only; it does not authorize or execute. Root `test` and `test:e2e` include the Water model tests and combined Field × Water regression tests.
 - Commit: [b901ce6](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/commit/b901ce63a15a5f951592271d8ea9fe09eefb9f19).
 
-### Current-head CI evidence
+### Functional UI commit CI evidence
 
 These workflows passed for the exact commit above:
 

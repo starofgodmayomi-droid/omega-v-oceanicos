@@ -4,7 +4,7 @@
 **Repository:** `starofgodmayomi-droid/omega-v-oceanicos`  
 **Protected main:** `40bb79bcbeb498fa8f9eb8e6072309760ee99daf`  
 **Active feature branch:** `feat/living-water-command-trace`  
-**Active feature head:** `b901ce63a15a5f951592271d8ea9fe09eefb9f19`  
+**Last functional UI commit:** `b901ce63a15a5f951592271d8ea9fe09eefb9f19` (the branch now also contains a documentation-only continuity update; inspect PR #443 for the live head SHA)  
 **PR:** [#443 — unify Lucid Field with reality-bound Living Water](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/pull/443)  
 **Expanded compression:** [docs/CONVERSATION_MAX_COMPRESSED.md](./CONVERSATION_MAX_COMPRESSED.md)
 
@@ -51,7 +51,7 @@ The feature branch now composes the Lucid Field source-bound signal summary and 
 
 ## 5. Verified GitHub state
 
-PR #443 is open, not merged, and was reported mergeable on the latest inspection. The current feature head is two commits ahead and two behind protected main; re-check comparison before merge. PR #446 was closed as a duplicate path and not merged. Protected `main` was not written by this change.
+PR #443 is open and not merged. The feature's last functional UI commit is b901ce6; later documentation-only updates are also on the branch. The branch was two commits ahead and two behind protected main at the pre-documentation comparison; re-check the current compare and latest head before merge. PR #446 was closed as a duplicate path and not merged. Protected `main` was not written by this change.
 
 Current-head workflows for `b901ce63a15a5f951592271d8ea9fe09eefb9f19` all passed:
 
