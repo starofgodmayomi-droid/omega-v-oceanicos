@@ -7,6 +7,7 @@ const skills = [
   'voice-bridge',
   'oread-pidgin-harmonizer',
   'kai-companion',
+  'lucid-full-stack',
   'omega-mirror-water-universal-body',
   'oceanicos-full-stack',
   'oceanicos-framework',

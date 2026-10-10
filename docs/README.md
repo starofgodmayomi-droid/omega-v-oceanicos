@@ -71,6 +71,9 @@ Welcome to the Ω∞v Oceanicos documentation. Start here to understand the proj
   finite transition, provenance, and authority boundaries.
 - **[Oceanicos Full Stack](../skills/oceanicos-full-stack/SKILL.md)** — renamed
   Ω∞v verification spine, whole-ecosystem routing, and bounded FLOW.
+- **[Lucid Full Stack](../skills/lucid-full-stack/SKILL.md)** — one integrated
+  guide across voice, continuity, culture, value, ecosystem planning, and
+  evidence-first software delivery.
 - **[Whole ecosystem reality compression](./upgrades/WHOLE_ECOSYSTEM_REALITY_COMPRESSION_2026-10-04.md)**
   — source-labeled translation of the supplied Ω∞v architecture into repository
   boundaries and explicit unknowns.
