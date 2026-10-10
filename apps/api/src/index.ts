@@ -21,6 +21,7 @@ import { registerPipelineRoute } from './pipeline-route.js';
 import { registerEcosystemRoute } from './ecosystem-route.js';
 import { registerSoulRoute } from './soul-route.js';
 import { registerRealityRoute } from './reality-route.js';
+import { registerChatRoute } from './chat-route.js';
 import { OmegaCommandStore, registerOmegaWorkerRoutes } from './omega.js';
 import { omegaRoutes } from './omega/routes.js';
 import { OmegaCommandStore as ExtendedOmegaCommandStore } from './omega/store.js';
@@ -226,6 +227,7 @@ export function createApp(
   registerEcosystemRoute(fastify, authMode, Boolean(attestationSigningKey));
   registerSoulRoute(fastify);
   registerRealityRoute(fastify, authMode, () => Boolean(attestationSigningKey), () => Boolean(ledgerMemory.getTip()));
+  registerChatRoute(fastify);
 
   fastify.get('/health', async (_request, reply) => {
     const memoryReady = true;
@@ -300,6 +302,8 @@ export function createApp(
     ledger: { ready: Boolean(ledgerMemory.getTip()) },
     evaluatedAt: new Date().toISOString(),
   }));
+
+  // Chat, soul, reality, and ecosystem routes registered above (single registration)
 
   // ─── Ocean Fabric // Access of Truth Gate ─────────────────────────
   fastify.get('/v1/ocean/fabric', async () => ({
