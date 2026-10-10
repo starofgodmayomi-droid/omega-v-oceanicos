@@ -6,7 +6,7 @@
 
 ## Audit date and evidence
 
-**2026-10-02** — inspected current `main` at `fd4417e73c4aa10cec678d1f09eb6f09a0cffec2`.
+**2026-10-10** — inspected `main` at `555f6e65c941778a96a368d5f456743083bf827c`.
 
 Evidence sources:
 
@@ -14,7 +14,7 @@ Evidence sources:
 - Each workspace package's `package.json` — package directory and declared name.
 - `apps/api/package.json` — direct API workspace dependency declarations.
 - `docs/REPO_INVENTORY.md` contract test — compares this inventory with those manifests.
-- [Verification Pipeline run 37074868414](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/actions/runs/37074868414) — succeeded on `main` at the audited commit. This is CI evidence for that revision; it does not prove deployment or current production health.
+- [Verification Pipeline run 38021218381](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/actions/runs/38021218381) — succeeded on `main` at the audited commit. This is CI evidence for that revision; it does not prove deployment or current production health.
 
 An earlier 2026-09-27 snapshot at `61b5fff` classified `worker` and `pipeline` as source-only. The current workspace configuration includes both. Historical classifications remain in Git history; the manifest is the source of truth for the inventory below.
 
