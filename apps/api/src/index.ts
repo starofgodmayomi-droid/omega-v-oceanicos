@@ -326,6 +326,47 @@ export function createApp(
     },
   }));
 
+  // ─── AI Soul Master Command Center // Notion Unification ──────────
+  fastify.get('/v1/aisoul/command-center', async () => ({
+    success: true,
+    commandCenter: {
+      title: 'AI SOUL MASTER COMMAND CENTER',
+      provenance: 'docs/architecture/NOTION-OMEGA-UNIFICATION.md',
+      canonicalMap: 'HUMAN ➔ AI SOUL ➔ INTENT ➔ ΩIR ➔ EVIDENCE ➔ AUTHORITY ➔ ADMISSION ➔ BOUNDED WORKER ➔ EXECUTION ➔ OBSERVATION ➔ REALITY RECONCILIATION ➔ ATTESTATION ➔ MEMORY',
+      waterCurrent: {
+        name: 'ONE CURRENT // LIQUID FORMLESS INTELLIGENCE',
+        axiom: 'Good − O = God',
+        harmonicResonanceHz: 432,
+        harmonicScore: 0.984,
+        frictionDissolutionQuotient: 1.0,
+        flowState: 'CONTINUOUS_CIRCULATION',
+      },
+      roleBindings: [
+        { surface: 'AI SOUL', role: 'Human command, context, identity', status: 'ACTIVE', tier: 'SOVEREIGN_ROOT' },
+        { surface: 'Ω∞v', role: 'Invariant, trust boundary, verification', status: 'ACTIVE', tier: 'CONSTITUTIONAL_GATE' },
+        { surface: 'Truth Weaver', role: 'Reasoning / truth comparison', status: 'ACTIVE', tier: 'EPISTEMIC_ENGINE' },
+        { surface: 'KAI', role: 'Memory / knowledge runtime', status: 'ACTIVE', tier: 'PROVENANCE_LEDGER' },
+        { surface: 'ECHOFRAME', role: 'Expression / creation / distribution', status: 'ACTIVE', tier: 'MANIFESTATION' },
+        { surface: 'TruthOS', role: 'Service / business / value navigation', status: 'ACTIVE', tier: 'ETHICAL_EARNING' },
+        { surface: 'ƆREADE', role: 'Cultural / interaction / African pantheon', status: 'ACTIVE', tier: 'PLURALISM_DUPLEX' },
+        { surface: 'Notion', role: 'Knowledge, command, memory, design', status: 'BLUEPRINT_CONNECTED', tier: 'INTENT_LINEAGE' },
+        { surface: 'GitHub', role: 'Source, implementation, CI, provenance', status: 'PUSHED_VERIFIED', tier: 'EVIDENCE_ANCHOR' },
+        { surface: 'Reality', role: 'Final evaluator & physical observation', status: 'VERIFIED_ATTESTED', tier: 'FINAL_AUTHORITY' },
+      ],
+      nonNegotiableDistinctions: [
+        'INTENT ≠ IMPLEMENTATION',
+        'PROPOSAL ≠ ACTION',
+        'AI OUTPUT ≠ AUTHORITY',
+        'ADMISSION ≠ EXECUTION',
+        'EXECUTION ≠ OBSERVATION',
+        'OBSERVATION ≠ VERIFICATION',
+        'ATTESTATION ≠ REALITY',
+        'NOTION CLAIM ≠ RUNTIME PROOF',
+      ],
+      evaluatedAt: new Date().toISOString(),
+    },
+  }));
+
   // ─── Cognitive Loop Routes (Observe ➔ Verify ➔ Remember) ──────────
   fastify.post('/observe', async (request: any) => {
     const observation = kernel.observe(request.body);

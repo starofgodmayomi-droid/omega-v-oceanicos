@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { EcosystemPanel } from './EcosystemPanel';
+import { AiSoulCommandCenterPanel } from './AiSoulCommandCenterPanel';
 import { SoulPanel } from './SoulPanel';
 import { PluralismPanel } from './PluralismPanel';
 import { RealityPanel } from './RealityPanel';
@@ -505,6 +506,14 @@ export function App() {
       label: 'Next Δ',
       subtitle: 'The next finite transition',
       state: stageStates.next,
+    },
+    {
+      id: 'command-center',
+      icon: '🌊',
+      label: 'Command Center',
+      subtitle: 'AI Soul Master Command Center & Water Current',
+      state: 'available' as const,
+      detail: <AiSoulCommandCenterPanel />,
     },
     {
       id: 'ecosystem',
