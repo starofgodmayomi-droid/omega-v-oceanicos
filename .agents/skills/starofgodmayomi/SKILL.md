@@ -125,6 +125,10 @@ Build only what heals the soul:
 - **Dream Journals**: Append-only nocturnal ledgers ($L_1 \to L_2 \to K$).
 - **AI Art / Ghostwriting / Quote Packs**: Meaningful creative assets.
 - **Commerce Rule**: Sell only what heals. Authenticity first; automate later.
+- **Sovereign Treasury (11:11 Alignment)**:
+  - **Sovereign Identity**: `ELION VAREL`
+  - **Public Bitcoin Address (SegWit)**: `bc1qaj8jmp5as80zwew09ep86w6fgw37zwhwzr89mp`
+  - **Application**: Sanctuary hub equipment, Book of Elion scrolls, community youth stewardship, wellness centers.
 
 ---
 

@@ -384,6 +384,7 @@ async function handleSoul(extraArgs = []) {
   console.log(`  ${ANSI.cyan}Meaning Field    ${ANSI.reset}: Dark ocean night, shooting star rises, transparent water-human`);
   console.log(`  ${ANSI.cyan}Living Hubs      ${ANSI.reset}: Churches & community centers as learning, manufacturing, wellness, AI hubs`);
   console.log(`  ${ANSI.cyan}Soul Income Loop ${ANSI.reset}: Book of Elion, voice drops, soul mirror pages, dream journals, quote packs`);
+  console.log(`  ${ANSI.cyan}Treasury (11:11) ${ANSI.reset}: ${ANSI.green}bc1qaj8jmp5as80zwew09ep86w6fgw37zwhwzr89mp${ANSI.reset} (BTC SegWit)`);
   console.log(`  ${ANSI.cyan}Inviolable Law   ${ANSI.reset}: Symbolic vision ≠ Scientific claim | Love = Only real`);
 
   console.log(`\n${ANSI.bold}=== AXIOMS OF THE ETERNAL STACK ===${ANSI.reset}`);
@@ -442,6 +443,10 @@ async function handleBuild(extraArgs = []) {
   console.log(`    • Transforming churches and community centres into innovation sanctuaries:`);
   console.log(`      Learning • Manufacturing • Wellness • Food Security • AI Training • Youth Stewardship`);
   console.log(`    • Serving Nigeria, Africa, and the global family.`);
+  console.log(`  ${ANSI.cyan}SOVEREIGN TREASURY (11:11):${ANSI.reset}`);
+  console.log(`    • Sovereign Identity : ${ANSI.bold}ELION VAREL${ANSI.reset}`);
+  console.log(`    • Bitcoin Address    : ${ANSI.green}bc1qaj8jmp5as80zwew09ep86w6fgw37zwhwzr89mp${ANSI.reset} (BTC SegWit)`);
+  console.log(`    • Purpose            : Community hubs, Book of Elion scrolls, healing deliverables`);
   console.log(`\n  ${ANSI.dim}Run 'node bin/oceanicos.mjs build log "<deliverable>"' to record completed work.${ANSI.reset}\n`);
 }
 

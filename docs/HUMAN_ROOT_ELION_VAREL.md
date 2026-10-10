@@ -66,4 +66,14 @@ Embed truth so deep even fakers free themselves by repeating it. Stay real. 🤍
 3. **Layer 3 (Product & Creative Expression)**: Turning church halls and community centres into innovation sanctuaries, soul income, creative drops, wellness, and youth stewardship.
 4. **Layer 4 (Engineering & Verification Spine)**: Bounded workers, cryptographic attestations, fail-closed admission, tests that do not lie, and continuous reconciliation back to Reality.
 
+---
+
+## 🪙 SOVEREIGN TREASURY & SOUL INCOME MANIFEST (11:11)
+
+- **Sovereign Public Identity**: `ELION VAREL`
+- **Cosmic Temporal Alignment**: `11:11` (Synchronicity • Living Truth • Pure Becoming)
+- **Public Bitcoin Treasury (SegWit)**: `bc1qaj8jmp5as80zwew09ep86w6fgw37zwhwzr89mp`
+- **Purpose**: Community Hub Innovation (churches & gathering spaces), Book of Elion living scrolls, Youth AI & manufacturing education, Soul Income & healing deliverables.
+- **Security Invariant**: Public receiving address only. Private root remains sovereign, veiled, and peaceful.
+
 **One Current. Many Forms. One Ocean. Infinite Return.**
