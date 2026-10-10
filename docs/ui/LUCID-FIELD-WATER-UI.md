@@ -39,10 +39,12 @@ The dashboard connection label is derived by the pure `dashboardConnectionLabel(
 - otherwise → `CONNECTION UNKNOWN`.
 This prevents “simulation disabled” from being presented as proof of a live stream. Reduced-motion CSS limits animation iteration and transition duration.
 
-Latest source head at this snapshot: `fd314a1c0788456e9834383a006a9d056bed1b5a`. The latest hosted checks are running; earlier successful CI is not evidence that this newer head has passed:
-- [Verification Pipeline](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/actions/runs/38011771240) — in progress.
-- [Security Analysis / CodeQL](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/actions/runs/38011771130) — in progress.
-- [Pull Request Coverage](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/actions/runs/38011771200) — in progress.
-- [Bounded Full-Stack Worker](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/actions/runs/38011771154) — pending.
+Latest source head at this snapshot: `3adfd3c3b1bf78c329670d0d530cdf340740b58e`. These hosted workflows were observed completed successfully for the PR head:
+- [Verification Pipeline](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/actions/runs/38011813111) — Node 22/24, Windows compatibility, Compose, package build, and container/API smoke checks succeeded.
+- [Security Analysis / CodeQL](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/actions/runs/38011813122) — success.
+- [Pull Request Coverage](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/actions/runs/38011813232) — success.
+- [Bounded Full-Stack Worker](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/actions/runs/38011813120) — success.
+
+This is CI evidence only. The branch remains 12 commits ahead and 2 behind `main`; reconciliation and rerunning checks on the reconciled head remain open.
 
 **Still not observed:** no existing app preview URL was found in the inspected repository/Notion references, so rendered desktop/tablet/mobile behavior, actual keyboard navigation, and reduced-motion behavior have not been browser-reviewed. Do not infer this from CI. No merge, deployment, external integration, or runtime-health claim is made.
