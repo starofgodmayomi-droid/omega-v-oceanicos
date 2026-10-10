@@ -52,3 +52,10 @@ export function summarizeLucidField(signals: readonly LucidFieldSignal[]): Lucid
 
   return { total, verifiedCount, unresolved, summaryText };
 }
+
+/** Describe connection evidence without inferring a live system from disabled simulation. */
+export function dashboardConnectionLabel(simulationMode: boolean, streamConnected: boolean):
+  'BOUNDED SIMULATION' | 'STREAM CONNECTED' | 'CONNECTION UNKNOWN' {
+  if (simulationMode) return 'BOUNDED SIMULATION';
+  return streamConnected ? 'STREAM CONNECTED' : 'CONNECTION UNKNOWN';
+}
