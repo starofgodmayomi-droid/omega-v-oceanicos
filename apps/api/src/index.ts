@@ -18,6 +18,7 @@ import { OceanicosKernel } from '@omega-v/kernel';
 import { LocalJobError, LocalJobLedger, LOCAL_JOB_WINDOW } from './jobs.js';
 import { registerPipelineRoute } from './pipeline-route.js';
 import { registerEcosystemRoute } from './ecosystem-route.js';
+import { registerSoulRoute } from './soul-route.js';
 import { registerRealityRoute } from './reality-route.js';
 import { OmegaCommandStore, registerOmegaWorkerRoutes } from './omega.js';
 import { omegaRoutes } from './omega/routes.js';
@@ -222,6 +223,7 @@ export function createApp(
 
   registerPipelineRoute(fastify, jsonError);
   registerEcosystemRoute(fastify, authMode, Boolean(attestationSigningKey));
+  registerSoulRoute(fastify);
   registerRealityRoute(fastify, authMode, Boolean(attestationSigningKey), Boolean(ledgerMemory.getTip()));
 
   fastify.get('/health', async (_request, reply) => {

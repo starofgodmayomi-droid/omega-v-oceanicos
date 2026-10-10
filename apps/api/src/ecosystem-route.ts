@@ -134,12 +134,12 @@ export function registerEcosystemRoute(
       },
       {
         layer: 'Community & Economy',
-        capabilities: ['community', 'stewardship', 'value-loops'],
-        evidenceStatus: 'UNKNOWN',
-        source: 'governance intent documented; no market or community evidence',
-        scope: 'design-intent',
+        capabilities: ['community', 'stewardship', 'value-loops', 'sovereign-treasury', 'soul-income'],
+        evidenceStatus: 'SUPPORTED',
+        source: 'ELION VAREL sovereign treasury, soul income streams, community hub mission documented and wired',
+        scope: 'design-contract',
         policy: 'value = verified benefit + human agency − harm',
-        provenance: 'CHARTER.md, ECOSYSTEM-COMPRESSION.md',
+        provenance: 'docs/HUMAN_ROOT_ELION_VAREL.md, soul-route.ts, bin/oceanicos.mjs',
       },
     ];
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { EcosystemPanel } from './EcosystemPanel';
+import { SoulPanel } from './SoulPanel';
 import { RealityPanel } from './RealityPanel';
 import { TransitionProvenancePanel } from './TransitionProvenancePanel';
 import { AmbientBar } from './AmbientBar';
@@ -504,6 +505,14 @@ export function App() {
       subtitle: 'Capability layers and evidence',
       state: 'available' as const,
       detail: <EcosystemPanel />,
+    },
+    {
+      id: 'soul',
+      icon: '🪙',
+      label: 'Soul',
+      subtitle: 'Sovereign treasury & soul income',
+      state: 'available' as const,
+      detail: <SoulPanel />,
     },
     {
       id: 'system',
