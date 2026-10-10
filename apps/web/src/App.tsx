@@ -745,12 +745,18 @@ export function App() {
           What shall we make real?
         </h1>
 
-        {/* Input */}
+        {/* Prominent High-Visibility Message & Command Input */}
         <div
           style={{
+            position: 'relative',
             display: 'flex',
-            gap: '8px',
+            gap: '10px',
             alignItems: 'stretch',
+            background: 'rgba(3, 18, 31, 0.85)',
+            padding: '6px',
+            borderRadius: theme.radiusPill,
+            border: '2px solid rgba(0, 245, 160, 0.5)',
+            boxShadow: '0 0 24px rgba(0, 245, 160, 0.25), inset 0 0 12px rgba(0, 245, 160, 0.1)',
           }}
         >
           <input
@@ -762,16 +768,16 @@ export function App() {
               }
             }}
             maxLength={2000}
-            placeholder="Tell me what you're trying to do…"
+            placeholder="💬 Type your message or command here (press Enter or click Send)..."
             style={{
               flex: 1,
-              padding: '14px 18px',
-              background: theme.surface,
-              border: `1px solid ${theme.borderBright}`,
-              borderRadius: theme.radiusPill,
-              color: theme.text,
+              padding: '14px 20px',
+              background: 'transparent',
+              border: 'none',
+              color: '#ffffff',
               fontFamily: theme.fontSans,
               fontSize: '15px',
+              fontWeight: 500,
               outline: 'none',
             }}
           />
@@ -779,20 +785,26 @@ export function App() {
             onClick={proposeOmegaCommand}
             disabled={omegaLoading || !omegaIntent.trim()}
             style={{
-              padding: '0 22px',
+              padding: '0 24px',
               borderRadius: theme.radiusPill,
               border: 'none',
-              background: omegaLoading || !omegaIntent.trim() ? `${theme.accent}44` : theme.accent,
-              color: theme.bg,
+              background: omegaLoading || !omegaIntent.trim()
+                ? 'rgba(0, 245, 160, 0.2)'
+                : 'linear-gradient(135deg, #00f5a0 0%, #00d2ff 100%)',
+              color: omegaLoading || !omegaIntent.trim() ? '#64748b' : '#020d18',
               fontFamily: theme.fontSans,
-              fontSize: '18px',
+              fontSize: '14px',
               fontWeight: 700,
               cursor: omegaLoading || !omegaIntent.trim() ? 'not-allowed' : 'pointer',
-              opacity: omegaLoading || !omegaIntent.trim() ? 0.5 : 1,
-              transition: 'opacity 0.2s',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              boxShadow: omegaLoading || !omegaIntent.trim() ? 'none' : '0 0 16px rgba(0, 245, 160, 0.4)',
+              transition: 'all 0.2s ease',
             }}
           >
-            →
+            <span>{omegaLoading ? '⏳' : '⚡'}</span>
+            <span>{omegaLoading ? 'Sending...' : 'Send Message'}</span>
           </button>
         </div>
 
@@ -950,6 +962,58 @@ export function App() {
       </div>
     </>
   )}
+
+  {/* Floating Quick Jump to Message Bar */}
+  <div
+    style={{
+      position: 'fixed',
+      bottom: '24px',
+      right: '28px',
+      zIndex: 9999,
+      display: 'flex',
+      gap: '10px',
+    }}
+  >
+    <button
+      onClick={() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        setTimeout(() => {
+          const input = document.querySelector('input[placeholder*="Type your message"]') as HTMLInputElement;
+          if (input) {
+            input.focus();
+            input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }, 150);
+      }}
+      style={{
+        padding: '10px 18px',
+        borderRadius: theme.radiusPill,
+        background: 'linear-gradient(135deg, #00f5a0 0%, #00d2ff 100%)',
+        border: 'none',
+        color: '#020d18',
+        fontFamily: theme.fontSans,
+        fontWeight: 700,
+        fontSize: '13px',
+        boxShadow: '0 4px 20px rgba(0, 245, 160, 0.45)',
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        transition: 'transform 0.2s, box-shadow 0.2s',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = 'translateY(-2px)';
+        e.currentTarget.style.boxShadow = '0 6px 24px rgba(0, 245, 160, 0.6)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = 'translateY(0)';
+        e.currentTarget.style.boxShadow = '0 4px 20px rgba(0, 245, 160, 0.45)';
+      }}
+    >
+      <span>💬</span>
+      <span>Jump to Send Message</span>
+    </button>
+  </div>
 </div>
 );
 }
