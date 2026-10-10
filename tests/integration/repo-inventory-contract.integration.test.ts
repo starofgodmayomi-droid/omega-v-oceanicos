@@ -84,7 +84,7 @@ test('source-only examples do not misclassify current workspace packages', () =>
   assert.match(sourceOnlyExamples, /examples, not an exhaustive package list/);
   for (const row of packageRows) {
     assert.ok(
-      !sourceOnlyExamples.includes(`\`${row.path}\``),
+      !sourceOnlyExamples.includes(`${row.path}`),
       `workspace package ${row.path} must not appear in source-only examples`
     );
   }
@@ -95,4 +95,24 @@ test('inventory contract is part of both explicit root test suites', () => {
   for (const script of ['test', 'test:e2e']) {
     assert.ok(rootPackage.scripts[script]?.includes(testPath), `${script} must run ${testPath}`);
   }
+});
+
+test('repository operating contract preserves evidence and execution boundaries', () => {
+  const contract = read('docs/REPOSITORY_OPERATING_CONTRACT.md');
+  for (const requiredPhrase of [
+    'INTENT → DISTINGUISH → MAP → EVIDENCE → VERIFY',
+    'AUTHORIZE → BOUND → EXECUTE → OBSERVE',
+    'RECONCILE → ATTEST → REMEMBER → NEXT FINITE Δ',
+    'UNKNOWN',
+    'DIVERGENT',
+    'NOT_EXECUTED',
+    'MODEL_ONLY',
+    'CI run does not waive review',
+    'exact candidate head',
+    'Definition of done for one finite change',
+  ]) {
+    assert.ok(contract.includes(requiredPhrase), `operating contract must preserve: ${requiredPhrase}`);
+  }
+  assert.match(contract, /Admission is not execution/);
+  assert.match(contract, /production health are not claimed without their own evidence/);
 });
