@@ -1,8 +1,9 @@
 import React, { useMemo } from 'react';
 import { theme, humanStatus } from './oceanicosTheme';
-import { boundedStatus, statusCounts, STATUS_ORDER, summarizeLucidField, type RealityStatus } from './whole-ecosystem-dashboard-model';
+import { boundedStatus, statusCounts, STATUS_ORDER, type RealityStatus } from './whole-ecosystem-dashboard-model';
 import { AgentSafetyBoundaryPanel } from './AgentSafetyBoundaryPanel';
 import { WorkerCoordinationPanel } from './WorkerCoordinationPanel';
+import { LucidFieldWaterPanel } from './LucidFieldWaterPanel';
 
 type Props = {
   streamConnected: boolean;
@@ -121,8 +122,6 @@ export function WholeEcosystemDashboard(props: Props) {
   const commandStatus = props.omegaCommand?.reality?.classification
     ? boundedStatus(props.omegaCommand.reality.classification)
     : 'NOT_EXECUTED';
-  const lucidSummary = summarizeLucidField(evidence);
-  const nextUnresolved = lucidSummary.unresolved[0];
 
   return (
     <section className="whole-ecosystem" aria-label="Whole ecosystem command surface">
@@ -173,23 +172,6 @@ export function WholeEcosystemDashboard(props: Props) {
             {STATUS_ORDER.map((status) => <div key={status}><span style={{ color: STATUS_COLOR[status] }}>● {status.replace('_', ' ')}</span><strong>{counts[status]}</strong></div>)}
           </div>
           <small className="whole-metric-note">Current signal plus retained history; not a whole-system total.</small>
-          <section className="lucid-field" aria-labelledby="lucid-field-heading">
-            <div className="lucid-field-header">
-              <span className="whole-ecosystem-label" id="lucid-field-heading">LUCID FIELD · VIEW-LOCAL</span>
-              <strong>{lucidSummary.verifiedCount}/{lucidSummary.total}</strong>
-            </div>
-            <p className="lucid-field-summary" role="status" aria-live="polite">{lucidSummary.summaryText}</p>
-            <small className="lucid-field-note">Only signals listed on this screen; not an all-channel or whole-reality scan.</small>
-            {nextUnresolved && (
-              <button
-                className="lucid-field-action"
-                type="button"
-                onClick={() => props.onFocusCommand(`Plan a bounded review of ${nextUnresolved.label} at its stated source (${nextUnresolved.source}); preserve ${nextUnresolved.status} until new evidence supports a change.`)}
-              >
-                PLAN REVIEW
-              </button>
-            )}
-          </section>
           <span className="whole-ecosystem-label whole-evidence-title">OBSERVED SIGNALS</span>
           <div className="whole-evidence-meter" role="img" aria-label={`${observedSignals} of ${evidence.length} observed signals`}><span style={{ width: `${observedSignalRatio * 100}%` }} /></div>
           <strong className="whole-evidence-number">{observedSignals} / {evidence.length}</strong>
@@ -199,6 +181,8 @@ export function WholeEcosystemDashboard(props: Props) {
           <div className="whole-trust-boundary">DOCUMENTED ≠ VERIFIED<br />CAPABILITY ≠ AUTHORITY<br />PLAN ≠ EXECUTION</div>
         </aside>
       </div>
+
+      <LucidFieldWaterPanel signals={evidence} command={props.omegaCommand} onPlanReview={props.onFocusCommand} />
 
       <AgentSafetyBoundaryPanel
         capabilityObserved={props.ecosystemBody?.status === 'VERIFIED'}
