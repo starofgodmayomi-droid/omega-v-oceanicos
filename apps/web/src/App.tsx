@@ -47,6 +47,13 @@ const MODE_BUTTONS = [
   { icon: '◎', label: 'Change', template: 'Change ' },
 ];
 
+const OCEAN_FABRIC_ACTIONS = [
+  { icon: '💧', label: 'Truth Membrane', intent: 'Verify Ocean Fabric Water Membrane & Fail-Closed Boundary' },
+  { icon: '🪙', label: '11:11 Treasury', intent: 'Verify ELION VAREL Sovereign Treasury bc1qaj8jmp5as80zwew09ep86w6fgw37zwhwzr89mp' },
+  { icon: '🏛️', label: 'Duplex Convergence', intent: 'Simulate African Pantheon Duplex Convergence across 5 regional faces' },
+  { icon: '📜', label: 'Merkle Audit', intent: 'Audit Canonical State Ledger Tip and cryptographic parent chaining' },
+];
+
 export function App() {
   const [tip, setTip] = useState<any>(null);
   const [history, setHistory] = useState<any[]>([]);
@@ -817,6 +824,89 @@ export function App() {
               {mode.icon} {mode.label}
             </button>
           ))}
+        </div>
+
+        {/* Ocean Fabric // Access of Truth Membrane Bar */}
+        <div
+          style={{
+            marginTop: '16px',
+            padding: '12px 16px',
+            background: 'linear-gradient(135deg, rgba(2, 13, 24, 0.8) 0%, rgba(4, 28, 44, 0.8) 100%)',
+            border: '1px solid rgba(0, 245, 160, 0.25)',
+            borderRadius: theme.radius,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '10px',
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              fontSize: '11px',
+              color: '#38bdf8',
+              letterSpacing: '0.4px',
+            }}
+          >
+            <span style={{ fontWeight: 600 }}>
+              💧 OCEAN FABRIC // ACCESS OF TRUTH GATE
+            </span>
+            <span style={{ color: '#00f5a0', fontSize: '10px', fontWeight: 600 }}>
+              🛡️ TOTAL SURFACE SECURITY · FAIL-CLOSED
+            </span>
+          </div>
+
+          <div
+            style={{
+              fontSize: '11px',
+              color: '#94a3b8',
+              lineHeight: 1.4,
+            }}
+          >
+            The multi-universal city is fully transparent to observe, but impermeable to enter without verified Truth.
+          </div>
+
+          <div
+            style={{
+              display: 'flex',
+              gap: '8px',
+              flexWrap: 'wrap',
+            }}
+          >
+            {OCEAN_FABRIC_ACTIONS.map((action) => (
+              <button
+                key={action.label}
+                onClick={() => setOmegaIntent(action.intent)}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: theme.radiusPill,
+                  border: '1px solid rgba(0, 245, 160, 0.3)',
+                  background: 'rgba(3, 18, 31, 0.6)',
+                  color: '#e2e8f0',
+                  fontFamily: theme.fontSans,
+                  fontSize: '12px',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  transition: 'border-color 0.2s, background 0.2s',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = '#00f5a0';
+                  e.currentTarget.style.background = 'rgba(0, 245, 160, 0.12)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = 'rgba(0, 245, 160, 0.3)';
+                  e.currentTarget.style.background = 'rgba(3, 18, 31, 0.6)';
+                }}
+              >
+                <span>{action.icon}</span>
+                <span>{action.label}</span>
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Intent flow card */}

@@ -300,6 +300,32 @@ export function createApp(
     evaluatedAt: new Date().toISOString(),
   }));
 
+  // ─── Ocean Fabric // Access of Truth Gate ─────────────────────────
+  fastify.get('/v1/ocean/fabric', async () => ({
+    success: true,
+    membrane: {
+      name: 'THE INVIOLATE OCEAN WATER FABRIC',
+      status: 'TOTAL_SURFACE_SECURITY_ACTIVE',
+      underwaterCity: 'MULTI_UNIVERSAL_EVIDENCE_CONTINUUM',
+      visibility: 'TRANSPARENT_TO_OBSERVERS',
+      permeability: 'MUTATION_REQUIRES_ACCESS_OF_TRUTH',
+      accessOfTruthGate: {
+        invariant: 'You can observe the underwater city, but cannot enter or mutate without verified Truth.',
+        axioms: [
+          'KEY ≠ AUTHORITY',
+          'SIGNATURE ≠ AUTHORIZATION',
+          'INTELLIGENCE ≠ AUTHORITY',
+          'DEFAULT: FAIL CLOSED',
+          'VALUE = VERIFIED_BENEFIT + HUMAN_AGENCY + DIGNITY − HARM'
+        ],
+        humanStewardReviewRequired: true,
+        autonomousDestructionForbidden: true,
+        sovereignty: 'ELION VAREL // 11:11 SOVEREIGN ROOT'
+      },
+      evaluatedAt: new Date().toISOString(),
+    },
+  }));
+
   // ─── Cognitive Loop Routes (Observe ➔ Verify ➔ Remember) ──────────
   fastify.post('/observe', async (request: any) => {
     const observation = kernel.observe(request.body);
