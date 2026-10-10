@@ -15,6 +15,7 @@ import { InferenceClient } from '@oceanicos/inference';
 import { VectorMemory } from '@oceanicos/vector';
 import { PluralisticRealityMatrix, PluralismConvergenceMatrix } from '@oceanicos/pluralism';
 import { OceanicosKernel } from '@omega-v/kernel';
+import { evaluateAuthorization } from '@oceanicos/authorization';
 import { LocalJobError, LocalJobLedger, LOCAL_JOB_WINDOW } from './jobs.js';
 import { registerPipelineRoute } from './pipeline-route.js';
 import { registerEcosystemRoute } from './ecosystem-route.js';
@@ -363,6 +364,58 @@ export function createApp(
         'ATTESTATION ≠ REALITY',
         'NOTION CLAIM ≠ RUNTIME PROOF',
       ],
+      evaluatedAt: new Date().toISOString(),
+    },
+  }));
+
+  // ─── Constitutional Authorization Gate (§6, §8, §9, §12) ─────────
+  fastify.post('/v1/authorization/evaluate', async (request: any) => {
+    const body = request.body || {};
+    const decision = evaluateAuthorization({
+      subject: body.subject || 'unspecified-subject',
+      intent: body.intent || '',
+      isDestructive: Boolean(body.isDestructive),
+      isFinancial: Boolean(body.isFinancial),
+      isIrreversible: Boolean(body.isIrreversible),
+      hasDissentRecords: Boolean(body.hasDissentRecords),
+      requestedBy: body.requestedBy || 'anonymous',
+      evidence: Array.isArray(body.evidence) ? body.evidence : [],
+      timestamp: new Date().toISOString(),
+    });
+    return {
+      success: true,
+      decision,
+      constitution: {
+        layer: 'Group C — Security (§6, §8, §9, §12)',
+        invariants: [
+          'KEY ≠ AUTHORITY',
+          'SIGNATURE ≠ AUTHORIZATION',
+          'INTELLIGENCE ≠ AUTHORITY',
+          'MOOD ≠ AUTHORITY',
+          'DEFAULT: FAIL CLOSED',
+        ],
+      },
+      evaluatedAt: new Date().toISOString(),
+    };
+  });
+
+  fastify.get('/v1/authorization/policy', async () => ({
+    success: true,
+    policy: {
+      name: 'CONSTITUTIONAL CHANGE CALCULUS',
+      sections: ['§6 Change Calculus', '§8 Worker Constitution', '§9 Human+AI Constitution', '§12 Autonomous Weapons Prohibition'],
+      axioms: [
+        'KEY ≠ AUTHORITY',
+        'SIGNATURE ≠ AUTHORIZATION',
+        'INTELLIGENCE ≠ AUTHORITY',
+        'MOOD ≠ AUTHORITY',
+        'DEFAULT: FAIL CLOSED',
+      ],
+      rules: {
+        DENY: 'Never execute (missing identity, empty bounds, or prohibited lethal/targeting/bypass actions)',
+        REVIEW: 'Never execute until authorized by human steward (destructive, financial, irreversible, or dissent)',
+        ALLOW: 'May execute only inside declared, verified bounds',
+      },
       evaluatedAt: new Date().toISOString(),
     },
   }));
