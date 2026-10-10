@@ -54,11 +54,13 @@ export interface RealityStatus {
 export function registerRealityRoute(
   fastify: FastifyInstance,
   authMode: string,
-  attesterReady: boolean,
-  ledgerHasTip: boolean,
+  attesterReady: boolean | (() => boolean),
+  ledgerHasTip: boolean | (() => boolean),
 ): void {
   fastify.get('/v1/reality/status', async () => {
     const now = new Date().toISOString();
+    const isAttesterReady = typeof attesterReady === 'function' ? attesterReady() : attesterReady;
+    const hasTip = typeof ledgerHasTip === 'function' ? ledgerHasTip() : ledgerHasTip;
 
     const statusVector: StatusVectorField[] = [
       {
@@ -112,22 +114,22 @@ export function registerRealityRoute(
       },
       {
         field: 'verified',
-        value: ledgerHasTip ? 'YES' : 'UNKNOWN',
-        evidence: ledgerHasTip
+        value: hasTip ? 'YES' : 'UNKNOWN',
+        evidence: hasTip
           ? 'ledger tip exists with hash-chained evidence'
           : 'no ledger tip — reality reconciliation not yet performed',
-        provenance: ledgerHasTip
+        provenance: hasTip
           ? '@oceanicos/remember SQLite ledger, SHA-256 hash chain'
           : 'no memory evidence observed',
         scope: 'local-runtime',
       },
       {
         field: 'attested',
-        value: attesterReady ? 'SUPPORTED' === 'SUPPORTED' ? 'YES' : 'UNKNOWN' : 'UNKNOWN',
-        evidence: attesterReady
+        value: isAttesterReady ? 'YES' : 'UNKNOWN',
+        evidence: isAttesterReady
           ? 'attestation service ready with configured signing key'
           : 'attester degraded — signing key not configured',
-        provenance: attesterReady
+        provenance: isAttesterReady
           ? '@oceanicos/attestation HMAC-SHA256'
           : 'OMEGA_SIGNING_KEY not set',
         scope: 'local-runtime',

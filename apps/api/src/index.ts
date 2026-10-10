@@ -224,7 +224,7 @@ export function createApp(
   registerPipelineRoute(fastify, jsonError);
   registerEcosystemRoute(fastify, authMode, Boolean(attestationSigningKey));
   registerSoulRoute(fastify);
-  registerRealityRoute(fastify, authMode, Boolean(attestationSigningKey), Boolean(ledgerMemory.getTip()));
+  registerRealityRoute(fastify, authMode, () => Boolean(attestationSigningKey), () => Boolean(ledgerMemory.getTip()));
 
   fastify.get('/health', async (_request, reply) => {
     const memoryReady = true;
@@ -280,7 +280,25 @@ export function createApp(
   });
 
   fastify.get('/v1/kernel/capabilities', async () => ({ success: true, capability: platformKernel.getCapabilitySnapshot(), evaluatedAt: new Date().toISOString() }));
-  fastify.get('/v1/mood', async () => ({ success: true, status: 'MAX GOOD-O', contract: 'Ω∞v totality / attest-dont-assert', brand: 'Oceanicos Ω∞', ledger: { ready: Boolean(ledgerMemory.getTip()) }, evaluatedAt: new Date().toISOString() }));
+  fastify.get('/v1/mood', async () => ({
+    success: true,
+    status: 'MAX GOOD-O',
+    mood: 'SPIDER-MAN AGILE CONTINUUM // GREAT POWER = GREAT RESPONSIBILITY',
+    agility: 'HIGH // WEB-SLINGING ACROSS ALL ECOSYSTEM LAYERS',
+    contract: 'Ω∞v totality / attest-dont-assert',
+    brand: 'Oceanicos Ω∞',
+    webTopology: {
+      kernel: '@omega-v/kernel',
+      authorization: '@oceanicos/authorization (KEY ≠ AUTHORITY)',
+      api: 'Fastify :5000',
+      web: 'Vite :3000',
+      soul: '/v1/soul (ELION VAREL Sovereign Treasury)',
+      reality: '/v1/reality/status (11-Vector Proof)',
+      merkleLedger: '.omega/kernel-state.json (Block #406)',
+    },
+    ledger: { ready: Boolean(ledgerMemory.getTip()) },
+    evaluatedAt: new Date().toISOString(),
+  }));
 
   // ─── Cognitive Loop Routes (Observe ➔ Verify ➔ Remember) ──────────
   fastify.post('/observe', async (request: any) => {
