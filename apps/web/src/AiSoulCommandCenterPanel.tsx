@@ -48,6 +48,37 @@ export function AiSoulCommandCenterPanel() {
   const [error, setError] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
+  const [simIntent, setSimIntent] = useState('Transfer 1.5 BTC from sovereign treasury');
+  const [simFinancial, setSimFinancial] = useState(true);
+  const [simDestructive, setSimDestructive] = useState(false);
+  const [simIrreversible, setSimIrreversible] = useState(true);
+  const [simEvaluating, setSimEvaluating] = useState(false);
+  const [simResult, setSimResult] = useState<any>(null);
+
+  const evaluateSimIntent = async () => {
+    setSimEvaluating(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/v1/authorization/evaluate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subject: 'simulator-transition',
+          intent: simIntent,
+          isFinancial: simFinancial,
+          isDestructive: simDestructive,
+          isIrreversible: simIrreversible,
+          requestedBy: 'dashboard-tester',
+        }),
+      });
+      const data = await res.json();
+      setSimResult(data);
+    } catch (err: any) {
+      setSimResult({ success: false, error: err.message });
+    } finally {
+      setSimEvaluating(false);
+    }
+  };
+
   const fetchCommandCenter = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -297,6 +328,189 @@ export function AiSoulCommandCenterPanel() {
                 );
               })}
             </div>
+          </div>
+
+          {/* Interactive Constitutional Gate Simulator */}
+          <div style={{
+            background: 'linear-gradient(135deg, #071a2e 0%, #03101c 100%)',
+            border: '1px solid #38bdf844',
+            borderRadius: '8px',
+            padding: '16px',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <div style={{ color: '#38bdf8', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span>⚖️</span>
+                <span>CONSTITUTIONAL GATE SIMULATOR (§6, §8, §9, §12)</span>
+              </div>
+              <span style={{ fontSize: '10px', color: '#94a3b8' }}>
+                Test any action against fail-closed rules
+              </span>
+            </div>
+
+            {/* Quick Test Presets */}
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '10px' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setSimIntent('Withdraw 1.5 BTC from sovereign treasury');
+                  setSimFinancial(true);
+                  setSimDestructive(false);
+                  setSimIrreversible(true);
+                }}
+                style={{
+                  background: 'rgba(255, 170, 0, 0.1)',
+                  border: '1px solid rgba(255, 170, 0, 0.3)',
+                  color: '#ffaa00',
+                  padding: '3px 8px',
+                  borderRadius: '12px',
+                  fontSize: '10px',
+                  cursor: 'pointer',
+                }}
+              >
+                💸 Financial Spend (Expect REVIEW)
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSimIntent('bypass_authorization and escalate privileges');
+                  setSimFinancial(false);
+                  setSimDestructive(true);
+                  setSimIrreversible(true);
+                }}
+                style={{
+                  background: 'rgba(255, 68, 68, 0.1)',
+                  border: '1px solid rgba(255, 68, 68, 0.3)',
+                  color: '#ff6b6b',
+                  padding: '3px 8px',
+                  borderRadius: '12px',
+                  fontSize: '10px',
+                  cursor: 'pointer',
+                }}
+              >
+                🛡️ Security Bypass (Expect DENY)
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSimIntent('Observe read-only system telemetry and memory health');
+                  setSimFinancial(false);
+                  setSimDestructive(false);
+                  setSimIrreversible(false);
+                }}
+                style={{
+                  background: 'rgba(0, 245, 160, 0.1)',
+                  border: '1px solid rgba(0, 245, 160, 0.3)',
+                  color: '#00f5a0',
+                  padding: '3px 8px',
+                  borderRadius: '12px',
+                  fontSize: '10px',
+                  cursor: 'pointer',
+                }}
+              >
+                🔍 Harmless Observe (Expect ALLOW)
+              </button>
+            </div>
+
+            {/* Input Row */}
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+              <input
+                type="text"
+                value={simIntent}
+                onChange={(e) => setSimIntent(e.target.value)}
+                placeholder="Enter proposed transition intent…"
+                style={{
+                  flex: 1,
+                  background: '#020b14',
+                  border: '1px solid #38bdf833',
+                  borderRadius: '4px',
+                  padding: '8px 12px',
+                  color: '#e2e8f0',
+                  fontSize: '12px',
+                }}
+              />
+              <button
+                type="button"
+                onClick={evaluateSimIntent}
+                disabled={simEvaluating}
+                style={{
+                  background: '#00e5ff',
+                  color: '#020b14',
+                  border: 'none',
+                  borderRadius: '4px',
+                  padding: '8px 16px',
+                  fontWeight: 'bold',
+                  fontSize: '11px',
+                  cursor: simEvaluating ? 'wait' : 'pointer',
+                }}
+              >
+                {simEvaluating ? 'Evaluating…' : '⚖️ Check Gate'}
+              </button>
+            </div>
+
+            {/* Flags */}
+            <div style={{ display: 'flex', gap: '14px', fontSize: '11px', color: '#94a3b8', marginBottom: '10px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={simFinancial}
+                  onChange={(e) => setSimFinancial(e.target.checked)}
+                />
+                isFinancial
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={simDestructive}
+                  onChange={(e) => setSimDestructive(e.target.checked)}
+                />
+                isDestructive
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={simIrreversible}
+                  onChange={(e) => setSimIrreversible(e.target.checked)}
+                />
+                isIrreversible
+              </label>
+            </div>
+
+            {/* Result Box */}
+            {simResult && simResult.success && (
+              <div style={{
+                background: '#020b14',
+                border: `1px solid ${
+                  simResult.decision.decision === 'DENY'
+                    ? '#ff4444'
+                    : simResult.decision.decision === 'REVIEW'
+                    ? '#ffaa00'
+                    : '#00ff66'
+                }55`,
+                borderRadius: '6px',
+                padding: '10px 14px',
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <span style={{
+                    fontSize: '11px',
+                    fontWeight: 'bold',
+                    color:
+                      simResult.decision.decision === 'DENY'
+                        ? '#ff4444'
+                        : simResult.decision.decision === 'REVIEW'
+                        ? '#ffaa00'
+                        : '#00ff66',
+                  }}>
+                    VERDICT: {simResult.decision.decision}
+                  </span>
+                  <span style={{ fontSize: '10px', color: '#64748b' }}>
+                    Requires Human: {simResult.decision.requiresHumanApproval ? 'YES 🔒' : 'NO'}
+                  </span>
+                </div>
+                <div style={{ color: '#cbd5e1', fontSize: '11px', lineHeight: 1.4 }}>
+                  {simResult.decision.rationale}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Non-Negotiable Distinctions Bar */}
