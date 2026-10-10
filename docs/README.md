@@ -83,6 +83,11 @@ Welcome to the Ω∞v Oceanicos documentation. Start here to understand the proj
 - **[Whole Ecosystem Constitution](./WHOLE-ECOSYSTEM-CONSTITUTION.md)**
   — the user-supplied one-body architecture source, preserved as design
   language and explicitly separated from runtime proof, authority, and reality.
+- **[Total maximum compressed matrix reconciliation](./research/TOTAL-MAXIMUM-COMPRESSED-MATRIX-RECONCILIATION-2026-10-07.md)**
+  — source-preserving extraction and evidence-bound mapping of the supplied
+  matrix and viewport prompt to the current repository contracts.
+- **[ΩIR v1 viewport proposal](./raw/omega-v-full-stack/omega-ir-v1-viewport-proposal.json)**
+  — declarative, dry-run-only JSON fixture; not a runtime command or attestation.
 - **[Full-stack reality access](./upgrades/FULL_STACK_REALITY_ACCESS_2026-09-28.md)**
   — admissible connector surfaces, authentication, authorization, and
   reconciliation boundaries.
@@ -148,8 +153,12 @@ remain on the [roadmap](./ROADMAP.md).
   evidence + memory composed into one cycle
 - **[Architecture](./ARCHITECTURE.md)** — how the packages fit together
 
-There is no compiler or IR, and no database: state is a JSON snapshot and
-two append-only files on disk.
+`@omega-v/ir` and `@omega-v/compiler` are workspace members, and the
+declarative `omega-ir.v1` contract is validated by `@oceanicos/mini`; the API
+does not directly depend on the IR/compiler packages. The API and memory
+packages also contain local SQLite/file-backed stores. Package membership and
+hash-chain integrity do not imply one immutable ledger, cross-host durability,
+or production health.
 
 ### Community
 
