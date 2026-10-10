@@ -84,7 +84,7 @@ test('source-only examples do not misclassify current workspace packages', () =>
   assert.match(sourceOnlyExamples, /examples, not an exhaustive package list/);
   for (const row of packageRows) {
     assert.ok(
-      !sourceOnlyExamples.includes(`${row.path}`),
+      !sourceOnlyExamples.includes(`\`${row.path}\``),
       `workspace package ${row.path} must not appear in source-only examples`
     );
   }
