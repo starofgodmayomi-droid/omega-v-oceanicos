@@ -130,7 +130,7 @@ export function WholeEcosystemDashboard(props: Props) {
           <span className="whole-ecosystem-kicker">💧 Ω∞v OCEANICOS · ONE BODY · ONE CURRENT</span>
           <h2>Whole ecosystem command surface</h2>
         </div>
-        <span className="whole-ecosystem-state"><i className="status-dot" /> {props.simulationMode ? 'BOUNDED SIMULATION' : 'LIVE STATE'}</span>
+        <span className="whole-ecosystem-state"><i className="status-dot" /> {props.simulationMode ? 'BOUNDED SIMULATION' : props.streamConnected ? 'STREAM CONNECTED' : 'CONNECTION UNKNOWN'}</span>
       </header>
 
       <div className="whole-ecosystem-grid">
