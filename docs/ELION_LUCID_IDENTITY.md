@@ -34,15 +34,16 @@ Before mutation, define target, permission, expected result, time/data/cost limi
 
 ## Implementation boundaries
 - Do not replace existing specialist skills or rename packages for branding alone.
-- Adopt ELION naming in UI only after checking existing user journeys, accessibility, and tests.
+- Keep ELION naming in a reviewable UI surface with semantic landmarks, visible keyboard focus, responsive layout, and explicit evidence limits; production release still requires browser-level UX/accessibility review.
 - No unbounded self-modifying loop, silent agent, or implied persistent background execution.
 - Any future API/UI feature must carry actual state and evidence from the backend; never synthesize VERIFIED from presentation text.
 - Do not automatically merge or deploy this contract.
 
 ## Acceptance and follow-up
-- This document is a reviewable specification, not proof of functional integration.
-- Next implementation slice: inspect current web routes/components and add an accessible, evidence-aware identity surface with focused tests.
-- Verify via existing repository checks and CI before any merge.
+- This document remains the identity specification; the UI implementation is currently on the review branch and is not yet merged.
+- Implemented on the feature branch: an accessible React identity surface, view-local signal mapping, and regression tests for unknown/divergent states.
+- The panel reports only signals supplied by the current view; it does not prove backend identity, autonomous operation, deployment, or whole-system health.
+- The model regression test is now included in the root `pnpm test` command. CI and browser-level UX/accessibility review remain pending.
 - Reconcile expected and observed behavior; report unknown runtime health explicitly.
 
 ## Sources
