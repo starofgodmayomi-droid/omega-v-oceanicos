@@ -144,6 +144,31 @@ describe('dashboard', () => {
     });
   });
 
+  it('fails closed when the pipeline returns a malformed water-flow receipt', async () => {
+    const user = userEvent.setup();
+    installFetch({
+      '/api/v1/pipeline': () =>
+        json({
+          success: true,
+          pipeline: { waterFlow: [{ stage: 'REALITY', verified: true }] },
+        }),
+    });
+    await renderApp();
+
+    await user.click(await screen.findByRole('button', { name: /request finite trace/i }));
+
+    const waterFlowRegion = await screen.findByRole('region', {
+      name: 'KAI bounded water-flow trace',
+    });
+    expect(within(waterFlowRegion).getByText('NOT_EXECUTED')).toBeInTheDocument();
+    expect(
+      within(waterFlowRegion).getByText(
+        'No pipeline receipt supplied; this surface is a contract view, not a runtime claim.'
+      )
+    ).toBeInTheDocument();
+    expect(await screen.findByText('pipeline returned an invalid water-flow receipt')).toBeInTheDocument();
+  });
+
   it('keeps the dashboard usable when the OS snapshot is unavailable', async () => {
     installFetch({ '/api/os': () => json({ message: 'kernel unavailable' }, { status: 503 }) });
     await renderApp();

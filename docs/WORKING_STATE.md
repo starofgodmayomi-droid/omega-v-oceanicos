@@ -18,11 +18,11 @@ Observed local evidence on the main-based branch: `pnpm build` and
 passed (14 tests); `pnpm test` passed (145 tests); `pnpm format:check`,
 `pnpm validate:ci`, and `pnpm validate:skills` passed. The Web DOM toolchain is
 now declared by `apps/web`, configured for ESM, and runnable through
-`pnpm run test:dom`; the new water-flow interaction test passes, as does the
-async DOM runner smoke test. The complete legacy DOM suite still has 86 stale
-dashboard assertions against older labels/routes, so it remains a known
-`DIVERGENT` test surface rather than evidence that the platform path is green.
-No deployment or runtime health claim is made.
+`pnpm run test:dom`; the bounded water-flow success and malformed-receipt paths
+both pass, as does the async DOM runner smoke test. The complete legacy DOM
+suite still has 86 stale dashboard assertions against older labels/routes, so
+it remains a known `DIVERGENT` test surface rather than evidence that the
+platform path is green. No deployment or runtime health claim is made.
 
 Next finite Δ: reconcile the 86 legacy DOM assertions with the current
 dashboard contract, then make `test:dom` part of the supported CI test matrix.

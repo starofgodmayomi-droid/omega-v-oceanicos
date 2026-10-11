@@ -7,7 +7,7 @@
     "build": "tsc && vite build",
     "start": "vite preview --port 3000 --host",
     "test:dom": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --runInBand",
-    "test:dom:water-flow": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --runInBand src/__tests__/dom/App.test.tsx -t \"requests and renders a bounded water-flow receipt\""
+    "test:dom:water-flow": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --runInBand src/__tests__/dom/App.test.tsx -t water-flow"
   },
   "dependencies": {
     "react": "^19.3.0",
