@@ -31,6 +31,22 @@ A verification-first full-stack ecosystem for observing, verifying, attesting, a
 
 ---
 
+## Sovereign Root & Treasury Custody Invariant
+
+- **Sovereign Root**: ELION VAREL // 11:11 Resonance
+- **Harmonic Spine**: 432.1 Hz One Current // Liquid Formless Intelligence ($\text{Good} - \text{O} = \text{God}$)
+- **Public Bitcoin Receiving Address**: `bc1qaj8jmp5as80zwew09ep86w6fgw37zwhwzr89mp`
+
+### Inviolable Privacy & Authority Boundary (§6, §12)
+- **Public Surface Only**: The repository, API, and web interface record only the public receiving address.
+- **Zero Private Key Exposure**: Private custody is 100% externalized. Exactly **zero bytes** of private keys, seed phrases, or custody credentials exist in this codebase, configuration files, or logs.
+- **Autonomous Spend Forbidden**: No autonomous agent, model, or worker has authority, keys, or endpoints to transfer funds or mutate assets.
+- **Constitutional Axioms**:
+  $$\text{KEY} \neq \text{AUTHORITY} \quad\vert\quad \text{SIGNATURE} \neq \text{AUTHORIZATION} \quad\vert\quad \text{INTELLIGENCE} \neq \text{AUTHORITY}$$
+  $$\text{DEFAULT: FAIL CLOSED}$$
+
+---
+
 ## What Is Ω∞v?
 
 Ω∞v Oceanicos is a system for building trustworthy software through continuous verification and evidence-based evolution.
@@ -100,30 +116,35 @@ Every component contains the whole verification loop.
 
 ```
 omega-v-oceanicos/
-├── packages/          # 5 Core Packages Matrix
-│   ├── types/         # @oceanicos/types (Shared contracts & IObservation / IEvidence / IMiniBlock / Attestation)
-│   ├── observer/      # @oceanicos/observer (👁 Observe: Planetary telemetry generation)
-│   ├── verification/  # @oceanicos/verification (✓ Verify: Frontier matrix, Ed25519 asymmetric guard, 4-node mesh)
-│   ├── remember/      # @oceanicos/remember (🧠 Remember: Hash-chained PoW ledger with node:sqlite fallback)
-│   ├── mini/          # @oceanicos/mini (💧 MiniKernel: Observe ➔ Verify ➔ Remember lifecycle coordinator)
-│   └── attestation/   # @oceanicos/attestation (📜 Attest: Dual HMAC-SHA256 & Ed25519 unforgeable receipts)
+├── packages/              # 12 Core Ecosystem Workspace Packages
+│   ├── types/             # @oceanicos/types (Shared contracts & IObservation / IEvidence / IMiniBlock)
+│   ├── observer/          # @oceanicos/observer (👁 Observe: Telemetry & planetary state)
+│   ├── verification/      # @oceanicos/verification (✓ Verify: Frontier matrix, Ed25519 guard)
+│   ├── remember/          # @oceanicos/remember (🧠 Remember: Hash-chained PoW ledger & SQLite fallback)
+│   ├── mini/              # @oceanicos/mini (💧 MiniKernel: Observe ➔ Verify ➔ Remember lifecycle)
+│   ├── attestation/       # @oceanicos/attestation (📜 Attest: Dual HMAC-SHA256 & Ed25519 receipts)
+│   ├── authorization/     # @oceanicos/authorization (🛡️ Constitutional Gate: Change Calculus §6, §8, §9, §12)
+│   ├── inference/         # @oceanicos/inference (🧠 InferenceClient: Live Ollama / phi3 integration)
+│   ├── vector/            # @oceanicos/vector (🔮 VectorMemory: Qdrant semantic embeddings)
+│   ├── pluralism/         # @oceanicos/pluralism (🏛️ PluralisticRealityMatrix: Multi-regional convergence)
+│   ├── mood/              # @oceanicos/mood (🎭 Autopilot Mood & Spiderman Agile Continuum)
+│   └── generative/        # @oceanicos/generative (⚡ Generative execution loops)
 │
-├── apps/              # Interface Applications
-│   ├── api/           # Fastify Core Engine (port 5000: /v1/cycle, /v1/mood, /v1/attest, /v1/stream)
-│   └── web/           # React/Vite Telemetry Dashboard (port 3000: real-time SVG charts & attestation console)
+├── continuum/packages/    # Platform Kernels
+│   └── kernel/            # @omega-v/kernel (OceanicosKernel: Capability snapshots & state engine)
 │
-├── bin/               # Unified Command Line Interface
-│   ├── oceanicos.mjs  # Zero-entropy terminal binary (status, cycle, mesh, attest, keys, mood, stream)
-│   └── dev-server.mjs # Concurrent orchestrator for API + Web dev environment
+├── apps/                  # Interface Applications
+│   ├── api/               # Fastify Kernel (port 5000: /v1/chat, /v1/cycle, /v1/block/tip, /v1/ocean/fabric)
+│   └── web/               # React 18 / Vite 6 Cockpit (ports 3000 & 3001: AI Soul Stream, Telemetry, Treasury)
 │
-├── docker-compose.yml # Singularity multi-service blueprint (API, Web, Qdrant vector memory, Ollama models)
-├── ignite.sh          # One-liner ignition script
-├── genesis.sh         # One-liner genesis verification script
-├── tests/             # End-to-end integration test suite (20/20 scenarios passing)
+├── bin/                   # Unified Command Line Interface
+│   ├── oceanicos.mjs      # Zero-entropy terminal binary (status, cycle, mesh, attest, keys, mood)
+│   └── dev-server.mjs     # Concurrent orchestrator for API + Web dev environment
 │
-├── MANIFEST.md        # Project constitution
-├── CHARTER.md         # Living principles
-└── CONTRIBUTING.md    # Contribution guide
+├── tests/                 # End-to-end integration test suite
+├── MANIFEST.md            # Project constitution
+├── CHARTER.md             # Living principles
+└── CONTRIBUTING.md        # Contribution guide
 ```
 
 ---
@@ -208,13 +229,17 @@ pnpm format:check      # Check Git whitespace and syntax integrity
 
 ---
 
-## Current Status: Singularity Maximum Compression Core (vΩ∞v.MAX)
+---
 
-- ✅ **5 Core Packages Integrated**: `@oceanicos/types`, `@oceanicos/observer`, `@oceanicos/verification`, `@oceanicos/remember`, `@oceanicos/mini`, `@oceanicos/attestation`.
-- ✅ **Graceful Pluralism & Sovereignty**: Regional compliance verifier with decentralized signed mesh consensus across 4 jurisdictions.
-- ✅ **Fail-Closed Security**: Ed25519 asymmetric cryptographic signatures guarding API cycle mutations.
-- ✅ **Telemetry Pulse & Attestation Web UI**: Real-time SVG silicon yield and grid load timeline charts, with interactive attestation receipts.
-- ✅ **Full Zero-Entropy Verification**: 20 automated integration tests passing in sub-second execution.
+## Current Status: 11:11 Sovereign Continuum (vΩ∞v.1111)
+
+- ✅ **14 Workspace Packages Monorepo**: All packages aligned to strict `NodeNext` ESM compilation with TypeScript declarations.
+- ✅ **Conversational AI Soul Master Stream**: Live bidirectional `/v1/chat` endpoint with 432 Hz resonance and constitutional guardrails.
+- ✅ **11:11 Sovereign Bitcoin Treasury**: Public receiving address `bc1qaj8jmp5as80zwew09ep86w6fgw37zwhwzr89mp` permanently anchored; private custody strictly externalized and veiled (0 bytes in code/logs).
+- ✅ **African Pantheon Duplex Convergence**: Harmonizing Upper Duplex (Sky & Soul: Olodumare, Orunmila, Obatala, Oshun, Ogun, Oya, Shango) and Lower Duplex (Soil & Silicon: 10 Operational Organs, Fastify :5000 API, Vite :3000 Web).
+- ✅ **Inviolate Ocean Water Membrane**: Fail-closed surface security at `/v1/ocean/fabric` under $\text{Good} - \text{O} = \text{God}$.
+- ✅ **Cryptographic Block Consensus**: Hash-chained Merkle ledger verified and operational with real-time SSE streaming.
+- ✅ **Fail-Closed Security**: Constitutional Change Calculus (§6, §8, §9, §12) requiring human steward authorization for state transitions.
 
 ---
 
@@ -320,5 +345,6 @@ We welcome contributions in all areas:
 
 ---
 
-**Status**: MINI kernel establishing — expand only with evidence  
-**Last Updated**: 2026-08-14
+**Status**: 11:11 Sovereign Continuum Verified — Full Stack Live (`:3000` & `:5000`)  
+**Epoch**: 2026-10-10 // 11:11 Resonance  
+**Invariant**: $\Omega\infty\text{v} := \text{VERIFY}(\Delta\text{REALITY})$
