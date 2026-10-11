@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { theme, humanStatus } from './oceanicosTheme';
+import { ElionIdentityPanel } from './ElionIdentityPanel';
 import { boundedStatus, statusCounts, STATUS_ORDER, summarizeLucidField, type RealityStatus } from './whole-ecosystem-dashboard-model';
 import { AgentSafetyBoundaryPanel } from './AgentSafetyBoundaryPanel';
 import { WorkerCoordinationPanel } from './WorkerCoordinationPanel';
@@ -133,6 +134,14 @@ export function WholeEcosystemDashboard(props: Props) {
         </div>
         <span className="whole-ecosystem-state"><i className="status-dot" /> {props.simulationMode ? 'BOUNDED SIMULATION' : 'LIVE STATE'}</span>
       </header>
+
+      <ElionIdentityPanel
+        streamConnected={props.streamConnected}
+        realityStatus={props.realityStatus}
+        ledgerIntegrity={props.ledgerIntegrity}
+        ecosystemStatus={props.ecosystemBody?.status}
+        onFocusCommand={props.onFocusCommand}
+      />
 
       <div className="whole-ecosystem-grid">
         <nav className="whole-ecosystem-organs" aria-label="Ecosystem organs">
