@@ -108,6 +108,7 @@ export type FakeResponse = {
   ok: boolean;
   status: number;
   json: () => Promise<unknown>;
+  text: () => Promise<string>;
   headers: { get: (name: string) => string | null };
 };
 
@@ -127,6 +128,7 @@ const json = (
     ok: status >= 200 && status < 300,
     status,
     json: async () => JSON.parse(JSON.stringify(body)),
+    text: async () => JSON.stringify(body),
     headers: { get: (name: string) => headers.get(name.toLowerCase()) ?? null },
   };
 };

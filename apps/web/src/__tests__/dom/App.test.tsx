@@ -72,7 +72,101 @@ describe('dashboard', () => {
       screen.getByText(
         /shell=DISABLED · remote=DISABLED · credentials=DISABLED · human gate=REQUIRED/
       )
+      ).toBeInTheDocument();
+  });
+
+  it('requests and renders a bounded water-flow receipt without upgrading it to verified', async () => {
+    const user = userEvent.setup();
+    const fetchMock = installFetch({
+      '/api/v1/pipeline': () =>
+        json({
+          success: true,
+          pipeline: {
+            waterFlow: [
+              {
+                flowVersion: 'omega.water-flow.v1',
+                sequence: 0,
+                stage: 'REALITY',
+                state: 'S0',
+                transition: 'reality → attention',
+                traceId: 'omega-water-flow-dashboard-test',
+                deterministic: true,
+                bounds: { maxSteps: 2 },
+                provenance: {
+                  source: 'local-water-flow',
+                  verified: false,
+                  note: 'bounded local test receipt',
+                },
+              },
+              {
+                flowVersion: 'omega.water-flow.v1',
+                sequence: 1,
+                stage: 'ATTENTION',
+                state: 'S1',
+                transition: 'attention → intention',
+                traceId: 'omega-water-flow-dashboard-test',
+                deterministic: true,
+                bounds: { maxSteps: 2 },
+                provenance: {
+                  source: 'local-water-flow',
+                  verified: false,
+                  note: 'bounded local test receipt',
+                },
+              },
+            ],
+          },
+        }),
+    });
+    await renderApp();
+
+    await user.click(await screen.findByRole('button', { name: /request finite trace/i }));
+
+    const waterFlowRegion = await screen.findByRole('region', {
+      name: 'KAI bounded water-flow trace',
+    });
+    expect(within(waterFlowRegion).getByText('UNKNOWN')).toBeInTheDocument();
+    expect(
+      within(waterFlowRegion).getByText(
+        'trace: omega-water-flow-dashboard-test · max steps: 2'
+      )
     ).toBeInTheDocument();
+    expect(within(waterFlowRegion).getByText('REALITY')).toBeInTheDocument();
+    expect(within(waterFlowRegion).getByText('ATTENTION')).toBeInTheDocument();
+    expect(within(waterFlowRegion).queryByText('VERIFIED')).not.toBeInTheDocument();
+
+    const request = fetchMock.mock.calls.find(([url]) => url === '/api/v1/pipeline');
+    expect(request).toBeDefined();
+    expect((request?.[1] as RequestInit).method).toBe('POST');
+    expect(JSON.parse(String((request?.[1] as RequestInit).body))).toMatchObject({
+      waterFlowMaxSteps: 8,
+      authority: 'human:dashboard-operator',
+      policy: 'policy:water-flow',
+    });
+  });
+
+  it('fails closed when the pipeline returns a malformed water-flow receipt', async () => {
+    const user = userEvent.setup();
+    installFetch({
+      '/api/v1/pipeline': () =>
+        json({
+          success: true,
+          pipeline: { waterFlow: [{ stage: 'REALITY', verified: true }] },
+        }),
+    });
+    await renderApp();
+
+    await user.click(await screen.findByRole('button', { name: /request finite trace/i }));
+
+    const waterFlowRegion = await screen.findByRole('region', {
+      name: 'KAI bounded water-flow trace',
+    });
+    expect(within(waterFlowRegion).getByText('NOT_EXECUTED')).toBeInTheDocument();
+    expect(
+      within(waterFlowRegion).getByText(
+        'No pipeline receipt supplied; this surface is a contract view, not a runtime claim.'
+      )
+    ).toBeInTheDocument();
+    expect(await screen.findByText('pipeline returned an invalid water-flow receipt')).toBeInTheDocument();
   });
 
   it('keeps the dashboard usable when the OS snapshot is unavailable', async () => {

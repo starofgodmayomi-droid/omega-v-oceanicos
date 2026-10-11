@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { summarizeWaterFlow, WATER_FLOW_STAGES, type WaterFlowFrameView } from '../water-flow-panel-model.ts';
+import {
+  normalizeWaterFlowFrames,
+  summarizeWaterFlow,
+  WATER_FLOW_STAGES,
+  type WaterFlowFrameView,
+} from '../water-flow-panel-model.ts';
 
 const frame = (stage: WaterFlowFrameView['stage'], sequence: number): WaterFlowFrameView => ({
   stage,
@@ -30,6 +35,14 @@ test('bounded local frames remain UNKNOWN rather than VERIFIED', () => {
   assert.deepEqual(summary.stages, ['REALITY', 'ATTENTION', 'INTENTION']);
   assert.equal(summary.maxSteps, 3);
   assert.equal(summary.traceId, 'trace-local-1');
+});
+
+test('receipt normalization rejects malformed or unknown frames', () => {
+  const valid = [frame('REALITY', 0)];
+  assert.deepEqual(normalizeWaterFlowFrames(valid), valid);
+  assert.equal(normalizeWaterFlowFrames([{ ...valid[0], stage: 'UNKNOWN_STAGE' }]), null);
+  assert.equal(normalizeWaterFlowFrames([{ ...valid[0], provenance: { ...valid[0].provenance, verified: true } }]), null);
+  assert.equal(normalizeWaterFlowFrames('not-a-receipt'), null);
 });
 
 test('canonical stage order is finite and explicit', () => {

@@ -4,6 +4,7 @@
  * Kept separate from jest.setup.ts because the server suites do not need
  * DOM matchers, and the DOM suites do not need a signing key.
  */
+import { jest } from '@jest/globals';
 import '@testing-library/jest-dom';
 import { configure } from '@testing-library/react';
 import { webcrypto } from 'node:crypto';

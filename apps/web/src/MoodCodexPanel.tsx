@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-const API_BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+const API_BASE_URL = (import.meta.env?.VITE_API_URL || '').replace(/\/$/, '');
 
 export function MoodCodexPanel() {
   const [intent, setIntent] = useState('improve the next bounded interaction');

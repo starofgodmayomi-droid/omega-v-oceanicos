@@ -8,7 +8,7 @@ import { theme, statusColor, humanStatus } from './oceanicosTheme';
  * with evidence-bearing status — no green claim without executable evidence.
  */
 
-const API_BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+const API_BASE_URL = (import.meta.env?.VITE_API_URL || '').replace(/\/$/, '');
 
 interface HealthResponse {
   status: string;
