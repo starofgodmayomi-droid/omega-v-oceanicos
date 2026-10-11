@@ -91,6 +91,12 @@ jobs:
       - name: Run tests
         run: pnpm test
 
+      # The full historical DOM suite is not yet reconciled with the current
+      # dashboard contract. Keep the current bounded product path executable
+      # in CI without treating stale labels as proof of a runtime regression.
+      - name: Run bounded Web DOM contract
+        run: pnpm --dir apps/web run test:dom:water-flow
+
       # This is a source-level worker proof, not a claim that every historical
       # package is an active workspace product.
       - name: Run worker lifecycle verification
