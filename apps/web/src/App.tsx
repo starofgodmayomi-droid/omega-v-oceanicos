@@ -32,7 +32,7 @@ import {
 // Use the browser-facing Vite/API proxy by default. A blank default sends
 // /v1/* to Vite itself, which returns the app HTML instead of API JSON.
 // VITE_API_URL remains available for a separately hosted API origin.
-const API_BASE_URL = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '');
+const API_BASE_URL = (import.meta.env?.VITE_API_URL || '/api').replace(/\/$/, '');
 
 function apiUrl(path: string): string {
   return `${API_BASE_URL}${path}`;

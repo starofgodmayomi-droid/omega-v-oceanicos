@@ -121,11 +121,18 @@ describe('dashboard', () => {
 
     await user.click(await screen.findByRole('button', { name: /request finite trace/i }));
 
-    expect(await screen.findByText('UNKNOWN')).toBeInTheDocument();
-    expect(screen.getByText('trace: omega-water-flow-dashboard-test · max steps: 2')).toBeInTheDocument();
-    expect(screen.getByText('REALITY')).toBeInTheDocument();
-    expect(screen.getByText('ATTENTION')).toBeInTheDocument();
-    expect(screen.queryByText('VERIFIED')).not.toBeInTheDocument();
+    const waterFlowRegion = await screen.findByRole('region', {
+      name: 'KAI bounded water-flow trace',
+    });
+    expect(within(waterFlowRegion).getByText('UNKNOWN')).toBeInTheDocument();
+    expect(
+      within(waterFlowRegion).getByText(
+        'trace: omega-water-flow-dashboard-test · max steps: 2'
+      )
+    ).toBeInTheDocument();
+    expect(within(waterFlowRegion).getByText('REALITY')).toBeInTheDocument();
+    expect(within(waterFlowRegion).getByText('ATTENTION')).toBeInTheDocument();
+    expect(within(waterFlowRegion).queryByText('VERIFIED')).not.toBeInTheDocument();
 
     const request = fetchMock.mock.calls.find(([url]) => url === '/api/v1/pipeline');
     expect(request).toBeDefined();

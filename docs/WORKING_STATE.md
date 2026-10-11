@@ -13,18 +13,19 @@ verification-claiming frames are rejected and surfaced as an error. This closes
 the dashboard → API → receipt path without claiming external execution or
 reality verification.
 
-Observed local evidence on the main-based branch: `pnpm build` succeeded;
-focused API pipeline and water-flow integration tests passed (14 tests);
-`pnpm test` passed (145 tests); `pnpm format:check`, `pnpm validate:ci`, and
-`pnpm validate:skills` passed. A new Web DOM regression test is present, but its
-configured Jest runner is not currently resolvable from `apps/web` because the
-package does not declare/link `jest` and `ts-jest`; direct execution therefore
-remains `UNKNOWN` rather than being reported as green. No deployment or runtime
-health claim is made.
+Observed local evidence on the main-based branch: `pnpm build` and
+`pnpm typecheck` succeeded; focused API pipeline and water-flow integration tests
+passed (14 tests); `pnpm test` passed (145 tests); `pnpm format:check`,
+`pnpm validate:ci`, and `pnpm validate:skills` passed. The Web DOM toolchain is
+now declared by `apps/web`, configured for ESM, and runnable through
+`pnpm run test:dom`; the new water-flow interaction test passes, as does the
+async DOM runner smoke test. The complete legacy DOM suite still has 86 stale
+dashboard assertions against older labels/routes, so it remains a known
+`DIVERGENT` test surface rather than evidence that the platform path is green.
+No deployment or runtime health claim is made.
 
-Next finite Δ: repair the web test-project dependency boundary (or migrate the
-DOM suite to the repository's supported runner), then run the new interaction
-test in CI before merge.
+Next finite Δ: reconcile the 86 legacy DOM assertions with the current
+dashboard contract, then make `test:dom` part of the supported CI test matrix.
 
 ## CI authority reconciliation — 2026-10-01
 
