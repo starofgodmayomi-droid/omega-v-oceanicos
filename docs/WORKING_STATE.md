@@ -2,6 +2,30 @@
 
 **Updated:** 2026-10-01
 
+## Bounded KAI water-flow observation — 2026-10-10
+
+On branch `feat/kai-water-flow-observation`, the Web dashboard now exposes an
+explicit `REQUEST FINITE TRACE` action that posts a bounded, dry-run observation
+to `/v1/pipeline` with `waterFlowMaxSteps: 8`. The response is normalized
+fail-closed before rendering: accepted local frames remain `UNKNOWN` because
+their provenance is deterministic and `verified: false`; malformed, unknown, or
+verification-claiming frames are rejected and surfaced as an error. This closes
+the dashboard → API → receipt path without claiming external execution or
+reality verification.
+
+Observed local evidence on the main-based branch: `pnpm build` succeeded;
+focused API pipeline and water-flow integration tests passed (14 tests);
+`pnpm test` passed (145 tests); `pnpm format:check`, `pnpm validate:ci`, and
+`pnpm validate:skills` passed. A new Web DOM regression test is present, but its
+configured Jest runner is not currently resolvable from `apps/web` because the
+package does not declare/link `jest` and `ts-jest`; direct execution therefore
+remains `UNKNOWN` rather than being reported as green. No deployment or runtime
+health claim is made.
+
+Next finite Δ: repair the web test-project dependency boundary (or migrate the
+DOM suite to the repository's supported runner), then run the new interaction
+test in CI before merge.
+
 ## CI authority reconciliation — 2026-10-01
 
 The automatic verification boundary is now explicit: `.github/workflows/verify.yml`

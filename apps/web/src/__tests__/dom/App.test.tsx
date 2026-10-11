@@ -72,7 +72,69 @@ describe('dashboard', () => {
       screen.getByText(
         /shell=DISABLED · remote=DISABLED · credentials=DISABLED · human gate=REQUIRED/
       )
-    ).toBeInTheDocument();
+      ).toBeInTheDocument();
+  });
+
+  it('requests and renders a bounded water-flow receipt without upgrading it to verified', async () => {
+    const user = userEvent.setup();
+    const fetchMock = installFetch({
+      '/api/v1/pipeline': () =>
+        json({
+          success: true,
+          pipeline: {
+            waterFlow: [
+              {
+                flowVersion: 'omega.water-flow.v1',
+                sequence: 0,
+                stage: 'REALITY',
+                state: 'S0',
+                transition: 'reality → attention',
+                traceId: 'omega-water-flow-dashboard-test',
+                deterministic: true,
+                bounds: { maxSteps: 2 },
+                provenance: {
+                  source: 'local-water-flow',
+                  verified: false,
+                  note: 'bounded local test receipt',
+                },
+              },
+              {
+                flowVersion: 'omega.water-flow.v1',
+                sequence: 1,
+                stage: 'ATTENTION',
+                state: 'S1',
+                transition: 'attention → intention',
+                traceId: 'omega-water-flow-dashboard-test',
+                deterministic: true,
+                bounds: { maxSteps: 2 },
+                provenance: {
+                  source: 'local-water-flow',
+                  verified: false,
+                  note: 'bounded local test receipt',
+                },
+              },
+            ],
+          },
+        }),
+    });
+    await renderApp();
+
+    await user.click(await screen.findByRole('button', { name: /request finite trace/i }));
+
+    expect(await screen.findByText('UNKNOWN')).toBeInTheDocument();
+    expect(screen.getByText('trace: omega-water-flow-dashboard-test · max steps: 2')).toBeInTheDocument();
+    expect(screen.getByText('REALITY')).toBeInTheDocument();
+    expect(screen.getByText('ATTENTION')).toBeInTheDocument();
+    expect(screen.queryByText('VERIFIED')).not.toBeInTheDocument();
+
+    const request = fetchMock.mock.calls.find(([url]) => url === '/api/v1/pipeline');
+    expect(request).toBeDefined();
+    expect((request?.[1] as RequestInit).method).toBe('POST');
+    expect(JSON.parse(String((request?.[1] as RequestInit).body))).toMatchObject({
+      waterFlowMaxSteps: 8,
+      authority: 'human:dashboard-operator',
+      policy: 'policy:water-flow',
+    });
   });
 
   it('keeps the dashboard usable when the OS snapshot is unavailable', async () => {

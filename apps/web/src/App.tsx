@@ -15,6 +15,7 @@ import { ValueNavigatorPanel } from './ValueNavigatorPanel';
 import { ConnectorPanel } from './ConnectorPanel';
 import { WholeEcosystemDashboard } from './WholeEcosystemDashboard';
 import { WaterFlowPanel } from './WaterFlowPanel';
+import { normalizeWaterFlowFrames, type WaterFlowFrameView } from './water-flow-panel-model';
 import { LifecycleFlow, deriveStageStates, type LifecycleStage } from './LifecycleFlow';
 import { GlobeViewport } from './GlobeViewport';
 import { bindGlobeEvidence } from './globe-shell';
@@ -96,6 +97,8 @@ export function App() {
   const [omegaIntent, setOmegaIntent] = useState('');
   const [omegaCommand, setOmegaCommand] = useState<any>(null);
   const [omegaLoading, setOmegaLoading] = useState(false);
+  const [waterFlowFrames, setWaterFlowFrames] = useState<WaterFlowFrameView[] | null>(null);
+  const [waterFlowLoading, setWaterFlowLoading] = useState(false);
 
   const [openStageId, setOpenStageId] = useState<string | null>(null);
   const [globeMax, setGlobeMax] = useState(false);
@@ -150,6 +153,43 @@ export function App() {
       if (data.success) setEcosystemBody(data);
     } catch {
       /* ambient — the API may be mounted separately from the web surface */
+    }
+  };
+
+  const observeWaterFlow = async () => {
+    setWaterFlowLoading(true);
+    setLastError(null);
+    try {
+      const data = await apiRequest<any>('/v1/pipeline', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          compile: {
+            intent: 'observe bounded KAI water flow',
+            subject: 'dashboard:water-flow',
+            stateBefore: 'S0',
+            evidenceRefs: [{ id: 'dashboard-water-flow', kind: 'ui-request', source: 'dashboard', digest: 'sha256:dashboard-water-flow' }],
+            policyRefs: [{ id: 'policy:water-flow', version: '1', requirement: 'bounded local observation' }],
+            workerPlan: [],
+            transition: { requestedStateAfter: 'S1', consequence: 'bounded local trace requested', dryRun: true },
+            observation: { observerId: 'dashboard-water-flow-observer', targets: ['dashboard:water-flow'], evidenceRequired: ['local trace'] },
+          },
+          admission: { authorityVerified: true, policySatisfied: true },
+          authority: 'human:dashboard-operator',
+          policy: 'policy:water-flow',
+          handlerStateAfter: 'S1',
+          waterFlowMaxSteps: 8,
+          changeId: `dashboard-water-flow-${Date.now()}`,
+        }),
+      });
+      const frames = normalizeWaterFlowFrames(data?.pipeline?.waterFlow);
+      if (!frames) throw new Error('pipeline returned an invalid water-flow receipt');
+      setWaterFlowFrames(frames);
+    } catch (err: any) {
+      setWaterFlowFrames(null);
+      setLastError(err instanceof Error ? err.message : 'bounded water-flow observation unavailable');
+    } finally {
+      setWaterFlowLoading(false);
     }
   };
 
@@ -763,7 +803,11 @@ export function App() {
           omegaCommand={omegaCommand}
           onFocusCommand={setOmegaIntent}
         />
-        <WaterFlowPanel />
+        <WaterFlowPanel
+          frames={waterFlowFrames}
+          loading={waterFlowLoading}
+          onObserve={observeWaterFlow}
+        />
 
         {/* Prompt */}
         <h1

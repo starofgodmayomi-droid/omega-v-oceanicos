@@ -7,6 +7,8 @@ import {
 
 interface WaterFlowPanelProps {
   frames?: readonly WaterFlowFrameView[] | null;
+  loading?: boolean;
+  onObserve?: () => void;
 }
 
 const STATUS_COLOR = {
@@ -16,7 +18,7 @@ const STATUS_COLOR = {
   NOT_EXECUTED: '#facc15',
 } as const;
 
-export function WaterFlowPanel({ frames = null }: WaterFlowPanelProps) {
+export function WaterFlowPanel({ frames = null, loading = false, onObserve }: WaterFlowPanelProps) {
   const summary = summarizeWaterFlow(frames);
   const color = STATUS_COLOR[summary.status];
 
@@ -37,23 +39,44 @@ export function WaterFlowPanel({ frames = null }: WaterFlowPanelProps) {
             💧 KAI WATER-FLOW · FINITE TRACE
           </div>
           <div style={{ color: '#94a3b8', fontSize: '11px', lineHeight: 1.5, marginTop: '4px' }}>
-            A provenance-aware representation of a pipeline receipt. It does not execute a pipeline or verify external reality.
+            A provenance-aware representation of a bounded pipeline receipt. The trace is not external reality verification.
           </div>
         </div>
-        <span
-          style={{
-            color,
-            background: `${color}15`,
-            border: `1px solid ${color}44`,
-            borderRadius: '3px',
-            padding: '3px 7px',
-            fontSize: '9px',
-            fontWeight: 'bold',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {summary.status}
-        </span>
+        <div style={{ display: 'grid', gap: '6px', justifyItems: 'end' }}>
+          <span
+            style={{
+              color,
+              background: `${color}15`,
+              border: `1px solid ${color}44`,
+              borderRadius: '3px',
+              padding: '3px 7px',
+              fontSize: '9px',
+              fontWeight: 'bold',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {summary.status}
+          </span>
+          {onObserve && (
+            <button
+              type="button"
+              onClick={onObserve}
+              disabled={loading}
+              style={{
+                background: '#0a1d2e',
+                color: '#6ee7b7',
+                border: '1px solid #6ee7b755',
+                borderRadius: '4px',
+                padding: '6px 9px',
+                fontSize: '9px',
+                fontWeight: 'bold',
+                cursor: loading ? 'wait' : 'pointer',
+              }}
+            >
+              {loading ? 'OBSERVING...' : 'REQUEST FINITE TRACE'}
+            </button>
+          )}
+        </div>
       </div>
 
       <div

@@ -37,6 +37,34 @@ export interface WaterFlowSummary {
 
 const KNOWN_STAGES = new Set<string>(WATER_FLOW_STAGES);
 
+export function normalizeWaterFlowFrames(input: unknown): WaterFlowFrameView[] | null {
+  if (!Array.isArray(input) || input.length === 0) return null;
+
+  const frames = input.filter((item): item is WaterFlowFrameView => {
+    if (!item || typeof item !== 'object') return false;
+    const frame = item as Partial<WaterFlowFrameView>;
+    return (
+      typeof frame.stage === 'string' &&
+      KNOWN_STAGES.has(frame.stage) &&
+      Number.isInteger(frame.sequence) &&
+      typeof frame.state === 'string' &&
+      typeof frame.transition === 'string' &&
+      typeof frame.traceId === 'string' &&
+      frame.deterministic === true &&
+      !!frame.bounds &&
+      Number.isInteger(frame.bounds.maxSteps) &&
+      frame.bounds.maxSteps >= 1 &&
+      frame.bounds.maxSteps <= WATER_FLOW_STAGES.length &&
+      !!frame.provenance &&
+      frame.provenance.source === 'local-water-flow' &&
+      frame.provenance.verified === false &&
+      typeof frame.provenance.note === 'string'
+    );
+  });
+
+  return frames.length === input.length ? frames : null;
+}
+
 export function summarizeWaterFlow(frames: readonly WaterFlowFrameView[] | null | undefined): WaterFlowSummary {
   if (!frames || frames.length === 0) {
     return {
