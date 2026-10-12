@@ -61,7 +61,7 @@ services:
 
   # ── 3. Qdrant: internal vector-memory service; host access is loopback-only ───
   qdrant:
-    image: qdrant/qdrant:v1.19.2
+    image: ghcr.io/qdrant/qdrant/qdrant:v1.19.2@sha256:86cdc262da7105228d8d42a9733ee95981b3abc3af891b49a0f89bdcb8bf3e0d
     ports:
       - "127.0.0.1:6333:6333"
       - "127.0.0.1:6334:6334"
@@ -76,7 +76,7 @@ services:
 
   # ── 4. Ollama: pinned local-model inference; host access is loopback-only ──────
   ollama:
-    image: ollama/ollama:0.40.3
+    image: ollama/ollama:0.35.1@sha256:292ee7945dfc3d5840a181f3ab86fedb1e66703e02c8af98b50f4da56b7e278c
     ports:
       - "127.0.0.1:11434:11434"
     volumes:
