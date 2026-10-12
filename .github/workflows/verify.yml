@@ -61,6 +61,9 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: 'pnpm'
 
+      - name: Validate CI and local Compose contracts
+        run: pnpm run validate:ci
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
