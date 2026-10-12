@@ -4,6 +4,7 @@ import {
   LIVING_WATER_STAGES,
   WATER_FLOW_STAGES,
   normalizeWaterFlowFrames,
+  normalizeTraceOnlyPipelineReceipt,
   summarizeWaterFlow,
   waterFlowFramesFromCommand,
   type WaterFlowFrameView,
@@ -112,4 +113,31 @@ test('normalizer accepts only a complete ordered local v1 trace', () => {
     ...valid[2],
     provenance: { source: 'external', verified: true, note: 'untrusted' },
   } as unknown as WaterFlowFrameView]), null);
+});
+
+test('trace-only API responses require explicit denial and no execution or attestation', () => {
+  const waterFlow = [frame('REALITY', 0), frame('ATTENTION', 1), frame('INTENTION', 2)];
+  const denied = {
+    success: true,
+    pipeline: {
+      stage: 'ADMIT',
+      halted: true,
+      haltReason: 'DENIED',
+      decision: 'DENY',
+      executionStatus: null,
+      attestationId: null,
+      realityStatus: null,
+      realityAttestation: null,
+      waterFlow,
+    },
+  };
+  assert.deepEqual(normalizeTraceOnlyPipelineReceipt(denied), { ok: true, frames: waterFlow });
+  assert.equal(normalizeTraceOnlyPipelineReceipt({ ...denied, pipeline: { ...denied.pipeline, decision: 'ALLOW' } }).ok, false);
+  assert.equal(normalizeTraceOnlyPipelineReceipt({ ...denied, pipeline: { ...denied.pipeline, executionStatus: 'EXECUTED' } }).ok, false);
+  assert.equal(normalizeTraceOnlyPipelineReceipt({ ...denied, pipeline: { ...denied.pipeline, attestationId: 'attestation-1' } }).ok, false);
+  assert.deepEqual(
+    normalizeTraceOnlyPipelineReceipt({ ...denied, pipeline: { ...denied.pipeline, waterFlow: [waterFlow[0]] } }),
+    { ok: false, reason: 'WATER_FLOW_DIVERGENT' },
+  );
+  assert.deepEqual(normalizeTraceOnlyPipelineReceipt({ success: false }), { ok: false, reason: 'INVALID_RESPONSE' });
 });
