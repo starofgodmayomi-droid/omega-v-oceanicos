@@ -23,6 +23,12 @@ docker compose config
 
 The API runs with `OMEGA_AUTH_MODE=required`; protected ledger and telemetry routes need the configured read token. The Compose healthcheck uses the unprotected `/health` endpoint. `OMEGA_CORS_ORIGINS` defaults to `http://localhost:3000` for the local web origin.
 
+## Browser/API authentication boundary — known integration blocker
+
+The static web image does **not** implement a browser login/session flow or a server-side proxy that adds the API bearer token. The API runs with `OMEGA_AUTH_MODE=required`, while the browser's current API helper does not send `Authorization`; therefore protected dashboard requests are expected to receive `401` even when the API container itself is healthy. The Vite `/api` proxy applies during development only; it is not present in the production `serve -s dist` web container.
+
+Do **not** expose `OMEGA_READ_TOKEN` or `OMEGA_ADMIN_TOKEN` with `VITE_*`, embed them in generated JavaScript, or switch a production deployment to `OMEGA_AUTH_MODE=local` as a workaround. Resolve the browser-safe session/reverse-proxy design tracked in [issue #459](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/issues/459) before treating the whole Compose dashboard as functional. Until then, the documented bearer-authenticated `curl` checks validate the API separately, not the browser-to-API integration.
+
 ## Start and validate
 
 Only after replacing the placeholders in `.env`:
