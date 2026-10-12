@@ -10,20 +10,20 @@ services:
       context: .
       target: api
     ports:
-      - "\${API_BIND_ADDRESS:-127.0.0.1}:5000:5000"
+      - "${API_BIND_ADDRESS:-127.0.0.1}:5000:5000"
     environment:
       - NODE_ENV=production
       - API_PORT=5000
       - OLLAMA_HOST=http://ollama:11434
       - QDRANT_URL=http://qdrant:6333
-      - OMEGA_SIGNING_KEY=\${OMEGA_SIGNING_KEY:?OMEGA_SIGNING_KEY is required}
+      - OMEGA_SIGNING_KEY=${OMEGA_SIGNING_KEY:?OMEGA_SIGNING_KEY is required}
       - OMEGA_AUTH_MODE=required
-      - OMEGA_READ_TOKEN=\${OMEGA_READ_TOKEN:?OMEGA_READ_TOKEN is required}
-      - OMEGA_ADMIN_TOKEN=\${OMEGA_ADMIN_TOKEN:?OMEGA_ADMIN_TOKEN is required}
-      - OMEGA_CORS_ORIGINS=\${OMEGA_CORS_ORIGINS:-http://localhost:3000}
-      - OMEGA_MODE=\${OMEGA_MODE:-MAX_FLUID}
-      - OMEGA_DB_PATH=\${OMEGA_DB_PATH:-/app/data/oceanicos.db}
-      - PIDGIN_ENGINE=\${PIDGIN_ENGINE:-ON}
+      - OMEGA_READ_TOKEN=${OMEGA_READ_TOKEN:?OMEGA_READ_TOKEN is required}
+      - OMEGA_ADMIN_TOKEN=${OMEGA_ADMIN_TOKEN:?OMEGA_ADMIN_TOKEN is required}
+      - OMEGA_CORS_ORIGINS=${OMEGA_CORS_ORIGINS:-http://localhost:3000}
+      - OMEGA_MODE=${OMEGA_MODE:-MAX_FLUID}
+      - OMEGA_DB_PATH=${OMEGA_DB_PATH:-/app/data/oceanicos.db}
+      - PIDGIN_ENGINE=${PIDGIN_ENGINE:-ON}
     volumes:
       - oceanicos-data:/app/data
     restart: unless-stopped
@@ -35,8 +35,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '\${CPU_LIMIT:-2.0}'
-          memory: '\${MEM_LIMIT:-2G}'
+          cpus: '${CPU_LIMIT:-2.0}'
+          memory: '${MEM_LIMIT:-2G}'
 
   # ── 2. Web: UI Module & Telemetry Dashboard ───────────────────────────────────
   web:
@@ -44,11 +44,11 @@ services:
       context: .
       target: web
       args:
-        VITE_API_URL: \${VITE_API_URL:-http://localhost:5000}
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:5000}
     ports:
-      - "\${WEB_BIND_ADDRESS:-127.0.0.1}:3000:3000"
+      - "${WEB_BIND_ADDRESS:-127.0.0.1}:3000:3000"
     environment:
-      - VITE_API_URL=\${VITE_API_URL:-http://localhost:5000}
+      - VITE_API_URL=${VITE_API_URL:-http://localhost:5000}
     depends_on:
       api:
         condition: service_healthy
@@ -87,7 +87,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: '\${OLLAMA_MEM_LIMIT:-8G}'
+          memory: '${OLLAMA_MEM_LIMIT:-8G}'
 
 volumes:
   oceanicos-data:
