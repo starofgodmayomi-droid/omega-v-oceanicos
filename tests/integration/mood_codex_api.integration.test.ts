@@ -80,13 +80,9 @@ test('mood Codex proposal enters the ledger as PROPOSED and never executes', asy
 
     const admitted = await app.inject({
       method: 'POST',
-      url: `/v1/omega/commands/${body.command.commandId}/admit`,
-      payload: {
-        authority: 'human:dashboard-operator',
-        policy: 'mood-codex-boundary.v1',
-        authorityVerified: true,
-        policySatisfied: true,
-      },
+      url: `/v1/omega/commands/${body.command.commandId}/approve`,
+      headers: { 'x-omega-operator-id': 'dashboard-operator' },
+      payload: { policy: 'mood-codex-boundary.v1' },
     });
     assert.equal(admitted.statusCode, 200);
     assert.equal(admitted.json().command.status, 'AUTHORIZED');

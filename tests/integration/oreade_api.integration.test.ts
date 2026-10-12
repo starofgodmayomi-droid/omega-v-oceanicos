@@ -66,6 +66,10 @@ test('API rejects an unbounded ƆREADE target scope', async () => {
 });
 
 test('API persists a planner-only proposal without authorizing or executing it', async () => {
+  const previousOperatorAllowlist = process.env.OMEGA_ADMIN_OPERATOR_ALLOWLIST;
+  const previousRequireAllowlist = process.env.OMEGA_ADMIN_REQUIRE_ALLOWLIST;
+  process.env.OMEGA_ADMIN_OPERATOR_ALLOWLIST = 'trusted-operator';
+  process.env.OMEGA_ADMIN_REQUIRE_ALLOWLIST = 'on';
   const dir = mkdtempSync(join(tmpdir(), 'omega-oreade-proposal-'));
   const app = createApp(join(dir, 'test.db'), false, { allowUnsignedCycle: true });
   await app.ready();
@@ -94,18 +98,35 @@ test('API persists a planner-only proposal without authorizing or executing it',
     assert.equal(body.executed, false);
     assert.match(body.nextAction, /review and explicitly admit/);
 
-    const admitted = await app.inject({
+    const deniedAdmission = await app.inject({
       method: 'POST',
       url: `/v1/omega/commands/${body.command.commandId}/admit`,
       payload: {
-        authority: 'human:dashboard-operator',
+        authority: 'human:claimed-operator',
         policy: 'oreade-symbolic-boundary.v1',
         authorityVerified: true,
         policySatisfied: true,
       },
     });
+    assert.equal(deniedAdmission.statusCode, 403);
+    assert.equal(deniedAdmission.json().error, 'ADMIN_OPERATOR_NOT_ALLOWED');
+    const stillProposed = await app.inject({ method: 'GET', url: `/v1/omega/commands/${body.command.commandId}` });
+    assert.equal(stillProposed.json().command.status, 'PROPOSED');
+
+    const admitted = await app.inject({
+      method: 'POST',
+      url: `/v1/omega/commands/${body.command.commandId}/admit`,
+      headers: { 'x-omega-operator-id': 'trusted-operator' },
+      payload: {
+        authority: 'human:forged-operator',
+        policy: 'oreade-symbolic-boundary.v1',
+        authorityVerified: false,
+        policySatisfied: true,
+      },
+    });
     assert.equal(admitted.statusCode, 200);
     assert.equal(admitted.json().command.status, 'AUTHORIZED');
+    assert.equal(admitted.json().command.change.authority, 'human:trusted-operator');
     assert.equal(admitted.json().command.result, undefined);
     assert.match(admitted.json().nextAction, /execute the authorized bounded action/);
 
@@ -148,5 +169,9 @@ test('API persists a planner-only proposal without authorizing or executing it',
   } finally {
     await app.close();
     rmSync(dir, { recursive: true, force: true });
+    if (previousOperatorAllowlist === undefined) delete process.env.OMEGA_ADMIN_OPERATOR_ALLOWLIST;
+    else process.env.OMEGA_ADMIN_OPERATOR_ALLOWLIST = previousOperatorAllowlist;
+    if (previousRequireAllowlist === undefined) delete process.env.OMEGA_ADMIN_REQUIRE_ALLOWLIST;
+    else process.env.OMEGA_ADMIN_REQUIRE_ALLOWLIST = previousRequireAllowlist;
   }
 });

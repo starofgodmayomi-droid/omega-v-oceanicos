@@ -97,15 +97,10 @@ export function OreadConsole() {
     setLoading('admit');
     setError(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/v1/omega/commands/${commandId}/admit`, {
+      const response = await fetch(`${API_BASE_URL}/v1/omega/commands/${commandId}/approve`, {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          authority: 'human:dashboard-operator',
-          policy: 'oreade-symbolic-boundary.v1',
-          authorityVerified: true,
-          policySatisfied: true,
-        }),
+        headers: { 'content-type': 'application/json', 'x-omega-operator-id': requestedBy.trim() },
+        body: JSON.stringify({ policy: 'oreade-symbolic-boundary.v1' }),
       });
       const text = await response.text();
       const data = text ? JSON.parse(text) : null;
@@ -145,7 +140,7 @@ export function OreadConsole() {
         <textarea value={intent} onChange={(event) => setIntent(event.target.value)} maxLength={2000} rows={2} placeholder="What do you want to explore or build?" style={{ ...fieldStyle, resize: 'vertical', marginTop: '5px' }} />
       </label>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '10px' }}>
-        <label style={{ color: '#9bc4bb', fontSize: '11px' }}>Requested by<input value={requestedBy} onChange={(event) => setRequestedBy(event.target.value)} maxLength={96} style={{ ...fieldStyle, marginTop: '5px' }} /></label>
+        <label style={{ color: '#9bc4bb', fontSize: '11px' }}>Requested by / operator ID<input value={requestedBy} onChange={(event) => setRequestedBy(event.target.value)} maxLength={96} style={{ ...fieldStyle, marginTop: '5px' }} /></label>
         <label style={{ color: '#9bc4bb', fontSize: '11px' }}>Target scope<input value={scope} onChange={(event) => setScope(event.target.value)} maxLength={512} style={{ ...fieldStyle, marginTop: '5px' }} /></label>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '10px' }}>
@@ -157,7 +152,7 @@ export function OreadConsole() {
         <button onClick={translate} disabled={!intent.trim() || loading !== null} style={{ border: '1px solid #67d9b4', background: '#123a31', color: '#b8f5de', padding: '8px 12px', borderRadius: '4px', fontSize: '11px', fontWeight: 700 }}>{loading === 'drop' ? 'TRANSLATING…' : 'TRANSLATE DROP'}</button>
         <button onClick={propose} disabled={!intent.trim() || loading !== null} style={{ border: '1px solid #8ce8c8', background: '#8ce8c8', color: '#071312', padding: '8px 12px', borderRadius: '4px', fontSize: '11px', fontWeight: 700 }}>{loading === 'proposal' ? 'PERSISTING…' : 'CREATE PROPOSED COMMAND'}</button>
         {result?.command && (result.command.status === 'PROPOSED' || result.command.status === 'REVIEW') && (
-          <button onClick={admit} disabled={loading !== null} style={{ border: '1px solid #f0c674', background: '#3a2f16', color: '#ffe2a1', padding: '8px 12px', borderRadius: '4px', fontSize: '11px', fontWeight: 700 }}>{loading === 'admit' ? 'CHECKING POLICY…' : 'ADMIT BOUNDED PROPOSAL'}</button>
+          <button onClick={admit} disabled={loading !== null} style={{ border: '1px solid #f0c674', background: '#3a2f16', color: '#ffe2a1', padding: '8px 12px', borderRadius: '4px', fontSize: '11px', fontWeight: 700 }}>{loading === 'admit' ? 'CHECKING POLICY…' : 'APPROVE BOUNDED PROPOSAL'}</button>
         )}
       </div>
 

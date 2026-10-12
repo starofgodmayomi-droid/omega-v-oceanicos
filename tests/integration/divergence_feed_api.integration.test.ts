@@ -21,7 +21,7 @@ test('divergence feed returns redacted divergent evidence only', async () => {
       },
     });
     const commandId = created.json().command.commandId;
-    await app.inject({ method: 'POST', url: `/v1/omega/commands/${commandId}/admit`, payload: { authority: 'human:feed-test', policy: 'test.v1', authorityVerified: true, policySatisfied: true } });
+    await app.inject({ method: 'POST', url: `/v1/omega/commands/${commandId}/approve`, headers: { 'x-omega-operator-id': 'feed-test' }, payload: { policy: 'test.v1' } });
     await app.inject({ method: 'POST', url: `/v1/omega/commands/${commandId}/execute`, payload: {} });
     await app.inject({ method: 'POST', url: `/v1/omega/commands/${commandId}/observe`, payload: { observedState: 'unexpected-state' } });
 
