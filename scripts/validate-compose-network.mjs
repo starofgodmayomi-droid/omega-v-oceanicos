@@ -67,8 +67,8 @@ check(
   'Ollama must publish its API port to loopback only',
 );
 
-check(services.qdrant.includes('image: qdrant/qdrant:v1.19.2'), 'Qdrant image must use the reviewed version tag');
-check(services.ollama.includes('image: ollama/ollama:0.40.3'), 'Ollama image must use the reviewed version tag');
+check(services.qdrant.includes('image: ghcr.io/qdrant/qdrant/qdrant:v1.19.2@sha256:86cdc262da7105228d8d42a9733ee95981b3abc3af891b49a0f89bdcb8bf3e0d'), 'Qdrant image must use the official reviewed release and immutable digest');
+check(services.ollama.includes('image: ollama/ollama:0.35.1@sha256:292ee7945dfc3d5840a181f3ab86fedb1e66703e02c8af98b50f4da56b7e278c'), 'Ollama image must use the reviewed stable release and immutable digest');
 check(
   !services.qdrant.includes('image: qdrant/qdrant:latest') &&
   !services.ollama.includes('image: ollama/ollama:latest'),
@@ -105,5 +105,5 @@ if (failures.length > 0) {
   console.error(['COMPOSE_NETWORK_CONTRACT_INVALID', ...failures].join('\n'));
   process.exitCode = 1;
 } else {
-  console.log('validated local-first Compose bindings, service image versions, required secrets, and local CORS contract');
+  console.log('validated local-first Compose bindings, immutable service image digests, required secrets, and local CORS contract');
 }
