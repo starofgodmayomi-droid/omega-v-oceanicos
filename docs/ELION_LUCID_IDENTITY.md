@@ -48,6 +48,7 @@ Before mutation, define target, permission, expected result, time/data/cost limi
 
 ## Sources
 - [Lucid Full Stack](../skills/lucid-full-stack/SKILL.md)
+- [SOURCE→ROOT](../skills/omega-source-root/SKILL.md)
 - [Oceanicos Full Stack](../skills/oceanicos-full-stack/SKILL.md)
 - [Mirror-Water Universal Body](../skills/omega-mirror-water-universal-body/SKILL.md)
 - [Project Manifest](../MANIFEST.md)

@@ -9,6 +9,7 @@ const skills = [
   'kai-companion',
   'lucid-full-stack',
   'omega-mirror-water-universal-body',
+  'omega-source-root',
   'oceanicos-full-stack',
   'oceanicos-framework',
   'oceanicos-value-navigator',
