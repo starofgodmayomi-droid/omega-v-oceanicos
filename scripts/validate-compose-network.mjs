@@ -100,10 +100,22 @@ check(envExample.includes('WEB_BIND_ADDRESS=127.0.0.1'), 'environment template m
 check(deploymentGuide.includes('loopback-only'), 'deployment guide must describe private inference/vector bindings');
 check(deploymentGuide.includes('API_BIND_ADDRESS'), 'deployment guide must document explicit API exposure');
 check(deploymentGuide.includes('OMEGA_CORS_ORIGINS'), 'deployment guide must document exact-origin CORS configuration');
+check(
+  deploymentGuide.includes('issue #459') && deploymentGuide.includes('expected to receive `401`'),
+  'deployment guide must disclose the current browser/API auth integration blocker',
+);
+check(
+  !services.web.includes('OMEGA_READ_TOKEN') && !services.web.includes('OMEGA_ADMIN_TOKEN'),
+  'web service must not receive API bearer service tokens',
+);
+check(
+  !/^VITE_[A-Z0-9_]*TOKEN=/m.test(envExample),
+  'environment template must not place bearer tokens in public Vite variables',
+);
 
 if (failures.length > 0) {
   console.error(['COMPOSE_NETWORK_CONTRACT_INVALID', ...failures].join('\n'));
   process.exitCode = 1;
 } else {
-  console.log('validated local-first Compose bindings, immutable service image digests, required secrets, and local CORS contract');
+  console.log('validated local-first Compose bindings, immutable image digests, API secret boundaries, local CORS, and browser-auth caveat');
 }
