@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { boundedStatus, statusCounts, summarizeLucidField } from '../whole-ecosystem-dashboard-model.ts';
+import { boundedStatus, deriveElionIdentitySignals, statusCounts, summarizeLucidField } from '../whole-ecosystem-dashboard-model.ts';
 
 test('unknown values never become verified dashboard status', () => {
   assert.equal(boundedStatus('healthy'), 'UNKNOWN');
@@ -51,4 +51,38 @@ test('Lucid field summary labels an empty view instead of implying completeness'
   assert.equal(summary.verifiedCount, 0);
   assert.deepEqual(summary.unresolved, []);
   assert.equal(summary.summaryText, 'No signals are available in this view.');
+});
+
+
+test('ELION identity signals preserve unknowns and distinguish divergent ledger evidence', () => {
+  const signals = deriveElionIdentitySignals({
+    streamConnected: false,
+    realityStatus: null,
+    ledgerIntegrity: { valid: false, height: 7 },
+    ecosystemStatus: 'RUNNING',
+  });
+
+  assert.deepEqual(signals.map(({ label, status }) => ({ label, status })), [
+    { label: 'Reality signal', status: 'UNKNOWN' },
+    { label: 'Event stream', status: 'UNKNOWN' },
+    { label: 'Ledger integrity', status: 'DIVERGENT' },
+    { label: 'Ecosystem endpoint', status: 'UNKNOWN' },
+  ]);
+  assert.match(signals[2].source, /height 7/);
+});
+
+test('ELION identity signals verify only explicitly recognized, observed statuses', () => {
+  const signals = deriveElionIdentitySignals({
+    streamConnected: true,
+    realityStatus: 'verified',
+    ledgerIntegrity: { valid: true, height: 12 },
+    ecosystemStatus: 'VERIFIED',
+  });
+
+  assert.deepEqual(signals.map(({ status }) => status), [
+    'VERIFIED',
+    'VERIFIED',
+    'VERIFIED',
+    'VERIFIED',
+  ]);
 });
