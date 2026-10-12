@@ -227,7 +227,7 @@ export function createApp(
   registerEcosystemRoute(fastify, authMode, Boolean(attestationSigningKey));
   registerSoulRoute(fastify);
   registerRealityRoute(fastify, authMode, () => Boolean(attestationSigningKey), () => Boolean(ledgerMemory.getTip()));
-  registerChatRoute(fastify);
+  registerChatRoute(fastify, { kaiLedger, vectorMemory, VectorMemoryClass: VectorMemory });
 
   fastify.get('/health', async (_request, reply) => {
     const memoryReady = true;
