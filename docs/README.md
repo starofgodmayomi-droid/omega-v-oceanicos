@@ -67,6 +67,8 @@ Welcome to the Ω∞v Oceanicos documentation. Start here to understand the proj
   uncertainty, and the next finite return; memory is not proof.
 - **[Ω∞v Mirror-Water Universal Body](../skills/omega-mirror-water-universal-body/SKILL.md)**
   — broad ecosystem intent translated into bounded, observable transitions.
+- **[SOURCE→ROOT](../skills/omega-source-root/SKILL.md)** — human-origin lineage,
+  provisional root framing, and one finite, evidence-aware next transition.
 - **[OceanicOS Framework](../skills/oceanicos-framework/SKILL.md)** — OUPEMLI,
   finite transition, provenance, and authority boundaries.
 - **[Oceanicos Full Stack](../skills/oceanicos-full-stack/SKILL.md)** — renamed

@@ -52,3 +52,43 @@ export function summarizeLucidField(signals: readonly LucidFieldSignal[]): Lucid
 
   return { total, verifiedCount, unresolved, summaryText };
 }
+
+
+export type ElionIdentitySignalsInput = {
+  streamConnected: boolean;
+  realityStatus: unknown;
+  ledgerIntegrity: { valid: boolean; height: number } | null;
+  ecosystemStatus: unknown;
+};
+
+export type ElionIdentitySignal = {
+  label: string;
+  status: RealityStatus;
+  source: string;
+};
+
+/** Map only current-view evidence into bounded ELION display states. */
+export function deriveElionIdentitySignals(input: ElionIdentitySignalsInput): ElionIdentitySignal[] {
+  return [
+    {
+      label: 'Reality signal',
+      status: boundedStatus(input.realityStatus),
+      source: 'current runtime evidence status',
+    },
+    {
+      label: 'Event stream',
+      status: input.streamConnected ? 'VERIFIED' : 'UNKNOWN',
+      source: input.streamConnected ? 'SSE connection observed' : 'SSE connection not observed',
+    },
+    {
+      label: 'Ledger integrity',
+      status: input.ledgerIntegrity ? (input.ledgerIntegrity.valid ? 'VERIFIED' : 'DIVERGENT') : 'UNKNOWN',
+      source: input.ledgerIntegrity ? `integrity check · height ${input.ledgerIntegrity.height}` : 'no integrity result observed',
+    },
+    {
+      label: 'Ecosystem endpoint',
+      status: boundedStatus(input.ecosystemStatus),
+      source: 'GET /v1/ecosystem/body · recognized status only',
+    },
+  ];
+}
