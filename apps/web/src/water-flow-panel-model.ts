@@ -125,6 +125,36 @@ function isWaterFlowFrame(value: unknown): value is WaterFlowFrameView {
  * Accept only a complete, ordered v1 local trace. A rejected payload remains
  * visible as DIVERGENT at the UI boundary; it is never normalized into proof.
  */
+export type TraceOnlyPipelineReceiptResult =
+  | { readonly ok: true; readonly frames: WaterFlowFrameView[] }
+  | { readonly ok: false; readonly reason: 'INVALID_RESPONSE' | 'EXECUTION_BOUNDARY_NOT_CONFIRMED' | 'WATER_FLOW_DIVERGENT' };
+
+/** Accept only the intentionally denied, non-executing pipeline trace response. */
+export function normalizeTraceOnlyPipelineReceipt(input: unknown): TraceOnlyPipelineReceiptResult {
+  if (!input || typeof input !== 'object') return { ok: false, reason: 'INVALID_RESPONSE' };
+  const response = input as { success?: unknown; pipeline?: unknown };
+  if (response.success !== true || !response.pipeline || typeof response.pipeline !== 'object') {
+    return { ok: false, reason: 'INVALID_RESPONSE' };
+  }
+
+  const pipeline = response.pipeline as Record<string, unknown>;
+  const executionBoundaryConfirmed =
+    pipeline.stage === 'ADMIT' &&
+    pipeline.halted === true &&
+    pipeline.haltReason === 'DENIED' &&
+    pipeline.decision === 'DENY' &&
+    pipeline.executionStatus === null &&
+    pipeline.attestationId === null &&
+    pipeline.realityStatus === null &&
+    pipeline.realityAttestation === null;
+
+  if (!executionBoundaryConfirmed) return { ok: false, reason: 'EXECUTION_BOUNDARY_NOT_CONFIRMED' };
+  const frames = normalizeWaterFlowFrames(pipeline.waterFlow);
+  return frames
+    ? { ok: true, frames }
+    : { ok: false, reason: 'WATER_FLOW_DIVERGENT' };
+}
+
 export function normalizeWaterFlowFrames(input: unknown): WaterFlowFrameView[] | null {
   if (!Array.isArray(input) || input.length === 0 || input.length > WATER_FLOW_STAGES.length) return null;
   if (!input.every(isWaterFlowFrame)) return null;
