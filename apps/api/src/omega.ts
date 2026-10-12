@@ -483,14 +483,12 @@ export function registerOmegaRoutes(
 
   fastify.post('/v1/omega/commands/:id/approve', async (request, reply) => {
     if (enforceAdminOperatorIdentity && !enforceAdminOperatorIdentity(request, reply)) return;
+    const operator = (request as typeof request & { omegaOperatorId?: string }).omegaOperatorId?.trim();
+    if (!operator) return reply.status(403).send({ success: false, error: 'ADMIN_OPERATOR_ID_REQUIRED' });
     const command = store.get((request.params as { id?: string }).id ?? '');
     if (!command) return reply.status(404).send({ success: false, error: 'OMEGA_COMMAND_NOT_FOUND' });
     if (command.status !== 'PROPOSED' && command.status !== 'REVIEW') return reply.status(409).send({ success: false, error: 'OMEGA_APPROVAL_REQUIRES_REVIEW' });
     const body = bodyOf(request);
-    const guardedOperator = (request as typeof request & { omegaOperatorId?: string }).omegaOperatorId;
-    const operator = typeof guardedOperator === 'string' && guardedOperator.trim()
-      ? guardedOperator.trim()
-      : typeof body.operator === 'string' && body.operator.trim() ? body.operator.trim() : 'dashboard-operator';
     const policy = typeof body.policy === 'string' && body.policy.trim() ? body.policy.trim() : 'human-review';
     try {
       validateOmegaApprovalInput({ operator, policy });
