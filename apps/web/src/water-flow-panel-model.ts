@@ -31,7 +31,7 @@ export function createTraceOnlyPipelineRequest(changeId: string) {
         version: '1',
         requirement: 'trace-only; no transition execution',
       }],
-      workerPlan: [] as never[],
+      workerPlan: [],
       transition: {
         requestedStateAfter: 'S1',
         consequence: 'trace-only; no transition executed',
