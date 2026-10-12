@@ -127,6 +127,14 @@ test('API persists a planner-only proposal without authorizing or executing it',
     assert.equal(admitted.statusCode, 200);
     assert.equal(admitted.json().command.status, 'AUTHORIZED');
     assert.equal(admitted.json().command.change.authority, 'human:trusted-operator');
+    const eventResponse = await app.inject({
+      method: 'GET',
+      url: `/v1/omega/events?commandId=${encodeURIComponent(body.command.commandId)}`,
+    });
+    assert.equal(eventResponse.statusCode, 200);
+    const admissionEvent = eventResponse.json().events.find((event: { type?: string }) => event.type === 'command.admitted');
+    assert.equal(admissionEvent?.operator, 'trusted-operator');
+    assert.equal(admissionEvent?.decision, 'ALLOW');
     assert.equal(admitted.json().command.result, undefined);
     assert.match(admitted.json().nextAction, /execute the authorized bounded action/);
 
