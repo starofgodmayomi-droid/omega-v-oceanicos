@@ -477,7 +477,7 @@ export function registerOmegaRoutes(
     );
     const status = statusForDecision(admitted.decision);
     const updated = store.update(command, { change: admitted, status });
-    store.record('command.admitted', updated, { decision: admitted.decision });
+    store.record('command.admitted', updated, { decision: admitted.decision, operator: operatorId });
     return { success: true, ...commandResult(updated, status === 'AUTHORIZED' ? 'execute the authorized bounded action' : status === 'DENIED' ? 'review the denial evidence; no execution is permitted' : 'obtain attributable human approval') };
   });
 
