@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@fastify/cors": "^11.3.0",
-    "@fastify/rate-limit": "^11.2.0",
+    "@fastify/rate-limit": "^11.2.1",
     "@oceanicos/attestation": "workspace:*",
     "@oceanicos/mini": "workspace:*",
     "@oceanicos/observer": "workspace:*",
