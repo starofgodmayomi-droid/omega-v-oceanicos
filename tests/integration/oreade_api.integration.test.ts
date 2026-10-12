@@ -150,3 +150,91 @@ test('API persists a planner-only proposal without authorizing or executing it',
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('ƆREADE telemetry returns privacy-bounded aggregates without appending records', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'omega-oreade-telemetry-'));
+  const app = createApp(join(dir, 'test.db'), false, { allowUnsignedCycle: true });
+  await app.ready();
+
+  try {
+    const buildProposal = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/oreade/proposal',
+      payload: {
+        symbolicIntent: 'telemetry-private-intent-alpha',
+        requestedBy: 'person:telemetry-private-alpha',
+        targetScope: ['oracle:reflection'],
+        idempotencyKey: 'telemetry-proposal-build-001',
+        stopCondition: 'stop after one stored proposal',
+        expectedObservation: 'one PROPOSED record exists',
+        mode: 'BUILD',
+      },
+    });
+    const worldviewProposal = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/oreade/proposal',
+      payload: {
+        symbolicIntent: 'telemetry-private-intent-worldview',
+        requestedBy: 'person:telemetry-private-worldview',
+        targetScope: ['reflection:only'],
+        idempotencyKey: 'telemetry-proposal-worldview-001',
+        stopCondition: 'stop after one stored proposal',
+        expectedObservation: 'one PROPOSED record exists',
+        mode: 'WORLDVIEW',
+      },
+    });
+    const translatedDrop = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/oreade/drop',
+      payload: {
+        symbolicIntent: 'telemetry-private-unpersisted-drop',
+        requestedBy: 'person:telemetry-private-drop',
+        targetScope: ['reflection:only'],
+        idempotencyKey: 'telemetry-drop-only-001',
+        stopCondition: 'stop after translation',
+        expectedObservation: 'a read-only Drop is returned',
+      },
+    });
+    assert.equal(buildProposal.statusCode, 201);
+    assert.equal(worldviewProposal.statusCode, 201);
+    assert.equal(translatedDrop.statusCode, 201);
+
+    const eventsBefore = (await app.inject({ method: 'GET', url: '/v1/omega/events' })).json().events;
+    const response = await app.inject({ method: 'GET', url: '/v1/omega/oreade/telemetry' });
+    const body = response.json();
+    assert.equal(response.statusCode, 200);
+    assert.equal(body.success, true);
+    assert.equal(body.readOnly, true);
+    assert.equal(body.telemetry.markedProposalCount, 2);
+    assert.equal(body.telemetry.byStatus.PROPOSED, 2);
+    assert.deepEqual(body.telemetry.byMode, { BUILD: 1, WORLDVIEW: 1 });
+    assert.deepEqual(body.telemetry.privacy, {
+      aggregateOnly: true,
+      includesIntent: false,
+      includesRequesterIdentity: false,
+      includesCommandIdentifiers: false,
+      writesAdditionalRecords: false,
+    });
+    assert.match(body.telemetry.observedAt, /^\d{4}-\d{2}-\d{2}T/);
+    const serialized = JSON.stringify(body);
+    for (const privateValue of [
+      'telemetry-private-intent-alpha',
+      'person:telemetry-private-alpha',
+      buildProposal.json().command.commandId,
+      'telemetry-private-unpersisted-drop',
+    ]) assert.equal(serialized.includes(privateValue), false);
+
+    for (let requestNumber = 1; requestNumber < 30; requestNumber += 1) {
+      const repeated = await app.inject({ method: 'GET', url: '/v1/omega/oreade/telemetry' });
+      assert.equal(repeated.statusCode, 200);
+    }
+    const rateLimited = await app.inject({ method: 'GET', url: '/v1/omega/oreade/telemetry' });
+    assert.equal(rateLimited.statusCode, 429);
+
+    const eventsAfter = (await app.inject({ method: 'GET', url: '/v1/omega/events' })).json().events;
+    assert.deepEqual(eventsAfter, eventsBefore);
+  } finally {
+    await app.close();
+    rmSync(dir, { recursive: true, force: true });
+  }
+});

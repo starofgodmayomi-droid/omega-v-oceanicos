@@ -8,7 +8,7 @@ import {
   verifyExecutedReality,
 } from '@oceanicos/mini';
 import type { OmegaCommand, OmegaCommandResult, OmegaCommandStatus, OmegaWorkerId } from '@oceanicos/types';
-import { decisionToStatus, validateOmegaApprovalInput, validateOmegaCommandInput, validateOmegaReconciliationInput } from '@oceanicos/types';
+import { decisionToStatus, isOmegaStatus, OMEGA_COMMAND_STATUSES, validateOmegaApprovalInput, validateOmegaCommandInput, validateOmegaReconciliationInput } from '@oceanicos/types';
 import { buildSymbolicDrop } from '@omega-v/oreade';
 import { OmegaDurableStore } from './omega-persistence.js';
 type StoredCommand = OmegaCommand & {
@@ -320,6 +320,50 @@ export function registerOmegaRoutes(
       }
       return reply.status(400).send({ success: false, error: error instanceof Error ? error.message : 'INVALID_OREADE_PROPOSAL' });
     }
+  });
+
+  fastify.get('/v1/omega/oreade/telemetry', {
+    config: { rateLimit: { max: 30, timeWindow: '1 minute' } },
+  }, async () => {
+    const proposals = store.listCommands().filter((command) =>
+      typeof command.context.symbolicDropId === 'string'
+      && command.context.symbolicDropId.length > 0
+      && (command.context.symbolicMode === 'BUILD' || command.context.symbolicMode === 'WORLDVIEW')
+    );
+    const byStatus = Object.fromEntries(
+      OMEGA_COMMAND_STATUSES.map((status) => [status, 0]),
+    ) as Record<OmegaCommandStatus, number>;
+    const byMode = { BUILD: 0, WORLDVIEW: 0 };
+
+    for (const proposal of proposals) {
+      const status = isOmegaStatus(proposal.status) ? proposal.status : 'UNKNOWN';
+      byStatus[status] += 1;
+      const mode = proposal.context.symbolicMode;
+      if (mode === 'BUILD' || mode === 'WORLDVIEW') byMode[mode] += 1;
+    }
+
+    return {
+      success: true,
+      readOnly: true,
+      telemetry: {
+        source: 'omega-command-store',
+        observedAt: new Date().toISOString(),
+        markedProposalCount: proposals.length,
+        byStatus,
+        byMode,
+        privacy: {
+          aggregateOnly: true,
+          includesIntent: false,
+          includesRequesterIdentity: false,
+          includesCommandIdentifiers: false,
+          writesAdditionalRecords: false,
+        },
+        limitations: [
+          'counts only command records carrying the symbolic Drop marker and a recognized mode; unpersisted read-only Drop translations are excluded',
+          'marker-based classification is not proof of who created a proposal and does not measure user outcomes or deployment health',
+        ],
+      },
+    };
   });
 
   fastify.post('/v1/omega/workers/register', async (request, reply) => {
