@@ -164,10 +164,30 @@ export function App() {
     }
   };
 
+  const fetchChatHistory = async () => {
+    try {
+      const data = await apiRequest<any>('/v1/chat/history?limit=30');
+      if (data?.success && Array.isArray(data.messages) && data.messages.length > 0) {
+        setChatMessages(
+          data.messages.map((m: any) => ({
+            id: m.id,
+            sender: m.sender,
+            content: m.content,
+            timestamp: new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            organ: m.metadata?.organ,
+          }))
+        );
+      }
+    } catch {
+      /* ambient fallback */
+    }
+  };
+
   useEffect(() => {
     fetchMinerStatus();
     fetchKernelCapabilities();
     fetchMood();
+    fetchChatHistory();
 
     let es: EventSource | null = null;
     let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
