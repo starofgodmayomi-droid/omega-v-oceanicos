@@ -13,6 +13,45 @@ export type WaterFlowStage = (typeof WATER_FLOW_STAGES)[number];
 export type WaterFlowStatus = 'VERIFIED' | 'DIVERGENT' | 'UNKNOWN' | 'NOT_EXECUTED';
 export type WaterFlowRequestStatus = 'NOT_REQUESTED' | 'LOADING' | 'RECEIVED' | 'FAILED' | 'DIVERGENT';
 
+/** Build a trace-only request that must be denied before transition execution. */
+export function createTraceOnlyPipelineRequest(changeId: string) {
+  return {
+    compile: {
+      intent: 'request bounded symbolic KAI water-flow trace without execution',
+      subject: 'dashboard:water-flow-trace',
+      stateBefore: 'S0',
+      evidenceRefs: [{
+        id: 'dashboard-water-flow-trace',
+        kind: 'ui-request',
+        source: 'dashboard',
+        digest: 'sha256:dashboard-water-flow-trace',
+      }],
+      policyRefs: [{
+        id: 'policy:water-flow-trace-only',
+        version: '1',
+        requirement: 'trace-only; no transition execution',
+      }],
+      workerPlan: [] as never[],
+      transition: {
+        requestedStateAfter: 'S1',
+        consequence: 'trace-only; no transition executed',
+        dryRun: true,
+      },
+      observation: {
+        observerId: 'dashboard-water-flow-trace-observer',
+        targets: ['dashboard:water-flow-trace'],
+        evidenceRequired: ['bounded local trace'],
+      },
+    },
+    admission: { authorityVerified: false, policySatisfied: false },
+    authority: 'none:trace-only',
+    policy: 'policy:water-flow-trace-only',
+    waterFlowMaxSteps: WATER_FLOW_STAGES.length,
+    changeId,
+  };
+}
+
+
 export const LIVING_WATER_STAGES = [
   'SOURCE',
   'DROP',
