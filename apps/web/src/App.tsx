@@ -14,7 +14,7 @@ import { DivergenceAlertsPanel } from './DivergenceAlertsPanel';
 import { ValueNavigatorPanel } from './ValueNavigatorPanel';
 import { ConnectorPanel } from './ConnectorPanel';
 import { WholeEcosystemDashboard } from './WholeEcosystemDashboard';
-import { normalizeTraceOnlyPipelineReceipt, type WaterFlowFrameView, type WaterFlowRequestStatus } from './water-flow-panel-model';
+import { createTraceOnlyPipelineRequest, normalizeTraceOnlyPipelineReceipt, type WaterFlowFrameView, type WaterFlowRequestStatus } from './water-flow-panel-model';
 import { LifecycleFlow, deriveStageStates, type LifecycleStage } from './LifecycleFlow';
 import { GlobeViewport } from './GlobeViewport';
 import { bindGlobeEvidence } from './globe-shell';
@@ -168,31 +168,7 @@ export function App() {
       const data = await apiRequest<unknown>('/v1/pipeline', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          compile: {
-            intent: 'request bounded symbolic KAI water-flow trace without execution',
-            subject: 'dashboard:water-flow-trace',
-            stateBefore: 'S0',
-            evidenceRefs: [{ id: 'dashboard-water-flow-trace', kind: 'ui-request', source: 'dashboard', digest: 'sha256:dashboard-water-flow-trace' }],
-            policyRefs: [{ id: 'policy:water-flow-trace-only', version: '1', requirement: 'trace-only; no transition execution' }],
-            workerPlan: [],
-            transition: {
-              requestedStateAfter: 'S1',
-              consequence: 'trace-only; no transition executed',
-              dryRun: true,
-            },
-            observation: {
-              observerId: 'dashboard-water-flow-trace-observer',
-              targets: ['dashboard:water-flow-trace'],
-              evidenceRequired: ['bounded local trace'],
-            },
-          },
-          admission: { authorityVerified: false, policySatisfied: false },
-          authority: 'none:trace-only',
-          policy: 'policy:water-flow-trace-only',
-          waterFlowMaxSteps: 8,
-          changeId: `dashboard-water-flow-${Date.now()}`,
-        }),
+        body: JSON.stringify(createTraceOnlyPipelineRequest(`dashboard-water-flow-${Date.now()}`)),
       });
 
       const normalized = normalizeTraceOnlyPipelineReceipt(data);
