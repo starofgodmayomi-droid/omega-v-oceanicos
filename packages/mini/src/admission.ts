@@ -25,7 +25,7 @@ export function resolveChangeAdmission(
   let decision: ChangeDecision = 'REVIEW';
   let authorized = false;
 
-  if (!gates.authorityVerified || !gates.policySatisfied) {
+  if (gates.authorityVerified !== true || gates.policySatisfied !== true) {
     decision = 'DENY';
   } else if (hasEvidence && hasAuthorityReference && hasPolicyReference) {
     decision = 'ALLOW';

@@ -73,6 +73,8 @@ Authorization establishes that a principal may request the transition. Admission
 
 The API's existing `REVIEW → AUTHORIZED → EXECUTED` path is one concrete implementation of this distinction. A successful admission does not establish that the requested change occurred in reality.
 
+At the C4 gate, authority and policy evidence MUST be literal boolean values. Only `true` satisfies a gate; truthy strings, objects, or other non-boolean values MUST fail closed and MUST NOT produce `ALLOW`.
+
 ### 4.4 Bound
 
 Before execution, the system MUST record the target, capability, lease or ownership boundary, expiry behavior, and stop condition. A worker MUST NOT continue after its authority or lease expires. Retrying a request MUST produce a new bounded attempt rather than silently extending the old one.
