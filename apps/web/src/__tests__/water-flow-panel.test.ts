@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import {
   LIVING_WATER_STAGES,
   WATER_FLOW_STAGES,
+  createTraceOnlyPipelineRequest,
   normalizeWaterFlowFrames,
   normalizeTraceOnlyPipelineReceipt,
   summarizeWaterFlow,
@@ -140,4 +141,16 @@ test('trace-only API responses require explicit denial and no execution or attes
     { ok: false, reason: 'WATER_FLOW_DIVERGENT' },
   );
   assert.deepEqual(normalizeTraceOnlyPipelineReceipt({ success: false }), { ok: false, reason: 'INVALID_RESPONSE' });
+});
+
+test('trace request is bounded, dry-run, and cannot request admission or execution', () => {
+  const request = createTraceOnlyPipelineRequest('test-trace-only');
+  assert.equal(request.changeId, 'test-trace-only');
+  assert.equal(request.compile.transition.dryRun, true);
+  assert.equal(request.admission.authorityVerified, false);
+  assert.equal(request.admission.policySatisfied, false);
+  assert.equal(request.waterFlowMaxSteps, WATER_FLOW_STAGES.length);
+  assert.equal(Object.hasOwn(request, 'handlerStateAfter'), false);
+  assert.equal(Object.hasOwn(request, 'handler'), false);
+  assert.deepEqual(request.compile.workerPlan, []);
 });
