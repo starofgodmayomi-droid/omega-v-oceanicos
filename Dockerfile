@@ -5,24 +5,18 @@ RUN apk add --no-cache python3 make g++ git && npm install -g pnpm@10.34.5
 
 WORKDIR /app
 
-# 1. Copy workspace manifests first for layer caching
+# 1. Copy the complete workspace before install.
+# The root build is recursive, so every workspace manifest must be visible to pnpm.
+# A partial manifest list can produce an apparently successful install followed by
+# missing dev/type dependencies when a previously omitted package is built.
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
-COPY packages/types/package.json         packages/types/package.json
-COPY packages/observer/package.json      packages/observer/package.json
-COPY packages/verification/package.json  packages/verification/package.json
-COPY packages/remember/package.json      packages/remember/package.json
-COPY packages/mini/package.json          packages/mini/package.json
-COPY packages/attestation/package.json   packages/attestation/package.json
-COPY packages/kernel/package.json        packages/kernel/package.json
-COPY apps/api/package.json               apps/api/package.json
-COPY apps/web/package.json               apps/web/package.json
-
-# 2. Install dependencies (layer cached until any manifest changes)
-RUN pnpm install --frozen-lockfile
-
-# 3. Copy source and build
 COPY packages/ packages/
 COPY apps/ apps/
+
+# 2. Install the complete workspace dependency graph.
+RUN pnpm install --frozen-lockfile
+
+# 3. Copy root build inputs and build.
 COPY tsconfig.json ./
 COPY bin/ bin/
 
