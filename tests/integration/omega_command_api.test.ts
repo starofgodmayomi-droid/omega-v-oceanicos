@@ -130,8 +130,11 @@ describe('Ω∞v command API vertical slice', () => {
     const allowedApproval = await requiredAuthApp.inject({
       method: 'POST',
       url: '/v1/omega/commands/omega-required-auth-3/approve',
-      headers: { authorization: `Bearer ${requiredAdminToken}` },
-      payload: { operator: 'integration-operator' },
+      headers: {
+        authorization: `Bearer ${requiredAdminToken}`,
+        'x-omega-operator-id': 'integration-operator',
+      },
+      payload: { operator: 'ignored-body-operator' },
     });
     assert.equal(allowedApproval.statusCode, 200);
     assert.equal(allowedApproval.json().command.status, 'AUTHORIZED');
@@ -142,7 +145,12 @@ describe('Ω∞v command API vertical slice', () => {
     assert.equal(denied.statusCode, 409);
     assert.equal(denied.json().error, 'OMEGA_EXECUTION_REQUIRES_AUTHORIZATION');
 
-    const approved = await app.inject({ method: 'POST', url: '/v1/omega/commands/omega-api-slice-1/approve', payload: { operator: 'integration-operator' } });
+    const approved = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/commands/omega-api-slice-1/approve',
+      headers: { 'x-omega-operator-id': 'integration-operator' },
+      payload: { operator: 'ignored-body-operator' },
+    });
     assert.equal(approved.statusCode, 200);
     assert.equal(approved.json().command.status, 'AUTHORIZED');
     assert.equal(approved.json().command.change.authority, 'human:integration-operator');
@@ -165,7 +173,8 @@ describe('Ω∞v command API vertical slice', () => {
     const oversizedOperator = await app.inject({
       method: 'POST',
       url: '/v1/omega/commands/omega-proposed-approval-1/approve',
-      payload: { operator: 'o'.repeat(97) },
+      headers: { 'x-omega-operator-id': 'o'.repeat(97) },
+      payload: {},
     });
     assert.equal(oversizedOperator.statusCode, 400);
     assert.equal(oversizedOperator.json().error, 'INVALID_OMEGA_APPROVAL_INPUT');
@@ -173,7 +182,8 @@ describe('Ω∞v command API vertical slice', () => {
     const oversizedPolicy = await app.inject({
       method: 'POST',
       url: '/v1/omega/commands/omega-proposed-approval-1/approve',
-      payload: { operator: 'integration-operator', policy: 'p'.repeat(257) },
+      headers: { 'x-omega-operator-id': 'integration-operator' },
+      payload: { operator: 'ignored-body-operator', policy: 'p'.repeat(257) },
     });
     assert.equal(oversizedPolicy.statusCode, 400);
     assert.equal(oversizedPolicy.json().error, 'INVALID_OMEGA_APPROVAL_INPUT');
@@ -185,7 +195,8 @@ describe('Ω∞v command API vertical slice', () => {
     const approved = await app.inject({
       method: 'POST',
       url: '/v1/omega/commands/omega-proposed-approval-1/approve',
-      payload: { operator: 'integration-operator', policy: 'human-review' },
+      headers: { 'x-omega-operator-id': 'integration-operator' },
+      payload: { operator: 'ignored-body-operator', policy: 'human-review' },
     });
     assert.equal(approved.statusCode, 200);
     assert.equal(approved.json().command.status, 'AUTHORIZED');
@@ -195,7 +206,8 @@ describe('Ω∞v command API vertical slice', () => {
     const repeatedApproval = await app.inject({
       method: 'POST',
       url: '/v1/omega/commands/omega-proposed-approval-1/approve',
-      payload: { operator: 'integration-operator' },
+      headers: { 'x-omega-operator-id': 'integration-operator' },
+      payload: { operator: 'ignored-body-operator' },
     });
     assert.equal(repeatedApproval.statusCode, 409);
     assert.equal(repeatedApproval.json().error, 'OMEGA_APPROVAL_REQUIRES_REVIEW');
@@ -228,7 +240,8 @@ describe('Ω∞v command API vertical slice', () => {
     const approved = await app.inject({
       method: 'POST',
       url: '/v1/omega/commands/omega-lease-execution-current-1/approve',
-      payload: { operator: 'integration-operator' },
+      headers: { 'x-omega-operator-id': 'integration-operator' },
+      payload: { operator: 'ignored-body-operator' },
     });
     assert.equal(approved.statusCode, 200);
     assert.equal(approved.json().command.status, 'AUTHORIZED');
