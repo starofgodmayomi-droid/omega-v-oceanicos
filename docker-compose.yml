@@ -44,11 +44,17 @@ services:
       context: .
       target: web
       args:
-        VITE_API_URL: ${VITE_API_URL:-http://localhost:5000}
+        VITE_API_URL: ${VITE_API_URL:-/api}
     ports:
       - "${WEB_BIND_ADDRESS:-127.0.0.1}:3000:3000"
     environment:
-      - VITE_API_URL=${VITE_API_URL:-http://localhost:5000}
+      - OMEGA_API_INTERNAL_URL=http://api:5000
+      - OMEGA_READ_TOKEN=${OMEGA_READ_TOKEN:?OMEGA_READ_TOKEN is required}
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/web-health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
     depends_on:
       api:
         condition: service_healthy
