@@ -26,7 +26,6 @@ const CONTENT_TYPES = new Map([
 const PROXY_RESPONSE_HEADERS = [
   'cache-control',
   'content-disposition',
-  'content-length',
   'content-type',
   'etag',
   'last-modified',
