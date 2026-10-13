@@ -101,12 +101,40 @@ check(deploymentGuide.includes('loopback-only'), 'deployment guide must describe
 check(deploymentGuide.includes('API_BIND_ADDRESS'), 'deployment guide must document explicit API exposure');
 check(deploymentGuide.includes('OMEGA_CORS_ORIGINS'), 'deployment guide must document exact-origin CORS configuration');
 check(
-  deploymentGuide.includes('issue #459') && deploymentGuide.includes('expected to receive `401`'),
-  'deployment guide must disclose the current browser/API auth integration blocker',
+  services.web.includes('OMEGA_API_INTERNAL_URL=http://api:5000'),
+  'web gateway must target the API over the private Compose network',
 );
 check(
-  !services.web.includes('OMEGA_READ_TOKEN') && !services.web.includes('OMEGA_ADMIN_TOKEN'),
-  'web service must not receive API bearer service tokens',
+  services.web.includes('OMEGA_READ_TOKEN=' + '
+check(
+  !/^VITE_[A-Z0-9_]*TOKEN=/m.test(envExample),
+  'environment template must not place bearer tokens in public Vite variables',
+);
+
+if (failures.length > 0) {
+  console.error(['COMPOSE_NETWORK_CONTRACT_INVALID', ...failures].join('\n'));
+  process.exitCode = 1;
+} else {
+  console.log('validated local-first Compose bindings, immutable image digests, server-held read credential, read-only web gateway, and mutation boundary');
+}
+ + '{OMEGA_READ_TOKEN:?'),
+  'web gateway must receive the read token server-side',
+);
+check(
+  !services.web.includes('OMEGA_ADMIN_TOKEN'),
+  'web service must never receive the API admin token',
+);
+check(
+  services.web.includes('/web-health'),
+  'web service must healthcheck the production gateway',
+);
+check(
+  envExample.includes('VITE_API_URL=/api'),
+  'browser API URL must default to the same-origin /api gateway',
+);
+check(
+  deploymentGuide.includes('read-only gateway') && deploymentGuide.includes('WEB_SESSION_REQUIRED'),
+  'deployment guide must document the read-only gateway and mutation boundary',
 );
 check(
   !/^VITE_[A-Z0-9_]*TOKEN=/m.test(envExample),
