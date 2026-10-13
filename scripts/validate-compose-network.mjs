@@ -105,19 +105,7 @@ check(
   'web gateway must target the API over the private Compose network',
 );
 check(
-  services.web.includes('OMEGA_READ_TOKEN=' + '
-check(
-  !/^VITE_[A-Z0-9_]*TOKEN=/m.test(envExample),
-  'environment template must not place bearer tokens in public Vite variables',
-);
-
-if (failures.length > 0) {
-  console.error(['COMPOSE_NETWORK_CONTRACT_INVALID', ...failures].join('\n'));
-  process.exitCode = 1;
-} else {
-  console.log('validated local-first Compose bindings, immutable image digests, server-held read credential, read-only web gateway, and mutation boundary');
-}
- + '{OMEGA_READ_TOKEN:?'),
+  services.web.includes('OMEGA_READ_TOKEN=' + '$' + '{OMEGA_READ_TOKEN:?'),
   'web gateway must receive the read token server-side',
 );
 check(
@@ -145,5 +133,5 @@ if (failures.length > 0) {
   console.error(['COMPOSE_NETWORK_CONTRACT_INVALID', ...failures].join('\n'));
   process.exitCode = 1;
 } else {
-  console.log('validated local-first Compose bindings, immutable image digests, API secret boundaries, local CORS, and browser-auth caveat');
+  console.log('validated local-first Compose bindings, immutable image digests, server-held read credential, read-only web gateway, and mutation boundary');
 }
