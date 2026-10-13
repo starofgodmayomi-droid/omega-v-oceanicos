@@ -316,13 +316,56 @@ jobs:
             exit 1
           fi
 
+      - name: Build the production web gateway image
+        run: docker build --target web -t omega-v-web:ci .
+
+      - name: Refuse to start the web gateway without a read token
+        run: |
+          if docker run --rm omega-v-web:ci; then
+            echo "::error::Web gateway started without OMEGA_READ_TOKEN."
+            exit 1
+          fi
+          echo "Web gateway exited non-zero without its server-held read credential, as required."
+
+      - name: Start the production web gateway
+        run: |
+          docker run -d --name omega-web-smoke \
+            -e OMEGA_READ_TOKEN=ci-smoke-read-token \
+            -e OMEGA_API_INTERNAL_URL=http://127.0.0.1:5000 \
+            --network host omega-v-web:ci
+
+      - name: Smoke test the read-only browser gateway
+        run: |
+          web=http://localhost:3000
+          for attempt in $(seq 1 30); do
+            if curl -sf "$web/web-health" > /dev/null; then break; fi
+            sleep 1
+          done
+
+          curl -sf "$web/web-health" | tee /tmp/web-health.json
+          grep -q '"gateway":"read-only-v1"' /tmp/web-health.json
+
+          # Protected read succeeds through the server-held read credential.
+          curl -sf "$web/api/v1/block/tip" | tee /tmp/web-tip.json
+          grep -q '"success":true' /tmp/web-tip.json
+
+          # Browser mutation remains fail-closed until session + CSRF exists.
+          status=$(curl -sS -o /tmp/web-mutation.json -w '%{http_code}' \
+            -X POST -H 'Content-Type: application/json' -d '{}' "$web/api/v1/omega/commands")
+          test "$status" = "403"
+          grep -q '"error":"WEB_SESSION_REQUIRED"' /tmp/web-mutation.json
+
       - name: Container logs
         if: always()
-        run: docker logs omega-smoke || true
+        run: |
+          docker logs omega-smoke || true
+          docker logs omega-web-smoke || true
 
-      - name: Stop the container
+      - name: Stop the containers
         if: always()
-        run: docker rm -f omega-smoke || true
+        run: |
+          docker rm -f omega-web-smoke || true
+          docker rm -f omega-smoke || true
 
       - name: Record the artifact
         if: success()

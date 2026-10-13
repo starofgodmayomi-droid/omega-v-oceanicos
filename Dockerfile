@@ -5,28 +5,22 @@ RUN apk add --no-cache python3 make g++ git && npm install -g pnpm@10.34.5
 
 WORKDIR /app
 
-# 1. Copy workspace manifests first for layer caching
+# 1. Copy the complete workspace before install.
+# The root build is recursive, so every workspace manifest must be visible to pnpm.
+# A partial manifest list can produce an apparently successful install followed by
+# missing dev/type dependencies when a previously omitted package is built.
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
-COPY packages/types/package.json         packages/types/package.json
-COPY packages/observer/package.json      packages/observer/package.json
-COPY packages/verification/package.json  packages/verification/package.json
-COPY packages/remember/package.json      packages/remember/package.json
-COPY packages/mini/package.json          packages/mini/package.json
-COPY packages/attestation/package.json   packages/attestation/package.json
-COPY packages/kernel/package.json        packages/kernel/package.json
-COPY apps/api/package.json               apps/api/package.json
-COPY apps/web/package.json               apps/web/package.json
-
-# 2. Install dependencies (layer cached until any manifest changes)
-RUN pnpm install --frozen-lockfile
-
-# 3. Copy source and build
 COPY packages/ packages/
 COPY apps/ apps/
+
+# 2. Install the complete workspace dependency graph.
+RUN pnpm install --frozen-lockfile
+
+# 3. Copy root build inputs and build.
 COPY tsconfig.json ./
 COPY bin/ bin/
 
-ARG VITE_API_URL=http://localhost:5000
+ARG VITE_API_URL=/api
 ENV VITE_API_URL=$VITE_API_URL
 
 RUN pnpm run build
@@ -50,10 +44,12 @@ CMD ["node", "apps/api/dist/index.js"]
 # ── Stage 3: Production Web Static Serve ─────────────────────────────────────
 FROM node:22-alpine AS web
 
-RUN npm install -g pnpm@10.34.5 serve
 WORKDIR /app
 
 COPY --from=builder /app/apps/web/dist ./dist
+COPY --from=builder /app/apps/web/server.mjs ./server.mjs
 
+ENV NODE_ENV=production
+ENV WEB_PORT=3000
 EXPOSE 3000
-CMD ["serve", "-s", "dist", "-l", "3000"]
+CMD ["node", "server.mjs"]
