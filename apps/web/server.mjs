@@ -166,8 +166,14 @@ async function proxyReadOnlyApi(request, reply, { apiBaseUrl, readToken }) {
 
 export function createWebGateway(options = {}) {
   const distDir = resolve(options.distDir || fileURLToPath(new URL('./dist', import.meta.url)));
-  const apiBaseUrl = String(options.apiBaseUrl || process.env.OMEGA_API_INTERNAL_URL || DEFAULT_API_BASE_URL).trim();
-  const readToken = String(options.readToken || process.env.OMEGA_READ_TOKEN || '').trim();
+  const apiBaseUrl = String(
+    options.apiBaseUrl !== undefined
+      ? options.apiBaseUrl
+      : process.env.OMEGA_API_INTERNAL_URL || DEFAULT_API_BASE_URL,
+  ).trim();
+  const readToken = String(
+    options.readToken !== undefined ? options.readToken : process.env.OMEGA_READ_TOKEN || '',
+  ).trim();
 
   if (!readToken) throw new Error('OMEGA_READ_TOKEN is required by the production web gateway');
   if (!/^https?:\/\//.test(apiBaseUrl)) throw new Error('OMEGA_API_INTERNAL_URL must be an http(s) URL');
