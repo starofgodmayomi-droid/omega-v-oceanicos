@@ -26,7 +26,7 @@ COPY apps/ apps/
 COPY tsconfig.json ./
 COPY bin/ bin/
 
-ARG VITE_API_URL=http://localhost:5000
+ARG VITE_API_URL=/api
 ENV VITE_API_URL=$VITE_API_URL
 
 RUN pnpm run build
@@ -50,10 +50,12 @@ CMD ["node", "apps/api/dist/index.js"]
 # ── Stage 3: Production Web Static Serve ─────────────────────────────────────
 FROM node:22-alpine AS web
 
-RUN npm install -g pnpm@10.34.5 serve
 WORKDIR /app
 
 COPY --from=builder /app/apps/web/dist ./dist
+COPY --from=builder /app/apps/web/server.mjs ./server.mjs
 
+ENV NODE_ENV=production
+ENV WEB_PORT=3000
 EXPOSE 3000
-CMD ["serve", "-s", "dist", "-l", "3000"]
+CMD ["node", "server.mjs"]
