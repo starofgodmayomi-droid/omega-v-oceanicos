@@ -7,6 +7,9 @@ description: Unified evidence-bound repository self-upgrade skill for Ω∞v OCE
 
 ONE ROOT • ONE CURRENT • MANY SKILLS • ONE VERIFIED EXECUTION.
 
+## Orchestration contract
+Use `.claude/skills/oceanicos-max-space-full-stack/SKILL.md` as the whole-system mapping and transition contract for max-space, cross-domain, or whole-ecosystem requests. This skill is the repository execution adapter: inspect actual repository state, choose one bounded slice, make reviewable changes, test, reconcile and preserve lineage. The max-space skill does not grant extra permissions or override repository policy.
+
 ## Sources and precedence
 Read the live repository before acting. Compose, do not delete or silently supersede, these existing source skills:
 - `.claude/skills/omega-v-ufi/SKILL.md`
