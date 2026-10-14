@@ -536,3 +536,149 @@ export async function recompileOmegaSlice(
   return res.json();
 }
 
+/* ─── Biblical Engine & Covenant Client Methods ──────────────────────── */
+
+export interface CovenantThreadView {
+  threadId: string;
+  sanctum: 'OUTER_COURT' | 'HOLY_PLACE' | 'HOLY_OF_HOLIES';
+  stewardDid: string;
+  parentThreadHash: string;
+  covenantStateHash: string;
+  timestamp: string;
+}
+
+export interface CovenantRecordView {
+  covenantId: string;
+  title: string;
+  status: 'PROMISED' | 'SEALED' | 'TESTED' | 'FULFILLED' | 'BREACHED' | 'RESTORED';
+  thread: CovenantThreadView;
+  terms: string[];
+  failClosedCondition: string;
+  attestationHash: string | null;
+  evidenceReceipts: string[];
+}
+
+export async function fetchCovenants(): Promise<{
+  success: boolean;
+  count: number;
+  covenants: CovenantRecordView[];
+}> {
+  const res = await fetch(`${API_BASE}/v1/covenant`);
+  return res.json();
+}
+
+export async function fetchCovenantById(id: string): Promise<{
+  success: boolean;
+  covenant?: CovenantRecordView;
+  error?: string;
+}> {
+  const res = await fetch(`${API_BASE}/v1/covenant/${id}`);
+  return res.json();
+}
+
+export async function createCovenantApi(payload: {
+  covenantId: string;
+  title: string;
+  terms: string[];
+  threadId?: string;
+  sanctum?: 'OUTER_COURT' | 'HOLY_PLACE' | 'HOLY_OF_HOLIES';
+  stewardDid?: string;
+  failClosedCondition?: string;
+}): Promise<{
+  success: boolean;
+  covenant?: CovenantRecordView;
+  error?: string;
+}> {
+  const res = await fetch(`${API_BASE}/v1/covenant`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  return res.json();
+}
+
+export async function transitionCovenantApi(payload: {
+  covenantId: string;
+  targetStatus: string;
+  requestedBy: string;
+  reason: string;
+  evidenceReceipts?: string[];
+  stewardSignature?: string;
+}): Promise<{
+  success: boolean;
+  rationale: string;
+  previousStatus: string;
+  newStatus: string;
+  covenant?: CovenantRecordView;
+  error?: string;
+}> {
+  const res = await fetch(`${API_BASE}/v1/covenant/transition`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  return res.json();
+}
+
+export async function verifySanctumApi(payload: {
+  sanctum: 'OUTER_COURT' | 'HOLY_PLACE' | 'HOLY_OF_HOLIES';
+  requesterDid: string;
+  stewardSignature?: string;
+}): Promise<{
+  allowed: boolean;
+  sanctum: string;
+  requesterDid: string;
+  rationale: string;
+}> {
+  const res = await fetch(`${API_BASE}/v1/covenant/sanctum/verify`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  return res.json();
+}
+
+/* ─── V1111 Singularity Upgrade Client Methods ───────────────────────── */
+
+export async function fetchUpgradeStatus(): Promise<{
+  success: boolean;
+  active: boolean;
+  contract: string;
+  tipHash: string;
+  chainLength: number;
+  invariants: {
+    failClosed: boolean;
+    humanConsentRequired: boolean;
+    realityAsFinalAuthority: boolean;
+  };
+}> {
+  const res = await fetch(`${API_BASE}/v1/upgrade`);
+  return res.json();
+}
+
+export async function commitUpgradeTransition(payload: {
+  claim: string;
+  observation: { status: string; uuid?: string };
+  provenanceHash: string;
+  actors?: string[];
+}): Promise<{
+  success: boolean;
+  status: string;
+  upgrade?: {
+    chainLength: number;
+    tipHash: string;
+    stateNodeId: string;
+    authorityClaim: string;
+  };
+  reason?: string;
+  error?: string;
+}> {
+  const res = await fetch(`${API_BASE}/v1/upgrade`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  return res.json();
+}
+
+

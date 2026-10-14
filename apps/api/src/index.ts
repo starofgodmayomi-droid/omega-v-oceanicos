@@ -255,7 +255,11 @@ export function createApp(
       service: 'omega-v-oceanicos-api',
       readiness: ready ? 'ready' : 'degraded',
       checks: {
-        observer: 'ready', verifier: 'ready', attester: attestationSigningKey ? 'ready' : 'degraded',
+        observer: 'ready',
+        verifier: 'ready',
+        attester: attestationSigningKey ? 'ready' : 'degraded',
+        covenant: 'ready',
+        upgrade: 'ready',
         memory: { status: memoryReady ? 'ready' : 'degraded', integrity: memoryReady, encryption: 'disabled' },
         persistence: {
           mode: persistenceEnabled ? 'file' : 'memory',

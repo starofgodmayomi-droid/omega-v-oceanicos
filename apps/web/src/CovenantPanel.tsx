@@ -1,36 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { theme } from './oceanicosTheme';
-
-interface TempleThreadTrace {
-  threadId: string;
-  sanctum: 'OUTER_COURT' | 'HOLY_PLACE' | 'HOLY_OF_HOLIES';
-  stewardDid: string;
-  parentThreadHash: string;
-  covenantStateHash: string;
-  timestamp: string;
-}
-
-interface CovenantRecord {
-  covenantId: string;
-  title: string;
-  status: 'PROMISED' | 'SEALED' | 'TESTED' | 'FULFILLED' | 'BREACHED' | 'RESTORED';
-  thread: TempleThreadTrace;
-  terms: string[];
-  failClosedCondition: string;
-  attestationHash: string | null;
-  evidenceReceipts: string[];
-}
+import {
+  fetchCovenants as loadCovenantsApi,
+  transitionCovenantApi,
+  verifySanctumApi,
+  type CovenantRecordView as CovenantRecord,
+} from './omega-api';
 
 interface CovenantPanelProps {
   onClose?: () => void;
 }
-
-const API_BASE_URL = (
-  import.meta.env.VITE_API_URL ||
-  (typeof window !== 'undefined' && window.location.port !== '5000'
-    ? `http://${window.location.hostname}:5000`
-    : '')
-).replace(/\/$/, '');
 
 function getStatusBadgeStyle(status: string) {
   switch (status) {
@@ -72,14 +51,11 @@ export const CovenantPanel: React.FC<CovenantPanelProps> = ({ onClose }) => {
   const fetchCovenants = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/v1/covenant`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data.covenants) {
-          setCovenants(data.covenants);
-          if (!selectedCovenantId && data.covenants.length > 0) {
-            setSelectedCovenantId(data.covenants[0].covenantId);
-          }
+      const data = await loadCovenantsApi();
+      if (data && data.covenants) {
+        setCovenants(data.covenants);
+        if (!selectedCovenantId && data.covenants.length > 0) {
+          setSelectedCovenantId(data.covenants[0].covenantId);
         }
       }
     } catch {
@@ -102,26 +78,21 @@ export const CovenantPanel: React.FC<CovenantPanelProps> = ({ onClose }) => {
     setLoading(true);
     setActionFeedback(null);
     try {
-      const res = await fetch(`${API_BASE_URL}/v1/covenant/transition`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          covenantId: selectedCovenantId,
-          targetStatus,
-          requestedBy: 'did:omega:human:starofgodmayomi',
-          reason: `Transition to ${targetStatus} via Web Covenant Console`,
-          evidenceReceipts: evidenceInput.trim() ? [evidenceInput.trim()] : [],
-          stewardSignature: 'sig-steward-web-session-root',
-        }),
+      const data = await transitionCovenantApi({
+        covenantId: selectedCovenantId,
+        targetStatus,
+        requestedBy: 'did:omega:human:starofgodmayomi',
+        reason: `Transition to ${targetStatus} via Web Covenant Console`,
+        evidenceReceipts: evidenceInput.trim() ? [evidenceInput.trim()] : [],
+        stewardSignature: 'sig-steward-web-session-root',
       });
 
-      const data = await res.json();
-      if (res.ok && data.success) {
+      if (data && data.success) {
         setActionFeedback(`✓ Transitioned to ${targetStatus}: ${data.rationale}`);
         setEvidenceInput('');
         await fetchCovenants();
       } else {
-        setActionFeedback(`✗ Transition Denied: ${data.rationale || data.error || 'Unknown error'}`);
+        setActionFeedback(`✗ Transition Denied: ${data?.rationale || data?.error || 'Unknown error'}`);
       }
     } catch (err: any) {
       setActionFeedback(`Error: ${err.message}`);
@@ -134,18 +105,13 @@ export const CovenantPanel: React.FC<CovenantPanelProps> = ({ onClose }) => {
     setLoading(true);
     setActionFeedback(null);
     try {
-      const res = await fetch(`${API_BASE_URL}/v1/covenant/sanctum/verify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sanctum,
-          requesterDid: withSteward ? 'did:omega:human:starofgodmayomi' : 'worker:unauthorized-probe',
-          stewardSignature: withSteward ? 'sig-valid-steward' : undefined,
-        }),
+      const data = await verifySanctumApi({
+        sanctum,
+        requesterDid: withSteward ? 'did:omega:human:starofgodmayomi' : 'worker:unauthorized-probe',
+        stewardSignature: withSteward ? 'sig-valid-steward' : undefined,
       });
 
-      const data = await res.json();
-      if (data.allowed) {
+      if (data && data.allowed) {
         setActionFeedback(`✓ Sanctum Access Allowed for ${sanctum} (Steward Verified)`);
       } else {
         setActionFeedback(`🛡️ Fail-Closed Triggered: Access to ${sanctum} was denied per Constitution!`);
