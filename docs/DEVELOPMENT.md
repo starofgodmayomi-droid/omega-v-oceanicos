@@ -64,6 +64,18 @@ For the complete verification path:
 pnpm verify:full
 ```
 
+### Local-first offline verification
+
+```bash
+pnpm verify:local-offline
+```
+
+This command builds the workspace (including `apps/api` and `apps/web`) and then
+runs `node bin/oceanicos.mjs offline`. The MINI cycle uses an in-memory
+`RememberEngine`, makes no API fetch, and leaves no durable ledger file. Exit
+code `0` is scoped to that local generated Observe → Verify → Remember result and
+its in-memory chain check; it does not verify external reality or deployment.
+
 ### 5. Start development
 
 ```bash

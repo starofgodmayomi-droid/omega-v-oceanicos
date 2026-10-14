@@ -252,7 +252,16 @@ pnpm docker:down
 pnpm cli status
 pnpm cli mood
 pnpm cli cycle --json
+
+# Build all workspace apps, then run MINI locally without an API request
+pnpm verify:local-offline
 ```
+
+`verify:local-offline` builds the workspace, including the API and web app, then
+runs the CLI's Observe → Verify → Remember cycle with an in-memory ledger. Exit
+code `0` means the local generated evidence passed and that in-memory ledger
+verified; it is not evidence about external systems, production health, or
+deployment. The offline CLI does not contact the API or persist a ledger to disk.
 
 Read the relevant command and source contract before extending a workflow. Do not
 pipe remote scripts into a shell, invent credentials, or infer production behavior

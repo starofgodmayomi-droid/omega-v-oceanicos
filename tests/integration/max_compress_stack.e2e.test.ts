@@ -299,20 +299,39 @@ describe('Ω∞v Oceanicos Max Compress Full-Stack E2E Suite', () => {
     assert.ok(stdout.includes('Chain Genesis Block'));
   });
 
-  it('14a. Unified CLI "offline" runs MINI without contacting the API', async () => {
+  it('14a. Unified CLI "offline" runs MINI with fetch blocked and no disk writes', async () => {
     const { execFileSync } = await import('node:child_process');
+    const { mkdtempSync, readdirSync, rmSync, writeFileSync } = await import('node:fs');
+    const { tmpdir } = await import('node:os');
     const path = await import('node:path');
     const cliPath = path.resolve(process.cwd(), 'bin/oceanicos.mjs');
-    const stdout = execFileSync(process.execPath, [cliPath, 'offline'], {
-      encoding: 'utf-8',
-      env: { ...process.env, OMEGA_API_URL: 'http://127.0.0.1:1' },
-    });
-    assert.ok(stdout.includes('OFFLINE MINI CYCLE'));
-    assert.ok(stdout.includes('Observe → Verify → Remember'));
-    assert.ok(stdout.includes('Network'));
-    assert.ok(stdout.includes('DISABLED'));
-    assert.ok(stdout.includes('local in-process evidence'));
-    assert.ok(!stdout.includes('Live API service'));
+    const probeDir = mkdtempSync(path.join(tmpdir(), 'omega-offline-cli-'));
+    const fetchGuardPath = path.join(probeDir, 'block-fetch.mjs');
+    writeFileSync(
+      fetchGuardPath,
+      "globalThis.fetch = async () => { throw new Error('offline MINI must not call fetch'); };\n"
+    );
+
+    try {
+      const stdout = execFileSync(
+        process.execPath,
+        ['--import', fetchGuardPath, cliPath, 'offline'],
+        {
+          encoding: 'utf-8',
+          cwd: probeDir,
+          env: { ...process.env, OMEGA_API_URL: 'http://127.0.0.1:1' },
+        }
+      );
+      assert.ok(stdout.includes('OFFLINE MINI CYCLE'));
+      assert.ok(stdout.includes('Observe → Verify → Remember'));
+      assert.ok(stdout.includes('Network'));
+      assert.ok(stdout.includes('DISABLED'));
+      assert.ok(stdout.includes('local in-process evidence'));
+      assert.ok(!stdout.includes('Live API service'));
+      assert.deepStrictEqual(readdirSync(probeDir), ['block-fetch.mjs']);
+    } finally {
+      rmSync(probeDir, { recursive: true, force: true });
+    }
   });
 
   it('15. Unified CLI "cycle --json" mints cryptographic block with satisfied PoW', async () => {
