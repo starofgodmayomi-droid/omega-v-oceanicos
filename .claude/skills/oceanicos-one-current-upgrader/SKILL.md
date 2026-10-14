@@ -8,7 +8,13 @@ description: Unified evidence-bound repository self-upgrade skill for Ω∞v OCE
 ONE ROOT • ONE CURRENT • MANY SKILLS • ONE VERIFIED EXECUTION.
 
 ## Sources and precedence
-Read the live repository before acting. Compose, do not delete or silently supersede, existing skills at `.claude/skills/omega-v-ufi/SKILL.md`, `omega-global-good-fullstack/SKILL.md`, `omega-global-good-fullstack-builder/SKILL.md`, and `omega-full-stack-max/SKILL.md`. Read `AGENTS.md`, `CHARTER.md`, `MANIFEST.md`, and affected package instructions. The existing source skills remain authoritative for their specialized detail. If conflicts arise, follow repository policies, least privilege, and the stricter safety/verification boundary.
+Read the live repository before acting. Compose, do not delete or silently supersede, these existing source skills:
+- `.claude/skills/omega-v-ufi/SKILL.md`
+- `.claude/skills/omega-global-good-fullstack/SKILL.md`
+- `.claude/skills/omega-global-good-fullstack-builder/SKILL.md`
+- `.claude/skills/omega-full-stack-max/SKILL.md`
+
+Read `AGENTS.md`, `CHARTER.md`, `MANIFEST.md`, and affected package instructions. The existing source skills remain authoritative for their specialized detail. If conflicts arise, follow repository policies, least privilege, and the stricter safety/verification boundary.
 
 ## One execution kernel
 SOURCE → ROOT → CURRENT REALITY → MAP → EVIDENCE → DISTINGUISH → PRIORITIZE → SPECIFY → BUILD → INTEGRATE → TEST → SECURE → RECONCILE → ATTEST → AUTHORIZE → DELIVER → OBSERVE → REMEMBER → NEXT Δ.
