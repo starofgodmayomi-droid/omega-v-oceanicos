@@ -1,3 +1,3 @@
-$bin = "C:\Users\pc\AppData\Local\OpenAI\Codex\runtimes\cua_node\fb8898c05a62885e\bin"
+$bin = "C:\Users\pc\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin"
 $env:PATH = "$bin;" + $env:PATH
-& "$bin\node.exe" "$bin\node_modules\corepack\dist\pnpm.js" @args
+& "$bin\node.exe" "C:\Users\pc\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\node_modules\pnpm\bin\pnpm.cjs" @args

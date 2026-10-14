@@ -154,7 +154,7 @@ export function transitionCovenant(
       success: true,
       previousStatus: current,
       newStatus: 'BREACHED',
-      rationale: `Covenant marked BREACHED. Fail-closed condition active: ${covenant.failClosedCondition}`,
+      rationale: `Covenant marked BREACHED. Fail-closed condition active: FAIL_CLOSED_ON_EVIDENCE_ABSENCE | ${covenant.failClosedCondition}`,
       updatedCovenant: updated,
     };
   }
