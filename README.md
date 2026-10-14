@@ -182,14 +182,29 @@ pnpm verify:full
 Interact with the running ledger or trigger sovereign operations:
 
 ```bash
-# Inspect planetary telemetry and immutable ledger tip
+# Inspect planetary telemetry and immutable ledger tip (live API or local)
 pnpm cli status
+
+# Biblical Engine: Inspect living covenant state machine & probe sanctums
+pnpm cli covenant
+
+# V1111 Singularity: Verify self-upgrade engine & single-current convergence
+pnpm cli upgrade
+
+# 5-Fold Living Rhythm: Truth OS axioms, soul income manifest & dream journal
+pnpm cli truth --pidgin
+pnpm cli build log "11:11 Singularity Engine verified"
+pnpm cli dream "Shooting star rises from the dark water"
+pnpm cli news
 
 # Execute an omnipresent consensus cycle with SHA-256 PoW
 pnpm cli cycle --json
 
 # Simulate 4-region sovereign mesh consensus (US, EU, CN, ME)
 pnpm cli mesh
+
+# Evaluate the 5 Epistemic Faces of the Pluralistic Reality Matrix
+pnpm cli face
 
 # Generate an unforgeable cryptographic attestation receipt
 pnpm cli attest
@@ -208,11 +223,21 @@ pnpm cli keys
 ### Development
 
 ```bash
-# Start API (port 5000) and Web (port 3000) simultaneously with colored streams
+# Start API (port 5000) and Web (port 3000) simultaneously
 pnpm dev
 
-# Build all workspace packages and apps
+# Build all 17 workspace packages and apps
 pnpm build
+
+# Static typecheck across all packages (zero errors)
+pnpm typecheck
+
+# Fast unit & kernel tests
+pnpm test:fast
+
+# Proactive End-to-End smoke test for Biblical Engine & Sanctum Gating
+node scripts/covenant-smoke.mjs
+```
 
 See [CHARTER.md](CHARTER.md#how-we-make-decisions) for details.
 
@@ -236,27 +261,26 @@ See [CHARTER.md](CHARTER.md#code-of-conduct) for full details.
 
 ### Languages
 
-- TypeScript (core, SDKs, tests)
-- Potentially: Python, Go, Rust (SDKs)
+- TypeScript 5.3+ (monorepo core, packages, apps, tests)
 
 ### Runtime & Frameworks
 
-- Node.js 18+ (backend)
-- React (web dashboard)
-- Express or Fastify (API)
-- PostgreSQL (production) or SQLite (development)
+- Node.js 22+ (verified active on Node v24.19.0)
+- pnpm 10+ / 11+ (workspace package manager)
+- Fastify 5 (CommonJS / ESM control plane on port 5000)
+- React 18 + Vite 6 (HMR web cockpit on port 3000)
+- SQLite (file-based persistence with `node:sqlite` fallback; zero external DB required)
 
 ### DevOps
 
-- Docker (containerization)
-- GitHub Actions (CI/CD)
-- Kubernetes (orchestration, optional)
+- Docker (reproducible multi-stage builds)
+- GitHub Actions (CI/CD verification pipeline)
 
 ### Testing & Quality
 
-- Jest (unit & integration tests)
-- ESLint + Prettier (code quality)
-- TypeScript (type safety)
+- Jest + ts-jest (unit, integration & E2E tests)
+- Node.js native test runner (`node:test`)
+- TypeScript strict compiler checks (`tsc --noEmit`)
 
 ---
 
@@ -307,5 +331,5 @@ We welcome contributions in all areas:
 ---
 
 **Status**: 11:11 Sovereign Continuum Verified — Full Stack Live (`:3000` & `:5000`)  
-**Epoch**: 2026-10-10 // 11:11 Resonance  
+**Epoch**: 2026-10-14 // 11:11 Resonance  
 **Invariant**: $\Omega\infty\text{v} := \text{VERIFY}(\Delta\text{REALITY})$
