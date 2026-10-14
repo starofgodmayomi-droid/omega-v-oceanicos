@@ -11,6 +11,7 @@ import { SystemControlsPanel } from './SystemControlsPanel';
 import { ObservationStreamPanel } from './ObservationStreamPanel';
 import { LifecycleFlow, deriveStageStates, type LifecycleStage } from './LifecycleFlow';
 import { OmegaWorkspace } from './OmegaWorkspace';
+import { CovenantPanel } from './CovenantPanel';
 import {
   theme,
   statusColor,
@@ -70,6 +71,7 @@ const OCEAN_FABRIC_ACTIONS = [
   { icon: '🪙', label: '11:11 Treasury', intent: 'Verify ELION VAREL Sovereign Treasury bc1qaj8jmp5as80zwew09ep86w6fgw37zwhwzr89mp' },
   { icon: '🏛️', label: 'Duplex Convergence', intent: 'Simulate African Pantheon Duplex Convergence across 5 regional faces' },
   { icon: '📜', label: 'Merkle Audit', intent: 'Audit Canonical State Ledger Tip and cryptographic parent chaining' },
+  { icon: '🏛️', label: 'Covenant Engine', intent: '__TOGGLE_COVENANT__' },
   { icon: '🌌', label: 'Dream Journal', intent: 'Record Night Ocean Dream: I saw a star fall into the deep water and rise in new form' },
   { icon: '⚡', label: 'Lucid Build', intent: 'Continue building with lucid skill across all 14 monorepo packages' },
 ];
@@ -120,6 +122,7 @@ export function App() {
 
   const [openStageId, setOpenStageId] = useState<string | null>(null);
   const [viewportMode, setViewportMode] = useState<'stream' | 'cockpit'>('stream');
+  const [showCovenantPanel, setShowCovenantPanel] = useState<boolean>(false);
 
   const eventSourceRef = useRef<EventSource | null>(null);
 
@@ -1095,7 +1098,13 @@ export function App() {
             {OCEAN_FABRIC_ACTIONS.map((action) => (
               <button
                 key={action.label}
-                onClick={() => sendMessage(action.intent)}
+                onClick={() => {
+                  if (action.intent === '__TOGGLE_COVENANT__') {
+                    setShowCovenantPanel((prev) => !prev);
+                  } else {
+                    sendMessage(action.intent);
+                  }
+                }}
                 style={{
                   padding: '6px 12px',
                   borderRadius: theme.radiusPill,
@@ -1126,6 +1135,13 @@ export function App() {
             ))}
           </div>
         </div>
+
+        {/* Biblical Engine Covenant Panel */}
+        {showCovenantPanel && (
+          <div style={{ marginTop: '20px' }}>
+            <CovenantPanel onClose={() => setShowCovenantPanel(false)} />
+          </div>
+        )}
 
         {/* Intent flow card */}
         <IntentFlow
