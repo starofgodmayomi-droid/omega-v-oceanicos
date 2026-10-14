@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { initialOreadSubmissionIdentity, prepareOreadSubmission } from './oreade-submission';
 
-const API_BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+const API_BASE_URL = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '');
 
 interface DropResult {
   drop: {
@@ -49,6 +49,7 @@ export function OreadConsole() {
   const [scope, setScope] = useState('oracle:reflection');
   const [stopCondition, setStopCondition] = useState('stop after one bounded response');
   const [expectedObservation, setExpectedObservation] = useState('one response labeled symbolic is returned');
+  const [mode, setMode] = useState<'BUILD' | 'WORLDVIEW'>('BUILD');
   const [result, setResult] = useState<DropResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<'drop' | 'proposal' | 'admit' | null>(null);
@@ -61,6 +62,7 @@ export function OreadConsole() {
       targetScope: scope.split(',').map((item) => item.trim()).filter(Boolean),
       stopCondition,
       expectedObservation,
+      mode,
     };
     const prepared = prepareOreadSubmission(request, submissionIdentity.current);
     submissionIdentity.current = prepared.identity;
@@ -144,6 +146,14 @@ export function OreadConsole() {
         Symbolic intent
         <textarea value={intent} onChange={(event) => setIntent(event.target.value)} maxLength={2000} rows={2} placeholder="What do you want to explore or build?" style={{ ...fieldStyle, resize: 'vertical', marginTop: '5px' }} />
       </label>
+      <label style={{ display: 'block', color: '#9bc4bb', fontSize: '11px', marginTop: '10px' }}>
+        Translation mode
+        <select value={mode} onChange={(event) => setMode(event.target.value === 'WORLDVIEW' ? 'WORLDVIEW' : 'BUILD')} style={{ ...fieldStyle, marginTop: '5px' }}>
+          <option value="BUILD">BUILD — bounded implementation intent</option>
+          <option value="WORLDVIEW">WORLDVIEW — preserve symbolic meaning</option>
+        </select>
+        <span style={{ display: 'block', color: '#87aaa2', marginTop: '4px' }}>WORLDVIEW preserves meaning; it does not verify physical reality.</span>
+      </label>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '10px' }}>
         <label style={{ color: '#9bc4bb', fontSize: '11px' }}>Requested by<input value={requestedBy} onChange={(event) => setRequestedBy(event.target.value)} maxLength={96} style={{ ...fieldStyle, marginTop: '5px' }} /></label>
         <label style={{ color: '#9bc4bb', fontSize: '11px' }}>Target scope<input value={scope} onChange={(event) => setScope(event.target.value)} maxLength={512} style={{ ...fieldStyle, marginTop: '5px' }} /></label>
@@ -166,6 +176,7 @@ export function OreadConsole() {
         <div style={{ marginTop: '15px', borderTop: '1px solid #285048', paddingTop: '13px' }}>
           <div style={{ display: 'flex', gap: '7px', alignItems: 'center', flexWrap: 'wrap' }}>
             <strong style={{ color: '#d9ebe7', fontSize: '12px' }}>{result.drop.kind}</strong>
+            <span style={{ color: '#69e7b9', font: '10px DM Mono, monospace' }}>{result.drop.mode}</span>
             <span style={{ color: '#69e7b9', font: '10px DM Mono, monospace' }}>{result.command?.status ?? 'TRANSLATED'}</span>
             {result.readOnly && <span style={{ color: '#87aaa2', fontSize: '10px' }}>read-only translation</span>}
           </div>
