@@ -822,6 +822,9 @@ const start = async () => {
   }
 };
 
-const isDirectExecution = typeof require !== 'undefined' && require.main === module;
+const isDirectExecution =
+  (typeof require !== 'undefined' && require.main === module) ||
+  (process.argv[1] ? fileURLToPath(import.meta.url) === resolve(process.argv[1]) : false) ||
+  (process.argv[1] ? process.argv[1].endsWith('index.js') || process.argv[1].endsWith('index.ts') : false);
 
 if (isDirectExecution) start();
