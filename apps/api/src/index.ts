@@ -22,6 +22,9 @@ import { registerEcosystemRoute } from './ecosystem-route.js';
 import { registerSoulRoute } from './soul-route.js';
 import { registerRealityRoute } from './reality-route.js';
 import { registerChatRoute } from './chat-route.js';
+import { registerUpgradeRoute } from './upgrade-route.js';
+import { registerCovenantRoute } from './covenant-route.js';
+import { OceanicosKernel as UpgradeKernel } from '@oceanicos/mini';
 import { OmegaCommandStore, registerOmegaWorkerRoutes } from './omega.js';
 import { omegaRoutes } from './omega/routes.js';
 import { OmegaCommandStore as ExtendedOmegaCommandStore } from './omega/store.js';
@@ -228,6 +231,10 @@ export function createApp(
   registerSoulRoute(fastify);
   registerRealityRoute(fastify, authMode, () => Boolean(attestationSigningKey), () => Boolean(ledgerMemory.getTip()));
   registerChatRoute(fastify, { kaiLedger, vectorMemory, VectorMemoryClass: VectorMemory });
+
+  const upgradeKernel = new UpgradeKernel(attestationSigningKey || 'omega-upgrade-secret');
+  registerUpgradeRoute(fastify, jsonError, upgradeKernel);
+  registerCovenantRoute(fastify, jsonError);
 
   fastify.get('/health', async (_request, reply) => {
     const memoryReady = true;
@@ -772,8 +779,19 @@ export function createApp(
 }
 
 const defaultFastifyApp = createApp(process.env.OMEGA_DB_PATH ?? './oceanicos.db', process.env.NODE_ENV !== 'test');
+const defaultReady = defaultFastifyApp.ready();
 export const app: any = Object.assign(
-  (req: any, res: any) => (defaultFastifyApp as any).server.emit('request', req, res),
+  (req: any, res: any) => {
+    defaultReady.then(
+      () => {
+        (defaultFastifyApp as any).server.emit('request', req, res);
+      },
+      (err) => {
+        res.statusCode = 500;
+        res.end(String(err));
+      }
+    );
+  },
   defaultFastifyApp
 );
 export const fastify = defaultFastifyApp;
@@ -800,12 +818,6 @@ const start = async () => {
   }
 };
 
-const isDirectExecution = typeof require !== 'undefined'
-  ? require.main === module
-  : Boolean(process.argv[1] && (
-      resolve(process.argv[1]) === resolve(fileURLToPath(import.meta.url)) ||
-      import.meta.url === `file://${process.argv[1]}` ||
-      import.meta.url.endsWith(process.argv[1].replace(/\\/g, '/'))
-    ));
+const isDirectExecution = typeof require !== 'undefined' && require.main === module;
 
 if (isDirectExecution) start();

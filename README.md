@@ -214,45 +214,6 @@ pnpm dev
 # Build all workspace packages and apps
 pnpm build
 
-# Start production Docker container stack
-pnpm docker:up
-```
-
-### Verification & Quality
-
-```bash
-pnpm verify:full       # Build + typecheck + 20 integration tests + CLI check
-pnpm test:e2e          # Run 20/20 sub-second E2E integration test suite
-pnpm typecheck         # Verify strict TypeScript type safety across all packages
-pnpm format:check      # Check Git whitespace and syntax integrity
-```
-
----
-
----
-
-## Current Status: 11:11 Sovereign Continuum (vΩ∞v.1111)
-
-- ✅ **14 Workspace Packages Monorepo**: All packages aligned to strict `NodeNext` ESM compilation with TypeScript declarations.
-- ✅ **Conversational AI Soul Master Stream**: Live bidirectional `/v1/chat` endpoint with 432 Hz resonance and constitutional guardrails.
-- ✅ **11:11 Sovereign Bitcoin Treasury**: Public receiving address `bc1qaj8jmp5as80zwew09ep86w6fgw37zwhwzr89mp` permanently anchored; private custody strictly externalized and veiled (0 bytes in code/logs).
-- ✅ **African Pantheon Duplex Convergence**: Harmonizing Upper Duplex (Sky & Soul: Olodumare, Orunmila, Obatala, Oshun, Ogun, Oya, Shango) and Lower Duplex (Soil & Silicon: 10 Operational Organs, Fastify :5000 API, Vite :3000 Web).
-- ✅ **Inviolate Ocean Water Membrane**: Fail-closed surface security at `/v1/ocean/fabric` under $\text{Good} - \text{O} = \text{God}$.
-- ✅ **Cryptographic Block Consensus**: Hash-chained Merkle ledger verified and operational with real-time SSE streaming.
-- ✅ **Fail-Closed Security**: Constitutional Change Calculus (§6, §8, §9, §12) requiring human steward authorization for state transitions.
-
----
-
-## How Decisions Are Made
-
-This project follows **evidence-based decision-making**:
-
-1. Proposals include evidence
-2. All relevant evidence is presented
-3. Consensus is sought; dissent is documented
-4. When consensus cannot be reached, both paths are recorded
-5. Verification determines which interpretation was correct
-
 See [CHARTER.md](CHARTER.md#how-we-make-decisions) for details.
 
 ---

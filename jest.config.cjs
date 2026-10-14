@@ -5,6 +5,7 @@ module.exports = {
     '<rootDir>/tests/**/*.test.ts',
     '<rootDir>/continuum/packages/kernel/src/__tests__/**/*.test.ts',
     '<rootDir>/packages/*/src/__tests__/**/*.test.ts',
+    '<rootDir>/apps/*/src/__tests__/**/*.test.ts',
   ],
   testPathIgnorePatterns: [
     '/node_modules/',

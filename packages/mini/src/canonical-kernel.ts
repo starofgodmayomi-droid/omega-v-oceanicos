@@ -1,5 +1,6 @@
 import { createHmac, randomUUID } from 'crypto';
 import { readFile } from 'node:fs/promises';
+import { WholeEcosystemUpgradeCore } from './upgrade/singularity.js';
 
 /* ─── Oceanic IR & Constitutional Types ──────────────────────────── */
 
@@ -546,6 +547,98 @@ export class OceanicosKernel {
       return new OceanicosKernel(fallbackSecret);
     }
   }
+
+  /* ── 8. Upgrade Transition (V1111 Convergence) ── */
+
+  private upgradeCore?: WholeEcosystemUpgradeCore;
+
+  /**
+   * Commit a V1111 whole-ecosystem upgrade transition.
+   *
+   * This bridges the singularity upgrade kernel into the canonical state chain:
+   * 1. Commits the upgrade payload through WholeEcosystemUpgradeCore (hash chain)
+   * 2. Records a canonical state transition with the upgrade evidence
+   * 3. Fails closed if observation is not AUTHORIZED
+   *
+   * The upgrade core is lazily initialized on first use.
+   */
+  async upgradeTransition(opts: {
+    claim: string;
+    observation: { status: string; uuid?: string };
+    provenanceHash: string;
+    actors?: string[];
+  }): Promise<{
+    canonicalState: CanonicalStateNode;
+    upgradeResult: import('./upgrade/singularity.js').IUpgradeVerificationResult;
+  }> {
+    if (!this.upgradeCore) {
+      this.upgradeCore = new WholeEcosystemUpgradeCore();
+    }
+
+    const upgradeResult = await this.upgradeCore.commitTotalCompression(
+      opts.observation,
+      opts.provenanceHash
+    );
+
+    const canonicalState = this.transition({
+      intent: {
+        claim: opts.claim,
+        actors: opts.actors ?? ['did:omega:kernel:upgrade'],
+        inputs: { provenanceHash: opts.provenanceHash, marker: 1111 },
+        expectedOutputs: { upgradeStatus: upgradeResult.status },
+        constraints: ['FAIL_CLOSED', 'HUMAN_CONSENT_REQUIRED', 'REALITY_FINAL_AUTHORITY'],
+        permissions: ['kernel:upgrade:commit'],
+        dependencies: [],
+        maxRiskScore: 0.1,
+        economicTarget: { targetValue: 0, resourceBudget: 0 },
+      },
+      observation: {
+        source: 'WholeEcosystemUpgradeCore',
+        observedAt: new Date().toISOString(),
+        rawTelemetry: {
+          upgradeChainLength: upgradeResult.chainLength,
+          upgradeTipHash: upgradeResult.tipHash,
+          upgradeStatus: upgradeResult.status,
+        },
+        epistemicType: upgradeResult.status === 'VERIFIED' ? 'FACT' : 'INFERENCE',
+        confidence: upgradeResult.status === 'VERIFIED' ? 1.0 : 0.0,
+      },
+      evidenceItems: [
+        {
+          claim: `V1111 upgrade ${upgradeResult.status}`,
+          source: 'singularity.ts',
+          observationId: opts.observation.uuid ?? 'unknown',
+          commandOrTest: 'commitTotalCompression',
+          status: upgradeResult.status === 'VERIFIED' ? 'PASSED' : 'FAILED',
+          confidence: upgradeResult.status === 'VERIFIED' ? 1.0 : 0.0,
+        },
+      ],
+      actionPlan: {
+        targetService: 'canonical-kernel:upgrade',
+        payload: {
+          tipHash: upgradeResult.tipHash,
+          chainLength: upgradeResult.chainLength,
+        },
+        isDestructive: false,
+        isFinancial: false,
+        gasLimit: 0,
+        reversibility: 'COMPENSATABLE',
+      },
+      autoAuthorizeIfNonDestructive: upgradeResult.status === 'VERIFIED',
+    });
+
+    return { canonicalState, upgradeResult };
+  }
+
+  /**
+   * Get the underlying upgrade core instance (initialized on demand).
+   */
+  getUpgradeCore(): WholeEcosystemUpgradeCore {
+    if (!this.upgradeCore) {
+      this.upgradeCore = new WholeEcosystemUpgradeCore();
+    }
+    return this.upgradeCore;
+  }
 }
 
 /**
@@ -559,4 +652,5 @@ export interface KernelSnapshot {
   states: CanonicalStateNode[];
   serializedAt: string;
 }
+
 

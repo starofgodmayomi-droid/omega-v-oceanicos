@@ -310,5 +310,6 @@ export {
   type ReplayVerificationOutcome,
 } from './reconciliation-boundary.js';
 export * from './canonical-kernel.js';
+export * from './upgrade/singularity.js';
 
 export default MiniKernel;
