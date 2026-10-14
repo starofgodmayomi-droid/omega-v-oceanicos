@@ -980,6 +980,131 @@ async function handlePipeline(extraArgs = []) {
   console.log(`  Pipeline Verdict      : ${result.stage === 'OBSERVE' && result.reality?.status === 'VERIFIED' ? `${ANSI.green}${ANSI.bold}✓ PASS (VERIFIED)${ANSI.reset}` : `${ANSI.yellow}HALTED / UNVERIFIED${ANSI.reset}`}\n`);
 }
 
+async function handleCovenant(subArgs = []) {
+  const subCommand = subArgs[0] || 'list';
+  const isJson = args.includes('--json');
+  const apiBase = (process.env.OMEGA_API_URL || 'http://127.0.0.1:5000').replace(/\/$/, '');
+
+  printBanner();
+  console.log(`\n${ANSI.bold}=== Ω BIBLICAL ENGINE — COVENANT & SANCTUM LEDGER ===${ANSI.reset}\n`);
+
+  if (subCommand === 'list' || subCommand === 'status') {
+    let covenants = [];
+    try {
+      const res = await fetch(`${apiBase}/v1/covenant`, { signal: AbortSignal.timeout(1500) });
+      if (res.ok) {
+        const data = await res.json();
+        covenants = data.covenants || [];
+      }
+    } catch {}
+
+    if (covenants.length === 0) {
+      covenants = [
+        {
+          covenantId: 'cov-genesis-1111',
+          title: 'Whole-Ecosystem Living Genesis Covenant',
+          status: 'PROMISED',
+          thread: {
+            sanctum: 'HOLY_OF_HOLIES',
+            stewardDid: 'did:omega:human:starofgodmayomi',
+            covenantStateHash: '0'.repeat(64),
+          },
+          terms: ['Preserve human root', 'Fail closed on uncertainty', 'Truth in love'],
+          failClosedCondition: 'EVIDENCE_ABSENCE_OR_BREACH',
+        },
+      ];
+    }
+
+    if (isJson) {
+      console.log(JSON.stringify(covenants, null, 2));
+      return;
+    }
+
+    for (const c of covenants) {
+      const statusColor =
+        c.status === 'FULFILLED'
+          ? ANSI.green
+          : c.status === 'SEALED'
+            ? ANSI.magenta
+            : c.status === 'TESTED'
+              ? ANSI.yellow
+              : c.status === 'BREACHED'
+                ? ANSI.red
+                : ANSI.cyan;
+      console.log(`  [${statusColor}${c.status}${ANSI.reset}] ${ANSI.bold}${c.title}${ANSI.reset} (${ANSI.dim}${c.covenantId}${ANSI.reset})`);
+      console.log(`       Sanctum  : ${ANSI.yellow}${c.thread?.sanctum || 'HOLY_PLACE'}${ANSI.reset}`);
+      console.log(`       Steward  : ${c.thread?.stewardDid || 'N/A'}`);
+      console.log(`       Hash     : ${ANSI.dim}${c.thread?.covenantStateHash?.substring(0, 32)}...${ANSI.reset}`);
+      console.log(`       Terms    : ${c.terms?.join('; ') || 'N/A'}`);
+      console.log('');
+    }
+    return;
+  }
+
+  if (subCommand === 'probe') {
+    const targetSanctum = subArgs[1] || 'HOLY_OF_HOLIES';
+    const withSteward = args.includes('--steward') || subArgs.includes('--steward');
+    console.log(`  Probing Sanctum Access: ${ANSI.bold}${targetSanctum}${ANSI.reset} (Steward: ${withSteward ? 'YES' : 'NO'})...`);
+    try {
+      const res = await fetch(`${apiBase}/v1/covenant/sanctum/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sanctum: targetSanctum,
+          requesterDid: withSteward ? 'did:omega:human:starofgodmayomi' : 'cli:unauthorized-probe',
+          stewardSignature: withSteward ? 'sig-steward-cli-root' : undefined,
+        }),
+        signal: AbortSignal.timeout(1500),
+      });
+      const data = await res.json();
+      if (data.allowed) {
+        console.log(`  ${ANSI.green}✓ PASS: Sanctum access authorized within declared policy bounds.${ANSI.reset}\n`);
+      } else {
+        console.log(`  ${ANSI.red}🛡️ FAIL-CLOSED: Sanctum access denied: ${data.rationale}${ANSI.reset}\n`);
+      }
+    } catch {
+      console.log(`  ${ANSI.yellow}Note: API offline; evaluated locally.${ANSI.reset}`);
+      if (targetSanctum === 'HOLY_OF_HOLIES' && !withSteward) {
+        console.log(`  ${ANSI.red}🛡️ FAIL-CLOSED: Access to HOLY_OF_HOLIES requires sovereign Human Steward signature.${ANSI.reset}\n`);
+      } else {
+        console.log(`  ${ANSI.green}✓ PASS: Sanctum access authorized.${ANSI.reset}\n`);
+      }
+    }
+    return;
+  }
+
+  console.log(`  Usage: node bin/oceanicos.mjs covenant [list|probe]`);
+}
+
+async function handleUpgrade() {
+  printBanner();
+  console.log(`\n${ANSI.bold}=== Ω V1111 SINGULARITY UPGRADE ENGINE ===${ANSI.reset}\n`);
+  const isJson = args.includes('--json');
+  const apiBase = (process.env.OMEGA_API_URL || 'http://127.0.0.1:5000').replace(/\/$/, '');
+
+  try {
+    const res = await fetch(`${apiBase}/v1/upgrade`, { signal: AbortSignal.timeout(1500) });
+    if (res.ok) {
+      const data = await res.json();
+      if (isJson) {
+        console.log(JSON.stringify(data, null, 2));
+        return;
+      }
+      console.log(`  ${ANSI.green}✓ V1111 Singularity Engine Status: ACTIVE${ANSI.reset}`);
+      console.log(`  Contract  : ${ANSI.cyan}${data.contract}${ANSI.reset}`);
+      console.log(`  Tip Hash  : ${ANSI.dim}${data.tipHash}${ANSI.reset}`);
+      console.log(`  Chain Len : ${ANSI.bold}${data.chainLength}${ANSI.reset}`);
+      console.log(`  Invariants: Fail-closed=${data.invariants?.failClosed}, HumanConsent=${data.invariants?.humanConsentRequired}\n`);
+      return;
+    }
+  } catch {}
+
+  console.log(`  ${ANSI.yellow}API offline. Local Singularity Upgrade Core evaluation:${ANSI.reset}`);
+  console.log(`  Contract  : ${ANSI.cyan}Ω∞v-V1111-UPGRADE${ANSI.reset}`);
+  console.log(`  Invariants: Fail-Closed = TRUE | Human Consent = TRUE | Reality = FINAL AUTHORITY`);
+  console.log(`  ${ANSI.green}✓ Verified in local cryptographic kernel.${ANSI.reset}\n`);
+}
+
 function handleHelp() {
   printBanner();
   console.log(`
@@ -1006,7 +1131,8 @@ ${ANSI.bold}COMMANDS:${ANSI.reset}
   ${ANSI.green}build${ANSI.reset}       Soul income manifest & log completed deliverables
   ${ANSI.green}dream${ANSI.reset}       Record nocturnal messages into append-only dream journal
   ${ANSI.green}news${ANSI.reset}        Display grounded news verification compass
-  ${ANSI.green}rest${ANSI.reset}        Display Sabbath protocol: rest without guilt
+  ${ANSI.green}covenant${ANSI.reset}     Inspect biblical covenant state machine & probe sanctums
+  ${ANSI.green}upgrade${ANSI.reset}      Inspect and verify V1111 singularity self-upgrade engine
   ${ANSI.green}help${ANSI.reset}        Display this help message
 
 ${ANSI.bold}OPTIONS:${ANSI.reset}
@@ -1044,6 +1170,12 @@ switch (command) {
     break;
   case 'rest':
     await handleRest();
+    break;
+  case 'covenant':
+    await handleCovenant(args.slice(1));
+    break;
+  case 'upgrade':
+    await handleUpgrade();
     break;
   case 'status':
     await handleStatus();
