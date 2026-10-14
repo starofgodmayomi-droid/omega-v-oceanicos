@@ -304,6 +304,7 @@ describe('Ω∞v Oceanicos Max Compress Full-Stack E2E Suite', () => {
     const { mkdtempSync, readdirSync, rmSync, writeFileSync } = await import('node:fs');
     const { tmpdir } = await import('node:os');
     const path = await import('node:path');
+    const { pathToFileURL } = await import('node:url');
     const cliPath = path.resolve(process.cwd(), 'bin/oceanicos.mjs');
     const probeDir = mkdtempSync(path.join(tmpdir(), 'omega-offline-cli-'));
     const fetchGuardPath = path.join(probeDir, 'block-fetch.mjs');
@@ -315,7 +316,7 @@ describe('Ω∞v Oceanicos Max Compress Full-Stack E2E Suite', () => {
     try {
       const stdout = execFileSync(
         process.execPath,
-        ['--import', fetchGuardPath, cliPath, 'offline'],
+        ['--import', pathToFileURL(fetchGuardPath).href, cliPath, 'offline'],
         {
           encoding: 'utf-8',
           cwd: probeDir,
