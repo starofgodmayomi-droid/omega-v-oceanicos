@@ -67,14 +67,17 @@ pnpm verify:full
 ### Local-first offline verification
 
 ```bash
-pnpm verify:local-offline
+pnpm run oceanicos:v_infinity -- --now --local-first --stateless --offline
+pnpm verify:local-offline # equivalent short alias
 ```
 
-This command builds the workspace (including `apps/api` and `apps/web`) and then
-runs `node bin/oceanicos.mjs offline`. The MINI cycle uses an in-memory
-`RememberEngine`, makes no API fetch, and leaves no durable ledger file. Exit
-code `0` is scoped to that local generated Observe → Verify → Remember result and
-its in-memory chain check; it does not verify external reality or deployment.
+The kernel entrypoint builds the workspace (including `apps/api` and `apps/web`),
+validates the explicit `--local-first --stateless --offline` mode contract, then
+runs `bin/oceanicos.mjs offline`. The MINI cycle uses an in-memory `RememberEngine`,
+makes no API fetch, and creates no durable ledger file. Exit code `0` is scoped
+to that local generated Observe → Verify → Remember result and its in-memory
+chain check; it does not verify external reality, production health, deployment,
+or connected hardware. Compilation emits normal generated workspace artifacts.
 
 ### 5. Start development
 

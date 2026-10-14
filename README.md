@@ -255,13 +255,18 @@ pnpm cli cycle --json
 
 # Build all workspace apps, then run MINI locally without an API request
 pnpm verify:local-offline
+pnpm run oceanicos:v_infinity -- --now --local-first --stateless --offline
 ```
 
-`verify:local-offline` builds the workspace, including the API and web app, then
-runs the CLI's Observe → Verify → Remember cycle with an in-memory ledger. Exit
-code `0` means the local generated evidence passed and that in-memory ledger
-verified; it is not evidence about external systems, production health, or
-deployment. The offline CLI does not contact the API or persist a ledger to disk.
+`oceanicos:v_infinity` is the explicit kernel entrypoint; `verify:local-offline` is
+its short alias. Both build the workspace and run the bounded MINI
+Observe → Verify → Remember cycle using an in-memory ledger. The entrypoint
+rejects missing required mode flags and unknown flags. Use pnpm's `--` separator
+to forward command flags. Exit code `0` means the local generated evidence passed
+and the in-memory chain verified; it is not evidence about external systems,
+production health, deployment, or physical hardware. The offline CLI makes no API
+fetch and creates no durable ledger file. The build emits its normal generated
+workspace artifacts.
 
 Read the relevant command and source contract before extending a workflow. Do not
 pipe remote scripts into a shell, invent credentials, or infer production behavior

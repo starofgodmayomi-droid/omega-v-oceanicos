@@ -335,6 +335,59 @@ describe('Ω∞v Oceanicos Max Compress Full-Stack E2E Suite', () => {
     }
   });
 
+  it('14b. Ω∞v kernel boot entry validates flags and propagates the offline MINI result', async () => {
+    const { spawnSync } = await import('node:child_process');
+    const { readFileSync } = await import('node:fs');
+    const path = await import('node:path');
+    const manifest = JSON.parse(readFileSync(path.resolve(process.cwd(), 'package.json'), 'utf-8'));
+    assert.equal(manifest.scripts['verify:local-offline'], 'pnpm run oceanicos:v_infinity');
+    assert.equal(
+      manifest.scripts['oceanicos:v_infinity'],
+      'pnpm build && node bin/oceanicos-v-infinity.mjs --now --local-first --stateless --offline',
+    );
+    const entry = path.resolve(process.cwd(), 'bin/oceanicos-v-infinity.mjs');
+    const result = spawnSync(
+      process.execPath,
+      [entry, '--now', '--local-first', '--stateless', '--offline'],
+      {
+        cwd: process.cwd(),
+        encoding: 'utf-8',
+        timeout: 30_000,
+        env: { ...process.env, PIDGIN_ENGINE: 'OFF' },
+      },
+    );
+
+    assert.equal(result.error, undefined, result.error?.message);
+    assert.equal(result.status, 0, `stdout:\n${result.stdout}\nstderr:\n${result.stderr}`);
+    assert.ok(result.stdout.includes('Mode contract accepted: LOCAL-FIRST, STATELESS, OFFLINE'));
+    assert.ok(result.stdout.includes('OFFLINE MINI CYCLE'));
+    assert.ok(result.stdout.includes('Network'));
+    assert.ok(result.stdout.includes('DISABLED'));
+  });
+
+  it('14c. Ω∞v kernel boot entry denies missing and unknown mode flags', async () => {
+    const { spawnSync } = await import('node:child_process');
+    const path = await import('node:path');
+    const entry = path.resolve(process.cwd(), 'bin/oceanicos-v-infinity.mjs');
+    const options = { cwd: process.cwd(), encoding: 'utf-8', timeout: 10_000 };
+
+    const missing = spawnSync(
+      process.execPath,
+      [entry, '--local-first', '--stateless'],
+      options,
+    );
+    assert.equal(missing.status, 2, `stdout:\n${missing.stdout}\nstderr:\n${missing.stderr}`);
+    assert.ok(missing.stderr.includes('Missing required mode flag'));
+
+    const unknown = spawnSync(
+      process.execPath,
+      ['' + entry, '--local-first', '--stateless', '--offline', '--network'],
+      options,
+    );
+    assert.equal(unknown.status, 2, `stdout:\n${unknown.stdout}\nstderr:\n${unknown.stderr}`);
+    assert.ok(unknown.stderr.includes('Unsupported mode flag'));
+  });
+
   it('15. Unified CLI "cycle --json" mints cryptographic block with satisfied PoW', async () => {
     const { execFileSync } = await import('node:child_process');
     const path = await import('node:path');
