@@ -54,3 +54,37 @@ Use Node 22 and pnpm 10 according to current repo instructions; check current ma
 CURRENT REALITY → ONE PRIORITY → CHANGE/PROPOSAL → PROOF → RISKS/UNKNOWN → AUTHORIZATION GATE → NEXT Δ.
 
 Capability ≠ authority. Proposal ≠ action. Test pass ≠ reality. Memory ≠ proof. Attest, don't assert.
+
+## Whole-repository skill compression and expansion
+
+The single orchestration entrypoint is .claude/skills/oceanicos-max-space-full-stack/SKILL.md. Its “KAI / ƆCEANiC_OS — Expandable Whole-Repository Skill Router” is the routing index for all discovered repository skills. Start there for full-stack/flow/expand requests, then read only the domain source(s) needed for the selected Δ.
+
+### Preserve and route, do not flatten away expertise
+
+The router currently indexes these specialist sources:
+- .claude/skills/omega-v-ufi/SKILL.md
+- .claude/skills/omega-full-stack-max/SKILL.md
+- .claude/skills/omega-global-good-fullstack/SKILL.md
+- .claude/skills/omega-global-good-fullstack-builder/SKILL.md
+- skills/full-stack-computer-mode/SKILL.md
+- skills/kai-companion/SKILL.md
+- skills/lucid-full-stack/SKILL.md
+- skills/oceanicos-framework/SKILL.md
+- skills/oceanicos-full-stack/SKILL.md
+- skills/oceanicos-value-navigator/SKILL.md
+- skills/omega-mirror-water-universal-body/SKILL.md
+- skills/omega-reality-first/SKILL.md
+- skills/oread-pidgin-harmonizer/SKILL.md
+- skills/voice-bridge/SKILL.md
+
+Do not remove or rewrite specialist sources as part of compression. If a source is duplicated between skills/ and .claude/skills/, check hashes and existing validation contracts before proposing consolidation. The unified entrypoint composes skills; it does not claim all have been loaded, run, or independently verified.
+
+### KAI drop-to-upgrade loop
+
+RECEIVE → OBSERVE → CLARIFY → REMEMBER SOURCE → RELATE → RESEARCH → PRIORITIZE → CHECK AUTHORITY → BUILD ONE Δ → TEST → OBSERVE CONSEQUENCE → RECONCILE → STEWARD → RECORD NEXT Δ.
+
+Every memory or execution record preserves provenance and unknowns. “Proactive” means bounded action in the active authorized context, not background surveillance or a perpetual daemon. Specialist agents are roles unless their actual tool executions are separately observed. Human judgment remains required for consequential or irreversible actions.
+
+### Expandable completion contract
+
+For each module, capture purpose, boundaries, inputs/outputs, authority, dependencies, state machine, failure/recovery, tests/evidence, privacy/accessibility/value, version lineage, blockers and next action. Keep PRESENT, BUILT, TESTED, RUNNING, DEPLOYED and OBSERVED_HEALTHY distinct. Link the exact GitHub revision to Notion context after the write is read back. Never report CI green while required checks are pending.
