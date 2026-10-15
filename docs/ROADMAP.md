@@ -29,6 +29,23 @@ listed under each phase below.
 They remain expansions. The kernel is still Observe → Verify → Remember, and
 [MINI.md](./MINI.md) governs that definition.
 
+### Capability status contract
+
+Use these states consistently in the roadmap, manifest, release notes, and Notion evidence ledger. A state is not implied by a neighboring state:
+
+| State | Minimum evidence | Does not establish |
+| --- | --- | --- |
+| **PRESENT** | Source path, package, route, or configuration exists at a named revision | Working behavior |
+| **BUILT** | Build/package command succeeds at a named revision | Tests, runtime, or deployment |
+| **TESTED** | Named test or CI check passes at a named revision, with its scope recorded | Production behavior or universal correctness |
+| **RUNNING** | A process or target is directly observed running at a timestamp | Healthy behavior or public availability |
+| **DEPLOYED** | A named release/artifact is shown installed on a specified target | Healthy service or correct real-world outcomes |
+| **OBSERVED HEALTHY** | A bounded health/smoke check succeeds against the named target, with timestamp and evidence | Permanent health or correctness beyond the check |
+
+Record **UNKNOWN**, **DIVERGENT**, **BLOCKED**, or **NOT EXECUTED** when evidence is absent, conflicting, prevented, or not collected. Never promote a state based on documentation alone. CI results must name the exact commit; results from an earlier revision do not transfer to a later one.
+
+**Current evidence boundary (2026-10-14):** the repository's latest skill-upgrade commit has successful results for Verification Pipeline, Security Analysis, Bounded Full-Stack Worker, and Pull Request Coverage. These are CI results for that exact revision, not proof of production deployment, live service health, or desktop/mobile browser acceptance. The roadmap's existing 2026-08 release checkpoints are historical records and should not be read as current deployment observations.
+
 ### Post-repair release checkpoint — 2026-08-23
 
 The final integrated revision is `2c017ab`, after PR #185 extended the bounded WebCrypto status wait from 15 seconds to 30 seconds for slower hosted coverage runs without weakening the `VALID` or non-proof assertions, PR #187 reconciled the final state records, and PR #189 made required-mode read/admin bearer tokens fail closed when identical. The post-merge Verification Pipeline [32639141845](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/actions/runs/32639141845) and Security Analysis [32639141883](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/actions/runs/32639141883) both completed successfully, including Node 20, Node 22, Windows compatibility, package/smoke, and main-branch publication. The workflow’s artifact publication completed, but this record does not claim or repeat an artifact digest without directly observed digest evidence.
