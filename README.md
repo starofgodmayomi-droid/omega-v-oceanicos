@@ -45,6 +45,7 @@ without treating any single component—or any agent—as the final authority.
 - 🌊 **[Oceanicos Full Stack](skills/oceanicos-full-stack/SKILL.md)** — the renamed Ω∞v verification spine, whole-ecosystem routing, and bounded FLOW
 - 🧭 **[Lucid Full Stack](skills/lucid-full-stack/SKILL.md)** — one evidence-first operating skill spanning voice, continuity, culture, value, ecosystem, and software delivery
 - 🌐 **[Full-stack reality-access handoff](docs/upgrades/FULL_STACK_REALITY_ACCESS_2026-09-28.md)** — connector taxonomy without implicit ownership or authority
+- 🔌 **[One-Current ecosystem integration contract](docs/ECOSYSTEM-INTEGRATION-CONTRACT.md)** — connector status vocabulary, authority boundaries, Notion/GitHub/Composio wiring, and finite implementation sequence
 - 🗺️ **[Repository inventory](docs/REPO_INVENTORY.md)** — workspace vs disk (current evidence)
 - ⚙️ **[Development Setup](docs/DEVELOPMENT.md)** — Get the project running locally
 | | Meaning |
