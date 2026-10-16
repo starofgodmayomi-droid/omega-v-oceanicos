@@ -65,12 +65,24 @@ const observeRuntime = async () => {
     ]);
     const health = await healthResponse.json();
     const body = await bodyResponse.json();
+    const checks = health.checks ?? {};
+    const policy = health.policy ?? {};
     return {
       status: healthResponse.ok && bodyResponse.ok ? 'OBSERVED' : 'DIVERGENT',
       baseUrl,
       endpoints: {
         health: { status: healthResponse.status, readiness: health.readiness ?? null },
         ecosystemBody: { status: bodyResponse.status, bodyStatus: body.status ?? null },
+      },
+      readiness: {
+        observer: checks.observer ?? 'UNKNOWN',
+        verifier: checks.verifier ?? 'UNKNOWN',
+        attester: checks.attester ?? 'UNKNOWN',
+        memory: checks.memory?.status ?? 'UNKNOWN',
+        authMode: policy.authMode ?? 'UNKNOWN',
+        readAuthConfigured: policy.readAuthConfigured ?? null,
+        adminAuthConfigured: policy.adminAuthConfigured ?? null,
+        persistenceEncryption: policy.persistenceEncryption ?? 'UNKNOWN',
       },
       evidenceBoundary: 'LOCAL_RUNTIME_HTTP_ONLY',
     };

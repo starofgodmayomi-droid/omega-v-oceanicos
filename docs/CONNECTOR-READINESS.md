@@ -18,6 +18,18 @@
 | Composio | `UNKNOWN / NOT CONFIGURED IN THIS SESSION` | No Composio MCP server or enabled Composio connector was exposed by session discovery | No Composio action, credential, worker, or external side effect was executed |
 | Local API runtime | `OBSERVED` | `GET /health` returned 200/ready; `GET /v1/ecosystem/body` returned 200/VERIFIED | Loopback evidence only; no public deployment or production health claim |
 
+### Live runtime posture — reconciled branch
+
+Observed on local branch `upgrade/oceanicos-connector-readiness-20261015` at exact head `6aa9ed7cbf4921303481a27fbca97e99a3e016e0`:
+
+- API readiness: `ready`; observer, verifier, memory, and ecosystem-body contract responded successfully.
+- Attester: `degraded`.
+- Auth: local mode; read and admin auth are not configured in this process.
+- Persistence: file mode with encryption disabled; event-log source is missing for this fresh local process.
+- Coordination: single-process local scope; distributed consistency, backups, external services, and production custody remain unverified.
+
+The developer operator now reports these posture fields under `snapshot.runtime.readiness`; endpoint reachability alone must not be interpreted as secure production readiness.
+
 ## Canonical flow
 
 ```text
