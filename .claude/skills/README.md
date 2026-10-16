@@ -13,6 +13,7 @@ its source.
 | `omega-global-good-fullstack`         | `094759e83a3aec27b6884c3b55e19b8021f8771a40d6f036e334c0e2e15af79b` | 2026-08-27 |
 | `omega-global-good-fullstack-builder` | `96d5c00b13c80d343230f301c9c87b08f6d12278d541e06480db818749c40422` | 2026-08-27 |
 | `omega-full-stack-max`                | `ec5b6a72fd453e20243813424991be79d0f718e301e18b9e54ed0417f5082cd1` | 2026-08-28 |
+| `oceanicos-one-current-companion` | `fda6e277a58529b52a4336c96a11c714104018e6ac0c2a63d7eaebae2664e722` | 2026-10-16 |
 | `oceanicos-full-stack-companion` | `7db7f5b030dc3ff5d5bef8f56eef407e5c9c9afa64472e4b5663bd7e8b07a222` | 2026-10-16 |
 | `oceanicos-max-space-full-stack` | `c3c5f8fa7a0b59d87dd4d1395b2422493eaded4f9a9296223699e4c5f369e65b` | 2026-10-16 |
 | `oceanicos-verified-upgrade` | `7c85422294d544464abc18ac4f946ea0269ca278ebefbe7fa1cf945e7bbf2c9a` | 2026-10-16 |
@@ -153,3 +154,7 @@ Installed 2026-10-16. Byte-identical to `skills/omega-v-os/SKILL.md`. The ƆCEAN
 ## lucid-continuum
 
 Installed 2026-10-16. Byte-identical to `skills/lucid-continuum/SKILL.md`. What may cross a handoff, and what must be observed again. A packet is not proof.
+
+## oceanicos-one-current-companion
+
+Canonical top-level router for whole-ecosystem work. Dispatches to the detailed Oceanicos full-stack companion and specialist skills, then coordinates one bounded, evidence-backed next transition. Compresses orchestration, not specialist knowledge.
