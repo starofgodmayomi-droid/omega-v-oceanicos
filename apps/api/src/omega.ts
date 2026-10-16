@@ -15,6 +15,28 @@ type StoredCommand = OmegaCommand & {
   readonly result?: OmegaCommandResult;
 };
 
+/** Evidence must come from a trusted server-side authority/policy source, never request-body assertions. */
+export interface OmegaCommandAdmissionEvidence {
+  readonly authority: string;
+  readonly policy: string;
+  readonly authorityVerified: boolean;
+  readonly policySatisfied: boolean;
+}
+
+export type OmegaCommandAdmissionEvidenceResolver = (
+  request: unknown,
+  command: OmegaCommand,
+) => OmegaCommandAdmissionEvidence | Promise<OmegaCommandAdmissionEvidence>;
+
+function isOmegaCommandAdmissionEvidence(value: unknown): value is OmegaCommandAdmissionEvidence {
+  if (!value || typeof value !== 'object') return false;
+  const evidence = value as Partial<OmegaCommandAdmissionEvidence>;
+  return typeof evidence.authority === 'string' && evidence.authority.trim().length > 0
+    && typeof evidence.policy === 'string' && evidence.policy.trim().length > 0
+    && typeof evidence.authorityVerified === 'boolean'
+    && typeof evidence.policySatisfied === 'boolean';
+}
+
 type CoordinationProbeClient = {
   registerWorker(workerId: string, capabilities: string[]): Promise<void>;
   acquireLease(workerId: string, commandId: string): Promise<{ leaseId?: string }>;
@@ -208,6 +230,7 @@ export function registerOmegaRoutes(
   fastify: FastifyInstance,
   store: OmegaCommandStore,
   enforceAdminOperatorIdentity?: (request: any, reply: any) => boolean,
+  resolveCommandAdmissionEvidence?: OmegaCommandAdmissionEvidenceResolver,
 ): void {
   let coordinationProbeInFlight = false;
 
@@ -461,18 +484,48 @@ export function registerOmegaRoutes(
     const command = store.get((request.params as { id?: string }).id ?? '');
     if (!command) return reply.status(404).send({ success: false, error: 'OMEGA_COMMAND_NOT_FOUND' });
     if (command.status !== 'PROPOSED' && command.status !== 'REVIEW') return reply.status(409).send({ success: false, error: 'OMEGA_COMMAND_STALE' });
-    const body = bodyOf(request);
-    const authority = typeof body.authority === 'string' ? body.authority : null;
-    const policy = typeof body.policy === 'string' ? body.policy : null;
-    const admitted = resolveChangeAdmission({ ...command.change, authority, policy }, { authorityVerified: body.authorityVerified === true, policySatisfied: body.policySatisfied === true });
-    const status = statusForDecision(admitted.decision);
-    const updated = store.update(command, { change: admitted, status });
-    store.record('command.admitted', updated, { decision: admitted.decision });
-    return { success: true, ...commandResult(updated, status === 'AUTHORIZED' ? 'execute the authorized bounded action' : status === 'DENIED' ? 'review the denial evidence; no execution is permitted' : 'obtain attributable human approval') };
+    if (!resolveCommandAdmissionEvidence) {
+      return reply.status(503).send({ success: false, error: 'OMEGA_ADMISSION_EVIDENCE_UNAVAILABLE', status: command.status });
+    }
+
+    let evidence: unknown;
+    try {
+      evidence = await resolveCommandAdmissionEvidence(request, command);
+    } catch {
+      return reply.status(503).send({ success: false, error: 'OMEGA_ADMISSION_EVIDENCE_UNAVAILABLE', status: command.status });
+    }
+    if (!isOmegaCommandAdmissionEvidence(evidence)) {
+      return reply.status(503).send({ success: false, error: 'OMEGA_ADMISSION_EVIDENCE_INVALID', status: command.status });
+    }
+
+    const admitted = resolveChangeAdmission({
+      ...command.change,
+      authority: evidence.authority.trim(),
+      policy: evidence.policy.trim(),
+    }, {
+      authorityVerified: evidence.authorityVerified,
+      policySatisfied: evidence.policySatisfied,
+    });
+    // A resolver may establish authority/policy, but it cannot substitute for
+    // explicit human approval required by commands already held in REVIEW.
+    const requiresExplicitApproval = command.status === 'REVIEW' && admitted.decision === 'ALLOW';
+    const change = requiresExplicitApproval ? { ...admitted, decision: 'REVIEW' as const, authorized: false } : admitted;
+    const status: OmegaCommandStatus = requiresExplicitApproval ? 'REVIEW' : statusForDecision(change.decision);
+    const updated = store.update(command, { change, status });
+    store.record('command.admitted', updated, { decision: change.decision, evidenceSource: 'server-side-resolver' });
+    return {
+      success: true,
+      ...commandResult(updated, status === 'AUTHORIZED'
+        ? 'execute the authorized bounded action'
+        : status === 'DENIED'
+          ? 'review the denial evidence; no execution is permitted'
+          : 'obtain attributable human approval'),
+    };
   });
 
   fastify.post('/v1/omega/commands/:id/approve', async (request, reply) => {
-    if (enforceAdminOperatorIdentity && !enforceAdminOperatorIdentity(request, reply)) return;
+    if (!enforceAdminOperatorIdentity) return reply.status(503).send({ success: false, error: 'OMEGA_OPERATOR_AUTHORITY_UNAVAILABLE' });
+    if (!enforceAdminOperatorIdentity(request, reply)) return;
     const command = store.get((request.params as { id?: string }).id ?? '');
     if (!command) return reply.status(404).send({ success: false, error: 'OMEGA_COMMAND_NOT_FOUND' });
     if (command.status !== 'PROPOSED' && command.status !== 'REVIEW') return reply.status(409).send({ success: false, error: 'OMEGA_APPROVAL_REQUIRES_REVIEW' });
