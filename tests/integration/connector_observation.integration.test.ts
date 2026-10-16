@@ -285,6 +285,46 @@ describe('Ω connector observation path', () => {
     }
   });
 
+  it('ignores client-supplied admission flags when no trusted resolver is configured', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'omega-connector-default-deny-'));
+    const { createApp } = await import('../../apps/api/dist/index.js');
+    let fetchCalls = 0;
+    const app = createApp(join(directory, 'ledger.db'), false, {
+      allowUnsignedCycle: true,
+      githubFetch: async () => {
+        fetchCalls += 1;
+        return new Response(JSON.stringify({
+          full_name: 'starofgodmayomi-droid/omega-v-oceanicos',
+          private: false,
+          html_url: 'https://github.com/starofgodmayomi-droid/omega-v-oceanicos',
+          description: 'test fixture',
+        }), { status: 200, headers: { 'content-type': 'application/json' } });
+      },
+    });
+    await app.ready();
+
+    try {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/v1/omega/connectors/observe',
+        payload: {
+          connector,
+          authorityVerified: true,
+          policySatisfied: true,
+          approvalVerified: true,
+          liveAdapter: 'github-public-repository',
+        },
+      });
+      assert.equal(response.statusCode, 200);
+      assert.equal(response.json().admission.admitted, false);
+      assert.equal(response.json().executed, false);
+      assert.equal(fetchCalls, 0);
+    } finally {
+      await app.close();
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
   it('fails closed when the connector journal hash chain is tampered', async () => {
     const directory = mkdtempSync(join(tmpdir(), 'omega-connector-journal-'));
     const journalPath = join(directory, 'connectors.jsonl');
