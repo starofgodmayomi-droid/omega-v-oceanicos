@@ -66,6 +66,18 @@ Safe local operations such as clone, fetch, branch creation, edits, tests, and d
 - Classify failures as source defect, missing dependency, wrong command, environment limitation, permission/authentication failure, or external service failure. Apply a safe correction, rerun the relevant check, and preserve the failed evidence.
 - If blocked, state the exact blocker and the smallest user action needed.
 
+## State labels
+
+Name the state before treating a result as done.
+
+- `POSSIBLE` — a check or change is in scope and has not run.
+- `AUTHORITY` — permission to commit, push, merge, deploy, or delete. Tool access is not `AUTHORITY`.
+- `DIVERGENT` — the command ran and the output conflicts with the expectation. Keep both.
+- `UNKNOWN` — the evidence is missing or the check could not be run.
+- `NOT_EXECUTED` — the step was specified and did not run.
+
+`VERIFIED` stays reserved for a check that ran and covers the claim.
+
 ## Completion contract
 
 Use this compact structure unless the user requests another format:

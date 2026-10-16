@@ -49,3 +49,7 @@ STATED 100% DEPLOYED ≠ DEPLOYED
 ## Next
 
 `PROPOSED`, not executed: bring the two unchecked skills up to the contract tokens, or leave them outside the gate. Do not deploy from this receipt.
+
+## Follow-up
+
+`full-stack-computer-mode` and `omega-global-good-fullstack` now name the missing states and are inside `pnpm validate:skills`. That later observation supersedes the "still outside the gate" row above. Deploy and cloud remain `NOT_EXECUTED`.
