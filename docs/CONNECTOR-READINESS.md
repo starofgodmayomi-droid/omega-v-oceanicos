@@ -14,20 +14,20 @@ As of `main` revision `c63af29884e591fe0c8ddaec93baa35cac9a5ab7`, [PR #479](http
 The remaining trusted-provider selection and production wiring are tracked in [issue #486](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/issues/486). Until a real provider is wired and its actor/action/resource scope, freshness, revocation, and negative cases are verified, connector admission must remain denied by default. No production connector enablement is implied.
 
 
-## Current evidence matrix
+## Evidence matrix — historical local snapshot, not current hosted state
 
 | Surface | Observed state | Evidence | Limitation |
 |---|---|---|---|
-| GitHub repository | `OBSERVED` | Public repository metadata, default branch `main`, configured `origin`, authenticated `gh` | Local checkout is one commit behind `origin/main`; no push or PR write was performed in this transition |
-| GitHub implementation | `VERIFIED` for local scope | `pnpm verify:full`; build, typecheck, 140 integration tests, API/runtime contract | Local verification does not establish hosted CI, merge, deployment, or production health |
+| GitHub repository (captured local snapshot) | `OBSERVED` | Public repository metadata, default branch `main`, configured `origin`, authenticated `gh` | Historical statement only; current branch/PR state is maintained by exact-SHA GitHub checks, not this old checkout note |
+| Local implementation (captured snapshot) | `VERIFIED` for local scope only | Previously reported `pnpm verify:full`, build, typecheck, 140 integration tests, and API/runtime contract on that checkout | Historical evidence only; it does not establish verification of PR #485's current head, deployment, or production health |
 | Notion connection | `AUTHENTICATED / OBSERVED` | Notion identity returned workspace `Work Mail’s Notion` and user `Work Mail` | Search is keyword-based; workspace-wide coverage remains partial; page verification state is separate |
 | Notion canonical registry | `OBSERVED / HISTORICAL MIX` | Canonical registry and Executive Control Plane fetched successfully | Existing entries contain historical GitHub heads and must not be reused as current state without refresh |
 | Composio | `UNKNOWN / NOT CONFIGURED IN THIS SESSION` | No Composio MCP server or enabled Composio connector was exposed by session discovery | No Composio action, credential, worker, or external side effect was executed |
-| Local API runtime | `OBSERVED` | `GET /health` returned 200/ready; `GET /v1/ecosystem/body` returned 200/VERIFIED | Loopback evidence only; no public deployment or production health claim |
+| Local API runtime (captured snapshot) | `OBSERVED` at that time | Previously reported `GET /health` returned 200/ready and `GET /v1/ecosystem/body` returned 200/VERIFIED | Historical loopback evidence; not a current runtime observation and not public deployment or production health |
 
-### Live runtime posture — reconciled branch
+### Historical local runtime posture — prior reconciled branch
 
-Observed on local branch `upgrade/oceanicos-connector-readiness-20261015` at exact head `6aa9ed7cbf4921303481a27fbca97e99a3e016e0`:
+This snapshot refers only to local branch `upgrade/oceanicos-connector-readiness-20261015` at exact head `6aa9ed7cbf4921303481a27fbca97e99a3e016e0`. It has not been reproduced on PR #485 or a production deployment:
 
 - API readiness: `ready`; observer, verifier, memory, and ecosystem-body contract responded successfully.
 - Attester: `degraded`.
@@ -35,7 +35,7 @@ Observed on local branch `upgrade/oceanicos-connector-readiness-20261015` at exa
 - Persistence: file mode with encryption disabled; event-log source is missing for this fresh local process.
 - Coordination: single-process local scope; distributed consistency, backups, external services, and production custody remain unverified.
 
-The developer operator now reports these posture fields under `snapshot.runtime.readiness`; endpoint reachability alone must not be interpreted as secure production readiness.
+The developer operator on that historical checkout reported these posture fields under `snapshot.runtime.readiness`; endpoint reachability alone must not be interpreted as secure production readiness.
 
 ## Canonical flow
 
