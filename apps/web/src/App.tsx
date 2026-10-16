@@ -87,6 +87,7 @@ export function App() {
   const [signRequests, setSignRequests] = useState(false);
   const [lastError, setLastError] = useState<string | null>(null);
   const [reconnectAttempt, setReconnectAttempt] = useState(0);
+  const [restActive, setRestActive] = useState(false);
 
   const [minerActive, setMinerActive] = useState(false);
   const [minerInterval, setMinerInterval] = useState(5000);
@@ -261,19 +262,31 @@ export function App() {
 
     connect();
 
+    const fallbackPollInterval = setInterval(() => {
+      if (!streamConnected) {
+        void fetchTipFallback();
+      }
+    }, 4000);
+
     return () => {
       disposed = true;
       if (reconnectTimer) clearTimeout(reconnectTimer);
+      clearInterval(fallbackPollInterval);
       es?.close();
     };
-  }, []);
+  }, [streamConnected]);
 
   const fetchTipFallback = async () => {
     try {
       const d = await apiRequest<any>('/v1/block/tip');
       if (d.tip) {
         setTip(d.tip);
-        setHistory((prev) => (prev.length === 0 ? [d.tip] : prev));
+        setRestActive(true);
+        setHistory((prev) => {
+          const exists = prev.some((b) => b.hash === d.tip.hash);
+          if (exists) return prev;
+          return [d.tip, ...prev.slice(0, 14)];
+        });
       }
     } catch {
       /* ambient */
@@ -706,6 +719,7 @@ export function App() {
       {/* Ambient status bar */}
       <AmbientBar
         connected={streamConnected}
+        restActive={restActive}
         reconnectAttempt={reconnectAttempt}
         simulationMode={simulationMode}
         identityActive={!!keyPair}

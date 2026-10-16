@@ -13,6 +13,7 @@ import { theme, statusColor, humanStatus } from './oceanicosTheme';
 
 interface AmbientBarProps {
   connected: boolean;
+  restActive?: boolean;
   reconnectAttempt: number;
   simulationMode: boolean;
   identityActive: boolean;
@@ -29,20 +30,24 @@ interface Indicator {
 }
 
 export function AmbientBar(props: AmbientBarProps) {
+  const isHealthy = props.connected || props.restActive;
+
   const indicators: Indicator[] = [
     {
       label: 'Connection',
       value: props.connected
         ? 'Connected'
-        : props.reconnectAttempt > 0
-          ? 'Reconnecting…'
-          : 'Offline',
-      color: props.connected
+        : props.restActive
+          ? 'Active (REST)'
+          : props.reconnectAttempt > 0
+            ? 'Reconnecting…'
+            : 'Offline',
+      color: isHealthy
         ? theme.verified
         : props.reconnectAttempt > 0
           ? theme.warning
           : theme.divergent,
-      pulse: !props.connected,
+      pulse: !isHealthy,
     },
     {
       label: 'Mode',
