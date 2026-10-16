@@ -7,6 +7,13 @@
 
 > This document records connector readiness. A named integration is not treated as active execution, authority, deployment, or production health.
 
+## Current main connector-admission boundary
+
+As of `main` revision `c63af29884e591fe0c8ddaec93baa35cac9a5ab7`, [PR #479](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/pull/479) removed request-body booleans as admission evidence and made missing server-side admission evidence fail closed. The default API bootstrap does not currently inject a production authority/policy/approval resolver. This is a source/configuration finding, not a live runtime-health observation.
+
+The remaining trusted-provider selection and production wiring are tracked in [issue #486](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/issues/486). Until a real provider is wired and its actor/action/resource scope, freshness, revocation, and negative cases are verified, connector admission must remain denied by default. No production connector enablement is implied.
+
+
 ## Current evidence matrix
 
 | Surface | Observed state | Evidence | Limitation |
