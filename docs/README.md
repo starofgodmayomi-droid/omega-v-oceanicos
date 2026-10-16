@@ -82,6 +82,10 @@ Welcome to the Ω∞v Oceanicos documentation. Start here to understand the proj
   — self-repair and upgrade through compile, admit, observe, and label.
 - **[Ω∞v OS](../skills/omega-v-os/SKILL.md)** — void, drop, field, sink, and
   the finite ∞/11:11 return.
+- **[Omega Reality First](../skills/omega-reality-first/SKILL.md)** — reality-first
+  upgrade loop, now inside `pnpm validate:skills`.
+- **[Repo compress and expand](./upgrades/REPO_COMPRESS_EXPAND_2026-10-16.md)**
+  — one local receipt for the whole tree; deploy and cloud stay `NOT_EXECUTED`.
 - **[Lucid Continuum](../skills/lucid-continuum/SKILL.md)** — what may cross a
   handoff, and what must be observed again.
 - **[Whole ecosystem reality compression](./upgrades/WHOLE_ECOSYSTEM_REALITY_COMPRESSION_2026-10-04.md)**

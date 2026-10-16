@@ -10,6 +10,7 @@ const skills = [
   'lucid-full-stack',
   'lucid-continuum',
   'omega-mirror-water-universal-body',
+  'omega-reality-first',
   'omega-v-os',
   'oceanicos-full-stack',
   'oceanicos-full-stack-companion',
