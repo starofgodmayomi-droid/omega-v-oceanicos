@@ -72,6 +72,11 @@ jobs:
       - name: Check formatting
         run: pnpm format:check
 
+      # Skill contracts are source checks. They do not need the install,
+      # and a missing run here is how a published skill becomes an unchecked claim.
+      - name: Validate skill contracts
+        run: pnpm validate:skills
+
       # Runs on every matrix version. ESLint 10 calls util.styleText, added in
       # Node 20.12, and the matrix floor is 22.x — so there is no version here
       # it cannot execute on.
@@ -159,6 +164,11 @@ jobs:
 
       - name: Check formatting
         run: pnpm format:check
+
+      # Skill contracts are source checks. They do not need the install,
+      # and a missing run here is how a published skill becomes an unchecked claim.
+      - name: Validate skill contracts
+        run: pnpm validate:skills
 
       - name: Run type checking
         run: pnpm --recursive run build
