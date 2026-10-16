@@ -88,16 +88,10 @@ export function ConnectorPanel() {
       const payload = live
         ? {
             connector: DEFAULT_CONNECTOR,
-            authorityVerified: true,
-            policySatisfied: true,
-            approvalVerified: false,
             liveAdapter: 'github-public-repository',
           }
         : {
             connector: DEFAULT_CONNECTOR,
-            authorityVerified: true,
-            policySatisfied: true,
-            approvalVerified: false,
           };
       const result = await request<Observation>('/v1/omega/connectors/observe', {
         method: 'POST',
@@ -128,12 +122,13 @@ export function ConnectorPanel() {
         CONNECTOR — GITHUB PUBLIC READ
       </div>
       <div style={{ color: '#94a3b8', fontSize: 11, marginTop: 4, marginBottom: 12 }}>
-        admit → bound execute → observe → reconcile → remember. Admission is not execution.
-        Live adapter is declared (`github-public-repository`) and read-only.
+        declare → server admission → observe → reconcile → remember. This panel does not send
+        authority, policy, or approval evidence. Live adapter is declared (`github-public-repository`)
+        and read-only.
       </div>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
         <button style={buttonStyle} disabled={loading} onClick={() => void observe(false)}>
-          {loading ? 'WORKING…' : 'ADMIT ONLY'}
+          {loading ? 'WORKING…' : 'RECORD DECLARATION'}
         </button>
         <button style={buttonStyle} disabled={loading} onClick={() => void observe(true)}>
           {loading ? 'WORKING…' : 'LIVE GITHUB OBSERVE'}
