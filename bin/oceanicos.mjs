@@ -22,6 +22,7 @@ let runOmegaChangePipeline;
 let AttestationService;
 let PluralisticRealityMatrix;
 let OceanicosKernel;
+let WholeEcosystemUpgradeCore;
 let pkgLoadError = null;
 
 try {
@@ -63,6 +64,7 @@ try {
     RememberEngine = remPkg.RememberEngine;
     executeOceanicosMaxExpansion = miniPkg.executeOceanicosMaxExpansion;
     OceanicosKernel = miniPkg.OceanicosKernel;
+    WholeEcosystemUpgradeCore = miniPkg.WholeEcosystemUpgradeCore;
     runOmegaChangePipeline = miniPkg.runOmegaChangePipeline;
     if (attestPkg) {
       AttestationService = attestPkg.AttestationService;
@@ -1080,7 +1082,63 @@ async function handleUpgrade() {
   printBanner();
   console.log(`\n${ANSI.bold}=== Ω V1111 SINGULARITY UPGRADE ENGINE ===${ANSI.reset}\n`);
   const isJson = args.includes('--json');
+  const isCommit = args[1] === 'commit' || args.includes('--commit');
+  const claim = args.find((a, i) => i > 0 && !a.startsWith('--') && a !== 'commit') ||
+    'Totality Compression towards V1111 Singularity Upgrade';
   const apiBase = (process.env.OMEGA_API_URL || 'http://127.0.0.1:5000').replace(/\/$/, '');
+
+  if (isCommit) {
+    console.log(`  ${ANSI.cyan}⚡ Initiating Totality Compression Upgrade Transition...${ANSI.reset}`);
+    console.log(`  Claim     : ${ANSI.bold}${claim}${ANSI.reset}`);
+    console.log(`  Steward   : did:omega:human:starofgodmayomi\n`);
+
+    // 1. Try committing through live Fastify API
+    try {
+      const res = await fetch(`${apiBase}/v1/upgrade`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          claim,
+          observation: { status: 'AUTHORIZED', uuid: `obs-cli-${Date.now()}` },
+          provenanceHash: `prov-${createHash('sha256').update(claim).digest('hex')}`,
+          actors: ['did:omega:human:starofgodmayomi'],
+        }),
+        signal: AbortSignal.timeout(3000),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (isJson) {
+          console.log(JSON.stringify(data, null, 2));
+          return;
+        }
+        console.log(`  ${ANSI.green}✓ V1111 Upgrade Transition Committed via Fastify API:${ANSI.reset}`);
+        console.log(`  Status    : ${ANSI.bold}${data.status}${ANSI.reset}`);
+        console.log(`  Tip Hash  : ${ANSI.cyan}${data.upgrade?.tipHash}${ANSI.reset}`);
+        console.log(`  Chain Len : ${ANSI.bold}${data.upgrade?.chainLength}${ANSI.reset}`);
+        console.log(`  State ID  : ${ANSI.dim}${data.canonicalState?.stateId}${ANSI.reset}\n`);
+        return;
+      }
+    } catch {}
+
+    // 2. Fallback to local WholeEcosystemUpgradeCore
+    if (WholeEcosystemUpgradeCore) {
+      const core = new WholeEcosystemUpgradeCore();
+      const upgradeRes = await core.commitTotalCompression(
+        { status: 'AUTHORIZED', uuid: `obs-local-${Date.now()}` },
+        `prov-${createHash('sha256').update(claim).digest('hex')}`
+      );
+      if (isJson) {
+        console.log(JSON.stringify(upgradeRes, null, 2));
+        return;
+      }
+      console.log(`  ${ANSI.green}✓ V1111 Upgrade Transition Committed in Local Kernel:${ANSI.reset}`);
+      console.log(`  Status    : ${ANSI.bold}${upgradeRes.status}${ANSI.reset}`);
+      console.log(`  Tip Hash  : ${ANSI.cyan}${upgradeRes.tipHash}${ANSI.reset}`);
+      console.log(`  Chain Len : ${ANSI.bold}${upgradeRes.chainLength}${ANSI.reset}`);
+      console.log(`  Evidence  : ${ANSI.dim}${upgradeRes.evidencePath.join(', ')}${ANSI.reset}\n`);
+      return;
+    }
+  }
 
   try {
     const res = await fetch(`${apiBase}/v1/upgrade`, { signal: AbortSignal.timeout(1500) });
@@ -1095,6 +1153,7 @@ async function handleUpgrade() {
       console.log(`  Tip Hash  : ${ANSI.dim}${data.tipHash}${ANSI.reset}`);
       console.log(`  Chain Len : ${ANSI.bold}${data.chainLength}${ANSI.reset}`);
       console.log(`  Invariants: Fail-closed=${data.invariants?.failClosed}, HumanConsent=${data.invariants?.humanConsentRequired}\n`);
+      console.log(`  Usage     : node bin/oceanicos.mjs upgrade [commit] ["<claim>"]\n`);
       return;
     }
   } catch {}
@@ -1102,7 +1161,8 @@ async function handleUpgrade() {
   console.log(`  ${ANSI.yellow}API offline. Local Singularity Upgrade Core evaluation:${ANSI.reset}`);
   console.log(`  Contract  : ${ANSI.cyan}Ω∞v-V1111-UPGRADE${ANSI.reset}`);
   console.log(`  Invariants: Fail-Closed = TRUE | Human Consent = TRUE | Reality = FINAL AUTHORITY`);
-  console.log(`  ${ANSI.green}✓ Verified in local cryptographic kernel.${ANSI.reset}\n`);
+  console.log(`  ${ANSI.green}✓ Verified in local cryptographic kernel.${ANSI.reset}`);
+  console.log(`  Usage     : node bin/oceanicos.mjs upgrade [commit] ["<claim>"]\n`);
 }
 
 function handleHelp() {

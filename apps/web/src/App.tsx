@@ -72,6 +72,7 @@ const OCEAN_FABRIC_ACTIONS = [
   { icon: '🏛️', label: 'Duplex Convergence', intent: 'Simulate African Pantheon Duplex Convergence across 5 regional faces' },
   { icon: '📜', label: 'Merkle Audit', intent: 'Audit Canonical State Ledger Tip and cryptographic parent chaining' },
   { icon: '🏛️', label: 'Covenant Engine', intent: '__TOGGLE_COVENANT__' },
+  { icon: '⚡', label: 'V1111 Upgrade', intent: '__TRIGGER_UPGRADE__' },
   { icon: '🌌', label: 'Dream Journal', intent: 'Record Night Ocean Dream: I saw a star fall into the deep water and rise in new form' },
   { icon: '⚡', label: 'Lucid Build', intent: 'Continue building with lucid skill across all 14 monorepo packages' },
 ];
@@ -1101,6 +1102,9 @@ export function App() {
                 onClick={() => {
                   if (action.intent === '__TOGGLE_COVENANT__') {
                     setShowCovenantPanel((prev) => !prev);
+                  } else if (action.intent === '__TRIGGER_UPGRADE__') {
+                    setShowCovenantPanel(true);
+                    sendMessage('Commit V1111 Singularity Upgrade and Totality Compression transition across all packages');
                   } else {
                     sendMessage(action.intent);
                   }

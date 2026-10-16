@@ -4,6 +4,8 @@ import {
   fetchCovenants as loadCovenantsApi,
   transitionCovenantApi,
   verifySanctumApi,
+  fetchUpgradeStatus,
+  commitUpgradeTransition,
   type CovenantRecordView as CovenantRecord,
 } from './omega-api';
 
@@ -47,6 +49,43 @@ export const CovenantPanel: React.FC<CovenantPanelProps> = ({ onClose }) => {
   const [actionFeedback, setActionFeedback] = useState<string | null>(null);
   const [evidenceInput, setEvidenceInput] = useState('');
   const [selectedCovenantId, setSelectedCovenantId] = useState<string>('cov-genesis-1111');
+  const [upgradeData, setUpgradeData] = useState<any>(null);
+  const [upgradeLoading, setUpgradeLoading] = useState(false);
+
+  const loadUpgrade = async () => {
+    try {
+      const data = await fetchUpgradeStatus();
+      if (data && data.success) {
+        setUpgradeData(data);
+      }
+    } catch {
+      /* ambient */
+    }
+  };
+
+  const handleCommitUpgrade = async () => {
+    setUpgradeLoading(true);
+    setActionFeedback(null);
+    try {
+      const res = await commitUpgradeTransition({
+        claim: 'Totality Compression towards V1111 Singularity Upgrade',
+        observation: { status: 'AUTHORIZED', uuid: `obs-web-${Date.now()}` },
+        provenanceHash: `prov-steward-web-session-${Date.now()}`,
+        actors: ['did:omega:human:starofgodmayomi'],
+      });
+
+      if (res && res.success) {
+        setActionFeedback(`✓ V1111 Upgrade Transition Committed! Chain Len: ${res.upgrade?.chainLength ?? 1}, Tip: ${res.upgrade?.tipHash?.slice(0, 16)}...`);
+        await loadUpgrade();
+      } else {
+        setActionFeedback(`✗ Upgrade Transition Denied: ${res?.reason || res?.error || 'Unauthorized'}`);
+      }
+    } catch (err: any) {
+      setActionFeedback(`Upgrade Error: ${err.message}`);
+    } finally {
+      setUpgradeLoading(false);
+    }
+  };
 
   const fetchCovenants = async () => {
     setLoading(true);
@@ -67,6 +106,7 @@ export const CovenantPanel: React.FC<CovenantPanelProps> = ({ onClose }) => {
 
   useEffect(() => {
     fetchCovenants();
+    loadUpgrade();
   }, []);
 
   const handleTransition = async (targetStatus: string, requireEvidence = false) => {
@@ -450,6 +490,82 @@ export const CovenantPanel: React.FC<CovenantPanelProps> = ({ onClose }) => {
           </div>
         </div>
       )}
+
+      {/* V1111 Singularity Upgrade & Totality Compression Deck */}
+      <div
+        style={{
+          background: 'linear-gradient(135deg, rgba(8, 25, 45, 0.8) 0%, rgba(2, 14, 28, 0.9) 100%)',
+          borderRadius: '10px',
+          border: '1px solid rgba(56, 189, 248, 0.35)',
+          padding: '16px 20px',
+          marginBottom: '16px',
+          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.4), inset 0 0 12px rgba(56, 189, 248, 0.08)',
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '16px' }}>⚡</span>
+            <span style={{ fontSize: '13px', fontWeight: 700, letterSpacing: '0.5px', color: '#38bdf8' }}>
+              V1111 SINGULARITY UPGRADE & TOTALITY COMPRESSION
+            </span>
+            <span
+              style={{
+                fontSize: '10px',
+                padding: '2px 8px',
+                borderRadius: theme.radiusPill,
+                background: 'rgba(0, 245, 160, 0.15)',
+                color: '#00f5a0',
+                border: '1px solid rgba(0, 245, 160, 0.3)',
+                fontWeight: 600,
+              }}
+            >
+              ACTIVE · FAIL-CLOSED
+            </span>
+          </div>
+
+          <button
+            onClick={handleCommitUpgrade}
+            disabled={upgradeLoading}
+            style={{
+              padding: '6px 14px',
+              borderRadius: theme.radiusPill,
+              border: '1px solid #00f5a0',
+              background: 'rgba(0, 245, 160, 0.18)',
+              color: '#00f5a0',
+              fontSize: '11px',
+              fontWeight: 700,
+              cursor: upgradeLoading ? 'wait' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'all 0.2s',
+            }}
+          >
+            {upgradeLoading ? 'Committing...' : '⚡ Compress & Commit Upgrade Transition'}
+          </button>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', fontSize: '11px' }}>
+          <div style={{ background: 'rgba(15, 23, 42, 0.5)', padding: '8px 12px', borderRadius: '6px', border: '1px solid rgba(148, 163, 184, 0.1)' }}>
+            <div style={{ color: '#94a3b8', marginBottom: '2px' }}>Contract Engine</div>
+            <div style={{ color: '#e2e8f0', fontWeight: 600, fontFamily: theme.fontMono }}>
+              {upgradeData?.contract || 'Ω∞v-V1111-UPGRADE'}
+            </div>
+          </div>
+          <div style={{ background: 'rgba(15, 23, 42, 0.5)', padding: '8px 12px', borderRadius: '6px', border: '1px solid rgba(148, 163, 184, 0.1)' }}>
+            <div style={{ color: '#94a3b8', marginBottom: '2px' }}>Upgrade Hash Chain Length</div>
+            <div style={{ color: '#00f5a0', fontWeight: 700, fontFamily: theme.fontMono }}>
+              {upgradeData?.chainLength ?? 0} transitions verified
+            </div>
+          </div>
+          <div style={{ background: 'rgba(15, 23, 42, 0.5)', padding: '8px 12px', borderRadius: '6px', border: '1px solid rgba(148, 163, 184, 0.1)', gridColumn: 'span 2' }}>
+            <div style={{ color: '#94a3b8', marginBottom: '2px' }}>Current Singularity Tip Hash</div>
+            <div style={{ color: '#38bdf8', fontFamily: theme.fontMono, wordBreak: 'break-all', fontSize: '10px' }}>
+              {upgradeData?.tipHash || '0'.repeat(64)}
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Temple Thread Sanctum Probe Bar */}
       <div
