@@ -169,7 +169,7 @@ describe('Ω connector observation path', () => {
   it('refuses unverified client status claims and remembers observations on a local hash chain', async () => {
     const directory = mkdtempSync(join(tmpdir(), 'omega-connector-observation-'));
     const { createApp } = await import('../../apps/api/dist/index.js');
-    const app = createApp(join(directory, 'ledger.db'), false, { allowUnsignedCycle: true });
+    const app = createApp(join(directory, 'ledger.db'), false, { allowUnsignedCycle: true, connectorAdmissionEvidence: (_request, connector) => ({ authorityVerified: connector.id !== 'deny-authority', policySatisfied: true, approvalVerified: false }) });
     await app.ready();
 
     try {
@@ -223,8 +223,8 @@ describe('Ω connector observation path', () => {
         method: 'POST',
         url: '/v1/omega/connectors/observe',
         payload: {
-          connector,
-          authorityVerified: false,
+          connector: { ...connector, id: 'deny-authority' },
+          authorityVerified: true,
           policySatisfied: true,
           approvalVerified: true,
           execution: {
@@ -296,6 +296,7 @@ describe('Ω connector observation path', () => {
     const app = createApp(join(directory, 'ledger.db'), false, {
       allowUnsignedCycle: true,
       connectorObservationPath: journalPath,
+      connectorAdmissionEvidence: (_request, connector) => ({ authorityVerified: connector.id !== 'deny-authority', policySatisfied: true, approvalVerified: false }),
     });
     await app.ready();
     try {
@@ -345,6 +346,7 @@ describe('Ω connector observation path', () => {
     const app = createApp(join(directory, 'ledger.db'), false, {
       allowUnsignedCycle: true,
       githubFetch: fetchImpl,
+      connectorAdmissionEvidence: (_request, connector) => ({ authorityVerified: connector.id !== 'deny-authority', policySatisfied: true, approvalVerified: false }),
     });
     await app.ready();
 
