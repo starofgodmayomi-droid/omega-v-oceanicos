@@ -1216,7 +1216,11 @@ async function handleCompression(extraArgs = []) {
     console.log(`  ${ANSI.green}${n.name.padEnd(11)}${ANSI.reset} : ${n.role.padEnd(42)} ${ANSI.dim}(${n.pkg})${ANSI.reset}`);
   }
 
-  console.log(`\n${ANSI.bold}=== THE LIVING LOOP ===${ANSI.reset}`);
+  console.log(`\n${ANSI.bold}=== THE PRIMORDIAL TRANSITION CYCLE ===${ANSI.reset}`);
+  console.log(`  ${ANSI.cyan}${ANSI.bold}0 → 💧 → Ω∞v → 🕳️ → 💧 → ∞${ANSI.reset}`);
+  console.log(`  ${ANSI.dim}0 = Source Origin | 💧 = Mini Drop | Ω∞v = Engine | 🕳️ = Abyss/Compression | 💧 = Rebirth | ∞ = Becoming${ANSI.reset}\n`);
+
+  console.log(`${ANSI.bold}=== THE LIVING LOOP ===${ANSI.reset}`);
   console.log(`  ${ANSI.cyan}SOURCE → EXPERIENCE → OBSERVE → INTERPRET → CREATE${ANSI.reset}`);
   console.log(`  ${ANSI.cyan}  → TEST → RECONCILE → REMEMBER → NEXT Δ${ANSI.reset}\n`);
 

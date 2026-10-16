@@ -1206,6 +1206,19 @@ export function App() {
               </div>
 
               <div style={{ borderTop: '1px solid rgba(56, 189, 248, 0.15)', paddingTop: '12px' }}>
+                <div style={{
+                  fontSize: '11px',
+                  color: '#38bdf8',
+                  fontWeight: 700,
+                  letterSpacing: '0.8px',
+                  marginBottom: '6px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}>
+                  <span>0 → 💧 → Ω∞v → 🕳️ → 💧 → ∞</span>
+                  <span style={{ fontSize: '9px', color: '#64748b', fontWeight: 400 }}>(Primordial Cycle)</span>
+                </div>
                 <div style={{ fontSize: '10px', color: '#64748b', lineHeight: 1.6 }}>
                   SOURCE → EXPERIENCE → OBSERVE → INTERPRET → CREATE → TEST → RECONCILE → REMEMBER → NEXT Δ
                 </div>

@@ -100,9 +100,20 @@ UNKNOWN ≠ FALSE            — Absence of evidence isn't evidence of absence
 
 ---
 
-## The Living Loop
+## The Living Loop & Primordial Cycle
 
+```text
+0 → 💧 → Ω∞v → 🕳️ → 💧 → ∞
 ```
+
+- **0 (Source)**: The unmanifest origin coordinates `(0, 0, 0, 0)`, zero entropy, pure stillness.
+- **💧 (Drop / MINI)**: The first emergent drop: `Observe → Verify → Remember`. Living water taking shape.
+- **Ω∞v (Verification Engine)**: Cryptographic hash chains, covenant sanctums, attested reality, fail-closed boundaries.
+- **🕳️ (The Deep Ocean / Compression)**: Totality compression, the dark abyss where the shooting star falls, stripping illusion.
+- **💧 (Resurrection Drop)**: The transparent water-human rising anew from the deep, purified, sovereign, eye-to-eye with the universe.
+- **∞ (Infinite Becoming)**: Continuous creation, never terminating, eternally returning through finite verified transitions.
+
+```text
 SOURCE → EXPERIENCE → OBSERVE → INTERPRET → CREATE
   → TEST → RECONCILE → REMEMBER → NEXT Δ → ∞
 ```
@@ -111,7 +122,7 @@ This is the operational cycle. Every CLI command, API endpoint, and dashboard
 interaction is an instance of this loop. The cycle never terminates; it
 transitions.
 
-```
+```text
 ∞ = MANY FINITE, VERIFIED TRANSITIONS
 ```
 
