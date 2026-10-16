@@ -25,6 +25,7 @@ import { registerChatRoute } from './chat-route.js';
 import { registerUpgradeRoute } from './upgrade-route.js';
 import { registerCovenantRoute } from './covenant-route.js';
 import { registerCompressionRoute } from './compression-route.js';
+import { registerEchoframeRoute } from './echoframe-route.js';
 import { API_ROUTE_INVENTORY } from './route-contract.js';
 import { OceanicosKernel as UpgradeKernel } from '@oceanicos/mini';
 import { OmegaCommandStore, registerOmegaWorkerRoutes } from './omega.js';
@@ -249,6 +250,7 @@ export function createApp(
   registerUpgradeRoute(fastify, jsonError, upgradeKernel);
   registerCovenantRoute(fastify, jsonError);
   registerCompressionRoute(fastify);
+  registerEchoframeRoute(fastify);
 
   fastify.get('/health', async (_request, reply) => {
     const memoryReady = true;
@@ -275,6 +277,7 @@ export function createApp(
         covenant: 'ready',
         upgrade: 'ready',
         compression: 'ready',
+        echoframe: 'ready',
         memory: { status: memoryReady ? 'ready' : 'degraded', integrity: memoryReady, encryption: 'disabled' },
         persistence: {
           mode: persistenceEnabled ? 'file' : 'memory',
