@@ -32,7 +32,7 @@ Notion is the context and continuity layer. GitHub is the implementation and ver
 
 ## Relationship to live readiness evidence
 
-This file defines the cross-system integration contract and acceptance invariants. The dated implementation snapshot and connector-by-connector evidence matrix live in [`docs/CONNECTOR-READINESS.md`](CONNECTOR-READINESS.md). Treat that snapshot as revision- and time-scoped; it does not replace this contract or establish production health beyond the observations it records.
+This file defines the cross-system integration contract and acceptance invariants. A dated implementation snapshot and connector-by-connector evidence matrix are proposed in [PR #485](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/pull/485) as `docs/CONNECTOR-READINESS.md`. That proposal remains separately reviewed and revision-/time-scoped; it does not replace this contract or establish production health beyond its recorded observations. Use a relative file link after the readiness document is merged.
 
 ## Integration status vocabulary
 
