@@ -54,9 +54,31 @@ interface TensorStatus {
   evaluatedAt: string;
 }
 
+interface MatrixStatus {
+  success: boolean;
+  contract: string;
+  equation: string;
+  kroneckerFormula: string;
+  dimension: number;
+  bodyOrgans: string[];
+  sampleTransition?: {
+    step: number;
+    tensorDimension: number;
+    frobeniusNorm: number;
+    determinantState: string;
+    authorizationProjectionPassed: boolean;
+    verificationVectorStatus: string;
+    stateVectorProof: string;
+    stateVectorHead: number[];
+  };
+}
+
 export function PluralismPanel() {
   const [data, setData] = useState<PluralisticFaceResponse | null>(null);
   const [tensor, setTensor] = useState<TensorStatus | null>(null);
+  const [matrix, setMatrix] = useState<MatrixStatus | null>(null);
+  const [simulatingTransition, setSimulatingTransition] = useState(false);
+  const [transitionResult, setTransitionResult] = useState<any | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -70,9 +92,10 @@ export function PluralismPanel() {
     setLoading(true);
     setError(null);
     try {
-      const [resFace, resTensor] = await Promise.all([
+      const [resFace, resTensor, resMatrix] = await Promise.all([
         fetch(`${API_BASE_URL}/v1/pluralism/face`),
         fetch(`${API_BASE_URL}/v1/pluralism/tensor`),
+        fetch(`${API_BASE_URL}/v1/pluralism/matrix`),
       ]);
       const textFace = await resFace.text();
       const parsedFace = textFace ? JSON.parse(textFace) : null;
@@ -84,12 +107,39 @@ export function PluralismPanel() {
         const parsedTensor = textTensor ? JSON.parse(textTensor) : null;
         setTensor(parsedTensor);
       }
+
+      if (resMatrix.ok) {
+        const textMatrix = await resMatrix.text();
+        const parsedMatrix = textMatrix ? JSON.parse(textMatrix) : null;
+        setMatrix(parsedMatrix);
+      }
     } catch (err: any) {
       setError(err instanceof Error ? err.message : 'pluralism matrix unavailable');
     } finally {
       setLoading(false);
     }
   }, []);
+
+  const handleTriggerTransition = async (unverified = false) => {
+    setSimulatingTransition(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/v1/pluralism/matrix/transition`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          isAuthorized: true,
+          isEvidenceVerified: !unverified,
+        }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const payload = await res.json();
+      setTransitionResult(payload.receipt);
+    } catch (err: any) {
+      setError(err instanceof Error ? err.message : 'failed transition');
+    } finally {
+      setSimulatingTransition(false);
+    }
+  };
 
   const handleRegisterMeaning = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -429,6 +479,172 @@ export function PluralismPanel() {
                   </button>
                 </div>
               </form>
+            </div>
+          )}
+
+          {/* Master Matrix Transformation HUD */}
+          {matrix && (
+            <div
+              style={{
+                background: '#040b12',
+                border: '1px solid #38bdf855',
+                borderRadius: '8px',
+                padding: '16px',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '14px' }}>🌌</span>
+                  <span style={{ color: '#38bdf8', fontWeight: 'bold', fontSize: '12px', letterSpacing: '0.8px' }}>
+                    MASTER MATRIX TRANSFORMATION HUD
+                  </span>
+                </div>
+                <span
+                  style={{
+                    background: '#38bdf822',
+                    border: '1px solid #38bdf866',
+                    color: '#38bdf8',
+                    fontSize: '10px',
+                    fontWeight: 'bold',
+                    padding: '2px 8px',
+                    borderRadius: '12px',
+                  }}
+                >
+                  {matrix.contract}
+                </span>
+              </div>
+
+              {/* Equation Banner */}
+              <div
+                style={{
+                  background: '#071626',
+                  border: '1px solid #38bdf833',
+                  borderRadius: '6px',
+                  padding: '10px 14px',
+                  marginBottom: '12px',
+                  fontFamily: 'monospace',
+                }}
+              >
+                <div style={{ color: '#38bdf8', fontSize: '13px', fontWeight: 'bold' }}>
+                  {matrix.equation}
+                </div>
+                <div style={{ color: '#94a3b8', fontSize: '11px', marginTop: '4px' }}>
+                  Operator: <strong style={{ color: '#a78bfa' }}>{matrix.kroneckerFormula}</strong> ({matrix.dimension} coordinates)
+                </div>
+              </div>
+
+              {/* 4 Dimension Layers & 20 Organs Grid */}
+              <div style={{ marginBottom: '12px' }}>
+                <div style={{ color: '#94a3b8', fontSize: '10px', textTransform: 'uppercase', marginBottom: '6px' }}>
+                  Sovereign Body Organs (20 Organs · 4 Tensors)
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                  {matrix.bodyOrgans.map((organ) => (
+                    <span
+                      key={organ}
+                      style={{
+                        background: '#0e2238',
+                        color: '#7dd3fc',
+                        border: '1px solid #38bdf833',
+                        borderRadius: '4px',
+                        padding: '3px 8px',
+                        fontSize: '10px',
+                        fontWeight: '500',
+                      }}
+                    >
+                      {organ}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Active Metrics & Transition Controls */}
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+                  gap: '8px',
+                  marginBottom: '12px',
+                }}
+              >
+                <div style={{ background: '#08121c', padding: '8px 12px', borderRadius: '6px', border: '1px solid #38bdf822' }}>
+                  <div style={{ color: '#94a3b8', fontSize: '10px' }}>Tensor Frobenius Norm</div>
+                  <div style={{ color: '#38bdf8', fontSize: '15px', fontWeight: 'bold', marginTop: '2px' }}>
+                    {transitionResult?.frobeniusNorm ?? matrix.sampleTransition?.frobeniusNorm ?? '0.780484'}
+                  </div>
+                </div>
+
+                <div style={{ background: '#08121c', padding: '8px 12px', borderRadius: '6px', border: '1px solid #38bdf822' }}>
+                  <div style={{ color: '#94a3b8', fontSize: '10px' }}>Determinant State</div>
+                  <div
+                    style={{
+                      color: (transitionResult?.determinantState ?? matrix.sampleTransition?.determinantState) === 'NON_ZERO' ? '#00ff66' : '#ff4444',
+                      fontSize: '13px',
+                      fontWeight: 'bold',
+                      marginTop: '4px',
+                    }}
+                  >
+                    {transitionResult?.determinantState ?? matrix.sampleTransition?.determinantState ?? 'NON_ZERO'}
+                  </div>
+                </div>
+
+                <div style={{ background: '#08121c', padding: '8px 12px', borderRadius: '6px', border: '1px solid #38bdf822' }}>
+                  <div style={{ color: '#94a3b8', fontSize: '10px' }}>P_auth Projection</div>
+                  <div
+                    style={{
+                      color: (transitionResult?.authorizationProjectionPassed ?? matrix.sampleTransition?.authorizationProjectionPassed) ? '#00ff66' : '#ffaa00',
+                      fontSize: '13px',
+                      fontWeight: 'bold',
+                      marginTop: '4px',
+                    }}
+                  >
+                    {(transitionResult?.authorizationProjectionPassed ?? matrix.sampleTransition?.authorizationProjectionPassed) ? 'PASSED (1.0)' : 'COLLAPSED (0.0)'}
+                  </div>
+                </div>
+              </div>
+
+              {/* Interactive Simulation Trigger */}
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <button
+                  onClick={() => handleTriggerTransition(false)}
+                  disabled={simulatingTransition}
+                  style={{
+                    background: '#0284c7',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '4px',
+                    padding: '6px 14px',
+                    fontSize: '10px',
+                    fontWeight: 'bold',
+                    cursor: simulatingTransition ? 'wait' : 'pointer',
+                  }}
+                >
+                  {simulatingTransition ? 'Computing...' : '⚡ Step k ➔ k+1 (Verified)'}
+                </button>
+
+                <button
+                  onClick={() => handleTriggerTransition(true)}
+                  disabled={simulatingTransition}
+                  style={{
+                    background: '#1e1b4b',
+                    color: '#f43f5e',
+                    border: '1px solid #f43f5e55',
+                    borderRadius: '4px',
+                    padding: '6px 14px',
+                    fontSize: '10px',
+                    fontWeight: 'bold',
+                    cursor: simulatingTransition ? 'wait' : 'pointer',
+                  }}
+                >
+                  ⚡ Test Fail-Closed Collapse (Unverified)
+                </button>
+              </div>
+
+              {transitionResult && (
+                <div style={{ marginTop: '10px', background: '#020617', padding: '8px 10px', borderRadius: '4px', fontSize: '10px', color: '#94a3b8', fontFamily: 'monospace' }}>
+                  State Proof: <span style={{ color: '#e2e8f0' }}>{transitionResult.stateVectorProof}</span> | Status: <span style={{ color: transitionResult.determinantState === 'NON_ZERO' ? '#00ff66' : '#f43f5e' }}>{transitionResult.determinantState}</span>
+                </div>
+              )}
             </div>
           )}
 

@@ -1551,6 +1551,102 @@ async function handleTensor(subArgs = []) {
   console.log(`  Usage: node bin/oceanicos.mjs tensor [status|meaning|evaluate] [options]\n`);
 }
 
+async function handleMatrix(cmdArgs = []) {
+  const isJson = args.includes('--json');
+  const subCommand = cmdArgs[0] || 'status';
+  const apiBase = (process.env.VITE_API_URL || 'http://localhost:5000').replace(/\/$/, '');
+
+  let matrixPkg;
+  try {
+    matrixPkg = await import('../packages/pluralism/src/matrix.ts');
+  } catch {
+    try {
+      matrixPkg = await import('../packages/pluralism/dist/matrix.js');
+    } catch {}
+  }
+
+  if (subCommand === 'transition') {
+    const isUnauthorized = args.includes('--unauthorized');
+    const isUnverified = args.includes('--unverified');
+    const isAuth = !isUnauthorized;
+    const isVerif = !isUnverified;
+
+    let result = null;
+    try {
+      const res = await fetch(`${apiBase}/v1/pluralism/matrix/transition`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isAuthorized: isAuth, isEvidenceVerified: isVerif }),
+      });
+      if (res.ok) result = await res.json();
+    } catch {}
+
+    if (!result && matrixPkg?.executeMatrixTransition) {
+      const receipt = matrixPkg.executeMatrixTransition(0, [], undefined, isAuth, isVerif);
+      result = { success: true, receipt, source: 'local-fallback' };
+    }
+
+    if (isJson) {
+      console.log(JSON.stringify(result, null, 2));
+      return;
+    }
+
+    printBanner();
+    console.log(`\n${ANSI.bold}=== 🌌 MASTER MATRIX STATE TRANSITION ===${ANSI.reset}\n`);
+    console.log(`  ${ANSI.cyan}Equation${ANSI.reset}         : ${ANSI.bold}R_{k+1} = P_{auth} · ( Evol(M) · Ω_{OS} · R_k ) + V_k${ANSI.reset}`);
+    console.log(`  ${ANSI.cyan}Step${ANSI.reset}             : ${result.receipt.step}`);
+    console.log(`  ${ANSI.cyan}Tensor Dimension${ANSI.reset} : ${result.receipt.tensorDimension} (4 ⊗ 4 ⊗ 4 ⊗ 5)`);
+    console.log(`  ${ANSI.bold}Frobenius Norm${ANSI.reset}   : ${result.receipt.frobeniusNorm}`);
+    console.log(`  ${ANSI.bold}Determinant${ANSI.reset}      : ${result.receipt.determinantState === 'NON_ZERO' ? ANSI.green : ANSI.red}${result.receipt.determinantState}${ANSI.reset}`);
+    console.log(`  ${ANSI.bold}P_auth Status${ANSI.reset}    : ${result.receipt.authorizationProjectionPassed ? ANSI.green + 'PASSED' : ANSI.red + 'FAIL_CLOSED (COLLAPSED)'}${ANSI.reset}`);
+    console.log(`  ${ANSI.cyan}Verification Vec${ANSI.reset} : ${result.receipt.verificationVectorStatus}`);
+    console.log(`  ${ANSI.green}State Proof${ANSI.reset}      : ${ANSI.dim}${result.receipt.stateVectorProof}${ANSI.reset}\n`);
+    return;
+  }
+
+  let matrixData = null;
+  try {
+    const res = await fetch(`${apiBase}/v1/pluralism/matrix`);
+    if (res.ok) matrixData = await res.json();
+  } catch {}
+
+  if (!matrixData && matrixPkg?.executeMatrixTransition) {
+    const sample = matrixPkg.executeMatrixTransition(0, [], undefined, true, true);
+    matrixData = {
+      success: true,
+      contract: 'Ω∞v-MASTER-MATRIX-V1111',
+      equation: 'R_{k+1} = Evol(M) · Ω_{OS} · R_k + V_k',
+      kroneckerFormula: 'Ω_{OS} = M_I ⊗ C_E ⊗ R_E ⊗ V_X',
+      dimension: 320,
+      bodyOrgans: matrixPkg.OCEANIC_BODY_MEMBERS,
+      sampleTransition: sample,
+      evaluatedAt: new Date().toISOString(),
+      source: 'local-fallback',
+    };
+  }
+
+  if (isJson) {
+    console.log(JSON.stringify(matrixData, null, 2));
+    return;
+  }
+
+  printBanner();
+  console.log(`\n${ANSI.bold}=== 🌌 ƆCEANiC_OS MASTER MATRIX TRANSFORMATION HUD ===${ANSI.reset}\n`);
+  console.log(`  ${ANSI.cyan}Contract${ANSI.reset}        : ${ANSI.bold}${matrixData.contract}${ANSI.reset}`);
+  console.log(`  ${ANSI.yellow}Master Equation${ANSI.reset} : ${ANSI.bold}${matrixData.equation}${ANSI.reset}`);
+  console.log(`  ${ANSI.cyan}Tensor Product${ANSI.reset}  : ${matrixData.kroneckerFormula}`);
+  console.log(`  ${ANSI.green}Total Dimension${ANSI.reset} : ${matrixData.dimension} coordinates (4 ⊗ 4 ⊗ 4 ⊗ 5)`);
+  console.log(`  ${ANSI.cyan}Sovereign Organs${ANSI.reset}: ${matrixData.bodyOrgans.length} members:`);
+  console.log(`    ${ANSI.dim}${matrixData.bodyOrgans.join(', ')}${ANSI.reset}`);
+  if (matrixData.sampleTransition) {
+    console.log(`\n  ${ANSI.bold}Sample Active Transition:${ANSI.reset}`);
+    console.log(`    • Frobenius Norm  : ${matrixData.sampleTransition.frobeniusNorm}`);
+    console.log(`    • Determinant     : ${ANSI.green}${matrixData.sampleTransition.determinantState}${ANSI.reset}`);
+    console.log(`    • State Proof     : ${ANSI.dim}${matrixData.sampleTransition.stateVectorProof}${ANSI.reset}`);
+  }
+  console.log('');
+}
+
 function handleHelp() {
   printBanner();
   console.log(`
@@ -1681,6 +1777,10 @@ switch (command) {
   case 'tensor':
   case 'duality':
     await handleTensor(args.slice(1));
+    break;
+  case 'matrix':
+  case 'lambda':
+    await handleMatrix(args.slice(1));
     break;
   case 'help':
   case '--help':
