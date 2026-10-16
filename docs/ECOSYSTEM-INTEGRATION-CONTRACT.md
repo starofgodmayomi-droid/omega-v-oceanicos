@@ -30,6 +30,10 @@ HUMAN INTENT / NOTION CONTEXT
 
 Notion is the context and continuity layer. GitHub is the implementation and version-provenance layer. Composio may orchestrate separately authorized app actions. None of these layers is a substitute for observing the runtime consequence.
 
+## Relationship to live readiness evidence
+
+This file defines the cross-system integration contract and acceptance invariants. The dated implementation snapshot and connector-by-connector evidence matrix live in [`docs/CONNECTOR-READINESS.md`](CONNECTOR-READINESS.md). Treat that snapshot as revision- and time-scoped; it does not replace this contract or establish production health beyond the observations it records.
+
 ## Integration status vocabulary
 
 Use these states per connector and per capability, never one broad “connected” badge:
