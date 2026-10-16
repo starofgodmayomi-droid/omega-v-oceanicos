@@ -44,6 +44,11 @@ without treating any single component—or any agent—as the final authority.
 - 🧩 **[OceanicOS Framework](skills/oceanicos-framework/SKILL.md)** — finite transitions, evidence, and human authority
 - 🌊 **[Oceanicos Full Stack](skills/oceanicos-full-stack/SKILL.md)** — the renamed Ω∞v verification spine, whole-ecosystem routing, and bounded FLOW
 - 🧭 **[Lucid Full Stack](skills/lucid-full-stack/SKILL.md)** — one evidence-first operating skill spanning voice, continuity, culture, value, ecosystem, and software delivery
+- 🤝 **[Oceanicos Full-Stack Companion](skills/oceanicos-full-stack-companion/SKILL.md)** — intent, meaning, repositories, tools, runtime, and learning into one authorized outcome
+- 🌌 **[Oceanicos Max-Space Full Stack](skills/oceanicos-max-space-full-stack/SKILL.md)** — dimensional state space as bounded coordinates, clocks, and arrays
+- ⬆️ **[Oceanicos Verified Upgrade](skills/oceanicos-verified-upgrade/SKILL.md)** — repair and upgrade only through an observed, reversible pipeline
+- 💠 **[Ω∞v OS](skills/omega-v-os/SKILL.md)** — the ƆCEANiC_OS sequence as a finite kernel
+- 🔁 **[Lucid Continuum](skills/lucid-continuum/SKILL.md)** — handoff across passes without invented memory
 - 🌐 **[Full-stack reality-access handoff](docs/upgrades/FULL_STACK_REALITY_ACCESS_2026-09-28.md)** — connector taxonomy without implicit ownership or authority
 - 🗺️ **[Repository inventory](docs/REPO_INVENTORY.md)** — workspace vs disk (current evidence)
 - ⚙️ **[Development Setup](docs/DEVELOPMENT.md)** — Get the project running locally
