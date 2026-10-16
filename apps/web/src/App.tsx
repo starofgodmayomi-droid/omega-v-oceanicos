@@ -14,7 +14,7 @@ import { DivergenceAlertsPanel } from './DivergenceAlertsPanel';
 import { ValueNavigatorPanel } from './ValueNavigatorPanel';
 import { ConnectorPanel } from './ConnectorPanel';
 import { WholeEcosystemDashboard } from './WholeEcosystemDashboard';
-import { WaterFlowPanel } from './WaterFlowPanel';
+import { createTraceOnlyPipelineRequest, normalizeTraceOnlyPipelineReceipt, type WaterFlowFrameView, type WaterFlowRequestStatus } from './water-flow-panel-model';
 import { LifecycleFlow, deriveStageStates, type LifecycleStage } from './LifecycleFlow';
 import { GlobeViewport } from './GlobeViewport';
 import { bindGlobeEvidence } from './globe-shell';
@@ -96,6 +96,9 @@ export function App() {
   const [omegaIntent, setOmegaIntent] = useState('');
   const [omegaCommand, setOmegaCommand] = useState<any>(null);
   const [omegaLoading, setOmegaLoading] = useState(false);
+  const [waterFlowReceipt, setWaterFlowReceipt] = useState<WaterFlowFrameView[] | null>(null);
+  const [waterFlowRequestStatus, setWaterFlowRequestStatus] = useState<WaterFlowRequestStatus>('NOT_REQUESTED');
+  const [waterFlowRequestError, setWaterFlowRequestError] = useState<string | null>(null);
 
   const [openStageId, setOpenStageId] = useState<string | null>(null);
   const [globeMax, setGlobeMax] = useState(false);
@@ -150,6 +153,39 @@ export function App() {
       if (data.success) setEcosystemBody(data);
     } catch {
       /* ambient — the API may be mounted separately from the web surface */
+    }
+  };
+
+  const requestWaterFlow = async () => {
+    if (waterFlowRequestStatus === 'LOADING') return;
+    setWaterFlowRequestStatus('LOADING');
+    setWaterFlowReceipt(null);
+    setWaterFlowRequestError(null);
+
+    try {
+      // This request intentionally cannot pass admission and has no handler.
+      // The API may return a bounded symbolic trace, but must halt before execution.
+      const data = await apiRequest<unknown>('/v1/pipeline', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(createTraceOnlyPipelineRequest(`dashboard-water-flow-${Date.now()}`)),
+      });
+
+      const normalized = normalizeTraceOnlyPipelineReceipt(data);
+      if (!normalized.ok) {
+        setWaterFlowRequestStatus('DIVERGENT');
+        setWaterFlowRequestError(`Pipeline response failed the trace-only contract (${normalized.reason}).`);
+        return;
+      }
+
+      setWaterFlowReceipt(normalized.frames);
+      setWaterFlowRequestStatus('RECEIVED');
+    } catch (error: unknown) {
+      setWaterFlowReceipt(null);
+      setWaterFlowRequestStatus('FAILED');
+      setWaterFlowRequestError(
+        error instanceof Error ? error.message : 'Trace request failed; no receipt was accepted.',
+      );
     }
   };
 
@@ -761,9 +797,12 @@ export function App() {
           history={history}
           ecosystemBody={ecosystemBody}
           omegaCommand={omegaCommand}
+          waterFlowReceipt={waterFlowReceipt}
+          waterFlowRequestStatus={waterFlowRequestStatus}
+          waterFlowRequestError={waterFlowRequestError}
+          onRequestWaterFlow={requestWaterFlow}
           onFocusCommand={setOmegaIntent}
         />
-        <WaterFlowPanel />
 
         {/* Prompt */}
         <h1
