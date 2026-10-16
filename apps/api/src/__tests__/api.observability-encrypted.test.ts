@@ -3,6 +3,7 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { jest } from '@jest/globals';
 import type { Express } from 'express';
 
 /**
@@ -17,7 +18,7 @@ import type { Express } from 'express';
  * yet" arm of every trust ternary have never actually run.
  */
 
-const requireFromModule = createRequire(__filename);
+const requireFromModule = createRequire(import.meta.url);
 
 type ApiResponse<T> = { data: T; meta?: Record<string, unknown> };
 
@@ -51,7 +52,7 @@ describe('encrypted, persisted observability and audit surface', () => {
     process.env.OMEGA_MEMORY_PATH = join(dir, 'memory.jsonl');
 
     jest.resetModules();
-    const { app } = requireFromModule('../index') as { app: Express };
+    const { app } = (await import('../index')) as any;
     server = createServer(app);
     await new Promise<void>((resolve, reject) => {
       server.once('error', reject);

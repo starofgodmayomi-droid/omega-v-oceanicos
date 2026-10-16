@@ -11,12 +11,9 @@ describe('API route contract', () => {
 
     try {
       await app.ready();
-      const registered = app.printRoutes().replace(/\s+/g, ' ');
-
       for (const contract of API_ROUTE_INVENTORY) {
         const [method, path] = contract.split(' ', 2);
-        expect(registered).toContain(path);
-        expect(registered).toContain(method);
+        expect(app.hasRoute({ method: method as any, url: path })).toBe(true);
       }
     } finally {
       await app.close();

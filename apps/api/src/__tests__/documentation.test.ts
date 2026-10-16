@@ -16,7 +16,7 @@ describe('API documentation', () => {
   const source = readFileSync(join(root, 'apps/api/src/index.ts'), 'utf8');
   const readme = readFileSync(join(root, 'apps/api/README.md'), 'utf8');
 
-  const routes = Array.from(source.matchAll(/app\.(get|post)\('([^']+)'/g)).map((match) => ({
+  const routes = Array.from(source.matchAll(/(?:app|fastify)\.(get|post)\('([^']+)'/g)).map((match) => ({
     method: match[1].toUpperCase(),
     path: match[2],
   }));
@@ -69,7 +69,7 @@ describe('startup banner', () => {
   const root = process.cwd();
   const source = readFileSync(join(root, 'apps/api/src/index.ts'), 'utf8');
 
-  const registered = Array.from(source.matchAll(/app\.(get|post)\('([^']+)'/g)).map((match) => ({
+  const registered = Array.from(source.matchAll(/(?:app|fastify)\.(get|post)\('([^']+)'/g)).map((match) => ({
     method: match[1].toUpperCase(),
     path: match[2],
   }));
@@ -87,12 +87,12 @@ describe('startup banner', () => {
   it.each(registered.map((route) => [`${route.method} ${route.path}`, route.method, route.path]))(
     'advertises %s',
     (_label, method, path) => {
-      expect(banner).toMatch(new RegExp(`${method}\\s+${path.replace(/\//g, '\\/')}(\\s|')`));
+      expect(banner).toMatch(new RegExp(`${method}\\s+${path.replace(/[*]/g, '\\*').replace(/\//g, '\\/')}(\\s|')`));
     }
   );
 
   it('advertises nothing the server does not serve', () => {
-    const advertised = Array.from(banner.matchAll(/(GET|POST)\s+(\/[a-zA-Z0-9:/-]*)/g)).map(
+    const advertised = Array.from(banner.matchAll(/(GET|POST)\s+(\/[a-zA-Z0-9:/*-]*)/g)).map(
       (match) => `${match[1]} ${match[2]}`
     );
     const real = new Set(registered.map((route) => `${route.method} ${route.path}`));

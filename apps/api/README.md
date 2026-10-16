@@ -23,6 +23,7 @@ The default port is `5000`; `PORT` or `API_PORT` overrides it.
 production. Required mode needs distinct `OMEGA_READ_TOKEN` and
 `OMEGA_ADMIN_TOKEN` values. Health remains unauthenticated; GET evidence
 routes use the read token and mutations use the admin token.
+Attestation signing key is configured via `OMEGA_SIGNING_KEY`.
 
 Optional local-job authentication uses `OMEGA_LOCAL_JOB_LEDGER_TOKEN`.
 
@@ -109,8 +110,34 @@ registry; distributed revocation consistency is not claimed.
 GET  /health
 GET  /v1/kernel/capabilities
 GET  /v1/mood
+GET  /v1/ocean/fabric
+GET  /v1/aisoul/command-center
+POST /v1/authorization/evaluate
+GET  /v1/authorization/policy
+POST /observe
+POST /verify
+POST /mini/cycle
+POST /mini/total
+GET  /mini/integrity
+POST /os/admit
+GET  /memory
+GET  /v1/kai/records
+GET  /v1/kai/integrity
+POST /v1/kai/record
+POST /v1/kai/verify-inference
+GET  /rules
+POST /complete-loop
 POST /v1/attest
 POST /v1/cycle
+POST /v1/pipeline
+GET  /v1/inference/status
+POST /v1/inference/analyze
+GET  /v1/memory/status
+GET  /v1/memory/search
+GET  /v1/pluralism/face
+POST /v1/pluralism/converge
+POST /v1/artemis/action
+POST /v1/totality/lock
 GET  /v1/block/tip
 GET  /v1/stream
 POST /v1/miner/start

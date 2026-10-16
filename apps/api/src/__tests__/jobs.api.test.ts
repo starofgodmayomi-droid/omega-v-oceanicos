@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { createRequire } from 'node:module';
 
-const requireFromModule = createRequire(__filename);
+const requireFromModule = createRequire(import.meta.url);
 
 /**
  * A raw node:http request, used only where fetch() cannot express the

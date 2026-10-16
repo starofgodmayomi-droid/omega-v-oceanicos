@@ -24,6 +24,7 @@ import { registerRealityRoute } from './reality-route.js';
 import { registerChatRoute } from './chat-route.js';
 import { registerUpgradeRoute } from './upgrade-route.js';
 import { registerCovenantRoute } from './covenant-route.js';
+import { API_ROUTE_INVENTORY } from './route-contract.js';
 import { OceanicosKernel as UpgradeKernel } from '@oceanicos/mini';
 import { OmegaCommandStore, registerOmegaWorkerRoutes } from './omega.js';
 import { omegaRoutes } from './omega/routes.js';
@@ -95,6 +96,17 @@ export function createApp(
     : options;
 
   const fastify = Fastify({ logger });
+
+  // Support /api/ prefix transparently in dev proxy and production
+  fastify.addHook('onRequest', async (request) => {
+    const req = request.raw;
+    if (req.url && (req.url === '/api' || req.url.startsWith('/api/'))) {
+      const rewritten = req.url.startsWith('/api/') ? req.url.slice(4) || '/' : '/';
+      req.url = rewritten;
+      (request as any).url = rewritten;
+    }
+  });
+
   const ledgerMemory = new RememberEngine(dbPath);
   const kaiLedgerPath = process.env.OMEGA_KAI_PATH ?? join(dirname(dbPath), 'kai-ledger.jsonl');
   const kaiLedger = new KaiLedger(kaiLedgerPath);
@@ -786,6 +798,9 @@ const defaultFastifyApp = createApp(process.env.OMEGA_DB_PATH ?? './oceanicos.db
 const defaultReady = defaultFastifyApp.ready();
 export const app: any = Object.assign(
   (req: any, res: any) => {
+    if (req.url && (req.url === '/api' || req.url.startsWith('/api/'))) {
+      req.url = req.url.startsWith('/api/') ? req.url.slice(4) || '/' : req.url.slice(4) || '/';
+    }
     defaultReady.then(
       () => {
         (defaultFastifyApp as any).server.emit('request', req, res);
@@ -810,12 +825,72 @@ export {
   parseAuditQuery,
 } from './auth-helpers.js';
 
+export const STARTUP_BANNER = [
+  '[Ω∞v API] Verification loop server running',
+  'Available endpoints:',
+  '  GET    /health',
+  '  GET    /v1/kernel/capabilities',
+  '  GET    /v1/mood',
+  '  GET    /v1/ocean/fabric',
+  '  GET    /v1/aisoul/command-center',
+  '  POST   /v1/authorization/evaluate',
+  '  GET    /v1/authorization/policy',
+  '  POST   /observe',
+  '  POST   /verify',
+  '  POST   /mini/cycle',
+  '  POST   /mini/total',
+  '  GET    /mini/integrity',
+  '  POST   /os/admit',
+  '  GET    /memory',
+  '  GET    /v1/kai/records',
+  '  GET    /v1/kai/integrity',
+  '  POST   /v1/kai/record',
+  '  POST   /v1/kai/verify-inference',
+  '  GET    /rules',
+  '  POST   /complete-loop',
+  '  POST   /v1/attest',
+  '  POST   /v1/cycle',
+  '  GET    /v1/inference/status',
+  '  POST   /v1/inference/analyze',
+  '  GET    /v1/memory/status',
+  '  GET    /v1/memory/search',
+  '  GET    /v1/pluralism/face',
+  '  POST   /v1/pluralism/converge',
+  '  POST   /v1/artemis/action',
+  '  POST   /v1/totality/lock',
+  '  GET    /v1/block/tip',
+  '  GET    /v1/stream',
+  '  POST   /v1/miner/start',
+  '  POST   /v1/miner/stop',
+  '  GET    /v1/miner/status',
+  '  GET    /v1/mesh/nodes',
+  '  GET    /v1/mesh/simulate',
+  '  POST   /v1/auth/keypair',
+  '  POST   /v1/block/sign',
+  '  POST   /v1/block/verify-signature',
+  '  GET    /persistence/status',
+  '  POST   /persistence/acknowledge',
+  '  POST   /persistence/reencrypt',
+  '  GET    /jobs',
+  '  POST   /jobs',
+  '  GET    /jobs/:jobId',
+  '  POST   /jobs/:jobId/claim',
+  '  POST   /jobs/:jobId/complete',
+  '  POST   /jobs/:jobId/fail',
+  '  GET    /attest/revocations',
+  '  POST   /attest/revoke',
+  '  GET    /attest/policy',
+  '  GET    /',
+  '  GET    /assets/*',
+  '',
+].join('\n');
+
 const start = async () => {
   try {
     const port = Number(process.env.PORT ?? process.env.API_PORT ?? 5000);
     if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error(`Invalid API port: ${String(process.env.PORT ?? process.env.API_PORT)}`);
     await app.listen({ port, host: '0.0.0.0' });
-    console.log(`Fastify API listening on http://0.0.0.0:${port}`);
+    console.log(`Fastify API listening on http://0.0.0.0:${port}\n${STARTUP_BANNER}`);
   } catch (err) {
     app.log.error(err);
     process.exit(1);

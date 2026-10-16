@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import type { Express } from 'express';
 
-const requireFromModule = createRequire(__filename);
+const requireFromModule = createRequire(import.meta.url);
 
 type LoadedApi = {
   app: Express;
