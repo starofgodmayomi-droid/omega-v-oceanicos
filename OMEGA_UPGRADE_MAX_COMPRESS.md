@@ -13,6 +13,7 @@ Canonical detail: [`docs/upgrades/MAX_COMPRESS_FULL_STACK_HANDOFF.md`](docs/upgr
 | API | `POST /v1/pipeline` |
 | Web | Pipeline panel |
 | CLI | `node bin/oceanicos.mjs pipeline` |
+| Repo compress | `node scripts/compress-repo.mjs` |
 | CI | `omega_pipeline.e2e` + CLI smoke |
 
 ```text
