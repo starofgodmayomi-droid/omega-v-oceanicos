@@ -126,6 +126,7 @@ export function App() {
   const [viewportMode, setViewportMode] = useState<'stream' | 'cockpit'>('stream');
   const [showCovenantPanel, setShowCovenantPanel] = useState<boolean>(false);
   const [showCompressionPulse, setShowCompressionPulse] = useState<boolean>(false);
+  const [compressionData, setCompressionData] = useState<any>(null);
 
   const eventSourceRef = useRef<EventSource | null>(null);
 
@@ -189,11 +190,21 @@ export function App() {
     }
   };
 
+  const fetchCompression = async () => {
+    try {
+      const data = await apiRequest<any>('/v1/compression');
+      if (data?.success) setCompressionData(data);
+    } catch {
+      /* ambient fallback */
+    }
+  };
+
   useEffect(() => {
     fetchMinerStatus();
     fetchKernelCapabilities();
     fetchMood();
     fetchChatHistory();
+    fetchCompression();
 
     let es: EventSource | null = null;
     let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
@@ -1164,9 +1175,24 @@ export function App() {
             }} />
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <span style={{ fontSize: '13px', fontWeight: 700, color: '#38bdf8', letterSpacing: '1px' }}>
-                🌊 MAX COMPRESSION — IRREDUCIBLE SEED
-              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '13px', fontWeight: 700, color: '#38bdf8', letterSpacing: '1px' }}>
+                  🌊 MAX COMPRESSION — IRREDUCIBLE SEED
+                </span>
+                {compressionData?.seedHash && (
+                  <span style={{
+                    fontSize: '9px',
+                    padding: '2px 6px',
+                    borderRadius: '4px',
+                    background: 'rgba(0, 245, 160, 0.15)',
+                    color: '#00f5a0',
+                    border: '1px solid rgba(0, 245, 160, 0.3)',
+                    fontWeight: 600,
+                  }}>
+                    ✓ LIVE API VERIFIED ({compressionData.seedHash.slice(0, 8)}…)
+                  </span>
+                )}
+              </div>
               <button
                 onClick={() => setShowCompressionPulse(false)}
                 style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '16px', padding: '4px' }}
