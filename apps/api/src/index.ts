@@ -13,7 +13,7 @@ import { ObserverEngine } from '@oceanicos/observer';
 import { AttestationService } from '@oceanicos/attestation';
 import { InferenceClient } from '@oceanicos/inference';
 import { VectorMemory } from '@oceanicos/vector';
-import { PluralisticRealityMatrix, PluralismConvergenceMatrix, PluralisticDualityTensor } from '@oceanicos/pluralism';
+import { PluralisticRealityMatrix, PluralismConvergenceMatrix, PluralisticDualityTensor, evaluateOmegaLambda, executeMatrixTransition, OCEANIC_BODY_MEMBERS } from '@oceanicos/pluralism';
 import { OceanicosKernel } from '@omega-v/kernel';
 import { evaluateAuthorization } from '@oceanicos/authorization';
 import { LocalJobError, LocalJobLedger, LOCAL_JOB_WINDOW } from './jobs.js';
@@ -256,7 +256,7 @@ export function createApp(
   registerContinuumRoute(fastify);
 
   fastify.get('/health', async (_request, reply) => {
-    const memoryReady = true;
+    const memoryReady = kernel.verifyMemoryIntegrity();
     const ready = memoryReady && persistenceReady(persistenceEnabled, snapshot.source) && eventLogReady(persistenceEnabled, eventLog.source) && recovery.mode !== 'invalid' && deletion.mode !== 'invalid' && custody.mode !== 'invalid' && coordination.mode !== 'invalid';
     const coverage = persistenceCoverage({
       enabled: persistenceEnabled,
@@ -511,7 +511,31 @@ export function createApp(
   fastify.get('/memory', async () => {
     const mem = kernel.getMemory();
     const entries = [...mem.all()];
-    return { success: true, entries };
+    return {
+      success: true,
+      data: entries,
+      entries,
+      meta: { size: entries.length, appendOnly: true },
+    };
+  });
+
+  fastify.get('/memory/integrity', async (_request, reply) => {
+    const intact = kernel.verifyMemoryIntegrity();
+    const entries = kernel.getMemorySize();
+    if (!intact) {
+      return reply.code(409).send({
+        success: false,
+        data: { intact: false, entries },
+        intact: false,
+        entries,
+      });
+    }
+    return {
+      success: true,
+      data: { intact: true, entries },
+      intact: true,
+      entries,
+    };
   });
 
   // ─── KAI Memory & Provenance Routes (Constitution §13) ──────────
@@ -577,12 +601,87 @@ export function createApp(
     return { success: true, count: rules.length, rules };
   });
 
+  const RECENT_EVENT_WINDOW = 40;
+  const runtimeEvents: any[] = [];
+
+  const recordEvent = (event: Record<string, any>) => {
+    const recorded = {
+      ...event,
+      id: `evt-${Date.now()}-${runtimeEvents.length + 1}`,
+      timestamp: new Date().toISOString(),
+    };
+    runtimeEvents.unshift(recorded);
+    if (runtimeEvents.length > RECENT_EVENT_WINDOW) {
+      runtimeEvents.splice(RECENT_EVENT_WINDOW);
+    }
+    return recorded;
+  };
+
+  fastify.get('/events', async () => ({
+    data: runtimeEvents,
+    meta: { window: RECENT_EVENT_WINDOW, note: 'recent window; see /log for full history' },
+    timestamp: new Date().toISOString(),
+  }));
+
   fastify.post('/complete-loop', async (request: any, reply) => {
-    if (!attestationSigningKey) return jsonError(reply, 503, 'ATTESTATION_SIGNING_KEY_REQUIRED');
+    const signingKey = attestationSigningKey || process.env.OMEGA_SIGNING_KEY;
+    if (!signingKey) return jsonError(reply, 503, 'ATTESTATION_SIGNING_KEY_REQUIRED');
     const result = kernel.cycle(request.body);
-    const service = new AttestationService({ signingKey: attestationSigningKey, algorithm: 'HMAC-SHA256' });
+    const service = new AttestationService({ signingKey, algorithm: 'HMAC-SHA256' });
     const attestation = service.attest(result.verification);
-    return { success: true, ...result, attestation };
+
+    const memoryId = result.memory?.id || (result.verification?.id ? `mem-${result.verification.id}` : `mem-${Date.now()}`);
+
+    recordEvent({
+      type: 'observation.received',
+      stage: 'observe',
+      message: 'Observation received from the workspace',
+      status: 'active',
+      correlationId: request.body?.correlationId,
+      requestId: request.id,
+    });
+    recordEvent({
+      type: 'verification.completed',
+      stage: 'verify',
+      message: 'Verification completed',
+      status: result.verification?.summary?.passed ? 'passed' : 'failed',
+      correlationId: request.body?.correlationId,
+      requestId: request.id,
+      details: { claim: request.body?.claim },
+    });
+    recordEvent({
+      type: 'memory.recorded',
+      stage: 'remember',
+      message: 'Verification result stored in MINI kernel',
+      status: 'passed',
+      correlationId: request.body?.correlationId,
+      requestId: request.id,
+      details: { memoryId },
+    });
+    recordEvent({
+      type: 'attestation.created',
+      stage: 'attest',
+      message: 'Verification result signed and recorded',
+      status: attestation.verified ? 'passed' : 'failed',
+      correlationId: request.body?.correlationId,
+      requestId: request.id,
+      details: {
+        attestationId: attestation.id,
+        memoryId,
+        signing: {
+          attestationId: attestation.id,
+          verificationId: attestation.verificationId,
+          algorithm: attestation.signingAlgorithm || 'HMAC-SHA256',
+          keyVersion: attestation.keyVersion,
+          keyFingerprint: attestation.signingKey,
+          verified: attestation.verified,
+          confidence: attestation.confidence,
+          ruleVersions: attestation.ruleVersions,
+        },
+      },
+    });
+
+    return { success: true, data: { ...result, attestation }, ...result, attestation };
   });
 
   fastify.post('/v1/attest', async (_request, reply) => {
@@ -695,6 +794,50 @@ export function createApp(
       return jsonError(reply, 400, 'DISCERNMENT_AND_EXTERNAL_FACT_REQUIRED');
     }
     const receipt = dualityTensor.evaluateDualityField(discernment, externalFact);
+    return { success: true, receipt };
+  });
+
+  fastify.get('/v1/pluralism/matrix', async () => {
+    const transition = executeMatrixTransition(0, [], undefined, true, true);
+    return {
+      success: true,
+      contract: 'Ω∞v-MASTER-MATRIX-V1111',
+      equation: 'R_{k+1} = Evol(M) · Ω_{OS} · R_k + V_k',
+      kroneckerFormula: 'Ω_{OS} = M_I ⊗ C_E ⊗ R_E ⊗ V_X',
+      dimension: 320,
+      bodyOrgans: OCEANIC_BODY_MEMBERS,
+      sampleTransition: transition,
+      evaluatedAt: new Date().toISOString(),
+    };
+  });
+
+  fastify.post('/v1/pluralism/matrix/lambda', async (request: any) => {
+    const body = request.body || {};
+    const res = evaluateOmegaLambda({
+      R: body.R || 'R_CURRENT',
+      I: body.I || 'NO_INTENT',
+      E: body.E || null,
+      A: Boolean(body.A),
+      P: Boolean(body.P),
+      M: body.M || {},
+    });
+    return { success: true, lambdaResult: res };
+  });
+
+  fastify.post('/v1/pluralism/matrix/transition', async (request: any) => {
+    const body = request.body || {};
+    const step = typeof body.step === 'number' ? body.step : 0;
+    const stateVector = Array.isArray(body.stateVector) ? body.stateVector : [];
+    const isAuthorized = body.isAuthorized !== undefined ? Boolean(body.isAuthorized) : true;
+    const isEvidenceVerified = body.isEvidenceVerified !== undefined ? Boolean(body.isEvidenceVerified) : true;
+
+    const receipt = executeMatrixTransition(
+      step,
+      stateVector,
+      body.vectors,
+      isAuthorized,
+      isEvidenceVerified
+    );
     return { success: true, receipt };
   });
 

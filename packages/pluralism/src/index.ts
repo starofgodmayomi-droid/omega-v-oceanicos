@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import type { IEvidence, IObservation, IUnifiedConsensus } from '@oceanicos/types';
 
 export * from './tensor.js';
+export * from './matrix.js';
 
 export class PluralismConvergenceMatrix {
   public static processConvergence(telemetry: IObservation): IEvidence {
