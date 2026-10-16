@@ -25,9 +25,8 @@ test('compression receipt refuses stated deployment and cloud claims', () => {
   assert.ok(receipt.observed.packageDirectories > receipt.observed.workspacePackages);
   assert.deepEqual(
     receipt.uncheckedSkills.map((skill) => skill.name),
-    ['full-stack-computer-mode', 'omega-global-good-fullstack'],
+    [],
   );
-  assert.ok(receipt.uncheckedSkills.every((skill) => skill.missingTokens.length > 0));
   assert.equal(
     receipt.uncheckedSkills.some((skill) => skill.name === 'omega-reality-first'),
     false,
@@ -59,7 +58,7 @@ test('omega-reality-first is inside the skill contract gate', () => {
     cwd: root,
     encoding: 'utf8',
   });
-  assert.match(output, /validated 14 Oceanicos skill contracts/);
+  assert.match(output, /validated 16 Oceanicos skill contracts/);
   const source = readFileSync(join(root, 'scripts', 'validate-skill-contracts.mjs'), 'utf8');
   assert.match(source, /'omega-reality-first'/);
 });
