@@ -14,6 +14,16 @@ describe('GET /v1/ecosystem/body', () => {
         success: true,
         bodyVersion: 'omega.fullstack.body.v1',
         status: 'VERIFIED',
+        lucidContinuum: {
+          version: 'lucid-continuum.xyzw.v1',
+          mode: 'OBSERVED_RUNTIME_SNAPSHOT',
+          coordinate: {
+            x: 'OBSERVE_VERIFY_REMEMBER',
+            y: 'VERIFIED',
+            z: ['L2_PROTOCOLS_SOFTWARE', 'REPOSITORY_RUNTIME'],
+            w: 'LOCAL_PROVENANCE_CONTINUITY',
+          },
+        },
         expansion: {
           appendOnly: true,
           readOnly: true,
@@ -29,6 +39,11 @@ describe('GET /v1/ecosystem/body', () => {
       expect(body.layers.kernel).toMatchObject({ status: 'READY', capability: { capabilities: { remoteMutation: false, arbitraryShellExecution: false } } });
       expect(body.layers.governance).toMatchObject({ status: 'HUMAN_GATE_REQUIRED', failClosed: true });
       expect(body.layers.interface).toMatchObject({ status: 'READY' });
+      expect(body.lucidContinuum.evidence).toMatchObject({
+        status: 'VERIFIED',
+        sources: ['observer-runtime', 'verification-engine', 'memory-ledger', 'mesh-convergence'],
+      });
+      expect(body.lucidContinuum.evidence.limitation).toContain('not neural measurement');
     } finally {
       await app.close();
     }

@@ -345,6 +345,21 @@ export function createApp(
         governance: { status: capability.humanAuthorizationRequired ? 'HUMAN_GATE_REQUIRED' : 'BOUNDED', failClosed: true },
         interface: { status: 'READY', contract: 'Navigator / Oceanic Mirror / living telemetry surface' },
       },
+      lucidContinuum: {
+        version: 'lucid-continuum.xyzw.v1',
+        mode: 'OBSERVED_RUNTIME_SNAPSHOT',
+        coordinate: {
+          x: 'OBSERVE_VERIFY_REMEMBER',
+          y: bodyStatus,
+          z: ['L2_PROTOCOLS_SOFTWARE', 'REPOSITORY_RUNTIME'],
+          w: 'LOCAL_PROVENANCE_CONTINUITY',
+        },
+        evidence: {
+          status: bodyStatus,
+          sources: ['observer-runtime', 'verification-engine', 'memory-ledger', 'mesh-convergence'],
+          limitation: 'Scoped local runtime evidence; not neural measurement, subjective-awareness proof, deployment health, or cosmological evidence.',
+        },
+      },
       expansion: {
         appendOnly: true,
         readOnly: true,
