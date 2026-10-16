@@ -97,17 +97,19 @@ const stateBody = {
 /**
  * jest-environment-jsdom provides no `fetch`, `Response`, or `Headers`, and
  * undici is not a dependency here. Rather than pull one in to construct real
- * Response objects, this is a double implementing exactly the surface the
- * component consumes: `ok`, `status`, `json()`, and `headers.get()`.
+ * Response objects, this double supplies the small surface the components
+ * consume: `ok`, `status`, `json()`, `text()`, and `headers.get()`.
  *
- * Stated plainly because it is a real limitation: if App.tsx starts reading
- * `text()`, streaming a body, or checking `redirected`, these tests will
- * throw rather than quietly pass on a shape the browser would not produce.
+ * The helper exposes the same serialized fixture through `json()` and
+ * `text()`. Streaming or redirect-specific behavior remains deliberately
+ * unsupported and will throw rather than pass on a shape the browser would
+ * not produce.
  */
 export type FakeResponse = {
   ok: boolean;
   status: number;
   json: () => Promise<unknown>;
+  text: () => Promise<string>;
   headers: { get: (name: string) => string | null };
 };
 
@@ -127,6 +129,7 @@ const json = (
     ok: status >= 200 && status < 300,
     status,
     json: async () => JSON.parse(JSON.stringify(body)),
+    text: async () => JSON.stringify(body) ?? '',
     headers: { get: (name: string) => headers.get(name.toLowerCase()) ?? null },
   };
 };
@@ -214,6 +217,16 @@ export function installFetch(overrides: RouteOverrides = {}): jest.Mock {
         },
       }),
     '/api/state': () => json(stateBody),
+    '/api/v1/omega/connectors/observations': () =>
+      json({
+        success: true,
+        entries: [],
+        total: 0,
+        truncated: false,
+        integrity: 'verified-local-hash-chain',
+        limitation:
+          'local connector journal is not deployment health, not live GitHub execution, not revenue, and not durable across a destroyed volume',
+      }),
     '/api/os': () =>
       json({
         data: {

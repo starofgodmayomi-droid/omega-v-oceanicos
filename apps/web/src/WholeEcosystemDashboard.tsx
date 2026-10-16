@@ -137,6 +137,7 @@ export function WholeEcosystemDashboard(props: Props) {
       <div className="whole-ecosystem-grid">
         <nav className="whole-ecosystem-organs" aria-label="Ecosystem organs">
           <span className="whole-ecosystem-label">ECOSYSTEM</span>
+          <small className="whole-organ-guidance">Select an organ to draft a mapping prompt; submitting is a separate action.</small>
           <button className="whole-organ active" onClick={() => props.onFocusCommand('Show what matters now.')}>⌂ <span>NOW</span></button>
           {ORGANS.map(([glyph, label]) => <button className="whole-organ" key={label} onClick={() => props.onFocusCommand(`Map ${label}.`)}><b>{glyph}</b><span>{label}</span></button>)}
         </nav>

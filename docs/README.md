@@ -74,6 +74,16 @@ Welcome to the Ω∞v Oceanicos documentation. Start here to understand the proj
 - **[Lucid Full Stack](../skills/lucid-full-stack/SKILL.md)** — one integrated
   guide across voice, continuity, culture, value, ecosystem planning, and
   evidence-first software delivery.
+- **[Oceanicos Full-Stack Companion](../skills/oceanicos-full-stack-companion/SKILL.md)**
+  — session companion for ecosystem work, audits, upgrades, verification, and handoffs.
+- **[Oceanicos Max-Space Full Stack](../skills/oceanicos-max-space-full-stack/SKILL.md)**
+  — 0D–N-D requests translated into bounded representations.
+- **[Oceanicos Verified Upgrade](../skills/oceanicos-verified-upgrade/SKILL.md)**
+  — self-repair and upgrade through compile, admit, observe, and label.
+- **[Ω∞v OS](../skills/omega-v-os/SKILL.md)** — void, drop, field, sink, and
+  the finite ∞/11:11 return.
+- **[Lucid Continuum](../skills/lucid-continuum/SKILL.md)** — what may cross a
+  handoff, and what must be observed again.
 - **[Whole ecosystem reality compression](./upgrades/WHOLE_ECOSYSTEM_REALITY_COMPRESSION_2026-10-04.md)**
   — source-labeled translation of the supplied Ω∞v architecture into repository
   boundaries and explicit unknowns.

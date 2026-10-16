@@ -169,7 +169,7 @@ describe('Ω connector observation path', () => {
   it('refuses unverified client status claims and remembers observations on a local hash chain', async () => {
     const directory = mkdtempSync(join(tmpdir(), 'omega-connector-observation-'));
     const { createApp } = await import('../../apps/api/dist/index.js');
-    const app = createApp(join(directory, 'ledger.db'), false, { allowUnsignedCycle: true });
+    const app = createApp(join(directory, 'ledger.db'), false, { allowUnsignedCycle: true, connectorAdmissionEvidence: (_request, connector) => ({ authorityVerified: connector.id !== 'deny-authority', policySatisfied: true, approvalVerified: false }) });
     await app.ready();
 
     try {
@@ -223,8 +223,8 @@ describe('Ω connector observation path', () => {
         method: 'POST',
         url: '/v1/omega/connectors/observe',
         payload: {
-          connector,
-          authorityVerified: false,
+          connector: { ...connector, id: 'deny-authority' },
+          authorityVerified: true,
           policySatisfied: true,
           approvalVerified: true,
           execution: {
@@ -285,6 +285,46 @@ describe('Ω connector observation path', () => {
     }
   });
 
+  it('ignores client-supplied admission flags when no trusted resolver is configured', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'omega-connector-default-deny-'));
+    const { createApp } = await import('../../apps/api/dist/index.js');
+    let fetchCalls = 0;
+    const app = createApp(join(directory, 'ledger.db'), false, {
+      allowUnsignedCycle: true,
+      githubFetch: async () => {
+        fetchCalls += 1;
+        return new Response(JSON.stringify({
+          full_name: 'starofgodmayomi-droid/omega-v-oceanicos',
+          private: false,
+          html_url: 'https://github.com/starofgodmayomi-droid/omega-v-oceanicos',
+          description: 'test fixture',
+        }), { status: 200, headers: { 'content-type': 'application/json' } });
+      },
+    });
+    await app.ready();
+
+    try {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/v1/omega/connectors/observe',
+        payload: {
+          connector,
+          authorityVerified: true,
+          policySatisfied: true,
+          approvalVerified: true,
+          liveAdapter: 'github-public-repository',
+        },
+      });
+      assert.equal(response.statusCode, 200);
+      assert.equal(response.json().admission.admitted, false);
+      assert.equal(response.json().executed, false);
+      assert.equal(fetchCalls, 0);
+    } finally {
+      await app.close();
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
   it('fails closed when the connector journal hash chain is tampered', async () => {
     const directory = mkdtempSync(join(tmpdir(), 'omega-connector-journal-'));
     const journalPath = join(directory, 'connectors.jsonl');
@@ -296,6 +336,7 @@ describe('Ω connector observation path', () => {
     const app = createApp(join(directory, 'ledger.db'), false, {
       allowUnsignedCycle: true,
       connectorObservationPath: journalPath,
+      connectorAdmissionEvidence: (_request, connector) => ({ authorityVerified: connector.id !== 'deny-authority', policySatisfied: true, approvalVerified: false }),
     });
     await app.ready();
     try {
@@ -345,6 +386,7 @@ describe('Ω connector observation path', () => {
     const app = createApp(join(directory, 'ledger.db'), false, {
       allowUnsignedCycle: true,
       githubFetch: fetchImpl,
+      connectorAdmissionEvidence: (_request, connector) => ({ authorityVerified: connector.id !== 'deny-authority', policySatisfied: true, approvalVerified: false }),
     });
     await app.ready();
 
