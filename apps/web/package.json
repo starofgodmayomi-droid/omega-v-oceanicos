@@ -5,6 +5,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config ./jest.config.js --runInBand",
+    "test:current-dom": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config ./jest.config.js --runInBand --runTestsByPath src/__tests__/dom/CurrentAppShell.test.tsx src/__tests__/dom/ConnectorPanel.test.tsx",
+    "test:connector": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config ./jest.config.js --runInBand --runTestsByPath src/__tests__/dom/ConnectorPanel.test.tsx",
     "start": "vite preview --port 3000 --host"
   },
   "dependencies": {
@@ -12,9 +15,16 @@
     "react-dom": "^19.3.0"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.8",
+    "@types/jest": "^30.0.0",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.1",
+    "jest": "^30.5.2",
+    "jest-environment-jsdom": "^30.5.2",
+    "ts-jest": "^29.4.14",
     "vite": "^8.3.2"
   }
 }

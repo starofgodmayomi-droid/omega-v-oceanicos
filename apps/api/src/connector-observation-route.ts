@@ -64,10 +64,6 @@ function parseConnector(value: unknown): OmegaConnectorDeclaration {
   };
 }
 
-function parseBooleanFlag(value: unknown): boolean {
-  return value === true;
-}
-
 function storeFailure(reply: any, jsonError: JsonError, error: unknown): unknown {
   const message = String((error as Error)?.message ?? error);
   if (/integrity|capacity exhausted/i.test(message)) {
@@ -76,8 +72,21 @@ function storeFailure(reply: any, jsonError: JsonError, error: unknown): unknown
   throw error;
 }
 
+export interface ConnectorAdmissionEvidence {
+  readonly authorityVerified: boolean;
+  readonly policySatisfied: boolean;
+  readonly approvalVerified: boolean;
+}
+
+export type ConnectorAdmissionEvidenceResolver = (
+  request: unknown,
+  connector: OmegaConnectorDeclaration,
+) => ConnectorAdmissionEvidence | Promise<ConnectorAdmissionEvidence>;
+
 export interface ConnectorObservationRouteOptions {
   readonly githubFetch?: typeof fetch;
+  /** Trusted server-side evidence source. Missing resolver means deny by default. */
+  readonly resolveAdmissionEvidence?: ConnectorAdmissionEvidenceResolver;
 }
 
 export function registerConnectorObservationRoute(
@@ -156,12 +165,10 @@ export function registerConnectorObservationRoute(
       };
     }
 
-    const admission = admitOmegaConnector({
-      connector,
-      authorityVerified: parseBooleanFlag(body.authorityVerified),
-      policySatisfied: parseBooleanFlag(body.policySatisfied),
-      approvalVerified: parseBooleanFlag(body.approvalVerified),
-    });
+    const admissionEvidence = options.resolveAdmissionEvidence
+      ? await options.resolveAdmissionEvidence(request, connector)
+      : { authorityVerified: false, policySatisfied: false, approvalVerified: false };
+    const admission = admitOmegaConnector({ connector, ...admissionEvidence });
 
     if (liveAdapter === GITHUB_PUBLIC_REPOSITORY_ADAPTER && admission.admitted) {
       try {
