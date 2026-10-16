@@ -62,3 +62,27 @@ test('the five OS skills are the same bytes published and installed', () => {
     assert.equal(readFileSync(published).equals(readFileSync(installed)), true, skill);
   }
 });
+
+test('expanded companion reference files stay byte-identical when published and installed', () => {
+  const skill = 'oceanicos-full-stack-companion';
+  const publishedDir = join(root, 'skills', skill, 'references');
+  const installedSkillDir = join(installedDir, skill, 'references');
+  const publishedExists = existsSync(publishedDir);
+  const installedExists = existsSync(installedSkillDir);
+
+  // The current mainline companion has no reference pack yet. When either side
+  // introduces one, require both copies to exist and remain structurally identical.
+  assert.equal(publishedExists, installedExists, 'published and installed reference directories must both exist');
+  if (!publishedExists) return;
+
+  const publishedFiles = readdirSync(publishedDir).sort();
+  const installedFiles = readdirSync(installedSkillDir).sort();
+  assert.ok(publishedFiles.length > 0, 'expanded companion reference pack must not be empty');
+  assert.deepEqual(installedFiles, publishedFiles, 'published and installed reference file sets must match');
+
+  for (const file of publishedFiles) {
+    const published = readFileSync(join(publishedDir, file));
+    const installed = readFileSync(join(installedSkillDir, file));
+    assert.equal(installed.equals(published), true, `reference drift: ${skill}/references/${file}`);
+  }
+});
