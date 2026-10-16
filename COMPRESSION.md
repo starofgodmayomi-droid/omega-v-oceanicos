@@ -57,6 +57,7 @@ COMPRESSION.md          ← YOU ARE HERE: Irreducible seed
 ├── README.md           ← Technical surface & project structure
 ├── AGENTS.md           ← Engineering copilot rules & dev environment
 └── docs/               ← Architecture, specs, decisions, audits
+    ├── spec/OCEANIC_OS_SUPER_COMPRESSION_SPECIFICATION.md ← Blueprint manual
     ├── ARCHITECTURE.md
     ├── ECOSYSTEM-COMPRESSION.md
     ├── GOVERNANCE.md
