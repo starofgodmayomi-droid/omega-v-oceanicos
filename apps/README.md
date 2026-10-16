@@ -1,6 +1,6 @@
 # Applications
 
-The repository's two runnable applications are the Fastify API and the React/Vite web dashboard. Their per-app READMEs are the canonical references for route and feature details; this page summarizes how they fit together and how to start the local development stack.
+The repository's two runnable applications are the Fastify API and the React/Vite web dashboard. Session method: [Oceanicos Full-Stack Companion](../skills/oceanicos-full-stack-companion/SKILL.md). This index is not runtime health. Their per-app READMEs are the canonical references for route and feature details; this page summarizes how they fit together and how to start the local development stack.
 
 ## Applications
 

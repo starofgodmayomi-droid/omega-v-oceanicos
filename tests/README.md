@@ -25,10 +25,12 @@ writer and the reader are different code paths.
 ## Running them
 
 ```bash
-pnpm test              # everything
-pnpm test:coverage     # with the 70% threshold enforced
-pnpm test:watch        # watch mode
+pnpm test              # the enumerated integration list in the root manifest
+pnpm test:coverage     # node:test lcov for that script's file list
 ```
+
+
+`pnpm test` is not "everything in the tree." `jest.config.js` still records 70% thresholds for Jest; `pnpm test:coverage` does not invoke that config. There is no `test:watch` script.
 
 ## What is verified beyond the suite
 

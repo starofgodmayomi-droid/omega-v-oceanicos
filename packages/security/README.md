@@ -1,7 +1,16 @@
 # @omega-v/security
 
-Verifiable Identity, Authorization & Security Policy Engine for Ω∞v Oceanicos (Sections XVIII & XIX)
+**Membership:** SOURCE-ONLY — not listed in `pnpm-workspace.yaml`.
 
-## Overview
+**Intent label (not a completion claim):** Verifiable Identity, Authorization & Security Policy Engine for Ω∞v Oceanicos (Sections XVIII & XIX)
 
-Ecosystem package for the Ω∞v Oceanicos platform.
+| Question | This README |
+| --- | --- |
+| Is the directory present? | Yes. `security/` |
+| Is that a running engine, network, custody system, or proof system? | No. |
+| External consensus, market, enclave, or chain | `NOT_EXECUTED` |
+| Whether local `src/` matches the intent label | `UNKNOWN` until a test names the exact property |
+
+Read `src/` before treating the intent label as behavior. A class name is not verification. Workspace membership is not API use and not deployment.
+
+See [packages/README.md](../README.md) and [docs/REPO_INVENTORY.md](../../docs/REPO_INVENTORY.md).

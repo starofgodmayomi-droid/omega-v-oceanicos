@@ -6,7 +6,7 @@ One deployment artifact: a single container image serving the API and, when
 built, the web client from the same origin.
 
 - **[`../apps/api/Dockerfile`](../apps/api/Dockerfile)** — multi-stage build on
-  `node:20-alpine`, runs as a non-root user, no signing key baked in.
+  `node:22-alpine`, runs as a non-root user, no signing key baked in.
 - **[`../.github/workflows/verify.yml`](../.github/workflows/verify.yml)** — the
   `docker` job builds the image and smoke tests a running container on every
   pull request; the `publish` job pushes it to GHCR with a signed provenance
