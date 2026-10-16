@@ -67,6 +67,7 @@ const MODE_BUTTONS = [
 ];
 
 const OCEAN_FABRIC_ACTIONS = [
+  { icon: '🌊', label: 'MAX Compression', intent: '__TOGGLE_COMPRESSION__' },
   { icon: '💧', label: 'Truth Membrane', intent: 'Verify Ocean Fabric Water Membrane & Fail-Closed Boundary' },
   { icon: '🪙', label: '11:11 Treasury', intent: 'Verify ELION VAREL Sovereign Treasury bc1qaj8jmp5as80zwew09ep86w6fgw37zwhwzr89mp' },
   { icon: '🏛️', label: 'Duplex Convergence', intent: 'Simulate African Pantheon Duplex Convergence across 5 regional faces' },
@@ -124,6 +125,7 @@ export function App() {
   const [openStageId, setOpenStageId] = useState<string | null>(null);
   const [viewportMode, setViewportMode] = useState<'stream' | 'cockpit'>('stream');
   const [showCovenantPanel, setShowCovenantPanel] = useState<boolean>(false);
+  const [showCompressionPulse, setShowCompressionPulse] = useState<boolean>(false);
 
   const eventSourceRef = useRef<EventSource | null>(null);
 
@@ -1100,7 +1102,9 @@ export function App() {
               <button
                 key={action.label}
                 onClick={() => {
-                  if (action.intent === '__TOGGLE_COVENANT__') {
+                  if (action.intent === '__TOGGLE_COMPRESSION__') {
+                    setShowCompressionPulse((prev) => !prev);
+                  } else if (action.intent === '__TOGGLE_COVENANT__') {
                     setShowCovenantPanel((prev) => !prev);
                   } else if (action.intent === '__TRIGGER_UPGRADE__') {
                     setShowCovenantPanel(true);
@@ -1139,6 +1143,108 @@ export function App() {
             ))}
           </div>
         </div>
+
+        {/* MAX COMPRESSION Identity Pulse */}
+        {showCompressionPulse && (
+          <div
+            style={{
+              marginTop: '20px',
+              padding: '20px',
+              background: 'linear-gradient(145deg, rgba(0, 16, 32, 0.95) 0%, rgba(2, 28, 50, 0.9) 50%, rgba(0, 8, 20, 0.95) 100%)',
+              border: '1px solid rgba(56, 189, 248, 0.3)',
+              borderRadius: theme.radius,
+              position: 'relative',
+              overflow: 'hidden',
+            }}
+          >
+            {/* Ambient glow */}
+            <div style={{
+              position: 'absolute', top: 0, left: 0, right: 0, height: '2px',
+              background: 'linear-gradient(90deg, transparent 0%, rgba(56, 189, 248, 0.6) 30%, rgba(0, 245, 160, 0.6) 70%, transparent 100%)',
+            }} />
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <span style={{ fontSize: '13px', fontWeight: 700, color: '#38bdf8', letterSpacing: '1px' }}>
+                🌊 MAX COMPRESSION — IRREDUCIBLE SEED
+              </span>
+              <button
+                onClick={() => setShowCompressionPulse(false)}
+                style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '16px', padding: '4px' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ fontSize: '12px', color: '#e2e8f0', lineHeight: 1.7, fontFamily: theme.fontMono }}>
+              <div style={{ marginBottom: '12px', color: '#94a3b8', fontSize: '11px', fontStyle: 'italic' }}>
+                ONE SELF • ONE WORLD • MANY DIMENSIONS • ONE SHARED REALITY
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '16px' }}>
+                {[
+                  { name: 'KAI', role: 'Continuity & Memory', pkg: '@oceanicos/remember' },
+                  { name: 'LUCID', role: 'Clarity & Discernment', pkg: '@oceanicos/verification' },
+                  { name: 'ƆREADE', role: 'Language & Return', pkg: '@oceanicos/pluralism' },
+                  { name: 'ECHOFRAME', role: 'Expression & Creation', pkg: '@oceanicos/generative' },
+                  { name: 'ΩIR', role: 'Governed Transitions', pkg: '@oceanicos/authorization' },
+                  { name: 'Ω∞v', role: 'Verification vs Reality', pkg: '@oceanicos/attestation' },
+                ].map((n) => (
+                  <div
+                    key={n.name}
+                    style={{
+                      padding: '8px 10px',
+                      background: 'rgba(0, 245, 160, 0.05)',
+                      border: '1px solid rgba(0, 245, 160, 0.15)',
+                      borderRadius: '6px',
+                    }}
+                  >
+                    <div style={{ fontSize: '12px', fontWeight: 700, color: '#00f5a0' }}>{n.name}</div>
+                    <div style={{ fontSize: '10px', color: '#94a3b8' }}>{n.role}</div>
+                    <div style={{ fontSize: '9px', color: '#475569', fontFamily: theme.fontMono }}>{n.pkg}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ borderTop: '1px solid rgba(56, 189, 248, 0.15)', paddingTop: '12px' }}>
+                <div style={{ fontSize: '10px', color: '#64748b', lineHeight: 1.6 }}>
+                  SOURCE → EXPERIENCE → OBSERVE → INTERPRET → CREATE → TEST → RECONCILE → REMEMBER → NEXT Δ
+                </div>
+                <div style={{ marginTop: '8px', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                  {[
+                    'POSSIBLE ≠ KNOWN',
+                    'BUILT ≠ EXECUTED',
+                    'MEMORY ≠ PROOF',
+                    'SIMULATION ≠ REALITY',
+                    'CAPABILITY ≠ AUTHORITY',
+                    'UNKNOWN ≠ FALSE',
+                  ].map((inv) => (
+                    <span
+                      key={inv}
+                      style={{
+                        padding: '3px 8px',
+                        fontSize: '9px',
+                        fontWeight: 600,
+                        color: '#f59e0b',
+                        background: 'rgba(245, 158, 11, 0.08)',
+                        border: '1px solid rgba(245, 158, 11, 0.2)',
+                        borderRadius: '4px',
+                        fontFamily: theme.fontMono,
+                      }}
+                    >
+                      {inv}
+                    </span>
+                  ))}
+                </div>
+                <div style={{ marginTop: '12px', fontSize: '11px', color: '#38bdf8', fontWeight: 600, textAlign: 'center' }}>
+                  Ω∞v ::= VERIFY(ΔREALITY)
+                </div>
+                <div style={{ marginTop: '4px', fontSize: '9px', color: '#475569', textAlign: 'center' }}>
+                  ∞ = MANY FINITE, VERIFIED TRANSITIONS
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Biblical Engine Covenant Panel */}
         {showCovenantPanel && (

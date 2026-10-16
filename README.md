@@ -23,6 +23,7 @@ A verification-first full-stack ecosystem for observing, verifying, attesting, a
 
 ## Quick Links
 
+- 💧 **[MAX COMPRESSION](COMPRESSION.md)** — Irreducible seed of the entire ecosystem
 - 📋 **[Manifest](MANIFEST.md)** — Project mission, principles, and architecture
 - 📜 **[Charter](CHARTER.md)** — Living agnostic principles and decision-making
 - 🤝 **[Contributing](CONTRIBUTING.md)** — How to contribute verification-first

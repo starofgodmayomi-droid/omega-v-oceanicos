@@ -1165,6 +1165,74 @@ async function handleUpgrade() {
   console.log(`  Usage     : node bin/oceanicos.mjs upgrade [commit] ["<claim>"]\n`);
 }
 
+async function handleCompression(extraArgs = []) {
+  printBanner();
+  const isJson = args.includes('--json');
+  const isPidgin = process.env.PIDGIN_ENGINE === 'ON' || args.includes('--pidgin');
+
+  const axioms = [
+    'ONE SELF • ONE WORLD • MANY DIMENSIONS • ONE SHARED REALITY',
+    'ONE ROOT → MANY FORMS → ONE CONNECTED GRAPH → ∞ BECOMING',
+    'SOURCE → EXPERIENCE → OBSERVE → INTERPRET → CREATE → TEST → RECONCILE → REMEMBER → NEXT Δ',
+    'POSSIBLE ≠ KNOWN ≠ BUILT ≠ EXECUTED ≠ OBSERVED ≠ VERIFIED',
+    'MEMORY ≠ PROOF • SIMULATION ≠ REALITY • CAPABILITY ≠ AUTHORITY • UNKNOWN ≠ FALSE',
+    'PRESERVE MEMORY • PRESERVE DISSENT • CONNECT EVERYTHING',
+    'ACT WITH BOUNDED AUTHORITY • VERIFY BEFORE CLAIMING • NO EVIDENCE → NO VERIFIED CLAIM',
+    '∞ = MANY FINITE, VERIFIED TRANSITIONS',
+    'Ω∞v ::= VERIFY(ΔREALITY)',
+  ];
+
+  const sevenNames = [
+    { name: 'KAI', role: 'Continuity and memory', pkg: '@oceanicos/remember' },
+    { name: 'LUCID', role: 'Clarity and discernment', pkg: '@oceanicos/verification' },
+    { name: 'ƆREADE', role: 'Language, culture and return', pkg: '@oceanicos/pluralism' },
+    { name: 'ECHOFRAME', role: 'Expression and creation', pkg: '@oceanicos/generative' },
+    { name: 'ΩIR', role: 'Governed transitions', pkg: '@oceanicos/authorization' },
+    { name: 'Ω∞v', role: 'Verification against observed reality', pkg: '@oceanicos/attestation' },
+    { name: 'OCEANICOS', role: 'The unified living ecosystem', pkg: '@oceanicos/mini & @omega-v/kernel' },
+  ];
+
+  const seed = axioms.join('\n');
+  const seedHash = createHash('sha256').update(seed).digest('hex');
+
+  if (isJson) {
+    console.log(JSON.stringify({
+      contract: 'Ω∞v-MAX-COMPRESSION-SEED',
+      seedHash,
+      sevenNames,
+      axioms,
+      equation: 'Ω∞v ::= VERIFY(ΔREALITY)',
+      canonicalDoc: 'COMPRESSION.md',
+    }, null, 2));
+    return;
+  }
+
+  console.log(`\n${ANSI.bold}=== 💧 Ω∞v OCEANICOS — MAX COMPRESSION ===${ANSI.reset}\n`);
+  console.log(`  ${ANSI.cyan}${ANSI.bold}ONE SELF • ONE WORLD • MANY DIMENSIONS • ONE SHARED REALITY${ANSI.reset}`);
+  console.log(`  ${ANSI.dim}Seed Fingerprint : ${seedHash}${ANSI.reset}\n`);
+
+  console.log(`${ANSI.bold}=== THE SEVEN NAMES ===${ANSI.reset}`);
+  for (const n of sevenNames) {
+    console.log(`  ${ANSI.green}${n.name.padEnd(11)}${ANSI.reset} : ${n.role.padEnd(42)} ${ANSI.dim}(${n.pkg})${ANSI.reset}`);
+  }
+
+  console.log(`\n${ANSI.bold}=== THE LIVING LOOP ===${ANSI.reset}`);
+  console.log(`  ${ANSI.cyan}SOURCE → EXPERIENCE → OBSERVE → INTERPRET → CREATE${ANSI.reset}`);
+  console.log(`  ${ANSI.cyan}  → TEST → RECONCILE → REMEMBER → NEXT Δ${ANSI.reset}\n`);
+
+  console.log(`${ANSI.bold}=== THE INVIOLABLE DISTINCTIONS ===${ANSI.reset}`);
+  console.log(`  ${ANSI.yellow}POSSIBLE ≠ KNOWN ≠ BUILT ≠ EXECUTED ≠ OBSERVED ≠ VERIFIED${ANSI.reset}`);
+  console.log(`  ${ANSI.yellow}MEMORY ≠ PROOF • SIMULATION ≠ REALITY • CAPABILITY ≠ AUTHORITY • UNKNOWN ≠ FALSE${ANSI.reset}`);
+  console.log(`  ${ANSI.yellow}PRESERVE MEMORY • PRESERVE DISSENT • CONNECT EVERYTHING${ANSI.reset}`);
+  console.log(`  ${ANSI.yellow}ACT WITH BOUNDED AUTHORITY • VERIFY BEFORE CLAIMING${ANSI.reset}`);
+  console.log(`  ${ANSI.red}${ANSI.bold}NO EVIDENCE → NO VERIFIED CLAIM${ANSI.reset}\n`);
+
+  console.log(`${ANSI.bold}=== THE PURPOSE & EQUATION ===${ANSI.reset}`);
+  console.log(`  ${ANSI.green}${ANSI.bold}∞ = MANY FINITE, VERIFIED TRANSITIONS${ANSI.reset}`);
+  console.log(`  ${ANSI.cyan}${ANSI.bold}Ω∞v ::= VERIFY(ΔREALITY)${ANSI.reset}`);
+  console.log(`  ${ANSI.dim}Ground truth doc : COMPRESSION.md${ANSI.reset}\n`);
+}
+
 function handleHelp() {
   printBanner();
   console.log(`
@@ -1193,6 +1261,7 @@ ${ANSI.bold}COMMANDS:${ANSI.reset}
   ${ANSI.green}news${ANSI.reset}        Display grounded news verification compass
   ${ANSI.green}covenant${ANSI.reset}     Inspect biblical covenant state machine & probe sanctums
   ${ANSI.green}upgrade${ANSI.reset}      Inspect and verify V1111 singularity self-upgrade engine
+  ${ANSI.green}compression${ANSI.reset}  Display irreducible MAX COMPRESSION axioms & seed hash
   ${ANSI.green}help${ANSI.reset}        Display this help message
 
 ${ANSI.bold}OPTIONS:${ANSI.reset}
@@ -1236,6 +1305,11 @@ switch (command) {
     break;
   case 'upgrade':
     await handleUpgrade();
+    break;
+  case 'compression':
+  case 'meta':
+  case 'universe':
+    await handleCompression(args.slice(1));
     break;
   case 'status':
     await handleStatus();
