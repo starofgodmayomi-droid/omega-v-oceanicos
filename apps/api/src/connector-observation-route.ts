@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import {
   admitOmegaConnector,
+  assertGithubPublicRepositoryConnector,
   createGithubPublicRepositoryHandler,
   GITHUB_PUBLIC_REPOSITORY_ADAPTER,
   observeAdmittedConnector,
@@ -83,6 +84,31 @@ export type ConnectorAdmissionEvidenceResolver = (
   request: unknown,
   connector: OmegaConnectorDeclaration,
 ) => ConnectorAdmissionEvidence | Promise<ConnectorAdmissionEvidence>;
+
+/** Named policy this process may satisfy. It is not a secret and not external-consequence approval. */
+export const GITHUB_PUBLIC_READ_POLICY = 'policy:github-public-read.v1';
+
+const deniedAdmissionEvidence: ConnectorAdmissionEvidence = {
+  authorityVerified: false,
+  policySatisfied: false,
+  approvalVerified: false,
+};
+
+/**
+ * Server-side evidence for one public GitHub metadata read.
+ * Fails closed unless the declaration is the public adapter and names this policy.
+ * `auth-ref:` is a non-secret marker. Approval stays false: this is not an external-consequence grant.
+ */
+export function publicGithubReadAdmission(connector: OmegaConnectorDeclaration): ConnectorAdmissionEvidence {
+  if (!connector.authRef.startsWith('auth-ref:')) return deniedAdmissionEvidence;
+  if (!connector.policyRefs.includes(GITHUB_PUBLIC_READ_POLICY)) return deniedAdmissionEvidence;
+  try {
+    assertGithubPublicRepositoryConnector(connector);
+  } catch {
+    return deniedAdmissionEvidence;
+  }
+  return { authorityVerified: true, policySatisfied: true, approvalVerified: false };
+}
 
 export interface ConnectorObservationRouteOptions {
   readonly githubFetch?: typeof fetch;

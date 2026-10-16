@@ -19,7 +19,7 @@ import { registerNavigatorEvidenceRoute } from './navigator-route.js';
 import { registerRealityRoute } from './reality-route.js';
 import { registerDependencyRoute } from './dependency-route.js';
 import { registerValueNavigatorRoute } from './value-navigator-route.js';
-import { registerConnectorObservationRoute, type ConnectorAdmissionEvidenceResolver } from './connector-observation-route.js';
+import { registerConnectorObservationRoute, publicGithubReadAdmission, type ConnectorAdmissionEvidenceResolver } from './connector-observation-route.js';
 import { OmegaCommandStore, OmegaIdempotencyConflictError, registerOmegaRoutes } from './omega.js';
 import { registerMeshValidationRoute } from './mesh-route.js';
 import {
@@ -55,6 +55,8 @@ export type CreateAppOptions = {
   connectorObservationPath?: string;
   githubFetch?: typeof fetch;
   connectorAdmissionEvidence?: ConnectorAdmissionEvidenceResolver;
+  /** Opt in to the public GitHub metadata admission resolver. Default false. */
+  publicGithubRead?: boolean;
 };
 
 type AuthMode = 'local' | 'required';
@@ -253,9 +255,14 @@ export function createApp(
   registerRealityRoute(fastify, authMode, Boolean(attestationSigningKey), Boolean(ledgerMemory.getTip()));
   registerDependencyRoute(fastify);
   registerValueNavigatorRoute(fastify, valueNavigatorStore, jsonError);
+  const publicGithubRead = options.publicGithubRead ?? process.env.OCEANICOS_PUBLIC_GITHUB_READ === 'on';
+  const resolveAdmissionEvidence = options.connectorAdmissionEvidence
+    ?? (publicGithubRead
+      ? ((_request, connector) => publicGithubReadAdmission(connector))
+      : undefined);
   registerConnectorObservationRoute(fastify, jsonError, connectorObservationStore, {
     githubFetch: options.githubFetch,
-    resolveAdmissionEvidence: options.connectorAdmissionEvidence,
+    resolveAdmissionEvidence,
   });
   registerMeshValidationRoute(fastify, ledgerMemory, requireReadAccess, jsonError);
 

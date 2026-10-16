@@ -328,6 +328,72 @@ describe('Ω connector observation path', () => {
     }
   });
 
+  it('admits one public GitHub read only when the server opt-in and named policy match', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'omega-connector-public-read-'));
+    const { createApp } = await import('../../apps/api/dist/index.js');
+    let fetchCalls = 0;
+    const githubFetch = async () => {
+      fetchCalls += 1;
+      return new Response(JSON.stringify({
+        full_name: 'starofgodmayomi-droid/omega-v-oceanicos',
+        private: false,
+      }), { status: 200, headers: { 'content-type': 'application/json', 'content-length': '80' } });
+    };
+    const publicConnector = {
+      ...connector,
+      id: 'github.public-metadata',
+      authRef: 'auth-ref:public-unauthenticated',
+      policyRefs: ['policy:github-public-read.v1'],
+    };
+    const app = createApp(join(directory, 'ledger.db'), false, {
+      allowUnsignedCycle: true,
+      publicGithubRead: true,
+      githubFetch,
+    });
+    await app.ready();
+
+    try {
+      const wrongPolicy = await app.inject({
+        method: 'POST',
+        url: '/v1/omega/connectors/observe',
+        payload: { connector, liveAdapter: 'github-public-repository' },
+      });
+      assert.equal(wrongPolicy.statusCode, 200);
+      assert.equal(wrongPolicy.json().admission.admitted, false);
+      assert.equal(wrongPolicy.json().status, 'NOT_EXECUTED');
+      assert.equal(fetchCalls, 0);
+
+      const observed = await app.inject({
+        method: 'POST',
+        url: '/v1/omega/connectors/observe',
+        payload: { connector: publicConnector, liveAdapter: 'github-public-repository' },
+      });
+      assert.equal(observed.statusCode, 200);
+      assert.equal(observed.json().admission.admitted, true);
+      assert.equal(observed.json().status, 'VERIFIED');
+      assert.equal(observed.json().executed, true);
+      assert.equal(observed.json().liveAdapter, 'github-public-repository');
+      assert.match(observed.json().evidence, /^sha256:[a-f0-9]{64}$/);
+      assert.equal(fetchCalls, 1);
+
+      const claimed = await app.inject({
+        method: 'POST',
+        url: '/v1/omega/connectors/observe',
+        payload: {
+          connector: publicConnector,
+          liveAdapter: 'github-public-repository',
+          authorityVerified: true,
+        },
+      });
+      assert.equal(claimed.statusCode, 400);
+      assert.equal(claimed.json().error, 'CONNECTOR_ADMISSION_EVIDENCE_NOT_ACCEPTED');
+      assert.equal(fetchCalls, 1);
+    } finally {
+      await app.close();
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
   it('fails closed when the connector journal hash chain is tampered', async () => {
     const directory = mkdtempSync(join(tmpdir(), 'omega-connector-journal-'));
     const journalPath = join(directory, 'connectors.jsonl');
