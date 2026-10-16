@@ -19,7 +19,7 @@
 [![Verification Pipeline](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/actions/workflows/verify.yml/badge.svg)](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/actions/workflows/verify.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
-![A luminous emerald current crossing a deep ocean toward the horizon](docs/assets/oceanicos-readme-hero.jpg)
+![OCEANICOS Living Ecosystem map: one current, many bounded forms](docs/assets/oceanicos-living-ecosystem-map.png)
 
 > **Attest, don't assert. Evidence before trust. Verification before evolution.**
 
@@ -38,6 +38,8 @@ without treating any single component—or any agent—as the final authority.
 - 🤝 **[Contributing](CONTRIBUTING.md)** — How to contribute verification-first
 - 📖 **[Documentation](docs/)** — Architecture, guides, and references
 - 🌊 **[Whole-ecosystem master prompt](docs/WHOLE-ECOSYSTEM-MASTER-PROMPT.md)** — canonical continuity/design layer, bounded by repository evidence
+- 🧭 **[LucidContinuum XYZ-Axis](docs/XYZ-AXIS-LUCID-CONTINUUM.md)** — coordinates finite transitions, evidence/admission state, and four-stack system layers
+- 🌐 **[System Core Compression / XYZW](docs/SYSTEM-CORE-COMPRESSION-XYZ-AXIS.md)** — translates warmth, Mirror Water, Deep Void, and XYZ-Axis language into bounded repository contracts
 - 🧭 **[Value Navigator contract](skills/oceanicos-value-navigator/references/repository-contract.md)** — proposals, evidence, observation, and reconciliation
 - 🌉 **[Voice Bridge](skills/voice-bridge/SKILL.md)** — one human source across many expressive forms
 - Ɔ **[ƆREADE × Oceanicos Harmonizer](skills/oread-pidgin-harmonizer/SKILL.md)** — symbolic meaning translated into bounded action
@@ -50,6 +52,7 @@ without treating any single component—or any agent—as the final authority.
 - 💠 **[Ω∞v OS](skills/omega-v-os/SKILL.md)** — the ƆCEANiC_OS sequence as a finite kernel
 - 🔁 **[Lucid Continuum](skills/lucid-continuum/SKILL.md)** — handoff across passes without invented memory
 - 🌐 **[Full-stack reality-access handoff](docs/upgrades/FULL_STACK_REALITY_ACCESS_2026-09-28.md)** — connector taxonomy without implicit ownership or authority
+- 🔌 **[Connector readiness and reconciliation](docs/CONNECTOR-READINESS.md)** — current GitHub, Notion, Composio, and local-runtime evidence boundaries
 - 🗺️ **[Repository inventory](docs/REPO_INVENTORY.md)** — workspace vs disk (current evidence)
 - ⚙️ **[Development Setup](docs/DEVELOPMENT.md)** — Get the project running locally
 | | Meaning |
@@ -227,6 +230,20 @@ pnpm verify:full
 This is a local evidence command covering the repository's configured build,
 type-check, integration, and API smoke stages. Its result is bounded to the exact
 machine, commit, configuration, and time at which it runs.
+
+### Use the bounded developer operator
+
+```bash
+pnpm dev:tool inspect --json
+pnpm dev:tool verify --json
+```
+
+The operator is allowlisted and local-only: it does not push, merge, publish,
+deploy, delete, or contact external services. Its output is evidence for the
+current checkout and revision. It also performs bounded GET-only observation of
+`http://127.0.0.1:5000/health` and `/v1/ecosystem/body` when the local API is
+reachable; otherwise runtime status remains `UNKNOWN`. Deployment remains
+`NOT_EXECUTED` and production health remains `UNKNOWN`.
 
 ## Common commands
 
