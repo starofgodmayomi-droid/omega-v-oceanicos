@@ -58,6 +58,7 @@ COMPRESSION.md          ← YOU ARE HERE: Irreducible seed
 ├── AGENTS.md           ← Engineering copilot rules & dev environment
 └── docs/               ← Architecture, specs, decisions, audits
     ├── spec/OCEANIC_OS_SUPER_COMPRESSION_SPECIFICATION.md ← Blueprint manual
+    ├── spec/SINGLE_PLURALISTIC_BODY_FORMULATION.md        ← Duality tensor field
     ├── ARCHITECTURE.md
     ├── ECOSYSTEM-COMPRESSION.md
     ├── GOVERNANCE.md
