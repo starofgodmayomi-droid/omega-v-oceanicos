@@ -19,7 +19,7 @@ import { registerNavigatorEvidenceRoute } from './navigator-route.js';
 import { registerRealityRoute } from './reality-route.js';
 import { registerDependencyRoute } from './dependency-route.js';
 import { registerValueNavigatorRoute } from './value-navigator-route.js';
-import { registerConnectorObservationRoute } from './connector-observation-route.js';
+import { registerConnectorObservationRoute, type ConnectorAdmissionEvidenceResolver } from './connector-observation-route.js';
 import { OmegaCommandStore, OmegaIdempotencyConflictError, registerOmegaRoutes } from './omega.js';
 import { registerMeshValidationRoute } from './mesh-route.js';
 import {
@@ -54,6 +54,7 @@ export type CreateAppOptions = {
   valueNavigatorPath?: string;
   connectorObservationPath?: string;
   githubFetch?: typeof fetch;
+  connectorAdmissionEvidence?: ConnectorAdmissionEvidenceResolver;
 };
 
 type AuthMode = 'local' | 'required';
@@ -252,7 +253,10 @@ export function createApp(
   registerRealityRoute(fastify, authMode, Boolean(attestationSigningKey), Boolean(ledgerMemory.getTip()));
   registerDependencyRoute(fastify);
   registerValueNavigatorRoute(fastify, valueNavigatorStore, jsonError);
-  registerConnectorObservationRoute(fastify, jsonError, connectorObservationStore, { githubFetch: options.githubFetch });
+  registerConnectorObservationRoute(fastify, jsonError, connectorObservationStore, {
+    githubFetch: options.githubFetch,
+    resolveAdmissionEvidence: options.connectorAdmissionEvidence,
+  });
   registerMeshValidationRoute(fastify, ledgerMemory, requireReadAccess, jsonError);
 
   fastify.get('/health', async (_request, reply) => {
