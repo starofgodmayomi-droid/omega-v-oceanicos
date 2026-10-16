@@ -77,6 +77,7 @@ test('expanded companion reference files stay byte-identical when published and 
 
   const publishedFiles = readdirSync(publishedDir).sort();
   const installedFiles = readdirSync(installedSkillDir).sort();
+  assert.ok(publishedFiles.length > 0, 'expanded companion reference pack must not be empty');
   assert.deepEqual(installedFiles, publishedFiles, 'published and installed reference file sets must match');
 
   for (const file of publishedFiles) {
