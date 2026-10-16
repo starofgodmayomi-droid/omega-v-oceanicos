@@ -9,7 +9,7 @@ description: Canonical Ω∞v OCEANICOS entrypoint and router for whole-ecosyste
 
 Turn the user's full intent into one coherent, authorized, verifiable next step. This skill is the **entrypoint and routing layer**, not a second copy of every specialist's knowledge. Preserve breadth in the map; compress duplicate instructions into references.
 
-- **Detailed playbook:** `skills/oceanicos-full-stack-companion/SKILL.md` (and its reference pack where present).
+- **Detailed playbook:** `.claude/skills/oceanicos-full-stack-companion/SKILL.md` (the loaded companion); consult its `references/` pack when available on the current branch. The parallel `skills/oceanicos-full-stack-companion/SKILL.md` is a publishable mirror—verify parity rather than assuming the copies match.
 - **Specialist authority:** existing contracts, source files, tests, and domain-specific skills remain authoritative for implementation details.
 - **Continuity:** append evidence-backed checkpoints to the canonical Notion control plane; GitHub preserves implementation and provenance.
 
