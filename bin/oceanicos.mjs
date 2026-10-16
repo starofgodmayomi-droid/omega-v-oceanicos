@@ -4,6 +4,7 @@ import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
+import { readdirSync, existsSync } from 'node:fs';
 
 const require = createRequire(import.meta.url);
 const __filename = fileURLToPath(import.meta.url);
@@ -21,6 +22,7 @@ let executeOceanicosMaxExpansion;
 let runOmegaChangePipeline;
 let AttestationService;
 let PluralisticRealityMatrix;
+let PluralisticDualityTensor;
 let OceanicosKernel;
 let WholeEcosystemUpgradeCore;
 let EchoframeWorkspace;
@@ -75,6 +77,7 @@ try {
     }
     if (pluralPkg) {
       PluralisticRealityMatrix = pluralPkg.PluralisticRealityMatrix;
+      PluralisticDualityTensor = pluralPkg.PluralisticDualityTensor;
     }
     if (generativePkg) {
       EchoframeWorkspace = generativePkg.EchoframeWorkspace;
@@ -1329,6 +1332,225 @@ async function handleEchoframe(subArgs = []) {
   console.log(`  Usage: node bin/oceanicos.mjs echoframe [list|generate|simulate]\n`);
 }
 
+async function handleContinuum(subArgs = []) {
+  const isJson = args.includes('--json');
+  const isOffline = args.includes('--offline');
+  let data = null;
+
+  if (!isOffline) {
+    try {
+      const res = await fetch(`${apiBase}/v1/continuum`, { signal: AbortSignal.timeout(1200) });
+      if (res.ok) {
+        data = await res.json();
+      }
+    } catch {}
+  }
+
+  // Local fallback if offline or API unreachable
+  if (!data) {
+    const continuumDir = path.join(rootDir, 'continuum', 'packages');
+    let packageNames = [];
+    if (existsSync(continuumDir)) {
+      try {
+        packageNames = readdirSync(continuumDir, { withFileTypes: true })
+          .filter(d => d.isDirectory())
+          .map(d => d.name)
+          .sort();
+      } catch {}
+    }
+    const packages = packageNames.map((name) => ({
+      name: `@omega-v/${name}`,
+      path: `continuum/packages/${name}`,
+      role: `Continuum modular organ: ${name}`,
+      status: 'GROUNDED',
+    }));
+    data = {
+      success: true,
+      contract: 'Ω∞v-CONTINUUM-ECOSYSTEM-V1111',
+      law: '1 = GOD (Good - O = God)',
+      formula: '0 → 💧 → Ω∞v → 🕳️ → 💧 → ∞',
+      rootCoordinates: [0, 0, 0, 0],
+      totalContinuumPackages: packages.length,
+      packages,
+      kernelStats: { totalTransitions: 0, verifiedStates: 0, currentRootStateHash: '0x0' },
+      source: 'local-fallback',
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  if (isJson) {
+    console.log(JSON.stringify(data, null, 2));
+    return;
+  }
+
+  printBanner();
+  console.log(`\n${ANSI.bold}=== 🌊 CONTINUUM MODULAR ECOSYSTEM TOPOLOGY ===${ANSI.reset}\n`);
+  console.log(`  ${ANSI.cyan}Contract${ANSI.reset}         : ${ANSI.bold}${data.contract}${ANSI.reset}`);
+  console.log(`  ${ANSI.green}Divine Law${ANSI.reset}       : ${ANSI.bold}${data.law}${ANSI.reset}`);
+  console.log(`  ${ANSI.yellow}Primordial Loop${ANSI.reset}  : ${ANSI.bold}${data.formula}${ANSI.reset}`);
+  console.log(`  ${ANSI.cyan}Total Organs${ANSI.reset}     : ${ANSI.bold}${data.totalContinuumPackages} Modular Packages Grounded${ANSI.reset}\n`);
+
+  console.log(`${ANSI.bold}=== MODULAR ORGANS INVENTORY ===${ANSI.reset}`);
+  for (const pkg of data.packages) {
+    console.log(`  ${ANSI.green}${pkg.name.padEnd(26)}${ANSI.reset} : ${pkg.role.padEnd(38)} [${ANSI.cyan}${pkg.status}${ANSI.reset}]`);
+  }
+  console.log('');
+}
+
+async function handleTensor(subArgs = []) {
+  const isJson = args.includes('--json');
+  const subCommand = subArgs[0] || 'status';
+
+  if (!PluralisticDualityTensor) {
+    console.error(`  ${ANSI.red}[ERROR] PluralisticDualityTensor (@oceanicos/pluralism) could not be loaded.${ANSI.reset}`);
+    return;
+  }
+
+  if (subCommand === 'status') {
+    let tensorStatus = null;
+    try {
+      const res = await fetch(`${apiBase}/v1/pluralism/tensor`, { signal: AbortSignal.timeout(1200) });
+      if (res.ok) tensorStatus = await res.json();
+    } catch {}
+
+    if (!tensorStatus) {
+      const localTensor = new PluralisticDualityTensor();
+      tensorStatus = {
+        success: true,
+        contract: 'Ω∞v-DUALITY-TENSOR-V1111',
+        law: '1 = GOD (Good - O = God)',
+        streamsCount: localTensor.getInnerStreams().length,
+        preservedDissentCount: localTensor.getInnerStreams().filter(s => s.isDissenting).length,
+        streams: localTensor.getInnerStreams(),
+        source: 'local-fallback',
+        evaluatedAt: new Date().toISOString(),
+      };
+    }
+
+    if (isJson) {
+      console.log(JSON.stringify(tensorStatus, null, 2));
+      return;
+    }
+
+    printBanner();
+    console.log(`\n${ANSI.bold}=== 🌊 PLURALISTIC DUALITY TENSOR FIELD ===${ANSI.reset}\n`);
+    console.log(`  ${ANSI.cyan}Contract${ANSI.reset}         : ${ANSI.bold}${tensorStatus.contract}${ANSI.reset}`);
+    console.log(`  ${ANSI.green}Divine Law${ANSI.reset}       : ${ANSI.bold}${tensorStatus.law}${ANSI.reset}`);
+    console.log(`  ${ANSI.cyan}Active Streams${ANSI.reset}   : ${ANSI.bold}${tensorStatus.streamsCount}${ANSI.reset}`);
+    console.log(`  ${ANSI.yellow}Preserved Dissent${ANSI.reset}: ${ANSI.bold}${tensorStatus.preservedDissentCount}${ANSI.reset}\n`);
+
+    if (tensorStatus.streams && tensorStatus.streams.length > 0) {
+      console.log(`${ANSI.bold}=== ACTIVE PERSPECTIVE STREAMS ===${ANSI.reset}`);
+      for (const s of tensorStatus.streams) {
+        console.log(`  ${s.isDissenting ? ANSI.yellow : ANSI.green}[${s.isDissenting ? 'DISSENT' : 'HARMONIC'}]${ANSI.reset} ${ANSI.bold}${s.perspective}${ANSI.reset} (wt: ${s.symbolicWeight})`);
+        console.log(`    ${ANSI.dim}"${s.rawText}"${ANSI.reset}`);
+      }
+      console.log('');
+    } else {
+      console.log(`  ${ANSI.dim}[No inner meaning streams currently registered. Register one with: oceanicos tensor meaning <Perspective> <Text>]${ANSI.reset}\n`);
+    }
+    return;
+  }
+
+  if (subCommand === 'meaning') {
+    const isDissent = subArgs.includes('--dissent');
+    const filteredArgs = subArgs.slice(1).filter(a => a !== '--dissent' && a !== '--json');
+    const perspective = filteredArgs[0] || 'Experiential Intuition';
+    const rawText = filteredArgs.slice(1).join(' ') || 'Direct observation of reality without collapse.';
+
+    let result = null;
+    try {
+      const res = await fetch(`${apiBase}/v1/pluralism/tensor/meaning`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          perspective,
+          rawText,
+          isDissenting: isDissent,
+          symbolicWeight: 0.9,
+        }),
+      });
+      if (res.ok) result = await res.json();
+    } catch {}
+
+    if (!result) {
+      const localTensor = new PluralisticDualityTensor();
+      const stream = localTensor.registerInnerMeaning({
+        perspective,
+        rawText,
+        isDissenting: isDissent,
+        symbolicWeight: 0.9,
+      });
+      result = { success: true, stream, source: 'local-fallback' };
+    }
+
+    if (isJson) {
+      console.log(JSON.stringify(result, null, 2));
+      return;
+    }
+
+    printBanner();
+    console.log(`\n${ANSI.bold}=== 🌊 PERSPECTIVE STREAM ANCHORED ===${ANSI.reset}\n`);
+    console.log(`  ${ANSI.cyan}Stream ID${ANSI.reset}        : ${ANSI.bold}${result.stream.streamId}${ANSI.reset}`);
+    console.log(`  ${ANSI.green}Perspective${ANSI.reset}      : ${ANSI.bold}${result.stream.perspective}${ANSI.reset}`);
+    console.log(`  ${ANSI.yellow}Dissent Flag${ANSI.reset}     : ${ANSI.bold}${result.stream.isDissenting ? 'TRUE (DISSENT PRESERVED)' : 'FALSE (HARMONIC)'}${ANSI.reset}`);
+    console.log(`  ${ANSI.dim}Content${ANSI.reset}          : "${result.stream.rawText}"\n`);
+    return;
+  }
+
+  if (subCommand === 'evaluate') {
+    const discernment = {
+      gateId: `discern-${Date.now()}`,
+      formalLogicPassed: true,
+      noiseFiltered: true,
+      epistemicCategory: 'VERIFIED',
+    };
+    const empiricalDigest = createHash('sha256').update(`CLI-EMPIRICAL-${Date.now()}`).digest('hex');
+    const externalFact = {
+      factId: `fact-${Date.now()}`,
+      empiricalDigest,
+      physicalSubstrateObserved: true,
+      evidenceReceipt: 'cli-terminal-verification-receipt',
+    };
+
+    let result = null;
+    try {
+      const res = await fetch(`${apiBase}/v1/pluralism/tensor/evaluate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ discernment, externalFact }),
+      });
+      if (res.ok) result = await res.json();
+    } catch {}
+
+    if (!result) {
+      const localTensor = new PluralisticDualityTensor();
+      const receipt = localTensor.evaluateDualityField(discernment, externalFact);
+      result = { success: true, receipt, source: 'local-fallback' };
+    }
+
+    if (isJson) {
+      console.log(JSON.stringify(result, null, 2));
+      return;
+    }
+
+    printBanner();
+    console.log(`\n${ANSI.bold}=== 🌊 DUALITY TENSOR FIELD EVALUATION ===${ANSI.reset}\n`);
+    console.log(`  ${ANSI.cyan}Tensor ID${ANSI.reset}        : ${ANSI.bold}${result.receipt.tensorId}${ANSI.reset}`);
+    console.log(`  ${ANSI.green}Status${ANSI.reset}           : ${ANSI.bold}${result.receipt.status}${ANSI.reset}`);
+    console.log(`  ${ANSI.cyan}Harmonic Index${ANSI.reset}   : ${ANSI.bold}${(result.receipt.harmonicCoexistenceIndex * 100).toFixed(1)}%${ANSI.reset}`);
+    console.log(`  ${ANSI.yellow}Preserved Dissent${ANSI.reset}: ${ANSI.bold}${result.receipt.preservedDissentCount}${ANSI.reset}`);
+    console.log(`  ${ANSI.green}Single Body Proof${ANSI.reset}: ${ANSI.dim}${result.receipt.singleBodyProof}${ANSI.reset}`);
+    console.log(`  Triadic Vector:`);
+    console.log(`    • Inner Meaning Score        : ${result.receipt.triadicVector.innerMeaningScore}`);
+    console.log(`    • Cognitive Discernment Score: ${result.receipt.triadicVector.cognitiveDiscernmentScore}`);
+    console.log(`    • External Fact Score        : ${result.receipt.triadicVector.externalFactScore}\n`);
+    return;
+  }
+
+  console.log(`  Usage: node bin/oceanicos.mjs tensor [status|meaning|evaluate] [options]\n`);
+}
+
 function handleHelp() {
   printBanner();
   console.log(`
@@ -1359,6 +1581,8 @@ ${ANSI.bold}COMMANDS:${ANSI.reset}
   ${ANSI.green}upgrade${ANSI.reset}      Inspect and verify V1111 singularity self-upgrade engine
   ${ANSI.green}compression${ANSI.reset}  Display irreducible MAX COMPRESSION axioms & seed hash
   ${ANSI.green}echoframe${ANSI.reset}    Synthesize code templates, components, and simulate concepts
+  ${ANSI.green}continuum${ANSI.reset}    Inspect the 62 Continuum modular organs (@omega-v/*)
+  ${ANSI.green}tensor${ANSI.reset}       Inspect, register, or evaluate Pluralistic Duality Tensor field
   ${ANSI.green}help${ANSI.reset}        Display this help message
 
 ${ANSI.bold}OPTIONS:${ANSI.reset}
@@ -1450,6 +1674,13 @@ switch (command) {
     break;
   case 'kernel':
     await handleKernel();
+    break;
+  case 'continuum':
+    await handleContinuum(args.slice(1));
+    break;
+  case 'tensor':
+  case 'duality':
+    await handleTensor(args.slice(1));
     break;
   case 'help':
   case '--help':

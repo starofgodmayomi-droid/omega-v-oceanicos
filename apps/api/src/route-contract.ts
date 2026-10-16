@@ -36,6 +36,12 @@ export const API_ROUTE_INVENTORY = [
   'GET /attest/revocations',
   'POST /attest/revoke',
   'GET /attest/policy',
+  'GET /v1/continuum',
+  'GET /v1/pluralism/face',
+  'POST /v1/pluralism/converge',
+  'GET /v1/pluralism/tensor',
+  'POST /v1/pluralism/tensor/meaning',
+  'POST /v1/pluralism/tensor/evaluate',
   'GET /',
   'GET /assets/*',
 ] as const;

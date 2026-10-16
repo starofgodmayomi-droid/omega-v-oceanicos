@@ -13,7 +13,7 @@ import { ObserverEngine } from '@oceanicos/observer';
 import { AttestationService } from '@oceanicos/attestation';
 import { InferenceClient } from '@oceanicos/inference';
 import { VectorMemory } from '@oceanicos/vector';
-import { PluralisticRealityMatrix, PluralismConvergenceMatrix } from '@oceanicos/pluralism';
+import { PluralisticRealityMatrix, PluralismConvergenceMatrix, PluralisticDualityTensor } from '@oceanicos/pluralism';
 import { OceanicosKernel } from '@omega-v/kernel';
 import { evaluateAuthorization } from '@oceanicos/authorization';
 import { LocalJobError, LocalJobLedger, LOCAL_JOB_WINDOW } from './jobs.js';
@@ -26,6 +26,7 @@ import { registerUpgradeRoute } from './upgrade-route.js';
 import { registerCovenantRoute } from './covenant-route.js';
 import { registerCompressionRoute } from './compression-route.js';
 import { registerEchoframeRoute } from './echoframe-route.js';
+import { registerContinuumRoute } from './continuum-route.js';
 import { API_ROUTE_INVENTORY } from './route-contract.js';
 import { OceanicosKernel as UpgradeKernel } from '@oceanicos/mini';
 import { OmegaCommandStore, registerOmegaWorkerRoutes } from './omega.js';
@@ -141,6 +142,7 @@ export function createApp(
   osKernel.boot();
   const compressor = new OmegaTotalCompressor(kernel);
   const platformKernel = new OceanicosKernel();
+  const dualityTensor = new PluralisticDualityTensor();
   const allowUnsignedCycle = resolvedOptions.allowUnsignedCycle ?? (process.env.OMEGA_ALLOW_UNSIGNED_CYCLE !== undefined ? process.env.OMEGA_ALLOW_UNSIGNED_CYCLE === 'true' : true);
   const attestationSigningKey = resolvedOptions.attestationSigningKey ?? process.env.OMEGA_SIGNING_KEY;
   const authMode = parseAuthMode(process.env.OMEGA_AUTH_MODE ?? (process.env.NODE_ENV === 'production' ? 'required' : 'local'));
@@ -251,6 +253,7 @@ export function createApp(
   registerCovenantRoute(fastify, jsonError);
   registerCompressionRoute(fastify);
   registerEchoframeRoute(fastify);
+  registerContinuumRoute(fastify);
 
   fastify.get('/health', async (_request, reply) => {
     const memoryReady = true;
@@ -278,6 +281,7 @@ export function createApp(
         upgrade: 'ready',
         compression: 'ready',
         echoframe: 'ready',
+        continuum: 'ready',
         memory: { status: memoryReady ? 'ready' : 'degraded', integrity: memoryReady, encryption: 'disabled' },
         persistence: {
           mode: persistenceEnabled ? 'file' : 'memory',
@@ -656,6 +660,44 @@ export function createApp(
     }
   });
 
+  fastify.get('/v1/pluralism/tensor', async () => ({
+    success: true,
+    contract: 'Ω∞v-DUALITY-TENSOR-V1111',
+    law: '1 = GOD (Good - O = God)',
+    streamsCount: dualityTensor.getInnerStreams().length,
+    preservedDissentCount: dualityTensor.getInnerStreams().filter(s => s.isDissenting).length,
+    streams: dualityTensor.getInnerStreams(),
+    evaluatedAt: new Date().toISOString(),
+  }));
+
+  fastify.post('/v1/pluralism/tensor/meaning', async (request: any, reply) => {
+    const body = request.body || {};
+    const perspective = typeof body.perspective === 'string' ? body.perspective.trim() : '';
+    const rawText = typeof body.rawText === 'string' ? body.rawText.trim() : '';
+    if (!perspective || !rawText) {
+      return jsonError(reply, 400, 'PERSPECTIVE_AND_RAWTEXT_REQUIRED');
+    }
+    const stream = dualityTensor.registerInnerMeaning({
+      perspective,
+      culturalContext: body.culturalContext,
+      symbolicWeight: typeof body.symbolicWeight === 'number' ? body.symbolicWeight : 0.8,
+      isDissenting: Boolean(body.isDissenting),
+      rawText,
+    });
+    return { success: true, stream };
+  });
+
+  fastify.post('/v1/pluralism/tensor/evaluate', async (request: any, reply) => {
+    const body = request.body || {};
+    const discernment = body.discernment;
+    const externalFact = body.externalFact;
+    if (!discernment || !externalFact) {
+      return jsonError(reply, 400, 'DISCERNMENT_AND_EXTERNAL_FACT_REQUIRED');
+    }
+    const receipt = dualityTensor.evaluateDualityField(discernment, externalFact);
+    return { success: true, receipt };
+  });
+
   fastify.post('/v1/artemis/action', async (request: any, reply) => {
     const command = typeof request.body?.command === 'string' ? request.body.command.trim() : '';
     if (!command) {
@@ -862,6 +904,10 @@ export const STARTUP_BANNER = [
   '  GET    /v1/memory/search',
   '  GET    /v1/pluralism/face',
   '  POST   /v1/pluralism/converge',
+  '  GET    /v1/pluralism/tensor',
+  '  POST   /v1/pluralism/tensor/meaning',
+  '  POST   /v1/pluralism/tensor/evaluate',
+  '  GET    /v1/continuum',
   '  POST   /v1/artemis/action',
   '  POST   /v1/totality/lock',
   '  GET    /v1/block/tip',

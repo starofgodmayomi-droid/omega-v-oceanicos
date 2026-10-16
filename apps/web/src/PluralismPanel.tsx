@@ -35,26 +35,88 @@ const GLOW_KEYFRAMES = `
 }
 `;
 
+interface InnerStream {
+  streamId: string;
+  perspective: string;
+  culturalContext?: string;
+  symbolicWeight: number;
+  isDissenting: boolean;
+  rawText: string;
+}
+
+interface TensorStatus {
+  success: boolean;
+  contract: string;
+  law: string;
+  streamsCount: number;
+  preservedDissentCount: number;
+  streams: InnerStream[];
+  evaluatedAt: string;
+}
+
 export function PluralismPanel() {
   const [data, setData] = useState<PluralisticFaceResponse | null>(null);
+  const [tensor, setTensor] = useState<TensorStatus | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Stream submission state
+  const [newPerspective, setNewPerspective] = useState('');
+  const [newRawText, setNewRawText] = useState('');
+  const [newDissent, setNewDissent] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const fetchPluralism = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE_URL}/v1/pluralism/face`);
-      const text = await res.text();
-      const parsed = text ? JSON.parse(text) : null;
-      if (!res.ok) throw new Error(parsed?.error || `HTTP ${res.status}`);
-      setData(parsed);
+      const [resFace, resTensor] = await Promise.all([
+        fetch(`${API_BASE_URL}/v1/pluralism/face`),
+        fetch(`${API_BASE_URL}/v1/pluralism/tensor`),
+      ]);
+      const textFace = await resFace.text();
+      const parsedFace = textFace ? JSON.parse(textFace) : null;
+      if (!resFace.ok) throw new Error(parsedFace?.error || `HTTP ${resFace.status}`);
+      setData(parsedFace);
+
+      if (resTensor.ok) {
+        const textTensor = await resTensor.text();
+        const parsedTensor = textTensor ? JSON.parse(textTensor) : null;
+        setTensor(parsedTensor);
+      }
     } catch (err: any) {
       setError(err instanceof Error ? err.message : 'pluralism matrix unavailable');
     } finally {
       setLoading(false);
     }
   }, []);
+
+  const handleRegisterMeaning = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPerspective.trim() || !newRawText.trim()) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/v1/pluralism/tensor/meaning`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          perspective: newPerspective.trim(),
+          rawText: newRawText.trim(),
+          isDissenting: newDissent,
+          symbolicWeight: 0.9,
+        }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setNewPerspective('');
+      setNewRawText('');
+      setNewDissent(false);
+      await fetchPluralism();
+    } catch (err: any) {
+      setError(err instanceof Error ? err.message : 'failed to register meaning');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   useEffect(() => {
     fetchPluralism();
@@ -218,6 +280,157 @@ export function PluralismPanel() {
               ))}
             </div>
           </div>
+          {/* Duality Tensor Field & Preserved Dissent */}
+          {tensor && (
+            <div style={{
+              background: '#091522',
+              border: '1px solid #38bdf844',
+              borderRadius: '8px',
+              padding: '14px',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <div>
+                  <div style={{ color: '#38bdf8', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span>🌊</span>
+                    <span>DUALITY TENSOR FIELD // SINGLE PLURALISTIC BODY</span>
+                  </div>
+                  <div style={{ color: '#94a3b8', fontSize: '10px', marginTop: '2px' }}>
+                    {tensor.law} · Invariant: PRESERVE DISSENT • NEVER SILENTLY OVERWRITE
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <span style={{
+                    color: '#38bdf8',
+                    background: '#38bdf815',
+                    border: '1px solid #38bdf844',
+                    borderRadius: '4px',
+                    fontSize: '10px',
+                    padding: '2px 8px',
+                    fontWeight: 'bold',
+                  }}>
+                    Streams: {tensor.streamsCount}
+                  </span>
+                  <span style={{
+                    color: tensor.preservedDissentCount > 0 ? '#ffaa00' : '#00ff66',
+                    background: tensor.preservedDissentCount > 0 ? '#ffaa0015' : '#00ff6615',
+                    border: `1px solid ${tensor.preservedDissentCount > 0 ? '#ffaa0044' : '#00ff6644'}`,
+                    borderRadius: '4px',
+                    fontSize: '10px',
+                    padding: '2px 8px',
+                    fontWeight: 'bold',
+                  }}>
+                    Preserved Dissent: {tensor.preservedDissentCount}
+                  </span>
+                </div>
+              </div>
+
+              {/* Streams List */}
+              {tensor.streams.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '12px', maxHeight: '180px', overflowY: 'auto' }}>
+                  {tensor.streams.map((s) => (
+                    <div key={s.streamId} style={{
+                      background: s.isDissenting ? '#1a1308' : '#05101a',
+                      border: `1px solid ${s.isDissenting ? '#ffaa0044' : '#38bdf822'}`,
+                      borderRadius: '4px',
+                      padding: '8px 10px',
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px' }}>
+                        <span style={{ color: s.isDissenting ? '#ffaa00' : '#38bdf8', fontWeight: 'bold', fontSize: '11px' }}>
+                          {s.perspective} {s.culturalContext ? `(${s.culturalContext})` : ''}
+                        </span>
+                        <span style={{
+                          color: s.isDissenting ? '#ffaa00' : '#00ff66',
+                          fontSize: '9px',
+                          fontWeight: 'bold',
+                          padding: '1px 5px',
+                          borderRadius: '2px',
+                          background: s.isDissenting ? '#ffaa0015' : '#00ff6615',
+                        }}>
+                          {s.isDissenting ? '⚠ DISSENTING' : '✓ HARMONIC'} (wt: {s.symbolicWeight})
+                        </span>
+                      </div>
+                      <div style={{ color: '#cbd5e1', fontSize: '10px', fontStyle: 'italic' }}>
+                        "{s.rawText}"
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Form to Register New Inner Meaning / Dissent */}
+              <form onSubmit={handleRegisterMeaning} style={{
+                background: '#040b12',
+                border: '1px solid #38bdf822',
+                borderRadius: '6px',
+                padding: '10px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+              }}>
+                <div style={{ color: '#e2e8f0', fontSize: '10px', fontWeight: 'bold' }}>
+                  + REGISTER PERSPECTIVE / PRESERVE DISSENTING STREAM
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <input
+                    type="text"
+                    placeholder="Perspective (e.g. Poetic Intuition, Positivist Check)"
+                    value={newPerspective}
+                    onChange={(e) => setNewPerspective(e.target.value)}
+                    style={{
+                      flex: 1,
+                      background: '#07121b',
+                      border: '1px solid #38bdf844',
+                      borderRadius: '4px',
+                      color: '#e2e8f0',
+                      fontSize: '10px',
+                      padding: '5px 8px',
+                    }}
+                  />
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#ffaa00', fontSize: '10px', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={newDissent}
+                      onChange={(e) => setNewDissent(e.target.checked)}
+                    />
+                    Dissenting
+                  </label>
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <input
+                    type="text"
+                    placeholder="Raw experiential or interpretive text..."
+                    value={newRawText}
+                    onChange={(e) => setNewRawText(e.target.value)}
+                    style={{
+                      flex: 1,
+                      background: '#07121b',
+                      border: '1px solid #38bdf844',
+                      borderRadius: '4px',
+                      color: '#e2e8f0',
+                      fontSize: '10px',
+                      padding: '5px 8px',
+                    }}
+                  />
+                  <button
+                    type="submit"
+                    disabled={submitting || !newPerspective.trim() || !newRawText.trim()}
+                    style={{
+                      background: '#0e263d',
+                      color: '#38bdf8',
+                      border: '1px solid #38bdf866',
+                      borderRadius: '4px',
+                      fontSize: '10px',
+                      padding: '5px 12px',
+                      cursor: submitting ? 'wait' : 'pointer',
+                      fontWeight: 'bold',
+                    }}
+                  >
+                    {submitting ? 'Anchoring...' : 'Anchor Stream'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
 
           {/* Blessing Invariant Footer */}
           <div style={{

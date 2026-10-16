@@ -51,20 +51,52 @@ const STATUS_COLORS: Record<EvidenceStatus, string> = {
 
 const GROWTH_STAGES = ['0', 'MINI', '+', '+', 'FULL STACK', 'ECOSYSTEM', 'REALITY'];
 
+interface ContinuumPackage {
+  name: string;
+  path: string;
+  role: string;
+  status: 'ACTIVE' | 'GROUNDED' | 'MODULAR';
+}
+
+interface ContinuumData {
+  success: boolean;
+  contract: string;
+  law: string;
+  formula: string;
+  totalContinuumPackages: number;
+  packages: ContinuumPackage[];
+  kernelStats: {
+    totalTransitions: number;
+    verifiedStates: number;
+    currentRootStateHash: string;
+  };
+}
+
 export function EcosystemPanel() {
   const [status, setStatus] = useState<EcosystemStatus | null>(null);
+  const [continuum, setContinuum] = useState<ContinuumData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [filterOrgan, setFilterOrgan] = useState<string>('');
 
   const fetchStatus = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE_URL}/v1/ecosystem/status`);
-      const text = await res.text();
-      const data = text ? JSON.parse(text) : null;
-      if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
-      setStatus(data);
+      const [resEco, resCont] = await Promise.all([
+        fetch(`${API_BASE_URL}/v1/ecosystem/status`),
+        fetch(`${API_BASE_URL}/v1/continuum`),
+      ]);
+      const textEco = await resEco.text();
+      const dataEco = textEco ? JSON.parse(textEco) : null;
+      if (!resEco.ok) throw new Error(dataEco?.error || `HTTP ${resEco.status}`);
+      setStatus(dataEco);
+
+      if (resCont.ok) {
+        const textCont = await resCont.text();
+        const dataCont = textCont ? JSON.parse(textCont) : null;
+        setContinuum(dataCont);
+      }
     } catch (err: any) {
       setError(err instanceof Error ? err.message : 'ecosystem status unavailable');
     } finally {
@@ -257,6 +289,91 @@ export function EcosystemPanel() {
               </div>
             </div>
           </div>
+
+          {/* Continuum Modular Organs (62 Packages) */}
+          {continuum && (
+            <div
+              style={{
+                marginTop: '16px',
+                background: '#040d17',
+                border: '1px solid #38bdf855',
+                borderRadius: '6px',
+                padding: '14px',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <div>
+                  <div style={{ color: '#38bdf8', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span>🌊</span>
+                    <span>CONTINUUM MODULAR ORGANS ({continuum.totalContinuumPackages} PACKAGES)</span>
+                  </div>
+                  <div style={{ color: '#00ff66', fontSize: '10px', marginTop: '2px', fontWeight: 'bold' }}>
+                    {continuum.law} · {continuum.formula}
+                  </div>
+                </div>
+                <input
+                  type="text"
+                  placeholder="Filter organs..."
+                  value={filterOrgan}
+                  onChange={(e) => setFilterOrgan(e.target.value)}
+                  style={{
+                    background: '#07121b',
+                    border: '1px solid #38bdf844',
+                    borderRadius: '4px',
+                    color: '#e2e8f0',
+                    fontSize: '10px',
+                    padding: '4px 8px',
+                    width: '140px',
+                  }}
+                />
+              </div>
+
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))',
+                  gap: '6px',
+                  maxHeight: '220px',
+                  overflowY: 'auto',
+                  paddingRight: '4px',
+                }}
+              >
+                {continuum.packages
+                  .filter((p) => !filterOrgan || p.name.toLowerCase().includes(filterOrgan.toLowerCase()))
+                  .map((pkg) => (
+                    <div
+                      key={pkg.name}
+                      style={{
+                        background: '#081726',
+                        border: '1px solid #38bdf822',
+                        borderRadius: '4px',
+                        padding: '6px 8px',
+                      }}
+                    >
+                      <div style={{ color: '#38bdf8', fontSize: '10px', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {pkg.name.replace('@omega-v/', '')}
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '3px' }}>
+                        <span style={{ color: '#64748b', fontSize: '8px' }}>{pkg.path.split('/')[1] || 'organ'}</span>
+                        <span
+                          style={{
+                            color: '#00ff66',
+                            background: '#00ff6615',
+                            border: '1px solid #00ff6644',
+                            borderRadius: '2px',
+                            fontSize: '8px',
+                            padding: '1px 4px',
+                            fontWeight: 'bold',
+                          }}
+                        >
+                          {pkg.status}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
         </>
       )}
     </section>
