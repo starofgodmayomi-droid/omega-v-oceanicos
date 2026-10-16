@@ -123,6 +123,27 @@ body {
   margin-right: 4px;
 }
 
+.ecosystem-xyzw {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0;
+  color: var(--omega-current);
+  font-size: 9px;
+  letter-spacing: 0.04em;
+}
+
+.ecosystem-xyzw span {
+  padding: 4px 6px;
+  border: 1px solid rgba(34, 211, 238, 0.22);
+  background: rgba(2, 6, 23, 0.34);
+}
+
+.ecosystem-xyzw b {
+  color: var(--omega-foam);
+  margin-right: 4px;
+}
+
 .ecosystem-body-strip small {
   color: var(--omega-unknown);
   font-size: 9px;

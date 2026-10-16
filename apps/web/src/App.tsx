@@ -589,6 +589,13 @@ export function App() {
                   </span>
                 ))}
               </div>
+              {ecosystemBody.lucidContinuum && (
+                <div className="ecosystem-xyzw" aria-label="LucidContinuum XYZW runtime coordinate">
+                  <span><b>XYZW</b> {ecosystemBody.lucidContinuum.coordinate.x} · {ecosystemBody.lucidContinuum.coordinate.y}</span>
+                  <span>{ecosystemBody.lucidContinuum.coordinate.z.join(' + ')}</span>
+                  <span>{ecosystemBody.lucidContinuum.coordinate.w}</span>
+                </div>
+              )}
               <small>{ecosystemBody.expansion?.moduleInvariant} · read-only · bounded · append-only</small>
             </section>
           )}

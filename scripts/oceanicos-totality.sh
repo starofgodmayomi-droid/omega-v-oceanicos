@@ -15,6 +15,7 @@ pnpm install --frozen-lockfile
 pnpm run build
 pnpm run typecheck
 pnpm run test:e2e
+pnpm run test:change-calculus
 node scripts/smoke-api.cjs
 
 printf '\nTOTALITY STATUS: VERIFIED (local build, integration, and compiled runtime contract)\n'
