@@ -24,6 +24,7 @@ import { registerRealityRoute } from './reality-route.js';
 import { registerChatRoute } from './chat-route.js';
 import { registerUpgradeRoute } from './upgrade-route.js';
 import { registerCovenantRoute } from './covenant-route.js';
+import { registerCompressionRoute } from './compression-route.js';
 import { API_ROUTE_INVENTORY } from './route-contract.js';
 import { OceanicosKernel as UpgradeKernel } from '@oceanicos/mini';
 import { OmegaCommandStore, registerOmegaWorkerRoutes } from './omega.js';
@@ -247,6 +248,7 @@ export function createApp(
   const upgradeKernel = new UpgradeKernel(attestationSigningKey || 'omega-upgrade-secret');
   registerUpgradeRoute(fastify, jsonError, upgradeKernel);
   registerCovenantRoute(fastify, jsonError);
+  registerCompressionRoute(fastify);
 
   fastify.get('/health', async (_request, reply) => {
     const memoryReady = true;
@@ -272,6 +274,7 @@ export function createApp(
         attester: attestationSigningKey ? 'ready' : 'degraded',
         covenant: 'ready',
         upgrade: 'ready',
+        compression: 'ready',
         memory: { status: memoryReady ? 'ready' : 'degraded', integrity: memoryReady, encryption: 'disabled' },
         persistence: {
           mode: persistenceEnabled ? 'file' : 'memory',
