@@ -14,6 +14,7 @@ type JsonError = (reply: any, status: number, error: string, extra?: Record<stri
 const connectorModes = new Set(['read-only', 'build-test', 'local-mutating', 'external-consequence']);
 const forbiddenClaimFields = new Set(['status', 'realityStatus', 'admitted', 'authorized', 'decision']);
 const forbiddenHandlerFields = new Set(['handler', 'execute', 'transport', 'fetch']);
+const forbiddenAdmissionFields = new Set(['authorityVerified', 'policySatisfied', 'approvalVerified']);
 const MAX_LIST_ENTRIES = 200;
 
 function parseObject(body: unknown): Record<string, unknown> | null {
@@ -123,6 +124,9 @@ export function registerConnectorObservationRoute(
     }
     if (Object.keys(body).some((field) => forbiddenHandlerFields.has(field))) {
       return jsonError(reply, 400, 'CONNECTOR_HANDLER_NOT_ACCEPTED');
+    }
+    if (Object.keys(body).some((field) => forbiddenAdmissionFields.has(field))) {
+      return jsonError(reply, 400, 'CONNECTOR_ADMISSION_EVIDENCE_NOT_ACCEPTED');
     }
 
     let connector: OmegaConnectorDeclaration;
