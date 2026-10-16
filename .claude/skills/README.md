@@ -13,6 +13,7 @@ its source.
 | `omega-global-good-fullstack`         | `094759e83a3aec27b6884c3b55e19b8021f8771a40d6f036e334c0e2e15af79b` | 2026-08-27 |
 | `omega-global-good-fullstack-builder` | `96d5c00b13c80d343230f301c9c87b08f6d12278d541e06480db818749c40422` | 2026-08-27 |
 | `omega-full-stack-max`                | `ec5b6a72fd453e20243813424991be79d0f718e301e18b9e54ed0417f5082cd1` | 2026-08-28 |
+| `oceanicos-one-current-companion` | `e684e49c3818a0937b7ba2b94f7b69e54a234687807a2e385de1f349b39d425e` | 2026-10-15 |
 
 Verify an installed skill still matches what was recorded:
 
@@ -127,3 +128,8 @@ So the rule is narrower than "installed skills load immediately": a skill
 written mid-session becomes available after some delay, not synchronously
 with the write. The length of that delay, and what ends it, were not
 established — only that it is neither zero nor a full session.
+
+
+## oceanicos-one-current-companion
+
+Canonical full-stack companion for bounded end-to-end Ω∞v OCEANICOS work. Routes specialist skills across architecture, verification, memory/provenance, connectors, security, product, runtime, and stewardship. Includes evidence-bound self-repair and continuous evolution protocols. Existing specialist skills remain preserved and authoritative for details.
