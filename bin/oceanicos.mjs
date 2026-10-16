@@ -1234,6 +1234,7 @@ async function handleCompression(extraArgs = []) {
   console.log(`${ANSI.bold}=== THE PURPOSE & EQUATION ===${ANSI.reset}`);
   console.log(`  ${ANSI.green}${ANSI.bold}∞ = MANY FINITE, VERIFIED TRANSITIONS${ANSI.reset}`);
   console.log(`  ${ANSI.cyan}${ANSI.bold}Ω∞v ::= VERIFY(ΔREALITY)${ANSI.reset}`);
+  console.log(`  ${ANSI.cyan}${ANSI.bold}💧 Ω∞v ::= 🌎 ⇄ ✓ ↺ ∞ ⛓️🧠🌊${ANSI.reset}`);
   console.log(`  ${ANSI.dim}Ground truth doc : COMPRESSION.md${ANSI.reset}\n`);
 }
 

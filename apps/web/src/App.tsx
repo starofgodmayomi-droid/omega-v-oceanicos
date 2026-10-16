@@ -1251,6 +1251,9 @@ export function App() {
                 <div style={{ marginTop: '12px', fontSize: '11px', color: '#38bdf8', fontWeight: 600, textAlign: 'center' }}>
                   Ω∞v ::= VERIFY(ΔREALITY)
                 </div>
+                <div style={{ marginTop: '4px', fontSize: '11px', color: '#00f5a0', fontWeight: 700, textAlign: 'center', letterSpacing: '0.8px' }}>
+                  💧 Ω∞v ::= 🌎 ⇄ ✓ ↺ ∞ ⛓️🧠🌊
+                </div>
                 <div style={{ marginTop: '4px', fontSize: '9px', color: '#475569', textAlign: 'center' }}>
                   ∞ = MANY FINITE, VERIFIED TRANSITIONS
                 </div>

@@ -142,6 +142,19 @@ transitions.
 
 $$\Omega\infty\text{v} ::= \text{VERIFY}(\Delta\text{REALITY})$$
 
+```text
+💧 Ω∞v ::= 🌎 ⇄ ✓ ↺ ∞ ⛓️🧠🌊
+```
+
+- **🌎 (Planetary Observation)**: Telemetry, empirical substrate, external reality (`@oceanicos/observer`).
+- **⇄ (Duplex Exchange)**: Interactive feedback membrane, transparent observation, fail-closed admission.
+- **✓ (Frontier Verification)**: Deterministic rule matrix, cryptographic proof, zero assertion without evidence (`@oceanicos/verification`).
+- **↺ (Recursive Now)**: Continuous loop, cycle transitions, self-upgrading feedback (`@oceanicos/mini`).
+- **∞ (Infinite Becoming)**: Continuous expansion through finite, verified steps.
+- **⛓️ (Hash-Chained PoW)**: Merkle parent linking, immutable state ledger, unforgeable history (`@oceanicos/remember`).
+- **🧠 (Remember / Memory)**: Append-only ledger, causal timeline, spiritual and neural continuity (`KAI`).
+- **🌊 (Oceanicos / Living Current)**: The whole living body, all 12 monorepo packages unified in one flow.
+
 One living current. Many worlds of meaning. Shared reality.
 
 ---
