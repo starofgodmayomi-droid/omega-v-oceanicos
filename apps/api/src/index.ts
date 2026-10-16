@@ -20,7 +20,7 @@ import { registerRealityRoute } from './reality-route.js';
 import { registerDependencyRoute } from './dependency-route.js';
 import { registerValueNavigatorRoute } from './value-navigator-route.js';
 import { registerConnectorObservationRoute, type ConnectorAdmissionEvidenceResolver } from './connector-observation-route.js';
-import { OmegaCommandStore, OmegaIdempotencyConflictError, registerOmegaRoutes } from './omega.js';
+import { OmegaCommandStore, OmegaIdempotencyConflictError, registerOmegaRoutes, type OmegaCommandAdmissionEvidenceResolver } from './omega.js';
 import { registerMeshValidationRoute } from './mesh-route.js';
 import {
   ENCRYPTION_ALGORITHM,
@@ -55,6 +55,7 @@ export type CreateAppOptions = {
   connectorObservationPath?: string;
   githubFetch?: typeof fetch;
   connectorAdmissionEvidence?: ConnectorAdmissionEvidenceResolver;
+  omegaCommandAdmissionEvidence?: OmegaCommandAdmissionEvidenceResolver;
 };
 
 type AuthMode = 'local' | 'required';
@@ -233,7 +234,7 @@ export function createApp(
   fastify.register(cors, { origin: corsOrigin });
   fastify.register(async (scope) => {
     await scope.register(rateLimit, { global: false });
-    registerOmegaRoutes(scope, omegaCommands, enforceAdminOperatorIdentity);
+    registerOmegaRoutes(scope, omegaCommands, enforceAdminOperatorIdentity, options.omegaCommandAdmissionEvidence);
   });
   fastify.addHook('onRequest', async (request, reply) => {
     if (authMode === 'local' || request.method === 'OPTIONS' || request.url.split('?')[0] === '/health') return;
