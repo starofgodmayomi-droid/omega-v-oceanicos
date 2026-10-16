@@ -1,3 +1,5 @@
+export * from './workspace.js';
+
 import { execFile } from 'node:child_process';
 import crypto from 'node:crypto';
 import type { IHiggsfieldJob } from '@oceanicos/types';

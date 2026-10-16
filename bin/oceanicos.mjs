@@ -23,10 +23,11 @@ let AttestationService;
 let PluralisticRealityMatrix;
 let OceanicosKernel;
 let WholeEcosystemUpgradeCore;
+let EchoframeWorkspace;
 let pkgLoadError = null;
 
 try {
-  let observerPkg, verifPkg, remPkg, miniPkg, attestPkg, pluralPkg;
+  let observerPkg, verifPkg, remPkg, miniPkg, attestPkg, pluralPkg, generativePkg;
   try {
     // Prefer source packages under tsx runtime
     observerPkg = await import('../packages/observer/src/index.ts');
@@ -36,6 +37,9 @@ try {
     pluralPkg = await import('../packages/pluralism/src/index.ts');
     try {
       attestPkg = await import('../packages/attestation/src/index.ts');
+    } catch {}
+    try {
+      generativePkg = await import('../packages/generative/src/index.ts');
     } catch {}
   } catch (srcErr) {
     // If not running under tsx, respawn with tsx import loader
@@ -71,6 +75,9 @@ try {
     }
     if (pluralPkg) {
       PluralisticRealityMatrix = pluralPkg.PluralisticRealityMatrix;
+    }
+    if (generativePkg) {
+      EchoframeWorkspace = generativePkg.EchoframeWorkspace;
     }
   }
 } catch (err) {
@@ -1238,6 +1245,90 @@ async function handleCompression(extraArgs = []) {
   console.log(`  ${ANSI.dim}Ground truth doc : COMPRESSION.md${ANSI.reset}\n`);
 }
 
+async function handleEchoframe(subArgs = []) {
+  printBanner();
+  const subCommand = subArgs[0] || 'list';
+  const isJson = args.includes('--json');
+
+  if (!EchoframeWorkspace) {
+    console.error(`  ${ANSI.red}[ERROR] ECHOFRAME Workspace engine (@oceanicos/generative) could not be loaded.${ANSI.reset}`);
+    return;
+  }
+
+  const workspace = new EchoframeWorkspace();
+
+  if (subCommand === 'list') {
+    const templates = workspace.listTemplates();
+    if (isJson) {
+      console.log(JSON.stringify(templates, null, 2));
+      return;
+    }
+    console.log(`\n${ANSI.bold}=== 🎨 ECHOFRAME: ACTIVE CONSTRUCTION TEMPLATES ===${ANSI.reset}\n`);
+    console.log(`  ${ANSI.cyan}Translating infinite mathematical possibilities into tangible, built logic.${ANSI.reset}\n`);
+    for (const t of templates) {
+      console.log(`  ${ANSI.green}${t.type.toUpperCase().padEnd(12)}${ANSI.reset} : ${t.description}`);
+      console.log(`  ${ANSI.dim}Target: ${t.targetPackage.padEnd(26)} Sanctum: ${t.defaultSanctum}${ANSI.reset}\n`);
+    }
+    console.log(`  Usage: node bin/oceanicos.mjs echoframe generate <primitive|route|agent|contract> <Name>\n`);
+    return;
+  }
+
+  if (subCommand === 'generate') {
+    const type = subArgs[1] || 'primitive';
+    const name = subArgs[2] || 'NewComponent';
+
+    const validTypes = ['primitive', 'route', 'agent', 'contract'];
+    if (!validTypes.includes(type)) {
+      console.error(`  ${ANSI.red}[ERROR] Invalid template type: '${type}'. Valid: ${validTypes.join(', ')}${ANSI.reset}`);
+      return;
+    }
+
+    const artifact = workspace.synthesizeTemplate(type, name);
+
+    if (isJson) {
+      console.log(JSON.stringify(artifact, null, 2));
+      return;
+    }
+
+    console.log(`\n${ANSI.bold}=== 🎨 ECHOFRAME: TANGIBLE CODE SYNTHESIZED ===${ANSI.reset}\n`);
+    console.log(`  Artifact ID   : ${ANSI.cyan}${artifact.id}${ANSI.reset}`);
+    console.log(`  Component     : ${ANSI.bold}${artifact.name}${ANSI.reset} (${artifact.type})`);
+    console.log(`  Suggested Path: ${ANSI.yellow}${artifact.suggestedPath}${ANSI.reset}`);
+    console.log(`  SHA-256 Digest: ${ANSI.dim}${artifact.digest}${ANSI.reset}`);
+    console.log(`  Gate Proof    : ${ANSI.green}✓ ${artifact.verificationGate.rule}${ANSI.reset}`);
+    console.log(`  Fail-Closed   : ${ANSI.bold}${artifact.verificationGate.failClosed}${ANSI.reset}\n`);
+    console.log(`${ANSI.dim}--- SYNTHESIZED CODE START ---${ANSI.reset}`);
+    console.log(artifact.code);
+    console.log(`${ANSI.dim}--- SYNTHESIZED CODE END ---${ANSI.reset}\n`);
+    return;
+  }
+
+  if (subCommand === 'simulate') {
+    const concept = subArgs.slice(1).join(' ') || 'Continuous Tensor Wave Engine';
+    const sim = workspace.simulateTransition(concept);
+
+    if (isJson) {
+      console.log(JSON.stringify(sim, null, 2));
+      return;
+    }
+
+    console.log(`\n${ANSI.bold}=== 🎨 ECHOFRAME: CONCEPT TRANSITION SIMULATION ===${ANSI.reset}\n`);
+    console.log(`  Simulation ID : ${ANSI.cyan}${sim.simulationId}${ANSI.reset}`);
+    console.log(`  Concept       : ${ANSI.bold}${sim.concept}${ANSI.reset}`);
+    console.log(`  Epistemic State: ${ANSI.green}${sim.epistemicState}${ANSI.reset}`);
+    console.log(`  Resonance     : ${ANSI.cyan}${sim.harmonicResonanceHz} Hz${ANSI.reset}`);
+    console.log(`  Entropy Level : ${ANSI.dim}${sim.entropyLevel}${ANSI.reset}\n`);
+    console.log(`  Evaluated Invariant Axioms:`);
+    for (const ax of sim.evaluatedAxioms) {
+      console.log(`    • ${ANSI.dim}${ax}${ANSI.reset}`);
+    }
+    console.log('');
+    return;
+  }
+
+  console.log(`  Usage: node bin/oceanicos.mjs echoframe [list|generate|simulate]\n`);
+}
+
 function handleHelp() {
   printBanner();
   console.log(`
@@ -1267,6 +1358,7 @@ ${ANSI.bold}COMMANDS:${ANSI.reset}
   ${ANSI.green}covenant${ANSI.reset}     Inspect biblical covenant state machine & probe sanctums
   ${ANSI.green}upgrade${ANSI.reset}      Inspect and verify V1111 singularity self-upgrade engine
   ${ANSI.green}compression${ANSI.reset}  Display irreducible MAX COMPRESSION axioms & seed hash
+  ${ANSI.green}echoframe${ANSI.reset}    Synthesize code templates, components, and simulate concepts
   ${ANSI.green}help${ANSI.reset}        Display this help message
 
 ${ANSI.bold}OPTIONS:${ANSI.reset}
@@ -1315,6 +1407,11 @@ switch (command) {
   case 'meta':
   case 'universe':
     await handleCompression(args.slice(1));
+    break;
+  case 'echoframe':
+  case 'generate':
+  case 'workspace':
+    await handleEchoframe(args.slice(1));
     break;
   case 'status':
     await handleStatus();
