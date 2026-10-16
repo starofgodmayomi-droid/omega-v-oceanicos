@@ -64,4 +64,14 @@ DEFAULT: FAIL CLOSED
 - **Command Line**: `node bin/oceanicos.mjs compression` outputs zero-entropy verified report
 - **Covenant Engine**: Genesis in `HOLY_OF_HOLIES`, fail-closed `403` proven on empty evidence
 
+---
+
+## 5. Transition History & State Hash Lineage
+
+| State Index | State ID | Tip Hash | Parent Root Hash | Status | Intent / Claim |
+|:---:|:---:|:---:|:---:|:---:|---|
+| **0** | `state-0-genesis` | `0000000000000000...` | `(0, 0, 0, 0)` | `VERIFIED` | Genesis Root Attestation |
+| **1** | `state-1-f300c0a2` | `0e191eadf49d41b6...` | `1fc0ea4c843b88a6...` | `VERIFIED` | V1111 Singularity Upgrade: Seed Crystal & Invariants |
+| **2** | `state-2-bc865a68` | `08b28cfcdaf30dbc...` | `3512e5215d236ad8...` | `VERIFIED` | V1111 Singularity Upgrade: Fluid Compression & REST Flow |
+
 $$\Omega\infty\text{v} ::= \text{VERIFY}(\Delta\text{REALITY})$$
