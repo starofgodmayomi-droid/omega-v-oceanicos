@@ -1604,6 +1604,40 @@ async function handleMatrix(cmdArgs = []) {
     return;
   }
 
+  if (subCommand === 'continuum' || subCommand === 'compress') {
+    let result = null;
+    try {
+      const res = await fetch(`${apiBase}/v1/pluralism/matrix/continuum-compression`);
+      if (res.ok) result = await res.json();
+    } catch {}
+
+    if (!result && matrixPkg?.executeContinuumCompressionTransition) {
+      const receipt = matrixPkg.executeContinuumCompressionTransition();
+      result = { success: receipt.success, receipt, source: 'local-fallback' };
+    }
+
+    if (isJson) {
+      console.log(JSON.stringify(result, null, 2));
+      return;
+    }
+
+    printBanner();
+    console.log(`\n${ANSI.bold}=== 💧 ƆCEANiC_OS CONTINUUM COMPRESSION MATRIX ===${ANSI.reset}\n`);
+    if (result?.receipt) {
+      console.log(`  ${ANSI.cyan}Contract${ANSI.reset}           : ${ANSI.bold}${result.receipt.contract}${ANSI.reset}`);
+      console.log(`  ${ANSI.yellow}Human Root${ANSI.reset}         : ${result.receipt.humanRoot} (${result.receipt.humanSteward})`);
+      console.log(`  ${ANSI.cyan}Continuum Packages${ANSI.reset} : ${result.receipt.continuumPackagesCount} packages`);
+      console.log(`  ${ANSI.cyan}Sovereign Organs${ANSI.reset}   : ${result.receipt.sovereignOrgansCount} organs`);
+      console.log(`  ${ANSI.cyan}Tensor Dimension${ANSI.reset}   : ${result.receipt.tensorDimension} coordinates`);
+      console.log(`  ${ANSI.bold}Frobenius Norm${ANSI.reset}     : ${result.receipt.frobeniusNorm}`);
+      console.log(`  ${ANSI.bold}Singularity Status${ANSI.reset} : ${result.receipt.singularityStatus === 'PREVENTED_VERIFIED' ? ANSI.green : ANSI.red}${result.receipt.singularityStatus}${ANSI.reset}`);
+      console.log(`  ${ANSI.green}Upgrade Hash${ANSI.reset}       : ${ANSI.dim}${result.receipt.upgradeHash}${ANSI.reset}\n`);
+    } else {
+      console.log(`  ${ANSI.red}[ERROR] Continuum compression unavailable.${ANSI.reset}\n`);
+    }
+    return;
+  }
+
   let matrixData = null;
   try {
     const res = await fetch(`${apiBase}/v1/pluralism/matrix`);
