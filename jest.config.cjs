@@ -49,7 +49,9 @@ module.exports = {
     '^@omega-v/remember$': '<rootDir>/packages/remember/src/index.ts',
     '^@omega-v/mini$': '<rootDir>/packages/mini/src/index.ts',
     '^@omega-v/(.*)$': '<rootDir>/continuum/packages/$1/src/index.ts',
+    '^fastify$': '<rootDir>/apps/api/node_modules/fastify',
   },
+  moduleDirectories: ['node_modules', '<rootDir>/apps/api/node_modules'],
   transform: {
     '^.+\\.tsx?$': [
       'ts-jest',

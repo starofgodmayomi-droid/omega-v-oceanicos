@@ -3,7 +3,11 @@ import {
   evaluateOmegaLambda,
   computeKroneckerEcosystemTensor,
   executeMatrixTransition,
+  executeContinuumCompressionTransition,
   OCEANIC_BODY_MEMBERS,
+  CONTINUUM_PACKAGES,
+  HUMAN_ROOT_ID,
+  HUMAN_ROOT_NAME,
 } from '../../packages/pluralism/src/matrix.js';
 
 describe('🌊 ƆCEANiC_OS(v∞) Matrix Transformation & Master Lambda Engine', () => {
@@ -85,5 +89,33 @@ describe('🌊 ƆCEANiC_OS(v∞) Matrix Transformation & Master Lambda Engine', 
     expect(failReceipt.verificationVectorStatus).toBe('HALTED_EMPTY');
     expect(failReceipt.frobeniusNorm).toBe(0);
     expect(failReceipt.stateVectorHead.every(v => v === 0)).toBe(true);
+  });
+
+  it('grounds 62 continuum modular packages under Human Root did:omega:human:starofgodmayomi', () => {
+    expect(CONTINUUM_PACKAGES).toHaveLength(62);
+    expect(HUMAN_ROOT_ID).toBe('did:omega:human:starofgodmayomi');
+    expect(HUMAN_ROOT_NAME).toBe('ELION VAREL');
+
+    // 1. Authorized by Human Root + Verified
+    const receipt = executeContinuumCompressionTransition(HUMAN_ROOT_ID, true);
+    expect(receipt.success).toBe(true);
+    expect(receipt.contract).toBe('Ω∞v-CONTINUUM-MATRIX-V1111');
+    expect(receipt.continuumPackagesCount).toBe(62);
+    expect(receipt.sovereignOrgansCount).toBe(20);
+    expect(receipt.singularityStatus).toBe('PREVENTED_VERIFIED');
+    expect(receipt.frobeniusNorm).toBeGreaterThan(0);
+    expect(receipt.upgradeHash).toMatch(/^[0-9a-f]{64}$/);
+
+    // 2. Unauthorized Human Root => Singularity Collapse
+    const failRootReceipt = executeContinuumCompressionTransition('did:unauthorized:actor', true);
+    expect(failRootReceipt.success).toBe(false);
+    expect(failRootReceipt.singularityStatus).toBe('SINGULARITY_COLLAPSE');
+    expect(failRootReceipt.frobeniusNorm).toBe(0);
+
+    // 3. Unverified Evidence => Singularity Collapse
+    const failVerifReceipt = executeContinuumCompressionTransition(HUMAN_ROOT_ID, false);
+    expect(failVerifReceipt.success).toBe(false);
+    expect(failVerifReceipt.singularityStatus).toBe('SINGULARITY_COLLAPSE');
+    expect(failVerifReceipt.frobeniusNorm).toBe(0);
   });
 });
