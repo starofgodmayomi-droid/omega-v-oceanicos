@@ -126,7 +126,7 @@ present in the repository.
 ┌──────────────────────────────────────────────────────────────┐
 │ Human intent, governance, authorization, and decision records │
 ├──────────────────────────────────────────────────────────────┤
-│ Web dashboard · CLI · SDK · API · worker interfaces          │
+│ Web dashboard · root CLI · API · workspace worker interfaces │
 ├──────────────────────────────────────────────────────────────┤
 │ Attestation · provenance · observation · reconciliation       │
 ├──────────────────────────────────────────────────────────────┤
@@ -148,7 +148,7 @@ present in the repository.
 | Attestation | `packages/attestation` | Produce and verify supported cryptographic receipts |
 | API | `apps/api` | Fastify runtime and network contracts |
 | Web | `apps/web` | React/Vite dashboard and evidence visualization |
-| CLI and SDK | `packages/cli`, `packages/sdk` | Programmatic and terminal access |
+| CLI and SDK package directories | `packages/cli`, `packages/sdk` | Source directories exist but are not listed in the current `pnpm-workspace.yaml`; do not imply root-workspace activation or a verified package build |
 | Workers | `packages/worker` | Bounded leases, lifecycle, and fail-closed execution |
 | Tests | `tests/` | Integration, contract, runtime, and regression evidence |
 | CI and release | `.github/workflows/`, `Dockerfile`, `docker-compose.yml` | Verification, packaging, and staged release gates |
@@ -224,9 +224,7 @@ production availability, identity proofing, external custody, or deployment heal
 pnpm verify:full
 ```
 
-This is a local evidence command covering the repository's configured build,
-type-check, integration, and API smoke stages. Its result is bounded to the exact
-machine, commit, configuration, and time at which it runs.
+This invokes `scripts/oceanicos-totality.sh`, which installs from the frozen lockfile, runs build, type-check, the configured end-to-end integration suite, and API smoke. Its result is bounded to the exact machine, commit, configuration, and time at which it runs.
 
 ## Common commands
 
@@ -392,7 +390,7 @@ infinity, consciousness, or control of external reality.
 ---
 
 **Status:** MINI kernel and earned expansions — expand only with evidence
-**Last updated:** 2026-10-02
+**Last updated:** 2026-10-14
 
 ## Whole-ecosystem root
 
