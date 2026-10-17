@@ -14,6 +14,8 @@
     "validate:skills": "node scripts/validate-skill-contracts.mjs",
     "lint": "pnpm typecheck",
     "type-check": "pnpm typecheck",
+    "verify:local-offline": "pnpm run oceanicos:v_infinity",
+    "oceanicos:v_infinity": "pnpm build && node bin/oceanicos-v-infinity.mjs --now --local-first --stateless --offline",
     "verify": "pnpm build && node --input-type=module -e \"const { executeOceanicosMaxExpansion } = await import('./packages/mini/dist/index.js'); executeOceanicosMaxExpansion();\"",
     "predev": "pnpm build",
     "mood": "node bin/oceanicos.mjs mood",
