@@ -124,6 +124,74 @@ export function evaluateOmegaLambda(ctx: OmegaLambdaContext): OmegaLambdaResult 
   };
 }
 
+export interface PluralisticDirectSumContext {
+  readonly S?: any;
+  readonly R?: any;
+  readonly I: any;
+  readonly E: { readonly observed?: boolean; readonly verified?: boolean; [key: string]: any } | null;
+  readonly A: boolean;
+  readonly P: boolean;
+  readonly M?: any;
+  readonly D?: any;
+}
+
+export interface PluralisticDirectSumResult {
+  readonly '🌊': 'ƆCEANiC_OS(v∞)';
+  readonly BODY: readonly string[];
+  readonly STATE: any;
+  readonly INTENT: any;
+  readonly MEMORY: any;
+  readonly DISSENT: any;
+  readonly DECISION: 'DENY' | 'VERIFIED' | 'UNKNOWN';
+  readonly LAW: 'PLURALISM∧DISSENT∧EVIDENCE∧AUTHORITY∧FINITE_TRANSITIONS';
+  readonly FLOW: '0→💧→Ω∞v→🕳️→💧→∞';
+  readonly proofHash: string;
+}
+
+/**
+ * Evaluates the Pluralistic Direct Sum Lambda Equation:
+ * Ω∞v = lambda S,I,E,A,P,M,D: { ... }
+ */
+export function evaluateDirectSumLambda(ctx: PluralisticDirectSumContext): PluralisticDirectSumResult {
+  const S = ctx.S !== undefined ? ctx.S : (ctx.R !== undefined ? ctx.R : 'S_GROUND');
+  const I = ctx.I !== undefined ? ctx.I : 'INTENT_NONE';
+  const M = ctx.M !== undefined ? ctx.M : {};
+  const D = ctx.D !== undefined ? ctx.D : [];
+  const { E, A, P } = ctx;
+
+  let decision: 'DENY' | 'VERIFIED' | 'UNKNOWN';
+  if (!(A && P)) {
+    decision = 'DENY';
+  } else if (E && typeof E === 'object' && E.observed === true && E.verified === true) {
+    decision = 'VERIFIED';
+  } else {
+    decision = 'UNKNOWN';
+  }
+
+  const proofPayload = JSON.stringify({ S, I, E, A, P, M, D, decision });
+  const proofHash = createHash('sha256').update(proofPayload).digest('hex');
+
+  const bodyMembers = [
+    'KAI', 'LUCID', 'AI_SOUL', 'ΩIR', 'TruthOS', 'VaaS',
+    'ECHOFRAME', 'ƆREADE', 'MOOD', 'MIRRIO', 'Notion', 'GitHub',
+    'Composio', 'Workers', 'API', 'Web',
+  ] as const;
+
+  return {
+    '🌊': 'ƆCEANiC_OS(v∞)',
+    BODY: bodyMembers,
+    STATE: S,
+    INTENT: I,
+    MEMORY: M,
+    DISSENT: D,
+    DECISION: decision,
+    LAW: 'PLURALISM∧DISSENT∧EVIDENCE∧AUTHORITY∧FINITE_TRANSITIONS',
+    FLOW: '0→💧→Ω∞v→🕳️→💧→∞',
+    proofHash,
+  };
+}
+
+
 /**
  * Computes the 320-dimensional Kronecker tensor product:
  * Ω_{OS} = M_I ⊗ C_E ⊗ R_E ⊗ V_X

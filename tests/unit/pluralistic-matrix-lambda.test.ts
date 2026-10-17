@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 import {
   evaluateOmegaLambda,
+  evaluateDirectSumLambda,
   computeKroneckerEcosystemTensor,
   executeMatrixTransition,
   executeContinuumCompressionTransition,
@@ -118,4 +119,62 @@ describe('🌊 ƆCEANiC_OS(v∞) Matrix Transformation & Master Lambda Engine', 
     expect(failVerifReceipt.singularityStatus).toBe('SINGULARITY_COLLAPSE');
     expect(failVerifReceipt.frobeniusNorm).toBe(0);
   });
+
+  it('evaluates Pluralistic Direct Sum Lambda (S, I, E, A, P, M, D) preserving dissent', () => {
+    // 1. Authorized and Evidence Verified
+    const verifiedResult = evaluateDirectSumLambda({
+      S: { step: 10, hash: '0x123' },
+      I: 'UPGRADE_HARMONIZE',
+      E: { observed: true, verified: true },
+      A: true,
+      P: true,
+      M: { recallCount: 42 },
+      D: [{ streamId: 'dissent-1', reason: 'alternative perspective preserved' }],
+    });
+
+    expect(verifiedResult['🌊']).toBe('ƆCEANiC_OS(v∞)');
+    expect(verifiedResult.DECISION).toBe('VERIFIED');
+    expect(verifiedResult.BODY).toHaveLength(16);
+    expect(verifiedResult.BODY).toContain('KAI');
+    expect(verifiedResult.BODY).toContain('LUCID');
+    expect(verifiedResult.BODY).toContain('AI_SOUL');
+    expect(verifiedResult.BODY).toContain('ΩIR');
+    expect(verifiedResult.BODY).toContain('TruthOS');
+    expect(verifiedResult.BODY).toContain('VaaS');
+    expect(verifiedResult.BODY).toContain('ECHOFRAME');
+    expect(verifiedResult.BODY).toContain('ƆREADE');
+    expect(verifiedResult.BODY).toContain('MOOD');
+    expect(verifiedResult.BODY).toContain('MIRRIO');
+    expect(verifiedResult.BODY).toContain('Notion');
+    expect(verifiedResult.BODY).toContain('GitHub');
+    expect(verifiedResult.BODY).toContain('Composio');
+    expect(verifiedResult.BODY).toContain('Workers');
+    expect(verifiedResult.BODY).toContain('API');
+    expect(verifiedResult.BODY).toContain('Web');
+    expect(verifiedResult.LAW).toBe('PLURALISM∧DISSENT∧EVIDENCE∧AUTHORITY∧FINITE_TRANSITIONS');
+    expect(verifiedResult.FLOW).toBe('0→💧→Ω∞v→🕳️→💧→∞');
+    expect(verifiedResult.DISSENT).toHaveLength(1);
+    expect(verifiedResult.proofHash).toMatch(/^[0-9a-f]{64}$/);
+
+    // 2. Denied if not(A and P)
+    const deniedResult = evaluateDirectSumLambda({
+      S: 'S_CURRENT',
+      I: 'UNAUTHORIZED_RUN',
+      E: { observed: true, verified: true },
+      A: false,
+      P: true,
+    });
+    expect(deniedResult.DECISION).toBe('DENY');
+
+    // 3. Unknown if evidence incomplete
+    const unknownResult = evaluateDirectSumLambda({
+      S: 'S_CURRENT',
+      I: 'PARTIAL_EVIDENCE',
+      E: { observed: true, verified: false },
+      A: true,
+      P: true,
+    });
+    expect(unknownResult.DECISION).toBe('UNKNOWN');
+  });
 });
+
