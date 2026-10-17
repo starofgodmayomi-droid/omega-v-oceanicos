@@ -458,16 +458,23 @@ export function registerOmegaRoutes(
   });
 
   fastify.post('/v1/omega/commands/:id/admit', async (request, reply) => {
+    if (enforceAdminOperatorIdentity && !enforceAdminOperatorIdentity(request, reply)) return;
     const command = store.get((request.params as { id?: string }).id ?? '');
     if (!command) return reply.status(404).send({ success: false, error: 'OMEGA_COMMAND_NOT_FOUND' });
     if (command.status !== 'PROPOSED' && command.status !== 'REVIEW') return reply.status(409).send({ success: false, error: 'OMEGA_COMMAND_STALE' });
     const body = bodyOf(request);
-    const authority = typeof body.authority === 'string' ? body.authority : null;
+    const guardedOperator = (request as typeof request & { omegaOperatorId?: string }).omegaOperatorId;
+    const authority = typeof guardedOperator === 'string' && guardedOperator.trim()
+      ? `human:${guardedOperator.trim()}`
+      : typeof body.authority === 'string' ? body.authority : null;
     const policy = typeof body.policy === 'string' ? body.policy : null;
     const admitted = resolveChangeAdmission({ ...command.change, authority, policy }, { authorityVerified: body.authorityVerified === true, policySatisfied: body.policySatisfied === true });
     const status = statusForDecision(admitted.decision);
     const updated = store.update(command, { change: admitted, status });
-    store.record('command.admitted', updated, { decision: admitted.decision });
+    store.record('command.admitted', updated, {
+      decision: admitted.decision,
+      ...(typeof guardedOperator === 'string' ? { operator: guardedOperator } : {}),
+    });
     return { success: true, ...commandResult(updated, status === 'AUTHORIZED' ? 'execute the authorized bounded action' : status === 'DENIED' ? 'review the denial evidence; no execution is permitted' : 'obtain attributable human approval') };
   });
 

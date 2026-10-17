@@ -478,7 +478,7 @@ export class OmegaApiError extends Error {
 export type OmegaCommandWorker = 'observer' | 'researcher' | 'planner' | 'tester' | 'security-reviewer' | 'governance-reviewer';
 export type OmegaCommandResponse = { success: boolean; command: Record<string, unknown>; status: string; nextAction: string; [key: string]: unknown };
 
-import { sdkOmegaApprovalRequest } from './omega-approval-request.js';
+import { sdkOmegaAdmissionRequest, sdkOmegaApprovalRequest } from './omega-approval-request.js';
 
 export class OmegaClient {
   private readonly baseUrl: string;
@@ -722,8 +722,9 @@ export class OmegaClient {
     return this.get<OmegaCommandResponse>(`/v1/omega/commands/${encodeURIComponent(commandId)}`);
   }
 
-  async admitCommand(commandId: string, input: { authority: string; policy: string; authorityVerified?: boolean; policySatisfied?: boolean }): Promise<OmegaCommandResponse> {
-    return this.post<OmegaCommandResponse>(`/v1/omega/commands/${encodeURIComponent(commandId)}/admit`, input, this.adminToken);
+  async admitCommand(commandId: string, input: { authority: string; policy: string; authorityVerified?: boolean; policySatisfied?: boolean }, operator = 'sdk-operator'): Promise<OmegaCommandResponse> {
+    const admission = sdkOmegaAdmissionRequest(commandId, input, operator);
+    return this.post<OmegaCommandResponse>(admission.path, admission.payload, this.adminToken, admission.headers);
   }
 
   async approveCommand(commandId: string, operator = 'sdk-operator'): Promise<OmegaCommandResponse> {

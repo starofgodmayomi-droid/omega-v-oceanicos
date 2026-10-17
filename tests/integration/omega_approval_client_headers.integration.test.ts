@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createApp } from '../../apps/api/dist/index.js';
-import { omegaApprovalRequest } from '../../apps/web/src/omega-approval-request.ts';
-import { sdkOmegaApprovalRequest } from '../../packages/sdk/src/omega-approval-request.ts';
+import { omegaApprovalRequest, omegaOperatorHeaders } from '../../apps/web/src/omega-approval-request.ts';
+import { sdkOmegaAdmissionRequest, sdkOmegaApprovalRequest } from '../../packages/sdk/src/omega-approval-request.ts';
 
 const environmentKeys = [
   'OMEGA_AUTH_MODE',
@@ -19,7 +19,7 @@ function restoreEnvironment(): void {
   }
 }
 
-test('dashboard and SDK approval requests send the allowlisted operator header to the API', async () => {
+test('dashboard and SDK command admission and approval honor allowlisted operator identity', async () => {
   process.env.OMEGA_AUTH_MODE = 'local';
   process.env.OMEGA_ADMIN_OPERATOR_ALLOWLIST = 'dashboard-operator,sdk-operator';
   process.env.OMEGA_ADMIN_REQUIRE_ALLOWLIST = 'on';
@@ -39,6 +39,14 @@ test('dashboard and SDK approval requests send the allowlisted operator header t
     assert.equal(response.statusCode, 201, response.body);
     return response.json().command.commandId as string;
   };
+  const readCommandEvents = async (commandId: string): Promise<Array<{ type?: string; operator?: string }>> => {
+    const response = await app.inject({
+      method: 'GET',
+      url: `/v1/omega/events?commandId=${encodeURIComponent(commandId)}`,
+    });
+    assert.equal(response.statusCode, 200, response.body);
+    return response.json().events as Array<{ type?: string; operator?: string }>;
+  };
 
   try {
     await app.ready();
@@ -56,6 +64,72 @@ test('dashboard and SDK approval requests send the allowlisted operator header t
       url: `/v1/omega/commands/${encodeURIComponent(bodyOnlyCommandId)}`,
     });
     assert.equal(unchanged.json().command.status, 'PROPOSED');
+
+    const bodyOnlyAdmitCommandId = await createProposal('admission-header-body-only');
+    const bodyOnlyAdmit = await app.inject({
+      method: 'POST',
+      url: `/v1/omega/commands/${encodeURIComponent(bodyOnlyAdmitCommandId)}/admit`,
+      payload: {
+        authority: 'human:dashboard-operator',
+        policy: 'mood-codex-boundary.v1',
+        authorityVerified: true,
+        policySatisfied: true,
+      },
+    });
+    assert.equal(bodyOnlyAdmit.statusCode, 403);
+    assert.equal(bodyOnlyAdmit.json().error, 'ADMIN_OPERATOR_NOT_ALLOWED');
+    const bodyOnlyAdmitUnchanged = await app.inject({
+      method: 'GET',
+      url: `/v1/omega/commands/${encodeURIComponent(bodyOnlyAdmitCommandId)}`,
+    });
+    assert.equal(bodyOnlyAdmitUnchanged.json().command.status, 'PROPOSED');
+    assert.equal(
+      (await readCommandEvents(bodyOnlyAdmitCommandId)).some((event) => event.type === 'command.admitted'),
+      false,
+    );
+
+    const unlistedAdmitCommandId = await createProposal('admission-header-unlisted');
+    const unlistedAdmit = await app.inject({
+      method: 'POST',
+      url: `/v1/omega/commands/${encodeURIComponent(unlistedAdmitCommandId)}/admit`,
+      headers: { 'x-omega-operator-id': 'untrusted-operator' },
+      payload: {
+        authority: 'human:untrusted-operator',
+        policy: 'mood-codex-boundary.v1',
+        authorityVerified: true,
+        policySatisfied: true,
+      },
+    });
+    assert.equal(unlistedAdmit.statusCode, 403);
+    const unlistedAdmitUnchanged = await app.inject({
+      method: 'GET',
+      url: `/v1/omega/commands/${encodeURIComponent(unlistedAdmitCommandId)}`,
+    });
+    assert.equal(unlistedAdmitUnchanged.json().command.status, 'PROPOSED');
+    assert.equal(
+      (await readCommandEvents(unlistedAdmitCommandId)).some((event) => event.type === 'command.admitted'),
+      false,
+    );
+
+    const dashboardAdmitCommandId = await createProposal('admission-header-dashboard');
+    const dashboardHeadersForAdmit = omegaOperatorHeaders();
+    assert.equal(dashboardHeadersForAdmit['x-omega-operator-id'], 'dashboard-operator');
+    const dashboardAdmit = await app.inject({
+      method: 'POST',
+      url: `/v1/omega/commands/${encodeURIComponent(dashboardAdmitCommandId)}/admit`,
+      headers: dashboardHeadersForAdmit,
+      payload: {
+        authority: 'human:body-spoofed-operator',
+        policy: 'mood-codex-boundary.v1',
+        authorityVerified: true,
+        policySatisfied: true,
+      },
+    });
+    assert.equal(dashboardAdmit.statusCode, 200, dashboardAdmit.body);
+    assert.equal(dashboardAdmit.json().command.status, 'AUTHORIZED');
+    assert.equal(dashboardAdmit.json().command.change.authority, 'human:dashboard-operator');
+    const dashboardAdmitEvent = (await readCommandEvents(dashboardAdmitCommandId)).find((event) => event.type === 'command.admitted');
+    assert.equal(dashboardAdmitEvent?.operator, 'dashboard-operator');
 
     const dashboardCommandId = await createProposal('approval-header-dashboard');
     const dashboardRequest = omegaApprovalRequest();
@@ -92,6 +166,25 @@ test('dashboard and SDK approval requests send the allowlisted operator header t
     });
     assert.equal(sdkApproval.statusCode, 200, sdkApproval.body);
     assert.equal(sdkApproval.json().command.change.authority, 'human:sdk-operator');
+
+    const sdkAdmitCommandId = await createProposal('admission-header-sdk');
+    const sdkAdmitRequest = sdkOmegaAdmissionRequest(sdkAdmitCommandId, {
+      authority: 'human:body-spoofed-operator',
+      policy: 'mood-codex-boundary.v1',
+      authorityVerified: true,
+      policySatisfied: true,
+    });
+    assert.equal(sdkAdmitRequest.headers['x-omega-operator-id'], 'sdk-operator');
+    const sdkAdmit = await app.inject({
+      method: 'POST',
+      url: sdkAdmitRequest.path,
+      headers: { 'content-type': 'application/json', ...sdkAdmitRequest.headers },
+      payload: JSON.stringify(sdkAdmitRequest.payload),
+    });
+    assert.equal(sdkAdmit.statusCode, 200, sdkAdmit.body);
+    assert.equal(sdkAdmit.json().command.change.authority, 'human:sdk-operator');
+    const sdkAdmitEvent = (await readCommandEvents(sdkAdmitCommandId)).find((event) => event.type === 'command.admitted');
+    assert.equal(sdkAdmitEvent?.operator, 'sdk-operator');
 
     const defaultSdkRequest = sdkOmegaApprovalRequest('command-default-operator');
     assert.equal(defaultSdkRequest.headers['x-omega-operator-id'], 'sdk-operator');

@@ -26,6 +26,17 @@ routes use the read token and mutations use the admin token.
 
 Optional local-job authentication uses `OMEGA_LOCAL_JOB_LEDGER_TOKEN`.
 
+Operator allowlisting is separate from bearer authentication. When
+`OMEGA_ADMIN_OPERATOR_ALLOWLIST` is configured, the three persistence/revocation
+mutations and Ω command admission/approval require an `x-omega-operator-id`
+from that list; `OMEGA_ADMIN_REQUIRE_ALLOWLIST=on` also fails closed when the
+list is missing. For admission, body-supplied authority cannot replace the
+header while this policy is active. The header is a caller assertion, not
+authentication or proof of human identity; required mode still needs the
+admin bearer token. Admission's `authorityVerified` and `policySatisfied`
+values are client-supplied inputs, not independently verified evidence, and an
+`AUTHORIZED` command has not yet executed.
+
 ## Persistence
 
 Persistence is controlled by `OMEGA_PERSISTENCE=on|off`. If omitted, tests
