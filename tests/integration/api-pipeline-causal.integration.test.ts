@@ -126,6 +126,49 @@ describe('live API pipeline → durable causal memory', () => {
     }
   });
 
+  it('halts dry-run before an explicit handler can execute', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'omega-api-pipeline-dry-run-'));
+    try {
+      const { createApp } = await import('../../apps/api/dist/index.js');
+      const app = createApp(join(directory, 'ledger.db'), false, { allowUnsignedCycle: true });
+      await app.ready();
+      try {
+        const dryRunCompile = {
+          ...compile,
+          transition: { ...compile.transition, dryRun: true },
+        };
+        const response = await app.inject({
+          method: 'POST',
+          url: '/v1/pipeline',
+          payload: {
+            compile: dryRunCompile,
+            admission: { authorityVerified: true, policySatisfied: true },
+            authority: 'human:api-test',
+            policy: 'policy:api',
+            // This previously caused the explicit handler to bypass the dry-run gate.
+            handlerStateAfter: 'S1',
+            waterFlowMaxSteps: 3,
+            changeId: 'api-pipeline-dry-run-handler-boundary',
+          },
+        });
+        assert.equal(response.statusCode, 200);
+        const body = response.json();
+        assert.equal(body.success, true);
+        assert.equal(body.pipeline.stage, 'EXECUTE');
+        assert.equal(body.pipeline.halted, true);
+        assert.equal(body.pipeline.haltReason, 'DRY_RUN');
+        assert.equal(body.pipeline.executionStatus, null);
+        assert.equal(body.pipeline.attestationId, null);
+        assert.equal(body.pipeline.realityStatus, null);
+        assert.equal(body.pipeline.waterFlow.length, 3);
+      } finally {
+        await app.close();
+      }
+    } finally {
+      await removeTemporaryDirectory(directory);
+    }
+  });
+
   it('rejects the pipeline before execution when configured causal memory is unreadable', async () => {
     const directory = mkdtempSync(join(tmpdir(), 'omega-api-causal-unreadable-'));
     const memoryPath = join(directory, 'causal-directory');
