@@ -13,7 +13,7 @@ import { ObserverEngine } from '@oceanicos/observer';
 import { AttestationService } from '@oceanicos/attestation';
 import { InferenceClient } from '@oceanicos/inference';
 import { VectorMemory } from '@oceanicos/vector';
-import { PluralisticRealityMatrix, PluralismConvergenceMatrix, PluralisticDualityTensor, evaluateOmegaLambda, executeMatrixTransition, OCEANIC_BODY_MEMBERS } from '@oceanicos/pluralism';
+import { PluralisticRealityMatrix, PluralismConvergenceMatrix, PluralisticDualityTensor, evaluateOmegaLambda, executeMatrixTransition, executeContinuumCompressionTransition, OCEANIC_BODY_MEMBERS } from '@oceanicos/pluralism';
 import { OceanicosKernel } from '@omega-v/kernel';
 import { evaluateAuthorization } from '@oceanicos/authorization';
 import { LocalJobError, LocalJobLedger, LOCAL_JOB_WINDOW } from './jobs.js';
@@ -841,6 +841,19 @@ export function createApp(
     return { success: true, receipt };
   });
 
+  fastify.get('/v1/pluralism/matrix/continuum-compression', async () => {
+    const receipt = executeContinuumCompressionTransition();
+    return { success: receipt.success, receipt };
+  });
+
+  fastify.post('/v1/pluralism/matrix/continuum-compression', async (request: any) => {
+    const body = request.body || {};
+    const attributedHuman = typeof body.attributedHuman === 'string' ? body.attributedHuman : undefined;
+    const isEvidenceVerified = body.isEvidenceVerified !== undefined ? Boolean(body.isEvidenceVerified) : true;
+    const receipt = executeContinuumCompressionTransition(attributedHuman, isEvidenceVerified);
+    return { success: receipt.success, receipt };
+  });
+
   fastify.post('/v1/artemis/action', async (request: any, reply) => {
     const command = typeof request.body?.command === 'string' ? request.body.command.trim() : '';
     if (!command) {
@@ -1050,6 +1063,11 @@ export const STARTUP_BANNER = [
   '  GET    /v1/pluralism/tensor',
   '  POST   /v1/pluralism/tensor/meaning',
   '  POST   /v1/pluralism/tensor/evaluate',
+  '  GET    /v1/pluralism/matrix',
+  '  POST   /v1/pluralism/matrix/lambda',
+  '  POST   /v1/pluralism/matrix/transition',
+  '  GET    /v1/pluralism/matrix/continuum-compression',
+  '  POST   /v1/pluralism/matrix/continuum-compression',
   '  GET    /v1/continuum',
   '  POST   /v1/artemis/action',
   '  POST   /v1/totality/lock',
