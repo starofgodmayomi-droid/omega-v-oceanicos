@@ -32,7 +32,7 @@ Welcome to the Ω∞v Oceanicos documentation. Start here to understand the proj
 2. Read [CONTRIBUTING.md](../CONTRIBUTING.md) — learn our workflow
 3. Run through [DEVELOPMENT.md](./DEVELOPMENT.md) — set up locally
 4. Find an issue labeled `good first issue` — make your first contribution
-5. See your work merged and in production — celebrate!
+5. Open a pull request with evidence. Merge and production remain separate human gates.
 
 ### For Architects
 
@@ -158,8 +158,7 @@ remain on the [roadmap](./ROADMAP.md).
   evidence + memory composed into one cycle
 - **[Architecture](./ARCHITECTURE.md)** — how the packages fit together
 
-There is no compiler or IR, and no database: state is a JSON snapshot and
-two append-only files on disk.
+`packages/compiler` and `packages/ir` are workspace members. Membership is not API use and not a production virtual machine. Persistence claims belong to the package that owns them; this index does not declare a single database.
 
 ### Community
 
@@ -189,6 +188,8 @@ A: Provide evidence and propose alternatives. See [CHARTER.md](../CHARTER.md#how
 ---
 
 ## Project Status
+
+Aligned with the [Oceanicos Full-Stack Companion](../skills/oceanicos-full-stack-companion/SKILL.md): this index is a map. It is not `VERIFIED` runtime health.
 
 - **Current Phase**: MINI kernel (Observe → Verify → Remember)
 - **Next Phase**: Earned expansions (`+ Attest`, interfaces) after MINI is proven

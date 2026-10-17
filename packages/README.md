@@ -1,169 +1,121 @@
 # Packages
 
-Shared libraries for the Ω∞v growth spine:
+Shared libraries on one spine. The kernel phrase is the default mental model:
 
 ```text
-0 → MINI (👁 → ✓ → 🧠) → earned +expansions → continuum subsystems
+Ω∞v MINI ::= Observe → Verify → Remember
 ```
+
+A row is membership and a TypeScript file count under `src/`. It is not import proof, not a test result, and not a running engine. Confirm membership from `pnpm-workspace.yaml` before treating a directory as active.
 
 ## MINI kernel
 
-```text
-💧 Ω∞v MINI ::= 👁 Observe → ✓ Verify → 🧠 Remember
-```
-
-```
-packages/
-├── types/              # Shared contracts
-├── observer/           # 👁 Capture and normalize observations
-├── verification/       # ✓ Apply rules and generate evidence
-├── remember/           # 🧠 Append-only hash-chained memory
-└── mini/               # 💧 Compose one living cycle
-```
-
-| Package                 | Role                         |
-| ----------------------- | ---------------------------- |
-| `@omega-v/types`        | Zero-dependency shared types |
-| `@omega-v/observer`     | Step 1 — observe             |
-| `@omega-v/verification` | Step 2 — verify              |
-| `@omega-v/remember`     | Step 3 — remember            |
-| `@omega-v/mini`         | Kernel composition           |
-
-### Quick start (MINI only)
+| Directory | Package name | Membership | `src` `.ts` files |
+| --- | --- | --- | ---: |
+| `types/` | `@oceanicos/types` | WORKSPACE | 10 |
+| `observer/` | `@oceanicos/observer` | WORKSPACE | 2 |
+| `verification/` | `@oceanicos/verification` | WORKSPACE | 5 |
+| `remember/` | `@oceanicos/remember` | WORKSPACE | 6 |
+| `mini/` | `@oceanicos/mini` | WORKSPACE | 42 |
 
 ```typescript
-import { MiniKernel } from '@omega-v/mini';
+import { MiniKernel } from '@oceanicos/mini';
 
-const mini = new MiniKernel({ rules: [/* VerificationRule */] });
-const { observation, verification, memory } = mini.cycle({
-  claim: 'Service healthy',
-  category: 'health-check',
-  source: { system: 'api', version: '1.0.0', environment: 'test' },
-  observedBy: 'dev',
-  metadata: { statusCode: 200, responseTime: 40 },
-  confidence: 0.95,
-  confidenceReason: 'checks passed',
-});
+const mini = new MiniKernel({ rules: [] });
 ```
 
-## Earned expansions
+The fenced sample is a shape, not a health check. Rules are required by the real constructor; an empty list is not evidence that a cycle passed.
 
-These packages expand MINI when earned:
+## Other workspace members
 
-```
-packages/
-├── attestation/        # + ATTEST — cryptographic signing
-├── dissensus/          # + DISSENT — reconcile plural verifiers
-├── lexicon/            # + LEGIBILITY — verdicts in Naijá and English
-├── sdk/                # + SDK — typed client
-├── cli/                # + CLI — operator commands
-├── coordination/       # + COORDINATION — bounded coordination contracts
-└── runtime/            # + RUNTIME — bounded agent execution loop
-```
+| Directory | Package name | Membership | `src` `.ts` files |
+| --- | --- | --- | ---: |
+| `attestation/` | `@oceanicos/attestation` | WORKSPACE | 4 |
+| `auth/` | `@omega-v/auth` | WORKSPACE | 2 |
+| `compiler/` | `@omega-v/compiler` | WORKSPACE | 2 |
+| `coordination/` | `@omega-v/coordination` | WORKSPACE | 4 |
+| `evolution/` | `@omega-v/evolution` | WORKSPACE | 2 |
+| `gateway/` | `@omega-v/gateway` | WORKSPACE | 2 |
+| `ir/` | `@omega-v/ir` | WORKSPACE | 3 |
+| `kernel/` | `@omega-v/kernel` | WORKSPACE | 2 |
+| `mood/` | `@omega-v/mood` | WORKSPACE | 4 |
+| `oreade/` | `@omega-v/oreade` | WORKSPACE | 2 |
+| `pipeline/` | `@omega-v/pipeline` | WORKSPACE | 2 |
+| `webhook/` | `@omega-v/webhook` | WORKSPACE | 2 |
+| `worker/` | `@omega-v/worker` | WORKSPACE | 2 |
 
-| Package                 | Expansion                                       |
-| ----------------------- | ----------------------------------------------- |
-| `@omega-v/attestation`  | `+ ATTEST` — signatures others can check        |
-| `@omega-v/dissensus`    | `+ DISSENT` — disagreement preserved            |
-| `@omega-v/lexicon`      | `+ LEGIBILITY` — verdicts in Naijá and English  |
-| `@omega-v/sdk`          | `+ SDK` — typed access                          |
-| `@omega-v/cli`          | `+ CLI` — operator surface                      |
-| `@omega-v/coordination` | `+ COORDINATION` — bounded workers and builders |
-| `@omega-v/runtime`      | `+ RUNTIME` — bounded agent loop and memory     |
+Apps `apps/api` and `apps/web` are workspace applications, not rows in the package tables. Their guides are [apps/README.md](../apps/README.md).
 
-Apps (`apps/api`, `apps/web`) are interface expansions (`+ API`, `+ Web`).
+## On disk, off the workspace
 
-## Continuum Subsystems
+These directories exist. They are **not** listed in `pnpm-workspace.yaml`. The old index called many of them engines (AMM, ZK, rollup, staking, consensus). That wording is withdrawn. Intent labels live in each package README and are not completion claims.
 
-Extended subsystem modules for the Ω∞v Oceanicos ecosystem:
+| Directory | Package name | Membership | `src` `.ts` files |
+| --- | --- | --- | ---: |
+| `agents/` | `@omega-v/agents` | SOURCE-ONLY | 2 |
+| `amm/` | `@omega-v/amm` | SOURCE-ONLY | 2 |
+| `analytics/` | `@omega-v/analytics` | SOURCE-ONLY | 2 |
+| `attestor/` | `@omega-v/attestor` | SOURCE-ONLY | 2 |
+| `benchmark/` | `@omega-v/benchmark` | SOURCE-ONLY | 2 |
+| `bridge/` | `@omega-v/bridge` | SOURCE-ONLY | 2 |
+| `cli/` | `@omega-v/cli` | SOURCE-ONLY | 12 |
+| `consensus/` | `@omega-v/consensus` | SOURCE-ONLY | 2 |
+| `contract/` | `@omega-v/contract` | SOURCE-ONLY | 2 |
+| `da/` | `@omega-v/da` | SOURCE-ONLY | 2 |
+| `dht/` | `@omega-v/dht` | SOURCE-ONLY | 2 |
+| `dispute/` | `@omega-v/dispute` | SOURCE-ONLY | 2 |
+| `dissensus/` | `@omega-v/dissensus` | SOURCE-ONLY | 2 |
+| `edge/` | `@omega-v/edge` | SOURCE-ONLY | 2 |
+| `enclave/` | `@omega-v/enclave` | SOURCE-ONLY | 2 |
+| `evidence/` | `@omega-v/evidence` | SOURCE-ONLY | 2 |
+| `evm/` | `@omega-v/evm` | SOURCE-ONLY | 2 |
+| `federation/` | `@omega-v/federation` | SOURCE-ONLY | 2 |
+| `friction/` | `@omega-v/friction` | SOURCE-ONLY | 2 |
+| `governance/` | `@omega-v/governance` | SOURCE-ONLY | 2 |
+| `governor/` | `@omega-v/governor` | SOURCE-ONLY | 2 |
+| `graph/` | `@omega-v/graph` | SOURCE-ONLY | 2 |
+| `green/` | `@omega-v/green` | SOURCE-ONLY | 2 |
+| `human/` | `@omega-v/human` | SOURCE-ONLY | 2 |
+| `intent/` | `@omega-v/intent` | SOURCE-ONLY | 2 |
+| `learning/` | `@omega-v/learning` | SOURCE-ONLY | 2 |
+| `lexicon/` | `@omega-v/lexicon` | SOURCE-ONLY | 2 |
+| `mempool/` | `@omega-v/mempool` | SOURCE-ONLY | 2 |
+| `mesh/` | `@omega-v/mesh` | SOURCE-ONLY | 2 |
+| `notary/` | `@omega-v/notary` | SOURCE-ONLY | 2 |
+| `oracle/` | `@omega-v/oracle` | SOURCE-ONLY | 2 |
+| `orchestrator/` | `@omega-v/orchestrator` | SOURCE-ONLY | 2 |
+| `policy/` | `@omega-v/policy` | SOURCE-ONLY | 2 |
+| `registry/` | `@omega-v/registry` | SOURCE-ONLY | 2 |
+| `relay/` | `@omega-v/relay` | SOURCE-ONLY | 2 |
+| `replay/` | `@omega-v/replay` | SOURCE-ONLY | 2 |
+| `reputation/` | `@omega-v/reputation` | SOURCE-ONLY | 2 |
+| `rollup/` | `@omega-v/rollup` | SOURCE-ONLY | 2 |
+| `runtime/` | `@omega-v/runtime` | SOURCE-ONLY | 2 |
+| `sandbox/` | `@omega-v/sandbox` | SOURCE-ONLY | 2 |
+| `scheduler/` | `@omega-v/scheduler` | SOURCE-ONLY | 2 |
+| `sdk/` | `@omega-v/sdk` | SOURCE-ONLY | 5 |
+| `security/` | `@omega-v/security` | SOURCE-ONLY | 2 |
+| `sequencer/` | `@omega-v/sequencer` | SOURCE-ONLY | 2 |
+| `sharding/` | `@omega-v/sharding` | SOURCE-ONLY | 2 |
+| `staking/` | `@omega-v/staking` | SOURCE-ONLY | 2 |
+| `store/` | `@omega-v/store` | SOURCE-ONLY | 2 |
+| `telemetry/` | `@omega-v/telemetry` | SOURCE-ONLY | 2 |
+| `vaas/` | `@omega-v/vaas` | SOURCE-ONLY | 2 |
+| `vault/` | `@omega-v/vault` | SOURCE-ONLY | 2 |
+| `zk/` | `@omega-v/zk` | SOURCE-ONLY | 2 |
 
-| Package                 | Description                               |
-| ----------------------- | ----------------------------------------- |
-| `@omega-v/agents`       | Formless Agent Swarm Engine               |
-| `@omega-v/amm`          | Automated Market Maker & Liquidity Engine |
-| `@omega-v/analytics`    | Verification Analytics Engine             |
-| `@omega-v/attestor`     | Distributed Attestor Network              |
-| `@omega-v/auth`         | Zero-Trust Authentication Engine          |
-| `@omega-v/benchmark`    | Verification Benchmark Engine             |
-| `@omega-v/bridge`       | Cross-Chain Verification Bridge           |
-| `@omega-v/compiler`     | Rule & Contract Compiler Engine           |
-| `@omega-v/consensus`    | Plural Consensus Engine                   |
-| `@omega-v/contract`     | Formal Verification Contract Engine       |
-| `@omega-v/da`           | Data Availability Verification Engine     |
-| `@omega-v/dht`          | Distributed Hash Table Network            |
-| `@omega-v/dispute`      | Dispute Resolution Engine                 |
-| `@omega-v/edge`         | Edge Observation Engine                   |
-| `@omega-v/enclave`      | Confidential Computing Enclave Engine     |
-| `@omega-v/evidence`     | Evidence Graph Engine                     |
-| `@omega-v/evm`          | EVM Verification Execution Engine         |
-| `@omega-v/evolution`    | Evolutionary Architecture Engine          |
-| `@omega-v/federation`   | Federation Mesh Engine                    |
-| `@omega-v/friction`     | Friction Quantification Engine            |
-| `@omega-v/gateway`      | API Gateway Engine                        |
-| `@omega-v/governance`   | Autonomous Governance Engine              |
-| `@omega-v/governor`     | Protocol Governor Engine                  |
-| `@omega-v/graph`        | Provenance Knowledge Graph Engine         |
-| `@omega-v/green`        | Ecological Optimization Engine            |
-| `@omega-v/human`        | Human-in-the-Loop Verification Engine     |
-| `@omega-v/intent`       | Intent Resolution Engine                  |
-| `@omega-v/ir`           | Intermediate Representation Engine        |
-| `@omega-v/kernel`       | Core State Kernel Engine                  |
-| `@omega-v/learning`     | Adaptive Learning Engine                  |
-| `@omega-v/mempool`      | Transaction Mempool Engine                |
-| `@omega-v/mesh`         | Service Mesh Engine                       |
-| `@omega-v/mood`         | Collective Mood Engine                    |
-| `@omega-v/notary`       | Notary Verification Engine                |
-| `@omega-v/oracle`       | Trusted Oracle Engine                     |
-| `@omega-v/orchestrator` | Pipeline Orchestrator Engine              |
-| `@omega-v/pipeline`     | Verification Pipeline Engine              |
-| `@omega-v/policy`       | Policy Evaluation Engine                  |
-| `@omega-v/registry`     | Component Registry Engine                 |
-| `@omega-v/relay`        | Cross-Chain Relay Engine                  |
-| `@omega-v/replay`       | Deterministic Replay Engine               |
-| `@omega-v/reputation`   | Reputation Scoring Engine                 |
-| `@omega-v/rollup`       | Rollup Verification Engine                |
-| `@omega-v/sandbox`      | Isolated Sandbox Execution Engine         |
-| `@omega-v/scheduler`    | Verification Task Scheduler               |
-| `@omega-v/security`     | Autonomous Security Engine                |
-| `@omega-v/sequencer`    | Transaction Sequencer Engine              |
-| `@omega-v/sharding`     | State Sharding Engine                     |
-| `@omega-v/staking`      | Proof-of-Stake Verification Engine        |
-| `@omega-v/store`        | Durable Provenance Store                  |
-| `@omega-v/telemetry`    | Telemetry & Observability Engine          |
-| `@omega-v/vaas`         | Verification-as-a-Service Gateway         |
-| `@omega-v/vault`        | Cryptographic State Vault                 |
-| `@omega-v/webhook`      | Webhook Event Notification Engine         |
-| `@omega-v/worker`       | Background Task Worker Engine             |
-| `@omega-v/zk`           | Zero-Knowledge Proof Engine               |
+## Naming
 
-## Installation
+Two scopes are in use: `@oceanicos/*` on the MINI kernel and attestation, `@omega-v/*` elsewhere. This index does not rename either.
 
-### From monorepo
+## Commands
 
 ```bash
 pnpm install
-pnpm --filter @omega-v/mini build
-pnpm test -- packages/mini packages/remember
+pnpm --filter @oceanicos/mini build
 ```
 
-### Mental model
+Root `pnpm test` does not take a path filter. See the root manifest for the enumerated list.
 
-1. Prefer `@omega-v/mini` for the default runtime unit
-2. Use observer / verification / remember directly when testing a single leg
-3. Reach for attestation/API/web only when the expansion is intentionally in scope
-
-## Testing
-
-Each MINI package includes unit tests. Kernel tests live in `packages/mini`.
-
-Coverage thresholds are enforced globally via root Jest config.
-
-## Versioning
-
-Semantic versioning. Current: **0.1.0** (MINI establishing).
-
----
-
-**Status:** MINI kernel establishing  
-**Last Updated:** 2026-08-14  
-**See also:** [docs/MINI.md](../docs/MINI.md)
+**Status of this index:** documentation only, aligned to the workspace file on the commit that contains it.
+**See also:** [docs/MINI.md](../docs/MINI.md), [docs/REPO_INVENTORY.md](../docs/REPO_INVENTORY.md)
