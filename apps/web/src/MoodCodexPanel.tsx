@@ -45,15 +45,10 @@ export function MoodCodexPanel() {
     setLoading('admit');
     setError(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/v1/omega/commands/${command.commandId}/admit`, {
+      const response = await fetch(`${API_BASE_URL}/v1/omega/commands/${command.commandId}/approve`, {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          authority: 'human:dashboard-operator',
-          policy: 'mood-codex-boundary.v1',
-          authorityVerified: true,
-          policySatisfied: true,
-        }),
+        headers: { 'content-type': 'application/json', 'x-omega-operator-id': 'dashboard-operator' },
+        body: JSON.stringify({ policy: 'mood-codex-boundary.v1' }),
       });
       const text = await response.text();
       const data = text ? JSON.parse(text) : null;
@@ -100,7 +95,7 @@ export function MoodCodexPanel() {
       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '12px' }}>
         <button onClick={() => plan(false)} disabled={loading !== null || !intent.trim()} style={{ border: '1px solid #f0c674', background: '#3a2f16', color: '#ffe2a1', padding: '8px 12px', borderRadius: '4px', fontSize: '11px', fontWeight: 700 }}>{loading === 'plan' ? 'PLANNING…' : 'RUN MOOD CODEX'}</button>
         <button onClick={() => plan(true)} disabled={loading !== null || !intent.trim()} style={{ border: '1px solid #8ce8c8', background: '#8ce8c8', color: '#071312', padding: '8px 12px', borderRadius: '4px', fontSize: '11px', fontWeight: 700 }}>{loading === 'proposal' ? 'PERSISTING…' : 'CREATE CODEX PROPOSAL'}</button>
-        {command && (command.status === 'PROPOSED' || command.status === 'REVIEW') && <button onClick={admit} disabled={loading !== null} style={{ border: '1px solid #f0c674', background: '#3a2f16', color: '#ffe2a1', padding: '8px 12px', borderRadius: '4px', fontSize: '11px', fontWeight: 700 }}>{loading === 'admit' ? 'CHECKING POLICY…' : 'ADMIT CODEX PROPOSAL'}</button>}
+        {command && (command.status === 'PROPOSED' || command.status === 'REVIEW') && <button onClick={admit} disabled={loading !== null} style={{ border: '1px solid #f0c674', background: '#3a2f16', color: '#ffe2a1', padding: '8px 12px', borderRadius: '4px', fontSize: '11px', fontWeight: 700 }}>{loading === 'admit' ? 'CHECKING POLICY…' : 'APPROVE CODEX PROPOSAL'}</button>}
         {command?.status === 'AUTHORIZED' && <button onClick={() => transition('execute')} disabled={loading !== null} style={{ border: '1px solid #ffb18d', background: '#3a2118', color: '#ffd3bd', padding: '8px 12px', borderRadius: '4px', fontSize: '11px', fontWeight: 700 }}>{loading === 'execute' ? 'EXECUTING…' : 'EXECUTE BOUNDED ACTION'}</button>}
         {command?.status === 'EXECUTED' && <><input value={observedState} onChange={(event) => setObservedState(event.target.value)} maxLength={512} aria-label="Observed state" style={{ border: '1px solid #6b5a3b', background: '#161b16', color: '#efe7d2', padding: '8px', borderRadius: '4px', fontSize: '11px' }} /><button onClick={() => transition('observe')} disabled={loading !== null || !observedState.trim()} style={{ border: '1px solid #8ce8c8', background: '#123a31', color: '#b8f5de', padding: '8px 12px', borderRadius: '4px', fontSize: '11px', fontWeight: 700 }}>{loading === 'observe' ? 'OBSERVING…' : 'RECORD OBSERVATION'}</button></>}
       </div>

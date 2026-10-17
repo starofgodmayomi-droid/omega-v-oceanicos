@@ -80,13 +80,9 @@ test('mood Codex proposal enters the ledger as PROPOSED and never executes', asy
 
     const admitted = await app.inject({
       method: 'POST',
-      url: `/v1/omega/commands/${body.command.commandId}/admit`,
-      payload: {
-        authority: 'human:dashboard-operator',
-        policy: 'mood-codex-boundary.v1',
-        authorityVerified: true,
-        policySatisfied: true,
-      },
+      url: `/v1/omega/commands/${body.command.commandId}/approve`,
+      headers: { 'x-omega-operator-id': 'dashboard-operator' },
+      payload: { policy: 'mood-codex-boundary.v1' },
     });
     assert.equal(admitted.statusCode, 200);
     assert.equal(admitted.json().command.status, 'AUTHORIZED');
@@ -109,5 +105,54 @@ test('mood Codex proposal enters the ledger as PROPOSED and never executes', asy
   } finally {
     await app.close();
     rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+
+test('approval rejects a body-only operator identity when the allowlist toggle is off', async () => {
+  const previousOperatorAllowlist = process.env.OMEGA_ADMIN_OPERATOR_ALLOWLIST;
+  const previousRequireAllowlist = process.env.OMEGA_ADMIN_REQUIRE_ALLOWLIST;
+  delete process.env.OMEGA_ADMIN_OPERATOR_ALLOWLIST;
+  delete process.env.OMEGA_ADMIN_REQUIRE_ALLOWLIST;
+
+  const dir = mkdtempSync(join(tmpdir(), 'omega-mood-approval-identity-'));
+  const app = createApp(join(dir, 'test.db'), false, { allowUnsignedCycle: true });
+  await app.ready();
+  try {
+    const proposal = await app.inject({
+      method: 'POST',
+      url: '/v1/mood/codex/proposal',
+      payload: {
+        intent: 'review the next bounded interaction',
+        requestedBy: 'human:claim-only',
+        status: 'USER_STATED',
+        uncertainty: 0,
+        signals: [{ signal: 'record review intent', status: 'USER_STATED', source: 'integration-test' }],
+      },
+    });
+    assert.equal(proposal.statusCode, 201);
+    const commandId = proposal.json().command.commandId;
+
+    const bodyOnlyApproval = await app.inject({
+      method: 'POST',
+      url: `/v1/omega/commands/${commandId}/approve`,
+      payload: { operator: 'forged-operator', policy: 'mood-codex-boundary.v1' },
+    });
+    assert.equal(bodyOnlyApproval.statusCode, 403);
+    assert.equal(bodyOnlyApproval.json().error, 'ADMIN_OPERATOR_ID_REQUIRED');
+
+    const detail = await app.inject({ method: 'GET', url: `/v1/omega/commands/${commandId}` });
+    assert.equal(detail.statusCode, 200);
+    assert.equal(detail.json().command.status, 'PROPOSED');
+    const events = await app.inject({ method: 'GET', url: `/v1/omega/events?commandId=${encodeURIComponent(commandId)}` });
+    assert.equal(events.statusCode, 200);
+    assert.equal(events.json().events.some((event: { type?: string }) => event.type === 'command.approved'), false);
+  } finally {
+    await app.close();
+    rmSync(dir, { recursive: true, force: true });
+    if (previousOperatorAllowlist === undefined) delete process.env.OMEGA_ADMIN_OPERATOR_ALLOWLIST;
+    else process.env.OMEGA_ADMIN_OPERATOR_ALLOWLIST = previousOperatorAllowlist;
+    if (previousRequireAllowlist === undefined) delete process.env.OMEGA_ADMIN_REQUIRE_ALLOWLIST;
+    else process.env.OMEGA_ADMIN_REQUIRE_ALLOWLIST = previousRequireAllowlist;
   }
 });

@@ -33,6 +33,18 @@ describe('Ω∞v reality verification boundary', () => {
     assert.equal(memory.length, 1);
   });
 
+  it('denies truthy non-boolean authority and policy gate values', () => {
+    const malformedGates = [
+      { authorityVerified: 'false', policySatisfied: true },
+      { authorityVerified: true, policySatisfied: 'false' },
+    ];
+    for (const gates of malformedGates) {
+      const denied = resolveChangeAdmission(record, gates as never);
+      assert.equal(denied.decision, 'DENY');
+      assert.equal(denied.authorized, false);
+    }
+  });
+
   it('preserves UNKNOWN when reality observation fails', () => {
     const allowed = resolveChangeAdmission(record, { authorityVerified: true, policySatisfied: true });
     const execution = executeAuthorizedTransition(allowed, () => ({ stateAfter: 'S1' }));
