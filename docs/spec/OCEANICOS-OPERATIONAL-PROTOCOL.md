@@ -118,6 +118,8 @@ Evidence MUST answer five questions:
 
 Evidence records SHOULD include a stable event type, a command or transition identifier, a timestamp, and a redacted payload appropriate to the audience. Sensitive credentials, secrets, and unnecessary personal data MUST NOT be copied into a public evidence record.
 
+`GET /v1/omega/oreade/telemetry` MUST remain a read-only aggregate over command-store records marked as ƆREADE proposals. It MAY report counts by status and mode plus the observation time and scope limitations, but MUST NOT return raw intent, requester identity, command identifiers, or append tracking events. It MUST inherit the API read-auth boundary and use a finite rate limit. Its counts exclude unpersisted read-only Drop translations and are not evidence of user outcomes, community impact, or deployment health.
+
 For line-addressable text sources, an implementation MAY include a `lineRange` with one-based inclusive `startLine` and `endLine` values in its source reference. Both values MUST be positive safe integers, and `endLine` MUST be greater than or equal to `startLine`. A line range is a locator only: it MUST NOT promote the source's epistemic state, establish authority, or claim that the referenced text was independently verified. Implementations MUST preserve the source locator and provenance alongside the range.
 
 The coordination evidence endpoint demonstrates this boundary. It records a lease lifecycle, replays the same durable SQLite volume, reports the scope `multi-process-single-volume`, and states that the result does not prove cross-host durability, consensus, deployment health, or external coordinator control.
@@ -168,6 +170,7 @@ The current repository implements portions of this module as follows:
 | Reality reconciliation | `POST /v1/omega/commands/:id/observe` and `verify-reality` |
 | Operator reconciliation record | `POST /v1/omega/commands/:id/reconciliation` records a durable note without changing command state |
 | Durable events | `GET /v1/omega/events` backed by SQLite persistence |
+| Privacy-bounded ƆREADE proposal telemetry | `GET /v1/omega/oreade/telemetry` returns aggregate status/mode counts without exposing proposal content or writing telemetry events |
 | Worker and lease bounds | Worker registration, exclusive leases, expiry, and release events |
 | Coordination evidence | `POST /v1/omega/coordination/evidence` |
 | Provenance of accepted evidence | `coordination.evidence-recorded` event |

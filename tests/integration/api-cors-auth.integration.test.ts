@@ -57,6 +57,21 @@ test('required authentication CORS boundary', async (t) => {
     error: 'READ_ACCESS_REQUIRED',
   });
 
+  const unauthenticatedTelemetry = await app.inject({
+    method: 'GET',
+    url: '/v1/omega/oreade/telemetry',
+    headers: { origin: 'https://dashboard.example' },
+  });
+  assert.equal(unauthenticatedTelemetry.statusCode, 401);
+  assert.equal(unauthenticatedTelemetry.json().error, 'READ_ACCESS_REQUIRED');
+  const authenticatedTelemetry = await app.inject({
+    method: 'GET',
+    url: '/v1/omega/oreade/telemetry',
+    headers: { origin: 'https://dashboard.example', authorization: 'Bearer read-token' },
+  });
+  assert.equal(authenticatedTelemetry.statusCode, 200);
+  assert.equal(authenticatedTelemetry.json().telemetry.markedProposalCount, 0);
+
   assert.equal(operatorIdentityAllowed(undefined, []), true);
   assert.equal(operatorIdentityAllowed('operator-a', [], true), false);
   assert.equal(operatorIdentityAllowed('operator-a', ['operator-a'], true), true);

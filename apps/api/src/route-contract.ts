@@ -39,6 +39,7 @@ export const API_ROUTE_INVENTORY = [
   'POST /v1/omega/workers/:workerId/lease/:leaseId/release',
   'POST /v1/omega/oreade/drop',
   'POST /v1/omega/oreade/proposal',
+  'GET /v1/omega/oreade/telemetry',
   'POST /v1/omega/commands',
   'GET /v1/omega/commands',
   'GET /v1/omega/commands/:id',
