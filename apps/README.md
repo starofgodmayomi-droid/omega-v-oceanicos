@@ -1,6 +1,9 @@
 # Applications
 
-The repository's two runnable applications are the Fastify API and the React/Vite web dashboard. Their per-app READMEs are the canonical references for route and feature details; this page summarizes how they fit together and how to start the local development stack.
+The repository contains three runnable application surfaces: the Fastify API, the
+React/Vite web dashboard, and a standalone Expo mobile app. Their per-app READMEs are
+the canonical references for route and feature details; this page summarizes how
+they fit together and how to start them.
 
 ## Applications
 
@@ -8,6 +11,7 @@ The repository's two runnable applications are the Fastify API and the React/Vit
 |---|---|---|---|
 | `apps/api` | Fastify HTTP API | `http://localhost:5000` | [API README](api/README.md) |
 | `apps/web` | React dashboard served by Vite | `http://localhost:3000` | [Web README](web/README.md) |
+| `apps/mobile` | Expo / React Native (Android, iOS, web preview) | Expo development server / QR code | [Mobile README](mobile/README.md) |
 
 The API defaults to port `5000`; `PORT` or `API_PORT` can override it. Vite is configured for port `3000`. Browser-relative `/api/*` requests use the Vite development proxy, which targets `http://localhost:5000` by default; `VITE_API_PROXY_TARGET` can override that target.
 
@@ -22,7 +26,10 @@ pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-The root `pnpm dev` command builds the workspace, then starts the API and web development servers together. Press `Ctrl+C` to stop them. See the app-specific guides for per-app configuration details.
+The root `pnpm dev` command builds the workspace, then starts the API and web
+development servers together. It does not start Expo. To run the mobile app, follow
+[its guide](mobile/README.md) from `apps/mobile`; its package is intentionally
+isolated from the root pnpm workspace.
 
 Useful root commands:
 
