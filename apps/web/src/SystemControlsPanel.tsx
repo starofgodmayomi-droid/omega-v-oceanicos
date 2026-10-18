@@ -203,8 +203,11 @@ export function SystemControlsPanel(props: SystemControlsPanelProps) {
             Attestation receipt · {props.attestationData.signingAlgorithm}
           </div>
           <div style={{ fontSize: '11px', color: theme.textMuted, lineHeight: 1.6, fontFamily: theme.fontMono }}>
-            <div>Verified: <span style={{ color: props.attestationData.verified ? theme.verified : theme.divergent }}>{props.attestationData.verified ? 'YES' : 'NO'}</span></div>
-            <div>Confidence: {(props.attestationData.confidence * 100).toFixed(0)}%</div>
+            <div>Server-reported verification claim: <span style={{ color: props.attestationData.verified ? theme.verified : theme.divergent }}>{props.attestationData.verified ? 'YES' : 'NO'}</span></div>
+            <div>API-reported confidence: {(props.attestationData.confidence * 100).toFixed(0)}%</div>
+            <div role="note" aria-label="Attestation evidence boundary" style={{ marginTop: '8px', color: theme.unknown, fontSize: '10px', lineHeight: 1.5 }}>
+              API-issued receipt only. This panel has not independently verified the signature or the underlying observation.
+            </div>
             <div style={{ marginTop: '6px', wordBreak: 'break-all', color: theme.textDim }}>
               {props.attestationData.signature}
             </div>
