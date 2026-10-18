@@ -23,7 +23,7 @@ IMAGIN is OCEANICOS's cross-cutting visual presentation and creative-brief capab
 2. Preserve source text and scoped evidence status. A visual state cannot promote UNKNOWN, DIVERGENT, or NOT_EXECUTED to VERIFIED.
 3. Use color together with labels and glyphs; color alone must not convey status.
 4. Keep the SVG accessible with a title, description, per-node label/status/source, and a readable caption.
-5. Remain responsive and legible on desktop and mobile; respect keyboard focus and reduced-motion conventions in the surrounding UI.
+5. Remain responsive and legible on desktop and mobile; respect keyboard focus and reduced-motion conventions in the surrounding UI. At narrow widths (≤560px), keep the per-signal label/status/source list visible as a readable alternative because SVG label text scales with the diagram.
 6. Distinguish conceptual art, an evidence map, a preview, and a generated image as different artifact types.
 
 ## Image-creation lifecycle
