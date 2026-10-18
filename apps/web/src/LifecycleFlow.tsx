@@ -184,7 +184,6 @@ export function LifecycleFlow({ stages, openStageId, onStageToggle }: LifecycleF
                 <button
                   type="button"
                   disabled={!hasDetail}
-                  aria-label={`${stage.label}. ${STATE_LABELS[stage.state]}. ${stage.subtitle}`}
                   aria-expanded={hasDetail ? isOpen : undefined}
                   aria-controls={hasDetail ? `lifecycle-stage-detail-${stage.id}` : undefined}
                   onClick={() => hasDetail && toggle(stage.id)}
