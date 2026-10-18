@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { theme, humanStatus } from './oceanicosTheme';
-import { boundedStatus, statusCounts, STATUS_ORDER, summarizeLucidField, type RealityStatus } from './whole-ecosystem-dashboard-model';
+import { boundedStatus, statusCounts, STATUS_ORDER, summarizeLucidField, type LucidFieldSignal, type RealityStatus } from './whole-ecosystem-dashboard-model';
+import { buildImaginVisualModel } from './imagin-visual-model';
 import { AgentSafetyBoundaryPanel } from './AgentSafetyBoundaryPanel';
 import { WorkerCoordinationPanel } from './WorkerCoordinationPanel';
 
@@ -31,81 +32,104 @@ const STATUS_COLOR: Record<RealityStatus, string> = {
 
 const CORE_STEPS = ['ASK', 'THINK', 'DISTINGUISH', 'AUTHORIZE', 'BOUND', 'ACT', 'OBSERVE', 'VERIFY', 'RECONCILE', 'VALUE', 'REMEMBER', 'NEXT Δ'];
 
-function EcosystemMap() {
+function ImaginEvidenceMap({ signals }: { signals: readonly LucidFieldSignal[] }) {
+  const model = buildImaginVisualModel(signals);
+  const usedStatuses = Array.from(new Set(model.nodes.map((node) => node.status)));
+
   return (
-    <div className="whole-map-wrap">
+    <div className="whole-map-wrap" aria-label="IMAGIN visual layer">
+      <span className="whole-ecosystem-label" style={{ textAlign: 'center', marginBottom: '5px' }}>
+        IMAGIN · SOURCE-BOUND VISUALIZATION
+      </span>
       <svg
         className="whole-map"
-        viewBox="0 0 520 260"
+        viewBox="0 0 520 280"
         role="img"
-        aria-labelledby="whole-map-title whole-map-description"
+        aria-labelledby="imagin-map-title imagin-map-description"
       >
-        <title id="whole-map-title">Conceptual OCEANICOS system map</title>
-        <desc id="whole-map-description">
-          A central Ω∞v mark is connected to Reality, Memory, Value, Observation, and Action. The map shows conceptual relationships, not live system topology or telemetry.
+        <title id="imagin-map-title">IMAGIN view-local evidence map</title>
+        <desc id="imagin-map-description">
+          Shows {model.nodes.length} of {signals.length} signals supplied to this dashboard view. Each node retains its bounded status and source. Lines are visual anchors only, not causal edges, live topology, or whole-reality telemetry.
         </desc>
         <defs>
-          <radialGradient id="whole-map-glow" cx="50%" cy="48%" r="58%">
+          <radialGradient id="imagin-map-glow" cx="50%" cy="48%" r="58%">
             <stop offset="0%" stopColor="#22d3ee" stopOpacity="0.22" />
             <stop offset="100%" stopColor="#020617" stopOpacity="0" />
           </radialGradient>
-          <linearGradient id="whole-map-drop" x1="0" y1="0" x2="1" y2="1">
+          <linearGradient id="imagin-map-current" x1="0" y1="0" x2="1" y2="1">
             <stop offset="0%" stopColor="#a5f3fc" />
             <stop offset="52%" stopColor="#22d3ee" />
-            <stop offset="100%" stopColor="#2563eb" />
+            <stop offset="100%" stopColor="#6366f1" />
           </linearGradient>
-          <radialGradient id="whole-map-world" cx="35%" cy="28%" r="72%">
+          <radialGradient id="imagin-map-world" cx="35%" cy="28%" r="72%">
             <stop offset="0%" stopColor="#164e63" />
             <stop offset="100%" stopColor="#071827" />
           </radialGradient>
         </defs>
-
-        <ellipse className="whole-map-halo" cx="260" cy="132" rx="220" ry="112" />
+        <ellipse className="whole-map-halo" cx="260" cy="132" rx="218" ry="112" />
         <ellipse className="whole-map-orbit" cx="260" cy="132" rx="196" ry="72" />
         <ellipse className="whole-map-orbit whole-map-orbit-inner" cx="260" cy="132" rx="132" ry="48" transform="rotate(-24 260 132)" />
-        <circle cx="260" cy="132" r="105" fill="url(#whole-map-glow)" />
-
+        <circle cx="260" cy="132" r="105" fill="url(#imagin-map-glow)" />
         <g className="whole-map-links" aria-hidden="true">
-          <path d="M260 105 L260 38 M230 122 L112 91 M290 122 L408 91 M233 157 L151 205 M287 157 L369 205" />
-          <path d="M112 91 Q260 14 408 91 M151 205 Q260 250 369 205" />
+          {model.nodes.map((node) => (
+            <line
+              key={'visual-anchor-' + node.id}
+              x1={model.center.x}
+              y1={model.center.y}
+              x2={node.x}
+              y2={node.y}
+              stroke="rgba(103, 232, 249, 0.36)"
+              strokeWidth="1"
+              strokeDasharray="2 5"
+            />
+          ))}
         </g>
-
         <g className="whole-map-core">
           <circle cx="260" cy="132" r="37" className="whole-map-core-aura" />
-          <circle cx="260" cy="143" r="20" fill="url(#whole-map-world)" className="whole-map-world" />
-          <path d="M253 135l6-4 5 2 4 6-4 4-1 7-6 1-4-7-5-2 1-5z" className="whole-map-land" />
-          <path d="M260 82c-7 11-21 28-21 42a21 21 0 0 0 42 0c0-14-14-31-21-42z" fill="none" stroke="url(#whole-map-drop)" strokeWidth="2.5" />
-          <text x="260" y="148" className="whole-map-mark" textAnchor="middle">Ω∞v</text>
+          <circle cx="260" cy="132" r="20" fill="url(#imagin-map-world)" className="whole-map-world" />
+          <path d="M260 113c-5 8-11 15-11 22a11 11 0 0 0 22 0c0-7-6-14-11-22z" fill="none" stroke="url(#imagin-map-current)" strokeWidth="1.5" />
+          <text x="260" y="145" className="whole-map-mark" textAnchor="middle">Ω∞v</text>
         </g>
-
-        <g className="whole-map-node" transform="translate(260 31)">
-          <circle r="14" /><text y="4" textAnchor="middle">◎</text><text className="whole-map-label" y="32" textAnchor="middle">REALITY</text>
-        </g>
-        <g className="whole-map-node" transform="translate(101 88)">
-          <circle r="13" /><text y="4" textAnchor="middle">◉</text><text className="whole-map-label" x="-8" y="30" textAnchor="end">MEMORY</text>
-        </g>
-        <g className="whole-map-node" transform="translate(419 88)">
-          <circle r="13" /><text y="4" textAnchor="middle">◇</text><text className="whole-map-label" x="8" y="30" textAnchor="start">VALUE</text>
-        </g>
-        <g className="whole-map-node" transform="translate(143 211)">
-          <circle r="13" /><text y="4" textAnchor="middle">◉</text><text className="whole-map-label" y="30" textAnchor="middle">OBSERVATION</text>
-        </g>
-        <g className="whole-map-node" transform="translate(377 211)">
-          <circle r="13" /><text y="4" textAnchor="middle">▶</text><text className="whole-map-label" y="30" textAnchor="middle">ACTION</text>
-        </g>
+        {model.nodes.map((node) => (
+          <g
+            key={node.id}
+            className="whole-map-node"
+            aria-label={node.label + ': ' + node.status + '; source: ' + node.source}
+            data-evidence-status={node.status}
+          >
+            <title>{node.label + ' — ' + node.status + ' — Source: ' + node.source}</title>
+            <circle cx={node.x} cy={node.y} r="13" style={{ stroke: STATUS_COLOR[node.status] }} />
+            <text x={node.x} y={node.y + 4} textAnchor="middle" style={{ fill: STATUS_COLOR[node.status] }}>
+              {node.status === 'VERIFIED' ? '✓' : node.status === 'DIVERGENT' ? '!' : node.status === 'NOT_EXECUTED' ? '–' : '?'}
+            </text>
+            <text
+              className="whole-map-label"
+              x={node.labelX}
+              y={node.labelY}
+              textAnchor={node.anchor}
+              style={{ fill: STATUS_COLOR[node.status] }}
+            >
+              {node.label.toUpperCase()}
+            </text>
+          </g>
+        ))}
       </svg>
-      <p className="whole-map-caption">CONCEPT MAP · relationships shown, not live topology</p>
-      <div className="whole-provider-currents">
-        <span className="whole-ecosystem-label">INTERCHANGEABLE CURRENTS · EXAMPLES ONLY</span>
-        <div className="whole-provider-chips">
-          {['ChatGPT', 'Grok', 'Manus', 'Codex', 'Composio'].map((provider) => <span className="whole-provider-chip" key={provider}>{provider}</span>)}
+      <p className="whole-map-caption">{model.caption}</p>
+      {usedStatuses.length > 0 && (
+        <div aria-label="Evidence status legend" style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '8px', margin: '4px 0 8px', fontSize: '9px', fontFamily: theme.fontMono }}>
+          {usedStatuses.map((status) => (
+            <span key={status} style={{ color: STATUS_COLOR[status] }}>
+              ● {humanStatus(status)}
+            </span>
+          ))}
         </div>
-        <small>Connection and availability are not queried by this screen.</small>
-      </div>
+      )}
+      <small style={{ display: 'block', color: theme.textDim, fontSize: '9px', lineHeight: 1.45, textAlign: 'center' }}>
+        This layer visualizes only supplied signals. Image creation is separate; this map does not execute image generation or assert that a provider is connected.
+      </small>
     </div>
   );
 }
-
 export function WholeEcosystemDashboard(props: Props) {
   const counts = useMemo(() => statusCounts(props.history, props.realityStatus), [props.history, props.realityStatus]);
   const evidence = [
@@ -143,8 +167,8 @@ export function WholeEcosystemDashboard(props: Props) {
         </nav>
 
         <article className="whole-current-card">
-          <span className="whole-ecosystem-label">MIRROR-WATER · CURRENT STATE</span>
-          <EcosystemMap />
+          <span className="whole-ecosystem-label">IMAGIN · VIEW-LOCAL EVIDENCE</span>
+          <ImaginEvidenceMap signals={evidence} />
           <p className="whole-question">WHAT MATTERS NOW?</p>
           <div className="whole-core-heading">
             <span className="whole-ecosystem-label">ONE GOVERNANCE SPINE</span>
@@ -162,6 +186,7 @@ export function WholeEcosystemDashboard(props: Props) {
             <button onClick={() => props.onFocusCommand('Map the highest-value next finite transition.')}>MAP</button>
             <button onClick={() => props.onFocusCommand('Verify the current state with observable evidence.')}>VERIFY</button>
             <button onClick={() => props.onFocusCommand('Build the smallest complete vertical slice.')}>BUILD</button>
+            <button title="Drafts a visual brief only; it does not run image generation" onClick={() => props.onFocusCommand('Draft an IMAGIN visual brief from these supplied signals. Keep evidence statuses and source links distinct; label concept art illustrative and do not claim image-provider execution without an observable receipt.')}>IMAGIN</button>
           </div>
           <div className="whole-command-status" style={{ color: STATUS_COLOR[commandStatus] }}>
             {humanStatus(commandStatus)} · command result is not proof of external reality
