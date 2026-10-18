@@ -1,0 +1,38 @@
+name: Ancestral Oracle IMAGIN provider tests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'projects/ancestral-oracle/**'
+      - '.github/workflows/ancestral-oracle-imagin.yml'
+  pull_request:
+    paths:
+      - 'projects/ancestral-oracle/**'
+      - '.github/workflows/ancestral-oracle-imagin.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ancestral-oracle-imagin-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  provider-contract:
+    name: Provider contract (Python 3.12, no credentials)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Compile bot and provider adapter
+        run: python -m py_compile projects/ancestral-oracle/ancestral_oracle_bot.py projects/ancestral-oracle/imagin_provider.py
+
+      - name: Run isolated provider contract tests (no network, no secrets)
+        run: python -m unittest discover -s projects/ancestral-oracle/tests -p 'test_*.py' -v

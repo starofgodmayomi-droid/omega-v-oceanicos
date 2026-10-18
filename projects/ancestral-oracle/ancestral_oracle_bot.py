@@ -7,9 +7,11 @@ speak for living African traditions.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 import random
+from io import BytesIO
 from typing import Any
 
 from dotenv import load_dotenv
@@ -19,6 +21,7 @@ from telegram.constants import ParseMode
 from telegram.ext import Application, CommandHandler, ContextTypes
 
 from pantheon_gods_expanded import DOMAINS, PANTHEON, find_by_domain, find_by_name
+from imagin_provider import DEFAULT_IMAGE_MODEL, ImageProviderError, MAX_PROMPT_CHARS, generate_image
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
@@ -28,6 +31,8 @@ SUPREME_ACTIVATOR_ID = 8632545391
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+GEMINI_IMAGE_MODEL = os.getenv("GEMINI_IMAGE_MODEL", DEFAULT_IMAGE_MODEL)
 
 SYSTEM_PROMPT = """You are Ancestral AI Oracle, a respectful creative guide for Pidgin-speaking communities.
 Use clear Nigerian Pidgin with some standard English where precision matters. Treat African deities and ancestors as symbolic cultural references, not verified supernatural agents. Do not claim to speak for every African tradition. Offer practical, non-coercive next steps. For health, legal, financial, or safety questions, state limits and suggest qualified or official help. Never promise wealth, protection, prophecy, or guaranteed outcomes."""
@@ -147,14 +152,83 @@ async def imagine(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not is_activator(update):
         await update.message.reply_text("This command dey reserved for the registered Supreme Activator.")
         return
+
     idea = " ".join(context.args).strip()
     if not idea:
         await update.message.reply_text("Use /imagine followed by the vision you want to explore.")
         return
+    if len(idea) > MAX_PROMPT_CHARS:
+        await update.message.reply_text(
+            f"That creative brief pass the {MAX_PROMPT_CHARS}-character limit. Shorten it and try again."
+        )
+        return
+    if not GEMINI_API_KEY:
+        await update.message.reply_text(
+            "IMAGIN image generation no dey configured. No provider request was made "
+            "(NOT_EXECUTED).\n\n"
+            f"Creative brief: {idea}\n\n"
+            "Set GEMINI_API_KEY in the private environment to enable image creation. "
+            "No secret should enter this chat or the repository."
+        )
+        return
+
     await update.message.reply_text(
-        "NanoBanana vision placeholder ready.\n\n"
-        f"Creative brief: {idea}\n\n"
-        "Next integration step: connect an approved image-generation provider and return the generated asset."
+        "IMAGIN request prepared. The configured image provider will now be called; "
+        "generation and delivery are not confirmed yet."
+    )
+    try:
+        image = await asyncio.to_thread(
+            generate_image,
+            idea,
+            GEMINI_API_KEY,
+            GEMINI_IMAGE_MODEL,
+        )
+    except ImageProviderError as exc:
+        LOGGER.warning("IMAGIN generation did not return a usable artifact; code=%s state=%s", exc.code, exc.state)
+        await update.message.reply_text(
+            f"Image result state: {exc.state}. No usable image was delivered.\n\n"
+            f"Creative brief: {idea}\n\n"
+            "Try again only after checking provider configuration and quota."
+        )
+        return
+
+    extension = {"image/png": "png", "image/jpeg": "jpg", "image/webp": "webp"}[image.mime_type]
+    photo = BytesIO(image.data)
+    photo.name = f"imagin-generated.{extension}"
+    caption = (
+        f"IMAGIN · {image.model}\n"
+        f"SHA-256: {image.sha256}\n"
+        f"Generated (UTC): {image.generated_at_utc}"
+    )
+    if image.provider_request_id:
+        caption += f"\nProvider receipt: {image.provider_request_id[:100]}"
+
+    try:
+        sent = await update.message.reply_photo(photo=photo, caption=caption)
+    except Exception:
+        LOGGER.exception(
+            "IMAGIN provider returned image but Telegram delivery is unconfirmed; sha256=%s",
+            image.sha256,
+        )
+        await update.message.reply_text(
+            "The provider returned an image, but Telegram delivery could not be confirmed. "
+            "State: UNKNOWN. The image bytes were not durably stored, so no local recovery copy exists."
+        )
+        return
+
+    if not getattr(sent, "photo", None):
+        LOGGER.warning("IMAGIN Telegram response had no photo receipt; sha256=%s", image.sha256)
+        await update.message.reply_text(
+            "The provider returned an image, but Telegram did not provide a photo receipt. "
+            "State: UNKNOWN; no local recovery copy exists."
+        )
+        return
+
+    LOGGER.info(
+        "IMAGIN image delivered to Telegram; model=%s sha256=%s provider_request_id=%s",
+        image.model,
+        image.sha256,
+        image.provider_request_id or "unavailable",
     )
 
 
