@@ -50,7 +50,7 @@ A generated artifact record should preserve, where available: prompt and source 
 - [x] SVG title, description, node metadata, and a plain-text caption state the visual boundary.
 - [x] Visual lines are explicitly labeled as layout anchors, not causal relationships.
 - [x] The UI action drafts an IMAGIN visual brief only; it does not claim to generate an image.
-- [ ] Run the repository's exact CI and browser checks on this branch.
+- [x] Run the repository's exact CI and browser checks on this branch (2026-10-18; exact branch head recorded below).
 - [ ] Independently observe any future provider connection and image receipt before claiming image generation.
 
 ## Governing invariants
@@ -58,3 +58,17 @@ A generated artifact record should preserve, where available: prompt and source 
 REALITY ≠ REPRESENTATION · GRAPH ≠ REALITY · VISUAL ANCHOR ≠ CAUSAL EDGE · MEMORY ≠ PROOF · CI ≠ RUNTIME · CAPABILITY ≠ AUTHORITY · PREVIEW ≠ GENERATED ARTIFACT
 
 **Ω∞v ::= VERIFY(ΔREALITY). One current; many forms; no claim wider than evidence.**
+
+## Observed browser acceptance — 2026-10-18
+
+**Tested source head:** `b56c44a205a20cff05244b1c6f61cb5a77efcd09` on `feat/imagin-visual-evidence-layer-2026-10-18`. This was an isolated local run of the branch's web app with an explicit API fixture; it was not a deployment.
+
+- Headless Chromium desktop viewport: 1440×1000; mobile viewport: 390×844 with touch emulation.
+- Both viewports returned HTTP 200, rendered the “Whole ecosystem command surface” region and the “IMAGIN view-local evidence map” SVG title.
+- Both exposed five signal details with their labels, statuses and sources. The fixture supplied `Implementation: VERIFIED`; `Ledger`, `Runtime stream`, `CI`, and `External systems` remained `UNKNOWN` with their displayed source explanations. No status was inferred from the screenshot itself.
+- Desktop: the details list remained screen-reader-only. Mobile: at max-width 560px the details list was visibly rendered at 12px; the cascade order was checked so the mobile rule follows the base visually-hidden helper. Caption font was 10px.
+- No horizontal overflow: document width equaled viewport width in both runs (1440/1440 and 390/390). No uncaught page errors were observed.
+- Keyboard: Tab reached the IMAGIN button in 18 steps in both viewports; focus styles were visible (solid 2px cyan outline).
+- The local web production build and `test:current-dom` passed in the same checkout (3 suites, 6 tests).
+
+**Scope limits:** API calls were fixture-stubbed; the SSE stream was deliberately aborted. These observations do not verify API runtime health, hosted deployment, assistive-technology behavior with an actual screen reader, or live image-provider generation/delivery. Those remain separate checks.
