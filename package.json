@@ -41,7 +41,7 @@
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f",
     "test:contract": "pnpm --filter @oceanicos/types build && node --experimental-strip-types --test ./tests/integration/navigator_contract.integration.test.ts",
-    "test:web": "pnpm --filter web test:current-dom && pnpm --filter web exec node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config ./jest.config.js --runInBand --runTestsByPath src/__tests__/dom/CurrentCommandLifecycle.test.tsx src/__tests__/dom/SystemHealthEvidence.test.tsx src/__tests__/dom/AttestationReceiptDisclosure.test.tsx src/__tests__/dom/AttestationTrustPanel.test.tsx"
+    "test:web": "pnpm --filter web test:current-dom && pnpm --filter web exec node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config ./jest.config.js --runInBand --runTestsByPath src/__tests__/dom/CurrentCommandLifecycle.test.tsx src/__tests__/dom/SystemHealthEvidence.test.tsx src/__tests__/dom/AttestationReceiptDisclosure.test.tsx src/__tests__/dom/AttestationTrustPanel.test.tsx src/__tests__/dom/LocalJobEvidencePanel.test.tsx"
   },
   "bin": {
     "oceanicos": "./bin/oceanicos.mjs"
