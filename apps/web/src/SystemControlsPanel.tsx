@@ -47,7 +47,7 @@ export function SystemControlsPanel(props: SystemControlsPanelProps) {
         <button
           onClick={props.onCycle}
           disabled={props.cycleLoading}
-          style={btnStyle(theme.accent, props.cycleLoading)}
+          style={btnStyle(theme.accent, props.cycleLoading, theme.bg)}
         >
           {props.cycleLoading ? 'Mining…' : '⚡ Execute cycle'}
         </button>
@@ -64,6 +64,7 @@ export function SystemControlsPanel(props: SystemControlsPanelProps) {
         </button>
         {!props.minerActive && (
           <select
+            aria-label="Miner interval"
             value={props.minerInterval}
             onChange={(e) => props.onSetMinerInterval(Number(e.target.value))}
             style={selectStyle}
