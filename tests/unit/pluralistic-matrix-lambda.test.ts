@@ -12,6 +12,7 @@ import {
   evaluateProactiveMoodMatrix,
   executeLucidLoop,
   LUCID_LOOP_PHASES,
+  evaluate4x4CompressionMatrix,
 } from '../../packages/pluralism/src/matrix.js';
 
 describe('🌊 ƆCEANiC_OS(v∞) Matrix Transformation & Master Lambda Engine', () => {
@@ -405,5 +406,73 @@ describe('🔮 Lucid Operating Loop (executeLucidLoop) State Machine', () => {
     expect(iter2.proofChain.previousHash).toBe(iter1.proofChain.currentHash);
     expect(iter2.proofChain.currentHash).not.toBe(iter1.proofChain.currentHash);
     expect(iter2.proofChain.currentHash).toMatch(/^[0-9a-f]{64}$/);
+  });
+});
+
+describe('💧 4×4 Total Ecosystem Compression Matrix & Fixpoint Engine', () => {
+  it('converges to ALLOW/VERIFIED when all 4 dimensions are authorized and verified', () => {
+    const result = evaluate4x4CompressionMatrix({
+      A: true,
+      P: true,
+      E: true,
+      C: true,
+      O: true,
+      V: true,
+    });
+
+    expect(result['🌊']).toBe('ƆCEANiC_OS(v∞)');
+    expect(result.contract).toBe('Ω∞v-4X4-TOTAL-COMPRESSION-V1');
+    expect(result.fixpointStatus).toBe('CONVERGED');
+    expect(result.decision).toBe('ALLOW');
+    expect(result.status).toBe('VERIFIED');
+    expect(result.frobeniusNorm).toBe(4.0);
+    expect(result.numericalMatrix).toHaveLength(4);
+    expect(result.proofHash).toMatch(/^[0-9a-f]{64}$/);
+    expect(result.invariantsPassed.noEvidenceNoClaim).toBe(true);
+    expect(result.invariantsPassed.noAuthorityNoExecution).toBe(true);
+  });
+
+  it('fails closed to DENY when authority is absent (no authority => no execution)', () => {
+    const result = evaluate4x4CompressionMatrix({
+      A: false,
+      P: true,
+      E: true,
+      C: true,
+      O: true,
+      V: true,
+    });
+
+    expect(result.decision).toBe('DENY');
+    expect(result.status).toBe('DENIED');
+    expect(result.fixpointStatus).toBe('HALTED_UNAUTHORIZED');
+    // Execution rows zeroed
+    expect(result.numericalMatrix[1]).toEqual([0, 0, 0, 0]);
+    expect(result.numericalMatrix[2]).toEqual([0, 0, 0, 0]);
+    expect(result.frobeniusNorm).toBeLessThan(4.0);
+  });
+
+  it('requires review when evidence is missing (no evidence => no verified claim)', () => {
+    const result = evaluate4x4CompressionMatrix({
+      A: true,
+      P: true,
+      E: false,
+      C: true,
+      O: true,
+      V: false,
+    });
+
+    expect(result.decision).toBe('REVIEW');
+    expect(result.status).toBe('UNKNOWN');
+    expect(result.fixpointStatus).toBe('REVIEW_REQUIRED');
+  });
+
+  it('embodies the master single-line compression code and 96-D tensor outer product', () => {
+    const result = evaluate4x4CompressionMatrix({ A: true, P: true, E: true, C: true, O: true, V: true });
+    expect(result.tensor96Dimension).toBe(96);
+    expect(result.singleLineCode).toContain('Ω∞v := μX.RECONCILE(X,ΔREALITY)');
+    expect(result.singleLineCode).toContain('¬EVIDENCE⇒¬VERIFIED');
+    expect(result.singleLineCode).toContain('¬AUTHORITY⇒¬EXECUTION');
+    expect(result.singleLineCode).toContain('CAPABILITY≠AUTHORITY');
+    expect(result.singleLineCode).toContain('∞:=ITERATE(FINITE_VERIFIED_TRANSITIONS).');
   });
 });

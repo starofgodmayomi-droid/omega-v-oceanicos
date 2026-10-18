@@ -157,6 +157,77 @@ def evaluate_proactive_mood_matrix(
         "proofHash": proof_hash
     }
 
+def evaluate_4x4_compression_matrix(
+    A: bool = False,
+    P: bool = False,
+    E: bool = False,
+    C: bool = True,
+    O: bool = False,
+    V: bool = False,
+    S: str = "INITIAL_STATE",
+    I: str = "INTENT_CONTINUE",
+    R: str = "RESULT",
+    M: str = "MEMORY",
+    T: str = "TRANSITION",
+    K: str = "KAI_LUCID",
+    L: str = "LIVING_STACK",
+    G: str = "ECOSYSTEM_GRAPH",
+    infinity: str = "FINITE_ITERATIONS"
+) -> Dict[str, Any]:
+    """
+    4x4 Total Ecosystem Compression Matrix & Fixpoint Evaluation:
+    Ω∞v* = FIXPOINT_{finite steps, bounded authority} [ RECONCILE( M_{4x4} ) ]
+    """
+    if not (A and P):
+        decision = "DENY"
+        status = "DENIED"
+        fixpoint = "HALTED_UNAUTHORIZED"
+    elif not E:
+        decision = "REVIEW"
+        status = "UNKNOWN"
+        fixpoint = "REVIEW_REQUIRED"
+    elif not (O and V):
+        decision = "REVIEW"
+        status = "UNKNOWN"
+        fixpoint = "REVIEW_REQUIRED"
+    elif A and P and E and O and V and C:
+        decision = "ALLOW"
+        status = "VERIFIED"
+        fixpoint = "CONVERGED"
+    else:
+        decision = "REVIEW"
+        status = "DIVERGENT"
+        fixpoint = "DIVERGENT"
+
+    num_m = [
+        [1.0 if S else 0.0, 1.0 if I else 0.0, 1.0 if E else 0.0, 1.0 if A else 0.0],
+        [1.0 if P else 0.0, 1.0 if C else 0.0, 1.0 if decision == "ALLOW" else 0.5 if decision == "REVIEW" else 0.0, 1.0 if R else 0.0],
+        [1.0 if O else 0.0, 1.0 if V else 0.0, 1.0 if M else 0.0, 1.0 if T else 0.0],
+        [1.0 if K else 0.0, 1.0 if L else 0.0, 1.0 if G else 0.0, 1.0 if infinity else 0.0],
+    ]
+
+    if decision == "DENY":
+        num_m[1] = [0.0, 0.0, 0.0, 0.0]
+        num_m[2] = [0.0, 0.0, 0.0, 0.0]
+
+    sum_sq = sum(num_m[r][c] ** 2 for r in range(4) for c in range(4))
+    frobenius_norm = sum_sq ** 0.5
+
+    proof_data = f"4X4|{fixpoint}|{decision}|{frobenius_norm:.6f}"
+    proof_hash = hashlib.sha256(proof_data.encode('utf-8')).hexdigest()
+
+    return {
+        "🌊": "ƆCEANiC_OS(v∞)",
+        "contract": "Ω∞v-4X4-TOTAL-COMPRESSION-V1",
+        "humanRoot": "did:omega:human:starofgodmayomi",
+        "fixpointStatus": fixpoint,
+        "decision": decision,
+        "status": status,
+        "numericalMatrix": num_m,
+        "frobeniusNorm": round(frobenius_norm, 6),
+        "proofHash": proof_hash
+    }
+
 if __name__ == "__main__":
     print("🌊 ƆCEANiC_OS(v∞) :: Master Matrix & Lambda Engine")
     print(f"Sovereign Body Members ({len(OCEANIC_BODY)}):", ", ".join(OCEANIC_BODY))
@@ -197,3 +268,13 @@ if __name__ == "__main__":
     )
     print("\n[Proactive Mood-Matrix Fusion Evaluation]:")
     print(json.dumps(proactive, indent=2))
+
+    # Evaluate 4x4 Total Compression Matrix (Converged)
+    matrix_4x4 = evaluate_4x4_compression_matrix(A=True, P=True, E=True, C=True, O=True, V=True)
+    print("\n[4x4 Total Compression Matrix Evaluation (Converged)]:")
+    print(json.dumps(matrix_4x4, indent=2))
+
+    # Evaluate 4x4 Total Compression Matrix (Unauthorized Fail-Closed)
+    matrix_4x4_denied = evaluate_4x4_compression_matrix(A=False, P=True, E=True, C=True, O=True, V=True)
+    print("\n[4x4 Total Compression Matrix Evaluation (Unauthorized Fail-Closed)]:")
+    print(json.dumps(matrix_4x4_denied, indent=2))
