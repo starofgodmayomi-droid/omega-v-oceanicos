@@ -41,7 +41,7 @@
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f",
     "test:contract": "pnpm --filter @oceanicos/types build && node --experimental-strip-types --test ./tests/integration/navigator_contract.integration.test.ts",
-    "test:web": "pnpm --filter web test:current-dom"
+    "test:web": "pnpm --filter web test:current-dom && pnpm --filter web test:current-command"
   },
   "bin": {
     "oceanicos": "./bin/oceanicos.mjs"
