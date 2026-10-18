@@ -828,6 +828,7 @@ export interface Matrix4x4EvaluationResult {
   numericalMatrix: number[][];
   tensor96Dimension: number;
   frobeniusNorm: number;
+  fourthRootGramDeterminant: number;
   fixpointStatus: 'CONVERGED' | 'HALTED_UNAUTHORIZED' | 'DIVERGENT' | 'REVIEW_REQUIRED';
   decision: 'ALLOW' | 'DENY' | 'REVIEW';
   status: 'VERIFIED' | 'DIVERGENT' | 'UNKNOWN' | 'DENIED';
@@ -841,6 +842,31 @@ export interface Matrix4x4EvaluationResult {
   singleLineCode: string;
   proofHash: string;
   evaluatedAt: string;
+}
+
+function det3x3(m: number[][]): number {
+  return (
+    m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1]) -
+    m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0]) +
+    m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0])
+  );
+}
+
+function det4x4(m: number[][]): number {
+  let det = 0;
+  for (let j = 0; j < 4; j++) {
+    const sub3: number[][] = [];
+    for (let r = 1; r < 4; r++) {
+      const row: number[] = [];
+      for (let c = 0; c < 4; c++) {
+        if (c !== j) row.push(m[r][c]);
+      }
+      sub3.push(row);
+    }
+    const sign = j % 2 === 0 ? 1 : -1;
+    det += sign * m[0][j] * det3x3(sub3);
+  }
+  return det;
 }
 
 export function evaluate4x4CompressionMatrix(input?: Partial<Matrix4x4Ecosystem>): Matrix4x4EvaluationResult {
@@ -933,12 +959,32 @@ export function evaluate4x4CompressionMatrix(input?: Partial<Matrix4x4Ecosystem>
   }
   const frobeniusNorm = Math.sqrt(sumSq);
 
+  // Gram Matrix: I_4 + M^T M & 4th Root Determinant: \sqrt[4]{\det(I_4 + M^T M)}
+  const gram: number[][] = [
+    [1, 0, 0, 0],
+    [0, 1, 0, 0],
+    [0, 0, 1, 0],
+    [0, 0, 0, 1],
+  ];
+  for (let i = 0; i < 4; i++) {
+    for (let j = 0; j < 4; j++) {
+      let sum = 0;
+      for (let k = 0; k < 4; k++) {
+        sum += numericalMatrix[k][i] * numericalMatrix[k][j];
+      }
+      gram[i][j] += sum;
+    }
+  }
+  const gramDeterminant = Math.max(0, det4x4(gram));
+  const fourthRootGramDeterminant = Math.pow(gramDeterminant, 0.25);
+
   const proofPayload = JSON.stringify({
     contract: 'Ω∞v-4X4-TOTAL-COMPRESSION-V1',
     humanRoot: HUMAN_ROOT_ID,
     numericalMatrix,
     tensor96Dimension: tensor96.length,
     frobeniusNorm,
+    fourthRootGramDeterminant,
     fixpointStatus,
     decision,
     status,
@@ -956,6 +1002,7 @@ export function evaluate4x4CompressionMatrix(input?: Partial<Matrix4x4Ecosystem>
     numericalMatrix,
     tensor96Dimension: tensor96.length,
     frobeniusNorm,
+    fourthRootGramDeterminant,
     fixpointStatus,
     decision,
     status,
