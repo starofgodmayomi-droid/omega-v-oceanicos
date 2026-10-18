@@ -89,7 +89,6 @@ class ImaginProviderTests(unittest.TestCase):
         self.assertEqual(request.get_header("X-goog-api-key"), "fake-key")
         sent = json.loads(request.data.decode("utf-8"))
         self.assertEqual(sent["model"], DEFAULT_IMAGE_MODEL)
-        self.assertEqual(sent["response_format"]["image_size"], "1K")
         self.assertEqual(opener.call_args.kwargs["timeout"], 60)
 
     def test_provider_http_failure_does_not_expose_response_body_or_key(self):

@@ -88,12 +88,6 @@ def generate_image(
     payload = {
         "model": model,
         "input": [{"type": "text", "text": normalized_prompt}],
-        "response_format": {
-            "type": "image",
-            "mime_type": "image/png",
-            "aspect_ratio": "1:1",
-            "image_size": "1K",
-        },
     }
     request = Request(
         ENDPOINT,
