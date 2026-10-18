@@ -384,5 +384,6 @@ export { AsymmetricValidationGuard, type AsymmetricKeyPair } from './asymmetric.
 export * from './frontier.js';
 export * from './regional-mesh.js';
 export * from './covenant-verifier.js';
+export * from './verification-contract.js';
 export { VerificationEngine as default };
 

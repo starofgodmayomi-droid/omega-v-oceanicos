@@ -811,8 +811,8 @@ export interface Matrix4x4Ecosystem {
   // Row 2: EXECUTION
   O: boolean;
   V: boolean;
-  M: string;
   T: string;
+  M: string;
   // Row 3: CONTINUITY
   K: string;
   L: string;
@@ -831,7 +831,7 @@ export interface Matrix4x4EvaluationResult {
   fourthRootGramDeterminant: number;
   fixpointStatus: 'CONVERGED' | 'HALTED_UNAUTHORIZED' | 'DIVERGENT' | 'REVIEW_REQUIRED';
   decision: 'ALLOW' | 'DENY' | 'REVIEW';
-  status: 'VERIFIED' | 'DIVERGENT' | 'UNKNOWN' | 'DENIED';
+  status: 'VERIFIED' | 'DIVERGENT' | 'UNKNOWN' | 'NOT_EXECUTED' | 'DENIED';
   invariantsPassed: {
     noEvidenceNoClaim: boolean;
     noAuthorityNoExecution: boolean;
@@ -881,7 +881,7 @@ export function evaluate4x4CompressionMatrix(input?: Partial<Matrix4x4Ecosystem>
   const V = input?.V ?? false;
 
   let decision: 'ALLOW' | 'DENY' | 'REVIEW';
-  let status: 'VERIFIED' | 'DIVERGENT' | 'UNKNOWN' | 'DENIED';
+  let status: 'VERIFIED' | 'DIVERGENT' | 'UNKNOWN' | 'NOT_EXECUTED' | 'DENIED';
   let fixpointStatus: 'CONVERGED' | 'HALTED_UNAUTHORIZED' | 'DIVERGENT' | 'REVIEW_REQUIRED';
 
   if (!A || !P) {
@@ -917,8 +917,8 @@ export function evaluate4x4CompressionMatrix(input?: Partial<Matrix4x4Ecosystem>
     R: input?.R ?? (decision === 'ALLOW' ? 'STATE_TRANSITION_VERIFIED' : 'TRANSITION_HALTED'),
     O,
     V,
-    M: input?.M ?? 'APPEND_ONLY_SQLITE_MERKLE_CHAIN',
     T: input?.T ?? 'FINITE_BOUNDED_AUTHORIZED_TRANSITION',
+    M: input?.M ?? 'APPEND_ONLY_SQLITE_MERKLE_CHAIN',
     K: input?.K ?? 'KAI_LUCID_EPISTEMIC_NAVIGATOR',
     L: input?.L ?? 'ONE_LIVING_VERIFIED_STACK',
     G: input?.G ?? 'INTENT->SPEC->DECISION->IMPL->TEST->ATTEST->GRAPH',
@@ -926,10 +926,14 @@ export function evaluate4x4CompressionMatrix(input?: Partial<Matrix4x4Ecosystem>
   };
 
   // Construct normalized numerical matrix M (4x4)
+  // Row 0: S, I, E, A
+  // Row 1: P, C, D, R
+  // Row 2: O, V, T, M (Observe, Verify, Transition, Memory)
+  // Row 3: K, L, G, Ω (KAI/LUCID, Living Stack, Connected Graph, Bounded Evolution)
   const numericalMatrix: number[][] = [
     [matrix.S ? 1.0 : 0.0, matrix.I ? 1.0 : 0.0, matrix.E ? 1.0 : 0.0, matrix.A ? 1.0 : 0.0],
     [matrix.P ? 1.0 : 0.0, matrix.C ? 1.0 : 0.0, matrix.D === 'ALLOW' ? 1.0 : matrix.D === 'REVIEW' ? 0.5 : 0.0, matrix.R ? 1.0 : 0.0],
-    [matrix.O ? 1.0 : 0.0, matrix.V ? 1.0 : 0.0, matrix.M ? 1.0 : 0.0, matrix.T ? 1.0 : 0.0],
+    [matrix.O ? 1.0 : 0.0, matrix.V ? 1.0 : 0.0, matrix.T ? 1.0 : 0.0, matrix.M ? 1.0 : 0.0],
     [matrix.K ? 1.0 : 0.0, matrix.L ? 1.0 : 0.0, matrix.G ? 1.0 : 0.0, matrix.infinity ? 1.0 : 0.0],
   ];
 
