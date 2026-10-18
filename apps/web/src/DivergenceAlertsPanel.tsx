@@ -75,8 +75,8 @@ export function DivergenceAlertsPanel() {
         <div style={{ color: '#b9a88a', fontSize: '10px', lineHeight: 1.5, marginTop: '4px' }}>{command.reality?.evidence ?? 'No divergence evidence text supplied.'}</div>
         <button onClick={() => acknowledge(command.commandId)} style={{ marginTop: '8px', border: '1px solid #9d6546', background: 'transparent', color: '#ffc28f', borderRadius: '4px', padding: '5px 8px', fontSize: '10px' }}>ACKNOWLEDGE VIEWED</button>
       </article>)}</div>}
-      <div style={{ color: '#547b74', font: '10px DM Mono, monospace', marginTop: '10px' }}>Automatic check every 15s · acknowledgement is local UI state only · divergence remains in ledger</div>
-      {lastChecked && <div style={{ color: '#547b74', font: '10px DM Mono, monospace', marginTop: '3px' }}>Last checked {new Date(lastChecked).toLocaleTimeString()}</div>}
+      <div style={{ color: '#94a3b8', font: '10px DM Mono, monospace', marginTop: '10px' }}>Automatic check every 15s · acknowledgement is local UI state only · divergence remains in ledger</div>
+      {lastChecked && <div style={{ color: '#94a3b8', font: '10px DM Mono, monospace', marginTop: '3px' }}>Last checked {new Date(lastChecked).toLocaleTimeString()}</div>}
     </section>
   );
 }

@@ -129,7 +129,7 @@ export function RealityPanel() {
                       borderRadius: '3px',
                       fontWeight: stage === status.contract.currentStage ? 'bold' : 'normal',
                       background: stage === status.contract.currentStage ? '#6ee7b722' : 'transparent',
-                      color: stage === status.contract.currentStage ? '#6ee7b7' : '#64748b',
+                      color: stage === status.contract.currentStage ? '#6ee7b7' : '#94a3b8',
                       border: stage === status.contract.currentStage ? '1px solid #6ee7b755' : '1px solid transparent',
                     }}
                   >
@@ -200,7 +200,7 @@ export function RealityPanel() {
                         {field.value}
                       </span>
                     </div>
-                    <div style={{ color: '#64748b', fontSize: '10px', lineHeight: 1.4 }}>
+                    <div style={{ color: '#94a3b8', fontSize: '10px', lineHeight: 1.4 }}>
                       <div>{field.evidence}</div>
                       <div style={{ marginTop: '3px', color: '#475569' }}>provenance: {field.provenance}</div>
                       <div style={{ marginTop: '2px', color: '#475569' }}>scope: {field.scope}</div>
@@ -227,7 +227,7 @@ export function RealityPanel() {
             <div style={{ color: '#94a3b8', fontSize: '10px', fontFamily: 'monospace', marginBottom: '6px' }}>
               {status.reconciliationContract.formula}
             </div>
-            <div style={{ color: '#64748b', fontSize: '10px', marginBottom: '6px' }}>
+            <div style={{ color: '#94a3b8', fontSize: '10px', marginBottom: '6px' }}>
               <strong style={{ color: '#6ee7b7' }}>VERIFIED requires:</strong> {status.reconciliationContract.verifiedRequires}
             </div>
             <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
@@ -265,7 +265,7 @@ export function RealityPanel() {
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
               {status.epistemicDistinctions.map((distinction, i) => (
-                <div key={i} style={{ color: '#64748b', fontSize: '10px', fontFamily: 'monospace' }}>
+                <div key={i} style={{ color: '#94a3b8', fontSize: '10px', fontFamily: 'monospace' }}>
                   {distinction}
                 </div>
               ))}
@@ -302,10 +302,10 @@ export function RealityPanel() {
             <div style={{ color: '#94a3b8', fontSize: '10px', marginBottom: '4px' }}>
               <strong style={{ color: '#6ee7b7' }}>Principle:</strong> {status.realityAuthority.principle}
             </div>
-            <div style={{ color: '#64748b', fontSize: '10px', marginBottom: '4px' }}>
+            <div style={{ color: '#94a3b8', fontSize: '10px', marginBottom: '4px' }}>
               <strong style={{ color: '#38bdf8' }}>Human Agency:</strong> {status.realityAuthority.humanAgency}
             </div>
-            <div style={{ color: '#64748b', fontSize: '10px' }}>
+            <div style={{ color: '#94a3b8', fontSize: '10px' }}>
               <strong style={{ color: '#facc15' }}>AI Bound:</strong> {status.realityAuthority.aiBound}
             </div>
           </div>

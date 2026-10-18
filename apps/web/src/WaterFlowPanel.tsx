@@ -72,7 +72,7 @@ export function WaterFlowPanel({ frames = null }: WaterFlowPanelProps) {
                 padding: '7px 5px',
                 background: observed ? '#123d37' : '#03080d',
                 border: `1px solid ${observed ? '#6ee7b755' : '#1e293b'}`,
-                color: observed ? '#b4ffe4' : '#64748b',
+                color: observed ? '#b4ffe4' : '#94a3b8',
                 fontSize: '9px',
                 lineHeight: 1.3,
                 textAlign: 'center',
@@ -86,7 +86,7 @@ export function WaterFlowPanel({ frames = null }: WaterFlowPanelProps) {
         })}
       </div>
 
-      <div style={{ color: '#64748b', fontSize: '10px', lineHeight: 1.5, marginTop: '12px' }}>
+      <div style={{ color: '#94a3b8', fontSize: '10px', lineHeight: 1.5, marginTop: '12px' }}>
         {summary.note}
         {summary.traceId && <div style={{ marginTop: '3px', fontFamily: 'monospace' }}>trace: {summary.traceId} · max steps: {summary.maxSteps}</div>}
       </div>
