@@ -2230,10 +2230,10 @@ body {
   letter-spacing: 0.08em;
 }
 .whole-map-caption {
-  margin: -2px 0 5px;
-  color: #64748b;
-  font: 8px 'DM Mono', monospace;
-  letter-spacing: 0.08em;
+  margin: 4px 6px 8px;
+  color: #cbd5e1;
+  font: 10px/1.45 'DM Mono', monospace;
+  letter-spacing: 0.025em;
   text-align: center;
 }
 .whole-metric-note {
@@ -2252,7 +2252,35 @@ body {
 }
 @media (max-width: 560px) {
   .whole-map-wrap { margin-top: 1px; }
-  .whole-map-caption { font-size: 7px; }
+  .whole-map-caption {
+    margin: 6px 8px 10px;
+    color: #e2e8f0;
+    font-size: 10px;
+    letter-spacing: 0.015em;
+    line-height: 1.5;
+  }
+
+  /* SVG text scales down with the diagram; retain a readable mobile evidence list. */
+  .imagin-visually-hidden {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 8px 0;
+    padding: 10px 12px 10px 28px;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+    border: 1px solid rgba(148, 163, 184, 0.32);
+    border-radius: 10px;
+    background: rgba(2, 6, 23, 0.34);
+    color: #e2e8f0;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  .imagin-visually-hidden li + li {
+    margin-top: 4px;
+  }
 }
 
 
