@@ -177,7 +177,7 @@ export function ValueNavigatorPanel() {
             <label style={{ color: '#cbd5e1', fontSize: 10 }}>Evidence for this observation<textarea value={observationEvidence} onChange={(e) => setObservationEvidence(e.target.value)} rows={2} style={{ ...inputStyle, display: 'block', marginTop: 4 }} /></label>
             <div style={{ display: 'flex', alignItems: 'end' }}><button disabled={busy} type="submit" style={buttonStyle}>APPEND OBSERVATION</button></div>
           </form>
-        ) : <div style={{ color: '#64748b', fontSize: 11 }}>No proposals recorded yet.</div>}
+        ) : <div style={{ color: '#94a3b8', fontSize: 11 }}>No proposals recorded yet.</div>}
       </div>
 
       <div style={{ marginTop: 14, display: 'grid', gap: 7 }}>
@@ -190,11 +190,11 @@ export function ValueNavigatorPanel() {
             <div style={{ color: '#94a3b8', fontSize: 10, marginTop: 5 }}>Expected: {entry.expectedOutcome}{entry.observation?.observedOutcome ? ` · Observed: ${entry.observation.observedOutcome}` : ''}</div>
             {entry.nextTransition && <div style={{ color: '#6ee7b7', fontSize: 10, marginTop: 4 }}>Next Δ: {entry.nextTransition}</div>}
             {entry.valuePotentialHypothesis && <div style={{ color: '#facc15', fontSize: 10, marginTop: 4 }}>Value-potential hypothesis: {entry.valuePotentialHypothesis.score}/100 — {entry.valuePotentialHypothesis.limitation}</div>}
-            <div style={{ color: '#64748b', fontSize: 9, marginTop: 4 }}>scope: {entry.verificationScope} · {entry.record.provenance.source} · append #{entry.sequence}{entry.supersedesId ? ` · supersedes ${entry.supersedesId}` : ''}</div>
+            <div style={{ color: '#94a3b8', fontSize: 9, marginTop: 4 }}>scope: {entry.verificationScope} · {entry.record.provenance.source} · append #{entry.sequence}{entry.supersedesId ? ` · supersedes ${entry.supersedesId}` : ''}</div>
           </article>
         ))}
       </div>
-      <footer style={{ color: '#64748b', fontSize: 9, marginTop: 10 }}>
+      <footer style={{ color: '#94a3b8', fontSize: 9, marginTop: 10 }}>
         A VERIFIED label here means only that a submitted, sourced observation matches the stated outcome hypothesis. It does not attest external truth, execution, demand, value, revenue, deployment, or health.
       </footer>
     </section>
