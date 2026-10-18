@@ -55,7 +55,7 @@ The project embodies a living evolution: every step contains all steps; every en
 
 Architecture begins at **ZERO**, becomes **MINI**, and expands only when reality verifies the next step.
 
-See [docs/MINI.md](docs/MINI.md). 
+See [docs/MINI.md](docs/MINI.md).
 
 ### IMAGIN — evidence-bound visual layer
 
