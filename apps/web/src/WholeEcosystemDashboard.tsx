@@ -114,6 +114,16 @@ function ImaginEvidenceMap({ signals }: { signals: readonly LucidFieldSignal[] }
           </g>
         ))}
       </svg>
+      <ul className="imagin-visually-hidden" aria-label="Evidence signal details">
+        {model.nodes.map((node) => (
+          <li key={'signal-detail-' + node.id}>
+            {`${node.label}: ${node.status}; source: ${node.source}`}
+          </li>
+        ))}
+        {model.omittedCount > 0 && (
+          <li>{model.omittedCount} additional signals omitted by the bounded view.</li>
+        )}
+      </ul>
       <p className="whole-map-caption">{model.caption}</p>
       {usedStatuses.length > 0 && (
         <div aria-label="Evidence status legend" style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '8px', margin: '4px 0 8px', fontSize: '9px', fontFamily: theme.fontMono }}>
