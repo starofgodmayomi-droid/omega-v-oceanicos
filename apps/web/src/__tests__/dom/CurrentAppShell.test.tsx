@@ -10,8 +10,9 @@ describe('current OceanicOS app shell', () => {
     render(<App />);
 
     const dashboard = await screen.findByRole('region', { name: 'Whole ecosystem command surface' });
-    expect(within(dashboard).getByRole('img', { name: /conceptual OCEANICOS system map/i })).toBeInTheDocument();
-    expect(within(dashboard).getByText(/relationships shown, not live topology/i)).toBeInTheDocument();
+    expect(within(dashboard).getByRole('img', { name: /IMAGIN view-local evidence map/i })).toBeInTheDocument();
+    expect(within(dashboard).getByRole('button', { name: 'IMAGIN' })).toBeInTheDocument();
+    expect(within(dashboard).getByText(/visual anchors are layout only, not causal edges/i)).toBeInTheDocument();
     expect(within(dashboard).getByText(/0 of 5 listed signals are marked VERIFIED in this view/i)).toBeInTheDocument();
     expect(within(dashboard).getByText('hosted CI is not queried by this screen')).toBeInTheDocument();
     expect(within(dashboard).getByText('no external authority inferred')).toBeInTheDocument();
