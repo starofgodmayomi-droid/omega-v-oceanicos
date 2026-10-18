@@ -6,6 +6,7 @@ import { AmbientBar } from './AmbientBar';
 import { IntentFlow } from './IntentFlow';
 import { SystemControlsPanel } from './SystemControlsPanel';
 import { SystemHealthPanel } from './SystemHealthPanel';
+import { AttestationTrustPanel } from './AttestationTrustPanel';
 import { DependencyMapPanel } from './DependencyMapPanel';
 import { ObservationStreamPanel } from './ObservationStreamPanel';
 import { OreadConsole } from './OreadConsole';
@@ -613,6 +614,7 @@ export function App() {
       detail: (
         <>
           <SystemHealthPanel />
+          <AttestationTrustPanel />
           <SystemControlsPanel
           onCycle={cycle}
           cycleLoading={loading}
