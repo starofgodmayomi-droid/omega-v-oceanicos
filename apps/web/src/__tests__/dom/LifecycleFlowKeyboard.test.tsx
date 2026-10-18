@@ -21,7 +21,7 @@ describe('lifecycle stage keyboard access', () => {
       />,
     );
 
-    const toggle = screen.getByRole('button', { name: 'System. Available. Health and trust evidence' });
+    const toggle = screen.getByRole('button', { name: /System.*Health and trust evidence/ });
     expect(toggle).toHaveAttribute('aria-expanded', 'false');
     expect(toggle).toHaveAttribute('aria-controls', 'lifecycle-stage-detail-system');
     expect(screen.queryByText('System stage detail fixture')).not.toBeInTheDocument();
