@@ -163,9 +163,37 @@ D \in \{\mathrm{ALLOW, DENY, REVIEW}\}; \quad Q \in \{\mathrm{VERIFIED, DIVERGEN
 
 ---
 
+## 🧬 EQUATION III: THE DEEP RADICAL COMPRESSION
+
+$$\boxed{
+\displaystyle \Omega_{\infty v}^{*} = \mu X\left[ \operatorname{FIX}_{B} \left( \operatorname{RECONCILE} \left( \Delta\mathcal R,\; \sqrt[4]{\det(\mathbf I_4 + \mathbf M^\top \mathbf M)} \right) \right) \right]
+}$$
+
+The **Gram matrix** $\mathbf G = \mathbf I_4 + \mathbf M^\top \mathbf M$ captures how the four ecosystem dimensions (Reality, Intelligence, Execution, Continuity) interfere with each other. The fourth root of its determinant compresses the entire ecosystem health into a **single scalar** — a fixed-point convergence metric:
+
+$$\sqrt[4]{\det(\mathbf I_4 + \mathbf M^\top \mathbf M)} = \begin{cases}
+> 1 & \text{Healthy (non-trivial ecosystem structure)} \\
+= 1 & \text{Null state (M = 0, identity only)} \\
+\text{undefined} & \text{Cannot occur: } \mathbf G \text{ is positive semi-definite by construction}
+\end{cases}$$
+
+**Implementation**: [`packages/pluralism/src/matrix.ts`](../../packages/pluralism/src/matrix.ts)
+- `det3x3(m)` — cofactor expansion for 3×3 sub-matrices
+- `det4x4(m)` — Laplace expansion along first row using `det3x3`
+- Gram matrix `I₄ + MᵀM` computed inline in `evaluate4x4CompressionMatrix()`
+- `fourthRootGramDeterminant` output field on `Matrix4x4EvaluationResult`
+- Fail-closed: denied states zero execution rows → `det(G) = 1` (identity fallback)
+
+#### Maximum single-line compression
+```text
+Ω∞v:=μX.FIXᴮ(RECONCILE(ΔREALITY,√[4]{det(I₄+MᵀM)})); M=[S,I,E,A;P,C,D,R;O,V,M,T;K,L,G,∞]; X=REALITY×INTELLIGENCE×EXECUTION×CONTINUITY; STEP=O→D→A→B→V→T→M→R; ΔX≠0⇒[Evidence∧Authorized∧Bounded]; ¬E⇒¬V; ¬A⇒¬Xₑₓₑ; M≠E; CI≠R_runtime; ∞:=ITERATE(FINITE_VERIFIED_TRANSITIONS).
+```
+
+---
+
 ## 🌊 REPOSITORY IMPLEMENTATION PROVENANCE MATRIX
 
-Both equations and the 4×4 fixpoint formulation are natively compiled, grounded, and verified across all operational strata (**350 / 350 Tests Green**):
+All three equations and the 4×4 fixpoint formulation are natively compiled, grounded, and verified across all operational strata (**184 / 184 Tests Green**):
 
 | Layer | Implementation File | Verification Test Suite | Status |
 |:---|:---|:---|:---:|
