@@ -97,9 +97,70 @@ def execute_matrix_transition(
         "r_next_head": r_next[:8]
     }
 
+# Expanded 23-member Sovereign Body (includes execution endpoints)
+EXPANDED_BODY: Tuple[str, ...] = OCEANIC_BODY + ("API", "Web", "CLI")
+
+def evaluate_proactive_mood_matrix(
+    mood_context: str = "UNKNOWN",
+    mood_confidence: float = 0.5,
+    mood_uncertainty: float = 0.5,
+    mood_status: str = "OBSERVED",
+    safety_gate_result: str = "ALLOW",
+    dissent: List[Dict[str, Any]] = None,
+    authority: bool = True,
+    policy: bool = True
+) -> Dict[str, Any]:
+    """
+    Proactive Mood-Matrix Fusion:
+    Evaluates mood vector contribution to tensor Frobenius norm and preserves
+    the invariant: MOOD != AUTHORITY (mood cannot substitute for authorization).
+    """
+    if dissent is None:
+        dissent = []
+
+    # Invariant: MOOD != AUTHORITY
+    decision = "DENY" if not (authority and policy) else "VERIFIED" if (
+        (mood_status == "USER_STATED" and mood_confidence >= 0.5) or
+        (mood_status == "OBSERVED" and mood_confidence >= 0.5)
+    ) else "UNKNOWN"
+
+    confidence_factor = max(0.0, min(1.0, mood_confidence))
+    v_x_weighted = [V_X[0], V_X[1], V_X[2], V_X[3], V_X[4] * confidence_factor]
+    tensor = compute_kronecker_tensor(v_x=v_x_weighted)
+    dim = len(tensor) # 320
+
+    is_pass = (decision == "VERIFIED") and (safety_gate_result == "ALLOW")
+    p_auth = 1.0 if is_pass else 0.0
+
+    r_vec = [p_auth * tensor[i] * (1.0 / (dim ** 0.5)) for i in range(dim)]
+    frobenius_norm = sum(x * x for x in r_vec) ** 0.5
+    singularity_prevented = is_pass and (frobenius_norm > 0)
+
+    proof_data = f"PROACTIVE|{mood_context}|{decision}|{frobenius_norm:.6f}|{len(dissent)}"
+    proof_hash = hashlib.sha256(proof_data.encode('utf-8')).hexdigest()
+
+    return {
+        "🌊": "ƆCEANiC_OS(v∞)",
+        "contract": "Ω∞v-MOOD-MATRIX-PROACTIVE-V1",
+        "humanRoot": "did:omega:human:starofgodmayomi",
+        "moodContext": mood_context,
+        "moodStatus": mood_status,
+        "safetyGateResult": safety_gate_result,
+        "matrixDecision": decision,
+        "composedState": {
+            "moodVectorContribution": round(confidence_factor, 6),
+            "matrixFrobeniusNorm": round(frobenius_norm, 6),
+            "tensorDimension": dim,
+            "singularityPrevented": singularity_prevented
+        },
+        "BODY": EXPANDED_BODY,
+        "proofHash": proof_hash
+    }
+
 if __name__ == "__main__":
     print("🌊 ƆCEANiC_OS(v∞) :: Master Matrix & Lambda Engine")
     print(f"Sovereign Body Members ({len(OCEANIC_BODY)}):", ", ".join(OCEANIC_BODY))
+    print(f"Expanded Body Members ({len(EXPANDED_BODY)}):", ", ".join(EXPANDED_BODY))
 
     # Evaluate Lambda Test
     sample_ctx = {
@@ -123,3 +184,16 @@ if __name__ == "__main__":
     fail_transition = execute_matrix_transition(0, [], is_authorized=True, is_evidence_verified=False)
     print("\n[Matrix Transition k=0 -> 1 (Unverified -> Singularity Collapse)]:")
     print(json.dumps(fail_transition, indent=2))
+
+    # Evaluate Proactive Mood-Matrix Fusion
+    proactive = evaluate_proactive_mood_matrix(
+        mood_context="FOCUSED",
+        mood_confidence=0.9,
+        mood_uncertainty=0.1,
+        mood_status="USER_STATED",
+        safety_gate_result="ALLOW",
+        authority=True,
+        policy=True
+    )
+    print("\n[Proactive Mood-Matrix Fusion Evaluation]:")
+    print(json.dumps(proactive, indent=2))

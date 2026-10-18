@@ -1,4 +1,4 @@
-import Fastify, { FastifyInstance } from 'fastify';
+import Fastify, { FastifyInstance, FastifyRequest } from 'fastify';
 import cors from '@fastify/cors';
 import rateLimit from '@fastify/rate-limit';
 import { randomUUID } from 'node:crypto';
@@ -13,7 +13,8 @@ import { ObserverEngine } from '@oceanicos/observer';
 import { AttestationService } from '@oceanicos/attestation';
 import { InferenceClient } from '@oceanicos/inference';
 import { VectorMemory } from '@oceanicos/vector';
-import { PluralisticRealityMatrix, PluralismConvergenceMatrix, PluralisticDualityTensor, evaluateOmegaLambda, executeMatrixTransition, executeContinuumCompressionTransition, OCEANIC_BODY_MEMBERS } from '@oceanicos/pluralism';
+import { PluralisticRealityMatrix, PluralismConvergenceMatrix, PluralisticDualityTensor, evaluateOmegaLambda, executeMatrixTransition, executeContinuumCompressionTransition, evaluateProactiveMoodMatrix, executeLucidLoop, OCEANIC_BODY_MEMBERS, EXPANDED_BODY_MEMBERS, LUCID_LOOP_PHASES } from '@oceanicos/pluralism';
+import { AutopilotMoodEngine } from '@oceanicos/mood';
 import { OceanicosKernel } from '@omega-v/kernel';
 import { evaluateAuthorization } from '@oceanicos/authorization';
 import { LocalJobError, LocalJobLedger, LOCAL_JOB_WINDOW } from './jobs.js';
@@ -26,7 +27,7 @@ import { registerUpgradeRoute } from './upgrade-route.js';
 import { registerCovenantRoute } from './covenant-route.js';
 import { registerCompressionRoute } from './compression-route.js';
 import { registerEchoframeRoute } from './echoframe-route.js';
-import { registerContinuumRoute } from './continuum-route.js';
+import { registerContinuumRoute, getContinuumEcosystemStatus } from './continuum-route.js';
 import { API_ROUTE_INVENTORY } from './route-contract.js';
 import { OceanicosKernel as UpgradeKernel } from '@oceanicos/mini';
 import { OmegaCommandStore, registerOmegaWorkerRoutes } from './omega.js';
@@ -253,7 +254,7 @@ export function createApp(
   registerCovenantRoute(fastify, jsonError);
   registerCompressionRoute(fastify);
   registerEchoframeRoute(fastify);
-  registerContinuumRoute(fastify);
+  fastify.get('/v1/continuum', async () => getContinuumEcosystemStatus());
 
   fastify.get('/health', async (_request, reply) => {
     const memoryReady = kernel.verifyMemoryIntegrity();
@@ -316,25 +317,158 @@ export function createApp(
   });
 
   fastify.get('/v1/kernel/capabilities', async () => ({ success: true, capability: platformKernel.getCapabilitySnapshot(), evaluatedAt: new Date().toISOString() }));
-  fastify.get('/v1/mood', async () => ({
-    success: true,
-    status: 'MAX GOOD-O',
-    mood: 'SPIDER-MAN AGILE CONTINUUM // GREAT POWER = GREAT RESPONSIBILITY',
-    agility: 'HIGH // WEB-SLINGING ACROSS ALL ECOSYSTEM LAYERS',
-    contract: 'Ω∞v totality / attest-dont-assert',
-    brand: 'Oceanicos Ω∞',
-    webTopology: {
-      kernel: '@omega-v/kernel',
-      authorization: '@oceanicos/authorization (KEY ≠ AUTHORITY)',
-      api: 'Fastify :5000',
-      web: 'Vite :3000',
-      soul: '/v1/soul (ELION VAREL Sovereign Treasury)',
-      reality: '/v1/reality/status (11-Vector Proof)',
-      merkleLedger: '.omega/kernel-state.json (Block #406)',
+  // ─── 🔥 LIVE MOOD ENGINE (proactive self-sensing) ────────────────
+  const moodEngine = new AutopilotMoodEngine({ level: 1, language: 'en' });
+
+  fastify.get('/v1/mood', async () => {
+    // Run the mood engine in self-observation mode
+    const pipeline = moodEngine.runPipeline({
+      signal: 'ecosystem-self-observation',
+      status: 'OBSERVED',
+      source: 'api-proactive-self-sense',
+      actionConsequential: false,
+      authorityPresent: true,
+      policyChecked: true,
+    });
+
+    // Compose mood→matrix fusion
+    const moodMatrix = evaluateProactiveMoodMatrix({
+      moodContext: pipeline.mood.context as any,
+      moodConfidence: 1.0 - pipeline.mood.uncertainty,
+      moodUncertainty: pipeline.mood.uncertainty,
+      moodStatus: pipeline.mood.status,
+      safetyGateResult: pipeline.safetyGate.admissionResult as any,
+      authority: true,
+      policy: true,
+    });
+
+    return {
+      success: true,
+      status: 'PROACTIVE_SELF_SENSING',
+      contract: 'Ω∞v-MOOD-MATRIX-PROACTIVE-V1',
+      brand: 'Oceanicos Ω∞',
+      moodEngine: {
+        context: pipeline.mood.context,
+        uncertainty: pipeline.mood.uncertainty,
+        status: pipeline.mood.status,
+        adaptation: {
+          tone: pipeline.adaptation.tone,
+          pacing: pipeline.adaptation.pacing,
+          density: pipeline.adaptation.density,
+        },
+        safetyGate: pipeline.safetyGate.admissionResult,
+      },
+      moodMatrix: {
+        decision: moodMatrix.matrixDecision,
+        singularityPrevented: moodMatrix.composedState.singularityPrevented,
+        moodVectorContribution: moodMatrix.composedState.moodVectorContribution,
+        frobeniusNorm: moodMatrix.composedState.matrixFrobeniusNorm,
+        proofHash: moodMatrix.proofHash,
+      },
+      body: EXPANDED_BODY_MEMBERS,
+      webTopology: {
+        kernel: '@omega-v/kernel',
+        authorization: '@oceanicos/authorization (KEY ≠ AUTHORITY)',
+        api: 'Fastify :5000',
+        web: 'Vite :3000',
+        soul: '/v1/soul (ELION VAREL Sovereign Treasury)',
+        reality: '/v1/reality/status (11-Vector Proof)',
+      },
+      ledger: { ready: Boolean(ledgerMemory.getTip()) },
+      evaluatedAt: new Date().toISOString(),
+    };
+  });
+
+  fastify.post('/v1/mood/pipeline', async (request: FastifyRequest<{ Body: { signal: string; status?: string; source?: string; consequential?: boolean } }>) => {
+      const { signal, status, source, consequential } = request.body || {};
+      if (!signal || typeof signal !== 'string') {
+        return { success: false, error: 'MISSING_MOOD_SIGNAL', detail: 'Body must include "signal" string.' };
+      }
+
+      const pipeline = moodEngine.runPipeline({
+        signal,
+        status: (status as any) || 'OBSERVED',
+        source: source || 'api-mood-pipeline',
+        actionConsequential: consequential ?? false,
+        authorityPresent: true,
+        policyChecked: true,
+      });
+
+      const moodMatrix = evaluateProactiveMoodMatrix({
+        moodContext: pipeline.mood.context as any,
+        moodConfidence: 1.0 - pipeline.mood.uncertainty,
+        moodUncertainty: pipeline.mood.uncertainty,
+        moodStatus: pipeline.mood.status,
+        safetyGateResult: pipeline.safetyGate.admissionResult as any,
+        authority: true,
+        policy: true,
+      });
+
+      return {
+        success: true,
+        contract: 'Ω∞v-MOOD-MATRIX-PROACTIVE-V1',
+        pipeline: {
+          signal: pipeline.signal,
+          mood: {
+            context: pipeline.mood.context,
+            uncertainty: pipeline.mood.uncertainty,
+            status: pipeline.mood.status,
+          },
+          adaptation: pipeline.adaptation,
+          safetyGate: pipeline.safetyGate,
+          memoryRecordsCount: pipeline.memoryRecords.length,
+        },
+        moodMatrix: {
+          decision: moodMatrix.matrixDecision,
+          moodContext: moodMatrix.moodContext,
+          composedState: moodMatrix.composedState,
+          proofHash: moodMatrix.proofHash,
+        },
+        evaluatedAt: new Date().toISOString(),
+      };
     },
-    ledger: { ready: Boolean(ledgerMemory.getTip()) },
+  );
+
+  // ─── 🔮 LUCID OPERATING LOOP (7-phase state machine) ─────────────
+  // Implements Ω∞v := VERIFY(ΔREALITY) as a live matrix transition
+  // OBSERVE → DISTINGUISH → ALIGN → BOUND → ACT → RECONCILE → NEXT_Δ
+
+  fastify.get('/v1/lucid/phases', async () => ({
+    success: true,
+    contract: 'Ω∞v-LUCID-LOOP-V1',
+    phases: LUCID_LOOP_PHASES,
+    phaseCount: LUCID_LOOP_PHASES.length,
+    rootInvariant: 'Ω∞v := VERIFY(ΔREALITY)',
+    description: 'OBSERVE → DISTINGUISH → ALIGN → BOUND → ACT → RECONCILE → NEXT_Δ',
+    tensorDimension: 320,
+    body: EXPANDED_BODY_MEMBERS,
     evaluatedAt: new Date().toISOString(),
   }));
+
+  fastify.post('/v1/lucid/loop', async (request: FastifyRequest<{ Body: { intent: string; realityObservation?: Record<string, any>; authority?: boolean; policy?: boolean; scope?: { include?: string[]; exclude?: string[] }; dissent?: string[]; previousProofHash?: string; stepIndex?: number } }>) => {
+    const body = request.body || {};
+    const { intent, realityObservation, authority, policy, scope, dissent, previousProofHash, stepIndex } = body;
+
+    if (!intent || typeof intent !== 'string' || !intent.trim()) {
+      return { success: false, error: 'MISSING_INTENT', detail: 'Body must include a non-empty "intent" string.' };
+    }
+
+    const receipt = executeLucidLoop({
+      intent: intent.trim(),
+      realityObservation: realityObservation ?? {},
+      authority: authority ?? true,
+      policy: policy ?? true,
+      scope: scope ?? undefined,
+      dissent: dissent ?? [],
+      previousProofHash: previousProofHash ?? undefined,
+      stepIndex: stepIndex ?? 0,
+    });
+
+    return {
+      success: true,
+      ...receipt,
+    };
+  });
 
   // Chat, soul, reality, and ecosystem routes registered above (single registration)
 
@@ -1035,6 +1169,7 @@ export const STARTUP_BANNER = [
   '  GET    /health',
   '  GET    /v1/kernel/capabilities',
   '  GET    /v1/mood',
+  '  POST   /v1/mood/pipeline',
   '  GET    /v1/ocean/fabric',
   '  GET    /v1/aisoul/command-center',
   '  POST   /v1/authorization/evaluate',
@@ -1046,11 +1181,13 @@ export const STARTUP_BANNER = [
   '  GET    /mini/integrity',
   '  POST   /os/admit',
   '  GET    /memory',
+  '  GET    /memory/integrity',
   '  GET    /v1/kai/records',
   '  GET    /v1/kai/integrity',
   '  POST   /v1/kai/record',
   '  POST   /v1/kai/verify-inference',
   '  GET    /rules',
+  '  GET    /events',
   '  POST   /complete-loop',
   '  POST   /v1/attest',
   '  POST   /v1/cycle',
@@ -1069,6 +1206,8 @@ export const STARTUP_BANNER = [
   '  GET    /v1/pluralism/matrix/continuum-compression',
   '  POST   /v1/pluralism/matrix/continuum-compression',
   '  GET    /v1/continuum',
+  '  GET    /v1/lucid/phases',
+  '  POST   /v1/lucid/loop',
   '  POST   /v1/artemis/action',
   '  POST   /v1/totality/lock',
   '  GET    /v1/block/tip',

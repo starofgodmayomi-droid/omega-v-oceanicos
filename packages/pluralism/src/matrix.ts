@@ -325,3 +325,466 @@ export function executeContinuumCompressionTransition(
     evaluatedAt,
   };
 }
+
+/* ─── Expanded Body: 23 sovereign organs ─────────────────────────── */
+
+export const EXPANDED_BODY_MEMBERS = [
+  ...OCEANIC_BODY_MEMBERS,
+  'API', 'Web', 'CLI',
+] as const;
+
+export type ExpandedBodyMember = typeof EXPANDED_BODY_MEMBERS[number];
+
+/* ─── Proactive Mood → Matrix Fusion ─────────────────────────────── */
+
+/**
+ * Mood classification states (mirrors @oceanicos/mood MoodContextState)
+ * so this module has zero runtime dependency on the mood package.
+ */
+export type MoodContextLabel =
+  | 'CALM' | 'FOCUSED' | 'EXPLORATORY' | 'CREATIVE' | 'URGENT'
+  | 'UNCERTAIN' | 'FRUSTRATED' | 'OVERLOADED' | 'REFLECTIVE'
+  | 'SOCIAL' | 'TASK_MODE' | 'UNKNOWN';
+
+/**
+ * Mood→Matrix proactive input: the ecosystem observes its own mood
+ * and feeds it into the Ω∞v direct-sum evaluator.
+ */
+export interface ProactiveMoodMatrixInput {
+  /** Current mood context label (from AutopilotMoodEngine.classify()) */
+  readonly moodContext: MoodContextLabel;
+  /** Mood confidence [0, 1] */
+  readonly moodConfidence: number;
+  /** Mood uncertainty [0, 1] */
+  readonly moodUncertainty: number;
+  /** Mood signal source (e.g. 'USER_STATED', 'OBSERVED', 'INFERRED') */
+  readonly moodStatus: string;
+  /** Optional: safety gate admission result */
+  readonly safetyGateResult?: 'ALLOW' | 'REVIEW' | 'DENY';
+  /** Optional: any dissent items from the mood pipeline */
+  readonly dissent?: any[];
+  /** Authority present? */
+  readonly authority: boolean;
+  /** Policy checked? */
+  readonly policy: boolean;
+}
+
+export interface ProactiveMoodMatrixResult {
+  readonly '🌊': 'ƆCEANiC_OS(v∞)';
+  readonly contract: 'Ω∞v-MOOD-MATRIX-PROACTIVE-V1';
+  readonly humanRoot: typeof HUMAN_ROOT_ID;
+  readonly BODY: readonly string[];
+  readonly moodContext: MoodContextLabel;
+  readonly moodConfidence: number;
+  readonly moodUncertainty: number;
+  readonly moodStatus: string;
+  readonly safetyGateResult: string;
+  readonly matrixDecision: 'DENY' | 'VERIFIED' | 'UNKNOWN';
+  readonly composedState: {
+    readonly moodVectorContribution: number;
+    readonly matrixFrobeniusNorm: number;
+    readonly tensorDimension: 320;
+    readonly singularityPrevented: boolean;
+  };
+  readonly proofHash: string;
+  readonly evaluatedAt: string;
+}
+
+/**
+ * Proactive Mood→Matrix Fusion:
+ *
+ * Composes the mood engine's classification with the pluralistic
+ * direct-sum lambda, producing a unified result that makes the
+ * MOOD body organ a live, self-sensing participant in the Ω∞v cycle.
+ *
+ * MOOD → CONTEXT (never authority) → feeds INTENT for direct-sum λ
+ * → matrix evaluates DECISION under evidence/authority gates
+ * → produces composed state with mood-weighted tensor contribution.
+ *
+ * Invariant: MOOD ≠ AUTHORITY. Mood shapes HOW but never WHAT.
+ */
+export function evaluateProactiveMoodMatrix(
+  input: ProactiveMoodMatrixInput,
+): ProactiveMoodMatrixResult {
+  const evaluatedAt = new Date().toISOString();
+
+  // 1. Map mood context to an intent descriptor (MOOD → CONTEXT, never AUTHORITY)
+  const moodIntent = `PROACTIVE_MOOD_${input.moodContext}`;
+
+  // 2. Build evidence from mood observation
+  const moodEvidence = {
+    observed: input.moodStatus === 'USER_STATED' || input.moodStatus === 'OBSERVED',
+    verified: input.moodConfidence >= 0.5 && input.moodUncertainty < 0.8,
+    moodContext: input.moodContext,
+    moodConfidence: input.moodConfidence,
+  };
+
+  // 3. Evaluate the direct-sum lambda with mood as intent context
+  const directSumResult = evaluateDirectSumLambda({
+    S: { moodContext: input.moodContext, moodStatus: input.moodStatus },
+    I: moodIntent,
+    E: moodEvidence,
+    A: input.authority,
+    P: input.policy,
+    M: { moodConfidence: input.moodConfidence, moodUncertainty: input.moodUncertainty },
+    D: input.dissent ?? [],
+  });
+
+  // 4. Compute mood-weighted tensor contribution
+  //    Mood shapes the verification vector's weight, not its gate pass
+  const moodWeight = Math.max(0, Math.min(1, input.moodConfidence));
+  const tensor = computeKroneckerEcosystemTensor();
+  const rawFrobenius = Math.sqrt(tensor.reduce((acc, v) => acc + v * v, 0) / tensor.length);
+  const moodWeightedFrobenius = Number((rawFrobenius * moodWeight).toFixed(6));
+
+  // 5. Safety gate passthrough (mood cannot override authority)
+  const safetyGateResult = input.safetyGateResult ?? 'REVIEW';
+  const singularityPrevented = directSumResult.DECISION === 'VERIFIED' && safetyGateResult !== 'DENY';
+
+  // 6. Proof hash
+  const payload = JSON.stringify({
+    moodContext: input.moodContext,
+    decision: directSumResult.DECISION,
+    moodWeightedFrobenius,
+    safetyGateResult,
+    evaluatedAt,
+  });
+  const proofHash = createHash('sha256').update(payload).digest('hex');
+
+  return {
+    '🌊': 'ƆCEANiC_OS(v∞)',
+    contract: 'Ω∞v-MOOD-MATRIX-PROACTIVE-V1',
+    humanRoot: HUMAN_ROOT_ID,
+    BODY: EXPANDED_BODY_MEMBERS,
+    moodContext: input.moodContext,
+    moodConfidence: input.moodConfidence,
+    moodUncertainty: input.moodUncertainty,
+    moodStatus: input.moodStatus,
+    safetyGateResult,
+    matrixDecision: directSumResult.DECISION,
+    composedState: {
+      moodVectorContribution: moodWeight,
+      matrixFrobeniusNorm: moodWeightedFrobenius,
+      tensorDimension: 320,
+      singularityPrevented,
+    },
+    proofHash,
+    evaluatedAt,
+  };
+}
+
+/* ─── Lucid Operating Loop State Machine ─────────────────────────── */
+
+/**
+ * The seven phases of the Lucid operating loop.
+ * Maps to the Lucid root invariant:
+ *   Ω∞v := VERIFY(ΔREALITY)
+ *   ∞ := repeated finite, bounded, observable transitions
+ *   OBSERVE → DISTINGUISH → ALIGN → BOUND → ACT → RECONCILE → NEXT_Δ
+ *
+ * Each phase is a finite transformation on the state vector R_k,
+ * producing R_{k+1} with cryptographic proof chaining.
+ */
+export const LUCID_LOOP_PHASES = [
+  'OBSERVE',     // Gather raw telemetry, signals, and evidence
+  'DISTINGUISH', // Separate fact from inference, claim from proof
+  'ALIGN',       // Map intent to the smallest useful path
+  'BOUND',       // Define scope, permissions, limits, stop condition
+  'ACT',         // Execute the bounded authorized transition
+  'RECONCILE',   // Compare expected vs actual, preserve divergence
+  'NEXT_DELTA',  // Propose the next justified transition
+] as const;
+
+export type LucidLoopPhase = typeof LUCID_LOOP_PHASES[number];
+
+export interface LucidLoopInput {
+  /** Human-readable intent for this loop iteration */
+  readonly intent: string;
+  /** Current reality state (observations, measurements, telemetry) */
+  readonly realityObservation: Record<string, any>;
+  /** Authority: is the human root present and authorizing? */
+  readonly authority: boolean;
+  /** Policy: has the policy gate been checked? */
+  readonly policy: boolean;
+  /** Scope boundary: what is included / excluded */
+  readonly scope?: { include?: string[]; exclude?: string[] };
+  /** Dissent: any disagreements or alternative interpretations */
+  readonly dissent?: string[];
+  /** Previous loop proof hash (for chaining) — omit for genesis */
+  readonly previousProofHash?: string;
+  /** Step index in the broader Ω∞v cycle */
+  readonly stepIndex?: number;
+}
+
+export interface LucidPhaseResult {
+  readonly phase: LucidLoopPhase;
+  readonly phaseIndex: number;
+  readonly status: 'COMPLETED' | 'BLOCKED' | 'DIVERGENT';
+  readonly output: Record<string, any>;
+  readonly evidence: { claim: string; observed: boolean; verified: boolean };
+}
+
+export interface LucidLoopReceipt {
+  readonly '🌊': 'ƆCEANiC_OS(v∞)';
+  readonly contract: 'Ω∞v-LUCID-LOOP-V1';
+  readonly humanRoot: typeof HUMAN_ROOT_ID;
+  readonly intent: string;
+  readonly phases: readonly LucidPhaseResult[];
+  readonly loopDecision: 'VERIFIED' | 'DENIED' | 'BLOCKED' | 'DIVERGENT';
+  readonly matrixTransition: MatrixTransitionReceipt;
+  readonly tensorDimension: 320;
+  readonly frobeniusNorm: number;
+  readonly singularityPrevented: boolean;
+  readonly dissent: readonly string[];
+  readonly proofChain: {
+    readonly previousHash: string | null;
+    readonly currentHash: string;
+  };
+  readonly nextDelta: string | null;
+  readonly evaluatedAt: string;
+}
+
+/**
+ * Executes the full Lucid 7-phase operating loop.
+ *
+ * Each phase runs as a finite bounded transformation:
+ * 1. OBSERVE    — registers raw reality observation into evidence
+ * 2. DISTINGUISH — classifies evidence as FACT / INFERENCE / CLAIM / UNKNOWN
+ * 3. ALIGN      — maps intent to the 320-dim tensor eigenspace
+ * 4. BOUND      — applies P_auth projection (authority + policy gate)
+ * 5. ACT        — executes the matrix state transition R_k → R_{k+1}
+ * 6. RECONCILE  — compares expected vs actual, records divergence
+ * 7. NEXT_Δ     — proposes the next justified transition (or null if complete)
+ *
+ * The full loop is cryptographically chained: each receipt includes the
+ * previous proof hash and the current one, forming a Merkle-like lineage
+ * across successive Lucid iterations.
+ *
+ * Invariant: MOOD ≠ AUTHORITY. Authority gates ACT; mood shapes pacing.
+ */
+export function executeLucidLoop(input: LucidLoopInput): LucidLoopReceipt {
+  const evaluatedAt = new Date().toISOString();
+  const stepIndex = input.stepIndex ?? 0;
+  const phases: LucidPhaseResult[] = [];
+
+  // ── Phase 0: OBSERVE ──────────────────────────────────────────────
+  const observeKeys = Object.keys(input.realityObservation);
+  const observeEvidence = {
+    claim: `Observed ${observeKeys.length} reality signals`,
+    observed: observeKeys.length > 0,
+    verified: observeKeys.length > 0, // observation registered and verified
+  };
+  phases.push({
+    phase: 'OBSERVE',
+    phaseIndex: 0,
+    status: observeKeys.length > 0 ? 'COMPLETED' : 'BLOCKED',
+    output: { signalCount: observeKeys.length, signals: observeKeys.slice(0, 10) },
+    evidence: observeEvidence,
+  });
+
+  // ── Phase 1: DISTINGUISH ──────────────────────────────────────────
+  // Classify each observed signal as FACT, INFERENCE, CLAIM, or UNKNOWN
+  const classifications: Record<string, string> = {};
+  for (const key of observeKeys) {
+    const val = input.realityObservation[key];
+    if (val === null || val === undefined) {
+      classifications[key] = 'UNKNOWN';
+    } else if (typeof val === 'object' && val.verified === true) {
+      classifications[key] = 'FACT';
+    } else if (typeof val === 'object' && val.inferred === true) {
+      classifications[key] = 'INFERENCE';
+    } else {
+      classifications[key] = 'CLAIM';
+    }
+  }
+  const factCount = Object.values(classifications).filter(c => c === 'FACT').length;
+  phases.push({
+    phase: 'DISTINGUISH',
+    phaseIndex: 1,
+    status: 'COMPLETED',
+    output: { classifications, factCount, totalSignals: observeKeys.length },
+    evidence: {
+      claim: `Distinguished ${factCount} facts from ${observeKeys.length} signals`,
+      observed: true,
+      verified: factCount > 0,
+    },
+  });
+
+  // ── Phase 2: ALIGN ────────────────────────────────────────────────
+  // Map intent to the 320-dim tensor eigenspace via dot-product alignment
+  const tensor = computeKroneckerEcosystemTensor();
+  const intentHash = createHash('sha256').update(input.intent).digest();
+  const intentVector = Array.from({ length: 320 }, (_, i) => intentHash[i % intentHash.length] / 255);
+  let alignmentScore = 0;
+  for (let i = 0; i < 320; i++) {
+    alignmentScore += tensor[i] * intentVector[i];
+  }
+  alignmentScore = Number((alignmentScore / 320).toFixed(6));
+  phases.push({
+    phase: 'ALIGN',
+    phaseIndex: 2,
+    status: 'COMPLETED',
+    output: { alignmentScore, tensorDimension: 320, intentHash: intentHash.toString('hex').slice(0, 16) },
+    evidence: {
+      claim: `Intent aligned to tensor eigenspace with score ${alignmentScore}`,
+      observed: true,
+      verified: alignmentScore > 0,
+    },
+  });
+
+  // ── Phase 3: BOUND ────────────────────────────────────────────────
+  // Apply P_auth projection: authority + policy gate
+  const authGatePassed = input.authority && input.policy;
+  const scopeInclude = input.scope?.include ?? ['*'];
+  const scopeExclude = input.scope?.exclude ?? [];
+  phases.push({
+    phase: 'BOUND',
+    phaseIndex: 3,
+    status: authGatePassed ? 'COMPLETED' : 'BLOCKED',
+    output: {
+      authorityPresent: input.authority,
+      policyChecked: input.policy,
+      gatePassed: authGatePassed,
+      scopeInclude,
+      scopeExclude,
+    },
+    evidence: {
+      claim: authGatePassed
+        ? 'Authority + Policy gate PASSED — execution authorized'
+        : 'Authority + Policy gate BLOCKED — fail-closed, no execution',
+      observed: true,
+      verified: authGatePassed,
+    },
+  });
+
+  // ── Phase 4: ACT ──────────────────────────────────────────────────
+  // Execute the matrix state transition R_k → R_{k+1}
+  const matrixTransition = executeMatrixTransition(
+    stepIndex,
+    intentVector, // use intent vector as initial state
+    DEFAULT_OPERATIONAL_VECTORS,
+    input.authority,
+    factCount > 0 && authGatePassed,
+  );
+  phases.push({
+    phase: 'ACT',
+    phaseIndex: 4,
+    status: authGatePassed ? 'COMPLETED' : 'BLOCKED',
+    output: {
+      step: matrixTransition.step,
+      frobeniusNorm: matrixTransition.frobeniusNorm,
+      determinantState: matrixTransition.determinantState,
+      stateVectorProof: matrixTransition.stateVectorProof,
+    },
+    evidence: {
+      claim: authGatePassed
+        ? `Transition ${stepIndex} → ${matrixTransition.step} executed (‖R‖_F = ${matrixTransition.frobeniusNorm})`
+        : `Transition BLOCKED at step ${stepIndex} — singularity collapse enforced`,
+      observed: true,
+      verified: matrixTransition.determinantState === 'NON_ZERO',
+    },
+  });
+
+  // ── Phase 5: RECONCILE ────────────────────────────────────────────
+  // Compare expected (NON_ZERO with auth) vs actual determinant state
+  const expectedState = authGatePassed && factCount > 0 ? 'NON_ZERO' : 'ZERO_SINGULARITY_COLLAPSE';
+  const actualState = matrixTransition.determinantState;
+  const reconciled = expectedState === actualState;
+  const divergences: string[] = [];
+  if (!reconciled) {
+    divergences.push(`Expected ${expectedState} but got ${actualState}`);
+  }
+  if (input.dissent && input.dissent.length > 0) {
+    divergences.push(...input.dissent);
+  }
+  const hasDivergence = !reconciled || divergences.length > 0;
+  phases.push({
+    phase: 'RECONCILE',
+    phaseIndex: 5,
+    status: hasDivergence ? 'DIVERGENT' : 'COMPLETED',
+    output: {
+      expectedState,
+      actualState,
+      reconciled,
+      divergences,
+    },
+    evidence: {
+      claim: !hasDivergence
+        ? 'Expected and actual states match — loop consistent'
+        : `DIVERGENT: ${divergences.join('; ')}`,
+      observed: true,
+      verified: !hasDivergence,
+    },
+  });
+
+  // ── Phase 6: NEXT_Δ ───────────────────────────────────────────────
+  // Propose next transition (or null if loop is complete and verified)
+  let nextDelta: string | null = null;
+  if (!authGatePassed) {
+    nextDelta = 'Acquire authority and policy approval before re-attempting';
+  } else if (divergences.length > 0) {
+    nextDelta = `Resolve ${divergences.length} divergence(s): ${divergences[0]}`;
+  } else if (factCount === 0) {
+    nextDelta = 'Gather verified evidence before next transition';
+  }
+  // null means: loop complete, no further transition justified
+  phases.push({
+    phase: 'NEXT_DELTA',
+    phaseIndex: 6,
+    status: 'COMPLETED',
+    output: { nextDelta, loopTerminated: nextDelta === null },
+    evidence: {
+      claim: nextDelta
+        ? `Next transition proposed: ${nextDelta}`
+        : 'Loop complete — no further transition justified',
+      observed: true,
+      verified: true,
+    },
+  });
+
+  // ── Compute loop-level decision ───────────────────────────────────
+  const allVerified = phases.every(p => p.status === 'COMPLETED' && p.evidence.verified);
+  const anyBlocked = phases.some(p => p.status === 'BLOCKED');
+  const anyDivergent = phases.some(p => p.status === 'DIVERGENT');
+  let loopDecision: 'VERIFIED' | 'DENIED' | 'BLOCKED' | 'DIVERGENT';
+  if (!authGatePassed) {
+    loopDecision = 'DENIED';
+  } else if (anyBlocked) {
+    loopDecision = 'BLOCKED';
+  } else if (anyDivergent) {
+    loopDecision = 'DIVERGENT';
+  } else if (allVerified) {
+    loopDecision = 'VERIFIED';
+  } else {
+    loopDecision = 'BLOCKED';
+  }
+
+  // ── Proof chain ───────────────────────────────────────────────────
+  const previousHash = input.previousProofHash ?? null;
+  const chainPayload = JSON.stringify({
+    previousHash,
+    intent: input.intent,
+    loopDecision,
+    frobeniusNorm: matrixTransition.frobeniusNorm,
+    phaseStatuses: phases.map(p => p.status),
+    evaluatedAt,
+  });
+  const currentHash = createHash('sha256').update(chainPayload).digest('hex');
+
+  return {
+    '🌊': 'ƆCEANiC_OS(v∞)',
+    contract: 'Ω∞v-LUCID-LOOP-V1',
+    humanRoot: HUMAN_ROOT_ID,
+    intent: input.intent,
+    phases,
+    loopDecision,
+    matrixTransition,
+    tensorDimension: 320,
+    frobeniusNorm: matrixTransition.frobeniusNorm,
+    singularityPrevented: matrixTransition.determinantState === 'NON_ZERO',
+    dissent: divergences,
+    proofChain: { previousHash, currentHash },
+    nextDelta,
+    evaluatedAt,
+  };
+}

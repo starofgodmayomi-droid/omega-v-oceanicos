@@ -1,3 +1,4 @@
+import React, { useState } from 'react';
 import { theme, statusColor, humanStatus, KeyPair, MeshConvergenceReceipt } from './oceanicosTheme';
 
 /*
@@ -24,6 +25,7 @@ interface SystemControlsPanelProps {
   onRequestAttestation: () => void;
   moodData: any;
   onFetchMood: () => void;
+  onEvaluateMoodPipeline?: (payload: { signal: string; status?: string; consequential?: boolean }) => Promise<any>;
   keyPair: KeyPair | null;
   onGenerateWebCrypto: () => void;
   onGenerateServerKeys: () => void;
@@ -32,6 +34,12 @@ interface SystemControlsPanelProps {
 }
 
 export function SystemControlsPanel(props: SystemControlsPanelProps) {
+  const [pipelineSignal, setPipelineSignal] = useState('ecosystem-self-observation');
+  const [pipelineStatus, setPipelineStatus] = useState('OBSERVED');
+  const [pipelineConsequential, setPipelineConsequential] = useState(false);
+  const [evaluatingPipeline, setEvaluatingPipeline] = useState(false);
+  const [pipelineResult, setPipelineResult] = useState<any>(null);
+  const [pipelineError, setPipelineError] = useState<string | null>(null);
   return (
     <div
       style={{
@@ -212,28 +220,184 @@ export function SystemControlsPanel(props: SystemControlsPanelProps) {
         </div>
       )}
 
-      {/* Mood */}
+      {/* Proactive Mood & Matrix Fusion */}
       {props.moodData && (
         <div style={cardStyle}>
-          <div style={{ ...cardTitleStyle, color: theme.accentWarm }}>
-            Mood · {props.moodData.singularityState}
+          <div style={{ ...cardTitleStyle, color: theme.accentWarm, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>
+              {props.moodData.status === 'PROACTIVE_SELF_SENSING'
+                ? 'Proactive Self-Sensing Mood Matrix'
+                : `Mood · ${props.moodData.singularityState || 'Active'}`}
+            </span>
+            <span style={{ fontSize: '10px', color: theme.accent, border: `1px solid ${theme.borderBright}`, padding: '2px 6px', borderRadius: '4px' }}>
+              contract: {props.moodData.contract || 'v∞'}
+            </span>
           </div>
-          <div style={{ fontSize: '12px', color: theme.textMuted, marginBottom: '8px' }}>
-            Reality: {props.moodData.reality} · Wave {props.moodData.waveIndex}
-          </div>
-          <div
-            style={{
-              padding: '10px 14px',
-              background: theme.surfaceDeep,
-              borderRadius: theme.radiusSmall,
-              fontStyle: 'italic',
-              borderLeft: `3px solid ${theme.accentWarm}`,
-              fontSize: '12px',
-              color: theme.text,
-            }}
-          >
-            "{props.moodData.pidginSpirit}"
-          </div>
+
+          {props.moodData.moodEngine ? (
+            <div style={{ fontSize: '11px', color: theme.textMuted, lineHeight: 1.6, fontFamily: theme.fontMono }}>
+              <div>Context: <span style={{ color: theme.accentWarm, fontWeight: 'bold' }}>{props.moodData.moodEngine.context}</span> (Uncertainty: {(props.moodData.moodEngine.uncertainty * 100).toFixed(1)}%)</div>
+              <div>Matrix Decision: <span style={{ color: props.moodData.moodMatrix?.decision === 'VERIFIED' ? theme.verified : theme.divergent, fontWeight: 'bold' }}>{props.moodData.moodMatrix?.decision || 'UNKNOWN'}</span></div>
+              <div>Tensor Frobenius Norm: <span style={{ color: theme.accent }}>{props.moodData.moodMatrix?.frobeniusNorm}</span></div>
+              <div>Singularity Protected: <span style={{ color: props.moodData.moodMatrix?.singularityPrevented ? theme.verified : theme.divergent }}>{props.moodData.moodMatrix?.singularityPrevented ? 'YES' : 'NO'}</span></div>
+              <div>Safety Gate: <span style={{ color: props.moodData.moodEngine.safetyGate === 'ALLOW' ? theme.verified : theme.divergent }}>{props.moodData.moodEngine.safetyGate}</span></div>
+              <div>Adaptation: {props.moodData.moodEngine.adaptation?.tone} · {props.moodData.moodEngine.adaptation?.pacing} · {props.moodData.moodEngine.adaptation?.density}</div>
+              <div style={{ marginTop: '6px', fontSize: '10px', color: theme.textDim, wordBreak: 'break-all' }}>
+                Proof Hash: {props.moodData.moodMatrix?.proofHash}
+              </div>
+            </div>
+          ) : (
+            <>
+              <div style={{ fontSize: '12px', color: theme.textMuted, marginBottom: '8px' }}>
+                Reality: {props.moodData.reality || 'Consensus'} · Wave {props.moodData.waveIndex ?? 0}
+              </div>
+              {props.moodData.pidginSpirit && (
+                <div
+                  style={{
+                    padding: '10px 14px',
+                    background: theme.surfaceDeep,
+                    borderRadius: theme.radiusSmall,
+                    fontStyle: 'italic',
+                    borderLeft: `3px solid ${theme.accentWarm}`,
+                    fontSize: '12px',
+                    color: theme.text,
+                  }}
+                >
+                  "{props.moodData.pidginSpirit}"
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Interactive Mood Pipeline Dispatcher */}
+          {props.onEvaluateMoodPipeline && (
+            <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: `1px dashed ${theme.borderBright}` }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, color: theme.text, marginBottom: '8px' }}>
+                Simulate & Dispatch Mood Pipeline (POST /v1/mood/pipeline)
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '8px' }}>
+                <input
+                  type="text"
+                  value={pipelineSignal}
+                  onChange={(e) => setPipelineSignal(e.target.value)}
+                  placeholder="Signal identifier (e.g. USER_OVERRIDE)"
+                  style={{
+                    flex: '1 1 200px',
+                    padding: '6px 10px',
+                    background: theme.surfaceDeep,
+                    border: `1px solid ${theme.borderBright}`,
+                    borderRadius: theme.radiusSmall,
+                    color: theme.text,
+                    fontSize: '11px',
+                    fontFamily: theme.fontMono,
+                  }}
+                />
+                <select
+                  value={pipelineStatus}
+                  onChange={(e) => setPipelineStatus(e.target.value)}
+                  style={{
+                    padding: '6px 10px',
+                    background: theme.surfaceDeep,
+                    border: `1px solid ${theme.borderBright}`,
+                    borderRadius: theme.radiusSmall,
+                    color: theme.text,
+                    fontSize: '11px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <option value="OBSERVED">OBSERVED</option>
+                  <option value="USER_STATED">USER_STATED</option>
+                  <option value="INFERRED">INFERRED</option>
+                </select>
+                <label
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontSize: '11px',
+                    color: theme.textMuted,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={pipelineConsequential}
+                    onChange={(e) => setPipelineConsequential(e.target.checked)}
+                    style={{ accentColor: theme.accentWarm }}
+                  />
+                  Consequential Action (Safety Gate Invariant)
+                </label>
+              </div>
+
+              {/* Quick Presets */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '10px' }}>
+                <span style={{ fontSize: '10px', color: theme.textDim, alignSelf: 'center' }}>Presets:</span>
+                {[
+                  { label: 'Ecosystem Self-Sense', signal: 'ecosystem-self-observation', status: 'OBSERVED', consequential: false },
+                  { label: 'User Stated Priority', signal: 'user-stated-priority-signal', status: 'USER_STATED', consequential: false },
+                  { label: 'Uncertain Telemetry', signal: 'divergent-telemetry-fluctuation', status: 'INFERRED', consequential: false },
+                  { label: 'Consequential Gate Test', signal: 'high-stakes-vault-operation', status: 'USER_STATED', consequential: true },
+                ].map((preset) => (
+                  <button
+                    key={preset.label}
+                    type="button"
+                    onClick={() => {
+                      setPipelineSignal(preset.signal);
+                      setPipelineStatus(preset.status);
+                      setPipelineConsequential(preset.consequential);
+                    }}
+                    style={{
+                      padding: '3px 7px',
+                      fontSize: '10px',
+                      background: theme.surfaceRaised,
+                      border: `1px solid ${theme.border}`,
+                      borderRadius: theme.radiusSmall,
+                      color: theme.textMuted,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setEvaluatingPipeline(true);
+                    setPipelineError(null);
+                    try {
+                      const res = await props.onEvaluateMoodPipeline!({
+                        signal: pipelineSignal,
+                        status: pipelineStatus,
+                        consequential: pipelineConsequential,
+                      });
+                      setPipelineResult(res);
+                    } catch (err: any) {
+                      setPipelineError(err?.message || 'Pipeline evaluation error');
+                    } finally {
+                      setEvaluatingPipeline(false);
+                    }
+                  }}
+                  disabled={evaluatingPipeline || !pipelineSignal.trim()}
+                  style={btnStyle(theme.surfaceRaised, evaluatingPipeline || !pipelineSignal.trim(), theme.accentWarm)}
+                >
+                  {evaluatingPipeline ? 'Evaluating Pipeline…' : '⚡ Evaluate Signal Pipeline'}
+                </button>
+                {pipelineResult?.moodMatrix && (
+                  <span style={{ fontSize: '10px', color: theme.verified, fontFamily: theme.fontMono }}>
+                    ✓ Evaluated: Decision={pipelineResult.moodMatrix.decision} (Gate={pipelineResult.pipeline?.safetyGate?.admissionResult})
+                  </span>
+                )}
+                {pipelineError && (
+                  <span style={{ fontSize: '10px', color: theme.divergent }}>
+                    ✗ {pipelineError}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

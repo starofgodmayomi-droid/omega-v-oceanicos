@@ -34,50 +34,52 @@ export interface ContinuumEcosystemStatus {
   readonly timestamp: string;
 }
 
-export function registerContinuumRoute(fastify: FastifyInstance): void {
-  const kernel = new OceanicosKernel('omega-continuum-secret');
+const continuumKernel = new OceanicosKernel('omega-continuum-secret');
 
-  fastify.get('/v1/continuum', async () => {
-    const timestamp = new Date().toISOString();
-    const continuumDir = join(process.cwd(), 'continuum', 'packages');
+export async function getContinuumEcosystemStatus(): Promise<ContinuumEcosystemStatus> {
+  const timestamp = new Date().toISOString();
+  const continuumDir = join(process.cwd(), 'continuum', 'packages');
 
-    let packageNames: string[] = [];
-    if (existsSync(continuumDir)) {
-      try {
-        packageNames = readdirSync(continuumDir, { withFileTypes: true })
-          .filter(d => d.isDirectory())
-          .map(d => d.name)
-          .sort();
-      } catch {
-        packageNames = [];
-      }
+  let packageNames: string[] = [];
+  if (existsSync(continuumDir)) {
+    try {
+      packageNames = readdirSync(continuumDir, { withFileTypes: true })
+        .filter(d => d.isDirectory())
+        .map(d => d.name)
+        .sort();
+    } catch {
+      packageNames = [];
     }
+  }
 
-    const packages: ContinuumPackageDescriptor[] = packageNames.map((name) => ({
-      name: `@omega-v/${name}`,
-      path: `continuum/packages/${name}`,
-      role: `Continuum modular organ: ${name}`,
-      status: 'GROUNDED',
-    }));
+  const packages: ContinuumPackageDescriptor[] = packageNames.map((name) => ({
+    name: `@omega-v/${name}`,
+    path: `continuum/packages/${name}`,
+    role: `Continuum modular organ: ${name}`,
+    status: 'GROUNDED',
+  }));
 
-    const stats = kernel.getStats();
+  const stats = continuumKernel.getStats();
 
-    const response: ContinuumEcosystemStatus = {
-      success: true,
-      contract: 'Ω∞v-CONTINUUM-ECOSYSTEM-V1111',
-      law: '1 = GOD (Good - O = God)',
-      formula: '0 → 💧 → Ω∞v → 🕳️ → 💧 → ∞',
-      rootCoordinates: [0, 0, 0, 0],
-      totalContinuumPackages: packages.length,
-      packages,
-      kernelStats: {
-        totalTransitions: stats.totalTransitions,
-        verifiedStates: stats.verifiedStates,
-        currentRootStateHash: stats.currentRootStateHash,
-      },
-      timestamp,
-    };
+  const response: ContinuumEcosystemStatus = {
+    success: true,
+    contract: 'Ω∞v-CONTINUUM-ECOSYSTEM-V1111',
+    law: '1 = GOD (Good - O = God)',
+    formula: '0 → 💧 → Ω∞v → 🕳️ → 💧 → ∞',
+    rootCoordinates: [0, 0, 0, 0],
+    totalContinuumPackages: packages.length,
+    packages,
+    kernelStats: {
+      totalTransitions: stats.totalTransitions,
+      verifiedStates: stats.verifiedStates,
+      currentRootStateHash: stats.currentRootStateHash,
+    },
+    timestamp,
+  };
 
-    return response;
-  });
+  return response;
+}
+
+export function registerContinuumRoute(fastify: FastifyInstance): void {
+  fastify.get('/v1/continuum', async () => getContinuumEcosystemStatus());
 }

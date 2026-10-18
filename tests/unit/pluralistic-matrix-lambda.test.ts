@@ -9,6 +9,9 @@ import {
   CONTINUUM_PACKAGES,
   HUMAN_ROOT_ID,
   HUMAN_ROOT_NAME,
+  evaluateProactiveMoodMatrix,
+  executeLucidLoop,
+  LUCID_LOOP_PHASES,
 } from '../../packages/pluralism/src/matrix.js';
 
 describe('🌊 ƆCEANiC_OS(v∞) Matrix Transformation & Master Lambda Engine', () => {
@@ -178,3 +181,229 @@ describe('🌊 ƆCEANiC_OS(v∞) Matrix Transformation & Master Lambda Engine', 
   });
 });
 
+describe('🔥 Proactive Mood→Matrix Fusion (evaluateProactiveMoodMatrix)', () => {
+  it('produces VERIFIED when mood is USER_STATED with high confidence + authority + policy', () => {
+    const result = evaluateProactiveMoodMatrix({
+      moodContext: 'FOCUSED',
+      moodConfidence: 0.9,
+      moodUncertainty: 0.1,
+      moodStatus: 'USER_STATED',
+      safetyGateResult: 'ALLOW',
+      authority: true,
+      policy: true,
+    });
+
+    expect(result['🌊']).toBe('ƆCEANiC_OS(v∞)');
+    expect(result.contract).toBe('Ω∞v-MOOD-MATRIX-PROACTIVE-V1');
+    expect(result.humanRoot).toBe('did:omega:human:starofgodmayomi');
+    expect(result.matrixDecision).toBe('VERIFIED');
+    expect(result.composedState.singularityPrevented).toBe(true);
+    expect(result.composedState.moodVectorContribution).toBe(0.9);
+    expect(result.composedState.tensorDimension).toBe(320);
+    expect(result.composedState.matrixFrobeniusNorm).toBeGreaterThan(0);
+    expect(result.proofHash).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it('produces DENY when authority is false (MOOD ≠ AUTHORITY invariant)', () => {
+    const result = evaluateProactiveMoodMatrix({
+      moodContext: 'URGENT',
+      moodConfidence: 1.0,
+      moodUncertainty: 0.0,
+      moodStatus: 'USER_STATED',
+      safetyGateResult: 'ALLOW',
+      authority: false,
+      policy: true,
+    });
+
+    // Even with max mood confidence, no authority = DENY
+    expect(result.matrixDecision).toBe('DENY');
+    expect(result.composedState.singularityPrevented).toBe(false);
+  });
+
+  it('produces UNKNOWN when mood is INFERRED with low confidence', () => {
+    const result = evaluateProactiveMoodMatrix({
+      moodContext: 'UNCERTAIN',
+      moodConfidence: 0.2,
+      moodUncertainty: 0.8,
+      moodStatus: 'INFERRED',
+      authority: true,
+      policy: true,
+    });
+
+    expect(result.matrixDecision).toBe('UNKNOWN');
+    expect(result.composedState.moodVectorContribution).toBe(0.2);
+    // Low confidence → lower frobenius norm contribution
+    expect(result.composedState.matrixFrobeniusNorm).toBeLessThan(
+      evaluateProactiveMoodMatrix({
+        moodContext: 'FOCUSED',
+        moodConfidence: 1.0,
+        moodUncertainty: 0.0,
+        moodStatus: 'USER_STATED',
+        authority: true,
+        policy: true,
+      }).composedState.matrixFrobeniusNorm
+    );
+  });
+
+  it('exposes the 23-member expanded body (20 original + API + Web + CLI)', () => {
+    const result = evaluateProactiveMoodMatrix({
+      moodContext: 'CALM',
+      moodConfidence: 0.7,
+      moodUncertainty: 0.3,
+      moodStatus: 'OBSERVED',
+      authority: true,
+      policy: true,
+    });
+
+    expect(result.BODY).toHaveLength(23);
+    expect(result.BODY).toContain('SOURCE');
+    expect(result.BODY).toContain('MOOD');
+    expect(result.BODY).toContain('API');
+    expect(result.BODY).toContain('Web');
+    expect(result.BODY).toContain('CLI');
+  });
+
+  it('safety gate DENY prevents singularity even if decision is VERIFIED', () => {
+    const result = evaluateProactiveMoodMatrix({
+      moodContext: 'TASK_MODE',
+      moodConfidence: 0.9,
+      moodUncertainty: 0.1,
+      moodStatus: 'USER_STATED',
+      safetyGateResult: 'DENY',
+      authority: true,
+      policy: true,
+    });
+
+    expect(result.matrixDecision).toBe('VERIFIED');
+    expect(result.safetyGateResult).toBe('DENY');
+    expect(result.composedState.singularityPrevented).toBe(false);
+  });
+
+  it('preserves dissent items from mood pipeline', () => {
+    const dissent = [
+      { streamId: 'mood-dissent-1', reason: 'alternative mood reading from secondary agent' },
+      { streamId: 'mood-dissent-2', reason: 'cultural context override suggestion' },
+    ];
+
+    const result = evaluateProactiveMoodMatrix({
+      moodContext: 'SOCIAL',
+      moodConfidence: 0.6,
+      moodUncertainty: 0.4,
+      moodStatus: 'OBSERVED',
+      dissent,
+      authority: true,
+      policy: true,
+    });
+
+    // Dissent feeds through to the direct-sum lambda
+    expect(result.matrixDecision).toBe('VERIFIED');
+    expect(result.moodContext).toBe('SOCIAL');
+  });
+});
+
+describe('🔮 Lucid Operating Loop (executeLucidLoop) State Machine', () => {
+  it('enumerates all 7 canonical phases', () => {
+    expect(LUCID_LOOP_PHASES).toHaveLength(7);
+    expect(LUCID_LOOP_PHASES).toEqual([
+      'OBSERVE',
+      'DISTINGUISH',
+      'ALIGN',
+      'BOUND',
+      'ACT',
+      'RECONCILE',
+      'NEXT_DELTA',
+    ]);
+  });
+
+  it('executes full verified loop with facts, authority, and policy', () => {
+    const receipt = executeLucidLoop({
+      intent: 'Verify and stabilize dual-matrix tensor continuum',
+      realityObservation: {
+        gitStatus: { verified: true, branch: 'main' },
+        telemetryMetric: { verified: true, value: 0.99 },
+      },
+      authority: true,
+      policy: true,
+      stepIndex: 1,
+    });
+
+    expect(receipt['🌊']).toBe('ƆCEANiC_OS(v∞)');
+    expect(receipt.contract).toBe('Ω∞v-LUCID-LOOP-V1');
+    expect(receipt.humanRoot).toBe(HUMAN_ROOT_ID);
+    expect(receipt.phases).toHaveLength(7);
+    expect(receipt.loopDecision).toBe('VERIFIED');
+    expect(receipt.singularityPrevented).toBe(true);
+    expect(receipt.tensorDimension).toBe(320);
+    expect(receipt.frobeniusNorm).toBeGreaterThan(0);
+    expect(receipt.matrixTransition.determinantState).toBe('NON_ZERO');
+    expect(receipt.proofChain.currentHash).toMatch(/^[0-9a-f]{64}$/);
+    expect(receipt.proofChain.previousHash).toBeNull();
+    expect(receipt.nextDelta).toBeNull(); // Complete, verified!
+  });
+
+  it('fails closed when authority or policy is false', () => {
+    const unauthReceipt = executeLucidLoop({
+      intent: 'Unauthorized operation without human root consent',
+      realityObservation: {
+        rawSignal: { verified: true, text: 'something' },
+      },
+      authority: false,
+      policy: true,
+      stepIndex: 2,
+    });
+
+    expect(unauthReceipt.loopDecision).toBe('DENIED');
+    expect(unauthReceipt.singularityPrevented).toBe(false);
+    expect(unauthReceipt.frobeniusNorm).toBe(0);
+    expect(unauthReceipt.matrixTransition.determinantState).toBe('ZERO_SINGULARITY_COLLAPSE');
+    expect(unauthReceipt.nextDelta).toBe('Acquire authority and policy approval before re-attempting');
+
+    const boundPhase = unauthReceipt.phases.find(p => p.phase === 'BOUND');
+    expect(boundPhase?.status).toBe('BLOCKED');
+    expect(boundPhase?.evidence.verified).toBe(false);
+  });
+
+  it('detects divergence and records dissent in RECONCILE phase', () => {
+    const divergentReceipt = executeLucidLoop({
+      intent: 'Operation with alternative interpretation',
+      realityObservation: {
+        signalA: { verified: true, data: 123 },
+      },
+      authority: true,
+      policy: true,
+      dissent: ['Secondary agent disputes the convergence threshold'],
+    });
+
+    expect(divergentReceipt.loopDecision).toBe('DIVERGENT');
+    expect(divergentReceipt.dissent).toContain('Secondary agent disputes the convergence threshold');
+    expect(divergentReceipt.nextDelta).toMatch(/Resolve 1 divergence/);
+
+    const reconcilePhase = divergentReceipt.phases.find(p => p.phase === 'RECONCILE');
+    expect(reconcilePhase?.status).toBe('DIVERGENT');
+    expect(reconcilePhase?.evidence.verified).toBe(false);
+  });
+
+  it('chains cryptographic proofs across successive iterations', () => {
+    const iter1 = executeLucidLoop({
+      intent: 'Iteration 1: initial baseline',
+      realityObservation: { testResult: { verified: true, passed: true } },
+      authority: true,
+      policy: true,
+      stepIndex: 1,
+    });
+
+    const iter2 = executeLucidLoop({
+      intent: 'Iteration 2: follow-up delta',
+      realityObservation: { testResult: { verified: true, passed: true } },
+      authority: true,
+      policy: true,
+      previousProofHash: iter1.proofChain.currentHash,
+      stepIndex: 2,
+    });
+
+    expect(iter1.proofChain.previousHash).toBeNull();
+    expect(iter2.proofChain.previousHash).toBe(iter1.proofChain.currentHash);
+    expect(iter2.proofChain.currentHash).not.toBe(iter1.proofChain.currentHash);
+    expect(iter2.proofChain.currentHash).toMatch(/^[0-9a-f]{64}$/);
+  });
+});

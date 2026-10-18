@@ -173,6 +173,36 @@ export function App() {
     }
   };
 
+  const evaluateMoodPipeline = async (payload: { signal: string; status?: string; consequential?: boolean }) => {
+    const data = await apiRequest<any>('/v1/mood/pipeline', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (data?.success && data?.moodMatrix) {
+      setMoodData((prev: any) => ({
+        ...prev,
+        status: 'PROACTIVE_SELF_SENSING',
+        contract: data.contract,
+        moodEngine: {
+          context: data.pipeline?.mood?.context,
+          uncertainty: data.pipeline?.mood?.uncertainty,
+          status: data.pipeline?.mood?.status,
+          adaptation: data.pipeline?.adaptation,
+          safetyGate: data.pipeline?.safetyGate?.admissionResult,
+        },
+        moodMatrix: {
+          decision: data.moodMatrix?.decision,
+          singularityPrevented: data.moodMatrix?.composedState?.singularityPrevented,
+          moodVectorContribution: data.moodMatrix?.composedState?.moodVectorContribution,
+          frobeniusNorm: data.moodMatrix?.composedState?.matrixFrobeniusNorm,
+          proofHash: data.moodMatrix?.proofHash,
+        },
+      }));
+    }
+    return data;
+  };
+
   const fetchChatHistory = async () => {
     try {
       const data = await apiRequest<any>('/v1/chat/history?limit=30');
@@ -696,6 +726,7 @@ export function App() {
           onRequestAttestation={requestAttestation}
           moodData={moodData}
           onFetchMood={fetchMood}
+          onEvaluateMoodPipeline={evaluateMoodPipeline}
           keyPair={keyPair}
           onGenerateWebCrypto={generateWebCryptoKeys}
           onGenerateServerKeys={generateServerKeys}
