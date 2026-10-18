@@ -24,7 +24,7 @@ export const theme = {
   // Text
   text: '#e2e8f0',
   textMuted: '#94a3b8',
-  textDim: '#64748b',
+  textDim: '#94a3b8',
 
   // Accents
   accent: '#06b6d4',
@@ -34,7 +34,7 @@ export const theme = {
   // Status — meaning-carrying, never decorative
   verified: '#06b6d4',
   divergent: '#ef4444',
-  unknown: '#64748b',
+  unknown: '#94a3b8',
   warning: '#f59e0b',
 
   // Fonts
