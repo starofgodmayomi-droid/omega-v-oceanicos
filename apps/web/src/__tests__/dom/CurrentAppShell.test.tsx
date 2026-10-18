@@ -16,6 +16,10 @@ describe('current OceanicOS app shell', () => {
     expect(within(dashboard).getByText(/0 of 5 listed signals are marked VERIFIED in this view/i)).toBeInTheDocument();
     expect(within(dashboard).getByText('hosted CI is not queried by this screen')).toBeInTheDocument();
     expect(within(dashboard).getByText('no external authority inferred')).toBeInTheDocument();
+    const signalDetails = within(dashboard).getByRole('list', { name: 'Evidence signal details' });
+    expect(within(signalDetails).getByText('CI: UNKNOWN; source: hosted CI is not queried by this screen')).toBeInTheDocument();
+    expect(within(signalDetails).getByText('External systems: UNKNOWN; source: no external authority inferred')).toBeInTheDocument();
+    expect(within(signalDetails).getAllByRole('listitem')).toHaveLength(5);
   });
 
   it('turns an organ choice into a draft prompt without submitting an action', async () => {
