@@ -181,11 +181,25 @@ export function LifecycleFlow({ stages, openStageId, onStageToggle }: LifecycleF
 
               {/* Content */}
               <div style={{ flex: 1, minWidth: 0, paddingTop: '4px' }}>
-                <div
+                <button
+                  type="button"
+                  disabled={!hasDetail}
+                  aria-expanded={hasDetail ? isOpen : undefined}
+                  aria-controls={hasDetail ? `lifecycle-stage-detail-${stage.id}` : undefined}
                   onClick={() => hasDetail && toggle(stage.id)}
                   style={{
+                    display: 'block',
+                    width: '100%',
+                    textAlign: 'left',
+                    fontFamily: 'inherit',
+                    fontSize: 'inherit',
+                    lineHeight: 'inherit',
+                    color: 'inherit',
+                    background: 'transparent',
+                    border: 0,
+                    margin: 0,
+                    padding: hasDetail ? '0 0 8px' : '0',
                     cursor: hasDetail ? 'pointer' : 'default',
-                    paddingBottom: hasDetail ? '8px' : '0',
                   }}
                 >
                   <div
@@ -244,24 +258,24 @@ export function LifecycleFlow({ stages, openStageId, onStageToggle }: LifecycleF
                   >
                     {stage.subtitle}
                   </div>
-                </div>
+                </button>
 
-                {/* Expanded detail panel */}
-                {isOpen && hasDetail && (
-                  <div
-                    className="omega-fade-in"
-                    style={{
-                      marginTop: '12px',
-                      marginBottom: '8px',
-                      border: `1px solid ${theme.border}`,
-                      borderRadius: theme.radiusSmall,
-                      overflow: 'hidden',
-                      background: theme.surfaceDeep,
-                    }}
-                  >
-                    {stage.detail}
-                  </div>
-                )}
+                {/* Keep a stable aria-controls target while leaving closed panel content unmounted. */}
+                <div
+                  id={`lifecycle-stage-detail-${stage.id}`}
+                  hidden={!isOpen || !hasDetail}
+                  className={isOpen && hasDetail ? 'omega-fade-in' : undefined}
+                  style={isOpen && hasDetail ? {
+                    marginTop: '12px',
+                    marginBottom: '8px',
+                    border: `1px solid ${theme.border}`,
+                    borderRadius: theme.radiusSmall,
+                    overflow: 'hidden',
+                    background: theme.surfaceDeep,
+                  } : undefined}
+                >
+                  {isOpen && hasDetail ? stage.detail : null}
+                </div>
               </div>
             </div>
           </div>
