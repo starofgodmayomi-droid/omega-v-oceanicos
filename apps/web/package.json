@@ -7,7 +7,6 @@
     "build": "tsc && vite build",
     "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config ./jest.config.js --runInBand",
     "test:current-dom": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config ./jest.config.js --runInBand --runTestsByPath src/__tests__/dom/CurrentAppShell.test.tsx src/__tests__/dom/ConnectorPanel.test.tsx",
-    "test:current-command": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config ./jest.config.js --runInBand --runTestsByPath src/__tests__/dom/CurrentCommandLifecycle.test.tsx",
     "test:connector": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config ./jest.config.js --runInBand --runTestsByPath src/__tests__/dom/ConnectorPanel.test.tsx",
     "start": "vite preview --port 3000 --host"
   },
