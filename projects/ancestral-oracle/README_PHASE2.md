@@ -16,7 +16,7 @@ Phase 2 delivers a searchable pantheon, random reflections, domain lookup, and a
 | Name search | Complete | `/god <name>` finds matching entries. |
 | Grounded guidance | Complete | `/ask <question>` pairs a symbolic lens with one practical next step. |
 | Supreme Activator AI | Complete with configuration | `/deepwisdom <question>` is restricted to Telegram user ID `8632545391` and calls the configured OpenAI-compatible endpoint. |
-| NanoBanana vision | Placeholder | `/imagine <idea>` records the integration boundary and returns a creative brief; it does not generate an image yet. |
+| NanoBanana vision | Configurable provider adapter | Owner-only `/imagine <idea>` calls Gemini Nano Banana only when `GEMINI_API_KEY` is configured; it returns the actual image to Telegram and displays its SHA-256 receipt. Missing key = `NOT_EXECUTED`; provider/delivery ambiguity remains explicit. |
 | 24/7 hosting | Not included | The code is polling-ready, but continuous hosting, secrets, monitoring, and restart policy must be configured separately. |
 
 ## Installation
@@ -30,7 +30,7 @@ pip install -r requirements.txt
 cp .env.example .env
 ```
 
-Set `TELEGRAM_BOT_TOKEN` in `.env`. To enable `/deepwisdom`, set `OPENAI_API_KEY`; optionally set `OPENAI_API_BASE` and `OPENAI_MODEL`. Never commit `.env` or bot tokens.
+Set `TELEGRAM_BOT_TOKEN` in `.env`. To enable `/deepwisdom`, set `OPENAI_API_KEY`; optionally set `OPENAI_API_BASE` and `OPENAI_MODEL`. To enable `/imagine`, set `GEMINI_API_KEY` and optionally `GEMINI_IMAGE_MODEL` (defaults to `gemini-nano-banana-2.1`). Keep keys only in the private environment; never commit `.env` or tokens.
 
 Run locally:
 
@@ -76,3 +76,16 @@ A responsible Phase 3 acceptance test should measure command latency, restart re
 3. Implement the NanoBanana provider through a server-side adapter with explicit quotas and error handling.
 4. Deploy privately with a process supervisor and monitoring before calling the service 24/7.
 5. Add automated tests for authorization, catalogue count, command formatting, and AI fallback paths.
+
+
+## IMAGIN provider contract
+
+- `/imagine` is owner-only and calls the fixed Google Gemini Interactions endpoint only after `GEMINI_API_KEY` is present.
+- The default image model is `gemini-nano-banana-2.1`; configured model names are allowlisted.
+- Prompts are capped at 1,500 characters; a 30-second process-local cooldown reduces accidental rapid repeat requests; provider calls have a finite timeout; output MIME type, image signature and decoded size are validated (maximum 8 MiB). The cooldown resets on process restart and is not a durable/global billing quota.
+- No prompt, API key, or image bytes are written to application logs. The image is held in memory and sent to the requesting Telegram chat. A successful Telegram response includes the image SHA-256, local artifact-received timestamp, and provider request id when available; the local timestamp is not represented as the provider's actual generation time, and no permanent local copy is created.
+- Missing key means `NOT_EXECUTED`. A timeout or ambiguous provider/delivery outcome stays `UNKNOWN`. A provider response with no valid image is `DIVERGENT`. A prompt draft is not an image receipt.
+- CI tests use a mocked HTTP response and never call Google or require secrets.
+- Generated image content is subject to provider policies and includes Google's SynthID watermark; confirm usage/rights before redistribution.
+
+The dedicated workflow is [`.github/workflows/ancestral-oracle-imagin.yml`](../../.github/workflows/ancestral-oracle-imagin.yml).
