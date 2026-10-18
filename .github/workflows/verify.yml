@@ -77,6 +77,10 @@ jobs:
       - name: Validate skill contracts
         run: pnpm validate:skills
 
+      # Keep the verification-report dependency graph itself under contract.
+      - name: Validate CI orchestration contract
+        run: pnpm validate:ci
+
       # Runs on every matrix version. ESLint 10 calls util.styleText, added in
       # Node 20.12, and the matrix floor is 22.x — so there is no version here
       # it cannot execute on.
@@ -354,7 +358,7 @@ jobs:
   report:
     name: Report pipeline result
     runs-on: ubuntu-latest
-    needs: [verify, windows, docker, compose]
+    needs: [verify, windows, docker, compose, legacy-required-status-contexts]
     # always(), so a failed pipeline is reported rather than passed over in
     # silence. A comment that only ever appears on success is not a report.
     if: always() && github.event_name == 'pull_request'
