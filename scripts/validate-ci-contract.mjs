@@ -22,6 +22,24 @@ const expectedActions = new Map([
   ['pnpm/action-setup', 'v6'],
 ]);
 const failures = [];
+const verificationWorkflow = readFileSync(join(workflowsDir, 'verify.yml'), 'utf8');
+const reportJob = verificationWorkflow.match(
+  /^  report:\s*\n([\s\S]*?)(?=^  [a-zA-Z0-9_-]+:\s*$)/m,
+)?.[1];
+if (!reportJob) {
+  failures.push('verify.yml: report job must exist so pull requests receive a completion report');
+} else {
+  const needsLine = reportJob.match(/^\s{4}needs:\s*\[([^\]]+)\]\s*$/m);
+  const reportNeeds = needsLine ? needsLine[1].split(',').map((name) => name.trim()) : [];
+  if (!reportNeeds.includes('legacy-required-status-contexts')) {
+    failures.push(
+      'verify.yml: report job must wait for legacy-required-status-contexts before evaluating all job states',
+    );
+  }
+}
+if (!/^\s{8}run:\s*pnpm validate:ci\s*$/m.test(verificationWorkflow)) {
+  failures.push('verify.yml: source validation must execute pnpm validate:ci in CI');
+}
 const packageJson = JSON.parse(readFileSync(join(process.cwd(), 'package.json'), 'utf8'));
 if (packageJson.packageManager !== 'pnpm@10.34.5') {
   failures.push(
