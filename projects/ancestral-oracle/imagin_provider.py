@@ -10,6 +10,7 @@ import base64
 import binascii
 import hashlib
 import json
+import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Callable
@@ -29,6 +30,7 @@ MAX_PROMPT_CHARS = 1500
 MAX_IMAGE_BYTES = 8 * 1024 * 1024
 MAX_PROVIDER_RESPONSE_BYTES = 12 * 1024 * 1024
 REQUEST_TIMEOUT_SECONDS = 60
+DEFAULT_IMAGE_COOLDOWN_SECONDS = 30
 
 _IMAGE_SIGNATURES = {
     "image/png": lambda data: data.startswith(b"\x89PNG\r\n\x1a\n"),
@@ -52,8 +54,25 @@ class GeneratedImage:
     mime_type: str
     sha256: str
     model: str
-    generated_at_utc: str
+    received_at_utc: str
     provider_request_id: str | None
+
+
+class ImageRequestGate:
+    """Process-local request cooldown. This is not a durable/global quota."""
+
+    def __init__(self, cooldown_seconds: float = DEFAULT_IMAGE_COOLDOWN_SECONDS) -> None:
+        if cooldown_seconds < 0:
+            raise ValueError("cooldown_seconds must be non-negative")
+        self.cooldown_seconds = float(cooldown_seconds)
+        self._last_request_at: float | None = None
+
+    def acquire(self, *, now: float | None = None) -> bool:
+        timestamp = time.monotonic() if now is None else float(now)
+        if self._last_request_at is not None and timestamp - self._last_request_at < self.cooldown_seconds:
+            return False
+        self._last_request_at = timestamp
+        return True
 
 
 Opener = Callable[..., object]
@@ -157,6 +176,6 @@ def generate_image(
         mime_type=mime_type,
         sha256=hashlib.sha256(image_data).hexdigest(),
         model=model,
-        generated_at_utc=datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        received_at_utc=datetime.now(timezone.utc).isoformat(timespec="seconds"),
         provider_request_id=provider_request_id,
     )

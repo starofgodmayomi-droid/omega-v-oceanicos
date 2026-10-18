@@ -16,6 +16,7 @@ from imagin_provider import (  # noqa: E402
     MAX_PROMPT_CHARS,
     GeneratedImage,
     ImageProviderError,
+    ImageRequestGate,
     generate_image,
 )
 
@@ -43,6 +44,16 @@ def fake_opener_for(payload):
 
 
 class ImaginProviderTests(unittest.TestCase):
+    def test_request_gate_enforces_a_process_local_cooldown(self):
+        gate = ImageRequestGate(cooldown_seconds=30)
+        self.assertTrue(gate.acquire(now=100.0))
+        self.assertFalse(gate.acquire(now=129.9))
+        self.assertTrue(gate.acquire(now=130.0))
+
+    def test_request_gate_rejects_negative_cooldown(self):
+        with self.assertRaises(ValueError):
+            ImageRequestGate(cooldown_seconds=-1)
+
     def test_missing_key_is_not_executed_and_makes_no_request(self):
         opener = Mock()
         with self.assertRaises(ImageProviderError) as caught:
@@ -81,7 +92,7 @@ class ImaginProviderTests(unittest.TestCase):
         self.assertEqual(result.model, DEFAULT_IMAGE_MODEL)
         self.assertEqual(len(result.sha256), 64)
         self.assertEqual(result.provider_request_id, "provider-receipt-123")
-        self.assertTrue(result.generated_at_utc.endswith("+00:00"))
+        self.assertTrue(result.received_at_utc.endswith("+00:00"))
 
         request = opener.call_args.args[0]
         self.assertEqual(request.full_url, ENDPOINT)

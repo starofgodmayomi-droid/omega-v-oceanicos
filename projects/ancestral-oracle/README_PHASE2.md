@@ -82,8 +82,8 @@ A responsible Phase 3 acceptance test should measure command latency, restart re
 
 - `/imagine` is owner-only and calls the fixed Google Gemini Interactions endpoint only after `GEMINI_API_KEY` is present.
 - The default image model is `gemini-nano-banana-2.1`; configured model names are allowlisted.
-- Prompts are capped at 1,500 characters; provider calls have a finite timeout; output MIME type, image signature and decoded size are validated (maximum 8 MiB).
-- No prompt, API key, or image bytes are written to application logs. The image is held in memory and sent to the requesting Telegram chat. A successful Telegram response includes the image SHA-256 and generation timestamp; no permanent local copy is created.
+- Prompts are capped at 1,500 characters; a 30-second process-local cooldown reduces accidental rapid repeat requests; provider calls have a finite timeout; output MIME type, image signature and decoded size are validated (maximum 8 MiB). The cooldown resets on process restart and is not a durable/global billing quota.
+- No prompt, API key, or image bytes are written to application logs. The image is held in memory and sent to the requesting Telegram chat. A successful Telegram response includes the image SHA-256, local artifact-received timestamp, and provider request id when available; the local timestamp is not represented as the provider's actual generation time, and no permanent local copy is created.
 - Missing key means `NOT_EXECUTED`. A timeout or ambiguous provider/delivery outcome stays `UNKNOWN`. A provider response with no valid image is `DIVERGENT`. A prompt draft is not an image receipt.
 - CI tests use a mocked HTTP response and never call Google or require secrets.
 - Generated image content is subject to provider policies and includes Google's SynthID watermark; confirm usage/rights before redistribution.

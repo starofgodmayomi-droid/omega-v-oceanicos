@@ -21,7 +21,13 @@ from telegram.constants import ParseMode
 from telegram.ext import Application, CommandHandler, ContextTypes
 
 from pantheon_gods_expanded import DOMAINS, PANTHEON, find_by_domain, find_by_name
-from imagin_provider import DEFAULT_IMAGE_MODEL, ImageProviderError, MAX_PROMPT_CHARS, generate_image
+from imagin_provider import (
+    DEFAULT_IMAGE_MODEL,
+    ImageProviderError,
+    ImageRequestGate,
+    MAX_PROMPT_CHARS,
+    generate_image,
+)
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
@@ -33,6 +39,7 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 GEMINI_IMAGE_MODEL = os.getenv("GEMINI_IMAGE_MODEL", DEFAULT_IMAGE_MODEL)
+IMAGIN_REQUEST_GATE = ImageRequestGate()
 
 SYSTEM_PROMPT = """You are Ancestral AI Oracle, a respectful creative guide for Pidgin-speaking communities.
 Use clear Nigerian Pidgin with some standard English where precision matters. Treat African deities and ancestors as symbolic cultural references, not verified supernatural agents. Do not claim to speak for every African tradition. Offer practical, non-coercive next steps. For health, legal, financial, or safety questions, state limits and suggest qualified or official help. Never promise wealth, protection, prophecy, or guaranteed outcomes."""
@@ -171,6 +178,12 @@ async def imagine(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             "No secret should enter this chat or the repository."
         )
         return
+    if not IMAGIN_REQUEST_GATE.acquire():
+        await update.message.reply_text(
+            "IMAGIN dey cool down small. Wait 30 seconds before sending another image request. "
+            "No new provider request was made (NOT_EXECUTED)."
+        )
+        return
 
     await update.message.reply_text(
         "IMAGIN request prepared. The configured image provider will now be called; "
@@ -198,7 +211,7 @@ async def imagine(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     caption = (
         f"IMAGIN · {image.model}\n"
         f"SHA-256: {image.sha256}\n"
-        f"Generated (UTC): {image.generated_at_utc}"
+        f"Artifact received (UTC): {image.received_at_utc}"
     )
     if image.provider_request_id:
         caption += f"\nProvider receipt: {image.provider_request_id[:100]}"
