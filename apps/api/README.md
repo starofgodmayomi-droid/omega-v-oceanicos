@@ -147,6 +147,8 @@ POST /v1/pluralism/matrix/lambda
 POST /v1/pluralism/matrix/transition
 GET  /v1/pluralism/matrix/continuum-compression
 POST /v1/pluralism/matrix/continuum-compression
+GET  /v1/verification/contract
+POST /v1/verification/contract
 GET  /v1/continuum
 GET  /v1/lucid/phases
 POST /v1/lucid/loop

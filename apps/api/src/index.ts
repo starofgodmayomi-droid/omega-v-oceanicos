@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { RememberEngine, KaiLedger } from '@oceanicos/remember';
 import { MiniKernel, OperatingSystemKernel, OmegaTotalCompressor } from '@oceanicos/mini';
 import type { VerificationRule } from '@oceanicos/types';
-import { AsymmetricValidationGuard, MultiRegionMeshConvergence } from '@oceanicos/verification';
+import { AsymmetricValidationGuard, MultiRegionMeshConvergence, evaluateVerificationContract } from '@oceanicos/verification';
 import { ObserverEngine } from '@oceanicos/observer';
 import { AttestationService } from '@oceanicos/attestation';
 import { InferenceClient } from '@oceanicos/inference';
@@ -988,6 +988,50 @@ export function createApp(
     return { success: receipt.success, receipt };
   });
 
+  fastify.get('/v1/verification/contract', async () => {
+    const receipt = evaluateVerificationContract({
+      stateBefore: 'STATE_VERIFIED_ROOT',
+      intent: 'STATUS_PROBE',
+      expectedState: 'STATE_VERIFIED_ROOT',
+      authority: true,
+      humanConsent: true,
+      policyPassed: true,
+      attempted: true,
+      executed: true,
+      observation: {
+        observed: true,
+        observedState: 'STATE_VERIFIED_ROOT',
+      },
+      evidence: {
+        claim: 'Verification contract probe active',
+        observed: true,
+        verified: true,
+      },
+    });
+    return { success: true, receipt };
+  });
+
+  fastify.post('/v1/verification/contract', async (request: any) => {
+    const body = request.body || {};
+    const receipt = evaluateVerificationContract({
+      stateBefore: body.stateBefore ?? 'STATE_VERIFIED_ROOT',
+      intent: typeof body.intent === 'string' ? body.intent : 'VERIFICATION_CONTRACT_EVALUATION',
+      expectedState: body.expectedState,
+      authority: body.authority !== undefined ? Boolean(body.authority) : false,
+      humanConsent: body.humanConsent !== undefined ? Boolean(body.humanConsent) : true,
+      policyPassed: body.policyPassed !== undefined ? Boolean(body.policyPassed) : false,
+      capabilityPresent: body.capabilityPresent !== undefined ? Boolean(body.capabilityPresent) : true,
+      attempted: body.attempted !== undefined ? Boolean(body.attempted) : false,
+      executed: body.executed !== undefined ? Boolean(body.executed) : false,
+      observation: body.observation,
+      evidence: body.evidence,
+      dissent: body.dissent,
+      previousProofHash: body.previousProofHash,
+      stepIndex: body.stepIndex,
+    });
+    return { success: receipt.outcome === 'VERIFIED', receipt };
+  });
+
   fastify.post('/v1/artemis/action', async (request: any, reply) => {
     const command = typeof request.body?.command === 'string' ? request.body.command.trim() : '';
     if (!command) {
@@ -1205,6 +1249,8 @@ export const STARTUP_BANNER = [
   '  POST   /v1/pluralism/matrix/transition',
   '  GET    /v1/pluralism/matrix/continuum-compression',
   '  POST   /v1/pluralism/matrix/continuum-compression',
+  '  GET    /v1/verification/contract',
+  '  POST   /v1/verification/contract',
   '  GET    /v1/continuum',
   '  GET    /v1/lucid/phases',
   '  POST   /v1/lucid/loop',

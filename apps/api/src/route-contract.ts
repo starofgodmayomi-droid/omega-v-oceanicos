@@ -50,6 +50,8 @@ export const API_ROUTE_INVENTORY = [
   'POST /v1/pluralism/matrix/transition',
   'GET /v1/pluralism/matrix/continuum-compression',
   'POST /v1/pluralism/matrix/continuum-compression',
+  'GET /v1/verification/contract',
+  'POST /v1/verification/contract',
   'GET /',
   'GET /assets/*',
 ] as const;
