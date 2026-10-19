@@ -31,3 +31,7 @@ The package also exports `runCoordinationEvidenceProbe()`. With two independent 
 This is a **local, bounded scheduler**. It does not provide a distributed queue, durable execution, leader election, retries, external callbacks, secret handling, deployment authorization, or proof of work outside the current process. Human authorization remains outside the executor.
 
 The repository root now includes the package in the build chain and fast verification path. Run `pnpm --filter @omega-v/coordination test` for the focused proof, or `pnpm verify:fast` for the repository gate.
+
+## Evidence boundary
+
+This guide describes the package contract; it is not a production attestation. Confirm behavior against the exported source, run the package's declared tests, and verify the target runtime separately. A module name or passing test does not prove external integration, deployment, or untested security properties.

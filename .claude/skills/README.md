@@ -153,3 +153,7 @@ Installed 2026-10-16. Byte-identical to `skills/omega-v-os/SKILL.md`. The ƆCEAN
 ## lucid-continuum
 
 Installed 2026-10-16. Byte-identical to `skills/lucid-continuum/SKILL.md`. What may cross a handoff, and what must be observed again. A packet is not proof.
+
+## Execution boundary
+
+Skill files describe workflows and intended constraints. Tool availability, authorization, repository state, and successful execution must be rechecked in the active session; a prompt or skill file is not proof that an action ran.

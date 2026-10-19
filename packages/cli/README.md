@@ -182,3 +182,7 @@ The health output also prints `COORDINATION policy=local-single-process|operator
 ## Ω command lifecycle
 
 The repository CLI exposes the bounded command family through `node bin/oceanicos.mjs omega`: `workers`, `propose <intent>`, `inspect <id>`, `admit <id>`, `approve <id>`, `execute <id>`, `observe <id> [state]`, `verify-reality <id>`, and `events [id]`. These commands are thin API clients; they do not bypass admission or convert execution into proof of reality. Set `OMEGA_API_URL` to target the API.
+
+## Evidence boundary
+
+This guide describes the package contract; it is not a production attestation. Confirm behavior against the exported source, run the package's declared tests, and verify the target runtime separately. A module name or passing test does not prove external integration, deployment, or untested security properties.

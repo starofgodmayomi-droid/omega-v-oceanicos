@@ -98,3 +98,7 @@ See [../TYPES.md](../README.md) for complete API documentation.
 
 **Package Status:** Production-ready  
 **Last Updated:** 2026-08-07
+
+## Evidence boundary
+
+This guide documents the repository contract at a point in time. Confirm implementation in source, test coverage in the relevant tests, and operational behavior in the target environment. Build/CI success is not by itself proof of production deployment or external-world correctness.

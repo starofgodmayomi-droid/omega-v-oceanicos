@@ -1,39 +1,34 @@
 # Applications
 
-The repository's two runnable applications are the Fastify API and the React/Vite web dashboard. Their per-app READMEs are the canonical references for route and feature details; this page summarizes how they fit together and how to start the local development stack.
+The repository exposes two primary runnable applications. This page is the compressed entry point; each app guide owns its detailed configuration and route/component contract.
 
-## Applications
-
-| App | Runtime | Default local URL | Canonical guide |
+| App | Stack | Local development URL | Guide |
 |---|---|---|---|
-| `apps/api` | Fastify HTTP API | `http://localhost:5000` | [API README](api/README.md) |
-| `apps/web` | React dashboard served by Vite | `http://localhost:3000` | [Web README](web/README.md) |
+| API | Fastify / Node.js | `http://localhost:5000` by default | [apps/api](api/README.md) |
+| Web | React / Vite | `http://localhost:3000` | [apps/web](web/README.md) |
 
-The API defaults to port `5000`; `PORT` or `API_PORT` can override it. Vite is configured for port `3000`. Browser-relative `/api/*` requests use the Vite development proxy, which targets `http://localhost:5000` by default; `VITE_API_PROXY_TARGET` can override that target.
+## Start both
 
-## Start the local stack
-
-Requirements: Node.js 22 or newer and pnpm 10 or newer, as declared by the root package manifest.
-
-From the repository root:
+Requirements: Node.js `>=22` and pnpm `10.34.5`.
 
 ```bash
 pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-The root `pnpm dev` command builds the workspace, then starts the API and web development servers together. Press `Ctrl+C` to stop them. See the app-specific guides for per-app configuration details.
+The root `dev` lifecycle builds the workspace before starting the development servers. The Vite `/api/*` proxy targets `http://localhost:5000` by default; app guides document overrides and runtime details.
 
-Useful root commands:
+## Useful checks
 
 ```bash
-pnpm build       # Build workspace packages and apps
-pnpm test        # Run the repository's registered integration checks
-pnpm verify:full # Run the repository verification sequence
+pnpm build
+pnpm test
+pnpm smoke:api
+pnpm verify:full
 ```
 
-## Scope and evidence
+Commands are defined by the root manifest. Check the current manifest and workflow before relying on a command or assuming a service is running.
 
-This index describes repository configuration and supported commands; it does not establish that a local or deployed service is currently running, healthy, production-hardened, or deployed. Check runtime health with the relevant probes and reconcile their results with the environment being evaluated.
+## Evidence boundary
 
-The API's route inventory and configuration belong in [the API README](api/README.md), and dashboard behavior and setup belong in [the web README](web/README.md). Keep this index brief rather than duplicating those contracts.
+This index documents repository configuration, not current runtime health. A successful build, test, or container smoke test does not by itself prove deployment, availability, security posture, or production correctness.

@@ -24,3 +24,7 @@ The contract preserves `USER_STATED`, `OBSERVED`, `DOCUMENTED`, `INFERRED`, `SIM
 - Empty or weak context defaults to `UNKNOWN` and preserves uncertainty.
 - Low-risk adaptation may change wording or pacing only.
 - Consequential or unsafe actions do not execute through this package.
+
+## Evidence boundary
+
+This guide documents the repository contract at a point in time. Confirm implementation in source, test coverage in the relevant tests, and operational behavior in the target environment. Build/CI success is not by itself proof of production deployment or external-world correctness.

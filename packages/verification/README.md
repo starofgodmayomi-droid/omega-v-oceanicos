@@ -246,3 +246,7 @@ npm test
 **Part of:** Ω∞v Oceanicos verification loop  
 **Next:** DSL compiler for custom rules  
 **Last Updated:** 2026-08-07
+
+## Evidence boundary
+
+This guide describes the package contract; it is not a production attestation. Confirm behavior against the exported source, run the package's declared tests, and verify the target runtime separately. A module name or passing test does not prove external integration, deployment, or untested security properties.

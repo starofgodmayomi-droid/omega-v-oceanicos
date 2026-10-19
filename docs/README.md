@@ -1,211 +1,36 @@
-# Documentation
+# Documentation map
 
-Welcome to the Ω∞v Oceanicos documentation. Start here to understand the project and contribute effectively.
+Use this page to find the smallest authoritative guide for the task. Design language and architecture explain intent; source, tests, CI, and runtime observations establish what is implemented and what was verified.
 
----
+## First read
 
-## Foundation Documents
+- [Manifest](../MANIFEST.md) — mission and system map
+- [Charter](../CHARTER.md) — principles and governance boundaries
+- [Architecture](ARCHITECTURE.md) — components and dependency direction
+- [MINI kernel](MINI.md) — the smallest verification loop
+- [Verification loop](VERIFICATION_LOOP.md) — observation through reconciliation
+- [Development setup](DEVELOPMENT.md) — install and run locally
+- [Repository inventory](REPO_INVENTORY.md) — declared workspace versus observed files
+- [Dependency map](DEPENDENCY_MAP.md) — declared package edges, not runtime health
+- [Roadmap](ROADMAP.md) — staged expansion
 
-### Getting Started
+## By task
 
-- **[Charter](../CHARTER.md)** — Our living agnostic principles and decision-making philosophy
-- **[Manifest](../MANIFEST.md)** — Project mission, architecture, and verification loop
-- **[Contributing](../CONTRIBUTING.md)** — How to submit PRs and work within our verification-first culture
+| Task | Canonical guide |
+|---|---|
+| Start the applications | [Applications](../apps/README.md) · [API](../apps/api/README.md) · [Web](../apps/web/README.md) |
+| Understand shared libraries | [Package index](../packages/README.md) |
+| Work on the verification loop | [Verification package](../packages/verification/README.md) · [Observer](../packages/observer/README.md) · [Remember](../packages/remember/README.md) |
+| Sign a result | [Attestation](../packages/attestation/README.md) |
+| Use command-line or typed clients | [CLI](../packages/cli/README.md) · [SDK](../packages/sdk/README.md) |
+| Inspect operational behavior | [Infrastructure](../infra/README.md) · [Tests](../tests/README.md) |
+| Contribute changes | [Contributing](../CONTRIBUTING.md) · [Security](../SECURITY.md) |
+| Understand symbolic language boundaries | [ƆREADE package](../packages/oreade/README.md) |
 
-### Development
+## Design specifications and ecosystem skills
 
-- **[Development Setup](./DEVELOPMENT.md)** — Get the project running locally
-- **[MINI Kernel](./MINI.md)** — Zero → MINI → verified expansion (canonical growth model)
-- **[Architecture](./ARCHITECTURE.md)** — High-level system design from MINI outward
-- **[Repository inventory](./REPO_INVENTORY.md)** — workspace vs disk (current evidence)
-- **[Dependency map](./DEPENDENCY_MAP.md)** — declared edges, not health claims
-- **[Roadmap](./ROADMAP.md)** — Earned expansion phases
-- **[Verification Loop](./VERIFICATION_LOOP.md)** — Full workflow including post-MINI steps
+Protocol, conflict-resolution, value-navigation, continuity, and whole-ecosystem design documents are available throughout `docs/spec/`, `docs/upgrades/`, and `skills/`. Treat prompts, symbolic models, simulations, and roadmaps as design inputs—not evidence that a capability is connected, authorized, deployed, or verified. Check the linked source and tests for implementation status.
 
----
+## Evidence rule
 
-## Learning Paths
-
-### For New Contributors
-
-1. Read [CHARTER.md](../CHARTER.md) — understand our principles
-2. Read [CONTRIBUTING.md](../CONTRIBUTING.md) — learn our workflow
-3. Run through [DEVELOPMENT.md](./DEVELOPMENT.md) — set up locally
-4. Find an issue labeled `good first issue` — make your first contribution
-5. See your work merged and in production — celebrate!
-
-### For Architects
-
-1. Read [MINI.md](./MINI.md) — Zero → MINI → expansion law
-2. Read [MANIFEST.md](../MANIFEST.md) — understand the vision
-3. Study [ARCHITECTURE.md](./ARCHITECTURE.md) — how components fit together
-4. Review [VERIFICATION_LOOP.md](./VERIFICATION_LOOP.md) — full workflow
-5. Explore the codebase and propose improvements only as earned `+` layers
-
-### For Users
-
-1. Read the README in the root — get oriented
-2. Run the published image — see [Infrastructure](../infra/README.md)
-3. Call the loop — see the [REST API reference](../apps/api/README.md)
-4. Verify the artifact's provenance before trusting it
-
----
-
-## API Reference
-
-- **[REST API](../apps/api/README.md)** — every endpoint, with request and
-  response shapes. A test asserts this document describes every route the
-  API actually registers, so it cannot drift from the code.
-- **[Value Navigator](../skills/oceanicos-value-navigator/SKILL.md)** — bounded
-  proposal/observation flow, status boundaries, and the repository API contract.
-- **[Voice Bridge](../skills/voice-bridge/SKILL.md)** — one human source across
-  system design, expression, truth-checking, and execution planning.
-- **[ƆREADE × Oceanicos Harmonizer](../skills/oread-pidgin-harmonizer/SKILL.md)**
-  — symbolic and Nigerian Pidgin meaning compiled into bounded, evidence-first
-  action.
-- **[KAI Companion](../skills/kai-companion/SKILL.md)** — continuity, provenance,
-  uncertainty, and the next finite return; memory is not proof.
-- **[Ω∞v Mirror-Water Universal Body](../skills/omega-mirror-water-universal-body/SKILL.md)**
-  — broad ecosystem intent translated into bounded, observable transitions.
-- **[OceanicOS Framework](../skills/oceanicos-framework/SKILL.md)** — OUPEMLI,
-  finite transition, provenance, and authority boundaries.
-- **[Oceanicos Full Stack](../skills/oceanicos-full-stack/SKILL.md)** — renamed
-  Ω∞v verification spine, whole-ecosystem routing, and bounded FLOW.
-- **[Lucid Full Stack](../skills/lucid-full-stack/SKILL.md)** — one integrated
-  guide across voice, continuity, culture, value, ecosystem planning, and
-  evidence-first software delivery.
-- **[Oceanicos Full-Stack Companion](../skills/oceanicos-full-stack-companion/SKILL.md)**
-  — session companion for ecosystem work, audits, upgrades, verification, and handoffs.
-- **[Oceanicos Max-Space Full Stack](../skills/oceanicos-max-space-full-stack/SKILL.md)**
-  — 0D–N-D requests translated into bounded representations.
-- **[Oceanicos Verified Upgrade](../skills/oceanicos-verified-upgrade/SKILL.md)**
-  — self-repair and upgrade through compile, admit, observe, and label.
-- **[Ω∞v OS](../skills/omega-v-os/SKILL.md)** — void, drop, field, sink, and
-  the finite ∞/11:11 return.
-- **[Lucid Continuum](../skills/lucid-continuum/SKILL.md)** — what may cross a
-  handoff, and what must be observed again.
-- **[Whole ecosystem reality compression](./upgrades/WHOLE_ECOSYSTEM_REALITY_COMPRESSION_2026-10-04.md)**
-  — source-labeled translation of the supplied Ω∞v architecture into repository
-  boundaries and explicit unknowns.
-- **[One-body operating core](./upgrades/ONE_BODY_OPERATING_CORE_2026-10-04.md)**
-  — the supplied operating-body architecture, mapped to a reality-bound
-  governance spine, interchangeable provider examples, and truthful UI states.
-- **[Whole Ecosystem Constitution](./WHOLE-ECOSYSTEM-CONSTITUTION.md)**
-  — the user-supplied one-body architecture source, preserved as design
-  language and explicitly separated from runtime proof, authority, and reality.
-- **[Full-stack reality access](./upgrades/FULL_STACK_REALITY_ACCESS_2026-09-28.md)**
-  — admissible connector surfaces, authentication, authorization, and
-  reconciliation boundaries.
-- **[Infrastructure](../infra/README.md)** — the image, its environment
-  variables, and what does not exist yet.
-
-The first CLI slice exists as [`@omega-v/cli`](../packages/cli/README.md).
-It provides `omega status`, `omega events`, and `omega runs` as read-only clients
-for real runtime evidence contracts. The first typed SDK slice exists as
-[`@omega-v/sdk`](../packages/sdk/README.md). Mobile and broader integrations
-remain on the [roadmap](./ROADMAP.md).
-
----
-
-## Deep Dives
-
-### How Verification Works
-
-- **[The verification loop](./VERIFICATION_LOOP.md)** — observe, verify,
-  attest, act, learn, recompile
-- **[Verification rules](../packages/verification/README.md)** — the rule
-  engine and the evidence paths it produces
-- **[Attestation](../packages/attestation/README.md)** — HMAC signing, key
-  fingerprints, and why there is no default key
-
-### Specifications
-
-- **[Operational Protocol Specification](./spec/OCEANICOS-OPERATIONAL-PROTOCOL.md)** — how a bounded Drop moves from intent through authority, execution, observation, reconciliation, and provenance
-- **[Error Handling and Conflict Resolution](./spec/OCEANICOS-CONFLICT-RESOLUTION.md)** — how failures, dissent, uncertainty, retries, and rollback remain evidence-bound
-- **[Commitment of Flow](./spec/OCEANICOS-COMMITMENT-OF-FLOW.md)** — participant rights, responsibilities, consent boundaries, and non-authority commitments
-- **[Attestation Envelope v1](./spec/ATTESTATION-ENVELOPE.md)** — the signed
-  payload, its exact byte serialisation, and how to verify one **without
-  running any code from this project**. Ships a reference verifier in Python
-  that imports nothing from here.
-- **[Browser verifier walkthrough](./BROWSER-VERIFIER.md)** — generate a
-  temporary Ed25519 key pair, create a real local attestation, and verify it
-  in the dashboard without sending the check to the API.
-
-### Governance
-
-- **[Governance](./GOVERNANCE.md)** — who may do what, which writes are
-  unauthenticated, and what the loop enforces regardless of tokens
-
-### Decisions
-
-- **[1. Serve the web client from the API's origin](./decisions/0001-single-origin-deployment.md)**
-  — why one container rather than two, what it costs, and the alternative that
-  is preserved on a branch rather than deleted
-
-- **[2. Diagnose dependency upgrades on main, not inside the proposal](./decisions/0002-dependency-upgrade-policy.md)**
-  — why seven of nine failing bumps were this repository not being ready, and
-  what to do about the one that was genuinely upstream
-
-### System Design
-
-- **[Ocean Point of View](./architecture/OCEAN-POINT-OF-VIEW.md)** — the planetary-ocean metaphor and its evidence-bound transition invariant
-- **[OCEANICOS Constitution](./architecture/OCEANICOS-CONSTITUTION.md)** — the one-current, many-bounded-forms map with current implementation evidence
-- **[Observer](../packages/observer/README.md)** — capturing normalized
-  observations
-- **[Memory](../packages/remember/README.md)** — the append-only
-  hash-chained record
-- **[MINI kernel](../packages/mini/README.md)** — observer + verifier +
-  evidence + memory composed into one cycle
-- **[Architecture](./ARCHITECTURE.md)** — how the packages fit together
-
-There is no compiler or IR, and no database: state is a JSON snapshot and
-two append-only files on disk.
-
-### Community
-
-- **[Charter](../CHARTER.md)** — how we treat each other
-- **[Contributing](../CONTRIBUTING.md)** — how to propose a change
-- **[Roadmap](./ROADMAP.md)** — earned expansion phases
-
----
-
-## FAQ
-
-**Q: How do I get started?**  
-A: Follow the [Development Setup](./DEVELOPMENT.md) guide, then read [CONTRIBUTING.md](../CONTRIBUTING.md).
-
-**Q: How do I verify my changes work?**  
-A: Run `pnpm verify` locally. Windows, macOS, and Linux use the same Node-based lifecycle helpers; CI additionally runs the full compatibility gate on `windows-latest`. See [CONTRIBUTING.md](../CONTRIBUTING.md#development-workflow) for details.
-
-**Q: I found a bug. What do I do?**  
-A: File an issue with reproduction steps. See [CONTRIBUTING.md](../CONTRIBUTING.md#bug-reports).
-
-**Q: How do I suggest a feature?**  
-A: Open an issue and describe the problem it solves. See [CONTRIBUTING.md](../CONTRIBUTING.md#feature-requests).
-
-**Q: What if I disagree with a decision?**  
-A: Provide evidence and propose alternatives. See [CHARTER.md](../CHARTER.md#how-we-make-decisions).
-
----
-
-## Project Status
-
-- **Current Phase**: MINI kernel (Observe → Verify → Remember)
-- **Next Phase**: Earned expansions (`+ Attest`, interfaces) after MINI is proven
-- **Stability**: Rapidly evolving — APIs may change
-- **Workspace vs disk**: [REPO_INVENTORY.md](./REPO_INVENTORY.md) — do not treat extra `packages/` directories as verified capabilities
-
-See [MINI.md](./MINI.md) and [ROADMAP.md](./ROADMAP.md).
-
----
-
-## More Questions?
-
-- **Technical questions**: Open an issue or discussion
-- **Design questions**: Start a GitHub discussion
-- **General questions**: Check [CHARTER.md](../CHARTER.md)
-
----
-
-**Documentation Status**: Living — Zero → MINI → verified expansion  
-**Last Updated**: 2026-09-27
+`POSSIBLE ≠ IMPLEMENTED ≠ EXECUTED ≠ OBSERVED ≠ VERIFIED ≠ DEPLOYED`. Every operational claim should name the revision, environment, check, result, and remaining uncertainty.
