@@ -30,10 +30,11 @@ import { registerEchoframeRoute } from './echoframe-route.js';
 import { registerContinuumRoute, getContinuumEcosystemStatus } from './continuum-route.js';
 import { API_ROUTE_INVENTORY } from './route-contract.js';
 import { OceanicosKernel as UpgradeKernel } from '@oceanicos/mini';
-import { OmegaCommandStore, registerOmegaWorkerRoutes } from './omega.js';
+import { OmegaCommandStore, registerOmegaWorkerRoutes, type OmegaCommandAdmissionEvidenceResolver } from './omega.js';
 import { omegaRoutes } from './omega/routes.js';
 import { OmegaCommandStore as ExtendedOmegaCommandStore } from './omega/store.js';
 import type { OmegaSecurityOptions } from './omega/security.js';
+import { operatorIdentityAllowed } from './auth-helpers.js';
 import {
   ENCRYPTION_ALGORITHM,
   encryptionEnabled,
@@ -58,6 +59,7 @@ const MIN_ATTESTATION_KEY_LENGTH = 32;
 export type CreateAppOptions = {
   allowUnsignedCycle?: boolean;
   attestationSigningKey?: string;
+  omegaCommandAdmissionEvidence?: OmegaCommandAdmissionEvidenceResolver;
 };
 
 type AuthMode = 'local' | 'required';
@@ -218,6 +220,22 @@ export function createApp(
     if (bearer(request.headers.authorization) !== configured) return jsonError(reply, 401, 'JOB_ACCESS_REQUIRED');
   };
 
+  const enforceAdminOperatorIdentity = (request: any, reply: any): boolean => {
+    const allowedOperators = (process.env.OMEGA_ADMIN_OPERATOR_ALLOWLIST ?? '')
+      .split(',')
+      .map((operatorId) => operatorId.trim())
+      .filter(Boolean);
+    const requireAllowlist = process.env.OMEGA_ADMIN_REQUIRE_ALLOWLIST === 'on';
+    const rawOperatorId = request.headers['x-omega-operator-id'];
+    const operatorId = typeof rawOperatorId === 'string' ? rawOperatorId.trim() : undefined;
+    if (operatorIdentityAllowed(operatorId || undefined, allowedOperators, requireAllowlist)) {
+      request.omegaOperatorId = operatorId || undefined;
+      return true;
+    }
+    jsonError(reply, 403, 'ADMIN_OPERATOR_NOT_ALLOWED');
+    return false;
+  };
+
   fastify.register(cors, { origin: '*' });
   fastify.register(rateLimit, { global: false });
 
@@ -228,6 +246,8 @@ export function createApp(
     store: extendedStore,
     canonicalStore: omegaCommands,
     security: securityOptions,
+    omegaCommandAdmissionEvidence: resolvedOptions.omegaCommandAdmissionEvidence,
+    enforceAdminOperatorIdentity,
   });
 
   // Register base omega worker coordination routes (register, heartbeat, lease, release)

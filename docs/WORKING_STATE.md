@@ -1,6 +1,37 @@
 # Ω∞v Oceanicos Working State
 
-**Updated:** 2026-09-12
+**Updated:** 2026-10-19
+
+## State 7: Max Equation & Server-Side Admission Evidence Hardening (#487, #486) — 2026-10-19
+
+The Ω∞v Oceanicos sovereign monorepo has completed State 7 under the governing Max Equation:
+$$\Omega_{\infty v} = \operatorname{VERIFY}\bigl(\Delta(\text{Intent},\text{Reality})\bigr) \quad \Big/ \quad \Delta^* = \underset{\Delta\in\mathcal{F}}{\arg\max}\; \frac{\text{Verified Value}(\Delta)}{\text{Risk}(\Delta)+\text{Cost}(\Delta)+\varepsilon}$$
+
+1. **Server-Side Command Admission Evidence Resolver (`apps/api`)**:
+   - Closed security vulnerability (#487, #486) where client-asserted request body flags (`authorityVerified: true, policySatisfied: true`) could bypass authority verification.
+   - Introduced `OmegaCommandAdmissionEvidence` interface and `OmegaCommandAdmissionEvidenceResolver` in `apps/api/src/omega.ts`.
+   - Wired `omegaCommandAdmissionEvidence` resolver parameter through `createApp` (`apps/api/src/index.ts`) into `omegaRoutes` (`apps/api/src/omega/routes.ts`).
+   - If no resolver is provided, `POST /v1/omega/commands/:id/admit` fails closed with HTTP `503 OMEGA_ADMISSION_EVIDENCE_UNAVAILABLE`.
+   - Enforced REVIEW invariant: commands in `REVIEW` status cannot bypass explicit human operator approval even if an admission resolver asserts `ALLOW`.
+   - Enforced operator identity allowlist check in `apps/api/src/index.ts` via `enforceAdminOperatorIdentity` when `OMEGA_ADMIN_REQUIRE_ALLOWLIST=on`.
+
+2. **Full-Stack Verification Proofs (364/364 Passing)**:
+   - `typecheck`: 17 of 17 workspace packages pass with 0 errors.
+   - `build`: 17 of 17 workspace packages build with 0 errors, including Vite production bundle.
+   - `test:fast`: 72/72 unit tests passing.
+   - `test:integration`: 109/109 integration tests passing.
+   - `test:e2e`: 121/121 end-to-end tests passing.
+   - `test:stack`: 32/32 full-stack E2E scenarios passing.
+   - `test:canonical`: 14/14 canonical store lifecycle tests passing.
+   - `test:omega-api`: 10/10 command API tests passing (including 3 new admission resolver and operator authorization tests).
+   - `test:worker`: 6/6 worker lifecycle tests passing.
+
+3. **Cryptographic Lineage**:
+   - State 6 Tip Hash: `29af4f2e1aa88b556953b1f071280489176c67406065e6b756dea4c7e14a884a`
+   - State 7 Tip Hash: `8532905e838d36b76011b1192b883bed8097ca377160f2c9e7ceecdf9f21383f`
+   - Parent Hash: `29af4f2e1aa88b556953b1f071280489176c67406065e6b756dea4c7e14a884a`
+
+---
 
 ## Singularity Maximum Compression Core vΩ∞v.MAX & Attestation Engine — 2026-09-12
 

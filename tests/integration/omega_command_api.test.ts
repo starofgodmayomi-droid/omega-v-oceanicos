@@ -172,4 +172,141 @@ describe('Ω∞v command API vertical slice', () => {
     assert.equal(response?.statusCode, 429);
     assert.equal(response?.headers['retry-after'], '60');
   });
+
+  it('rejects client-asserted admission flags and fails closed without trusted resolver (#487, #486)', async () => {
+    // 1. Create a fresh proposal in app (which has no omegaCommandAdmissionEvidence resolver)
+    const createRes = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/commands',
+      payload: {
+        intent: 'unadmitted test command',
+        requestedBy: 'dashboard-user',
+        workers: ['planner', 'tester'],
+        idempotencyKey: 'unadmitted-slice-1',
+      },
+    });
+    assert.equal(createRes.statusCode, 201);
+    const cmdId = createRes.json().command.commandId;
+
+    // 2. Attempt to admit with client-provided authorityVerified: true and policySatisfied: true
+    const response = await app.inject({
+      method: 'POST',
+      url: `/v1/omega/commands/${cmdId}/admit`,
+      payload: {
+        authority: 'client-asserted-admin',
+        policy: 'client-asserted-policy',
+        authorityVerified: true,
+        policySatisfied: true,
+      },
+    });
+    // Must fail closed with 503 unavailable because no server-side resolver was provided
+    assert.equal(response.statusCode, 503);
+    assert.equal(response.json().error, 'OMEGA_ADMISSION_EVIDENCE_UNAVAILABLE');
+  });
+
+  it('admits commands using server-side resolver and enforces REVIEW protection', async () => {
+    const resolverApp = createApp(':memory:', false, {
+      omegaCommandAdmissionEvidence: (_request, command) => ({
+        authority: 'server:security-gate',
+        policy: 'policy:bounded-execution',
+        authorityVerified: true,
+        policySatisfied: true,
+      }),
+    });
+    await resolverApp.ready();
+    try {
+      // 1. Create a command with workers that require review (e.g. tester)
+      const createRes = await resolverApp.inject({
+        method: 'POST',
+        url: '/v1/omega/commands',
+        payload: {
+          intent: 'server-resolved admission test',
+          requestedBy: 'resolver-user',
+          workers: ['planner', 'tester'],
+          idempotencyKey: 'resolver-test-1',
+        },
+      });
+      assert.equal(createRes.statusCode, 201);
+      const cmdId = createRes.json().command.commandId;
+      assert.equal(createRes.json().command.status, 'REVIEW');
+
+      // 2. Admit command with server-side resolver:
+      // Even though resolver yields ALLOW, a command already in REVIEW cannot bypass explicit operator approval.
+      const admitRes = await resolverApp.inject({
+        method: 'POST',
+        url: `/v1/omega/commands/${cmdId}/admit`,
+        payload: {
+          // Client assertions here must be completely ignored
+          authority: 'spoofed-authority',
+          authorityVerified: false,
+          policySatisfied: false,
+        },
+      });
+      assert.equal(admitRes.statusCode, 200);
+      const admittedBody = admitRes.json();
+      assert.equal(admittedBody.success, true);
+      assert.equal(admittedBody.status, 'REVIEW');
+      assert.equal(admittedBody.command.change.authority, 'server:security-gate');
+      assert.equal(admittedBody.command.change.policy, 'policy:bounded-execution');
+
+      // 3. Human approval is required to transition from REVIEW to AUTHORIZED
+      const approveRes = await resolverApp.inject({
+        method: 'POST',
+        url: `/v1/omega/commands/${cmdId}/approve`,
+        payload: { operator: 'security-officer' },
+      });
+      assert.equal(approveRes.statusCode, 200);
+      assert.equal(approveRes.json().command.status, 'AUTHORIZED');
+    } finally {
+      await resolverApp.close();
+    }
+  });
+
+  it('enforces operator allowlist when OMEGA_ADMIN_REQUIRE_ALLOWLIST is on', async () => {
+    const prevAllowlist = process.env.OMEGA_ADMIN_OPERATOR_ALLOWLIST;
+    const prevRequire = process.env.OMEGA_ADMIN_REQUIRE_ALLOWLIST;
+    process.env.OMEGA_ADMIN_OPERATOR_ALLOWLIST = 'steward-alice,steward-bob';
+    process.env.OMEGA_ADMIN_REQUIRE_ALLOWLIST = 'on';
+
+    const authApp = createApp(':memory:', false);
+    await authApp.ready();
+    try {
+      await authApp.inject({
+        method: 'POST',
+        url: '/v1/omega/commands',
+        payload: {
+          intent: 'operator authorization test',
+          requestedBy: 'test-user',
+          workers: ['planner', 'tester'],
+          idempotencyKey: 'op-auth-test-1',
+        },
+      });
+
+      // Attempt approval with unauthorized operator header
+      const unauthorizedRes = await authApp.inject({
+        method: 'POST',
+        url: '/v1/omega/commands/omega-op-auth-test-1/approve',
+        headers: { 'x-omega-operator-id': 'eve' },
+        payload: { operator: 'eve' },
+      });
+      assert.equal(unauthorizedRes.statusCode, 403);
+      assert.equal(unauthorizedRes.json().error, 'ADMIN_OPERATOR_NOT_ALLOWED');
+
+      // Attempt approval with authorized operator header
+      const authorizedRes = await authApp.inject({
+        method: 'POST',
+        url: '/v1/omega/commands/omega-op-auth-test-1/approve',
+        headers: { 'x-omega-operator-id': 'steward-alice' },
+        payload: { operator: 'steward-alice' },
+      });
+      assert.equal(authorizedRes.statusCode, 200);
+      assert.equal(authorizedRes.json().command.status, 'AUTHORIZED');
+    } finally {
+      if (prevAllowlist === undefined) delete process.env.OMEGA_ADMIN_OPERATOR_ALLOWLIST;
+      else process.env.OMEGA_ADMIN_OPERATOR_ALLOWLIST = prevAllowlist;
+      if (prevRequire === undefined) delete process.env.OMEGA_ADMIN_REQUIRE_ALLOWLIST;
+      else process.env.OMEGA_ADMIN_REQUIRE_ALLOWLIST = prevRequire;
+      await authApp.close();
+    }
+  });
 });

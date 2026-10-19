@@ -77,13 +77,23 @@ DEFAULT: FAIL CLOSED
 | **4** | `state-4-e899c302` | `e899c302cd6df6e4...` | `3dfc1f8fbc56f0a5...` | `VERIFIED` | V1111 Singularity Upgrade: Single Pluralistic Body & ECHOFRAME Engine Integration |
 | **5** | `state-5-b6cbd1fb` | `44969edb91ace951...` | `e899c302cd6df6e4...` | `VERIFIED` | V1111 Singularity Upgrade: Shared Verification Contract & 4-Outcome Ecosystem Compression |
 | **6** | `state-6-77d1ac07` | `29af4f2e1aa88b55...` | `44969edb91ace951...` | `VERIFIED` | V1111 Singularity Upgrade: Canonical Compression Law & Multi-Surface Grounding (361/361 Proofs) |
+| **7** | `state-7-8532905e` | `8532905e838d36b7...` | `29af4f2e1aa88b55...` | `VERIFIED` | Max Equation & Server-Side Admission Resolver Hardening: Issues #487 & #486 (364/364 Proofs) |
 
+---
+
+## 6. The Governing Equations of the Sovereign Body
 
 $$\boxed{ \Omega_{\infty v} = \operatorname{VERIFY} \bigl( \Delta(\text{Intent},\text{Reality}) \bigr) }$$
 
-> **The Sovereign Law of the Razor's Edge**:
+$$\boxed{ \Delta^* = \underset{\Delta\in\mathcal{F}}{\arg\max}\; \frac{\text{Verified Value}(\Delta)}{\text{Risk}(\Delta)+\text{Cost}(\Delta)+\varepsilon} }$$
+
+$$\boxed{ \text{PriorityScore}(\Delta) = \frac{\widehat V(\Delta)\cdot Q_E(\Delta)}{\widehat R(\Delta)+\widehat C(\Delta)+\varepsilon} }$$
+
+> **The Sovereign Law of the Razor's Edge & Finite Transition**:
 > 1. $\Delta(\text{Intent}, \text{Reality}) = 0 \implies \text{VERIFIED}$: Intent and Reality rest in mutual coherence.
 > 2. $\Delta(\text{Intent}, \text{Reality}) \neq 0 \implies \text{RECONCILE}$: Bounded, authorized, evidence-proven transition.
 > 3. $\neg \operatorname{Evidence} \implies \neg \operatorname{Claim}$: Radical honesty; subtraction over speculative expansion.
-> 4. $\text{Ecosystem} \neq \text{Soul}$: Technology serves the human root; the living steward transcends the machine.
+> 4. $\Delta^* = \arg\max_\Delta \frac{\text{Verified Value}(\Delta)}{\text{Risk}(\Delta)+\text{Cost}(\Delta)+\varepsilon}$: Every upgrade is the smallest complete, authorized change maximizing verified value relative to risk and cost.
+> 5. $\text{Ecosystem} \neq \text{Soul}$: Technology serves the human root; the living steward transcends the machine.
+> 6. $\text{Missing Authority} \lor \text{Missing Evidence} \implies \text{FAIL CLOSED}$: No execution without authority; no claim without evidence.
 
