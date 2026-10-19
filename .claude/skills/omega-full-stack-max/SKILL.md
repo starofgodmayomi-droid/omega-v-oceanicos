@@ -194,3 +194,14 @@ This is a reusable operating contract, not proof that any repository, person, si
 > **One root. One current. Many minds. Finite evidence. Human-gated action. Continuous correction.**
 >
 > **Find one real problem. Solve one part. Prove what changed. Protect the people involved. Record the lesson. Return better.**
+
+## State labels
+
+Name the state before treating a result as done.
+
+- `POSSIBLE` — a delta is in scope and has not been verified.
+- `DIVERGENT` — the check ran and the output conflicts with the expectation. Keep both.
+- `UNKNOWN` — the evidence is missing or the check could not be run.
+- `NOT_EXECUTED` — the step was specified and did not run.
+
+Maximum value cannot be selected from a `POSSIBLE` or `NOT_EXECUTED` delta. `VERIFIED` stays reserved for a check that ran and covers the claim.

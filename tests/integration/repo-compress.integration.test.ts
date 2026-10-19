@@ -58,7 +58,7 @@ test('omega-reality-first is inside the skill contract gate', () => {
     cwd: root,
     encoding: 'utf8',
   });
-  assert.match(output, /validated 16 Oceanicos skill contracts/);
+  assert.match(output, /validated 17 Oceanicos skill contracts/);
   const source = readFileSync(join(root, 'scripts', 'validate-skill-contracts.mjs'), 'utf8');
   assert.match(source, /'omega-reality-first'/);
 });

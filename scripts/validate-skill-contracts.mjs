@@ -10,6 +10,7 @@ const skills = [
   'kai-companion',
   'lucid-full-stack',
   'lucid-continuum',
+  'omega-full-stack-max',
   'omega-global-good-fullstack',
   'omega-mirror-water-universal-body',
   'omega-reality-first',
