@@ -225,7 +225,7 @@ export function SystemControlsPanel(props: SystemControlsPanelProps) {
         <div style={cardStyle}>
           <div style={{ ...cardTitleStyle, color: theme.accentWarm, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span>
-              {props.moodData.status === 'PROACTIVE_SELF_SENSING'
+              {props.moodData.status === 'PROACTIVE_SELF_SENSING' || props.moodData.status === 'MAX GOOD-O'
                 ? 'Proactive Self-Sensing Mood Matrix'
                 : `Mood · ${props.moodData.singularityState || 'Active'}`}
             </span>

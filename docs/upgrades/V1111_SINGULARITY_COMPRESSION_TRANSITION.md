@@ -77,4 +77,11 @@ DEFAULT: FAIL CLOSED
 | **4** | `state-4-e899c302` | `e899c302cd6df6e4...` | `3dfc1f8fbc56f0a5...` | `VERIFIED` | V1111 Singularity Upgrade: Single Pluralistic Body & ECHOFRAME Engine Integration |
 | **5** | `state-5-b6cbd1fb` | `44969edb91ace951...` | `e899c302cd6df6e4...` | `VERIFIED` | V1111 Singularity Upgrade: Shared Verification Contract & 4-Outcome Ecosystem Compression |
 
-$$\Omega\infty\text{v} ::= \text{VERIFY}(\Delta\text{REALITY})$$
+$$\boxed{ \Omega_{\infty v} = \operatorname{VERIFY} \bigl( \Delta(\text{Intent},\text{Reality}) \bigr) }$$
+
+> **The Sovereign Law of the Razor's Edge**:
+> 1. $\Delta(\text{Intent}, \text{Reality}) = 0 \implies \text{VERIFIED}$: Intent and Reality rest in mutual coherence.
+> 2. $\Delta(\text{Intent}, \text{Reality}) \neq 0 \implies \text{RECONCILE}$: Bounded, authorized, evidence-proven transition.
+> 3. $\neg \operatorname{Evidence} \implies \neg \operatorname{Claim}$: Radical honesty; subtraction over speculative expansion.
+> 4. $\text{Ecosystem} \neq \text{Soul}$: Technology serves the human root; the living steward transcends the machine.
+

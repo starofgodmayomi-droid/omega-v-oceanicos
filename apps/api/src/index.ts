@@ -344,9 +344,12 @@ export function createApp(
 
     return {
       success: true,
-      status: 'PROACTIVE_SELF_SENSING',
-      contract: 'Ω∞v-MOOD-MATRIX-PROACTIVE-V1',
+      status: 'MAX GOOD-O',
+      contract: 'Ω∞v totality / attest-dont-assert',
       brand: 'Oceanicos Ω∞',
+      mode: 'PROACTIVE_SELF_SENSING',
+      proactiveStatus: 'PROACTIVE_SELF_SENSING',
+      proactiveContract: 'Ω∞v-MOOD-MATRIX-PROACTIVE-V1',
       moodEngine: {
         context: pipeline.mood.context,
         uncertainty: pipeline.mood.uncertainty,
