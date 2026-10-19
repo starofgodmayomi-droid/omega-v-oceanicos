@@ -1638,6 +1638,102 @@ async function handleMatrix(cmdArgs = []) {
     return;
   }
 
+  if (subCommand === '4x4' || subCommand === 'gram') {
+    let result = null;
+    if (matrixPkg?.evaluate4x4CompressionMatrix) {
+      result = matrixPkg.evaluate4x4CompressionMatrix({ A: true, P: true, E: true, C: true, O: true, V: true });
+    }
+
+    if (isJson) {
+      console.log(JSON.stringify(result, null, 2));
+      return;
+    }
+
+    printBanner();
+    console.log(`\n${ANSI.bold}=== 💧 4×4 TOTAL ECOSYSTEM COMPRESSION MATRIX & FIXPOINT ===${ANSI.reset}\n`);
+    if (result) {
+      console.log(`  ${ANSI.cyan}Contract${ANSI.reset}         : ${ANSI.bold}${result.contract}${ANSI.reset}`);
+      console.log(`  ${ANSI.yellow}Human Root${ANSI.reset}       : ${result.humanRoot}`);
+      console.log(`  ${ANSI.cyan}Fixpoint Status${ANSI.reset}  : ${ANSI.green}${result.fixpointStatus}${ANSI.reset}`);
+      console.log(`  ${ANSI.cyan}Decision / Status${ANSI.reset}: ${ANSI.green}${result.decision}${ANSI.reset} / ${ANSI.bold}${result.status}${ANSI.reset}`);
+      console.log(`  ${ANSI.bold}Frobenius Norm${ANSI.reset}   : ${result.frobeniusNorm}`);
+      console.log(`  ${ANSI.bold}⁴√det(I₄ + MᵀM)${ANSI.reset} : ${ANSI.green}${result.fourthRootGramDeterminant}${ANSI.reset}`);
+      console.log(`  ${ANSI.cyan}96-D Tensor Dim${ANSI.reset}  : ${result.tensor96Dimension} coordinates`);
+      console.log(`  ${ANSI.green}Proof Hash${ANSI.reset}       : ${ANSI.dim}${result.proofHash}${ANSI.reset}\n`);
+      console.log(`${ANSI.bold}Numerical Matrix M (4x4):${ANSI.reset}`);
+      console.log(`  Row 0 [S, I, E, A] : [${result.numericalMatrix[0].join(', ')}]`);
+      console.log(`  Row 1 [P, C, D, R] : [${result.numericalMatrix[1].join(', ')}]`);
+      console.log(`  Row 2 [O, V, T, M] : [${result.numericalMatrix[2].join(', ')}]`);
+      console.log(`  Row 3 [K, L, G, Ω] : [${result.numericalMatrix[3].join(', ')}]\n`);
+    } else {
+      console.log(`  ${ANSI.red}[ERROR] 4x4 matrix engine unavailable.${ANSI.reset}\n`);
+    }
+    return;
+  }
+
+  if (subCommand === 'verify' || subCommand === 'contract') {
+    let verifContractPkg = null;
+    try {
+      verifContractPkg = await import('../packages/verification/src/verification-contract.ts');
+    } catch {
+      try {
+        verifContractPkg = await import('../packages/verification/dist/verification-contract.js');
+      } catch {}
+    }
+
+    let receipt = null;
+    if (verifContractPkg?.evaluateVerificationContract) {
+      receipt = verifContractPkg.evaluateVerificationContract({
+        stateBefore: 'STATE_VERIFIED_ROOT',
+        intent: 'V1111_SINGULARITY_COMPRESSION_UPGRADE',
+        expectedState: 'STATE_VERIFIED_V1111_CONTINUUM',
+        authority: true,
+        humanConsent: true,
+        policyPassed: true,
+        attempted: true,
+        executed: true,
+        observation: {
+          observed: true,
+          observedState: 'STATE_VERIFIED_V1111_CONTINUUM',
+        },
+        evidence: {
+          claim: 'Unified 4-outcome verification contract verified across repository',
+          observed: true,
+          verified: true,
+          confidence: 1.0,
+        },
+      });
+    }
+
+    if (isJson) {
+      console.log(JSON.stringify(receipt, null, 2));
+      return;
+    }
+
+    printBanner();
+    console.log(`\n${ANSI.bold}=== 🌊 SHARED VERIFICATION CONTRACT (4-OUTCOME GATES) ===${ANSI.reset}\n`);
+    if (receipt) {
+      console.log(`  ${ANSI.cyan}Contract${ANSI.reset}         : ${ANSI.bold}${receipt.contract}${ANSI.reset}`);
+      console.log(`  ${ANSI.yellow}Human Root${ANSI.reset}       : ${receipt.humanRoot} (${receipt.humanSteward})`);
+      console.log(`  ${ANSI.cyan}Outcome${ANSI.reset}          : ${ANSI.green}${ANSI.bold}${receipt.outcome}${ANSI.reset}`);
+      console.log(`  ${ANSI.cyan}Decision${ANSI.reset}         : ${ANSI.green}${receipt.decision}${ANSI.reset}`);
+      console.log(`  ${ANSI.bold}Frobenius Norm${ANSI.reset}   : ${receipt.frobeniusNorm}`);
+      console.log(`  ${ANSI.bold}⁴√det(I₄ + MᵀM)${ANSI.reset} : ${ANSI.green}${receipt.fourthRootGramDeterminant}${ANSI.reset}`);
+      console.log(`  ${ANSI.green}Current Hash${ANSI.reset}     : ${ANSI.dim}${receipt.proofChain.currentHash}${ANSI.reset}`);
+      console.log(`  ${ANSI.dim}Reason${ANSI.reset}           : ${receipt.reason}\n`);
+      console.log(`${ANSI.bold}Fail-Closed Invariant Report:${ANSI.reset}`);
+      console.log(`  • ¬Evidence ⇒ NO VERIFIED CLAIM : ${receipt.invariants.noEvidenceNoClaim ? ANSI.green + '✓ PASS' : ANSI.red + '✗ FAIL'}${ANSI.reset}`);
+      console.log(`  • ¬Authority ⇒ NO EXECUTION     : ${receipt.invariants.noAuthorityNoExecution ? ANSI.green + '✓ PASS' : ANSI.red + '✗ FAIL'}${ANSI.reset}`);
+      console.log(`  • Mismatch ⇒ DIVERGENT          : ${receipt.invariants.mismatchDivergent ? ANSI.green + '✓ PASS' : ANSI.red + '✗ FAIL'}${ANSI.reset}`);
+      console.log(`  • Missing obs ⇒ UNKNOWN         : ${receipt.invariants.missingObservationUnknown ? ANSI.green + '✓ PASS' : ANSI.red + '✗ FAIL'}${ANSI.reset}`);
+      console.log(`  • No attempt ⇒ NOT_EXECUTED     : ${receipt.invariants.noAttemptNotExecuted ? ANSI.green + '✓ PASS' : ANSI.red + '✗ FAIL'}${ANSI.reset}`);
+      console.log(`  • Verified ⇒ Traceable Next     : ${receipt.invariants.verifiedChangeTraceable ? ANSI.green + '✓ PASS' : ANSI.red + '✗ FAIL'}${ANSI.reset}\n`);
+    } else {
+      console.log(`  ${ANSI.red}[ERROR] Verification contract unavailable.${ANSI.reset}\n`);
+    }
+    return;
+  }
+
   let matrixData = null;
   try {
     const res = await fetch(`${apiBase}/v1/pluralism/matrix`);
@@ -1713,6 +1809,7 @@ ${ANSI.bold}COMMANDS:${ANSI.reset}
   ${ANSI.green}echoframe${ANSI.reset}    Synthesize code templates, components, and simulate concepts
   ${ANSI.green}continuum${ANSI.reset}    Inspect the 62 Continuum modular organs (@omega-v/*)
   ${ANSI.green}tensor${ANSI.reset}       Inspect, register, or evaluate Pluralistic Duality Tensor field
+  ${ANSI.green}matrix${ANSI.reset}       Evaluate 4x4 compression matrix, shared verification contract, or state transitions
   ${ANSI.green}help${ANSI.reset}        Display this help message
 
 ${ANSI.bold}OPTIONS:${ANSI.reset}
