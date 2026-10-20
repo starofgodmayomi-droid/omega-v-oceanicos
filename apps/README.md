@@ -4,8 +4,8 @@ The repository exposes two primary runnable applications. This page is the compr
 
 | App | Stack | Local development URL | Guide |
 |---|---|---|---|
-| API | Fastify / Node.js | `http://localhost:5000` by default | [apps/api](api/README.md) |
-| Web | React / Vite | `http://localhost:3000` | [apps/web](web/README.md) |
+| `apps/api` | Fastify HTTP API | `http://localhost:5000` | [API README](api/README.md) |
+| `apps/web` | React dashboard served by Vite | `http://localhost:3000` | [Web README](web/README.md) |
 
 ## Start both
 
@@ -16,7 +16,7 @@ pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-The root `dev` lifecycle builds the workspace before starting the development servers. The Vite `/api/*` proxy targets `http://localhost:5000` by default; app guides document overrides and runtime details.
+The root `dev` lifecycle builds the workspace before starting the development servers. Vite's `/api/*` proxy targets `http://localhost:5000` by default. Set `VITE_API_PROXY_TARGET` to override the proxy target for a local environment; check the Vite config and app guides before assuming a target is reachable.
 
 ## Useful checks
 
