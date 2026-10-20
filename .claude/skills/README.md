@@ -18,6 +18,7 @@ its source.
 | `oceanicos-verified-upgrade` | `7c85422294d544464abc18ac4f946ea0269ca278ebefbe7fa1cf945e7bbf2c9a` | 2026-10-16 |
 | `omega-v-os` | `6ed3f35d0085b8c3d7256cb65c3a8e49a24f860d90c7b940509ccfaf35480513` | 2026-10-16 |
 | `lucid-continuum` | `57a34241ff3d52ed143da49f1a9a04380743c2adf09bf9916553146915d711da` | 2026-10-16 |
+| `omega-all-dimensional-ecosystem` | `113170e0c9010b2d48d598f538bf31b737c669df8522f6027b4b6e1ef7e99769` | 2026-10-20 |
 
 Verify an installed skill still matches what was recorded:
 
@@ -153,3 +154,7 @@ Installed 2026-10-16. Byte-identical to `skills/omega-v-os/SKILL.md`. The ƆCEAN
 ## lucid-continuum
 
 Installed 2026-10-16. Byte-identical to `skills/lucid-continuum/SKILL.md`. What may cross a handoff, and what must be observed again. A packet is not proof.
+
+## omega-all-dimensional-ecosystem
+
+Installed 2026-10-20. Byte-identical to `skills/omega-all-dimensional-ecosystem/SKILL.md`. Composed in-repo from the stated law `Ω∞v = VERIFY(Δ(Intent, Reality))` and `NEXT = argmax E[Verified Value] / (Risk + Cost + ε)`. It was not a previously supplied file. Dimensional detail stays in `oceanicos-max-space-full-stack`. Selection is not execution.
