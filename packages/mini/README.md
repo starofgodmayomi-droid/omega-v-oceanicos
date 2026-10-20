@@ -79,3 +79,7 @@ observation against a supplied actual observation as `VERIFIED`, `DIVERGENT`,
 cannot become `VERIFIED`. A match verifies only the admitted observation
 receipt; it does not prove deployment, revenue, secret custody, or an
 undeclared network call.
+
+## Evidence boundary
+
+This guide describes the package contract; it is not a production attestation. Confirm behavior against the exported source, run the package's declared tests, and verify the target runtime separately. A module name or passing test does not prove external integration, deployment, or untested security properties.

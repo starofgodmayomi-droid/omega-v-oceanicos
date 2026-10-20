@@ -36,3 +36,7 @@ const drop = buildSymbolicDrop({
 ```
 
 This produces a `PROPOSAL` only. Runtime authority, admission, execution, observation, and reconciliation remain separate steps; translation grants none of them.
+
+## Evidence boundary
+
+This guide documents the repository contract at a point in time. Confirm implementation in source, test coverage in the relevant tests, and operational behavior in the target environment. Build/CI success is not by itself proof of production deployment or external-world correctness.

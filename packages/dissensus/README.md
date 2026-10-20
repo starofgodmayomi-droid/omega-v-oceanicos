@@ -81,3 +81,7 @@ permissive threshold there is.
 `apps/api` exposes `POST /dissensus` and `GET /dissensus`, and `/act` accepts a
 `dissensusId`. A split does **not** block the action; it is recorded against
 it. See `apps/api/README.md`.
+
+## Evidence boundary
+
+This guide documents the repository contract at a point in time. Confirm implementation in source, test coverage in the relevant tests, and operational behavior in the target environment. Build/CI success is not by itself proof of production deployment or external-world correctness.

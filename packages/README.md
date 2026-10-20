@@ -1,169 +1,115 @@
-# Packages
+# Shared packages
 
-Shared libraries for the Ω∞v growth spine:
+This monorepo contains a small verification spine and a wider set of domain-oriented modules. Use this index to navigate; package READMEs link to source, tests, and available scripts. A declared package is not automatically a production-ready or externally connected service.
 
-```text
-0 → MINI (👁 → ✓ → 🧠) → earned +expansions → continuum subsystems
-```
+## Core verification and stewardship spine
 
-## MINI kernel
+These packages most directly express the evidence-first operating model.
 
-```text
-💧 Ω∞v MINI ::= 👁 Observe → ✓ Verify → 🧠 Remember
-```
+| Package | Responsibility |
+|---|---|
+| [`@oceanicos/mini`](mini/README.md) | Shared ecosystem package |
+| [`@oceanicos/types`](types/README.md) | Shared ecosystem package |
+| [`@oceanicos/observer`](observer/README.md) | Shared ecosystem package |
+| [`@oceanicos/verification`](verification/README.md) | Shared ecosystem package |
+| [`@oceanicos/remember`](remember/README.md) | Shared ecosystem package |
+| [`@oceanicos/attestation`](attestation/README.md) | Cryptographic attestation service for Ω∞v Oceanicos |
+| [`@omega-v/evidence`](evidence/README.md) | Ω∞v Evidence Artifact Engine (Section XXIV) |
+| [`@omega-v/graph`](graph/README.md) | Provenance Knowledge Graph & Lineage Traversal Engine for Ω∞v Oceanicos (Section XIV) |
+| [`@omega-v/policy`](policy/README.md) | Dynamic Declarative Compliance, Policy Bundles & Cryptographic Compliance Receipts for Ω∞v Oceanicos |
+| [`@omega-v/security`](security/README.md) | Verifiable Identity, Authorization & Security Policy Engine for Ω∞v Oceanicos (Sections XVIII & XIX) |
+| [`@omega-v/dissensus`](dissensus/README.md) | Reconciliation of plural verifier opinions for Ω∞v Oceanicos |
+| [`@omega-v/lexicon`](lexicon/README.md) | Verdict states in the languages their readers speak, for Ω∞v Oceanicos |
+| [`@omega-v/oreade`](oreade/README.md) | Bounded ƆREADE symbolic translation for Ω∞v Oceanicos Drops |
+| [`@omega-v/mood`](mood/README.md) | System Mood Evaluator for Ω∞v Oceanicos (Pillar 19) |
+| [`@omega-v/coordination`](coordination/README.md) | Bounded, auditable parallel workers and builders for Ω∞v Oceanicos |
+| [`@omega-v/runtime`](runtime/README.md) | Bounded low-overhead agent loops and memory fabric for Ω∞v Oceanicos |
+| [`@omega-v/worker`](worker/README.md) | Bounded worker pool for Ω∞v Oceanicos — leases, local HMAC observation receipts, fail-closed authority |
 
-```
-packages/
-├── types/              # Shared contracts
-├── observer/           # 👁 Capture and normalize observations
-├── verification/       # ✓ Apply rules and generate evidence
-├── remember/           # 🧠 Append-only hash-chained memory
-└── mini/               # 💧 Compose one living cycle
-```
+## Operator and integration surfaces
 
-| Package                 | Role                         |
-| ----------------------- | ---------------------------- |
-| `@omega-v/types`        | Zero-dependency shared types |
-| `@omega-v/observer`     | Step 1 — observe             |
-| `@omega-v/verification` | Step 2 — verify              |
-| `@omega-v/remember`     | Step 3 — remember            |
-| `@omega-v/mini`         | Kernel composition           |
+| Package | Responsibility |
+|---|---|
+| [`@omega-v/cli`](cli/README.md) | Command line tool for Ω∞v Oceanicos verification loop |
+| [`@omega-v/sdk`](sdk/README.md) | Programmatic Client SDK for Ω∞v Oceanicos |
 
-### Quick start (MINI only)
+## Domain and expansion modules
 
-```typescript
-import { MiniKernel } from '@omega-v/mini';
+The following package descriptions record declared design scope. Check each package's current source and tests before treating the named capability as complete.
 
-const mini = new MiniKernel({ rules: [/* VerificationRule */] });
-const { observation, verification, memory } = mini.cycle({
-  claim: 'Service healthy',
-  category: 'health-check',
-  source: { system: 'api', version: '1.0.0', environment: 'test' },
-  observedBy: 'dev',
-  metadata: { statusCode: 200, responseTime: 40 },
-  confidence: 0.95,
-  confidenceReason: 'checks passed',
-});
-```
+| Package | Declared scope |
+|---|---|
+| [`@omega-v/agents`](agents/README.md) | Formless Agent Swarm for Ω∞v Oceanicos |
+| [`@omega-v/amm`](amm/README.md) | Verifiable Automated Market Maker (AMM), Constant Product Invariant, Concentrated Liquidity & Swap Proofs for Ω∞v Oceanicos |
+| [`@omega-v/analytics`](analytics/README.md) | Verification analytics, efficacy scoring, and pattern extraction for Ω∞v Oceanicos |
+| [`@omega-v/attestor`](attestor/README.md) | Decentralized Threshold Multi-Signature Attestation Network & Quorum Certificates for Ω∞v Oceanicos |
+| [`@omega-v/auth`](auth/README.md) | Decentralized Identity (DID), Capability-Based Access Control, and Proof-of-Authority Auth Engine for Ω∞v Oceanicos |
+| [`@omega-v/benchmark`](benchmark/README.md) | Verifier Performance, Latency Quantile (P50/P90/P99), and Throughput Stress Profiling Engine for Ω∞v Oceanicos |
+| [`@omega-v/bridge`](bridge/README.md) | Cross-Chain Cryptographic State Proofs, Light Client Verification, Merkle Mountain Range (MMR) & Relayer Attestations for Ω∞v Oceanicos |
+| [`@omega-v/compiler`](compiler/README.md) | Rule DSL compiler to Oceanicum IR bytecode for Ω∞v Oceanicos |
+| [`@omega-v/consensus`](consensus/README.md) | Byzantine Fault Tolerant (BFT) State Machine Replication & Proof-of-Attestation Consensus Engine for Ω∞v Oceanicos — Quorum Certificates, Block Finality, Slashing |
+| [`@omega-v/contract`](contract/README.md) | Formal Schema & Behavioral Contract Verification Engine for Ω∞v Oceanicos |
+| [`@omega-v/da`](da/README.md) | Data Availability Sampling, Reed-Solomon Erasure Coding, Blob Storage & KZG Commitment Proofs for Ω∞v Oceanicos |
+| [`@omega-v/dht`](dht/README.md) | Distributed Hash Table, Kademlia-Style Content-Addressable Routing for Ω∞v Oceanicos |
+| [`@omega-v/dispute`](dispute/README.md) | Verifiable Decentralized Dispute Resolution, Evidence Submissions & Arbitration Jury Engine for Ω∞v Oceanicos |
+| [`@omega-v/edge`](edge/README.md) | Edge observation buffering, offline-first Merkle batching, and sync for Ω∞v Oceanicos |
+| [`@omega-v/enclave`](enclave/README.md) | Hardware TEE Confidential Computing & Remote Attestation Engine for Ω∞v Oceanicos — MRENCLAVE Proofs, Sealed State, Hardware Nonces |
+| [`@omega-v/evm`](evm/README.md) | Verifiable Oceanic Virtual Machine (OVM), Stack Execution, Gas Metering & State Trie Commitments for Ω∞v Oceanicos |
+| [`@omega-v/evolution`](evolution/README.md) | Controlled Rule Recompilation & Drift Detection Engine for Ω∞v Oceanicos (Section XXVII) |
+| [`@omega-v/federation`](federation/README.md) | Cross-Mesh Inter-Cluster Verification Federation Protocol for Ω∞v Oceanicos |
+| [`@omega-v/friction`](friction/README.md) | Friction & Dissent Tracker for Ω∞v Oceanicos (Pillars 20-21) |
+| [`@omega-v/gateway`](gateway/README.md) | Adaptive Rate Limiter, Request Signing, and Anomaly Detection Gateway for Ω∞v Oceanicos |
+| [`@omega-v/governance`](governance/README.md) | Ω∞v Governance Engine (Section XXIX) |
+| [`@omega-v/governor`](governor/README.md) | On-Chain Timelocked Decentralized Governance, Verifiable Vote Aggregation & Execution Proofs for Ω∞v Oceanicos |
+| [`@omega-v/green`](green/README.md) | Ω∞v GREEN Rule Engine (Section XXV) |
+| [`@omega-v/human`](human/README.md) | Ω∞v Human Intelligence Module (Section XXVIII) |
+| [`@omega-v/intent`](intent/README.md) | Verifiable AI Agent Intent Solver & Cross-Domain Composable Settlement Engine for Ω∞v Oceanicos |
+| [`@omega-v/ir`](ir/README.md) | Oceanicum IR (Intermediate Representation) bytecode and execution engine for Ω∞v Oceanicos |
+| [`@omega-v/kernel`](kernel/README.md) | Oceanic Finite State Machine Kernel — Canonical Verification-First Full-Stack Transition Loop for Ω∞v Oceanicos |
+| [`@omega-v/learning`](learning/README.md) | Ω∞v Learning Engine (Section XXVI) |
+| [`@omega-v/mempool`](mempool/README.md) | High-Throughput Priority Transaction Mempool, MEV Bundle Bidding & Nonce Queuing for Ω∞v Oceanicos |
+| [`@omega-v/mesh`](mesh/README.md) | Peer-to-Peer Gossip Protocol & Verifiable Message Propagation for Ω∞v Oceanicos — DHT Peer Discovery, Signed Gossip, Epidemic Broadcast, Merkle Sync |
+| [`@omega-v/notary`](notary/README.md) | Cryptographic Timestamp Notarization, Merkle Transparency Log & Inclusion Proof Engine for Ω∞v Oceanicos |
+| [`@omega-v/oracle`](oracle/README.md) | Cryptographic External World State Verifier & Multi-Source Consensus Oracle Engine for Ω∞v Oceanicos |
+| [`@omega-v/orchestrator`](orchestrator/README.md) | Multi-Agent Swarm Orchestrator & Parallel Worker Dispatcher for Ω∞v Oceanicos |
+| [`@omega-v/pipeline`](pipeline/README.md) | Automated Verified CI/CD Pipeline Orchestrator for Ω∞v Oceanicos — Stage graphs, dependency ordering, gate checks, worker dispatch, rollback, and build observation receipts |
+| [`@omega-v/registry`](registry/README.md) | Decentralized Verifiable Package & Artifact Registry for Ω∞v Oceanicos — Signed Manifests, Provenance Verification, Tamper-Evident Downloads |
+| [`@omega-v/relay`](relay/README.md) | Decentralized Cross-Shard & Cross-Rollup Packet Relaying, Merkle Delivery Receipts & Replay Protection for Ω∞v Oceanicos |
+| [`@omega-v/replay`](replay/README.md) | Verification Replay Engine — capture, store, replay, and diff past verification loop executions for Ω∞v Oceanicos |
+| [`@omega-v/reputation`](reputation/README.md) | Verifiable On-Chain Agent Reputation, EigenTrust Scoring & Sybil-Resistant Feedback for Ω∞v Oceanicos |
+| [`@omega-v/rollup`](rollup/README.md) | Optimistic and ZK-Validity Layer-2 Rollup Execution Engine, State Transition Proofs & L1 Settlement for Ω∞v Oceanicos |
+| [`@omega-v/sandbox`](sandbox/README.md) | Deterministic Isolated Rule Execution Sandbox with Resource & Timeout Guards for Ω∞v Oceanicos |
+| [`@omega-v/scheduler`](scheduler/README.md) | Autonomous periodic verification scheduler — runs the Ω∞v kernel loop on a configurable cadence |
+| [`@omega-v/sequencer`](sequencer/README.md) | MEV-Resistant Fair Ordering, Verifiable Delay Functions (VDF), Encrypted Mempool & Batch Settlement Engine for Ω∞v Oceanicos |
+| [`@omega-v/sharding`](sharding/README.md) | Adaptive State Sharding, Cross-Shard Atomic Two-Phase Commit (2PC) & Dynamic Merkle State Rebalancing for Ω∞v Oceanicos |
+| [`@omega-v/staking`](staking/README.md) | Proof-of-Stake Delegation & Slashing Engine for Ω∞v Oceanicos |
+| [`@omega-v/store`](store/README.md) | Append-only provenance store for Ω∞v Oceanicos |
+| [`@omega-v/telemetry`](telemetry/README.md) | Distributed provenance tracing, W3C trace context, and SLO verification engine for Ω∞v Oceanicos |
+| [`@omega-v/vaas`](vaas/README.md) | Verification-as-a-Service (VaaS) multi-tenant gateway, rate-limiting, and tenant-isolated verification execution for Ω∞v Oceanicos |
+| [`@omega-v/vault`](vault/README.md) | Cryptographic State Vault, Checkpoint Backup & Disaster Recovery Engine for Ω∞v Oceanicos |
+| [`@omega-v/webhook`](webhook/README.md) | Real-Time Verification Event Webhook Dispatcher with HMAC Signatures & Exponential Backoff for Ω∞v Oceanicos |
+| [`@omega-v/zk`](zk/README.md) | Zero-Knowledge Succinct Verification Proofs & Privacy-Preserving Attestations for Ω∞v Oceanicos |
 
-## Earned expansions
 
-These packages expand MINI when earned:
+## Local verification
 
-```
-packages/
-├── attestation/        # + ATTEST — cryptographic signing
-├── dissensus/          # + DISSENT — reconcile plural verifiers
-├── lexicon/            # + LEGIBILITY — verdicts in Naijá and English
-├── sdk/                # + SDK — typed client
-├── cli/                # + CLI — operator commands
-├── coordination/       # + COORDINATION — bounded coordination contracts
-└── runtime/            # + RUNTIME — bounded agent execution loop
-```
-
-| Package                 | Expansion                                       |
-| ----------------------- | ----------------------------------------------- |
-| `@omega-v/attestation`  | `+ ATTEST` — signatures others can check        |
-| `@omega-v/dissensus`    | `+ DISSENT` — disagreement preserved            |
-| `@omega-v/lexicon`      | `+ LEGIBILITY` — verdicts in Naijá and English  |
-| `@omega-v/sdk`          | `+ SDK` — typed access                          |
-| `@omega-v/cli`          | `+ CLI` — operator surface                      |
-| `@omega-v/coordination` | `+ COORDINATION` — bounded workers and builders |
-| `@omega-v/runtime`      | `+ RUNTIME` — bounded agent loop and memory     |
-
-Apps (`apps/api`, `apps/web`) are interface expansions (`+ API`, `+ Web`).
-
-## Continuum Subsystems
-
-Extended subsystem modules for the Ω∞v Oceanicos ecosystem:
-
-| Package                 | Description                               |
-| ----------------------- | ----------------------------------------- |
-| `@omega-v/agents`       | Formless Agent Swarm Engine               |
-| `@omega-v/amm`          | Automated Market Maker & Liquidity Engine |
-| `@omega-v/analytics`    | Verification Analytics Engine             |
-| `@omega-v/attestor`     | Distributed Attestor Network              |
-| `@omega-v/auth`         | Zero-Trust Authentication Engine          |
-| `@omega-v/benchmark`    | Verification Benchmark Engine             |
-| `@omega-v/bridge`       | Cross-Chain Verification Bridge           |
-| `@omega-v/compiler`     | Rule & Contract Compiler Engine           |
-| `@omega-v/consensus`    | Plural Consensus Engine                   |
-| `@omega-v/contract`     | Formal Verification Contract Engine       |
-| `@omega-v/da`           | Data Availability Verification Engine     |
-| `@omega-v/dht`          | Distributed Hash Table Network            |
-| `@omega-v/dispute`      | Dispute Resolution Engine                 |
-| `@omega-v/edge`         | Edge Observation Engine                   |
-| `@omega-v/enclave`      | Confidential Computing Enclave Engine     |
-| `@omega-v/evidence`     | Evidence Graph Engine                     |
-| `@omega-v/evm`          | EVM Verification Execution Engine         |
-| `@omega-v/evolution`    | Evolutionary Architecture Engine          |
-| `@omega-v/federation`   | Federation Mesh Engine                    |
-| `@omega-v/friction`     | Friction Quantification Engine            |
-| `@omega-v/gateway`      | API Gateway Engine                        |
-| `@omega-v/governance`   | Autonomous Governance Engine              |
-| `@omega-v/governor`     | Protocol Governor Engine                  |
-| `@omega-v/graph`        | Provenance Knowledge Graph Engine         |
-| `@omega-v/green`        | Ecological Optimization Engine            |
-| `@omega-v/human`        | Human-in-the-Loop Verification Engine     |
-| `@omega-v/intent`       | Intent Resolution Engine                  |
-| `@omega-v/ir`           | Intermediate Representation Engine        |
-| `@omega-v/kernel`       | Core State Kernel Engine                  |
-| `@omega-v/learning`     | Adaptive Learning Engine                  |
-| `@omega-v/mempool`      | Transaction Mempool Engine                |
-| `@omega-v/mesh`         | Service Mesh Engine                       |
-| `@omega-v/mood`         | Collective Mood Engine                    |
-| `@omega-v/notary`       | Notary Verification Engine                |
-| `@omega-v/oracle`       | Trusted Oracle Engine                     |
-| `@omega-v/orchestrator` | Pipeline Orchestrator Engine              |
-| `@omega-v/pipeline`     | Verification Pipeline Engine              |
-| `@omega-v/policy`       | Policy Evaluation Engine                  |
-| `@omega-v/registry`     | Component Registry Engine                 |
-| `@omega-v/relay`        | Cross-Chain Relay Engine                  |
-| `@omega-v/replay`       | Deterministic Replay Engine               |
-| `@omega-v/reputation`   | Reputation Scoring Engine                 |
-| `@omega-v/rollup`       | Rollup Verification Engine                |
-| `@omega-v/sandbox`      | Isolated Sandbox Execution Engine         |
-| `@omega-v/scheduler`    | Verification Task Scheduler               |
-| `@omega-v/security`     | Autonomous Security Engine                |
-| `@omega-v/sequencer`    | Transaction Sequencer Engine              |
-| `@omega-v/sharding`     | State Sharding Engine                     |
-| `@omega-v/staking`      | Proof-of-Stake Verification Engine        |
-| `@omega-v/store`        | Durable Provenance Store                  |
-| `@omega-v/telemetry`    | Telemetry & Observability Engine          |
-| `@omega-v/vaas`         | Verification-as-a-Service Gateway         |
-| `@omega-v/vault`        | Cryptographic State Vault                 |
-| `@omega-v/webhook`      | Webhook Event Notification Engine         |
-| `@omega-v/worker`       | Background Task Worker Engine             |
-| `@omega-v/zk`           | Zero-Knowledge Proof Engine               |
-
-## Installation
-
-### From monorepo
+At the repository root:
 
 ```bash
-pnpm install
-pnpm --filter @omega-v/mini build
-pnpm test -- packages/mini packages/remember
+pnpm build
+pnpm test
+pnpm verify:full
 ```
 
-### Mental model
+For an individual package, inspect its `package.json` first and run only a script that exists, for example `pnpm --filter @omega-v/observer build` or `pnpm --filter @omega-v/observer test` where declared. Root and package scripts can differ; do not infer test coverage from a README alone.
 
-1. Prefer `@omega-v/mini` for the default runtime unit
-2. Use observer / verification / remember directly when testing a single leg
-3. Reach for attestation/API/web only when the expansion is intentionally in scope
+## Status semantics
 
-## Testing
+- **Declared:** manifest, directory, or interface exists.
+- **Implemented:** behavior exists in source.
+- **Tested:** a named test executed successfully on a specific revision.
+- **Observed:** behavior was checked in the target environment.
+- **Verified:** evidence satisfied explicit acceptance criteria.
+- **Deployed:** a separate deployment event and target environment are confirmed.
 
-Each MINI package includes unit tests. Kernel tests live in `packages/mini`.
-
-Coverage thresholds are enforced globally via root Jest config.
-
-## Versioning
-
-Semantic versioning. Current: **0.1.0** (MINI establishing).
-
----
-
-**Status:** MINI kernel establishing  
-**Last Updated:** 2026-08-14  
-**See also:** [docs/MINI.md](../docs/MINI.md)
+These states are not interchangeable. In particular, labels such as *decentralized*, *on-chain*, *zero-knowledge*, *enclave*, or *autonomous* may describe a module's intended domain; they do not prove a live network, production deployment, cryptographic audit, hardware backing, or independent third-party verification.

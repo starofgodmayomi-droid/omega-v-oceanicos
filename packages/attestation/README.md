@@ -210,3 +210,7 @@ npm test
 **Part of:** Ω∞v Oceanicos — an earned expansion on the MINI kernel
 **Next:** Key custody (HSM/KMS), revocation, signing audit log
 **Last Updated:** 2026-08-15
+
+## Evidence boundary
+
+This guide documents the repository contract at a point in time. Confirm implementation in source, test coverage in the relevant tests, and operational behavior in the target environment. Build/CI success is not by itself proof of production deployment or external-world correctness.

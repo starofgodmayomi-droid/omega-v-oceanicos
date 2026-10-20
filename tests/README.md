@@ -47,3 +47,7 @@ job is what proves the artifact runs.
 - `pnpm test:integration` matches no tests, because this directory is empty.
   It passes rather than failing on an empty match, which is honest only for as
   long as this note stays next to it.
+
+## Evidence boundary
+
+A passing test establishes only the assertions that ran against the tested revision. It does not prove production deployment, external service health, cryptographic security, or untested behavior. Record the exact command and environment when reporting results.

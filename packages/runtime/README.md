@@ -17,3 +17,7 @@ const result = await loop.run('fixture', 'agent-run-001');
 ```
 
 The package intentionally does not claim literal zero latency, distributed coordination, autonomous authorization, hidden retries, network access, or durable memory. Measured elapsed time is returned as an observation so optimization can be evidence-driven.
+
+## Evidence boundary
+
+This guide describes the package contract; it is not a production attestation. Confirm behavior against the exported source, run the package's declared tests, and verify the target runtime separately. A module name or passing test does not prove external integration, deployment, or untested security properties.

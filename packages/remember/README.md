@@ -56,3 +56,7 @@ The package does not expose the secret or claim key custody. Operators remain re
 ## Status
 
 MINI kernel component. Attestation, APIs, and full-stack layers are earned expansions beyond this package.
+
+## Evidence boundary
+
+This guide describes the package contract; it is not a production attestation. Confirm behavior against the exported source, run the package's declared tests, and verify the target runtime separately. A module name or passing test does not prove external integration, deployment, or untested security properties.

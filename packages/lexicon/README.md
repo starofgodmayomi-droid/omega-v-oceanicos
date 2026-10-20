@@ -72,3 +72,7 @@ say('DISSENTING', 'pcm').label; // 'Dem no gree'
 sayAll('ATTESTED'); // both, so either reader can check the other
 isReviewed('pcm'); // false — not yet checked by a speaker
 ```
+
+## Evidence boundary
+
+This guide documents the repository contract at a point in time. Confirm implementation in source, test coverage in the relevant tests, and operational behavior in the target environment. Build/CI success is not by itself proof of production deployment or external-world correctness.

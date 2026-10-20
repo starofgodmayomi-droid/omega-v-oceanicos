@@ -31,3 +31,7 @@ The repository workflow at `.github/workflows/worker.yml` runs the bounded worke
 The worker script enforces those bounds, runs with external actions and Git writes disabled, uploads inspection logs as a short-lived workflow artifact, and writes a scoped job summary. A successful workflow proves only that the declared CI steps completed in GitHub's runner context.
 
 A persistent or production worker requires a separately authorized hosting target, runtime identity, secrets, networking policy, observability, and post-deployment smoke evidence. None is inferred from this workflow.
+
+## Evidence boundary
+
+This guide describes the package contract; it is not a production attestation. Confirm behavior against the exported source, run the package's declared tests, and verify the target runtime separately. A module name or passing test does not prove external integration, deployment, or untested security properties.
