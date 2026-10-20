@@ -7,6 +7,8 @@ SOURCE → RUNTIME → REALITY
 
 Canonical detail: [`docs/upgrades/MAX_COMPRESS_FULL_STACK_HANDOFF.md`](docs/upgrades/MAX_COMPRESS_FULL_STACK_HANDOFF.md)
 
+Ecosystem map (skills and layers, not a second constitution): [`docs/upgrades/ECOSYSTEM_COMPRESS_EXPAND.md`](docs/upgrades/ECOSYSTEM_COMPRESS_EXPAND.md)
+
 | Surface | Entry |
 |---------|--------|
 | Kernel | `runOmegaChangePipeline` `@oceanicos/mini` |
