@@ -462,9 +462,12 @@ export function registerOmegaRoutes(
     if (!command) return reply.status(404).send({ success: false, error: 'OMEGA_COMMAND_NOT_FOUND' });
     if (command.status !== 'PROPOSED' && command.status !== 'REVIEW') return reply.status(409).send({ success: false, error: 'OMEGA_COMMAND_STALE' });
     const body = bodyOf(request);
+    if (Object.prototype.hasOwnProperty.call(body, 'authorityVerified') || Object.prototype.hasOwnProperty.call(body, 'policySatisfied')) {
+      return reply.status(400).send({ success: false, error: 'COMMAND_ADMISSION_EVIDENCE_NOT_ACCEPTED' });
+    }
     const authority = typeof body.authority === 'string' ? body.authority : null;
     const policy = typeof body.policy === 'string' ? body.policy : null;
-    const admitted = resolveChangeAdmission({ ...command.change, authority, policy }, { authorityVerified: body.authorityVerified === true, policySatisfied: body.policySatisfied === true });
+    const admitted = resolveChangeAdmission({ ...command.change, authority, policy }, { authorityVerified: false, policySatisfied: false });
     const status = statusForDecision(admitted.decision);
     const updated = store.update(command, { change: admitted, status });
     store.record('command.admitted', updated, { decision: admitted.decision });

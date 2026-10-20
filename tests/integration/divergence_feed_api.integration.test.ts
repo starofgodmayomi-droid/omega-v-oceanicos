@@ -21,7 +21,14 @@ test('divergence feed returns redacted divergent evidence only', async () => {
       },
     });
     const commandId = created.json().command.commandId;
-    await app.inject({ method: 'POST', url: `/v1/omega/commands/${commandId}/admit`, payload: { authority: 'human:feed-test', policy: 'test.v1', authorityVerified: true, policySatisfied: true } });
+    const claimed = await app.inject({ method: 'POST', url: `/v1/omega/commands/${commandId}/admit`, payload: { authority: 'human:feed-test', policy: 'test.v1', authorityVerified: true, policySatisfied: true } });
+    assert.equal(claimed.statusCode, 400);
+    assert.equal(claimed.json().error, 'COMMAND_ADMISSION_EVIDENCE_NOT_ACCEPTED');
+    const stillProposed = await app.inject({ method: 'GET', url: `/v1/omega/commands/${commandId}` });
+    assert.equal(stillProposed.json().command.status, 'PROPOSED');
+    const approved = await app.inject({ method: 'POST', url: `/v1/omega/commands/${commandId}/approve`, payload: { operator: 'feed-test', policy: 'test.v1' } });
+    assert.equal(approved.statusCode, 200);
+    assert.equal(approved.json().command.status, 'AUTHORIZED');
     await app.inject({ method: 'POST', url: `/v1/omega/commands/${commandId}/execute`, payload: {} });
     await app.inject({ method: 'POST', url: `/v1/omega/commands/${commandId}/observe`, payload: { observedState: 'unexpected-state' } });
 

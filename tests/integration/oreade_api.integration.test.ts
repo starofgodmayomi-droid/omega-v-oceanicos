@@ -130,7 +130,7 @@ test('API persists a planner-only proposal without authorizing or executing it',
     assert.equal(body.executed, false);
     assert.match(body.nextAction, /review and explicitly admit/);
 
-    const admitted = await app.inject({
+    const claimed = await app.inject({
       method: 'POST',
       url: `/v1/omega/commands/${body.command.commandId}/admit`,
       payload: {
@@ -138,6 +138,17 @@ test('API persists a planner-only proposal without authorizing or executing it',
         policy: 'oreade-symbolic-boundary.v1',
         authorityVerified: true,
         policySatisfied: true,
+      },
+    });
+    assert.equal(claimed.statusCode, 400);
+    assert.equal(claimed.json().error, 'COMMAND_ADMISSION_EVIDENCE_NOT_ACCEPTED');
+
+    const admitted = await app.inject({
+      method: 'POST',
+      url: `/v1/omega/commands/${body.command.commandId}/approve`,
+      payload: {
+        operator: 'dashboard-operator',
+        policy: 'oreade-symbolic-boundary.v1',
       },
     });
     assert.equal(admitted.statusCode, 200);
