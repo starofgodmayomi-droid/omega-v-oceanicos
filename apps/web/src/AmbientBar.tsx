@@ -26,6 +26,11 @@ interface AmbientBarProps {
     context?: string;
     decision?: string;
   } | null;
+  latestTransition?: {
+    epoch?: number;
+    hash?: string;
+    outcome?: string;
+  } | null;
 }
 
 interface Indicator {
@@ -88,6 +93,12 @@ export function AmbientBar(props: AmbientBarProps) {
       label: 'Mood',
       value: `${props.mood.status} · ${Math.round((1 - (props.mood.uncertainty ?? 0.1)) * 100)}% flow`,
       color: props.mood.status === 'OPTIMAL_FLOW' || props.mood.status === 'HIGH_INTEGRITY' || props.mood.decision === 'ALLOW' ? theme.verified : theme.accent,
+    }] : []),
+    ...(props.latestTransition ? [{
+      label: 'Transition',
+      value: `Epoch ${props.latestTransition.epoch ?? '?'} · ${props.latestTransition.outcome ?? 'VERIFIED'}`,
+      color: theme.verified,
+      pulse: true,
     }] : []),
   ];
 

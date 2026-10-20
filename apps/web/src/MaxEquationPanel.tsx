@@ -115,7 +115,11 @@ const PRESET_CANDIDATES = [
 
 /* ─────────── Component ─────────── */
 
-export function MaxEquationPanel() {
+export interface MaxEquationPanelProps {
+  latestTransition?: any | null;
+}
+
+export function MaxEquationPanel({ latestTransition }: MaxEquationPanelProps = {}) {
   const [metadata, setMetadata] = useState<MaxEquationMetadata | null>(null);
   const [metaLoading, setMetaLoading] = useState(false);
   const [metaError, setMetaError] = useState<string | null>(null);
@@ -311,6 +315,12 @@ export function MaxEquationPanel() {
   useEffect(() => {
     fetchMetadata();
   }, [fetchMetadata]);
+
+  useEffect(() => {
+    if (latestTransition?.step) {
+      setStepResult(latestTransition.step);
+    }
+  }, [latestTransition]);
 
   const verdictColor = (v: string) =>
     v === 'ALLOW' ? '#00f5a0' : v === 'DENY' ? '#ef4444' : '#f59e0b';
@@ -1251,6 +1261,35 @@ export function MaxEquationPanel() {
             </label>
           </div>
         </div>
+
+        {latestTransition && (
+          <div style={{
+            background: 'rgba(56, 189, 248, 0.08)',
+            border: '1px solid rgba(56, 189, 248, 0.3)',
+            borderRadius: '6px',
+            padding: '8px 12px',
+            marginBottom: '12px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            fontFamily: theme.fontMono,
+            fontSize: '11px',
+          }}>
+            <span style={{ color: '#38bdf8', fontWeight: 600 }}>
+              ⚡ Live Tri-Surface Sync (SSE): Epoch {latestTransition.step?.nextState?.epoch ?? '?'}
+            </span>
+            <span style={{ color: '#94a3b8', fontSize: '10px' }}>
+              Hash: {latestTransition.hash ? `${latestTransition.hash.slice(0, 16)}...` : 'N/A'}
+            </span>
+            <span style={{
+              color: latestTransition.step?.verification?.verified ? '#00f5a0' : '#ef4444',
+              fontWeight: 700,
+              fontSize: '10px',
+            }}>
+              {latestTransition.step?.verification?.outcome ?? 'VERIFIED'}
+            </span>
+          </div>
+        )}
 
         <button
           onClick={handleExecuteStep}

@@ -130,6 +130,7 @@ export function App() {
   const [showCovenantPanel, setShowCovenantPanel] = useState<boolean>(false);
   const [showCompressionPulse, setShowCompressionPulse] = useState<boolean>(false);
   const [compressionData, setCompressionData] = useState<any>(null);
+  const [latestTransition, setLatestTransition] = useState<any | null>(null);
 
   const eventSourceRef = useRef<EventSource | null>(null);
 
@@ -262,16 +263,20 @@ export function App() {
           try {
             const payload = JSON.parse(event.data);
             if (payload.block) {
-              setTip(payload.block);
-              setHistory((prev) => {
-                const exists = prev.some((b) => b.hash === payload.block.hash);
-                if (exists) return prev;
-                return [payload.block, ...prev.slice(0, 14)];
-              });
-              setMinerStats((prev) => ({
-                totalMined: prev.totalMined + 1,
-                lastBlockTime: payload.block.timestamp,
-              }));
+              if (payload.block.type === 'STATE_TRANSITION') {
+                setLatestTransition(payload.block);
+              } else {
+                setTip(payload.block);
+                setHistory((prev) => {
+                  const exists = prev.some((b) => b.hash === payload.block.hash);
+                  if (exists) return prev;
+                  return [payload.block, ...prev.slice(0, 14)];
+                });
+                setMinerStats((prev) => ({
+                  totalMined: prev.totalMined + 1,
+                  lastBlockTime: payload.block.timestamp,
+                }));
+              }
             }
           } catch {
             /* skip malformed event */
@@ -742,7 +747,7 @@ export function App() {
       label: 'Max Equation',
       subtitle: 'Optimization engine — next best verified Δ*',
       state: 'available' as const,
-      detail: <MaxEquationPanel />,
+      detail: <MaxEquationPanel latestTransition={latestTransition} />,
     },
   ];
 
@@ -772,6 +777,11 @@ export function App() {
           uncertainty: moodData.moodEngine?.uncertainty ?? 0.1,
           context: moodData.moodEngine?.context,
           decision: moodData.moodMatrix?.decision,
+        } : null}
+        latestTransition={latestTransition ? {
+          epoch: latestTransition.step?.nextState?.epoch,
+          hash: latestTransition.hash,
+          outcome: latestTransition.step?.verification?.outcome,
         } : null}
       />
 
