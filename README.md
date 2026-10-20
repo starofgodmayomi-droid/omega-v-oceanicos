@@ -49,6 +49,7 @@ without treating any single component—or any agent—as the final authority.
 - ⬆️ **[Oceanicos Verified Upgrade](skills/oceanicos-verified-upgrade/SKILL.md)** — repair and upgrade only through an observed, reversible pipeline
 - 💠 **[Ω∞v OS](skills/omega-v-os/SKILL.md)** — the ƆCEANiC_OS sequence as a finite kernel
 - 🔁 **[Lucid Continuum](skills/lucid-continuum/SKILL.md)** — handoff across passes without invented memory
+- 🧭 **[Omega All-Dimensional Ecosystem](skills/omega-all-dimensional-ecosystem/SKILL.md)** — next delta is expected verified value over risk and cost, inside this repository
 - 🌐 **[Full-stack reality-access handoff](docs/upgrades/FULL_STACK_REALITY_ACCESS_2026-09-28.md)** — connector taxonomy without implicit ownership or authority
 - 🗺️ **[Repository inventory](docs/REPO_INVENTORY.md)** — workspace vs disk (current evidence)
 - ⚙️ **[Development Setup](docs/DEVELOPMENT.md)** — Get the project running locally
