@@ -49,7 +49,7 @@ without treating any single component—or any agent—as the final authority.
 - ⬆️ **[Oceanicos Verified Upgrade](skills/oceanicos-verified-upgrade/SKILL.md)** — repair and upgrade only through an observed, reversible pipeline
 - 💠 **[Ω∞v OS](skills/omega-v-os/SKILL.md)** — the ƆCEANiC_OS sequence as a finite kernel
 - 🔁 **[Lucid Continuum](skills/lucid-continuum/SKILL.md)** — handoff across passes without invented memory
-- 🌐 **[Full-stack reality-access handoff](docs/upgrades/FULL_STACK_REALITY_ACCESS_2026-09-28.md)** — connector taxonomy without implicit ownership or authority
+- 🌐 **[Full-stack reality-access handoff](docs/upgrades/FULL_STACK_REALITY_ACCESS_2026-09-28.md)** — bounded GitHub metadata access and evidence boundaries for other providers
 - 🗺️ **[Repository inventory](docs/REPO_INVENTORY.md)** — workspace vs disk (current evidence)
 - ⚙️ **[Development Setup](docs/DEVELOPMENT.md)** — Get the project running locally
 | | Meaning |
@@ -293,7 +293,8 @@ The project is built around explicit boundaries:
 - Preserve append-only records, lineage, revocation state, and relevant dissent.
 - Require human review for consequential, destructive, security-sensitive, or
   production actions.
-- Treat external connectors and provider integrations as unavailable until tested.
+- Treat connector support as provider- and scope-specific; UI labels are not
+  evidence of a live connection.
 - Keep symbolic language as a meaning layer; never use it as technical evidence.
 
 Read [SECURITY.md](SECURITY.md), [CHARTER.md](CHARTER.md), and the
@@ -347,6 +348,15 @@ Current boundaries include:
 - The MINI kernel and multiple earned full-stack surfaces are implemented.
 - Local and hosted verification provide evidence for the commands and commits run.
 - Release bundles can be validated for provenance and staged with a checksum.
+- The connector-observation path has one declared live adapter,
+  `github-public-repository`. When trusted server-side admission evidence admits
+  it, it reads metadata for exactly one public `repo:owner/name` in read-only mode.
+  The route denies by default without an evidence resolver. This adapter does not
+  provide private-repository access, repository writes, or general GitHub automation.
+- No live Notion or Composio adapter is implemented in this repository. The dashboard
+  names Notion as a conceptual organ and Composio among example provider chips; it
+  explicitly does not query connection or availability. See the
+  [connector-boundary record](docs/upgrades/FULL_STACK_REALITY_ACCESS_2026-09-28.md).
 - Provider-specific deployment, production runtime health, external identity
   integration, universal correctness, and physical-world claims remain separate
   gates and must not be inferred.
