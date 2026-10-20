@@ -1138,6 +1138,15 @@ export function createApp(
       const observedReality = body.observedReality;
       const stepResult = executeRememberVerifyObserveStep(currentO, candidate, observedReality);
 
+      if (stepResult.verification.verified) {
+        broadcastMintedBlock({
+          type: 'STATE_TRANSITION',
+          step: stepResult,
+          hash: stepResult.nextState.stateHash,
+          timestamp: stepResult.nextState.timestamp,
+        });
+      }
+
       return {
         success: true,
         contract: 'Ω∞v-RECURSIVE-STATE-UPDATE-V1',
