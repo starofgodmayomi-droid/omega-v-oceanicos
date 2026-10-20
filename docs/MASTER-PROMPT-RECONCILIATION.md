@@ -4,7 +4,7 @@
 
 **Repository system of record:** starofgodmayomi-droid/omega-v-oceanicos
 
-**Canonical root:** docs/WHOLE-ECOSYSTEM-MASTER-PROMPT.md
+**Canonical root:** [WHOLE-ECOSYSTEM-MASTER-PROMPT.md](../WHOLE-ECOSYSTEM-MASTER-PROMPT.md)
 
 ## Current reconciliation
 

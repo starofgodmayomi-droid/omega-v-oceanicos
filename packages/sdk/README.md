@@ -36,3 +36,11 @@ The SDK reads the real unauthenticated `/health` liveness/readiness contract plu
 `OmegaClient` exposes `listOmegaWorkers()`, `proposeCommand()`, `inspectCommand()`, `admitCommand()`, `approveCommand()`, `executeCommand()`, `observeCommand()`, `verifyReality()`, and `getOmegaEvents()`. These methods call the same `/v1/omega/` API boundary and preserve the server’s lifecycle status; the SDK does not infer authorization, execution success, or external reality locally.
 
 `approveCommand(commandId, operator = 'sdk-operator')` sends the operator in both the request body and `x-omega-operator-id`. When the API allowlist is enabled, the accepted header is the approval actor; the label is still caller-supplied, not authenticated identity proof. Configure the allowlist to include the exact operator labels used by clients.
+
+---
+
+## Whole-ecosystem alignment
+
+This repository surface is one bounded form in the OCEANICOS body, rooted in human intent and source context. Its place in `SOURCE → ROOT → SUCCESS → relevant BODY → finite Δ` and the full-stack transition loop is defined by the [Whole-Ecosystem Master Prompt](../../WHOLE-ECOSYSTEM-MASTER-PROMPT.md).
+
+The prompt is a design/continuity contract, not evidence that a named component exists, connects, runs, or is healthy. This README documents this surface; establish claims from relevant implementation, tests, and observations. Keep `UNKNOWN` and `DIVERGENT` explicit; capability is not authority, and execution is not verification.
