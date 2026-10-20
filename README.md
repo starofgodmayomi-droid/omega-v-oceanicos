@@ -48,6 +48,7 @@ without treating any single component—or any agent—as the final authority.
 - 🌌 **[Oceanicos Max-Space Full Stack](skills/oceanicos-max-space-full-stack/SKILL.md)** — dimensional state space as bounded coordinates, clocks, and arrays
 - ⬆️ **[Oceanicos Verified Upgrade](skills/oceanicos-verified-upgrade/SKILL.md)** — repair and upgrade only through an observed, reversible pipeline
 - 💠 **[Ω∞v OS](skills/omega-v-os/SKILL.md)** — the ƆCEANiC_OS sequence as a finite kernel
+- ⬆️ **[Ω∞v max compress](OMEGA_UPGRADE_MAX_COMPRESS.md)** — pipeline entry; ecosystem map in [`docs/upgrades/ECOSYSTEM_COMPRESS_EXPAND.md`](docs/upgrades/ECOSYSTEM_COMPRESS_EXPAND.md)
 - 🔁 **[Lucid Continuum](skills/lucid-continuum/SKILL.md)** — handoff across passes without invented memory
 - 🌐 **[Full-stack reality-access handoff](docs/upgrades/FULL_STACK_REALITY_ACCESS_2026-09-28.md)** — connector taxonomy without implicit ownership or authority
 - 🗺️ **[Repository inventory](docs/REPO_INVENTORY.md)** — workspace vs disk (current evidence)
