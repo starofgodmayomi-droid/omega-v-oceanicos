@@ -15,6 +15,9 @@ import {
   optimizeMaxEquationSlices,
   computePriorityScore,
   checkCandidateEligibility,
+  evaluatePsiConvergence,
+  executeRememberVerifyObserveStep,
+  type OceanicosStateRecord,
   DEFAULT_MAX_EQUATION_METADATA,
 } from '@oceanicos/verification';
 import { ObserverEngine } from '@oceanicos/observer';
@@ -1081,6 +1084,72 @@ export function createApp(
     }
   });
 
+  fastify.post('/v1/verification/convergence', async (request: any, reply) => {
+    try {
+      const body = request.body || {};
+      const A = Array.isArray(body.A) ? body.A : [1, 2, 3, 4];
+      const B = Array.isArray(body.B) ? body.B : [1, 1, 1, 1];
+      const C = typeof body.C === 'number' ? body.C : -10;
+      const S = typeof body.S === 'number' ? body.S : 1;
+      const delta = body.delta || {
+        intent: 'MAX_TOTAL_CONVERGENCE_SINGULARITY',
+        reality: 'MAX_TOTAL_CONVERGENCE_SINGULARITY',
+      };
+      const evaluation = evaluatePsiConvergence(A, B, C, S, delta);
+      return {
+        success: true,
+        contract: 'Ω∞v-TOTAL-CONVERGENCE-SINGULARITY-V1',
+        equation: 'Ψ = λ(A, B, C, S, Δ): 0 if (∑(a·b)·S + C == 0) else { "Ω∞v": verify(Δ) or "∞💧" }',
+        evaluation,
+        evaluatedAt: new Date().toISOString(),
+      };
+    } catch (err: any) {
+      return jsonError(reply, 400, 'CONVERGENCE_EVALUATION_FAILED', { detail: err?.message || String(err) });
+    }
+  });
+
+  fastify.post('/v1/verification/step', async (request: any, reply) => {
+    try {
+      const body = request.body || {};
+      const currentO: OceanicosStateRecord = body.currentState || {
+        epoch: 0,
+        stateHash: '1def428b80fe33eae8fc94bca0fbf47c82fd02d1147e04c704d886222cbcdbfa',
+        parentHash: '86d77b24503518470b0f14a08511986e5790d30e8794a048b401de1eeaf6499b',
+        intent: 'V1111_SINGULARITY_RADICAL_COMPRESSION',
+        verified: true,
+        outcome: 'VERIFIED',
+        value: 100,
+        timestamp: new Date().toISOString(),
+      };
+
+      const candidate = body.candidate || {
+        id: 'slice-v1111-step',
+        intent: 'V1111_SINGULARITY_COMPRESSION_UPGRADE',
+        valueEstimate: 95,
+        evidenceQuality: 0.98,
+        riskEstimate: 1,
+        costEstimate: 2,
+        authority: true,
+        policy: true,
+        scoped: true,
+        acceptanceCriteria: ['Recursive step verification passes with fail-closed gate'],
+      };
+
+      const observedReality = body.observedReality;
+      const stepResult = executeRememberVerifyObserveStep(currentO, candidate, observedReality);
+
+      return {
+        success: true,
+        contract: 'Ω∞v-RECURSIVE-STATE-UPDATE-V1',
+        equation: 'O_{t+1} = REMEMBER( VERIFY( OBSERVE( O_t, Δ ) ) )',
+        step: stepResult,
+        executedAt: new Date().toISOString(),
+      };
+    } catch (err: any) {
+      return jsonError(reply, 400, 'RECURSIVE_STEP_EVALUATION_FAILED', { detail: err?.message || String(err) });
+    }
+  });
+
   fastify.post('/v1/artemis/action', async (request: any, reply) => {
     const command = typeof request.body?.command === 'string' ? request.body.command.trim() : '';
     if (!command) {
@@ -1302,6 +1371,8 @@ export const STARTUP_BANNER = [
   '  POST   /v1/verification/contract',
   '  GET    /v1/verification/max-equation',
   '  POST   /v1/verification/optimize-slice',
+  '  POST   /v1/verification/convergence',
+  '  POST   /v1/verification/step',
   '  GET    /v1/continuum',
   '  GET    /v1/lucid/phases',
   '  POST   /v1/lucid/loop',

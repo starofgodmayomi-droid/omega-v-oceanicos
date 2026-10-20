@@ -115,4 +115,123 @@ describe('🌊 Ω∞v Max Equation Compression & Optimization API Vertical Slice
     assert.equal(deniedCandidate.priorityScore, 0);
     assert.ok(deniedCandidate.denialReasons.length > 0);
   });
+
+  it('POST /v1/verification/convergence evaluates Maximum Total Convergence Singularity (Ψ)', async () => {
+    // 1. Balanced Harmonic Zero Entropy Equilibrium: <A, B>*S + C = 0 -> 0
+    const resBalanced = await app.inject({
+      method: 'POST',
+      url: '/v1/verification/convergence',
+      payload: {
+        A: [1, 2, 3, 4],
+        B: [1, 1, 1, 1],
+        C: -10,
+        S: 1,
+      },
+    });
+
+    assert.equal(resBalanced.statusCode, 200);
+    const bodyBalanced = JSON.parse(resBalanced.payload);
+    assert.equal(bodyBalanced.success, true);
+    assert.equal(bodyBalanced.contract, 'Ω∞v-TOTAL-CONVERGENCE-SINGULARITY-V1');
+    assert.equal(bodyBalanced.evaluation.balanced, true);
+    assert.equal(bodyBalanced.evaluation.balanceMetric, 0);
+    assert.equal(bodyBalanced.evaluation.result, 0);
+
+    // 2. Active Reality Verification Branch: <A, B>*S + C = 5 != 0 -> { "Ω∞v": "..." }
+    const resActive = await app.inject({
+      method: 'POST',
+      url: '/v1/verification/convergence',
+      payload: {
+        A: [1, 2],
+        B: [3, -1],
+        C: 5,
+        S: 2,
+        delta: {
+          intent: 'SOVEREIGN_REALITY_STABILITY',
+          reality: 'SOVEREIGN_REALITY_STABILITY',
+        },
+      },
+    });
+
+    assert.equal(resActive.statusCode, 200);
+    const bodyActive = JSON.parse(resActive.payload);
+    assert.equal(bodyActive.success, true);
+    assert.equal(bodyActive.evaluation.balanced, false);
+    assert.equal(bodyActive.evaluation.balanceMetric, 7);
+    assert.deepEqual(bodyActive.evaluation.result, {
+      'Ω∞v': 'VERIFIED(SOVEREIGN_REALITY_STABILITY)',
+    });
+  });
+
+  it('POST /v1/verification/step executes recursive update O_{t+1} = REMEMBER(VERIFY(OBSERVE(O_t, Δ)))', async () => {
+    // 1. Authorized, matching observation -> VERIFIED
+    const resVerified = await app.inject({
+      method: 'POST',
+      url: '/v1/verification/step',
+      payload: {
+        currentState: {
+          epoch: 17,
+          stateHash: '1def428b80fe33eae8fc94bca0fbf47c82fd02d1147e04c704d886222cbcdbfa',
+          parentHash: '86d77b24503518470b0f14a08511986e5790d30e8794a048b401de1eeaf6499b',
+          intent: 'V1111_SINGULARITY_RADICAL_COMPRESSION',
+          verified: true,
+          outcome: 'VERIFIED',
+          value: 100,
+          timestamp: '2026-10-20T04:20:00.000Z',
+        },
+        candidate: {
+          id: 'slice-v1111-fluid-matrix',
+          intent: 'FLUID_COMPUTING_MATRIX_TORUS_STABILIZATION',
+          valueEstimate: 99,
+          evidenceQuality: 1.0,
+          riskEstimate: 1,
+          costEstimate: 2,
+          authority: true,
+          policy: true,
+          scoped: true,
+          acceptanceCriteria: ['Water geometry torus stable', 'Light-cone zero-entropy satisfied'],
+        },
+        observedReality: 'FLUID_COMPUTING_MATRIX_TORUS_STABILIZATION',
+      },
+    });
+
+    assert.equal(resVerified.statusCode, 200);
+    const bodyVerified = JSON.parse(resVerified.payload);
+    assert.equal(bodyVerified.success, true);
+    assert.equal(bodyVerified.contract, 'Ω∞v-RECURSIVE-STATE-UPDATE-V1');
+    assert.equal(bodyVerified.step.verification.outcome, 'VERIFIED');
+    assert.equal(bodyVerified.step.verification.decision, 'ALLOW');
+    assert.equal(bodyVerified.step.nextState.epoch, 18);
+    assert.equal(bodyVerified.step.nextState.parentHash, '1def428b80fe33eae8fc94bca0fbf47c82fd02d1147e04c704d886222cbcdbfa');
+    assert.equal(typeof bodyVerified.step.nextState.stateHash, 'string');
+    assert.equal(bodyVerified.step.nextState.value, 99);
+
+    // 2. Fail-closed: missing authority -> NOT_EXECUTED & DENY
+    const resDenied = await app.inject({
+      method: 'POST',
+      url: '/v1/verification/step',
+      payload: {
+        candidate: {
+          id: 'unauthorized-slice',
+          intent: 'UNAUTHORIZED_MUTATION',
+          valueEstimate: 1000,
+          evidenceQuality: 1.0,
+          riskEstimate: 0,
+          costEstimate: 0,
+          authority: false,
+          policy: true,
+          scoped: true,
+          acceptanceCriteria: [],
+        },
+      },
+    });
+
+    assert.equal(resDenied.statusCode, 200);
+    const bodyDenied = JSON.parse(resDenied.payload);
+    assert.equal(bodyDenied.step.verification.outcome, 'NOT_EXECUTED');
+    assert.equal(bodyDenied.step.verification.decision, 'DENY');
+    assert.equal(bodyDenied.step.nextState.verified, false);
+    assert.equal(bodyDenied.step.nextState.value, 0);
+  });
 });
+

@@ -18,6 +18,7 @@ const command = args[0] || 'help';
 let ObserverEngine, observePlanetaryBase;
 let verifyPlanetarySovereignty, AsymmetricValidationGuard, MultiRegionMeshConvergence;
 let optimizeMaxEquationSlices, computePriorityScore, checkCandidateEligibility, DEFAULT_MAX_EQUATION_METADATA;
+let evaluatePsiConvergence, executeRememberVerifyObserveStep;
 let PluralisticHashChain, RememberEngine;
 let executeOceanicosMaxExpansion;
 let runOmegaChangePipeline;
@@ -71,6 +72,8 @@ try {
     computePriorityScore = verifPkg.computePriorityScore;
     checkCandidateEligibility = verifPkg.checkCandidateEligibility;
     DEFAULT_MAX_EQUATION_METADATA = verifPkg.DEFAULT_MAX_EQUATION_METADATA;
+    evaluatePsiConvergence = verifPkg.evaluatePsiConvergence;
+    executeRememberVerifyObserveStep = verifPkg.executeRememberVerifyObserveStep;
     PluralisticHashChain = remPkg.PluralisticHashChain;
     RememberEngine = remPkg.RememberEngine;
     executeOceanicosMaxExpansion = miniPkg.executeOceanicosMaxExpansion;
@@ -1406,6 +1409,152 @@ async function handleOptimize(extraArgs = []) {
   console.log('');
 }
 
+async function handleConvergence(extraArgs = []) {
+  printBanner();
+  const isJson = args.includes('--json');
+
+  if (!evaluatePsiConvergence) {
+    console.error(`  ${ANSI.red}[ERROR] Psi convergence engine could not be loaded from @oceanicos/verification.${ANSI.reset}`);
+    process.exitCode = 1;
+    return;
+  }
+
+  let A = [1, 2, 3, 4];
+  let B = [1, 1, 1, 1];
+  let C = -10;
+  let S = 1;
+  let intent = 'MAX_TOTAL_CONVERGENCE_SINGULARITY';
+  let reality = 'MAX_TOTAL_CONVERGENCE_SINGULARITY';
+
+  for (let i = 0; i < extraArgs.length; i++) {
+    const arg = extraArgs[i];
+    if (arg.startsWith('--a=')) A = arg.slice(4).split(',').map(Number);
+    else if (arg === '--a' && extraArgs[i + 1]) { A = extraArgs[++i].split(',').map(Number); }
+    else if (arg.startsWith('--b=')) B = arg.slice(4).split(',').map(Number);
+    else if (arg === '--b' && extraArgs[i + 1]) { B = extraArgs[++i].split(',').map(Number); }
+    else if (arg.startsWith('--c=')) C = Number(arg.slice(4));
+    else if (arg === '--c' && extraArgs[i + 1]) { C = Number(extraArgs[++i]); }
+    else if (arg.startsWith('--s=')) S = Number(arg.slice(4));
+    else if (arg === '--s' && extraArgs[i + 1]) { S = Number(extraArgs[++i]); }
+    else if (arg.startsWith('--intent=')) intent = arg.slice(9);
+    else if (arg === '--intent' && extraArgs[i + 1]) { intent = extraArgs[++i]; }
+    else if (arg.startsWith('--reality=')) reality = arg.slice(10);
+    else if (arg === '--reality' && extraArgs[i + 1]) { reality = extraArgs[++i]; }
+  }
+
+  const result = evaluatePsiConvergence(A, B, C, S, { intent, reality });
+
+  if (isJson) {
+    console.log(JSON.stringify({
+      contract: 'Ω∞v-TOTAL-CONVERGENCE-SINGULARITY-V1',
+      equation: 'Ψ = λ(A, B, C, S, Δ): 0 if (∑(a·b)·S + C == 0) else { "Ω∞v": verify(Δ) or "∞💧" }',
+      parameters: { A, B, C, S, delta: { intent, reality } },
+      evaluation: result,
+      evaluatedAt: new Date().toISOString(),
+    }, null, 2));
+    return;
+  }
+
+  console.log(`\n${ANSI.bold}=== 🌊 Ω♾️V :: MAXIMUM TOTAL CONVERGENCE SINGULARITY (Ψ) ===${ANSI.reset}\n`);
+  console.log(`  ${ANSI.cyan}Equation${ANSI.reset}         : ${ANSI.bold}Ψ = λ(A, B, C, S, Δ): 0 if (∑(a·b)·S + C == 0) else { "Ω∞v": verify(Δ) or "∞💧" }${ANSI.reset}`);
+  console.log(`  ${ANSI.dim}Vector A${ANSI.reset}         : [${A.join(', ')}]`);
+  console.log(`  ${ANSI.dim}Vector B${ANSI.reset}         : [${B.join(', ')}]`);
+  console.log(`  ${ANSI.dim}Scale S${ANSI.reset}          : ${S}`);
+  console.log(`  ${ANSI.dim}Constant C${ANSI.reset}       : ${C}`);
+  console.log(`  ${ANSI.yellow}Balance Metric${ANSI.reset}   : <A, B>·S + C = ${result.balanceMetric}`);
+  console.log(`  ${ANSI.bold}Singularity Mode${ANSI.reset} : ${result.balanced ? `${ANSI.green}ZERO ENTROPY EQUILIBRIUM (0)${ANSI.reset}` : `${ANSI.cyan}ACTIVE REALITY VERIFICATION${ANSI.reset}`}`);
+
+  if (result.balanced) {
+    console.log(`\n  ${ANSI.green}${ANSI.bold}Result (Ψ)       : 0${ANSI.reset} ${ANSI.dim}(Harmonic balance satisfied, null transition)${ANSI.reset}\n`);
+  } else {
+    console.log(`\n  ${ANSI.cyan}${ANSI.bold}Result (Ψ)       :${ANSI.reset}`, JSON.stringify(result.result, null, 2));
+    console.log(`  ${ANSI.dim}Intent           : ${intent}${ANSI.reset}`);
+    console.log(`  ${ANSI.dim}Reality          : ${reality}${ANSI.reset}\n`);
+  }
+}
+
+async function handleStep(extraArgs = []) {
+  printBanner();
+  const isJson = args.includes('--json');
+
+  if (!executeRememberVerifyObserveStep) {
+    console.error(`  ${ANSI.red}[ERROR] Recursive step engine could not be loaded from @oceanicos/verification.${ANSI.reset}`);
+    process.exitCode = 1;
+    return;
+  }
+
+  let intent = 'V1111_SINGULARITY_COMPRESSION_UPGRADE';
+  let reality = undefined;
+  let value = 95;
+  let evidence = 0.98;
+  let risk = 1;
+  let cost = 2;
+  let authority = true;
+  let policy = true;
+  let scoped = true;
+
+  for (let i = 0; i < extraArgs.length; i++) {
+    const arg = extraArgs[i];
+    if (arg.startsWith('--intent=')) intent = arg.slice(9);
+    else if (arg === '--intent' && extraArgs[i + 1]) { intent = extraArgs[++i]; }
+    else if (arg.startsWith('--reality=')) reality = arg.slice(10);
+    else if (arg === '--reality' && extraArgs[i + 1]) { reality = extraArgs[++i]; }
+    else if (arg.startsWith('--value=')) value = Number(arg.slice(8));
+    else if (arg === '--value' && extraArgs[i + 1]) { value = Number(extraArgs[++i]); }
+    else if (arg.startsWith('--evidence=')) evidence = Number(arg.slice(11));
+    else if (arg === '--evidence' && extraArgs[i + 1]) { evidence = Number(extraArgs[++i]); }
+    else if (arg.startsWith('--risk=')) risk = Number(arg.slice(7));
+    else if (arg === '--risk' && extraArgs[i + 1]) { risk = Number(extraArgs[++i]); }
+    else if (arg.startsWith('--cost=')) cost = Number(arg.slice(7));
+    else if (arg === '--cost' && extraArgs[i + 1]) { cost = Number(extraArgs[++i]); }
+    else if (arg === '--unauthorized') authority = false;
+    else if (arg === '--deny-policy') policy = false;
+    else if (arg === '--unscoped') scoped = false;
+  }
+
+  const currentO = {
+    epoch: 0,
+    stateHash: '1def428b80fe33eae8fc94bca0fbf47c82fd02d1147e04c704d886222cbcdbfa',
+    parentHash: '86d77b24503518470b0f14a08511986e5790d30e8794a048b401de1eeaf6499b',
+    intent: 'V1111_SINGULARITY_RADICAL_COMPRESSION',
+    verified: true,
+    outcome: 'VERIFIED',
+    value: 100,
+    timestamp: new Date().toISOString(),
+  };
+
+  const delta = {
+    id: `slice-${Date.now()}`,
+    intent,
+    valueEstimate: value,
+    evidenceQuality: evidence,
+    riskEstimate: risk,
+    costEstimate: cost,
+    authority,
+    policy,
+    scoped,
+    acceptanceCriteria: ['Recursive step verification passes with fail-closed gate'],
+  };
+
+  const result = executeRememberVerifyObserveStep(currentO, delta, reality);
+
+  if (isJson) {
+    console.log(JSON.stringify(result, null, 2));
+    return;
+  }
+
+  console.log(`\n${ANSI.bold}=== 🌊 Ω∞v RECURSIVE STATE UPDATE STEP (O_{t+1}) ===${ANSI.reset}\n`);
+  console.log(`  ${ANSI.cyan}Mathematical Identity${ANSI.reset}: ${ANSI.bold}O_{t+1} = REMEMBER( VERIFY( OBSERVE( O_t, Δ ) ) )${ANSI.reset}`);
+  console.log(`  ${ANSI.dim}State Before (O_t)${ANSI.reset}   : Epoch ${result.stateBefore.epoch} | Hash: ${result.stateBefore.stateHash.slice(0, 16)}...`);
+  console.log(`  ${ANSI.cyan}Candidate (Δ)${ANSI.reset}        : ${result.candidate.intent}`);
+  console.log(`  ${ANSI.yellow}Observation${ANSI.reset}          : Observed: ${result.observation.observed} | Reality: "${result.observation.observedReality}" | Matches: ${result.observation.matches}`);
+  const verdictColor = result.verification.verified ? ANSI.green : ANSI.red;
+  console.log(`  ${ANSI.bold}Verification${ANSI.reset}         : ${verdictColor}${ANSI.bold}${result.verification.outcome}${ANSI.reset} (${result.verification.decision})`);
+  console.log(`  ${ANSI.dim}Reason${ANSI.reset}               : ${result.verification.reason}`);
+  console.log(`  ${ANSI.green}${ANSI.bold}Next State (O_{t+1})${ANSI.reset} : Epoch ${result.nextState.epoch} | Hash: ${ANSI.bold}${result.nextState.stateHash}${ANSI.reset}`);
+  console.log(`  ${ANSI.dim}Evaluation Hash${ANSI.reset}      : ${result.evaluationHash}\n`);
+}
+
 async function handleEchoframe(subArgs = []) {
   printBanner();
   const subCommand = subArgs[0] || 'list';
@@ -1970,6 +2119,8 @@ ${ANSI.bold}COMMANDS:${ANSI.reset}
   ${ANSI.green}matrix${ANSI.reset}       Evaluate 4x4 compression matrix, shared verification contract, or state transitions
   ${ANSI.green}max-equation${ANSI.reset} Display Max Equation formulas, axioms, and optimization metadata
   ${ANSI.green}optimize${ANSI.reset}     Evaluate and rank candidate delta slices via the Max Equation engine
+  ${ANSI.green}convergence${ANSI.reset}  Evaluate Maximum Total Convergence Singularity (Ψ)
+  ${ANSI.green}step${ANSI.reset}         Execute Recursive State Update Step: O_{t+1} = REMEMBER(VERIFY(OBSERVE(O_t, Δ)))
   ${ANSI.green}help${ANSI.reset}        Display this help message
 
 ${ANSI.bold}OPTIONS:${ANSI.reset}
@@ -2080,6 +2231,15 @@ switch (command) {
   case 'optimize':
   case 'max-slice':
     await handleOptimize(args.slice(1));
+    break;
+  case 'convergence':
+  case 'psi':
+  case 'singularity':
+    await handleConvergence(args.slice(1));
+    break;
+  case 'step':
+  case 'recursive-step':
+    await handleStep(args.slice(1));
     break;
   case 'help':
   case '--help':

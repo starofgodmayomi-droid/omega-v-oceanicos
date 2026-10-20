@@ -239,3 +239,174 @@ export function optimizeMaxEquationSlices(
     evaluationHash,
   };
 }
+
+/**
+ * 🌊 ƆCEANiC_OS(v∞) :: Maximum Total Convergence Singularity (Ψ)
+ *
+ * Mathematical Identity:
+ * Ψ = λ(A, B, C, S, Δ): 0 if (sum([a*b for a,b in zip(A,B)])*S + C == 0) else { "Ω∞v": verify(Δ) or "∞💧" }
+ *
+ * Operational Law:
+ * - If inner product balance <A, B> * S + C reaches 0 (Zero Entropy / Equilibrium), return 0.
+ * - Otherwise, evaluate verification of Δ:
+ *   If verify(Δ) is valid, return { "Ω∞v": verificationResult },
+ *   Else return primordial drop { "Ω∞v": "∞💧" }.
+ */
+export interface PsiConvergenceResult {
+  readonly balanced: boolean;
+  readonly balanceMetric: number;
+  readonly result: 0 | { readonly 'Ω∞v': string | Readonly<Record<string, unknown>> };
+}
+
+export function evaluatePsiConvergence(
+  A: readonly number[],
+  B: readonly number[],
+  C: number,
+  S: number,
+  delta: { intent: string; reality: string } | string,
+  verifier?: (d: any) => string | Record<string, unknown> | null | undefined
+): PsiConvergenceResult {
+  const minLen = Math.min(A.length, B.length);
+  let innerProduct = 0;
+  for (let i = 0; i < minLen; i++) {
+    innerProduct += A[i] * B[i];
+  }
+  const balanceMetric = innerProduct * S + C;
+
+  if (Math.abs(balanceMetric) < 1e-9) {
+    return {
+      balanced: true,
+      balanceMetric: 0,
+      result: 0,
+    };
+  }
+
+  const verified = verifier
+    ? verifier(delta)
+    : typeof delta === 'object' && delta.intent === delta.reality
+      ? `VERIFIED(${delta.intent})`
+      : null;
+
+  return {
+    balanced: false,
+    balanceMetric,
+    result: {
+      'Ω∞v': verified || '∞💧',
+    },
+  };
+}
+
+/**
+ * 🌊 ƆCEANiC_OS(v∞) :: Recursive State Update Loop
+ *
+ * Mathematical Identity:
+ * O_{t+1} = REMEMBER( VERIFY( OBSERVE( O_t, Δ ) ) )
+ * where Δ* = argmax_{Δ ∈ A_admissible} [ E[Verified Value(Δ)] / ( Risk(Δ) + Cost(Δ) + ε ) ]
+ */
+export interface OceanicosStateRecord {
+  readonly epoch: number;
+  readonly stateHash: string;
+  readonly parentHash: string;
+  readonly intent: string;
+  readonly verified: boolean;
+  readonly outcome: 'VERIFIED' | 'DIVERGENT' | 'UNKNOWN' | 'NOT_EXECUTED';
+  readonly value: number;
+  readonly timestamp: string;
+}
+
+export interface RecursiveStepResult {
+  readonly stateBefore: OceanicosStateRecord;
+  readonly candidate: MaxEquationCandidateInput;
+  readonly observation: {
+    readonly observed: boolean;
+    readonly intent: string;
+    readonly observedReality: string;
+    readonly matches: boolean;
+  };
+  readonly verification: {
+    readonly verified: boolean;
+    readonly outcome: 'VERIFIED' | 'DIVERGENT' | 'UNKNOWN' | 'NOT_EXECUTED';
+    readonly decision: 'ALLOW' | 'DENY';
+    readonly reason: string;
+  };
+  readonly nextState: OceanicosStateRecord;
+  readonly evaluationHash: string;
+}
+
+export function executeRememberVerifyObserveStep(
+  currentO: OceanicosStateRecord,
+  delta: MaxEquationCandidateInput,
+  observedReality?: string
+): RecursiveStepResult {
+  // 1. OBSERVE(O_t, Δ)
+  const actualReality = observedReality ?? delta.intent;
+  const matches = delta.intent === actualReality;
+  const observation = {
+    observed: true,
+    intent: delta.intent,
+    observedReality: actualReality,
+    matches,
+  };
+
+  // 2. VERIFY(OBSERVE(...))
+  let outcome: 'VERIFIED' | 'DIVERGENT' | 'UNKNOWN' | 'NOT_EXECUTED';
+  let decision: 'ALLOW' | 'DENY';
+  let reason: string;
+
+  if (!delta.authority || !delta.policy || !delta.scoped) {
+    outcome = 'NOT_EXECUTED';
+    decision = 'DENY';
+    reason = 'Hard gate failure: requires attributable authority, policy compliance, and bounded scope.';
+  } else if (!matches) {
+    outcome = 'DIVERGENT';
+    decision = 'DENY';
+    reason = 'Observation divergence: intent and observed reality differ.';
+  } else {
+    outcome = 'VERIFIED';
+    decision = 'ALLOW';
+    reason = 'Observation matches intent and all hard authorization gates passed.';
+  }
+
+  const verified = outcome === 'VERIFIED';
+
+  // 3. REMEMBER(VERIFY(...)) -> O_{t+1}
+  const payloadToHash = JSON.stringify({
+    parentHash: currentO.stateHash,
+    epoch: currentO.epoch + 1,
+    intent: delta.intent,
+    outcome,
+    value: verified ? delta.valueEstimate : 0,
+    timestamp: new Date().toISOString(),
+  });
+  const nextHash = createHash('sha256').update(payloadToHash).digest('hex');
+
+  const nextState: OceanicosStateRecord = {
+    epoch: currentO.epoch + 1,
+    stateHash: nextHash,
+    parentHash: currentO.stateHash,
+    intent: delta.intent,
+    verified,
+    outcome,
+    value: verified ? delta.valueEstimate : 0,
+    timestamp: new Date().toISOString(),
+  };
+
+  const evaluationHash = createHash('sha256')
+    .update(`${currentO.stateHash}:${nextHash}:${outcome}`)
+    .digest('hex');
+
+  return {
+    stateBefore: currentO,
+    candidate: delta,
+    observation,
+    verification: {
+      verified,
+      outcome,
+      decision,
+      reason,
+    },
+    nextState,
+    evaluationHash,
+  };
+}
+

@@ -20,6 +20,12 @@ interface AmbientBarProps {
   realityStatus: string | null;
   epochsRemembered: number;
   miningActive: boolean;
+  mood?: {
+    status?: string;
+    uncertainty?: number;
+    context?: string;
+    decision?: string;
+  } | null;
 }
 
 interface Indicator {
@@ -78,6 +84,11 @@ export function AmbientBar(props: AmbientBarProps) {
       value: props.miningActive ? 'Autonomous mining' : 'Idle',
       color: props.miningActive ? theme.warning : theme.unknown,
     },
+    ...(props.mood?.status ? [{
+      label: 'Mood',
+      value: `${props.mood.status} · ${Math.round((1 - (props.mood.uncertainty ?? 0.1)) * 100)}% flow`,
+      color: props.mood.status === 'OPTIMAL_FLOW' || props.mood.status === 'HIGH_INTEGRITY' || props.mood.decision === 'ALLOW' ? theme.verified : theme.accent,
+    }] : []),
   ];
 
   return (

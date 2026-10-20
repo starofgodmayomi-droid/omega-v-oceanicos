@@ -151,6 +151,8 @@ GET  /v1/verification/contract
 POST /v1/verification/contract
 GET  /v1/verification/max-equation
 POST /v1/verification/optimize-slice
+POST /v1/verification/convergence
+POST /v1/verification/step
 GET  /v1/continuum
 GET  /v1/lucid/phases
 POST /v1/lucid/loop

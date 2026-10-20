@@ -12,6 +12,7 @@ import { ObservationStreamPanel } from './ObservationStreamPanel';
 import { LifecycleFlow, deriveStageStates, type LifecycleStage } from './LifecycleFlow';
 import { OmegaWorkspace } from './OmegaWorkspace';
 import { CovenantPanel } from './CovenantPanel';
+import { MaxEquationPanel } from './MaxEquationPanel';
 import {
   theme,
   statusColor,
@@ -735,6 +736,14 @@ export function App() {
         />
       ),
     },
+    {
+      id: 'max-equation',
+      icon: '⚡',
+      label: 'Max Equation',
+      subtitle: 'Optimization engine — next best verified Δ*',
+      state: 'available' as const,
+      detail: <MaxEquationPanel />,
+    },
   ];
 
   return (
@@ -758,6 +767,12 @@ export function App() {
         realityStatus={tip?.evidence?.status ?? null}
         epochsRemembered={history.length}
         miningActive={minerActive}
+        mood={moodData ? {
+          status: moodData.moodEngine?.status || moodData.status,
+          uncertainty: moodData.moodEngine?.uncertainty ?? 0.1,
+          context: moodData.moodEngine?.context,
+          decision: moodData.moodMatrix?.decision,
+        } : null}
       />
 
       {/* Error toast */}

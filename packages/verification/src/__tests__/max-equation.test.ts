@@ -3,7 +3,10 @@ import {
   checkCandidateEligibility,
   computePriorityScore,
   optimizeMaxEquationSlices,
+  evaluatePsiConvergence,
+  executeRememberVerifyObserveStep,
   type MaxEquationCandidateInput,
+  type OceanicosStateRecord,
 } from '../max-equation.js';
 
 describe('🌊 Max Equation Optimization & Finite Compression Engine', () => {
@@ -107,4 +110,81 @@ describe('🌊 Max Equation Optimization & Finite Compression Engine', () => {
     expect(unauthResult?.verdict).toBe('DENY');
     expect(unauthResult?.priorityScore).toBe(0);
   });
+
+  it('evaluates Maximum Total Convergence Singularity (Ψ) correctly', () => {
+    // When inner product * S + C == 0 -> Zero Entropy / Equilibrium (returns 0)
+    // A = [1, 2], B = [3, -1] -> dot = 3 - 2 = 1.
+    // S = 2 -> 1 * 2 = 2. C = -2 -> 2 + (-2) = 0.
+    const balanced = evaluatePsiConvergence([1, 2], [3, -1], -2, 2, 'delta-intent');
+    expect(balanced.balanced).toBe(true);
+    expect(balanced.balanceMetric).toBe(0);
+    expect(balanced.result).toBe(0);
+
+    // When not balanced -> Active verification branch
+    // C = 5 -> balanceMetric = 7 != 0
+    const verified = evaluatePsiConvergence([1, 2], [3, -1], 5, 2, {
+      intent: 'REALITY_CONVERGENCE',
+      reality: 'REALITY_CONVERGENCE',
+    });
+    expect(verified.balanced).toBe(false);
+    expect(verified.balanceMetric).toBe(7);
+    expect(verified.result).toEqual({ 'Ω∞v': 'VERIFIED(REALITY_CONVERGENCE)' });
+
+    // Fallback unverified -> Primordial Drop ∞💧
+    const primordial = evaluatePsiConvergence([1, 2], [3, -1], 5, 2, {
+      intent: 'UNVERIFIED_INTENT',
+      reality: 'ACTUAL_REALITY',
+    });
+    expect(primordial.balanced).toBe(false);
+    expect(primordial.result).toEqual({ 'Ω∞v': '∞💧' });
+  });
+
+  it('executes recursive transition step O_{t+1} = REMEMBER(VERIFY(OBSERVE(O_t, Δ)))', () => {
+    const state0: OceanicosStateRecord = {
+      epoch: 0,
+      stateHash: '0000000000000000000000000000000000000000000000000000000000000000',
+      parentHash: 'root-genesis',
+      intent: 'GENESIS_ROOT',
+      verified: true,
+      outcome: 'VERIFIED',
+      value: 100,
+      timestamp: new Date().toISOString(),
+    };
+
+    // 1. Success path: All gates pass, observation matches intent
+    const step1 = executeRememberVerifyObserveStep(state0, validCandidate, validCandidate.intent);
+    expect(step1.verification.verified).toBe(true);
+    expect(step1.verification.outcome).toBe('VERIFIED');
+    expect(step1.verification.decision).toBe('ALLOW');
+    expect(step1.nextState.epoch).toBe(1);
+    expect(step1.nextState.parentHash).toBe(state0.stateHash);
+    expect(step1.nextState.stateHash).toHaveLength(64);
+    expect(step1.nextState.verified).toBe(true);
+    expect(step1.nextState.value).toBe(80);
+
+    // 2. Gate failure path: Unauthorized candidate fails closed
+    const unauthCandidate: MaxEquationCandidateInput = {
+      ...validCandidate,
+      id: 'slice-unauthorized',
+      authority: false,
+    };
+    const step2 = executeRememberVerifyObserveStep(step1.nextState, unauthCandidate);
+    expect(step2.verification.verified).toBe(false);
+    expect(step2.verification.outcome).toBe('NOT_EXECUTED');
+    expect(step2.verification.decision).toBe('DENY');
+    expect(step2.nextState.verified).toBe(false);
+    expect(step2.nextState.value).toBe(0);
+
+    // 3. Divergence path: Observed reality differs from intent
+    const step3 = executeRememberVerifyObserveStep(
+      step1.nextState,
+      validCandidate,
+      'UNEXPECTED_REALITY_COLLAPSE'
+    );
+    expect(step3.verification.verified).toBe(false);
+    expect(step3.verification.outcome).toBe('DIVERGENT');
+    expect(step3.verification.decision).toBe('DENY');
+    expect(step3.nextState.verified).toBe(false);
+  });
 });
+
