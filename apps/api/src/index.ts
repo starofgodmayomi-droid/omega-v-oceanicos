@@ -8,7 +8,15 @@ import { fileURLToPath } from 'node:url';
 import { RememberEngine, KaiLedger } from '@oceanicos/remember';
 import { MiniKernel, OperatingSystemKernel, OmegaTotalCompressor } from '@oceanicos/mini';
 import type { VerificationRule } from '@oceanicos/types';
-import { AsymmetricValidationGuard, MultiRegionMeshConvergence, evaluateVerificationContract } from '@oceanicos/verification';
+import {
+  AsymmetricValidationGuard,
+  MultiRegionMeshConvergence,
+  evaluateVerificationContract,
+  optimizeMaxEquationSlices,
+  computePriorityScore,
+  checkCandidateEligibility,
+  DEFAULT_MAX_EQUATION_METADATA,
+} from '@oceanicos/verification';
 import { ObserverEngine } from '@oceanicos/observer';
 import { AttestationService } from '@oceanicos/attestation';
 import { InferenceClient } from '@oceanicos/inference';
@@ -147,9 +155,9 @@ export function createApp(
   const platformKernel = new OceanicosKernel();
   const dualityTensor = new PluralisticDualityTensor();
   const allowUnsignedCycle = resolvedOptions.allowUnsignedCycle ?? (process.env.OMEGA_ALLOW_UNSIGNED_CYCLE !== undefined ? process.env.OMEGA_ALLOW_UNSIGNED_CYCLE === 'true' : true);
-  const attestationSigningKey = resolvedOptions.attestationSigningKey ?? process.env.OMEGA_SIGNING_KEY;
   const authMode = parseAuthMode(process.env.OMEGA_AUTH_MODE ?? (process.env.NODE_ENV === 'production' ? 'required' : 'local'));
   const { readToken, adminToken } = configuredBearerTokens(authMode);
+  const attestationSigningKey = resolvedOptions.attestationSigningKey ?? process.env.OMEGA_SIGNING_KEY;
 
   const persistenceEnabled = process.env.OMEGA_PERSISTENCE
     ? process.env.OMEGA_PERSISTENCE === 'on'
@@ -297,7 +305,7 @@ export function createApp(
       checks: {
         observer: 'ready',
         verifier: 'ready',
-        attester: attestationSigningKey ? 'ready' : 'degraded',
+        attester: (process.env.OMEGA_SIGNING_KEY || attestationSigningKey) ? 'ready' : 'degraded',
         covenant: 'ready',
         upgrade: 'ready',
         compression: 'ready',
@@ -1055,6 +1063,24 @@ export function createApp(
     return { success: receipt.outcome === 'VERIFIED', receipt };
   });
 
+  fastify.get('/v1/verification/max-equation', async () => ({
+    success: true,
+    metadata: DEFAULT_MAX_EQUATION_METADATA,
+    evaluatedAt: new Date().toISOString(),
+  }));
+
+  fastify.post('/v1/verification/optimize-slice', async (request: any, reply) => {
+    try {
+      const body = request.body || {};
+      const candidates = Array.isArray(body.candidates) ? body.candidates : [];
+      const context = body.context || {};
+      const result = optimizeMaxEquationSlices(candidates, context);
+      return { success: true, result };
+    } catch (err: any) {
+      return jsonError(reply, 400, 'MAX_EQUATION_OPTIMIZATION_FAILED', { detail: err?.message || String(err) });
+    }
+  });
+
   fastify.post('/v1/artemis/action', async (request: any, reply) => {
     const command = typeof request.body?.command === 'string' ? request.body.command.trim() : '';
     if (!command) {
@@ -1274,6 +1300,8 @@ export const STARTUP_BANNER = [
   '  POST   /v1/pluralism/matrix/continuum-compression',
   '  GET    /v1/verification/contract',
   '  POST   /v1/verification/contract',
+  '  GET    /v1/verification/max-equation',
+  '  POST   /v1/verification/optimize-slice',
   '  GET    /v1/continuum',
   '  GET    /v1/lucid/phases',
   '  POST   /v1/lucid/loop',

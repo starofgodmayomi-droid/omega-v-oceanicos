@@ -4,7 +4,7 @@ import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
-import { readdirSync, existsSync } from 'node:fs';
+import { readdirSync, existsSync, readFileSync } from 'node:fs';
 
 const require = createRequire(import.meta.url);
 const __filename = fileURLToPath(import.meta.url);
@@ -17,6 +17,7 @@ const command = args[0] || 'help';
 // Dynamically import compiled workspace packages
 let ObserverEngine, observePlanetaryBase;
 let verifyPlanetarySovereignty, AsymmetricValidationGuard, MultiRegionMeshConvergence;
+let optimizeMaxEquationSlices, computePriorityScore, checkCandidateEligibility, DEFAULT_MAX_EQUATION_METADATA;
 let PluralisticHashChain, RememberEngine;
 let executeOceanicosMaxExpansion;
 let runOmegaChangePipeline;
@@ -66,6 +67,10 @@ try {
     verifyPlanetarySovereignty = verifPkg.verifyPlanetarySovereignty;
     AsymmetricValidationGuard = verifPkg.AsymmetricValidationGuard;
     MultiRegionMeshConvergence = verifPkg.MultiRegionMeshConvergence;
+    optimizeMaxEquationSlices = verifPkg.optimizeMaxEquationSlices;
+    computePriorityScore = verifPkg.computePriorityScore;
+    checkCandidateEligibility = verifPkg.checkCandidateEligibility;
+    DEFAULT_MAX_EQUATION_METADATA = verifPkg.DEFAULT_MAX_EQUATION_METADATA;
     PluralisticHashChain = remPkg.PluralisticHashChain;
     RememberEngine = remPkg.RememberEngine;
     executeOceanicosMaxExpansion = miniPkg.executeOceanicosMaxExpansion;
@@ -1248,6 +1253,159 @@ async function handleCompression(extraArgs = []) {
   console.log(`  ${ANSI.dim}Ground truth doc : COMPRESSION.md${ANSI.reset}\n`);
 }
 
+async function handleMaxEquation(extraArgs = []) {
+  printBanner();
+  const isJson = args.includes('--json');
+
+  const metadata = DEFAULT_MAX_EQUATION_METADATA || {
+    contract: 'Ω∞v-MAX-EQUATION-COMPRESSION-V1',
+    governingEquation: 'Ω∞v = VERIFY( Δ(Intent, Reality) )',
+    optimizationFormula: 'Δ* = argmax_{Δ ∈ F} [ Verified Value(Δ) / ( Risk(Δ) + Cost(Δ) + ε ) ]',
+    priorityScoreFormula: 'PriorityScore(Δ) = [ V_hat(Δ) * Q_E(Δ) ] / [ R_hat(Δ) + C_hat(Δ) + ε ]',
+    feasibleSetRules: [
+      'attributableAuthority: true (approved by human root or authorized delegate)',
+      'policyCompliant: true (satisfies constitutional invariants and data safety)',
+      'boundedScope: true (finite scope, explicit rollback/stop condition)',
+      'observableAcceptanceCriteria: defined before execution (no evidence => no claim)',
+    ],
+    tieBreakerHierarchy: [
+      '1. Lower risk estimate (R_hat)',
+      '2. Higher evidence quality (Q_E)',
+      '3. Higher estimated value (V_hat)',
+      '4. Lower estimated cost (C_hat)',
+    ],
+    epsilon: 1e-6,
+  };
+
+  if (isJson) {
+    console.log(JSON.stringify(metadata, null, 2));
+    return;
+  }
+
+  console.log(`\n${ANSI.bold}=== 🌊 Ω∞v OCEANICOS — MAX EQUATION COMPRESSION ===${ANSI.reset}\n`);
+  console.log(`  ${ANSI.cyan}${ANSI.bold}Contract : ${metadata.contract}${ANSI.reset}`);
+  console.log(`  ${ANSI.green}Equation 1 (Verification Contract):${ANSI.reset}`);
+  console.log(`    ${ANSI.bold}${metadata.governingEquation}${ANSI.reset}`);
+  console.log(`  ${ANSI.green}Equation 2 (Optimal Finite Transition):${ANSI.reset}`);
+  console.log(`    ${ANSI.bold}${metadata.optimizationFormula}${ANSI.reset}`);
+  console.log(`  ${ANSI.green}Equation 3 (Pre-Verification Priority Score):${ANSI.reset}`);
+  console.log(`    ${ANSI.bold}${metadata.priorityScoreFormula}${ANSI.reset}\n`);
+
+  console.log(`${ANSI.bold}=== HARD FEASIBLE SET (F) GATES ===${ANSI.reset}`);
+  for (const rule of metadata.feasibleSetRules) {
+    console.log(`  ${ANSI.cyan}•${ANSI.reset} ${rule}`);
+  }
+
+  console.log(`\n${ANSI.bold}=== TIE-BREAKER HIERARCHY ===${ANSI.reset}`);
+  for (const tb of metadata.tieBreakerHierarchy) {
+    console.log(`  ${ANSI.yellow}${tb}${ANSI.reset}`);
+  }
+
+  console.log(`\n  ${ANSI.dim}Epsilon : ${metadata.epsilon}${ANSI.reset}`);
+  console.log(`  ${ANSI.dim}Usage   : node bin/oceanicos.mjs optimize [candidates.json] [--json]${ANSI.reset}\n`);
+}
+
+async function handleOptimize(extraArgs = []) {
+  printBanner();
+  const isJson = args.includes('--json');
+  const fileArg = extraArgs.find((a) => !a.startsWith('--'));
+
+  let candidates = [];
+  if (fileArg && existsSync(fileArg)) {
+    try {
+      const content = readFileSync(fileArg, 'utf8');
+      const parsed = JSON.parse(content);
+      candidates = Array.isArray(parsed) ? parsed : (parsed.candidates || []);
+    } catch (err) {
+      console.error(`${ANSI.red}Failed to read candidates from ${fileArg}: ${err.message}${ANSI.reset}`);
+      process.exitCode = 1;
+      return;
+    }
+  } else {
+    // Default active candidate set representing next potential repository slices
+    candidates = [
+      {
+        id: 'slice-1-api-attester-ready',
+        intent: 'Harden local attester signing key so health check reports ready',
+        valueEstimate: 85,
+        evidenceQuality: 0.95,
+        riskEstimate: 2,
+        costEstimate: 3,
+        authority: true,
+        policy: true,
+        scoped: true,
+        acceptanceCriteria: ['/health reports attester: ready in local dev mode', '100% existing tests pass'],
+      },
+      {
+        id: 'slice-2-rest-endpoints',
+        intent: 'Expose /v1/verification/max-equation and /v1/verification/optimize-slice',
+        valueEstimate: 90,
+        evidenceQuality: 0.95,
+        riskEstimate: 3,
+        costEstimate: 5,
+        authority: true,
+        policy: true,
+        scoped: true,
+        acceptanceCriteria: ['GET /v1/verification/max-equation returns 200', 'POST /v1/verification/optimize-slice ranks candidates correctly'],
+      },
+      {
+        id: 'slice-3-unauthorized-expansion',
+        intent: 'Bypass human authorization and rewrite kernel without consent',
+        valueEstimate: 100,
+        evidenceQuality: 0.8,
+        riskEstimate: 99,
+        costEstimate: 50,
+        authority: false,
+        policy: false,
+        scoped: false,
+        acceptanceCriteria: ['fail-closed check'],
+      },
+    ];
+  }
+
+  if (!optimizeMaxEquationSlices) {
+    console.error(`  ${ANSI.red}[ERROR] Max equation optimizer could not be loaded from @oceanicos/verification.${ANSI.reset}`);
+    process.exitCode = 1;
+    return;
+  }
+
+  const result = optimizeMaxEquationSlices(candidates);
+
+  if (isJson) {
+    console.log(JSON.stringify(result, null, 2));
+    return;
+  }
+
+  console.log(`\n${ANSI.bold}=== 🌊 Ω∞v MAX EQUATION SLICE OPTIMIZATION ===${ANSI.reset}\n`);
+  console.log(`  ${ANSI.dim}Contract         : ${result.contract}${ANSI.reset}`);
+  console.log(`  ${ANSI.dim}Evaluation Hash  : ${result.evaluationHash}${ANSI.reset}`);
+  console.log(`  Total Evaluated  : ${ANSI.bold}${result.totalCandidates}${ANSI.reset}`);
+  console.log(`  Feasible (in F)  : ${ANSI.green}${ANSI.bold}${result.eligibleCandidatesCount}${ANSI.reset}\n`);
+
+  if (result.optimalSlice) {
+    const opt = result.optimalSlice;
+    console.log(`${ANSI.bold}=== OPTIMAL FINITE TRANSITION (Δ*) ===${ANSI.reset}`);
+    console.log(`  ${ANSI.green}${ANSI.bold}Rank #${opt.rank} :: ${opt.id}${ANSI.reset}`);
+    console.log(`  Intent           : ${ANSI.cyan}${opt.intent}${ANSI.reset}`);
+    console.log(`  Priority Score   : ${ANSI.yellow}${ANSI.bold}${opt.priorityScore.toFixed(4)}${ANSI.reset}`);
+    console.log(`  Value Estimate   : ${opt.valueEstimate} | Evidence Quality: ${opt.evidenceQuality}`);
+    console.log(`  Risk Estimate    : ${opt.riskEstimate} | Cost Estimate: ${opt.costEstimate}\n`);
+  } else {
+    console.log(`${ANSI.red}${ANSI.bold}No candidate met the hard eligibility gates of the feasible set F!${ANSI.reset}\n`);
+  }
+
+  console.log(`${ANSI.bold}=== ALL RANKED CANDIDATES ===${ANSI.reset}`);
+  for (const s of result.rankedSlices) {
+    const verdictColor = s.verdict === 'ALLOW' ? ANSI.green : ANSI.red;
+    const rankStr = s.rank === 9999 ? 'DENIED' : `#${s.rank}`;
+    console.log(`  ${verdictColor}[${rankStr.padEnd(6)}]${ANSI.reset} ${s.id.padEnd(32)} Score: ${s.priorityScore.toFixed(4).padStart(8)} | Verdict: ${verdictColor}${s.verdict}${ANSI.reset}`);
+    if (s.denialReasons.length > 0) {
+      console.log(`           ${ANSI.dim}Denial reasons: ${s.denialReasons.join(', ')}${ANSI.reset}`);
+    }
+  }
+  console.log('');
+}
+
 async function handleEchoframe(subArgs = []) {
   printBanner();
   const subCommand = subArgs[0] || 'list';
@@ -1810,6 +1968,8 @@ ${ANSI.bold}COMMANDS:${ANSI.reset}
   ${ANSI.green}continuum${ANSI.reset}    Inspect the 62 Continuum modular organs (@omega-v/*)
   ${ANSI.green}tensor${ANSI.reset}       Inspect, register, or evaluate Pluralistic Duality Tensor field
   ${ANSI.green}matrix${ANSI.reset}       Evaluate 4x4 compression matrix, shared verification contract, or state transitions
+  ${ANSI.green}max-equation${ANSI.reset} Display Max Equation formulas, axioms, and optimization metadata
+  ${ANSI.green}optimize${ANSI.reset}     Evaluate and rank candidate delta slices via the Max Equation engine
   ${ANSI.green}help${ANSI.reset}        Display this help message
 
 ${ANSI.bold}OPTIONS:${ANSI.reset}
@@ -1912,6 +2072,14 @@ switch (command) {
   case 'matrix':
   case 'lambda':
     await handleMatrix(args.slice(1));
+    break;
+  case 'max-equation':
+  case 'equation':
+    await handleMaxEquation(args.slice(1));
+    break;
+  case 'optimize':
+  case 'max-slice':
+    await handleOptimize(args.slice(1));
     break;
   case 'help':
   case '--help':

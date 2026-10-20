@@ -2,6 +2,39 @@
 
 **Updated:** 2026-10-19
 
+## State 8: Max Equation Compression Engine & Tri-Surface Operationalization — 2026-10-19
+
+The Ω∞v Oceanicos sovereign monorepo has formalized and operationalized the governing Max Equation across all layers:
+$$\Omega_{\infty v} = \operatorname{VERIFY}\bigl(\Delta(\text{Intent},\text{Reality})\bigr)$$
+$$\Delta^* = \underset{\Delta\in\mathcal{F}}{\arg\max}\; \left( \frac{\text{Verified Value}(\Delta)}{\text{Risk}(\Delta)+\text{Cost}(\Delta)+\varepsilon} \right)$$
+$$\text{PriorityScore}(\Delta) = \frac{\widehat V(\Delta)\cdot Q_E(\Delta)}{\widehat R(\Delta)+\widehat C(\Delta)+\varepsilon}$$
+
+1. **Max Equation Compression Engine (`packages/verification`)**:
+   - Implemented `checkCandidateEligibility`, `computePriorityScore`, and `optimizeMaxEquationSlices` in `packages/verification/src/max-equation.ts`.
+   - Hard Feasible Set ($\mathcal{F}$) gates: Authority, Policy, Bounded Scope, and Observable Acceptance Criteria. Missing authority fails closed immediately (`DENY`).
+   - 4-tier deterministic tie-breakers: lower risk first, higher evidence quality second, higher value third, lower cost fourth.
+   - Comprehensive unit tests: `packages/verification/src/__tests__/max-equation.test.ts` (3/3 passing).
+
+2. **Tri-Surface Operationalization**:
+   - **Skill Surface**: Created `skills/omega-max-equation-compression/SKILL.md` and mirrored to `.agents/skills/omega-max-equation-compression/SKILL.md` for proactive agentic reasoning.
+   - **CLI Surface**: Added `max-equation` and `optimize` subcommands in `bin/oceanicos.mjs` supporting JSON output, file input, and live active slice ranking.
+   - **REST API Control Plane**: Added `GET /v1/verification/max-equation` and `POST /v1/verification/optimize-slice` in `apps/api/src/index.ts` and `apps/api/src/route-contract.ts`. Documented and verified in `apps/api/README.md` and `apps/api/src/__tests__/documentation.test.ts` (149/149 checks passed).
+   - **API Integration Tests**: `tests/integration/max_equation_api.test.ts` (3/3 passing).
+
+3. **Full-Stack Verification Proofs (370/370 Passing)**:
+   - `typecheck`: 17 of 17 workspace packages pass with 0 errors.
+   - `build`: 17 of 17 workspace packages build with 0 errors, including Vite production bundle.
+   - `test:fast`: 72/72 unit tests passing.
+   - `test:integration`: 109/109 integration tests passing.
+   - `test:e2e`: 121/121 end-to-end tests passing.
+   - `test:stack`: 32/32 full-stack E2E scenarios passing.
+   - `test:canonical`: 14/14 canonical store lifecycle tests passing.
+   - `test:omega-api`: 10/10 command API tests passing.
+   - `test:max-equation-api`: 3/3 API integration tests passing.
+   - `packages/verification` unit tests: 3/3 tests passing.
+
+---
+
 ## State 7: Max Equation & Server-Side Admission Evidence Hardening (#487, #486) — 2026-10-19
 
 The Ω∞v Oceanicos sovereign monorepo has completed State 7 under the governing Max Equation:
