@@ -58,3 +58,11 @@ been inspected or built. This file is now subject to it.
 ## Container healthcheck
 
 The image declares a Docker `HEALTHCHECK` that requests `http://127.0.0.1:${API_PORT:-3000}/health` every 30 seconds after a 15-second start period. Docker marks the container unhealthy when the service is unreachable or the route returns a non-2xx response, including explicit degraded readiness. This is local process and API-probe evidence only; it does not prove deployment availability, replica agreement, persistence durability, external coordination, or production authorization.
+
+---
+
+## Whole-ecosystem alignment
+
+This repository surface is one bounded form in the OCEANICOS body, rooted in human intent and source context. Its place in `SOURCE → ROOT → SUCCESS → relevant BODY → finite Δ` and the full-stack transition loop is defined by the [Whole-Ecosystem Master Prompt](../WHOLE-ECOSYSTEM-MASTER-PROMPT.md).
+
+The prompt is a design/continuity contract, not evidence that a named component exists, connects, runs, or is healthy. This README documents this surface; establish claims from relevant implementation, tests, and observations. Keep `UNKNOWN` and `DIVERGENT` explicit; capability is not authority, and execution is not verification.

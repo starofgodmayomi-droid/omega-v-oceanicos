@@ -1,5 +1,9 @@
 # Tests
 
+## Source-level documentation guard
+
+`pnpm validate:docs` checks that every tracked README links to the root whole-ecosystem master prompt, uses the shared source-to-root alignment contract, and keeps the former prompt path as a working compatibility pointer. CI runs this dependency-free check on Linux and Windows. It validates documentation structure and links, not subsystem runtime behavior.
+
 ## Where the tests are
 
 Beside the code they test, in `src/__tests__/` within each package and app.
@@ -47,3 +51,11 @@ job is what proves the artifact runs.
 - `pnpm test:integration` matches no tests, because this directory is empty.
   It passes rather than failing on an empty match, which is honest only for as
   long as this note stays next to it.
+
+---
+
+## Whole-ecosystem alignment
+
+This repository surface is one bounded form in the OCEANICOS body, rooted in human intent and source context. Its place in `SOURCE → ROOT → SUCCESS → relevant BODY → finite Δ` and the full-stack transition loop is defined by the [Whole-Ecosystem Master Prompt](../WHOLE-ECOSYSTEM-MASTER-PROMPT.md).
+
+The prompt is a design/continuity contract, not evidence that a named component exists, connects, runs, or is healthy. This README documents this surface; establish claims from relevant implementation, tests, and observations. Keep `UNKNOWN` and `DIVERGENT` explicit; capability is not authority, and execution is not verification.

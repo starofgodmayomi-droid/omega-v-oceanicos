@@ -37,7 +37,7 @@ without treating any single component—or any agent—as the final authority.
 - 🌊 **[Finite operational charter](docs/OMEGA_INFINITY_CHARTER.md)** — Drop → Current → Ocean → Evaporation protocol
 - 🤝 **[Contributing](CONTRIBUTING.md)** — How to contribute verification-first
 - 📖 **[Documentation](docs/)** — Architecture, guides, and references
-- 🌊 **[Whole-ecosystem master prompt](docs/WHOLE-ECOSYSTEM-MASTER-PROMPT.md)** — canonical continuity/design layer, bounded by repository evidence
+- 🌊 **[Whole-ecosystem master prompt](WHOLE-ECOSYSTEM-MASTER-PROMPT.md)** — canonical continuity/design layer, bounded by repository evidence
 - 🧭 **[Value Navigator contract](skills/oceanicos-value-navigator/references/repository-contract.md)** — proposals, evidence, observation, and reconciliation
 - 🌉 **[Voice Bridge](skills/voice-bridge/SKILL.md)** — one human source across many expressive forms
 - Ɔ **[ƆREADE × Oceanicos Harmonizer](skills/oread-pidgin-harmonizer/SKILL.md)** — symbolic meaning translated into bounded action
@@ -396,4 +396,12 @@ infinity, consciousness, or control of external reality.
 
 ## Whole-ecosystem root
 
-The canonical expandable continuity/root prompt is [docs/WHOLE-ECOSYSTEM-MASTER-PROMPT.md](docs/WHOLE-ECOSYSTEM-MASTER-PROMPT.md). It is a design/continuity contract, not runtime proof. Existing repository contracts, ΩIR types, admission gates, tests, and runtime observations remain the executable evidence boundary.
+The canonical expandable continuity/root prompt is [WHOLE-ECOSYSTEM-MASTER-PROMPT.md](WHOLE-ECOSYSTEM-MASTER-PROMPT.md). It is a design/continuity contract, not runtime proof. Existing repository contracts, ΩIR types, admission gates, tests, and runtime observations remain the executable evidence boundary.
+
+---
+
+## Whole-ecosystem alignment
+
+This repository surface is one bounded form in the OCEANICOS body, rooted in human intent and source context. Its place in `SOURCE → ROOT → SUCCESS → relevant BODY → finite Δ` and the full-stack transition loop is defined by the [Whole-Ecosystem Master Prompt](WHOLE-ECOSYSTEM-MASTER-PROMPT.md).
+
+The prompt is a design/continuity contract, not evidence that a named component exists, connects, runs, or is healthy. This README documents this surface; establish claims from relevant implementation, tests, and observations. Keep `UNKNOWN` and `DIVERGENT` explicit; capability is not authority, and execution is not verification.

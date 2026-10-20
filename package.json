@@ -12,6 +12,7 @@
     "audit": "node scripts/oceanicos-audit.mjs && pnpm audit --ignore CVE-2026-97058",
     "validate:ci": "node scripts/validate-ci-contract.mjs",
     "validate:skills": "node scripts/validate-skill-contracts.mjs",
+    "validate:docs": "node scripts/validate-readme-contract.mjs",
     "lint": "pnpm typecheck",
     "type-check": "pnpm typecheck",
     "verify": "pnpm build && node --input-type=module -e \"const { executeOceanicosMaxExpansion } = await import('./packages/mini/dist/index.js'); executeOceanicosMaxExpansion();\"",

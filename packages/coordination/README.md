@@ -31,3 +31,11 @@ The package also exports `runCoordinationEvidenceProbe()`. With two independent 
 This is a **local, bounded scheduler**. It does not provide a distributed queue, durable execution, leader election, retries, external callbacks, secret handling, deployment authorization, or proof of work outside the current process. Human authorization remains outside the executor.
 
 The repository root now includes the package in the build chain and fast verification path. Run `pnpm --filter @omega-v/coordination test` for the focused proof, or `pnpm verify:fast` for the repository gate.
+
+---
+
+## Whole-ecosystem alignment
+
+This repository surface is one bounded form in the OCEANICOS body, rooted in human intent and source context. Its place in `SOURCE → ROOT → SUCCESS → relevant BODY → finite Δ` and the full-stack transition loop is defined by the [Whole-Ecosystem Master Prompt](../../WHOLE-ECOSYSTEM-MASTER-PROMPT.md).
+
+The prompt is a design/continuity contract, not evidence that a named component exists, connects, runs, or is healthy. This README documents this surface; establish claims from relevant implementation, tests, and observations. Keep `UNKNOWN` and `DIVERGENT` explicit; capability is not authority, and execution is not verification.
