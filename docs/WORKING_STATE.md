@@ -2,6 +2,26 @@
 
 **Updated:** 2026-10-20
 
+## State 20: KAI Memory Ledger Auto-Chaining on Verified Recursive Step Transitions — 2026-10-20
+
+The Ω∞v Oceanicos sovereign monorepo has completed State 20, cryptographically binding the recursive verification loop directly into the KAI continuity ledger (`@oceanicos/remember`):
+- **Tip Hash**: `fbf67b6da7f50e56f31eb754c88a4fdafff5339e17cca8567c44c286d2bada80`
+- **Parent Hash**: `b14d15b83916ad03acec10232402d09911f8d4448419b36fbb9f8e8d70fbe7c2`
+- **Status**: `VERIFIED`
+
+1. **KAI Ledger Auto-Chaining (`apps/api/src/index.ts`)**:
+   - `POST /v1/verification/step` now auto-appends an `OBSERVED` record to `kaiLedger` upon each verified transition.
+   - Enshrines sovereign authorship (`did:omega:human:starofgodmayomi`), constitutional authority (`AUTHORITY_VERIFIED`), subject (`epoch:X`), and evidence reference (`evidenceRef: stateHash`).
+   - Returns `kaiRecord` in the endpoint response payload and broadcasts `kaiRecordId` over `/v1/stream`.
+
+2. **Integration & API Vertical Slice Proofs**:
+   - `node --test tests/integration/max_equation_api.test.ts`: **5 of 5 tests passed** (including `kaiRecord` distinction, subject, author, and evidenceRef assertions).
+   - `apps/api/src/__tests__/documentation.test.ts` & `route-inventory.test.ts`: **154 of 154 tests passed**.
+   - `apps/web` typecheck & build: `tsc --noEmit && vite build` passed with 0 errors.
+   - `apps/api` build: `tsc` compiled `apps/api/dist` with 0 errors.
+
+---
+
 ## State 19: Tri-Surface Real-Time SSE State Synchronization & Live Transition Stream Integration — 2026-10-20
 
 The Ω∞v Oceanicos sovereign monorepo has completed State 19, uniting the recursive state update loop with live real-time server-sent event (SSE) synchronization across all client and operator surfaces:

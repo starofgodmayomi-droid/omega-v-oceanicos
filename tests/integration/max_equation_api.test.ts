@@ -205,6 +205,12 @@ describe('🌊 Ω∞v Max Equation Compression & Optimization API Vertical Slice
     assert.equal(bodyVerified.step.nextState.parentHash, '1def428b80fe33eae8fc94bca0fbf47c82fd02d1147e04c704d886222cbcdbfa');
     assert.equal(typeof bodyVerified.step.nextState.stateHash, 'string');
     assert.equal(bodyVerified.step.nextState.value, 99);
+    assert.ok(bodyVerified.kaiRecord);
+    assert.equal(bodyVerified.kaiRecord.distinction, 'OBSERVED');
+    assert.equal(bodyVerified.kaiRecord.subject, 'epoch:18');
+    assert.equal(bodyVerified.kaiRecord.evidenceRef, bodyVerified.step.nextState.stateHash);
+    assert.equal(bodyVerified.kaiRecord.author, 'did:omega:human:starofgodmayomi');
+    assert.equal(bodyVerified.kaiRecord.policyOrAuthority, 'AUTHORITY_VERIFIED');
 
     // 2. Fail-closed: missing authority -> NOT_EXECUTED & DENY
     const resDenied = await app.inject({

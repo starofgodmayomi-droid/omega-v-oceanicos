@@ -1138,12 +1138,36 @@ export function createApp(
       const observedReality = body.observedReality;
       const stepResult = executeRememberVerifyObserveStep(currentO, candidate, observedReality);
 
+      let kaiRecord: any = null;
       if (stepResult.verification.verified) {
+        try {
+          kaiRecord = kaiLedger.append({
+            distinction: 'OBSERVED',
+            statement: `Verified recursive transition to Epoch ${stepResult.nextState.epoch}: ${candidate.intent}`,
+            subject: `epoch:${stepResult.nextState.epoch}`,
+            source: 'verification:/v1/verification/step',
+            author: 'did:omega:human:starofgodmayomi',
+            policyOrAuthority: 'AUTHORITY_VERIFIED',
+            evidenceRef: stepResult.nextState.stateHash,
+            metadata: {
+              epoch: stepResult.nextState.epoch,
+              parentHash: stepResult.nextState.parentHash,
+              stateHash: stepResult.nextState.stateHash,
+              value: stepResult.nextState.value,
+              verificationDecision: stepResult.verification.decision,
+              verificationOutcome: stepResult.verification.outcome,
+            },
+          });
+        } catch {
+          // Fail-safe: ensure transition completes even if secondary ledger sync throws
+        }
+
         broadcastMintedBlock({
           type: 'STATE_TRANSITION',
           step: stepResult,
           hash: stepResult.nextState.stateHash,
           timestamp: stepResult.nextState.timestamp,
+          kaiRecordId: kaiRecord?.id,
         });
       }
 
@@ -1152,6 +1176,7 @@ export function createApp(
         contract: 'Ω∞v-RECURSIVE-STATE-UPDATE-V1',
         equation: 'O_{t+1} = REMEMBER( VERIFY( OBSERVE( O_t, Δ ) ) )',
         step: stepResult,
+        kaiRecord,
         executedAt: new Date().toISOString(),
       };
     } catch (err: any) {
