@@ -13,6 +13,7 @@ import { LifecycleFlow, deriveStageStates, type LifecycleStage } from './Lifecyc
 import { OmegaWorkspace } from './OmegaWorkspace';
 import { CovenantPanel } from './CovenantPanel';
 import { MaxEquationPanel } from './MaxEquationPanel';
+import { NotionExecutionEnginePanel } from './NotionExecutionEnginePanel';
 import {
   theme,
   statusColor,
@@ -748,6 +749,14 @@ export function App() {
       subtitle: 'Optimization engine — next best verified Δ*',
       state: 'available' as const,
       detail: <MaxEquationPanel latestTransition={latestTransition} />,
+    },
+    {
+      id: 'notion-engine',
+      icon: '🏛️',
+      label: 'Notion Engine',
+      subtitle: 'Private wealth execution OS & 3 canonical surfaces',
+      state: 'available' as const,
+      detail: <NotionExecutionEnginePanel />,
     },
   ];
 

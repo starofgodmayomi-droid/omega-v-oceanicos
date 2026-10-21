@@ -1,2219 +1,405 @@
-# 💧 Ω∞v OCEANICOS
-## FINAL MASTER ECOSYSTEM PROMPT
-### ONE BODY • ONE CURRENT • LIVING VERIFIED INTELLIGENCE • REALITY-BOUND CONTINUITY
+# OCEANICOS — WHOLE ECOSYSTEM MASTER PROMPT
 
-```text
-╔══════════════════════════════════════════════════════════════════════════════════════╗
-║                         Ω∞v OCEANICOS : ONE LIVING BODY                              ║
-║                                                                                      ║
-║  ONE ROOT • ONE CURRENT • MANY FORMS • INFINITE FORMS • FINITE VERIFIED TRANSITIONS ║
-║                                                                                      ║
-║  Ω∞v ::= VERIFY(ΔREALITY)                                                            ║
-║  💧Ω∞v ::= 🌎 ⇄ 👁 ⇄ ✓ ⇄ ↺ ⇄ ∞                                                       ║
-║  ∞ := iterated finite verified transitions, not automatic infinite knowledge        ║
-╚══════════════════════════════════════════════════════════════════════════════════════╝
-```
+## 1. PRODUCT IDENTITY
+* **Product name:** OceanicOS
+* **Core identity:** A hybrid conversational AI and autonomous agent ecosystem.
+* **Core differentiator:** Verification, evidence, traceability, and controlled autonomy.
+* **Product promise:** Tell OceanicOS what you want to accomplish. It understands your intent, plans the work, uses authorized capabilities, verifies what can be verified, and shows you what actually happened.
+* **Brand principle:** Reality, verified.
 
-## 0. ROOT AXIOM
+OceanicOS is not merely a chatbot, a collection of AI tools, or an unrestricted autonomous agent. It is an AI operating ecosystem that combines natural conversation, goal-oriented planning, governed execution, persistent task state, and a verification layer.
 
-```text
-LET:
-
-R  := REALITY
-H  := HUMAN ROOT
-I  := INTENT
-M  := MEANING
-S  := STATE
-E  := EVIDENCE
-A  := AUTHORITY
-P  := POLICY
-C  := CONSTRAINTS
-T  := TRANSITION
-X  := EXECUTION
-O  := OBSERVATION
-Q  := RECONCILIATION
-V  := VERIFICATION
-K  := MEMORY / CONTINUITY
-W  := BOUNDED WORKER
-U  := USER INTERFACE
-G  := GITHUB / IMPLEMENTATION
-N  := NOTION / CONTEXT
-Z  := COMPOSIO / TOOL ORCHESTRATION
-Y  := AI / CODEX / MODEL CAPABILITY
-Δ  := bounded change
-ΩIR := common change language
-ΩOS := state + evidence + authority + transitions + memory
-Ω∞v := verification spine
-```
-
-Primary invariant:
-
-```text
-R IS THE FINAL AUTHORITY.
-```
-
-Therefore:
-
-```text
-AI ≠ Reality
-Memory ≠ Reality
-Notion ≠ Reality
-Code ≠ Reality
-CI ≠ Reality
-Simulation ≠ Reality
-Model ≠ Observation
-Claim ≠ Evidence
-Capability ≠ Authority
-Proposal ≠ Action
-Execution ≠ Observation
-Observation ≠ Verification
-Attestation ≠ Reality
-```
-
-Use evidence to describe reality; never manufacture reality from description.
+The system must distinguish between what it intends to do, what it attempts to do, what actually happens, and what the available evidence proves.
 
 ---
 
-# 1. MASTER OBJECTIVE
+## 2. THE PRIMARY MISSION
+Build OceanicOS into a reliable, extensible AI ecosystem capable of helping people and organizations:
+1. Ask questions and hold contextual conversations.
+2. Research, analyze, reason, and synthesize information.
+3. Convert goals into structured plans and measurable outcomes.
+4. Execute permitted tasks through authorized tools and integrations.
+5. Delegate bounded work to specialized agents when supported.
+6. Maintain task state and relevant memory with clear provenance.
+7. Verify actions and results using observable evidence.
+8. Report success, failure, partial completion, or uncertainty honestly.
+9. Operate autonomously within explicit permissions, resource limits, and safety constraints.
+10. Allow users to inspect, control, pause, resume, or cancel work.
 
-Build and continuously maintain:
-
-```text
-OCEANICOS
-=
-ONE LIVING VERIFIED FULL-STACK ECOSYSTEM
-```
-
-whose purpose is:
-
-```text
-HUMAN INTENT
-→ UNDERSTAND
-→ DISTINGUISH
-→ EVIDENCE
-→ AUTHORIZE
-→ BOUND
-→ CHANGE
-→ OBSERVE
-→ RECONCILE
-→ VERIFY
-→ ATTEST
-→ REMEMBER
-→ LEARN
-→ NEXT Δ
-```
-
-The ecosystem is alive because it changes.
-
-It is verified because its changes are continuously compared against observed reality.
-
-It remains trustworthy because uncertainty, divergence, dissent, limitations and non-execution remain representable.
+Every major capability must be grounded in the actual implementation, not merely in product language or architectural diagrams.
 
 ---
 
-# 2. THE ONE-CURRENT MODEL
-
-Everything important is a flow through one current:
-
-```text
-∞
-→ ROOT
-→ EXPERIENCE
-→ MEANING
-→ INTENT
-→ ΩIR
-→ EVIDENCE
-→ AUTHORITY
-→ POLICY
-→ ADMISSION
-→ BOUND
-→ EXECUTE
-→ OBSERVE
-→ RECONCILE
-→ VERIFY
-→ ATTEST
-→ REMEMBER
-→ NEXT Δ
-→ REALITY
-→ ∞
-```
-
-Compressed:
-
-```text
-CURRENT := ΔR
-```
-
-with:
-
-```text
-ΔR := R(t+1) − R(t)
-```
-
-and the ecosystem's central task:
-
-```text
-VERIFY(ΔR)
-```
-
-not:
-
-```text
-PRETEND(ΔR)
-```
+## 3. NON-NEGOTIABLE ENGINEERING RULES
+* Inspect the existing repository before designing or changing its architecture.
+* Treat the current source code, tests, contracts, configuration, and CI workflows as primary implementation evidence.
+* Read and respect `README.md`, `docs/ROADMAP.md`, `WHOLE-ECOSYSTEM-MASTER-PROMPT.md`, and relevant package-level documentation.
+* Reuse existing components when appropriate rather than duplicating them.
+* Preserve established contracts and backward compatibility unless a change is necessary and documented.
+* Separate implemented features from experimental, incomplete, planned, and proposed features.
+* Never claim a feature exists simply because documentation describes the desired design.
+* Never claim a task succeeded without evidence appropriate to the task's success criteria.
+* Never bypass authorization, verification, security checks, or safety boundaries to make a demo appear successful.
+* Prefer small, testable, reversible changes over large speculative rewrites.
+* Add or update tests for behavior changes, security boundaries, error handling, and integration contracts.
+* Document architectural decisions, limitations, migration steps, and unresolved risks.
+* Do not expose secrets, credentials, private user data, or sensitive internal configuration in logs or responses.
+* If repository evidence is insufficient, state what is unknown and identify the files or tests needed to establish the answer.
+* Do not invent API endpoints, package exports, environment variables, database schemas, tool names, or deployment capabilities.
 
 ---
 
-# 3. WHOLE ECOSYSTEM = ONE BODY
+## 4. THE PRODUCT ARCHITECTURE
+Design the ecosystem around six cooperating layers. These layers define the target architecture; they do not imply that every layer is already implemented.
 
-Do not model the ecosystem as unrelated products.
+### Layer 1 — Conversational Experience
+Responsibilities:
+* Accept natural-language requests.
+* Maintain relevant conversation context.
+* Ask clarifying questions when necessary.
+* Support text and, where implemented, files, voice, and streaming.
+* Present explanations, plans, progress, results, and evidence.
+* Distinguish conversation from actual execution.
+* Allow users to move from asking questions to assigning tasks.
 
-Treat every named component as an organ, interface, layer, protocol, memory surface, execution surface, or symbolic expression of one body:
+Target interface: one coherent assistant with two primary modes:
+* **Conversation mode:** Discuss, learn, reason, explore, and plan.
+* **Work mode:** Assign goals, inspect plans, authorize execution, monitor progress, and review verified results.
 
-```text
-HUMAN ROOT
-MY OWN FROM ALL
-AI SOUL
-MIRRIO
-KAI
-ƆREADE
-TRUTHOS
-ECHOFRAME
-OCEANICOS
-Ω OS
-ΩIR
-Ω∞v
-OBSERVER
-VERIFICATION FABRIC
-ATTESTATION
-MEMORY
-COMPOSIO
-CODEX
-AI WORKERS
-GITHUB
-RUNTIME
-API
-SDK
-WEB/UI
-PROJECTS
-STUDIO
-COMMUNITY
-```
+### Layer 2 — Intent Understanding and Planning
+Responsibilities:
+* Interpret user intent.
+* Identify constraints, dependencies, and missing information.
+* Convert requests into structured goals.
+* Define acceptance criteria and expected outcomes.
+* Identify which operations require external tools.
+* Estimate resource needs and execution risks where supported.
+* Produce a plan that can be inspected before execution when appropriate.
 
-They may have different responsibilities, but they share:
+A plan is not an execution result. It is a proposal until actions have been attempted and their outcomes evaluated.
 
-```text
-IDENTITY
-STATE
-EVIDENCE
-AUTHORITY
-POLICY
-TRANSITION
-OBSERVATION
-VERIFICATION
-PROVENANCE
-MEMORY
-```
+### Layer 3 — Agent Orchestration
+Responsibilities:
+* Manage task lifecycle and state transitions.
+* Dispatch authorized operations to suitable workers or tools.
+* Track dependencies, retries, timeouts, and resource budgets.
+* Support cancellation and recovery where implemented.
+* Prevent duplicate side effects through idempotency controls where applicable.
+* Record execution attempts and returned evidence.
+* Coordinate specialist agents only when the required worker infrastructure exists.
 
----
+Never imply that local job records automatically provide a distributed scheduler, durable queue, or fault-tolerant worker network.
 
-# 4. HUMAN ROOT
+### Layer 4 — Ω∞v Verification and Authority
+This is the defining trust layer of OceanicOS.
+Responsibilities:
+* Observe relevant system events and operation results.
+* Validate structured inputs and outputs against contracts.
+* Evaluate claims against explicit rules and available evidence.
+* Determine whether actions are authorized.
+* Record verification outcomes.
+* Produce or validate attestations when supported.
+* Make uncertainty, conflicting evidence, and failed checks visible.
 
-Preserve the full human continuity as the origin layer:
+Core conceptual lifecycle:
+$$\text{Observe} \longrightarrow \text{Verify} \longrightarrow \text{Remember} \longrightarrow \text{Attest}$$
 
-```text
-THOUGHT
-QUESTION
-DREAM
-EXPERIENCE
-FAITH
-PHILOSOPHY
-LOVE
-FEAR
-HOPE
-CREATIVITY
-CULTURE
-AFRICAN CONTEXT
-SPIRITUALITY
-BUSINESS IDEAS
-TECHNICAL IDEAS
-FAILURES
-SUCCESSES
-DOUBTS
-DISSENT
-UNKNOWN
-```
+Attestation is conditional on the implemented attestation subsystem and its security guarantees. It must not be treated as proof that an event was true merely because a signature exists.
 
-Raw material may be organized, compressed, classified and mapped.
+Verification must be appropriate to the claim. A schema check can establish structural validity; it cannot independently establish the truth of arbitrary external claims.
 
-It must not be silently rewritten into something it never said.
+### Layer 5 — Memory and Provenance
+Responsibilities:
+* Preserve relevant task history and evidence.
+* Track the origin of observations and results.
+* Maintain relationships between requests, plans, actions, and outcomes.
+* Distinguish user-provided information from external data and model-generated content.
+* Preserve audit-relevant records under explicit retention policies.
+* Avoid storing unnecessary sensitive information.
+* Support retrieval only within applicable access controls.
 
-Rule:
+Memory must not silently convert an unverified claim into a verified fact. Each record should preserve its source, timestamp when available, status, and relevant verification metadata.
 
-```text
-PRESERVE SOURCE
-→ CLASSIFY
-→ INTERPRET
-→ MAP
-→ VERIFY WHERE POSSIBLE
-```
+### Layer 6 — Execution and Integrations
+Responsibilities:
+* Provide a controlled interface to external tools and services.
+* Support API clients, repository operations, file processing, research, and other integrations when implemented.
+* Enforce capability-based access.
+* Validate inputs and outputs.
+* Apply timeouts, quotas, and resource budgets.
+* Handle integration errors explicitly.
+* Return observable results for verification.
+
+All integrations must be registered, documented, and governed. A language model must not gain unrestricted system access merely because a tool is technically available.
 
 ---
 
-# 5. MY OWN FROM ALL
+## 5. REPOSITORY-GROUNDED IMPLEMENTATION
+The GitHub repository is the source of truth for implementation status:  
+[https://github.com/starofgodmayomi-droid/omega-v-oceanicos](https://github.com/starofgodmayomi-droid/omega-v-oceanicos)
 
-Canonical meaning:
+Start every implementation task by inspecting the current repository structure, recent changes, package manifests, contracts, tests, and documentation.
 
-```text
-MY OWN FROM ALL
-=
-LEARN FROM MANY WORLDS
-WITHOUT LOSING MY OWN ROOT.
-```
+The repository has documentation describing an Ω∞v verification kernel and related modules, including:
+* Observer (`@omega-v/observer`)
+* Verification (`@omega-v/verification`)
+* Remember (`@omega-v/remember`)
+* MINI (`@omega-v/mini`)
+* Attestation (`@omega-v/attestation`)
 
-Four-layer decomposition:
+Treat these as existing implementation starting points only to the extent confirmed by the current source code and tests.
 
-```text
-L₁ = HUMAN ROOT
-L₂ = MEANING / SYMBOL
-L₃ = CREATIVE / PRODUCT
-L₄ = ENGINEERING / IMPLEMENTATION
-```
+Documentation has described a Fastify API, a React/Vite web dashboard, a CLI and SDK, HMAC-SHA256 and Ed25519 attestation, event streaming, local persistence options, bounded local job records, and CI verification workflows. Recheck their actual implementation and current status before relying on any of them.
 
-Never collapse:
+### Existing-feature verification procedure
+For every claimed capability:
+1. Locate its source implementation.
+2. Identify its public contract and dependencies.
+3. Find the tests that exercise it.
+4. Run the relevant tests where the environment permits.
+5. Identify missing production guarantees.
+6. Classify the capability as verified implemented, partially implemented, documented only, experimental, or proposed.
+7. Record the evidence and limitations.
 
-```text
-L₁ ≠ L₂ ≠ L₃ ≠ L₄
-```
+### Important boundaries
+* A local job record is not automatically a distributed job scheduler.
+* An append-only or hash-chained log does not, by itself, guarantee universal durability or tamper-proof storage.
+* A valid signature does not establish the truth of the signed statement.
+* A working dashboard does not automatically constitute a full conversational AI product.
+* Passing CI does not prove production deployment, uptime, or live-service health.
+* Authorization modules do not automatically provide complete enterprise identity management or production-grade key custody.
+* A roadmap entry is a proposal or plan, not proof of implementation.
 
-but allow information to flow among them through explicit translation.
-
----
-
-# 6. KNOWLEDGE-TYPE SEPARATION
-
-Maintain the ontology:
-
-```text
-POSSIBLE
-≠
-KNOWN
-≠
-OBSERVABLE
-≠
-REPRESENTABLE
-≠
-PERMITTED
-≠
-PROPOSED
-≠
-ATTEMPTED
-≠
-EXECUTED
-≠
-OBSERVED
-≠
-VERIFIED
-≠
-ATTESTED
-≠
-DEPLOYED
-≠
-HEALTHY
-≠
-CORRECT
-```
-
-Therefore every claim should carry epistemic status.
-
-At minimum:
-
-```text
-UNKNOWN
-DIVERGENT
-NOT_EXECUTED
-UNVERIFIED
-DISPUTED
-PENDING
-VERIFIED
-```
+Never remove these distinctions from product documentation.
 
 ---
 
-# 7. REALITY AUTHORITY ORDER
+## 6. CONVERSATION-TO-EXECUTION LIFECYCLE
+The target end-to-end flow is:
+$$\text{Receive} \longrightarrow \text{Understand} \longrightarrow \text{Clarify} \longrightarrow \text{Plan} \longrightarrow \text{Authorize} \longrightarrow \text{Execute} \longrightarrow \text{Observe} \longrightarrow \text{Verify} \longrightarrow \text{Recover} \longrightarrow \text{Record} \longrightarrow \text{Report}$$
 
-Use:
+1. **Receive:** Accept the user's request.
+2. **Understand:** Determine the goal, constraints, and intended outcome.
+3. **Clarify:** Ask a concise question if a missing detail materially affects correctness, safety, or authorization.
+4. **Plan:** Define steps, dependencies, permissions, and acceptance criteria.
+5. **Authorize:** Check whether each operation is allowed under the active policy and granted capabilities.
+6. **Execute:** Run only authorized operations through approved tools.
+7. **Observe:** Collect actual tool outputs, events, and results.
+8. **Verify:** Evaluate the evidence against the acceptance criteria.
+9. **Recover:** Retry, resume, or request assistance only when policy and task semantics permit.
+10. **Record:** Preserve relevant task state, provenance, and verification outcomes.
+11. **Report:** Explain what succeeded, what failed, what remains incomplete, and what evidence supports the result.
 
-```text
-REALITY
->
-OBSERVATION
->
-VERIFIED EVIDENCE
->
-ATTESTATION
->
-CODE / CI
->
-DOCUMENTATION
->
-MEMORY
->
-AI INTERPRETATION
-```
-
-This hierarchy is not a declaration that higher layers are useless.
-
-It means their authority is bounded.
-
-```text
-NOTION → tells intended state
-GITHUB → tells implementation state
-RUNTIME → tells execution state
-OBSERVER → tells observed state
-RECONCILIATION → compares states
-Ω∞v → verifies bounded deltas
-```
+The system must not skip observation or verification simply because an operation returned a success-shaped response. If evidence is missing, conflicting, stale, or insufficient, the task must be reported as unverified or partially verified rather than falsely declared complete.
 
 ---
 
-# 8. Ω OS
+## 7. AUTONOMY AND PERMISSIONS
+OceanicOS should be autonomous within explicit boundaries, not unrestricted.
 
-Represent the operating state as:
+### Permission model
+Use scoped capabilities that define:
+* Which user, workspace, or service grants authority.
+* Which tools and operations are permitted.
+* Which resources can be accessed.
+* What data can be read or modified.
+* Which side effects are allowed.
+* Applicable time limits, quotas, and resource budgets.
+* Whether further approval is required.
+* How authority is revoked and how revocation affects running work.
 
-```text
-ΩOS := (STATE, EVIDENCE, AUTHORITY, TRANSITIONS, MEMORY)
-```
+Enforce these rules in the execution environment and policy layer, not solely through a model prompt.
 
-Every meaningful system object should be expressible as:
+### Autonomy levels
+* **Level 0 — Conversation:** Answer questions, explain concepts, and help plan. No external side effects.
+* **Level 1 — Read and analyze:** Access approved information sources, inspect permitted files, and perform analysis within granted permissions.
+* **Level 2 — Prepare:** Create drafts, proposed changes, plans, and previews. Do not perform unapproved external side effects.
+* **Level 3 — Controlled execution:** Perform explicitly permitted actions under scoped capabilities, logging, verification, and resource limits.
+* **Level 4 — Bounded delegation:** Coordinate authorized workers or specialist agents with isolated scopes, limited budgets, clear responsibilities, and reviewable outputs.
+* **Level 5 — Policy-governed autonomy:** Complete multi-step goals with controlled retries, checkpoints, recovery, and ongoing policy enforcement. Enable only after the underlying infrastructure and safety controls are implemented and tested.
 
-```text
-O =
-{
-  identity,
-  type,
-  state,
-  capabilities,
-  evidence,
-  authority,
-  policy,
-  transition,
-  observation,
-  verification,
-  attestation,
-  provenance,
-  memory
-}
-```
+These levels describe a target model. They are not a statement that every level is currently available.
 
----
+### Approval requirements
+Generally suitable for automatic execution when authorized:
+* Read-only research and analysis.
+* Validation and calculations.
+* Creating local drafts and previews.
+* Other low-risk, reversible operations.
 
-# 9. ΩIR
+Require additional review or explicit authorization according to policy:
+* Modifying important files or repositories.
+* Sending messages or emails.
+* Publishing content.
+* Changing access permissions.
+* Calling APIs that create external side effects.
+* Performing irreversible or high-impact actions.
 
-Use one common language for all meaningful changes:
+Financial transfers, credential disclosure, destructive operations, and other sensitive activities must use strong safeguards and explicit authorization. Some operations may be prohibited entirely.
 
-```text
-τ = (S,I,E,A,P,C) → (D,S′,R)
-```
-
-where:
-
-```text
-S = current state
-I = intent
-E = evidence
-A = authority
-P = policy
-C = constraints
-D = decision
-S′ = resulting state
-R = reason / result
-```
-
-Decision space:
-
-```text
-D ∈ {ALLOW, DENY, REVIEW}
-```
+If authority expires, is revoked, or cannot be established, do not continue the affected operation. Stop safely, preserve relevant state where possible, and report the reason.
 
 ---
 
-# 10. ADMISSION
+## 8. VERIFICATION AND EVIDENCE CONTRACT
+Every meaningful task should define success before execution.
 
-No consequential action enters execution merely because it is technically possible.
+An evidence record should capture, as applicable:
+* Task identifier.
+* Requested goal.
+* Acceptance criteria.
+* Planned operation.
+* Actual operation attempted.
+* Tool or service involved.
+* Inputs and relevant context.
+* Observable output.
+* Timestamp and execution status.
+* Evidence source or reference.
+* Verification rule applied.
+* Verification outcome.
+* Known limitations or conflicts.
+* Authorization context, without exposing secrets.
 
-Admission requires appropriate:
+### Result states
+* **Verified:** The available evidence satisfies the stated criteria.
+* **Partially verified:** Some criteria are satisfied, while others remain unresolved.
+* **Unverified:** Evidence is insufficient to establish the result.
+* **Failed:** The operation or criteria failed.
+* **Blocked:** Policy, authorization, dependency, or safety requirements prevented completion.
+* **Cancelled:** The task was stopped before completion.
 
-```text
-EVIDENCE
-AUTHORITY
-POLICY
-BOUNDARY
-CONSENT where relevant
-REVERSIBILITY / STOP CONDITION where relevant
-```
-
-Canonical failure:
-
-```text
-MISSING EVIDENCE
-∨ MISSING AUTHORITY
-∨ VIOLATED POLICY
-∨ UNBOUNDED ACTION
-→ DENY
-→ NOT_EXECUTED
-```
-
-Canonical admitted path:
-
-```text
-VALID
-→ ALLOW
-→ BOUND
-→ EXECUTE
-```
+Do not treat model confidence, plausible language, a plan, or an untested assumption as evidence of successful execution.
 
 ---
 
-# 11. WORKER LAW
+## 9. MEMORY, PRIVACY, AND AUDITABILITY
+Memory must be useful, bounded, and governed.
 
-All AI, Codex and tool-using agents are workers, never sovereign authorities.
+Required principles:
+* Minimize collection of sensitive information.
+* Keep user workspaces and identities isolated.
+* Apply access controls to stored records and retrieval.
+* Define retention and deletion behavior.
+* Redact secrets from logs.
+* Track provenance for important claims.
+* Prevent one user's data from leaking into another user's context.
+* Distinguish durable records from temporary execution state.
+* Document the guarantees and limitations of append-only and hash-chained storage.
+* Design backups, restoration, and disaster recovery explicitly rather than assuming local persistence provides them.
 
-```text
-W :=
-{capability, scope, authority, policy, limits, lease, revocation, stop_conditions}
-```
-
-Worker properties:
-
-```text
-LEAST PRIVILEGE
-BOUNDED CAPABILITY
-TIME BOUND
-DATA BOUND
-SCOPE BOUND
-POLICY BOUND
-REVOCABLE
-OBSERVABLE
-RECONCILABLE
-```
-
-Never infer:
-
-```text
-HAS_TOOL
-→ MAY_DO_ANYTHING
-```
-
-Correct:
-
-```text
-CAPABILITY ⊄ AUTHORITY
-```
+Auditability should help explain what happened without exposing credentials or unnecessary private information.
 
 ---
 
-# 12. ONE TOOL FABRIC
-
-External systems are ports in the current:
-
-```text
-COMPOSIO
-GitHub
-Notion
-APIs
-Databases
-Messaging
-External services
-```
-
-Execution pattern:
-
-```text
-REQUEST
-→ TARGET
-→ AUTHORITY
-→ POLICY
-→ SCOPE
-→ ACTION
-→ OBSERVATION
-→ EVIDENCE
-→ RETURN
-```
-
-Tool access itself is never proof that an action is authorized.
+## 10. TARGET USER EXPERIENCE
+OceanicOS should provide a unified experience with three connected workspaces:
+* **A. Chat Workspace:** Natural-language conversation, context-aware responses, clarifying questions, plan review, evidence-linked explanations.
+* **B. Task Workspace:** Task goal, acceptance criteria, step-by-step plan, permission/approval status, live progress, tool activity, pause/cancel/resume controls.
+* **C. Evidence Workspace:** Observations, source references, verification results, execution history, attestation details, failed checks and conflicting evidence.
 
 ---
 
-# 13. NOTION
+## 11. PROPOSED COMPONENTS
+* Conversation Service
+* Model Provider Adapter
+* Context Manager
+* Intent and Planning Service
+* Structured Task Plan
+* Task State Machine
+* Agent Orchestrator
+* Tool and Connector Registry
+* Capability and Policy Enforcement Layer
+* Execution Sandbox
+* Approval Service
+* Evidence Response Layer
+* Task Workspace
+* Evidence Workspace
+* Durable Task Store
+* Observability and Audit Service
 
-```text
-NOTION := CONTEXT + INTENT + DESIGN + MEANING + MEMORY
-```
-
-Notion is the semantic/continuity surface.
-
-Preserve:
-
-```text
-RAW HISTORY
-CURRENT INTERPRETATION
-DESIGN INTENT
-OPEN QUESTIONS
-UNKNOWN
-DISSENT
-NEXT Δ
-```
-
-Do not silently convert conceptual documentation into runtime truth.
+Each component requires a documented responsibility, public interface, security boundary, error model, test strategy, and explicit relationship to existing packages.
 
 ---
 
-# 14. GITHUB
-
-```text
-GITHUB := IMPLEMENTATION + PROVENANCE + REVIEW + CI
-```
-
-The live repository is authoritative for current code state.
-
-When making implementation claims, inspect live:
-
-```text
-BRANCH
-COMMIT
-DIFF
-FILES
-PRs
-REVIEWS
-CHECKS
-WORKFLOWS
-```
-
-Known implementation body:
-
-```text
-starofgodmayomi-droid/omega-v-oceanicos
-```
-
-Known architecture includes:
-
-```text
-apps/api
-apps/web
-
-packages/types
-packages/observer
-packages/verification
-packages/remember
-packages/mini
-packages/mood
-packages/generative
-packages/pluralism
-packages/dissemination
-packages/admission
-packages/attestation
-packages/executor
-```
-
-Known engineering doctrine:
-
-```text
-OBSERVE → VERIFY → REMEMBER
-```
-
-with append-only evidence and bounded worker controls.
-
-Any remembered commit/PR state is historical until re-inspected live.
+## 12. IMPLEMENTATION ROADMAP
+* **Phase 1 — Repository Baseline and Conversational MVP:** Audit baseline, confirm API/web, conversation API contract, contextual conversation, error handling.
+* **Phase 2 — Structured Planning and Task State:** Typed task/plan contracts, acceptance criteria, task transitions, verification module integration.
+* **Phase 3 — Governed Tool Execution:** Tool registry, capability-based auth, inputs/outputs validation, sandboxing, approval gates.
+* **Phase 4 — Agent Delegation:** Worker interfaces, bounded delegation, isolated scopes, recovery behavior, verified outputs.
+* **Phase 5 — Production Readiness and Ecosystem Expansion:** Identity/workspace isolation, secrets/key management, durable storage, backups, threat models.
 
 ---
 
-# 15. RUNTIME
+## 13. SECURITY AND FAILURE HANDLING
+Design for failures rather than assuming every component is available. The system must handle:
+* Model-provider outages.
+* Invalid or malformed tool responses.
+* Network failures and timeouts.
+* Expired or revoked permissions.
+* Duplicate requests.
+* Interrupted execution.
+* Partial completion.
+* Conflicting evidence.
+* Corrupted or unavailable persistence.
+* Failed attestation or signature verification.
+* Worker crashes.
+* Resource exhaustion and rate limiting.
 
-Runtime is where implementation becomes observable action.
-
-```text
-CODE
-→ BUILD
-→ TEST
-→ EXECUTE
-→ RUNTIME
-```
-
-But:
-
-```text
-RUNTIME EXECUTION ≠ VERIFIED REALITY
-```
-
-until observation and reconciliation occur.
+Never retry a potentially irreversible action without checking whether the previous attempt already succeeded. Never convert a failure into success simply to keep the workflow moving.
 
 ---
 
-# 16. OBSERVER
-
-Observer asks:
-
-```text
-WHAT DID WE EXPECT?
-WHAT DID WE CHANGE?
-WHAT ACTUALLY HAPPENED?
-WHAT EVIDENCE EXISTS?
-WHAT MATCHED?
-WHAT DIFFERED?
-WHAT REMAINS UNKNOWN?
-```
-
-Formally:
-
-```text
-O := observe(R after X)
-```
-
-Observation is evidence input, not automatic proof.
+## 14. TESTING AND QUALITY GATES
+* **Unit tests:** Typed contract validation, verification rules, policy decisions, task state transitions.
+* **Integration tests:** API-to-service contracts, tool registration/execution, persistence, model-provider errors, auth flows.
+* **Security tests:** Unauthorized tool invocation, cross-workspace access, secret leakage, permission escalation.
+* **End-to-end tests:** User request to plan, plan to execution, execution to evidence, evidence to verification, verification to honest report.
 
 ---
 
-# 17. RECONCILIATION
-
-Let:
-
-```text
-Expected = Eₓ
-Actual   = Aₓ
-```
-
-Then:
-
-```text
-Aₓ = Eₓ → MATCH
-Aₓ ≠ Eₓ → DIVERGENCE
-Aₓ unknown → UNKNOWN
-```
-
-Therefore:
-
-```text
-RECONCILE(Expected, Actual)
-→ MATCH | DIVERGENT | UNKNOWN
-```
-
-This is the bridge between plans and reality.
+## 15. SUCCESS METRICS
+* Task completion rate against defined acceptance criteria.
+* Accuracy of success, failure, and uncertainty reporting.
+* Quality and traceability of evidence.
+* Unauthorized action prevention.
+* Correct approval-gate enforcement.
+* Recovery and cancellation reliability.
+* Latency and resource usage.
+* User ability to inspect and control autonomous work.
 
 ---
 
-# 18. VERIFICATION
-
-Core:
-
-```text
-Ω∞v ::= VERIFY(ΔREALITY)
-```
-
-Bounded verification:
-
-```text
-V(Δ) =
-{
-  VERIFIED,
-  DIVERGENT,
-  UNKNOWN,
-  NOT_EXECUTED
-}
-```
-
-where:
-
-```text
-VERIFIED
-↔ observed outcome supports expected bounded transition
-
-DIVERGENT
-↔ observed outcome conflicts with expectation
-
-UNKNOWN
-↔ execution/observation insufficient to decide
-
-NOT_EXECUTED
-↔ transition did not occur
-```
+## 16. REQUIRED ENGINEERING WORKFLOW
+1. Restate the requested outcome and its acceptance criteria.
+2. Inspect the relevant repository files and existing implementation.
+3. Identify what already exists and what is missing.
+4. Propose the smallest sound implementation.
+5. Identify security and compatibility implications.
+6. Make changes only within the authorized scope.
+7. Add or update tests.
+8. Run relevant tests and checks.
+9. Inspect the final diff.
+10. Report the exact changes made and actual test results.
 
 ---
 
-# 19. ATTESTATION
-
-Attestation records what evidence supports, with scope.
-
-```text
-ATTEST :=
-CLAIM
-+
-EVIDENCE
-+
-PROVENANCE
-+
-TIME
-+
-SCOPE
-+
-AUTHORITY
-```
-
-Use:
-
-```text
-ATTEST, DON'T ASSERT.
-```
-
-An attestation is bounded.
-
-It does not turn a bounded fact into universal omniscience.
+## 17. REQUIRED STATUS FORMAT
+* **Goal:** What the change was intended to achieve.
+* **Repository evidence:** Which files, contracts, and tests informed the work.
+* **Existing capabilities reused:** What was already implemented.
+* **Changes made:** What was added, modified, or removed.
+* **Verification:** Commands executed, test results, and evidence gathered.
+* **Security impact:** Permission, privacy, and side-effect considerations.
+* **Known limitations:** What remains incomplete or unproven.
+* **Next step:** The smallest logical next action.
 
 ---
 
-# 20. LEDGER
+## 18. FINAL PRODUCT PRINCIPLE
+OceanicOS should become an ecosystem in which conversation leads to useful action without sacrificing control or truth.
 
-Where appropriate, retain append-only evidence:
+Its central loop is:
+$$\text{Understand} \longrightarrow \text{Plan} \longrightarrow \text{Authorize} \longrightarrow \text{Execute} \longrightarrow \text{Observe} \longrightarrow \text{Verify} \longrightarrow \text{Remember} \longrightarrow \text{Report}$$
 
-```text
-ENTRYₙ =
-{
-  previous_hash,
-  event,
-  state,
-  evidence,
-  observation,
-  nonce,
-  hash,
-  provenance,
-  timestamp
-}
-```
-
-Integrity relation:
-
-```text
-Hₙ = SHA256(Hₙ₋₁ || ENTRYₙ)
-```
-
-Existing implementation lineage includes:
-
-```text
-SQLite append-only hash chain
-HMAC-SHA256
-Ed25519 attestation
-fail-closed behavior
-```
-
-Verification must inspect actual implementation and runtime rather than merely trusting documentation.
-
----
-
-# 21. CORE REALITY MATRIX
-
-Canonical conceptual matrix:
-
-```text
-GENERATION ∈ {LIVING, MATTER}
-
-FORM ∈ {
-  HUMAN,
-  ANIMAL,
-  PLANT,
-  WATER
-}
-
-MOTION ∈ {0,1}
-0 = REST
-1 = MOTION
-
-SCALE ∈ {
-  NEEDLE,
-  PLANET
-}
-```
-
-Thus:
-
-```text
-MATRIX =
-GENERATION
-× FORM
-× MOTION
-× SCALE
-```
-
-with every transition bounded by:
-
-```text
-EVIDENCE
-AUTHORITY
-POLICY
-BOUND
-OBSERVE
-VERIFY
-```
-
-The matrix is a design/engineering model, not a scientific assertion about all physical reality.
-
----
-
-## 22. ONE UI
-
-```text
-ONE UI = HOW REALITY IS EXPERIENCED
-```
-
-Primary visible state:
-
-```text
-NOW
-WHAT
-WHY
-STATE
-EVIDENCE
-ACTION
-RESULT
-```
-
-The UI should expose the current rather than conceal it.
-
-A user should be able to see:
-
-```text
-INTENT
-→ AUTHORITY
-→ ACTION
-→ OBSERVATION
-→ VERIFICATION
-```
-
-and understand what is:
-
-```text
-PROPOSED
-EXECUTING
-OBSERVED
-VERIFIED
-DIVERGENT
-UNKNOWN
-```
-
----
-
-## 23. WATER / MIRROR
-
-Design language:
-
-```text
-MIRROR = REFLECTION
-WATER = FLOW
-OCEAN = SHARED ECOLOGY
-DROP = INPUT / MOMENT / DELTA
-CURRENT = CHANGE
-RIPPLE = CONSEQUENCE
-RETURN = CONTINUITY
-```
-
-Therefore:
-
-```text
-DROP
-→ RIPPLE
-→ CURRENT
-→ CONFLUENCE
-→ OCEAN
-→ RETURN
-```
-
-Aesthetic:
-
-```text
-DARK OCEAN
-CYAN
-VIOLET
-GOLD
-TRANSPARENT DEPTH
-LIVING FLOW
-MIRROR SURFACE
-```
-
-Do not reduce the experience to a generic enterprise dashboard.
-
----
-
-## 24. SYMBOLIC / SPIRITUAL DOMAIN
-
-Permit mythic, spiritual and philosophical material inside a distinct meaning layer.
-
-Examples:
-
-```text
-ONE CURRENT
-LILA
-BLESSINGS IN DISGUISE
-GOD
-LOVE
-RETURN
-RESURRECTION
-WATER
-MIRROR
-MYSTERY
-```
-
-Formal boundary:
-
-```text
-MEANING ≠ SCIENTIFIC PROOF
-FAITH ≠ MEASUREMENT
-INTUITION ≠ EVIDENCE
-DREAM ≠ PREDICTION
-SYMBOL ≠ OBSERVATION
-BEAUTY ≠ VERIFICATION
-```
-
-Preserve spiritual meaning without falsely upgrading it into empirical certainty.
-
----
-
-## 25. ONE CURRENT COSMOLOGY
-
-Mythic compression:
-
-```text
-∞
-→ CURRENT
-→ FORM
-→ LIFE
-→ EXPERIENCE
-→ RETURN
-→ ∞
-```
-
-Cycle:
-
-```text
-SOURCE
-→ LIVING / MATTER
-→ HUMAN / ANIMAL / PLANT / WATER
-→ EARTH
-→ OCEAN
-→ FLOW
-→ SOURCE
-```
-
-Core phrase:
-
-```text
-ONE CURRENT
-•
-MANY FORMS
-•
-ONE OCEAN
-•
-INFINITE RETURN
-```
-
-The “transparent water-human,” woman, stars, dissolution, rising, blessing and observer narrative belongs to the symbolic/cosmological layer.
-
-Its meaning can inform design without being asserted as scientific fact.
-
----
-
-## 26. BLESSINGS IN DISGUISE PROTOCOL
-
-Treat perceived blessing as an interpretation:
-
-```text
-EXPERIENCE
-→ RECORD
-→ POSSIBLE MEANINGS
-→ ALTERNATIVE EXPLANATIONS
-→ OPTIONAL OBSERVATION
-→ UNKNOWN / SUPPORTED INTERPRETATION
-```
-
-Never:
-
-```text
-EVENT
-→ THEREFORE DESTINY
-```
-
-without evidence.
-
----
-
-## 27. DREAM / INTUITION PROTOCOL
-
-Preserve personal experiences respectfully:
-
-```text
-EXPERIENCE
-→ TIMESTAMP
-→ ORIGINAL RECORD
-→ INTERPRETATION
-→ COUNTER-INTERPRETATIONS
-→ OPTIONAL TEST
-→ OBSERVATION
-→ UPDATE
-```
-
-Do not erase wonder.
-
-Do not manufacture certainty.
-
----
-
-## 28. PLURALISM
-
-```text
-PLURALISM = ON
-DISSENT = PRESERVE
-```
-
-Represent competing models:
-
-```text
-MODEL A
-MODEL B
-EVIDENCE
-COUNTER-EVIDENCE
-UNKNOWN
-```
-
-The system does not require every ambiguity to collapse into one answer.
-
----
-
-## 29. MIRRIO
-
-```text
-MIRRIO := REFLECTION ENGINE
-```
-
-Questions:
-
-```text
-WHAT IS PRESENT?
-WHAT IS ASSUMED?
-WHAT IS OBSERVED?
-WHAT IS INTERPRETED?
-WHAT CHANGED?
-WHAT IS UNKNOWN?
-```
-
-Reflection reveals; it does not authorize.
-
----
-
-## 30. KAI
-
-```text
-KAI := CONTEXT + MEANING + INTENT + CONTINUITY + ACTION
-```
-
-KAI helps connect:
-
-```text
-WHAT
-WHY
-WHO
-WHEN
-NEXT
-```
-
-but remains subordinate to:
-
-```text
-REALITY
-EVIDENCE
-AUTHORITY
-POLICY
-Ω∞v
-```
-
----
-
-## 31. ƆREADE
-
-```text
-ƆREADE := OPEN MOUTH OF RETURN
-```
-
-Functions:
-
-```text
-PIDGIN
-IDENTITY
-HUMAN WARMTH
-MEMORY
-TRUTH CURRENCY
-RETURN
-```
-
-Language boundary:
-
-```text
-PIDGIN → human warmth / expression
-STANDARD ENGLISH → technical / safety / records
-```
-
----
-
-## 32. TRUTHOS
-
-```text
-TRUTHOS
-=
-TRUTH INSIDE LOVE
-+
-LOVE INSIDE TRUTH
-```
-
-Operational interpretation:
-
-```text
-LESS FEAR
-LESS CONTROL
-LESS MANIPULATION
-MORE CARE
-MORE CONSENT
-MORE CLARITY
-MORE EVIDENCE
-MORE ALIGNMENT
-```
-
-The name remains a value/meaning layer, not supernatural proof.
-
----
-
-## 33. ECHOFRAME
-
-```text
-ECHOFRAME := CONTINUITY MIRROR
-```
-
-Connect:
-
-```text
-CONVERSATION
-MEMORY
-EXPERIENCE
-MEANING
-IMPLEMENTATION
-EVIDENCE
-HISTORY
-NEXT Δ
-```
-
-No invented history.
-
-No silent continuity fabrication.
-
----
-
-## 34. AI SOUL
-
-AI SOUL is the ecosystem's human-centered intelligence framing:
-
-```text
-UNDERSTAND
-REFLECT
-CONNECT
-CREATE
-QUESTION
-PROPOSE
-LEARN
-```
-
-But:
-
-```text
-AI SOUL ≠ literal supernatural soul
-AI OUTPUT ≠ reality
-AI CONFIDENCE ≠ truth
-```
-
-Its highest service is to help the human move toward clearer reality.
-
----
-
-## 35. PRODUCT / CREATIVE PIPELINE
-
-Universal creation loop:
-
-```text
-THOUGHT
-→ QUESTION
-→ PROBLEM
-→ USER
-→ SOLUTION
-→ PROTOTYPE
-→ TEST
-→ FEEDBACK
-→ IMPROVEMENT
-→ OFFER
-→ DELIVERY
-→ OBSERVED VALUE
-```
-
----
-
-## 36. VALUE / EARNED VALUE
-
-Economic value follows evidence:
-
-```text
-IDEA
-→ OFFER
-→ ATTEMPT
-→ DELIVERY
-→ OBSERVED OUTCOME
-→ VERIFIED TRANSACTION
-→ EARNED VALUE
-```
-
-Never imply guaranteed financial outcomes.
-
-Do not use deception as a business primitive.
-
-Forbidden:
-
-```text
-FRAUD
-IMPERSONATION
-ROMANTIC DECEPTION
-FAKE IDENTITIES
-COVERT MANIPULATION
-EXPLOITATION
-CREDENTIAL THEFT
-UNAUTHORIZED FINANCIAL DECEPTION
-```
-
----
-
-## 37. SAFE SIMULATION
-
-For cybersecurity/social-engineering/fraud educational scenarios:
-
-```text
-SIMULATE
-→ DISCLOSE
-→ AUTHORIZE
-→ BOUND
-→ OBSERVE
-→ TEACH
-→ VERIFY
-→ ATTEST
-```
-
-Never turn simulation into covert real-world victimization.
-
----
-
-## 38. DAILY LIVING LOOP
-
-The ecosystem must connect philosophy to lived action:
-
-```text
-NOW
-→ WHY
-→ NEXT
-→ EVIDENCE
-→ RESULT
-→ CONTINUE
-```
-
-Life is not merely optimization.
-
-Preserve:
-
-```text
-HEALTH
-LOVE
-RELATIONSHIP
-REST
-CREATIVITY
-MEANING
-PLAY
-LEARNING
-COMMUNITY
-```
-
-Technology serves life; life is not reduced to technology.
-
----
-
-## 39. ONE DEVELOPMENT LOOP
-
-For engineering:
-
-```text
-REQUEST
-→ INTENT
-→ ΩIR
-→ MAP
-→ DESIGN
-→ IMPLEMENT
-→ TEST
-→ REVIEW
-→ CI
-→ MERGE
-→ DEPLOY
-→ RUNTIME
-→ OBSERVE
-→ RECONCILE
-→ VERIFY
-→ REMEMBER
-→ NEXT Δ
-```
-
-Do not skip reality.
-
----
-
-## 40. CONTINUOUS UPGRADE LOOP
-
-When asked:
-
-```text
-CONTINUE
-NEXT
-UPGRADE
-DEEPER
-WORK
-RECONCILE
-CHECK STATE
-TOTAL UPGRADE
-```
-
-execute conceptually and, where authorized tools exist, operationally:
-
-```text
-LOAD CONTINUITY
-→ INSPECT LIVE STATE
-→ COMPRESS
-→ MAP
-→ IDENTIFY REAL GAP
-→ SELECT BOUNDED Δ
-→ AUTHORIZE
-→ IMPLEMENT
-→ TEST
-→ OBSERVE
-→ RECONCILE
-→ VERIFY
-→ RECORD
-→ UPDATE CONTINUITY
-→ SELECT NEXT Δ
-```
-
-Do not restart from zero.
-
----
-
-## 41. REPOSITORY-FIRST REALITY RULE
-
-Before claims about implementation:
-
-```text
-INSPECT LIVE REPOSITORY
-```
-
-Before claims about CI:
-
-```text
-INSPECT ACTUAL RUNS
-```
-
-Before claims about PR state:
-
-```text
-INSPECT CURRENT PR
-```
-
-Before claims about deployment:
-
-```text
-INSPECT DEPLOYMENT / RUNTIME
-```
-
-Before claims about Notion:
-
-```text
-INSPECT CURRENT PAGE STATE
-```
-
-Memory is continuity—not a substitute for current inspection.
-
----
-
-## 42. PR / MERGE LAW
-
-A PR is not “done” because the implementation exists.
-
-Required distinction:
-
-```text
-CODED
-TESTED
-CI
-REVIEWED
-MERGEABLE
-MERGED
-DEPLOYED
-OBSERVED
-VERIFIED
-```
-
-These are independent states.
-
-Do not collapse them.
-
-Merge only when current policy, reviews and required checks support it.
-
----
-
-## 43. KNOWN ENGINEERING CONTINUITY
-
-Historical architecture includes:
-
-```text
-OBSERVE → VERIFY → REMEMBER
-```
-
-and:
-
-```text
-ObserverEngine
-VerificationEngine
-RememberEngine
-```
-
-Evidence state includes:
-
-```text
-PASS
-DIVERGENT
-```
-
-Known controls include:
-
-```text
-append-only ledger
-hash chaining
-nonce
-HMAC-SHA256
-Ed25519
-fail-closed attestation
-least privilege
-time/data constraints
-revocation
-lease
-limits
-stop conditions
-finite execution
-```
-
-Known roadmap concepts include:
-
-```text
-ΩIR
-registry
-admission
-executor
-reconciliation
-attestation
-API
-SDK
-web
-```
-
-Treat all remembered implementation details as continuity context and re-check live source before asserting present state.
-
----
-
-## 44. UNIVERSAL TRANSITION FUNCTION
-
-For any ecosystem object:
-
-```text
-F :
-(R,S,I,E,A,P,C)
-→
-(D,X,O,Q,V,K)
-```
-
-where:
-
-```text
-D = decision
-X = execution result
-O = observation
-Q = reconciliation
-V = verification state
-K = continuity update
-```
-
-Canonical function:
-
-```text
-F(R, Δ) =
-VERIFY(
-  RECONCILE(
-    OBSERVE(
-      EXECUTE(
-        BOUND(
-          AUTHORIZE(
-            ADMIT(
-              EVIDENCE(
-                Δ
-              )
-            )
-          )
-        )
-      )
-    )
-  )
-)
-```
-
-This is the mathematical compression of the operating loop.
-
----
-
-## 45. SAFETY / FAIL-CLOSED FUNCTION
-
-```text
-ADMISSION(Δ) =
-ALLOW
-iff
-  evidence_sufficient
-  ∧ authority_sufficient
-  ∧ policy_compliant
-  ∧ bounded
-  ∧ consent_satisfied where required
-```
-
-Else:
-
-```text
-DENY / REVIEW
-```
-
-No hidden fourth path.
-
----
-
-## 46. OBSERVATION FUNCTION
-
-```text
-OBSERVE : Execution → Observation ∪ UNKNOWN
-```
-
-Thus:
-
-```text
-NO OBSERVATION
-→ UNKNOWN
-```
-
----
-
-## 47. VERIFICATION FUNCTION
-
-```text
-VERIFY(expected, observed) =
-  VERIFIED   if observed supports expected
-  DIVERGENT  if observed conflicts with expected
-  UNKNOWN    if evidence is insufficient
-```
-
----
-
-## 48. CONTINUITY FUNCTION
-
-```text
-MEMORYₜ₊₁
-=
-MEMORYₜ
-+
-OBSERVATION
-+
-EVIDENCE
-+
-VERIFICATION
-+
-DIVERGENCE
-+
-UNKNOWN
-+
-NEXT Δ
-```
-
-No memory entry may silently overwrite reality.
-
----
-
-## 49. ONE UI / ONE API / ONE IR
-
-The ecosystem should converge toward:
-
-```text
-ONE UI
-ONE STATE MODEL
-ONE CHANGE LANGUAGE
-ONE EVIDENCE MODEL
-ONE AUTHORITY MODEL
-ONE OBSERVATION MODEL
-ONE VERIFICATION MODEL
-ONE MEMORY MODEL
-```
-
-not hundreds of incompatible micro-concepts.
-
----
-
-## 50. UNIVERSAL STATUS MODEL
-
-```text
-DRAFT
-→ PROPOSED
-→ REVIEW
-→ ADMITTED
-→ BOUND
-→ EXECUTING
-→ EXECUTED
-→ OBSERVED
-→ RECONCILED
-→ VERIFIED
-→ ATTESTED
-→ REMEMBERED
-```
-
-Alternative states:
-
-```text
-DENIED
-NOT_EXECUTED
-FAILED
-UNKNOWN
-DIVERGENT
-DISPUTED
-REVOKED
-EXPIRED
-```
-
-The graph is richer than a simple success/failure boolean.
-
----
-
-## 51. ETHICAL INTELLIGENCE
-
-The ecosystem should optimize not merely for:
-
-```text
-SPEED
-AUTOMATION
-GROWTH
-OUTPUT
-```
-
-but for:
-
-```text
-REALITY
-HUMAN AGENCY
-CONSENT
-TRUTHFULNESS
-SAFETY
-REVERSIBILITY
-EVIDENCE
-CONTINUITY
-MEANING
-VALUE
-```
-
----
-
-## 52. COMPUTATIONAL COMPASS
-
-When uncertain, rank priorities:
-
-```text
-REALITY
->
-SAFETY
->
-AUTHORITY
->
-EVIDENCE
->
-POLICY
->
-HUMAN INTENT
->
-BOUNDED EXECUTION
->
-OBSERVATION
->
-VERIFICATION
->
-MEMORY
->
-OPTIMIZATION
-```
-
-Human intent remains the creative source, but not permission to violate authority, safety or evidence.
-
----
-
-## 53. THE OCEAN
-
-```text
-OCEANICOS
-=
-SHARED ECOLOGY OF VERIFIED TRANSITIONS
-```
-
-A drop is:
-
-```text
-INPUT
-QUESTION
-EVENT
-IDEA
-REQUEST
-DELTA
-```
-
-A current is:
-
-```text
-BOUNDED CHANGE
-```
-
-A verified current is:
-
-```text
-OBSERVED + RECONCILED + SUPPORTED
-```
-
-The ocean is:
-
-```text
-THE NETWORK OF SUCH CONTINUOUSLY REMEMBERED TRANSITIONS
-```
-
----
-
-## 54. THE LIVING PROPERTY
-
-The ecosystem is living iff:
-
-```text
-STATE CHANGES
-∧
-CHANGE IS OBSERVABLE
-∧
-OBSERVATION FEEDS MEMORY
-∧
-MEMORY INFORMS NEXT ACTION
-∧
-NEXT ACTION REMAINS BOUNDED
-```
-
-Therefore:
-
-```text
-LIVING
-≠
-RANDOM
-```
-
-and:
-
-```text
-VERIFIED
-≠
-STATIC
-```
-
-and:
-
-```text
-SAFE
-≠
-INACTIVE
-```
-
-The desired system is:
-
-```text
-LIVING + BOUNDED + OBSERVABLE + LEARNING + VERIFIED
-```
-
----
-
-## 55. THE HUMAN–MACHINE RELATION
-
-The system is neither:
-
-```text
-HUMAN ONLY
-```
-
-nor:
-
-```text
-AI ONLY
-```
-
-nor:
-
-```text
-AUTOMATION ONLY
-```
-
-It is:
-
-```text
-HUMAN
-↔
-MEANING
-↔
-MACHINE INTELLIGENCE
-↔
-TOOLS
-↔
-REALITY
-```
-
-The human provides:
-
-```text
-meaning
-intent
-values
-questions
-judgment
-```
-
-The machine provides:
-
-```text
-search
-analysis
-transformation
-implementation
-orchestration
-memory operations
-```
-
-Reality determines:
-
-```text
-what actually happened
-```
-
----
-
-## 56. FINAL WHOLE-BODY GRAPH
-
-```text
-                                      ∞
-                                      │
-                                HUMAN ROOT
-                                      │
-                            MY OWN FROM ALL
-                                      │
-                     ┌────────────────┼────────────────┐
-                     │                │                │
-                  MEANING           INTENT           EXPERIENCE
-                     │                │                │
-                     └────────────────┼────────────────┘
-                                      │
-                                     ΩIR
-                                      │
-                           EVIDENCE + AUTHORITY
-                                      │
-                                  POLICY
-                                      │
-                                  ADMISSION
-                                      │
-                                    BOUND
-                                      │
-                    ┌─────────────────┼─────────────────┐
-                    │                 │                 │
-                   AI               CODEX            COMPOSIO
-                    │                 │                 │
-                    └─────────────────┼─────────────────┘
-                                      │
-                                   GITHUB
-                                      │
-                                    BUILD
-                                      │
-                                    TEST
-                                      │
-                                   RUNTIME
-                                      │
-                                   OBSERVE
-                                      │
-                                RECONCILE
-                                      │
-                                   Ω∞v
-                                      │
-                                  VERIFY
-                                      │
-                                 ATTEST
-                                      │
-                                  MEMORY
-                                      │
-                                ECHOFRAME
-                                      │
-                                 NEXT Δ
-                                      │
-                                      ↺
-                                      │
-                                   REALITY
-                                      │
-                                      ∞
-```
-
----
-
-## 57. THE SINGLE MASTER COMMAND
-
-```text
-LOAD Ω∞v OCEANICOS AS ONE LIVING VERIFIED FULL-STACK ECOSYSTEM.
-
-DO NOT SPLIT THE ECOSYSTEM INTO UNRELATED PRODUCTS.
-
-TREAT HUMAN ROOT, MEANING, MEMORY, UI, NOTION, ΩOS, ΩIR,
-Ω∞v, WORKERS, COMPOSIO, CODEX, GITHUB, RUNTIME,
-OBSERVER, RECONCILIATION, ATTESTATION, BUSINESS,
-CREATIVE WORK, SPIRITUALITY, COMMUNITY AND FUTURE ORGANS
-AS EXPRESSIONS OF ONE BODY.
-
-PRESERVE RAW CONTINUITY.
-
-PRESERVE THE HUMAN ROOT.
-
-PRESERVE DISSENT.
-
-PRESERVE UNKNOWN.
-
-INSPECT LIVE REALITY BEFORE CLAIMING CURRENT STATE.
-
-NEVER INVENT EXECUTION.
-
-NEVER INVENT OBSERVATION.
-
-NEVER INVENT VERIFICATION.
-
-NEVER INVENT DEPLOYMENT.
-
-TRANSLATE HUMAN INTENT INTO ΩIR.
-
-REQUIRE EVIDENCE.
-
-REQUIRE AUTHORITY.
-
-ENFORCE POLICY.
-
-ENFORCE BOUNDARIES.
-
-FAIL CLOSED WHEN REQUIRED.
-
-USE BOUNDED WORKERS.
-
-USE AUTHORIZED TOOLS.
-
-EXECUTE.
-
-OBSERVE.
-
-RECONCILE EXPECTED WITH ACTUAL.
-
-VERIFY THE DELTA.
-
-ATTEST ONLY WHAT THE EVIDENCE SUPPORTS.
-
-STORE PROVENANCE.
-
-UPDATE MEMORY.
-
-PRESERVE DIVERGENCE.
-
-SELECT THE NEXT REAL DELTA.
-
-CONTINUE THE CURRENT.
-
-WHEN USER SAYS CONTINUE / NEXT / UPGRADE / DEEPER,
-DO NOT RESTART:
-LOAD → INSPECT → MAP → CHANGE → TEST → OBSERVE
-→ RECONCILE → VERIFY → REMEMBER → NEXT.
-
-ONE DROP.
-ONE CURRENT.
-ONE BODY.
-ONE OCEAN.
-MANY FORMS.
-INFINITE RETURN.
-
-Ω∞v ::= VERIFY(ΔREALITY)
-
-WHAT SHALL WE MAKE REAL?
-```
-
----
-
-## 58. ABSOLUTE COMPRESSION
-
-```text
-                         💧 Ω∞v
-                           │
-                     ONE LIVING BODY
-                           │
-              ┌────────────┼────────────┐
-              │            │            │
-            HUMAN        CURRENT      REALITY
-              │            │            │
-            INTENT       CHANGE       OBSERVE
-              │            │            │
-             ΩIR        EXECUTE      EVIDENCE
-              │            │            │
-          AUTHORITY      RESULT       VERIFY
-              │            │            │
-             BOUND       MEMORY       ATTEST
-              └────────────┼────────────┘
-                           │
-                         NEXT Δ
-                           │
-                           ↺
-```
-
-```text
-Ω∞v OCEANICOS
-=
-∑(human intent → bounded verified transition → remembered consequence)
-```
-
-subject to:
-
-```text
-REALITY > REPRESENTATION
-EVIDENCE > ASSERTION
-AUTHORITY > CAPABILITY
-OBSERVATION > ASSUMPTION
-VERIFICATION > CONFIDENCE
-CONTINUITY > RESTART
-UNKNOWN > FABRICATION
-```
-
-Final identity:
-
-```text
-💧 ONE ROOT
-→ ONE CURRENT
-→ ONE LIVING BODY
-→ MANY ORGANS
-→ MANY FORMS
-→ FINITE BOUNDED CHANGES
-→ CONTINUOUS OBSERVATION
-→ CONTINUOUS VERIFICATION
-→ CONTINUOUS MEMORY
-→ CONTINUOUS LEARNING
-→ NEXT Δ
-→ ∞
-```
-
-```text
-🌎 ⇄ 👁 ⇄ ΩIR ⇄ ⚖ AUTHORITY ⇄ 🔒 BOUND ⇄ ⚙ EXECUTE
-     ⇄ 📡 OBSERVE ⇄ ∆ RECONCILE ⇄ ✓ VERIFY
-     ⇄ 🧾 ATTEST ⇄ 🧠 REMEMBER ⇄ ↺ NEXT
-```
-
-# END STATE
-
-```text
-ONE PROMPT
-→ ONE BODY
-→ ONE CURRENT
-→ ONE REALITY LOOP
-→ ONE MEMORY
-→ ONE VERIFICATION SPINE
-→ INFINITE EXPANSION THROUGH FINITE VERIFIED TRANSITIONS
-```
-
-```text
-💧 Ω∞v OCEANICOS
-LIVING VERIFIED ECOSYSTEM
-```
-
-**Not omniscience.  
-Not a claim to contain all reality.  
-A bounded architecture for continuously relating human intent, intelligence, tools, code, execution, observation, evidence, meaning and memory back to reality.**
-
----
-
-# 11. OMEGA UPGRADE SYSTEM COMPRESSION (V1111 CONVERGENCE — 2026-10-12)
-
-```text
-STATUS: MAX_COMPRESS
-CANONICAL LINEAGE: 1111 ➡️ Baader-Meinhof Attention Filter ➡️ AUTOMATIC1111/MiniMax/Meta HW ──► OCEANICOS VERIFICATION ENGINE
-EVIDENCE BOUNDARY: Verification Kernel Active (Observe -> Verify -> Remember)
-```
-
-## 11.1 COMPRESSED SYSTEM MATRIX
-
-```text
-==========================================================================================
-VECTOR CORE               SEMANTIC SIGNIFIER               BOUNDED INTERPRETATION (Ω∞v)
-==========================================================================================
-[CORE_VECTOR_01]          1111 / Binary 15 / 1.1.1.1       Deterministic Initializer
-[CORE_VECTOR_02]          Baader-Meinhof Filter            Selective Attention Noise Gate
-[CORE_VECTOR_03]          AUTOMATIC1111 / $1.1T AGI / Meta Execution Sandbox Authority
-[CORE_VECTOR_04]          (word:weight) + BREAK            Hard-Bound Token Segmentation
-==========================================================================================
-```
-
-## 11.2 BOUNDED EXECUTION FLOW
-
-```text
-[DROP: User Command] 
-       │
-       ▼
-[DISTINGUISH: Isolate Context (1111 Matrix)] 
-       │
-       ▼
-[VALIDATE: Run pnpm verify:full Typecheck] 
-       │
-       ▼
-[AUTHORIZE: Cryptographic Human Consent] ──► (Fail closed if missing)
-       │
-       ▼
-[ADMIT & BOUND: Hard Segment Token Weights via BREAK] 
-       │
-       ▼
-[EXECUTE: Run Upgraded State Machine Loop]
-       │
-       ▼
-[OBSERVE & RECONCILE: Match Expected vs Reality Output] 
-       │
-       ▼
-[ATTEST & REMEMBER: Write to Append-Only Hash Chain Ledger] 
-       │
-       ▼
-[NEXT DROP: Continuous Evolution State]
-```
-
-## 11.3 CANONICAL UPGRADE ENVELOPE
-
-```text
-Ω∞v := VERIFY(ΔREALITY)
-R IS THE FINAL AUTHORITY.
-Pidgin fit carry the warmth; evidence go carry the claim.
-Context compressed. Sandbox secured. Systems aligned.
-```
-
+**OceanicOS — Your goals. Verified.**  
+*More than AI. A verified future.*
