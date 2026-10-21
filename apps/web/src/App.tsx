@@ -15,6 +15,7 @@ import { ValueNavigatorPanel } from './ValueNavigatorPanel';
 import { ConnectorPanel } from './ConnectorPanel';
 import { WholeEcosystemDashboard } from './WholeEcosystemDashboard';
 import { WaterFlowPanel } from './WaterFlowPanel';
+import { WaterIntelligencePanel } from './WaterIntelligencePanel';
 import { LifecycleFlow, deriveStageStates, type LifecycleStage } from './LifecycleFlow';
 import { GlobeViewport } from './GlobeViewport';
 import { bindGlobeEvidence } from './globe-shell';
@@ -764,6 +765,7 @@ export function App() {
           onFocusCommand={setOmegaIntent}
         />
         <WaterFlowPanel />
+        <WaterIntelligencePanel reportedStatus={tip?.evidence?.status ?? null} />
 
         {/* Prompt */}
         <h1
