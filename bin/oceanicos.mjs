@@ -2084,6 +2084,88 @@ async function handleMatrix(cmdArgs = []) {
   console.log('');
 }
 
+async function handleNotion(cmdArgs = []) {
+  const isJson = args.includes('--json');
+  const subCommand = cmdArgs[0] || 'sync';
+  const pageId = process.env.NOTION_PAGE_ID || '4003080b-dd53-8159-8220-ef09061f54b7';
+  const token = process.env.NOTION_TOKEN;
+
+  let syncPkg;
+  try {
+    syncPkg = await import('../scripts/notion-evidence-sync.mjs');
+  } catch (err) {
+    if (isJson) {
+      console.log(JSON.stringify({ success: false, error: 'NOTION_SYNC_SCRIPT_UNAVAILABLE', detail: err.message }));
+      return;
+    }
+    console.error(`${ANSI.red}[ERROR] Could not load notion-evidence-sync script: ${err.message}${ANSI.reset}`);
+    return;
+  }
+
+  const env = {
+    GITHUB_REPOSITORY: process.env.GITHUB_REPOSITORY || 'starofgodmayomi-droid/omega-v-oceanicos',
+    GITHUB_SHA: process.env.GITHUB_SHA || '48b1888048b1888048b1888048b1888048b18880',
+    GITHUB_REF: process.env.GITHUB_REF || 'refs/heads/feat/elion-varel-1111-treasury',
+    GITHUB_RUN_ID: process.env.GITHUB_RUN_ID || '1111',
+    GITHUB_SERVER_URL: process.env.GITHUB_SERVER_URL || 'https://github.com',
+    GITHUB_WORKFLOW: process.env.GITHUB_WORKFLOW || 'OceanicOS Sovereign Sync',
+  };
+
+  const record = syncPkg.buildEvidenceRecord(env);
+  const block = syncPkg.buildNotionBlock(record);
+
+  if (!token) {
+    if (isJson) {
+      console.log(JSON.stringify({
+        status: 'DRY_RUN_CREDENTIALS_MISSING',
+        pageId,
+        pageUrl: `https://app.notion.com/p/OCEANICOS-MOTION-Private-Wealth-Execution-Engine-${pageId.replace(/-/g, '')}`,
+        record,
+        block,
+        instruction: 'Add NOTION_TOKEN to your .env file to execute live append.',
+      }, null, 2));
+      return;
+    }
+
+    printBanner();
+    console.log(`\n${ANSI.bold}=== 🏛️ NOTION PRIVATE WEALTH EXECUTION ENGINE BRIDGE ===${ANSI.reset}\n`);
+    console.log(`  ${ANSI.cyan}Notion Target Page${ANSI.reset} : ${ANSI.bold}OCEANICOS-MOTION-Private-Wealth-Execution-Engine${ANSI.reset}`);
+    console.log(`  ${ANSI.cyan}Page UUID${ANSI.reset}          : ${ANSI.bold}${pageId}${ANSI.reset}`);
+    console.log(`  ${ANSI.cyan}Target URL${ANSI.reset}         : https://app.notion.com/p/OCEANICOS-MOTION-Private-Wealth-Execution-Engine-${pageId.replace(/-/g, '')}`);
+    console.log(`  ${ANSI.yellow}Status${ANSI.reset}             : ${ANSI.bold}DRY RUN (NOTION_TOKEN not yet configured in .env)${ANSI.reset}\n`);
+    console.log(`${ANSI.bold}Prepared Evidence Block:${ANSI.reset}`);
+    console.log(block.paragraph.rich_text[0].text.content);
+    console.log(`\n${ANSI.dim}To enable live sync, configure NOTION_TOKEN in .env using the safe protocol.${ANSI.reset}\n`);
+    return;
+  }
+
+  try {
+    const res = await syncPkg.appendEvidenceToNotion({
+      token,
+      pageId,
+      block,
+      runId: record.run_id,
+    });
+
+    if (isJson) {
+      console.log(JSON.stringify({ success: true, pageId, result: res, record }, null, 2));
+      return;
+    }
+
+    printBanner();
+    console.log(`\n${ANSI.bold}=== 🏛️ NOTION EVIDENCE SYNC COMPLETE ===${ANSI.reset}\n`);
+    console.log(`  ${ANSI.cyan}Target Page${ANSI.reset} : ${ANSI.bold}${pageId}${ANSI.reset}`);
+    console.log(`  ${ANSI.green}Sync Status${ANSI.reset} : ${ANSI.bold}${res.skipped_duplicate ? 'SKIPPED (DUPLICATE RUN PREVENTED)' : '✓ APPENDED'}${ANSI.reset}`);
+    console.log(`  ${ANSI.cyan}Appended${ANSI.reset}    : ${res.appended_block_count} block(s)\n`);
+  } catch (err) {
+    if (isJson) {
+      console.log(JSON.stringify({ success: false, error: err.message }, null, 2));
+      return;
+    }
+    console.error(`\n${ANSI.red}[ERROR] Notion sync failed: ${err.message}${ANSI.reset}\n`);
+  }
+}
+
 function handleHelp() {
   printBanner();
   console.log(`
@@ -2121,6 +2203,7 @@ ${ANSI.bold}COMMANDS:${ANSI.reset}
   ${ANSI.green}optimize${ANSI.reset}     Evaluate and rank candidate delta slices via the Max Equation engine
   ${ANSI.green}convergence${ANSI.reset}  Evaluate Maximum Total Convergence Singularity (Ψ)
   ${ANSI.green}step${ANSI.reset}         Execute Recursive State Update Step: O_{t+1} = REMEMBER(VERIFY(OBSERVE(O_t, Δ)))
+  ${ANSI.green}notion${ANSI.reset}       Sync verified telemetry and execution state to Notion Private Wealth Engine
   ${ANSI.green}help${ANSI.reset}        Display this help message
 
 ${ANSI.bold}OPTIONS:${ANSI.reset}
@@ -2240,6 +2323,9 @@ switch (command) {
   case 'step':
   case 'recursive-step':
     await handleStep(args.slice(1));
+    break;
+  case 'notion':
+    await handleNotion(args.slice(1));
     break;
   case 'help':
   case '--help':
