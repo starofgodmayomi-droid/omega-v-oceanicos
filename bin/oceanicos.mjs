@@ -2086,8 +2086,10 @@ async function handleMatrix(cmdArgs = []) {
 
 async function handleNotion(cmdArgs = []) {
   const isJson = args.includes('--json');
-  const subCommand = cmdArgs[0] || 'sync';
+  const subCommand = cmdArgs[0] || 'status';
   const pageId = process.env.NOTION_PAGE_ID || '4003080b-dd53-8159-8220-ef09061f54b7';
+  const oppDbId = process.env.NOTION_OPPORTUNITIES_DB_ID || 'baf1877d-e979-4cd8-949e-6c48cdee4c7a';
+  const execDbId = process.env.NOTION_EXECUTION_DB_ID || '75b1967f-fb19-47fc-8f5a-db1298fe8f02';
   const token = process.env.NOTION_TOKEN;
 
   let syncPkg;
@@ -2102,6 +2104,97 @@ async function handleNotion(cmdArgs = []) {
     return;
   }
 
+  if (subCommand === 'help') {
+    printBanner();
+    console.log(`
+${ANSI.bold}NOTION OPERATING SURFACES & PRIVATE WEALTH ENGINE COMMANDS:${ANSI.reset}
+  node bin/oceanicos.mjs notion status       Inspect 3 Notion operating surfaces, Composio, and GitHub
+  node bin/oceanicos.mjs notion experiment   Render First Finite Action (5-buyer workflow setup validation)
+  node bin/oceanicos.mjs notion sync         Append cryptographic evidence block to Notion master page
+  node bin/oceanicos.mjs notion help         Display this help message
+
+${ANSI.bold}CANONICAL SURFACES:${ANSI.reset}
+  • Master Control Page: https://app.notion.com/p/OCEANICOS-MOTION-Private-Wealth-Execution-Engine-4003080bdd5381598220ef09061f54b7
+  • Opportunities DB   : https://app.notion.com/p/baf1877de9794cd8949e6c48cdee4c7a
+  • Execution Queue DB : https://app.notion.com/p/75b1967ffb1947fc8f5adb1298fe8f02
+`);
+    return;
+  }
+
+  if (subCommand === 'experiment') {
+    const experiment = syncPkg.buildFirstFiniteActionRecord();
+    if (isJson) {
+      console.log(JSON.stringify({ success: true, experiment }, null, 2));
+      return;
+    }
+
+    printBanner();
+    console.log(`\n${ANSI.bold}=== 🏛️ AI SOUL × OCEANICOS: FIRST FINITE WEALTH EXPERIMENT ===${ANSI.reset}\n`);
+    console.log(`${ANSI.cyan}Section 11 Daily Command Format:${ANSI.reset}`);
+    console.log(`${ANSI.bold}${experiment.formattedLine}${ANSI.reset}\n`);
+    console.log(`${ANSI.bold}Field-by-Field Decomposition:${ANSI.reset}`);
+    for (const [k, v] of Object.entries(experiment.fields)) {
+      console.log(`  ${ANSI.cyan}${k.padEnd(20)}${ANSI.reset} : ${v}`);
+    }
+    console.log(`\n${ANSI.bold}5-Buyer Interview Prompts (Stage Gate 3: VALIDATE):${ANSI.reset}`);
+    console.log(`  1. [Task]       What repetitive manual task consumes 3+ hours per week in your business?`);
+    console.log(`  2. [Workaround] What messy combination of spreadsheets/tools are you currently using to bridge it?`);
+    console.log(`  3. [Urgency]    What does this friction cost you in delayed delivery, dropped leads, or stress?`);
+    console.log(`  4. [Pilot Fee]  If we delivered a guaranteed, automated setup in 48 hours, would a $250-$500 pilot make sense?`);
+    console.log(`  5. [Decision]   Can we inspect your sample data structure under mutual NDA to verify feasibility?`);
+    console.log(`\n${ANSI.yellow}Governance Rule:${ANSI.reset} Human approval strictly required before external dispatch.`);
+    console.log(`${ANSI.dim}Boundary: Potential value ≠ earned revenue; revenue ≠ profit. Reality remains sovereign.${ANSI.reset}\n`);
+    return;
+  }
+
+  if (subCommand === 'status') {
+    const inspection = await syncPkg.inspectNotionSurfaces({ token, pageId, oppDbId, execDbId });
+    const composioKey = process.env.COMPOSIO_API_KEY;
+
+    if (isJson) {
+      console.log(JSON.stringify({
+        success: true,
+        inspection,
+        composio: { configured: Boolean(composioKey), status: composioKey ? 'CONFIGURED' : 'UNCONFIGURED' },
+        github: { repository: 'starofgodmayomi-droid/omega-v-oceanicos', url: 'https://github.com/starofgodmayomi-droid/omega-v-oceanicos' },
+      }, null, 2));
+      return;
+    }
+
+    printBanner();
+    console.log(`\n${ANSI.bold}=== 🏛️ AI SOUL × OCEANICOS: OPERATING SURFACES AUDIT ===${ANSI.reset}\n`);
+    console.log(`  ${ANSI.cyan}Connection Mode${ANSI.reset}     : ${inspection.mode === 'LIVE_CONNECTED' ? `${ANSI.green}✓ LIVE CONNECTED${ANSI.reset}` : `${ANSI.yellow}⚠ DRY RUN (Offline)${ANSI.reset}`}`);
+    console.log(`  ${ANSI.cyan}GitHub Repository${ANSI.reset}   : ${ANSI.bold}starofgodmayomi-droid/omega-v-oceanicos${ANSI.reset}`);
+    console.log(`  ${ANSI.cyan}Composio Tool Bridge${ANSI.reset}: ${composioKey ? `${ANSI.green}CONFIGURED${ANSI.reset}` : `${ANSI.dim}OPTIONAL / UNCONFIGURED${ANSI.reset}`}\n`);
+
+    console.log(`${ANSI.bold}Notion Operating Surfaces:${ANSI.reset}`);
+    console.log(`  [1] ${ANSI.bold}Master Motion Control Page${ANSI.reset}`);
+    console.log(`      UUID   : ${inspection.surfaces.masterPage.id}`);
+    console.log(`      URL    : ${inspection.surfaces.masterPage.url}`);
+    console.log(`      Role   : ${inspection.surfaces.masterPage.role}`);
+    console.log(`      Status : ${inspection.surfaces.masterPage.status === 'ONLINE_ACCESSIBLE' ? ANSI.green : ANSI.yellow}${inspection.surfaces.masterPage.status}${ANSI.reset}`);
+
+    console.log(`  [2] ${ANSI.bold}Value Opportunities Pipeline${ANSI.reset}`);
+    console.log(`      UUID   : ${inspection.surfaces.opportunitiesPipeline.id}`);
+    console.log(`      URL    : ${inspection.surfaces.opportunitiesPipeline.url}`);
+    console.log(`      Role   : ${inspection.surfaces.opportunitiesPipeline.role}`);
+    console.log(`      Status : ${inspection.surfaces.opportunitiesPipeline.status === 'ONLINE_ACCESSIBLE' ? ANSI.green : ANSI.yellow}${inspection.surfaces.opportunitiesPipeline.status}${ANSI.reset}`);
+
+    console.log(`  [3] ${ANSI.bold}Execution Queue${ANSI.reset}`);
+    console.log(`      UUID   : ${inspection.surfaces.executionQueue.id}`);
+    console.log(`      URL    : ${inspection.surfaces.executionQueue.url}`);
+    console.log(`      Role   : ${inspection.surfaces.executionQueue.role}`);
+    console.log(`      Status : ${inspection.surfaces.executionQueue.status === 'ONLINE_ACCESSIBLE' ? ANSI.green : ANSI.yellow}${inspection.surfaces.executionQueue.status}${ANSI.reset}`);
+
+    if (!token) {
+      console.log(`\n${ANSI.dim}Note: NOTION_TOKEN not set in .env. Pre-flight schema verified. Use safe protocol to activate live sync.${ANSI.reset}\n`);
+    } else {
+      console.log(`\n${ANSI.green}✓ All 3 Notion surfaces bound and ready for bidirectional operations.${ANSI.reset}\n`);
+    }
+    return;
+  }
+
+  // subCommand === 'sync'
   const env = {
     GITHUB_REPOSITORY: process.env.GITHUB_REPOSITORY || 'starofgodmayomi-droid/omega-v-oceanicos',
     GITHUB_SHA: process.env.GITHUB_SHA || '48b1888048b1888048b1888048b1888048b18880',

@@ -1,7 +1,19 @@
 import test from "node:test";
 import { readFile } from "node:fs/promises";
 import assert from "node:assert/strict";
-import { buildEvidenceRecord, buildNotionBlock, appendEvidenceToNotion, findExistingRun } from "../scripts/notion-evidence-sync.mjs";
+import {
+  buildEvidenceRecord,
+  buildNotionBlock,
+  appendEvidenceToNotion,
+  findExistingRun,
+  buildDailyCommandRecord,
+  buildDailyCommandBlock,
+  buildFirstFiniteActionRecord,
+  inspectNotionSurfaces,
+  DEFAULT_NOTION_PAGE_ID,
+  DEFAULT_NOTION_OPPORTUNITIES_DB_ID,
+  DEFAULT_NOTION_EXECUTION_DB_ID,
+} from "../scripts/notion-evidence-sync.mjs";
 
 const validEnv = {
   GITHUB_REPOSITORY: "starofgodmayomi-droid/omega-v-oceanicos",
@@ -136,7 +148,6 @@ test("Notion writer rejects malformed page IDs and run IDs before making a reque
   assert.equal(called, false);
 });
 
-
 test("credentialed Notion sync is restricted to main branch", async () => {
   const workflow = await readFile(
     new URL("../.github/workflows/oceanicos-notion-evidence-sync.yml", import.meta.url),
@@ -146,4 +157,57 @@ test("credentialed Notion sync is restricted to main branch", async () => {
     workflow,
     /if: \$\{\{ github\.event_name == 'workflow_dispatch' && inputs\.write_to_notion == true && github\.ref == 'refs\/heads\/main' \}\}/,
   );
+});
+
+test("builds daily command record adhering to Section 11 format", () => {
+  const record = buildDailyCommandRecord();
+  assert.equal(typeof record.formattedLine, "string");
+  const parts = record.formattedLine.split(" | ");
+  assert.equal(parts.length, 12);
+  assert.match(parts[0], /Validate narrow workflow setup offer/); // INTENT
+  assert.match(parts[1], /Small businesses/); // BUYER/VALUE
+  assert.match(parts[2], /OceanicOS monorepo test receipts/); // SOURCE EVIDENCE
+  assert.match(parts[3], /Draft 5 personalized interview prompts/); // NEXT FINITE Δ
+  assert.match(parts[4], /Notion Execution Queue/); // REQUIRED ACCESS
+  assert.match(parts[5], /Human approval strictly required/); // RISK/APPROVAL
+  assert.match(parts[6], /5 reviewable interview questions/); // EXPECTED OUTPUT
+  assert.match(parts[7], /dry-run preview in CLI passes/); // ACCEPTANCE TEST
+  assert.match(parts[8], /Formatted in CLI/); // OBSERVED RESULT
+  assert.match(parts[9], /\$0 incurred/); // COST/REVENUE EVIDENCE
+  assert.match(parts[10], /Awaiting human consent/); // DECISION
+  assert.match(parts[11], /Value Opportunities Pipeline/); // NEXT Δ
+});
+
+test("builds daily command block bounded within Notion character limits", () => {
+  const record = buildFirstFiniteActionRecord();
+  const block = buildDailyCommandBlock(record);
+  assert.equal(block.type, "paragraph");
+  const content = block.paragraph.rich_text[0].text.content;
+  assert.match(content, /AI SOUL × OceanicOS Daily Command/);
+  assert.match(content, /Potential value ≠ earned revenue/);
+  assert.ok(content.length < 1900);
+});
+
+test("inspectNotionSurfaces operates correctly in dry-run offline mode", async () => {
+  const inspection = await inspectNotionSurfaces({ token: "" });
+  assert.equal(inspection.connected, false);
+  assert.equal(inspection.mode, "DRY_RUN_OFFLINE");
+  assert.equal(inspection.surfaces.masterPage.id, DEFAULT_NOTION_PAGE_ID);
+  assert.equal(inspection.surfaces.opportunitiesPipeline.id, DEFAULT_NOTION_OPPORTUNITIES_DB_ID);
+  assert.equal(inspection.surfaces.executionQueue.id, DEFAULT_NOTION_EXECUTION_DB_ID);
+});
+
+test("inspectNotionSurfaces probes all 3 surfaces when token is provided", async () => {
+  const requestedUrls = [];
+  const fetchImpl = async (url) => {
+    requestedUrls.push(url);
+    return { ok: true, json: async () => ({ id: "mock" }) };
+  };
+  const inspection = await inspectNotionSurfaces({ token: "test-token", fetchImpl });
+  assert.equal(inspection.connected, true);
+  assert.equal(inspection.mode, "LIVE_CONNECTED");
+  assert.equal(requestedUrls.length, 3);
+  assert.equal(inspection.surfaces.masterPage.status, "ONLINE_ACCESSIBLE");
+  assert.equal(inspection.surfaces.opportunitiesPipeline.status, "ONLINE_ACCESSIBLE");
+  assert.equal(inspection.surfaces.executionQueue.status, "ONLINE_ACCESSIBLE");
 });
