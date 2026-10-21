@@ -8,6 +8,7 @@ import { SystemControlsPanel } from './SystemControlsPanel';
 import { SystemHealthPanel } from './SystemHealthPanel';
 import { DependencyMapPanel } from './DependencyMapPanel';
 import { ObservationStreamPanel } from './ObservationStreamPanel';
+import { ConversationPanel } from './ConversationPanel';
 import { OreadConsole } from './OreadConsole';
 import { MoodCodexPanel } from './MoodCodexPanel';
 import { DivergenceAlertsPanel } from './DivergenceAlertsPanel';
@@ -870,6 +871,7 @@ export function App() {
         </div>
 
         {/* Intent flow card */}
+        <ConversationPanel />
         <OreadConsole />
         <MoodCodexPanel />
         <DivergenceAlertsPanel />

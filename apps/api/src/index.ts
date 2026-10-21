@@ -20,6 +20,7 @@ import { registerRealityRoute } from './reality-route.js';
 import { registerDependencyRoute } from './dependency-route.js';
 import { registerValueNavigatorRoute } from './value-navigator-route.js';
 import { registerConnectorObservationRoute, type ConnectorAdmissionEvidenceResolver } from './connector-observation-route.js';
+import { registerConversationRoute, type ConversationModel } from './conversation-route.js';
 import { OmegaCommandStore, OmegaIdempotencyConflictError, registerOmegaRoutes } from './omega.js';
 import { registerMeshValidationRoute } from './mesh-route.js';
 import {
@@ -55,6 +56,7 @@ export type CreateAppOptions = {
   connectorObservationPath?: string;
   githubFetch?: typeof fetch;
   connectorAdmissionEvidence?: ConnectorAdmissionEvidenceResolver;
+  conversationModel?: ConversationModel;
 };
 
 type AuthMode = 'local' | 'required';
@@ -257,6 +259,7 @@ export function createApp(
     githubFetch: options.githubFetch,
     resolveAdmissionEvidence: options.connectorAdmissionEvidence,
   });
+  registerConversationRoute(fastify, jsonError, options.conversationModel);
   registerMeshValidationRoute(fastify, ledgerMemory, requireReadAccess, jsonError);
 
   fastify.get('/health', async (_request, reply) => {
