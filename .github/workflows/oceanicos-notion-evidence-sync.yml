@@ -17,10 +17,17 @@ on:
 permissions:
   contents: read
 
+# Serialize this workflow on a ref so manual dispatches cannot race each other.
+# This is not a global lock against other writers to the same Notion page.
+concurrency:
+  group: oceanicos-notion-evidence-sync-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   test:
     name: Test evidence record builder
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
@@ -36,6 +43,7 @@ jobs:
     needs: test
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.write_to_notion == true }}
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Checkout source
         uses: actions/checkout@v4

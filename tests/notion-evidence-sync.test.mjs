@@ -78,17 +78,14 @@ test("preflight scans every Notion child page and finds a duplicate run", async 
 test("skips a duplicate run without issuing an append", async () => {
   let patchCalled = false;
   const fetchImpl = async (url, options) => {
-    assert.equal(options.method, "GET");
+    if (options.method === "PATCH") patchCalled = true;
     return { ok: true, json: async () => ({
       results: [{ type: "paragraph", paragraph: { rich_text: [{ plain_text: "Run ID: 123456789" }] } }],
       has_more: false,
       next_cursor: null,
     }) };
   };
-  const result = await appendEvidenceToNotion({ token, pageId, block: {}, runId: "123456789", fetchImpl: async (url, options) => {
-    if (options.method === "PATCH") patchCalled = true;
-    return fetchImpl(url, options);
-  }});
+  const result = await appendEvidenceToNotion({ token, pageId, block: {}, runId: "123456789", fetchImpl });
   assert.deepEqual(result, { ok: true, appended_block_count: 0, skipped_duplicate: true });
   assert.equal(patchCalled, false);
 });
@@ -110,6 +107,7 @@ test("appends exactly one block when the run has not been recorded", async () =>
   assert.equal(requests.length, 2);
   assert.equal(requests[0].options.method, "GET");
   assert.match(requests[0].url, /page_size=100/);
+  assert.ok(requests.every((request) => request.options.signal instanceof AbortSignal));
   assert.equal(requests[1].options.method, "PATCH");
   assert.equal(requests[1].url, `https://api.notion.com/v1/blocks/${pageId}/children`);
   assert.equal(requests[1].options.headers["Notion-Version"], "2022-06-28");

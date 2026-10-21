@@ -2,12 +2,22 @@ import { pathToFileURL } from "node:url";
 
 const EXPECTED_REPOSITORY = "starofgodmayomi-droid/omega-v-oceanicos";
 const NOTION_API_VERSION = "2022-06-28";
+const NOTION_REQUEST_TIMEOUT_MS = 15_000;
 
 function notionHeaders(token) {
   return {
     Authorization: `Bearer ${token}`,
     "Notion-Version": NOTION_API_VERSION,
     "Content-Type": "application/json",
+  };
+}
+
+function notionRequestOptions(token, method, body) {
+  return {
+    method,
+    headers: notionHeaders(token),
+    signal: AbortSignal.timeout(NOTION_REQUEST_TIMEOUT_MS),
+    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   };
 }
 
@@ -105,7 +115,7 @@ export async function findExistingRun({ token, pageId, runId, fetchImpl = fetch 
     if (cursor) params.set("start_cursor", cursor);
     const response = await fetchImpl(
       `https://api.notion.com/v1/blocks/${pageId}/children?${params.toString()}`,
-      { method: "GET", headers: notionHeaders(token) },
+      notionRequestOptions(token, "GET"),
     );
     const body = await readJson(response, "Notion preflight read failed");
     for (const block of Array.isArray(body.results) ? body.results : []) {
@@ -134,11 +144,12 @@ export async function appendEvidenceToNotion({ token, pageId, block, runId, fetc
     return { ok: true, appended_block_count: 0, skipped_duplicate: true };
   }
 
-  const response = await fetchImpl(`https://api.notion.com/v1/blocks/${pageId}/children`, {
-    method: "PATCH",
-    headers: notionHeaders(token),
-    body: JSON.stringify({ children: [block] }),
-  });
+  // Do not automatically retry this PATCH: if the connection drops after the server
+  // accepted it, the client cannot safely infer whether the append happened.
+  const response = await fetchImpl(
+    `https://api.notion.com/v1/blocks/${pageId}/children`,
+    notionRequestOptions(token, "PATCH", { children: [block] }),
+  );
   const body = await readJson(response, "Notion append failed");
   return {
     ok: true,
