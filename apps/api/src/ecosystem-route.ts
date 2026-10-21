@@ -212,6 +212,7 @@ export function registerEcosystemRoute(
           'does not prove community, economy, or real-world outcomes',
           'does not grant authority to execute consequential actions',
           'connector journal is local provenance, not live GitHub or Notion connectivity',
+          'conversation records are in-memory only; chat is not command execution, and model text is not verification',
         ],
       },
     };
