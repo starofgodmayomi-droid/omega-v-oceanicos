@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { buildEvidenceRecord, buildNotionBlock, appendEvidenceToNotion } from "../scripts/notion-evidence-sync.mjs";
+import { buildEvidenceRecord, buildNotionBlock, appendEvidenceToNotion, findExistingRun } from "../scripts/notion-evidence-sync.mjs";
 
 const validEnv = {
   GITHUB_REPOSITORY: "starofgodmayomi-droid/omega-v-oceanicos",
@@ -11,6 +11,10 @@ const validEnv = {
   GITHUB_WORKFLOW: "OceanicOS Notion Evidence Sync",
   SYNC_TIMESTAMP: "2026-10-21T13:00:00.000Z",
 };
+const pageId = "4003080b-dd53-8159-8220-ef09061f54b7";
+const token = "test-token";
+const emptyChildren = { ok: true, json: async () => ({ results: [], has_more: false, next_cursor: null }) };
+const appended = { ok: true, json: async () => ({ results: [{ id: "block-1" }] }) };
 
 test("builds deterministic evidence links from GitHub context", () => {
   const record = buildEvidenceRecord(validEnv);
@@ -44,28 +48,91 @@ test("builds one bounded Notion paragraph block without secrets", () => {
 test("Notion writer rejects missing credentials before making a request", async () => {
   let called = false;
   await assert.rejects(
-    appendEvidenceToNotion({ token: "", pageId: "4003080b-dd53-8159-8220-ef09061f54b7", block: {}, fetchImpl: async () => { called = true; } }),
+    appendEvidenceToNotion({ token: "", pageId, block: {}, runId: "123", fetchImpl: async () => { called = true; } }),
     /NOTION_TOKEN is required/,
   );
   assert.equal(called, false);
 });
 
-test("Notion writer sends a single append and reports API failures safely", async () => {
-  let request;
+test("preflight scans every Notion child page and finds a duplicate run", async () => {
+  const urls = [];
+  const fetchImpl = async (url) => {
+    urls.push(url);
+    if (urls.length === 1) {
+      return { ok: true, json: async () => ({
+        results: [{ type: "paragraph", paragraph: { rich_text: [{ plain_text: "older record" }] } }],
+        has_more: true,
+        next_cursor: "cursor-2",
+      }) };
+    }
+    return { ok: true, json: async () => ({
+      results: [{ type: "paragraph", paragraph: { rich_text: [{ plain_text: "Run ID: 123456789" }] } }],
+      has_more: false,
+      next_cursor: null,
+    }) };
+  };
+  assert.equal(await findExistingRun({ token, pageId, runId: "123456789", fetchImpl }), true);
+  assert.match(urls[1], /start_cursor=cursor-2/);
+});
+
+test("skips a duplicate run without issuing an append", async () => {
+  let patchCalled = false;
   const fetchImpl = async (url, options) => {
-    request = { url, options };
-    return { ok: true, json: async () => ({ results: [{ id: "block-1" }] }) };
+    assert.equal(options.method, "GET");
+    return { ok: true, json: async () => ({
+      results: [{ type: "paragraph", paragraph: { rich_text: [{ plain_text: "Run ID: 123456789" }] } }],
+      has_more: false,
+      next_cursor: null,
+    }) };
+  };
+  const result = await appendEvidenceToNotion({ token, pageId, block: {}, runId: "123456789", fetchImpl: async (url, options) => {
+    if (options.method === "PATCH") patchCalled = true;
+    return fetchImpl(url, options);
+  }});
+  assert.deepEqual(result, { ok: true, appended_block_count: 0, skipped_duplicate: true });
+  assert.equal(patchCalled, false);
+});
+
+test("appends exactly one block when the run has not been recorded", async () => {
+  const requests = [];
+  const fetchImpl = async (url, options) => {
+    requests.push({ url, options });
+    return options.method === "GET" ? emptyChildren : appended;
   };
   const result = await appendEvidenceToNotion({
-    token: "test-token",
-    pageId: "4003080b-dd53-8159-8220-ef09061f54b7",
+    token,
+    pageId,
     block: { type: "paragraph" },
+    runId: "123456789",
     fetchImpl,
   });
-  assert.equal(result.ok, true);
-  assert.equal(result.appended_block_count, 1);
-  assert.equal(request.options.method, "PATCH");
-  assert.equal(request.url, "https://api.notion.com/v1/blocks/4003080b-dd53-8159-8220-ef09061f54b7/children");
-  assert.equal(request.options.headers["Notion-Version"], "2022-06-28");
-  assert.equal(JSON.parse(request.options.body).children.length, 1);
+  assert.deepEqual(result, { ok: true, appended_block_count: 1, skipped_duplicate: false });
+  assert.equal(requests.length, 2);
+  assert.equal(requests[0].options.method, "GET");
+  assert.match(requests[0].url, /page_size=100/);
+  assert.equal(requests[1].options.method, "PATCH");
+  assert.equal(requests[1].url, `https://api.notion.com/v1/blocks/${pageId}/children`);
+  assert.equal(requests[1].options.headers["Notion-Version"], "2022-06-28");
+  assert.equal(JSON.parse(requests[1].options.body).children.length, 1);
+});
+
+test("preflight failures fail closed and do not append", async () => {
+  let patchCalled = false;
+  const fetchImpl = async (_url, options) => {
+    if (options.method === "PATCH") patchCalled = true;
+    return { ok: false, json: async () => ({ message: "permission denied" }) };
+  };
+  await assert.rejects(
+    appendEvidenceToNotion({ token, pageId, block: {}, runId: "123456789", fetchImpl }),
+    /Notion preflight read failed: permission denied/,
+  );
+  assert.equal(patchCalled, false);
+});
+
+test("Notion writer rejects malformed page IDs and run IDs before making a request", async () => {
+  let called = false;
+  const fetchImpl = async () => { called = true; };
+  await assert.rejects(appendEvidenceToNotion({ token, pageId: "not-a-uuid", block: {}, runId: "123", fetchImpl }), /NOTION_PAGE_ID must be a UUID/);
+  await assert.rejects(appendEvidenceToNotion({ token, pageId, block: {}, runId: "abc", fetchImpl }), /runId must be numeric/);
+  assert.equal(called, false);
 });

@@ -3,6 +3,14 @@ import { pathToFileURL } from "node:url";
 const EXPECTED_REPOSITORY = "starofgodmayomi-droid/omega-v-oceanicos";
 const NOTION_API_VERSION = "2022-06-28";
 
+function notionHeaders(token) {
+  return {
+    Authorization: `Bearer ${token}`,
+    "Notion-Version": NOTION_API_VERSION,
+    "Content-Type": "application/json",
+  };
+}
+
 export function buildEvidenceRecord(env) {
   const required = [
     "GITHUB_REPOSITORY",
@@ -73,26 +81,70 @@ export function buildNotionBlock(record) {
   };
 }
 
-export async function appendEvidenceToNotion({ token, pageId, block, fetchImpl = fetch }) {
+async function readJson(response, label) {
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const message = typeof body.message === "string" ? body.message : `HTTP ${response.status}`;
+    throw new Error(`${label}: ${message}`);
+  }
+  return body;
+}
+
+export async function findExistingRun({ token, pageId, runId, fetchImpl = fetch }) {
   if (!token) throw new Error("NOTION_TOKEN is required for a write");
   if (!pageId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(pageId)) {
     throw new Error("NOTION_PAGE_ID must be a UUID");
   }
+  if (!/^\d+$/.test(String(runId ?? ""))) {
+    throw new Error("runId must be numeric");
+  }
+
+  let cursor = null;
+  do {
+    const params = new URLSearchParams({ page_size: "100" });
+    if (cursor) params.set("start_cursor", cursor);
+    const response = await fetchImpl(
+      `https://api.notion.com/v1/blocks/${pageId}/children?${params.toString()}`,
+      { method: "GET", headers: notionHeaders(token) },
+    );
+    const body = await readJson(response, "Notion preflight read failed");
+    for (const block of Array.isArray(body.results) ? body.results : []) {
+      const blockBody = block?.[block.type];
+      const richText = Array.isArray(blockBody?.rich_text) ? blockBody.rich_text : [];
+      const text = richText.map((part) => part.plain_text ?? part.text?.content ?? "").join("");
+      if (text.includes(`Run ID: ${runId}`)) return true;
+    }
+    cursor = body.has_more && body.next_cursor ? body.next_cursor : null;
+  } while (cursor);
+
+  return false;
+}
+
+export async function appendEvidenceToNotion({ token, pageId, block, runId, fetchImpl = fetch }) {
+  if (!token) throw new Error("NOTION_TOKEN is required for a write");
+  if (!pageId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(pageId)) {
+    throw new Error("NOTION_PAGE_ID must be a UUID");
+  }
+  if (!/^\d+$/.test(String(runId ?? ""))) {
+    throw new Error("runId must be numeric");
+  }
+
+  const exists = await findExistingRun({ token, pageId, runId, fetchImpl });
+  if (exists) {
+    return { ok: true, appended_block_count: 0, skipped_duplicate: true };
+  }
+
   const response = await fetchImpl(`https://api.notion.com/v1/blocks/${pageId}/children`, {
     method: "PATCH",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Notion-Version": NOTION_API_VERSION,
-      "Content-Type": "application/json",
-    },
+    headers: notionHeaders(token),
     body: JSON.stringify({ children: [block] }),
   });
-  const body = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    const message = typeof body.message === "string" ? body.message : `HTTP ${response.status}`;
-    throw new Error(`Notion append failed: ${message}`);
-  }
-  return { ok: true, appended_block_count: Array.isArray(body.results) ? body.results.length : 1 };
+  const body = await readJson(response, "Notion append failed");
+  return {
+    ok: true,
+    appended_block_count: Array.isArray(body.results) ? body.results.length : 1,
+    skipped_duplicate: false,
+  };
 }
 
 async function main() {
@@ -106,6 +158,7 @@ async function main() {
     token: process.env.NOTION_TOKEN,
     pageId: process.env.NOTION_PAGE_ID,
     block,
+    runId: record.run_id,
   });
   console.log(JSON.stringify({ mode: "write", result, record }, null, 2));
 }
