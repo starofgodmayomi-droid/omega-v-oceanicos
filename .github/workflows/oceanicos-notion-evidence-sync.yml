@@ -1,0 +1,59 @@
+name: OceanicOS Notion Evidence Sync
+
+on:
+  push:
+    paths:
+      - ".github/workflows/oceanicos-notion-evidence-sync.yml"
+      - "scripts/notion-evidence-sync.mjs"
+      - "tests/notion-evidence-sync.test.mjs"
+  workflow_dispatch:
+    inputs:
+      write_to_notion:
+        description: "Append this successful run's evidence to the configured Notion page"
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+# Serialize this workflow on a ref so manual dispatches cannot race each other.
+# This is not a global lock against other writers to the same Notion page.
+concurrency:
+  group: oceanicos-notion-evidence-sync-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  test:
+    name: Test evidence record builder
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Run isolated tests (no credentials or network writes)
+        run: node --test tests/notion-evidence-sync.test.mjs
+
+  sync:
+    name: Append evidence to Notion
+    needs: test
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.write_to_notion == true && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Append verified workflow evidence
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_PAGE_ID: "4003080b-dd53-8159-8220-ef09061f54b7"
+          SYNC_WRITE: "true"
+        run: node scripts/notion-evidence-sync.mjs
