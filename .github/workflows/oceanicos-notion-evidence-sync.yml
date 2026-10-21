@@ -41,7 +41,7 @@ jobs:
   sync:
     name: Append evidence to Notion
     needs: test
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.write_to_notion == true }}
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.write_to_notion == true && github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

@@ -1,4 +1,5 @@
 import test from "node:test";
+import { readFile } from "node:fs/promises";
 import assert from "node:assert/strict";
 import { buildEvidenceRecord, buildNotionBlock, appendEvidenceToNotion, findExistingRun } from "../scripts/notion-evidence-sync.mjs";
 
@@ -133,4 +134,16 @@ test("Notion writer rejects malformed page IDs and run IDs before making a reque
   await assert.rejects(appendEvidenceToNotion({ token, pageId: "not-a-uuid", block: {}, runId: "123", fetchImpl }), /NOTION_PAGE_ID must be a UUID/);
   await assert.rejects(appendEvidenceToNotion({ token, pageId, block: {}, runId: "abc", fetchImpl }), /runId must be numeric/);
   assert.equal(called, false);
+});
+
+
+test("credentialed Notion sync is restricted to main branch", async () => {
+  const workflow = await readFile(
+    new URL("../.github/workflows/oceanicos-notion-evidence-sync.yml", import.meta.url),
+    "utf8",
+  );
+  assert.match(
+    workflow,
+    /if: \$\{\{ github\.event_name == 'workflow_dispatch' && inputs\.write_to_notion == true && github\.ref == 'refs\/heads\/main' \}\}/,
+  );
 });
