@@ -191,3 +191,62 @@ a:focus-visible {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Runtime receipt: values come from the app's observed client state. */
+.water-runtime-observation {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--omega-abyss-edge);
+}
+
+.water-runtime-observation__heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: var(--omega-foam);
+  font: 700 10px/1.5 var(--font-mono, ui-monospace, monospace);
+  letter-spacing: 0.04em;
+}
+
+.water-runtime-observation__heading span {
+  color: var(--omega-warning);
+}
+
+.water-runtime-observation__heading span[data-connected='true'] {
+  color: var(--omega-verified);
+}
+
+.water-runtime-observation__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 12px 0 0;
+}
+
+.water-runtime-observation__row {
+  min-width: 0;
+  padding: 9px;
+  border: 1px solid rgba(140, 232, 200, 0.12);
+  border-radius: 4px;
+  background: rgba(3, 11, 10, 0.5);
+}
+
+.water-runtime-observation__row dt {
+  color: var(--omega-current-dim);
+  font-size: 10px;
+}
+
+.water-runtime-observation__row dd {
+  margin: 5px 0 0;
+  color: var(--omega-foam);
+  font: 11px/1.5 var(--font-mono, ui-monospace, monospace);
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 560px) {
+  .water-runtime-observation__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

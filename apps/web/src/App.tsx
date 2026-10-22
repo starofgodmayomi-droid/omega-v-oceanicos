@@ -763,7 +763,17 @@ export function App() {
           omegaCommand={omegaCommand}
           onFocusCommand={setOmegaIntent}
         />
-        <WaterFlowPanel />
+        <WaterFlowPanel
+          runtime={{
+            streamConnected,
+            tipHash: tip?.hash ?? null,
+            tipTimestamp: tip?.timestamp ?? null,
+            evidenceStatus: tip?.evidence?.status ?? null,
+            ledgerIntegrity,
+            historyCount: history.length,
+            simulationMode,
+          }}
+        />
 
         {/* Prompt */}
         <h1
