@@ -56,6 +56,10 @@ test('runtime observation displays supplied client state without inferring verif
     ledgerIntegrity: { valid: false, height: 7, reason: 'test fixture' },
     historyCount: 3,
     simulationMode: true,
+    commandId: 'omega-cmd-42',
+    commandStatus: 'DIVERGENT',
+    admissionDecision: 'ALLOW',
+    realityClassification: 'DIVERGENT',
   });
 
   assert.equal(summary.streamConnected, true);
@@ -63,6 +67,10 @@ test('runtime observation displays supplied client state without inferring verif
   assert.equal(summary.rows.find((row) => row.label === 'Evidence status')?.value, 'Unavailable');
   assert.equal(summary.rows.find((row) => row.label === 'Ledger integrity')?.value, 'Integrity invalid · height 7');
   assert.equal(summary.rows.find((row) => row.label === 'Simulation flag')?.value, 'Enabled');
+  assert.equal(summary.rows.find((row) => row.label === 'Omega command ID')?.value, 'omega-cmd-42');
+  assert.equal(summary.rows.find((row) => row.label === 'Command status')?.value, 'DIVERGENT');
+  assert.equal(summary.rows.find((row) => row.label === 'Admission decision')?.value, 'ALLOW');
+  assert.equal(summary.rows.find((row) => row.label === 'Reality classification')?.value, 'DIVERGENT');
   assert.equal(summary.rows.some((row) => row.value === 'VERIFIED'), false);
 });
 
@@ -76,4 +84,8 @@ test('missing runtime values remain unavailable rather than successful', () => {
   assert.equal(summary.streamConnected, false);
   assert.equal(summary.rows.find((row) => row.label === 'Latest record')?.value, 'Unavailable');
   assert.equal(summary.rows.find((row) => row.label === 'Ledger integrity')?.value, 'Unavailable');
+  assert.equal(summary.rows.find((row) => row.label === 'Omega command ID')?.value, 'Unavailable');
+  assert.equal(summary.rows.find((row) => row.label === 'Command status')?.value, 'Unavailable');
+  assert.equal(summary.rows.find((row) => row.label === 'Admission decision')?.value, 'Unavailable');
+  assert.equal(summary.rows.find((row) => row.label === 'Reality classification')?.value, 'Unavailable');
 });

@@ -772,6 +772,10 @@ export function App() {
             ledgerIntegrity,
             historyCount: history.length,
             simulationMode,
+            commandId: omegaCommand?.command?.commandId ?? null,
+            commandStatus: omegaCommand?.command?.status ?? null,
+            admissionDecision: omegaCommand?.command?.change?.decision ?? null,
+            realityClassification: omegaCommand?.reality?.classification ?? null,
           }}
         />
 
