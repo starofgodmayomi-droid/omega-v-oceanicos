@@ -1,4 +1,5 @@
 import React from 'react';
+import { WATER_BEHAVIOR_MEANING, WATER_BEHAVIORS } from '../../../packages/types/src/water-intelligence.ts';
 import {
   WATER_FLOW_STAGES,
   summarizeWaterFlow,
@@ -9,16 +10,17 @@ interface WaterFlowPanelProps {
   frames?: readonly WaterFlowFrameView[] | null;
 }
 
-const STATUS_COLOR = {
-  VERIFIED: '#6ee7b7',
-  DIVERGENT: '#fca5a5',
-  UNKNOWN: '#94a3b8',
-  NOT_EXECUTED: '#facc15',
+const CLAIM_COLOR = {
+  'verified-glow': '#6ee7b7',
+  divergence: '#fca5a5',
+  unknown: '#94a3b8',
+  held: '#facc15',
 } as const;
 
 export function WaterFlowPanel({ frames = null }: WaterFlowPanelProps) {
   const summary = summarizeWaterFlow(frames);
-  const color = STATUS_COLOR[summary.status];
+  const color = CLAIM_COLOR[summary.skin.visualClaim];
+  const glow = summary.skin.visualClaim === 'verified-glow';
 
   return (
     <section
@@ -27,17 +29,18 @@ export function WaterFlowPanel({ frames = null }: WaterFlowPanelProps) {
         marginTop: '18px',
         padding: '18px',
         background: '#07121b',
-        border: '1px solid #38bdf833',
+        border: `1px solid ${glow ? '#38bdf833' : '#1e293b'}`,
         borderRadius: '6px',
       }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'flex-start' }}>
         <div>
-          <div style={{ color: '#6ee7b7', fontSize: '13px', fontWeight: 'bold' }}>
-            💧 KAI WATER-FLOW · FINITE TRACE
+          <div style={{ color: glow ? '#6ee7b7' : '#cbd5e1', fontSize: '13px', fontWeight: 'bold' }}>
+            💧 WATER INTELLIGENCE · BOUND TO EVIDENCE
           </div>
           <div style={{ color: '#94a3b8', fontSize: '11px', lineHeight: 1.5, marginTop: '4px' }}>
-            A provenance-aware representation of a pipeline receipt. It does not execute a pipeline or verify external reality.
+            Water names are claims about this receipt. A glow appears only when the status is VERIFIED.
+            This panel does not execute a pipeline or verify external reality.
           </div>
         </div>
         <span
@@ -86,8 +89,38 @@ export function WaterFlowPanel({ frames = null }: WaterFlowPanelProps) {
         })}
       </div>
 
+      <div
+        role="list"
+        aria-label="Water behaviors bound to evidence"
+        style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '6px', marginTop: '14px' }}
+      >
+        {WATER_BEHAVIORS.map((behavior) => {
+          const claim = summary.skin.behaviors[behavior];
+          const shown = claim === 'shown';
+          return (
+            <div
+              key={behavior}
+              role="listitem"
+              title={WATER_BEHAVIOR_MEANING[behavior]}
+              style={{
+                padding: '8px',
+                background: '#03080d',
+                border: `1px solid ${shown ? '#334155' : '#0f172a'}`,
+                color: shown ? '#e2e8f0' : '#475569',
+                fontSize: '10px',
+                lineHeight: 1.35,
+              }}
+            >
+              <div style={{ fontWeight: 'bold' }}>{behavior}</div>
+              <div>{shown ? 'shown' : 'withheld'}</div>
+            </div>
+          );
+        })}
+      </div>
+
       <div style={{ color: '#64748b', fontSize: '10px', lineHeight: 1.5, marginTop: '12px' }}>
         {summary.note}
+        <div style={{ marginTop: '3px' }}>{summary.skin.note}</div>
         {summary.traceId && <div style={{ marginTop: '3px', fontFamily: 'monospace' }}>trace: {summary.traceId} · max steps: {summary.maxSteps}</div>}
       </div>
     </section>

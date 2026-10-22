@@ -186,6 +186,7 @@ export * from './omega-command.js';
 export * from './scene.js';
 export * from './navigator-contract.js';
 export * from './water-flow.js';
+export * from './water-intelligence.js';
 
 export type SceneState =
   | 'darkness'
