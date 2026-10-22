@@ -44,3 +44,48 @@ test('canonical stage order is finite and explicit', () => {
     'RETURN',
   ]);
 });
+
+import { summarizeRuntimeObservation } from '../runtime-observation-model.ts';
+
+test('runtime observation displays supplied client state without inferring verification', () => {
+  const summary = summarizeRuntimeObservation({
+    streamConnected: true,
+    tipHash: '0123456789abcdef0123456789abcdef',
+    tipTimestamp: '2026-10-22T00:00:00Z',
+    evidenceStatus: null,
+    ledgerIntegrity: { valid: false, height: 7, reason: 'test fixture' },
+    historyCount: 3,
+    simulationMode: true,
+    commandId: 'omega-cmd-42',
+    commandStatus: 'DIVERGENT',
+    admissionDecision: 'ALLOW',
+    realityClassification: 'DIVERGENT',
+  });
+
+  assert.equal(summary.streamConnected, true);
+  assert.equal(summary.rows.find((row) => row.label === 'Latest record')?.value, '0123456789abcdef…');
+  assert.equal(summary.rows.find((row) => row.label === 'Evidence status')?.value, 'Unavailable');
+  assert.equal(summary.rows.find((row) => row.label === 'Ledger integrity')?.value, 'Integrity invalid · height 7');
+  assert.equal(summary.rows.find((row) => row.label === 'Simulation flag')?.value, 'Enabled');
+  assert.equal(summary.rows.find((row) => row.label === 'Omega command ID')?.value, 'omega-cmd-42');
+  assert.equal(summary.rows.find((row) => row.label === 'Command status')?.value, 'DIVERGENT');
+  assert.equal(summary.rows.find((row) => row.label === 'Admission decision')?.value, 'ALLOW');
+  assert.equal(summary.rows.find((row) => row.label === 'Reality classification')?.value, 'DIVERGENT');
+  assert.equal(summary.rows.some((row) => row.value === 'VERIFIED'), false);
+});
+
+test('missing runtime values remain unavailable rather than successful', () => {
+  const summary = summarizeRuntimeObservation({
+    streamConnected: false,
+    historyCount: 0,
+    simulationMode: false,
+  });
+
+  assert.equal(summary.streamConnected, false);
+  assert.equal(summary.rows.find((row) => row.label === 'Latest record')?.value, 'Unavailable');
+  assert.equal(summary.rows.find((row) => row.label === 'Ledger integrity')?.value, 'Unavailable');
+  assert.equal(summary.rows.find((row) => row.label === 'Omega command ID')?.value, 'Unavailable');
+  assert.equal(summary.rows.find((row) => row.label === 'Command status')?.value, 'Unavailable');
+  assert.equal(summary.rows.find((row) => row.label === 'Admission decision')?.value, 'Unavailable');
+  assert.equal(summary.rows.find((row) => row.label === 'Reality classification')?.value, 'Unavailable');
+});

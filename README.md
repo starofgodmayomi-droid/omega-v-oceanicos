@@ -38,6 +38,7 @@ without treating any single component—or any agent—as the final authority.
 - 🤝 **[Contributing](CONTRIBUTING.md)** — How to contribute verification-first
 - 📖 **[Documentation](docs/)** — Architecture, guides, and references
 - 🌊 **[Whole-ecosystem master prompt](WHOLE-ECOSYSTEM-MASTER-PROMPT.md)** — canonical continuity/design layer, bounded by repository evidence
+- 🌊 **[Whole-ecosystem evolution protocol](docs/WHOLE-ECOSYSTEM-EVOLUTION-PROTOCOL.md)** — evidence-gated priorities, finite execution stages, acceptance criteria, and verified learning
 - 🧭 **[Value Navigator contract](skills/oceanicos-value-navigator/references/repository-contract.md)** — proposals, evidence, observation, and reconciliation
 - 🌉 **[Voice Bridge](skills/voice-bridge/SKILL.md)** — one human source across many expressive forms
 - Ɔ **[ƆREADE × Oceanicos Harmonizer](skills/oread-pidgin-harmonizer/SKILL.md)** — symbolic meaning translated into bounded action
