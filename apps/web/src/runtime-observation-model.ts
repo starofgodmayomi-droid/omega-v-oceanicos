@@ -45,7 +45,7 @@ export function summarizeRuntimeObservation(input: RuntimeObservationInput): Run
       { label: 'Evidence status', value: displayValue(input.evidenceStatus) },
       { label: 'Ledger integrity', value: ledger },
       { label: 'Retained history', value: String(Math.max(0, input.historyCount)) },
-      { label: 'Execution mode', value: input.simulationMode ? 'Simulation' : 'Runtime' },
+      { label: 'Simulation flag', value: input.simulationMode ? 'Enabled' : 'Disabled' },
     ],
   };
 }

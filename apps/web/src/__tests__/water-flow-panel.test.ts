@@ -62,7 +62,7 @@ test('runtime observation displays supplied client state without inferring verif
   assert.equal(summary.rows.find((row) => row.label === 'Latest record')?.value, '0123456789abcdef…');
   assert.equal(summary.rows.find((row) => row.label === 'Evidence status')?.value, 'Unavailable');
   assert.equal(summary.rows.find((row) => row.label === 'Ledger integrity')?.value, 'Integrity invalid · height 7');
-  assert.equal(summary.rows.find((row) => row.label === 'Execution mode')?.value, 'Simulation');
+  assert.equal(summary.rows.find((row) => row.label === 'Simulation flag')?.value, 'Enabled');
   assert.equal(summary.rows.some((row) => row.value === 'VERIFIED'), false);
 });
 

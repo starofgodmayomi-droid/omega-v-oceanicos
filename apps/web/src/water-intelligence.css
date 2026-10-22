@@ -215,7 +215,7 @@ a:focus-visible {
 }
 
 .water-runtime-observation__heading span[data-connected='true'] {
-  color: var(--omega-verified);
+  color: var(--omega-current);
 }
 
 .water-runtime-observation__grid {
