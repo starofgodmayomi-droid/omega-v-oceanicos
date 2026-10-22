@@ -1,0 +1,193 @@
+/*
+ * OCEANICOS water-intelligence skin.
+ * The metaphor is presentation only; runtime receipts remain authoritative.
+ */
+:root {
+  /* Canonical brand-aligned surfaces and current from docs/BRAND.md. */
+  --omega-abyss: #071312;
+  --omega-abyss-raised: #0b1d1a;
+  --omega-abyss-edge: #1b3b35;
+  --omega-current: #8ce8c8;
+  --omega-current-bright: #69e7b9;
+  --omega-current-dim: #609187;
+  --omega-foam: #ebfaf4;
+  --omega-foam-muted: #c8e9df;
+  --omega-verified: #69e7b9;
+  --omega-dissent: #ed9986;
+  --omega-unknown: #547b74;
+  --omega-warning: #f4c66a;
+  --omega-electric: #00ff66;
+  --omega-glass: rgba(5, 15, 14, 0.78);
+  --omega-shadow: 0 18px 56px rgba(0, 0, 0, 0.28);
+  --omega-motion-fast: 140ms;
+  --omega-motion-base: 220ms;
+  --omega-motion-slow: 360ms;
+  --omega-focus-ring: 0 0 0 3px rgba(140, 232, 200, 0.3);
+}
+
+.os-shell {
+  background:
+    radial-gradient(circle at 74% -10%, rgba(105, 231, 185, 0.12), transparent 30rem),
+    radial-gradient(circle at 18% 18%, rgba(0, 255, 102, 0.055), transparent 34rem),
+    linear-gradient(145deg, #071312 0%, #0b1d1a 56%, #050b0b 100%);
+}
+
+.sidebar,
+.current-panel,
+.intent-panel,
+.architecture-panel,
+.stream-panel,
+.evidence-panel {
+  border-color: var(--omega-abyss-edge);
+  background: var(--omega-glass);
+  box-shadow: var(--omega-shadow);
+  backdrop-filter: blur(16px) saturate(118%);
+  -webkit-backdrop-filter: blur(16px) saturate(118%);
+}
+
+button:focus-visible,
+textarea:focus-visible,
+input:focus-visible,
+select:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--omega-current);
+  outline-offset: 3px;
+  box-shadow: var(--omega-focus-ring);
+}
+
+/* A finite trace is styled from its supplied receipt, never from animation. */
+.water-flow-panel {
+  margin-top: 18px;
+  padding: 18px;
+  color: var(--omega-foam);
+  background: linear-gradient(145deg, rgba(11, 29, 26, 0.94), rgba(3, 11, 10, 0.96));
+  border: 1px solid var(--omega-abyss-edge);
+  border-radius: 8px;
+  box-shadow: inset 0 1px rgba(235, 250, 244, 0.035), var(--omega-shadow);
+}
+
+.water-flow-panel__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.water-flow-panel__eyebrow {
+  color: var(--omega-current);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.035em;
+}
+
+.water-flow-panel__description,
+.water-flow-panel__note {
+  color: var(--omega-foam-muted);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.water-flow-panel__description {
+  max-width: 760px;
+  margin: 5px 0 0;
+}
+
+.water-flow-panel__status {
+  flex-shrink: 0;
+  padding: 4px 8px;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  font: 700 10px/1.4 var(--font-mono, ui-monospace, monospace);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.water-flow-panel__status[data-status='VERIFIED'] {
+  color: var(--omega-verified);
+  background: rgba(105, 231, 185, 0.08);
+}
+
+.water-flow-panel__status[data-status='DIVERGENT'] {
+  color: var(--omega-dissent);
+  background: rgba(237, 153, 134, 0.08);
+}
+
+.water-flow-panel__status[data-status='UNKNOWN'] {
+  color: #a9b8b3;
+  background: rgba(169, 184, 179, 0.07);
+}
+
+.water-flow-panel__status[data-status='NOT_EXECUTED'] {
+  color: var(--omega-warning);
+  background: rgba(244, 198, 106, 0.08);
+}
+
+.water-flow-panel__stages {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 16px;
+}
+
+.water-flow-stage {
+  display: grid;
+  min-height: 48px;
+  place-items: center;
+  padding: 7px 5px;
+  border: 1px solid rgba(140, 232, 200, 0.13);
+  border-radius: 4px;
+  color: #809b92;
+  background: rgba(3, 11, 10, 0.72);
+  font: 9px/1.35 var(--font-mono, ui-monospace, monospace);
+  text-align: center;
+  overflow-wrap: anywhere;
+  transition: color var(--omega-motion-base) ease, background-color var(--omega-motion-base) ease, border-color var(--omega-motion-base) ease;
+}
+
+.water-flow-stage[data-observed='true'] {
+  color: var(--omega-foam);
+  border-color: rgba(140, 232, 200, 0.52);
+  background: linear-gradient(145deg, rgba(105, 231, 185, 0.16), rgba(11, 29, 26, 0.92));
+}
+
+.water-flow-panel__note {
+  margin: 12px 0 0;
+}
+
+.water-flow-panel__trace {
+  margin-top: 4px;
+  color: var(--omega-current-dim);
+  font: 10px/1.6 var(--font-mono, ui-monospace, monospace);
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 760px) {
+  .water-flow-panel__stages {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 420px) {
+  .water-flow-panel {
+    padding: 14px;
+  }
+
+  .water-flow-panel__header {
+    flex-direction: column;
+  }
+
+  .water-flow-panel__stages {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
