@@ -101,6 +101,19 @@ test('mood Codex proposal enters the ledger as PROPOSED and never executes', asy
     assert.equal(missingEvidence.json().error, 'COMMAND_ADMISSION_EVIDENCE_UNAVAILABLE');
     const stillPending = await app.inject({ method: 'GET', url: `/v1/omega/commands/${body.command.commandId}` });
     assert.equal(stillPending.json().command.status, 'PROPOSED');
+    // The untrusted admission attempt must not create a denial or approval
+    // record, nor silently change the stored command's admission decision.
+    assert.deepEqual(stillPending.json().command.change, body.command.change);
+    const provenance = await app.inject({
+      method: 'GET',
+      url: `/v1/omega/commands/${body.command.commandId}/provenance`,
+    });
+    assert.equal(provenance.statusCode, 200);
+    assert.equal(
+      provenance.json().provenance.events.some((event: { type: string }) =>
+        event.type === 'command.admitted' || event.type === 'command.approved'),
+      false,
+    );
 
     const admitted = await app.inject({
       method: 'POST',
