@@ -10,7 +10,7 @@
     "typecheck": "pnpm --recursive run build && pnpm --recursive run typecheck",
     "format:check": "git diff --check",
     "audit": "node scripts/oceanicos-audit.mjs && pnpm audit --ignore CVE-2026-97058",
-    "validate:ci": "node scripts/validate-ci-contract.mjs",
+    "validate:ci": "node scripts/validate-ci-contract.mjs && node scripts/validate-base44-env-defaults.mjs",
     "validate:skills": "node scripts/validate-skill-contracts.mjs",
     "validate:docs": "node scripts/validate-readme-contract.mjs",
     "lint": "pnpm typecheck",
