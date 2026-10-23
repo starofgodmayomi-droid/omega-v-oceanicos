@@ -149,7 +149,7 @@ describe('required API authentication profile', () => {
   it('keeps the SPA shell and assets behind the same read boundary as API reads', async () => {
     const distDir = mkdtempSync(join(tmpdir(), 'omega-required-auth-web-dist-'));
     writeFileSync(join(distDir, 'index.html'), '<!doctype html><title>Omega required</title>');
-    writeFileSync(join(distDir, 'app.js'), 'console.log("required web bundle");');
+    writeFileSync(distDir, 'app.js', 'console.log("required web bundle");');
     process.env.OMEGA_WEB_DIST = distDir;
 
     const { server, baseUrl } = await startApi();
@@ -231,6 +231,37 @@ describe('required API authentication profile', () => {
       });
       expect(admin.status).not.toBe(401);
       expect(admin.status).not.toBe(403);
+    } finally {
+      await stopApi(server);
+    }
+  });
+
+  it('enforces read/admin roles on runtime-control routes before handling requests', async () => {
+    const { server, baseUrl } = await startApi();
+    try {
+      const readOnControl = await fetch(`${baseUrl}/v1/miner/stop`, {
+        method: 'POST',
+        headers: { authorization: 'Bearer read-token' },
+      });
+      expect(readOnControl.status).toBe(401);
+      expect((await readOnControl.json()).code).toBe('ADMIN_ACCESS_REQUIRED');
+
+      const anonymousControl = await fetch(`${baseUrl}/v1/miner/stop`, {
+        method: 'POST',
+      });
+      expect(anonymousControl.status).toBe(401);
+      expect((await anonymousControl.json()).code).toBe('ADMIN_ACCESS_REQUIRED');
+
+      const adminOnRead = await fetch(`${baseUrl}/v1/miner/status`, {
+        headers: { authorization: 'Bearer admin-token' },
+      });
+      expect(adminOnRead.status).toBe(401);
+      expect((await adminOnRead.json()).code).toBe('READ_ACCESS_REQUIRED');
+
+      const read = await fetch(`${baseUrl}/v1/miner/status`, {
+        headers: { authorization: 'Bearer read-token' },
+      });
+      expect(read.status).toBe(200);
     } finally {
       await stopApi(server);
     }
