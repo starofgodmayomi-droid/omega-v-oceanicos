@@ -22,7 +22,8 @@ describe('current OceanicOS app shell', () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(await screen.findByRole('button', { name: /AI SOUL/i }));
+    const frontView = await screen.findByRole('region', { name: 'OceanicOS unified conversational front view' });
+    await user.click(within(frontView).getByRole('button', { name: /AI SOUL/i }));
 
     expect(screen.getByLabelText('Your intent')).toHaveValue(
       'Map AI SOUL: purpose, implementation, authority boundary, runtime state, and evidence.'
