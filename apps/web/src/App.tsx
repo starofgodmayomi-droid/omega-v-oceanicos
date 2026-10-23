@@ -796,11 +796,6 @@ export function App() {
           onFocusCommand={setOmegaIntent}
         />
         <WaterFlowPanel />
-        <OreadConsole />
-        <MoodCodexPanel />
-        <DivergenceAlertsPanel />
-        <ValueNavigatorPanel />
-        <ConnectorPanel />
 
         {/* Intent flow card */}
         <OreadConsole />
