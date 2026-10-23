@@ -22,7 +22,7 @@ describe('current OceanicOS app shell', () => {
     render(<App />);
     const panel = await screen.findByRole('region', { name: 'Read-only ecosystem status evidence' });
     expect(within(panel).getByText(/Reality Observation/)).toBeInTheDocument();
-    expect(within(panel).getByText(/Distribution & Deployment — UNKNOWN/)).toBeInTheDocument();
+    expect(within(panel).getByText('Distribution & Deployment').closest('li')).toHaveTextContent('UNKNOWN');
     expect(within(panel).getByText(/does not prove deployment or external service availability/)).toBeInTheDocument();
   });
 
@@ -37,7 +37,8 @@ describe('current OceanicOS app shell', () => {
       };
     }});
     render(<App />);
-    expect(await screen.findByRole('alert')).toHaveTextContent(/status unavailable/i);
+    const panel = await screen.findByRole('region', { name: 'Read-only ecosystem status evidence' });
+    expect(within(panel).getByRole('alert')).toHaveTextContent(/status unavailable/i);
   });
 
   it('turns an organ choice into a draft prompt without submitting an action', async () => {
