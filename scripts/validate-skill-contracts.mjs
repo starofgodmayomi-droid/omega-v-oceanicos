@@ -4,12 +4,16 @@ import { join } from 'node:path';
 
 const root = process.cwd();
 const skills = [
+  'full-stack-computer-mode',
   'voice-bridge',
   'oread-pidgin-harmonizer',
   'kai-companion',
   'lucid-full-stack',
   'lucid-continuum',
+  'omega-full-stack-max',
+  'omega-global-good-fullstack',
   'omega-mirror-water-universal-body',
+  'omega-reality-first',
   'omega-v-os',
   'oceanicos-full-stack',
   'oceanicos-full-stack-companion',

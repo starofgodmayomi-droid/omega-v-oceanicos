@@ -51,6 +51,7 @@ without treating any single component—or any agent—as the final authority.
 - 🔁 **[Lucid Continuum](skills/lucid-continuum/SKILL.md)** — handoff across passes without invented memory
 - 🌐 **[Full-stack reality-access handoff](docs/upgrades/FULL_STACK_REALITY_ACCESS_2026-09-28.md)** — connector taxonomy without implicit ownership or authority
 - 🗺️ **[Repository inventory](docs/REPO_INVENTORY.md)** — workspace vs disk (current evidence)
+- 💧 **[Repo compress](docs/upgrades/REPO_COMPRESS_EXPAND_2026-10-16.md)** — `node scripts/compress-repo.mjs` sinks a whole-repo count without promoting deploy or cloud claims
 - ⚙️ **[Development Setup](docs/DEVELOPMENT.md)** — Get the project running locally
 | | Meaning |
 | --- | --- |

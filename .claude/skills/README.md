@@ -10,9 +10,9 @@ its source.
 | skill                                 | sha256 of `SKILL.md`                                               | installed  |
 | ------------------------------------- | ------------------------------------------------------------------ | ---------- |
 | `omega-v-ufi`                         | `3ef1fda3a9e84115495948c5f9510b22b946442a5847f701c1e922628e73bc45` | 2026-08-16 |
-| `omega-global-good-fullstack`         | `094759e83a3aec27b6884c3b55e19b8021f8771a40d6f036e334c0e2e15af79b` | 2026-08-27 |
+| `omega-global-good-fullstack`         | `5a453d5c0270b6feb0702213a1995464f5ca6c6b3862ef938205da4f74df4c1d` | 2026-08-27 |
 | `omega-global-good-fullstack-builder` | `96d5c00b13c80d343230f301c9c87b08f6d12278d541e06480db818749c40422` | 2026-08-27 |
-| `omega-full-stack-max`                | `ec5b6a72fd453e20243813424991be79d0f718e301e18b9e54ed0417f5082cd1` | 2026-08-28 |
+| `omega-full-stack-max`                | `a46d21bd40799dd2393377be975ad93f3231aeb6a237ec367225caa1774cbde8` | 2026-08-28 |
 | `oceanicos-full-stack-companion` | `7db7f5b030dc3ff5d5bef8f56eef407e5c9c9afa64472e4b5663bd7e8b07a222` | 2026-10-16 |
 | `oceanicos-max-space-full-stack` | `c3c5f8fa7a0b59d87dd4d1395b2422493eaded4f9a9296223699e4c5f369e65b` | 2026-10-16 |
 | `oceanicos-verified-upgrade` | `7c85422294d544464abc18ac4f946ea0269ca278ebefbe7fa1cf945e7bbf2c9a` | 2026-10-16 |
