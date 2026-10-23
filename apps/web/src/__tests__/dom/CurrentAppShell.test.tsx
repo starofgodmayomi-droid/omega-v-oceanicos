@@ -24,7 +24,9 @@ describe('current OceanicOS app shell', () => {
 
     await user.click(await screen.findByRole('button', { name: /AI SOUL/i }));
 
-    expect(screen.getByPlaceholderText("Tell me what you're trying to do…")).toHaveValue('Map AI SOUL.');
+    expect(screen.getByLabelText('Your intent')).toHaveValue(
+      'Map AI SOUL: purpose, implementation, authority boundary, runtime state, and evidence.'
+    );
     expect(
       fetchMock.mock.calls.some(([, init]) => {
         const options = init as { method?: string } | undefined;
