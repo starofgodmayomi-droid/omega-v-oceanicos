@@ -99,22 +99,20 @@ export function OreadConsole() {
     setLoading('admit');
     setError(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/v1/omega/commands/${commandId}/admit`, {
+      const response = await fetch(`${API_BASE_URL}/v1/omega/commands/${commandId}/approve`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
-          authority: 'human:dashboard-operator',
+          operator: 'dashboard-operator',
           policy: 'oreade-symbolic-boundary.v1',
-          authorityVerified: true,
-          policySatisfied: true,
         }),
       });
       const text = await response.text();
       const data = text ? JSON.parse(text) : null;
-      if (!response.ok) throw new Error(data?.error || `Admission failed (${response.status})`);
+      if (!response.ok) throw new Error(data?.error || `Approval failed (${response.status})`);
       setResult((previous) => previous ? { ...previous, command: data.command, nextAction: data.nextAction, executed: false } : previous);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Proposal admission failed');
+      setError(err instanceof Error ? err.message : 'Proposal approval failed');
     } finally {
       setLoading(null);
     }
@@ -167,7 +165,7 @@ export function OreadConsole() {
         <button onClick={translate} disabled={!intent.trim() || loading !== null} style={{ border: '1px solid #67d9b4', background: '#123a31', color: '#b8f5de', padding: '8px 12px', borderRadius: '4px', fontSize: '11px', fontWeight: 700 }}>{loading === 'drop' ? 'TRANSLATING…' : 'TRANSLATE DROP'}</button>
         <button onClick={propose} disabled={!intent.trim() || loading !== null} style={{ border: '1px solid #8ce8c8', background: '#8ce8c8', color: '#071312', padding: '8px 12px', borderRadius: '4px', fontSize: '11px', fontWeight: 700 }}>{loading === 'proposal' ? 'PERSISTING…' : 'CREATE PROPOSED COMMAND'}</button>
         {result?.command && (result.command.status === 'PROPOSED' || result.command.status === 'REVIEW') && (
-          <button onClick={admit} disabled={loading !== null} style={{ border: '1px solid #f0c674', background: '#3a2f16', color: '#ffe2a1', padding: '8px 12px', borderRadius: '4px', fontSize: '11px', fontWeight: 700 }}>{loading === 'admit' ? 'CHECKING POLICY…' : 'ADMIT BOUNDED PROPOSAL'}</button>
+          <button onClick={admit} disabled={loading !== null} style={{ border: '1px solid #f0c674', background: '#3a2f16', color: '#ffe2a1', padding: '8px 12px', borderRadius: '4px', fontSize: '11px', fontWeight: 700 }}>{loading === 'admit' ? 'CHECKING POLICY…' : 'APPROVE BOUNDED PROPOSAL'}</button>
         )}
       </div>
 
