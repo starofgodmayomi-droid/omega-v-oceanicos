@@ -17,6 +17,29 @@ describe('current OceanicOS app shell', () => {
     expect(within(dashboard).getByText('no external authority inferred')).toBeInTheDocument();
   });
 
+  it('renders read-only status evidence and preserves unknown deployment state', async () => {
+    installFetch();
+    render(<App />);
+    const panel = await screen.findByRole('region', { name: 'Read-only ecosystem status evidence' });
+    expect(within(panel).getByText(/Reality Observation/)).toBeInTheDocument();
+    expect(within(panel).getByText(/Distribution & Deployment — UNKNOWN/)).toBeInTheDocument();
+    expect(within(panel).getByText(/does not prove deployment or external service availability/)).toBeInTheDocument();
+  });
+
+  it('shows an explicit error when the status evidence endpoint is unavailable', async () => {
+    installFetch({ '/api/v1/ecosystem/status': () => {
+      const status = 503;
+      return {
+        ok: false, status,
+        json: async () => ({ error: 'status unavailable' }),
+        text: async () => JSON.stringify({ error: 'status unavailable' }),
+        headers: { get: () => 'application/json' }
+      };
+    }});
+    render(<App />);
+    expect(await screen.findByRole('alert')).toHaveTextContent(/status unavailable/i);
+  });
+
   it('turns an organ choice into a draft prompt without submitting an action', async () => {
     const fetchMock = installFetch();
     const user = userEvent.setup();

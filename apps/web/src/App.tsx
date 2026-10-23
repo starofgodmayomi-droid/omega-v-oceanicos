@@ -83,6 +83,9 @@ export function App() {
 
   const [moodData, setMoodData] = useState<any>(null);
   const [ecosystemBody, setEcosystemBody] = useState<any>(null);
+  const [ecosystemStatus, setEcosystemStatus] = useState<any>(null);
+  const [ecosystemStatusState, setEcosystemStatusState] = useState<'loading' | 'available' | 'error'>('loading');
+  const [ecosystemStatusError, setEcosystemStatusError] = useState<string | null>(null);
   const [attestationData, setAttestationData] = useState<any>(null);
   const [attestLoading, setAttestLoading] = useState(false);
   const [kernelCapabilities, setKernelCapabilities] = useState<KernelCapabilitySnapshot | null>(null);
@@ -138,6 +141,23 @@ export function App() {
       /* ambient */
     }
   };
+  const fetchEcosystemStatus = async () => {
+    setEcosystemStatusState('loading');
+    setEcosystemStatusError(null);
+    try {
+      const data = await apiRequest<any>('/v1/ecosystem/status');
+      if (!data?.success || !Array.isArray(data.layers) || !data.contract || !data.governance) {
+        throw new Error('Ecosystem status response did not match the expected evidence contract');
+      }
+      setEcosystemStatus(data);
+      setEcosystemStatusState('available');
+    } catch (err: any) {
+      setEcosystemStatus(null);
+      setEcosystemStatusState('error');
+      setEcosystemStatusError(typeof err?.message === 'string' ? err.message : 'Status snapshot unavailable');
+    }
+  };
+
   const fetchEcosystemBody = async () => {
     try {
       const data = await apiRequest<any>('/v1/ecosystem/body');
@@ -152,6 +172,7 @@ export function App() {
     fetchKernelCapabilities();
     fetchMood();
     fetchEcosystemBody();
+    fetchEcosystemStatus();
 
     let es: EventSource | null = null;
     let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
@@ -757,6 +778,9 @@ export function App() {
           realityStatus={tip?.evidence?.status ?? null}
           ledgerIntegrity={ledgerIntegrity}
           ecosystemBody={ecosystemBody}
+          ecosystemStatus={ecosystemStatus}
+          ecosystemStatusState={ecosystemStatusState}
+          ecosystemStatusError={ecosystemStatusError}
           command={omegaCommand}
         />
 

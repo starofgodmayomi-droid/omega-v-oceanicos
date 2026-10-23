@@ -5,7 +5,7 @@ type Props = {
   intent: string; onIntentChange: (value: string) => void; onSubmit: () => void;
   loading: boolean; streamConnected: boolean; simulationMode: boolean; humanGateRequired: boolean;
   realityStatus?: string | null; ledgerIntegrity: { valid: boolean; height: number } | null;
-  ecosystemBody: any; command: any;
+  ecosystemBody: any; ecosystemStatus?: any; ecosystemStatusState?: 'loading' | 'available' | 'error'; ecosystemStatusError?: string | null; command: any;
 };
 
 const ORGANS = [
@@ -42,7 +42,7 @@ function EvidenceSignal({label,value,status,detail}:{label:string;value:string;s
 }
 
 export function UnifiedOceanicFrontView(props: Props) {
-  const {intent,onIntentChange,onSubmit,loading,streamConnected,simulationMode,humanGateRequired,realityStatus,ledgerIntegrity,ecosystemBody,command}=props;
+  const {intent,onIntentChange,onSubmit,loading,streamConnected,simulationMode,humanGateRequired,realityStatus,ledgerIntegrity,ecosystemBody,ecosystemStatus,ecosystemStatusState='loading',ecosystemStatusError,command}=props;
   const bodyState=evidenceState(ecosystemBody?.status);
   const realityState=evidenceState(realityStatus);
   const commandState=evidenceState(command?.reality?.classification);
@@ -103,6 +103,27 @@ export function UnifiedOceanicFrontView(props: Props) {
         <div className="oceanic-front-system-notes"><div><span>Authority</span><strong>{humanGateRequired?'Human gate required':'Review action policy'}</strong></div><div><span>Execution mode</span><strong>{simulationMode?'Simulation':'Not proven live'}</strong></div></div>
       </aside>
     </div>
+
+    <section className="oceanic-front-panel oceanic-front-status-evidence" aria-label="Read-only ecosystem status evidence">
+      <div className="oceanic-front-panel-heading">
+        <span className="oceanic-front-eyebrow">READ-ONLY API · /v1/ecosystem/status</span>
+        <h2>Evidence snapshot</h2>
+        <p>Separate from the ecosystem-body snapshot. This is an API contract response, not proof of deployment or live external connectivity.</p>
+      </div>
+      {ecosystemStatusState === 'loading' && <p role="status">Loading ecosystem status evidence…</p>}
+      {ecosystemStatusState === 'error' && <div role="alert"><strong>Status snapshot unavailable.</strong><p>{ecosystemStatusError || 'The status endpoint could not be read.'}</p><p>Unknown remains unknown; no live status is inferred.</p></div>}
+      {ecosystemStatusState === 'available' && ecosystemStatus && <>
+        <p><strong>{ecosystemStatus.contract?.name || 'Ecosystem'} · schema {ecosystemStatus.contract?.schemaVersion || 'unknown'}</strong></p>
+        <p>Evaluated at: <time dateTime={ecosystemStatus.contract?.evaluatedAt}>{ecosystemStatus.contract?.evaluatedAt || 'Timestamp unavailable'}</time> · scope: {ecosystemStatus.oneBody?.scope || 'unknown'}</p>
+        <ul className="oceanic-front-status-layers">{ecosystemStatus.layers.map((layer: any) => <li key={layer.layer}>
+          <strong>{layer.layer}</strong> — {layer.evidenceStatus || 'UNKNOWN'}
+          <p>Source: {layer.source || 'Not supplied'} · Scope: {layer.scope || 'unknown'}</p>
+          <p>Policy: {layer.policy || 'Not supplied'} · Provenance: {layer.provenance || 'Not supplied'}</p>
+        </li>)}</ul>
+        <div><strong>Governance:</strong> {ecosystemStatus.governance?.status || 'UNKNOWN'} · auth mode: {ecosystemStatus.governance?.authMode || 'unknown'} · fail closed: {String(ecosystemStatus.governance?.failClosed ?? 'unknown')}</div>
+        <div><strong>Limitations</strong><ul>{(ecosystemStatus.oneBody?.limitations || ['Limitations were not supplied by the endpoint.']).map((item: string, i: number) => <li key={i}>{item}</li>)}</ul></div>
+      </>}
+    </section>
 
     <section className="oceanic-front-flow" aria-label="Whole ecosystem operating flow"><div className="oceanic-front-flow-head"><div><span className="oceanic-front-eyebrow">THE ONE CURRENT</span><h2>Intent to value, with evidence all the way through.</h2></div><small>Operating design · individual stage completion is not inferred from this diagram.</small></div><ol>{FLOW.map((step,i)=><li key={step}><span>{String(i+1).padStart(2,'0')}</span>{step}</li>)}</ol></section>
   </section>;
