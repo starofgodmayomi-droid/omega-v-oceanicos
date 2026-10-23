@@ -465,13 +465,10 @@ export function registerOmegaRoutes(
     if (Object.prototype.hasOwnProperty.call(body, 'authorityVerified') || Object.prototype.hasOwnProperty.call(body, 'policySatisfied')) {
       return reply.status(400).send({ success: false, error: 'COMMAND_ADMISSION_EVIDENCE_NOT_ACCEPTED' });
     }
-    const authority = typeof body.authority === 'string' ? body.authority : null;
-    const policy = typeof body.policy === 'string' ? body.policy : null;
-    const admitted = resolveChangeAdmission({ ...command.change, authority, policy }, { authorityVerified: false, policySatisfied: false });
-    const status = statusForDecision(admitted.decision);
-    const updated = store.update(command, { change: admitted, status });
-    store.record('command.admitted', updated, { decision: admitted.decision });
-    return { success: true, ...commandResult(updated, status === 'AUTHORIZED' ? 'execute the authorized bounded action' : status === 'DENIED' ? 'review the denial evidence; no execution is permitted' : 'obtain attributable human approval') };
+    // No trusted server-side admission evidence resolver is configured.
+    // Do not convert an unverified request into a durable denial or mutate a
+    // pending command. Explicit operator approval remains a separate route.
+    return reply.status(403).send({ success: false, error: 'COMMAND_ADMISSION_EVIDENCE_UNAVAILABLE' });
   });
 
   fastify.post('/v1/omega/commands/:id/approve', async (request, reply) => {
