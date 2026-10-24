@@ -17,14 +17,41 @@ describe('current OceanicOS app shell', () => {
     expect(within(dashboard).getByText('no external authority inferred')).toBeInTheDocument();
   });
 
+  it('renders read-only status evidence and preserves unknown deployment state', async () => {
+    installFetch();
+    render(<App />);
+    const panel = await screen.findByRole('region', { name: 'Read-only ecosystem status evidence' });
+    expect(within(panel).getByText(/Reality Observation/)).toBeInTheDocument();
+    expect(within(panel).getByText('Distribution & Deployment').closest('li')).toHaveTextContent('UNKNOWN');
+    expect(within(panel).getByText(/does not prove deployment or external service availability/)).toBeInTheDocument();
+  });
+
+  it('shows an explicit error when the status evidence endpoint is unavailable', async () => {
+    installFetch({ '/api/v1/ecosystem/status': () => {
+      const status = 503;
+      return {
+        ok: false, status,
+        json: async () => ({ error: 'status unavailable' }),
+        text: async () => JSON.stringify({ error: 'status unavailable' }),
+        headers: { get: () => 'application/json' }
+      };
+    }});
+    render(<App />);
+    const panel = await screen.findByRole('region', { name: 'Read-only ecosystem status evidence' });
+    expect(within(panel).getByRole('alert')).toHaveTextContent(/status unavailable/i);
+  });
+
   it('turns an organ choice into a draft prompt without submitting an action', async () => {
     const fetchMock = installFetch();
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(await screen.findByRole('button', { name: /AI SOUL/i }));
+    const frontView = await screen.findByRole('region', { name: 'OceanicOS unified conversational front view' });
+    await user.click(within(frontView).getByRole('button', { name: /AI SOUL/i }));
 
-    expect(screen.getByPlaceholderText("Tell me what you're trying to do…")).toHaveValue('Map AI SOUL.');
+    expect(screen.getByLabelText('Your intent')).toHaveValue(
+      'Map AI SOUL: purpose, implementation, authority boundary, runtime state, and evidence.'
+    );
     expect(
       fetchMock.mock.calls.some(([, init]) => {
         const options = init as { method?: string } | undefined;

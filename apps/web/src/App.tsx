@@ -15,6 +15,7 @@ import { ValueNavigatorPanel } from './ValueNavigatorPanel';
 import { ConnectorPanel } from './ConnectorPanel';
 import { WholeEcosystemDashboard } from './WholeEcosystemDashboard';
 import { WaterFlowPanel } from './WaterFlowPanel';
+import { UnifiedOceanicFrontView } from './UnifiedOceanicFrontView';
 import { LifecycleFlow, deriveStageStates, type LifecycleStage } from './LifecycleFlow';
 import { GlobeViewport } from './GlobeViewport';
 import { bindGlobeEvidence } from './globe-shell';
@@ -52,13 +53,6 @@ async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
   return payload as T;
 }
 
-const MODE_BUTTONS = [
-  { icon: '✦', label: 'Create', template: 'Create a new ' },
-  { icon: '◇', label: 'Explore', template: 'Explore the current state of ' },
-  { icon: '⚙', label: 'Build', template: 'Build and test ' },
-  { icon: '◎', label: 'Change', template: 'Change ' },
-];
-
 export function App() {
   const [tip, setTip] = useState<any>(null);
   const [ledgerIntegrity, setLedgerIntegrity] = useState<{
@@ -89,6 +83,9 @@ export function App() {
 
   const [moodData, setMoodData] = useState<any>(null);
   const [ecosystemBody, setEcosystemBody] = useState<any>(null);
+  const [ecosystemStatus, setEcosystemStatus] = useState<any>(null);
+  const [ecosystemStatusState, setEcosystemStatusState] = useState<'loading' | 'available' | 'error'>('loading');
+  const [ecosystemStatusError, setEcosystemStatusError] = useState<string | null>(null);
   const [attestationData, setAttestationData] = useState<any>(null);
   const [attestLoading, setAttestLoading] = useState(false);
   const [kernelCapabilities, setKernelCapabilities] = useState<KernelCapabilitySnapshot | null>(null);
@@ -144,6 +141,23 @@ export function App() {
       /* ambient */
     }
   };
+  const fetchEcosystemStatus = async () => {
+    setEcosystemStatusState('loading');
+    setEcosystemStatusError(null);
+    try {
+      const data = await apiRequest<any>('/v1/ecosystem/status');
+      if (!data?.success || !Array.isArray(data.layers) || !data.contract || !data.governance) {
+        throw new Error('Ecosystem status response did not match the expected evidence contract');
+      }
+      setEcosystemStatus(data);
+      setEcosystemStatusState('available');
+    } catch (err: any) {
+      setEcosystemStatus(null);
+      setEcosystemStatusState('error');
+      setEcosystemStatusError(typeof err?.message === 'string' ? err.message : 'Status snapshot unavailable');
+    }
+  };
+
   const fetchEcosystemBody = async () => {
     try {
       const data = await apiRequest<any>('/v1/ecosystem/body');
@@ -158,6 +172,7 @@ export function App() {
     fetchKernelCapabilities();
     fetchMood();
     fetchEcosystemBody();
+    fetchEcosystemStatus();
 
     let es: EventSource | null = null;
     let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
@@ -709,7 +724,7 @@ export function App() {
       {/* Main surface */}
       <main
         style={{
-          maxWidth: globeMax ? '1100px' : '720px',
+          maxWidth: globeMax ? '1440px' : '1320px',
           width: '100%',
           margin: '0 auto',
           padding: '60px 24px 40px',
@@ -752,6 +767,23 @@ export function App() {
           </button>
         </div>
 
+        <UnifiedOceanicFrontView
+          intent={omegaIntent}
+          onIntentChange={setOmegaIntent}
+          onSubmit={proposeOmegaCommand}
+          loading={omegaLoading}
+          streamConnected={streamConnected}
+          simulationMode={simulationMode}
+          humanGateRequired={humanGateRequired}
+          realityStatus={tip?.evidence?.status ?? null}
+          ledgerIntegrity={ledgerIntegrity}
+          ecosystemBody={ecosystemBody}
+          ecosystemStatus={ecosystemStatus}
+          ecosystemStatusState={ecosystemStatusState}
+          ecosystemStatusError={ecosystemStatusError}
+          command={omegaCommand}
+        />
+
         <WholeEcosystemDashboard
           streamConnected={streamConnected}
           simulationMode={simulationMode}
@@ -764,110 +796,6 @@ export function App() {
           onFocusCommand={setOmegaIntent}
         />
         <WaterFlowPanel />
-
-        {/* Prompt */}
-        <h1
-          style={{
-            fontSize: '28px',
-            fontWeight: 600,
-            color: theme.text,
-            textAlign: 'center',
-            margin: '0 0 28px',
-            letterSpacing: '-0.5px',
-          }}
-        >
-          What shall we make real?
-        </h1>
-
-        {/* Input */}
-        <div
-          style={{
-            display: 'flex',
-            gap: '8px',
-            alignItems: 'stretch',
-          }}
-        >
-          <input
-            value={omegaIntent}
-            onChange={(e) => setOmegaIntent(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && omegaIntent.trim() && !omegaLoading) {
-                proposeOmegaCommand();
-              }
-            }}
-            maxLength={2000}
-            placeholder="Tell me what you're trying to do…"
-            style={{
-              flex: 1,
-              padding: '14px 18px',
-              background: theme.surface,
-              border: `1px solid ${theme.borderBright}`,
-              borderRadius: theme.radiusPill,
-              color: theme.text,
-              fontFamily: theme.fontSans,
-              fontSize: '15px',
-              outline: 'none',
-            }}
-          />
-          <button
-            onClick={proposeOmegaCommand}
-            disabled={omegaLoading || !omegaIntent.trim()}
-            style={{
-              padding: '0 22px',
-              borderRadius: theme.radiusPill,
-              border: 'none',
-              background: omegaLoading || !omegaIntent.trim() ? `${theme.accent}44` : theme.accent,
-              color: theme.bg,
-              fontFamily: theme.fontSans,
-              fontSize: '18px',
-              fontWeight: 700,
-              cursor: omegaLoading || !omegaIntent.trim() ? 'not-allowed' : 'pointer',
-              opacity: omegaLoading || !omegaIntent.trim() ? 0.5 : 1,
-              transition: 'opacity 0.2s',
-            }}
-          >
-            →
-          </button>
-        </div>
-
-        {/* Mode buttons */}
-        <div
-          style={{
-            display: 'flex',
-            gap: '10px',
-            marginTop: '14px',
-            flexWrap: 'wrap',
-          }}
-        >
-          {MODE_BUTTONS.map((mode) => (
-            <button
-              key={mode.label}
-              onClick={() => setOmegaIntent(mode.template)}
-              style={{
-                padding: '8px 16px',
-                borderRadius: theme.radiusPill,
-                border: `1px solid ${theme.border}`,
-                background: 'transparent',
-                color: theme.textMuted,
-                fontFamily: theme.fontSans,
-                fontSize: '13px',
-                fontWeight: 500,
-                cursor: 'pointer',
-                transition: 'border-color 0.2s, color 0.2s',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = theme.borderBright;
-                e.currentTarget.style.color = theme.text;
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = theme.border;
-                e.currentTarget.style.color = theme.textMuted;
-              }}
-            >
-              {mode.icon} {mode.label}
-            </button>
-          ))}
-        </div>
 
         {/* Intent flow card */}
         <OreadConsole />
