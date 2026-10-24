@@ -39,7 +39,10 @@ describe('live API pipeline → durable causal memory', () => {
     try {
       const { createApp } = await import('../../apps/api/dist/index.js');
       const { FileCausalMemory } = await import('../../packages/mini/dist/index.js');
-      const app = createApp(join(directory, 'ledger.db'), false, { allowUnsignedCycle: true });
+      const app = createApp(join(directory, 'ledger.db'), false, {
+        allowUnsignedCycle: true,
+        pipelineAdmissionEvidence: () => ({ authorityVerified: true, policySatisfied: true }),
+      });
       await app.ready();
       try {
         const response = await app.inject({
@@ -47,7 +50,7 @@ describe('live API pipeline → durable causal memory', () => {
           url: '/v1/pipeline',
           payload: {
             compile,
-            admission: { authorityVerified: true, policySatisfied: true },
+            admission: {},
             authority: 'human:api-test',
             policy: 'policy:api',
             handlerStateAfter: 'S1',
@@ -79,6 +82,52 @@ describe('live API pipeline → durable causal memory', () => {
     }
   });
 
+  it('rejects caller-supplied admission gates and does not record execution', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'omega-api-client-admission-'));
+    const memoryPath = join(directory, 'causal.jsonl');
+    const previousPath = process.env.OMEGA_CAUSAL_MEMORY_PATH;
+    const previousKey = process.env.OMEGA_REALITY_ATTESTATION_KEY;
+    process.env.OMEGA_CAUSAL_MEMORY_PATH = memoryPath;
+    process.env.OMEGA_REALITY_ATTESTATION_KEY = 'api-causal-test-key';
+    try {
+      const { createApp } = await import('../../apps/api/dist/index.js');
+      const { FileCausalMemory } = await import('../../packages/mini/dist/index.js');
+      const app = createApp(join(directory, 'ledger.db'), false, {
+        allowUnsignedCycle: true,
+        pipelineAdmissionEvidence: () => ({ authorityVerified: true, policySatisfied: true }),
+      });
+      await app.ready();
+      try {
+        const response = await app.inject({
+          method: 'POST',
+          url: '/v1/pipeline',
+          payload: {
+            compile,
+            admission: { authorityVerified: true, policySatisfied: true },
+            authority: 'human:api-test',
+            policy: 'policy:api',
+            handlerStateAfter: 'S1',
+            observedState: 'S1',
+            changeId: 'api-client-admission-rejected',
+          },
+        });
+        assert.equal(response.statusCode, 400);
+        assert.equal(response.json().error, 'PIPELINE_ADMISSION_EVIDENCE_NOT_ACCEPTED');
+        const memory = new FileCausalMemory(memoryPath, { key: 'api-causal-test-key' });
+        assert.equal(memory.verifyIntegrity(), true);
+        assert.equal(memory.replay('api-client-admission-rejected'), undefined);
+      } finally {
+        await app.close();
+      }
+    } finally {
+      if (previousPath === undefined) delete process.env.OMEGA_CAUSAL_MEMORY_PATH;
+      else process.env.OMEGA_CAUSAL_MEMORY_PATH = previousPath;
+      if (previousKey === undefined) delete process.env.OMEGA_REALITY_ATTESTATION_KEY;
+      else process.env.OMEGA_REALITY_ATTESTATION_KEY = previousKey;
+      await removeTemporaryDirectory(directory);
+    }
+  });
+
   it('accepts a finite water-flow prefix and rejects invalid bounds at the API boundary', async () => {
     const directory = mkdtempSync(join(tmpdir(), 'omega-api-water-flow-'));
     try {
@@ -91,7 +140,7 @@ describe('live API pipeline → durable causal memory', () => {
           url: '/v1/pipeline',
           payload: {
             compile,
-            admission: { authorityVerified: true, policySatisfied: true },
+            admission: {},
             authority: 'human:api-test',
             policy: 'policy:api',
             handlerStateAfter: 'S1',
@@ -100,8 +149,13 @@ describe('live API pipeline → durable causal memory', () => {
           },
         });
         assert.equal(valid.statusCode, 200);
+        const validBody = valid.json();
+        assert.equal(validBody.pipeline.halted, true);
+        assert.equal(validBody.pipeline.haltReason, 'DENIED');
+        assert.equal(validBody.pipeline.authorized, false);
+        assert.equal(validBody.pipeline.executionStatus, null);
         assert.deepEqual(
-          valid.json().pipeline.waterFlow.map((frame: { stage: string }) => frame.stage),
+          validBody.pipeline.waterFlow.map((frame: { stage: string }) => frame.stage),
           ['REALITY', 'ATTENTION'],
         );
 
@@ -110,7 +164,7 @@ describe('live API pipeline → durable causal memory', () => {
           url: '/v1/pipeline',
           payload: {
             compile,
-            admission: { authorityVerified: true, policySatisfied: true },
+            admission: {},
             authority: 'human:api-test',
             policy: 'policy:api',
             waterFlowMaxSteps: 9,
@@ -144,7 +198,7 @@ describe('live API pipeline → durable causal memory', () => {
           url: '/v1/pipeline',
           payload: {
             compile,
-            admission: { authorityVerified: true, policySatisfied: true },
+            admission: {},
             authority: 'human:api-test',
             policy: 'policy:api',
             handlerStateAfter: 'S1',

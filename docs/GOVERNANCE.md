@@ -47,6 +47,7 @@ port, regardless of how the three variables are configured:
 - `POST /os/admit`
 - `POST /mini/cycle`
 - `POST /mini/total`
+- `POST /v1/pipeline`
 
 A caller who can reach the service can write into the append-only chain,
 authorize actions, and record learnings. `POST /attest/verify` is read-shaped
@@ -108,6 +109,10 @@ The Observer and API now preserve optional `parentId` and a bounded `lineage` ar
 
 When `OMEGA_ADMIN_OPERATOR_ALLOWLIST` is configured, the three persistence/revocation mutations and Ω command approval require a matching `x-omega-operator-id`; `OMEGA_ADMIN_REQUIRE_ALLOWLIST=on` also fails closed if the list is missing. A JSON body operator cannot substitute for the dedicated header when the allowlist policy is active. Without the policy, legacy body fallback remains for compatibility. The header is still a caller assertion checked against the configured allowlist, not authentication, identity proofing, or evidence of the human behind the request. The dashboard and SDK use the labels `dashboard-operator` and `sdk-operator` by default; deployments enabling the allowlist must configure the labels their clients use.
 
+
+## Pipeline admission boundary
+
+`POST /v1/pipeline` is open when auth mode is local. Fields named authorityVerified or policySatisfied inside the request admission object are not authority. If either is present the route returns 400 PIPELINE_ADMISSION_EVIDENCE_NOT_ACCEPTED and does not run. With those fields absent, admission evidence comes only from the server pipelineAdmissionEvidence option supplied to createApp. That option is not read from the request, the environment, or an admin bearer token. When it is absent, the route still compiles and can return a water-flow prefix, then the existing gate returns DENY. The response is halted at ADMIT with haltReason DENIED, authorized false, and no execution, attestation, or reality verification. A thrown or malformed server resolver returns 403 PIPELINE_ADMISSION_EVIDENCE_UNAVAILABLE and does not run. handlerStateAfter does not execute unless that server evidence allows the transition. This boundary does not change kernel dry-run ordering.
 
 ## Ω command lifecycle governance
 
