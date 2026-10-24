@@ -88,7 +88,7 @@ async function handleOmega(argsAfterCommand) {
   const id = argsAfterCommand[1];
   if (!id) throw new Error(`omega ${subcommand} requires a command id`);
   if (subcommand === 'inspect') return console.log(JSON.stringify(await omegaRequest(`/v1/omega/commands/${encodeURIComponent(id)}`), null, 2));
-  if (subcommand === 'admit') return console.log(JSON.stringify(await omegaRequest(`/v1/omega/commands/${encodeURIComponent(id)}/admit`, 'POST', { authority: process.env.OMEGA_AUTHORITY || 'human:cli-user', policy: 'policy:cli', authorityVerified: true, policySatisfied: true }), null, 2));
+  if (subcommand === 'admit') return console.log(JSON.stringify(await omegaRequest(`/v1/omega/commands/${encodeURIComponent(id)}/admit`, 'POST', { authority: process.env.OMEGA_AUTHORITY || 'human:cli-user', policy: 'policy:cli' }), null, 2));
   if (subcommand === 'approve') return console.log(JSON.stringify(await omegaRequest(`/v1/omega/commands/${encodeURIComponent(id)}/approve`, 'POST', { operator: process.env.OMEGA_REQUESTED_BY || 'cli-user' }), null, 2));
   if (subcommand === 'execute') return console.log(JSON.stringify(await omegaRequest(`/v1/omega/commands/${encodeURIComponent(id)}/execute`, 'POST', {}), null, 2));
   if (subcommand === 'observe') return console.log(JSON.stringify(await omegaRequest(`/v1/omega/commands/${encodeURIComponent(id)}/observe`, 'POST', { observedState: argsAfterCommand.slice(2).join(' ') || 'bounded-local-action-complete' }), null, 2));

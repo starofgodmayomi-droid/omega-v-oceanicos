@@ -17,6 +17,7 @@ const skills = [
   'oceanicos-max-space-full-stack',
   'oceanicos-value-navigator',
   'oceanicos-verified-upgrade',
+  'oceanicos-total-continuum',
 ];
 const required = [
   'POSSIBLE',
