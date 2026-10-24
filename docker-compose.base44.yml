@@ -11,7 +11,7 @@ services:
     environment:
       - CI=true
 
-  # API: Fastify server (CommonJS, tsc --watch + node --watch live reload).
+  # API: Fastify ESM server (tsc --watch + node --watch live reload).
   api:
     image: node:22
     working_dir: /app
