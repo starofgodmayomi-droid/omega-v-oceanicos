@@ -84,6 +84,8 @@ Welcome to the Ω∞v Oceanicos documentation. Start here to understand the proj
   the finite ∞/11:11 return.
 - **[Lucid Continuum](../skills/lucid-continuum/SKILL.md)** — what may cross a
   handoff, and what must be observed again.
+- **[Oceanicos Total Continuum](../skills/oceanicos-total-continuum/SKILL.md)**
+  — one finite pass inside this public repository, then only an observed handoff.
 - **[Whole ecosystem reality compression](./upgrades/WHOLE_ECOSYSTEM_REALITY_COMPRESSION_2026-10-04.md)**
   — source-labeled translation of the supplied Ω∞v architecture into repository
   boundaries and explicit unknowns.
