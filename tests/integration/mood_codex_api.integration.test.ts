@@ -92,6 +92,29 @@ test('mood Codex proposal enters the ledger as PROPOSED and never executes', asy
     assert.equal(claimed.json().error, 'COMMAND_ADMISSION_EVIDENCE_NOT_ACCEPTED');
     assert.equal((await app.inject({ method: 'GET', url: `/v1/omega/commands/${body.command.commandId}` })).json().command.status, 'PROPOSED');
 
+    const missingEvidence = await app.inject({
+      method: 'POST',
+      url: `/v1/omega/commands/${body.command.commandId}/admit`,
+      payload: { authority: 'human:dashboard-operator', policy: 'mood-codex-boundary.v1' },
+    });
+    assert.equal(missingEvidence.statusCode, 403);
+    assert.equal(missingEvidence.json().error, 'COMMAND_ADMISSION_EVIDENCE_UNAVAILABLE');
+    const stillPending = await app.inject({ method: 'GET', url: `/v1/omega/commands/${body.command.commandId}` });
+    assert.equal(stillPending.json().command.status, 'PROPOSED');
+    // The untrusted admission attempt must not create a denial or approval
+    // record, nor silently change the stored command's admission decision.
+    assert.deepEqual(stillPending.json().command.change, body.command.change);
+    const provenance = await app.inject({
+      method: 'GET',
+      url: `/v1/omega/commands/${body.command.commandId}/provenance`,
+    });
+    assert.equal(provenance.statusCode, 200);
+    assert.equal(
+      provenance.json().provenance.events.some((event: { type: string }) =>
+        event.type === 'command.admitted' || event.type === 'command.approved'),
+      false,
+    );
+
     const admitted = await app.inject({
       method: 'POST',
       url: `/v1/omega/commands/${body.command.commandId}/approve`,
@@ -121,5 +144,72 @@ test('mood Codex proposal enters the ledger as PROPOSED and never executes', asy
   } finally {
     await app.close();
     rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('authenticated command approval requires a server-side operator allowlist', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'omega-approval-allowlist-'));
+  const names = [
+    'OMEGA_AUTH_MODE',
+    'OMEGA_READ_TOKEN',
+    'OMEGA_ADMIN_TOKEN',
+    'OMEGA_ADMIN_OPERATOR_ALLOWLIST',
+    'OMEGA_ADMIN_REQUIRE_ALLOWLIST',
+    'OMEGA_PERSISTENCE',
+    'NODE_ENV',
+  ] as const;
+  const previous = new Map(names.map((name) => [name, process.env[name]]));
+  process.env.OMEGA_AUTH_MODE = 'required';
+  process.env.OMEGA_READ_TOKEN = 'read-token-for-test';
+  process.env.OMEGA_ADMIN_TOKEN = 'admin-token-for-test';
+  process.env.OMEGA_ADMIN_OPERATOR_ALLOWLIST = 'trusted-operator';
+  // Even an explicit "off" cannot disable the allowlist in authenticated mode.
+  process.env.OMEGA_ADMIN_REQUIRE_ALLOWLIST = 'off';
+  process.env.OMEGA_PERSISTENCE = 'off';
+  process.env.NODE_ENV = 'test';
+  const app = createApp(join(dir, 'test.db'), false, { allowUnsignedCycle: true });
+  await app.ready();
+  try {
+    const proposal = await app.inject({
+      method: 'POST',
+      url: '/v1/mood/codex/proposal',
+      headers: { authorization: 'Bearer admin-token-for-test' },
+      payload: {
+        intent: 'improve the next bounded interaction',
+        requestedBy: 'human:dashboard-operator',
+        status: 'USER_STATED',
+        uncertainty: 0,
+      },
+    });
+    assert.equal(proposal.statusCode, 201);
+    const commandId = proposal.json().command.commandId;
+
+    const spoofed = await app.inject({
+      method: 'POST',
+      url: `/v1/omega/commands/${commandId}/approve`,
+      headers: {
+        authorization: 'Bearer admin-token-for-test',
+        'x-omega-operator-id': 'attacker',
+      },
+      payload: { operator: 'trusted-operator', policy: 'human-review' },
+    });
+    assert.equal(spoofed.statusCode, 403);
+    assert.equal(spoofed.json().error, 'ADMIN_OPERATOR_NOT_ALLOWED');
+
+    const unchanged = await app.inject({
+      method: 'GET',
+      url: `/v1/omega/commands/${commandId}`,
+      headers: { authorization: 'Bearer read-token-for-test' },
+    });
+    assert.equal(unchanged.statusCode, 200);
+    assert.equal(unchanged.json().command.status, 'PROPOSED');
+  } finally {
+    await app.close();
+    rmSync(dir, { recursive: true, force: true });
+    for (const name of names) {
+      const value = previous.get(name);
+      if (value === undefined) delete process.env[name];
+      else process.env[name] = value;
+    }
   }
 });

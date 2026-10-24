@@ -214,7 +214,10 @@ export function createApp(
       .split(',')
       .map((operatorId) => operatorId.trim())
       .filter(Boolean);
-    const requireAllowlist = process.env.OMEGA_ADMIN_REQUIRE_ALLOWLIST === 'on';
+    // In authenticated deployments, operator IDs are meaningful only when checked
+    // against an explicit server-side allowlist. A caller-controlled header or body
+    // field is attribution, not proof of human identity.
+    const requireAllowlist = authMode === 'required' || process.env.OMEGA_ADMIN_REQUIRE_ALLOWLIST === 'on';
     const rawOperatorId = request.headers['x-omega-operator-id'];
     const operatorId = typeof rawOperatorId === 'string' ? rawOperatorId.trim() : undefined;
     if (operatorIdentityAllowed(operatorId || undefined, allowedOperators, requireAllowlist)) {
