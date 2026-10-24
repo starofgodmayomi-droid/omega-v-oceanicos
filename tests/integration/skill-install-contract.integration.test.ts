@@ -14,6 +14,7 @@ const loadable = [
   'oceanicos-verified-upgrade',
   'omega-v-os',
   'lucid-continuum',
+  'oceanicos-total-continuum',
 ] as const;
 
 test('published Oceanicos skill contracts validate', () => {
@@ -21,7 +22,7 @@ test('published Oceanicos skill contracts validate', () => {
     cwd: root,
     encoding: 'utf8',
   });
-  assert.match(output, /validated 13 Oceanicos skill contracts/);
+  assert.match(output, /validated 14 Oceanicos skill contracts/);
 });
 
 test('CI runs the skill contract check', () => {
@@ -53,7 +54,7 @@ test('installed skills match the hashes the README records', () => {
   }
 });
 
-test('the five OS skills are the same bytes published and installed', () => {
+test('published and installed Oceanicos skills are the same bytes', () => {
   for (const skill of loadable) {
     const published = join(root, 'skills', skill, 'SKILL.md');
     const installed = join(installedDir, skill, 'SKILL.md');
