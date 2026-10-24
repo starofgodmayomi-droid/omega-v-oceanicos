@@ -131,7 +131,7 @@ export function App() {
   ]);
 
   const [openStageId, setOpenStageId] = useState<string | null>(null);
-  const [viewportMode, setViewportMode] = useState<'conversation' | 'work' | 'evidence' | 'catalog'>('catalog');
+  const [viewportMode, setViewportMode] = useState<'conversation' | 'work' | 'evidence' | 'catalog'>('conversation');
   const [showCovenantPanel, setShowCovenantPanel] = useState<boolean>(false);
   const [showCompressionPulse, setShowCompressionPulse] = useState<boolean>(false);
   const [compressionData, setCompressionData] = useState<any>(null);
