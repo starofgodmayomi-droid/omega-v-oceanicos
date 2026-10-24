@@ -69,6 +69,20 @@ bounded text/evidence and record counts. A match verifies only the stated
 hypothesis against the supplied observation; it does not prove demand, revenue,
 execution, external truth, deployment, or health.
 
+## Authorized next
+
+`selectAuthorizedNext` compresses a finite candidate list to one next step, or
+an explicit stop:
+
+```text
+NEXT = argmax_{Δ in Authorized} EvidenceBackedValue(Δ) / (Risk(Δ) + Cost(Δ) + ε)
+```
+
+Unauthorized candidates are excluded, not scored. Ties break by id. The numbers
+are caller-supplied estimates: a selection does not grant authority, start
+work, or prove that the value was evidence-backed. An empty or fully
+unauthorized list returns `STOP`.
+
 ## Connector observation
 
 `admitOmegaConnector` remains a non-executing admission boundary.
