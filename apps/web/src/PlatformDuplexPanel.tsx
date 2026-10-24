@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { theme } from './oceanicosTheme';
+import { playTransmitPulse, playReceivePulse, playVerificationPulse } from './audioResonance';
 
 interface RoomData {
   id: string;
@@ -214,15 +215,17 @@ export function PlatformDuplexPanel() {
   const [activeFilter, setActiveFilter] = useState<'ALL' | 'UPPER' | 'LOWER'>('ALL');
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
   const [chatInput, setChatInput] = useState('');
-  const [chatLog, setChatLog] = useState<Array<{ sender: 'user' | 'aisoul'; content: string; organ?: string; timestamp: string }>>([]);
+  const [chatLog, setChatLog] = useState<Array<{ sender: 'user' | 'aisoul'; content: string; organ?: string; timestamp: string; isStreaming?: boolean }>>([]);
   const [chatLoading, setChatLoading] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
 
-  // Send a live message to the API
+  // Send a live message to the API with real-time SSE streaming
   const sendRoomMessage = async (text: string, organContext?: string) => {
     if (!text.trim() || chatLoading) return;
     setChatLoading(true);
     setChatError(null);
+    playTransmitPulse();
+
     const userTurn = {
       sender: 'user' as const,
       content: text.trim(),
@@ -232,25 +235,114 @@ export function PlatformDuplexPanel() {
     setChatInput('');
 
     try {
-      const res = await fetch(`${API_BASE_URL}/v1/chat`, {
+      // 1. Attempt real-time SSE stream
+      const res = await fetch(`${API_BASE_URL}/v1/chat/stream`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: text.trim() }),
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const json = await res.json();
-      if (json.success && json.reply) {
-        setChatLog((prev) => [
-          ...prev,
-          {
-            sender: 'aisoul',
-            content: json.reply.content,
-            organ: json.reply.metadata?.organ || organContext || 'DUPLEX_HUB',
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          },
-        ]);
-      } else {
-        throw new Error(json.error || 'Failed to receive reply');
+
+      if (!res.ok || !res.body) {
+        // Fall back to standard REST /v1/chat
+        const fallbackRes = await fetch(`${API_BASE_URL}/v1/chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: text.trim() }),
+        });
+        if (!fallbackRes.ok) throw new Error(`HTTP ${fallbackRes.status}`);
+        const json = await fallbackRes.json();
+        if (json.success && json.reply) {
+          playVerificationPulse();
+          setChatLog((prev) => [
+            ...prev,
+            {
+              sender: 'aisoul',
+              content: json.reply.content,
+              organ: json.reply.metadata?.organ || organContext || 'DUPLEX_HUB',
+              timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            },
+          ]);
+        } else {
+          throw new Error(json.error || 'Failed to receive reply');
+        }
+        return;
+      }
+
+      // 2. Consume SSE stream
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let streamedContent = '';
+      let currentOrgan = organContext || 'DUPLEX_HUB';
+      let aiTurnAdded = false;
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        let currentEvent = 'message';
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed) continue;
+          if (trimmed.startsWith('event:')) {
+            currentEvent = trimmed.slice(6).trim();
+          } else if (trimmed.startsWith('data:')) {
+            try {
+              const data = JSON.parse(trimmed.slice(5).trim());
+              if (currentEvent === 'start') {
+                if (data.organ) currentOrgan = data.organ;
+              } else if (currentEvent === 'chunk') {
+                const token = data.token || '';
+                streamedContent += token;
+                if (!aiTurnAdded) {
+                  aiTurnAdded = true;
+                  playReceivePulse();
+                  setChatLog((prev) => [
+                    ...prev,
+                    {
+                      sender: 'aisoul',
+                      content: streamedContent,
+                      organ: currentOrgan,
+                      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                      isStreaming: true,
+                    },
+                  ]);
+                } else {
+                  setChatLog((prev) => {
+                    const next = [...prev];
+                    const last = next[next.length - 1];
+                    if (last && last.sender === 'aisoul') {
+                      next[next.length - 1] = { ...last, content: streamedContent, isStreaming: true };
+                    }
+                    return next;
+                  });
+                }
+              } else if (currentEvent === 'done') {
+                playVerificationPulse();
+                const finalContent = data.content || streamedContent;
+                setChatLog((prev) => {
+                  const next = [...prev];
+                  const last = next[next.length - 1];
+                  if (last && last.sender === 'aisoul') {
+                    next[next.length - 1] = {
+                      ...last,
+                      content: finalContent,
+                      organ: data.organ || currentOrgan,
+                      isStreaming: false,
+                    };
+                  }
+                  return next;
+                });
+              }
+            } catch {
+              // ignore partial json
+            }
+          }
+        }
       }
     } catch (err: any) {
       setChatError(err.message || 'Chat service error');
@@ -612,7 +704,7 @@ export function PlatformDuplexPanel() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{ fontSize: '16px' }}>⚡</span>
             <span style={{ fontSize: '13px', fontWeight: 700, color: '#00f5a0', letterSpacing: '0.4px' }}>
-              DUPLEX REAL-TIME DISPATCH TERMINAL (POST /v1/chat)
+              DUPLEX REAL-TIME STREAMING TERMINAL (POST /v1/chat/stream)
             </span>
           </div>
           <span style={{ fontSize: '11px', color: '#38bdf8', fontFamily: theme.fontMono }}>
@@ -661,6 +753,20 @@ export function PlatformDuplexPanel() {
                   }}
                 >
                   {turn.content}
+                  {turn.isStreaming && (
+                    <span
+                      style={{
+                        display: 'inline-block',
+                        width: '5px',
+                        height: '11px',
+                        marginLeft: '3px',
+                        verticalAlign: 'baseline',
+                        background: '#00f5a0',
+                        boxShadow: '0 0 6px #00f5a0',
+                        animation: 'omega-glow-pulse 0.8s infinite alternate',
+                      }}
+                    />
+                  )}
                 </div>
               </div>
             ))}
