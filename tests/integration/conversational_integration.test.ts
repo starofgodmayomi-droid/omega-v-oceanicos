@@ -106,4 +106,22 @@ describe('🌊 OceanicOS Conversational Assistant & KAI Memory Integration Slice
     assert.ok(userMsgs.length >= 4);
     assert.ok(aiMsgs.length >= 4);
   });
+
+  it('POST /v1/chat/stream returns real-time text/event-stream with start, chunk, and done SSE events', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/v1/chat/stream',
+      payload: {
+        message: 'Verify the sovereign Bitcoin treasury address in stream mode',
+      },
+    });
+
+    assert.equal(res.statusCode, 200);
+    assert.match(res.headers['content-type'] || '', /text\/event-stream/);
+    assert.match(res.payload, /event: start/);
+    assert.match(res.payload, /event: chunk/);
+    assert.match(res.payload, /event: done/);
+    assert.match(res.payload, /bc1qaj8jmp5as80zwew09ep86w6fgw37zwhwzr89mp/);
+    assert.match(res.payload, /SOVEREIGN_TREASURY_ORATOR/);
+  });
 });

@@ -1,5 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { theme } from './oceanicosTheme';
+import {
+  playTransmitPulse,
+  playReceivePulse,
+  playVerificationPulse,
+  isAudioEnabled,
+  toggleAudio,
+} from './audioResonance';
 
 /* ── API plumbing ── */
 const API_BASE_URL = (
@@ -64,6 +71,7 @@ interface ChatMessage {
   organ?: string;
   evidenceHash?: string;
   kaiRecordId?: string;
+  isStreaming?: boolean;
 }
 
 /* ── Organ icons ── */
@@ -447,6 +455,20 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
         }}
       >
         {msg.content}
+        {msg.isStreaming && (
+          <span
+            style={{
+              display: 'inline-block',
+              width: '6px',
+              height: '13px',
+              marginLeft: '4px',
+              verticalAlign: 'baseline',
+              background: 'var(--omega-current)',
+              boxShadow: '0 0 8px var(--omega-current)',
+              animation: 'omega-glow-pulse 0.8s infinite alternate',
+            }}
+          />
+        )}
       </div>
     </div>
   );
@@ -466,8 +488,13 @@ export function FuturisticEcosystemChatPanel() {
   const [maxEquation, setMaxEquation] = useState<any>(null);
   const [sidePanel, setSidePanel] = useState<'organs' | 'workers' | 'equation' | null>(null);
   const [mobilePanel, setMobilePanel] = useState(false);
+  const [sseConnected, setSseConnected] = useState(false);
+  const [audioOn, setAudioOn] = useState(isAudioEnabled());
+  const [minerBlockCount, setMinerBlockCount] = useState(0);
+  const [lastMinerPulse, setLastMinerPulse] = useState<string | null>(null);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
+  const eventSourceRef = useRef<EventSource | null>(null);
 
   const fetchChatHistory = useCallback(async () => {
     try {
@@ -501,19 +528,74 @@ export function FuturisticEcosystemChatPanel() {
       if (bodyRes?.success && Array.isArray(bodyRes.body)) setBodyParts(bodyRes.body);
       if (workersRes?.success && Array.isArray(workersRes.workers)) setWorkers(workersRes.workers);
       if (maxEqRes?.success) setMaxEquation(maxEqRes.metadata);
-      if (tipRes?.success && tipRes.block) setTipData(tipRes.block);
+      if (tipRes?.success && tipRes.tip) setTipData(tipRes.tip);
     } catch {
       /* ambient */
     }
   }, []);
 
+  /* ── SSE Live Block Pulse ── */
+  useEffect(() => {
+    let es: EventSource | null = null;
+    let disposed = false;
+    let attempt = 0;
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const connect = () => {
+      if (disposed) return;
+      es?.close();
+      try {
+        es = new EventSource(apiUrl('/v1/stream'));
+        eventSourceRef.current = es;
+
+        es.onopen = () => {
+          attempt = 0;
+          setSseConnected(true);
+        };
+
+        es.onmessage = (event) => {
+          try {
+            const payload = JSON.parse(event.data);
+            if (payload.block) {
+              setTipData(payload.block);
+              setMinerBlockCount((prev) => prev + 1);
+              setLastMinerPulse(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+            }
+          } catch {
+            /* skip malformed SSE event */
+          }
+        };
+
+        es.onerror = () => {
+          es?.close();
+          setSseConnected(false);
+          attempt += 1;
+          const delay = Math.min(30_000, 1_000 * 2 ** Math.min(attempt - 1, 4));
+          reconnectTimer = setTimeout(connect, delay);
+        };
+      } catch {
+        setSseConnected(false);
+      }
+    };
+
+    connect();
+
+    return () => {
+      disposed = true;
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      es?.close();
+    };
+  }, []);
+
+  /* ── Initial data fetch + ambient polling (reduced frequency since SSE is primary) ── */
   useEffect(() => {
     fetchChatHistory();
     fetchEcosystemState();
+    // Polling reduced to 15s since SSE handles real-time block updates
     const interval = setInterval(() => {
       fetchChatHistory();
       fetchEcosystemState();
-    }, 6000);
+    }, 15000);
     return () => clearInterval(interval);
   }, [fetchChatHistory, fetchEcosystemState]);
 
@@ -536,31 +618,141 @@ export function FuturisticEcosystemChatPanel() {
     if (!textToSend) setInput('');
     setLoading(true);
     setHasError(false);
+    playTransmitPulse();
+
+    const tempAiId = `ai-stream-${Date.now()}`;
 
     try {
-      const res = await apiRequest<any>('/v1/chat', {
+      // 1. Attempt live SSE streaming from POST /v1/chat/stream
+      const streamUrl = apiUrl('/v1/chat/stream');
+      const response = await fetch(streamUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: text }),
       });
-      if (res?.success && res.reply) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: res.reply.id || `ai-${Date.now()}`,
-            sender: 'aisoul',
-            content: res.reply.content,
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            organ: res.reply.metadata?.organ || 'WHOLE_ECOSYSTEM_BODY',
-            evidenceHash: res.reply.metadata?.evidenceHash,
-            kaiRecordId: res.reply.metadata?.kaiRecordId,
-          },
-        ]);
+
+      if (!response.ok || !response.body) {
+        // Fall back gracefully to standard REST POST /v1/chat
+        const res = await apiRequest<any>('/v1/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: text }),
+        });
+        if (res?.success && res.reply) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: res.reply.id || `ai-${Date.now()}`,
+              sender: 'aisoul',
+              content: res.reply.content,
+              timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              organ: res.reply.metadata?.organ || 'WHOLE_ECOSYSTEM_BODY',
+              evidenceHash: res.reply.metadata?.evidenceHash,
+              kaiRecordId: res.reply.metadata?.kaiRecordId,
+            },
+          ]);
+        }
+        return;
+      }
+
+      // 2. Consume real-time SSE token stream
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let streamedContent = '';
+      let currentOrgan = 'AI_SOUL_INTELLIGENCE';
+      let realAiId = tempAiId;
+      let aiTurnAdded = false;
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        let currentEvent = 'message';
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed) continue;
+          if (trimmed.startsWith('event:')) {
+            currentEvent = trimmed.slice(6).trim();
+          } else if (trimmed.startsWith('data:')) {
+            try {
+              const data = JSON.parse(trimmed.slice(5).trim());
+              if (currentEvent === 'start') {
+                if (data.id) realAiId = data.id;
+                if (data.organ) currentOrgan = data.organ;
+                if (!aiTurnAdded) {
+                  aiTurnAdded = true;
+                  setMessages((prev) => [
+                    ...prev,
+                    {
+                      id: realAiId,
+                      sender: 'aisoul',
+                      content: '',
+                      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                      organ: currentOrgan,
+                      isStreaming: true,
+                    },
+                  ]);
+                }
+              } else if (currentEvent === 'chunk') {
+                const token = data.token || '';
+                streamedContent += token;
+                if (!aiTurnAdded) {
+                  aiTurnAdded = true;
+                  playReceivePulse();
+                  setMessages((prev) => [
+                    ...prev,
+                    {
+                      id: realAiId,
+                      sender: 'aisoul',
+                      content: streamedContent,
+                      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                      organ: currentOrgan,
+                      isStreaming: true,
+                    },
+                  ]);
+                } else {
+                  setMessages((prev) =>
+                    prev.map((m) =>
+                      m.id === realAiId || m.id === tempAiId
+                        ? { ...m, content: streamedContent, isStreaming: true }
+                        : m
+                    )
+                  );
+                }
+              } else if (currentEvent === 'done') {
+                playVerificationPulse();
+                const finalContent = data.content || streamedContent;
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === realAiId || m.id === tempAiId
+                      ? {
+                          ...m,
+                          id: data.id || realAiId,
+                          content: finalContent,
+                          organ: data.organ || currentOrgan,
+                          evidenceHash: data.metadata?.evidenceHash,
+                          kaiRecordId: data.metadata?.kaiRecordId,
+                          isStreaming: false,
+                        }
+                      : m
+                  )
+                );
+              }
+            } catch {
+              // Ignore partial JSON chunks
+            }
+          }
+        }
       }
     } catch (err: any) {
       setHasError(true);
       setMessages((prev) => [
-        ...prev,
+        ...prev.filter((m) => m.id !== tempAiId),
         {
           id: `err-${Date.now()}`,
           sender: 'system',
@@ -664,6 +856,41 @@ export function FuturisticEcosystemChatPanel() {
 
           {/* Right: Live telemetry badges */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            {/* SSE pulse indicator */}
+            <div
+              style={{
+                padding: '6px 14px',
+                background: sseConnected ? 'rgba(105, 231, 185, 0.08)' : 'rgba(237, 153, 134, 0.08)',
+                border: `1px solid ${sseConnected ? 'rgba(105, 231, 185, 0.25)' : 'rgba(237, 153, 134, 0.25)'}`,
+                borderRadius: '10px',
+                fontSize: '11px',
+                fontFamily: theme.fontMono,
+                backdropFilter: 'blur(8px)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+              }}
+            >
+              <span
+                style={{
+                  width: '6px',
+                  height: '6px',
+                  borderRadius: '50%',
+                  background: sseConnected ? 'var(--omega-verified)' : 'var(--omega-dissent)',
+                  boxShadow: sseConnected ? '0 0 8px rgba(105, 231, 185, 0.6)' : '0 0 8px rgba(237, 153, 134, 0.6)',
+                  animation: sseConnected ? 'pulse 2s ease-in-out infinite' : 'none',
+                }}
+              />
+              <span style={{ color: sseConnected ? 'var(--omega-current)' : 'var(--omega-dissent)', fontWeight: 600, fontSize: '10px' }}>
+                {sseConnected ? 'LIVE' : 'RECONNECTING'}
+              </span>
+              {minerBlockCount > 0 && (
+                <span style={{ color: '#547b74', fontSize: '9px' }}>
+                  ⛏ {minerBlockCount}
+                </span>
+              )}
+            </div>
+
             {/* Spine tip */}
             <div
               style={{
@@ -990,6 +1217,27 @@ export function FuturisticEcosystemChatPanel() {
 
             <div style={{ flex: 1 }} />
 
+            <button
+              onClick={() => setAudioOn(toggleAudio())}
+              style={{
+                padding: '4px 10px',
+                borderRadius: '8px',
+                border: `1px solid ${audioOn ? 'rgba(105, 231, 185, 0.3)' : 'rgba(139, 168, 160, 0.2)'}`,
+                background: audioOn ? 'rgba(105, 231, 185, 0.08)' : 'transparent',
+                color: audioOn ? 'var(--omega-current)' : '#547b74',
+                fontSize: '11px',
+                fontFamily: theme.fontMono,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                transition: 'all 0.2s',
+              }}
+              title="Toggle 432 Hz Harmonic Web Audio resonance"
+            >
+              {audioOn ? '🔊 432 Hz' : '🔇 Audio Off'}
+            </button>
+
             <span style={{ fontSize: '10px', color: '#547b74', fontFamily: theme.fontMono }}>
               {messages.length} messages · {implementedOrgans} organs · {workers.length} workers
             </span>
@@ -1172,7 +1420,7 @@ export function FuturisticEcosystemChatPanel() {
               <MessageBubble key={m.id} msg={m} />
             ))}
 
-            {loading && <TypingIndicator />}
+            {loading && !messages.some((m) => m.isStreaming) && <TypingIndicator />}
             <div ref={chatEndRef} />
           </div>
 
