@@ -87,6 +87,9 @@ Welcome to the Ω∞v Oceanicos documentation. Start here to understand the proj
 - **[Whole ecosystem reality compression](./upgrades/WHOLE_ECOSYSTEM_REALITY_COMPRESSION_2026-10-04.md)**
   — source-labeled translation of the supplied Ω∞v architecture into repository
   boundaries and explicit unknowns.
+- **[Ocecosystem compression](./upgrades/OCECOSYSTEM_COMPRESSION_2026-10-24.md)**
+  — one-body equation, authorized argmax, and a revision label that advances
+  only after verification and attestation. Selection does not execute.
 - **[One-body operating core](./upgrades/ONE_BODY_OPERATING_CORE_2026-10-04.md)**
   — the supplied operating-body architecture, mapped to a reality-bound
   governance spine, interchangeable provider examples, and truthful UI states.
