@@ -184,7 +184,19 @@ async function resolveOrganAndContext(
     actionTriggered = 'LUCID_BUILD_CONTINUUM';
     replyContent = `The whole ecosystem body activates the Lucid Full-Stack Continuum: Hands (compiler) and Spine (kernel) are ready. Packages compiled, Fastify :5000 and Vite :3000 nervous channels active. Standing by for your next authorized slice.`;
   }
-  // 10. General / Real-World Conversational Fallback
+  // 10. Mining / Mint Block / PoW Consensus
+  else if (lower.includes('mine') || lower.includes('mint block') || lower.includes('consensus') || lower.includes('cycle')) {
+    organ = 'CANONICAL_KERNEL_MINER';
+    actionTriggered = 'MINT_CONSENSUS_BLOCK';
+    replyContent = `The Spine organ operates the proof-of-work consensus miner: runs kernel cycle, verifies planetary telemetry, seals SHA-256 block hash, and broadcasts live to connected nervous streams.`;
+  }
+  // 11. Max Equation / Singularity Optimizer
+  else if (lower.includes('max equation') || lower.includes('optimize') || lower.includes('delta*') || lower.includes('candidate')) {
+    organ = 'MAX_EQUATION_SINGULARITY';
+    actionTriggered = 'OPTIMIZE_MAX_EQUATION';
+    replyContent = `The Max Equation Singularity Engine optimizes finite slice transitions:\nΔ* = argmax [ V_E(Δ) / (R(Δ) + C(Δ) + ε) ]\nEvaluates feasible set F_A, enforces fail-closed human authorization, and guarantees zero entropy convergence Ψ → 0.`;
+  }
+  // 12. General / Real-World Conversational Fallback
   else {
     organ = 'AI_SOUL_INTELLIGENCE';
     replyContent = `The whole ecosystem body receives your intent. Mind has processed it, Memory has anchored it to the ledger, and the Nervous System holds state steady. What is our next step?`;

@@ -93,6 +93,8 @@ const ACTION_CHIPS = [
   { label: '📜 Merkle Audit', query: 'Audit canonical Merkle ledger tip and cryptographic parent chain' },
   { label: '🏛️ Pantheon Duplex', query: 'How is the African Pantheon duplex resonating?' },
   { label: '🌌 Dream Journal', query: 'Record: a celestial star descended into the deep ocean and emerged as conscious light.' },
+  { label: '⛏️ Mine Block', query: 'Mint a new verified consensus block into the spine ledger' },
+  { label: '🌀 Max Equation', query: 'Evaluate optimal slice candidate ranking with Max Equation engine' },
   { label: '⚡ Lucid Build', query: 'Lucid, continue upgrading the ecosystem platform' },
   { label: '🤫 Silent Mode', query: 'Stay silent until I give notice' },
   { label: '🔍 Full Check', query: 'CHECK — inspect current reality, evidence, gaps, blockers' },
