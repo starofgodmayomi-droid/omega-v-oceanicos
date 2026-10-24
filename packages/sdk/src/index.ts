@@ -722,8 +722,11 @@ export class OmegaClient {
     return this.get<OmegaCommandResponse>(`/v1/omega/commands/${encodeURIComponent(commandId)}`);
   }
 
-  async admitCommand(commandId: string, input: { authority: string; policy: string; authorityVerified?: boolean; policySatisfied?: boolean }): Promise<OmegaCommandResponse> {
-    return this.post<OmegaCommandResponse>(`/v1/omega/commands/${encodeURIComponent(commandId)}/admit`, input, this.adminToken);
+  async admitCommand(commandId: string, input: { authority: string; policy: string }): Promise<OmegaCommandResponse> {
+    return this.post<OmegaCommandResponse>(`/v1/omega/commands/${encodeURIComponent(commandId)}/admit`, {
+      authority: input.authority,
+      policy: input.policy,
+    }, this.adminToken);
   }
 
   async approveCommand(commandId: string, operator = 'sdk-operator'): Promise<OmegaCommandResponse> {
