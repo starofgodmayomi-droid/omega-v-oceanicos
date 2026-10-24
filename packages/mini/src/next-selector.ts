@@ -61,7 +61,7 @@ interface SelectedNext {
   readonly considered: number;
   readonly excludedUnauthorized: number;
   readonly ranking: readonly RankedCandidate[];
-  readonly issues: readonly [];
+  readonly issues: readonly NextSelectionIssue[];
 }
 
 interface StoppedNext {
@@ -75,8 +75,8 @@ interface StoppedNext {
   readonly score: null;
   readonly considered: number;
   readonly excludedUnauthorized: number;
-  readonly ranking: readonly [];
-  readonly issues: readonly [];
+  readonly ranking: readonly RankedCandidate[];
+  readonly issues: readonly NextSelectionIssue[];
 }
 
 interface InvalidNext {

@@ -33,6 +33,7 @@ test('selects the authorized maximum of value over risk, cost, and epsilon', () 
   assert.equal(result.selected.id, 'direct-meaning');
   assert.equal(result.score, 3 / NEXT_SELECTOR_EPSILON);
   assert.equal(result.epsilon, NEXT_SELECTOR_EPSILON);
+  assert.equal(result.issues.length, 0);
   assert.deepEqual(
     result.ranking.map((entry) => entry.id),
     ['direct-meaning', 'slow-safe', 'costly'],
@@ -64,6 +65,8 @@ test('stops when nothing is authorized', () => {
   if (empty.status !== 'STOP') throw new Error('expected stop');
   assert.equal(empty.selected, null);
   assert.equal(empty.considered, 0);
+  assert.equal(empty.ranking.length, 0);
+  assert.equal(empty.issues.length, 0);
 
   const refused = selectAuthorizedNext({
     candidates: [candidate('no', 5, 0, 0, false)],
@@ -72,6 +75,7 @@ test('stops when nothing is authorized', () => {
   if (refused.status !== 'STOP') throw new Error('expected stop');
   assert.equal(refused.excludedUnauthorized, 1);
   assert.equal(refused.execution, 'NOT_STARTED');
+  assert.equal(refused.ranking.length, 0);
 });
 
 test('breaks equal scores by lexicographic id', () => {
