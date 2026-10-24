@@ -14,6 +14,10 @@ import { OmegaWorkspace } from './OmegaWorkspace';
 import { CovenantPanel } from './CovenantPanel';
 import { MaxEquationPanel } from './MaxEquationPanel';
 import { NotionExecutionEnginePanel } from './NotionExecutionEnginePanel';
+import { EcosystemBodyPanel } from './EcosystemBodyPanel';
+import { PlatformDuplexPanel } from './PlatformDuplexPanel';
+import { MultidimensionalCatalogPanel } from './MultidimensionalCatalogPanel';
+import { FuturisticEcosystemChatPanel } from './FuturisticEcosystemChatPanel';
 import {
   theme,
   statusColor,
@@ -120,14 +124,14 @@ export function App() {
     {
       id: 'welcome',
       sender: 'aisoul',
-      content: 'Sovereign Salutations ELION VAREL! The Inviolate Ocean Water Membrane is active (432 Hz). You can chat freely with me, verify your sovereign Bitcoin treasury, simulate the African Pantheon duplex, or send any command.',
+      content: 'Whole Ecosystem Body is active and in living resonance. Mind, Nervous System (:5000 / :3000), Memory Ledger, and Verification Gates are coherent and ready. What shall we make real together?',
       timestamp: '11:11',
-      organ: 'AI SOUL MASTER COMMAND',
+      organ: 'WHOLE_ECOSYSTEM_BODY',
     },
   ]);
 
   const [openStageId, setOpenStageId] = useState<string | null>(null);
-  const [viewportMode, setViewportMode] = useState<'stream' | 'cockpit'>('stream');
+  const [viewportMode, setViewportMode] = useState<'conversation' | 'work' | 'evidence' | 'catalog'>('catalog');
   const [showCovenantPanel, setShowCovenantPanel] = useState<boolean>(false);
   const [showCompressionPulse, setShowCompressionPulse] = useState<boolean>(false);
   const [compressionData, setCompressionData] = useState<any>(null);
@@ -751,6 +755,30 @@ export function App() {
       detail: <MaxEquationPanel latestTransition={latestTransition} />,
     },
     {
+      id: 'ecosystem-body',
+      icon: '🫀',
+      label: 'Living Body',
+      subtitle: '12-layer full stack body & implementation truth',
+      state: 'available' as const,
+      detail: <EcosystemBodyPanel />,
+    },
+    {
+      id: 'platform-duplex',
+      icon: '🏢',
+      label: 'Platform Duplex',
+      subtitle: '12-room duplex & compressed full stack chamber',
+      state: 'available' as const,
+      detail: <PlatformDuplexPanel />,
+    },
+    {
+      id: 'multidimensional-catalog',
+      icon: '🌌',
+      label: 'Ecosystem Catalog',
+      subtitle: '8-dimension grounded catalog of the single ecosystem body',
+      state: 'available' as const,
+      detail: <MultidimensionalCatalogPanel />,
+    },
+    {
       id: 'notion-engine',
       icon: '🏛️',
       label: 'Notion Engine',
@@ -827,7 +855,7 @@ export function App() {
         </div>
       )}
 
-      {/* Viewport Mode Switcher */}
+      {/* Viewport Mode Switcher — OceanicOS Tri-Workspace Model */}
       <div
         style={{
           display: 'flex',
@@ -848,53 +876,109 @@ export function App() {
           }}
         >
           <button
-            onClick={() => setViewportMode('stream')}
+            onClick={() => setViewportMode('catalog')}
             style={{
-              padding: '6px 16px',
+              padding: '8px 18px',
               borderRadius: theme.radiusPill,
               border: 'none',
-              background: viewportMode === 'stream' ? theme.surfaceRaised : 'transparent',
-              color: viewportMode === 'stream' ? theme.accent : theme.textMuted,
-              boxShadow: viewportMode === 'stream' ? `0 0 12px ${theme.accent}22` : 'none',
+              background: viewportMode === 'catalog' ? theme.surfaceRaised : 'transparent',
+              color: viewportMode === 'catalog' ? theme.accent : theme.textMuted,
+              boxShadow: viewportMode === 'catalog' ? `0 0 14px ${theme.accent}33` : 'none',
               fontFamily: theme.fontSans,
-              fontSize: '12px',
+              fontSize: '12.5px',
               fontWeight: 600,
               cursor: 'pointer',
               transition: 'all 0.2s ease',
               display: 'flex',
               alignItems: 'center',
-              gap: '6px',
-            }}
-          >
-            <span>💧</span>
-            <span>Mirror-Water Stream</span>
-          </button>
-          <button
-            onClick={() => setViewportMode('cockpit')}
-            style={{
-              padding: '6px 16px',
-              borderRadius: theme.radiusPill,
-              border: 'none',
-              background: viewportMode === 'cockpit' ? theme.surfaceRaised : 'transparent',
-              color: viewportMode === 'cockpit' ? theme.accent : theme.textMuted,
-              boxShadow: viewportMode === 'cockpit' ? `0 0 12px ${theme.accent}22` : 'none',
-              fontFamily: theme.fontSans,
-              fontSize: '12px',
-              fontWeight: 600,
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
+              gap: '7px',
             }}
           >
             <span>🌌</span>
-            <span>Omega Workspace Cockpit</span>
+            <span>Ecosystem Catalog</span>
+          </button>
+          <button
+            onClick={() => setViewportMode('conversation')}
+            style={{
+              padding: '8px 18px',
+              borderRadius: theme.radiusPill,
+              border: 'none',
+              background: viewportMode === 'conversation' ? theme.surfaceRaised : 'transparent',
+              color: viewportMode === 'conversation' ? theme.accent : theme.textMuted,
+              boxShadow: viewportMode === 'conversation' ? `0 0 14px ${theme.accent}33` : 'none',
+              fontFamily: theme.fontSans,
+              fontSize: '12.5px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '7px',
+            }}
+          >
+            <span>💬</span>
+            <span>Conversation Mode</span>
+          </button>
+          <button
+            onClick={() => setViewportMode('work')}
+            style={{
+              padding: '8px 18px',
+              borderRadius: theme.radiusPill,
+              border: 'none',
+              background: viewportMode === 'work' ? theme.surfaceRaised : 'transparent',
+              color: viewportMode === 'work' ? theme.accent : theme.textMuted,
+              boxShadow: viewportMode === 'work' ? `0 0 14px ${theme.accent}33` : 'none',
+              fontFamily: theme.fontSans,
+              fontSize: '12.5px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '7px',
+            }}
+          >
+            <span>⚙️</span>
+            <span>Work Mode</span>
+          </button>
+          <button
+            onClick={() => setViewportMode('evidence')}
+            style={{
+              padding: '8px 18px',
+              borderRadius: theme.radiusPill,
+              border: 'none',
+              background: viewportMode === 'evidence' ? theme.surfaceRaised : 'transparent',
+              color: viewportMode === 'evidence' ? theme.accent : theme.textMuted,
+              boxShadow: viewportMode === 'evidence' ? `0 0 14px ${theme.accent}33` : 'none',
+              fontFamily: theme.fontSans,
+              fontSize: '12.5px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '7px',
+            }}
+          >
+            <span>🛡️</span>
+            <span>Evidence Workspace</span>
           </button>
         </div>
       </div>
 
-      {viewportMode === 'cockpit' ? (
+      {viewportMode === 'catalog' ? (
+        <div
+          style={{
+            maxWidth: '1280px',
+            width: '100%',
+            margin: '0 auto',
+            padding: '24px 24px 60px',
+            flex: 1,
+          }}
+        >
+          <MultidimensionalCatalogPanel />
+        </div>
+      ) : viewportMode === 'work' ? (
         <div
           style={{
             maxWidth: '1360px',
@@ -906,201 +990,92 @@ export function App() {
         >
           <OmegaWorkspace />
         </div>
+      ) : viewportMode === 'evidence' ? (
+        <div
+          style={{
+            maxWidth: '1280px',
+            width: '100%',
+            margin: '0 auto',
+            padding: '24px 24px 60px',
+            flex: 1,
+          }}
+        >
+          {/* Evidence Hero Banner */}
+          <div
+            style={{
+              marginBottom: '20px',
+              padding: '20px 24px',
+              background: 'linear-gradient(135deg, rgba(2, 13, 24, 0.95) 0%, rgba(4, 28, 44, 0.9) 100%)',
+              border: '1px solid rgba(0, 245, 160, 0.35)',
+              borderRadius: theme.radius,
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '20px' }}>🛡️</span>
+                  <h2 style={{ margin: 0, fontSize: '18px', color: '#00f5a0', letterSpacing: '-0.02em', fontWeight: 700 }}>
+                    Ω∞v Verification Spine & Trust Workspace
+                  </h2>
+                  <span
+                    style={{
+                      padding: '2px 8px',
+                      borderRadius: '12px',
+                      fontSize: '11px',
+                      fontFamily: theme.fontMono,
+                      background: 'rgba(0, 245, 160, 0.15)',
+                      border: '1px solid rgba(0, 245, 160, 0.3)',
+                      color: '#00f5a0',
+                      fontWeight: 600,
+                    }}
+                  >
+                    ✓ FAIL-CLOSED INVARIANT
+                  </span>
+                </div>
+                <p style={{ margin: '6px 0 0', fontSize: '13px', color: '#94a3b8' }}>
+                  Ω∞v ::= VERIFY(ΔREALITY) — Distinguishing a plausible answer, a proposed action, an executed action, and a verified outcome.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Multidimensional Catalog of the Single Ecosystem Body */}
+          <div style={{ marginBottom: '24px' }}>
+            <MultidimensionalCatalogPanel />
+          </div>
+
+          {/* Max Equation Panel with live transition SSE synchronization */}
+          <MaxEquationPanel latestTransition={latestTransition} />
+
+          {/* 12-Room Responsive Platform Duplex */}
+          <div style={{ marginTop: '24px' }}>
+            <PlatformDuplexPanel />
+          </div>
+
+          {/* Living Ecosystem Body with 12-layer full stack and implementation truth */}
+          <div style={{ marginTop: '24px' }}>
+            <EcosystemBodyPanel />
+          </div>
+
+          {/* Cryptographic Transition Provenance Ledger */}
+          <div style={{ marginTop: '24px' }}>
+            <TransitionProvenancePanel />
+          </div>
+        </div>
       ) : (
         <>
           {/* Main surface */}
           <main
             style={{
-              maxWidth: '720px',
+              maxWidth: '1360px',
               width: '100%',
               margin: '0 auto',
-              padding: '60px 24px 40px',
+              padding: '24px 24px 60px',
               flex: 1,
             }}
           >
-        {/* Logo */}
-        <div
-          style={{
-            fontSize: '13px',
-            fontWeight: 800,
-            letterSpacing: '0.2em',
-            color: theme.accent,
-            textAlign: 'center',
-            marginBottom: '8px',
-          }}
-        >
-          💧 OCEANICOS
-        </div>
-
-        {/* Prompt */}
-        <h1
-          style={{
-            fontSize: '28px',
-            fontWeight: 600,
-            color: theme.text,
-            textAlign: 'center',
-            margin: '0 0 28px',
-            letterSpacing: '-0.5px',
-          }}
-        >
-          What shall we make real?
-        </h1>
-
-        {/* Living Conversational Stream */}
-        <div
-          style={{
-            marginBottom: '20px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '12px',
-            maxHeight: '380px',
-            overflowY: 'auto',
-            padding: '16px',
-            background: 'rgba(2, 10, 20, 0.85)',
-            border: '1px solid rgba(0, 245, 160, 0.25)',
-            borderRadius: theme.radius,
-            backdropFilter: 'blur(12px)',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
-          }}
-        >
-          {chatMessages.map((msg) => (
-            <div
-              key={msg.id}
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: msg.sender === 'user' ? 'flex-end' : 'flex-start',
-                gap: '4px',
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  fontSize: '11px',
-                  color: msg.sender === 'user' ? '#00f5a0' : '#38bdf8',
-                  fontWeight: 600,
-                  letterSpacing: '0.3px',
-                }}
-              >
-                <span>{msg.sender === 'user' ? '👑 ELION VAREL' : msg.sender === 'system' ? '⚙️ SYSTEM' : '🌊 AI SOUL MASTER'}</span>
-                {msg.organ && (
-                  <span
-                    style={{
-                      fontSize: '9px',
-                      background: 'rgba(56, 189, 248, 0.15)',
-                      padding: '1px 6px',
-                      borderRadius: '4px',
-                      border: '1px solid rgba(56, 189, 248, 0.3)',
-                    }}
-                  >
-                    {msg.organ}
-                  </span>
-                )}
-                <span style={{ fontSize: '10px', color: '#64748b' }}>{msg.timestamp}</span>
-              </div>
-              <div
-                style={{
-                  maxWidth: '85%',
-                  padding: '12px 16px',
-                  borderRadius: '12px',
-                  background:
-                    msg.sender === 'user'
-                      ? 'linear-gradient(135deg, rgba(0, 245, 160, 0.18) 0%, rgba(0, 210, 255, 0.18) 100%)'
-                      : msg.sender === 'system'
-                        ? 'rgba(239, 68, 68, 0.15)'
-                        : 'rgba(15, 23, 42, 0.9)',
-                  border:
-                    msg.sender === 'user'
-                      ? '1px solid rgba(0, 245, 160, 0.45)'
-                      : msg.sender === 'system'
-                        ? '1px solid rgba(239, 68, 68, 0.4)'
-                        : '1px solid rgba(56, 189, 248, 0.3)',
-                  color: '#f8fafc',
-                  fontSize: '13.5px',
-                  lineHeight: '1.5',
-                  whiteSpace: 'pre-wrap',
-                  boxShadow:
-                    msg.sender === 'user'
-                      ? '0 2px 14px rgba(0, 245, 160, 0.15)'
-                      : '0 2px 14px rgba(0, 0, 0, 0.4)',
-                }}
-              >
-                {msg.content}
-              </div>
-            </div>
-          ))}
-          {omegaLoading && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#38bdf8', fontSize: '12px', padding: '6px' }}>
-              <span className="omega-pulse">🌊</span>
-              <span>AI Soul Master is synthesizing in 432 Hz One Current...</span>
-            </div>
-          )}
-        </div>
-
-        {/* Prominent High-Visibility Message & Command Input */}
-        <div
-          style={{
-            position: 'relative',
-            display: 'flex',
-            gap: '10px',
-            alignItems: 'stretch',
-            background: 'rgba(3, 18, 31, 0.95)',
-            padding: '6px',
-            borderRadius: theme.radiusPill,
-            border: '2px solid rgba(0, 245, 160, 0.55)',
-            boxShadow: '0 0 24px rgba(0, 245, 160, 0.25), inset 0 0 12px rgba(0, 245, 160, 0.1)',
-          }}
-        >
-          <input
-            value={omegaIntent}
-            onChange={(e) => setOmegaIntent(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && omegaIntent.trim() && !omegaLoading) {
-                sendMessage();
-              }
-            }}
-            maxLength={2000}
-            placeholder="💬 Type your message or command here (press Enter or click Send)..."
-            style={{
-              flex: 1,
-              padding: '14px 20px',
-              background: 'transparent',
-              border: 'none',
-              color: '#ffffff',
-              fontFamily: theme.fontSans,
-              fontSize: '15px',
-              fontWeight: 500,
-              outline: 'none',
-            }}
-          />
-          <button
-            onClick={() => sendMessage()}
-            disabled={omegaLoading || !omegaIntent.trim()}
-            style={{
-              padding: '0 24px',
-              borderRadius: theme.radiusPill,
-              border: 'none',
-              background: omegaLoading || !omegaIntent.trim()
-                ? 'rgba(0, 245, 160, 0.2)'
-                : 'linear-gradient(135deg, #00f5a0 0%, #00d2ff 100%)',
-              color: omegaLoading || !omegaIntent.trim() ? '#64748b' : '#020d18',
-              fontFamily: theme.fontSans,
-              fontSize: '14px',
-              fontWeight: 700,
-              cursor: omegaLoading || !omegaIntent.trim() ? 'not-allowed' : 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              boxShadow: omegaLoading || !omegaIntent.trim() ? 'none' : '0 0 16px rgba(0, 245, 160, 0.4)',
-              transition: 'all 0.2s ease',
-            }}
-          >
-            <span>{omegaLoading ? '⏳' : '⚡'}</span>
-            <span>{omegaLoading ? 'Sending...' : 'Send Message'}</span>
-          </button>
-        </div>
+            <FuturisticEcosystemChatPanel />
 
         {/* Mode buttons */}
         <div

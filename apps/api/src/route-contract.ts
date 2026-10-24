@@ -56,6 +56,8 @@ export const API_ROUTE_INVENTORY = [
   'POST /v1/verification/optimize-slice',
   'POST /v1/verification/convergence',
   'POST /v1/verification/step',
+  'GET /v1/ecosystem/body',
+  'GET /v1/notion/surfaces',
   'GET /',
   'GET /assets/*',
 ] as const;

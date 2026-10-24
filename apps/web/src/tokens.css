@@ -122,3 +122,153 @@
 .omega-drift {
   animation: omega-drift 4s ease-in-out infinite;
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+ *  WATER INTELLIGENCE — Design Tokens & Animations
+ *  Each animation maps to a real system behavior.
+ *  NEVER: animate success without success.
+ * ═══════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* Water depth layers — z-space from surface to pressure core */
+  --water-surface: rgba(105, 231, 185, 0.06);
+  --water-shallow: rgba(14, 42, 54, 0.85);
+  --water-mid: rgba(8, 28, 36, 0.92);
+  --water-deep: rgba(5, 16, 22, 0.97);
+  --water-abyss: rgba(3, 10, 14, 0.99);
+
+  /* Water current colors — active intelligence flow */
+  --current-flow: rgba(105, 231, 185, 0.35);
+  --current-confluence: rgba(130, 220, 200, 0.25);
+  --current-still: rgba(84, 123, 116, 0.1);
+
+  /* Pressure core — verification center */
+  --pressure-verified: rgba(105, 231, 185, 0.6);
+  --pressure-uncertain: rgba(240, 198, 116, 0.5);
+  --pressure-failed: rgba(237, 153, 134, 0.5);
+
+  /* Water surface — glass refraction */
+  --water-glass: rgba(105, 231, 185, 0.04);
+  --water-glass-border: rgba(105, 231, 185, 0.1);
+  --water-glass-hover: rgba(105, 231, 185, 0.08);
+
+  /* Bioluminescence — living glow particles */
+  --biolum-primary: rgba(105, 231, 185, 0.5);
+  --biolum-secondary: rgba(80, 180, 220, 0.4);
+  --biolum-deep: rgba(60, 140, 200, 0.3);
+}
+
+/* ── Ocean wave — continuous ambient motion (IDLE / system alive) ── */
+@keyframes ocean-wave {
+  0%, 100% { transform: translateX(0) translateY(0); }
+  25% { transform: translateX(-8px) translateY(-3px); }
+  50% { transform: translateX(0) translateY(-5px); }
+  75% { transform: translateX(8px) translateY(-2px); }
+}
+
+/* ── Ocean swell — breathing rhythm (system health pulse) ── */
+@keyframes ocean-swell {
+  0%, 100% { transform: scaleY(1); opacity: 1; }
+  50% { transform: scaleY(1.02); opacity: 0.85; }
+}
+
+/* ── Current flow — directional intelligence routing ── */
+@keyframes ocean-current-flow {
+  0% { background-position: 200% 50%; }
+  100% { background-position: -200% 50%; }
+}
+
+/* ── Water ripple event — new event signal (maps to real events) ── */
+@keyframes water-ripple-event {
+  0% { transform: scale(0.8); opacity: 0.6; box-shadow: 0 0 0 0 var(--current-flow); }
+  50% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 12px rgba(105, 231, 185, 0); }
+  100% { transform: scale(0.8); opacity: 0.6; box-shadow: 0 0 0 0 rgba(105, 231, 185, 0); }
+}
+
+/* ── Depth shimmer — knowledge/memory layer reveal ── */
+@keyframes depth-shimmer {
+  0%, 100% { opacity: 0.3; filter: blur(0px); }
+  50% { opacity: 0.6; filter: blur(0.5px); }
+}
+
+/* ── Turbulence — error/conflict/uncertainty signal ── */
+@keyframes turbulence-shake {
+  0%, 100% { transform: translateX(0) rotate(0deg); }
+  10% { transform: translateX(-2px) rotate(-0.5deg); }
+  20% { transform: translateX(2px) rotate(0.5deg); }
+  30% { transform: translateX(-1px) rotate(-0.3deg); }
+  40% { transform: translateX(1px) rotate(0.3deg); }
+  50% { transform: translateX(0) rotate(0deg); }
+}
+
+/* ── Tide pulse — workload/activity visualization ── */
+@keyframes tide-pulse {
+  0%, 100% { opacity: 0.15; transform: scaleX(1); }
+  50% { opacity: 0.4; transform: scaleX(1.02); }
+}
+
+/* ── Bioluminescent particle glow ── */
+@keyframes biolum-glow {
+  0%, 100% { opacity: 0.2; transform: scale(1); }
+  30% { opacity: 0.7; transform: scale(1.3); }
+  60% { opacity: 0.4; transform: scale(0.9); }
+}
+
+/* ── Water class utilities ── */
+.water-surface {
+  background: var(--water-glass);
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  border: 1px solid var(--water-glass-border);
+}
+
+.water-current-active {
+  background: linear-gradient(90deg, transparent, var(--current-flow), transparent);
+  background-size: 200% 100%;
+  animation: ocean-current-flow 3s ease-in-out infinite;
+}
+
+.water-still {
+  animation: ocean-swell 6s ease-in-out infinite;
+}
+
+.water-turbulent {
+  animation: turbulence-shake 0.6s ease-in-out;
+}
+
+.water-ripple-event {
+  animation: water-ripple-event 1.5s ease-out;
+}
+
+.water-depth-shimmer {
+  animation: depth-shimmer 4s ease-in-out infinite;
+}
+
+.water-tide {
+  animation: tide-pulse 5s ease-in-out infinite;
+}
+
+.water-biolum {
+  animation: biolum-glow 3s ease-in-out infinite;
+}
+
+/* ── Reduced motion — accessibility compliance ── */
+@media (prefers-reduced-motion: reduce) {
+  .water-surface,
+  .water-current-active,
+  .water-still,
+  .water-turbulent,
+  .water-ripple-event,
+  .water-depth-shimmer,
+  .water-tide,
+  .water-biolum,
+  .omega-pulse,
+  .omega-drift,
+  .omega-ripple::before,
+  .omega-ripple::after,
+  .omega-flow-line,
+  .omega-flow-line-dormant {
+    animation: none !important;
+    transition: none !important;
+  }
+}

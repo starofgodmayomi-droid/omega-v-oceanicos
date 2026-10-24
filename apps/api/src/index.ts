@@ -31,6 +31,8 @@ import { evaluateAuthorization } from '@oceanicos/authorization';
 import { LocalJobError, LocalJobLedger, LOCAL_JOB_WINDOW } from './jobs.js';
 import { registerPipelineRoute } from './pipeline-route.js';
 import { registerEcosystemRoute } from './ecosystem-route.js';
+import { registerEcosystemBodyRoute } from './ecosystem-body-route.js';
+import { registerNotionSurfacesRoute } from './notion-surfaces-route.js';
 import { registerSoulRoute } from './soul-route.js';
 import { registerRealityRoute } from './reality-route.js';
 import { registerChatRoute } from './chat-route.js';
@@ -276,6 +278,8 @@ export function createApp(
 
   registerPipelineRoute(fastify, jsonError);
   registerEcosystemRoute(fastify, authMode, Boolean(attestationSigningKey));
+  registerEcosystemBodyRoute(fastify, authMode, Boolean(attestationSigningKey));
+  registerNotionSurfacesRoute(fastify);
   registerSoulRoute(fastify);
   registerRealityRoute(fastify, authMode, () => Boolean(attestationSigningKey), () => Boolean(ledgerMemory.getTip()));
   registerChatRoute(fastify, { kaiLedger, vectorMemory, VectorMemoryClass: VectorMemory });
