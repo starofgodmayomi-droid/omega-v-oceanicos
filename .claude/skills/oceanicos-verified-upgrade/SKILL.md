@@ -18,7 +18,7 @@ COMPILE → VALIDATE → ADMIT → EXECUTE → OBSERVE
 → VERIFIED | DIVERGENT | HALTED
 ```
 
-See `OMEGA_UPGRADE_MAX_COMPRESS.md`. This skill is the operating contract for that line. It does not by itself prove the kernel, API, web panel, CLI, or CI stage is healthy.
+See `OMEGA_UPGRADE_MAX_COMPRESS.md` and the index `docs/upgrades/ECOSYSTEM_COMPRESS_EXPAND.md`. This skill is the operating contract for that line. A later pass carries state through `skills/lucid-continuum`, then re-observes it. Neither file proves the kernel, API, web panel, CLI, or CI stage is healthy.
 
 ## Pipeline
 

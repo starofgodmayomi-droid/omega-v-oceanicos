@@ -19,6 +19,7 @@ MODEL ≠ REALITY · CAPABILITY ≠ AUTHORITY · TEST PASS ≠ PRODUCTION HEALTH
 | Session routing | [`skills/oceanicos-full-stack-companion/SKILL.md`](../../skills/oceanicos-full-stack-companion/SKILL.md) |
 | Kernel sequence | [`skills/omega-v-os/SKILL.md`](../../skills/omega-v-os/SKILL.md) |
 | Repair or upgrade | [`skills/oceanicos-verified-upgrade/SKILL.md`](../../skills/oceanicos-verified-upgrade/SKILL.md) |
+| Continuum between passes | [`skills/lucid-continuum/SKILL.md`](../../skills/lucid-continuum/SKILL.md) |
 | Bounded space / N-D | [`skills/oceanicos-max-space-full-stack/SKILL.md`](../../skills/oceanicos-max-space-full-stack/SKILL.md) |
 | Pipeline surfaces | [`OMEGA_UPGRADE_MAX_COMPRESS.md`](../../OMEGA_UPGRADE_MAX_COMPRESS.md) |
 | Exact supplied wording, `EXPAND ALL` | [`WHOLE-ECOSYSTEM-MASTER-PROMPT.md`](../../WHOLE-ECOSYSTEM-MASTER-PROMPT.md) |
