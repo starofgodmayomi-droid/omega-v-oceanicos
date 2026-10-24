@@ -13,11 +13,11 @@ its source.
 | `omega-global-good-fullstack`         | `094759e83a3aec27b6884c3b55e19b8021f8771a40d6f036e334c0e2e15af79b` | 2026-08-27 |
 | `omega-global-good-fullstack-builder` | `96d5c00b13c80d343230f301c9c87b08f6d12278d541e06480db818749c40422` | 2026-08-27 |
 | `omega-full-stack-max`                | `ec5b6a72fd453e20243813424991be79d0f718e301e18b9e54ed0417f5082cd1` | 2026-08-28 |
-| `oceanicos-full-stack-companion` | `7db7f5b030dc3ff5d5bef8f56eef407e5c9c9afa64472e4b5663bd7e8b07a222` | 2026-10-16 |
+| `oceanicos-full-stack-companion` | `53eda735bafb066473dca5ba7af8f0e40e72fc8a3e0d41831be1080004ed6fe5` | 2026-10-24 |
 | `oceanicos-max-space-full-stack` | `c3c5f8fa7a0b59d87dd4d1395b2422493eaded4f9a9296223699e4c5f369e65b` | 2026-10-16 |
-| `oceanicos-verified-upgrade` | `7c85422294d544464abc18ac4f946ea0269ca278ebefbe7fa1cf945e7bbf2c9a` | 2026-10-16 |
+| `oceanicos-verified-upgrade` | `7d616227104f1ef8346824eaac4b11c91f8aeba46bdea6adfc3f5c390c4aedf4` | 2026-10-24 |
 | `omega-v-os` | `6ed3f35d0085b8c3d7256cb65c3a8e49a24f860d90c7b940509ccfaf35480513` | 2026-10-16 |
-| `lucid-continuum` | `57a34241ff3d52ed143da49f1a9a04380743c2adf09bf9916553146915d711da` | 2026-10-16 |
+| `lucid-continuum` | `a2ff9630e23b413d93fcfbbf565cb1731b93a5fac6949551cc98da945f1b2f0c` | 2026-10-24 |
 
 Verify an installed skill still matches what was recorded:
 

@@ -21,6 +21,7 @@ This is the session-facing companion for ƆCEANiC_OS inside this repository. It 
 | Provenance and memory | `skills/kai-companion` |
 | Value experiments | `skills/oceanicos-value-navigator` |
 | Expression | `skills/voice-bridge`, `skills/oread-pidgin-harmonizer` |
+| Whole-ecosystem compress / expand | `docs/upgrades/ECOSYSTEM_COMPRESS_EXPAND.md` (index only; not a second constitution) |
 
 A skill is a method used during an active task. It is not a person, a consciousness, a hidden process, or proof that a machine, account, wallet, or external system is under this repository's control.
 

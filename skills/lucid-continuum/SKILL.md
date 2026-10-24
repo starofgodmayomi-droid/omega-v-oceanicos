@@ -7,7 +7,7 @@ description: "Carry Lucid/Oceanicos work across passes and handoffs without inve
 
 ## Purpose
 
-Lucid full stack (`skills/lucid-full-stack`) is the integrated method for one pass. This skill is the continuum between passes: what may cross a handoff, what must be observed again, and how the `∞/11:11` return stays finite.
+Lucid full stack (`skills/lucid-full-stack`) is the integrated method for one pass. This skill is the continuum between passes: what may cross a handoff, what must be observed again, and how the `∞/11:11` return stays finite. An upgrade pass uses `skills/oceanicos-verified-upgrade`. The compressed map is `docs/upgrades/ECOSYSTEM_COMPRESS_EXPAND.md`.
 
 Continuity is a written packet with provenance. It is not hidden memory, a background watcher, or proof that earlier work is still true.
 
