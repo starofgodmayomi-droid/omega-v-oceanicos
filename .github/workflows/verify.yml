@@ -291,15 +291,32 @@ jobs:
           grep -q '"success":true' /tmp/cycle.json
           grep -q '"block"' /tmp/cycle.json
 
+          compile='{"intent":"CI causal pipeline","subject":"docker-smoke","stateBefore":"S0","evidenceRefs":[{"id":"ci-ev","kind":"test-result","source":"docker-smoke","digest":"sha256:ci"}],"policyRefs":[{"id":"policy:ci","version":"1","requirement":"explicit authority"}],"workerPlan":[],"transition":{"requestedStateAfter":"S1","consequence":"bounded smoke transition","dryRun":false},"observation":{"observerId":"ci-smoke","targets":["docker-smoke"],"evidenceRequired":["state"]}}'
+
+          if [ "$(curl -sS -o /tmp/pipeline-client.json -w '%{http_code}' -X POST "$api/v1/pipeline" \
+            -H 'Content-Type: application/json' \
+            -H 'Authorization: Bearer ci-smoke-admin-token' \
+            -d "{\"compile\":$compile,\"admission\":{\"authorityVerified\":true,\"policySatisfied\":true},\"authority\":\"ci:docker-smoke\",\"policy\":\"policy:ci\",\"handlerStateAfter\":\"S1\",\"observedState\":\"S1\",\"changeId\":\"ci-docker-client-gates\"}")" != "400" ]; then
+            echo "::error::Caller-supplied pipeline admission gates were not rejected."
+            cat /tmp/pipeline-client.json
+            exit 1
+          fi
+          grep -q '"error":"PIPELINE_ADMISSION_EVIDENCE_NOT_ACCEPTED"' /tmp/pipeline-client.json
+
           curl -sf -X POST "$api/v1/pipeline" \
             -H 'Content-Type: application/json' \
             -H 'Authorization: Bearer ci-smoke-admin-token' \
-            -d '{"compile":{"intent":"CI causal pipeline","subject":"docker-smoke","stateBefore":"S0","evidenceRefs":[{"id":"ci-ev","kind":"test-result","source":"docker-smoke","digest":"sha256:ci"}],"policyRefs":[{"id":"policy:ci","version":"1","requirement":"explicit authority"}],"workerPlan":[],"transition":{"requestedStateAfter":"S1","consequence":"bounded smoke transition","dryRun":false},"observation":{"observerId":"ci-smoke","targets":["docker-smoke"],"evidenceRequired":["state"]}},"admission":{"authorityVerified":true,"policySatisfied":true},"authority":"ci:docker-smoke","policy":"policy:ci","handlerStateAfter":"S1","observedState":"S1","changeId":"ci-docker-causal-1"}' | tee /tmp/pipeline.json
+            -d "{\"compile\":$compile,\"admission\":{},\"authority\":\"ci:docker-smoke\",\"policy\":\"policy:ci\",\"handlerStateAfter\":\"S1\",\"observedState\":\"S1\",\"changeId\":\"ci-docker-unresolved\"}" | tee /tmp/pipeline.json
           grep -q '"success":true' /tmp/pipeline.json
-          grep -q '"realityStatus":"VERIFIED"' /tmp/pipeline.json
-          grep -q '"durableMemory":true' /tmp/pipeline.json
-          grep -q '"memoryIntegrity":true' /tmp/pipeline.json
-          docker exec omega-smoke sh -c 'test -s /tmp/omega-ledger/causal.jsonl'
+          grep -q '"halted":true' /tmp/pipeline.json
+          grep -q '"haltReason":"DENIED"' /tmp/pipeline.json
+          grep -q '"authorized":false' /tmp/pipeline.json
+          grep -q '"executionStatus":null' /tmp/pipeline.json
+          grep -q '"realityStatus":null' /tmp/pipeline.json
+          if docker exec omega-smoke sh -c 'test -s /tmp/omega-ledger/causal.jsonl'; then
+            echo "::error::A denied pipeline wrote a causal record."
+            exit 1
+          fi
 
           timeout 8s curl -sN \
             -H 'Authorization: Bearer ci-smoke-read-token' \

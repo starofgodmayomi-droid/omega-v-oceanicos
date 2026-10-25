@@ -47,6 +47,7 @@ port, regardless of how the three variables are configured:
 - `POST /os/admit`
 - `POST /mini/cycle`
 - `POST /mini/total`
+- `POST /v1/pipeline`
 
 A caller who can reach the service can write into the append-only chain,
 authorize actions, and record learnings. `POST /attest/verify` is read-shaped
@@ -111,6 +112,10 @@ When `OMEGA_ADMIN_OPERATOR_ALLOWLIST` is configured, the three persistence/revoc
 ## Conversation boundary
 
 `POST /v1/conversations` and `POST /v1/conversations/:id/messages` record a bounded in-memory transcript. They do not accept a role, handler, tool, command, or model function from the body. Without a server-side model provider, a user turn is stored and completion stays not executed. Provider text is model output, not verification, authorization, or command execution. The record is lost when the process stops.
+
+## Pipeline admission boundary
+
+`POST /v1/pipeline` is open when auth mode is local. Fields named authorityVerified or policySatisfied inside the request admission object are not authority. If either is present the route returns 400 PIPELINE_ADMISSION_EVIDENCE_NOT_ACCEPTED and does not run. With those fields absent, admission evidence comes only from the server pipelineAdmissionEvidence option supplied to createApp. That option is not read from the request, the environment, or an admin bearer token. When it is absent, the route still compiles and can return a water-flow prefix, then the existing gate returns DENY. The response is halted at ADMIT with haltReason DENIED, authorized false, and no execution, attestation, or reality verification. A thrown or malformed server resolver returns 403 PIPELINE_ADMISSION_EVIDENCE_UNAVAILABLE and does not run. handlerStateAfter does not execute unless that server evidence allows the transition. This boundary does not change kernel dry-run ordering.
 
 ## Ω command lifecycle governance
 

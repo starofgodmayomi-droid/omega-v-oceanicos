@@ -13,7 +13,7 @@ import { AttestationService } from '@oceanicos/attestation';
 import { OceanicosKernel } from '@omega-v/kernel';
 import { createMoodContext, proposeMoodCodex } from '@omega-v/mood';
 import { LocalJobError, LocalJobLedger, LOCAL_JOB_WINDOW } from './jobs.js';
-import { registerPipelineRoute } from './pipeline-route.js';
+import { registerPipelineRoute, type PipelineAdmissionEvidenceResolver } from './pipeline-route.js';
 import { registerEcosystemRoute } from './ecosystem-route.js';
 import { registerNavigatorEvidenceRoute } from './navigator-route.js';
 import { registerRealityRoute } from './reality-route.js';
@@ -56,6 +56,7 @@ export type CreateAppOptions = {
   connectorObservationPath?: string;
   githubFetch?: typeof fetch;
   connectorAdmissionEvidence?: ConnectorAdmissionEvidenceResolver;
+  pipelineAdmissionEvidence?: PipelineAdmissionEvidenceResolver;
   conversationModel?: ConversationModel;
 };
 
@@ -247,7 +248,7 @@ export function createApp(
 
   fastify.register(async (scope) => {
     await scope.register(rateLimit, { global: false });
-    registerPipelineRoute(scope, jsonError);
+    registerPipelineRoute(scope, jsonError, options.pipelineAdmissionEvidence);
   });
 
   registerEcosystemRoute(fastify, authMode, Boolean(attestationSigningKey));

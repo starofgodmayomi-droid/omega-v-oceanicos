@@ -8,7 +8,7 @@ import {
   verifyExecutedReality,
 } from '@oceanicos/mini';
 import type { OmegaCommand, OmegaCommandResult, OmegaCommandStatus, OmegaWorkerId } from '@oceanicos/types';
-import { decisionToStatus, validateOmegaApprovalInput, validateOmegaCommandInput, validateOmegaReconciliationInput } from '@oceanicos/types';
+import { validateOmegaApprovalInput, validateOmegaCommandInput, validateOmegaReconciliationInput } from '@oceanicos/types';
 import { buildSymbolicDrop } from '@omega-v/oreade';
 import { OmegaDurableStore } from './omega-persistence.js';
 type StoredCommand = OmegaCommand & {
@@ -198,10 +198,6 @@ function commandWaterFlow(command: StoredCommand): ReturnType<typeof buildOmegaW
 
 function commandResult(command: StoredCommand, nextAction: string): OmegaCommandResult {
   return { command, status: command.status, waterFlow: commandWaterFlow(command), ...(command.result?.execution ? { execution: command.result.execution } : {}), ...(command.result?.reality ? { reality: command.result.reality } : {}), nextAction };
-}
-
-function statusForDecision(decision: 'ALLOW' | 'DENY' | 'REVIEW'): OmegaCommandStatus {
-  return decisionToStatus(decision);
 }
 
 export function registerOmegaRoutes(
@@ -462,13 +458,13 @@ export function registerOmegaRoutes(
     if (!command) return reply.status(404).send({ success: false, error: 'OMEGA_COMMAND_NOT_FOUND' });
     if (command.status !== 'PROPOSED' && command.status !== 'REVIEW') return reply.status(409).send({ success: false, error: 'OMEGA_COMMAND_STALE' });
     const body = bodyOf(request);
-    const authority = typeof body.authority === 'string' ? body.authority : null;
-    const policy = typeof body.policy === 'string' ? body.policy : null;
-    const admitted = resolveChangeAdmission({ ...command.change, authority, policy }, { authorityVerified: body.authorityVerified === true, policySatisfied: body.policySatisfied === true });
-    const status = statusForDecision(admitted.decision);
-    const updated = store.update(command, { change: admitted, status });
-    store.record('command.admitted', updated, { decision: admitted.decision });
-    return { success: true, ...commandResult(updated, status === 'AUTHORIZED' ? 'execute the authorized bounded action' : status === 'DENIED' ? 'review the denial evidence; no execution is permitted' : 'obtain attributable human approval') };
+    if (Object.prototype.hasOwnProperty.call(body, 'authorityVerified') || Object.prototype.hasOwnProperty.call(body, 'policySatisfied')) {
+      return reply.status(400).send({ success: false, error: 'COMMAND_ADMISSION_EVIDENCE_NOT_ACCEPTED' });
+    }
+    // No trusted server-side admission resolver is configured. A caller must
+    // not turn that absence into AUTHORIZED or into a durable DENIED record.
+    // Operator approval stays on /approve.
+    return reply.status(403).send({ success: false, error: 'COMMAND_ADMISSION_EVIDENCE_UNAVAILABLE' });
   });
 
   fastify.post('/v1/omega/commands/:id/approve', async (request, reply) => {
