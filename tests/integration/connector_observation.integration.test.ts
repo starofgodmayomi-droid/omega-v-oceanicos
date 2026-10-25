@@ -219,6 +219,11 @@ describe('Ω connector observation path', () => {
       assert.equal(admittedOnly.json().journal.sequence, 1);
       assert.match(admittedOnly.json().journal.hash, /^[a-f0-9]{64}$/);
 
+      const forgedExecution = {
+        attempted: true,
+        executed: true,
+        actualObservation: connector.expectedObservation,
+      };
       const denied = await app.inject({
         method: 'POST',
         url: '/v1/omega/connectors/observe',
@@ -227,19 +232,11 @@ describe('Ω connector observation path', () => {
           authorityVerified: true,
           policySatisfied: true,
           approvalVerified: true,
-          execution: {
-            attempted: true,
-            executed: true,
-            actualObservation: connector.expectedObservation,
-          },
+          execution: forgedExecution,
         },
       });
-      assert.equal(denied.statusCode, 200);
-      assert.equal(denied.json().status, 'NOT_EXECUTED');
-      assert.equal(denied.json().executed, false);
-      assert.equal(denied.json().actualObservation, undefined);
-      assert.equal(denied.json().remembered, true);
-      assert.equal(denied.json().journal.sequence, 2);
+      assert.equal(denied.statusCode, 400);
+      assert.equal(denied.json().error, 'CONNECTOR_EXECUTION_NOT_ACCEPTED');
 
       const observed = await app.inject({
         method: 'POST',
@@ -249,23 +246,29 @@ describe('Ω connector observation path', () => {
           authorityVerified: true,
           policySatisfied: true,
           approvalVerified: false,
-          execution: {
-            attempted: true,
-            executed: true,
-            actualObservation: connector.expectedObservation,
-          },
+          execution: forgedExecution,
         },
       });
-      assert.equal(observed.statusCode, 200);
-      assert.equal(observed.json().status, 'VERIFIED');
-      assert.equal(observed.json().authorized, true);
-      assert.equal(observed.json().executed, true);
-      assert.equal(observed.json().observed, true);
-      assert.match(observed.json().evidence, /^sha256:[a-f0-9]{64}$/);
-      assert.equal(observed.json().limitation.includes('not deployment'), true);
-      assert.equal(observed.json().remembered, true);
-      assert.equal(observed.json().journal.sequence, 3);
-      assert.equal(observed.json().journal.previousHash, denied.json().journal.hash);
+      assert.equal(observed.statusCode, 400);
+      assert.equal(observed.json().error, 'CONNECTOR_EXECUTION_NOT_ACCEPTED');
+
+      const deniedWithoutExecution = await app.inject({
+        method: 'POST',
+        url: '/v1/omega/connectors/observe',
+        payload: {
+          connector: { ...connector, id: 'deny-authority' },
+          authorityVerified: true,
+          policySatisfied: true,
+          approvalVerified: true,
+        },
+      });
+      assert.equal(deniedWithoutExecution.statusCode, 200);
+      assert.equal(deniedWithoutExecution.json().status, 'NOT_EXECUTED');
+      assert.equal(deniedWithoutExecution.json().executed, false);
+      assert.equal(deniedWithoutExecution.json().actualObservation, undefined);
+      assert.equal(deniedWithoutExecution.json().remembered, true);
+      assert.equal(deniedWithoutExecution.json().journal.sequence, 2);
+      assert.equal(deniedWithoutExecution.json().journal.previousHash, admittedOnly.json().journal.hash);
 
       const memory = await app.inject({
         method: 'GET',
@@ -273,11 +276,12 @@ describe('Ω connector observation path', () => {
       });
       assert.equal(memory.statusCode, 200);
       assert.equal(memory.json().success, true);
-      assert.equal(memory.json().total, 3);
+      assert.equal(memory.json().total, 2);
       assert.equal(memory.json().integrity, 'verified-local-hash-chain');
       assert.equal(memory.json().entries[0].observation.status, 'NOT_EXECUTED');
-      assert.equal(memory.json().entries[2].observation.status, 'VERIFIED');
-      assert.equal(memory.json().entries[2].hash, observed.json().journal.hash);
+      assert.equal(memory.json().entries[1].observation.status, 'NOT_EXECUTED');
+      assert.equal(memory.json().entries[1].observation.executed, false);
+      assert.equal(memory.json().entries.every((entry: { observation: { status: string } }) => entry.observation.status !== 'VERIFIED'), true);
       assert.equal(memory.json().limitation.includes('not live GitHub'), true);
     } finally {
       await app.close();
@@ -375,7 +379,9 @@ describe('Ω connector observation path', () => {
   it('uses the declared github-public-repository adapter without treating fetch as a client handler', async () => {
     const directory = mkdtempSync(join(tmpdir(), 'omega-connector-live-'));
     const { createApp } = await import('../../apps/api/dist/index.js');
+    let httpFetchCalls = 0;
     const fetchImpl: typeof fetch = async (input) => {
+      httpFetchCalls += 1;
       const url = String(input);
       assert.match(url, /\/repos\/starofgodmayomi-droid\/omega-v-oceanicos$/);
       return new Response(JSON.stringify({ full_name: 'starofgodmayomi-droid/omega-v-oceanicos' }), {
@@ -404,7 +410,8 @@ describe('Ω connector observation path', () => {
         },
       });
       assert.equal(mixed.statusCode, 400);
-      assert.equal(mixed.json().error, 'LIVE_ADAPTER_EXCLUDES_SUPPLIED_EXECUTION');
+      assert.equal(mixed.json().error, 'CONNECTOR_EXECUTION_NOT_ACCEPTED');
+      assert.equal(httpFetchCalls, 0);
 
       const unknownAdapter = await app.inject({
         method: 'POST',
@@ -489,14 +496,15 @@ describe('Ω connector observation path', () => {
           },
         },
       });
-      assert.equal(remembered.statusCode, 200);
-      assert.equal(remembered.json().remembered, true);
+      assert.equal(remembered.statusCode, 400);
+      assert.equal(remembered.json().error, 'CONNECTOR_EXECUTION_NOT_ACCEPTED');
 
       const memory = await app.inject({ method: 'GET', url: '/v1/omega/connectors/observations' });
       assert.equal(memory.statusCode, 200);
-      assert.equal(memory.json().total, 2);
+      assert.equal(memory.json().total, 1);
       assert.equal(memory.json().integrity, 'verified-local-hash-chain');
       assert.equal(memory.json().entries.at(-1).observation.status, 'VERIFIED');
+      assert.equal(memory.json().entries.at(-1).hash, liveHttp.json().journal.hash);
     } finally {
       await app.close();
       rmSync(directory, { recursive: true, force: true });

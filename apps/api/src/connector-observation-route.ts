@@ -141,28 +141,10 @@ export function registerConnectorObservationRoute(
       });
     }
 
-    let execution: ConnectorExecutionObservation | undefined;
+    // A caller-supplied execution is not an observation. The only HTTP
+    // execution is the server-side live adapter, and only after admission.
     if (body.execution !== undefined) {
-      if (liveAdapter === GITHUB_PUBLIC_REPOSITORY_ADAPTER) {
-        return jsonError(reply, 400, 'LIVE_ADAPTER_EXCLUDES_SUPPLIED_EXECUTION');
-      }
-      const executionBody = parseObject(body.execution);
-      if (!executionBody) return jsonError(reply, 400, 'INVALID_CONNECTOR_EXECUTION');
-      if (typeof executionBody.attempted !== 'boolean' || typeof executionBody.executed !== 'boolean') {
-        return jsonError(reply, 400, 'INVALID_CONNECTOR_EXECUTION');
-      }
-      if (executionBody.actualObservation !== undefined && typeof executionBody.actualObservation !== 'string') {
-        return jsonError(reply, 400, 'INVALID_CONNECTOR_EXECUTION');
-      }
-      if (executionBody.error !== undefined && typeof executionBody.error !== 'string') {
-        return jsonError(reply, 400, 'INVALID_CONNECTOR_EXECUTION');
-      }
-      execution = {
-        attempted: executionBody.attempted,
-        executed: executionBody.executed,
-        actualObservation: executionBody.actualObservation,
-        error: executionBody.error,
-      };
+      return jsonError(reply, 400, 'CONNECTOR_EXECUTION_NOT_ACCEPTED');
     }
 
     const admissionEvidence = options.resolveAdmissionEvidence
@@ -170,6 +152,7 @@ export function registerConnectorObservationRoute(
       : { authorityVerified: false, policySatisfied: false, approvalVerified: false };
     const admission = admitOmegaConnector({ connector, ...admissionEvidence });
 
+    let execution: ConnectorExecutionObservation | undefined;
     if (liveAdapter === GITHUB_PUBLIC_REPOSITORY_ADAPTER && admission.admitted) {
       try {
         execution = await createGithubPublicRepositoryHandler(connector, options.githubFetch)();
