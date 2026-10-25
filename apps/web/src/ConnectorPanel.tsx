@@ -88,16 +88,10 @@ export function ConnectorPanel() {
       const payload = live
         ? {
             connector: DEFAULT_CONNECTOR,
-            authorityVerified: true,
-            policySatisfied: true,
-            approvalVerified: false,
             liveAdapter: 'github-public-repository',
           }
         : {
             connector: DEFAULT_CONNECTOR,
-            authorityVerified: true,
-            policySatisfied: true,
-            approvalVerified: false,
           };
       const result = await request<Observation>('/v1/omega/connectors/observe', {
         method: 'POST',

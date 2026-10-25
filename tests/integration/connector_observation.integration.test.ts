@@ -173,14 +173,24 @@ describe('Ω connector observation path', () => {
     await app.ready();
 
     try {
-      const claimed = await app.inject({
+      const clientGates = await app.inject({
         method: 'POST',
         url: '/v1/omega/connectors/observe',
         payload: {
           connector,
           authorityVerified: true,
           policySatisfied: true,
-          approvalVerified: false,
+          approvalVerified: true,
+        },
+      });
+      assert.equal(clientGates.statusCode, 400);
+      assert.equal(clientGates.json().error, 'CONNECTOR_ADMISSION_EVIDENCE_NOT_ACCEPTED');
+
+      const claimed = await app.inject({
+        method: 'POST',
+        url: '/v1/omega/connectors/observe',
+        payload: {
+          connector,
           status: 'VERIFIED',
         },
       });
@@ -192,9 +202,6 @@ describe('Ω connector observation path', () => {
         url: '/v1/omega/connectors/observe',
         payload: {
           connector,
-          authorityVerified: true,
-          policySatisfied: true,
-          approvalVerified: false,
           handler: { kind: 'network' },
         },
       });
@@ -206,9 +213,6 @@ describe('Ω connector observation path', () => {
         url: '/v1/omega/connectors/observe',
         payload: {
           connector,
-          authorityVerified: true,
-          policySatisfied: true,
-          approvalVerified: false,
         },
       });
       assert.equal(admittedOnly.statusCode, 200);
@@ -224,9 +228,6 @@ describe('Ω connector observation path', () => {
         url: '/v1/omega/connectors/observe',
         payload: {
           connector: { ...connector, id: 'deny-authority' },
-          authorityVerified: true,
-          policySatisfied: true,
-          approvalVerified: true,
           execution: {
             attempted: true,
             executed: true,
@@ -246,9 +247,6 @@ describe('Ω connector observation path', () => {
         url: '/v1/omega/connectors/observe',
         payload: {
           connector,
-          authorityVerified: true,
-          policySatisfied: true,
-          approvalVerified: false,
           execution: {
             attempted: true,
             executed: true,
@@ -285,7 +283,7 @@ describe('Ω connector observation path', () => {
     }
   });
 
-  it('ignores client-supplied admission flags when no trusted resolver is configured', async () => {
+  it('rejects client-supplied admission flags and still denies when no trusted resolver is configured', async () => {
     const directory = mkdtempSync(join(tmpdir(), 'omega-connector-default-deny-'));
     const { createApp } = await import('../../apps/api/dist/index.js');
     let fetchCalls = 0;
@@ -315,9 +313,21 @@ describe('Ω connector observation path', () => {
           liveAdapter: 'github-public-repository',
         },
       });
-      assert.equal(response.statusCode, 200);
-      assert.equal(response.json().admission.admitted, false);
-      assert.equal(response.json().executed, false);
+      assert.equal(response.statusCode, 400);
+      assert.equal(response.json().error, 'CONNECTOR_ADMISSION_EVIDENCE_NOT_ACCEPTED');
+      assert.equal(fetchCalls, 0);
+
+      const withoutFlags = await app.inject({
+        method: 'POST',
+        url: '/v1/omega/connectors/observe',
+        payload: {
+          connector,
+          liveAdapter: 'github-public-repository',
+        },
+      });
+      assert.equal(withoutFlags.statusCode, 200);
+      assert.equal(withoutFlags.json().admission.admitted, false);
+      assert.equal(withoutFlags.json().executed, false);
       assert.equal(fetchCalls, 0);
     } finally {
       await app.close();
@@ -396,9 +406,6 @@ describe('Ω connector observation path', () => {
         url: '/v1/omega/connectors/observe',
         payload: {
           connector,
-          authorityVerified: true,
-          policySatisfied: true,
-          approvalVerified: false,
           liveAdapter: 'github-public-repository',
           execution: { attempted: true, executed: true, actualObservation: connector.expectedObservation },
         },
@@ -411,9 +418,6 @@ describe('Ω connector observation path', () => {
         url: '/v1/omega/connectors/observe',
         payload: {
           connector,
-          authorityVerified: true,
-          policySatisfied: true,
-          approvalVerified: false,
           liveAdapter: 'gmail',
         },
       });
@@ -425,9 +429,6 @@ describe('Ω connector observation path', () => {
         url: '/v1/omega/connectors/observe',
         payload: {
           connector,
-          authorityVerified: true,
-          policySatisfied: true,
-          approvalVerified: false,
           liveAdapter: 'github-public-repository',
         },
       });
@@ -479,9 +480,6 @@ describe('Ω connector observation path', () => {
         url: '/v1/omega/connectors/observe',
         payload: {
           connector,
-          authorityVerified: true,
-          policySatisfied: true,
-          approvalVerified: false,
           execution: {
             attempted: true,
             executed: true,
