@@ -128,6 +128,90 @@ describe('live API pipeline → durable causal memory', () => {
     }
   });
 
+  it('does not invoke an explicit handler when the transition is a dry run', async () => {
+    const { runOmegaChangePipeline } = await import('../../packages/mini/dist/index.js');
+    let handlerCalls = 0;
+    let observationCalls = 0;
+    const result = runOmegaChangePipeline({
+      compile: {
+        ...compile,
+        transition: { ...compile.transition, dryRun: true },
+      },
+      admission: { authorityVerified: true, policySatisfied: true },
+      authority: 'human:api-test',
+      policy: 'policy:api',
+      handler: () => {
+        handlerCalls += 1;
+        return { stateAfter: 'S1' };
+      },
+      observeState: () => {
+        observationCalls += 1;
+        return 'S1';
+      },
+      waterFlowMaxSteps: 3,
+      changeId: 'kernel-dry-run-explicit-handler',
+    });
+
+    assert.equal(result.halted, true);
+    assert.equal(result.stage, 'EXECUTE');
+    assert.equal(result.haltReason, 'DRY_RUN');
+    assert.equal(handlerCalls, 0);
+    assert.equal(observationCalls, 0);
+    assert.equal(result.execution, undefined);
+    assert.equal(result.reality, undefined);
+    assert.equal(result.realityAttestation, undefined);
+    assert.equal(result.statusVector.executed, 'NO');
+    assert.equal(result.waterFlow.length, 3);
+    assert.equal(result.waterFlow.every((frame) => frame.provenance.verified === false), true);
+  });
+
+  it('halts an admitted dry-run before handlerStateAfter can execute', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'omega-api-pipeline-dry-run-'));
+    try {
+      const { createApp } = await import('../../apps/api/dist/index.js');
+      const app = createApp(join(directory, 'ledger.db'), false, {
+        allowUnsignedCycle: true,
+        pipelineAdmissionEvidence: () => ({ authorityVerified: true, policySatisfied: true }),
+      });
+      await app.ready();
+      try {
+        const response = await app.inject({
+          method: 'POST',
+          url: '/v1/pipeline',
+          payload: {
+            compile: {
+              ...compile,
+              transition: { ...compile.transition, dryRun: true },
+            },
+            admission: {},
+            authority: 'human:api-test',
+            policy: 'policy:api',
+            handlerStateAfter: 'S1',
+            observedState: 'S1',
+            waterFlowMaxSteps: 3,
+            changeId: 'api-pipeline-dry-run-handler-boundary',
+          },
+        });
+        assert.equal(response.statusCode, 200);
+        const body = response.json();
+        assert.equal(body.success, true);
+        assert.equal(body.pipeline.stage, 'EXECUTE');
+        assert.equal(body.pipeline.halted, true);
+        assert.equal(body.pipeline.haltReason, 'DRY_RUN');
+        assert.equal(body.pipeline.decision, 'ALLOW');
+        assert.equal(body.pipeline.authorized, true);
+        assert.equal(body.pipeline.executionStatus, null);
+        assert.equal(body.pipeline.attestationId, null);
+        assert.equal(body.pipeline.realityStatus, null);
+        assert.equal(body.pipeline.waterFlow.length, 3);
+      } finally {
+        await app.close();
+      }
+    } finally {
+      await removeTemporaryDirectory(directory);
+    }
+  });
+
   it('accepts a finite water-flow prefix and rejects invalid bounds at the API boundary', async () => {
     const directory = mkdtempSync(join(tmpdir(), 'omega-api-water-flow-'));
     try {
