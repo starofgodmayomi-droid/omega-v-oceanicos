@@ -4,6 +4,7 @@ export * from './executor.js';
 export * from './omega-command.js';
 export * from './scene.js';
 export * from './covenant.js';
+export * from './trading.js';
 import type { ExecutionReceipt } from './executor.js';
 import type { OmegaCommandStatus } from './omega-command.js';
 

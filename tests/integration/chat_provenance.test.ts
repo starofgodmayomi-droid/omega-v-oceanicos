@@ -77,6 +77,48 @@ describe('Chat & KAI Conversational Pipeline Integration', () => {
     expect(body.reply.metadata.actionTriggered).toBe('SEMANTIC_RECALL');
   });
 
+  it('POST /v1/chat activates Market Analyst on gold market prompts', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/v1/chat',
+      payload: { message: 'Analyze the current gold market and price trend' },
+    });
+
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.payload);
+    expect(body.reply.metadata.organ).toBe('MARKET_ANALYST');
+    expect(body.reply.metadata.actionTriggered).toBe('ANALYZE_GOLD_MARKET');
+    expect(body.reply.content).toContain('XAU/USD Market Analyst');
+  });
+
+  it('POST /v1/chat activates Signal Generator on trading signal prompts', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/v1/chat',
+      payload: { message: 'Give me a trading signal with RSI indicator' },
+    });
+
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.payload);
+    expect(body.reply.metadata.organ).toBe('SIGNAL_GENERATOR');
+    expect(body.reply.metadata.actionTriggered).toBe('GENERATE_AI_TRADING_SIGNALS');
+    expect(body.reply.content).toContain('AI Sovereign Signal Generator');
+  });
+
+  it('POST /v1/chat activates Risk Guardian on trading risk prompts', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/v1/chat',
+      payload: { message: 'Check my trading risk and leverage drawdown limit' },
+    });
+
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.payload);
+    expect(body.reply.metadata.organ).toBe('RISK_GUARDIAN');
+    expect(body.reply.metadata.actionTriggered).toBe('AUDIT_TRADING_RISK');
+    expect(body.reply.content).toContain('Sovereign Risk Guardian Audit');
+  });
+
   it('GET /v1/chat/history returns the recorded dialogue lineage', async () => {
     const res = await app.inject({
       method: 'GET',

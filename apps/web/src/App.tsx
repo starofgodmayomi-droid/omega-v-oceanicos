@@ -18,6 +18,7 @@ import { EcosystemBodyPanel } from './EcosystemBodyPanel';
 import { PlatformDuplexPanel } from './PlatformDuplexPanel';
 import { MultidimensionalCatalogPanel } from './MultidimensionalCatalogPanel';
 import { FuturisticEcosystemChatPanel } from './FuturisticEcosystemChatPanel';
+import { TradingDashboard } from './TradingDashboard';
 import {
   theme,
   statusColor,
@@ -131,7 +132,7 @@ export function App() {
   ]);
 
   const [openStageId, setOpenStageId] = useState<string | null>(null);
-  const [viewportMode, setViewportMode] = useState<'conversation' | 'work' | 'evidence' | 'catalog'>('conversation');
+  const [viewportMode, setViewportMode] = useState<'trading' | 'conversation' | 'work' | 'evidence' | 'catalog'>('trading');
   const [showCovenantPanel, setShowCovenantPanel] = useState<boolean>(false);
   const [showCompressionPulse, setShowCompressionPulse] = useState<boolean>(false);
   const [compressionData, setCompressionData] = useState<any>(null);
@@ -876,6 +877,28 @@ export function App() {
           }}
         >
           <button
+            onClick={() => setViewportMode('trading')}
+            style={{
+              padding: '8px 20px',
+              borderRadius: theme.radiusPill,
+              border: viewportMode === 'trading' ? '1px solid rgba(240, 198, 116, 0.5)' : 'none',
+              background: viewportMode === 'trading' ? 'rgba(240, 198, 116, 0.2)' : 'transparent',
+              color: viewportMode === 'trading' ? '#f0c674' : theme.textMuted,
+              boxShadow: viewportMode === 'trading' ? '0 0 16px rgba(240, 198, 116, 0.3)' : 'none',
+              fontFamily: theme.fontSans,
+              fontSize: '12.5px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '7px',
+            }}
+          >
+            <span>🥇</span>
+            <span>XAU/USD AI Trader</span>
+          </button>
+          <button
             onClick={() => setViewportMode('catalog')}
             style={{
               padding: '8px 18px',
@@ -966,7 +989,19 @@ export function App() {
         </div>
       </div>
 
-      {viewportMode === 'catalog' ? (
+      {viewportMode === 'trading' ? (
+        <div
+          style={{
+            maxWidth: '1440px',
+            width: '100%',
+            margin: '0 auto',
+            padding: '24px 24px 60px',
+            flex: 1,
+          }}
+        >
+          <TradingDashboard />
+        </div>
+      ) : viewportMode === 'catalog' ? (
         <div
           style={{
             maxWidth: '1280px',

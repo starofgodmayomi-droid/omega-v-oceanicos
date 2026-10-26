@@ -58,6 +58,13 @@ export const API_ROUTE_INVENTORY = [
   'POST /v1/verification/step',
   'GET /v1/ecosystem/body',
   'GET /v1/notion/surfaces',
+  'GET /v1/market/quote',
+  'GET /v1/market/xauusd',
+  'GET /v1/market/history',
+  'GET /v1/market/indicators',
+  'GET /v1/market/signals',
+  'GET /v1/market/status',
+  'POST /v1/market/tick',
   'GET /',
   'GET /assets/*',
 ] as const;

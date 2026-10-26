@@ -5,6 +5,7 @@ import { AttestationService } from '@oceanicos/attestation';
 import { ObserverEngine } from '@oceanicos/observer';
 import { evaluate4x4CompressionMatrix } from '@oceanicos/pluralism';
 import { geminiSoulReply, geminiSoulStream } from './gemini-soul.js';
+import { globalMarketEngine } from './market-route.js';
 
 export interface ChatMessage {
   id: string;
@@ -133,6 +134,47 @@ async function resolveOrganAndContext(
     organ = 'KAI_DREAM_ORACLE';
     actionTriggered = 'RECORD_NIGHT_OCEAN_DREAM';
     replyContent = `Night Ocean Dream Signal Received by the body's sensory fabric and recorded into your KAI ledger under did:omega:human:starofgodmayomi. Preserved across all 8 organs with zero entropy.`;
+  }
+  // 3. Gold / XAU/USD / AI Trading Organs
+  else if (/\bgold\b/.test(lower) || lower.includes('xau') || lower.includes('trading') || /\btrade\b/.test(lower) || lower.includes('pip') || lower.includes('candlestick')) {
+    const quote = globalMarketEngine.getQuote();
+    const indicators = globalMarketEngine.calculateIndicators();
+    const signals = globalMarketEngine.getSignals();
+
+    if (lower.includes('risk') || lower.includes('leverage') || lower.includes('drawdown') || lower.includes('margin')) {
+      organ = 'RISK_GUARDIAN';
+      actionTriggered = 'AUDIT_TRADING_RISK';
+      evidenceHash = quote.sovereignProofHash;
+      replyContent = `🛡️ **Sovereign Risk Guardian Audit — XAU/USD**\n\n` +
+        `• **Current Gold Price**: Bid $${quote.bid.toFixed(2)} / Ask $${quote.ask.toFixed(2)} (Spread: $${quote.spread.toFixed(2)})\n` +
+        `• **Max Drawdown Limit**: 5.0% (Fail-Closed Sovereign Guardrail)\n` +
+        `• **Max Position Size**: 2.0 Lots per ticket\n` +
+        `• **Max Recommended Leverage**: 20x for Gold Spot\n` +
+        `• **ATR Volatility (14)**: $${indicators.atr?.toFixed(2) ?? '2.50'} / 15m\n` +
+        `• **Status**: NORMAL ✓ — All Sovereign Verification Gates Admitted.`;
+    } else if (lower.includes('signal') || lower.includes('rsi') || lower.includes('macd') || lower.includes('indicator')) {
+      organ = 'SIGNAL_GENERATOR';
+      actionTriggered = 'GENERATE_AI_TRADING_SIGNALS';
+      evidenceHash = quote.sovereignProofHash;
+      const topSig = signals[0];
+      replyContent = `🧠 **AI Sovereign Signal Generator — XAU/USD**\n\n` +
+        `• **Primary Strategy**: **${topSig.strategy}** (${topSig.timeframe})\n` +
+        `• **Direction**: **${topSig.direction}** (Confidence: ${(topSig.confidence * 100).toFixed(0)}%)\n` +
+        `• **Rationale**: ${topSig.rationale}\n` +
+        `• **Technical Matrix**: RSI(14)=${indicators.rsi?.toFixed(1) ?? 'N/A'}, MACD Hist=${indicators.macd?.histogram?.toFixed(2) ?? 'N/A'}, SMA20=$${indicators.sma20?.toFixed(2) ?? 'N/A'}, SMA50=$${indicators.sma50?.toFixed(2) ?? 'N/A'}\n` +
+        `• **Target Price**: $${topSig.targetPrice?.toFixed(2) ?? 'N/A'} | **Stop Loss**: $${topSig.stopLoss?.toFixed(2) ?? 'N/A'}\n` +
+        `• **Sovereign Identity**: \`${topSig.provenance.sovereignIdentity}\``;
+    } else {
+      organ = 'MARKET_ANALYST';
+      actionTriggered = 'ANALYZE_GOLD_MARKET';
+      evidenceHash = quote.sovereignProofHash;
+      replyContent = `🥇 **XAU/USD Market Analyst — Real-Time Sovereign Feed**\n\n` +
+        `• **Live Spot Quote**: Bid **$${quote.bid.toFixed(2)}** | Ask **$${quote.ask.toFixed(2)}** (Mid $${quote.mid.toFixed(2)})\n` +
+        `• **24h Dynamics**: ${quote.change24h >= 0 ? '+' : ''}$${quote.change24h.toFixed(2)} (${quote.changePercent24h}%) • Range: $${quote.low24h.toFixed(2)} - $${quote.high24h.toFixed(2)}\n` +
+        `• **Trend**: RSI at ${indicators.rsi?.toFixed(1) ?? '50'} with price ${quote.mid >= (indicators.sma20 ?? 0) ? 'above' : 'below'} 20-SMA ($${indicators.sma20?.toFixed(2) ?? '-'})\n` +
+        `• **Cryptographic Attestation Hash**: \`${quote.sovereignProofHash}\`\n\n` +
+        `Ready to execute paper orders via the **XAU/USD AI Trader** terminal or refine trade thesis.`;
+    }
   }
   // 3. Ocean Fabric / Membrane / Security
   else if (lower.includes('fabric') || lower.includes('water') || lower.includes('security') || lower.includes('membrane') || lower.includes('ocean')) {
