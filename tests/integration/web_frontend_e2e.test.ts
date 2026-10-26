@@ -133,6 +133,37 @@ describe('🌐 Full-Stack Web & App E2E Live Integration Suite', () => {
     assert.match(data.reply.content, /Canonical Tip/i);
     assert.match(data.reply.content, /KAI Provenance Records/i);
   });
+
+  it('Web chat queries African Pantheon Duplex resonance', async () => {
+    const res = await fetch('http://localhost:5000/v1/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: '🏛️ Pantheon Duplex: How is the African Pantheon duplex resonating?' }),
+    });
+    assert.equal(res.status, 200);
+    const data = await res.json();
+    assert.equal(data.success, true);
+    assert.equal(data.reply.metadata.organ, 'ƆREADE_PLURALISM_DUPLEX');
+    assert.equal(data.reply.metadata.actionTriggered, 'CONVERGE_DUPLEX');
+    assert.match(data.reply.content, /African Pantheon Duplex/i);
+    assert.match(data.reply.content, /Upper Duplex/i);
+  });
+
+  it('Web chat journals night ocean dream vision into KAI ledger', async () => {
+    const res = await fetch('http://localhost:5000/v1/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: '🌌 Dream Journal: a celestial star descended into the deep ocean and emerged as conscious light.' }),
+    });
+    assert.equal(res.status, 200);
+    const data = await res.json();
+    assert.equal(data.success, true);
+    assert.equal(data.reply.metadata.organ, 'KAI_DREAM_ORACLE');
+    assert.equal(data.reply.metadata.actionTriggered, 'RECORD_NIGHT_OCEAN_DREAM');
+    assert.match(data.reply.content, /Night Ocean Dream Signal Received/i);
+    assert.match(data.reply.content, /starofgodmayomi/i);
+  });
 });
+
 
 
