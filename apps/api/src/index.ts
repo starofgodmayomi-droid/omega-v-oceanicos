@@ -282,7 +282,16 @@ export function createApp(
   registerNotionSurfacesRoute(fastify);
   registerSoulRoute(fastify);
   registerRealityRoute(fastify, authMode, () => Boolean(attestationSigningKey), () => Boolean(ledgerMemory.getTip()));
-  registerChatRoute(fastify, { kaiLedger, vectorMemory, VectorMemoryClass: VectorMemory });
+  registerChatRoute(fastify, {
+    kaiLedger,
+    vectorMemory,
+    VectorMemoryClass: VectorMemory,
+    kernel,
+    ledgerMemory,
+    broadcastMintedBlock,
+    attestationSigningKey,
+    optimizeMaxEquationSlices,
+  });
 
   const upgradeKernel = new UpgradeKernel(attestationSigningKey || 'omega-upgrade-secret');
   registerUpgradeRoute(fastify, jsonError, upgradeKernel);
@@ -1386,6 +1395,10 @@ export const STARTUP_BANNER = [
   '  GET    /v1/kai/integrity',
   '  POST   /v1/kai/record',
   '  POST   /v1/kai/verify-inference',
+  '  POST   /v1/chat',
+  '  POST   /v1/chat/stream',
+  '  GET    /v1/chat/history',
+  '  GET    /v1/chat/recall',
   '  GET    /rules',
   '  GET    /events',
   '  POST   /complete-loop',

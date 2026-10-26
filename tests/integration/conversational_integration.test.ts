@@ -1,5 +1,8 @@
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
+
+process.env.OMEGA_SIGNING_KEY = process.env.OMEGA_SIGNING_KEY || 'base44-dev-signing-key-replace-in-production-32chars';
+
 import { createApp } from '../../apps/api/dist/index.js';
 
 describe('🌊 OceanicOS Conversational Assistant & KAI Memory Integration Slice', () => {
@@ -123,5 +126,64 @@ describe('🌊 OceanicOS Conversational Assistant & KAI Memory Integration Slice
     assert.match(res.payload, /event: done/);
     assert.match(res.payload, /bc1qaj8jmp5as80zwew09ep86w6fgw37zwhwzr89mp/);
     assert.match(res.payload, /SOVEREIGN_TREASURY_ORATOR/);
+  });
+
+  it('POST /v1/chat executes real Proof-of-Work mining cycle and returns block hash when asked to mine block', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/v1/chat',
+      payload: {
+        message: '⛏️ Mine Block: Run a PoW consensus cycle and seal block to ledger',
+      },
+    });
+
+    assert.equal(res.statusCode, 200);
+    const body = JSON.parse(res.payload);
+    assert.equal(body.success, true);
+    assert.equal(body.reply.metadata.organ, 'CANONICAL_KERNEL_MINER');
+    assert.equal(body.reply.metadata.actionTriggered, 'MINT_CONSENSUS_BLOCK');
+    assert.ok(body.reply.metadata.evidenceHash);
+    assert.match(body.reply.content, /Consensus Block #/i);
+    assert.match(body.reply.content, /Block Hash/i);
+    assert.match(body.reply.content, /Nonce/i);
+  });
+
+  it('POST /v1/chat executes live Max Equation singularity optimization and returns winning candidate', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/v1/chat',
+      payload: {
+        message: '🌀 Max Equation: Optimize the next finite delta* slice for zero entropy',
+      },
+    });
+
+    assert.equal(res.statusCode, 200);
+    const body = JSON.parse(res.payload);
+    assert.equal(body.success, true);
+    assert.equal(body.reply.metadata.organ, 'MAX_EQUATION_SINGULARITY');
+    assert.equal(body.reply.metadata.actionTriggered, 'OPTIMIZE_MAX_EQUATION');
+    assert.ok(body.reply.metadata.evidenceHash);
+    assert.match(body.reply.content, /Max Equation Singularity Optimization Complete/i);
+    assert.match(body.reply.content, /Priority Score/i);
+    assert.match(body.reply.content, /Mathematical Proof Hash/i);
+  });
+
+  it('POST /v1/chat inspects canonical ledger tip and KAI provenance integrity', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/v1/chat',
+      payload: {
+        message: 'Audit the canonical ledger tip and verify KAI provenance chain',
+      },
+    });
+
+    assert.equal(res.statusCode, 200);
+    const body = JSON.parse(res.payload);
+    assert.equal(body.success, true);
+    assert.equal(body.reply.metadata.organ, 'KAI_PROVENANCE_LEDGER');
+    assert.equal(body.reply.metadata.actionTriggered, 'AUDIT_CANONICAL_LEDGER');
+    assert.match(body.reply.content, /Canonical Tip/i);
+    assert.match(body.reply.content, /KAI Provenance Records/i);
+    assert.match(body.reply.content, /Cryptographic Verification/i);
   });
 });
