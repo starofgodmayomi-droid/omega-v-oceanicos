@@ -118,6 +118,8 @@ export { captureMiniKernelCycle } from './kai-cycle.js';
 export { buildOmegaWaterFlow } from './water-flow.js';
 export { MAX_TOTAL_COMPRESSION_LEASE_MS, TOTAL_COMPRESSION_PACKAGE_IDS, validateTotalCompressionRequest } from './total-compress.js';
 export type { TotalCompressionIssueCode, TotalCompressionPackage, TotalCompressionRequest, TotalCompressionScope, TotalCompressionValidationIssue, TotalCompressionValidationResult } from './total-compress.js';
+export { admitRootEquationAction, readRootEquation, ROOT_EQUATION_ID, ROOT_EQUATION_LAYERS, ROOT_EQUATION_STEPS } from './root-equation.js';
+export type { RootEquationAdmission, RootEquationDenyReason, RootEquationLayer, RootEquationReading, RootEquationStep } from './root-equation.js';
 export { runBoundedParallel } from './parallel.js';
 export type {
   BoundedParallelAdmission,
