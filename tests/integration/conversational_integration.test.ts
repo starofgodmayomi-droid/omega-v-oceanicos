@@ -186,4 +186,25 @@ describe('🌊 OceanicOS Conversational Assistant & KAI Memory Integration Slice
     assert.match(body.reply.content, /KAI Provenance Records/i);
     assert.match(body.reply.content, /Cryptographic Verification/i);
   });
+
+  it('POST /v1/chat executes 4x4 whole-ecosystem total compression and returns Gram determinant', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/v1/chat',
+      payload: {
+        message: '🌊 Compress: execute whole-ecosystem 4x4 matrix compression and Gram determinant',
+      },
+    });
+
+    assert.equal(res.statusCode, 200);
+    const body = JSON.parse(res.payload);
+    assert.equal(body.success, true);
+    assert.equal(body.reply.metadata.organ, 'WHOLE_ECOSYSTEM_COMPRESSOR');
+    assert.equal(body.reply.metadata.actionTriggered, 'EVALUATE_4X4_COMPRESSION');
+    assert.ok(body.reply.metadata.evidenceHash);
+    assert.match(body.reply.content, /Whole-Ecosystem 4×4 Total Compression Evaluated/i);
+    assert.match(body.reply.content, /Fourth-Root Gram Determinant/i);
+    assert.match(body.reply.content, /Fixpoint Status/i);
+  });
 });
+

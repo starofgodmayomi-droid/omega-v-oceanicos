@@ -3,6 +3,7 @@ import type { KaiLedger } from '@oceanicos/remember';
 import type { VectorMemory } from '@oceanicos/vector';
 import { AttestationService } from '@oceanicos/attestation';
 import { ObserverEngine } from '@oceanicos/observer';
+import { evaluate4x4CompressionMatrix } from '@oceanicos/pluralism';
 import { geminiSoulReply, geminiSoulStream } from './gemini-soul.js';
 
 export interface ChatMessage {
@@ -240,6 +241,26 @@ async function resolveOrganAndContext(
       }
     } else {
       replyContent = `The Max Equation Singularity Engine optimizes finite slice transitions:\nΔ* = argmax [ V_E(Δ) / (R(Δ) + C(Δ) + ε) ]\nEvaluates feasible set F_A, enforces fail-closed human authorization, and guarantees zero entropy convergence Ψ → 0.`;
+    }
+  }
+  // 8b. Whole-Ecosystem 4x4 Compression & Radical Determinant
+  else if (lower.includes('compress') || lower.includes('4x4') || lower.includes('singularity') || lower.includes('matrix') || lower.includes('gram')) {
+    organ = 'WHOLE_ECOSYSTEM_COMPRESSOR';
+    actionTriggered = 'EVALUATE_4X4_COMPRESSION';
+    try {
+      const compResult = evaluate4x4CompressionMatrix({ A: true, P: true, E: true, C: true, O: true, V: true });
+      evidenceHash = compResult.proofHash;
+      replyContent = `🌊 **Whole-Ecosystem 4×4 Total Compression Evaluated!**\n\n` +
+        `• **Contract**: \`${compResult.contract}\`\n` +
+        `• **Human Root**: \`${compResult.humanRoot}\`\n` +
+        `• **Fixpoint Status**: **${compResult.fixpointStatus}** (Status: ${compResult.status})\n` +
+        `• **Frobenius Norm**: ${compResult.frobeniusNorm}\n` +
+        `• **Fourth-Root Gram Determinant**: $\\sqrt[4]{\\det(I_4 + M^T M)} = ${compResult.fourthRootGramDeterminant.toFixed(6)}$\n` +
+        `• **96-D Tensor Coordinates**: ${compResult.tensor96Dimension}\n` +
+        `• **Mathematical Proof Hash**: \`${compResult.proofHash}\`\n\n` +
+        `*Irreducible Axiom:* \`0 → 💧 → Ω∞v → 🕳️ → 💧 → ∞\``;
+    } catch (err: any) {
+      replyContent = `Total compression evaluated: ${err.message}`;
     }
   }
   // 9. Attestation Generation / Cryptographic proof
