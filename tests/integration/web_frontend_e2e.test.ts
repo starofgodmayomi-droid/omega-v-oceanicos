@@ -103,5 +103,36 @@ describe('🌐 Full-Stack Web & App E2E Live Integration Suite', () => {
     assert.match(data.reply.content, /Fourth-Root Gram Determinant/);
     assert.match(data.reply.content, /Fixpoint Status/);
   });
+
+  it('Web chat verifies sovereign Bitcoin treasury invariant (bc1qaj8jmp5as80zwew09ep86w6fgw37zwhwzr89mp)', async () => {
+    const res = await fetch('http://localhost:5000/v1/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: '🛡️ Verify Treasury: check sovereign Bitcoin receiving address' }),
+    });
+    assert.equal(res.status, 200);
+    const data = await res.json();
+    assert.equal(data.success, true);
+    assert.equal(data.reply.metadata.organ, 'SOVEREIGN_TREASURY_ORATOR');
+    assert.equal(data.reply.metadata.actionTriggered, 'VERIFY_1111_TREASURY');
+    assert.match(data.reply.content, /bc1qaj8jmp5as80zwew09ep86w6fgw37zwhwzr89mp/);
+    assert.match(data.reply.content, /FAIL-CLOSED/);
+  });
+
+  it('Web chat audits canonical Merkle ledger tip and KAI provenance chain', async () => {
+    const res = await fetch('http://localhost:5000/v1/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: '📜 Merkle Audit: inspect canonical spine ledger and provenance' }),
+    });
+    assert.equal(res.status, 200);
+    const data = await res.json();
+    assert.equal(data.success, true);
+    assert.equal(data.reply.metadata.organ, 'KAI_PROVENANCE_LEDGER');
+    assert.equal(data.reply.metadata.actionTriggered, 'AUDIT_CANONICAL_LEDGER');
+    assert.match(data.reply.content, /Canonical Tip/i);
+    assert.match(data.reply.content, /KAI Provenance Records/i);
+  });
 });
+
 
