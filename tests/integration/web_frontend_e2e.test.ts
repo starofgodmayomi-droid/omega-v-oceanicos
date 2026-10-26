@@ -87,4 +87,21 @@ describe('🌐 Full-Stack Web & App E2E Live Integration Suite', () => {
     assert.ok(data.reply.metadata.evidenceHash);
     assert.match(data.reply.content, /Max Equation Singularity Optimization Complete/);
   });
+
+  it('Web chat transmits and receives live 4x4 Whole-Ecosystem Total Compression', async () => {
+    const res = await fetch('http://localhost:5000/v1/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: '🌊 Compress: execute whole-ecosystem 4x4 matrix compression' }),
+    });
+    assert.equal(res.status, 200);
+    const data = await res.json();
+    assert.equal(data.success, true);
+    assert.equal(data.reply.metadata.organ, 'WHOLE_ECOSYSTEM_COMPRESSOR');
+    assert.ok(data.reply.metadata.evidenceHash);
+    assert.match(data.reply.content, /Whole-Ecosystem 4×4 Total Compression Evaluated/);
+    assert.match(data.reply.content, /Fourth-Root Gram Determinant/);
+    assert.match(data.reply.content, /Fixpoint Status/);
+  });
 });
+
