@@ -7,6 +7,7 @@ import {
   isAudioEnabled,
   toggleAudio,
 } from './audioResonance';
+import { enqueueOfflineMessage, syncOfflineQueue } from './offlineQueue';
 
 /* ── API plumbing ── */
 const API_BASE_URL = (
@@ -605,6 +606,38 @@ export function FuturisticEcosystemChatPanel() {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
 
+  /* ── Auto-sync offline dream vault when reconnecting ── */
+  useEffect(() => {
+    const handleOnline = async () => {
+      try {
+        const { syncedCount } = await syncOfflineQueue(apiUrl, (_entry, reply) => {
+          if (reply?.reply) {
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: reply.reply.id || `ai-${Date.now()}`,
+                sender: 'aisoul',
+                content: reply.reply.content,
+                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                organ: reply.reply.metadata?.organ || 'KAI_DREAM_ORACLE',
+                evidenceHash: reply.reply.metadata?.evidenceHash,
+                kaiRecordId: reply.reply.metadata?.kaiRecordId,
+              },
+            ]);
+          }
+        });
+        if (syncedCount > 0) {
+          playVerificationPulse();
+        }
+      } catch {
+        /* ambient retry */
+      }
+    };
+
+    window.addEventListener('online', handleOnline);
+    return () => window.removeEventListener('online', handleOnline);
+  }, []);
+
   const handleSend = async (textToSend?: string) => {
     const text = (textToSend || input).trim();
     if (!text || loading) return;
@@ -753,16 +786,29 @@ export function FuturisticEcosystemChatPanel() {
       }
     } catch (err: any) {
       setHasError(true);
-      setMessages((prev) => [
-        ...prev.filter((m) => m.id !== tempAiId),
-        {
-          id: `err-${Date.now()}`,
-          sender: 'system',
-          content: `⚠️ ${err.message || 'Transmission disrupted — turbulence detected'}`,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        },
-      ]);
-      // Clear turbulence after 4 seconds (water calms)
+      try {
+        const offlineEntry = await enqueueOfflineMessage(text);
+        setMessages((prev) => [
+          ...prev.filter((m) => m.id !== tempAiId),
+          {
+            id: `offline-${Date.now()}`,
+            sender: 'aisoul',
+            organ: 'KAI_DREAM_ORACLE',
+            content: `🌊 **Saved to Offline Dream Vault**\n\nYour signal is cryptographically stored in client IndexedDB under DID \`did:omega:human:starofgodmayomi\`.\n\n• Queue ID: \`${offlineEntry.id}\`\n• Status: PENDING AUTO-SYNC\n• When connection to the nervous system is restored, this dream will automatically synchronize into the canonical KAI ledger.`,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          },
+        ]);
+      } catch {
+        setMessages((prev) => [
+          ...prev.filter((m) => m.id !== tempAiId),
+          {
+            id: `err-${Date.now()}`,
+            sender: 'system',
+            content: `⚠️ ${err.message || 'Transmission disrupted — turbulence detected'}`,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          },
+        ]);
+      }
       setTimeout(() => setHasError(false), 4000);
     } finally {
       setLoading(false);

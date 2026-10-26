@@ -98,4 +98,41 @@ describe('📱 OceanicOS PWA Offline & Service Worker Verification Slice', () =>
     testDream.status = 'synced';
     assert.equal(testDream.status, 'synced');
   });
+
+  it('verifies offlineQueue module enqueues, reads, and marks messages synced', async () => {
+    const {
+      enqueueOfflineMessage,
+      getPendingOfflineMessages,
+      markOfflineMessageSynced,
+      syncOfflineQueue,
+    } = await import('../../apps/web/src/offlineQueue.ts');
+
+    const entry = await enqueueOfflineMessage('A deep oceanic revelation: 11:11 light');
+    assert.ok(entry.id.startsWith('dream-offline-'));
+    assert.equal(entry.status, 'pending');
+    assert.equal(entry.authorDid, 'did:omega:human:starofgodmayomi');
+
+    const pending = await getPendingOfflineMessages();
+    assert.ok(pending.some((e: any) => e.id === entry.id));
+
+    await markOfflineMessageSynced(entry.id, { success: true });
+    const pendingAfter = await getPendingOfflineMessages();
+    assert.ok(!pendingAfter.some((e: any) => e.id === entry.id));
+
+    // Test syncOfflineQueue with a mock handler
+    const entry2 = await enqueueOfflineMessage('Second vision queued during offline state');
+    let syncedReceived = false;
+    const syncRes = await syncOfflineQueue(
+      () => 'http://localhost:5000/v1/chat',
+      (syncedEntry, reply) => {
+        if (syncedEntry.id === entry2.id) {
+          syncedReceived = true;
+          assert.equal(reply.success, true);
+        }
+      }
+    );
+
+    assert.ok(syncRes.syncedCount >= 1);
+    assert.equal(syncedReceived, true);
+  });
 });
