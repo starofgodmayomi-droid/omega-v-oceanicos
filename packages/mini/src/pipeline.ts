@@ -129,6 +129,13 @@ export function resolveBoundedWorkerHandler(
   consequence: string | undefined,
   dryRun: boolean,
 ): { handler?: TransitionHandler; worker?: OmegaWorkerCapability; error?: PipelineHaltReason } {
+  // A dry run is a hard execution barrier, including for caller-supplied handlers.
+  // It may still compile and emit a bounded symbolic trace, but must never invoke
+  // executeAuthorizedTransition.
+  if (dryRun) {
+    return { error: 'DRY_RUN' };
+  }
+
   if (explicitHandler) {
     return { handler: explicitHandler };
   }

@@ -4,42 +4,66 @@ import { theme, statusColor, humanStatus } from './oceanicosTheme';
 /*
  * SystemHealthPanel — surfaces the /health endpoint in the UI.
  *
- * Shows observer, verifier, attester, memory, and persistence readiness
- * with evidence-bearing status — no green claim without executable evidence.
+ * The API returns `{ data: Health }`. Missing fields stay UNKNOWN.
+ * A readiness string is displayed, not promoted into a deployment claim.
  */
 
 const API_BASE_URL = (import.meta.env?.VITE_API_URL || '/api').replace(/\/$/, '');
 
+interface HealthAcknowledgement {
+  operatorId?: string;
+  action?: string;
+}
+
+interface HealthPersistence {
+  mode?: string;
+  source?: string;
+  keySource?: string;
+  eventLogSource?: string;
+  skippedLogEntries?: number;
+  rotationPending?: boolean;
+  operatorAction?: string;
+  acknowledgement?: HealthAcknowledgement | null;
+  coverage?: {
+    complete?: boolean;
+    unverifiedSurfaces?: string[];
+  };
+}
+
 interface HealthResponse {
-  status: string;
-  service: string;
-  readiness: string;
-  checks: {
-    observer: string;
-    verifier: string;
-    attester: string;
-    memory: { status: string; integrity: boolean; encryption: string };
-    persistence: {
-      mode: string;
-      source: string;
-      keySource: string;
-      rotationPending: boolean;
-      operatorAction: string;
-      coverage: {
-        complete: boolean;
-        surfaces: { name: string; encryption: string; keySource: string; evidence: string }[];
-        unverifiedSurfaces: string[];
-      };
-    };
+  status?: string;
+  service?: string;
+  readiness?: string;
+  checks?: {
+    observer?: string;
+    verifier?: string;
+    attester?: string;
+    memory?: { status?: string; integrity?: boolean; encryption?: string };
+    persistence?: HealthPersistence;
   };
-  policy: {
-    authMode: string;
-    readAuthConfigured: boolean;
-    adminAuthConfigured: boolean;
-    revocationEnabled: boolean;
-    persistenceEncryption: string;
+  policy?: {
+    authMode?: string;
+    readAuthConfigured?: boolean;
+    adminAuthConfigured?: boolean;
+    revocationEnabled?: boolean;
+    persistenceEncryption?: string;
   };
-  timestamp: string;
+  timestamp?: string;
+}
+
+function readHealth(payload: unknown): HealthResponse | null {
+  if (!payload || typeof payload !== 'object') return null;
+  const record = payload as { data?: unknown };
+  const body =
+    record.data && typeof record.data === 'object' && !Array.isArray(record.data)
+      ? record.data
+      : payload;
+  if (!body || typeof body !== 'object') return null;
+  return body as HealthResponse;
+}
+
+function readinessLabel(value: string | undefined): string {
+  return typeof value === 'string' && value.trim() ? value.trim().toUpperCase() : 'UNKNOWN';
 }
 
 export function SystemHealthPanel() {
@@ -54,9 +78,12 @@ export function SystemHealthPanel() {
       const res = await fetch(`${API_BASE_URL}/health`);
       const text = await res.text();
       const data = text ? JSON.parse(text) : null;
-      if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
-      setHealth(data);
-    } catch (err: any) {
+      if (!res.ok) throw new Error(data?.error || data?.message || `HTTP ${res.status}`);
+      const next = readHealth(data);
+      if (!next) throw new Error('health evidence unavailable');
+      setHealth(next);
+    } catch (err: unknown) {
+      setHealth(null);
       setError(err instanceof Error ? err.message : 'health check unavailable');
     } finally {
       setLoading(false);
@@ -69,7 +96,13 @@ export function SystemHealthPanel() {
     return () => clearInterval(interval);
   }, [fetchHealth]);
 
-  const readinessColor = health?.readiness === 'ready' ? theme.verified : theme.warning;
+  const label = readinessLabel(health?.readiness);
+  const readinessColor =
+    label === 'READY' ? theme.verified : label === 'UNKNOWN' ? theme.unknown : theme.warning;
+  const persistence = health?.checks?.persistence;
+  const policy = health?.policy;
+  const memory = health?.checks?.memory;
+  const acknowledgement = persistence?.acknowledgement;
 
   return (
     <div style={{ padding: '20px 22px', fontFamily: theme.fontSans }}>
@@ -95,7 +128,7 @@ export function SystemHealthPanel() {
                 border: `1px solid ${readinessColor}33`,
               }}
             >
-              {health.readiness.toUpperCase()}
+              {label}
             </span>
           )}
           <button
@@ -126,16 +159,16 @@ export function SystemHealthPanel() {
 
       {health && (
         <>
-          {/* Core checks */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '8px', marginBottom: '14px' }}>
             {[
-              { label: 'Observer', value: health.checks.observer },
-              { label: 'Verifier', value: health.checks.verifier },
-              { label: 'Attester', value: health.checks.attester },
-              { label: 'Memory', value: health.checks.memory.status },
+              { label: 'Observer', value: health.checks?.observer },
+              { label: 'Verifier', value: health.checks?.verifier },
+              { label: 'Attester', value: health.checks?.attester },
+              { label: 'Memory', value: memory?.status },
             ].map((check) => {
-              const isReady = check.value === 'ready';
-              const color = isReady ? theme.verified : theme.warning;
+              const shown = typeof check.value === 'string' && check.value.trim() ? check.value : 'UNKNOWN';
+              const isReady = shown === 'ready';
+              const color = isReady ? theme.verified : shown === 'UNKNOWN' ? theme.unknown : theme.warning;
               return (
                 <div
                   key={check.label}
@@ -160,7 +193,7 @@ export function SystemHealthPanel() {
                       }}
                     />
                     <span style={{ fontSize: '12px', fontWeight: 600, color }}>
-                      {check.value}
+                      {shown}
                     </span>
                   </div>
                 </div>
@@ -168,54 +201,65 @@ export function SystemHealthPanel() {
             })}
           </div>
 
-          {/* Memory integrity */}
-          <div style={{
-            padding: '10px 14px',
-            background: theme.surfaceDeep,
-            border: `1px solid ${theme.border}`,
-            borderRadius: theme.radiusSmall,
-            marginBottom: '10px',
-          }}>
-            <div style={{ fontSize: '11px', fontWeight: 600, color: theme.textMuted, marginBottom: '4px' }}>
-              Memory Integrity
+          {memory && (
+            <div style={{
+              padding: '10px 14px',
+              background: theme.surfaceDeep,
+              border: `1px solid ${theme.border}`,
+              borderRadius: theme.radiusSmall,
+              marginBottom: '10px',
+            }}>
+              <div style={{ fontSize: '11px', fontWeight: 600, color: theme.textMuted, marginBottom: '4px' }}>
+                Memory Integrity
+              </div>
+              <div style={{ fontSize: '12px', color: theme.text, display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                <span>integrity: <span style={{ color: memory.integrity === true ? theme.verified : memory.integrity === false ? theme.divergent : theme.unknown, fontWeight: 600 }}>
+                  {memory.integrity === true ? 'intact' : memory.integrity === false ? 'broken' : 'UNKNOWN'}
+                </span></span>
+                <span>encryption: <span style={{ color: theme.textDim }}>{memory.encryption ?? 'UNKNOWN'}</span></span>
+              </div>
             </div>
-            <div style={{ fontSize: '12px', color: theme.text, display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-              <span>integrity: <span style={{ color: health.checks.memory.integrity ? theme.verified : theme.divergent, fontWeight: 600 }}>
-                {health.checks.memory.integrity ? 'intact' : 'broken'}
-              </span></span>
-              <span>encryption: <span style={{ color: theme.textDim }}>{health.checks.memory.encryption}</span></span>
-            </div>
-          </div>
+          )}
 
-          {/* Persistence */}
-          <div style={{
-            padding: '10px 14px',
-            background: theme.surfaceDeep,
-            border: `1px solid ${theme.border}`,
-            borderRadius: theme.radiusSmall,
-            marginBottom: '10px',
-          }}>
-            <div style={{ fontSize: '11px', fontWeight: 600, color: theme.textMuted, marginBottom: '6px' }}>
-              Persistence · {health.checks.persistence.mode}
-            </div>
-            <div style={{ fontSize: '11px', color: theme.textDim, display: 'flex', flexDirection: 'column', gap: '3px' }}>
-              <span>source: {health.checks.persistence.source}</span>
-              <span>key: {health.checks.persistence.keySource}</span>
-              <span>rotation pending: {String(health.checks.persistence.rotationPending)}</span>
-              {health.checks.persistence.operatorAction !== 'none' && (
-                <span style={{ color: theme.warning }}>
-                  ⚠ operator action: {health.checks.persistence.operatorAction}
+          {persistence && (
+            <div style={{
+              padding: '10px 14px',
+              background: theme.surfaceDeep,
+              border: `1px solid ${theme.border}`,
+              borderRadius: theme.radiusSmall,
+              marginBottom: '10px',
+            }}>
+              <div style={{ fontSize: '11px', fontWeight: 600, color: theme.textMuted, marginBottom: '6px' }}>
+                Persistence{persistence.mode ? ` · ${persistence.mode}` : ''}
+              </div>
+              <div style={{ fontSize: '11px', color: theme.textDim, display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                <span>event log: {persistence.eventLogSource ?? persistence.source ?? 'UNKNOWN'}</span>
+                {typeof persistence.skippedLogEntries === 'number' && (
+                  <span>skipped: {persistence.skippedLogEntries}</span>
+                )}
+                <span>key: {persistence.keySource ?? 'UNKNOWN'}</span>
+                <span>
+                  rotation pending: {typeof persistence.rotationPending === 'boolean' ? String(persistence.rotationPending) : 'UNKNOWN'}
                 </span>
-              )}
-              {!health.checks.persistence.coverage.complete && (
-                <span style={{ color: theme.unknown }}>
-                  unverified: {health.checks.persistence.coverage.unverifiedSurfaces.join(', ')}
-                </span>
-              )}
+                {persistence.operatorAction && persistence.operatorAction !== 'none' && (
+                  <span style={{ color: theme.warning }}>
+                    operator action: {persistence.operatorAction} · review evidence, not recovery
+                  </span>
+                )}
+                {acknowledgement && (
+                  <span>
+                    acknowledged: {acknowledgement.operatorId ?? 'UNKNOWN'} / {acknowledgement.action ?? 'UNKNOWN'} · review evidence, not recovery
+                  </span>
+                )}
+                {persistence.coverage?.complete === false && (
+                  <span style={{ color: theme.unknown }}>
+                    unverified: {(persistence.coverage.unverifiedSurfaces ?? []).join(', ') || 'UNKNOWN'}
+                  </span>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Policy */}
           <div style={{
             padding: '10px 14px',
             background: theme.surfaceDeep,
@@ -226,11 +270,11 @@ export function SystemHealthPanel() {
               Policy
             </div>
             <div style={{ fontSize: '11px', color: theme.textDim, display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-              <span>auth: <span style={{ color: theme.accent }}>{health.policy.authMode}</span></span>
-              <span>revocation: <span style={{ color: health.policy.revocationEnabled ? theme.verified : theme.divergent }}>
-                {health.policy.revocationEnabled ? 'enabled' : 'disabled'}
+              <span>auth: <span style={{ color: theme.accent }}>{policy?.authMode ?? 'UNKNOWN'}</span></span>
+              <span>revocation: <span style={{ color: policy?.revocationEnabled === true ? theme.verified : policy?.revocationEnabled === false ? theme.divergent : theme.unknown }}>
+                {policy?.revocationEnabled === true ? 'enabled' : policy?.revocationEnabled === false ? 'disabled' : 'UNKNOWN'}
               </span></span>
-              <span>encryption: <span style={{ color: theme.textDim }}>{health.policy.persistenceEncryption}</span></span>
+              <span>encryption: <span style={{ color: theme.textDim }}>{policy?.persistenceEncryption ?? 'UNKNOWN'}</span></span>
             </div>
           </div>
         </>
