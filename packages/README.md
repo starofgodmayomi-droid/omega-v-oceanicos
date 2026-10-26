@@ -136,6 +136,10 @@ Extended subsystem modules for the Ω∞v Oceanicos ecosystem:
 | `@omega-v/worker`       | Background Task Worker Engine             |
 | `@omega-v/zk`           | Zero-Knowledge Proof Engine               |
 
+## Source-only contracts
+
+`validation-rules/` holds the whole-memory epistemic schemas. It is on disk and is not a workspace member. See [Whole memory → REA](../docs/WHOLE-MEMORY-REA.md).
+
 ## Installation
 
 ### From monorepo

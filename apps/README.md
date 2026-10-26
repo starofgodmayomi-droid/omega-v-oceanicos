@@ -9,6 +9,9 @@ The repository's two runnable applications are the Fastify API and the React/Vit
 | `apps/api` | Fastify HTTP API | `http://localhost:5000` | [API README](api/README.md) |
 | `apps/web` | React dashboard served by Vite | `http://localhost:3000` | [Web README](web/README.md) |
 
+`attestation-node` is source-only. It is not one of the two runnable applications, and `pnpm dev` does not start it. See [its README](attestation-node/README.md).
+
+
 The API defaults to port `5000`; `PORT` or `API_PORT` can override it. Vite is configured for port `3000`. Browser-relative `/api/*` requests use the Vite development proxy, which targets `http://localhost:5000` by default; `VITE_API_PROXY_TARGET` can override that target.
 
 ## Start the local stack
