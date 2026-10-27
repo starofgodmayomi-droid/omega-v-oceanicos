@@ -18,4 +18,4 @@ It does not replace those skills, and it does not rewrite `omega-full-stack-max`
 
 ## What this record does not claim
 
-Push, pull request, hosted CI, merge, deployment, and runtime health are `NOT_EXECUTED` until each is observed. A green local contract check is not those things.
+A branch commit is not hosted CI, not a merge, not deployment, and not runtime health. A green local contract check is not those things.
