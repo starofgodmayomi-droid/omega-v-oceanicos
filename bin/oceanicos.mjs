@@ -2101,13 +2101,18 @@ async function handleNotion(cmdArgs = []) {
     printBanner();
     console.log(`
 ${ANSI.bold}NOTION OPERATING SURFACES & PRIVATE WEALTH ENGINE COMMANDS:${ANSI.reset}
-  node bin/oceanicos.mjs notion status       Inspect 3 Notion operating surfaces, Composio, and GitHub
+  node bin/oceanicos.mjs notion status       Inspect all 6 canonical Notion surfaces, Composio, and GitHub
   node bin/oceanicos.mjs notion experiment   Render First Finite Action (5-buyer workflow setup validation)
   node bin/oceanicos.mjs notion sync         Append cryptographic evidence block to Notion master page
   node bin/oceanicos.mjs notion help         Display this help message
 
-${ANSI.bold}CANONICAL SURFACES:${ANSI.reset}
-  • Master Control Page: https://app.notion.com/p/OCEANICOS-MOTION-Private-Wealth-Execution-Engine-4003080bdd5381598220ef09061f54b7
+${ANSI.bold}4-QUADRANT MASTER PAGES:${ANSI.reset}
+  • [Q1 · SOUL]         AI Soul Command Center : https://app.notion.com/p/AI-SOUL-MASTER-COMMAND-CENTER-33949ca435a281a89c83ca074966bbfa
+  • [Q2 · UNIVERSE]     Living Universe Master : https://app.notion.com/p/OceanicOS-Living-Universe-Master-Blueprint-4003080bdd538153b957c6bdb9417958
+  • [Q3 · ARCHITECTURE] GitHub↔Notion Arch Map : https://app.notion.com/p/OceanicOS-GitHub-to-Notion-Architecture-Map-4003080bdd538142a075c9da63c46c70
+  • [Q4 · WEALTH]       Private Wealth Engine  : https://app.notion.com/p/OCEANICOS-MOTION-Private-Wealth-Execution-Engine-4003080bdd5381598220ef09061f54b7
+
+${ANSI.bold}2 RELATIONAL OPERATIONAL DATABASES:${ANSI.reset}
   • Opportunities DB   : https://app.notion.com/p/baf1877de9794cd8949e6c48cdee4c7a
   • Execution Queue DB : https://app.notion.com/p/75b1967ffb1947fc8f5adb1298fe8f02
 `);
@@ -2141,7 +2146,7 @@ ${ANSI.bold}CANONICAL SURFACES:${ANSI.reset}
   }
 
   if (subCommand === 'status') {
-    const inspection = await syncPkg.inspectNotionSurfaces({ token, pageId, oppDbId, execDbId });
+    const inspection = await syncPkg.inspectNotionSurfaces({ token, pageId, oppDbId, execDbId, includeQuadrants: true });
     const composioKey = process.env.COMPOSIO_API_KEY;
 
     if (isJson) {
@@ -2155,34 +2160,56 @@ ${ANSI.bold}CANONICAL SURFACES:${ANSI.reset}
     }
 
     printBanner();
-    console.log(`\n${ANSI.bold}=== 🏛️ AI SOUL × OCEANICOS: OPERATING SURFACES AUDIT ===${ANSI.reset}\n`);
+    console.log(`\n${ANSI.bold}=== 🏛️ AI SOUL × OCEANICOS: 6 CANONICAL NOTION OPERATING SURFACES ===${ANSI.reset}\n`);
     console.log(`  ${ANSI.cyan}Connection Mode${ANSI.reset}     : ${inspection.mode === 'LIVE_CONNECTED' ? `${ANSI.green}✓ LIVE CONNECTED${ANSI.reset}` : `${ANSI.yellow}⚠ DRY RUN (Offline)${ANSI.reset}`}`);
     console.log(`  ${ANSI.cyan}GitHub Repository${ANSI.reset}   : ${ANSI.bold}starofgodmayomi-droid/omega-v-oceanicos${ANSI.reset}`);
     console.log(`  ${ANSI.cyan}Composio Tool Bridge${ANSI.reset}: ${composioKey ? `${ANSI.green}CONFIGURED${ANSI.reset}` : `${ANSI.dim}OPTIONAL / UNCONFIGURED${ANSI.reset}`}\n`);
 
-    console.log(`${ANSI.bold}Notion Operating Surfaces:${ANSI.reset}`);
-    console.log(`  [1] ${ANSI.bold}Master Motion Control Page${ANSI.reset}`);
+    console.log(`${ANSI.bold}4-Quadrant Master Pages:${ANSI.reset}`);
+    if (inspection.surfaces.soulPage) {
+      console.log(`  [Q1 · SOUL] ${ANSI.bold}AI SOUL MASTER COMMAND CENTER${ANSI.reset}`);
+      console.log(`      UUID   : ${inspection.surfaces.soulPage.id}`);
+      console.log(`      URL    : ${inspection.surfaces.soulPage.url}`);
+      console.log(`      Role   : ${inspection.surfaces.soulPage.role}`);
+      console.log(`      Status : ${inspection.surfaces.soulPage.status === 'ONLINE_ACCESSIBLE' ? ANSI.green : ANSI.yellow}${inspection.surfaces.soulPage.status}${ANSI.reset}`);
+    }
+    if (inspection.surfaces.blueprintPage) {
+      console.log(`  [Q2 · UNIVERSE] ${ANSI.bold}OceanicOS Living Universe Master Blueprint${ANSI.reset}`);
+      console.log(`      UUID   : ${inspection.surfaces.blueprintPage.id}`);
+      console.log(`      URL    : ${inspection.surfaces.blueprintPage.url}`);
+      console.log(`      Role   : ${inspection.surfaces.blueprintPage.role}`);
+      console.log(`      Status : ${inspection.surfaces.blueprintPage.status === 'ONLINE_ACCESSIBLE' ? ANSI.green : ANSI.yellow}${inspection.surfaces.blueprintPage.status}${ANSI.reset}`);
+    }
+    if (inspection.surfaces.architecturePage) {
+      console.log(`  [Q3 · ARCHITECTURE] ${ANSI.bold}OceanicOS GitHub to Notion Architecture Map${ANSI.reset}`);
+      console.log(`      UUID   : ${inspection.surfaces.architecturePage.id}`);
+      console.log(`      URL    : ${inspection.surfaces.architecturePage.url}`);
+      console.log(`      Role   : ${inspection.surfaces.architecturePage.role}`);
+      console.log(`      Status : ${inspection.surfaces.architecturePage.status === 'ONLINE_ACCESSIBLE' ? ANSI.green : ANSI.yellow}${inspection.surfaces.architecturePage.status}${ANSI.reset}`);
+    }
+    console.log(`  [Q4 · WEALTH] ${ANSI.bold}OCEANICOS MOTION Private Wealth Execution Engine${ANSI.reset}`);
     console.log(`      UUID   : ${inspection.surfaces.masterPage.id}`);
     console.log(`      URL    : ${inspection.surfaces.masterPage.url}`);
     console.log(`      Role   : ${inspection.surfaces.masterPage.role}`);
-    console.log(`      Status : ${inspection.surfaces.masterPage.status === 'ONLINE_ACCESSIBLE' ? ANSI.green : ANSI.yellow}${inspection.surfaces.masterPage.status}${ANSI.reset}`);
+    console.log(`      Status : ${inspection.surfaces.masterPage.status === 'ONLINE_ACCESSIBLE' ? ANSI.green : ANSI.yellow}${inspection.surfaces.masterPage.status}${ANSI.reset}\n`);
 
-    console.log(`  [2] ${ANSI.bold}Value Opportunities Pipeline${ANSI.reset}`);
+    console.log(`${ANSI.bold}2 Relational Operational Databases:${ANSI.reset}`);
+    console.log(`  [DB · PIPELINE] ${ANSI.bold}Value Opportunities Pipeline${ANSI.reset}`);
     console.log(`      UUID   : ${inspection.surfaces.opportunitiesPipeline.id}`);
     console.log(`      URL    : ${inspection.surfaces.opportunitiesPipeline.url}`);
     console.log(`      Role   : ${inspection.surfaces.opportunitiesPipeline.role}`);
     console.log(`      Status : ${inspection.surfaces.opportunitiesPipeline.status === 'ONLINE_ACCESSIBLE' ? ANSI.green : ANSI.yellow}${inspection.surfaces.opportunitiesPipeline.status}${ANSI.reset}`);
 
-    console.log(`  [3] ${ANSI.bold}Execution Queue${ANSI.reset}`);
+    console.log(`  [DB · EXECUTION] ${ANSI.bold}Execution Queue${ANSI.reset}`);
     console.log(`      UUID   : ${inspection.surfaces.executionQueue.id}`);
     console.log(`      URL    : ${inspection.surfaces.executionQueue.url}`);
     console.log(`      Role   : ${inspection.surfaces.executionQueue.role}`);
     console.log(`      Status : ${inspection.surfaces.executionQueue.status === 'ONLINE_ACCESSIBLE' ? ANSI.green : ANSI.yellow}${inspection.surfaces.executionQueue.status}${ANSI.reset}`);
 
     if (!token) {
-      console.log(`\n${ANSI.dim}Note: NOTION_TOKEN not set in .env. Pre-flight schema verified. Use safe protocol to activate live sync.${ANSI.reset}\n`);
+      console.log(`\n${ANSI.dim}Note: NOTION_TOKEN not set in .env. Pre-flight schemas verified across all 6 surfaces. Use safe protocol to activate live sync.${ANSI.reset}\n`);
     } else {
-      console.log(`\n${ANSI.green}✓ All 3 Notion surfaces bound and ready for bidirectional operations.${ANSI.reset}\n`);
+      console.log(`\n${ANSI.green}✓ All 6 Notion surfaces bound and ready for bidirectional operations.${ANSI.reset}\n`);
     }
     return;
   }

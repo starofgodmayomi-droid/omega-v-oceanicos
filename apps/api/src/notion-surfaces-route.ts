@@ -1,9 +1,20 @@
 /**
- * Ω∞v Notion Surfaces Route — exposes the tri-surface Notion control plane
+ * Ω∞v Notion Surfaces Route — exposes the 6-surface Notion universe
  * and connected domains registry through the API.
  *
- * Returns the status of all 3 canonical Notion surfaces, the Composio
- * tool bridge configuration, and the ecosystem workspace layout.
+ * Returns the status of all 6 canonical Notion surfaces (4 master pages +
+ * 2 relational databases), the Composio tool bridge configuration,
+ * and the ecosystem workspace layout.
+ *
+ * 4-Quadrant Master Pages:
+ *   1. AI SOUL MASTER COMMAND CENTER    — Prompt router, Truth Weaver nexus
+ *   2. OceanicOS Living Universe Blueprint — Metaphysical architecture, 11 layers
+ *   3. OceanicOS GitHub↔Notion Map       — Codebase bi-directional mirror
+ *   4. OCEANICOS MOTION Wealth Engine    — Treasury & gold ledger
+ *
+ * 2 Relational Databases:
+ *   5. Value Opportunities Pipeline      — Deal flow & scoring
+ *   6. Execution Queue                   — Task orchestration
  */
 import type { FastifyInstance } from 'fastify';
 
@@ -12,6 +23,7 @@ export interface NotionSurfaceStatus {
   uuid: string;
   url: string;
   role: string;
+  quadrant: string;
   connected: boolean;
   tokenConfigured: boolean;
 }
@@ -36,19 +48,47 @@ export interface NotionSurfacesResponse {
 }
 
 const SURFACE_DEFS = [
+  // ── 4-Quadrant Master Pages ──────────────────────────────────────
   {
-    name: 'Master Motion Control Page',
+    name: 'AI SOUL MASTER COMMAND CENTER',
+    envKey: 'NOTION_SOUL_PAGE_ID',
+    defaultUuid: '33949ca4-35a2-81a8-9c83-ca074966bbfa',
+    url: 'https://app.notion.com/p/AI-SOUL-MASTER-COMMAND-CENTER-33949ca435a281a89c83ca074966bbfa',
+    role: 'Prompt router, Truth Weaver nexus, AI soul orchestration',
+    quadrant: 'Q1_SOUL',
+  },
+  {
+    name: 'OceanicOS Living Universe Master Blueprint',
+    envKey: 'NOTION_BLUEPRINT_PAGE_ID',
+    defaultUuid: '4003080b-dd53-8153-b957-c6bdb9417958',
+    url: 'https://app.notion.com/p/OceanicOS-Living-Universe-Master-Blueprint-4003080bdd538153b957c6bdb9417958',
+    role: 'Metaphysical architecture, 11 topological layers, living universe map',
+    quadrant: 'Q2_UNIVERSE',
+  },
+  {
+    name: 'OceanicOS GitHub to Notion Architecture Map',
+    envKey: 'NOTION_ARCHITECTURE_PAGE_ID',
+    defaultUuid: '4003080b-dd53-8142-a075-c9da63c46c70',
+    url: 'https://app.notion.com/p/OceanicOS-GitHub-to-Notion-Architecture-Map-4003080bdd538142a075c9da63c46c70',
+    role: 'Codebase-to-Notion bi-directional mirror, repo structure map',
+    quadrant: 'Q3_ARCHITECTURE',
+  },
+  {
+    name: 'OCEANICOS MOTION Private Wealth Execution Engine',
     envKey: 'NOTION_PAGE_ID',
     defaultUuid: '4003080b-dd53-8159-8220-ef09061f54b7',
     url: 'https://app.notion.com/p/OCEANICOS-MOTION-Private-Wealth-Execution-Engine-4003080bdd5381598220ef09061f54b7',
-    role: 'Canonical control plane — decisions, daily command, audit blocks',
+    role: 'Canonical control plane — decisions, daily command, treasury & gold ledger',
+    quadrant: 'Q4_WEALTH',
   },
+  // ── 2 Relational Operational Databases ───────────────────────────
   {
     name: 'Value Opportunities Pipeline',
     envKey: 'NOTION_OPPORTUNITIES_DB_ID',
     defaultUuid: 'baf1877d-e979-4cd8-949e-6c48cdee4c7a',
     url: 'https://app.notion.com/p/baf1877de9794cd8949e6c48cdee4c7a',
     role: 'Tracks buyer, problem, offer, stage, score, next action, review date, evidence',
+    quadrant: 'DB_PIPELINE',
   },
   {
     name: 'Execution Queue',
@@ -56,6 +96,7 @@ const SURFACE_DEFS = [
     defaultUuid: '75b1967f-fb19-47fc-8f5a-db1298fe8f02',
     url: 'https://app.notion.com/p/75b1967ffb1947fc8f5adb1298fe8f02',
     role: 'Tracks task priority, dependencies, approvals, status, output, test receipts',
+    quadrant: 'DB_EXECUTION',
   },
 ];
 
@@ -85,6 +126,7 @@ export function registerNotionSurfacesRoute(fastify: FastifyInstance): void {
         uuid,
         url: def.url,
         role: def.role,
+        quadrant: def.quadrant,
         connected: tokenConfigured,
         tokenConfigured,
       };

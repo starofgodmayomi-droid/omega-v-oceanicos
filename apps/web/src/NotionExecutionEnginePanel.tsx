@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { theme } from './oceanicosTheme';
 
 interface NotionSurface {
@@ -9,27 +9,77 @@ interface NotionSurface {
   stage: string;
 }
 
+interface WorkspaceSection {
+  name: string;
+  status: 'CONFIGURED' | 'PROPOSED' | 'BLOCKED';
+  evidence: string;
+}
+
+interface NotionApiResponse {
+  success: boolean;
+  token?: { configured: boolean; source: string };
+  surfaces?: Array<{
+    name: string;
+    uuid: string;
+    url: string;
+    role: string;
+    quadrant: string;
+    connected: boolean;
+    tokenConfigured: boolean;
+  }>;
+  workspaceSections?: WorkspaceSection[];
+  composioBridge?: {
+    configured: boolean;
+    apiKeyPresent: boolean;
+    status: string;
+  };
+  evaluatedAt?: string;
+}
+
 const SURFACES: NotionSurface[] = [
+  // ── 4-Quadrant Master Pages ──────────────────────────────────────
   {
-    name: 'Master Motion Control Page',
-    uuid: '4003080b-dd53-8159-8220-ef09061f54b7',
-    url: 'https://app.notion.com/p/OCEANICOS-MOTION-Private-Wealth-Execution-Engine-4003080bdd5381598220ef09061f54b7?pvs=21',
-    role: 'Canonical control plane, decisions, daily command, audit blocks',
-    stage: 'COMMAND CENTER',
+    name: 'AI SOUL MASTER COMMAND CENTER',
+    uuid: '33949ca4-35a2-81a8-9c83-ca074966bbfa',
+    url: 'https://app.notion.com/p/AI-SOUL-MASTER-COMMAND-CENTER-33949ca435a281a89c83ca074966bbfa',
+    role: 'Prompt router, Truth Weaver nexus, AI soul orchestration',
+    stage: 'Q1 · SOUL',
   },
+  {
+    name: 'OceanicOS Living Universe Master Blueprint',
+    uuid: '4003080b-dd53-8153-b957-c6bdb9417958',
+    url: 'https://app.notion.com/p/OceanicOS-Living-Universe-Master-Blueprint-4003080bdd538153b957c6bdb9417958',
+    role: 'Metaphysical architecture, 11 topological layers, living universe map',
+    stage: 'Q2 · UNIVERSE',
+  },
+  {
+    name: 'OceanicOS GitHub to Notion Architecture Map',
+    uuid: '4003080b-dd53-8142-a075-c9da63c46c70',
+    url: 'https://app.notion.com/p/OceanicOS-GitHub-to-Notion-Architecture-Map-4003080bdd538142a075c9da63c46c70',
+    role: 'Codebase-to-Notion bi-directional mirror, repo structure map',
+    stage: 'Q3 · ARCHITECTURE',
+  },
+  {
+    name: 'OCEANICOS MOTION Private Wealth Execution Engine',
+    uuid: '4003080b-dd53-8159-8220-ef09061f54b7',
+    url: 'https://app.notion.com/p/OCEANICOS-MOTION-Private-Wealth-Execution-Engine-4003080bdd5381598220ef09061f54b7',
+    role: 'Canonical control plane — decisions, daily command, treasury & gold ledger',
+    stage: 'Q4 · WEALTH',
+  },
+  // ── 2 Relational Operational Databases ───────────────────────────
   {
     name: 'Value Opportunities Pipeline',
     uuid: 'baf1877d-e979-4cd8-949e-6c48cdee4c7a',
-    url: 'https://app.notion.com/p/baf1877de9794cd8949e6c48cdee4c7a?pvs=21',
+    url: 'https://app.notion.com/p/baf1877de9794cd8949e6c48cdee4c7a',
     role: 'Tracks buyer, problem, offer, stage, score, next action, review date, evidence',
-    stage: 'VALUE MOTION',
+    stage: 'DB · PIPELINE',
   },
   {
     name: 'Execution Queue',
     uuid: '75b1967f-fb19-47fc-8f5a-db1298fe8f02',
-    url: 'https://app.notion.com/p/75b1967ffb1947fc8f5adb1298fe8f02?pvs=21',
+    url: 'https://app.notion.com/p/75b1967ffb1947fc8f5adb1298fe8f02',
     role: 'Tracks task priority, dependencies, approvals, status, output, test receipts',
-    stage: 'BOUNDED WORK',
+    stage: 'DB · EXECUTION',
   },
 ];
 
@@ -74,6 +124,18 @@ export function NotionExecutionEnginePanel() {
   const [activeWorkspace, setActiveWorkspace] = useState<'chat' | 'task' | 'evidence'>('task');
   const [activeMode, setActiveMode] = useState<'conversation' | 'work'>('work');
   const [copied, setCopied] = useState(false);
+  const [apiTelemetry, setApiTelemetry] = useState<NotionApiResponse | null>(null);
+
+  useEffect(() => {
+    let unmounted = false;
+    fetch('/v1/notion/surfaces')
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (!unmounted && data) setApiTelemetry(data);
+      })
+      .catch(() => {});
+    return () => { unmounted = true; };
+  }, []);
 
   const dailyCommandLine =
     'Validate narrow workflow setup offer with 5 reachable potential buyers | Small businesses & boutique agencies spending 3+ hrs/wk on manual tool duct-tape | OceanicOS monorepo test receipts, working Notion sync engine, inbound integration requests | Draft 5 personalized interview prompts inquiring about repeated tasks, workarounds, pain, and pilot fee willingness | Notion Execution Queue & local drafts (no external spend, messages, or credential disclosures) | Low risk (0.05). Human approval strictly required before external outreach or dispatch | 5 reviewable interview questions aligned with Section 4 stage gates (VALIDATE) | Human steward reviews copy; dry-run preview in CLI passes with 0 errors | Formatted in CLI and queued for operator decision | $0 incurred / $0 earned (Stage: VALIDATING) | Awaiting human consent to dispatch outreach | Log buyer feedback directly into Notion Value Opportunities Pipeline';
@@ -184,72 +246,147 @@ export function NotionExecutionEnginePanel() {
           Canonical Notion Control Plane Surfaces
         </h3>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
-          {SURFACES.map((surf, idx) => (
-            <div
-              key={surf.uuid}
-              style={{
-                background: theme.surface,
-                border: `1px solid ${theme.border}`,
-                borderRadius: theme.radiusSmall,
-                padding: '16px',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-              }}
-            >
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                  <span style={{ fontSize: '11px', fontFamily: theme.fontMono, color: theme.accent, fontWeight: 700 }}>
-                    SURFACE [{idx + 1}]
-                  </span>
-                  <span
+          {SURFACES.map((surf, idx) => {
+            const apiSurface = apiTelemetry?.surfaces?.find(s => s.uuid.toLowerCase() === surf.uuid.toLowerCase());
+            const isConnected = apiSurface?.connected ?? false;
+            return (
+              <div
+                key={surf.uuid}
+                style={{
+                  background: theme.surface,
+                  border: `1px solid ${isConnected ? theme.verified : theme.border}`,
+                  borderRadius: theme.radiusSmall,
+                  padding: '16px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '11px', fontFamily: theme.fontMono, color: theme.accent, fontWeight: 700 }}>
+                      SURFACE [{idx + 1}]
+                    </span>
+                    <div style={{ display: 'flex', gap: '4px' }}>
+                      <span
+                        style={{
+                          fontSize: '10px',
+                          fontFamily: theme.fontMono,
+                          padding: '2px 8px',
+                          borderRadius: theme.radiusPill,
+                          background: 'rgba(105, 231, 185, 0.12)',
+                          color: theme.verified,
+                        }}
+                      >
+                        {surf.stage}
+                      </span>
+                      {apiSurface && (
+                        <span
+                          style={{
+                            fontSize: '9px',
+                            fontFamily: theme.fontMono,
+                            padding: '2px 6px',
+                            borderRadius: theme.radiusPill,
+                            background: isConnected ? 'rgba(105, 231, 185, 0.15)' : 'rgba(255, 255, 255, 0.05)',
+                            color: isConnected ? theme.verified : theme.textDim,
+                          }}
+                        >
+                          {isConnected ? '✓ ONLINE' : 'CONFIGURED'}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div style={{ fontSize: '14px', fontWeight: 600, color: theme.text, marginBottom: '6px' }}>
+                    {surf.name}
+                  </div>
+                  <div style={{ fontSize: '12px', color: theme.textMuted, lineHeight: '1.4', marginBottom: '12px' }}>
+                    {surf.role}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '11px', fontFamily: theme.fontMono, color: theme.textDim, marginBottom: '8px' }}>
+                    UUID: {surf.uuid}
+                  </div>
+                  <a
+                    href={surf.url}
+                    target="_blank"
+                    rel="noreferrer"
                     style={{
-                      fontSize: '10px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      fontSize: '12px',
                       fontFamily: theme.fontMono,
-                      padding: '2px 8px',
-                      borderRadius: theme.radiusPill,
-                      background: 'rgba(105, 231, 185, 0.12)',
-                      color: theme.verified,
+                      color: theme.accent,
+                      textDecoration: 'none',
+                      padding: '6px 12px',
+                      background: 'rgba(105, 231, 185, 0.08)',
+                      borderRadius: '6px',
+                      border: `1px solid ${theme.border}`,
                     }}
                   >
-                    {surf.stage}
-                  </span>
-                </div>
-                <div style={{ fontSize: '14px', fontWeight: 600, color: theme.text, marginBottom: '6px' }}>
-                  {surf.name}
-                </div>
-                <div style={{ fontSize: '12px', color: theme.textMuted, lineHeight: '1.4', marginBottom: '12px' }}>
-                  {surf.role}
+                    Open in Notion ↗
+                  </a>
                 </div>
               </div>
-              <div>
-                <div style={{ fontSize: '11px', fontFamily: theme.fontMono, color: theme.textDim, marginBottom: '8px' }}>
-                  UUID: {surf.uuid}
-                </div>
-                <a
-                  href={surf.url}
-                  target="_blank"
-                  rel="noreferrer"
+            );
+          })}
+        </div>
+
+        {/* 9 Workspace Sections Telemetry from API */}
+        {apiTelemetry?.workspaceSections && apiTelemetry.workspaceSections.length > 0 && (
+          <div
+            style={{
+              background: theme.surfaceRaised,
+              border: `1px solid ${theme.borderSubtle}`,
+              borderRadius: theme.radiusSmall,
+              padding: '16px',
+              marginTop: '16px',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <div style={{ fontSize: '12px', fontWeight: 700, color: theme.accent, letterSpacing: '0.05em' }}>
+                9 CONNECTED WORKSPACE SECTIONS
+              </div>
+              <span style={{ fontSize: '10px', fontFamily: theme.fontMono, color: theme.textDim }}>
+                {apiTelemetry.evaluatedAt ? `Evaluated: ${new Date(apiTelemetry.evaluatedAt).toLocaleTimeString()}` : ''}
+              </span>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '8px' }}>
+              {apiTelemetry.workspaceSections.map(sec => (
+                <div
+                  key={sec.name}
                   style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    fontSize: '12px',
-                    fontFamily: theme.fontMono,
-                    color: theme.accent,
-                    textDecoration: 'none',
-                    padding: '6px 12px',
-                    background: 'rgba(105, 231, 185, 0.08)',
-                    borderRadius: '6px',
-                    border: `1px solid ${theme.border}`,
+                    padding: '8px 10px',
+                    background: theme.surfaceDeep,
+                    borderRadius: '4px',
+                    border: `1px solid ${theme.borderSubtle}`,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '2px',
                   }}
                 >
-                  Open in Notion ↗
-                </a>
-              </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 600, color: theme.text }}>{sec.name}</span>
+                    <span
+                      style={{
+                        fontSize: '9px',
+                        fontFamily: theme.fontMono,
+                        padding: '1px 5px',
+                        borderRadius: '3px',
+                        background: sec.status === 'CONFIGURED' ? 'rgba(105, 231, 185, 0.1)' : 'rgba(240, 198, 116, 0.1)',
+                        color: sec.status === 'CONFIGURED' ? theme.verified : theme.accentWarm,
+                      }}
+                    >
+                      {sec.status}
+                    </span>
+                  </div>
+                  <span style={{ fontSize: '10px', color: theme.textDim }}>{sec.evidence}</span>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Target User Experience Workspaces (Section 10) */}

@@ -211,3 +211,22 @@ test("inspectNotionSurfaces probes all 3 surfaces when token is provided", async
   assert.equal(inspection.surfaces.opportunitiesPipeline.status, "ONLINE_ACCESSIBLE");
   assert.equal(inspection.surfaces.executionQueue.status, "ONLINE_ACCESSIBLE");
 });
+
+test("inspectNotionSurfaces probes all 6 canonical surfaces when includeQuadrants is true", async () => {
+  const requestedUrls = [];
+  const fetchImpl = async (url) => {
+    requestedUrls.push(url);
+    return { ok: true, json: async () => ({ id: "mock" }) };
+  };
+  const inspection = await inspectNotionSurfaces({ token: "test-token", fetchImpl, includeQuadrants: true });
+  assert.equal(inspection.connected, true);
+  assert.equal(inspection.mode, "LIVE_CONNECTED");
+  assert.equal(requestedUrls.length, 6);
+  assert.equal(inspection.surfaces.masterPage.status, "ONLINE_ACCESSIBLE");
+  assert.equal(inspection.surfaces.soulPage.status, "ONLINE_ACCESSIBLE");
+  assert.equal(inspection.surfaces.blueprintPage.status, "ONLINE_ACCESSIBLE");
+  assert.equal(inspection.surfaces.architecturePage.status, "ONLINE_ACCESSIBLE");
+  assert.equal(inspection.surfaces.opportunitiesPipeline.status, "ONLINE_ACCESSIBLE");
+  assert.equal(inspection.surfaces.executionQueue.status, "ONLINE_ACCESSIBLE");
+});
+

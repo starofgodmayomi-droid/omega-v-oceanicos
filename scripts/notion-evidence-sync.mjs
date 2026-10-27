@@ -5,6 +5,9 @@ export const NOTION_API_VERSION = "2022-06-28";
 export const NOTION_REQUEST_TIMEOUT_MS = 15_000;
 
 export const DEFAULT_NOTION_PAGE_ID = "4003080b-dd53-8159-8220-ef09061f54b7";
+export const DEFAULT_NOTION_SOUL_PAGE_ID = "33949ca4-35a2-81a8-9c83-ca074966bbfa";
+export const DEFAULT_NOTION_BLUEPRINT_PAGE_ID = "4003080b-dd53-8153-b957-c6bdb9417958";
+export const DEFAULT_NOTION_ARCHITECTURE_PAGE_ID = "4003080b-dd53-8142-a075-c9da63c46c70";
 export const DEFAULT_NOTION_OPPORTUNITIES_DB_ID = "baf1877d-e979-4cd8-949e-6c48cdee4c7a";
 export const DEFAULT_NOTION_EXECUTION_DB_ID = "75b1967f-fb19-47fc-8f5a-db1298fe8f02";
 
@@ -291,7 +294,11 @@ export async function inspectNotionSurfaces({
   pageId = process.env.NOTION_PAGE_ID || DEFAULT_NOTION_PAGE_ID,
   oppDbId = process.env.NOTION_OPPORTUNITIES_DB_ID || DEFAULT_NOTION_OPPORTUNITIES_DB_ID,
   execDbId = process.env.NOTION_EXECUTION_DB_ID || DEFAULT_NOTION_EXECUTION_DB_ID,
+  soulPageId = process.env.NOTION_SOUL_PAGE_ID || DEFAULT_NOTION_SOUL_PAGE_ID,
+  blueprintPageId = process.env.NOTION_BLUEPRINT_PAGE_ID || DEFAULT_NOTION_BLUEPRINT_PAGE_ID,
+  architecturePageId = process.env.NOTION_ARCHITECTURE_PAGE_ID || DEFAULT_NOTION_ARCHITECTURE_PAGE_ID,
   fetchImpl = fetch,
+  includeQuadrants = false,
 } = {}) {
   const pageUuid = pageId.replace(/-/g, "");
   const oppDbUuid = oppDbId.replace(/-/g, "");
@@ -317,6 +324,31 @@ export async function inspectNotionSurfaces({
       status: "CONFIGURED",
     },
   };
+
+  if (includeQuadrants) {
+    const soulUuid = soulPageId.replace(/-/g, "");
+    const blueprintUuid = blueprintPageId.replace(/-/g, "");
+    const architectureUuid = architecturePageId.replace(/-/g, "");
+
+    surfaces.soulPage = {
+      id: soulPageId,
+      url: `https://app.notion.com/p/AI-SOUL-MASTER-COMMAND-CENTER-${soulUuid}`,
+      role: "AI Soul Master Command Center — prompt router & Truth Weaver nexus",
+      status: "CONFIGURED",
+    };
+    surfaces.blueprintPage = {
+      id: blueprintPageId,
+      url: `https://app.notion.com/p/OceanicOS-Living-Universe-Master-Blueprint-${blueprintUuid}`,
+      role: "OceanicOS Living Universe Master Blueprint — 11 topological layers",
+      status: "CONFIGURED",
+    };
+    surfaces.architecturePage = {
+      id: architecturePageId,
+      url: `https://app.notion.com/p/OceanicOS-GitHub-to-Notion-Architecture-Map-${architectureUuid}`,
+      role: "OceanicOS GitHub to Notion Architecture Map — codebase mirror",
+      status: "CONFIGURED",
+    };
+  }
 
   if (!token) {
     return {
@@ -347,6 +379,21 @@ export async function inspectNotionSurfaces({
     surfaces.executionQueue.status = execRes.ok ? "ONLINE_ACCESSIBLE" : `HTTP_${execRes.status}`;
   } catch (err) {
     surfaces.executionQueue.status = `ERROR_${err.message}`;
+  }
+
+  if (includeQuadrants) {
+    for (const p of [
+      { key: "soulPage", id: soulPageId },
+      { key: "blueprintPage", id: blueprintPageId },
+      { key: "architecturePage", id: architecturePageId },
+    ]) {
+      try {
+        const res = await fetchImpl(`https://api.notion.com/v1/pages/${p.id}`, notionRequestOptions(token, "GET"));
+        surfaces[p.key].status = res.ok ? "ONLINE_ACCESSIBLE" : `HTTP_${res.status}`;
+      } catch (err) {
+        surfaces[p.key].status = `ERROR_${err.message}`;
+      }
+    }
   }
 
   const allOnline = Object.values(surfaces).every((s) => s.status === "ONLINE_ACCESSIBLE");
