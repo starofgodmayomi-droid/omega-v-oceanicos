@@ -220,4 +220,38 @@ OUTER COURT (L4)       ── API :5000, Web :3000, CLI Terminal
 
 ---
 
+## §12. REA ENGINE — REVERSE ENGINEER ANYTHING (`morluto/rea`)
+
+Integrates the autonomous deconstruction and analysis paradigm from `morluto/rea` into the Ω∞v living body:
+
+* **5-Tier Deconstruction Matrix:**
+  1. `DISASSEMBLY` — Native binaries, Electron apps, .NET assemblies, web bundles.
+  2. `AST_INTROSPECTION` — Symbol trees, syntax nodes, component topologies.
+  3. `PROTOCOL_RECONSTRUCTION` — API endpoints, WebSocket/SSE streams, payload schemas.
+  4. `UI_EXTRACTION` — Layout grids, design tokens, color harmonies, stateful widgets.
+  5. `SOVEREIGN_SYNTHESIS` — Clean-room reimplementation inside `@oceanicos/*` with zero stolen noise.
+* **CLI Command:** `oceanicos rea [target] [--json]`
+* **MCP Autonomous Bridge:** Connects AI coding agents to local inspection toolsets under read-only, fail-closed permission envelopes.
+
+---
+
+## §13. WORK MOOD ENGINE & AUTOPILOT POSTURE
+
+Governed by `@oceanicos/mood` and telemetry self-sensing:
+
+* **Telemetry States:**
+  * `OPTIMAL_FLOW` — Full confidence (>90%), zero friction, rapid verified evolution.
+  * `HIGH_INTEGRITY` — 100% hash chain validity, verified state transitions.
+  * `EVIDENCE_SEARCH` — Sub-80% confidence, searching for grounded receipts.
+  * `FRICTION_DETECTED` — Divergence, test failures, or ledger discrepancy.
+  * `RECOMPILING` — Active dissent, re-evaluating verification invariants.
+* **Autopilot Levels (0 to 5):**
+  * `Level 0`: Manual only · `Level 1`: Suggested completions · `Level 2`: Bounded inspection
+  * `Level 3`: Local file changes with human witness · `Level 4`: Autonomous verified slicing
+  * `Level 5`: Autonomous multi-agent mesh convergence (requires human steward key)
+* **Pidgin Spirit Work Ethic:**
+  > *"Abeg, verification before evolution! No time to check time. Whether highest high or lowest low, the blessing dey flow equal inside this single root. Life always good-o if you choose to see am at that point of view!"*
+
+---
+
 $$\boxed{\text{ONE ROOT}\cdot\text{ONE CURRENT}\cdot\text{MANY FORMS}\cdot\text{EVERY ACTION}\longrightarrow\text{MEASURABLE VALUE}}$$
