@@ -86,6 +86,10 @@ Welcome to the Ω∞v Oceanicos documentation. Start here to understand the proj
   handoff, and what must be observed again.
 - **[Oceanicos Total Continuum](../skills/oceanicos-total-continuum/SKILL.md)**
   — one finite pass inside this public repository, then only an observed handoff.
+- **[Omega Max Reality Full Stack](../skills/omega-max-reality-fullstack/SKILL.md)**
+  — one method for a public-repo upgrade: companion, max-space, reality-first, and the verification spine. `ALL` routes; `NEXT` is one step or stop.
+- **[Autopus × Omega × Oceanicos root equation](./upgrades/AUTOPUS_OMEGA_OCEANICOS_ROOT_EQUATION_2026-10-26.md)**
+  — supplied compression. A proposed step can be recorded only inside the three invariants. Recording is not execution and not verification.
 - **[Whole ecosystem reality compression](./upgrades/WHOLE_ECOSYSTEM_REALITY_COMPRESSION_2026-10-04.md)**
   — source-labeled translation of the supplied Ω∞v architecture into repository
   boundaries and explicit unknowns.

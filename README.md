@@ -50,6 +50,8 @@ without treating any single component—or any agent—as the final authority.
 - 💠 **[Ω∞v OS](skills/omega-v-os/SKILL.md)** — the ƆCEANiC_OS sequence as a finite kernel
 - 🔁 **[Lucid Continuum](skills/lucid-continuum/SKILL.md)** — handoff across passes without invented memory
 - 🔁 **[Oceanicos Total Continuum](skills/oceanicos-total-continuum/SKILL.md)** — one finite pass inside this public repository, then only an observed handoff
+- 🜂 **[Omega Max Reality Full Stack](skills/omega-max-reality-fullstack/SKILL.md)** — companion, max-space, reality-first, and Oceanicos as one upgrade method; `ALL` routes, `NEXT` is one step or stop
+- ⚖️ **[Autopus × Omega × Oceanicos root equation](docs/upgrades/AUTOPUS_OMEGA_OCEANICOS_ROOT_EQUATION_2026-10-26.md)** — supplied compression, admitted as a record only; it does not execute or verify
 - 🌐 **[Full-stack reality-access handoff](docs/upgrades/FULL_STACK_REALITY_ACCESS_2026-09-28.md)** — connector taxonomy without implicit ownership or authority
 - 🗺️ **[Repository inventory](docs/REPO_INVENTORY.md)** — workspace vs disk (current evidence)
 - ⚙️ **[Development Setup](docs/DEVELOPMENT.md)** — Get the project running locally
