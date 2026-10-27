@@ -6,6 +6,7 @@ import { ObserverEngine } from '@oceanicos/observer';
 import { evaluate4x4CompressionMatrix } from '@oceanicos/pluralism';
 import { geminiSoulReply, geminiSoulStream } from './gemini-soul.js';
 import { globalMarketEngine } from './market-route.js';
+import { evaluateReaTarget } from './rea-route.js';
 
 export interface ChatMessage {
   id: string;
@@ -329,6 +330,25 @@ async function resolveOrganAndContext(
     } else {
       replyContent = `Attestation engine is standing by in local dev mode. Cryptographic HMAC-SHA256 attestation signing key is available when configured.`;
     }
+  }
+  // 9b. REA (Reverse Engineer Anything) Engine
+  else if (lower.includes('rea') || lower.includes('reverse engineer')) {
+    organ = 'REA_DECONSTRUCTION_ENGINE';
+    actionTriggered = 'REA_AUTONOMOUS_INSPECTION';
+    const report = evaluateReaTarget();
+    evidenceHash = report.evaluationHash;
+    replyContent = `🔍 **REA (Reverse Engineer Anything) Engine Activated — morluto/rea Protocol**\n\n` +
+      `• **Target Source**: \`${report.target}\`\n` +
+      `• **Evaluation Hash**: \`${report.evaluationHash}\`\n` +
+      `• **Work Mood**: **${report.workMood.state}** (Confidence: ${(report.workMood.confidence * 100).toFixed(0)}%, Autopilot: Level ${report.workMood.autopilotLevel})\n` +
+      `• **Pidgin Ethic**: *"${report.workMood.pidginAxiom}"*\n\n` +
+      `**5-Tier Deconstruction Matrix:**\n` +
+      `1. **DISASSEMBLY**: Native binaries, Electron apps, .NET assemblies, web bundles\n` +
+      `2. **AST_INTROSPECTION**: Symbol trees, abstract syntax nodes, component topologies\n` +
+      `3. **PROTOCOL_RECONSTRUCTION**: API endpoints, WebSocket/SSE streams, payload schemas\n` +
+      `4. **UI_EXTRACTION**: Layout grids, design tokens, color harmonies, stateful widgets\n` +
+      `5. **SOVEREIGN_SYNTHESIS**: Clean-room reimplementation inside \`@oceanicos/*\`\n\n` +
+      `*MCP Bridge: ACTIVE_BOUNDED | Fail-Closed: TRUE*`;
   }
   // 10. Audit / Ledger / Verification
   else if (lower.includes('audit') || lower.includes('ledger') || lower.includes('tip') || lower.includes('verify')) {

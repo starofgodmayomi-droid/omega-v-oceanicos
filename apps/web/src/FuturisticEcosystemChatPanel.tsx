@@ -96,11 +96,13 @@ const ORGAN_ICON: Record<string, string> = {
   OCEAN_TRUTH_MEMBRANE: '🌊',
   ATTESTATION_VERIFIER: '🛡️',
   LUCID_FULL_STACK_BUILDER: '🛠️',
+  REA_DECONSTRUCTION_ENGINE: '🔍',
 };
 
 /* ── Quick action chips ── */
 const ACTION_CHIPS = [
   { label: '🛡️ Verify Treasury', query: 'Verify the sovereign Bitcoin treasury address' },
+  { label: '🔍 REA Reverse Engineer', query: 'Execute REA autonomous inspection on morluto/rea with optimal flow work mood' },
   { label: '📜 Merkle Audit', query: 'Audit canonical Merkle ledger tip and cryptographic parent chain' },
   { label: '🏛️ Pantheon Duplex', query: 'How is the African Pantheon duplex resonating?' },
   { label: '🌌 Dream Journal', query: 'Record: a celestial star descended into the deep ocean and emerged as conscious light.' },
