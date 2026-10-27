@@ -42,6 +42,7 @@ import { registerCompressionRoute } from './compression-route.js';
 import { registerEchoframeRoute } from './echoframe-route.js';
 import { registerMarketRoute } from './market-route.js';
 import { registerTradingRoute } from './trading-route.js';
+import { registerReaRoute } from './rea-route.js';
 import { registerContinuumRoute, getContinuumEcosystemStatus } from './continuum-route.js';
 import { API_ROUTE_INVENTORY } from './route-contract.js';
 import { OceanicosKernel as UpgradeKernel } from '@oceanicos/mini';
@@ -302,6 +303,7 @@ export function createApp(
   registerEchoframeRoute(fastify);
   registerMarketRoute(fastify);
   registerTradingRoute(fastify);
+  registerReaRoute(fastify);
   fastify.get('/v1/continuum', async () => getContinuumEcosystemStatus());
 
   fastify.get('/health', async (_request, reply) => {
