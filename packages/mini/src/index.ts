@@ -281,6 +281,9 @@ export type {
   TotalCompressionValidationIssue,
   TotalCompressionValidationResult,
 } from './total-compress.js';
+export { validateKnowledgeEnvelope, KNOWLEDGE_KINDS, KNOWLEDGE_STATES, KNOWLEDGE_VISIBILITIES } from './knowledge-envelope.js';
+export type { KnowledgeEnvelope, KnowledgeEnvelopeResult } from './knowledge-envelope.js';
+
 
 export function executeOceanicosMaxExpansion(): CryptographicBlock {
   const kernelChain = new PluralisticHashChain();
