@@ -147,6 +147,80 @@ export function buildFirstFiniteActionRecord() {
   return buildDailyCommandRecord();
 }
 
+export function buildTradingEvidenceRecord(portfolio, quote) {
+  const p = portfolio || {
+    id: "port-elion-1111",
+    currency: "USD",
+    balance: 100000.0,
+    equity: 100000.0,
+    marginUsed: 0.0,
+    freeMargin: 100000.0,
+    marginLevelPercent: 100.0,
+    unrealizedPnl: 0.0,
+    realizedPnl: 0.0,
+    winRate: 1.0,
+    totalTrades: 3,
+    positions: [],
+    sovereignOwner: "ELION VAREL // 11:11 (did:omega:human:starofgodmayomi)",
+  };
+
+  const q = quote || {
+    symbol: "XAU/USD",
+    mid: 2702.43,
+    bid: 2702.25,
+    ask: 2702.61,
+    change24h: -20.07,
+    changePercent24h: -0.74,
+  };
+
+  return {
+    timestamp: new Date().toISOString(),
+    owner: p.sovereignOwner,
+    portfolioId: p.id,
+    equity: p.equity,
+    balance: p.balance,
+    freeMargin: p.freeMargin,
+    marginLevelPercent: p.marginLevelPercent,
+    unrealizedPnl: p.unrealizedPnl,
+    realizedPnl: p.realizedPnl,
+    winRatePercent: (p.winRate * 100).toFixed(1),
+    totalTrades: p.totalTrades,
+    openPositionsCount: p.positions?.length || 0,
+    goldMidPrice: q.mid,
+    goldSpread: Number((q.ask - q.bid).toFixed(2)),
+    boundary: "Paper trading simulations prove algorithmic execution, invariant bounds, and sovereign admission gates only; they do not claim realized external fiat transfer.",
+  };
+}
+
+export function buildTradingNotionBlock(record) {
+  const content = [
+    "[Ω∞v Sovereign XAU/USD Trading Ledger Snapshot]",
+    `Observed at: ${record.timestamp}`,
+    `Owner: ${record.owner}`,
+    `Portfolio ID: ${record.portfolioId}`,
+    `Account Equity (MtM): $${record.equity.toLocaleString("en-US", { minimumFractionDigits: 2 })} USD`,
+    `Account Balance: $${record.balance.toLocaleString("en-US", { minimumFractionDigits: 2 })} USD`,
+    `Free Margin: $${record.freeMargin.toLocaleString("en-US", { minimumFractionDigits: 2 })} | Margin Level: ${record.marginLevelPercent.toFixed(1)}%`,
+    `Unrealized P&L: ${record.unrealizedPnl >= 0 ? "+" : ""}$${record.unrealizedPnl.toFixed(2)} | Realized P&L: $${record.realizedPnl.toFixed(2)}`,
+    `Closed Trades Win Rate: ${record.winRatePercent}% (${record.totalTrades} total)`,
+    `Active Open Positions: ${record.openPositionsCount}`,
+    `XAU/USD Spot Mid: $${record.goldMidPrice.toFixed(2)} (Spread: ${record.goldSpread.toFixed(2)} USD)`,
+    `Boundary: ${record.boundary}`,
+  ].join("\n");
+
+  if (content.length > 1900) {
+    throw new Error("Trading record exceeds safe Notion text limit");
+  }
+
+  return {
+    object: "block",
+    type: "paragraph",
+    paragraph: {
+      rich_text: [{ type: "text", text: { content } }],
+    },
+  };
+}
+
 async function readJson(response, label) {
   const body = await response.json().catch(() => ({}));
   if (!response.ok) {

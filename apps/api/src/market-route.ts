@@ -26,6 +26,15 @@ export class MarketEngine {
   private lastUpdate: number = Date.now();
   private tickInterval: NodeJS.Timeout | null = null;
   private activeSignals: TradingSignal[] = [];
+  private listeners: Set<(quote: MarketQuote) => void> = new Set();
+
+  public onTick(listener: (quote: MarketQuote) => void): void {
+    this.listeners.add(listener);
+  }
+
+  public offTick(listener: (quote: MarketQuote) => void): void {
+    this.listeners.delete(listener);
+  }
 
   constructor() {
     this.seedHistoricalCandles();
@@ -162,7 +171,16 @@ export class MarketEngine {
       this.generateSignals();
     }
 
-    return this.getQuote();
+    const quote = this.getQuote();
+    for (const listener of this.listeners) {
+      try {
+        listener(quote);
+      } catch {
+        /* client disconnected */
+      }
+    }
+
+    return quote;
   }
 
   public getQuote(): MarketQuote {
@@ -498,5 +516,32 @@ export function registerMarketRoute(fastify: FastifyInstance): void {
       success: true,
       quote,
     };
+  });
+
+  // 7. Real-Time Market SSE Stream (Live Gold Ticks)
+  fastify.get('/v1/market/stream', async (request: FastifyRequest, reply: FastifyReply) => {
+    reply.raw.setHeader('Content-Type', 'text/event-stream');
+    reply.raw.setHeader('Cache-Control', 'no-cache, no-transform');
+    reply.raw.setHeader('Connection', 'keep-alive');
+    reply.raw.setHeader('Access-Control-Allow-Origin', '*');
+    reply.raw.flushHeaders?.();
+
+    // Send initial quote immediately upon connection
+    const initialQuote = globalMarketEngine.getQuote();
+    reply.raw.write(`data: ${JSON.stringify({ type: 'quote', quote: initialQuote })}\n\n`);
+
+    const onTick = (quote: MarketQuote) => {
+      try {
+        reply.raw.write(`data: ${JSON.stringify({ type: 'tick', quote })}\n\n`);
+      } catch {
+        globalMarketEngine.offTick(onTick);
+      }
+    };
+
+    globalMarketEngine.onTick(onTick);
+
+    request.raw.on('close', () => {
+      globalMarketEngine.offTick(onTick);
+    });
   });
 }

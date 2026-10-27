@@ -22,6 +22,18 @@ description: The master sovereign ecosystem skill for Elion Varel / Ω∞v / OCE
 ╚════════════════════════════════════════════════════════════════════════════════════════════════════╝
 ```
 
+## 0. AUTOPUS × OMEGA × OCEANICOS — COMPRESSED ROOT EQUATION
+
+$$\boxed{\mathbb E_{\mathrm{ALL}}^{*} = \operatorname{Evolve}_{\mathrm{evidence}}\left[(\mathbb L_I\otimes\mathbb L_S) \otimes\mathbb A \otimes\mathbb O \otimes\mathbb W \otimes \left(\bigotimes_{i=1}^{11}\mathcal L_i\right) \otimes\mathbb{AI}_{\mathrm{connected}}\right]}$$
+
+$$\boxed{\text{INTENT} \rightarrow \text{CONTEXT} \rightarrow \text{REASON} \rightarrow \text{PLAN} \rightarrow \text{AUTHORIZE} \rightarrow \text{ORCHESTRATE} \rightarrow \text{EXECUTE} \rightarrow \text{VERIFY} \rightarrow \text{VALUE} \rightarrow \text{LEARN} \rightarrow \mathbb E_{t+1}}$$
+
+### Governing Invariant:
+$$\boxed{\text{TALK NATURALLY} \;\land\; \text{ACT DELIBERATELY} \;\land\; \text{VERIFY HONESTLY}}$$
+
+### Execution Constraint:
+$$\boxed{\text{Autonomy} \le \text{Granted Authority} \quad;\quad \text{Claims} \le \text{Verified Evidence} \quad;\quad \text{Every Action} \rightarrow \text{Measurable Value}}$$
+
 ---
 
 ## 1. THE ROOT CREED & SPIRITUAL AXIOMS ($L_0 \to L_1$)

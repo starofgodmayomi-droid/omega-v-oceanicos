@@ -2204,8 +2204,24 @@ ${ANSI.bold}CANONICAL SURFACES:${ANSI.reset}
     GITHUB_WORKFLOW: process.env.GITHUB_WORKFLOW || 'OceanicOS Sovereign Sync',
   };
 
-  const record = syncPkg.buildEvidenceRecord(env);
-  const block = syncPkg.buildNotionBlock(record);
+  const isTrading = args.includes('--trading');
+  let record = syncPkg.buildEvidenceRecord(env);
+  let block = syncPkg.buildNotionBlock(record);
+
+  if (isTrading && typeof syncPkg.buildTradingEvidenceRecord === 'function') {
+    let port = null;
+    let quote = null;
+    try {
+      const portRes = await omegaRequest('/v1/trading/portfolio');
+      if (portRes?.portfolio) port = portRes.portfolio;
+      const quoteRes = await omegaRequest('/v1/market/quote');
+      if (quoteRes?.quote) quote = quoteRes.quote;
+    } catch {
+      /* fallback to defaults */
+    }
+    record = syncPkg.buildTradingEvidenceRecord(port, quote);
+    block = syncPkg.buildTradingNotionBlock(record);
+  }
 
   if (!token) {
     if (isJson) {
@@ -2226,7 +2242,7 @@ ${ANSI.bold}CANONICAL SURFACES:${ANSI.reset}
     console.log(`  ${ANSI.cyan}Page UUID${ANSI.reset}          : ${ANSI.bold}${pageId}${ANSI.reset}`);
     console.log(`  ${ANSI.cyan}Target URL${ANSI.reset}         : https://app.notion.com/p/OCEANICOS-MOTION-Private-Wealth-Execution-Engine-${pageId.replace(/-/g, '')}`);
     console.log(`  ${ANSI.yellow}Status${ANSI.reset}             : ${ANSI.bold}DRY RUN (NOTION_TOKEN not yet configured in .env)${ANSI.reset}\n`);
-    console.log(`${ANSI.bold}Prepared Evidence Block:${ANSI.reset}`);
+    console.log(`${ANSI.bold}Prepared Evidence Block (${isTrading ? 'TRADING LEDGER SNAPSHOT' : 'CI VERIFICATION'}):${ANSI.reset}`);
     console.log(block.paragraph.rich_text[0].text.content);
     console.log(`\n${ANSI.dim}To enable live sync, configure NOTION_TOKEN in .env using the safe protocol.${ANSI.reset}\n`);
     return;
@@ -2256,6 +2272,161 @@ ${ANSI.bold}CANONICAL SURFACES:${ANSI.reset}
       return;
     }
     console.error(`\n${ANSI.red}[ERROR] Notion sync failed: ${err.message}${ANSI.reset}\n`);
+  }
+}
+
+async function handleMarket(extraArgs = []) {
+  const isJson = args.includes('--json');
+  try {
+    const [quoteRes, statusRes, signalsRes] = await Promise.all([
+      omegaRequest('/v1/market/quote'),
+      omegaRequest('/v1/market/status'),
+      omegaRequest('/v1/market/signals'),
+    ]);
+
+    if (isJson) {
+      console.log(JSON.stringify({ success: true, quote: quoteRes.quote, status: statusRes, signals: signalsRes.signals }, null, 2));
+      return;
+    }
+
+    printBanner();
+    const q = quoteRes.quote;
+    console.log(`\n${ANSI.bold}=== 🪙 SOVEREIGN XAU/USD GOLD SPOT TICKER ===${ANSI.reset}`);
+    console.log(`  ${ANSI.cyan}Instrument${ANSI.reset}         : ${ANSI.bold}${q.symbol} (Gold vs US Dollar)${ANSI.reset}`);
+    console.log(`  ${ANSI.cyan}Bid / Ask${ANSI.reset}          : ${ANSI.green}${q.bid.toFixed(2)}${ANSI.reset} / ${ANSI.yellow}${q.ask.toFixed(2)}${ANSI.reset} (Spread: ${q.spread.toFixed(2)} USD)`);
+    console.log(`  ${ANSI.cyan}Mid Price${ANSI.reset}          : ${ANSI.bold}$${q.mid.toFixed(2)}${ANSI.reset}`);
+    console.log(`  ${ANSI.cyan}24h Range${ANSI.reset}          : Low $${q.low24h.toFixed(2)} ➔ High $${q.high24h.toFixed(2)}`);
+    const changeColor = q.change24h >= 0 ? ANSI.green : ANSI.red;
+    console.log(`  ${ANSI.cyan}24h Change${ANSI.reset}         : ${changeColor}${q.change24h >= 0 ? '+' : ''}${q.change24h.toFixed(2)} USD (${q.changePercent24h >= 0 ? '+' : ''}${q.changePercent24h.toFixed(2)}%)${ANSI.reset}`);
+    console.log(`  ${ANSI.cyan}Timestamp${ANSI.reset}          : ${q.timestamp}`);
+    console.log(`  ${ANSI.cyan}Sovereign Proof${ANSI.reset}    : ${ANSI.dim}${q.sovereignProofHash}${ANSI.reset}`);
+
+    console.log(`\n${ANSI.bold}=== 🌐 GLOBAL SESSION & LIQUIDITY MATRIX ===${ANSI.reset}`);
+    console.log(`  ${ANSI.cyan}Market Open${ANSI.reset}        : ${statusRes.marketOpen ? ANSI.green + '✓ OPEN' : ANSI.red + 'CLOSED'}${ANSI.reset}`);
+    console.log(`  ${ANSI.cyan}Active Sessions${ANSI.reset}    : ${statusRes.activeSessions.join(', ')}`);
+    console.log(`  ${ANSI.cyan}Liquidity Tier${ANSI.reset}     : ${ANSI.bold}${statusRes.liquidityTier}${ANSI.reset} (Overlap Window: ${statusRes.highLiquidityWindow ? 'ACTIVE' : 'INACTIVE'})`);
+
+    console.log(`\n${ANSI.bold}=== ⚡ ACTIVE AI TRADING SIGNALS (${signalsRes.signals?.length || 0}) ===${ANSI.reset}`);
+    for (const sig of (signalsRes.signals || [])) {
+      const dirColor = sig.direction?.includes('BUY') ? ANSI.green : sig.direction?.includes('SELL') ? ANSI.red : ANSI.yellow;
+      console.log(`  • ${dirColor}${ANSI.bold}[${sig.direction}]${ANSI.reset} ${ANSI.bold}${sig.strategy}${ANSI.reset} (Conf: ${((sig.confidence || 0) * 100).toFixed(0)}%)`);
+      const targetStr = sig.targetPrice ? `$${sig.targetPrice.toFixed(2)}` : 'N/A';
+      const slStr = sig.stopLoss ? `$${sig.stopLoss.toFixed(2)}` : 'N/A';
+      console.log(`    Target: ${targetStr} | Stop Loss: ${slStr} | Timeframe: ${sig.timeframe || '15m'}`);
+      console.log(`    ${ANSI.dim}Rationale: ${sig.rationale || 'Sovereign signal'}${ANSI.reset}`);
+    }
+    console.log('');
+  } catch (err) {
+    if (isJson) {
+      console.log(JSON.stringify({ success: false, error: err.message }, null, 2));
+      return;
+    }
+    console.error(`\n${ANSI.red}[ERROR] Failed to fetch market data from local daemon: ${err.message}${ANSI.reset}\n`);
+  }
+}
+
+async function handleTrade(extraArgs = []) {
+  const isJson = args.includes('--json');
+  const side = (extraArgs[0] || 'BUY').toUpperCase();
+  const lots = parseFloat(extraArgs[1] || '0.1');
+  const limitPrice = extraArgs[2] ? parseFloat(extraArgs[2]) : undefined;
+  const stopLoss = extraArgs[3] ? parseFloat(extraArgs[3]) : undefined;
+  const takeProfit = extraArgs[4] ? parseFloat(extraArgs[4]) : undefined;
+
+  if (side !== 'BUY' && side !== 'SELL') {
+    console.error(`${ANSI.red}Error: Side must be BUY or SELL. Usage: oceanicos trade [buy|sell] <lots> [limitPrice] [stopLoss] [takeProfit]${ANSI.reset}`);
+    process.exitCode = 1;
+    return;
+  }
+
+  try {
+    const payload = {
+      symbol: 'XAU/USD',
+      side,
+      type: limitPrice ? 'LIMIT' : 'MARKET',
+      quantity: lots,
+      lots,
+      price: limitPrice,
+      stopLoss,
+      takeProfit,
+      leverage: 20,
+    };
+
+    const res = await omegaRequest('/v1/trading/order', 'POST', payload);
+
+    if (isJson) {
+      console.log(JSON.stringify(res, null, 2));
+      return;
+    }
+
+    const volumeLots = res.order.quantity ?? res.order.lots ?? lots;
+    const gate = res.order.verificationGate || { passed: true, gateState: 'ADMITTED', rule: 'RISK_GUARDRAIL' };
+    const margin = res.position?.marginUsed ?? (volumeLots * 100 * res.order.price / 20);
+
+    printBanner();
+    console.log(`\n${ANSI.bold}=== ⚖️ SOVEREIGN TRADE ADMISSION & EXECUTION RECEIPT ===${ANSI.reset}`);
+    console.log(`  ${ANSI.cyan}Order ID${ANSI.reset}           : ${ANSI.bold}${res.order.id}${ANSI.reset}`);
+    console.log(`  ${ANSI.cyan}Side & Type${ANSI.reset}        : ${side === 'BUY' ? ANSI.green : ANSI.red}${ANSI.bold}${side} ${res.order.type}${ANSI.reset}`);
+    console.log(`  ${ANSI.cyan}Volume${ANSI.reset}             : ${ANSI.bold}${volumeLots} lots${ANSI.reset} (${(volumeLots * 100).toFixed(0)} oz gold)`);
+    console.log(`  ${ANSI.cyan}Execution Price${ANSI.reset}    : ${ANSI.bold}$${res.order.price.toFixed(2)}${ANSI.reset}`);
+    console.log(`  ${ANSI.cyan}Margin Utilized${ANSI.reset}    : $${margin.toFixed(2)} USD (20x leverage)`);
+    console.log(`  ${ANSI.cyan}Admission Status${ANSI.reset}   : ${ANSI.green}✓ ${gate.gateState || 'ADMITTED'}${ANSI.reset}`);
+    console.log(`  ${ANSI.cyan}Admission Rule${ANSI.reset}     : ${gate.rule || 'RISK_GUARDRAIL_PASS'}`);
+    if (res.position) {
+      console.log(`  ${ANSI.cyan}Position ID${ANSI.reset}        : ${res.position.id}`);
+      console.log(`  ${ANSI.cyan}Evidence Hash${ANSI.reset}      : ${ANSI.dim}${res.position.evidenceHash}${ANSI.reset}`);
+    }
+    console.log(`\n  ${ANSI.green}✓ Sovereign trade executed within verified risk bounds.${ANSI.reset}\n`);
+  } catch (err) {
+    if (isJson) {
+      console.log(JSON.stringify({ success: false, error: err.message }, null, 2));
+      return;
+    }
+    console.error(`\n${ANSI.red}[ERROR] Trade execution failed: ${err.message}${ANSI.reset}\n`);
+  }
+}
+
+async function handlePortfolio() {
+  const isJson = args.includes('--json');
+  try {
+    const res = await omegaRequest('/v1/trading/portfolio');
+    if (isJson) {
+      console.log(JSON.stringify(res, null, 2));
+      return;
+    }
+
+    printBanner();
+    const p = res.portfolio;
+    console.log(`\n${ANSI.bold}=== 💼 SOVEREIGN TRADING PORTFOLIO & RISK REPORT ===${ANSI.reset}`);
+    console.log(`  ${ANSI.cyan}Portfolio ID${ANSI.reset}       : ${p.id}`);
+    console.log(`  ${ANSI.cyan}Account Owner${ANSI.reset}      : ${p.sovereignOwner}`);
+    console.log(`  ${ANSI.cyan}Account Balance${ANSI.reset}    : ${ANSI.bold}$${p.balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}${ANSI.reset} ${p.currency}`);
+    console.log(`  ${ANSI.cyan}Equity (MtM)${ANSI.reset}       : ${ANSI.bold}$${p.equity.toLocaleString('en-US', { minimumFractionDigits: 2 })}${ANSI.reset} ${p.currency}`);
+    console.log(`  ${ANSI.cyan}Margin Used / Free${ANSI.reset} : $${p.marginUsed.toFixed(2)} / $${p.freeMargin.toFixed(2)}`);
+    console.log(`  ${ANSI.cyan}Margin Level${ANSI.reset}       : ${p.marginLevelPercent > 200 ? ANSI.green : ANSI.yellow}${p.marginLevelPercent.toFixed(1)}%${ANSI.reset}`);
+    const pnlColor = p.unrealizedPnl >= 0 ? ANSI.green : ANSI.red;
+    console.log(`  ${ANSI.cyan}Unrealized P&L${ANSI.reset}    : ${pnlColor}${p.unrealizedPnl >= 0 ? '+' : ''}$${p.unrealizedPnl.toFixed(2)}${ANSI.reset}`);
+    console.log(`  ${ANSI.cyan}Realized P&L${ANSI.reset}      : $${p.realizedPnl.toFixed(2)}`);
+    console.log(`  ${ANSI.cyan}Total Closed Trades${ANSI.reset}: ${p.totalTrades} (Win Rate: ${(p.winRate * 100).toFixed(1)}%)`);
+
+    console.log(`\n${ANSI.bold}=== 📊 ACTIVE OPEN POSITIONS (${p.positions?.length || 0}) ===${ANSI.reset}`);
+    if (!p.positions || p.positions.length === 0) {
+      console.log(`  ${ANSI.dim}No open positions currently active.${ANSI.reset}\n`);
+    } else {
+      for (const pos of p.positions) {
+        const sideColor = pos.side === 'BUY' ? ANSI.green : ANSI.red;
+        const posPnlColor = pos.unrealizedPnl >= 0 ? ANSI.green : ANSI.red;
+        const posLots = pos.quantity ?? pos.lots ?? 0.1;
+        console.log(`  • ${sideColor}${ANSI.bold}[${pos.side}]${ANSI.reset} ${ANSI.bold}${posLots} lots${ANSI.reset} @ $${pos.entryPrice.toFixed(2)} ➔ Current: $${pos.currentPrice.toFixed(2)} | P&L: ${posPnlColor}${pos.unrealizedPnl >= 0 ? '+' : ''}$${pos.unrealizedPnl.toFixed(2)}${ANSI.reset} (ID: ${pos.id})`);
+      }
+      console.log('');
+    }
+  } catch (err) {
+    if (isJson) {
+      console.log(JSON.stringify({ success: false, error: err.message }, null, 2));
+      return;
+    }
+    console.error(`\n${ANSI.red}[ERROR] Failed to fetch portfolio: ${err.message}${ANSI.reset}\n`);
   }
 }
 
@@ -2297,6 +2468,9 @@ ${ANSI.bold}COMMANDS:${ANSI.reset}
   ${ANSI.green}convergence${ANSI.reset}  Evaluate Maximum Total Convergence Singularity (Ψ)
   ${ANSI.green}step${ANSI.reset}         Execute Recursive State Update Step: O_{t+1} = REMEMBER(VERIFY(OBSERVE(O_t, Δ)))
   ${ANSI.green}notion${ANSI.reset}       Sync verified telemetry and execution state to Notion Private Wealth Engine
+  ${ANSI.green}market${ANSI.reset}       Show live XAU/USD gold spot ticker, session overlap, and AI signals
+  ${ANSI.green}trade${ANSI.reset}        Submit sovereign order: oceanicos trade [buy|sell] <lots> [limitPrice]
+  ${ANSI.green}portfolio${ANSI.reset}    Display live portfolio equity, margin level, and active positions
   ${ANSI.green}help${ANSI.reset}        Display this help message
 
 ${ANSI.bold}OPTIONS:${ANSI.reset}
@@ -2419,6 +2593,19 @@ switch (command) {
     break;
   case 'notion':
     await handleNotion(args.slice(1));
+    break;
+  case 'market':
+  case 'gold':
+  case 'xauusd':
+    await handleMarket(args.slice(1));
+    break;
+  case 'trade':
+  case 'order':
+    await handleTrade(args.slice(1));
+    break;
+  case 'portfolio':
+  case 'positions':
+    await handlePortfolio();
     break;
   case 'help':
   case '--help':

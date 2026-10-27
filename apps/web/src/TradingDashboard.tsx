@@ -89,6 +89,20 @@ export function TradingDashboard() {
     }
   }, []);
 
+  // Fetch Real-time Portfolio & Positions from Server
+  const fetchPortfolio = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE}/v1/trading/portfolio`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.success && data.portfolio) {
+        setPortfolio(data.portfolio);
+      }
+    } catch {
+      /* ambient fallback to localStorage */
+    }
+  }, []);
+
   // Fetch OHLCV Candles
   const fetchCandles = useCallback(async (tf: string) => {
     try {
@@ -125,22 +139,54 @@ export function TradingDashboard() {
 
   useEffect(() => {
     fetchQuote();
+    fetchPortfolio();
     fetchCandles(timeframe);
     fetchSignalsAndStatus();
 
-    // Fast quote polling (every 2.5s) to sync with market engine
-    const quoteInterval = setInterval(fetchQuote, 2500);
+    // Live Server-Sent Events stream for sub-second real-time gold ticks
+    let es: EventSource | null = null;
+    try {
+      es = new EventSource(`${API_BASE}/v1/market/stream`);
+      es.onmessage = (event) => {
+        try {
+          const payload = JSON.parse(event.data);
+          if (payload.quote) {
+            setQuote(payload.quote);
+          }
+        } catch {
+          /* ambient parsing */
+        }
+      };
+      es.onerror = () => {
+        // Fallback polling seamlessly covers updates if SSE is interrupted or proxied
+        if (es) {
+          es.close();
+          es = null;
+        }
+      };
+    } catch {
+      /* ambient */
+    }
+
+    // Fast quote & portfolio polling (every 2.5s) to sync with market engine and backup stream
+    const quoteInterval = setInterval(() => {
+      fetchQuote();
+      fetchPortfolio();
+    }, 2500);
     // Candle polling (every 10s)
     const candleInterval = setInterval(() => fetchCandles(timeframe), 10000);
     // Signals polling (every 20s)
     const sigInterval = setInterval(fetchSignalsAndStatus, 20000);
 
     return () => {
+      if (es) {
+        es.close();
+      }
       clearInterval(quoteInterval);
       clearInterval(candleInterval);
       clearInterval(sigInterval);
     };
-  }, [fetchQuote, fetchCandles, fetchSignalsAndStatus, timeframe]);
+  }, [fetchQuote, fetchPortfolio, fetchCandles, fetchSignalsAndStatus, timeframe]);
 
   // Calculate Margin Requirement
   const currentPrice = quote ? (orderSide === 'BUY' ? quote.ask : quote.bid) : 2735.0;
@@ -164,57 +210,112 @@ export function TradingDashboard() {
     });
   };
 
-  // Execute Order
-  const handleExecuteOrder = (e: React.FormEvent) => {
+  // Execute Order (Sovereign Admission Gate)
+  const handleExecuteOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!quote) return;
 
-    if (requiredMargin > portfolio.balance - portfolio.marginUsed) {
-      setOrderStatusMsg({
-        type: 'error',
-        text: `Insufficient Free Margin. Required: $${requiredMargin}, Available: $${(portfolio.balance - portfolio.marginUsed).toFixed(2)}`,
-      });
-      return;
-    }
-
-    const execPrice = orderType === 'MARKET' ? (orderSide === 'BUY' ? quote.ask : quote.bid) : parseFloat(limitPrice) || currentPrice;
     const sl = stopLoss ? parseFloat(stopLoss) : undefined;
     const tp = takeProfit ? parseFloat(takeProfit) : undefined;
+    const execPrice = orderType === 'MARKET' ? (orderSide === 'BUY' ? quote.ask : quote.bid) : parseFloat(limitPrice) || currentPrice;
 
-    const newPosition: TradingPosition = {
-      id: `pos-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-      symbol: 'XAU/USD',
-      side: orderSide,
-      entryPrice: execPrice,
-      quantity: lots,
-      currentPrice: execPrice,
-      unrealizedPnl: 0,
-      realizedPnl: 0,
-      stopLoss: sl,
-      takeProfit: tp,
-      marginUsed: requiredMargin,
-      leverage,
-      status: 'OPEN',
-      openedAt: new Date().toISOString(),
-      evidenceHash: quote.sovereignProofHash ?? 'SOVEREIGN_HASH_DEV',
-    };
+    try {
+      const res = await fetch(`${API_BASE}/v1/trading/order`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          symbol: 'XAU/USD',
+          side: orderSide,
+          type: orderType,
+          quantity: lots,
+          price: execPrice,
+          stopLoss: sl,
+          takeProfit: tp,
+          leverage,
+        }),
+      });
 
-    setPortfolio((prev: Portfolio) => ({
-      ...prev,
-      marginUsed: Number((prev.marginUsed + requiredMargin).toFixed(2)),
-      positions: [newPosition, ...prev.positions],
-      totalTrades: prev.totalTrades + 1,
-      updatedAt: new Date().toISOString(),
-    }));
+      const data = await res.json();
+      if (res.ok && data.success) {
+        if (data.portfolio) setPortfolio(data.portfolio);
+        setOrderStatusMsg({
+          type: 'success',
+          text: `Verified & Admitted: ${data.order.side} ${data.order.quantity} lots XAU/USD @ ${data.order.price.toFixed(2)} (Gate: ${data.order.verificationGate.gateState})`,
+        });
+        return;
+      } else {
+        setOrderStatusMsg({
+          type: 'error',
+          text: data.error || data.order?.rejectionReason || 'Order rejected by sovereign admission gate',
+        });
+        return;
+      }
+    } catch {
+      // Offline fallback
+      if (requiredMargin > portfolio.balance - portfolio.marginUsed) {
+        setOrderStatusMsg({
+          type: 'error',
+          text: `Insufficient Free Margin. Required: $${requiredMargin}, Available: $${(portfolio.balance - portfolio.marginUsed).toFixed(2)}`,
+        });
+        return;
+      }
 
-    setOrderStatusMsg({
-      type: 'success',
-      text: `Order Admitted & Verified: ${orderSide} ${lots} lots XAU/USD @ ${execPrice.toFixed(2)}`,
-    });
+      const newPosition: TradingPosition = {
+        id: `pos-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+        symbol: 'XAU/USD',
+        side: orderSide,
+        entryPrice: execPrice,
+        quantity: lots,
+        currentPrice: execPrice,
+        unrealizedPnl: 0,
+        realizedPnl: 0,
+        stopLoss: sl,
+        takeProfit: tp,
+        marginUsed: requiredMargin,
+        leverage,
+        status: 'OPEN',
+        openedAt: new Date().toISOString(),
+        evidenceHash: quote.sovereignProofHash ?? 'SOVEREIGN_HASH_DEV',
+      };
+
+      setPortfolio((prev: Portfolio) => ({
+        ...prev,
+        marginUsed: Number((prev.marginUsed + requiredMargin).toFixed(2)),
+        positions: [newPosition, ...prev.positions],
+        totalTrades: prev.totalTrades + 1,
+        updatedAt: new Date().toISOString(),
+      }));
+
+      setOrderStatusMsg({
+        type: 'success',
+        text: `Order Admitted (Offline Queue): ${orderSide} ${lots} lots @ ${execPrice.toFixed(2)}`,
+      });
+    }
   };
 
   // Close Position
-  const handleClosePosition = (positionId: string) => {
+  const handleClosePosition = async (positionId: string) => {
+    try {
+      const res = await fetch(`${API_BASE}/v1/trading/positions/${positionId}/close`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{}',
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.portfolio) {
+          setPortfolio(data.portfolio);
+          setOrderStatusMsg({
+            type: 'success',
+            text: `Position closed mark-to-market. Realized P&L: $${data.position.realizedPnl.toFixed(2)}`,
+          });
+          return;
+        }
+      }
+    } catch {
+      /* fallback to local close */
+    }
+
     if (!quote) return;
     const currentBid = quote.bid;
     const currentAsk = quote.ask;

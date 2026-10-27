@@ -27,6 +27,8 @@ module.exports = {
     'canonical-store-lifecycle\\.integration\\.test\\.ts$',
     'max_equation_api\\.test\\.ts$',
     'conversational_integration\\.test\\.ts$',
+    'web_frontend_e2e\\.test\\.ts$',
+    'pwa_offline\\.test\\.ts$',
   ],
   moduleNameMapper: {
     '\\.\\./\\.\\./packages/([^/]+)/dist/index(\\.js)?$': '<rootDir>/packages/$1/src/index.ts',

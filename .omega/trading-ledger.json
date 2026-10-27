@@ -1,0 +1,22 @@
+{
+  "portfolio": {
+    "id": "port-elion-1111",
+    "currency": "USD",
+    "initialBalance": 100000,
+    "balance": 100000,
+    "equity": 100000,
+    "marginUsed": 0,
+    "freeMargin": 100000,
+    "marginLevelPercent": 100,
+    "unrealizedPnl": 0,
+    "realizedPnl": 0,
+    "winCount": 0,
+    "lossCount": 0,
+    "totalTrades": 0,
+    "winRate": 0,
+    "positions": [],
+    "updatedAt": "2026-10-27T11:19:31.372Z",
+    "sovereignOwner": "ELION VAREL // 11:11 (did:omega:human:starofgodmayomi)"
+  },
+  "orders": []
+}
