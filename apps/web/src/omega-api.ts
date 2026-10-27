@@ -681,4 +681,51 @@ export async function commitUpgradeTransition(payload: {
   return res.json();
 }
 
+/* ─── AI News & Multi-World Holographic Compression Client Methods ─── */
+
+export interface CompressedAiNewsItem {
+  id: string;
+  headline: string;
+  rawSource: string;
+  world: 'WORLD_PHYSICAL' | 'WORLD_COGNITIVE' | 'WORLD_ECONOMIC' | 'WORLD_CELESTIAL';
+  holographicSummary: string;
+  verificationStatus: 'VERIFIED' | 'DIVERGENT' | 'UNKNOWN' | 'NOT_EXECUTED';
+  truthSignalRatio: number;
+  actionableDelta: string;
+  resonanceHz: number;
+}
+
+export interface NewsCompressionReport {
+  success: boolean;
+  contract: string;
+  steward: string;
+  holographicAxiom: string;
+  totalSignals: number;
+  noiseFilteredRatio: number;
+  multiWorldVectors: {
+    physical: number;
+    cognitive: number;
+    economic: number;
+    celestial: number;
+  };
+  signals: CompressedAiNewsItem[];
+  evaluationHash: string;
+  evaluatedAt: string;
+}
+
+export async function fetchAiNews(): Promise<NewsCompressionReport> {
+  const res = await fetch(`${API_BASE}/v1/news`);
+  return res.json();
+}
+
+export async function compressCustomAiNews(feed: Array<{ headline: string; source?: string; world?: string }>): Promise<NewsCompressionReport> {
+  const res = await fetch(`${API_BASE}/v1/news/compress`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ feed }),
+  });
+  return res.json();
+}
+
+
 

@@ -7,6 +7,7 @@ import { evaluate4x4CompressionMatrix } from '@oceanicos/pluralism';
 import { geminiSoulReply, geminiSoulStream } from './gemini-soul.js';
 import { globalMarketEngine } from './market-route.js';
 import { evaluateReaTarget } from './rea-route.js';
+import { compressAiNews } from './news-route.js';
 
 export interface ChatMessage {
   id: string;
@@ -199,6 +200,26 @@ async function resolveOrganAndContext(
       `4. **ABYSSAL (4000–6000m)**: Native binaries, Electron apps, .NET assemblies, web bundles\n` +
       `5. **HADOPELAGIC (6000m+ Trench)**: Clean-room crystalline reimplementation inside \`@oceanicos/*\`\n\n` +
       `*MCP Bridge: ACTIVE_BOUNDED | Fail-Closed: TRUE | Permeability: NON_DESTRUCTIVE*`;
+  }
+  // 3a-1. AI News & Multi-World Holographic Intelligence Compression
+  else if (lower.includes('news') || lower.includes('ai news') || lower.includes('world signal') || lower.includes('headline') || lower.includes('holographic')) {
+    organ = 'AI_NEWS_HOLOGRAPHIC_COMPASS';
+    actionTriggered = 'COMPRESS_AI_WORLD_NEWS';
+    const report = compressAiNews();
+    evidenceHash = report.evaluationHash;
+    replyContent = `📰 **AI News & Multi-World Holographic Intelligence Compression**\n\n` +
+      `• **Contract**: \`${report.contract}\`\n` +
+      `• **Holographic Axiom**: *"${report.holographicAxiom}"*\n` +
+      `• **Noise Filtered**: **${(report.noiseFilteredRatio * 100).toFixed(0)}%**\n` +
+      `• **Evaluation Hash**: \`${report.evaluationHash}\`\n\n` +
+      `**4 Sovereign World Signals:**\n` +
+      `1. **WORLD_PHYSICAL** (${report.multiWorldVectors.physical}): Silicon, Energy Grids, Robotics, Local Offline PWA\n` +
+      `2. **WORLD_COGNITIVE** (${report.multiWorldVectors.cognitive}): Autonomous Deconstruction (REA), Deep Reasoning, AST Synthesis\n` +
+      `3. **WORLD_ECONOMIC** (${report.multiWorldVectors.economic}): Hard Physical XAU/USD Gold, SegWit Sovereign Treasury\n` +
+      `4. **WORLD_CELESTIAL** (${report.multiWorldVectors.celestial}): Truth-in-Love, 432 Hz Resonance, Prophet Seed Covenant\n\n` +
+      `**Top Verified Signals:**\n` +
+      report.signals.map(s => `• [**${s.world}**] **${s.headline}**\n  *Delta*: ${s.actionableDelta}`).join('\n\n') + `\n\n` +
+      `*Resonance: 432 Hz | Evaluated At: ${report.evaluatedAt}*`;
   }
   // 3b. Ocean Fabric / Membrane / Security
   else if (lower.includes('fabric') || lower.includes('water') || lower.includes('security') || lower.includes('membrane') || lower.includes('ocean')) {

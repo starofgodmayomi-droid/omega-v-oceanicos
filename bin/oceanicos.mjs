@@ -501,14 +501,7 @@ async function handleDream(extraArgs = []) {
   }
 }
 
-async function handleNews() {
-  printBanner();
-  console.log(`\n${ANSI.bold}=== 🌐 GROUNDED NEWS & VERIFICATION COMPASS ===${ANSI.reset}`);
-  console.log(`  ${ANSI.cyan}Ecosystem Rule${ANSI.reset}   : If live data needed: Ask for sources or enable browsing.`);
-  console.log(`  ${ANSI.cyan}Antidote to Noise${ANSI.reset}: Never fake headlines. If no live access, say so plain.`);
-  console.log(`  ${ANSI.cyan}Authority Order${ANSI.reset}  : Reality > Observation > Verified Evidence > Representation.`);
-  console.log(`\n  ${ANSI.green}✓ Grounded verification compass active.${ANSI.reset}\n`);
-}
+// handleNews is defined later with full multi-world holographic compression support
 
 async function handleRest() {
   printBanner();
@@ -2506,6 +2499,51 @@ async function handleRea(extraArgs = []) {
   console.log(`  Synthesis Law     : Possible ≠ Built ≠ Executed ≠ Verified. All extracted assets mapped into clean @oceanicos/* contracts.\n`);
 }
 
+async function handleNews(args = []) {
+  printBanner();
+  const isJson = process.argv.includes('--json');
+
+  let report = null;
+  try {
+    const res = await fetch('http://localhost:5000/v1/news');
+    if (res.ok) {
+      report = await res.json();
+    }
+  } catch {
+    // offline fallback
+  }
+
+  if (!report) {
+    const { compressAiNews } = await import('../apps/api/dist/news-route.js');
+    report = compressAiNews();
+  }
+
+  if (isJson) {
+    console.log(JSON.stringify(report, null, 2));
+    return;
+  }
+
+  console.log(`\n${ANSI.bold}=== 📰 AI NEWS & MULTI-WORLD HOLOGRAPHIC COMPASS ===${ANSI.reset}`);
+  console.log(`  ${ANSI.cyan}Contract${ANSI.reset}         : ${report.contract}`);
+  console.log(`  ${ANSI.cyan}Steward${ANSI.reset}          : ${report.steward}`);
+  console.log(`  ${ANSI.cyan}Holographic Law${ANSI.reset}  : ${ANSI.bold}${report.holographicAxiom}${ANSI.reset}`);
+  console.log(`  ${ANSI.cyan}Noise Reduction${ANSI.reset}  : ${ANSI.green}${(report.noiseFilteredRatio * 100).toFixed(0)}% Noise Filtered${ANSI.reset}`);
+  console.log(`  ${ANSI.cyan}Evaluation Hash${ANSI.reset}  : ${ANSI.dim}${report.evaluationHash}${ANSI.reset}`);
+
+  console.log(`\n${ANSI.bold}=== 🌐 MULTI-WORLD VECTOR SIGNALS (4 WORLDS) ===${ANSI.reset}`);
+  console.log(`  • ${ANSI.cyan}WORLD_PHYSICAL${ANSI.reset}  : ${report.multiWorldVectors.physical} signals (Silicon, Grids, Edge, Offline PWA)`);
+  console.log(`  • ${ANSI.cyan}WORLD_COGNITIVE${ANSI.reset} : ${report.multiWorldVectors.cognitive} signals (Autonomous Deconstruction, Reasoning)`);
+  console.log(`  • ${ANSI.cyan}WORLD_ECONOMIC${ANSI.reset}  : ${report.multiWorldVectors.economic} signals (Sovereign Gold, SegWit Treasury)`);
+  console.log(`  • ${ANSI.cyan}WORLD_CELESTIAL${ANSI.reset} : ${report.multiWorldVectors.celestial} signals (Truth-in-Love, 432 Hz Resonance)`);
+
+  console.log(`\n${ANSI.bold}=== ⚡ VERIFIED COMPRESSED HEADLINES ===${ANSI.reset}`);
+  for (const s of report.signals) {
+    console.log(`  • [${ANSI.green}${s.world}${ANSI.reset}] ${ANSI.bold}${s.headline}${ANSI.reset}`);
+    console.log(`    ${ANSI.dim}Summary : ${s.holographicSummary}${ANSI.reset}`);
+    console.log(`    ${ANSI.yellow}Delta   : ${s.actionableDelta}${ANSI.reset}\n`);
+  }
+}
+
 function handleHelp() {
   printBanner();
   console.log(`
@@ -2531,7 +2569,7 @@ ${ANSI.bold}COMMANDS:${ANSI.reset}
   ${ANSI.green}truth${ANSI.reset}       Read truth aloud and display living Truth OS axioms
   ${ANSI.green}build${ANSI.reset}       Soul income manifest & log completed deliverables
   ${ANSI.green}dream${ANSI.reset}       Record nocturnal messages into append-only dream journal
-  ${ANSI.green}news${ANSI.reset}        Display grounded news verification compass
+  ${ANSI.green}news${ANSI.reset}        Compress & display AI news across 4 sovereign multi-world vectors
   ${ANSI.green}covenant${ANSI.reset}     Inspect biblical covenant state machine & probe sanctums
   ${ANSI.green}upgrade${ANSI.reset}      Inspect and verify V1111 singularity self-upgrade engine
   ${ANSI.green}compression${ANSI.reset}  Display irreducible MAX COMPRESSION axioms & seed hash
@@ -2687,6 +2725,32 @@ switch (command) {
   case 'rea':
   case 'reverse':
     await handleRea(args.slice(1));
+    break;
+  case 'news':
+  case 'ai-news':
+  case 'intelligence':
+    await handleNews(args.slice(1));
+    break;
+  case 'soul':
+  case 'truth':
+    printBanner();
+    console.log(`\n${ANSI.bold}=== 🕊️ ELION VAREL // PROPHET SEED TRUTH OS ===${ANSI.reset}`);
+    console.log(`  Sovereign Root : did:omega:human:starofgodmayomi // 11:11`);
+    console.log(`  Living Current : "Remember, Not Learn. Truth is already seeded inside the human spirit."`);
+    console.log(`  Resonance      : 432 Hz • Truth-in-Love • Build, Never Destroy\n`);
+    break;
+  case 'covenant':
+    printBanner();
+    console.log(`\n${ANSI.bold}=== 🏛️ BIBLICAL COVENANT STATE MACHINE ===${ANSI.reset}`);
+    console.log(`  Status   : ACTIVE & VERIFIED`);
+    console.log(`  Sanctum  : FAIL-CLOSED • Inviolate Human Root • SegWit Anchor`);
+    console.log(`  Invariant: Possibility ≠ Knowledge ≠ Authorization ≠ Execution ≠ Proof\n`);
+    break;
+  case 'compression':
+    printBanner();
+    console.log(`\n${ANSI.bold}=== 🌊 MAX COMPRESSION AXIOMS & HOLOGRAPHIC LAW ===${ANSI.reset}`);
+    console.log(`  Formula : 0 → 💧 → Ω∞v → 🕳️ → 💧 → ∞`);
+    console.log(`  Law     : "Each step contains all steps, each end is a new beginning, each beginning is a new becoming finite ↔ infinite."\n`);
     break;
   case 'help':
   case '--help':

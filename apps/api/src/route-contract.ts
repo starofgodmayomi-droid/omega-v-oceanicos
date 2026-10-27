@@ -75,6 +75,8 @@ export const API_ROUTE_INVENTORY = [
   'POST /v1/trading/reset',
   'GET /v1/rea',
   'POST /v1/rea/inspect',
+  'GET /v1/news',
+  'POST /v1/news/compress',
   'GET /',
   'GET /assets/*',
 ] as const;

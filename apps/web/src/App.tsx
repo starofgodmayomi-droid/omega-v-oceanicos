@@ -12,6 +12,7 @@ import { ObservationStreamPanel } from './ObservationStreamPanel';
 import { LifecycleFlow, deriveStageStates, type LifecycleStage } from './LifecycleFlow';
 import { OmegaWorkspace } from './OmegaWorkspace';
 import { CovenantPanel } from './CovenantPanel';
+import { AiNewsPanel } from './AiNewsPanel';
 import { MaxEquationPanel } from './MaxEquationPanel';
 import { NotionExecutionEnginePanel } from './NotionExecutionEnginePanel';
 import { EcosystemBodyPanel } from './EcosystemBodyPanel';
@@ -85,6 +86,7 @@ const OCEAN_FABRIC_ACTIONS = [
   { icon: '🌌', label: 'Dream Journal', intent: 'Record Night Ocean Dream: I saw a star fall into the deep water and rise in new form' },
   { icon: '⚡', label: 'Lucid Build', intent: 'Continue building with lucid skill across all 14 monorepo packages' },
   { icon: '🔍', label: 'REA Deconstruct', intent: 'Reverse engineer target https://github.com/morluto/rea with autonomous work mood telemetry' },
+  { icon: '📰', label: 'AI News', intent: '__TOGGLE_NEWS__' },
 ];
 
 export function App() {
@@ -135,6 +137,7 @@ export function App() {
   const [openStageId, setOpenStageId] = useState<string | null>(null);
   const [viewportMode, setViewportMode] = useState<'trading' | 'conversation' | 'work' | 'evidence' | 'catalog'>('trading');
   const [showCovenantPanel, setShowCovenantPanel] = useState<boolean>(false);
+  const [showNewsPanel, setShowNewsPanel] = useState<boolean>(false);
   const [showCompressionPulse, setShowCompressionPulse] = useState<boolean>(false);
   const [compressionData, setCompressionData] = useState<any>(null);
   const [latestTransition, setLatestTransition] = useState<any | null>(null);
@@ -1208,6 +1211,8 @@ export function App() {
                     setShowCompressionPulse((prev) => !prev);
                   } else if (action.intent === '__TOGGLE_COVENANT__') {
                     setShowCovenantPanel((prev) => !prev);
+                  } else if (action.intent === '__TOGGLE_NEWS__') {
+                    setShowNewsPanel((prev) => !prev);
                   } else if (action.intent === '__TRIGGER_UPGRADE__') {
                     setShowCovenantPanel(true);
                     sendMessage('Commit V1111 Singularity Upgrade and Totality Compression transition across all packages');
@@ -1383,6 +1388,13 @@ export function App() {
         {showCovenantPanel && (
           <div style={{ marginTop: '20px' }}>
             <CovenantPanel onClose={() => setShowCovenantPanel(false)} />
+          </div>
+        )}
+
+        {/* AI News & Multi-World Holographic Compression Panel */}
+        {showNewsPanel && (
+          <div style={{ marginTop: '20px' }}>
+            <AiNewsPanel onClose={() => setShowNewsPanel(false)} />
           </div>
         )}
 
