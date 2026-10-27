@@ -84,6 +84,7 @@ const OCEAN_FABRIC_ACTIONS = [
   { icon: '🎨', label: 'ECHOFRAME Workspace', intent: 'Synthesize verified ƆCEANiC_OS code templates and simulate continuous fluid-state tensor wave transitions' },
   { icon: '🌌', label: 'Dream Journal', intent: 'Record Night Ocean Dream: I saw a star fall into the deep water and rise in new form' },
   { icon: '⚡', label: 'Lucid Build', intent: 'Continue building with lucid skill across all 14 monorepo packages' },
+  { icon: '🔍', label: 'REA Deconstruct', intent: 'Reverse engineer target https://github.com/morluto/rea with autonomous work mood telemetry' },
 ];
 
 export function App() {

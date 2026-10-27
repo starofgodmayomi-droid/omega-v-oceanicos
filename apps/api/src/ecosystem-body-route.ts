@@ -144,6 +144,15 @@ export function registerEcosystemBodyRoute(
         evidence: 'Mood engine with flow/integrity evaluation; autopilot learning from feedback; recursive state transition loop; Notion evidence sync. Revenue tracking and customer outcome measurement are proposed.',
         provenance: ['@oceanicos/mood', 'packages/verification/src/max-equation.ts', 'scripts/notion-evidence-sync.mjs'],
       },
+      {
+        organ: 'Deconstruction',
+        role: 'Reverse Engineering (REA)',
+        description: 'Autonomous clean-room deconstruction (morluto/rea), AST introspection, protocol reconstruction, UI extraction, and sovereign synthesis with Level 4 Work Mood.',
+        status: 'IMPLEMENTED',
+        capabilities: ['disassembly', 'ast-introspection', 'protocol-reconstruction', 'ui-extraction', 'sovereign-synthesis', 'mcp-bounded-inspection'],
+        evidence: 'evaluateReaTarget() producing SHA-256 evaluation contracts, GET /v1/rea, POST /v1/rea/inspect, CLI oceanicos rea, and Web Cockpit REA quick chips — verified by Jest unit tests and fail-closed MCP bounds',
+        provenance: ['apps/api/src/rea-route.ts', 'bin/oceanicos.mjs', 'apps/web/src/FuturisticEcosystemChatPanel.tsx'],
+      },
     ];
 
     const architecture: PlatformLayer[] = [

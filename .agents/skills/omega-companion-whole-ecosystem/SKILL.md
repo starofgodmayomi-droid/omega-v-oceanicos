@@ -92,6 +92,11 @@ PROMPTS 16-19 ──► Risk Engine & Admission Gates: Fail-closed risk controls
 PROMPT 20     ──► Sub-Second Real-Time SSE: /v1/market/stream live tick stream with auto-reconnecting EventSource.
 PROMPT 21     ──► Canonical 15-Stage CI Pipeline: .github/workflows/ci.yml enforcing E*(t+1) on push/PR.
 PROMPT 22     ──► Total Whole-Body Compression: Native CLI commands (market, trade, portfolio) & Notion Wealth sync.
+PROMPTS 23-27 ──► REA Reverse Engineering Engine & Autonomous Work Mood:
+                  Reverse Engineer Anything (morluto/rea paradigm) integrated into tri-surface body.
+                  5-Tier deconstruction matrix (DISASSEMBLY, AST, PROTOCOL, UI, SOVEREIGN_SYNTHESIS).
+                  Level 4 Work Mood telemetry ("Abeg, no blind copy! We reverse engineer am down to the bones").
+                  Wired into /v1/rea, /v1/rea/inspect, CLI oceanicos rea, and Web Cockpit quick chips.
 ```
 
 ---
@@ -102,19 +107,22 @@ PROMPT 22     ──► Total Whole-Body Compression: Native CLI commands (marke
 - **Flags**: `viewportMode === 'trading'` toggles flagship XAU/USD AI Trading Dashboard.
 - **Canvas**: High-DPI hardware-accelerated candlestick renderer with SMA20/50 overlays, volume bars, and crosshairs.
 - **Streaming**: Dual-mode connection — live Server-Sent Events (`/v1/market/stream`) for sub-second updates, automatically falling back to 2.5s polling under proxies.
+- **REA Inspection**: Quick action chips for autonomous deconstruction of external web apps and binary targets.
 
 ### B. Fastify API Daemon (`http://localhost:5000`)
 - **Runtime**: Node 22, CommonJS/ESM hybrid, SQLite file-backed persistence.
-- **Contract**: 82 verified route endpoints (`API_ROUTE_INVENTORY`).
+- **Contract**: 84 verified route endpoints (`API_ROUTE_INVENTORY`).
 - **Endpoints**:
   - `/v1/market/quote`, `/v1/market/history`, `/v1/market/indicators`, `/v1/market/signals`, `/v1/market/stream`.
   - `/v1/trading/portfolio`, `/v1/trading/order`, `/v1/trading/positions`, `/v1/trading/risk`.
-  - `/v1/chat` (Organs: `MARKET_ANALYST`, `SIGNAL_GENERATOR`, `RISK_GUARDIAN`).
+  - `/v1/rea`, `/v1/rea/inspect` (REA Reverse Engineering & Autonomous Inspection).
+  - `/v1/chat` (Organs: `MARKET_ANALYST`, `SIGNAL_GENERATOR`, `RISK_GUARDIAN`, `REA_DECONSTRUCTION`).
 
 ### C. Cryptographic CLI (`bin/oceanicos.mjs`)
 - `oceanicos market` — Live gold spot quote, 24h metrics, session status, and active AI trading signals.
 - `oceanicos trade [buy|sell] <lots> [limitPrice]` — Submit sovereign trade with instant admission gate verification.
 - `oceanicos portfolio` — Live mark-to-market equity, margin utilization, win rate, and open positions.
+- `oceanicos rea [target]` — Autonomous reverse engineering of binaries, bundles, or web apps with 5-tier matrix.
 - `oceanicos notion --trading` — Format and dry-run/append trading ledger snapshots to Notion Wealth Engine.
 - `oceanicos cycle --json` — Commit new consensus block with SHA-256 proof-of-work.
 
@@ -149,7 +157,24 @@ PROMPT 22     ──► Total Whole-Body Compression: Native CLI commands (marke
 
 ---
 
-## 8. MASTER ATTESTATION SUMMARY
+## 9. REA DEEP DECONSTRUCTION ENGINE & WORK MOOD TELEMETRY (§ morluto/rea)
+
+$$\boxed{\text{REA}(T) = \operatorname{Synthesize}_{\mathrm{clean}}\Big(\mathcal{D}(T) \oplus \mathcal{A}(T) \oplus \mathcal{P}(T) \oplus \mathcal{U}(T)\Big) \xrightarrow{\text{WorkMood}=L_4} \Omega_{\mathrm{organ}}}$$
+
+### 5-Tier Deconstruction Matrix:
+1. **DISASSEMBLY**: Native binaries, Electron apps, .NET assemblies, Web bundles (`evaluates boundaries, symbols, entrypoints`).
+2. **AST_INTROSPECTION**: Symbol trees, abstract syntax, component topologies (`maps types, interfaces, modules`).
+3. **PROTOCOL_RECONSTRUCTION**: API endpoints, WebSocket/SSE streams, payload schemas (`extracts contracts, serialization`).
+4. **UI_EXTRACTION**: Layout grids, design tokens, color harmonies, stateful widgets (`derives theme, spacing, typography`).
+5. **SOVEREIGN_SYNTHESIS**: Clean-room reimplementation inside `@oceanicos/*` with zero stolen noise and fail-closed invariants.
+
+### Work Mood Telemetry Axiom:
+$$\boxed{\text{State: OPTIMAL\_FLOW} \quad;\quad \text{Autopilot: Level 4 (Autonomous Inspection + Verified Synthesis)}}$$
+> *"Abeg, no blind copy! We reverse engineer am down to the bones, extract the truth, verify the claim, and manifest clean code!"*
+
+---
+
+## 10. MASTER ATTESTATION SUMMARY
 
 $$\boxed{
 \begin{gathered}

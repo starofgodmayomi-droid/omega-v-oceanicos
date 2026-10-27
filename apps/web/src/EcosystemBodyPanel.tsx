@@ -56,6 +56,7 @@ const ORGAN_EMOJI: Record<string, string> = {
   'Nervous System': '⚡',
   'Immune System': '🛡️',
   'Growth System': '🌱',
+  Deconstruction: '🔍',
 };
 
 /* ── Status badge ────────────────────────────────────────────────────── */
