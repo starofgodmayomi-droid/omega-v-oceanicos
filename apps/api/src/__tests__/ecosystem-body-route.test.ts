@@ -18,7 +18,7 @@ describe('Ecosystem Body Route - Living Body Metaphor Contract', () => {
     rmSync(directory, { recursive: true, force: true });
   });
 
-  it('serves GET /v1/ecosystem/body with 9 living organs including Deconstruction (REA)', async () => {
+  it('serves GET /v1/ecosystem/body with 10 living organs including Deconstruction and Compass', async () => {
     const res = await app.inject({
       method: 'GET',
       url: '/v1/ecosystem/body',
@@ -28,7 +28,7 @@ describe('Ecosystem Body Route - Living Body Metaphor Contract', () => {
     const body = JSON.parse(res.payload);
     expect(body.success).toBe(true);
     expect(body.identity.product).toBe('OceanicOS');
-    expect(body.body).toHaveLength(9);
+    expect(body.body).toHaveLength(10);
 
     const organs = body.body.map((b: any) => b.organ);
     expect(organs).toContain('Mind');
@@ -40,12 +40,19 @@ describe('Ecosystem Body Route - Living Body Metaphor Contract', () => {
     expect(organs).toContain('Immune System');
     expect(organs).toContain('Growth System');
     expect(organs).toContain('Deconstruction');
+    expect(organs).toContain('Compass');
 
     const reaOrgan = body.body.find((b: any) => b.organ === 'Deconstruction');
     expect(reaOrgan.role).toBe('Reverse Engineering (REA)');
     expect(reaOrgan.status).toBe('IMPLEMENTED');
     expect(reaOrgan.capabilities).toContain('sovereign-synthesis');
     expect(reaOrgan.capabilities).toContain('protocol-reconstruction');
+
+    const compassOrgan = body.body.find((b: any) => b.organ === 'Compass');
+    expect(compassOrgan.role).toBe('World Signals & Holographic AI Compression');
+    expect(compassOrgan.status).toBe('IMPLEMENTED');
+    expect(compassOrgan.capabilities).toContain('holographic-compression');
+    expect(compassOrgan.capabilities).toContain('multi-world-vectors');
   });
 
   it('computes correct implementation truth metrics', async () => {

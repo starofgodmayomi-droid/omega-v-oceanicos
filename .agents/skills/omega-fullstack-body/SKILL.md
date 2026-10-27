@@ -153,19 +153,25 @@ $$S_0 \to S_{22} \to \mathbb{E}_{\mathrm{ALL}}^* \;\;;\;\; \text{PROMISED} \xrig
 **A. Web Viewport** (`http://localhost:3000`)
 - XAU/USD AI Trading Dashboard with high-DPI canvas charts
 - Dual-mode: SSE live stream + polling fallback
-- Ecosystem panels: Covenant, Pluralism, Max Equation, Soul, Reality
+- REA Deconstruction: Quick action chips for autonomous reverse engineering
+- AI News Compass: Glassmorphic `AiNewsPanel` with 4-world vector matrix
+- Ecosystem panels: Covenant, Pluralism, Max Equation, Soul, Reality, Body
 
 **B. Fastify API** (`http://localhost:5000`)
-- Node 22, CommonJS/ESM hybrid, SQLite persistence
+- Node 22, CommonJS/ESM hybrid, SQLite persistence (86 routes)
 - Market: `/v1/market/quote`, `/history`, `/indicators`, `/signals`, `/stream`
 - Trading: `/v1/trading/portfolio`, `/order`, `/positions`, `/risk`
-- Chat: `/v1/chat` (MARKET_ANALYST, SIGNAL_GENERATOR, RISK_GUARDIAN organs)
-- Ecosystem: `/v1/covenant`, `/v1/upgrade`, `/v1/verification/*`, `/health`
+- Deconstruction: `/v1/rea`, `/v1/rea/inspect` (Reverse Engineer Anything)
+- Intelligence: `/v1/news`, `/v1/news/compress` (AI News Holographic Compression)
+- Chat: `/v1/chat` (MARKET_ANALYST, SIGNAL_GENERATOR, RISK_GUARDIAN, REA_DECONSTRUCTION, AI_NEWS_HOLOGRAPHIC_COMPASS)
+- Ecosystem: `/v1/ecosystem/body` (10 living organs), `/v1/covenant`, `/v1/upgrade`, `/v1/verification/*`, `/health`
 
 **C. CLI** (`bin/oceanicos.mjs`)
 - `oceanicos market` — Live gold spot, 24h metrics, signals
 - `oceanicos trade [buy|sell] <lots>` — Sovereign trade with admission gate
 - `oceanicos portfolio` — Mark-to-market equity, margin, win rate
+- `oceanicos rea [target]` — Autonomous reverse engineering with 5-tier matrix
+- `oceanicos news [--json]` — Holographic AI news compression across 4 worlds
 - `oceanicos notion --trading` — Notion wealth ledger sync
 - `oceanicos cycle --json` — SHA-256 consensus block
 

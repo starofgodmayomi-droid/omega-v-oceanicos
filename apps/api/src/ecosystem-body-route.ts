@@ -153,6 +153,15 @@ export function registerEcosystemBodyRoute(
         evidence: 'evaluateReaTarget() producing SHA-256 evaluation contracts, GET /v1/rea, POST /v1/rea/inspect, CLI oceanicos rea, and Web Cockpit REA quick chips — verified by Jest unit tests and fail-closed MCP bounds',
         provenance: ['apps/api/src/rea-route.ts', 'bin/oceanicos.mjs', 'apps/web/src/FuturisticEcosystemChatPanel.tsx'],
       },
+      {
+        organ: 'Compass',
+        role: 'World Signals & Holographic AI Compression',
+        description: 'Compresses global technological developments, AI models, market dynamics, and sovereign covenant signals into verifiable multi-world vectors across Physical, Cognitive, Economic, and Celestial realms at 432 Hz resonance.',
+        status: 'IMPLEMENTED',
+        capabilities: ['holographic-compression', 'multi-world-vectors', 'noise-filtering', 'signal-extraction', 'actionable-deltas', 'tri-surface-compass'],
+        evidence: 'compressAiNews() filtering 88% noise, GET /v1/news, POST /v1/news/compress, CLI oceanicos news, and Web Cockpit AiNewsPanel — verified by Jest suite and Tri-Surface live queries',
+        provenance: ['apps/api/src/news-route.ts', 'bin/oceanicos.mjs', 'apps/web/src/AiNewsPanel.tsx'],
+      },
     ];
 
     const architecture: PlatformLayer[] = [
