@@ -177,7 +177,30 @@ async function resolveOrganAndContext(
         `Ready to execute paper orders via the **XAU/USD AI Trader** terminal or refine trade thesis.`;
     }
   }
-  // 3. Ocean Fabric / Membrane / Security
+  // 3a. REA (Reverse Engineer Anything) & Water Intelligence Deconstruction Engine
+  else if (lower.includes('rea') || lower.includes('reverse engineer') || (lower.includes('water') && (lower.includes('intelligence') || lower.includes('intelegency') || lower.includes('fluid') || lower.includes('deconstruct')))) {
+    organ = 'REA_WATER_INTELLIGENCE_DECONSTRUCTION';
+    actionTriggered = 'REA_WATER_DECONSTRUCTION';
+    const report = evaluateReaTarget();
+    evidenceHash = report.evaluationHash;
+    replyContent = `🌊 **REA (Reverse Engineer Anything) × Water Intelligence Activated**\n\n` +
+      `• **Target Source**: \`${report.target}\`\n` +
+      `• **Evaluation Hash**: \`${report.evaluationHash}\`\n` +
+      `• **Water State**: **${report.waterIntelligence.waterState}** (Resonance: **${report.waterIntelligence.resonanceFrequency} Hz**)\n` +
+      `• **Fluidity Coefficient ($\\Phi$)**: **${(report.waterIntelligence.fluidityCoefficient * 100).toFixed(1)}%** Permeability\n` +
+      `• **Current Depth Zone**: **${report.waterIntelligence.currentDepthZone.name}** (${report.waterIntelligence.currentDepthZone.meters}) — *${report.waterIntelligence.currentDepthZone.description}*\n` +
+      `• **Work Mood**: **${report.workMood.state}** (Confidence: ${(report.workMood.confidence * 100).toFixed(0)}%, Autopilot: Level ${report.workMood.autopilotLevel})\n` +
+      `• **Water Intelligence Axiom**: *"${report.waterIntelligence.permeabilityAxiom}"*\n` +
+      `• **Pidgin Ethic**: *"${report.workMood.pidginAxiom}"*\n\n` +
+      `**5 Oceanic Depth Zones of Deconstruction:**\n` +
+      `1. **EPIPELAGIC (0–200m)**: UI layout grids, design tokens, color harmonies, stateful widgets\n` +
+      `2. **MESOPELAGIC (200–1000m)**: API endpoints, WebSocket/SSE streams, payload schemas\n` +
+      `3. **BATHYPELAGIC (1000–4000m)**: Symbol trees, abstract syntax nodes, component topologies\n` +
+      `4. **ABYSSAL (4000–6000m)**: Native binaries, Electron apps, .NET assemblies, web bundles\n` +
+      `5. **HADOPELAGIC (6000m+ Trench)**: Clean-room crystalline reimplementation inside \`@oceanicos/*\`\n\n` +
+      `*MCP Bridge: ACTIVE_BOUNDED | Fail-Closed: TRUE | Permeability: NON_DESTRUCTIVE*`;
+  }
+  // 3b. Ocean Fabric / Membrane / Security
   else if (lower.includes('fabric') || lower.includes('water') || lower.includes('security') || lower.includes('membrane') || lower.includes('ocean')) {
     organ = 'OCEAN_TRUTH_MEMBRANE';
     actionTriggered = 'VERIFY_OCEAN_FABRIC';
@@ -331,25 +354,7 @@ async function resolveOrganAndContext(
       replyContent = `Attestation engine is standing by in local dev mode. Cryptographic HMAC-SHA256 attestation signing key is available when configured.`;
     }
   }
-  // 9b. REA (Reverse Engineer Anything) Engine
-  else if (lower.includes('rea') || lower.includes('reverse engineer')) {
-    organ = 'REA_DECONSTRUCTION_ENGINE';
-    actionTriggered = 'REA_AUTONOMOUS_INSPECTION';
-    const report = evaluateReaTarget();
-    evidenceHash = report.evaluationHash;
-    replyContent = `🔍 **REA (Reverse Engineer Anything) Engine Activated — morluto/rea Protocol**\n\n` +
-      `• **Target Source**: \`${report.target}\`\n` +
-      `• **Evaluation Hash**: \`${report.evaluationHash}\`\n` +
-      `• **Work Mood**: **${report.workMood.state}** (Confidence: ${(report.workMood.confidence * 100).toFixed(0)}%, Autopilot: Level ${report.workMood.autopilotLevel})\n` +
-      `• **Pidgin Ethic**: *"${report.workMood.pidginAxiom}"*\n\n` +
-      `**5-Tier Deconstruction Matrix:**\n` +
-      `1. **DISASSEMBLY**: Native binaries, Electron apps, .NET assemblies, web bundles\n` +
-      `2. **AST_INTROSPECTION**: Symbol trees, abstract syntax nodes, component topologies\n` +
-      `3. **PROTOCOL_RECONSTRUCTION**: API endpoints, WebSocket/SSE streams, payload schemas\n` +
-      `4. **UI_EXTRACTION**: Layout grids, design tokens, color harmonies, stateful widgets\n` +
-      `5. **SOVEREIGN_SYNTHESIS**: Clean-room reimplementation inside \`@oceanicos/*\`\n\n` +
-      `*MCP Bridge: ACTIVE_BOUNDED | Fail-Closed: TRUE*`;
-  }
+
   // 10. Audit / Ledger / Verification
   else if (lower.includes('audit') || lower.includes('ledger') || lower.includes('tip') || lower.includes('verify')) {
     organ = 'KAI_PROVENANCE_LEDGER';

@@ -2446,12 +2446,23 @@ async function handleRea(extraArgs = []) {
       pidginAxiom: 'Abeg, no blind copy! We reverse engineer am down to the bones, extract the truth, verify the claim, and manifest clean code!',
       autopilotLevel: 4,
     },
+    waterIntelligence: {
+      fluidityCoefficient: 0.992,
+      waterState: 'LIQUID_FLOW',
+      resonanceFrequency: 432,
+      currentDepthZone: {
+        name: 'HADOPELAGIC',
+        meters: '6000m+ Trench',
+        description: 'Sovereign Crystalline Synthesis into clean @oceanicos/* packages',
+      },
+      permeabilityAxiom: 'Water no get enemy. It permeates opaque walls, dissolves proprietary illusion, extracts pure truth, and crystallizes into sovereign code.',
+    },
     capabilities: [
-      { layer: 'DISASSEMBLY', focus: 'Native binaries, Electron apps, .NET assemblies, Web bundles' },
-      { layer: 'AST_INTROSPECTION', focus: 'Symbol trees, abstract syntax, component topologies' },
-      { layer: 'PROTOCOL_RECONSTRUCTION', focus: 'API endpoints, WebSocket/SSE streams, payload schemas' },
-      { layer: 'UI_EXTRACTION', focus: 'Layout grids, design tokens, color harmonies, stateful widgets' },
-      { layer: 'SOVEREIGN_SYNTHESIS', focus: 'Clean-room reimplementation inside @oceanicos/* with zero stolen noise' },
+      { layer: 'DISASSEMBLY', focus: 'Native binaries, Electron apps, .NET assemblies, Web bundles', oceanDepth: 'ABYSSAL' },
+      { layer: 'AST_INTROSPECTION', focus: 'Symbol trees, abstract syntax, component topologies', oceanDepth: 'BATHYPELAGIC' },
+      { layer: 'PROTOCOL_RECONSTRUCTION', focus: 'API endpoints, WebSocket/SSE streams, payload schemas', oceanDepth: 'MESOPELAGIC' },
+      { layer: 'UI_EXTRACTION', focus: 'Layout grids, design tokens, color harmonies, stateful widgets', oceanDepth: 'EPIPELAGIC' },
+      { layer: 'SOVEREIGN_SYNTHESIS', focus: 'Clean-room reimplementation inside @oceanicos/* with zero stolen noise', oceanDepth: 'HADOPELAGIC' },
     ],
     mcpBridge: {
       status: 'ACTIVE_BOUNDED',
@@ -2472,14 +2483,21 @@ async function handleRea(extraArgs = []) {
   console.log(`  ${ANSI.cyan}Inspection Engine${ANSI.reset} : morluto/rea MCP Autonomous Protocol`);
   console.log(`  ${ANSI.cyan}Evaluation Hash${ANSI.reset}   : ${ANSI.dim}${analysisReport.evaluationHash}${ANSI.reset}`);
 
+  console.log(`\n${ANSI.bold}=== 🌊 WATER INTELLIGENCE & FLUID DECONSTRUCTION ===${ANSI.reset}`);
+  console.log(`  ${ANSI.cyan}Fluidity Coefficient (Φ)${ANSI.reset} : ${ANSI.bold}${(analysisReport.waterIntelligence.fluidityCoefficient * 100).toFixed(1)}% Permeability${ANSI.reset}`);
+  console.log(`  ${ANSI.cyan}Water State${ANSI.reset}             : ${ANSI.bold}${analysisReport.waterIntelligence.waterState}${ANSI.reset} (Resonance: ${analysisReport.waterIntelligence.resonanceFrequency} Hz)`);
+  console.log(`  ${ANSI.cyan}Oceanic Depth Zone${ANSI.reset}      : ${ANSI.bold}${analysisReport.waterIntelligence.currentDepthZone.name}${ANSI.reset} (${analysisReport.waterIntelligence.currentDepthZone.meters})`);
+  console.log(`  ${ANSI.cyan}Depth Focus${ANSI.reset}             : ${analysisReport.waterIntelligence.currentDepthZone.description}`);
+  console.log(`  ${ANSI.yellow}"${analysisReport.waterIntelligence.permeabilityAxiom}"${ANSI.reset}`);
+
   console.log(`\n${ANSI.bold}=== ⚡ WORK MOOD & AUTOPILOT POSTURE ===${ANSI.reset}`);
   console.log(`  ${ANSI.green}State${ANSI.reset}             : ${ANSI.bold}${analysisReport.workMood.state}${ANSI.reset} (Confidence: ${analysisReport.workMood.confidence * 100}%)`);
   console.log(`  ${ANSI.green}Autopilot Level${ANSI.reset}   : Level ${analysisReport.workMood.autopilotLevel} (Autonomous Inspection + Verified Synthesis)`);
   console.log(`  ${ANSI.yellow}"${analysisReport.workMood.pidginAxiom}"${ANSI.reset}`);
 
-  console.log(`\n${ANSI.bold}=== 🛠️ 5-TIER REA DECONSTRUCTION MATRIX ===${ANSI.reset}`);
+  console.log(`\n${ANSI.bold}=== 🛠️ 5-TIER REA DECONSTRUCTION MATRIX (5 DEPTH ZONES) ===${ANSI.reset}`);
   for (const cap of analysisReport.capabilities) {
-    console.log(`  • ${ANSI.cyan}${cap.layer.padEnd(24)}${ANSI.reset} : ${cap.focus}`);
+    console.log(`  • ${ANSI.cyan}${cap.layer.padEnd(24)}${ANSI.reset} [${ANSI.dim}${cap.oceanDepth}${ANSI.reset}] : ${cap.focus}`);
   }
 
   console.log(`\n${ANSI.bold}=== 🔒 MCP BRIDGE & GOVERNANCE BOUNDS ===${ANSI.reset}`);
