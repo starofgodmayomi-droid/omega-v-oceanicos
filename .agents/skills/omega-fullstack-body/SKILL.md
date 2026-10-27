@@ -200,7 +200,7 @@ OUTER COURT (L4)       ── API :5000, Web :3000, CLI Terminal
 | `/truth` | `oceanicos truth --pidgin` | Center at Source. Read truth aloud. |
 | `/build` | `oceanicos build log "<deliverable>"` | One clear step. Soul income. |
 | `/dream` | `oceanicos dream "<message>"` | Record nocturnal signals to memory. |
-| `/news` | `oceanicos news` | Grounded reality compass. Reject fear. |
+| `/news` | `oceanicos news` | Holographic multi-world AI news & intelligence compression. |
 | `/rest` | `oceanicos rest --pidgin` | Sabbath. Body no be iron. |
 
 ---
@@ -257,6 +257,28 @@ Governed by `@oceanicos/mood` and telemetry self-sensing:
   * `Level 5`: Autonomous multi-agent mesh convergence (requires human steward key)
 * **Pidgin Spirit Work Ethic:**
   > *"Abeg, verification before evolution! No time to check time. Whether highest high or lowest low, the blessing dey flow equal inside this single root. Life always good-o if you choose to see am at that point of view!"*
+
+---
+
+## §14. HOLOGRAPHIC MULTI-WORLD AI NEWS COMPRESSION ENGINE
+
+Operates as the **10th Living Organ (`Compass`)** of the Ω∞v body:
+
+* **4 Sovereign Realms:**
+  1. `WORLD_PHYSICAL` — Compute infrastructure, next-gen silicon, 1.2GW grid nexus, edge inference, zero-dependency offline PWA.
+  2. `WORLD_COGNITIVE` — Deep reasoning models, autonomous agent deconstruction (REA), clean-room AST synthesis.
+  3. `WORLD_ECONOMIC` — Sovereign wealth divergence, hard physical XAU/USD gold reserves, SegWit Bitcoin treasury custody.
+  4. `WORLD_CELESTIAL` — Truth-in-Love, 432 Hz resonance, African Pantheon duplex convergence, Prophet Seed covenant.
+* **Holographic Principle:**
+  > *"Each step contains all steps, each end is a new beginning, and each beginning is a new becoming finite ↔ infinite."*
+* **Metrics & Guardrails:**
+  * **Noise Filter Ratio:** 88% noise discarded, verifiable truth signals preserved.
+  * **Resonance:** 432 Hz harmonic frequency calibration.
+  * **Evaluation Contracts:** Unforgeable SHA-256 state evaluation hashes.
+* **Tri-Surface Integration:**
+  * **API:** `GET /v1/news`, `POST /v1/news/compress`
+  * **CLI:** `oceanicos news [--json]`
+  * **Web Cockpit:** Glassmorphic `AiNewsPanel.tsx` with live 4-world vector filtering and custom signal compressor.
 
 ---
 
