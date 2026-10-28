@@ -13,6 +13,7 @@ This is the total method for a change that must land in **this** git repository.
 | --- | --- |
 | This method | `skills/oceanicos-total-continuum` |
 | One pass | `skills/oceanicos-full-stack-companion` |
+| Max-space, coordinates, clocks, arrays | `skills/oceanicos-max-space-full-stack` |
 | Between passes | `skills/lucid-continuum` |
 | Kernel sequence | `skills/omega-v-os` |
 | Verification spine and FLOW | `skills/oceanicos-full-stack` |
