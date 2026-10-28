@@ -6,7 +6,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { MAX_PROOF_OF_WORK_ATTEMPTS, RememberEngine } from '@oceanicos/remember';
-import { FileConnectorObservationStore, FileValueNavigatorStore, MiniKernel, compressSingleBody, expandSingleBody } from '@oceanicos/mini';
+import { FileConnectorObservationStore, FileValueNavigatorStore, MiniKernel, compressSingleBody, expandSingleBody, listOmegaWorkers } from '@oceanicos/mini';
 import type { SingleBodyEntry } from '@oceanicos/mini';
 import { AsymmetricValidationGuard, DeclarativeVerificationEngine, MultiRegionMeshConvergence } from '@oceanicos/verification';
 import { ObserverEngine } from '@oceanicos/observer';
@@ -21,6 +21,8 @@ import { registerRealityRoute } from './reality-route.js';
 import { registerDependencyRoute } from './dependency-route.js';
 import { registerValueNavigatorRoute } from './value-navigator-route.js';
 import { registerConnectorObservationRoute, type ConnectorAdmissionEvidenceResolver } from './connector-observation-route.js';
+import { registerExecuteRoute } from './execute-route.js';
+import { FileKaiMemoryStore } from './kai-memory.js';
 import { OmegaCommandStore, OmegaIdempotencyConflictError, registerOmegaRoutes } from './omega.js';
 import { registerMeshValidationRoute } from './mesh-route.js';
 import {
@@ -54,6 +56,7 @@ export type CreateAppOptions = {
   attestationSigningKey?: string;
   valueNavigatorPath?: string;
   connectorObservationPath?: string;
+  kaiMemoryPath?: string;
   githubFetch?: typeof fetch;
   connectorAdmissionEvidence?: ConnectorAdmissionEvidenceResolver;
   pipelineAdmissionEvidence?: PipelineAdmissionEvidenceResolver;
@@ -161,6 +164,11 @@ export function createApp(
     || process.env.OMEGA_CONNECTOR_OBSERVATION_PATH?.trim()
     || (dbPath === ':memory:' ? ':memory:' : `${dbPath}.connector-observations.jsonl`);
   const connectorObservationStore = new FileConnectorObservationStore(connectorObservationPath);
+  const kaiMemoryPath =
+    options.kaiMemoryPath?.trim()
+    || process.env.OMEGA_KAI_MEMORY_PATH?.trim()
+    || (dbPath === ':memory:' ? ':memory:' : `${dbPath}.kai-memory.jsonl`);
+  const kaiMemoryStore = new FileKaiMemoryStore(kaiMemoryPath);
 
   fastify.addHook('onClose', async () => {
     ledgerMemory.close();
@@ -248,6 +256,20 @@ export function createApp(
   fastify.register(async (scope) => {
     await scope.register(rateLimit, { global: false });
     registerPipelineRoute(scope, jsonError, options.pipelineAdmissionEvidence);
+    registerExecuteRoute(scope, jsonError, kaiMemoryStore, {
+      // ELION's bounded executor reads only what this process observed.
+      readEvidence: () => {
+        const chain = kernel.verifyLedger();
+        return {
+          ledgerHeight: chain.height,
+          ledgerIntegrity: chain.valid,
+          bodyStatus: chain.valid ? 'INTEGRITY_VERIFIED' : 'DEGRADED',
+          workerCount: listOmegaWorkers().length,
+          memoryHeight: kaiMemoryStore.height(),
+          observedAt: new Date().toISOString(),
+        };
+      },
+    });
   });
 
   registerEcosystemRoute(fastify, authMode, Boolean(attestationSigningKey));

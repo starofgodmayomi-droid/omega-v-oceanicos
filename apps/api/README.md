@@ -142,7 +142,35 @@ GET  /v1/value-navigator/proposals
 GET  /v1/value-navigator/proposals/:proposalId
 POST /v1/value-navigator/proposals
 POST /v1/value-navigator/proposals/:proposalId/observe
+POST /v1/execute
+GET  /v1/execute/memory
 ```
+
+### POST /v1/execute — the KAI/ELION loop
+
+One bounded slice: `KAI OBSERVE → ELION BOUND → ELION EXECUTE → OMEGA VERIFY →
+KAI REMEMBER`. Body: `{ "intent": "...", "expectedOutcome"?: "...", "authority"?: "READ_ONLY" | "BOUNDED" | "AUTONOMOUS" }`.
+
+- **KAI OBSERVE** scans the intent against `KAI_SHIELD_RULES` (guaranteed
+  returns, send-money/urgency, seed-phrase requests, giveaway schemes, gift-card
+  payments, prize claims). A match halts with `DIVERGENT` and the reason
+  `KAI Shield blocked this intent.` — ELION never forms a contract.
+- **ELION BOUND** forms the ΩIR contract. `AUTONOMOUS` on an irreversible intent
+  returns `NOT_EXECUTED` / `HUMAN_AUTHORIZATION_REQUIRED`.
+- **ELION EXECUTE** is a bounded executor that reports only the process's own
+  observed state (ledger height/integrity, worker contracts, KAI memory height).
+  No model connector is configured, so a generative intent is `NOT_EXECUTED`
+  with `ELION_BOUNDED_EXECUTOR_HAS_NO_CAPABILITY_FOR_THIS_INTENT` — nothing is
+  invented.
+- **OMEGA VERIFY** hashes the output with SHA-256 and returns
+  `evidenceHash`. With an `expectedOutcome`, the normalized output must contain
+  it or the verdict is `DIVERGENT`; empty output is `UNKNOWN`.
+- **KAI REMEMBER** appends the drop, with its own verdict, to the hash-chained
+  journal at `OMEGA_KAI_MEMORY_PATH` (default `${OMEGA_DB_PATH}.kai-memory.jsonl`).
+
+`GET /v1/execute/memory?limit=20` returns the remembered drops, newest first,
+with the journal height. Memory is evidence of what this process recorded — not
+proof of external reality, and not durable across a destroyed volume.
 
 Value Navigator proposals always remain `decision: REVIEW`,
 `authorized: false`, and `NOT_EXECUTED`. Observations are supplied by the

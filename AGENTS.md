@@ -31,10 +31,29 @@ docker compose -f docker-compose.base44.yml up -d
 - `apps/api/src/runtime-globals.d.ts` declares a global `persistenceEncryptionKey` var; only `tsc` picks it up, not ts-node's type-checker.
 - `apps/api/tsconfig.json` `include` lists only `src/index.ts` + the `.d.ts`, but tsc follows imports so all src files compile.
 - **Workspace packages must be built** before the API can start — their `main` points to `dist/index.js`. The setup service builds them in dependency order.
+- **Jest is not installed in this sandbox** — the `apps/**/__tests__` jest suites and `pnpm test:web` cannot run here (only `ts-node`/`typescript` are installed at the root). Write API coverage as a `tests/integration/*.integration.test.ts` file with `node --test`, and add it to the root `test` script's explicit list; that is the harness that actually runs in CI.
 - **SSE through the preview proxy**: with the CORS header fix described above, `/v1/stream` does connect from the browser through the preview proxy (status bar reads "Connected", runtime stream marked VERIFIED). If the proxy drops a long-lived connection the UI shows "Reconnecting…" and retries; REST endpoints are unaffected either way.
 
 ## Single body compression (4×4×4×4)
 `GET /v1/ecosystem/body` carries a `compression` block: the seven runtime layers projected onto four axes of four coordinates (256 cells) with a local compress→expand proof. `POST /v1/ecosystem/body/expand` takes `{ compression }` and returns the records; a tampered digest is `400 DIGEST_MISMATCH`. Contract: `packages/mini/src/single-body.ts`; doc: `docs/SINGLE-BODY-4X4X4X4.md`; UI: `apps/web/src/SingleBodyPanel.tsx`. Coordinates are a declared projection (`body.layers.v1`), not inferred truth.
+
+## KAI/ELION execute loop
+`POST /v1/execute` (the browser calls `/api/v1/execute` — Vite strips the `/api` prefix) is
+the one bounded end-to-end slice: KAI OBSERVE → ELION BOUND → ELION EXECUTE → OMEGA VERIFY
+→ KAI REMEMBER.
+- Shield rules, contract, verification and the step log live in `apps/api/src/execute-route.ts`;
+  the hash-chained journal is `apps/api/src/kai-memory.ts`.
+- The journal is a JSONL file at `OMEGA_KAI_MEMORY_PATH` (default `${OMEGA_DB_PATH}.kai-memory.jsonl`).
+  Read it back with `GET /v1/execute/memory?limit=20`.
+- The bounded executor only reports state this process already observed (ledger height/integrity,
+  worker contracts, KAI memory height). No model connector is configured, so a generative intent
+  returns `NOT_EXECUTED` / `ELION_BOUNDED_EXECUTOR_HAS_NO_CAPABILITY_FOR_THIS_INTENT` — that is the
+  design, not a missing feature. Do not add a fallback that invents an answer.
+- UI: `apps/web/src/ExecuteLoopPanel.tsx`, mounted directly under `WaterFlowPanel` in `App.tsx`.
+- Test: `node --experimental-strip-types --test-concurrency=1 --test ./tests/integration/execute-loop.integration.test.ts`
+  (listed in the root `test` and `test:e2e` scripts). `api-route-contract.integration.test.ts`
+  asserts the exact size of `API_ROUTE_INVENTORY`, so adding a route means updating that number,
+  the inventory, and `apps/api/README.md` together.
 
 ## Fixed bug
 `apps/api/src/index.ts` line 204: `persistenceEncryptionKey` was undefined → changed to `encryptionEnabled(persistenceKey)` to match the pattern used at lines 163/165.
