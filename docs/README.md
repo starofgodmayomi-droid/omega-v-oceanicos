@@ -86,6 +86,10 @@ Welcome to the Ω∞v Oceanicos documentation. Start here to understand the proj
   handoff, and what must be observed again.
 - **[Oceanicos Total Continuum](../skills/oceanicos-total-continuum/SKILL.md)**
   — one finite pass inside this public repository, then only an observed handoff.
+- **[Full stack work mood](./upgrades/FULL_STACK_WORK_MOOD_MAX_COMPRESS.md)**
+  — the supplied Ω∞v ecosystem plates compressed into one mood plate, an
+  organ-to-surface map with explicit `NOT_EXECUTED` and `UNKNOWN` gaps, the first
+  trustworthy vertical slice, and the design tokens the mood compiles to.
 - **[Whole ecosystem reality compression](./upgrades/WHOLE_ECOSYSTEM_REALITY_COMPRESSION_2026-10-04.md)**
   — source-labeled translation of the supplied Ω∞v architecture into repository
   boundaries and explicit unknowns.

@@ -51,6 +51,7 @@ without treating any single component—or any agent—as the final authority.
 - 🔁 **[Lucid Continuum](skills/lucid-continuum/SKILL.md)** — handoff across passes without invented memory
 - 🔁 **[Oceanicos Total Continuum](skills/oceanicos-total-continuum/SKILL.md)** — one finite pass inside this public repository, then only an observed handoff
 - 🌐 **[Full-stack reality-access handoff](docs/upgrades/FULL_STACK_REALITY_ACCESS_2026-09-28.md)** — connector taxonomy without implicit ownership or authority
+- 💧 **[Full stack work mood](docs/upgrades/FULL_STACK_WORK_MOOD_MAX_COMPRESS.md)** — the ecosystem plates compressed into one mood, organ map, vertical slice, and evidence ledger
 - 🗺️ **[Repository inventory](docs/REPO_INVENTORY.md)** — workspace vs disk (current evidence)
 - ⚙️ **[Development Setup](docs/DEVELOPMENT.md)** — Get the project running locally
 | | Meaning |
