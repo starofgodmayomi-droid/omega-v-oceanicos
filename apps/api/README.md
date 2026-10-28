@@ -126,6 +126,8 @@ GET  /health
 GET  /v1/kernel/capabilities
 GET  /v1/mood
 GET  /v1/ecosystem/status
+GET  /v1/ecosystem/body
+POST /v1/ecosystem/body/expand
 POST /v1/attest
 POST /v1/cycle
 GET  /v1/block/tip

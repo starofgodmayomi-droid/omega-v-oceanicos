@@ -117,6 +117,34 @@ export type { KaiDrop, KaiSource, KaiStatus } from './kai.js';
 export { captureMiniKernelCycle } from './kai-cycle.js';
 export { buildOmegaWaterFlow } from './water-flow.js';
 export { MAX_TOTAL_COMPRESSION_LEASE_MS, TOTAL_COMPRESSION_PACKAGE_IDS, validateTotalCompressionRequest } from './total-compress.js';
+export {
+  compressSingleBody,
+  expandSingleBody,
+  verifySingleBodyRoundTrip,
+  SINGLE_BODY_AXES,
+  SINGLE_BODY_CAPACITY,
+  SINGLE_BODY_NOTATION,
+  SINGLE_BODY_RANK,
+  SINGLE_BODY_SHAPE,
+} from './single-body.js';
+export type {
+  CompressedSingleBody,
+  SingleBodyAddress,
+  SingleBodyAxis,
+  SingleBodyCell,
+  SingleBodyCellEntry,
+  SingleBodyCompression,
+  SingleBodyEntry,
+  SingleBodyEvidence,
+  SingleBodyExpansion,
+  SingleBodyForm,
+  SingleBodyIssue,
+  SingleBodyIssueCode,
+  SingleBodyLayer,
+  SingleBodyOrgan,
+  SingleBodyRoundTrip,
+  SingleBodySpace,
+} from './single-body.js';
 export type { TotalCompressionIssueCode, TotalCompressionPackage, TotalCompressionRequest, TotalCompressionScope, TotalCompressionValidationIssue, TotalCompressionValidationResult } from './total-compress.js';
 export {
   MAX_NEXT_CANDIDATES,
