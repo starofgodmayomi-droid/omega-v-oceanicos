@@ -1,6 +1,29 @@
 # Ω∞v Oceanicos Working State
 
-**Updated:** 2026-10-01
+**Updated:** 2026-10-28
+
+## Replay attempt status invariant — 2026-10-28
+
+`VerificationReplayEngine.replay()` set the snapshot to `REPLAYING` before re-executing
+the claim and had no failure path, so an upstream error left the captured snapshot
+permanently `REPLAYING` — a provenance state no later read could correct — while
+`ReplayStatus` declared a `FAILED` member that nothing ever assigned. Reproduced against
+the compiled engine before the fix: a rejected `runLoop` left `status: REPLAYING`.
+
+The engine now records the previous status, restores it and rethrows the underlying
+error, and records no replayed snapshot; `ReplayStatus` is `CAPTURED | REPLAYING |
+REPLAYED` with no unreachable member. `@omega-v/sdk` is imported with `import type`
+because only types cross that edge.
+
+Evidence: `tests/integration/replay-failure.integration.test.ts` (2/2 pass under
+`node --experimental-strip-types --test`, and wired into `pnpm test` / `pnpm test:e2e`)
+covers the failed attempt and the unchanged success path; the same reproduction script
+now reports `CAPTURED` with one snapshot; `validate:docs`, `validate:ci`, and
+`validate:skills` pass.
+
+Not claimed: `packages/replay` is not a `pnpm-workspace.yaml` member, so `tsc` still
+cannot resolve `@omega-v/sdk` types for it (pre-existing), and `bin/oceanicos.mjs`
+exposes no `replay` command, so the CLI wrapper around this engine remains unreachable.
 
 ## CI authority reconciliation — 2026-10-01
 

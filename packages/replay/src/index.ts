@@ -1,9 +1,14 @@
-import { FullLoopResult, OceanicosClient } from '@omega-v/sdk';
+import type { FullLoopResult, OceanicosClient } from '@omega-v/sdk';
 import * as crypto from 'crypto';
 
 // ─── Replay Types ─────────────────────────────────────────────────────────────
 
-export type ReplayStatus = 'CAPTURED' | 'REPLAYING' | 'REPLAYED' | 'FAILED';
+/**
+ * Snapshot states. A failed replay attempt throws and leaves the snapshot in
+ * its previous state — the attempt is not a property of the captured evidence,
+ * so there is deliberately no `FAILED` snapshot status (ATTEMPTED ≠ EXECUTED).
+ */
+export type ReplayStatus = 'CAPTURED' | 'REPLAYING' | 'REPLAYED';
 
 /**
  * A frozen snapshot of a single verification loop execution —
@@ -131,16 +136,26 @@ export class VerificationReplayEngine {
     }
 
     // Mark as replaying
+    const previousStatus = original.status;
     original.status = 'REPLAYING';
 
     const start = Date.now();
-    const freshResult = await client.runLoop({
-      claim: original.claim,
-      category: 'replay-verification',
-      observedBy: 'replay-engine',
-      sourceSystem: 'omega-v-replay',
-      metadata: { originalSnapshotId: snapshotId },
-    });
+    let freshResult: FullLoopResult;
+    try {
+      freshResult = await client.runLoop({
+        claim: original.claim,
+        category: 'replay-verification',
+        observedBy: 'replay-engine',
+        sourceSystem: 'omega-v-replay',
+        metadata: { originalSnapshotId: snapshotId },
+      });
+    } catch (error) {
+      // A failed attempt changes nothing about the captured evidence: restore
+      // the snapshot instead of leaving it stuck in REPLAYING, and surface the
+      // failure to the caller. No replayed snapshot is recorded.
+      original.status = previousStatus;
+      throw error;
+    }
     const durationMs = Date.now() - start;
 
     // Capture the replayed result as a new snapshot
