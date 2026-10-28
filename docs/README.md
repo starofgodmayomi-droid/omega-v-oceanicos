@@ -92,6 +92,10 @@ Welcome to the Ω∞v Oceanicos documentation. Start here to understand the proj
 - **[One-body operating core](./upgrades/ONE_BODY_OPERATING_CORE_2026-10-04.md)**
   — the supplied operating-body architecture, mapped to a reality-bound
   governance spine, interchangeable provider examples, and truthful UI states.
+- **[4×4×4×4 single body](./4X4X4X4-SINGLE-BODY.md)**
+  — the whole lineage compressed into four axes of four, then expanded back
+  onto the repository surfaces that carry each position, with observed evidence
+  labels (`OBSERVED` / `DOCUMENTED` / `UNKNOWN`).
 - **[Whole Ecosystem Constitution](./WHOLE-ECOSYSTEM-CONSTITUTION.md)**
   — the user-supplied one-body architecture source, preserved as design
   language and explicitly separated from runtime proof, authority, and reality.
