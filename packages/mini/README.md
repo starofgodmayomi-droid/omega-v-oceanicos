@@ -80,6 +80,16 @@ cannot become `VERIFIED`. A match verifies only the admitted observation
 receipt; it does not prove deployment, revenue, secret custody, or an
 undeclared network call.
 
+## Ocecosystem compression
+
+`selectBestAuthorizedAction` scores caller-declared admissible actions by
+`V / (R + C + ε)` and returns `SELECTED`, `TIED`, `NONE_AUTHORIZED`, or
+`INVALID`. It does not execute. `reconcileVerifiedImprovement` advances a
+revision label only when the supplied verification is `VERIFIED` and an
+attestation reference is present. Declared scores and revision labels are not
+reality claims. See
+[Ocecosystem compression](../../docs/upgrades/OCECOSYSTEM_COMPRESSION_2026-10-24.md).
+
 ---
 
 ## Whole-ecosystem alignment

@@ -118,6 +118,22 @@ export { captureMiniKernelCycle } from './kai-cycle.js';
 export { buildOmegaWaterFlow } from './water-flow.js';
 export { MAX_TOTAL_COMPRESSION_LEASE_MS, TOTAL_COMPRESSION_PACKAGE_IDS, validateTotalCompressionRequest } from './total-compress.js';
 export type { TotalCompressionIssueCode, TotalCompressionPackage, TotalCompressionRequest, TotalCompressionScope, TotalCompressionValidationIssue, TotalCompressionValidationResult } from './total-compress.js';
+export {
+  COMPRESSED_ECOSYSTEM_BODY,
+  DEFAULT_SCORE_EPSILON,
+  OCEANICOS_SINGLE_LINE,
+  OCECOSYSTEM_CONSTRAINTS,
+  reconcileVerifiedImprovement,
+  selectBestAuthorizedAction,
+} from './ocecosystem-compression.js';
+export type {
+  AuthorizedDelta,
+  AuthorizedSelection,
+  ImprovementEvidence,
+  ImprovementReconciliation,
+  OcecosystemConstraint,
+  ScoredDelta,
+} from './ocecosystem-compression.js';
 export { runBoundedParallel } from './parallel.js';
 export type {
   BoundedParallelAdmission,
