@@ -90,7 +90,12 @@ export type OmegaCommandResult = {
   readonly status: OmegaCommandStatus;
   readonly waterFlow: readonly OmegaWaterFlowFrame[];
   readonly execution?: { readonly stateAfter: string; readonly consequence: string; readonly attestationId: string };
-  readonly reality?: OmegaRealityObservation & { readonly classification: 'VERIFIED' | 'DIVERGENT' | 'UNKNOWN' };
+  readonly reality?: OmegaRealityObservation & {
+    readonly classification: 'VERIFIED' | 'DIVERGENT' | 'UNKNOWN';
+    readonly comparison?: 'MATCH' | 'DIVERGENT' | 'UNAVAILABLE';
+    readonly observationSource?: 'caller-supplied';
+    readonly independentObservation?: false;
+  };
   readonly nextAction: string;
 };
 

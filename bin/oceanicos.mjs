@@ -91,7 +91,11 @@ async function handleOmega(argsAfterCommand) {
   if (subcommand === 'admit') return console.log(JSON.stringify(await omegaRequest(`/v1/omega/commands/${encodeURIComponent(id)}/admit`, 'POST', { authority: process.env.OMEGA_AUTHORITY || 'human:cli-user', policy: 'policy:cli' }), null, 2));
   if (subcommand === 'approve') return console.log(JSON.stringify(await omegaRequest(`/v1/omega/commands/${encodeURIComponent(id)}/approve`, 'POST', { operator: process.env.OMEGA_REQUESTED_BY || 'cli-user' }), null, 2));
   if (subcommand === 'execute') return console.log(JSON.stringify(await omegaRequest(`/v1/omega/commands/${encodeURIComponent(id)}/execute`, 'POST', {}), null, 2));
-  if (subcommand === 'observe') return console.log(JSON.stringify(await omegaRequest(`/v1/omega/commands/${encodeURIComponent(id)}/observe`, 'POST', { observedState: argsAfterCommand.slice(2).join(' ') || 'bounded-local-action-complete' }), null, 2));
+  if (subcommand === 'observe') {
+    const observedState = argsAfterCommand.slice(2).join(' ').trim();
+    if (!observedState) throw new Error('omega observe requires the observed state; the CLI does not repeat the executor record');
+    return console.log(JSON.stringify(await omegaRequest(`/v1/omega/commands/${encodeURIComponent(id)}/observe`, 'POST', { observedState }), null, 2));
+  }
   if (subcommand === 'verify-reality') return console.log(JSON.stringify(await omegaRequest(`/v1/omega/commands/${encodeURIComponent(id)}/verify-reality`, 'POST', {}), null, 2));
   throw new Error('unknown omega command; use workers, propose, inspect, admit, approve, execute, observe, verify-reality, or events');
 }

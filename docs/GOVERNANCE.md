@@ -120,4 +120,6 @@ When `OMEGA_ADMIN_OPERATOR_ALLOWLIST` is configured, the three persistence/revoc
 
 The `/v1/omega/commands` lifecycle records human intent, worker attribution, ΩIR, evidence, authority, policy, approval, execution, attestation, provenance, and reality observation as separate states. `DENY` and `REVIEW` never execute. Approval does not claim success; execution does not claim reality; observation does not become proof without defined evidence.
 
+`POST /v1/omega/commands/:id/observe` accepts only a caller-supplied `observedState`. A string that matches the executor's recorded `stateAfter` is stored as `comparison: MATCH` with `observationSource: caller-supplied` and `independentObservation: false`. The command status stays `UNKNOWN`. It does not become `VERIFIED`. A different non-empty string remains `DIVERGENT`. There is no server-side reality observer on this route.
+
 The first worker registry enables only observer, researcher, planner, tester, security-reviewer, and governance-reviewer. Arbitrary shell, credentials, remote mutation, finance, broad publication, deployment, and hidden autonomous loops remain disabled. Dissent and conflicting evidence are retained rather than silently collapsed.

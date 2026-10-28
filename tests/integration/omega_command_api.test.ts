@@ -201,7 +201,7 @@ describe('Ω∞v command API vertical slice', () => {
     assert.equal(repeatedApproval.json().error, 'OMEGA_APPROVAL_REQUIRES_REVIEW');
   });
 
-  it('executes only after approval and distinguishes verified reality', async () => {
+  it('executes only after approval and does not treat a caller echo as verification', async () => {
     const executed = await app.inject({ method: 'POST', url: '/v1/omega/commands/omega-api-slice-1/execute' });
     assert.equal(executed.statusCode, 200);
     assert.equal(executed.json().command.status, 'EXECUTED');
@@ -209,8 +209,13 @@ describe('Ω∞v command API vertical slice', () => {
 
     const observed = await app.inject({ method: 'POST', url: '/v1/omega/commands/omega-api-slice-1/observe', payload: { observedState: 'bounded-local-action-complete' } });
     assert.equal(observed.statusCode, 200);
-    assert.equal(observed.json().command.status, 'VERIFIED');
-    assert.equal(observed.json().reality.classification, 'VERIFIED');
+    assert.equal(observed.json().command.status, 'UNKNOWN');
+    assert.equal(observed.json().reality.classification, 'UNKNOWN');
+    assert.equal(observed.json().reality.comparison, 'MATCH');
+    assert.equal(observed.json().reality.observationSource, 'caller-supplied');
+    assert.equal(observed.json().reality.independentObservation, false);
+    assert.match(observed.json().nextAction, /not independent verification/);
+    assert.doesNotMatch(observed.json().command.change.consequence, /reality verified/);
 
     const events = await app.inject({ method: 'GET', url: '/v1/omega/events?commandId=omega-api-slice-1' });
     assert.equal(events.statusCode, 200);
