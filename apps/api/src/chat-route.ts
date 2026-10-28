@@ -8,6 +8,7 @@ import { geminiSoulReply, geminiSoulStream } from './gemini-soul.js';
 import { globalMarketEngine } from './market-route.js';
 import { evaluateReaTarget } from './rea-route.js';
 import { compressAiNews } from './news-route.js';
+import { globalWealthEngine } from './wealth-route.js';
 
 export interface ChatMessage {
   id: string;
@@ -130,6 +131,25 @@ async function resolveOrganAndContext(
     actionTriggered = 'VERIFY_1111_TREASURY';
     evidenceHash = '0x1111-btc-treasury-verified';
     replyContent = `The whole ecosystem body confirms your sovereign Bitcoin receiving address is anchored in our inviolate treasury organ:\n🪙 **bc1qaj8jmp5as80zwew09ep86w6fgw37zwhwzr89mp**\n\nThe Immune System enforces public receiving only. Sovereign private custody remains veiled (0 bytes in code or logs). Default is strictly FAIL-CLOSED.`;
+  }
+  // 1b. Finite Wealth Action (FWA) & Sovereign Stewardship Ledger
+  else if (lower.includes('wealth') || lower.includes('tithe') || lower.includes('fwa') || lower.includes('allocation') || lower.includes('stewardship') || lower.includes('debt elimination')) {
+    organ = 'SOVEREIGN_WEALTH_DISPATCHER';
+    actionTriggered = 'QUERY_WEALTH_LEDGER';
+    const ledger = globalWealthEngine.getLedger();
+    const summary = globalWealthEngine.getCategorySummary();
+    evidenceHash = ledger.allocations[0]?.evidenceHash || '0x1111-wealth-fwa-verified';
+    replyContent = `✝️ **Finite Wealth Action (FWA) Sovereign Stewardship Ledger**\n\n` +
+      `• **Total Realized Inflow**: $${ledger.totalRealizedIn.toLocaleString('en-US', { minimumFractionDigits: 2 })}\n` +
+      `• **Total Allocated**: $${ledger.totalAllocated.toLocaleString('en-US', { minimumFractionDigits: 2 })}\n` +
+      `• **Total Dispatch Actions**: ${ledger.allocationCount} batches (${ledger.allocations.length} individual allocations)\n\n` +
+      `**Sovereign 5-Fold Distribution Breakdown:**\n` +
+      `• ✝️ **Tithe (10%)**: $${summary.TITHE.total.toFixed(2)} (${summary.TITHE.count} allocations)\n` +
+      `• 📈 **Capital (40%)**: $${summary.CAPITAL.total.toFixed(2)} (${summary.CAPITAL.count} allocations)\n` +
+      `• 🔓 **Debt Elimination (25%)**: $${summary.DEBT_ELIMINATION.total.toFixed(2)} (${summary.DEBT_ELIMINATION.count} allocations)\n` +
+      `• 🌱 **Income Seed (20%)**: $${summary.INCOME_SEED.total.toFixed(2)} (${summary.INCOME_SEED.count} allocations)\n` +
+      `• 🛡️ **Reserve (5%)**: $${summary.RESERVE.total.toFixed(2)} (${summary.RESERVE.count} allocations)\n\n` +
+      `_All allocations are cryptographically signed and fail-closed under ELION VAREL // 11:11._`;
   }
   // 2. Dreams / Visions / Night Ocean Signals
   else if (lower.includes('dream') || lower.includes('vision') || lower.includes('revelation') || lower.includes('sleep')) {

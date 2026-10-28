@@ -2450,6 +2450,113 @@ async function handlePortfolio() {
   }
 }
 
+async function handleWealth(extraArgs = []) {
+  printBanner();
+  const isJson = args.includes('--json');
+  const sub = extraArgs[0];
+
+  if (sub === 'dispatch') {
+    const rawAmount = parseFloat(extraArgs[1]);
+    const desc = extraArgs.slice(2).filter((a) => !a.startsWith('--')).join(' ') || 'CLI Sovereign Finite Wealth Dispatch';
+    if (!rawAmount || isNaN(rawAmount) || rawAmount <= 0) {
+      console.error(`\n${ANSI.red}[ERROR] Valid gross amount required: oceanicos wealth dispatch <amount> [description]${ANSI.reset}\n`);
+      return;
+    }
+    try {
+      const res = await omegaRequest('/v1/wealth/dispatch', 'POST', {
+        grossAmount: rawAmount,
+        description: desc,
+        sourceType: 'MANUAL_DEPOSIT',
+      });
+      if (isJson) {
+        console.log(JSON.stringify(res, null, 2));
+        return;
+      }
+      console.log(`\n${ANSI.bold}=== ✝️ FINITE WEALTH ACTION (FWA) DISPATCH RECEIPT ===${ANSI.reset}`);
+      console.log(`  ${ANSI.cyan}Gross Amount${ANSI.reset}    : ${ANSI.bold}$${rawAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}${ANSI.reset}`);
+      console.log(`  ${ANSI.cyan}Description${ANSI.reset}     : ${desc}`);
+      console.log(`  ${ANSI.cyan}Sovereign Owner${ANSI.reset} : ELION VAREL // 11:11 (did:omega:human:starofgodmayomi)`);
+      console.log(`\n${ANSI.bold}=== 5-FOLD DISPATCHED ALLOCATIONS ===${ANSI.reset}`);
+      for (const a of res.allocations) {
+        console.log(`  • ${ANSI.bold}${a.category.padEnd(18)}${ANSI.reset} : $${a.allocatedAmount.toFixed(2)} (${a.allocationPercent}%) | Hash: ${ANSI.dim}${a.evidenceHash.slice(0, 24)}...${ANSI.reset}`);
+      }
+      console.log(`\n  ${ANSI.green}✓ Dispatched and sealed to .omega/wealth-ledger.json with zero entropy.${ANSI.reset}\n`);
+      return;
+    } catch (err) {
+      if (isJson) {
+        console.log(JSON.stringify({ success: false, error: err.message }, null, 2));
+        return;
+      }
+      console.error(`\n${ANSI.red}[ERROR] Dispatch failed: ${err.message}${ANSI.reset}\n`);
+      return;
+    }
+  }
+
+  if (sub === 'sync') {
+    try {
+      const res = await omegaRequest('/v1/wealth/sync', 'POST', {});
+      if (isJson) {
+        console.log(JSON.stringify(res, null, 2));
+        return;
+      }
+      console.log(`\n${ANSI.bold}=== ⟳ TRADING REALIZED P&L TO WEALTH SYNC ===${ANSI.reset}`);
+      if (res.synced) {
+        console.log(`  ${ANSI.green}✓ Synced New Gross Inflow: $${res.newGross.toFixed(2)}${ANSI.reset}`);
+        for (const a of res.allocations) {
+          console.log(`  • ${a.category}: $${a.allocatedAmount.toFixed(2)} (${a.allocationPercent}%)`);
+        }
+      } else {
+        console.log(`  ${ANSI.dim}No new positive realized P&L since last sync. Status: STEADY.${ANSI.reset}`);
+      }
+      console.log('');
+      return;
+    } catch (err) {
+      if (isJson) {
+        console.log(JSON.stringify({ success: false, error: err.message }, null, 2));
+        return;
+      }
+      console.error(`\n${ANSI.red}[ERROR] Sync failed: ${err.message}${ANSI.reset}\n`);
+      return;
+    }
+  }
+
+  // Default: Show Wealth Ledger & 5-Fold Summary
+  try {
+    const res = await omegaRequest('/v1/wealth/ledger');
+    if (isJson) {
+      console.log(JSON.stringify(res, null, 2));
+      return;
+    }
+    const l = res.ledger;
+    const s = res.summary;
+    console.log(`\n${ANSI.bold}=== ✝️ FINITE WEALTH ACTION (FWA) SOVEREIGN STEWARDSHIP LEDGER ===${ANSI.reset}`);
+    console.log(`  ${ANSI.cyan}Sovereign Owner${ANSI.reset}     : ${l.sovereignOwner}`);
+    console.log(`  ${ANSI.cyan}Total Realized In${ANSI.reset}   : ${ANSI.bold}$${l.totalRealizedIn.toLocaleString('en-US', { minimumFractionDigits: 2 })}${ANSI.reset}`);
+    console.log(`  ${ANSI.cyan}Total Allocated${ANSI.reset}     : ${ANSI.bold}$${l.totalAllocated.toLocaleString('en-US', { minimumFractionDigits: 2 })}${ANSI.reset}`);
+    console.log(`  ${ANSI.cyan}Allocation Batches${ANSI.reset}  : ${l.allocationCount} (${l.allocations.length} total entries)`);
+    console.log(`\n${ANSI.bold}=== 5-FOLD CANONICAL ALLOCATIONS ===${ANSI.reset}`);
+    console.log(`  ✝️ ${ANSI.bold}TITHE (10%)${ANSI.reset}             : $${s.TITHE.total.toFixed(2)} (${s.TITHE.count} entries)`);
+    console.log(`  📈 ${ANSI.bold}CAPITAL (40%)${ANSI.reset}           : $${s.CAPITAL.total.toFixed(2)} (${s.CAPITAL.count} entries)`);
+    console.log(`  🔓 ${ANSI.bold}DEBT ELIMINATION (25%)${ANSI.reset} : $${s.DEBT_ELIMINATION.total.toFixed(2)} (${s.DEBT_ELIMINATION.count} entries)`);
+    console.log(`  🌱 ${ANSI.bold}INCOME SEED (20%)${ANSI.reset}      : $${s.INCOME_SEED.total.toFixed(2)} (${s.INCOME_SEED.count} entries)`);
+    console.log(`  🛡️ ${ANSI.bold}RESERVE (5%)${ANSI.reset}           : $${s.RESERVE.total.toFixed(2)} (${s.RESERVE.count} entries)`);
+
+    if (l.allocations.length > 0) {
+      console.log(`\n${ANSI.bold}=== RECENT DISPATCHES (TOP 5) ===${ANSI.reset}`);
+      for (const a of l.allocations.slice(0, 5)) {
+        console.log(`  • [${a.category.padEnd(16)}] $${a.allocatedAmount.toFixed(2)} ➔ ${a.description} (${ANSI.dim}${a.evidenceHash.slice(0, 16)}...${ANSI.reset})`);
+      }
+    }
+    console.log(`\n  Usage: node bin/oceanicos.mjs wealth [dispatch <amount> "<desc>"] | [sync]\n`);
+  } catch (err) {
+    if (isJson) {
+      console.log(JSON.stringify({ success: false, error: err.message }, null, 2));
+      return;
+    }
+    console.error(`\n${ANSI.red}[ERROR] Failed to fetch wealth ledger: ${err.message}${ANSI.reset}\n`);
+  }
+}
+
 async function handleRea(extraArgs = []) {
   printBanner();
   const target = extraArgs.filter((a) => !a.startsWith('--'))[0] || 'https://github.com/morluto/rea';
@@ -2720,6 +2827,7 @@ ${ANSI.bold}COMMANDS:${ANSI.reset}
   ${ANSI.green}market${ANSI.reset}       Show live XAU/USD gold spot ticker, session overlap, and AI signals
   ${ANSI.green}trade${ANSI.reset}        Submit sovereign order: oceanicos trade [buy|sell] <lots> [limitPrice]
   ${ANSI.green}portfolio${ANSI.reset}    Display live portfolio equity, margin level, and active positions
+  ${ANSI.green}wealth${ANSI.reset}       Inspect FWA stewardship ledger, dispatch 5-fold allocations, or auto-sync profit
   ${ANSI.green}rea${ANSI.reset}          Reverse Engineer Anything (morluto/rea) inspection & work mood engine
   ${ANSI.green}envelope${ANSI.reset}     Inspect knowledge envelope schema or validate knowledge envelopes
   ${ANSI.green}help${ANSI.reset}        Display this help message
@@ -2857,6 +2965,11 @@ switch (command) {
   case 'portfolio':
   case 'positions':
     await handlePortfolio();
+    break;
+  case 'wealth':
+  case 'fwa':
+  case 'tithe':
+    await handleWealth(args.slice(1));
     break;
   case 'rea':
   case 'reverse':

@@ -42,6 +42,7 @@ import { registerCompressionRoute } from './compression-route.js';
 import { registerEchoframeRoute } from './echoframe-route.js';
 import { registerMarketRoute } from './market-route.js';
 import { registerTradingRoute } from './trading-route.js';
+import { registerWealthRoute } from './wealth-route.js';
 import { registerReaRoute } from './rea-route.js';
 import { registerNewsRoute } from './news-route.js';
 import { registerKnowledgeRoute } from './knowledge-route.js';
@@ -305,6 +306,7 @@ export function createApp(
   registerEchoframeRoute(fastify);
   registerMarketRoute(fastify);
   registerTradingRoute(fastify);
+  registerWealthRoute(fastify);
   registerReaRoute(fastify);
   registerNewsRoute(fastify);
   registerKnowledgeRoute(fastify);

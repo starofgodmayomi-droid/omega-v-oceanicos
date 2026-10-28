@@ -98,11 +98,13 @@ const ORGAN_ICON: Record<string, string> = {
   LUCID_FULL_STACK_BUILDER: '🛠️',
   REA_DECONSTRUCTION_ENGINE: '🔍',
   AI_NEWS_HOLOGRAPHIC_COMPASS: '📰',
+  SOVEREIGN_WEALTH_DISPATCHER: '✝️',
 };
 
 /* ── Quick action chips ── */
 const ACTION_CHIPS = [
   { label: '🛡️ Verify Treasury', query: 'Verify the sovereign Bitcoin treasury address' },
+  { label: '✝️ Wealth & Tithe', query: 'What is the status of our sovereign wealth ledger and 5-fold tithe allocation?' },
   { label: '🔍 REA Reverse Engineer', query: 'Execute REA autonomous inspection on morluto/rea with optimal flow work mood' },
   { label: '📰 AI News Compass', query: 'Compress global AI news and multi-world vector signals' },
   { label: '📜 Merkle Audit', query: 'Audit canonical Merkle ledger tip and cryptographic parent chain' },

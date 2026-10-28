@@ -3,20 +3,92 @@
     "id": "port-elion-1111",
     "currency": "USD",
     "initialBalance": 100000,
-    "balance": 100000,
-    "equity": 100000,
-    "marginUsed": 0,
-    "freeMargin": 100000,
-    "marginLevelPercent": 100,
-    "unrealizedPnl": 0,
-    "realizedPnl": 0,
+    "balance": 99993,
+    "equity": 99985.8,
+    "marginUsed": 2722.64,
+    "freeMargin": 97263.16,
+    "marginLevelPercent": 3672.4,
+    "unrealizedPnl": -7.2,
+    "realizedPnl": -7,
     "winCount": 0,
-    "lossCount": 0,
-    "totalTrades": 0,
+    "lossCount": 1,
+    "totalTrades": 2,
     "winRate": 0,
-    "positions": [],
-    "updatedAt": "2026-10-27T22:55:41.871Z",
+    "positions": [
+      {
+        "id": "pos-1793177846195-4fb99aef",
+        "symbol": "XAU/USD",
+        "side": "BUY",
+        "entryPrice": 2722.64,
+        "quantity": 0.2,
+        "currentPrice": 2722.28,
+        "unrealizedPnl": -7.2,
+        "realizedPnl": 0,
+        "marginUsed": 2722.64,
+        "leverage": 20,
+        "status": "OPEN",
+        "openedAt": "2026-10-28T08:57:26.195Z",
+        "evidenceHash": "18e052469f5d1b7580d1d523dd209fd908355cb2e083cde14dfad083d2b4605e"
+      },
+      {
+        "id": "pos-1793177729262-3db4572a",
+        "symbol": "XAU/USD",
+        "side": "BUY",
+        "entryPrice": 2720.43,
+        "quantity": 1,
+        "currentPrice": 2720.07,
+        "unrealizedPnl": 0,
+        "realizedPnl": -7,
+        "marginUsed": 27204.3,
+        "leverage": 10,
+        "status": "CLOSED",
+        "openedAt": "2026-10-28T08:55:29.262Z",
+        "evidenceHash": "8c6311dda9b4f6ec5b25e292ae2abfa9d2874c7265337c4ea5595fa5a64ebcbf",
+        "closedAt": "2026-10-28T08:55:48.725Z",
+        "closePrice": 2720.36
+      }
+    ],
+    "updatedAt": "2026-10-28T08:57:26.195Z",
     "sovereignOwner": "ELION VAREL // 11:11 (did:omega:human:starofgodmayomi)"
   },
-  "orders": []
+  "orders": [
+    {
+      "id": "ord-1793177846194-95fcf301",
+      "symbol": "XAU/USD",
+      "side": "BUY",
+      "type": "MARKET",
+      "price": 2722.64,
+      "quantity": 0.2,
+      "leverage": 20,
+      "status": "EXECUTED",
+      "createdAt": "2026-10-28T08:57:26.195Z",
+      "executedAt": "2026-10-28T08:57:26.195Z",
+      "executedPrice": 2722.64,
+      "verificationGate": {
+        "passed": true,
+        "rule": "SOVEREIGN_ADMISSION_GATE_V1111",
+        "gateState": "ADMITTED",
+        "verifiedBy": "ELION_VAREL_IMMUNE_SYSTEM:18e052469f5d1b75"
+      }
+    },
+    {
+      "id": "ord-1793177729262-25bd021c",
+      "symbol": "XAU/USD",
+      "side": "BUY",
+      "type": "MARKET",
+      "price": 2720.43,
+      "quantity": 1,
+      "leverage": 10,
+      "status": "EXECUTED",
+      "createdAt": "2026-10-28T08:55:29.262Z",
+      "executedAt": "2026-10-28T08:55:29.262Z",
+      "executedPrice": 2720.43,
+      "verificationGate": {
+        "passed": true,
+        "rule": "SOVEREIGN_ADMISSION_GATE_V1111",
+        "gateState": "ADMITTED",
+        "verifiedBy": "ELION_VAREL_IMMUNE_SYSTEM:8c6311dda9b4f6ec"
+      }
+    }
+  ]
 }

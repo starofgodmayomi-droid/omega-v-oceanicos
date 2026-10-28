@@ -20,6 +20,7 @@ import { PlatformDuplexPanel } from './PlatformDuplexPanel';
 import { MultidimensionalCatalogPanel } from './MultidimensionalCatalogPanel';
 import { FuturisticEcosystemChatPanel } from './FuturisticEcosystemChatPanel';
 import { TradingDashboard } from './TradingDashboard';
+import { WealthActionPanel } from './WealthActionPanel';
 import {
   theme,
   statusColor,
@@ -135,7 +136,7 @@ export function App() {
   ]);
 
   const [openStageId, setOpenStageId] = useState<string | null>(null);
-  const [viewportMode, setViewportMode] = useState<'trading' | 'conversation' | 'work' | 'evidence' | 'catalog'>('trading');
+  const [viewportMode, setViewportMode] = useState<'trading' | 'conversation' | 'work' | 'evidence' | 'catalog' | 'wealth'>('trading');
   const [showCovenantPanel, setShowCovenantPanel] = useState<boolean>(false);
   const [showNewsPanel, setShowNewsPanel] = useState<boolean>(false);
   const [showCompressionPulse, setShowCompressionPulse] = useState<boolean>(false);
@@ -990,6 +991,28 @@ export function App() {
             <span>🛡️</span>
             <span>Evidence Workspace</span>
           </button>
+          <button
+            onClick={() => setViewportMode('wealth')}
+            style={{
+              padding: '8px 18px',
+              borderRadius: theme.radiusPill,
+              border: 'none',
+              background: viewportMode === 'wealth' ? 'rgba(167,139,250,0.2)' : 'transparent',
+              color: viewportMode === 'wealth' ? '#a78bfa' : theme.textMuted,
+              boxShadow: viewportMode === 'wealth' ? '0 0 14px rgba(167,139,250,0.3)' : 'none',
+              fontFamily: theme.fontSans,
+              fontSize: '12.5px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '7px',
+            }}
+          >
+            <span>💰</span>
+            <span>Wealth Pipeline</span>
+          </button>
         </div>
       </div>
 
@@ -1004,6 +1027,18 @@ export function App() {
           }}
         >
           <TradingDashboard />
+        </div>
+      ) : viewportMode === 'wealth' ? (
+        <div
+          style={{
+            maxWidth: '1280px',
+            width: '100%',
+            margin: '0 auto',
+            padding: '0 0 60px',
+            flex: 1,
+          }}
+        >
+          <WealthActionPanel />
         </div>
       ) : viewportMode === 'catalog' ? (
         <div
