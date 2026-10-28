@@ -2225,10 +2225,23 @@ ${ANSI.bold}2 RELATIONAL OPERATIONAL DATABASES:${ANSI.reset}
   };
 
   const isTrading = args.includes('--trading');
+  const isWealth = args.includes('--wealth') || args.includes('--fwa');
   let record = syncPkg.buildEvidenceRecord(env);
   let block = syncPkg.buildNotionBlock(record);
 
-  if (isTrading && typeof syncPkg.buildTradingEvidenceRecord === 'function') {
+  if (isWealth && typeof syncPkg.buildWealthEvidenceRecord === 'function') {
+    let ledger = null;
+    let summary = null;
+    try {
+      const wealthRes = await omegaRequest('/v1/wealth/ledger');
+      if (wealthRes?.ledger) ledger = wealthRes.ledger;
+      if (wealthRes?.summary) summary = wealthRes.summary;
+    } catch {
+      /* fallback to defaults */
+    }
+    record = syncPkg.buildWealthEvidenceRecord(ledger, summary);
+    block = syncPkg.buildWealthNotionBlock(record);
+  } else if (isTrading && typeof syncPkg.buildTradingEvidenceRecord === 'function') {
     let port = null;
     let quote = null;
     try {
@@ -2262,7 +2275,8 @@ ${ANSI.bold}2 RELATIONAL OPERATIONAL DATABASES:${ANSI.reset}
     console.log(`  ${ANSI.cyan}Page UUID${ANSI.reset}          : ${ANSI.bold}${pageId}${ANSI.reset}`);
     console.log(`  ${ANSI.cyan}Target URL${ANSI.reset}         : https://app.notion.com/p/OCEANICOS-MOTION-Private-Wealth-Execution-Engine-${pageId.replace(/-/g, '')}`);
     console.log(`  ${ANSI.yellow}Status${ANSI.reset}             : ${ANSI.bold}DRY RUN (NOTION_TOKEN not yet configured in .env)${ANSI.reset}\n`);
-    console.log(`${ANSI.bold}Prepared Evidence Block (${isTrading ? 'TRADING LEDGER SNAPSHOT' : 'CI VERIFICATION'}):${ANSI.reset}`);
+    const blockType = isWealth ? 'FINITE WEALTH ACTION (FWA)' : (isTrading ? 'TRADING LEDGER SNAPSHOT' : 'CI VERIFICATION');
+    console.log(`${ANSI.bold}Prepared Evidence Block (${blockType}):${ANSI.reset}`);
     console.log(block.paragraph.rich_text[0].text.content);
     console.log(`\n${ANSI.dim}To enable live sync, configure NOTION_TOKEN in .env using the safe protocol.${ANSI.reset}\n`);
     return;

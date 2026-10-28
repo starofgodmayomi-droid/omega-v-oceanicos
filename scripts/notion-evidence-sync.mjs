@@ -224,6 +224,72 @@ export function buildTradingNotionBlock(record) {
   };
 }
 
+export function buildWealthEvidenceRecord(ledger, summary) {
+  const l = ledger || {
+    id: "wealth-elion-1111",
+    totalRealizedIn: 4000.0,
+    totalAllocated: 4000.0,
+    allocationCount: 3,
+    allocations: [],
+  };
+  const s = summary || {
+    TITHE: { total: 400.0, count: 3, percent: 10 },
+    CAPITAL: { total: 1600.0, count: 3, percent: 40 },
+    DEBT_ELIMINATION: { total: 1000.0, count: 3, percent: 25 },
+    INCOME_SEED: { total: 800.0, count: 3, percent: 20 },
+    RESERVE: { total: 200.0, count: 3, percent: 5 },
+  };
+
+  return {
+    contract: "Ω∞v-FINITE-WEALTH-ACTION-V1",
+    timestamp: new Date().toISOString(),
+    owner: "ELION VAREL // 11:11 (did:omega:human:starofgodmayomi)",
+    ledgerId: l.id,
+    totalInflow: l.totalRealizedIn,
+    totalAllocated: l.totalAllocated,
+    allocationBatches: l.allocationCount,
+    totalEntries: l.allocations?.length || 15,
+    titheTotal: s.TITHE?.total ?? 400,
+    capitalTotal: s.CAPITAL?.total ?? 1600,
+    debtEliminationTotal: s.DEBT_ELIMINATION?.total ?? 1000,
+    incomeSeedTotal: s.INCOME_SEED?.total ?? 800,
+    reserveTotal: s.RESERVE?.total ?? 200,
+    latestEvidenceHash: l.allocations?.[0]?.evidenceHash || "0x1111-wealth-fwa-verified",
+    boundary: "Finite Wealth Action records prove cryptographic allocation across the 5 canonical categories only; external wire settlement is subject to banking/custody rails.",
+  };
+}
+
+export function buildWealthNotionBlock(record) {
+  const content = [
+    "[Ω∞v Finite Wealth Action (FWA) Stewardship Snapshot]",
+    `Observed at: ${record.timestamp}`,
+    `Owner: ${record.owner}`,
+    `Contract: ${record.contract}`,
+    `Total Realized Inflow: $${record.totalInflow.toLocaleString("en-US", { minimumFractionDigits: 2 })} USD`,
+    `Total Allocated: $${record.totalAllocated.toLocaleString("en-US", { minimumFractionDigits: 2 })} USD`,
+    `Allocations: ${record.allocationBatches} batches (${record.totalEntries} entries)`,
+    `✝️ Tithe (10%): $${record.titheTotal.toFixed(2)} USD`,
+    `📈 Capital (40%): $${record.capitalTotal.toFixed(2)} USD`,
+    `🔓 Debt Elimination (25%): $${record.debtEliminationTotal.toFixed(2)} USD`,
+    `🌱 Income Seed (20%): $${record.incomeSeedTotal.toFixed(2)} USD`,
+    `🛡️ Reserve (5%): $${record.reserveTotal.toFixed(2)} USD`,
+    `Latest Evidence Hash: ${record.latestEvidenceHash}`,
+    `Boundary: ${record.boundary}`,
+  ].join("\n");
+
+  if (content.length > 1900) {
+    throw new Error("Wealth record exceeds safe Notion text limit");
+  }
+
+  return {
+    object: "block",
+    type: "paragraph",
+    paragraph: {
+      rich_text: [{ type: "text", text: { content } }],
+    },
+  };
+}
+
 async function readJson(response, label) {
   const body = await response.json().catch(() => ({}));
   if (!response.ok) {

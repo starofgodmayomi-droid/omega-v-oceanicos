@@ -9,6 +9,8 @@ import {
   buildDailyCommandRecord,
   buildDailyCommandBlock,
   buildFirstFiniteActionRecord,
+  buildWealthEvidenceRecord,
+  buildWealthNotionBlock,
   inspectNotionSurfaces,
   DEFAULT_NOTION_PAGE_ID,
   DEFAULT_NOTION_OPPORTUNITIES_DB_ID,
@@ -228,5 +230,28 @@ test("inspectNotionSurfaces probes all 6 canonical surfaces when includeQuadrant
   assert.equal(inspection.surfaces.architecturePage.status, "ONLINE_ACCESSIBLE");
   assert.equal(inspection.surfaces.opportunitiesPipeline.status, "ONLINE_ACCESSIBLE");
   assert.equal(inspection.surfaces.executionQueue.status, "ONLINE_ACCESSIBLE");
+});
+
+test("buildWealthEvidenceRecord and buildWealthNotionBlock format 5-fold distribution within Notion limits", () => {
+  const record = buildWealthEvidenceRecord();
+  assert.equal(record.contract, "Ω∞v-FINITE-WEALTH-ACTION-V1");
+  assert.equal(record.totalInflow, 4000);
+  assert.equal(record.titheTotal, 400);
+  assert.equal(record.capitalTotal, 1600);
+  assert.equal(record.debtEliminationTotal, 1000);
+  assert.equal(record.incomeSeedTotal, 800);
+  assert.equal(record.reserveTotal, 200);
+
+  const block = buildWealthNotionBlock(record);
+  assert.equal(block.object, "block");
+  assert.equal(block.type, "paragraph");
+  const text = block.paragraph.rich_text[0].text.content;
+  assert.match(text, /\[Ω∞v Finite Wealth Action \(FWA\) Stewardship Snapshot\]/);
+  assert.match(text, /Tithe \(10%\): \$400\.00 USD/);
+  assert.match(text, /Capital \(40%\): \$1600\.00 USD/);
+  assert.match(text, /Debt Elimination \(25%\): \$1000\.00 USD/);
+  assert.match(text, /Income Seed \(20%\): \$800\.00 USD/);
+  assert.match(text, /Reserve \(5%\): \$200\.00 USD/);
+  assert(text.length < 1900, "Block must stay within safe Notion limit");
 });
 
