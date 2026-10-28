@@ -14,6 +14,7 @@ type Props = {
   history: Array<{ evidence?: { status?: string } }>;
   ecosystemBody: any;
   omegaCommand: any;
+  draftIntent?: string;
   onFocusCommand: (prompt: string) => void;
 };
 
@@ -157,6 +158,7 @@ export function WholeEcosystemDashboard(props: Props) {
           <div className="whole-transition">
             <span>ONE FINITE Δ</span>
             <strong>{currentTransition}</strong>
+            {props.draftIntent ? <small className="whole-draft">DRAFT · {props.draftIntent}</small> : null}
             <small>{props.humanGateRequired ? 'Human approval remains required for consequential action.' : 'No human gate reported by the capability snapshot.'}</small>
           </div>
           <div className="whole-current-actions">

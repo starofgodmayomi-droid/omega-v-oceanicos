@@ -5,13 +5,17 @@ import { InvisibleComputer } from './InvisibleComputer.tsx';
 import './App.css';
 import './tokens.css';
 
-// The Invisible Online Computer is the public surface; the full console keeps
-// its own path so every existing panel stays reachable.
+// The Invisible Online Computer is the public surface; the console dashboard
+// lives at /console and the older panels at /console/legacy, so the two are
+// never stacked on one page.
 const path = window.location.pathname.replace(/\/+$/, '') || '/';
-const Surface = path === '/console' ? App : InvisibleComputer;
+const Surface =
+  path === '/console' ? (
+    <App surface="dashboard" />
+  ) : path === '/console/legacy' ? (
+    <App surface="legacy" />
+  ) : (
+    <InvisibleComputer />
+  );
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <Surface />
-  </React.StrictMode>
-);
+ReactDOM.createRoot(document.getElementById('root')!).render(<React.StrictMode>{Surface}</React.StrictMode>);

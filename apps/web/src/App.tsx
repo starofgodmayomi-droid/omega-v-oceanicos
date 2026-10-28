@@ -59,7 +59,12 @@ const MODE_BUTTONS = [
   { icon: '◎', label: 'Change', template: 'Change ' },
 ];
 
-export function App() {
+type ConsoleSurface = 'dashboard' | 'legacy';
+
+export function App({ surface = 'legacy' }: { surface?: ConsoleSurface } = {}) {
+  // Two console surfaces so the whole-ecosystem dashboard is never stacked with
+  // the older panels: /console renders the dashboard, /console/legacy the rest.
+  const showLegacy = surface === 'legacy';
   const [tip, setTip] = useState<any>(null);
   const [ledgerIntegrity, setLedgerIntegrity] = useState<{
     valid: boolean;
@@ -93,7 +98,9 @@ export function App() {
   const [attestLoading, setAttestLoading] = useState(false);
   const [kernelCapabilities, setKernelCapabilities] = useState<KernelCapabilitySnapshot | null>(null);
   const [kernelCapabilitiesError, setKernelCapabilitiesError] = useState<string | null>(null);
-  const [omegaIntent, setOmegaIntent] = useState('');
+  const [omegaIntent, setOmegaIntent] = useState(
+    () => new URLSearchParams(window.location.search).get('intent') ?? ''
+  );
   const [omegaObservedState, setOmegaObservedState] = useState('');
   const [omegaCommand, setOmegaCommand] = useState<any>(null);
   const [omegaLoading, setOmegaLoading] = useState(false);
@@ -745,6 +752,20 @@ export function App() {
             ← Invisible Online Computer
           </a>
         </div>
+        <div style={{ textAlign: 'center', marginBottom: '8px' }}>
+          <a
+            href={showLegacy ? '/console' : '/console/legacy'}
+            style={{
+              fontSize: '10px',
+              letterSpacing: '0.16em',
+              textTransform: 'uppercase',
+              color: theme.accent,
+              textDecoration: 'none',
+            }}
+          >
+            {showLegacy ? '← Command surface' : 'Legacy panels ↗'}
+          </a>
+        </div>
         <div style={{ textAlign: 'center', marginBottom: '16px' }}>
           <button
             type="button"
@@ -775,8 +796,33 @@ export function App() {
           history={history}
           ecosystemBody={ecosystemBody}
           omegaCommand={omegaCommand}
+          draftIntent={omegaIntent}
           onFocusCommand={setOmegaIntent}
         />
+
+        {!showLegacy && omegaIntent.trim() && (
+          <p
+            style={{
+              margin: '18px auto 0',
+              maxWidth: '560px',
+              textAlign: 'center',
+              fontSize: '12px',
+              lineHeight: 1.6,
+              color: theme.textMuted,
+            }}
+          >
+            Drafted here and submitted from the legacy console —{' '}
+            <a
+              href={`/console/legacy?intent=${encodeURIComponent(omegaIntent)}`}
+              style={{ color: theme.accent }}
+            >
+              continue with this draft →
+            </a>
+          </p>
+        )}
+
+        {showLegacy && (
+          <>
         <WaterFlowPanel />
 
         {/* Prompt */}
@@ -904,23 +950,27 @@ export function App() {
           simulationMode={simulationMode}
           humanGateRequired={humanGateRequired}
         />
+          </>
+        )}
       </main>
 
-      {/* Mirror-water lifecycle flow */}
-      <div
-        style={{
-          maxWidth: '720px',
-          width: '100%',
-          margin: '0 auto',
-          padding: '8px 24px 60px',
-        }}
-      >
-        <LifecycleFlow
-          stages={lifecycleStages}
-          openStageId={openStageId}
-          onStageToggle={(id) => setOpenStageId(id || null)}
-        />
-      </div>
+      {showLegacy && (
+        /* Mirror-water lifecycle flow */
+        <div
+          style={{
+            maxWidth: '720px',
+            width: '100%',
+            margin: '0 auto',
+            padding: '8px 24px 60px',
+          }}
+        >
+          <LifecycleFlow
+            stages={lifecycleStages}
+            openStageId={openStageId}
+            onStageToggle={(id) => setOpenStageId(id || null)}
+          />
+        </div>
+      )}
     </div>
   );
 }

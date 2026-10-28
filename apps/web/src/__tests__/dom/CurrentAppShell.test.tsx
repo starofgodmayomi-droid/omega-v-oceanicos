@@ -2,6 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from '../../App';
+import { App as AppSurface } from '../../App';
 import { installFetch } from './harness';
 
 describe('current OceanicOS app shell', () => {
@@ -31,5 +32,54 @@ describe('current OceanicOS app shell', () => {
         return options?.method?.toUpperCase() === 'POST';
       })
     ).toBe(false);
+  });
+
+  it('keeps the dashboard surface free of the older panels', async () => {
+    installFetch();
+    render(<AppSurface surface="dashboard" />);
+
+    expect(await screen.findByRole('region', { name: 'Whole ecosystem command surface' })).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText("Tell me what you're trying to do…")).not.toBeInTheDocument();
+    expect(screen.queryByText('What shall we make real?')).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /legacy panels/i })).toHaveAttribute('href', '/console/legacy');
+  });
+
+  it('drafts an organ prompt on the dashboard surface and hands it to the legacy console', async () => {
+    const fetchMock = installFetch();
+    const user = userEvent.setup();
+    render(<AppSurface surface="dashboard" />);
+
+    await user.click(await screen.findByRole('button', { name: /AI SOUL/i }));
+
+    expect(screen.getByText('DRAFT · Map AI SOUL.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /continue with this draft/i })).toHaveAttribute(
+      'href',
+      '/console/legacy?intent=Map%20AI%20SOUL.'
+    );
+    expect(
+      fetchMock.mock.calls.some(([, init]) => {
+        const options = init as { method?: string } | undefined;
+        return options?.method?.toUpperCase() === 'POST';
+      })
+    ).toBe(false);
+  });
+
+  it('keeps the older panels reachable on their own legacy surface', async () => {
+    installFetch();
+    render(<AppSurface surface="legacy" />);
+
+    expect(await screen.findByPlaceholderText("Tell me what you're trying to do…")).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /command surface/i })).toHaveAttribute('href', '/console');
+  });
+
+  it('prefills the legacy prompt from the dashboard handoff', async () => {
+    installFetch();
+    window.history.pushState({}, '', '/console/legacy?intent=Map%20AI%20SOUL.');
+    try {
+      render(<AppSurface surface="legacy" />);
+      expect(await screen.findByPlaceholderText("Tell me what you're trying to do…")).toHaveValue('Map AI SOUL.');
+    } finally {
+      window.history.pushState({}, '', '/');
+    }
   });
 });
