@@ -55,15 +55,22 @@ describe('Ecosystem Body Route - Living Body Metaphor Contract', () => {
     expect(compassOrgan.capabilities).toContain('multi-world-vectors');
   });
 
-  it('computes correct implementation truth metrics', async () => {
+  it('computes correct implementation truth metrics and exposes 11 topological layers', async () => {
     const res = await app.inject({
       method: 'GET',
       url: '/v1/ecosystem/body',
     });
 
     const body = JSON.parse(res.payload);
-    expect(body.implementationTruth.totalParts).toBeGreaterThan(20);
-    expect(body.implementationTruth.implemented).toBeGreaterThan(10);
-    expect(body.implementationTruth.completionRatio).toBeGreaterThan(0.4);
+    expect(body.implementationTruth.totalParts).toBe(36);
+    expect(body.implementationTruth.implemented).toBeGreaterThanOrEqual(20);
+    expect(body.implementationTruth.completionRatio).toBeGreaterThan(0.5);
+
+    expect(Array.isArray(body.topologicalLayers)).toBe(true);
+    expect(body.topologicalLayers).toHaveLength(11);
+    expect(body.topologicalLayers[0].symbol).toBe('L1');
+    expect(body.topologicalLayers[0].domain).toBe('Experience Surface');
+    expect(body.topologicalLayers[10].symbol).toBe('L11');
+    expect(body.topologicalLayers[10].domain).toBe('Continuous Evolution');
   });
 });
