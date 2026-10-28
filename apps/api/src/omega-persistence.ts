@@ -1,7 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { createRequire } from 'node:module';
-
-const require = createRequire(import.meta.url);
+import { openDatabase, type SqliteDb } from './sqlite.js';
 
 export type DurableWorker = {
   workerId: string;
@@ -27,22 +25,6 @@ export type DurableRevocation = {
   revokedBy: string;
   revokedAt: string;
 };
-
-type SqliteDb = {
-  exec(sql: string): void;
-  prepare(sql: string): { get(...params: unknown[]): any; all(...params: unknown[]): any[]; run(...params: unknown[]): any };
-  close?: () => void;
-};
-
-function openDatabase(path: string): SqliteDb {
-  try {
-    const BetterSqlite = require('better-sqlite3');
-    return new BetterSqlite(path) as SqliteDb;
-  } catch {
-    const { DatabaseSync } = require('node:sqlite');
-    return new DatabaseSync(path) as SqliteDb;
-  }
-}
 
 export class OmegaDurableStore {
   private readonly db: SqliteDb;

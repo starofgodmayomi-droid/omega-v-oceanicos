@@ -30,8 +30,21 @@ docker compose -f docker-compose.base44.yml up -d
 - The API uses `.js` extension imports (`import { X } from './jobs.js'`) — an ESM-style pattern compiled to CommonJS. ts-node cannot resolve these from source, so the API runs from `dist` (built by tsc) rather than via ts-node.
 - `apps/api/src/runtime-globals.d.ts` declares a global `persistenceEncryptionKey` var; only `tsc` picks it up, not ts-node's type-checker.
 - `apps/api/tsconfig.json` `include` lists only `src/index.ts` + the `.d.ts`, but tsc follows imports so all src files compile.
+- **Transient `[vite] http proxy error: /v1/... ECONNREFUSED 172.18.0.x:5000` lines in the `web` log are expected while the API is restarting.** `tsc --watch` + `node --watch` in the `api` service leave a few seconds (longer if a compile errors mid-edit) where nothing listens on 5000, and the WORKERS panel polls every 10 s. The target is still correct: once the rebuild finishes the same lines stop and `curl http://localhost:3000/api/v1/omega/workers` returns 200. Only a *persistent* stream of them means a real misconfiguration (wrong `VITE_API_PROXY_TARGET`, or an API that never turns healthy).
 - **Workspace packages must be built** before the API can start — their `main` points to `dist/index.js`. The setup service builds them in dependency order.
 - **SSE through the preview proxy**: with the CORS header fix described above, `/v1/stream` does connect from the browser through the preview proxy (status bar reads "Connected", runtime stream marked VERIFIED). If the proxy drops a long-lived connection the UI shows "Reconnecting…" and retries; REST endpoints are unaffected either way.
+
+## Invisible Online Computer (KAI → ELION → OMEGA → KAI)
+- `POST /api/execute` (alias `POST /execute`, which is the Vite proxy's rewritten target) runs the four-step loop from `apps/api/src/execute-route.ts`:
+  1. **KAI observe** — `scanIntent` matches known scam patterns; a match halts with `status: "DIVERGENT"`, `reason: "KAI Shield blocked this intent."` and writes nothing.
+  2. **ELION execute** — `executeElion` calls an OpenAI-compatible `chat/completions` endpoint when `OMEGA_LLM_API_KEY` is set (`OMEGA_LLM_BASE_URL`, `OMEGA_LLM_MODEL` optional). Without a key it returns the clearly labelled `local-deterministic` composer. A failed model call returns empty text, not an invented answer.
+  3. **OMEGA verify** — `verifyOmega` recomputes the SHA-256 evidence hash and checks the text against the `OmegaIR_Contracts` row; empty text, a broken digest, or a fabricated completion collapses to `UNKNOWN`.
+  4. **KAI remember** — only `VERIFIED` outcomes are appended to `KaiMemory`.
+- `GET /api/kai/memory?limit=n` (alias `GET /kai/memory`) returns the most recent memory rows.
+- Storage is the same SQLite file family as the other API stores: `<dbPath>.kai.db`, tables `KaiMemory` (id, timestamp, intent, evidence_hash, status) and `OmegaIR_Contracts` (id, intent, authority_level, expected_outcome). `openDatabase` lives in `apps/api/src/sqlite.ts` and is shared with `omega-persistence.ts`.
+- UI: `apps/web/src/InvisibleComputer.tsx` is the hero surface in `App.tsx` — one input ("WHAT SHALL WE MAKE REAL?"), a terminal that reveals the API's recorded steps, and the `VERIFIED` / `DIVERGENT` / `UNKNOWN` / `NOT_EXECUTED` badge.
+- `authorityLevel` in the request body may be `AUTONOMOUS`; the endpoint still only answers (CAPABILITY != AUTHORITY), and the contract records a bounded plan.
+- Tests: `node --experimental-strip-types --test ./tests/integration/execute-route.integration.test.ts` (needs `apps/api/dist` built, like the route-contract test).
 
 ## Single body compression (4×4×4×4)
 `GET /v1/ecosystem/body` carries a `compression` block: the seven runtime layers projected onto four axes of four coordinates (256 cells) with a local compress→expand proof. `POST /v1/ecosystem/body/expand` takes `{ compression }` and returns the records; a tampered digest is `400 DIGEST_MISMATCH`. Contract: `packages/mini/src/single-body.ts`; doc: `docs/SINGLE-BODY-4X4X4X4.md`; UI: `apps/web/src/SingleBodyPanel.tsx`. Coordinates are a declared projection (`body.layers.v1`), not inferred truth.

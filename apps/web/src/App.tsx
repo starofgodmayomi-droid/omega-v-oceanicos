@@ -14,6 +14,7 @@ import { DivergenceAlertsPanel } from './DivergenceAlertsPanel';
 import { ValueNavigatorPanel } from './ValueNavigatorPanel';
 import { ConnectorPanel } from './ConnectorPanel';
 import { WholeEcosystemDashboard } from './WholeEcosystemDashboard';
+import { InvisibleComputer } from './InvisibleComputer';
 import { WaterFlowPanel } from './WaterFlowPanel';
 import { LifecycleFlow, deriveStageStates, type LifecycleStage } from './LifecycleFlow';
 import { GlobeViewport } from './GlobeViewport';
@@ -751,6 +752,8 @@ export function App() {
             {globeMax ? 'Exit globe view' : 'Globe view'}
           </button>
         </div>
+
+        <InvisibleComputer />
 
         <WholeEcosystemDashboard
           streamConnected={streamConnected}
