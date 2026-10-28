@@ -109,6 +109,9 @@ The Observer and API now preserve optional `parentId` and a bounded `lineage` ar
 
 When `OMEGA_ADMIN_OPERATOR_ALLOWLIST` is configured, the three persistence/revocation mutations and Ω command approval require a matching `x-omega-operator-id`; `OMEGA_ADMIN_REQUIRE_ALLOWLIST=on` also fails closed if the list is missing. A JSON body operator cannot substitute for the dedicated header when the allowlist policy is active. Without the policy, legacy body fallback remains for compatibility. The header is still a caller assertion checked against the configured allowlist, not authentication, identity proofing, or evidence of the human behind the request. The dashboard and SDK use the labels `dashboard-operator` and `sdk-operator` by default; deployments enabling the allowlist must configure the labels their clients use.
 
+## Conversation boundary
+
+`POST /v1/conversations` and `POST /v1/conversations/:id/messages` record a bounded in-memory transcript. They do not accept a role, handler, tool, command, or model function from the body. Without a server-side model provider, a user turn is stored and completion stays not executed. Provider text is model output, not verification, authorization, or command execution. The record is lost when the process stops.
 
 ## Pipeline admission boundary
 
