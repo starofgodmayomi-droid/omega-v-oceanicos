@@ -118,6 +118,18 @@ export { captureMiniKernelCycle } from './kai-cycle.js';
 export { buildOmegaWaterFlow } from './water-flow.js';
 export { MAX_TOTAL_COMPRESSION_LEASE_MS, TOTAL_COMPRESSION_PACKAGE_IDS, validateTotalCompressionRequest } from './total-compress.js';
 export type { TotalCompressionIssueCode, TotalCompressionPackage, TotalCompressionRequest, TotalCompressionScope, TotalCompressionValidationIssue, TotalCompressionValidationResult } from './total-compress.js';
+export {
+  MAX_NEXT_CANDIDATES,
+  NEXT_SELECTOR_EPSILON,
+  selectAuthorizedNext,
+} from './next-selector.js';
+export type {
+  NextCandidate,
+  NextSelectionIssue,
+  NextSelectionIssueCode,
+  NextSelectionResult,
+  NextSelectionStatus,
+} from './next-selector.js';
 export { runBoundedParallel } from './parallel.js';
 export type {
   BoundedParallelAdmission,

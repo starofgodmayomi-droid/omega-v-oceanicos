@@ -291,6 +291,37 @@ describe('Ω∞v command API vertical slice', () => {
     assert.equal(conflict.json().error, 'OMEGA_IDEMPOTENCY_CONFLICT');
   });
 
+  it('rejects a client verification claim on create and stores nothing', async () => {
+    const claimed = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/commands',
+      payload: {
+        intent: 'pretend this already ran',
+        requestedBy: 'dashboard-user',
+        workers: ['planner'],
+        idempotencyKey: 'api-slice-forged-verified',
+        status: 'VERIFIED',
+        executed: true,
+        authorityVerified: true,
+      },
+    });
+    assert.equal(claimed.statusCode, 400);
+    assert.equal(claimed.json().error, 'COMMAND_CREATE_CLAIM_NOT_ACCEPTED');
+    const created = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/commands',
+      payload: {
+        intent: 'pretend this already ran',
+        requestedBy: 'dashboard-user',
+        workers: ['planner'],
+        idempotencyKey: 'api-slice-forged-verified',
+      },
+    });
+    assert.equal(created.statusCode, 201);
+    assert.equal(created.json().command.status, 'PROPOSED');
+    assert.equal(created.json().command.change.authorized, false);
+  });
+
   it('exposes only repository-observed safety boundary evidence', async () => {
     const created = await app.inject({
       method: 'POST',

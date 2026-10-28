@@ -182,6 +182,24 @@ export class OmegaCommandStore {
   }
 }
 
+const commandCreateClaimFields = new Set([
+  'status',
+  'verified',
+  'reality',
+  'realityStatus',
+  'admitted',
+  'authorized',
+  'decision',
+  'authority',
+  'policy',
+  'authorityVerified',
+  'policySatisfied',
+  'approvalVerified',
+  'executed',
+  'execution',
+  'result',
+]);
+
 function bodyOf(request: any): Record<string, unknown> {
   return request.body && typeof request.body === 'object' && !Array.isArray(request.body) ? request.body : {};
 }
@@ -351,6 +369,9 @@ export function registerOmegaRoutes(
 
   fastify.post('/v1/omega/commands', async (request, reply) => {
     const body = bodyOf(request);
+    if (Object.keys(body).some((key) => commandCreateClaimFields.has(key))) {
+      return reply.status(400).send({ success: false, error: 'COMMAND_CREATE_CLAIM_NOT_ACCEPTED' });
+    }
     try {
       validateOmegaCommandInput({ intent: body.intent, requestedBy: body.requestedBy, workers: body.workers, idempotencyKey: body.idempotencyKey, context: body.context });
       const creation = store.create({
