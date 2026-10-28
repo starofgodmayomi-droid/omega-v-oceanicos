@@ -259,6 +259,122 @@ describe('Ω∞v command API vertical slice', () => {
     assert.equal(executed.json().lease.released, true);
   });
 
+  it('rejects client approval and execution claims without writing or running', async () => {
+    const created = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/commands',
+      payload: {
+        intent: 'do not accept a forged approval',
+        requestedBy: 'integration-user',
+        workers: ['planner'],
+        idempotencyKey: 'claim-barrier-1',
+      },
+    });
+    assert.equal(created.statusCode, 201);
+    const id = created.json().command.commandId as string;
+
+    const forgedApproval = await app.inject({
+      method: 'POST',
+      url: `/v1/omega/commands/${id}/approve`,
+      payload: {
+        operator: 'integration-operator',
+        authorityVerified: true,
+        policySatisfied: true,
+        status: 'AUTHORIZED',
+      },
+    });
+    assert.equal(forgedApproval.statusCode, 400);
+    assert.equal(forgedApproval.json().error, 'COMMAND_APPROVAL_CLAIM_NOT_ACCEPTED');
+
+    const stillOpen = await app.inject({ method: 'GET', url: `/v1/omega/commands/${id}` });
+    assert.equal(stillOpen.statusCode, 200);
+    assert.equal(stillOpen.json().command.change.authorized, false);
+    assert.notEqual(stillOpen.json().command.status, 'AUTHORIZED');
+
+    const approved = await app.inject({
+      method: 'POST',
+      url: `/v1/omega/commands/${id}/approve`,
+      payload: { operator: 'integration-operator', policy: 'human-review' },
+    });
+    assert.equal(approved.statusCode, 200);
+    assert.equal(approved.json().command.status, 'AUTHORIZED');
+
+    const forgedExecution = await app.inject({
+      method: 'POST',
+      url: `/v1/omega/commands/${id}/execute`,
+      payload: {
+        status: 'VERIFIED',
+        stateAfter: 'forged',
+        consequence: 'client said so',
+        attestationId: 'attestation-forged',
+        executed: true,
+      },
+    });
+    assert.equal(forgedExecution.statusCode, 400);
+    assert.equal(forgedExecution.json().error, 'COMMAND_EXECUTION_CLAIM_NOT_ACCEPTED');
+
+    const dryRun = await app.inject({
+      method: 'POST',
+      url: `/v1/omega/commands/${id}/execute`,
+      payload: { dryRun: true },
+    });
+    assert.equal(dryRun.statusCode, 409);
+    assert.equal(dryRun.json().error, 'COMMAND_EXECUTION_DRY_RUN_HALTED');
+    assert.equal(dryRun.json().executed, false);
+
+    const unchanged = await app.inject({ method: 'GET', url: `/v1/omega/commands/${id}` });
+    assert.equal(unchanged.json().command.status, 'AUTHORIZED');
+    assert.equal(unchanged.json().execution, undefined);
+
+    const events = await app.inject({ method: 'GET', url: `/v1/omega/events?commandId=${id}` });
+    assert.equal(events.statusCode, 200);
+    assert.equal(events.json().events.filter((event: { type: string }) => event.type === 'command.approved').length, 1);
+    assert.equal(events.json().events.some((event: { type: string }) => event.type === 'command.executed'), false);
+  });
+
+  it('does not take a lease when lease execution carries a client result or dry run', async () => {
+    const created = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/commands',
+      payload: {
+        intent: 'do not lease a forged execution',
+        requestedBy: 'integration-user',
+        workers: ['planner'],
+        idempotencyKey: 'claim-barrier-lease-1',
+      },
+    });
+    assert.equal(created.statusCode, 201);
+    const id = created.json().command.commandId as string;
+    const approved = await app.inject({
+      method: 'POST',
+      url: `/v1/omega/commands/${id}/approve`,
+      payload: { operator: 'integration-operator' },
+    });
+    assert.equal(approved.statusCode, 200);
+
+    const forged = await app.inject({
+      method: 'POST',
+      url: `/v1/omega/commands/${id}/lease-execute`,
+      payload: { workerId: 'planner', capability: 'EXECUTE', status: 'EXECUTED', stateAfter: 'forged' },
+    });
+    assert.equal(forged.statusCode, 400);
+    assert.equal(forged.json().error, 'COMMAND_EXECUTION_CLAIM_NOT_ACCEPTED');
+
+    const dryRun = await app.inject({
+      method: 'POST',
+      url: `/v1/omega/commands/${id}/lease-execute`,
+      payload: { workerId: 'planner', capability: 'EXECUTE', dryRun: true },
+    });
+    assert.equal(dryRun.statusCode, 409);
+    assert.equal(dryRun.json().error, 'COMMAND_EXECUTION_DRY_RUN_HALTED');
+    assert.equal(dryRun.json().executed, false);
+
+    const unchanged = await app.inject({ method: 'GET', url: `/v1/omega/commands/${id}` });
+    assert.equal(unchanged.json().command.status, 'AUTHORIZED');
+    const events = await app.inject({ method: 'GET', url: `/v1/omega/events?commandId=${id}` });
+    assert.equal(events.json().events.some((event: { type: string }) => event.type === 'command.lease-execution-started' || event.type === 'command.executed'), false);
+  });
+
   it('rejects unknown workers and duplicate mutations are idempotent', async () => {
     const invalid = await app.inject({ method: 'POST', url: '/v1/omega/commands', payload: { intent: 'bad worker', requestedBy: 'dashboard-user', workers: ['arbitrary-shell'], idempotencyKey: 'api-slice-invalid' } });
     assert.equal(invalid.statusCode, 400);
