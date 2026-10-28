@@ -300,6 +300,39 @@ describe('Ω∞v command API vertical slice', () => {
     assert.equal(body.boundary.reconciliation.status, 'NOT_EXECUTED');
   });
 
+  it('does not call a recorded policy or authority string verified', async () => {
+    const created = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/commands',
+      payload: {
+        intent: 'inspect recorded authority without calling it verified',
+        requestedBy: 'integration-user',
+        workers: ['governance-reviewer'],
+        idempotencyKey: 'safety-boundary-recorded-1',
+      },
+    });
+    assert.equal(created.statusCode, 201);
+    const approved = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/commands/omega-safety-boundary-recorded-1/approve',
+      payload: { operator: 'integration-operator', policy: 'human-review' },
+    });
+    assert.equal(approved.statusCode, 200);
+    assert.equal(approved.json().command.status, 'AUTHORIZED');
+
+    const boundary = await app.inject({
+      method: 'GET',
+      url: '/v1/omega/commands/omega-safety-boundary-recorded-1/safety-boundary',
+    });
+    assert.equal(boundary.statusCode, 200);
+    const recorded = boundary.json().boundary;
+    assert.equal(recorded.policy.status, 'RECORDED');
+    assert.equal(recorded.authority.status, 'RECORDED');
+    assert.equal(recorded.policy.value, 'human-review');
+    assert.equal(recorded.authority.value, 'human:integration-operator');
+    assert.equal(JSON.stringify(recorded).includes('"status":"VERIFIED"'), false);
+  });
+
   it('rate-limits repeated command-store reads', async () => {
     let response;
     for (let attempt = 0; attempt < 61; attempt += 1) {

@@ -121,3 +121,5 @@ When `OMEGA_ADMIN_OPERATOR_ALLOWLIST` is configured, the three persistence/revoc
 The `/v1/omega/commands` lifecycle records human intent, worker attribution, ΩIR, evidence, authority, policy, approval, execution, attestation, provenance, and reality observation as separate states. `DENY` and `REVIEW` never execute. Approval does not claim success; execution does not claim reality; observation does not become proof without defined evidence.
 
 The first worker registry enables only observer, researcher, planner, tester, security-reviewer, and governance-reviewer. Arbitrary shell, credentials, remote mutation, finance, broad publication, deployment, and hidden autonomous loops remain disabled. Dissent and conflicting evidence are retained rather than silently collapsed.
+
+`GET /v1/omega/commands/:id/safety-boundary` reports a present capability declaration, policy string, authority string, worker lease, revocation record, or reconciliation note as `RECORDED`, not `VERIFIED`. Presence of the record is not independent verification. The execution row is outside this rule.
