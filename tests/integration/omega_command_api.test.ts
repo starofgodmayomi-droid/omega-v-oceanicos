@@ -300,6 +300,55 @@ describe('Ω∞v command API vertical slice', () => {
     assert.equal(body.boundary.reconciliation.status, 'NOT_EXECUTED');
   });
 
+  it('does not call a present capability, policy, authority, or lease verified', async () => {
+    const registered = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/workers/register',
+      payload: { workerId: 'planner', capabilities: ['EXECUTE'] },
+    });
+    assert.equal(registered.statusCode, 200);
+
+    const created = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/commands',
+      payload: {
+        intent: 'record the safety boundary without calling it verified',
+        requestedBy: 'integration-user',
+        workers: ['planner'],
+        idempotencyKey: 'safety-boundary-recorded-1',
+      },
+    });
+    assert.equal(created.statusCode, 201);
+    const commandId = created.json().command.commandId as string;
+
+    const approved = await app.inject({
+      method: 'POST',
+      url: `/v1/omega/commands/${commandId}/approve`,
+      payload: { operator: 'integration-operator', policy: 'human-review' },
+    });
+    assert.equal(approved.statusCode, 200);
+
+    const leased = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/workers/planner/lease',
+      payload: { commandId, capability: 'EXECUTE', durationMs: 60_000 },
+    });
+    assert.equal(leased.statusCode, 200);
+
+    const boundary = await app.inject({
+      method: 'GET',
+      url: `/v1/omega/commands/${commandId}/safety-boundary`,
+    });
+    assert.equal(boundary.statusCode, 200);
+    const body = boundary.json();
+    for (const row of ['capability', 'policy', 'authority', 'lease'] as const) {
+      assert.equal(body.boundary[row].status, 'RECORDED');
+      assert.match(body.boundary[row].evidence, /not independent verification/);
+    }
+    assert.equal(body.boundary.execution.status, 'NOT_EXECUTED');
+    assert.equal(JSON.stringify(body.boundary).includes('"VERIFIED"'), false);
+  });
+
   it('rate-limits repeated command-store reads', async () => {
     let response;
     for (let attempt = 0; attempt < 61; attempt += 1) {
