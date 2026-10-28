@@ -1,4 +1,4 @@
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyRequest } from 'fastify';
 import {
   buildOmegaCommand,
   buildOmegaWaterFlow,
@@ -14,6 +14,33 @@ import { OmegaDurableStore } from './omega-persistence.js';
 type StoredCommand = OmegaCommand & {
   readonly result?: OmegaCommandResult;
 };
+
+/** Server-supplied command admission evidence. Request bodies are not a source. */
+export interface OmegaCommandAdmissionEvidence {
+  readonly authorityVerified: boolean;
+  readonly policySatisfied: boolean;
+  readonly authority: string;
+  readonly policy: string;
+}
+
+export type OmegaCommandAdmissionEvidenceResolver = (
+  request: FastifyRequest,
+  command: OmegaCommand,
+) => OmegaCommandAdmissionEvidence | Promise<OmegaCommandAdmissionEvidence>;
+
+function commandAdmissionEvidence(value: unknown): OmegaCommandAdmissionEvidence | undefined {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
+  const record = value as Record<string, unknown>;
+  if (typeof record.authorityVerified !== 'boolean' || typeof record.policySatisfied !== 'boolean') return undefined;
+  if (typeof record.authority !== 'string' || record.authority.trim().length === 0) return undefined;
+  if (typeof record.policy !== 'string' || record.policy.trim().length === 0) return undefined;
+  return {
+    authorityVerified: record.authorityVerified,
+    policySatisfied: record.policySatisfied,
+    authority: record.authority.trim(),
+    policy: record.policy.trim(),
+  };
+}
 
 type CoordinationProbeClient = {
   registerWorker(workerId: string, capabilities: string[]): Promise<void>;
@@ -204,6 +231,7 @@ export function registerOmegaRoutes(
   fastify: FastifyInstance,
   store: OmegaCommandStore,
   enforceAdminOperatorIdentity?: (request: any, reply: any) => boolean,
+  resolveCommandAdmissionEvidence?: OmegaCommandAdmissionEvidenceResolver,
 ): void {
   let coordinationProbeInFlight = false;
 
@@ -461,10 +489,50 @@ export function registerOmegaRoutes(
     if (Object.prototype.hasOwnProperty.call(body, 'authorityVerified') || Object.prototype.hasOwnProperty.call(body, 'policySatisfied')) {
       return reply.status(400).send({ success: false, error: 'COMMAND_ADMISSION_EVIDENCE_NOT_ACCEPTED' });
     }
-    // No trusted server-side admission resolver is configured. A caller must
-    // not turn that absence into AUTHORIZED or into a durable DENIED record.
-    // Operator approval stays on /approve.
-    return reply.status(403).send({ success: false, error: 'COMMAND_ADMISSION_EVIDENCE_UNAVAILABLE' });
+    // Body authority/policy strings are not evidence. No resolver means no admission.
+    if (!resolveCommandAdmissionEvidence) {
+      return reply.status(403).send({ success: false, error: 'COMMAND_ADMISSION_EVIDENCE_UNAVAILABLE' });
+    }
+    let evidence: OmegaCommandAdmissionEvidence | undefined;
+    try {
+      evidence = commandAdmissionEvidence(await resolveCommandAdmissionEvidence(request, command));
+    } catch {
+      return reply.status(403).send({ success: false, error: 'COMMAND_ADMISSION_EVIDENCE_UNAVAILABLE' });
+    }
+    if (!evidence) {
+      return reply.status(403).send({ success: false, error: 'COMMAND_ADMISSION_EVIDENCE_UNAVAILABLE' });
+    }
+    if (!evidence.authorityVerified || !evidence.policySatisfied) {
+      return reply.status(403).send({ success: false, error: 'COMMAND_ADMISSION_DENIED' });
+    }
+    // Workers that start in REVIEW still need explicit /approve. Resolver evidence
+    // is not operator identity and must not authorize them.
+    if (command.status === 'REVIEW') {
+      const preserved = store.update(command, {
+        change: {
+          ...command.change,
+          authority: evidence.authority,
+          policy: evidence.policy,
+          decision: 'REVIEW',
+          authorized: false,
+        },
+      });
+      store.record('command.admission-review-preserved', preserved, { source: 'server-resolver' });
+      return {
+        success: true,
+        ...commandResult(preserved, 'explicit operator approval is still required; resolver evidence did not authorize this command'),
+      };
+    }
+    const admitted = resolveChangeAdmission(
+      { ...command.change, authority: evidence.authority, policy: evidence.policy },
+      { authorityVerified: true, policySatisfied: true },
+    );
+    if (!admitted.authorized || admitted.decision !== 'ALLOW') {
+      return reply.status(403).send({ success: false, error: 'COMMAND_ADMISSION_EVIDENCE_UNAVAILABLE' });
+    }
+    const updated = store.update(command, { change: admitted, status: 'AUTHORIZED' });
+    store.record('command.admitted', updated, { source: 'server-resolver' });
+    return { success: true, ...commandResult(updated, 'execute the authorized bounded action') };
   });
 
   fastify.post('/v1/omega/commands/:id/approve', async (request, reply) => {
