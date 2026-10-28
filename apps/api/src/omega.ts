@@ -650,11 +650,12 @@ export function registerOmegaRoutes(
       .listEvents(command.commandId)
       .filter((event) => event.type === 'command.reconciliation-noted');
 
-    const capabilityObserved =
+    const capabilityRecorded =
       workers.length === command.workers.length &&
       workers.every((worker) => worker.capabilities.length > 0);
-    const policyObserved = typeof command.change?.policy === 'string' && command.change.policy.length > 0;
-    const authorityObserved = typeof command.change?.authority === 'string' && command.change.authority.length > 0;
+    const policyRecorded = typeof command.change?.policy === 'string' && command.change.policy.length > 0;
+    const authorityRecorded = typeof command.change?.authority === 'string' && command.change.authority.length > 0;
+    const recordedNotVerified = 'recording is not independent verification';
 
     return {
       success: true,
@@ -662,27 +663,31 @@ export function registerOmegaRoutes(
       status: command.status,
       boundary: {
         capability: {
-          status: capabilityObserved ? 'VERIFIED' : 'UNKNOWN',
-          evidence: capabilityObserved
-            ? 'declared worker capabilities observed'
+          status: capabilityRecorded ? 'RECORDED' : 'UNKNOWN',
+          evidence: capabilityRecorded
+            ? `declared worker capabilities recorded; ${recordedNotVerified}`
             : 'one or more requested worker capabilities were not observed',
           workers,
         },
         policy: {
-          status: policyObserved ? 'VERIFIED' : 'UNKNOWN',
-          evidence: policyObserved ? 'admission policy evidence observed' : 'admission policy evidence unavailable',
+          status: policyRecorded ? 'RECORDED' : 'UNKNOWN',
+          evidence: policyRecorded
+            ? `admission policy string recorded; ${recordedNotVerified}`
+            : 'admission policy evidence unavailable',
           value: command.change?.policy ?? null,
         },
         authority: {
-          status: authorityObserved ? 'VERIFIED' : 'UNKNOWN',
-          evidence: authorityObserved
-            ? 'attributable authority evidence observed'
+          status: authorityRecorded ? 'RECORDED' : 'UNKNOWN',
+          evidence: authorityRecorded
+            ? `authority label recorded; ${recordedNotVerified}`
             : 'attributable authority evidence unavailable',
           value: command.change?.authority ?? null,
         },
         lease: {
-          status: activeLease ? 'VERIFIED' : 'NOT_EXECUTED',
-          evidence: activeLease ? 'active worker lease observed' : 'no active worker lease observed',
+          status: activeLease ? 'RECORDED' : 'NOT_EXECUTED',
+          evidence: activeLease
+            ? `active worker lease recorded; ${recordedNotVerified}`
+            : 'no active worker lease observed',
           value: activeLease,
         },
         execution: {
@@ -711,6 +716,7 @@ export function registerOmegaRoutes(
       },
       limitations: [
         'This endpoint reports repository-observed command evidence; it does not prove production deployment or external consequences.',
+        'A RECORDED capability, policy, authority, or lease means a local record is present. It is not independent verification.',
         'Absence of a lease or revocation is not proof that no external system holds one.',
         'Policy and authority evidence are records of the admitted command, not independent authorization proof.',
       ],
