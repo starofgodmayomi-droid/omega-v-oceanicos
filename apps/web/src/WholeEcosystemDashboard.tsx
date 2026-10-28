@@ -3,6 +3,7 @@ import { theme, humanStatus } from './oceanicosTheme';
 import { boundedStatus, statusCounts, STATUS_ORDER, summarizeLucidField, type RealityStatus } from './whole-ecosystem-dashboard-model';
 import { AgentSafetyBoundaryPanel } from './AgentSafetyBoundaryPanel';
 import { WorkerCoordinationPanel } from './WorkerCoordinationPanel';
+import { SingleBodyPanel } from './SingleBodyPanel';
 
 type Props = {
   streamConnected: boolean;
@@ -200,6 +201,8 @@ export function WholeEcosystemDashboard(props: Props) {
           <div className="whole-trust-boundary">DOCUMENTED ≠ VERIFIED<br />CAPABILITY ≠ AUTHORITY<br />PLAN ≠ EXECUTION</div>
         </aside>
       </div>
+
+      <SingleBodyPanel body={props.ecosystemBody} />
 
       <AgentSafetyBoundaryPanel
         capabilityObserved={props.ecosystemBody?.status === 'VERIFIED'}

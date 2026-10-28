@@ -6,7 +6,8 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { MAX_PROOF_OF_WORK_ATTEMPTS, RememberEngine } from '@oceanicos/remember';
-import { FileConnectorObservationStore, FileValueNavigatorStore, MiniKernel } from '@oceanicos/mini';
+import { FileConnectorObservationStore, FileValueNavigatorStore, MiniKernel, compressSingleBody, expandSingleBody } from '@oceanicos/mini';
+import type { SingleBodyEntry } from '@oceanicos/mini';
 import { AsymmetricValidationGuard, DeclarativeVerificationEngine, MultiRegionMeshConvergence } from '@oceanicos/verification';
 import { ObserverEngine } from '@oceanicos/observer';
 import { AttestationService } from '@oceanicos/attestation';
@@ -336,6 +337,17 @@ export function createApp(
     const ledgerIntact = ledgerMemory.verifyIntegrity();
     const capability = platformKernel.getCapabilitySnapshot();
     const bodyStatus = receipt.status === 'VERIFIED' && ledgerIntact && mesh.quorumReached ? 'VERIFIED' : receipt.status;
+    const bodyEntries: SingleBodyEntry[] = [
+      { id: 'sensory', name: 'Sensory runtime', source: 'observer-runtime', status: 'OBSERVED', layer: 'reality', organ: 'sense', form: 'runtime', evidence: 'SUPPORTED' },
+      { id: 'verification', name: 'Verification receipt', source: 'declarative-verification', status: receipt.status, layer: 'evidence', organ: 'verify', form: 'runtime', evidence: receipt.status === 'VERIFIED' ? 'VERIFIED' : 'UNVERIFIED' },
+      { id: 'memory', name: 'Append-only ledger', source: 'remember-engine', status: ledgerIntact ? 'INTEGRITY_VERIFIED' : 'DIVERGENT', layer: 'evidence', organ: 'remember', form: 'runtime', evidence: ledgerIntact ? 'VERIFIED' : 'UNVERIFIED' },
+      { id: 'mesh', name: 'Multi-region convergence', source: 'mesh-convergence', status: mesh.effectiveStatus, layer: 'system', organ: 'verify', form: 'runtime', evidence: mesh.quorumReached ? 'VERIFIED' : 'UNVERIFIED' },
+      { id: 'kernel', name: 'Platform capability boundary', source: 'kernel-capability-snapshot', status: 'READY', layer: 'authority', organ: 'express', form: 'contract', evidence: 'SUPPORTED' },
+      { id: 'governance', name: 'Human authorization gate', source: 'kernel-governance', status: capability.humanAuthorizationRequired ? 'HUMAN_GATE_REQUIRED' : 'BOUNDED', layer: 'authority', organ: 'verify', form: 'boundary', evidence: 'SUPPORTED' },
+      { id: 'interface', name: 'Public interface', source: 'api-web-cli-sdk', status: 'READY', layer: 'system', organ: 'express', form: 'runtime', evidence: 'SUPPORTED' },
+    ];
+    const compression = compressSingleBody(bodyEntries);
+    const expansion = compression.status === 'COMPRESSED' ? expandSingleBody(compression.body) : null;
     return {
       success: true,
       bodyVersion: 'omega.fullstack.body.v1',
@@ -356,6 +368,41 @@ export function createApp(
         bounded: true,
         moduleInvariant: 'observe → verify → remember → govern → present',
       },
+      compression: compression.status === 'COMPRESSED'
+        ? {
+            space: compression.body.space,
+            projection: 'body.layers.v1',
+            projectionBoundary: 'coordinates are a declared projection of each runtime layer, not inferred truth',
+            count: compression.body.count,
+            filled: compression.body.filled,
+            empty: compression.body.empty,
+            digest: compression.body.digest,
+            cells: compression.body.cells.map((cell) => ({
+              address: cell.address,
+              key: cell.key,
+              digest: cell.digest,
+              entries: cell.entries,
+            })),
+            expansion: expansion && expansion.status === 'EXPANDED'
+              ? { status: 'VERIFIED', entries: expansion.entries.length, digestMatches: true, lossless: true, evidence: expansion.evidence }
+              : { status: 'INVALID', entries: 0, digestMatches: false, lossless: false, evidence: 'LOCAL_ROUND_TRIP_ONLY', issues: expansion?.issues ?? [] },
+          }
+        : { status: 'INVALID', issues: compression.issues },
+    };
+  });
+  fastify.post('/v1/ecosystem/body/expand', { preHandler: requireReadAccess }, async (request: any, reply) => {
+    const body = request.body && typeof request.body === 'object' && !Array.isArray(request.body) ? request.body as Record<string, unknown> : {};
+    const expanded = expandSingleBody(body.compression ?? body);
+    if (expanded.status !== 'EXPANDED') {
+      return reply.status(400).send({ success: false, status: 'INVALID', issues: expanded.issues });
+    }
+    return {
+      success: true,
+      status: 'EXPANDED',
+      entries: expanded.entries,
+      digest: expanded.bodyDigest,
+      digestMatches: expanded.digestMatches,
+      evidence: expanded.evidence,
     };
   });
   fastify.get('/v1/mood', async () => ({ success: true, status: 'MAX GOOD-O', contract: 'Ω∞v totality / attest-dont-assert', brand: 'Oceanicos Ω∞', ledger: { ready: Boolean(ledgerMemory.getTip()) }, evaluatedAt: new Date().toISOString() }));
