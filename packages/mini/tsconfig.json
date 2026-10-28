@@ -27,6 +27,7 @@
     "src/connector-observation.ts",
     "src/connector-observation-journal.ts",
     "src/github-public-repository.ts",
-    "src/total-compress.ts"
+    "src/total-compress.ts",
+    "src/single-body.ts"
   ]
 }
