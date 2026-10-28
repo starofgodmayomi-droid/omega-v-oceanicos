@@ -83,15 +83,15 @@ jobs:
         shell: bash
         run: |
           {
-            echo '### 💧 Ω∞v bounded worker evidence'
-            echo ''
-            echo "- Commit: \\`${GITHUB_SHA}\\`"
-            echo '- Runtime: Node 22.x on ubuntu-latest'
-            echo "- Cycles: \\`${OMEGA_WORKER_CYCLES}\\`"
-            echo "- Interval: \\`${OMEGA_WORKER_INTERVAL_MS}ms\\`"
-            echo '- External action: OFF'
-            echo '- Git write: OFF'
-            echo "- Job result: \\`${{ job.status }}\\`"
-            echo '- Artifact: bounded worker logs retained for 14 days'
-            echo '- Non-claim: this is GitHub Actions evidence, not runtime health, fleet health, or production deployment proof'
+            printf '%s\n' '### 💧 Ω∞v bounded worker evidence'
+            printf '\n'
+            printf -- '- Commit: `%s`\n' "$GITHUB_SHA"
+            printf '%s\n' '- Runtime: Node 22.x on ubuntu-latest'
+            printf -- '- Cycles: `%s`\n' "$OMEGA_WORKER_CYCLES"
+            printf -- '- Interval: `%sms`\n' "$OMEGA_WORKER_INTERVAL_MS"
+            printf '%s\n' '- External action: OFF'
+            printf '%s\n' '- Git write: OFF'
+            printf -- '- Job result: `%s`\n' "${{ job.status }}"
+            printf '%s\n' '- Artifact: bounded worker logs retained for 14 days'
+            printf '%s\n' '- Non-claim: this is GitHub Actions evidence, not runtime health, fleet health, or production deployment proof'
           } >> "$GITHUB_STEP_SUMMARY"

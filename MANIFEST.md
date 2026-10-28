@@ -57,6 +57,14 @@ Architecture begins at **ZERO**, becomes **MINI**, and expands only when reality
 
 See [docs/MINI.md](docs/MINI.md).
 
+### IMAGIN — evidence-bound visual layer
+
+IMAGIN is a cross-cutting renderer for scoped signals and creative briefs, not a new authority, source of truth, or thirteenth canonical organ. The web renderer displays only signals supplied by its current view, preserves their bounded status and source, and labels connectors as visual anchors rather than causal graph edges.
+
+Actual image generation is a separate capability: it requires a configured provider, explicit authorization, and an observable artifact receipt. This dashboard map does not execute image generation. If provider capability is not observed, record UNKNOWN; without an artifact receipt, generation remains NOT_EXECUTED.
+
+See [docs/IMAGIN-VISUAL-CONTRACT.md](docs/IMAGIN-VISUAL-CONTRACT.md).
+
 ### Growth law
 
 ```text
