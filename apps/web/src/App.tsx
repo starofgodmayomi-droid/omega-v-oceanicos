@@ -589,12 +589,7 @@ export function App() {
                   </span>
                 ))}
               </div>
-              <small>
-                {ecosystemBody.expansion?.moduleInvariant} · read-only · bounded · append-only
-                {ecosystemBody.compression?.space
-                  ? ` · ${ecosystemBody.compression.space.notation} ${ecosystemBody.compression.filled}/${ecosystemBody.compression.space.capacity} · round-trip ${ecosystemBody.compression.expansion?.status}`
-                  : ''}
-              </small>
+              <small>{ecosystemBody.expansion?.moduleInvariant} · read-only · bounded · append-only</small>
             </section>
           )}
           <EcosystemPanel />
