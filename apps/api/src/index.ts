@@ -481,6 +481,14 @@ export function createApp(
     reply.raw.setHeader('Content-Type', 'text/event-stream');
     reply.raw.setHeader('Cache-Control', 'no-cache');
     reply.raw.setHeader('Connection', 'keep-alive');
+    // flushHeaders() commits the raw response before Fastify applies its own header map,
+    // so the CORS headers @fastify/cors decided in onRequest would be dropped and a
+    // browser EventSource fails with "No 'Access-Control-Allow-Origin' header is present".
+    // Copy the ones the plugin already resolved onto the raw response before flushing.
+    for (const header of ['access-control-allow-origin', 'access-control-allow-credentials', 'access-control-expose-headers', 'vary']) {
+      const value = reply.getHeader(header);
+      if (value !== undefined) reply.raw.setHeader(header, value);
+    }
     reply.raw.flushHeaders();
     let listener: (block: any) => boolean;
     const close = () => streamClients.delete(listener);
