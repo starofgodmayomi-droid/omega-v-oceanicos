@@ -116,4 +116,59 @@ describe('Invisible Online Computer', () => {
     expect(screen.queryByText('ELION OUTPUT')).not.toBeInTheDocument();
     expect(within(screen.getByRole('status')).getByText(/EVIDENCE none/)).toBeInTheDocument();
   });
+
+  it('explains a missing model provider instead of implying the computer broke', async () => {
+    installFetch({
+      '/api/execute': () =>
+        json({
+          success: true,
+          status: 'UNKNOWN',
+          intent: 'summarise why verification matters',
+          response: null,
+          evidenceHash: null,
+          reason: 'LLM_NOT_CONFIGURED',
+          steps: [
+            {
+              actor: 'KAI',
+              step: 'OBSERVE',
+              status: 'VERIFIED',
+              detail: 'no known scam pattern matched — screening completed, safety not certified',
+            },
+            {
+              actor: 'ELION',
+              step: 'EXECUTE',
+              status: 'UNKNOWN',
+              detail: 'no response produced (LLM_NOT_CONFIGURED)',
+            },
+          ],
+          memory: { id: 'kai-2', timestamp: '2026-10-28T00:00:00.000Z', status: 'UNKNOWN' },
+          contract: {
+            id: 'ir-2',
+            scope: 'intent.execute',
+            authorityLimit: 'READ_ONLY',
+            expectedOutcome: 'produce a response; none was produced, so nothing is claimed',
+          },
+          authorityLimit: 'READ_ONLY',
+          provider: null,
+          timestamp: '2026-10-28T00:00:00.000Z',
+        }),
+    });
+    const user = userEvent.setup();
+    render(<InvisibleComputer />);
+
+    await user.type(
+      screen.getByPlaceholderText(/Speak an intent/i),
+      'summarise why verification matters'
+    );
+    await user.click(screen.getByRole('button', { name: /MAKE IT REAL/i }));
+
+    await waitFor(
+      () => expect(within(screen.getByRole('status')).getByText('UNKNOWN')).toBeInTheDocument(),
+      { timeout: 5000 }
+    );
+
+    expect(screen.getByRole('note')).toHaveTextContent(/No model provider is configured/i);
+    expect(screen.getByText(/no response produced \(LLM_NOT_CONFIGURED\)/)).toBeInTheDocument();
+    expect(screen.queryByText('ELION OUTPUT')).not.toBeInTheDocument();
+  });
 });

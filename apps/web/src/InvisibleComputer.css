@@ -243,6 +243,23 @@
   line-height: 1.6;
 }
 
+.ic-notice {
+  margin: 18px 0 0;
+  padding: 12px 16px;
+  border: 1px solid rgba(233, 180, 76, 0.34);
+  border-radius: 12px;
+  background: rgba(233, 180, 76, 0.07);
+  color: var(--ic-foam);
+  font-family: 'DM Mono', 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.ic-notice strong {
+  color: var(--ic-gold);
+  font-weight: 600;
+}
+
 .ic-terminal {
   margin-top: 28px;
   border: 1px solid rgba(34, 211, 238, 0.16);

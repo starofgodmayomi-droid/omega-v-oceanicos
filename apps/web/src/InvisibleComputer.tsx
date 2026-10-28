@@ -141,6 +141,8 @@ export function InvisibleComputer() {
     }
   };
 
+  const providerMissing = result?.status === 'UNKNOWN' && result.reason === 'LLM_NOT_CONFIGURED';
+
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
@@ -206,6 +208,15 @@ export function InvisibleComputer() {
         {error && (
           <p className="ic-error" role="alert">
             {error}
+          </p>
+        )}
+
+        {providerMissing && (
+          <p className="ic-notice" role="note">
+            <strong>No model provider is configured.</strong> ELION had nothing to execute with, so
+            this intent is recorded as UNKNOWN and no evidence hash is issued. Add
+            ANTHROPIC_API_KEY or OPENAI_API_KEY to the app&apos;s secrets to enable execution —
+            verification stays this strict either way.
           </p>
         )}
 

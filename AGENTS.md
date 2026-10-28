@@ -44,6 +44,8 @@ docker compose -f docker-compose.base44.yml up -d
 - API: `POST /execute` (`apps/api/src/computer-route.ts`) runs KAI observe → ELION execute → OMEGA verify. The browser calls `/api/execute` through the Vite proxy (or `${VITE_API_URL}/execute` when set).
 - Memory: `apps/api/src/kai-memory.ts` owns SQLite tables `KaiMemory` and `OmegaIR` in `kai-memory.db` beside `OMEGA_DB_PATH`. Every outcome writes one row to each table; contracts are always `READ_ONLY` because the route performs no external action.
 - LLM: `ANTHROPIC_API_KEY` (preferred) or `OPENAI_API_KEY`; optional `OMEGA_LLM_PROVIDER`, `OMEGA_LLM_MODEL`, `OMEGA_LLM_TIMEOUT_MS`. With no credential the route correctly returns `UNKNOWN` — do not "fix" that into a fabricated VERIFIED.
+- No-credential UI state: both keys are optional (`requiredAtBoot: false`), so the stack boots fine without them. When `/execute` answers `UNKNOWN` with `reason: LLM_NOT_CONFIGURED`, `InvisibleComputer.tsx` renders an `ic-notice` telling the user which secret to add; the DIVERGENT screening path still works with no provider. Verified 2026-10-28 with both keys absent (`docker compose … exec -T api` showed both missing).
+- KaiMemory is an append-only audit ledger with no delete route; every `/execute` call (including endpoint smoke tests) leaves a permanent row in `data/kai-memory.db`.
 - Verification: `tests/integration/computer-execute.integration.test.ts` injects a fake completion through `createApp(..., { computerExecute })` and asserts VERIFIED/DIVERGENT/UNKNOWN plus persisted hashes; `apps/web/src/__tests__/dom/InvisibleComputer.test.tsx` drives the UI.
 
 ## No external credentials needed
