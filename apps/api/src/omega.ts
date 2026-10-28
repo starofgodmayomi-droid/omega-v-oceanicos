@@ -629,8 +629,21 @@ export function registerOmegaRoutes(
   fastify.post('/v1/omega/commands/:id/verify-reality', async (request, reply) => {
     const command = store.get((request.params as { id?: string }).id ?? '');
     if (!command) return reply.status(404).send({ success: false, error: 'OMEGA_COMMAND_NOT_FOUND' });
-    if (!command.result?.reality) return reply.status(409).send({ success: false, error: 'OMEGA_REALITY_OBSERVATION_REQUIRED' });
-    return { success: true, ...commandResult(command, command.result.nextAction) };
+    const body = bodyOf(request);
+    if (['verified', 'classification', 'observedState', 'independentObservation', 'comparison', 'observationSource'].some((field) => Object.prototype.hasOwnProperty.call(body, field))) {
+      return reply.status(400).send({ success: false, error: 'REALITY_VERIFICATION_CLAIM_NOT_ACCEPTED' });
+    }
+    const reality = command.result?.reality;
+    if (!reality) return reply.status(409).send({ success: false, error: 'OMEGA_REALITY_OBSERVATION_REQUIRED' });
+    const independentlyVerified = command.status === 'VERIFIED' && reality.classification === 'VERIFIED' && reality.independentObservation !== false;
+    if (!independentlyVerified) {
+      return reply.status(409).send({
+        success: false,
+        error: 'COMMAND_REALITY_NOT_INDEPENDENTLY_VERIFIED',
+        ...commandResult(command, command.result?.nextAction ?? 'an independent observation is required before reality can be verified'),
+      });
+    }
+    return { success: true, ...commandResult(command, command.result?.nextAction ?? 'record what was learned and select the next bounded change') };
   });
 
   fastify.get('/v1/omega/commands/:id/safety-boundary', {

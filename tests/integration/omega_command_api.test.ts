@@ -217,6 +217,22 @@ describe('Ω∞v command API vertical slice', () => {
     assert.match(observed.json().nextAction, /not independent verification/);
     assert.doesNotMatch(observed.json().command.change.consequence, /reality verified/);
 
+    const claimedVerification = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/commands/omega-api-slice-1/verify-reality',
+      payload: { verified: true, classification: 'VERIFIED' },
+    });
+    assert.equal(claimedVerification.statusCode, 400);
+    assert.equal(claimedVerification.json().error, 'REALITY_VERIFICATION_CLAIM_NOT_ACCEPTED');
+
+    const verified = await app.inject({ method: 'POST', url: '/v1/omega/commands/omega-api-slice-1/verify-reality', payload: {} });
+    assert.equal(verified.statusCode, 409);
+    assert.equal(verified.json().success, false);
+    assert.equal(verified.json().error, 'COMMAND_REALITY_NOT_INDEPENDENTLY_VERIFIED');
+    assert.equal(verified.json().command.status, 'UNKNOWN');
+    assert.equal(verified.json().reality.comparison, 'MATCH');
+    assert.equal(verified.json().reality.independentObservation, false);
+
     const events = await app.inject({ method: 'GET', url: '/v1/omega/events?commandId=omega-api-slice-1' });
     assert.equal(events.statusCode, 200);
     assert.equal(events.json().redacted, true);
