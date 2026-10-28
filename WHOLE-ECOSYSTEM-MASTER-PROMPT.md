@@ -862,6 +862,27 @@ The matrix is a design/engineering model, not a scientific assertion about all p
 
 # 22. ONE UI
 
+### Unified conversational front view — 2026-10-22
+
+The front view is the single conversational entry to the body, not a second execution engine.
+
+```text
+ONE CONVERSATION → INTENT → RELEVANT CONTEXT → BOUNDED PLAN
+→ AUTHORITY / POLICY → EXECUTION RECEIPT → OBSERVATION
+→ RECONCILIATION → VERIFICATION → MEMORY → MEASURED VALUE
+```
+
+The visible surface MUST lead with one natural-language composer; provide purposeful starters; and let users explore AI SOUL, MIRRIO, KAI, ƆREADE, TRUTHOS, ECHOFRAME, OCEANICOS, ΩIR, Ω∞v, workers, GitHub, Notion, and Composio without treating names as proof of availability.
+
+Organ selection and suggested prompts MUST draft only. Submission MUST reuse the existing OMEGA command/lifecycle contract. The UI must show actual request state, authority boundaries, source, provenance, evidence, and uncertainty when supplied.
+
+Use PROPOSED, AUTHORIZED, RUNNING, SUCCEEDED, VERIFIED, DIVERGENT, FAILED, UNKNOWN, and NOT_EXECUTED only when supported. Unknown values normalize to UNKNOWN, never VERIFIED. Stream connectivity is connectivity only; simulation is not live execution; a successful proposal request is not proof of downstream effect; local ledger checks apply only to that ledger.
+
+Use progressive disclosure: conversation is the front door, while lifecycle, evidence, provenance, system, connectors, and value panels remain available. Avoid invented task totals, integration health, uptime, revenue, universal scanning, or fabricated assistant replies. Maintain keyboard access, visible focus, semantic labels, responsive layout, and reduced-motion preferences.
+
+The UI mirrors both known and unknown state. It cannot grant authority or make a backend capability real by displaying it. A true general-purpose conversational model/session service is a separate feature requiring an explicit runtime, privacy/memory policy, cost boundary, authorization model, tests, and evidence contract.
+
+
 ```text
 ONE UI = HOW REALITY IS EXPERIENCED
 ```

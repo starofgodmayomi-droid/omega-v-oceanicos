@@ -208,6 +208,19 @@ export const agreedDissensus = () => ({
 
 export function installFetch(overrides: RouteOverrides = {}): jest.Mock {
   const defaults: RouteOverrides = {
+    '/api/v1/ecosystem/status': () => json({
+      success: true,
+      contract: { name: 'omega-v-oceanicos', schemaVersion: '1', evaluatedAt: '2026-10-23T00:00:00.000Z' },
+      layers: [{
+        layer: 'Reality Observation', capabilities: ['observe'], evidenceStatus: 'SUPPORTED',
+        source: 'test fixture', scope: 'local-runtime', policy: 'read-only inspection', provenance: 'test'
+      }, {
+        layer: 'Distribution & Deployment', capabilities: ['deploy'], evidenceStatus: 'UNKNOWN',
+        source: 'no deployment target observed', scope: 'not-executed', policy: 'bounded authority required', provenance: 'none observed'
+      }],
+      governance: { authMode: 'local', humanAuthorizationRequired: true, failClosed: true, status: 'SUPPORTED' },
+      oneBody: { scope: 'local-runtime', limitations: ['does not prove deployment or external service availability'] }
+    }),
     '/api/health': () =>
       json({
         data: {
