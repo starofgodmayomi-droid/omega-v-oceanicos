@@ -94,6 +94,7 @@ export function App() {
   const [kernelCapabilities, setKernelCapabilities] = useState<KernelCapabilitySnapshot | null>(null);
   const [kernelCapabilitiesError, setKernelCapabilitiesError] = useState<string | null>(null);
   const [omegaIntent, setOmegaIntent] = useState('');
+  const [omegaObservedState, setOmegaObservedState] = useState('');
   const [omegaCommand, setOmegaCommand] = useState<any>(null);
   const [omegaLoading, setOmegaLoading] = useState(false);
 
@@ -293,7 +294,7 @@ export function App() {
   };
 
   const observeOmegaReality = async () => {
-    if (!omegaCommand?.command?.commandId) return;
+    if (!omegaCommand?.command?.commandId || !omegaObservedState.trim()) return;
     setOmegaLoading(true);
     try {
       const data = await apiRequest<any>(
@@ -302,8 +303,7 @@ export function App() {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({
-            observedState:
-              omegaCommand.command.change.stateAfter ?? tip?.hash ?? 'unknown',
+            observedState: omegaObservedState.trim(),
           }),
         }
       );
@@ -882,6 +882,8 @@ export function App() {
           onApprove={approveOmegaCommand}
           onExecute={executeOmegaCommand}
           onObserve={observeOmegaReality}
+          observedState={omegaObservedState}
+          onObservedStateChange={setOmegaObservedState}
           onViewEvidence={() => setOpenStageId('evidence')}
           onViewTimeline={() => setOpenStageId('remember')}
           onDismiss={dismissCommand}

@@ -587,9 +587,33 @@ export function registerOmegaRoutes(
     if (typeof body.observedState !== 'string' || body.observedState.length > 512) return reply.status(400).send({ success: false, error: 'OBSERVED_STATE_REQUIRED' });
     const execution = { status: 'EXECUTED' as const, record: command.change, attestationId: command.change.attestationId };
     const verification = verifyExecutedReality(execution, () => body.observedState as string);
-    const status: OmegaCommandStatus = verification.status === 'VERIFIED' ? 'VERIFIED' : verification.status === 'DIVERGENT' ? 'DIVERGENT' : 'UNKNOWN';
-    const reality = { kind: 'supplied-state' as const, observedState: verification.observedState ?? body.observedState as string, evidence: verification.evidence, observedAt: new Date().toISOString(), classification: verification.status === 'VERIFIED' ? 'VERIFIED' as const : verification.status === 'DIVERGENT' ? 'DIVERGENT' as const : 'UNKNOWN' as const };
-    const updated = store.update(command, { change: verification.record, status, result: { command, status, waterFlow: commandWaterFlow(command), ...(command.result?.execution ? { execution: command.result.execution } : {}), reality, nextAction: status === 'VERIFIED' ? 'record what was learned and select the next bounded change' : 'review divergence before selecting the next change' } });
+    // The HTTP body is the caller. Agreement with the executor's own stateAfter
+    // is a comparison, not an independent observation, so it cannot become VERIFIED.
+    const callerMatchedRecord = verification.status === 'VERIFIED';
+    const status: OmegaCommandStatus = verification.status === 'DIVERGENT' ? 'DIVERGENT' : 'UNKNOWN';
+    const comparison = callerMatchedRecord ? 'MATCH' as const : verification.status === 'DIVERGENT' ? 'DIVERGENT' as const : 'UNAVAILABLE' as const;
+    const change = callerMatchedRecord
+      ? {
+          ...verification.record,
+          consequence: `${command.change.consequence ?? 'transition executed'}; caller-supplied comparison matched the executor record; not independently verified`,
+        }
+      : verification.record;
+    const nextAction = callerMatchedRecord
+      ? 'caller-supplied state matched the executor record; this is a comparison, not independent verification'
+      : verification.status === 'DIVERGENT'
+        ? 'review divergence before selecting the next change'
+        : 'observation did not verify reality; gather an independent observation before another claim';
+    const reality = {
+      kind: 'supplied-state' as const,
+      observedState: verification.observedState ?? (body.observedState as string),
+      evidence: verification.evidence,
+      observedAt: new Date().toISOString(),
+      classification: status,
+      comparison,
+      observationSource: 'caller-supplied' as const,
+      independentObservation: false as const,
+    };
+    const updated = store.update(command, { change, status, result: { command, status, waterFlow: commandWaterFlow(command), ...(command.result?.execution ? { execution: command.result.execution } : {}), reality, nextAction } });
     store.record('command.reality-observed', updated, { classification: reality.classification });
     return { success: true, ...commandResult(updated, updated.result?.nextAction ?? 'review the observed result') };
   });
@@ -626,8 +650,21 @@ export function registerOmegaRoutes(
   fastify.post('/v1/omega/commands/:id/verify-reality', async (request, reply) => {
     const command = store.get((request.params as { id?: string }).id ?? '');
     if (!command) return reply.status(404).send({ success: false, error: 'OMEGA_COMMAND_NOT_FOUND' });
-    if (!command.result?.reality) return reply.status(409).send({ success: false, error: 'OMEGA_REALITY_OBSERVATION_REQUIRED' });
-    return { success: true, ...commandResult(command, command.result.nextAction) };
+    const body = bodyOf(request);
+    if (['verified', 'classification', 'observedState', 'independentObservation', 'comparison', 'observationSource'].some((field) => Object.prototype.hasOwnProperty.call(body, field))) {
+      return reply.status(400).send({ success: false, error: 'REALITY_VERIFICATION_CLAIM_NOT_ACCEPTED' });
+    }
+    const reality = command.result?.reality;
+    if (!reality) return reply.status(409).send({ success: false, error: 'OMEGA_REALITY_OBSERVATION_REQUIRED' });
+    const independentlyVerified = command.status === 'VERIFIED' && reality.classification === 'VERIFIED' && reality.independentObservation !== false;
+    if (!independentlyVerified) {
+      return reply.status(409).send({
+        success: false,
+        error: 'COMMAND_REALITY_NOT_INDEPENDENTLY_VERIFIED',
+        ...commandResult(command, command.result?.nextAction ?? 'an independent observation is required before reality can be verified'),
+      });
+    }
+    return { success: true, ...commandResult(command, command.result?.nextAction ?? 'record what was learned and select the next bounded change') };
   });
 
   fastify.get('/v1/omega/commands/:id/safety-boundary', {

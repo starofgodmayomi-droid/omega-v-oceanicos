@@ -125,8 +125,10 @@ test('mood Codex proposal enters the ledger as PROPOSED and never executes', asy
       payload: { observedState: 'bounded-local-action-complete' },
     });
     assert.equal(observed.statusCode, 200);
-    assert.equal(observed.json().command.status, 'VERIFIED');
-    assert.equal(observed.json().command.result.reality.classification, 'VERIFIED');
+    assert.equal(observed.json().command.status, 'UNKNOWN');
+    assert.equal(observed.json().command.result.reality.classification, 'UNKNOWN');
+    assert.equal(observed.json().command.result.reality.comparison, 'MATCH');
+    assert.equal(observed.json().command.result.reality.independentObservation, false);
   } finally {
     await app.close();
     rmSync(dir, { recursive: true, force: true });
