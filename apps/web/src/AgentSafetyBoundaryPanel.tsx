@@ -2,7 +2,7 @@ import React from 'react';
 import { boundedStatus, type RealityStatus } from './whole-ecosystem-dashboard-model';
 import { humanStatus, theme } from './oceanicosTheme';
 
-type SafetyStatus = RealityStatus;
+type SafetyStatus = RealityStatus | 'RECORDED';
 
 type SafetyControl = {
   label: string;
@@ -26,7 +26,12 @@ const STATUS_COLOR: Record<SafetyStatus, string> = {
   UNKNOWN: theme.unknown,
   DIVERGENT: theme.divergent,
   NOT_EXECUTED: theme.warning,
+  RECORDED: theme.warning,
 };
+
+function safetyLabel(status: SafetyStatus): string {
+  return status === 'RECORDED' ? 'Recorded' : humanStatus(status);
+}
 
 function yesNoStatus(value: boolean, fallback: SafetyStatus = 'UNKNOWN'): SafetyStatus {
   return value ? 'VERIFIED' : fallback;
@@ -56,8 +61,10 @@ export function AgentSafetyBoundaryPanel(props: Props) {
     },
     {
       label: 'Execution',
-      status: yesNoStatus(props.executed, 'NOT_EXECUTED'),
-      evidence: props.executed ? 'execution result observed' : 'no execution observed',
+      status: props.executed ? 'RECORDED' : 'NOT_EXECUTED',
+      evidence: props.executed
+        ? 'execution result observed; recording is not independent verification'
+        : 'no execution observed',
     },
     {
       label: 'Observation',
@@ -95,7 +102,7 @@ export function AgentSafetyBoundaryPanel(props: Props) {
           <div className="agent-safety-control" key={control.label}>
             <div className="agent-safety-control-top">
               <span>{control.label}</span>
-              <b style={{ color: STATUS_COLOR[control.status] }}>{humanStatus(control.status)}</b>
+              <b style={{ color: STATUS_COLOR[control.status] }}>{safetyLabel(control.status)}</b>
             </div>
             <small>{control.evidence}</small>
           </div>

@@ -665,8 +665,12 @@ export function registerOmegaRoutes(
           value: activeLease,
         },
         execution: {
-          status: command.result?.execution ? 'VERIFIED' : 'NOT_EXECUTED',
-          evidence: command.result?.execution ? 'execution result observed' : 'no execution result recorded',
+          // A stored handler result is a record of execution, not an independent
+          // observation. RECORDED must not be read as VERIFIED.
+          status: command.result?.execution ? 'RECORDED' : 'NOT_EXECUTED',
+          evidence: command.result?.execution
+            ? 'execution result observed; recording is not independent verification'
+            : 'no execution result recorded',
         },
         observation: {
           status:
