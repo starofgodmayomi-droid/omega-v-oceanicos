@@ -1,5 +1,5 @@
 import * as crypto from 'crypto';
-import { Attestation } from '@omega-v/types';
+import { Attestation } from '@oceanicos/types';
 
 export interface AuditPathStep {
   position: 'left' | 'right';

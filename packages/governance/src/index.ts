@@ -1,4 +1,4 @@
-import { GovernanceRule, GovernanceDecision, GovernanceAction } from '@omega-v/types';
+import { GovernanceRule, GovernanceDecision, GovernanceAction } from '@oceanicos/types';
 
 /**
  * Governance Engine: Implements Section XXIX (Governance)

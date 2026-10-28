@@ -1,5 +1,5 @@
 import { Remember } from '../index';
-import { Observation, VerificationResult } from '@omega-v/types';
+import { Observation, VerificationResult } from '@oceanicos/types';
 
 function makeObservation(id: string, claim: string): Observation {
   return {

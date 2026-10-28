@@ -5,7 +5,7 @@ import {
   MissingSigningKeyError,
   verifyEd25519,
 } from '../index';
-import { Attestation, VerificationResult } from '@omega-v/types';
+import { Attestation, VerificationResult } from '@oceanicos/types';
 
 const verificationResult: VerificationResult = {
   id: 'ver-test-1',

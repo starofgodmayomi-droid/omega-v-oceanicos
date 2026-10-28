@@ -1,4 +1,4 @@
-import { EvidenceArtifact, VerificationResult, EventLogEntry } from '@omega-v/types';
+import { EvidenceArtifact, VerificationResult, EventLogEntry } from '@oceanicos/types';
 import * as crypto from 'crypto';
 
 /**

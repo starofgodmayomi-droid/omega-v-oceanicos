@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { generateKeyPairSync, verify as nodeVerify } from 'node:crypto';
 import { AttestationService } from '@omega-v/attestation';
-import { VerificationResult } from '@omega-v/types';
+import { VerificationResult } from '@oceanicos/types';
 
 /**
  * The specification is a promise to people outside this repository. A

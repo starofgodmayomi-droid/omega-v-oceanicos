@@ -1,5 +1,5 @@
 import { MiniKernel } from '../index';
-import { VerificationRule } from '@omega-v/types';
+import { VerificationRule } from '@oceanicos/types';
 
 const DEFAULT_RULE: VerificationRule = {
   name: 'response-time-threshold',

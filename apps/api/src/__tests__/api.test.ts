@@ -11,7 +11,7 @@ import {
   operatorIdentityAllowed,
   parseAuditQuery,
 } from '../index';
-import { Attestation } from '@omega-v/types';
+import { Attestation } from '@oceanicos/types';
 import {
   appendEvent,
   loadSnapshot,

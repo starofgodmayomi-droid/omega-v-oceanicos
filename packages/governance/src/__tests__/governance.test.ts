@@ -1,5 +1,5 @@
 import { GovernanceEngine } from '../index';
-import { GovernanceRule } from '@omega-v/types';
+import { GovernanceRule } from '@oceanicos/types';
 
 describe('GovernanceEngine (Section XXIX Governance)', () => {
   let engine: GovernanceEngine;

@@ -2,7 +2,7 @@ import { OceanicosClient } from '@omega-v/sdk';
 import { VerificationEngine } from '@omega-v/verification';
 import { AttestationService } from '@omega-v/attestation';
 import { ProvenanceStore } from '@omega-v/store';
-import { Observation, VerificationResult } from '@omega-v/types';
+import { Observation, VerificationResult } from '@oceanicos/types';
 
 export interface LatencyQuantiles {
   minMs: number;

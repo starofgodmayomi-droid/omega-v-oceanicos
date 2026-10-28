@@ -17,6 +17,7 @@ packages:
   - 'packages/webhook'
   - 'packages/worker'
   - 'packages/pipeline'
+  - 'packages/evidence'
   - 'apps/api'
   - 'apps/web'
 

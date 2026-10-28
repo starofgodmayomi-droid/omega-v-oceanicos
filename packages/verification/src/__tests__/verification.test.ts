@@ -1,5 +1,5 @@
 import { VerificationEngine } from '../index';
-import { Observation, VerificationRule } from '@omega-v/types';
+import { Observation, VerificationRule } from '@oceanicos/types';
 
 const rule = (over: Partial<VerificationRule> = {}): VerificationRule => ({
   name: 'status-code-check',

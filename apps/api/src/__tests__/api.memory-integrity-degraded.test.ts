@@ -3,7 +3,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import Remember, { FileMemoryStore } from '@omega-v/remember';
-import { Observation, VerificationResult } from '@omega-v/types';
+import { Observation, VerificationResult } from '@oceanicos/types';
 
 type ApiApp = { app: import('express').Express };
 type ApiResponse<T> = { data: T };

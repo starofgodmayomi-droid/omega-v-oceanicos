@@ -1,7 +1,7 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'crypto';
 import { appendFileSync, mkdirSync, readFileSync } from 'fs';
 import { dirname } from 'path';
-import { EventLogEntry } from '@omega-v/types';
+import { EventLogEntry } from '@oceanicos/types';
 
 /** Environment variable used to encrypt the kernel memory JSONL file. */
 export const MEMORY_KEY_ENV = 'OMEGA_MEMORY_KEY';

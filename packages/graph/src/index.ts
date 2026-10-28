@@ -3,7 +3,7 @@ import {
   ProvenanceGraphNode,
   ProvenanceGraphEdge,
   GraphTraversalResult,
-} from '@omega-v/types';
+} from '@oceanicos/types';
 
 /**
  * ProvenanceGraph: Knowledge Graph & Lineage Traversal Engine (Section XIV)

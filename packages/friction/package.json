@@ -10,7 +10,7 @@
     "test": "jest"
   },
   "dependencies": {
-    "@omega-v/types": "workspace:*",
+    "@oceanicos/types": "workspace:*",
     "@omega-v/store": "workspace:*"
   },
   "devDependencies": {

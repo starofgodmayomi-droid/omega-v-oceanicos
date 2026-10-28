@@ -1,5 +1,5 @@
 import { OceanicosClient } from '@omega-v/sdk';
-import { EventLogEntry } from '@omega-v/types';
+import { EventLogEntry } from '@oceanicos/types';
 
 export type SchedulerStatus = 'IDLE' | 'RUNNING' | 'PAUSED' | 'STOPPED';
 

@@ -1,4 +1,4 @@
-import { SystemMetrics } from '@omega-v/types';
+import { SystemMetrics } from '@oceanicos/types';
 import * as crypto from 'crypto';
 
 export type SpanStatus = 'OK' | 'ERROR' | 'UNSET';

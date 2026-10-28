@@ -60,6 +60,43 @@ export interface VerificationResult {
   readonly summary: VerificationResultSummary;
   readonly ruleVersions?: Record<string, string>;
   readonly status?: 'pending' | 'completed' | 'failed';
+  readonly evidencePath?: unknown[];
+  readonly rules?: Array<{
+    name: string;
+    passed: boolean;
+    confidence: number;
+    details?: string;
+  }>;
+}
+
+/**
+ * Evidence artifact produced by a verification pipeline (Section XXIV).
+ * Machine-readable proof linking a verification result to its lineage.
+ */
+export interface EvidenceArtifact {
+  id: string;
+  verificationId: string;
+  commitHash?: string;
+  environment: string;
+  toolVersions: Record<string, string>;
+  lineageHash: string;
+  payload: Record<string, unknown>;
+  createdAt: string;
+}
+
+/**
+ * Sequential entry in an append-only event log.
+ * `data` is `unknown` here because the active types package does not
+ * re-export `Observation` / `MemoryRecord` as value-level types; consumers
+ * that need the specific union should narrow it themselves.
+ */
+export interface EventLogEntry {
+  id: number;
+  type: 'OBSERVATION' | 'VERIFICATION' | 'ATTESTATION' | 'MEMORY';
+  data: unknown;
+  recordedAt: string;
+  hash: string;
+  previousHash: string;
 }
 
 export interface Attestation {

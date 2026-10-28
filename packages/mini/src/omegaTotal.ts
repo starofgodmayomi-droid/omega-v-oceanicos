@@ -1,5 +1,5 @@
 import { MiniKernel } from './index.js';
-import { OmegaTotalManifest } from '@omega-v/types';
+import { OmegaTotalManifest } from '@oceanicos/types';
 
 /**
  * OmegaTotalCompressor: thin composition layer that enforces totality.

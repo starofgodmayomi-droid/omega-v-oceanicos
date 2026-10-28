@@ -3,7 +3,7 @@ import {
   FrictionCategory,
   DissentRecord,
   DissentInterpretation,
-} from '@omega-v/types';
+} from '@oceanicos/types';
 
 /**
  * FrictionTracker: Converts system friction into observable evidence (Pillar 20)

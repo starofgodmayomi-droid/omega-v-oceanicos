@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { Observation } from '@omega-v/types';
+import { Observation } from '@oceanicos/types';
 import { Observer } from '@omega-v/observer';
 
 export interface EdgeNodeConfig {

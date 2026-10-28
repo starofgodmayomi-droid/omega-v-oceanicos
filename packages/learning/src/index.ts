@@ -1,4 +1,4 @@
-import { Prediction, LearningEvent, LearningInsight, VerificationResult } from '@omega-v/types';
+import { Prediction, LearningEvent, LearningInsight, VerificationResult } from '@oceanicos/types';
 
 /**
  * Learning Engine: Implements Section XXVI (Learning)

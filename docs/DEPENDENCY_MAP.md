@@ -26,8 +26,8 @@ for a check that ran; dormant packages carry no such claim.
 | Classification | Meaning | Count |
 |----------------|---------|------|
 | **BUILT** | `pnpm-workspace.yaml` **and** imported by `apps/api` | 9 |
-| **WORKSPACE** | `pnpm-workspace.yaml`, not imported by `apps/api` | 4 |
-| **SOURCE-ONLY** | On disk, in the self-model, not in the workspace | 28 |
+| **WORKSPACE** | `pnpm-workspace.yaml`, not imported by `apps/api` | 5 |
+| **SOURCE-ONLY** | On disk, in the self-model, not in the workspace | 27 |
 | **STUB** | SOURCE-ONLY, thin implementation | 2 |
 | **UNTRACKED** | On disk, **not** in the self-model, workspace, or API | 26 |
 
@@ -60,11 +60,42 @@ imported by `apps/api`. This is the only surface that is OBSERVED running.
 @omega-v/auth         -> @oceanicos/types
 @omega-v/webhook      -> @oceanicos/types
 @omega-v/coordination -> (no workspace deps declared)
+@omega-v/evidence     -> @oceanicos/types   [promoted this pass]
 ```
 
 These build (the `setup` service compiles the full workspace tree) but the API
 does not import them. Workspace membership is not capability and not a claim
 that they serve traffic.
+
+## Naming-split reconciliation (executed this pass)
+
+The phantom `@omega-v/types` dependency — referenced by 38 `package.json` files
+and 44 source files but never resolvable as a package — was renamed to the
+real `@oceanicos/types` across all package manifests and source imports. The
+BUILT packages survived pre-fix only because their narrow tsconfig `include`
+excluded the files that imported `@omega-v/types`; the dormant packages could
+not build at all.
+
+`apps/api/src/dependency-route.ts` and `packages/registry/src/index.ts` retain
+`@omega-v/types` as **data strings** (dependency-graph labels, not imports) —
+these describe the historical graph and are intentionally left.
+
+## First earned promotion: `@omega-v/evidence` → WORKSPACE
+
+Promoted from SOURCE-ONLY to WORKSPACE. Changes:
+
+| Change | What |
+|--------|-----|
+| `pnpm-workspace.yaml` | Added `packages/evidence` |
+| `package.json` dep | `@omega-v/types` → `@oceanicos/types` |
+| `tsconfig.json` include | `src/**/*` → `src/index.ts` (excludes tests from build, matches BUILT pattern) |
+| TypeScript devDep | `^5.4.5` → `^6.0.3` (root tsconfig uses `ignoreDeprecations: "6.0"`) |
+| `src/index.ts` import | `@omega-v/types` → `@oceanicos/types` |
+| `@oceanicos/types` | Added `EvidenceArtifact`, `EventLogEntry`, `evidencePath?`, `rules?` (additive, non-breaking) |
+
+**Verified:** `tsc` build passes, full workspace build passes, smoke test
+(generate artifact + verify integrity + tamper detection) passes, BUILT
+packages unaffected, API healthy (200), contract tests pass (3/3).
 
 ## UNTRACKED orphans (26 — the divergence)
 

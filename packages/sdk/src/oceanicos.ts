@@ -14,7 +14,7 @@ import {
   QueryResult,
   MiniCycleResult,
   OmegaTotalManifest,
-} from '@omega-v/types';
+} from '@oceanicos/types';
 
 export interface OceanicosClientOptions {
   /** Mode of operation: 'local' (embedded engine) or 'remote' (REST API) */

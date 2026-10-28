@@ -4,7 +4,7 @@ import {
   SecurityPermission,
   SecurityToken,
   AuthorizationResult,
-} from '@omega-v/types';
+} from '@oceanicos/types';
 
 /**
  * SecurityEngine: Verifiable Identity, Authorization & Least Privilege Engine (Sections XVIII & XIX)

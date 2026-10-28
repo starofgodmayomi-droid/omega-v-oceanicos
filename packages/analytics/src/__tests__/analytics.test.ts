@@ -1,5 +1,5 @@
 import { VerificationAnalyticsEngine } from '../index';
-import { EventLogEntry, VerificationRule } from '@omega-v/types';
+import { EventLogEntry, VerificationRule } from '@oceanicos/types';
 
 describe('VerificationAnalyticsEngine (@omega-v/analytics)', () => {
   let analytics: VerificationAnalyticsEngine;

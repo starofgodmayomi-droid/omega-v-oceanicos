@@ -1,5 +1,5 @@
 import { SecurityEngine } from '../index';
-import { IdentitySubject, SecurityToken } from '@omega-v/types';
+import { IdentitySubject, SecurityToken } from '@oceanicos/types';
 
 describe('SecurityEngine (Sections XVIII & XIX)', () => {
   let engine: SecurityEngine;

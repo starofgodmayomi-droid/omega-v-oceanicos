@@ -1,5 +1,5 @@
 import { MiniKernel } from './index.js';
-import { MiniCycleResult } from '@omega-v/types';
+import { MiniCycleResult } from '@oceanicos/types';
 
 /** Finite lifecycle for the repository's computer-like control plane. */
 export type OperatingSystemState =
