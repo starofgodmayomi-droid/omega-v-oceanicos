@@ -51,7 +51,7 @@ export function GlobeViewport({ active, evidence }: GlobeViewportProps) {
           fontSize: 11,
           letterSpacing: '0.12em',
           textTransform: 'uppercase',
-          color: '#547b74',
+          color: '#94a3b8',
         }}
       >
         {globeShellCaptionFromEvidence(evidence)}

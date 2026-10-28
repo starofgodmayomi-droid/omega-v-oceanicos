@@ -141,10 +141,10 @@ export function ConnectorPanel() {
           {' · '}executed {String(latest.executed)}
           {' · '}observed {String(latest.observed)}
           {latest.actualObservation ? ` · ${latest.actualObservation}` : ''}
-          <div style={{ color: '#64748b', marginTop: 4, wordBreak: 'break-all' }}>{latest.evidence}</div>
+          <div style={{ color: '#94a3b8', marginTop: 4, wordBreak: 'break-all' }}>{latest.evidence}</div>
         </div>
       )}
-      <div style={{ color: '#64748b', fontSize: 10 }}>
+      <div style={{ color: '#94a3b8', fontSize: 10 }}>
         memory {memory.length} · in-process only · not deployment · not revenue
       </div>
     </section>

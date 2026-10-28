@@ -143,7 +143,7 @@ export function EcosystemPanel() {
                       borderRadius: '3px',
                       fontWeight: stage === status.contract.currentStage ? 'bold' : 'normal',
                       background: stage === status.contract.currentStage ? '#38bdf822' : 'transparent',
-                      color: stage === status.contract.currentStage ? '#38bdf8' : '#64748b',
+                      color: stage === status.contract.currentStage ? '#38bdf8' : '#94a3b8',
                       border: stage === status.contract.currentStage ? '1px solid #38bdf855' : '1px solid transparent',
                     }}
                   >
@@ -185,7 +185,7 @@ export function EcosystemPanel() {
                   </span>
                 ))}
               </div>
-              <div style={{ marginTop: '6px', color: '#64748b' }}>limits: {status.oneBody.limitations.join(' · ')}</div>
+              <div style={{ marginTop: '6px', color: '#94a3b8' }}>limits: {status.oneBody.limitations.join(' · ')}</div>
             </div>
           </div>
 
@@ -222,7 +222,7 @@ export function EcosystemPanel() {
                       {layer.evidenceStatus}
                     </span>
                   </div>
-                  <div style={{ color: '#64748b', fontSize: '10px', lineHeight: '1.4' }}>
+                  <div style={{ color: '#94a3b8', fontSize: '10px', lineHeight: '1.4' }}>
                     <div>capabilities: {layer.capabilities.join(', ')}</div>
                     <div style={{ marginTop: '3px' }}>scope: {layer.scope}</div>
                     <div style={{ marginTop: '3px' }}>policy: {layer.policy}</div>
