@@ -71,3 +71,48 @@ test('divergence feed returns redacted divergent evidence only', async () => {
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('divergence feed since uses the observation instant, not command creation', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'omega-divergence-since-'));
+  const app = createApp(join(dir, 'test.db'), false, { allowUnsignedCycle: true });
+  await app.ready();
+  try {
+    const created = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/commands',
+      payload: {
+        intent: 'compare a later observation with an earlier proposal',
+        requestedBy: 'operator:since-test',
+        workers: ['planner'],
+        idempotencyKey: 'divergence-since-001',
+      },
+    });
+    const commandId = created.json().command.commandId;
+    const createdAt = created.json().command.createdAt as string;
+    const since = new Date(new Date(createdAt).getTime() + 1).toISOString();
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    await app.inject({ method: 'POST', url: `/v1/omega/commands/${commandId}/approve`, payload: { operator: 'since-test', policy: 'test.v1' } });
+    await app.inject({ method: 'POST', url: `/v1/omega/commands/${commandId}/execute`, payload: {} });
+    const observed = await app.inject({ method: 'POST', url: `/v1/omega/commands/${commandId}/observe`, payload: { observedState: 'not-the-executor-record' } });
+    assert.equal(observed.statusCode, 200);
+    assert.equal(observed.json().command.status, 'DIVERGENT');
+
+    const included = await app.inject({ method: 'GET', url: `/v1/omega/divergences?since=${encodeURIComponent(since)}` });
+    assert.equal(included.statusCode, 200);
+    assert.equal(included.json().sinceBasis, 'divergence-observed-at');
+    assert.equal(included.json().count, 1);
+    assert.equal(included.json().alerts[0].commandId, commandId);
+    assert.equal(included.json().alerts[0].timeBasis, 'reality-observed-event');
+    assert.equal(typeof included.json().alerts[0].observedAt, 'string');
+    assert.ok(new Date(included.json().alerts[0].observedAt).getTime() >= new Date(since).getTime());
+    assert.ok(new Date(included.json().alerts[0].observedAt).getTime() > new Date(createdAt).getTime());
+
+    const after = new Date(Date.now() + 60_000).toISOString();
+    const excluded = await app.inject({ method: 'GET', url: `/v1/omega/divergences?since=${encodeURIComponent(after)}` });
+    assert.equal(excluded.statusCode, 200);
+    assert.equal(excluded.json().count, 0);
+  } finally {
+    await app.close();
+    rmSync(dir, { recursive: true, force: true });
+  }
+});

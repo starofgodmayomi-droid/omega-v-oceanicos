@@ -204,6 +204,29 @@ function bodyOf(request: any): Record<string, unknown> {
   return request.body && typeof request.body === 'object' && !Array.isArray(request.body) ? request.body : {};
 }
 
+type DivergenceTimeBasis = 'reality-observed-event' | 'reality-record' | 'UNKNOWN';
+
+function validInstant(value: unknown): value is string {
+  return typeof value === 'string' && !Number.isNaN(new Date(value).getTime());
+}
+
+function divergenceObservationInstant(
+  command: StoredCommand,
+  events: readonly Record<string, unknown>[],
+): { observedAt: string | null; timeBasis: DivergenceTimeBasis } {
+  const eventTimes = events
+    .filter((event) => event.type === 'command.reality-observed' && event.classification === 'DIVERGENT' && validInstant(event.at))
+    .map((event) => event.at as string)
+    .sort();
+  const latestEvent = eventTimes.at(-1);
+  if (latestEvent) return { observedAt: latestEvent, timeBasis: 'reality-observed-event' };
+  const reality = command.result?.reality;
+  if (reality?.classification === 'DIVERGENT' && validInstant(reality.observedAt)) {
+    return { observedAt: reality.observedAt, timeBasis: 'reality-record' };
+  }
+  return { observedAt: null, timeBasis: 'UNKNOWN' };
+}
+
 function commandWaterFlow(command: StoredCommand): ReturnType<typeof buildOmegaWaterFlow> {
   return buildOmegaWaterFlow({
     state: typeof command.change?.stateBefore === 'string'
@@ -423,18 +446,26 @@ export function registerOmegaRoutes(
     if (since && Number.isNaN(since.getTime())) return reply.status(400).send({ success: false, error: 'DIVERGENCE_SINCE_INVALID' });
     const alerts = store.listCommands()
       .filter((command) => command.status === 'DIVERGENT' || command.result?.reality?.classification === 'DIVERGENT')
-      .filter((command) => !since || new Date(command.createdAt).getTime() >= since.getTime())
-      .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
+      .map((command) => ({ command, instant: divergenceObservationInstant(command, store.listEvents(command.commandId)) }))
+      .filter(({ instant }) => !since || (instant.observedAt !== null && new Date(instant.observedAt).getTime() >= since.getTime()))
+      .sort((left, right) => {
+        const leftTime = left.instant.observedAt ? new Date(left.instant.observedAt).getTime() : Number.NEGATIVE_INFINITY;
+        const rightTime = right.instant.observedAt ? new Date(right.instant.observedAt).getTime() : Number.NEGATIVE_INFINITY;
+        if (rightTime !== leftTime) return rightTime - leftTime;
+        return right.command.createdAt < left.command.createdAt ? -1 : right.command.createdAt > left.command.createdAt ? 1 : 0;
+      })
       .slice(0, limit)
-      .map((command) => ({
+      .map(({ command, instant }) => ({
         commandId: command.commandId,
         intent: command.intent,
         requestedBy: command.requestedBy,
         status: command.status,
         createdAt: command.createdAt,
+        observedAt: instant.observedAt,
+        timeBasis: instant.timeBasis,
         reality: command.result?.reality ?? null,
       }));
-    return { success: true, count: alerts.length, alerts, redacted: true, nextAction: 'review the divergent evidence and preserve the conflict; no retry or authorization was performed' };
+    return { success: true, count: alerts.length, alerts, redacted: true, sinceBasis: 'divergence-observed-at', nextAction: 'review the divergent evidence and preserve the conflict; no retry or authorization was performed' };
   });
 
   fastify.get('/v1/omega/commands/:id/provenance', {

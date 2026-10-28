@@ -9,6 +9,8 @@ type CommandSummary = {
   requestedBy: string;
   status: string;
   createdAt: string;
+  observedAt?: string | null;
+  timeBasis?: 'reality-observed-event' | 'reality-record' | 'UNKNOWN';
   reality?: {
     observedState?: string;
     evidence?: string;
@@ -72,6 +74,7 @@ export function DivergenceAlertsPanel() {
         <div style={{ color: '#ffe0bc', fontSize: '11px', fontWeight: 700 }}>{command.intent}</div>
         <div style={{ color: '#b9a88a', font: '10px DM Mono, monospace', marginTop: '4px' }}>{command.commandId} · by {command.requestedBy}</div>
         <div style={{ color: '#ffc28f', fontSize: '11px', marginTop: '7px' }}>Observed: {command.reality?.observedState ?? 'unknown'}</div>
+        <div style={{ color: '#b9a88a', fontSize: '10px', marginTop: '4px' }}>{command.timeBasis === 'UNKNOWN' || !command.observedAt ? 'Divergence time unknown. Command creation is not treated as the observation instant.' : `Divergence observed ${command.observedAt}`}</div>
         <div style={{ color: '#b9a88a', fontSize: '10px', lineHeight: 1.5, marginTop: '4px' }}>{command.reality?.evidence ?? 'No divergence evidence text supplied.'}</div>
         <button onClick={() => acknowledge(command.commandId)} style={{ marginTop: '8px', border: '1px solid #9d6546', background: 'transparent', color: '#ffc28f', borderRadius: '4px', padding: '5px 8px', fontSize: '10px' }}>ACKNOWLEDGE VIEWED</button>
       </article>)}</div>}
