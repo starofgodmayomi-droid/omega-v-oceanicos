@@ -28,13 +28,13 @@ export type DurableRevocation = {
   revokedAt: string;
 };
 
-type SqliteDb = {
+export type SqliteDb = {
   exec(sql: string): void;
   prepare(sql: string): { get(...params: unknown[]): any; all(...params: unknown[]): any[]; run(...params: unknown[]): any };
   close?: () => void;
 };
 
-function openDatabase(path: string): SqliteDb {
+export function openDatabase(path: string): SqliteDb {
   try {
     const BetterSqlite = require('better-sqlite3');
     return new BetterSqlite(path) as SqliteDb;

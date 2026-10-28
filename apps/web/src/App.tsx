@@ -731,6 +731,20 @@ export function App() {
         >
           💧 OCEANICOS
         </div>
+        <div style={{ textAlign: 'center', marginBottom: '8px' }}>
+          <a
+            href="/"
+            style={{
+              fontSize: '10px',
+              letterSpacing: '0.16em',
+              textTransform: 'uppercase',
+              color: theme.textMuted,
+              textDecoration: 'none',
+            }}
+          >
+            ← Invisible Online Computer
+          </a>
+        </div>
         <div style={{ textAlign: 'center', marginBottom: '16px' }}>
           <button
             type="button"

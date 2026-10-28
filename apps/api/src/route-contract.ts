@@ -63,6 +63,7 @@ export const API_ROUTE_INVENTORY = [
   'GET /v1/mesh/nodes',
   'GET /v1/mesh/simulate',
   'GET /v1/mesh/validate',
+  'POST /execute',
   'POST /v1/auth/keypair',
   'POST /v1/block/sign',
   'POST /v1/block/verify-signature',

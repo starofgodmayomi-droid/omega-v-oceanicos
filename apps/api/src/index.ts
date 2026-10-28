@@ -23,6 +23,8 @@ import { registerValueNavigatorRoute } from './value-navigator-route.js';
 import { registerConnectorObservationRoute, type ConnectorAdmissionEvidenceResolver } from './connector-observation-route.js';
 import { OmegaCommandStore, OmegaIdempotencyConflictError, registerOmegaRoutes } from './omega.js';
 import { registerMeshValidationRoute } from './mesh-route.js';
+import { registerComputerRoute, type LlmCompletion } from './computer-route.js';
+import { KaiMemoryStore } from './kai-memory.js';
 import {
   ENCRYPTION_ALGORITHM,
   appendEvent,
@@ -57,6 +59,7 @@ export type CreateAppOptions = {
   githubFetch?: typeof fetch;
   connectorAdmissionEvidence?: ConnectorAdmissionEvidenceResolver;
   pipelineAdmissionEvidence?: PipelineAdmissionEvidenceResolver;
+  computerExecute?: LlmCompletion;
 };
 
 type AuthMode = 'local' | 'required';
@@ -153,6 +156,8 @@ export function createApp(
   });
   const omegaCommandPath = dbPath === ':memory:' ? ':memory:' : join(resolve(dbPath, '..'), 'omega-commands.db');
   const omegaCommands = new OmegaCommandStore(omegaCommandPath);
+  const kaiMemoryPath = dbPath === ':memory:' ? ':memory:' : join(resolve(dbPath, '..'), 'kai-memory.db');
+  const kaiMemory = new KaiMemoryStore(kaiMemoryPath);
   const durableRevocationStore = persistenceEnabled && dbPath !== ':memory:' ? omegaCommands : null;
   const valueNavigatorPath = options.valueNavigatorPath?.trim() || process.env.OMEGA_VALUE_NAVIGATOR_PATH?.trim() || `${dbPath}.value-navigator.jsonl`;
   const valueNavigatorStore = new FileValueNavigatorStore(valueNavigatorPath);
@@ -165,6 +170,7 @@ export function createApp(
   fastify.addHook('onClose', async () => {
     ledgerMemory.close();
     omegaCommands.close();
+    kaiMemory.close();
   });
 
   type RevocationRecord = { id: string; attestationId: string; reason: string; revokedBy: string; revokedAt: string };
@@ -260,6 +266,7 @@ export function createApp(
     resolveAdmissionEvidence: options.connectorAdmissionEvidence,
   });
   registerMeshValidationRoute(fastify, ledgerMemory, requireReadAccess, jsonError);
+  registerComputerRoute(fastify, kaiMemory, { llm: options.computerExecute });
 
   fastify.get('/health', async (_request, reply) => {
     let ledgerIntegrity;

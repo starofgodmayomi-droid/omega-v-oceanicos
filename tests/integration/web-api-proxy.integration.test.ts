@@ -14,6 +14,7 @@ const webApiClientPaths = [
   '../../apps/web/src/DivergenceAlertsPanel.tsx',
   '../../apps/web/src/ValueNavigatorPanel.tsx',
   '../../apps/web/src/TransitionProvenancePanel.tsx',
+  '../../apps/web/src/InvisibleComputer.tsx',
 ];
 
 test('all web API clients preserve VITE_API_URL and default to the /api proxy', async () => {

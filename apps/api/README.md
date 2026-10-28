@@ -153,6 +153,46 @@ outbound observation, shell operation, outreach, spending, or proposal
 execution. Writes inherit the existing admin bearer boundary in required-auth
 mode. See [the repository contract](../../skills/oceanicos-value-navigator/references/repository-contract.md).
 
+## Invisible Online Computer (KAI → ELION → OMEGA)
+
+```text
+POST /execute
+```
+
+Takes `{ "intent": "..." }` and runs the verification-first loop:
+
+1. **KAI Observe** screens the intent against known scam patterns in
+   `KaiMemory`. A match returns `DIVERGENT` and ELION never runs.
+2. **ELION Execute** sends the intent to an LLM under the repository
+   constitution (no hallucination, no fabricated success, UNKNOWN when evidence
+   is missing).
+3. **OMEGA Verify** accepts only a non-empty text response, hashes it with
+   SHA-256, and writes the record to `KaiMemory` with status `VERIFIED`.
+   A failed or empty completion is remembered as `UNKNOWN`.
+4. **Return** sends `{ status, response, evidenceHash, steps, memory, contract }`
+   to the client.
+
+Every outcome writes one `KaiMemory` row (`id`, `timestamp`, `intent`,
+`evidence_hash`, `status`) and one `OmegaIR` contract row (`id`, `scope`,
+`authority_limit`, `expected_outcome`). The contract is always `READ_ONLY`:
+this endpoint composes text and performs no external action. The hash proves
+the returned text is unchanged; it does not prove the text is true.
+
+The same route is reachable from the browser as `/api/execute` through the
+Vite dev proxy.
+
+```text
+ANTHROPIC_API_KEY    Claude credential (preferred provider)
+OPENAI_API_KEY       OpenAI credential (fallback provider)
+OMEGA_LLM_PROVIDER   optional: anthropic | openai
+OMEGA_LLM_MODEL      optional model override
+OMEGA_LLM_TIMEOUT_MS optional request timeout (default 20000)
+```
+
+With no provider credential the endpoint returns `UNKNOWN` — never a
+fabricated `VERIFIED`. `KaiMemory` and `OmegaIR` live in `kai-memory.db`
+next to `OMEGA_DB_PATH`.
+
 ## Static client
 
 Set `OMEGA_WEB_DIST` to a built `apps/web` directory to serve the SPA from the
