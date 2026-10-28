@@ -2571,6 +2571,114 @@ async function handleNews(args = []) {
   }
 }
 
+async function handleEnvelope(extraArgs = []) {
+  printBanner();
+  const isJson = process.argv.includes('--json');
+  const subCmd = extraArgs[0] || 'schema';
+
+  const {
+    validateKnowledgeEnvelope,
+    KNOWLEDGE_KINDS,
+    KNOWLEDGE_STATES,
+    KNOWLEDGE_VISIBILITIES,
+  } = await import('../packages/mini/dist/index.js');
+
+  if (subCmd === 'schema') {
+    if (isJson) {
+      console.log(JSON.stringify({
+        contract: 'Ω∞v-KNOWLEDGE-ENVELOPE-V4',
+        steward: 'did:omega:human:starofgodmayomi',
+        kinds: KNOWLEDGE_KINDS,
+        states: KNOWLEDGE_STATES,
+        visibilities: KNOWLEDGE_VISIBILITIES,
+        policy: {
+          failClosed: true,
+          forbidsRawSourceLeaks: true,
+          forbidsAuthorityShapedFields: true,
+          freezesArrays: true,
+        },
+      }, null, 2));
+      return;
+    }
+
+    console.log(`\n${ANSI.bold}=== 📜 Ω∞v SANITIZED KNOWLEDGE ENVELOPE SCHEMA (V4) ===${ANSI.reset}`);
+    console.log(`  ${ANSI.cyan}Contract${ANSI.reset}         : Ω∞v-KNOWLEDGE-ENVELOPE-V4`);
+    console.log(`  ${ANSI.cyan}Steward${ANSI.reset}          : did:omega:human:starofgodmayomi // 11:11`);
+    console.log(`  ${ANSI.cyan}Invariant${ANSI.reset}        : Structure & Disclosure Policy Only · Fail-Closed`);
+    console.log(`  ${ANSI.cyan}Knowledge Kinds${ANSI.reset}  : ${KNOWLEDGE_KINDS.join(', ')}`);
+    console.log(`  ${ANSI.cyan}States${ANSI.reset}           : ${KNOWLEDGE_STATES.join(', ')}`);
+    console.log(`  ${ANSI.cyan}Visibilities${ANSI.reset}     : ${KNOWLEDGE_VISIBILITIES.join(', ')}`);
+    console.log(`  ${ANSI.yellow}Forbidden Leaks${ANSI.reset}  : content, rawcontent, rawsourcecontent, sourcebody, pagebody, rawtext, fulltext\n`);
+    return;
+  }
+
+  if (subCmd === 'validate') {
+    let rawPayload = null;
+    const nonFlagArgs = extraArgs.filter(a => !a.startsWith('--'));
+    const target = nonFlagArgs[1];
+    if (target && existsSync(target)) {
+      rawPayload = JSON.parse(readFileSync(target, 'utf8'));
+    } else if (target) {
+      try { rawPayload = JSON.parse(target); } catch { rawPayload = null; }
+    } else {
+      // canonical sample envelope
+      rawPayload = {
+        id: 'env-notion-canonical-001',
+        kind: 'proposal',
+        summary: '5-buyer workflow setup offer validation in Notion Value Pipeline',
+        state: 'VERIFIED',
+        source: {
+          system: 'notion',
+          reference: 'page:4003080b-dd53-8159-8220-ef09061f54b7',
+          revision: 'rev-01',
+          capturedAt: new Date().toISOString(),
+        },
+        capturedAt: new Date().toISOString(),
+        owner: 'starofgodmayomi',
+        visibility: 'internal',
+        policy: {
+          reviewedForPublicRelease: true,
+          containsRawSourceContent: false,
+          sensitivity: 'reviewed',
+          approvalReference: 'auth:did:omega:human:starofgodmayomi',
+        },
+        relations: [{ type: 'implements', targetId: 'env-wealth-q4' }],
+        evidence: [{ type: 'test', status: 'PRESENT', reference: 'tests/notion-evidence-sync.test.mjs' }],
+        tags: ['notion', 'wealth', 'first-finite-action'],
+      };
+    }
+
+    if (!rawPayload) {
+      console.error(`${ANSI.red}[ERROR] Invalid JSON payload or missing file path.${ANSI.reset}`);
+      process.exitCode = 1;
+      return;
+    }
+
+    const result = validateKnowledgeEnvelope(rawPayload);
+    if (isJson) {
+      console.log(JSON.stringify(result, null, 2));
+      return;
+    }
+
+    console.log(`\n${ANSI.bold}=== 📜 KNOWLEDGE ENVELOPE VALIDATION RECEIPT ===${ANSI.reset}`);
+    console.log(`  ${ANSI.cyan}Validation Verdict${ANSI.reset}   : ${result.validation === 'VALID' ? `${ANSI.green}✓ VALID${ANSI.reset}` : `${ANSI.red}✗ INVALID${ANSI.reset}`}`);
+    console.log(`  ${ANSI.cyan}Public Export Status${ANSI.reset} : ${result.publicExportAllowed ? `${ANSI.green}ALLOWED${ANSI.reset}` : `${ANSI.yellow}DENIED (Protected / Internal)${ANSI.reset}`}`);
+    console.log(`  ${ANSI.cyan}Evidence Scope${ANSI.reset}       : ${result.evidence}`);
+    if (result.validation === 'VALID') {
+      console.log(`  ${ANSI.cyan}Envelope ID${ANSI.reset}          : ${result.envelope.id}`);
+      console.log(`  ${ANSI.cyan}Kind & State${ANSI.reset}         : ${result.envelope.kind} · ${result.envelope.state}`);
+      console.log(`  ${ANSI.cyan}Source System${ANSI.reset}        : ${result.envelope.source.system} (${result.envelope.source.reference})`);
+      console.log(`  ${ANSI.cyan}Summary${ANSI.reset}              : ${result.envelope.summary}`);
+    } else {
+      console.log(`  ${ANSI.red}Violations (${result.issues.length}):${ANSI.reset}`);
+      for (const iss of result.issues) {
+        console.log(`    • [${iss.code}] ${iss.field}: ${iss.message}`);
+      }
+    }
+    console.log('');
+  }
+}
+
 function handleHelp() {
   printBanner();
   console.log(`
@@ -2613,6 +2721,7 @@ ${ANSI.bold}COMMANDS:${ANSI.reset}
   ${ANSI.green}trade${ANSI.reset}        Submit sovereign order: oceanicos trade [buy|sell] <lots> [limitPrice]
   ${ANSI.green}portfolio${ANSI.reset}    Display live portfolio equity, margin level, and active positions
   ${ANSI.green}rea${ANSI.reset}          Reverse Engineer Anything (morluto/rea) inspection & work mood engine
+  ${ANSI.green}envelope${ANSI.reset}     Inspect knowledge envelope schema or validate knowledge envelopes
   ${ANSI.green}help${ANSI.reset}        Display this help message
 
 ${ANSI.bold}OPTIONS:${ANSI.reset}
@@ -2752,6 +2861,10 @@ switch (command) {
   case 'rea':
   case 'reverse':
     await handleRea(args.slice(1));
+    break;
+  case 'envelope':
+  case 'knowledge':
+    await handleEnvelope(args.slice(1));
     break;
   case 'news':
   case 'ai-news':

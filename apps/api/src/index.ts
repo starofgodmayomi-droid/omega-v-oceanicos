@@ -44,6 +44,7 @@ import { registerMarketRoute } from './market-route.js';
 import { registerTradingRoute } from './trading-route.js';
 import { registerReaRoute } from './rea-route.js';
 import { registerNewsRoute } from './news-route.js';
+import { registerKnowledgeRoute } from './knowledge-route.js';
 import { registerContinuumRoute, getContinuumEcosystemStatus } from './continuum-route.js';
 import { API_ROUTE_INVENTORY } from './route-contract.js';
 import { OceanicosKernel as UpgradeKernel } from '@oceanicos/mini';
@@ -306,6 +307,7 @@ export function createApp(
   registerTradingRoute(fastify);
   registerReaRoute(fastify);
   registerNewsRoute(fastify);
+  registerKnowledgeRoute(fastify);
   fastify.get('/v1/continuum', async () => getContinuumEcosystemStatus());
 
   fastify.get('/health', async (_request, reply) => {
@@ -1459,6 +1461,8 @@ export const STARTUP_BANNER = [
   '  GET    /attest/revocations',
   '  POST   /attest/revoke',
   '  GET    /attest/policy',
+  '  GET    /v1/knowledge/envelope/schema',
+  '  POST   /v1/knowledge/envelope/validate',
   '  GET    /',
   '  GET    /assets/*',
   '',
