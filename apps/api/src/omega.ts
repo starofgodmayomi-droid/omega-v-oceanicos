@@ -204,6 +204,43 @@ function bodyOf(request: any): Record<string, unknown> {
   return request.body && typeof request.body === 'object' && !Array.isArray(request.body) ? request.body : {};
 }
 
+const commandApprovalClaimFields = new Set([
+  'status',
+  'verified',
+  'reality',
+  'realityStatus',
+  'admitted',
+  'authorized',
+  'decision',
+  'authorityVerified',
+  'policySatisfied',
+  'approvalVerified',
+  'executed',
+  'execution',
+  'result',
+]);
+
+const commandExecutionClaimFields = new Set([
+  'status',
+  'verified',
+  'reality',
+  'realityStatus',
+  'authorized',
+  'authorityVerified',
+  'policySatisfied',
+  'approvalVerified',
+  'executed',
+  'execution',
+  'result',
+  'stateAfter',
+  'consequence',
+  'attestationId',
+]);
+
+function hasClaimField(body: Record<string, unknown>, fields: ReadonlySet<string>): boolean {
+  return Object.keys(body).some((key) => fields.has(key));
+}
+
 function commandWaterFlow(command: StoredCommand): ReturnType<typeof buildOmegaWaterFlow> {
   return buildOmegaWaterFlow({
     state: typeof command.change?.stateBefore === 'string'
@@ -494,6 +531,9 @@ export function registerOmegaRoutes(
     if (!command) return reply.status(404).send({ success: false, error: 'OMEGA_COMMAND_NOT_FOUND' });
     if (command.status !== 'PROPOSED' && command.status !== 'REVIEW') return reply.status(409).send({ success: false, error: 'OMEGA_APPROVAL_REQUIRES_REVIEW' });
     const body = bodyOf(request);
+    if (hasClaimField(body, commandApprovalClaimFields)) {
+      return reply.status(400).send({ success: false, error: 'COMMAND_APPROVAL_CLAIM_NOT_ACCEPTED' });
+    }
     const guardedOperator = (request as typeof request & { omegaOperatorId?: string }).omegaOperatorId;
     const operator = typeof guardedOperator === 'string' && guardedOperator.trim()
       ? guardedOperator.trim()
@@ -514,6 +554,13 @@ export function registerOmegaRoutes(
     const command = store.get((request.params as { id?: string }).id ?? '');
     if (!command) return reply.status(404).send({ success: false, error: 'OMEGA_COMMAND_NOT_FOUND' });
     if (command.status !== 'AUTHORIZED') return reply.status(409).send({ success: false, error: 'OMEGA_EXECUTION_REQUIRES_AUTHORIZATION' });
+    const body = bodyOf(request);
+    if (hasClaimField(body, commandExecutionClaimFields)) {
+      return reply.status(400).send({ success: false, error: 'COMMAND_EXECUTION_CLAIM_NOT_ACCEPTED' });
+    }
+    if (body.dryRun === true) {
+      return reply.status(409).send({ success: false, error: 'COMMAND_EXECUTION_DRY_RUN_HALTED', executed: false });
+    }
     const execution = executeAuthorizedTransition(command.change, () => ({ stateAfter: 'bounded-local-action-complete', consequence: 'bounded local action recorded; no remote mutation performed' }));
     const status: OmegaCommandStatus = execution.status === 'EXECUTED' ? 'EXECUTED' : 'FAILED';
     const result = execution.status === 'EXECUTED' && execution.attestationId ? { execution: { stateAfter: execution.record.stateAfter ?? '', consequence: execution.record.consequence ?? '', attestationId: execution.attestationId } } : undefined;
@@ -529,6 +576,12 @@ export function registerOmegaRoutes(
       return reply.status(409).send({ success: false, error: 'OMEGA_EXECUTION_REQUIRES_AUTHORIZATION' });
     }
     const body = bodyOf(request);
+    if (hasClaimField(body, commandExecutionClaimFields)) {
+      return reply.status(400).send({ success: false, error: 'COMMAND_EXECUTION_CLAIM_NOT_ACCEPTED' });
+    }
+    if (body.dryRun === true) {
+      return reply.status(409).send({ success: false, error: 'COMMAND_EXECUTION_DRY_RUN_HALTED', executed: false });
+    }
     const workerId = typeof body.workerId === 'string' ? body.workerId.trim() : '';
     const capability = typeof body.capability === 'string' ? body.capability.trim() : '';
     if (!workerId || !capability) {
