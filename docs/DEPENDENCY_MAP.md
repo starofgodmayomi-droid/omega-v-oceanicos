@@ -2,18 +2,39 @@
 
 > INVENTORY → **DEPENDENCY MAP** → CONTRACT MAP → MIGRATION → TEST → EVIDENCE
 >
-> Observed at tip `35eab29` plus the fail-closed worker constitution slice. This map records **declared** edges, not verification of runtime health.
+> **Reconciled** at tip `d1bde925` (branch `reconcile-architecture`) against the
+> live API self-model (`GET /v1/dependencies`), `pnpm-workspace.yaml`,
+> `apps/api/package.json`, and the packages present on disk. This map records
+> **observed** edges and classifications, not a claim of VERIFIED / DEPLOYED /
+> HEALTHY for any dormant surface.
+
+## How this map was observed
+
+| Source | Method | Status |
+|--------|--------|--------|
+| `pnpm-workspace.yaml` | read | 21 workspace members |
+| `apps/api` imports | `grep @oceanicos/@omega-v` in `apps/api/src` | 10 packages imported |
+| Live self-model | `curl http://localhost:5000/v1/dependencies` | 43 nodes, `success:true` |
+| Disk inventory | `ls packages/` | 63 package directories (excl. `README.md`) |
+| Runtime | `GET /health` → `ready`; `GET /` → 200; proxy → 200 | api + web healthy |
+
+Every classification below is **OBSERVED**, not asserted. `VERIFIED` is reserved
+for a check that ran; dormant packages carry no such claim.
 
 ## Legend
 
-| Classification | Meaning |
-|----------------|---------|
-| **BUILT** | `pnpm-workspace.yaml` + imported by `apps/api` |
-| **WORKSPACE** | `pnpm-workspace.yaml`, not imported by `apps/api` |
-| **SOURCE-ONLY** | On disk, not in the workspace |
-| **STUB** | SOURCE-ONLY, thin implementation |
+| Classification | Meaning | Count |
+|----------------|---------|------|
+| **BUILT** | `pnpm-workspace.yaml` **and** imported by `apps/api` | 9 |
+| **WORKSPACE** | `pnpm-workspace.yaml`, not imported by `apps/api` | 4 |
+| **SOURCE-ONLY** | On disk, in the self-model, not in the workspace | 28 |
+| **STUB** | SOURCE-ONLY, thin implementation | 2 |
+| **UNTRACKED** | On disk, **not** in the self-model, workspace, or API | 26 |
 
-## Core graph (BUILT)
+## Core graph (BUILT — the live spine)
+
+These 9 packages are workspace members, built by the `setup` service, and
+imported by `apps/api`. This is the only surface that is OBSERVED running.
 
 ```text
 @oceanicos/types
@@ -25,57 +46,108 @@
     |               +-- @oceanicos/remember
     |                       |
     |                       +-- @oceanicos/mini --+
-    +-- @oceanicos/attestation -------------------+ 
+    +-- @oceanicos/attestation -------------------+
     +-- (standalone / no workspace deps)          |
             @omega-v/kernel                       +-- apps/api
             @omega-v/oreade                       |
-            @omega-v/mood ------------------------+ 
-
-WORKSPACE (not imported by apps/api):
-    @omega-v/gateway      -> @oceanicos/types
-    @omega-v/auth         -> @oceanicos/types
-    @omega-v/webhook      -> @oceanicos/types
-    @omega-v/coordination -> (no workspace deps declared)
-    @omega-v/worker       -> (no workspace deps declared)
-    @omega-v/pipeline     -> @omega-v/worker
+            @omega-v/mood ------------------------+
 ```
 
-## Corrections vs 2026-09-25 map
+## WORKSPACE (buildable, not API-imported)
 
-| Prior claim | Current evidence |
+```text
+@omega-v/gateway      -> @oceanicos/types
+@omega-v/auth         -> @oceanicos/types
+@omega-v/webhook      -> @oceanicos/types
+@omega-v/coordination -> (no workspace deps declared)
+```
+
+These build (the `setup` service compiles the full workspace tree) but the API
+does not import them. Workspace membership is not capability and not a claim
+that they serve traffic.
+
+## UNTRACKED orphans (26 — the divergence)
+
+These package directories exist on disk with real source (300–5300 lines each)
+and real `package.json` manifests, but are **not** in `pnpm-workspace.yaml`,
+**not** in the API self-model, **not** built, and **not** tested. They encode a
+"decentralized verification network" vision (AMM, consensus, rollups, sharding,
+staking, governance) that has not been earned into the workspace.
+
+```
+agents  amm  attestor  consensus  da  dht  dispute  dissensus  enclave  evm
+federation  governor  mempool  mesh  oracle  orchestrator  relay  replay
+reputation  rollup  sequencer  sharding  staking  vaas  vault  zk
+```
+
+> **UNKNOWN preserved.** Whether these packages compile, type-check, or agree
+> with the contracts in `@oceanicos/types` is **not observed**. They must not be
+> promoted or cited as functional until each is admitted to the workspace,
+> built, and tested in an authorized transition.
+
+## SOURCE-ONLY + STUB (28 + 2 — tracked but dormant)
+
+The self-model tracks these (they appear in `/v1/dependencies`) but they are
+not workspace members. The self-model flags **27 archive candidates** and
+identifies **14 lowest-risk promotions** (depend only on `types`):
+
+```
+lowest-risk: ir, registry, evidence, intent, contract, governance,
+             human, learning, store, security, telemetry, bridge,
+             analytics, green
+```
+
+Seven are **blocked by `@omega-v/sdk`** (the SDK is itself SOURCE-ONLY and
+un-built, so its dependents cannot be promoted first):
+
+```
+blocked-by-sdk: policy, worker, cli, sandbox, scheduler, benchmark, notary
+```
+
+STUB packages (thin implementations): `runtime`, `lexicon`.
+
+## Corrections vs prior map (tip `35eab29`)
+
+| Prior claim | Current evidence (tip `d1bde925`) |
 |-------------|------------------|
+| Map covers ~13 packages | **43 tracked + 26 untracked = 69 surfaces** observed on disk |
 | `@omega-v/ir` is BUILT | **SOURCE-ONLY** — not in `pnpm-workspace.yaml` |
 | `@omega-v/mood` is STUB | **BUILT** — workspace + imported by `apps/api` |
 | `@omega-v/oreade` omitted | **BUILT** — workspace + imported by `apps/api` |
 | `coordination` archive candidate | **WORKSPACE** — in `pnpm-workspace.yaml`, not API-imported |
 | `gateway` / `auth` / `webhook` SOURCE-ONLY | **WORKSPACE** |
-| `worker` / `pipeline` SOURCE-ONLY | **WORKSPACE** after fail-closed constitution slice — still not API-imported |
+| `worker` / `pipeline` SOURCE-ONLY | **WORKSPACE** — still not API-imported |
+| 26 decentralized-network packages absent | **UNTRACKED** — now named; previously invisible to the map |
 
-## Key observations
+## Authority and promotion
 
-1. **`types` is the MINI root.** The earned observe-verify-remember-mini chain is self-contained.
-2. **`ir` is not an active workspace package.** Do not treat Omega IR as compiled runtime on this tip.
-3. **Mood and OREADE are live API imports.** They remain **layers**, not authority.
-4. **Workspace membership is not capability.** Worker and pipeline are now workspace members so leases and observation receipts can be built and tested. They are **not** API capabilities.
-5. **Dormant packages must not be promoted in bulk.**
+Promoting a SOURCE-ONLY or UNTRACKED package requires, per the self-model's
+own contract:
 
-## Promotion risk
+1. Workspace membership is explicit in `pnpm-workspace.yaml`.
+2. Dependencies are already BUILT or promoted in the same authorized transition.
+3. A demonstrated runtime need.
+4. Tests + observation after the change.
+5. Human authority for the transition (capability ≠ authority).
 
-Promoting a SOURCE-ONLY package requires:
+`@omega-v/sdk` is the gating blocker for 7 packages: until the SDK is itself
+admitted, built, and tested, none of its dependents can be promoted safely.
 
-1. Workspace membership is explicit
-2. Dependencies are already BUILT or promoted in the same authorized transition
-3. A demonstrated runtime need
-4. Tests + observation after the change
+## What was NOT opened
 
-Lowest-risk (depend only on types, still off-workspace): evidence, intent, contract, governance, human, security, telemetry, bridge, analytics, green.
+- No UNTRACKED or SOURCE-ONLY package was built, imported, or executed.
+- No package's internal source was audited for correctness — only classification,
+  line counts, and wiring were observed.
+- No test was run against dormant packages.
+- The web app (`apps/web`) imports **no** workspace package (Vite transpiles
+  standalone); its only coupling to the API is the `/api/*` proxy + `VITE_API_URL`.
 
-Worker is no longer blocked by sdk: unused `@omega-v/types` / `@omega-v/sdk` declarations were removed. Pipeline depends only on worker.
+## Next Δ
 
-## Next step
-
-CONTRACT MAP for one candidate at a time. In-flight PRs (not merged here):
-
-1. Ignore `.pnpm-store` (#322) — still open against an older base
-2. Oreade idempotent retries (#335) — current-main rebase of #329
-3. This worker constitution slice — rebase of #330 onto `35eab29`
+1. **CONTRACT MAP** for one lowest-risk promotion candidate (e.g. `evidence` or
+   `intent` — depend only on `types`).
+2. Decide, with human authority, whether the 26 UNTRACKED packages are
+   **earned expansions to promote one-at-a-time** or **archive candidates** to
+   link-and-set-aside. Bulk promotion is prohibited by the self-model contract.
+3. `@omega-v/sdk` promotion unblocks 7 dependents — it is the highest-leverage
+   single gate, but it is itself SOURCE-ONLY and must be earned first.
