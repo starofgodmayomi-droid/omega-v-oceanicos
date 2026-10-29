@@ -15,7 +15,7 @@
 docker compose -f docker-compose.base44.yml up -d
 ```
 - `setup` (one-shot): `pnpm install --frozen-lockfile` + `pnpm --filter api... run build` (builds the API and its workspace dependency tree; skips web).
-- `api`: runs `tsc --watch` (rebuilds `apps/api/dist` on source change) + `node --watch apps/api/dist/index.js` (restarts on dist change). Live reload for API source edits.
+- `api`: runs `tsc --watch` for `packages/kai`, `packages/elion`, `packages/omega` **and** `apps/api` (the loop's organs are workspace packages, so their sources need rebuilding too) + `node --watch apps/api/dist/index.js`, which follows the symlinked packages and restarts on dist change. Live reload for both API and loop-package edits.
 - `web`: `npx vite --host 0.0.0.0` from `apps/web`. Vite HMR for frontend edits.
 
 ## Key config

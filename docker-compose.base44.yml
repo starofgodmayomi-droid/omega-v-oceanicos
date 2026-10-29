@@ -17,7 +17,10 @@ services:
     working_dir: /app
     volumes:
       - .:/app
-    command: sh -c "mkdir -p data && npx tsc --watch -p apps/api & node --watch apps/api/dist/index.js"
+    # The loop's organs live in workspace packages, so their sources must be
+    # rebuilt on edit too; otherwise an edit to packages/kai|elion|omega would
+    # leave the API running stale dist. node --watch then restarts on change.
+    command: sh -c "mkdir -p data && npx tsc --watch -p packages/kai & npx tsc --watch -p packages/elion & npx tsc --watch -p packages/omega & npx tsc --watch -p apps/api & node --watch apps/api/dist/index.js"
     environment:
       - NODE_ENV=development
       - API_PORT=5000
