@@ -342,3 +342,29 @@ Remaining gates are evidence-based: durable persistence and event replay, requir
 ### Durable command coordination increment — 2026-09
 
 The Ω command store now persists commands and lifecycle events in a configurable SQLite database and recovers them after API restart. Independent API processes can register workers, heartbeat, and acquire exclusive transactional leases against the same volume. Live local-staging smoke verification passed for proposal, restart recovery, worker registration, lease exclusivity, release, and durable events. This earns multi-process single-volume coordination, not cross-host consensus, network-database durability, deployment, or production health.
+
+### Governance evidence surface — local checkpoint — 2026-10-29
+
+C6/C7/authorization now reach the interface layer that actually runs in this
+workspace: the API routes, a `GovernancePanel` inside the dashboard's Verify
+stage, and a contract test that imports the compiled `dist` of the three
+packages (`tests/integration/governance_surfaces.test.ts`, wired into
+`pnpm test`).
+
+Observed locally:
+
+- Reconciliation returns `VERIFIED`, `DIVERGENT`, and `NOT_EXECUTED` with a
+  SHA-256 evidence digest; an unobserved change is never upgraded to verified.
+- Provenance appends hash-linked entries, reports `INTACT` integrity with a
+  tip, and exposes lineage by change id.
+- Authorization fails closed: self-grants return HTTP 400, revoked grants deny,
+  wildcard scopes require matching policy references, and the active count
+  drops to zero after revocation.
+- `pnpm test` passed 9 suites / 62 tests; the full workspace build passed.
+
+Not earned by this slice: the provenance chain and grant registry are
+in-memory process singletons that reset on API restart, with no durable
+governance ledger, cross-process sharing, distributed consistency, or
+deployment claim. `packages/sdk` and `packages/cli` remain outside the pnpm
+workspace and still target removed package exports, so they need a migration
+before they can carry these surfaces.

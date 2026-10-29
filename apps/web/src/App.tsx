@@ -9,6 +9,7 @@ import { SystemControlsPanel } from './SystemControlsPanel';
 import { SystemHealthPanel } from './SystemHealthPanel';
 import { DependencyMapPanel } from './DependencyMapPanel';
 import { ObservationStreamPanel } from './ObservationStreamPanel';
+import { GovernancePanel } from './GovernancePanel';
 import { LifecycleFlow, deriveStageStates, type LifecycleStage } from './LifecycleFlow';
 import {
   theme,
@@ -510,6 +511,7 @@ export function App() {
         ? humanStatus(omegaCommand.reality.classification)
         : 'Does reality match the proposition?',
       state: stageStates.verify,
+      detail: <GovernancePanel />,
     },
     {
       id: 'remember',

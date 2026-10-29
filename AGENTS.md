@@ -35,6 +35,10 @@ docker compose -f docker-compose.base44.yml up -d
 - **`@omega-v/authorization`**: fail-closed authority/permission engine producing `authorityVerified`+`policySatisfied` for the C4 admission gate. No self-authorization, grants expire/revocable/scoped. API: `POST /v1/authorization/grant`, `POST /v1/authorization/evaluate`, `POST /v1/authorization/revoke`, `GET /v1/authorization/grants`.
 - All three are ESM (`"type": "module"`, `module: NodeNext` in tsconfig) and built via `pnpm --filter @omega-v/reconciliation... run build`.
 - Route contract in `apps/api/src/route-contract.ts` and `apps/api/src/governance-route.ts`.
+- **Web surface**: `apps/web/src/GovernancePanel.tsx` is rendered inside the `Verify` lifecycle stage. It reads `/v1/provenance/verify`, `/v1/provenance/tip`, `/v1/authorization/grants` and runs `POST /v1/reconciliation/reconcile` (pure comparison — no persisted writes from the UI).
+- **Contract test**: `tests/integration/governance_surfaces.test.ts` runs against the compiled `dist` of the three packages and is wired into `pnpm test` (node test runner). It covers VERIFIED/DIVERGENT/NOT_EXECUTED, hash-linked lineage, fail-closed denial, self-grant refusal, and revocation.
+- **API state is in-memory**: the provenance chain and authorization grants are process singletons in `governance-route.ts`. They reset on API restart and are not shared across processes; do not present them as durable.
+- **SDK/CLI are not active workspace projects**: `pnpm-workspace.yaml` lists only 16 projects, and `packages/sdk` / `packages/cli` import removed exports (`Observer`, `Remember`, `OperatingSystemKernel`, `OmegaTotalCompressor`) from the current packages. They cannot be built or typechecked as-is — adding to them requires a migration first, and their jest suites do not run in CI.
 
 ## Fixed bug
 `apps/api/src/index.ts` line 204: `persistenceEncryptionKey` was undefined → changed to `encryptionEnabled(persistenceKey)` to match the pattern used at lines 163/165.
