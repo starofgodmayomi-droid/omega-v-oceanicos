@@ -2484,6 +2484,41 @@ body {
 }
 .single-body-equation strong { color: var(--omega-current); font-weight: 600; }
 .single-body-equation span { color: var(--omega-unknown); }
+.single-body-fixpoint {
+  margin: 12px 0;
+  padding: 11px 13px;
+  border: 1px solid rgba(56, 189, 248, 0.22);
+  border-radius: 6px;
+  background: rgba(8, 18, 28, 0.6);
+}
+.single-body-fixpoint code {
+  display: block;
+  color: var(--omega-current);
+  font: 10px/1.7 var(--font-mono);
+  overflow-wrap: anywhere;
+}
+.single-body-fixpoint ul {
+  display: grid;
+  gap: 2px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.single-body-fixpoint li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  font: 9px var(--font-mono);
+}
+.single-body-fixpoint li b { color: var(--omega-foam); font-weight: 600; }
+.single-body-fixpoint li span { color: var(--omega-unknown); }
+.single-body-fixpoint small {
+  display: block;
+  margin-top: 8px;
+  color: var(--omega-unknown);
+  font: 8px var(--font-mono);
+  letter-spacing: 0.02em;
+}
 .single-body-meter {
   height: 4px;
   margin-bottom: 13px;

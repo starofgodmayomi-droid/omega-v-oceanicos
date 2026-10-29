@@ -368,6 +368,21 @@ export function createApp(
         governance: { status: capability.humanAuthorizationRequired ? 'HUMAN_GATE_REQUIRED' : 'BOUNDED', failClosed: true },
         interface: { status: 'READY', contract: 'Navigator / Oceanic Mirror / living telemetry surface' },
       },
+      fixpoint: {
+        law: 'Ω∞v := Y( λf. ( M_{t+1} = M_t ∪ Δ | V(Δ) = ⊤ ) ) | V ≡ (Expected ≡ Observed)',
+        step: 'λx. f(Σ ∪ Hash(x)) when O(E(x)) ≡ VERIFIED, else HALT',
+        truth: 'Expected ≡ Observed',
+        branches: [
+          { when: 'O(E(x)) ≡ VERIFIED', then: 'f(Σ ∪ Hash(x))' },
+          { when: 'K(x) ∈ SCAM', then: 'HALT ⊢ DIVERGENT' },
+          { when: 'Evidence(x) = ∅', then: 'HALT ⊢ UNKNOWN' },
+          { when: 'Authority(x) < Required', then: 'HALT ⊢ NOT_EXECUTED' },
+        ],
+        observed: bodyStatus,
+        source: 'ECOSYSTEM_BODY.md',
+        scope: 'local-runtime',
+        boundary: 'the law is declared; this reading reports the observed status of this runtime, not a proof of infinity',
+      },
       expansion: {
         appendOnly: true,
         readOnly: true,

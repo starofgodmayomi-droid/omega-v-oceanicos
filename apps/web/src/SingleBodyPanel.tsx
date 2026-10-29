@@ -44,6 +44,15 @@ type Compression = {
   expansion?: { status: string; digestMatches?: boolean; lossless?: boolean };
 };
 
+type FixpointBranch = { when: string; then: string };
+type Fixpoint = {
+  law: string;
+  truth: string;
+  branches: FixpointBranch[];
+  observed: string;
+  source: string;
+};
+
 type Props = { body: any };
 
 const keyFor = (layer: string, organ: string, form: string, evidence: string) =>
@@ -61,6 +70,7 @@ export function SingleBodyPanel({ body }: Props) {
   const filled = compression?.filled ?? 0;
   const count = compression?.count ?? 0;
   const roundTrip = compression?.expansion?.status ?? 'UNKNOWN';
+  const fixpoint: Fixpoint | undefined = body?.fixpoint;
 
   const cellMap = useMemo(() => {
     const map = new Map<string, Cell>();
@@ -110,6 +120,24 @@ export function SingleBodyPanel({ body }: Props) {
           ROUND TRIP {roundTrip}
         </span>
       </header>
+
+      <div className="single-body-fixpoint" aria-label="Absolute Fixpoint Equation">
+        <code>{fixpoint?.law ?? 'Ω∞v := Y( λf. ( M_{t+1} = M_t ∪ Δ | V(Δ) = ⊤ ) ) | V ≡ (Expected ≡ Observed)'}</code>
+        <ul>
+          {(fixpoint?.branches ?? []).map((branch) => (
+            <li key={branch.when}>
+              <b>{branch.then}</b>
+              <span>if {branch.when}</span>
+            </li>
+          ))}
+          {!fixpoint && <li><b>UNKNOWN</b><span>the API has not reported the fixpoint yet</span></li>}
+        </ul>
+        <small>
+          {fixpoint
+            ? `${fixpoint.source} · truth ${fixpoint.truth} · observed ${fixpoint.observed}`
+            : 'Source: ECOSYSTEM_BODY.md'}
+        </small>
+      </div>
 
       <p className="single-body-equation" aria-label="Compression equation">
         {AXES.layer.length} layer × {AXES.organ.length} organ × {AXES.form.length} form × {AXES.evidence.length} evidence
