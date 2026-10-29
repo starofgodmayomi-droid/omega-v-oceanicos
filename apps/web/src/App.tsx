@@ -61,10 +61,10 @@ const MODE_BUTTONS = [
 
 type ConsoleSurface = 'dashboard' | 'legacy';
 
-export function App({ surface = 'legacy' }: { surface?: ConsoleSurface } = {}) {
-  // Two console surfaces so the whole-ecosystem dashboard is never stacked with
-  // the older panels: /console renders the dashboard, /console/legacy the rest.
-  const showLegacy = surface === 'legacy';
+export function App({ surface = 'dashboard' }: { surface?: ConsoleSurface } = {}) {
+  // The older panels are not a separate page: they sit behind a toggle on the
+  // dashboard. `surface` only chooses the initial state of that toggle.
+  const [showLegacy, setShowLegacy] = useState(surface === 'legacy');
   const [tip, setTip] = useState<any>(null);
   const [ledgerIntegrity, setLedgerIntegrity] = useState<{
     valid: boolean;
@@ -753,18 +753,26 @@ export function App({ surface = 'legacy' }: { surface?: ConsoleSurface } = {}) {
           </a>
         </div>
         <div style={{ textAlign: 'center', marginBottom: '8px' }}>
-          <a
-            href={showLegacy ? '/console' : '/console/legacy'}
+          <button
+            type="button"
+            aria-pressed={showLegacy}
+            aria-controls="legacy-panels"
+            onClick={() => setShowLegacy((open) => !open)}
             style={{
+              background: 'transparent',
+              border: `1px solid ${showLegacy ? theme.borderBright : theme.border}`,
+              color: theme.accent,
+              borderRadius: theme.radiusPill,
+              padding: '5px 14px',
+              fontFamily: theme.fontSans,
               fontSize: '10px',
               letterSpacing: '0.16em',
               textTransform: 'uppercase',
-              color: theme.accent,
-              textDecoration: 'none',
+              cursor: 'pointer',
             }}
           >
-            {showLegacy ? '← Command surface' : 'Legacy panels ↗'}
-          </a>
+            {showLegacy ? 'Hide legacy panels' : 'Legacy panels'}
+          </button>
         </div>
         <div style={{ textAlign: 'center', marginBottom: '16px' }}>
           <button
@@ -811,18 +819,27 @@ export function App({ surface = 'legacy' }: { surface?: ConsoleSurface } = {}) {
               color: theme.textMuted,
             }}
           >
-            Drafted here and submitted from the legacy console —{' '}
-            <a
-              href={`/console/legacy?intent=${encodeURIComponent(omegaIntent)}`}
-              style={{ color: theme.accent }}
+            Drafted here and submitted from the legacy panels —{' '}
+            <button
+              type="button"
+              onClick={() => setShowLegacy(true)}
+              style={{
+                background: 'none',
+                border: 'none',
+                padding: 0,
+                color: theme.accent,
+                fontFamily: 'inherit',
+                fontSize: 'inherit',
+                cursor: 'pointer',
+              }}
             >
               continue with this draft →
-            </a>
+            </button>
           </p>
         )}
 
         {showLegacy && (
-          <>
+          <section id="legacy-panels" aria-label="Legacy console panels">
         <WaterFlowPanel />
 
         {/* Prompt */}
@@ -950,7 +967,7 @@ export function App({ surface = 'legacy' }: { surface?: ConsoleSurface } = {}) {
           simulationMode={simulationMode}
           humanGateRequired={humanGateRequired}
         />
-          </>
+          </section>
         )}
       </main>
 

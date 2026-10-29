@@ -24,6 +24,7 @@ describe('current OceanicOS app shell', () => {
     render(<App />);
 
     await user.click(await screen.findByRole('button', { name: /AI SOUL/i }));
+    await user.click(screen.getByRole('button', { name: /continue with this draft/i }));
 
     expect(screen.getByPlaceholderText("Tell me what you're trying to do…")).toHaveValue('Map AI SOUL.');
     expect(
@@ -34,17 +35,37 @@ describe('current OceanicOS app shell', () => {
     ).toBe(false);
   });
 
-  it('keeps the dashboard surface free of the older panels', async () => {
+  it('starts with the older panels collapsed behind a toggle', async () => {
     installFetch();
     render(<AppSurface surface="dashboard" />);
 
     expect(await screen.findByRole('region', { name: 'Whole ecosystem command surface' })).toBeInTheDocument();
     expect(screen.queryByPlaceholderText("Tell me what you're trying to do…")).not.toBeInTheDocument();
     expect(screen.queryByText('What shall we make real?')).not.toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /legacy panels/i })).toHaveAttribute('href', '/console/legacy');
+    expect(screen.getByRole('button', { name: 'Legacy panels' })).toHaveAttribute('aria-pressed', 'false');
   });
 
-  it('drafts an organ prompt on the dashboard surface and hands it to the legacy console', async () => {
+  it('reveals the older panels in place instead of navigating to another page', async () => {
+    installFetch();
+    const user = userEvent.setup();
+    render(<AppSurface surface="dashboard" />);
+
+    await user.click(await screen.findByRole('button', { name: 'Legacy panels' }));
+
+    expect(
+      within(screen.getByRole('region', { name: 'Legacy console panels' })).getByPlaceholderText(
+        "Tell me what you're trying to do…"
+      )
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Hide legacy panels' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.queryByRole('link', { name: /legacy panels/i })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Hide legacy panels' }));
+
+    expect(screen.queryByRole('region', { name: 'Legacy console panels' })).not.toBeInTheDocument();
+  });
+
+  it('drafts an organ prompt on the dashboard and offers it to the legacy panels', async () => {
     const fetchMock = installFetch();
     const user = userEvent.setup();
     render(<AppSurface surface="dashboard" />);
@@ -52,10 +73,7 @@ describe('current OceanicOS app shell', () => {
     await user.click(await screen.findByRole('button', { name: /AI SOUL/i }));
 
     expect(screen.getByText('DRAFT · Map AI SOUL.')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /continue with this draft/i })).toHaveAttribute(
-      'href',
-      '/console/legacy?intent=Map%20AI%20SOUL.'
-    );
+    expect(screen.getByRole('button', { name: /continue with this draft/i })).toBeInTheDocument();
     expect(
       fetchMock.mock.calls.some(([, init]) => {
         const options = init as { method?: string } | undefined;
@@ -64,12 +82,12 @@ describe('current OceanicOS app shell', () => {
     ).toBe(false);
   });
 
-  it('keeps the older panels reachable on their own legacy surface', async () => {
+  it('opens the toggle already expanded for the legacy deep link', async () => {
     installFetch();
     render(<AppSurface surface="legacy" />);
 
     expect(await screen.findByPlaceholderText("Tell me what you're trying to do…")).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /command surface/i })).toHaveAttribute('href', '/console');
+    expect(screen.getByRole('button', { name: 'Hide legacy panels' })).toBeInTheDocument();
   });
 
   it('prefills the legacy prompt from the dashboard handoff', async () => {

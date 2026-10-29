@@ -6,16 +6,14 @@ import './App.css';
 import './tokens.css';
 
 // The Invisible Online Computer is the public surface; the console dashboard
-// lives at /console and the older panels at /console/legacy, so the two are
-// never stacked on one page.
+// lives at /console. The older panels are a toggle inside that page, not a
+// route of their own — /console/legacy only opens the toggle on arrival.
 const path = window.location.pathname.replace(/\/+$/, '') || '/';
-const Surface =
-  path === '/console' ? (
-    <App surface="dashboard" />
-  ) : path === '/console/legacy' ? (
-    <App surface="legacy" />
-  ) : (
-    <InvisibleComputer />
-  );
+const onConsole = path === '/console' || path === '/console/legacy';
+const Surface = onConsole ? (
+  <App surface={path === '/console/legacy' ? 'legacy' : 'dashboard'} />
+) : (
+  <InvisibleComputer />
+);
 
 ReactDOM.createRoot(document.getElementById('root')!).render(<React.StrictMode>{Surface}</React.StrictMode>);
