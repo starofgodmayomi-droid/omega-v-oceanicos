@@ -85,6 +85,28 @@ export function deriveAuthorityLevel(requested: unknown): AuthorityLevel {
   return requested === 'AUTONOMOUS' ? 'AUTONOMOUS' : 'READ_ONLY';
 }
 
+/**
+ * CAPABILITY != AUTHORITY. An intent that directs the system to act needs
+ * AUTONOMOUS authority. The endpoint grants READ_ONLY unless the request
+ * carries AUTONOMOUS, so a directive at READ_ONLY halts as NOT_EXECUTED before
+ * anything is executed, contracted, or remembered.
+ */
+export type RequiredAuthority = AuthorityLevel;
+
+const DIRECTIVE_ACTION =
+  /^(?:(?:please|kindly|now|go|just)\s+)*(?:(?:can|could|would|will)\s+you\s+|i\s+(?:want|need)\s+you\s+to\s+|i\s+(?:want|need)\s+to\s+)?(?:send|transfer|wire|pay|withdraw|deploy|publish|delete|remove|install|sign|submit|launch|mint|bridge|approve|buy|sell|trade|execute)\b/i;
+
+export function requiredAuthorityFor(intent: string): RequiredAuthority {
+  return DIRECTIVE_ACTION.test(intent.trim()) ? 'AUTONOMOUS' : 'READ_ONLY';
+}
+
+export function authoritySatisfies(
+  granted: AuthorityLevel,
+  required: RequiredAuthority
+): boolean {
+  return required === 'READ_ONLY' || granted === 'AUTONOMOUS';
+}
+
 export function expectedOutcomeFor(authorityLevel: AuthorityLevel): string {
   return authorityLevel === 'AUTONOMOUS'
     ? 'A bounded plan that names the single next action and its authorization gate; no execution or completion is claimed.'
@@ -155,6 +177,77 @@ export function verifyOmega(input: {
       status: 'UNKNOWN',
       checks,
       reason: `OMEGA could not verify the output: ${failed.map((check) => check.id).join(', ')}.`,
+    };
+  }
+  return { status: 'VERIFIED', checks, reason: null };
+}
+
+export type ReconciliationVerdict = {
+  status: 'VERIFIED' | 'DIVERGENT' | 'UNKNOWN';
+  checks: OmegaCheck[];
+  reason: string | null;
+};
+
+/**
+ * `V ≡ (Expected ≡ Observed)`, checked after the fact.
+ *
+ * MEMORY != PROOF: a memory row keeps the digest, not the text. Re-verifying
+ * therefore needs the preimage supplied again; the recomputed digest must
+ * match the remembered one and the contract that carried the expectation must
+ * still exist. A missing preimage or a missing contract is UNKNOWN, never a
+ * green verdict.
+ */
+export function reconcileEvidence(input: {
+  output: string | null | undefined;
+  evidenceHash: string;
+  expectedOutcome: string | null;
+}): ReconciliationVerdict {
+  const output = input.output ?? '';
+  const supplied = output.trim().length > 0;
+  const checks: OmegaCheck[] = [
+    {
+      id: 'PREIMAGE_SUPPLIED',
+      label: 'The observed output was supplied for recomputation',
+      passed: supplied,
+      detail: supplied ? `${output.trim().length} characters` : 'no output supplied',
+    },
+    {
+      id: 'DIGEST_MATCHES',
+      label: 'SHA-256 of the output matches the remembered digest',
+      passed:
+        supplied &&
+        /^[0-9a-f]{64}$/.test(input.evidenceHash) &&
+        sha256Hex(output) === input.evidenceHash,
+      detail: supplied ? 'digest recomputed from the supplied output' : 'cannot recompute without the output',
+    },
+    {
+      id: 'CONTRACT_BOUND',
+      label: 'The expectation the digest was verified against still exists',
+      passed: typeof input.expectedOutcome === 'string' && input.expectedOutcome.length > 0,
+      detail: input.expectedOutcome ? 'contract present' : 'no contract bound to this memory row',
+    },
+  ];
+
+  if (!supplied) {
+    return {
+      status: 'UNKNOWN',
+      checks,
+      reason:
+        'No preimage supplied; the remembered digest cannot be recomputed (MEMORY != PROOF).',
+    };
+  }
+  if (!checks[1].passed) {
+    return {
+      status: 'DIVERGENT',
+      checks,
+      reason: 'The supplied output does not reproduce the remembered digest.',
+    };
+  }
+  if (!checks[2].passed) {
+    return {
+      status: 'UNKNOWN',
+      checks,
+      reason: 'The output matches its digest, but no contract records the expectation.',
     };
   }
   return { status: 'VERIFIED', checks, reason: null };
