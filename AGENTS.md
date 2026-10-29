@@ -10,7 +10,7 @@
 ```bash
 docker compose -f docker-compose.base44.yml up -d
 ```
-- `setup` (one-shot): `pnpm install --frozen-lockfile` + `pnpm --filter api... run build` (builds the API and its workspace dependency tree; skips web).
+- `setup` (one-shot): `pnpm install --frozen-lockfile` + `pnpm --filter './packages/**' run build` + `pnpm --filter api run build`. It builds every workspace package, not just the API's dependency tree: several tests listed in the root `pnpm test` script import `packages/evolution`, `packages/coordination`, etc. from their `dist`, and those packages are not API dependencies, so without this they fail `ERR_MODULE_NOT_FOUND`. Skips the web build (Vite transpiles on the fly).
 - `api`: runs `tsc --watch` (rebuilds `apps/api/dist` on source change) + `node --watch apps/api/dist/index.js` (restarts on dist change). Live reload for API source edits.
 - `web`: `npx vite --host 0.0.0.0` from `apps/web`. Vite HMR for frontend edits.
 

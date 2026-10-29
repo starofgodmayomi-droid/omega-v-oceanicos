@@ -6,6 +6,8 @@
 
 ## Audit date and evidence
 
+**2026-10-29** — KAI, ELION, and OMEGA promoted to workspace packages (`packages/kai`, `packages/elion`, `packages/omega`) and declared as API dependencies; both tables, the counts, and the naming split were re-read from the manifests.
+
 **2026-10-02** — inspected current `main` at `fd4417e73c4aa10cec678d1f09eb6f09a0cffec2`.
 
 Evidence sources:
@@ -40,7 +42,7 @@ PRESENT ON DISK
 | **SOURCE-ONLY** | Package directory exists under `packages/`, but is not listed in `pnpm-workspace.yaml`. |
 | **STUB** | A source-only directory with a thin implementation; not an active workspace capability. |
 
-## API-DECLARED — workspace + direct API dependency (9 packages)
+## API-DECLARED — workspace + direct API dependency (12 packages)
 
 | Package | Name | Declared role |
 |---|---|---|
@@ -50,6 +52,9 @@ PRESENT ON DISK
 | `remember` | `@oceanicos/remember` | Remember |
 | `mini` | `@oceanicos/mini` | MINI kernel |
 | `attestation` | `@oceanicos/attestation` | Attest |
+| `kai` | `@oceanicos/kai` | KAI — intent screening, constitution, memory record types |
+| `elion` | `@oceanicos/elion` | ELION — provider resolution and execution |
+| `omega` | `@oceanicos/omega` | OMEGA — evidence hashing and verification |
 | `kernel` | `@omega-v/kernel` | Finite-state kernel |
 | `oreade` | `@omega-v/oreade` | ƆREADE layer, not authority |
 | `mood` | `@omega-v/mood` | Planning context, not evidence |
@@ -82,7 +87,7 @@ The following are examples, not an exhaustive package list: `policy`, `registry`
 
 ## Naming split (observed)
 
-- `@oceanicos/*` — types, observer, verification, remember, mini, attestation.
+- `@oceanicos/*` — types, observer, verification, remember, mini, attestation, kai, elion, omega.
 - `@omega-v/*` — kernel, oreade, mood, gateway, ir, compiler, evolution, coordination, auth, webhook, worker, pipeline, plus source-only packages.
 
 Unresolved naming edge. Do not silently rename packages.
@@ -91,8 +96,8 @@ Unresolved naming edge. Do not silently rename packages.
 
 | Category | Count | Action |
 |---|---:|---|
-| Workspace members | 20 (18 packages + 2 apps) | Membership only; do not infer capability |
-| API-declared | 9 packages | Direct manifest dependencies; verify actual use separately |
+| Workspace members | 23 (21 packages + 2 apps) | Membership only; do not infer capability |
+| API-declared | 12 packages | Direct manifest dependencies; verify actual use separately |
 | Workspace-only | 9 packages | Not direct API dependencies |
 | On-disk, off-workspace | Non-exhaustive | Promote only when earned |
 

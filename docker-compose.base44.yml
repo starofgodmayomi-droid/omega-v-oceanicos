@@ -7,7 +7,10 @@ services:
     working_dir: /app
     volumes:
       - .:/app
-    command: sh -c "corepack enable && corepack prepare pnpm@10 --activate && pnpm install --frozen-lockfile && pnpm --filter api... run build"
+    # Also builds workspace-only packages (evolution, coordination, …): the
+    # canonical integration suite imports their `dist`, but the API's own
+    # dependency tree does not include them.
+    command: sh -c "corepack enable && corepack prepare pnpm@10 --activate && pnpm install --frozen-lockfile && pnpm --filter './packages/**' run build && pnpm --filter api run build"
     environment:
       - CI=true
 
