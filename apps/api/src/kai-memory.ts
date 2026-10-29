@@ -170,6 +170,26 @@ export class KaiMemoryStore {
     return row ?? null;
   }
 
+  /**
+   * The approvals still waiting on a human. They are listed apart from
+   * KaiMemory because nothing is remembered until one is authorized.
+   */
+  listPendingApprovals(limit = 10): ApprovalRecord[] {
+    const bounded = Math.min(Math.max(Math.trunc(limit) || 10, 1), 50);
+    return this.db
+      .prepare(
+        'SELECT id, timestamp, intent, gate, contract_id, status, decided_at FROM "KaiApprovals" WHERE status = ? ORDER BY timestamp DESC, rowid DESC LIMIT ?'
+      )
+      .all('PENDING', bounded) as ApprovalRecord[];
+  }
+
+  countPendingApprovals(): number {
+    const row = this.db
+      .prepare('SELECT COUNT(*) AS total FROM "KaiApprovals" WHERE status = ?')
+      .get('PENDING') as { total: number } | undefined;
+    return Number(row?.total ?? 0);
+  }
+
   /** Single use: only a PENDING approval can be decided, once. */
   decideApproval(id: string, decision: 'AUTHORIZED' | 'REJECTED'): ApprovalRecord | null {
     const result = this.db

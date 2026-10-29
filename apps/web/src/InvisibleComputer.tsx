@@ -52,6 +52,14 @@ type MemoryRecord = {
   status: string;
 };
 
+type PendingApproval = {
+  id: string;
+  timestamp: string;
+  intent: string;
+  gate: string;
+  status: string;
+};
+
 const STATUS_TONE: Record<Verdict, string> = {
   VERIFIED: '#22c55e',
   DIVERGENT: '#ef4444',
@@ -87,6 +95,7 @@ export function InvisibleComputer() {
   const [visibleSteps, setVisibleSteps] = useState<ExecutionStep[]>([]);
   const [memoryTotal, setMemoryTotal] = useState<number | null>(null);
   const [memoryRecords, setMemoryRecords] = useState<MemoryRecord[]>([]);
+  const [pendingApprovals, setPendingApprovals] = useState<PendingApproval[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [approvalBusy, setApprovalBusy] = useState(false);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -103,6 +112,9 @@ export function InvisibleComputer() {
       const payload = await response.json();
       setMemoryTotal(typeof payload?.total === 'number' ? payload.total : null);
       setMemoryRecords(Array.isArray(payload?.records) ? payload.records : []);
+      setPendingApprovals(
+        Array.isArray(payload?.pending_approvals) ? payload.pending_approvals : []
+      );
     } catch {
       /* memory is ambient — a read failure must not break the surface */
     }
@@ -158,7 +170,9 @@ export function InvisibleComputer() {
         setRunning(false);
       }
 
-      if (execution.status === 'VERIFIED') void loadMemory();
+      // A pause or a decision changes the pending list, so memory is re-read
+      // after every outcome rather than only after a verified one.
+      void loadMemory();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Execution failed');
       setRunning(false);
@@ -188,7 +202,7 @@ export function InvisibleComputer() {
       setVisibleSteps((previous) => [...previous, ...resumedSteps]);
       setResult(resumed);
       setVerdict(resumed.status);
-      if (resumed.status === 'VERIFIED') void loadMemory();
+      void loadMemory();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Approval failed');
     } finally {
@@ -415,41 +429,94 @@ export function InvisibleComputer() {
         </div>
       )}
 
-      {/* Recent memory */}
-      {memoryRecords.length > 0 && (
+      {/* Recent memory, and the approvals still waiting on a human */}
+      {(memoryRecords.length > 0 || pendingApprovals.length > 0) && (
         <div style={{ marginTop: '14px' }}>
-          <div
-            style={{
-              fontFamily: theme.fontMono,
-              fontSize: '10px',
-              letterSpacing: '0.18em',
-              color: theme.textDim,
-              marginBottom: '6px',
-            }}
-          >
-            KAI MEMORY · LAST {memoryRecords.length}
-          </div>
-          {memoryRecords.map((record) => (
-            <div
-              key={record.id}
-              style={{
-                display: 'flex',
-                gap: '10px',
-                fontFamily: theme.fontMono,
-                fontSize: '10.5px',
-                color: theme.textDim,
-                padding: '2px 0',
-              }}
-            >
-              <span style={{ color: STATUS_TONE[(record.status as Verdict) ?? 'NOT_EXECUTED'] }}>
-                {record.status}
-              </span>
-              <span style={{ color: theme.textMuted, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {record.intent}
-              </span>
-              <span style={{ color: theme.accentWarm }}>{shortHash(record.evidence_hash)}</span>
+          {pendingApprovals.length > 0 && (
+            <div>
+              <div
+                style={{
+                  fontFamily: theme.fontMono,
+                  fontSize: '10px',
+                  letterSpacing: '0.18em',
+                  color: STATUS_TONE.AWAITING_APPROVAL,
+                  marginBottom: '6px',
+                }}
+              >
+                LUCID GATE · {pendingApprovals.length} PENDING
+              </div>
+              {pendingApprovals.map((approval) => (
+                <div
+                  key={approval.id}
+                  data-approval-id={approval.id}
+                  style={{
+                    display: 'flex',
+                    gap: '10px',
+                    fontFamily: theme.fontMono,
+                    fontSize: '10.5px',
+                    color: theme.textDim,
+                    padding: '2px 0',
+                  }}
+                >
+                  <span style={{ color: STATUS_TONE.AWAITING_APPROVAL, fontWeight: 700 }}>
+                    {approval.status}
+                  </span>
+                  <span
+                    style={{
+                      color: theme.textMuted,
+                      flex: 1,
+                      minWidth: 0,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {approval.intent}
+                  </span>
+                  <span style={{ color: theme.accentWarm, flexShrink: 0 }}>{approval.gate}</span>
+                  <span style={{ color: theme.textDim, flexShrink: 0 }}>
+                    {approval.id.slice(0, 8)}
+                  </span>
+                </div>
+              ))}
             </div>
-          ))}
+          )}
+          {memoryRecords.length > 0 && (
+            <div style={{ marginTop: pendingApprovals.length > 0 ? '10px' : 0 }}>
+              <div
+                style={{
+                  fontFamily: theme.fontMono,
+                  fontSize: '10px',
+                  letterSpacing: '0.18em',
+                  color: theme.textDim,
+                  marginBottom: '6px',
+                }}
+              >
+                KAI MEMORY · LAST {memoryRecords.length}
+              </div>
+              {memoryRecords.map((record) => (
+                <div
+                  key={record.id}
+                  style={{
+                    display: 'flex',
+                    gap: '10px',
+                    fontFamily: theme.fontMono,
+                    fontSize: '10.5px',
+                    color: theme.textDim,
+                    padding: '2px 0',
+                  }}
+                >
+                  <span style={{ color: STATUS_TONE[(record.status as Verdict) ?? 'NOT_EXECUTED'] }}>
+                    {record.status}
+                  </span>
+                  <span style={{ color: theme.textMuted, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {record.intent}
+                  </span>
+                  <span style={{ color: theme.accentWarm }}>{shortHash(record.evidence_hash)}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

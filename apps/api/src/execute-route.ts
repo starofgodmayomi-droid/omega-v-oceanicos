@@ -225,10 +225,15 @@ export function registerExecuteRoute(
   const memoryHandler = async (request: any) => {
     const rawLimit = request.query?.limit;
     const limit = rawLimit === undefined ? 10 : Number(rawLimit);
+    const bounded = Number.isFinite(limit) ? limit : 10;
     return {
       success: true,
       total: store.count(),
-      records: store.listMemory(Number.isFinite(limit) ? limit : 10),
+      records: store.listMemory(bounded),
+      // A paused intent is deliberately not a memory row, so the panel reads
+      // the approvals it is still waiting on from here.
+      pending_total: store.countPendingApprovals(),
+      pending_approvals: store.listPendingApprovals(bounded),
     };
   };
 

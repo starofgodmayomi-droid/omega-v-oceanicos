@@ -128,6 +128,16 @@ test('an irreversible intent pauses at the LUCID gate and remembers nothing', as
 
     const memory = await app.inject({ method: 'GET', url: '/api/kai/memory' });
     assert.equal(memory.json().total, 0);
+
+    // The paused intent is not a memory row, but it must be visible while it
+    // waits on a human.
+    const pending = await app.inject({ method: 'GET', url: '/api/kai/memory?limit=5' });
+    const pendingBody = pending.json();
+    assert.equal(pendingBody.pending_total, 1);
+    assert.equal(pendingBody.pending_approvals.length, 1);
+    assert.equal(pendingBody.pending_approvals[0].id, body.approval.id);
+    assert.equal(pendingBody.pending_approvals[0].gate, 'irreversible deployment');
+    assert.equal(pendingBody.pending_approvals[0].status, 'PENDING');
   } finally {
     await app.close();
   }
@@ -173,6 +183,7 @@ test('AUTHORIZE resumes the paused flow, remembers the evidence, and spends the 
     const memory = await app.inject({ method: 'GET', url: '/api/kai/memory' });
     assert.equal(memory.json().total, 1);
     assert.equal(memory.json().records[0].id, body.memory.id);
+    assert.equal(memory.json().pending_total, 0, 'a spent approval leaves the pending list');
 
     const again = await app.inject({
       method: 'POST',
@@ -215,6 +226,7 @@ test('REJECT ends the flow without executing or remembering anything', async () 
 
     const memory = await app.inject({ method: 'GET', url: '/api/kai/memory' });
     assert.equal(memory.json().total, 0);
+    assert.equal(memory.json().pending_total, 0, 'a rejected approval leaves the pending list');
   } finally {
     await app.close();
   }
