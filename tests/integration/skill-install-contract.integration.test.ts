@@ -15,6 +15,7 @@ const loadable = [
   'omega-v-os',
   'lucid-continuum',
   'oceanicos-total-continuum',
+  'kai-companion',
 ] as const;
 
 test('published Oceanicos skill contracts validate', () => {

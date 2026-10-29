@@ -19,6 +19,7 @@ its source.
 | `omega-v-os` | `6ed3f35d0085b8c3d7256cb65c3a8e49a24f860d90c7b940509ccfaf35480513` | 2026-10-16 |
 | `lucid-continuum` | `57a34241ff3d52ed143da49f1a9a04380743c2adf09bf9916553146915d711da` | 2026-10-16 |
 | `oceanicos-total-continuum` | `23aae4defff33f608b6ab1419a19e05b550565b8c44bc86aca3a31e24fa15086` | 2026-10-24 |
+| `kai-companion` | `c80e78043326775e82c323f7e42a0db911566b3b8b91967f69149d22fd2445b2` | 2026-10-29 |
 
 Verify an installed skill still matches what was recorded:
 
@@ -158,6 +159,23 @@ Installed 2026-10-16. Byte-identical to `skills/lucid-continuum/SKILL.md`. What 
 ## oceanicos-total-continuum
 
 Installed 2026-10-24. Byte-identical to `skills/oceanicos-total-continuum/SKILL.md`. One finite pass inside this public repository, then a handoff of only what was observed. A plan that never landed on the remote is `NOT_EXECUTED`.
+
+## kai-companion
+
+Installed 2026-10-29. Byte-identical to `skills/kai-companion/SKILL.md`, which
+`pnpm validate:skills` already checked as a published contract; this copy is what
+makes it loadable. KAI (continuity, memory, provenance) → ELION (bounded execution)
+→ Ω∞v (verification) is the method it states for repository work:
+`HUMAN INTENT → ΩIR → GITHUB HISTORY → RUNTIME OBSERVATION → RECONCILIATION →
+MEMORY → NEXT Δ`, with `VERIFIED` reserved for authorized execution plus valid,
+provenance-intact evidence and an observed result. `POSSIBLE`, `UNKNOWN`,
+`DIVERGENT`, and `NOT_EXECUTED` are preserved rather than smoothed into success.
+
+### Loading
+
+Written mid-session on 2026-10-29 and not available in that same session's skill
+list, which is consistent with the delayed-loading observation recorded under
+`omega-full-stack-max` above. Read directly from this path until it appears.
 
 ---
 
