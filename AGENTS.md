@@ -39,6 +39,13 @@ docker compose -f docker-compose.base44.yml up -d
 ## No external credentials needed
 All secrets (signing key, tokens) are local dev values in `.env.base44-defaults`. No external service credentials are required for the app to run.
 
+## Organ packages (KAI / ELION / OMEGA)
+`packages/kai` (`@oceanicos/kai`), `packages/elion` (`@oceanicos/elion`), and `packages/omega` (`@oceanicos/omega`) are workspace members declared in `ECOSYSTEM_BODY.md`. They are plain CommonJS-targeted TypeScript (no `"type": "module"`, like `packages/mini`), so `ts-jest` can run their tests without ESM flags. They build with the rest of the workspace and are **not** imported by `apps/api` yet.
+- After adding or removing a workspace package, run `pnpm install` once (inside the `api` container) and commit the updated `pnpm-lock.yaml`; the `setup` service uses `--frozen-lockfile` and fails otherwise.
+- `docs/REPO_INVENTORY.md` has two tables the inventory contract test compares to `pnpm-workspace.yaml` and `apps/api/package.json`, plus counts. Adding a workspace package requires updating the table and the summary counts together.
+- `packages/README.md` must name every directory in `packages/`; `apps/README.md` must name every directory in `apps/`, and each of those directories needs a README (documents-claims test).
+- Per-package tests: `docker compose -f docker-compose.base44.yml exec -T api sh -c "cd /app/packages/kai && ./node_modules/.bin/jest --config jest.config.cjs --no-cache"` (same for `elion`, `omega`). Use `--no-cache` after changing a package's `type` field; a stale haste map otherwise reports an ESM error that no longer applies.
+
 ## Verify
 - API health: `curl http://localhost:5000/health` → `{"status":"ok",...}`
 - Web: `curl http://localhost:3000` → Vite-served HTML with `/@vite/client` and `/src/main.tsx`.

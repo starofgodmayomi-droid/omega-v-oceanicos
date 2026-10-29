@@ -46,6 +46,20 @@ const { observation, verification, memory } = mini.cycle({
 });
 ```
 
+## The body's organs
+
+The three organs declared in [ECOSYSTEM_BODY.md](../ECOSYSTEM_BODY.md), each a workspace
+member with its own tests:
+
+| Organ | Package | Role | Invariant |
+| --- | --- | --- | --- |
+| Mind | `packages/kai/` (`@oceanicos/kai`) | continuity drops, bounded recall, scam-intent shield | a drop is memory, never proof |
+| Hands | `packages/elion/` (`@oceanicos/elion`) | admission-gated execution | returns `EXECUTED_NOT_VERIFIED`, never a verdict |
+| Judge | `packages/omega/` (`@oceanicos/omega`) | expected-vs-observed reconciliation | fails closed; no observation is `UNKNOWN` |
+
+They are unit-tested but not yet imported by `apps/api`; that divergence is recorded in
+[ECOSYSTEM_BODY.md](../ECOSYSTEM_BODY.md) and [docs/REPO_INVENTORY.md](../docs/REPO_INVENTORY.md).
+
 ## Earned expansions
 
 These packages expand MINI when earned:
@@ -115,6 +129,7 @@ Extended subsystem modules for the Ω∞v Oceanicos ecosystem:
 | `@omega-v/notary`       | Notary Verification Engine                |
 | `@omega-v/oracle`       | Trusted Oracle Engine                     |
 | `@omega-v/orchestrator` | Pipeline Orchestrator Engine              |
+| `@omega-v/oreade`       | ƆREADE symbolic language into bounded drops |
 | `@omega-v/pipeline`     | Verification Pipeline Engine              |
 | `@omega-v/policy`       | Policy Evaluation Engine                  |
 | `@omega-v/registry`     | Component Registry Engine                 |

@@ -403,3 +403,51 @@ continuity.
 
 **EACH END IS A NEW BEGINNING. EACH BEGINNING IS A NEW BECOMING.**
 **💧 Ω∞v OCEANICOS — THE ONE LIVING ECOSYSTEM BODY.**
+
+---
+
+## §16 — Body instantiated, one intent walked (2026-10-29)
+
+The previous pass ended with a next becoming: walk the §8 vertical slice as one intent.
+This pass did that, and it also gave the body its declared organs.
+
+### What was instantiated
+
+| Claim | Evidence observed this pass | Status |
+| --- | --- | --- |
+| The Soul file exists at the repository root and maps every organ to a real path | wrote and read `ECOSYSTEM_BODY.md`; its reality table names `packages/kai`, `packages/elion`, `packages/omega`, `packages/remember`, `packages/mini`, `packages/types`, `apps/api`, `apps/web`, `genesis.sh` | `SUPPORTED` |
+| KAI, ELION, and OMEGA are workspace members with real behaviour | `pnpm-workspace.yaml` lists the three paths; `pnpm install --frozen-lockfile` reports the lockfile up to date (24 workspace projects) | `SUPPORTED` |
+| Their units pass | `jest --config packages/{kai,elion,omega}/jest.config.cjs --no-cache` → 5, 4, and 5 tests passing | `SUPPORTED` |
+| The whole workspace still builds | `pnpm --recursive run build` → every package and both apps report `Done` | `SUPPORTED` |
+| The inventory and app indexes match the manifests | `node --experimental-strip-types --test repo-inventory-contract apps-index-contract one-body-ecosystem` → 8/8 pass | `SUPPORTED` |
+| Documentation still resolves | link/README sweep over every markdown file → 0 broken links, every package and app has a README and is named in its index; `validate-readme-contract` → 80 contracts, `validate-skill-contracts` → 14 contracts | `SUPPORTED` |
+| The organs are wired into the running API | `apps/api/package.json` declares none of the three; the API routes do not import them | `NOT_EXECUTED` — divergence kept |
+
+### The walked intent
+
+```text
+INTENT      "observe the running API health and report what was actually returned"
+  → CREATE    POST /v1/omega/commands            → PROPOSED, dryRun true, authorized false
+  → APPROVE   POST .../approve                   → AUTHORIZED, authority human:kai-operator
+  → EXECUTE   POST .../execute                   → EXECUTED, attestation-b3d5d286…9d2b2ac
+  → OBSERVE   POST .../observe (caller-supplied) → DIVERGENT, independentObservation false
+  → VERIFY    POST .../verify-reality            → 409 COMMAND_REALITY_NOT_INDEPENDENTLY_VERIFIED
+  → MEMORY    GET  .../provenance                → command.proposed → approved → executed → reality-observed
+```
+
+Terminal state `DIVERGENT`, kept. The supplied state (`health endpoint returned ok`) did not
+match the executed transition target, and the API refused to upgrade a caller-supplied
+observation into verification — the same prohibition §8 states. No step was inferred from a
+green status.
+
+### Continuity record for the next cycle
+
+- **Inherited:** the body map, the three organ packages with their fail-closed contracts, the
+  `DIVERGENT` slice result above, and the pre-existing documentation gaps now closed
+  (`oreade` named in the packages index, `apps/data` has a README and is named in the apps index).
+- **Next becoming (highest value, safe, authorized):** wire KAI → ELION → OMEGA into one API
+  route behind human approval, keeping the existing rule that a caller-supplied observation is
+  never verification; prove it with success, denial, divergence, and missing-observation tests.
+- **Prerequisite:** none external; the dev stack runs on compose with no credentials.
+- **Acceptance:** the route returns `VERIFIED | DIVERGENT | UNKNOWN | NOT_EXECUTED`, and a
+  caller echo still cannot pass the gate.

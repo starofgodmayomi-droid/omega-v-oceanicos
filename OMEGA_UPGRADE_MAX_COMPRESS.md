@@ -5,6 +5,9 @@ VERIFY(ΔREALITY)
 SOURCE → RUNTIME → REALITY
 ```
 
+Soul and body map: [`ECOSYSTEM_BODY.md`](ECOSYSTEM_BODY.md) — KAI (`packages/kai`), ELION
+(`packages/elion`), OMEGA (`packages/omega`), and the Fixpoint laws.
+
 Canonical detail: [`docs/upgrades/MAX_COMPRESS_FULL_STACK_HANDOFF.md`](docs/upgrades/MAX_COMPRESS_FULL_STACK_HANDOFF.md)
 
 Work mood compression: [`docs/upgrades/FULL_STACK_WORK_MOOD_MAX_COMPRESS.md`](docs/upgrades/FULL_STACK_WORK_MOOD_MAX_COMPRESS.md)

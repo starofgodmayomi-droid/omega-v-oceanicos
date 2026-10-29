@@ -30,6 +30,7 @@ without treating any single component—or any agent—as the final authority.
 
 ## At a glance
 
+- 💧 **[Ecosystem body](ECOSYSTEM_BODY.md)** — the repository as the whole body: KAI (mind), ELION (hands), OMEGA (judge), and the Fixpoint laws
 - 📋 **[Manifest](MANIFEST.md)** — Project mission, principles, and architecture
 - 💧 **[Mirror-Water Universal Body](docs/MIRROR-WATER-UNIVERSAL-BODY.md)** — one body, one current, bounded transitions, and evidence-bound truth
 - 🌊 **[Ω∞v Maximum Full-Stack Space of Reality](docs/OMEGA-INFINITY-MAXIMUM-FULL-STACK-SPACE.md)** — canonical ecosystem vision: representation, authority, bounded execution, observation, reconciliation, and next finite Δ

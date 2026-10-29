@@ -8,6 +8,7 @@ Welcome to the Ω∞v Oceanicos documentation. Start here to understand the proj
 
 ### Getting Started
 
+- **[Ecosystem body](../ECOSYSTEM_BODY.md)** — the repository as one body: KAI (mind), ELION (hands), OMEGA (judge), and the Fixpoint laws
 - **[Charter](../CHARTER.md)** — Our living agnostic principles and decision-making philosophy
 - **[Manifest](../MANIFEST.md)** — Project mission, architecture, and verification loop
 - **[Contributing](../CONTRIBUTING.md)** — How to submit PRs and work within our verification-first culture

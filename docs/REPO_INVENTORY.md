@@ -8,6 +8,12 @@
 
 **2026-10-02** — inspected current `main` at `fd4417e73c4aa10cec678d1f09eb6f09a0cffec2`.
 
+**2026-10-29** — `kai`, `elion`, and `omega` added as workspace members (the organs declared
+in [ECOSYSTEM_BODY.md](../ECOSYSTEM_BODY.md)). Tables and counts below were re-checked
+against the manifests on branch `full-stack-upgrade`; the inventory contract test passed
+(8/8). Membership still does not prove they are imported, run, or verified — `apps/api`
+does not depend on them on this tip.
+
 Evidence sources:
 
 - `pnpm-workspace.yaml` — authoritative explicit workspace paths.
@@ -56,10 +62,13 @@ PRESENT ON DISK
 
 The API manifest declares these workspace dependencies. The list alone does not prove each is imported, executed, or exposed as an API capability.
 
-## WORKSPACE-ONLY — workspace member, no direct API dependency (9 packages)
+## WORKSPACE-ONLY — workspace member, no direct API dependency (12 packages)
 
 | Package | Name | Declared role |
 |---|---|---|
+| `kai` | `@oceanicos/kai` | Mind: continuity memory, bounded recall, scam-intent shield |
+| `elion` | `@oceanicos/elion` | Hands: admission-gated execution, never a verdict |
+| `omega` | `@oceanicos/omega` | Judge: expected-vs-observed reconciliation, fails closed |
 | `gateway` | `@omega-v/gateway` | Gateway |
 | `ir` | `@omega-v/ir` | Intermediate-representation bytecode and execution engine |
 | `compiler` | `@omega-v/compiler` | Rule DSL to IR bytecode compiler |
@@ -72,6 +81,10 @@ The API manifest declares these workspace dependencies. The list alone does not 
 
 These packages are explicit workspace members, but are not direct API workspace dependencies. That does not prove whether another package uses them or whether a specific build/test ran.
 
+`kai`, `elion`, and `omega` are the organs declared in `ECOSYSTEM_BODY.md`. They are
+workspace members with their own unit tests and are not imported by `apps/api` on this
+tip; their capability is a package surface, not a running route.
+
 This includes `@omega-v/ir`, `@omega-v/compiler`, and `@omega-v/evolution`: all three are workspace members on the audited tip, not source-only directories, and not direct API dependencies in the current API manifest.
 
 The workspace also includes the `apps/api` and `apps/web` applications. They are applications, not entries in either package table.
@@ -82,7 +95,7 @@ The following are examples, not an exhaustive package list: `policy`, `registry`
 
 ## Naming split (observed)
 
-- `@oceanicos/*` — types, observer, verification, remember, mini, attestation.
+- `@oceanicos/*` — types, observer, verification, remember, mini, attestation, kai, elion, omega.
 - `@omega-v/*` — kernel, oreade, mood, gateway, ir, compiler, evolution, coordination, auth, webhook, worker, pipeline, plus source-only packages.
 
 Unresolved naming edge. Do not silently rename packages.
@@ -91,9 +104,9 @@ Unresolved naming edge. Do not silently rename packages.
 
 | Category | Count | Action |
 |---|---:|---|
-| Workspace members | 20 (18 packages + 2 apps) | Membership only; do not infer capability |
+| Workspace members | 23 (21 packages + 2 apps) | Membership only; do not infer capability |
 | API-declared | 9 packages | Direct manifest dependencies; verify actual use separately |
-| Workspace-only | 9 packages | Not direct API dependencies |
+| Workspace-only | 12 packages | Not direct API dependencies |
 | On-disk, off-workspace | Non-exhaustive | Promote only when earned |
 
 ## Test and CI evidence

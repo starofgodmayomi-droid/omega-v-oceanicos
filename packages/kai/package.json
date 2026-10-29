@@ -1,0 +1,28 @@
+{
+  "name": "@oceanicos/kai",
+  "version": "0.1.0",
+  "description": "KAI \u2014 the Mind of the \u03a9\u221ev body: continuity drops, bounded recall, and the scam-intent shield",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "cd ../.. && jest --runInBand --config packages/kai/jest.config.cjs",
+    "clean": "node ../../scripts/rimraf.cjs dist \"*.tsbuildinfo\""
+  },
+  "keywords": [
+    "kai",
+    "memory",
+    "continuity",
+    "shield",
+    "oceanicos"
+  ],
+  "author": "\u03a9\u221ev Community",
+  "license": "Apache-2.0",
+  "dependencies": {},
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "jest": "^30.5.2",
+    "ts-jest": "^29.4.14",
+    "typescript": "^6.0.3"
+  }
+}

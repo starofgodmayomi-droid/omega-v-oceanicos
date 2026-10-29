@@ -1,0 +1,28 @@
+{
+  "name": "@oceanicos/elion",
+  "version": "0.1.0",
+  "description": "ELION \u2014 the Hands of the \u03a9\u221ev body: admission-gated execution that never claims verification",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "cd ../.. && jest --runInBand --config packages/elion/jest.config.cjs",
+    "clean": "node ../../scripts/rimraf.cjs dist \"*.tsbuildinfo\""
+  },
+  "keywords": [
+    "elion",
+    "execution",
+    "admission",
+    "authority",
+    "oceanicos"
+  ],
+  "author": "\u03a9\u221ev Community",
+  "license": "Apache-2.0",
+  "dependencies": {},
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "jest": "^30.5.2",
+    "ts-jest": "^29.4.14",
+    "typescript": "^6.0.3"
+  }
+}
