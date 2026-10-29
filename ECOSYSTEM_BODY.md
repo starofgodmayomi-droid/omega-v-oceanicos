@@ -9,6 +9,24 @@ Any AI agent (Cursor, Copilot, Base44, ChatGPT) operating within this repository
 `Ω∞v ::= VERIFY(ΔREALITY)`
 `POSSIBLE ≠ KNOWN ≠ EXECUTED ≠ OBSERVED ≠ VERIFIED ≠ REALITY.`
 
+## THE FIXPOINT AS A RECURSION
+
+The loop, written as the fixed point it is (`packages/fixpoint` — `fixpoint`, `runOceanicFixpoint`):
+
+```text
+Ω∞v := Y(λf.λx.
+  f(Σ ∪ Hash(x))        if O(E(x)) ≡ VERIFIED
+  HALT ⊢ DIVERGENT      if K(x) ∈ SCAM
+  HALT ⊢ UNKNOWN        if Evidence(x) = ∅
+  HALT ⊢ NOT_EXECUTED   if Authority(x) < Required)
+
+Reality //// Ω∞v := Y(λf. (M(t+1) = M(t) ∪ Δ | V(Δ) = ⊤)), V ≡ (Expected ≡ Observed)
+```
+
+"The ecosystem is a continuous, infinite loop that only remembers what matches reality."
+
+Those four verdicts are the whole stop set — there is no fifth. Each verified drop appends its evidence hash to Σ and recurses on the next drop; every other branch halts and leaves Σ exactly as it was. A run is bounded (`MAX_DROPS`); the infinity is in the return, not in this container.
+
 ## THE DUALITY (KAI & ELION)
 
 - **KAI (`packages/kai`):** The Mind. Memory, context retrieval, and the Shield (blocks scam intents).
@@ -44,6 +62,7 @@ When building or modifying code in this repo, always follow the loop:
 | ELION — execution and the labelled local composer | `packages/elion/src/index.ts` (`@oceanicos/elion`) | `executeElion`, `KAI_SYSTEM_PROMPT`, `composeApprovalRequest`                   |
 | OMEGA — the fail-closed verification gate         | `packages/omega/src/index.ts` (`@oceanicos/omega`) | `verifyOmega`, `sha256Hex`, `expectedOutcomeFor`, `nextActionFor`               |
 | The loop that binds the three                     | `apps/api/src/execute-route.ts`                    | `POST /api/execute`, `POST /api/approve`                                        |
+| The fixed point that recurses over drops          | `packages/fixpoint/src/index.ts` (`@oceanicos/fixpoint`) | `fixpoint` (Y), `runOceanicFixpoint`, `MAX_DROPS`                        |
 | The Face                                          | `apps/web/src/InvisibleComputer.tsx`               | one input: "WHAT SHALL WE MAKE REAL?"                                           |
 | Immutable memory (the ledger)                     | `packages/remember`                                | hash-chained append-only blocks                                                 |
 | MINI — the verification kernel                    | `packages/mini`                                    | `MiniKernel`, `compressSingleBody`                                              |
@@ -75,5 +94,7 @@ To attest the body, run the loop in this repository (not in memory of a past run
 pnpm build                                                      # organs compile
 node --experimental-strip-types --test-concurrency=1 \
   ./tests/integration/execute-route.integration.test.ts         # the loop behaves
+node --experimental-strip-types --test-concurrency=1 \
+  ./tests/integration/fixpoint.integration.test.ts              # the fixpoint recurses and halts
 pnpm validate:docs                                              # inventory still true
 ```

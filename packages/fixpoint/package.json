@@ -1,0 +1,20 @@
+{
+  "name": "@oceanicos/fixpoint",
+  "version": "1.0.0",
+  "description": "Ω∞v — the fixed point of the body: Y over the drop loop, memory grows only with verified deltas",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@oceanicos/elion": "workspace:*",
+    "@oceanicos/kai": "workspace:*",
+    "@oceanicos/omega": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.4"
+  }
+}

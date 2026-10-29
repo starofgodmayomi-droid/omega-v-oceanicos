@@ -40,6 +40,9 @@ importers:
       '@oceanicos/elion':
         specifier: workspace:*
         version: link:../../packages/elion
+      '@oceanicos/fixpoint':
+        specifier: workspace:*
+        version: link:../../packages/fixpoint
       '@oceanicos/kai':
         specifier: workspace:*
         version: link:../../packages/kai
@@ -202,6 +205,22 @@ importers:
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
+
+  packages/fixpoint:
+    dependencies:
+      '@oceanicos/elion':
+        specifier: workspace:*
+        version: link:../elion
+      '@oceanicos/kai':
+        specifier: workspace:*
+        version: link:../kai
+      '@oceanicos/omega':
+        specifier: workspace:*
+        version: link:../omega
+    devDependencies:
+      '@types/node':
+        specifier: ^26.6.4
+        version: 26.6.4
 
   packages/gateway:
     dependencies:

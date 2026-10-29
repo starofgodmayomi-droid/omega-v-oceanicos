@@ -13,6 +13,7 @@
     "@fastify/rate-limit": "^11.2.0",
     "@oceanicos/attestation": "workspace:*",
     "@oceanicos/elion": "workspace:*",
+    "@oceanicos/fixpoint": "workspace:*",
     "@oceanicos/kai": "workspace:*",
     "@oceanicos/mini": "workspace:*",
     "@oceanicos/observer": "workspace:*",

@@ -25,6 +25,7 @@ import { OmegaCommandStore, OmegaIdempotencyConflictError, registerOmegaRoutes }
 import { registerMeshValidationRoute } from './mesh-route.js';
 import { KaiMemoryStore } from './kai-memory.js';
 import { registerExecuteRoute } from './execute-route.js';
+import { registerFixpointRoute } from './fixpoint-route.js';
 import {
   ENCRYPTION_ALGORITHM,
   appendEvent,
@@ -266,6 +267,7 @@ export function createApp(
   });
   registerMeshValidationRoute(fastify, ledgerMemory, requireReadAccess, jsonError);
   registerExecuteRoute(fastify, kaiMemory, jsonError);
+  registerFixpointRoute(fastify, kaiMemory, jsonError);
 
   fastify.get('/health', async (_request, reply) => {
     let ledgerIntegrity;

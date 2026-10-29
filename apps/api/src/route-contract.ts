@@ -57,6 +57,8 @@ export const API_ROUTE_INVENTORY = [
   'GET /v1/ecosystem/status',
   'POST /api/execute',
   'POST /execute',
+  'POST /api/fixpoint',
+  'POST /fixpoint',
   'GET /api/kai/memory',
   'GET /kai/memory',
   'GET /v1/block/tip',

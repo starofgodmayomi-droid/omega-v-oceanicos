@@ -10,6 +10,7 @@ packages:
   - 'packages/kai'
   - 'packages/elion'
   - 'packages/omega'
+  - 'packages/fixpoint'
   - 'packages/ir'
   - 'packages/compiler'
   - 'packages/evolution'

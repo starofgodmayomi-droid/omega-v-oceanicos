@@ -49,6 +49,13 @@ docker compose -f docker-compose.base44.yml up -d
 - `authorityLevel` in the request body may be `AUTONOMOUS`; the endpoint still only answers (CAPABILITY != AUTHORITY), and the contract records a bounded plan. An irreversible intent overrides the caller to `HUMAN_APPROVAL_REQUIRED` — a caller cannot self-authorize a deployment, deletion, or payment.
 - Tests: `node --experimental-strip-types --test ./tests/integration/execute-route.integration.test.ts` (needs `apps/api/dist` built, like the route-contract test).
 
+## The fixpoint (`@oceanicos/fixpoint`)
+- `packages/fixpoint/src/index.ts` carries the recursion the other organs run inside: `fixpoint` is a real Y combinator (`fixpoint(f) = f(fixpoint(f))`), and `runOceanicFixpoint({ drops })` is the loop `Ω∞v := Y(λf.λx. f(Σ ∪ Hash(x)) if O(E(x)) ≡ VERIFIED else HALT)`.
+- Stop set is exactly four verdicts — `DIVERGENT` (K(x) ∈ SCAM, or Expected ≢ Observed), `UNKNOWN` (Evidence(x) = ∅), `NOT_EXECUTED` (Authority(x) < Required, i.e. the LUCID gate without a human), `VERIFIED` (every drop reconciled). `VERIFIED` with `halted_at: null` means the whole run completed; otherwise `halted_at` is the index that stopped it.
+- `POST /api/fixpoint` (alias `POST /fixpoint`, also reachable through the Vite `/api` proxy) takes `{ intent }` or `{ intents: [...] }` (1..`MAX_DROPS` = 8, each ≤ 2000 chars) and returns the receipt. Only the verified passes are written to `KaiMemory` by the route; a halting drop writes nothing, so `memory` and the `KaiMemory` rows stay in step.
+- This endpoint has no human in it, so an irreversible drop halts with `NOT_EXECUTED` rather than creating an approval row. `/execute` + `/approve` remains the path that carries a person through the LUCID gate.
+- Test: `node --experimental-strip-types --test ./tests/integration/fixpoint.integration.test.ts` (needs `apps/api/dist` and `packages/fixpoint/dist` built).
+
 ## Single body compression (4×4×4×4)
 `GET /v1/ecosystem/body` carries a `compression` block: the seven runtime layers projected onto four axes of four coordinates (256 cells) with a local compress→expand proof. `POST /v1/ecosystem/body/expand` takes `{ compression }` and returns the records; a tampered digest is `400 DIGEST_MISMATCH`. Contract: `packages/mini/src/single-body.ts`; doc: `docs/SINGLE-BODY-4X4X4X4.md`; UI: `apps/web/src/SingleBodyPanel.tsx`. Coordinates are a declared projection (`body.layers.v1`), not inferred truth.
 
