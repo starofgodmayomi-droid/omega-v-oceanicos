@@ -3,13 +3,15 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import test from 'node:test';
-import { KAI_SYSTEM_PROMPT } from '../../apps/api/src/invisible-computer.ts';
+import { KAI_SYSTEM_PROMPT } from '@oceanicos/kai';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const body = () => readFileSync(join(root, 'ECOSYSTEM_BODY.md'), 'utf8');
 
 const ORGANS = [
-  'apps/api/src/invisible-computer.ts',
+  'packages/kai/src/index.ts',
+  'packages/elion/src/index.ts',
+  'packages/omega/src/index.ts',
   'apps/api/src/kai-memory.ts',
   'apps/api/src/execute-route.ts',
   'packages/mini/src/index.ts',

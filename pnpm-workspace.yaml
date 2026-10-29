@@ -1,5 +1,8 @@
 packages:
   - 'packages/types'
+  - 'packages/kai'
+  - 'packages/elion'
+  - 'packages/omega'
   - 'packages/observer'
   - 'packages/verification'
   - 'packages/remember'

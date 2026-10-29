@@ -1,6 +1,11 @@
 import { randomUUID } from 'node:crypto';
 import { openDatabase, type SqliteDb } from './sqlite.js';
-import type { AuthorityLevel } from './invisible-computer.js';
+import type {
+  AuthorityLevel,
+  KaiMemoryEvidenceRecord,
+  KaiMemoryRecord,
+  OmegaContract,
+} from '@oceanicos/kai';
 
 /*
  * KAI — the memory of the Invisible Online Computer.
@@ -16,22 +21,7 @@ import type { AuthorityLevel } from './invisible-computer.js';
  * written before replay existed carry no text and replay as UNKNOWN.
  */
 
-export type KaiMemoryRecord = {
-  id: string;
-  timestamp: string;
-  intent: string;
-  evidence_hash: string;
-  status: string;
-};
-
-export type KaiMemoryEvidenceRecord = KaiMemoryRecord & { evidence_text: string | null };
-
-export type OmegaContract = {
-  id: string;
-  intent: string;
-  authority_level: AuthorityLevel;
-  expected_outcome: string;
-};
+export type { KaiMemoryEvidenceRecord, KaiMemoryRecord, OmegaContract };
 
 export class KaiMemoryStore {
   private readonly db: SqliteDb;

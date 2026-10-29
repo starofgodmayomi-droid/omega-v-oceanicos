@@ -18,11 +18,11 @@ POSSIBLE ≠ KNOWN ≠ EXECUTED ≠ OBSERVED ≠ VERIFIED ≠ REALITY
 
 | Organ | Where it actually lives | What it does |
 | --- | --- | --- |
-| **KAI · Shield** | `apps/api/src/invisible-computer.ts` (`scanIntent`) | Halts a known fraud pattern before anything executes. |
-| **KAI · Memory** | `apps/api/src/kai-memory.ts` (`KaiMemoryStore`) | SQLite `KaiMemory` + `OmegaIR_Contracts`; retains the evidence text a digest was taken from. |
-| **ELION · Hands** | `apps/api/src/invisible-computer.ts` (`executeElion`) | One bounded answer via an OpenAI-compatible model, or the labelled `local-deterministic` composer. |
+| **KAI · Shield** | `packages/kai/src/index.ts` (`scanIntent`, `KAI_SHIELD_PATTERNS`, `KAI_SYSTEM_PROMPT`) | Halts a known fraud pattern before anything executes. |
+| **KAI · Memory** | `apps/api/src/kai-memory.ts` (`KaiMemoryStore`) over the record contracts in `@oceanicos/kai` | SQLite `KaiMemory` + `OmegaIR_Contracts`; retains the evidence text a digest was taken from. |
+| **ELION · Hands** | `packages/elion/src/index.ts` (`executeElion`, `composeLocalElionResponse`) | One bounded answer via an OpenAI-compatible model, or the labelled `local-deterministic` composer. |
 | **The loop** | `apps/api/src/execute-route.ts` | Wires observe → execute → verify → remember and owns the replay/audit endpoints. |
-| **OMEGA · Judge** | `apps/api/src/invisible-computer.ts` (`verifyOmega`) + `packages/mini/src/index.ts` | Recomputes the SHA-256 digest, compares against the contract, fails closed to `UNKNOWN`. |
+| **OMEGA · Judge** | `packages/omega/src/index.ts` (`sha256Hex`, `verifyOmega`, `replayVerdict`) + `packages/mini/src/index.ts` | Recomputes the SHA-256 digest, compares against the contract, fails closed to `UNKNOWN`. |
 | **Ledger** | `packages/remember/src/index.ts` (`ledger.ts`, `store.ts`) | Append-only remembered evidence; the API's replay rule reads the same rows. |
 | **Shared contracts** | `packages/types` (`@oceanicos/types`) | Contract types shared across packages. |
 | **Face** | `apps/api` (Fastify, port 5000) and `apps/web` (Vite/React, port 3000); hero surface `apps/web/src/InvisibleComputer.tsx` | The routes and the one screen a human uses. |
@@ -59,16 +59,26 @@ while it still recomputes.
 7. **PIDGIN FIT CARRY THE WARMTH; EVIDENCE GO CARRY THE CLAIM.** — the persona text carries the
    warmth; the ledger carries the claim.
 
-## DELIBERATELY ABSENT: EMPTY `kai` / `elion` / `omega` PACKAGES
+## THE EXTRACTION (DONE, NOT DECORATED)
 
-Earlier blueprints proposed `packages/kai`, `packages/elion`, `packages/omega` with empty
-`index.ts` stubs. Those directories are not created, on purpose: the organs already run, from the
-paths in the table above. An empty package would be structure without function — `NOT_EXECUTED`
-decorated as architecture, which this body forbids.
+The organs now live in real workspace packages — `@oceanicos/kai`, `@oceanicos/elion`,
+`@oceanicos/omega` — built by tsc like every other `@oceanicos/*` package, and imported by
+`apps/api/src/execute-route.ts`. The old single file they were copied out of is deleted; there is
+no second copy to drift.
 
-Extracting them for real is a refactor with a named trigger: when a second consumer needs `scanIntent`,
-`executeElion` or `verifyOmega`, lift the functions into workspace packages, point `apps/api` at them,
-delete the old copies, and only then update this table. A rename without that move is `DIVERGENT`.
+What stayed outside on purpose:
+
+- **The SQLite adapter** (`apps/api/src/kai-memory.ts`) still owns the database handle, because
+  `openDatabase` is shared with the API's other durable stores. The packages carry the contracts
+  and the rules; the API carries the disk.
+- **Route wiring** stays in `execute-route.ts`: Fastify is the face, not the judge.
+
+Root `package.json` links the three packages as dev dependencies so the integration tests can
+import them by name; `pnpm --filter api... run build` still builds them in dependency order
+(kai → elion / omega → api).
+
+A package that stops being imported is `DIVERGENT` structure, and this section is the claim to
+re-check.
 
 ## VERIFY THE BODY
 

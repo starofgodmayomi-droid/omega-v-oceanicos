@@ -6,7 +6,8 @@ import { join } from 'node:path';
 import test from 'node:test';
 import { createApp } from '../../apps/api/dist/index.js';
 import { KaiMemoryStore } from '../../apps/api/dist/kai-memory.js';
-import { KAI_SYSTEM_PROMPT, verifyOmega } from '../../apps/api/src/invisible-computer.ts';
+import { KAI_SYSTEM_PROMPT } from '@oceanicos/kai';
+import { verifyOmega } from '@oceanicos/omega';
 
 const sha256 = (value: string) => createHash('sha256').update(value, 'utf8').digest('hex');
 

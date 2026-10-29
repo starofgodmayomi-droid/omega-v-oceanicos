@@ -1,19 +1,8 @@
 import type { FastifyInstance } from 'fastify';
-import {
-  deriveAuthorityLevel,
-  executeElion,
-  expectedOutcomeFor,
-  scanIntent,
-  sha256Hex,
-  verifyOmega,
-  type AuthorityLevel,
-} from './invisible-computer.js';
-import type {
-  KaiMemoryStore,
-  KaiMemoryRecord,
-  KaiMemoryEvidenceRecord,
-  OmegaContract,
-} from './kai-memory.js';
+import { deriveAuthorityLevel, executeElion, expectedOutcomeFor } from '@oceanicos/elion';
+import { scanIntent, type AuthorityLevel, type OmegaContract } from '@oceanicos/kai';
+import { replayVerdict, sha256Hex, verifyOmega } from '@oceanicos/omega';
+import type { KaiMemoryStore, KaiMemoryRecord } from './kai-memory.js';
 
 type JsonError = (reply: any, status: number, error: string, extra?: Record<string, unknown>) => unknown;
 
@@ -32,37 +21,6 @@ function parseObject(body: unknown): Record<string, unknown> | null {
   return body && typeof body === 'object' && !Array.isArray(body)
     ? (body as Record<string, unknown>)
     : null;
-}
-
-type ReplayVerdict = {
-  status: 'VERIFIED' | 'DIVERGENT' | 'UNKNOWN';
-  recomputed_hash: string | null;
-  reason: string | null;
-};
-
-/**
- * Recompute one remembered record's digest from the evidence text retained
- * with it. Shared by single-record replay and the ledger audit so a row can
- * never be judged one way by one endpoint and another way by the other.
- */
-function replayVerdict(record: KaiMemoryEvidenceRecord): ReplayVerdict {
-  if (!record.evidence_text) {
-    return {
-      status: 'UNKNOWN',
-      recomputed_hash: null,
-      reason:
-        'EVIDENCE_TEXT_NOT_RETAINED: this record predates replayable evidence and cannot be re-verified.',
-    };
-  }
-  const recomputedHash = sha256Hex(record.evidence_text);
-  const matches = recomputedHash === record.evidence_hash;
-  return {
-    status: matches ? 'VERIFIED' : 'DIVERGENT',
-    recomputed_hash: recomputedHash,
-    reason: matches
-      ? null
-      : 'EVIDENCE_HASH_MISMATCH: the retained evidence does not recompute to the recorded digest.',
-  };
 }
 
 /**

@@ -52,6 +52,9 @@
     "pnpm": "10.34.5"
   },
   "devDependencies": {
+    "@oceanicos/elion": "workspace:*",
+    "@oceanicos/kai": "workspace:*",
+    "@oceanicos/omega": "workspace:*",
     "@types/node": "^26.6.4",
     "ts-node": "^10.9.2",
     "typescript": "^6.0.3"
