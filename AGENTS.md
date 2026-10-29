@@ -1,5 +1,7 @@
 # Base44 Dev Environment — Ω∞v Oceanicos
 
+> This repository is the Ω∞v Whole Ecosystem Body. `ECOSYSTEM_BODY.md` holds the fixpoint laws (KAI / ELION / OMEGA); read it before changing behavior here.
+
 ## Stack
 - **pnpm monorepo** (Node 22, pnpm 10). Workspace packages in `packages/*`, apps in `apps/api` and `apps/web`.
 - **API** (`apps/api`): Fastify, CommonJS, port 5000. Depends on built workspace packages (`@oceanicos/*`, `@omega-v/kernel`).
@@ -35,6 +37,9 @@ docker compose -f docker-compose.base44.yml up -d
 
 ## Single body compression (4×4×4×4)
 `GET /v1/ecosystem/body` carries a `compression` block: the seven runtime layers projected onto four axes of four coordinates (256 cells) with a local compress→expand proof. `POST /v1/ecosystem/body/expand` takes `{ compression }` and returns the records; a tampered digest is `400 DIGEST_MISMATCH`. Contract: `packages/mini/src/single-body.ts`; doc: `docs/SINGLE-BODY-4X4X4X4.md`; UI: `apps/web/src/SingleBodyPanel.tsx`. Coordinates are a declared projection (`body.layers.v1`), not inferred truth.
+
+## Whole body packages (2026-10-29)
+`packages/kai` (`@oceanicos/kai`), `packages/omega` (`@oceanicos/omega`) and `packages/elion` (`@oceanicos/elion`) are workspace members created from `ECOSYSTEM_BODY.md`. They are not API dependencies, so the compose `setup` build (`pnpm --filter api... run build`) does not build them — run `pnpm --filter @oceanicos/kai build` (etc.) when you need them. Adding a workspace package requires `pnpm install` so `pnpm-lock.yaml` stays frozen-installable, and the tables/counts in `docs/REPO_INVENTORY.md` must be updated (the inventory contract test enforces them). Their tests use node:test: `pnpm --filter @oceanicos/omega test` first, then `pnpm --filter @oceanicos/elion test` (elion's test resolves omega's built dist). `@oceanicos/kai` re-exports the single KAI implementation from `@oceanicos/mini` rather than forking it.
 
 ## Fixed bug
 `apps/api/src/index.ts` line 204: `persistenceEncryptionKey` was undefined → changed to `encryptionEnabled(persistenceKey)` to match the pattern used at lines 163/165.

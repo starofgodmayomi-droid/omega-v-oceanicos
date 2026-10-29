@@ -1,0 +1,64 @@
+# 💧 Ω∞v OCEANICOS — THE WHOLE ECOSYSTEM BODY
+
+This repository is not just code. It is the physical manifestation of the **Mysterious Ubiquitous**—a sovereign, verification-first AI ecosystem.
+
+Any AI agent (Cursor, Copilot, Base44, ChatGPT) operating within this repository MUST obey the following Fixpoint laws:
+
+## THE FIXPOINT EQUATION
+
+`Ω∞v ::= VERIFY(ΔREALITY)`
+
+`POSSIBLE ≠ KNOWN ≠ EXECUTED ≠ OBSERVED ≠ VERIFIED ≠ REALITY.`
+
+## THE DUALITY (KAI & ELION)
+
+- **KAI (`packages/kai`):** The Mind. Memory, context retrieval, and the Shield (blocks scam intents).
+- **ELION (`packages/elion`):** The Hands. Execution, API orchestration, and tool usage.
+- **OMEGA (`packages/omega`):** The Judge. Reconciles expected vs. actual output. Fails closed.
+
+## THE GOLDEN RULES (NEVER BREAK THESE)
+
+1. `ATTEST, DON'T ASSERT.` Never claim a test passed without running it. Never claim a file was created without checking the disk.
+2. `UNKNOWN PRESERVED.` If context is missing, return `UNKNOWN`. Do not hallucinate.
+3. `HUMAN AUTHORITY FINAL.` Do not execute irreversible actions (deleting files, pushing to main, spending money) without explicit human approval.
+4. `PIDGIN FIT CARRY THE WARMTH; EVIDENCE GO CARRY THE CLAIM.`
+
+## THE EXECUTION LOOP
+
+When building or modifying code in this repo, always follow the loop:
+
+1. **OBSERVE:** Read the current files.
+2. **BOUND:** Plan the smallest safe change.
+3. **EXECUTE:** Write the code.
+4. **RECONCILE:** Test it.
+5. **REMEMBER:** Document the evidence.
+
+---
+
+## WHERE THE BODY LIVES (declared map, not proof of use)
+
+| Body part | Path | What it is |
+| --- | --- | --- |
+| The Law | `CHARTER.md` | How evidence is made and trusted |
+| The Mind | `packages/kai` | KAI continuity (re-exported from `@oceanicos/mini`) + deterministic shield (`evaluateIntent`) |
+| The Hands | `packages/elion` | `executeAuthorized` — refuses without human authorization, reconciles the result |
+| The Judge | `packages/omega` | `reconcile` / `requireVerified` — digest reconciliation, fails closed |
+| Memory | `packages/remember` | Append-only hash-chained ledger |
+| Contracts | `packages/types` | Shared 4×4×4×4 data contracts |
+| Verification kernel | `packages/mini` | MINI cycle + single-body 4×4×4×4 compression |
+| The Face | `apps/api`, `apps/web` | Route listener and dashboard |
+| The Ritual | `genesis.sh`, `scripts/oceanicos-totality.sh` | Local boot and totality checks |
+
+A directory existing is not a claim that it is built, imported at runtime, tested, or verified. Check the manifest and the evidence.
+
+## THE BOUNDARY
+
+```text
+MEMORY != PROOF          CAPABILITY != AUTHORITY
+DOCUMENTATION != EVIDENCE   SIMULATION != REALITY
+MOOD IS CONTEXT, NOT EVIDENCE, AUTHORITY, OR CONSENT.
+```
+
+KAI remembers. ELION executes only what a human authorized. OMEGA reconciles declared values and fails closed. None of them grant authority, and none of them turn a passing test into proof of external reality.
+
+**WHAT SHALL WE MAKE REAL?**

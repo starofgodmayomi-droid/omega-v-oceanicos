@@ -1,0 +1,17 @@
+{
+  "name": "@oceanicos/kai",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "node --experimental-strip-types --test src/__tests__/kai.test.ts"
+  },
+  "dependencies": {
+    "@oceanicos/mini": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.4"
+  }
+}

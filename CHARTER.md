@@ -2,6 +2,10 @@
 
 > A charter is not a constitution handed down. It emerges through practice.  
 > This charter documents how we learn together.
+>
+> **Body law:** the repository's fixpoint laws — ATTEST, DON'T ASSERT / UNKNOWN PRESERVED /
+> HUMAN AUTHORITY FINAL — live in `ECOSYSTEM_BODY.md`. This charter governs how evidence is
+> made and trusted inside that body.
 
 ---
 

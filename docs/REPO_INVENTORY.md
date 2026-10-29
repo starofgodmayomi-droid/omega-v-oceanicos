@@ -56,10 +56,13 @@ PRESENT ON DISK
 
 The API manifest declares these workspace dependencies. The list alone does not prove each is imported, executed, or exposed as an API capability.
 
-## WORKSPACE-ONLY — workspace member, no direct API dependency (9 packages)
+## WORKSPACE-ONLY — workspace member, no direct API dependency (12 packages)
 
 | Package | Name | Declared role |
 |---|---|---|
+| `kai` | `@oceanicos/kai` | Mind: continuity + scam-intent shield (added 2026-10-29) |
+| `omega` | `@oceanicos/omega` | Judge: digest reconciliation, fails closed (added 2026-10-29) |
+| `elion` | `@oceanicos/elion` | Hands: authorized execution + reconciliation (added 2026-10-29) |
 | `gateway` | `@omega-v/gateway` | Gateway |
 | `ir` | `@omega-v/ir` | Intermediate-representation bytecode and execution engine |
 | `compiler` | `@omega-v/compiler` | Rule DSL to IR bytecode compiler |
@@ -82,7 +85,7 @@ The following are examples, not an exhaustive package list: `policy`, `registry`
 
 ## Naming split (observed)
 
-- `@oceanicos/*` — types, observer, verification, remember, mini, attestation.
+- `@oceanicos/*` — types, observer, verification, remember, mini, attestation, kai, omega, elion.
 - `@omega-v/*` — kernel, oreade, mood, gateway, ir, compiler, evolution, coordination, auth, webhook, worker, pipeline, plus source-only packages.
 
 Unresolved naming edge. Do not silently rename packages.
@@ -91,9 +94,9 @@ Unresolved naming edge. Do not silently rename packages.
 
 | Category | Count | Action |
 |---|---:|---|
-| Workspace members | 20 (18 packages + 2 apps) | Membership only; do not infer capability |
+| Workspace members | 23 (21 packages + 2 apps) | Membership only; do not infer capability |
 | API-declared | 9 packages | Direct manifest dependencies; verify actual use separately |
-| Workspace-only | 9 packages | Not direct API dependencies |
+| Workspace-only | 12 packages | Not direct API dependencies |
 | On-disk, off-workspace | Non-exhaustive | Promote only when earned |
 
 ## Test and CI evidence
