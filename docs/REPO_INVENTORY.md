@@ -16,6 +16,8 @@ Evidence sources:
 - `docs/REPO_INVENTORY.md` contract test — compares this inventory with those manifests.
 - [Verification Pipeline run 37074868414](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/actions/runs/37074868414) — succeeded on `main` at the audited commit. This is CI evidence for that revision; it does not prove deployment or current production health.
 
+**2026-10-29** — `packages/kai`, `packages/elion`, and `packages/omega` were added as workspace members and direct API dependencies, and the tables below were extended to match those manifests (checked by the same contract test).
+
 An earlier 2026-09-27 snapshot at `61b5fff` classified `worker` and `pipeline` as source-only. The current workspace configuration includes both. Historical classifications remain in Git history; the manifest is the source of truth for the inventory below.
 
 ## Non-collapse
@@ -40,11 +42,14 @@ PRESENT ON DISK
 | **SOURCE-ONLY** | Package directory exists under `packages/`, but is not listed in `pnpm-workspace.yaml`. |
 | **STUB** | A source-only directory with a thin implementation; not an active workspace capability. |
 
-## API-DECLARED — workspace + direct API dependency (9 packages)
+## API-DECLARED — workspace + direct API dependency (12 packages)
 
 | Package | Name | Declared role |
 |---|---|---|
 | `types` | `@oceanicos/types` | Shared contracts |
+| `kai` | `@oceanicos/kai` | KAI — shield and authority derivation |
+| `elion` | `@oceanicos/elion` | ELION — execution and local composer |
+| `omega` | `@oceanicos/omega` | OMEGA — fail-closed verification gate |
 | `observer` | `@oceanicos/observer` | Observe |
 | `verification` | `@oceanicos/verification` | Verify |
 | `remember` | `@oceanicos/remember` | Remember |
@@ -82,7 +87,7 @@ The following are examples, not an exhaustive package list: `policy`, `registry`
 
 ## Naming split (observed)
 
-- `@oceanicos/*` — types, observer, verification, remember, mini, attestation.
+- `@oceanicos/*` — types, observer, verification, remember, mini, attestation, kai, elion, omega.
 - `@omega-v/*` — kernel, oreade, mood, gateway, ir, compiler, evolution, coordination, auth, webhook, worker, pipeline, plus source-only packages.
 
 Unresolved naming edge. Do not silently rename packages.
@@ -91,8 +96,8 @@ Unresolved naming edge. Do not silently rename packages.
 
 | Category | Count | Action |
 |---|---:|---|
-| Workspace members | 20 (18 packages + 2 apps) | Membership only; do not infer capability |
-| API-declared | 9 packages | Direct manifest dependencies; verify actual use separately |
+| Workspace members | 23 (21 packages + 2 apps) | Membership only; do not infer capability |
+| API-declared | 12 packages | Direct manifest dependencies; verify actual use separately |
 | Workspace-only | 9 packages | Not direct API dependencies |
 | On-disk, off-workspace | Non-exhaustive | Promote only when earned |
 

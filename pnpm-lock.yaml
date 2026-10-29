@@ -37,12 +37,21 @@ importers:
       '@oceanicos/attestation':
         specifier: workspace:*
         version: link:../../packages/attestation
+      '@oceanicos/elion':
+        specifier: workspace:*
+        version: link:../../packages/elion
+      '@oceanicos/kai':
+        specifier: workspace:*
+        version: link:../../packages/kai
       '@oceanicos/mini':
         specifier: workspace:*
         version: link:../../packages/mini
       '@oceanicos/observer':
         specifier: workspace:*
         version: link:../../packages/observer
+      '@oceanicos/omega':
+        specifier: workspace:*
+        version: link:../../packages/omega
       '@oceanicos/remember':
         specifier: workspace:*
         version: link:../../packages/remember
@@ -162,6 +171,16 @@ importers:
         specifier: ^30.5.2
         version: 30.5.2(@types/node@26.6.4)(ts-node@10.9.2(@types/node@26.6.4)(typescript@6.0.3))
 
+  packages/elion:
+    dependencies:
+      '@oceanicos/kai':
+        specifier: workspace:*
+        version: link:../kai
+    devDependencies:
+      '@types/node':
+        specifier: ^26.6.4
+        version: 26.6.4
+
   packages/evolution:
     dependencies:
       '@oceanicos/types':
@@ -222,6 +241,12 @@ importers:
         specifier: ^6.0.3
         version: 6.0.3
 
+  packages/kai:
+    devDependencies:
+      '@types/node':
+        specifier: ^26.6.4
+        version: 26.6.4
+
   packages/kernel:
     devDependencies:
       '@types/node':
@@ -267,6 +292,16 @@ importers:
       '@oceanicos/types':
         specifier: workspace:*
         version: link:../types
+    devDependencies:
+      '@types/node':
+        specifier: ^26.6.4
+        version: 26.6.4
+
+  packages/omega:
+    dependencies:
+      '@oceanicos/kai':
+        specifier: workspace:*
+        version: link:../kai
     devDependencies:
       '@types/node':
         specifier: ^26.6.4
