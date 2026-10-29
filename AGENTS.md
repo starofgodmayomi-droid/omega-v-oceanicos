@@ -34,6 +34,15 @@ docker compose -f docker-compose.base44.yml up -d
 - **Workspace packages must be built** before the API can start — their `main` points to `dist/index.js`. The setup service builds them in dependency order.
 - **SSE through the preview proxy**: with the CORS header fix described above, `/v1/stream` does connect from the browser through the preview proxy (status bar reads "Connected", runtime stream marked VERIFIED). If the proxy drops a long-lived connection the UI shows "Reconnecting…" and retries; REST endpoints are unaffected either way.
 
+## Ecosystem body packages (KAI / ELION / OMEGA)
+The loop's three actors each have their own workspace package, so the repository layout matches `ECOSYSTEM_BODY.md`:
+
+- `packages/kai` (`@oceanicos/kai`) — `scanIntent` + `KAI_SHIELD_PATTERNS`, `KAI_SYSTEM_PROMPT`, `deriveAuthorityLevel`, `expectedOutcomeFor`, `AuthorityLevel`.
+- `packages/elion` (`@oceanicos/elion`) — `executeElion`, `composeLocalElionResponse`; depends on `@oceanicos/kai`.
+- `packages/omega` (`@oceanicos/omega`) — `verifyOmega`, `sha256Hex`, `OmegaVerdict`; depends on `@oceanicos/kai`.
+
+`apps/api/src/invisible-computer.ts` is now a barrel re-exporting all three, so `execute-route.ts`, `kai-memory.ts` and the integration tests keep their existing import paths. Adding packages means the lockfile and `apps/api/package.json` must change together; after editing the workspace list run `pnpm install` before `pnpm --filter api... run build`, or the setup service's `--frozen-lockfile` install fails. These packages are CommonJS (`module: Node16`, no `"type": "module"`), matching the API's `require()` boundary.
+
 ## Invisible Online Computer (KAI → ELION → OMEGA → KAI)
 - `POST /api/execute` (alias `POST /execute`, which is the Vite proxy's rewritten target) runs the four-step loop from `apps/api/src/execute-route.ts`:
   1. **KAI observe** — `scanIntent` matches known scam patterns; a match halts with `status: "DIVERGENT"`, `reason: "KAI Shield blocked this intent."` and writes nothing.
