@@ -181,12 +181,33 @@ export function composeLocalElionResponse(intent: string, authorityLevel: Author
 export type ElionResult = {
   output: string;
   engine: string;
+  requestedEngine: EngineRequest;
   error: string | null;
 };
 
+/** The engine the human picked in the command center. */
+export type EngineRequest = 'auto' | 'claude' | 'gpt';
+
+export function deriveEngine(requested: unknown): EngineRequest {
+  return requested === 'claude' || requested === 'gpt' ? requested : 'auto';
+}
+
 const DEFAULT_MODEL_BASE_URL = 'https://api.openai.com/v1';
 const DEFAULT_MODEL = 'gpt-4o-mini';
+const DEFAULT_CLAUDE_MODEL = 'claude-3-5-sonnet-latest';
 const MODEL_TIMEOUT_MS = 20_000;
+
+/**
+ * The requested engine only selects a model name. The endpoint stays
+ * whatever `OMEGA_LLM_BASE_URL` points at, and a missing credential is
+ * reported as the local composer — a selection never invents a connection.
+ */
+function resolveModel(engine: EngineRequest): string {
+  if (engine === 'claude') {
+    return process.env.OMEGA_LLM_CLAUDE_MODEL?.trim() || DEFAULT_CLAUDE_MODEL;
+  }
+  return process.env.OMEGA_LLM_MODEL?.trim() || DEFAULT_MODEL;
+}
 
 /**
  * Step 2 — ELION turns the safe intent into an answer.
@@ -198,13 +219,15 @@ const MODEL_TIMEOUT_MS = 20_000;
  */
 export async function executeElion(
   intent: string,
-  authorityLevel: AuthorityLevel
+  authorityLevel: AuthorityLevel,
+  engine: EngineRequest = 'auto'
 ): Promise<ElionResult> {
   const apiKey = process.env.OMEGA_LLM_API_KEY?.trim();
   if (!apiKey) {
     return {
       output: composeLocalElionResponse(intent, authorityLevel),
       engine: 'local-deterministic',
+      requestedEngine: engine,
       error: null,
     };
   }
@@ -213,7 +236,7 @@ export async function executeElion(
     /\/$/,
     ''
   );
-  const model = process.env.OMEGA_LLM_MODEL?.trim() || DEFAULT_MODEL;
+  const model = resolveModel(engine);
 
   try {
     const response = await fetch(`${baseUrl}/chat/completions`, {
@@ -234,17 +257,28 @@ export async function executeElion(
       signal: AbortSignal.timeout(MODEL_TIMEOUT_MS),
     });
     if (!response.ok) {
-      return { output: '', engine: `llm:${model}`, error: `MODEL_HTTP_${response.status}` };
+      return {
+        output: '',
+        engine: `llm:${model}`,
+        requestedEngine: engine,
+        error: `MODEL_HTTP_${response.status}`,
+      };
     }
     const payload: any = await response.json();
     const output = typeof payload?.choices?.[0]?.message?.content === 'string'
       ? payload.choices[0].message.content
       : '';
-    return { output, engine: `llm:${model}`, error: output ? null : 'MODEL_EMPTY_RESPONSE' };
+    return {
+      output,
+      engine: `llm:${model}`,
+      requestedEngine: engine,
+      error: output ? null : 'MODEL_EMPTY_RESPONSE',
+    };
   } catch (error) {
     return {
       output: '',
       engine: `llm:${model}`,
+      requestedEngine: engine,
       error: error instanceof Error ? error.message : 'MODEL_UNAVAILABLE',
     };
   }

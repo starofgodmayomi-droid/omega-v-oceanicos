@@ -117,6 +117,29 @@ test('OMEGA collapses an empty or overclaiming output to UNKNOWN', () => {
   assert.match(String(fabricated.reason), /NO_FABRICATED_COMPLETION/);
 });
 
+test('the engine selector names a model and never widens authority', async () => {
+  const app = createApp(':memory:', false);
+  try {
+    for (const [sent, expected] of [
+      ['claude', 'claude'],
+      ['gpt', 'gpt'],
+      ['bogus', 'auto'],
+    ] as const) {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/execute',
+        payload: { intent: 'Map the next finite step', engine: sent },
+      });
+      const body = response.json();
+      assert.equal(response.statusCode, 200);
+      assert.equal(body.requested_engine, expected);
+      assert.equal(body.contract.authority_level, 'READ_ONLY');
+    }
+  } finally {
+    await app.close();
+  }
+});
+
 test('the KAI/ELION persona keeps its non-collapse rules', () => {
   for (const law of [
     'VERIFY(ΔREALITY)',

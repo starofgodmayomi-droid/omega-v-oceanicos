@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import {
   deriveAuthorityLevel,
+  deriveEngine,
   executeElion,
   expectedOutcomeFor,
   scanIntent,
@@ -52,6 +53,9 @@ export function registerExecuteRoute(
     }
 
     const authorityLevel: AuthorityLevel = deriveAuthorityLevel(body.authorityLevel);
+    // The engine selector only names a model; the credential and endpoint stay
+    // configuration, so a selection can never widen authority.
+    const engine = deriveEngine(body.engine);
     const startedAt = Date.now();
     const steps: ExecutionStep[] = [];
     const recordStep = (
@@ -91,6 +95,7 @@ export function registerExecuteRoute(
         contract: null,
         memory: null,
         engine: null,
+        requested_engine: engine,
         model_error: null,
         evaluated_at: new Date().toISOString(),
       });
@@ -106,14 +111,14 @@ export function registerExecuteRoute(
     });
 
     // Step 2 — ELION execute: bounded answer, model or local composer.
-    const elion = await executeElion(intent, authorityLevel);
+    const elion = await executeElion(intent, authorityLevel, engine);
     recordStep(
       'ELION',
       'EXECUTE',
       elion.error ? 'UNKNOWN' : 'VERIFIED',
       elion.error
         ? `Answer unavailable from ${elion.engine}: ${elion.error}. UNKNOWN preserved.`
-        : `Bounded answer composed via ${elion.engine}.`
+        : `Bounded answer composed via ${elion.engine}${engine === 'auto' ? '' : ` (requested ${engine})`}.`
     );
 
     // Step 3 — OMEGA verify: hash the output, compare it to the contract.
@@ -155,6 +160,7 @@ export function registerExecuteRoute(
       contract,
       memory,
       engine: elion.engine,
+      requested_engine: elion.requestedEngine,
       model_error: elion.error,
       evaluated_at: new Date().toISOString(),
     });
