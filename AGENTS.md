@@ -48,6 +48,18 @@ docker compose -f docker-compose.base44.yml up -d
 - KaiMemory is an append-only audit ledger with no delete route; every `/execute` call (including endpoint smoke tests) leaves a permanent row in `data/kai-memory.db`.
 - Verification: `tests/integration/computer-execute.integration.test.ts` injects a fake completion through `createApp(..., { computerExecute })` and asserts VERIFIED/DIVERGENT/UNKNOWN plus persisted hashes; `apps/web/src/__tests__/dom/InvisibleComputer.test.tsx` drives the UI.
 
+## Whole Ecosystem Body (2026-10-29)
+`ECOSYSTEM_BODY.md` at the root is the soul/instruction file any agent working here should read first: the fixpoint law (`Ω∞v ::= VERIFY(ΔREALITY)`), the KAI/ELION/OMEGA duality, the golden rules, and a table mapping every claim to a real path.
+
+The Invisible Computer's three actors are now workspace packages, not code inside the API:
+- `packages/kai` (`@oceanicos/kai`) — `OCEANICOS_CONSTITUTION`, `SCAM_PATTERNS`, `screenIntent`, and the `KaiStatus`/`AuthorityLimit`/`KaiMemoryRecord`/`OmegaIRRecord` types.
+- `packages/elion` (`@oceanicos/elion`) — `resolveLlmProvider`, `completeWithConfiguredProvider`, `LlmCompletion`.
+- `packages/omega` (`@oceanicos/omega`) — `hashEvidence`, `verifyResponseIntegrity` (fails closed on empty/oversized), `MAX_EVIDENCE_LENGTH`.
+
+`apps/api/src/computer-route.ts` is the face of that loop: it composes the three packages, keeps the HTTP handler, and re-exports the moved symbols for compatibility. `apps/api/src/kai-memory.ts` still owns the SQLite storage but imports its record types from `@oceanicos/kai`.
+
+Adding a workspace package means three things, or the stack will not boot: add it to the explicit list in `pnpm-workspace.yaml` (it is **not** a `packages/*` glob), refresh `pnpm-lock.yaml` (`pnpm install --no-frozen-lockfile`), and add it to the consumer's `dependencies` (`workspace:*`). `setup` runs `pnpm install --frozen-lockfile`, so a stale lockfile is a boot failure.
+
 ## No external credentials needed
 All secrets (signing key, tokens) are local dev values in `.env.base44-defaults`. No external service credentials are required for the app to run.
 

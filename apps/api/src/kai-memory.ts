@@ -1,4 +1,10 @@
 import { randomUUID } from 'node:crypto';
+import type {
+  AuthorityLimit,
+  KaiMemoryRecord,
+  KaiStatus,
+  OmegaIRRecord,
+} from '@oceanicos/kai';
 import { openDatabase, type SqliteDb } from './omega-persistence.js';
 
 /**
@@ -10,24 +16,10 @@ import { openDatabase, type SqliteDb } from './omega-persistence.js';
  *
  * A record is written for every outcome, including DIVERGENT and UNKNOWN, so
  * the absence of evidence is remembered as clearly as its presence.
+ *
+ * The record contract lives in `@oceanicos/kai`; this module owns the storage.
  */
-export type KaiStatus = 'VERIFIED' | 'DIVERGENT' | 'UNKNOWN';
-export type AuthorityLimit = 'READ_ONLY' | 'AUTONOMOUS';
-
-export type KaiMemoryRecord = {
-  id: string;
-  timestamp: string;
-  intent: string;
-  evidenceHash: string | null;
-  status: KaiStatus;
-};
-
-export type OmegaIRRecord = {
-  id: string;
-  scope: string;
-  authorityLimit: AuthorityLimit;
-  expectedOutcome: string;
-};
+export type { AuthorityLimit, KaiMemoryRecord, KaiStatus, OmegaIRRecord };
 
 type KaiMemoryRow = {
   id: string;

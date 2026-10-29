@@ -17,6 +17,9 @@ packages:
   - 'packages/webhook'
   - 'packages/worker'
   - 'packages/pipeline'
+  - 'packages/kai'
+  - 'packages/elion'
+  - 'packages/omega'
   - 'apps/api'
   - 'apps/web'
 
