@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { createRequire } from 'node:module';
+import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
@@ -176,6 +177,94 @@ async function handleOffline() {
   return integrity.valid && block.evidence.status === 'PASS' ? 0 : 1;
 }
 
+async function handlePipeline(argsAfterCommand) {
+  const flags = {
+    stateBefore: 'S0',
+    stateAfter: 'S1',
+    observe: null,
+    authority: process.env.OMEGA_AUTHORITY || 'human:cli-user',
+    policy: process.env.OMEGA_POLICY || 'policy:cli',
+    json: false,
+  };
+  const words = [];
+  for (let i = 0; i < argsAfterCommand.length; i += 1) {
+    const token = argsAfterCommand[i];
+    if (token === '--json') flags.json = true;
+    else if (token === '--state-before') flags.stateBefore = argsAfterCommand[i += 1];
+    else if (token === '--state-after') flags.stateAfter = argsAfterCommand[i += 1];
+    else if (token === '--observe') flags.observe = argsAfterCommand[i += 1];
+    else if (token === '--authority') flags.authority = argsAfterCommand[i += 1];
+    else if (token === '--policy') flags.policy = argsAfterCommand[i += 1];
+    else words.push(token);
+  }
+  const intent = words.join(' ').trim();
+  if (!intent) {
+    throw new Error('pipeline requires a bounded intent, e.g. oceanicos pipeline "advance the bounded state"');
+  }
+
+  printBanner();
+  const changeId = `cli-${Date.now().toString(36)}`;
+  const payload = {
+    compile: {
+      intent,
+      subject: 'cli:pipeline',
+      stateBefore: flags.stateBefore,
+      evidenceRefs: [{
+        id: 'cli-evidence',
+        kind: 'test-result',
+        source: 'cli',
+        digest: `sha256:${createHash('sha256').update(intent).digest('hex').slice(0, 16)}`,
+      }],
+      policyRefs: [{ id: flags.policy, version: '1', requirement: 'explicit authority' }],
+      workerPlan: [],
+      transition: { requestedStateAfter: flags.stateAfter, consequence: 'bounded CLI-requested state change', dryRun: false },
+      observation: { observerId: 'cli', targets: ['cli:pipeline'], evidenceRequired: ['state'] },
+    },
+    // Admission gates are server-supplied only; never sent from the CLI.
+    admission: {},
+    authority: flags.authority,
+    policy: flags.policy,
+    handlerStateAfter: flags.stateAfter,
+    changeId,
+  };
+  if (flags.observe) payload.observedState = flags.observe;
+
+  const result = await omegaRequest('/v1/pipeline', 'POST', payload);
+  const pipeline = result.pipeline || {};
+
+  if (flags.json) {
+    console.log(JSON.stringify(result, null, 2));
+  } else {
+    const halted = pipeline.halted === true;
+    const verdictColor = pipeline.realityStatus === 'VERIFIED'
+      ? ANSI.green
+      : halted || pipeline.realityStatus === 'DIVERGENT' ? ANSI.yellow : ANSI.cyan;
+    console.log(`\n${ANSI.bold}=== C0→C6 CHANGE PIPELINE ===${ANSI.reset}`);
+    console.log(`  ${ANSI.cyan}Change${ANSI.reset}              : ${changeId}`);
+    console.log(`  ${ANSI.cyan}Intent${ANSI.reset}              : ${intent}`);
+    console.log(`  ${ANSI.cyan}Stage${ANSI.reset}               : ${verdictColor}${pipeline.stage ?? 'UNKNOWN'}${ANSI.reset}`);
+    console.log(`  ${ANSI.cyan}Decision${ANSI.reset}            : ${pipeline.decision ?? 'NONE'}`);
+    console.log(`  ${ANSI.cyan}Authorized${ANSI.reset}          : ${pipeline.authorized ? 'YES' : 'NO'}`);
+    console.log(`  ${ANSI.cyan}Execution Status${ANSI.reset}    : ${pipeline.executionStatus ?? 'NOT_EXECUTED'}`);
+    console.log(`  ${ANSI.cyan}Reality Status${ANSI.reset}      : ${pipeline.realityStatus ?? 'UNKNOWN'}`);
+    console.log(`  ${ANSI.cyan}Halted${ANSI.reset}              : ${halted ? `YES (${pipeline.haltReason ?? 'UNSPECIFIED'})` : 'NO'}`);
+    console.log(`  ${ANSI.cyan}Expected → Observed${ANSI.reset} : ${pipeline.expectedState ?? 'UNKNOWN'} → ${pipeline.observedState ?? 'UNKNOWN'}`);
+    console.log(`  ${ANSI.cyan}Provenance Root${ANSI.reset}     : ${ANSI.dim}${pipeline.provenanceRoot ?? 'UNKNOWN'}${ANSI.reset}`);
+    if (Array.isArray(pipeline.lineage) && pipeline.lineage.length > 0) {
+      console.log(`  ${ANSI.cyan}Lineage${ANSI.reset}             : ${pipeline.lineage.join(' → ')}`);
+    }
+    if (Array.isArray(pipeline.waterFlow)) {
+      const stages = pipeline.waterFlow.map((frame) => frame.stage);
+      console.log(`  ${ANSI.cyan}Water Flow${ANSI.reset}          : ${stages.length} bounded frames [${stages.join(' → ')}]`);
+    }
+    console.log(`  ${ANSI.cyan}Durable Memory${ANSI.reset}      : ${pipeline.durableMemory ? `YES (integrity=${pipeline.memoryIntegrity})` : 'NO (not configured)'}`);
+    console.log(`\n  ${ANSI.dim}Boundary: this prints what the API reported for this one request. ` +
+      `A DENY or halt means nothing was executed; admission authority is server-supplied and cannot be asserted by the CLI.${ANSI.reset}\n`);
+  }
+
+  return pipeline.realityStatus === 'VERIFIED' ? 0 : 1;
+}
+
 async function handleMesh() {
   printBanner();
   console.log(`\n${ANSI.bold}=== PLANETARY SOVEREIGN MESH CONVERGENCE ===${ANSI.reset}`);
@@ -325,6 +414,7 @@ ${ANSI.bold}COMMANDS:${ANSI.reset}
   ${ANSI.green}status${ANSI.reset}      Show system health, telemetry, genesis anchor, and live API status
   ${ANSI.green}cycle${ANSI.reset}       Execute and cryptographically commit a new consensus block (PoW)
   ${ANSI.green}offline${ANSI.reset}     Run a local MINI Observe → Verify → Remember cycle with network disabled
+  ${ANSI.green}pipeline${ANSI.reset}    Run the bounded C0→C6 change pipeline over HTTP and print its verdict
   ${ANSI.green}mesh${ANSI.reset}        Simulate decentralized consensus convergence across 4 sovereign nodes
   ${ANSI.green}attest${ANSI.reset}      Generate unforgeable cryptographic attestation for verified telemetry
   ${ANSI.green}keys${ANSI.reset}        Generate an Ed25519 asymmetric keypair for fail-closed authentication
@@ -348,6 +438,14 @@ switch (command) {
     break;
   case 'offline':
     process.exitCode = await handleOffline();
+    break;
+  case 'pipeline':
+    try {
+      process.exitCode = await handlePipeline(args.slice(1));
+    } catch (err) {
+      console.error(`${ANSI.red}Pipeline request failed:${ANSI.reset} ${err.message}`);
+      process.exitCode = 1;
+    }
     break;
   case 'mesh':
     await handleMesh();
