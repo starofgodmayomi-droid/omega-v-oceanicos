@@ -136,6 +136,7 @@ export type FlowVerdict =
   | 'DIVERGENT'
   | 'UNKNOWN'
   | 'AWAITING_APPROVAL'
+  | 'REJECTED'
   | 'NOT_EXECUTED';
 
 /** Phase 5 — the single next step carried back in every receipt. */
@@ -145,6 +146,8 @@ export function nextActionFor(verdict: FlowVerdict): string {
       return 'Review the evidence hash, then authorize one bounded next action.';
     case 'AWAITING_APPROVAL':
       return 'Authorize or reject this irreversible action explicitly; nothing has been executed.';
+    case 'REJECTED':
+      return 'Nothing was executed. Send a different, reversible intent when you are ready.';
     case 'DIVERGENT':
       return 'Rephrase the intent without the flagged fraud pattern; KAI Shield will not execute it.';
     case 'UNKNOWN':
@@ -256,6 +259,30 @@ export function composeApprovalRequest(intent: string, matchedLabels: string[]):
   ].join('\n');
 }
 
+/** A recorded human authorization for one paused irreversible intent. */
+export type HumanAuthorization = { id: string; decidedAt: string };
+
+/**
+ * Phase 3 on resume — ELION's local composer after a human authorized the
+ * paused action. It repeats the authorization and still claims no result.
+ */
+export function composeAuthorizedLocalResponse(
+  intent: string,
+  authorization: HumanAuthorization
+): string {
+  return [
+    `Intent received: ${intent.trim()}`,
+    '',
+    `Human authorization: approval ${authorization.id} was granted at ${authorization.decidedAt} for this single action.`,
+    'What is observed: KAI Shield found no fraud pattern, and this runtime holds no tool that can move funds, delete data, or deploy — nothing left the sandbox.',
+    'What is UNKNOWN: the real-world effect of the action until the system that owns it returns its own evidence.',
+    'Next finite step: carry out the one authorized action there, then attest its outcome back to KAI with that evidence.',
+    '',
+    'Evidence: local deterministic composer (no OMEGA_LLM_API_KEY configured); this is a bounded template, not a model answer.',
+    "Ω∞v ::= VERIFY(ΔREALITY) · ATTEST, DON'T ASSERT.",
+  ].join('\n');
+}
+
 export type ElionResult = {
   output: string;
   engine: string;
@@ -276,12 +303,15 @@ const MODEL_TIMEOUT_MS = 20_000;
  */
 export async function executeElion(
   intent: string,
-  authorityLevel: AuthorityLevel
+  authorityLevel: AuthorityLevel,
+  authorization?: HumanAuthorization
 ): Promise<ElionResult> {
   const apiKey = process.env.OMEGA_LLM_API_KEY?.trim();
   if (!apiKey) {
     return {
-      output: composeLocalElionResponse(intent, authorityLevel),
+      output: authorization
+        ? composeAuthorizedLocalResponse(intent, authorization)
+        : composeLocalElionResponse(intent, authorityLevel),
       engine: 'local-deterministic',
       error: null,
     };

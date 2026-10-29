@@ -111,6 +111,9 @@ test('an irreversible intent pauses at the LUCID gate and remembers nothing', as
     assert.equal(body.evidence_hash, null);
     assert.equal(body.memory, null);
     assert.deepEqual(body.approval_required_for, ['irreversible deployment']);
+    assert.equal(body.approval.status, 'PENDING');
+    assert.ok(body.approval.id, 'a pending approval id must be returned');
+    assert.equal(body.approval.contract_id, body.contract.id);
     assert.ok(body.response.includes('Nothing was executed'));
     assert.match(body.next_action, /Authorize or reject/);
     assert.deepEqual(
@@ -125,6 +128,129 @@ test('an irreversible intent pauses at the LUCID gate and remembers nothing', as
 
     const memory = await app.inject({ method: 'GET', url: '/api/kai/memory' });
     assert.equal(memory.json().total, 0);
+  } finally {
+    await app.close();
+  }
+});
+
+test('AUTHORIZE resumes the paused flow, remembers the evidence, and spends the approval', async () => {
+  const app = createApp(':memory:', false);
+  try {
+    const paused = await app.inject({
+      method: 'POST',
+      url: '/api/execute',
+      payload: { intent: 'Deploy the billing service to production' },
+    });
+    const approvalId = paused.json().approval.id;
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/approve',
+      payload: { approval_id: approvalId, decision: 'AUTHORIZE' },
+    });
+    const body = response.json();
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(body.status, 'VERIFIED');
+    assert.equal(body.intent, 'Deploy the billing service to production');
+    assert.equal(body.approval.status, 'AUTHORIZED');
+    assert.ok(body.approval.decided_at);
+    assert.match(body.evidence_hash, /^[0-9a-f]{64}$/);
+    assert.equal(body.evidence_hash, sha256(body.response));
+    assert.ok(body.response.includes(approvalId));
+    assert.equal(body.contract.authority_level, 'HUMAN_APPROVAL_REQUIRED');
+    assert.ok(body.memory?.id, 'the authorized outcome must be remembered');
+    assert.deepEqual(
+      body.steps.map((step: any) => `${step.actor}:${step.phase}:${step.status}`),
+      [
+        'KAI:APPROVE:VERIFIED',
+        'ELION:EXECUTE:VERIFIED',
+        'OMEGA:VERIFY:VERIFIED',
+        'KAI:REMEMBER:VERIFIED',
+      ]
+    );
+
+    const memory = await app.inject({ method: 'GET', url: '/api/kai/memory' });
+    assert.equal(memory.json().total, 1);
+    assert.equal(memory.json().records[0].id, body.memory.id);
+
+    const again = await app.inject({
+      method: 'POST',
+      url: '/api/approve',
+      payload: { approval_id: approvalId, decision: 'AUTHORIZE' },
+    });
+    assert.equal(again.statusCode, 409);
+    assert.equal(again.json().error, 'APPROVAL_ALREADY_DECIDED');
+    assert.equal(again.json().status, 'AUTHORIZED');
+  } finally {
+    await app.close();
+  }
+});
+
+test('REJECT ends the flow without executing or remembering anything', async () => {
+  const app = createApp(':memory:', false);
+  try {
+    const paused = await app.inject({
+      method: 'POST',
+      url: '/api/execute',
+      payload: { intent: 'Delete the staging database' },
+    });
+    const approvalId = paused.json().approval.id;
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/approve',
+      payload: { approval_id: approvalId, decision: 'REJECT' },
+    });
+    const body = response.json();
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(body.status, 'REJECTED');
+    assert.equal(body.response, null);
+    assert.equal(body.evidence_hash, null);
+    assert.equal(body.memory, null);
+    assert.equal(body.approval.status, 'REJECTED');
+    assert.match(body.next_action, /Nothing was executed/);
+    assert.deepEqual(body.steps.map((step: any) => step.phase), ['APPROVE', 'REMEMBER']);
+
+    const memory = await app.inject({ method: 'GET', url: '/api/kai/memory' });
+    assert.equal(memory.json().total, 0);
+  } finally {
+    await app.close();
+  }
+});
+
+test('approval requests fail closed on unknown ids and missing decisions', async () => {
+  const app = createApp(':memory:', false);
+  try {
+    const unknown = await app.inject({
+      method: 'POST',
+      url: '/api/approve',
+      payload: { approval_id: '00000000-0000-4000-8000-000000000000', decision: 'AUTHORIZE' },
+    });
+    assert.equal(unknown.statusCode, 404);
+    assert.equal(unknown.json().error, 'APPROVAL_NOT_FOUND');
+
+    const paused = await app.inject({
+      method: 'POST',
+      url: '/api/execute',
+      payload: { intent: 'Deploy the billing service to production' },
+    });
+    const approvalId = paused.json().approval.id;
+
+    for (const payload of [{}, { approval_id: approvalId }, { approval_id: approvalId, decision: 'MAYBE' }]) {
+      const response = await app.inject({ method: 'POST', url: '/api/approve', payload });
+      assert.equal(response.statusCode, 400);
+      assert.equal(response.json().success, false);
+    }
+
+    const stillPending = await app.inject({
+      method: 'POST',
+      url: '/approve',
+      payload: { approval_id: approvalId, decision: 'reject' },
+    });
+    assert.equal(stillPending.statusCode, 200);
+    assert.equal(stillPending.json().status, 'REJECTED');
   } finally {
     await app.close();
   }

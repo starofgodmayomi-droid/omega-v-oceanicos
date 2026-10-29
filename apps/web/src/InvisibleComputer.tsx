@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { ApprovalGate, type ApprovalView } from './ApprovalGate';
 import { theme } from './oceanicosTheme';
 
 /*
@@ -15,6 +16,7 @@ export type Verdict =
   | 'DIVERGENT'
   | 'UNKNOWN'
   | 'AWAITING_APPROVAL'
+  | 'REJECTED'
   | 'NOT_EXECUTED';
 
 type ExecutionStep = {
@@ -34,6 +36,7 @@ type ExecutionResult = {
   reason: string | null;
   matched_patterns: string[];
   approval_required_for?: string[];
+  approval?: ApprovalView | null;
   next_action: string | null;
   steps: ExecutionStep[];
   contract: { id: string; authority_level: string; expected_outcome: string } | null;
@@ -54,6 +57,7 @@ const STATUS_TONE: Record<Verdict, string> = {
   DIVERGENT: '#ef4444',
   UNKNOWN: '#eab308',
   AWAITING_APPROVAL: '#f97316',
+  REJECTED: '#94a3b8',
   NOT_EXECUTED: '#64748b',
 };
 
@@ -84,6 +88,7 @@ export function InvisibleComputer() {
   const [memoryTotal, setMemoryTotal] = useState<number | null>(null);
   const [memoryRecords, setMemoryRecords] = useState<MemoryRecord[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [approvalBusy, setApprovalBusy] = useState(false);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   const clearTimers = () => {
@@ -114,6 +119,7 @@ export function InvisibleComputer() {
     clearTimers();
     setRunning(true);
     setError(null);
+    setApprovalBusy(false);
     setResult(null);
     setVerdict('NOT_EXECUTED');
     setVisibleSteps([]);
@@ -156,6 +162,37 @@ export function InvisibleComputer() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Execution failed');
       setRunning(false);
+    }
+  };
+
+  // The LUCID gate: decide the pending approval and reveal the resumed flow.
+  const decide = async (decision: 'AUTHORIZE' | 'REJECT') => {
+    const approval = result?.approval;
+    if (!approval || approval.status !== 'PENDING' || approvalBusy) return;
+    setApprovalBusy(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/approve`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ approval_id: approval.id, decision }),
+      });
+      const text = await response.text();
+      const payload = text ? JSON.parse(text) : null;
+      if (!response.ok) {
+        throw new Error(payload?.error || `Approval failed (${response.status})`);
+      }
+      const resumed = payload as ExecutionResult;
+      const resumedSteps = Array.isArray(resumed.steps) ? resumed.steps : [];
+      setVisibleSteps((previous) => [...previous, ...resumedSteps]);
+      setResult(resumed);
+      setVerdict(resumed.status);
+      if (resumed.status === 'VERIFIED') void loadMemory();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Approval failed');
+    } finally {
+      setApprovalBusy(false);
     }
   };
 
@@ -340,6 +377,13 @@ export function InvisibleComputer() {
               </span>{' '}
               {result.next_action}
             </p>
+          )}
+          {result.approval && (
+            <ApprovalGate
+              approval={result.approval}
+              busy={approvalBusy}
+              onDecision={(decision) => void decide(decision)}
+            />
           )}
           <div
             style={{

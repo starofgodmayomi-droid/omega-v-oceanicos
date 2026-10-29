@@ -28,6 +28,18 @@ export type OmegaContract = {
   expected_outcome: string;
 };
 
+export type ApprovalStatus = 'PENDING' | 'AUTHORIZED' | 'REJECTED';
+
+export type ApprovalRecord = {
+  id: string;
+  timestamp: string;
+  intent: string;
+  gate: string;
+  contract_id: string;
+  status: ApprovalStatus;
+  decided_at: string | null;
+};
+
 export class KaiMemoryStore {
   private readonly db: SqliteDb;
 
@@ -50,6 +62,16 @@ export class KaiMemoryStore {
         expected_outcome TEXT NOT NULL
       );
       CREATE INDEX IF NOT EXISTS "OmegaIR_Contracts_intent_idx" ON "OmegaIR_Contracts" (intent);
+      CREATE TABLE IF NOT EXISTS "KaiApprovals" (
+        id TEXT PRIMARY KEY,
+        timestamp TEXT NOT NULL,
+        intent TEXT NOT NULL,
+        gate TEXT NOT NULL,
+        contract_id TEXT NOT NULL,
+        status TEXT NOT NULL,
+        decided_at TEXT
+      );
+      CREATE INDEX IF NOT EXISTS "KaiApprovals_status_idx" ON "KaiApprovals" (status);
     `);
   }
 
@@ -77,6 +99,15 @@ export class KaiMemoryStore {
     return contract;
   }
 
+  getContract(id: string): OmegaContract | null {
+    const row = this.db
+      .prepare(
+        'SELECT id, intent, authority_level, expected_outcome FROM "OmegaIR_Contracts" WHERE id = ?'
+      )
+      .get(id) as OmegaContract | undefined;
+    return row ?? null;
+  }
+
   remember(input: { intent: string; evidenceHash: string; status: string }): KaiMemoryRecord {
     const record: KaiMemoryRecord = {
       id: randomUUID(),
@@ -97,6 +128,57 @@ export class KaiMemoryStore {
         record.status
       );
     return record;
+  }
+
+  /**
+   * Phase 2 — a paused irreversible intent waits here for a human decision.
+   * The row is what makes authorization a real, single-use step rather than a
+   * flag the caller can set again.
+   */
+  createApproval(input: { intent: string; gate: string; contractId: string }): ApprovalRecord {
+    const record: ApprovalRecord = {
+      id: randomUUID(),
+      timestamp: new Date().toISOString(),
+      intent: input.intent,
+      gate: input.gate,
+      contract_id: input.contractId,
+      status: 'PENDING',
+      decided_at: null,
+    };
+    this.db
+      .prepare(
+        'INSERT INTO "KaiApprovals" (id, timestamp, intent, gate, contract_id, status, decided_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
+      )
+      .run(
+        record.id,
+        record.timestamp,
+        record.intent,
+        record.gate,
+        record.contract_id,
+        record.status,
+        record.decided_at
+      );
+    return record;
+  }
+
+  getApproval(id: string): ApprovalRecord | null {
+    const row = this.db
+      .prepare(
+        'SELECT id, timestamp, intent, gate, contract_id, status, decided_at FROM "KaiApprovals" WHERE id = ?'
+      )
+      .get(id) as ApprovalRecord | undefined;
+    return row ?? null;
+  }
+
+  /** Single use: only a PENDING approval can be decided, once. */
+  decideApproval(id: string, decision: 'AUTHORIZED' | 'REJECTED'): ApprovalRecord | null {
+    const result = this.db
+      .prepare(
+        'UPDATE "KaiApprovals" SET status = ?, decided_at = ? WHERE id = ? AND status = ?'
+      )
+      .run(decision, new Date().toISOString(), id, 'PENDING');
+    if (!result?.changes) return null;
+    return this.getApproval(id);
   }
 
   listMemory(limit = 10): KaiMemoryRecord[] {

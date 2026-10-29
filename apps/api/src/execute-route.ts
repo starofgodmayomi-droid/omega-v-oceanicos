@@ -19,12 +19,42 @@ const MAX_INTENT_LENGTH = 2000;
 
 export type ExecutionStep = {
   actor: 'KAI' | 'ELION' | 'OMEGA';
-  phase: 'OBSERVE' | 'EXECUTE' | 'VERIFY' | 'REMEMBER';
+  phase: 'OBSERVE' | 'BOUND' | 'APPROVE' | 'EXECUTE' | 'VERIFY' | 'REMEMBER';
   status: string;
   detail: string;
   at: string;
   elapsedMs: number;
 };
+
+/** Collects the steps actually recorded by one run, in order. */
+function createStepRecorder(): {
+  steps: ExecutionStep[];
+  recordStep: (
+    actor: ExecutionStep['actor'],
+    phase: ExecutionStep['phase'],
+    status: string,
+    detail: string
+  ) => void;
+} {
+  const startedAt = Date.now();
+  const steps: ExecutionStep[] = [];
+  const recordStep: ReturnType<typeof createStepRecorder>['recordStep'] = (
+    actor,
+    phase,
+    status,
+    detail
+  ) => {
+    steps.push({
+      actor,
+      phase,
+      status,
+      detail,
+      at: new Date().toISOString(),
+      elapsedMs: Date.now() - startedAt,
+    });
+  };
+  return { steps, recordStep };
+}
 
 function parseObject(body: unknown): Record<string, unknown> | null {
   return body && typeof body === 'object' && !Array.isArray(body)
@@ -55,23 +85,7 @@ export function registerExecuteRoute(
     }
 
     const authorityLevel: AuthorityLevel = deriveAuthorityLevel(body.authorityLevel, intent);
-    const startedAt = Date.now();
-    const steps: ExecutionStep[] = [];
-    const recordStep = (
-      actor: ExecutionStep['actor'],
-      phase: ExecutionStep['phase'],
-      status: string,
-      detail: string
-    ) => {
-      steps.push({
-        actor,
-        phase,
-        status,
-        detail,
-        at: new Date().toISOString(),
-        elapsedMs: Date.now() - startedAt,
-      });
-    };
+    const { steps, recordStep } = createStepRecorder();
 
     // Step 1 — KAI observe: the shield halts before anything is executed.
     const shield = scanIntent(intent);
@@ -119,11 +133,16 @@ export function registerExecuteRoute(
     // authorization; nothing is executed and nothing is remembered.
     if (authorityLevel === 'HUMAN_APPROVAL_REQUIRED') {
       const gate = scanIrreversible(intent);
+      const approval = store.createApproval({
+        intent,
+        gate: gate.matchedLabels.join(', '),
+        contractId: contract.id,
+      });
       recordStep(
         'ELION',
         'EXECUTE',
         'NOT_EXECUTED',
-        `Paused at the LUCID gate: ${gate.matchedLabels.join(', ')}. No tool was called.`
+        `Paused at the LUCID gate: ${gate.matchedLabels.join(', ')}. No tool was called; approval ${approval.id.slice(0, 8)} is pending.`
       );
       recordStep('KAI', 'REMEMBER', 'NOT_EXECUTED', 'Nothing was remembered because nothing was authorized.');
       return reply.status(200).send({
@@ -141,6 +160,7 @@ export function registerExecuteRoute(
         memory: null,
         engine: null,
         model_error: null,
+        approval,
         next_action: nextActionFor('AWAITING_APPROVAL'),
         evaluated_at: new Date().toISOString(),
       });
@@ -212,8 +232,135 @@ export function registerExecuteRoute(
     };
   };
 
+  /**
+   * POST /api/approve — the human side of the LUCID gate.
+   *
+   * A pending approval can be decided exactly once: AUTHORIZE resumes the
+   * bounded flow for that one intent at authority level AUTONOMOUS; REJECT
+   * ends it. The decision is recorded, and any second call is 409.
+   */
+  const approveHandler = async (request: any, reply: any) => {
+    const body = parseObject(request.body);
+    if (!body) return jsonError(reply, 400, 'APPROVAL_REQUIRED');
+    const approvalId = typeof body.approval_id === 'string' ? body.approval_id.trim() : '';
+    const decisionRaw = typeof body.decision === 'string' ? body.decision.trim().toUpperCase() : '';
+    if (!approvalId) return jsonError(reply, 400, 'APPROVAL_REQUIRED');
+    if (decisionRaw !== 'AUTHORIZE' && decisionRaw !== 'REJECT') {
+      return jsonError(reply, 400, 'DECISION_REQUIRED', { allowed: ['AUTHORIZE', 'REJECT'] });
+    }
+
+    const pending = store.getApproval(approvalId);
+    if (!pending) return jsonError(reply, 404, 'APPROVAL_NOT_FOUND');
+    if (pending.status !== 'PENDING') {
+      return jsonError(reply, 409, 'APPROVAL_ALREADY_DECIDED', {
+        status: pending.status,
+        decided_at: pending.decided_at,
+      });
+    }
+
+    if (decisionRaw === 'REJECT') {
+      const rejected = store.decideApproval(approvalId, 'REJECTED');
+      if (!rejected) return jsonError(reply, 409, 'APPROVAL_ALREADY_DECIDED');
+      const { steps, recordStep } = createStepRecorder();
+      recordStep('KAI', 'APPROVE', 'REJECTED', 'Human authorization was declined; this approval is spent.');
+      recordStep('KAI', 'REMEMBER', 'NOT_EXECUTED', 'Nothing was remembered because nothing was authorized.');
+      return reply.status(200).send({
+        success: true,
+        status: 'REJECTED',
+        intent: pending.intent,
+        response: null,
+        evidence_hash: null,
+        reason: 'Human authorization was declined; nothing was executed.',
+        matched_patterns: [],
+        approval_required_for: [pending.gate],
+        checks: [],
+        steps,
+        contract: store.getContract(pending.contract_id),
+        memory: null,
+        engine: null,
+        model_error: null,
+        approval: rejected,
+        next_action: nextActionFor('REJECTED'),
+        evaluated_at: new Date().toISOString(),
+      });
+    }
+
+    // AUTHORIZE — resume the bounded flow for this single intent.
+    const authorized = store.decideApproval(approvalId, 'AUTHORIZED');
+    if (!authorized) return jsonError(reply, 409, 'APPROVAL_ALREADY_DECIDED');
+    const { steps, recordStep } = createStepRecorder();
+    recordStep(
+      'KAI',
+      'APPROVE',
+      'VERIFIED',
+      `Human authorization recorded at ${authorized.decided_at}; approval ${authorized.id.slice(0, 8)} is spent.`
+    );
+
+    const elion = await executeElion(authorized.intent, 'AUTONOMOUS', {
+      id: authorized.id,
+      decidedAt: String(authorized.decided_at),
+    });
+    recordStep(
+      'ELION',
+      'EXECUTE',
+      elion.error ? 'UNKNOWN' : 'VERIFIED',
+      elion.error
+        ? `Answer unavailable from ${elion.engine}: ${elion.error}. UNKNOWN preserved.`
+        : `Authorized bounded answer composed via ${elion.engine}.`
+    );
+
+    const evidenceHash = sha256Hex(elion.output);
+    const omega = verifyOmega({ output: elion.output, evidenceHash, authorityLevel: 'AUTONOMOUS' });
+    recordStep(
+      'OMEGA',
+      'VERIFY',
+      omega.status,
+      omega.status === 'VERIFIED'
+        ? 'Output matches the contract and the SHA-256 digest recomputes.'
+        : omega.reason ?? 'Output could not be verified.'
+    );
+
+    let memory: KaiMemoryRecord | null = null;
+    if (omega.status === 'VERIFIED') {
+      memory = store.remember({
+        intent: authorized.intent,
+        evidenceHash,
+        status: omega.status,
+      });
+      recordStep('KAI', 'REMEMBER', 'VERIFIED', `Evidence stored as ${memory.id}.`);
+    } else {
+      recordStep(
+        'KAI',
+        'REMEMBER',
+        'NOT_EXECUTED',
+        'Nothing was remembered because verification did not pass.'
+      );
+    }
+
+    return reply.status(200).send({
+      success: true,
+      status: omega.status,
+      intent: authorized.intent,
+      response: elion.output || null,
+      evidence_hash: elion.output ? evidenceHash : null,
+      reason: omega.reason,
+      matched_patterns: [],
+      approval_required_for: [authorized.gate],
+      checks: omega.checks,
+      steps,
+      contract: store.getContract(authorized.contract_id),
+      memory,
+      engine: elion.engine,
+      model_error: elion.error,
+      approval: authorized,
+      next_action: nextActionFor(omega.status),
+      evaluated_at: new Date().toISOString(),
+    });
+  };
+
   // `/execute` is what the Vite dev proxy targets after rewriting `/api/*`;
   // `/api/execute` is the published endpoint. Both are one handler.
   for (const path of ['/execute', '/api/execute']) fastify.post(path, executeHandler);
+  for (const path of ['/approve', '/api/approve']) fastify.post(path, approveHandler);
   for (const path of ['/kai/memory', '/api/kai/memory']) fastify.get(path, memoryHandler);
 }
