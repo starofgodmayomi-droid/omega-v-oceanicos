@@ -4,6 +4,7 @@ import { boundedStatus, statusCounts, STATUS_ORDER, summarizeLucidField, type Re
 import { AgentSafetyBoundaryPanel } from './AgentSafetyBoundaryPanel';
 import { WorkerCoordinationPanel } from './WorkerCoordinationPanel';
 import { SingleBodyPanel } from './SingleBodyPanel';
+import { ContinuumVerdictPanel } from './ContinuumVerdictPanel';
 
 type Props = {
   streamConnected: boolean;
@@ -203,6 +204,12 @@ export function WholeEcosystemDashboard(props: Props) {
       </div>
 
       <SingleBodyPanel body={props.ecosystemBody} />
+
+      <ContinuumVerdictPanel
+        streamConnected={props.streamConnected}
+        ledgerIntegrity={props.ledgerIntegrity}
+        ecosystemBody={props.ecosystemBody}
+      />
 
       <AgentSafetyBoundaryPanel
         capabilityObserved={props.ecosystemBody?.status === 'VERIFIED'}
