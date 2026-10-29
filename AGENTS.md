@@ -1,5 +1,10 @@
 # Base44 Dev Environment — Ω∞v Oceanicos
 
+## Governing law
+`ECOSYSTEM_BODY.md` holds the Absolute Fixpoint Equation:
+`Ω∞v := Y( λf. ( M_{t+1} = M_t ∪ Δ | V(Δ) = ⊤ ) ) | V ≡ (Expected ≡ Observed)`.
+Code added must expand it; code removed must compress back into it. Keep the runtime invariant strings (`VERIFY(ΔREALITY)`, `omega.fullstack.body.v1`) aligned with it rather than inventing parallel laws.
+
 ## Stack
 - **pnpm monorepo** (Node 22, pnpm 10). Workspace packages in `packages/*`, apps in `apps/api` and `apps/web`.
 - **API** (`apps/api`): Fastify, CommonJS, port 5000. Depends on built workspace packages (`@oceanicos/*`, `@omega-v/kernel`).
