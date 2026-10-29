@@ -75,6 +75,8 @@ export function InvisibleComputer() {
   const [visibleSteps, setVisibleSteps] = useState<ExecutionStep[]>([]);
   const [memoryTotal, setMemoryTotal] = useState<number | null>(null);
   const [memoryRecords, setMemoryRecords] = useState<MemoryRecord[]>([]);
+  const [replays, setReplays] = useState<Record<string, { status: Verdict; reason: string | null }>>({});
+  const [replayPending, setReplayPending] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
@@ -99,6 +101,33 @@ export function InvisibleComputer() {
     void loadMemory();
     return clearTimers;
   }, [loadMemory]);
+
+  /*
+   * Replay one remembered row: the API recomputes its digest from the retained
+   * evidence. A mismatch is shown as DIVERGENT, never smoothed into VERIFIED.
+   */
+  const replay = async (id: string) => {
+    if (replayPending) return;
+    setReplayPending(id);
+    try {
+      const response = await fetch(`${API_BASE_URL}/kai/memory/${id}/replay`);
+      const payload = await response.json().catch(() => null);
+      setReplays((previous) => ({
+        ...previous,
+        [id]: {
+          status: (payload?.status as Verdict) || 'UNKNOWN',
+          reason: typeof payload?.reason === 'string' ? payload.reason : null,
+        },
+      }));
+    } catch {
+      setReplays((previous) => ({
+        ...previous,
+        [id]: { status: 'UNKNOWN', reason: 'REPLAY_UNREACHABLE' },
+      }));
+    } finally {
+      setReplayPending(null);
+    }
+  };
 
   const execute = async () => {
     const trimmed = intent.trim();
@@ -367,6 +396,7 @@ export function InvisibleComputer() {
               key={record.id}
               style={{
                 display: 'flex',
+                alignItems: 'center',
                 gap: '10px',
                 fontFamily: theme.fontMono,
                 fontSize: '10.5px',
@@ -381,6 +411,40 @@ export function InvisibleComputer() {
                 {record.intent}
               </span>
               <span style={{ color: theme.accentWarm }}>{shortHash(record.evidence_hash)}</span>
+              {replays[record.id] && (
+                <span
+                  title={replays[record.id].reason ?? undefined}
+                  data-replay-state={replays[record.id].status}
+                  style={{ color: STATUS_TONE[replays[record.id].status], whiteSpace: 'nowrap' }}
+                >
+                  → {replays[record.id].status}
+                  {replays[record.id].reason
+                    ? ` · ${replays[record.id].reason.split(':')[0]}`
+                    : ''}
+                </span>
+              )}
+              <button
+                type="button"
+                aria-label={`Replay memory ${record.id}`}
+                onClick={() => void replay(record.id)}
+                disabled={replayPending === record.id}
+                style={{
+                  flexShrink: 0,
+                  padding: '2px 8px',
+                  borderRadius: theme.radiusPill,
+                  border: `1px solid ${theme.borderBright}`,
+                  background: 'transparent',
+                  color: theme.accentDim,
+                  fontFamily: theme.fontMono,
+                  fontSize: '9.5px',
+                  fontWeight: 700,
+                  letterSpacing: '0.12em',
+                  cursor: replayPending === record.id ? 'wait' : 'pointer',
+                  opacity: replayPending === record.id ? 0.6 : 1,
+                }}
+              >
+                {replayPending === record.id ? 'REPLAYING' : 'REPLAY'}
+              </button>
             </div>
           ))}
         </div>
