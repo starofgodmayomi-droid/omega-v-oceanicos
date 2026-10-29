@@ -7,7 +7,7 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "test": "jest",
+    "test": "node ../../scripts/run-node-suite.mjs packages/evidence",
     "clean": "node ../../scripts/rimraf.cjs dist \"*.tsbuildinfo\""
   },
   "dependencies": {

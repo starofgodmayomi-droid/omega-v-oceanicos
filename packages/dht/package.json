@@ -6,6 +6,6 @@
   "main": "src/index.ts",
   "types": "src/index.ts",
   "scripts": {
-    "test": "jest"
+    "test": "node ../../scripts/run-node-suite.mjs packages/dht"
   }
 }

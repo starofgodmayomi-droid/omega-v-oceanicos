@@ -8,6 +8,6 @@
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "test": "jest"
+    "test": "node ../../scripts/run-node-suite.mjs packages/kernel"
   }
 }

@@ -1,41 +1,225 @@
-import { observePlanetaryBase, ObserverEngine } from '@oceanicos/observer';
-import { verifyPlanetarySovereignty, VerificationEngine } from '@oceanicos/verification';
-import { PluralisticHashChain, RememberEngine, CryptographicBlock } from '@oceanicos/remember';
-import { IMiniBlock } from '@oceanicos/types';
+import crypto from 'node:crypto';
+import { Observer, ObserverEngine, observePlanetaryBase } from '@oceanicos/observer';
+import {
+  VerificationEngine,
+  verifyPlanetarySovereignty,
+} from '@oceanicos/verification';
+import {
+  Remember,
+  RememberEngine,
+  PluralisticHashChain,
+  type CryptographicBlock,
+} from '@oceanicos/remember';
+import type {
+  IMiniBlock,
+  Observation,
+  VerificationResult,
+  VerificationRule,
+  MemoryRecord,
+  MiniCycleResult,
+} from '@oceanicos/types';
 
+export interface MiniKernelOptions {
+  observer?: Observer;
+  verificationEngine?: VerificationEngine;
+  memory?: Remember;
+  rules?: VerificationRule[];
+}
+
+/**
+ * MiniKernel: The foundational composition layer for Ω∞v.
+ *
+ * Supports both:
+ * 1. Cognitive verification cycle: Observe ➔ Verify ➔ Remember (MiniCycleResult)
+ * 2. High-throughput block mining: PoW block consensus (IMiniBlock)
+ */
 export class MiniKernel {
-  protected remember: RememberEngine;
-  constructor(rememberEngine: RememberEngine) {
-    this.remember = rememberEngine;
+  private readonly observer: Observer;
+  private readonly verificationEngine: VerificationEngine;
+  private readonly memory: Remember;
+  private readonly ledger: RememberEngine;
+
+  constructor(
+    optionsOrLedger?: MiniKernelOptions | RememberEngine
+  ) {
+    if (optionsOrLedger instanceof RememberEngine) {
+      this.ledger = optionsOrLedger;
+      this.observer = new Observer();
+      this.verificationEngine = new VerificationEngine();
+      this.memory = new Remember();
+    } else {
+      const opts = optionsOrLedger ?? {};
+      this.observer = opts.observer ?? new Observer();
+      this.verificationEngine = opts.verificationEngine ?? new VerificationEngine();
+      this.memory = opts.memory ?? new Remember();
+      this.ledger = new RememberEngine(':memory:');
+
+      if (opts.rules) {
+        for (const rule of opts.rules) {
+          this.verificationEngine.registerRule(rule);
+        }
+      }
+    }
   }
-  public runCycle(): IMiniBlock {
-    const telemetry = ObserverEngine.generateTelemetry();
-    const evidence = VerificationEngine.evaluate(telemetry);
-    return this.remember.append(telemetry, evidence);
+
+  /**
+   * Run a full cognitive MINI cycle: Observe ➔ Verify ➔ Remember
+   */
+  public cycle(input: {
+    claim: string;
+    category?: string;
+    source?: {
+      system: string;
+      version: string;
+      environment: string;
+    };
+    observedBy?: string;
+    metadata?: Record<string, unknown>;
+    confidence?: number;
+    confidenceReason?: string;
+    parentId?: string;
+    lineage?: string[];
+  }): MiniCycleResult {
+    const observation = this.observe(input);
+    const verification = this.verify(observation);
+    const { memory, entries } = this.memory.rememberWithEntries(observation, verification);
+
+    return {
+      observation,
+      verification,
+      memory,
+      entries,
+      passed: verification.summary.passed,
+      confidence: verification.summary.confidence,
+      completedAt: new Date().toISOString(),
+    };
   }
-  public executeCycle(): IMiniBlock {
-    return this.runCycle();
+
+  /**
+   * Step 1: Observe a claim.
+   */
+  public observe(input: {
+    claim: string;
+    category?: string;
+    source?: {
+      system: string;
+      version: string;
+      environment: string;
+    };
+    observedBy?: string;
+    metadata?: Record<string, unknown>;
+    confidence?: number;
+    confidenceReason?: string;
+    parentId?: string;
+    lineage?: string[];
+  }): Observation {
+    return this.observer.observe({
+      claim: input.claim,
+      category: input.category ?? 'mini-cycle',
+      source: input.source ?? {
+        system: 'mini-kernel',
+        version: '0.1.0',
+        environment: 'local',
+      },
+      observedBy: input.observedBy ?? 'mini-kernel',
+      metadata: input.metadata ?? {},
+      confidence: input.confidence ?? 0.9,
+      confidenceReason: input.confidenceReason ?? 'MINI kernel cycle input',
+      parentId: input.parentId,
+      lineage: input.lineage,
+    });
+  }
+
+  /**
+   * Step 2: Verify an observation against registered rules.
+   */
+  public verify(observation: Observation): VerificationResult {
+    return this.verificationEngine.verify(observation);
+  }
+
+  /**
+   * Run high-throughput PoW consensus block cycle.
+   */
+  public runCycle(io = 'EXEC'): IMiniBlock {
+    const observation = ObserverEngine.generateTelemetry(io);
+    const evidence = VerificationEngine.evaluate(observation);
+    const previousHash = this.ledger.getTip()?.hash ?? '8a3f91c2e4f9011b989210ffffffffff';
+    let nonce = 0;
+    let hash = '';
+    while (true) {
+      hash = crypto
+        .createHash('sha256')
+        .update(`0xΩ-${this.ledger.height}-${previousHash}-${evidence.signatureProof}-${nonce}`)
+        .digest('hex');
+      if (hash.startsWith('00')) break;
+      nonce++;
+    }
+    const block: IMiniBlock = {
+      index: this.ledger.height,
+      timestamp: new Date().toISOString(),
+      observation,
+      evidence,
+      previousHash,
+      hash,
+      nonce,
+    };
+    this.ledger.append(block);
+    return block;
+  }
+
+  public executeCycle(io = 'EXEC'): IMiniBlock {
+    return this.runCycle(io);
+  }
+
+  public verifyMemoryIntegrity(): boolean {
+    return this.memory.verifyIntegrity();
+  }
+
+  public getMemorySize(): number {
+    return this.memory.size();
+  }
+
+  public recallMemory(memoryId: string): MemoryRecord | undefined {
+    return this.memory.recallMemory(memoryId);
+  }
+
+  public getMemory(): Remember {
+    return this.memory;
+  }
+
+  public getVerificationEngine(): VerificationEngine {
+    return this.verificationEngine;
+  }
+
+  public getObserver(): Observer {
+    return this.observer;
   }
 }
 
-export const MiniKernelCoordinator = MiniKernel;
-export type MiniKernelCoordinator = MiniKernel;
+export function executeOceanicosMaxExpansion(): CryptographicBlock {
+  const kernelChain = new PluralisticHashChain();
+  const telemetry = observePlanetaryBase();
+  const verificationReceipt = verifyPlanetarySovereignty(telemetry);
+  const securelyMintedBlock = kernelChain.commitState(verificationReceipt);
+  return securelyMintedBlock;
+}
+
+export { OperatingSystemKernel } from './os.js';
+export { OmegaTotalCompressor } from './omegaTotal.js';
 export { observeCandidateChange } from './change.js';
 export { resolveChangeAdmission } from './admission.js';
 export type { OmegaAdmissionEvidence } from './admission.js';
 export { executeAuthorizedTransition } from './transition.js';
 export type {
-  TransitionExecution,
-  TransitionExecutionStatus,
-  TransitionExecutorOptions,
-  TransitionHandler,
-  TransitionMemory,
+  OmegaTransitionInput,
+  OmegaTransitionResult,
+  OmegaTransitionVerdict,
 } from './transition.js';
 export { verifyExecutedReality } from './reality.js';
 export type {
-  RealityObserverOptions,
-  RealityVerification,
-  RealityVerificationStatus,
+  OmegaRealityInput,
+  OmegaRealityVerdict,
+  OmegaRealityVerification,
 } from './reality.js';
 export { compileOmegaIntent } from './compiler.js';
 export type { OmegaCompileInput } from './compiler.js';
@@ -50,14 +234,12 @@ export { runOmegaChangePipeline, resolveBoundedWorkerHandler } from './pipeline.
 export type {
   OmegaPipelineInput,
   OmegaPipelineResult,
-  PipelineStage,
-  PipelineHaltReason,
+  OmegaPipelineStage,
 } from './pipeline.js';
 export { FileCausalMemory, createRealityAttestation, verifyRealityAttestation } from './causal-memory.js';
 export type { CausalMemory, CausalMemoryEntry, RealityAttestation } from './causal-memory.js';
 export {
   OMEGA_EMPTY_ROOT,
-  OMEGA_FIXPOINT_OPERATOR,
   createOmegaFixpointState,
   evaluateOmegaOperator,
   iterateOmegaFixpoint,
@@ -66,28 +248,11 @@ export {
 } from './fixpoint.js';
 export type {
   OmegaDelta,
-  OmegaFixpointOptions,
-  OmegaFixpointRun,
+  OmegaDeltaVerdict,
+  OmegaFixpointEntry,
+  OmegaFixpointResult,
   OmegaFixpointState,
-  OmegaHaltReason,
-  OmegaMemoryEntry,
-  OmegaOperatorResult,
-  OmegaVerdict,
 } from './fixpoint.js';
-
-export function executeOceanicosMaxExpansion(): CryptographicBlock {
-  const kernelChain = new PluralisticHashChain();
-  const telemetry = observePlanetaryBase();
-  const verificationReceipt = verifyPlanetarySovereignty(telemetry);
-  const securelyMintedBlock = kernelChain.commitState(verificationReceipt);
-  console.log(`\nΩ ➔ [👁 ${Math.round(telemetry.siliconYield * 100)}% | ✓ ${verificationReceipt.status} | 🧠 #${securelyMintedBlock.index}] ── LIVE ── 0 ERRORS ── $`);
-  console.log(`   [BLOCK HASH]      : ${securelyMintedBlock.hash}`);
-  console.log(`   [PREVIOUS HASH]   : ${securelyMintedBlock.previousHash}`);
-  console.log(`   [STATE ROOT]      : ${securelyMintedBlock.payload.stateRootHash}`);
-  console.log(`   [PLURALISM LOGS]  : Regional tracking matrix verified cleanly via ${securelyMintedBlock.nonce} consensus operations.\n`);
-  return securelyMintedBlock;
-}
-
-if (typeof require !== 'undefined' && require.main === module) {
-  executeOceanicosMaxExpansion();
-}
+export const MiniKernelCoordinator = MiniKernel;
+export type MiniKernelCoordinator = MiniKernel;
+export default MiniKernel;

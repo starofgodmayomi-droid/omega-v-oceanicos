@@ -7,7 +7,7 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "test": "cd ../.. && jest --runInBand packages/runtime/src/index.test.ts",
+    "test": "node ../../scripts/run-node-suite.mjs packages/runtime",
     "clean": "node ../../scripts/rimraf.cjs dist \"*.tsbuildinfo\""
   },
   "keywords": [

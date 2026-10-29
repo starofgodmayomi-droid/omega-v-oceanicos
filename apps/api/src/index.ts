@@ -70,7 +70,17 @@ export function createApp(
   logger: boolean = true,
   options: CreateAppOptions = {}
 ): FastifyInstance {
-  const fastify = Fastify({ logger });
+  // The shipped client calls `/api/*` (the path a dev-server rewrite used to
+  // produce). Strip that prefix before routing so the API answers the same
+  // routes with and without it.
+  const fastify = Fastify({
+    logger,
+    rewriteUrl: (request) => {
+      const url = request.url;
+      if (url && (url === '/api' || url.startsWith('/api/'))) return url.slice(4) || '/';
+      return url;
+    },
+  });
   const ledgerMemory = new RememberEngine(dbPath);
   const kernel = new MiniKernel(ledgerMemory);
   const platformKernel = new OceanicosKernel();
@@ -340,6 +350,7 @@ export function createApp(
 }
 
 export const app = createApp(process.env.OMEGA_DB_PATH ?? './oceanicos.db', process.env.NODE_ENV !== 'test');
+export default app;
 
 const start = async () => {
   try {

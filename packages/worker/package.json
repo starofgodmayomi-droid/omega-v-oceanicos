@@ -8,7 +8,7 @@
   "scripts": {
     "build": "tsc",
     "watch": "tsc --watch",
-    "test": "jest",
+    "test": "node ../../scripts/run-node-suite.mjs packages/worker",
     "clean": "node ../../scripts/rimraf.cjs dist \"*.tsbuildinfo\""
   },
   "keywords": [

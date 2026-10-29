@@ -7,7 +7,7 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "test": "jest"
+    "test": "node ../../scripts/run-node-suite.mjs packages/friction"
   },
   "dependencies": {
     "@oceanicos/types": "workspace:*",

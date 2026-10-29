@@ -7,7 +7,7 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "test": "jest"
+    "test": "node ../../scripts/run-node-suite.mjs packages/graph"
   },
   "dependencies": {
     "@oceanicos/types": "workspace:*",
