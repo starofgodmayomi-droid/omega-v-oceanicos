@@ -26,8 +26,16 @@ services:
       - OMEGA_DB_PATH=/app/data/oceanicos.db
       - OMEGA_ALLOW_UNSIGNED_CYCLE=true
     env_file:
-      - ./.env.base44-defaults
-      - /run/base44/app.env
+      - path: ./.env.base44-defaults
+        required: true
+      # Platform-managed secret delivery file. It lives outside the repo and is
+      # written asynchronously by the platform, so it may not exist yet on the
+      # very first start (e.g. right after a branch/secret change): a required
+      # entry makes `docker compose up` exit 1 with "env file ... not found" and
+      # the preview never starts. Still listed LAST so real values win over the
+      # placeholders above whenever it is present.
+      - path: /run/base44/app.env
+        required: false
     ports:
       - "5000:5000"
     restart: on-failure
@@ -60,8 +68,16 @@ services:
       - VITE_API_PROXY_TARGET=http://api:5000
       - __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS
     env_file:
-      - ./.env.base44-defaults
-      - /run/base44/app.env
+      - path: ./.env.base44-defaults
+        required: true
+      # Platform-managed secret delivery file. It lives outside the repo and is
+      # written asynchronously by the platform, so it may not exist yet on the
+      # very first start (e.g. right after a branch/secret change): a required
+      # entry makes `docker compose up` exit 1 with "env file ... not found" and
+      # the preview never starts. Still listed LAST so real values win over the
+      # placeholders above whenever it is present.
+      - path: /run/base44/app.env
+        required: false
     ports:
       - "3000:3000"
     restart: on-failure
