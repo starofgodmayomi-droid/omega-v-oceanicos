@@ -79,3 +79,10 @@ export function verifyOmega(input: {
   }
   return { status: 'VERIFIED', checks, reason: null };
 }
+
+/*
+ * The Ω∞v fixed point — the loop that only remembers what matches reality.
+ * Kept in its own module; exported here so `@oceanicos/omega` stays the one
+ * boundary the API imports.
+ */
+export * from './reality-gate.js';

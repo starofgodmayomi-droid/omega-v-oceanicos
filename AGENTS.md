@@ -58,6 +58,21 @@ The loop's three actors each have their own workspace package, so the repository
 ## Single body compression (4×4×4×4)
 `GET /v1/ecosystem/body` carries a `compression` block: the seven runtime layers projected onto four axes of four coordinates (256 cells) with a local compress→expand proof. `POST /v1/ecosystem/body/expand` takes `{ compression }` and returns the records; a tampered digest is `400 DIGEST_MISMATCH`. Contract: `packages/mini/src/single-body.ts`; doc: `docs/SINGLE-BODY-4X4X4X4.md`; UI: `apps/web/src/SingleBodyPanel.tsx`. Coordinates are a declared projection (`body.layers.v1`), not inferred truth.
 
+## Reality gate (Ω∞v fixed point)
+`packages/omega/src/reality-gate.ts` (exported from `@oceanicos/omega`, and therefore from the `apps/api/src/invisible-computer.ts` barrel) is the loop as a finite step:
+
+```
+Ω∞v := Y(λf. M_{t+1} = M_t ∪ Δ | V(Δ) = ⊤)
+V(Δ) ≡ (Expected ≡ Observed)
+```
+
+- **Branches**, checked in this order: `K(x) ∈ SCAM` → `HALT ⊢ DIVERGENT` (`scanIntent`); `Evidence(x) = ∅` → `HALT ⊢ UNKNOWN` (missing/blank `observed`); `Authority(x) < Required` → `HALT ⊢ NOT_EXECUTED` (`AUTHORITY_RANK`, READ_ONLY < AUTONOMOUS); then `V(Δ) = ⊥` → `HALT ⊢ DIVERGENT` (both states kept) or `V(Δ) = ⊤` → commit `Σ ∪ Hash(x)`.
+- The supplied formula lists the commit branch first. The implementation makes the three halt guards **fail-closed ahead of it**, so a fraud intent is never committed even when an observation matches, and an unobserved delta is UNKNOWN rather than DIVERGENT. The branch set is unchanged; only the guard order is declared.
+- **Memory** (`createRealityMemory`) is append-only and SHA-256 hash-chained from `omega-reality-memory-genesis-v1`; `verifyChain()` recomputes every link. It is a **set**: committing the same delta twice answers `VERIFIED` with `entry: null` and does not grow memory (`M ∪ Δ = M`).
+- **`runRealityLoop`** is one finite pass: each committed delta feeds the next, and the first halt ends the pass (`haltedAt`). An empty pass is `NOT_EXECUTED` — nothing runs unattended.
+- Nothing here mutates reality or executes a repository operation; it decides what may be remembered.
+- Tests: `node --experimental-strip-types --test ./tests/integration/reality-gate.integration.test.ts` (needs `packages/omega/dist`; build with `pnpm --filter @oceanicos/omega run build`).
+
 ## Repository access control (capability ≠ authority)
 `apps/api/src/repo-access.ts` is the repository access boundary. An operation is admitted only when every independent predicate holds — registered operation, available key, capability present, valid signature, not expired, and exact subject/operation/scope match. The first failing predicate is the recorded reason.
 
