@@ -91,6 +91,8 @@ test('AUTONOMOUS authority halts with NOT_EXECUTED when system max is READ_ONLY'
       body.steps.map((step: any) => `${step.actor}:${step.phase}:${step.status}`),
       ['KAI:OBSERVE:VERIFIED', 'KAI:GATE:NOT_EXECUTED']
     );
+    assert.ok(body.reality, 'NOT_EXECUTED must carry the reality transition');
+    assert.equal(body.reality.delta_admitted, false);
   } finally {
     await app.close();
   }
@@ -112,6 +114,33 @@ test('READ_ONLY authority passes the gate and produces VERIFIED', async () => {
       body.steps.some((step: any) => step.phase === 'GATE' && step.status === 'VERIFIED'),
       'the authority gate step must appear and pass'
     );
+    assert.ok(body.reality, 'VERIFIED must carry the reality transition');
+    assert.equal(body.reality.delta_admitted, true);
+  } finally {
+    await app.close();
+  }
+});
+
+test('GET /api/omega-v/reality returns the accumulated memory state', async () => {
+  const app = createApp(':memory:', false);
+  try {
+    // Seed one verified transition so M > 0
+    await app.inject({
+      method: 'POST',
+      url: '/api/execute',
+      payload: { intent: 'Seed reality with a verified delta' },
+    });
+
+    const response = await app.inject({ method: 'GET', url: '/api/omega-v/reality' });
+    const body = response.json();
+    assert.equal(response.statusCode, 200);
+    assert.equal(body.success, true);
+    assert.ok(body.reality);
+    assert.equal(body.reality.M, 1, 'M must reflect the accumulated verified deltas');
+    assert.ok(body.reality.formula.includes('M_t'));
+    assert.ok(body.reality.V.includes('Expected ≡ Observed'));
+    assert.ok(Array.isArray(body.reality.transitions));
+    assert.equal(body.reality.transitions.length, 1);
   } finally {
     await app.close();
   }

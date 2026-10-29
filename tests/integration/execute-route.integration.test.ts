@@ -44,6 +44,10 @@ test('POST /api/execute runs KAI → ELION → OMEGA → KAI and returns the evi
     assert.equal(memoryBody.records[0].id, body.memory.id);
     assert.equal(memoryBody.records[0].evidence_hash, body.evidence_hash);
     assert.equal(memoryBody.records[0].status, 'VERIFIED');
+
+    assert.ok(body.reality, 'response must carry the reality transition');
+    assert.equal(body.reality.delta_admitted, true, 'VERIFIED delta must be admitted');
+    assert.equal(body.reality.M_t_plus_1, body.reality.M_t + 1, 'M must grow by 1 when delta is admitted');
   } finally {
     await app.close();
   }
@@ -85,6 +89,10 @@ test('KAI Shield halts a fraud pattern with DIVERGENT and remembers nothing', as
 
     const memory = await app.inject({ method: 'GET', url: '/api/kai/memory' });
     assert.equal(memory.json().total, 0);
+
+    assert.ok(body.reality, 'DIVERGENT must carry the reality transition');
+    assert.equal(body.reality.delta_admitted, false);
+    assert.equal(body.reality.M_t, body.reality.M_t_plus_1, 'M must not grow when delta is rejected');
   } finally {
     await app.close();
   }

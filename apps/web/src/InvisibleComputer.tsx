@@ -39,6 +39,7 @@ type ExecutionResult = {
   memory: { id: string; timestamp: string } | null;
   engine: string | null;
   requested_engine: EngineChoice | 'auto' | null;
+  reality: { M_t: number; M_t_plus_1: number; delta_admitted: boolean; V: string } | null;
 };
 
 type MemoryRecord = {
@@ -363,8 +364,8 @@ export function InvisibleComputer() {
         {/* Right pane — KAI ledger */}
         <div className="ioc-pane" style={paneStyle} aria-label="KAI ledger">
           <div style={{ ...paneLabelStyle, display: 'flex', justifyContent: 'space-between' }}>
-            <span>KAI Ledger</span>
-            <span style={{ color: theme.accentWarm }}>{memoryTotal ?? '—'} VERIFIED</span>
+            <span>Reality · M</span>
+            <span style={{ color: theme.accentWarm }}>M = {memoryTotal ?? '—'}</span>
           </div>
 
           <div
@@ -560,6 +561,13 @@ export function InvisibleComputer() {
               </span>
             )}
             {result.memory && <span>REMEMBERED · {result.memory.id.slice(0, 8)}</span>}
+            {result.reality && (
+              <span>
+                REALITY · M{result.reality.M_t} → M{result.reality.M_t_plus_1}
+                {' · '}
+                {result.reality.delta_admitted ? 'Δ ADMITTED' : 'Δ REJECTED'}
+              </span>
+            )}
           </div>
         </div>
       )}

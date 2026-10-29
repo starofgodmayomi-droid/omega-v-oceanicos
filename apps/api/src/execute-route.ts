@@ -95,6 +95,7 @@ export function registerExecuteRoute(
         steps,
         contract: null,
         memory: null,
+        reality: { M_t: store.count(), M_t_plus_1: store.count(), delta_admitted: false, V: 'Expected ≡ Observed' },
         engine: null,
         requested_engine: engine,
         model_error: null,
@@ -134,6 +135,7 @@ export function registerExecuteRoute(
         steps,
         contract,
         memory: null,
+        reality: { M_t: store.count(), M_t_plus_1: store.count(), delta_admitted: false, V: 'Expected ≡ Observed' },
         engine: null,
         requested_engine: engine,
         model_error: null,
@@ -171,6 +173,8 @@ export function registerExecuteRoute(
     );
 
     // Step 4 — KAI remember: only a verified outcome is written to memory.
+    // Reality := M_{t+1} = M_t ∪ Δ | V(Δ) = ⊤ — a delta enters M only when V holds.
+    const M_t = store.count();
     let memory: KaiMemoryRecord | null = null;
     if (omega.status === 'VERIFIED') {
       memory = store.remember({ intent, evidenceHash, status: omega.status });
@@ -183,6 +187,7 @@ export function registerExecuteRoute(
         'Nothing was remembered because verification did not pass.'
       );
     }
+    const M_t_plus_1 = store.count();
 
     return reply.status(200).send({
       success: true,
@@ -196,6 +201,7 @@ export function registerExecuteRoute(
       steps,
       contract,
       memory,
+      reality: { M_t, M_t_plus_1, delta_admitted: omega.status === 'VERIFIED', V: 'Expected ≡ Observed' },
       engine: elion.engine,
       requested_engine: elion.requestedEngine,
       model_error: elion.error,
@@ -219,5 +225,16 @@ export function registerExecuteRoute(
   for (const path of ['/kai/memory', '/api/kai/memory']) fastify.get(path, memoryHandler);
   for (const path of ['/omega-v/spec', '/api/omega-v/spec']) {
     fastify.get(path, async () => ({ success: true, spec: OMEGA_V_SPEC }));
+  }
+  for (const path of ['/omega-v/reality', '/api/omega-v/reality']) {
+    fastify.get(path, async () => ({
+      success: true,
+      reality: {
+        M: store.count(),
+        transitions: store.listMemory(10),
+        formula: 'M_{t+1} = M_t ∪ Δ | V(Δ) = ⊤',
+        V: 'Expected ≡ Observed',
+      },
+    }));
   }
 }
