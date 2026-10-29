@@ -1,5 +1,8 @@
 # Base44 Dev Environment — Ω∞v Oceanicos
 
+## Read first
+`ECOSYSTEM_BODY.md` is the master context: the organ map (KAI / ELION / OMEGA → the real file paths they live at), the golden rules and where each is enforced, and the commands that verify the body. Its claims are held by `tests/integration/ecosystem-body.integration.test.ts`; a renamed organ or dropped law fails that test, so update the body in the same change. `packages/kai`, `packages/elion` and `packages/omega` do not exist on purpose — the body explains the extraction trigger.
+
 ## Stack
 - **pnpm monorepo** (Node 22, pnpm 10). Workspace packages in `packages/*`, apps in `apps/api` and `apps/web`.
 - **API** (`apps/api`): Fastify, CommonJS, port 5000. Depends on built workspace packages (`@oceanicos/*`, `@omega-v/kernel`).
