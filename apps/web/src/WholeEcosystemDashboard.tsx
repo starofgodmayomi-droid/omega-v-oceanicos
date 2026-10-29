@@ -3,6 +3,7 @@ import { theme, humanStatus } from './oceanicosTheme';
 import { boundedStatus, statusCounts, STATUS_ORDER, summarizeLucidField, type RealityStatus } from './whole-ecosystem-dashboard-model';
 import { AgentSafetyBoundaryPanel } from './AgentSafetyBoundaryPanel';
 import { WorkerCoordinationPanel } from './WorkerCoordinationPanel';
+import { EcosystemBodyRolesPanel } from './EcosystemBodyRolesPanel';
 
 type Props = {
   streamConnected: boolean;
@@ -12,6 +13,7 @@ type Props = {
   ledgerIntegrity: { valid: boolean; height: number } | null;
   history: Array<{ evidence?: { status?: string } }>;
   ecosystemBody: any;
+  bodyRoles: any;
   omegaCommand: any;
   onFocusCommand: (prompt: string) => void;
 };
@@ -133,6 +135,8 @@ export function WholeEcosystemDashboard(props: Props) {
         </div>
         <span className="whole-ecosystem-state"><i className="status-dot" /> {props.simulationMode ? 'BOUNDED SIMULATION' : 'LIVE STATE'}</span>
       </header>
+
+      <EcosystemBodyRolesPanel roles={props.bodyRoles} />
 
       <div className="whole-ecosystem-grid">
         <nav className="whole-ecosystem-organs" aria-label="Ecosystem organs">

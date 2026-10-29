@@ -2114,6 +2114,18 @@ body {
 .whole-ecosystem-state { color: #94a3b8; font: 10px 'DM Mono', monospace; white-space: nowrap; }
 .whole-ecosystem-state .status-dot { margin-right: 5px; }
 .whole-ecosystem-grid { display: grid; grid-template-columns: minmax(126px, 0.55fr) minmax(260px, 1.65fr) minmax(160px, 0.82fr); gap: 12px; padding: 14px 0; }
+.body-roles { margin: 14px 0 0; padding: 12px 10px; border: 1px solid rgba(148, 163, 184, 0.13); border-radius: 13px; background: rgba(2, 6, 23, 0.38); }
+.body-roles-heading { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
+.body-roles-heading span { color: #67e8f9; font: 10px 'DM Mono', monospace; letter-spacing: 0.12em; }
+.body-roles-heading small { color: #64748b; font-size: 9px; }
+.body-roles-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; margin-top: 10px; }
+.body-role { min-width: 0; padding: 9px 10px; border: 1px solid rgba(148, 163, 184, 0.12); border-radius: 9px; background: rgba(8, 47, 73, 0.16); }
+.body-role-head { display: flex; gap: 6px; align-items: baseline; }
+.body-role-head b { color: #22d3ee; font-weight: 500; }
+.body-role-name { color: #e2e8f0; font: 11px 'DM Mono', monospace; letter-spacing: 0.08em; }
+.body-role-head small { margin-left: auto; color: #64748b; font: 9px 'DM Mono', monospace; }
+.body-role-status { display: block; margin-top: 7px; font: 13px 'DM Mono', monospace; font-weight: 500; }
+.body-role-detail { display: block; margin-top: 3px; color: #94a3b8; font-size: 9px; line-height: 1.45; overflow-wrap: anywhere; }
 .whole-ecosystem-organs, .whole-current-card, .whole-reality-panel { min-width: 0; border: 1px solid rgba(148, 163, 184, 0.13); border-radius: 13px; background: rgba(2, 6, 23, 0.38); }
 .whole-ecosystem-organs { padding: 12px 8px; }
 .whole-ecosystem-organs .whole-ecosystem-label, .whole-reality-panel .whole-ecosystem-label { padding: 2px 7px 9px; color: #64748b; }
@@ -2162,7 +2174,7 @@ body {
 .whole-bottom-current button { flex: 0 0 auto; padding: 4px 5px; border: 0; background: transparent; color: #64748b; font: 9px 'DM Mono', monospace; cursor: pointer; }
 .whole-bottom-current button:hover { color: #67e8f9; }
 @media (max-width: 820px) { .whole-ecosystem-grid { grid-template-columns: 1fr 1.6fr; } .whole-reality-panel { grid-column: 1 / -1; } }
-@media (max-width: 560px) { .whole-ecosystem-grid { grid-template-columns: 1fr; } .whole-reality-panel { grid-column: auto; } .whole-ecosystem-header { align-items: flex-start; flex-direction: column; } .whole-value-current { align-items: flex-start; flex-direction: column; } .whole-value-unknown { text-align: left; } }
+@media (max-width: 560px) { .whole-ecosystem-grid { grid-template-columns: 1fr; } .body-roles-grid { grid-template-columns: 1fr; } .whole-reality-panel { grid-column: auto; } .whole-ecosystem-header { align-items: flex-start; flex-direction: column; } .whole-value-current { align-items: flex-start; flex-direction: column; } .whole-value-unknown { text-align: left; } }
 
 
 /* Screenshot-guided center map: conceptual relationships only, never live telemetry. */

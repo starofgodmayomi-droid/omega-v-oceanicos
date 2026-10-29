@@ -89,6 +89,7 @@ export function App() {
 
   const [moodData, setMoodData] = useState<any>(null);
   const [ecosystemBody, setEcosystemBody] = useState<any>(null);
+  const [bodyRoles, setBodyRoles] = useState<any>(null);
   const [attestationData, setAttestationData] = useState<any>(null);
   const [attestLoading, setAttestLoading] = useState(false);
   const [kernelCapabilities, setKernelCapabilities] = useState<KernelCapabilitySnapshot | null>(null);
@@ -151,6 +152,12 @@ export function App() {
       if (data.success) setEcosystemBody(data);
     } catch {
       /* ambient — the API may be mounted separately from the web surface */
+    }
+    try {
+      const body = await apiRequest<any>('/v1/body');
+      if (body.success) setBodyRoles(body.roles ?? null);
+    } catch {
+      /* ambient — roles stay UNKNOWN when the body endpoint is unreachable */
     }
   };
 
@@ -760,6 +767,7 @@ export function App() {
           ledgerIntegrity={ledgerIntegrity}
           history={history}
           ecosystemBody={ecosystemBody}
+          bodyRoles={bodyRoles}
           omegaCommand={omegaCommand}
           onFocusCommand={setOmegaIntent}
         />
