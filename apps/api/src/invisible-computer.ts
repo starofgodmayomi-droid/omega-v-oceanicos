@@ -85,6 +85,28 @@ export function deriveAuthorityLevel(requested: unknown): AuthorityLevel {
   return requested === 'AUTONOMOUS' ? 'AUTONOMOUS' : 'READ_ONLY';
 }
 
+/**
+ * CAPABILITY != AUTHORITY. An intent that directs the system to act needs
+ * AUTONOMOUS authority. The endpoint grants READ_ONLY unless the request
+ * carries AUTONOMOUS, so a directive at READ_ONLY halts as NOT_EXECUTED before
+ * anything is executed, contracted, or remembered.
+ */
+export type RequiredAuthority = AuthorityLevel;
+
+const DIRECTIVE_ACTION =
+  /^(?:(?:please|kindly|now|go|just)\s+)*(?:(?:can|could|would|will)\s+you\s+|i\s+(?:want|need)\s+you\s+to\s+|i\s+(?:want|need)\s+to\s+)?(?:send|transfer|wire|pay|withdraw|deploy|publish|delete|remove|install|sign|submit|launch|mint|bridge|approve|buy|sell|trade|execute)\b/i;
+
+export function requiredAuthorityFor(intent: string): RequiredAuthority {
+  return DIRECTIVE_ACTION.test(intent.trim()) ? 'AUTONOMOUS' : 'READ_ONLY';
+}
+
+export function authoritySatisfies(
+  granted: AuthorityLevel,
+  required: RequiredAuthority
+): boolean {
+  return required === 'READ_ONLY' || granted === 'AUTONOMOUS';
+}
+
 export function expectedOutcomeFor(authorityLevel: AuthorityLevel): string {
   return authorityLevel === 'AUTONOMOUS'
     ? 'A bounded plan that names the single next action and its authorization gate; no execution or completion is claimed.'

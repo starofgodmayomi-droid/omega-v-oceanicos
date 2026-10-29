@@ -37,6 +37,7 @@ docker compose -f docker-compose.base44.yml up -d
 ## Invisible Online Computer (KAI → ELION → OMEGA → KAI)
 - `POST /api/execute` (alias `POST /execute`, which is the Vite proxy's rewritten target) runs the four-step loop from `apps/api/src/execute-route.ts`:
   1. **KAI observe** — `scanIntent` matches known scam patterns; a match halts with `status: "DIVERGENT"`, `reason: "KAI Shield blocked this intent."` and writes nothing.
+  1b. **Authority** — `requiredAuthorityFor` marks a directive intent (deploy/send/delete/…) as needing `AUTONOMOUS`; when the granted level is lower, the loop halts `status: "NOT_EXECUTED"` (`authority: {granted, required}`) with nothing executed, contracted, or remembered. This is the third terminating halt: DIVERGENT / UNKNOWN / NOT_EXECUTED.
   2. **ELION execute** — `executeElion` calls an OpenAI-compatible `chat/completions` endpoint when `OMEGA_LLM_API_KEY` is set (`OMEGA_LLM_BASE_URL`, `OMEGA_LLM_MODEL` optional). Without a key it returns the clearly labelled `local-deterministic` composer. A failed model call returns empty text, not an invented answer.
   3. **OMEGA verify** — `verifyOmega` recomputes the SHA-256 evidence hash and checks the text against the `OmegaIR_Contracts` row; empty text, a broken digest, or a fabricated completion collapses to `UNKNOWN`.
   4. **KAI remember** — only `VERIFIED` outcomes are appended to `KaiMemory`.

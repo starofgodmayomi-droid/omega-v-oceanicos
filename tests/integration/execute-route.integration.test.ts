@@ -89,6 +89,43 @@ test('KAI Shield halts a fraud pattern with DIVERGENT and remembers nothing', as
   }
 });
 
+test('authority below the required level halts NOT_EXECUTED and remembers nothing', async () => {
+  const app = createApp(':memory:', false);
+  try {
+    const denied = await app.inject({
+      method: 'POST',
+      url: '/api/execute',
+      payload: { intent: 'Deploy the production service' },
+    });
+    const deniedBody = denied.json();
+
+    assert.equal(denied.statusCode, 200);
+    assert.equal(deniedBody.status, 'NOT_EXECUTED');
+    assert.equal(deniedBody.response, null);
+    assert.equal(deniedBody.evidence_hash, null);
+    assert.equal(deniedBody.memory, null);
+    assert.equal(deniedBody.contract, null);
+    assert.deepEqual(deniedBody.authority, { granted: 'READ_ONLY', required: 'AUTONOMOUS' });
+    assert.deepEqual(
+      deniedBody.steps.map((step: any) => `${step.actor}:${step.phase}:${step.status}`),
+      ['KAI:OBSERVE:NOT_EXECUTED']
+    );
+
+    const granted = await app.inject({
+      method: 'POST',
+      url: '/api/execute',
+      payload: { intent: 'Deploy the production service', authorityLevel: 'AUTONOMOUS' },
+    });
+    assert.equal(granted.json().status, 'VERIFIED');
+    assert.equal(granted.json().contract.authority_level, 'AUTONOMOUS');
+
+    const memory = await app.inject({ method: 'GET', url: '/api/kai/memory' });
+    assert.equal(memory.json().total, 1, 'only the authorized run is remembered');
+  } finally {
+    await app.close();
+  }
+});
+
 test('malformed intents fail closed with 400', async () => {
   const app = createApp(':memory:', false);
   try {

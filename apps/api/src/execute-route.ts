@@ -1,7 +1,9 @@
 import type { FastifyInstance } from 'fastify';
 import {
+  authoritySatisfies,
   deriveAuthorityLevel,
   executeElion,
+  requiredAuthorityFor,
   expectedOutcomeFor,
   scanIntent,
   sha256Hex,
@@ -95,7 +97,35 @@ export function registerExecuteRoute(
         evaluated_at: new Date().toISOString(),
       });
     }
-    recordStep('KAI', 'OBSERVE', 'VERIFIED', 'No known fraud pattern matched.');
+    // Step 1b — AUTHORITY: CAPABILITY != AUTHORITY. A directive intent needs
+    // AUTONOMOUS authority; below that the loop halts NOT_EXECUTED before
+    // anything is executed, contracted, or remembered.
+    const requiredAuthority = requiredAuthorityFor(intent);
+    if (!authoritySatisfies(authorityLevel, requiredAuthority)) {
+      recordStep(
+        'KAI',
+        'OBSERVE',
+        'NOT_EXECUTED',
+        `Granted ${authorityLevel} < required ${requiredAuthority}. No execution attempted.`
+      );
+      return reply.status(200).send({
+        success: true,
+        status: 'NOT_EXECUTED',
+        intent,
+        response: null,
+        evidence_hash: null,
+        reason: `Authority ${authorityLevel} is below the required ${requiredAuthority}.`,
+        matched_patterns: [],
+        authority: { granted: authorityLevel, required: requiredAuthority },
+        steps,
+        contract: null,
+        memory: null,
+        engine: null,
+        model_error: null,
+        evaluated_at: new Date().toISOString(),
+      });
+    }
+    recordStep('KAI', 'OBSERVE', 'VERIFIED', 'No known fraud pattern matched; authority is sufficient.');
 
     // The OmegaIR contract is written before execution so the output is
     // verified against a declared expectation, not against itself.
