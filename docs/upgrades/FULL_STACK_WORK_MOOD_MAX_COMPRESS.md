@@ -451,3 +451,51 @@ green status.
 - **Prerequisite:** none external; the dev stack runs on compose with no credentials.
 - **Acceptance:** the route returns `VERIFIED | DIVERGENT | UNKNOWN | NOT_EXECUTED`, and a
   caller echo still cannot pass the gate.
+
+## §17 — The organs enter the request path (2026-10-29)
+
+§16 recorded one honest gap: KAI, ELION, and OMEGA existed as tested packages, but
+`apps/api` imported none of them, so the body's organ claim was a package surface. This
+pass closes that gap on the same tip, without inventing a new authority.
+
+### What changed
+
+```text
+apps/api/package.json          declares @oceanicos/kai, @oceanicos/elion, @oceanicos/omega
+apps/api/src/organs.ts         runs all three for one observation
+apps/api/src/index.ts          GET /v1/ecosystem/body now composes layers.organs
+docs/REPO_INVENTORY.md         kai | elion | omega moved to API-DECLARED (12 / 9 counts)
+ECOSYSTEM_BODY.md              organ rows point at the running layer instead of "not wired"
+```
+
+The layer is not a side effect: each request builds a fresh `KaiMind`, so memory stays
+bounded to the observation being reported, and nothing is appended to the ledger.
+
+### Evidence observed this pass
+
+| Claim | Evidence observed | Status |
+| --- | --- | --- |
+| The API compiles the organs into its runtime | `pnpm --filter api run build` → `tsc` exits clean | `SUPPORTED` |
+| The endpoints still answer | `curl` → web `200`, api `/health` `200`, proxy `/api/v1/omega/workers` `200`, `/v1/omega/workers` `200` | `SUPPORTED` |
+| The layer reports real organ output | `GET /v1/ecosystem/body` on the built runtime → `layers.organs.status = VERIFIED`, `mind = { version: kai.mind.v1, drops: 1, recalled: 1, memoryIsProof: false }`, `hands = { status: NOT_EXECUTED, reason: human authority required: authorizedBy was empty }`, `judge = { verdict: VERIFIED, allow: true, differences: [] }` | `SUPPORTED` |
+| Memory stays bounded per request | a second identical request reports `mind.drops = 1`, not 2 | `SUPPORTED` |
+| The layer grants no authority | ELION returns `NOT_EXECUTED` / `PENDING_OMEGA` on every read; OMEGA's verdict is bounded to one comparison; `failClosed: true` is fixed | `SUPPORTED` |
+| The unit test encodes the new layer | `apps/api/src/__tests__/ecosystem-body.test.ts` asserts the `organs` key and each organ's expected output — **not run on this tip**: root jest type-checks `jest.setup.ts` against a tsconfig whose `types` is `["node"]`, so it fails before any test loads (pre-existing, unrelated to this change) | `NOT_EXECUTED` |
+
+### What this does not claim
+
+- The organ layer is not verification of reality, deployment, or external services.
+- ELION refusing on a read is the expected contract, not a passing capability test.
+- The inventory contract still treats a declared dependency as declaration, not proof; the
+  proof is the endpoint's own layer.
+
+### Continuity record for the next cycle
+
+- **Inherited:** the `organs` layer, the inventory tables (12 API-declared / 9 workspace-only),
+  and §16's `DIVERGENT` slice, which remains the correct terminal state for a caller echo.
+- **Next becoming (highest value, safe, authorized):** run one human-authorized intent
+  through ELION → OMEGA and show the gate opening only on `VERIFIED`, reusing
+  `POST /v1/omega/commands` instead of adding authority to the read path.
+- **Prerequisite:** the root jest setup must type-check (`@types/jest` in the root tsconfig
+  `types`) before the API unit suite can run in this sandbox; the live endpoint was verified
+  through the built runtime instead.

@@ -9,10 +9,11 @@
 **2026-10-02** — inspected current `main` at `fd4417e73c4aa10cec678d1f09eb6f09a0cffec2`.
 
 **2026-10-29** — `kai`, `elion`, and `omega` added as workspace members (the organs declared
-in [ECOSYSTEM_BODY.md](../ECOSYSTEM_BODY.md)). Tables and counts below were re-checked
-against the manifests on branch `full-stack-upgrade`; the inventory contract test passed
-(8/8). Membership still does not prove they are imported, run, or verified — `apps/api`
-does not depend on them on this tip.
+in [ECOSYSTEM_BODY.md](../ECOSYSTEM_BODY.md)), then declared as direct `apps/api` workspace
+dependencies and invoked by `GET /v1/ecosystem/body`, which reports an `organs` layer built
+by running all three. Tables and counts below were re-checked against the manifests on
+branch `full-stack-upgrade`. Declaring a dependency still does not prove a package is
+verified — the endpoint's own `organs` layer is the runtime evidence.
 
 Evidence sources:
 
@@ -46,7 +47,7 @@ PRESENT ON DISK
 | **SOURCE-ONLY** | Package directory exists under `packages/`, but is not listed in `pnpm-workspace.yaml`. |
 | **STUB** | A source-only directory with a thin implementation; not an active workspace capability. |
 
-## API-DECLARED — workspace + direct API dependency (9 packages)
+## API-DECLARED — workspace + direct API dependency (12 packages)
 
 | Package | Name | Declared role |
 |---|---|---|
@@ -56,19 +57,19 @@ PRESENT ON DISK
 | `remember` | `@oceanicos/remember` | Remember |
 | `mini` | `@oceanicos/mini` | MINI kernel |
 | `attestation` | `@oceanicos/attestation` | Attest |
+| `kai` | `@oceanicos/kai` | Mind: continuity memory, bounded recall, scam-intent shield |
+| `elion` | `@oceanicos/elion` | Hands: admission-gated execution, never a verdict |
+| `omega` | `@oceanicos/omega` | Judge: expected-vs-observed reconciliation, fails closed |
 | `kernel` | `@omega-v/kernel` | Finite-state kernel |
 | `oreade` | `@omega-v/oreade` | ƆREADE layer, not authority |
 | `mood` | `@omega-v/mood` | Planning context, not evidence |
 
 The API manifest declares these workspace dependencies. The list alone does not prove each is imported, executed, or exposed as an API capability.
 
-## WORKSPACE-ONLY — workspace member, no direct API dependency (12 packages)
+## WORKSPACE-ONLY — workspace member, no direct API dependency (9 packages)
 
 | Package | Name | Declared role |
 |---|---|---|
-| `kai` | `@oceanicos/kai` | Mind: continuity memory, bounded recall, scam-intent shield |
-| `elion` | `@oceanicos/elion` | Hands: admission-gated execution, never a verdict |
-| `omega` | `@oceanicos/omega` | Judge: expected-vs-observed reconciliation, fails closed |
 | `gateway` | `@omega-v/gateway` | Gateway |
 | `ir` | `@omega-v/ir` | Intermediate-representation bytecode and execution engine |
 | `compiler` | `@omega-v/compiler` | Rule DSL to IR bytecode compiler |
@@ -82,8 +83,8 @@ The API manifest declares these workspace dependencies. The list alone does not 
 These packages are explicit workspace members, but are not direct API workspace dependencies. That does not prove whether another package uses them or whether a specific build/test ran.
 
 `kai`, `elion`, and `omega` are the organs declared in `ECOSYSTEM_BODY.md`. They are
-workspace members with their own unit tests and are not imported by `apps/api` on this
-tip; their capability is a package surface, not a running route.
+workspace members with their own unit tests, and `apps/api` now invokes all three while
+composing `GET /v1/ecosystem/body`; that endpoint's `organs` layer reports their output.
 
 This includes `@omega-v/ir`, `@omega-v/compiler`, and `@omega-v/evolution`: all three are workspace members on the audited tip, not source-only directories, and not direct API dependencies in the current API manifest.
 
@@ -105,8 +106,8 @@ Unresolved naming edge. Do not silently rename packages.
 | Category | Count | Action |
 |---|---:|---|
 | Workspace members | 23 (21 packages + 2 apps) | Membership only; do not infer capability |
-| API-declared | 9 packages | Direct manifest dependencies; verify actual use separately |
-| Workspace-only | 12 packages | Not direct API dependencies |
+| API-declared | 12 packages | Direct manifest dependencies; verify actual use separately |
+| Workspace-only | 9 packages | Not direct API dependencies |
 | On-disk, off-workspace | Non-exhaustive | Promote only when earned |
 
 ## Test and CI evidence

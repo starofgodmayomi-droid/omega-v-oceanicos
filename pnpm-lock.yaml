@@ -37,12 +37,21 @@ importers:
       '@oceanicos/attestation':
         specifier: workspace:*
         version: link:../../packages/attestation
+      '@oceanicos/elion':
+        specifier: workspace:*
+        version: link:../../packages/elion
+      '@oceanicos/kai':
+        specifier: workspace:*
+        version: link:../../packages/kai
       '@oceanicos/mini':
         specifier: workspace:*
         version: link:../../packages/mini
       '@oceanicos/observer':
         specifier: workspace:*
         version: link:../../packages/observer
+      '@oceanicos/omega':
+        specifier: workspace:*
+        version: link:../../packages/omega
       '@oceanicos/remember':
         specifier: workspace:*
         version: link:../../packages/remember

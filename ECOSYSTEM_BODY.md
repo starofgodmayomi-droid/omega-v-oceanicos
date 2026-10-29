@@ -52,9 +52,9 @@ tests it. Everything else is `UNKNOWN`, exactly as the golden rules require.
 | --- | --- | --- | --- |
 | Soul | `ECOSYSTEM_BODY.md` | this file | `SUPPORTED` |
 | Law | [`CHARTER.md`](CHARTER.md), [`MANIFEST.md`](MANIFEST.md) | non-collapse rules, mission, authority boundaries | `SUPPORTED` |
-| Mind — KAI | `packages/kai` | append-only continuity drops, bounded recall, scam-intent shield | `SUPPORTED` (unit-tested, not yet wired into `apps/api`) |
-| Hands — ELION | `packages/elion` | admission-gated execution that returns `EXECUTED_NOT_VERIFIED` or `NOT_EXECUTED` | `SUPPORTED` (unit-tested, not yet wired into `apps/api`) |
-| Judge — OMEGA | `packages/omega` | expected-vs-observed reconciliation, fails closed | `SUPPORTED` (unit-tested, not yet wired into `apps/api`) |
+| Mind — KAI | `packages/kai` | append-only continuity drops, bounded recall, scam-intent shield | `SUPPORTED` (unit-tested, run by `GET /v1/ecosystem/body` → `layers.organs.mind`) |
+| Hands — ELION | `packages/elion` | admission-gated execution that returns `EXECUTED_NOT_VERIFIED` or `NOT_EXECUTED` | `SUPPORTED` (unit-tested, run by `GET /v1/ecosystem/body`, refuses without human authority) |
+| Judge — OMEGA | `packages/omega` | expected-vs-observed reconciliation, fails closed | `SUPPORTED` (unit-tested, run by `GET /v1/ecosystem/body` → `layers.organs.judge`) |
 | Memory ledger | `packages/remember` | append-only hash-chained SQLite ledger | `SUPPORTED` |
 | MINI kernel | `packages/mini` | `👁 Observe → ✓ Verify → 🧠 Remember` plus admission, transition, reality verification | `SUPPORTED` |
 | Contracts | `packages/types` | shared observation / evidence / block types | `SUPPORTED` |
@@ -64,9 +64,11 @@ tests it. Everything else is `UNKNOWN`, exactly as the golden rules require.
 | Deployment of this body | — | no deployment was observed in this pass | `NOT_EXECUTED` |
 | `AUTOPUS`, `ECHOFRAME`, `AI SOUL` as named organs | — | no package, route, or service carries these names | `UNKNOWN` |
 
-The three organ packages are real, typed, and tested, but `apps/api` does not import them
-yet. That is a divergence kept on purpose: adding them to the running request path is a
-separate, authorized change, not something this declaration may claim.
+The three organ packages are real, typed, tested, and now imported by `apps/api`. Every
+`GET /v1/ecosystem/body` composes an `organs` layer by running all three: KAI records and
+recalls the observed receipt, ELION refuses because a read request names no human
+authority, and OMEGA reconciles the expected receipt status against the observed one. The
+layer's fields are evidence for that request only — none of them is authority.
 
 ## READING ORDER FOR AN AGENT
 

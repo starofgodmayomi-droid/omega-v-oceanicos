@@ -1,7 +1,7 @@
 import { createApp } from '../index';
 
 describe('GET /v1/ecosystem/body', () => {
-  const requiredLayers = ['sensory', 'verification', 'memory', 'mesh', 'kernel', 'governance', 'interface'] as const;
+  const requiredLayers = ['sensory', 'verification', 'memory', 'mesh', 'kernel', 'governance', 'organs', 'interface'] as const;
 
   it('composes every runtime layer into one verified, bounded body', async () => {
     const app = createApp(':memory:', false);
@@ -28,6 +28,13 @@ describe('GET /v1/ecosystem/body', () => {
       expect(body.layers.mesh).toMatchObject({ status: 'CONVERGED_PLURAL', convergence: { quorumReached: true } });
       expect(body.layers.kernel).toMatchObject({ status: 'READY', capability: { capabilities: { remoteMutation: false, arbitraryShellExecution: false } } });
       expect(body.layers.governance).toMatchObject({ status: 'HUMAN_GATE_REQUIRED', failClosed: true });
+      expect(body.layers.organs).toMatchObject({
+        status: 'VERIFIED',
+        failClosed: true,
+        mind: { version: 'kai.mind.v1', status: 'VERIFIED', drops: 1, recalled: 1, memoryIsProof: false },
+        hands: { status: 'NOT_EXECUTED', verification: 'PENDING_OMEGA' },
+        judge: { verdict: 'VERIFIED', allow: true, differences: [] },
+      });
       expect(body.layers.interface).toMatchObject({ status: 'READY' });
     } finally {
       await app.close();
@@ -64,6 +71,7 @@ describe('GET /v1/ecosystem/body', () => {
       expect(body.layers.memory.status).toBe('INTEGRITY_VERIFIED');
       expect(body.layers.memory.tip).toMatchObject({ index: expect.any(Number), hash: expect.stringMatching(/^[a-f0-9]{64}$/) });
       expect(body.layers.verification.receipt).toMatchObject({ status: 'VERIFIED' });
+      expect(body.layers.organs).toMatchObject({ status: 'VERIFIED', judge: { allow: true } });
     } finally {
       await app.close();
     }

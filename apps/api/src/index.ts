@@ -15,6 +15,7 @@ import { createMoodContext, proposeMoodCodex } from '@omega-v/mood';
 import { LocalJobError, LocalJobLedger, LOCAL_JOB_WINDOW } from './jobs.js';
 import { registerPipelineRoute, type PipelineAdmissionEvidenceResolver } from './pipeline-route.js';
 import { registerEcosystemRoute } from './ecosystem-route.js';
+import { observeOrgans } from './organs.js';
 import { registerNavigatorEvidenceRoute } from './navigator-route.js';
 import { registerRealityRoute } from './reality-route.js';
 import { registerDependencyRoute } from './dependency-route.js';
@@ -335,6 +336,12 @@ export function createApp(
     const tip = ledgerMemory.getTip();
     const ledgerIntact = ledgerMemory.verifyIntegrity();
     const capability = platformKernel.getCapabilitySnapshot();
+    const organs = await observeOrgans({
+      id: telemetry.uuid,
+      subject: 'omega-v-oceanicos',
+      receiptStatus: receipt.status,
+      ledgerIntact,
+    });
     const bodyStatus = receipt.status === 'VERIFIED' && ledgerIntact && mesh.quorumReached ? 'VERIFIED' : receipt.status;
     return {
       success: true,
@@ -348,6 +355,7 @@ export function createApp(
         mesh: { status: mesh.effectiveStatus, convergence: mesh },
         kernel: { status: 'READY', capability },
         governance: { status: capability.humanAuthorizationRequired ? 'HUMAN_GATE_REQUIRED' : 'BOUNDED', failClosed: true },
+        organs,
         interface: { status: 'READY', contract: 'Navigator / Oceanic Mirror / living telemetry surface' },
       },
       expansion: {
