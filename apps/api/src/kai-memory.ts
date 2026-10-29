@@ -131,6 +131,16 @@ export class KaiMemoryStore {
     return row ?? null;
   }
 
+  /** Records with the retained evidence text, newest first, for a ledger audit. */
+  listEvidence(limit = 50): KaiMemoryEvidenceRecord[] {
+    const bounded = Math.min(Math.max(Math.trunc(limit) || 50, 1), 50);
+    return this.db
+      .prepare(
+        'SELECT id, timestamp, intent, evidence_hash, status, evidence_text FROM "KaiMemory" ORDER BY timestamp DESC, rowid DESC LIMIT ?'
+      )
+      .all(bounded) as KaiMemoryEvidenceRecord[];
+  }
+
   listMemory(limit = 10): KaiMemoryRecord[] {
     const bounded = Math.min(Math.max(Math.trunc(limit) || 10, 1), 50);
     return this.db

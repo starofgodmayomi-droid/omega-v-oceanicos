@@ -77,6 +77,17 @@ export function InvisibleComputer() {
   const [memoryRecords, setMemoryRecords] = useState<MemoryRecord[]>([]);
   const [replays, setReplays] = useState<Record<string, { status: Verdict; reason: string | null }>>({});
   const [replayPending, setReplayPending] = useState<string | null>(null);
+  const [ledger, setLedger] = useState<{
+    status: Verdict;
+    verified: number;
+    divergent: number;
+    unknown: number;
+    audited: number;
+    total: number;
+    notAudited: number;
+  } | null>(null);
+  const [ledgerPending, setLedgerPending] = useState(false);
+  const [ledgerError, setLedgerError] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
@@ -126,6 +137,36 @@ export function InvisibleComputer() {
       }));
     } finally {
       setReplayPending(null);
+    }
+  };
+
+  /*
+   * Audit the whole remembered ledger in one call. The ledger verdict is the
+   * worst row audited, and rows beyond the bound are shown as unaudited rather
+   * than counted as good memory.
+   */
+  const auditLedger = async () => {
+    if (ledgerPending) return;
+    setLedgerPending(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/kai/memory/audit`);
+      const payload = await response.json().catch(() => null);
+      if (!payload || typeof payload.audited !== 'number') throw new Error('malformed audit');
+      setLedger({
+        status: (payload.status as Verdict) || 'UNKNOWN',
+        verified: Number(payload.verified ?? 0),
+        divergent: Number(payload.divergent ?? 0),
+        unknown: Number(payload.unknown ?? 0),
+        audited: Number(payload.audited),
+        total: Number(payload.total ?? payload.audited),
+        notAudited: Number(payload.not_audited ?? 0),
+      });
+      setLedgerError(false);
+    } catch {
+      setLedger(null);
+      setLedgerError(true);
+    } finally {
+      setLedgerPending(false);
     }
   };
 
@@ -382,6 +423,10 @@ export function InvisibleComputer() {
         <div style={{ marginTop: '14px' }}>
           <div
             style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              flexWrap: 'wrap',
               fontFamily: theme.fontMono,
               fontSize: '10px',
               letterSpacing: '0.18em',
@@ -389,7 +434,52 @@ export function InvisibleComputer() {
               marginBottom: '6px',
             }}
           >
-            KAI MEMORY · LAST {memoryRecords.length}
+            <span>KAI MEMORY · LAST {memoryRecords.length}</span>
+            {ledgerError && (
+              <span
+                data-ledger-audit="UNKNOWN"
+                style={{ fontSize: '9.5px', letterSpacing: '0.1em', color: STATUS_TONE.UNKNOWN }}
+              >
+                LEDGER → UNKNOWN · AUDIT_UNREACHABLE
+              </span>
+            )}
+            {ledger && (
+              <span
+                data-ledger-audit={ledger.status}
+                title={`audited ${ledger.audited} of ${ledger.total} remembered rows`}
+                style={{
+                  fontSize: '9.5px',
+                  letterSpacing: '0.1em',
+                  color: STATUS_TONE[ledger.status],
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                LEDGER → {ledger.status} · {ledger.verified}V {ledger.divergent}D {ledger.unknown}U
+                {ledger.notAudited > 0 ? ` · +${ledger.notAudited} UNAUDITED` : ''}
+              </span>
+            )}
+            <button
+              type="button"
+              aria-label="Verify ledger"
+              onClick={() => void auditLedger()}
+              disabled={ledgerPending}
+              style={{
+                marginLeft: 'auto',
+                padding: '2px 8px',
+                borderRadius: theme.radiusPill,
+                border: `1px solid ${theme.borderBright}`,
+                background: 'transparent',
+                color: theme.accentDim,
+                fontFamily: theme.fontMono,
+                fontSize: '9.5px',
+                fontWeight: 700,
+                letterSpacing: '0.12em',
+                cursor: ledgerPending ? 'wait' : 'pointer',
+                opacity: ledgerPending ? 0.6 : 1,
+              }}
+            >
+              {ledgerPending ? 'AUDITING' : 'VERIFY LEDGER'}
+            </button>
           </div>
           {memoryRecords.map((record) => (
             <div

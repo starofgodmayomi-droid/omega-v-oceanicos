@@ -180,6 +180,75 @@ test('a remembered record replays from retained evidence; a bad digest is DIVERG
   }
 });
 
+test('the remembered ledger audits every row in one call', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'kai-audit-'));
+  const dbPath = join(dir, 'audit.db');
+  const app = createApp(dbPath, false);
+  const store = new KaiMemoryStore(`${dbPath}.kai.db`);
+  try {
+    // Nothing remembered yet: the ledger has nothing to audit, not a pass.
+    const empty = (await app.inject({ method: 'GET', url: '/api/kai/memory/audit' })).json();
+    assert.equal(empty.status, 'NOT_EXECUTED');
+    assert.equal(empty.audited, 0);
+
+    const executed = await app.inject({
+      method: 'POST',
+      url: '/api/execute',
+      payload: { intent: 'Audit the whole ledger' },
+    });
+    assert.equal(executed.json().status, 'VERIFIED');
+
+    // One intact row alone is a VERIFIED ledger.
+    const clean = (await app.inject({ method: 'GET', url: '/api/kai/memory/audit' })).json();
+    assert.equal(clean.status, 'VERIFIED');
+    assert.equal(clean.total, 1);
+    assert.equal(clean.audited, 1);
+    assert.equal(clean.verified, 1);
+    assert.equal(clean.divergent, 0);
+    assert.equal(clean.unknown, 0);
+    assert.equal(clean.not_audited, 0);
+
+    store.remember({
+      intent: 'tampered evidence',
+      evidenceHash: sha256('the claimed output'),
+      status: 'VERIFIED',
+      evidenceText: 'a different output',
+    });
+    store.remember({
+      intent: 'legacy row',
+      evidenceHash: sha256('legacy output'),
+      status: 'VERIFIED',
+    });
+
+    // One broken row is enough to make the whole ledger DIVERGENT.
+    const audit = (await app.inject({ method: 'GET', url: '/api/kai/memory/audit' })).json();
+    assert.equal(audit.status, 'DIVERGENT');
+    assert.equal(audit.total, 3);
+    assert.equal(audit.audited, 3);
+    assert.equal(audit.verified, 1);
+    assert.equal(audit.divergent, 1);
+    assert.equal(audit.unknown, 1);
+    const reasons = audit.records.map((row: any) => String(row.reason));
+    assert.ok(reasons.some((reason: string) => /EVIDENCE_HASH_MISMATCH/.test(reason)));
+    assert.ok(reasons.some((reason: string) => /EVIDENCE_TEXT_NOT_RETAINED/.test(reason)));
+
+    // The bound is reported, never assumed: auditing one row leaves two unaudited.
+    const bounded = (
+      await app.inject({ method: 'GET', url: '/api/kai/memory/audit?limit=1' })
+    ).json();
+    assert.equal(bounded.audited, 1);
+    assert.equal(bounded.not_audited, 2);
+
+    // The alias answers identically.
+    const alias = await app.inject({ method: 'GET', url: '/kai/memory/audit' });
+    assert.equal(alias.json().status, 'DIVERGENT');
+  } finally {
+    store.close();
+    await app.close();
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('the KAI/ELION persona keeps its non-collapse rules', () => {
   for (const law of [
     'VERIFY(ΔREALITY)',

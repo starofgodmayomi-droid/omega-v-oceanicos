@@ -8,7 +8,12 @@ import {
   verifyOmega,
   type AuthorityLevel,
 } from './invisible-computer.js';
-import type { KaiMemoryStore, KaiMemoryRecord, OmegaContract } from './kai-memory.js';
+import type {
+  KaiMemoryStore,
+  KaiMemoryRecord,
+  KaiMemoryEvidenceRecord,
+  OmegaContract,
+} from './kai-memory.js';
 
 type JsonError = (reply: any, status: number, error: string, extra?: Record<string, unknown>) => unknown;
 
@@ -27,6 +32,37 @@ function parseObject(body: unknown): Record<string, unknown> | null {
   return body && typeof body === 'object' && !Array.isArray(body)
     ? (body as Record<string, unknown>)
     : null;
+}
+
+type ReplayVerdict = {
+  status: 'VERIFIED' | 'DIVERGENT' | 'UNKNOWN';
+  recomputed_hash: string | null;
+  reason: string | null;
+};
+
+/**
+ * Recompute one remembered record's digest from the evidence text retained
+ * with it. Shared by single-record replay and the ledger audit so a row can
+ * never be judged one way by one endpoint and another way by the other.
+ */
+function replayVerdict(record: KaiMemoryEvidenceRecord): ReplayVerdict {
+  if (!record.evidence_text) {
+    return {
+      status: 'UNKNOWN',
+      recomputed_hash: null,
+      reason:
+        'EVIDENCE_TEXT_NOT_RETAINED: this record predates replayable evidence and cannot be re-verified.',
+    };
+  }
+  const recomputedHash = sha256Hex(record.evidence_text);
+  const matches = recomputedHash === record.evidence_hash;
+  return {
+    status: matches ? 'VERIFIED' : 'DIVERGENT',
+    recomputed_hash: recomputedHash,
+    reason: matches
+      ? null
+      : 'EVIDENCE_HASH_MISMATCH: the retained evidence does not recompute to the recorded digest.',
+  };
 }
 
 /**
@@ -190,40 +226,65 @@ export function registerExecuteRoute(
     const record = store.findMemory(id);
     if (!record) return jsonError(reply, 404, 'MEMORY_NOT_FOUND');
 
-    const base = {
+    return reply.status(200).send({
       success: true,
       id: record.id,
       intent: record.intent,
       remembered_status: record.status,
       stored_hash: record.evidence_hash,
-    };
-
-    if (!record.evidence_text) {
-      return reply.status(200).send({
-        ...base,
-        status: 'UNKNOWN',
-        recomputed_hash: null,
-        reason:
-          'EVIDENCE_TEXT_NOT_RETAINED: this record predates replayable evidence and cannot be re-verified.',
-      });
-    }
-
-    const recomputedHash = sha256Hex(record.evidence_text);
-    const matches = recomputedHash === record.evidence_hash;
-    return reply.status(200).send({
-      ...base,
-      status: matches ? 'VERIFIED' : 'DIVERGENT',
-      recomputed_hash: recomputedHash,
-      reason: matches
-        ? null
-        : 'EVIDENCE_HASH_MISMATCH: the retained evidence does not recompute to the recorded digest.',
+      ...replayVerdict(record),
     });
+  };
+
+  /**
+   * GET /api/kai/memory/audit — replay the remembered ledger in one call.
+   *
+   * The ledger verdict is the worst row in the audited window: any DIVERGENT
+   * row makes the ledger DIVERGENT, otherwise any UNKNOWN row makes it UNKNOWN.
+   * Only a ledger whose every audited row recomputes is VERIFIED. Rows beyond
+   * the bound are counted in `not_audited`, never assumed good.
+   */
+  const auditHandler = async (request: any) => {
+    const rawLimit = request.query?.limit;
+    const limit = rawLimit === undefined ? 50 : Number(rawLimit);
+    const rows = store
+      .listEvidence(Number.isFinite(limit) ? limit : 50)
+      .map((record) => ({
+        id: record.id,
+        intent: record.intent,
+        stored_hash: record.evidence_hash,
+        ...replayVerdict(record),
+      }));
+    const total = store.count();
+    const countOf = (status: string) => rows.filter((row) => row.status === status).length;
+    const divergent = countOf('DIVERGENT');
+    const unknown = countOf('UNKNOWN');
+
+    return {
+      success: true,
+      status:
+        rows.length === 0
+          ? 'NOT_EXECUTED'
+          : divergent > 0
+            ? 'DIVERGENT'
+            : unknown > 0
+              ? 'UNKNOWN'
+              : 'VERIFIED',
+      total,
+      audited: rows.length,
+      not_audited: Math.max(total - rows.length, 0),
+      verified: countOf('VERIFIED'),
+      divergent,
+      unknown,
+      records: rows,
+    };
   };
 
   // `/execute` is what the Vite dev proxy targets after rewriting `/api/*`;
   // `/api/execute` is the published endpoint. Both are one handler.
   for (const path of ['/execute', '/api/execute']) fastify.post(path, executeHandler);
   for (const path of ['/kai/memory', '/api/kai/memory']) fastify.get(path, memoryHandler);
+  for (const path of ['/kai/memory/audit', '/api/kai/memory/audit']) fastify.get(path, auditHandler);
   for (const path of ['/kai/memory/:id/replay', '/api/kai/memory/:id/replay']) {
     fastify.get(path, replayHandler);
   }
