@@ -217,6 +217,29 @@ export function InvisibleComputer() {
         Ω∞v OCEANICOS · Invisible Online Computer
       </div>
 
+      <div
+        style={{
+          fontFamily: theme.fontMono,
+          fontSize: '9.5px',
+          color: theme.textDim,
+          textAlign: 'center',
+          lineHeight: 1.7,
+          marginBottom: '14px',
+          padding: '0 10px',
+          opacity: 0.75,
+        }}
+      >
+        <div style={{ color: theme.accent, opacity: 0.7 }}>
+          Ω∞v = Y(λf.λx. f(Σ ∪ Hash(x)) ⟂ HALT ⊢ DIVERGENT · UNKNOWN · NOT_EXECUTED)
+        </div>
+        <div>
+          Reality := Y(λf. M_t+1 = M_t ∪ Δ ∣ V(Δ) = ⊤) · V ≡ (Expected ≡ Observed)
+        </div>
+        <div style={{ fontStyle: 'italic', color: theme.textMuted, marginTop: '3px' }}>
+          "only remembers what matches reality"
+        </div>
+      </div>
+
       <h2
         style={{
           fontSize: '24px',

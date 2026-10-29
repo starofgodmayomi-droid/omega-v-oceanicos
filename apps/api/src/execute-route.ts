@@ -10,6 +10,7 @@ import {
   type AuthorityLevel,
 } from './invisible-computer.js';
 import type { KaiMemoryStore, KaiMemoryRecord, OmegaContract } from './kai-memory.js';
+import { authoritySufficient, OMEGA_V_SPEC } from './omega-v-fixpoint.js';
 
 type JsonError = (reply: any, status: number, error: string, extra?: Record<string, unknown>) => unknown;
 
@@ -17,7 +18,7 @@ const MAX_INTENT_LENGTH = 2000;
 
 export type ExecutionStep = {
   actor: 'KAI' | 'ELION' | 'OMEGA';
-  phase: 'OBSERVE' | 'EXECUTE' | 'VERIFY' | 'REMEMBER';
+  phase: 'OBSERVE' | 'GATE' | 'EXECUTE' | 'VERIFY' | 'REMEMBER';
   status: string;
   detail: string;
   at: string;
@@ -110,6 +111,42 @@ export function registerExecuteRoute(
       expectedOutcome: expectedOutcomeFor(authorityLevel),
     });
 
+    // Authority gate — HALT ⊢ NOT_EXECUTED if Authority(x) < Required.
+    // The system's maximum authority is READ_ONLY unless OMEGA_MAX_AUTHORITY
+    // is set to AUTONOMOUS. An insufficient request halts before ELION runs.
+    const maxAuthority: AuthorityLevel =
+      process.env.OMEGA_MAX_AUTHORITY?.trim() === 'AUTONOMOUS' ? 'AUTONOMOUS' : 'READ_ONLY';
+    if (!authoritySufficient(authorityLevel, maxAuthority)) {
+      recordStep(
+        'KAI',
+        'GATE',
+        'NOT_EXECUTED',
+        `Authority insufficient: requested ${authorityLevel} but system max is ${maxAuthority}.`
+      );
+      return reply.status(200).send({
+        success: true,
+        status: 'NOT_EXECUTED',
+        intent,
+        response: null,
+        evidence_hash: null,
+        reason: `Authority insufficient: requested ${authorityLevel} but system max is ${maxAuthority}.`,
+        matched_patterns: [],
+        steps,
+        contract,
+        memory: null,
+        engine: null,
+        requested_engine: engine,
+        model_error: null,
+        evaluated_at: new Date().toISOString(),
+      });
+    }
+    recordStep(
+      'KAI',
+      'GATE',
+      'VERIFIED',
+      `Authority ${authorityLevel} within system max ${maxAuthority}.`
+    );
+
     // Step 2 — ELION execute: bounded answer, model or local composer.
     const elion = await executeElion(intent, authorityLevel, engine);
     recordStep(
@@ -180,4 +217,7 @@ export function registerExecuteRoute(
   // `/api/execute` is the published endpoint. Both are one handler.
   for (const path of ['/execute', '/api/execute']) fastify.post(path, executeHandler);
   for (const path of ['/kai/memory', '/api/kai/memory']) fastify.get(path, memoryHandler);
+  for (const path of ['/omega-v/spec', '/api/omega-v/spec']) {
+    fastify.get(path, async () => ({ success: true, spec: OMEGA_V_SPEC }));
+  }
 }

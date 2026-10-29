@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { verificationIdentity } from './omega-v-fixpoint.js';
 
 /*
  * KAI / ELION / OMEGA — the Invisible Online Computer loop.
@@ -126,12 +127,12 @@ export function verifyOmega(input: {
       detail: output.trim().length > 0 ? `${output.trim().length} characters` : 'empty output',
     },
     {
-      id: 'DIGEST_BOUND',
-      label: 'SHA-256 digest matches the output',
+      id: 'VERIFICATION_IDENTITY',
+      label: 'V ≡ (Expected ≡ Observed) · SHA-256',
       passed:
         /^[0-9a-f]{64}$/.test(input.evidenceHash) &&
-        sha256Hex(output) === input.evidenceHash,
-      detail: 'evidence_hash is recomputed from the returned text',
+        verificationIdentity(sha256Hex(output), input.evidenceHash),
+      detail: 'SHA-256 of observed output matches the declared evidence hash',
     },
     {
       id: 'NO_FABRICATED_COMPLETION',

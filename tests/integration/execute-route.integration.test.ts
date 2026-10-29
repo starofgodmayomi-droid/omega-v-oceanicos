@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import test from 'node:test';
 import { createApp } from '../../apps/api/dist/index.js';
-import { KAI_SYSTEM_PROMPT, verifyOmega } from '../../apps/api/src/invisible-computer.ts';
+import { KAI_SYSTEM_PROMPT, verifyOmega } from '../../apps/api/dist/invisible-computer.js';
 
 const sha256 = (value: string) => createHash('sha256').update(value, 'utf8').digest('hex');
 
@@ -30,6 +30,7 @@ test('POST /api/execute runs KAI → ELION → OMEGA → KAI and returns the evi
       body.steps.map((step: any) => `${step.actor}:${step.phase}:${step.status}`),
       [
         'KAI:OBSERVE:VERIFIED',
+        'KAI:GATE:VERIFIED',
         'ELION:EXECUTE:VERIFIED',
         'OMEGA:VERIFY:VERIFIED',
         'KAI:REMEMBER:VERIFIED',
