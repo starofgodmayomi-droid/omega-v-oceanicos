@@ -55,6 +55,25 @@ export type {
 } from './pipeline.js';
 export { FileCausalMemory, createRealityAttestation, verifyRealityAttestation } from './causal-memory.js';
 export type { CausalMemory, CausalMemoryEntry, RealityAttestation } from './causal-memory.js';
+export {
+  OMEGA_EMPTY_ROOT,
+  OMEGA_FIXPOINT_OPERATOR,
+  createOmegaFixpointState,
+  evaluateOmegaOperator,
+  iterateOmegaFixpoint,
+  omegaDeltaHash,
+  omegaY,
+} from './fixpoint.js';
+export type {
+  OmegaDelta,
+  OmegaFixpointOptions,
+  OmegaFixpointRun,
+  OmegaFixpointState,
+  OmegaHaltReason,
+  OmegaMemoryEntry,
+  OmegaOperatorResult,
+  OmegaVerdict,
+} from './fixpoint.js';
 
 export function executeOceanicosMaxExpansion(): CryptographicBlock {
   const kernelChain = new PluralisticHashChain();

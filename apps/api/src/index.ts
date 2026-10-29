@@ -12,6 +12,7 @@ import { OceanicosKernel } from '@omega-v/kernel';
 import { LocalJobError, LocalJobLedger, LOCAL_JOB_WINDOW } from './jobs.js';
 import { registerPipelineRoute } from './pipeline-route.js';
 import { OmegaCommandStore, registerOmegaRoutes } from './omega.js';
+import { OmegaRealityLoop, registerRealityRoutes } from './reality.js';
 import {
   ENCRYPTION_ALGORITHM,
   encryptionEnabled,
@@ -100,6 +101,7 @@ export function createApp(
   });
   const omegaCommandPath = dbPath === ':memory:' ? ':memory:' : join(resolve(dbPath, '..'), 'omega-commands.db');
   const omegaCommands = new OmegaCommandStore(omegaCommandPath);
+  const realityLoop = new OmegaRealityLoop();
 
   fastify.addHook('onClose', async () => {
     ledgerMemory.close();
@@ -137,6 +139,7 @@ export function createApp(
 
   fastify.register(cors, { origin: '*' });
   registerOmegaRoutes(fastify, omegaCommands);
+  registerRealityRoutes(fastify, realityLoop);
   fastify.addHook('onRequest', async (request, reply) => {
     if (authMode === 'local' || request.url.split('?')[0] === '/health') return;
     const required = request.method === 'GET' ? readToken : adminToken;

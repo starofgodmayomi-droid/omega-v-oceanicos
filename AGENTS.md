@@ -22,6 +22,40 @@ pnpm monorepo (Node 22, pnpm 10) with:
 - **Qdrant/Ollama skipped**: referenced in `docker-compose.yml` but not used by API source code.
 - **OMEGA_SIGNING_KEY**: generated as development placeholder via `generate_development_secrets`. Needed for `/v1/attest` route (attester shows "ready" when present).
 
+## Reality fixpoint (`Ω∞v`)
+
+`packages/mini/src/fixpoint.ts` implements the fixed-point operator and the
+monotone memory it feeds:
+
+```
+Ω∞v = Y(λf.λx.  f(Σ ∪ Hash(x))        if O(E(x)) ≡ VERIFIED
+                HALT ⊢ DIVERGENT      if K(x) ∈ SCAM
+                HALT ⊢ UNKNOWN        if Evidence(x) = ∅
+                HALT ⊢ NOT_EXECUTED   if Authority(x) < Required )
+Reality////Ω∞v := Y(λf.(Mₜ₊₁ = Mₜ ∪ Δ ∣ Expected ≡ Observed))
+```
+
+- `Σ` is a set of delta hashes, so the Y-recursion terminates at the fixed
+  point (re-adding a known hash commits nothing) instead of diverging.
+- Verified deltas are committed and continue the loop; every other branch
+  halts and leaves `Σ` untouched. Precedence follows the order written above,
+  with `O(E(x))` requiring evidence and authority because an observation
+  cannot verify an execution that was never authorized.
+- API: `GET /v1/reality/state`, `POST /v1/reality/step`, `POST /v1/reality/run`.
+  The loop lives in the API process (in-memory, starts at `Ø`); it holds no
+  durable memory of its own.
+- UI: the `Ω∞v FIXPOINT` panel on the OCEANICOS view renders the operator and
+  exposes one probe per halt branch.
+
+## Known gaps
+
+- `pnpm build` currently fails at `packages/sdk` (its `oceanicos.ts` still
+  imports pre-refactor symbols: `Remember`, `OperatingSystemKernel`,
+  `OmegaTotalCompressor`, `VerificationEngine.verify/registerRule`). Every
+  other package and `apps/api` build cleanly, so the one-shot `setup` service
+  exits non-zero while `api` and `web` still start from already-built `dist/`.
+  Fix the SDK surface before relying on a cold `docker compose up`.
+
 ## Verification
 
 ```bash
