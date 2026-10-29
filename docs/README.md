@@ -16,6 +16,7 @@ Welcome to the Ω∞v Oceanicos documentation. Start here to understand the proj
 
 - **[Development Setup](./DEVELOPMENT.md)** — Get the project running locally
 - **[MINI Kernel](./MINI.md)** — Zero → MINI → verified expansion (canonical growth model)
+- **[Ecosystem Body](../ECOSYSTEM_BODY.md)** — the governing equation, its operators, its four exits, and the live body contract
 - **[Architecture](./ARCHITECTURE.md)** — High-level system design from MINI outward
 - **[Repository inventory](./REPO_INVENTORY.md)** — workspace vs disk (current evidence)
 - **[Dependency map](./DEPENDENCY_MAP.md)** — declared edges, not health claims

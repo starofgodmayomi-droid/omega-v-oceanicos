@@ -32,6 +32,7 @@ without treating any single component—or any agent—as the final authority.
 
 - 📋 **[Manifest](MANIFEST.md)** — Project mission, principles, and architecture
 - 💧 **[Mirror-Water Universal Body](docs/MIRROR-WATER-UNIVERSAL-BODY.md)** — one body, one current, bounded transitions, and evidence-bound truth
+- 🫀 **[Ecosystem Body](ECOSYSTEM_BODY.md)** — the Absolute Fixpoint Equation, its operators, its four exits, and what the seven-layer body actually reports
 - 🌊 **[Ω∞v Maximum Full-Stack Space of Reality](docs/OMEGA-INFINITY-MAXIMUM-FULL-STACK-SPACE.md)** — canonical ecosystem vision: representation, authority, bounded execution, observation, reconciliation, and next finite Δ
 - 📜 **[Charter](CHARTER.md)** — Living agnostic principles and decision-making
 - 🌊 **[Finite operational charter](docs/OMEGA_INFINITY_CHARTER.md)** — Drop → Current → Ocean → Evaporation protocol
@@ -306,6 +307,7 @@ security, governance, authority, or external-action behavior.
 - [Brand system](docs/BRAND.md) — canonical name, voice, visual tokens, and lockup
 - [Project manifest](MANIFEST.md) — mission, principles, architecture, and roadmap
 - [Charter](CHARTER.md) — decision-making, conduct, and human governance
+- [Ecosystem Body](ECOSYSTEM_BODY.md) — governing equation, operators, halt exits, and the live body contract
 - [Development guide](docs/DEVELOPMENT.md) — local workflows and repository conventions
 - [API guide](apps/api/README.md) — server routes and runtime contracts
 - [Web guide](apps/web/README.md) — dashboard behavior and local proxy usage

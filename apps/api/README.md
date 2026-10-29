@@ -124,7 +124,11 @@ unverified.
 ```text
 GET  /health
 GET  /v1/kernel/capabilities
+GET  /v1/ecosystem/body
+POST /v1/ecosystem/body/expand
 GET  /v1/mood
+POST /v1/mood/codex
+POST /v1/mood/codex/proposal
 GET  /v1/ecosystem/status
 POST /v1/attest
 POST /v1/cycle
@@ -152,6 +156,18 @@ execution, earnings, deployment, or external-world truth. The API performs no
 outbound observation, shell operation, outreach, spending, or proposal
 execution. Writes inherit the existing admin bearer boundary in required-auth
 mode. See [the repository contract](../../skills/oceanicos-value-navigator/references/repository-contract.md).
+
+## Ecosystem body
+
+`GET /v1/ecosystem/body` composes the runtime layers — sensory, verification,
+memory, mesh, kernel, governance, interface — into one bounded, read-only body,
+with the 4×4×4×4 compression projection and its local round-trip proof. It does
+not mutate the ledger it reports on. `POST /v1/ecosystem/body/expand` restores
+the records from a `{ compression }` block; a tampered digest is
+`400 DIGEST_MISMATCH`, never a silent repair.
+
+The governing equation, its operators and its four exits are in
+[ECOSYSTEM_BODY.md](../../ECOSYSTEM_BODY.md).
 
 ## Static client
 
