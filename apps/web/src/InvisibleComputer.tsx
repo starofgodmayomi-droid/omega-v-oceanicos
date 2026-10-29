@@ -97,7 +97,7 @@ export function InvisibleComputer() {
   const [memoryRecords, setMemoryRecords] = useState<MemoryRecord[]>([]);
   const [pendingApprovals, setPendingApprovals] = useState<PendingApproval[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [approvalBusy, setApprovalBusy] = useState(false);
+  const [decidingId, setDecidingId] = useState<string | null>(null);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   const clearTimers = () => {
@@ -131,7 +131,7 @@ export function InvisibleComputer() {
     clearTimers();
     setRunning(true);
     setError(null);
-    setApprovalBusy(false);
+    setDecidingId(null);
     setResult(null);
     setVerdict('NOT_EXECUTED');
     setVisibleSteps([]);
@@ -179,18 +179,19 @@ export function InvisibleComputer() {
     }
   };
 
-  // The LUCID gate: decide the pending approval and reveal the resumed flow.
-  const decide = async (decision: 'AUTHORIZE' | 'REJECT') => {
-    const approval = result?.approval;
-    if (!approval || approval.status !== 'PENDING' || approvalBusy) return;
-    setApprovalBusy(true);
+  // The LUCID gate: decide one pending approval and reveal the resumed flow.
+  // Any approval the panel lists can be decided, not only the one from the
+  // current run — the API enforces single use either way.
+  const decide = async (approvalId: string, decision: 'AUTHORIZE' | 'REJECT') => {
+    if (!approvalId || decidingId) return;
+    setDecidingId(approvalId);
     setError(null);
 
     try {
       const response = await fetch(`${API_BASE_URL}/approve`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ approval_id: approval.id, decision }),
+        body: JSON.stringify({ approval_id: approvalId, decision }),
       });
       const text = await response.text();
       const payload = text ? JSON.parse(text) : null;
@@ -206,11 +207,37 @@ export function InvisibleComputer() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Approval failed');
     } finally {
-      setApprovalBusy(false);
+      setDecidingId(null);
     }
   };
 
   const badgeTone = STATUS_TONE[verdict];
+  const activeApproval = result?.approval ?? null;
+
+  // One decision control, shared by every pending row in the memory panel.
+  const pendingDecisionButton = (label: 'AUTHORIZE' | 'REJECT', accent: string, onClick: () => void) => (
+    <button
+      type="button"
+      data-decision={label}
+      onClick={onClick}
+      disabled={decidingId !== null}
+      style={{
+        padding: '3px 9px',
+        borderRadius: theme.radiusSmall,
+        border: `1px solid ${accent}66`,
+        background: `${accent}1f`,
+        color: accent,
+        fontFamily: theme.fontMono,
+        fontSize: '9.5px',
+        fontWeight: 700,
+        letterSpacing: '0.12em',
+        cursor: decidingId !== null ? 'not-allowed' : 'pointer',
+        opacity: decidingId !== null ? 0.6 : 1,
+      }}
+    >
+      {decidingId !== null ? 'DECIDING' : label}
+    </button>
+  );
 
   return (
     <section
@@ -392,11 +419,11 @@ export function InvisibleComputer() {
               {result.next_action}
             </p>
           )}
-          {result.approval && (
+          {activeApproval && (
             <ApprovalGate
-              approval={result.approval}
-              busy={approvalBusy}
-              onDecision={(decision) => void decide(decision)}
+              approval={activeApproval}
+              busy={decidingId !== null}
+              onDecision={(decision) => void decide(activeApproval.id, decision)}
             />
           )}
           <div
@@ -451,7 +478,9 @@ export function InvisibleComputer() {
                   data-approval-id={approval.id}
                   style={{
                     display: 'flex',
-                    gap: '10px',
+                    flexWrap: 'wrap',
+                    alignItems: 'center',
+                    gap: '6px 10px',
                     fontFamily: theme.fontMono,
                     fontSize: '10.5px',
                     color: theme.textDim,
@@ -473,9 +502,15 @@ export function InvisibleComputer() {
                   >
                     {approval.intent}
                   </span>
-                  <span style={{ color: theme.accentWarm, flexShrink: 0 }}>{approval.gate}</span>
-                  <span style={{ color: theme.textDim, flexShrink: 0 }}>
-                    {approval.id.slice(0, 8)}
+                  <span style={{ color: theme.accentWarm }}>{approval.gate}</span>
+                  <span style={{ color: theme.textDim }}>{approval.id.slice(0, 8)}</span>
+                  <span style={{ display: 'flex', gap: '6px' }}>
+                    {pendingDecisionButton('AUTHORIZE', '#22c55e', () =>
+                      void decide(approval.id, 'AUTHORIZE')
+                    )}
+                    {pendingDecisionButton('REJECT', '#ef4444', () =>
+                      void decide(approval.id, 'REJECT')
+                    )}
                   </span>
                 </div>
               ))}
