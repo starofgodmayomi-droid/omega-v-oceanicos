@@ -23,6 +23,7 @@ Welcome to the Ω∞v Oceanicos documentation. Start here to understand the proj
 - **[Verification Loop](./VERIFICATION_LOOP.md)** — Full workflow including post-MINI steps
 - **[Master handoff](../MASTER_HANDOFF.md)** — preserved KAI/ELION handoff prompt; design and continuity layer, not runtime evidence
 - **[Reality Fixed Point](./REALITY-FIXED-POINT.md)** — the loop as `Y`, its four halts, and the memory rule `M(t+1) = M(t) ∪ Δ | V(Δ) = ⊤`
+- **[Ecosystem Body](../ECOSYSTEM_BODY.md)** — the merged body map: law, layers, observed evidence, explicit absences, and the next important Δ
 
 ---
 
