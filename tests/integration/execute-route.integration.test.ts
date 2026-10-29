@@ -30,11 +30,13 @@ test('POST /api/execute runs KAI → ELION → OMEGA → KAI and returns the evi
       body.steps.map((step: any) => `${step.actor}:${step.phase}:${step.status}`),
       [
         'KAI:OBSERVE:VERIFIED',
+        'ELION:BOUND:VERIFIED',
         'ELION:EXECUTE:VERIFIED',
         'OMEGA:VERIFY:VERIFIED',
         'KAI:REMEMBER:VERIFIED',
       ]
     );
+    assert.match(body.next_action, /Review the evidence hash/);
 
     const memory = await app.inject({ method: 'GET', url: '/api/kai/memory?limit=5' });
     const memoryBody = memory.json();
@@ -80,7 +82,46 @@ test('KAI Shield halts a fraud pattern with DIVERGENT and remembers nothing', as
     assert.equal(body.response, null);
     assert.equal(body.memory, null);
     assert.ok(body.matched_patterns.length > 0);
+    assert.match(body.next_action, /Rephrase the intent/);
     assert.deepEqual(body.steps.map((step: any) => step.actor), ['KAI']);
+
+    const memory = await app.inject({ method: 'GET', url: '/api/kai/memory' });
+    assert.equal(memory.json().total, 0);
+  } finally {
+    await app.close();
+  }
+});
+
+test('an irreversible intent pauses at the LUCID gate and remembers nothing', async () => {
+  const app = createApp(':memory:', false);
+  try {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/execute',
+      payload: {
+        intent: 'Deploy the billing service to production',
+        authorityLevel: 'AUTONOMOUS',
+      },
+    });
+    const body = response.json();
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(body.status, 'AWAITING_APPROVAL');
+    assert.equal(body.contract.authority_level, 'HUMAN_APPROVAL_REQUIRED');
+    assert.equal(body.evidence_hash, null);
+    assert.equal(body.memory, null);
+    assert.deepEqual(body.approval_required_for, ['irreversible deployment']);
+    assert.ok(body.response.includes('Nothing was executed'));
+    assert.match(body.next_action, /Authorize or reject/);
+    assert.deepEqual(
+      body.steps.map((step: any) => `${step.actor}:${step.phase}:${step.status}`),
+      [
+        'KAI:OBSERVE:VERIFIED',
+        'ELION:BOUND:VERIFIED',
+        'ELION:EXECUTE:NOT_EXECUTED',
+        'KAI:REMEMBER:NOT_EXECUTED',
+      ]
+    );
 
     const memory = await app.inject({ method: 'GET', url: '/api/kai/memory' });
     assert.equal(memory.json().total, 0);

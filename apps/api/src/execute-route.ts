@@ -1,9 +1,12 @@
 import type { FastifyInstance } from 'fastify';
 import {
+  composeApprovalRequest,
   deriveAuthorityLevel,
   executeElion,
   expectedOutcomeFor,
+  nextActionFor,
   scanIntent,
+  scanIrreversible,
   sha256Hex,
   verifyOmega,
   type AuthorityLevel,
@@ -51,7 +54,7 @@ export function registerExecuteRoute(
       return jsonError(reply, 400, 'INTENT_TOO_LONG', { maxLength: MAX_INTENT_LENGTH });
     }
 
-    const authorityLevel: AuthorityLevel = deriveAuthorityLevel(body.authorityLevel);
+    const authorityLevel: AuthorityLevel = deriveAuthorityLevel(body.authorityLevel, intent);
     const startedAt = Date.now();
     const steps: ExecutionStep[] = [];
     const recordStep = (
@@ -92,6 +95,7 @@ export function registerExecuteRoute(
         memory: null,
         engine: null,
         model_error: null,
+        next_action: nextActionFor('DIVERGENT'),
         evaluated_at: new Date().toISOString(),
       });
     }
@@ -104,6 +108,43 @@ export function registerExecuteRoute(
       authorityLevel,
       expectedOutcome: expectedOutcomeFor(authorityLevel),
     });
+    recordStep(
+      'ELION',
+      'BOUND',
+      'VERIFIED',
+      `ΩIR contract ${contract.id.slice(0, 8)} written at authority level ${authorityLevel}.`
+    );
+
+    // Phase 2 gate — an irreversible action pauses for explicit human
+    // authorization; nothing is executed and nothing is remembered.
+    if (authorityLevel === 'HUMAN_APPROVAL_REQUIRED') {
+      const gate = scanIrreversible(intent);
+      recordStep(
+        'ELION',
+        'EXECUTE',
+        'NOT_EXECUTED',
+        `Paused at the LUCID gate: ${gate.matchedLabels.join(', ')}. No tool was called.`
+      );
+      recordStep('KAI', 'REMEMBER', 'NOT_EXECUTED', 'Nothing was remembered because nothing was authorized.');
+      return reply.status(200).send({
+        success: true,
+        status: 'AWAITING_APPROVAL',
+        intent,
+        response: composeApprovalRequest(intent, gate.matchedLabels),
+        evidence_hash: null,
+        reason: 'Human authorization is required before this irreversible action.',
+        matched_patterns: [],
+        approval_required_for: gate.matchedLabels,
+        checks: [],
+        steps,
+        contract,
+        memory: null,
+        engine: null,
+        model_error: null,
+        next_action: nextActionFor('AWAITING_APPROVAL'),
+        evaluated_at: new Date().toISOString(),
+      });
+    }
 
     // Step 2 — ELION execute: bounded answer, model or local composer.
     const elion = await executeElion(intent, authorityLevel);
@@ -156,6 +197,7 @@ export function registerExecuteRoute(
       memory,
       engine: elion.engine,
       model_error: elion.error,
+      next_action: nextActionFor(omega.status),
       evaluated_at: new Date().toISOString(),
     });
   };

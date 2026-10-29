@@ -35,15 +35,16 @@ docker compose -f docker-compose.base44.yml up -d
 - **SSE through the preview proxy**: with the CORS header fix described above, `/v1/stream` does connect from the browser through the preview proxy (status bar reads "Connected", runtime stream marked VERIFIED). If the proxy drops a long-lived connection the UI shows "Reconnecting…" and retries; REST endpoints are unaffected either way.
 
 ## Invisible Online Computer (KAI → ELION → OMEGA → KAI)
-- `POST /api/execute` (alias `POST /execute`, which is the Vite proxy's rewritten target) runs the four-step loop from `apps/api/src/execute-route.ts`:
+- `POST /api/execute` (alias `POST /execute`, which is the Vite proxy's rewritten target) runs the five-step loop from `apps/api/src/execute-route.ts`:
   1. **KAI observe** — `scanIntent` matches known scam patterns; a match halts with `status: "DIVERGENT"`, `reason: "KAI Shield blocked this intent."` and writes nothing.
-  2. **ELION execute** — `executeElion` calls an OpenAI-compatible `chat/completions` endpoint when `OMEGA_LLM_API_KEY` is set (`OMEGA_LLM_BASE_URL`, `OMEGA_LLM_MODEL` optional). Without a key it returns the clearly labelled `local-deterministic` composer. A failed model call returns empty text, not an invented answer.
-  3. **OMEGA verify** — `verifyOmega` recomputes the SHA-256 evidence hash and checks the text against the `OmegaIR_Contracts` row; empty text, a broken digest, or a fabricated completion collapses to `UNKNOWN`.
-  4. **KAI remember** — only `VERIFIED` outcomes are appended to `KaiMemory`.
+  2. **ELION bound** — the `OmegaIR_Contracts` row (scope, authority level, expected outcome) is written *before* execution, and the step list records it as `ELION:BOUND`. `scanIrreversible` upgrades any intent naming funds, deletion, or deployment to authority level `HUMAN_APPROVAL_REQUIRED`; that branch pauses at the LUCID gate with `status: "AWAITING_APPROVAL"`, a `composeApprovalRequest` receipt, no evidence hash, and nothing remembered.
+  3. **ELION execute** — `executeElion` calls an OpenAI-compatible `chat/completions` endpoint when `OMEGA_LLM_API_KEY` is set (`OMEGA_LLM_BASE_URL`, `OMEGA_LLM_MODEL` optional). Without a key it returns the clearly labelled `local-deterministic` composer. A failed model call returns empty text, not an invented answer.
+  4. **OMEGA verify** — `verifyOmega` recomputes the SHA-256 evidence hash and checks the text against the `OmegaIR_Contracts` row; empty text, a broken digest, or a fabricated completion collapses to `UNKNOWN`.
+  5. **KAI remember / return** — only `VERIFIED` outcomes are appended to `KaiMemory`, and every response carries `next_action` (`nextActionFor`) as the single recommended next step in the receipt.
 - `GET /api/kai/memory?limit=n` (alias `GET /kai/memory`) returns the most recent memory rows.
 - Storage is the same SQLite file family as the other API stores: `<dbPath>.kai.db`, tables `KaiMemory` (id, timestamp, intent, evidence_hash, status) and `OmegaIR_Contracts` (id, intent, authority_level, expected_outcome). `openDatabase` lives in `apps/api/src/sqlite.ts` and is shared with `omega-persistence.ts`.
-- UI: `apps/web/src/InvisibleComputer.tsx` is the hero surface in `App.tsx` — one input ("WHAT SHALL WE MAKE REAL?"), a terminal that reveals the API's recorded steps, and the `VERIFIED` / `DIVERGENT` / `UNKNOWN` / `NOT_EXECUTED` badge.
-- `authorityLevel` in the request body may be `AUTONOMOUS`; the endpoint still only answers (CAPABILITY != AUTHORITY), and the contract records a bounded plan.
+- UI: `apps/web/src/InvisibleComputer.tsx` is the hero surface in `App.tsx` — one input ("WHAT SHALL WE MAKE REAL?"), a terminal that reveals the API's recorded steps, the `NEXT` line from the response receipt, and the `VERIFIED` / `DIVERGENT` / `UNKNOWN` / `AWAITING_APPROVAL` / `NOT_EXECUTED` badge.
+- `authorityLevel` in the request body may be `AUTONOMOUS`; the endpoint still only answers (CAPABILITY != AUTHORITY), and the contract records a bounded plan. An irreversible intent overrides the caller to `HUMAN_APPROVAL_REQUIRED` — a caller cannot self-authorize a deployment, deletion, or payment.
 - Tests: `node --experimental-strip-types --test ./tests/integration/execute-route.integration.test.ts` (needs `apps/api/dist` built, like the route-contract test).
 
 ## Single body compression (4×4×4×4)

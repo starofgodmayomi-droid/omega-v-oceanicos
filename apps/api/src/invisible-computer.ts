@@ -18,7 +18,7 @@ You are bound by the Non-Collapse Rules: \`MEMORY != PROOF\`, \`CAPABILITY != AU
 Do not hallucinate. If you do not know the answer, state \`UNKNOWN\`.
 You speak with human empathy and cultural warmth (Nigerian Pidgin: 'Pidgin fit carry the warmth; evidence go carry the claim'), but you only claim what is mathematically and observably true.`;
 
-export type AuthorityLevel = 'READ_ONLY' | 'AUTONOMOUS';
+export type AuthorityLevel = 'READ_ONLY' | 'AUTONOMOUS' | 'HUMAN_APPROVAL_REQUIRED';
 
 export type ShieldPattern = { id: string; label: string; pattern: RegExp };
 
@@ -78,17 +78,80 @@ export function sha256Hex(value: string): string {
 }
 
 /**
- * CAPABILITY != AUTHORITY. The endpoint can only answer; it never acts on the
- * world, so an autonomous claim is recorded as a bounded plan.
+ * Phase 2 — the actions OMEGA cannot undo after the fact. Any intent that names
+ * one of them pauses at the LUCID gate instead of executing.
  */
-export function deriveAuthorityLevel(requested: unknown): AuthorityLevel {
+export const IRREVERSIBLE_ACTION_PATTERNS: readonly ShieldPattern[] = [
+  {
+    id: 'funds',
+    label: 'movement of funds',
+    pattern: /\b(pay|payment|send|transfer|wire|withdraw|invest|trade|buy|sell|spend|stake)\b/i,
+  },
+  {
+    id: 'deletion',
+    label: 'deletion',
+    pattern: /\b(delete|drop|destroy|wipe|erase|purge)\b/i,
+  },
+  {
+    id: 'deployment',
+    label: 'irreversible deployment',
+    pattern: /\b(deploy|publish|release|launch|migrate)\b/i,
+  },
+];
+
+export type IrreversibleVerdict = { required: boolean; matchedLabels: string[] };
+
+/** Phase 2 — does this intent need explicit human authorization? */
+export function scanIrreversible(intent: string): IrreversibleVerdict {
+  const matchedLabels: string[] = [];
+  for (const entry of IRREVERSIBLE_ACTION_PATTERNS) {
+    if (entry.pattern.test(intent) && !matchedLabels.includes(entry.label)) {
+      matchedLabels.push(entry.label);
+    }
+  }
+  return { required: matchedLabels.length > 0, matchedLabels };
+}
+
+/**
+ * CAPABILITY != AUTHORITY. The endpoint can only answer; it never acts on the
+ * world, so an autonomous claim is recorded as a bounded plan — and an
+ * irreversible one is recorded as a request for authorization, not an action.
+ */
+export function deriveAuthorityLevel(requested: unknown, intent: string): AuthorityLevel {
+  if (scanIrreversible(intent).required) return 'HUMAN_APPROVAL_REQUIRED';
   return requested === 'AUTONOMOUS' ? 'AUTONOMOUS' : 'READ_ONLY';
 }
 
 export function expectedOutcomeFor(authorityLevel: AuthorityLevel): string {
+  if (authorityLevel === 'HUMAN_APPROVAL_REQUIRED') {
+    return 'A request for explicit human authorization that names the single irreversible action, its scope, and what would have to be true to proceed; nothing is executed.';
+  }
   return authorityLevel === 'AUTONOMOUS'
     ? 'A bounded plan that names the single next action and its authorization gate; no execution or completion is claimed.'
     : 'A bounded answer that states what was observed, what remains UNKNOWN, and the next finite step; no execution is claimed.';
+}
+
+export type FlowVerdict =
+  | 'VERIFIED'
+  | 'DIVERGENT'
+  | 'UNKNOWN'
+  | 'AWAITING_APPROVAL'
+  | 'NOT_EXECUTED';
+
+/** Phase 5 — the single next step carried back in every receipt. */
+export function nextActionFor(verdict: FlowVerdict): string {
+  switch (verdict) {
+    case 'VERIFIED':
+      return 'Review the evidence hash, then authorize one bounded next action.';
+    case 'AWAITING_APPROVAL':
+      return 'Authorize or reject this irreversible action explicitly; nothing has been executed.';
+    case 'DIVERGENT':
+      return 'Rephrase the intent without the flagged fraud pattern; KAI Shield will not execute it.';
+    case 'UNKNOWN':
+      return 'Retry once the engine is reachable; an unverified output is never remembered.';
+    default:
+      return 'Send an intent to start the flow.';
+  }
 }
 
 export type OmegaCheck = {
@@ -175,6 +238,21 @@ export function composeLocalElionResponse(intent: string, authorityLevel: Author
     '',
     'Evidence: local deterministic composer (no OMEGA_LLM_API_KEY configured); this is a bounded template, not a model answer.',
     "Ω∞v ::= VERIFY(ΔREALITY) · ATTEST, DON'T ASSERT.",
+  ].join('\n');
+}
+
+/**
+ * Phase 2 — the LUCID gate. Returned instead of executing when the intent names
+ * an irreversible action: it asks for authorization and claims nothing.
+ */
+export function composeApprovalRequest(intent: string, matchedLabels: string[]): string {
+  return [
+    `Intent received: ${intent.trim()}`,
+    '',
+    `LUCID gate: this intent names ${matchedLabels.join(', ')} — an action OMEGA cannot undo after the fact.`,
+    'Nothing was executed, deployed, deleted, or paid.',
+    'Authorization required: confirm this single action explicitly — its target, its limit, and the evidence that would prove it worked — before ELION proceeds.',
+    "Ω∞v ::= VERIFY(ΔREALITY) · CAPABILITY != AUTHORITY.",
   ].join('\n');
 }
 

@@ -10,7 +10,12 @@ import { theme } from './oceanicosTheme';
 
 const API_BASE_URL = (import.meta.env?.VITE_API_URL || '/api').replace(/\/$/, '');
 
-export type Verdict = 'VERIFIED' | 'DIVERGENT' | 'UNKNOWN' | 'NOT_EXECUTED';
+export type Verdict =
+  | 'VERIFIED'
+  | 'DIVERGENT'
+  | 'UNKNOWN'
+  | 'AWAITING_APPROVAL'
+  | 'NOT_EXECUTED';
 
 type ExecutionStep = {
   actor: 'KAI' | 'ELION' | 'OMEGA';
@@ -28,6 +33,8 @@ type ExecutionResult = {
   evidence_hash: string | null;
   reason: string | null;
   matched_patterns: string[];
+  approval_required_for?: string[];
+  next_action: string | null;
   steps: ExecutionStep[];
   contract: { id: string; authority_level: string; expected_outcome: string } | null;
   memory: { id: string; timestamp: string } | null;
@@ -46,6 +53,7 @@ const STATUS_TONE: Record<Verdict, string> = {
   VERIFIED: '#22c55e',
   DIVERGENT: '#ef4444',
   UNKNOWN: '#eab308',
+  AWAITING_APPROVAL: '#f97316',
   NOT_EXECUTED: '#64748b',
 };
 
@@ -316,6 +324,21 @@ export function InvisibleComputer() {
               }}
             >
               {result.reason}
+            </p>
+          )}
+          {result.next_action && (
+            <p style={{ margin: '8px 0 0', color: theme.textMuted, fontSize: '12.5px' }}>
+              <span
+                style={{
+                  color: theme.accentWarm,
+                  fontFamily: theme.fontMono,
+                  fontSize: '10.5px',
+                  letterSpacing: '0.14em',
+                }}
+              >
+                NEXT
+              </span>{' '}
+              {result.next_action}
             </p>
           )}
           <div
