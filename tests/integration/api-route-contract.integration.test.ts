@@ -38,6 +38,25 @@ test('API README documents every inventoried route', () => {
   assert.deepEqual(undocumented, [], `undocumented routes: ${undocumented.join(', ')}`);
 });
 
+test('API README documents the environment variables the API depends on', () => {
+  const readme = readFileSync(new URL('../../apps/api/README.md', import.meta.url), 'utf8');
+  const undocumented = [
+    'OMEGA_SIGNING_KEY',
+    'OMEGA_RUNTIME_STORE_PATH',
+    'OMEGA_EVENT_LOG_PATH',
+    'OMEGA_PERSISTENCE',
+  ].filter((variable) => !readme.includes(variable));
+
+  assert.deepEqual(undocumented, [], `undocumented environment variables: ${undocumented.join(', ')}`);
+});
+
+test('API README never publishes a signing key value', () => {
+  const readme = readFileSync(new URL('../../apps/api/README.md', import.meta.url), 'utf8');
+
+  assert.equal(readme.includes('key-2026-08-production-v1'), false);
+  assert.doesNotMatch(readme, /"signingKey":\s*"(?!sha256:)/i);
+});
+
 test('route inventory rejects malformed and duplicate method/path contracts', () => {
   assert.throws(() => parseApiRouteContract('PATCH /v1/unsupported'), /invalid API route contract/);
   assert.throws(() => parseApiRouteContract('GET v1/missing-leading-slash'), /invalid API route contract/);

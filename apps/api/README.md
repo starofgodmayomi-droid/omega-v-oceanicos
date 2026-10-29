@@ -6,7 +6,7 @@ The executable contract is the current `createApp` surface. Persistence,
 local jobs, readiness, attestation revocations, and optional static-client
 serving are supported modules and are registered by `createApp`. The supported
 route inventory is pinned in `src/route-contract.ts` and enforced by
-`src/__tests__/route-inventory.test.ts`.
+`tests/integration/api-route-contract.integration.test.ts`.
 
 ## Run
 
@@ -25,6 +25,12 @@ production. Required mode needs distinct `OMEGA_READ_TOKEN` and
 routes use the read token and mutations use the admin token.
 
 Optional local-job authentication uses `OMEGA_LOCAL_JOB_LEDGER_TOKEN`.
+
+`POST /v1/attest` signs with `OMEGA_SIGNING_KEY`. Without it the API still
+boots and serves every other route, but attestation is degraded: `GET
+/v1/reality/status` reports `attested: UNKNOWN` with provenance
+`OMEGA_SIGNING_KEY not set`. Supply the key through the environment or the
+deployment secret store; never commit it or publish it in a document.
 
 ## Persistence
 
