@@ -52,6 +52,15 @@ docker compose -f docker-compose.base44.yml up -d
 ## Fixed bug
 `apps/api/src/index.ts` line 204: `persistenceEncryptionKey` was undefined → changed to `encryptionEnabled(persistenceKey)` to match the pattern used at lines 163/165.
 
+## Continuum verdict (Reality////Ω∞v)
+`POST /v1/omega/continuum` (`apps/api/src/continuum-route.ts`, registered in its own rate-limited scope after the auth hook) exposes the operator from `packages/mini/src/continuum.ts`:
+
+- Body `{ drops: [...], memory?: string[] }`; each drop is `{ delta, expected, observed?, evidence[], authority, requiredAuthority?, scam? }` (1..64 drops, ≤16 evidence refs).
+- Reply `{ status, halted, memory, steps[], contract, scope }` — `status` is the halt verdict (`VERIFIED` when the drops ran out).
+- **It judges the supplied fields only**: nothing is executed, observed, or persisted, so it is safe for a dashboard to poll. Do not read a `VERIFIED` reply as an independent verification of reality.
+- Omega commands can never become `VERIFIED` over HTTP (`/observe` is caller-supplied and `/verify-reality` requires an independent observation), so do not derive the dashboard's drops from command history — send the drops you want judged.
+- Verified in this environment: 200 with `status: "VERIFIED"` and `memory: ["S1","S2"]` both directly on 5000 and through `/api/v1/omega/continuum` on 3000; tests `continuum-fixed-point.integration.test.ts` and `continuum_api.integration.test.ts`.
+
 ## No external credentials needed
 All secrets (signing key, tokens) are local dev values in `.env.base44-defaults`. No external service credentials are required for the app to run.
 
@@ -73,7 +82,7 @@ docker compose -f docker-compose.base44.yml exec -T api sh -c \
 
 - `test:e2e` = `pnpm build` → `pnpm test:web` (jest DOM suites in `apps/web`) → one `node --experimental-strip-types --test` run over an **explicit** file list. Node's `--test` discovers nothing here and accepts no path filter, so the list in `package.json` is the gate. `test` and `test:e2e` run the same 39 files.
 - `tests/integration/e2e-suite-contract.integration.test.ts` guards that list: every `tests/integration/*.test.ts` is either run or named in `KNOWN_UNRUN` with its reason, every `*.e2e.test.ts` is run by both scripts, and `test`/`test:e2e` cannot drift apart.
-- Verified 2026-10-29 in this environment: build clean, 202 integration tests / 92 suites / 0 failures, plus the DOM suites.
+- Verified 2026-10-29 in this environment: build clean, 208 integration tests / 98 suites / 0 failures, plus the DOM suites.
 - Running a suite **by hand** needs the workspace built first. `pnpm build` covers every workspace package; without it `evolve-recompile.e2e.test.ts` and `omega_distributed_coordination.test.ts` die with `ERR_MODULE_NOT_FOUND` for `packages/evolution/dist` and `packages/coordination/dist`, because the compose `setup` service only builds the API's dependency tree.
 - Five `tests/integration` files stay outside the gate because they cannot run: `full-loop` and `broken-current` drive the removed `/complete-loop` and `/log` routes, `mini-kernel` and `verification_loop` import pre-rename `@omega-v/*` names under jest globals, and `fullstack_e2e` imports 60+ names that are not workspace members. They are listed in `KNOWN_UNRUN` with those reasons.
 - Four suites passed while nothing ran them, and are now in the gate: `omega_pipeline.e2e.test.ts` (called "the executable proof" in `docs/OMEGA_STATUS_VECTOR.md`), `omega_change_boundary.test.ts`, `omega_transition_boundary.test.ts`, and `navigator_contract.integration.test.ts` (previously reachable only through `test:contract`).

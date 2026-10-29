@@ -52,6 +52,7 @@ export const API_ROUTE_INVENTORY = [
   'POST /v1/omega/commands/:id/observe',
   'POST /v1/omega/commands/:id/verify-reality',
   'GET /v1/omega/divergences',
+  'POST /v1/omega/continuum',
   'GET /v1/omega/events',
   'POST /v1/omega/coordination/evidence',
   'GET /v1/ecosystem/status',

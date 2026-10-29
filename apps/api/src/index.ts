@@ -18,6 +18,7 @@ import { registerPipelineRoute, type PipelineAdmissionEvidenceResolver } from '.
 import { registerEcosystemRoute } from './ecosystem-route.js';
 import { registerNavigatorEvidenceRoute } from './navigator-route.js';
 import { registerRealityRoute } from './reality-route.js';
+import { registerContinuumRoute } from './continuum-route.js';
 import { registerDependencyRoute } from './dependency-route.js';
 import { registerValueNavigatorRoute } from './value-navigator-route.js';
 import { registerConnectorObservationRoute, type ConnectorAdmissionEvidenceResolver } from './connector-observation-route.js';
@@ -253,6 +254,11 @@ export function createApp(
   fastify.register(async (scope) => {
     await scope.register(rateLimit, { global: false });
     registerPipelineRoute(scope, jsonError, options.pipelineAdmissionEvidence);
+  });
+
+  fastify.register(async (scope) => {
+    await scope.register(rateLimit, { global: false });
+    registerContinuumRoute(scope);
   });
 
   registerEcosystemRoute(fastify, authMode, Boolean(attestationSigningKey));
