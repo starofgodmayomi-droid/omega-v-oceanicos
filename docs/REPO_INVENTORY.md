@@ -18,6 +18,8 @@ Evidence sources:
 
 An earlier 2026-09-27 snapshot at `61b5fff` classified `worker` and `pipeline` as source-only. The current workspace configuration includes both. Historical classifications remain in Git history; the manifest is the source of truth for the inventory below.
 
+**2026-10-29 — re-audit after the ecosystem-body package split.** `packages/kai`, `packages/elion` and `packages/omega` are explicit workspace members and direct `workspace:` dependencies of `apps/api`; the tables and counts below are updated for them. The 2026-10-02 snapshot above stays as recorded history.
+
 ## Non-collapse
 
 ```text
@@ -40,7 +42,7 @@ PRESENT ON DISK
 | **SOURCE-ONLY** | Package directory exists under `packages/`, but is not listed in `pnpm-workspace.yaml`. |
 | **STUB** | A source-only directory with a thin implementation; not an active workspace capability. |
 
-## API-DECLARED — workspace + direct API dependency (9 packages)
+## API-DECLARED — workspace + direct API dependency (12 packages)
 
 | Package | Name | Declared role |
 |---|---|---|
@@ -49,6 +51,9 @@ PRESENT ON DISK
 | `verification` | `@oceanicos/verification` | Verify |
 | `remember` | `@oceanicos/remember` | Remember |
 | `mini` | `@oceanicos/mini` | MINI kernel |
+| `kai` | `@oceanicos/kai` | KAI: Shield observation + bounded authority |
+| `elion` | `@oceanicos/elion` | ELION: execution |
+| `omega` | `@oceanicos/omega` | OMEGA: verification that fails closed |
 | `attestation` | `@oceanicos/attestation` | Attest |
 | `kernel` | `@omega-v/kernel` | Finite-state kernel |
 | `oreade` | `@omega-v/oreade` | ƆREADE layer, not authority |
@@ -82,7 +87,7 @@ The following are examples, not an exhaustive package list: `policy`, `registry`
 
 ## Naming split (observed)
 
-- `@oceanicos/*` — types, observer, verification, remember, mini, attestation.
+- `@oceanicos/*` — types, observer, verification, remember, mini, kai, elion, omega, attestation.
 - `@omega-v/*` — kernel, oreade, mood, gateway, ir, compiler, evolution, coordination, auth, webhook, worker, pipeline, plus source-only packages.
 
 Unresolved naming edge. Do not silently rename packages.
@@ -91,8 +96,8 @@ Unresolved naming edge. Do not silently rename packages.
 
 | Category | Count | Action |
 |---|---:|---|
-| Workspace members | 20 (18 packages + 2 apps) | Membership only; do not infer capability |
-| API-declared | 9 packages | Direct manifest dependencies; verify actual use separately |
+| Workspace members | 23 (21 packages + 2 apps) | Membership only; do not infer capability |
+| API-declared | 12 packages | Direct manifest dependencies; verify actual use separately |
 | Workspace-only | 9 packages | Not direct API dependencies |
 | On-disk, off-workspace | Non-exhaustive | Promote only when earned |
 
