@@ -1,6 +1,30 @@
 # Ω∞v Oceanicos Working State
 
-**Updated:** 2026-10-01
+**Updated:** 2026-10-29
+
+## E2E gate completion — 2026-10-29
+
+The E2E gate now runs everything that can run, and states what cannot. `pnpm test`
+and `pnpm test:e2e` carry the same 39 files (the difference — `total-compress-admission` —
+is gone), and four suites that were green but executed by nothing are inside the gate:
+`omega_pipeline.e2e.test.ts`, which `docs/OMEGA_STATUS_VECTOR.md` calls the executable
+proof of the pipeline, plus `omega_change_boundary.test.ts`,
+`omega_transition_boundary.test.ts` and `navigator_contract.integration.test.ts`
+(previously reachable only through `test:contract`).
+
+`tests/integration/e2e-suite-contract.integration.test.ts` guards the list: every
+integration file is either listed or named in `KNOWN_UNRUN` with the reason it cannot
+run, every `*.e2e.test.ts` is in both commands, and the two commands cannot drift.
+Dropping a suite from `package.json` makes it fail (verified by removing
+`omega_pipeline` and watching three of its tests fail, then restoring).
+
+Verified in the sandbox with `pnpm test:e2e` in the `api` container: build clean,
+web DOM suites 3/3, integration 195 tests across 91 suites, 0 failures. Five files
+remain unrunnable and are documented as history rather than coverage: `full-loop` and
+`broken-current` target the removed `/complete-loop` and `/log` routes, `mini-kernel`
+and `verification_loop` import pre-rename `@omega-v/*` names under jest globals, and
+`fullstack_e2e` imports 60+ packages that are not workspace members. This is a test
+gate statement, not a product or deployment health claim.
 
 ## CI authority reconciliation — 2026-10-01
 

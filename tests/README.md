@@ -48,9 +48,14 @@ job is what proves the artifact runs.
   needs jsdom and a component testing setup that does not exist here. The
   exclusion is explicit in `jest.config.js` so the reported percentage is not
   read as covering more than it does.
-- `pnpm test:integration` matches no tests, because this directory is empty.
-  It passes rather than failing on an empty match, which is honest only for as
-  long as this note stays next to it.
+- Five files here are not run by any command, because they predate the current
+  architecture: `full-loop` and `broken-current` drive the removed
+  `/complete-loop` and `/log` routes, `mini-kernel` and `verification_loop`
+  import the pre-rename `@omega-v/*` package names under jest globals, and
+  `fullstack_e2e` imports 60+ names that are not workspace members at all.
+  `tests/integration/e2e-suite-contract.integration.test.ts` names each one
+  with its reason, so the list of unrun suites cannot grow silently; read them
+  as history, not as coverage.
 
 ---
 
