@@ -131,7 +131,14 @@ export function registerExecuteRoute(
     // Step 4 — KAI remember: only a verified outcome is written to memory.
     let memory: KaiMemoryRecord | null = null;
     if (omega.status === 'VERIFIED') {
-      memory = store.remember({ intent, evidenceHash, status: omega.status });
+      // The evidence text is retained so the digest can be recomputed later;
+      // a remembered row that cannot be replayed would be an assertion, not memory.
+      memory = store.remember({
+        intent,
+        evidenceHash,
+        status: omega.status,
+        evidenceText: elion.output,
+      });
       recordStep('KAI', 'REMEMBER', 'VERIFIED', `Evidence stored as ${memory.id}.`);
     } else {
       recordStep(
@@ -170,8 +177,54 @@ export function registerExecuteRoute(
     };
   };
 
+  /**
+   * GET /api/kai/memory/:id/replay — recompute a remembered record's digest
+   * from the evidence text that was retained with it.
+   *
+   * VERIFIED means the digest still recomputes. DIVERGENT means it does not:
+   * the row is preserved and reported as broken memory, never served as good.
+   * A row written before evidence was retained is UNKNOWN, not VERIFIED.
+   */
+  const replayHandler = async (request: any, reply: any) => {
+    const id = typeof request.params?.id === 'string' ? request.params.id : '';
+    const record = store.findMemory(id);
+    if (!record) return jsonError(reply, 404, 'MEMORY_NOT_FOUND');
+
+    const base = {
+      success: true,
+      id: record.id,
+      intent: record.intent,
+      remembered_status: record.status,
+      stored_hash: record.evidence_hash,
+    };
+
+    if (!record.evidence_text) {
+      return reply.status(200).send({
+        ...base,
+        status: 'UNKNOWN',
+        recomputed_hash: null,
+        reason:
+          'EVIDENCE_TEXT_NOT_RETAINED: this record predates replayable evidence and cannot be re-verified.',
+      });
+    }
+
+    const recomputedHash = sha256Hex(record.evidence_text);
+    const matches = recomputedHash === record.evidence_hash;
+    return reply.status(200).send({
+      ...base,
+      status: matches ? 'VERIFIED' : 'DIVERGENT',
+      recomputed_hash: recomputedHash,
+      reason: matches
+        ? null
+        : 'EVIDENCE_HASH_MISMATCH: the retained evidence does not recompute to the recorded digest.',
+    });
+  };
+
   // `/execute` is what the Vite dev proxy targets after rewriting `/api/*`;
   // `/api/execute` is the published endpoint. Both are one handler.
   for (const path of ['/execute', '/api/execute']) fastify.post(path, executeHandler);
   for (const path of ['/kai/memory', '/api/kai/memory']) fastify.get(path, memoryHandler);
+  for (const path of ['/kai/memory/:id/replay', '/api/kai/memory/:id/replay']) {
+    fastify.get(path, replayHandler);
+  }
 }

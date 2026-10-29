@@ -6,11 +6,14 @@ import type { AuthorityLevel } from './invisible-computer.js';
  * KAI — the memory of the Invisible Online Computer.
  *
  * Two durable tables:
- *   KaiMemory        — what was asked, the SHA-256 evidence, and the verdict.
+ *   KaiMemory        — what was asked, the SHA-256 evidence, the verdict, and
+ *                      the evidence text the digest was taken from.
  *   OmegaIR_Contracts — the bounded contract each intent is verified against.
  *
  * MEMORY != PROOF: a row records that a verification happened; it does not
- * make the intent true.
+ * make the intent true. The retained evidence makes a row *replayable* — the
+ * digest can be recomputed later and a mismatch reported as DIVERGENT. Rows
+ * written before replay existed carry no text and replay as UNKNOWN.
  */
 
 export type KaiMemoryRecord = {
@@ -20,6 +23,8 @@ export type KaiMemoryRecord = {
   evidence_hash: string;
   status: string;
 };
+
+export type KaiMemoryEvidenceRecord = KaiMemoryRecord & { evidence_text: string | null };
 
 export type OmegaContract = {
   id: string;
@@ -40,7 +45,8 @@ export class KaiMemoryStore {
         timestamp TEXT NOT NULL,
         intent TEXT NOT NULL,
         evidence_hash TEXT NOT NULL,
-        status TEXT NOT NULL
+        status TEXT NOT NULL,
+        evidence_text TEXT
       );
       CREATE INDEX IF NOT EXISTS "KaiMemory_timestamp_idx" ON "KaiMemory" (timestamp DESC);
       CREATE TABLE IF NOT EXISTS "OmegaIR_Contracts" (
@@ -51,6 +57,16 @@ export class KaiMemoryStore {
       );
       CREATE INDEX IF NOT EXISTS "OmegaIR_Contracts_intent_idx" ON "OmegaIR_Contracts" (intent);
     `);
+
+    // Additive and nullable, so a database written before replay existed keeps
+    // its rows and verdicts; those rows replay as UNKNOWN rather than being
+    // rewritten. CREATE TABLE IF NOT EXISTS alone cannot add the column.
+    const columns = this.db.prepare('PRAGMA table_info("KaiMemory")').all() as Array<{
+      name?: string;
+    }>;
+    if (!columns.some((column) => column?.name === 'evidence_text')) {
+      this.db.exec('ALTER TABLE "KaiMemory" ADD COLUMN evidence_text TEXT');
+    }
   }
 
   createContract(input: {
@@ -77,7 +93,12 @@ export class KaiMemoryStore {
     return contract;
   }
 
-  remember(input: { intent: string; evidenceHash: string; status: string }): KaiMemoryRecord {
+  remember(input: {
+    intent: string;
+    evidenceHash: string;
+    status: string;
+    evidenceText?: string | null;
+  }): KaiMemoryRecord {
     const record: KaiMemoryRecord = {
       id: randomUUID(),
       timestamp: new Date().toISOString(),
@@ -87,16 +108,27 @@ export class KaiMemoryStore {
     };
     this.db
       .prepare(
-        'INSERT INTO "KaiMemory" (id, timestamp, intent, evidence_hash, status) VALUES (?, ?, ?, ?, ?)'
+        'INSERT INTO "KaiMemory" (id, timestamp, intent, evidence_hash, status, evidence_text) VALUES (?, ?, ?, ?, ?, ?)'
       )
       .run(
         record.id,
         record.timestamp,
         record.intent,
         record.evidence_hash,
-        record.status
+        record.status,
+        input.evidenceText ?? null
       );
     return record;
+  }
+
+  /** One record with the evidence text retained for replay. */
+  findMemory(id: string): KaiMemoryEvidenceRecord | null {
+    const row = this.db
+      .prepare(
+        'SELECT id, timestamp, intent, evidence_hash, status, evidence_text FROM "KaiMemory" WHERE id = ?'
+      )
+      .get(id) as KaiMemoryEvidenceRecord | undefined;
+    return row ?? null;
   }
 
   listMemory(limit = 10): KaiMemoryRecord[] {

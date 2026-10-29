@@ -59,6 +59,8 @@ export const API_ROUTE_INVENTORY = [
   'POST /execute',
   'GET /api/kai/memory',
   'GET /kai/memory',
+  'GET /api/kai/memory/:id/replay',
+  'GET /kai/memory/:id/replay',
   'GET /v1/block/tip',
   'GET /v1/stream',
   'POST /v1/miner/start',

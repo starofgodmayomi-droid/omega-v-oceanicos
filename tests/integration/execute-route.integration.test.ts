@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import test from 'node:test';
 import { createApp } from '../../apps/api/dist/index.js';
+import { KaiMemoryStore } from '../../apps/api/dist/kai-memory.js';
 import { KAI_SYSTEM_PROMPT, verifyOmega } from '../../apps/api/src/invisible-computer.ts';
 
 const sha256 = (value: string) => createHash('sha256').update(value, 'utf8').digest('hex');
@@ -115,6 +119,65 @@ test('OMEGA collapses an empty or overclaiming output to UNKNOWN', () => {
   });
   assert.equal(fabricated.status, 'UNKNOWN');
   assert.match(String(fabricated.reason), /NO_FABRICATED_COMPLETION/);
+});
+
+test('a remembered record replays from retained evidence; a bad digest is DIVERGENT', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'kai-replay-'));
+  const dbPath = join(dir, 'replay.db');
+  const app = createApp(dbPath, false);
+  const store = new KaiMemoryStore(`${dbPath}.kai.db`);
+  try {
+    // A real execution leaves a record that recomputes to its own digest.
+    const executed = await app.inject({
+      method: 'POST',
+      url: '/api/execute',
+      payload: { intent: 'Keep the memory replayable' },
+    });
+    const body = executed.json();
+    assert.equal(body.status, 'VERIFIED');
+
+    const replay = await app.inject({
+      method: 'GET',
+      url: `/api/kai/memory/${body.memory.id}/replay`,
+    });
+    const replayed = replay.json();
+    assert.equal(replay.statusCode, 200);
+    assert.equal(replayed.status, 'VERIFIED');
+    assert.equal(replayed.stored_hash, body.evidence_hash);
+    assert.equal(replayed.recomputed_hash, body.evidence_hash);
+
+    // Text that does not recompute to its recorded digest is preserved as DIVERGENT.
+    const tampered = store.remember({
+      intent: 'tampered evidence',
+      evidenceHash: sha256('the claimed output'),
+      status: 'VERIFIED',
+      evidenceText: 'a different output',
+    });
+    const divergent = (
+      await app.inject({ method: 'GET', url: `/api/kai/memory/${tampered.id}/replay` })
+    ).json();
+    assert.equal(divergent.status, 'DIVERGENT');
+    assert.match(String(divergent.reason), /EVIDENCE_HASH_MISMATCH/);
+
+    // A row written before evidence was retained is UNKNOWN, never VERIFIED.
+    const legacy = store.remember({
+      intent: 'legacy row',
+      evidenceHash: sha256('legacy output'),
+      status: 'VERIFIED',
+    });
+    const unknown = (
+      await app.inject({ method: 'GET', url: `/api/kai/memory/${legacy.id}/replay` })
+    ).json();
+    assert.equal(unknown.status, 'UNKNOWN');
+    assert.match(String(unknown.reason), /EVIDENCE_TEXT_NOT_RETAINED/);
+
+    const missing = await app.inject({ method: 'GET', url: '/api/kai/memory/not-a-record/replay' });
+    assert.equal(missing.statusCode, 404);
+  } finally {
+    store.close();
+    await app.close();
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 test('the KAI/ELION persona keeps its non-collapse rules', () => {
