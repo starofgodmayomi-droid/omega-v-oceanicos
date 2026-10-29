@@ -40,7 +40,7 @@ PRESENT ON DISK
 | **SOURCE-ONLY** | Package directory exists under `packages/`, but is not listed in `pnpm-workspace.yaml`. |
 | **STUB** | A source-only directory with a thin implementation; not an active workspace capability. |
 
-## API-DECLARED — workspace + direct API dependency (9 packages)
+## API-DECLARED — workspace + direct API dependency (12 packages)
 
 | Package | Name | Declared role |
 |---|---|---|
@@ -53,10 +53,13 @@ PRESENT ON DISK
 | `kernel` | `@omega-v/kernel` | Finite-state kernel |
 | `oreade` | `@omega-v/oreade` | ƆREADE layer, not authority |
 | `mood` | `@omega-v/mood` | Planning context, not evidence |
+| `kai` | `@oceanicos/kai` | Mind: KAI continuity and a fail-closed intent shield |
+| `elion` | `@oceanicos/elion` | Hands: authorized execution and bounded orchestration |
+| `omega` | `@oceanicos/omega` | Judge: expected-vs-actual reconciliation, fails closed |
 
 The API manifest declares these workspace dependencies. The list alone does not prove each is imported, executed, or exposed as an API capability.
 
-## WORKSPACE-ONLY — workspace member, no direct API dependency (13 packages)
+## WORKSPACE-ONLY — workspace member, no direct API dependency (10 packages)
 
 | Package | Name | Declared role |
 |---|---|---|
@@ -70,9 +73,6 @@ The API manifest declares these workspace dependencies. The list alone does not 
 | `worker` | `@omega-v/worker` | Fail-closed local worker pool |
 | `pipeline` | `@omega-v/pipeline` | Stage graph over the worker pool |
 | `evidence` | `@omega-v/evidence` | Evidence artifact engine |
-| `kai` | `@oceanicos/kai` | Mind: KAI continuity and a fail-closed intent shield |
-| `elion` | `@oceanicos/elion` | Hands: authorized execution and bounded orchestration |
-| `omega` | `@oceanicos/omega` | Judge: expected-vs-actual reconciliation, fails closed |
 
 These packages are explicit workspace members, but are not direct API workspace dependencies. That does not prove whether another package uses them or whether a specific build/test ran.
 
@@ -96,8 +96,8 @@ Unresolved naming edge. Do not silently rename packages.
 | Category | Count | Action |
 |---|---:|---|
 | Workspace members | 24 (22 packages + 2 apps) | Membership only; do not infer capability |
-| API-declared | 9 packages | Direct manifest dependencies; verify actual use separately |
-| Workspace-only | 13 packages | Not direct API dependencies |
+| API-declared | 12 packages | Direct manifest dependencies; verify actual use separately |
+| Workspace-only | 10 packages | Not direct API dependencies |
 | On-disk, off-workspace | Non-exhaustive | Promote only when earned |
 
 ## Test and CI evidence

@@ -25,16 +25,24 @@ for a check that ran; dormant packages carry no such claim.
 
 | Classification | Meaning | Count |
 |----------------|---------|------|
-| **BUILT** | `pnpm-workspace.yaml` **and** imported by `apps/api` | 9 |
-| **WORKSPACE** | `pnpm-workspace.yaml`, not imported by `apps/api` | 8 |
+| **BUILT** | `pnpm-workspace.yaml` **and** imported by `apps/api` | 12 |
+| **WORKSPACE** | `pnpm-workspace.yaml`, not imported by `apps/api` | 5 |
 | **SOURCE-ONLY** | On disk, in the self-model, not in the workspace | 27 |
 | **STUB** | SOURCE-ONLY, thin implementation | 2 |
 | **UNTRACKED** | On disk, **not** in the self-model, workspace, or API | 26 |
 
 ## Core graph (BUILT — the live spine)
 
-These 9 packages are workspace members, built by the `setup` service, and
+These 12 packages are workspace members, built by the `setup` service, and
 imported by `apps/api`. This is the only surface that is OBSERVED running.
+
+`@oceanicos/kai`, `@oceanicos/elion`, and `@oceanicos/omega` are the named
+entry points for the KAI / ELION / OMEGA roles in `ECOSYSTEM_BODY.md`. They
+re-export primitives already implemented in `@oceanicos/mini` and
+`@oceanicos/verification`, and the API now runs through them: KAI records every
+minted cycle (`POST /v1/cycle`, the miner), ELION is the executor the omega
+command routes call, and OMEGA is the judge those routes reconcile with.
+`GET /v1/body` reports all three from live state.
 
 ```text
 @oceanicos/types
@@ -61,16 +69,7 @@ imported by `apps/api`. This is the only surface that is OBSERVED running.
 @omega-v/webhook      -> @oceanicos/types
 @omega-v/coordination -> (no workspace deps declared)
 @omega-v/evidence     -> @oceanicos/types   [promoted this pass]
-@oceanicos/kai        -> @oceanicos/mini, @oceanicos/types
-@oceanicos/elion      -> @oceanicos/mini, @oceanicos/types
-@oceanicos/omega      -> @oceanicos/mini, @oceanicos/verification, @oceanicos/types
 ```
-
-`@oceanicos/kai`, `@oceanicos/elion`, and `@oceanicos/omega` are the named
-entry points for the KAI / ELION / OMEGA roles in `ECOSYSTEM_BODY.md`. They
-re-export the KAI continuity, transition-executor, and reality-verification
-primitives already implemented in `@oceanicos/mini` and `@oceanicos/verification`;
-they hold no independent authority and the API does not import them yet.
 
 These build (the `setup` service compiles the full workspace tree) but the API
 does not import them. Workspace membership is not capability and not a claim

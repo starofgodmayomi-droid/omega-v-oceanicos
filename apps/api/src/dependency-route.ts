@@ -62,6 +62,9 @@ const ALL_PACKAGES: DependencyNode[] = [
   { name: 'mini', package: '@oceanicos/mini', classification: 'BUILT', specRole: 'MINI kernel + admission + transition', dependsOn: ['@oceanicos/types', '@oceanicos/observer', '@oceanicos/verification', '@oceanicos/remember'], lines: 2677, workspaceActive: true, apiImported: true },
   { name: 'oreade', package: '@omega-v/oreade', classification: 'BUILT', specRole: 'ƆREADE symbolic translation', dependsOn: [], lines: 0, workspaceActive: true, apiImported: true },
   { name: 'mood', package: '@omega-v/mood', classification: 'BUILT', specRole: 'MOOD = experience context, not authority', dependsOn: [], lines: 371, workspaceActive: true, apiImported: true },
+  { name: 'kai', package: '@oceanicos/kai', classification: 'BUILT', specRole: 'KAI = the Mind: continuity memory + fail-closed shield', dependsOn: ['@oceanicos/mini', '@oceanicos/types'], lines: 48, workspaceActive: true, apiImported: true },
+  { name: 'elion', package: '@oceanicos/elion', classification: 'BUILT', specRole: 'ELION = the Hands: authorized execution only', dependsOn: ['@oceanicos/mini', '@oceanicos/types'], lines: 25, workspaceActive: true, apiImported: true },
+  { name: 'omega', package: '@oceanicos/omega', classification: 'BUILT', specRole: 'OMEGA = the Judge: reconciles expected vs actual', dependsOn: ['@oceanicos/mini', '@oceanicos/verification', '@oceanicos/types'], lines: 23, workspaceActive: true, apiImported: true },
 
   // ── WORKSPACE: in pnpm-workspace.yaml, not imported by apps/api ──
   { name: 'gateway', package: '@omega-v/gateway', classification: 'WORKSPACE', specRole: 'Gateway', dependsOn: ['@oceanicos/types'], lines: 526, workspaceActive: true, apiImported: false },

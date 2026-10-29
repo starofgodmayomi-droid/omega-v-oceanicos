@@ -2,11 +2,14 @@ import type { FastifyInstance } from 'fastify';
 import {
   buildOmegaCommand,
   buildOmegaWaterFlow,
-  executeAuthorizedTransition,
   listOmegaWorkers,
   resolveChangeAdmission,
-  verifyExecutedReality,
 } from '@oceanicos/mini';
+// ELION is the Hands and OMEGA is the Judge (ECOSYSTEM_BODY.md): the command
+// routes execute and reconcile through these two role packages rather than
+// importing the primitives directly.
+import { executeAuthorizedTransition } from '@oceanicos/elion';
+import { verifyExecutedReality } from '@oceanicos/omega';
 import type { OmegaCommand, OmegaCommandResult, OmegaCommandStatus, OmegaWorkerId } from '@oceanicos/types';
 import { validateOmegaApprovalInput, validateOmegaCommandInput, validateOmegaReconciliationInput } from '@oceanicos/types';
 import { buildSymbolicDrop } from '@omega-v/oreade';

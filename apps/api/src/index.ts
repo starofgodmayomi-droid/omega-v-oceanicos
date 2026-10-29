@@ -7,6 +7,7 @@ import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { MAX_PROOF_OF_WORK_ATTEMPTS, RememberEngine } from '@oceanicos/remember';
 import { FileConnectorObservationStore, FileValueNavigatorStore, MiniKernel } from '@oceanicos/mini';
+import { KaiContinuity } from '@oceanicos/kai';
 import { AsymmetricValidationGuard, DeclarativeVerificationEngine, MultiRegionMeshConvergence } from '@oceanicos/verification';
 import { ObserverEngine } from '@oceanicos/observer';
 import { AttestationService } from '@oceanicos/attestation';
@@ -22,6 +23,7 @@ import { registerValueNavigatorRoute } from './value-navigator-route.js';
 import { registerConnectorObservationRoute, type ConnectorAdmissionEvidenceResolver } from './connector-observation-route.js';
 import { OmegaCommandStore, OmegaIdempotencyConflictError, registerOmegaRoutes } from './omega.js';
 import { registerMeshValidationRoute } from './mesh-route.js';
+import { registerBodyRoute } from './body-route.js';
 import {
   ENCRYPTION_ALGORITHM,
   appendEvent,
@@ -122,6 +124,9 @@ export function createApp(
   const fastify = Fastify({ logger });
   const ledgerMemory = new RememberEngine(dbPath);
   const kernel = new MiniKernel(ledgerMemory);
+  // KAI is the Mind (ECOSYSTEM_BODY.md): it records every cycle this process
+  // mints. Process-local continuity, not persisted, not evidence of reality.
+  const kai = new KaiContinuity();
   const platformKernel = new OceanicosKernel();
   const declarativeVerification = new DeclarativeVerificationEngine();
   const allowUnsignedCycle = options.allowUnsignedCycle ?? process.env.OMEGA_ALLOW_UNSIGNED_CYCLE === 'true';
@@ -259,6 +264,12 @@ export function createApp(
     resolveAdmissionEvidence: options.connectorAdmissionEvidence,
   });
   registerMeshValidationRoute(fastify, ledgerMemory, requireReadAccess, jsonError);
+  registerBodyRoute(fastify, {
+    kai,
+    ledgerIntegrity: () => ledgerMemory.verifyChain(),
+    requireReadAccess,
+    jsonError,
+  });
 
   fastify.get('/health', async (_request, reply) => {
     let ledgerIntegrity;
@@ -461,6 +472,7 @@ export function createApp(
     const ledgerIntegrity = ledgerMemory.verifyChain();
     if (!ledgerIntegrity.valid) return jsonError(reply, 409, 'LEDGER_INTEGRITY_DEGRADED', { integrity: ledgerIntegrity });
     const block = kernel.runCycle();
+    kai.capture(block, { source: 'api.cycle' });
     minerStats.totalMined++;
     minerStats.lastBlockTime = block.timestamp;
     broadcastMintedBlock(block);
@@ -520,7 +532,7 @@ export function createApp(
     }
     if (minerInterval) clearInterval(minerInterval);
     minerStats.active = true; minerStats.intervalMs = interval;
-    minerInterval = setInterval(() => { try { const block = kernel.runCycle(); minerStats.totalMined++; minerStats.lastBlockTime = block.timestamp; broadcastMintedBlock(block); } catch (error) { fastify.log.error(error); } }, interval);
+    minerInterval = setInterval(() => { try { const block = kernel.runCycle(); kai.capture(block, { source: 'api.miner' }); minerStats.totalMined++; minerStats.lastBlockTime = block.timestamp; broadcastMintedBlock(block); } catch (error) { fastify.log.error(error); } }, interval);
     return minerResponse();
   });
   fastify.post('/v1/miner/stop', async () => { if (minerInterval) clearInterval(minerInterval); minerInterval = null; minerStats.active = false; return minerResponse(); });
