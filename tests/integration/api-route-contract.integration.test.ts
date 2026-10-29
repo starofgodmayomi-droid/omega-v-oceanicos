@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import test from 'node:test';
@@ -28,6 +28,14 @@ test('compiled API registers every inventoried method/path pair', async () => {
     await app.close();
     rmSync(directory, { recursive: true, force: true });
   }
+});
+
+test('API README documents every inventoried route', () => {
+  const readme = readFileSync(new URL('../../apps/api/README.md', import.meta.url), 'utf8');
+  const undocumented = API_ROUTE_INVENTORY.filter(
+    (entry) => !readme.includes(parseApiRouteContract(entry).path),
+  );
+  assert.deepEqual(undocumented, [], `undocumented routes: ${undocumented.join(', ')}`);
 });
 
 test('route inventory rejects malformed and duplicate method/path contracts', () => {

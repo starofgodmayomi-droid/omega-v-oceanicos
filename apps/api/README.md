@@ -169,6 +169,113 @@ the records from a `{ compression }` block; a tampered digest is
 The governing equation, its operators and its four exits are in
 [ECOSYSTEM_BODY.md](../../ECOSYSTEM_BODY.md).
 
+## Evidence and ecosystem routes
+
+```text
+GET  /v1/navigator/evidence
+GET  /v1/reality/status
+GET  /v1/dependencies
+GET  /v1/mesh/validate
+POST /v1/pipeline
+```
+
+`GET /v1/navigator/evidence` returns a read-only navigator snapshot, each claim
+carrying its source and limitations. `GET /v1/reality/status` reports the
+status vector and reconciliation contract as observed from this process.
+`GET /v1/dependencies` reports the declared package graph and each package's
+classification; it is not a health or deployment claim.
+
+`GET /v1/mesh/validate?siliconYield=&gridLoadMegawatts=&acceleratorInventory=`
+recomputes local ledger integrity and simulates regional convergence for the
+supplied bounded telemetry. That convergence is simulated local evidence, not
+external consensus, deployment proof, or truth attestation.
+
+`POST /v1/pipeline` runs the bounded C0→C6 pipeline. Admission evidence is
+server-supplied: a body that carries `authorityVerified` or `policySatisfied`
+is rejected rather than trusted.
+
+## Omega command routes
+
+```text
+GET  /v1/omega/workers
+POST /v1/omega/workers/register
+POST /v1/omega/workers/:workerId/heartbeat
+POST /v1/omega/workers/:workerId/lease
+POST /v1/omega/workers/:workerId/lease/:leaseId/release
+GET  /v1/omega/commands
+POST /v1/omega/commands
+GET  /v1/omega/commands/:id
+GET  /v1/omega/commands/:id/provenance
+GET  /v1/omega/commands/:id/safety-boundary
+POST /v1/omega/commands/:id/admit
+POST /v1/omega/commands/:id/approve
+POST /v1/omega/commands/:id/execute
+POST /v1/omega/commands/:id/lease-execute
+POST /v1/omega/commands/:id/observe
+POST /v1/omega/commands/:id/verify-reality
+POST /v1/omega/commands/:id/reconciliation
+GET  /v1/omega/divergences
+GET  /v1/omega/events
+POST /v1/omega/coordination/evidence
+POST /v1/omega/connectors/observe
+GET  /v1/omega/connectors/observations
+POST /v1/omega/oreade/drop
+POST /v1/omega/oreade/proposal
+```
+
+A command moves `PROPOSED → AUTHORIZED → EXECUTED`, and every later step
+records evidence without granting new authority.
+
+- `POST /v1/omega/commands` creates a proposal from an intent, workers, and an
+  idempotency key. Admission claims in the creation body are rejected.
+- `POST .../admit` fails closed with
+  `403 COMMAND_ADMISSION_EVIDENCE_UNAVAILABLE`: this runtime has no trusted
+  server-side admission resolver, so approval stays with a human operator on
+  `POST .../approve`.
+- `POST .../execute` requires `AUTHORIZED` and performs a bounded local action
+  with its attestation; `.../lease-execute` is the same transition bound to a
+  worker lease. Neither performs a remote mutation.
+- `POST .../observe` takes a caller-supplied `observedState`. Agreement with
+  the executor's own record is a comparison, so the command becomes `UNKNOWN`
+  or `DIVERGENT` — never `VERIFIED` from the caller's word.
+- `POST .../verify-reality` rejects verification claims in the body and answers
+  `409 COMMAND_REALITY_NOT_INDEPENDENTLY_VERIFIED` until an independent
+  observation exists.
+- `POST .../reconciliation` accepts a note for a `DIVERGENT` or `UNKNOWN`
+  command. It records durable evidence; it does not retry, correct, authorize,
+  or execute anything.
+- `GET /v1/omega/events?commandId=` replays the redacted event log;
+  `GET /v1/omega/divergences` lists the divergence feed; `.../provenance` and
+  `.../safety-boundary` report the trail and boundary of one command.
+
+Workers register, heartbeat, and hold a lease before a leased execution; the
+lease is the only evidence that a worker holds a command. `GET
+/v1/omega/workers` also lists the active workers and the coordination
+limitations. `POST /v1/omega/coordination/evidence` runs a two-client probe
+over the shared SQLite volume and returns that evidence — not cross-host
+durability, consensus, ordering, or deployment health.
+
+`POST /v1/omega/connectors/observe` stores a caller-supplied observation as
+evidence, and `GET /v1/omega/connectors/observations` lists them.
+`oreade/drop` and `oreade/proposal` turn a symbolic drop into a proposal;
+neither executes.
+
+## Execute and memory routes
+
+```text
+POST /api/execute
+POST /execute
+GET  /api/kai/memory
+GET  /kai/memory
+```
+
+`/execute` is the path the Vite dev proxy reaches after rewriting `/api/*`;
+`/api/execute` is the published form, and both share one handler. The handler
+scans the intent against the KAI shield before anything runs, records each
+phase (`OBSERVE`, `EXECUTE`, `VERIFY`, `REMEMBER`), and returns the steps with
+their evidence. The memory routes return the most recent KAI memory records
+(`?limit=`, default 10, with the stored total).
+
 ## Static client
 
 Set `OMEGA_WEB_DIST` to a built `apps/web` directory to serve the SPA from the
