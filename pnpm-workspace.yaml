@@ -18,6 +18,9 @@ packages:
   - 'packages/worker'
   - 'packages/pipeline'
   - 'packages/evidence'
+  - 'packages/kai'
+  - 'packages/elion'
+  - 'packages/omega'
   - 'apps/api'
   - 'apps/web'
 

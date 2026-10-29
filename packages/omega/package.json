@@ -1,0 +1,19 @@
+{
+  "name": "@oceanicos/omega",
+  "version": "1.0.0",
+  "description": "Ω∞v OMEGA — the Judge: reconciles expected against actual and fails closed",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@oceanicos/mini": "workspace:*",
+    "@oceanicos/types": "workspace:*",
+    "@oceanicos/verification": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.4"
+  }
+}

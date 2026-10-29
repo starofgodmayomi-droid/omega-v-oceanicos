@@ -1,0 +1,18 @@
+{
+  "name": "@oceanicos/kai",
+  "version": "1.0.0",
+  "description": "Ω∞v KAI — the Mind: continuity memory and a fail-closed intent shield",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@oceanicos/mini": "workspace:*",
+    "@oceanicos/types": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.4"
+  }
+}

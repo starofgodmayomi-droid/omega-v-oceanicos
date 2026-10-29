@@ -56,7 +56,7 @@ PRESENT ON DISK
 
 The API manifest declares these workspace dependencies. The list alone does not prove each is imported, executed, or exposed as an API capability.
 
-## WORKSPACE-ONLY — workspace member, no direct API dependency (9 packages)
+## WORKSPACE-ONLY — workspace member, no direct API dependency (13 packages)
 
 | Package | Name | Declared role |
 |---|---|---|
@@ -69,6 +69,10 @@ The API manifest declares these workspace dependencies. The list alone does not 
 | `webhook` | `@omega-v/webhook` | Webhooks |
 | `worker` | `@omega-v/worker` | Fail-closed local worker pool |
 | `pipeline` | `@omega-v/pipeline` | Stage graph over the worker pool |
+| `evidence` | `@omega-v/evidence` | Evidence artifact engine |
+| `kai` | `@oceanicos/kai` | Mind: KAI continuity and a fail-closed intent shield |
+| `elion` | `@oceanicos/elion` | Hands: authorized execution and bounded orchestration |
+| `omega` | `@oceanicos/omega` | Judge: expected-vs-actual reconciliation, fails closed |
 
 These packages are explicit workspace members, but are not direct API workspace dependencies. That does not prove whether another package uses them or whether a specific build/test ran.
 
@@ -78,11 +82,11 @@ The workspace also includes the `apps/api` and `apps/web` applications. They are
 
 ## SOURCE-ONLY / STUB — on disk, off workspace
 
-The following are examples, not an exhaustive package list: `policy`, `registry`, `sdk`, `cli`, `evidence`, `intent`, `contract`, and the distributed/speculative set (`agents`, `amm`, `consensus`, `zk`, …). Confirm membership from `pnpm-workspace.yaml` before treating any directory as an active workspace package.
+The following are examples, not an exhaustive package list: `policy`, `registry`, `sdk`, `cli`, `intent`, `contract`, and the distributed/speculative set (`agents`, `amm`, `consensus`, `zk`, …). Confirm membership from `pnpm-workspace.yaml` before treating any directory as an active workspace package.
 
 ## Naming split (observed)
 
-- `@oceanicos/*` — types, observer, verification, remember, mini, attestation.
+- `@oceanicos/*` — types, observer, verification, remember, mini, attestation, kai, elion, omega.
 - `@omega-v/*` — kernel, oreade, mood, gateway, ir, compiler, evolution, coordination, auth, webhook, worker, pipeline, plus source-only packages.
 
 Unresolved naming edge. Do not silently rename packages.
@@ -91,9 +95,9 @@ Unresolved naming edge. Do not silently rename packages.
 
 | Category | Count | Action |
 |---|---:|---|
-| Workspace members | 20 (18 packages + 2 apps) | Membership only; do not infer capability |
+| Workspace members | 24 (22 packages + 2 apps) | Membership only; do not infer capability |
 | API-declared | 9 packages | Direct manifest dependencies; verify actual use separately |
-| Workspace-only | 9 packages | Not direct API dependencies |
+| Workspace-only | 13 packages | Not direct API dependencies |
 | On-disk, off-workspace | Non-exhaustive | Promote only when earned |
 
 ## Test and CI evidence
