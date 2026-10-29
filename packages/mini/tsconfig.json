@@ -17,6 +17,7 @@
     "src/admission.ts",
     "src/transition.ts",
     "src/reality.ts",
+    "src/continuum.ts",
     "src/worker-registry.ts",
     "src/change.ts",
     "src/compiler.ts",

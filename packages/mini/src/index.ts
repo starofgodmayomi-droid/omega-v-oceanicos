@@ -41,6 +41,14 @@ export type {
   RealityVerification,
   RealityVerificationStatus,
 } from './reality.js';
+export { decideContinuumDrop, runContinuum } from './continuum.js';
+export type {
+  ContinuumDecision,
+  ContinuumDrop,
+  ContinuumRun,
+  ContinuumStep,
+  ContinuumVerdict,
+} from './continuum.js';
 export { advanceOmegaSourceState, compileOmegaIntent, normalizeOmegaSource } from './compiler.js';
 export type { OmegaCompileInput } from './compiler.js';
 export { validateOmegaIR } from './ir-validator.js';
