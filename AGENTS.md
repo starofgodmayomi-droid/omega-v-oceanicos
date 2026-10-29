@@ -55,6 +55,23 @@ the one bounded end-to-end slice: KAI OBSERVE → ELION BOUND → ELION EXECUTE 
   asserts the exact size of `API_ROUTE_INVENTORY`, so adding a route means updating that number,
   the inventory, and `apps/api/README.md` together.
 
+## Ω∞v reality fixed point (Y)
+`packages/mini/src/reality-fixed-point.ts` (exported from `@oceanicos/mini`) is the loop
+written as one law: `Y(λf.λx. f(Σ ∪ Hash(x)) | O(E(x)) ≡ VERIFIED)` with `HALT ⊢ DIVERGENT`
+(`K(x) ∈ SCAM`), `HALT ⊢ UNKNOWN` (`Evidence(x) = ∅`), `HALT ⊢ NOT_EXECUTED`
+(`Authority(x) < Required`), and `M(t+1) = M(t) ∪ Δ` only when `V(Δ) = ⊤`.
+- `POST /v1/execute` calls `judgeDrop` for its `OMEGA_VERIFY` step (match mode `CONTAINS`,
+  because there the declared expectation is a fragment of a live report); the shield already
+  returns `DIVERGENT` and a missing capability is passed as `held: 0, required: 1` → `NOT_EXECUTED`.
+- Precedence when several halts hold at once is SCAM → AUTHORITY → EVIDENCE → VERIFICATION.
+  That precedence is a kernel decision, not something the law's listing settles.
+- `Σ` (verified-only memory) is deliberately NOT the KAI journal: the journal keeps every
+  verdict including `DIVERGENT`/`UNKNOWN`. Do not "fix" the journal to drop failures.
+- Test: `node --experimental-strip-types --test-concurrency=1 --test ./tests/integration/reality-fixed-point.integration.test.ts`
+  (listed in `test` and `test:e2e`). Doc: `docs/REALITY-FIXED-POINT.md`.
+- The kernel is pure: it never reads the world, so `VERIFIED` there means "expected equalled
+  observed *as supplied*". Do not surface it as an observation.
+
 ## Fixed bug
 `apps/api/src/index.ts` line 204: `persistenceEncryptionKey` was undefined → changed to `encryptionEnabled(persistenceKey)` to match the pattern used at lines 163/165.
 

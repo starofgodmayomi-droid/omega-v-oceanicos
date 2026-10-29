@@ -167,6 +167,28 @@ export type {
   BoundedParallelOptions,
 } from './parallel.js';
 export type { OmegaWaterFlowInput } from './water-flow.js';
+export {
+  EMPTY_REALITY_MEMORY,
+  REALITY_FIXED_POINT_LAW,
+  REALITY_LOOP_VERDICTS,
+  expectedEqualsObserved,
+  hashDrop,
+  judgeDrop,
+  rememberVerified,
+  runRealityFixedPoint,
+} from './reality-fixed-point.js';
+export type {
+  RealityAuthority,
+  RealityDrop,
+  RealityHaltReason,
+  RealityJudgement,
+  RealityJudgementReason,
+  RealityLoopRun,
+  RealityLoopStep,
+  RealityLoopVerdict,
+  RealityMatchMode,
+  RealityMemory,
+} from './reality-fixed-point.js';
 
 export function executeOceanicosMaxExpansion(): CryptographicBlock {
   const kernelChain = new PluralisticHashChain();

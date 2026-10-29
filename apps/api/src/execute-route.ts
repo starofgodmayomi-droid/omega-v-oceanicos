@@ -14,6 +14,7 @@
  */
 import { createHash } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
+import { judgeDrop } from '@oceanicos/mini';
 import {
   KAI_AUTHORITY_LEVELS,
   type FileKaiMemoryStore,
@@ -71,8 +72,6 @@ export interface ExecuteStep {
 }
 
 const sha256 = (text: string): string => `sha256:${createHash('sha256').update(text, 'utf8').digest('hex')}`;
-
-const normalize = (text: string): string => text.toLowerCase().replace(/\s+/g, ' ').trim();
 
 function shieldMatches(intent: string): KaiShieldRule[] {
   return KAI_SHIELD_RULES.filter((rule) => rule.pattern.test(intent));
@@ -220,26 +219,42 @@ export function registerExecuteRoute(
       });
     }
 
-    // STEP 4 — OMEGA VERIFY: hash the output and compare it to the contract.
-    let status: KaiMemoryStatus;
-    let reason: string | undefined;
-    let evidenceHash: string;
-    if (!output || !output.trim()) {
-      status = canAnswer ? 'UNKNOWN' : 'NOT_EXECUTED';
-      reason = canAnswer ? 'OMEGA_OUTPUT_EMPTY' : 'ELION_BOUNDED_EXECUTOR_HAS_NO_CAPABILITY_FOR_THIS_INTENT';
-      evidenceHash = sha256(`${reason}|${intent}`);
-      steps.push({ step: 'OMEGA_VERIFY', status, detail: `${reason}. Nothing was claimed as verified.` });
-    } else {
-      evidenceHash = sha256(output);
-      if (expectedOutcome && !normalize(output).includes(normalize(expectedOutcome))) {
-        status = 'DIVERGENT';
-        reason = 'OMEGA_EXPECTED_OUTCOME_NOT_OBSERVED';
-        steps.push({ step: 'OMEGA_VERIFY', status, detail: `DIVERGENT: expected outcome "${expectedOutcome}" was not observed in the output.` });
-      } else {
-        status = 'VERIFIED';
-        steps.push({ step: 'OMEGA_VERIFY', status, detail: `Output hashed (${evidenceHash.slice(0, 19)}…) and matched the contract.` });
-      }
-    }
+    // STEP 4 — OMEGA VERIFY: the Ω∞v fixed-point gate decides the verdict.
+    // A capability the bounded executor does not hold is authority it does not
+    // have, so it halts NOT_EXECUTED rather than inventing an answer. The
+    // declared expectation is a fragment the report must contain, because a
+    // runtime report carries live values around it.
+    const judged = judgeDrop(
+      {
+        id: intent,
+        scam: false,
+        evidence: output ? [output] : [],
+        authority: { held: canAnswer ? 1 : 0, required: 1 },
+        expected: expectedOutcome ?? null,
+        observed: output,
+      },
+      'CONTAINS',
+    );
+    const status: KaiMemoryStatus = judged.verdict;
+    const reason =
+      judged.reason === 'EVIDENCE_EMPTY'
+        ? 'OMEGA_OUTPUT_EMPTY'
+        : judged.reason === 'AUTHORITY_INSUFFICIENT'
+          ? 'ELION_BOUNDED_EXECUTOR_HAS_NO_CAPABILITY_FOR_THIS_INTENT'
+          : judged.reason === 'OBSERVED_DIVERGES_FROM_EXPECTED'
+            ? 'OMEGA_EXPECTED_OUTCOME_NOT_OBSERVED'
+            : undefined;
+    const evidenceHash = output && output.trim() ? sha256(output) : sha256(`${reason}|${intent}`);
+    steps.push({
+      step: 'OMEGA_VERIFY',
+      status,
+      detail:
+        status === 'VERIFIED'
+          ? `Output hashed (${evidenceHash.slice(0, 19)}…) and matched the contract.`
+          : status === 'DIVERGENT'
+            ? `DIVERGENT: expected outcome "${expectedOutcome}" was not observed in the output.`
+            : `${reason}. Nothing was claimed as verified.`,
+    });
 
     // STEP 5 — KAI REMEMBER: seal the drop with its own verdict.
     const entry = store.append({ intent, evidenceHash, status, authorityLevel, expectedOutcome, reason });

@@ -28,6 +28,7 @@
     "src/connector-observation-journal.ts",
     "src/github-public-repository.ts",
     "src/total-compress.ts",
+    "src/reality-fixed-point.ts",
     "src/single-body.ts"
   ]
 }
