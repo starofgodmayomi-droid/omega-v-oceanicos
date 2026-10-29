@@ -2,16 +2,7 @@ import { createServer, Server } from 'node:http';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import {
-  app,
-  constantTimeTokenMatch,
-  isAttestationExpired,
-  revocationRegistryDigest,
-  revocationRegistryStatus,
-  operatorIdentityAllowed,
-  parseAuditQuery,
-} from '../index';
-import { Attestation } from '@omega-v/types';
+import { app, constantTimeTokenMatch, operatorIdentityAllowed } from '../index';
 import {
   appendEvent,
   loadSnapshot,
@@ -66,64 +57,6 @@ describe('API runtime contracts', () => {
     expect(operatorIdentityAllowed('operator-b', ['operator-a'], true)).toBe(false);
   });
 
-  it('makes revocation registry integrity states explicit', () => {
-    const records = [
-      {
-        id: 'rev-1',
-        attestationId: 'att-1',
-        reason: 'review',
-        revokedBy: 'test',
-        revokedAt: '2026-08-16T00:00:00.000Z',
-      },
-    ];
-    const digest = revocationRegistryDigest(records);
-
-    expect(revocationRegistryStatus(false, undefined, digest)).toBe('disabled');
-    expect(revocationRegistryStatus(true, undefined, digest)).toBe('legacy');
-    expect(revocationRegistryStatus(true, digest, digest)).toBe('intact');
-    expect(revocationRegistryStatus(true, digest, `${digest}-tampered`)).toBe('mismatch');
-  });
-
-  it('parses bounded audit filters and rejects unsafe temporal ranges', () => {
-    expect(parseAuditQuery({ type: 'attestation.created', status: 'passed', limit: '12' })).toEqual(
-      {
-        query: {
-          type: 'attestation.created',
-          stage: undefined,
-          status: 'passed',
-          from: undefined,
-          to: undefined,
-          limit: 12,
-        },
-      }
-    );
-    expect(parseAuditQuery({ limit: '0' })).toEqual({
-      error: 'limit must be an integer between 1 and 500',
-    });
-    expect(parseAuditQuery({ status: 'unknown' })).toEqual({
-      error: 'status must be active, passed, or failed',
-    });
-    expect(parseAuditQuery({ from: '2026-08-17T00:00:00Z', to: '2026-08-16T00:00:00Z' })).toEqual({
-      error: 'from must not be later than to',
-    });
-  });
-
-  /**
-   * `parseAuditQuery` validates `from` and `to` as ISO-8601 timestamps before
-   * comparing them. The existing test only supplied two well-formed
-   * timestamps in the wrong order, so the `Number.isNaN(Date.parse(...))`
-   * guards that reject an unparseable `from` or `to` had never returned
-   * their error.
-   */
-  it('rejects audit query timestamps that are not valid ISO-8601', () => {
-    expect(parseAuditQuery({ from: 'not-a-date' })).toEqual({
-      error: 'from must be an ISO-8601 timestamp',
-    });
-    expect(parseAuditQuery({ to: 'not-a-date' })).toEqual({
-      error: 'to must be an ISO-8601 timestamp',
-    });
-  });
-
   it('allows only configured operator identities when an allowlist is present', () => {
     expect(operatorIdentityAllowed('dashboard-operator', [])).toBe(true);
     expect(operatorIdentityAllowed('dashboard-operator', ['dashboard-operator'])).toBe(true);
@@ -135,15 +68,6 @@ describe('API runtime contracts', () => {
     expect(constantTimeTokenMatch('same-token', 'same-token')).toBe(true);
     expect(constantTimeTokenMatch('same-token', 'same-tokeN')).toBe(false);
     expect(constantTimeTokenMatch('short', 'longer-token')).toBe(false);
-  });
-
-  it('applies an opt-in attestation TTL without changing signature semantics', () => {
-    const attestation = { attestedAt: '2026-08-16T00:00:00.000Z' } as Attestation;
-    const issuedAt = Date.parse(attestation.attestedAt);
-
-    expect(isAttestationExpired(attestation, issuedAt + 999, 1000)).toBe(false);
-    expect(isAttestationExpired(attestation, issuedAt + 1000, 1000)).toBe(true);
-    expect(isAttestationExpired(attestation, issuedAt + 1000, null)).toBe(false);
   });
 
   let server: Server;

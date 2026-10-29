@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createApp, operatorIdentityAllowed, parseCorsOrigins } from '../../apps/api/dist/index.js';
+import {
+  constantTimeTokenMatch,
+  createApp,
+  operatorIdentityAllowed,
+  parseCorsOrigins,
+} from '../../apps/api/dist/index.js';
 
 test('required authentication CORS boundary', async (t) => {
   const originalEnvironment = { ...process.env };
@@ -57,10 +62,39 @@ test('required authentication CORS boundary', async (t) => {
     error: 'READ_ACCESS_REQUIRED',
   });
 
+  const wrongReadToken = await app.inject({
+    method: 'GET',
+    url: '/v1/ecosystem/status',
+    headers: { authorization: 'Bearer wrong-read-token' },
+  });
+  assert.equal(wrongReadToken.statusCode, 401);
+  assert.deepEqual(wrongReadToken.json(), {
+    success: false,
+    error: 'READ_ACCESS_REQUIRED',
+  });
+
+  const wrongAdminToken = await app.inject({
+    method: 'POST',
+    url: '/attest/revoke',
+    headers: { authorization: 'Bearer wrong-admin-token' },
+    payload: { attestationId: 'att-wrong-token', reason: 'rejected before identity checks' },
+  });
+  assert.equal(wrongAdminToken.statusCode, 401);
+  assert.deepEqual(wrongAdminToken.json(), {
+    success: false,
+    error: 'ADMIN_ACCESS_REQUIRED',
+  });
+
   assert.equal(operatorIdentityAllowed(undefined, []), true);
   assert.equal(operatorIdentityAllowed('operator-a', [], true), false);
   assert.equal(operatorIdentityAllowed('operator-a', ['operator-a'], true), true);
   assert.equal(operatorIdentityAllowed('operator-b', ['operator-a'], true), false);
+
+  assert.equal(constantTimeTokenMatch('read-token', 'read-token'), true);
+  assert.equal(constantTimeTokenMatch('read-token', 'read-tokeN'), false);
+  assert.equal(constantTimeTokenMatch('read-token', 'read-token-longer'), false);
+  assert.equal(constantTimeTokenMatch('read-token', ''), false);
+  assert.equal(constantTimeTokenMatch('', ''), false);
 
   process.env.OMEGA_ADMIN_OPERATOR_ALLOWLIST = 'trusted-operator';
   delete process.env.OMEGA_ADMIN_REQUIRE_ALLOWLIST;

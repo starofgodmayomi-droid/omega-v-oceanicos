@@ -1,7 +1,7 @@
 import Fastify, { FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
 import rateLimit from '@fastify/rate-limit';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, timingSafeEqual } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -104,6 +104,18 @@ export const parseCorsOrigins = (value: string | undefined, mode: AuthMode): str
 
 const bearer = (authorization?: string): string =>
   authorization?.startsWith('Bearer ') ? authorization.slice(7).trim() : '';
+
+/**
+ * Compares a presented bearer secret with the configured one without an
+ * early-exit string comparison, so a failed match does not leak how many
+ * leading characters were correct. An absent value never matches.
+ */
+export function constantTimeTokenMatch(expected: string, presented: string): boolean {
+  if (!expected || !presented) return false;
+  const left = Buffer.from(expected, 'utf8');
+  const right = Buffer.from(presented, 'utf8');
+  return left.length === right.length && timingSafeEqual(left, right);
+}
 
 export function operatorIdentityAllowed(
   operatorId: string | undefined,
@@ -216,11 +228,15 @@ export function createApp(
 
   const requireReadAccess = async (request: any, reply: any) => {
     if (authMode === 'local') return;
-    if (bearer(request.headers.authorization) !== readToken) return jsonError(reply, 401, 'READ_ACCESS_REQUIRED');
+    if (!constantTimeTokenMatch(readToken, bearer(request.headers.authorization))) {
+      return jsonError(reply, 401, 'READ_ACCESS_REQUIRED');
+    }
   };
   const requireAdminAccess = async (request: any, reply: any) => {
     if (authMode === 'local') return;
-    if (bearer(request.headers.authorization) !== adminToken) return jsonError(reply, 401, 'ADMIN_ACCESS_REQUIRED');
+    if (!constantTimeTokenMatch(adminToken, bearer(request.headers.authorization))) {
+      return jsonError(reply, 401, 'ADMIN_ACCESS_REQUIRED');
+    }
   };
   const enforceAdminOperatorIdentity = (request: any, reply: any): boolean => {
     const allowedOperators = (process.env.OMEGA_ADMIN_OPERATOR_ALLOWLIST ?? '')
@@ -240,7 +256,9 @@ export function createApp(
   const requireJobAccess = async (request: any, reply: any) => {
     const configured = process.env.OMEGA_LOCAL_JOB_LEDGER_TOKEN?.trim();
     if (!configured) return;
-    if (bearer(request.headers.authorization) !== configured) return jsonError(reply, 401, 'JOB_ACCESS_REQUIRED');
+    if (!constantTimeTokenMatch(configured, bearer(request.headers.authorization))) {
+      return jsonError(reply, 401, 'JOB_ACCESS_REQUIRED');
+    }
   };
 
   fastify.register(cors, { origin: corsOrigin });
@@ -251,7 +269,7 @@ export function createApp(
   fastify.addHook('onRequest', async (request, reply) => {
     if (authMode === 'local' || request.method === 'OPTIONS' || request.url.split('?')[0] === '/health') return;
     const required = request.method === 'GET' ? readToken : adminToken;
-    if (bearer(request.headers.authorization) !== required) {
+    if (!constantTimeTokenMatch(required, bearer(request.headers.authorization))) {
       return jsonError(reply, 401, request.method === 'GET' ? 'READ_ACCESS_REQUIRED' : 'ADMIN_ACCESS_REQUIRED');
     }
   });

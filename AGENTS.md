@@ -64,6 +64,12 @@ docker compose -f docker-compose.base44.yml up -d
 ## Fixed bug
 `apps/api/src/index.ts` line 204: `persistenceEncryptionKey` was undefined → changed to `encryptionEnabled(persistenceKey)` to match the pattern used at lines 163/165.
 
+## Bearer token comparison (constant time)
+`constantTimeTokenMatch(expected, presented)` in `apps/api/src/index.ts` compares a configured bearer secret with the presented one via `crypto.timingSafeEqual` after a length check; an absent value never matches. All four guards use it — read access, admin access, the local job ledger token, and the global `onRequest` gate — instead of `!==`, so a rejected request does not leak matching-prefix length through timing. Covered by `tests/integration/api-cors-auth.integration.test.ts` (pure matcher + wrong read/admin token returning 401).
+
+## Legacy jest tests do not run
+`apps/api/src/__tests__/` is jest-era and `package.json` has neither a jest dependency nor a jest script, so nothing in that directory executes. `api.test.ts` no longer imports helpers the API no longer provides (audit query parsing, revocation registry digest, attestation TTL); those features are absent from `apps/api/src`, so their assertions were removed rather than kept as false evidence. The runnable suites are the `node --test` files under `tests/integration/`.
+
 ## No external credentials needed
 All secrets (signing key, tokens) are local dev values in `.env.base44-defaults`. No external service credentials are required for the app to run.
 
