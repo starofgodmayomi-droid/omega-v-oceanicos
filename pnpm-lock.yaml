@@ -49,6 +49,9 @@ importers:
       '@oceanicos/observer':
         specifier: workspace:*
         version: link:../../packages/observer
+      '@oceanicos/omega':
+        specifier: workspace:*
+        version: link:../../packages/omega
       '@oceanicos/remember':
         specifier: workspace:*
         version: link:../../packages/remember

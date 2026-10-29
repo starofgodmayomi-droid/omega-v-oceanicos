@@ -53,7 +53,7 @@ export function statusColor(status: string): string {
     return theme.verified;
   if (['DIVERGENT', 'DENIED', 'FAILED', 'NO', 'CONSENSUS_FAILED', 'REJECT'].includes(s))
     return theme.divergent;
-  if (['REVIEW', 'AUTHORIZED', 'EXECUTED', 'PROPOSED', 'SUPPORTED', 'UNVERIFIED', 'CONVERGED_PLURAL'].includes(s))
+  if (['REVIEW', 'AUTHORIZED', 'EXECUTED', 'PROPOSED', 'SUPPORTED', 'UNVERIFIED', 'NOT_EXECUTED', 'CONVERGED_PLURAL'].includes(s))
     return theme.warning;
   return theme.unknown;
 }

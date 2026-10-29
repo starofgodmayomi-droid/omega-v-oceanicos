@@ -15,6 +15,7 @@
     "@oceanicos/elion": "workspace:*",
     "@oceanicos/kai": "workspace:*",
     "@oceanicos/mini": "workspace:*",
+    "@oceanicos/omega": "workspace:*",
     "@oceanicos/observer": "workspace:*",
     "@oceanicos/remember": "workspace:*",
     "@oceanicos/types": "workspace:*",

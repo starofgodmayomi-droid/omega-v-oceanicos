@@ -6,7 +6,7 @@
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types --test src/__tests__/omega.test.ts"
+    "test": "node --experimental-strip-types --test src/__tests__/omega.test.ts src/__tests__/fixpoint.test.ts"
   },
   "devDependencies": {
     "@types/node": "^26.6.4"

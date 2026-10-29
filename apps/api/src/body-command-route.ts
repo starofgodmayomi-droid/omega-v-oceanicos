@@ -1,26 +1,34 @@
 /**
- * Ω∞v Body Command — the KAI / ELION / OMEGA loop over HTTP.
+ * Ω∞v Body Command — the KAI / ELION / OMEGA fixpoint over HTTP.
  *
- * POST /v1/body/execute
+ * POST /v1/body/execute is one turn of the law in `@oceanicos/omega`:
+ *
+ *   f(Σ ∪ Hash(x))        if O(E(x)) ≡ VERIFIED
+ *   HALT ⊢ DIVERGENT      if K(x) ∈ SCAM
+ *   HALT ⊢ UNKNOWN        if Evidence(x) = ∅
+ *   HALT ⊢ NOT_EXECUTED   if Authority(x) < Required
+ *
  *   1. KAI Shield screens the intent (fail-closed; UNKNOWN is preserved).
  *   2. ELION executes only with the operator's explicit command as authorization.
- *   3. OMEGA reconciles the authorized record against the executed record.
- *   4. KAI appends the transition to a bounded, in-memory journal.
+ *   3. OMEGA reconciles the executed record against the declared one.
+ *   4. KAI appends the transition; only a VERIFIED delta joins Σ (memory).
  *
  * Scope: the engine is a label and the execution is local. No external model is
  * called, no deployment happens, and a VERIFIED status is digest reconciliation
- * of declared values — not proof of external reality. The journal is in-memory
- * and bounded at 256 entries; it is not durable and not an immutable ledger.
+ * of declared values — not proof of external reality. The journal and memory are
+ * in-memory, bounded at 256 entries, and reset on restart.
  */
 import { createHash } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
 import { evaluateIntent } from '@oceanicos/kai';
 import { executeAuthorized } from '@oceanicos/elion';
+import { stepFixpoint } from '@oceanicos/omega';
+import type { FixpointVerdict } from '@oceanicos/omega';
 
 export const BODY_JOURNAL_CAPACITY = 256;
 export const BODY_INTENT_MAX_LENGTH = 2000;
 
-export type BodyTransitionStatus = 'VERIFIED' | 'DIVERGENT' | 'UNKNOWN';
+export type BodyTransitionStatus = FixpointVerdict;
 
 export interface BodyJournalEntry {
   readonly seq: number;
@@ -56,7 +64,9 @@ const hashEntry = (
 
 export class BodyCommandJournal {
   private readonly entries: BodyJournalEntry[] = [];
+  private memory: string[] = [];
   private dropped = 0;
+  private memoryDropped = 0;
 
   public append(input: BodyJournalAppend): BodyJournalEntry {
     const previousHash = this.entries[this.entries.length - 1]?.hash ?? '0'.repeat(64);
@@ -77,6 +87,22 @@ export class BodyCommandJournal {
     return entry;
   }
 
+  /**
+   * Σ — the digests of deltas that reconciled. Set union, bounded like the
+   * journal; dropping an old digest is reported, never silent.
+   */
+  public setMemory(next: readonly string[]): void {
+    this.memory = [...next];
+    while (this.memory.length > BODY_JOURNAL_CAPACITY) {
+      this.memory.shift();
+      this.memoryDropped += 1;
+    }
+  }
+
+  public memoryState(): readonly string[] {
+    return [...this.memory];
+  }
+
   public all(): readonly BodyJournalEntry[] {
     return [...this.entries];
   }
@@ -88,6 +114,12 @@ export class BodyCommandJournal {
       dropped: this.dropped,
       durable: false as const,
       tip: this.entries[this.entries.length - 1]?.hash ?? null,
+      memory: {
+        count: this.memory.length,
+        capacity: BODY_JOURNAL_CAPACITY,
+        dropped: this.memoryDropped,
+        tip: this.memory[this.memory.length - 1] ?? null,
+      },
     };
   }
 }
@@ -109,7 +141,13 @@ export function registerBodyCommandRoute(
     const body = (request.body ?? {}) as ExecuteBody;
     const intent = typeof body.intent === 'string' ? body.intent.trim() : '';
     const engine = asLabel(body.engine, 'unspecified');
-    const operator = asLabel(body.operator, 'dashboard-operator');
+    const declaredOperator = body.operator;
+    // Absent operator → the dashboard's default declaration. Present but empty
+    // or non-textual → Authority(x) < Required, and the hands do not move.
+    const authorityDeclared =
+      declaredOperator === undefined ||
+      (typeof declaredOperator === 'string' && declaredOperator.trim().length > 0);
+    const operator = asLabel(declaredOperator, 'dashboard-operator');
 
     if (!intent) {
       return reply.status(400).send({
@@ -127,9 +165,38 @@ export function registerBodyCommandRoute(
       });
     }
 
-    // 1. KAI Shield — declared patterns only; a CLEAR result is not consent.
     const shield = evaluateIntent(intent);
-    if (!shield.allowed) {
+    const executedAt = new Date().toISOString();
+
+    const turn = await stepFixpoint(
+      {
+        value: { intent, engine },
+        scam: shield.status === 'BLOCKED',
+        evidence: shield.status !== 'UNKNOWN',
+        authority: authorityDeclared,
+        execute: async () => {
+          const execution = await executeAuthorized({
+            intent,
+            authorization: {
+              approvedBy: operator,
+              approvedAt: executedAt,
+              scope: 'v1/body/execute',
+            },
+            handler: () => ({ intent, engine }),
+          });
+          if (execution.status !== 'EXECUTED' || execution.observed === undefined) {
+            throw new Error(execution.reason);
+          }
+          return execution.observed;
+        },
+      },
+      journal.memoryState(),
+    );
+
+    journal.setMemory(turn.memory);
+
+    // 1. KAI Shield — declared patterns only; a CLEAR result is not consent.
+    if (turn.verdict === 'DIVERGENT' && !turn.executed) {
       const entry = journal.append({
         intent,
         engine,
@@ -147,57 +214,60 @@ export function registerBodyCommandRoute(
       });
     }
 
-    // 2. ELION — the operator's command is the authorization; the engine label
-    // is all that is requested, and the execution is local.
-    const executedAt = new Date().toISOString();
-    const execution = await executeAuthorized({
-      intent,
-      authorization: { approvedBy: operator, approvedAt: executedAt, scope: 'v1/body/execute' },
-      expected: { intent, engine },
-      handler: () => ({ intent, engine }),
-    });
-
-    if (execution.status === 'REFUSED' || execution.status === 'FAILED') {
+    // 3. Authority below the requirement — no execution happened.
+    if (turn.verdict === 'NOT_EXECUTED') {
       const entry = journal.append({
         intent,
         engine,
         operator,
-        status: 'UNKNOWN',
-        reason: execution.reason,
+        status: 'NOT_EXECUTED',
+        reason: turn.reason,
       });
-      return reply.status(500).send({
+      return reply.status(403).send({
         success: false,
-        status: 'UNKNOWN',
+        status: 'NOT_EXECUTED',
         phase: 'ELION',
-        reason: execution.reason,
+        reason: turn.reason,
         ledger: entry,
       });
     }
 
-    // 3. OMEGA — reconcile the authorized record against the executed record.
-    const observed = execution.observed as { intent: string; engine: string } | undefined;
-    const verified =
-      execution.verification?.status === 'VERIFIED' &&
-      observed?.intent === intent &&
-      observed?.engine === engine;
-    const status: BodyTransitionStatus = verified ? 'VERIFIED' : 'DIVERGENT';
-    const reason = verified
-      ? 'OMEGA reconciled the authorized record with the executed record.'
-      : execution.reason;
+    const entry = journal.append({
+      intent,
+      engine,
+      operator,
+      status: turn.verdict,
+      reason: turn.reason,
+    });
 
-    // 4. KAI — remember the transition.
-    const entry = journal.append({ intent, engine, operator, status, reason });
+    if (turn.verdict === 'UNKNOWN') {
+      return reply.status(500).send({
+        success: false,
+        status: 'UNKNOWN',
+        phase: turn.executed ? 'OMEGA' : 'ELION',
+        reason: turn.reason,
+        ledger: entry,
+      });
+    }
+
+    const verified = turn.verdict === 'VERIFIED';
 
     return reply.status(200).send({
       success: true,
-      status,
-      phase: 'KAI_REMEMBER',
+      status: turn.verdict,
+      phase: verified ? 'KAI_REMEMBER' : 'OMEGA',
       engine,
       mock: true,
       executed_at: executedAt,
       response: verified ? `Verified execution of: "${intent}"` : null,
       evidence_hash: entry.hash,
-      verification: execution.verification,
+      fixpoint: {
+        executed: turn.executed,
+        delta: turn.delta,
+        remembered: turn.remembered,
+        memory_count: turn.memory.length,
+      },
+      verification: turn.verification,
       ledger: entry,
     });
   });

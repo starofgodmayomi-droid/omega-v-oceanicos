@@ -6,7 +6,21 @@ Any AI agent (Cursor, Copilot, Base44, ChatGPT) operating within this repository
 
 ## THE FIXPOINT EQUATION
 
-`Ω∞v ::= VERIFY(ΔREALITY)`
+```text
+Ω∞v = Y(λf.λx.
+  f(Σ ∪ Hash(x))                if O(E(x)) ≡ VERIFIED
+  HALT ⊢ DIVERGENT              if K(x) ∈ SCAM
+  HALT ⊢ UNKNOWN                if Evidence(x) = ∅
+  HALT ⊢ NOT_EXECUTED           if Authority(x) < Required)
+
+Reality////Ω∞v := Y(λf.(M_{t+1} = M_t ∪ Δ | V(Δ) = ⊤))
+V ≡ (Expected ≡ Observed)
+```
+
+- **Y is the loop.** One turn is `f`; the three `HALT` branches are its only exits. A `VERIFIED` turn recurs with the grown body.
+- **Σ / M is memory.** It grows only by `Hash(x)` of a delta that reconciled, and `∪` is a set union: a repeated delta is not remembered twice. Every halting branch leaves memory untouched, so the body remembers only what matched its declared observation.
+- **Four verdicts, no fifth.** `VERIFIED` (recur), `DIVERGENT` (scam, or declared values disagree), `UNKNOWN` (no evidence, an execution that threw, or a value that could not be serialized), `NOT_EXECUTED` (authority below the requirement).
+- **Code.** `packages/omega/src/index.ts` (`stepFixpoint`) is one turn of the law; `POST /v1/body/execute` is that turn over HTTP and `GET /v1/body/ledger` reports both the bounded journal and memory Σ.
 
 `POSSIBLE ≠ KNOWN ≠ EXECUTED ≠ OBSERVED ≠ VERIFIED ≠ REALITY.`
 

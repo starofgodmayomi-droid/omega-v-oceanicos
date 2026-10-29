@@ -95,6 +95,10 @@ export function BodyCommandPanel() {
         setLastStatus('DIVERGENT');
         log('[KAI SHIELD]: 🚨 SCAM PATTERN DETECTED. HALTING.', 'shield');
         log('[OMEGA]: Status DIVERGENT. Execution blocked.', 'omega');
+      } else if (data.status === 'NOT_EXECUTED') {
+        setLastStatus('NOT_EXECUTED');
+        log('[ELION]: Authority below the requirement. The hands did not move.', 'elion');
+        log('[KAI]: Halt remembered. Nothing joined Σ.', 'kai');
       } else if (response.ok && data.status === 'VERIFIED') {
         setLastStatus('VERIFIED');
         log(`[ELION]: Local execution on ${engine} (engine label only).`, 'elion');

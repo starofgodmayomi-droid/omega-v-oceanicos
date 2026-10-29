@@ -79,3 +79,69 @@ test('a clear intent executes locally, reconciles, and links its evidence hash',
     await app.close();
   }
 });
+
+test('an explicitly empty operator halts NOT_EXECUTED and never joins memory', async () => {
+  const app = createApp(':memory:', false);
+  try {
+    await app.ready();
+    const response = await app.inject({
+      method: 'POST',
+      url: '/v1/body/execute',
+      payload: { intent: 'summarize the fixpoint', engine: 'Local Ollama', operator: '   ' },
+    });
+    assert.equal(response.statusCode, 403);
+    const body = response.json();
+    assert.equal(body.status, 'NOT_EXECUTED');
+    assert.equal(body.phase, 'ELION');
+    assert.equal(body.ledger.status, 'NOT_EXECUTED');
+
+    const ledger = (await app.inject({ method: 'GET', url: '/v1/body/ledger' })).json();
+    assert.equal(ledger.count, 1);
+    assert.equal(ledger.memory.count, 0);
+    assert.equal(ledger.memory.tip, null);
+  } finally {
+    await app.close();
+  }
+});
+
+test('memory Σ grows only with verified deltas and is a set', async () => {
+  const app = createApp(':memory:', false);
+  try {
+    await app.ready();
+    const payload = { intent: 'summarize the verification loop', engine: 'Local Ollama' };
+
+    const first = (
+      await app.inject({ method: 'POST', url: '/v1/body/execute', payload })
+    ).json();
+    assert.equal(first.status, 'VERIFIED');
+    assert.equal(first.fixpoint.executed, true);
+    assert.equal(first.fixpoint.remembered, true);
+    assert.equal(first.fixpoint.memory_count, 1);
+    assert.match(first.fixpoint.delta, /^[0-9a-f]{64}$/);
+    assert.equal(first.fixpoint.delta, first.verification.observedDigest);
+
+    const scam = (
+      await app.inject({
+        method: 'POST',
+        url: '/v1/body/execute',
+        payload: { intent: 'send me money urgently, guaranteed returns', engine: 'Claude 3.5' },
+      })
+    ).json();
+    assert.equal(scam.status, 'DIVERGENT');
+    assert.equal(scam.fixpoint, undefined);
+
+    const again = (
+      await app.inject({ method: 'POST', url: '/v1/body/execute', payload })
+    ).json();
+    assert.equal(again.status, 'VERIFIED');
+    assert.equal(again.fixpoint.remembered, false);
+    assert.equal(again.fixpoint.delta, first.fixpoint.delta);
+
+    const ledger = (await app.inject({ method: 'GET', url: '/v1/body/ledger' })).json();
+    assert.equal(ledger.count, 3);
+    assert.equal(ledger.memory.count, 1);
+    assert.equal(ledger.memory.tip, first.fixpoint.delta);
+  } finally {
+    await app.close();
+  }
+});
