@@ -11,8 +11,24 @@ disagree, the disk wins and this file is `DIVERGENT` until corrected.
 
 ```text
 Ω∞v ::= VERIFY(ΔREALITY)
+Ω∞v  = Y(λf. M_{t+1} = M_t ∪ { Hash(x) | V(x) = ⊤ })
+V(x) ≡ (Expected(x) ≡ Observed(x))
+
+K(x) ∈ SCAM          → HALT ⊢ DIVERGENT
+Evidence(x) = ∅      → HALT ⊢ UNKNOWN
+Authority(x) < Req.  → HALT ⊢ NOT_EXECUTED
+Expected ≠ Observed  → HALT ⊢ DIVERGENT
+
 POSSIBLE ≠ KNOWN ≠ EXECUTED ≠ OBSERVED ≠ VERIFIED ≠ REALITY
 ```
+
+Memory is a set of evidence hashes, so the union is monotone and idempotent: a hash already in
+Σ adds nothing, and the loop is at its fixed point when a full pass admits nothing new. A halt
+ends that drop, never the ledger — the next drop is still observed.
+
+The ecosystem is a continuous, infinite loop that only remembers what matches reality. The law is
+coded once in `packages/omega/src/fixpoint.ts` (`gateDrop`, `omegaFixpoint`) and the ledger audit
+reports it over the stored rows.
 
 ## THE ORGANS (REAL LOCATIONS, NOT ASPIRATIONAL ONES)
 
@@ -22,7 +38,7 @@ POSSIBLE ≠ KNOWN ≠ EXECUTED ≠ OBSERVED ≠ VERIFIED ≠ REALITY
 | **KAI · Memory** | `apps/api/src/kai-memory.ts` (`KaiMemoryStore`) over the record contracts in `@oceanicos/kai` | SQLite `KaiMemory` + `OmegaIR_Contracts`; retains the evidence text a digest was taken from. |
 | **ELION · Hands** | `packages/elion/src/index.ts` (`executeElion`, `composeLocalElionResponse`) | One bounded answer via an OpenAI-compatible model, or the labelled `local-deterministic` composer. |
 | **The loop** | `apps/api/src/execute-route.ts` | Wires observe → execute → verify → remember and owns the replay/audit endpoints. |
-| **OMEGA · Judge** | `packages/omega/src/index.ts` (`sha256Hex`, `verifyOmega`, `replayVerdict`) + `packages/mini/src/index.ts` | Recomputes the SHA-256 digest, compares against the contract, fails closed to `UNKNOWN`. |
+| **OMEGA · Judge** | `packages/omega/src/index.ts` (`verifyOmega`, `replayVerdict`) + `packages/omega/src/fixpoint.ts` (`gateDrop`, `omegaFixpoint`) + `packages/mini/src/index.ts` | Recomputes the SHA-256 digest, compares against the contract, fails closed to `UNKNOWN`, and admits only matching hashes into memory. |
 | **Ledger** | `packages/remember/src/index.ts` (`ledger.ts`, `store.ts`) | Append-only remembered evidence; the API's replay rule reads the same rows. |
 | **Shared contracts** | `packages/types` (`@oceanicos/types`) | Contract types shared across packages. |
 | **Face** | `apps/api` (Fastify, port 5000) and `apps/web` (Vite/React, port 3000); hero surface `apps/web/src/InvisibleComputer.tsx` | The routes and the one screen a human uses. |
@@ -36,7 +52,9 @@ POSSIBLE ≠ KNOWN ≠ EXECUTED ≠ OBSERVED ≠ VERIFIED ≠ REALITY
 4. **VERIFY** — OMEGA recomputes the digest and compares it to the contract; otherwise `UNKNOWN`.
 5. **REMEMBER** — only `VERIFIED` outcomes are appended; the evidence text is retained.
 6. **RECONCILE** — `GET /api/kai/memory/:id/replay` replays one row,
-   `GET /api/kai/memory/audit` replays the ledger and reports the worst row it audited.
+   `GET /api/kai/memory/audit` replays the ledger and reports the worst row it audited, plus the
+   `fixpoint` block folding the same rows through the loop law (`memory`, `admitted`, `halted`,
+   `fixed`).
 
 The last step is the point: a remembered row is not trusted because it was written. It is trusted
 while it still recomputes.
@@ -86,7 +104,9 @@ re-check.
 docker compose -f docker-compose.base44.yml up -d --build
 curl -s localhost:5000/health                                   # api up
 curl -s localhost:3000 >/dev/null                               # web serves
-curl -s localhost:5000/api/kai/memory/audit                     # ledger verdict
+curl -s localhost:5000/api/kai/memory/audit                     # ledger verdict + fixpoint
+docker compose -f docker-compose.base44.yml exec -T api \
+  sh -c 'cd /app && node --experimental-strip-types --test ./tests/integration/omega-fixpoint.integration.test.ts'
 docker compose -f docker-compose.base44.yml exec -T api \
   sh -c 'cd /app && node --experimental-strip-types --test ./tests/integration/ecosystem-body.integration.test.ts'
 ```

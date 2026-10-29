@@ -209,6 +209,14 @@ test('the remembered ledger audits every row in one call', async () => {
     assert.equal(clean.unknown, 0);
     assert.equal(clean.not_audited, 0);
 
+    // The ledger is at its fixed point: the one row's evidence recomputes, so
+    // memory holds exactly one hash and nothing halted.
+    assert.equal(clean.fixpoint.verdict, 'VERIFIED');
+    assert.equal(clean.fixpoint.memory, 1);
+    assert.equal(clean.fixpoint.admitted, 1);
+    assert.equal(clean.fixpoint.fixed, true);
+    assert.deepEqual(clean.fixpoint.halted, { divergent: 0, unknown: 0, not_executed: 0 });
+
     store.remember({
       intent: 'tampered evidence',
       evidenceHash: sha256('the claimed output'),
@@ -232,6 +240,14 @@ test('the remembered ledger audits every row in one call', async () => {
     const reasons = audit.records.map((row: any) => String(row.reason));
     assert.ok(reasons.some((reason: string) => /EVIDENCE_HASH_MISMATCH/.test(reason)));
     assert.ok(reasons.some((reason: string) => /EVIDENCE_TEXT_NOT_RETAINED/.test(reason)));
+
+    // The fold refuses the two broken rows: memory keeps only the hash whose
+    // evidence still recomputes, and each refusal halts on its own verdict.
+    assert.equal(audit.fixpoint.verdict, 'DIVERGENT');
+    assert.equal(audit.fixpoint.memory, 1);
+    assert.equal(audit.fixpoint.admitted, 1);
+    assert.deepEqual(audit.fixpoint.halted, { divergent: 1, unknown: 1, not_executed: 0 });
+    assert.equal(audit.fixpoint.fixed, true);
 
     // The bound is reported, never assumed: auditing one row leaves two unaudited.
     const bounded = (

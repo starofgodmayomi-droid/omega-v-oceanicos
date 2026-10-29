@@ -9,12 +9,20 @@
  * ledger audit so a record can never be judged one way singly and another way
  * in the ledger.
  */
-import { createHash } from 'node:crypto';
 import type { AuthorityLevel, KaiMemoryEvidenceRecord } from '@oceanicos/kai';
+import { sha256Hex } from './digest.js';
 
-export function sha256Hex(value: string): string {
-  return createHash('sha256').update(value, 'utf8').digest('hex');
-}
+export { sha256Hex } from './digest.js';
+export {
+  gateDrop,
+  omegaFixpoint,
+  type FixpointDrop,
+  type FixpointGate,
+  type FixpointHalt,
+  type FixpointHaltVerdict,
+  type FixpointResult,
+  type FixpointVerdict,
+} from './fixpoint.js';
 
 export type OmegaCheck = {
   id: string;

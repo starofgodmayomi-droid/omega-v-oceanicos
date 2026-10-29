@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { deriveAuthorityLevel, executeElion, expectedOutcomeFor } from '@oceanicos/elion';
 import { scanIntent, type AuthorityLevel, type OmegaContract } from '@oceanicos/kai';
-import { replayVerdict, sha256Hex, verifyOmega } from '@oceanicos/omega';
+import { omegaFixpoint, replayVerdict, sha256Hex, verifyOmega } from '@oceanicos/omega';
 import type { KaiMemoryStore, KaiMemoryRecord } from './kai-memory.js';
 
 type JsonError = (reply: any, status: number, error: string, extra?: Record<string, unknown>) => unknown;
@@ -201,22 +201,38 @@ export function registerExecuteRoute(
    * row makes the ledger DIVERGENT, otherwise any UNKNOWN row makes it UNKNOWN.
    * Only a ledger whose every audited row recomputes is VERIFIED. Rows beyond
    * the bound are counted in `not_audited`, never assumed good.
+   *
+   * `fixpoint` folds the same rows through the loop law: memory grows only
+   * with hashes whose evidence still recomputes, and every other row halts
+   * with DIVERGENT / UNKNOWN / NOT_EXECUTED without touching it.
    */
   const auditHandler = async (request: any) => {
     const rawLimit = request.query?.limit;
     const limit = rawLimit === undefined ? 50 : Number(rawLimit);
-    const rows = store
-      .listEvidence(Number.isFinite(limit) ? limit : 50)
-      .map((record) => ({
-        id: record.id,
-        intent: record.intent,
-        stored_hash: record.evidence_hash,
-        ...replayVerdict(record),
-      }));
+    const evidence = store.listEvidence(Number.isFinite(limit) ? limit : 50);
+    const rows = evidence.map((record) => ({
+      id: record.id,
+      intent: record.intent,
+      stored_hash: record.evidence_hash,
+      ...replayVerdict(record),
+    }));
     const total = store.count();
     const countOf = (status: string) => rows.filter((row) => row.status === status).length;
     const divergent = countOf('DIVERGENT');
     const unknown = countOf('UNKNOWN');
+
+    // The ledger as a fixed point: `M_{t+1} = M_t ∪ { Hash(x) | V(x) = ⊤ }`.
+    // Only a row whose evidence still recomputes may stay in memory; every
+    // other row halts with its own verdict and is counted, never assumed good.
+    const fixpoint = omegaFixpoint(
+      evidence.map((record) => ({
+        observed: record.evidence_text,
+        expectedHash: record.evidence_hash,
+        scam: scanIntent(record.intent).blocked,
+      }))
+    );
+    const haltedOf = (verdict: string) =>
+      fixpoint.halted.filter((halt) => halt.verdict === verdict).length;
 
     return {
       success: true,
@@ -234,6 +250,18 @@ export function registerExecuteRoute(
       verified: countOf('VERIFIED'),
       divergent,
       unknown,
+      fixpoint: {
+        verdict: fixpoint.verdict,
+        memory: fixpoint.memory.length,
+        admitted: fixpoint.admitted,
+        halted: {
+          divergent: haltedOf('DIVERGENT'),
+          unknown: haltedOf('UNKNOWN'),
+          not_executed: haltedOf('NOT_EXECUTED'),
+        },
+        steps: fixpoint.steps,
+        fixed: fixpoint.fixed,
+      },
       records: rows,
     };
   };
