@@ -126,6 +126,55 @@ test('authority below the required level halts NOT_EXECUTED and remembers nothin
   }
 });
 
+test('a remembered verdict is bound to its contract and reconciles after the fact', async () => {
+  const app = createApp(':memory:', false);
+  try {
+    const run = await app.inject({
+      method: 'POST',
+      url: '/api/execute',
+      payload: { intent: 'Explain how evidence-bound verification works' },
+    });
+    const body = run.json();
+    assert.equal(body.status, 'VERIFIED');
+
+    const detail = await app.inject({
+      method: 'GET',
+      url: `/api/kai/memory/${body.memory.id}`,
+    });
+    const detailBody = detail.json();
+    assert.equal(detail.statusCode, 200);
+    assert.equal(detailBody.record.contract_id, body.contract.id);
+    assert.equal(detailBody.contract.id, body.contract.id);
+
+    const verified = await app.inject({
+      method: 'POST',
+      url: `/api/kai/memory/${body.memory.id}/reconcile`,
+      payload: { output: body.response },
+    });
+    assert.equal(verified.statusCode, 200);
+    assert.equal(verified.json().status, 'VERIFIED');
+
+    const tampered = await app.inject({
+      method: 'POST',
+      url: `/api/kai/memory/${body.memory.id}/reconcile`,
+      payload: { output: `${body.response} (edited)` },
+    });
+    assert.equal(tampered.json().status, 'DIVERGENT');
+
+    const missing = await app.inject({
+      method: 'POST',
+      url: `/api/kai/memory/${body.memory.id}/reconcile`,
+      payload: {},
+    });
+    assert.equal(missing.json().status, 'UNKNOWN');
+
+    const absent = await app.inject({ method: 'GET', url: '/api/kai/memory/does-not-exist' });
+    assert.equal(absent.statusCode, 404);
+  } finally {
+    await app.close();
+  }
+});
+
 test('malformed intents fail closed with 400', async () => {
   const app = createApp(':memory:', false);
   try {

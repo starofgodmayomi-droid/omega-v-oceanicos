@@ -6,11 +6,12 @@ import type { AuthorityLevel } from './invisible-computer.js';
  * KAI — the memory of the Invisible Online Computer.
  *
  * Two durable tables:
- *   KaiMemory        — what was asked, the SHA-256 evidence, and the verdict.
+ *   KaiMemory         — what was asked, the SHA-256 evidence, and the verdict.
  *   OmegaIR_Contracts — the bounded contract each intent is verified against.
  *
  * MEMORY != PROOF: a row records that a verification happened; it does not
- * make the intent true.
+ * make the intent true. The row keeps a pointer to its contract so the
+ * `Expected ≡ Observed` comparison can be reconciled after the fact.
  */
 
 export type KaiMemoryRecord = {
@@ -19,6 +20,7 @@ export type KaiMemoryRecord = {
   intent: string;
   evidence_hash: string;
   status: string;
+  contract_id: string | null;
 };
 
 export type OmegaContract = {
@@ -40,7 +42,8 @@ export class KaiMemoryStore {
         timestamp TEXT NOT NULL,
         intent TEXT NOT NULL,
         evidence_hash TEXT NOT NULL,
-        status TEXT NOT NULL
+        status TEXT NOT NULL,
+        contract_id TEXT
       );
       CREATE INDEX IF NOT EXISTS "KaiMemory_timestamp_idx" ON "KaiMemory" (timestamp DESC);
       CREATE TABLE IF NOT EXISTS "OmegaIR_Contracts" (
@@ -51,6 +54,13 @@ export class KaiMemoryStore {
       );
       CREATE INDEX IF NOT EXISTS "OmegaIR_Contracts_intent_idx" ON "OmegaIR_Contracts" (intent);
     `);
+    // Additive migration for rows written before the contract pointer existed.
+    const memoryColumns = this.db.prepare('PRAGMA table_info("KaiMemory")').all() as Array<{
+      name: string;
+    }>;
+    if (!memoryColumns.some((column) => column.name === 'contract_id')) {
+      this.db.exec('ALTER TABLE "KaiMemory" ADD COLUMN contract_id TEXT');
+    }
   }
 
   createContract(input: {
@@ -77,24 +87,40 @@ export class KaiMemoryStore {
     return contract;
   }
 
-  remember(input: { intent: string; evidenceHash: string; status: string }): KaiMemoryRecord {
+  getContract(id: string): OmegaContract | null {
+    const row = this.db
+      .prepare(
+        'SELECT id, intent, authority_level, expected_outcome FROM "OmegaIR_Contracts" WHERE id = ?'
+      )
+      .get(id) as OmegaContract | undefined;
+    return row ?? null;
+  }
+
+  remember(input: {
+    intent: string;
+    evidenceHash: string;
+    status: string;
+    contractId?: string | null;
+  }): KaiMemoryRecord {
     const record: KaiMemoryRecord = {
       id: randomUUID(),
       timestamp: new Date().toISOString(),
       intent: input.intent,
       evidence_hash: input.evidenceHash,
       status: input.status,
+      contract_id: input.contractId ?? null,
     };
     this.db
       .prepare(
-        'INSERT INTO "KaiMemory" (id, timestamp, intent, evidence_hash, status) VALUES (?, ?, ?, ?, ?)'
+        'INSERT INTO "KaiMemory" (id, timestamp, intent, evidence_hash, status, contract_id) VALUES (?, ?, ?, ?, ?, ?)'
       )
       .run(
         record.id,
         record.timestamp,
         record.intent,
         record.evidence_hash,
-        record.status
+        record.status,
+        record.contract_id
       );
     return record;
   }
@@ -103,9 +129,18 @@ export class KaiMemoryStore {
     const bounded = Math.min(Math.max(Math.trunc(limit) || 10, 1), 50);
     return this.db
       .prepare(
-        'SELECT id, timestamp, intent, evidence_hash, status FROM "KaiMemory" ORDER BY timestamp DESC, rowid DESC LIMIT ?'
+        'SELECT id, timestamp, intent, evidence_hash, status, contract_id FROM "KaiMemory" ORDER BY timestamp DESC, rowid DESC LIMIT ?'
       )
       .all(bounded) as KaiMemoryRecord[];
+  }
+
+  getMemory(id: string): KaiMemoryRecord | null {
+    const row = this.db
+      .prepare(
+        'SELECT id, timestamp, intent, evidence_hash, status, contract_id FROM "KaiMemory" WHERE id = ?'
+      )
+      .get(id) as KaiMemoryRecord | undefined;
+    return row ?? null;
   }
 
   count(): number {
