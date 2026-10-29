@@ -16,6 +16,7 @@ import { ConnectorPanel } from './ConnectorPanel';
 import { WholeEcosystemDashboard } from './WholeEcosystemDashboard';
 import { WaterFlowPanel } from './WaterFlowPanel';
 import { ExecuteLoopPanel } from './ExecuteLoopPanel';
+import { MemoryStatePanel } from './MemoryStatePanel';
 import { LifecycleFlow, deriveStageStates, type LifecycleStage } from './LifecycleFlow';
 import { GlobeViewport } from './GlobeViewport';
 import { bindGlobeEvidence } from './globe-shell';
@@ -766,6 +767,7 @@ export function App() {
         />
         <WaterFlowPanel />
         <ExecuteLoopPanel />
+        <MemoryStatePanel />
 
         {/* Prompt */}
         <h1

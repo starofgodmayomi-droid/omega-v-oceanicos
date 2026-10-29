@@ -56,6 +56,7 @@ export function ExecuteLoopPanel() {
         throw new Error(payload?.error || `HTTP ${response.status}`);
       }
       setResult(payload as ExecuteResponse);
+      window.dispatchEvent(new Event('omega:memory-updated'));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'execute loop unavailable');
     } finally {

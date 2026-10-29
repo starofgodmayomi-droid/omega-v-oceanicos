@@ -79,11 +79,12 @@ Observed 2026-10-29 in this sandbox (`docker compose -f docker-compose.base44.ym
 | Sensory | `@oceanicos/observer` | **OBSERVED (simulated)** | `GET /v1/ecosystem/body` → `layers.sensory.status: OBSERVED`, generated telemetry |
 | Verification | `@oceanicos/verification`, OMEGA gate | **VERIFIED (local)** | kernel + execute-loop suites: 8/8 pass at this commit |
 | Memory — audit | `apps/api/src/kai-memory.ts` | **VERIFIED (local hash chain)** | journal height > 0, chain re-verified on read |
-| Memory — Σ (verified-only) | `runRealityFixedPoint` | **OBSERVED, NOT DURABLE** | lives in the process; no store behind it |
+| Memory — Σ (verified-only) | `apps/api/src/kai-verified-memory.ts` | **VERIFIED (durable, hash-chained)** | `GET /v1/execute/verified` → 1 drop, chain intact after an API restart |
+| Memory — export | `GET /v1/execute/memory/export` | **VERIFIED** | `omega.memory.export.v1` attachment carrying journal + Σ |
 | Execution | bounded executor in `execute-route.ts` | **BOUNDED** | answers runtime-state intents only |
 | Shield | 8 declarative rules | **VERIFIED** | "Guaranteed returns, send money now." → `DIVERGENT` |
 | Attestation | `POST /v1/attest`, HMAC-SHA256 | **DEGRADED (dev key)** | boots without `OMEGA_SIGNING_KEY`; placeholder in `.env.base44-defaults` |
-| Surface | 69 registered routes, 43 integration test files | **COUNTED** | route grep + `tests/integration` listing |
+| Surface | 71 registered routes, 44 integration test files | **COUNTED** | route inventory + `tests/integration` listing |
 | Kernel self-description | `GET /v1/kernel/capabilities` | **`execution: local-simulation-only`** | `remoteMutation: false`, `externalDeployment: false`, `credentialHandling: false` |
 
 ---
@@ -100,8 +101,6 @@ Stated plainly, because a body map that hides its absences is a prompt wearing a
 - **No cloud, no deployment.** The kernel reports `externalDeployment: false`,
   `remoteMutation: false`. This sandbox is a development environment; the app has
   no published URL.
-- **No durable Σ.** Verified-only memory is a value returned by a pure function.
-  Restart the API and it is gone (the *audit* journal survives; Σ does not).
 - **No physical-reality claim.** The kernel's own limitation text: *"cryptographic
   proofs attest simulated state, not physical reality"*, and *"distributed
   consistency and external execution are unverified"*.
@@ -109,6 +108,24 @@ Stated plainly, because a body map that hides its absences is a prompt wearing a
 ---
 
 ## 5. Next important Δ
+
+**Landed (2026-10-29) — persist Σ.** `FileKaiVerifiedStore` writes verified drops
+hash-chained to `OMEGA_KAI_VERIFIED_PATH`; `GET /v1/execute/verified` reads them;
+`GET /v1/execute/memory/export` exports journal + Σ together; `MemoryStatePanel`
+renders both columns with the export button. Observed in the browser: Σ went from
+`0 drops` to `#1 VERIFIED` beside a journal of 12, and the export request returned
+200. Restart survival and degrade-closed tampering are asserted in
+`tests/integration/kai-verified-memory.integration.test.ts`.
+
+**Next important Δ — make Σ provable against the journal.** Σ carries a `dropHash`
+and the journal carries an `evidenceHash`, but nothing yet cross-checks that every
+Σ drop corresponds to a VERIFIED journal entry. That is the last place where
+"verified-only memory" is a claim rather than a check. Acceptance: the export
+gains a `reconciliation` block proving `Σ ⊆ journal(VERIFIED)` and naming any
+orphan, plus a test that plants an orphan Σ line and sees it reported — never
+silently accepted.
+
+Superseded rationale, kept because it is why this landed:
 
 **Persist Σ — the verified-only memory — so the body can keep what matched reality
 across a restart.**
@@ -146,6 +163,8 @@ curl -s localhost:5000/health
 curl -s localhost:5000/v1/kernel/capabilities
 curl -s localhost:5000/v1/ecosystem/body | head -c 400
 curl -s "localhost:5000/v1/execute/memory?limit=1"
+curl -s "localhost:5000/v1/execute/verified?limit=1"
+curl -s -D - -o /dev/null localhost:5000/v1/execute/memory/export
 docker compose -f docker-compose.base44.yml exec -T api sh -c \
   'node --experimental-strip-types --test-concurrency=1 --test \
    ./tests/integration/reality-fixed-point.integration.test.ts \

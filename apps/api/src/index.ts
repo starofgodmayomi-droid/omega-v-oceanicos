@@ -23,6 +23,7 @@ import { registerValueNavigatorRoute } from './value-navigator-route.js';
 import { registerConnectorObservationRoute, type ConnectorAdmissionEvidenceResolver } from './connector-observation-route.js';
 import { registerExecuteRoute } from './execute-route.js';
 import { FileKaiMemoryStore } from './kai-memory.js';
+import { FileKaiVerifiedStore } from './kai-verified-memory.js';
 import { OmegaCommandStore, OmegaIdempotencyConflictError, registerOmegaRoutes } from './omega.js';
 import { registerMeshValidationRoute } from './mesh-route.js';
 import {
@@ -57,6 +58,7 @@ export type CreateAppOptions = {
   valueNavigatorPath?: string;
   connectorObservationPath?: string;
   kaiMemoryPath?: string;
+  kaiVerifiedPath?: string;
   githubFetch?: typeof fetch;
   connectorAdmissionEvidence?: ConnectorAdmissionEvidenceResolver;
   pipelineAdmissionEvidence?: PipelineAdmissionEvidenceResolver;
@@ -169,6 +171,11 @@ export function createApp(
     || process.env.OMEGA_KAI_MEMORY_PATH?.trim()
     || (dbPath === ':memory:' ? ':memory:' : `${dbPath}.kai-memory.jsonl`);
   const kaiMemoryStore = new FileKaiMemoryStore(kaiMemoryPath);
+  const kaiVerifiedPath =
+    options.kaiVerifiedPath?.trim()
+    || process.env.OMEGA_KAI_VERIFIED_PATH?.trim()
+    || (dbPath === ':memory:' ? ':memory:' : `${dbPath}.kai-verified.jsonl`);
+  const kaiVerifiedStore = new FileKaiVerifiedStore(kaiVerifiedPath);
 
   fastify.addHook('onClose', async () => {
     ledgerMemory.close();
@@ -257,6 +264,7 @@ export function createApp(
     await scope.register(rateLimit, { global: false });
     registerPipelineRoute(scope, jsonError, options.pipelineAdmissionEvidence);
     registerExecuteRoute(scope, jsonError, kaiMemoryStore, {
+      verifiedStore: kaiVerifiedStore,
       // ELION's bounded executor reads only what this process observed.
       readEvidence: () => {
         const chain = kernel.verifyLedger();

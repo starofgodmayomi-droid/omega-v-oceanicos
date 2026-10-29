@@ -144,6 +144,8 @@ POST /v1/value-navigator/proposals
 POST /v1/value-navigator/proposals/:proposalId/observe
 POST /v1/execute
 GET  /v1/execute/memory
+GET  /v1/execute/memory/export
+GET  /v1/execute/verified
 ```
 
 ### POST /v1/execute — the KAI/ELION loop
@@ -171,6 +173,19 @@ KAI REMEMBER`. Body: `{ "intent": "...", "expectedOutcome"?: "...", "authority"?
 `GET /v1/execute/memory?limit=20` returns the remembered drops, newest first,
 with the journal height. Memory is evidence of what this process recorded — not
 proof of external reality, and not durable across a destroyed volume.
+
+`GET /v1/execute/verified?limit=20` returns **Σ**, the verified-only memory: only
+drops OMEGA judged `VERIFIED` are appended, so `DIVERGENT`, `UNKNOWN` and
+`NOT_EXECUTED` verdicts leave it byte-identical (`M(t+1) = M(t) ∪ Δ | V(Δ) = ⊤`).
+It is hash-chained and stored beside the journal at `OMEGA_KAI_VERIFIED_PATH`
+(default `${OMEGA_DB_PATH}.kai-verified.jsonl`). It degrades closed: a tampered or
+unreadable line answers `503 KAI_VERIFIED_MEMORY_INTEGRITY_DEGRADED` rather than
+silently reloading a shorter history.
+
+`GET /v1/execute/memory/export` returns the full memory state as one JSON document
+(`omega.memory.export.v1`), sent as an attachment: the journal (every verdict) and
+Σ (verified only), each with its height and integrity, plus the fixed-point law and
+the limitation string. It reads only what this process recorded.
 
 Value Navigator proposals always remain `decision: REVIEW`,
 `authorized: false`, and `NOT_EXECUTED`. Observations are supplied by the

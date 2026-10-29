@@ -82,4 +82,7 @@ once, the kernel resolves them fail-closed:
   `DIVERGENT` and `UNKNOWN`, because an audit trail that deletes its own
   failures is not an audit trail. `Σ` is the narrower memory the law describes:
   only drops with `V(Δ) = ⊤`.
-- Memory is not durable across a destroyed volume, and neither is this law.
+- Σ is now persisted hash-chained at `OMEGA_KAI_VERIFIED_PATH`
+  (`apps/api/src/kai-verified-memory.ts`), read at `GET /v1/execute/verified` and
+  exported with the journal at `GET /v1/execute/memory/export`. It is still not
+  durable across a destroyed volume, and neither is this law.

@@ -14,7 +14,7 @@
  */
 import { createHash } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
-import { judgeDrop } from '@oceanicos/mini';
+import { REALITY_FIXED_POINT_LAW, hashDrop, judgeDrop } from '@oceanicos/mini';
 import {
   KAI_AUTHORITY_LEVELS,
   type FileKaiMemoryStore,
@@ -22,6 +22,7 @@ import {
   type KaiMemoryEntry,
   type KaiMemoryStatus,
 } from './kai-memory.js';
+import type { FileKaiVerifiedStore, KaiVerifiedEntry } from './kai-verified-memory.js';
 
 type JsonError = (reply: any, status: number, error: string, extra?: Record<string, unknown>) => unknown;
 
@@ -102,6 +103,17 @@ function parseAuthority(value: unknown): KaiAuthorityLevel {
   return value as KaiAuthorityLevel;
 }
 
+function verifiedReceipt(entry: KaiVerifiedEntry | null, store?: FileKaiVerifiedStore): Record<string, unknown> {
+  return {
+    admitted: Boolean(entry),
+    id: entry?.id ?? null,
+    sequence: entry?.sequence ?? null,
+    hash: entry?.hash ?? null,
+    dropHash: entry?.dropHash ?? null,
+    height: store?.height() ?? null,
+  };
+}
+
 function receipt(entry: KaiMemoryEntry | null, remembered: boolean): Record<string, unknown> {
   return remembered && entry
     ? { id: entry.id, sequence: entry.sequence, hash: entry.hash, previousHash: entry.previousHash, timestamp: entry.timestamp }
@@ -112,7 +124,7 @@ export function registerExecuteRoute(
   fastify: FastifyInstance,
   jsonError: JsonError,
   store: FileKaiMemoryStore,
-  options: { readonly readEvidence?: ExecuteEvidenceReader } = {},
+  options: { readonly readEvidence?: ExecuteEvidenceReader; readonly verifiedStore?: FileKaiVerifiedStore } = {},
 ): void {
   fastify.post('/v1/execute', {
     config: { rateLimit: { max: 30, timeWindow: '1 minute' } },
@@ -224,17 +236,15 @@ export function registerExecuteRoute(
     // have, so it halts NOT_EXECUTED rather than inventing an answer. The
     // declared expectation is a fragment the report must contain, because a
     // runtime report carries live values around it.
-    const judged = judgeDrop(
-      {
-        id: intent,
-        scam: false,
-        evidence: output ? [output] : [],
-        authority: { held: canAnswer ? 1 : 0, required: 1 },
-        expected: expectedOutcome ?? null,
-        observed: output,
-      },
-      'CONTAINS',
-    );
+    const drop = {
+      id: intent,
+      scam: false,
+      evidence: output ? [output] : [],
+      authority: { held: canAnswer ? 1 : 0, required: 1 },
+      expected: expectedOutcome ?? null,
+      observed: output,
+    };
+    const judged = judgeDrop(drop, 'CONTAINS');
     const status: KaiMemoryStatus = judged.verdict;
     const reason =
       judged.reason === 'EVIDENCE_EMPTY'
@@ -259,6 +269,10 @@ export function registerExecuteRoute(
     // STEP 5 — KAI REMEMBER: seal the drop with its own verdict.
     const entry = store.append({ intent, evidenceHash, status, authorityLevel, expectedOutcome, reason });
     steps.push({ step: 'KAI_REMEMBER', status, detail: `Remembered as ${status} at sequence ${entry.sequence}.` });
+    // Σ admits only what matched reality. Every other verdict leaves it untouched.
+    const verifiedEntry = status === 'VERIFIED' && options.verifiedStore
+      ? options.verifiedStore.append({ intent, evidenceHash, dropHash: hashDrop(drop) })
+      : null;
 
     return reply.status(200).send({
       success: true,
@@ -271,6 +285,7 @@ export function registerExecuteRoute(
       hashAlgorithm: 'SHA-256',
       steps,
       memory: receipt(entry, true),
+      verified: verifiedReceipt(verifiedEntry, options.verifiedStore),
     });
   });
 
@@ -284,6 +299,51 @@ export function registerExecuteRoute(
       height: store.height(),
       integrity: 'verified-local-hash-chain',
       limitation: 'KAI memory is evidence of what this process recorded, not proof of external reality and not durable across a destroyed volume',
+    };
+  });
+
+  // Σ — the verified-only memory: M(t+1) = M(t) ∪ Δ | V(Δ) = ⊤.
+  fastify.get('/v1/execute/verified', async (request: any, reply) => {
+    if (!options.verifiedStore) return jsonError(reply, 503, 'KAI_VERIFIED_MEMORY_UNAVAILABLE');
+    if (!options.verifiedStore.verifyIntegrity()) return jsonError(reply, 503, 'KAI_VERIFIED_MEMORY_INTEGRITY_DEGRADED');
+    const requested = Number(request.query?.limit ?? 20);
+    return {
+      success: true,
+      entries: options.verifiedStore.recent(Number.isFinite(requested) ? requested : 20),
+      height: options.verifiedStore.height(),
+      integrity: 'verified-local-hash-chain',
+      law: REALITY_FIXED_POINT_LAW,
+      limitation: 'Σ keeps only drops OMEGA judged VERIFIED; it is evidence of what this process matched, not proof of external reality and not durable across a destroyed volume',
+    };
+  });
+
+  // Full memory state: the audit journal (every verdict) and Σ (verified only).
+  fastify.get('/v1/execute/memory/export', async (_request: any, reply) => {
+    const generatedAt = new Date().toISOString();
+    const verifiedStore = options.verifiedStore;
+    const verifiedEntries = verifiedStore ? [...verifiedStore.all()].reverse() : null;
+    reply.header('content-disposition', `attachment; filename="omega-memory-${generatedAt.replace(/[:.]/g, '-')}.json"`);
+    reply.header('cache-control', 'no-store');
+    return {
+      success: true,
+      contract: 'omega.memory.export.v1',
+      generatedAt,
+      law: REALITY_FIXED_POINT_LAW,
+      journal: {
+        kind: 'OMEGA_KAI_MEMORY',
+        integrity: store.verifyIntegrity() ? 'verified-local-hash-chain' : 'DEGRADED',
+        height: store.height(),
+        entries: [...store.all()].reverse(),
+      },
+      verified: verifiedStore && verifiedEntries
+        ? {
+            kind: 'OMEGA_KAI_VERIFIED_MEMORY',
+            integrity: verifiedStore.verifyIntegrity() ? 'verified-local-hash-chain' : 'DEGRADED',
+            height: verifiedStore.height(),
+            entries: verifiedEntries,
+          }
+        : null,
+      limitation: 'This export is evidence of what this process recorded. It is not proof of external reality, not authority to act, and not durable across a destroyed volume.',
     };
   });
 }

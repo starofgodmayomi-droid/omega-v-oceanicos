@@ -72,6 +72,21 @@ written as one law: `Y(λf.λx. f(Σ ∪ Hash(x)) | O(E(x)) ≡ VERIFIED)` with 
 - The kernel is pure: it never reads the world, so `VERIFIED` there means "expected equalled
   observed *as supplied*". Do not surface it as an observation.
 
+## Σ — verified-only memory (durable)
+`apps/api/src/kai-verified-memory.ts` (`FileKaiVerifiedStore`) is the durable form of
+`M(t+1) = M(t) ∪ Δ | V(Δ) = ⊤`. `POST /v1/execute` appends to it **only** when OMEGA's
+verdict is `VERIFIED`; every other verdict leaves the file byte-identical.
+- Path: `OMEGA_KAI_VERIFIED_PATH` / `CreateAppOptions.kaiVerifiedPath` (default `${OMEGA_DB_PATH}.kai-verified.jsonl`).
+- Read: `GET /v1/execute/verified?limit=20`. Full state: `GET /v1/execute/memory/export`
+  (`omega.memory.export.v1`, `content-disposition: attachment`) carrying the journal **and** Σ.
+- Degrades closed: a tampered/unreadable line → `503 KAI_VERIFIED_MEMORY_INTEGRITY_DEGRADED`,
+  and `verified.integrity` reads `DEGRADED` in the export. Do not "repair" it by truncating.
+- UI: `apps/web/src/MemoryStatePanel.tsx` (journal column beside Σ, export button), mounted
+  after `ExecuteLoopPanel` in `App.tsx`. `ExecuteLoopPanel` fires `omega:memory-updated` after a
+  run so the panel refreshes; the panel also has its own Refresh button.
+- Route inventory grew 69 → 71 (`api-route-contract.integration.test.ts` asserts the exact count).
+- Test: `node --experimental-strip-types --test-concurrency=1 --test ./tests/integration/kai-verified-memory.integration.test.ts`
+
 ## Fixed bug
 `apps/api/src/index.ts` line 204: `persistenceEncryptionKey` was undefined → changed to `encryptionEnabled(persistenceKey)` to match the pattern used at lines 163/165.
 
