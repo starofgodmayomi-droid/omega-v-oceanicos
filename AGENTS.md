@@ -27,7 +27,7 @@ docker compose -f docker-compose.base44.yml up -d
 - `apps/api/src/runtime-globals.d.ts` declares a global `persistenceEncryptionKey` var; only `tsc` picks it up, not ts-node's type-checker.
 - `apps/api/tsconfig.json` `include` lists only `src/index.ts` + the `.d.ts`, but tsc follows imports so all src files compile.
 - **Workspace packages must be built** before the API can start — their `main` points to `dist/index.js`. The setup service builds them in dependency order.
-- **SSE limitation**: the `/v1/stream` EventSource endpoint won't connect through the preview proxy (long-lived connections are unsupported). This shows as "Reconnecting…" in the UI but doesn't affect REST endpoints.
+- **SSE + CORS**: `/v1/stream` writes straight to the raw response, so the `@fastify/cors` hook headers never reach the client. The handler sets `Access-Control-Allow-Origin` itself before flushing; without it the browser blocks the EventSource with a CORS error. The UI also polls `/v1/block/tip` every 5s while the stream is disconnected.
 
 ## New roadmap packages (C6/C7/Authorization)
 - **`@omega-v/reconciliation`** (C6): expected↔actual comparison → VERIFIED/DIVERGENT/UNKNOWN/NOT_EXECUTED with SHA-256 evidence. API: `POST /v1/reconciliation/reconcile`, `POST /v1/reconciliation/batch`.

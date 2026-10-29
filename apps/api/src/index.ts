@@ -240,6 +240,9 @@ export function createApp(
   fastify.get('/v1/block/tip', { preHandler: requireReadAccess }, async () => ({ success: true, status: 'ONLINE', tip: ledgerMemory.getTip() }));
   fastify.get('/v1/stream', { preHandler: requireReadAccess }, async (request: any, reply) => {
     if (streamClients.size >= MAX_STREAM_CLIENTS) return jsonError(reply, 503, 'STREAM_CAPACITY_REACHED', { limit: MAX_STREAM_CLIENTS });
+    // This handler writes to the raw response and never goes through Fastify's reply
+    // pipeline, so the @fastify/cors hook headers are never applied — set them here.
+    reply.raw.setHeader('Access-Control-Allow-Origin', '*');
     reply.raw.setHeader('Content-Type', 'text/event-stream');
     reply.raw.setHeader('Cache-Control', 'no-cache');
     reply.raw.setHeader('Connection', 'keep-alive');
