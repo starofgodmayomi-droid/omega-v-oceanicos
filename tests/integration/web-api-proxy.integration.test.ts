@@ -13,6 +13,7 @@ const webApiClientPaths = [
   '../../apps/web/src/EcosystemPanel.tsx',
   '../../apps/web/src/DivergenceAlertsPanel.tsx',
   '../../apps/web/src/ValueNavigatorPanel.tsx',
+  '../../apps/web/src/RepoAccessPanel.tsx',
   '../../apps/web/src/TransitionProvenancePanel.tsx',
 ];
 

@@ -49,6 +49,18 @@ docker compose -f docker-compose.base44.yml up -d
 ## Single body compression (4×4×4×4)
 `GET /v1/ecosystem/body` carries a `compression` block: the seven runtime layers projected onto four axes of four coordinates (256 cells) with a local compress→expand proof. `POST /v1/ecosystem/body/expand` takes `{ compression }` and returns the records; a tampered digest is `400 DIGEST_MISMATCH`. Contract: `packages/mini/src/single-body.ts`; doc: `docs/SINGLE-BODY-4X4X4X4.md`; UI: `apps/web/src/SingleBodyPanel.tsx`. Coordinates are a declared projection (`body.layers.v1`), not inferred truth.
 
+## Repository access control (capability ≠ authority)
+`apps/api/src/repo-access.ts` is the repository access boundary. An operation is admitted only when every independent predicate holds — registered operation, available key, capability present, valid signature, not expired, and exact subject/operation/scope match. The first failing predicate is the recorded reason.
+
+- **Operations** (declared, no implied hierarchy): `repo:metadata:read`, `repo:file:read`, `repo:file:write`, `repo:merge`. An unknown operation is denied `OPERATION_NOT_REGISTERED`.
+- **Capability**: HMAC-SHA256 over `omega-repo-access.v1\n<subject>\n<operation>\n<scope>\n<expiresAt>`. Key = `OMEGA_REPO_ACCESS_KEY`, falling back to `OMEGA_SIGNING_KEY`; shorter than 32 chars counts as unavailable, so grant answers `503 CAPABILITY_KEY_UNAVAILABLE` and evaluation denies instead of admitting.
+- **Routes**: `POST /v1/repo/access/grant` (admin), `POST /v1/repo/access/evaluate` (admin), `GET /v1/repo/access/policy` (read), `GET /v1/repo/access/audit?limit=` (read). Unknown body fields are rejected, so a caller cannot supply its own authority claims.
+- **Scope** defaults to `OMEGA_SOURCE_REPOSITORY` (fallback `starofgodmayomi-droid/omega-v-oceanicos`) and can be overridden per request.
+- **Audit**: append-only JSONL at `<dbPath>.repo-access.jsonl`, SHA-256 hash-chained from `omega-repo-access-genesis-v1`. Every decision is recorded with `executed: false`; a tampered or reordered line makes every audit read answer `503 REPO_ACCESS_AUDIT_INTEGRITY_DEGRADED` and blocks further appends.
+- **Evaluation never executes a repository operation.** It answers `ALLOW`/`DENY` with a reason and an audit id, so a decision is evidence, not a mutation.
+- **UI**: `apps/web/src/RepoAccessPanel.tsx` on the main surface — issue a capability, evaluate access, and read the audit chain.
+- **Tests**: `node --experimental-strip-types --test ./tests/integration/repo-access-control.integration.test.ts` (needs `apps/api/dist` built, like the other route tests).
+
 ## Fixed bug
 `apps/api/src/index.ts` line 204: `persistenceEncryptionKey` was undefined → changed to `encryptionEnabled(persistenceKey)` to match the pattern used at lines 163/165.
 

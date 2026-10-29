@@ -25,6 +25,7 @@ import { OmegaCommandStore, OmegaIdempotencyConflictError, registerOmegaRoutes }
 import { registerMeshValidationRoute } from './mesh-route.js';
 import { KaiMemoryStore } from './kai-memory.js';
 import { registerExecuteRoute } from './execute-route.js';
+import { FileRepoAccessStore, registerRepoAccessRoute, repoAccessKeyFrom } from './repo-access.js';
 import {
   ENCRYPTION_ALGORITHM,
   appendEvent,
@@ -165,6 +166,11 @@ export function createApp(
   const connectorObservationStore = new FileConnectorObservationStore(connectorObservationPath);
   const kaiMemoryPath = dbPath === ':memory:' ? ':memory:' : `${dbPath}.kai.db`;
   const kaiMemory = new KaiMemoryStore(kaiMemoryPath);
+  const repoAccessPath = dbPath === ':memory:' ? ':memory:' : `${dbPath}.repo-access.jsonl`;
+  const repoAccessStore = new FileRepoAccessStore(repoAccessPath);
+  const repoAccessKey = () => repoAccessKeyFrom(process.env);
+  const sourceRepository =
+    process.env.OMEGA_SOURCE_REPOSITORY?.trim() || 'starofgodmayomi-droid/omega-v-oceanicos';
 
   fastify.addHook('onClose', async () => {
     ledgerMemory.close();
@@ -260,6 +266,15 @@ export function createApp(
   registerRealityRoute(fastify, authMode, Boolean(attestationSigningKey), Boolean(ledgerMemory.getTip()));
   registerDependencyRoute(fastify);
   registerValueNavigatorRoute(fastify, valueNavigatorStore, jsonError);
+  registerRepoAccessRoute(fastify, {
+    store: repoAccessStore,
+    resolveKey: repoAccessKey,
+    jsonError,
+    requireReadAccess,
+    requireAdminAccess,
+    authMode,
+    defaultScope: sourceRepository,
+  });
   registerConnectorObservationRoute(fastify, jsonError, connectorObservationStore, {
     githubFetch: options.githubFetch,
     resolveAdmissionEvidence: options.connectorAdmissionEvidence,

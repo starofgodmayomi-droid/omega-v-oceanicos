@@ -13,6 +13,7 @@ import { MoodCodexPanel } from './MoodCodexPanel';
 import { DivergenceAlertsPanel } from './DivergenceAlertsPanel';
 import { ValueNavigatorPanel } from './ValueNavigatorPanel';
 import { ConnectorPanel } from './ConnectorPanel';
+import { RepoAccessPanel } from './RepoAccessPanel';
 import { WholeEcosystemDashboard } from './WholeEcosystemDashboard';
 import { InvisibleComputer } from './InvisibleComputer';
 import { WaterFlowPanel } from './WaterFlowPanel';
@@ -878,6 +879,7 @@ export function App() {
         <DivergenceAlertsPanel />
         <ValueNavigatorPanel />
         <ConnectorPanel />
+        <RepoAccessPanel />
 
         <IntentFlow
           command={omegaCommand}
