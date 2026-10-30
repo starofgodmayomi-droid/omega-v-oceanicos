@@ -167,6 +167,38 @@ export type {
   BoundedParallelOptions,
 } from './parallel.js';
 export type { OmegaWaterFlowInput } from './water-flow.js';
+export {
+  ECOSYSTEM_BODY_EQUATION_ID,
+  ECOSYSTEM_BODY_EQUATION_SOURCE,
+  ECOSYSTEM_BODY_REALITY,
+  EQUATION_LAW_OBSERVATION,
+  EQUATION_TEXT,
+  MAX_EQUATION_SURFACES,
+  MAX_OBSERVED_FILE_BYTES,
+  REPO_OUTWARD_RING,
+  REPO_OUTWARD_ROLES,
+  compressRepoEquation,
+  compressRepoTowardUpgrade,
+  expandRepoEquation,
+  observeOutwardFiles,
+  reconcileOutwardExpansion,
+} from './ecosystem-body-equation.js';
+export type {
+  EquationBody,
+  EquationCompression,
+  EquationExpansion,
+  EquationHalt,
+  EquationHaltVerdict,
+  EquationIssue,
+  EquationIssueCode,
+  EquationMemoryEntry,
+  OutwardReconciliation,
+  OutwardSurface,
+  RepoOutwardRole,
+  RepoSurfaceObservation,
+  RepoUpgradeCompression,
+  UpgradeCandidate,
+} from './ecosystem-body-equation.js';
 
 export function executeOceanicosMaxExpansion(): CryptographicBlock {
   const kernelChain = new PluralisticHashChain();

@@ -6,7 +6,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { MAX_PROOF_OF_WORK_ATTEMPTS, RememberEngine } from '@oceanicos/remember';
-import { FileConnectorObservationStore, FileValueNavigatorStore, MiniKernel, compressSingleBody, expandSingleBody } from '@oceanicos/mini';
+import { FileConnectorObservationStore, FileValueNavigatorStore, MiniKernel, compressRepoEquation, compressRepoTowardUpgrade, compressSingleBody, expandRepoEquation, expandSingleBody, ECOSYSTEM_BODY_EQUATION_ID, ECOSYSTEM_BODY_EQUATION_SOURCE, ECOSYSTEM_BODY_REALITY, EQUATION_LAW_OBSERVATION, EQUATION_TEXT, REPO_OUTWARD_RING } from '@oceanicos/mini';
 import type { SingleBodyEntry } from '@oceanicos/mini';
 import { AsymmetricValidationGuard, DeclarativeVerificationEngine, MultiRegionMeshConvergence } from '@oceanicos/verification';
 import { ObserverEngine } from '@oceanicos/observer';
@@ -409,6 +409,72 @@ export function createApp(
       digest: expanded.bodyDigest,
       digestMatches: expanded.digestMatches,
       evidence: expanded.evidence,
+    };
+  });
+  fastify.get('/v1/ecosystem/equation', async () => {
+    const compression = compressRepoEquation([EQUATION_LAW_OBSERVATION]);
+    return {
+      success: compression.status !== 'INVALID',
+      law: ECOSYSTEM_BODY_EQUATION_ID,
+      source: ECOSYSTEM_BODY_EQUATION_SOURCE,
+      reality: ECOSYSTEM_BODY_REALITY,
+      equation: EQUATION_TEXT,
+      evaluatedAt: new Date().toISOString(),
+      evidence: 'IN_PROCESS_CONSTANT',
+      evidenceBoundary: 'The law record compares two copies of an in-process constant. It does not read ECOSYSTEM_BODY.md from disk and it does not prove deployment.',
+      compression: compression.body,
+      upgrade: compression.upgrade,
+      issues: compression.issues,
+      outward: REPO_OUTWARD_RING.map((surface) => ({
+        id: surface.id,
+        path: surface.path,
+        role: surface.role,
+        admission: 'NOT_OBSERVED',
+        verdict: 'UNKNOWN',
+      })),
+    };
+  });
+  fastify.post('/v1/ecosystem/equation', { preHandler: requireReadAccess }, async (request: any, reply) => {
+    const body = request.body && typeof request.body === 'object' && !Array.isArray(request.body) ? request.body as Record<string, unknown> : {};
+    if (Object.keys(body).some((key) => key !== 'surfaces')) {
+      return reply.status(400).send({ success: false, status: 'INVALID', issues: [{ code: 'UNKNOWN_FIELD', field: '$', message: 'only surfaces is accepted' }] });
+    }
+    const compression = compressRepoEquation(body.surfaces);
+    if (compression.status === 'INVALID') {
+      return reply.status(400).send({ success: false, status: 'INVALID', issues: compression.issues, upgrade: compression.upgrade });
+    }
+    return {
+      success: true,
+      status: compression.status,
+      evidence: 'CALLER_SUPPLIED',
+      evidenceBoundary: 'Caller-supplied expected and observed values are not an independent observation of the repository.',
+      compression: compression.body,
+      upgrade: compression.upgrade,
+    };
+  });
+  fastify.post('/v1/ecosystem/equation/expand', { preHandler: requireReadAccess }, async (request: any, reply) => {
+    const body = request.body && typeof request.body === 'object' && !Array.isArray(request.body) ? request.body as Record<string, unknown> : {};
+    const expanded = expandRepoEquation(body.compression ?? body);
+    if (expanded.status !== 'EXPANDED') {
+      return reply.status(400).send({ success: false, status: 'INVALID', issues: expanded.issues });
+    }
+    return {
+      success: true,
+      status: 'EXPANDED',
+      entries: expanded.entries,
+      halt: expanded.halt,
+      digest: expanded.digest,
+      digestMatches: expanded.digestMatches,
+      evidence: expanded.evidence,
+      upgrade: compressRepoTowardUpgrade(expanded.halt ? null : {
+        law: ECOSYSTEM_BODY_EQUATION_ID,
+        source: ECOSYSTEM_BODY_EQUATION_SOURCE,
+        reality: ECOSYSTEM_BODY_REALITY,
+        status: 'COMPRESSED',
+        memory: expanded.entries,
+        halt: null,
+        digest: expanded.digest,
+      }),
     };
   });
   fastify.get('/v1/mood', async () => ({ success: true, status: 'MAX GOOD-O', contract: 'Ω∞v totality / attest-dont-assert', brand: 'Oceanicos Ω∞', ledger: { ready: Boolean(ledgerMemory.getTip()) }, evaluatedAt: new Date().toISOString() }));
