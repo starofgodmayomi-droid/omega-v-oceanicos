@@ -145,6 +145,8 @@ export type {
   SingleBodyRoundTrip,
   SingleBodySpace,
 } from './single-body.js';
+export { evaluateEcosystemFixpoint, ECOSYSTEM_FIXPOINT_EQUATION } from './ecosystem-fixpoint.js';
+export type { EcosystemFixpoint, EcosystemFixpointInput, EcosystemFixpointStatus } from './ecosystem-fixpoint.js';
 export type { TotalCompressionIssueCode, TotalCompressionPackage, TotalCompressionRequest, TotalCompressionScope, TotalCompressionValidationIssue, TotalCompressionValidationResult } from './total-compress.js';
 export {
   MAX_NEXT_CANDIDATES,

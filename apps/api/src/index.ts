@@ -6,7 +6,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { MAX_PROOF_OF_WORK_ATTEMPTS, RememberEngine } from '@oceanicos/remember';
-import { FileConnectorObservationStore, FileValueNavigatorStore, MiniKernel, compressSingleBody, expandSingleBody } from '@oceanicos/mini';
+import { FileConnectorObservationStore, FileValueNavigatorStore, MiniKernel, compressSingleBody, expandSingleBody, evaluateEcosystemFixpoint } from '@oceanicos/mini';
 import type { SingleBodyEntry } from '@oceanicos/mini';
 import { AsymmetricValidationGuard, DeclarativeVerificationEngine, MultiRegionMeshConvergence } from '@oceanicos/verification';
 import { ObserverEngine } from '@oceanicos/observer';
@@ -354,6 +354,15 @@ export function createApp(
     ];
     const compression = compressSingleBody(bodyEntries);
     const expansion = compression.status === 'COMPRESSED' ? expandSingleBody(compression.body) : null;
+    const fixpoint = evaluateEcosystemFixpoint({
+      expected: compression.status === 'COMPRESSED' ? compression.body.digest : null,
+      observed: expansion && expansion.status === 'EXPANDED' ? expansion.bodyDigest : null,
+      evidence: bodyEntries.map((entry) => entry.evidence),
+      authority: 0,
+      requiredAuthority: 1,
+      classifiedScam: false,
+      mayRemember: false,
+    });
     return {
       success: true,
       bodyVersion: 'omega.fullstack.body.v1',
@@ -374,6 +383,7 @@ export function createApp(
         bounded: true,
         moduleInvariant: 'observe → verify → remember → govern → present',
       },
+      fixpoint,
       compression: compression.status === 'COMPRESSED'
         ? {
             space: compression.body.space,

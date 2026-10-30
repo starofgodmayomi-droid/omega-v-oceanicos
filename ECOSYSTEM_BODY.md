@@ -31,3 +31,7 @@
 We do not build features; we build the Fixpoint. If a proposed change cannot be verified against reality, it is `DIVERGENT` and must be rejected. 
 
 *Pidgin fit carry the warmth; evidence go carry the claim.*
+
+### Executable form
+
+`evaluateEcosystemFixpoint` in `packages/mini` is this equation as code. `GET /v1/ecosystem/body` runs it on the compressed body digest and the expanded digest. A matching round trip is `roundTrip: VERIFIED`. The read has no authority to append, so `admission` stays `HALT`, `status` stays `NOT_EXECUTED`, and `written` stays `false`. Admission is not a write.
