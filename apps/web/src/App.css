@@ -2484,6 +2484,80 @@ body {
 }
 .single-body-equation strong { color: var(--omega-current); font-weight: 600; }
 .single-body-equation span { color: var(--omega-unknown); }
+.equation-outward {
+  margin: 18px 0 8px;
+  padding: 16px 16px 14px;
+  border: 1px solid rgba(125, 211, 252, 0.18);
+  border-radius: 16px;
+  background: rgba(2, 6, 23, 0.45);
+}
+.equation-outward-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+.equation-outward-kicker {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--omega-current);
+  font: 10px var(--font-mono);
+  letter-spacing: 0.14em;
+}
+.equation-outward h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 560;
+}
+.equation-outward-badge {
+  flex: none;
+  padding: 4px 8px;
+  border: 1px solid rgba(125, 211, 252, 0.35);
+  border-radius: 999px;
+  color: var(--omega-unknown);
+  font: 10px var(--font-mono);
+  letter-spacing: 0.06em;
+}
+.equation-outward-equation,
+.equation-outward-boundary,
+.equation-outward-empty {
+  margin: 10px 0 0;
+  color: var(--omega-foam-muted);
+  font: 11px var(--font-mono);
+  letter-spacing: 0.03em;
+}
+.equation-outward-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 10px 0 0;
+  font: 11px var(--font-mono);
+}
+.equation-outward-counts strong { color: var(--omega-current); font-weight: 600; }
+.equation-outward-counts span { color: var(--omega-unknown); }
+.equation-outward-rays {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 8px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.equation-outward-rays li {
+  display: grid;
+  gap: 2px;
+  padding: 8px;
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.65);
+}
+.equation-outward-rays b {
+  color: var(--omega-current);
+  font: 10px var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.equation-outward-rays span { font-size: 13px; }
+.equation-outward-rays small { color: var(--omega-unknown); font: 10px var(--font-mono); }
 .single-body-meter {
   height: 4px;
   margin-bottom: 13px;

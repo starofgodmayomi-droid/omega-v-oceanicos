@@ -118,6 +118,28 @@ export { captureMiniKernelCycle } from './kai-cycle.js';
 export { buildOmegaWaterFlow } from './water-flow.js';
 export { MAX_TOTAL_COMPRESSION_LEASE_MS, TOTAL_COMPRESSION_PACKAGE_IDS, validateTotalCompressionRequest } from './total-compress.js';
 export {
+  ECOSYSTEM_EQUATION,
+  ECOSYSTEM_EQUATION_ID,
+  EQUATION_ARMS,
+  IMPORTANT_UPGRADED_WORK,
+  compressTowardUpgradedWork,
+  evaluateEcosystemEquation,
+  rememberEquationStep,
+  signalForUpgradedWork,
+} from './ecosystem-equation.js';
+export type {
+  EcosystemSignal,
+  EquationArm,
+  EquationAuthority,
+  EquationCompression,
+  EquationEvidenceScope,
+  EquationKnowledge,
+  EquationStatus,
+  EquationStep,
+  OutwardSurface,
+  UpgradedWork,
+} from './ecosystem-equation.js';
+export {
   compressSingleBody,
   expandSingleBody,
   verifySingleBodyRoundTrip,

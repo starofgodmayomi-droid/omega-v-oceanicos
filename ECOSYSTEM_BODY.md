@@ -31,3 +31,22 @@
 We do not build features; we build the Fixpoint. If a proposed change cannot be verified against reality, it is `DIVERGENT` and must be rejected. 
 
 *Pidgin fit carry the warmth; evidence go carry the claim.*
+
+---
+
+### Executable expansion
+
+The equation above is the law. The runnable form is `evaluateEcosystemEquation` in `packages/mini/src/ecosystem-equation.ts`.
+
+Compression folds the important upgraded work (pipeline, single body, Invisible Online Computer, KAI shield, authority halt, KAI reconcile) through that law. Only a CONTINUE step is remembered. Everything else halts and is not expanded.
+
+Outward surfaces, each a projection and not a reality claim:
+
+| Surface | Entry |
+| --- | --- |
+| Kernel | `evaluateEcosystemEquation`, `compressTowardUpgradedWork` |
+| API | `GET /v1/ecosystem/equation`, `POST /v1/ecosystem/equation` |
+| Web | `EquationOutwardPanel` on the ecosystem body |
+| CLI | `node bin/oceanicos.mjs equation` |
+
+`VERIFIED` from this expansion means the local predicate held. It does not mean CI passed, a deploy is healthy, or reality agreed.
