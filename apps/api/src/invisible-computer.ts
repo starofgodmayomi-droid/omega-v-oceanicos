@@ -302,6 +302,36 @@ export function deriveEngine(requested: unknown): EngineId {
   return requested === 'claude' ? 'claude' : 'gpt';
 }
 
+export type EngineReadiness = {
+  id: EngineId;
+  label: string;
+  keyName: string;
+  configured: boolean;
+};
+
+/**
+ * Which engines can actually reach a model on this process. Only the presence
+ * of a credential is reported — never its value.
+ */
+export function engineReadiness(): EngineReadiness[] {
+  return [
+    {
+      id: 'gpt',
+      label: 'GPT',
+      keyName: ENGINE_KEY.gpt,
+      configured: Boolean(
+        process.env.OPENAI_API_KEY?.trim() || process.env.OMEGA_LLM_API_KEY?.trim()
+      ),
+    },
+    {
+      id: 'claude',
+      label: 'CLAUDE',
+      keyName: ENGINE_KEY.claude,
+      configured: Boolean(process.env.ANTHROPIC_API_KEY?.trim()),
+    },
+  ];
+}
+
 /**
  * Step 2 — ELION turns the safe intent into an answer.
  *

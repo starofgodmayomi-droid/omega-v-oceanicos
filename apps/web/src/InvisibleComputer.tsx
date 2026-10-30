@@ -85,6 +85,8 @@ export function InvisibleComputer() {
   const [visibleSteps, setVisibleSteps] = useState<ExecutionStep[]>([]);
   const [memoryTotal, setMemoryTotal] = useState<number | null>(null);
   const [memoryRecords, setMemoryRecords] = useState<MemoryRecord[]>([]);
+  // Which engines hold a credential on the API. Presence only; null = unknown.
+  const [engineReady, setEngineReady] = useState<Record<string, boolean> | null>(null);
   const [error, setError] = useState<string | null>(null);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
@@ -109,6 +111,26 @@ export function InvisibleComputer() {
     void loadMemory();
     return clearTimers;
   }, [loadMemory]);
+
+  useEffect(() => {
+    let alive = true;
+    fetch(`${API_BASE_URL}/engines`)
+      .then((response) => (response.ok ? response.json() : null))
+      .then((payload: any) => {
+        if (!alive || !Array.isArray(payload?.engines)) return;
+        const map: Record<string, boolean> = {};
+        for (const entry of payload.engines) {
+          if (entry?.id) map[entry.id] = Boolean(entry.configured);
+        }
+        setEngineReady(map);
+      })
+      .catch(() => {
+        /* readiness is advisory — the loop still answers with its labelled fallback */
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   const execute = async () => {
     const trimmed = intent.trim();
@@ -229,6 +251,7 @@ export function InvisibleComputer() {
         </span>
         {ENGINE_CHOICES.map((choice) => {
           const selected = engine === choice.id;
+          const live = engineReady?.[choice.id] !== false;
           return (
             <button
               key={choice.id}
@@ -236,6 +259,7 @@ export function InvisibleComputer() {
               onClick={() => setEngine(choice.id)}
               aria-pressed={selected}
               disabled={running}
+              title={live ? 'key configured' : 'no key — answers via the local composer'}
               style={{
                 padding: '6px 12px',
                 borderRadius: theme.radiusSmall,
@@ -250,10 +274,37 @@ export function InvisibleComputer() {
                 opacity: running ? 0.6 : 1,
               }}
             >
+              <span
+                aria-hidden="true"
+                style={{
+                  display: 'inline-block',
+                  width: '6px',
+                  height: '6px',
+                  borderRadius: '50%',
+                  marginRight: '6px',
+                  verticalAlign: 'middle',
+                  background: live ? '#22c55e' : '#64748b',
+                }}
+              />
               {choice.label}
             </button>
           );
         })}
+      </div>
+
+      <div
+        style={{
+          textAlign: 'center',
+          fontFamily: theme.fontMono,
+          fontSize: '10px',
+          letterSpacing: '0.06em',
+          color: theme.textDim,
+          marginBottom: '10px',
+        }}
+      >
+        {engineReady?.[engine] === false
+          ? `${engine.toUpperCase()} key not configured · answers via the local composer`
+          : 'engine ready · select GPT or CLAUDE to execute'}
       </div>
 
       <div style={{ display: 'flex', gap: '8px', alignItems: 'stretch' }}>

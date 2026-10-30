@@ -55,8 +55,8 @@ docker compose -f docker-compose.base44.yml up -d
 ## Fixed bug
 `apps/api/src/index.ts` line 204: `persistenceEncryptionKey` was undefined → changed to `encryptionEnabled(persistenceKey)` to match the pattern used at lines 163/165.
 
-## No external credentials needed
-All secrets (signing key, tokens) are local dev values in `.env.base44-defaults`. No external service credentials are required for the app to run.
+## No external credentials needed to boot
+All secrets required to boot (signing key, tokens) are local dev values in `.env.base44-defaults`. The only external credentials are the optional engine keys (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`); without them ELION answers with the labelled local composer. `GET /api/engines` reports presence only.
 
 ## Verify
 - API health: `curl http://localhost:5000/health` → `{"status":"ok",...}`

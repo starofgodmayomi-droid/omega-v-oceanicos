@@ -3,6 +3,7 @@ import {
   authoritySatisfies,
   deriveAuthorityLevel,
   deriveEngine,
+  engineReadiness,
   executeElion,
   requiredAuthorityFor,
   expectedOutcomeFor,
@@ -242,10 +243,18 @@ export function registerExecuteRoute(
     };
   };
 
+  // Which engines hold a credential right now. Presence only — never a value.
+  const engineReadinessHandler = async () => ({
+    success: true,
+    engines: engineReadiness(),
+    evaluated_at: new Date().toISOString(),
+  });
+
   // `/execute` is what the Vite dev proxy targets after rewriting `/api/*`;
   // `/api/execute` is the published endpoint. Both are one handler. The same
   // two prefixes serve memory reads and the after-the-fact reconciliation.
   for (const path of ['/execute', '/api/execute']) fastify.post(path, executeHandler);
+  for (const path of ['/engines', '/api/engines']) fastify.get(path, engineReadinessHandler);
   for (const path of ['/kai/memory', '/api/kai/memory']) fastify.get(path, memoryHandler);
   for (const path of ['/kai/memory/:id', '/api/kai/memory/:id']) {
     fastify.get(path, memoryDetailHandler);
