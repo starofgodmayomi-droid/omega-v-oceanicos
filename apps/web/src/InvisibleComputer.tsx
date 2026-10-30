@@ -32,7 +32,16 @@ type ExecutionResult = {
   contract: { id: string; authority_level: string; expected_outcome: string } | null;
   memory: { id: string; timestamp: string } | null;
   engine: string | null;
+  engine_requested?: string | null;
 };
+
+/** The frontier engines the human may select for ELION. */
+type EngineChoice = 'gpt' | 'claude';
+
+const ENGINE_CHOICES: { id: EngineChoice; label: string }[] = [
+  { id: 'gpt', label: 'GPT' },
+  { id: 'claude', label: 'CLAUDE' },
+];
 
 type MemoryRecord = {
   id: string;
@@ -69,6 +78,7 @@ function shortHash(hash: string | null): string {
 
 export function InvisibleComputer() {
   const [intent, setIntent] = useState('');
+  const [engine, setEngine] = useState<EngineChoice>('gpt');
   const [running, setRunning] = useState(false);
   const [verdict, setVerdict] = useState<Verdict>('NOT_EXECUTED');
   const [result, setResult] = useState<ExecutionResult | null>(null);
@@ -114,7 +124,7 @@ export function InvisibleComputer() {
       const response = await fetch(`${API_BASE_URL}/execute`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ intent: trimmed }),
+        body: JSON.stringify({ intent: trimmed, engine }),
       });
       const text = await response.text();
       const payload = text ? JSON.parse(text) : null;
@@ -194,6 +204,57 @@ export function InvisibleComputer() {
       >
         WHAT SHALL WE MAKE REAL?
       </h2>
+
+      <div
+        role="group"
+        aria-label="ELION engine"
+        style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          gap: '6px',
+          marginBottom: '10px',
+        }}
+      >
+        <span
+          style={{
+            fontFamily: theme.fontMono,
+            fontSize: '10px',
+            letterSpacing: '0.18em',
+            color: theme.textDim,
+            marginRight: '4px',
+          }}
+        >
+          ENGINE
+        </span>
+        {ENGINE_CHOICES.map((choice) => {
+          const selected = engine === choice.id;
+          return (
+            <button
+              key={choice.id}
+              type="button"
+              onClick={() => setEngine(choice.id)}
+              aria-pressed={selected}
+              disabled={running}
+              style={{
+                padding: '6px 12px',
+                borderRadius: theme.radiusSmall,
+                border: `1px solid ${selected ? 'rgba(245, 158, 11, 0.55)' : theme.borderBright}`,
+                background: selected ? 'rgba(245, 158, 11, 0.16)' : 'transparent',
+                color: selected ? theme.accentWarm : theme.textMuted,
+                fontFamily: theme.fontSans,
+                fontSize: '10.5px',
+                fontWeight: 700,
+                letterSpacing: '0.12em',
+                cursor: running ? 'not-allowed' : 'pointer',
+                opacity: running ? 0.6 : 1,
+              }}
+            >
+              {choice.label}
+            </button>
+          );
+        })}
+      </div>
 
       <div style={{ display: 'flex', gap: '8px', alignItems: 'stretch' }}>
         <input
@@ -342,7 +403,14 @@ export function InvisibleComputer() {
                 {result.contract.id.slice(0, 8)}
               </span>
             )}
-            {result.engine && <span>ELION · {result.engine}</span>}
+            {result.engine && (
+              <span>
+                ELION · {result.engine}
+                {result.engine === 'local-deterministic' && result.engine_requested
+                  ? ` · ${result.engine_requested.toUpperCase()} key not configured`
+                  : ''}
+              </span>
+            )}
             {result.memory && <span>REMEMBERED · {result.memory.id.slice(0, 8)}</span>}
           </div>
         </div>

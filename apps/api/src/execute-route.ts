@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import {
   authoritySatisfies,
   deriveAuthorityLevel,
+  deriveEngine,
   executeElion,
   requiredAuthorityFor,
   expectedOutcomeFor,
@@ -55,6 +56,9 @@ export function registerExecuteRoute(
     }
 
     const authorityLevel: AuthorityLevel = deriveAuthorityLevel(body.authorityLevel);
+    // The console's engine selector. An absent or unknown value keeps the
+    // pre-existing default (`gpt`).
+    const engine = deriveEngine(body.engine);
     const startedAt = Date.now();
     const steps: ExecutionStep[] = [];
     const recordStep = (
@@ -137,7 +141,7 @@ export function registerExecuteRoute(
     });
 
     // Step 2 — ELION execute: bounded answer, model or local composer.
-    const elion = await executeElion(intent, authorityLevel);
+    const elion = await executeElion(intent, authorityLevel, engine);
     recordStep(
       'ELION',
       'EXECUTE',
@@ -191,6 +195,7 @@ export function registerExecuteRoute(
       contract,
       memory,
       engine: elion.engine,
+      engine_requested: engine,
       model_error: elion.error,
       evaluated_at: new Date().toISOString(),
     });

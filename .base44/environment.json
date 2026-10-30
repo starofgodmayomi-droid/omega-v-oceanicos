@@ -9,8 +9,13 @@
       "requiredAtBoot": false
     },
     {
-      "name": "OMEGA_LLM_API_KEY",
-      "description": "Optional OpenAI-compatible model key for ELION in POST /api/execute. Without it the endpoint answers with the clearly labelled local deterministic composer.",
+      "name": "OPENAI_API_KEY",
+      "description": "OpenAI API key (platform.openai.com → API keys) for the console's GPT engine. Without it the GPT selection answers with the clearly labelled local deterministic composer. Legacy OMEGA_LLM_API_KEY is still accepted as a fallback.",
+      "requiredAtBoot": false
+    },
+    {
+      "name": "ANTHROPIC_API_KEY",
+      "description": "Anthropic API key (console.anthropic.com → API keys) for the console's Claude engine. Without it the Claude selection answers with the clearly labelled local deterministic composer.",
       "requiredAtBoot": false
     }
   ]

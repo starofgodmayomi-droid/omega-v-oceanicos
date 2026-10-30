@@ -257,7 +257,11 @@ export function reconcileEvidence(input: {
  * ELION's local composer. Used when no model credential is configured, and
  * labelled as such so the answer is never mistaken for a model claim.
  */
-export function composeLocalElionResponse(intent: string, authorityLevel: AuthorityLevel): string {
+export function composeLocalElionResponse(
+  intent: string,
+  authorityLevel: AuthorityLevel,
+  engine: EngineId = 'gpt'
+): string {
   const boundedIntent = intent.trim();
   return [
     `Intent received: ${boundedIntent}`,
@@ -266,7 +270,7 @@ export function composeLocalElionResponse(intent: string, authorityLevel: Author
     `What is UNKNOWN: whether the intent can be carried out safely — that requires human authorization at authority level ${authorityLevel}.`,
     'Next finite step: review this bounded answer, then authorize one action at a time.',
     '',
-    'Evidence: local deterministic composer (no OMEGA_LLM_API_KEY configured); this is a bounded template, not a model answer.',
+    `Evidence: local deterministic composer (no ${ENGINE_KEY[engine]} configured for the ${engine} engine); this is a bounded template, not a model answer.`,
     "Ω∞v ::= VERIFY(ΔREALITY) · ATTEST, DON'T ASSERT.",
   ].join('\n');
 }
@@ -279,29 +283,54 @@ export type ElionResult = {
 
 const DEFAULT_MODEL_BASE_URL = 'https://api.openai.com/v1';
 const DEFAULT_MODEL = 'gpt-4o-mini';
+const DEFAULT_CLAUDE_BASE_URL = 'https://api.anthropic.com/v1';
+const DEFAULT_CLAUDE_MODEL = 'claude-sonnet-4-5';
+const ANTHROPIC_VERSION = '2023-06-01';
 const MODEL_TIMEOUT_MS = 20_000;
+
+/** The frontier engines a human may pick from the console. */
+export type EngineId = 'gpt' | 'claude';
+
+/** Which credential each engine reads. `gpt` keeps OMEGA_LLM_API_KEY as a fallback. */
+export const ENGINE_KEY: Record<EngineId, string> = {
+  gpt: 'OPENAI_API_KEY',
+  claude: 'ANTHROPIC_API_KEY',
+};
+
+/** An unknown or absent engine resolves to `gpt`, the pre-existing default. */
+export function deriveEngine(requested: unknown): EngineId {
+  return requested === 'claude' ? 'claude' : 'gpt';
+}
 
 /**
  * Step 2 — ELION turns the safe intent into an answer.
  *
- * With `OMEGA_LLM_API_KEY` set, the intent is sent to an OpenAI-compatible
- * chat completion endpoint using KAI_SYSTEM_PROMPT. Without it (or when the
- * call fails) nothing is invented: the local composer answers and the engine
- * field records which path produced the text.
+ * The human picks the engine (`gpt` or `claude`). `gpt` calls an
+ * OpenAI-compatible chat completion endpoint with `OPENAI_API_KEY` (or the
+ * older `OMEGA_LLM_API_KEY`); `claude` calls Anthropic's Messages API with
+ * `ANTHROPIC_API_KEY`. Both carry KAI_SYSTEM_PROMPT. Without the selected
+ * engine's credential (or when the call fails) nothing is invented: the local
+ * composer answers and the engine field records which path produced the text.
  */
 export async function executeElion(
   intent: string,
-  authorityLevel: AuthorityLevel
+  authorityLevel: AuthorityLevel,
+  engine: EngineId = 'gpt'
 ): Promise<ElionResult> {
-  const apiKey = process.env.OMEGA_LLM_API_KEY?.trim();
-  if (!apiKey) {
+  const credential = engine === 'claude' ? process.env.ANTHROPIC_API_KEY?.trim() : (process.env.OPENAI_API_KEY?.trim() || process.env.OMEGA_LLM_API_KEY?.trim());
+  if (!credential) {
     return {
-      output: composeLocalElionResponse(intent, authorityLevel),
+      output: composeLocalElionResponse(intent, authorityLevel, engine),
       engine: 'local-deterministic',
       error: null,
     };
   }
 
+  if (engine === 'claude') {
+    return executeClaude(intent, authorityLevel, credential);
+  }
+
+  const apiKey = credential;
   const baseUrl = (process.env.OMEGA_LLM_BASE_URL?.trim() || DEFAULT_MODEL_BASE_URL).replace(
     /\/$/,
     ''
@@ -338,6 +367,65 @@ export async function executeElion(
     return {
       output: '',
       engine: `llm:${model}`,
+      error: error instanceof Error ? error.message : 'MODEL_UNAVAILABLE',
+    };
+  }
+}
+
+/**
+ * ELION's Claude path — Anthropic's Messages API, same KAI_SYSTEM_PROMPT law.
+ * A non-2xx response or empty text is returned as an error so OMEGA collapses
+ * the verdict to UNKNOWN instead of an invented answer.
+ */
+async function executeClaude(
+  intent: string,
+  authorityLevel: AuthorityLevel,
+  apiKey: string
+): Promise<ElionResult> {
+  const baseUrl = (process.env.OMEGA_CLAUDE_BASE_URL?.trim() || DEFAULT_CLAUDE_BASE_URL).replace(
+    /\/$/,
+    ''
+  );
+  const model = process.env.OMEGA_CLAUDE_MODEL?.trim() || DEFAULT_CLAUDE_MODEL;
+
+  try {
+    const response = await fetch(`${baseUrl}/messages`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': ANTHROPIC_VERSION,
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: 700,
+        temperature: 0.2,
+        system: KAI_SYSTEM_PROMPT,
+        messages: [
+          {
+            role: 'user',
+            content: `Authority level: ${authorityLevel}\nIntent: ${intent.trim()}`,
+          },
+        ],
+      }),
+      signal: AbortSignal.timeout(MODEL_TIMEOUT_MS),
+    });
+    if (!response.ok) {
+      return { output: '', engine: `claude:${model}`, error: `MODEL_HTTP_${response.status}` };
+    }
+    const payload: any = await response.json();
+    const output = Array.isArray(payload?.content)
+      ? payload.content
+          .filter((block: any) => block?.type === 'text' && typeof block.text === 'string')
+          .map((block: any) => block.text)
+          .join('\n')
+          .trim()
+      : '';
+    return { output, engine: `claude:${model}`, error: output ? null : 'MODEL_EMPTY_RESPONSE' };
+  } catch (error) {
+    return {
+      output: '',
+      engine: `claude:${model}`,
       error: error instanceof Error ? error.message : 'MODEL_UNAVAILABLE',
     };
   }
