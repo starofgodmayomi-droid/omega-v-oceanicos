@@ -53,6 +53,12 @@ export type FixpointReceipt = {
 
 export type FixpointInput = {
   drops: readonly string[];
+  /**
+   * Σ₀ — evidence hashes already held by durable memory. The recursion starts
+   * from what was remembered, so a later run replays the body instead of
+   * pretending memory began empty.
+   */
+  initialMemory?: readonly string[];
   /** Injectable for tests; defaults to ELION's bounded executor. */
   execute?: (intent: string, authorityLevel: AuthorityLevel) => Promise<ElionResult>;
 };
@@ -82,6 +88,7 @@ export async function runOceanicFixpoint(input: FixpointInput): Promise<Fixpoint
   }
 
   const execute = input.execute ?? executeElion;
+  const seed = [...(input.initialMemory ?? [])];
 
   const halt = (
     state: LoopState,
@@ -105,7 +112,7 @@ export async function runOceanicFixpoint(input: FixpointInput): Promise<Fixpoint
       return {
         status: 'VERIFIED',
         haltedAt: null,
-        detail: `Every drop reconciled with reality; ${state.memory.length} verified delta(s) join memory.`,
+        detail: `Every drop reconciled with reality; ${state.memory.length - seed.length} verified delta(s) join memory (Σ₀ held ${seed.length}).`,
         memory: state.memory,
         passes: state.passes,
       };
@@ -183,5 +190,5 @@ export async function runOceanicFixpoint(input: FixpointInput): Promise<Fixpoint
     });
   });
 
-  return loop({ index: 0, memory: [], passes: [] });
+  return loop({ index: 0, memory: seed, passes: [] });
 }

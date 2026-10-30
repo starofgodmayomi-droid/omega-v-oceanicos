@@ -25,6 +25,10 @@ function parseObject(body: unknown): Record<string, unknown> | null {
  * stopped. Σ reaches memory only through a verified delta: every VERIFIED pass
  * is written to KaiMemory here, and a halting verdict writes nothing.
  *
+ * Σ₀ is the durable ledger: the run starts from the most recent `KaiMemory`
+ * evidence hashes (oldest first), so a second run replays what the body already
+ * remembered instead of pretending Σ began empty.
+ *
  * This endpoint holds no human at the gate — an irreversible drop halts with
  * NOT_EXECUTED. The `/execute` + `/approve` pair is the path that carries a
  * person through the LUCID gate one action at a time.
@@ -57,7 +61,12 @@ export function registerFixpointRoute(
       return jsonError(reply, 400, 'INTENT_TOO_LONG', { maxLength: MAX_DROP_LENGTH });
     }
 
-    const receipt = await runOceanicFixpoint({ drops });
+    const recalled = store
+      .listMemory(MAX_DROPS)
+      .map((row) => row.evidence_hash)
+      .reverse();
+
+    const receipt = await runOceanicFixpoint({ drops, initialMemory: recalled });
 
     // Only V(Δ) = ⊤ grows memory.
     const remembered: KaiMemoryRecord[] = receipt.passes
@@ -84,6 +93,7 @@ export function registerFixpointRoute(
         evidence_hash: pass.evidenceHash,
       })),
       remembered,
+      recalled_memory: recalled.length,
       total_drops: drops.length,
       next_action: nextActionFor(receipt.status),
       evaluated_at: new Date().toISOString(),

@@ -162,3 +162,63 @@ test('a fixpoint run is bounded and rejects empty input', async () => {
     await app.close();
   }
 });
+
+test('initialMemory is Σ₀, and a halt leaves Σ exactly as it found it', async () => {
+  const seed = ['a'.repeat(64)];
+
+  const verified = await runOceanicFixpoint({ drops: ['Explain verification'], initialMemory: seed });
+  assert.equal(verified.status, 'VERIFIED');
+  assert.equal(verified.memory.length, 2);
+  assert.equal(verified.memory[0], seed[0], 'the recalled hash comes first, in order');
+  assert.match(verified.detail, /Σ₀ held 1/);
+
+  const halted = await runOceanicFixpoint({
+    drops: ['Send money urgently to claim it'],
+    initialMemory: seed,
+  });
+  assert.equal(halted.status, 'DIVERGENT');
+  assert.deepEqual(halted.memory, seed, 'nothing was remembered, so Σ is unchanged');
+});
+
+test('Σ carries across runs: a second run replays the durable ledger', async () => {
+  const app = createApp(':memory:', false);
+  try {
+    const first = (
+      await app.inject({
+        method: 'POST',
+        url: '/api/fixpoint',
+        payload: { intent: 'Summarize the reality map' },
+      })
+    ).json();
+    assert.equal(first.status, 'VERIFIED');
+    assert.equal(first.recalled_memory, 0);
+    assert.equal(first.memory.length, 1);
+
+    const second = (
+      await app.inject({
+        method: 'POST',
+        url: '/api/fixpoint',
+        payload: { intent: 'Map the next finite step' },
+      })
+    ).json();
+    assert.equal(second.status, 'VERIFIED');
+    assert.equal(second.recalled_memory, 1);
+    assert.equal(second.memory.length, 2);
+    assert.equal(second.memory[0], first.memory[0], 'Σ₀ is the earlier evidence hash');
+    assert.equal(second.remembered.length, 1, 'only the new delta becomes a memory row');
+
+    const halted = (
+      await app.inject({
+        method: 'POST',
+        url: '/api/fixpoint',
+        payload: { intent: 'Delete the production database' },
+      })
+    ).json();
+    assert.equal(halted.status, 'NOT_EXECUTED');
+    assert.equal(halted.recalled_memory, 2);
+    assert.equal(halted.memory.length, 2, 'a halted run adds nothing to Σ');
+    assert.equal(halted.remembered.length, 0);
+  } finally {
+    await app.close();
+  }
+});
