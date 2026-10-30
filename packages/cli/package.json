@@ -1,7 +1,7 @@
 {
   "name": "@omega-v/cli",
-  "version": "0.1.0",
-  "description": "Command line tool for Ω∞v Oceanicos verification loop",
+  "version": "0.2.0",
+  "description": "Command line tool for the Ω∞v Oceanicos verification loop (C9)",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
@@ -10,7 +10,8 @@
   "scripts": {
     "build": "tsc",
     "watch": "tsc --watch",
-    "test": "jest",
+    "test": "cd ../.. && node --experimental-transform-types --import ./tests/helpers/jest-compat.mjs --test packages/cli/src/index.test.ts packages/cli/src/__tests__/*.test.ts packages/cli/src/cli-failures.test.ts packages/cli/src/scene-and-persistence-mutations.test.ts",
+    "typecheck": "tsc --noEmit",
     "clean": "node ../../scripts/rimraf.cjs dist \"*.tsbuildinfo\""
   },
   "keywords": [
@@ -21,22 +22,5 @@
   ],
   "author": "Ω∞v Community",
   "license": "Apache-2.0",
-  "dependencies": {
-    "@omega-v/types": "workspace:*",
-    "@omega-v/sdk": "workspace:*",
-    "@omega-v/agents": "workspace:*",
-    "@omega-v/edge": "workspace:*",
-    "@omega-v/analytics": "workspace:*",
-    "@omega-v/scheduler": "workspace:*",
-    "@omega-v/telemetry": "workspace:*",
-    "@omega-v/vaas": "workspace:*",
-    "@omega-v/remember": "workspace:*",
-    "@omega-v/mini": "workspace:*"
-  },
-  "devDependencies": {
-    "@types/jest": "^29.5.0",
-    "jest": "^29.5.0",
-    "ts-jest": "^29.1.0",
-    "typescript": "^5.0.0"
-  }
+  "dependencies": {}
 }

@@ -1,4 +1,4 @@
-import { validateSceneInput, type SceneInput } from '@omega-v/types';
+import { validateSceneInput, type SceneInput } from '@oceanicos/types';
 
 export type OperatingSystemState =
   'offline' | 'booting' | 'ready' | 'degraded' | 'stopping' | 'stopped';
@@ -478,6 +478,57 @@ export class OmegaApiError extends Error {
 export type OmegaCommandWorker = 'observer' | 'researcher' | 'planner' | 'tester' | 'security-reviewer' | 'governance-reviewer';
 export type OmegaCommandResponse = { success: boolean; command: Record<string, unknown>; status: string; nextAction: string; [key: string]: unknown };
 
+/**
+ * C6 reconciliation verdict. `UNKNOWN` is a first-class outcome: an attempted
+ * observation that produced no evidence is never upgraded to VERIFIED.
+ */
+export type ReconciliationVerdict = 'VERIFIED' | 'DIVERGENT' | 'UNKNOWN' | 'NOT_EXECUTED';
+export type ReconciliationResult = {
+  status: ReconciliationVerdict;
+  changeId: string;
+  expectedState: string;
+  observedState?: string;
+  evidence: string;
+  reconciledAt: string;
+  divergence?: string;
+};
+export type ReconciliationSummary = Record<ReconciliationVerdict, number>;
+
+/** One append-only, hash-chained lineage record (C7). */
+export type ProvenanceEntry = {
+  id: string;
+  changeId: string;
+  source: string;
+  attributedTo: string | null;
+  lineage: string[];
+  sequence: number;
+  previousHash: string;
+  hash: string;
+  createdAt: string;
+};
+
+/** Fail-closed authority grant. `grantedBy` must differ from `subject`. */
+export type AuthorityGrant = {
+  id: string;
+  subject: string;
+  scope: string;
+  policyRefs: string[];
+  grantedBy: string;
+  grantedAt: string;
+  expiresAt?: string;
+  revoked: boolean;
+  revokedBy?: string;
+  revokedAt?: string;
+};
+export type AuthorizationResult = {
+  authorized: boolean;
+  authorityVerified: boolean;
+  policySatisfied: boolean;
+  reason: string;
+  grantId?: string;
+  evaluatedAt: string;
+};
+
 export class OmegaClient {
   private readonly baseUrl: string;
   private readonly fetchImpl: FetchLike;
@@ -744,6 +795,108 @@ export class OmegaClient {
     return this.get<Record<string, unknown>>(`/v1/omega/events${commandId ? `?commandId=${encodeURIComponent(commandId)}` : ''}`);
   }
 
+  // ── C6: Reconciliation (expected ↔ actual) ───────────────────────────
+
+  async reconcile(input: {
+    changeId: string;
+    expectedState: string;
+    observedState?: string;
+    attestationId?: string;
+    provenanceLineage?: string[];
+  }): Promise<{ success: true; reconciliation: ReconciliationResult }> {
+    return this.post('/v1/reconciliation/reconcile', input);
+  }
+
+  async reconcileBatch(
+    items: Array<{
+      changeId: string;
+      expectedState: string;
+      observedState?: string;
+      attestationId?: string;
+      provenanceLineage?: string[];
+    }>
+  ): Promise<{
+    success: true;
+    results: ReconciliationResult[];
+    summary: ReconciliationSummary;
+  }> {
+    return this.post('/v1/reconciliation/batch', { items });
+  }
+
+  // ── C7: Provenance (append-only lineage) ─────────────────────────────
+
+  async appendProvenance(input: {
+    changeId: string;
+    source: string;
+    attributedTo?: string;
+    lineage?: string[];
+  }): Promise<{ success: true; entry: ProvenanceEntry }> {
+    return this.post('/v1/provenance/append', input);
+  }
+
+  async verifyProvenance(): Promise<{
+    success: true;
+    integrity: boolean;
+    length: number;
+  }> {
+    return this.get('/v1/provenance/verify');
+  }
+
+  async getProvenanceLineage(changeId: string): Promise<{
+    success: true;
+    changeId: string;
+    entry: ProvenanceEntry;
+    lineage: string[];
+  }> {
+    return this.get(`/v1/provenance/lineage/${encodeURIComponent(changeId)}`);
+  }
+
+  async getProvenanceTip(): Promise<{
+    success: true;
+    tip: { hash: string; sequence: number } | null;
+    length: number;
+  }> {
+    return this.get('/v1/provenance/tip');
+  }
+
+  // ── Authority (fail-closed admission evidence) ───────────────────────
+
+  async grantAuthorization(input: {
+    subject: string;
+    scope: string;
+    grantedBy: string;
+    policyRefs?: string[];
+    expiresAt?: string;
+  }): Promise<{ success: true; grant: AuthorityGrant }> {
+    return this.post('/v1/authorization/grant', input);
+  }
+
+  async evaluateAuthorization(input: {
+    subject: string;
+    scope: string;
+    changeId?: string;
+    policyRefs?: string[];
+    evidence?: string[];
+  }): Promise<{ success: true; authorization: AuthorizationResult }> {
+    return this.post('/v1/authorization/evaluate', input);
+  }
+
+  async revokeAuthorization(grantId: string, revokedBy: string): Promise<{
+    success: true;
+    grantId: string;
+    revoked: true;
+  }> {
+    return this.post('/v1/authorization/revoke', { grantId, revokedBy });
+  }
+
+  async getAuthorizationGrants(): Promise<{
+    success: true;
+    grants: AuthorityGrant[];
+    activeCount: number;
+  }> {
+    return this.get('/v1/authorization/grants');
+  }
+
   private async post<T>(
     path: string,
     payload: unknown,
@@ -822,22 +975,5 @@ export class OmegaClient {
     return body as T;
   }
 }
-
-export {
-  OceanicosClient,
-  type OceanicosClientOptions,
-  type FullLoopResult,
-  type EcosystemFlowResult,
-  type GrandFlowResult,
-  type HyperFlowResult,
-  Observer,
-  VerificationEngine,
-  AttestationService,
-  ProvenanceStore,
-  Remember,
-  MiniKernel,
-  OperatingSystemKernel,
-  OmegaTotalCompressor,
-} from './oceanicos.js';
 
 export default OmegaClient;

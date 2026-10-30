@@ -1,19 +1,12 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "outDir": "dist",
-    "rootDir": "src",
-    "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true,
-    "types": ["node", "jest"],
-    "paths": {
-      "@omega-v/types": ["../types/dist/index.d.ts"],
-      "@omega-v/sdk": ["../sdk/dist/index.d.ts"],
-      "@omega-v/mini": ["../mini/dist/index.d.ts"],
-      "@omega-v/remember": ["../remember/dist/index.d.ts"]
-    }
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "declaration": true
   },
-  "include": ["src/**/*.ts"],
-  "exclude": ["src/**/*.test.ts", "src/**/__tests__/**"]
+  "include": ["src/**/*"],
+  "exclude": ["src/**/*.test.ts", "src/bin.ts"]
 }

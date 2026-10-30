@@ -34,3 +34,25 @@ The SDK reads the real unauthenticated `/health` liveness/readiness contract plu
 ## Ω command lifecycle
 
 `OmegaClient` exposes `listOmegaWorkers()`, `proposeCommand()`, `inspectCommand()`, `admitCommand()`, `approveCommand()`, `executeCommand()`, `observeCommand()`, `verifyReality()`, and `getOmegaEvents()`. These methods call the same `/v1/omega/` API boundary and preserve the server’s lifecycle status; the SDK does not infer authorization, execution success, or external reality locally.
+
+
+## Governance surfaces (C6 / C7 / authority)
+
+`OmegaClient` also covers the constitutional governance boundary the dashboard renders:
+
+```ts
+const verdict = await client.reconcile({ changeId, expectedState, observedState });
+const batch = await client.reconcileBatch([{ changeId, expectedState, observedState }]);
+const lineage = await client.appendProvenance({ changeId, source: 'sdk-client', lineage: [] });
+const integrity = await client.verifyProvenance();
+const tip = await client.getProvenanceTip();
+const ancestry = await client.getProvenanceLineage(changeId);
+const grant = await client.grantAuthorization({ subject, scope, grantedBy, policyRefs: [] });
+const decision = await client.evaluateAuthorization({ subject, scope, evidence: [] });
+await client.revokeAuthorization(grant.grant.id, operatorId);
+const grants = await client.getAuthorizationGrants();
+```
+
+Verdicts come back exactly as the API produced them: `VERIFIED`, `DIVERGENT`, `UNKNOWN`, or `NOT_EXECUTED`. The SDK never promotes `UNKNOWN` to a passing state and never evaluates authority locally — `evaluateAuthorization()` returns `authorized`, `authorityVerified`, and `policySatisfied` from the fail-closed authority engine, and a self-grant is refused by the API. `tests/integration/sdk_client_contract.test.ts` pins these methods to the routes in `API_ROUTE_INVENTORY`.
+
+**Status (C9):** the client is built and tested as a workspace package, but some older read methods (`getState`, `getObservability`, `getEvents`, `getRuns`, `getAuditEvents`, `getRules`, `getSubsystems`, `getEvidenceExport`, `getOperatingSystem`, `simulateScene`, `verifyAttestation`) still target endpoints from the earlier evidence-API generation that `apps/api` does not register — they fail with `OmegaApiError` rather than inventing data.

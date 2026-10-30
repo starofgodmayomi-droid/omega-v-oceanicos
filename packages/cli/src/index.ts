@@ -262,6 +262,10 @@ function usage(): string {
     'omega verify --attestation-json JSON [--url URL] [--token TOKEN]',
     'omega policy [--url URL] [--token TOKEN]',
     'omega scene [--seed SEED] [--steps N] [--branches N] [--url URL] [--token TOKEN]',
+    'omega reconcile --change-id ID --expected STATE [--observed STATE] [--url URL] [--admin-token TOKEN]',
+    'omega provenance [--url URL] [--token TOKEN] [--admin-token TOKEN]',
+    'omega grants [--url URL] [--token TOKEN] [--admin-token TOKEN]',
+    'omega authorize --subject SUBJECT --scope SCOPE [--change-id ID] [--url URL] [--admin-token TOKEN]',
     '',
     'Read live runtime and evidence from the Omega V API.',
     '',
@@ -269,6 +273,8 @@ function usage(): string {
     '  OMEGA_API_URL  Base API URL (default: http://localhost:3000)',
   ].join('\n');
 }
+
+type ReconcileVerdict = 'VERIFIED' | 'DIVERGENT' | 'UNKNOWN' | 'NOT_EXECUTED';
 
 function baseUrl(argv: string[]): string {
   // option() treats a flag with no value as absent, which is what
@@ -1035,6 +1041,184 @@ async function events(argv: string[], fetchImpl: FetchLike): Promise<number> {
   }
 }
 
+/**
+ * C6: compare an expected state against an observed one. Exit code 0 means
+ * VERIFIED only — UNKNOWN is reported as a distinct verdict, never promoted.
+ */
+async function reconcile(argv: string[], fetchImpl: FetchLike): Promise<number> {
+  const changeId = option(argv, '--change-id');
+  const expected = option(argv, '--expected');
+  if (!changeId || !expected) {
+    process.stderr.write(
+      'Usage: omega reconcile --change-id ID --expected STATE [--observed STATE] [options]\n'
+    );
+    return 2;
+  }
+  const observed = option(argv, '--observed');
+  const endpoint = `${baseUrl(argv).replace(/\/$/, '')}/v1/reconciliation/reconcile`;
+  try {
+    const response = await fetchImpl(endpoint, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        ...(adminToken(argv) ? { Authorization: `Bearer ${adminToken(argv)}` } : {}),
+      },
+      body: JSON.stringify({
+        changeId,
+        expectedState: expected,
+        ...(observed !== null ? { observedState: observed } : {}),
+      }),
+    });
+    const body = (await response.json()) as {
+      success?: boolean;
+      reconciliation?: {
+        status: ReconcileVerdict;
+        changeId: string;
+        evidence: string;
+        divergence?: string;
+      };
+      message?: string;
+    };
+    if (!response.ok || !body.reconciliation) {
+      process.stderr.write(
+        `Reconciliation unavailable (${response.status}): ${body.message ?? 'unknown error'}\n`
+      );
+      return 1;
+    }
+    const result = body.reconciliation;
+    process.stdout.write(
+      [
+        `RECONCILE     ${result.status} change=${result.changeId}`,
+        `EXPECTED      ${expected}`,
+        `OBSERVED      ${observed ?? 'NOT EXECUTED'}`,
+        ...(result.divergence ? [`DIVERGENCE    ${result.divergence}`] : []),
+        `EVIDENCE      ${result.evidence}`,
+      ].join('\n') + '\n'
+    );
+    return result.status === 'VERIFIED' ? 0 : 1;
+  } catch (error) {
+    process.stderr.write(
+      `Reconciliation unavailable: ${error instanceof Error ? error.message : String(error)}\n`
+    );
+    return 1;
+  }
+}
+
+/** C7: read the lineage ledger tip and its integrity verdict. */
+async function provenance(argv: string[], fetchImpl: FetchLike): Promise<number> {
+  const base = baseUrl(argv).replace(/\/$/, '');
+  try {
+    const [tipResponse, verifyResponse] = await Promise.all([
+      fetchImpl(`${base}/v1/provenance/tip`, requestInit(argv)),
+      fetchImpl(`${base}/v1/provenance/verify`, requestInit(argv)),
+    ]);
+    const tip = (await tipResponse.json()) as {
+      tip?: { hash: string; sequence: number } | null;
+      length?: number;
+      message?: string;
+    };
+    const integrity = (await verifyResponse.json()) as { integrity?: boolean; length?: number };
+    if (!tipResponse.ok || !verifyResponse.ok) {
+      process.stderr.write(`Provenance unavailable (${tipResponse.status}/${verifyResponse.status})\n`);
+      return 1;
+    }
+    process.stdout.write(
+      [
+        `PROVENANCE    entries=${tip.length ?? 0}`,
+        `INTEGRITY     ${integrity.integrity === true ? 'INTACT' : 'BROKEN'}`,
+        `TIP           ${tip.tip ? `${tip.tip.hash} sequence=${tip.tip.sequence}` : 'none'}`,
+      ].join('\n') + '\n'
+    );
+    return integrity.integrity === true ? 0 : 1;
+  } catch (error) {
+    process.stderr.write(
+      `Provenance unavailable: ${error instanceof Error ? error.message : String(error)}\n`
+    );
+    return 1;
+  }
+}
+
+/** Authority: list the grants the API process currently holds (in-memory). */
+async function grants(argv: string[], fetchImpl: FetchLike): Promise<number> {
+  const endpoint = `${baseUrl(argv).replace(/\/$/, '')}/v1/authorization/grants`;
+  try {
+    const response = await fetchImpl(endpoint, requestInit(argv));
+    const body = (await response.json()) as {
+      grants?: Array<{ id: string; subject: string; scope: string; grantedBy: string; revoked: boolean }>;
+      activeCount?: number;
+      message?: string;
+    };
+    if (!response.ok || !Array.isArray(body.grants)) {
+      process.stderr.write(`Grants unavailable (${response.status}): ${body.message ?? 'unknown error'}\n`);
+      return 1;
+    }
+    process.stdout.write(`GRANTS        ${body.activeCount ?? 0} active / ${body.grants.length} total\n`);
+    for (const grant of body.grants) {
+      process.stdout.write(
+        `${grant.id} subject=${grant.subject} scope=${grant.scope} by=${grant.grantedBy} revoked=${grant.revoked}\n`
+      );
+    }
+    return 0;
+  } catch (error) {
+    process.stderr.write(`Grants unavailable: ${error instanceof Error ? error.message : String(error)}\n`);
+    return 1;
+  }
+}
+
+/** Authority: evaluate a request; exit 0 only when the API authorized it. */
+async function authorize(argv: string[], fetchImpl: FetchLike): Promise<number> {
+  const subject = option(argv, '--subject');
+  const scope = option(argv, '--scope');
+  if (!subject || !scope) {
+    process.stderr.write('Usage: omega authorize --subject SUBJECT --scope SCOPE [options]\n');
+    return 2;
+  }
+  const changeId = option(argv, '--change-id');
+  const endpoint = `${baseUrl(argv).replace(/\/$/, '')}/v1/authorization/evaluate`;
+  try {
+    const response = await fetchImpl(endpoint, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        ...(adminToken(argv) ? { Authorization: `Bearer ${adminToken(argv)}` } : {}),
+      },
+      body: JSON.stringify({ subject, scope, ...(changeId ? { changeId } : {}) }),
+    });
+    const body = (await response.json()) as {
+      authorization?: {
+        authorized: boolean;
+        authorityVerified: boolean;
+        policySatisfied: boolean;
+        reason: string;
+        grantId?: string;
+      };
+      message?: string;
+    };
+    if (!response.ok || !body.authorization) {
+      process.stderr.write(
+        `Authorization unavailable (${response.status}): ${body.message ?? 'unknown error'}\n`
+      );
+      return 1;
+    }
+    const result = body.authorization;
+    process.stdout.write(
+      [
+        `AUTHORIZED    ${result.authorized}`,
+        `AUTHORITY     ${result.authorityVerified}`,
+        `POLICY        ${result.policySatisfied}`,
+        `REASON        ${result.reason}`,
+        `GRANT         ${result.grantId ?? 'none'}`,
+      ].join('\n') + '\n'
+    );
+    return result.authorized ? 0 : 1;
+  } catch (error) {
+    process.stderr.write(
+      `Authorization unavailable: ${error instanceof Error ? error.message : String(error)}\n`
+    );
+    return 1;
+  }
+}
+
 export async function run(
   argv: string[],
   fetchImpl: FetchLike = globalThis.fetch
@@ -1062,9 +1246,11 @@ export async function run(
   if (command === 'revoke') return revoke(argv, fetchImpl);
   if (command === 'acknowledge-persistence') return acknowledgePersistence(argv, fetchImpl);
   if (command === 'reencrypt-persistence') return reencryptPersistence(argv, fetchImpl);
+  if (command === 'reconcile') return reconcile(argv, fetchImpl);
+  if (command === 'provenance') return provenance(argv, fetchImpl);
+  if (command === 'grants') return grants(argv, fetchImpl);
+  if (command === 'authorize') return authorize(argv, fetchImpl);
 
   process.stderr.write(`Unknown command: ${command}\n\n${usage()}\n`);
   return 2;
 }
-
-export { OceanicosCLI, type CLIResult } from './oceanicos-cli.js';

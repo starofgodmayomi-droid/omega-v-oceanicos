@@ -131,6 +131,16 @@ clock policy and distributed time coordination remain open. The unauthenticated 
 | `+ SDK`    | `packages/sdk` |
 | `+ Mobile` | planned        |
 
+C9 status (2026-10-30): `packages/sdk` and `packages/cli` are workspace
+projects again — they build, typecheck, and their suites run under
+`tests/run-node-suite.mjs`. Both now cover the governance boundary
+(`reconcile`, `provenance`, `grants`, `authorize`) that the dashboard reads,
+pinned by `tests/integration/sdk_client_contract.test.ts` and the expanded
+`API_ROUTE_INVENTORY`. Not earned yet: the older evidence-API commands and
+reads in both packages still point at endpoints this API generation does not
+register (and `health`/`policy` still expect the previous `{ data }` envelope);
+they fail closed rather than fabricating a result. Mobile remains planned.
+
 ### Phase 5 — Depth expansions
 
 - Stronger rule engine / compiler / IR

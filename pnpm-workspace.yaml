@@ -12,6 +12,8 @@ packages:
   - 'packages/reconciliation'
   - 'packages/provenance'
   - 'packages/authorization'
+  - 'packages/sdk'
+  - 'packages/cli'
   - 'apps/api'
   - 'apps/web'
 

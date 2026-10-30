@@ -101,6 +101,8 @@ importers:
         specifier: workspace:*
         version: link:../types
 
+  packages/cli: {}
+
   packages/coordination:
     devDependencies:
       '@types/jest':
@@ -191,6 +193,12 @@ importers:
       '@types/better-sqlite3':
         specifier: ^7.6.9
         version: 7.6.13
+
+  packages/sdk:
+    dependencies:
+      '@oceanicos/types':
+        specifier: workspace:*
+        version: link:../types
 
   packages/types: {}
 

@@ -14,6 +14,9 @@ export const API_ROUTE_INVENTORY = [
   'POST /v1/attest',
   'POST /v1/cycle',
   'POST /v1/pipeline',
+  'GET /v1/ecosystem/status',
+  'GET /v1/reality/status',
+  'GET /v1/dependencies',
   'GET /v1/block/tip',
   'GET /v1/stream',
   'POST /v1/miner/start',
@@ -46,6 +49,14 @@ export const API_ROUTE_INVENTORY = [
   'POST /v1/authorization/evaluate',
   'POST /v1/authorization/revoke',
   'GET /v1/authorization/grants',
+  // Omega command lifecycle. Parameterised sub-routes (`/workers/register`,
+  // `/commands/:id/admit`, …) hang off these parents and are asserted by
+  // tests/integration/omega_command_api.test.ts rather than flattened here.
+  'GET /v1/omega/workers',
+  'GET /v1/omega/commands',
+  'POST /v1/omega/commands',
+  'GET /v1/omega/events',
+  'POST /v1/omega/coordination/evidence',
   'GET /',
   'GET /assets/*',
 ] as const;

@@ -182,3 +182,17 @@ The health output also prints `COORDINATION policy=local-single-process|operator
 ## Ω command lifecycle
 
 The repository CLI exposes the bounded command family through `node bin/oceanicos.mjs omega`: `workers`, `propose <intent>`, `inspect <id>`, `admit <id>`, `approve <id>`, `execute <id>`, `observe <id> [state]`, `verify-reality <id>`, and `events [id]`. These commands are thin API clients; they do not bypass admission or convert execution into proof of reality. Set `OMEGA_API_URL` to target the API.
+
+
+## Governance commands (C6 / C7 / authority)
+
+```bash
+omega-v reconcile --change-id ID --expected STATE [--observed STATE]
+omega-v provenance
+omega-v grants
+omega-v authorize --subject SUBJECT --scope SCOPE [--change-id ID]
+```
+
+`reconcile` prints the evidence-bound verdict and exits `0` only for `VERIFIED`; `DIVERGENT`, `UNKNOWN`, and `NOT_EXECUTED` all exit non-zero, so a script cannot mistake uncertainty for success. `provenance` prints the ledger length, the `INTEGRITY` verdict from `/v1/provenance/verify`, and the hash-chain tip. `grants` lists the authority grants the API process holds. `authorize` asks the fail-closed authority engine for a decision and exits `0` only when it authorized the request.
+
+**Status (C9):** the CLI is built and tested as a workspace package. Its older evidence-API commands (`status`, `os`, `events`, `audit`, `runs`, `export`, `rules`, `subsystems`, `scene`, and the `/state`-based persistence view) still address endpoints this API generation does not register, and `health`/`policy` still expect the older `{ data }` envelope. They report "unavailable" and exit non-zero rather than fabricating a result; aligning them with the served contracts is the next CLI slice.
