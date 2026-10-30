@@ -125,8 +125,14 @@ export function createApp(
   const ledgerMemory = new RememberEngine(dbPath);
   const kernel = new MiniKernel(ledgerMemory);
   // KAI is the Mind (ECOSYSTEM_BODY.md): it records every cycle this process
-  // mints. Process-local continuity, not persisted, not evidence of reality.
+  // mints, then recalls the durable ledger on boot so its continuity survives a
+  // restart instead of resetting to UNKNOWN. Recall is memory, not proof.
   const kai = new KaiContinuity();
+  try {
+    for (const block of ledgerMemory.all()) kai.capture(block, { source: 'remember.replay' });
+  } catch {
+    // A corrupt row must not stop the API from booting; OMEGA fails closed on it.
+  }
   const platformKernel = new OceanicosKernel();
   const declarativeVerification = new DeclarativeVerificationEngine();
   const allowUnsignedCycle = options.allowUnsignedCycle ?? process.env.OMEGA_ALLOW_UNSIGNED_CYCLE === 'true';
@@ -267,6 +273,7 @@ export function createApp(
   registerBodyRoute(fastify, {
     kai,
     ledgerIntegrity: () => ledgerMemory.verifyChain(),
+    ledgerTip: () => ledgerMemory.getTip(),
     requireReadAccess,
     jsonError,
   });

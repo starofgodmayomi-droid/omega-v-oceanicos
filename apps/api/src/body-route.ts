@@ -11,12 +11,13 @@
  */
 import type { FastifyInstance } from 'fastify';
 import { screenIntent } from '@oceanicos/kai';
-import type { KaiContinuity } from '@oceanicos/kai';
-import type { LedgerIntegrity } from '@oceanicos/types';
+import type { KaiContinuity, KaiDrop } from '@oceanicos/kai';
+import type { IMiniBlock, LedgerIntegrity } from '@oceanicos/types';
 
 export type BodyRouteOptions = {
   kai: KaiContinuity;
   ledgerIntegrity: () => LedgerIntegrity;
+  ledgerTip: () => IMiniBlock | null;
   requireReadAccess: (request: any, reply: any) => Promise<void>;
   jsonError: (reply: any, status: number, error: string, extra?: Record<string, unknown>) => unknown;
 };
@@ -29,7 +30,22 @@ type Judgment = {
   height: number;
 };
 
-const judgeLedger = (integrity: LedgerIntegrity): Judgment => {
+const recordedBlock = (drop: KaiDrop | null): { index: number | null; hash: string | null } => {
+  const indexEntry = drop?.provenance.find((entry) => entry.startsWith('remember:index:'));
+  const hashEntry = drop?.provenance.find((entry) => entry.startsWith('remember:hash:'));
+  const index = indexEntry ? Number(indexEntry.slice('remember:index:'.length)) : NaN;
+  return {
+    index: Number.isInteger(index) ? index : null,
+    hash: hashEntry ? hashEntry.slice('remember:hash:'.length) : null,
+  };
+};
+
+/**
+ * OMEGA reconciles KAI's recorded expectation against the durable ledger
+ * (ECOSYSTEM_BODY.md). A valid chain is not enough: the block KAI last
+ * recorded must be the ledger's tip, or the two disagree and OMEGA says so.
+ */
+const judgeBody = (integrity: LedgerIntegrity, latest: KaiDrop | null, tip: IMiniBlock | null): Judgment => {
   if (!integrity.valid) {
     return {
       status: 'DIVERGENT',
@@ -37,22 +53,44 @@ const judgeLedger = (integrity: LedgerIntegrity): Judgment => {
       height: integrity.height,
     };
   }
-  if (integrity.height === 0) {
+  if (!tip) {
     return {
       status: 'UNKNOWN',
       evidence: 'ledger holds no blocks; there is nothing to reconcile yet',
       height: 0,
     };
   }
+  if (!latest) {
+    return {
+      status: 'UNKNOWN',
+      evidence: 'KAI recorded no continuity; there is no expectation to reconcile',
+      height: integrity.height,
+    };
+  }
+  const recorded = recordedBlock(latest);
+  if (recorded.index === null || !recorded.hash) {
+    return {
+      status: 'UNKNOWN',
+      evidence: 'KAI\'s last record carries no durable ledger reference',
+      height: integrity.height,
+    };
+  }
+  if (recorded.index !== tip.index || recorded.hash !== tip.hash) {
+    return {
+      status: 'DIVERGENT',
+      evidence: `KAI's last record (index ${recorded.index}) is not the durable tip (index ${tip.index}); recorded expectation ≠ ledger`,
+      height: integrity.height,
+    };
+  }
   return {
     status: 'VERIFIED',
-    evidence: `ledger chain verified across ${integrity.height} block(s)`,
+    evidence: `KAI's last recorded block (index ${recorded.index}) is the durable ledger tip across ${integrity.height} block(s)`,
     height: integrity.height,
   };
 };
 
 export function registerBodyRoute(fastify: FastifyInstance, options: BodyRouteOptions): void {
-  const { kai, ledgerIntegrity, requireReadAccess, jsonError } = options;
+  const { kai, ledgerIntegrity, ledgerTip, requireReadAccess, jsonError } = options;
 
   fastify.get('/v1/body', { preHandler: requireReadAccess }, async () => ({
     success: true,
@@ -80,7 +118,7 @@ export function registerBodyRoute(fastify: FastifyInstance, options: BodyRouteOp
         role: 'JUDGE',
         package: '@oceanicos/omega',
         reconciles: 'recorded expectation against the durable ledger',
-        judgment: judgeLedger(ledgerIntegrity()),
+        judgment: judgeBody(ledgerIntegrity(), kai.latest(), ledgerTip()),
       },
     },
   }));

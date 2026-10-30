@@ -59,9 +59,10 @@ export function EcosystemBodyRolesPanel({ roles }: Props) {
   const recorded = typeof kai?.recorded === 'number' ? kai.recorded : null;
   const latest = kai?.latest;
   const kaiStatus = latest ? upper(latest.status) : UNKNOWN_LABEL;
+  const kaiSource = latest?.source === 'remember.replay' ? 'recalled from the durable ledger' : latest?.source;
   const kaiDetail = recorded === null
     ? 'no continuity reported by the API'
-    : `${recorded} cycle(s) recorded · ${latest?.source ?? 'no drop yet'}`;
+    : `${recorded} cycle(s) recorded · ${kaiSource ?? 'no drop yet'}`;
 
   const elionStatus = elion?.executor ? 'BOUND' : UNKNOWN_LABEL;
   const elionDetail = elion?.executor
