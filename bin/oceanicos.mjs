@@ -14,6 +14,7 @@ let ObserverEngine, observePlanetaryBase;
 let verifyPlanetarySovereignty, AsymmetricValidationGuard, MultiRegionMeshConvergence;
 let PluralisticHashChain, RememberEngine;
 let executeOceanicosMaxExpansion, MiniKernel;
+let compressTowardUpgradedWork, ECOSYSTEM_EQUATION;
 let AttestationService;
 
 try {
@@ -33,6 +34,8 @@ try {
   const miniPkg = require(path.join(rootDir, 'packages/mini/dist/index.js'));
   executeOceanicosMaxExpansion = miniPkg.executeOceanicosMaxExpansion;
   MiniKernel = miniPkg.MiniKernel;
+  compressTowardUpgradedWork = miniPkg.compressTowardUpgradedWork;
+  ECOSYSTEM_EQUATION = miniPkg.ECOSYSTEM_EQUATION;
 
   try {
     const attestPkg = require(path.join(rootDir, 'packages/attestation/dist/index.js'));
@@ -98,6 +101,24 @@ async function handleOmega(argsAfterCommand) {
   }
   if (subcommand === 'verify-reality') return console.log(JSON.stringify(await omegaRequest(`/v1/omega/commands/${encodeURIComponent(id)}/verify-reality`, 'POST', {}), null, 2));
   throw new Error('unknown omega command; use workers, propose, inspect, admit, approve, execute, observe, verify-reality, or events');
+}
+
+function handleEquation() {
+  if (typeof compressTowardUpgradedWork !== 'function') {
+    console.error('[\x1b[31mERROR\x1b[0m] evaluateEcosystemEquation is not in the compiled mini package. Rebuild @oceanicos/mini.');
+    process.exitCode = 1;
+    return;
+  }
+  const fixpoint = compressTowardUpgradedWork();
+  console.log(JSON.stringify({
+    equation: ECOSYSTEM_EQUATION,
+    source: 'ECOSYSTEM_BODY.md',
+    evidenceScope: fixpoint.evidenceScope,
+    boundary: fixpoint.boundary,
+    admitted: fixpoint.admitted.length,
+    halted: fixpoint.halted.length,
+    expansion: fixpoint.expansion,
+  }, null, 2));
 }
 
 function printBanner() {
@@ -331,6 +352,7 @@ ${ANSI.bold}COMMANDS:${ANSI.reset}
   ${ANSI.green}mood${ANSI.reset}        Display Singularity compression state and Pidgin Spirit Axiom
   ${ANSI.green}stream${ANSI.reset}      Stream live block minting events via SSE from local Fastify API
   ${ANSI.green}omega${ANSI.reset}       Propose, inspect, admit, execute, and verify bounded Ω commands
+  ${ANSI.green}equation${ANSI.reset}    Compress upgraded work through the ECOSYSTEM_BODY fixpoint and print the outward expansion
   ${ANSI.green}help${ANSI.reset}        Display this help message
 
 ${ANSI.bold}OPTIONS:${ANSI.reset}
@@ -366,6 +388,9 @@ switch (command) {
     break;
   case 'omega':
     await handleOmega(args.slice(1));
+    break;
+  case 'equation':
+    handleEquation();
     break;
   case 'help':
   case '--help':

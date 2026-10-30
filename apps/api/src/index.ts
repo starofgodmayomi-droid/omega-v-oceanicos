@@ -6,7 +6,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { MAX_PROOF_OF_WORK_ATTEMPTS, RememberEngine } from '@oceanicos/remember';
-import { FileConnectorObservationStore, FileValueNavigatorStore, MiniKernel, compressSingleBody, expandSingleBody } from '@oceanicos/mini';
+import { FileConnectorObservationStore, FileValueNavigatorStore, MiniKernel, compressSingleBody, compressTowardUpgradedWork, expandSingleBody } from '@oceanicos/mini';
 import type { SingleBodyEntry } from '@oceanicos/mini';
 import { AsymmetricValidationGuard, DeclarativeVerificationEngine, MultiRegionMeshConvergence } from '@oceanicos/verification';
 import { ObserverEngine } from '@oceanicos/observer';
@@ -25,6 +25,7 @@ import { OmegaCommandStore, OmegaIdempotencyConflictError, registerOmegaRoutes }
 import { registerMeshValidationRoute } from './mesh-route.js';
 import { KaiMemoryStore } from './kai-memory.js';
 import { registerExecuteRoute } from './execute-route.js';
+import { registerEquationRoute } from './equation-route.js';
 import {
   ENCRYPTION_ALGORITHM,
   appendEvent,
@@ -266,6 +267,7 @@ export function createApp(
   });
   registerMeshValidationRoute(fastify, ledgerMemory, requireReadAccess, jsonError);
   registerExecuteRoute(fastify, kaiMemory, jsonError);
+  registerEquationRoute(fastify, jsonError);
 
   fastify.get('/health', async (_request, reply) => {
     let ledgerIntegrity;
@@ -394,6 +396,7 @@ export function createApp(
               : { status: 'INVALID', entries: 0, digestMatches: false, lossless: false, evidence: 'LOCAL_ROUND_TRIP_ONLY', issues: expansion?.issues ?? [] },
           }
         : { status: 'INVALID', issues: compression.issues },
+      fixpoint: compressTowardUpgradedWork(),
     };
   });
   fastify.post('/v1/ecosystem/body/expand', { preHandler: requireReadAccess }, async (request: any, reply) => {

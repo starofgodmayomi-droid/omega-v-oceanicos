@@ -4,6 +4,7 @@ import { boundedStatus, statusCounts, STATUS_ORDER, summarizeLucidField, type Re
 import { AgentSafetyBoundaryPanel } from './AgentSafetyBoundaryPanel';
 import { WorkerCoordinationPanel } from './WorkerCoordinationPanel';
 import { SingleBodyPanel } from './SingleBodyPanel';
+import { EquationOutwardPanel } from './EquationOutwardPanel';
 
 type Props = {
   streamConnected: boolean;
@@ -203,6 +204,7 @@ export function WholeEcosystemDashboard(props: Props) {
       </div>
 
       <SingleBodyPanel body={props.ecosystemBody} />
+      <EquationOutwardPanel fixpoint={props.ecosystemBody?.fixpoint} />
 
       <AgentSafetyBoundaryPanel
         capabilityObserved={props.ecosystemBody?.status === 'VERIFIED'}
