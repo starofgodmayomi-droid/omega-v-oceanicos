@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { createRequire } from 'node:module';
 import test from 'node:test';
 import { createApp } from '../../apps/api/dist/index.js';
@@ -50,7 +51,8 @@ test('Single body compresses into a 4×4×4×4 space and expands losslessly', as
     await app.ready();
     const response = await app.inject({ method: 'GET', url: '/v1/ecosystem/body' });
     assert.equal(response.statusCode, 200);
-    const compression = response.json().compression;
+    const payload = response.json();
+    const compression = payload.compression;
 
     assert.equal(compression.space.notation, '4×4×4×4');
     assert.equal(compression.space.rank, 4);
@@ -62,6 +64,11 @@ test('Single body compresses into a 4×4×4×4 space and expands losslessly', as
     assert.match(compression.digest, /^[a-f0-9]{64}$/);
     assert.equal(compression.expansion.status, 'VERIFIED');
     assert.equal(compression.expansion.lossless, true);
+    assert.equal(payload.fixpoint.roundTrip, 'VERIFIED');
+    assert.equal(payload.fixpoint.admission, 'HALT');
+    assert.equal(payload.fixpoint.status, 'NOT_EXECUTED');
+    assert.equal(payload.fixpoint.written, false);
+    assert.equal(payload.fixpoint.digest, createHash('sha256').update(compression.digest).digest('hex'));
 
     const expanded = await app.inject({
       method: 'POST',
