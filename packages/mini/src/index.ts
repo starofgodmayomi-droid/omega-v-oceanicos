@@ -167,6 +167,14 @@ export type {
   BoundedParallelOptions,
 } from './parallel.js';
 export type { OmegaWaterFlowInput } from './water-flow.js';
+export {
+  evaluateEcosystemFixpoint,
+  hashFixpointDelta,
+  FIXPOINT_EQUATION_ID,
+  MAX_FIXPOINT_DELTA_CHARS,
+  MAX_FIXPOINT_MEMORY,
+} from './ecosystem-fixpoint.js';
+export type { FixpointInput, FixpointReason, FixpointStatus, FixpointStep } from './ecosystem-fixpoint.js';
 
 export function executeOceanicosMaxExpansion(): CryptographicBlock {
   const kernelChain = new PluralisticHashChain();

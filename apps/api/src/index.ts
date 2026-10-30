@@ -6,7 +6,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { MAX_PROOF_OF_WORK_ATTEMPTS, RememberEngine } from '@oceanicos/remember';
-import { FileConnectorObservationStore, FileValueNavigatorStore, MiniKernel, compressSingleBody, expandSingleBody } from '@oceanicos/mini';
+import { FileConnectorObservationStore, FileValueNavigatorStore, MiniKernel, compressSingleBody, evaluateEcosystemFixpoint, expandSingleBody } from '@oceanicos/mini';
 import type { SingleBodyEntry } from '@oceanicos/mini';
 import { AsymmetricValidationGuard, DeclarativeVerificationEngine, MultiRegionMeshConvergence } from '@oceanicos/verification';
 import { ObserverEngine } from '@oceanicos/observer';
@@ -343,6 +343,15 @@ export function createApp(
     const ledgerIntact = ledgerMemory.verifyIntegrity();
     const capability = platformKernel.getCapabilitySnapshot();
     const bodyStatus = receipt.status === 'VERIFIED' && ledgerIntact && mesh.quorumReached ? 'VERIFIED' : receipt.status;
+    const fixpoint = evaluateEcosystemFixpoint({
+      expectedObserved: bodyStatus === 'VERIFIED',
+      scam: false,
+      evidenceEmpty: false,
+      authority: 1,
+      requiredAuthority: 1,
+      memory: tip?.hash ? [tip.hash] : [],
+      delta: `${telemetry.uuid}:${receipt.status}:${ledgerIntact ? 'ledger-intact' : 'ledger-divergent'}`,
+    });
     const bodyEntries: SingleBodyEntry[] = [
       { id: 'sensory', name: 'Sensory runtime', source: 'observer-runtime', status: 'OBSERVED', layer: 'reality', organ: 'sense', form: 'runtime', evidence: 'SUPPORTED' },
       { id: 'verification', name: 'Verification receipt', source: 'declarative-verification', status: receipt.status, layer: 'evidence', organ: 'verify', form: 'runtime', evidence: receipt.status === 'VERIFIED' ? 'VERIFIED' : 'UNVERIFIED' },
@@ -359,6 +368,7 @@ export function createApp(
       bodyVersion: 'omega.fullstack.body.v1',
       status: bodyStatus,
       evaluatedAt,
+      fixpoint,
       layers: {
         sensory: { status: 'OBSERVED', telemetry },
         verification: { status: receipt.status, receipt },

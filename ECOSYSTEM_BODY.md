@@ -10,17 +10,27 @@
  \Omega_{\infty v} := \mathcal{Y} \Big( \lambda f. \big( M_{t+1} = M_t \cup \Delta \mid \mathcal{V}(\Delta) = \top \big) \Big) \Big|_{\mathcal{V} \equiv (\text{Expected} \equiv \text{Observed})} 
 \]
 
-> *"The ecosystem is a continuous, infinite loop that only remembers what matches reality."*
+> The ecosystem continues only by finite verified steps. It remembers a delta only when expected matches observed. Empty evidence stays `UNKNOWN`. Missing authority stays `NOT_EXECUTED`. A scam pattern stays `DIVERGENT`. Nothing else is appended.
 
 ---
 
-### 📐 THE VARIABLE DEFINITIONS
+### THE VARIABLE DEFINITIONS
 
-- **\(\mathcal{Y}\) (Y-Combinator)**: The infinite loop of the Invisible Online Computer. The system is self-sustaining and requires no external base state.
-- **\(\mathcal{M}\) (Memory)**: The KAI ledger. An immutable, append-only record of verified reality.
-- **\(\Delta\) (Intent)**: The Human Root. The incoming signal, dream, or task.
-- **\(\mathcal{V}\) (Verification)**: The OMEGA gate. It fails closed if expected reality does not match observed reality.
-- **\((\text{Expected} \equiv \text{Observed})\)**: The Reality Principle. `ATTEST, DON'T ASSERT.`
+- **Y**: Another finite step may be justified. Not unlimited autonomy, not a missing base, and not a process that runs without a human root.
+- **M**: Append-only memory of hashes that passed the gate. Memory is not truth. This equation does not erase an unknown by forgetting it was unknown; it refuses to store the delta as verified.
+- **Δ**: Human intent, the incoming signal. It stays outside the function until it is admitted.
+- **V**: The omega gate. Expected must match observed. A claim of `VERIFIED` is not itself the observation.
+- **Expected ≡ Observed**: Attest, don't assert.
+
+Halt cases are decided before any hash is appended, including when a caller also says the step is verified:
+
+1. `K(x) ∈ SCAM` → halt `DIVERGENT`
+2. `Evidence(x) = ∅` or the input is not a bounded record → halt `UNKNOWN`
+3. `Authority(x) < Required` → halt `NOT_EXECUTED`
+4. Expected ≡ Observed → append `Hash(x)` once and stop this step (`halt: false` means another finite step may be requested)
+5. Otherwise → halt `DIVERGENT`
+
+The pure step is `evaluateEcosystemFixpoint` in [packages/mini/src/ecosystem-fixpoint.ts](packages/mini/src/ecosystem-fixpoint.ts). `GET /v1/ecosystem/body` includes `fixpoint` for that local read. `ledgerMutation` is false: the response is not a ledger write, not deployment, and not production health.
 
 ---
 

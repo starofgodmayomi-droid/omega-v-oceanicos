@@ -50,7 +50,19 @@ test('Single body compresses into a 4×4×4×4 space and expands losslessly', as
     await app.ready();
     const response = await app.inject({ method: 'GET', url: '/v1/ecosystem/body' });
     assert.equal(response.statusCode, 200);
-    const compression = response.json().compression;
+    const payload = response.json();
+    const compression = payload.compression;
+    assert.equal(payload.fixpoint.equation, 'omega.ecosystem-body.fixpoint.v1');
+    assert.equal(payload.fixpoint.ledgerMutation, false);
+    if (payload.status === 'VERIFIED') {
+      assert.equal(payload.fixpoint.status, 'VERIFIED');
+      assert.equal(payload.fixpoint.halt, false);
+      assert.equal(payload.fixpoint.reason, 'VERIFIED_APPEND');
+      assert.equal(payload.fixpoint.memory.at(-1), payload.fixpoint.deltaHash);
+    } else {
+      assert.equal(payload.fixpoint.halt, true);
+      assert.equal(payload.fixpoint.appended, false);
+    }
 
     assert.equal(compression.space.notation, '4×4×4×4');
     assert.equal(compression.space.rank, 4);
