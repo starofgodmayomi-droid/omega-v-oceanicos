@@ -29,5 +29,6 @@
     "src/github-public-repository.ts",
     "src/total-compress.ts",
     "src/single-body.ts"
+    "src/ecosystem-body-equation.ts"
   ]
 }
