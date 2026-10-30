@@ -16,6 +16,7 @@
 
 ### 📐 THE VARIABLE DEFINITIONS
 
+- **Ecosystem**: In this repository, "ecosystem" means **the universe**. The word names no smaller scope — wherever it appears, read the whole.
 - **\(\mathcal{Y}\) (Y-Combinator)**: The infinite loop of the Invisible Online Computer. The system is self-sustaining and requires no external base state.
 - **\(\mathcal{M}\) (Memory)**: The KAI ledger. An immutable, append-only record of verified reality.
 - **\(\Delta\) (Intent)**: The Human Root. The incoming signal, dream, or task.
