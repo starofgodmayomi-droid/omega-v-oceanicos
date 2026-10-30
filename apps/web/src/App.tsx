@@ -146,6 +146,15 @@ export function App() {
       /* ambient */
     }
   };
+  const fetchBodyRoles = async () => {
+    try {
+      const body = await apiRequest<any>('/v1/body');
+      if (body.success) setBodyRoles(body.roles ?? null);
+    } catch {
+      /* ambient — roles stay UNKNOWN when the body endpoint is unreachable */
+    }
+  };
+
   const fetchEcosystemBody = async () => {
     try {
       const data = await apiRequest<any>('/v1/ecosystem/body');
@@ -153,12 +162,7 @@ export function App() {
     } catch {
       /* ambient — the API may be mounted separately from the web surface */
     }
-    try {
-      const body = await apiRequest<any>('/v1/body');
-      if (body.success) setBodyRoles(body.roles ?? null);
-    } catch {
-      /* ambient — roles stay UNKNOWN when the body endpoint is unreachable */
-    }
+    await fetchBodyRoles();
   };
 
   useEffect(() => {
@@ -200,6 +204,9 @@ export function App() {
                 totalMined: prev.totalMined + 1,
                 lastBlockTime: payload.block.timestamp,
               }));
+              // A minted block changes KAI's recorded continuity and OMEGA's
+              // ledger judgment, so the body roles are re-read on each one.
+              void fetchBodyRoles();
             }
           } catch {
             /* skip malformed event */
@@ -473,6 +480,7 @@ export function App() {
         setLastError(data.error || 'Cycle execution rejected');
       } else if (data.block) {
         setTip(data.block);
+        void fetchBodyRoles();
       }
     } catch (err: any) {
       setLastError(err.message);
