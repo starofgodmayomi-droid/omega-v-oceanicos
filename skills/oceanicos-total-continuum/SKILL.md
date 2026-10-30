@@ -50,7 +50,7 @@ Use the companion order:
 
 1. Drop invented state. Name the outcome, the beneficiary, the files in scope, and what is out of scope.
 2. Observe branch, commit, and the files the slice will touch.
-3. Route to the smallest specialist skill. Do not open the whole ecosystem for a local edit.
+3. Route to the smallest specialist skill. Do not open the whole universe for a local edit.
 4. Bound the transition: target, inputs, stop, and what observation would count.
 5. Act in one vertical slice when the human asked for the change and it is reversible.
 6. Observe again. Record the commit SHA and the paths. Keep a failed check intact.

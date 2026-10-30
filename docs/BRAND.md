@@ -76,7 +76,7 @@ INFINITE FORMS.
 ### Naming roles
 
 - **Ω∞** — the enduring mark and conceptual symbol: continuity, recursion, and open-ended evolution.
-- **OCEANICOS** — the platform/ecosystem name.
+- **OCEANICOS** — the platform/universe name.
 - **OMEGA OS** — the surrounding operating environment and execution context.
 - **Ω∞v** — the intelligence/verification engine and kernel identity.
 - **Verified Current** — the system's connective execution layer between intelligence and real-world consequence.

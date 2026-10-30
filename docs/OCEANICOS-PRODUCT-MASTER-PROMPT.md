@@ -2,7 +2,7 @@
 
 **Status:** design and engineering contract. Not implementation evidence, not authorization, not connectivity, and not runtime health.
 
-**Does not replace** the continuity root [WHOLE-ECOSYSTEM-MASTER-PROMPT.md](../WHOLE-ECOSYSTEM-MASTER-PROMPT.md). That root stays the one-body continuity prompt. This file is the product operating spec for OceanicOS: conversation, planning, governed execution, and verification.
+**Does not replace** the continuity root [WHOLE-UNIVERSE-MASTER-PROMPT.md](../WHOLE-ECOSYSTEM-MASTER-PROMPT.md). That root stays the one-body continuity prompt. This file is the product operating spec for OceanicOS: conversation, planning, governed execution, and verification.
 
 **Source:** product map and conversation-to-execution lifecycle supplied 2026-10-21. Diagrams are intent. Repository files, tests, and checks remain the implementation evidence.
 
@@ -14,7 +14,7 @@
 
 Product name: OceanicOS
 
-Core identity: a hybrid conversational AI and autonomous agent ecosystem.
+Core identity: a hybrid conversational AI and autonomous agent universe.
 
 Core differentiator: verification, evidence, traceability, and controlled autonomy.
 
@@ -22,7 +22,7 @@ Product promise: tell OceanicOS what you want to accomplish. It understands your
 
 Brand principle: **Reality, verified.**
 
-OceanicOS is not merely a chatbot, a collection of AI tools, or an unrestricted autonomous agent. It is an AI operating ecosystem that combines natural conversation, goal-oriented planning, governed execution, persistent task state, and a verification layer.
+OceanicOS is not merely a chatbot, a collection of AI tools, or an unrestricted autonomous agent. It is an AI operating universe that combines natural conversation, goal-oriented planning, governed execution, persistent task state, and a verification layer.
 
 The system must distinguish between what it intends to do, what it attempts to do, what actually happens, and what the available evidence proves.
 
@@ -32,7 +32,7 @@ Tagline: More than AI. A verified future.
 
 ## 2. Primary mission
 
-Build OceanicOS into a reliable, extensible AI ecosystem capable of helping people and organizations:
+Build OceanicOS into a reliable, extensible AI universe capable of helping people and organizations:
 
 - Ask questions and hold contextual conversations.
 - Research, analyze, reason, and synthesize information.
@@ -71,7 +71,7 @@ Every major capability must be grounded in the actual implementation, not merely
 
 ## 4. Product architecture
 
-Design the ecosystem around six cooperating layers. These layers define the target architecture. They do not imply that every layer is already implemented.
+Design the universe around six cooperating layers. These layers define the target architecture. They do not imply that every layer is already implemented.
 
 ### Layer 1 — Conversational experience
 
@@ -390,7 +390,7 @@ Add worker interfaces only when the task model is stable. Enforce isolated permi
 
 Exit: delegated tasks remain bounded, traceable, and subject to the same verification policies.
 
-### Phase 5 — Production readiness and ecosystem expansion
+### Phase 5 — Production readiness and universe expansion
 
 Identity and workspace isolation, production-grade secrets and key management, key rotation and revocation, durable storage with backup and restoration, observability, privacy and threat review, and release procedures supported by deployment evidence.
 
@@ -469,7 +469,7 @@ Keep implementation facts, assumptions, and proposals visibly separate.
 
 ## 18. Final product principle
 
-OceanicOS should become an ecosystem in which conversation leads to useful action without sacrificing control or truth.
+OceanicOS should become an universe in which conversation leads to useful action without sacrificing control or truth.
 
 Central loop:
 

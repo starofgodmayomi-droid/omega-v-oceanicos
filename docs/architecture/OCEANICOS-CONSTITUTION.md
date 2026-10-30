@@ -146,7 +146,7 @@ C9  SDK / CLI
 C10 web / ecosystem / frontier
 ```
 
-The repository has executable evidence for several of these boundaries, but the capability labels are not a license to claim complete ecosystem integration. Each new transition must be selected as a finite slice:
+The repository has executable evidence for several of these boundaries, but the capability labels are not a license to claim complete universe integration. Each new transition must be selected as a finite slice:
 
 ```text
 INSPECT → DISTINGUISH → IMPLEMENT → TEST → OBSERVE

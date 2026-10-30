@@ -110,7 +110,7 @@ function EcosystemMap() {
 export function WholeEcosystemDashboard(props: Props) {
   const counts = useMemo(() => statusCounts(props.history, props.realityStatus), [props.history, props.realityStatus]);
   const evidence = [
-    { label: 'Implementation', status: props.ecosystemBody?.status === 'VERIFIED' ? 'VERIFIED' : 'UNKNOWN', source: 'ecosystem body endpoint' },
+    { label: 'Implementation', status: props.ecosystemBody?.status === 'VERIFIED' ? 'VERIFIED' : 'UNKNOWN', source: 'universe body endpoint' },
     { label: 'Ledger', status: props.ledgerIntegrity?.valid ? 'VERIFIED' : 'UNKNOWN', source: props.ledgerIntegrity ? `height ${props.ledgerIntegrity.height}` : 'no tip observed' },
     { label: 'Runtime stream', status: props.streamConnected ? 'VERIFIED' : 'UNKNOWN', source: props.streamConnected ? 'SSE connection observed' : 'not connected' },
     { label: 'CI', status: 'UNKNOWN', source: 'hosted CI is not queried by this screen' },
@@ -126,18 +126,18 @@ export function WholeEcosystemDashboard(props: Props) {
   const nextUnresolved = lucidSummary.unresolved[0];
 
   return (
-    <section className="whole-ecosystem" aria-label="Whole ecosystem command surface">
+    <section className="whole-ecosystem" aria-label="Whole universe command surface">
       <header className="whole-ecosystem-header">
         <div>
           <span className="whole-ecosystem-kicker">💧 Ω∞v OCEANICOS · ONE BODY · ONE CURRENT</span>
-          <h2>Whole ecosystem command surface</h2>
+          <h2>Whole universe command surface</h2>
         </div>
         <span className="whole-ecosystem-state"><i className="status-dot" /> {props.simulationMode ? 'BOUNDED SIMULATION' : 'LIVE STATE'}</span>
       </header>
 
       <div className="whole-ecosystem-grid">
-        <nav className="whole-ecosystem-organs" aria-label="Ecosystem organs">
-          <span className="whole-ecosystem-label">ECOSYSTEM</span>
+        <nav className="whole-ecosystem-organs" aria-label="Universe organs">
+          <span className="whole-ecosystem-label">UNIVERSE</span>
           <small className="whole-organ-guidance">Select an organ to draft a mapping prompt; submitting is a separate action.</small>
           <button className="whole-organ active" onClick={() => props.onFocusCommand('Show what matters now.')}>⌂ <span>NOW</span></button>
           {ORGANS.map(([glyph, label]) => <button className="whole-organ" key={label} onClick={() => props.onFocusCommand(`Map ${label}.`)}><b>{glyph}</b><span>{label}</span></button>)}
@@ -223,7 +223,7 @@ export function WholeEcosystemDashboard(props: Props) {
         <button onClick={() => props.onFocusCommand('Show me what actually produced value.')}>SEE VALUE PATH</button>
       </div>
 
-      <footer className="whole-bottom-current" aria-label="Whole ecosystem views">
+      <footer className="whole-bottom-current" aria-label="Whole universe views">
         {['REALITY', 'THINK', 'MIRROR', 'BUILD', 'ACT', 'VERIFY', 'VALUE', 'REMEMBER', 'NEXT'].map((item) => <button key={item} onClick={() => props.onFocusCommand(`Open ${item.toLowerCase()} view.`)}>{item}</button>)}
       </footer>
     </section>

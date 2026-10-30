@@ -38,7 +38,7 @@
 - #370 — reconciliation-stage pipeline assertions
 - #369 — bounded total-compression validation
 - #301 — Ω coordination observability
-- #308 — bounded multi-job ecosystem orchestration
+- #308 — bounded multi-job universe orchestration
 - #249 — safe admission contract
 - #251 — shared @omega-v/types package
 - #252 — OmegaTotal integrity composition
@@ -65,11 +65,11 @@
 **Priority: high**
 - #413 — Network Intelligence design law
 - #414 — machine-readable Network Intelligence contract
-- #407 — OCEANICOS ecosystem graph contract
+- #407 — OCEANICOS universe graph contract
 - #406 — ΩIR source-line provenance (referenced by current work)
 - #401 — Ocean of Thought universal current root
 - #381 — Notion ↔ repository operating spine
-- #339 — maximum full-stack ecosystem compression
+- #339 — maximum full-stack universe compression
 - #311 — continuation handoff
 - #300 — compressed continuation handoff
 - #197 — roadmap/current-state reconciliation

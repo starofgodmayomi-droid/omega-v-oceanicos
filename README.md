@@ -32,18 +32,18 @@ without treating any single component—or any agent—as the final authority.
 
 - 📋 **[Manifest](MANIFEST.md)** — Project mission, principles, and architecture
 - 💧 **[Mirror-Water Universal Body](docs/MIRROR-WATER-UNIVERSAL-BODY.md)** — one body, one current, bounded transitions, and evidence-bound truth
-- 🌊 **[Ω∞v Maximum Full-Stack Space of Reality](docs/OMEGA-INFINITY-MAXIMUM-FULL-STACK-SPACE.md)** — canonical ecosystem vision: representation, authority, bounded execution, observation, reconciliation, and next finite Δ
+- 🌊 **[Ω∞v Maximum Full-Stack Space of Reality](docs/OMEGA-INFINITY-MAXIMUM-FULL-STACK-SPACE.md)** — canonical universe vision: representation, authority, bounded execution, observation, reconciliation, and next finite Δ
 - 📜 **[Charter](CHARTER.md)** — Living agnostic principles and decision-making
 - 🌊 **[Finite operational charter](docs/OMEGA_INFINITY_CHARTER.md)** — Drop → Current → Ocean → Evaporation protocol
 - 🤝 **[Contributing](CONTRIBUTING.md)** — How to contribute verification-first
 - 📖 **[Documentation](docs/)** — Architecture, guides, and references
-- 🌊 **[Whole-ecosystem master prompt](WHOLE-ECOSYSTEM-MASTER-PROMPT.md)** — canonical continuity/design layer, bounded by repository evidence
+- 🌊 **[Whole-universe master prompt](WHOLE-ECOSYSTEM-MASTER-PROMPT.md)** — canonical continuity/design layer, bounded by repository evidence
 - 🧭 **[Value Navigator contract](skills/oceanicos-value-navigator/references/repository-contract.md)** — proposals, evidence, observation, and reconciliation
 - 🌉 **[Voice Bridge](skills/voice-bridge/SKILL.md)** — one human source across many expressive forms
 - Ɔ **[ƆREADE × Oceanicos Harmonizer](skills/oread-pidgin-harmonizer/SKILL.md)** — symbolic meaning translated into bounded action
 - 🧩 **[OceanicOS Framework](skills/oceanicos-framework/SKILL.md)** — finite transitions, evidence, and human authority
-- 🌊 **[Oceanicos Full Stack](skills/oceanicos-full-stack/SKILL.md)** — the renamed Ω∞v verification spine, whole-ecosystem routing, and bounded FLOW
-- 🧭 **[Lucid Full Stack](skills/lucid-full-stack/SKILL.md)** — one evidence-first operating skill spanning voice, continuity, culture, value, ecosystem, and software delivery
+- 🌊 **[Oceanicos Full Stack](skills/oceanicos-full-stack/SKILL.md)** — the renamed Ω∞v verification spine, whole-universe routing, and bounded FLOW
+- 🧭 **[Lucid Full Stack](skills/lucid-full-stack/SKILL.md)** — one evidence-first operating skill spanning voice, continuity, culture, value, universe, and software delivery
 - 🤝 **[Oceanicos Full-Stack Companion](skills/oceanicos-full-stack-companion/SKILL.md)** — intent, meaning, repositories, tools, runtime, and learning into one authorized outcome
 - 🌌 **[Oceanicos Max-Space Full Stack](skills/oceanicos-max-space-full-stack/SKILL.md)** — dimensional state space as bounded coordinates, clocks, and arrays
 - ⬆️ **[Oceanicos Verified Upgrade](skills/oceanicos-verified-upgrade/SKILL.md)** — repair and upgrade only through an observed, reversible pipeline
@@ -55,7 +55,7 @@ without treating any single component—or any agent—as the final authority.
 - ⚙️ **[Development Setup](docs/DEVELOPMENT.md)** — Get the project running locally
 | | Meaning |
 | --- | --- |
-| **Platform** | OCEANICOS — one ecosystem body with many bounded capabilities |
+| **Platform** | OCEANICOS — one universe body with many bounded capabilities |
 | **Engine** | Ω∞v — the verification and evidence loop |
 | **Core loop** | Observe → Verify → Remember |
 | **Earned loop** | Observe → Verify → Remember → Attest → Display → Learn → Return |
@@ -382,7 +382,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full process.
 
 - **Ω∞** is the mark: continuity, recursion, and open-ended evolution.
 - **Ω∞v** is the verification engine and kernel identity.
-- **OCEANICOS** is the platform and ecosystem body.
+- **OCEANICOS** is the platform and universe body.
 - **One root. One current. Infinite forms.** is the creative creed.
 - **REALITY, VERIFIED.** is the public promise, bounded by evidence.
 
@@ -395,14 +395,14 @@ infinity, consciousness, or control of external reality.
 **Status:** MINI kernel and earned expansions — expand only with evidence
 **Last updated:** 2026-10-02
 
-## Whole-ecosystem root
+## Whole-universe root
 
-The canonical expandable continuity/root prompt is [WHOLE-ECOSYSTEM-MASTER-PROMPT.md](WHOLE-ECOSYSTEM-MASTER-PROMPT.md). It is a design/continuity contract, not runtime proof. Existing repository contracts, ΩIR types, admission gates, tests, and runtime observations remain the executable evidence boundary.
+The canonical expandable continuity/root prompt is [WHOLE-UNIVERSE-MASTER-PROMPT.md](WHOLE-ECOSYSTEM-MASTER-PROMPT.md). It is a design/continuity contract, not runtime proof. Existing repository contracts, ΩIR types, admission gates, tests, and runtime observations remain the executable evidence boundary.
 
 ---
 
-## Whole-ecosystem alignment
+## Whole-universe alignment
 
-This repository surface is one bounded form in the OCEANICOS body, rooted in human intent and source context. Its place in `SOURCE → ROOT → SUCCESS → relevant BODY → finite Δ` and the full-stack transition loop is defined by the [Whole-Ecosystem Master Prompt](WHOLE-ECOSYSTEM-MASTER-PROMPT.md).
+This repository surface is one bounded form in the OCEANICOS body, rooted in human intent and source context. Its place in `SOURCE → ROOT → SUCCESS → relevant BODY → finite Δ` and the full-stack transition loop is defined by the [Whole-Universe Master Prompt](WHOLE-ECOSYSTEM-MASTER-PROMPT.md).
 
 The prompt is a design/continuity contract, not evidence that a named component exists, connects, runs, or is healthy. This README documents this surface; establish claims from relevant implementation, tests, and observations. Keep `UNKNOWN` and `DIVERGENT` explicit; capability is not authority, and execution is not verification.

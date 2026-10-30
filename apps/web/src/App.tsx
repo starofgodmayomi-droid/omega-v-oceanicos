@@ -572,13 +572,13 @@ export function App() {
     {
       id: 'ecosystem',
       icon: '🌊',
-      label: 'Ecosystem',
+      label: 'Universe',
       subtitle: 'Capability layers and evidence',
       state: 'available' as const,
       detail: (
         <>
           {ecosystemBody && (
-            <section className="ecosystem-body-strip" aria-label="Unified full-stack ecosystem body">
+            <section className="ecosystem-body-strip" aria-label="Unified full-stack universe body">
               <div className="ecosystem-body-heading">
                 <span>Ω∞v FULL-STACK BODY · {ecosystemBody.bodyVersion}</span>
                 <strong>{ecosystemBody.status}</strong>

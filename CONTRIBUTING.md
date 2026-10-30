@@ -1,6 +1,6 @@
 # Contributing to Ω∞v Oceanicos
 
-Thank you for joining this verification-first community. This document explains how to contribute in a way that strengthens the whole ecosystem.
+Thank you for joining this verification-first community. This document explains how to contribute in a way that strengthens the whole universe.
 
 > **Before you contribute code, understand the charter.** Read [CHARTER.md](CHARTER.md) and [MANIFEST.md](MANIFEST.md) first.
 

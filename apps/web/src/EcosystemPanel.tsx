@@ -76,7 +76,7 @@ export function EcosystemPanel() {
       if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
       setStatus(data);
     } catch (err: any) {
-      setError(err instanceof Error ? err.message : 'ecosystem status unavailable');
+      setError(err instanceof Error ? err.message : 'universe status unavailable');
     } finally {
       setLoading(false);
     }
@@ -88,7 +88,7 @@ export function EcosystemPanel() {
 
   return (
     <section
-      aria-label="Ecosystem status adapter contract"
+      aria-label="Universe status adapter contract"
       style={{
         background: '#07121b',
         border: '1px solid #38bdf844',
@@ -100,7 +100,7 @@ export function EcosystemPanel() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
         <div>
           <div style={{ color: '#38bdf8', fontSize: '13px', fontWeight: 'bold' }}>
-            🌊 ECOSYSTEM STATUS — ADAPTER CONTRACT
+            🌊 UNIVERSE STATUS — ADAPTER CONTRACT
           </div>
           <div style={{ color: '#94a3b8', fontSize: '11px', marginTop: '4px' }}>
             Read-only evidence-bearing contract · distinguishes VERIFIED from Unknown
@@ -120,7 +120,7 @@ export function EcosystemPanel() {
             cursor: loading ? 'wait' : 'pointer',
           }}
         >
-          {loading ? 'EVALUATING...' : status ? '↻ REFRESH' : '📋 FETCH ECOSYSTEM STATUS'}
+          {loading ? 'EVALUATING...' : status ? '↻ REFRESH' : '📋 FETCH UNIVERSE STATUS'}
         </button>
       </div>
 

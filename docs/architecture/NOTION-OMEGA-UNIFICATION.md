@@ -1,10 +1,10 @@
-# 💧 Ω∞v × NOTION — UNIFIED ECOSYSTEM CONTRACT
+# 💧 Ω∞v × NOTION — UNIFIED UNIVERSE CONTRACT
 
 > **ONE ROOT • ONE CURRENT • MANY BOUNDED FORMS • ONE TRUST BOUNDARY • REALITY FIRST**
 
 ## Purpose
 
-This document is the implementation bridge between the Notion knowledge/command ecosystem and the Ω∞v/OCEANICOS runtime.
+This document is the implementation bridge between the Notion knowledge/command universe and the Ω∞v/OCEANICOS runtime.
 
 It does **not** declare that every Notion statement is true or every planned capability is deployed. Notion is treated as intent, knowledge, design, provenance, and human context. GitHub/runtime evidence determines implementation reality.
 
@@ -38,7 +38,7 @@ HUMAN
 |---|---|
 | AI SOUL | human command, context, identity |
 | Ω∞v | invariant, trust boundary, verification |
-| OCEANICOS | ecosystem constitution |
+| OCEANICOS | universe constitution |
 | ΩIR | change contract |
 | Truth Weaver | reasoning / truth comparison |
 | KAI | memory / knowledge runtime |

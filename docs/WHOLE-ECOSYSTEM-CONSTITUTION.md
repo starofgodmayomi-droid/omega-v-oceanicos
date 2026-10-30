@@ -1,12 +1,12 @@
-> **Source:** user-supplied ecosystem specification received on 2026-10-06.
+> **Source:** user-supplied universe specification received on 2026-10-06.
 
 > **Repository status:** design source only; this document is not runtime, deployment, authorization, or reality proof.
 
-# 💧 Ω∞v OCEANICOS — WHOLE ECOSYSTEM
+# 💧 Ω∞v OCEANICOS — WHOLE UNIVERSE
 
 **ONE ROOT • ONE CURRENT • ONE BODY • MANY FORMS**
 
-The whole system is best understood as **one living ecosystem**, not a collection of separate products.
+The whole system is best understood as **one living universe**, not a collection of separate products.
 
 ```text
                            🌎 REALITY
@@ -150,7 +150,7 @@ VERIFIED
 UNKNOWN
 ```
 
-Its purpose is to prevent the ecosystem from turning imagination, memory, confidence, or model output into false certainty.
+Its purpose is to prevent the universe from turning imagination, memory, confidence, or model output into false certainty.
 
 ---
 
@@ -204,7 +204,7 @@ intelligence, not sovereignty**
 
 ƆREADE is the **Open Mouth of Return**.
 
-It gives the ecosystem human language, cultural expression, warmth and return.
+It gives the universe human language, cultural expression, warmth and return.
 
 ```text
 MEANING → LANGUAGE → CONNECTION → RETURN
@@ -254,7 +254,7 @@ OBSERVED OUTCOME
 EARNED VALUE
 ```
 
-The ecosystem must distinguish:
+The universe must distinguish:
 
 ```text
 OPPORTUNITY ≠ REVENUE
@@ -468,7 +468,7 @@ becomes reconciliation.
 
 # ⚖️ RECONCILIATION
 
-The ecosystem compares:
+The universe compares:
 
 ```text
 INTENDED STATE
@@ -536,7 +536,7 @@ The live canonical structure found in the workspace compresses into:
 09 DOMAINS / 12 ORGANS
 ```
 
-So the many V10, full-stack, one-body, one-drop, KAI, TruthOS, ECHOFRAME and OceanicOS pages become **rooms and views of one body**, rather than unrelated ecosystems.
+So the many V10, full-stack, one-body, one-drop, KAI, TruthOS, ECHOFRAME and OceanicOS pages become **rooms and views of one body**, rather than unrelated universes.
 
 ---
 
@@ -631,7 +631,7 @@ History is not silently rewritten.**
 
 ---
 
-# 💧 THE WHOLE ECOSYSTEM IN ONE DROP
+# 💧 THE WHOLE UNIVERSE IN ONE DROP
 
 ```text
 MY OWN FROM ALL
@@ -696,7 +696,7 @@ ASK
 → RETURN
 ```
 
-**The Human Root gives the ecosystem meaning.
+**The Human Root gives the universe meaning.
 KAI gives it continuity.
 MIRRIO gives it distinction.
 OCEANICOS gives it structure.

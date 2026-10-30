@@ -57,7 +57,7 @@ When designing or upgrading a full-stack system, map responsibilities as:
 
 `REALITY → OCEANICOS → Ω OS → Ω KERNEL → ΩIR → VALIDATOR → REGISTRY → ADMISSION → EXECUTOR → OBSERVER → ATTESTATION → PROVENANCE → MEMORY → WEB/API/CLI/SDK → HUMAN+AI+WORKERS → REALITY`
 
-Use these capability boundaries when relevant: **C0** ΩIR contract, **C1** deterministic compiler, **C2** fail-closed validator, **C3** bounded worker registry, **C4** admission bridge, **C5** bounded executor, **C6** reality reconciliation, **C7** attestation and memory, **C8** command API, **C9** SDK/CLI, and **C10** observable ecosystem. Do not claim the architecture exists merely because it is specified; verify each implemented boundary independently.
+Use these capability boundaries when relevant: **C0** ΩIR contract, **C1** deterministic compiler, **C2** fail-closed validator, **C3** bounded worker registry, **C4** admission bridge, **C5** bounded executor, **C6** reality reconciliation, **C7** attestation and memory, **C8** command API, **C9** SDK/CLI, and **C10** observable universe. Do not claim the architecture exists merely because it is specified; verify each implemented boundary independently.
 
 Treat KAI as continuity, context, knowledge, and provenance—not proof. Ask: what, who, why, when, where, based on what, under which policy/authority, what changed, what happened, what was proven, what diverged, and what remains unknown. Preserve append-only lineage, such as `hashₙ = H(recordₙ + hashₙ₋₁)`, without treating integrity as truth.
 

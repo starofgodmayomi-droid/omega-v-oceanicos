@@ -22,7 +22,7 @@ The central change is a unified read-only body: sensory telemetry flows through 
   - append-only
   - bounded
   - `observe → verify → remember → govern → present`
-- Wired the unified body into the expandable Navigator Ecosystem stage.
+- Wired the unified body into the expandable Navigator Universe stage.
 - Replaced the smoke runner’s fixed-port assumption with free-port reservation and fallback.
 - Extended compiled API smoke to verify the unified body contract and all required layers.
 - Added production environment and deployment documentation.

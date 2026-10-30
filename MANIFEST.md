@@ -6,7 +6,7 @@
 
 ## Mission
 
-Ω∞v Oceanicos is a verification-first full-stack ecosystem that enables continuous observation, verification, attestation, and provenance tracking for building trustworthy intelligence systems.
+Ω∞v Oceanicos is a verification-first full-stack universe that enables continuous observation, verification, attestation, and provenance tracking for building trustworthy intelligence systems.
 
 The project embodies a living evolution: every step contains all steps; every end is a new beginning; every becoming is a returning.
 
@@ -166,7 +166,7 @@ Growth order: **Zero → MINI → earned expansions**. Details in [docs/ROADMAP.
 
 ### Phase 0–1: Zero + Constitution
 
-- [x] Admit empty origin (no fake ecosystem)
+- [x] Admit empty origin (no fake universe)
 - [x] Charter, manifest, contributing, license
 
 ### Phase 2: MINI kernel (Observe → Verify → Remember)
@@ -187,7 +187,7 @@ Growth order: **Zero → MINI → earned expansions**. Details in [docs/ROADMAP.
 
 - [ ] API / Web / CLI / SDK / Mobile
 
-### Phase 5–7: Depth, distribution, ecosystem
+### Phase 5–7: Depth, distribution, universe
 
 - [ ] Compiler/IR, durable stores, edge, VaaS
 - [ ] Governance, stewardship, economy, evolution ↺ ∞
@@ -245,7 +245,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on:
 *   **Evidence boundary:** On-disk packages, future adapters, external services, and deployment targets are not treated as active capabilities until directly verified.
 
 ## 💧 2. THE SYSTEM LAW (Ω∞v MINI)
-> *Growth Matrix: 0 ➔ MINI ➔ + ➔ + ➔ FULL STACK ➔ ECOSYSTEM ➔ REALITY ↺ ∞*
+> *Growth Matrix: 0 ➔ MINI ➔ + ➔ + ➔ FULL STACK ➔ UNIVERSE ➔ REALITY ↺ ∞*
 > **Rule:** Attest, don't assert. Evidence before trust. Verification before evolution.
 
 *   `@oceanicos/observer` -> Continuous low-impact sensor/stream inspection.

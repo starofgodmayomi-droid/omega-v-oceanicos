@@ -807,7 +807,7 @@ export class OceanicosCLI {
           message: `Ω∞v Oceanicos CLI v0.1.0
 Commands:
   omega-v loop [claim]              Execute complete verification loop
-  omega-v ecosystem [claim]         Execute unified 8-stage canonical ecosystem OS flow
+  omega-v ecosystem [claim]         Execute unified 8-stage canonical universe OS flow
   omega-v grand-flow [claim]        Execute full grand continuum flow (lowest to max form)
   omega-v hyper-flow [claim]        Execute 22-stage hyper-continuum max flow end-to-end
   omega-v swarm [claim]             Execute multi-agent Formless Swarm cycle

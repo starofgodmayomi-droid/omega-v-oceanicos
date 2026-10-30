@@ -6,7 +6,7 @@
 
 ## Growth model
 
-Architecture does **not** begin as the giant ecosystem. It begins at **ZERO**, becomes a **MINI** kernel, and expands only when reality verifies the next step.
+Architecture does **not** begin as the giant universe. It begins at **ZERO**, becomes a **MINI** kernel, and expands only when reality verifies the next step.
 
 ```text
                          0
@@ -67,7 +67,7 @@ Architecture does **not** begin as the giant ecosystem. It begins at **ZERO**, b
 0
 ```
 
-- No assumed ecosystem
+- No assumed universe
 - No assumed capital
 - No assumed architecture
 - No pretending something is already verified
@@ -137,7 +137,7 @@ MINI
 
 **Each `+` is earned by the previous layer.**
 
-Do not scaffold the full ecosystem because the vision diagram includes it. Ship MINI. Prove it. Then expand.
+Do not scaffold the full universe because the vision diagram includes it. Ship MINI. Prove it. Then expand.
 
 ---
 

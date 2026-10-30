@@ -46,7 +46,7 @@ The custody modes are `unverified-local`, `operator-managed`, `hsm-kms`, and `ex
 
 ## Explicit uncertainty
 
-The following remain open and must not be represented as complete: real HSM/KMS custody, verified secure deletion, complete data-at-rest coverage, key recovery, distributed coordination, distributed revocation consistency, clock coordination, identity proofing, stronger administrative authorization, mobile surface, production deployment hardening, and ecosystem-wide causal knowledge graph semantics.
+The following remain open and must not be represented as complete: real HSM/KMS custody, verified secure deletion, complete data-at-rest coverage, key recovery, distributed coordination, distributed revocation consistency, clock coordination, identity proofing, stronger administrative authorization, mobile surface, production deployment hardening, and universe-wide causal knowledge graph semantics.
 
 ## Next executable action
 

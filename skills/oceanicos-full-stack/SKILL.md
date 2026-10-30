@@ -1,11 +1,11 @@
 ---
 name: oceanicos-full-stack
-description: Operate, explain, and expand the user's Ω∞v/Oceanicos ecosystem as a connected but bounded full-stack practice spanning human intent, Notion/context, ΩIR change contracts, GitHub implementation, workers, runtime observation, verification, memory, value, culture, and creative expression. Use for expand commands, Oceanicos/Ω∞v/Ω OS/ΩIR work, repository implementation, cross-layer planning, provenance, reconciliation, or evidence-backed next transitions. Formerly omega-v-full-stack.
+description: Operate, explain, and expand the user's Ω∞v/Oceanicos universe as a connected but bounded full-stack practice spanning human intent, Notion/context, ΩIR change contracts, GitHub implementation, workers, runtime observation, verification, memory, value, culture, and creative expression. Use for expand commands, Oceanicos/Ω∞v/Ω OS/ΩIR work, repository implementation, cross-layer planning, provenance, reconciliation, or evidence-backed next transitions. Formerly omega-v-full-stack.
 ---
 
 # Oceanicos Full Stack
 
-Use this skill as the **verification spine and routing layer** for the user's Ω∞v/Oceanicos framework. Treat the supplied ecosystem as user context and conceptual architecture, not as proof that any named system, integration, control, repository state, service, worker, or outcome exists.
+Use this skill as the **verification spine and routing layer** for the user's Ω∞v/Oceanicos framework. Treat the supplied universe as user context and conceptual architecture, not as proof that any named system, integration, control, repository state, service, worker, or outcome exists.
 
 The complete supplied master prompt is preserved at `references/master-prompt.md`. Read it when the user requests the exact source, `expand ALL`, a deep branch not covered here, or detailed symbolic/organ-specific context. Keep this file as the compact operating core.
 
@@ -99,7 +99,7 @@ Bound data, side effects, duration, cost, permissions, and reversibility. Ask on
 
 ## Real-work loop
 
-Follow this sequence for repository, tool, runtime, or ecosystem work:
+Follow this sequence for repository, tool, runtime, or universe work:
 
 1. **Inspect reality:** inspect the actual environment, repository, branch, files, integrations, or runtime relevant to the request.
 2. **Map current state:** separate observed facts from supplied context, inference, proposal, and unknowns.

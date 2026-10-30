@@ -66,16 +66,16 @@ Welcome to the Ω∞v Oceanicos documentation. Start here to understand the proj
 - **[KAI Companion](../skills/kai-companion/SKILL.md)** — continuity, provenance,
   uncertainty, and the next finite return; memory is not proof.
 - **[Ω∞v Mirror-Water Universal Body](../skills/omega-mirror-water-universal-body/SKILL.md)**
-  — broad ecosystem intent translated into bounded, observable transitions.
+  — broad universe intent translated into bounded, observable transitions.
 - **[OceanicOS Framework](../skills/oceanicos-framework/SKILL.md)** — OUPEMLI,
   finite transition, provenance, and authority boundaries.
 - **[Oceanicos Full Stack](../skills/oceanicos-full-stack/SKILL.md)** — renamed
-  Ω∞v verification spine, whole-ecosystem routing, and bounded FLOW.
+  Ω∞v verification spine, whole-universe routing, and bounded FLOW.
 - **[Lucid Full Stack](../skills/lucid-full-stack/SKILL.md)** — one integrated
-  guide across voice, continuity, culture, value, ecosystem planning, and
+  guide across voice, continuity, culture, value, universe planning, and
   evidence-first software delivery.
 - **[Oceanicos Full-Stack Companion](../skills/oceanicos-full-stack-companion/SKILL.md)**
-  — session companion for ecosystem work, audits, upgrades, verification, and handoffs.
+  — session companion for universe work, audits, upgrades, verification, and handoffs.
 - **[Oceanicos Max-Space Full Stack](../skills/oceanicos-max-space-full-stack/SKILL.md)**
   — 0D–N-D requests translated into bounded representations.
 - **[Oceanicos Verified Upgrade](../skills/oceanicos-verified-upgrade/SKILL.md)**
@@ -86,13 +86,13 @@ Welcome to the Ω∞v Oceanicos documentation. Start here to understand the proj
   handoff, and what must be observed again.
 - **[Oceanicos Total Continuum](../skills/oceanicos-total-continuum/SKILL.md)**
   — one finite pass inside this public repository, then only an observed handoff.
-- **[Whole ecosystem reality compression](./upgrades/WHOLE_ECOSYSTEM_REALITY_COMPRESSION_2026-10-04.md)**
+- **[Whole universe reality compression](./upgrades/WHOLE_ECOSYSTEM_REALITY_COMPRESSION_2026-10-04.md)**
   — source-labeled translation of the supplied Ω∞v architecture into repository
   boundaries and explicit unknowns.
 - **[One-body operating core](./upgrades/ONE_BODY_OPERATING_CORE_2026-10-04.md)**
   — the supplied operating-body architecture, mapped to a reality-bound
   governance spine, interchangeable provider examples, and truthful UI states.
-- **[Whole Ecosystem Constitution](./WHOLE-ECOSYSTEM-CONSTITUTION.md)**
+- **[Whole Universe Constitution](./WHOLE-ECOSYSTEM-CONSTITUTION.md)**
   — the user-supplied one-body architecture source, preserved as design
   language and explicitly separated from runtime proof, authority, and reality.
 - **[Full-stack reality access](./upgrades/FULL_STACK_REALITY_ACCESS_2026-09-28.md)**
@@ -214,8 +214,8 @@ See [MINI.md](./MINI.md) and [ROADMAP.md](./ROADMAP.md).
 
 ---
 
-## Whole-ecosystem alignment
+## Whole-universe alignment
 
-This repository surface is one bounded form in the OCEANICOS body, rooted in human intent and source context. Its place in `SOURCE → ROOT → SUCCESS → relevant BODY → finite Δ` and the full-stack transition loop is defined by the [Whole-Ecosystem Master Prompt](../WHOLE-ECOSYSTEM-MASTER-PROMPT.md).
+This repository surface is one bounded form in the OCEANICOS body, rooted in human intent and source context. Its place in `SOURCE → ROOT → SUCCESS → relevant BODY → finite Δ` and the full-stack transition loop is defined by the [Whole-Universe Master Prompt](../WHOLE-ECOSYSTEM-MASTER-PROMPT.md).
 
 The prompt is a design/continuity contract, not evidence that a named component exists, connects, runs, or is healthy. This README documents this surface; establish claims from relevant implementation, tests, and observations. Keep `UNKNOWN` and `DIVERGENT` explicit; capability is not authority, and execution is not verification.

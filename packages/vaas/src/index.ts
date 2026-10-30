@@ -38,7 +38,7 @@ export class VaaSGate {
   private usage: Map<string, { requestCount: number; windowStart: number }> = new Map();
 
   /**
-   * Register a new organization / tenant in the VaaS ecosystem
+   * Register a new organization / tenant in the VaaS universe
    */
   public registerTenant(
     name: string,

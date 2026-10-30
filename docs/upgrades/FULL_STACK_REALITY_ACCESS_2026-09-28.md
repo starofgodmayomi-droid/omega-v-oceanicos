@@ -14,7 +14,7 @@ This is a capability-plane design, not a claim that every connector, account, pe
 
 ## One body, many admissible organs
 
-The ecosystem may represent and, when separately connected and authorized, route bounded work across capability surfaces such as:
+The universe may represent and, when separately connected and authorized, route bounded work across capability surfaces such as:
 
 ```text
 KNOWLEDGE • CODE • REPOSITORIES • FILES • DATABASES • CLOUD • SERVERS

@@ -354,7 +354,7 @@ export class OceanicosClient {
   }
 
   /**
-   * Read the unified, evidence-bearing One Body ecosystem snapshot.
+   * Read the unified, evidence-bearing One Body universe snapshot.
    */
   public async getOneBodyStatus(): Promise<OneBodyStatus> {
     if (this.mode === 'local') {
@@ -380,7 +380,7 @@ export class OceanicosClient {
   }
 
   /**
-   * Run the unified 8-stage canonical ecosystem OS execution flow
+   * Run the unified 8-stage canonical universe OS execution flow
    */
   public async runEcosystemFlow(
     input: {
@@ -530,7 +530,7 @@ export class OceanicosClient {
   }
 
   /**
-   * Run the 22-stage hyper-continuum ecosystem execution flow
+   * Run the 22-stage hyper-continuum universe execution flow
    */
   public async runHyperFlow(
     input: {

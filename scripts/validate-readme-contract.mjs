@@ -5,7 +5,7 @@ import { basename, dirname, resolve } from 'node:path';
 const root = process.cwd();
 const promptPath = resolve(root, 'WHOLE-ECOSYSTEM-MASTER-PROMPT.md');
 const compatibilityPath = resolve(root, 'docs/WHOLE-ECOSYSTEM-MASTER-PROMPT.md');
-const heading = '## Whole-ecosystem alignment';
+const heading = '## Whole-universe alignment';
 const errors = [];
 
 if (!existsSync(promptPath)) errors.push('missing root WHOLE-ECOSYSTEM-MASTER-PROMPT.md');
@@ -62,7 +62,7 @@ for (const file of readmes) {
     errors.push(`${relativeLabel}: must keep UNKNOWN and DIVERGENT explicit`);
   }
 
-  const links = Array.from(text.matchAll(/\[Whole-Ecosystem Master Prompt\]\(([^)]+)\)/g));
+  const links = Array.from(text.matchAll(/\[Whole-Universe Master Prompt\]\(([^)]+)\)/g));
   if (links.length !== 1) {
     errors.push(`${relativeLabel}: expected exactly one canonical master-prompt link, found ${links.length}`);
     continue;
@@ -88,9 +88,9 @@ for (const file of readmes) {
 }
 
 if (errors.length > 0) {
-  console.error(`README ecosystem contract validation failed (${errors.length} issue(s)):`);
+  console.error(`README universe contract validation failed (${errors.length} issue(s)):`);
   for (const error of errors) console.error(`- ${error}`);
   process.exit(1);
 }
 
-console.log(`validated ${readmes.length} tracked README ecosystem contracts and the canonical source prompt`);
+console.log(`validated ${readmes.length} tracked README universe contracts and the canonical source prompt`);

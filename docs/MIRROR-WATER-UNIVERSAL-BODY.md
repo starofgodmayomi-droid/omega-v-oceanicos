@@ -258,7 +258,7 @@ NEXT Δ
 
 ## THE UNIVERSAL-BODY DEFINITION
 
-> **OCEANICOS is a mirror-water full-stack ecosystem: one reality-connected body through which human and AI reflection can continuously change form across time, space, domains, and computational media; create measurable value; execute only bounded transitions; preserve security and uncertainty; pass claims through progressively stronger evidence and verification; remember what happened; and continuously re-form itself toward the next most useful finite transition.**
+> **OCEANICOS is a mirror-water full-stack universe: one reality-connected body through which human and AI reflection can continuously change form across time, space, domains, and computational media; create measurable value; execute only bounded transitions; preserve security and uncertainty; pass claims through progressively stronger evidence and verification; remember what happened; and continuously re-form itself toward the next most useful finite transition.**
 
 ---
 
@@ -293,7 +293,7 @@ CONTINUOUS RECONCILIATION
 
 > **MANY FORMS. ONE CURRENT. EVERY Δ BOUNDED. EVERY CLAIM TESTED. EVERY UNKNOWN PRESERVED. EVERY VALUE TRACEABLE. EVERY OBSERVATION RETURNED TO THE MIRROR.**
 
-The ecosystem does not merely produce answers — it continuously **reflects → forms → acts → observes → verifies → learns → reforms**, while **reality remains outside the mirror** as the thing that ultimately decides whether the reflection corresponds to what actually happened.
+The universe does not merely produce answers — it continuously **reflects → forms → acts → observes → verifies → learns → reforms**, while **reality remains outside the mirror** as the thing that ultimately decides whether the reflection corresponds to what actually happened.
 
 ---
 

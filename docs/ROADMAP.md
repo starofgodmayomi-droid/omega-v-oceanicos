@@ -12,7 +12,7 @@ Canonical model: [MINI.md](./MINI.md).
 
 ## Vision
 
-Ω∞v is a verification-first system that starts as a living MINI kernel (Observe → Verify → Remember) and expands into a full-stack trusted intelligence ecosystem only when reality verifies each next step.
+Ω∞v is a verification-first system that starts as a living MINI kernel (Observe → Verify → Remember) and expands into a full-stack trusted intelligence universe only when reality verifies each next step.
 
 ## Current Status
 
@@ -45,7 +45,7 @@ Main-branch Verification Pipeline and Security Analysis completed successfully a
 
 ### Phase 0 — Zero
 
-Honest origin. No assumed ecosystem, capital, or verified stack.
+Honest origin. No assumed universe, capital, or verified stack.
 
 **Done when**: project admits it starts empty and refuses fake completeness.
 
@@ -145,7 +145,7 @@ clock policy and distributed time coordination remain open. The unauthenticated 
 - Infrastructure (Docker/K8s/cloud)
 - VaaS (verification as a service)
 
-### Phase 7 — Ecosystem expansions
+### Phase 7 — Universe expansions
 
 - Governance / trust
 - Community + stewardship
@@ -172,7 +172,7 @@ pnpm run dev   # expansion surfaces (API/Web), optional for MINI work
 ## Workflow Principles
 
 - Start from Zero; ship MINI first
-- Build the smallest executable loop before the ecosystem story
+- Build the smallest executable loop before the universe story
 - Keep every package compilable independently
 - Keep each package exporting one public interface
 - Keep the repo runnable from a fresh clone
@@ -286,7 +286,7 @@ blocked on design; each is a decision or a scoped change.
 
 - **Portable compiled-runtime smoke — local reproducibility implemented, deployment health not complete.** The root `pnpm smoke:api` command builds the workspace, starts the compiled API from `apps/api` so workspace package resolution is reproducible, checks `readiness: ready`, and exercises the bounded scene endpoint through `return` with `deterministic: true` and `verified: false`. It provides local runtime evidence only; deployment orchestration, distributed coordination, external custody, persistence, backups, replicas, and production availability remain unverified.
 
-- **TypeScript 7.0.2 migration — upstream toolchain compatibility remains open.** PR #125 rebased onto the green `main` baseline and produced authoritative failures in Node 22 lint (`@typescript-eslint/parser` 8.67.0 rejects TypeScript 7.0) and Windows tests (`ts-jest` 29.4.12 cannot use the TypeScript 7 compiler API). The earlier commit labels called this TypeScript 6; that naming error is preserved as lineage dissent, while the observed dependency is TypeScript 7.0.2. No bypass, compatibility shim, or false green result is accepted until the parser and transformer ecosystem supports the compiler API or an explicitly designed dual-compiler strategy is verified. See [typescript-eslint#10940](https://github.com/typescript-eslint/typescript-eslint/issues/10940).
+- **TypeScript 7.0.2 migration — upstream toolchain compatibility remains open.** PR #125 rebased onto the green `main` baseline and produced authoritative failures in Node 22 lint (`@typescript-eslint/parser` 8.67.0 rejects TypeScript 7.0) and Windows tests (`ts-jest` 29.4.12 cannot use the TypeScript 7 compiler API). The earlier commit labels called this TypeScript 6; that naming error is preserved as lineage dissent, while the observed dependency is TypeScript 7.0.2. No bypass, compatibility shim, or false green result is accepted until the parser and transformer universe supports the compiler API or an explicitly designed dual-compiler strategy is verified. See [typescript-eslint#10940](https://github.com/typescript-eslint/typescript-eslint/issues/10940).
 
 - **Coordination declaration boundary — full-stack evidence implemented, distributed proof remains open.** Persistence policy parsing, API health/readiness and observability/state responses, shared SDK contract, CLI output, web dashboard panel, tests, and operator documentation now carry the same bounded coordination declaration. Reference-bearing modes require a reference; malformed or reference-less declarations fail closed for readiness. The declaration is always `verified:false` and does not prove distributed consistency, leader election, replica agreement, global ordering, external coordinator control, deployment availability, or production orchestration.
 - **Current verification evidence — focused contract gate green.** The coordination slice currently passes 4 suites and 143 tests covering persistence policy parsing, API contracts, job routes, and dashboard behavior; type-check and lint also pass. The repository-wide gate now passes 41 suites and 844 tests, alongside format, type-check, lint, build, and compiled-runtime smoke evidence; merge and publication state remain separate human-controlled actions.
@@ -353,6 +353,6 @@ Attestation revocations now persist in the runtime snapshot and emit append-only
 The attestation revocation registry now uses the shared SQLite command volume when file-backed persistence is enabled. Independent API instances observe live revocations and SQLite uniqueness makes duplicate writes fail closed with `ATTESTATION_ALREADY_REVOKED`. The API exposes `consistency: multi-process-single-volume` and `verified: true` for this runtime-observed boundary; memory mode remains `single-process`. The focused integration gate verifies live visibility and duplicate safety. Cross-host ordering, replica agreement, external storage, backup/restore consistency, key custody, and deployment health remain unverified.
 
 
-## One Body ecosystem contract — bounded full-stack slice — 2026-09-28
+## One Body universe contract — bounded full-stack slice — 2026-09-28
 
-The existing ecosystem adapter now returns one shared `oneBody` snapshot consumed by the API contract, typed SDK (`getOneBodyStatus()`), CLI (`omega one-body`), and web Ecosystem panel. The snapshot binds MINI, API/Web, attestation, worker, governance, and distribution layers to explicit evidence statuses, with `SUPPORTED` / `runtime-observed` / `local-runtime` as the aggregate boundary. It does not claim that deployment, community, economy, external services, or consequential authority are active. Focused integration coverage verifies the contract shape and its limitations.
+The existing universe adapter now returns one shared `oneBody` snapshot consumed by the API contract, typed SDK (`getOneBodyStatus()`), CLI (`omega one-body`), and web Universe panel. The snapshot binds MINI, API/Web, attestation, worker, governance, and distribution layers to explicit evidence statuses, with `SUPPORTED` / `runtime-observed` / `local-runtime` as the aggregate boundary. It does not claim that deployment, community, economy, external services, or consequential authority are active. Focused integration coverage verifies the contract shape and its limitations.

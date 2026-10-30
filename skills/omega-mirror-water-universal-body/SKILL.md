@@ -1,6 +1,6 @@
 ---
 name: omega-mirror-water-universal-body
-description: "Translate broad Oceanicos, symbolic, repository, and ecosystem intent into finite, secure, testable, observable, value-producing transitions."
+description: "Translate broad Oceanicos, symbolic, repository, and universe intent into finite, secure, testable, observable, value-producing transitions."
 ---
 
 # Ω∞v Mirror-Water Universal Body

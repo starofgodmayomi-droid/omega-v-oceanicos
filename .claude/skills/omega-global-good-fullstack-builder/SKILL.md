@@ -1,6 +1,6 @@
 ---
 name: omega-global-good-fullstack-builder
-description: Build and evolve repositories or connected ecosystems toward broadly beneficial outcomes through evidence-bound full-stack vertical slices. Use for Omega Global Good, OCEANICOS, Ω∞v, repository audits, API/SDK/CLI/web/mobile integration, security, provenance, CI/CD, observability, and human-gated GitHub work.
+description: Build and evolve repositories or connected universes toward broadly beneficial outcomes through evidence-bound full-stack vertical slices. Use for Omega Global Good, OCEANICOS, Ω∞v, repository audits, API/SDK/CLI/web/mobile integration, security, provenance, CI/CD, observability, and human-gated GitHub work.
 ---
 
 # Omega Global Good Fullstack Builder

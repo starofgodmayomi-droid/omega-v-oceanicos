@@ -190,7 +190,7 @@ Next Δ: wire the typed contract into Mini admission, then prove DENY/REVIEW non
 ```
 
 
-## 26. Current Voice Bridge → GitHub ecosystem upgrade — 2026-09-28
+## 26. Current Voice Bridge → GitHub universe upgrade — 2026-09-28
 
 This section supersedes stale branch/HEAD statements above for the current work cycle while preserving the historical record.
 
@@ -259,9 +259,9 @@ pnpm test             → 68 passed, 0 failed
 pnpm build            → PASSED
 ```
 
-The full test suite covers the existing API, OREADE, Value Navigator, worker, verification, coordination, memory, web proxy, and publication-authorization boundaries. These results prove the tested local repository behavior only; they do not prove external deployment, production health, market demand, earned income, or universal ecosystem completion.
+The full test suite covers the existing API, OREADE, Value Navigator, worker, verification, coordination, memory, web proxy, and publication-authorization boundaries. These results prove the tested local repository behavior only; they do not prove external deployment, production health, market demand, earned income, or universal universe completion.
 
-### GitHub ecosystem mapping
+### GitHub universe mapping
 
 ```text
 VOICE / HUMAN INTENT
@@ -285,7 +285,7 @@ GitHub remains the implementation, history, CI, and provenance layer. Runtime re
 | Existing repository tests pass | `VERIFIED` | 68 local tests; bounded to tested cases |
 | Upgrade is committed or pushed | `NOT_EXECUTED` | No commit or GitHub write performed |
 | Upgrade is merged into `main` | `NOT_EXECUTED` | No PR/merge performed |
-| GitHub ecosystem is deployed/healthy | `UNKNOWN` | No deployment or production observation made |
+| GitHub universe is deployed/healthy | `UNKNOWN` | No deployment or production observation made |
 | Value has been earned | `UNKNOWN` | No market or exchange experiment was executed |
 | Universal intelligence/autonomy exists | `UNVERIFIED` | Symbolic/design language only |
 
@@ -383,7 +383,7 @@ The implementation boundary is explicit: a broad connector taxonomy does not pro
 
 The next finite connector transition is `DISCOVER → DECLARE → REVIEW → AUTHORIZE → ADMIT → BOUND → EXECUTE → OBSERVE → RECONCILE → REMEMBER → NEXT`. No external connector was activated and no credentials, payments, deployments, or real-world services were touched.
 
-## 31. Ecosystem discoverability integration — 2026-09-28
+## 31. Universe discoverability integration — 2026-09-28
 
 The root README and documentation index now expose the Voice Bridge, ƆREADE × Oceanicos Harmonizer, OceanicOS Framework, Value Navigator, and full-stack reality-access handoff as discoverable repository entry points. This is a documentation-only integration; it adds no connector, authority, runtime, deployment, or external side effect.
 

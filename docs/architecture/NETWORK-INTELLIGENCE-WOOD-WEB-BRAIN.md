@@ -43,14 +43,14 @@ REALITY DECIDES.
 | Root | origin / lineage |
 | Mycorrhizal connection | connector |
 | Tree | organ / node |
-| Forest | ecosystem body |
+| Forest | universe body |
 | Neural pathway | ΩIR transition |
 | Synapse | bounded edge |
 | Signal | event / proposal |
 | Nutrient/resource flow | bounded resource flow |
 | Warning | dissent / divergence signal |
 | Tree memory | local memory |
-| Forest memory | collective ecosystem memory |
+| Forest memory | collective universe memory |
 | Brain | AI SOUL / coordination layer |
 | Thought | representation / proposal |
 | Observation | runtime witness |

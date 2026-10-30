@@ -59,7 +59,7 @@ export interface CompatibilityCheckResult {
 
 /**
  * FormalContractEngine: Strict schema, behavioral invariants (pre/post-conditions),
- * and interface contract validation across the Ω∞v Oceanicos ecosystem.
+ * and interface contract validation across the Ω∞v Oceanicos universe.
  *
  * ```
  * 💧 Ω∞v ::= Producer ⇄ CONTRACT ⇄ Consumer ⇄ PROVENANCE

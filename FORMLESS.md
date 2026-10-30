@@ -209,7 +209,7 @@ Every layer must be able to explain where its state came from.
 
 # IV. FULL-STACK EMBODIMENT
 
-Build the intelligence as a complete observable ecosystem.
+Build the intelligence as a complete observable universe.
 
 ## 1. EXPERIENCE LAYER
 
@@ -841,7 +841,7 @@ failure
 
 # XXII. DOCKER / INFRASTRUCTURE
 
-The ecosystem must run reproducibly.
+The universe must run reproducibly.
 
 Provide:
 
@@ -1092,7 +1092,7 @@ OBSERVE
 → RETURN
 ```
 
-The entire ecosystem:
+The entire universe:
 
 ```text
 REALITY

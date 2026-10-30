@@ -1,4 +1,4 @@
-# Whole-Ecosystem Source Lineage Upgrade
+# Whole-Universe Source Lineage Upgrade
 
 **Prepared:** 2026-10-07
 
@@ -21,9 +21,9 @@ The source locator distinguishes the two attachments; each line range below is o
 
 ## Repository reconciliation
 
-The repository already contains overlapping ecosystem architecture in `CHARTER.md`, `docs/architecture/OCEANICOS-CONSTITUTION.md`, and `docs/spec/OCEANICOS-OPERATIONAL-PROTOCOL.md`. The updated base also adds `docs/WHOLE-ECOSYSTEM-MASTER-PROMPT.md`, which records the canonical ΩIR framing, raw-data law, and a source-register contract (source ID/type/origin/timestamp/hash/location/relationship/status).  These sources cover human authority, evidence, uncertainty, bounded workers, the lifecycle, and the conceptual role map. The path cited here reflects the repository state observed in this 2026-10-07 report; on 2026-10-20, the full prompt was consolidated at the repository root ([WHOLE-ECOSYSTEM-MASTER-PROMPT.md](../../WHOLE-ECOSYSTEM-MASTER-PROMPT.md)), while the former docs path became a compatibility pointer.
+The repository already contains overlapping universe architecture in `CHARTER.md`, `docs/architecture/OCEANICOS-CONSTITUTION.md`, and `docs/spec/OCEANICOS-OPERATIONAL-PROTOCOL.md`. The updated base also adds `docs/WHOLE-ECOSYSTEM-MASTER-PROMPT.md`, which records the canonical ΩIR framing, raw-data law, and a source-register contract (source ID/type/origin/timestamp/hash/location/relationship/status).  These sources cover human authority, evidence, uncertainty, bounded workers, the lifecycle, and the conceptual role map. The path cited here reflects the repository state observed in this 2026-10-07 report; on 2026-10-20, the full prompt was consolidated at the repository root ([WHOLE-UNIVERSE-MASTER-PROMPT.md](../../WHOLE-ECOSYSTEM-MASTER-PROMPT.md)), while the former docs path became a compatibility pointer.
 
-This change complements that register with optional structured line coordinates on ΩIR source refs. It does **not** add another master prompt, duplicate the complete ecosystem map, or claim that every named organ is implemented.
+This change complements that register with optional structured line coordinates on ΩIR source refs. It does **not** add another master prompt, duplicate the complete universe map, or claim that every named organ is implemented.
 
 The concrete gap is at the data boundary: `OmegaSourceRef` had a source `locator`, provenance, and epistemic state, but no structured way to identify the exact lines from which a derived proposal or record came. Free-form locator text alone cannot be validated as a line span.
 
@@ -64,7 +64,7 @@ The operational protocol now states the same boundary under its evidence protoco
 - Importing the source into Notion, a database, memory store, or app screen.
 - Automatic source ingestion, canonicalization, classification, trust scoring, or claim verification.
 - New AI News feed, workers, tools, network permissions, execution, or external integrations.
-- Implementing all named ecosystem roles or asserting that conceptual mappings are deployed.
+- Implementing all named universe roles or asserting that conceptual mappings are deployed.
 - Merge, deployment, or runtime claims based only on this source or a passing test.
 
 ## Acceptance evidence

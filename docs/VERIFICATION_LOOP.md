@@ -293,7 +293,7 @@ const failureResult = {
 
 ### Purpose
 
-Persist the observation and verification as durable memory without assuming a database or ecosystem.
+Persist the observation and verification as durable memory without assuming a database or universe.
 
 ### Process
 

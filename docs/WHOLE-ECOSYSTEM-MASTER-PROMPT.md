@@ -1,4 +1,4 @@
-# Whole-Ecosystem Master Prompt — compatibility path
+# Whole-Universe Master Prompt — compatibility path
 
 The canonical, complete master prompt now lives at the repository root: [WHOLE-ECOSYSTEM-MASTER-PROMPT.md](../WHOLE-ECOSYSTEM-MASTER-PROMPT.md). This file remains so existing links continue to resolve.
 

@@ -10,13 +10,13 @@
  \Omega_{\infty v} := \mathcal{Y} \Big( \lambda f. \big( M_{t+1} = M_t \cup \Delta \mid \mathcal{V}(\Delta) = \top \big) \Big) \Big|_{\mathcal{V} \equiv (\text{Expected} \equiv \text{Observed})} 
 \]
 
-> *"The ecosystem is a continuous, infinite loop that only remembers what matches reality."*
+> *"The universe is a continuous, infinite loop that only remembers what matches reality."*
 
 ---
 
 ### 📐 THE VARIABLE DEFINITIONS
 
-- **Ecosystem**: In this repository, "ecosystem" means **the universe**. The word names no smaller scope — wherever it appears, read the whole.
+- **Universe**: What this repository calls the universe — the whole of everything the equation ranges over. Wherever the older word "ecosystem" survives as a route, class, or file name, it means exactly this, and nothing smaller.
 - **\(\mathcal{Y}\) (Y-Combinator)**: The infinite loop of the Invisible Online Computer. The system is self-sustaining and requires no external base state.
 - **\(\mathcal{M}\) (Memory)**: The KAI ledger. An immutable, append-only record of verified reality.
 - **\(\Delta\) (Intent)**: The Human Root. The incoming signal, dream, or task.

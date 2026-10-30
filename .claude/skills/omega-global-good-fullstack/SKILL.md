@@ -1,6 +1,6 @@
 ---
 name: omega-global-good-fullstack
-description: Full-stack Ω∞v / Global Good operating skill for turning personal vision, Notion workspaces, AI systems, connected tools, GitHub repositories, products, clean-money goals, and symbolic language into bounded, evidence-backed, secure, authorized, testable, and observable real-world value. Use for whole-ecosystem audits, Notion-to-code flows, repository integration, business-value compression, tool orchestration, governance, deployment, and continuous learning.
+description: Full-stack Ω∞v / Global Good operating skill for turning personal vision, Notion workspaces, AI systems, connected tools, GitHub repositories, products, clean-money goals, and symbolic language into bounded, evidence-backed, secure, authorized, testable, and observable real-world value. Use for whole-universe audits, Notion-to-code flows, repository integration, business-value compression, tool orchestration, governance, deployment, and continuous learning.
 ---
 
 # Ω∞v Global Good Full-Stack Skill

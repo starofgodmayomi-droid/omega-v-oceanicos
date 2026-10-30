@@ -2,7 +2,7 @@
 
 ## Conclusion
 
-**Qov is the repository-level name for a living intelligence ecosystem that continuously observes, verifies, attests, and evolves reality without losing provenance.** In the current Omega V implementation, Qov is not a new runtime or a claim of autonomous control over reality. It is a precise framing for the existing verification-first loop and its bounded expansion surfaces.
+**Qov is the repository-level name for a living intelligence universe that continuously observes, verifies, attests, and evolves reality without losing provenance.** In the current Omega V implementation, Qov is not a new runtime or a claim of autonomous control over reality. It is a precise framing for the existing verification-first loop and its bounded expansion surfaces.
 
 The current repository already contains the minimum executable Qov cycle:
 

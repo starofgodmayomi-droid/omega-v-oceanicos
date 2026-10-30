@@ -1,10 +1,10 @@
 # Ω∞v / OCEANICOS Master-Prompt Reconciliation
 
-**Purpose:** Map the whole-ecosystem root prompt to the live repository without treating architectural direction as runtime fact.
+**Purpose:** Map the whole-universe root prompt to the live repository without treating architectural direction as runtime fact.
 
 **Repository system of record:** starofgodmayomi-droid/omega-v-oceanicos
 
-**Canonical root:** [WHOLE-ECOSYSTEM-MASTER-PROMPT.md](../WHOLE-ECOSYSTEM-MASTER-PROMPT.md)
+**Canonical root:** [WHOLE-UNIVERSE-MASTER-PROMPT.md](../WHOLE-ECOSYSTEM-MASTER-PROMPT.md)
 
 **OceanicOS product spec:** [OCEANICOS-PRODUCT-MASTER-PROMPT.md](OCEANICOS-PRODUCT-MASTER-PROMPT.md)
 
@@ -23,7 +23,7 @@
 | GitHub / implementation | mainline code, CI, history, PR workflow | Commit/CI state does not imply deployment or production health |
 | Runtime / observation | API/runtime and smoke/integration suites | Evidence is scoped to the observed run |
 | Blessings / universal layer | symbolic design language | Meaning-making, not empirical or metaphysical proof |
-| Raw / canonical / provenance | ecosystem compression and source-register patterns | Preserve lineage; summaries do not replace raw source when exact preservation matters |
+| Raw / canonical / provenance | universe compression and source-register patterns | Preserve lineage; summaries do not replace raw source when exact preservation matters |
 
 ## OceanicOS product prompt (2026-10-21)
 

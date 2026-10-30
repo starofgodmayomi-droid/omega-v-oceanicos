@@ -1,4 +1,4 @@
-# Ω∞v Ecosystem Compression Record
+# Ω∞v Universe Compression Record
 
 **Record status:** `SUPPORTED` for repository inventory and local source inspection; `UNKNOWN` for any unobserved deployment, external service, or repository not listed below.
 
@@ -6,7 +6,7 @@
 
 ## Purpose and boundary
 
-This document compresses the currently observable Oceanicos ecosystem toward `starofgodmayomi-droid/omega-v-oceanicos`. It is a provenance record, not a claim that every named concept, product, service, or repository exists. The governing distinction is:
+This document compresses the currently observable Oceanicos universe toward `starofgodmayomi-droid/omega-v-oceanicos`. It is a provenance record, not a claim that every named concept, product, service, or repository exists. The governing distinction is:
 
 > **Conceptual intent may guide design; executable repository and runtime evidence determine what exists.**
 
@@ -35,7 +35,7 @@ The private navigator repository is a separate Lovable-connected TanStack Start 
 |---|---|---|
 | `/` | Navigator landing surface | `SUPPORTED` by route generation; behavior beyond source inspection is `UNKNOWN` |
 | `/loop` | Loop-oriented presentation surface | `SUPPORTED` by route generation; backend binding is `UNKNOWN` |
-| `/stack` | A 14-layer ecosystem presentation with a YAML-like handoff contract | `SUPPORTED` by source inspection; the displayed layers are presentation/design, not proof of implemented layers |
+| `/stack` | A 14-layer universe presentation with a YAML-like handoff contract | `SUPPORTED` by source inspection; the displayed layers are presentation/design, not proof of implemented layers |
 
 The `/stack` source presents layers from Reality through Evolution/Drift and lists possible data, infrastructure, services, and surfaces. That is useful design intent and a candidate information architecture. It must not be read as evidence that Kubernetes, payments, mobile, vector storage, agent runtime, or any other listed capability is deployed or connected.
 

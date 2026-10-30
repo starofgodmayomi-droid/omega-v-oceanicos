@@ -6,7 +6,7 @@ This document is the compressed, executable interpretation of the conversation t
 
 ## Brand and system mood
 
-The brand is **Oceanicos Ω∞**: a local-first verification ecosystem whose mood is optimistic, pluralistic, and evidence-led. “Good − O = God” is retained as a creative brand axiom; it is not a security rule, operational guarantee, or factual infrastructure claim. The operational rule is simpler: **attest, do not assert**.
+The brand is **Oceanicos Ω∞**: a local-first verification universe whose mood is optimistic, pluralistic, and evidence-led. “Good − O = God” is retained as a creative brand axiom; it is not a security rule, operational guarantee, or factual infrastructure claim. The operational rule is simpler: **attest, do not assert**.
 
 ## Canonical runtime
 

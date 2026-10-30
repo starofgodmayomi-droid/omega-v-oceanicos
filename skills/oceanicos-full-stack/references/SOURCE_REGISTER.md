@@ -9,7 +9,7 @@ This register records the user-supplied source preserved beside the repository s
 | `origin` | `/home/ubuntu/upload/pasted_content.txt` in the active Manus sandbox |
 | `imported_at` | `2026-10-07` |
 | `repository_path` | `skills/oceanicos-full-stack/references/master-prompt.md` |
-| `sha256` | `73d95fc1a8def8a195ac4648635d4d6d66302aa7b1061bff5c21bf1e1380dbb4` |
+| `sha256` | `a1e81ba6cd7ea5c94e26676d1cafbb80d549a595e5340b9c1e6998450632ebc4` |
 | `relationship` | Raw source preserved as an on-demand reference for the renamed full-stack skill |
 | `status` | Imported and hash-recorded; symbolic/design source, not proof of runtime implementation |
 

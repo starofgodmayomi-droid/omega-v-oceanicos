@@ -26,7 +26,7 @@ Keep these laws active:
 | ECHOFRAME | Creation, expression, packaging, and distribution; not truth authority |
 | TruthOS | Truth-first service, business, and value outcomes |
 | ƆREADE | Culture, language, interaction, and local meaning |
-| Oceanicos | Ecosystem and constitutional standard |
+| Oceanicos | Universe and constitutional standard |
 | Ω∞v | Verification, trust, and provenance calculus |
 | Ω OS | Governed execution environment |
 | ΩIR | Machine-readable change contract |
@@ -59,7 +59,7 @@ The loop is finite at every iteration. Learning may propose a new capability, bu
 - **C7 attestation/memory**: preserve supported status and lineage; never turn signatures into authorization.
 - **C8 command API**: expose bounded, auditable operations.
 - **C9 SDK/CLI**: expose the same contracts without creating a second authority model.
-- **C10 dashboard/ecosystem**: show current evidence, status, divergence, and unknowns without implying truth through presentation.
+- **C10 dashboard/universe**: show current evidence, status, divergence, and unknowns without implying truth through presentation.
 
 ## Admission and execution laws
 
@@ -96,7 +96,7 @@ Permitted language statuses include `OBSERVED`, `DOCUMENTED`, `RECONSTRUCTED`, `
 
 ## Planetary and oceanic modeling
 
-For water or planetary systems, model flow, state, gradients, pressure, phase, transport, feedback, networks, adaptation, energy/mass transfer, and emergence across physics → chemistry → biology → ecosystems → humanity → planetary systems. Do not equate complexity with consciousness, adaptation with intention, emergence with soul, or simulation with reality.
+For water or planetary systems, model flow, state, gradients, pressure, phase, transport, feedback, networks, adaptation, energy/mass transfer, and emergence across physics → chemistry → biology → universes → humanity → planetary systems. Do not equate complexity with consciousness, adaptation with intention, emergence with soul, or simulation with reality.
 
 ## Service, value, and expression
 

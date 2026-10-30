@@ -1,4 +1,4 @@
-# Ω∞v Max Full-Stack Compression — GitHub Ecosystem Handoff
+# Ω∞v Max Full-Stack Compression — GitHub Universe Handoff
 
 **Status:** `APPLIED` locally; GitHub commit/PR/merge/deployment remain `NOT_EXECUTED`  
 **Date:** 2026-09-28  
@@ -120,4 +120,4 @@ The bounded connector lifecycle is `DISCOVER → DECLARE → REVIEW → AUTHORIZ
 
 ## Discoverability integration
 
-The root and docs READMEs now link the four skill contracts and the full-stack reality-access handoff. This keeps the repository ecosystem navigable without implying that linked capabilities are connected, authorized, deployed, or healthy.
+The root and docs READMEs now link the four skill contracts and the full-stack reality-access handoff. This keeps the repository universe navigable without implying that linked capabilities are connected, authorized, deployed, or healthy.

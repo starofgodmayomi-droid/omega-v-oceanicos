@@ -68,4 +68,4 @@ Each output is a representation. Mark it `VERIFIED` only if it was run and check
 - Collapse uncertainty in the sink to make the receipt look clean.
 - Continue the loop after a missing permission, a required confirmation, or a stop condition.
 
-Companion routing for ecosystem work lives in `skills/oceanicos-full-stack-companion`. This file is the state machine that companion must not skip.
+Companion routing for universe work lives in `skills/oceanicos-full-stack-companion`. This file is the state machine that companion must not skip.

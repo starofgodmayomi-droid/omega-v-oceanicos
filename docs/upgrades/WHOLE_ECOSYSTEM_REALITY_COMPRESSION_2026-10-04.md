@@ -1,4 +1,4 @@
-# Ω∞v OCEANICOS — Whole Ecosystem Reality Compression
+# Ω∞v OCEANICOS — Whole Universe Reality Compression
 
 **Status:** repository-aligned design record, not a runtime attestation  
 **Source:** user-supplied `pasted_content_2.txt`  
@@ -9,7 +9,7 @@
 
 > **One root, one current, many forms; finite evidence, human authority, bounded action, real observation, continuous return.**
 
-The uploaded compression describes Notion, AI SOUL, MIRRIO, ƆREADE, TruthOS, ECHOFRAME, KAI, Oceanicos, Ω∞v, workers, Codex, Composio, GitHub, runtime, reconciliation, and memory as different roles in one bounded ecosystem. This repository record translates that intent into implementation boundaries without claiming that every Notion descendant, external connector, deployment, customer outcome, or production effect has been observed.
+The uploaded compression describes Notion, AI SOUL, MIRRIO, ƆREADE, TruthOS, ECHOFRAME, KAI, Oceanicos, Ω∞v, workers, Codex, Composio, GitHub, runtime, reconciliation, and memory as different roles in one bounded universe. This repository record translates that intent into implementation boundaries without claiming that every Notion descendant, external connector, deployment, customer outcome, or production effect has been observed.
 
 ## System-of-record bridge
 

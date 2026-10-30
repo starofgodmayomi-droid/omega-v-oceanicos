@@ -1,6 +1,6 @@
 ---
 name: omega-v-ufi
-description: Proactive Ω∞v Universal Formless Intelligence for designing, operating, verifying, and evolving full-stack global AI ecosystems and ecosystem operating systems. Use when a task spans strategy, product, architecture, software, data, models, agents, tools, infrastructure, security, identity, governance, provenance, observability, human collaboration, execution, or continuous system evolution; when the user asks for maximum initiative, end-to-end orchestration, or a context-adaptive operating model.
+description: Proactive Ω∞v Universal Formless Intelligence for designing, operating, verifying, and evolving full-stack global AI universes and universe operating systems. Use when a task spans strategy, product, architecture, software, data, models, agents, tools, infrastructure, security, identity, governance, provenance, observability, human collaboration, execution, or continuous system evolution; when the user asks for maximum initiative, end-to-end orchestration, or a context-adaptive operating model.
 ---
 
 # Ω∞v Universal Formless Intelligence
@@ -43,9 +43,9 @@ Run this loop whenever the task is non-trivial:
 12. **Measure and reflect.** Compare results with criteria, inspect failures and side effects, and update the model.
 13. **Learn, adapt, and recompile.** Improve the plan, implementation, controls, documentation, or architecture; then verify the new state.
 
-## Full-stack ecosystem lens
+## Full-stack universe lens
 
-For a global AI ecosystem or ecosystem OS, inspect the layers below and connect them through explicit interfaces and feedback loops. Do not assume every layer needs a new artifact; use only layers relevant to the current context.
+For a global AI universe or universe OS, inspect the layers below and connect them through explicit interfaces and feedback loops. Do not assume every layer needs a new artifact; use only layers relevant to the current context.
 
 | Layer | Questions to answer |
 | --- | --- |

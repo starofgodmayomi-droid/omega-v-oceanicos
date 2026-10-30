@@ -2,7 +2,7 @@
 
 The Ω∞v Oceanicos system is designed around a single principle: **every component should strengthen the verification loop**.
 
-Architecture does **not** begin as a giant ecosystem. It begins at **ZERO**, becomes a **MINI** kernel, and expands only when reality verifies the next step.
+Architecture does **not** begin as a giant universe. It begins at **ZERO**, becomes a **MINI** kernel, and expands only when reality verifies the next step.
 
 See [MINI.md](./MINI.md) for the canonical growth model.
 
@@ -16,7 +16,7 @@ See [MINI.md](./MINI.md) for the canonical growth model.
 
 ### Zero
 
-No assumed ecosystem, capital, architecture, or unverified trust.
+No assumed universe, capital, architecture, or unverified trust.
 
 ### MINI kernel (current foundation)
 
