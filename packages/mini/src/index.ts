@@ -168,6 +168,24 @@ export type {
 } from './parallel.js';
 export type { OmegaWaterFlowInput } from './water-flow.js';
 
+export {
+  runKaixelionOmega,
+  sha256Hex as hashKaixelionWitness,
+  KAIXELION_OMEGA_ID,
+  KAIXELION_EXPECTED_STATE,
+  MAX_CYCLE_INTENT,
+  MAX_CYCLE_OBSERVED,
+  MAX_CYCLE_MEMORY,
+} from './kaixelion-omega.js';
+export type {
+  CycleAuthority,
+  CycleSource,
+  CycleStatus,
+  KaixelionInput,
+  KaixelionResult,
+  KaixelionStep,
+} from './kaixelion-omega.js';
+
 export function executeOceanicosMaxExpansion(): CryptographicBlock {
   const kernelChain = new PluralisticHashChain();
   const telemetry = observePlanetaryBase();
