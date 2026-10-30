@@ -49,6 +49,10 @@ docker compose -f docker-compose.base44.yml up -d
 - `authorityLevel` in the request body may be `AUTONOMOUS`; the endpoint still only answers (CAPABILITY != AUTHORITY), and the contract records a bounded plan.
 - Tests: `node --experimental-strip-types --test ./tests/integration/execute-route.integration.test.ts` (needs `apps/api/dist` built, like the route-contract test).
 
+## Meaning-to-reality surfaces
+- `apps/web/src/HumanRootPanel.tsx` holds the human's own words (`textarea[aria-label="Human meaning"]`, max 2000 chars) with no translation, summary or scoring. "Hand to the console" copies the text **verbatim** into the console input: `App.tsx` `handToConsole` sets `{ text, nonce }` state, `InvisibleComputer` fills the field and focuses it. It never executes.
+- `apps/web/src/MissionPanels.tsx` gives TRUTHOS / MIRRIO / ECHOFRAME one bounded next step each; "Prepare in console" writes that step into the same field. Nothing runs, contracts or is remembered until EXECUTE — the verdict stays `NOT_EXECUTED` after a handoff.
+
 ## Single body compression (4×4×4×4)
 `GET /v1/ecosystem/body` carries a `compression` block: the seven runtime layers projected onto four axes of four coordinates (256 cells) with a local compress→expand proof. `POST /v1/ecosystem/body/expand` takes `{ compression }` and returns the records; a tampered digest is `400 DIGEST_MISMATCH`. Contract: `packages/mini/src/single-body.ts`; doc: `docs/SINGLE-BODY-4X4X4X4.md`; UI: `apps/web/src/SingleBodyPanel.tsx`. Coordinates are a declared projection (`body.layers.v1`), not inferred truth.
 

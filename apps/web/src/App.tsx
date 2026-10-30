@@ -15,6 +15,8 @@ import { ValueNavigatorPanel } from './ValueNavigatorPanel';
 import { ConnectorPanel } from './ConnectorPanel';
 import { WholeEcosystemDashboard } from './WholeEcosystemDashboard';
 import { InvisibleComputer } from './InvisibleComputer';
+import { HumanRootPanel } from './HumanRootPanel';
+import { MissionPanels } from './MissionPanels';
 import { WaterFlowPanel } from './WaterFlowPanel';
 import { LifecycleFlow, deriveStageStates, type LifecycleStage } from './LifecycleFlow';
 import { GlobeViewport } from './GlobeViewport';
@@ -76,6 +78,15 @@ export function App() {
   const [keyPair, setKeyPair] = useState<KeyPair | null>(null);
   const [signRequests, setSignRequests] = useState(false);
   const [lastError, setLastError] = useState<string | null>(null);
+  const [meaning, setMeaning] = useState('');
+  const [consoleSeed, setConsoleSeed] = useState<{ text: string; nonce: number } | null>(null);
+
+  // Handing meaning (or a mission step) to the console only fills its field —
+  // it never executes. The human still presses EXECUTE.
+  const handToConsole = (text: string) => {
+    setConsoleSeed({ text, nonce: Date.now() });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
   const [reconnectAttempt, setReconnectAttempt] = useState(0);
 
   const [minerActive, setMinerActive] = useState(false);
@@ -753,7 +764,15 @@ export function App() {
           </button>
         </div>
 
-        <InvisibleComputer />
+        <InvisibleComputer seedIntent={consoleSeed} />
+
+        <HumanRootPanel
+          meaning={meaning}
+          onChange={setMeaning}
+          onHandToConsole={() => handToConsole(meaning)}
+        />
+
+        <MissionPanels onPrepare={handToConsole} />
 
         <WholeEcosystemDashboard
           streamConnected={streamConnected}

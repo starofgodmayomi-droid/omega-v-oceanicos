@@ -76,7 +76,12 @@ function shortHash(hash: string | null): string {
   return `${hash.slice(0, 12)}…${hash.slice(-8)}`;
 }
 
-export function InvisibleComputer() {
+type InvisibleComputerProps = {
+  /** Text handed over from another surface (Human Root, missions). Nonce re-triggers. */
+  seedIntent?: { text: string; nonce: number } | null;
+};
+
+export function InvisibleComputer({ seedIntent }: InvisibleComputerProps) {
   const [intent, setIntent] = useState('');
   const [engine, setEngine] = useState<EngineChoice>('gpt');
   const [running, setRunning] = useState(false);
@@ -131,6 +136,15 @@ export function InvisibleComputer() {
       alive = false;
     };
   }, []);
+
+  // A handoff fills the field with the exact words it was given, untranslated.
+  useEffect(() => {
+    if (!seedIntent) return;
+    setIntent(seedIntent.text);
+    document
+      .querySelector<HTMLInputElement>('input[aria-label="What shall we make real?"]')
+      ?.focus();
+  }, [seedIntent?.nonce]);
 
   const execute = async () => {
     const trimmed = intent.trim();
