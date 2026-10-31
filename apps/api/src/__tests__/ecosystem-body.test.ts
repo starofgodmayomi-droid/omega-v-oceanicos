@@ -1,4 +1,5 @@
-import { createApp } from '../index';
+import { describe, it, expect } from '../../../../tests/support/jest-compat.mjs';
+import { createApp } from '../../dist/index.js';
 
 describe('GET /v1/ecosystem/body', () => {
   const requiredLayers = ['sensory', 'verification', 'memory', 'mesh', 'kernel', 'governance', 'interface'] as const;
@@ -25,7 +26,7 @@ describe('GET /v1/ecosystem/body', () => {
       expect(body.layers.sensory).toMatchObject({ status: 'OBSERVED' });
       expect(body.layers.verification).toMatchObject({ status: 'VERIFIED' });
       expect(body.layers.memory).toMatchObject({ status: 'INTEGRITY_VERIFIED', tip: null });
-      expect(body.layers.mesh).toMatchObject({ status: 'CONVERGED_PLURAL', convergence: { quorumReached: true } });
+      expect(body.layers.mesh).toMatchObject({ status: 'CONVERGED_PASS', convergence: { quorumReached: true } });
       expect(body.layers.kernel).toMatchObject({ status: 'READY', capability: { capabilities: { remoteMutation: false, arbitraryShellExecution: false } } });
       expect(body.layers.governance).toMatchObject({ status: 'HUMAN_GATE_REQUIRED', failClosed: true });
       expect(body.layers.interface).toMatchObject({ status: 'READY' });

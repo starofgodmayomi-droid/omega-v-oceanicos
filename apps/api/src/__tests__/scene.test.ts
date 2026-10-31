@@ -1,4 +1,5 @@
-import { sceneStates, simulateScene } from '../scene';
+import { describe, expect, it } from '../../../../tests/support/jest-compat.mjs';
+import { sceneStates, simulateScene } from '../../dist/scene.js';
 
 describe('Ω∞v scene equation simulation', () => {
   it('walks the complete bounded equation deterministically', () => {

@@ -10,5 +10,11 @@
     "esModuleInterop": true,
     "skipLibCheck": true
   },
-  "include": ["src/index.ts", "src/runtime-globals.d.ts"]
+  "include": [
+    "src/index.ts",
+    "src/route-contract.ts",
+    "src/scene.ts",
+    "src/server.ts",
+    "src/runtime-globals.d.ts"
+  ]
 }

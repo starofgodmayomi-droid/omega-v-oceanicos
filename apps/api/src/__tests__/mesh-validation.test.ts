@@ -1,4 +1,5 @@
-import { createApp } from '../index';
+import { describe, it, expect } from '../../../../tests/support/jest-compat.mjs';
+import { createApp } from '../../dist/index.js';
 
 describe('GET /v1/mesh/validate', () => {
   it('returns bounded regional evidence and local ledger integrity', async () => {

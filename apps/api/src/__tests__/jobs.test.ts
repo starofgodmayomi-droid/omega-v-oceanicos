@@ -1,8 +1,9 @@
+import { describe, it, expect } from '../../../../tests/support/jest-compat.mjs';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createCipheriv, createHash, randomBytes } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { LocalJobError, LocalJobLedger, LOCAL_JOB_WINDOW } from '../jobs';
+import { LocalJobError, LocalJobLedger, LOCAL_JOB_WINDOW } from '../../dist/jobs.js';
 
 const provenance = {
   source: 'api' as const,

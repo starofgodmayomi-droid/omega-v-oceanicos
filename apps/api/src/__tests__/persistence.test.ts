@@ -1,3 +1,4 @@
+import { describe, it, beforeEach, expect } from '../../../../tests/support/jest-compat.mjs';
 import { mkdtempSync, readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -22,7 +23,7 @@ import {
   persistenceCoverage,
   SNAPSHOT_KEYS,
   encryptionEnabled,
-} from '../persistence';
+} from '../../dist/persistence.js';
 
 type Snap = Record<(typeof SNAPSHOT_KEYS)[number], unknown[]>;
 

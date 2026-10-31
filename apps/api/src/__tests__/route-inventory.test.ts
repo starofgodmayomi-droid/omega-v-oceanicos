@@ -1,8 +1,9 @@
+import { describe, it, expect } from '../../../../tests/support/jest-compat.mjs';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { createApp } from '../index';
-import { API_ROUTE_INVENTORY } from '../route-contract';
+import { createApp } from '../../dist/index.js';
+import { API_ROUTE_INVENTORY } from '../../dist/route-contract.js';
 
 describe('API route contract', () => {
   it('registers every supported route in createApp', async () => {

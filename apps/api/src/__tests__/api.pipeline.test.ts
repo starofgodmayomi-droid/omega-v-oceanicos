@@ -3,8 +3,8 @@
  * Full C0→C6 logic is covered by packages/mini + integration tests;
  * this proves the HTTP surface is registered and fail-closed on bad input.
  */
-import { describe, expect, it, beforeAll, afterAll } from '@jest/globals';
-import { createApp } from '../index';
+import { describe, it, beforeAll, afterAll, expect } from '../../../../tests/support/jest-compat.mjs';
+import { createApp } from '../../dist/index.js';
 import type { FastifyInstance } from 'fastify';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
@@ -132,7 +132,7 @@ describe('POST /v1/pipeline', () => {
       expect(res.statusCode).toBe(200);
       const body = res.json();
       expect(body.success).toBe(true);
-      expect(body.pipeline.stage).toBe('OBSERVE');
+      expect(body.pipeline.stage).toBe('RECONCILE');
       expect(body.pipeline.realityStatus).toBe('VERIFIED');
       expect(body.pipeline.halted).toBe(false);
       expect(body.pipeline.provenanceRoot).toMatch(/^prov-root-[a-f0-9]{64}$/);

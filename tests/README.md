@@ -29,8 +29,9 @@ writer and the reader are different code paths.
 ## Running them
 
 ```bash
-pnpm test              # build, web suites, the node integration suite, then test:suites
+pnpm test              # build, web suites, the node integration suite, test:suites, then test:api
 pnpm test:suites       # the Jest-era suites, now on node:test
+pnpm test:api          # the API suites that still test the live surface
 pnpm test:coverage     # with the 70% threshold enforced
 ```
 
@@ -51,6 +52,18 @@ observation, IR validator, KAI, KAI cycle, repo builder, repo verifier,
 transition, water flow, worker registry) and the root documentation guards
 that pass against the current tree.
 
+Wired by `pnpm test:api`: the API suites that still test the live surface —
+`persistence`, `jobs`, `mesh-validation`, `route-inventory`, `api.pipeline`,
+`ecosystem-body` and `scene` (102 tests). They run from the built
+`apps/api/dist` (the API is ESM with `.js`-suffixed source imports, so it is
+executed the way it ships, not through a transpiler), which means
+`pnpm --filter api build` must run first — `pnpm test` already builds.
+`route-contract.ts`, `scene.ts` and `server.ts` are in the api tsconfig
+`include` so those modules are built and type-checked too; `scene.ts` had
+never been compiled or run, and fixing that exposed two real defects (a
+runtime validator imported as a type, and a retired `@omega-v/types` package
+name) that this suite now covers.
+
 Still not wired, each reporting pre-existing drift rather than a runner
 problem: `brand` (docs/BRAND.md publishes an older palette than
 `apps/web/src/tokens.css`), `docs-claims` (packages/apps without READMEs),
@@ -58,8 +71,20 @@ problem: `brand` (docs/BRAND.md publishes an older palette than
 `portable-scripts` (root `test:coverage` still shells out to `rm -rf` /
 `mkdir -p`, and the smoke test names `dist/server.js` where `scripts/smoke-api.cjs`
 runs `dist/index.js`), `roadmap-claims`, and `node-support` (CI claims the
-suites no longer make). `apps/api/src/__tests__` still imports
-`@jest/globals` and needs a hand conversion per file.
+suites no longer make). `apps/api/src/__tests__/documentation.test.ts` reports
+the same kind of drift: its route and environment checks no longer find what
+`apps/api/README.md` documents.
+
+Nine more API suites stay unwired because they test endpoints the API no
+longer serves: `api.dissensus`, `api.loop`, `api.memory`, `api.prefix`,
+`api.validation`, `api.attestation-ttl`, `api.ed25519`,
+`api.ed25519-legacy-key` and `api.revocation-mismatch` all drive
+`/complete-loop`, `/act`, `/dissensus`, `/log` or `/rules`, none of which is in
+`src/route-contract.ts` or registered by `createApp` (they 404 on a live
+server). They also built their HTTP server by passing the Fastify instance to
+`node:http`'s `createServer` as if it were an options object, so no request was
+ever answered. Rewriting them against the `/v1` surface is a separate change;
+until then they are not evidence of anything.
 
 ## What is verified beyond the suite
 
