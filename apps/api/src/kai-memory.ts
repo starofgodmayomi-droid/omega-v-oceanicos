@@ -14,6 +14,12 @@ import type { AuthorityLevel } from './invisible-computer.js';
  * `Expected ≡ Observed` comparison can be reconciled after the fact.
  */
 
+export type KaiMemoryContractRef = {
+  id: string;
+  authority_level: AuthorityLevel;
+  expected_outcome: string;
+};
+
 export type KaiMemoryRecord = {
   id: string;
   timestamp: string;
@@ -21,6 +27,8 @@ export type KaiMemoryRecord = {
   evidence_hash: string;
   status: string;
   contract_id: string | null;
+  /** The contract this row was verified against, joined on read. */
+  contract?: KaiMemoryContractRef | null;
 };
 
 export type OmegaContract = {
@@ -127,11 +135,34 @@ export class KaiMemoryStore {
 
   listMemory(limit = 10): KaiMemoryRecord[] {
     const bounded = Math.min(Math.max(Math.trunc(limit) || 10, 1), 50);
-    return this.db
+    // One join rather than a contract lookup per row: memory rows are listed
+    // with the contract they were verified against (or null when unbound).
+    const rows = this.db
       .prepare(
-        'SELECT id, timestamp, intent, evidence_hash, status, contract_id FROM "KaiMemory" ORDER BY timestamp DESC, rowid DESC LIMIT ?'
+        `SELECT m.id, m.timestamp, m.intent, m.evidence_hash, m.status, m.contract_id,
+                c.authority_level AS contract_authority_level,
+                c.expected_outcome AS contract_expected_outcome
+           FROM "KaiMemory" m
+           LEFT JOIN "OmegaIR_Contracts" c ON c.id = m.contract_id
+          ORDER BY m.timestamp DESC, m.rowid DESC LIMIT ?`
       )
-      .all(bounded) as KaiMemoryRecord[];
+      .all(bounded) as Array<
+      KaiMemoryRecord & {
+        contract_authority_level: string | null;
+        contract_expected_outcome: string | null;
+      }
+    >;
+    return rows.map(({ contract_authority_level, contract_expected_outcome, ...row }) => ({
+      ...row,
+      contract:
+        row.contract_id && contract_authority_level
+          ? {
+              id: row.contract_id,
+              authority_level: contract_authority_level as AuthorityLevel,
+              expected_outcome: contract_expected_outcome ?? '',
+            }
+          : null,
+    }));
   }
 
   getMemory(id: string): KaiMemoryRecord | null {

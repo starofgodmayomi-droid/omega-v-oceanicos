@@ -41,6 +41,7 @@ type MemoryRecord = {
   intent: string;
   evidence_hash: string;
   status: string;
+  contract?: { id: string; authority_level: string; expected_outcome: string } | null;
 };
 
 const STATUS_TONE: Record<Verdict, string> = {
@@ -380,8 +381,32 @@ export function InvisibleComputer() {
                 <span style={{ color: theme.textMuted, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {record.intent}
                 </span>
+                <span
+                  style={{
+                    color: record.contract ? theme.accent : theme.textDim,
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {record.contract
+                    ? `CONTRACT · ${record.contract.authority_level} · ${record.contract.id.slice(0, 8)}`
+                    : 'CONTRACT · NONE'}
+                </span>
                 <span style={{ color: theme.accentWarm }}>{shortHash(record.evidence_hash)}</span>
               </div>
+              {record.contract?.expected_outcome && (
+                <div
+                  style={{
+                    fontFamily: theme.fontMono,
+                    fontSize: '9.5px',
+                    color: theme.textDim,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  EXPECTED · {record.contract.expected_outcome}
+                </div>
+              )}
               <MemoryReconcile memoryId={record.id} apiBaseUrl={API_BASE_URL} />
             </div>
           ))}

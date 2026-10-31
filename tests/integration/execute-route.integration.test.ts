@@ -43,6 +43,16 @@ test('POST /api/execute runs KAI → ELION → OMEGA → KAI and returns the evi
     assert.equal(memoryBody.records[0].id, body.memory.id);
     assert.equal(memoryBody.records[0].evidence_hash, body.evidence_hash);
     assert.equal(memoryBody.records[0].status, 'VERIFIED');
+    assert.equal(memoryBody.records[0].contract_id, body.contract.id);
+    assert.deepEqual(
+      memoryBody.records[0].contract,
+      {
+        id: body.contract.id,
+        authority_level: body.contract.authority_level,
+        expected_outcome: body.contract.expected_outcome,
+      },
+      'a row lists the contract it was verified against'
+    );
   } finally {
     await app.close();
   }
