@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { describe, expect, it } from '../harness/jest-compat.ts';
 
 describe('the pipeline report says what happened', () => {
   const workflow = readFileSync(join(process.cwd(), '.github/workflows/verify.yml'), 'utf8');

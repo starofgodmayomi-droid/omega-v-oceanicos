@@ -7,7 +7,14 @@ import {
   pemToDer,
   preflight,
   verifyAttestation,
-} from '../verify';
+} from '../verify.ts';
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+} from '../../../../tests/harness/jest-compat.ts';
 
 /**
  * This module implements docs/spec/ATTESTATION-ENVELOPE.md independently of

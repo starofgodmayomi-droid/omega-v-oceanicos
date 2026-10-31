@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import { describe, expect, it } from '@jest/globals';
+import { afterEach, beforeEach, describe, expect, it } from '../harness/jest-compat.ts';
 import { ObserverEngine } from '@oceanicos/observer';
 import { VerificationEngine } from '@oceanicos/verification';
 

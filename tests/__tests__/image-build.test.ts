@@ -1,5 +1,6 @@
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
+import { describe, expect, it } from '../harness/jest-compat.ts';
 
 describe('the image builds the packages it names', () => {
   const root = process.cwd();

@@ -81,9 +81,47 @@ docker compose -f docker-compose.base44.yml exec -T api sh -c \
   'cd /app && corepack enable && corepack prepare pnpm@10.34.5 --activate && pnpm test:e2e'
 ```
 
-- `test:e2e` = `pnpm build` → `pnpm test:web` (jest DOM suites in `apps/web`) → one `node --experimental-strip-types --test` run over an **explicit** file list. Node's `--test` discovers nothing here and accepts no path filter, so the list in `package.json` is the gate. `test` and `test:e2e` run the same 39 files.
-- `tests/integration/e2e-suite-contract.integration.test.ts` guards that list: every `tests/integration/*.test.ts` is either run or named in `KNOWN_UNRUN` with its reason, every `*.e2e.test.ts` is run by both scripts, and `test`/`test:e2e` cannot drift apart.
-- Verified 2026-10-29 in this environment: build clean, 208 integration tests / 98 suites / 0 failures, plus the DOM suites.
+- `test:e2e` = `pnpm build` → `pnpm test:web` (6 jest DOM suites in `apps/web`) → one `node --experimental-strip-types --test` run over an **explicit** file list. Node's `--test` discovers nothing here and accepts no path filter, so the list in `package.json` is the gate. `test` and `test:e2e` run the same 62 files.
+- `tests/integration/e2e-suite-contract.integration.test.ts` guards that list: every `tests/integration/*.test.ts`, every `tests/__tests__/*.test.ts`, and every `apps/web/src/__tests__/**` suite is either run by a gate or named in `KNOWN_UNRUN` with its reason, every `*.e2e.test.ts` is run by both scripts, and `test`/`test:e2e` cannot drift apart.
+- Verified 2026-10-31 in this environment: build clean, **1234 node tests / 0 failures** over the 62-file gate, plus the DOM gate (6 suites / 11 tests).
+
+### Jest → node:test migration (2026-10-31)
+The root `jest.config.js` was dead config: no script ran jest, jest was not a
+root dependency, and the config could not start (`ts-jest` uninstalled,
+`jest.setup.ts` fails to typecheck). The suites it named ran nowhere — the
+same failure the gate was built to stop, in a second location. Fixes:
+
+- `tests/harness/jest-compat.ts` implements exactly the matchers those suites
+  use on top of `node:assert/strict` (`toBe`, `toEqual`, `toContain`,
+  `toMatch`, `toHaveLength`, the comparisons, the null/defined/truthy pair, and
+  `.not`), plus `it.each`. Anything else throws. The suites keep their
+  assertions; only the import line changed.
+- 15 `tests/__tests__` suites and 6 `apps/web/src/__tests__` model suites now
+  run in the node gate. `tests/harness/api-routes.ts` reads routes from every
+  `apps/api/src` module (they moved into `register*Route` files), which is what
+  the web/API contract test now compares against.
+- Moving the suites surfaced real drift, fixed here rather than papered over:
+  `docs/BRAND.md` still published the pre-oceanic palette (and omitted four
+  tokens `tokens.css` defines); the App.css literal-colour claim had grown from
+  109/146 to 124/198 and now lives next to the tokens; `packages/README.md`
+  never named `@omega-v/oreade`; `apps/api/README.md` never stated the kernel
+  unit; `apps/data` (an untracked scratch dir) was treated as an app;
+  `scripts/smoke-api.cjs` spawns `dist/index.js`, not `dist/server.js`;
+  `test:coverage` used `rm -rf`/`mkdir -p` in a repo whose scripts must be
+  portable; and `node-support.test.ts` still asserted `--runInBand` jest
+  scripts and a CI ledger-smoke that has since been rewritten.
+- Parked with reasons in the suite contract (not deleted): `governance.test.ts`
+  (its document inventories the pre-`/v1` surface — rewriting a security doc is
+  a governance decision), `asymmetric-attestation.test.ts` (a root-level suite
+  cannot resolve `@oceanicos/*`; pnpm links workspace packages per package),
+  and the two DOM suites that drive the removed Builder-kernel shell
+  (`App.test.tsx`, `runtime-health-panel.test.tsx`). `agent-safety-boundary`
+  and `act-async-wrapper` moved into the DOM gate, where they actually run.
+- Still parked and not yet in any gate: `apps/api/src/__tests__/` and most
+  `packages/*/src/__tests__/` remain Jest-global suites. Some packages run
+  them per package (`pnpm --filter @omega-v/mood test` passes, 12 tests);
+  others declare `test: jest` with no jest linked, so the script fails. The
+  root `jest.config.js` is kept only as their alias map.
 - Running a suite **by hand** needs the workspace built first. `pnpm build` covers every workspace package; without it `evolve-recompile.e2e.test.ts` and `omega_distributed_coordination.test.ts` die with `ERR_MODULE_NOT_FOUND` for `packages/evolution/dist` and `packages/coordination/dist`, because the compose `setup` service only builds the API's dependency tree.
 - Five `tests/integration` files stay outside the gate because they cannot run: `full-loop` and `broken-current` drive the removed `/complete-loop` and `/log` routes, `mini-kernel` and `verification_loop` import pre-rename `@omega-v/*` names under jest globals, and `fullstack_e2e` imports 60+ names that are not workspace members. They are listed in `KNOWN_UNRUN` with those reasons.
 - Four suites passed while nothing ran them, and are now in the gate: `omega_pipeline.e2e.test.ts` (called "the executable proof" in `docs/OMEGA_STATUS_VECTOR.md`), `omega_change_boundary.test.ts`, `omega_transition_boundary.test.ts`, and `navigator_contract.integration.test.ts` (previously reachable only through `test:contract`).

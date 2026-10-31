@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { describe, expect, it } from '../harness/jest-compat.ts';
 
 /**
  * An assertion budget must be reachable, or it is not a budget.

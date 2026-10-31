@@ -1,4 +1,5 @@
-import { evidenceStepClassName, evidenceStepLabel } from '../evidence-step';
+import { evidenceStepClassName, evidenceStepLabel } from '../evidence-step.ts';
+import { describe, expect, it } from '../../../../tests/harness/jest-compat.ts';
 
 /**
  * The dashboard used to render every non-passing step as FAIL. A rule the

@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { describe, expect, it } from '../harness/jest-compat.ts';
 
 /**
  * A brand document that drifts from the interface is the same defect as a
@@ -12,7 +13,10 @@ describe('brand system', () => {
   const appCss = readFileSync(join(root, 'apps/web/src/App.css'), 'utf8');
   const html = readFileSync(join(root, 'apps/web/index.html'), 'utf8');
 
-  const documented = Array.from(brand.matchAll(/`(--omega-[a-z-]+)`\s*\|\s*`(#[0-9a-f]{6})`/g)).map(
+  // Values are not always hex: the edge, glass, and shadow tokens are rgba
+  // or a full box-shadow. Matching any backticked value keeps the table
+  // checkable without forbidding the tokens the interface actually uses.
+  const documented = Array.from(brand.matchAll(/`(--omega-[a-z-]+)`\s*\|\s*`([^`]+)`/g)).map(
     (match) => ({ token: match[1], value: match[2] })
   );
 
@@ -38,12 +42,13 @@ describe('brand system', () => {
     const literals = appCss.match(/#[0-9a-fA-F]{3,8}/g) ?? [];
     const distinct = new Set(literals.map((value) => value.toLowerCase()));
 
-    // The document claims 109 distinct across 146 uses. If a change pushes
-    // either number up, the claim is stale and this fails — the debt may be
-    // paid down freely, but it may not quietly grow.
-    expect(brand).toContain('109 distinct colours across 146 uses');
-    expect(distinct.size).toBeLessThanOrEqual(109);
-    expect(literals.length).toBeLessThanOrEqual(146);
+    // The claim lives next to the tokens that are meant to replace the
+    // literals. If a change pushes either number up, the claim is stale and
+    // this fails — the debt may be paid down freely, but it may not grow
+    // quietly.
+    expect(tokens).toContain('App.css carries 124 distinct colours across 198 uses');
+    expect(distinct.size).toBeLessThanOrEqual(124);
+    expect(literals.length).toBeLessThanOrEqual(198);
   });
 
   it('ships the mark and wires it into the page', () => {

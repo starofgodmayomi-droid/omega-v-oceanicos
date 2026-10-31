@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { describe, expect, it } from '../harness/jest-compat.ts';
 
 /**
  * The skills README records a sha256 for every installed skill and offers a

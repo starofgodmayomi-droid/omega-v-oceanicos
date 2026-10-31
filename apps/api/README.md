@@ -2,6 +2,10 @@
 
 Fastify HTTP runtime for Ω∞v | OCEANICOS.
 
+The runtime unit is the MINI kernel — Observe → Verify → Remember — and every
+route below is a bounded way to observe, verify, remember, or ask for
+permission. Nothing here is a licence to act.
+
 The executable contract is the current `createApp` surface. Persistence,
 local jobs, readiness, attestation revocations, and optional static-client
 serving are supported modules and are registered by `createApp`. The supported

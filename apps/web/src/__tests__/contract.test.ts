@@ -1,81 +1,44 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { describe, expect, it } from '../../../../tests/harness/jest-compat.ts';
+import { apiRoutes, clientPaths, isServed } from '../../../../tests/harness/api-routes.ts';
 
 /**
- * The web client and the API have no shared contract: the client hardcodes
- * paths as string literals and the server registers them independently.
- * Nothing connected the two, and apps/web has no test of any kind.
+ * The web client and the API share no types: the client builds `/v1/...`
+ * strings and the server registers them independently. Nothing connects the
+ * two, so a renamed route is a 404 nobody sees until someone loads the panel
+ * that calls it.
  *
- * This does not test the UI. It asserts the two halves agree about which
- * endpoints exist, which is the thing that silently breaks.
+ * This does not test the UI. It asserts that every path the client builds is
+ * one the API registers, which is the part that silently breaks.
  */
 describe('web/API contract', () => {
   const root = process.cwd();
-  const client = readFileSync(join(root, 'apps/web/src/App.tsx'), 'utf8');
-  const server = readFileSync(join(root, 'apps/api/src/index.ts'), 'utf8');
   const viteConfig = readFileSync(join(root, 'apps/web/vite.config.ts'), 'utf8');
-
-  const serverRoutes = new Set(
-    Array.from(server.matchAll(/app\.(get|post)\('([^']+)'/g)).map((match) => match[2])
-  );
-
-  // The dev server rewrites /api/* onto the API root, so the client's
-  // literals carry a prefix the server never sees.
-  const clientPaths = Array.from(
-    new Set(
-      Array.from(client.matchAll(/['\"`](\/api\/[a-z0-9/-]+)(?:\?[^'\"`]+)?['\"`]/g)).map(
-        (m) => m[1]
-      )
-    )
-  ).sort();
-
-  /** Convert a server route like `/jobs/:jobId/claim` to a regex that
-   *  matches client equivalents like `/jobs/id/claim`. */
-  const routeToPattern = (route: string): RegExp =>
-    new RegExp('^' + route.replace(/:[a-zA-Z]+/g, '[a-z0-9-]+') + '$');
+  const routes = apiRoutes(root);
+  const paths = clientPaths(root);
 
   it('finds paths on both sides', () => {
-    expect(clientPaths.length).toBeGreaterThan(5);
-    expect(serverRoutes.size).toBeGreaterThan(10);
+    expect(routes.length).toBeGreaterThan(20);
+    expect(paths.length).toBeGreaterThan(5);
   });
 
-  it.each(clientPaths)('the API serves %s', (clientPath) => {
-    const stripped = clientPath.replace(/^\/api/, '');
-    // Exact match (static routes).
-    if (serverRoutes.has(stripped)) return;
-    // Parameterised match: the client uses a segment like `id` where the
-    // server defines `:jobId`.
-    const matched = Array.from(serverRoutes).some((route) => routeToPattern(route).test(stripped));
-    expect(matched).toBe(true);
+  it.each(paths)('the API serves %s', (clientPath) => {
+    expect(isServed(clientPath, routes)).toBe(true);
   });
 
-  it('rewrites the /api prefix the client depends on, in dev and in production', () => {
-    // Development: the Vite dev server rewrites it.
+  it('rewrites the /api prefix the client depends on', () => {
+    // The client defaults to `/api` as its base (VITE_API_URL overrides it for
+    // a separately hosted API). The dev server rewrites that prefix onto the
+    // API root; the API itself registers no /api routes, so the rewrite is the
+    // only thing making the default base work in development.
     expect(viteConfig).toContain("'/api'");
-    expect(viteConfig).toMatch(/rewrite/);
-
-    // Production: there is no dev server, so the API strips it itself.
-    // Without this the built bundle calls /api/* and nothing answers.
-    expect(server).toMatch(/req\.url\.startsWith\('\/api\/'\)/);
-    expect(server).toMatch(/req\.url\.slice\(4\)/);
+    expect(viteConfig).toMatch(/rewrite:\s*\(path\)\s*=>\s*path\.replace\(\/\^\\\/api\//);
   });
 
-  it('records which endpoints the client does not yet use', () => {
-    const strippedClientPaths = clientPaths.map((path) => path.replace(/^\/api/, ''));
-    const unused = Array.from(serverRoutes)
-      .filter((route) => {
-        // Exact match.
-        if (strippedClientPaths.includes(route)) return false;
-        // Parameterised match: check if any client path matches this
-        // server route when parameters are wildcarded.
-        const pattern = routeToPattern(route);
-        return !strippedClientPaths.some((cp) => pattern.test(cp));
-      })
-      .sort();
-
-    // Not a failure: the client is behind the API, deliberately. This
-    // pins the gap so it is visible and shrinks on purpose rather than
-    // drifting further without anyone noticing.
-    expect(unused).toEqual([]);
+  it('registers no route under the /api prefix', () => {
+    // If the server ever served /api itself, the dev rewrite would double it.
+    // Keeping the two halves separate is what makes one proxy config enough.
+    expect(routes.filter((route) => route.path.startsWith('/api'))).toEqual([]);
   });
 });

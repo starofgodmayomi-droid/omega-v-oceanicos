@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { describe, expect, it } from '../harness/jest-compat.ts';
 
 /**
  * CONTRIBUTING.md is eleven kilobytes inviting people to contribute, and

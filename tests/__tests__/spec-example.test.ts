@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { verify as nodeVerify } from 'node:crypto';
+import { describe, expect, it } from '../harness/jest-compat.ts';
 
 /**
  * The worked example in the specification must actually verify.

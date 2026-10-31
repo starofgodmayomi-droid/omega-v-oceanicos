@@ -1,3 +1,16 @@
+/*
+ * PARKED CONFIG — this cannot start in this checkout.
+ *
+ * No script runs jest at the root, jest is not a root dependency, and
+ * `jest.setup.ts` does not typecheck, so the suites this file names run
+ * nowhere. They were migrated (or parked with a reason) in
+ * `tests/integration/e2e-suite-contract.integration.test.ts` and
+ * `tests/harness/jest-compat.ts`.
+ *
+ * What remains below is only the package-alias map for the Jest-global suites
+ * still sitting in `apps/api/src/__tests__` and `packages/*/src/__tests__`.
+ * Do not treat this file as evidence that anything runs.
+ */
 const moduleNameMapper = {
   // The packages are ESM ("type": "module"), so relative imports must
   // carry a .js extension for Node to resolve them at runtime. Strip it

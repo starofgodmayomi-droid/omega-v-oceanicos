@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
+import { describe, expect, it } from '../harness/jest-compat.ts';
 
 /**
  * Every package script must run on every platform CI claims to support.
@@ -66,7 +67,7 @@ describe('package scripts are portable', () => {
     >;
     expect(scripts['smoke:api']).toBe('pnpm build && node scripts/smoke-api.cjs');
     expect(readFileSync(join(root, 'scripts/smoke-api.cjs'), 'utf8')).toContain(
-      "spawn(process.execPath, ['dist/server.js']"
+      "spawn(process.execPath, ['dist/index.js']"
     );
   });
 

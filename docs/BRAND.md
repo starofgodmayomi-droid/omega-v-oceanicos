@@ -159,17 +159,21 @@ Defined in `apps/web/src/tokens.css`:
 
 | Token | Value | Use |
 | --- | --- | --- |
-| `--omega-abyss` | `#071312` | page background |
-| `--omega-abyss-raised` | `#0b1d1a` | panels |
-| `--omega-abyss-edge` | `#1b3b35` | borders, dividers |
-| `--omega-current` | `#8ce8c8` | primary signal, the mark |
-| `--omega-current-bright` | `#69e7b9` | active state |
-| `--omega-current-dim` | `#609187` | secondary text |
-| `--omega-foam` | `#ebfaf4` | primary text |
-| `--omega-foam-muted` | `#c8e9df` | supporting text |
-| `--omega-verified` | `#69e7b9` | verified verdict |
-| `--omega-dissent` | `#ed9986` | dissenting verdict |
-| `--omega-unknown` | `#547b74` | unknown verdict |
+| `--omega-abyss` | `#020617` | page background |
+| `--omega-abyss-raised` | `#0b1329` | panels |
+| `--omega-abyss-edge` | `rgba(6, 182, 212, 0.2)` | borders, dividers |
+| `--omega-current` | `#22d3ee` | primary signal, the mark |
+| `--omega-current-bright` | `#06b6d4` | active state |
+| `--omega-current-dim` | `#0891b2` | secondary signal |
+| `--omega-foam` | `#e2e8f0` | primary text |
+| `--omega-foam-muted` | `#94a3b8` | supporting text |
+| `--omega-verified` | `#06b6d4` | verified verdict |
+| `--omega-dissent` | `#ef4444` | dissenting verdict |
+| `--omega-unknown` | `#64748b` | unknown verdict |
+| `--omega-violet` | `#7c3aed` | symbolic accent for ecosystem layers |
+| `--omega-warning` | `#f59e0b` | not-executed / attention verdict |
+| `--omega-glass` | `rgba(15, 23, 42, 0.65)` | translucent panel surface |
+| `--omega-shadow` | `0 18px 70px rgba(2, 6, 23, 0.46)` | panel elevation |
 
 **Semantic verdict colors are reserved.** They communicate system state, not decoration.
 

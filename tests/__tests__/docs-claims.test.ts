@@ -1,5 +1,6 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, dirname, relative } from 'node:path';
+import { describe, expect, it } from '../harness/jest-compat.ts';
 
 /**
  * Directory READMEs must not describe siblings that do not exist.
@@ -108,7 +109,14 @@ describe('packages document themselves', () => {
 describe('apps document themselves', () => {
   const appsDir = join(process.cwd(), 'apps');
 
-  const apps = readdirSync(appsDir).filter((entry) => statSync(join(appsDir, entry)).isDirectory());
+  // An app is a directory with a manifest. A stray data/ or scratch directory
+  // is not an application, and requiring a README of it would describe the
+  // checkout rather than the repository.
+  const apps = readdirSync(appsDir).filter(
+    (entry) =>
+      statSync(join(appsDir, entry)).isDirectory() &&
+      existsSync(join(appsDir, entry, 'package.json'))
+  );
 
   const index = readFileSync(join(appsDir, 'README.md'), 'utf8');
 

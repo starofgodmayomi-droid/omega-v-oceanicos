@@ -13,17 +13,23 @@ import { fileURLToPath } from 'node:url';
  * and `omega_change_boundary.test.ts` / `omega_transition_boundary.test.ts`
  * were green but unrun.
  *
- * This guard keeps the list answerable: every integration file is either run
- * by `pnpm test` or named below with the reason it cannot be, every
- * `*.e2e.test.ts` is run, every listed path exists, and `test:e2e` runs the
- * same set as `test` so the two cannot drift apart.
+ * The same failure had a second home: every suite written against Jest's
+ * globals. The root `jest.config.js` named them, no script ran jest, jest was
+ * not a root dependency, and the config could not even start. `tests/__tests__`
+ * and `apps/web/src/__tests__` were covered on paper only.
+ *
+ * This guard keeps both lists answerable: every integration file, every
+ * repo-level contract suite, and every web suite is either run by a gate or
+ * named below with the reason it cannot be; every `*.e2e.test.ts` is run;
+ * every listed path exists; and `test:e2e` runs the same set as `test` so the
+ * two cannot drift apart.
  */
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
 
 /**
- * Integration files that no command runs. Each one predates the current
- * architecture; they are kept as history, not as evidence of coverage.
+ * Suites that no command runs. Each one predates the current architecture;
+ * they are kept as history, not as evidence of coverage.
  */
 const KNOWN_UNRUN: Record<string, string> = {
   'tests/integration/full-loop.integration.test.ts':
@@ -36,18 +42,46 @@ const KNOWN_UNRUN: Record<string, string> = {
     'Imports the pre-rename @omega-v/* package names under jest globals; observe→verify→attest is covered by max_compress_stack.e2e.test.ts.',
   'tests/integration/fullstack_e2e.integration.test.ts':
     'Imports 60+ @omega-v/* names that are not workspace members (renamed @oceanicos/*), so it cannot resolve a single import.',
+  'tests/__tests__/asymmetric-attestation.test.ts':
+    'A root-level suite cannot resolve @oceanicos/* imports: pnpm links workspace packages per package, so only apps/api and the libraries themselves see them. The envelope it covers is asserted by tests/__tests__/spec-example.test.ts and apps/web/src/__tests__/verify.test.ts.',
+  'tests/__tests__/governance.test.ts':
+    'docs/GOVERNANCE.md still inventories the pre-/v1 write surface (it lists POST /observe, /act, /learn, /complete-loop and omits every /v1 write), so its route check cannot pass without a governance rewrite. Rewriting a security document is a governance decision, not a test migration; the suite is parked until that rewrite lands.',
+  'apps/web/src/__tests__/dom/App.test.tsx':
+    'Drives the removed Builder-kernel dashboard (headings and panels that no longer exist anywhere in apps/web/src). CurrentAppShell.test.tsx and the panel suites cover the surface that replaced it.',
+  'apps/web/src/__tests__/dom/runtime-health-panel.test.tsx':
+    'Renders the removed metrics-row / revocation-evidence rows of the old App shell. The surface it measured is gone; runtime evidence is now covered by ObservationStreamPanel and SystemHealthPanel.',
 };
 
 const scripts = (): Record<string, string> =>
   JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).scripts;
 
 const listedIn = (script: string): string[] =>
-  [...String(scripts()[script] ?? '').matchAll(/(\.\/[^\s"]+\.ts)/g)].map((match) => match[1]);
+  [...String(scripts()[script] ?? '').matchAll(/(\.\/[^\s"]+\.tsx?)/g)].map((match) => match[1]);
+
+const filesIn = (directory: string, pattern: RegExp): string[] =>
+  readdirSync(join(root, directory))
+    .filter((name) => pattern.test(name))
+    .map((name) => `${directory}/${name}`);
 
 const integrationFiles = (): string[] =>
-  readdirSync(join(root, 'tests', 'integration'))
-    .filter((name) => name.endsWith('.test.ts'))
-    .map((name) => `tests/integration/${name}`);
+  filesIn('tests/integration', /\.test\.ts$/);
+
+const contractFiles = (): string[] => filesIn('tests/__tests__', /\.test\.ts$/);
+
+const webFiles = (): string[] => filesIn('apps/web/src/__tests__', /\.test\.tsx?$/);
+
+const webDomFiles = (): string[] => filesIn('apps/web/src/__tests__/dom', /\.test\.tsx$/);
+
+/** The DOM suites the web gate runs, as `apps/web`-relative paths. */
+const webDomGate = (): string[] => {
+  const web = JSON.parse(readFileSync(join(root, 'apps/web/package.json'), 'utf8')).scripts as Record<
+    string,
+    string
+  >;
+  return [...String(web['test:current-dom'] ?? '').matchAll(/(src\/__tests__\/[^\s"]+\.tsx)/g)].map(
+    (match) => `apps/web/${match[1]}`
+  );
+};
 
 test('every path the test command lists exists', () => {
   const missing = listedIn('test').filter((file) => !existsSync(join(root, file)));
@@ -58,6 +92,27 @@ test('every integration file is run or documented as unrun', () => {
   const listed = new Set(listedIn('test').map((file) => file.replace('./', '')));
   const orphans = integrationFiles().filter((file) => !listed.has(file) && !KNOWN_UNRUN[file]);
   assert.deepEqual(orphans, [], 'integration suites that no command runs and no note explains');
+});
+
+test('every repo-level contract suite is run or documented as unrun', () => {
+  const listed = new Set(listedIn('test').map((file) => file.replace('./', '')));
+  const orphans = contractFiles().filter((file) => !listed.has(file) && !KNOWN_UNRUN[file]);
+  assert.deepEqual(orphans, [], 'tests/__tests__ suites that no command runs and no note explains');
+});
+
+test('every web suite is run by a gate or documented as unrun', () => {
+  const nodeGate = new Set(listedIn('test').map((file) => file.replace('./', '')));
+  const domGate = new Set(webDomGate());
+  const orphans = webFiles().filter(
+    (file) => !nodeGate.has(file) && !domGate.has(file) && !KNOWN_UNRUN[file]
+  );
+  assert.deepEqual(orphans, [], 'web suites that no gate runs and no note explains');
+});
+
+test('the web DOM gate covers every DOM suite it claims', () => {
+  const domGate = new Set(webDomGate());
+  const orphans = webDomFiles().filter((file) => !domGate.has(file) && !KNOWN_UNRUN[file]);
+  assert.deepEqual(orphans, [], 'DOM suites missing from test:current-dom');
 });
 
 test('every documented unrun suite still exists and says why it cannot run', () => {
