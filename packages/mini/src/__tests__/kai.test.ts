@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { KaiContinuity, kaiFromBlock, kaiUnknown } from '../kai.js';
+import { describe, expect, it } from './../../../../tests/helpers/node-test-compat.ts';
+import { KaiContinuity, kaiFromBlock, kaiUnknown } from '../../dist/kai.js';
 
 const block = { index: 4101, timestamp: '2026-10-04T00:00:00.000Z', observation: { source: 'test' }, evidence: { status: 'PASS' }, previousHash: 'prev', hash: 'a'.repeat(64), nonce: 1 } as any;
 

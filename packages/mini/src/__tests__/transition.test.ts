@@ -1,7 +1,7 @@
-import { describe, expect, it } from '@jest/globals';
+import { describe, expect, it } from './../../../../tests/helpers/node-test-compat.ts';
 import type { OmegaChangeRecord } from '@oceanicos/types';
-import { executeAuthorizedTransition } from '../transition';
-import { resolveChangeAdmission } from '../admission';
+import { executeAuthorizedTransition } from '../../dist/transition.js';
+import { resolveChangeAdmission } from '../../dist/admission.js';
 
 const baseRecord = (decision: OmegaChangeRecord['decision'] = 'REVIEW'): OmegaChangeRecord => ({
   id: 'change-test',

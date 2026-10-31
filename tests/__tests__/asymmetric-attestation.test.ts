@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
-import { describe, expect, it } from '@jest/globals';
-import { ObserverEngine } from '@oceanicos/observer';
-import { VerificationEngine } from '@oceanicos/verification';
+import { describe, expect, it } from './../helpers/node-test-compat.ts';
+import { ObserverEngine } from '../../packages/observer/dist/index.js';
+import { VerificationEngine } from '../../packages/verification/dist/index.js';
 
 describe('asymmetric attestation boundary', () => {
   it('signs evidence with Ed25519 and verifies it with only the public key', () => {

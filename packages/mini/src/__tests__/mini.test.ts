@@ -1,5 +1,6 @@
-import { MiniKernel } from '../index';
-import { VerificationRule } from '@omega-v/types';
+import { beforeEach, describe, expect, test } from './../../../../tests/helpers/node-test-compat.ts';
+import { MiniKernel } from '../../dist/index.js';
+import type { VerificationRule } from '@oceanicos/types';
 
 const DEFAULT_RULE: VerificationRule = {
   name: 'response-time-threshold',

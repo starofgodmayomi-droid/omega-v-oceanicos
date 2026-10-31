@@ -1,7 +1,7 @@
-import { describe, expect, it } from '@jest/globals';
-import type { OmegaConnectorDeclaration } from '../connector-admission';
-import { admitOmegaConnector } from '../connector-admission';
-import { executeAdmittedConnector, observeAdmittedConnector } from '../connector-observation';
+import { describe, expect, it } from './../../../../tests/helpers/node-test-compat.ts';
+import type { OmegaConnectorDeclaration } from '../../dist/connector-admission.js';
+import { admitOmegaConnector } from '../../dist/connector-admission.js';
+import { executeAdmittedConnector, observeAdmittedConnector } from '../../dist/connector-observation.js';
 
 const connector: OmegaConnectorDeclaration = {
   id: 'github.read-repository',

@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
-import { KaiContinuity } from '../kai.js';
-import { captureMiniKernelCycle } from '../kai-cycle.js';
+import { describe, expect, it } from './../../../../tests/helpers/node-test-compat.ts';
+import { KaiContinuity } from '../../dist/kai.js';
+import { captureMiniKernelCycle } from '../../dist/kai-cycle.js';
 
 const block = {
   index: 4102,

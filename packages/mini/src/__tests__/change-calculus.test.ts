@@ -1,4 +1,4 @@
-import { describe, expect, it } from '@jest/globals';
+import { describe, expect, it } from './../../../../tests/helpers/node-test-compat.ts';
 import {
   canExecuteOmegaDecision,
   canPromoteOmegaReality,

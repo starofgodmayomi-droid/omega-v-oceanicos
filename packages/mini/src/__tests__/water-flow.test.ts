@@ -1,5 +1,5 @@
-import { describe, expect, it } from '@jest/globals';
-import { buildOmegaWaterFlow } from '../water-flow';
+import { describe, expect, it } from './../../../../tests/helpers/node-test-compat.ts';
+import { buildOmegaWaterFlow } from '../../dist/water-flow.js';
 
 describe('KAI water-of-reality flow', () => {
   it('builds a deterministic bounded trace with explicit provenance', () => {
