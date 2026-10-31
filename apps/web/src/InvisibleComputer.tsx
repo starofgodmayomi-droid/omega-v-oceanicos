@@ -32,6 +32,10 @@ type ExecutionResult = {
   contract: { id: string; authority_level: string; expected_outcome: string } | null;
   memory: { id: string; timestamp: string } | null;
   engine: string | null;
+  upgrade?: {
+    execution: 'NOT_EXECUTED';
+    selected: { id: string } | null;
+  };
 };
 
 type MemoryRecord = {
@@ -344,6 +348,12 @@ export function InvisibleComputer() {
             )}
             {result.engine && <span>ELION · {result.engine}</span>}
             {result.memory && <span>REMEMBERED · {result.memory.id.slice(0, 8)}</span>}
+            {result.upgrade && (
+              <span>
+                UPGRADE · {result.upgrade.execution}
+                {result.upgrade.selected ? ` · ${result.upgrade.selected.id}` : ' · none'}
+              </span>
+            )}
           </div>
         </div>
       )}

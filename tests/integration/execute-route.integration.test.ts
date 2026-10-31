@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import test from 'node:test';
 import { createApp } from '../../apps/api/dist/index.js';
-import { KAI_SYSTEM_PROMPT, verifyOmega } from '../../apps/api/src/invisible-computer.ts';
+import { KAI_SYSTEM_PROMPT, compressTowardUpgrade, verifyOmega } from '../../apps/api/src/invisible-computer.ts';
 
 const sha256 = (value: string) => createHash('sha256').update(value, 'utf8').digest('hex');
 
@@ -25,6 +25,10 @@ test('POST /api/execute runs KAI → ELION → OMEGA → KAI and returns the evi
     assert.equal(body.contract.authority_level, 'READ_ONLY');
     assert.ok(body.contract.expected_outcome.length > 0);
     assert.ok(body.memory?.id, 'a verified outcome must be remembered');
+    assert.equal(body.upgrade.execution, 'NOT_EXECUTED');
+    assert.equal(body.upgrade.authority, 'compression-is-not-permission');
+    assert.equal(body.upgrade.selected.evidenceHash, body.evidence_hash);
+    assert.equal(body.upgrade.selected.id, `upgrade.${body.evidence_hash.slice(0, 16)}`);
 
     assert.deepEqual(
       body.steps.map((step: any) => `${step.actor}:${step.phase}:${step.status}`),
@@ -79,6 +83,9 @@ test('KAI Shield halts a fraud pattern with DIVERGENT and remembers nothing', as
     assert.equal(body.evidence_hash, null);
     assert.equal(body.response, null);
     assert.equal(body.memory, null);
+    assert.equal(body.upgrade.selected, null);
+    assert.equal(body.upgrade.cycleStatus, 'DIVERGENT');
+    assert.equal(body.upgrade.execution, 'NOT_EXECUTED');
     assert.ok(body.matched_patterns.length > 0);
     assert.deepEqual(body.steps.map((step: any) => step.actor), ['KAI']);
 
@@ -105,6 +112,8 @@ test('authority below the required level halts NOT_EXECUTED and remembers nothin
     assert.equal(deniedBody.evidence_hash, null);
     assert.equal(deniedBody.memory, null);
     assert.equal(deniedBody.contract, null);
+    assert.equal(deniedBody.upgrade.selected, null);
+    assert.equal(deniedBody.upgrade.cycleStatus, 'NOT_EXECUTED');
     assert.deepEqual(deniedBody.authority, { granted: 'READ_ONLY', required: 'AUTONOMOUS' });
     assert.deepEqual(
       deniedBody.steps.map((step: any) => `${step.actor}:${step.phase}:${step.status}`),
@@ -216,4 +225,22 @@ test('the KAI/ELION persona keeps its non-collapse rules', () => {
   ]) {
     assert.ok(KAI_SYSTEM_PROMPT.includes(law), `system prompt must carry: ${law}`);
   }
+});
+
+test('compression names one unexecuted upgrade only for a verified digest', () => {
+  const hash = sha256('observed');
+  const selected = compressTowardUpgrade({ cycleStatus: 'VERIFIED', evidenceHash: hash });
+  assert.equal(selected.execution, 'NOT_EXECUTED');
+  assert.equal(selected.authority, 'compression-is-not-permission');
+  assert.equal(selected.selected?.id, `upgrade.${hash.slice(0, 16)}`);
+  assert.equal(selected.selected?.evidenceHash, hash);
+
+  const halted = compressTowardUpgrade({ cycleStatus: 'VERIFIED', evidenceHash: 'not-a-digest' });
+  assert.equal(halted.selected, null);
+  assert.equal(halted.cycleStatus, 'VERIFIED');
+
+  const unknown = compressTowardUpgrade({ cycleStatus: 'MAYBE', evidenceHash: hash });
+  assert.equal(unknown.cycleStatus, 'UNKNOWN');
+  assert.equal(unknown.selected, null);
+  assert.equal(unknown.execution, 'NOT_EXECUTED');
 });
