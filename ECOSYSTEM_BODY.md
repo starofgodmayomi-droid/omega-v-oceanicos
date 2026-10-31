@@ -84,7 +84,7 @@ Observed 2026-10-29 in this sandbox (`docker compose -f docker-compose.base44.ym
 | Execution | bounded executor in `execute-route.ts` | **BOUNDED** | answers runtime-state intents only |
 | Shield | 8 declarative rules | **VERIFIED** | "Guaranteed returns, send money now." → `DIVERGENT` |
 | Attestation | `POST /v1/attest`, HMAC-SHA256 | **DEGRADED (dev key)** | boots without `OMEGA_SIGNING_KEY`; placeholder in `.env.base44-defaults` |
-| Surface | 71 registered routes, 44 integration test files | **COUNTED** | route inventory + `tests/integration` listing |
+| Surface | 73 registered routes, 45 integration test files | **COUNTED** | route inventory + `tests/integration` listing |
 | Kernel self-description | `GET /v1/kernel/capabilities` | **`execution: local-simulation-only`** | `remoteMutation: false`, `externalDeployment: false`, `credentialHandling: false` |
 
 ---
@@ -96,8 +96,12 @@ Stated plainly, because a body map that hides its absences is a prompt wearing a
 - **No model connector.** A generative intent (`"Write a poem…"`) returns
   `NOT_EXECUTED` / `ELION_BOUNDED_EXECUTOR_HAS_NO_CAPABILITY_FOR_THIS_INTENT`.
   That is the design, not a missing fallback.
-- **No Telegram intake.** No bot is configured; a BotFather token has not been
-  supplied. `NOT_EXECUTED`.
+- **Telegram intake exists but is `UNCONFIGURED`.** `POST /v1/telegram/webhook`
+  runs the same bounded loop as `/v1/execute`, with `READ_ONLY` authority, behind a
+  required webhook secret. No BotFather token has been supplied, so
+  `GET /v1/telegram/status` answers `UNCONFIGURED` and every update halts
+  `NOT_EXECUTED` / `TELEGRAM_BOT_TOKEN_MISSING` without touching KAI memory. The
+  capability is present; the authority is not.
 - **No cloud, no deployment.** The kernel reports `externalDeployment: false`,
   `remoteMutation: false`. This sandbox is a development environment; the app has
   no published URL.
@@ -150,8 +154,16 @@ Stop conditions: any need for a model connector, a credential, or remote mutatio
 means this Δ is out of scope. A tampered Σ file must degrade to
 `integrity: DEGRADED`, never silently reload.
 
-Explicitly **not** next: Telegram intake (blocked on a token only you can supply),
-LLM generation, publishing, multi-region claims.
+**Landed (2026-10-31) — Telegram intake, bounded and fail-closed.** The loop is now
+`runExecuteLoop` in `execute-route.ts`, transport-independent, so `/v1/execute` and
+`POST /v1/telegram/webhook` cannot reach different verdicts. The webhook requires
+`TELEGRAM_WEBHOOK_SECRET`, carries `READ_ONLY` authority, and stays `UNCONFIGURED`
+until a BotFather token exists — at which point configuration, not code, is the only
+missing step. Asserted in `tests/integration/telegram-intake.integration.test.ts`
+(5 cases: unconfigured halts without a memory write, unsigned update refused,
+identical verdicts + Σ admission, failed delivery reported, thrown send degraded).
+
+Explicitly **not** next: LLM generation, publishing, multi-region claims.
 
 ---
 

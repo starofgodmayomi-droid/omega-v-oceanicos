@@ -146,6 +146,8 @@ POST /v1/execute
 GET  /v1/execute/memory
 GET  /v1/execute/memory/export
 GET  /v1/execute/verified
+GET  /v1/telegram/status
+POST /v1/telegram/webhook
 ```
 
 ### POST /v1/execute — the KAI/ELION loop
@@ -186,6 +188,31 @@ silently reloading a shorter history.
 (`omega.memory.export.v1`), sent as an attachment: the journal (every verdict) and
 Σ (verified only), each with its height and integrity, plus the fixed-point law and
 the limitation string. It reads only what this process recorded.
+
+### POST /v1/telegram/webhook — the same loop, reached from a chat
+
+`GET /v1/telegram/status` answers whether intake is configured, reporting the
+credentials as `CONFIGURED`/`MISSING` — never their values.
+
+- **No `TELEGRAM_BOT_TOKEN` → `UNCONFIGURED`.** Every update answers
+  `503 TELEGRAM_INTAKE_NOT_CONFIGURED` / `TELEGRAM_BOT_TOKEN_MISSING` with
+  `remembered: false`; KAI memory is not touched and nothing is sent.
+- **No `TELEGRAM_WEBHOOK_SECRET`, or a header that does not match
+  `X-Telegram-Bot-Api-Secret-Token` → refused** (`401
+  TELEGRAM_WEBHOOK_SECRET_MISMATCH`), because an unauthenticated webhook could
+  plant intents in KAI memory and make the body speak in someone else's chat.
+- **A message is always `READ_ONLY`.** The update's `message.text` is the intent;
+  the caller cannot ask the chat surface for `AUTONOMOUS` authority.
+- **The verdict is the loop's verdict.** `message.text` runs through the same
+  `runExecuteLoop` as `POST /v1/execute`: the shield still halts scams, an intent
+  with no bounded capability is still `NOT_EXECUTED`, and only a `VERIFIED` drop
+  enters Σ.
+- **Delivery is observed, not assumed.** `telegram.delivered` reflects the Bot
+  API's answer; a failed send answers `TELEGRAM_SEND_FAILED[_<status>]` and the
+  drop stays remembered with its verdict.
+- Configure the webhook with
+  `https://api.telegram.org/bot<token>/setWebhook?url=https://<host>/v1/telegram/webhook&secret_token=<secret>`
+  once both values exist.
 
 Value Navigator proposals always remain `decision: REVIEW`,
 `authorized: false`, and `NOT_EXECUTED`. Observations are supplied by the

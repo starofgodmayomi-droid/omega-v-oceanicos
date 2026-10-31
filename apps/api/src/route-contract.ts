@@ -30,6 +30,8 @@ export const API_ROUTE_INVENTORY = [
   'GET /v1/execute/memory',
   'GET /v1/execute/memory/export',
   'GET /v1/execute/verified',
+  'GET /v1/telegram/status',
+  'POST /v1/telegram/webhook',
   'GET /v1/value-navigator/proposals',
   'GET /v1/value-navigator/proposals/:proposalId',
   'POST /v1/value-navigator/proposals',

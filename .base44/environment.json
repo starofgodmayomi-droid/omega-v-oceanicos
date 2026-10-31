@@ -7,6 +7,16 @@
       "name": "OMEGA_SIGNING_KEY",
       "description": "HMAC-SHA256 signing key for /v1/attest (>=32 chars). A dev placeholder is provided in .env.base44-defaults; replace with a real random key for trustworthy attestations.",
       "requiredAtBoot": false
+    },
+    {
+      "name": "TELEGRAM_BOT_TOKEN",
+      "description": "BotFather token for Telegram intake (BotFather → /newbot → token). Optional: without it GET /v1/telegram/status answers UNCONFIGURED and POST /v1/telegram/webhook halts NOT_EXECUTED without touching KAI memory.",
+      "requiredAtBoot": false
+    },
+    {
+      "name": "TELEGRAM_WEBHOOK_SECRET",
+      "description": "Secret passed to Telegram setWebhook as secret_token and returned in the X-Telegram-Bot-Api-Secret-Token header (any random string). Required before the webhook accepts an update, so an unauthenticated caller cannot plant intents in KAI memory.",
+      "requiredAtBoot": false
     }
   ]
 }

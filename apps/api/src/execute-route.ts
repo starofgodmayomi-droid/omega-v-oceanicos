@@ -88,7 +88,7 @@ function evidenceReport(evidence: ExecuteRuntimeEvidence): string {
   ].join('\n');
 }
 
-function requireIntent(value: unknown): string {
+export function requireIntent(value: unknown): string {
   if (typeof value !== 'string' || !value.trim()) throw new Error('intent must be a non-empty string');
   const intent = value.trim();
   if (intent.length > MAX_INTENT_LENGTH) throw new Error(`intent must be at most ${MAX_INTENT_LENGTH} characters`);
@@ -120,12 +120,196 @@ function receipt(entry: KaiMemoryEntry | null, remembered: boolean): Record<stri
     : { id: null, sequence: null, hash: null, previousHash: null, timestamp: null };
 }
 
+export interface ExecuteLoopDeps {
+  readonly store: FileKaiMemoryStore;
+  readonly readEvidence?: ExecuteEvidenceReader;
+  readonly verifiedStore?: FileKaiVerifiedStore;
+}
+
+export interface ExecuteLoopInput {
+  readonly intent: string;
+  readonly authorityLevel: KaiAuthorityLevel;
+  readonly expectedOutcome?: string;
+}
+
+export interface ExecuteLoopResult {
+  readonly httpStatus: number;
+  readonly payload: Record<string, unknown>;
+}
+
+/**
+ * The loop itself, independent of transport. Every intake — HTTP, chat, anything
+ * later — runs exactly this function, so no surface can reach an easier verdict
+ * than another.
+ */
+export function runExecuteLoop(input: ExecuteLoopInput, deps: ExecuteLoopDeps): ExecuteLoopResult {
+  const { intent, authorityLevel, expectedOutcome } = input;
+  const { store, readEvidence, verifiedStore } = deps;
+  const steps: ExecuteStep[] = [];
+
+  // STEP 1 — KAI OBSERVE: scan before anything is allowed to act.
+  const blocked = shieldMatches(intent);
+  if (blocked.length > 0) {
+    steps.push({ step: 'KAI_OBSERVE', status: 'DIVERGENT', detail: `${KAI_SHIELD_BLOCK_REASON} Matched: ${blocked.map((rule) => rule.label).join(', ')}.` });
+    steps.push({ step: 'ELION_BOUND', status: 'HALTED', detail: 'No contract formed. The shield halts before execution.' });
+    const entry = store.append({
+      intent,
+      evidenceHash: sha256(`blocked|${intent}|${blocked.map((rule) => rule.id).join(',')}`),
+      status: 'DIVERGENT',
+      authorityLevel,
+      expectedOutcome,
+      reason: KAI_SHIELD_BLOCK_REASON,
+    });
+    steps.push({ step: 'KAI_REMEMBER', status: 'DIVERGENT', detail: `Remembered as DIVERGENT at sequence ${entry.sequence}.` });
+    return {
+      httpStatus: 200,
+      payload: {
+        success: true,
+        status: 'DIVERGENT',
+        reason: KAI_SHIELD_BLOCK_REASON,
+        shield: { blocked: true, rules: blocked.map((rule) => ({ id: rule.id, label: rule.label })) },
+        contract: null,
+        output: null,
+        evidenceHash: entry.evidenceHash,
+        hashAlgorithm: 'SHA-256',
+        steps,
+        memory: receipt(entry, true),
+      },
+    };
+  }
+  steps.push({ step: 'KAI_OBSERVE', status: 'OBSERVED', detail: 'No shield rule matched the intent.' });
+
+  // STEP 2 — ELION BOUND: form the ΩIR contract, and refuse authority it cannot hold.
+  if (authorityLevel === 'AUTONOMOUS' && IRREVERSIBLE_INTENT.test(intent)) {
+    const entry = store.append({
+      intent,
+      evidenceHash: sha256(`unauthorized|${intent}`),
+      status: 'NOT_EXECUTED',
+      authorityLevel,
+      expectedOutcome,
+      reason: 'HUMAN_AUTHORIZATION_REQUIRED',
+    });
+    steps.push({ step: 'ELION_BOUND', status: 'NOT_EXECUTED', detail: 'Autonomous authority requested for an irreversible intent. Human authorization is required.' });
+    steps.push({ step: 'KAI_REMEMBER', status: 'NOT_EXECUTED', detail: `Remembered as NOT_EXECUTED at sequence ${entry.sequence}.` });
+    return {
+      httpStatus: 202,
+      payload: {
+        success: true,
+        status: 'NOT_EXECUTED',
+        reason: 'HUMAN_AUTHORIZATION_REQUIRED',
+        shield: { blocked: false, rules: [] },
+        contract: { id: entry.id, intent, authorityLevel, expectedOutcome: expectedOutcome ?? null },
+        output: null,
+        evidenceHash: entry.evidenceHash,
+        hashAlgorithm: 'SHA-256',
+        steps,
+        memory: receipt(entry, true),
+      },
+    };
+  }
+
+  const contract = {
+    id: `oir-${createHash('sha256').update(`${intent}|${authorityLevel}|${Date.now()}`).digest('hex').slice(0, 24)}`,
+    intent,
+    authorityLevel,
+    executionScope: 'READ_ONLY_OBSERVED_STATE',
+    expectedOutcome: expectedOutcome ?? null,
+  };
+  steps.push({ step: 'ELION_BOUND', status: 'BOUND', detail: `Contract ${contract.id} formed. Scope: read-only observed state.` });
+
+  // STEP 3 — ELION EXECUTE: bounded executor. No model connector is configured,
+  // so it only reports what the body already observed; it invents nothing.
+  const canAnswer = EVIDENCE_INTENT.test(intent) && typeof readEvidence === 'function';
+  let output: string | null = null;
+  if (canAnswer) {
+    try {
+      output = evidenceReport(readEvidence!());
+      steps.push({ step: 'ELION_EXECUTE', status: 'OBSERVED', detail: 'Bounded executor read the observed runtime state.' });
+    } catch {
+      output = null;
+      steps.push({ step: 'ELION_EXECUTE', status: 'UNKNOWN', detail: 'Evidence source unavailable; no output produced.' });
+    }
+  } else {
+    steps.push({
+      step: 'ELION_EXECUTE',
+      status: 'NOT_EXECUTED',
+      detail: 'No bounded capability for this intent. No model connector is configured, so nothing was generated.',
+    });
+  }
+
+  // STEP 4 — OMEGA VERIFY: the Ω∞v fixed-point gate decides the verdict.
+  // A capability the bounded executor does not hold is authority it does not
+  // have, so it halts NOT_EXECUTED rather than inventing an answer. The
+  // declared expectation is a fragment the report must contain, because a
+  // runtime report carries live values around it.
+  const drop = {
+    id: intent,
+    scam: false,
+    evidence: output ? [output] : [],
+    authority: { held: canAnswer ? 1 : 0, required: 1 },
+    expected: expectedOutcome ?? null,
+    observed: output,
+  };
+  const judged = judgeDrop(drop, 'CONTAINS');
+  const status: KaiMemoryStatus = judged.verdict;
+  const reason =
+    judged.reason === 'EVIDENCE_EMPTY'
+      ? 'OMEGA_OUTPUT_EMPTY'
+      : judged.reason === 'AUTHORITY_INSUFFICIENT'
+        ? 'ELION_BOUNDED_EXECUTOR_HAS_NO_CAPABILITY_FOR_THIS_INTENT'
+        : judged.reason === 'OBSERVED_DIVERGES_FROM_EXPECTED'
+          ? 'OMEGA_EXPECTED_OUTCOME_NOT_OBSERVED'
+          : undefined;
+  const evidenceHash = output && output.trim() ? sha256(output) : sha256(`${reason}|${intent}`);
+  steps.push({
+    step: 'OMEGA_VERIFY',
+    status,
+    detail:
+      status === 'VERIFIED'
+        ? `Output hashed (${evidenceHash.slice(0, 19)}…) and matched the contract.`
+        : status === 'DIVERGENT'
+          ? `DIVERGENT: expected outcome "${expectedOutcome}" was not observed in the output.`
+          : `${reason}. Nothing was claimed as verified.`,
+  });
+
+  // STEP 5 — KAI REMEMBER: seal the drop with its own verdict.
+  const entry = store.append({ intent, evidenceHash, status, authorityLevel, expectedOutcome, reason });
+  steps.push({ step: 'KAI_REMEMBER', status, detail: `Remembered as ${status} at sequence ${entry.sequence}.` });
+  // Σ admits only what matched reality. Every other verdict leaves it untouched.
+  const verifiedEntry = status === 'VERIFIED' && verifiedStore
+    ? verifiedStore.append({ intent, evidenceHash, dropHash: hashDrop(drop) })
+    : null;
+
+  return {
+    httpStatus: 200,
+    payload: {
+      success: true,
+      status,
+      reason: reason ?? null,
+      shield: { blocked: false, rules: [] },
+      contract,
+      output,
+      evidenceHash,
+      hashAlgorithm: 'SHA-256',
+      steps,
+      memory: receipt(entry, true),
+      verified: verifiedReceipt(verifiedEntry, verifiedStore),
+    },
+  };
+}
+
 export function registerExecuteRoute(
   fastify: FastifyInstance,
   jsonError: JsonError,
   store: FileKaiMemoryStore,
   options: { readonly readEvidence?: ExecuteEvidenceReader; readonly verifiedStore?: FileKaiVerifiedStore } = {},
 ): void {
+  const deps: ExecuteLoopDeps = {
+    store,
+    readEvidence: options.readEvidence,
+    verifiedStore: options.verifiedStore,
+  };
+
   fastify.post('/v1/execute', {
     config: { rateLimit: { max: 30, timeWindow: '1 minute' } },
   }, async (request: any, reply) => {
@@ -145,148 +329,8 @@ export function registerExecuteRoute(
     }
     if (!store.verifyIntegrity()) return jsonError(reply, 503, 'KAI_MEMORY_INTEGRITY_DEGRADED');
 
-    const steps: ExecuteStep[] = [];
-
-    // STEP 1 — KAI OBSERVE: scan before anything is allowed to act.
-    const blocked = shieldMatches(intent);
-    if (blocked.length > 0) {
-      steps.push({ step: 'KAI_OBSERVE', status: 'DIVERGENT', detail: `${KAI_SHIELD_BLOCK_REASON} Matched: ${blocked.map((rule) => rule.label).join(', ')}.` });
-      steps.push({ step: 'ELION_BOUND', status: 'HALTED', detail: 'No contract formed. The shield halts before execution.' });
-      const entry = store.append({
-        intent,
-        evidenceHash: sha256(`blocked|${intent}|${blocked.map((rule) => rule.id).join(',')}`),
-        status: 'DIVERGENT',
-        authorityLevel,
-        expectedOutcome,
-        reason: KAI_SHIELD_BLOCK_REASON,
-      });
-      steps.push({ step: 'KAI_REMEMBER', status: 'DIVERGENT', detail: `Remembered as DIVERGENT at sequence ${entry.sequence}.` });
-      return reply.status(200).send({
-        success: true,
-        status: 'DIVERGENT',
-        reason: KAI_SHIELD_BLOCK_REASON,
-        shield: { blocked: true, rules: blocked.map((rule) => ({ id: rule.id, label: rule.label })) },
-        contract: null,
-        output: null,
-        evidenceHash: entry.evidenceHash,
-        hashAlgorithm: 'SHA-256',
-        steps,
-        memory: receipt(entry, true),
-      });
-    }
-    steps.push({ step: 'KAI_OBSERVE', status: 'OBSERVED', detail: 'No shield rule matched the intent.' });
-
-    // STEP 2 — ELION BOUND: form the ΩIR contract, and refuse authority it cannot hold.
-    if (authorityLevel === 'AUTONOMOUS' && IRREVERSIBLE_INTENT.test(intent)) {
-      const entry = store.append({
-        intent,
-        evidenceHash: sha256(`unauthorized|${intent}`),
-        status: 'NOT_EXECUTED',
-        authorityLevel,
-        expectedOutcome,
-        reason: 'HUMAN_AUTHORIZATION_REQUIRED',
-      });
-      steps.push({ step: 'ELION_BOUND', status: 'NOT_EXECUTED', detail: 'Autonomous authority requested for an irreversible intent. Human authorization is required.' });
-      steps.push({ step: 'KAI_REMEMBER', status: 'NOT_EXECUTED', detail: `Remembered as NOT_EXECUTED at sequence ${entry.sequence}.` });
-      return reply.status(202).send({
-        success: true,
-        status: 'NOT_EXECUTED',
-        reason: 'HUMAN_AUTHORIZATION_REQUIRED',
-        shield: { blocked: false, rules: [] },
-        contract: { id: entry.id, intent, authorityLevel, expectedOutcome: expectedOutcome ?? null },
-        output: null,
-        evidenceHash: entry.evidenceHash,
-        hashAlgorithm: 'SHA-256',
-        steps,
-        memory: receipt(entry, true),
-      });
-    }
-
-    const contract = {
-      id: `oir-${createHash('sha256').update(`${intent}|${authorityLevel}|${Date.now()}`).digest('hex').slice(0, 24)}`,
-      intent,
-      authorityLevel,
-      executionScope: 'READ_ONLY_OBSERVED_STATE',
-      expectedOutcome: expectedOutcome ?? null,
-    };
-    steps.push({ step: 'ELION_BOUND', status: 'BOUND', detail: `Contract ${contract.id} formed. Scope: read-only observed state.` });
-
-    // STEP 3 — ELION EXECUTE: bounded executor. No model connector is configured,
-    // so it only reports what the body already observed; it invents nothing.
-    const canAnswer = EVIDENCE_INTENT.test(intent) && typeof options.readEvidence === 'function';
-    let output: string | null = null;
-    if (canAnswer) {
-      try {
-        output = evidenceReport(options.readEvidence!());
-        steps.push({ step: 'ELION_EXECUTE', status: 'OBSERVED', detail: 'Bounded executor read the observed runtime state.' });
-      } catch {
-        output = null;
-        steps.push({ step: 'ELION_EXECUTE', status: 'UNKNOWN', detail: 'Evidence source unavailable; no output produced.' });
-      }
-    } else {
-      steps.push({
-        step: 'ELION_EXECUTE',
-        status: 'NOT_EXECUTED',
-        detail: 'No bounded capability for this intent. No model connector is configured, so nothing was generated.',
-      });
-    }
-
-    // STEP 4 — OMEGA VERIFY: the Ω∞v fixed-point gate decides the verdict.
-    // A capability the bounded executor does not hold is authority it does not
-    // have, so it halts NOT_EXECUTED rather than inventing an answer. The
-    // declared expectation is a fragment the report must contain, because a
-    // runtime report carries live values around it.
-    const drop = {
-      id: intent,
-      scam: false,
-      evidence: output ? [output] : [],
-      authority: { held: canAnswer ? 1 : 0, required: 1 },
-      expected: expectedOutcome ?? null,
-      observed: output,
-    };
-    const judged = judgeDrop(drop, 'CONTAINS');
-    const status: KaiMemoryStatus = judged.verdict;
-    const reason =
-      judged.reason === 'EVIDENCE_EMPTY'
-        ? 'OMEGA_OUTPUT_EMPTY'
-        : judged.reason === 'AUTHORITY_INSUFFICIENT'
-          ? 'ELION_BOUNDED_EXECUTOR_HAS_NO_CAPABILITY_FOR_THIS_INTENT'
-          : judged.reason === 'OBSERVED_DIVERGES_FROM_EXPECTED'
-            ? 'OMEGA_EXPECTED_OUTCOME_NOT_OBSERVED'
-            : undefined;
-    const evidenceHash = output && output.trim() ? sha256(output) : sha256(`${reason}|${intent}`);
-    steps.push({
-      step: 'OMEGA_VERIFY',
-      status,
-      detail:
-        status === 'VERIFIED'
-          ? `Output hashed (${evidenceHash.slice(0, 19)}…) and matched the contract.`
-          : status === 'DIVERGENT'
-            ? `DIVERGENT: expected outcome "${expectedOutcome}" was not observed in the output.`
-            : `${reason}. Nothing was claimed as verified.`,
-    });
-
-    // STEP 5 — KAI REMEMBER: seal the drop with its own verdict.
-    const entry = store.append({ intent, evidenceHash, status, authorityLevel, expectedOutcome, reason });
-    steps.push({ step: 'KAI_REMEMBER', status, detail: `Remembered as ${status} at sequence ${entry.sequence}.` });
-    // Σ admits only what matched reality. Every other verdict leaves it untouched.
-    const verifiedEntry = status === 'VERIFIED' && options.verifiedStore
-      ? options.verifiedStore.append({ intent, evidenceHash, dropHash: hashDrop(drop) })
-      : null;
-
-    return reply.status(200).send({
-      success: true,
-      status,
-      reason: reason ?? null,
-      shield: { blocked: false, rules: [] },
-      contract,
-      output,
-      evidenceHash,
-      hashAlgorithm: 'SHA-256',
-      steps,
-      memory: receipt(entry, true),
-      verified: verifiedReceipt(verifiedEntry, options.verifiedStore),
-    });
+    const result = runExecuteLoop({ intent, authorityLevel, expectedOutcome }, deps);
+    return reply.status(result.httpStatus).send(result.payload);
   });
 
   fastify.get('/v1/execute/memory', async (request: any, reply) => {

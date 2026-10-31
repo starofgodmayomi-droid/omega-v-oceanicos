@@ -84,8 +84,33 @@ verdict is `VERIFIED`; every other verdict leaves the file byte-identical.
 - UI: `apps/web/src/MemoryStatePanel.tsx` (journal column beside Σ, export button), mounted
   after `ExecuteLoopPanel` in `App.tsx`. `ExecuteLoopPanel` fires `omega:memory-updated` after a
   run so the panel refreshes; the panel also has its own Refresh button.
-- Route inventory grew 69 → 71 (`api-route-contract.integration.test.ts` asserts the exact count).
+- Route inventory grew 69 → 71 → 73 (`api-route-contract.integration.test.ts` asserts the exact count; +2 for Telegram intake).
 - Test: `node --experimental-strip-types --test-concurrency=1 --test ./tests/integration/kai-verified-memory.integration.test.ts`
+
+## Telegram intake (bounded, fail-closed)
+The loop itself is `runExecuteLoop(intent, authority, expectedOutcome, deps)` in
+`apps/api/src/execute-route.ts` — extracted so `/v1/execute` and chat intake run the
+same function and cannot reach different verdicts. `POST /v1/execute` keeps its
+parsing/`jsonError` behaviour and just sends `result.httpStatus` / `result.payload`.
+- `apps/api/src/telegram-route.ts`: `GET /v1/telegram/status` (reports credentials as
+  `CONFIGURED`/`MISSING`, never their values) and `POST /v1/telegram/webhook`.
+- Fail-closed order, all before any memory write: no `TELEGRAM_BOT_TOKEN` →
+  `503 TELEGRAM_INTAKE_NOT_CONFIGURED`; no `TELEGRAM_WEBHOOK_SECRET` → `503`;
+  header `X-Telegram-Bot-Api-Secret-Token` mismatch → `401`. An unauthenticated
+  webhook could plant intents in KAI memory and speak in someone else's chat, so the
+  secret is required, not optional.
+- A chat message is always `READ_ONLY` authority — the update cannot request
+  `AUTONOMOUS`, so the human-authorization branch is unreachable from Telegram.
+- `telegram.delivered` is the Bot API's actual answer; a failure answers
+  `TELEGRAM_SEND_FAILED[_<status>]` and the drop is still remembered with its verdict.
+- Wire the webhook with
+  `https://api.telegram.org/bot<token>/setWebhook?url=<host>/v1/telegram/webhook&secret_token=<secret>`.
+- Env: `TELEGRAM_BOT_TOKEN` + `TELEGRAM_WEBHOOK_SECRET` arrive via `/run/base44/app.env`
+  (dashboard secrets, optional — the API boots `UNCONFIGURED` without them and no
+  placeholder is written to `.env.base44-defaults`, because a fake token would make
+  intake claim `CONFIGURED`). Tests inject `telegramConfig` / `telegramFetch` via
+  `CreateAppOptions`, so no network call is made.
+- Test: `node --experimental-strip-types --test-concurrency=1 --test ./tests/integration/telegram-intake.integration.test.ts`
 
 ## Fixed bug
 `apps/api/src/index.ts` line 204: `persistenceEncryptionKey` was undefined → changed to `encryptionEnabled(persistenceKey)` to match the pattern used at lines 163/165.

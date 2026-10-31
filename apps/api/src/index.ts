@@ -22,6 +22,7 @@ import { registerDependencyRoute } from './dependency-route.js';
 import { registerValueNavigatorRoute } from './value-navigator-route.js';
 import { registerConnectorObservationRoute, type ConnectorAdmissionEvidenceResolver } from './connector-observation-route.js';
 import { registerExecuteRoute } from './execute-route.js';
+import { registerTelegramRoute, type TelegramIntakeConfig } from './telegram-route.js';
 import { FileKaiMemoryStore } from './kai-memory.js';
 import { FileKaiVerifiedStore } from './kai-verified-memory.js';
 import { OmegaCommandStore, OmegaIdempotencyConflictError, registerOmegaRoutes } from './omega.js';
@@ -60,6 +61,8 @@ export type CreateAppOptions = {
   kaiMemoryPath?: string;
   kaiVerifiedPath?: string;
   githubFetch?: typeof fetch;
+  telegramConfig?: TelegramIntakeConfig;
+  telegramFetch?: typeof fetch;
   connectorAdmissionEvidence?: ConnectorAdmissionEvidenceResolver;
   pipelineAdmissionEvidence?: PipelineAdmissionEvidenceResolver;
 };
@@ -260,23 +263,25 @@ export function createApp(
     }
   });
 
+  // ELION's bounded executor reads only what this process observed.
+  const readExecuteEvidence = () => {
+    const chain = kernel.verifyLedger();
+    return {
+      ledgerHeight: chain.height,
+      ledgerIntegrity: chain.valid,
+      bodyStatus: chain.valid ? 'INTEGRITY_VERIFIED' : 'DEGRADED',
+      workerCount: listOmegaWorkers().length,
+      memoryHeight: kaiMemoryStore.height(),
+      observedAt: new Date().toISOString(),
+    };
+  };
+
   fastify.register(async (scope) => {
     await scope.register(rateLimit, { global: false });
     registerPipelineRoute(scope, jsonError, options.pipelineAdmissionEvidence);
     registerExecuteRoute(scope, jsonError, kaiMemoryStore, {
       verifiedStore: kaiVerifiedStore,
-      // ELION's bounded executor reads only what this process observed.
-      readEvidence: () => {
-        const chain = kernel.verifyLedger();
-        return {
-          ledgerHeight: chain.height,
-          ledgerIntegrity: chain.valid,
-          bodyStatus: chain.valid ? 'INTEGRITY_VERIFIED' : 'DEGRADED',
-          workerCount: listOmegaWorkers().length,
-          memoryHeight: kaiMemoryStore.height(),
-          observedAt: new Date().toISOString(),
-        };
-      },
+      readEvidence: readExecuteEvidence,
     });
   });
 
@@ -288,6 +293,18 @@ export function createApp(
   registerConnectorObservationRoute(fastify, jsonError, connectorObservationStore, {
     githubFetch: options.githubFetch,
     resolveAdmissionEvidence: options.connectorAdmissionEvidence,
+  });
+  // Telegram intake reaches the same bounded loop; without a BotFather token it
+  // stays UNCONFIGURED and every update halts NOT_EXECUTED before ELION.
+  registerTelegramRoute(fastify, jsonError, {
+    store: kaiMemoryStore,
+    verifiedStore: kaiVerifiedStore,
+    readEvidence: readExecuteEvidence,
+    config: {
+      botToken: options.telegramConfig?.botToken ?? process.env.TELEGRAM_BOT_TOKEN ?? '',
+      webhookSecret: options.telegramConfig?.webhookSecret ?? process.env.TELEGRAM_WEBHOOK_SECRET ?? '',
+    },
+    telegramFetch: options.telegramFetch,
   });
   registerMeshValidationRoute(fastify, ledgerMemory, requireReadAccess, jsonError);
 
