@@ -9,6 +9,7 @@
  * architecture labels into verified status. Reality is final authority.
  */
 import type { FastifyInstance } from 'fastify';
+import { fixpointReport, type FixpointReport } from './fixpoint.js';
 
 export type EvidenceStatus = 'VERIFIED' | 'SUPPORTED' | 'UNVERIFIED' | 'DIVERGENT' | 'UNKNOWN';
 
@@ -46,6 +47,7 @@ export interface EcosystemStatus {
     growthLaw: string;
     currentStage: string;
     invariant: string;
+    fixpoint: FixpointReport;
     evaluatedAt: string;
   };
   layers: EcosystemLayer[];
@@ -177,6 +179,7 @@ export function registerEcosystemRoute(
         growthLaw: '0 → MINI → + → + → FULL STACK → ECOSYSTEM → REALITY ↺ ∞',
         currentStage: 'ECOSYSTEM',
         invariant: 'VERIFY(ΔREALITY)',
+        fixpoint: fixpointReport(),
         evaluatedAt: now,
       },
       layers,

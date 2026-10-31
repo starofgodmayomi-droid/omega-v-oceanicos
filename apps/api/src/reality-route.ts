@@ -13,6 +13,7 @@
  * local evidence into verified reality. Reality is final authority.
  */
 import type { FastifyInstance } from 'fastify';
+import { fixpointReport, type FixpointReport } from './fixpoint.js';
 
 export type VectorValue = 'YES' | 'NO' | 'UNKNOWN';
 
@@ -34,6 +35,7 @@ export interface RealityStatus {
     currentStage: string;
     invariant: string;
     governingEquation: string;
+    fixpoint: FixpointReport;
     evaluatedAt: string;
   };
   statusVector: StatusVectorField[];
@@ -180,6 +182,7 @@ export function registerRealityRoute(
         invariant: 'VERIFY(ΔREALITY)',
         governingEquation:
           'Ω∞v := VERIFY(ΔREALITY) ∧ PRESERVE(TRUTH) ∧ PROTECT(HUMAN_AGENCY) ∧ BOUND(POWER) ∧ CREATE(VERIFIED_VALUE) ∧ OBSERVE(CONSEQUENCE) ∧ REMEMBER(PROVENANCE) → NEXT_FINITE_Δ ↺∞',
+        fixpoint: fixpointReport(),
         evaluatedAt: now,
       },
       statusVector,

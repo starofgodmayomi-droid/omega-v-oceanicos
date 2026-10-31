@@ -110,6 +110,37 @@ test('Ecosystem body reports the Absolute Fixpoint Equation that governs it', as
   }
 });
 
+test('every contract reports the same Absolute Fixpoint Equation', async () => {
+  const app = createApp(':memory:', false);
+  try {
+    await app.ready();
+    const read = async (url: string) => {
+      const response = await app.inject({ method: 'GET', url });
+      assert.equal(response.statusCode, 200);
+      return response.json();
+    };
+
+    const body = await read('/v1/ecosystem/body');
+    const status = await read('/v1/ecosystem/status');
+    const reality = await read('/v1/reality/status');
+
+    const laws = [body.fixpoint.law, status.contract.fixpoint.law, reality.contract.fixpoint.law];
+    assert.equal(new Set(laws).size, 1);
+    assert.equal(
+      laws[0],
+      'Ω∞v := Y( λf. ( M_{t+1} = M_t ∪ Δ | V(Δ) = ⊤ ) ) | V ≡ (Expected ≡ Observed)',
+    );
+    assert.equal(status.contract.fixpoint.source, 'ECOSYSTEM_BODY.md');
+
+    // Only the body read observes a status; the other contracts declare the law without claiming one.
+    assert.equal(body.fixpoint.observed, body.status);
+    assert.equal(status.contract.fixpoint.observed, undefined);
+    assert.equal(reality.contract.fixpoint.observed, undefined);
+  } finally {
+    await app.close();
+  }
+});
+
 test('Single body expansion refuses a compressed body whose digest was tampered with', async () => {
   const app = createApp(':memory:', false, { allowUnsignedCycle: true });
   try {
