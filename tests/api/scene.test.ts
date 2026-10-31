@@ -1,4 +1,9 @@
-import { sceneStates, simulateScene } from '../scene';
+import '../helpers/node-env.ts';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from '../helpers/expect.ts';
+// `scene.ts` is not reachable from the API entry point, so tsc does not emit
+// it into `dist`; node's type stripping runs the source directly.
+import { sceneStates, simulateScene } from '../../apps/api/src/scene.ts';
+import { validateSceneInput } from '../../packages/types/dist/index.js';
 
 describe('Ω∞v scene equation simulation', () => {
   it('walks the complete bounded equation deterministically', () => {

@@ -1,8 +1,10 @@
+import '../helpers/node-env.ts';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from '../helpers/expect.ts';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createCipheriv, createHash, randomBytes } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { LocalJobError, LocalJobLedger, LOCAL_JOB_WINDOW } from '../jobs';
+import { LocalJobError, LocalJobLedger, LOCAL_JOB_WINDOW } from '../../apps/api/dist/jobs.js';
 
 const provenance = {
   source: 'api' as const,

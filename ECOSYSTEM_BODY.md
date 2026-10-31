@@ -85,7 +85,7 @@ Halting is not a failure of the continuum. A system that cannot halt cannot atte
 
 The same seven layers are folded into the **4×4×4×4** projection — `layer × organ × form × evidence`, 4 coordinates per axis, **256 addressable cells** — and proven lossless by a local compress → expand round trip. `POST /v1/ecosystem/body/expand` restores the records from `{ compression }`; a tampered digest is a `400 DIGEST_MISMATCH`, never a silent repair. Coordinates are a declared projection (`body.layers.v1`), not inferred truth.
 
-Contract: `packages/mini/src/single-body.ts` · doc: `docs/SINGLE-BODY-4X4X4X4.md` · specification: `apps/api/src/__tests__/ecosystem-body.test.ts` (a jest file; jest is not installed in this checkout, so it states the contract but does not run here).
+Contract: `packages/mini/src/single-body.ts` · doc: `docs/SINGLE-BODY-4X4X4X4.md` · specification: `tests/api/ecosystem-body.test.ts` (node:test; run with `pnpm test:api`).
 
 ---
 
@@ -117,7 +117,7 @@ Observed on branch `continue-ecosystem-documentation` on 2026-10-29, with the st
 | `POST /v1/ecosystem/body/expand` restores the 7 records from the body's own `compression` block | `VERIFIED` | live POST → `status: "EXPANDED"`, 7 entries |
 | A tampered body digest is refused, never repaired | `VERIFIED` | same POST with a zeroed digest → `400 DIGEST_MISMATCH` |
 | 256-cell capacity and refusal beyond it, over many more than 7 records | `SUPPORTED` | module contract `packages/mini/src/single-body.ts`; exercised here with 7 entries only |
-| Memory tip becomes a 64-hex hash after a verified `/v1/cycle` | `NOT_EXECUTED` | no cycle was run this pass; asserted by `apps/api/src/__tests__/ecosystem-body.test.ts`, which jest would run and jest is not installed here |
+| Memory tip becomes a 64-hex hash after a verified `/v1/cycle` | `VERIFIED` | `tests/api/ecosystem-body.test.ts` runs `/v1/cycle` then reads the tip, 2026-10-31 |
 | Deployment, external availability, multi-process consistency, real-world outcome of any intent | `UNKNOWN` | nothing in this pass observed them |
 
 ---

@@ -1,11 +1,11 @@
+import '../helpers/node-env.ts';
 /**
  * Contract smoke for POST /v1/pipeline.
  * Full C0→C6 logic is covered by packages/mini + integration tests;
  * this proves the HTTP surface is registered and fail-closed on bad input.
  */
-import { describe, expect, it, beforeAll, afterAll } from '@jest/globals';
-import { createApp } from '../index';
-import type { FastifyInstance } from 'fastify';
+import { describe, expect, it, beforeAll, afterAll } from '../helpers/expect.ts';
+import { createApp } from '../../apps/api/dist/index.js';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -28,7 +28,7 @@ const verifiedCompile = {
 };
 
 describe('POST /v1/pipeline', () => {
-  let app: FastifyInstance;
+  let app: ReturnType<typeof createApp>;
   let dir: string;
 
   beforeAll(async () => {
@@ -132,7 +132,8 @@ describe('POST /v1/pipeline', () => {
       expect(res.statusCode).toBe(200);
       const body = res.json();
       expect(body.success).toBe(true);
-      expect(body.pipeline.stage).toBe('OBSERVE');
+      // The C0→C6 run ends at reconcile, which is where reality is compared.
+      expect(body.pipeline.stage).toBe('RECONCILE');
       expect(body.pipeline.realityStatus).toBe('VERIFIED');
       expect(body.pipeline.halted).toBe(false);
       expect(body.pipeline.provenanceRoot).toMatch(/^prov-root-[a-f0-9]{64}$/);

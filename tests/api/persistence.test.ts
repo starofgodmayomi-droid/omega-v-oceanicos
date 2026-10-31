@@ -1,3 +1,5 @@
+import '../helpers/node-env.ts';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from '../helpers/expect.ts';
 import { mkdtempSync, readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -22,7 +24,7 @@ import {
   persistenceCoverage,
   SNAPSHOT_KEYS,
   encryptionEnabled,
-} from '../persistence';
+} from '../../apps/api/dist/persistence.js';
 
 type Snap = Record<(typeof SNAPSHOT_KEYS)[number], unknown[]>;
 

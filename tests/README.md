@@ -6,9 +6,13 @@
 
 ## Where the tests are
 
-Beside the code they test, in `src/__tests__/` within each package and app.
-Beside them, this directory holds the cross-package integration suite and the
-guards that check the documentation against the code.
+Beside the code they test, in `src/__tests__/` within each package.
+This directory holds the cross-package integration suite, the repository
+contract guards, and the API suite.
+
+`tests/contracts/` and `tests/api/` run on `node:test` (`pnpm test:contracts`,
+`pnpm test:api`) and import the compiled `apps/api/dist`. They are the
+executable replacement for the former Jest suites, which had no runner here.
 
 `tests/integration/full-loop.integration.test.ts` runs the API with durability
 switched on, drives it over HTTP, then reads what it wrote back out using
@@ -23,7 +27,7 @@ writer and the reader are different code paths.
 | `packages/attestation/src/__tests__/`  | HMAC signing, verification, key handling, rotation                      |
 | `packages/remember/src/__tests__/`     | hash chain, durable store, tamper and deletion detection                |
 | `packages/mini/src/__tests__/`         | the kernel cycle, component injection, restart resumption               |
-| `apps/api/src/__tests__/`              | endpoints, validation guards, persistence, prefix parity, documentation |
+| `tests/api/`                           | API routes, pipeline, mesh, ecosystem body, job ledger, persistence      |
 | `apps/web/src/__tests__/`              | the client/API contract                                                 |
 
 ## Running them

@@ -298,6 +298,11 @@ Static serving is optional; the API remains usable without a web build.
 
 ## Contract verification
 
+`tests/api/` holds the API suites (pipeline, ecosystem body, mesh, job ledger,
+persistence, scene) and runs on `node:test` against the compiled `dist`:
+`pnpm test:api`, or inside the dev container
+`docker compose -f docker-compose.base44.yml exec -T api sh -c 'node --experimental-strip-types --test ./tests/api/*.test.ts'`.
+
 `src/route-contract.ts` is deliberately independent from route registration.
 The contract test calls `createApp`, asks Fastify for its registered route
 tree, and requires every inventory entry to be present. If a route is

@@ -1,4 +1,6 @@
-import { createApp } from '../index';
+import '../helpers/node-env.ts';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from '../helpers/expect.ts';
+import { createApp } from '../../apps/api/dist/index.js';
 
 describe('GET /v1/mesh/validate', () => {
   it('returns bounded regional evidence and local ledger integrity', async () => {
