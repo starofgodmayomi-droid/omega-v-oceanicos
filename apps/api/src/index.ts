@@ -6,7 +6,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { MAX_PROOF_OF_WORK_ATTEMPTS, RememberEngine } from '@oceanicos/remember';
-import { FileConnectorObservationStore, FileValueNavigatorStore, MiniKernel, compressSingleBody, evolveQuantumState, expandSingleBody } from '@oceanicos/mini';
+import { FileConnectorObservationStore, FileValueNavigatorStore, MiniKernel, QUANTUM_STATE_CONTRACT, compressSingleBody, evolveQuantumState, expandSingleBody } from '@oceanicos/mini';
 import type { SingleBodyEntry } from '@oceanicos/mini';
 import { AsymmetricValidationGuard, DeclarativeVerificationEngine, MultiRegionMeshConvergence } from '@oceanicos/verification';
 import { ObserverEngine } from '@oceanicos/observer';
@@ -46,6 +46,8 @@ import {
 } from './persistence.js';
 
 const MAX_STREAM_CLIENTS = 256;
+/** Prefix for the KAI memory intent that records a verified quantum evolution. */
+const QUANTUM_RECEIPT_INTENT = 'quantum:evolve';
 const MIN_ATTESTATION_KEY_LENGTH = 32;
 const MIN_MINER_INTERVAL_MS = 1_000;
 const MAX_MINER_INTERVAL_MS = 60_000;
@@ -421,7 +423,33 @@ export function createApp(
     if (evolution.status !== 'EVOLVED') {
       return reply.status(400).send({ success: false, status: 'INVALID', issues: evolution.issues });
     }
-    return { success: true, status: evolution.status, ...evolution.state };
+    const state = evolution.state;
+    // MEMORY != PROOF: only a locally VERIFIED evolution becomes a receipt, the
+    // row keeps the digest rather than the amplitudes, and the same digest is
+    // stored once no matter how often it is recomputed. The read-only GET above
+    // writes nothing, so rendering the shell never leaves a row behind.
+    let receipt: Record<string, unknown> | null = null;
+    if (state.reality.status === 'VERIFIED') {
+      const intent = `${QUANTUM_RECEIPT_INTENT}:${state.contract}`;
+      const existing = kaiMemory.findMemoryByEvidence(intent, state.digest);
+      if (existing) {
+        receipt = { ...existing, reused: true };
+      } else {
+        const contract = kaiMemory.createContract({
+          intent,
+          authorityLevel: 'READ_ONLY',
+          expectedOutcome: `${QUANTUM_STATE_CONTRACT} digest ${state.digest} with normalization, unitarity, phase-only, and reversibility inside 1e-9`,
+        });
+        const record = kaiMemory.remember({
+          intent,
+          evidenceHash: state.digest,
+          status: 'VERIFIED',
+          contractId: contract.id,
+        });
+        receipt = { ...record, reused: false };
+      }
+    }
+    return { success: true, status: evolution.status, ...state, receipt };
   });
   fastify.get('/v1/mood', async () => ({ success: true, status: 'MAX GOOD-O', contract: 'Ω∞v totality / attest-dont-assert', brand: 'Oceanicos Ω∞', ledger: { ready: Boolean(ledgerMemory.getTip()) }, evaluatedAt: new Date().toISOString() }));
 

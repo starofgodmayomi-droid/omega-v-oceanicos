@@ -89,6 +89,33 @@ test('POST /v1/ecosystem/quantum/evolve returns a verified local evolution', asy
     assert.equal(payload.states.evolved.probabilities.length, 4);
     assert.equal(payload.reality.boundary.includes('not a physical quantum observation'), true);
 
+    // A VERIFIED evolution leaves a receipt in KAI memory; the row keeps the digest.
+    assert.equal(payload.receipt.status, 'VERIFIED');
+    assert.equal(payload.receipt.evidence_hash, payload.digest);
+    assert.equal(payload.receipt.reused, false);
+    assert.match(payload.receipt.contract_id, /^[0-9a-f-]{36}$/);
+
+    const repeated = await app.inject({
+      method: 'POST',
+      url: '/v1/ecosystem/quantum/evolve',
+      payload: { symmetryDegrees: 60, inversionDegrees: 30, tau: Math.PI / 3 },
+    });
+    assert.equal(repeated.statusCode, 200);
+    assert.equal(repeated.json().receipt.id, payload.receipt.id);
+    assert.equal(repeated.json().receipt.reused, true);
+
+    const memoryBefore = (await app.inject({ method: 'GET', url: '/api/kai/memory?limit=50' })).json();
+    const receipts = memoryBefore.records.filter((row: any) => row.intent === 'quantum:evolve:omega.quantum.evolution.v1');
+    assert.equal(receipts.length, 1);
+    assert.equal(receipts[0].evidence_hash, payload.digest);
+
+    // Rendering the shell uses the read-only GET, which must not write a row.
+    const readOnly = await app.inject({ method: 'GET', url: '/v1/ecosystem/quantum' });
+    assert.equal(readOnly.statusCode, 200);
+    assert.equal(readOnly.json().receipt, undefined);
+    const memoryAfter = (await app.inject({ method: 'GET', url: '/api/kai/memory?limit=50' })).json();
+    assert.equal(memoryAfter.records.length, memoryBefore.records.length);
+
     const refused = await app.inject({
       method: 'POST',
       url: '/v1/ecosystem/quantum/evolve',

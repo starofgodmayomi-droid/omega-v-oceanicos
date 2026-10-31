@@ -134,6 +134,16 @@ export class KaiMemoryStore {
       .all(bounded) as KaiMemoryRecord[];
   }
 
+  /** An existing row for the same intent and evidence, so a repeated verification is not stored twice. */
+  findMemoryByEvidence(intent: string, evidenceHash: string): KaiMemoryRecord | null {
+    const row = this.db
+      .prepare(
+        'SELECT id, timestamp, intent, evidence_hash, status, contract_id FROM "KaiMemory" WHERE intent = ? AND evidence_hash = ? ORDER BY timestamp ASC, rowid ASC LIMIT 1'
+      )
+      .get(intent, evidenceHash) as KaiMemoryRecord | undefined;
+    return row ?? null;
+  }
+
   getMemory(id: string): KaiMemoryRecord | null {
     const row = this.db
       .prepare(

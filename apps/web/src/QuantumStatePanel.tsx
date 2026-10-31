@@ -26,6 +26,7 @@ type Evolution = {
   checks: { normalization: number; unitarity: number; phaseOnly: number; reversibility: number; passed: boolean };
   reality: { status: string; checksRun: string[]; boundary: string };
   digest: string;
+  receipt?: { id: string; timestamp: string; status: string; reused: boolean } | null;
 };
 
 const formatAmplitude = (amplitude: Amplitude | undefined): string => {
@@ -191,6 +192,11 @@ export function QuantumStatePanel() {
       <div className="quantum-footer">
         <span className="quantum-digest">
           digest {evolution?.digest ? `${evolution.digest.slice(0, 16)}…` : 'UNKNOWN'}
+        </span>
+        <span className="quantum-digest">
+          {evolution?.receipt
+            ? `receipt ${evolution.receipt.id.slice(0, 8)}… · KAI memory${evolution.receipt.reused ? ' (already stored)' : ''}`
+            : 'read-only default · no receipt written'}
         </span>
         <small>{evolution?.reality.boundary ?? 'Local symbolic evolution only — not a physical observation.'}</small>
       </div>
