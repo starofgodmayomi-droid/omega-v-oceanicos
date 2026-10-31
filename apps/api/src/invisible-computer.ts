@@ -342,3 +342,76 @@ export async function executeElion(
     };
   }
 }
+
+export const UPGRADE_COMPRESSION_LAW = 'KAI×ELION×OMEGA' as const;
+
+export type UpgradeCycleStatus = 'VERIFIED' | 'DIVERGENT' | 'UNKNOWN' | 'NOT_EXECUTED';
+
+export type UpgradeCandidate = {
+  readonly id: string;
+  readonly kind: 'review-verified-answer';
+  readonly evidenceHash: string;
+};
+
+export type UpgradeCompression = {
+  readonly law: typeof UPGRADE_COMPRESSION_LAW;
+  readonly phase: 'COMPRESS';
+  readonly execution: 'NOT_EXECUTED';
+  readonly authority: 'compression-is-not-permission';
+  readonly cycleStatus: UpgradeCycleStatus;
+  readonly selected: UpgradeCandidate | null;
+  readonly reason: string;
+};
+
+const UPGRADE_CYCLE_STATUSES = new Set<UpgradeCycleStatus>([
+  'VERIFIED',
+  'DIVERGENT',
+  'UNKNOWN',
+  'NOT_EXECUTED',
+]);
+
+/**
+ * Compress one observed KAI × ELION × OMEGA cycle into at most one upgrade
+ * candidate. The candidate is a review handle. This function does not change
+ * the repository, grant authority, or start the upgrade.
+ */
+export function compressTowardUpgrade(input: {
+  cycleStatus: string;
+  evidenceHash: string | null;
+}): UpgradeCompression {
+  const cycleStatus: UpgradeCycleStatus = UPGRADE_CYCLE_STATUSES.has(
+    input.cycleStatus as UpgradeCycleStatus
+  )
+    ? (input.cycleStatus as UpgradeCycleStatus)
+    : 'UNKNOWN';
+  const evidenceHash = input.evidenceHash;
+  const hashBound = typeof evidenceHash === 'string' && /^[0-9a-f]{64}$/.test(evidenceHash);
+  if (cycleStatus !== 'VERIFIED' || !hashBound) {
+    return Object.freeze({
+      law: UPGRADE_COMPRESSION_LAW,
+      phase: 'COMPRESS',
+      execution: 'NOT_EXECUTED',
+      authority: 'compression-is-not-permission',
+      cycleStatus,
+      selected: null,
+      reason:
+        cycleStatus === 'VERIFIED'
+          ? 'Verified cycle has no bound digest, so no upgrade candidate is compressed.'
+          : `Cycle is ${cycleStatus}; compression does not invent an upgrade.`,
+    });
+  }
+  return Object.freeze({
+    law: UPGRADE_COMPRESSION_LAW,
+    phase: 'COMPRESS',
+    execution: 'NOT_EXECUTED',
+    authority: 'compression-is-not-permission',
+    cycleStatus,
+    selected: Object.freeze({
+      id: `upgrade.${evidenceHash.slice(0, 16)}`,
+      kind: 'review-verified-answer',
+      evidenceHash,
+    }),
+    reason:
+      'One verified cycle compressed to one unexecuted upgrade candidate. Selection is not permission and nothing was upgraded.',
+  });
+}

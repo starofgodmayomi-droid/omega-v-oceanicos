@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import {
   authoritySatisfies,
+  compressTowardUpgrade,
   deriveAuthorityLevel,
   executeElion,
   requiredAuthorityFor,
@@ -96,6 +97,7 @@ export function registerExecuteRoute(
         engine: null,
         model_error: null,
         evaluated_at: new Date().toISOString(),
+        upgrade: compressTowardUpgrade({ cycleStatus: 'DIVERGENT', evidenceHash: null }),
       });
     }
     // Step 1b — AUTHORITY: CAPABILITY != AUTHORITY. A directive intent needs
@@ -124,6 +126,7 @@ export function registerExecuteRoute(
         engine: null,
         model_error: null,
         evaluated_at: new Date().toISOString(),
+        upgrade: compressTowardUpgrade({ cycleStatus: 'NOT_EXECUTED', evidenceHash: null }),
       });
     }
     recordStep('KAI', 'OBSERVE', 'VERIFIED', 'No known fraud pattern matched; authority is sufficient.');
@@ -193,6 +196,10 @@ export function registerExecuteRoute(
       engine: elion.engine,
       model_error: elion.error,
       evaluated_at: new Date().toISOString(),
+      upgrade: compressTowardUpgrade({
+        cycleStatus: omega.status,
+        evidenceHash: elion.output ? evidenceHash : null,
+      }),
     });
   };
 
