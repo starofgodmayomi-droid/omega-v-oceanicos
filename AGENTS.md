@@ -75,6 +75,9 @@ The web unit tests that still relied on Jest globals now run on `node:test` and 
 
 **Still failing, deliberately not wired:** `dom/App.test.tsx` and `dom/runtime-health-panel.test.tsx` (88 tests) assert the dashboard that `App.tsx` no longer contains — "Builder kernel", the `run verification` button, the old evidence timeline. They fail identically before this branch's changes. Rewriting them against the current whole-ecosystem shell is separate work; do not add them to `test:current-dom` until then.
 
+### Second main merge (057302c0)
+`origin/main` was merged again at `057302c0` (KAI × ELION × OMEGA halt-order cycle in `packages/mini/src/kaixelion-omega.ts`). Conflicts were only `ECOSYSTEM_BODY.md` (kept this branch's boundary paragraph *and* main's `THE CYCLE` section) and `package.json` (union — `./tests/integration/kaixelion-omega.integration.test.ts` joined both `test` and `test:e2e`). The mini export is additive, so no API route changed and the inventory stays at 77; `/api/execute` was deliberately left as-is on main and is not routed through the cycle yet.
+
 ## Fixed bug
 `apps/api/src/index.ts` line 204: `persistenceEncryptionKey` was undefined → changed to `encryptionEnabled(persistenceKey)` to match the pattern used at lines 163/165.
 
