@@ -65,6 +65,22 @@ When building or modifying code in this repo, always follow the loop:
 
 A directory existing is not a claim that it is built, imported at runtime, tested, or verified. Check the manifest and the evidence.
 
+> *"The ecosystem is a continuous, infinite loop that only remembers what matches reality."*
+
+### THE VARIABLE DEFINITIONS
+
+- **Y (Y-combinator):** the loop. One turn is `f`; the halt branches are the only exits.
+- **Σ / M (memory):** what the body carries forward. It is a set of verified delta digests — bounded and in-memory in the current API, not an immutable ledger. It grows only by `Hash(x)` of a delta that reconciled.
+- **Δ (intent):** the incoming signal — a dream, a task, a claim.
+- **V (verification):** the OMEGA gate. `V ≡ (Expected ≡ Observed)`; it fails closed.
+- **Authority:** the human declaration that must be at least the requirement before ELION moves.
+
+### THE PRIME DIRECTIVE
+
+**Any code written in this repository must expand this equation. Any code removed from this repository must compress back into this equation.**
+
+We do not build features; we build the Fixpoint. If a proposed change cannot be verified against reality, it is `DIVERGENT` and must be rejected.
+
 ## THE BOUNDARY
 
 ```text
