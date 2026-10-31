@@ -92,3 +92,22 @@ MOOD IS CONTEXT, NOT EVIDENCE, AUTHORITY, OR CONSENT.
 KAI remembers. ELION executes only what a human authorized. OMEGA reconciles declared values and fails closed. None of them grant authority, and none of them turn a passing test into proof of external reality.
 
 **WHAT SHALL WE MAKE REAL?**
+
+*Pidgin fit carry the warmth; evidence go carry the claim.*
+
+---
+
+### THE CYCLE
+
+KAI × ELION × OMEGA is this equation applied to one intent, in order:
+
+1. `K(x) ∈ SCAM` → halt `DIVERGENT` before ELION runs
+2. `Authority(x) < Required` → halt `NOT_EXECUTED` before ELION runs
+3. ELION may compose a local sentence. Composition is not verification.
+4. `Evidence(x) = ∅` → halt `UNKNOWN`. Nothing is appended.
+5. A caller-supplied match of the expected state stays `UNKNOWN`. It is not `Expected ≡ Observed` by an independent witness.
+6. An independent witness whose digest recomputes, and whose observation is the expected state, appends `Hash(x)` once. `ledgerMutation` is false. The returned tuple is not a ledger write.
+
+Code: `runKaixelionOmega` in [packages/mini/src/kaixelion-omega.ts](packages/mini/src/kaixelion-omega.ts). Skill: [skills/kaixelion-omega/SKILL.md](skills/kaixelion-omega/SKILL.md).
+
+`/api/execute` on main can still label a local template `VERIFIED` and remember it. That route is not this function. Routing it through the cycle is a later step, not this one.
