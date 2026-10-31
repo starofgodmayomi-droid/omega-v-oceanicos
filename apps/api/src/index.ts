@@ -118,12 +118,30 @@ export function operatorIdentityAllowed(
 const jsonError = (reply: any, status: number, error: string, extra: Record<string, unknown> = {}) =>
   reply.status(status).send({ success: false, error, ...extra });
 
+/**
+ * The shipped bundle calls `/api/*`. In development the Vite server rewrites
+ * that prefix; a static host has no dev server, so the API must strip it
+ * itself or every browser call 404s. `/api` alone means root, and a path that
+ * merely begins with the letters `api` (`/apiary`) is left untouched.
+ */
+export function rewriteApiPrefix(url: string): string {
+  if (url === '/api') return '/';
+  if (url.startsWith('/api/') || url.startsWith('/api?')) {
+    const rest = url.slice(4);
+    return rest.startsWith('/') ? rest : `/${rest}`;
+  }
+  return url;
+}
+
 export function createApp(
   dbPath: string = './oceanicos.db',
   logger: boolean = true,
   options: CreateAppOptions = {}
 ): FastifyInstance {
-  const fastify = Fastify({ logger });
+  const fastify = Fastify({
+    logger,
+    rewriteUrl: (request) => rewriteApiPrefix(request.url ?? '/'),
+  });
   const ledgerMemory = new RememberEngine(dbPath);
   const kernel = new MiniKernel(ledgerMemory);
   const platformKernel = new OceanicosKernel();

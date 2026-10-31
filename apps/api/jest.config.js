@@ -15,7 +15,6 @@ export default {
   testEnvironment: 'node',
   rootDir: '.',
   testMatch: ['<rootDir>/src/**/*.test.ts'],
-  testPathIgnorePatterns: ['<rootDir>/src/__tests__/documentation.test.ts'],
   moduleFileExtensions: ['ts', 'js', 'json', 'node'],
   moduleNameMapper,
   setupFilesAfterEnv: ['<rootDir>/../../jest.setup.ts'],

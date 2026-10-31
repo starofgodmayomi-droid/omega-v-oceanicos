@@ -6,7 +6,7 @@ The executable contract is the current `createApp` surface. Persistence,
 local jobs, readiness, attestation revocations, and optional static-client
 serving are supported modules and are registered by `createApp`. The supported
 route inventory is pinned in `src/route-contract.ts` and enforced by
-`src/__tests__/route-inventory.test.ts`.
+`tests/integration/api-route-contract.integration.test.ts`.
 
 ## Run
 
@@ -25,6 +25,10 @@ production. Required mode needs distinct `OMEGA_READ_TOKEN` and
 routes use the read token and mutations use the admin token.
 
 Optional local-job authentication uses `OMEGA_LOCAL_JOB_LEDGER_TOKEN`.
+
+Attestations are signed with `OMEGA_SIGNING_KEY` (HMAC-SHA256) or an Ed25519
+key. Without a signing key the attester reports itself as degraded instead of
+producing an unsigned attestation that looks signed.
 
 ## Persistence
 
@@ -152,6 +156,91 @@ execution, earnings, deployment, or external-world truth. The API performs no
 outbound observation, shell operation, outreach, spending, or proposal
 execution. Writes inherit the existing admin bearer boundary in required-auth
 mode. See [the repository contract](../../skills/oceanicos-value-navigator/references/repository-contract.md).
+
+## Executable route inventory
+
+Every route `createApp` registers, pinned by `src/route-contract.ts` and checked
+against the compiled app by
+`tests/integration/api-route-contract.integration.test.ts`. This table lists
+method and path only: it does not claim that each route is exercised, healthy,
+or reachable in a deployed environment.
+
+| Method | Path |
+| --- | --- |
+| `GET` | `/health` |
+| `GET` | `/v1/kernel/capabilities` |
+| `GET` | `/v1/ecosystem/body` |
+| `POST` | `/v1/ecosystem/body/expand` |
+| `GET` | `/v1/mood` |
+| `POST` | `/v1/mood/codex` |
+| `POST` | `/v1/mood/codex/proposal` |
+| `GET` | `/v1/navigator/evidence` |
+| `GET` | `/v1/reality/status` |
+| `GET` | `/v1/dependencies` |
+| `POST` | `/v1/attest` |
+| `POST` | `/v1/cycle` |
+| `POST` | `/v1/pipeline` |
+| `GET` | `/v1/value-navigator/proposals` |
+| `GET` | `/v1/value-navigator/proposals/:proposalId` |
+| `POST` | `/v1/value-navigator/proposals` |
+| `POST` | `/v1/value-navigator/proposals/:proposalId/observe` |
+| `POST` | `/v1/omega/commands/:id/reconciliation` |
+| `POST` | `/v1/omega/connectors/observe` |
+| `GET` | `/v1/omega/connectors/observations` |
+| `GET` | `/v1/omega/workers` |
+| `POST` | `/v1/omega/workers/register` |
+| `POST` | `/v1/omega/workers/:workerId/heartbeat` |
+| `POST` | `/v1/omega/workers/:workerId/lease` |
+| `POST` | `/v1/omega/workers/:workerId/lease/:leaseId/release` |
+| `POST` | `/v1/omega/oreade/drop` |
+| `POST` | `/v1/omega/oreade/proposal` |
+| `POST` | `/v1/omega/commands` |
+| `GET` | `/v1/omega/commands` |
+| `GET` | `/v1/omega/commands/:id` |
+| `GET` | `/v1/omega/commands/:id/provenance` |
+| `GET` | `/v1/omega/commands/:id/safety-boundary` |
+| `POST` | `/v1/omega/commands/:id/admit` |
+| `POST` | `/v1/omega/commands/:id/approve` |
+| `POST` | `/v1/omega/commands/:id/execute` |
+| `POST` | `/v1/omega/commands/:id/lease-execute` |
+| `POST` | `/v1/omega/commands/:id/observe` |
+| `POST` | `/v1/omega/commands/:id/verify-reality` |
+| `GET` | `/v1/omega/divergences` |
+| `GET` | `/v1/omega/events` |
+| `POST` | `/v1/omega/coordination/evidence` |
+| `GET` | `/v1/ecosystem/status` |
+| `POST` | `/api/execute` |
+| `POST` | `/execute` |
+| `POST` | `/api/fixpoint` |
+| `POST` | `/fixpoint` |
+| `GET` | `/api/kai/memory` |
+| `GET` | `/kai/memory` |
+| `GET` | `/v1/block/tip` |
+| `GET` | `/v1/stream` |
+| `POST` | `/v1/miner/start` |
+| `POST` | `/v1/miner/stop` |
+| `GET` | `/v1/miner/status` |
+| `GET` | `/v1/mesh/nodes` |
+| `GET` | `/v1/mesh/simulate` |
+| `GET` | `/v1/mesh/validate` |
+| `POST` | `/v1/auth/keypair` |
+| `POST` | `/v1/block/sign` |
+| `POST` | `/v1/block/verify-signature` |
+| `GET` | `/persistence/status` |
+| `POST` | `/persistence/acknowledge` |
+| `POST` | `/persistence/reencrypt` |
+| `GET` | `/jobs` |
+| `POST` | `/jobs` |
+| `GET` | `/jobs/:jobId` |
+| `POST` | `/jobs/:jobId/claim` |
+| `POST` | `/jobs/:jobId/complete` |
+| `POST` | `/jobs/:jobId/fail` |
+| `GET` | `/attest/revocations` |
+| `POST` | `/attest/revoke` |
+| `GET` | `/attest/policy` |
+| `GET` | `/` |
+| `GET` | `/assets/*` |
+
 
 ## Static client
 
