@@ -277,3 +277,6 @@ export class RememberEngine {
 }
 
 export * from './ledger.js';
+
+// Documented public name (README: `import { Remember } from '@omega-v/remember'`).
+export { RememberEngine as Remember };

@@ -16,3 +16,6 @@ export class ObserverEngine {
 }
 
 export const observePlanetaryBase = ObserverEngine.generateTelemetry;
+
+// Documented public name (README: `import { Observer } from '@omega-v/observer'`).
+export { ObserverEngine as Observer };

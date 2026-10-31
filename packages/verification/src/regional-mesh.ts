@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import { GlobalComputeTelemetry } from '@oceanicos/observer';
-import { GeopoliticalRegion } from './frontier.js';
+import type { GeopoliticalRegion } from './frontier.js';
 
 export interface RegionalNodeVote {
   nodeId: string;
