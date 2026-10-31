@@ -1,19 +1,16 @@
 version: '3.8'
 
-# Ω∞v Oceanicos Singularity Orchestration Matrix
-# Architecture: Core Engine (API + Web) + Local Inference (Ollama) + Vector Memory (Qdrant)
-# Hardware States:
-#   MINI_OMAGE  : Strict hardware limits to secure the base architecture memory envelope
-#   MAX_RUN_MOOD: Uncapped unified memory processing for multi-layered high-throughput flows
-
+# Local-first Ω∞v service topology.
+# All host-published ports bind to loopback by default. Container-to-container
+# traffic still uses the private Compose network (api -> qdrant/ollama).
 services:
-  # ── 1. API: Core Engine, Cryptographic Ledger & Telemetry Matrix ───────────────
+  # ── 1. API: Core Engine, Cryptographic Ledger & Telemetry ─────────────────────
   api:
     build:
       context: .
       target: api
     ports:
-      - "5000:5000"
+      - "${API_BIND_ADDRESS:-127.0.0.1}:5000:5000"
     environment:
       - NODE_ENV=production
       - API_PORT=5000
@@ -23,6 +20,7 @@ services:
       - OMEGA_AUTH_MODE=required
       - OMEGA_READ_TOKEN=${OMEGA_READ_TOKEN:?OMEGA_READ_TOKEN is required}
       - OMEGA_ADMIN_TOKEN=${OMEGA_ADMIN_TOKEN:?OMEGA_ADMIN_TOKEN is required}
+      - OMEGA_CORS_ORIGINS=${OMEGA_CORS_ORIGINS:-http://localhost:3000}
       - OMEGA_MODE=${OMEGA_MODE:-MAX_FLUID}
       - OMEGA_DB_PATH=${OMEGA_DB_PATH:-/app/data/oceanicos.db}
       - PIDGIN_ENGINE=${PIDGIN_ENGINE:-ON}
@@ -40,7 +38,7 @@ services:
           cpus: '${CPU_LIMIT:-2.0}'
           memory: '${MEM_LIMIT:-2G}'
 
-  # ── 2. Web: UI Module & Real-Time Telemetry Dashboard ──────────────────────────
+  # ── 2. Web: UI Module & Telemetry Dashboard ───────────────────────────────────
   web:
     build:
       context: .
@@ -48,9 +46,9 @@ services:
       args:
         VITE_API_URL: ${VITE_API_URL:-http://localhost:5000}
     ports:
-      - "3000:3000"
+      - "${WEB_BIND_ADDRESS:-127.0.0.1}:3000:3000"
     environment:
-      - VITE_API_URL=http://localhost:5000
+      - VITE_API_URL=${VITE_API_URL:-http://localhost:5000}
     depends_on:
       api:
         condition: service_healthy
@@ -61,12 +59,12 @@ services:
           cpus: '1.0'
           memory: '512M'
 
-  # ── 3. Qdrant: Dense Vector Memory Engine ──────────────────────────────────────
+  # ── 3. Qdrant: internal vector-memory service; host access is loopback-only ───
   qdrant:
-    image: qdrant/qdrant:v1.11.0
+    image: ghcr.io/qdrant/qdrant/qdrant:v1.19.2@sha256:86cdc262da7105228d8d42a9733ee95981b3abc3af891b49a0f89bdcb8bf3e0d
     ports:
-      - "6333:6333"
-      - "6334:6334"
+      - "127.0.0.1:6333:6333"
+      - "127.0.0.1:6334:6334"
     volumes:
       - qdrant-data:/qdrant/storage
     restart: unless-stopped
@@ -76,11 +74,11 @@ services:
       timeout: 5s
       retries: 3
 
-  # ── 4. Ollama: Local Model Inference Engine (Phi-3-mini / Llama 3 8B) ──────────
+  # ── 4. Ollama: pinned local-model inference; host access is loopback-only ──────
   ollama:
-    image: ollama/ollama:latest
+    image: ollama/ollama:0.35.1@sha256:292ee7945dfc3d5840a181f3ab86fedb1e66703e02c8af98b50f4da56b7e278c
     ports:
-      - "11434:11434"
+      - "127.0.0.1:11434:11434"
     volumes:
       - ollama-models:/root/.ollama
     restart: unless-stopped
