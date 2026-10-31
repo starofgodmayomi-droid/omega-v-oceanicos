@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { theme } from './oceanicosTheme';
+import { MemoryReconcile } from './MemoryReconcile';
 
 /*
  * ECHOFRAME — the face of the Invisible Online Computer.
@@ -363,24 +364,25 @@ export function InvisibleComputer() {
             KAI MEMORY · LAST {memoryRecords.length}
           </div>
           {memoryRecords.map((record) => (
-            <div
-              key={record.id}
-              style={{
-                display: 'flex',
-                gap: '10px',
-                fontFamily: theme.fontMono,
-                fontSize: '10.5px',
-                color: theme.textDim,
-                padding: '2px 0',
-              }}
-            >
-              <span style={{ color: STATUS_TONE[(record.status as Verdict) ?? 'NOT_EXECUTED'] }}>
-                {record.status}
-              </span>
-              <span style={{ color: theme.textMuted, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {record.intent}
-              </span>
-              <span style={{ color: theme.accentWarm }}>{shortHash(record.evidence_hash)}</span>
+            <div key={record.id} style={{ padding: '2px 0' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  gap: '10px',
+                  fontFamily: theme.fontMono,
+                  fontSize: '10.5px',
+                  color: theme.textDim,
+                }}
+              >
+                <span style={{ color: STATUS_TONE[(record.status as Verdict) ?? 'NOT_EXECUTED'] }}>
+                  {record.status}
+                </span>
+                <span style={{ color: theme.textMuted, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {record.intent}
+                </span>
+                <span style={{ color: theme.accentWarm }}>{shortHash(record.evidence_hash)}</span>
+              </div>
+              <MemoryReconcile memoryId={record.id} apiBaseUrl={API_BASE_URL} />
             </div>
           ))}
         </div>

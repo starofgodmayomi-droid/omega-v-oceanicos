@@ -5,11 +5,11 @@ import App from '../../App';
 import { installFetch } from './harness';
 
 describe('current OceanicOS app shell', () => {
-  it('renders the whole-ecosystem surface without promoting unqueried sources to verified', async () => {
+  it('renders the whole-universe surface without promoting unqueried sources to verified', async () => {
     installFetch();
     render(<App />);
 
-    const dashboard = await screen.findByRole('region', { name: 'Whole ecosystem command surface' });
+    const dashboard = await screen.findByRole('region', { name: 'Whole universe command surface' });
     expect(within(dashboard).getByRole('img', { name: /conceptual OCEANICOS system map/i })).toBeInTheDocument();
     expect(within(dashboard).getByText(/relationships shown, not live topology/i)).toBeInTheDocument();
     expect(within(dashboard).getByText(/0 of 5 listed signals are marked VERIFIED in this view/i)).toBeInTheDocument();
