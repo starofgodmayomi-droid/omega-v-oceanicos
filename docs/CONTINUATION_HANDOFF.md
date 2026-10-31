@@ -4,6 +4,8 @@
 
 This document is a current, evidence-bound continuation record for the next finite repository transition. It preserves intent, authority, scope, current state, contracts, evidence, uncertainty, blockers, rollback, and the next safe change. It is not proof of deployment, production health, distributed consistency, or universal ecosystem completion.
 
+> **Snapshot caveat (2026-10-14):** The repository anchor and most validation rows below describe an earlier checkout at `fc3f8b6`; they are historical, not the live branch/runtime state. The `offline` CLI row was rechecked against current `origin/main` and the local-first feature branch; other historical claims remain bounded to their original checkpoint.
+
 ## Repository anchor
 
 | Field | Current observed value |
@@ -96,7 +98,7 @@ Warnings about Node type stripping, SQLite, and module type were non-failing war
 | Eight-slot worker capacity accounting | `VERIFIED` | In-process worker-pool probe |
 | Attestation validity and reproducibility | `VERIFIED` | Eight completed identical-output attestations |
 | Offline-local equivalent path | `VERIFIED` | Local commands ran without requiring external services |
-| Formal `offline` CLI subcommand | `NOT_EXECUTED` / not implemented | Repository CLI does not currently expose it |
+| Formal `offline` CLI subcommand | `VERIFIED` | The CLI already exposes `offline`; its regression test blocks `fetch`, runs from a temporary directory, and checks that no additional working-directory file is created. `pnpm verify:local-offline` builds the workspace and runs it. Exit 0 is local MINI evidence only. |
 | Production/distributed scalability | `UNKNOWN` | No production or distributed target was tested |
 | Deployment/runtime health | `UNKNOWN` | No deployment target was selected or probed |
 | Universal ecosystem completion | `UNVERIFIED` | Broad surfaces exist; no universal completion proof |
