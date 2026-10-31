@@ -62,6 +62,7 @@ export function humanStatus(status: string): string {
   const s = (status || '').toUpperCase();
   const map: Record<string, string> = {
     VERIFIED: 'Verified',
+    RECORDED: 'Recorded',
     DIVERGENT: 'Divergent',
     UNKNOWN: 'Unknown',
     PASS: 'Verified',

@@ -699,27 +699,27 @@ export function registerOmegaRoutes(
       status: command.status,
       boundary: {
         capability: {
-          status: capabilityObserved ? 'VERIFIED' : 'UNKNOWN',
+          status: capabilityObserved ? 'RECORDED' : 'UNKNOWN',
           evidence: capabilityObserved
-            ? 'declared worker capabilities observed'
+            ? 'declared worker capabilities recorded; a declaration is not independent verification'
             : 'one or more requested worker capabilities were not observed',
           workers,
         },
         policy: {
-          status: policyObserved ? 'VERIFIED' : 'UNKNOWN',
-          evidence: policyObserved ? 'admission policy evidence observed' : 'admission policy evidence unavailable',
+          status: policyObserved ? 'RECORDED' : 'UNKNOWN',
+          evidence: policyObserved ? 'admission policy string recorded; a string is not independent verification' : 'admission policy evidence unavailable',
           value: command.change?.policy ?? null,
         },
         authority: {
-          status: authorityObserved ? 'VERIFIED' : 'UNKNOWN',
+          status: authorityObserved ? 'RECORDED' : 'UNKNOWN',
           evidence: authorityObserved
-            ? 'attributable authority evidence observed'
+            ? 'authority string recorded; a string is not independent verification'
             : 'attributable authority evidence unavailable',
           value: command.change?.authority ?? null,
         },
         lease: {
-          status: activeLease ? 'VERIFIED' : 'NOT_EXECUTED',
-          evidence: activeLease ? 'active worker lease observed' : 'no active worker lease observed',
+          status: activeLease ? 'RECORDED' : 'NOT_EXECUTED',
+          evidence: activeLease ? 'active worker lease recorded; a lease is not independent verification' : 'no active worker lease observed',
           value: activeLease,
         },
         execution: {
@@ -734,14 +734,14 @@ export function registerOmegaRoutes(
           evidence: reality ? 'reality classification observed' : 'no reality observation recorded',
         },
         revocation: {
-          status: revoked ? 'VERIFIED' : 'NOT_EXECUTED',
-          evidence: revoked ? 'matching attestation revocation observed' : 'no matching attestation revocation observed',
+          status: revoked ? 'RECORDED' : 'NOT_EXECUTED',
+          evidence: revoked ? 'matching attestation revocation recorded; a record is not independent verification' : 'no matching attestation revocation observed',
           value: revoked,
         },
         reconciliation: {
-          status: reconciliationEvents.length > 0 ? 'VERIFIED' : 'NOT_EXECUTED',
+          status: reconciliationEvents.length > 0 ? 'RECORDED' : 'NOT_EXECUTED',
           evidence: reconciliationEvents.length > 0
-            ? 'durable reconciliation note observed'
+            ? 'durable reconciliation note recorded; a note is not independent verification'
             : 'no reconciliation note observed',
           count: reconciliationEvents.length,
         },
