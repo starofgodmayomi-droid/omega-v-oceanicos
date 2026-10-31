@@ -1,81 +1,74 @@
-import { readFileSync } from 'node:fs';
+import assert from 'node:assert/strict';
+import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { describe, it } from 'node:test';
 
 /**
- * The web client and the API have no shared contract: the client hardcodes
- * paths as string literals and the server registers them independently.
- * Nothing connected the two, and apps/web has no test of any kind.
+ * The web client and the API have no shared contract: the client names paths
+ * as string literals and the server declares its inventory independently.
+ * Nothing connects the two, and a path the client calls that the API does not
+ * serve fails only when a user reaches that panel.
  *
  * This does not test the UI. It asserts the two halves agree about which
  * endpoints exist, which is the thing that silently breaks.
+ *
+ * History: this file used to scan `App.tsx` alone for `/api/*` literals and
+ * pin the set of endpoints the client did not yet use. Both premises changed —
+ * the client now calls `${API_BASE_URL}/v1/...` across panels, and the
+ * inventory grew past the client on purpose — so the scan covers every client
+ * source and the pin is replaced by the assertion that matters: no client path
+ * is unknown to the API.
  */
 describe('web/API contract', () => {
   const root = process.cwd();
-  const client = readFileSync(join(root, 'apps/web/src/App.tsx'), 'utf8');
-  const server = readFileSync(join(root, 'apps/api/src/index.ts'), 'utf8');
+  const clientDir = join(root, 'apps/web/src');
+  const clientSources = readdirSync(clientDir)
+    .filter((name) => /\.(tsx|ts)$/.test(name))
+    .map((name) => readFileSync(join(clientDir, name), 'utf8'));
   const viteConfig = readFileSync(join(root, 'apps/web/vite.config.ts'), 'utf8');
+  const routeContract = readFileSync(join(root, 'apps/api/src/route-contract.ts'), 'utf8');
 
   const serverRoutes = new Set(
-    Array.from(server.matchAll(/app\.(get|post)\('([^']+)'/g)).map((match) => match[2])
+    Array.from(routeContract.matchAll(/'[A-Z]+ ([^']+)'/g)).map((match) => match[1])
   );
 
-  // The dev server rewrites /api/* onto the API root, so the client's
-  // literals carry a prefix the server never sees.
+  // The client builds paths from `API_BASE_URL`, so the versioned path is the
+  // literal half; the host half is configuration.
   const clientPaths = Array.from(
     new Set(
-      Array.from(client.matchAll(/['\"`](\/api\/[a-z0-9/-]+)(?:\?[^'\"`]+)?['\"`]/g)).map(
-        (m) => m[1]
-      )
+      clientSources
+        .flatMap((source) => Array.from(source.matchAll(/\/v1\/[a-zA-Z0-9/_-]+/g)))
+        .map((match) => match[0].replace(/\/$/, ''))
     )
   ).sort();
 
-  /** Convert a server route like `/jobs/:jobId/claim` to a regex that
-   *  matches client equivalents like `/jobs/id/claim`. */
+  /** Convert a server route like `/v1/jobs/:jobId/claim` to a regex that
+   *  matches client equivalents like `/v1/jobs/id/claim`. */
   const routeToPattern = (route: string): RegExp =>
-    new RegExp('^' + route.replace(/:[a-zA-Z]+/g, '[a-z0-9-]+') + '$');
+    new RegExp('^' + route.replace(/:[a-zA-Z]+/g, '[a-z0-9_-]+') + '$');
 
   it('finds paths on both sides', () => {
-    expect(clientPaths.length).toBeGreaterThan(5);
-    expect(serverRoutes.size).toBeGreaterThan(10);
+    assert.ok(clientPaths.length > 5);
+    assert.ok(serverRoutes.size > 10);
   });
 
-  it.each(clientPaths)('the API serves %s', (clientPath) => {
-    const stripped = clientPath.replace(/^\/api/, '');
-    // Exact match (static routes).
-    if (serverRoutes.has(stripped)) return;
-    // Parameterised match: the client uses a segment like `id` where the
-    // server defines `:jobId`.
-    const matched = Array.from(serverRoutes).some((route) => routeToPattern(route).test(stripped));
-    expect(matched).toBe(true);
-  });
+  for (const clientPath of clientPaths) {
+    it(`the API serves ${clientPath}`, () => {
+      // Exact match (static routes).
+      if (serverRoutes.has(clientPath)) return;
+      // Parameterised match: the client uses a segment like `id` where the
+      // server declares `:jobId`.
+      const matched = Array.from(serverRoutes).some((route) => routeToPattern(route).test(clientPath));
+      assert.equal(matched, true);
+    });
+  }
 
-  it('rewrites the /api prefix the client depends on, in dev and in production', () => {
-    // Development: the Vite dev server rewrites it.
-    expect(viteConfig).toContain("'/api'");
-    expect(viteConfig).toMatch(/rewrite/);
-
-    // Production: there is no dev server, so the API strips it itself.
-    // Without this the built bundle calls /api/* and nothing answers.
-    expect(server).toMatch(/req\.url\.startsWith\('\/api\/'\)/);
-    expect(server).toMatch(/req\.url\.slice\(4\)/);
-  });
-
-  it('records which endpoints the client does not yet use', () => {
-    const strippedClientPaths = clientPaths.map((path) => path.replace(/^\/api/, ''));
-    const unused = Array.from(serverRoutes)
-      .filter((route) => {
-        // Exact match.
-        if (strippedClientPaths.includes(route)) return false;
-        // Parameterised match: check if any client path matches this
-        // server route when parameters are wildcarded.
-        const pattern = routeToPattern(route);
-        return !strippedClientPaths.some((cp) => pattern.test(cp));
-      })
-      .sort();
-
-    // Not a failure: the client is behind the API, deliberately. This
-    // pins the gap so it is visible and shrinks on purpose rather than
-    // drifting further without anyone noticing.
-    expect(unused).toEqual([]);
+  it('rewrites the /api prefix the client falls back to', () => {
+    // The browser calls `/api/*` when no API origin is configured, and the
+    // Vite dev server strips the prefix before proxying. The production host
+    // configures VITE_API_URL instead, so this rewrite is dev-only on purpose.
+    assert.ok(clientSources.some((source) => source.includes("|| '/api'")));
+    assert.ok(viteConfig.includes("'/api'"));
+    assert.match(viteConfig, /rewrite/);
   });
 });

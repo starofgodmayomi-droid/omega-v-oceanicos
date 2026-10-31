@@ -40,10 +40,13 @@ PRESENT ON DISK
 | **SOURCE-ONLY** | Package directory exists under `packages/`, but is not listed in `pnpm-workspace.yaml`. |
 | **STUB** | A source-only directory with a thin implementation; not an active workspace capability. |
 
-## API-DECLARED — workspace + direct API dependency (9 packages)
+## API-DECLARED — workspace + direct API dependency (12 packages)
 
 | Package | Name | Declared role |
 |---|---|---|
+| `kai` | `@oceanicos/kai` | Mind: continuity + scam-intent shield (imported 2026-10-29) |
+| `elion` | `@oceanicos/elion` | Hands: authorized execution + reconciliation (imported 2026-10-29) |
+| `omega` | `@oceanicos/omega` | Judge: digest reconciliation + the body fixpoint turn (direct 2026-10-31) |
 | `types` | `@oceanicos/types` | Shared contracts |
 | `observer` | `@oceanicos/observer` | Observe |
 | `verification` | `@oceanicos/verification` | Verify |
@@ -82,7 +85,7 @@ The following are examples, not an exhaustive package list: `policy`, `registry`
 
 ## Naming split (observed)
 
-- `@oceanicos/*` — types, observer, verification, remember, mini, attestation.
+- `@oceanicos/*` — types, observer, verification, remember, mini, attestation, kai, omega, elion.
 - `@omega-v/*` — kernel, oreade, mood, gateway, ir, compiler, evolution, coordination, auth, webhook, worker, pipeline, plus source-only packages.
 
 Unresolved naming edge. Do not silently rename packages.
@@ -91,8 +94,8 @@ Unresolved naming edge. Do not silently rename packages.
 
 | Category | Count | Action |
 |---|---:|---|
-| Workspace members | 20 (18 packages + 2 apps) | Membership only; do not infer capability |
-| API-declared | 9 packages | Direct manifest dependencies; verify actual use separately |
+| Workspace members | 23 (21 packages + 2 apps) | Membership only; do not infer capability |
+| API-declared | 12 packages | Direct manifest dependencies; verify actual use separately |
 | Workspace-only | 9 packages | Not direct API dependencies |
 | On-disk, off-workspace | Non-exhaustive | Promote only when earned |
 

@@ -2,6 +2,8 @@
 
 ## Operating model
 
+The repository is the Ω∞v Whole Ecosystem Body. Read `ECOSYSTEM_BODY.md` for the fixpoint laws (KAI/ELION/OMEGA) before this contract.
+
 Use the repository as the source of truth. Follow this loop:
 
 > Observe → gather evidence → verify → remember → reason → define intent → build → test → attest → act.

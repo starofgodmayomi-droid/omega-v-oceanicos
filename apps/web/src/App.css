@@ -2660,3 +2660,167 @@ body {
   .single-body-records li { grid-template-columns: minmax(0, 1fr) auto; }
   .single-body-records small { grid-column: 1 / -1; text-align: left; }
 }
+
+/* Ω∞v Body Command — KAI Shield → ELION execution → OMEGA reconciliation. */
+.body-command {
+  margin: 26px 0 6px;
+  padding: 16px;
+  border: 1px solid var(--omega-abyss-edge);
+  border-radius: 16px;
+  background: linear-gradient(160deg, rgba(8, 47, 73, 0.34), rgba(2, 6, 23, 0.72));
+}
+.body-command-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.body-command-kicker {
+  color: #67e8f9;
+  font: 10px var(--font-mono);
+  letter-spacing: 0.18em;
+}
+.body-command-head h2 {
+  margin: 4px 0 0;
+  color: var(--omega-foam);
+  font-size: 16px;
+  font-weight: 600;
+}
+.body-command-state {
+  font: 10px var(--font-mono);
+  letter-spacing: 0.12em;
+  text-align: right;
+}
+.body-command-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+.body-command-card {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid rgba(6, 182, 212, 0.16);
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.6);
+}
+.body-command-card h3 {
+  margin: 0;
+  color: #67e8f9;
+  font: 10px var(--font-mono);
+  letter-spacing: 0.16em;
+}
+.body-command-card textarea,
+.body-command-card select {
+  width: 100%;
+  padding: 9px 10px;
+  border: 1px solid rgba(6, 182, 212, 0.24);
+  border-radius: 8px;
+  background: var(--omega-abyss);
+  color: var(--omega-foam);
+  font: 12px/1.5 var(--font-mono);
+  resize: vertical;
+}
+.body-command-card textarea:focus,
+.body-command-card select:focus {
+  border-color: var(--omega-current-bright);
+  outline: none;
+}
+.body-command-field {
+  display: grid;
+  gap: 5px;
+  color: var(--omega-foam-muted);
+  font: 9px var(--font-mono);
+  letter-spacing: 0.12em;
+}
+.body-command-execute {
+  padding: 10px 12px;
+  border: 1px solid rgba(34, 211, 238, 0.4);
+  border-radius: 9px;
+  background: rgba(6, 182, 212, 0.16);
+  color: #a5f3fc;
+  font: 11px var(--font-mono);
+  letter-spacing: 0.12em;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.body-command-execute:hover:not(:disabled) {
+  background: rgba(6, 182, 212, 0.3);
+}
+.body-command-execute:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.body-command-note {
+  margin: 0;
+  color: var(--omega-unknown);
+  font: 9px/1.6 var(--font-mono);
+}
+.body-command-list {
+  display: flex;
+  max-height: 260px;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+}
+.body-command-entry {
+  padding: 8px;
+  border: 1px solid rgba(6, 182, 212, 0.12);
+  border-radius: 8px;
+  background: rgba(2, 6, 23, 0.7);
+}
+.body-command-entry div {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--omega-unknown);
+  font: 9px var(--font-mono);
+}
+.body-command-entry p {
+  margin: 4px 0;
+  color: var(--omega-foam);
+  font: 11px/1.45 var(--font-mono);
+  overflow-wrap: anywhere;
+}
+.body-command-entry small {
+  color: var(--omega-unknown);
+  font: 9px var(--font-mono);
+}
+.body-command-empty {
+  margin: 0;
+  color: var(--omega-unknown);
+  font: 10px var(--font-mono);
+  font-style: italic;
+}
+.body-command-foot {
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px solid rgba(148, 163, 184, 0.12);
+  color: var(--omega-unknown);
+  font: 9px var(--font-mono);
+}
+.body-command-log {
+  background: #020617;
+}
+.body-command-lines {
+  display: flex;
+  max-height: 260px;
+  flex-direction: column;
+  gap: 5px;
+  overflow-y: auto;
+  font: 10px/1.6 var(--font-mono);
+  overflow-wrap: anywhere;
+}
+.body-command-caret {
+  color: var(--omega-current);
+  animation: body-command-blink 1s steps(2, start) infinite;
+}
+@keyframes body-command-blink {
+  to { visibility: hidden; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .body-command-caret { animation: none; }
+}

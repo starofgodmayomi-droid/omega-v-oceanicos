@@ -16,6 +16,7 @@ import { createMoodContext, proposeMoodCodex } from '@omega-v/mood';
 import { LocalJobError, LocalJobLedger, LOCAL_JOB_WINDOW } from './jobs.js';
 import { registerPipelineRoute, type PipelineAdmissionEvidenceResolver } from './pipeline-route.js';
 import { registerEcosystemRoute } from './ecosystem-route.js';
+import { BodyCommandJournal, registerBodyCommandRoute } from './body-command-route.js';
 import { registerNavigatorEvidenceRoute } from './navigator-route.js';
 import { registerRealityRoute } from './reality-route.js';
 import { registerDependencyRoute } from './dependency-route.js';
@@ -163,6 +164,7 @@ export function createApp(
     || process.env.OMEGA_CONNECTOR_OBSERVATION_PATH?.trim()
     || (dbPath === ':memory:' ? ':memory:' : `${dbPath}.connector-observations.jsonl`);
   const connectorObservationStore = new FileConnectorObservationStore(connectorObservationPath);
+  const bodyJournal = new BodyCommandJournal();
   const kaiMemoryPath = dbPath === ':memory:' ? ':memory:' : `${dbPath}.kai.db`;
   const kaiMemory = new KaiMemoryStore(kaiMemoryPath);
 
@@ -256,6 +258,7 @@ export function createApp(
   });
 
   registerEcosystemRoute(fastify, authMode, Boolean(attestationSigningKey));
+  registerBodyCommandRoute(fastify, bodyJournal);
   registerNavigatorEvidenceRoute(fastify);
   registerRealityRoute(fastify, authMode, Boolean(attestationSigningKey), Boolean(ledgerMemory.getTip()));
   registerDependencyRoute(fastify);

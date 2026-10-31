@@ -126,6 +126,10 @@ GET  /health
 GET  /v1/kernel/capabilities
 GET  /v1/mood
 GET  /v1/ecosystem/status
+GET  /v1/ecosystem/body
+POST /v1/ecosystem/body/expand
+POST /v1/body/execute
+GET  /v1/body/ledger
 POST /v1/attest
 POST /v1/cycle
 GET  /v1/block/tip
@@ -152,6 +156,20 @@ execution, earnings, deployment, or external-world truth. The API performs no
 outbound observation, shell operation, outreach, spending, or proposal
 execution. Writes inherit the existing admin bearer boundary in required-auth
 mode. See [the repository contract](../../skills/oceanicos-value-navigator/references/repository-contract.md).
+
+## Body command (KAI → ELION → OMEGA)
+
+`POST /v1/body/execute` takes `{ intent, engine?, operator? }`. KAI screens the
+intent against declared scam patterns; a blocked intent returns
+`403 DIVERGENT` and is journaled. Otherwise ELION runs locally with the
+operator's command as authorization, and OMEGA reconciles the authorized record
+against the executed record by canonical digest. `GET /v1/body/ledger` returns
+the bounded (256-entry), in-memory journal — not durable storage and not an
+immutable ledger.
+
+The engine name is a label: no external model is called (`mock: true`), and a
+`VERIFIED` status is digest reconciliation of declared values, not proof of
+deployment or external reality.
 
 ## Static client
 

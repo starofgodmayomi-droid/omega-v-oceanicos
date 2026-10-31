@@ -16,6 +16,7 @@ import { ConnectorPanel } from './ConnectorPanel';
 import { WholeEcosystemDashboard } from './WholeEcosystemDashboard';
 import { InvisibleComputer } from './InvisibleComputer';
 import { WaterFlowPanel } from './WaterFlowPanel';
+import { BodyCommandPanel } from './BodyCommandPanel';
 import { LifecycleFlow, deriveStageStates, type LifecycleStage } from './LifecycleFlow';
 import { GlobeViewport } from './GlobeViewport';
 import { bindGlobeEvidence } from './globe-shell';
@@ -767,6 +768,7 @@ export function App() {
           onFocusCommand={setOmegaIntent}
         />
         <WaterFlowPanel />
+        <BodyCommandPanel />
 
         {/* Prompt */}
         <h1

@@ -1,5 +1,7 @@
 # Base44 Dev Environment — Ω∞v Oceanicos
 
+> This repository is the Ω∞v Whole Ecosystem Body. `ECOSYSTEM_BODY.md` holds the fixpoint laws (KAI / ELION / OMEGA); read it before changing behavior here.
+
 ## Stack
 - **pnpm monorepo** (Node 22, pnpm 10). Workspace packages in `packages/*`, apps in `apps/api` and `apps/web`.
 - **API** (`apps/api`): Fastify, CommonJS, port 5000. Depends on built workspace packages (`@oceanicos/*`, `@omega-v/kernel`).
@@ -50,6 +52,31 @@ docker compose -f docker-compose.base44.yml up -d
 
 ## Single body compression (4×4×4×4)
 `GET /v1/ecosystem/body` carries a `compression` block: the seven runtime layers projected onto four axes of four coordinates (256 cells) with a local compress→expand proof. `POST /v1/ecosystem/body/expand` takes `{ compression }` and returns the records; a tampered digest is `400 DIGEST_MISMATCH`. Contract: `packages/mini/src/single-body.ts`; doc: `docs/SINGLE-BODY-4X4X4X4.md`; UI: `apps/web/src/SingleBodyPanel.tsx`. Coordinates are a declared projection (`body.layers.v1`), not inferred truth.
+
+## Whole body packages (2026-10-29)
+`packages/kai` (`@oceanicos/kai`), `packages/omega` (`@oceanicos/omega`) and `packages/elion` (`@oceanicos/elion`) are workspace members created from `ECOSYSTEM_BODY.md`. `kai` and `elion` are direct API dependencies and `omega` arrives transitively through `elion`, so the compose `setup` build (`pnpm --filter api... run build`) builds all three. Adding a workspace package requires `pnpm install` so `pnpm-lock.yaml` stays frozen-installable, and the tables/counts in `docs/REPO_INVENTORY.md` must be updated (the inventory contract test enforces them). Their tests use node:test: `pnpm --filter @oceanicos/omega test` first, then `pnpm --filter @oceanicos/elion test` (elion's test resolves omega's built dist). `@oceanicos/kai` re-exports the single KAI implementation from `@oceanicos/mini` rather than forking it.
+
+## Body command (KAI → ELION → OMEGA)
+`apps/api/src/body-command-route.ts` adds `POST /v1/body/execute` and `GET /v1/body/ledger` (route inventory now 77 entries, after merging `main`'s execute/invisible-computer routes). The execute path runs `evaluateIntent` from `@oceanicos/kai` (403 DIVERGENT on a declared scam pattern), then `executeAuthorized` from `@oceanicos/elion`, then reconciles the authorized record against the executed record with OMEGA. The caller's `operator` (default `dashboard-operator`) is the authorization label — it is a declaration, not identity proof.
+
+The journal is bounded (256 entries), in-memory and **not durable**: it resets on API restart, drops the oldest entry past the cap and reports `dropped`. Do not describe it as an immutable ledger. The engine name is a label (`mock: true`); no external model is called, so a `VERIFIED` status means declared values reconciled, not external reality. UI: `apps/web/src/BodyCommandPanel.tsx` (styles at the end of `App.css`). Tests: `tests/integration/body-command.integration.test.ts` (runs in both root suites).
+
+**The turn is the fixpoint law.** `packages/omega/src/index.ts` (`stepFixpoint`) implements one turn of `ECOSYSTEM_BODY.md`'s equation: `DIVERGENT` on `K(x) ∈ SCAM`, `UNKNOWN` when evidence is empty or execution/reconciliation cannot be read, `NOT_EXECUTED` when `Authority(x) < Required`, and `VERIFIED` otherwise — in that order. An absent `operator` falls back to `dashboard-operator`, but an operator explicitly sent empty or non-textual is below the requirement and returns `403 NOT_EXECUTED`; ELION is then never called. Only a `VERIFIED` turn appends `Hash(x)` (`verification.observedDigest`) to memory Σ, and the union is a set. `GET /v1/body/ledger` returns `memory: { count, capacity, dropped, tip }` next to the journal — memory is bounded and in-memory like the journal, so `dropped` is reported, never hidden. The API now depends on `@oceanicos/omega` directly (workspace link; lockfile updated). The web DOM suites `App.test.tsx` and `runtime-health-panel.test.tsx` already fail on this branch without these changes (88 failures, unrelated to the panel).
+
+## Packaging (apps/api/Dockerfile)
+The image build is an explicit `pnpm --filter … build` chain, not the root recursive build, so a new workspace package that the API imports must be added there too. `@oceanicos/kai`, `@oceanicos/omega` and `@oceanicos/elion` were missing, which made `pnpm --filter api build` fail with `TS2307: Cannot find module '@oceanicos/<pkg>'` in the `docker` CI job ("Package and smoke test"). They now build after `@oceanicos/attestation` in dependency order (kai → omega → elion). Verify with `docker build -f apps/api/Dockerfile -t omega-v-api:ci .`; the packaged image still exits non-zero with no `OMEGA_SIGNING_KEY` and answers `/health` with `"readiness":"ready"` when one is supplied.
+
+## Test wiring and the main merge (2026-10-31)
+`origin/main` was merged in at `734be58f` (execute route, invisible computer, Kai memory). Conflicts were: `ECOSYSTEM_BODY.md` (kept this branch's equation, folded in main's variable definitions and prime directive), `apps/api/src/index.ts` (kept **both** `BodyCommandJournal` and `KaiMemoryStore`), `package.json` (union of both `test` / `test:e2e` lists), and the route-count assertion — the merged inventory is **77**.
+
+The web unit tests that still relied on Jest globals now run on `node:test` and are listed in `pnpm test` and `pnpm test:e2e`: `apps/web/src/__tests__/{contract,evidence-step,verify,globe-shell,water-flow-panel,whole-ecosystem-dashboard}.test.ts`. They import app modules with explicit `.ts` extensions (Node's type stripping does not remap `.js`→`.ts`; that is also why `@oceanicos/omega` keeps its gate and fixpoint in one file). `contract.test.ts` now scans every `apps/web/src/*.tsx` for `/v1/...` literals and checks each against `API_ROUTE_INVENTORY`; its old `/api/*`-in-App.tsx premise and the "no unused endpoint" pin no longer describe the code.
+
+`apps/web/src/__tests__/agent-safety-boundary.test.tsx` was stranded outside the `dom/` folder, where neither Jest (`.tsx` is not in its testMatch) nor the node suite could reach it. It now lives in `dom/` and is in `test:current-dom`.
+
+**Still failing, deliberately not wired:** `dom/App.test.tsx` and `dom/runtime-health-panel.test.tsx` (88 tests) assert the dashboard that `App.tsx` no longer contains — "Builder kernel", the `run verification` button, the old evidence timeline. They fail identically before this branch's changes. Rewriting them against the current whole-ecosystem shell is separate work; do not add them to `test:current-dom` until then.
+
+### Second main merge (057302c0)
+`origin/main` was merged again at `057302c0` (KAI × ELION × OMEGA halt-order cycle in `packages/mini/src/kaixelion-omega.ts`). Conflicts were only `ECOSYSTEM_BODY.md` (kept this branch's boundary paragraph *and* main's `THE CYCLE` section) and `package.json` (union — `./tests/integration/kaixelion-omega.integration.test.ts` joined both `test` and `test:e2e`). The mini export is additive, so no API route changed and the inventory stays at 77; `/api/execute` was deliberately left as-is on main and is not routed through the cycle yet.
 
 ## Fixed bug
 `apps/api/src/index.ts` line 204: `persistenceEncryptionKey` was undefined → changed to `encryptionEnabled(persistenceKey)` to match the pattern used at lines 163/165.
