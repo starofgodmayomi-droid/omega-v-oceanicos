@@ -13,6 +13,7 @@
 
 import { describe as _describe, it as _it, test as _test, before, after, beforeEach as _beforeEach, afterEach as _afterEach } from 'node:test';
 import { inspect } from 'node:util';
+import { createRequire } from 'node:module';
 
 // --- node:test wrappers with `.each` support -------------------------------
 
@@ -89,8 +90,8 @@ function deepEqual(a, b, strict) {
     for (const [k, v] of a) { if (!b.has(k) || !deepEqual(v, b.get(k), strict)) return false; }
     return true;
   }
-  const aKeys = Reflect.ownKeys(a).filter((k) => !strict || a[k] !== undefined);
-  const bKeys = Reflect.ownKeys(b).filter((k) => !strict || b[k] !== undefined);
+  const aKeys = Reflect.ownKeys(a).filter((k) => a[k] !== undefined);
+  const bKeys = Reflect.ownKeys(b).filter((k) => b[k] !== undefined);
   if (strict && aKeys.length !== bKeys.length) return false;
   for (const k of bKeys) {
     if (!(k in a)) return false;
@@ -136,6 +137,27 @@ function contains(haystack, needle) {
 
 function fail(msg) { throw new Error(msg); }
 
+// Handle expect.arrayContaining / expect.objectContaining / expect.any / expect.anything
+function matchSpecial(actual, expected, strict) {
+  if (expected && typeof expected === 'object') {
+    if (expected.__partialArr) {
+      if (!Array.isArray(actual)) return false;
+      return expected.arr.every((item) => actual.some((a) => deepEqual(a, item, strict)));
+    }
+    if (expected.__partial) {
+      if (actual == null || typeof actual !== 'object') return false;
+      return Object.entries(expected.shape).every(([k, v]) => k in actual && matchSpecial(actual[k], v, strict));
+    }
+    if (expected.__any) {
+      return actual instanceof expected.__any || (typeof actual === expected.__any.name.toLowerCase() && expected.__any !== Number && expected.__any !== String && expected.__any !== Boolean);
+    }
+    if (expected.__anything) {
+      return actual !== undefined && actual !== null;
+    }
+  }
+  return deepEqual(actual, expected, strict);
+}
+
 function makeExpectation(actual, negate = false) {
   const apply = (ok, message) => {
     const passed = negate ? !ok : ok;
@@ -146,8 +168,8 @@ function makeExpectation(actual, negate = false) {
   };
   const api = {
     toBe(expected) { apply(Object.is(actual, expected), `toBe(${inspect(expected)})`); return api; },
-    toEqual(expected) { apply(deepEqual(actual, expected, false), `toEqual(${inspect(expected)})`); return api; },
-    toStrictEqual(expected) { apply(deepEqual(actual, expected, true), `toStrictEqual(${inspect(expected)})`); return api; },
+    toEqual(expected) { apply(matchSpecial(actual, expected, false), `toEqual(${inspect(expected)})`); return api; },
+    toStrictEqual(expected) { apply(matchSpecial(actual, expected, true), `toStrictEqual(${inspect(expected)})`); return api; },
     toStrictEqual2(expected) { return api.toStrictEqual(expected); },
     toContain(expected) { apply(contains(actual, expected), `toContain(${inspect(expected)})`); return api; },
     toMatch(expected) {
@@ -162,6 +184,11 @@ function makeExpectation(actual, negate = false) {
     toBeTruthy() { apply(!!actual, `toBeTruthy (got ${inspect(actual)})`); return api; },
     toBeFalsy() { apply(!actual, `toBeFalsy (got ${inspect(actual)})`); return api; },
     toBeNaN() { apply(Number.isNaN(actual), `toBeNaN (got ${inspect(actual)})`); return api; },
+    toBeCloseTo(expected, precision = 2) {
+      const pow = Math.pow(10, -precision) / 2;
+      apply(Math.abs(actual - expected) < pow, `toBeCloseTo(${expected}, ${precision}) (got ${actual})`);
+      return api;
+    },
     toBeGreaterThan(expected) { apply(actual > expected, `toBeGreaterThan(${expected}) (got ${actual})`); return api; },
     toBeGreaterThanOrEqual(expected) { apply(actual >= expected, `toBeGreaterThanOrEqual(${expected}) (got ${actual})`); return api; },
     toBeLessThan(expected) { apply(actual < expected, `toBeLessThan(${expected}) (got ${actual})`); return api; },
@@ -194,14 +221,31 @@ function makeExpectation(actual, negate = false) {
     toHaveBeenCalledTimes(n) { apply(actual?.mock?.calls?.length === n, `toHaveBeenCalledTimes(${n}) (got ${actual?.mock?.calls?.length})`); return api; },
     toHaveBeenCalledWith(...args) {
       const calls = actual?.mock?.calls ?? [];
-      apply(calls.some((c) => deepEqual(c, args, false)), `toHaveBeenCalledWith(${inspect(args)})`); return api;
+      apply(calls.some((c) => c.length === args.length && c.every((a, i) => matchSpecial(a, args[i], false))), `toHaveBeenCalledWith(${inspect(args)})`); return api;
     },
     toHaveReturned() { apply((actual?.mock?.results ?? []).some((r) => r.type === 'return'), `toHaveReturned`); return api; },
     toHaveReturnedWith(value) { apply((actual?.mock?.results ?? []).some((r) => r.type === 'return' && deepEqual(r.value, value, false)), `toHaveReturnedWith(${inspect(value)})`); return api; },
     resolves: {
       async toBe(expected) { const v = await actual; if (!Object.is(v, expected)) fail(`expect.resolves.toBe(${inspect(expected)}) (got ${inspect(v)})`); },
-      async toEqual(expected) { const v = await actual; if (!deepEqual(v, expected, false)) fail(`expect.resolves.toEqual(${inspect(expected)}) (got ${inspect(v)})`); },
+      async toEqual(expected) { const v = await actual; if (!matchSpecial(v, expected, false)) fail(`expect.resolves.toEqual(${inspect(expected)}) (got ${inspect(v)})`); },
+      async toStrictEqual(expected) { const v = await actual; if (!deepEqual(v, expected, true)) fail(`expect.resolves.toStrictEqual(${inspect(expected)}) (got ${inspect(v)})`); },
+      async toBeDefined() { const v = await actual; if (v === undefined) fail(`expect.resolves.toBeDefined (got undefined)`); },
+      async toBeUndefined() { const v = await actual; if (v !== undefined) fail(`expect.resolves.toBeUndefined (got ${inspect(v)})`); },
+      async toBeNull() { const v = await actual; if (v !== null) fail(`expect.resolves.toBeNull (got ${inspect(v)})`); },
+      async toBeTruthy() { const v = await actual; if (!v) fail(`expect.resolves.toBeTruthy (got ${inspect(v)})`); },
+      async toBeFalsy() { const v = await actual; if (v) fail(`expect.resolves.toBeFalsy (got ${inspect(v)})`); },
+      async toContain(expected) { const v = await actual; if (!contains(v, expected)) fail(`expect.resolves.toContain(${inspect(expected)})`); },
+      async toMatch(expected) { const v = await actual; const s = String(v); if (expected instanceof RegExp ? !expected.test(s) : !s.includes(String(expected))) fail(`expect.resolves.toMatch`); },
+      async toHaveLength(expected) { const v = await actual; if (v == null || v.length !== expected) fail(`expect.resolves.toHaveLength(${expected}) (got ${v?.length})`); },
       async toMatchObject(expected) { const v = await actual; if (!matchObject(v, expected)) fail(`expect.resolves.toMatchObject`); },
+      async toHaveProperty(path, value) {
+        const v = await actual;
+        const parts = Array.isArray(path) ? path : String(path).split('.');
+        let cur = v, ok = true;
+        for (const p of parts) { if (cur == null || !(p in cur)) { ok = false; break; } cur = cur[p]; }
+        if (ok && arguments.length > 1) ok = deepEqual(cur, value, false);
+        if (!ok) fail(`expect.resolves.toHaveProperty(${inspect(path)})`);
+      },
     },
     rejects: {
       async toThrow(expected) {
@@ -209,6 +253,15 @@ function makeExpectation(actual, negate = false) {
         if (!err) fail(`expect.rejects.toThrow — promise resolved`);
         if (expected instanceof RegExp && !expected.test(String(err?.message ?? err))) fail(`rejects.toThrow regex`);
         else if (typeof expected === 'string' && !String(err?.message ?? err).includes(expected)) fail(`rejects.toThrow ${expected}`);
+      },
+      async toEqual(expected) {
+        let err; try { await actual; } catch (e) { err = e; }
+        if (!err) fail(`expect.rejects.toEqual — promise resolved`);
+        if (!matchSpecial(err, expected, false)) fail(`expect.rejects.toEqual(${inspect(expected)}) (got ${inspect(err)})`);
+      },
+      async toBeDefined() {
+        let err; try { await actual; } catch (e) { err = e; }
+        if (!err) fail(`expect.rejects.toBeDefined — promise resolved`);
       },
     },
   };
@@ -269,7 +322,13 @@ function fn(impl) {
 const jest = {
   fn,
   mock: () => {},                 // module mocking is not available under node:test; no-op.
-  requireActual: (spec) => { throw new Error(`jest.requireActual('${spec}') is not supported under the node:test compat layer`); },
+  requireActual: (spec) => {
+    // For built-in modules, return the actual module via require.
+    // The compat layer does not support module mocking, so requireActual
+    // is just a passthrough.
+    if (globalThis.require) return globalThis.require(spec);
+    throw new Error(`jest.requireActual('${spec}') is not supported under the node:test compat layer`);
+  },
   resetModules: () => {},
   clearAllMocks: () => {},
   restoreAllMocks: () => {},
@@ -303,4 +362,13 @@ export {
 const globals = { describe, it, test, before, after, beforeAll, afterAll, beforeEach, afterEach, expect, jest, vi };
 for (const [k, v] of Object.entries(globals)) {
   if (globalThis[k] === undefined) globalThis[k] = v;
+}
+
+// Provide `require` for source files that use CommonJS `require()` in an ESM
+// context (e.g. packages/remember/src/index.ts calls `require('better-sqlite3')`).
+// Only bare specifiers are needed; relative paths would need a per-module require.
+if (globalThis.require === undefined) {
+  try {
+    globalThis.require = createRequire(import.meta.url);
+  } catch { /* not available */ }
 }

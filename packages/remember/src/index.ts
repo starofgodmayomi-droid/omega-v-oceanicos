@@ -278,5 +278,7 @@ export class RememberEngine {
 
 export * from './ledger.js';
 
-// Documented public name (README: `import { Remember } from '@omega-v/remember'`).
-export { RememberEngine as Remember };
+// `Remember` is the in-memory event log (RememberLog) that matches the
+// test-expected Observe → Verify → Remember API from index.d.ts.
+// `RememberEngine` remains the SQLite hash-chain ledger used by the API.
+export { RememberLog, RememberLog as Remember } from './remember-log.js';

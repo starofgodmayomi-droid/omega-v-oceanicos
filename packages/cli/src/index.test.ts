@@ -3,10 +3,21 @@ import { run } from './index';
 describe('omega status CLI', () => {
   const originalWrite = process.stdout.write;
   const originalError = process.stderr.write;
+  const originalReadToken = process.env.OMEGA_READ_TOKEN;
+  const originalAdminToken = process.env.OMEGA_ADMIN_TOKEN;
+
+  beforeEach(() => {
+    delete process.env.OMEGA_READ_TOKEN;
+    delete process.env.OMEGA_ADMIN_TOKEN;
+  });
 
   afterEach(() => {
     process.stdout.write = originalWrite;
     process.stderr.write = originalError;
+    if (originalReadToken === undefined) delete process.env.OMEGA_READ_TOKEN;
+    else process.env.OMEGA_READ_TOKEN = originalReadToken;
+    if (originalAdminToken === undefined) delete process.env.OMEGA_ADMIN_TOKEN;
+    else process.env.OMEGA_ADMIN_TOKEN = originalAdminToken;
   });
 
   it('renders the bounded operating-system snapshot', async () => {

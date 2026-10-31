@@ -2,11 +2,28 @@ import { observePlanetaryBase, ObserverEngine } from '@oceanicos/observer';
 import { verifyPlanetarySovereignty, VerificationEngine } from '@oceanicos/verification';
 import { PluralisticHashChain, RememberEngine, CryptographicBlock } from '@oceanicos/remember';
 import { IMiniBlock } from '@oceanicos/types';
+import { MiniCycleEngine } from './mini-cycle-engine.js';
+import type { VerificationRule } from '@oceanicos/types';
 
-export class MiniKernel {
+type MiniKernelOptions = {
+  rules?: VerificationRule[];
+  observer?: ObserverEngine;
+  verificationEngine?: any;
+};
+
+export class MiniKernel extends MiniCycleEngine {
   protected remember: RememberEngine;
-  constructor(rememberEngine: RememberEngine) {
-    this.remember = rememberEngine;
+  constructor(rememberEngineOrOptions?: RememberEngine | MiniKernelOptions) {
+    if (rememberEngineOrOptions && typeof rememberEngineOrOptions === 'object' && 'rules' in rememberEngineOrOptions) {
+      super(rememberEngineOrOptions);
+      this.remember = new RememberEngine();
+    } else if (rememberEngineOrOptions && 'append' in rememberEngineOrOptions) {
+      super();
+      this.remember = rememberEngineOrOptions as RememberEngine;
+    } else {
+      super(rememberEngineOrOptions as MiniKernelOptions | undefined);
+      this.remember = new RememberEngine();
+    }
   }
   public runCycle(): IMiniBlock {
     const telemetry = ObserverEngine.generateTelemetry();
@@ -115,6 +132,9 @@ export type {
 export { KaiContinuity, kaiFromBlock, kaiUnknown, KAI_VERSION } from './kai.js';
 export type { KaiDrop, KaiSource, KaiStatus } from './kai.js';
 export { captureMiniKernelCycle } from './kai-cycle.js';
+export { OmegaTotalCompressor } from './omegaTotal.js';
+export { OperatingSystemKernel } from './os.js';
+export { MiniCycleEngine } from './mini-cycle-engine.js';
 export { buildOmegaWaterFlow } from './water-flow.js';
 export { MAX_TOTAL_COMPRESSION_LEASE_MS, TOTAL_COMPRESSION_PACKAGE_IDS, validateTotalCompressionRequest } from './total-compress.js';
 export {
@@ -181,6 +201,6 @@ export function executeOceanicosMaxExpansion(): CryptographicBlock {
   return securelyMintedBlock;
 }
 
-if (typeof require !== 'undefined' && require.main === module) {
+if (typeof require !== 'undefined' && typeof module !== 'undefined' && require.main === module) {
   executeOceanicosMaxExpansion();
 }

@@ -23,12 +23,16 @@ import { run } from './index';
 describe('omega CLI persistence mutation failure paths', () => {
   const originalWrite = process.stdout.write;
   const originalError = process.stderr.write;
+  const originalAdminToken = process.env.OMEGA_ADMIN_TOKEN;
+  const originalReadToken = process.env.OMEGA_READ_TOKEN;
   let out: string[];
   let err: string[];
 
   beforeEach(() => {
     out = [];
     err = [];
+    delete process.env.OMEGA_ADMIN_TOKEN;
+    delete process.env.OMEGA_READ_TOKEN;
     process.stdout.write = ((chunk: string | Uint8Array) => {
       out.push(String(chunk));
       return true;
@@ -42,6 +46,10 @@ describe('omega CLI persistence mutation failure paths', () => {
   afterEach(() => {
     process.stdout.write = originalWrite;
     process.stderr.write = originalError;
+    if (originalAdminToken === undefined) delete process.env.OMEGA_ADMIN_TOKEN;
+    else process.env.OMEGA_ADMIN_TOKEN = originalAdminToken;
+    if (originalReadToken === undefined) delete process.env.OMEGA_READ_TOKEN;
+    else process.env.OMEGA_READ_TOKEN = originalReadToken;
   });
 
   describe('acknowledge-persistence', () => {

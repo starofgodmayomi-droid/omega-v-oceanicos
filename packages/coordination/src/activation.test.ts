@@ -50,7 +50,7 @@ describe('activateWorkersAndBuilders', () => {
     expect(result.execution.succeeded).toBe(1);
     expect(result.execution.failed).toBe(1);
     expect(result.execution.results['worker-ok']).toBe('ok');
-    expect(result.execution.events.find((event) => event.taskId === 'builder-fail')?.message).toBe(
+    expect(result.execution.events.find((event) => event.taskId === 'builder-fail' && event.state === 'failed')?.message).toBe(
       'builder failed',
     );
   });

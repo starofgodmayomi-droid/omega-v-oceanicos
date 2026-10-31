@@ -47,7 +47,7 @@ export function executeAuthorizedTransition(
   const now = options.now ?? (() => new Date().toISOString());
   const memory = options.memory;
 
-  if (record.decision === 'DENY' || !record.authorized) {
+  if (record.decision === 'DENY' || (record.decision === 'ALLOW' && !record.authorized)) {
     const refused: OmegaChangeRecord = {
       ...record,
       authorized: false,

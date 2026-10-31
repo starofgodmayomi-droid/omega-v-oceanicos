@@ -6,6 +6,7 @@ import type {
   VerificationPredicate,
   VerificationReceipt,
 } from '@oceanicos/types';
+import { MiniVerificationEngine } from './mini-verify-engine.js';
 
 type AttestationProfile = 'flash' | 'pro';
 
@@ -17,7 +18,7 @@ function canonicalAttestationPayload(
   return `${telemetryUuid}:${status}:${profile}`;
 }
 
-export class VerificationEngine {
+export class VerificationEngine extends MiniVerificationEngine {
   public static evaluate(telemetry: IObservation, privateKeyPem?: string): IEvidence {
     const scale = telemetry.acceleratorInventory > 500000;
     const independence = telemetry.siliconYield >= 0.92;
@@ -117,6 +118,7 @@ export class DeclarativeVerificationEngine {
   }
 }
 
+export { MiniVerificationEngine } from './mini-verify-engine.js';
 export * from './frontier.js';
 export * from './asymmetric.js';
 export * from './regional-mesh.js';
