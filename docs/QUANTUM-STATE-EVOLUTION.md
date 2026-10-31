@@ -59,6 +59,22 @@ A `POST` whose result is `VERIFIED` also becomes one receipt in KAI memory (the 
 
 The row keeps the digest, not the amplitudes (`MEMORY != PROOF`), and the same digest is stored once: repeating the evolution returns the existing receipt with `reused: true`. The read-only `GET` records nothing, so rendering the app shell never leaves a row behind. The receipt is visible through `GET /api/kai/memory` and can be reconciled afterwards with `POST /api/kai/memory/:id/reconcile`.
 
+## Reconciliation
+
+A receipt cannot verify itself, so `POST /v1/ecosystem/quantum/reconcile` recomputes the declared evolution and compares digests:
+
+```
+POST /v1/ecosystem/quantum/reconcile
+{ "memoryId": "<receipt id>", "symmetryDegrees": 60, "inversionDegrees": 30, "tau": 1.0471975511965976 }
+→ 200 { status: "VERIFIED", expected_digest, observed_digest, memory_id, contract_id, checks, boundary }
+→ 200 { status: "DIVERGENT", … }        // a different declared input yields a different digest
+→ 400 { status: "UNKNOWN", … }          // no digest supplied, malformed digest, or refused input
+→ 404 { error: "MEMORY_NOT_FOUND" }
+→ 400 { error: "MEMORY_NOT_QUANTUM_RECEIPT" }
+```
+
+`digest` may be supplied instead of `memoryId`. `VERIFIED` means only that the recorded digest is reproduced from the same declared input under the same contract — not that a physical quantum system was observed.
+
 ## API
 
 ```

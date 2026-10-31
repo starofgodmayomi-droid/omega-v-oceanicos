@@ -169,10 +169,12 @@ export type {
 export type { OmegaWaterFlowInput } from './water-flow.js';
 export {
   evolveQuantumState,
+  reconcileQuantumEvolution,
   QUANTUM_ALGEBRA_TOLERANCE,
   QUANTUM_ENERGY_GAP,
   QUANTUM_INVERSION_OPERATOR,
   QUANTUM_REALITY_BOUNDARY,
+  QUANTUM_RECONCILE_BOUNDARY,
   QUANTUM_STATE_BASIS,
   QUANTUM_STATE_CONTRACT,
   QUANTUM_STATE_LIMITS,
@@ -183,6 +185,7 @@ export {
 export type {
   ComplexAmplitude,
   QuantumEvolutionChecks,
+  QuantumReconciliation,
   QuantumStateEvolution,
   QuantumStateIssue,
   QuantumStateIssueCode,

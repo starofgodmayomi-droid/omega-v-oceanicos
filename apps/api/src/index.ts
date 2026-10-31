@@ -6,7 +6,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { MAX_PROOF_OF_WORK_ATTEMPTS, RememberEngine } from '@oceanicos/remember';
-import { FileConnectorObservationStore, FileValueNavigatorStore, MiniKernel, QUANTUM_STATE_CONTRACT, compressSingleBody, evolveQuantumState, expandSingleBody } from '@oceanicos/mini';
+import { FileConnectorObservationStore, FileValueNavigatorStore, MiniKernel, QUANTUM_STATE_CONTRACT, compressSingleBody, evolveQuantumState, expandSingleBody, reconcileQuantumEvolution } from '@oceanicos/mini';
 import type { SingleBodyEntry } from '@oceanicos/mini';
 import { AsymmetricValidationGuard, DeclarativeVerificationEngine, MultiRegionMeshConvergence } from '@oceanicos/verification';
 import { ObserverEngine } from '@oceanicos/observer';
@@ -450,6 +450,39 @@ export function createApp(
       }
     }
     return { success: true, status: evolution.status, ...state, receipt };
+  });
+  fastify.post('/v1/ecosystem/quantum/reconcile', { preHandler: requireReadAccess }, async (request: any, reply) => {
+    const body = request.body && typeof request.body === 'object' && !Array.isArray(request.body) ? request.body as Record<string, unknown> : {};
+    const memoryId = typeof body.memoryId === 'string' ? body.memoryId.trim() : '';
+    let memory: ReturnType<KaiMemoryStore['getMemory']> = null;
+    let contract: ReturnType<KaiMemoryStore['getContract']> = null;
+    let expected: unknown = body.digest;
+    if (memoryId) {
+      memory = kaiMemory.getMemory(memoryId);
+      if (!memory) return reply.status(404).send({ success: false, error: 'MEMORY_NOT_FOUND' });
+      if (!memory.intent.startsWith(`${QUANTUM_RECEIPT_INTENT}:`)) {
+        return reply.status(400).send({ success: false, error: 'MEMORY_NOT_QUANTUM_RECEIPT' });
+      }
+      contract = memory.contract_id ? kaiMemory.getContract(memory.contract_id) : null;
+      expected = memory.evidence_hash;
+    }
+    const reconciliation = reconcileQuantumEvolution(expected, body);
+    return reply.status(reconciliation.status === 'UNKNOWN' ? 400 : 200).send({
+      success: reconciliation.status !== 'UNKNOWN',
+      status: reconciliation.status,
+      contract: reconciliation.contract,
+      expected_digest: reconciliation.expectedDigest,
+      observed_digest: reconciliation.observedDigest,
+      memory_id: memory?.id ?? null,
+      memory_intent: memory?.intent ?? null,
+      contract_id: memory?.contract_id ?? null,
+      contract_record: contract,
+      checks: reconciliation.checks,
+      reason: reconciliation.reason,
+      issues: reconciliation.issues,
+      boundary: reconciliation.boundary,
+      evaluated_at: new Date().toISOString(),
+    });
   });
   fastify.get('/v1/mood', async () => ({ success: true, status: 'MAX GOOD-O', contract: 'Ω∞v totality / attest-dont-assert', brand: 'Oceanicos Ω∞', ledger: { ready: Boolean(ledgerMemory.getTip()) }, evaluatedAt: new Date().toISOString() }));
 

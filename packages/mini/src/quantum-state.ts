@@ -362,3 +362,71 @@ export function evolveQuantumState(input: unknown = {}): QuantumStateResult {
     },
   };
 }
+
+/**
+ * `V ≡ (Expected ≡ Observed)` for a recorded evolution.
+ *
+ * A receipt keeps the digest, not the amplitudes, so the preimage has to be
+ * supplied again: the same declared angles and τ. Recomputation is
+ * deterministic, so an exact digest match is the whole proof this contract
+ * can offer. It is not a physical observation.
+ */
+export const QUANTUM_RECONCILE_BOUNDARY =
+  'local recomputation of a declared evolution; VERIFIED means the recorded digest is reproduced from the same declared input, not that a physical quantum system was observed';
+
+const QUANTUM_DIGEST_PATTERN = /^[a-f0-9]{64}$/;
+
+export interface QuantumReconciliation {
+  readonly status: 'VERIFIED' | 'DIVERGENT' | 'UNKNOWN';
+  readonly contract: typeof QUANTUM_STATE_CONTRACT;
+  readonly expectedDigest: string | null;
+  readonly observedDigest: string | null;
+  readonly checks: {
+    readonly digestFormat: boolean;
+    readonly inputAccepted: boolean;
+    readonly digestEquality: boolean;
+  };
+  readonly reason: string;
+  readonly issues: readonly QuantumStateIssue[];
+  readonly boundary: string;
+}
+
+export function reconcileQuantumEvolution(
+  expectedDigest: unknown,
+  input: unknown = {},
+): QuantumReconciliation {
+  const expected =
+    typeof expectedDigest === 'string' && QUANTUM_DIGEST_PATTERN.test(expectedDigest) ? expectedDigest : null;
+  const evolution = evolveQuantumState(input);
+  const observed = evolution.status === 'EVOLVED' ? evolution.state.digest : null;
+  const issues = evolution.status === 'EVOLVED' ? [] : evolution.issues;
+
+  const digestFormat = expected !== null;
+  const inputAccepted = evolution.status === 'EVOLVED';
+  const digestEquality = digestFormat && inputAccepted && expected === observed;
+
+  let status: QuantumReconciliation['status'] = 'UNKNOWN';
+  let reason: string;
+  if (!digestFormat) {
+    reason = 'expected digest must be a 64-character lowercase SHA-256 hex string';
+  } else if (!inputAccepted) {
+    reason = 'declared evolution input was refused, so nothing was recomputed';
+  } else if (digestEquality) {
+    status = 'VERIFIED';
+    reason = 'recomputed digest equals the recorded digest';
+  } else {
+    status = 'DIVERGENT';
+    reason = 'recomputed digest differs from the recorded digest';
+  }
+
+  return {
+    status,
+    contract: QUANTUM_STATE_CONTRACT,
+    expectedDigest: expected,
+    observedDigest: observed,
+    checks: { digestFormat, inputAccepted, digestEquality },
+    reason,
+    issues,
+    boundary: QUANTUM_RECONCILE_BOUNDARY,
+  };
+}

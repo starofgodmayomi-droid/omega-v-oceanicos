@@ -4,7 +4,7 @@ import test from 'node:test';
 import { createApp } from '../../apps/api/dist/index.js';
 
 const require = createRequire(import.meta.url);
-const { evolveQuantumState, QUANTUM_STATE_BASIS, QUANTUM_STATE_LIMITS } = require('../../packages/mini/dist/index.js');
+const { evolveQuantumState, reconcileQuantumEvolution, QUANTUM_STATE_BASIS, QUANTUM_STATE_LIMITS } = require('../../packages/mini/dist/index.js');
 
 test('quantum evolution applies Symmetry ⊗ Inversion then a unitary time step', () => {
   const result = evolveQuantumState({ symmetryDegrees: 90, inversionDegrees: 90, tau: Math.PI / 2 });
@@ -124,7 +124,83 @@ test('POST /v1/ecosystem/quantum/evolve returns a verified local evolution', asy
     assert.equal(refused.statusCode, 400);
     assert.equal(refused.json().status, 'INVALID');
     assert.equal(refused.json().issues[0].code, 'ANGLE_OUT_OF_RANGE');
+
+    // The receipt keeps the digest, so reconciliation needs the same declared input.
+    const reconcileBody = { symmetryDegrees: 60, inversionDegrees: 30, tau: Math.PI / 3 };
+    const reconciled = await app.inject({
+      method: 'POST',
+      url: '/v1/ecosystem/quantum/reconcile',
+      payload: { memoryId: payload.receipt.id, ...reconcileBody },
+    });
+    assert.equal(reconciled.statusCode, 200);
+    assert.equal(reconciled.json().status, 'VERIFIED');
+    assert.equal(reconciled.json().expected_digest, payload.digest);
+    assert.equal(reconciled.json().observed_digest, payload.digest);
+    assert.equal(reconciled.json().memory_id, payload.receipt.id);
+    assert.equal(reconciled.json().contract_id, payload.receipt.contract_id);
+    assert.equal(reconciled.json().checks.digestEquality, true);
+
+    const divergent = await app.inject({
+      method: 'POST',
+      url: '/v1/ecosystem/quantum/reconcile',
+      payload: { memoryId: payload.receipt.id, symmetryDegrees: 60, inversionDegrees: 30, tau: Math.PI / 2 },
+    });
+    assert.equal(divergent.statusCode, 200);
+    assert.equal(divergent.json().status, 'DIVERGENT');
+    assert.notEqual(divergent.json().observed_digest, payload.digest);
+
+    const byDigest = await app.inject({
+      method: 'POST',
+      url: '/v1/ecosystem/quantum/reconcile',
+      payload: { digest: payload.digest, ...reconcileBody },
+    });
+    assert.equal(byDigest.statusCode, 200);
+    assert.equal(byDigest.json().status, 'VERIFIED');
+
+    const missing = await app.inject({
+      method: 'POST',
+      url: '/v1/ecosystem/quantum/reconcile',
+      payload: { memoryId: 'no-such-receipt', ...reconcileBody },
+    });
+    assert.equal(missing.statusCode, 404);
+    assert.equal(missing.json().error, 'MEMORY_NOT_FOUND');
+
+    // Nothing to compare against, and a value that is not a digest, stay UNKNOWN.
+    const noEvidence = await app.inject({ method: 'POST', url: '/v1/ecosystem/quantum/reconcile', payload: {} });
+    assert.equal(noEvidence.statusCode, 400);
+    assert.equal(noEvidence.json().status, 'UNKNOWN');
+    assert.equal(noEvidence.json().success, false);
+
+    const notADigest = await app.inject({
+      method: 'POST',
+      url: '/v1/ecosystem/quantum/reconcile',
+      payload: { digest: 'not-a-digest', ...reconcileBody },
+    });
+    assert.equal(notADigest.statusCode, 400);
+    assert.equal(notADigest.json().checks.digestFormat, false);
   } finally {
     await app.close();
   }
+});
+
+test('reconcileQuantumEvolution reproduces a digest or reports the divergence', () => {
+  const declared = { symmetryDegrees: 120, inversionDegrees: 45, tau: Math.PI };
+  const evolved = evolveQuantumState(declared);
+  assert.equal(evolved.status, 'EVOLVED');
+
+  const same = reconcileQuantumEvolution(evolved.state.digest, declared);
+  assert.equal(same.status, 'VERIFIED');
+  assert.equal(same.observedDigest, evolved.state.digest);
+
+  const moved = reconcileQuantumEvolution(evolved.state.digest, { ...declared, tau: 0 });
+  assert.equal(moved.status, 'DIVERGENT');
+  assert.notEqual(moved.observedDigest, evolved.state.digest);
+
+  const refused = reconcileQuantumEvolution(evolved.state.digest, { tau: -1 });
+  assert.equal(refused.status, 'UNKNOWN');
+  assert.equal(refused.issues[0].code, 'TAU_OUT_OF_RANGE');
+
+  const malformed = reconcileQuantumEvolution(42, declared);
+  assert.equal(malformed.status, 'UNKNOWN');
+  assert.equal(malformed.checks.digestFormat, false);
 });
