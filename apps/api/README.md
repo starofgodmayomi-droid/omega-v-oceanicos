@@ -1,12 +1,14 @@
 # @omega-v/api
 
-Fastify HTTP runtime for Ω∞v | OCEANICOS.
+Fastify HTTP runtime for Ω∞v | OCEANICOS, serving the MINI kernel
+(Observe → Verify → Remember) over HTTP.
 
 The executable contract is the current `createApp` surface. Persistence,
 local jobs, readiness, attestation revocations, and optional static-client
 serving are supported modules and are registered by `createApp`. The supported
 route inventory is pinned in `src/route-contract.ts` and enforced by
-`src/__tests__/route-inventory.test.ts`.
+`tests/integration/api-route-contract.integration.test.ts` under the
+repository's `node:test` suite.
 
 ## Run
 

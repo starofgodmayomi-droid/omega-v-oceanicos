@@ -1,3 +1,5 @@
+import assert from 'node:assert/strict';
+import { describe, it } from 'node:test';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -18,7 +20,7 @@ describe('contributor templates', () => {
   const config = join(root, '.github/ISSUE_TEMPLATE/config.yml');
 
   it('ships a pull request template', () => {
-    expect(existsSync(pr)).toBe(true);
+    assert.equal(existsSync(pr), true);
   });
 
   it('asks for evidence rather than a claim that tests pass', () => {
@@ -27,8 +29,8 @@ describe('contributor templates', () => {
     // "Tests pass" is an assertion. A run number is evidence. This
     // repository has spent a long time on that distinction and the
     // template should not quietly drop it.
-    expect(template).toMatch(/is a claim; a run number is\s*\n?\s*evidence/i);
-    expect(template).toContain('## Evidence');
+    assert.match(template, /is a claim; a run number is\s*\n?\s*evidence/i);
+    assert.ok(template.includes('## Evidence'));
   });
 
   it('asks what the change does not do', () => {
@@ -36,34 +38,34 @@ describe('contributor templates', () => {
 
     // The most useful section. A change that names its own edges is
     // easier to review, revert and build on.
-    expect(template).toContain('## Limitations');
-    expect(template).toMatch(/not an admission of weakness/i);
+    assert.ok(template.includes('## Limitations'));
+    assert.match(template, /not an admission of weakness/i);
   });
 
   it('asks about the envelope when the change touches it', () => {
     const template = readFileSync(pr, 'utf8');
 
-    expect(template).toMatch(/reference verifier/i);
+    assert.match(template, /reference verifier/i);
     // Three implementations of one published format: a disagreement is a
     // finding even with no exploit.
-    expect(template).toMatch(/finding even without an exploit/i);
+    assert.match(template, /finding even without an exploit/i);
   });
 
   it('requires failure paths, not only success paths', () => {
     const template = readFileSync(pr, 'utf8');
-    expect(template).toMatch(/Failure paths are tested/i);
+    assert.match(template, /Failure paths are tested/i);
   });
 
   it('routes security reports away from public issues', () => {
-    expect(existsSync(issue)).toBe(true);
-    expect(existsSync(config)).toBe(true);
+    assert.equal(existsSync(issue), true);
+    assert.equal(existsSync(config), true);
 
     const bug = readFileSync(issue, 'utf8');
     const links = readFileSync(config, 'utf8');
 
-    expect(bug).toMatch(/do not open it here/i);
-    expect(bug).toContain('SECURITY.md');
-    expect(links).toContain('security/advisories/new');
+    assert.match(bug, /do not open it here/i);
+    assert.ok(bug.includes('SECURITY.md'));
+    assert.ok(links.includes('security/advisories/new'));
   });
 
   it('links only to things that exist', () => {
@@ -76,9 +78,9 @@ describe('contributor templates', () => {
     // checked against the tree.
     const paths = Array.from(links.matchAll(/blob\/main\/(\S+)/g)).map((match) => match[1]);
 
-    expect(paths.length).toBeGreaterThan(0);
+    assert.ok(paths.length > 0);
     for (const path of paths) {
-      expect(existsSync(join(root, path))).toBe(true);
+      assert.equal(existsSync(join(root, path)), true);
     }
   });
 });

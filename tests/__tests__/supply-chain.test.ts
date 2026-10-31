@@ -1,3 +1,5 @@
+import assert from 'node:assert/strict';
+import { describe, it } from 'node:test';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -16,13 +18,13 @@ describe('supply chain and static analysis', () => {
 
   it('configures dependency updates', () => {
     const path = join(root, '.github/dependabot.yml');
-    expect(existsSync(path)).toBe(true);
+    assert.equal(existsSync(path), true);
 
     const config = readFileSync(path, 'utf8');
-    expect(config).toContain('package-ecosystem: npm');
+    assert.ok(config.includes('package-ecosystem: npm'));
     // The workflow is the observer; an unmaintained action inside it is a
     // hole in the thing that checks everything else.
-    expect(config).toContain('package-ecosystem: github-actions');
+    assert.ok(config.includes('package-ecosystem: github-actions'));
   });
 
   it('groups updates rather than opening one pull request per package', () => {
@@ -30,18 +32,18 @@ describe('supply chain and static analysis', () => {
 
     // Ten pull requests for one toolchain bump is how updates get ignored,
     // and an ignored update is no update with extra noise.
-    expect(config).toContain('groups:');
-    expect(config).toMatch(/open-pull-requests-limit:\s*\d+/);
+    assert.ok(config.includes('groups:'));
+    assert.match(config, /open-pull-requests-limit:\s*\d+/);
   });
 
   it('runs static security analysis over the source', () => {
     const path = join(root, '.github/workflows/codeql.yml');
-    expect(existsSync(path)).toBe(true);
+    assert.equal(existsSync(path), true);
 
     const workflow = readFileSync(path, 'utf8');
-    expect(workflow).toContain('github/codeql-action/init');
-    expect(workflow).toContain('javascript-typescript');
-    expect(workflow).toContain('security-events: write');
+    assert.ok(workflow.includes('github/codeql-action/init'));
+    assert.ok(workflow.includes('javascript-typescript'));
+    assert.ok(workflow.includes('security-events: write'));
   });
 
   it('analyses on a schedule, not only on change', () => {
@@ -49,22 +51,22 @@ describe('supply chain and static analysis', () => {
 
     // A vulnerability disclosed after a merge does not wait for the next
     // commit to become relevant.
-    expect(workflow).toMatch(/schedule:/);
-    expect(workflow).toMatch(/cron:/);
+    assert.match(workflow, /schedule:/);
+    assert.match(workflow, /cron:/);
   });
 
   it('grants every workflow an explicit permission block', () => {
     const workflowsDir = join(root, '.github/workflows');
     const workflows = readdirSync(workflowsDir).filter((entry) => entry.endsWith('.yml'));
 
-    expect(workflows.length).toBeGreaterThanOrEqual(2);
+    assert.ok(workflows.length >= 2);
 
     for (const name of workflows) {
       const workflow = readFileSync(join(workflowsDir, name), 'utf8');
       // Without a block, a workflow inherits whatever the repository
       // default happens to be, which is not least privilege — it is
       // whatever nobody changed.
-      expect(workflow).toMatch(/^permissions:/m);
+      assert.match(workflow, /^permissions:/m);
     }
   });
 
@@ -75,8 +77,8 @@ describe('supply chain and static analysis', () => {
     // inside it", and a consumer asking whether the image ships a package
     // with a known CVE had no way to find out without pulling and
     // unpacking it.
-    expect(workflow).toContain('anchore/sbom-action');
-    expect(workflow).toContain('spdx-json');
+    assert.ok(workflow.includes('anchore/sbom-action'));
+    assert.ok(workflow.includes('spdx-json'));
   });
 
   it('signs the inventory rather than shipping it unsigned', () => {
@@ -85,8 +87,8 @@ describe('supply chain and static analysis', () => {
     // An unsigned SBOM is a file anyone could have written afterwards.
     // Attested and pushed to the registry, it is evidence bound to the
     // digest it describes.
-    expect(workflow).toContain('actions/attest-sbom');
-    expect(workflow).toMatch(/attest-sbom[\s\S]{0,400}push-to-registry:\s*true/);
+    assert.ok(workflow.includes('actions/attest-sbom'));
+    assert.match(workflow, /attest-sbom[\s\S]{0,400}push-to-registry:\s*true/);
   });
 
   it('binds both attestations to the digest, not to a mutable tag', () => {
@@ -95,7 +97,7 @@ describe('supply chain and static analysis', () => {
     // `latest` moves. A digest does not, and an attestation bound to a tag
     // would describe whatever that tag points at today.
     const digestSubjects = workflow.match(/subject-digest:\s*\$\{\{ steps\.push\.outputs\.digest/g);
-    expect(digestSubjects?.length).toBeGreaterThanOrEqual(2);
+    assert.ok(digestSubjects?.length >= 2);
   });
 
   it('keeps peer-coupled packages in one group', () => {
@@ -106,11 +108,11 @@ describe('supply chain and static analysis', () => {
     // apps/web still declared ^18.2.0 — two copies of React in one tree,
     // failing on Windows and passing on Linux. Neither half could be green
     // alone, so neither could ever land.
-    expect(config).toContain('testing-and-react:');
+    assert.ok(config.includes('testing-and-react:'));
 
     const group = config.slice(config.indexOf('testing-and-react:'), config.indexOf('linting:'));
     for (const pkg of ['react', 'react-dom', '@testing-library/*', 'jest']) {
-      expect(group).toContain(pkg);
+      assert.ok(group.includes(pkg));
     }
   });
 
@@ -119,8 +121,8 @@ describe('supply chain and static analysis', () => {
 
     // Groups match in order, so '@types/*' would take @types/react before
     // the React group saw it, reintroducing the same split one level down.
-    expect(config).toContain('exclude-patterns:');
-    expect(config).toMatch(/exclude-patterns:[\s\S]{0,120}@types\/react/);
+    assert.ok(config.includes('exclude-patterns:'));
+    assert.match(config, /exclude-patterns:[\s\S]{0,120}@types\/react/);
   });
 
   it('holds a dependency the toolchain cannot accept, with a reason and a way out', () => {
@@ -131,9 +133,9 @@ describe('supply chain and static analysis', () => {
     // linting is a required stage, so no change to this repository can make
     // the bump pass. Proposing it weekly would train us to look past a red
     // pipeline, which is the habit this project can least afford.
-    expect(config).toContain('ignore:');
-    expect(config).toMatch(/dependency-name:\s*typescript/);
-    expect(config).toMatch(/versions:\s*\['>=7\.0\.0'\]/);
+    assert.ok(config.includes('ignore:'));
+    assert.match(config, /dependency-name:\s*typescript/);
+    assert.match(config, /versions:\s*\['>=7\.0\.0'\]/);
   });
 
   it('records why a hold exists and when to remove it', () => {
@@ -143,8 +145,8 @@ describe('supply chain and static analysis', () => {
     // An ignore rule with no reason is indistinguishable from one added to
     // silence an inconvenient failure. This one names the upstream tracking
     // issue and the condition that retires it.
-    expect(hold).toMatch(/typescript-eslint/);
-    expect(hold).toMatch(/10940/);
-    expect(hold).toMatch(/Remove this entry/i);
+    assert.match(hold, /typescript-eslint/);
+    assert.match(hold, /10940/);
+    assert.match(hold, /Remove this entry/i);
   });
 });

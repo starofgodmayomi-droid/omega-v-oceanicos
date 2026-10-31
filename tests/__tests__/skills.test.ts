@@ -1,3 +1,6 @@
+import assert from 'node:assert/strict';
+import { each } from './node-test-each.ts';
+import { describe, it } from 'node:test';
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -39,25 +42,25 @@ describe('installed skills match what the README records', () => {
   it('records at least the skills this repository has installed', () => {
     // Guards the degenerate pass: a regex that matched nothing would make
     // every other assertion here vacuously true.
-    expect(recorded.size).toBeGreaterThanOrEqual(3);
-    expect(installed.length).toBeGreaterThanOrEqual(3);
+    assert.ok(recorded.size >= 3);
+    assert.ok(installed.length >= 3);
   });
 
-  it.each(Array.from(recorded.keys()))('has %s installed where it is recorded', (skill) => {
-    expect(existsSync(join(dir, skill, 'SKILL.md'))).toBe(true);
+  each(Array.from(recorded.keys()))('has %s installed where it is recorded', (skill) => {
+    assert.equal(existsSync(join(dir, skill, 'SKILL.md')), true);
   });
 
-  it.each(Array.from(recorded.entries()))('%s still hashes to what was recorded', (skill, hash) => {
+  each(Array.from(recorded.entries()))('%s still hashes to what was recorded', (skill, hash) => {
     // The README's own instruction, executed. A skill edited in place — by a
     // formatter, a merge, or a hand — fails here rather than passing as the
     // artifact it no longer is.
-    expect(digest(skill)).toBe(hash);
+    assert.equal(digest(skill), hash);
   });
 
-  it.each(installed)('%s is recorded in the README', (skill) => {
+  each(installed)('%s is recorded in the README', (skill) => {
     // The other direction: an installed skill absent from the table has no
     // link back to the file it was supplied as.
-    expect(recorded.has(skill)).toBe(true);
+    assert.equal(recorded.has(skill), true);
   });
 
   it('keeps every skill directory shaped the way the loader expects', () => {
@@ -65,9 +68,9 @@ describe('installed skills match what the README records', () => {
       const source = readFileSync(join(dir, skill, 'SKILL.md'), 'utf8');
       // Frontmatter naming the skill, and a name that matches its directory.
       // A mismatch loads under a name nobody wrote down.
-      expect(source.startsWith('---\n')).toBe(true);
-      expect(source).toMatch(new RegExp(`^name:\\s*${skill}\\s*$`, 'm'));
-      expect(source).toMatch(/^description:\s*\S/m);
+      assert.equal(source.startsWith('---\n'), true);
+      assert.match(source, new RegExp(`^name:\\s*${skill}\\s*$`, 'm'));
+      assert.match(source, /^description:\s*\S/m);
     }
   });
 
@@ -76,7 +79,7 @@ describe('installed skills match what the README records', () => {
     // hash becomes a hash of whatever CI last decided the file should look
     // like.
     const ignore = readFileSync(join(root, '.prettierignore'), 'utf8');
-    expect(ignore).toMatch(/^\.claude\/skills\/$/m);
-    expect(ignore).toMatch(/^skills\/$/m);
+    assert.match(ignore, /^\.claude\/skills\/$/m);
+    assert.match(ignore, /^skills\/$/m);
   });
 });

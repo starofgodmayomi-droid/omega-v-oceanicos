@@ -1,3 +1,6 @@
+import assert from 'node:assert/strict';
+import { each } from './node-test-each.ts';
+import { describe, it } from 'node:test';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, normalize, relative, resolve } from 'node:path';
 
@@ -31,10 +34,10 @@ describe('documentation links resolve', () => {
   const LINK = /\[[^\]]*\]\(([^)#\s]+)(?:#[^)\s]*)?\)/g;
 
   it('finds documents to check', () => {
-    expect(documents.length).toBeGreaterThan(10);
+    assert.ok(documents.length > 10);
   });
 
-  it.each(documents.map((file) => [relative(root, file), file]))(
+  each(documents.map((file) => [relative(root, file), file]))(
     '%s links only to files that exist',
     (_label, file) => {
       const text = readFileSync(file, 'utf8');
@@ -50,7 +53,7 @@ describe('documentation links resolve', () => {
           return !existsSync(resolved);
         });
 
-      expect(broken).toEqual([]);
+      assert.deepEqual(broken, []);
     }
   );
 });

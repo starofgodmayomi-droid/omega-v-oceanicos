@@ -1,3 +1,5 @@
+import assert from 'node:assert/strict';
+import { describe, it } from 'node:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -42,96 +44,99 @@ describe('the supported Node version is one claim, not three', () => {
   const matrixBlocks = Array.from(workflowConfig.matchAll(/^\s*matrix:\s*$/gm));
 
   it('declares an engine range to check', () => {
-    expect(declared).toBeGreaterThan(0);
-    expect(matrix.length).toBeGreaterThan(0);
-    expect(image).toBeGreaterThan(0);
+    assert.ok(declared > 0);
+    assert.ok(matrix.length > 0);
+    assert.ok(image > 0);
   });
 
   it('tests nothing older than it claims to support', () => {
     // Testing a runtime below the declared floor proves compatibility the
     // project does not promise; testing above it leaves the promise
     // unverified. The floor and the lowest tested version must match.
-    expect(Math.min(...matrix)).toBe(declared);
+    assert.equal(Math.min(...matrix), declared);
   });
 
   it('ships on a version it tests', () => {
     // The image is the artifact people actually run. A runtime that never
     // appears in the matrix is shipped unverified.
-    expect(matrix).toContain(image);
+    assert.ok(matrix.includes(image));
   });
 
   it('claims no runtime that is past end of life', () => {
     // Node 18 ended support in April 2025. Even-numbered releases below 20
     // are all past end of life, and promising them is a claim nobody can
     // honour.
-    expect(declared).toBeGreaterThanOrEqual(20);
-    expect(Math.min(...matrix)).toBeGreaterThanOrEqual(20);
+    assert.ok(declared >= 20);
+    assert.ok(Math.min(...matrix) >= 20);
   });
 
   it('tests a version beyond the one it ships', () => {
     // Otherwise the next LTS becomes a surprise on the day it turns
     // default, rather than a red pull request beforehand.
-    expect(Math.max(...matrix)).toBeGreaterThan(image);
+    assert.ok(Math.max(...matrix) > image);
   });
 
   it('keeps every matrix leg reporting when one leg fails', () => {
-    expect(failFast).toEqual(matrixBlocks.map(() => 'false'));
+    assert.deepEqual(failFast, matrixBlocks.map(() => 'false'));
   });
 
   it('reads the matrix from the matrix, not from prose about it', () => {
     // Guards the mistake that produced this test's own first red run.
-    expect(matrix).not.toContain(18);
-    expect(matrix.length).toBeGreaterThanOrEqual(2);
+    assert.ok(!matrix.includes(18));
+    assert.ok(matrix.length >= 2);
   });
 
   it('declares a local healthcheck against the unauthenticated health route', () => {
-    expect(dockerfile).toMatch(/HEALTHCHECK[\s\S]*127\.0\.0\.1[\s\S]*\/health/);
-    expect(dockerfile).toMatch(/response\.ok/);
+    assert.match(dockerfile, /HEALTHCHECK[\s\S]*127\.0\.0\.1[\s\S]*\/health/);
+    assert.match(dockerfile, /response\.ok/);
   });
 
   it('ships the production image with required authentication enabled', () => {
-    expect(dockerfile).toMatch(/ENV OMEGA_AUTH_MODE=required/);
-    expect(workflow).toMatch(/OMEGA_READ_TOKEN=ci-smoke-read-token/);
-    expect(workflow).toMatch(/OMEGA_ADMIN_TOKEN=ci-smoke-admin-token/);
-    expect(workflow).toMatch(/Authorization: Bearer ci-smoke-read-token/);
-    expect(workflow).toMatch(/Authorization: Bearer ci-smoke-admin-token/);
+    assert.match(dockerfile, /ENV OMEGA_AUTH_MODE=required/);
+    assert.match(workflow, /OMEGA_READ_TOKEN=ci-smoke-read-token/);
+    assert.match(workflow, /OMEGA_ADMIN_TOKEN=ci-smoke-admin-token/);
+    assert.match(workflow, /Authorization: Bearer ci-smoke-read-token/);
+    assert.match(workflow, /Authorization: Bearer ci-smoke-admin-token/);
   });
 
   it('runs browser-sensitive release tests in-band', () => {
-    expect(manifest.scripts?.test).toContain('--runInBand');
-    expect(manifest.scripts?.['test:fast']).toContain('--runInBand');
-    expect(manifest.scripts?.['test:coverage']).toContain('--runInBand');
+    // The suite moved from Jest (--runInBand) to node:test; the equivalent
+    // serialization is --test-concurrency=1.
+    assert.ok(manifest.scripts?.test.includes('--test-concurrency=1'));
+    assert.ok(manifest.scripts?.['test:coverage'].includes('--test-concurrency=1'));
   });
 
   it('hosts an encrypted local-ledger restart smoke in CI', () => {
-    expect(workflow).toMatch(/OMEGA_LOCAL_JOB_LEDGER=on/);
-    expect(workflow).toMatch(/OMEGA_LOCAL_JOB_LEDGER_PATH=\/tmp\/omega-ledger\/jobs\.json/);
-    expect(workflow).toMatch(/OMEGA_LOCAL_JOB_LEDGER_KEY=ci-smoke-ledger-key/);
-    expect(workflow).toMatch(/x-omega-local-job-token: ci-smoke-job-token/);
-    expect(workflow).toMatch(/Job creation returned HTTP \$status/);
-    expect(workflow).toMatch(/test -s \/tmp\/job\.json/);
-    expect(workflow).toMatch(/-v \"\$RUNNER_TEMP\/omega-ledger:\/tmp\/omega-ledger\"/);
-    expect(workflow).toMatch(/--network host omega-v-api:ci/);
-    expect(workflow).toMatch(/Grant image user access to encrypted local-ledger volume/);
-    expect(workflow).toMatch(
-      /sudo chown \"\$ledger_uid:\$ledger_gid\" \"\$RUNNER_TEMP\/omega-ledger\"/
+    assert.match(workflow, /OMEGA_LOCAL_JOB_LEDGER=on/);
+    assert.match(workflow, /OMEGA_LOCAL_JOB_LEDGER_PATH=\/tmp\/omega-ledger\/jobs\.json/);
+    assert.match(workflow, /OMEGA_LOCAL_JOB_LEDGER_KEY=ci-smoke-ledger-key/);
+    assert.match(workflow, /OMEGA_LOCAL_JOB_LEDGER_TOKEN=ci-smoke-job-token/);
+    assert.match(workflow, /Job creation returned HTTP \$status/);
+    assert.match(workflow, /test -s \/tmp\/job\.json/);
+    assert.match(workflow, /-v \"\$RUNNER_TEMP\/omega-ledger:\/tmp\/omega-ledger\"/);
+    assert.match(workflow, /--network host omega-v-api:ci/);
+    assert.match(workflow, /Grant image user access to encrypted local-ledger volume/);
+    assert.match(
+      workflow,
+      /sudo chown \"\$ledger_uid:\$ledger_gid\" \"\$RUNNER_TEMP\/omega-ledger\"/,
     );
-    expect(workflow).toMatch(/docker run --rm --user 0:0/);
-    expect(workflow).toMatch(/omega-ledger:\/tmp\/omega-ledger:ro/);
-    expect(workflow).toMatch(/docker rm -f omega-smoke/);
-    expect(workflow).toMatch(/local:\/\/ci-restart/);
-    expect(workflow).toMatch(/The encrypted local-ledger volume contains plaintext job payload/);
-    expect(workflow).toMatch(/job-after-restart\.json/);
-    expect(workflow).toMatch(/check_api\(\) \{/);
-    expect(workflow).toMatch(/API prefix \$path returned HTTP \$status/);
-    expect(workflow).toMatch(/Accept: text\/html/);
-    expect(workflow).toMatch(/Authorization: Bearer ci-smoke-read-token/);
-    expect(workflow).toMatch(/http:\/\/localhost:3000\//);
-    expect(workflow).toMatch(
-      /Root SPA curl failed with exit \$page_curl_exit and HTTP \$page_status/
+    assert.match(workflow, /docker run --rm --user 0:0/);
+    assert.match(workflow, /omega-ledger:\/tmp\/omega-ledger:ro/);
+    assert.match(workflow, /docker rm -f omega-smoke/);
+    assert.match(workflow, /local:\/\/ci-restart/);
+    assert.match(workflow, /The encrypted local-ledger volume contains plaintext job payload/);
+    assert.match(workflow, /job-after-restart\.json/);
+    assert.match(workflow, /check_api\(\) \{/);
+    assert.match(workflow, /API prefix \$path returned HTTP \$status/);
+    assert.match(workflow, /Accept: text\/html/);
+    assert.match(workflow, /Authorization: Bearer ci-smoke-read-token/);
+    assert.match(workflow, /http:\/\/localhost:3000\//);
+    assert.match(
+      workflow,
+      /Root SPA curl failed with exit \$page_curl_exit and HTTP \$page_status/,
     );
-    expect(workflow).toMatch(/index\.headers/);
-    expect(workflow).toMatch(/Root SPA response did not contain the root mount/);
-    expect(workflow).toMatch(/\"encryption\":\"aes-256-gcm\"/);
+    assert.match(workflow, /index\.headers/);
+    assert.match(workflow, /Root SPA response did not contain the root mount/);
+    assert.match(workflow, /\"encryption\":\"aes-256-gcm\"/);
   });
 });

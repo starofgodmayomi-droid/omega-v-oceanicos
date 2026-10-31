@@ -1,3 +1,6 @@
+import assert from 'node:assert/strict';
+import { each } from './node-test-each.ts';
+import { describe, it } from 'node:test';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -22,24 +25,24 @@ describe('the image builds the packages it names', () => {
   );
 
   it('finds a workspace and build filters to check', () => {
-    expect(declared.size).toBeGreaterThan(5);
-    expect(filtered.length).toBeGreaterThan(0);
+    assert.ok(declared.size > 5);
+    assert.ok(filtered.length > 0);
   });
 
-  it.each(filtered)('--filter %s matches a declared workspace package', (name) => {
-    expect(declared.has(name)).toBe(true);
+  each(filtered)('--filter %s matches a declared workspace package', (name) => {
+    assert.equal(declared.has(name), true);
   });
 
   it('builds the application executed by the container', () => {
     const command = dockerfile.match(/CMD\s+\[([^\]]+)\]/)?.[1] ?? '';
     const entry = command.match(/(apps\/[a-z-]+)\/dist/)?.[1];
-    expect(entry).toBeTruthy();
+    assert.ok(entry);
 
     const manifest = JSON.parse(
       readFileSync(join(root, entry as string, 'package.json'), 'utf8')
     ) as { name?: string };
 
-    expect(filtered).toContain(manifest.name);
+    assert.ok(filtered.includes(manifest.name));
   });
 
   it('builds every workspace dependency declared by the container application', () => {
@@ -53,6 +56,6 @@ describe('the image builds the packages it names', () => {
       ).dependencies ?? {}
     ).filter((name) => declared.has(name));
 
-    expect(deps.filter((name) => !filtered.includes(name))).toEqual([]);
+    assert.deepEqual(deps.filter((name) => !filtered.includes(name)), []);
   });
 });

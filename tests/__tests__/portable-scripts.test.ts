@@ -1,3 +1,6 @@
+import assert from 'node:assert/strict';
+import { each } from './node-test-each.ts';
+import { describe, it } from 'node:test';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
@@ -40,10 +43,10 @@ describe('package scripts are portable', () => {
   const files = manifests(root);
 
   it('finds the manifests it is meant to check', () => {
-    expect(files.length).toBeGreaterThan(5);
+    assert.ok(files.length > 5);
   });
 
-  it.each(files.map((file) => [relative(root, file), file]))(
+  each(files.map((file) => [relative(root, file), file]))(
     '%s uses no shell-only commands',
     (_label, file) => {
       const scripts = (JSON.parse(readFileSync(file, 'utf8')).scripts ?? {}) as Record<
@@ -55,7 +58,7 @@ describe('package scripts are portable', () => {
         .filter(([, command]) => SHELLISMS.some((pattern) => pattern.test(command)))
         .map(([name, command]) => `${name}: ${command}`);
 
-      expect(offenders).toEqual([]);
+      assert.deepEqual(offenders, []);
     }
   );
 
@@ -64,9 +67,11 @@ describe('package scripts are portable', () => {
       string,
       string
     >;
-    expect(scripts['smoke:api']).toBe('pnpm build && node scripts/smoke-api.cjs');
-    expect(readFileSync(join(root, 'scripts/smoke-api.cjs'), 'utf8')).toContain(
-      "spawn(process.execPath, ['dist/server.js']"
+    assert.equal(scripts['smoke:api'], 'pnpm build && node scripts/smoke-api.cjs');
+    assert.ok(
+      readFileSync(join(root, 'scripts/smoke-api.cjs'), 'utf8').includes(
+        "spawn(process.execPath, ['dist/index.js']"
+      ),
     );
   });
 
@@ -75,9 +80,9 @@ describe('package scripts are portable', () => {
       .map((file) => JSON.parse(readFileSync(file, 'utf8')).scripts?.clean)
       .filter((command): command is string => typeof command === 'string');
 
-    expect(cleaners.length).toBeGreaterThan(5);
+    assert.ok(cleaners.length > 5);
     for (const command of cleaners) {
-      expect(command).toMatch(/node .*scripts[/\\](rimraf|clean)\.cjs/);
+      assert.match(command, /node .*scripts[/\\](rimraf|clean)\.cjs/);
     }
   });
 });

@@ -1,7 +1,8 @@
+import assert from 'node:assert/strict';
+import { describe, it } from 'node:test';
 import crypto from 'node:crypto';
-import { describe, expect, it } from '@jest/globals';
-import { ObserverEngine } from '@oceanicos/observer';
-import { VerificationEngine } from '@oceanicos/verification';
+import { ObserverEngine } from '../../packages/observer/dist/index.js';
+import { VerificationEngine } from '../../packages/verification/dist/index.js';
 
 describe('asymmetric attestation boundary', () => {
   it('signs evidence with Ed25519 and verifies it with only the public key', () => {
@@ -12,9 +13,9 @@ describe('asymmetric attestation boundary', () => {
     const telemetry = ObserverEngine.generateTelemetry('ATTESTATION_TEST');
     const evidence = VerificationEngine.evaluate(telemetry, privateKey);
 
-    expect(evidence.status).toBe('PASS');
-    expect(evidence.signatureProof).toMatch(/^[0-9a-f]+$/);
-    expect(
+    assert.equal(evidence.status, 'PASS');
+    assert.match(evidence.signatureProof, /^[0-9a-f]+$/);
+    assert.equal(
       VerificationEngine.verifyAttestation(
         telemetry.uuid,
         evidence.status,
@@ -22,7 +23,7 @@ describe('asymmetric attestation boundary', () => {
         evidence.signatureProof,
         publicKey
       )
-    ).toBe(true);
+    , true);
   });
 
   it('rejects a proof when any signed field changes', () => {
@@ -33,7 +34,7 @@ describe('asymmetric attestation boundary', () => {
     const telemetry = ObserverEngine.generateTelemetry('ATTESTATION_TEST');
     const evidence = VerificationEngine.evaluate(telemetry, privateKey);
 
-    expect(
+    assert.equal(
       VerificationEngine.verifyAttestation(
         telemetry.uuid,
         'DIVERGENT',
@@ -41,6 +42,6 @@ describe('asymmetric attestation boundary', () => {
         evidence.signatureProof,
         publicKey
       )
-    ).toBe(false);
+    , false);
   });
 });

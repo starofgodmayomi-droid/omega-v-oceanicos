@@ -1,9 +1,17 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import assert from 'node:assert/strict';
 import { createCipheriv, createHash, randomBytes } from 'node:crypto';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { LocalJobError, LocalJobLedger, LOCAL_JOB_WINDOW } from '../jobs';
+import { describe, it } from 'node:test';
+import { LocalJobError, LocalJobLedger, LOCAL_JOB_WINDOW } from '../../apps/api/dist/jobs.js';
 
+/**
+ * Converted from apps/api/src/__tests__/jobs.test.ts. apps/api declares no
+ * Jest runner and CI only runs the node:test suite, so these 25 contracts for
+ * the local job ledger never executed. Import paths point at the compiled
+ * module, the same boundary `pnpm test` builds for the other API suites.
+ */
 const provenance = {
   source: 'api' as const,
   actor: 'operator-a',
@@ -57,9 +65,10 @@ describe('LocalJobLedger', () => {
       })
     );
   };
+
   it('is disabled by default and does not accept work', () => {
     const ledger = new LocalJobLedger(false);
-    expect(ledger.status()).toEqual({
+    assert.deepEqual(ledger.status(), {
       enabled: false,
       durable: false,
       source: 'memory',
@@ -67,52 +76,50 @@ describe('LocalJobLedger', () => {
       counts: { queued: 0, running: 0, succeeded: 0, failed: 0, unknown: 0 },
       recentWindow: 40,
     });
-    expect(() => ledger.create(input, provenance)).toThrow(
-      expect.objectContaining({ code: 'JOB_INVALID' })
-    );
+    assert.throws(() => ledger.create(input, provenance), { code: 'JOB_INVALID' });
   });
 
   it('creates an auditable queued job and replays idempotently', () => {
     const ledger = new LocalJobLedger(true);
     const created = ledger.create(input, provenance);
-    expect(created.job.state).toBe('queued');
-    expect(created.event.type).toBe('created');
-    expect(created.job.provenance).toEqual(provenance);
-    expect(() => ledger.create(input, provenance)).toThrow(
-      expect.objectContaining({ code: 'JOB_DUPLICATE' })
-    );
-    expect(() => ledger.create({ ...input, sourceUri: 'local://fixture/two' }, provenance)).toThrow(
-      expect.objectContaining({ code: 'JOB_IDEMPOTENCY_CONFLICT' })
+    assert.equal(created.job.state, 'queued');
+    assert.equal(created.event.type, 'created');
+    assert.deepEqual(created.job.provenance, provenance);
+    assert.throws(() => ledger.create(input, provenance), { code: 'JOB_DUPLICATE' });
+    assert.throws(
+      () => ledger.create({ ...input, sourceUri: 'local://fixture/two' }, provenance),
+      { code: 'JOB_IDEMPOTENCY_CONFLICT' },
     );
   });
 
   it('enforces claim ownership and terminal transitions', () => {
     const ledger = new LocalJobLedger(true);
     const created = ledger.create(input, provenance);
-    expect(() => ledger.complete(created.job.id, 'worker-a', 'before claim', provenance)).toThrow(
-      expect.objectContaining({ code: 'JOB_CLAIM_REQUIRED' })
+    assert.throws(
+      () => ledger.complete(created.job.id, 'worker-a', 'before claim', provenance),
+      { code: 'JOB_CLAIM_REQUIRED' },
     );
     const claimed = ledger.claim(created.job.id, 'worker-a', provenance);
-    expect(claimed.job.state).toBe('running');
-    expect(claimed.job.attempt).toBe(1);
-    expect(() => ledger.claim(created.job.id, 'worker-b', provenance)).toThrow(
-      expect.objectContaining({ code: 'JOB_NOT_CLAIMABLE' })
-    );
+    assert.equal(claimed.job.state, 'running');
+    assert.equal(claimed.job.attempt, 1);
+    assert.throws(() => ledger.claim(created.job.id, 'worker-b', provenance), {
+      code: 'JOB_NOT_CLAIMABLE',
+    });
     const completed = ledger.complete(created.job.id, 'worker-a', 'synthetic result', provenance);
-    expect(completed.job.state).toBe('succeeded');
-    expect(() => ledger.fail(created.job.id, 'worker-a', 'late_failure', provenance)).toThrow(
-      expect.objectContaining({ code: 'JOB_TERMINAL' })
-    );
+    assert.equal(completed.job.state, 'succeeded');
+    assert.throws(() => ledger.fail(created.job.id, 'worker-a', 'late_failure', provenance), {
+      code: 'JOB_TERMINAL',
+    });
   });
 
   it('keeps bounded status and rejects unsafe source or limits', () => {
     const ledger = new LocalJobLedger(true);
-    expect(() => ledger.create({ ...input, sourceUri: 'https://example.com' }, provenance)).toThrow(
-      expect.objectContaining({ code: 'JOB_INVALID' })
-    );
-    expect(() => ledger.list(0)).toThrow(LocalJobError);
-    expect(() => ledger.list(41)).toThrow(LocalJobError);
-    expect(ledger.recentEvents(40)).toHaveLength(0);
+    assert.throws(() => ledger.create({ ...input, sourceUri: 'https://example.com' }, provenance), {
+      code: 'JOB_INVALID',
+    });
+    assert.throws(() => ledger.list(0), LocalJobError);
+    assert.throws(() => ledger.list(41), LocalJobError);
+    assert.equal(ledger.recentEvents(40).length, 0);
   });
 
   it('rejects a non-integer limit, distinct from an out-of-range integer limit', () => {
@@ -121,13 +128,9 @@ describe('LocalJobLedger', () => {
     // the !Number.isInteger(limit) operand, which list(0)/list(41) above
     // never actually make true.
     const ledger = new LocalJobLedger(true);
-    expect(() => ledger.list(Number.NaN)).toThrow(
-      expect.objectContaining({
-        code: 'JOB_INVALID',
-        message: expect.stringContaining('integer'),
-      })
-    );
-    expect(() => ledger.list(2.5)).toThrow(expect.objectContaining({ code: 'JOB_INVALID' }));
+    assert.throws(() => ledger.list(Number.NaN), (error: any) =>
+      error?.code === 'JOB_INVALID' && /integer/.test(String(error.message)));
+    assert.throws(() => ledger.list(2.5), { code: 'JOB_INVALID' });
   });
 
   it('persists an encrypted ledger and restores jobs, idempotency, and events', () => {
@@ -138,24 +141,22 @@ describe('LocalJobLedger', () => {
         encryptionKey: 'local-job-test-key',
       });
       const created = first.create(input, provenance);
-      expect(first.status()).toMatchObject({
+      assert.partialDeepStrictEqual(first.status(), {
         enabled: true,
         durable: true,
         source: 'file',
         encryption: 'aes-256-gcm',
       });
-      expect(readFileSync(storagePath, 'utf8')).not.toContain('local://fixture/one');
+      assert.ok(!readFileSync(storagePath, 'utf8').includes('local://fixture/one'));
 
       const restored = new LocalJobLedger({
         enabled: true,
         storagePath,
         encryptionKey: 'local-job-test-key',
       });
-      expect(restored.get(created.job.id)).toEqual(created.job);
-      expect(restored.recentEvents()).toEqual([created.event]);
-      expect(() => restored.create(input, provenance)).toThrow(
-        expect.objectContaining({ code: 'JOB_DUPLICATE' })
-      );
+      assert.deepEqual(restored.get(created.job.id), created.job);
+      assert.deepEqual(restored.recentEvents(), [created.event]);
+      assert.throws(() => restored.create(input, provenance), { code: 'JOB_DUPLICATE' });
     });
   });
 
@@ -163,15 +164,17 @@ describe('LocalJobLedger', () => {
     // The sibling test below only exercises storagePath-set/encryptionKey-omitted.
     // Boolean(storagePath) !== Boolean(encryptionKey) is also true, and must
     // still throw, when it's the encryptionKey that's supplied alone.
-    expect(() => new LocalJobLedger({ enabled: true, encryptionKey: 'some-key' })).toThrow(
-      /must be configured together/
+    assert.throws(
+      () => new LocalJobLedger({ enabled: true, encryptionKey: 'some-key' }),
+      /must be configured together/,
     );
   });
 
   it('requires paired storage and encryption configuration and rejects tampering', () => {
-    expect(
-      () => new LocalJobLedger({ enabled: true, storagePath: '/tmp/omega-ledger.json' })
-    ).toThrow(/must be configured together/);
+    assert.throws(
+      () => new LocalJobLedger({ enabled: true, storagePath: '/tmp/omega-ledger.json' }),
+      /must be configured together/,
+    );
     withStorage((storagePath) => {
       const ledger = new LocalJobLedger({
         enabled: true,
@@ -182,14 +185,15 @@ describe('LocalJobLedger', () => {
       const envelope = JSON.parse(readFileSync(storagePath, 'utf8')) as { ciphertext: string };
       envelope.ciphertext = `${envelope.ciphertext.slice(0, -2)}aa`;
       writeFileSync(storagePath, JSON.stringify(envelope));
-      expect(
+      assert.throws(
         () =>
           new LocalJobLedger({
             enabled: true,
             storagePath,
             encryptionKey: 'local-job-test-key',
-          })
-      ).toThrow(/failed authentication/);
+          }),
+        /failed authentication/,
+      );
     });
   });
 
@@ -197,10 +201,10 @@ describe('LocalJobLedger', () => {
     const priorFlag = process.env.OMEGA_LOCAL_JOB_LEDGER;
     try {
       delete process.env.OMEGA_LOCAL_JOB_LEDGER;
-      expect(new LocalJobLedger().isEnabled()).toBe(false);
+      assert.equal(new LocalJobLedger().isEnabled(), false);
 
       process.env.OMEGA_LOCAL_JOB_LEDGER = 'on';
-      expect(new LocalJobLedger().isEnabled()).toBe(true);
+      assert.equal(new LocalJobLedger().isEnabled(), true);
     } finally {
       if (priorFlag === undefined) delete process.env.OMEGA_LOCAL_JOB_LEDGER;
       else process.env.OMEGA_LOCAL_JOB_LEDGER = priorFlag;
@@ -222,18 +226,18 @@ describe('LocalJobLedger', () => {
         process.env.OMEGA_LOCAL_JOB_LEDGER_KEY = ledgerKey;
 
         const first = new LocalJobLedger();
-        expect(first.status()).toMatchObject({
+        assert.partialDeepStrictEqual(first.status(), {
           enabled: true,
           durable: true,
           source: 'file',
           encryption: 'aes-256-gcm',
         });
         const created = first.create(input, provenance);
-        expect(readFileSync(storagePath, 'utf8')).not.toContain('local://fixture/one');
+        assert.ok(!readFileSync(storagePath, 'utf8').includes('local://fixture/one'));
 
         const restored = new LocalJobLedger();
-        expect(restored.status().source).toBe('file');
-        expect(restored.get(created.job.id)).toEqual(created.job);
+        assert.equal(restored.status().source, 'file');
+        assert.deepEqual(restored.get(created.job.id), created.job);
       } finally {
         if (priorFlag === undefined) delete process.env.OMEGA_LOCAL_JOB_LEDGER;
         else process.env.OMEGA_LOCAL_JOB_LEDGER = priorFlag;
@@ -249,8 +253,8 @@ describe('LocalJobLedger', () => {
     const ledger = new LocalJobLedger(true);
     ledger.create(input, provenance);
     const listed = ledger.list();
-    expect(listed).toHaveLength(1);
-    expect(listed[0].idempotencyKey).toBe(input.idempotencyKey);
+    assert.equal(listed.length, 1);
+    assert.equal(listed[0].idempotencyKey, input.idempotencyKey);
   });
 
   it('filters and orders multiple jobs by state and recency', async () => {
@@ -263,46 +267,41 @@ describe('LocalJobLedger', () => {
     ledger.claim(queuedTwo.job.id, 'worker-a', provenance);
 
     const queued = ledger.list(LOCAL_JOB_WINDOW, 'queued');
-    expect(queued.map((job) => job.id)).toEqual([queuedOne.job.id]);
+    assert.deepEqual(queued.map((job) => job.id), [queuedOne.job.id]);
 
     const all = ledger.list(LOCAL_JOB_WINDOW);
-    expect(all.map((job) => job.id)).toEqual([queuedTwo.job.id, queuedOne.job.id]);
+    assert.deepEqual(all.map((job) => job.id), [queuedTwo.job.id, queuedOne.job.id]);
   });
 
   it('rejects unbounded mutation inputs and unknown job ids', () => {
     const ledger = new LocalJobLedger(true);
     const created = ledger.create(input, provenance);
 
-    expect(() => ledger.claim('job-does-not-exist', 'worker-a', provenance)).toThrow(
-      expect.objectContaining({ code: 'JOB_NOT_FOUND' })
-    );
-    expect(() => ledger.claim(created.job.id, '', provenance)).toThrow(
-      expect.objectContaining({ code: 'JOB_INVALID' })
-    );
+    assert.throws(() => ledger.claim('job-does-not-exist', 'worker-a', provenance), {
+      code: 'JOB_NOT_FOUND',
+    });
+    assert.throws(() => ledger.claim(created.job.id, '', provenance), { code: 'JOB_INVALID' });
 
     ledger.claim(created.job.id, 'worker-a', provenance);
-    expect(() => ledger.complete(created.job.id, 'worker-a', '   ', provenance)).toThrow(
-      expect.objectContaining({ code: 'JOB_INVALID' })
-    );
-    expect(() => ledger.complete(created.job.id, 'worker-a', 'x'.repeat(501), provenance)).toThrow(
-      expect.objectContaining({ code: 'JOB_INVALID' })
-    );
+    assert.throws(() => ledger.complete(created.job.id, 'worker-a', '   ', provenance), {
+      code: 'JOB_INVALID',
+    });
+    assert.throws(() => ledger.complete(created.job.id, 'worker-a', 'x'.repeat(501), provenance), {
+      code: 'JOB_INVALID',
+    });
 
-    expect(() =>
-      ledger.fail(created.job.id, 'worker-a', 'not a bounded identifier!', provenance)
-    ).toThrow(expect.objectContaining({ code: 'JOB_INVALID' }));
+    assert.throws(
+      () => ledger.fail(created.job.id, 'worker-a', 'not a bounded identifier!', provenance),
+      { code: 'JOB_INVALID' },
+    );
     // Mirrors the resultSummary length-boundary case above: errorClass reuses
     // the same 500-char bound via validIdentifier, but only its invalid-character
     // case was previously exercised, never the length boundary itself.
-    expect(() => ledger.fail(created.job.id, 'worker-a', 'a'.repeat(501), provenance)).toThrow(
-      expect.objectContaining({
-        code: 'JOB_INVALID',
-        message: expect.stringContaining('errorClass'),
-      })
-    );
+    assert.throws(() => ledger.fail(created.job.id, 'worker-a', 'a'.repeat(501), provenance), (error: any) =>
+      error?.code === 'JOB_INVALID' && /errorClass/.test(String(error.message)));
     const failed = ledger.fail(created.job.id, 'worker-a', 'synthetic_failure', provenance);
-    expect(failed.job.state).toBe('failed');
-    expect(failed.job.errorClass).toBe('synthetic_failure');
+    assert.equal(failed.job.state, 'failed');
+    assert.equal(failed.job.errorClass, 'synthetic_failure');
   });
 
   it('treats a duplicate submission as inconsistent once its original event ages out of the window', () => {
@@ -314,16 +313,13 @@ describe('LocalJobLedger', () => {
     for (let index = 0; index < LOCAL_JOB_WINDOW; index += 1) {
       ledger.create({ ...input, idempotencyKey: `job-key-fill-${index}` }, provenance);
     }
-    expect(
-      ledger.recentEvents(LOCAL_JOB_WINDOW).some((event) => event.jobId === first.job.id)
-    ).toBe(false);
-    expect(ledger.get(first.job.id)).toBeDefined();
-    expect(() => ledger.create(input, provenance)).toThrow(
-      expect.objectContaining({
-        code: 'JOB_INVALID',
-        message: expect.stringContaining('event record'),
-      })
+    assert.equal(
+      ledger.recentEvents(LOCAL_JOB_WINDOW).some((event) => event.jobId === first.job.id),
+      false,
     );
+    assert.notEqual(ledger.get(first.job.id), undefined);
+    assert.throws(() => ledger.create(input, provenance), (error: any) =>
+      error?.code === 'JOB_INVALID' && /event record/.test(String(error.message)));
   });
 
   it('surfaces an idempotency record with no matching job as an inconsistent restored ledger', () => {
@@ -335,21 +331,18 @@ describe('LocalJobLedger', () => {
         events: [],
       });
       const ledger = new LocalJobLedger({ enabled: true, storagePath, encryptionKey: ledgerKey });
-      expect(() => ledger.create(input, provenance)).toThrow(
-        expect.objectContaining({
-          code: 'JOB_INVALID',
-          message: expect.stringContaining('inconsistent'),
-        })
-      );
+      assert.throws(() => ledger.create(input, provenance), (error: any) =>
+        error?.code === 'JOB_INVALID' && /inconsistent/.test(String(error.message)));
     });
   });
 
   it('rejects a restored ledger file that is not parseable JSON at all', () => {
     withStorage((storagePath) => {
       writeFileSync(storagePath, '{not valid json');
-      expect(
-        () => new LocalJobLedger({ enabled: true, storagePath, encryptionKey: ledgerKey })
-      ).toThrow(/storage is unreadable/);
+      assert.throws(
+        () => new LocalJobLedger({ enabled: true, storagePath, encryptionKey: ledgerKey }),
+        /storage is unreadable/,
+      );
     });
   });
 
@@ -359,9 +352,10 @@ describe('LocalJobLedger', () => {
         storagePath,
         JSON.stringify({ version: 1, algorithm: 'aes-256-gcm', iv: 'aa==', tag: 'bb==' })
       );
-      expect(
-        () => new LocalJobLedger({ enabled: true, storagePath, encryptionKey: ledgerKey })
-      ).toThrow(/invalid authenticated envelope/);
+      assert.throws(
+        () => new LocalJobLedger({ enabled: true, storagePath, encryptionKey: ledgerKey }),
+        /invalid authenticated envelope/,
+      );
     });
   });
 
@@ -373,9 +367,10 @@ describe('LocalJobLedger', () => {
         idempotency: {},
         events: [],
       });
-      expect(
-        () => new LocalJobLedger({ enabled: true, storagePath, encryptionKey: ledgerKey })
-      ).toThrow(/invalid payload/);
+      assert.throws(
+        () => new LocalJobLedger({ enabled: true, storagePath, encryptionKey: ledgerKey }),
+        /invalid payload/,
+      );
     });
   });
 
@@ -387,9 +382,10 @@ describe('LocalJobLedger', () => {
         idempotency: {},
         events: [],
       });
-      expect(
-        () => new LocalJobLedger({ enabled: true, storagePath, encryptionKey: ledgerKey })
-      ).toThrow(/invalid job/);
+      assert.throws(
+        () => new LocalJobLedger({ enabled: true, storagePath, encryptionKey: ledgerKey }),
+        /invalid job/,
+      );
     });
   });
 
@@ -401,9 +397,10 @@ describe('LocalJobLedger', () => {
         idempotency: { 'job-key-1': { notADigest: true } },
         events: [],
       });
-      expect(
-        () => new LocalJobLedger({ enabled: true, storagePath, encryptionKey: ledgerKey })
-      ).toThrow(/invalid idempotency record/);
+      assert.throws(
+        () => new LocalJobLedger({ enabled: true, storagePath, encryptionKey: ledgerKey }),
+        /invalid idempotency record/,
+      );
     });
   });
 
@@ -415,21 +412,22 @@ describe('LocalJobLedger', () => {
         idempotency: {},
         events: [{ notAnEvent: true }],
       });
-      expect(
-        () => new LocalJobLedger({ enabled: true, storagePath, encryptionKey: ledgerKey })
-      ).toThrow(/invalid event/);
+      assert.throws(
+        () => new LocalJobLedger({ enabled: true, storagePath, encryptionKey: ledgerKey }),
+        /invalid event/,
+      );
     });
   });
 
   it('restores a job with a corrupted state field without validating it (documents a real gap)', () => {
-    // restore()'s job validation (lines 373-378) only checks that job.id and
-    // job.idempotencyKey are strings -- unlike the idempotency and event
-    // records restored just below, it never checks that `state` is one of
-    // the five valid LocalJobState values. status() then does
-    // `counts[job.state] += 1` unconditionally, so a corrupted state that
-    // still passes the id/idempotencyKey check silently produces a NaN count
-    // under a bogus key instead of restore() raising the same kind of
-    // "invalid job" error the sibling malformed-record tests assert for.
+    // restore()'s job validation only checks that job.id and job.idempotencyKey
+    // are strings -- unlike the idempotency and event records restored just
+    // below, it never checks that `state` is one of the five valid
+    // LocalJobState values. status() then does `counts[job.state] += 1`
+    // unconditionally, so a corrupted state that still passes the
+    // id/idempotencyKey check silently produces a NaN count under a bogus key
+    // instead of restore() raising the same kind of "invalid job" error the
+    // sibling malformed-record tests assert for.
     withStorage((storagePath) => {
       writeEncryptedEnvelope(storagePath, {
         version: 1,
@@ -457,14 +455,14 @@ describe('LocalJobLedger', () => {
       });
       const ledger = new LocalJobLedger({ enabled: true, storagePath, encryptionKey: ledgerKey });
       // The corrupted record is accepted into the ledger rather than rejected...
-      expect(ledger.get('job-corrupt-state')).toBeDefined();
+      assert.notEqual(ledger.get('job-corrupt-state'), undefined);
       const counts = ledger.status().counts as unknown as Record<string, number>;
       // ...the five known states stay untouched by it...
-      expect(counts).toMatchObject({ queued: 0, running: 0, succeeded: 0, failed: 0, unknown: 0 });
+      assert.partialDeepStrictEqual(counts, { queued: 0, running: 0, succeeded: 0, failed: 0, unknown: 0 });
       // ...but status() silently created a bogus counts key with NaN, instead
       // of restore() catching the malformed state up front the way it does
       // for malformed idempotency and event records.
-      expect(counts['not-a-real-state']).toBeNaN();
+      assert.ok(Number.isNaN(counts['not-a-real-state']));
     });
   });
 
@@ -481,7 +479,7 @@ describe('LocalJobLedger', () => {
       }));
       writeEncryptedEnvelope(storagePath, { version: 1, jobs: [], idempotency: {}, events });
       const ledger = new LocalJobLedger({ enabled: true, storagePath, encryptionKey: ledgerKey });
-      expect(ledger.recentEvents(LOCAL_JOB_WINDOW + 5)).toHaveLength(LOCAL_JOB_WINDOW);
+      assert.equal(ledger.recentEvents(LOCAL_JOB_WINDOW + 5).length, LOCAL_JOB_WINDOW);
     });
   });
 });

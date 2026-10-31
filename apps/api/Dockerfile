@@ -29,6 +29,9 @@ RUN pnpm --filter @oceanicos/types build \
  && pnpm --filter @oceanicos/verification build \
  && pnpm --filter @oceanicos/remember build \
  && pnpm --filter @oceanicos/mini build \
+ && pnpm --filter @oceanicos/kai build \
+ && pnpm --filter @oceanicos/elion build \
+ && pnpm --filter @oceanicos/omega build \
  && pnpm --filter @oceanicos/attestation build \
  && pnpm --filter @omega-v/oreade build \
  && pnpm --filter @omega-v/mood build \

@@ -1,3 +1,5 @@
+import assert from 'node:assert/strict';
+import { describe, it } from 'node:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -12,41 +14,41 @@ describe('the pipeline report says what happened', () => {
     .join('\n');
 
   it('runs after every job it speaks for', () => {
-    expect(report).toMatch(/needs:\s*\[verify, windows, docker, compose\]/);
+    assert.match(report, /needs:\s*\[verify, windows, docker, compose\]/);
   });
 
   it('runs even when the pipeline fails', () => {
-    expect(report).toMatch(/if:\s*always\(\)/);
+    assert.match(report, /if:\s*always\(\)/);
   });
 
   it('observes run jobs rather than collapsing a matrix to needs results', () => {
-    expect(config).toContain('listJobsForWorkflowRun');
-    expect(config).not.toContain('needs.verify.result');
-    expect(config).not.toContain('needs.windows.result');
-    expect(config).not.toContain('needs.docker.result');
+    assert.ok(config.includes('listJobsForWorkflowRun'));
+    assert.ok(!config.includes('needs.verify.result'));
+    assert.ok(!config.includes('needs.windows.result'));
+    assert.ok(!config.includes('needs.docker.result'));
   });
 
   it('has permission to read workflow jobs', () => {
-    expect(config).toMatch(/actions:\s*read/);
+    assert.match(config, /actions:\s*read/);
   });
 
   it('does not count its own still-running job', () => {
-    expect(config).toContain("job.name !== 'Report pipeline result'");
+    assert.ok(config.includes("job.name !== 'Report pipeline result'"));
   });
 
   it('preserves unfinished states as unfinished and only success as a pass', () => {
-    expect(config).toContain("job.status === 'completed'");
-    expect(config).toContain("job.conclusion || 'no conclusion'");
-    expect(config).toContain("required.every((job) => stateOf(job) === 'success')");
+    assert.ok(config.includes("job.status === 'completed'"));
+    assert.ok(config.includes("job.conclusion || 'no conclusion'"));
+    assert.ok(config.includes("required.every((job) => stateOf(job) === 'success')"));
   });
 
   it('excludes pull-request publish because publication is explicitly gated', () => {
     const publish = workflow.slice(publishStart);
-    expect(publish).toContain("github.event_name == 'workflow_dispatch'");
-    expect(config).toContain("new Set(['Publish attested artifact'])");
+    assert.ok(publish.includes("github.event_name == 'workflow_dispatch'"));
+    assert.ok(config.includes("new Set(['Publish attested artifact'])"));
   });
 
   it('reports every observed job dynamically', () => {
-    expect(config).toContain("jobs.map((job) => '- ' + mark(stateOf(job))");
+    assert.ok(config.includes("jobs.map((job) => '- ' + mark(stateOf(job))"));
   });
 });

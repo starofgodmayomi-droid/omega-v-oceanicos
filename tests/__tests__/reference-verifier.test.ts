@@ -1,3 +1,5 @@
+import assert from 'node:assert/strict';
+import { describe, it } from 'node:test';
 import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -129,26 +131,26 @@ sys.stdout.write(module.signed_bytes(payload).hex())
   it('found a Python interpreter to run the reference with', () => {
     // Reported as a failure rather than a silent skip of the whole file:
     // a suite that disappears is not a suite that passed.
-    expect(interpreter).toBeDefined();
+    assert.notEqual(interpreter, undefined);
   });
 
   describeIfPython('byte-for-byte', () => {
     it('agrees on an ASCII payload', () => {
       const subject = attestation('attestation-service');
-      expect(referenceBytes(subject)).toBe(signerBytes(subject));
+      assert.equal(referenceBytes(subject), signerBytes(subject));
     });
 
     it('agrees on a payload carrying the name this project signs with', () => {
       // The regression. Before the fix these differed by seven bytes.
       const subject = attestation('Ω∞v-attestation-service');
-      expect(referenceBytes(subject)).toBe(signerBytes(subject));
+      assert.equal(referenceBytes(subject), signerBytes(subject));
     });
 
     it('agrees on non-ASCII outside the Basic Multilingual Plane', () => {
       // Surrogate pairs are the next place an escaping difference would
       // surface, and they are not covered by the case above.
       const subject = attestation('attestation-service 🌊');
-      expect(referenceBytes(subject)).toBe(signerBytes(subject));
+      assert.equal(referenceBytes(subject), signerBytes(subject));
     });
 
     it('does not depend on the locale encoding of the child process', () => {
@@ -159,8 +161,9 @@ sys.stdout.write(module.signed_bytes(payload).hex())
       // non-UTF-8 encoding here reproduces that on any platform, so the
       // regression cannot come back only on Windows.
       const subject = attestation('attestation-service 🌊');
-      expect(referenceBytes(subject, { ...process.env, PYTHONIOENCODING: 'cp1252' })).toBe(
-        signerBytes(subject)
+      assert.equal(
+        referenceBytes(subject, { ...process.env, PYTHONIOENCODING: 'cp1252' }),
+        signerBytes(subject),
       );
     });
 
@@ -178,7 +181,7 @@ sys.stdout.write(module.signed_bytes(payload).hex())
       // Neither setting is right on its own. This asserts both directions
       // are covered at once.
       const subject = attestation(`attestation-service ${JSON.parse('"\\ud800"')}`);
-      expect(referenceBytes(subject)).toBe(signerBytes(subject));
+      assert.equal(referenceBytes(subject), signerBytes(subject));
     });
 
     it('agrees with the specification about its own published example', () => {
@@ -192,13 +195,13 @@ sys.stdout.write(module.signed_bytes(payload).hex())
       if (!match) throw new Error('no attestation example found in the specification');
 
       const published = JSON.parse(match[1]) as Record<string, unknown>;
-      expect(referenceBytes(published)).toBe(signerBytes(published));
+      assert.equal(referenceBytes(published), signerBytes(published));
     });
 
     it('covers only the eight signed fields', () => {
       const subject = attestation('attestation-service');
       const relabelled = { ...subject, id: 'att-relabelled', signature: '0xffff' };
-      expect(referenceBytes(relabelled)).toBe(referenceBytes(subject));
+      assert.equal(referenceBytes(relabelled), referenceBytes(subject));
     });
   });
 });

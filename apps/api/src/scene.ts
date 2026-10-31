@@ -5,8 +5,11 @@ import type {
   SceneSimulationInput,
   SceneState,
   SceneTrace,
-  validateSceneInput,
-} from '@omega-v/types';
+} from '@oceanicos/types';
+// validateSceneInput is a runtime guard, not a type: importing it under
+// `import type` erased it from the emitted module and every simulateScene
+// call threw `validateSceneInput is not defined`.
+import { validateSceneInput } from '@oceanicos/types';
 
 const SCENE_STATES: readonly SceneState[] = [
   'darkness',

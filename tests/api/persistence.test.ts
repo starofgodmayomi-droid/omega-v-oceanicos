@@ -1,3 +1,10 @@
+/**
+ * Converted from apps/api/src/__tests__/persistence.test.ts. apps/api declares
+ * no Jest runner and CI only runs the node:test suite, so these contracts for
+ * snapshot, event-log, rotation, and re-encryption behaviour never executed.
+ */
+import assert from 'node:assert/strict';
+import { beforeEach, describe, it } from 'node:test';
 import { mkdtempSync, readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -22,7 +29,7 @@ import {
   persistenceCoverage,
   SNAPSHOT_KEYS,
   encryptionEnabled,
-} from '../persistence';
+} from '../../apps/api/dist/persistence.js';
 
 type Snap = Record<(typeof SNAPSHOT_KEYS)[number], unknown[]>;
 
@@ -35,30 +42,34 @@ const fixture = (): Snap => ({
 });
 
 describe('runtime persistence', () => {
+  // The retired Jest suite compared with expect.objectContaining; node:assert
+  // has no asymmetric matcher, so compare the three evidence fields explicitly.
+  const surfaceRows = (surfaces: readonly any[]) =>
+    surfaces.map(({ name, encryption, keySource }) => ({ name, encryption, keySource }));
   it('fails readiness closed for corrupt enabled snapshots but permits a missing cold start', () => {
-    expect(persistenceReady(false, 'corrupt')).toBe(true);
-    expect(persistenceReady(true, 'missing')).toBe(true);
-    expect(persistenceReady(true, 'restored')).toBe(true);
-    expect(persistenceReady(true, 'corrupt')).toBe(false);
+    assert.equal(persistenceReady(false, 'corrupt'), true);
+    assert.equal(persistenceReady(true, 'missing'), true);
+    assert.equal(persistenceReady(true, 'restored'), true);
+    assert.equal(persistenceReady(true, 'corrupt'), false);
   });
 
   it('answers for every declared snapshot source, not just the one it rejects', () => {
     // The predicate was `!enabled || source !== 'corrupt'`. Every current
     // member gets the same answer from the exhaustive form, which is the
     // point: this pins that the rewrite changed nothing today.
-    expect(persistenceReady(true, 'disabled')).toBe(true);
-    expect(persistenceReady(true, 'missing')).toBe(true);
-    expect(persistenceReady(true, 'restored')).toBe(true);
-    expect(persistenceReady(true, 'corrupt')).toBe(false);
-    expect(persistenceReady(false, 'corrupt')).toBe(true);
+    assert.equal(persistenceReady(true, 'disabled'), true);
+    assert.equal(persistenceReady(true, 'missing'), true);
+    assert.equal(persistenceReady(true, 'restored'), true);
+    assert.equal(persistenceReady(true, 'corrupt'), false);
+    assert.equal(persistenceReady(false, 'corrupt'), true);
   });
 
   it('answers for every declared event log source', () => {
-    expect(eventLogReady(true, 'disabled')).toBe(true);
-    expect(eventLogReady(true, 'missing')).toBe(true);
-    expect(eventLogReady(true, 'restored')).toBe(true);
-    expect(eventLogReady(true, 'partial')).toBe(false);
-    expect(eventLogReady(false, 'partial')).toBe(true);
+    assert.equal(eventLogReady(true, 'disabled'), true);
+    assert.equal(eventLogReady(true, 'missing'), true);
+    assert.equal(eventLogReady(true, 'restored'), true);
+    assert.equal(eventLogReady(true, 'partial'), false);
+    assert.equal(eventLogReady(false, 'partial'), true);
   });
 
   it('refuses readiness for a source the type system did not vouch for', () => {
@@ -70,58 +81,58 @@ describe('runtime persistence', () => {
     // branch: adding a member to either union fails type-check until someone
     // says whether it counts as ready. That cannot be asserted from a test,
     // so it is stated here and demonstrated in the pull request.
-    expect(persistenceReady(true, 'truncated' as never)).toBe(false);
-    expect(eventLogReady(true, 'truncated' as never)).toBe(false);
+    assert.equal(persistenceReady(true, 'truncated' as never), false);
+    assert.equal(eventLogReady(true, 'truncated' as never), false);
   });
 
   it('exposes only a deterministic non-secret key fingerprint', () => {
     const fingerprint = persistenceKeyFingerprint('current-secret');
-    expect(fingerprint).toHaveLength(16);
-    expect(fingerprint).not.toContain('current-secret');
-    expect(persistenceKeyFingerprint('current-secret')).toBe(fingerprint);
-    expect(persistenceKeyFingerprint()).toBeNull();
+    assert.equal(fingerprint.length, 16);
+    assert.ok(!fingerprint.includes('current-secret'));
+    assert.equal(persistenceKeyFingerprint('current-secret'), fingerprint);
+    assert.equal(persistenceKeyFingerprint(), null);
   });
 
   it('parses bounded recovery policy declarations without claiming verification', () => {
-    expect(parsePersistenceRecoveryPolicy()).toEqual({
+    assert.deepEqual(parsePersistenceRecoveryPolicy(), {
       mode: 'unavailable',
       reference: null,
       reason: null,
     });
-    expect(parsePersistenceRecoveryPolicy('operator-provided', 'operator-7')).toEqual({
+    assert.deepEqual(parsePersistenceRecoveryPolicy('operator-provided', 'operator-7'), {
       mode: 'operator-provided',
       reference: 'operator-7',
       reason: null,
     });
-    expect(parsePersistenceRecoveryPolicy('external-reference', 'vault-record-7')).toEqual({
+    assert.deepEqual(parsePersistenceRecoveryPolicy('external-reference', 'vault-record-7'), {
       mode: 'external-reference',
       reference: 'vault-record-7',
       reason: null,
     });
-    expect(parsePersistenceRecoveryPolicy('unknown', 'record-7').mode).toBe('invalid');
-    expect(parsePersistenceRecoveryPolicy('external-reference').mode).toBe('invalid');
+    assert.equal(parsePersistenceRecoveryPolicy('unknown', 'record-7').mode, 'invalid');
+    assert.equal(parsePersistenceRecoveryPolicy('external-reference').mode, 'invalid');
   });
 
   it('parses custody policy declarations without claiming verified custody', () => {
-    expect(parsePersistenceCustodyPolicy()).toEqual({
+    assert.deepEqual(parsePersistenceCustodyPolicy(), {
       mode: 'unverified-local',
       reference: null,
       reason: null,
       verified: false,
     });
-    expect(parsePersistenceCustodyPolicy('operator-managed', 'operator-record-7')).toEqual({
+    assert.deepEqual(parsePersistenceCustodyPolicy('operator-managed', 'operator-record-7'), {
       mode: 'operator-managed',
       reference: 'operator-record-7',
       reason: null,
       verified: false,
     });
-    expect(parsePersistenceCustodyPolicy('hsm-kms', 'kms-key-7').verified).toBe(false);
-    expect(parsePersistenceCustodyPolicy('external-reference', 'vault-record-7').reference).toBe(
+    assert.equal(parsePersistenceCustodyPolicy('hsm-kms', 'kms-key-7').verified, false);
+    assert.equal(parsePersistenceCustodyPolicy('external-reference', 'vault-record-7').reference, 
       'vault-record-7'
     );
-    expect(parsePersistenceCustodyPolicy('hsm-kms').mode).toBe('invalid');
-    expect(parsePersistenceCustodyPolicy('hsm-kms', 'line\nbreak').mode).toBe('invalid');
-    expect(parsePersistenceCustodyPolicy('unknown', 'record-7')).toEqual({
+    assert.equal(parsePersistenceCustodyPolicy('hsm-kms').mode, 'invalid');
+    assert.equal(parsePersistenceCustodyPolicy('hsm-kms', 'line\nbreak').mode, 'invalid');
+    assert.deepEqual(parsePersistenceCustodyPolicy('unknown', 'record-7'), {
       mode: 'invalid',
       reference: null,
       reason: 'unsupported custody policy mode',
@@ -130,7 +141,7 @@ describe('runtime persistence', () => {
   });
 
   it('parses coordination declarations without claiming distributed consistency', () => {
-    expect(parsePersistenceCoordinationPolicy()).toEqual({
+    assert.deepEqual(parsePersistenceCoordinationPolicy(), {
       mode: 'local-single-process',
       reference: null,
       reason: null,
@@ -143,7 +154,7 @@ describe('runtime persistence', () => {
       ],
       verified: false,
     });
-    expect(parsePersistenceCoordinationPolicy('operator-coordinated', 'operator-record-8')).toEqual(
+    assert.deepEqual(parsePersistenceCoordinationPolicy('operator-coordinated', 'operator-record-8'), 
       {
         mode: 'operator-coordinated',
         reference: 'operator-record-8',
@@ -158,11 +169,11 @@ describe('runtime persistence', () => {
         verified: false,
       }
     );
-    expect(
+    assert.equal(
       parsePersistenceCoordinationPolicy('external-coordinator', 'coordinator-8').verified
-    ).toBe(false);
-    expect(parsePersistenceCoordinationPolicy('external-coordinator').mode).toBe('invalid');
-    expect(parsePersistenceCoordinationPolicy('unknown', 'record-8')).toEqual({
+    , false);
+    assert.equal(parsePersistenceCoordinationPolicy('external-coordinator').mode, 'invalid');
+    assert.deepEqual(parsePersistenceCoordinationPolicy('unknown', 'record-8'), {
       mode: 'invalid',
       reference: null,
       reason: 'unsupported coordination policy mode',
@@ -175,28 +186,28 @@ describe('runtime persistence', () => {
       ],
       verified: false,
     });
-    expect(parsePersistenceCoordinationPolicy('external-coordinator', 'line\nbreak').mode).toBe(
+    assert.equal(parsePersistenceCoordinationPolicy('external-coordinator', 'line\nbreak').mode, 
       'invalid'
     );
   });
 
   it('parses secure-deletion capability declarations without claiming verified erasure', () => {
-    expect(parsePersistenceDeletionPolicy()).toEqual({
+    assert.deepEqual(parsePersistenceDeletionPolicy(), {
       mode: 'unavailable',
       reason: null,
       verified: false,
     });
-    expect(parsePersistenceDeletionPolicy('unlink-only')).toEqual({
+    assert.deepEqual(parsePersistenceDeletionPolicy('unlink-only'), {
       mode: 'unlink-only',
       reason: null,
       verified: false,
     });
-    expect(parsePersistenceDeletionPolicy('overwrite-unlink')).toEqual({
+    assert.deepEqual(parsePersistenceDeletionPolicy('overwrite-unlink'), {
       mode: 'overwrite-unlink',
       reason: null,
       verified: false,
     });
-    expect(parsePersistenceDeletionPolicy('secure-wipe')).toEqual({
+    assert.deepEqual(parsePersistenceDeletionPolicy('secure-wipe'), {
       mode: 'invalid',
       reason: 'unsupported deletion policy mode',
       verified: false,
@@ -215,28 +226,20 @@ describe('runtime persistence', () => {
       jobLedgerEncrypted: false,
       jobLedgerKeySource: 'none',
     });
-    expect(coverage.complete).toBe(false);
-    expect(coverage.surfaces).toEqual([
-      expect.objectContaining({
-        name: 'runtime-snapshot',
-        encryption: 'aes-256-gcm',
-        keySource: 'current',
-      }),
-      expect.objectContaining({ name: 'event-log', encryption: 'aes-256-gcm', keySource: 'mixed' }),
-      expect.objectContaining({ name: 'kernel-memory', encryption: 'disabled', keySource: 'none' }),
-      expect.objectContaining({
-        name: 'local-job-ledger',
-        encryption: 'disabled',
-        keySource: 'none',
-      }),
+    assert.equal(coverage.complete, false);
+    assert.deepEqual(surfaceRows(coverage.surfaces), [
+      { name: 'runtime-snapshot', encryption: 'aes-256-gcm', keySource: 'current' },
+      { name: 'event-log', encryption: 'aes-256-gcm', keySource: 'mixed' },
+      { name: 'kernel-memory', encryption: 'disabled', keySource: 'none' },
+      { name: 'local-job-ledger', encryption: 'disabled', keySource: 'none' },
     ]);
-    expect(coverage.unverifiedSurfaces).toEqual([
+    assert.deepEqual(coverage.unverifiedSurfaces, [
       'databases',
       'object storage',
       'backups',
       'external services',
     ]);
-    expect(coverage.unverifiedReasons).toEqual([
+    assert.deepEqual(coverage.unverifiedReasons, [
       'no database persistence adapter is configured',
       'no object-storage persistence adapter is configured',
       'backup encryption and restore evidence are not connected to this runtime',
@@ -254,15 +257,9 @@ describe('runtime persistence', () => {
       jobLedgerEncrypted: true,
       jobLedgerKeySource: 'current',
     });
-    expect(encrypted.surfaces).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          name: 'local-job-ledger',
-          encryption: 'aes-256-gcm',
-          keySource: 'current',
-        }),
-      ])
-    );
+    assert.deepEqual(surfaceRows(encrypted.surfaces).filter((row) => row.name === 'local-job-ledger'), [
+      { name: 'local-job-ledger', encryption: 'aes-256-gcm', keySource: 'current' },
+    ]);
   });
 
   it('reports every surface as disabled and keyless when persistence itself is off', () => {
@@ -282,19 +279,11 @@ describe('runtime persistence', () => {
       jobLedgerEncrypted: true,
       jobLedgerKeySource: 'current',
     });
-    expect(coverage.surfaces).toEqual([
-      expect.objectContaining({
-        name: 'runtime-snapshot',
-        encryption: 'disabled',
-        keySource: 'none',
-      }),
-      expect.objectContaining({ name: 'event-log', encryption: 'disabled', keySource: 'none' }),
-      expect.objectContaining({ name: 'kernel-memory', encryption: 'disabled', keySource: 'none' }),
-      expect.objectContaining({
-        name: 'local-job-ledger',
-        encryption: 'aes-256-gcm',
-        keySource: 'current',
-      }),
+    assert.deepEqual(surfaceRows(coverage.surfaces), [
+      { name: 'runtime-snapshot', encryption: 'disabled', keySource: 'none' },
+      { name: 'event-log', encryption: 'disabled', keySource: 'none' },
+      { name: 'kernel-memory', encryption: 'disabled', keySource: 'none' },
+      { name: 'local-job-ledger', encryption: 'aes-256-gcm', keySource: 'current' },
     ]);
   });
 
@@ -313,45 +302,39 @@ describe('runtime persistence', () => {
       jobLedgerEncrypted: false,
       jobLedgerKeySource: 'none',
     });
-    expect(coverage.surfaces).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          name: 'kernel-memory',
-          encryption: 'aes-256-gcm',
-          keySource: 'current',
-        }),
-      ])
-    );
+    assert.deepEqual(surfaceRows(coverage.surfaces).filter((row) => row.name === 'kernel-memory'), [
+      { name: 'kernel-memory', encryption: 'aes-256-gcm', keySource: 'current' },
+    ]);
   });
 
   it('reports whether a configured secret actually turns encryption on', () => {
-    expect(encryptionEnabled('a-real-secret')).toBe(true);
-    expect(encryptionEnabled(undefined)).toBe(false);
-    expect(encryptionEnabled('')).toBe(false);
+    assert.equal(encryptionEnabled('a-real-secret'), true);
+    assert.equal(encryptionEnabled(undefined), false);
+    assert.equal(encryptionEnabled(''), false);
   });
 
   it('reports rotation pending only when a configured previous key was used', () => {
-    expect(persistenceRotationPending(false, 'previous')).toBe(false);
-    expect(persistenceRotationPending(true, 'none', 'current')).toBe(false);
-    expect(persistenceRotationPending(true, 'previous')).toBe(true);
-    expect(persistenceRotationPending(true, 'current', 'mixed')).toBe(true);
+    assert.equal(persistenceRotationPending(false, 'previous'), false);
+    assert.equal(persistenceRotationPending(true, 'none', 'current'), false);
+    assert.equal(persistenceRotationPending(true, 'previous'), true);
+    assert.equal(persistenceRotationPending(true, 'current', 'mixed'), true);
   });
 
   it('routes operator action from recovery and rotation evidence without authorizing repair', () => {
-    expect(persistenceOperatorAction('restored', 'restored', false)).toBe('none');
-    expect(persistenceOperatorAction('corrupt', 'restored', false)).toBe('review-partial-recovery');
-    expect(persistenceOperatorAction('restored', 'partial', false)).toBe('review-partial-recovery');
-    expect(persistenceOperatorAction('restored', 'restored', true)).toBe('review-key-rotation');
-    expect(persistenceOperatorAction('corrupt', 'partial', true)).toBe(
+    assert.equal(persistenceOperatorAction('restored', 'restored', false), 'none');
+    assert.equal(persistenceOperatorAction('corrupt', 'restored', false), 'review-partial-recovery');
+    assert.equal(persistenceOperatorAction('restored', 'partial', false), 'review-partial-recovery');
+    assert.equal(persistenceOperatorAction('restored', 'restored', true), 'review-key-rotation');
+    assert.equal(persistenceOperatorAction('corrupt', 'partial', true), 
       'review-partial-recovery-and-key-rotation'
     );
   });
 
   it('fails readiness closed for partial enabled event logs but permits cold starts', () => {
-    expect(eventLogReady(false, 'partial')).toBe(true);
-    expect(eventLogReady(true, 'missing')).toBe(true);
-    expect(eventLogReady(true, 'restored')).toBe(true);
-    expect(eventLogReady(true, 'partial')).toBe(false);
+    assert.equal(eventLogReady(false, 'partial'), true);
+    assert.equal(eventLogReady(true, 'missing'), true);
+    assert.equal(eventLogReady(true, 'restored'), true);
+    assert.equal(eventLogReady(true, 'partial'), false);
   });
 
   let dir: string;
@@ -368,17 +351,17 @@ describe('runtime persistence', () => {
 
       const result = loadSnapshot<Snap>(storePath, false);
 
-      expect(result.source).toBe('disabled');
-      expect(result.snapshot).toEqual(emptySnapshot());
-      expect(result.reason).toBeUndefined();
+      assert.equal(result.source, 'disabled');
+      assert.deepEqual(result.snapshot, emptySnapshot());
+      assert.equal(result.reason, undefined);
     });
 
     it('reports missing rather than corrupt when no store exists', () => {
       const result = loadSnapshot<Snap>(join(dir, 'never-written.json'), true);
 
-      expect(result.source).toBe('missing');
-      expect(result.reason).toBeDefined();
-      expect(result.snapshot).toEqual(emptySnapshot());
+      assert.equal(result.source, 'missing');
+      assert.notEqual(result.reason, undefined);
+      assert.deepEqual(result.snapshot, emptySnapshot());
     });
 
     it('reports corrupt when the store is not valid JSON', () => {
@@ -386,25 +369,25 @@ describe('runtime persistence', () => {
 
       const result = loadSnapshot<Snap>(storePath, true);
 
-      expect(result.source).toBe('corrupt');
-      expect(result.reason).toBeDefined();
-      expect(result.snapshot).toEqual(emptySnapshot());
+      assert.equal(result.source, 'corrupt');
+      assert.notEqual(result.reason, undefined);
+      assert.deepEqual(result.snapshot, emptySnapshot());
     });
 
     it('reports corrupt when a collection is missing or not an array', () => {
       writeFileSync(storePath, JSON.stringify({ ...fixture(), runs: 'not-an-array' }));
-      expect(loadSnapshot<Snap>(storePath, true).source).toBe('corrupt');
+      assert.equal(loadSnapshot<Snap>(storePath, true).source, 'corrupt');
 
       writeFileSync(storePath, JSON.stringify({ events: [] }));
-      expect(loadSnapshot<Snap>(storePath, true).source).toBe('corrupt');
+      assert.equal(loadSnapshot<Snap>(storePath, true).source, 'corrupt');
     });
 
     it('reports corrupt when the store parses to a non-object', () => {
       writeFileSync(storePath, 'null');
-      expect(loadSnapshot<Snap>(storePath, true).source).toBe('corrupt');
+      assert.equal(loadSnapshot<Snap>(storePath, true).source, 'corrupt');
 
       writeFileSync(storePath, '42');
-      expect(loadSnapshot<Snap>(storePath, true).source).toBe('corrupt');
+      assert.equal(loadSnapshot<Snap>(storePath, true).source, 'corrupt');
     });
 
     /**
@@ -421,8 +404,8 @@ describe('runtime persistence', () => {
 
       const result = loadSnapshot<Snap>(storePath, true, 'irrelevant-secret');
 
-      expect(result.source).toBe('corrupt');
-      expect(result.reason).toBe('encrypted persistence record is malformed');
+      assert.equal(result.source, 'corrupt');
+      assert.equal(result.reason, 'encrypted persistence record is malformed');
     });
 
     it('reports a specific reason when an encrypted record has truncated segments', () => {
@@ -430,8 +413,8 @@ describe('runtime persistence', () => {
 
       const result = loadSnapshot<Snap>(storePath, true, 'irrelevant-secret');
 
-      expect(result.source).toBe('corrupt');
-      expect(result.reason).toBe('encrypted persistence record has invalid lengths');
+      assert.equal(result.source, 'corrupt');
+      assert.equal(result.reason, 'encrypted persistence record has invalid lengths');
     });
 
     it('reports a specific reason when an encrypted store has no persistence key configured', () => {
@@ -439,8 +422,8 @@ describe('runtime persistence', () => {
 
       const result = loadSnapshot<Snap>(storePath, true);
 
-      expect(result.source).toBe('corrupt');
-      expect(result.reason).toBe('encrypted persistence requires OMEGA_PERSISTENCE_KEY');
+      assert.equal(result.source, 'corrupt');
+      assert.equal(result.reason, 'encrypted persistence requires OMEGA_PERSISTENCE_KEY');
     });
 
     it('restores every collection from a well-formed store', () => {
@@ -449,11 +432,11 @@ describe('runtime persistence', () => {
 
       const result = loadSnapshot<Snap>(storePath, true);
 
-      expect(result.source).toBe('restored');
-      expect(result.reason).toBeUndefined();
-      expect(result.snapshot).toEqual(written);
+      assert.equal(result.source, 'restored');
+      assert.equal(result.reason, undefined);
+      assert.deepEqual(result.snapshot, written);
       for (const key of SNAPSHOT_KEYS) {
-        expect(result.snapshot[key]).toHaveLength(1);
+        assert.equal(result.snapshot[key].length, 1);
       }
     });
 
@@ -463,33 +446,33 @@ describe('runtime persistence', () => {
 
       const result = loadSnapshot<Snap>(storePath, true);
 
-      expect(result.source).toBe('restored');
-      expect(result.snapshot.recompilations).toEqual([]);
+      assert.equal(result.source, 'restored');
+      assert.deepEqual(result.snapshot.recompilations, []);
     });
   });
 
   describe('saveSnapshot', () => {
     it('writes nothing and reports false when persistence is off', () => {
-      expect(saveSnapshot(storePath, fixture(), false)).toBe(false);
-      expect(existsSync(storePath)).toBe(false);
+      assert.equal(saveSnapshot(storePath, fixture(), false), false);
+      assert.equal(existsSync(storePath), false);
     });
 
     it('writes the snapshot and reports true when enabled', () => {
-      expect(saveSnapshot(storePath, fixture(), true)).toBe(true);
-      expect(JSON.parse(readFileSync(storePath, 'utf8'))).toEqual(fixture());
+      assert.equal(saveSnapshot(storePath, fixture(), true), true);
+      assert.deepEqual(JSON.parse(readFileSync(storePath, 'utf8')), fixture());
     });
 
     it('creates the parent directory when it does not exist', () => {
       const nested = join(dir, 'deep', 'nested', 'runtime.json');
 
-      expect(saveSnapshot(nested, fixture(), true)).toBe(true);
-      expect(existsSync(nested)).toBe(true);
+      assert.equal(saveSnapshot(nested, fixture(), true), true);
+      assert.equal(existsSync(nested), true);
     });
 
     it('leaves no temporary file behind after an atomic write', () => {
       saveSnapshot(storePath, fixture(), true);
 
-      expect(existsSync(`${storePath}.tmp`)).toBe(false);
+      assert.equal(existsSync(`${storePath}.tmp`), false);
     });
 
     it('round-trips through loadSnapshot', () => {
@@ -498,23 +481,23 @@ describe('runtime persistence', () => {
 
       const result = loadSnapshot<Snap>(storePath, true);
 
-      expect(result.source).toBe('restored');
-      expect(result.snapshot).toEqual(written);
+      assert.equal(result.source, 'restored');
+      assert.deepEqual(result.snapshot, written);
     });
 
     it('encrypts snapshots at rest and authenticates the round trip', () => {
       const written = fixture();
       const secret = 'runtime-encryption-test-secret';
 
-      expect(saveSnapshot(storePath, written, true, secret)).toBe(true);
+      assert.equal(saveSnapshot(storePath, written, true, secret), true);
       const stored = readFileSync(storePath, 'utf8');
-      expect(stored.startsWith('omega-v1:')).toBe(true);
-      expect(stored).not.toContain('evt-1');
+      assert.equal(stored.startsWith('omega-v1:'), true);
+      assert.ok(!stored.includes('evt-1'));
 
       const result = loadSnapshot<Snap>(storePath, true, secret);
 
-      expect(result.source).toBe('restored');
-      expect(result.snapshot).toEqual(written);
+      assert.equal(result.source, 'restored');
+      assert.deepEqual(result.snapshot, written);
     });
 
     it('reads a legacy plaintext snapshot while encryption is configured', () => {
@@ -523,8 +506,8 @@ describe('runtime persistence', () => {
 
       const result = loadSnapshot<Snap>(storePath, true, 'migration-secret');
 
-      expect(result.source).toBe('restored');
-      expect(result.snapshot).toEqual(written);
+      assert.equal(result.source, 'restored');
+      assert.deepEqual(result.snapshot, written);
     });
 
     it('restores an encrypted snapshot with the previous key and reports its source', () => {
@@ -532,9 +515,9 @@ describe('runtime persistence', () => {
 
       const result = loadSnapshot<Snap>(storePath, true, 'current-secret', 'previous-secret');
 
-      expect(result.source).toBe('restored');
-      expect(result.keySource).toBe('previous');
-      expect(result.snapshot).toEqual(fixture());
+      assert.equal(result.source, 'restored');
+      assert.equal(result.keySource, 'previous');
+      assert.deepEqual(result.snapshot, fixture());
     });
 
     it('reports encrypted snapshots as corrupt when both rotation keys are wrong', () => {
@@ -542,9 +525,9 @@ describe('runtime persistence', () => {
 
       const result = loadSnapshot<Snap>(storePath, true, 'wrong-secret', 'also-wrong-secret');
 
-      expect(result.source).toBe('corrupt');
-      expect(result.reason).toBeDefined();
-      expect(result.snapshot).toEqual(emptySnapshot());
+      assert.equal(result.source, 'corrupt');
+      assert.notEqual(result.reason, undefined);
+      assert.deepEqual(result.snapshot, emptySnapshot());
     });
 
     it('overwrites a previously written store', () => {
@@ -553,7 +536,7 @@ describe('runtime persistence', () => {
 
       const result = loadSnapshot<Snap>(storePath, true);
 
-      expect(result.snapshot).toEqual(emptySnapshot());
+      assert.deepEqual(result.snapshot, emptySnapshot());
     });
 
     it('surfaces a corrupt store rather than silently starting fresh', () => {
@@ -564,8 +547,8 @@ describe('runtime persistence', () => {
 
       const result = loadSnapshot<Snap>(path, true);
 
-      expect(result.source).toBe('corrupt');
-      expect(result.reason).toBeDefined();
+      assert.equal(result.source, 'corrupt');
+      assert.notEqual(result.reason, undefined);
     });
 
     it('re-encrypts a previous-key snapshot and event log under the current key', () => {
@@ -581,18 +564,18 @@ describe('runtime persistence', () => {
         'previous-secret'
       );
 
-      expect(result).toMatchObject({
+      assert.partialDeepStrictEqual(result, {
         rewritten: true,
         snapshotRecords: 5,
         eventRecords: 1,
         snapshotKeySource: 'previous',
         eventLogKeySource: 'previous',
       });
-      expect(loadSnapshot<Snap>(storePath, true, 'current-secret').keySource).toBe('current');
-      expect(readEventLog<{ id: string }>(logPath, true, 'current-secret').entries).toEqual([
+      assert.equal(loadSnapshot<Snap>(storePath, true, 'current-secret').keySource, 'current');
+      assert.deepEqual(readEventLog<{ id: string }>(logPath, true, 'current-secret').entries, [
         { id: 'evt-old' },
       ]);
-      expect(loadSnapshot<Snap>(storePath, true, 'current-secret', 'previous-secret').source).toBe(
+      assert.equal(loadSnapshot<Snap>(storePath, true, 'current-secret', 'previous-secret').source, 
         'restored'
       );
     });
@@ -610,9 +593,9 @@ describe('runtime persistence', () => {
         'previous-secret'
       );
 
-      expect(result.rewritten).toBe(false);
-      expect(result.snapshotKeySource).toBe('current');
-      expect(result.eventLogKeySource).toBe('current');
+      assert.equal(result.rewritten, false);
+      assert.equal(result.snapshotKeySource, 'current');
+      assert.equal(result.eventLogKeySource, 'current');
     });
 
     it('does nothing when disabled or when either encryption key is missing', () => {
@@ -629,13 +612,13 @@ describe('runtime persistence', () => {
         eventLogKeySource: 'none',
       };
 
-      expect(
+      assert.deepEqual(
         reencryptPersistence(storePath, logPath, false, 'current-secret', 'previous-secret')
-      ).toEqual(expected);
-      expect(reencryptPersistence(storePath, logPath, true, undefined, 'previous-secret')).toEqual(
+      , expected);
+      assert.deepEqual(reencryptPersistence(storePath, logPath, true, undefined, 'previous-secret'), 
         expected
       );
-      expect(reencryptPersistence(storePath, logPath, true, 'current-secret', undefined)).toEqual(
+      assert.deepEqual(reencryptPersistence(storePath, logPath, true, 'current-secret', undefined), 
         expected
       );
     });
@@ -655,9 +638,9 @@ describe('runtime persistence', () => {
         'previous-secret'
       );
 
-      expect(result.rewritten).toBe(true);
-      expect(result.eventRecords).toBe(0);
-      expect(readFileSync(logPath, 'utf8')).toBe('');
+      assert.equal(result.rewritten, true);
+      assert.equal(result.eventRecords, 0);
+      assert.equal(readFileSync(logPath, 'utf8'), '');
     });
 
     it('refuses to rewrite when the event log is partial', () => {
@@ -668,11 +651,12 @@ describe('runtime persistence', () => {
       const snapshotBefore = readFileSync(storePath, 'utf8');
       const logBefore = readFileSync(logPath, 'utf8');
 
-      expect(() =>
-        reencryptPersistence(storePath, logPath, true, 'current-secret', 'previous-secret')
-      ).toThrow('complete authenticated local evidence');
-      expect(readFileSync(storePath, 'utf8')).toBe(snapshotBefore);
-      expect(readFileSync(logPath, 'utf8')).toBe(logBefore);
+      assert.throws(
+        () => reencryptPersistence(storePath, logPath, true, 'current-secret', 'previous-secret'),
+        /complete authenticated local evidence/
+      );
+      assert.equal(readFileSync(storePath, 'utf8'), snapshotBefore);
+      assert.equal(readFileSync(logPath, 'utf8'), logBefore);
     });
 
     it('recovers a staged re-encryption transaction and removes its journal', () => {
@@ -694,10 +678,10 @@ describe('runtime persistence', () => {
         })
       );
 
-      expect(reconcileReencryptionJournal(journalPath)).toEqual({ status: 'recovered' });
-      expect(existsSync(journalPath)).toBe(false);
-      expect(readFileSync(storePath, 'utf8')).toContain('evt-1');
-      expect(readFileSync(logPath, 'utf8')).toContain('evt-recovered');
+      assert.deepEqual(reconcileReencryptionJournal(journalPath), { status: 'recovered' });
+      assert.equal(existsSync(journalPath), false);
+      assert.ok(readFileSync(storePath, 'utf8').includes('evt-1'));
+      assert.ok(readFileSync(logPath, 'utf8').includes('evt-recovered'));
     });
 
     it('blocks startup reconciliation when a journal artifact is missing', () => {
@@ -714,8 +698,8 @@ describe('runtime persistence', () => {
         })
       );
 
-      expect(reconcileReencryptionJournal(journalPath)).toMatchObject({ status: 'blocked' });
-      expect(existsSync(journalPath)).toBe(true);
+      assert.partialDeepStrictEqual(reconcileReencryptionJournal(journalPath), { status: 'blocked' });
+      assert.equal(existsSync(journalPath), true);
     });
 
     it('reports nothing to reconcile when no journal was ever left behind', () => {
@@ -725,14 +709,14 @@ describe('runtime persistence', () => {
       // return, and that had never run.
       const journalPath = reencryptionJournalPath(storePath);
 
-      expect(reconcileReencryptionJournal(journalPath)).toEqual({ status: 'none' });
+      assert.deepEqual(reconcileReencryptionJournal(journalPath), { status: 'none' });
     });
 
     it('blocks reconciliation when the journal file is not valid JSON', () => {
       const journalPath = reencryptionJournalPath(storePath);
       writeFileSync(journalPath, '{ not valid json');
 
-      expect(reconcileReencryptionJournal(journalPath)).toEqual({
+      assert.deepEqual(reconcileReencryptionJournal(journalPath), {
         status: 'blocked',
         reason: 're-encryption journal is unreadable',
       });
@@ -752,7 +736,7 @@ describe('runtime persistence', () => {
         })
       );
 
-      expect(reconcileReencryptionJournal(journalPath)).toEqual({
+      assert.deepEqual(reconcileReencryptionJournal(journalPath), {
         status: 'blocked',
         reason: 're-encryption journal is malformed',
       });
@@ -776,7 +760,7 @@ describe('runtime persistence', () => {
         })
       );
 
-      expect(reconcileReencryptionJournal(journalPath)).toEqual({
+      assert.deepEqual(reconcileReencryptionJournal(journalPath), {
         status: 'blocked',
         reason: 're-encryption journal is malformed',
       });
@@ -803,7 +787,7 @@ describe('runtime persistence', () => {
         })
       );
 
-      expect(reconcileReencryptionJournal(journalPath)).toEqual({
+      assert.deepEqual(reconcileReencryptionJournal(journalPath), {
         status: 'blocked',
         reason: 're-encryption transaction is missing its staged snapshot',
       });
@@ -832,10 +816,10 @@ describe('runtime persistence', () => {
         })
       );
 
-      expect(reconcileReencryptionJournal(journalPath)).toEqual({ status: 'recovered' });
-      expect(existsSync(journalPath)).toBe(false);
-      expect(readFileSync(storePath, 'utf8')).toContain('evt-1');
-      expect(readFileSync(logPath, 'utf8')).toContain('evt-recovered');
+      assert.deepEqual(reconcileReencryptionJournal(journalPath), { status: 'recovered' });
+      assert.equal(existsSync(journalPath), false);
+      assert.ok(readFileSync(storePath, 'utf8').includes('evt-1'));
+      assert.ok(readFileSync(logPath, 'utf8').includes('evt-recovered'));
     });
 
     it('blocks reconciliation when the final commit fails partway through', () => {
@@ -863,7 +847,7 @@ describe('runtime persistence', () => {
         })
       );
 
-      expect(reconcileReencryptionJournal(journalPath)).toEqual({
+      assert.deepEqual(reconcileReencryptionJournal(journalPath), {
         status: 'blocked',
         reason: 're-encryption transaction could not be committed',
       });
@@ -881,30 +865,30 @@ describe('append-only event log', () => {
   });
 
   it('writes nothing and reports not appended when disabled', () => {
-    expect(appendEvent(logPath, { id: 'evt-1' }, false).appended).toBe(false);
-    expect(existsSync(logPath)).toBe(false);
+    assert.equal(appendEvent(logPath, { id: 'evt-1' }, false).appended, false);
+    assert.equal(existsSync(logPath), false);
   });
 
   it('reports missing rather than empty when no log exists', () => {
     const result = readEventLog(join(dir, 'absent.jsonl'), true);
 
-    expect(result.source).toBe('missing');
-    expect(result.entries).toEqual([]);
-    expect(result.reason).toBeDefined();
+    assert.equal(result.source, 'missing');
+    assert.deepEqual(result.entries, []);
+    assert.notEqual(result.reason, undefined);
   });
 
   it('reports disabled without touching the filesystem', () => {
     const result = readEventLog(logPath, false);
 
-    expect(result.source).toBe('disabled');
-    expect(result.skipped).toBe(0);
+    assert.equal(result.source, 'disabled');
+    assert.equal(result.skipped, 0);
   });
 
   it('creates the parent directory on first append', () => {
     const nested = join(dir, 'deep', 'runtime.log.jsonl');
 
-    expect(appendEvent(nested, { id: 'evt-1' }, true).appended).toBe(true);
-    expect(existsSync(nested)).toBe(true);
+    assert.equal(appendEvent(nested, { id: 'evt-1' }, true).appended, true);
+    assert.equal(existsSync(nested), true);
   });
 
   it('appends without rewriting earlier entries', () => {
@@ -914,7 +898,7 @@ describe('append-only event log', () => {
     appendEvent(logPath, { id: 'evt-2' }, true);
     const afterSecond = readFileSync(logPath, 'utf8');
 
-    expect(afterSecond.startsWith(afterFirst)).toBe(true);
+    assert.equal(afterSecond.startsWith(afterFirst), true);
   });
 
   it('encrypts each event line without breaking append-only order', () => {
@@ -924,14 +908,14 @@ describe('append-only event log', () => {
     appendEvent(logPath, { id: 'evt-2', claim: 'second event' }, true, secret);
 
     const stored = readFileSync(logPath, 'utf8');
-    expect(stored).toMatch(/^omega-v1:/);
-    expect(stored).not.toContain('private event');
+    assert.match(stored, /^omega-v1:/);
+    assert.ok(!stored.includes('private event'));
 
     const result = readEventLog<{ id: string }>(logPath, true, secret);
 
-    expect(result.source).toBe('restored');
-    expect(result.entries.map((entry) => entry.id)).toEqual(['evt-1', 'evt-2']);
-    expect(result.skipped).toBe(0);
+    assert.equal(result.source, 'restored');
+    assert.deepEqual(result.entries.map((entry) => entry.id), ['evt-1', 'evt-2']);
+    assert.equal(result.skipped, 0);
   });
 
   it('restores mixed event-log lines and reports previous-key provenance', () => {
@@ -940,9 +924,9 @@ describe('append-only event log', () => {
 
     const result = readEventLog<{ id: string }>(logPath, true, 'current-secret', 'previous-secret');
 
-    expect(result.source).toBe('restored');
-    expect(result.keySource).toBe('mixed');
-    expect(result.entries.map((entry) => entry.id)).toEqual(['evt-old', 'evt-new']);
+    assert.equal(result.source, 'restored');
+    assert.equal(result.keySource, 'mixed');
+    assert.deepEqual(result.entries.map((entry) => entry.id), ['evt-old', 'evt-new']);
   });
 
   /**
@@ -958,9 +942,9 @@ describe('append-only event log', () => {
 
     const result = readEventLog<{ id: string }>(logPath, true, undefined, 'previous-secret');
 
-    expect(result.source).toBe('restored');
-    expect(result.keySource).toBe('previous');
-    expect(result.entries.map((entry) => entry.id)).toEqual(['evt-1', 'evt-2']);
+    assert.equal(result.source, 'restored');
+    assert.equal(result.keySource, 'previous');
+    assert.deepEqual(result.entries.map((entry) => entry.id), ['evt-1', 'evt-2']);
   });
 
   it('reports an encrypted line as partial when the key is wrong', () => {
@@ -968,9 +952,9 @@ describe('append-only event log', () => {
 
     const result = readEventLog<{ id: string }>(logPath, true, 'wrong-secret', 'also-wrong-secret');
 
-    expect(result.source).toBe('partial');
-    expect(result.skipped).toBe(1);
-    expect(result.entries).toEqual([]);
+    assert.equal(result.source, 'partial');
+    assert.equal(result.skipped, 1);
+    assert.deepEqual(result.entries, []);
   });
 
   it('preserves every entry in order, beyond the in-memory window', () => {
@@ -980,11 +964,11 @@ describe('append-only event log', () => {
 
     const result = readEventLog<{ id: string }>(logPath, true);
 
-    expect(result.source).toBe('restored');
-    expect(result.entries).toHaveLength(120);
-    expect(result.entries[0].id).toBe('evt-0');
-    expect(result.entries[119].id).toBe('evt-119');
-    expect(result.skipped).toBe(0);
+    assert.equal(result.source, 'restored');
+    assert.equal(result.entries.length, 120);
+    assert.equal(result.entries[0].id, 'evt-0');
+    assert.equal(result.entries[119].id, 'evt-119');
+    assert.equal(result.skipped, 0);
   });
 
   it('keeps history that the bounded runtime window would have dropped', () => {
@@ -995,8 +979,8 @@ describe('append-only event log', () => {
 
     const result = readEventLog<{ id: string }>(logPath, true);
 
-    expect(result.entries).toHaveLength(window + 5);
-    expect(result.entries.map((entry) => entry.id)).toContain('evt-0');
+    assert.equal(result.entries.length, window + 5);
+    assert.ok(result.entries.map((entry) => entry.id).includes('evt-0'));
   });
 
   it('reports a partial read rather than silently dropping a bad line', () => {
@@ -1006,10 +990,10 @@ describe('append-only event log', () => {
 
     const result = readEventLog<{ id: string }>(logPath, true);
 
-    expect(result.source).toBe('partial');
-    expect(result.skipped).toBe(1);
-    expect(result.reason).toContain('1');
-    expect(result.entries.map((entry) => entry.id)).toEqual(['evt-1', 'evt-2']);
+    assert.equal(result.source, 'partial');
+    assert.equal(result.skipped, 1);
+    assert.ok(result.reason.includes('1'));
+    assert.deepEqual(result.entries.map((entry) => entry.id), ['evt-1', 'evt-2']);
   });
 
   it('ignores blank lines without counting them as damage', () => {
@@ -1018,9 +1002,9 @@ describe('append-only event log', () => {
 
     const result = readEventLog(logPath, true);
 
-    expect(result.source).toBe('restored');
-    expect(result.skipped).toBe(0);
-    expect(result.entries).toHaveLength(1);
+    assert.equal(result.source, 'restored');
+    assert.equal(result.skipped, 0);
+    assert.equal(result.entries.length, 1);
   });
 
   it('reports a reason when the append itself fails', () => {
@@ -1030,7 +1014,7 @@ describe('append-only event log', () => {
 
     const outcome = appendEvent(join(blocker, 'runtime.log.jsonl'), { id: 'x' }, true);
 
-    expect(outcome.appended).toBe(false);
-    expect(outcome.reason).toBeDefined();
+    assert.equal(outcome.appended, false);
+    assert.notEqual(outcome.reason, undefined);
   });
 });

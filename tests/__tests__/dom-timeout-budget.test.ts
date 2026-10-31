@@ -1,3 +1,5 @@
+import assert from 'node:assert/strict';
+import { describe, it } from 'node:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -31,7 +33,7 @@ describe('dom assertion budgets stay inside their test budget', () => {
 
   it('reads a suite-wide test budget', () => {
     // Guards the parse: a rename would otherwise make every check below vacuous.
-    expect(defaultTestBudget).toBeGreaterThan(0);
+    assert.ok(defaultTestBudget > 0);
   });
 
   /**
@@ -48,7 +50,7 @@ describe('dom assertion budgets stay inside their test budget', () => {
   );
 
   it('finds the assertion budgets it means to check', () => {
-    expect(assertionBudgets.length).toBeGreaterThan(0);
+    assert.ok(assertionBudgets.length > 0);
   });
 
   it('never gives an assertion the whole test budget or more', () => {
@@ -62,7 +64,7 @@ describe('dom assertion budgets stay inside their test budget', () => {
     // An assertion allowed to wait as long as its test cannot fail on its own
     // terms: jest kills it first, aborting inside act() and taking the rest of
     // the file with it.
-    expect(unreachable).toEqual([]);
+    assert.deepEqual(unreachable, []);
   });
 
   it('leaves real headroom for the setup that precedes the assertion', () => {
@@ -73,6 +75,6 @@ describe('dom assertion budgets stay inside their test budget', () => {
     // the longest wait begins. Headroom equal to that wait is not a precise
     // measurement of them; it is a margin wide enough that ordinary slowness
     // cannot close it.
-    expect(governing - longest).toBeGreaterThanOrEqual(longest);
+    assert.ok(governing - longest >= longest);
   });
 });

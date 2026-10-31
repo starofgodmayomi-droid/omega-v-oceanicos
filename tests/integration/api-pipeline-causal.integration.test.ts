@@ -92,9 +92,13 @@ describe('live API pipeline → durable causal memory', () => {
     try {
       const { createApp } = await import('../../apps/api/dist/index.js');
       const { FileCausalMemory } = await import('../../packages/mini/dist/index.js');
+      let admissionResolverCalls = 0;
       const app = createApp(join(directory, 'ledger.db'), false, {
         allowUnsignedCycle: true,
-        pipelineAdmissionEvidence: () => ({ authorityVerified: true, policySatisfied: true }),
+        pipelineAdmissionEvidence: () => {
+          admissionResolverCalls += 1;
+          return { authorityVerified: true, policySatisfied: true };
+        },
       });
       await app.ready();
       try {
@@ -113,6 +117,7 @@ describe('live API pipeline → durable causal memory', () => {
         });
         assert.equal(response.statusCode, 400);
         assert.equal(response.json().error, 'PIPELINE_ADMISSION_EVIDENCE_NOT_ACCEPTED');
+        assert.equal(admissionResolverCalls, 0, 'client-supplied gates must be rejected before the server resolver runs');
         const memory = new FileCausalMemory(memoryPath, { key: 'api-causal-test-key' });
         assert.equal(memory.verifyIntegrity(), true);
         assert.equal(memory.replay('api-client-admission-rejected'), undefined);

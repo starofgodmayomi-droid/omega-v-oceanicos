@@ -1,3 +1,6 @@
+import assert from 'node:assert/strict';
+import { each } from './node-test-each.ts';
+import { describe, it } from 'node:test';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -88,7 +91,7 @@ describe('roadmap Phase 2 claims have evidence', () => {
   it('finds the Phase 2 checklist', () => {
     // Guards against the parse silently matching nothing after an edit to the
     // roadmap's headings, which would make every assertion below vacuous.
-    expect(items.length).toBeGreaterThan(0);
+    assert.ok(items.length > 0);
   });
 
   it('has an anchor defined for every Phase 2 item', () => {
@@ -96,18 +99,18 @@ describe('roadmap Phase 2 claims have evidence', () => {
 
     // A new checklist row must arrive with a way to check it, or it is a
     // claim nothing can contradict.
-    expect(unanchored).toEqual([]);
+    assert.deepEqual(unanchored, []);
   });
 
   const checked = items.filter((item) => item.checked);
 
   it('has at least one checked item to verify', () => {
-    expect(checked.length).toBeGreaterThan(0);
+    assert.ok(checked.length > 0);
   });
 
-  it.each(checked.map((item) => item.claim))('evidence exists for: %s', (claim) => {
+  each(checked.map((item) => item.claim))('evidence exists for: %s', (claim) => {
     const anchor = ANCHORS[claim];
-    expect(anchor).toBeDefined();
-    expect(anchor()).toBe(true);
+    assert.notEqual(anchor, undefined);
+    assert.equal(anchor(), true);
   });
 });

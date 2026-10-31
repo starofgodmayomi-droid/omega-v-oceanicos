@@ -1,3 +1,5 @@
+import assert from 'node:assert/strict';
+import { describe, it } from 'node:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { verify as nodeVerify } from 'node:crypto';
@@ -48,8 +50,9 @@ describe('the specification worked example', () => {
   it('publishes an attestation that verifies against its published key', () => {
     const attestation = exampleBlock();
 
-    expect(nodeVerify(null, bytes(attestation), examplePublicKey(), signatureOf(attestation))).toBe(
-      true
+    assert.equal(
+      nodeVerify(null, bytes(attestation), examplePublicKey(), signatureOf(attestation)),
+      true,
     );
   });
 
@@ -58,8 +61,9 @@ describe('the specification worked example', () => {
     const tampered = { ...attestation, verified: !attestation.verified };
 
     // The document tells the reader to try this and watch it fail.
-    expect(nodeVerify(null, bytes(tampered), examplePublicKey(), signatureOf(attestation))).toBe(
-      false
+    assert.equal(
+      nodeVerify(null, bytes(tampered), examplePublicKey(), signatureOf(attestation)),
+      false,
     );
   });
 
@@ -68,13 +72,14 @@ describe('the specification worked example', () => {
     const relabelled = { ...attestation, id: 'att-anything-at-all' };
 
     // Also promised to the reader, and the reason the field list matters.
-    expect(nodeVerify(null, bytes(relabelled), examplePublicKey(), signatureOf(attestation))).toBe(
-      true
+    assert.equal(
+      nodeVerify(null, bytes(relabelled), examplePublicKey(), signatureOf(attestation)),
+      true,
     );
   });
 
   it('states that the example private key was discarded', () => {
-    expect(spec).toMatch(/discarded/i);
-    expect(spec).not.toContain('BEGIN PRIVATE KEY');
+    assert.match(spec, /discarded/i);
+    assert.ok(!spec.includes('BEGIN PRIVATE KEY'));
   });
 });

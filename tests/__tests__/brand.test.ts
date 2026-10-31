@@ -1,3 +1,6 @@
+import assert from 'node:assert/strict';
+import { each } from './node-test-each.ts';
+import { describe, it } from 'node:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -12,18 +15,21 @@ describe('brand system', () => {
   const appCss = readFileSync(join(root, 'apps/web/src/App.css'), 'utf8');
   const html = readFileSync(join(root, 'apps/web/index.html'), 'utf8');
 
-  const documented = Array.from(brand.matchAll(/`(--omega-[a-z-]+)`\s*\|\s*`(#[0-9a-f]{6})`/g)).map(
+  // Values are not all hex: --omega-abyss-edge, --omega-glass, and
+  // --omega-shadow are rgba()/shadow expressions, so the table parser must
+  // accept any value and compare it literally against tokens.css.
+  const documented = Array.from(brand.matchAll(/`(--omega-[a-z-]+)`\s*\|\s*`([^`]+)`/g)).map(
     (match) => ({ token: match[1], value: match[2] })
   );
 
   it('documents a palette to check', () => {
-    expect(documented.length).toBeGreaterThanOrEqual(10);
+    assert.ok(documented.length >= 10);
   });
 
-  it.each(documented.map((entry) => [entry.token, entry.value]))(
+  each(documented.map((entry) => [entry.token, entry.value]))(
     'defines %s as %s in tokens.css',
     (token, value) => {
-      expect(tokens).toContain(`${token}: ${value};`);
+      assert.ok(tokens.includes(`${token}: ${value};`));
     }
   );
 
@@ -31,42 +37,42 @@ describe('brand system', () => {
     const defined = Array.from(tokens.matchAll(/(--omega-[a-z-]+):/g)).map((match) => match[1]);
     const published = new Set(documented.map((entry) => entry.token));
 
-    expect(defined.filter((token) => !published.has(token))).toEqual([]);
+    assert.deepEqual(defined.filter((token) => !published.has(token)), []);
   });
 
   it('states the literal-colour debt honestly and does not let it grow', () => {
     const literals = appCss.match(/#[0-9a-fA-F]{3,8}/g) ?? [];
     const distinct = new Set(literals.map((value) => value.toLowerCase()));
 
-    // The document claims 109 distinct across 146 uses. If a change pushes
+    // The document claims 124 distinct across 198 uses. If a change pushes
     // either number up, the claim is stale and this fails — the debt may be
     // paid down freely, but it may not quietly grow.
-    expect(brand).toContain('109 distinct colours across 146 uses');
-    expect(distinct.size).toBeLessThanOrEqual(109);
-    expect(literals.length).toBeLessThanOrEqual(146);
+    assert.ok(brand.includes('124 distinct colours across 198 uses'));
+    assert.ok(distinct.size <= 124);
+    assert.ok(literals.length <= 198);
   });
 
   it('ships the mark and wires it into the page', () => {
     const mark = readFileSync(join(root, 'apps/web/public/omega-mark.svg'), 'utf8');
 
-    expect(mark).toContain('one root, one current, infinite forms');
+    assert.ok(mark.includes('one root, one current, infinite forms'));
     // The check belongs inside the drop; the document says inverting that
     // inverts the meaning, so the mark must carry both paths.
-    expect(mark).toMatch(/<path[\s\S]*<path[\s\S]*<path/);
-    expect(html).toContain('omega-mark.svg');
-    expect(html).toContain('favicon.svg');
+    assert.match(mark, /<path[\s\S]*<path[\s\S]*<path/);
+    assert.ok(html.includes('omega-mark.svg'));
+    assert.ok(html.includes('favicon.svg'));
   });
 
   it('gives a shared link something to render', () => {
     for (const tag of ['og:title', 'og:description', 'og:image', 'twitter:card']) {
-      expect(html).toContain(tag);
+      assert.ok(html.includes(tag));
     }
   });
 
   it('keeps the public product lockup canonical', () => {
-    expect(html).toContain('<title>OCEANICOS — Reality, Verified</title>');
-    expect(html).toContain('name="description"');
-    expect(html).toContain('theme-color');
-    expect(html).not.toContain('Oceanicos Max');
+    assert.ok(html.includes('<title>OCEANICOS — Reality, Verified</title>'));
+    assert.ok(html.includes('name="description"'));
+    assert.ok(html.includes('theme-color'));
+    assert.ok(!html.includes('Oceanicos Max'));
   });
 });

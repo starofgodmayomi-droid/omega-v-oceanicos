@@ -1,3 +1,6 @@
+import assert from 'node:assert/strict';
+import { each } from './node-test-each.ts';
+import { describe, it } from 'node:test';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, dirname, relative } from 'node:path';
 
@@ -26,11 +29,11 @@ describe('directory READMEs describe real contents', () => {
   const SIBLING = /`(?!\.)([A-Za-z0-9_-]+(?:\.[A-Za-z0-9]+)?\/?)`/g;
   const LOOKS_LIKE_PATH = /(\/$)|\.(yml|yaml|json|sh|ts|tsx|js|md|tf)$|^Dockerfile/;
 
-  it.each(targets)('%s exists', (target) => {
-    expect(existsSync(join(root, target))).toBe(true);
+  each(targets)('%s exists', (target) => {
+    assert.equal(existsSync(join(root, target)), true);
   });
 
-  it.each(targets)('%s claims nothing that is missing', (target) => {
+  each(targets)('%s claims nothing that is missing', (target) => {
     const readme = readFileSync(join(root, target), 'utf8');
     const base = join(root, dirname(target));
 
@@ -40,7 +43,7 @@ describe('directory READMEs describe real contents', () => {
 
     const missing = claimed.filter((token) => !existsSync(join(base, token.replace(/\/$/, ''))));
 
-    expect(missing).toEqual([]);
+    assert.deepEqual(missing, []);
   });
 });
 
@@ -67,15 +70,15 @@ describe('packages document themselves', () => {
   const index = readFileSync(join(packagesDir, 'README.md'), 'utf8');
 
   it('finds the packages it is meant to check', () => {
-    expect(packages.length).toBeGreaterThanOrEqual(8);
+    assert.ok(packages.length >= 8);
   });
 
-  it.each(packages)('packages/%s has a README', (name) => {
-    expect(existsSync(join(packagesDir, name, 'README.md'))).toBe(true);
+  each(packages)('packages/%s has a README', (name) => {
+    assert.equal(existsSync(join(packagesDir, name, 'README.md')), true);
   });
 
-  it.each(packages)('packages/README.md names %s', (name) => {
-    expect(index.includes(`${name}/`) || index.includes(`@omega-v/${name}`)).toBe(true);
+  each(packages)('packages/README.md names %s', (name) => {
+    assert.equal(index.includes(`${name}/`) || index.includes(`@omega-v/${name}`), true);
   });
 
   it('names no package that does not exist', () => {
@@ -88,8 +91,8 @@ describe('packages document themselves', () => {
     const named = Array.from(claims.matchAll(/@omega-v\/([a-z-]+)/g)).map((match) => match[1]);
     const real = new Set(packages);
 
-    expect(named.length).toBeGreaterThan(0);
-    expect(named.filter((name) => !real.has(name))).toEqual([]);
+    assert.ok(named.length > 0);
+    assert.deepEqual(named.filter((name) => !real.has(name)), []);
   });
 });
 
@@ -113,15 +116,15 @@ describe('apps document themselves', () => {
   const index = readFileSync(join(appsDir, 'README.md'), 'utf8');
 
   it('finds the apps it is meant to check', () => {
-    expect(apps.length).toBeGreaterThanOrEqual(2);
+    assert.ok(apps.length >= 2);
   });
 
-  it.each(apps)('apps/%s has a README', (name) => {
-    expect(existsSync(join(appsDir, name, 'README.md'))).toBe(true);
+  each(apps)('apps/%s has a README', (name) => {
+    assert.equal(existsSync(join(appsDir, name, 'README.md')), true);
   });
 
-  it.each(apps)('apps/README.md names %s', (name) => {
-    expect(index).toContain(name);
+  each(apps)('apps/README.md names %s', (name) => {
+    assert.ok(index.includes(name));
   });
 
   it('keeps no second copy of the endpoint list', () => {
@@ -132,14 +135,14 @@ describe('apps document themselves', () => {
       .split('\n')
       .filter((line) => /^\s*[-*]\s+`?(GET|POST)\s+\//.test(line));
 
-    expect(routeLines).toEqual([]);
+    assert.deepEqual(routeLines, []);
   });
 
   it('does not describe a shipped surface as future', () => {
     // packages/cli and packages/sdk both exist. Calling them future was
     // true once and quietly stopped being true.
     for (const shipped of ['CLI', 'SDK']) {
-      expect(index).not.toMatch(new RegExp(`${shipped}\\s*\\(future\\)`));
+      assert.doesNotMatch(index, new RegExp(`${shipped}\\s*\\(future\\)`));
     }
   });
 });
@@ -172,10 +175,10 @@ describe('documents describe the cryptography that exists', () => {
   const documents = markdown(root);
 
   it('finds documents to check', () => {
-    expect(documents.length).toBeGreaterThan(10);
+    assert.ok(documents.length > 10);
   });
 
-  it.each(documents.map((file) => [relative(root, file), file]))(
+  each(documents.map((file) => [relative(root, file), file]))(
     '%s names no algorithm the system cannot perform',
     (_label, file) => {
       const text = readFileSync(file, 'utf8');
@@ -185,11 +188,11 @@ describe('documents describe the cryptography that exists', () => {
         text.matchAll(/signingAlgorithm['":\s]+['"]?([A-Za-z0-9-]+)/g)
       ).map((match) => match[1]);
 
-      expect(claimed.filter((name) => !['Ed25519', 'HMAC-SHA256'].includes(name))).toEqual([]);
+      assert.deepEqual(claimed.filter((name) => !['Ed25519', 'HMAC-SHA256'].includes(name)), []);
     }
   );
 
-  it.each(documents.map((file) => [relative(root, file), file]))(
+  each(documents.map((file) => [relative(root, file), file]))(
     '%s prints no key-shaped literal',
     (_label, file) => {
       const text = readFileSync(file, 'utf8');
@@ -207,7 +210,7 @@ describe('documents describe the cryptography that exists', () => {
         (value) => !value.startsWith('sha256:') && !value.startsWith('OMEGA_')
       );
 
-      expect(suspicious).toEqual([]);
+      assert.deepEqual(suspicious, []);
     }
   );
 });
