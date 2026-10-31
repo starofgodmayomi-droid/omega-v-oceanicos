@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
 /**
@@ -21,7 +21,14 @@ import { join } from 'node:path';
  */
 describe('dom assertion budgets stay inside their test budget', () => {
   const root = process.cwd();
-  const suite = readFileSync(join(root, 'apps/web/src/__tests__/dom/App.test.tsx'), 'utf8');
+  const domDirectory = join(root, 'apps/web/src/__tests__/dom');
+  // Every DOM suite in the directory, not one file: the budget relationship
+  // has to hold for whichever suite is added next.
+  const suites = readdirSync(domDirectory)
+    .filter((file) => file.endsWith('.test.tsx'))
+    .sort()
+    .map((file) => ({ file, source: readFileSync(join(domDirectory, file), 'utf8') }));
+  const suite = suites.map((entry) => entry.source).join('\n');
   const setup = readFileSync(join(root, 'jest.setup.dom.ts'), 'utf8');
 
   /** The suite-wide default every test inherits unless it declares its own. */

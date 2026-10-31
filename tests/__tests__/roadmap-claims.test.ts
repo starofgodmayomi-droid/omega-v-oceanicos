@@ -73,8 +73,8 @@ describe('roadmap Phase 2 claims have evidence', () => {
       KERNEL_PHRASE
     ),
     'Integration tests treat MINI as the primary runtime unit': fileContains(
-      'tests/integration/mini-kernel.integration.test.ts',
-      "from '@omega-v/mini'"
+      'tests/integration/one-body-ecosystem.integration.test.ts',
+      "packages/mini/dist/index.js"
     ),
   };
 

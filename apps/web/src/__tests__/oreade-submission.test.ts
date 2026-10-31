@@ -3,7 +3,7 @@ import test from 'node:test';
 import {
   initialOreadSubmissionIdentity,
   prepareOreadSubmission,
-} from '../src/oreade-submission.ts';
+} from '../oreade-submission.ts';
 
 const request = {
   symbolicIntent: 'prepare one bounded reflection',

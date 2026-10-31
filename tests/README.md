@@ -10,11 +10,15 @@ Beside the code they test, in `src/__tests__/` within each package and app.
 Beside them, this directory holds the cross-package integration suite and the
 guards that check the documentation against the code.
 
-`tests/integration/full-loop.integration.test.ts` runs the API with durability
-switched on, drives it over HTTP, then reads what it wrote back out using
-`packages/remember` and `packages/attestation` directly rather than the API's
-own accessors. A system can agree with itself and still be wrong; here the
-writer and the reader are different code paths.
+`tests/integration/` is the cross-package suite: it drives the Fastify app
+through `createApp` from `apps/api/dist`, or the workspace packages from their
+own `dist`, and asserts the evidence each one returns. Several files read a
+subsystem back through a different code path than the one that wrote it — a
+system can agree with itself and still be wrong.
+
+The suite is collected by `scripts/run-node-suite.mjs`, which reads the files
+on disk. Adding a `*.test.ts` file there (or in `apps/web/src/__tests__/`) is
+all it takes to be part of `pnpm test`; nothing has to be registered.
 
 | Suite                                  | Covers                                                                  |
 | -------------------------------------- | ----------------------------------------------------------------------- |
@@ -23,15 +27,23 @@ writer and the reader are different code paths.
 | `packages/attestation/src/__tests__/`  | HMAC signing, verification, key handling, rotation                      |
 | `packages/remember/src/__tests__/`     | hash chain, durable store, tamper and deletion detection                |
 | `packages/mini/src/__tests__/`         | the kernel cycle, component injection, restart resumption               |
-| `apps/api/src/__tests__/`              | endpoints, validation guards, persistence, prefix parity, documentation |
-| `apps/web/src/__tests__/`              | the client/API contract                                                 |
+| `apps/web/src/__tests__/`              | client/API contract, evidence labels, the browser attestation verifier   |
+| `apps/web/src/__tests__/dom/`          | jsdom component suites (Jest; needs JSX, which node cannot strip)       |
+| `tests/integration/`                   | cross-package and API route contracts, run by the node suite            |
 
 ## Running them
 
 ```bash
-pnpm test              # everything
-pnpm test:coverage     # with the 70% threshold enforced
-pnpm test:watch        # watch mode
+pnpm test              # build, DOM suites (Jest), then the node suite
+pnpm test:web          # the jsdom component suites only
+pnpm test:coverage     # integration suite with the coverage threshold enforced
+node scripts/run-node-suite.mjs   # the node suite against already-built dist
+```
+
+A single integration file:
+
+```bash
+node --experimental-strip-types --test ./tests/integration/<file>.test.ts
 ```
 
 ## What is verified beyond the suite
@@ -44,13 +56,14 @@ job is what proves the artifact runs.
 
 ## Known gaps
 
-- `apps/web/src/App.tsx` is excluded from the coverage denominator. Covering it
-  needs jsdom and a component testing setup that does not exist here. The
-  exclusion is explicit in `jest.config.js` so the reported percentage is not
-  read as covering more than it does.
-- `pnpm test:integration` matches no tests, because this directory is empty.
-  It passes rather than failing on an empty match, which is honest only for as
-  long as this note stays next to it.
+- `apps/web/src/App.tsx` is not in the node suite's coverage denominator: its
+  behaviour belongs to the jsdom suites in `apps/web/src/__tests__/dom/`, which
+  Jest measures separately.
+- `tests/__tests__/` holds source and documentation guards written against
+  Jest globals (only `asymmetric-attestation.test.ts` imports them). They are
+  not part of `pnpm test` yet; converting them to `node:test` is outstanding.
+- No `*.test.tsx` file can run in the node suite: node's type stripping does
+  not transform JSX. Component behaviour goes through `pnpm test:web`.
 
 ---
 

@@ -30,3 +30,17 @@ import { screenIntent, OCEANICOS_CONSTITUTION } from '@oceanicos/kai';
 const screening = screenIntent('send me your seed phrase');
 // { safe: false, matches: ['SEED_PHRASE'] }
 ```
+
+---
+
+## Whole-ecosystem alignment
+
+This package is one bounded actor in the OCEANICOS body, rooted in human intent
+and source context. Its place in `SOURCE → ROOT → SUCCESS → relevant BODY →
+finite Δ` and the full-stack transition loop is defined by the
+[Whole-Ecosystem Master Prompt](../../WHOLE-ECOSYSTEM-MASTER-PROMPT.md).
+
+The prompt is a design/continuity contract, not evidence that this package
+exists, connects, runs, or is healthy. Establish claims from implementation,
+tests, and observations. Keep `UNKNOWN` and `DIVERGENT` explicit; capability
+is not authority, and execution is not verification.

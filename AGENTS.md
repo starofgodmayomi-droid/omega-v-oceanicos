@@ -60,6 +60,16 @@ The Invisible Computer's three actors are now workspace packages, not code insid
 
 Adding a workspace package means three things, or the stack will not boot: add it to the explicit list in `pnpm-workspace.yaml` (it is **not** a `packages/*` glob), refresh `pnpm-lock.yaml` (`pnpm install --no-frozen-lockfile`), and add it to the consumer's `dependencies` (`workspace:*`). `setup` runs `pnpm install --frozen-lockfile`, so a stale lockfile is a boot failure.
 
+## Tests (2026-10-31)
+Two runners, split by what needs a browser:
+
+- **Node suite** — `node scripts/run-node-suite.mjs` (inside the `api` container, after `pnpm build`). It collects every `tests/integration/*.test.ts` and every `apps/web/src/__tests__/*.test.ts` from disk, so a new test file is part of the suite by existing. `pnpm test` and `pnpm test:e2e` both run `pnpm build && pnpm test:web && node scripts/run-node-suite.mjs`.
+- **DOM suites** — `pnpm test:web` → `apps/web` Jest (jsdom). Node's type stripping does not transform JSX, so `*.test.tsx` cannot run in the node suite. The config runs every file in `apps/web/src/__tests__/dom/`.
+
+Retired on this pass, because they could not run and asserted surfaces that no longer exist: `apps/api/src/__tests__/` (25 Express-era files — they imported `parseAuditQuery`, `revocationRegistryStatus`, `revocationRegistryDigest` and pre-`/v1` routes, none of which exist in `apps/api/src` any more; root has no Jest), `apps/web/src/__tests__/dom/App.test.tsx` (87 tests for the removed Builder-kernel dashboard; 1 passed) and `runtime-health-panel.test.tsx` (`.metrics-row` is gone), and five Jest-mapped e2e files (`broken-current`, `full-loop`, `fullstack_e2e`, `mini-kernel`, `verification_loop`) that imported `apps/api/src` and `@omega-v/*` through Jest's `moduleNameMapper`. The only still-live unique coverage in the retired API directory — `/v1/mesh/validate` and `/v1/kernel/capabilities` — moved to `tests/integration/api-route-surface.integration.test.ts`.
+
+`tests/__tests__/` (17 source/documentation guards written against Jest globals) is still outside both runners; converting it to `node:test` is the remaining known gap.
+
 ## No external credentials needed
 All secrets (signing key, tokens) are local dev values in `.env.base44-defaults`. No external service credentials are required for the app to run.
 

@@ -1,4 +1,6 @@
-import { evidenceStepClassName, evidenceStepLabel } from '../evidence-step';
+import assert from 'node:assert/strict';
+import { describe, it } from 'node:test';
+import { evidenceStepClassName, evidenceStepLabel } from '../evidence-step.ts';
 
 /**
  * The dashboard used to render every non-passing step as FAIL. A rule the
@@ -12,33 +14,33 @@ import { evidenceStepClassName, evidenceStepLabel } from '../evidence-step';
  */
 describe('evidence step labelling', () => {
   it('separates a rule that failed from a rule that never ran', () => {
-    expect(evidenceStepLabel({ passed: false, evaluated: true })).toBe('FAIL');
-    expect(evidenceStepLabel({ passed: false, evaluated: false })).toBe('NOT EVALUATED');
+    assert.equal(evidenceStepLabel({ passed: false, evaluated: true }), 'FAIL');
+    assert.equal(evidenceStepLabel({ passed: false, evaluated: false }), 'NOT EVALUATED');
   });
 
   it('labels an evaluated pass as a pass', () => {
-    expect(evidenceStepLabel({ passed: true, evaluated: true })).toBe('PASS');
+    assert.equal(evidenceStepLabel({ passed: true, evaluated: true }), 'PASS');
   });
 
   it('does not read a missing flag as a skipped rule', () => {
     // Evidence recorded before the engine reported this carries no flag.
     // Inferring "not evaluated" from its absence would invent a claim about
     // what the engine did — the same move, in the opposite direction.
-    expect(evidenceStepLabel({ passed: true })).toBe('PASS');
-    expect(evidenceStepLabel({ passed: false })).toBe('FAIL');
+    assert.equal(evidenceStepLabel({ passed: true }), 'PASS');
+    assert.equal(evidenceStepLabel({ passed: false }), 'FAIL');
   });
 
   it('never labels an unevaluated step as passing, whatever `passed` says', () => {
     // Defensive: `passed: true` with `evaluated: false` should not be
     // producible by the engine. If it ever is, the safe reading is that
     // nothing was checked, not that something passed.
-    expect(evidenceStepLabel({ passed: true, evaluated: false })).toBe('NOT EVALUATED');
+    assert.equal(evidenceStepLabel({ passed: true, evaluated: false }), 'NOT EVALUATED');
   });
 
   it('gives an unevaluated step its own class rather than the failure one', () => {
     // Colouring it like a failure restates the conflation the label removes.
-    expect(evidenceStepClassName({ passed: false, evaluated: false })).toBe('evidence-unevaluated');
-    expect(evidenceStepClassName({ passed: false, evaluated: true })).toBe('evidence-fail');
-    expect(evidenceStepClassName({ passed: true, evaluated: true })).toBe('evidence-pass');
+    assert.equal(evidenceStepClassName({ passed: false, evaluated: false }), 'evidence-unevaluated');
+    assert.equal(evidenceStepClassName({ passed: false, evaluated: true }), 'evidence-fail');
+    assert.equal(evidenceStepClassName({ passed: true, evaluated: true }), 'evidence-pass');
   });
 });

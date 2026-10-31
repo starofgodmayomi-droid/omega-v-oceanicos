@@ -90,9 +90,17 @@ test('source-only examples do not misclassify current workspace packages', () =>
   }
 });
 
-test('inventory contract is part of both explicit root test suites', () => {
-  const testPath = './tests/integration/repo-inventory-contract.integration.test.ts';
+test('inventory contract is part of both root test suites', () => {
+  // The suite is defined by the files on disk, collected by the runner, so
+  // this test is part of `pnpm test` by existing rather than by being listed
+  // in package.json. Assert the runner is still what both scripts call, and
+  // that it still collects this directory.
+  const runner = read('scripts/run-node-suite.mjs');
   for (const script of ['test', 'test:e2e']) {
-    assert.ok(rootPackage.scripts[script]?.includes(testPath), `${script} must run ${testPath}`);
+    assert.ok(
+      rootPackage.scripts[script]?.includes('node scripts/run-node-suite.mjs'),
+      `${script} must run scripts/run-node-suite.mjs`
+    );
   }
+  assert.match(runner, /collect\('tests\/integration'\)/);
 });

@@ -103,7 +103,7 @@ Unresolved naming edge. Do not silently rename packages.
 
 ## Test and CI evidence
 
-The root `package.json` maintains explicit file lists for `pnpm test` and `pnpm test:e2e`; do not assume those commands discover arbitrary tests or accept path-filter semantics. `pnpm test:worker` is the focused worker lifecycle command.
+`pnpm test` and `pnpm test:e2e` both build, run the Jest DOM suites for the web app, then run the canonical node suite through `scripts/run-node-suite.mjs`. The runner collects every `tests/integration/*.test.ts` and every `apps/web/src/__tests__/*.test.ts`, so the suite is defined by the files on disk rather than by a list in `package.json` (eight integration tests previously sat outside that list and never ran). It does not accept path filters; run a single file with `node --experimental-strip-types --test ./tests/integration/<file>`. `pnpm test:worker` is the focused worker lifecycle command.
 
 At audited main commit `fd4417e73c4aa10cec678d1f09eb6f09a0cffec2`, Verification Pipeline run [37074868414](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/actions/runs/37074868414) completed successfully. Its Node 22.x and 24.x verification jobs, Compose configuration, Windows compatibility, and package/smoke jobs succeeded; artifact publication was skipped. This records CI for that commit only, not deployment or runtime health.
 

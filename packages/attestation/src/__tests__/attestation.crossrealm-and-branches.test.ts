@@ -7,7 +7,7 @@
  *    PEM drives a genuine failure through Node's native crypto bindings
  *    (createPrivateKey/createPublicKey), and under Jest that failure is never
  *    `instanceof` this test file's own `Error`. See the cross-realm note
- *    below, and apps/api/src/__tests__/persistence.crossrealm-errors.test.ts
+ *    below, and the retired apps/api/src/__tests__/persistence.crossrealm-errors.test.ts
  *    for the same phenomenon documented against fs/crypto in persistence.ts.
  *  - the constructor's old-API `keyVersion || '1'` fallback (line 191) — every
  *    existing old-API test passes an explicit version.
