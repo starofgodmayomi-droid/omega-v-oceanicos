@@ -80,11 +80,30 @@ const moduleNameMapper = {
 };
 
 export default {
-  preset: 'ts-jest',
   testEnvironment: 'node',
+  // The repository root tsconfig narrows `types` to node only, so jest globals
+  // (`jest`, `describe`, `beforeAll`) are not ambient there. tsconfig.jest.json
+  // extends it and adds the jest types for the test compilation only.
+  transform: {
+    '^.+\\.tsx?$': [
+      'ts-jest',
+      {
+        // tsconfig.jest.json emits CommonJS for the jest runtime; the app
+        // tsconfigs use Node16/ESM, which jest cannot load without
+        // --experimental-vm-modules. Tests are transpiled, not type-checked:
+        // `pnpm typecheck` owns type errors.
+        tsconfig: '<rootDir>/tsconfig.jest.json',
+      },
+    ],
+  },
   roots: ['<rootDir>/packages', '<rootDir>/apps', '<rootDir>/tests'],
   testMatch: ['**/__tests__/**/*.ts', '**/?(*.)+(spec|test).ts'],
-  testPathIgnorePatterns: ['/node_modules/', '<rootDir>/apps/web/src/__tests__/dom/'],
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '<rootDir>/apps/web/src/__tests__/dom/',
+    // Suites that drive the pre-Fastify API entry point; see the README there.
+    '<rootDir>/apps/api/src/__tests__/retired/',
+  ],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   moduleNameMapper,
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],

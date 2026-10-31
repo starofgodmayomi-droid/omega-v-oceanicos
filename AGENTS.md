@@ -91,8 +91,16 @@ V(Δ) ≡ (Expected ≡ Observed)
 ## Bearer token comparison (constant time)
 `constantTimeTokenMatch(expected, presented)` in `apps/api/src/index.ts` compares a configured bearer secret with the presented one via `crypto.timingSafeEqual` after a length check; an absent value never matches. All four guards use it — read access, admin access, the local job ledger token, and the global `onRequest` gate — instead of `!==`, so a rejected request does not leak matching-prefix length through timing. Covered by `tests/integration/api-cors-auth.integration.test.ts` (pure matcher + wrong read/admin token returning 401).
 
-## Legacy jest tests do not run
-`apps/api/src/__tests__/` is jest-era and `package.json` has neither a jest dependency nor a jest script, so nothing in that directory executes. `api.test.ts` no longer imports helpers the API no longer provides (audit query parsing, revocation registry digest, attestation TTL); those features are absent from `apps/api/src`, so their assertions were removed rather than kept as false evidence. The runnable suites are the `node --test` files under `tests/integration/`.
+## Legacy jest suite (`pnpm test:legacy`)
+The Max Compress refactor removed jest from `package.json` but left `jest.config.js` and `jest.setup.ts` behind, so nothing under `apps/api/src/__tests__/` ran and the directory was false coverage. The runner is restored: `jest@30` + `ts-jest@29` + `@types/jest` are root devDependencies, `pnpm test:legacy` runs the directory, and `tsconfig.jest.json` compiles it to CommonJS (the repo root is `"type": "module"`, which made jest load the setup file as ESM and fail before any test). Tests are transpiled, not type-checked — `pnpm typecheck` owns type errors.
+
+Four suites run and pass: `jobs`, `scene`, `persistence`, `persistence.crossrealm-errors`.
+
+The other 21 are in `apps/api/src/__tests__/retired/` and ignored by jest, because they drive the pre-Fastify entry point (`import app from '../index'`, `createServer(app)`, `express` types). Loading the current entry point from jest fails in **both** module modes: CommonJS cannot parse the `import.meta.url` run-if-main guard in `apps/api/src/index.ts`, and ESM cannot run the `require('node:sqlite')` fallback in `apps/api/src/sqlite.ts`. That makes reviving them a migration, not a config change; `retired/README.md` records each reason and the live test that covers the same intent. Port on the runner that works — `node --test` + `createApp(...)` + `app.inject(...)`, as `tests/integration/mesh-validation.integration.test.ts` does for `/v1/mesh/validate`.
+
+Finding worth keeping: running the suite exposed a real defect in `apps/api/src/scene.ts` — it imported `validateSceneInput` with `import type` (so the call threw `ReferenceError`) and imported the unused `@omega-v/*` alias rather than `@oceanicos/types`. Nothing imports `scene.ts` from the route layer, so `tsc` never compiled it and the API build stayed green with a module that could not run. Suite fixed, four tests pass.
+
+The runnable coverage of the current API remains the `node --test` files under `tests/integration/`.
 
 ## No external credentials needed
 All secrets (signing key, tokens) are local dev values in `.env.base44-defaults`. No external service credentials are required for the app to run.

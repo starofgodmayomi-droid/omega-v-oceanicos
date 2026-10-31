@@ -3,6 +3,10 @@
  * Runs before any test suite
  */
 
+// Jest does not inject the `jest` object into ES module test files; importing it
+// from @jest/globals works for both the CommonJS and the ESM project.
+import { afterAll, beforeAll, jest } from '@jest/globals';
+
 // Increase timeout for integration tests
 jest.setTimeout(30000);
 

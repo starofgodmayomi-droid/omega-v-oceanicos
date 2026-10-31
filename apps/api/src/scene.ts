@@ -1,12 +1,12 @@
 import { createHash } from 'node:crypto';
-import type {
-  SceneBranch,
-  SceneSimulation,
-  SceneSimulationInput,
-  SceneState,
-  SceneTrace,
+import {
   validateSceneInput,
-} from '@omega-v/types';
+  type SceneBranch,
+  type SceneSimulation,
+  type SceneSimulationInput,
+  type SceneState,
+  type SceneTrace,
+} from '@oceanicos/types';
 
 const SCENE_STATES: readonly SceneState[] = [
   'darkness',
