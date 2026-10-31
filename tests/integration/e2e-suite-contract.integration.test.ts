@@ -42,10 +42,6 @@ const KNOWN_UNRUN: Record<string, string> = {
     'Imports the pre-rename @omega-v/* package names under jest globals; observe→verify→attest is covered by max_compress_stack.e2e.test.ts.',
   'tests/integration/fullstack_e2e.integration.test.ts':
     'Imports 60+ @omega-v/* names that are not workspace members (renamed @oceanicos/*), so it cannot resolve a single import.',
-  'tests/__tests__/asymmetric-attestation.test.ts':
-    'A root-level suite cannot resolve @oceanicos/* imports: pnpm links workspace packages per package, so only apps/api and the libraries themselves see them. The envelope it covers is asserted by tests/__tests__/spec-example.test.ts and apps/web/src/__tests__/verify.test.ts.',
-  'tests/__tests__/governance.test.ts':
-    'docs/GOVERNANCE.md still inventories the pre-/v1 write surface (it lists POST /observe, /act, /learn, /complete-loop and omits every /v1 write), so its route check cannot pass without a governance rewrite. Rewriting a security document is a governance decision, not a test migration; the suite is parked until that rewrite lands.',
   'apps/web/src/__tests__/dom/App.test.tsx':
     'Drives the removed Builder-kernel dashboard (headings and panels that no longer exist anywhere in apps/web/src). CurrentAppShell.test.tsx and the panel suites cover the surface that replaced it.',
   'apps/web/src/__tests__/dom/runtime-health-panel.test.tsx':

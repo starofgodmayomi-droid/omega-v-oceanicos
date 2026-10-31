@@ -35,23 +35,44 @@ credential.
 **Every other write.** These accept requests from anyone who can reach the
 port, regardless of how the three variables are configured:
 
-- `POST /observe`
-- `POST /verify`
-- `POST /attest`
-- `POST /attest/verify`
-- `POST /act`
-- `POST /learn`
-- `POST /recompile`
-- `POST /complete-loop`
-- `POST /dissensus`
-- `POST /os/admit`
-- `POST /mini/cycle`
-- `POST /mini/total`
+- `POST /v1/attest`
+- `POST /v1/auth/keypair`
+- `POST /v1/block/sign`
+- `POST /v1/block/verify-signature`
+- `POST /v1/cycle`
+- `POST /v1/ecosystem/body/expand`
+- `POST /v1/miner/start`
+- `POST /v1/miner/stop`
+- `POST /v1/mood/codex`
+- `POST /v1/mood/codex/proposal`
 - `POST /v1/pipeline`
+- `POST /v1/value-navigator/proposals`
+- `POST /v1/value-navigator/proposals/:proposalId/observe`
+- `POST /v1/omega/commands`
+- `POST /v1/omega/commands/:id/admit`
+- `POST /v1/omega/commands/:id/execute`
+- `POST /v1/omega/commands/:id/lease-execute`
+- `POST /v1/omega/commands/:id/observe`
+- `POST /v1/omega/commands/:id/reconciliation`
+- `POST /v1/omega/commands/:id/verify-reality`
+- `POST /v1/omega/connectors/observe`
+- `POST /v1/omega/continuum`
+- `POST /v1/omega/coordination/evidence`
+- `POST /v1/omega/oreade/drop`
+- `POST /v1/omega/oreade/proposal`
+- `POST /v1/omega/workers/register`
+- `POST /v1/omega/workers/:workerId/heartbeat`
+- `POST /v1/omega/workers/:workerId/lease`
+- `POST /v1/omega/workers/:workerId/lease/:leaseId/release`
 
 A caller who can reach the service can write into the append-only chain,
-authorize actions, and record learnings. `POST /attest/verify` is read-shaped
-but is listed here because it is a `POST` and takes no token.
+submit commands, register workers, and record observations. `POST
+/v1/block/verify-signature` is read-shaped but is listed here because it is a
+`POST` and takes no token.
+
+The pre-`/v1` names this list used to carry (`/observe`, `/act`, `/learn`,
+`/complete-loop`, `/dissensus`, `/os/admit`, `/mini/cycle`, `/mini/total`) are
+gone from the router; they are not aliases and cannot be called.
 
 This is defensible for a service intended to sit behind a gateway that
 authenticates before it. It is indefensible as an assumption nobody wrote

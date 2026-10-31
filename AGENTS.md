@@ -81,9 +81,9 @@ docker compose -f docker-compose.base44.yml exec -T api sh -c \
   'cd /app && corepack enable && corepack prepare pnpm@10.34.5 --activate && pnpm test:e2e'
 ```
 
-- `test:e2e` = `pnpm build` → `pnpm test:web` (6 jest DOM suites in `apps/web`) → one `node --experimental-strip-types --test` run over an **explicit** file list. Node's `--test` discovers nothing here and accepts no path filter, so the list in `package.json` is the gate. `test` and `test:e2e` run the same 62 files.
+- `test:e2e` = `pnpm build` → `pnpm test:web` (6 jest DOM suites in `apps/web`) → one `node --experimental-strip-types --test` run over an **explicit** file list. Node's `--test` discovers nothing here and accepts no path filter, so the list in `package.json` is the gate. `test` and `test:e2e` run the same 64 files.
 - `tests/integration/e2e-suite-contract.integration.test.ts` guards that list: every `tests/integration/*.test.ts`, every `tests/__tests__/*.test.ts`, and every `apps/web/src/__tests__/**` suite is either run by a gate or named in `KNOWN_UNRUN` with its reason, every `*.e2e.test.ts` is run by both scripts, and `test`/`test:e2e` cannot drift apart.
-- Verified 2026-10-31 in this environment: build clean, **1234 node tests / 0 failures** over the 62-file gate, plus the DOM gate (6 suites / 11 tests).
+- Verified 2026-10-31 in this environment: build clean, **1272 node tests / 0 failures** over the 64-file gate, plus the DOM gate (6 suites / 11 tests).
 
 ### Jest → node:test migration (2026-10-31)
 The root `jest.config.js` was dead config: no script ran jest, jest was not a
@@ -110,13 +110,27 @@ same failure the gate was built to stop, in a second location. Fixes:
   `test:coverage` used `rm -rf`/`mkdir -p` in a repo whose scripts must be
   portable; and `node-support.test.ts` still asserted `--runInBand` jest
   scripts and a CI ledger-smoke that has since been rewritten.
-- Parked with reasons in the suite contract (not deleted): `governance.test.ts`
-  (its document inventories the pre-`/v1` surface — rewriting a security doc is
-  a governance decision), `asymmetric-attestation.test.ts` (a root-level suite
-  cannot resolve `@oceanicos/*`; pnpm links workspace packages per package),
-  and the two DOM suites that drive the removed Builder-kernel shell
-  (`App.test.tsx`, `runtime-health-panel.test.tsx`). `agent-safety-boundary`
-  and `act-async-wrapper` moved into the DOM gate, where they actually run.
+- `asymmetric-attestation.test.ts` was the one parked suite that only needed a
+  resolution fix: pnpm links workspace packages per package, so a root-level
+  suite saw no `@oceanicos/*`. It now imports `packages/observer/dist` and
+  `packages/verification/dist` by path (the same way `api-route-contract`
+  imports `apps/api/dist`) and runs in the gate — Ed25519 sign/verify against
+  only the public key, plus rejection when a signed field changes.
+- `governance.test.ts` looked like a governance rewrite but was the same route
+  drift: it scanned `apps/api/src/index.ts` for `app.post('…')`, found zero
+  writes once the routes moved into `register*Route` modules, and failed its
+  own "finds the surface" guard while its per-route cases silently ran on an
+  empty list. It now reads `tests/harness/api-routes.ts`, and the one real
+  finding was `docs/GOVERNANCE.md`: its "not gated" list still named eight
+  pre-`/v1` routes that no longer exist and omitted all 29 current ungated
+  writes. The list now matches the router, and the suite runs in the gate
+  (36 cases), so the document cannot drift from the code again. Reviewing that
+  inventory is still a governance decision — the test only proves it matches
+  what is registered.
+- Parked with reasons in the suite contract (not deleted): only the two DOM
+  suites that drive the removed Builder-kernel shell (`App.test.tsx`,
+  `runtime-health-panel.test.tsx`). `agent-safety-boundary` and
+  `act-async-wrapper` moved into the DOM gate, where they actually run.
 - Still parked and not yet in any gate: `apps/api/src/__tests__/` and most
   `packages/*/src/__tests__/` remain Jest-global suites. Some packages run
   them per package (`pnpm --filter @omega-v/mood test` passes, 12 tests);

@@ -1,7 +1,10 @@
 import crypto from 'node:crypto';
 import { afterEach, beforeEach, describe, expect, it } from '../harness/jest-compat.ts';
-import { ObserverEngine } from '@oceanicos/observer';
-import { VerificationEngine } from '@oceanicos/verification';
+// pnpm links workspace packages per package, so a root-level suite cannot
+// resolve the `@oceanicos/*` names. Import the built packages by path instead,
+// the same way api-route-contract imports `../../apps/api/dist/index.js`.
+import { ObserverEngine } from '../../packages/observer/dist/index.js';
+import { VerificationEngine } from '../../packages/verification/dist/index.js';
 
 describe('asymmetric attestation boundary', () => {
   it('signs evidence with Ed25519 and verifies it with only the public key', () => {

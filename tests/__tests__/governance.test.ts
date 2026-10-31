@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from '../harness/jest-compat.ts';
+import { apiRoutes } from '../harness/api-routes.ts';
 
 /**
  * The governance document must describe the surface that exists.
@@ -19,13 +20,12 @@ import { describe, expect, it } from '../harness/jest-compat.ts';
  */
 describe('governance describes the real surface', () => {
   const root = process.cwd();
-  const source = readFileSync(join(root, 'apps/api/src/index.ts'), 'utf8');
   const governance = readFileSync(join(root, 'docs/GOVERNANCE.md'), 'utf8');
 
-  const routes = Array.from(source.matchAll(/app\.(get|post)\('([^']+)'/g)).map((match) => ({
-    method: match[1].toUpperCase(),
-    path: match[2],
-  }));
+  // Read every `register*Route` module, not only index.ts: the routes moved
+  // out of it, and a scan of index.ts alone found zero writes — so this suite
+  // silently checked an empty surface while failing its first assertion.
+  const routes = apiRoutes(root).filter((route) => route.method === 'GET' || route.method === 'POST');
 
   const writes = routes.filter((route) => route.method === 'POST');
 
@@ -44,7 +44,8 @@ describe('governance describes the real surface', () => {
 
   it('finds the surface it is meant to describe', () => {
     expect(writes.length).toBeGreaterThanOrEqual(8);
-    expect(writes.map((route) => route.path)).toEqual(expect.arrayContaining(ADMIN_GATED));
+    const paths = writes.map((route) => route.path);
+    for (const path of ADMIN_GATED) expect(paths).toContain(path);
   });
 
   it.each(writes.filter((route) => !ADMIN_GATED.includes(route.path)).map((route) => route.path))(
