@@ -1,6 +1,6 @@
 # KAI × ELION × OMEGA
 
-**Status:** `SUPPORTED` as a local pure step. Not a claim that `/api/execute` uses it, and not a claim that a ledger was written.
+**Status:** `SUPPORTED` as the caller path of `POST /api/execute`. Not a ledger write, and not a claim that an external effect was observed.
 
 Source law: [`ECOSYSTEM_BODY.md`](../ECOSYSTEM_BODY.md).
 
@@ -25,4 +25,4 @@ KAI observe → authority → ELION compose → OMEGA compare → remember or ha
 
 The expected state is bound by the function: `No external effect was performed.`
 
-`/api/execute` on main is a different organ. It can still mark a local template `VERIFIED`. This document does not change that route.
+`POST /api/execute` (and `POST /execute`) calls this function with `source: "caller"`, an empty observation, and `witness: null`. Body fields named `observed`, `source`, or `witness` are not read. The route does not call a model and does not write `KaiMemory`. A composition therefore stays `UNKNOWN` unless an earlier gate already halted `DIVERGENT` or `NOT_EXECUTED`. `ledgerMutation` on the response is false.

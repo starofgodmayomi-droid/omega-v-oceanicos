@@ -47,7 +47,7 @@ KAI × ELION × OMEGA is this equation applied to one intent, in order:
 
 Code: `runKaixelionOmega` in [packages/mini/src/kaixelion-omega.ts](packages/mini/src/kaixelion-omega.ts). Skill: [skills/kaixelion-omega/SKILL.md](skills/kaixelion-omega/SKILL.md).
 
-`/api/execute` on main can still label a local template `VERIFIED` and remember it. That route is not this function. Routing it through the cycle is a later step, not this one.
+`POST /api/execute` calls `runKaixelionOmega` as a caller. It does not read `observed`, `source`, or `witness` from the body, does not call a model, and does not write `KaiMemory`. Empty evidence stays `UNKNOWN`. `ledgerMutation` is false. A caller cannot turn a local sentence into `VERIFIED`.
 
 ### THE FIXPOINT
 

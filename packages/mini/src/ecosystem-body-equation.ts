@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { readFileSync, realpathSync, statSync } from 'node:fs';
+import { closeSync, fstatSync, openSync, readFileSync, realpathSync } from 'node:fs';
 import { isAbsolute, relative, resolve, sep } from 'node:path';
 
 /**
@@ -629,14 +629,19 @@ const readInside = (root: string, relPath: string): Buffer | null => {
   }
   const relReal = relative(rootReal, real);
   if (relReal.startsWith(`..${sep}`) || relReal === '..' || isAbsolute(relReal)) return null;
-  let info: ReturnType<typeof statSync>;
+  let fd: number | undefined;
   try {
-    info = statSync(real);
+    // One descriptor: size and bytes come from the same open file.
+    // A path stat followed by a path read is a check-then-use race.
+    fd = openSync(real, 'r');
+    const info = fstatSync(fd);
+    if (!info.isFile() || info.size < 1 || info.size > MAX_OBSERVED_FILE_BYTES) return null;
+    return readFileSync(fd);
   } catch {
     return null;
+  } finally {
+    if (fd !== undefined) closeSync(fd);
   }
-  if (!info.isFile() || info.size < 1 || info.size > MAX_OBSERVED_FILE_BYTES) return null;
-  return readFileSync(real);
 };
 
 /**

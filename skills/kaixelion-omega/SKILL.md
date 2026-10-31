@@ -28,10 +28,9 @@ Decide these before any hash is appended:
 
 ## What this skill must not do
 
-- Do not label `/api/execute`'s local template as this function. On main that route can still remember a local composition as `VERIFIED`. Rebinding it is a separate change with its own suite.
-- Do not merge, deploy, or write `KaiMemory` from this function.
-- Do not treat a green test of the cycle as production health.
-- Do not set `source: "independent"` from a user-typed sentence. The desk and the API caller path stay `caller`.
+- `POST /api/execute` is this function on the caller path. Do not read `source`, `witness`, or `observed` from that body, and do not write `KaiMemory` from it. A local composition stays `UNKNOWN`.
+- Do not merge, deploy, or treat a green test of the cycle as production health.
+- Do not set `source: "independent"` from a user-typed sentence.
 
 ## Check
 

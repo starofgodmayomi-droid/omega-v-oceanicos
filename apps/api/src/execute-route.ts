@@ -1,18 +1,13 @@
 import type { FastifyInstance } from 'fastify';
+import { KAIXELION_OMEGA_ID, runKaixelionOmega } from '@oceanicos/mini';
 import {
-  authoritySatisfies,
   compressTowardUpgrade,
   deriveAuthorityLevel,
-  executeElion,
-  requiredAuthorityFor,
-  expectedOutcomeFor,
   reconcileEvidence,
-  scanIntent,
-  sha256Hex,
-  verifyOmega,
+  requiredAuthorityFor,
   type AuthorityLevel,
 } from './invisible-computer.js';
-import type { KaiMemoryStore, KaiMemoryRecord, OmegaContract } from './kai-memory.js';
+import type { KaiMemoryStore } from './kai-memory.js';
 
 type JsonError = (reply: any, status: number, error: string, extra?: Record<string, unknown>) => unknown;
 
@@ -34,12 +29,13 @@ function parseObject(body: unknown): Record<string, unknown> | null {
 }
 
 /**
- * POST /api/execute — the Invisible Online Computer loop.
+ * POST /api/execute — one caller step of KAI × ELION × OMEGA.
  *
- *   KAI observe → ELION execute → OMEGA verify → KAI remember → return
- *
- * A blocked intent (DIVERGENT) or an unverifiable output (UNKNOWN) is a
- * successful HTTP response carrying a verdict, not an HTTP failure.
+ * The verdict is `runKaixelionOmega`. This route does not read `observed`,
+ * `source`, or `witness` from the body, does not call a model, and does not
+ * write KaiMemory. A local composition with empty evidence is UNKNOWN.
+ * `ledgerMutation` is false. A blocked intent or an unverifiable output is
+ * HTTP 200 carrying a verdict, not an HTTP failure.
  */
 export function registerExecuteRoute(
   fastify: FastifyInstance,
@@ -57,149 +53,53 @@ export function registerExecuteRoute(
 
     const authorityLevel: AuthorityLevel = deriveAuthorityLevel(body.authorityLevel);
     const startedAt = Date.now();
-    const steps: ExecutionStep[] = [];
-    const recordStep = (
-      actor: ExecutionStep['actor'],
-      phase: ExecutionStep['phase'],
-      status: string,
-      detail: string
-    ) => {
-      steps.push({
-        actor,
-        phase,
-        status,
-        detail,
-        at: new Date().toISOString(),
-        elapsedMs: Date.now() - startedAt,
-      });
-    };
-
-    // Step 1 — KAI observe: the shield halts before anything is executed.
-    const shield = scanIntent(intent);
-    if (shield.blocked) {
-      recordStep(
-        'KAI',
-        'OBSERVE',
-        'DIVERGENT',
-        `Matched ${shield.matchedLabels.join(', ')}. No execution attempted.`
-      );
-      return reply.status(200).send({
-        success: true,
-        status: 'DIVERGENT',
-        intent,
-        response: null,
-        evidence_hash: null,
-        reason: 'KAI Shield blocked this intent.',
-        matched_patterns: shield.matchedLabels,
-        steps,
-        contract: null,
-        memory: null,
-        engine: null,
-        model_error: null,
-        evaluated_at: new Date().toISOString(),
-        upgrade: compressTowardUpgrade({ cycleStatus: 'DIVERGENT', evidenceHash: null }),
-      });
-    }
-    // Step 1b — AUTHORITY: CAPABILITY != AUTHORITY. A directive intent needs
-    // AUTONOMOUS authority; below that the loop halts NOT_EXECUTED before
-    // anything is executed, contracted, or remembered.
-    const requiredAuthority = requiredAuthorityFor(intent);
-    if (!authoritySatisfies(authorityLevel, requiredAuthority)) {
-      recordStep(
-        'KAI',
-        'OBSERVE',
-        'NOT_EXECUTED',
-        `Granted ${authorityLevel} < required ${requiredAuthority}. No execution attempted.`
-      );
-      return reply.status(200).send({
-        success: true,
-        status: 'NOT_EXECUTED',
-        intent,
-        response: null,
-        evidence_hash: null,
-        reason: `Authority ${authorityLevel} is below the required ${requiredAuthority}.`,
-        matched_patterns: [],
-        authority: { granted: authorityLevel, required: requiredAuthority },
-        steps,
-        contract: null,
-        memory: null,
-        engine: null,
-        model_error: null,
-        evaluated_at: new Date().toISOString(),
-        upgrade: compressTowardUpgrade({ cycleStatus: 'NOT_EXECUTED', evidenceHash: null }),
-      });
-    }
-    recordStep('KAI', 'OBSERVE', 'VERIFIED', 'No known fraud pattern matched; authority is sufficient.');
-
-    // The OmegaIR contract is written before execution so the output is
-    // verified against a declared expectation, not against itself.
-    const contract: OmegaContract = store.createContract({
+    const cycle = await runKaixelionOmega({
       intent,
-      authorityLevel,
-      expectedOutcome: expectedOutcomeFor(authorityLevel),
+      authority: authorityLevel,
+      observed: '',
+      source: 'caller',
+      witness: null,
+      memory: [],
     });
-
-    // Step 2 — ELION execute: bounded answer, model or local composer.
-    const elion = await executeElion(intent, authorityLevel);
-    recordStep(
-      'ELION',
-      'EXECUTE',
-      elion.error ? 'UNKNOWN' : 'VERIFIED',
-      elion.error
-        ? `Answer unavailable from ${elion.engine}: ${elion.error}. UNKNOWN preserved.`
-        : `Bounded answer composed via ${elion.engine}.`
-    );
-
-    // Step 3 — OMEGA verify: hash the output, compare it to the contract.
-    const evidenceHash = sha256Hex(elion.output);
-    const omega = verifyOmega({ output: elion.output, evidenceHash, authorityLevel });
-    recordStep(
-      'OMEGA',
-      'VERIFY',
-      omega.status,
-      omega.status === 'VERIFIED'
-        ? 'Output matches the contract and the SHA-256 digest recomputes.'
-        : omega.reason ?? 'Output could not be verified.'
-    );
-
-    // Step 4 — KAI remember: only a verified outcome is written to memory.
-    let memory: KaiMemoryRecord | null = null;
-    if (omega.status === 'VERIFIED') {
-      memory = store.remember({
-        intent,
-        evidenceHash,
-        status: omega.status,
-        contractId: contract.id,
-      });
-      recordStep('KAI', 'REMEMBER', 'VERIFIED', `Evidence stored as ${memory.id}.`);
-    } else {
-      recordStep(
-        'KAI',
-        'REMEMBER',
-        'NOT_EXECUTED',
-        'Nothing was remembered because verification did not pass.'
-      );
-    }
+    const steps: ExecutionStep[] = cycle.steps.map((step) => ({
+      actor: step.actor,
+      phase: step.phase,
+      status: step.status,
+      detail: step.detail,
+      at: new Date().toISOString(),
+      elapsedMs: Date.now() - startedAt,
+    }));
+    const requiredAuthority = requiredAuthorityFor(intent);
 
     return reply.status(200).send({
       success: true,
-      status: omega.status,
+      status: cycle.status,
       intent,
-      response: elion.output || null,
-      evidence_hash: elion.output ? evidenceHash : null,
-      reason: omega.reason,
-      matched_patterns: [],
-      checks: omega.checks,
+      response: cycle.composed,
+      evidence_hash: cycle.deltaHash,
+      reason: cycle.reason,
+      matched_patterns: cycle.matchedLabels,
+      ...(cycle.status === 'NOT_EXECUTED'
+        ? { authority: { granted: authorityLevel, required: requiredAuthority } }
+        : {}),
       steps,
-      contract,
-      memory,
-      engine: elion.engine,
-      model_error: elion.error,
+      contract: null,
+      memory: null,
+      engine: 'kaixelion-omega',
+      model_error: null,
       evaluated_at: new Date().toISOString(),
       upgrade: compressTowardUpgrade({
-        cycleStatus: omega.status,
-        evidenceHash: elion.output ? evidenceHash : null,
+        cycleStatus: cycle.status,
+        evidenceHash: cycle.deltaHash,
       }),
+      cycle: {
+        equation: KAIXELION_OMEGA_ID,
+        halt: cycle.halt,
+        ledgerMutation: cycle.ledgerMutation,
+        remembered: cycle.remembered,
+        independentObservation: cycle.independentObservation,
+        expected: cycle.expected,
+      },
     });
   };
 
