@@ -123,3 +123,64 @@ test('required authentication CORS boundary', async (t) => {
   assert.equal(listedHeader.statusCode, 409);
   assert.equal(listedHeader.json().error, 'PERSISTENCE_REENCRYPTION_NOT_READY');
 });
+
+test('required mode keeps the job ledger credential separate from the admin bearer', async (t) => {
+  const originalEnvironment = { ...process.env };
+  t.after(() => {
+    process.env = originalEnvironment;
+  });
+
+  process.env.NODE_ENV = 'production';
+  process.env.OMEGA_AUTH_MODE = 'required';
+  process.env.OMEGA_READ_TOKEN = 'read-token';
+  process.env.OMEGA_ADMIN_TOKEN = 'admin-token';
+  process.env.OMEGA_PERSISTENCE = 'off';
+  process.env.OMEGA_LOCAL_JOB_LEDGER = 'on';
+  process.env.OMEGA_LOCAL_JOB_LEDGER_TOKEN = 'job-token';
+
+  const app = createApp(':memory:', false);
+  t.after(async () => {
+    await app.close();
+  });
+
+  // The admin and read bearers are not the job credential, so the ledger does
+  // not become a side door into job records for an otherwise privileged caller.
+  for (const token of ['admin-token', 'read-token']) {
+    const denied = await app.inject({
+      method: 'GET',
+      url: '/jobs',
+      headers: { authorization: `Bearer ${token}` },
+    });
+    assert.equal(denied.statusCode, 401);
+    assert.equal(denied.json().error, 'JOB_ACCESS_REQUIRED');
+  }
+
+  // A job token is sufficient for the job routes in required mode. Before the
+  // hook learned to step aside, the admin gate consumed the same header and
+  // this request could never succeed.
+  const created = await app.inject({
+    method: 'POST',
+    url: '/jobs',
+    headers: {
+      authorization: 'Bearer job-token',
+      'x-omega-operator-id': 'operator-a',
+    },
+    payload: {
+      kind: 'synthetic-observe',
+      idempotencyKey: 'job-auth-1',
+      actor: 'operator-a',
+      sourceUri: 'local://job-auth',
+    },
+  });
+  assert.equal(created.statusCode, 201);
+
+  // The same job token grants nothing on the admin surface.
+  const rejected = await app.inject({
+    method: 'POST',
+    url: '/attest/revoke',
+    headers: { authorization: 'Bearer job-token' },
+    payload: { attestationId: 'att-job-token', reason: 'job token is not admin authority' },
+  });
+  assert.equal(rejected.statusCode, 401);
+  assert.equal(rejected.json().error, 'ADMIN_ACCESS_REQUIRED');
+});

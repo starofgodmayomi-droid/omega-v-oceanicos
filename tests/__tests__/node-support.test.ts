@@ -126,17 +126,15 @@ describe('the supported Node version is one claim, not three', () => {
     assert.match(workflow, /local:\/\/ci-restart/);
     assert.match(workflow, /The encrypted local-ledger volume contains plaintext job payload/);
     assert.match(workflow, /job-after-restart\.json/);
-    assert.match(workflow, /check_api\(\) \{/);
-    assert.match(workflow, /API prefix \$path returned HTTP \$status/);
-    assert.match(workflow, /Accept: text\/html/);
-    assert.match(workflow, /Authorization: Bearer ci-smoke-read-token/);
-    assert.match(workflow, /http:\/\/localhost:3000\//);
-    assert.match(
-      workflow,
-      /Root SPA curl failed with exit \$page_curl_exit and HTTP \$page_status/,
-    );
-    assert.match(workflow, /index\.headers/);
-    assert.match(workflow, /Root SPA response did not contain the root mount/);
+    // The job routes carry OMEGA_LOCAL_JOB_LEDGER_TOKEN, not the admin bearer.
+    // The smoke proves that separation by using only the job token.
+    assert.match(workflow, /job_token=ci-smoke-job-token/);
+    assert.match(workflow, /Authorization: Bearer \$job_token/);
+    assert.match(workflow, /\"durable\":true/);
+    assert.match(workflow, /\"source\":\"file\"/);
     assert.match(workflow, /\"encryption\":\"aes-256-gcm\"/);
+    // Required-mode auth still covers the rest of the runtime.
+    assert.match(workflow, /Authorization: Bearer ci-smoke-read-token/);
+    assert.match(workflow, /\$api\/v1\/block\/tip/);
   });
 });

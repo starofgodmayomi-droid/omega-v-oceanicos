@@ -346,6 +346,79 @@ jobs:
             exit 1
           fi
 
+      # The container above is started with the encrypted local job ledger
+      # enabled, but nothing exercised it. This creates a job, removes and
+      # recreates the container against the same mounted volume and key, and
+      # requires the job back — plus no plaintext payload on the volume.
+      - name: Smoke the encrypted job ledger across a restart
+        run: |
+          api=http://localhost:5000
+          job_token=ci-smoke-job-token
+
+          status=$(curl -sS -o /tmp/job.json -w '%{http_code}' -X POST "$api/jobs" \
+            -H "Authorization: Bearer $job_token" \
+            -H 'x-omega-operator-id: ci-smoke-operator' \
+            -H 'Content-Type: application/json' \
+            -d '{"kind":"synthetic-observe","idempotencyKey":"ci-restart-1","actor":"ci-smoke-operator","sourceUri":"local://ci-restart"}')
+          if [ "$status" != "201" ]; then
+            echo "::error::Job creation returned HTTP $status"
+            cat /tmp/job.json
+            exit 1
+          fi
+          test -s /tmp/job.json
+          job_id=$(node -e "const body=JSON.parse(require('fs').readFileSync('/tmp/job.json','utf8')); if (!body.job?.id) process.exit(1); process.stdout.write(body.job.id)")
+          curl -sf -H "Authorization: Bearer $job_token" \
+            "$api/jobs/$job_id" | tee /tmp/job-before-restart.json
+          grep -q "\"id\":\"$job_id\"" /tmp/job-before-restart.json
+
+          # The volume is owned by the image user, so the host runner cannot
+          # read it directly after the ownership fix. Inspect it read-only
+          # through the image as root; this is a CI confidentiality assertion,
+          # not a production permission model.
+          if docker run --rm --user 0:0 \
+            -v "$RUNNER_TEMP/omega-ledger:/tmp/omega-ledger:ro" \
+            --entrypoint sh omega-v-api:ci \
+            -c "grep -R -q -E 'local://ci-restart|ci-restart-1' /tmp/omega-ledger"; then
+            echo "::error::The encrypted local-ledger volume contains plaintext job payload."
+            exit 1
+          fi
+
+          docker rm -f omega-smoke
+          docker run -d --name omega-smoke \
+            -e OMEGA_SIGNING_KEY=ci-smoke-key-not-for-production-2026-strong \
+            -e OMEGA_AUTH_MODE=required \
+            -e OMEGA_ALLOW_UNSIGNED_CYCLE=true \
+            -e OMEGA_READ_TOKEN=ci-smoke-read-token \
+            -e OMEGA_ADMIN_TOKEN=ci-smoke-admin-token \
+            -e OMEGA_LOCAL_JOB_LEDGER=on \
+            -e OMEGA_LOCAL_JOB_LEDGER_TOKEN=ci-smoke-job-token \
+            -e OMEGA_LOCAL_JOB_LEDGER_PATH=/tmp/omega-ledger/jobs.json \
+            -e OMEGA_LOCAL_JOB_LEDGER_KEY=ci-smoke-ledger-key \
+            -e OMEGA_CAUSAL_MEMORY_PATH=/tmp/omega-ledger/causal.jsonl \
+            -e OMEGA_REALITY_ATTESTATION_KEY=ci-smoke-causal-key \
+            -e OMEGA_REALITY_ATTESTATION_SIGNER=ci-smoke-attestor \
+            -e OMEGA_REALITY_ATTESTATION_KEY_VERSION=ci-v1 \
+            -v "$RUNNER_TEMP/omega-ledger:/tmp/omega-ledger" \
+            --network host omega-v-api:ci
+          for attempt in $(seq 1 30); do
+            if curl -sf "$api/health" > /dev/null; then break; fi
+            sleep 1
+          done
+
+          curl -sf -H "Authorization: Bearer $job_token" \
+            "$api/jobs/$job_id" | tee /tmp/job-after-restart.json
+          grep -q "\"id\":\"$job_id\"" /tmp/job-after-restart.json
+
+          curl -sf -H "Authorization: Bearer $job_token" \
+            "$api/jobs" | tee /tmp/jobs-after-restart.json
+          grep -q '"durable":true' /tmp/jobs-after-restart.json
+          grep -q '"source":"file"' /tmp/jobs-after-restart.json
+          grep -q '"encryption":"aes-256-gcm"' /tmp/jobs-after-restart.json
+
+          curl -sf "$api/health" | tee /tmp/health-after-restart.json
+          grep -q '"name":"local-job-ledger","encryption":"aes-256-gcm","keySource":"current"' /tmp/health-after-restart.json
+          grep -q '"complete":false' /tmp/health-after-restart.json
+
       - name: Container logs
         if: always()
         run: docker logs omega-smoke || true

@@ -226,10 +226,11 @@ export function createApp(
     jsonError(reply, 403, 'ADMIN_OPERATOR_NOT_ALLOWED');
     return false;
   };
+  const jobLedgerToken = process.env.OMEGA_LOCAL_JOB_LEDGER_TOKEN?.trim();
+  const isJobRoute = (path: string) => path === '/jobs' || path.startsWith('/jobs/');
   const requireJobAccess = async (request: any, reply: any) => {
-    const configured = process.env.OMEGA_LOCAL_JOB_LEDGER_TOKEN?.trim();
-    if (!configured) return;
-    if (bearer(request.headers.authorization) !== configured) return jsonError(reply, 401, 'JOB_ACCESS_REQUIRED');
+    if (!jobLedgerToken) return;
+    if (bearer(request.headers.authorization) !== jobLedgerToken) return jsonError(reply, 401, 'JOB_ACCESS_REQUIRED');
   };
 
   fastify.register(cors, { origin: corsOrigin });
@@ -238,7 +239,13 @@ export function createApp(
     registerOmegaRoutes(scope, omegaCommands, enforceAdminOperatorIdentity);
   });
   fastify.addHook('onRequest', async (request, reply) => {
-    if (authMode === 'local' || request.method === 'OPTIONS' || request.url.split('?')[0] === '/health') return;
+    const path = request.url.split('?')[0];
+    if (authMode === 'local' || request.method === 'OPTIONS' || path === '/health') return;
+    // Job routes carry their own credential when the local ledger configures
+    // one. Without this branch the hook demands the admin token for a POST and
+    // requireJobAccess then demands the ledger token from the same header, so
+    // no request could ever satisfy both.
+    if (jobLedgerToken && isJobRoute(path)) return;
     const required = request.method === 'GET' ? readToken : adminToken;
     if (bearer(request.headers.authorization) !== required) {
       return jsonError(reply, 401, request.method === 'GET' ? 'READ_ACCESS_REQUIRED' : 'ADMIN_ACCESS_REQUIRED');
