@@ -257,7 +257,7 @@ export function createApp(
 
   registerEcosystemRoute(fastify, authMode, Boolean(attestationSigningKey));
   registerNavigatorEvidenceRoute(fastify);
-  registerRealityRoute(fastify, authMode, Boolean(attestationSigningKey), Boolean(ledgerMemory.getTip()));
+  registerRealityRoute(fastify);
   registerDependencyRoute(fastify);
   registerValueNavigatorRoute(fastify, valueNavigatorStore, jsonError);
   registerConnectorObservationRoute(fastify, jsonError, connectorObservationStore, {
