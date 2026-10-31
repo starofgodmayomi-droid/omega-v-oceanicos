@@ -164,4 +164,43 @@ describe('AuthorizationEngine', () => {
     engine.revoke(g1.id, 'h', fixedTime);
     assert.equal(engine.activeGrantCount, 1);
   });
+
+  it('honours restored grants and keeps restored revocations closed', () => {
+    const original = new AuthorizationEngine();
+    const kept = original.grant({ subject: 'agent-1', scope: 'oceanicos:*', grantedBy: 'human-1' });
+    const revoked = original.grant({ subject: 'agent-2', scope: 'oceanicos:*', grantedBy: 'human-1' });
+    original.revoke(revoked.id, 'human-1', fixedTime);
+
+    const restored = new AuthorizationEngine();
+    restored.restore(original.getAllGrants());
+
+    const allowed = restored.evaluate({
+      changeId: 'c1',
+      subject: 'agent-1',
+      scope: 'oceanicos:worker:test',
+      policyRefs: [],
+      evidence: ['attestation-1'],
+    });
+    assert.equal(allowed.authorized, true);
+    assert.equal(allowed.grantId, kept.id);
+
+    const denied = restored.evaluate({
+      changeId: 'c2',
+      subject: 'agent-2',
+      scope: 'oceanicos:worker:test',
+      policyRefs: [],
+      evidence: ['attestation-1'],
+    });
+    assert.equal(denied.authorized, false);
+    assert.equal(restored.getAllGrants().find((grant) => grant.id === revoked.id)?.revoked, true);
+    assert.equal(restored.activeGrantCount, 1);
+  });
+
+  it('replaces rather than accumulates state on restore', () => {
+    const engine = new AuthorizationEngine();
+    engine.grant({ subject: 'stale', scope: 's', grantedBy: 'h' });
+    engine.restore([]);
+    assert.equal(engine.getAllGrants().length, 0);
+    assert.equal(engine.activeGrantCount, 0);
+  });
 });

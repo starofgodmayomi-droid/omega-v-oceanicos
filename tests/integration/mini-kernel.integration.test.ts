@@ -1,4 +1,4 @@
-import { createServer, Server } from 'node:http';
+import type { Server } from 'node:http';
 import { Observer } from '@omega-v/observer';
 import { VerificationEngine } from '@omega-v/verification';
 import { Remember } from '@omega-v/remember';
@@ -6,6 +6,7 @@ import { MiniKernel, OperatingSystemKernel, OmegaTotalCompressor } from '@omega-
 import { OceanicosClient } from '@omega-v/sdk';
 import { OceanicosCLI } from '@omega-v/cli';
 import { VerificationRule } from '@omega-v/types';
+import { listenApi } from '../helpers/api-server';
 
 describe('Ω∞v Oceanicos Integration — Foundational MINI Kernel & Totality', () => {
   const healthRule: VerificationRule = {
@@ -250,10 +251,9 @@ describe('Ω∞v Oceanicos Integration — Foundational MINI Kernel & Totality',
       process.env.OMEGA_SIGNING_KEY = 'mini-api-integration-key';
       jest.resetModules();
       const module = await import('../../apps/api/src/index');
-      const app = module.default as { (...args: unknown[]): unknown };
+      const app = module.app as { (...args: unknown[]): unknown };
 
-      server = createServer(app as never);
-      await new Promise<void>((resolve) => server.listen(0, resolve));
+      server = await listenApi(app as never);
       const address = server.address();
       if (!address || typeof address === 'string') throw new Error('Test server did not start');
       baseUrl = `http://127.0.0.1:${address.port}`;

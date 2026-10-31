@@ -12,8 +12,6 @@ registers, so it cannot quietly fall behind the code.
 | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
 | `OMEGA_READ_TOKEN`                | Every `GET` except `/health` requires a matching bearer token                                                                                                                | All reads are open                               |
 | `OMEGA_ADMIN_TOKEN`               | `POST /attest/revoke`, `POST /persistence/acknowledge`, and `POST /persistence/reencrypt` require a matching bearer token                                                    | Those mutations need no token                    |
-| `OMEGA_ADMIN_OPERATOR_ALLOWLIST`  | All three admin mutations require `x-omega-operator-id` from the list                                                                                                        | Any operator identity is accepted                |
-| `OMEGA_ADMIN_REQUIRE_ALLOWLIST`   | When `on`, all three admin mutations fail closed unless the operator allowlist is configured and the identity is listed                                                      | Allowlist remains optional                       |
 | `OMEGA_PERSISTENCE_DELETION_MODE` | Declares `unlink-only` or `overwrite-unlink`; invalid values degrade readiness and every mode reports `verified:false`                                                       | `unavailable`; no erasure capability is declared |
 | `OMEGA_PERSISTENCE_CUSTODY_MODE`  | Declares `unverified-local`, `operator-managed`, `hsm-kms`, or `external-reference`; invalid/reference-less values degrade readiness and every mode reports `verified:false` | `unverified-local`; no custody proof is declared |
 
@@ -26,7 +24,7 @@ rather than a safe default. It is stated here rather than discovered.
 set. `/health` stays open so a load balancer can probe it without holding a
 credential.
 
-**Admin-gated** — `POST /attest/revoke`, `POST /persistence/acknowledge`, and `POST /persistence/reencrypt`, by token and by operator identity. Revocation changes what an existing attestation means; persistence acknowledgement records a human review event and does not change readiness or claim repair; re-encryption rewrites authenticated local ciphertext only after complete previous-key evidence, records non-secret counts and key-source provenance, and uses a local transaction journal to reconcile or block interrupted startup; it does not prove distributed recovery or authorize deployment. Deterministic short fingerprints for configured local current/previous secrets are configuration-equality evidence only; they never prove custody, HSM/KMS control, recovery, or secure deletion. Recovery policy declarations (`unavailable`, `operator-provided`, or `external-reference`) expose bounded configuration labels only; unsupported or malformed declarations are invalid and fail readiness closed, while valid labels never verify an operator, custodian, recovery material, or external system. Custody declarations follow the same boundary and always report `verified:false`.
+**Admin-gated** — `POST /attest/revoke`, `POST /persistence/acknowledge`, and `POST /persistence/reencrypt`, by token. Revocation changes what an existing attestation means; persistence acknowledgement records a human review event and does not change readiness or claim repair; re-encryption rewrites authenticated local ciphertext only after complete previous-key evidence, records non-secret counts and key-source provenance, and uses a local transaction journal to reconcile or block interrupted startup; it does not prove distributed recovery or authorize deployment. Deterministic short fingerprints for configured local current/previous secrets are configuration-equality evidence only; they never prove custody, HSM/KMS control, recovery, or secure deletion. Recovery policy declarations (`unavailable`, `operator-provided`, or `external-reference`) expose bounded configuration labels only; unsupported or malformed declarations are invalid and fail readiness closed, while valid labels never verify an operator, custodian, recovery material, or external system. Custody declarations follow the same boundary and always report `verified:false`.
 
 **Local-job-gated** — `POST /jobs`, `POST /jobs/:jobId/claim`, `POST /jobs/:jobId/complete`, and `POST /jobs/:jobId/fail` require `OMEGA_LOCAL_JOB_LEDGER=on`, `OMEGA_LOCAL_JOB_LEDGER_TOKEN`, a matching bearer token, and loopback transport. `GET /jobs` and `GET /jobs/:jobId` use the same token and loopback gate. The ledger is in-memory, bounded, and `durable:false`; it is not a queue, crawler, scheduler, or proof of durable execution.
 
@@ -47,6 +45,13 @@ port, regardless of how the three variables are configured:
 - `POST /os/admit`
 - `POST /mini/cycle`
 - `POST /mini/total`
+- `POST /v1/attest`
+- `POST /v1/cycle`
+- `POST /v1/miner/start`
+- `POST /v1/miner/stop`
+- `POST /v1/auth/keypair`
+- `POST /v1/block/sign`
+- `POST /v1/block/verify-signature`
 
 A caller who can reach the service can write into the append-only chain,
 authorize actions, and record learnings. `POST /attest/verify` is read-shaped

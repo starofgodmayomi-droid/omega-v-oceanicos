@@ -1,4 +1,4 @@
-import { createServer, Server } from 'node:http';
+import type { Server } from 'node:http';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -13,6 +13,7 @@ import {
 } from '../index';
 import { Attestation } from '@omega-v/types';
 import {
+import { listenApi } from '../../../../tests/helpers/api-server';
   appendEvent,
   loadSnapshot,
   readEventLog,
@@ -31,8 +32,7 @@ type LoopPayload = {
 
 describe('API runtime contracts', () => {
   it('exposes the bounded omega kernel capability contract as read-only evidence', async () => {
-    const server = createServer(app as any);
-    await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', () => resolve()));
+    const server = await listenApi(app as any);
     const address = server.address();
     if (!address || typeof address === 'string') throw new Error('API server did not start');
     try {
@@ -150,8 +150,7 @@ describe('API runtime contracts', () => {
   let baseUrl: string;
 
   beforeAll(async () => {
-    server = createServer(app);
-    await new Promise<void>((resolve) => server.listen(0, resolve));
+    server = await listenApi(app);
     const address = server.address();
     if (!address || typeof address === 'string') throw new Error('Test server did not start');
     baseUrl = `http://127.0.0.1:${address.port}`;
@@ -984,8 +983,7 @@ describe('Runtime persistence failures reach the route handlers that trigger the
 
     jest.resetModules();
     const isolated = require('../index') as { app: typeof app };
-    server = createServer(isolated.app);
-    await new Promise<void>((resolve) => server.listen(0, resolve));
+    server = await listenApi(isolated.app);
     const address = server.address();
     if (!address || typeof address === 'string') throw new Error('Test server did not start');
     baseUrl = `http://127.0.0.1:${address.port}`;
@@ -1103,8 +1101,7 @@ describe('partial durable-log recovery readiness', () => {
 
     jest.resetModules();
     const isolated = require('../index') as { app: typeof app };
-    server = createServer(isolated.app);
-    await new Promise<void>((resolve) => server.listen(0, resolve));
+    server = await listenApi(isolated.app);
     const address = server.address();
     if (!address || typeof address === 'string') throw new Error('Test server did not start');
     baseUrl = `http://127.0.0.1:${address.port}`;
@@ -1249,8 +1246,7 @@ describe('persistence review endpoints with nothing pending', () => {
 
     jest.resetModules();
     const isolated = require('../index') as { app: typeof app };
-    server = createServer(isolated.app);
-    await new Promise<void>((resolve) => server.listen(0, resolve));
+    server = await listenApi(isolated.app);
     const address = server.address();
     if (!address || typeof address === 'string') throw new Error('Test server did not start');
     baseUrl = `http://127.0.0.1:${address.port}`;
@@ -1364,8 +1360,7 @@ describe('persistence re-encryption boundary', () => {
 
     jest.resetModules();
     const isolated = require('../index') as { app: typeof app };
-    server = createServer(isolated.app);
-    await new Promise<void>((resolve) => server.listen(0, resolve));
+    server = await listenApi(isolated.app);
     const address = server.address();
     if (!address || typeof address === 'string') throw new Error('Test server did not start');
     baseUrl = `http://127.0.0.1:${address.port}`;
@@ -1466,8 +1461,7 @@ describe('persistence re-encryption failure boundary', () => {
 
     jest.resetModules();
     const isolated = require('../index') as { app: typeof app };
-    server = createServer(isolated.app);
-    await new Promise<void>((resolve) => server.listen(0, resolve));
+    server = await listenApi(isolated.app);
     const address = server.address();
     if (!address || typeof address === 'string') throw new Error('Test server did not start');
     baseUrl = `http://127.0.0.1:${address.port}`;
@@ -1535,8 +1529,7 @@ describe('persistence re-encryption journal startup boundary', () => {
 
     jest.resetModules();
     const isolated = require('../index') as { app: typeof app };
-    server = createServer(isolated.app);
-    await new Promise<void>((resolve) => server.listen(0, resolve));
+    server = await listenApi(isolated.app);
     const address = server.address();
     if (!address || typeof address === 'string') throw new Error('Test server did not start');
     baseUrl = `http://127.0.0.1:${address.port}`;
@@ -1587,8 +1580,7 @@ describe('persistence review admin auth messaging', () => {
 
     jest.resetModules();
     const isolated = require('../index') as { app: typeof app };
-    server = createServer(isolated.app);
-    await new Promise<void>((resolve) => server.listen(0, resolve));
+    server = await listenApi(isolated.app);
     const address = server.address();
     if (!address || typeof address === 'string') throw new Error('Test server did not start');
     baseUrl = `http://127.0.0.1:${address.port}`;
@@ -1659,8 +1651,7 @@ describe('persistence acknowledgement and re-encryption rehydrate after restart'
     try {
       jest.resetModules();
       const first = require('../index') as { app: typeof app };
-      server = createServer(first.app);
-      await new Promise<void>((resolve) => server!.listen(0, resolve));
+      server = await listenApi(first.app);
       let address = server.address();
       if (!address || typeof address === 'string') throw new Error('Test server did not start');
       const firstUrl = `http://127.0.0.1:${address.port}`;
@@ -1694,8 +1685,7 @@ describe('persistence acknowledgement and re-encryption rehydrate after restart'
       // to exercise the startup rehydration path at all.
       jest.resetModules();
       const second = require('../index') as { app: typeof app };
-      server = createServer(second.app);
-      await new Promise<void>((resolve) => server!.listen(0, resolve));
+      server = await listenApi(second.app);
       address = server.address();
       if (!address || typeof address === 'string') throw new Error('Test server did not start');
       const secondUrl = `http://127.0.0.1:${address.port}`;
@@ -1745,8 +1735,7 @@ describe('persistence acknowledgement and re-encryption rehydrate after restart'
     try {
       jest.resetModules();
       const first = require('../index') as { app: typeof app };
-      server = createServer(first.app);
-      await new Promise<void>((resolve) => server!.listen(0, resolve));
+      server = await listenApi(first.app);
       let address = server.address();
       if (!address || typeof address === 'string') throw new Error('Test server did not start');
       const firstUrl = `http://127.0.0.1:${address.port}`;
@@ -1781,8 +1770,7 @@ describe('persistence acknowledgement and re-encryption rehydrate after restart'
 
       jest.resetModules();
       const second = require('../index') as { app: typeof app };
-      server = createServer(second.app);
-      await new Promise<void>((resolve) => server!.listen(0, resolve));
+      server = await listenApi(second.app);
       address = server.address();
       if (!address || typeof address === 'string') throw new Error('Test server did not start');
       const secondUrl = `http://127.0.0.1:${address.port}`;
@@ -1845,8 +1833,7 @@ describe('static web client, when a build is present', () => {
 
     jest.resetModules();
     const isolated = require('../index') as { app: typeof app };
-    server = createServer(isolated.app);
-    await new Promise<void>((resolve) => server.listen(0, resolve));
+    server = await listenApi(isolated.app);
     const address = server.address();
     if (!address || typeof address === 'string') throw new Error('Test server did not start');
     baseUrl = `http://127.0.0.1:${address.port}`;

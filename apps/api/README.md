@@ -35,6 +35,7 @@ configured with:
 ```text
 OMEGA_RUNTIME_STORE_PATH
 OMEGA_EVENT_LOG_PATH
+OMEGA_GOVERNANCE_LOG_PATH
 OMEGA_PERSISTENCE_KEY
 OMEGA_PERSISTENCE_KEY_PREVIOUS
 OMEGA_PERSISTENCE_RECOVERY_MODE
@@ -91,6 +92,14 @@ Jobs are local, bounded, idempotent, and provenance-bearing. They are not a
 distributed worker scheduler and do not grant authorization to perform
 external actions.
 
+## Attestation
+
+`POST /v1/attest` signs with `OMEGA_SIGNING_KEY`. The runtime boots without it
+(the attester reports `degraded`), and the route answers `503` until a key of at
+least `MIN_ATTESTATION_KEY_LENGTH` characters is configured. The signature is
+HMAC-SHA256 over the canonical attestation payload; the key value is never
+returned by any route.
+
 ## Attestation revocation
 
 ```text
@@ -122,6 +131,70 @@ POST /v1/auth/keypair
 POST /v1/block/sign
 POST /v1/block/verify-signature
 ```
+
+## Pipeline and ecosystem routes
+
+```text
+POST /v1/pipeline
+GET  /v1/ecosystem/status
+GET  /v1/reality/status
+GET  /v1/dependencies
+```
+
+`POST /v1/pipeline` runs the C0→C6 change pipeline and fails closed:
+`compile`, `admission.authorityVerified` and `admission.policySatisfied`
+are required, and an observation without evidence stays `UNKNOWN` rather
+than being upgraded to `VERIFIED`.
+
+## Governance routes (C6 / C7 / authorization)
+
+```text
+POST /v1/reconciliation/reconcile
+POST /v1/reconciliation/batch
+POST /v1/provenance/append
+GET  /v1/provenance/verify
+GET  /v1/provenance/lineage/:changeId
+GET  /v1/provenance/tip
+POST /v1/authorization/grant
+POST /v1/authorization/evaluate
+POST /v1/authorization/revoke
+GET  /v1/authorization/grants
+```
+
+Reconciliation compares an expected and an observed state and reports
+`VERIFIED`, `DIVERGENT`, `NOT_EXECUTED` or `UNKNOWN`; it records nothing.
+Provenance is an append-only hash-chained ledger, and `GET
+/v1/provenance/verify` reports chain integrity. Authorization is a
+fail-closed grant/evaluate engine: it refuses self-grants, honors expiry
+and revocation, and never infers authority from the caller's own claim.
+
+The provenance chain and the authorization grants are journaled. Each mutation
+appends one record to `OMEGA_GOVERNANCE_LOG_PATH` (default
+`<dbPath dir>/governance.jsonl`) using the same append-only, optionally
+AES-256-GCM-encrypted writer as the event log, and the journal is replayed on
+boot. A restart therefore resumes the same hash chain — `GET
+/v1/provenance/verify` keeps reporting the chain's real integrity — and keeps
+the recorded revocations in force.
+
+Governance responses carry `durable`: `true` when the record reached the
+journal, `false` when it exists in memory only (`OMEGA_PERSISTENCE=off`, a
+`:memory:` database, or an unwritable path). The journal is a single-host file,
+not a distributed log.
+
+## Omega command lifecycle
+
+```text
+GET  /v1/omega/workers
+GET  /v1/omega/commands
+POST /v1/omega/commands
+GET  /v1/omega/events
+POST /v1/omega/coordination/evidence
+```
+
+Commands move through propose → admit → approve → execute → observe →
+verify-reality under `/v1/omega/commands/:id/...`; worker registration,
+heartbeats and leases live under `/v1/omega/workers/...`. Both families are
+parameterised and are asserted by `tests/integration/omega_command_api.test.ts`.
 
 ## Static client
 

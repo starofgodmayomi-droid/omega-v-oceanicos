@@ -1,4 +1,5 @@
-import { createServer, Server } from 'node:http';
+import type { Server } from 'node:http';
+import { listenApi } from '../../../../tests/helpers/api-server';
 
 /**
  * `/act` refuses to authorize an action against an attestation that has
@@ -12,7 +13,7 @@ import { createServer, Server } from 'node:http';
  * attestation (which would just fail signature verification instead).
  */
 describe('API attestation TTL enforcement', () => {
-  let app: Parameters<typeof createServer>[0];
+  let app: Parameters<typeof listenApi>[0];
   let server: Server;
   let baseUrl: string;
 
@@ -23,8 +24,7 @@ describe('API attestation TTL enforcement', () => {
     delete process.env.OMEGA_ATTESTATION_ALGORITHM;
 
     app = (await import('../server')).default;
-    server = createServer(app);
-    await new Promise<void>((resolve) => server.listen(0, resolve));
+    server = await listenApi(app);
     const address = server.address();
     if (!address || typeof address === 'string') throw new Error('Test server did not start');
     baseUrl = `http://127.0.0.1:${address.port}`;

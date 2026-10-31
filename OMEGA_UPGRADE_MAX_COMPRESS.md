@@ -5,7 +5,7 @@ VERIFY(ΔREALITY)
 SOURCE → RUNTIME → REALITY
 ```
 
-Canonical detail: [`docs/upgrades/MAX_COMPRESS_FULL_STACK_HANDOFF.md`](docs/upgrades/MAX_COMPRESS_FULL_STACK_HANDOFF.md)
+Canonical detail: [`docs/ROADMAP.md`](docs/ROADMAP.md)
 
 | Surface | Entry |
 |---------|--------|

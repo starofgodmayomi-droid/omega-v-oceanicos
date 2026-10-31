@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { API_ROUTE_INVENTORY } from '../route-contract';
 
 /**
  * Documentation drift is a correctness problem, not a cosmetic one.
@@ -9,20 +10,25 @@ import { join } from 'node:path';
  * that was removed for being forgeable — long after it stopped existing.
  * Both were found by reading, which does not scale and does not run in CI.
  *
- * This asserts the README describes every route the API actually serves.
+ * The route list this checks is `src/route-contract.ts`. The startup banner it
+ * used to check no longer exists: the Express generation printed an
+ * "Available endpoints" list, the Fastify runtime replaced it with the route
+ * contract plus `app.printRoutes()`, and the old assertion was left matching a
+ * string that had been deleted. Reading the contract instead means a route
+ * added to the inventory and the README together stays documented, and a route
+ * removed from both stays absent.
  */
 describe('API documentation', () => {
   const root = process.cwd();
-  const source = readFileSync(join(root, 'apps/api/src/index.ts'), 'utf8');
   const readme = readFileSync(join(root, 'apps/api/README.md'), 'utf8');
 
-  const routes = Array.from(source.matchAll(/app\.(get|post)\('([^']+)'/g)).map((match) => ({
-    method: match[1].toUpperCase(),
-    path: match[2],
-  }));
+  const routes = API_ROUTE_INVENTORY.map((entry) => {
+    const [method, path] = entry.split(' ');
+    return { method, path };
+  });
 
-  it('finds the routes it is meant to check', () => {
-    expect(routes.length).toBeGreaterThan(10);
+  it('reads the route contract it is meant to check', () => {
+    expect(routes.length).toBeGreaterThan(20);
     expect(routes.map((route) => route.path)).toContain('/health');
   });
 
@@ -51,52 +57,21 @@ describe('API documentation', () => {
 });
 
 /**
- * The startup banner is the first thing an operator reads, and it is a
- * documentation surface with no guard.
- *
- * It has now drifted twice. GET /log was added in one change and reached
- * the banner only later; by this commit the banner advertised 16 of the
- * 27 routes the server actually registers, omitting /attest/verify,
- * /attest/public-key, /attest/revocations and /observability — four
- * endpoints the CLI itself calls. An operator reading the banner would
- * conclude they do not exist.
- *
- * documentation.test.ts already asserts the README describes every route.
- * This applies the same rule to the banner, so the two cannot diverge
- * again without failing here.
+ * The other direction: the README must not teach an operator a route the
+ * server does not answer. Every documented `METHOD /path` line therefore has
+ * to appear in the inventory that the route-contract test proves is registered.
  */
-describe('startup banner', () => {
+describe('documented routes', () => {
   const root = process.cwd();
-  const source = readFileSync(join(root, 'apps/api/src/index.ts'), 'utf8');
+  const readme = readFileSync(join(root, 'apps/api/README.md'), 'utf8');
+  const inventory = new Set<string>(API_ROUTE_INVENTORY);
 
-  const registered = Array.from(source.matchAll(/app\.(get|post)\('([^']+)'/g)).map((match) => ({
-    method: match[1].toUpperCase(),
-    path: match[2],
-  }));
-
-  const banner = source.slice(
-    source.indexOf('Available endpoints:'),
-    source.indexOf("].join('\\n')", source.indexOf('Available endpoints:'))
-  );
-
-  it('finds a banner to check', () => {
-    expect(banner).toContain('Available endpoints:');
-    expect(registered.length).toBeGreaterThan(20);
-  });
-
-  it.each(registered.map((route) => [`${route.method} ${route.path}`, route.method, route.path]))(
-    'advertises %s',
-    (_label, method, path) => {
-      expect(banner).toMatch(new RegExp(`${method}\\s+${path.replace(/\//g, '\\/')}(\\s|')`));
-    }
-  );
-
-  it('advertises nothing the server does not serve', () => {
-    const advertised = Array.from(banner.matchAll(/(GET|POST)\s+(\/[a-zA-Z0-9:/-]*)/g)).map(
+  it('documents no route the contract does not serve', () => {
+    const documented = Array.from(readme.matchAll(/^(GET|POST)\s+(\/\S*)$/gm)).map(
       (match) => `${match[1]} ${match[2]}`
     );
-    const real = new Set(registered.map((route) => `${route.method} ${route.path}`));
 
-    expect(advertised.filter((entry) => !real.has(entry))).toEqual([]);
+    expect(documented.length).toBeGreaterThan(20);
+    expect(documented.filter((entry) => !inventory.has(entry))).toEqual([]);
   });
 });

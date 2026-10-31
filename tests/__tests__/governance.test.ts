@@ -21,7 +21,7 @@ describe('governance describes the real surface', () => {
   const source = readFileSync(join(root, 'apps/api/src/index.ts'), 'utf8');
   const governance = readFileSync(join(root, 'docs/GOVERNANCE.md'), 'utf8');
 
-  const routes = Array.from(source.matchAll(/app\.(get|post)\('([^']+)'/g)).map((match) => ({
+  const routes = Array.from(source.matchAll(/(?:app|fastify)\.(get|post)\('([^']+)'/g)).map((match) => ({
     method: match[1].toUpperCase(),
     path: match[2],
   }));

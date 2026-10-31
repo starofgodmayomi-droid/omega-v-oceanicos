@@ -378,3 +378,47 @@ governance ledger, cross-process sharing, distributed consistency, or
 deployment claim. `packages/sdk` and `packages/cli` remain outside the pnpm
 workspace and still target removed package exports, so they need a migration
 before they can carry these surfaces.
+
+### Durable governance ledger — local checkpoint — 2026-10-31
+
+The C7 provenance chain and the authority grant registry previously lived only
+in the API process, so every restart rewound the chain to genesis and forgot
+which subjects had been granted or revoked. Both are now journaled and replayed.
+
+- Every mutation (`POST /v1/provenance/append`,
+  `POST /v1/authorization/grant`, `POST /v1/authorization/revoke`) appends one
+  record to `OMEGA_GOVERNANCE_LOG_PATH` (default `<dbPath dir>/governance.jsonl`)
+  through the same append-only, AES-256-GCM-capable event-log writer the runtime
+  already uses, so the journal inherits `OMEGA_PERSISTENCE_KEY` and its key
+  rotation rather than introducing a second key.
+- On registration the journal is replayed into the engines
+  (`ProvenanceChain.restore`, `AuthorizationEngine.restore`). Entries keep their
+  recorded hashes, ids and timestamps, so the restarted process continues the
+  same chain and `GET /v1/provenance/verify` reports the chain's actual
+  integrity. A tampered journal reports `integrity:false`; it is not repaired.
+- Revocations survive the restart, so a revoked subject is still denied and
+  `activeCount` reflects the recorded ledger.
+- Governance responses now carry `durable`. `true` means the record reached the
+  journal; `false` means the mutation was accepted in memory only
+  (`OMEGA_PERSISTENCE=off`, a `:memory:` database, or an unwritable path) and is
+  reported as such instead of being presented as persisted.
+
+Observed locally: `apps/api/src/__tests__/governance-durability.test.ts` builds a
+second app over the same store and re-checks chain length and integrity, the tip
+hash, lineage, restored grants, the surviving revocation, an `authorized:true`
+evaluation for the kept grant, an `authorized:false` evaluation for the revoked
+one, and the continuation of the chain (sequence 3 linked to the restored tip).
+The contrasting case asserts `durable:false` and an empty ledger when
+persistence is off. The provenance and authorization package suites cover
+`restore()` directly, including altered history reporting `integrity:false`.
+Full suite (`tests/run-node-suite.mjs`): 1755 tests, 1624 passing, 131 failing —
+the same 131 failures the suite reported before this slice, all of them the
+legacy-package and pre-Fastify suites documented in `tests/run-node-suite.mjs`.
+No suite regressed and the 54 governance assertions added here pass.
+
+Not earned by this slice: the journal is a single-host append-only file, not a
+distributed log. Two API instances would each replay and extend their own copy;
+there is no cross-process lease, no compaction, and no verification that the
+file is on durable media. Journal encryption is only as good as
+`OMEGA_PERSISTENCE_KEY`; with it unset the records are plaintext. No deployment
+claim is made.

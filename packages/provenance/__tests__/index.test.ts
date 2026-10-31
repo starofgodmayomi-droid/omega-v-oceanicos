@@ -75,4 +75,38 @@ describe('ProvenanceChain', () => {
     const entry = chain.append('c1', 'observer', null, [], fixedTime);
     assert.equal(entry.attributedTo, null);
   });
+
+  it('resumes a restored chain instead of starting a second one', () => {
+    const original = new ProvenanceChain();
+    original.append('c1', 'src1', 'a1', [], fixedTime);
+    original.append('c2', 'src1', 'a1', [], fixedTime);
+
+    const restored = new ProvenanceChain();
+    restored.restore(original.getAll());
+
+    assert.equal(restored.length, 2);
+    assert.equal(restored.verifyIntegrity(), true);
+    assert.equal(restored.tip?.hash, original.tip?.hash);
+    assert.equal(restored.tip?.createdAt, fixedTime(), 'restore keeps recorded timestamps');
+
+    const next = restored.append('c3', 'src2', 'a2', [], fixedTime);
+    assert.equal(next.sequence, 3);
+    assert.equal(next.previousHash, original.tip?.hash);
+    assert.equal(restored.verifyIntegrity(), true);
+  });
+
+  it('reports false integrity for a restored chain whose history was altered', () => {
+    const original = new ProvenanceChain();
+    original.append('c1', 'src1', 'a1', [], fixedTime);
+    original.append('c2', 'src1', 'a1', [], fixedTime);
+
+    const tampered = original.getAll().map((entry, index) =>
+      index === 0 ? { ...entry, source: 'rewritten' } : entry
+    );
+    const restored = new ProvenanceChain();
+    restored.restore(tampered);
+
+    assert.equal(restored.length, 2, 'restore does not silently drop the tampered history');
+    assert.equal(restored.verifyIntegrity(), false);
+  });
 });

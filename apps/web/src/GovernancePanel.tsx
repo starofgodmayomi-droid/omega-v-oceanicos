@@ -69,10 +69,12 @@ const inputStyle: React.CSSProperties = {
 };
 
 export function GovernancePanel() {
-  const [integrity, setIntegrity] = useState<{ integrity: boolean; length: number } | null>(null);
+  const [integrity, setIntegrity] = useState<{ integrity: boolean; length: number; durable: boolean } | null>(null);
   const [tip, setTip] = useState<ProvenanceTip | null>(null);
   const [grants, setGrants] = useState<{ grants: GrantSummary[]; activeCount: number } | null>(null);
-  const [loading, setLoading] = useState(false);
+  // Starts true: before the first read lands there is no integrity verdict, and
+  // an unread chain must not be painted as BROKEN.
+  const [loading, setLoading] = useState(true);
   const [readError, setReadError] = useState<string | null>(null);
 
   const [changeId, setChangeId] = useState('');
@@ -91,7 +93,11 @@ export function GovernancePanel() {
         readJson('/v1/provenance/tip'),
         readJson('/v1/authorization/grants'),
       ]);
-      setIntegrity({ integrity: verifyData.integrity === true, length: verifyData.length ?? 0 });
+      setIntegrity({
+        integrity: verifyData.integrity === true,
+        length: verifyData.length ?? 0,
+        durable: verifyData.durable === true,
+      });
       setTip(tipData.tip ?? null);
       setGrants({ grants: grantData.grants ?? [], activeCount: grantData.activeCount ?? 0 });
     } catch (err: any) {
@@ -244,14 +250,23 @@ export function GovernancePanel() {
                   fontSize: '10px',
                   fontWeight: 800,
                   letterSpacing: '0.1em',
-                  color: integrity?.integrity ? theme.verified : theme.divergent,
+                  color: integrity
+                    ? integrity.integrity
+                      ? theme.verified
+                      : theme.divergent
+                    : theme.textDim,
                 }}
               >
-                {integrity?.integrity ? 'INTACT' : 'BROKEN'}
+                {integrity ? (integrity.integrity ? 'INTACT' : 'BROKEN') : 'UNKNOWN'}
               </span>
               <span style={{ ...valueStyle, color: theme.textMuted }}>
                 {integrity?.length ?? 0} entries
               </span>
+              {integrity && (
+                <span style={{ ...valueStyle, color: theme.textDim }}>
+                  {integrity.durable ? 'journaled' : 'memory only'}
+                </span>
+              )}
             </div>
             <div style={{ ...valueStyle, color: theme.textMuted }}>
               tip: {tip ? `${tip.changeId} · seq ${tip.sequence}` : 'none'}

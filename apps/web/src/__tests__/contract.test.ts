@@ -16,7 +16,7 @@ describe('web/API contract', () => {
   const viteConfig = readFileSync(join(root, 'apps/web/vite.config.ts'), 'utf8');
 
   const serverRoutes = new Set(
-    Array.from(server.matchAll(/app\.(get|post)\('([^']+)'/g)).map((match) => match[2])
+    Array.from(server.matchAll(/(?:app|fastify)\.(get|post)\('([^']+)'/g)).map((match) => match[2])
   );
 
   // The dev server rewrites /api/* onto the API root, so the client's

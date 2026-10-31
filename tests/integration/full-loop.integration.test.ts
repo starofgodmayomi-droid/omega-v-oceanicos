@@ -1,4 +1,4 @@
-import { createServer, Server } from 'node:http';
+import type { Server } from 'node:http';
 import { mkdtempSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -6,6 +6,7 @@ import { Remember, FileMemoryStore } from '@omega-v/remember';
 import { AttestationService } from '@omega-v/attestation';
 import { Observer } from '@omega-v/observer';
 import { VerificationEngine } from '@omega-v/verification';
+import { listenApi } from '../helpers/api-server';
 
 /**
  * Cross-package integration.
@@ -57,8 +58,7 @@ describe('full loop, written by the API and read back by the packages', () => {
     const module = await import('../../apps/api/src/index');
     app = module.default as typeof app;
 
-    server = createServer(app as never);
-    await new Promise<void>((resolve) => server.listen(0, resolve));
+    server = await listenApi(app as never);
     const address = server.address();
     if (!address || typeof address === 'string') throw new Error('Test server did not start');
     baseUrl = `http://127.0.0.1:${address.port}`;

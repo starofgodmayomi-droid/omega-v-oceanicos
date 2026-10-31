@@ -104,6 +104,12 @@ export function createApp(
     encryptionKey: process.env.OMEGA_LOCAL_JOB_LEDGER_KEY,
   });
   const omegaCommandPath = dbPath === ':memory:' ? ':memory:' : join(resolve(dbPath, '..'), 'omega-commands.db');
+  // Provenance entries and authority grants are journaled next to the runtime
+  // store so a restart resumes the same hash chain and grant ledger instead of
+  // starting from genesis. `:memory:` databases get no journal.
+  const governanceLogPath =
+    process.env.OMEGA_GOVERNANCE_LOG_PATH?.trim() ||
+    (dbPath === ':memory:' ? ':memory:' : join(resolve(dbPath, '..'), 'governance.jsonl'));
   const omegaCommands = new OmegaCommandStore(omegaCommandPath);
 
   fastify.addHook('onClose', async () => {
@@ -157,7 +163,11 @@ export function createApp(
   registerEcosystemRoute(fastify, authMode, Boolean(attestationSigningKey));
   registerRealityRoute(fastify, authMode, Boolean(attestationSigningKey), Boolean(ledgerMemory.getTip()));
   registerDependencyRoute(fastify);
-  registerGovernanceRoutes(fastify, jsonError);
+  registerGovernanceRoutes(fastify, jsonError, {
+    enabled: persistenceEnabled && governanceLogPath !== ':memory:',
+    path: governanceLogPath,
+    secret: persistenceKey,
+  });
 
   fastify.get('/health', async (_request, reply) => {
     const memoryReady = true;

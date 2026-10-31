@@ -16,13 +16,24 @@
  * NOT supported: `jest.mock` module interception and fake timers. Suites that
  * need them are excluded by tests/run-node-suite.mjs and reported as unwired.
  */
-import { describe, it, test, before, after, beforeEach, afterEach } from 'node:test';
+import { describe, it, test, before, after, beforeEach, afterEach, mock as nodeMock } from 'node:test';
 import assert from 'node:assert/strict';
 import { inspect } from 'node:util';
 import { registerHooks, createRequire } from 'node:module';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import {
+  isMocked,
+  isMockFacadeUrl,
+  mockFacadeUrl,
+  registerMock,
+  renderFacade,
+  requireActual,
+  resetModules,
+  scanSourceForMocks,
+} from './jest-mock.mjs';
+import { isRepoSource, transformSource } from './esbuild-transform.mjs';
 
 const fmt = (value) => inspect(value, { depth: 4, breakLength: 120 });
 
@@ -350,13 +361,37 @@ const unsupported = (name) => () => {
   throw new Error(`jest.${name} is not supported by the node test runner (see tests/helpers/jest-compat.mjs)`);
 };
 
+/** The module that called into the jest global — always the test file itself. */
+function callerFileUrl() {
+  const stack = new Error().stack ?? '';
+  for (const line of stack.split('\n').slice(1)) {
+    const match = line.match(/\(?((?:file:\/\/)?\/[^():]+):\d+:\d+\)?$/);
+    if (!match) continue;
+    const file = match[1];
+    if (file.includes('jest-compat.mjs') || file.includes('jest-mock.mjs')) continue;
+    return file.startsWith('file://') ? file : pathToFileURL(file).href;
+  }
+  return undefined;
+}
+
 const jestGlobal = {
   fn,
   setTimeout: () => {},
-  mock: unsupported('mock'),
+  mock: (specifier, factory) => registerMock(specifier, factory, callerFileUrl()),
+  requireActual: (specifier) => requireActual(specifier, callerFileUrl()),
+  resetModules,
+  unmock: () => {},
   spyOn: unsupported('spyOn'),
-  useFakeTimers: unsupported('useFakeTimers'),
-  useRealTimers: () => {},
+  // Jest's modern timers, on top of node:test's MockTimers.
+  useFakeTimers: (options = {}) =>
+    nodeMock.timers.enable({
+      apis: ['setTimeout', 'setInterval', 'setImmediate', 'Date'],
+      now: options.now ?? Date.now(),
+    }),
+  advanceTimersByTime: (ms) => nodeMock.timers.tick(ms),
+  runAllTimers: () => nodeMock.timers.runAll(),
+  runOnlyPendingTimers: () => nodeMock.timers.runAll(),
+  useRealTimers: () => nodeMock.timers.reset(),
 };
 
 /** `it.each` / `describe.each`, including `%s` printf and `$key` object titles. */
@@ -398,6 +433,39 @@ for (const entry of readdirSync(join(repoRoot, 'packages'), { withFileTypes: tru
 
 const CJS_FACADE = '?cjs-facade';
 
+/**
+ * Names the importing module asks for from `specifier`. A CommonJS build
+ * cannot export an interface, so a facade that mirrors only the runtime keys
+ * makes `import { SomeInterface } from '@oceanicos/types'` fail to link. The
+ * requested names are appended to the facade URL and exported as whatever the
+ * runtime module provides (undefined for types), which restores the elision
+ * that a type-aware transform would have done.
+ */
+function requestedNames(parentURL, specifier) {
+  if (!parentURL?.startsWith('file:')) return [];
+  try {
+    const source = readFileSync(fileURLToPath(parentURL), 'utf8');
+    const quoted = specifier.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const pattern = new RegExp(`import\\s+(?:type\\s+)?\\{([^}]*)\\}\\s*from\\s*['"]${quoted}['"]`, 'g');
+    const names = new Set();
+    for (const match of source.matchAll(pattern)) {
+      for (const part of match[1].split(',')) {
+        const name = part.trim().split(/\s+as\s+/)[0].trim();
+        if (/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(name)) names.add(name);
+      }
+    }
+    return [...names];
+  } catch {
+    return [];
+  }
+}
+
+const facadeUrlFor = (targetUrl, context, specifier) => {
+  const names = requestedNames(context.parentURL, specifier);
+  const query = names.length ? `&names=${encodeURIComponent(names.join(','))}` : '';
+  return `${targetUrl}${CJS_FACADE}${query}`;
+};
+
 /** True when the package owning `file` is a CommonJS package. */
 function isCommonJs(file) {
   let dir = dirname(file);
@@ -417,6 +485,12 @@ function isCommonJs(file) {
 
 registerHooks({
   resolve(specifier, context, nextResolve) {
+    // A specifier registered with jest.mock(): ES module importers get a
+    // generated facade (see tests/helpers/jest-mock.mjs), CommonJS importers
+    // resolve the real module and read the patched properties.
+    if (isMocked(specifier) && (context.conditions ?? []).includes('import')) {
+      return { url: mockFacadeUrl(specifier), shortCircuit: true };
+    }
     // Jest mapped '@jest/globals' to the runner's own globals.
     if (specifier === '@jest/globals') {
       return { url: pathToFileURL(fileURLToPath(import.meta.url)).href, shortCircuit: true };
@@ -427,7 +501,11 @@ registerHooks({
     // point them at the compiled server instead.
     if (/^(\.\/)?\.\.\/index(\.js)?$/.test(specifier) && context.parentURL?.includes('/apps/api/src/__tests__/')) {
       const built = join(repoRoot, 'apps/api/dist/index.js');
-      if (existsSync(built)) return { url: pathToFileURL(built).href + CJS_FACADE, shortCircuit: true };
+      if (!existsSync(built)) return nextResolve(specifier, context);
+      // A CommonJS caller (jest.resetModules() + require) gets the real file;
+      // an ESM importer gets the facade served by the load hook below.
+      if ((context.conditions ?? []).includes('require')) return { url: pathToFileURL(built).href, shortCircuit: true };
+      return { url: pathToFileURL(built).href + CJS_FACADE, shortCircuit: true };
     }
     // Relative imports: the sources use TS's NodeNext convention
     // (`import { x } from './jobs.js'` for jobs.ts) and Jest stripped the
@@ -454,28 +532,40 @@ registerHooks({
       } catch {
         const alias = packageEntryPoints.get(`@omega-v/${specifier.split('/')[1]}`) ?? packageEntryPoints.get(`@oceanicos/${specifier.split('/')[1]}`);
         if (!alias) throw new Error(`package ${specifier} no longer exists in this repository`);
-        return { url: pathToFileURL(alias).href + CJS_FACADE, shortCircuit: true };
+        return { url: facadeUrlFor(pathToFileURL(alias).href, context, specifier), shortCircuit: true };
       }
       // A CommonJS dist cannot expose named exports to an ESM importer without
       // help; the load hook below re-exports it as an ESM facade.
       const file = fileURLToPath(resolved.url);
       const esmImporter = (context.conditions ?? []).includes('import');
       if (esmImporter && /\.js$/.test(file) && file.includes('/packages/') && file.includes('/dist/') && isCommonJs(file)) {
-        return { url: resolved.url + CJS_FACADE, shortCircuit: true };
+        return { url: facadeUrlFor(resolved.url, context, specifier), shortCircuit: true };
       }
       return resolved;
     }
     return nextResolve(specifier, context);
   },
   load(url, context, nextLoad) {
+    // A mocked specifier imported from an ES module: forward every export to
+    // the mock object registered by jest.mock().
+    if (isMockFacadeUrl(url)) {
+      const specifier = decodeURIComponent(url.slice(url.indexOf(':') + 1));
+      return { format: 'module', source: renderFacade(specifier), shortCircuit: true };
+    }
     // The workspace packages are CommonJS builds; their named exports are not
     // statically analysable, so re-export them through a generated ESM facade.
-    if (url.endsWith(CJS_FACADE)) {
-      const file = fileURLToPath(url.slice(0, -CJS_FACADE.length));
+    if (url.includes(CJS_FACADE)) {
+      const [fileUrl, query = ''] = url.split('?');
+      const file = fileURLToPath(fileUrl);
       const exported = requireFromHere(file);
       const names = Object.keys(exported).filter(
         (key) => key !== 'default' && /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(key)
       );
+      // Type-only names the importer asked for: exported as undefined so the
+      // module links (see requestedNames above).
+      for (const name of (new URLSearchParams(query).get('names') ?? '').split(',')) {
+        if (name && name !== 'default' && /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(name) && !names.includes(name)) names.push(name);
+      }
       const source = [
         "import { createRequire } from 'node:module';",
         `const m = createRequire(import.meta.url)(${JSON.stringify(file)});`,
@@ -484,7 +574,22 @@ registerHooks({
       ].join('\n');
       return { format: 'module', source, shortCircuit: true };
     }
-    return nextLoad(url, context);
+    const loaded = nextLoad(url, context);
+    if (!loaded.source) return loaded;
+    const source = loaded.source.toString();
+    // Test files: register their jest.mock() calls before their own imports
+    // are resolved (the hoisting Jest's transform does for us), and give the
+    // suite a require() rooted at itself for jest.resetModules() + require.
+    if (/\.(?:test|spec)\.[cm]?[jt]sx?$/.test(url)) {
+      scanSourceForMocks(source, url);
+    }
+    // Repository TS/TSX: elide type-only imports and compile JSX (the loader's
+    // own transform cannot do either) — see tests/helpers/esbuild-transform.mjs.
+    if (isRepoSource(url)) {
+      const transformed = transformSource(url, source);
+      if (transformed !== null) return { format: 'module', source: transformed, shortCircuit: true };
+    }
+    return loaded;
   },
 });
 

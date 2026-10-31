@@ -1,7 +1,8 @@
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { createServer, Server } from 'node:http';
+import type { Server } from 'node:http';
+import { listenApi } from '../../../../tests/helpers/api-server';
 
 /**
  * A revocation registry integrity mismatch means the persisted digest of the
@@ -15,7 +16,7 @@ import { createServer, Server } from 'node:http';
  * `revocations` array before the server module is loaded.
  */
 describe('API revocation registry integrity mismatch', () => {
-  let app: Parameters<typeof createServer>[0];
+  let app: Parameters<typeof listenApi>[0];
   let server: Server;
   let baseUrl: string;
 
@@ -54,8 +55,7 @@ describe('API revocation registry integrity mismatch', () => {
     delete process.env.OMEGA_ADMIN_OPERATOR_ALLOWLIST;
 
     app = (await import('../server')).default;
-    server = createServer(app);
-    await new Promise<void>((resolve) => server.listen(0, resolve));
+    server = await listenApi(app);
     const address = server.address();
     if (!address || typeof address === 'string') throw new Error('Test server did not start');
     baseUrl = `http://127.0.0.1:${address.port}`;

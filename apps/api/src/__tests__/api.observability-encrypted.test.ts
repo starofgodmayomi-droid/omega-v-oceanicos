@@ -1,9 +1,10 @@
-import { createServer, type Server } from 'node:http';
+import type { Server } from 'node:http';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import type { Express } from 'express';
+import { listenApi } from '../../../../tests/helpers/api-server';
 
 /**
  * The read-only observability surface (/health, /state, /observability,
@@ -52,11 +53,7 @@ describe('encrypted, persisted observability and audit surface', () => {
 
     jest.resetModules();
     const { app } = requireFromModule('../index') as { app: Express };
-    server = createServer(app);
-    await new Promise<void>((resolve, reject) => {
-      server.once('error', reject);
-      server.listen(0, '127.0.0.1', () => resolve());
-    });
+    server = await listenApi(app);
     const address = server.address();
     if (!address || typeof address === 'string') throw new Error('Test server did not start');
     baseUrl = `http://127.0.0.1:${address.port}`;

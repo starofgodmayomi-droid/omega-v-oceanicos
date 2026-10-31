@@ -58,7 +58,10 @@ packages/
 ├── sdk/                # + SDK — typed client
 ├── cli/                # + CLI — operator commands
 ├── coordination/       # + COORDINATION — bounded coordination contracts
-└── runtime/            # + RUNTIME — bounded agent execution loop
+├── runtime/            # + RUNTIME — bounded agent execution loop
+├── authorization/      # + AUTHORITY — fail-closed grants for the C4 gate
+├── provenance/         # + PROVENANCE — append-only hash-chained lineage
+└── reconciliation/     # + RECONCILE — expected ↔ actual verdicts
 ```
 
 | Package                 | Expansion                                       |
@@ -70,6 +73,9 @@ packages/
 | `@omega-v/cli`          | `+ CLI` — operator surface                      |
 | `@omega-v/coordination` | `+ COORDINATION` — bounded workers and builders |
 | `@omega-v/runtime`      | `+ RUNTIME` — bounded agent loop and memory     |
+| `@omega-v/authorization`| `+ AUTHORITY` — fail-closed grants (C4 gate)    |
+| `@omega-v/provenance`   | `+ PROVENANCE` — hash-chained lineage (C7)      |
+| `@omega-v/reconciliation`| `+ RECONCILE` — expected ↔ actual verdicts (C6) |
 
 Apps (`apps/api`, `apps/web`) are interface expansions (`+ API`, `+ Web`).
 

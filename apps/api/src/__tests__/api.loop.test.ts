@@ -1,5 +1,6 @@
-import { createServer, Server } from 'node:http';
-import app from '../index';
+import type { Server } from 'node:http';
+import { app } from '../index';
+import { listenApi } from '../../../../tests/helpers/api-server';
 
 type Body<T> = { data: T; meta?: Record<string, unknown> };
 type Attestation = {
@@ -72,8 +73,7 @@ describe('API loop: act, learn, recompile', () => {
   });
 
   beforeAll(async () => {
-    server = createServer(app);
-    await new Promise<void>((resolve) => server.listen(0, resolve));
+    server = await listenApi(app);
     const address = server.address();
     if (!address || typeof address === 'string') throw new Error('Test server did not start');
     baseUrl = `http://127.0.0.1:${address.port}`;

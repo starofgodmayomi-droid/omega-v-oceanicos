@@ -81,6 +81,22 @@ export class ProvenanceChain {
   }
 
   /**
+   * Rehydrate the chain from durable storage.
+   *
+   * Entries are taken verbatim — recorded hashes, ids and `createdAt` included
+   * — so a restarted process continues the same chain instead of starting a
+   * second one. This is not a repair path: `verifyIntegrity()` re-checks every
+   * hash and link afterwards, so a tampered journal is reported as false
+   * rather than silently rebuilt.
+   */
+  restore(entries: readonly ProvenanceEntry[]): void {
+    this.entries.length = 0;
+    for (const entry of entries) {
+      this.entries.push({ ...entry, lineage: [...entry.lineage] });
+    }
+  }
+
+  /**
    * Verify the integrity of the entire chain.
    *
    * Checks that every entry's hash matches a recomputation, and that each

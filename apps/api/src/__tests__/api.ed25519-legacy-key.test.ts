@@ -1,5 +1,6 @@
 import { generateKeyPairSync } from 'node:crypto';
-import { createServer, Server } from 'node:http';
+import type { Server } from 'node:http';
+import { listenApi } from '../../../../tests/helpers/api-server';
 
 /**
  * `api.ed25519.test.ts` always sets both `OMEGA_ED25519_PRIVATE_KEY` and
@@ -33,14 +34,13 @@ type LoopPayload = {
 };
 
 describe('API Ed25519 legacy key-variable and default key-version fallbacks', () => {
-  let app: Parameters<typeof createServer>[0];
+  let app: Parameters<typeof listenApi>[0];
   let server: Server;
   let baseUrl: string;
 
   beforeAll(async () => {
     app = (await import('../server')).default;
-    server = createServer(app);
-    await new Promise<void>((resolve) => server.listen(0, resolve));
+    server = await listenApi(app);
     const address = server.address();
     if (!address || typeof address === 'string') {
       throw new Error('Test server did not start');

@@ -46,6 +46,8 @@ docker-compose.override.yml
 *.sqlite
 *.sqlite3
 *.db
+# Append-only runtime journals (event log, governance ledger)
+*.jsonl
 
 # Cache
 .eslintcache

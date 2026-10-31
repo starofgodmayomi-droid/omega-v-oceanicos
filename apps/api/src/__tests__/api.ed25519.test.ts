@@ -1,5 +1,6 @@
 import { generateKeyPairSync } from 'node:crypto';
-import { createServer, Server } from 'node:http';
+import type { Server } from 'node:http';
+import { listenApi } from '../../../../tests/helpers/api-server';
 
 const { privateKey } = generateKeyPairSync('ed25519');
 process.env.NODE_ENV = 'test';
@@ -27,14 +28,13 @@ type LoopPayload = {
 };
 
 describe('API Ed25519 integration', () => {
-  let app: Parameters<typeof createServer>[0];
+  let app: Parameters<typeof listenApi>[0];
   let server: Server;
   let baseUrl: string;
 
   beforeAll(async () => {
     app = (await import('../server')).default;
-    server = createServer(app);
-    await new Promise<void>((resolve) => server.listen(0, resolve));
+    server = await listenApi(app);
     const address = server.address();
     if (!address || typeof address === 'string') {
       throw new Error('Test server did not start');

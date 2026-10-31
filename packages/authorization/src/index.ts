@@ -129,6 +129,20 @@ export class AuthorizationEngine {
   }
 
   /**
+   * Rehydrate the grant ledger from durable storage.
+   *
+   * Replaces what this engine holds with the recorded grants, revocation state
+   * included, so a restart keeps denying the subjects that were revoked and
+   * keeps honouring the ones that were not. Grants are stored verbatim and are
+   * not re-validated here: expiry is evaluated against the clock on each
+   * `evaluate()`, and an unusable record surfaces as a failed match (DENY).
+   */
+  restore(grants: readonly AuthorityGrant[]): void {
+    this.grants.clear();
+    for (const grant of grants) this.grants.set(grant.id, { ...grant, policyRefs: [...grant.policyRefs] });
+  }
+
+  /**
    * Revoke a grant. Revocation is immediate and irreversible.
    */
   revoke(grantId: string, revokedBy: string, now: () => string = () => new Date().toISOString()): void {

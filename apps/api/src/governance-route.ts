@@ -7,16 +7,83 @@
  */
 import type { FastifyInstance } from 'fastify';
 import { reconcile, reconcileAll, summarizeReconciliation } from '@omega-v/reconciliation';
-import { ProvenanceChain } from '@omega-v/provenance';
-import { AuthorizationEngine } from '@omega-v/authorization';
+import { ProvenanceChain, type ProvenanceEntry } from '@omega-v/provenance';
+import { AuthorizationEngine, type AuthorityGrant } from '@omega-v/authorization';
+import { appendEvent, readEventLog } from './persistence.js';
 
 type JsonError = (reply: any, status: number, error: string, extra?: Record<string, unknown>) => any;
+
+/**
+ * Where governance state is journaled between processes.
+ *
+ * `path` is the append-only log the runtime writes each mutation to; `secret`
+ * is the same persistence key the runtime already uses for its event log, so
+ * the journal inherits that encryption rather than inventing a second one.
+ */
+export type GovernancePersistence = {
+  enabled: boolean;
+  path: string;
+  secret?: string;
+};
+
+type GovernanceRecord =
+  | { kind: 'provenance.append'; entry: ProvenanceEntry }
+  | { kind: 'authorization.grant'; grant: AuthorityGrant }
+  | { kind: 'authorization.revoke'; grantId: string; revokedBy: string; revokedAt: string };
 
 // Singleton engines for the API process.
 const provenanceChain = new ProvenanceChain();
 const authorizationEngine = new AuthorizationEngine();
 
-export function registerGovernanceRoutes(fastify: FastifyInstance, jsonError: JsonError): void {
+/**
+ * Replay the journal into the engines.
+ *
+ * A history that cannot be read is not a reason to refuse service: the engine
+ * is rehydrated with whatever is recoverable, `GET /v1/provenance/verify`
+ * reports the chain's actual integrity, and `/health` already reports the
+ * event log as `partial`. Nothing is repaired or synthesized here.
+ */
+function restoreGovernance(persistence?: GovernancePersistence): void {
+  if (!persistence?.enabled) {
+    // No journal: start empty rather than inheriting a previous app instance
+    // in this process (integration suites build several apps per run).
+    provenanceChain.restore([]);
+    authorizationEngine.restore([]);
+    return;
+  }
+
+  const read = readEventLog<GovernanceRecord>(persistence.path, true, persistence.secret);
+  const provenance: ProvenanceEntry[] = [];
+  const grants: AuthorityGrant[] = [];
+
+  for (const record of read.entries) {
+    if (record?.kind === 'provenance.append') provenance.push(record.entry);
+    else if (record?.kind === 'authorization.grant') grants.push(record.grant);
+    else if (record?.kind === 'authorization.revoke') {
+      const grant = grants.find((candidate) => candidate.id === record.grantId);
+      if (grant) Object.assign(grant, { revoked: true, revokedBy: record.revokedBy, revokedAt: record.revokedAt });
+    }
+  }
+
+  provenanceChain.restore(provenance);
+  authorizationEngine.restore(grants);
+}
+
+export function registerGovernanceRoutes(
+  fastify: FastifyInstance,
+  jsonError: JsonError,
+  persistence?: GovernancePersistence,
+): void {
+  restoreGovernance(persistence);
+
+  const durable = Boolean(persistence?.enabled);
+
+  /** Journal one mutation. A failed append is reported, never swallowed. */
+  const journal = (record: GovernanceRecord): boolean => {
+    if (!persistence?.enabled) return false;
+    return appendEvent(persistence.path, record, true, persistence.secret).appended;
+  };
+
   // ── C6: Reconciliation ──────────────────────────────────────────────
 
   fastify.post('/v1/reconciliation/reconcile', async (request: any, reply: any) => {
@@ -68,11 +135,17 @@ export function registerGovernanceRoutes(fastify: FastifyInstance, jsonError: Js
       typeof body.attributedTo === 'string' ? body.attributedTo : null,
       Array.isArray(body.lineage) ? body.lineage : [],
     );
-    return { success: true, entry };
+    const persisted = journal({ kind: 'provenance.append', entry });
+    return { success: true, entry, durable: persisted };
   });
 
   fastify.get('/v1/provenance/verify', async () => {
-    return { success: true, integrity: provenanceChain.verifyIntegrity(), length: provenanceChain.length };
+    return {
+      success: true,
+      integrity: provenanceChain.verifyIntegrity(),
+      length: provenanceChain.length,
+      durable,
+    };
   });
 
   fastify.get('/v1/provenance/lineage/:changeId', async (request: any, reply: any) => {
@@ -85,7 +158,7 @@ export function registerGovernanceRoutes(fastify: FastifyInstance, jsonError: Js
   });
 
   fastify.get('/v1/provenance/tip', async () => {
-    return { success: true, tip: provenanceChain.tip, length: provenanceChain.length };
+    return { success: true, tip: provenanceChain.tip, length: provenanceChain.length, durable };
   });
 
   // ── Authorization ────────────────────────────────────────────────────
@@ -107,7 +180,8 @@ export function registerGovernanceRoutes(fastify: FastifyInstance, jsonError: Js
         grantedBy: body.grantedBy,
         expiresAt: body.expiresAt,
       });
-      return { success: true, grant };
+      const persisted = journal({ kind: 'authorization.grant', grant });
+      return { success: true, grant, durable: persisted };
     } catch (error: any) {
       return jsonError(reply, 400, error.message ?? 'GRANT_FAILED');
     }
@@ -139,7 +213,14 @@ export function registerGovernanceRoutes(fastify: FastifyInstance, jsonError: Js
 
     try {
       authorizationEngine.revoke(body.grantId, body.revokedBy);
-      return { success: true, grantId: body.grantId, revoked: true };
+      const grant = authorizationEngine.getAllGrants().find((candidate) => candidate.id === body.grantId);
+      const persisted = journal({
+        kind: 'authorization.revoke',
+        grantId: body.grantId,
+        revokedBy: body.revokedBy,
+        revokedAt: grant?.revokedAt ?? new Date().toISOString(),
+      });
+      return { success: true, grantId: body.grantId, revoked: true, durable: persisted };
     } catch (error: any) {
       return jsonError(reply, 400, error.message ?? 'REVOKE_FAILED');
     }
@@ -150,6 +231,7 @@ export function registerGovernanceRoutes(fastify: FastifyInstance, jsonError: Js
       success: true,
       grants: authorizationEngine.getAllGrants(),
       activeCount: authorizationEngine.activeGrantCount,
+      durable,
     };
   });
 }
