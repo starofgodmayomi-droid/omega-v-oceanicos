@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { proposeRepositoryChange } from '../repo-builder.js';
+import { describe, expect, it } from '../../../../tests/support/jest-compat.mjs';
+import { proposeRepositoryChange } from '../../dist/repo-builder.js';
 
 describe('repo builder', () => {
   it('creates a bounded proposal without claiming authorization', () => {

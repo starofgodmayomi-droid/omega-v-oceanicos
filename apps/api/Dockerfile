@@ -24,6 +24,9 @@ RUN pnpm install --frozen-lockfile
 
 # One origin serves both: the API and the static client it talks to.
 RUN pnpm --filter @oceanicos/types build \
+ && pnpm --filter @oceanicos/kai build \
+ && pnpm --filter @oceanicos/elion build \
+ && pnpm --filter @oceanicos/omega build \
  && pnpm --filter @omega-v/kernel build \
  && pnpm --filter @oceanicos/observer build \
  && pnpm --filter @oceanicos/verification build \

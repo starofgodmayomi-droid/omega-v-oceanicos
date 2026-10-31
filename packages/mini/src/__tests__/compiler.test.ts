@@ -1,6 +1,6 @@
-import { describe, expect, it } from '@jest/globals';
+import { describe, expect, it } from '../../../../tests/support/jest-compat.mjs';
 import type { NetworkGraph, OmegaEvidenceRef, OmegaPolicyRef, OmegaWorkerPlan } from '@oceanicos/types';
-import { compileOmegaIntent } from '../compiler';
+import { compileOmegaIntent } from '../../dist/compiler.js';
 
 const evidenceRefs: readonly OmegaEvidenceRef[] = [
   { id: 'evidence-1', kind: 'test-result', source: 'ci', digest: 'sha256:abc' },

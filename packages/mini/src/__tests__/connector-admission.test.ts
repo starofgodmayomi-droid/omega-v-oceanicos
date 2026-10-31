@@ -1,10 +1,10 @@
-import { describe, expect, it } from '@jest/globals';
-import type { OmegaConnectorDeclaration } from '../connector-admission';
+import { describe, expect, it } from '../../../../tests/support/jest-compat.mjs';
+import type { OmegaConnectorDeclaration } from '../../dist/connector-admission.js';
 import {
   admitOmegaConnector,
   MAX_CONNECTOR_ATTEMPTS,
   MAX_CONNECTOR_TIMEOUT_MS,
-} from '../connector-admission';
+} from '../../dist/connector-admission.js';
 
 const connector: OmegaConnectorDeclaration = {
   id: 'github.read-repository',

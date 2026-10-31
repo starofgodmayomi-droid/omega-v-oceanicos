@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { createOmegaWorkerRegistry, getOmegaWorker } from '../worker-registry.js';
+import { describe, expect, it } from '../../../../tests/support/jest-compat.mjs';
+import { createOmegaWorkerRegistry, getOmegaWorker } from '../../dist/worker-registry.js';
 import type { OmegaWorkerCapability } from '@oceanicos/types';
 
 const observer: OmegaWorkerCapability = {

@@ -1,6 +1,6 @@
-import { describe, expect, it } from '@jest/globals';
+import { describe, expect, it } from '../../../../tests/support/jest-compat.mjs';
 import type { OmegaChangeRecord, OmegaIR, OmegaWorkerCapability, OmegaWorkerRegistry } from '@oceanicos/types';
-import { admitOmegaIR } from '../admission-bridge';
+import { admitOmegaIR } from '../../dist/admission-bridge.js';
 
 const worker: OmegaWorkerCapability = {
   id: 'tester',

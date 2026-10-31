@@ -1,6 +1,6 @@
-import { describe, expect, it } from '@jest/globals';
+import { describe, expect, it } from '../../../../tests/support/jest-compat.mjs';
 import type { OmegaIR } from '@oceanicos/types';
-import { validateOmegaIR } from '../ir-validator';
+import { validateOmegaIR } from '../../dist/ir-validator.js';
 
 const validIR: OmegaIR = {
   version: 'omega-ir.v1',

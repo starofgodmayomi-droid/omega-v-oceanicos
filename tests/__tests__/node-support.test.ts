@@ -1,3 +1,4 @@
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, jest, test } from '../support/jest-compat.mjs';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -97,10 +98,13 @@ describe('the supported Node version is one claim, not three', () => {
     expect(workflow).toMatch(/Authorization: Bearer ci-smoke-admin-token/);
   });
 
-  it('runs browser-sensitive release tests in-band', () => {
-    expect(manifest.scripts?.test).toContain('--runInBand');
-    expect(manifest.scripts?.['test:fast']).toContain('--runInBand');
-    expect(manifest.scripts?.['test:coverage']).toContain('--runInBand');
+  it('runs the suites in-band on the node test runner', () => {
+    // The root Jest preset was never installed, so the suites now run on
+    // `node:test`; the in-band guarantee survives as --test-concurrency=1.
+    expect(manifest.scripts?.test).toContain('node --experimental-strip-types');
+    expect(manifest.scripts?.test).toContain('--test-concurrency=1');
+    expect(manifest.scripts?.['test:coverage']).toContain('--test-concurrency=1');
+    expect(manifest.scripts?.test).not.toContain('jest');
   });
 
   it('hosts an encrypted local-ledger restart smoke in CI', () => {

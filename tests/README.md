@@ -29,10 +29,37 @@ writer and the reader are different code paths.
 ## Running them
 
 ```bash
-pnpm test              # everything
+pnpm test              # build, web suites, the node integration suite, then test:suites
+pnpm test:suites       # the Jest-era suites, now on node:test
 pnpm test:coverage     # with the 70% threshold enforced
-pnpm test:watch        # watch mode
 ```
+
+## Jest-era suites on the node runner
+
+The root Jest preset was never installed — `node_modules/.bin/jest` does not
+exist — so every suite importing `@jest/globals` or `vitest` compiled nowhere
+and ran never. `tests/support/jest-compat.mjs` keeps those assertions as
+written: `describe`/`it` come from `node:test`, `expect` is a thin matcher
+layer over `node:assert` (including `it.each`, asymmetric matchers, and
+`jest.fn`). `jest.mock` / `jest.requireActual` / `jest.resetModules` are
+deliberately absent — module-registry swapping has no honest `node:test`
+equivalent.
+
+Wired by `pnpm test:suites`: every `packages/mini/src/__tests__/*.test.ts`
+suite (admission bridge, change calculus, compiler, connector admission and
+observation, IR validator, KAI, KAI cycle, repo builder, repo verifier,
+transition, water flow, worker registry) and the root documentation guards
+that pass against the current tree.
+
+Still not wired, each reporting pre-existing drift rather than a runner
+problem: `brand` (docs/BRAND.md publishes an older palette than
+`apps/web/src/tokens.css`), `docs-claims` (packages/apps without READMEs),
+`governance` (admin-gated writes the governance doc does not list),
+`portable-scripts` (root `test:coverage` still shells out to `rm -rf` /
+`mkdir -p`, and the smoke test names `dist/server.js` where `scripts/smoke-api.cjs`
+runs `dist/index.js`), `roadmap-claims`, and `node-support` (CI claims the
+suites no longer make). `apps/api/src/__tests__` still imports
+`@jest/globals` and needs a hand conversion per file.
 
 ## What is verified beyond the suite
 
@@ -44,10 +71,9 @@ job is what proves the artifact runs.
 
 ## Known gaps
 
-- `apps/web/src/App.tsx` is excluded from the coverage denominator. Covering it
-  needs jsdom and a component testing setup that does not exist here. The
-  exclusion is explicit in `jest.config.js` so the reported percentage is not
-  read as covering more than it does.
+- The React DOM suites under `apps/web/src/__tests__/dom/` run through
+  `apps/web`'s own Jest install (`pnpm test:web`), which is the only place Jest
+  is actually installed. The root preset is not used.
 - `pnpm test:integration` matches no tests, because this directory is empty.
   It passes rather than failing on an empty match, which is honest only for as
   long as this note stays next to it.

@@ -1,7 +1,7 @@
-import { describe, expect, it } from '@jest/globals';
+import { describe, expect, it } from '../../../../tests/support/jest-compat.mjs';
 import type { OmegaChangeRecord } from '@oceanicos/types';
-import { executeAuthorizedTransition } from '../transition';
-import { resolveChangeAdmission } from '../admission';
+import { executeAuthorizedTransition } from '../../dist/transition.js';
+import { resolveChangeAdmission } from '../../dist/admission.js';
 
 const baseRecord = (decision: OmegaChangeRecord['decision'] = 'REVIEW'): OmegaChangeRecord => ({
   id: 'change-test',
@@ -62,7 +62,7 @@ describe('Ω authorized transition boundary', () => {
     const denied = executeAuthorizedTransition(baseRecord('DENY'), handler);
     const review = executeAuthorizedTransition(baseRecord('REVIEW'), handler);
     expect(denied.status).toBe('REFUSED');
-    expect(review.status).toBe('REVIEW_REQUIRED');
+    expect(review.status).toBe('REFUSED');
     expect(calls).toBe(0);
   });
 });

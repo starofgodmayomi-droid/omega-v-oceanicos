@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { reconcileRepositoryState } from '../repo-verifier.js';
+import { describe, expect, it } from '../../../../tests/support/jest-compat.mjs';
+import { reconcileRepositoryState } from '../../dist/repo-verifier.js';
 
 const expected = { repository: 'starofgodmayomi-droid/omega-v-oceanicos', ref: 'refs/heads/main', headSha: 'abc', clean: true, observedAt: '2026-10-01T16:00:00.000Z' };
 
