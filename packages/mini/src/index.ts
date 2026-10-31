@@ -186,6 +186,40 @@ export type {
   KaixelionStep,
 } from './kaixelion-omega.js';
 
+export {
+  evaluateEcosystemFixpoint,
+  hashFixpointDelta,
+  FIXPOINT_EQUATION_ID,
+  MAX_FIXPOINT_DELTA_CHARS,
+  MAX_FIXPOINT_MEMORY,
+} from './ecosystem-fixpoint.js';
+export type { FixpointInput, FixpointReason, FixpointStatus, FixpointStep } from './ecosystem-fixpoint.js';
+
+export {
+  ECOSYSTEM_BODY_EQUATION_ID,
+  ECOSYSTEM_BODY_EQUATION_SOURCE,
+  ECOSYSTEM_BODY_REALITY,
+  EQUATION_LAW_OBSERVATION,
+  EQUATION_TEXT,
+  MAX_EQUATION_SURFACES,
+  REPO_OUTWARD_RING,
+  compressRepoEquation,
+  compressRepoTowardUpgrade,
+  expandRepoEquation,
+  observeOutwardFiles,
+  reconcileOutwardExpansion,
+} from './ecosystem-body-equation.js';
+export type {
+  EquationBody,
+  EquationCompression,
+  EquationExpansion,
+  EquationHalt,
+  EquationIssue,
+  OutwardSurface,
+  RepoSurfaceObservation,
+  RepoUpgradeCompression,
+} from './ecosystem-body-equation.js';
+
 export function executeOceanicosMaxExpansion(): CryptographicBlock {
   const kernelChain = new PluralisticHashChain();
   const telemetry = observePlanetaryBase();
