@@ -392,7 +392,7 @@ export class OceanicosClient {
       },
       verification: {
         passed: verification.summary.passed,
-        rulesEvaluated: verification.summary.rulesApplied,
+        rulesEvaluated: verification.summary.rulesApplied ?? 0,
       },
       attestation: { id: attestation.id, signature: attestation.signature },
       kernelState: {

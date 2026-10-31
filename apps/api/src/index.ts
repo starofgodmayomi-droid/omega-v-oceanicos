@@ -76,8 +76,8 @@ export function createApp(
   const fastify = Fastify({
     logger,
     rewriteUrl: (request) => {
-      const url = request.url;
-      if (url && (url === '/api' || url.startsWith('/api/'))) return url.slice(4) || '/';
+      const url: string = request.url ?? '/';
+      if (url === '/api' || url.startsWith('/api/')) return url.slice(4) || '/';
       return url;
     },
   });

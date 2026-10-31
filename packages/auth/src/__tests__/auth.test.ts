@@ -4,7 +4,7 @@ describe('@omega-v/auth — OceanicosAuthEngine', () => {
   let auth: OceanicosAuthEngine;
 
   beforeEach(() => {
-    auth = new OceanicosAuthEngine('test-master-secret-1234');
+    auth = new OceanicosAuthEngine('test-master-secret-1234-abcdefghijklmnop');
   });
 
   describe('Identity Creation & Retrieval', () => {
@@ -70,8 +70,8 @@ describe('@omega-v/auth — OceanicosAuthEngine', () => {
       const { did } = auth.createIdentity('SERVICE', ['observe:write']);
       expect(() => auth.issueToken(did, 'wrong-secret')).toThrow('Authentication Failed');
 
-      const { did, secret } = auth.createIdentity('SYSTEM', ['admin:all']);
-      const token = auth.issueToken(did, secret);
+      const { did: systemDid, secret: systemSecret } = auth.createIdentity('SYSTEM', ['admin:all']);
+      const token = auth.issueToken(systemDid, systemSecret);
       const tampered = `${token.slice(0, -5)}abcde`;
       const verification = auth.verifyToken(tampered);
       expect(verification.valid).toBe(false);

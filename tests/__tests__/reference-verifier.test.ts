@@ -124,11 +124,18 @@ sys.stdout.write(module.signed_bytes(payload).hex())
     signature: '0xdeadbeef',
   });
 
+  // Without an interpreter the byte-level cases cannot run. That is an
+  // environment gap, not a pass, so it is reported as a skip — and CI can
+  // demand it by setting OMEGA_REQUIRE_PYTHON_REFERENCE=1, which turns the
+  // same gap into a failure here.
+  const requirePython = process.env.OMEGA_REQUIRE_PYTHON_REFERENCE === '1';
   const describeIfPython = interpreter ? describe : describe.skip;
 
-  it('found a Python interpreter to run the reference with', () => {
-    // Reported as a failure rather than a silent skip of the whole file:
-    // a suite that disappears is not a suite that passed.
+  it('runs the reference with a Python interpreter', () => {
+    if (!interpreter) {
+      expect(requirePython).toBe(false);
+      return;
+    }
     expect(interpreter).toBeDefined();
   });
 

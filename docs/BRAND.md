@@ -149,6 +149,11 @@ WHITE
 
 The existing product token system remains the implementation layer. New UI work should use canonical design tokens rather than introducing ad-hoc color literals.
 
+The remaining literal-colour debt is stated rather than hidden:
+`apps/web/src/App.css` currently carries **109 distinct colours across 146 uses**.
+That number may be paid down freely but must not quietly grow — the brand
+suite fails if either count rises.
+
 ### Existing semantic tokens
 
 Defined in `apps/web/src/tokens.css`:

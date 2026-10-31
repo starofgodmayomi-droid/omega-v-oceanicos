@@ -211,15 +211,17 @@ export { resolveChangeAdmission } from './admission.js';
 export type { OmegaAdmissionEvidence } from './admission.js';
 export { executeAuthorizedTransition } from './transition.js';
 export type {
-  OmegaTransitionInput,
-  OmegaTransitionResult,
-  OmegaTransitionVerdict,
+  TransitionExecution,
+  TransitionExecutionStatus,
+  TransitionExecutorOptions,
+  TransitionHandler,
+  TransitionMemory,
 } from './transition.js';
 export { verifyExecutedReality } from './reality.js';
 export type {
-  OmegaRealityInput,
-  OmegaRealityVerdict,
-  OmegaRealityVerification,
+  RealityObserverOptions,
+  RealityVerification,
+  RealityVerificationStatus,
 } from './reality.js';
 export { compileOmegaIntent } from './compiler.js';
 export type { OmegaCompileInput } from './compiler.js';
@@ -234,12 +236,14 @@ export { runOmegaChangePipeline, resolveBoundedWorkerHandler } from './pipeline.
 export type {
   OmegaPipelineInput,
   OmegaPipelineResult,
-  OmegaPipelineStage,
+  PipelineStage,
+  PipelineHaltReason,
 } from './pipeline.js';
 export { FileCausalMemory, createRealityAttestation, verifyRealityAttestation } from './causal-memory.js';
 export type { CausalMemory, CausalMemoryEntry, RealityAttestation } from './causal-memory.js';
 export {
   OMEGA_EMPTY_ROOT,
+  OMEGA_FIXPOINT_OPERATOR,
   createOmegaFixpointState,
   evaluateOmegaOperator,
   iterateOmegaFixpoint,
@@ -248,10 +252,12 @@ export {
 } from './fixpoint.js';
 export type {
   OmegaDelta,
-  OmegaDeltaVerdict,
-  OmegaFixpointEntry,
-  OmegaFixpointResult,
+  OmegaFixpointRun,
   OmegaFixpointState,
+  OmegaHaltReason,
+  OmegaMemoryEntry,
+  OmegaOperatorResult,
+  OmegaVerdict,
 } from './fixpoint.js';
 export const MiniKernelCoordinator = MiniKernel;
 export type MiniKernelCoordinator = MiniKernel;

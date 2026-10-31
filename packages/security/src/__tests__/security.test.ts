@@ -6,7 +6,7 @@ describe('SecurityEngine (Sections XVIII & XIX)', () => {
   let subject: IdentitySubject;
 
   beforeEach(() => {
-    engine = new SecurityEngine('test-secret-key');
+    engine = new SecurityEngine('test-secret-key-0123456789-abcdefghijkl');
     subject = {
       id: 'agent-observer-1',
       type: 'AGENT',

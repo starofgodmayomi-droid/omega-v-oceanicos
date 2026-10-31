@@ -114,7 +114,7 @@ Module._resolveFilename = function resolveFilename(request, parent, isMain, opti
 
 const originalLoad = Module._load;
 Module._load = function load(request, parent, isMain) {
-  const mock = moduleMocks.get(request);
+  const mock = globalThis.__jestRequireActualDepth > 0 ? undefined : moduleMocks.get(request);
   if (mock) {
     if (!mock.loaded) {
       mock.exports = mock.factory();

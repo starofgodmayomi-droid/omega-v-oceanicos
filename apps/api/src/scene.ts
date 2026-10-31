@@ -5,8 +5,8 @@ import type {
   SceneSimulationInput,
   SceneState,
   SceneTrace,
-  validateSceneInput,
-} from '@omega-v/types';
+} from '@oceanicos/types';
+import { validateSceneInput } from '@oceanicos/types';
 
 const SCENE_STATES: readonly SceneState[] = [
   'darkness',

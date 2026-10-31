@@ -1,9 +1,32 @@
+export interface HardwareState {
+  readonly cpu: number;
+  readonly ram: number;
+  readonly io: string;
+  readonly ts: string;
+}
+
+export interface INewsArticle {
+  readonly source: string;
+  readonly headline: string;
+  readonly timestamp: string;
+  readonly impactMetric: number;
+}
+
 export interface IObservation {
   readonly uuid: string;
   readonly timestamp: string;
   readonly siliconYield: number;
   readonly gridLoadMegawatts: number;
   readonly acceleratorInventory: number;
+  readonly hardwareState?: HardwareState;
+  readonly globalNewsFeed?: readonly INewsArticle[];
+  readonly androidAutomationState?: boolean;
+}
+
+export interface McpDiagnostics {
+  readonly logcatAnomalyCount: number;
+  readonly stepDurationMs: number;
+  readonly profileExecuted: string;
 }
 
 export interface IEvidence {
@@ -12,6 +35,7 @@ export interface IEvidence {
   readonly timestamp: string;
   readonly observationUuid: string;
   readonly signatureProof: string;
+  readonly mcpDiagnostics?: McpDiagnostics;
 }
 
 export interface IMiniBlock {

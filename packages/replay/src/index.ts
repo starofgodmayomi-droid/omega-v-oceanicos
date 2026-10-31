@@ -187,12 +187,12 @@ export class VerificationReplayEngine {
         severity: 'INFO',
       });
     }
-    if (rulesA.rulesPassed !== rulesB.rulesPassed) {
+    if ((rulesA.rulesPassed ?? 0) !== (rulesB.rulesPassed ?? 0)) {
       changes.push({
         path: 'verification.summary.rulesPassed',
-        valueA: rulesA.rulesPassed,
-        valueB: rulesB.rulesPassed,
-        severity: rulesA.rulesPassed > rulesB.rulesPassed ? 'REGRESSION' : 'WARNING',
+        valueA: rulesA.rulesPassed ?? 0,
+        valueB: rulesB.rulesPassed ?? 0,
+        severity: (rulesA.rulesPassed ?? 0) > (rulesB.rulesPassed ?? 0) ? 'REGRESSION' : 'WARNING',
       });
     }
 

@@ -254,6 +254,8 @@ const lazy = (target, name, factory) => {
   Object.defineProperty(target, name, { get: factory, enumerable: false, configurable: true });
 };
 
+const THROW_MATCHERS = new Set(['toThrow', 'toThrowError']);
+
 function createAsyncAssertions(mode, negate) {
   return (promise, asyncNegate = negate) => {
     const assertions = {};
@@ -265,6 +267,19 @@ function createAsyncAssertions(mode, negate) {
         } catch (error) {
           if (mode === 'resolves') {
             fail(`Expected the promise to resolve, but it rejected with ${format(error)}`);
+          }
+          // `rejects.toThrow(...)` matches the rejection reason, not a thunk,
+          // so hand the matcher a function that rethrows it.
+          if (THROW_MATCHERS.has(name)) {
+            applyMatcher(
+              name,
+              () => {
+                throw error;
+              },
+              args,
+              asyncNegate
+            );
+            return;
           }
           applyMatcher(name, error, args, asyncNegate);
           return;
@@ -432,7 +447,16 @@ export const jest = {
   dontMock(moduleName) {
     jest.unmock(moduleName);
   },
-  requireActual: (id) => nodeRequire(id),
+  requireActual: (id) => {
+    // Bypass this registry so a factory calling `requireActual` on the module
+    // it is mocking loads the real module instead of recursing into itself.
+    globalThis.__jestRequireActualDepth = (globalThis.__jestRequireActualDepth ?? 0) + 1;
+    try {
+      return nodeRequire(id);
+    } finally {
+      globalThis.__jestRequireActualDepth -= 1;
+    }
+  },
   requireMock: (id) => nodeRequire(id),
   resetModules: requireCacheReset,
   isolateModules: (fn) => fn(),

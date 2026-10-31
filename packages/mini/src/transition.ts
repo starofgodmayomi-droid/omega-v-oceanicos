@@ -47,7 +47,10 @@ export function executeAuthorizedTransition(
   const now = options.now ?? (() => new Date().toISOString());
   const memory = options.memory;
 
-  if (record.decision === 'DENY' || !record.authorized) {
+  // A DENY decision, and an ALLOW that was never authorized, both fail closed.
+  // REVIEW is reported as REVIEW before the authorization check so a change
+  // awaiting human or policy review is not mislabelled as refused.
+  if (record.decision === 'DENY' || (record.decision === 'ALLOW' && !record.authorized)) {
     const refused: OmegaChangeRecord = {
       ...record,
       authorized: false,

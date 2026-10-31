@@ -66,7 +66,7 @@ describe('package scripts are portable', () => {
     >;
     expect(scripts['smoke:api']).toBe('pnpm build && node scripts/smoke-api.cjs');
     expect(readFileSync(join(root, 'scripts/smoke-api.cjs'), 'utf8')).toContain(
-      "spawn(process.execPath, ['dist/server.js']"
+      "spawn(process.execPath, ['dist/index.js']"
     );
   });
 

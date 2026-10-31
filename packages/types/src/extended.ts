@@ -48,6 +48,7 @@ export interface MemoryRecord {
   verified: boolean;
   confidence: number;
   summary?: string;
+  recordedAt?: string;
   rememberedAt: string;
 }
 

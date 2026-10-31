@@ -26,7 +26,7 @@
     "totality": "bash scripts/oceanicos-totality.sh",
     "verify:full": "pnpm run totality",
     "smoke:api": "pnpm build && node scripts/smoke-api.cjs",
-    "test:coverage": "rm -rf coverage && NODE_V8_COVERAGE=coverage/raw node scripts/run-node-suite.mjs",
+    "test:coverage": "node scripts/coverage.cjs",
     "cli": "node bin/oceanicos.mjs",
     "oceanicos": "node bin/oceanicos.mjs",
     "start:api": "pnpm --filter api run start",

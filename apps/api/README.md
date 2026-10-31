@@ -1,12 +1,17 @@
-# @omega-v/api
+# api
 
 Fastify HTTP runtime for Ω∞v | OCEANICOS.
 
 The executable contract is the current `createApp` surface. Persistence,
-local jobs, readiness, attestation revocations, and optional static-client
-serving are supported modules and are registered by `createApp`. The supported
-route inventory is pinned in `src/route-contract.ts` and enforced by
-`src/__tests__/route-inventory.test.ts`.
+local jobs, readiness, attestation revocations, the Ω∞v reality loop, the
+governed command OS, and optional static-client serving are supported modules
+and are registered by `createApp`. The supported route inventory is pinned in
+`src/route-contract.ts` and enforced by `src/__tests__/route-inventory.test.ts`.
+
+The MINI kernel (`Observe → Verify → Remember`) is the default runtime mental
+model: `POST /v1/pipeline` drives one bounded change through
+compile → validate → admit → execute → observe, and reports `VERIFIED`,
+`DIVERGENT`, or a halt instead of asserting success.
 
 ## Run
 
@@ -21,10 +26,15 @@ The default port is `5000`; `PORT` or `API_PORT` overrides it.
 
 `OMEGA_AUTH_MODE` is `local` by default outside production and `required` in
 production. Required mode needs distinct `OMEGA_READ_TOKEN` and
-`OMEGA_ADMIN_TOKEN` values. Health remains unauthenticated; GET evidence
-routes use the read token and mutations use the admin token.
+`OMEGA_ADMIN_TOKEN` values. Health remains unauthenticated; GET reads use the
+read token and writes use the admin token. See `docs/GOVERNANCE.md` for the
+full gate map.
 
 Optional local-job authentication uses `OMEGA_LOCAL_JOB_LEDGER_TOKEN`.
+
+`OMEGA_SIGNING_KEY` (at least 32 characters) enables `POST /v1/attest` with
+HMAC-SHA256. Without it the route answers `503 ATTESTATION_SIGNING_KEY_REQUIRED`
+rather than signing with a default key.
 
 ## Persistence
 
@@ -111,6 +121,7 @@ GET  /v1/kernel/capabilities
 GET  /v1/mood
 POST /v1/attest
 POST /v1/cycle
+POST /v1/pipeline
 GET  /v1/block/tip
 GET  /v1/stream
 POST /v1/miner/start
@@ -123,10 +134,46 @@ POST /v1/block/sign
 POST /v1/block/verify-signature
 ```
 
+## Reality fixpoint
+
+```text
+GET  /v1/reality/state
+POST /v1/reality/step
+POST /v1/reality/run
+```
+
+`Σ` is a set of committed delta hashes, so a repeated step terminates at the
+fixed point instead of diverging. Unverified observations, missing evidence,
+and insufficient authority halt and leave `Σ` untouched. The loop is
+in-memory and starts at `Ø`.
+
+## Governed command OS
+
+```text
+GET  /v1/omega/workers
+POST /v1/omega/workers/register
+POST /v1/omega/workers/:workerId/heartbeat
+POST /v1/omega/workers/:workerId/lease
+POST /v1/omega/workers/:workerId/lease/:leaseId/release
+POST /v1/omega/commands
+GET  /v1/omega/commands/:id
+POST /v1/omega/commands/:id/admit
+POST /v1/omega/commands/:id/approve
+POST /v1/omega/commands/:id/execute
+POST /v1/omega/commands/:id/observe
+POST /v1/omega/commands/:id/verify-reality
+GET  /v1/omega/events
+```
+
+Commands move through explicit admission and approval before execution, and
+an execution is only `VERIFIED` once an observed state matches the expected
+one. Worker leases are bounded in-process coordination, not a distributed
+scheduler.
+
 ## Static client
 
 Set `OMEGA_WEB_DIST` to a built `apps/web` directory to serve the SPA from the
-same Fastify origin. `/` serves `index.html`, `/assets/*` serves built assets,
+same Fastify origin. `GET /` serves `index.html`, `GET /assets/*` serves built assets,
 and eligible non-API GET paths fall back to `index.html` for client-side
 routing. API/module paths remain JSON 404s when unmatched.
 
@@ -139,10 +186,11 @@ Static serving is optional; the API remains usable without a web build.
 ## Contract verification
 
 `src/route-contract.ts` is deliberately independent from route registration.
-The contract test calls `createApp`, asks Fastify for its registered route
-tree, and requires every inventory entry to be present. If a route is
-intentionally removed, remove it from the inventory and update this document
-in the same change; otherwise a supported module has become orphaned.
+The contract test calls `createApp`, probes every inventory entry through the
+router, and scans the registration sites so the inventory cannot drift in
+either direction. If a route is intentionally removed, remove it from the
+inventory and update this document in the same change; otherwise a supported
+module has become orphaned.
 
 The operational invariant remains:
 
