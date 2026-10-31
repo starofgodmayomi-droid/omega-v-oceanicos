@@ -185,7 +185,9 @@ Growth order: **Zero → MINI → earned expansions**. Details in [docs/ROADMAP.
 
 ### Phase 4: Interface expansions
 
-- [ ] API / Web / CLI / SDK / Mobile
+- [x] API / Web source surfaces are present in the current workspace (`apps/api`, `apps/web`); presence does not imply current runtime health, deployment, or production readiness.
+- [ ] CLI / SDK / Mobile as active workspace interfaces. CLI and SDK package manifests exist in the repository but are not listed in the current `pnpm-workspace.yaml`; Mobile is not established by the current workspace declaration.
+- [ ] Record execution evidence separately: build/test, local API smoke, rendered browser/accessibility review, deployment, and observed health.
 
 ### Phase 5–7: Depth, distribution, ecosystem
 
