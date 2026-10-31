@@ -88,9 +88,15 @@ describe('the supported Node version is one claim, not three', () => {
     // The Jest runner (and its --runInBand flag) is gone; every test script
     // now delegates to the node runner, which executes each file in its own
     // process and is therefore already in-band.
-    for (const script of ['test', 'test:coverage', 'test:e2e', 'test:worker']) {
+    for (const script of ['test', 'test:e2e', 'test:worker']) {
       expect(manifest.scripts?.[script]).toContain('scripts/run-node-suite.mjs');
     }
+    // Coverage is a portable wrapper: it sets NODE_V8_COVERAGE and delegates
+    // the run itself to the same node runner.
+    expect(manifest.scripts?.['test:coverage']).toContain('scripts/coverage.cjs');
+    expect(readFileSync(join(root, 'scripts/coverage.cjs'), 'utf8')).toContain(
+      'scripts/run-node-suite.mjs'
+    );
   });
 
   it('hosts an encrypted local-ledger API smoke in CI', () => {

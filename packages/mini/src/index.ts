@@ -143,19 +143,21 @@ export class MiniKernel {
   public runCycle(io = 'EXEC'): IMiniBlock {
     const observation = ObserverEngine.generateTelemetry(io);
     const evidence = VerificationEngine.evaluate(observation);
-    const previousHash = this.ledger.getTip()?.hash ?? '8a3f91c2e4f9011b989210ffffffffff';
+    const tip = this.ledger.getTip();
+    const index = tip ? tip.index + 1 : 4101;
+    const previousHash = tip?.hash ?? '8a3f91c2e4f9011b989210ffffffffff';
     let nonce = 0;
     let hash = '';
     while (true) {
       hash = crypto
         .createHash('sha256')
-        .update(`0xΩ-${this.ledger.height}-${previousHash}-${evidence.signatureProof}-${nonce}`)
+        .update(`0xΩ-${index}-${previousHash}-${evidence.signatureProof}-${nonce}`)
         .digest('hex');
       if (hash.startsWith('00')) break;
       nonce++;
     }
     const block: IMiniBlock = {
-      index: this.ledger.height,
+      index,
       timestamp: new Date().toISOString(),
       observation,
       evidence,
