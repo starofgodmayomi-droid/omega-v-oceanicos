@@ -84,6 +84,32 @@ test('Single body compresses into a 4×4×4×4 space and expands losslessly', as
   }
 });
 
+test('Ecosystem body reports the Absolute Fixpoint Equation that governs it', async () => {
+  const app = createApp(':memory:', false);
+  try {
+    await app.ready();
+    const response = await app.inject({ method: 'GET', url: '/v1/ecosystem/body' });
+    assert.equal(response.statusCode, 200);
+    const body = response.json();
+
+    assert.equal(
+      body.fixpoint.law,
+      'Ω∞v := Y( λf. ( M_{t+1} = M_t ∪ Δ | V(Δ) = ⊤ ) ) | V ≡ (Expected ≡ Observed)',
+    );
+    assert.equal(body.fixpoint.truth, 'Expected ≡ Observed');
+    assert.equal(body.fixpoint.source, 'ECOSYSTEM_BODY.md');
+    assert.equal(body.fixpoint.scope, 'local-runtime');
+    assert.equal(body.fixpoint.observed, body.status);
+    assert.deepEqual(
+      body.fixpoint.branches.map((branch: { when: string; then: string }) => branch.then),
+      ['f(Σ ∪ Hash(x))', 'HALT ⊢ DIVERGENT', 'HALT ⊢ UNKNOWN', 'HALT ⊢ NOT_EXECUTED'],
+    );
+    assert.ok(body.fixpoint.boundary.includes('not a proof of infinity'));
+  } finally {
+    await app.close();
+  }
+});
+
 test('Single body expansion refuses a compressed body whose digest was tampered with', async () => {
   const app = createApp(':memory:', false, { allowUnsignedCycle: true });
   try {
