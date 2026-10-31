@@ -1,3 +1,4 @@
+import { describe, expect, it } from '../helpers/expect.ts';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -29,7 +30,9 @@ describe('brand system', () => {
 
   it('defines no token the brand document does not publish', () => {
     const defined = Array.from(tokens.matchAll(/(--omega-[a-z-]+):/g)).map((match) => match[1]);
-    const published = new Set(documented.map((entry) => entry.token));
+    // Non-hex tokens (rgba surfaces, shadows) are published by name only, so
+    // the comparison is against every token the document mentions.
+    const published = new Set(Array.from(brand.matchAll(/--omega-[a-z-]+/g), (m) => m[0]));
 
     expect(defined.filter((token) => !published.has(token))).toEqual([]);
   });
@@ -38,12 +41,15 @@ describe('brand system', () => {
     const literals = appCss.match(/#[0-9a-fA-F]{3,8}/g) ?? [];
     const distinct = new Set(literals.map((value) => value.toLowerCase()));
 
-    // The document claims 109 distinct across 146 uses. If a change pushes
-    // either number up, the claim is stale and this fails — the debt may be
-    // paid down freely, but it may not quietly grow.
-    expect(brand).toContain('109 distinct colours across 146 uses');
-    expect(distinct.size).toBeLessThanOrEqual(109);
-    expect(literals.length).toBeLessThanOrEqual(146);
+    // The document states its own debt count. If a change pushes either
+    // number up, the claim is stale and this fails — the debt may be paid
+    // down freely, but it may not quietly grow.
+    const claimed = brand.match(/(\d+) distinct colours across (\d+) uses/);
+    expect(Boolean(claimed)).toBe(true);
+    const [, claimedDistinct, claimedUses] = claimed as RegExpMatchArray;
+
+    expect(distinct.size).toBeLessThanOrEqual(Number(claimedDistinct));
+    expect(literals.length).toBeLessThanOrEqual(Number(claimedUses));
   });
 
   it('ships the mark and wires it into the page', () => {

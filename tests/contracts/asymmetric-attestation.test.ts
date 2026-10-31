@@ -1,7 +1,7 @@
+import { describe, expect, it } from '../helpers/expect.ts';
 import crypto from 'node:crypto';
-import { describe, expect, it } from '@jest/globals';
-import { ObserverEngine } from '@oceanicos/observer';
-import { VerificationEngine } from '@oceanicos/verification';
+import { ObserverEngine } from '../../packages/observer/dist/index.js';
+import { VerificationEngine } from '../../packages/verification/dist/index.js';
 
 describe('asymmetric attestation boundary', () => {
   it('signs evidence with Ed25519 and verifies it with only the public key', () => {
@@ -9,7 +9,7 @@ describe('asymmetric attestation boundary', () => {
       publicKeyEncoding: { type: 'spki', format: 'pem' },
       privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
     });
-    const telemetry = ObserverEngine.generateTelemetry('ATTESTATION_TEST');
+    const telemetry = ObserverEngine.generateTelemetry();
     const evidence = VerificationEngine.evaluate(telemetry, privateKey);
 
     expect(evidence.status).toBe('PASS');
@@ -30,7 +30,7 @@ describe('asymmetric attestation boundary', () => {
       publicKeyEncoding: { type: 'spki', format: 'pem' },
       privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
     });
-    const telemetry = ObserverEngine.generateTelemetry('ATTESTATION_TEST');
+    const telemetry = ObserverEngine.generateTelemetry();
     const evidence = VerificationEngine.evaluate(telemetry, privateKey);
 
     expect(

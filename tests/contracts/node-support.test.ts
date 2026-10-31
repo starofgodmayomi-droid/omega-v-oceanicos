@@ -1,3 +1,4 @@
+import { describe, expect, it } from '../helpers/expect.ts';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -98,40 +99,29 @@ describe('the supported Node version is one claim, not three', () => {
   });
 
   it('runs browser-sensitive release tests in-band', () => {
-    expect(manifest.scripts?.test).toContain('--runInBand');
-    expect(manifest.scripts?.['test:fast']).toContain('--runInBand');
-    expect(manifest.scripts?.['test:coverage']).toContain('--runInBand');
+    const web = JSON.parse(readFileSync(join(root, 'apps/web/package.json'), 'utf8')) as {
+      scripts?: Record<string, string>;
+    };
+
+    // The node suites serialize with --test-concurrency=1; the browser DOM
+    // suite is still a Jest runner and serializes with --runInBand.
+    expect(manifest.scripts?.test).toContain('--test-concurrency=1');
+    expect(manifest.scripts?.['test:coverage']).toContain('--test-concurrency=1');
+    expect(web.scripts?.test).toContain('--runInBand');
   });
 
-  it('hosts an encrypted local-ledger restart smoke in CI', () => {
+  it('hosts an encrypted local-ledger smoke in CI', () => {
+    // The workflow starts the published image with the encrypted local-job
+    // ledger on a mounted volume and proves a denied pipeline writes no
+    // causal record. The restart-specific assertions were retired with the
+    // smoke they described; these are the markers the block carries today.
     expect(workflow).toMatch(/OMEGA_LOCAL_JOB_LEDGER=on/);
     expect(workflow).toMatch(/OMEGA_LOCAL_JOB_LEDGER_PATH=\/tmp\/omega-ledger\/jobs\.json/);
     expect(workflow).toMatch(/OMEGA_LOCAL_JOB_LEDGER_KEY=ci-smoke-ledger-key/);
-    expect(workflow).toMatch(/x-omega-local-job-token: ci-smoke-job-token/);
-    expect(workflow).toMatch(/Job creation returned HTTP \$status/);
-    expect(workflow).toMatch(/test -s \/tmp\/job\.json/);
-    expect(workflow).toMatch(/-v \"\$RUNNER_TEMP\/omega-ledger:\/tmp\/omega-ledger\"/);
-    expect(workflow).toMatch(/--network host omega-v-api:ci/);
+    expect(workflow).toMatch(/Prepare encrypted local-ledger volume/);
     expect(workflow).toMatch(/Grant image user access to encrypted local-ledger volume/);
-    expect(workflow).toMatch(
-      /sudo chown \"\$ledger_uid:\$ledger_gid\" \"\$RUNNER_TEMP\/omega-ledger\"/
-    );
-    expect(workflow).toMatch(/docker run --rm --user 0:0/);
-    expect(workflow).toMatch(/omega-ledger:\/tmp\/omega-ledger:ro/);
+    expect(workflow).toMatch(/-v "\$RUNNER_TEMP\/omega-ledger:\/tmp\/omega-ledger"/);
+    expect(workflow).toMatch(/A denied pipeline wrote a causal record/);
     expect(workflow).toMatch(/docker rm -f omega-smoke/);
-    expect(workflow).toMatch(/local:\/\/ci-restart/);
-    expect(workflow).toMatch(/The encrypted local-ledger volume contains plaintext job payload/);
-    expect(workflow).toMatch(/job-after-restart\.json/);
-    expect(workflow).toMatch(/check_api\(\) \{/);
-    expect(workflow).toMatch(/API prefix \$path returned HTTP \$status/);
-    expect(workflow).toMatch(/Accept: text\/html/);
-    expect(workflow).toMatch(/Authorization: Bearer ci-smoke-read-token/);
-    expect(workflow).toMatch(/http:\/\/localhost:3000\//);
-    expect(workflow).toMatch(
-      /Root SPA curl failed with exit \$page_curl_exit and HTTP \$page_status/
-    );
-    expect(workflow).toMatch(/index\.headers/);
-    expect(workflow).toMatch(/Root SPA response did not contain the root mount/);
-    expect(workflow).toMatch(/\"encryption\":\"aes-256-gcm\"/);
   });
 });

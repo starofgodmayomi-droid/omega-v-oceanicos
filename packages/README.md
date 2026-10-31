@@ -115,6 +115,7 @@ Extended subsystem modules for the Ω∞v Oceanicos ecosystem:
 | `@omega-v/notary`       | Notary Verification Engine                |
 | `@omega-v/oracle`       | Trusted Oracle Engine                     |
 | `@omega-v/orchestrator` | Pipeline Orchestrator Engine              |
+| `@omega-v/oreade`       | Bounded ƆREADE symbolic translation       |
 | `@omega-v/pipeline`     | Verification Pipeline Engine              |
 | `@omega-v/policy`       | Policy Evaluation Engine                  |
 | `@omega-v/registry`     | Component Registry Engine                 |

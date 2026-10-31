@@ -2,7 +2,8 @@
   "extends": "../tsconfig.json",
   "compilerOptions": {
     "rootDir": "..",
-    "noEmit": true
+    "noEmit": true,
+    "allowImportingTsExtensions": true
   },
   "include": ["./**/*", "../packages/*/src/index.ts"],
   "exclude": ["../node_modules", "node_modules", "../dist", "../packages/**/__tests__"]

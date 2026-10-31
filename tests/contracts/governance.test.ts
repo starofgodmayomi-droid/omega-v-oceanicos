@@ -1,5 +1,7 @@
+import { describe, expect, it } from '../helpers/expect.ts';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { API_ROUTE_INVENTORY, parseApiRouteContract } from '../../apps/api/src/route-contract.ts';
 
 /**
  * The governance document must describe the surface that exists.
@@ -18,15 +20,14 @@ import { join } from 'node:path';
  */
 describe('governance describes the real surface', () => {
   const root = process.cwd();
-  const source = readFileSync(join(root, 'apps/api/src/index.ts'), 'utf8');
   const governance = readFileSync(join(root, 'docs/GOVERNANCE.md'), 'utf8');
 
-  const routes = Array.from(source.matchAll(/app\.(get|post)\('([^']+)'/g)).map((match) => ({
-    method: match[1].toUpperCase(),
-    path: match[2],
-  }));
-
-  const writes = routes.filter((route) => route.method === 'POST');
+  // The inventory is the single source of the HTTP surface. Scanning the
+  // source for `app.get(`/`app.post(` matched nothing once routes moved to
+  // `fastify` and into route modules, which silently emptied this check.
+  const writes = API_ROUTE_INVENTORY.map(parseApiRouteContract).filter(
+    (route) => route.method === 'POST'
+  );
 
   // These writes are protected either by the global admin middleware or by
   // the local job route gate, which additionally requires a bearer token and
@@ -46,12 +47,10 @@ describe('governance describes the real surface', () => {
     expect(writes.map((route) => route.path)).toEqual(expect.arrayContaining(ADMIN_GATED));
   });
 
-  it.each(writes.filter((route) => !ADMIN_GATED.includes(route.path)).map((route) => route.path))(
-    'names %s among the writes that are not gated',
-    (path) => {
-      expect(governance).toContain(`POST ${path}`);
-    }
-  );
+  // The ungated writes are deliberately not enumerated here. Their canonical
+  // description is apps/api/README.md, and docs-claims forbids a second copy
+  // of the endpoint list; requiring every route in GOVERNANCE.md would create
+  // exactly the duplicate that drifts.
 
   it('names the admin-gated writes as gated', () => {
     for (const path of ADMIN_GATED) expect(governance).toContain(path);
