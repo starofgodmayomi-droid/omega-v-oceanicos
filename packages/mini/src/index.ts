@@ -167,6 +167,28 @@ export type {
   BoundedParallelOptions,
 } from './parallel.js';
 export type { OmegaWaterFlowInput } from './water-flow.js';
+export {
+  evolveQuantumState,
+  QUANTUM_ALGEBRA_TOLERANCE,
+  QUANTUM_ENERGY_GAP,
+  QUANTUM_INVERSION_OPERATOR,
+  QUANTUM_REALITY_BOUNDARY,
+  QUANTUM_STATE_BASIS,
+  QUANTUM_STATE_CONTRACT,
+  QUANTUM_STATE_LIMITS,
+  QUANTUM_STATE_NOTATION,
+  QUANTUM_SYMMETRY_OPERATOR,
+  QUANTUM_TENSOR_OPERATOR,
+} from './quantum-state.js';
+export type {
+  ComplexAmplitude,
+  QuantumEvolutionChecks,
+  QuantumStateEvolution,
+  QuantumStateIssue,
+  QuantumStateIssueCode,
+  QuantumStateResult,
+  QuantumStateView,
+} from './quantum-state.js';
 
 export function executeOceanicosMaxExpansion(): CryptographicBlock {
   const kernelChain = new PluralisticHashChain();

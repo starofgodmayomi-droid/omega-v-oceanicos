@@ -6,7 +6,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { MAX_PROOF_OF_WORK_ATTEMPTS, RememberEngine } from '@oceanicos/remember';
-import { FileConnectorObservationStore, FileValueNavigatorStore, MiniKernel, compressSingleBody, expandSingleBody } from '@oceanicos/mini';
+import { FileConnectorObservationStore, FileValueNavigatorStore, MiniKernel, compressSingleBody, evolveQuantumState, expandSingleBody } from '@oceanicos/mini';
 import type { SingleBodyEntry } from '@oceanicos/mini';
 import { AsymmetricValidationGuard, DeclarativeVerificationEngine, MultiRegionMeshConvergence } from '@oceanicos/verification';
 import { ObserverEngine } from '@oceanicos/observer';
@@ -410,6 +410,18 @@ export function createApp(
       digestMatches: expanded.digestMatches,
       evidence: expanded.evidence,
     };
+  });
+  fastify.get('/v1/ecosystem/quantum', async () => {
+    const evolution = evolveQuantumState();
+    return { success: true, status: evolution.status, ...(evolution.state ?? {}) };
+  });
+  fastify.post('/v1/ecosystem/quantum/evolve', { preHandler: requireReadAccess }, async (request: any, reply) => {
+    const body = request.body && typeof request.body === 'object' && !Array.isArray(request.body) ? request.body as Record<string, unknown> : {};
+    const evolution = evolveQuantumState(body);
+    if (evolution.status !== 'EVOLVED') {
+      return reply.status(400).send({ success: false, status: 'INVALID', issues: evolution.issues });
+    }
+    return { success: true, status: evolution.status, ...evolution.state };
   });
   fastify.get('/v1/mood', async () => ({ success: true, status: 'MAX GOOD-O', contract: 'Ω∞v totality / attest-dont-assert', brand: 'Oceanicos Ω∞', ledger: { ready: Boolean(ledgerMemory.getTip()) }, evaluatedAt: new Date().toISOString() }));
 

@@ -1,0 +1,103 @@
+import assert from 'node:assert/strict';
+import { createRequire } from 'node:module';
+import test from 'node:test';
+import { createApp } from '../../apps/api/dist/index.js';
+
+const require = createRequire(import.meta.url);
+const { evolveQuantumState, QUANTUM_STATE_BASIS, QUANTUM_STATE_LIMITS } = require('../../packages/mini/dist/index.js');
+
+test('quantum evolution applies Symmetry ⊗ Inversion then a unitary time step', () => {
+  const result = evolveQuantumState({ symmetryDegrees: 90, inversionDegrees: 90, tau: Math.PI / 2 });
+  assert.equal(result.status, 'EVOLVED');
+  const state = result.state;
+
+  assert.equal(state.contract, 'omega.quantum.evolution.v1');
+  assert.deepEqual(state.basis, ['00', '01', '10', '11']);
+  assert.deepEqual(QUANTUM_STATE_BASIS, ['00', '01', '10', '11']);
+  assert.deepEqual(state.operators.tensor, [
+    [0, 0, 1, 0],
+    [0, 0, 0, -1],
+    [1, 0, 0, 0],
+    [0, -1, 0, 0],
+  ]);
+  assert.deepEqual(state.operators.hamiltonian, [0, 1, 1, 2]);
+
+  assert.ok(state.checks.normalization < 1e-9, `normalization ${state.checks.normalization}`);
+  assert.ok(state.checks.unitarity < 1e-9, `unitarity ${state.checks.unitarity}`);
+  assert.ok(state.checks.phaseOnly < 1e-9, `phaseOnly ${state.checks.phaseOnly}`);
+  assert.ok(1 - state.checks.reversibility < 1e-9, `reversibility ${state.checks.reversibility}`);
+  assert.equal(state.checks.passed, true);
+  assert.equal(state.reality.status, 'VERIFIED');
+  assert.equal(state.evidence, 'LOCAL_SYMBOLIC');
+  assert.match(state.digest, /^[a-f0-9]{64}$/);
+
+  const total = state.states.evolved.probabilities.reduce((sum: number, value: number) => sum + value, 0);
+  assert.ok(Math.abs(total - 1) < 1e-9);
+});
+
+test('time evolution adds phase only: probabilities survive every τ', () => {
+  const early = evolveQuantumState({ symmetryDegrees: 40, inversionDegrees: 125, tau: 0 });
+  const late = evolveQuantumState({ symmetryDegrees: 40, inversionDegrees: 125, tau: Math.PI });
+
+  assert.equal(early.status, 'EVOLVED');
+  assert.equal(late.status, 'EVOLVED');
+  assert.notEqual(early.state.digest, late.state.digest);
+  assert.deepEqual(late.state.states.agent.probabilities, early.state.states.agent.probabilities);
+  assert.deepEqual(late.state.states.evolved.probabilities, early.state.states.inverted.probabilities);
+});
+
+test('evolution refuses unbounded or non-finite input instead of inventing a state', () => {
+  const angle = evolveQuantumState({ symmetryDegrees: 200 });
+  assert.equal(angle.status, 'INVALID');
+  assert.equal(angle.state, null);
+  assert.equal(angle.issues[0].code, 'ANGLE_OUT_OF_RANGE');
+
+  const tau = evolveQuantumState({ tau: QUANTUM_STATE_LIMITS.maxTau + 1 });
+  assert.equal(tau.status, 'INVALID');
+  assert.equal(tau.issues[0].code, 'TAU_OUT_OF_RANGE');
+
+  const nonFinite = evolveQuantumState({ inversionDegrees: 'ninety' });
+  assert.equal(nonFinite.status, 'INVALID');
+  assert.equal(nonFinite.issues[0].code, 'NON_FINITE_NUMBER');
+
+  const malformed = evolveQuantumState([1, 2, 3]);
+  assert.equal(malformed.status, 'INVALID');
+  assert.equal(malformed.issues[0].code, 'INVALID_INPUT');
+});
+
+test('POST /v1/ecosystem/quantum/evolve returns a verified local evolution', async () => {
+  const app = createApp(':memory:', false);
+  try {
+    await app.ready();
+
+    const declared = await app.inject({ method: 'GET', url: '/v1/ecosystem/quantum' });
+    assert.equal(declared.statusCode, 200);
+    assert.equal(declared.json().status, 'EVOLVED');
+    assert.equal(declared.json().reality.status, 'VERIFIED');
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/v1/ecosystem/quantum/evolve',
+      payload: { symmetryDegrees: 60, inversionDegrees: 30, tau: Math.PI / 3 },
+    });
+    assert.equal(response.statusCode, 200);
+    const payload = response.json();
+    assert.equal(payload.success, true);
+    assert.equal(payload.status, 'EVOLVED');
+    assert.equal(payload.reality.status, 'VERIFIED');
+    assert.equal(payload.checks.passed, true);
+    assert.equal(payload.states.evolved.probabilities.length, 4);
+    assert.equal(payload.reality.boundary.includes('not a physical quantum observation'), true);
+
+    const refused = await app.inject({
+      method: 'POST',
+      url: '/v1/ecosystem/quantum/evolve',
+      payload: { symmetryDegrees: -1 },
+    });
+    assert.equal(refused.statusCode, 400);
+    assert.equal(refused.json().status, 'INVALID');
+    assert.equal(refused.json().issues[0].code, 'ANGLE_OUT_OF_RANGE');
+  } finally {
+    await app.close();
+  }
+});

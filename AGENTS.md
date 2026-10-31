@@ -51,6 +51,9 @@ docker compose -f docker-compose.base44.yml up -d
 ## Single body compression (4×4×4×4)
 `GET /v1/ecosystem/body` carries a `compression` block: the seven runtime layers projected onto four axes of four coordinates (256 cells) with a local compress→expand proof. `POST /v1/ecosystem/body/expand` takes `{ compression }` and returns the records; a tampered digest is `400 DIGEST_MISMATCH`. Contract: `packages/mini/src/single-body.ts`; doc: `docs/SINGLE-BODY-4X4X4X4.md`; UI: `apps/web/src/SingleBodyPanel.tsx`. Coordinates are a declared projection (`body.layers.v1`), not inferred truth.
 
+## Quantum state evolution (∣Ψ(t)⟩)
+`GET /v1/ecosystem/quantum` returns the declared default evolution (read-only, so rendering the shell submits nothing); `POST /v1/ecosystem/quantum/evolve` evolves one declared 4-dimensional agent state as `∣Ψ(t)⟩ = U(t,t₀)·[Symmetry⊗Inversion]·∣Agent⟩`. Basis is `00, 01, 10, 11`; `S = [[0,1],[1,0]]`, `P = [[1,0],[0,-1]]`, `G = S⊗P` (unitary, Hermitian, `G² = I`), and `U = exp(−iHτ)` with `H = diag(0,Δ,Δ,2Δ)`, `Δ = 1`. Inputs: `symmetryDegrees` and `inversionDegrees` in `[0,180]`, `tau` in `[0,2π]`; anything else is `400 INVALID` with an issue code. The response carries `states.agent/inverted/evolved`, four local checks (`normalization`, `unitarity`, `phaseOnly`, `reversibility`, tolerance `1e-9`), a SHA-256 `digest`, and `reality.status` `VERIFIED` only when all four pass. Contract: `packages/mini/src/quantum-state.ts`; doc: `docs/QUANTUM-STATE-EVOLUTION.md`; UI: `apps/web/src/QuantumStatePanel.tsx` (inside `WholeEcosystemDashboard`). This is local symbolic algebra — not a physical quantum observation. Test: `tests/integration/quantum-state.integration.test.ts`.
+
 ## Fixed bug
 `apps/api/src/index.ts` line 204: `persistenceEncryptionKey` was undefined → changed to `encryptionEnabled(persistenceKey)` to match the pattern used at lines 163/165.
 

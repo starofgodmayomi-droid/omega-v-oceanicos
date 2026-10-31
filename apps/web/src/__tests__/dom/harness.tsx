@@ -217,6 +217,27 @@ export function installFetch(overrides: RouteOverrides = {}): jest.Mock {
         },
       }),
     '/api/state': () => json(stateBody),
+    '/api/v1/ecosystem/quantum': () =>
+      json({
+        success: true,
+        status: 'EVOLVED',
+        notation: '∣Ψ(t)⟩ = U(t,t₀)·[Symmetry⊗Inversion]·∣Agent⟩',
+        basis: ['00', '01', '10', '11'],
+        angles: { symmetryDegrees: 90, inversionDegrees: 90 },
+        tau: Math.PI / 2,
+        states: {
+          agent: { amplitudes: [], probabilities: [0.25, 0.25, 0.25, 0.25], phases: [0, 0, 0, 0] },
+          inverted: { amplitudes: [], probabilities: [0.25, 0.25, 0.25, 0.25], phases: [0, 0, 0, 0] },
+          evolved: { amplitudes: [], probabilities: [0.25, 0.25, 0.25, 0.25], phases: [0, 0, 0, 0] },
+        },
+        checks: { normalization: 0, unitarity: 0, phaseOnly: 0, reversibility: 1, passed: true },
+        reality: {
+          status: 'VERIFIED',
+          checksRun: ['normalization', 'unitarity', 'phaseOnly', 'reversibility'],
+          boundary: 'local symbolic evolution only',
+        },
+        digest: 'd'.repeat(64),
+      }),
     '/api/v1/omega/connectors/observations': () =>
       json({
         success: true,
