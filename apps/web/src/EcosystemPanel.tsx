@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { FixpointLaw, type FixpointReport } from './FixpointLaw';
 
 const API_BASE_URL = (import.meta.env?.VITE_API_URL || '/api').replace(/\/$/, '');
 
@@ -23,6 +24,7 @@ interface EcosystemStatus {
     growthLaw: string;
     currentStage: string;
     invariant: string;
+    fixpoint?: FixpointReport;
     evaluatedAt: string;
   };
   layers: EcosystemLayer[];
@@ -158,6 +160,8 @@ export function EcosystemPanel() {
               invariant: {status.contract.invariant} · schema v{status.contract.schemaVersion} · evaluated {new Date(status.contract.evaluatedAt).toLocaleTimeString()}
             </div>
           </div>
+
+          <FixpointLaw fixpoint={status.contract.fixpoint} />
 
           {/* One Body Aggregate */}
           <div

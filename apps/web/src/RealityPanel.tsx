@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { FixpointLaw, type FixpointReport } from './FixpointLaw';
 
 const API_BASE_URL = (import.meta.env?.VITE_API_URL || '/api').replace(/\/$/, '');
 
@@ -22,6 +23,7 @@ interface RealityStatus {
     currentStage: string;
     invariant: string;
     governingEquation: string;
+    fixpoint?: FixpointReport;
     evaluatedAt: string;
   };
   statusVector: StatusVectorField[];
@@ -144,6 +146,8 @@ export function RealityPanel() {
               invariant: {status.contract.invariant} · schema v{status.contract.schemaVersion} · evaluated {new Date(status.contract.evaluatedAt).toLocaleTimeString()}
             </div>
           </div>
+
+          <FixpointLaw fixpoint={status.contract.fixpoint} />
 
           {/* Governing Equation */}
           <div
