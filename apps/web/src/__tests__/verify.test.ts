@@ -1,4 +1,6 @@
+import assert from 'node:assert/strict';
 import { generateKeyPairSync, sign, webcrypto } from 'node:crypto';
+import { afterEach, beforeEach, describe, it } from 'node:test';
 import {
   SIGNED_FIELDS,
   buildSignedBytes,
@@ -7,7 +9,7 @@ import {
   pemToDer,
   preflight,
   verifyAttestation,
-} from '../verify';
+} from '../verify.ts';
 
 /**
  * This module implements docs/spec/ATTESTATION-ENVELOPE.md independently of
@@ -75,7 +77,7 @@ describe('browser attestation verifier', () => {
       subtle
     );
 
-    expect(result.valid).toBe(true);
+    assert.equal(result.valid, true);
   });
 
   it('rejects a tampered non-ASCII field like any other', async () => {
@@ -86,23 +88,22 @@ describe('browser attestation verifier', () => {
 
     const result = await verifyAttestation(attestation, publicKeyPem, subtle);
 
-    expect(result.valid).toBe(false);
-    expect(result.stage).toBe('signature');
+    assert.equal(result.valid, false);
+    assert.equal(result.stage, 'signature');
   });
 
   it('reports whether this environment can verify Ed25519 at all', async () => {
     // Recorded rather than asserted true: a runtime without Ed25519 must
     // say so instead of silently reporting every attestation invalid.
-    expect(typeof (await canVerify(subtle))).toBe('boolean');
+    assert.equal(typeof (await canVerify(subtle)), 'boolean');
   });
 
   it('falls back to the global crypto object when no subtle is given', async () => {
     // Every other call in this file passes `subtle` explicitly, so the
     // `subtle ?? globalThis.crypto?.subtle` fallback never actually runs.
-    // Jest's own Node runtime supplies a real WebCrypto object, so this
-    // exercises the fallback with the same implementation the explicit
-    // calls use, not a stand-in.
-    expect(typeof (await canVerify())).toBe('boolean');
+    // Node supplies a real WebCrypto object, so this exercises the fallback
+    // with the same implementation the explicit calls use, not a stand-in.
+    assert.equal(typeof (await canVerify()), 'boolean');
   });
 
   it('verifies a real attestation through the global crypto fallback, with no subtle argument', async () => {
@@ -119,8 +120,8 @@ describe('browser attestation verifier', () => {
     // window.crypto.subtle with nothing passed as the third argument.
     const result = await verifyAttestation(signed(), publicKeyPem);
 
-    expect(result.valid).toBe(true);
-    expect(result.reason).toContain('valid');
+    assert.equal(result.valid, true);
+    assert.ok((result.reason ?? '').includes('valid'));
   });
 
   describe('without a global crypto object', () => {
@@ -136,13 +137,13 @@ describe('browser attestation verifier', () => {
     });
 
     it('canVerify reports false rather than throwing when nothing is available', async () => {
-      expect(await canVerify()).toBe(false);
+      assert.equal(await canVerify(), false);
     });
 
     it('verifyAttestation reports the missing implementation before touching cryptography', async () => {
       const result = await verifyAttestation(signed(), publicKeyPem);
 
-      expect(result).toEqual({
+      assert.deepEqual(result, {
         valid: false,
         stage: 'crypto',
         reason: 'this environment has no WebCrypto',
@@ -153,8 +154,8 @@ describe('browser attestation verifier', () => {
   it('verifies a signature it did not produce', async () => {
     const result = await verifyAttestation(signed(), publicKeyPem, subtle);
 
-    expect(result.valid).toBe(true);
-    expect(result.reason).toContain('valid');
+    assert.equal(result.valid, true);
+    assert.ok((result.reason ?? '').includes('valid'));
   });
 
   it('rejects a signature from a different key', async () => {
@@ -165,21 +166,20 @@ describe('browser attestation verifier', () => {
 
     const result = await verifyAttestation(signed(), other.toString(), subtle);
 
-    expect(result.valid).toBe(false);
-    expect(result.stage).toBe('signature');
+    assert.equal(result.valid, false);
+    assert.equal(result.stage, 'signature');
   });
 
-  it.each(SIGNED_FIELDS.filter((field) => field !== 'ruleVersions'))(
-    'rejects an attestation whose %s was altered after signing',
-    async (field) => {
+  for (const field of SIGNED_FIELDS.filter((name) => name !== 'ruleVersions')) {
+    it(`rejects an attestation whose ${field} was altered after signing`, async () => {
       const attestation = signed();
       attestation[field] = field === 'verified' ? !attestation[field] : 'tampered';
 
       const result = await verifyAttestation(attestation, publicKeyPem, subtle);
 
-      expect(result.valid).toBe(false);
-    }
-  );
+      assert.equal(result.valid, false);
+    });
+  }
 
   it('is unaffected by fields the specification leaves unsigned', async () => {
     const attestation = signed();
@@ -188,7 +188,7 @@ describe('browser attestation verifier', () => {
 
     // Documented behaviour, not a flaw — which is why trust decisions must
     // not rest on these fields.
-    expect((await verifyAttestation(attestation, publicKeyPem, subtle)).valid).toBe(true);
+    assert.equal((await verifyAttestation(attestation, publicKeyPem, subtle)).valid, true);
   });
 
   it('refuses to select its algorithm from the attestation', async () => {
@@ -196,16 +196,16 @@ describe('browser attestation verifier', () => {
 
     const result = await verifyAttestation(attestation, publicKeyPem, subtle);
 
-    expect(result.valid).toBe(false);
-    expect(result.stage).toBe('algorithm');
-    expect(result.reason).toContain('Ed25519 only');
+    assert.equal(result.valid, false);
+    assert.equal(result.stage, 'algorithm');
+    assert.ok((result.reason ?? '').includes('Ed25519 only'));
   });
 
   it('rejects an unsigned or revoked status before touching cryptography', async () => {
     for (const status of ['revoked', 'draft', undefined]) {
       const result = await verifyAttestation(signed({ status }), publicKeyPem, subtle);
-      expect(result.valid).toBe(false);
-      expect(result.stage).toBe('shape');
+      assert.equal(result.valid, false);
+      assert.equal(result.stage, 'shape');
     }
   });
 
@@ -215,26 +215,28 @@ describe('browser attestation verifier', () => {
 
     const result = await verifyAttestation(attestation, publicKeyPem, subtle);
 
-    expect(result.reason).toContain('attestedBy');
+    assert.ok((result.reason ?? '').includes('attestedBy'));
   });
 
   describe('input handling', () => {
     it('decodes hex with or without the 0x prefix', () => {
-      expect(decodeSignature('0x00ff')).toEqual(new Uint8Array([0, 255]));
-      expect(decodeSignature('00ff')).toEqual(new Uint8Array([0, 255]));
+      assert.deepEqual(decodeSignature('0x00ff'), new Uint8Array([0, 255]));
+      assert.deepEqual(decodeSignature('00ff'), new Uint8Array([0, 255]));
     });
 
-    it.each(['', '0x', 'zz', '0xabc'])('rejects malformed signature %p', (value) => {
-      expect(decodeSignature(value)).toBeNull();
-    });
+    for (const value of ['', '0x', 'zz', '0xabc']) {
+      it(`rejects malformed signature ${JSON.stringify(value)}`, () => {
+        assert.equal(decodeSignature(value), null);
+      });
+    }
 
     it('extracts DER from a PEM block', () => {
       const der = pemToDer(publicKeyPem);
-      expect(der).not.toBeNull();
-      expect((der as Uint8Array).length).toBeGreaterThan(30);
+      assert.notEqual(der, null);
+      assert.ok((der as Uint8Array).length > 30);
     });
 
-    it.each([
+    const malformedKeys = [
       '',
       'not a pem',
       '-----BEGIN PUBLIC KEY-----\n-----END PUBLIC KEY-----',
@@ -242,24 +244,26 @@ describe('browser attestation verifier', () => {
       // all, rather than merely the wrong key type — atob() itself throws,
       // which is the only way into the function's catch block.
       '-----BEGIN PUBLIC KEY-----\n!!!\n-----END PUBLIC KEY-----',
-    ])('rejects malformed key %p', (value) => {
-      expect(pemToDer(value)).toBeNull();
-    });
+    ];
+    for (const value of malformedKeys) {
+      it(`rejects malformed key ${JSON.stringify(value)}`, () => {
+        assert.equal(pemToDer(value), null);
+      });
+    }
 
     it('reports a bad key without claiming the signature was forged', async () => {
       const result = await verifyAttestation(signed(), 'not a key', subtle);
 
-      expect(result.valid).toBe(false);
-      expect(result.stage).toBe('key');
+      assert.equal(result.valid, false);
+      assert.equal(result.stage, 'key');
     });
 
     it('preflight passes a well-formed attestation through to cryptography', () => {
-      expect(preflight(signed())).toBeNull();
+      assert.equal(preflight(signed()), null);
     });
 
-    it.each(['signature', 'verificationId', 'observationId'] as const)(
-      'flags an empty %s as a shape failure, distinct from a missing one',
-      (field) => {
+    for (const field of ['signature', 'verificationId', 'observationId'] as const) {
+      it(`flags an empty ${field} as a shape failure, distinct from a missing one`, () => {
         // `base()` already carries signature: ''; the other two required
         // fields start populated. A non-empty placeholder signature keeps
         // that first check from firing for every case, so each iteration
@@ -270,21 +274,21 @@ describe('browser attestation verifier', () => {
 
         const result = preflight(attestation);
 
-        expect(result).not.toBeNull();
-        expect(result?.stage).toBe('shape');
-        expect(result?.reason).toBe(`${field} is empty`);
-      }
-    );
+        assert.notEqual(result, null);
+        assert.equal(result?.stage, 'shape');
+        assert.equal(result?.reason, `${field} is empty`);
+      });
+    }
   });
 
   it('builds the same bytes as the published field order, not sorted order', () => {
     const attestation = signed();
     const published = new TextDecoder().decode(buildSignedBytes(attestation));
 
-    expect(published.indexOf('verificationId')).toBeLessThan(published.indexOf('observationId'));
-    expect(published.indexOf('attestedAt')).toBeLessThan(published.indexOf('keyVersion'));
+    assert.ok(published.indexOf('verificationId') < published.indexOf('observationId'));
+    assert.ok(published.indexOf('attestedAt') < published.indexOf('keyVersion'));
     // Sorted order would put attestedAt first; it does not.
-    expect(published.startsWith('{"verificationId"')).toBe(true);
+    assert.equal(published.startsWith('{"verificationId"'), true);
   });
 
   it('returns a bounded crypto failure when WebCrypto stalls', async () => {
@@ -294,7 +298,7 @@ describe('browser attestation verifier', () => {
 
     const result = await verifyAttestation(signed(), publicKeyPem, stalled);
 
-    expect(result).toEqual({
+    assert.deepEqual(result, {
       valid: false,
       stage: 'crypto',
       reason: 'could not verify: WebCrypto importing the public key timed out after 2000ms',
@@ -311,13 +315,13 @@ describe('browser attestation verifier', () => {
       },
     } as unknown as SubtleCrypto;
 
-    expect(await canVerify(withoutEd25519)).toBe(false);
+    assert.equal(await canVerify(withoutEd25519), false);
 
     const result = await verifyAttestation(signed(), publicKeyPem, withoutEd25519);
 
-    expect(result.valid).toBe(false);
-    expect(result.stage).toBe('crypto');
-    expect(result.reason).toContain('could not verify');
+    assert.equal(result.valid, false);
+    assert.equal(result.stage, 'crypto');
+    assert.ok((result.reason ?? '').includes('could not verify'));
   });
 
   it('rejects a signature that is not valid hex before touching cryptography', async () => {
@@ -329,7 +333,7 @@ describe('browser attestation verifier', () => {
 
     const result = await verifyAttestation(attestation, publicKeyPem, subtle);
 
-    expect(result).toEqual({
+    assert.deepEqual(result, {
       valid: false,
       stage: 'signature',
       reason: 'signature is not valid hex',
@@ -350,7 +354,7 @@ describe('browser attestation verifier', () => {
 
     const result = await verifyAttestation(signed(), publicKeyPem, throwsAString);
 
-    expect(result).toEqual({
+    assert.deepEqual(result, {
       valid: false,
       stage: 'crypto',
       reason: 'could not verify: boom',

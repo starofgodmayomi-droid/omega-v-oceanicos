@@ -40,12 +40,13 @@ PRESENT ON DISK
 | **SOURCE-ONLY** | Package directory exists under `packages/`, but is not listed in `pnpm-workspace.yaml`. |
 | **STUB** | A source-only directory with a thin implementation; not an active workspace capability. |
 
-## API-DECLARED — workspace + direct API dependency (11 packages)
+## API-DECLARED — workspace + direct API dependency (12 packages)
 
 | Package | Name | Declared role |
 |---|---|---|
 | `kai` | `@oceanicos/kai` | Mind: continuity + scam-intent shield (imported 2026-10-29) |
 | `elion` | `@oceanicos/elion` | Hands: authorized execution + reconciliation (imported 2026-10-29) |
+| `omega` | `@oceanicos/omega` | Judge: digest reconciliation + the body fixpoint turn (direct 2026-10-31) |
 | `types` | `@oceanicos/types` | Shared contracts |
 | `observer` | `@oceanicos/observer` | Observe |
 | `verification` | `@oceanicos/verification` | Verify |
@@ -58,11 +59,10 @@ PRESENT ON DISK
 
 The API manifest declares these workspace dependencies. The list alone does not prove each is imported, executed, or exposed as an API capability.
 
-## WORKSPACE-ONLY — workspace member, no direct API dependency (10 packages)
+## WORKSPACE-ONLY — workspace member, no direct API dependency (9 packages)
 
 | Package | Name | Declared role |
 |---|---|---|
-| `omega` | `@oceanicos/omega` | Judge: digest reconciliation, fails closed (added 2026-10-29) |
 | `gateway` | `@omega-v/gateway` | Gateway |
 | `ir` | `@omega-v/ir` | Intermediate-representation bytecode and execution engine |
 | `compiler` | `@omega-v/compiler` | Rule DSL to IR bytecode compiler |
@@ -95,8 +95,8 @@ Unresolved naming edge. Do not silently rename packages.
 | Category | Count | Action |
 |---|---:|---|
 | Workspace members | 23 (21 packages + 2 apps) | Membership only; do not infer capability |
-| API-declared | 11 packages | Direct manifest dependencies; verify actual use separately |
-| Workspace-only | 10 packages | Not direct API dependencies |
+| API-declared | 12 packages | Direct manifest dependencies; verify actual use separately |
+| Workspace-only | 9 packages | Not direct API dependencies |
 | On-disk, off-workspace | Non-exhaustive | Promote only when earned |
 
 ## Test and CI evidence
