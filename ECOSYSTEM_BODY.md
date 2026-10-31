@@ -16,8 +16,8 @@
 
 ### 📐 THE VARIABLE DEFINITIONS
 
-- **\(\mathcal{Y}\) (Y-Combinator)**: The infinite loop of the Invisible Online Computer. The system is self-sustaining and requires no external base state.
-- **\(\mathcal{M}\) (Memory)**: The KAI ledger. An immutable, append-only record of verified reality.
+- **\(\mathcal{Y}\) (Y-Combinator)**: Another finite step may be justified. Not unlimited autonomy, and not a process that runs without a human root. The root stays outside the function.
+- **\(\mathcal{M}\) (Memory)**: Append-only memory of hashes that passed the gate. Memory is not truth. This equation does not erase an unknown by storing it as verified.
 - **\(\Delta\) (Intent)**: The Human Root. The incoming signal, dream, or task.
 - **\(\mathcal{V}\) (Verification)**: The OMEGA gate. It fails closed if expected reality does not match observed reality.
 - **\((\text{Expected} \equiv \text{Observed})\)**: The Reality Principle. `ATTEST, DON'T ASSERT.`
@@ -47,4 +47,27 @@ KAI × ELION × OMEGA is this equation applied to one intent, in order:
 
 Code: `runKaixelionOmega` in [packages/mini/src/kaixelion-omega.ts](packages/mini/src/kaixelion-omega.ts). Skill: [skills/kaixelion-omega/SKILL.md](skills/kaixelion-omega/SKILL.md).
 
-`/api/execute` on main can still label a local template `VERIFIED` and remember it. That route is not this function. Routing it through the cycle is a later step, not this one.
+`POST /api/execute` calls `runKaixelionOmega` as a caller. It does not read `observed`, `source`, or `witness` from the body, does not call a model, and does not write `KaiMemory`. Empty evidence stays `UNKNOWN`. `ledgerMutation` is false. A caller cannot turn a local sentence into `VERIFIED`.
+
+### THE FIXPOINT
+
+Halt cases are decided before any hash is appended, including when a caller also says the step is verified:
+
+1. `K(x) ∈ SCAM` → halt `DIVERGENT`
+2. `Evidence(x) = ∅` or the input is not a bounded record → halt `UNKNOWN`
+3. `Authority(x) < Required` → halt `NOT_EXECUTED`
+4. Expected ≡ Observed → append `Hash(x)` once and stop this step (`halt: false` means another finite step may be requested)
+5. Otherwise → halt `DIVERGENT`
+
+The pure step is `evaluateEcosystemFixpoint` in [packages/mini/src/ecosystem-fixpoint.ts](packages/mini/src/ecosystem-fixpoint.ts). `GET /v1/ecosystem/body` includes `fixpoint` for that local read. `ledgerMutation` is false: the response is not a ledger write, not deployment, and not production health.
+
+### OUTWARD EQUATION
+
+The same halt order folds a declared ring in [packages/mini/src/ecosystem-body-equation.ts](packages/mini/src/ecosystem-body-equation.ts). A verified surface is remembered. Scam, empty evidence, missing authority, or `Expected ≢ Observed` halts the fold and keeps only the verified prefix.
+
+- `GET /v1/ecosystem/equation` compresses an in-process constant. It does not read this file from disk.
+- `POST /v1/ecosystem/equation` compresses caller-supplied surfaces. Those values are `CALLER_SUPPLIED`.
+- `POST /v1/ecosystem/equation/expand` restores a body and refuses a tampered digest.
+- `pnpm compress:repo` reads the declared outward ring from a checkout. `upgrade.execution` stays `NOT_EXECUTED`. Compression is not permission.
+
+Detail: [docs/ECOSYSTEM-BODY-EQUATION.md](docs/ECOSYSTEM-BODY-EQUATION.md).
