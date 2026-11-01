@@ -156,6 +156,43 @@ The supplied architecture diagram is adopted here as the **canonical conceptual 
 
 This mapping keeps the diagram maximally expressive without allowing presentation to overstate implementation. In particular, the return arrow to Reality means **iterated finite observation and reconciliation**, not infinite autonomy. “∞” is notation for bounded next transitions, not unlimited authority, execution, budget, or capability.
 
+## Reverse-engineered boundary: Glober, AI, and compression
+
+**Source:** user-supplied “Reverse Engineering the Glober, AI, & the Compression of All” blueprint, received 2026-11-01. The terms *Glober*, *KAI Shield*, *ELION*, *OMEGA*, *Entity*, and `30013030` are retained as the source's conceptual vocabulary. This section maps that vocabulary to the repository; it does not attest to internet-wide properties or autonomous system capabilities.
+
+| Blueprint claim | Repository evidence | Status and limit |
+|---|---|---|
+| The “Glober” is a global source of noisy and deceptive information; “99%” is noise | No global corpus, prevalence study, or internet-wide observation is part of this repository record | `UNVERIFIED`; the 99% figure is unsupported here and must not be repeated as fact |
+| Frontier AI providers process intent and return generated output | A search of `apps/api/src` did not identify an OpenAI, Anthropic, Gemini, or other frontier-model provider integration | `NOT OBSERVED` in the inspected API source; not a claim that no integration exists elsewhere or outside this repository |
+| KAI scans intent for scam patterns before model invocation | The inspected API source did not expose a scam/phishing classifier or pattern-screening flow; `@oceanicos/remember` supplies memory and integrity functions | `NOT OBSERVED` as a runtime shield; memory and integrity checking do not classify intent |
+| ELION calls external APIs to execute the requested task | Omega command routes model admission and bounded local execution; the documented executor records a local action and consequence | `SUPPORTED` for bounded local command flow; external marketplace, payment, model, and social actions are not established by that flow |
+| OMEGA compares expected and observed state | The command lifecycle records execution and reality observations, then classifies outcomes such as `VERIFIED`, `DIVERGENT`, or `UNKNOWN` | `SUPPORTED` for the implemented command contract; a matching state is scoped evidence, not proof of broad real-world truth |
+| Output becomes one SHA-256 hash and only verified truth enters immutable memory | The Remember package verifies a local hash chain and links observation with verification; attestation and hashes establish integrity/provenance properties within their defined inputs | `PARTIALLY SUPPORTED`; a digest does not establish truth, the ledger is not proof against every privileged storage modification, and not every AI output is automatically committed |
+| Human, internet, and AI form one “Entity” or feedback loop | The repo models human intent, bounded transitions, observation, reconciliation, and memory as an architecture | `CONCEPTUAL`; no universal integration, identity, consciousness, ownership, or global control follows from that model |
+| `30013030` is a system checksum or code | No executable contract or verifier for this value was identified in the inspected implementation path | `SYMBOLIC / UNVERIFIED`; it has no authority, security, or attestation effect unless a specific protocol defines and verifies it |
+
+### Mechanical flow that the repository supports
+
+```text
+human-supplied request
+  → validate a bounded command and its context
+  → record an admission decision and authority fields
+  → execute only the implemented bounded transition
+  → observe a supplied or runtime state
+  → classify the comparison as VERIFIED | DIVERGENT | UNKNOWN
+  → retain evidence in the configured local persistence and memory surfaces
+```
+
+This is not currently equivalent to “internet input → scam shield → frontier model → verified commercial action.” In particular, the local command executor is not evidence that a buyer was found, a payment moved, a creator was paid, or a market opportunity was safe. A self-reported operator string is not identity proof. A successful hash-chain check is evidence of chain integrity under the implementation's storage and key assumptions; it is not an oracle for factual correctness.
+
+### Reverse-engineered conclusion
+
+The strongest repository-grounded compression is:
+
+> **Human intent can be represented as a bounded command; the system can record authority, execute a limited transition, compare an observation, and preserve integrity-linked evidence. External truth, provider output, identity, and real-world consequences remain separate claims requiring their own sources and observations.**
+
+The submitted phrase “Ω∞v is the verification boundary” is therefore a design principle, not a claim that the current repository filters the global internet or verifies arbitrary AI output. The next finite engineering step is to specify and test one concrete external-source adapter, including source provenance, threat model, authorization, observation, and failure behavior, before describing it as an active shield or agent integration.
+
 ## Reconciliation record
 
 | Claim | Source | Observation | Status |

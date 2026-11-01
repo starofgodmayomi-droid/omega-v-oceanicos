@@ -86,6 +86,9 @@ This documentation set is intentionally explicit about what is implemented, what
 - **[Whole ecosystem reality compression](./upgrades/WHOLE_ECOSYSTEM_REALITY_COMPRESSION_2026-10-04.md)**
   — source-labeled translation of the supplied Ω∞v architecture into repository
   boundaries and explicit unknowns.
+- **[Reverse-engineered ecosystem boundary](./ECOSYSTEM-COMPRESSION.md#reverse-engineered-boundary-glober-ai-and-compression)**
+  — repository evidence and limits for the supplied Glober, AI, and compression
+  blueprint.
 - **[One-body operating core](./upgrades/ONE_BODY_OPERATING_CORE_2026-10-04.md)**
   — the supplied operating-body architecture, mapped to a reality-bound
   governance spine, interchangeable provider examples, and truthful UI states.

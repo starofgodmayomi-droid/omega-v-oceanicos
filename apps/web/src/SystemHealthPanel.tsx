@@ -88,6 +88,8 @@ interface OmegaDivergenceAlert {
   reality: { classification?: string; observedState?: string } | null;
 }
 
+type OmegaReconciliationAction = 'accepted' | 'retried' | 'corrected' | 'closed';
+
 export function SystemHealthPanel() {
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [therapeuticState, setTherapeuticState] = useState<TherapeuticStateResponse | null>(null);
@@ -99,6 +101,9 @@ export function SystemHealthPanel() {
   const [lastFlowStatus, setLastFlowStatus] = useState<string | null>(null);
   const [transitioning, setTransitioning] = useState(false);
   const [commandAction, setCommandAction] = useState<string | null>(null);
+  const [reconciliationAction, setReconciliationAction] = useState<OmegaReconciliationAction>('accepted');
+  const [reconciliationNote, setReconciliationNote] = useState('');
+  const [reconciliationOperator, setReconciliationOperator] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -297,7 +302,7 @@ export function SystemHealthPanel() {
           break;
         case 'reconcile':
           url += '/reconciliation';
-          payload = { action: 'REPLAN', note: 'operator reconciled the runtime evidence and recorded the follow-up direction', operator: 'dashboard-operator' };
+          payload = { action: reconciliationAction, note: reconciliationNote, operator: reconciliationOperator };
           break;
         default:
           return;
@@ -319,7 +324,7 @@ export function SystemHealthPanel() {
     } finally {
       setCommandAction(null);
     }
-  }, [fetchOmegaCommands, fetchSelectedCommandDetails, selectedCommand, selectedCommandId]);
+  }, [fetchOmegaCommands, fetchSelectedCommandDetails, reconciliationAction, reconciliationNote, reconciliationOperator, selectedCommand, selectedCommandId]);
 
   useEffect(() => {
     fetchHealth();
@@ -340,6 +345,10 @@ export function SystemHealthPanel() {
       fetchSelectedCommandDetails(selectedCommandId);
     }
   }, [fetchSelectedCommandDetails, selectedCommandId]);
+
+  useEffect(() => {
+    setReconciliationNote('');
+  }, [selectedCommandId]);
 
   const readinessColor = health?.readiness === 'ready' ? theme.verified : theme.warning;
 
@@ -648,7 +657,7 @@ export function SystemHealthPanel() {
                 )}
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '10px' }}>
-                {['admit', 'approve', 'execute', 'observe', 'reconcile'].map((action) => (
+                {['admit', 'approve', 'execute', 'observe'].map((action) => (
                   <button
                     key={action}
                     type="button"
@@ -670,6 +679,57 @@ export function SystemHealthPanel() {
                   </button>
                 ))}
               </div>
+              {(selectedCommand.status === 'DIVERGENT' || selectedCommand.status === 'UNKNOWN') && (
+                <div style={{ display: 'grid', gap: '8px', marginTop: '12px', paddingTop: '10px', borderTop: `1px solid ${theme.border}` }}>
+                  <label style={{ display: 'grid', gap: '4px', fontSize: '10px', color: theme.textMuted }}>
+                    Review outcome
+                    <select
+                      value={reconciliationAction}
+                      onChange={(event) => setReconciliationAction(event.target.value as OmegaReconciliationAction)}
+                      style={{ background: theme.surfaceRaised, color: theme.text, border: `1px solid ${theme.borderBright}`, borderRadius: theme.radiusSmall, padding: '7px 9px' }}
+                    >
+                      <option value="accepted">Accepted</option>
+                      <option value="retried">Retried</option>
+                      <option value="corrected">Corrected</option>
+                      <option value="closed">Closed</option>
+                    </select>
+                  </label>
+                  <label style={{ display: 'grid', gap: '4px', fontSize: '10px', color: theme.textMuted }}>
+                    Operator ID (self-reported; not authenticated)
+                    <input
+                      value={reconciliationOperator}
+                      onChange={(event) => setReconciliationOperator(event.target.value)}
+                      maxLength={96}
+                      required
+                      placeholder="operator-id"
+                      style={{ background: theme.surfaceRaised, color: theme.text, border: `1px solid ${theme.borderBright}`, borderRadius: theme.radiusSmall, padding: '7px 9px' }}
+                    />
+                  </label>
+                  <label style={{ display: 'grid', gap: '4px', fontSize: '10px', color: theme.textMuted }}>
+                    Reconciliation note
+                    <textarea
+                      value={reconciliationNote}
+                      onChange={(event) => setReconciliationNote(event.target.value)}
+                      maxLength={2000}
+                      required
+                      rows={3}
+                      placeholder="Record what was reviewed and the evidence or follow-up."
+                      style={{ resize: 'vertical', background: theme.surfaceRaised, color: theme.text, border: `1px solid ${theme.borderBright}`, borderRadius: theme.radiusSmall, padding: '7px 9px', font: `11px ${theme.fontSans}` }}
+                    />
+                  </label>
+                  <div style={{ fontSize: '10px', color: theme.textDim }}>
+                    Records a durable review note only; it does not retry, correct, authorize, or execute the command.
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => runCommandAction('reconcile')}
+                    disabled={Boolean(commandAction) || !reconciliationNote.trim() || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,95}$/.test(reconciliationOperator)}
+                    style={{ justifySelf: 'start', background: theme.surfaceRaised, color: theme.accent, border: `1px solid ${theme.borderBright}`, borderRadius: theme.radiusSmall, padding: '6px 10px', fontSize: '10px', fontWeight: 700, cursor: commandAction ? 'wait' : 'pointer', opacity: commandAction || !reconciliationNote.trim() || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,95}$/.test(reconciliationOperator) ? 0.6 : 1 }}
+                  >
+                    {commandAction === 'reconcile' ? 'RECORDING…' : 'RECORD REVIEW'}
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
