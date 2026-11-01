@@ -84,7 +84,8 @@ View each step of the MINI kernel and its earned expansions:
 - Ω∞v current visualization with progressive stages
 - Runtime-aware navigation and explicit unavailable boundaries
 - Keeps last-observed command evidence visible during API read failures and
-  labels unavailable feeds separately from successful empty results
+  labels retained responses as stale, unavailable feeds separately from
+  successful empty results, and action failures with their error details
 - Command palette with `⌘ K` / `Ctrl + K`
 - Operator-controlled response-time and status-code evidence
 - Responsive desktop and mobile layouts

@@ -124,6 +124,12 @@ export function SystemHealthPanel() {
     commandDetails: false,
     divergences: false,
   });
+  const [dataStale, setDataStale] = useState<Record<DataSurface, boolean>>({
+    therapeutic: false,
+    commands: false,
+    commandDetails: false,
+    divergences: false,
+  });
 
   const fetchHealth = useCallback(async () => {
     setLoading(true);
@@ -149,12 +155,11 @@ export function SystemHealthPanel() {
       if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
       setTherapeuticState(data);
       setDataLoaded((current) => ({ ...current, therapeutic: true }));
+      setDataStale((current) => ({ ...current, therapeutic: false }));
       setDataErrors((current) => ({ ...current, therapeutic: null }));
     } catch (err) {
-      setDataErrors((current) => ({
-        ...current,
-        therapeutic: errorMessage(err, 'therapeutic state unavailable'),
-      }));
+      setDataStale((current) => ({ ...current, therapeutic: true }));
+      setDataErrors((current) => ({ ...current, therapeutic: errorMessage(err, 'therapeutic state unavailable') }));
     }
   }, []);
 
@@ -167,15 +172,14 @@ export function SystemHealthPanel() {
       const commands = Array.isArray(data?.commands) ? data.commands.slice(0, 5) : [];
       setOmegaCommands(commands);
       setDataLoaded((current) => ({ ...current, commands: true }));
+      setDataStale((current) => ({ ...current, commands: false }));
       setDataErrors((current) => ({ ...current, commands: null }));
       if (!selectedCommandId && commands[0]?.commandId) {
         setSelectedCommandId(commands[0].commandId);
       }
     } catch (err) {
-      setDataErrors((current) => ({
-        ...current,
-        commands: errorMessage(err, 'command evidence unavailable'),
-      }));
+      setDataStale((current) => ({ ...current, commands: true }));
+      setDataErrors((current) => ({ ...current, commands: errorMessage(err, 'command evidence unavailable') }));
     }
   }, [selectedCommandId]);
 
@@ -198,6 +202,7 @@ export function SystemHealthPanel() {
       if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
       setTherapeuticState(data);
       setDataLoaded((current) => ({ ...current, therapeutic: true }));
+      setDataStale((current) => ({ ...current, therapeutic: false }));
       setDataErrors((current) => ({ ...current, therapeutic: null }));
       setLastFlowStatus(data?.status ?? 'VERIFIED');
       setActionError(null);
@@ -226,12 +231,11 @@ export function SystemHealthPanel() {
       setSelectedCommand(commandData);
       setSelectedBoundary(boundaryData?.boundary ?? null);
       setDataLoaded((current) => ({ ...current, commandDetails: true }));
+      setDataStale((current) => ({ ...current, commandDetails: false }));
       setDataErrors((current) => ({ ...current, commandDetails: null }));
     } catch (err) {
-      setDataErrors((current) => ({
-        ...current,
-        commandDetails: errorMessage(err, 'command detail unavailable'),
-      }));
+      setDataStale((current) => ({ ...current, commandDetails: true }));
+      setDataErrors((current) => ({ ...current, commandDetails: errorMessage(err, 'command detail unavailable') }));
     }
   }, []);
 
@@ -243,12 +247,11 @@ export function SystemHealthPanel() {
       if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
       setDivergenceAlerts(Array.isArray(data?.alerts) ? data.alerts.slice(0, 5) : []);
       setDataLoaded((current) => ({ ...current, divergences: true }));
+      setDataStale((current) => ({ ...current, divergences: false }));
       setDataErrors((current) => ({ ...current, divergences: null }));
     } catch (err) {
-      setDataErrors((current) => ({
-        ...current,
-        divergences: errorMessage(err, 'divergence evidence unavailable'),
-      }));
+      setDataStale((current) => ({ ...current, divergences: true }));
+      setDataErrors((current) => ({ ...current, divergences: errorMessage(err, 'divergence evidence unavailable') }));
     }
   }, []);
 
@@ -387,6 +390,7 @@ export function SystemHealthPanel() {
       setSelectedCommand(null);
       setSelectedBoundary(null);
       setDataLoaded((current) => ({ ...current, commandDetails: false }));
+      setDataStale((current) => ({ ...current, commandDetails: false }));
       setDataErrors((current) => ({ ...current, commandDetails: null }));
       fetchSelectedCommandDetails(selectedCommandId);
     }
@@ -632,6 +636,9 @@ export function SystemHealthPanel() {
               {!therapeuticState && !dataErrors.therapeutic && !dataLoaded.therapeutic && (
                 <div style={{ fontSize: '11px', color: theme.textDim }}>Loading state evidence…</div>
               )}
+              {therapeuticState && dataStale.therapeutic && (
+                <div style={{ fontSize: '10px', color: theme.warning }}>Showing last successful state response; refresh failed.</div>
+              )}
             </div>
           )}
 
@@ -695,6 +702,11 @@ export function SystemHealthPanel() {
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+            {omegaCommands.length > 0 && dataStale.commands && (
+              <div style={{ fontSize: '10px', color: theme.warning, marginTop: '6px' }}>
+                Showing last successful command response; refresh failed.
               </div>
             )}
           </div>
@@ -811,6 +823,11 @@ export function SystemHealthPanel() {
               Loading selected command evidence…
             </div>
           )}
+          {selectedCommand && dataStale.commandDetails && (
+            <div style={{ fontSize: '10px', color: theme.warning, marginBottom: '10px' }}>
+              Showing last successful details response; refresh failed.
+            </div>
+          )}
 
           <div style={{
             padding: '10px 14px',
@@ -852,6 +869,11 @@ export function SystemHealthPanel() {
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+            {divergenceAlerts.length > 0 && dataStale.divergences && (
+              <div style={{ fontSize: '10px', color: theme.warning, marginTop: '6px' }}>
+                Showing last successful divergence response; refresh failed.
               </div>
             )}
           </div>
