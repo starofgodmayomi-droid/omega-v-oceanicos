@@ -2,7 +2,15 @@
 
 Event observation and normalization for Ω∞v Oceanicos.
 
-**Step 1 of the verification loop**: Capture claims and prepare them for verification.
+**Step 1 of the verification loop**: capture claims and prepare them for verification.
+
+## Public README alignment
+
+- [README.md](../../README.md) — repo-wide mission and evidence-first operating model
+- [packages/README.md](../README.md) — package catalog and earned expansion path
+- [docs/README.md](../../docs/README.md) — design, governance, and verification references
+
+Observer is the intake boundary for the claim lifecycle; it does not produce truth by itself, only normalized evidence that can be checked and remembered.
 
 ## Installation
 

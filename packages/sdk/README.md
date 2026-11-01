@@ -2,6 +2,14 @@
 
 `@omega-v/sdk` is the first typed client boundary for the existing Omega V Oceanicos runtime evidence API.
 
+## Public README alignment
+
+- [README.md](../../README.md) — project mission and evidence-first operating posture
+- [apps/README.md](../../apps/README.md) — public runtime surfaces and local startup path
+- [docs/README.md](../../docs/README.md) — broader architecture and verification context
+
+The SDK exposes typed access to evidence boundaries, not sovereign authority. It reads what the API declares and preserves the server’s trust boundaries rather than reinterpreting them locally.
+
 ## Usage
 
 ```ts

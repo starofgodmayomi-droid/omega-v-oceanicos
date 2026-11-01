@@ -2,6 +2,14 @@
 
 The CLI reads the real API observability and runtime evidence contracts and exposes one explicit operator mutation for attestation revocation. When the API has `OMEGA_READ_TOKEN` configured, pass `--token TOKEN` or set `OMEGA_READ_TOKEN` so the CLI sends `Authorization: Bearer TOKEN`; this token is not a substitute for stronger administrative policy.
 
+## Public README alignment
+
+- [README.md](../../README.md) — repository mission and evidence-first posture
+- [apps/README.md](../../apps/README.md) — operational app surfaces and startup flow
+- [docs/README.md](../../docs/README.md) — architecture, policy, and flow references
+
+The CLI is a bounded operator surface. It exposes evidence and explicit actions, but it never upgrades a local inspection into authorization, deployment, or truth about the external world.
+
 ## Usage
 
 Build the workspace, then run:

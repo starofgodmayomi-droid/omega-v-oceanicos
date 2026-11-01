@@ -5,3 +5,12 @@ Peer-to-Peer Gossip Protocol & Verifiable Message Propagation for Ω∞v Oceanic
 ## Overview
 
 Ecosystem package for the Ω∞v Oceanicos platform.
+
+## Public README alignment
+
+- [README.md](../../README.md) — repo-wide mission and evidence-first boundaries
+- [packages/coordination/README.md](../coordination/README.md) — local worker orchestration and parallel execution evidence
+- [packages/orchestrator/README.md](../orchestrator/README.md) — broader scheduling and run control layer
+- [docs/DEPENDENCY_MAP.md](../../docs/DEPENDENCY_MAP.md) — actual dependency edges and non-assertive integration map
+
+Mesh networking is a broader coordination concern, not proof of distribution, consensus, or execution success. It remains an ecosystem capability that must be validated by evidence and bounded by authority.

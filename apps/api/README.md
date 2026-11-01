@@ -1,6 +1,6 @@
 # @omega-v/api
 
-Fastify HTTP runtime for Ω∞v | OCEANICOS.
+Public contract for the OCEANICOS Fastify runtime. This README describes the currently supported API surface, evidence boundaries, and the local-operating model that the app enforces.
 
 The executable contract is the current `createApp` surface. Persistence,
 local jobs, readiness, attestation revocations, and optional static-client
@@ -125,6 +125,8 @@ unverified.
 GET  /health
 GET  /v1/kernel/capabilities
 GET  /v1/mood
+GET  /v1/therapeutic/state
+POST /v1/therapeutic/transition
 GET  /v1/ecosystem/status
 POST /v1/attest
 POST /v1/cycle

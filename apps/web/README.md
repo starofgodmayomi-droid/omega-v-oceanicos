@@ -1,10 +1,8 @@
 # OCEANICOS Web Dashboard
 
-The OCEANICOS web dashboard is the visual surface for the Ω∞v verification loop:
-**Observe → Verify → Remember**, with earned layers for attestation, display,
-learning, and return.
+This is the public README for the OCEANICOS browser interface. It presents the visual surface for the Ω∞v verification loop: **Observe → Verify → Remember**, with earned layers for attestation, display, learning, and return.
 
-Visualizes the verification loop in real-time with an interactive interface.
+The dashboard visualizes the verification loop in real time, but it does not create authority or production truth on its own.
 
 ## Quick Start
 

@@ -2,7 +2,15 @@
 
 Verification rule engine for Ω∞v Oceanicos.
 
-**Step 2 of the verification loop**: Apply rules to observations and produce evidence.
+**Step 2 of the verification loop**: apply rules to observations and produce evidence.
+
+## Public README alignment
+
+- [README.md](../../README.md) — project-wide verification posture and evidence boundaries
+- [packages/README.md](../README.md) — kernel and expansion package map
+- [docs/README.md](../../docs/README.md) — broader architecture and governance references
+
+This package enforces the rule that a rule must be executable before it can be treated as evidence. A passing verdict is not authority; it is a checked claim that can be attested and acted on only under the correct boundaries.
 
 ## What this engine can and cannot evaluate
 

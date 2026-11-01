@@ -1,6 +1,16 @@
 # Documentation
 
-Welcome to the Ω∞v Oceanicos documentation. Start here to understand the project and contribute effectively.
+This is the public documentation index for OCEANICOS and Ω∞v. It connects the project narrative, the runtime surfaces, and the implementation boundaries so the repo reads as one evidence-first system rather than a collection of disconnected documents.
+
+## Public README map
+
+- [README.md](../README.md) — repository mission, operating model, and evidence-first posture
+- [apps/README.md](../apps/README.md) — runnable application surfaces and local startup path
+- [packages/README.md](../packages/README.md) — package catalog and earned expansion model
+- [apps/api/README.md](../apps/api/README.md) — API contract and runtime evidence boundaries
+- [apps/web/README.md](../apps/web/README.md) — dashboard behavior and browser verification flow
+
+This documentation set is intentionally explicit about what is implemented, what is verified, and what is still a proposal or local-only state.
 
 ---
 
@@ -10,6 +20,7 @@ Welcome to the Ω∞v Oceanicos documentation. Start here to understand the proj
 
 - **[Charter](../CHARTER.md)** — Our living agnostic principles and decision-making philosophy
 - **[Manifest](../MANIFEST.md)** — Project mission, architecture, and verification loop
+- **[Therapeutic State Machine](./THERAPEUTIC-STATE-MACHINE.md)** — KAI / ELION / OMEGA operating model for bounded human-centered execution
 - **[Contributing](../CONTRIBUTING.md)** — How to submit PRs and work within our verification-first culture
 
 ### Development

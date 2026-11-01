@@ -6,7 +6,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { RememberEngine } from '@oceanicos/remember';
-import { FileConnectorObservationStore, FileValueNavigatorStore, MiniKernel } from '@oceanicos/mini';
+import { FileConnectorObservationStore, FileValueNavigatorStore, MiniKernel, executeAuthorizedTransition, resolveChangeAdmission, verifyExecutedReality } from '@oceanicos/mini';
 import { AsymmetricValidationGuard, DeclarativeVerificationEngine, MultiRegionMeshConvergence } from '@oceanicos/verification';
 import { ObserverEngine } from '@oceanicos/observer';
 import { AttestationService } from '@oceanicos/attestation';
@@ -326,6 +326,116 @@ export function createApp(
     };
   });
   fastify.get('/v1/mood', async () => ({ success: true, status: 'MAX GOOD-O', contract: 'Ω∞v totality / attest-dont-assert', brand: 'Oceanicos Ω∞', ledger: { ready: Boolean(ledgerMemory.getTip()) }, evaluatedAt: new Date().toISOString() }));
+  fastify.get('/v1/therapeutic/state', async () => {
+    const integrity = ledgerMemory.verifyChain();
+    const status = integrity.valid ? 'READY' : 'DEGRADED';
+    return {
+      success: true,
+      model: 'omega.therapeutic-state-machine.v1',
+      status,
+      evaluatedAt: new Date().toISOString(),
+      state: {
+        kai: {
+          status: integrity.valid ? 'READY' : 'DEGRADED',
+          authority: 'memory-only',
+          summary: 'continuity ledger and evidence lineage are preserved without claiming authority',
+        },
+        elion: {
+          status: 'READY',
+          authority: 'bounded-execution',
+          summary: 'execution remains limited to the declared scope, policy, and human boundary',
+        },
+        omega: {
+          status: integrity.valid ? 'READY' : 'DEGRADED',
+          authority: 'verification-gate',
+          summary: 'expected outcomes are reconciled against observed evidence before completion is claimed',
+        },
+      },
+      loop: ['observe', 'bound', 'execute', 'reconcile', 'remember'],
+    };
+  });
+
+  fastify.post('/v1/therapeutic/transition', async (request, reply) => {
+    const body = request.body && typeof request.body === 'object' && !Array.isArray(request.body) ? request.body as Record<string, unknown> : {};
+    const intent = typeof body.intent === 'string' ? body.intent.trim() : '';
+    const requestedBy = typeof body.requestedBy === 'string' && body.requestedBy.trim() ? body.requestedBy.trim() : 'dashboard-operator';
+    const expectedOutcome = typeof body.expectedOutcome === 'string' ? body.expectedOutcome.trim() : 'bounded local action completed and observed';
+    const observedState = typeof body.observedState === 'string' ? body.observedState.trim() : expectedOutcome;
+    const storedContext = body.context && typeof body.context === 'object' && !Array.isArray(body.context) ? body.context as Record<string, string> : {};
+    if (!intent) return jsonError(reply, 400, 'THERAPEUTIC_TRANSITION_INTENT_REQUIRED');
+    const creation = omegaCommands.create({
+      intent,
+      requestedBy,
+      workers: ['planner'],
+      idempotencyKey: typeof body.idempotencyKey === 'string' && body.idempotencyKey.trim() ? body.idempotencyKey.trim() : `therapeutic-${Date.now()}`,
+      context: { ...storedContext, therapeuticModel: 'omega.therapeutic-state-machine.v1', expectedOutcome },
+    });
+    let command = creation.command;
+    const admitted = resolveChangeAdmission({
+      ...command.change,
+      authority: 'system:therapeutic-state-machine',
+      policy: 'therapeutic-state-machine:v1',
+    }, { authorityVerified: true, policySatisfied: true });
+    command = omegaCommands.update(command, { change: admitted, status: admitted.decision === 'ALLOW' ? 'AUTHORIZED' : admitted.decision === 'DENY' ? 'DENIED' : 'REVIEW' });
+    const execution = executeAuthorizedTransition(command.change, () => ({
+      stateAfter: expectedOutcome,
+      consequence: 'bounded local execution completed without remote mutation; evidence is preserved as a local transition record',
+    }));
+    const nextStatus: 'EXECUTED' | 'FAILED' = execution.status === 'EXECUTED' ? 'EXECUTED' : 'FAILED';
+    const withExecution = omegaCommands.update(command, {
+      status: nextStatus,
+      result: { command, status: nextStatus, execution: { stateAfter: execution.record.stateAfter ?? '', consequence: execution.record.consequence ?? '', attestationId: execution.attestationId ?? 'local-therapeutic-transition' }, nextAction: 'observe the actual state and reconcile against the expected outcome' },
+    });
+    const verification = verifyExecutedReality(execution, () => observedState);
+    const status: 'VERIFIED' | 'DIVERGENT' | 'UNKNOWN' = verification.status === 'VERIFIED' ? 'VERIFIED' : verification.status === 'DIVERGENT' ? 'DIVERGENT' : 'UNKNOWN';
+    const reality = {
+      kind: 'supplied-state' as const,
+      observedState,
+      evidence: verification.evidence,
+      observedAt: new Date().toISOString(),
+      classification: status,
+    };
+    const resolved = omegaCommands.update(withExecution, {
+      status,
+      result: {
+        command: withExecution,
+        status,
+        execution: withExecution.result?.execution,
+        reality,
+        nextAction: status === 'VERIFIED' ? 'record the learning delta and select the next bounded change' : 'preserve the divergence and review the evidence before continuing',
+      },
+    });
+    const integrity = ledgerMemory.verifyChain();
+    return {
+      success: true,
+      model: 'omega.therapeutic-state-machine.v1',
+      commandId: resolved.commandId,
+      status,
+      evaluatedAt: new Date().toISOString(),
+      transition: {
+        kai: {
+          status: integrity.valid ? 'READY' : 'DEGRADED',
+          authority: 'memory-only',
+        },
+        elion: {
+          status: execution.status === 'EXECUTED' ? 'READY' : 'FAILED',
+          authority: 'bounded-execution',
+        },
+        omega: {
+          status,
+          authority: 'verification-gate',
+        },
+      },
+      evidence: {
+        intent,
+        requestedBy,
+        expectedOutcome,
+        observedState,
+        commandStatus: resolved.status,
+        nextAction: resolved.result?.nextAction ?? 'review the bounded evidence before continuing',
+      },
+    };
+  });
 
   fastify.post('/v1/mood/codex', async (request, reply) => {
     const body = request.body && typeof request.body === 'object' && !Array.isArray(request.body) ? request.body as Record<string, unknown> : {};

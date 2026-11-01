@@ -2,6 +2,14 @@
 
 🧠 **Remember** — append-only memory for the Ω∞v MINI kernel.
 
+## Public README alignment
+
+- [README.md](../../README.md) — repo-wide mission and evidence-first system posture
+- [packages/README.md](../README.md) — package map and expansion model
+- [docs/README.md](../../docs/README.md) — design references and governance context
+
+Remember is the durable ledger of the MINI loop. It preserves what was observed and verified, but it does not create external proof or authority by itself.
+
 ```text
 💧 Ω∞v MINI ::= 👁 Observe → ✓ Verify → 🧠 Remember
 ```

@@ -26,9 +26,23 @@ observable, and auditable action. It brings together a verification kernel, API,
 web dashboard, CLI, SDKs, memory, attestation, workers, and operational contracts
 without treating any single component—or any agent—as the final authority.
 
+## Public README map
+
+This repository has a single public-facing narrative and a set of operational indexes:
+
+- [README.md](README.md) — project-level mission, operating model, and verification posture
+- [apps/README.md](apps/README.md) — runnable application surfaces and startup path
+- [packages/README.md](packages/README.md) — kernel, expansion packages, and subsystem catalog
+- [apps/api/README.md](apps/api/README.md) — API runtime contracts and local evidence boundaries
+- [apps/web/README.md](apps/web/README.md) — dashboard behavior, UX flow, and environment setup
+
+All public docs follow the same rule: describe what is implemented, what is verified,
+and what remains only a proposal or local evidence state.
+
 ## At a glance
 
 - 📋 **[Manifest](MANIFEST.md)** — Project mission, principles, and architecture
+- 💧 **[Therapeutic State Machine](docs/THERAPEUTIC-STATE-MACHINE.md)** — KAI / ELION / OMEGA operating prompt for bounded human-centered execution
 - 💧 **[Mirror-Water Universal Body](docs/MIRROR-WATER-UNIVERSAL-BODY.md)** — one body, one current, bounded transitions, and evidence-bound truth
 - 🌊 **[Ω∞v Maximum Full-Stack Space of Reality](docs/OMEGA-INFINITY-MAXIMUM-FULL-STACK-SPACE.md)** — canonical ecosystem vision: representation, authority, bounded execution, observation, reconciliation, and next finite Δ
 - 📜 **[Charter](CHARTER.md)** — Living agnostic principles and decision-making

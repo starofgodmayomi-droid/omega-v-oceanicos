@@ -1,6 +1,16 @@
 # @omega-v/mini
 
-💧 **Ω∞v MINI** — the first living system.
+💧 **Ω∞v MINI** — the first living system and the public entry point for the OCEANICOS kernel.
+
+This package is intentionally small: it is the observe → verify → remember cycle at the center of the repository. It is not a claim of full ecosystem authority; it is the bounded first unit that can be verified and expanded with earned layers.
+
+## Public README alignment
+
+- [README.md](../../README.md) — repo-wide mission and evidence-first model
+- [packages/README.md](../README.md) — package catalog and subsystem expansion path
+- [docs/README.md](../../docs/README.md) — design and governance references
+
+The expansion model remains strict: MINI is real first, then attestation, interfaces, and broader execution can be earned.
 
 ```text
 0

@@ -7,6 +7,14 @@ Remember) is complete without it. Attestation adds one thing: proof that a
 particular verification happened, at a particular time, under particular rule
 versions — in a form that survives leaving this process.
 
+## Public README alignment
+
+- [README.md](../../README.md) — project-wide evidence and verification posture
+- [packages/README.md](../README.md) — package catalog and earned expansion model
+- [docs/README.md](../../docs/README.md) — architecture and operational context
+
+Attestation is an earned layer, not a default behavior. It makes a verified claim portable without implying authorization, custody, or deployment.
+
 `ATTEST ≠ ASSERT`. A service reporting that it verified something is an
 assertion. A signature someone else can check is not.
 

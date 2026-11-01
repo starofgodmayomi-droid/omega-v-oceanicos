@@ -2,6 +2,13 @@
 
 Bounded worker pool for Ω∞v Oceanicos.
 
+## Public README alignment
+
+- [README.md](../../README.md) — repo-wide mission and evidence-first model
+- [packages/runtime/README.md](../runtime/README.md) — runtime execution and module-loop boundaries
+- [packages/coordination/README.md](../coordination/README.md) — local scheduling and lifecycle traces
+- [docs/WORKER-LIFECYCLE.md](../../docs/WORKER-LIFECYCLE.md) — worker lifecycle and bounded operational semantics
+
 This package leases jobs to capability-matched workers, records local HMAC observation receipts, and fail-closes when a worker lacks authority, policy, or an unexpired grant.
 
 It does **not** claim SLSA provenance, distributed fleet health, a persistent worker fleet, or production deployment.
