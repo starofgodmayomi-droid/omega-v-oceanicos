@@ -29,6 +29,8 @@ This documentation set is intentionally explicit about what is implemented, what
 - **[Development Setup](./DEVELOPMENT.md)** — Get the project running locally
 - **[MINI Kernel](./MINI.md)** — Zero → MINI → verified expansion (canonical growth model)
 - **[Architecture](./ARCHITECTURE.md)** — High-level system design from MINI outward
+- **[Ocean Point of View](./architecture/OCEAN-POINT-OF-VIEW.md)** — conceptual
+  oceanic model with explicit runtime and evidence boundaries
 - **[Repository inventory](./REPO_INVENTORY.md)** — workspace vs disk (current evidence)
 - **[Dependency map](./DEPENDENCY_MAP.md)** — declared edges, not health claims
 - **[Roadmap](./ROADMAP.md)** — Earned expansion phases

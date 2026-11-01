@@ -89,6 +89,11 @@ interface OmegaDivergenceAlert {
 }
 
 type OmegaReconciliationAction = 'accepted' | 'retried' | 'corrected' | 'closed';
+type DataSurface = 'therapeutic' | 'commands' | 'commandDetails' | 'divergences';
+
+function errorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback;
+}
 
 export function SystemHealthPanel() {
   const [health, setHealth] = useState<HealthResponse | null>(null);
@@ -106,6 +111,19 @@ export function SystemHealthPanel() {
   const [reconciliationOperator, setReconciliationOperator] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [dataErrors, setDataErrors] = useState<Record<DataSurface, string | null>>({
+    therapeutic: null,
+    commands: null,
+    commandDetails: null,
+    divergences: null,
+  });
+  const [dataLoaded, setDataLoaded] = useState<Record<DataSurface, boolean>>({
+    therapeutic: false,
+    commands: false,
+    commandDetails: false,
+    divergences: false,
+  });
 
   const fetchHealth = useCallback(async () => {
     setLoading(true);
@@ -130,13 +148,40 @@ export function SystemHealthPanel() {
       const data = text ? JSON.parse(text) : null;
       if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
       setTherapeuticState(data);
-    } catch {
-      setTherapeuticState(null);
+      setDataLoaded((current) => ({ ...current, therapeutic: true }));
+      setDataErrors((current) => ({ ...current, therapeutic: null }));
+    } catch (err) {
+      setDataErrors((current) => ({
+        ...current,
+        therapeutic: errorMessage(err, 'therapeutic state unavailable'),
+      }));
     }
   }, []);
 
+  const fetchOmegaCommands = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/v1/omega/commands`);
+      const text = await res.text();
+      const data = text ? JSON.parse(text) : null;
+      if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
+      const commands = Array.isArray(data?.commands) ? data.commands.slice(0, 5) : [];
+      setOmegaCommands(commands);
+      setDataLoaded((current) => ({ ...current, commands: true }));
+      setDataErrors((current) => ({ ...current, commands: null }));
+      if (!selectedCommandId && commands[0]?.commandId) {
+        setSelectedCommandId(commands[0].commandId);
+      }
+    } catch (err) {
+      setDataErrors((current) => ({
+        ...current,
+        commands: errorMessage(err, 'command evidence unavailable'),
+      }));
+    }
+  }, [selectedCommandId]);
+
   const runTherapeuticTransition = useCallback(async () => {
     setTransitioning(true);
+    setActionError(null);
     try {
       const res = await fetch(`${API_BASE_URL}/v1/therapeutic/transition`, {
         method: 'POST',
@@ -152,35 +197,19 @@ export function SystemHealthPanel() {
       const data = text ? JSON.parse(text) : null;
       if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
       setTherapeuticState(data);
+      setDataLoaded((current) => ({ ...current, therapeutic: true }));
+      setDataErrors((current) => ({ ...current, therapeutic: null }));
       setLastFlowStatus(data?.status ?? 'VERIFIED');
-      const commandsRes = await fetch(`${API_BASE_URL}/v1/omega/commands`);
-      const commandsText = await commandsRes.text();
-      const commandsData = commandsText ? JSON.parse(commandsText) : null;
-      if (commandsRes.ok && Array.isArray(commandsData?.commands)) setOmegaCommands(commandsData.commands.slice(0, 5));
+      setActionError(null);
+      await fetchOmegaCommands();
       await fetchHealth();
-    } catch {
-      setTherapeuticState(null);
+    } catch (err) {
       setLastFlowStatus('FAILED');
+      setActionError(errorMessage(err, 'therapeutic transition failed'));
     } finally {
       setTransitioning(false);
     }
-  }, [fetchHealth]);
-
-  const fetchOmegaCommands = useCallback(async () => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/v1/omega/commands`);
-      const text = await res.text();
-      const data = text ? JSON.parse(text) : null;
-      if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
-      const commands = Array.isArray(data?.commands) ? data.commands.slice(0, 5) : [];
-      setOmegaCommands(commands);
-      if (!selectedCommandId && commands[0]?.commandId) {
-        setSelectedCommandId(commands[0].commandId);
-      }
-    } catch {
-      setOmegaCommands([]);
-    }
-  }, [selectedCommandId]);
+  }, [fetchHealth, fetchOmegaCommands]);
 
   const fetchSelectedCommandDetails = useCallback(async (commandId: string) => {
     if (!commandId) return;
@@ -196,9 +225,13 @@ export function SystemHealthPanel() {
       if (!commandRes.ok || !boundaryRes.ok) throw new Error(commandData?.error || boundaryData?.error || 'command detail unavailable');
       setSelectedCommand(commandData);
       setSelectedBoundary(boundaryData?.boundary ?? null);
-    } catch {
-      setSelectedCommand(null);
-      setSelectedBoundary(null);
+      setDataLoaded((current) => ({ ...current, commandDetails: true }));
+      setDataErrors((current) => ({ ...current, commandDetails: null }));
+    } catch (err) {
+      setDataErrors((current) => ({
+        ...current,
+        commandDetails: errorMessage(err, 'command detail unavailable'),
+      }));
     }
   }, []);
 
@@ -209,14 +242,20 @@ export function SystemHealthPanel() {
       const data = text ? JSON.parse(text) : null;
       if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
       setDivergenceAlerts(Array.isArray(data?.alerts) ? data.alerts.slice(0, 5) : []);
-    } catch {
-      setDivergenceAlerts([]);
+      setDataLoaded((current) => ({ ...current, divergences: true }));
+      setDataErrors((current) => ({ ...current, divergences: null }));
+    } catch (err) {
+      setDataErrors((current) => ({
+        ...current,
+        divergences: errorMessage(err, 'divergence evidence unavailable'),
+      }));
     }
   }, []);
 
   const runOmegaLifecycle = useCallback(async () => {
     setTransitioning(true);
     setLastFlowStatus(null);
+    setActionError(null);
     try {
       const createBody = {
         intent: 'Verify the dashboard command lifecycle',
@@ -270,8 +309,9 @@ export function SystemHealthPanel() {
       await fetchSelectedCommandDetails(commandId);
       await fetchTherapeuticState();
       await fetchHealth();
-    } catch (err: any) {
-      setLastFlowStatus(err instanceof Error ? 'FAILED' : 'FAILED');
+    } catch (err) {
+      setLastFlowStatus('FAILED');
+      setActionError(errorMessage(err, 'Omega command flow failed'));
     } finally {
       setTransitioning(false);
     }
@@ -280,6 +320,7 @@ export function SystemHealthPanel() {
   const runCommandAction = useCallback(async (action: 'admit' | 'approve' | 'execute' | 'observe' | 'reconcile') => {
     if (!selectedCommandId) return;
     setCommandAction(action);
+    setActionError(null);
     try {
       let url = `${API_BASE_URL}/v1/omega/commands/${encodeURIComponent(selectedCommandId)}`;
       let payload: Record<string, unknown> | undefined;
@@ -319,8 +360,9 @@ export function SystemHealthPanel() {
       setLastFlowStatus(data?.status || data?.command?.status || 'UPDATED');
       await fetchOmegaCommands();
       await fetchSelectedCommandDetails(selectedCommandId);
-    } catch (err: any) {
-      setLastFlowStatus(err instanceof Error ? 'FAILED' : 'FAILED');
+    } catch (err) {
+      setLastFlowStatus('FAILED');
+      setActionError(errorMessage(err, `Omega ${action} action failed`));
     } finally {
       setCommandAction(null);
     }
@@ -342,6 +384,10 @@ export function SystemHealthPanel() {
 
   useEffect(() => {
     if (selectedCommandId) {
+      setSelectedCommand(null);
+      setSelectedBoundary(null);
+      setDataLoaded((current) => ({ ...current, commandDetails: false }));
+      setDataErrors((current) => ({ ...current, commandDetails: null }));
       fetchSelectedCommandDetails(selectedCommandId);
     }
   }, [fetchSelectedCommandDetails, selectedCommandId]);
@@ -402,6 +448,14 @@ export function SystemHealthPanel() {
       {error && (
         <div style={{ color: theme.divergent, fontSize: '11px', marginBottom: '10px' }}>
           ⚠ {error}
+        </div>
+      )}
+      {Object.entries(dataErrors).some(([, message]) => message) && (
+        <div role="status" style={{ color: theme.warning, fontSize: '11px', marginBottom: '10px' }}>
+          Evidence availability: {Object.entries(dataErrors)
+            .filter(([, message]) => message)
+            .map(([surface, message]) => `${surface}: ${message}`)
+            .join(' · ')}
         </div>
       )}
 
@@ -572,6 +626,12 @@ export function SystemHealthPanel() {
                   </div>
                 </>
               )}
+              {!therapeuticState && dataErrors.therapeutic && (
+                <div style={{ fontSize: '11px', color: theme.warning }}>State unavailable: {dataErrors.therapeutic}</div>
+              )}
+              {!therapeuticState && !dataErrors.therapeutic && !dataLoaded.therapeutic && (
+                <div style={{ fontSize: '11px', color: theme.textDim }}>Loading state evidence…</div>
+              )}
             </div>
           )}
 
@@ -587,6 +647,11 @@ export function SystemHealthPanel() {
               <div style={{ fontSize: '12px', fontWeight: 700, color: lastFlowStatus === 'VERIFIED' ? theme.verified : theme.warning }}>
                 {lastFlowStatus}
               </div>
+              {actionError && (
+                <div role="alert" style={{ fontSize: '11px', color: theme.divergent, marginTop: '5px' }}>
+                  {actionError}
+                </div>
+              )}
             </div>
           )}
 
@@ -600,7 +665,11 @@ export function SystemHealthPanel() {
             <div style={{ fontSize: '11px', fontWeight: 600, color: theme.textMuted, marginBottom: '8px' }}>
               Recent Omega Commands
             </div>
-            {omegaCommands.length === 0 ? (
+            {omegaCommands.length === 0 && dataErrors.commands ? (
+              <div style={{ fontSize: '11px', color: theme.warning }}>Command evidence unavailable: {dataErrors.commands}</div>
+            ) : omegaCommands.length === 0 && !dataLoaded.commands ? (
+              <div style={{ fontSize: '11px', color: theme.textDim }}>Loading command evidence…</div>
+            ) : omegaCommands.length === 0 ? (
               <div style={{ fontSize: '11px', color: theme.textDim }}>no command evidence yet</div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -732,6 +801,16 @@ export function SystemHealthPanel() {
               )}
             </div>
           )}
+          {!selectedCommand && selectedCommandId && dataErrors.commandDetails && (
+            <div style={{ fontSize: '11px', color: theme.warning, marginBottom: '10px' }}>
+              Selected command details unavailable: {dataErrors.commandDetails}
+            </div>
+          )}
+          {!selectedCommand && selectedCommandId && !dataErrors.commandDetails && !dataLoaded.commandDetails && (
+            <div style={{ fontSize: '11px', color: theme.textDim, marginBottom: '10px' }}>
+              Loading selected command evidence…
+            </div>
+          )}
 
           <div style={{
             padding: '10px 14px',
@@ -743,7 +822,11 @@ export function SystemHealthPanel() {
             <div style={{ fontSize: '11px', fontWeight: 600, color: theme.textMuted, marginBottom: '8px' }}>
               Divergence Feed
             </div>
-            {divergenceAlerts.length === 0 ? (
+            {divergenceAlerts.length === 0 && dataErrors.divergences ? (
+              <div style={{ fontSize: '11px', color: theme.warning }}>Divergence evidence unavailable: {dataErrors.divergences}</div>
+            ) : divergenceAlerts.length === 0 && !dataLoaded.divergences ? (
+              <div style={{ fontSize: '11px', color: theme.textDim }}>Loading divergence evidence…</div>
+            ) : divergenceAlerts.length === 0 ? (
               <div style={{ fontSize: '11px', color: theme.textDim }}>no divergent command evidence</div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
