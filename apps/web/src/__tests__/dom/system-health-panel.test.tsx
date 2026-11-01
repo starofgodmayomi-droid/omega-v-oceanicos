@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { SystemHealthPanel } from '../../SystemHealthPanel';
 
 const response = (body: unknown, status = 200) => ({
@@ -35,6 +35,14 @@ const healthyResponse = () => ({
   },
   timestamp: '2026-11-01T00:00:00.000Z',
 });
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((settle) => {
+    resolve = settle;
+  });
+  return { promise, resolve };
+}
 
 describe('SystemHealthPanel evidence availability', () => {
   let fetchDescriptor: PropertyDescriptor | undefined;
@@ -187,5 +195,77 @@ describe('SystemHealthPanel evidence availability', () => {
     expect(screen.getByText('Showing last successful divergence response; refresh failed.')).toBeTruthy();
     expect(screen.getByText('Showing last successful state response; refresh failed.')).toBeTruthy();
     expect(screen.getByText('Showing last successful details response; refresh failed.')).toBeTruthy();
+  });
+
+  it('ignores a late response for a command that is no longer selected', async () => {
+    const firstCommand = {
+      commandId: 'cmd-1',
+      intent: 'First command intent',
+      requestedBy: 'operator',
+      status: 'DIVERGENT',
+      createdAt: '2026-11-01T00:00:00.000Z',
+      workers: ['planner'],
+      decision: null,
+      authority: null,
+      policy: null,
+      execution: null,
+      reality: { classification: 'DIVERGENT', observedState: 'first' },
+    };
+    const secondCommand = {
+      ...firstCommand,
+      commandId: 'cmd-2',
+      intent: 'Second command intent',
+      reality: { classification: 'UNKNOWN', observedState: 'second' },
+    };
+    const delayedFirstDetails = deferred<ReturnType<typeof response>>();
+
+    Object.defineProperty(globalThis, 'fetch', {
+      configurable: true,
+      writable: true,
+      value: jest.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.endsWith('/health')) return response(healthyResponse());
+        if (url.endsWith('/v1/therapeutic/state')) {
+          return response({
+            success: true,
+            model: 'omega.therapeutic-state-machine.v1',
+            status: 'READY',
+            evaluatedAt: '2026-11-01T00:00:00.000Z',
+            state: {
+              kai: { status: 'READY', authority: 'bounded', summary: 'ready' },
+              elion: { status: 'READY', authority: 'bounded', summary: 'ready' },
+              omega: { status: 'READY', authority: 'bounded', summary: 'ready' },
+            },
+            loop: ['observe', 'bound', 'execute', 'reconcile', 'remember'],
+          });
+        }
+        if (url.endsWith('/v1/omega/commands')) return response({ commands: [firstCommand, secondCommand] });
+        if (url.endsWith('/v1/omega/divergences')) return response({ alerts: [] });
+        if (url.endsWith('/v1/omega/commands/cmd-1/safety-boundary')) {
+          return response({ boundary: {} });
+        }
+        if (url.endsWith('/v1/omega/commands/cmd-1')) return delayedFirstDetails.promise;
+        if (url.endsWith('/v1/omega/commands/cmd-2/safety-boundary')) {
+          return response({ boundary: {} });
+        }
+        if (url.endsWith('/v1/omega/commands/cmd-2')) return response(secondCommand);
+        return response({ error: 'not found' }, 404);
+      }),
+    });
+
+    render(<SystemHealthPanel />);
+    expect(await screen.findByText('First command intent')).toBeTruthy();
+    expect(await screen.findByText('Second command intent')).toBeTruthy();
+
+    fireEvent.click(screen.getByText('Second command intent'));
+    expect(await screen.findByText(/Selected Command Evidence · cmd-2/)).toBeTruthy();
+
+    await act(async () => {
+      delayedFirstDetails.resolve(response(firstCommand));
+      await delayedFirstDetails.promise;
+    });
+
+    expect(screen.getByText(/Selected Command Evidence · cmd-2/)).toBeTruthy();
+    expect(screen.queryByText(/Selected Command Evidence · cmd-1/)).toBeNull();
   });
 });

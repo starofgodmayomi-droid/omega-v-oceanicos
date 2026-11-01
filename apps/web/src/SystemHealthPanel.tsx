@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { theme, statusColor, humanStatus } from './oceanicosTheme';
 
 /*
@@ -103,6 +103,7 @@ export function SystemHealthPanel() {
   const [selectedCommandId, setSelectedCommandId] = useState<string | null>(null);
   const [selectedCommand, setSelectedCommand] = useState<OmegaCommandDetails | null>(null);
   const [selectedBoundary, setSelectedBoundary] = useState<Record<string, any> | null>(null);
+  const commandDetailsRequestId = useRef(0);
   const [lastFlowStatus, setLastFlowStatus] = useState<string | null>(null);
   const [transitioning, setTransitioning] = useState(false);
   const [commandAction, setCommandAction] = useState<string | null>(null);
@@ -218,6 +219,7 @@ export function SystemHealthPanel() {
 
   const fetchSelectedCommandDetails = useCallback(async (commandId: string) => {
     if (!commandId) return;
+    const requestId = ++commandDetailsRequestId.current;
     try {
       const [commandRes, boundaryRes] = await Promise.all([
         fetch(`${API_BASE_URL}/v1/omega/commands/${encodeURIComponent(commandId)}`),
@@ -228,12 +230,14 @@ export function SystemHealthPanel() {
       const commandData = commandText ? JSON.parse(commandText) : null;
       const boundaryData = boundaryText ? JSON.parse(boundaryText) : null;
       if (!commandRes.ok || !boundaryRes.ok) throw new Error(commandData?.error || boundaryData?.error || 'command detail unavailable');
+      if (requestId !== commandDetailsRequestId.current) return;
       setSelectedCommand(commandData);
       setSelectedBoundary(boundaryData?.boundary ?? null);
       setDataLoaded((current) => ({ ...current, commandDetails: true }));
       setDataStale((current) => ({ ...current, commandDetails: false }));
       setDataErrors((current) => ({ ...current, commandDetails: null }));
     } catch (err) {
+      if (requestId !== commandDetailsRequestId.current) return;
       setDataStale((current) => ({ ...current, commandDetails: true }));
       setDataErrors((current) => ({ ...current, commandDetails: errorMessage(err, 'command detail unavailable') }));
     }
@@ -394,6 +398,9 @@ export function SystemHealthPanel() {
       setDataErrors((current) => ({ ...current, commandDetails: null }));
       fetchSelectedCommandDetails(selectedCommandId);
     }
+    return () => {
+      commandDetailsRequestId.current += 1;
+    };
   }, [fetchSelectedCommandDetails, selectedCommandId]);
 
   useEffect(() => {
