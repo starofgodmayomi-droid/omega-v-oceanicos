@@ -1,4 +1,4 @@
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyRequest } from 'fastify';
 import {
   buildOmegaCommand,
   executeAuthorizedTransition,
@@ -188,6 +188,26 @@ function bodyOf(request: any): Record<string, unknown> {
 function commandResult(command: StoredCommand, nextAction: string): OmegaCommandResult {
   return { command, status: command.status, ...(command.result?.execution ? { execution: command.result.execution } : {}), ...(command.result?.reality ? { reality: command.result.reality } : {}), nextAction };
 }
+
+type OmegaAuthorizationContext = {
+  mode: 'local' | 'required';
+  principal: 'local-development' | 'read-bearer' | 'admin-bearer';
+};
+
+const omegaAuthorizationContext = (request: FastifyRequest): OmegaAuthorizationContext | null => {
+  const context = request.omegaAuthorization;
+  if (!context) return null;
+  if (context.mode === 'local') {
+    return context.principal === 'local-development' ? context : null;
+  }
+  if (context.mode === 'required' && ['read-bearer', 'admin-bearer'].includes(context.principal)) {
+    return context;
+  }
+  return null;
+};
+
+const OMEGA_ADMISSION_POLICY = 'runtime-evidence-bound:v1';
+const OMEGA_APPROVAL_POLICY = 'human-review';
 
 function statusForDecision(decision: 'ALLOW' | 'DENY' | 'REVIEW'): OmegaCommandStatus {
   return decisionToStatus(decision);
@@ -447,12 +467,22 @@ export function registerOmegaRoutes(fastify: FastifyInstance, store: OmegaComman
     if (!command) return reply.status(404).send({ success: false, error: 'OMEGA_COMMAND_NOT_FOUND' });
     if (command.status !== 'PROPOSED' && command.status !== 'REVIEW') return reply.status(409).send({ success: false, error: 'OMEGA_COMMAND_STALE' });
     const body = bodyOf(request);
-    const authority = typeof body.authority === 'string' ? body.authority : null;
+    const auth = omegaAuthorizationContext(request);
+    if (!auth) return reply.status(403).send({ success: false, error: 'OMEGA_AUTHORIZATION_CONTEXT_UNAVAILABLE' });
     const policy = typeof body.policy === 'string' ? body.policy : null;
-    const admitted = resolveChangeAdmission({ ...command.change, authority, policy }, { authorityVerified: body.authorityVerified === true, policySatisfied: body.policySatisfied === true });
+    const authority = auth.principal === 'admin-bearer' || auth.principal === 'local-development'
+      ? auth.principal
+      : null;
+    const admitted = resolveChangeAdmission(
+      { ...command.change, authority, policy },
+      {
+        authorityVerified: authority !== null,
+        policySatisfied: policy === OMEGA_ADMISSION_POLICY,
+      },
+    );
     const status = statusForDecision(admitted.decision);
     const updated = store.update(command, { change: admitted, status });
-    store.record('command.admitted', updated, { decision: admitted.decision });
+    store.record('command.admitted', updated, { decision: admitted.decision, principal: auth.principal, policy });
     return { success: true, ...commandResult(updated, status === 'AUTHORIZED' ? 'execute the authorized bounded action' : status === 'DENIED' ? 'review the denial evidence; no execution is permitted' : 'obtain attributable human approval') };
   });
 
@@ -461,11 +491,32 @@ export function registerOmegaRoutes(fastify: FastifyInstance, store: OmegaComman
     if (!command) return reply.status(404).send({ success: false, error: 'OMEGA_COMMAND_NOT_FOUND' });
     if (command.status !== 'REVIEW') return reply.status(409).send({ success: false, error: 'OMEGA_APPROVAL_REQUIRES_REVIEW' });
     const body = bodyOf(request);
-    const operator = typeof body.operator === 'string' && body.operator.trim() ? body.operator : 'dashboard-operator';
-    const policy = typeof body.policy === 'string' && body.policy.trim() ? body.policy : 'human-review';
-    const admitted = resolveChangeAdmission({ ...command.change, authority: `human:${operator}`, policy }, { authorityVerified: true, policySatisfied: true });
+    const auth = omegaAuthorizationContext(request);
+    if (!auth) return reply.status(403).send({ success: false, error: 'OMEGA_AUTHORIZATION_CONTEXT_UNAVAILABLE' });
+    const operator = typeof body.operator === 'string' ? body.operator.trim() : '';
+    const policy = typeof body.policy === 'string' ? body.policy.trim() : '';
+    if (!operator || operator.length > 96 || !/^[A-Za-z0-9][A-Za-z0-9._:-]*$/.test(operator)) {
+      return reply.status(400).send({ success: false, error: 'OMEGA_OPERATOR_REQUIRED' });
+    }
+    if (policy !== OMEGA_APPROVAL_POLICY) {
+      return reply.status(400).send({ success: false, error: 'OMEGA_APPROVAL_POLICY_UNSUPPORTED' });
+    }
+    const authority = auth.principal === 'admin-bearer' || auth.principal === 'local-development'
+      ? auth.principal
+      : null;
+    const admitted = resolveChangeAdmission(
+      { ...command.change, authority, policy },
+      { authorityVerified: authority !== null, policySatisfied: true },
+    );
+    if (admitted.decision !== 'ALLOW') {
+      return reply.status(403).send({ success: false, error: 'OMEGA_APPROVAL_NOT_AUTHORIZED' });
+    }
     const updated = store.update(command, { change: admitted, status: 'AUTHORIZED' });
-    store.record('command.approved', updated, { operator });
+    store.record('command.approved', updated, {
+      principal: auth.principal,
+      operatorClaim: operator,
+      operatorClaimSource: 'request-body-self-reported',
+    });
     return { success: true, ...commandResult(updated, 'execute the authorized bounded action') };
   });
 

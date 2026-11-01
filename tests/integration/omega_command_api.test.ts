@@ -6,6 +6,7 @@ describe('Ω∞v command API vertical slice', () => {
   const app = createApp(':memory:', false);
   const requiredReadToken = 'integration-read-token';
   const requiredAdminToken = 'integration-admin-token';
+  const bearerHeader = (token: string) => ({ authorization: ['Bearer', token].join(' ') });
   let requiredAuthApp: ReturnType<typeof createApp>;
   before(async () => { await app.ready(); });
   before(async () => {
@@ -85,6 +86,74 @@ describe('Ω∞v command API vertical slice', () => {
       payload: { intent: 'protected command', requestedBy: 'integration-user', workers: ['planner'], idempotencyKey: 'required-auth-3' },
     });
     assert.equal(allowedWrite.statusCode, 201);
+    const commandId = allowedWrite.json().command.commandId;
+    const forgedAdmission = {
+      authority: 'human:claimed-operator',
+      authorityVerified: true,
+      policy: 'runtime-evidence-bound:v1',
+      policySatisfied: true,
+    };
+    const anonymousAdmission = await requiredAuthApp.inject({
+      method: 'POST',
+      url: `/v1/omega/commands/${commandId}/admit`,
+      payload: forgedAdmission,
+    });
+    assert.equal(anonymousAdmission.statusCode, 401);
+    assert.equal(anonymousAdmission.json().error, 'ADMIN_ACCESS_REQUIRED');
+
+    const readTokenAdmission = await requiredAuthApp.inject({
+      method: 'POST',
+      url: `/v1/omega/commands/${commandId}/admit`,
+      headers: bearerHeader(requiredReadToken),
+      payload: forgedAdmission,
+    });
+    assert.equal(readTokenAdmission.statusCode, 401);
+    assert.equal(readTokenAdmission.json().error, 'ADMIN_ACCESS_REQUIRED');
+
+    const admitted = await requiredAuthApp.inject({
+      method: 'POST',
+      url: `/v1/omega/commands/${commandId}/admit`,
+      headers: bearerHeader(requiredAdminToken),
+      payload: { ...forgedAdmission, authorityVerified: false, policySatisfied: false },
+    });
+    assert.equal(admitted.statusCode, 200);
+    assert.equal(admitted.json().command.status, 'AUTHORIZED');
+    assert.equal(admitted.json().command.change.authority, 'admin-bearer');
+    const admissionEvents = await requiredAuthApp.inject({
+      method: 'GET',
+      url: `/v1/omega/events?commandId=${commandId}`,
+      headers: bearerHeader(requiredReadToken),
+    });
+    assert.equal(admissionEvents.statusCode, 200);
+    assert.ok(admissionEvents.json().events.some((event: { type: string; principal?: string }) =>
+      event.type === 'command.admitted' && event.principal === 'admin-bearer'));
+
+    const unsupportedPolicyCommand = await requiredAuthApp.inject({
+      method: 'POST',
+      url: '/v1/omega/commands',
+      headers: bearerHeader(requiredAdminToken),
+      payload: {
+        intent: 'policy boundary check',
+        requestedBy: 'integration-user',
+        workers: ['planner'],
+        idempotencyKey: 'required-auth-4',
+      },
+    });
+    assert.equal(unsupportedPolicyCommand.statusCode, 201);
+    const unsupportedPolicyAdmission = await requiredAuthApp.inject({
+      method: 'POST',
+      url: `/v1/omega/commands/${unsupportedPolicyCommand.json().command.commandId}/admit`,
+      headers: bearerHeader(requiredAdminToken),
+      payload: {
+        authority: 'human:claimed-operator',
+        authorityVerified: true,
+        policy: 'caller-invented-policy',
+        policySatisfied: true,
+      },
+    });
+    assert.equal(unsupportedPolicyAdmission.statusCode, 200);
+    assert.equal(unsupportedPolicyAdmission.json().command.status, 'DENIED');
+    assert.equal(unsupportedPolicyAdmission.json().command.change.authority, 'admin-bearer');
   });
 
   it('requires explicit approval before executing a review-gated command', async () => {
@@ -92,10 +161,36 @@ describe('Ω∞v command API vertical slice', () => {
     assert.equal(denied.statusCode, 409);
     assert.equal(denied.json().error, 'OMEGA_EXECUTION_REQUIRES_AUTHORIZATION');
 
-    const approved = await app.inject({ method: 'POST', url: '/v1/omega/commands/omega-api-slice-1/approve', payload: { operator: 'integration-operator' } });
+    const missingOperator = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/commands/omega-api-slice-1/approve',
+      payload: { policy: 'human-review' },
+    });
+    assert.equal(missingOperator.statusCode, 400);
+    assert.equal(missingOperator.json().error, 'OMEGA_OPERATOR_REQUIRED');
+
+    const approved = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/commands/omega-api-slice-1/approve',
+      payload: {
+        authority: 'human:forged-operator',
+        authorityVerified: true,
+        operator: 'integration-operator',
+        policy: 'human-review',
+        policySatisfied: true,
+      },
+    });
     assert.equal(approved.statusCode, 200);
     assert.equal(approved.json().command.status, 'AUTHORIZED');
-    assert.equal(approved.json().command.change.authority, 'human:integration-operator');
+    assert.equal(approved.json().command.change.authority, 'local-development');
+    const approvalEvents = await app.inject({
+      method: 'GET',
+      url: '/v1/omega/events?commandId=omega-api-slice-1',
+    });
+    const approvalEvent = approvalEvents.json().events.find((event: { type: string }) => event.type === 'command.approved');
+    assert.equal(approvalEvent.principal, 'local-development');
+    assert.equal(approvalEvent.operatorClaim, 'integration-operator');
+    assert.equal(approvalEvent.operatorClaimSource, 'request-body-self-reported');
   });
 
   it('executes only after approval and distinguishes verified reality', async () => {

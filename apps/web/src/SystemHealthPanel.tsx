@@ -129,6 +129,7 @@ export function SystemHealthPanel() {
   const [reconciliationAction, setReconciliationAction] = useState<OmegaReconciliationAction>('accepted');
   const [reconciliationNote, setReconciliationNote] = useState('');
   const [reconciliationOperator, setReconciliationOperator] = useState('');
+  const [approvalOperator, setApprovalOperator] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -312,7 +313,7 @@ export function SystemHealthPanel() {
       const admitRes = await fetch(`${API_BASE_URL}/v1/omega/commands/${encodeURIComponent(commandId)}/admit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ authority: 'dashboard:runtime-flow', policy: 'runtime-evidence-bound:v1', authorityVerified: true, policySatisfied: true }),
+        body: JSON.stringify({ policy: 'runtime-evidence-bound:v1' }),
       });
       const admitData = admitRes.ok ? (await admitRes.json()) : null;
       if (!admitRes.ok || !admitData?.command?.commandId) throw new Error(admitData?.error || `HTTP ${admitRes.status}`);
@@ -363,11 +364,11 @@ export function SystemHealthPanel() {
       switch (action) {
         case 'admit':
           url += '/admit';
-          payload = { authority: 'dashboard:operator', policy: 'runtime-evidence-bound:v1', authorityVerified: true, policySatisfied: true };
+          payload = { policy: 'runtime-evidence-bound:v1' };
           break;
         case 'approve':
           url += '/approve';
-          payload = { operator: 'dashboard-operator', policy: 'human-review' };
+          payload = { operator: approvalOperator, policy: 'human-review' };
           break;
         case 'execute':
           url += '/execute';
@@ -401,7 +402,7 @@ export function SystemHealthPanel() {
     } finally {
       setCommandAction(null);
     }
-  }, [fetchOmegaCommands, fetchSelectedCommandDetails, reconciliationAction, reconciliationNote, reconciliationOperator, selectedCommand, selectedCommandId]);
+  }, [approvalOperator, fetchOmegaCommands, fetchSelectedCommandDetails, reconciliationAction, reconciliationNote, reconciliationOperator, selectedCommand, selectedCommandId]);
 
   useEffect(() => {
     fetchHealth();
@@ -778,7 +779,7 @@ export function SystemHealthPanel() {
                     key={action}
                     type="button"
                     onClick={() => runCommandAction(action)}
-                    disabled={Boolean(commandAction)}
+                    disabled={Boolean(commandAction) || (action === 'approve' && !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,95}$/.test(approvalOperator.trim()))}
                     style={{
                       background: theme.surfaceRaised,
                       color: theme.accent,
@@ -788,13 +789,31 @@ export function SystemHealthPanel() {
                       fontSize: '10px',
                       fontWeight: 700,
                       cursor: commandAction ? 'wait' : 'pointer',
-                      opacity: commandAction ? 0.6 : 1,
+                      opacity: commandAction || (action === 'approve' && !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,95}$/.test(approvalOperator.trim())) ? 0.6 : 1,
                     }}
                   >
                     {commandAction === action ? '…' : action.toUpperCase()}
                   </button>
                 ))}
               </div>
+              {availableCommandActions(selectedCommand.status).includes('approve') && (
+                <div style={{ display: 'grid', gap: '6px', marginTop: '8px' }}>
+                  <label style={{ display: 'grid', gap: '4px', fontSize: '10px', color: theme.textMuted }}>
+                    Operator claim (self-reported; server records credential role separately)
+                    <input
+                      value={approvalOperator}
+                      onChange={(event) => setApprovalOperator(event.target.value)}
+                      maxLength={96}
+                      required
+                      placeholder="operator-id"
+                      style={{ background: theme.surfaceRaised, color: theme.text, border: `1px solid ${theme.borderBright}`, borderRadius: theme.radiusSmall, padding: '7px 9px' }}
+                    />
+                  </label>
+                  <div style={{ fontSize: '10px', color: theme.textDim }}>
+                    Required-auth deployments authenticate the admin bearer role, not the human identity named here. Local mode records local-development authority.
+                  </div>
+                </div>
+              )}
               <div style={{ fontSize: '10px', color: theme.textDim, marginTop: '6px' }}>
                 Admission values are request inputs, not independent identity proof; these dashboard lifecycle actions record bounded local state and do not mutate a remote system.
               </div>

@@ -24,6 +24,16 @@ production. Required mode needs distinct `OMEGA_READ_TOKEN` and
 `OMEGA_ADMIN_TOKEN` values. Health remains unauthenticated; GET evidence
 routes use the read token and mutations use the admin token.
 
+Omega command admission derives its authority role from the server-validated
+request context. Caller-supplied `authority`, `authorityVerified`, and
+`policySatisfied` fields are not treated as proof; admission recognizes the
+server-supported `runtime-evidence-bound:v1` policy identifier. Approval
+requires an explicit operator claim and the `human-review` policy. The actor
+recorded by the runtime is `admin-bearer` in required mode or
+`local-development` in local mode; the operator claim is separately recorded
+as self-reported and is not an authenticated human identity. Local mode is for
+development and does not provide authenticated access control.
+
 Optional local-job authentication uses `OMEGA_LOCAL_JOB_LEDGER_TOKEN`.
 
 ## Persistence

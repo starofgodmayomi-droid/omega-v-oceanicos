@@ -207,11 +207,19 @@ export function createApp(
     registerOmegaRoutes(scope, omegaCommands);
   });
   fastify.addHook('onRequest', async (request, reply) => {
-    if (authMode === 'local' || request.method === 'OPTIONS' || request.url.split('?')[0] === '/health') return;
+    if (request.method === 'OPTIONS' || request.url.split('?')[0] === '/health') return;
+    if (authMode === 'local') {
+      request.omegaAuthorization = { mode: 'local', principal: 'local-development' };
+      return;
+    }
     const required = request.method === 'GET' ? readToken : adminToken;
     if (bearer(request.headers.authorization) !== required) {
       return jsonError(reply, 401, request.method === 'GET' ? 'READ_ACCESS_REQUIRED' : 'ADMIN_ACCESS_REQUIRED');
     }
+    request.omegaAuthorization = {
+      mode: 'required',
+      principal: request.method === 'GET' ? 'read-bearer' : 'admin-bearer',
+    };
   });
 
   fastify.register(async (scope) => {
