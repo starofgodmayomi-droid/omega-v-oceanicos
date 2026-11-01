@@ -89,10 +89,27 @@ interface OmegaDivergenceAlert {
 }
 
 type OmegaReconciliationAction = 'accepted' | 'retried' | 'corrected' | 'closed';
+type OmegaCommandAction = 'admit' | 'approve' | 'execute' | 'observe';
 type DataSurface = 'therapeutic' | 'commands' | 'commandDetails' | 'divergences';
 
 function errorMessage(error: unknown, fallback: string): string {
   return error instanceof Error ? error.message : fallback;
+}
+
+function availableCommandActions(status: string): OmegaCommandAction[] {
+  switch (status) {
+    case 'PROPOSED':
+      return ['admit'];
+    case 'REVIEW':
+      return ['admit', 'approve'];
+    case 'AUTHORIZED':
+      return ['execute'];
+    case 'EXECUTED':
+    case 'ATTESTED':
+      return ['observe'];
+    default:
+      return [];
+  }
 }
 
 export function SystemHealthPanel() {
@@ -331,8 +348,12 @@ export function SystemHealthPanel() {
     }
   }, [fetchHealth, fetchOmegaCommands, fetchSelectedCommandDetails, fetchTherapeuticState, selectCommand]);
 
-  const runCommandAction = useCallback(async (action: 'admit' | 'approve' | 'execute' | 'observe' | 'reconcile') => {
+  const runCommandAction = useCallback(async (action: OmegaCommandAction | 'reconcile') => {
     if (!selectedCommandId) return;
+    if (action !== 'reconcile' && (!selectedCommand || !availableCommandActions(selectedCommand.status).includes(action))) {
+      setActionError(`Cannot ${action} a command in ${selectedCommand?.status ?? 'UNKNOWN'} status`);
+      return;
+    }
     setCommandAction(action);
     setActionError(null);
     try {
@@ -752,11 +773,11 @@ export function SystemHealthPanel() {
                 )}
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '10px' }}>
-                {['admit', 'approve', 'execute', 'observe'].map((action) => (
+                {availableCommandActions(selectedCommand.status).map((action) => (
                   <button
                     key={action}
                     type="button"
-                    onClick={() => runCommandAction(action as 'admit' | 'approve' | 'execute' | 'observe' | 'reconcile')}
+                    onClick={() => runCommandAction(action)}
                     disabled={Boolean(commandAction)}
                     style={{
                       background: theme.surfaceRaised,
@@ -773,6 +794,9 @@ export function SystemHealthPanel() {
                     {commandAction === action ? '…' : action.toUpperCase()}
                   </button>
                 ))}
+              </div>
+              <div style={{ fontSize: '10px', color: theme.textDim, marginTop: '6px' }}>
+                Admission values are request inputs, not independent identity proof; these dashboard lifecycle actions record bounded local state and do not mutate a remote system.
               </div>
               {(selectedCommand.status === 'DIVERGENT' || selectedCommand.status === 'UNKNOWN') && (
                 <div style={{ display: 'grid', gap: '8px', marginTop: '12px', paddingTop: '10px', borderTop: `1px solid ${theme.border}` }}>

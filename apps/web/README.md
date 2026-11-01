@@ -86,6 +86,8 @@ View each step of the MINI kernel and its earned expansions:
 - Keeps last-observed command evidence visible during API read failures and
   labels retained responses as stale, unavailable feeds separately from
   successful empty results, and action failures with their error details
+- Offers command lifecycle actions only for the selected command's current
+  status; displayed admission inputs are not independent identity proof
 - Command palette with `⌘ K` / `Ctrl + K`
 - Operator-controlled response-time and status-code evidence
 - Responsive desktop and mobile layouts

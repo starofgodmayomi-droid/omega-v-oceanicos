@@ -346,4 +346,59 @@ describe('SystemHealthPanel evidence availability', () => {
     expect(screen.getByText(/Selected Command Evidence · cmd-2/)).toBeTruthy();
     expect(firstDetailsRequests).toHaveBeenCalledTimes(1);
   });
+
+  it('only offers lifecycle actions allowed by the selected command status', async () => {
+    const divergentCommand = {
+      commandId: 'cmd-divergent',
+      intent: 'Review a divergent result',
+      requestedBy: 'operator',
+      status: 'DIVERGENT',
+      createdAt: '2026-11-01T00:00:00.000Z',
+      workers: ['planner'],
+      decision: null,
+      authority: null,
+      policy: null,
+      execution: null,
+      reality: { classification: 'DIVERGENT', observedState: 'mismatch' },
+    };
+
+    Object.defineProperty(globalThis, 'fetch', {
+      configurable: true,
+      writable: true,
+      value: jest.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.endsWith('/health')) return response(healthyResponse());
+        if (url.endsWith('/v1/therapeutic/state')) {
+          return response({
+            success: true,
+            model: 'omega.therapeutic-state-machine.v1',
+            status: 'READY',
+            evaluatedAt: '2026-11-01T00:00:00.000Z',
+            state: {
+              kai: { status: 'READY', authority: 'bounded', summary: 'ready' },
+              elion: { status: 'READY', authority: 'bounded', summary: 'ready' },
+              omega: { status: 'READY', authority: 'bounded', summary: 'ready' },
+            },
+            loop: ['observe', 'bound', 'execute', 'reconcile', 'remember'],
+          });
+        }
+        if (url.endsWith('/v1/omega/commands')) return response({ commands: [divergentCommand] });
+        if (url.endsWith('/v1/omega/divergences')) return response({ alerts: [divergentCommand] });
+        if (url.endsWith('/v1/omega/commands/cmd-divergent/safety-boundary')) {
+          return response({ boundary: {} });
+        }
+        if (url.endsWith('/v1/omega/commands/cmd-divergent')) return response(divergentCommand);
+        return response({ error: 'not found' }, 404);
+      }),
+    });
+
+    render(<SystemHealthPanel />);
+
+    expect(await screen.findByText(/Selected Command Evidence · cmd-divergent/)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'ADMIT' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'APPROVE' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'EXECUTE' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'OBSERVE' })).toBeNull();
+    expect(screen.getByText(/not independent identity proof/)).toBeTruthy();
+  });
 });
