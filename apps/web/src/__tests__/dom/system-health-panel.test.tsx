@@ -268,4 +268,82 @@ describe('SystemHealthPanel evidence availability', () => {
     expect(screen.getByText(/Selected Command Evidence · cmd-2/)).toBeTruthy();
     expect(screen.queryByText(/Selected Command Evidence · cmd-1/)).toBeNull();
   });
+
+  it('does not refresh old command details after its action completes post-switch', async () => {
+    const firstCommand = {
+      commandId: 'cmd-1',
+      intent: 'First command intent',
+      requestedBy: 'operator',
+      status: 'PROPOSED',
+      createdAt: '2026-11-01T00:00:00.000Z',
+      workers: ['planner'],
+      decision: null,
+      authority: null,
+      policy: null,
+      execution: null,
+      reality: null,
+    };
+    const secondCommand = {
+      ...firstCommand,
+      commandId: 'cmd-2',
+      intent: 'Second command intent',
+      status: 'UNKNOWN',
+    };
+    const delayedAdmission = deferred<ReturnType<typeof response>>();
+    const firstDetailsRequests = jest.fn();
+    Object.defineProperty(globalThis, 'fetch', {
+      configurable: true,
+      writable: true,
+      value: jest.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.endsWith('/health')) return response(healthyResponse());
+        if (url.endsWith('/v1/therapeutic/state')) {
+          return response({
+            success: true,
+            model: 'omega.therapeutic-state-machine.v1',
+            status: 'READY',
+            evaluatedAt: '2026-11-01T00:00:00.000Z',
+            state: {
+              kai: { status: 'READY', authority: 'bounded', summary: 'ready' },
+              elion: { status: 'READY', authority: 'bounded', summary: 'ready' },
+              omega: { status: 'READY', authority: 'bounded', summary: 'ready' },
+            },
+            loop: ['observe', 'bound', 'execute', 'reconcile', 'remember'],
+          });
+        }
+        if (url.endsWith('/v1/omega/commands')) return response({ commands: [firstCommand, secondCommand] });
+        if (url.endsWith('/v1/omega/divergences')) return response({ alerts: [] });
+        if (url.endsWith('/v1/omega/commands/cmd-1/admit')) return delayedAdmission.promise;
+        if (url.endsWith('/v1/omega/commands/cmd-1/safety-boundary')) {
+          return response({ boundary: {} });
+        }
+        if (url.endsWith('/v1/omega/commands/cmd-1')) {
+          firstDetailsRequests();
+          return response(firstCommand);
+        }
+        if (url.endsWith('/v1/omega/commands/cmd-2/safety-boundary')) {
+          return response({ boundary: {} });
+        }
+        if (url.endsWith('/v1/omega/commands/cmd-2')) return response(secondCommand);
+        return response({ error: 'not found' }, 404);
+      }),
+    });
+
+    render(<SystemHealthPanel />);
+    expect(await screen.findByText('First command intent')).toBeTruthy();
+    expect(await screen.findByText(/Selected Command Evidence · cmd-1/)).toBeTruthy();
+    expect(firstDetailsRequests).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByText('ADMIT'));
+    fireEvent.click(screen.getByText('Second command intent'));
+    expect(await screen.findByText(/Selected Command Evidence · cmd-2/)).toBeTruthy();
+
+    await act(async () => {
+      delayedAdmission.resolve(response({ command: { ...firstCommand, status: 'AUTHORIZED' } }));
+      await delayedAdmission.promise;
+    });
+
+    expect(screen.getByText(/Selected Command Evidence · cmd-2/)).toBeTruthy();
+    expect(firstDetailsRequests).toHaveBeenCalledTimes(1);
+  });
 });

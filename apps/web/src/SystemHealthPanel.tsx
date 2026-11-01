@@ -103,6 +103,8 @@ export function SystemHealthPanel() {
   const [selectedCommandId, setSelectedCommandId] = useState<string | null>(null);
   const [selectedCommand, setSelectedCommand] = useState<OmegaCommandDetails | null>(null);
   const [selectedBoundary, setSelectedBoundary] = useState<Record<string, any> | null>(null);
+  const selectedCommandIdRef = useRef<string | null>(selectedCommandId);
+  selectedCommandIdRef.current = selectedCommandId;
   const commandDetailsRequestId = useRef(0);
   const [lastFlowStatus, setLastFlowStatus] = useState<string | null>(null);
   const [transitioning, setTransitioning] = useState(false);
@@ -131,6 +133,11 @@ export function SystemHealthPanel() {
     commandDetails: false,
     divergences: false,
   });
+
+  const selectCommand = useCallback((commandId: string) => {
+    selectedCommandIdRef.current = commandId;
+    setSelectedCommandId(commandId);
+  }, []);
 
   const fetchHealth = useCallback(async () => {
     setLoading(true);
@@ -175,14 +182,14 @@ export function SystemHealthPanel() {
       setDataLoaded((current) => ({ ...current, commands: true }));
       setDataStale((current) => ({ ...current, commands: false }));
       setDataErrors((current) => ({ ...current, commands: null }));
-      if (!selectedCommandId && commands[0]?.commandId) {
-        setSelectedCommandId(commands[0].commandId);
+      if (!selectedCommandIdRef.current && commands[0]?.commandId) {
+        selectCommand(commands[0].commandId);
       }
     } catch (err) {
       setDataStale((current) => ({ ...current, commands: true }));
       setDataErrors((current) => ({ ...current, commands: errorMessage(err, 'command evidence unavailable') }));
     }
-  }, [selectedCommandId]);
+  }, [selectCommand]);
 
   const runTherapeuticTransition = useCallback(async () => {
     setTransitioning(true);
@@ -218,7 +225,7 @@ export function SystemHealthPanel() {
   }, [fetchHealth, fetchOmegaCommands]);
 
   const fetchSelectedCommandDetails = useCallback(async (commandId: string) => {
-    if (!commandId) return;
+    if (!commandId || commandId !== selectedCommandIdRef.current) return;
     const requestId = ++commandDetailsRequestId.current;
     try {
       const [commandRes, boundaryRes] = await Promise.all([
@@ -311,7 +318,7 @@ export function SystemHealthPanel() {
       if (!observeRes.ok || !observeData?.command?.commandId) throw new Error(observeData?.error || `HTTP ${observeRes.status}`);
 
       setLastFlowStatus(observeData.command.status || 'VERIFIED');
-      setSelectedCommandId(commandId);
+      selectCommand(commandId);
       await fetchOmegaCommands();
       await fetchSelectedCommandDetails(commandId);
       await fetchTherapeuticState();
@@ -322,7 +329,7 @@ export function SystemHealthPanel() {
     } finally {
       setTransitioning(false);
     }
-  }, [fetchHealth, fetchOmegaCommands, fetchTherapeuticState]);
+  }, [fetchHealth, fetchOmegaCommands, fetchSelectedCommandDetails, fetchTherapeuticState, selectCommand]);
 
   const runCommandAction = useCallback(async (action: 'admit' | 'approve' | 'execute' | 'observe' | 'reconcile') => {
     if (!selectedCommandId) return;
@@ -690,7 +697,7 @@ export function SystemHealthPanel() {
                 {omegaCommands.map((command) => (
                   <div
                     key={command.commandId}
-                    onClick={() => setSelectedCommandId(command.commandId)}
+                    onClick={() => selectCommand(command.commandId)}
                     style={{
                       padding: '8px 10px',
                       border: `1px solid ${selectedCommandId === command.commandId ? theme.accent : theme.border}`,
@@ -857,7 +864,7 @@ export function SystemHealthPanel() {
                 {divergenceAlerts.map((alert) => (
                   <div
                     key={alert.commandId}
-                    onClick={() => setSelectedCommandId(alert.commandId)}
+                    onClick={() => selectCommand(alert.commandId)}
                     style={{
                       padding: '8px 10px',
                       border: `1px solid ${theme.divergent}66`,
