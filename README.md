@@ -42,6 +42,7 @@ and what remains only a proposal or local evidence state.
 ## At a glance
 
 - 📋 **[Manifest](MANIFEST.md)** — Project mission, principles, and architecture
+- 💧 **[Entity Manifest](ECOSYSTEM_BODY.md)** — the constitutional compression of Ω∞v OCEANICOS as a sovereign digital entity
 - 💧 **[Therapeutic State Machine](docs/THERAPEUTIC-STATE-MACHINE.md)** — KAI / ELION / OMEGA operating prompt for bounded human-centered execution
 - 💧 **[Mirror-Water Universal Body](docs/MIRROR-WATER-UNIVERSAL-BODY.md)** — one body, one current, bounded transitions, and evidence-bound truth
 - 🌊 **[Ω∞v Maximum Full-Stack Space of Reality](docs/OMEGA-INFINITY-MAXIMUM-FULL-STACK-SPACE.md)** — canonical ecosystem vision: representation, authority, bounded execution, observation, reconciliation, and next finite Δ
