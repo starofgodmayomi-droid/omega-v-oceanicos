@@ -149,12 +149,14 @@ export function registerPipelineRoute(
           authorized: result.record?.authorized ?? false,
           executionStatus: result.execution?.status ?? null,
           attestationId: result.execution?.attestationId ?? result.record?.attestationId ?? null,
-          realityStatus: result.reality?.status ?? 'UNKNOWN',
+          realityStatus: result.reality?.status ?? (result.stage === 'EXECUTE' ? 'UNKNOWN' : null),
           expectedState: result.reality?.expectedState ?? result.record?.stateAfter ?? requestedAfter ?? null,
           observedState: result.reality?.observedState ?? null,
-          realityEvidence:
-            result.reality?.evidence ??
-            'independent server-owned observation unavailable; caller-supplied state claims were not compared',
+          realityEvidence: result.reality?.evidence ?? (
+            result.stage === 'EXECUTE'
+              ? 'independent server-owned observation unavailable; caller-supplied state claims were not compared'
+              : null
+          ),
           realityAttestation: result.realityAttestation ?? null,
           waterFlow: result.waterFlow,
           durableMemory: Boolean(causalMemoryPath && causalMemoryKey),

@@ -29,6 +29,43 @@ async function removeTemporaryDirectory(directory: string): Promise<void> {
 }
 
 describe('live API pipeline → durable causal memory', () => {
+  it('keeps reality unassessed when admission is denied before execution', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'omega-api-pipeline-denied-'));
+    try {
+      const { createApp } = await import('../../apps/api/dist/index.js');
+      const app = createApp(join(directory, 'ledger.db'), false, { allowUnsignedCycle: true });
+      await app.ready();
+      try {
+        const response = await app.inject({
+          method: 'POST',
+          url: '/v1/pipeline',
+          payload: {
+            compile,
+            admission: {},
+            authority: 'human:api-test',
+            policy: 'policy:api',
+            handlerStateAfter: 'S1',
+            observedState: 'S1',
+            changeId: 'api-pipeline-denied-before-execution',
+          },
+        });
+        assert.equal(response.statusCode, 200);
+        const body = response.json();
+        assert.equal(body.pipeline.stage, 'ADMIT');
+        assert.equal(body.pipeline.haltReason, 'DENIED');
+        assert.equal(body.pipeline.executionStatus, null);
+        assert.equal(body.pipeline.realityStatus, null);
+        assert.equal(body.pipeline.realityEvidence, null);
+        assert.equal(body.pipeline.observedState, null);
+        assert.equal(body.pipeline.realityAttestation, null);
+      } finally {
+        await app.close();
+      }
+    } finally {
+      await removeTemporaryDirectory(directory);
+    }
+  });
+
   it('does not verify matching caller-supplied state or mint a reality attestation', async () => {
     const directory = mkdtempSync(join(tmpdir(), 'omega-api-causal-'));
     const memoryPath = join(directory, 'causal.jsonl');
