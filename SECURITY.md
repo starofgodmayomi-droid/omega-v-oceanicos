@@ -61,6 +61,17 @@ generated for the worked example and discarded; it signs nothing else.
 `main` only. There are no released versions to back-port to, and claiming a
 support matrix for versions nobody runs would be fiction.
 
+## Dependency audit exception
+
+The repository’s audit command ignores **only** `CVE-2026-97058` (GHSA-hp3w-g68c-fv3c),
+an unfixable `sprintf-js` denial-of-service advisory with no patched release. The
+observed path is confined to Jest’s development-only coverage transformer in the
+inactive-at-runtime test tooling of workspace packages; it is not part of the API
+or web production dependency graph. The exception is explicit in `package.json`,
+and the audit command must be revisited if an upstream fix, a new reachable path,
+or a production dependency on this chain appears. All other audit findings remain
+fatal to the release gate.
+
 ## What this project already does
 
 Stated so a reporter knows what has been tried rather than rediscovering it:

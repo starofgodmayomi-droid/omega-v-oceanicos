@@ -7,10 +7,18 @@ const skills = [
   'voice-bridge',
   'oread-pidgin-harmonizer',
   'kai-companion',
+  'lucid-full-stack',
+  'lucid-continuum',
   'omega-mirror-water-universal-body',
+  'omega-v-os',
   'oceanicos-full-stack',
+  'oceanicos-full-stack-companion',
   'oceanicos-framework',
+  'oceanicos-max-space-full-stack',
   'oceanicos-value-navigator',
+  'oceanicos-verified-upgrade',
+  'oceanicos-total-continuum',
+  'kaixelionxomega',
 ];
 const required = [
   'POSSIBLE',
@@ -35,6 +43,8 @@ for (const skill of skills) {
       throw new Error(`${skill}: missing ${key}`);
     }
   }
+  const name = source.match(/^name:\s*(.+)$/m)?.[1]?.trim();
+  if (name !== skill) throw new Error(`${skill}: frontmatter name must match directory`);
   for (const token of required) {
     if (!normalized.includes(token)) throw new Error(`${skill}: missing contract token ${token}`);
   }

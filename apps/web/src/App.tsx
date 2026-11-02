@@ -14,10 +14,12 @@ import { DivergenceAlertsPanel } from './DivergenceAlertsPanel';
 import { ValueNavigatorPanel } from './ValueNavigatorPanel';
 import { ConnectorPanel } from './ConnectorPanel';
 import { WholeEcosystemDashboard } from './WholeEcosystemDashboard';
+import { InvisibleComputer } from './InvisibleComputer';
 import { WaterFlowPanel } from './WaterFlowPanel';
 import { LifecycleFlow, deriveStageStates, type LifecycleStage } from './LifecycleFlow';
 import { GlobeViewport } from './GlobeViewport';
 import { bindGlobeEvidence } from './globe-shell';
+import { omegaApprovalRequest } from './omega-approval-request';
 import {
   theme,
   statusColor,
@@ -30,7 +32,7 @@ import {
 // Use the browser-facing Vite/API proxy by default. A blank default sends
 // /v1/* to Vite itself, which returns the app HTML instead of API JSON.
 // VITE_API_URL remains available for a separately hosted API origin.
-const API_BASE_URL = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '');
+const API_BASE_URL = (import.meta.env?.VITE_API_URL || '/api').replace(/\/$/, '');
 
 function apiUrl(path: string): string {
   return `${API_BASE_URL}${path}`;
@@ -93,6 +95,7 @@ export function App() {
   const [kernelCapabilities, setKernelCapabilities] = useState<KernelCapabilitySnapshot | null>(null);
   const [kernelCapabilitiesError, setKernelCapabilitiesError] = useState<string | null>(null);
   const [omegaIntent, setOmegaIntent] = useState('');
+  const [omegaObservedState, setOmegaObservedState] = useState('');
   const [omegaCommand, setOmegaCommand] = useState<any>(null);
   const [omegaLoading, setOmegaLoading] = useState(false);
 
@@ -292,7 +295,7 @@ export function App() {
   };
 
   const observeOmegaReality = async () => {
-    if (!omegaCommand?.command?.commandId) return;
+    if (!omegaCommand?.command?.commandId || !omegaObservedState.trim()) return;
     setOmegaLoading(true);
     try {
       const data = await apiRequest<any>(
@@ -301,8 +304,7 @@ export function App() {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({
-            observedState:
-              omegaCommand.command.change.stateAfter ?? tip?.hash ?? 'unknown',
+            observedState: omegaObservedState.trim(),
           }),
         }
       );
@@ -320,11 +322,7 @@ export function App() {
     try {
       const data = await apiRequest<any>(
         `/v1/omega/commands/${omegaCommand.command.commandId}/approve`,
-        {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ operator: 'dashboard-operator' }),
-        }
+        omegaApprovalRequest()
       );
       setOmegaCommand(data);
     } catch (err: any) {
@@ -755,6 +753,8 @@ export function App() {
           </button>
         </div>
 
+        <InvisibleComputer />
+
         <WholeEcosystemDashboard
           streamConnected={streamConnected}
           simulationMode={simulationMode}
@@ -885,6 +885,8 @@ export function App() {
           onApprove={approveOmegaCommand}
           onExecute={executeOmegaCommand}
           onObserve={observeOmegaReality}
+          observedState={omegaObservedState}
+          onObservedStateChange={setOmegaObservedState}
           onViewEvidence={() => setOpenStageId('evidence')}
           onViewTimeline={() => setOpenStageId('remember')}
           onDismiss={dismissCommand}

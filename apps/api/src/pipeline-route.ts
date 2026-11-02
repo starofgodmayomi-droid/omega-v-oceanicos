@@ -10,6 +10,40 @@ import {
 } from '@oceanicos/mini';
 import { OMEGA_WATER_FLOW_MAX_STEPS } from '@oceanicos/types';
 
+export type PipelineAdmissionEvidence = {
+  readonly authorityVerified: boolean;
+  readonly policySatisfied: boolean;
+};
+
+/** Server-supplied admission evidence. Request bodies are not a source. */
+export type PipelineAdmissionEvidenceResolver = () => PipelineAdmissionEvidence;
+
+function clientSuppliedAdmissionGates(admission: object): boolean {
+  return (
+    Object.prototype.hasOwnProperty.call(admission, 'authorityVerified') ||
+    Object.prototype.hasOwnProperty.call(admission, 'policySatisfied')
+  );
+}
+
+function serverAdmissionEvidence(
+  resolve: PipelineAdmissionEvidenceResolver | undefined,
+): PipelineAdmissionEvidence | undefined {
+  if (!resolve) return { authorityVerified: false, policySatisfied: false };
+  const evidence = resolve();
+  if (
+    !evidence ||
+    typeof evidence !== 'object' ||
+    typeof evidence.authorityVerified !== 'boolean' ||
+    typeof evidence.policySatisfied !== 'boolean'
+  ) {
+    return undefined;
+  }
+  return {
+    authorityVerified: evidence.authorityVerified,
+    policySatisfied: evidence.policySatisfied,
+  };
+}
+
 type JsonError = (
   reply: any,
   status: number,
@@ -20,6 +54,7 @@ type JsonError = (
 export function registerPipelineRoute(
   fastify: FastifyInstance,
   jsonError: JsonError,
+  resolveAdmissionEvidence?: PipelineAdmissionEvidenceResolver,
 ): void {
   fastify.post('/v1/pipeline', {
     config: { rateLimit: { max: 10, timeWindow: '1 minute' } },
@@ -30,11 +65,19 @@ export function registerPipelineRoute(
     const authority = typeof body.authority === 'string' ? body.authority.trim() : '';
     const policy = typeof body.policy === 'string' ? body.policy.trim() : '';
     if (!compile || typeof compile !== 'object') return jsonError(reply, 400, 'MISSING_COMPILE');
-    if (!admission || typeof admission !== 'object') return jsonError(reply, 400, 'MISSING_ADMISSION');
+    if (!admission || typeof admission !== 'object' || Array.isArray(admission)) return jsonError(reply, 400, 'MISSING_ADMISSION');
     if (!authority) return jsonError(reply, 400, 'MISSING_AUTHORITY');
     if (!policy) return jsonError(reply, 400, 'MISSING_POLICY');
-    if (typeof admission.authorityVerified !== 'boolean' || typeof admission.policySatisfied !== 'boolean') {
-      return jsonError(reply, 400, 'INVALID_ADMISSION_GATES');
+    if (clientSuppliedAdmissionGates(admission)) {
+      return jsonError(reply, 400, 'PIPELINE_ADMISSION_EVIDENCE_NOT_ACCEPTED');
+    }
+    let admissionEvidence: PipelineAdmissionEvidence;
+    try {
+      const resolved = serverAdmissionEvidence(resolveAdmissionEvidence);
+      if (!resolved) return jsonError(reply, 403, 'PIPELINE_ADMISSION_EVIDENCE_UNAVAILABLE');
+      admissionEvidence = resolved;
+    } catch {
+      return jsonError(reply, 403, 'PIPELINE_ADMISSION_EVIDENCE_UNAVAILABLE');
     }
     const waterFlowMaxSteps = body.waterFlowMaxSteps;
     if (
@@ -85,10 +128,7 @@ export function registerPipelineRoute(
     try {
       const result = runOmegaChangePipeline({
         compile,
-        admission: {
-          authorityVerified: admission.authorityVerified,
-          policySatisfied: admission.policySatisfied,
-        },
+        admission: admissionEvidence,
         authority,
         policy,
         registry,

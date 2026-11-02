@@ -7,6 +7,11 @@
       "name": "OMEGA_SIGNING_KEY",
       "description": "HMAC-SHA256 signing key for /v1/attest (>=32 chars). A dev placeholder is provided in .env.base44-defaults; replace with a real random key for trustworthy attestations.",
       "requiredAtBoot": false
+    },
+    {
+      "name": "OMEGA_LLM_API_KEY",
+      "description": "Optional OpenAI-compatible model key for ELION in POST /api/execute. Without it the endpoint answers with the clearly labelled local deterministic composer.",
+      "requiredAtBoot": false
     }
   ]
 }

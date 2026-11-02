@@ -47,6 +47,30 @@ describe('Ω∞v command API vertical slice', () => {
     assert.equal(body.command.change.authorized, false);
   });
 
+  it('returns a finite water-flow trace without claiming verification', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/commands',
+      payload: {
+        intent: 'trace one bounded transition',
+        requestedBy: 'dashboard-user',
+        workers: ['planner'],
+        idempotencyKey: 'water-flow-api-1',
+        context: { stateBefore: 'S0' },
+      },
+    });
+    assert.equal(response.statusCode, 201);
+    const body = response.json();
+    assert.deepEqual(
+      body.waterFlow.map((frame: { stage: string }) => frame.stage),
+      ['REALITY', 'ATTENTION', 'INTENTION', 'ACTION', 'CONSEQUENCE', 'OBSERVATION', 'LEARNING', 'RETURN'],
+    );
+    assert.equal(body.waterFlow.length, 8);
+    assert.equal(body.waterFlow.every((frame: { deterministic: boolean }) => frame.deterministic === true), true);
+    assert.equal(body.waterFlow.every((frame: { provenance: { verified: boolean } }) => frame.provenance.verified === false), true);
+    assert.ok(body.waterFlow.every((frame: { traceId: string }) => frame.traceId === 'omega-water-flow-api-1'));
+  });
+
   it('enforces read and admin bearer tokens at the Ω route boundary', async () => {
     const publicHealth = await requiredAuthApp.inject({ method: 'GET', url: '/health' });
     assert.equal(publicHealth.statusCode, 200);
@@ -110,50 +134,74 @@ describe('Ω∞v command API vertical slice', () => {
     assert.equal(readTokenAdmission.statusCode, 401);
     assert.equal(readTokenAdmission.json().error, 'ADMIN_ACCESS_REQUIRED');
 
-    const admitted = await requiredAuthApp.inject({
+    const forgedAdmissionResponse = await requiredAuthApp.inject({
       method: 'POST',
       url: `/v1/omega/commands/${commandId}/admit`,
       headers: bearerHeader(requiredAdminToken),
-      payload: { ...forgedAdmission, authorityVerified: false, policySatisfied: false },
+      payload: forgedAdmission,
     });
-    assert.equal(admitted.statusCode, 200);
-    assert.equal(admitted.json().command.status, 'AUTHORIZED');
-    assert.equal(admitted.json().command.change.authority, 'admin-bearer');
-    const admissionEvents = await requiredAuthApp.inject({
+    assert.equal(forgedAdmissionResponse.statusCode, 400);
+    assert.equal(forgedAdmissionResponse.json().error, 'COMMAND_ADMISSION_EVIDENCE_NOT_ACCEPTED');
+
+    const unavailableAdmission = await requiredAuthApp.inject({
+      method: 'POST',
+      url: `/v1/omega/commands/${commandId}/admit`,
+      headers: bearerHeader(requiredAdminToken),
+      payload: { authority: 'human:claimed-operator', policy: 'runtime-evidence-bound:v1' },
+    });
+    assert.equal(unavailableAdmission.statusCode, 403);
+    assert.equal(unavailableAdmission.json().error, 'COMMAND_ADMISSION_EVIDENCE_UNAVAILABLE');
+
+    const unchangedCommand = await requiredAuthApp.inject({
+      method: 'GET',
+      url: `/v1/omega/commands/${commandId}`,
+      headers: bearerHeader(requiredReadToken),
+    });
+    assert.equal(unchangedCommand.statusCode, 200);
+    assert.equal(unchangedCommand.json().command.status, 'PROPOSED');
+    assert.equal(unchangedCommand.json().command.change.authority, null);
+
+    const deniedApproval = await requiredAuthApp.inject({
+      method: 'POST',
+      url: `/v1/omega/commands/${commandId}/approve`,
+      payload: { operator: 'integration-operator', policy: 'human-review' },
+    });
+    assert.equal(deniedApproval.statusCode, 401);
+    assert.equal(deniedApproval.json().error, 'ADMIN_ACCESS_REQUIRED');
+
+    const readCannotApprove = await requiredAuthApp.inject({
+      method: 'POST',
+      url: `/v1/omega/commands/${commandId}/approve`,
+      headers: bearerHeader(requiredReadToken),
+      payload: { operator: 'integration-operator', policy: 'human-review' },
+    });
+    assert.equal(readCannotApprove.statusCode, 401);
+    assert.equal(readCannotApprove.json().error, 'ADMIN_ACCESS_REQUIRED');
+
+    const allowedApproval = await requiredAuthApp.inject({
+      method: 'POST',
+      url: `/v1/omega/commands/${commandId}/approve`,
+      headers: bearerHeader(requiredAdminToken),
+      payload: { operator: 'integration-operator', policy: 'human-review' },
+    });
+    assert.equal(allowedApproval.statusCode, 200);
+    assert.equal(allowedApproval.json().command.status, 'AUTHORIZED');
+    assert.equal(allowedApproval.json().command.change.authority, 'admin-bearer');
+    const approvalEvents = await requiredAuthApp.inject({
       method: 'GET',
       url: `/v1/omega/events?commandId=${commandId}`,
       headers: bearerHeader(requiredReadToken),
     });
-    assert.equal(admissionEvents.statusCode, 200);
-    assert.ok(admissionEvents.json().events.some((event: { type: string; principal?: string }) =>
-      event.type === 'command.admitted' && event.principal === 'admin-bearer'));
-
-    const unsupportedPolicyCommand = await requiredAuthApp.inject({
-      method: 'POST',
-      url: '/v1/omega/commands',
-      headers: bearerHeader(requiredAdminToken),
-      payload: {
-        intent: 'policy boundary check',
-        requestedBy: 'integration-user',
-        workers: ['planner'],
-        idempotencyKey: 'required-auth-4',
-      },
-    });
-    assert.equal(unsupportedPolicyCommand.statusCode, 201);
-    const unsupportedPolicyAdmission = await requiredAuthApp.inject({
-      method: 'POST',
-      url: `/v1/omega/commands/${unsupportedPolicyCommand.json().command.commandId}/admit`,
-      headers: bearerHeader(requiredAdminToken),
-      payload: {
-        authority: 'human:claimed-operator',
-        authorityVerified: true,
-        policy: 'caller-invented-policy',
-        policySatisfied: true,
-      },
-    });
-    assert.equal(unsupportedPolicyAdmission.statusCode, 200);
-    assert.equal(unsupportedPolicyAdmission.json().command.status, 'DENIED');
-    assert.equal(unsupportedPolicyAdmission.json().command.change.authority, 'admin-bearer');
+    assert.equal(approvalEvents.statusCode, 200);
+    assert.ok(approvalEvents.json().events.some((event: {
+      type: string;
+      principal?: string;
+      operatorClaim?: string;
+      operatorClaimSource?: string;
+    }) => event.type === 'command.approved'
+      && event.principal === 'admin-bearer'
+      && event.operatorClaim === 'integration-operator'
+      && event.operatorClaimSource === 'request-body-self-reported'));
   });
 
   it('requires explicit approval before executing a review-gated command', async () => {
@@ -193,7 +241,60 @@ describe('Ω∞v command API vertical slice', () => {
     assert.equal(approvalEvent.operatorClaimSource, 'request-body-self-reported');
   });
 
-  it('executes only after approval and distinguishes verified reality', async () => {
+  it('allows explicit human approval of a proposed read-only command once', async () => {
+    const created = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/commands',
+      payload: {
+        intent: 'review a bounded repository observation',
+        requestedBy: 'integration-user',
+        workers: ['planner'],
+        idempotencyKey: 'proposed-approval-1',
+      },
+    });
+    assert.equal(created.statusCode, 201);
+    assert.equal(created.json().command.status, 'PROPOSED');
+
+    const oversizedOperator = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/commands/omega-proposed-approval-1/approve',
+      payload: { operator: 'o'.repeat(97) },
+    });
+    assert.equal(oversizedOperator.statusCode, 400);
+    assert.equal(oversizedOperator.json().error, 'INVALID_OMEGA_APPROVAL_INPUT');
+
+    const oversizedPolicy = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/commands/omega-proposed-approval-1/approve',
+      payload: { operator: 'integration-operator', policy: 'p'.repeat(257) },
+    });
+    assert.equal(oversizedPolicy.statusCode, 400);
+    assert.equal(oversizedPolicy.json().error, 'INVALID_OMEGA_APPROVAL_INPUT');
+
+    const unchanged = await app.inject({ method: 'GET', url: '/v1/omega/commands/omega-proposed-approval-1' });
+    assert.equal(unchanged.statusCode, 200);
+    assert.equal(unchanged.json().command.status, 'PROPOSED');
+
+    const approved = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/commands/omega-proposed-approval-1/approve',
+      payload: { operator: 'integration-operator', policy: 'human-review' },
+    });
+    assert.equal(approved.statusCode, 200);
+    assert.equal(approved.json().command.status, 'AUTHORIZED');
+    assert.equal(approved.json().command.change.authority, 'local-development');
+    assert.equal(approved.json().command.change.policy, 'human-review');
+
+    const repeatedApproval = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/commands/omega-proposed-approval-1/approve',
+      payload: { operator: 'integration-operator', policy: 'human-review' },
+    });
+    assert.equal(repeatedApproval.statusCode, 409);
+    assert.equal(repeatedApproval.json().error, 'OMEGA_APPROVAL_REQUIRES_REVIEW');
+  });
+
+  it('executes only after approval and does not treat a caller echo as verification', async () => {
     const executed = await app.inject({ method: 'POST', url: '/v1/omega/commands/omega-api-slice-1/execute' });
     assert.equal(executed.statusCode, 200);
     assert.equal(executed.json().command.status, 'EXECUTED');
@@ -201,13 +302,75 @@ describe('Ω∞v command API vertical slice', () => {
 
     const observed = await app.inject({ method: 'POST', url: '/v1/omega/commands/omega-api-slice-1/observe', payload: { observedState: 'bounded-local-action-complete' } });
     assert.equal(observed.statusCode, 200);
-    assert.equal(observed.json().command.status, 'VERIFIED');
-    assert.equal(observed.json().reality.classification, 'VERIFIED');
+    assert.equal(observed.json().command.status, 'UNKNOWN');
+    assert.equal(observed.json().reality.classification, 'UNKNOWN');
+    assert.equal(observed.json().reality.comparison, 'MATCH');
+    assert.equal(observed.json().reality.observationSource, 'caller-supplied');
+    assert.equal(observed.json().reality.independentObservation, false);
+    assert.match(observed.json().nextAction, /not independent verification/);
+    assert.doesNotMatch(observed.json().command.change.consequence, /reality verified/);
+
+    const claimedVerification = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/commands/omega-api-slice-1/verify-reality',
+      payload: { verified: true, classification: 'VERIFIED' },
+    });
+    assert.equal(claimedVerification.statusCode, 400);
+    assert.equal(claimedVerification.json().error, 'REALITY_VERIFICATION_CLAIM_NOT_ACCEPTED');
+
+    const verified = await app.inject({ method: 'POST', url: '/v1/omega/commands/omega-api-slice-1/verify-reality', payload: {} });
+    assert.equal(verified.statusCode, 409);
+    assert.equal(verified.json().success, false);
+    assert.equal(verified.json().error, 'COMMAND_REALITY_NOT_INDEPENDENTLY_VERIFIED');
+    assert.equal(verified.json().command.status, 'UNKNOWN');
+    assert.equal(verified.json().reality.comparison, 'MATCH');
+    assert.equal(verified.json().reality.independentObservation, false);
 
     const events = await app.inject({ method: 'GET', url: '/v1/omega/events?commandId=omega-api-slice-1' });
     assert.equal(events.statusCode, 200);
     assert.equal(events.json().redacted, true);
     assert.ok(events.json().events.some((event: { type: string }) => event.type === 'command.executed'));
+  });
+
+  it('binds execution to an admitted worker lease and releases the lease', async () => {
+    const created = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/commands',
+      payload: { intent: 'lease-bound execution', requestedBy: 'integration-user', workers: ['planner'], idempotencyKey: 'lease-execution-current-1' },
+    });
+    assert.equal(created.statusCode, 201);
+    const approved = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/commands/omega-lease-execution-current-1/approve',
+      payload: { operator: 'integration-operator', policy: 'human-review' },
+    });
+    assert.equal(approved.statusCode, 200);
+    assert.equal(approved.json().command.status, 'AUTHORIZED');
+
+    const unregistered = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/commands/omega-lease-execution-current-1/lease-execute',
+      payload: { workerId: 'planner', capability: 'EXECUTE' },
+    });
+    assert.equal(unregistered.statusCode, 409);
+    assert.equal(unregistered.json().error, 'OMEGA_WORKER_LEASE_UNAVAILABLE');
+
+    const registered = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/workers/register',
+      payload: { workerId: 'planner', capabilities: ['EXECUTE'] },
+    });
+    assert.equal(registered.statusCode, 200);
+
+    const executed = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/commands/omega-lease-execution-current-1/lease-execute',
+      payload: { workerId: 'planner', capability: 'EXECUTE' },
+    });
+    assert.equal(executed.statusCode, 200);
+    assert.equal(executed.json().command.status, 'EXECUTED');
+    assert.equal(executed.json().lease.workerId, 'planner');
+    assert.equal(executed.json().lease.released, true);
   });
 
   it('rejects unknown workers and duplicate mutations are idempotent', async () => {
@@ -221,6 +384,37 @@ describe('Ω∞v command API vertical slice', () => {
     assert.equal(conflict.json().error, 'OMEGA_IDEMPOTENCY_CONFLICT');
   });
 
+  it('rejects a client verification claim on create and stores nothing', async () => {
+    const claimed = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/commands',
+      payload: {
+        intent: 'pretend this already ran',
+        requestedBy: 'dashboard-user',
+        workers: ['planner'],
+        idempotencyKey: 'api-slice-forged-verified',
+        status: 'VERIFIED',
+        executed: true,
+        authorityVerified: true,
+      },
+    });
+    assert.equal(claimed.statusCode, 400);
+    assert.equal(claimed.json().error, 'COMMAND_CREATE_CLAIM_NOT_ACCEPTED');
+    const created = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/commands',
+      payload: {
+        intent: 'pretend this already ran',
+        requestedBy: 'dashboard-user',
+        workers: ['planner'],
+        idempotencyKey: 'api-slice-forged-verified',
+      },
+    });
+    assert.equal(created.statusCode, 201);
+    assert.equal(created.json().command.status, 'PROPOSED');
+    assert.equal(created.json().command.change.authorized, false);
+  });
+
   it('exposes only repository-observed safety boundary evidence', async () => {
     const created = await app.inject({
       method: 'POST',
@@ -228,7 +422,7 @@ describe('Ω∞v command API vertical slice', () => {
       payload: {
         intent: 'inspect safety boundary',
         requestedBy: 'integration-user',
-        workers: ['planner'],
+        workers: ['governance-reviewer'],
         idempotencyKey: 'safety-boundary-1',
       },
     });

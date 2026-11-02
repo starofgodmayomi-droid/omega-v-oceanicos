@@ -38,6 +38,42 @@ test('API translates ƆREADE intent into a bounded read-only Drop', async () => 
   }
 });
 
+test('API preserves the exact OceanicOS cycle in WORLDVIEW mode without granting authority', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'omega-oreade-worldview-'));
+  const app = createApp(join(dir, 'test.db'), false, { allowUnsignedCycle: true });
+  await app.ready();
+
+  try {
+    const symbolicIntent = '🌊 Ω♾️V :: ƆCEANiC_OS(v∞)/0 → 💧 → Ω∞v → 🕳️ → 💧 → ∞.';
+    const response = await app.inject({
+      method: 'POST',
+      url: '/v1/omega/oreade/drop',
+      payload: {
+        symbolicIntent,
+        requestedBy: 'operator:human',
+        targetScope: ['oreade:translation'],
+        idempotencyKey: 'oceanic-cycle-worldview-001',
+        stopCondition: 'stop after one translation; do not recurse or execute external actions',
+        expectedObservation: 'one bounded Drop retains the symbolic input without asserting physical reality',
+        mode: 'WORLDVIEW',
+      },
+    });
+    const body = response.json();
+
+    assert.equal(response.statusCode, 201);
+    assert.equal(body.success, true);
+    assert.equal(body.drop.intent, symbolicIntent);
+    assert.equal(body.drop.kind, 'PROPOSAL');
+    assert.equal(body.drop.mode, 'WORLDVIEW');
+    assert.equal(body.drop.authority, 'MUST_BE_SUPPLIED_BY_RUNTIME');
+    assert.equal(body.drop.admission, 'NOT_GRANTED_BY_TRANSLATION');
+    assert.equal(body.readOnly, true);
+  } finally {
+    await app.close();
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('API rejects an unbounded ƆREADE target scope', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'omega-oreade-api-invalid-'));
   const app = createApp(join(dir, 'test.db'), false, { allowUnsignedCycle: true });
@@ -94,7 +130,7 @@ test('API persists a planner-only proposal without authorizing or executing it',
     assert.equal(body.executed, false);
     assert.match(body.nextAction, /review and explicitly admit/);
 
-    const admitted = await app.inject({
+    const claimed = await app.inject({
       method: 'POST',
       url: `/v1/omega/commands/${body.command.commandId}/admit`,
       payload: {
@@ -102,6 +138,18 @@ test('API persists a planner-only proposal without authorizing or executing it',
         policy: 'oreade-symbolic-boundary.v1',
         authorityVerified: true,
         policySatisfied: true,
+      },
+    });
+    assert.equal(claimed.statusCode, 400);
+    assert.equal(claimed.json().error, 'COMMAND_ADMISSION_EVIDENCE_NOT_ACCEPTED');
+    assert.equal((await app.inject({ method: 'GET', url: `/v1/omega/commands/${body.command.commandId}` })).json().command.status, 'PROPOSED');
+
+    const admitted = await app.inject({
+      method: 'POST',
+      url: `/v1/omega/commands/${body.command.commandId}/approve`,
+      payload: {
+        operator: 'dashboard-operator',
+        policy: 'human-review',
       },
     });
     assert.equal(admitted.statusCode, 200);

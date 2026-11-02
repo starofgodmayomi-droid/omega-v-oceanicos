@@ -4,6 +4,7 @@ export type OreadSubmissionRequest = {
   targetScope: string[];
   stopCondition: string;
   expectedObservation: string;
+  mode?: 'BUILD' | 'WORLDVIEW';
 };
 
 export type OreadSubmissionPayload = OreadSubmissionRequest & {

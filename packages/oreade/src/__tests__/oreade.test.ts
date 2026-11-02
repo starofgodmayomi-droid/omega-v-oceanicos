@@ -49,6 +49,28 @@ test('classifies requests without treating symbolism as authority', () => {
   assert.equal(classifySymbolicIntent('ask the community a question'), 'PROPOSAL');
 });
 
+test('preserves the OceanicOS cycle as a finite worldview proposal, not an execution claim', () => {
+  const symbolicIntent = '🌊 Ω♾️V :: ƆCEANiC_OS(v∞)/0 → 💧 → Ω∞v → 🕳️ → 💧 → ∞.';
+  const drop = buildSymbolicDrop({
+    symbolicIntent,
+    requestedBy: 'operator:human',
+    targetScope: ['oreade:translation'],
+    idempotencyKey: 'oceanic-cycle-001',
+    stopCondition: 'stop after one translation; do not recurse or execute external actions',
+    expectedObservation: 'one bounded Drop retains the symbolic input without asserting physical reality',
+    mode: 'WORLDVIEW',
+  }, new Date('2026-10-14T18:48:28.000Z'));
+
+  assert.equal(drop.intent, symbolicIntent);
+  assert.equal(drop.kind, 'PROPOSAL');
+  assert.equal(drop.mode, 'WORLDVIEW');
+  assert.deepEqual(drop.targetScope, ['oreade:translation']);
+  assert.equal(drop.authority, 'MUST_BE_SUPPLIED_BY_RUNTIME');
+  assert.equal(drop.admission, 'NOT_GRANTED_BY_TRANSLATION');
+  assert.match(drop.stopCondition, /one translation/);
+  assert.match(drop.evidenceBoundary, /does not prove supernatural agency/);
+});
+
 test('rejects missing bounded fields before a Drop exists', () => {
   assert.throws(
     () => buildSymbolicDrop({

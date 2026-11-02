@@ -7,7 +7,7 @@
   "scripts": {
     "build": "tsc",
     "watch": "tsc --watch",
-    "test": "jest",
+    "test": "node --experimental-strip-types --test src/__tests__/auth.test.ts",
     "clean": "node ../../scripts/rimraf.cjs dist \"*.tsbuildinfo\""
   },
   "keywords": [
@@ -26,9 +26,6 @@
     "@oceanicos/types": "workspace:*"
   },
   "devDependencies": {
-    "@types/jest": "^30.0.0",
-    "jest": "^30.5.2",
-    "ts-jest": "^29.4.14",
     "typescript": "^6.0.3"
   }
 }

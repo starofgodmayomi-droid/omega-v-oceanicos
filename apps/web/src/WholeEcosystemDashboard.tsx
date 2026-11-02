@@ -2,6 +2,8 @@ import React, { useMemo } from 'react';
 import { theme, humanStatus } from './oceanicosTheme';
 import { boundedStatus, statusCounts, STATUS_ORDER, summarizeLucidField, type RealityStatus } from './whole-ecosystem-dashboard-model';
 import { AgentSafetyBoundaryPanel } from './AgentSafetyBoundaryPanel';
+import { WorkerCoordinationPanel } from './WorkerCoordinationPanel';
+import { SingleBodyPanel } from './SingleBodyPanel';
 
 type Props = {
   streamConnected: boolean;
@@ -136,6 +138,7 @@ export function WholeEcosystemDashboard(props: Props) {
       <div className="whole-ecosystem-grid">
         <nav className="whole-ecosystem-organs" aria-label="Ecosystem organs">
           <span className="whole-ecosystem-label">ECOSYSTEM</span>
+          <small className="whole-organ-guidance">Select an organ to draft a mapping prompt; submitting is a separate action.</small>
           <button className="whole-organ active" onClick={() => props.onFocusCommand('Show what matters now.')}>⌂ <span>NOW</span></button>
           {ORGANS.map(([glyph, label]) => <button className="whole-organ" key={label} onClick={() => props.onFocusCommand(`Map ${label}.`)}><b>{glyph}</b><span>{label}</span></button>)}
         </nav>
@@ -199,6 +202,8 @@ export function WholeEcosystemDashboard(props: Props) {
         </aside>
       </div>
 
+      <SingleBodyPanel body={props.ecosystemBody} />
+
       <AgentSafetyBoundaryPanel
         capabilityObserved={props.ecosystemBody?.status === 'VERIFIED'}
         policySatisfied={props.omegaCommand?.command?.policy?.satisfied === true}
@@ -209,6 +214,8 @@ export function WholeEcosystemDashboard(props: Props) {
         revocationObserved={props.omegaCommand?.revocation?.observed === true}
         reconciliationStatus={props.omegaCommand?.reality?.classification}
       />
+
+      <WorkerCoordinationPanel />
 
       <div className="whole-value-current">
         <div><span className="whole-ecosystem-label">VALUE CURRENT</span><strong>Need → Problem → Solution → Delivery → Observed outcome → Earned value</strong></div>

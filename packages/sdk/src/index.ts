@@ -478,6 +478,8 @@ export class OmegaApiError extends Error {
 export type OmegaCommandWorker = 'observer' | 'researcher' | 'planner' | 'tester' | 'security-reviewer' | 'governance-reviewer';
 export type OmegaCommandResponse = { success: boolean; command: Record<string, unknown>; status: string; nextAction: string; [key: string]: unknown };
 
+import { sdkOmegaApprovalRequest } from './omega-approval-request.js';
+
 export class OmegaClient {
   private readonly baseUrl: string;
   private readonly fetchImpl: FetchLike;
@@ -720,12 +722,16 @@ export class OmegaClient {
     return this.get<OmegaCommandResponse>(`/v1/omega/commands/${encodeURIComponent(commandId)}`);
   }
 
-  async admitCommand(commandId: string, input: { authority: string; policy: string; authorityVerified?: boolean; policySatisfied?: boolean }): Promise<OmegaCommandResponse> {
-    return this.post<OmegaCommandResponse>(`/v1/omega/commands/${encodeURIComponent(commandId)}/admit`, input, this.adminToken);
+  async admitCommand(commandId: string, input: { authority: string; policy: string }): Promise<OmegaCommandResponse> {
+    return this.post<OmegaCommandResponse>(`/v1/omega/commands/${encodeURIComponent(commandId)}/admit`, {
+      authority: input.authority,
+      policy: input.policy,
+    }, this.adminToken);
   }
 
   async approveCommand(commandId: string, operator = 'sdk-operator'): Promise<OmegaCommandResponse> {
-    return this.post<OmegaCommandResponse>(`/v1/omega/commands/${encodeURIComponent(commandId)}/approve`, { operator }, this.adminToken);
+    const approval = sdkOmegaApprovalRequest(commandId, operator);
+    return this.post<OmegaCommandResponse>(approval.path, approval.payload, this.adminToken, approval.headers);
   }
 
   async executeCommand(commandId: string): Promise<OmegaCommandResponse> {

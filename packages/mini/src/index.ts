@@ -116,6 +116,48 @@ export { KaiContinuity, kaiFromBlock, kaiUnknown, KAI_VERSION } from './kai.js';
 export type { KaiDrop, KaiSource, KaiStatus } from './kai.js';
 export { captureMiniKernelCycle } from './kai-cycle.js';
 export { buildOmegaWaterFlow } from './water-flow.js';
+export { MAX_TOTAL_COMPRESSION_LEASE_MS, TOTAL_COMPRESSION_PACKAGE_IDS, validateTotalCompressionRequest } from './total-compress.js';
+export {
+  compressSingleBody,
+  expandSingleBody,
+  verifySingleBodyRoundTrip,
+  SINGLE_BODY_AXES,
+  SINGLE_BODY_CAPACITY,
+  SINGLE_BODY_NOTATION,
+  SINGLE_BODY_RANK,
+  SINGLE_BODY_SHAPE,
+} from './single-body.js';
+export type {
+  CompressedSingleBody,
+  SingleBodyAddress,
+  SingleBodyAxis,
+  SingleBodyCell,
+  SingleBodyCellEntry,
+  SingleBodyCompression,
+  SingleBodyEntry,
+  SingleBodyEvidence,
+  SingleBodyExpansion,
+  SingleBodyForm,
+  SingleBodyIssue,
+  SingleBodyIssueCode,
+  SingleBodyLayer,
+  SingleBodyOrgan,
+  SingleBodyRoundTrip,
+  SingleBodySpace,
+} from './single-body.js';
+export type { TotalCompressionIssueCode, TotalCompressionPackage, TotalCompressionRequest, TotalCompressionScope, TotalCompressionValidationIssue, TotalCompressionValidationResult } from './total-compress.js';
+export {
+  MAX_NEXT_CANDIDATES,
+  NEXT_SELECTOR_EPSILON,
+  selectAuthorizedNext,
+} from './next-selector.js';
+export type {
+  NextCandidate,
+  NextSelectionIssue,
+  NextSelectionIssueCode,
+  NextSelectionResult,
+  NextSelectionStatus,
+} from './next-selector.js';
 export { runBoundedParallel } from './parallel.js';
 export type {
   BoundedParallelAdmission,
@@ -125,6 +167,58 @@ export type {
   BoundedParallelOptions,
 } from './parallel.js';
 export type { OmegaWaterFlowInput } from './water-flow.js';
+
+export {
+  runKaixelionOmega,
+  sha256Hex as hashKaixelionWitness,
+  KAIXELION_OMEGA_ID,
+  KAIXELION_EXPECTED_STATE,
+  MAX_CYCLE_INTENT,
+  MAX_CYCLE_OBSERVED,
+  MAX_CYCLE_MEMORY,
+} from './kaixelion-omega.js';
+export type {
+  CycleAuthority,
+  CycleSource,
+  CycleStatus,
+  KaixelionInput,
+  KaixelionResult,
+  KaixelionStep,
+} from './kaixelion-omega.js';
+
+export {
+  evaluateEcosystemFixpoint,
+  hashFixpointDelta,
+  FIXPOINT_EQUATION_ID,
+  MAX_FIXPOINT_DELTA_CHARS,
+  MAX_FIXPOINT_MEMORY,
+} from './ecosystem-fixpoint.js';
+export type { FixpointInput, FixpointReason, FixpointStatus, FixpointStep } from './ecosystem-fixpoint.js';
+
+export {
+  ECOSYSTEM_BODY_EQUATION_ID,
+  ECOSYSTEM_BODY_EQUATION_SOURCE,
+  ECOSYSTEM_BODY_REALITY,
+  EQUATION_LAW_OBSERVATION,
+  EQUATION_TEXT,
+  MAX_EQUATION_SURFACES,
+  REPO_OUTWARD_RING,
+  compressRepoEquation,
+  compressRepoTowardUpgrade,
+  expandRepoEquation,
+  observeOutwardFiles,
+  reconcileOutwardExpansion,
+} from './ecosystem-body-equation.js';
+export type {
+  EquationBody,
+  EquationCompression,
+  EquationExpansion,
+  EquationHalt,
+  EquationIssue,
+  OutwardSurface,
+  RepoSurfaceObservation,
+  RepoUpgradeCompression,
+} from './ecosystem-body-equation.js';
 
 export function executeOceanicosMaxExpansion(): CryptographicBlock {
   const kernelChain = new PluralisticHashChain();

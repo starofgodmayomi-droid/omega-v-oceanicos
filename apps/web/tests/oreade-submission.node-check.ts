@@ -11,6 +11,7 @@ const request = {
   targetScope: ['oracle:reflection'],
   stopCondition: 'stop after one proposal',
   expectedObservation: 'one proposal is persisted',
+  mode: 'BUILD' as const,
 };
 
 test('unchanged OREAD request reuses its idempotency key across retries', () => {
@@ -31,4 +32,18 @@ test('materially changed OREAD request receives a fresh idempotency key', () => 
 
   assert.notEqual(changed.payload.idempotencyKey, first.payload.idempotencyKey);
   assert.equal(changed.identity.sequence, first.identity.sequence + 1);
+});
+
+test('changing translation mode to WORLDVIEW creates a fresh idempotent submission', () => {
+  const first = prepareOreadSubmission(request, initialOreadSubmissionIdentity(), 1000);
+  const worldview = prepareOreadSubmission(
+    { ...request, mode: 'WORLDVIEW' },
+    first.identity,
+    1000,
+  );
+
+  assert.equal(first.payload.mode, 'BUILD');
+  assert.equal(worldview.payload.mode, 'WORLDVIEW');
+  assert.notEqual(worldview.payload.idempotencyKey, first.payload.idempotencyKey);
+  assert.equal(worldview.identity.sequence, first.identity.sequence + 1);
 });

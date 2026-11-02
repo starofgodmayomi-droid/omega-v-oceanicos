@@ -422,9 +422,18 @@ describe('Ω∞v Oceanicos Max Compress Full-Stack E2E Suite', () => {
     const address = apiApp.server.address();
     assert.ok(address && typeof address === 'object');
     const baseUrl = `http://127.0.0.1:${address.port}`;
-    const response = await fetch(`${baseUrl}/v1/stream`);
+    // A browser EventSource reaches this route cross-origin, so the raw-flushed
+    // response must still carry the access-control-allow-origin that @fastify/cors
+    // resolved in onRequest; without it the dashboard stream is blocked.
+    const streamOrigin = (process.env.OMEGA_CORS_ORIGINS ?? '').split(',')[0].trim() || 'https://dashboard.example';
+    const response = await fetch(`${baseUrl}/v1/stream`, { headers: { origin: streamOrigin } });
     assert.strictEqual(response.status, 200);
     assert.ok(response.headers.get('content-type')?.includes('text/event-stream'));
+    const streamAllowOrigin = response.headers.get('access-control-allow-origin');
+    assert.ok(
+      streamAllowOrigin === '*' || streamAllowOrigin === streamOrigin,
+      `the SSE route must keep the CORS origin resolved for ${streamOrigin}, received ${streamAllowOrigin}`
+    );
     assert.ok(response.body);
     const reader = response.body.getReader();
     const decoder = new TextDecoder();

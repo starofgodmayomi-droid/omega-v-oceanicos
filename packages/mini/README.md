@@ -79,6 +79,20 @@ bounded text/evidence and record counts. A match verifies only the stated
 hypothesis against the supplied observation; it does not prove demand, revenue,
 execution, external truth, deployment, or health.
 
+## Authorized next
+
+`selectAuthorizedNext` compresses a finite candidate list to one next step, or
+an explicit stop:
+
+```text
+NEXT = argmax_{Δ in Authorized} EvidenceBackedValue(Δ) / (Risk(Δ) + Cost(Δ) + ε)
+```
+
+Unauthorized candidates are excluded, not scored. Ties break by id. The numbers
+are caller-supplied estimates: a selection does not grant authority, start
+work, or prove that the value was evidence-backed. An empty or fully
+unauthorized list returns `STOP`.
+
 ## Connector observation
 
 `admitOmegaConnector` remains a non-executing admission boundary.
@@ -89,3 +103,11 @@ observation against a supplied actual observation as `VERIFIED`, `DIVERGENT`,
 cannot become `VERIFIED`. A match verifies only the admitted observation
 receipt; it does not prove deployment, revenue, secret custody, or an
 undeclared network call.
+
+---
+
+## Whole-ecosystem alignment
+
+This repository surface is one bounded form in the OCEANICOS body, rooted in human intent and source context. Its place in `SOURCE → ROOT → SUCCESS → relevant BODY → finite Δ` and the full-stack transition loop is defined by the [Whole-Ecosystem Master Prompt](../../WHOLE-ECOSYSTEM-MASTER-PROMPT.md).
+
+The prompt is a design/continuity contract, not evidence that a named component exists, connects, runs, or is healthy. This README documents this surface; establish claims from relevant implementation, tests, and observations. Keep `UNKNOWN` and `DIVERGENT` explicit; capability is not authority, and execution is not verification.

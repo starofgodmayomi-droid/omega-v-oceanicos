@@ -85,6 +85,21 @@ This documentation set is intentionally explicit about what is implemented, what
   finite transition, provenance, and authority boundaries.
 - **[Oceanicos Full Stack](../skills/oceanicos-full-stack/SKILL.md)** — renamed
   Ω∞v verification spine, whole-ecosystem routing, and bounded FLOW.
+- **[Lucid Full Stack](../skills/lucid-full-stack/SKILL.md)** — one integrated
+  guide across voice, continuity, culture, value, ecosystem planning, and
+  evidence-first software delivery.
+- **[Oceanicos Full-Stack Companion](../skills/oceanicos-full-stack-companion/SKILL.md)**
+  — session companion for ecosystem work, audits, upgrades, verification, and handoffs.
+- **[Oceanicos Max-Space Full Stack](../skills/oceanicos-max-space-full-stack/SKILL.md)**
+  — 0D–N-D requests translated into bounded representations.
+- **[Oceanicos Verified Upgrade](../skills/oceanicos-verified-upgrade/SKILL.md)**
+  — self-repair and upgrade through compile, admit, observe, and label.
+- **[Ω∞v OS](../skills/omega-v-os/SKILL.md)** — void, drop, field, sink, and
+  the finite ∞/11:11 return.
+- **[Lucid Continuum](../skills/lucid-continuum/SKILL.md)** — what may cross a
+  handoff, and what must be observed again.
+- **[Oceanicos Total Continuum](../skills/oceanicos-total-continuum/SKILL.md)**
+  — one finite pass inside this public repository, then only an observed handoff.
 - **[Whole ecosystem reality compression](./upgrades/WHOLE_ECOSYSTEM_REALITY_COMPRESSION_2026-10-04.md)**
   — source-labeled translation of the supplied Ω∞v architecture into repository
   boundaries and explicit unknowns.
@@ -213,3 +228,11 @@ See [MINI.md](./MINI.md) and [ROADMAP.md](./ROADMAP.md).
 
 **Documentation Status**: Living — Zero → MINI → verified expansion  
 **Last Updated**: 2026-09-27
+
+---
+
+## Whole-ecosystem alignment
+
+This repository surface is one bounded form in the OCEANICOS body, rooted in human intent and source context. Its place in `SOURCE → ROOT → SUCCESS → relevant BODY → finite Δ` and the full-stack transition loop is defined by the [Whole-Ecosystem Master Prompt](../WHOLE-ECOSYSTEM-MASTER-PROMPT.md).
+
+The prompt is a design/continuity contract, not evidence that a named component exists, connects, runs, or is healthy. This README documents this surface; establish claims from relevant implementation, tests, and observations. Keep `UNKNOWN` and `DIVERGENT` explicit; capability is not authority, and execution is not verification.

@@ -21,7 +21,7 @@ The source locator distinguishes the two attachments; each line range below is o
 
 ## Repository reconciliation
 
-The repository already contains overlapping ecosystem architecture in `CHARTER.md`, `docs/architecture/OCEANICOS-CONSTITUTION.md`, and `docs/spec/OCEANICOS-OPERATIONAL-PROTOCOL.md`. The updated base also adds `docs/WHOLE-ECOSYSTEM-MASTER-PROMPT.md`, which records the canonical ΩIR framing, raw-data law, and a source-register contract (source ID/type/origin/timestamp/hash/location/relationship/status). These sources cover human authority, evidence, uncertainty, bounded workers, the lifecycle, and the conceptual role map.
+The repository already contains overlapping ecosystem architecture in `CHARTER.md`, `docs/architecture/OCEANICOS-CONSTITUTION.md`, and `docs/spec/OCEANICOS-OPERATIONAL-PROTOCOL.md`. The updated base also adds `docs/WHOLE-ECOSYSTEM-MASTER-PROMPT.md`, which records the canonical ΩIR framing, raw-data law, and a source-register contract (source ID/type/origin/timestamp/hash/location/relationship/status).  These sources cover human authority, evidence, uncertainty, bounded workers, the lifecycle, and the conceptual role map. The path cited here reflects the repository state observed in this 2026-10-07 report; on 2026-10-20, the full prompt was consolidated at the repository root ([WHOLE-ECOSYSTEM-MASTER-PROMPT.md](../../WHOLE-ECOSYSTEM-MASTER-PROMPT.md)), while the former docs path became a compatibility pointer.
 
 This change complements that register with optional structured line coordinates on ΩIR source refs. It does **not** add another master prompt, duplicate the complete ecosystem map, or claim that every named organ is implemented.
 

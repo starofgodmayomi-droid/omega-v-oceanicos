@@ -21,3 +21,7 @@ COMPILE → VALIDATE → ADMIT → EXECUTE → OBSERVE
 ```
 
 **Do not invent authority. Do not skip observation. Reality is final.**
+
+## Repo equation
+
+[`ECOSYSTEM_BODY.md`](ECOSYSTEM_BODY.md) is the fixpoint this handoff compresses toward. `pnpm compress:repo` folds the declared outward ring through `compressRepoEquation`. A verified fold names one upgrade candidate. `upgrade.execution` stays `NOT_EXECUTED`. Detail: [`docs/ECOSYSTEM-BODY-EQUATION.md`](docs/ECOSYSTEM-BODY-EQUATION.md).

@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { initialOreadSubmissionIdentity, prepareOreadSubmission } from './oreade-submission';
 
-const API_BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+const API_BASE_URL = (import.meta.env?.VITE_API_URL || '/api').replace(/\/$/, '');
 
 interface DropResult {
   drop: {
@@ -49,6 +49,7 @@ export function OreadConsole() {
   const [scope, setScope] = useState('oracle:reflection');
   const [stopCondition, setStopCondition] = useState('stop after one bounded response');
   const [expectedObservation, setExpectedObservation] = useState('one response labeled symbolic is returned');
+  const [mode, setMode] = useState<'BUILD' | 'WORLDVIEW'>('BUILD');
   const [result, setResult] = useState<DropResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<'drop' | 'proposal' | 'admit' | null>(null);
@@ -61,6 +62,7 @@ export function OreadConsole() {
       targetScope: scope.split(',').map((item) => item.trim()).filter(Boolean),
       stopCondition,
       expectedObservation,
+      mode,
     };
     const prepared = prepareOreadSubmission(request, submissionIdentity.current);
     submissionIdentity.current = prepared.identity;
@@ -97,22 +99,20 @@ export function OreadConsole() {
     setLoading('admit');
     setError(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/v1/omega/commands/${commandId}/admit`, {
+      const response = await fetch(`${API_BASE_URL}/v1/omega/commands/${commandId}/approve`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
-          authority: 'human:dashboard-operator',
+          operator: 'dashboard-operator',
           policy: 'oreade-symbolic-boundary.v1',
-          authorityVerified: true,
-          policySatisfied: true,
         }),
       });
       const text = await response.text();
       const data = text ? JSON.parse(text) : null;
-      if (!response.ok) throw new Error(data?.error || `Admission failed (${response.status})`);
+      if (!response.ok) throw new Error(data?.error || `Approval failed (${response.status})`);
       setResult((previous) => previous ? { ...previous, command: data.command, nextAction: data.nextAction, executed: false } : previous);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Proposal admission failed');
+      setError(err instanceof Error ? err.message : 'Proposal approval failed');
     } finally {
       setLoading(null);
     }
@@ -144,6 +144,14 @@ export function OreadConsole() {
         Symbolic intent
         <textarea value={intent} onChange={(event) => setIntent(event.target.value)} maxLength={2000} rows={2} placeholder="What do you want to explore or build?" style={{ ...fieldStyle, resize: 'vertical', marginTop: '5px' }} />
       </label>
+      <label style={{ display: 'block', color: '#9bc4bb', fontSize: '11px', marginTop: '10px' }}>
+        Translation mode
+        <select value={mode} onChange={(event) => setMode(event.target.value === 'WORLDVIEW' ? 'WORLDVIEW' : 'BUILD')} style={{ ...fieldStyle, marginTop: '5px' }}>
+          <option value="BUILD">BUILD — bounded implementation intent</option>
+          <option value="WORLDVIEW">WORLDVIEW — preserve symbolic meaning</option>
+        </select>
+        <span style={{ display: 'block', color: '#87aaa2', marginTop: '4px' }}>WORLDVIEW preserves meaning; it does not verify physical reality.</span>
+      </label>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '10px' }}>
         <label style={{ color: '#9bc4bb', fontSize: '11px' }}>Requested by<input value={requestedBy} onChange={(event) => setRequestedBy(event.target.value)} maxLength={96} style={{ ...fieldStyle, marginTop: '5px' }} /></label>
         <label style={{ color: '#9bc4bb', fontSize: '11px' }}>Target scope<input value={scope} onChange={(event) => setScope(event.target.value)} maxLength={512} style={{ ...fieldStyle, marginTop: '5px' }} /></label>
@@ -157,7 +165,7 @@ export function OreadConsole() {
         <button onClick={translate} disabled={!intent.trim() || loading !== null} style={{ border: '1px solid #67d9b4', background: '#123a31', color: '#b8f5de', padding: '8px 12px', borderRadius: '4px', fontSize: '11px', fontWeight: 700 }}>{loading === 'drop' ? 'TRANSLATING…' : 'TRANSLATE DROP'}</button>
         <button onClick={propose} disabled={!intent.trim() || loading !== null} style={{ border: '1px solid #8ce8c8', background: '#8ce8c8', color: '#071312', padding: '8px 12px', borderRadius: '4px', fontSize: '11px', fontWeight: 700 }}>{loading === 'proposal' ? 'PERSISTING…' : 'CREATE PROPOSED COMMAND'}</button>
         {result?.command && (result.command.status === 'PROPOSED' || result.command.status === 'REVIEW') && (
-          <button onClick={admit} disabled={loading !== null} style={{ border: '1px solid #f0c674', background: '#3a2f16', color: '#ffe2a1', padding: '8px 12px', borderRadius: '4px', fontSize: '11px', fontWeight: 700 }}>{loading === 'admit' ? 'CHECKING POLICY…' : 'ADMIT BOUNDED PROPOSAL'}</button>
+          <button onClick={admit} disabled={loading !== null} style={{ border: '1px solid #f0c674', background: '#3a2f16', color: '#ffe2a1', padding: '8px 12px', borderRadius: '4px', fontSize: '11px', fontWeight: 700 }}>{loading === 'admit' ? 'CHECKING POLICY…' : 'APPROVE BOUNDED PROPOSAL'}</button>
         )}
       </div>
 
@@ -166,6 +174,7 @@ export function OreadConsole() {
         <div style={{ marginTop: '15px', borderTop: '1px solid #285048', paddingTop: '13px' }}>
           <div style={{ display: 'flex', gap: '7px', alignItems: 'center', flexWrap: 'wrap' }}>
             <strong style={{ color: '#d9ebe7', fontSize: '12px' }}>{result.drop.kind}</strong>
+            <span style={{ color: '#69e7b9', font: '10px DM Mono, monospace' }}>{result.drop.mode}</span>
             <span style={{ color: '#69e7b9', font: '10px DM Mono, monospace' }}>{result.command?.status ?? 'TRANSLATED'}</span>
             {result.readOnly && <span style={{ color: '#87aaa2', fontSize: '10px' }}>read-only translation</span>}
           </div>

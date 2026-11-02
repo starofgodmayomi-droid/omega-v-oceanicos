@@ -76,3 +76,11 @@ A responsible Phase 3 acceptance test should measure command latency, restart re
 3. Implement the NanoBanana provider through a server-side adapter with explicit quotas and error handling.
 4. Deploy privately with a process supervisor and monitoring before calling the service 24/7.
 5. Add automated tests for authorization, catalogue count, command formatting, and AI fallback paths.
+
+---
+
+## Whole-ecosystem alignment
+
+This repository surface is one bounded form in the OCEANICOS body, rooted in human intent and source context. Its place in `SOURCE → ROOT → SUCCESS → relevant BODY → finite Δ` and the full-stack transition loop is defined by the [Whole-Ecosystem Master Prompt](../../WHOLE-ECOSYSTEM-MASTER-PROMPT.md).
+
+The prompt is a design/continuity contract, not evidence that a named component exists, connects, runs, or is healthy. This README documents this surface; establish claims from relevant implementation, tests, and observations. Keep `UNKNOWN` and `DIVERGENT` explicit; capability is not authority, and execution is not verification.

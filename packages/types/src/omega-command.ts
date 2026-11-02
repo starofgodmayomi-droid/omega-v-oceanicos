@@ -1,4 +1,5 @@
 import type { ChangeDecision, OmegaChangeRecord } from './index.js';
+import type { OmegaWaterFlowFrame } from './water-flow.js';
 
 export const OMEGA_COMMAND_VERSION = 'omega.command.v1' as const;
 export const OMEGA_IR_VERSION = 'omega.ir.v1' as const;
@@ -87,8 +88,14 @@ export type OmegaRealityObservation = {
 export type OmegaCommandResult = {
   readonly command: OmegaCommand;
   readonly status: OmegaCommandStatus;
+  readonly waterFlow: readonly OmegaWaterFlowFrame[];
   readonly execution?: { readonly stateAfter: string; readonly consequence: string; readonly attestationId: string };
-  readonly reality?: OmegaRealityObservation & { readonly classification: 'VERIFIED' | 'DIVERGENT' | 'UNKNOWN' };
+  readonly reality?: OmegaRealityObservation & {
+    readonly classification: 'VERIFIED' | 'DIVERGENT' | 'UNKNOWN';
+    readonly comparison?: 'MATCH' | 'DIVERGENT' | 'UNAVAILABLE';
+    readonly observationSource?: 'caller-supplied';
+    readonly independentObservation?: false;
+  };
   readonly nextAction: string;
 };
 
@@ -137,6 +144,23 @@ export function validateOmegaReconciliationInput(input: {
   }
   if (typeof input.operator !== 'string' || !ID.test(input.operator)) {
     throw new Error('operator must be a bounded identifier');
+  }
+}
+
+export function validateOmegaApprovalInput(input: {
+  operator: unknown;
+  policy: unknown;
+}): asserts input is { operator: string; policy: string } {
+  if (typeof input.operator !== 'string' || !ID.test(input.operator)) {
+    throw new Error('operator must be a bounded identifier');
+  }
+  if (
+    typeof input.policy !== 'string' ||
+    input.policy.trim().length < 1 ||
+    input.policy.length > 256 ||
+    /[\u0000-\u001f\u007f]/.test(input.policy)
+  ) {
+    throw new Error('policy must be a non-empty string no longer than 256 characters');
   }
 }
 

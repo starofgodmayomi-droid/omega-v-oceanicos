@@ -1,6 +1,34 @@
 import { OmegaApiError, OmegaClient } from './index';
 
 describe('OmegaClient', () => {
+  it('approves commands with admin authorization and operator identity headers', async () => {
+    const client = new OmegaClient(
+      'http://api.test/',
+      async (url, init) => {
+        expect(url).toBe('http://api.test/v1/omega/commands/omega-approval-header/approve');
+        expect(init?.method).toBe('POST');
+        const headers = new Headers(init?.headers);
+        expect(headers.get('authorization')).toBe('Bearer admin-token');
+        expect(headers.get('x-omega-operator-id')).toBe('sdk-operator-9');
+        expect(JSON.parse(String(init?.body))).toEqual({ operator: 'sdk-operator-9' });
+        return new Response(
+          JSON.stringify({
+            success: true,
+            command: { commandId: 'omega-approval-header', status: 'AUTHORIZED' },
+            status: 'AUTHORIZED',
+            nextAction: 'execute the authorized bounded action',
+          }),
+        );
+      },
+      { adminToken: 'admin-token' },
+    );
+
+    await expect(client.approveCommand('omega-approval-header', 'sdk-operator-9')).resolves.toMatchObject({
+      success: true,
+      status: 'AUTHORIZED',
+    });
+  });
+
   it('reads which rules the engine can actually execute', async () => {
     // The flag is the reason this method exists. A rule the engine holds
     // but cannot run fails verification rather than passing quietly, and

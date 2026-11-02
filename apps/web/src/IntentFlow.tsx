@@ -21,6 +21,8 @@ interface IntentFlowProps {
   onApprove: () => void;
   onExecute: () => void;
   onObserve: () => void;
+  observedState: string;
+  onObservedStateChange: (value: string) => void;
   onViewEvidence: () => void;
   onViewTimeline: () => void;
   onDismiss: () => void;
@@ -42,6 +44,8 @@ export function IntentFlow({
   onApprove,
   onExecute,
   onObserve,
+  observedState,
+  onObservedStateChange,
   onViewEvidence,
   onViewTimeline,
   onDismiss,
@@ -315,13 +319,37 @@ export function IntentFlow({
           </button>
         )}
         {isExecuted && (
-          <button
-            onClick={onObserve}
-            disabled={loading}
-            style={actionBtnStyle(theme.accent, loading)}
-          >
-            {loading ? 'Observing…' : 'Observe & verify reality'}
-          </button>
+          <>
+            <label style={{ display: 'block', flex: '1 1 220px', fontSize: '11px', color: theme.textDim }}>
+              Observed state (not copied from the executor record)
+              <input
+                aria-label="Observed state"
+                value={observedState}
+                maxLength={512}
+                onChange={(event) => onObservedStateChange(event.target.value)}
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  marginTop: '4px',
+                  padding: '8px',
+                  borderRadius: theme.radiusSmall,
+                  border: `1px solid ${theme.border}`,
+                  background: 'transparent',
+                  color: theme.text,
+                  fontFamily: theme.fontSans,
+                  fontSize: '12px',
+                }}
+              />
+            </label>
+            <button
+              onClick={onObserve}
+              disabled={loading || !observedState.trim()}
+              style={actionBtnStyle(theme.accent, loading || !observedState.trim())}
+            >
+              {loading ? 'Recording…' : 'Record supplied observation'}
+            </button>
+          </>
         )}
       </div>
 
@@ -371,7 +399,10 @@ export function IntentFlow({
               label="Evidence"
               value={reality?.evidence ?? '—'}
             />
-            <ProveItem label="Provenance" value="intact" />
+            <ProveItem
+              label="Independence"
+              value={reality?.independentObservation === false ? 'caller-supplied' : '—'}
+            />
           </div>
           <div
             style={{

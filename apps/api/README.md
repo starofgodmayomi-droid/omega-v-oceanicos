@@ -24,15 +24,17 @@ production. Required mode needs distinct `OMEGA_READ_TOKEN` and
 `OMEGA_ADMIN_TOKEN` values. Health remains unauthenticated; GET evidence
 routes use the read token and mutations use the admin token.
 
-Omega command admission derives its authority role from the server-validated
-request context. Caller-supplied `authority`, `authorityVerified`, and
-`policySatisfied` fields are not treated as proof; admission recognizes the
-server-supported `runtime-evidence-bound:v1` policy identifier. Approval
-requires an explicit operator claim and the `human-review` policy. The actor
-recorded by the runtime is `admin-bearer` in required mode or
-`local-development` in local mode; the operator claim is separately recorded
-as self-reported and is not an authenticated human identity. Local mode is for
-development and does not provide authenticated access control.
+Omega command admission fails closed until a trusted server-side evidence
+resolver is configured. Caller-supplied `authority`, `authorityVerified`, and
+`policySatisfied` fields cannot authorize admission. Approval requires admin
+access, the `human-review` policy, and an explicit operator claim. When
+`OMEGA_ADMIN_REQUIRE_ALLOWLIST=on`, the claim must match an entry in
+`OMEGA_ADMIN_OPERATOR_ALLOWLIST`; otherwise a request-body operator name is
+self-reported. The runtime records the server principal separately:
+`admin-bearer` in required mode or `local-development` in local mode. Neither
+the bearer role nor an unallowlisted operator claim proves a human identity.
+Local mode is for development and does not provide authenticated access
+control.
 
 Optional local-job authentication uses `OMEGA_LOCAL_JOB_LEDGER_TOKEN`.
 
@@ -198,3 +200,11 @@ DEPLOYED != HEALTHY
 
 The API is an evidence boundary, not a claim that every downstream system is
 controlled by this process.
+
+---
+
+## Whole-ecosystem alignment
+
+This repository surface is one bounded form in the OCEANICOS body, rooted in human intent and source context. Its place in `SOURCE → ROOT → SUCCESS → relevant BODY → finite Δ` and the full-stack transition loop is defined by the [Whole-Ecosystem Master Prompt](../../WHOLE-ECOSYSTEM-MASTER-PROMPT.md).
+
+The prompt is a design/continuity contract, not evidence that a named component exists, connects, runs, or is healthy. This README documents this surface; establish claims from relevant implementation, tests, and observations. Keep `UNKNOWN` and `DIVERGENT` explicit; capability is not authority, and execution is not verification.

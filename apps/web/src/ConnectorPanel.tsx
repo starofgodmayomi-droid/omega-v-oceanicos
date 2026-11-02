@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 
-const API_BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+const API_BASE_URL = (import.meta.env?.VITE_API_URL || '/api').replace(/\/$/, '');
 
 type Status = 'VERIFIED' | 'DIVERGENT' | 'UNKNOWN' | 'NOT_EXECUTED';
 
@@ -73,8 +73,8 @@ export function ConnectorPanel() {
   const [error, setError] = useState<string | null>(null);
 
   const refreshMemory = useCallback(async () => {
-    const data = await request<{ observations: Observation[] }>('/v1/omega/connectors/observations');
-    setMemory(data.observations);
+    const data = await request<{ entries: Observation[] }>('/v1/omega/connectors/observations');
+    setMemory(Array.isArray(data.entries) ? data.entries : []);
   }, []);
 
   useEffect(() => {
@@ -88,16 +88,10 @@ export function ConnectorPanel() {
       const payload = live
         ? {
             connector: DEFAULT_CONNECTOR,
-            authorityVerified: true,
-            policySatisfied: true,
-            approvalVerified: false,
             liveAdapter: 'github-public-repository',
           }
         : {
             connector: DEFAULT_CONNECTOR,
-            authorityVerified: true,
-            policySatisfied: true,
-            approvalVerified: false,
           };
       const result = await request<Observation>('/v1/omega/connectors/observe', {
         method: 'POST',

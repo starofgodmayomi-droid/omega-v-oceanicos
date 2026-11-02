@@ -52,7 +52,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Audit dependencies
-        run: pnpm audit --ignore-unfixable
+        run: pnpm run audit
 
       - name: Prepare worker evidence directory
         run: mkdir -p worker-evidence

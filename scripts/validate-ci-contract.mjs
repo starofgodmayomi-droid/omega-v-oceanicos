@@ -60,7 +60,7 @@ for (const file of workflowFiles) {
     failures.push(`${file}: pnpm/action-setup@v6 must pin pnpm 10.34.5`);
   }
 
-  if (source.includes('pnpm install') && !/\bpnpm audit\b/.test(source)) {
+  if (source.includes('pnpm install') && !/\bpnpm (?:run )?audit\b/.test(source)) {
     failures.push(`${file}: dependency-installing workflows must run pnpm audit`);
   }
 }

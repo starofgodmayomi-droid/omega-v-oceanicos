@@ -19,6 +19,8 @@
 [![Verification Pipeline](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/actions/workflows/verify.yml/badge.svg)](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/actions/workflows/verify.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
+![A luminous emerald current crossing a deep ocean toward the horizon](docs/assets/oceanicos-readme-hero.jpg)
+
 > **Attest, don't assert. Evidence before trust. Verification before evolution.**
 
 OCEANICOS is evidence-bound infrastructure for turning human intent into bounded,
@@ -50,12 +52,19 @@ and what remains only a proposal or local evidence state.
 - 🌊 **[Finite operational charter](docs/OMEGA_INFINITY_CHARTER.md)** — Drop → Current → Ocean → Evaporation protocol
 - 🤝 **[Contributing](CONTRIBUTING.md)** — How to contribute verification-first
 - 📖 **[Documentation](docs/)** — Architecture, guides, and references
-- 🌊 **[Whole-ecosystem master prompt](docs/WHOLE-ECOSYSTEM-MASTER-PROMPT.md)** — canonical continuity/design layer, bounded by repository evidence
+- 🌊 **[Whole-ecosystem master prompt](WHOLE-ECOSYSTEM-MASTER-PROMPT.md)** — canonical continuity/design layer, bounded by repository evidence
 - 🧭 **[Value Navigator contract](skills/oceanicos-value-navigator/references/repository-contract.md)** — proposals, evidence, observation, and reconciliation
 - 🌉 **[Voice Bridge](skills/voice-bridge/SKILL.md)** — one human source across many expressive forms
 - Ɔ **[ƆREADE × Oceanicos Harmonizer](skills/oread-pidgin-harmonizer/SKILL.md)** — symbolic meaning translated into bounded action
 - 🧩 **[OceanicOS Framework](skills/oceanicos-framework/SKILL.md)** — finite transitions, evidence, and human authority
 - 🌊 **[Oceanicos Full Stack](skills/oceanicos-full-stack/SKILL.md)** — the renamed Ω∞v verification spine, whole-ecosystem routing, and bounded FLOW
+- 🧭 **[Lucid Full Stack](skills/lucid-full-stack/SKILL.md)** — one evidence-first operating skill spanning voice, continuity, culture, value, ecosystem, and software delivery
+- 🤝 **[Oceanicos Full-Stack Companion](skills/oceanicos-full-stack-companion/SKILL.md)** — intent, meaning, repositories, tools, runtime, and learning into one authorized outcome
+- 🌌 **[Oceanicos Max-Space Full Stack](skills/oceanicos-max-space-full-stack/SKILL.md)** — dimensional state space as bounded coordinates, clocks, and arrays
+- ⬆️ **[Oceanicos Verified Upgrade](skills/oceanicos-verified-upgrade/SKILL.md)** — repair and upgrade only through an observed, reversible pipeline
+- 💠 **[Ω∞v OS](skills/omega-v-os/SKILL.md)** — the ƆCEANiC_OS sequence as a finite kernel
+- 🔁 **[Lucid Continuum](skills/lucid-continuum/SKILL.md)** — handoff across passes without invented memory
+- 🔁 **[Oceanicos Total Continuum](skills/oceanicos-total-continuum/SKILL.md)** — one finite pass inside this public repository, then only an observed handoff
 - 🌐 **[Full-stack reality-access handoff](docs/upgrades/FULL_STACK_REALITY_ACCESS_2026-09-28.md)** — connector taxonomy without implicit ownership or authority
 - 🗺️ **[Repository inventory](docs/REPO_INVENTORY.md)** — workspace vs disk (current evidence)
 - ⚙️ **[Development Setup](docs/DEVELOPMENT.md)** — Get the project running locally
@@ -403,4 +412,12 @@ infinity, consciousness, or control of external reality.
 
 ## Whole-ecosystem root
 
-The canonical expandable continuity/root prompt is [docs/WHOLE-ECOSYSTEM-MASTER-PROMPT.md](docs/WHOLE-ECOSYSTEM-MASTER-PROMPT.md). It is a design/continuity contract, not runtime proof. Existing repository contracts, ΩIR types, admission gates, tests, and runtime observations remain the executable evidence boundary.
+The canonical expandable continuity/root prompt is [WHOLE-ECOSYSTEM-MASTER-PROMPT.md](WHOLE-ECOSYSTEM-MASTER-PROMPT.md). It is a design/continuity contract, not runtime proof. Existing repository contracts, ΩIR types, admission gates, tests, and runtime observations remain the executable evidence boundary.
+
+---
+
+## Whole-ecosystem alignment
+
+This repository surface is one bounded form in the OCEANICOS body, rooted in human intent and source context. Its place in `SOURCE → ROOT → SUCCESS → relevant BODY → finite Δ` and the full-stack transition loop is defined by the [Whole-Ecosystem Master Prompt](WHOLE-ECOSYSTEM-MASTER-PROMPT.md).
+
+The prompt is a design/continuity contract, not evidence that a named component exists, connects, runs, or is healthy. This README documents this surface; establish claims from relevant implementation, tests, and observations. Keep `UNKNOWN` and `DIVERGENT` explicit; capability is not authority, and execution is not verification.
