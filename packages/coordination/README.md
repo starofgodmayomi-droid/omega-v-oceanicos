@@ -2,6 +2,15 @@
 
 `@omega-v/coordination` provides a small, local execution boundary for running independent **workers** and **builders** in parallel while preserving inspectable lifecycle evidence.
 
+## Public README alignment
+
+- [README.md](../../README.md) — repository mission and evidence-first system model
+- [packages/runtime/README.md](../runtime/README.md) — bounded execution model and local evidence chain
+- [packages/orchestrator/README.md](../orchestrator/README.md) — broader coordination and task dispatch layer
+- [packages/worker/README.md](../worker/README.md) — worker lifecycle, authority checks, and local evidence scope
+
+Coordination is intentionally bounded. It exposes parallel execution and lifecycle evidence, but it does not imply durable worker coordination, distributed consensus, or production authority.
+
 ## What this demonstrates
 
 The executor supports a bounded concurrency limit, a bounded task count, explicit worker or builder roles, deterministic event sequencing, isolated task failures, and a replayable summary. It is designed to make parallel execution visible rather than magical.

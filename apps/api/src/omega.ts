@@ -204,7 +204,7 @@ function bodyOf(request: any): Record<string, unknown> {
   return request.body && typeof request.body === 'object' && !Array.isArray(request.body) ? request.body : {};
 }
 
-function commandWaterFlow(command: StoredCommand): ReturnType<typeof buildOmegaWaterFlow> {
+export function commandWaterFlow(command: StoredCommand): ReturnType<typeof buildOmegaWaterFlow> {
   return buildOmegaWaterFlow({
     state: typeof command.change?.stateBefore === 'string'
       ? command.change.stateBefore

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { theme, statusColor, humanStatus } from './oceanicosTheme';
 
 /*
@@ -66,10 +66,119 @@ function readinessLabel(value: string | undefined): string {
   return typeof value === 'string' && value.trim() ? value.trim().toUpperCase() : 'UNKNOWN';
 }
 
+interface TherapeuticStateResponse {
+  success: boolean;
+  model: string;
+  status: string;
+  evaluatedAt: string;
+  state: {
+    kai: { status: string; authority: string; summary: string };
+    elion: { status: string; authority: string; summary: string };
+    omega: { status: string; authority: string; summary: string };
+  };
+  loop: string[];
+}
+
+interface OmegaCommandSummary {
+  commandId: string;
+  intent: string;
+  requestedBy: string;
+  status: string;
+  createdAt: string;
+  workers: string[];
+  decision: string | null;
+  authority: string | null;
+  policy: string | null;
+  execution: { stateAfter?: string; consequence?: string; attestationId?: string } | null;
+  reality: { classification?: string; observedState?: string } | null;
+}
+
+interface OmegaCommandDetails {
+  commandId: string;
+  status: string;
+  intent: string;
+  requestedBy: string;
+  nextAction?: string;
+  execution?: { stateAfter?: string; consequence?: string; attestationId?: string } | null;
+  reality?: { classification?: string; observedState?: string; evidence?: string } | null;
+}
+
+interface OmegaDivergenceAlert {
+  commandId: string;
+  intent: string;
+  requestedBy: string;
+  status: string;
+  createdAt: string;
+  reality: { classification?: string; observedState?: string } | null;
+}
+
+type OmegaReconciliationAction = 'accepted' | 'retried' | 'corrected' | 'closed';
+type OmegaCommandAction = 'admit' | 'approve' | 'execute' | 'observe';
+type DataSurface = 'therapeutic' | 'commands' | 'commandDetails' | 'divergences';
+
+function errorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback;
+}
+
+function availableCommandActions(status: string): OmegaCommandAction[] {
+  switch (status) {
+    case 'PROPOSED':
+      return ['admit'];
+    case 'REVIEW':
+      return ['admit', 'approve'];
+    case 'AUTHORIZED':
+      return ['execute'];
+    case 'EXECUTED':
+    case 'ATTESTED':
+      return ['observe'];
+    default:
+      return [];
+  }
+}
+
 export function SystemHealthPanel() {
   const [health, setHealth] = useState<HealthResponse | null>(null);
+  const [therapeuticState, setTherapeuticState] = useState<TherapeuticStateResponse | null>(null);
+  const [omegaCommands, setOmegaCommands] = useState<OmegaCommandSummary[]>([]);
+  const [divergenceAlerts, setDivergenceAlerts] = useState<OmegaDivergenceAlert[]>([]);
+  const [selectedCommandId, setSelectedCommandId] = useState<string | null>(null);
+  const [selectedCommand, setSelectedCommand] = useState<OmegaCommandDetails | null>(null);
+  const [selectedBoundary, setSelectedBoundary] = useState<Record<string, any> | null>(null);
+  const selectedCommandIdRef = useRef<string | null>(selectedCommandId);
+  selectedCommandIdRef.current = selectedCommandId;
+  const commandDetailsRequestId = useRef(0);
+  const [lastFlowStatus, setLastFlowStatus] = useState<string | null>(null);
+  const [transitioning, setTransitioning] = useState(false);
+  const [commandAction, setCommandAction] = useState<string | null>(null);
+  const [reconciliationAction, setReconciliationAction] = useState<OmegaReconciliationAction>('accepted');
+  const [reconciliationNote, setReconciliationNote] = useState('');
+  const [reconciliationOperator, setReconciliationOperator] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [dataErrors, setDataErrors] = useState<Record<DataSurface, string | null>>({
+    therapeutic: null,
+    commands: null,
+    commandDetails: null,
+    divergences: null,
+  });
+  const [dataLoaded, setDataLoaded] = useState<Record<DataSurface, boolean>>({
+    therapeutic: false,
+    commands: false,
+    commandDetails: false,
+    divergences: false,
+  });
+  const [dataStale, setDataStale] = useState<Record<DataSurface, boolean>>({
+    therapeutic: false,
+    commands: false,
+    commandDetails: false,
+    divergences: false,
+  });
+
+  const selectCommand = useCallback((commandId: string) => {
+    selectedCommandIdRef.current = commandId;
+    setSelectedCommandId(commandId);
+  }, []);
 
   const fetchHealth = useCallback(async () => {
     setLoading(true);
@@ -90,11 +199,268 @@ export function SystemHealthPanel() {
     }
   }, []);
 
+  const fetchTherapeuticState = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/v1/therapeutic/state`);
+      const text = await res.text();
+      const data = text ? JSON.parse(text) : null;
+      if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
+      setTherapeuticState(data);
+      setDataLoaded((current) => ({ ...current, therapeutic: true }));
+      setDataStale((current) => ({ ...current, therapeutic: false }));
+      setDataErrors((current) => ({ ...current, therapeutic: null }));
+    } catch (err) {
+      setDataStale((current) => ({ ...current, therapeutic: true }));
+      setDataErrors((current) => ({ ...current, therapeutic: errorMessage(err, 'therapeutic state unavailable') }));
+    }
+  }, []);
+
+  const fetchOmegaCommands = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/v1/omega/commands`);
+      const text = await res.text();
+      const data = text ? JSON.parse(text) : null;
+      if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
+      const commands = Array.isArray(data?.commands) ? data.commands.slice(0, 5) : [];
+      setOmegaCommands(commands);
+      setDataLoaded((current) => ({ ...current, commands: true }));
+      setDataStale((current) => ({ ...current, commands: false }));
+      setDataErrors((current) => ({ ...current, commands: null }));
+      if (!selectedCommandIdRef.current && commands[0]?.commandId) {
+        selectCommand(commands[0].commandId);
+      }
+    } catch (err) {
+      setDataStale((current) => ({ ...current, commands: true }));
+      setDataErrors((current) => ({ ...current, commands: errorMessage(err, 'command evidence unavailable') }));
+    }
+  }, [selectCommand]);
+
+  const runTherapeuticTransition = useCallback(async () => {
+    setTransitioning(true);
+    setActionError(null);
+    try {
+      const res = await fetch(`${API_BASE_URL}/v1/therapeutic/transition`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          intent: 'Verify the local therapeutic state machine',
+          requestedBy: 'dashboard-system-health',
+          expectedOutcome: 'The KAI, ELION, and OMEGA loop remains ready and evidence-bound',
+        }),
+      });
+      const text = await res.text();
+      const data = text ? JSON.parse(text) : null;
+      if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
+      setTherapeuticState(data);
+      setDataLoaded((current) => ({ ...current, therapeutic: true }));
+      setDataStale((current) => ({ ...current, therapeutic: false }));
+      setDataErrors((current) => ({ ...current, therapeutic: null }));
+      setLastFlowStatus(data?.status ?? 'UNKNOWN');
+      setActionError(null);
+      await fetchOmegaCommands();
+      await fetchHealth();
+    } catch (err) {
+      setLastFlowStatus('FAILED');
+      setActionError(errorMessage(err, 'therapeutic transition failed'));
+    } finally {
+      setTransitioning(false);
+    }
+  }, [fetchHealth, fetchOmegaCommands]);
+
+  const fetchSelectedCommandDetails = useCallback(async (commandId: string) => {
+    if (!commandId || commandId !== selectedCommandIdRef.current) return;
+    const requestId = ++commandDetailsRequestId.current;
+    try {
+      const [commandRes, boundaryRes] = await Promise.all([
+        fetch(`${API_BASE_URL}/v1/omega/commands/${encodeURIComponent(commandId)}`),
+        fetch(`${API_BASE_URL}/v1/omega/commands/${encodeURIComponent(commandId)}/safety-boundary`),
+      ]);
+      const commandText = await commandRes.text();
+      const boundaryText = await boundaryRes.text();
+      const commandData = commandText ? JSON.parse(commandText) : null;
+      const boundaryData = boundaryText ? JSON.parse(boundaryText) : null;
+      if (!commandRes.ok || !boundaryRes.ok) throw new Error(commandData?.error || boundaryData?.error || 'command detail unavailable');
+      if (requestId !== commandDetailsRequestId.current) return;
+      setSelectedCommand(commandData);
+      setSelectedBoundary(boundaryData?.boundary ?? null);
+      setDataLoaded((current) => ({ ...current, commandDetails: true }));
+      setDataStale((current) => ({ ...current, commandDetails: false }));
+      setDataErrors((current) => ({ ...current, commandDetails: null }));
+    } catch (err) {
+      if (requestId !== commandDetailsRequestId.current) return;
+      setDataStale((current) => ({ ...current, commandDetails: true }));
+      setDataErrors((current) => ({ ...current, commandDetails: errorMessage(err, 'command detail unavailable') }));
+    }
+  }, []);
+
+  const fetchDivergenceAlerts = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/v1/omega/divergences`);
+      const text = await res.text();
+      const data = text ? JSON.parse(text) : null;
+      if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
+      setDivergenceAlerts(Array.isArray(data?.alerts) ? data.alerts.slice(0, 5) : []);
+      setDataLoaded((current) => ({ ...current, divergences: true }));
+      setDataStale((current) => ({ ...current, divergences: false }));
+      setDataErrors((current) => ({ ...current, divergences: null }));
+    } catch (err) {
+      setDataStale((current) => ({ ...current, divergences: true }));
+      setDataErrors((current) => ({ ...current, divergences: errorMessage(err, 'divergence evidence unavailable') }));
+    }
+  }, []);
+
+  const runOmegaLifecycle = useCallback(async () => {
+    setTransitioning(true);
+    setLastFlowStatus(null);
+    setActionError(null);
+    try {
+      const createBody = {
+        intent: 'Verify the dashboard command lifecycle',
+        requestedBy: 'dashboard-system-health',
+        workers: ['planner'],
+        idempotencyKey: `omega-ui-${Date.now()}`,
+        context: {
+          stateBefore: 'ready',
+          expectedObservation: 'The KAI, ELION, and OMEGA loop remains ready and evidence-bound',
+          observationKind: 'supplied-state',
+        },
+      };
+
+      const createRes = await fetch(`${API_BASE_URL}/v1/omega/commands`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(createBody),
+      });
+      const createData = createRes.ok ? (await createRes.json()) : null;
+      if (!createRes.ok || !createData?.command?.commandId) throw new Error(createData?.error || `HTTP ${createRes.status}`);
+
+      const commandId = createData.command.commandId;
+      const admitRes = await fetch(`${API_BASE_URL}/v1/omega/commands/${encodeURIComponent(commandId)}/admit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ authority: 'dashboard:runtime-flow', policy: 'runtime-evidence-bound:v1', authorityVerified: true, policySatisfied: true }),
+      });
+      const admitData = admitRes.ok ? (await admitRes.json()) : null;
+      if (!admitRes.ok || !admitData?.command?.commandId) throw new Error(admitData?.error || `HTTP ${admitRes.status}`);
+
+      const executeRes = await fetch(`${API_BASE_URL}/v1/omega/commands/${encodeURIComponent(commandId)}/execute`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      const executeData = executeRes.ok ? (await executeRes.json()) : null;
+      if (!executeRes.ok || !executeData?.command?.commandId) throw new Error(executeData?.error || `HTTP ${executeRes.status}`);
+
+      const observedState = executeData.command.change?.stateAfter ?? 'bounded-local-action-complete';
+      const observeRes = await fetch(`${API_BASE_URL}/v1/omega/commands/${encodeURIComponent(commandId)}/observe`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ observedState }),
+      });
+      const observeData = observeRes.ok ? (await observeRes.json()) : null;
+      if (!observeRes.ok || !observeData?.command?.commandId) throw new Error(observeData?.error || `HTTP ${observeRes.status}`);
+
+      setLastFlowStatus(observeData.command.status || 'VERIFIED');
+      selectCommand(commandId);
+      await fetchOmegaCommands();
+      await fetchSelectedCommandDetails(commandId);
+      await fetchTherapeuticState();
+      await fetchHealth();
+    } catch (err) {
+      setLastFlowStatus('FAILED');
+      setActionError(errorMessage(err, 'Omega command flow failed'));
+    } finally {
+      setTransitioning(false);
+    }
+  }, [fetchHealth, fetchOmegaCommands, fetchSelectedCommandDetails, fetchTherapeuticState, selectCommand]);
+
+  const runCommandAction = useCallback(async (action: OmegaCommandAction | 'reconcile') => {
+    if (!selectedCommandId) return;
+    if (action !== 'reconcile' && (!selectedCommand || !availableCommandActions(selectedCommand.status).includes(action))) {
+      setActionError(`Cannot ${action} a command in ${selectedCommand?.status ?? 'UNKNOWN'} status`);
+      return;
+    }
+    setCommandAction(action);
+    setActionError(null);
+    try {
+      let url = `${API_BASE_URL}/v1/omega/commands/${encodeURIComponent(selectedCommandId)}`;
+      let payload: Record<string, unknown> | undefined;
+
+      switch (action) {
+        case 'admit':
+          url += '/admit';
+          payload = { authority: 'dashboard:operator', policy: 'runtime-evidence-bound:v1', authorityVerified: true, policySatisfied: true };
+          break;
+        case 'approve':
+          url += '/approve';
+          payload = { operator: 'dashboard-operator', policy: 'human-review' };
+          break;
+        case 'execute':
+          url += '/execute';
+          break;
+        case 'observe':
+          url += '/observe';
+          payload = { observedState: selectedCommand?.execution?.stateAfter ?? 'bounded-local-action-complete' };
+          break;
+        case 'reconcile':
+          url += '/reconciliation';
+          payload = { action: reconciliationAction, note: reconciliationNote, operator: reconciliationOperator };
+          break;
+        default:
+          return;
+      }
+
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload ?? {}),
+      });
+      const text = await res.text();
+      const data = text ? JSON.parse(text) : null;
+      if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
+      setLastFlowStatus(data?.status || data?.command?.status || 'UPDATED');
+      await fetchOmegaCommands();
+      await fetchSelectedCommandDetails(selectedCommandId);
+    } catch (err) {
+      setLastFlowStatus('FAILED');
+      setActionError(errorMessage(err, `Omega ${action} action failed`));
+    } finally {
+      setCommandAction(null);
+    }
+  }, [fetchOmegaCommands, fetchSelectedCommandDetails, reconciliationAction, reconciliationNote, reconciliationOperator, selectedCommand, selectedCommandId]);
+
   useEffect(() => {
     fetchHealth();
-    const interval = setInterval(fetchHealth, 15000);
+    fetchTherapeuticState();
+    fetchOmegaCommands();
+    fetchDivergenceAlerts();
+    const interval = setInterval(() => {
+      fetchHealth();
+      fetchTherapeuticState();
+      fetchOmegaCommands();
+      fetchDivergenceAlerts();
+      if (selectedCommandIdRef.current) fetchSelectedCommandDetails(selectedCommandIdRef.current);
+    }, 15000);
     return () => clearInterval(interval);
-  }, [fetchHealth]);
+  }, [fetchDivergenceAlerts, fetchHealth, fetchSelectedCommandDetails, fetchTherapeuticState, fetchOmegaCommands]);
+
+  useEffect(() => {
+    if (selectedCommandId) {
+      setSelectedCommand(null);
+      setSelectedBoundary(null);
+      setDataLoaded((current) => ({ ...current, commandDetails: false }));
+      setDataStale((current) => ({ ...current, commandDetails: false }));
+      setDataErrors((current) => ({ ...current, commandDetails: null }));
+      fetchSelectedCommandDetails(selectedCommandId);
+    }
+    return () => {
+      commandDetailsRequestId.current += 1;
+    };
+  }, [fetchSelectedCommandDetails, selectedCommandId]);
+
+  useEffect(() => {
+    setReconciliationNote('');
+  }, [selectedCommandId]);
 
   const label = readinessLabel(health?.readiness);
   const readinessColor =
@@ -154,6 +520,14 @@ export function SystemHealthPanel() {
       {error && (
         <div style={{ color: theme.divergent, fontSize: '11px', marginBottom: '10px' }}>
           ⚠ {error}
+        </div>
+      )}
+      {Object.entries(dataErrors).some(([, message]) => message) && (
+        <div role="status" style={{ color: theme.warning, fontSize: '11px', marginBottom: '10px' }}>
+          Evidence availability: {Object.entries(dataErrors)
+            .filter(([, message]) => message)
+            .map(([surface, message]) => `${surface}: ${message}`)
+            .join(' · ')}
         </div>
       )}
 
@@ -260,6 +634,334 @@ export function SystemHealthPanel() {
             </div>
           )}
 
+          {(
+            <div style={{
+              padding: '10px 14px',
+              background: theme.surfaceDeep,
+              border: `1px solid ${theme.border}`,
+              borderRadius: theme.radiusSmall,
+              marginBottom: '10px',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <div style={{ fontSize: '11px', fontWeight: 600, color: theme.textMuted }}>
+                  Therapeutic State · {therapeuticState?.model ?? 'omega.therapeutic-state-machine.v1'}
+                </div>
+                <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                  <button
+                    type="button"
+                    onClick={runTherapeuticTransition}
+                    disabled={transitioning}
+                    style={{
+                      background: theme.surfaceRaised,
+                      color: theme.accent,
+                      border: `1px solid ${theme.borderBright}`,
+                      borderRadius: theme.radiusSmall,
+                      padding: '5px 10px',
+                      fontSize: '10px',
+                      fontWeight: 700,
+                      cursor: transitioning ? 'wait' : 'pointer',
+                      opacity: transitioning ? 0.6 : 1,
+                    }}
+                  >
+                    {transitioning ? '…' : 'RUN'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={runOmegaLifecycle}
+                    disabled={transitioning}
+                    style={{
+                      background: theme.surfaceRaised,
+                      color: theme.accent,
+                      border: `1px solid ${theme.borderBright}`,
+                      borderRadius: theme.radiusSmall,
+                      padding: '5px 10px',
+                      fontSize: '10px',
+                      fontWeight: 700,
+                      cursor: transitioning ? 'wait' : 'pointer',
+                      opacity: transitioning ? 0.6 : 1,
+                    }}
+                  >
+                    {transitioning ? '…' : 'FLOW'}
+                  </button>
+                </div>
+              </div>
+              {therapeuticState && (
+                <>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '8px' }}>
+                    {Object.entries(therapeuticState.state).map(([role, entry]) => {
+                      const isReady = entry.status === 'READY';
+                      const color = isReady ? theme.verified : theme.warning;
+                      return (
+                        <div key={role} style={{ padding: '8px 10px', border: `1px solid ${color}33`, borderRadius: theme.radiusSmall }}>
+                          <div style={{ fontSize: '10px', color: theme.textMuted, marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                            {role}
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: color }} />
+                            <span style={{ fontSize: '12px', fontWeight: 700, color }}>{entry.status}</span>
+                          </div>
+                          <div style={{ fontSize: '10px', color: theme.textDim }}>{entry.authority}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div style={{ fontSize: '10px', color: theme.textDim, marginTop: '8px' }}>
+                    loop: {therapeuticState.loop.join(' → ')}
+                  </div>
+                </>
+              )}
+              {!therapeuticState && dataErrors.therapeutic && (
+                <div style={{ fontSize: '11px', color: theme.warning }}>State unavailable: {dataErrors.therapeutic}</div>
+              )}
+              {!therapeuticState && !dataErrors.therapeutic && !dataLoaded.therapeutic && (
+                <div style={{ fontSize: '11px', color: theme.textDim }}>Loading state evidence…</div>
+              )}
+              {therapeuticState && dataStale.therapeutic && (
+                <div style={{ fontSize: '10px', color: theme.warning }}>Showing last successful state response; refresh failed.</div>
+              )}
+            </div>
+          )}
+
+          {lastFlowStatus && (
+            <div style={{
+              padding: '10px 14px',
+              background: theme.surfaceDeep,
+              border: `1px solid ${lastFlowStatus === 'VERIFIED' ? theme.verified : theme.warning}33`,
+              borderRadius: theme.radiusSmall,
+              marginBottom: '10px',
+            }}>
+              <div style={{ fontSize: '11px', color: theme.textMuted, marginBottom: '4px' }}>Command Flow</div>
+              <div style={{ fontSize: '12px', fontWeight: 700, color: lastFlowStatus === 'VERIFIED' ? theme.verified : theme.warning }}>
+                {lastFlowStatus}
+              </div>
+              {actionError && (
+                <div role="alert" style={{ fontSize: '11px', color: theme.divergent, marginTop: '5px' }}>
+                  {actionError}
+                </div>
+              )}
+            </div>
+          )}
+
+          <div style={{
+            padding: '10px 14px',
+            background: theme.surfaceDeep,
+            border: `1px solid ${theme.border}`,
+            borderRadius: theme.radiusSmall,
+            marginBottom: '10px',
+          }}>
+            <div style={{ fontSize: '11px', fontWeight: 600, color: theme.textMuted, marginBottom: '8px' }}>
+              Recent Omega Commands
+            </div>
+            {omegaCommands.length === 0 && dataErrors.commands ? (
+              <div style={{ fontSize: '11px', color: theme.warning }}>Command evidence unavailable: {dataErrors.commands}</div>
+            ) : omegaCommands.length === 0 && !dataLoaded.commands ? (
+              <div style={{ fontSize: '11px', color: theme.textDim }}>Loading command evidence…</div>
+            ) : omegaCommands.length === 0 ? (
+              <div style={{ fontSize: '11px', color: theme.textDim }}>no command evidence yet</div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {omegaCommands.map((command) => (
+                  <div
+                    key={command.commandId}
+                    onClick={() => selectCommand(command.commandId)}
+                    style={{
+                      padding: '8px 10px',
+                      border: `1px solid ${selectedCommandId === command.commandId ? theme.accent : theme.border}`,
+                      borderRadius: theme.radiusSmall,
+                      background: theme.surfaceRaised,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', marginBottom: '4px' }}>
+                      <div style={{ fontSize: '10px', color: theme.textMuted, fontWeight: 700 }}>{command.commandId}</div>
+                      <div style={{ fontSize: '10px', color: command.status === 'VERIFIED' ? theme.verified : command.status === 'DIVERGENT' ? theme.divergent : theme.warning, fontWeight: 700 }}>{command.status}</div>
+                    </div>
+                    <div style={{ fontSize: '11px', color: theme.text, marginBottom: '3px' }}>{command.intent}</div>
+                    <div style={{ fontSize: '10px', color: theme.textDim }}>
+                      by {command.requestedBy} · {command.workers.join(', ')}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {omegaCommands.length > 0 && dataStale.commands && (
+              <div style={{ fontSize: '10px', color: theme.warning, marginTop: '6px' }}>
+                Showing last successful command response; refresh failed.
+              </div>
+            )}
+          </div>
+
+          {selectedCommand && (
+            <div style={{
+              padding: '10px 14px',
+              background: theme.surfaceDeep,
+              border: `1px solid ${theme.border}`,
+              borderRadius: theme.radiusSmall,
+              marginBottom: '10px',
+            }}>
+              <div style={{ fontSize: '11px', fontWeight: 600, color: theme.textMuted, marginBottom: '8px' }}>
+                Selected Command Evidence · {selectedCommand.commandId}
+              </div>
+              <div style={{ fontSize: '11px', color: theme.textDim, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <span>status: <span style={{ color: selectedCommand.status === 'VERIFIED' ? theme.verified : selectedCommand.status === 'DIVERGENT' ? theme.divergent : theme.warning, fontWeight: 700 }}>{selectedCommand.status}</span></span>
+                <span>intent: {selectedCommand.intent}</span>
+                <span>requestedBy: {selectedCommand.requestedBy}</span>
+                <span>nextAction: {selectedCommand.nextAction ?? 'none'}</span>
+                {selectedCommand.execution && (
+                  <span>execution: {selectedCommand.execution.consequence ?? selectedCommand.execution.stateAfter ?? 'recorded'}</span>
+                )}
+                {selectedCommand.reality && (
+                  <span>reality: {selectedCommand.reality.classification ?? 'unknown'} · {selectedCommand.reality.observedState ?? 'no observed state'}</span>
+                )}
+                {selectedBoundary && (
+                  <span>boundary: {selectedBoundary.policy?.status ?? 'UNKNOWN'} / {selectedBoundary.execution?.status ?? 'NOT_EXECUTED'} / {selectedBoundary.observation?.status ?? 'UNKNOWN'}</span>
+                )}
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '10px' }}>
+                {availableCommandActions(selectedCommand.status).map((action) => (
+                  <button
+                    key={action}
+                    type="button"
+                    onClick={() => runCommandAction(action)}
+                    disabled={Boolean(commandAction)}
+                    style={{
+                      background: theme.surfaceRaised,
+                      color: theme.accent,
+                      border: `1px solid ${theme.borderBright}`,
+                      borderRadius: theme.radiusSmall,
+                      padding: '5px 10px',
+                      fontSize: '10px',
+                      fontWeight: 700,
+                      cursor: commandAction ? 'wait' : 'pointer',
+                      opacity: commandAction ? 0.6 : 1,
+                    }}
+                  >
+                    {commandAction === action ? '…' : action.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+              <div style={{ fontSize: '10px', color: theme.textDim, marginTop: '6px' }}>
+                Admission values are request inputs, not independent identity proof; these dashboard lifecycle actions record bounded local state and do not mutate a remote system.
+              </div>
+              {(selectedCommand.status === 'DIVERGENT' || selectedCommand.status === 'UNKNOWN') && (
+                <div style={{ display: 'grid', gap: '8px', marginTop: '12px', paddingTop: '10px', borderTop: `1px solid ${theme.border}` }}>
+                  <label style={{ display: 'grid', gap: '4px', fontSize: '10px', color: theme.textMuted }}>
+                    Review outcome
+                    <select
+                      value={reconciliationAction}
+                      onChange={(event) => setReconciliationAction(event.target.value as OmegaReconciliationAction)}
+                      style={{ background: theme.surfaceRaised, color: theme.text, border: `1px solid ${theme.borderBright}`, borderRadius: theme.radiusSmall, padding: '7px 9px' }}
+                    >
+                      <option value="accepted">Accepted</option>
+                      <option value="retried">Retried</option>
+                      <option value="corrected">Corrected</option>
+                      <option value="closed">Closed</option>
+                    </select>
+                  </label>
+                  <label style={{ display: 'grid', gap: '4px', fontSize: '10px', color: theme.textMuted }}>
+                    Operator ID (self-reported; not authenticated)
+                    <input
+                      value={reconciliationOperator}
+                      onChange={(event) => setReconciliationOperator(event.target.value)}
+                      maxLength={96}
+                      required
+                      placeholder="operator-id"
+                      style={{ background: theme.surfaceRaised, color: theme.text, border: `1px solid ${theme.borderBright}`, borderRadius: theme.radiusSmall, padding: '7px 9px' }}
+                    />
+                  </label>
+                  <label style={{ display: 'grid', gap: '4px', fontSize: '10px', color: theme.textMuted }}>
+                    Reconciliation note
+                    <textarea
+                      value={reconciliationNote}
+                      onChange={(event) => setReconciliationNote(event.target.value)}
+                      maxLength={2000}
+                      required
+                      rows={3}
+                      placeholder="Record what was reviewed and the evidence or follow-up."
+                      style={{ resize: 'vertical', background: theme.surfaceRaised, color: theme.text, border: `1px solid ${theme.borderBright}`, borderRadius: theme.radiusSmall, padding: '7px 9px', font: `11px ${theme.fontSans}` }}
+                    />
+                  </label>
+                  <div style={{ fontSize: '10px', color: theme.textDim }}>
+                    Records a durable review note only; it does not retry, correct, authorize, or execute the command.
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => runCommandAction('reconcile')}
+                    disabled={Boolean(commandAction) || !reconciliationNote.trim() || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,95}$/.test(reconciliationOperator)}
+                    style={{ justifySelf: 'start', background: theme.surfaceRaised, color: theme.accent, border: `1px solid ${theme.borderBright}`, borderRadius: theme.radiusSmall, padding: '6px 10px', fontSize: '10px', fontWeight: 700, cursor: commandAction ? 'wait' : 'pointer', opacity: commandAction || !reconciliationNote.trim() || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,95}$/.test(reconciliationOperator) ? 0.6 : 1 }}
+                  >
+                    {commandAction === 'reconcile' ? 'RECORDING…' : 'RECORD REVIEW'}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+          {!selectedCommand && selectedCommandId && dataErrors.commandDetails && (
+            <div style={{ fontSize: '11px', color: theme.warning, marginBottom: '10px' }}>
+              Selected command details unavailable: {dataErrors.commandDetails}
+            </div>
+          )}
+          {!selectedCommand && selectedCommandId && !dataErrors.commandDetails && !dataLoaded.commandDetails && (
+            <div style={{ fontSize: '11px', color: theme.textDim, marginBottom: '10px' }}>
+              Loading selected command evidence…
+            </div>
+          )}
+          {selectedCommand && dataStale.commandDetails && (
+            <div style={{ fontSize: '10px', color: theme.warning, marginBottom: '10px' }}>
+              Showing last successful details response; refresh failed.
+            </div>
+          )}
+
+          <div style={{
+            padding: '10px 14px',
+            background: theme.surfaceDeep,
+            border: `1px solid ${theme.border}`,
+            borderRadius: theme.radiusSmall,
+            marginBottom: '10px',
+          }}>
+            <div style={{ fontSize: '11px', fontWeight: 600, color: theme.textMuted, marginBottom: '8px' }}>
+              Divergence Feed
+            </div>
+            {divergenceAlerts.length === 0 && dataErrors.divergences ? (
+              <div style={{ fontSize: '11px', color: theme.warning }}>Divergence evidence unavailable: {dataErrors.divergences}</div>
+            ) : divergenceAlerts.length === 0 && !dataLoaded.divergences ? (
+              <div style={{ fontSize: '11px', color: theme.textDim }}>Loading divergence evidence…</div>
+            ) : divergenceAlerts.length === 0 ? (
+              <div style={{ fontSize: '11px', color: theme.textDim }}>no divergent command evidence</div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {divergenceAlerts.map((alert) => (
+                  <div
+                    key={alert.commandId}
+                    onClick={() => selectCommand(alert.commandId)}
+                    style={{
+                      padding: '8px 10px',
+                      border: `1px solid ${theme.divergent}66`,
+                      borderRadius: theme.radiusSmall,
+                      background: theme.surfaceRaised,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', marginBottom: '4px' }}>
+                      <div style={{ fontSize: '10px', color: theme.textMuted, fontWeight: 700 }}>{alert.commandId}</div>
+                      <div style={{ fontSize: '10px', color: theme.divergent, fontWeight: 700 }}>{alert.status}</div>
+                    </div>
+                    <div style={{ fontSize: '11px', color: theme.text, marginBottom: '3px' }}>{alert.intent}</div>
+                    <div style={{ fontSize: '10px', color: theme.textDim }}>
+                      by {alert.requestedBy} · {alert.reality?.classification ?? 'unknown'}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {divergenceAlerts.length > 0 && dataStale.divergences && (
+              <div style={{ fontSize: '10px', color: theme.warning, marginTop: '6px' }}>
+                Showing last successful divergence response; refresh failed.
+              </div>
+            )}
+          </div>
+
+          {/* Policy */}
           <div style={{
             padding: '10px 14px',
             background: theme.surfaceDeep,
