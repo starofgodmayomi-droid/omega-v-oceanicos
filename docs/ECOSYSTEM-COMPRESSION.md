@@ -4,6 +4,8 @@
 
 **Recorded:** 2026-09-21
 
+**Runtime-boundary update:** 2026-11-01
+
 ## Purpose and boundary
 
 This document compresses the currently observable Oceanicos ecosystem toward `starofgodmayomi-droid/omega-v-oceanicos`. It is a provenance record, not a claim that every named concept, product, service, or repository exists. The governing distinction is:
@@ -163,10 +165,10 @@ This mapping keeps the diagram maximally expressive without allowing presentatio
 | Blueprint claim | Repository evidence | Status and limit |
 |---|---|---|
 | The “Glober” is a global source of noisy and deceptive information; “99%” is noise | No global corpus, prevalence study, or internet-wide observation is part of this repository record | `UNVERIFIED`; the 99% figure is unsupported here and must not be repeated as fact |
-| Frontier AI providers process intent and return generated output | A search of `apps/api/src` did not identify an OpenAI, Anthropic, Gemini, or other frontier-model provider integration | `NOT OBSERVED` in the inspected API source; not a claim that no integration exists elsewhere or outside this repository |
-| KAI scans intent for scam patterns before model invocation | The inspected API source did not expose a scam/phishing classifier or pattern-screening flow; `@oceanicos/remember` supplies memory and integrity functions | `NOT OBSERVED` as a runtime shield; memory and integrity checking do not classify intent |
+| An external model may process intent and return generated output | `apps/api/src/invisible-computer.ts` supports an OpenAI-compatible chat-completions request when configured; `apps/api/src/execute-route.ts` requires `useExternalModel: true` per request | `SUPPORTED` as an optional code path; provider availability is not observed. When opted in, the unredacted intent is sent to the configured endpoint |
+| KAI screens intent before model invocation | `scanIntent` applies deterministic regular-expression matching for a limited set of known phrases before ELION; the therapeutic transition uses the same matcher | `SUPPORTED` as limited pattern screening only; not a general scam, fraud, phishing, or crisis classifier, and false positives/negatives remain possible |
 | ELION calls external APIs to execute the requested task | Omega command routes model admission and bounded local execution; the documented executor records a local action and consequence | `SUPPORTED` for bounded local command flow; external marketplace, payment, model, and social actions are not established by that flow |
-| OMEGA compares expected and observed state | The command lifecycle records execution and reality observations, then classifies outcomes such as `VERIFIED`, `DIVERGENT`, or `UNKNOWN` | `SUPPORTED` for the implemented command contract; a matching state is scoped evidence, not proof of broad real-world truth |
+| OMEGA compares expected and observed state | The command lifecycle records execution and reality observations; the therapeutic route labels caller-supplied matches `UNKNOWN` and non-independent | `SUPPORTED` for bounded comparisons; caller-supplied state and a matching executor record do not independently verify reality |
 | Output becomes one SHA-256 hash and only verified truth enters immutable memory | The Remember package verifies a local hash chain and links observation with verification; attestation and hashes establish integrity/provenance properties within their defined inputs | `PARTIALLY SUPPORTED`; a digest does not establish truth, the ledger is not proof against every privileged storage modification, and not every AI output is automatically committed |
 | Human, internet, and AI form one “Entity” or feedback loop | The repo models human intent, bounded transitions, observation, reconciliation, and memory as an architecture | `CONCEPTUAL`; no universal integration, identity, consciousness, ownership, or global control follows from that model |
 | `30013030` is a system checksum or code | No executable contract or verifier for this value was identified in the inspected implementation path | `SYMBOLIC / UNVERIFIED`; it has no authority, security, or attestation effect unless a specific protocol defines and verifies it |
@@ -178,12 +180,13 @@ human-supplied request
   → validate a bounded command and its context
   → record an admission decision and authority fields
   → execute only the implemented bounded transition
-  → observe a supplied or runtime state
+  → optionally request an external model only after explicit request opt-in
+  → compare a supplied observation or recorded output within its stated limit
   → classify the comparison as VERIFIED | DIVERGENT | UNKNOWN
   → retain evidence in the configured local persistence and memory surfaces
 ```
 
-This is not currently equivalent to “internet input → scam shield → frontier model → verified commercial action.” In particular, the local command executor is not evidence that a buyer was found, a payment moved, a creator was paid, or a market opportunity was safe. A self-reported operator string is not identity proof. A successful hash-chain check is evidence of chain integrity under the implementation's storage and key assumptions; it is not an oracle for factual correctness.
+This is not equivalent to “internet input → scam shield → frontier model → verified commercial action.” The regex matcher is not a general scam or crisis classifier. The external model path is opt-in and its deployment/availability is unverified; its output digest verifies text integrity, not factual truth. The local command executor is not evidence that a buyer was found, a payment moved, a creator was paid, or a market opportunity was safe. A self-reported operator string is not identity proof. A successful hash-chain check is evidence of chain integrity under the implementation's storage and key assumptions; it is not an oracle for factual correctness.
 
 ### Reverse-engineered conclusion
 

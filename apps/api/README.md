@@ -158,6 +158,16 @@ POST /v1/value-navigator/proposals
 POST /v1/value-navigator/proposals/:proposalId/observe
 ```
 
+`POST /api/execute` uses ELION's local deterministic composer by default. A
+request may include `useExternalModel: true` to opt into the server-configured
+OpenAI-compatible provider; if configured, the complete intent is sent as
+entered, without automatic redaction. KAI's current guard is deterministic
+pattern matching for a limited set of phrases, not a general fraud or crisis
+classifier. No model is contacted when opt-in is absent, the credential is
+missing, or KAI blocks a matching intent. Provider availability and model
+output are not independently validated facts; the output digest verifies text
+integrity only.
+
 Value Navigator proposals always remain `decision: REVIEW`,
 `authorized: false`, and `NOT_EXECUTED`. Observations are supplied by the
 caller; a `VERIFIED` result means only that the submitted source/evidence and

@@ -25,6 +25,7 @@ import { OmegaCommandStore, OmegaIdempotencyConflictError, registerOmegaRoutes }
 import { registerMeshValidationRoute } from './mesh-route.js';
 import { KaiMemoryStore } from './kai-memory.js';
 import { registerExecuteRoute } from './execute-route.js';
+import { scanIntent } from './invisible-computer.js';
 import {
   ENCRYPTION_ALGORITHM,
   appendEvent,
@@ -528,11 +529,76 @@ export function createApp(
   fastify.post('/v1/therapeutic/transition', async (request, reply) => {
     const body = request.body && typeof request.body === 'object' && !Array.isArray(request.body) ? request.body as Record<string, unknown> : {};
     const intent = typeof body.intent === 'string' ? body.intent.trim() : '';
+    if (Object.prototype.hasOwnProperty.call(body, 'requestedBy') && typeof body.requestedBy !== 'string') {
+      return jsonError(reply, 400, 'THERAPEUTIC_REQUESTED_BY_INVALID');
+    }
     const requestedBy = typeof body.requestedBy === 'string' && body.requestedBy.trim() ? body.requestedBy.trim() : 'dashboard-operator';
-    const expectedOutcome = typeof body.expectedOutcome === 'string' ? body.expectedOutcome.trim() : 'bounded local action completed and observed';
-    const observedState = typeof body.observedState === 'string' ? body.observedState.trim() : expectedOutcome;
-    const storedContext = body.context && typeof body.context === 'object' && !Array.isArray(body.context) ? body.context as Record<string, string> : {};
+    if (requestedBy.length > 128) return jsonError(reply, 400, 'THERAPEUTIC_REQUESTED_BY_TOO_LONG', { maxLength: 128 });
+    if (Object.prototype.hasOwnProperty.call(body, 'expectedOutcome') && typeof body.expectedOutcome !== 'string') {
+      return jsonError(reply, 400, 'THERAPEUTIC_EXPECTED_OUTCOME_INVALID');
+    }
+    const expectedOutcome = typeof body.expectedOutcome === 'string' ? body.expectedOutcome.trim() : 'bounded local action completed';
+    const observedState = typeof body.observedState === 'string' ? body.observedState.trim() : '';
+    const contextEntries: Array<[string, string]> = [];
+    if (Object.prototype.hasOwnProperty.call(body, 'context')) {
+      if (!body.context || typeof body.context !== 'object' || Array.isArray(body.context)) {
+        return jsonError(reply, 400, 'THERAPEUTIC_CONTEXT_INVALID');
+      }
+      const entries = Object.entries(body.context as Record<string, unknown>);
+      if (entries.length > 32) return jsonError(reply, 400, 'THERAPEUTIC_CONTEXT_TOO_LARGE', { maxEntries: 32 });
+      for (const [key, value] of entries) {
+        if (
+          key.length > 64 ||
+          key === '__proto__' ||
+          key === 'prototype' ||
+          key === 'constructor' ||
+          typeof value !== 'string' ||
+          value.length > 512
+        ) {
+          return jsonError(reply, 400, 'THERAPEUTIC_CONTEXT_ENTRY_INVALID', { maxKeyLength: 64, maxValueLength: 512 });
+        }
+        contextEntries.push([key, value]);
+      }
+    }
+    const storedContext = Object.fromEntries(contextEntries);
     if (!intent) return jsonError(reply, 400, 'THERAPEUTIC_TRANSITION_INTENT_REQUIRED');
+    if (intent.length > 2000) return jsonError(reply, 400, 'THERAPEUTIC_TRANSITION_INTENT_TOO_LONG', { maxLength: 2000 });
+    if (Object.prototype.hasOwnProperty.call(body, 'observedState') && typeof body.observedState !== 'string') {
+      return jsonError(reply, 400, 'THERAPEUTIC_OBSERVED_STATE_INVALID');
+    }
+    if (observedState.length > 512) return jsonError(reply, 400, 'THERAPEUTIC_OBSERVED_STATE_TOO_LONG', { maxLength: 512 });
+    if (expectedOutcome.length > 512) return jsonError(reply, 400, 'THERAPEUTIC_EXPECTED_OUTCOME_TOO_LONG', { maxLength: 512 });
+    if (!expectedOutcome) return jsonError(reply, 400, 'THERAPEUTIC_EXPECTED_OUTCOME_REQUIRED');
+    if (Object.prototype.hasOwnProperty.call(body, 'idempotencyKey') && typeof body.idempotencyKey !== 'string') {
+      return jsonError(reply, 400, 'THERAPEUTIC_IDEMPOTENCY_KEY_INVALID');
+    }
+    if (typeof body.idempotencyKey === 'string' && body.idempotencyKey.length > 128) {
+      return jsonError(reply, 400, 'THERAPEUTIC_IDEMPOTENCY_KEY_TOO_LONG', { maxLength: 128 });
+    }
+    const shield = scanIntent(intent);
+    if (shield.blocked) {
+      return {
+        success: true,
+        model: 'omega.therapeutic-state-machine.v1',
+        commandId: null,
+        status: 'DIVERGENT',
+        evaluatedAt: new Date().toISOString(),
+        transition: {
+          kai: { status: 'DIVERGENT', authority: 'pattern-screening-only' },
+          elion: { status: 'NOT_EXECUTED', authority: 'bounded-execution' },
+          omega: { status: 'NOT_EXECUTED', authority: 'verification-gate' },
+        },
+        evidence: {
+          intent,
+          requestedBy,
+          expectedOutcome,
+          observedState: null,
+          commandStatus: 'NOT_CREATED',
+          matchedPatterns: shield.matchedLabels,
+          nextAction: 'review the flagged intent; no command or transition was created',
+        },
+      };
+    }
     const creation = omegaCommands.create({
       intent,
       requestedBy,
@@ -564,15 +630,36 @@ export function createApp(
       result: { command, status: nextStatus, waterFlow, execution: { stateAfter: execution.record.stateAfter ?? '', consequence: execution.record.consequence ?? '', attestationId: execution.attestationId ?? 'local-therapeutic-transition' }, nextAction: 'observe the actual state and reconcile against the expected outcome' },
     });
     const verification = verifyExecutedReality(execution, () => observedState);
-    const status: 'VERIFIED' | 'DIVERGENT' | 'UNKNOWN' = verification.status === 'VERIFIED' ? 'VERIFIED' : verification.status === 'DIVERGENT' ? 'DIVERGENT' : 'UNKNOWN';
+    const callerMatchedRecord = verification.status === 'VERIFIED';
+    const status: 'DIVERGENT' | 'UNKNOWN' = verification.status === 'DIVERGENT' ? 'DIVERGENT' : 'UNKNOWN';
+    const comparison = callerMatchedRecord
+      ? 'MATCH' as const
+      : verification.status === 'DIVERGENT'
+        ? 'DIVERGENT' as const
+        : 'UNAVAILABLE' as const;
+    const change = callerMatchedRecord
+      ? {
+          ...verification.record,
+          consequence: `${verification.record.consequence ?? 'transition executed'}; caller-supplied state matched the executor record; not independently verified`,
+        }
+      : verification.record;
+    const nextAction = callerMatchedRecord
+      ? 'caller-supplied state matched the executor record; this is a comparison, not independent verification'
+      : status === 'DIVERGENT'
+        ? 'preserve the divergence and review the supplied evidence before continuing'
+        : 'gather an independent observation before claiming verification';
     const reality = {
       kind: 'supplied-state' as const,
       observedState,
       evidence: verification.evidence,
       observedAt: new Date().toISOString(),
       classification: status,
+      comparison,
+      observationSource: 'caller-supplied' as const,
+      independentObservation: false as const,
     };
     const resolved = omegaCommands.update(withExecution, {
+      change,
       status,
       result: {
         command: withExecution,
@@ -580,7 +667,7 @@ export function createApp(
         waterFlow,
         execution: withExecution.result?.execution,
         reality,
-        nextAction: status === 'VERIFIED' ? 'record the learning delta and select the next bounded change' : 'preserve the divergence and review the evidence before continuing',
+        nextAction,
       },
     });
     const integrity = ledgerMemory.verifyChain();
@@ -610,7 +697,11 @@ export function createApp(
         expectedOutcome,
         observedState,
         commandStatus: resolved.status,
-        nextAction: resolved.result?.nextAction ?? 'review the bounded evidence before continuing',
+        comparison,
+        observationSource: 'caller-supplied',
+        independentObservation: false,
+        matchedPatterns: [],
+        nextAction: resolved.result?.nextAction ?? nextAction,
       },
     };
   });

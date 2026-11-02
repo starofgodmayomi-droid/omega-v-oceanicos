@@ -12,11 +12,34 @@ REALITY → OBSERVE → VERIFY → REMEMBER → ATTEST → NEXT FINITE TRANSITIO
 
 The Therapeutic State Machine expresses that loop in human-centered language:
 
-- KAI holds memory, continuity, and scam/poison filtering.
+- KAI holds memory, continuity, and limited known-phrase screening.
 - ELION performs bounded execution.
 - OMEGA verifies expected vs observed outcomes and fails closed on divergence.
 
 This is a system design for bounded action and evidence, not an argument for omnipotent AI authority.
+
+## Runtime limits
+
+The current API implements a bounded local transition, not a clinical
+therapeutic service, crisis triage system, or LangGraph runtime. Its KAI check
+is a deterministic matcher for a limited set of known phrases; it can miss
+scams and produce false positives, and it does not detect crises or assess
+mental health. Do not rely on it as an emergency or professional-support
+service.
+
+`POST /v1/therapeutic/transition` does not mutate a remote system. The
+executor's local record is not an independent observation. A matching
+caller-supplied `observedState` is therefore returned as `UNKNOWN` with
+`comparison: MATCH` and `independentObservation: false`; a mismatch remains
+`DIVERGENT`, and a missing observation remains `UNKNOWN`. Only an independent,
+source-backed observation can support a stronger claim, and the route does not
+perform one.
+
+For `POST /api/execute`, the local composer is the default. External-model
+requests require `useExternalModel: true` and a configured credential. When
+enabled, the intent is sent as entered to the configured provider without
+automatic redaction. The UI discloses this behavior and keeps opt-in disabled
+by default.
 
 ## Core law
 
@@ -44,13 +67,13 @@ NO FABRICATED COMPLETION.
 
 ### KAI — memory and guardrail
 
-KAI is the continuity layer. It remembers what happened, preserves lineage, observes intent, screens for fraud or scam patterns, and records the ledger of transitions.
+KAI is the continuity layer. It remembers what happened, preserves lineage, applies a limited known-phrase screen, and records bounded transitions. This screen is not a general fraud, scam, or crisis classifier.
 
 It is responsible for:
 
 - contextual memory
 - bounded provenance
-- scam and fraud filtering
+- limited known-phrase pattern screening
 - prior-state continuity
 - immutable event lineage
 
@@ -58,12 +81,12 @@ KAI must not authorize action merely because it can interpret intent. It can fil
 
 ### ELION — execution surface
 
-ELION is the bounded execution engine. It performs the task inside declared scope, authority limits, and policy boundaries.
+ELION is the bounded execution surface. It uses a local deterministic composer by default; an external model call is an explicit, per-request opt-in and sends the unredacted intent to the configured provider.
 
 It is responsible for:
 
 - turning accepted intent into a concrete action plan
-- invoking bounded tool or API flows
+- invoking bounded local flows or explicitly opted-in model requests
 - preserving explicit constraints and stop conditions
 - returning observable output for verification
 
@@ -71,7 +94,7 @@ ELION does not decide reality; it executes within a bounded contract.
 
 ### OMEGA — verification gate
 
-OMEGA checks the promised outcome against the actual outcome. It asks whether the result is real, supported, and consistent with the declared contract.
+OMEGA checks bounded output properties and supplied observations against the declared contract. A digest or matching caller-supplied value does not establish factual truth or independent observation.
 
 It is responsible for:
 

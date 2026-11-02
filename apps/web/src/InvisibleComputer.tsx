@@ -73,6 +73,7 @@ function shortHash(hash: string | null): string {
 
 export function InvisibleComputer() {
   const [intent, setIntent] = useState('');
+  const [useExternalModel, setUseExternalModel] = useState(false);
   const [running, setRunning] = useState(false);
   const [verdict, setVerdict] = useState<Verdict>('NOT_EXECUTED');
   const [result, setResult] = useState<ExecutionResult | null>(null);
@@ -118,7 +119,7 @@ export function InvisibleComputer() {
       const response = await fetch(`${API_BASE_URL}/execute`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ intent: trimmed }),
+        body: JSON.stringify({ intent: trimmed, useExternalModel }),
       });
       const text = await response.text();
       const payload = text ? JSON.parse(text) : null;
@@ -245,6 +246,30 @@ export function InvisibleComputer() {
           {running ? 'EXECUTING' : 'EXECUTE'}
         </button>
       </div>
+      <label
+        style={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: '8px',
+          marginTop: '10px',
+          color: theme.textMuted,
+          fontSize: '12px',
+          lineHeight: 1.5,
+        }}
+      >
+        <input
+          type="checkbox"
+          checked={useExternalModel}
+          onChange={(event) => setUseExternalModel(event.target.checked)}
+          disabled={running}
+          style={{ marginTop: '2px' }}
+        />
+        <span>
+          Send this intent to the server-configured external model. Leave unchecked to use the
+          local deterministic composer. The intent is sent as entered; it is not automatically
+          redacted.
+        </span>
+      </label>
 
       {/* Live execution terminal */}
       <div
