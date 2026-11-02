@@ -539,7 +539,7 @@ export function createApp(
     }
     const expectedOutcome = typeof body.expectedOutcome === 'string' ? body.expectedOutcome.trim() : 'bounded local action completed';
     const observedState = typeof body.observedState === 'string' ? body.observedState.trim() : '';
-    const storedContext: Record<string, string> = Object.create(null) as Record<string, string>;
+    const contextEntries: Array<[string, string]> = [];
     if (Object.prototype.hasOwnProperty.call(body, 'context')) {
       if (!body.context || typeof body.context !== 'object' || Array.isArray(body.context)) {
         return jsonError(reply, 400, 'THERAPEUTIC_CONTEXT_INVALID');
@@ -547,12 +547,20 @@ export function createApp(
       const entries = Object.entries(body.context as Record<string, unknown>);
       if (entries.length > 32) return jsonError(reply, 400, 'THERAPEUTIC_CONTEXT_TOO_LARGE', { maxEntries: 32 });
       for (const [key, value] of entries) {
-        if (key.length > 64 || typeof value !== 'string' || value.length > 512) {
+        if (
+          key.length > 64 ||
+          key === '__proto__' ||
+          key === 'prototype' ||
+          key === 'constructor' ||
+          typeof value !== 'string' ||
+          value.length > 512
+        ) {
           return jsonError(reply, 400, 'THERAPEUTIC_CONTEXT_ENTRY_INVALID', { maxKeyLength: 64, maxValueLength: 512 });
         }
-        storedContext[key] = value;
+        contextEntries.push([key, value]);
       }
     }
+    const storedContext = Object.fromEntries(contextEntries);
     if (!intent) return jsonError(reply, 400, 'THERAPEUTIC_TRANSITION_INTENT_REQUIRED');
     if (intent.length > 2000) return jsonError(reply, 400, 'THERAPEUTIC_TRANSITION_INTENT_TOO_LONG', { maxLength: 2000 });
     if (Object.prototype.hasOwnProperty.call(body, 'observedState') && typeof body.observedState !== 'string') {

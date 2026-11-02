@@ -186,6 +186,7 @@ test('therapeutic transition rejects malformed and oversized observation inputs'
       { intent: 'Record a bounded transition', observedState: null },
       { intent: 'Record a bounded transition', expectedOutcome: 'x'.repeat(513) },
       { intent: 'Record a bounded transition', context: { detail: 42 } },
+      { intent: 'Record a bounded transition', context: Object.fromEntries([['__proto__', 'unsafe']]) },
       { intent: 'Record a bounded transition', idempotencyKey: 'x'.repeat(129) },
     ];
     for (const payload of invalidPayloads) {
@@ -195,7 +196,8 @@ test('therapeutic transition rejects malformed and oversized observation inputs'
         payload,
       });
       assert.equal(response.statusCode, 400);
-      assert.equal(response.json().success, false);
+      const body = response.json();
+      assert.ok(body.success === false || body.code === 'FST_ERR_CTP_INVALID_JSON_BODY', response.body);
     }
   } finally {
     await app.close();
