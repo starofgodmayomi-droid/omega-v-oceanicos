@@ -256,6 +256,72 @@ test('therapeutic observations remain caller-supplied comparisons, not independe
   }
 });
 
+test('therapeutic idempotency keys reject changed observations without rewriting evidence', async () => {
+  const app = createApp(':memory:', false);
+  try {
+    const request = (observedState: string) => app.inject({
+      method: 'POST',
+      url: '/v1/therapeutic/transition',
+      payload: {
+        intent: 'Record a bounded idempotent transition',
+        expectedOutcome: 'expected state',
+        observedState,
+        idempotencyKey: 'therapeutic-observation-idempotency',
+      },
+    });
+
+    const first = await request('expected state');
+    assert.equal(first.statusCode, 200);
+    assert.equal(first.json().status, 'UNKNOWN');
+
+    const firstProvenance = await app.inject({
+      method: 'GET',
+      url: `/v1/omega/commands/${first.json().commandId}/provenance`,
+    });
+    const firstCommand = await app.inject({
+      method: 'GET',
+      url: `/v1/omega/commands/${first.json().commandId}`,
+    });
+    const replay = await request('expected state');
+    assert.equal(replay.statusCode, 200);
+    assert.equal(replay.json().commandId, first.json().commandId);
+    assert.equal(replay.json().status, 'UNKNOWN');
+    assert.equal(replay.json().evaluatedAt, first.json().evaluatedAt);
+
+    const replayProvenance = await app.inject({
+      method: 'GET',
+      url: `/v1/omega/commands/${first.json().commandId}/provenance`,
+    });
+    assert.deepEqual(
+      replayProvenance.json().provenance.events,
+      firstProvenance.json().provenance.events,
+      'an identical idempotent retry must not append events or execute the transition again'
+    );
+
+    const conflictingReplay = await request('unexpected state');
+    assert.equal(conflictingReplay.statusCode, 409);
+    assert.equal(conflictingReplay.json().error, 'OMEGA_IDEMPOTENCY_CONFLICT');
+
+    const stored = await app.inject({
+      method: 'GET',
+      url: `/v1/omega/commands/${first.json().commandId}`,
+    });
+    assert.equal(stored.statusCode, 200);
+    assert.equal(stored.json().command.status, 'UNKNOWN');
+    assert.equal(stored.json().reality.observedState, 'expected state');
+    assert.deepEqual(
+      stored.json().command.result,
+      firstCommand.json().command.result,
+      'an identical retry must preserve the stored command result'
+    );
+
+    const commands = await app.inject({ method: 'GET', url: '/v1/omega/commands' });
+    assert.equal(commands.json().commands.length, 1);
+  } finally {
+    await app.close();
+  }
+});
+
 test('authority below the required level halts NOT_EXECUTED and remembers nothing', async () => {
   const app = createApp(':memory:', false);
   try {

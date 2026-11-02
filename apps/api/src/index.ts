@@ -599,13 +599,58 @@ export function createApp(
         },
       };
     }
-    const creation = omegaCommands.create({
-      intent,
-      requestedBy,
-      workers: ['planner'],
-      idempotencyKey: typeof body.idempotencyKey === 'string' && body.idempotencyKey.trim() ? body.idempotencyKey.trim() : `therapeutic-${Date.now()}`,
-      context: { ...storedContext, therapeuticModel: 'omega.therapeutic-state-machine.v1', expectedOutcome },
-    });
+    let creation: ReturnType<OmegaCommandStore['create']>;
+    try {
+      creation = omegaCommands.create({
+        intent,
+        requestedBy,
+        workers: ['planner'],
+        idempotencyKey: typeof body.idempotencyKey === 'string' && body.idempotencyKey.trim() ? body.idempotencyKey.trim() : `therapeutic-${Date.now()}`,
+        context: {
+          ...storedContext,
+          therapeuticModel: 'omega.therapeutic-state-machine.v1',
+          expectedOutcome,
+          observedState,
+        },
+      });
+    } catch (error) {
+      if (error instanceof OmegaIdempotencyConflictError) {
+        return reply.status(409).send({ success: false, error: 'OMEGA_IDEMPOTENCY_CONFLICT' });
+      }
+      throw error;
+    }
+    if (!creation.created) {
+      const { command } = creation;
+      const cached = command.result;
+      if (!cached?.execution || !cached.reality) {
+        return reply.status(409).send({ success: false, error: 'OMEGA_IDEMPOTENCY_CONFLICT' });
+      }
+      const integrity = ledgerMemory.verifyChain();
+      return {
+        success: true,
+        model: 'omega.therapeutic-state-machine.v1',
+        commandId: command.commandId,
+        status: command.status,
+        evaluatedAt: cached.reality.observedAt,
+        transition: {
+          kai: { status: integrity.valid ? 'READY' : 'DEGRADED', authority: 'memory-only' },
+          elion: { status: 'READY', authority: 'bounded-execution' },
+          omega: { status: command.status, authority: 'verification-gate' },
+        },
+        evidence: {
+          intent: command.intent,
+          requestedBy: command.requestedBy,
+          expectedOutcome: command.context.expectedOutcome ?? expectedOutcome,
+          observedState: command.context.observedState ?? '',
+          commandStatus: command.status,
+          comparison: cached.reality.comparison ?? 'UNAVAILABLE',
+          observationSource: 'caller-supplied',
+          independentObservation: false,
+          matchedPatterns: [],
+          nextAction: cached.nextAction,
+        },
+      };
+    }
     let command = creation.command;
     const admitted = resolveChangeAdmission({
       ...command.change,
@@ -676,7 +721,7 @@ export function createApp(
       model: 'omega.therapeutic-state-machine.v1',
       commandId: resolved.commandId,
       status,
-      evaluatedAt: new Date().toISOString(),
+      evaluatedAt: reality.observedAt,
       transition: {
         kai: {
           status: integrity.valid ? 'READY' : 'DEGRADED',

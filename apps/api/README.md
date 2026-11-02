@@ -158,6 +158,13 @@ POST /v1/value-navigator/proposals
 POST /v1/value-navigator/proposals/:proposalId/observe
 ```
 
+`POST /v1/therapeutic/transition` records a bounded local transition; it does
+not perform a remote action or independently verify reality. Its optional
+`idempotencyKey` binds the intent, requester, expected outcome, context, and
+supplied observation. An identical retry replays the stored result without
+re-executing the transition. Reusing that key with a different request returns
+`409 OMEGA_IDEMPOTENCY_CONFLICT` without changing the existing command.
+
 `POST /api/execute` uses ELION's local deterministic composer by default. A
 request may include `useExternalModel: true` to opt into the server-configured
 OpenAI-compatible provider; if configured, the complete intent is sent as
