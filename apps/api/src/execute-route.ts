@@ -140,7 +140,7 @@ export function registerExecuteRoute(
     });
 
     // Step 2 — ELION execute: bounded answer, model or local composer.
-    const elion = await executeElion(intent, authorityLevel);
+    const elion = await executeElion(intent, authorityLevel, body.useExternalModel === true);
     recordStep(
       'ELION',
       'EXECUTE',

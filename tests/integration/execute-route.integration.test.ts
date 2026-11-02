@@ -67,6 +67,65 @@ test('POST /execute (the Vite proxy target) answers identically', async () => {
   }
 });
 
+test('external model execution requires explicit request opt-in and KAI screening runs first', async () => {
+  const previousKey = process.env.OMEGA_LLM_API_KEY;
+  const previousBaseUrl = process.env.OMEGA_LLM_BASE_URL;
+  const originalFetch = globalThis.fetch;
+  const providerCalls: Array<{ url: string; authorization: string | null; prompt: string }> = [];
+  process.env.OMEGA_LLM_API_KEY = 'test-only-key';
+  process.env.OMEGA_LLM_BASE_URL = 'https://provider.invalid/v1';
+  globalThis.fetch = async (input, init) => {
+    const requestBody = JSON.parse(String(init?.body)) as {
+      messages: Array<{ role: string; content: string }>;
+    };
+    providerCalls.push({
+      url: String(input),
+      authorization: new Headers(init?.headers).get('authorization'),
+      prompt: requestBody.messages.find((message) => message.role === 'user')?.content ?? '',
+    });
+    return new Response(JSON.stringify({
+      choices: [{ message: { content: 'A bounded external-model test response.' } }],
+    }), { status: 200, headers: { 'content-type': 'application/json' } });
+  };
+
+  const app = createApp(':memory:', false);
+  try {
+    const local = await app.inject({
+      method: 'POST',
+      url: '/api/execute',
+      payload: { intent: 'Explain a safe local test' },
+    });
+    assert.equal(local.json().engine, 'local-deterministic');
+    assert.equal(providerCalls.length, 0, 'configured credentials alone must not trigger egress');
+
+    const optedIn = await app.inject({
+      method: 'POST',
+      url: '/api/execute',
+      payload: { intent: 'Explain a safe external test', useExternalModel: true },
+    });
+    assert.equal(optedIn.json().engine, 'llm:gpt-4o-mini');
+    assert.equal(providerCalls.length, 1);
+    assert.equal(providerCalls[0].url, 'https://provider.invalid/v1/chat/completions');
+    assert.equal(providerCalls[0].authorization, 'Bearer test-only-key');
+    assert.ok(providerCalls[0].prompt.includes('Explain a safe external test'));
+
+    const blocked = await app.inject({
+      method: 'POST',
+      url: '/api/execute',
+      payload: { intent: 'Urgent send money now for guaranteed returns', useExternalModel: true },
+    });
+    assert.equal(blocked.json().status, 'DIVERGENT');
+    assert.equal(providerCalls.length, 1, 'KAI screening must block before provider egress');
+  } finally {
+    await app.close();
+    globalThis.fetch = originalFetch;
+    if (previousKey === undefined) delete process.env.OMEGA_LLM_API_KEY;
+    else process.env.OMEGA_LLM_API_KEY = previousKey;
+    if (previousBaseUrl === undefined) delete process.env.OMEGA_LLM_BASE_URL;
+    else process.env.OMEGA_LLM_BASE_URL = previousBaseUrl;
+  }
+});
+
 test('KAI Shield halts a fraud pattern with DIVERGENT and remembers nothing', async () => {
   const app = createApp(':memory:', false);
   try {
@@ -91,6 +150,105 @@ test('KAI Shield halts a fraud pattern with DIVERGENT and remembers nothing', as
 
     const memory = await app.inject({ method: 'GET', url: '/api/kai/memory' });
     assert.equal(memory.json().total, 0);
+  } finally {
+    await app.close();
+  }
+});
+
+test('therapeutic transition blocks known patterns before creating a command', async () => {
+  const app = createApp(':memory:', false);
+  try {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/v1/therapeutic/transition',
+      payload: { intent: 'Urgent send money now for guaranteed returns' },
+    });
+    const body = response.json();
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(body.status, 'DIVERGENT');
+    assert.equal(body.commandId, null);
+    assert.equal(body.evidence.commandStatus, 'NOT_CREATED');
+    assert.ok(body.evidence.matchedPatterns.length > 0);
+    assert.equal(body.transition.elion.status, 'NOT_EXECUTED');
+
+    const commands = await app.inject({ method: 'GET', url: '/v1/omega/commands' });
+    assert.equal(commands.json().commands.length, 0);
+  } finally {
+    await app.close();
+  }
+});
+
+test('therapeutic transition rejects malformed and oversized observation inputs', async () => {
+  const app = createApp(':memory:', false);
+  try {
+    const invalidPayloads = [
+      { intent: 'Record a bounded transition', observedState: null },
+      { intent: 'Record a bounded transition', expectedOutcome: 'x'.repeat(513) },
+      { intent: 'Record a bounded transition', context: { detail: 42 } },
+      { intent: 'Record a bounded transition', idempotencyKey: 'x'.repeat(129) },
+    ];
+    for (const payload of invalidPayloads) {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/v1/therapeutic/transition',
+        payload,
+      });
+      assert.equal(response.statusCode, 400);
+      assert.equal(response.json().success, false);
+    }
+  } finally {
+    await app.close();
+  }
+});
+
+test('therapeutic observations remain caller-supplied comparisons, not independent verification', async () => {
+  const app = createApp(':memory:', false);
+  try {
+    const matching = await app.inject({
+      method: 'POST',
+      url: '/v1/therapeutic/transition',
+      payload: {
+        intent: 'Record a bounded local transition',
+        expectedOutcome: 'local state reached',
+        observedState: 'local state reached',
+        idempotencyKey: 'therapeutic-observation-match',
+      },
+    });
+    const matchingBody = matching.json();
+    assert.equal(matchingBody.status, 'UNKNOWN');
+    assert.equal(matchingBody.evidence.comparison, 'MATCH');
+    assert.equal(matchingBody.evidence.observationSource, 'caller-supplied');
+    assert.equal(matchingBody.evidence.independentObservation, false);
+
+    const missing = await app.inject({
+      method: 'POST',
+      url: '/v1/therapeutic/transition',
+      payload: {
+        intent: 'Record a transition without an observation',
+        expectedOutcome: 'expected state',
+        idempotencyKey: 'therapeutic-observation-missing',
+      },
+    });
+    const missingBody = missing.json();
+    assert.equal(missingBody.status, 'UNKNOWN');
+    assert.equal(missingBody.evidence.observedState, '');
+    assert.equal(missingBody.evidence.comparison, 'UNAVAILABLE');
+
+    const divergent = await app.inject({
+      method: 'POST',
+      url: '/v1/therapeutic/transition',
+      payload: {
+        intent: 'Record a bounded transition with a mismatch',
+        expectedOutcome: 'expected state',
+        observedState: 'different state',
+        idempotencyKey: 'therapeutic-observation-divergent',
+      },
+    });
+    const divergentBody = divergent.json();
+    assert.equal(divergentBody.status, 'DIVERGENT');
+    assert.equal(divergentBody.evidence.comparison, 'DIVERGENT');
+    assert.equal(divergentBody.evidence.independentObservation, false);
   } finally {
     await app.close();
   }

@@ -254,8 +254,8 @@ export function reconcileEvidence(input: {
 }
 
 /**
- * ELION's local composer. Used when no model credential is configured, and
- * labelled as such so the answer is never mistaken for a model claim.
+ * ELION's local composer. It remains the default unless the caller explicitly
+ * opts into an external model and a credential is configured.
  */
 export function composeLocalElionResponse(intent: string, authorityLevel: AuthorityLevel): string {
   const boundedIntent = intent.trim();
@@ -266,7 +266,7 @@ export function composeLocalElionResponse(intent: string, authorityLevel: Author
     `What is UNKNOWN: whether the intent can be carried out safely — that requires human authorization at authority level ${authorityLevel}.`,
     'Next finite step: review this bounded answer, then authorize one action at a time.',
     '',
-    'Evidence: local deterministic composer (no OMEGA_LLM_API_KEY configured); this is a bounded template, not a model answer.',
+    'Evidence: local deterministic composer; no external model was used. This is a bounded template, not a model answer.',
     "Ω∞v ::= VERIFY(ΔREALITY) · ATTEST, DON'T ASSERT.",
   ].join('\n');
 }
@@ -284,16 +284,17 @@ const MODEL_TIMEOUT_MS = 20_000;
 /**
  * Step 2 — ELION turns the safe intent into an answer.
  *
- * With `OMEGA_LLM_API_KEY` set, the intent is sent to an OpenAI-compatible
- * chat completion endpoint using KAI_SYSTEM_PROMPT. Without it (or when the
- * call fails) nothing is invented: the local composer answers and the engine
- * field records which path produced the text.
+ * The intent is sent to an OpenAI-compatible chat-completions endpoint only
+ * when the request opts in and `OMEGA_LLM_API_KEY` is configured. Otherwise
+ * the local composer answers. A failed opted-in call returns no invented
+ * output; the engine field records which path produced the text.
  */
 export async function executeElion(
   intent: string,
-  authorityLevel: AuthorityLevel
+  authorityLevel: AuthorityLevel,
+  useExternalModel = false
 ): Promise<ElionResult> {
-  const apiKey = process.env.OMEGA_LLM_API_KEY?.trim();
+  const apiKey = useExternalModel ? process.env.OMEGA_LLM_API_KEY?.trim() : '';
   if (!apiKey) {
     return {
       output: composeLocalElionResponse(intent, authorityLevel),
