@@ -91,10 +91,6 @@ export function registerPipelineRoute(
       });
     }
 
-    const observedState =
-      typeof body.observedState === 'string' && body.observedState.trim()
-        ? body.observedState.trim()
-        : undefined;
     const requestedAfter =
       typeof compile?.transition?.requestedStateAfter === 'string'
         ? compile.transition.requestedStateAfter
@@ -134,18 +130,7 @@ export function registerPipelineRoute(
         registry,
         workerId: typeof body.workerId === 'string' ? body.workerId : undefined,
         changeId: typeof body.changeId === 'string' ? body.changeId : undefined,
-        handler:
-          body.handlerStateAfter && typeof body.handlerStateAfter === 'string'
-            ? () => ({
-                stateAfter: String(body.handlerStateAfter).trim(),
-                consequence: typeof body.handlerConsequence === 'string' ? body.handlerConsequence : undefined,
-              })
-            : undefined,
-        observeState: observedState ? () => observedState : undefined,
         memory,
-        realityAttestationKey: causalMemoryKey,
-        realityAttestationSignerId: process.env.OMEGA_REALITY_ATTESTATION_SIGNER,
-        realityAttestationKeyVersion: process.env.OMEGA_REALITY_ATTESTATION_KEY_VERSION,
         waterFlowMaxSteps,
       });
 
@@ -164,10 +149,12 @@ export function registerPipelineRoute(
           authorized: result.record?.authorized ?? false,
           executionStatus: result.execution?.status ?? null,
           attestationId: result.execution?.attestationId ?? result.record?.attestationId ?? null,
-          realityStatus: result.reality?.status ?? null,
+          realityStatus: result.reality?.status ?? 'UNKNOWN',
           expectedState: result.reality?.expectedState ?? result.record?.stateAfter ?? requestedAfter ?? null,
-          observedState: result.reality?.observedState ?? observedState ?? null,
-          realityEvidence: result.reality?.evidence ?? null,
+          observedState: result.reality?.observedState ?? null,
+          realityEvidence:
+            result.reality?.evidence ??
+            'independent server-owned observation unavailable; caller-supplied state claims were not compared',
           realityAttestation: result.realityAttestation ?? null,
           waterFlow: result.waterFlow,
           durableMemory: Boolean(causalMemoryPath && causalMemoryKey),

@@ -29,7 +29,7 @@ async function removeTemporaryDirectory(directory: string): Promise<void> {
 }
 
 describe('live API pipeline → durable causal memory', () => {
-  it('registers POST /v1/pipeline and returns a replayable C7 record', async () => {
+  it('does not verify matching caller-supplied state or mint a reality attestation', async () => {
     const directory = mkdtempSync(join(tmpdir(), 'omega-api-causal-'));
     const memoryPath = join(directory, 'causal.jsonl');
     const previousPath = process.env.OMEGA_CAUSAL_MEMORY_PATH;
@@ -61,15 +61,18 @@ describe('live API pipeline → durable causal memory', () => {
         assert.equal(response.statusCode, 200);
         const body = response.json();
         assert.equal(body.success, true);
-        assert.equal(body.pipeline.stage, 'RECONCILE');
-        assert.equal(body.pipeline.realityStatus, 'VERIFIED');
+        assert.equal(body.pipeline.stage, 'EXECUTE');
+        assert.equal(body.pipeline.realityStatus, 'UNKNOWN');
+        assert.equal(body.pipeline.executionStatus, null);
+        assert.equal(body.pipeline.observedState, null);
+        assert.equal(body.pipeline.realityEvidence, 'independent server-owned observation unavailable; caller-supplied state claims were not compared');
+        assert.equal(body.pipeline.realityAttestation, null);
         assert.equal(body.pipeline.durableMemory, true);
         assert.equal(body.pipeline.memoryIntegrity, true);
-        assert.equal(body.pipeline.realityAttestation.changeId, 'api-causal-1');
 
         const memory = new FileCausalMemory(memoryPath, { key: 'api-causal-test-key' });
         assert.equal(memory.verifyIntegrity(), true);
-        assert.equal(memory.replay('api-causal-1')?.attestation.status, 'VERIFIED');
+        assert.equal(memory.replay('api-causal-1'), undefined);
       } finally {
         await app.close();
       }
@@ -202,7 +205,7 @@ describe('live API pipeline → durable causal memory', () => {
         assert.equal(body.pipeline.authorized, true);
         assert.equal(body.pipeline.executionStatus, null);
         assert.equal(body.pipeline.attestationId, null);
-        assert.equal(body.pipeline.realityStatus, null);
+        assert.equal(body.pipeline.realityStatus, 'UNKNOWN');
         assert.equal(body.pipeline.waterFlow.length, 3);
       } finally {
         await app.close();
