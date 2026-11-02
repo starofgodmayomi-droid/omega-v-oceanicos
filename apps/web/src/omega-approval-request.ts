@@ -5,6 +5,6 @@ export function omegaApprovalRequest(operatorId = 'dashboard-operator'): Request
       'content-type': 'application/json',
       'x-omega-operator-id': operatorId,
     },
-    body: JSON.stringify({ operator: operatorId }),
+    body: JSON.stringify({ operator: operatorId, policy: 'human-review' }),
   };
 }

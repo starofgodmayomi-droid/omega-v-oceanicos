@@ -1,6 +1,16 @@
 # Documentation
 
-Welcome to the Ω∞v Oceanicos documentation. Start here to understand the project and contribute effectively.
+This is the public documentation index for OCEANICOS and Ω∞v. It connects the project narrative, the runtime surfaces, and the implementation boundaries so the repo reads as one evidence-first system rather than a collection of disconnected documents.
+
+## Public README map
+
+- [README.md](../README.md) — repository mission, operating model, and evidence-first posture
+- [apps/README.md](../apps/README.md) — runnable application surfaces and local startup path
+- [packages/README.md](../packages/README.md) — package catalog and earned expansion model
+- [apps/api/README.md](../apps/api/README.md) — API contract and runtime evidence boundaries
+- [apps/web/README.md](../apps/web/README.md) — dashboard behavior and browser verification flow
+
+This documentation set is intentionally explicit about what is implemented, what is verified, and what is still a proposal or local-only state.
 
 ---
 
@@ -10,6 +20,8 @@ Welcome to the Ω∞v Oceanicos documentation. Start here to understand the proj
 
 - **[Charter](../CHARTER.md)** — Our living agnostic principles and decision-making philosophy
 - **[Manifest](../MANIFEST.md)** — Project mission, architecture, and verification loop
+- **[Entity Manifest](../ECOSYSTEM_BODY.md)** — the constitutional compression of Ω∞v OCEANICOS as a sovereign digital entity
+- **[Therapeutic State Machine](./THERAPEUTIC-STATE-MACHINE.md)** — KAI / ELION / OMEGA operating model for bounded human-centered execution
 - **[Contributing](../CONTRIBUTING.md)** — How to submit PRs and work within our verification-first culture
 
 ### Development
@@ -17,6 +29,8 @@ Welcome to the Ω∞v Oceanicos documentation. Start here to understand the proj
 - **[Development Setup](./DEVELOPMENT.md)** — Get the project running locally
 - **[MINI Kernel](./MINI.md)** — Zero → MINI → verified expansion (canonical growth model)
 - **[Architecture](./ARCHITECTURE.md)** — High-level system design from MINI outward
+- **[Ocean Point of View](./architecture/OCEAN-POINT-OF-VIEW.md)** — conceptual
+  oceanic model with explicit runtime and evidence boundaries
 - **[Repository inventory](./REPO_INVENTORY.md)** — workspace vs disk (current evidence)
 - **[Dependency map](./DEPENDENCY_MAP.md)** — declared edges, not health claims
 - **[Roadmap](./ROADMAP.md)** — Earned expansion phases
@@ -89,6 +103,9 @@ Welcome to the Ω∞v Oceanicos documentation. Start here to understand the proj
 - **[Whole ecosystem reality compression](./upgrades/WHOLE_ECOSYSTEM_REALITY_COMPRESSION_2026-10-04.md)**
   — source-labeled translation of the supplied Ω∞v architecture into repository
   boundaries and explicit unknowns.
+- **[Reverse-engineered ecosystem boundary](./ECOSYSTEM-COMPRESSION.md#reverse-engineered-boundary-glober-ai-and-compression)**
+  — repository evidence and limits for the supplied Glober, AI, and compression
+  blueprint.
 - **[One-body operating core](./upgrades/ONE_BODY_OPERATING_CORE_2026-10-04.md)**
   — the supplied operating-body architecture, mapped to a reality-bound
   governance spine, interchangeable provider examples, and truthful UI states.

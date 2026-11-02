@@ -59,6 +59,37 @@ describe('API runtime contracts', () => {
     }
   });
 
+  it('exposes the therapeutic state machine contract as live evidence', async () => {
+    const server = createServer(app as any);
+    await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', () => resolve()));
+    const address = server.address();
+    if (!address || typeof address === 'string') throw new Error('API server did not start');
+    try {
+      const response = await fetch(`http://127.0.0.1:${address.port}/v1/therapeutic/state`);
+      const body = (await response.json()) as {
+        success: boolean;
+        model: string;
+        state: {
+          kai: { status: string; authority: string };
+          elion: { status: string; authority: string };
+          omega: { status: string; authority: string };
+        };
+      };
+      expect(response.status).toBe(200);
+      expect(body).toMatchObject({
+        success: true,
+        model: 'omega.therapeutic-state-machine.v1',
+        state: {
+          kai: { status: 'READY', authority: 'memory-only' },
+          elion: { status: 'READY', authority: 'bounded-execution' },
+          omega: { status: 'READY', authority: 'verification-gate' },
+        },
+      });
+    } finally {
+      await new Promise<void>((resolve) => server.close(() => resolve()));
+    }
+  });
+
   it('supports optional allowlists while failing closed when allowlists are required', () => {
     expect(operatorIdentityAllowed(undefined, [])).toBe(true);
     expect(operatorIdentityAllowed('operator-a', [], true)).toBe(false);

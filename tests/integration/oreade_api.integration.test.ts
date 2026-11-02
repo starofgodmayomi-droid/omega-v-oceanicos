@@ -149,7 +149,7 @@ test('API persists a planner-only proposal without authorizing or executing it',
       url: `/v1/omega/commands/${body.command.commandId}/approve`,
       payload: {
         operator: 'dashboard-operator',
-        policy: 'oreade-symbolic-boundary.v1',
+        policy: 'human-review',
       },
     });
     assert.equal(admitted.statusCode, 200);

@@ -1,10 +1,8 @@
 # OCEANICOS Web Dashboard
 
-The OCEANICOS web dashboard is the visual surface for the Ω∞v verification loop:
-**Observe → Verify → Remember**, with earned layers for attestation, display,
-learning, and return.
+This is the public README for the OCEANICOS browser interface. It presents the visual surface for the Ω∞v verification loop: **Observe → Verify → Remember**, with earned layers for attestation, display, learning, and return.
 
-Visualizes the verification loop in real-time with an interactive interface.
+The dashboard displays API responses and lifecycle state; update timing depends on API and event-stream availability. It does not create authority or production truth on its own.
 
 ## Quick Start
 
@@ -50,6 +48,8 @@ authorize consequential action by itself.
 - Watch them flow through the verification pipeline
 - See results instantly
 
+Entered claims are inputs, not evidence that the statements are true. A result is limited to the rules and sources actually available to the API.
+
 ### Verification Visualization
 
 View each step of the MINI kernel and its earned expansions:
@@ -85,6 +85,11 @@ View each step of the MINI kernel and its earned expansions:
 
 - Ω∞v current visualization with progressive stages
 - Runtime-aware navigation and explicit unavailable boundaries
+- Keeps last-observed command evidence visible during API read failures and
+  labels retained responses as stale, unavailable feeds separately from
+  successful empty results, and action failures with their error details
+- Offers command lifecycle actions only for the selected command's current
+  status; displayed admission inputs are not independent identity proof
 - Command palette with `⌘ K` / `Ctrl + K`
 - Operator-controlled response-time and status-code evidence
 - Responsive desktop and mobile layouts
@@ -105,6 +110,8 @@ View each step of the MINI kernel and its earned expansions:
 - "API response time is under 100ms"
 - "All tests passed"
 - "Deployment successful"
+
+These are example prompts only. Use them only when the corresponding system, measurement, test report, or deployment evidence is actually connected and observed.
 
 ## API Integration
 
@@ -197,17 +204,15 @@ deployment or production health.
 
 ## Performance
 
-- Lazy loading with React.StrictMode
-- Optimized CSS-in-JS
-- Minimal external dependencies
-- Hot module reloading in development
+- Vite serves the development app with hot-module replacement.
+- Vite builds the production assets; this README does not claim lazy loading or a specific performance budget.
 
 ## Security
 
-- Input validation on form submission
-- The development proxy does not provide authentication or production CORS policy
-- No sensitive data stored locally
-- API calls use HTTPS in production
+- Client-side form checks are usability aids, not a substitute for API validation or authorization.
+- The development proxy does not provide authentication or production CORS policy.
+- Do not enter sensitive data unless the deployed API and its data-handling policy are approved for it.
+- Production deployments should serve the dashboard and API over HTTPS; this client does not enforce deployment transport security.
 
 ## Browser Support
 

@@ -62,6 +62,7 @@ test('dashboard and SDK approval requests send the allowlisted operator header t
     const dashboardHeaders = new Headers(dashboardRequest.headers);
     assert.equal(dashboardRequest.method, 'POST');
     assert.equal(dashboardHeaders.get('x-omega-operator-id'), 'dashboard-operator');
+    assert.deepEqual(JSON.parse(dashboardRequest.body as string), { operator: 'dashboard-operator', policy: 'human-review' });
     const dashboardApproval = await app.inject({
       method: 'POST',
       url: `/v1/omega/commands/${encodeURIComponent(dashboardCommandId)}/approve`,
@@ -69,7 +70,15 @@ test('dashboard and SDK approval requests send the allowlisted operator header t
       payload: dashboardRequest.body as string,
     });
     assert.equal(dashboardApproval.statusCode, 200, dashboardApproval.body);
-    assert.equal(dashboardApproval.json().command.change.authority, 'human:dashboard-operator');
+    assert.equal(dashboardApproval.json().command.change.authority, 'local-development');
+    const dashboardEvents = await app.inject({
+      method: 'GET',
+      url: `/v1/omega/events?commandId=${encodeURIComponent(dashboardCommandId)}`,
+    });
+    const dashboardApprovalEvent = dashboardEvents.json().events.find((event: { type: string }) => event.type === 'command.approved');
+    assert.equal(dashboardApprovalEvent.principal, 'local-development');
+    assert.equal(dashboardApprovalEvent.operatorClaim, 'dashboard-operator');
+    assert.equal(dashboardApprovalEvent.operatorClaimSource, 'request-header-claim');
 
     const headerWinsCommandId = await createProposal('approval-header-source-of-truth');
     const headerWins = await app.inject({
@@ -79,11 +88,19 @@ test('dashboard and SDK approval requests send the allowlisted operator header t
       payload: JSON.stringify({ operator: 'body-spoofed-operator', policy: 'human-review' }),
     });
     assert.equal(headerWins.statusCode, 200, headerWins.body);
-    assert.equal(headerWins.json().command.change.authority, 'human:dashboard-operator');
+    assert.equal(headerWins.json().command.change.authority, 'local-development');
+    const headerWinsEvents = await app.inject({
+      method: 'GET',
+      url: `/v1/omega/events?commandId=${encodeURIComponent(headerWinsCommandId)}`,
+    });
+    const headerWinsApprovalEvent = headerWinsEvents.json().events.find((event: { type: string }) => event.type === 'command.approved');
+    assert.equal(headerWinsApprovalEvent.operatorClaim, 'dashboard-operator');
+    assert.equal(headerWinsApprovalEvent.operatorClaimSource, 'request-header-claim');
 
     const sdkCommandId = await createProposal('approval-header-sdk');
     const sdkRequest = sdkOmegaApprovalRequest(sdkCommandId, 'sdk-operator');
     assert.equal(sdkRequest.headers['x-omega-operator-id'], 'sdk-operator');
+    assert.deepEqual(sdkRequest.payload, { operator: 'sdk-operator', policy: 'human-review' });
     const sdkApproval = await app.inject({
       method: 'POST',
       url: sdkRequest.path,
@@ -91,7 +108,14 @@ test('dashboard and SDK approval requests send the allowlisted operator header t
       payload: JSON.stringify(sdkRequest.payload),
     });
     assert.equal(sdkApproval.statusCode, 200, sdkApproval.body);
-    assert.equal(sdkApproval.json().command.change.authority, 'human:sdk-operator');
+    assert.equal(sdkApproval.json().command.change.authority, 'local-development');
+    const sdkEvents = await app.inject({
+      method: 'GET',
+      url: `/v1/omega/events?commandId=${encodeURIComponent(sdkCommandId)}`,
+    });
+    const sdkApprovalEvent = sdkEvents.json().events.find((event: { type: string }) => event.type === 'command.approved');
+    assert.equal(sdkApprovalEvent.operatorClaim, 'sdk-operator');
+    assert.equal(sdkApprovalEvent.operatorClaimSource, 'request-header-claim');
 
     const defaultSdkRequest = sdkOmegaApprovalRequest('command-default-operator');
     assert.equal(defaultSdkRequest.headers['x-omega-operator-id'], 'sdk-operator');

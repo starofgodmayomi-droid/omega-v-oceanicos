@@ -106,7 +106,7 @@ test('mood Codex proposal enters the ledger as PROPOSED and never executes', asy
       url: `/v1/omega/commands/${body.command.commandId}/approve`,
       payload: {
         operator: 'dashboard-operator',
-        policy: 'mood-codex-boundary.v1',
+        policy: 'human-review',
       },
     });
     assert.equal(admitted.statusCode, 200);

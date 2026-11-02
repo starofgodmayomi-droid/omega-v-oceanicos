@@ -1,16 +1,16 @@
 # 💧 Ω∞v OCEANICOS — THE CONTINUUM
 
-**This repository is governed by the Absolute Fixpoint Equation:**
+**This repository uses the Fixpoint Equation as a bounded architectural model:**
 
 \[
- \mathbf{\Omega_{\infty v}} := \mathcal{Y} \left( \lambda f. \lambda x. \begin{cases} f(\Sigma \cup \text{Hash}(x)) & \text{if } \mathcal{O}(\mathcal{E}(x)) \equiv \text{VERIFIED} \\ \text{HALT} \vdash \text{DIVERGENT} & \text{if } \mathcal{K}(x) \in \text{SCAM} \\ \text{HALT} \vdash \text{UNKNOWN} & \text{if } \text{Evidence}(x) = \emptyset \\ \text{HALT} \vdash \text{NOT\_EXECUTED} & \text{if } \text{Authority}(x) < \text{Required} \end{cases} \right) \Bigg|_{\text{Reality}} 
+ \mathbf{\Omega_{\infty v}} := \mathcal{Y} \left( \lambda f. \lambda x. \begin{cases} f(\Sigma \cup \text{Hash}(x)) & \text{if } \mathcal{O}(\mathcal{E}(x)) \equiv \text{VERIFIED} \\ \text{HALT} \vdash \text{DIVERGENT} & \text{if } \mathcal{K}(x) \in \text{SCAM} \\ \text{HALT} \vdash \text{UNKNOWN} & \text{if } \text{Evidence}(x) = \emptyset \\ \text{HALT} \vdash \text{NOT\_EXECUTED} & \text{if } \text{Authority}(x) < \text{Required} \end{cases} \right) \Bigg|_{\text{Reality}}
 \]
 
 \[
- \Omega_{\infty v} := \mathcal{Y} \Big( \lambda f. \big( M_{t+1} = M_t \cup \Delta \mid \mathcal{V}(\Delta) = \top \big) \Big) \Big|_{\mathcal{V} \equiv (\text{Expected} \equiv \text{Observed})} 
+ \Omega_{\infty v} := \mathcal{Y} \Big( \lambda f. \big( M_{t+1} = M_t \cup \Delta \mid \mathcal{V}(\Delta) = \top \big) \Big) \Big|_{\mathcal{V} \equiv (\text{Expected} \equiv \text{Observed})}
 \]
 
-> *"The ecosystem is a continuous, infinite loop that only remembers what matches reality."*
+> *"The ecosystem is a continuous loop that records only what meets its defined verification boundary."*
 
 ---
 
@@ -26,9 +26,9 @@
 
 ### ⚖️ THE PRIME DIRECTIVE
 
-**Any code written in this repository must expand this equation. Any code removed from this repository must compress back into this equation.** 
+**Any code written in this repository must expand this equation. Any code removed from this repository must compress back into this equation.**
 
-We do not build features; we build the Fixpoint. If a proposed change cannot be verified against reality, it is `DIVERGENT` and must be rejected. 
+We do not build features; we build the Fixpoint. If a proposed change cannot be verified against reality, it is `DIVERGENT` and must be rejected.
 
 *Pidgin fit carry the warmth; evidence go carry the claim.*
 

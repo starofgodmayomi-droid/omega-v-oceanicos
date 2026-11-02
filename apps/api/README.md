@@ -1,6 +1,6 @@
 # @omega-v/api
 
-Fastify HTTP runtime for Ω∞v | OCEANICOS.
+Public contract for the OCEANICOS Fastify runtime. This README describes the currently supported API surface, evidence boundaries, and the local-operating model that the app enforces.
 
 The executable contract is the current `createApp` surface. Persistence,
 local jobs, readiness, attestation revocations, and optional static-client
@@ -23,6 +23,18 @@ The default port is `5000`; `PORT` or `API_PORT` overrides it.
 production. Required mode needs distinct `OMEGA_READ_TOKEN` and
 `OMEGA_ADMIN_TOKEN` values. Health remains unauthenticated; GET evidence
 routes use the read token and mutations use the admin token.
+
+Omega command admission fails closed until a trusted server-side evidence
+resolver is configured. Caller-supplied `authority`, `authorityVerified`, and
+`policySatisfied` fields cannot authorize admission. Approval requires admin
+access, the `human-review` policy, and an explicit operator claim. When
+`OMEGA_ADMIN_REQUIRE_ALLOWLIST=on`, the claim must match an entry in
+`OMEGA_ADMIN_OPERATOR_ALLOWLIST`; otherwise a request-body operator name is
+self-reported. The runtime records the server principal separately:
+`admin-bearer` in required mode or `local-development` in local mode. Neither
+the bearer role nor an unallowlisted operator claim proves a human identity.
+Local mode is for development and does not provide authenticated access
+control.
 
 Optional local-job authentication uses `OMEGA_LOCAL_JOB_LEDGER_TOKEN`.
 
@@ -125,6 +137,8 @@ unverified.
 GET  /health
 GET  /v1/kernel/capabilities
 GET  /v1/mood
+GET  /v1/therapeutic/state
+POST /v1/therapeutic/transition
 GET  /v1/ecosystem/status
 POST /v1/attest
 POST /v1/cycle

@@ -1,5 +1,15 @@
 # Packages
 
+This is the public package catalog for the Ω∞v / OCEANICOS kernel and its earned expansions. It keeps the repository's package map aligned with the same evidence-first language used across the project: observe, verify, remember, attest, and only then expand into wider execution.
+
+## Public README alignment
+
+- [README.md](../README.md) — repo-wide mission and verification posture
+- [apps/README.md](../apps/README.md) — runnable application surfaces
+- [packages/README.md](README.md) — package map and subsystem overview
+
+The package index intentionally stays concise; the deeper contracts live in each package's README or source files.
+
 Shared libraries for the Ω∞v growth spine:
 
 ```text

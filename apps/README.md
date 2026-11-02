@@ -1,6 +1,14 @@
 # Applications
 
-The repository's two runnable applications are the Fastify API and the React/Vite web dashboard. Their per-app READMEs are the canonical references for route and feature details; this page summarizes how they fit together and how to start the local development stack.
+This is the public entry point for the runnable surfaces of OCEANICOS. The Fastify API and the React/Vite dashboard are the primary user-facing applications, and their app-specific READMEs remain the canonical references for route, config, and feature details.
+
+## Public README alignment
+
+- [README.md](../README.md) — project mission, verification model, and repo-wide context
+- [apps/api/README.md](api/README.md) — HTTP runtime, persistence, jobs, and attestation flow
+- [apps/web/README.md](web/README.md) — dashboard UX, browser verification, and proxy setup
+
+This index keeps the public-facing app docs aligned without duplicating the deeper technical contracts.
 
 ## Applications
 

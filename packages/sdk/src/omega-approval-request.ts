@@ -3,12 +3,12 @@ export function sdkOmegaApprovalRequest(
   operator = 'sdk-operator',
 ): {
   path: string;
-  payload: { operator: string };
+  payload: { operator: string; policy: 'human-review' };
   headers: Record<string, string>;
 } {
   return {
     path: `/v1/omega/commands/${encodeURIComponent(commandId)}/approve`,
-    payload: { operator },
+    payload: { operator, policy: 'human-review' },
     headers: { 'x-omega-operator-id': operator },
   };
 }
