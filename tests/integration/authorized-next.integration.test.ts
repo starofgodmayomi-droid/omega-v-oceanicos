@@ -1,5 +1,9 @@
 import assert from 'node:assert/strict';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { test } from 'node:test';
+import { createApp } from '../../apps/api/dist/index.js';
 import {
   MAX_NEXT_CANDIDATES,
   NEXT_SELECTOR_EPSILON,
@@ -143,4 +147,61 @@ test('does not mutate the caller and fails closed on hostile inspection', () => 
     },
   );
   assert.ok(codes(selectAuthorizedNext(hostile)).includes('REQUEST_INSPECTION_FAILED'));
+});
+
+test('POST /v1/ecosystem/next ranks authorized candidates and starts nothing', async () => {
+  const directory = mkdtempSync(join(tmpdir(), 'omega-next-route-'));
+  const app = createApp(join(directory, 'ledger.db'), false, { allowUnsignedCycle: true });
+
+  try {
+    await app.ready();
+
+    const selected = await app.inject({
+      method: 'POST',
+      url: '/v1/ecosystem/next',
+      payload: {
+        candidates: [
+          candidate('slow-safe', 9, 4, 4),
+          candidate('direct-meaning', 3, 0, 0),
+          candidate('unpermitted', 1000, 0, 0, false),
+        ],
+      },
+    });
+    assert.equal(selected.statusCode, 200);
+    const body = selected.json();
+    assert.equal(body.status, 'SELECTED');
+    assert.equal(body.evidence, 'CALLER_SUPPLIED_ESTIMATES');
+    assert.match(body.evidenceBoundary, /starts nothing/);
+    assert.equal(body.selection.execution, 'NOT_STARTED');
+    assert.equal(body.selection.authority, 'selection-is-not-permission');
+    assert.equal(body.selection.selected.id, 'direct-meaning');
+    assert.equal(body.selection.excludedUnauthorized, 1);
+    assert.deepEqual(
+      body.selection.ranking.map((entry: { id: string }) => entry.id),
+      ['direct-meaning', 'slow-safe'],
+    );
+
+    const stopped = await app.inject({
+      method: 'POST',
+      url: '/v1/ecosystem/next',
+      payload: { candidates: [candidate('no', 5, 0, 0, false)] },
+    });
+    assert.equal(stopped.statusCode, 200);
+    assert.equal(stopped.json().status, 'STOP');
+    assert.equal(stopped.json().selection.selected, null);
+
+    const refused = await app.inject({
+      method: 'POST',
+      url: '/v1/ecosystem/next',
+      payload: { candidates: [candidate('alpha', 1, 0, 0)], execute: true },
+    });
+    assert.equal(refused.statusCode, 400);
+    assert.equal(refused.json().status, 'INVALID');
+    assert.ok(
+      refused.json().selection.issues.some((issue: { code: string }) => issue.code === 'UNSUPPORTED_FIELD'),
+    );
+  } finally {
+    await app.close();
+    rmSync(directory, { recursive: true, force: true });
+  }
 });

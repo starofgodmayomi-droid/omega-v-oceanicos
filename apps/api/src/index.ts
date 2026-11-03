@@ -6,7 +6,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { MAX_PROOF_OF_WORK_ATTEMPTS, RememberEngine } from '@oceanicos/remember';
-import { FileConnectorObservationStore, FileValueNavigatorStore, MiniKernel, buildOmegaWaterFlow, compressRepoEquation, compressRepoTowardUpgrade, compressSingleBody, evaluateEcosystemFixpoint, executeAuthorizedTransition, expandRepoEquation, expandSingleBody, ECOSYSTEM_BODY_EQUATION_ID, ECOSYSTEM_BODY_EQUATION_SOURCE, ECOSYSTEM_BODY_REALITY, EQUATION_LAW_OBSERVATION, EQUATION_TEXT, REPO_OUTWARD_RING, resolveChangeAdmission, verifyExecutedReality } from '@oceanicos/mini';
+import { FileConnectorObservationStore, FileValueNavigatorStore, MiniKernel, buildOmegaWaterFlow, compressRepoEquation, compressRepoTowardUpgrade, compressSingleBody, evaluateEcosystemFixpoint, executeAuthorizedTransition, expandRepoEquation, expandSingleBody, selectAuthorizedNext, ECOSYSTEM_BODY_EQUATION_ID, ECOSYSTEM_BODY_EQUATION_SOURCE, ECOSYSTEM_BODY_REALITY, EQUATION_LAW_OBSERVATION, EQUATION_TEXT, REPO_OUTWARD_RING, resolveChangeAdmission, verifyExecutedReality } from '@oceanicos/mini';
 import type { SingleBodyEntry } from '@oceanicos/mini';
 import { AsymmetricValidationGuard, DeclarativeVerificationEngine, MultiRegionMeshConvergence } from '@oceanicos/verification';
 import { ObserverEngine } from '@oceanicos/observer';
@@ -494,6 +494,23 @@ export function createApp(
         halt: null,
         digest: expanded.digest,
       }),
+    };
+  });
+  // NEXT = argmax EvidenceBackedValue / (Risk + Cost + ε) over AUTHORIZED candidates.
+  // Ranks caller-supplied estimates and answers with one selection or STOP.
+  // Selection is not permission: nothing is started, read, or written.
+  fastify.post('/v1/ecosystem/next', { preHandler: requireReadAccess }, async (request: any, reply) => {
+    const selection = selectAuthorizedNext(request.body ?? null);
+    if (selection.status === 'INVALID') {
+      return reply.status(400).send({ success: false, status: 'INVALID', selection });
+    }
+    return {
+      success: true,
+      status: selection.status,
+      selection,
+      evidence: 'CALLER_SUPPLIED_ESTIMATES',
+      evidenceBoundary: 'Candidate values, risk, cost, and authority flags come from the caller. The API ranks them and starts nothing.',
+      evaluatedAt: new Date().toISOString(),
     };
   });
   fastify.get('/v1/mood', async () => ({ success: true, status: 'MAX GOOD-O', contract: 'Ω∞v totality / attest-dont-assert', brand: 'Oceanicos Ω∞', ledger: { ready: Boolean(ledgerMemory.getTip()) }, evaluatedAt: new Date().toISOString() }));

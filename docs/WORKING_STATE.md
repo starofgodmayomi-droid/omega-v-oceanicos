@@ -1,6 +1,33 @@
 # Ω∞v Oceanicos Working State
 
-**Updated:** 2026-10-01
+**Updated:** 2026-11-03
+
+## Next selection surface — 2026-11-03
+
+`NEXT = argmax EvidenceBackedValue / (Risk + Cost + ε)` already existed as a
+tested law (`packages/mini/src/next-selector.ts`) and had no runtime surface.
+This pass wired it up without adding execution authority:
+
+1. **API** — `POST /v1/ecosystem/next` (read access) ranks caller-supplied
+   candidates and answers `SELECTED`, `STOP`, or `INVALID` (400). Every answer
+   keeps `execution: "NOT_STARTED"`, `evidence: "CALLER_SUPPLIED_ESTIMATES"`,
+   and `authority: "selection-is-not-permission"`. The route is listed in
+   `API_ROUTE_INVENTORY`, so route parity is compiled-checked.
+2. **Dashboard** — `apps/web/src/NextSelectionPanel.tsx` renders the editable
+   estimates, the selected candidate, its score, the ranking, and how many
+   unauthorized candidates were excluded. It fetches only when `SELECT NEXT`
+   is pressed; the estimates are the operator's, not observed.
+3. **Docs** — `docs/NEXT-SELECTION.md` states the contract, the three halts,
+   and the boundaries (`SELECTION ≠ PERMISSION`, `PLAN ≠ EXECUTION`).
+
+Observed evidence in this sandbox: `npx tsc --noEmit` clean for
+`apps/api` and `apps/web`; `authorized-next.integration.test.ts` 8/8 plus
+`api-route-contract.integration.test.ts` 2/2 pass; `test:current-dom` 4 suites /
+7 tests pass; live `POST /v1/ecosystem/next` returned `SELECTED
+observe-a-claimed-state` with the unauthorized candidate excluded, and the
+panel rendered the same answer at desktop and 375 px with no horizontal
+overflow and no console errors. No deployment, merge, or production health is
+claimed.
 
 ## CI authority reconciliation — 2026-10-01
 

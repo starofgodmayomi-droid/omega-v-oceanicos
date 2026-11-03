@@ -140,6 +140,7 @@ GET  /v1/mood
 GET  /v1/therapeutic/state
 POST /v1/therapeutic/transition
 GET  /v1/ecosystem/status
+POST /v1/ecosystem/next
 POST /v1/attest
 POST /v1/cycle
 GET  /v1/block/tip
@@ -157,6 +158,14 @@ GET  /v1/value-navigator/proposals/:proposalId
 POST /v1/value-navigator/proposals
 POST /v1/value-navigator/proposals/:proposalId/observe
 ```
+
+`POST /v1/ecosystem/next` takes caller-supplied candidates
+(`{ candidates: [{ id, authorized, evidenceBackedValue, risk, cost }], epsilon? }`)
+and returns one selection or `STOP` from
+`NEXT = argmax EvidenceBackedValue / (Risk + Cost + ε)`. Every number is the
+caller's estimate, not an observation; `execution` is always `NOT_STARTED`,
+and a selection is not permission. Contract: `packages/mini/src/next-selector.ts`;
+doc: `docs/NEXT-SELECTION.md`.
 
 `POST /v1/therapeutic/transition` records a bounded local transition; it does
 not perform a remote action or independently verify reality. Its optional

@@ -55,6 +55,9 @@ docker compose -f docker-compose.base44.yml up -d
 ## Ecosystem body equation (repo outward ring)
 `ECOSYSTEM_BODY.md` is the fixpoint. `packages/mini/src/ecosystem-body-equation.ts` runs it: a surface is remembered only when evidence is present, it is not a known scam, authority meets the required level, and expected ≡ observed. Otherwise the fold halts `DIVERGENT`, `UNKNOWN`, or `NOT_EXECUTED` and names no upgrade. `GET /v1/ecosystem/equation` compresses the in-process law constant only — that is not a disk read. `POST /v1/ecosystem/equation` compresses caller-supplied surfaces. `POST /v1/ecosystem/equation/expand` restores them and refuses a tampered digest. `pnpm compress:repo` reads the declared outward ring from the checkout, compresses it, and prints one `NOT_EXECUTED` upgrade candidate when every path was read and non-empty. Compression is not permission. Doc: `docs/ECOSYSTEM-BODY-EQUATION.md`.
 
+## Next selection (one transition or STOP)
+`POST /v1/ecosystem/next` exposes `selectAuthorizedNext` from `packages/mini/src/next-selector.ts`: it ranks caller-supplied candidates by `evidenceBackedValue / (risk + cost + epsilon)` over authorized ones only and answers `SELECTED`, `STOP`, or `INVALID` (400). Responses keep `execution: "NOT_STARTED"`, `evidence: "CALLER_SUPPLIED_ESTIMATES"`, and `authority: "selection-is-not-permission"` — the API ranks numbers it was given and starts nothing. Route is in `API_ROUTE_INVENTORY` (`apps/api/src/route-contract.ts`); UI is `apps/web/src/NextSelectionPanel.tsx` in the dashboard (fetches only on button press). Contract doc: `docs/NEXT-SELECTION.md`. Test: `node --experimental-strip-types --test-concurrency=1 --test ./tests/integration/authorized-next.integration.test.ts` (needs `apps/api/dist` built).
+
 ## Fixed bug
 `apps/api/src/index.ts` line 204: `persistenceEncryptionKey` was undefined → changed to `encryptionEnabled(persistenceKey)` to match the pattern used at lines 163/165.
 

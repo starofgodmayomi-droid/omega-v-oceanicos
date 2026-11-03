@@ -20,6 +20,7 @@ export const API_ROUTE_INVENTORY = [
   'GET /v1/ecosystem/equation',
   'POST /v1/ecosystem/equation',
   'POST /v1/ecosystem/equation/expand',
+  'POST /v1/ecosystem/next',
   'GET /v1/mood',
   'GET /v1/therapeutic/state',
   'POST /v1/therapeutic/transition',

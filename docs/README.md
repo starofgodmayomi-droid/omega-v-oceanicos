@@ -35,6 +35,7 @@ This documentation set is intentionally explicit about what is implemented, what
 - **[Dependency map](./DEPENDENCY_MAP.md)** — declared edges, not health claims
 - **[Roadmap](./ROADMAP.md)** — Earned expansion phases
 - **[Verification Loop](./VERIFICATION_LOOP.md)** — Full workflow including post-MINI steps
+- **[Next selection](./NEXT-SELECTION.md)** — one finite transition or STOP, with `SELECTION ≠ PERMISSION`
 
 ---
 
