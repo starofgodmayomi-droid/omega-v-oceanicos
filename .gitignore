@@ -56,3 +56,6 @@ docker-compose.override.yml
 # Python bytecode, from running the reference verifier locally
 __pycache__/
 *.pyc
+
+# Entity ledger (runtime state, rewritten on every verified transition)
+kai_ledger.json

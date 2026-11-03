@@ -64,6 +64,14 @@ docker compose -f docker-compose.base44.yml up -d
 ## No external credentials needed
 All secrets (signing key, tokens) are local dev values in `.env.base44-defaults`. No external service credentials are required for the app to run.
 
+## Entity faces (Streamlit, port 8501)
+`app.py` + `backend_magic.py` + `00_SOUL/human_root.txt` are the standalone Ω∞v entity: a three-pane Streamlit mirror (THE INTENT / KAI LEDGER / EXECUTION LOG) over the same KAI → ELION → OMEGA → KAI law. `requirements.txt` pins `streamlit==1.32.0`.
+- Standalone: `pip install -r requirements.txt && streamlit run app.py` from the repo root. In the sandbox it is the `entity` service (`base44.project: entity`, host port 8501); dependencies install from `requirements.txt` at container start, so Python edits need no rebuild.
+- `backend_magic.py` owns the law: `kai_shield` blocks the `SCAM_PATTERNS` (`DIVERGENT`), `elion_execute` composes a bounded answer, `omega_verify` returns the SHA-256 of the output (`None` under 5 chars), `kai_remember` prepends to the JSON ledger (`get_ledger()` is newest-first). Ledger path: `KAI_LEDGER_FILE`, else `kai_ledger.json` beside the module — gitignored runtime state; delete it to reset the ocean to "still".
+- `app.py` runs the transition *before* drawing the ledger and log, so both show the new row on the same pass. The upstream draft called `st.rerun()` right after writing the log placeholder, which wiped the execution log it had just rendered.
+- Streamlit runs with `--server.enableCORS false --server.enableXsrfProtection false` inside the sandbox only, so the preview proxy's host can drive its websocket.
+- Check: `curl -s localhost:8501/_stcore/health` → `ok`. Behaviour check (headless, drives the real button): `streamlit.testing.v1.AppTest` from `/app` with `PYTHONPATH=/app` — scam intent → `DIVERGENT` row + `KAI Shield blocked`, good intent → `VERIFIED` row with a 64-hex digest and both panes showing it.
+
 ## Verify
 - API health: `curl http://localhost:5000/health` → `{"status":"ok",...}`
 - Web: `curl http://localhost:3000` → Vite-served HTML with `/@vite/client` and `/src/main.tsx`.

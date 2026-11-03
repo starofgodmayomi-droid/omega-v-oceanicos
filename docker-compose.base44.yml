@@ -80,3 +80,29 @@ services:
       timeout: 5s
       retries: 6
       start_period: 20s
+
+  # Entity: the Ω∞v Streamlit faces (app.py mirroring backend_magic.py + 00_SOUL).
+  # Dependencies are installed on startup from requirements.txt so edits to the
+  # Python sources apply without an image rebuild.
+  entity:
+    image: python:3.12-slim
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: sh -c "pip install --no-cache-dir -q -r requirements.txt && exec streamlit run app.py --server.address 0.0.0.0 --server.port 8501 --server.headless true --server.enableCORS false --server.enableXsrfProtection false"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - KAI_LEDGER_FILE=/app/kai_ledger.json
+    ports:
+      - "8501:8501"
+    restart: on-failure
+    labels:
+      base44.project: entity
+      base44.kind: web
+      base44.port: "8501"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8501/_stcore/health',timeout=5)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
