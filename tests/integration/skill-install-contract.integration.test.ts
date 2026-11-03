@@ -16,6 +16,7 @@ const loadable = [
   'lucid-continuum',
   'oceanicos-total-continuum',
   'kaixelionxomega',
+  'omega-entity-full-stack',
 ] as const;
 
 test('published Oceanicos skill contracts validate', () => {

@@ -20,6 +20,7 @@ its source.
 | `lucid-continuum` | `57a34241ff3d52ed143da49f1a9a04380743c2adf09bf9916553146915d711da` | 2026-10-16 |
 | `oceanicos-total-continuum` | `23aae4defff33f608b6ab1419a19e05b550565b8c44bc86aca3a31e24fa15086` | 2026-10-24 |
 | `kaixelionxomega` | `ab59d4fb7cd81a9ce489720f7f5044336736a913f2f706733fda24c69874679f` | 2026-10-30 |
+| `omega-entity-full-stack` | `1e333f7be1a525d0bdcb4a05bcdc0817a1c53b65a4fdddb93c67a3f9975775a8` | 2026-11-03 |
 
 Verify an installed skill still matches what was recorded:
 
@@ -163,6 +164,31 @@ Installed 2026-10-24. Byte-identical to `skills/oceanicos-total-continuum/SKILL.
 ## kaixelionxomega
 
 Installed 2026-10-30. Byte-identical to `skills/kaixelionxomega/SKILL.md`. The KAI → ELION → OMEGA loop compresses a verified cycle into one review candidate. `compressTowardUpgrade` always reports `NOT_EXECUTED`. A candidate id is not an upgrade.
+
+## omega-entity-full-stack
+
+Installed 2026-11-03 from the supplied `omega-entity-full-stack1.zip`, whose only
+payload file is `SKILL.md`. The published copy at
+`skills/omega-entity-full-stack/SKILL.md` and the loadable copy here are
+byte-identical to it; the hash above is the hash of those supplied bytes.
+
+One bidirectional Entity workflow: intent flows down into a bounded, authorized
+transition, and the consequence flows back up as observation, evidence, and
+correction. It names two engineering modes — read-only `REVERSE_AUDIT` and
+mutating `FORWARD_BUILD` — and requires the mode to be chosen rather than
+combined silently. It also states the boundary this repository keeps: capability
+is not authority, execution is not verification, and memory is not proof.
+
+### Not in the contract validator
+
+The supplied file is deliberately absent from `scripts/validate-skill-contracts.mjs`.
+That check requires every published skill to carry the repository's
+`POSSIBLE → OBSERVE → …` ladder token, and this skill states its loop as
+`FRAME → OBSERVE → DISTINGUISH → BOUND → ADMIT → ACT → …` with no `POSSIBLE`
+anywhere in the text. Adding the token would mean editing bytes this README
+promises to preserve, so the skill is installed exactly as received and the gap
+is recorded here instead of patched. `tests/integration/skill-install-contract.integration.test.ts`
+still asserts that its published and loadable copies are the same bytes.
 
 ---
 
