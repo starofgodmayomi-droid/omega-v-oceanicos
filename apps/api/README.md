@@ -136,6 +136,7 @@ unverified.
 ```text
 GET  /health
 GET  /v1/kernel/capabilities
+GET  /v1/entity/body
 GET  /v1/mood
 GET  /v1/therapeutic/state
 POST /v1/therapeutic/transition
@@ -164,6 +165,13 @@ not perform a remote action or independently verify reality. Its optional
 supplied observation. An identical retry replays the stored result without
 re-executing the transition. Reusing that key with a different request returns
 `409 OMEGA_IDEMPOTENCY_CONFLICT` without changing the existing command.
+
+`GET /v1/entity/body` (alias `/api/v1/entity/body`) reports the Entity OS body:
+the seven organs, each with the repository path that implements it, whether
+that path exists, its size and SHA-256 digest. The response carries a declared
+`brandChecksum` (`30013030`) and a `bodyDigest` computed over what was actually
+read. A missing organ is reported `MISSING` and the body `INCOMPLETE`; nothing
+is asserted from memory.
 
 `POST /api/execute` uses ELION's local deterministic composer by default. A
 request may include `useExternalModel: true` to opt into the server-configured

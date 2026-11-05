@@ -71,3 +71,13 @@ All secrets (signing key, tokens) are local dev values in `.env.base44-defaults`
 
 ## Start-failure investigation (2026-10-28)
 `main` was at `1dc8e69b` (PR #536, "do not verify reality from a caller-supplied echo", all CI checks green) when a preview start was reported as failing; this branch already contains that commit, so nothing had to be brought in. A clean `docker compose -f docker-compose.base44.yml down` + `up -d` starts the stack here — `setup` exits 0, `api` turns healthy, `web` serves port 3000 — and the container event history shows no failed attempt, so the reported start failure could not be reproduced in this sandbox. What the running logs did show was the `/api` proxy defect documented above (the WORKERS panel's request returned 502 through Vite); that is fixed, and both the monorepo build and the proxy contract test pass.
+
+## Entity OS body (seven organs)
+- **Layer 1 soul**: `00_SOUL/human_root.txt` holds the raw human intent the body answers to. It is data, not code — editing it changes the body digest and nothing else.
+- **`GET /v1/entity/body`** (alias `/api/v1/entity/body`) lives in `apps/api/src/entity-body.ts`. It stats and SHA-256s each organ's real path instead of narrating the anatomy: Soul `00_SOUL/human_root.txt`, Face `apps/web/src/InvisibleComputer.tsx`, Mind `apps/api/src/execute-route.ts`, Shield/Hands/Judge `apps/api/src/invisible-computer.ts`, Memory `data/oceanicos.db.kai.db` (created on boot by the KaiMemory store). `brandChecksum` `30013030` is a declared constant; `bodyDigest` is computed over what was read. A missing file reports that organ `MISSING` and the body `INCOMPLETE`.
+- **The API is ESM** (`apps/api/package.json` `"type": "module"`): resolve repo paths from `import.meta.url`. `__dirname` compiles but throws `ReferenceError: __dirname is not defined` at runtime (the entity route hit this once).
+- **Face**: `apps/web/src/InvisibleComputer.tsx` is the three-pane Clean Ocean command center — THE INTENT | KAI LEDGER | EXECUTION LOG — laid out by `.entity-command-center` in `App.css` (single column below 900px). `EntityBodyPanel.tsx` renders the seven-organ anatomy above it from the API read.
+- Verify: `curl http://localhost:5000/v1/entity/body` → `body.status: "ALIVE"` with seven `PRESENT` organs.
+
+## Tests that cannot run in this sandbox
+- The jest suites (`apps/**/__tests__`, `apps/web` `test:current-dom`) do not start here: `node_modules/jest` is absent and the `ts-jest` preset is not resolvable from `/app`, so jest exits with a validation error before collecting tests. Use the `node --experimental-strip-types --test` integration suites (they run against `apps/api/dist`, which `tsc --watch` keeps current) plus preview verification instead.

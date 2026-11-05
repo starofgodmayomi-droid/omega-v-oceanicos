@@ -1,11 +1,12 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import { theme } from './oceanicosTheme';
 
 /*
- * ECHOFRAME — the face of the Invisible Online Computer.
+ * ECHOFRAME — the face of the Entity OS Body.
  *
- * One input, one live execution terminal, one verdict badge. Every line in the
- * terminal is a step the API actually recorded; nothing is narrated locally.
+ * Three panes, one law: THE INTENT goes in, KAI LEDGER holds what was proven,
+ * EXECUTION LOG shows the steps the API actually recorded. Nothing is
+ * narrated locally — every line is read back from the loop.
  */
 
 const API_BASE_URL = (import.meta.env?.VITE_API_URL || '/api').replace(/\/$/, '');
@@ -60,6 +61,26 @@ const ACTOR_TONE: Record<ExecutionStep['actor'], string> = {
 };
 
 const STEP_REVEAL_MS = 240;
+
+const paneStyle: CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  minWidth: 0,
+  padding: '14px',
+  border: `1px solid ${theme.border}`,
+  borderRadius: theme.radiusSmall,
+  background: 'rgba(2, 6, 23, 0.55)',
+};
+
+const paneLabelStyle: CSSProperties = {
+  fontFamily: theme.fontMono,
+  fontSize: '9.5px',
+  fontWeight: 700,
+  letterSpacing: '0.22em',
+  color: theme.accent,
+  textTransform: 'uppercase',
+  marginBottom: '10px',
+};
 
 function clockOf(iso: string): string {
   const date = new Date(iso);
@@ -129,7 +150,7 @@ export function InvisibleComputer() {
       const execution = payload as ExecutionResult;
       const steps = Array.isArray(execution.steps) ? execution.steps : [];
 
-      // Reveal the recorded steps in order so the terminal reads as execution.
+      // Reveal the recorded steps in order so the log reads as execution.
       steps.forEach((step, index) => {
         timers.current.push(
           setTimeout(() => {
@@ -169,149 +190,237 @@ export function InvisibleComputer() {
         border: `1px solid ${theme.borderBright}`,
         borderRadius: '20px',
         boxShadow: '0 0 0 1px rgba(245, 158, 11, 0.08), 0 24px 60px rgba(2, 6, 23, 0.7)',
-        padding: '26px 22px 0',
+        padding: '22px 20px 0',
         marginBottom: '28px',
       }}
     >
       <div
         style={{
-          fontSize: '10px',
-          fontWeight: 700,
-          letterSpacing: '0.28em',
-          color: theme.accent,
-          textAlign: 'center',
-          textTransform: 'uppercase',
-          marginBottom: '14px',
+          display: 'flex',
+          alignItems: 'baseline',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '6px',
+          marginBottom: '16px',
         }}
       >
-        Ω∞v OCEANICOS · Invisible Online Computer
-      </div>
-
-      <h2
-        style={{
-          fontSize: '24px',
-          fontWeight: 600,
-          letterSpacing: '0.04em',
-          textAlign: 'center',
-          color: theme.text,
-          margin: '0 0 20px',
-        }}
-      >
-        WHAT SHALL WE MAKE REAL?
-      </h2>
-
-      <div style={{ display: 'flex', gap: '8px', alignItems: 'stretch' }}>
-        <input
-          aria-label="What shall we make real?"
-          value={intent}
-          onChange={(event) => setIntent(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter') void execute();
-          }}
-          maxLength={2000}
-          disabled={running}
-          placeholder="Describe the intent you want verified…"
+        <span
           style={{
-            flex: 1,
-            minWidth: 0,
-            padding: '15px 18px',
-            background: 'rgba(2, 6, 23, 0.82)',
-            border: `1px solid ${theme.borderBright}`,
-            borderRadius: theme.radiusSmall,
-            color: theme.text,
-            fontFamily: theme.fontSans,
-            fontSize: '15px',
-            outline: 'none',
-          }}
-        />
-        <button
-          type="button"
-          onClick={() => void execute()}
-          disabled={running || !intent.trim()}
-          style={{
-            padding: '0 20px',
-            borderRadius: theme.radiusSmall,
-            border: '1px solid rgba(245, 158, 11, 0.45)',
-            background:
-              running || !intent.trim() ? 'rgba(245, 158, 11, 0.10)' : 'rgba(245, 158, 11, 0.18)',
-            color: theme.accentWarm,
-            fontFamily: theme.fontSans,
-            fontSize: '12px',
+            fontSize: '10px',
             fontWeight: 700,
-            letterSpacing: '0.14em',
-            cursor: running || !intent.trim() ? 'not-allowed' : 'pointer',
-            opacity: running || !intent.trim() ? 0.6 : 1,
+            letterSpacing: '0.28em',
+            color: theme.accent,
+            textTransform: 'uppercase',
           }}
         >
-          {running ? 'EXECUTING' : 'EXECUTE'}
-        </button>
-      </div>
-      <label
-        style={{
-          display: 'flex',
-          alignItems: 'flex-start',
-          gap: '8px',
-          marginTop: '10px',
-          color: theme.textMuted,
-          fontSize: '12px',
-          lineHeight: 1.5,
-        }}
-      >
-        <input
-          type="checkbox"
-          checked={useExternalModel}
-          onChange={(event) => setUseExternalModel(event.target.checked)}
-          disabled={running}
-          style={{ marginTop: '2px' }}
-        />
-        <span>
-          Send this intent to the server-configured external model. Leave unchecked to use the
-          local deterministic composer. The intent is sent as entered; it is not automatically
-          redacted.
+          Ω∞v OCEANICOS · Clean Ocean Command Center
         </span>
-      </label>
+        <span
+          style={{
+            fontFamily: theme.fontMono,
+            fontSize: '9px',
+            letterSpacing: '0.12em',
+            color: theme.textDim,
+          }}
+        >
+          LOCAL-FIRST SOVEREIGN ENTITY · CHECKSUM 30013030
+        </span>
+      </div>
 
-      {/* Live execution terminal */}
-      <div
-        role="log"
-        aria-live="polite"
-        aria-label="Execution terminal"
-        style={{
-          marginTop: '16px',
-          minHeight: '128px',
-          maxHeight: '248px',
-          overflowY: 'auto',
-          padding: '12px 14px',
-          background: '#01060f',
-          border: `1px solid ${theme.border}`,
-          borderRadius: theme.radiusSmall,
-          fontFamily: theme.fontMono,
-          fontSize: '11.5px',
-          lineHeight: 1.6,
-        }}
-      >
-        <div style={{ color: theme.textDim }}>
-          KAI idle · awaiting intent · ledger memory {memoryTotal ?? '—'}
+      <div className="entity-command-center">
+        {/* Pane 1 — THE INTENT */}
+        <div style={paneStyle}>
+          <div style={paneLabelStyle}>The Intent</div>
+          <label
+            htmlFor="entity-intent"
+            style={{ fontSize: '12px', color: theme.textMuted, marginBottom: '6px' }}
+          >
+            What shall we make real?
+          </label>
+          <textarea
+            id="entity-intent"
+            aria-label="What shall we make real?"
+            value={intent}
+            onChange={(event) => setIntent(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                void execute();
+              }
+            }}
+            maxLength={2000}
+            disabled={running}
+            rows={6}
+            placeholder="Describe the intent you want verified…"
+            style={{
+              width: '100%',
+              boxSizing: 'border-box',
+              resize: 'vertical',
+              minHeight: '128px',
+              padding: '12px 14px',
+              background: 'rgba(2, 6, 23, 0.82)',
+              border: `1px solid ${theme.borderBright}`,
+              borderRadius: theme.radiusSmall,
+              color: theme.text,
+              fontFamily: theme.fontSans,
+              fontSize: '14px',
+              lineHeight: 1.55,
+              outline: 'none',
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => void execute()}
+            disabled={running || !intent.trim()}
+            style={{
+              marginTop: '10px',
+              width: '100%',
+              padding: '11px 18px',
+              borderRadius: theme.radiusSmall,
+              border: '1px solid rgba(245, 158, 11, 0.45)',
+              background:
+                running || !intent.trim() ? 'rgba(245, 158, 11, 0.10)' : 'rgba(245, 158, 11, 0.18)',
+              color: theme.accentWarm,
+              fontFamily: theme.fontMono,
+              fontSize: '11.5px',
+              fontWeight: 700,
+              letterSpacing: '0.16em',
+              cursor: running || !intent.trim() ? 'not-allowed' : 'pointer',
+              opacity: running || !intent.trim() ? 0.6 : 1,
+            }}
+          >
+            {running ? 'EXECUTING' : 'EXECUTE'}
+          </button>
+          <label
+            style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '8px',
+              marginTop: '10px',
+              color: theme.textDim,
+              fontSize: '10.5px',
+              lineHeight: 1.5,
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={useExternalModel}
+              onChange={(event) => setUseExternalModel(event.target.checked)}
+              disabled={running}
+              style={{ marginTop: '2px' }}
+            />
+            <span>
+              Send this intent to the server-configured external model. Unchecked keeps the local
+              deterministic composer. The intent is sent as entered; it is not automatically
+              redacted.
+            </span>
+          </label>
         </div>
-        {visibleSteps.map((step, index) => (
-          <div key={`${step.actor}-${step.phase}-${index}`} style={{ color: theme.textMuted }}>
-            <span style={{ color: theme.textDim }}>[{clockOf(step.at)}]</span>{' '}
-            <span style={{ color: ACTOR_TONE[step.actor], fontWeight: 700 }}>
-              {step.actor.padEnd(6, ' ')}
-            </span>{' '}
-            <span style={{ color: theme.textDim }}>{step.phase.padEnd(8, ' ')}</span>{' '}
-            <span style={{ color: STATUS_TONE[(step.status as Verdict) ?? 'NOT_EXECUTED'] ?? theme.textMuted }}>
-              {step.status}
-            </span>{' '}
-            <span>{step.detail}</span>
+
+        {/* Pane 2 — KAI LEDGER */}
+        <div style={paneStyle}>
+          <div style={{ ...paneLabelStyle, display: 'flex', justifyContent: 'space-between' }}>
+            <span>Kai Ledger</span>
+            <span style={{ color: theme.textDim, letterSpacing: '0.08em' }}>
+              {memoryTotal ?? '—'} SEALED
+            </span>
           </div>
-        ))}
-        {running && (
-          <div style={{ color: theme.accent }}>
-            <span style={{ animation: 'none' }}>▍</span> executing…
+          <div
+            role="list"
+            aria-label="Kai ledger memory"
+            style={{ flex: 1, minHeight: '128px', maxHeight: '238px', overflowY: 'auto' }}
+          >
+            {memoryRecords.length === 0 && (
+              <p style={{ margin: 0, color: theme.textDim, fontSize: '11.5px', lineHeight: 1.55 }}>
+                Nothing sealed yet. Only a VERIFIED cycle is remembered; a blocked or unverified
+                intent writes nothing.
+              </p>
+            )}
+            {memoryRecords.map((record) => (
+              <div
+                key={record.id}
+                role="listitem"
+                style={{
+                  padding: '6px 0',
+                  borderBottom: `1px solid ${theme.border}`,
+                  fontFamily: theme.fontMono,
+                  fontSize: '10px',
+                  lineHeight: 1.5,
+                }}
+              >
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <span style={{ color: theme.textDim }}>{clockOf(record.timestamp)}</span>
+                  <span
+                    style={{
+                      color: STATUS_TONE[(record.status as Verdict) ?? 'NOT_EXECUTED'],
+                      fontWeight: 700,
+                    }}
+                  >
+                    {record.status}
+                  </span>
+                </div>
+                <div
+                  style={{
+                    color: theme.textMuted,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                  title={record.intent}
+                >
+                  {record.intent}
+                </div>
+                <div style={{ color: theme.accentWarm }}>{shortHash(record.evidence_hash)}</div>
+              </div>
+            ))}
           </div>
-        )}
-        {error && <div style={{ color: theme.divergent }}>✕ {error}</div>}
+        </div>
+
+        {/* Pane 3 — EXECUTION LOG */}
+        <div style={paneStyle}>
+          <div style={paneLabelStyle}>Execution Log</div>
+          <div
+            role="log"
+            aria-live="polite"
+            aria-label="Execution terminal"
+            style={{
+              flex: 1,
+              minHeight: '128px',
+              maxHeight: '238px',
+              overflowY: 'auto',
+              padding: '10px 12px',
+              background: '#01060f',
+              border: `1px solid ${theme.border}`,
+              borderRadius: theme.radiusSmall,
+              fontFamily: theme.fontMono,
+              fontSize: '10.5px',
+              lineHeight: 1.6,
+              wordBreak: 'break-word',
+            }}
+          >
+            <div style={{ color: theme.textDim }}>
+              KAI idle · awaiting intent · ledger memory {memoryTotal ?? '—'}
+            </div>
+            {visibleSteps.map((step, index) => (
+              <div key={`${step.actor}-${step.phase}-${index}`} style={{ color: theme.textMuted }}>
+                <span style={{ color: theme.textDim }}>[{clockOf(step.at)}]</span>{' '}
+                <span style={{ color: ACTOR_TONE[step.actor], fontWeight: 700 }}>{step.actor}</span>{' '}
+                <span style={{ color: theme.textDim }}>{step.phase}</span>{' '}
+                <span
+                  style={{
+                    color:
+                      STATUS_TONE[(step.status as Verdict) ?? 'NOT_EXECUTED'] ?? theme.textMuted,
+                  }}
+                >
+                  {step.status}
+                </span>{' '}
+                <span>{step.detail}</span>
+              </div>
+            ))}
+            {running && <div style={{ color: theme.accent }}>▍ executing…</div>}
+            {error && <div style={{ color: theme.divergent }}>✕ {error}</div>}
+          </div>
+        </div>
       </div>
 
       {/* Verified answer */}
@@ -367,8 +476,7 @@ export function InvisibleComputer() {
             </span>
             {result.contract && (
               <span>
-                CONTRACT · {result.contract.authority_level} ·{' '}
-                {result.contract.id.slice(0, 8)}
+                CONTRACT · {result.contract.authority_level} · {result.contract.id.slice(0, 8)}
               </span>
             )}
             {result.engine && <span>ELION · {result.engine}</span>}
@@ -383,44 +491,6 @@ export function InvisibleComputer() {
         </div>
       )}
 
-      {/* Recent memory */}
-      {memoryRecords.length > 0 && (
-        <div style={{ marginTop: '14px' }}>
-          <div
-            style={{
-              fontFamily: theme.fontMono,
-              fontSize: '10px',
-              letterSpacing: '0.18em',
-              color: theme.textDim,
-              marginBottom: '6px',
-            }}
-          >
-            KAI MEMORY · LAST {memoryRecords.length}
-          </div>
-          {memoryRecords.map((record) => (
-            <div
-              key={record.id}
-              style={{
-                display: 'flex',
-                gap: '10px',
-                fontFamily: theme.fontMono,
-                fontSize: '10.5px',
-                color: theme.textDim,
-                padding: '2px 0',
-              }}
-            >
-              <span style={{ color: STATUS_TONE[(record.status as Verdict) ?? 'NOT_EXECUTED'] }}>
-                {record.status}
-              </span>
-              <span style={{ color: theme.textMuted, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {record.intent}
-              </span>
-              <span style={{ color: theme.accentWarm }}>{shortHash(record.evidence_hash)}</span>
-            </div>
-          ))}
-        </div>
-      )}
-
       {/* Bottom status bar */}
       <div
         style={{
@@ -428,8 +498,8 @@ export function InvisibleComputer() {
           alignItems: 'center',
           justifyContent: 'space-between',
           gap: '12px',
-          margin: '20px -22px 0',
-          padding: '12px 22px',
+          margin: '20px -20px 0',
+          padding: '12px 20px',
           borderTop: `1px solid ${theme.border}`,
           background: 'rgba(2, 6, 23, 0.72)',
         }}
@@ -463,7 +533,7 @@ export function InvisibleComputer() {
           {verdict}
         </span>
         <span style={{ fontSize: '11px', color: theme.textDim }}>
-          ATT&nbsp;DON&apos;T&nbsp;ASSERT · UNKNOWN&nbsp;PRESERVED
+          Pidgin fit carry the warmth · evidence go carry the claim
         </span>
       </div>
     </section>
