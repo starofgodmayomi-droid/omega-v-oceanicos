@@ -125,6 +125,45 @@ export function EntityBodyPanel() {
         </p>
       ) : (
         <>
+          {body?.soul && (
+            <div
+              style={{
+                marginBottom: '12px',
+                padding: '10px 12px',
+                border: `1px dashed ${theme.border}`,
+                borderRadius: '6px',
+                background: 'rgba(2, 6, 23, 0.72)',
+              }}
+            >
+              <div
+                style={{
+                  fontFamily: theme.fontMono,
+                  fontSize: '8.5px',
+                  letterSpacing: '0.16em',
+                  color: theme.accentWarm,
+                  marginBottom: '6px',
+                }}
+              >
+                THE ROOT IT ANSWERS TO · 00_SOUL/human_root.txt
+              </div>
+              <pre
+                aria-label="Entity soul intent"
+                style={{
+                  margin: 0,
+                  maxHeight: '150px',
+                  overflowY: 'auto',
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-word',
+                  fontFamily: theme.fontMono,
+                  fontSize: '9.5px',
+                  lineHeight: 1.6,
+                  color: theme.textMuted,
+                }}
+              >
+                {body.soul.trim()}
+              </pre>
+            </div>
+          )}
           <ul
             className="entity-organ-grid"
             style={{ display: 'grid', listStyle: 'none', gap: '8px', margin: 0, padding: 0 }}
@@ -162,7 +201,14 @@ export function EntityBodyPanel() {
                     {organ.status}
                   </span>
                 </div>
-                <div style={{ fontSize: '10.5px', color: theme.textMuted, lineHeight: 1.45, marginTop: '3px' }}>
+                <div
+                  style={{
+                    fontSize: '10.5px',
+                    color: theme.textMuted,
+                    lineHeight: 1.45,
+                    marginTop: '3px',
+                  }}
+                >
                   {organ.role}
                 </div>
                 <div
@@ -191,7 +237,8 @@ export function EntityBodyPanel() {
               color: theme.textDim,
             }}
           >
-            BODY · {body ? `${body.bodyDigest.slice(0, 16)}…` : '—'} · {body?.law ?? 'Ω∞v ::= VERIFY(ΔREALITY)'}
+            BODY · {body ? `${body.bodyDigest.slice(0, 16)}…` : '—'} ·{' '}
+            {body?.law ?? 'Ω∞v ::= VERIFY(ΔREALITY)'}
             {body?.missing.length ? ` · MISSING ${body.missing.join(', ')}` : ''}
           </p>
         </>
