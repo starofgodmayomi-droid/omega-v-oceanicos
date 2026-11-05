@@ -150,8 +150,6 @@ export function EntityBodyPanel() {
                 aria-label="Entity soul intent"
                 style={{
                   margin: 0,
-                  maxHeight: '150px',
-                  overflowY: 'auto',
                   whiteSpace: 'pre-wrap',
                   wordBreak: 'break-word',
                   fontFamily: theme.fontMono,
