@@ -56,6 +56,15 @@ docker compose -f docker-compose.base44.yml up -d
 ## Ecosystem body equation (repo outward ring)
 `ECOSYSTEM_BODY.md` is the fixpoint. `packages/mini/src/ecosystem-body-equation.ts` runs it: a surface is remembered only when evidence is present, it is not a known scam, authority meets the required level, and expected ≡ observed. Otherwise the fold halts `DIVERGENT`, `UNKNOWN`, or `NOT_EXECUTED` and names no upgrade. `GET /v1/ecosystem/equation` compresses the in-process law constant only — that is not a disk read. `POST /v1/ecosystem/equation` compresses caller-supplied surfaces. `POST /v1/ecosystem/equation/expand` restores them and refuses a tampered digest. `pnpm compress:repo` reads the declared outward ring from the checkout, compresses it, and prints one `NOT_EXECUTED` upgrade candidate when every path was read and non-empty. Compression is not permission. Doc: `docs/ECOSYSTEM-BODY-EQUATION.md`.
 
+## ΩVØØS entity body (receipt law → API → three-pane ocean UI)
+The stored directive in `ΩVØØS/CORE/ECOSYSTEM_BODY.md` names a three-pane ocean surface (`#030812` ocean, `#00e5ff` cyan) and points at `ΩVØØS/app.py` for it. `app.py` never served HTTP, so the surface lives on the repo's real web app instead.
+
+- **Law**: `runEntity` in `packages/mini/src/ovoos-entity.ts`, exported from `@oceanicos/mini` (`runEntity`, `ENGINE`, `CHECKSUM_SYMBOL`, `PHASE_THRESHOLDS`, `ovoosPhaseName`, `ovoosEase`, `ovoosSha256Hex`). It composes locally and never emits `VERIFIED`; a caller-supplied witness match stays `UNKNOWN`.
+- `ΩVØØS/backend_magic.ts` is now a thin CLI wrapper: it re-exports `../packages/mini/src/ovoos-entity.ts` and keeps its `node --experimental-strip-types backend_magic.ts "intent" [phaseT]` entry (Node 22.23 strips types, so the `.ts` re-export resolves). Node prints a `MODULE_TYPELESS_PACKAGE_JSON` warning for that import because `packages/mini` has no `"type"` field; it is stderr-only and the receipt is unaffected. Do not add `"type": "module"` to `packages/mini` — tsc emits that package as CommonJS and the API requires it. Do not re-implement the law there.
+- **API**: `apps/api/src/ovoos-entity-route.ts` — `GET /v1/ovoos/entity` (law constants) and `POST /v1/ovoos/entity` (`{intent, phaseT, witness?}` → `{receipt, phase, row, ledgerMutation:false}`), each also on the `/api/v1/ovoos/entity` alias the Vite proxy reaches. All four are in `API_ROUTE_INVENTORY`; the route-contract test fails if they are not registered.
+- **Web**: `apps/web/src/EntityBodyPanel.tsx`, rendered directly after `InvisibleComputer` in `App.tsx`. It loads the law from the GET (so the phase names are not duplicated in the client) and renders the POST receipt in pane III. `display:grid` + `auto-fit` collapses the three panes to one column on mobile.
+- Tests: `tests/integration/ovoos-entity-route.integration.test.ts` (both aliases, halts, malformed body) and `apps/web/src/__tests__/dom/EntityBodyPanel.test.tsx`.
+
 ## Fixed bug
 `apps/api/src/index.ts` line 204: `persistenceEncryptionKey` was undefined → changed to `encryptionEnabled(persistenceKey)` to match the pattern used at lines 163/165.
 

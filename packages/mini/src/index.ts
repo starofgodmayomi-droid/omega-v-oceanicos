@@ -233,6 +233,23 @@ export function executeOceanicosMaxExpansion(): CryptographicBlock {
   return securelyMintedBlock;
 }
 
+export {
+  ENGINE,
+  CHECKSUM_SYMBOL,
+  PHASE_THRESHOLDS,
+  ease as ovoosEase,
+  phaseName as ovoosPhaseName,
+  runEntity,
+  sha256Hex as ovoosSha256Hex,
+} from './ovoos-entity.js';
+export type {
+  LedgerRow as OvoosLedgerRow,
+  PhaseName as OvoosPhaseName,
+  Receipt as OvoosReceipt,
+  ReceiptStatus as OvoosReceiptStatus,
+  RunInput as OvoosRunInput,
+} from './ovoos-entity.js';
+
 if (typeof require !== 'undefined' && require.main === module) {
   executeOceanicosMaxExpansion();
 }

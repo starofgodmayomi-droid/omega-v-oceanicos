@@ -2,8 +2,9 @@
 """Print one ΩVØØS receipt as JSON.
 
 Section V of the stored directive names this file as a 3-pane ocean UI.
-That UI is not implemented in this file. The repository web surface is
-apps/web. This process does not start a server, call a model, or write a ledger.
+The UI itself is served by the repository web surface: apps/web/src/EntityBodyPanel.tsx
+(three panes, #030812 ocean, #00e5ff cyan), reading POST /v1/ovoos/entity.
+This process does not start a server, call a model, or write a ledger.
 
 Usage: python3 app.py "intent" [phase_t]
 """
