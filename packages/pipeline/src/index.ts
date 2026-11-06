@@ -139,6 +139,9 @@ export class OceanicosPipelineEngine {
       attestations: [],
     }));
 
+    // Admit only a well-formed DAG; invalid graphs must not create runs or dispatch jobs.
+    const order = this.topologicalSort(stages);
+
     const run: PipelineRun = {
       runId,
       name: spec.name,
@@ -154,7 +157,6 @@ export class OceanicosPipelineEngine {
     this.runs.set(runId, run);
 
     // Execute stages in topological order
-    const order = this.topologicalSort(stages);
     let rollbackTriggered = false;
     let totalAttestations = 0;
 
@@ -170,6 +172,17 @@ export class OceanicosPipelineEngine {
       if (!depsOk) {
         stage.status = 'SKIPPED';
         continue;
+      }
+
+      if (stage.gate.policy === 'REQUIRE_HUMAN') {
+        stage.status = 'GATE_BLOCKED';
+        stage.completedAt = new Date().toISOString();
+        stage.error = 'Human approval cannot be verified by this pipeline engine; no jobs were dispatched.';
+        run.currentStageId = stageId;
+        for (const pendingStage of stages) {
+          if (pendingStage.status === 'PENDING') pendingStage.status = 'SKIPPED';
+        }
+        break;
       }
 
       stage.status = 'RUNNING';
@@ -345,6 +358,27 @@ export class OceanicosPipelineEngine {
 
   /** Kahn's Algorithm — topological sort of stage DAG */
   private topologicalSort(stages: PipelineStage[]): string[] {
+    const stageIds = new Set<string>();
+    for (const stage of stages) {
+      if (!stage.stageId.trim()) {
+        throw new Error('Invalid pipeline stage graph: stageId must not be empty');
+      }
+      if (stageIds.has(stage.stageId)) {
+        throw new Error(`Invalid pipeline stage graph: duplicate stage ID '${stage.stageId}'`);
+      }
+      stageIds.add(stage.stageId);
+    }
+
+    for (const stage of stages) {
+      for (const dependencyId of stage.dependsOn) {
+        if (!stageIds.has(dependencyId)) {
+          throw new Error(
+            `Invalid pipeline stage graph: stage '${stage.stageId}' depends on unknown stage '${dependencyId}'`
+          );
+        }
+      }
+    }
+
     const inDegree = new Map<string, number>();
     const adj = new Map<string, string[]>();
 
@@ -370,9 +404,8 @@ export class OceanicosPipelineEngine {
       }
     }
 
-    // If not all stages included → cycle detected, include remaining in order
-    for (const s of stages) {
-      if (!result.includes(s.stageId)) result.push(s.stageId);
+    if (result.length !== stages.length) {
+      throw new Error('Invalid pipeline stage graph: dependency cycle detected');
     }
 
     return result;
@@ -385,9 +418,8 @@ export class OceanicosPipelineEngine {
       case 'REQUIRE_ATTESTATION':
         return passed > 0;
       case 'REQUIRE_HUMAN':
-        // In a real system this would block for a human approval event
-        // Here we auto-approve to enable testable behaviour
-        return passed > 0;
+        // No independent human-approval event is available in this engine.
+        return false;
       case 'THRESHOLD':
         return total === 0 ? true : passed / total >= (gate.threshold ?? 1.0);
       default:
