@@ -100,6 +100,12 @@ async function handleOmega(argsAfterCommand) {
   throw new Error('unknown omega command; use workers, propose, inspect, admit, approve, execute, observe, verify-reality, or events');
 }
 
+async function handleOvoos(argsAfterCommand) {
+  const intent = argsAfterCommand.join(' ').trim();
+  if (!intent) throw new Error('ovoos requires a bounded intent');
+  console.log(JSON.stringify(await omegaRequest('/v1/ovoos/receipt', 'POST', { intent, phaseT: 0 }), null, 2));
+}
+
 function printBanner() {
   const pidgin = process.env.PIDGIN_ENGINE === 'ON' || args.includes('--pidgin');
   console.log(`
@@ -331,6 +337,7 @@ ${ANSI.bold}COMMANDS:${ANSI.reset}
   ${ANSI.green}mood${ANSI.reset}        Display Singularity compression state and Pidgin Spirit Axiom
   ${ANSI.green}stream${ANSI.reset}      Stream live block minting events via SSE from local Fastify API
   ${ANSI.green}omega${ANSI.reset}       Propose, inspect, admit, execute, and verify bounded Ω commands
+  ${ANSI.green}ovoos${ANSI.reset}       Produce a bounded, read-only ΩVØØS receipt
   ${ANSI.green}help${ANSI.reset}        Display this help message
 
 ${ANSI.bold}OPTIONS:${ANSI.reset}
@@ -366,6 +373,9 @@ switch (command) {
     break;
   case 'omega':
     await handleOmega(args.slice(1));
+    break;
+  case 'ovoos':
+    await handleOvoos(args.slice(1));
     break;
   case 'help':
   case '--help':

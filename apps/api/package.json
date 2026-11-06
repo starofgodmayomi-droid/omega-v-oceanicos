@@ -15,6 +15,7 @@
     "@oceanicos/mini": "workspace:*",
     "@oceanicos/observer": "workspace:*",
     "@oceanicos/remember": "workspace:*",
+    "@oceanicos/ovoos": "workspace:*",
     "@oceanicos/types": "workspace:*",
     "@oceanicos/verification": "workspace:*",
     "@omega-v/oreade": "workspace:*",

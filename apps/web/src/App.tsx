@@ -18,6 +18,7 @@ import { InvisibleComputer } from './InvisibleComputer';
 import { WaterFlowPanel } from './WaterFlowPanel';
 import { LifecycleFlow, deriveStageStates, type LifecycleStage } from './LifecycleFlow';
 import { GlobeViewport } from './GlobeViewport';
+import { OvoosPanel } from './OvoosPanel';
 import { bindGlobeEvidence } from './globe-shell';
 import { omegaApprovalRequest } from './omega-approval-request';
 import {
@@ -593,6 +594,7 @@ export function App() {
               <small>{ecosystemBody.expansion?.moduleInvariant} · read-only · bounded · append-only</small>
             </section>
           )}
+          <OvoosPanel />
           <EcosystemPanel />
         </>
       ),
