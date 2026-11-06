@@ -50,6 +50,15 @@ docker compose -f docker-compose.base44.yml up -d
 - `authorityLevel` in the request body may be `AUTONOMOUS`; the endpoint still only answers (CAPABILITY != AUTHORITY), and the contract records a bounded plan.
 - Tests: `node --experimental-strip-types --test ./tests/integration/execute-route.integration.test.ts` (needs `apps/api/dist` built, like the route-contract test).
 
+## ΩVØØS cosmic mirror (four-step loop)
+`POST /v1/voos/execute` (`{intent, phaseT?, observed?, source?}`) runs the loop stored in `ΩVØØS/CORE/ECOSYSTEM_BODY.md`: KAI Shield → ELION `Ease(t)` composer → OMEGA digest comparison → KAI Ledger append. The response is `{success, receipt, ledger, integrity}`; `receipt` is the directive's flat contract (`engine/status/phase_t/evidence_hash/action/reason/next_delta`).
+- Status: `DIVERGENT` on a shield phrase; `UNKNOWN` for a local composition, a named external bridge (NOT_EXECUTED), or an abundance draft; `VERIFIED` only when `observed` — declared from a `source` outside the engine — reproduces the expected SHA-256. That verifies artifact identity between two byte streams, not that a real-world action happened. A self-named source (`voos`, `engine`, `self`, `local`) stays `UNKNOWN`.
+- `GET /v1/voos/ledger?limit=n` returns newest-first rows, total, and hash-chain integrity.
+- Ledger: append-only table `VoosLedger` in `<dbPath>.voos.db` (sequence, timestamp, intent, phase_t, status, evidence_hash, prev_hash, reason, authorized, row_hash). Rows chain by `prev_hash`; `row_hash` covers every field, so an edited row breaks `verifyIntegrity()`. No update/delete method exists. `authorized` is always false in this slice: verification is not authorization.
+- No external bridge, model, or payment is called. The engine is deterministic and local.
+- UI: `apps/web/src/VoosPanel.tsx` in `App.tsx` — three panes (intent + phase slider, receipt JSON, ledger) on the directive's ocean surface (`#030812` / `#00e5ff`).
+- Tests: `node --experimental-strip-types --test ./tests/integration/voos-api.integration.test.ts` (needs `apps/api/dist`).
+
 ## Single body compression (4×4×4×4)
 `GET /v1/ecosystem/body` carries a `compression` block: the seven runtime layers projected onto four axes of four coordinates (256 cells) with a local compress→expand proof. `POST /v1/ecosystem/body/expand` takes `{ compression }` and returns the records; a tampered digest is `400 DIGEST_MISMATCH`. Contract: `packages/mini/src/single-body.ts`; doc: `docs/SINGLE-BODY-4X4X4X4.md`; UI: `apps/web/src/SingleBodyPanel.tsx`. Coordinates are a declared projection (`body.layers.v1`), not inferred truth. The same read includes `fixpoint` from `evaluateEcosystemFixpoint`. `ledgerMutation` is false.
 

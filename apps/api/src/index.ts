@@ -25,6 +25,8 @@ import { OmegaCommandStore, OmegaIdempotencyConflictError, registerOmegaRoutes }
 import { registerMeshValidationRoute } from './mesh-route.js';
 import { KaiMemoryStore } from './kai-memory.js';
 import { registerExecuteRoute } from './execute-route.js';
+import { VoosLedgerStore } from './voos.js';
+import { registerVoosRoute } from './voos-route.js';
 import { scanIntent } from './invisible-computer.js';
 import {
   ENCRYPTION_ALGORITHM,
@@ -166,11 +168,14 @@ export function createApp(
   const connectorObservationStore = new FileConnectorObservationStore(connectorObservationPath);
   const kaiMemoryPath = dbPath === ':memory:' ? ':memory:' : `${dbPath}.kai.db`;
   const kaiMemory = new KaiMemoryStore(kaiMemoryPath);
+  const voosLedgerPath = dbPath === ':memory:' ? ':memory:' : `${dbPath}.voos.db`;
+  const voosLedger = new VoosLedgerStore(voosLedgerPath);
 
   fastify.addHook('onClose', async () => {
     ledgerMemory.close();
     omegaCommands.close();
     kaiMemory.close();
+    voosLedger.close();
   });
 
   type RevocationRecord = { id: string; attestationId: string; reason: string; revokedBy: string; revokedAt: string };
@@ -275,6 +280,7 @@ export function createApp(
   });
   registerMeshValidationRoute(fastify, ledgerMemory, requireReadAccess, jsonError);
   registerExecuteRoute(fastify, kaiMemory, jsonError);
+  registerVoosRoute(fastify, voosLedger, jsonError);
 
   fastify.get('/health', async (_request, reply) => {
     let ledgerIntegrity;

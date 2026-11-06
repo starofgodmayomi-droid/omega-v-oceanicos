@@ -12,6 +12,7 @@ import { OreadConsole } from './OreadConsole';
 import { MoodCodexPanel } from './MoodCodexPanel';
 import { DivergenceAlertsPanel } from './DivergenceAlertsPanel';
 import { ValueNavigatorPanel } from './ValueNavigatorPanel';
+import { VoosPanel } from './VoosPanel';
 import { ConnectorPanel } from './ConnectorPanel';
 import { WholeEcosystemDashboard } from './WholeEcosystemDashboard';
 import { InvisibleComputer } from './InvisibleComputer';
@@ -877,6 +878,7 @@ export function App() {
         <MoodCodexPanel />
         <DivergenceAlertsPanel />
         <ValueNavigatorPanel />
+        <VoosPanel />
         <ConnectorPanel />
 
         <IntentFlow

@@ -60,6 +60,8 @@ export const API_ROUTE_INVENTORY = [
   'GET /v1/omega/events',
   'POST /v1/omega/coordination/evidence',
   'GET /v1/ecosystem/status',
+  'POST /v1/voos/execute',
+  'GET /v1/voos/ledger',
   'POST /api/execute',
   'POST /execute',
   'GET /api/kai/memory',
