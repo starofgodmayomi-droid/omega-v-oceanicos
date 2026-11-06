@@ -24,11 +24,47 @@ services:
     working_dir: /app
     volumes:
       - .:/app
-    # Start node --watch only after tsc's initial pass finished: emitting ~9 files
-    # into dist while node --watch is already running restarted the server nine
-    # times in a row at boot, so the WORKERS panel's poll hit a closed port
-    # (ECONNREFUSED through the Vite proxy). Later edits emit one file → one restart.
-    command: sh -c "mkdir -p data && (npx tsc --watch -p apps/api > /tmp/tsc.log 2>&1 &) && until grep -q 'Watching for file changes' /tmp/tsc.log 2>/dev/null; do sleep 0.3; done && exec node --watch apps/api/dist/index.js"
+    # Live reload is debounced: tsc --watch emits one file at a time, and a plain
+    # `node --watch` restart per emit took the port down for each file (7 restarts
+    # in 7s at boot). A polling client such as the WORKERS panel then hit a closed
+    # port through the Vite proxy (ECONNREFUSED). This supervisor waits for tsc's
+    # initial pass, then restarts the server once per compile batch, so the server
+    # is offline for a single short restart instead of a burst.
+    command:
+      - sh
+      - -ec
+      - |
+        mkdir -p data
+        npx tsc --watch -p apps/api > /tmp/tsc.log 2>&1 &
+        tsc_pid=$$!
+        compiles() { grep -c 'Watching for file changes' /tmp/tsc.log 2>/dev/null || true; }
+        until [ "$$(compiles)" -ge 1 ]; do
+          if ! kill -0 "$$tsc_pid" 2>/dev/null; then
+            echo "tsc exited before the first compile" >&2
+            tail -20 /tmp/tsc.log >&2
+            exit 1
+          fi
+          sleep 0.3
+        done
+        start_api() { node apps/api/dist/index.js & api_pid=$$!; }
+        seen=$$(compiles); seen=$${seen:-0}
+        start_api
+        while kill -0 "$$tsc_pid" 2>/dev/null; do
+          sleep 0.4
+          now=$$(compiles); now=$${now:-0}
+          if [ "$$now" -gt "$$seen" ]; then
+            sleep 1
+            seen=$$(compiles); seen=$${seen:-0}
+            kill "$$api_pid" 2>/dev/null || true
+            wait "$$api_pid" 2>/dev/null || true
+            sleep 0.2
+            start_api
+          elif ! kill -0 "$$api_pid" 2>/dev/null; then
+            sleep 1
+            start_api
+          fi
+        done
+        kill "$$api_pid" 2>/dev/null || true
     environment:
       - NODE_ENV=development
       - API_PORT=5000
