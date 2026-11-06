@@ -175,6 +175,16 @@ missing, or KAI blocks a matching intent. Provider availability and model
 output are not independently validated facts; the output digest verifies text
 integrity only.
 
+`POST /api/execute` accepts an optional `phase_t` (0.0–1.0) and echoes the
+declared pacing: `phase_t` (clamped to the range), `phase_label` (`SPROUT` below
+0.3, `BLOOM` below 0.7, `PLATEAU` below 0.9, otherwise `WILT`) and
+`ease_factor = (1 - cos(π·t)) / 2`, which rises monotonically from 0 at t = 0 to
+1 at t = 1 — so `WILT` carries the highest factor and the labels do not invert
+the curve. A missing or non-numeric `phase_t` leaves all three `null` /
+`UNKNOWN`; it is not defaulted. The phase is a label the caller supplies. It
+allocates nothing, spends nothing, changes no verdict, and is not evidence that a
+process grew.
+
 Value Navigator proposals always remain `decision: REVIEW`,
 `authorized: false`, and `NOT_EXECUTED`. Observations are supplied by the
 caller; a `VERIFIED` result means only that the submitted source/evidence and

@@ -78,6 +78,45 @@ export function sha256Hex(value: string): string {
 }
 
 /**
+ * The Arrow of Time, as declared pacing — not a measurement.
+ *
+ * `Ease(t) = (1 - cos(t * π)) / 2` over t bounded to [0, 1]: 0 at t = 0, rising
+ * monotonically to 1 at t = 1. The phase labels are a separate declared
+ * mapping, so `WILT` (t >= 0.9) carries the highest factor — the labels do not
+ * invert the curve. Nothing here allocates resources, spends money, or slows a
+ * real process. The curve is reported beside the cycle so a caller can see
+ * which phase it declared.
+ */
+export function ease(t: number): number {
+  const bounded = Math.max(0, Math.min(1, t));
+  return (1 - Math.cos(bounded * Math.PI)) / 2;
+}
+
+export type PhaseLabel = 'SPROUT' | 'BLOOM' | 'PLATEAU' | 'WILT' | 'UNKNOWN';
+
+/** Label thresholds are a declared mapping, not an observed growth state. */
+export function phaseLabelFor(t: number): PhaseLabel {
+  if (t < 0.3) return 'SPROUT';
+  if (t < 0.7) return 'BLOOM';
+  if (t < 0.9) return 'PLATEAU';
+  return 'WILT';
+}
+
+export type PhaseProjection = { t: number | null; label: PhaseLabel; ease: number | null };
+
+/**
+ * A phase the caller did not supply stays UNKNOWN. Defaulting it to 0.5 would
+ * invent a position on the arrow of time that nobody observed.
+ */
+export function phaseProjection(requested: unknown): PhaseProjection {
+  if (typeof requested !== 'number' || !Number.isFinite(requested)) {
+    return { t: null, label: 'UNKNOWN', ease: null };
+  }
+  const t = Math.max(0, Math.min(1, requested));
+  return { t, label: phaseLabelFor(t), ease: ease(t) };
+}
+
+/**
  * CAPABILITY != AUTHORITY. The endpoint can only answer; it never acts on the
  * world, so an autonomous claim is recorded as a bounded plan.
  */

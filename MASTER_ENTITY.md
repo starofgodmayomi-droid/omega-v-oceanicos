@@ -103,12 +103,12 @@ two truths.
 | --- | --- | --- |
 | 1. KAI Shield, halt `DIVERGENT` | `scanIntent` matches money transfer, guaranteed returns, risk-free profit, doubling scheme, seed phrase, private key, OTP, gift card, bank details | implemented |
 | 1b. Authority, halt `NOT_EXECUTED` | `requiredAuthorityFor` vs. granted level | implemented (an addition to the block's list of halt states) |
-| 2. ELION execute with `Ease(t)` pacing | ELION executes; **no `Ease(t)` pacing and no Sprout → Bloom → Wilt phase exists** | execute implemented; pacing **NOT_EXECUTED** |
+| 2. ELION execute with `Ease(t)` pacing | `phaseProjection` in `apps/api/src/invisible-computer.ts`; `POST /api/execute` echoes `phase_t`, `phase_label` (`SPROUT` < 0.3, `BLOOM` < 0.7, `PLATEAU` < 0.9, else `WILT`) and `ease_factor = (1 − cos(π·t)) / 2` | implemented as declared pacing: it allocates nothing and changes no verdict. The curve is monotonic, so `WILT` carries the **highest** factor, not the lowest |
 | 3. OMEGA gate, SHA-256, `Expected ≡ Observed` | `verifyOmega` recomputes the digest and checks the contract row | implemented |
 | 4. KAI ledger append | `KaiMemory` insert, `VERIFIED` only; schema `{id, timestamp, intent, evidence_hash, status, contract_id}` | implemented; the schema carries `contract_id`, not `phase_t` / `authorized` |
 | Urgency / coercion pattern | `urgency` and `act-now` patterns, both labelled `artificial urgency` | implemented for urgency; there is no separate threat or coercion pattern |
 | §V Abundance Bridge (888Hz, 4 layers) | No wealth/growth composer exists in the code | **NOT_EXECUTED** |
-| §VII receipt `{engine, status, phase_t, evidence_hash, action, reason, next_delta}` | `POST /api/execute` returns `status`, `engine` (the model id, `null` on a halt), `evidence_hash`, `reason`, `steps`, `upgrade`, `memory`, `contract` | partially implemented: no `action`, `phase_t`, or `next_delta` field |
+| §VII receipt `{engine, status, phase_t, evidence_hash, action, reason, next_delta}` | `POST /api/execute` returns `status`, `engine` (the model id, `null` on a halt), `evidence_hash`, `reason`, `steps`, `upgrade`, `memory`, `contract` | partially implemented: `phase_t`, `phase_label` and `ease_factor` are present; no `action` or `next_delta` field |
 
 ### The one boundary to keep in view
 

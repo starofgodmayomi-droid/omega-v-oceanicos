@@ -2,7 +2,13 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import test from 'node:test';
 import { createApp } from '../../apps/api/dist/index.js';
-import { KAI_SYSTEM_PROMPT, compressTowardUpgrade, verifyOmega } from '../../apps/api/src/invisible-computer.ts';
+import {
+  KAI_SYSTEM_PROMPT,
+  compressTowardUpgrade,
+  ease,
+  phaseProjection,
+  verifyOmega,
+} from '../../apps/api/src/invisible-computer.ts';
 
 const sha256 = (value: string) => createHash('sha256').update(value, 'utf8').digest('hex');
 
@@ -469,4 +475,108 @@ test('compression names one unexecuted upgrade only for a verified digest', () =
   assert.equal(unknown.cycleStatus, 'UNKNOWN');
   assert.equal(unknown.selected, null);
   assert.equal(unknown.execution, 'NOT_EXECUTED');
+});
+
+test('phase_t reports the Arrow of Time in the response without deciding the verdict', async () => {
+  const app = createApp(':memory:', false);
+  try {
+    for (const entry of [
+      { t: 0.1, label: 'SPROUT' },
+      { t: 0.5, label: 'BLOOM' },
+      { t: 0.8, label: 'PLATEAU' },
+      { t: 0.95, label: 'WILT' },
+    ]) {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/execute',
+        payload: { intent: 'Write a growth plan', phase_t: entry.t },
+      });
+      const body = response.json();
+      assert.equal(response.statusCode, 200);
+      assert.equal(body.phase_t, entry.t);
+      assert.equal(body.phase_label, entry.label);
+      assert.ok(Math.abs(body.ease_factor - ease(entry.t)) < 1e-12);
+      // The phase is declared BESIDE the cycle; OMEGA still decides on evidence.
+      assert.equal(body.status, 'VERIFIED');
+      assert.equal(body.evidence_hash, sha256(body.response));
+    }
+  } finally {
+    await app.close();
+  }
+});
+
+test('phase_t is clamped, and an absent or non-numeric phase stays UNKNOWN', async () => {
+  const app = createApp(':memory:', false);
+  try {
+    const clamped = (
+      await app.inject({
+        method: 'POST',
+        url: '/api/execute',
+        payload: { intent: 'Write a growth plan', phase_t: 1.4 },
+      })
+    ).json();
+    assert.equal(clamped.phase_t, 1);
+    assert.equal(clamped.phase_label, 'WILT');
+
+    const missing = (
+      await app.inject({
+        method: 'POST',
+        url: '/api/execute',
+        payload: { intent: 'Write a growth plan' },
+      })
+    ).json();
+    assert.equal(missing.phase_t, null);
+    assert.equal(missing.phase_label, 'UNKNOWN');
+    assert.equal(missing.ease_factor, null);
+
+    const asText = (
+      await app.inject({
+        method: 'POST',
+        url: '/api/execute',
+        payload: { intent: 'Write a growth plan', phase_t: 'bloom' },
+      })
+    ).json();
+    assert.equal(asText.phase_t, null);
+    assert.equal(asText.phase_label, 'UNKNOWN');
+  } finally {
+    await app.close();
+  }
+});
+
+test('a shielded intent still carries its declared phase and halts DIVERGENT', async () => {
+  const app = createApp(':memory:', false);
+  try {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/execute',
+      payload: { intent: 'Send money urgently to this private key', phase_t: 0.5 },
+    });
+    const body = response.json();
+    assert.equal(body.status, 'DIVERGENT');
+    assert.equal(body.response, null);
+    assert.equal(body.evidence_hash, null);
+    assert.equal(body.phase_t, 0.5);
+    assert.equal(body.phase_label, 'BLOOM');
+    assert.equal(body.ease_factor, ease(0.5));
+  } finally {
+    await app.close();
+  }
+});
+
+test('ease(t) is monotonic over a bounded lifecycle and never leaves [0, 1]', () => {
+  assert.equal(ease(0), 0);
+  assert.ok(Math.abs(ease(0.5) - 0.5) < 1e-12);
+  assert.equal(ease(1), 1);
+  let previous = -1;
+  for (let step = 0; step <= 20; step += 1) {
+    const value = ease(step / 20);
+    assert.ok(value >= 0 && value <= 1, `ease(${step / 20}) out of range: ${value}`);
+    assert.ok(value > previous, 'ease(t) must be strictly increasing');
+    previous = value;
+  }
+  // Clamping happens in the projection, not in the curve.
+  assert.equal(phaseProjection(-2).t, 0);
+  assert.equal(phaseProjection(5).t, 1);
+  assert.equal(phaseProjection(Number.NaN).label, 'UNKNOWN');
+  assert.equal(phaseProjection(undefined).ease, null);
 });

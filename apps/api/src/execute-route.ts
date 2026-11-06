@@ -6,6 +6,7 @@ import {
   executeElion,
   requiredAuthorityFor,
   expectedOutcomeFor,
+  phaseProjection,
   reconcileEvidence,
   scanIntent,
   sha256Hex,
@@ -56,6 +57,8 @@ export function registerExecuteRoute(
     }
 
     const authorityLevel: AuthorityLevel = deriveAuthorityLevel(body.authorityLevel);
+    // The Arrow of Time is declared by the caller and never inferred here.
+    const phase = phaseProjection(body.phase_t);
     const startedAt = Date.now();
     const steps: ExecutionStep[] = [];
     const recordStep = (
@@ -87,6 +90,9 @@ export function registerExecuteRoute(
         success: true,
         status: 'DIVERGENT',
         intent,
+        phase_t: phase.t,
+        phase_label: phase.label,
+        ease_factor: phase.ease,
         response: null,
         evidence_hash: null,
         reason: 'KAI Shield blocked this intent.',
@@ -115,6 +121,9 @@ export function registerExecuteRoute(
         success: true,
         status: 'NOT_EXECUTED',
         intent,
+        phase_t: phase.t,
+        phase_label: phase.label,
+        ease_factor: phase.ease,
         response: null,
         evidence_hash: null,
         reason: `Authority ${authorityLevel} is below the required ${requiredAuthority}.`,
@@ -185,6 +194,9 @@ export function registerExecuteRoute(
       success: true,
       status: omega.status,
       intent,
+      phase_t: phase.t,
+      phase_label: phase.label,
+      ease_factor: phase.ease,
       response: elion.output || null,
       evidence_hash: elion.output ? evidenceHash : null,
       reason: omega.reason,
