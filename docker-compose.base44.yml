@@ -1,5 +1,8 @@
 # Base44 dev environment for Ω∞v Oceanicos
 # Development-oriented: runs from bind-mounted source with live reload.
+volumes:
+  pnpm-store:
+
 services:
   # One-shot: install deps + build the API's workspace dependency tree.
   setup:
@@ -7,7 +10,11 @@ services:
     working_dir: /app
     volumes:
       - .:/app
-    command: sh -c "corepack enable && corepack prepare pnpm@10 --activate && pnpm install --frozen-lockfile && pnpm --filter api... run build"
+      # Keep the content-addressable store outside the bind mount: the repo ships a
+      # tracked .pnpm-store/, and installing into it rewrote tracked files on every
+      # boot (dirty working tree). The volume persists between restarts.
+      - pnpm-store:/pnpm-store
+    command: sh -c "corepack enable && corepack prepare pnpm@10 --activate && pnpm install --frozen-lockfile --store-dir=/pnpm-store && pnpm --filter api... run build"
     environment:
       - CI=true
 
@@ -17,7 +24,11 @@ services:
     working_dir: /app
     volumes:
       - .:/app
-    command: sh -c "mkdir -p data && npx tsc --watch -p apps/api & node --watch apps/api/dist/index.js"
+    # Start node --watch only after tsc's initial pass finished: emitting ~9 files
+    # into dist while node --watch is already running restarted the server nine
+    # times in a row at boot, so the WORKERS panel's poll hit a closed port
+    # (ECONNREFUSED through the Vite proxy). Later edits emit one file → one restart.
+    command: sh -c "mkdir -p data && (npx tsc --watch -p apps/api > /tmp/tsc.log 2>&1 &) && until grep -q 'Watching for file changes' /tmp/tsc.log 2>/dev/null; do sleep 0.3; done && exec node --watch apps/api/dist/index.js"
     environment:
       - NODE_ENV=development
       - API_PORT=5000

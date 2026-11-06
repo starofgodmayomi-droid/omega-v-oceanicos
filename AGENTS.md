@@ -10,8 +10,9 @@
 ```bash
 docker compose -f docker-compose.base44.yml up -d
 ```
-- `setup` (one-shot): `pnpm install --frozen-lockfile` + `pnpm --filter api... run build` (builds the API and its workspace dependency tree; skips web).
-- `api`: runs `tsc --watch` (rebuilds `apps/api/dist` on source change) + `node --watch apps/api/dist/index.js` (restarts on dist change). Live reload for API source edits.
+- `setup` (one-shot): `pnpm install --frozen-lockfile --store-dir=/pnpm-store` + `pnpm --filter api... run build` (builds the API and its workspace dependency tree; skips web).
+  The pnpm content-addressable store lives on the `pnpm-store` compose volume, not in the checkout: the repo tracks a `.pnpm-store/` from an earlier commit and installing into it rewrote tracked files on every boot, leaving the working tree dirty. Keep `--store-dir` on any install you add to compose.
+- `api`: runs `tsc --watch` (rebuilds `apps/api/dist` on source change) + `node --watch` (restarts on dist change). Live reload for API source edits. The command waits for tsc's first pass (`Watching for file changes` in `/tmp/tsc.log`) before starting `node --watch`: starting both at once made the initial emit of ~9 files restart the server nine times, so the WORKERS panel's 10 s poll hit a closed port and Vite logged `http proxy error … ECONNREFUSED`. After that one edit → one emit → one restart.
 - `web`: `npx vite --host 0.0.0.0` from `apps/web`. Vite HMR for frontend edits.
 
 ## Key config
