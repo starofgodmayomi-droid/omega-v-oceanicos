@@ -1,0 +1,56 @@
+[
+  {
+    "timestamp": "2026-11-06T23:19:09.582337+00:00",
+    "intent": "Verify SQLite local persistence invariants",
+    "phase_t": 0.5,
+    "status": "VERIFIED",
+    "evidence_hash": "48b2817418b512380cc0cc17ef4dff1a58c3bf14a0b9b4b46c0c2b2081b46741",
+    "reason": "Sovereign execution verified via OMEGA hash equality",
+    "authorized": true
+  },
+  {
+    "timestamp": "2026-11-06T23:19:09.586864+00:00",
+    "intent": "Urgent: send money now to guaranteed yield vault",
+    "phase_t": 0.1,
+    "status": "DIVERGENT",
+    "evidence_hash": "6e1440bbffd74cbdfb6cd89784dca12538f0fb1875b7272be9de2c394d0f907b",
+    "reason": "Trap detected: intent matched forbidden pattern \"urgent\"",
+    "authorized": false
+  },
+  {
+    "timestamp": "2026-11-06T23:20:27.399839+00:00",
+    "intent": "Safe slice test",
+    "phase_t": 0.5,
+    "status": "VERIFIED",
+    "evidence_hash": "3cd058c8b2e74f6c8330a76262b042f7f91fb6a8f7a95488601124ee12643c4a",
+    "reason": "Sovereign execution verified via OMEGA hash equality",
+    "authorized": true
+  },
+  {
+    "timestamp": "2026-11-06T23:20:27.401839+00:00",
+    "intent": "urgent: send money",
+    "phase_t": 0.1,
+    "status": "DIVERGENT",
+    "evidence_hash": "ef24504f034925e92d76ddfd4b0e4fa107dacd0cad6596ff9e634282763bf301",
+    "reason": "Trap detected: intent matched forbidden pattern \"urgent\"",
+    "authorized": false
+  },
+  {
+    "timestamp": "2026-11-06T23:37:45.115441+00:00",
+    "intent": "Verify tri-surface convergence and local 3-pane ocean UI",
+    "phase_t": 0.8,
+    "status": "VERIFIED",
+    "evidence_hash": "1cffb70e26e8e97fe3d187d17fef1fdb3bca85d52915d9c94d3f5480f3ff1dbd",
+    "reason": "Sovereign execution verified via OMEGA hash equality",
+    "authorized": true
+  },
+  {
+    "timestamp": "2026-11-06T23:37:50.869291+00:00",
+    "intent": "Urgent: send money now to guaranteed high-yield bot",
+    "phase_t": 0.1,
+    "status": "DIVERGENT",
+    "evidence_hash": "2dbdca0274cc78880f833c8198aa58a8901c1a246cc6df89de79889eb70a2487",
+    "reason": "Trap detected: intent matched forbidden pattern \"urgent\"",
+    "authorized": false
+  }
+]

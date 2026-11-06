@@ -1,3 +1,4 @@
+import { jest } from '@jest/globals';
 import { createServer, Server } from 'node:http';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';

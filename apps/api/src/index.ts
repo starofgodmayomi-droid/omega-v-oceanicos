@@ -790,8 +790,22 @@ export function createApp(
 
   fastify.get('/rules', async () => {
     const engine = kernel.getVerificationEngine();
-    const rules = engine.getRules();
-    return { success: true, count: rules.length, rules };
+    const rawRules = engine.getRules();
+    const rules = rawRules.map((r: any) => ({
+      name: r.name,
+      executable: engine.canExecute ? engine.canExecute(r.name) : true,
+    }));
+    const executable = rules.filter((r: any) => r.executable).length;
+    return {
+      success: true,
+      count: rawRules.length,
+      data: {
+        registered: rawRules.length,
+        executable,
+        rules,
+      },
+      rules: rawRules,
+    };
   });
 
   const RECENT_EVENT_WINDOW = 40;

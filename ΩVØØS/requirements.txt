@@ -1,0 +1,9 @@
+# ΩVØØS Local-First Ecosystem Requirements
+# Python 3.10+
+# Core runs with 0 external dependencies (Standard Library: hashlib, json, math, http.server)
+# Optional enhancements for production bridges:
+requests>=2.31.0
+fastapi>=0.110.0
+uvicorn>=0.28.0
+pydantic>=2.6.0
+

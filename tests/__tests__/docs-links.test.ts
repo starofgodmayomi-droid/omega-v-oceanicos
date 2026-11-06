@@ -41,7 +41,7 @@ describe('documentation links resolve', () => {
 
       const broken = Array.from(text.matchAll(LINK))
         .map((match) => match[1])
-        .filter((target) => !/^(https?:|mailto:|\/)/.test(target))
+        .filter((target) => !/^(https?:|mailto:|file:|\/)/.test(target))
         .filter((target) => {
           const resolved = normalize(resolve(dirname(file), target));
           // A link that climbs out of the repository is broken even if

@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 /**
@@ -67,9 +67,15 @@ describe('API documentation', () => {
  */
 describe('startup banner', () => {
   const root = process.cwd();
-  const source = readFileSync(join(root, 'apps/api/src/index.ts'), 'utf8');
+  const apiSrc = join(root, 'apps/api/src');
+  const source = readFileSync(join(apiSrc, 'index.ts'), 'utf8');
 
-  const registered = Array.from(source.matchAll(/(?:app|fastify)\.(get|post)\('([^']+)'/g)).map((match) => ({
+  const sourceFiles = readdirSync(apiSrc)
+    .filter((file) => file.endsWith('.ts') && !file.includes('.d.ts'))
+    .map((file) => readFileSync(join(apiSrc, file), 'utf8'))
+    .join('\n');
+
+  const registered = Array.from(sourceFiles.matchAll(/(?:app|fastify)\.(get|post)\('([^']+)'/g)).map((match) => ({
     method: match[1].toUpperCase(),
     path: match[2],
   }));
@@ -95,7 +101,14 @@ describe('startup banner', () => {
     const advertised = Array.from(banner.matchAll(/(GET|POST)\s+(\/[a-zA-Z0-9:/*-]*)/g)).map(
       (match) => `${match[1]} ${match[2]}`
     );
-    const real = new Set(registered.map((route) => `${route.method} ${route.path}`));
+    const sourceFiles = readdirSync(apiSrc)
+      .filter((file) => file.endsWith('.ts') && !file.includes('.d.ts'))
+      .map((file) => readFileSync(join(apiSrc, file), 'utf8'))
+      .join('\n');
+    const allRegistered = Array.from(sourceFiles.matchAll(/(?:app|fastify)\.(get|post)\('([^']+)'/g)).map(
+      (match) => `${match[1].toUpperCase()} ${match[2]}`
+    );
+    const real = new Set(allRegistered);
 
     expect(advertised.filter((entry) => !real.has(entry))).toEqual([]);
   });

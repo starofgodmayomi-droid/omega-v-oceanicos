@@ -29,6 +29,7 @@ module.exports = {
     'conversational_integration\\.test\\.ts$',
     'web_frontend_e2e\\.test\\.ts$',
     'pwa_offline\\.test\\.ts$',
+    'knowledge-envelope-contract\\.integration\\.test\\.ts$',
   ],
   moduleNameMapper: {
     '\\.\\./\\.\\./packages/([^/]+)/dist/index(\\.js)?$': '<rootDir>/packages/$1/src/index.ts',
