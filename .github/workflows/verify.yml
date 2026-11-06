@@ -64,6 +64,15 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # Validate repository-level contracts before spending runner time on
+      # the deeper build and test matrix. These checks prove source invariants,
+      # not hosted runtime health.
+      - name: Validate CI contracts
+        run: pnpm validate:ci
+
+      - name: Validate skill contracts
+        run: pnpm validate:skills
+
       # Dependency security is part of the executable proof. Keep this after
       # the frozen install so CI audits exactly the lockfile it will build.
       - name: Audit dependencies
