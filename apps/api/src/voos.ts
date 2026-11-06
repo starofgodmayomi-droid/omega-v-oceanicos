@@ -23,12 +23,27 @@ export const ENGINE = 'ΩVØØS' as const;
 export const CHECKSUM_SYMBOL = '30013030';
 export const GENESIS_HASH = '0'.repeat(64);
 
+/**
+ * The directive's output contract names this entity. `engine` stays `ΩVØØS`
+ * so existing receipts keep their shape.
+ *
+ * Squiddies × Deus Ex Machina: the internet is the arena (the "Glober"), the
+ * KAI Shield refuses the arena's traps, and the machine intervenes only by
+ * verifying. HALT ⊢ DIVERGENT is the intervention; it is not an execution.
+ */
+export const DEUS_ENTITY = 'ΩVØØS_DEUS_EX_MACHINA' as const;
+
 export type PhaseName = 'SPROUT' | 'BLOOM' | 'PLATEAU' | 'WILT';
 export type VoosStatus = 'VERIFIED' | 'DIVERGENT' | 'UNKNOWN';
 
 export type VoosReceipt = {
   engine: typeof ENGINE;
+  entity: typeof DEUS_ENTITY;
   status: VoosStatus;
+  /** True only when the KAI Shield matched a trap phrase from the arena. */
+  game_detected: boolean;
+  /** What the machine did, stated plainly. Intervention is never execution. */
+  intervention_action: string;
   phase_t: number;
   evidence_hash: string;
   action: string;
@@ -192,10 +207,29 @@ export function runVoos(input: VoosInput, now = new Date().toISOString()): VoosR
     }
   }
 
+  const gameDetected = hits.length > 0;
+  let intervention: string;
+  if (intent.length === 0) {
+    intervention = 'No intervention. Intent was empty.';
+  } else if (gameDetected) {
+    intervention = 'KAI Shield pulled the plug. The arena did not enter the local node.';
+  } else if (status === 'VERIFIED') {
+    intervention = 'OMEGA confirmed Expected ≡ Observed on bytes produced outside the engine.';
+  } else if (status === 'DIVERGENT') {
+    intervention = 'OMEGA refused the offered observation. Nothing was executed.';
+  } else if (BRIDGE.test(intent)) {
+    intervention = 'No bridge called. Nothing left the local node.';
+  } else {
+    intervention = 'ELION composed inside the node. No external machine was invoked.';
+  }
+
   return {
     receipt: {
       engine: ENGINE,
+      entity: DEUS_ENTITY,
       status,
+      game_detected: gameDetected,
+      intervention_action: intervention,
       phase_t: phaseT,
       evidence_hash: digest,
       action,

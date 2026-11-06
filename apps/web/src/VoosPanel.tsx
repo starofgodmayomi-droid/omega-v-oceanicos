@@ -6,7 +6,10 @@ type VoosStatus = 'VERIFIED' | 'DIVERGENT' | 'UNKNOWN';
 
 type Receipt = {
   engine: string;
+  entity: string;
   status: VoosStatus;
+  game_detected: boolean;
+  intervention_action: string;
   phase_t: number;
   evidence_hash: string;
   action: string;
@@ -188,7 +191,7 @@ export function VoosPanel() {
           ΩVØØS
         </h2>
         <span style={{ fontSize: 10, letterSpacing: '0.18em', color: OCEAN.muted, textTransform: 'uppercase' }}>
-          Cosmic mirror · 30013030
+          Deus Ex Machina · 30013030
         </span>
         <span style={{ fontSize: 11, color: OCEAN.muted, marginLeft: 'auto' }}>
           ATTEST, DON&apos;T ASSERT · UNKNOWN PRESERVED
@@ -310,6 +313,21 @@ export function VoosPanel() {
                   phase_t {receipt.phase_t.toFixed(3)} · {receipt.evidence_hash.slice(0, 16)}…
                 </span>
               </div>
+              <p
+                data-testid="voos-intervention"
+                style={{
+                  margin: '0 0 8px',
+                  fontSize: 10,
+                  lineHeight: 1.6,
+                  color: receipt.game_detected ? '#f87171' : OCEAN.muted,
+                  fontFamily: OCEAN.mono,
+                  letterSpacing: '0.06em',
+                }}
+              >
+                {receipt.game_detected ? 'SQUIDDIES PROTOCOL · GAME DETECTED' : 'SQUIDDIES PROTOCOL · NO TRAP MATCHED'}
+                {' · '}
+                {receipt.intervention_action}
+              </p>
               <pre
                 data-testid="voos-receipt"
                 style={{
@@ -333,7 +351,7 @@ export function VoosPanel() {
             </>
           ) : (
             <p style={{ margin: 0, fontSize: 12, color: OCEAN.muted }}>
-              No receipt yet. The loop returns ENGINE, STATUS, PHASE_T, EVIDENCE_HASH, ACTION, REASON and NEXT_DELTA.
+              No receipt yet. The loop returns ENTITY, STATUS, GAME_DETECTED, INTERVENTION_ACTION, EVIDENCE_HASH and NEXT_DELTA.
             </p>
           )}
         </div>

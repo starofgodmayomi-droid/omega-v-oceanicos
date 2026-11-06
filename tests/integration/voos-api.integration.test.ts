@@ -9,7 +9,10 @@ import { openDatabase } from '../../apps/api/dist/sqlite.js';
 
 type Receipt = {
   engine: string;
+  entity: string;
   status: string;
+  game_detected: boolean;
+  intervention_action: string;
   phase_t: number;
   evidence_hash: string;
   action: string;
@@ -42,6 +45,9 @@ test('ΩVØØS halts a coercive intent DIVERGENT and authorizes nothing', async 
     assert.equal(statusCode, 200);
     const receipt = body.receipt as Receipt;
     assert.equal(receipt.engine, 'ΩVØØS');
+    assert.equal(receipt.entity, 'ΩVØØS_DEUS_EX_MACHINA');
+    assert.equal(receipt.game_detected, true);
+    assert.match(receipt.intervention_action, /KAI Shield pulled the plug/);
     assert.equal(receipt.status, 'DIVERGENT');
     assert.equal(receipt.action, 'HALT ⊢ DIVERGENT');
     assert.equal(receipt.phase_t, 0.1);
@@ -67,6 +73,8 @@ test('a local sentence stays UNKNOWN and is appended as a hash-chained row', asy
     const first = await execute(app, { intent: 'Map a patient plan for a book stall.', phaseT: 0 });
     const receipt = first.body.receipt as Receipt;
     assert.equal(receipt.status, 'UNKNOWN');
+    assert.equal(receipt.game_detected, false);
+    assert.match(receipt.intervention_action, /ELION composed inside the node/);
     assert.match(receipt.action, /^Sprout\./);
     assert.equal(receipt.evidence_hash, sha256Hex(receipt.action));
     assert.match(receipt.reason, /Composition is not Expected ≡ Observed/);
@@ -129,6 +137,8 @@ test('VERIFIED requires an observation declared outside the engine', async () =>
     });
     const verifiedReceipt = verified.body.receipt as Receipt;
     assert.equal(verifiedReceipt.status, 'VERIFIED');
+    assert.equal(verifiedReceipt.game_detected, false);
+    assert.match(verifiedReceipt.intervention_action, /Expected ≡ Observed/);
     assert.equal(verifiedReceipt.evidence_hash, sha256Hex(action));
     assert.match(verifiedReceipt.reason, /not that a real-world action happened/);
     assert.equal((verified.body.ledger as LedgerRow).authorized, false);
@@ -142,6 +152,8 @@ test('a named bridge is not executed and an abundance draft stays at four layers
   try {
     const bridge = await execute(app, { intent: 'Charge the customer in stripe.', phaseT: 0.4 });
     assert.equal((bridge.body.receipt as Receipt).status, 'UNKNOWN');
+    assert.equal((bridge.body.receipt as Receipt).game_detected, false);
+    assert.match((bridge.body.receipt as Receipt).intervention_action, /No bridge called/);
     assert.equal((bridge.body.receipt as Receipt).action, 'Bridge not called.');
     assert.match((bridge.body.receipt as Receipt).reason, /NOT_EXECUTED/);
 
