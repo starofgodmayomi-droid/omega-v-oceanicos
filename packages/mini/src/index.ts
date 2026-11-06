@@ -196,6 +196,15 @@ export {
 export type { FixpointInput, FixpointReason, FixpointStatus, FixpointStep } from './ecosystem-fixpoint.js';
 
 export {
+  easeOf,
+  evolutionPosition,
+  phaseOf,
+  EVOLUTION_CAPACITY,
+  EVOLUTION_LAW_ID,
+} from './evolution.js';
+export type { EvolutionPhase, EvolutionPosition } from './evolution.js';
+
+export {
   ECOSYSTEM_BODY_EQUATION_ID,
   ECOSYSTEM_BODY_EQUATION_SOURCE,
   ECOSYSTEM_BODY_REALITY,

@@ -8,7 +8,9 @@
 
 This is an activation prompt and design contract, not executable proof. The executable law of this repository remains [`ECOSYSTEM_BODY.md`](ECOSYSTEM_BODY.md): the halt order `DIVERGENT` → `UNKNOWN` → `NOT_EXECUTED` → `Expected ≡ Observed` is enforced by `packages/mini/src/ecosystem-fixpoint.ts` and `packages/mini/src/kaixelion-omega.ts`, and tested. The loop this repository actually runs today is documented in [`AGENTS.md`](AGENTS.md) and [`README.md`](README.md).
 
-Capabilities this directive names that are **not** implemented here stay `UNKNOWN` until a route and a test exist: `Ease(t)` growth pacing (SPROUT → BLOOM → PLATEAU → WILT), the `phase_t` receipt field, and the 888 Hz / 4-Layer Abundance Bridge. The receipt shape below is not the `/api/execute` response; that route returns its own recorded steps, `evidence_hash`, and an `upgrade` candidate with `execution: NOT_EXECUTED`.
+Implemented since preservation: the Evolution Law `Ease(t) = (1 - cos(t * π)) / 2` with the SPROUT → BLOOM → PLATEAU → WILT quarters ([`packages/mini/src/evolution.ts`](packages/mini/src/evolution.ts)), and the `phase_t` receipt field on every `POST /api/execute` response, derived from the verified rows the ledger holds against a declared capacity of 1024 and covered by [`tests/integration/evolution-ease.integration.test.ts`](tests/integration/evolution-ease.integration.test.ts).
+
+Still `UNKNOWN`, because no route or test implements it: the 888 Hz / 4-Layer Abundance Bridge. The receipt shape below is not the `/api/execute` response; that route returns its own recorded steps, `evidence_hash`, `phase_t`, an `evolution` block, and an `upgrade` candidate with `execution: NOT_EXECUTED`.
 
 Adopting this prompt grants no authority. `POSSIBLE ≠ KNOWN ≠ EXECUTED ≠ OBSERVED ≠ VERIFIED ≠ REALITY`.
 

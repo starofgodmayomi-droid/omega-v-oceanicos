@@ -61,6 +61,30 @@ Architecture does **not** begin as the giant ecosystem. It begins at **ZERO**, b
 
 ---
 
+## Evolution law
+
+Growth toward a declared capacity is paced, not linear:
+
+```text
+Ease(t) = (1 - cos(t * π)) / 2        t ∈ [0, 1]
+
+SPROUT   [0.00, 0.25)
+BLOOM    [0.25, 0.50)
+PLATEAU  [0.50, 0.75)
+WILT     [0.75, 1.00]
+```
+
+`t` is `verified rows / EVOLUTION_CAPACITY` (1024, declared in
+`packages/mini/src/evolution.ts`), so a position describes memory the ledger
+actually holds. WILT is the closing quarter, where the curve has nearly stopped
+adding value: reaching the bound is a decision point for a declared expansion,
+not permission to keep growing. Every `POST /api/execute` response carries
+`phase_t` and an `evolution` block. The law is a read — out-of-range input is
+refused with `null`, a saturated position reports `saturated: true`, and no
+position changes a verdict, grants authority, or remembers anything.
+
+---
+
 ## Zero
 
 ```text

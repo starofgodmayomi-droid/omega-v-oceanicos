@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify';
+import { evolutionPosition } from '@oceanicos/mini';
 import {
   authoritySatisfies,
   compressTowardUpgrade,
@@ -74,6 +75,13 @@ export function registerExecuteRoute(
       });
     };
 
+    // Evolution Law: the receipt carries the growth position of the verified
+    // memory this cycle actually earned. It is a read; it authorizes nothing.
+    const evolutionReceipt = () => {
+      const evolution = evolutionPosition(store.count());
+      return { phase_t: evolution ? evolution.phase_t : null, evolution };
+    };
+
     // Step 1 — KAI observe: the shield halts before anything is executed.
     const shield = scanIntent(intent);
     if (shield.blocked) {
@@ -97,6 +105,7 @@ export function registerExecuteRoute(
         engine: null,
         model_error: null,
         evaluated_at: new Date().toISOString(),
+        ...evolutionReceipt(),
         upgrade: compressTowardUpgrade({ cycleStatus: 'DIVERGENT', evidenceHash: null }),
       });
     }
@@ -126,6 +135,7 @@ export function registerExecuteRoute(
         engine: null,
         model_error: null,
         evaluated_at: new Date().toISOString(),
+        ...evolutionReceipt(),
         upgrade: compressTowardUpgrade({ cycleStatus: 'NOT_EXECUTED', evidenceHash: null }),
       });
     }
@@ -196,6 +206,7 @@ export function registerExecuteRoute(
       engine: elion.engine,
       model_error: elion.error,
       evaluated_at: new Date().toISOString(),
+      ...evolutionReceipt(),
       upgrade: compressTowardUpgrade({
         cycleStatus: omega.status,
         evidenceHash: elion.output ? evidenceHash : null,

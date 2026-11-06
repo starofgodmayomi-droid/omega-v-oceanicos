@@ -74,4 +74,6 @@ Detail: [docs/ECOSYSTEM-BODY-EQUATION.md](docs/ECOSYSTEM-BODY-EQUATION.md).
 
 ### THE ENTITY BODY DIRECTIVE
 
-The preserved ΩVØØS single full-stack entity body — KAI → ELION → OMEGA as one pasted activation prompt — is [SOVEREIGN-OS-ENTITY-BODY.md](SOVEREIGN-OS-ENTITY-BODY.md). It is design intent and a prompt, not an executed path: it does not override the halt order above, and the capabilities it names that this repository does not implement (`Ease(t)` pacing, `phase_t`, the 888 Hz abundance bridge) remain `UNKNOWN` until a route and a test exist.
+The preserved ΩVØØS single full-stack entity body — KAI → ELION → OMEGA as one pasted activation prompt — is [SOVEREIGN-OS-ENTITY-BODY.md](SOVEREIGN-OS-ENTITY-BODY.md). It is design intent and a prompt, not an executed path: it does not override the halt order above.
+
+Two of the laws it names are now executed. `Ease(t) = (1 - cos(t * π)) / 2` and the SPROUT → BLOOM → PLATEAU → WILT phases live in [packages/mini/src/evolution.ts](packages/mini/src/evolution.ts), and every `POST /api/execute` response carries `phase_t` plus an `evolution` block read from the verified rows the ledger holds ([tests/integration/evolution-ease.integration.test.ts](tests/integration/evolution-ease.integration.test.ts)). The position is a read: it changes no verdict, grants no authority, and cannot remember. The 888 Hz / 4-Layer Abundance Bridge remains `UNKNOWN` — no route or test implements it.

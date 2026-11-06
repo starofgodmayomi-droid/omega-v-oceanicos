@@ -175,6 +175,13 @@ missing, or KAI blocks a matching intent. Provider availability and model
 output are not independently validated facts; the output digest verifies text
 integrity only.
 
+Every `/api/execute` response also carries `phase_t` and an `evolution` block:
+the Evolution Law `Ease(t) = (1 - cos(t * π)) / 2` applied to the verified rows
+the ledger holds against a declared capacity of 1024
+([`packages/mini/src/evolution.ts`](../../packages/mini/src/evolution.ts)). The
+block describes stored rows, not a growth claim: it changes no verdict, grants
+no authority, and is `null` only when a position cannot be derived.
+
 Value Navigator proposals always remain `decision: REVIEW`,
 `authorized: false`, and `NOT_EXECUTED`. Observations are supplied by the
 caller; a `VERIFIED` result means only that the submitted source/evidence and

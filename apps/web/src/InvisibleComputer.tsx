@@ -32,6 +32,15 @@ type ExecutionResult = {
   contract: { id: string; authority_level: string; expected_outcome: string } | null;
   memory: { id: string; timestamp: string } | null;
   engine: string | null;
+  phase_t: number | null;
+  evolution: {
+    phase: string;
+    ease: number;
+    remaining: number;
+    verified: number;
+    capacity: number;
+    saturated: boolean;
+  } | null;
   upgrade?: {
     execution: 'NOT_EXECUTED';
     selected: { id: string } | null;
@@ -372,6 +381,13 @@ export function InvisibleComputer() {
               </span>
             )}
             {result.engine && <span>ELION · {result.engine}</span>}
+            {result.evolution && (
+              <span>
+                EASE · {result.evolution.phase} · t {result.phase_t?.toFixed(3) ?? '—'} ·{' '}
+                {result.evolution.ease.toFixed(3)}
+                {result.evolution.saturated ? ' · SATURATED' : ''}
+              </span>
+            )}
             {result.memory && <span>REMEMBERED · {result.memory.id.slice(0, 8)}</span>}
             {result.upgrade && (
               <span>
