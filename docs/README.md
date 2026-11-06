@@ -21,6 +21,7 @@ This documentation set is intentionally explicit about what is implemented, what
 - **[Charter](../CHARTER.md)** — Our living agnostic principles and decision-making philosophy
 - **[Manifest](../MANIFEST.md)** — Project mission, architecture, and verification loop
 - **[Entity Manifest](../ECOSYSTEM_BODY.md)** — the constitutional compression of Ω∞v OCEANICOS as a sovereign digital entity
+- **[Master Entity](../MASTER_ENTITY.md)** — the ΩVØØS entity body: the laws, the 11:11 protocol, the output contract, and §VIII's reality map of what is implemented versus `NOT_EXECUTED`
 - **[Therapeutic State Machine](./THERAPEUTIC-STATE-MACHINE.md)** — KAI / ELION / OMEGA operating model for bounded human-centered execution
 - **[Contributing](../CONTRIBUTING.md)** — How to submit PRs and work within our verification-first culture
 
