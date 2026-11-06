@@ -2161,6 +2161,18 @@ body {
 .whole-bottom-current { gap: 4px; justify-content: space-between; overflow-x: auto; padding: 11px 2px 1px; }
 .whole-bottom-current button { flex: 0 0 auto; padding: 4px 5px; border: 0; background: transparent; color: #64748b; font: 9px 'DM Mono', monospace; cursor: pointer; }
 .whole-bottom-current button:hover { color: #67e8f9; }
+.whole-deus { margin: 12px 0 2px; padding: 11px 12px; border: 1px solid rgba(0, 229, 255, 0.22); border-radius: 13px; background: rgba(3, 8, 18, 0.55); }
+.whole-deus-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-bottom: 8px; border-bottom: 1px solid rgba(148, 163, 184, 0.12); }
+.whole-deus-head .whole-ecosystem-label { padding: 0; color: #67e8f9; }
+.whole-deus-entity { color: #64748b; font: 9px 'DM Mono', monospace; letter-spacing: 0.1em; white-space: nowrap; }
+.whole-deus-body { display: flex; align-items: flex-start; gap: 12px; padding-top: 10px; }
+.whole-deus-status { flex: 0 0 auto; padding: 3px 10px; border: 1px solid; border-radius: 999px; font: 11px 'DM Mono', monospace; letter-spacing: 0.14em; }
+.whole-deus-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px 14px; min-width: 0; }
+.whole-deus-fields div { display: grid; gap: 3px; min-width: 0; }
+.whole-deus-fields span { color: #64748b; font: 9px 'DM Mono', monospace; letter-spacing: 0.12em; }
+.whole-deus-fields b { color: #cbd5e1; font: 10px/1.5 'DM Mono', monospace; font-weight: 500; overflow-wrap: anywhere; }
+.whole-deus-empty { margin: 10px 0 0; color: #64748b; font: 10px/1.6 'DM Mono', monospace; }
+@media (max-width: 560px) { .whole-deus-head { align-items: flex-start; flex-direction: column; } .whole-deus-body { flex-direction: column; } }
 @media (max-width: 820px) { .whole-ecosystem-grid { grid-template-columns: 1fr 1.6fr; } .whole-reality-panel { grid-column: 1 / -1; } }
 @media (max-width: 560px) { .whole-ecosystem-grid { grid-template-columns: 1fr; } .whole-reality-panel { grid-column: auto; } .whole-ecosystem-header { align-items: flex-start; flex-direction: column; } .whole-value-current { align-items: flex-start; flex-direction: column; } .whole-value-unknown { text-align: left; } }
 

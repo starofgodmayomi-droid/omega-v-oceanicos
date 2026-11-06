@@ -4,6 +4,8 @@ import { boundedStatus, statusCounts, STATUS_ORDER, summarizeLucidField, type Re
 import { AgentSafetyBoundaryPanel } from './AgentSafetyBoundaryPanel';
 import { WorkerCoordinationPanel } from './WorkerCoordinationPanel';
 import { SingleBodyPanel } from './SingleBodyPanel';
+import { DeusReceiptCard } from './DeusReceiptCard';
+import type { VoosReceipt } from './voos-receipt';
 
 type Props = {
   streamConnected: boolean;
@@ -15,6 +17,7 @@ type Props = {
   ecosystemBody: any;
   omegaCommand: any;
   onFocusCommand: (prompt: string) => void;
+  deusReceipt: VoosReceipt | null;
 };
 
 const ORGANS = [
@@ -134,6 +137,8 @@ export function WholeEcosystemDashboard(props: Props) {
         </div>
         <span className="whole-ecosystem-state"><i className="status-dot" /> {props.simulationMode ? 'BOUNDED SIMULATION' : 'LIVE STATE'}</span>
       </header>
+
+      <DeusReceiptCard receipt={props.deusReceipt} />
 
       <div className="whole-ecosystem-grid">
         <nav className="whole-ecosystem-organs" aria-label="Ecosystem organs">

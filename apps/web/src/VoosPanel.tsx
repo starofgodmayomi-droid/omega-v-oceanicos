@@ -1,21 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import type { VoosReceipt, VoosStatus } from './voos-receipt';
 
 const API_BASE_URL = (import.meta.env?.VITE_API_URL || '/api').replace(/\/$/, '');
-
-type VoosStatus = 'VERIFIED' | 'DIVERGENT' | 'UNKNOWN';
-
-type Receipt = {
-  engine: string;
-  entity: string;
-  status: VoosStatus;
-  game_detected: boolean;
-  intervention_action: string;
-  phase_t: number;
-  evidence_hash: string;
-  action: string;
-  reason: string;
-  next_delta: string;
-};
 
 type LedgerRow = {
   sequence: number;
@@ -113,12 +99,18 @@ const inputStyle: React.CSSProperties = {
  * endpoint emitted it and the append-only KAI Ledger beneath it, so an UNKNOWN
  * verdict is displayed as UNKNOWN rather than dressed up as completion.
  */
-export function VoosPanel() {
+export function VoosPanel({
+  receipt,
+  onReceipt,
+}: {
+  /** The last receipt this session observed; owned by App so the dashboard shows the same one. */
+  receipt: VoosReceipt | null;
+  onReceipt: (receipt: VoosReceipt) => void;
+}) {
   const [intent, setIntent] = useState('');
   const [phaseT, setPhaseT] = useState(0);
   const [observed, setObserved] = useState('');
   const [source, setSource] = useState('');
-  const [receipt, setReceipt] = useState<Receipt | null>(null);
   const [entries, setEntries] = useState<LedgerRow[]>([]);
   const [integrity, setIntegrity] = useState<Integrity | null>(null);
   const [busy, setBusy] = useState(false);
@@ -150,12 +142,12 @@ export function VoosPanel() {
         body.observed = observed;
         body.source = source.trim();
       }
-      const data = await request<{ success: true; receipt: Receipt }>('/v1/voos/execute', {
+      const data = await request<{ success: true; receipt: VoosReceipt }>('/v1/voos/execute', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
-      setReceipt(data.receipt);
+      onReceipt(data.receipt);
       await refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Execution rejected');

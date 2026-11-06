@@ -13,6 +13,7 @@ import { MoodCodexPanel } from './MoodCodexPanel';
 import { DivergenceAlertsPanel } from './DivergenceAlertsPanel';
 import { ValueNavigatorPanel } from './ValueNavigatorPanel';
 import { VoosPanel } from './VoosPanel';
+import type { VoosReceipt } from './voos-receipt';
 import { ConnectorPanel } from './ConnectorPanel';
 import { WholeEcosystemDashboard } from './WholeEcosystemDashboard';
 import { InvisibleComputer } from './InvisibleComputer';
@@ -77,6 +78,7 @@ export function App() {
   const [keyPair, setKeyPair] = useState<KeyPair | null>(null);
   const [signRequests, setSignRequests] = useState(false);
   const [lastError, setLastError] = useState<string | null>(null);
+  const [voosReceipt, setVoosReceipt] = useState<VoosReceipt | null>(null);
   const [reconnectAttempt, setReconnectAttempt] = useState(0);
 
   const [minerActive, setMinerActive] = useState(false);
@@ -766,6 +768,7 @@ export function App() {
           ecosystemBody={ecosystemBody}
           omegaCommand={omegaCommand}
           onFocusCommand={setOmegaIntent}
+          deusReceipt={voosReceipt}
         />
         <WaterFlowPanel />
 
@@ -878,7 +881,7 @@ export function App() {
         <MoodCodexPanel />
         <DivergenceAlertsPanel />
         <ValueNavigatorPanel />
-        <VoosPanel />
+        <VoosPanel receipt={voosReceipt} onReceipt={setVoosReceipt} />
         <ConnectorPanel />
 
         <IntentFlow
