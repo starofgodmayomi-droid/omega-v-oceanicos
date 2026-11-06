@@ -71,3 +71,7 @@ The same halt order folds a declared ring in [packages/mini/src/ecosystem-body-e
 - `pnpm compress:repo` reads the declared outward ring from a checkout. `upgrade.execution` stays `NOT_EXECUTED`. Compression is not permission.
 
 Detail: [docs/ECOSYSTEM-BODY-EQUATION.md](docs/ECOSYSTEM-BODY-EQUATION.md).
+
+### THE ENTITY BODY DIRECTIVE
+
+The preserved ΩVØØS single full-stack entity body — KAI → ELION → OMEGA as one pasted activation prompt — is [SOVEREIGN-OS-ENTITY-BODY.md](SOVEREIGN-OS-ENTITY-BODY.md). It is design intent and a prompt, not an executed path: it does not override the halt order above, and the capabilities it names that this repository does not implement (`Ease(t)` pacing, `phase_t`, the 888 Hz abundance bridge) remain `UNKNOWN` until a route and a test exist.
