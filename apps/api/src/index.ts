@@ -25,6 +25,7 @@ import { OmegaCommandStore, OmegaIdempotencyConflictError, registerOmegaRoutes }
 import { registerMeshValidationRoute } from './mesh-route.js';
 import { KaiMemoryStore } from './kai-memory.js';
 import { registerExecuteRoute } from './execute-route.js';
+import { registerOvoosRoute } from './ovoos-route.js';
 import { scanIntent } from './invisible-computer.js';
 import {
   ENCRYPTION_ALGORITHM,
@@ -336,6 +337,7 @@ export function createApp(
   });
 
   fastify.get('/v1/kernel/capabilities', async () => ({ success: true, capability: platformKernel.getCapabilitySnapshot(), evaluatedAt: new Date().toISOString() }));
+  registerOvoosRoute(fastify, requireReadAccess);
   fastify.get('/v1/ecosystem/body', async () => {
     const evaluatedAt = new Date().toISOString();
     const telemetry = ObserverEngine.generateTelemetry();

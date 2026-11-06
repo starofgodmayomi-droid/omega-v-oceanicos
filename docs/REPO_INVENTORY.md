@@ -40,7 +40,7 @@ PRESENT ON DISK
 | **SOURCE-ONLY** | Package directory exists under `packages/`, but is not listed in `pnpm-workspace.yaml`. |
 | **STUB** | A source-only directory with a thin implementation; not an active workspace capability. |
 
-## API-DECLARED — workspace + direct API dependency (9 packages)
+## API-DECLARED — workspace + direct API dependency (10 packages)
 
 | Package | Name | Declared role |
 |---|---|---|
@@ -53,6 +53,7 @@ PRESENT ON DISK
 | `kernel` | `@omega-v/kernel` | Finite-state kernel |
 | `oreade` | `@omega-v/oreade` | ƆREADE layer, not authority |
 | `mood` | `@omega-v/mood` | Planning context, not evidence |
+| `ovoos` | `@oceanicos/ovoos` | Bounded ΩVØØS receipt, read-only |
 
 The API manifest declares these workspace dependencies. The list alone does not prove each is imported, executed, or exposed as an API capability.
 
@@ -91,8 +92,8 @@ Unresolved naming edge. Do not silently rename packages.
 
 | Category | Count | Action |
 |---|---:|---|
-| Workspace members | 20 (18 packages + 2 apps) | Membership only; do not infer capability |
-| API-declared | 9 packages | Direct manifest dependencies; verify actual use separately |
+| Workspace members | 21 (19 packages + 2 apps) | Membership only; do not infer capability |
+| API-declared | 10 packages | Direct manifest dependencies; verify actual use separately |
 | Workspace-only | 9 packages | Not direct API dependencies |
 | On-disk, off-workspace | Non-exhaustive | Promote only when earned |
 
