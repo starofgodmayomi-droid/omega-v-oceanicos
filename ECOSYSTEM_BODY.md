@@ -71,3 +71,9 @@ The same halt order folds a declared ring in [packages/mini/src/ecosystem-body-e
 - `pnpm compress:repo` reads the declared outward ring from a checkout. `upgrade.execution` stays `NOT_EXECUTED`. Compression is not permission.
 
 Detail: [docs/ECOSYSTEM-BODY-EQUATION.md](docs/ECOSYSTEM-BODY-EQUATION.md).
+
+### STORED DIRECTIVE
+
+On 2026-11-06 the human supplied one system directive and asked for it to be saved as `ECOSYSTEM_BODY.md`. The bytes are stored verbatim at [ΩVØØS/CORE/ECOSYSTEM_BODY.md](ΩVØØS/CORE/ECOSYSTEM_BODY.md). That file is the supplied prompt. It does not replace the fixpoint in this file.
+
+`30013030` is still a symbol. This repository does not verify it. Reading the prompt does not put a runtime online. [ΩVØØS/backend_magic.ts](ΩVØØS/backend_magic.ts) returns the prompt's receipt shape and fails closed: a self-hash of a local sentence stays `UNKNOWN`, not `VERIFIED`. The function does not write a ledger.
