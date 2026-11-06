@@ -24,7 +24,11 @@ services:
     working_dir: /app
     volumes:
       - .:/app
-    command: sh -c "mkdir -p data && npx tsc --watch -p apps/api & node --watch apps/api/dist/index.js"
+    # Start node --watch only after tsc's initial pass finished: emitting ~9 files
+    # into dist while node --watch is already running restarted the server nine
+    # times in a row at boot, so the WORKERS panel's poll hit a closed port
+    # (ECONNREFUSED through the Vite proxy). Later edits emit one file → one restart.
+    command: sh -c "mkdir -p data && (npx tsc --watch -p apps/api > /tmp/tsc.log 2>&1 &) && until grep -q 'Watching for file changes' /tmp/tsc.log 2>/dev/null; do sleep 0.3; done && exec node --watch apps/api/dist/index.js"
     environment:
       - NODE_ENV=development
       - API_PORT=5000
