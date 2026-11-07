@@ -12,7 +12,7 @@ import { AsymmetricValidationGuard, DeclarativeVerificationEngine, MultiRegionMe
 import { ObserverEngine } from '@oceanicos/observer';
 import { AttestationService } from '@oceanicos/attestation';
 import { OceanicosKernel } from '@omega-v/kernel';
-import { createMoodContext, proposeMoodCodex } from '@omega-v/mood';
+import { createMoodContext, MoodEvaluator, proposeMoodCodex } from '@omega-v/mood';
 import { LocalJobError, LocalJobLedger, LOCAL_JOB_WINDOW } from './jobs.js';
 import { registerPipelineRoute, type PipelineAdmissionEvidenceResolver } from './pipeline-route.js';
 import { registerEcosystemRoute } from './ecosystem-route.js';
@@ -126,6 +126,7 @@ export function createApp(
   const fastify = Fastify({ logger });
   const ledgerMemory = new RememberEngine(dbPath);
   const kernel = new MiniKernel(ledgerMemory);
+  const moodEvaluator = new MoodEvaluator();
   const platformKernel = new OceanicosKernel();
   const declarativeVerification = new DeclarativeVerificationEngine();
   const allowUnsignedCycle = options.allowUnsignedCycle ?? process.env.OMEGA_ALLOW_UNSIGNED_CYCLE === 'true';
@@ -496,7 +497,29 @@ export function createApp(
       }),
     };
   });
-  fastify.get('/v1/mood', async () => ({ success: true, status: 'MAX GOOD-O', contract: 'Ω∞v totality / attest-dont-assert', brand: 'Oceanicos Ω∞', ledger: { ready: Boolean(ledgerMemory.getTip()) }, evaluatedAt: new Date().toISOString() }));
+  fastify.get('/v1/mood', async () => {
+    const integrity = ledgerMemory.verifyChain();
+    const hasEvidence = integrity.height > 0;
+    const evaluation = moodEvaluator.evaluate(
+      {
+        totalObservations: integrity.height,
+        totalVerifications: integrity.height,
+        successRate: hasEvidence && integrity.valid ? 1 : 0,
+        systemConfidence: hasEvidence && integrity.valid ? 1 : 0,
+      },
+      integrity.valid,
+    );
+    return {
+      success: true,
+      status: 'MAX GOOD-O',
+      contract: 'Ω∞v totality / attest-dont-assert',
+      brand: 'Oceanicos Ω∞',
+      ledger: { ready: Boolean(ledgerMemory.getTip()), integrity },
+      evaluation,
+      evidenceBoundary: 'Mood is bounded runtime context derived from local ledger evidence; it is not truth, authority, consent, or deployment health.',
+      evaluatedAt: new Date().toISOString(),
+    };
+  });
   fastify.get('/v1/therapeutic/state', async () => {
     const integrity = ledgerMemory.verifyChain();
     const status = integrity.valid ? 'READY' : 'DEGRADED';

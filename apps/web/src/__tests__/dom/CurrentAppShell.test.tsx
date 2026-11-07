@@ -9,6 +9,7 @@ describe('current OceanicOS app shell', () => {
     installFetch();
     render(<App />);
 
+    await userEvent.click(await screen.findByRole('button', { name: /open background full-stack/i }));
     const dashboard = await screen.findByRole('region', { name: 'Whole ecosystem command surface' });
     expect(within(dashboard).getByRole('img', { name: /conceptual OCEANICOS system map/i })).toBeInTheDocument();
     expect(within(dashboard).getByText(/relationships shown, not live topology/i)).toBeInTheDocument();
@@ -22,6 +23,7 @@ describe('current OceanicOS app shell', () => {
     const user = userEvent.setup();
     render(<App />);
 
+    await user.click(await screen.findByRole('button', { name: /open background full-stack/i }));
     await user.click(await screen.findByRole('button', { name: /AI SOUL/i }));
 
     expect(screen.getByPlaceholderText("Tell me what you're trying to do…")).toHaveValue('Map AI SOUL.');
