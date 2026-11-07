@@ -3,8 +3,8 @@
 # Ω∞v Oceanicos API
 #
 # The repository had no packaging of any kind: every green pipeline proved
-# the code passes its own tests, never that it runs. This produces the
-# artifact, and CI proves it starts, serves, and refuses to start unsafely.
+the code passes its own tests, never that it runs. This produces the
+artifact, and CI proves it starts, serves, and refuses to start unsafely.
 
 FROM node:22-alpine AS builder
 
@@ -32,6 +32,7 @@ RUN pnpm --filter @oceanicos/types build \
  && pnpm --filter @oceanicos/attestation build \
  && pnpm --filter @omega-v/oreade build \
  && pnpm --filter @omega-v/mood build \
+ && pnpm --filter @oceanicos/ovoos build \
  && pnpm --filter api build \
  && pnpm --filter web build
 
